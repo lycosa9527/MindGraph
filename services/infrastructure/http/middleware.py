@@ -607,6 +607,7 @@ def setup_middleware(app: FastAPI):
         allowed_origins = [
             base_server_url,
             "http://localhost:3000",
+            "http://localhost:9527",
             "http://127.0.0.1:9527",
             "http://localhost:41732",
             "http://127.0.0.1:41732",

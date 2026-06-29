@@ -82,7 +82,7 @@ def test_chat_handoff_ingest_rejects_used_code(client: TestClient) -> None:
 
 
 def test_chat_handoff_ingest_success(client: TestClient) -> None:
-    """Successful ingest marks handoff received then indexing."""
+    """Successful ingest adds transcript to package without starting indexing."""
     app.dependency_overrides[get_current_user] = _make_user
 
     async def _mock_db():
@@ -99,10 +99,10 @@ def test_chat_handoff_ingest_success(client: TestClient) -> None:
         file_name="chat.md",
         file_type="text/markdown",
         file_size=10,
-        status="processing",
+        status="pending",
         chunk_count=0,
         error_message=None,
-        processing_progress="queued",
+        processing_progress=None,
         processing_progress_percent=0,
         doc_metadata={},
         created_at=SimpleNamespace(isoformat=lambda: "2026-01-01T00:00:00"),
@@ -116,8 +116,6 @@ def test_chat_handoff_ingest_success(client: TestClient) -> None:
         ) as claim,
         patch("routers.api.knowledge_space.chat_handoff.update_handoff_status", new_callable=AsyncMock) as update,
         patch("routers.api.knowledge_space.chat_handoff.KnowledgePackageService") as service_cls,
-        patch("routers.api.knowledge_space.chat_handoff.process_document_task") as task,
-        patch("routers.api.knowledge_space.chat_handoff._enqueue_processing"),
     ):
         claim.return_value = record
         service = service_cls.return_value
@@ -136,11 +134,65 @@ def test_chat_handoff_ingest_success(client: TestClient) -> None:
     assert response.status_code == 200
     assert update.await_count == 1
     assert update.await_args_list[0].args[0] == "123456"
-    assert update.await_args_list[0].args[1] == "indexing"
+    assert update.await_args_list[0].args[1] == "done"
     service.add_text_source.assert_awaited_once()
     await_args = service.add_text_source.await_args
     assert await_args is not None
     add_kwargs = await_args.kwargs
     assert add_kwargs["extra_metadata"]["handoff_code"] == "123456"
     assert add_kwargs["extra_metadata"]["source_export_name"] == "chat.txt"
-    task.delay.assert_called_once()
+
+
+def test_chat_handoff_ingest_wecom_platform(client: TestClient) -> None:
+    """WeCom platform maps to wecom ingest_source metadata."""
+    app.dependency_overrides[get_current_user] = _make_user
+
+    async def _mock_db():
+        mock_db = MagicMock()
+        mock_db.commit = AsyncMock()
+        mock_db.add = MagicMock()
+        yield mock_db
+
+    app.dependency_overrides[get_async_db] = _mock_db
+
+    record = ChatHandoffRecord(user_id=42, package_id=3, status="received")
+    document = SimpleNamespace(
+        id=89,
+        file_name="wecom-chat.md",
+        file_type="text/markdown",
+        file_size=10,
+        status="processing",
+        chunk_count=0,
+        error_message=None,
+        processing_progress="queued",
+        processing_progress_percent=0,
+        doc_metadata={},
+        created_at=SimpleNamespace(isoformat=lambda: "2026-01-01T00:00:00"),
+        updated_at=SimpleNamespace(isoformat=lambda: "2026-01-01T00:00:00"),
+    )
+    batch = SimpleNamespace(id=3)
+    with (
+        patch(
+            "routers.api.knowledge_space.chat_handoff.claim_handoff_for_ingest",
+            new_callable=AsyncMock,
+        ) as claim,
+        patch("routers.api.knowledge_space.chat_handoff.update_handoff_status", new_callable=AsyncMock),
+        patch("routers.api.knowledge_space.chat_handoff.KnowledgePackageService") as service_cls,
+    ):
+        claim.return_value = record
+        service = service_cls.return_value
+        service.get_package = AsyncMock(return_value=batch)
+        service.add_text_source = AsyncMock(return_value=document)
+        response = client.post(
+            "/api/knowledge-space/chat-handoff/ingest",
+            json={
+                "code": "654321",
+                "platform": "wecom",
+                "chat_title": "WeCom group",
+                "content": "Alice: hi",
+            },
+        )
+    assert response.status_code == 200
+    await_args = service.add_text_source.await_args
+    assert await_args is not None
+    assert await_args.kwargs["source_kind"] == "wecom"

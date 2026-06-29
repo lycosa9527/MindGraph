@@ -285,6 +285,11 @@ class QdrantService(QdrantDiagnosticsMixin):
                     field_name="chunk_id",
                     field_schema=rest.PayloadSchemaType.KEYWORD,
                 )
+                await self.client.create_payload_index(
+                    collection_name=collection_name,
+                    field_name="section_key",
+                    field_schema=rest.PayloadSchemaType.KEYWORD,
+                )
             except QDRANT_ERRORS as exc:
                 logger.debug("[Qdrant] Payload index creation (may already exist): %s", exc)
 
@@ -480,6 +485,100 @@ class QdrantService(QdrantDiagnosticsMixin):
                 tags={"user_id": user_id, "operation": "search"},
             )
             raise
+
+    async def scroll_chunk_ids(
+        self,
+        user_id: int,
+        metadata_filter: Optional[Dict[str, Any]] = None,
+        limit: int = 256,
+    ) -> List[int]:
+        """Return chunk IDs matching payload filters (ordered by Qdrant scroll, not chunk_index)."""
+        collection_name = await self.get_user_collection(user_id)
+        if not collection_name:
+            return []
+
+        filter_conditions = [
+            rest.FieldCondition(
+                key="user_id",
+                match=rest.MatchValue(value=str(user_id)),
+            )
+        ]
+        if metadata_filter:
+            _append_metadata_filter_conditions(metadata_filter, filter_conditions)
+
+        query_filter = rest.Filter(must=cast(List[rest.Condition], filter_conditions))
+
+        try:
+            points, _next = await self.client.scroll(
+                collection_name=collection_name,
+                scroll_filter=query_filter,
+                limit=limit,
+                with_payload=False,
+                with_vectors=False,
+            )
+        except QDRANT_ERRORS as exc:
+            logger.error("[Qdrant] Scroll failed for user %s: %s", user_id, exc)
+            return []
+
+        chunk_ids: List[int] = []
+        for point in points:
+            try:
+                chunk_ids.append(int(point.id))
+            except (TypeError, ValueError):
+                continue
+        return chunk_ids
+
+    async def scroll_chunk_payloads(
+        self,
+        user_id: int,
+        metadata_filter: Optional[Dict[str, Any]] = None,
+        limit: int = 512,
+    ) -> List[Dict[str, Any]]:
+        """Return chunk IDs and selected payload fields for metadata-only scroll."""
+        collection_name = await self.get_user_collection(user_id)
+        if not collection_name:
+            return []
+
+        filter_conditions = [
+            rest.FieldCondition(
+                key="user_id",
+                match=rest.MatchValue(value=str(user_id)),
+            )
+        ]
+        if metadata_filter:
+            _append_metadata_filter_conditions(metadata_filter, filter_conditions)
+
+        query_filter = rest.Filter(must=cast(List[rest.Condition], filter_conditions))
+
+        try:
+            points, _next = await self.client.scroll(
+                collection_name=collection_name,
+                scroll_filter=query_filter,
+                limit=limit,
+                with_payload=True,
+                with_vectors=False,
+            )
+        except QDRANT_ERRORS as exc:
+            logger.error("[Qdrant] Payload scroll failed for user %s: %s", user_id, exc)
+            return []
+
+        rows: List[Dict[str, Any]] = []
+        for point in points:
+            try:
+                chunk_id = int(point.id)
+            except (TypeError, ValueError):
+                continue
+            payload = point.payload or {}
+            rows.append(
+                {
+                    "chunk_id": chunk_id,
+                    "section_key": payload.get("section_key"),
+                    "section_title": payload.get("section_title"),
+                    "section_number": payload.get("section_number"),
+                    "document_id": payload.get("document_id"),
+                }
+            )
+        return rows
 
     async def delete_chunks(
         self,

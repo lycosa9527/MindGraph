@@ -6,7 +6,6 @@ and github.com/svcvit/chatlog pkg/util/dat2img.
 
 from __future__ import annotations
 
-import ctypes
 import os
 import re
 import subprocess

@@ -1,5 +1,5 @@
 /**
- * en UI � common
+ * ig UI � common
  */
 
 export default {

@@ -2,14 +2,8 @@
 /**
  * KnowledgeSpacePage - Personal Knowledge Space interface
  * Route: /knowledge-space
- * Full-page layout with header, document table, and modals
- *
- * Features:
- * - Background processing: Documents process in background, user can navigate away
- * - State persistence: Pinia store persists state across navigation
- * - Auto-resume polling: Automatically resumes polling when returning to page
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import ChunkPreviewModal from '@/components/knowledge-space/ChunkPreviewModal.vue'
 import DocumentTable from '@/components/knowledge-space/DocumentTable.vue'
@@ -19,10 +13,13 @@ import KnowledgeSpacePackageGroups from '@/components/knowledge-space/KnowledgeS
 import KnowledgeSpaceSettings from '@/components/knowledge-space/KnowledgeSpaceSettings.vue'
 import ProcessingProgressBar from '@/components/knowledge-space/ProcessingProgressBar.vue'
 import RetrievalTest from '@/components/knowledge-space/RetrievalTest.vue'
-import { useKnowledgeSpace } from '@/composables/knowledge/useKnowledgeSpace'
+import { useKnowledgeSpacePackagePage } from '@/composables/knowledge/useKnowledgeSpacePackagePage'
+import { documentNeedsPipelinePoll } from '@/composables/knowledge/usePipelineStatusBadge'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 
 const {
+  activePackageId,
+  activePackageName,
   documents,
   loading,
   uploading,
@@ -30,13 +27,12 @@ const {
   completedCount,
   pendingCount,
   canUpload,
-  fetchDocuments,
+  resumePolling,
   uploadDocument,
   deleteDocument,
   startProcessing,
   processSelected,
-  resumePolling,
-} = useKnowledgeSpace()
+} = useKnowledgeSpacePackagePage()
 
 const selectedDocumentIds = ref<number[]>([])
 const showUploadModal = ref(false)
@@ -46,104 +42,82 @@ const showChunkPreviewModal = ref(false)
 const viewingDocumentId = ref<number | null>(null)
 const viewingDocumentName = ref('')
 
-onMounted(async () => {
-  // Fetch documents first
-  await fetchDocuments()
-  // Resume polling for any documents that are processing
-  // This ensures progress continues even if user navigated away
+onMounted(() => {
   resumePolling()
 })
 
-onUnmounted(() => {
-  // Clean up polling when component unmounts
-  // Note: We don't stop polling completely because user might navigate to another page
-  // and come back. Polling will resume automatically via resumePolling()
-  // Only stop if we're sure user is leaving the app (handled by app-level cleanup if needed)
-})
+watch(
+  activePackageId,
+  () => {
+    selectedDocumentIds.value = []
+    resumePolling()
+  }
+)
 
-// Watch for new processing documents and start polling automatically
 watch(
   documents,
   (newDocuments: KnowledgeDocument[]) => {
-    const processingDocs = newDocuments.filter(
-      (d: KnowledgeDocument) => d.status === 'processing' || d.status === 'pending'
-    )
-    if (processingDocs.length > 0) {
-      // Resume polling for all processing documents
-      // resumePolling handles duplicate prevention internally
+    if (documentNeedsPipelinePoll(newDocuments)) {
       resumePolling()
     }
   },
   { deep: true }
 )
 
-const handleUpload = () => {
-  showUploadModal.value = true
+const selectedCount = computed(() => selectedDocumentIds.value.length)
+
+const selectedPendingCount = computed(() =>
+  documents.value.filter(
+    (doc: KnowledgeDocument) =>
+      selectedDocumentIds.value.includes(doc.id) &&
+      (doc.status === 'pending' || doc.status === 'failed')
+  ).length
+)
+
+function handleProcessSelected(): void {
+  if (selectedDocumentIds.value.length === 0) return
+  processSelected(selectedDocumentIds.value)
+  selectedDocumentIds.value = []
 }
 
-const handleSettings = () => {
-  showSettingsModal.value = true
+function handleDelete(id: number): void {
+  void deleteDocument(id)
 }
 
-const handleRetrievalTest = () => {
-  showRetrievalTestModal.value = true
-}
-
-const handleDelete = (id: number) => {
-  deleteDocument(id)
-}
-
-const handleView = (id: number) => {
-  const doc = documents.value.find((d: KnowledgeDocument) => d.id === id)
+function handleView(id: number): void {
+  const doc = documents.value.find((item: KnowledgeDocument) => item.id === id)
   if (doc && doc.status === 'completed') {
     viewingDocumentId.value = id
     viewingDocumentName.value = doc.file_name
     showChunkPreviewModal.value = true
   }
 }
-
-// Selection related computed and handlers
-const selectedCount = computed(() => selectedDocumentIds.value.length)
-
-const selectedPendingCount = computed(() => {
-  return documents.value.filter(
-    (d: KnowledgeDocument) =>
-      selectedDocumentIds.value.includes(d.id) && (d.status === 'pending' || d.status === 'failed')
-  ).length
-})
-
-const handleProcessSelected = () => {
-  if (selectedDocumentIds.value.length === 0) return
-  processSelected(selectedDocumentIds.value)
-  // Clear selection after starting processing
-  selectedDocumentIds.value = []
-}
 </script>
 
 <template>
   <div class="knowledge-space-page flex-1 flex flex-col bg-white h-full overflow-hidden">
-    <!-- Header -->
     <KnowledgeSpaceHeader
+      :package-name="activePackageName"
       :document-count="documentCount"
       :completed-count="completedCount"
       :pending-count="pendingCount"
       :can-upload="canUpload"
       :selected-count="selectedCount"
       :selected-pending-count="selectedPendingCount"
-      @upload="handleUpload"
-      @settings="handleSettings"
-      @retrievalTest="handleRetrievalTest"
-      @startProcessing="startProcessing"
-      @processSelected="handleProcessSelected"
+      @upload="showUploadModal = true"
+      @settings="showSettingsModal = true"
+      @retrieval-test="showRetrievalTestModal = true"
+      @start-processing="startProcessing"
+      @process-selected="handleProcessSelected"
     />
 
-    <!-- Processing Progress Bar -->
     <ProcessingProgressBar :documents="documents" />
 
-    <!-- Document Table -->
     <div class="flex-1 overflow-y-auto p-6">
-      <KnowledgeSpacePackageGroups />
+      <KnowledgeSpacePackageGroups v-if="activePackageId === null" />
+
       <DocumentTable
+        v-else
         :documents="documents"
         :loading="loading"
         :selected-ids="selectedDocumentIds"
@@ -153,7 +127,6 @@ const handleProcessSelected = () => {
       />
     </div>
 
-    <!-- Upload Modal -->
     <DocumentUpload
       v-model:visible="showUploadModal"
       :uploading="uploading"
@@ -162,19 +135,16 @@ const handleProcessSelected = () => {
       @close="showUploadModal = false"
     />
 
-    <!-- Settings Modal -->
     <KnowledgeSpaceSettings
       v-model:visible="showSettingsModal"
       @close="showSettingsModal = false"
     />
 
-    <!-- Retrieval Test Modal -->
     <RetrievalTest
       v-model:visible="showRetrievalTestModal"
       @close="showRetrievalTestModal = false"
     />
 
-    <!-- Chunk Preview Modal -->
     <ChunkPreviewModal
       v-model:visible="showChunkPreviewModal"
       :document-id="viewingDocumentId"

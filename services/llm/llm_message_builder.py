@@ -124,7 +124,12 @@ class LLMMessageBuilder:
                     return messages
 
                 context_chunks = await rag_service.retrieve_context(
-                    db=db, user_id=user_id, query=query, top_k=5, method="hybrid"
+                    db=db,
+                    user_id=user_id,
+                    query=query,
+                    method="hybrid",
+                    top_k=None,
+                    score_threshold=None,
                 )
 
                 if not context_chunks:

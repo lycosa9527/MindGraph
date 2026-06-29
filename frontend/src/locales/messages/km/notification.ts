@@ -1,5 +1,5 @@
 /**
- * en UI � notification
+ * km UI � notification
  */
 
 export default {

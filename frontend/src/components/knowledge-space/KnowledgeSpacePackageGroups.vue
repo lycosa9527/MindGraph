@@ -1,151 +1,183 @@
 <script setup lang="ts">
 /**
- * Knowledge Space — package groups (Zotero-style collections).
- *
- * Lists File Center packages, each expandable to reveal its sources, with a
- * link back to the diagram the package is bound to.
+ * Knowledge Space landing card — RAG + wiki pipeline explainer and live status.
  */
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
-import { ChevronDown, ChevronRight, ExternalLink, FileText, Folder } from '@lucide/vue'
+import { BookOpen, BookMarked, Layers, Search, Sparkles, Upload } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
-import { usePackageDetail, usePackages } from '@/composables/fileCenter/useFileCenter'
+import { usePackages } from '@/composables/fileCenter/useFileCenter'
 
 const { t } = useLanguage()
-
 const packagesQuery = usePackages()
 const packages = computed(() => packagesQuery.data.value?.packages ?? [])
+const wikiCompileEnabled = computed(
+  () => packagesQuery.data.value?.wiki_compile_enabled ?? false
+)
 
-const expandedId = ref<number | null>(null)
-const detailQuery = usePackageDetail(expandedId)
-const expandedDocuments = computed(() => detailQuery.data.value?.documents ?? [])
+const ragReadyCount = computed(
+  () => packages.value.filter((pkg) => pkg.rag_status === 'completed').length
+)
+const wikiReadyCount = computed(
+  () => packages.value.filter((pkg) => pkg.wiki_status === 'ready').length
+)
+const wikiPendingCount = computed(
+  () => packages.value.filter((pkg) => pkg.wiki_status === 'pending').length
+)
+const processingCount = computed(
+  () => packages.value.filter((pkg) => pkg.rag_status === 'processing').length
+)
 
-function toggle(packageId: number): void {
-  expandedId.value = expandedId.value === packageId ? null : packageId
+const steps = [
+  { key: 'step1', icon: Upload },
+  { key: 'step2', icon: Layers },
+  { key: 'step3', icon: BookMarked },
+  { key: 'step4', icon: Search },
+  { key: 'step5', icon: Sparkles },
+] as const
+
+type PipelineTone = 'neutral' | 'active' | 'success' | 'muted'
+
+interface PipelineRow {
+  key: string
+  tone: PipelineTone
+  detail: string
 }
 
-function sourceBadge(source: string | null): string {
-  switch (source) {
-    case 'chrome_extension':
-      return t('fileCenterLibrary.badgeExtension')
-    case 'knowledge_space':
-      return t('fileCenterLibrary.badgeUpload')
-    default:
-      return t('fileCenterLibrary.badgeCanvas')
-  }
-}
+const pipelineRows = computed((): PipelineRow[] => {
+  const rows: PipelineRow[] = []
 
-function statusLabel(status: string): string {
-  switch (status) {
-    case 'completed':
-      return t('fileCenter.statusReady')
-    case 'failed':
-      return t('fileCenter.statusFailed')
-    default:
-      return t('fileCenter.statusIndexing')
+  if (processingCount.value > 0) {
+    rows.push({
+      key: 'ragProcessing',
+      tone: 'active',
+      detail: t('knowledge.pipeline.ragProcessingDetail', { count: processingCount.value }),
+    })
+  } else if (ragReadyCount.value > 0) {
+    rows.push({
+      key: 'ragReady',
+      tone: 'success',
+      detail: t('knowledge.pipeline.ragReadyDetail', { count: ragReadyCount.value }),
+    })
+  } else {
+    rows.push({
+      key: 'ragIdle',
+      tone: 'neutral',
+      detail: t('knowledge.pipeline.ragIdleDetail'),
+    })
   }
+
+  if (!wikiCompileEnabled.value) {
+    rows.push({
+      key: 'wikiDisabled',
+      tone: 'muted',
+      detail: t('knowledge.pipeline.wikiDisabledDetail'),
+    })
+  } else if (wikiPendingCount.value > 0) {
+    rows.push({
+      key: 'wikiPending',
+      tone: 'active',
+      detail: t('knowledge.pipeline.wikiPendingDetail', { count: wikiPendingCount.value }),
+    })
+  } else if (wikiReadyCount.value > 0) {
+    rows.push({
+      key: 'wikiReady',
+      tone: 'success',
+      detail: t('knowledge.pipeline.wikiReadyDetail', { count: wikiReadyCount.value }),
+    })
+  } else {
+    rows.push({
+      key: 'wikiIdle',
+      tone: 'neutral',
+      detail: t('knowledge.pipeline.wikiIdleDetail'),
+    })
+  }
+
+  return rows
+})
+
+const toneClasses: Record<PipelineTone, string> = {
+  neutral: 'border-slate-200 bg-white text-slate-600',
+  active: 'border-amber-200 bg-amber-50 text-amber-800',
+  success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  muted: 'border-slate-200 bg-slate-50 text-slate-500',
 }
 </script>
 
 <template>
-  <div
-    v-if="packages.length > 0"
-    class="mb-4 rounded-xl border border-slate-200 bg-white"
-  >
-    <div class="border-b border-slate-100 px-4 py-3">
-      <h3 class="text-sm font-semibold text-slate-800">
-        {{ t('fileCenterLibrary.title') }}
-      </h3>
-      <p class="mt-0.5 text-xs text-slate-400">
-        {{ t('fileCenterLibrary.subtitle') }}
-      </p>
+  <div class="mb-6 rounded-xl border border-slate-200 bg-white">
+    <div class="border-b border-slate-100 px-5 py-4">
+      <div class="flex items-start gap-3">
+        <BookOpen
+          class="mt-0.5 h-5 w-5 shrink-0 text-blue-500"
+          :stroke-width="2"
+        />
+        <div>
+          <h3 class="text-sm font-semibold text-slate-800">
+            {{ t('knowledge.ragGuide.title') }}
+          </h3>
+          <p class="mt-1 text-sm leading-relaxed text-slate-500">
+            {{ t('knowledge.ragGuide.subtitle') }}
+          </p>
+        </div>
+      </div>
     </div>
 
-    <ul class="divide-y divide-slate-100">
+    <div class="border-b border-slate-100 px-5 py-4">
+      <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {{ t('knowledge.pipeline.title') }}
+      </h4>
+      <div class="mt-3 grid gap-2 sm:grid-cols-2">
+        <div
+          v-for="row in pipelineRows"
+          :key="row.key"
+          class="rounded-lg border px-3 py-2.5"
+          :class="toneClasses[row.tone]"
+        >
+          <p class="text-xs font-medium">
+            {{ t(`knowledge.pipeline.${row.key}`) }}
+          </p>
+          <p class="mt-1 text-xs leading-relaxed opacity-90">
+            {{ row.detail }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <ol class="divide-y divide-slate-100 px-5 py-2">
       <li
-        v-for="pkg in packages"
-        :key="pkg.id"
-        class="px-4 py-2.5"
+        v-for="(step, index) in steps"
+        :key="step.key"
+        class="flex gap-3 py-3.5"
       >
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            class="flex min-w-0 flex-1 items-center gap-2 text-left"
-            @click="toggle(pkg.id)"
-          >
+        <div
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600"
+        >
+          {{ index + 1 }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2">
             <component
-              :is="expandedId === pkg.id ? ChevronDown : ChevronRight"
+              :is="step.icon"
               class="h-4 w-4 shrink-0 text-slate-400"
               :stroke-width="2"
             />
-            <Folder
-              class="h-4 w-4 shrink-0 text-amber-500"
-              :stroke-width="2"
-            />
-            <span class="truncate text-sm font-medium text-slate-700">
-              {{ pkg.name || t('fileCenter.defaultPackageName') }}
-            </span>
-            <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">
-              {{ sourceBadge(pkg.source) }}
-            </span>
-          </button>
-
-          <span class="shrink-0 text-xs text-slate-400">
-            {{
-              t('fileCenter.corpusStatus', {
-                completed: pkg.completed_count,
-                total: pkg.document_count,
-              })
-            }}
-          </span>
-
-          <a
-            v-if="pkg.diagram_id"
-            :href="`/canvas?diagramId=${pkg.diagram_id}&openDocSummary=1`"
-            class="shrink-0 text-slate-400 transition-colors hover:text-blue-600"
-            :title="t('fileCenterLibrary.openDiagram')"
-          >
-            <ExternalLink
-              class="h-4 w-4"
-              :stroke-width="2"
-            />
-          </a>
+            <h4 class="text-sm font-medium text-slate-800">
+              {{ t(`knowledge.ragGuide.${step.key}.title`) }}
+            </h4>
+          </div>
+          <p class="mt-1 text-sm leading-relaxed text-slate-500">
+            {{ t(`knowledge.ragGuide.${step.key}.body`) }}
+          </p>
         </div>
-
-        <ul
-          v-if="expandedId === pkg.id"
-          class="mt-2 space-y-1 pl-10"
-        >
-          <li
-            v-if="expandedDocuments.length === 0"
-            class="py-1 text-xs text-slate-400"
-          >
-            {{ t('fileCenter.noSources') }}
-          </li>
-          <li
-            v-for="doc in expandedDocuments"
-            :key="doc.id"
-            class="flex items-center gap-2 py-1"
-          >
-            <FileText
-              class="h-3.5 w-3.5 shrink-0 text-slate-400"
-              :stroke-width="2"
-            />
-            <span class="truncate text-xs text-slate-600">{{ doc.file_name }}</span>
-            <span
-              class="ml-auto shrink-0 text-[10px]"
-              :class="{
-                'text-emerald-600': doc.status === 'completed',
-                'text-rose-500': doc.status === 'failed',
-                'text-blue-500': doc.status !== 'completed' && doc.status !== 'failed',
-              }"
-            >
-              {{ statusLabel(doc.status) }}
-            </span>
-          </li>
-        </ul>
       </li>
-    </ul>
+    </ol>
+
+    <div class="border-t border-slate-100 bg-slate-50/80 px-5 py-3.5">
+      <p class="text-xs leading-relaxed text-slate-500">
+        {{ t('knowledge.ragGuide.footer') }}
+      </p>
+    </div>
   </div>
 </template>

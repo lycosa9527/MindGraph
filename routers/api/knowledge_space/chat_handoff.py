@@ -19,7 +19,7 @@ from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from models.requests.requests_knowledge_space import ChatHandoffIngestRequest, ChatHandoffStartRequest
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.api.knowledge_space.packages import _document_to_response, _enqueue_processing
+from routers.api.knowledge_space.packages import _document_to_response
 from services.knowledge.chat_handoff_service import (
     claim_handoff_for_ingest,
     list_waiting_handoffs,
@@ -30,7 +30,6 @@ from services.knowledge.chat_handoff_service import (
 from services.knowledge.chat_transcript_normalizer import normalize_chat_messages, normalize_raw_content
 from services.knowledge.knowledge_package_service import KnowledgePackageService
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
-from tasks.knowledge_space_tasks import process_document_task
 from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -178,19 +177,15 @@ async def ingest_chat_handoff(
         if message_count is not None:
             extra_metadata["message_count"] = message_count
 
-        source_kind = "wechat" if request.platform == "wechat" else "dingtalk"
         document = await service.add_text_source(
             record.package_id,
             content=body,
             title=request.chat_title,
-            source_kind=source_kind,
+            source_kind=request.platform,
             language=request.language,
             extra_metadata=extra_metadata,
         )
-        _enqueue_processing(db, document)
-        await db.commit()
-        process_document_task.delay(current_user.id, document.id)
-        await update_handoff_status(request.code, "indexing", document.id)
+        await update_handoff_status(request.code, "done", document.id)
         logger.info(
             "[ChatHandoff] Ingested doc_id=%s package=%s user=%s",
             document.id,

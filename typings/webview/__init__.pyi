@@ -1,4 +1,4 @@
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from typing import Any
 
 windows: Sequence[Any]

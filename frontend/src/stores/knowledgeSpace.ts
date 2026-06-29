@@ -1,11 +1,11 @@
 /**
- * Knowledge Space Store - Pinia store for UI state only
+ * Knowledge Space Store - UI state for Knowledge Space / File Center.
  *
- * Note: API calls are handled by Vue Query composables.
- * This store provides a thin wrapper for backward compatibility.
- * Components should use Vue Query composables directly for new code.
+ * Server data is managed by Vue Query composables; this store holds selection
+ * and legacy polling no-ops for backward compatibility.
  */
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 export interface KnowledgeDocument {
   id: number
@@ -19,18 +19,37 @@ export interface KnowledgeDocument {
   processing_progress_percent?: number
   chunking_engine?: string | null
   chunking_mode?: string | null
+  rag_status?: 'not_yet' | 'processing' | 'complete' | 'failed' | null
+  wiki_status?: 'disabled' | 'not_yet' | 'pending' | 'complete' | null
   created_at: string
   updated_at: string
 }
 
-export const useKnowledgeSpaceStore = defineStore('knowledgeSpace', () => {
-  // This store is now a thin wrapper
-  // Actual state is managed by Vue Query composables
-  // Components should use useKnowledgeSpace() composable which provides
-  // access to both Pinia store and Vue Query composables
+const ACTIVE_PACKAGE_KEY = 'mindgraph.knowledgeSpace.activePackageId'
 
-  // Legacy functions kept for backward compatibility
-  // These are no-ops - actual implementation is in useKnowledgeSpace composable
+function readActivePackageId(): number | null {
+  const raw = sessionStorage.getItem(ACTIVE_PACKAGE_KEY)
+  if (!raw) return null
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function writeActivePackageId(packageId: number | null): void {
+  if (packageId === null) {
+    sessionStorage.removeItem(ACTIVE_PACKAGE_KEY)
+  } else {
+    sessionStorage.setItem(ACTIVE_PACKAGE_KEY, String(packageId))
+  }
+}
+
+export const useKnowledgeSpaceStore = defineStore('knowledgeSpace', () => {
+  const activePackageId = ref<number | null>(readActivePackageId())
+
+  function selectPackage(packageId: number | null): void {
+    activePackageId.value = packageId
+    writeActivePackageId(packageId)
+  }
+
   function startPolling(_documentId: number) {
     // No-op: Vue Query handles polling via refetchInterval
   }
@@ -48,6 +67,8 @@ export const useKnowledgeSpaceStore = defineStore('knowledgeSpace', () => {
   }
 
   return {
+    activePackageId,
+    selectPackage,
     startPolling,
     stopPolling,
     stopAllPolling,

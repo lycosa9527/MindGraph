@@ -21,6 +21,8 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
+from services.knowledge.chat_handoff_platforms import FLAT_TEXT_INGEST_SOURCES
+
 # File types that carry structure worth preserving (TOC, headings, pages).
 HIERARCHICAL_FILE_TYPES = frozenset(
     {
@@ -66,7 +68,7 @@ def resolve_chunking_policy(
     if explicit_mode in EXPLICIT_MODES:
         return ChunkingPolicy(mode=explicit_mode, engine=engine)
 
-    if ingest_source in ("paste", "web", "wechat", "dingtalk"):
+    if ingest_source in FLAT_TEXT_INGEST_SOURCES:
         return ChunkingPolicy(mode="automatic", engine=engine)
 
     if file_type in HIERARCHICAL_FILE_TYPES:

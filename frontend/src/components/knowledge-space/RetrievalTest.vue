@@ -22,9 +22,9 @@ import { Search } from '@element-plus/icons-vue'
 
 import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { type RetrievalTestResponse, useRetrievalTest } from '@/composables/queries'
+import { type RetrievalTestResponse, useRAGSettings, useRetrievalTest } from '@/composables/queries'
 
-defineProps<{
+const props = defineProps<{
   visible: boolean
 }>()
 
@@ -34,15 +34,41 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const settingsQuery = useRAGSettings()
 
 const query = ref('')
 const method = ref<'hybrid' | 'semantic' | 'keyword'>('hybrid')
 const topK = ref(5)
-const scoreThreshold = ref(0.0)
+const scoreThreshold = ref(0.5)
 const results = ref<RetrievalTestResponse | null>(null)
 
-// Use Vue Query mutation
 const retrievalTestMutation = useRetrievalTest()
+
+function applySettingsDefaults(): void {
+  const settings = settingsQuery.data.value
+  if (!settings) return
+  method.value = settings.default_method
+  topK.value = settings.top_k
+  scoreThreshold.value = settings.score_threshold
+}
+
+watch(
+  () => props.visible,
+  (open) => {
+    if (open) {
+      void settingsQuery.refetch().then(() => applySettingsDefaults())
+    }
+  }
+)
+
+watch(
+  () => settingsQuery.data.value,
+  (settings) => {
+    if (settings && props.visible) {
+      applySettingsDefaults()
+    }
+  }
+)
 
 const handleClose = () => {
   emit('update:visible', false)

@@ -17,6 +17,7 @@ import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 import { apiRequestJson, apiUpload } from '@/utils/apiClient'
+import { documentNeedsPipelinePoll } from '@/composables/knowledge/usePipelineStatusBadge'
 
 // ============================================================================
 // Types
@@ -32,6 +33,9 @@ export interface KnowledgePackage {
   status: string
   document_count: number
   completed_count: number
+  rag_status: string
+  wiki_page_count: number
+  wiki_status: 'disabled' | 'none' | 'pending' | 'ready'
   created_at: string
   updated_at: string
 }
@@ -39,6 +43,7 @@ export interface KnowledgePackage {
 export interface PackageListResponse {
   packages: KnowledgePackage[]
   total: number
+  wiki_compile_enabled: boolean
 }
 
 export interface PackageDetailResponse {
@@ -82,14 +87,23 @@ export const fileCenterKeys = {
 
 const PACKAGES_BASE = '/api/knowledge-space/packages'
 
-/** A processing source keeps the detail query polling until everything settles. */
+/** Poll while any source is still indexing or wiki compile is pending. */
 function hasProcessingDocuments(documents: KnowledgeDocument[]): boolean {
-  return documents.some((doc) => doc.status === 'pending' || doc.status === 'processing')
+  return documentNeedsPipelinePoll(documents)
 }
 
 // ============================================================================
 // Queries
 // ============================================================================
+
+/** Poll while sources index or wiki pages are still compiling. */
+function shouldPollPackages(packages: KnowledgePackage[]): boolean {
+  return packages.some(
+    (pkg) =>
+      pkg.status === 'processing' ||
+      (pkg.wiki_status === 'pending' && pkg.rag_status === 'completed')
+  )
+}
 
 export function usePackages(options?: { enabled?: MaybeRef<boolean> }) {
   return useQuery({
@@ -98,6 +112,10 @@ export function usePackages(options?: { enabled?: MaybeRef<boolean> }) {
     staleTime: 30 * 1000,
     enabled: options?.enabled,
     retry: 1,
+    refetchInterval: (query) => {
+      const data = query.state.data as PackageListResponse | undefined
+      return data && shouldPollPackages(data.packages) ? 8000 : false
+    },
   })
 }
 
@@ -225,6 +243,16 @@ export function useFileCenterMutations() {
     onError: (error: Error) => notify.error(error.message || t('fileCenter.deleteFailed')),
   })
 
+  const startProcessing = useMutation({
+    mutationFn: (packageId: number) =>
+      apiRequestJson<{ message: string; processed_count: number }>(
+        `${PACKAGES_BASE}/${packageId}/documents/start-processing`,
+        { method: 'POST' }
+      ),
+    onSuccess: (_data, packageId) => invalidatePackage(packageId),
+    onError: (error: Error) => notify.error(error.message || t('fileCenter.startProcessingFailed')),
+  })
+
   return {
     createPackage,
     updatePackage,
@@ -234,5 +262,6 @@ export function useFileCenterMutations() {
     ingestWeb,
     ingestWebUrl,
     deleteSource,
+    startProcessing,
   }
 }

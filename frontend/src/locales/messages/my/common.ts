@@ -1,5 +1,5 @@
 /**
- * en UI � common
+ * my UI � common
  */
 
 export default {

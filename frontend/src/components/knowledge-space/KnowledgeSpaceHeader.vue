@@ -1,7 +1,6 @@
 <script setup lang="ts">
 /**
- * KnowledgeSpaceHeader - Header component for Knowledge Space page
- * Swiss design style matching MindMate/MindGraph
+ * KnowledgeSpaceHeader - Header with breadcrumb for Knowledge Space page.
  */
 import { computed } from 'vue'
 
@@ -12,6 +11,7 @@ import { Search, Setting, Upload, VideoPlay } from '@element-plus/icons-vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 
 const props = defineProps<{
+  packageName: string | null
   documentCount: number
   completedCount: number
   pendingCount: number
@@ -30,6 +30,14 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 
+const breadcrumb = computed(() => {
+  const segments = [{ label: t('knowledge.header.title') }]
+  if (props.packageName) {
+    segments.push({ label: props.packageName })
+  }
+  return segments
+})
+
 const showStartProcessing = computed(() => props.pendingCount > 0)
 const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
 </script>
@@ -38,14 +46,41 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
   <div
     class="knowledge-space-header h-14 px-6 flex items-center justify-between border-b border-stone-200 bg-white shrink-0"
   >
-    <div class="flex items-center gap-3 min-w-0 flex-1">
-      <h1 class="text-lg font-semibold text-stone-900">
-        {{ t('knowledge.header.title') }}
-      </h1>
-      <span class="text-sm text-stone-500"> ({{ documentCount }}/5) </span>
-    </div>
+    <nav
+      aria-label="breadcrumb"
+      class="flex min-w-0 flex-1 items-center gap-1 text-sm truncate"
+    >
+      <template
+        v-for="(segment, index) in breadcrumb"
+        :key="index"
+      >
+        <span
+          v-if="index > 0"
+          class="shrink-0 text-stone-400"
+          aria-hidden="true"
+        >
+          /
+        </span>
+        <span
+          class="truncate"
+          :class="
+            index === breadcrumb.length - 1
+              ? 'font-semibold text-stone-900'
+              : 'text-stone-500'
+          "
+        >
+          {{ segment.label }}
+        </span>
+      </template>
+      <span
+        v-if="packageName"
+        class="ml-2 shrink-0 text-sm text-stone-400"
+      >
+        ({{ documentCount }}/5)
+      </span>
+    </nav>
+
     <div class="flex items-center gap-2 shrink-0">
-      <!-- Upload Documents Button -->
       <ElButton
         class="upload-btn"
         size="small"
@@ -56,7 +91,6 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         {{ t('knowledge.header.upload') }}
       </ElButton>
 
-      <!-- Selected Count Badge -->
       <span
         v-if="selectedCount > 0"
         class="selected-badge"
@@ -64,7 +98,6 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         {{ t('knowledge.header.selected', { n: selectedCount }) }}
       </span>
 
-      <!-- Process Selected Button (when documents are selected) -->
       <ElButton
         v-if="hasSelectedPending"
         class="start-processing-btn"
@@ -75,7 +108,6 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         {{ t('knowledge.header.processSelected', { n: selectedPendingCount }) }}
       </ElButton>
 
-      <!-- Start All Processing Button (when no selection but has pending) -->
       <ElButton
         v-else-if="showStartProcessing && selectedCount === 0"
         class="start-processing-btn-secondary"
@@ -86,7 +118,6 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         {{ t('knowledge.header.processAll') }}
       </ElButton>
 
-      <!-- Retrieval Test Button -->
       <ElTooltip :content="t('knowledge.header.retrievalTest')">
         <ElButton
           text
@@ -100,7 +131,6 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
         </ElButton>
       </ElTooltip>
 
-      <!-- Settings Button -->
       <ElTooltip :content="t('knowledge.header.settings')">
         <ElButton
           text
@@ -117,7 +147,6 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
 </template>
 
 <style scoped>
-/* Upload button - Swiss Design style (grey, round) */
 .upload-btn {
   --el-button-bg-color: #e7e5e4;
   --el-button-border-color: #d6d3d1;
@@ -132,7 +161,6 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
   border-radius: 9999px;
 }
 
-/* Start Processing button - Swiss Design style (blue accent) */
 .start-processing-btn {
   --el-button-bg-color: #3b82f6;
   --el-button-border-color: #3b82f6;
@@ -145,7 +173,6 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
   border-radius: 9999px;
 }
 
-/* Start Processing button secondary - Swiss Design style (grey) */
 .start-processing-btn-secondary {
   --el-button-bg-color: #e7e5e4;
   --el-button-border-color: #d6d3d1;
@@ -158,7 +185,6 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
   border-radius: 9999px;
 }
 
-/* Action buttons - Swiss Design style */
 .action-btn {
   --el-button-text-color: #78716c;
   --el-button-hover-text-color: #1c1917;
@@ -167,7 +193,6 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
   --el-button-disabled-bg-color: transparent;
 }
 
-/* Selected count badge */
 .selected-badge {
   font-size: 13px;
   color: #3b82f6;

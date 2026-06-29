@@ -21,6 +21,12 @@ def test_dingtalk_uses_flat_chunking() -> None:
     assert policy.mode == "automatic"
 
 
+def test_wecom_uses_flat_chunking() -> None:
+    """WeCom transcripts use automatic chunking."""
+    policy = resolve_chunking_policy("text/markdown", None, ingest_source="wecom")
+    assert policy.mode == "automatic"
+
+
 def test_pdf_still_hierarchical() -> None:
     """PDF documents keep hierarchical chunking."""
     policy = resolve_chunking_policy("application/pdf", None, ingest_source="file")

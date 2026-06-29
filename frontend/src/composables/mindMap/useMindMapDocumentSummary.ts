@@ -2,9 +2,16 @@ import { ref } from 'vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import type { PackageDetailResponse } from '@/composables/fileCenter/useFileCenter'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
+import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 import { authFetch } from '@/utils/api'
+import { apiRequestJson } from '@/utils/apiClient'
+
+const PACKAGES_BASE = '/api/knowledge-space/packages'
+const PACKAGE_INDEX_POLL_MS = 2500
+const PACKAGE_INDEX_TIMEOUT_MS = 10 * 60 * 1000
 
 const MAX_CONTENT_LENGTH = 32000
 const ALLOWED_DOC_EXTENSIONS = new Set(['.pdf', '.docx'])
@@ -18,6 +25,46 @@ type WebContentResult = {
   detail?: string
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+function packageNeedsIndexing(documents: KnowledgeDocument[]): boolean {
+  return documents.some((doc) => doc.status === 'pending' || doc.status === 'processing')
+}
+
+function packageHasIndexedCorpus(documents: KnowledgeDocument[]): boolean {
+  return documents.some((doc) => doc.status === 'completed')
+}
+
+async function fetchPackageDetail(packageId: number): Promise<PackageDetailResponse> {
+  return apiRequestJson<PackageDetailResponse>(`${PACKAGES_BASE}/${packageId}`)
+}
+
+async function ensurePackageIndexed(packageId: number): Promise<boolean> {
+  let detail = await fetchPackageDetail(packageId)
+  const hasUnindexed = detail.documents.some(
+    (doc) => doc.status === 'pending' || doc.status === 'failed'
+  )
+  if (hasUnindexed) {
+    await apiRequestJson(`${PACKAGES_BASE}/${packageId}/documents/start-processing`, {
+      method: 'POST',
+    })
+  }
+
+  const deadline = Date.now() + PACKAGE_INDEX_TIMEOUT_MS
+  while (Date.now() < deadline) {
+    detail = await fetchPackageDetail(packageId)
+    if (!packageNeedsIndexing(detail.documents)) {
+      return packageHasIndexedCorpus(detail.documents)
+    }
+    await sleep(PACKAGE_INDEX_POLL_MS)
+  }
+  return false
+}
+
 export function useMindMapDocumentSummary() {
   const { promptLanguage, t } = useLanguage()
   const notify = useNotifications()
@@ -26,6 +73,7 @@ export function useMindMapDocumentSummary() {
   const llmResultsStore = useLLMResultsStore()
 
   const isGenerating = ref(false)
+  const isIndexingCorpus = ref(false)
   const isAdding = ref(false)
 
   async function applyMindMapResult(result: WebContentResult): Promise<boolean> {
@@ -61,6 +109,16 @@ export function useMindMapDocumentSummary() {
 
     isGenerating.value = true
     try {
+      if (packageId) {
+        isIndexingCorpus.value = true
+        const indexed = await ensurePackageIndexed(packageId)
+        isIndexingCorpus.value = false
+        if (!indexed) {
+          notify.error(t('canvas.mindMapDocumentSummary.generateNoCorpus'))
+          return false
+        }
+      }
+
       const response = await authFetch('/api/canvas/generate_mindmap_from_package', {
         method: 'POST',
         body: JSON.stringify({
@@ -83,6 +141,7 @@ export function useMindMapDocumentSummary() {
       notify.error(t('canvas.mindMapDocumentSummary.generateFailed'))
       return false
     } finally {
+      isIndexingCorpus.value = false
       isGenerating.value = false
     }
   }
@@ -102,6 +161,7 @@ export function useMindMapDocumentSummary() {
 
   return {
     isGenerating,
+    isIndexingCorpus,
     isAdding,
     generateFromPackage,
     validateDocumentFile,

@@ -5,7 +5,7 @@
  */
 import { useQuery } from '@tanstack/vue-query'
 
-import { apiRequest } from '@/utils/apiClient'
+import { apiRequest, apiRequestJson } from '@/utils/apiClient'
 
 import { ragKeys } from './ragKeys'
 
@@ -13,14 +13,30 @@ import { ragKeys } from './ragKeys'
 // Types
 // ============================================================================
 
+export type RetrievalMethod = 'hybrid' | 'semantic' | 'keyword'
+
 export interface RAGSettings {
-  default_method: 'hybrid' | 'semantic' | 'keyword'
-  vector_weight: number
-  keyword_weight: number
-  reranking_mode: 'reranking_model' | 'weighted_score' | 'none'
-  rerank_threshold: number
+  default_method: RetrievalMethod
+  top_k: number
+  score_threshold: number
   chunk_size: number
   chunk_overlap: number
+  vector_weight: number
+  keyword_weight: number
+  reranking_mode: string
+  wiki_compile_enabled: boolean
+  chunking_engine: string
+  has_user_overrides: boolean
+}
+
+export type RAGSettingsUpdatePayload = Pick<
+  RAGSettings,
+  'default_method' | 'top_k' | 'score_threshold' | 'chunk_size' | 'chunk_overlap'
+>
+
+export interface RAGSettingsUpdateResponse {
+  settings: RAGSettings
+  reindex_required: boolean
 }
 
 export interface QueryAnalytics {
@@ -76,27 +92,7 @@ export interface RetrievalTestHistoryResponse {
 // ============================================================================
 
 async function fetchRAGSettings(): Promise<RAGSettings> {
-  // Note: This endpoint may not exist yet, but we're preparing for it
-  // For now, return default settings
-  const response = await apiRequest('/api/knowledge-space/settings')
-
-  if (!response.ok) {
-    // Return default settings if endpoint doesn't exist
-    if (response.status === 404) {
-      return {
-        default_method: 'hybrid',
-        vector_weight: 0.5,
-        keyword_weight: 0.5,
-        reranking_mode: 'reranking_model',
-        rerank_threshold: 0.5,
-        chunk_size: 512,
-        chunk_overlap: 50,
-      }
-    }
-    throw new Error('Failed to fetch RAG settings')
-  }
-
-  return await response.json()
+  return apiRequestJson<RAGSettings>('/api/knowledge-space/settings')
 }
 
 async function fetchQueryAnalytics(days: number = 30): Promise<QueryAnalytics> {
@@ -141,8 +137,8 @@ export function useRAGSettings() {
   return useQuery({
     queryKey: ragKeys.settings(),
     queryFn: fetchRAGSettings,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1, // Only retry once for 404 (endpoint may not exist)
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
   })
 }
 
@@ -154,7 +150,7 @@ export function useQueryAnalytics(days: number = 30) {
   return useQuery({
     queryKey: ragKeys.queryAnalytics(days),
     queryFn: () => fetchQueryAnalytics(days),
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000,
     enabled: days > 0,
   })
 }
@@ -167,7 +163,7 @@ export function useCompressionMetrics() {
   return useQuery({
     queryKey: ragKeys.compressionMetrics(),
     queryFn: fetchCompressionMetrics,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -179,6 +175,6 @@ export function useRetrievalTestHistory() {
   return useQuery({
     queryKey: ragKeys.retrievalTestHistory(),
     queryFn: fetchRetrievalTestHistory,
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 60 * 1000,
   })
 }

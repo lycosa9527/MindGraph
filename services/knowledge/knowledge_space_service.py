@@ -289,6 +289,8 @@ class KnowledgeSpaceService:
             raise ValueError(f"Document {document_id} not found or access denied")
 
         try:
+            await self._clear_document_index_if_present(document_id)
+
             chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
             chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
             logger.info(
@@ -316,7 +318,7 @@ class KnowledgeSpaceService:
             processing_rules = await self._apply_file_center_chunking_policy(document, processing_rules)
 
             try:
-                cleaned_text, page_info = await extract_and_clean_text(
+                cleaned_text, page_info, structure_headings = await extract_and_clean_text(
                     self.processor, self.cleaner, document, self.db, processing_rules
                 )
             except ValueError as value_error:
@@ -346,6 +348,7 @@ class KnowledgeSpaceService:
                 page_info,
                 document_id,
                 user_id=self.user_id,
+                structure_headings=structure_headings,
             )
 
             if len(chunks) == 0:
@@ -566,6 +569,22 @@ class KnowledgeSpaceService:
             failed: Number of failed documents (increment)
         """
         await update_batch_progress_helper(self.db, self.user_id, batch_id, completed, failed)
+
+    async def _clear_document_index_if_present(self, document_id: int) -> None:
+        """Remove existing DB chunks and Qdrant vectors before a full reprocess."""
+        result = await self.db.execute(select(DocumentChunk.id).where(DocumentChunk.document_id == document_id))
+        chunk_ids = [row[0] for row in result.all()]
+        if not chunk_ids:
+            return
+
+        await self.qdrant.delete_chunks(self.user_id, chunk_ids)
+        await self.db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document_id))
+        await self.db.commit()
+        logger.info(
+            "[KnowledgeSpace] Cleared %s existing chunks for doc_id=%s before reprocess",
+            len(chunk_ids),
+            document_id,
+        )
 
     async def delete_document(self, document_id: int) -> None:
         """
@@ -842,7 +861,7 @@ class KnowledgeSpaceService:
             processing_rules = await self._apply_file_center_chunking_policy(document, processing_rules)
 
             try:
-                cleaned_text, page_info = await extract_and_clean_text(
+                cleaned_text, page_info, structure_headings = await extract_and_clean_text(
                     self.processor, self.cleaner, document, self.db, processing_rules
                 )
             except ValueError as value_error:
@@ -865,7 +884,14 @@ class KnowledgeSpaceService:
             document.processing_progress_percent = 30
             await self.db.commit()
 
-            new_chunks = chunk_text_for_reindexing(self.chunking, cleaned_text, document, processing_rules, page_info)
+            new_chunks = chunk_text_for_reindexing(
+                self.chunking,
+                cleaned_text,
+                document,
+                processing_rules,
+                page_info,
+                structure_headings=structure_headings,
+            )
 
             if not self.chunking.validate_chunk_count(len(new_chunks), self.user_id):
                 raise ValueError(f"Chunk count ({len(new_chunks)}) exceeds limit")

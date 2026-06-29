@@ -1,5 +1,5 @@
 /**
- * en UI � mindmate
+ * ta UI � mindmate
  */
 
 export default {

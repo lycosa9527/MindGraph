@@ -10,3 +10,5 @@ Ports logic from community tools; keep behavior aligned with `chrome-extension/d
 | [hantang/smartedu-dl-go](https://github.com/hantang/smartedu-dl-go) | — | Optional `?accessToken=` suffix on download URLs (not used in v1) |
 
 When updating URL templates or `ti_items` selection rules, update both this package and the Chrome extension SmartEdu module in the same change.
+
+Multi-site browser registry: see [`../platform_browser/REFERENCES.md`](../platform_browser/REFERENCES.md).

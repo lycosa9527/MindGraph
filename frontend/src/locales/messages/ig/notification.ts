@@ -1,5 +1,5 @@
 /**
- * en UI � notification
+ * ig UI � notification
  */
 
 export default {

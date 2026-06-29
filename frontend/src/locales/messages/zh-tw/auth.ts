@@ -1,4 +1,6 @@
-/** zh-tw UI — auth */
+/**
+ * zh-tw UI � auth
+ */
 
 export default {
   'auth.accountInfo': '賬戶信息',
@@ -11,19 +13,13 @@ export default {
   'auth.softwareAgreementLink': '用戶協議與隱私政策',
   'auth.softwareAgreementUpdated': '更新日期：{date}',
   'auth.downloadDesktopShortcut': '添加到桌面',
-  'auth.pwaIosInstallHint':
-    '在 Safari、Chrome 或 Edge 中点分享，再选择「添加到主屏幕」。',
-  'auth.pwaAndroidInstallHint':
-    '打开浏览器菜单（⋮），选择「安装应用」或「添加到主屏幕」。',
-  'auth.pwaSafariMacInstallHint':
-    '在 Safari 中选择「文件 → 添加到程序坞」，或使用「共享 → 添加到程序坞」（macOS Sonoma 及以上）。',
-  'auth.pwaDesktopInstallHint':
-    '请打开浏览器菜单（⋮），或使用地址栏旁的安装图标（Chrome、Edge 或 Brave）。',
+  'auth.pwaIosInstallHint': '在 Safari、Chrome 或 Edge 中点分享，再选择「添加到主屏幕」。',
+  'auth.pwaAndroidInstallHint': '打开浏览器菜单（⋮），选择「安装应用」或「添加到主屏幕」。',
+  'auth.pwaSafariMacInstallHint': '在 Safari 中选择「文件 → 添加到程序坞」，或使用「共享 → 添加到程序坞」（macOS Sonoma 及以上）。',
+  'auth.pwaDesktopInstallHint': '请打开浏览器菜单（⋮），或使用地址栏旁的安装图标（Chrome、Edge 或 Brave）。',
   'auth.pwaInstallSuccess': 'MindGraph 已添加到桌面。',
-  'auth.pwaDevInstallHint':
-    '普通开发模式未启用 PWA。请使用生产构建（npm run build 后由后端提供），或运行 npm run dev:pwa，并用 Chrome/Edge 在 HTTPS 或 localhost 下打开。',
-  'auth.pwaInsecureOriginHint':
-    '请先在浏览器中打开 MindGraph 的 HTTPS 网址（不要打开已保存的 HTML 文件），再添加到桌面。',
+  'auth.pwaDevInstallHint': '普通开发模式未启用 PWA。请使用生产构建（npm run build 后由后端提供），或运行 npm run dev:pwa，并用 Chrome/Edge 在 HTTPS 或 localhost 下打开。',
+  'auth.pwaInsecureOriginHint': '请先在浏览器中打开 MindGraph 的 HTTPS 网址（不要打开已保存的 HTML 文件），再添加到桌面。',
   'auth.backToLogin': '返回登錄',
   'auth.captcha': '驗證碼',
   'auth.captchaLength4': '請輸入4位驗證碼',
@@ -33,12 +29,9 @@ export default {
   'auth.accountPlugin': '插件',
   'auth.apiTokenButton': 'API令牌',
   'auth.downloadChromeExtension': 'Chrome 擴展',
-  'auth.schoolTierFeatureUnavailable':
-    '当前学校版本不支持此功能，请升级至标准教研版或校本共建版（基础教研版不含此功能）',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    '学校订阅已到期，已自动切换为体验版。如需续订请联系平台管理员。',
-  'auth.diagramLimitReached':
-    '体验版每位教师最多保存 {max} 张导图，请删除后再保存。',
+  'auth.schoolTierFeatureUnavailable': '当前学校版本不支持此功能，请升级至标准教研版或校本共建版（基础教研版不含此功能）',
+  'auth.schoolSubscriptionExpiredDowngraded': '学校订阅已到期，已自动切换为体验版。如需续订请联系平台管理员。',
+  'auth.diagramLimitReached': '体验版每位教师最多保存 {max} 张导图，请删除后再保存。',
   'auth.downloadOpenclawSkill': 'OpenClaw 技能包',
   'auth.changePhoneButton': '更換手機',
   'auth.passwordChangeSuccess': '密碼修改成功',
@@ -116,8 +109,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': '教育郵箱',
   'auth.modal.hybridRegisterEmailTabAny': '郵箱',
   'auth.modal.hybridRegisterPhoneTab': '手機號與邀請碼',
-  'auth.modal.mainlandSalesNotice':
-    '中国大陆用户请使用手机号与邀请码注册；如需帮助请联系客服人员。',
+  'auth.modal.mainlandSalesNotice': '中国大陆用户请使用手机号与邀请码注册；如需帮助请联系客服人员。',
   'auth.modal.registrationEmailLabel': '僅限教育郵箱',
   'auth.modal.registrationEmailLabelAny': '郵箱地址',
   'auth.modal.registrationEmailHint': '',
@@ -132,10 +124,8 @@ export default {
   'auth.modal.emailCodePlaceholder': '6位郵箱驗證碼',
   'auth.modal.acknowledgeOverseas': '我理解並僅將軟件用於教育用途。',
   'auth.modal.acknowledgeOverseasAny': '我理解並同意海外註冊相關條款。',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    '我理解并同意海外注册相关条款，并知晓该注册路径不提供简体中文支持。',
-  'auth.modal.acknowledgeOverseasScBrowser':
-    '我理解并仅将软件用于教育用途，并知晓该注册路径不提供简体中文支持。',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': '我理解并同意海外注册相关条款，并知晓该注册路径不提供简体中文支持。',
+  'auth.modal.acknowledgeOverseasScBrowser': '我理解并仅将软件用于教育用途，并知晓该注册路径不提供简体中文支持。',
   'auth.modal.acknowledgeOverseasRequired': '請勾選確認上述說明。',
   'auth.loginPhoneOrEmail': '手機號或郵箱',
   'auth.name': '姓名',
@@ -149,15 +139,13 @@ export default {
   'auth.username': '用戶名',
   'auth.waitCaptchaLoad': '請等待驗證碼加載',
   'auth.quickRegPageTitle': '快速註冊',
-  'auth.quickRegPageHint':
-    '请使用学校分享的链接进入本页。输入手机号，并输入老师快速注册窗口上显示的 6 位数字码（每约 30 秒变化一次）后完成加入。房间码用于确认你在场，不会像短信验证码那样单独验证机主身份。',
+  'auth.quickRegPageHint': '请使用学校分享的链接进入本页。输入手机号，并输入老师快速注册窗口上显示的 6 位数字码（每约 30 秒变化一次）后完成加入。房间码用于确认你在场，不会像短信验证码那样单独验证机主身份。',
   'auth.quickRegLinkInvalid': '本註冊鏈接已失效或已結束，請讓主持人重新分享當前鏈接後再試。',
   'auth.quickRegProbeRateLimited': '本頁請求過於頻繁，請稍候再刷新或稍後再試。',
   'auth.quickRegSessionSignups': '本場次已報名：{n} 人',
   'auth.quickRegRoomCodeLabel': '房間碼',
   'auth.quickRegRoomCodePlaceholder': '6 位數字',
-  'auth.quickRegRoomCodeHint':
-    '请对照老师/主持人屏幕上「快速注册」弹窗中显示的大号数字，确保在下一轮换码前完成输入。',
+  'auth.quickRegRoomCodeHint': '请对照老师/主持人屏幕上「快速注册」弹窗中显示的大号数字，确保在下一轮换码前完成输入。',
   'auth.quickRegRoomCodeEnter6': '請輸入 6 位房間碼',
   'auth.quickRegMaxUses': '本鏈接最多註冊人數',
   'auth.quickRegHeadcount': '人數',
@@ -167,8 +155,7 @@ export default {
   'auth.quickRegSubmit': '完成註冊',
   'auth.quickRegSubmitting': '註冊中…',
   'auth.quickRegRegisterSuccess': '註冊成功',
-  'auth.quickRegSessionUnsure':
-    '注册可能已成功。若未自动进入，请返回使用验证码登录，或重新打开本页。',
+  'auth.quickRegSessionUnsure': '注册可能已成功。若未自动进入，请返回使用验证码登录，或重新打开本页。',
   'auth.quickRegBackToSignIn': '使用常規登錄 / 註冊',
   'auth.quickRegSelectOrg': '選擇學校',
   'auth.quickRegOrgLoadError': '無法加載學校列表，請稍後重試。',
@@ -191,8 +178,7 @@ export default {
   'auth.dingtalkBindUnbindError': '解綁失敗，請稍後重試',
   'auth.dingtalkBindRebind': '重新綁定',
   'auth.dingtalkBindTitle': '綁定釘釘賬戶',
-  'auth.dingtalkBindInstructions':
-    '请将下方显示的 6 位验证码（例如 123-456）以文字消息发送到您学校的钉钉 MindBot。',
+  'auth.dingtalkBindInstructions': '请将下方显示的 6 位验证码（例如 123-456）以文字消息发送到您学校的钉钉 MindBot。',
   'auth.dingtalkBindPairWaiting': '等待 MindBot 接收驗證碼…',
   'auth.dingtalkBindCodeHint': '僅發送驗證碼，不要附加其他文字。',
   'auth.dingtalkBindCountdown': '綁定會話將在 {s} 秒後過期',
@@ -207,8 +193,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': '已綁定（{staff}）',
   'auth.dingtalkBindAlreadyLinked': '當前已綁定：{staff}',
   'auth.dingtalkUnbindTitle': '解綁釘釘賬戶',
-  'auth.dingtalkUnbindInstructions':
-    '请使用已绑定的钉钉账号，向 MindBot 发送下方验证码以确认解绑。',
+  'auth.dingtalkUnbindInstructions': '请使用已绑定的钉钉账号，向 MindBot 发送下方验证码以确认解绑。',
   'auth.dingtalkUnbindPairWaiting': '等待已綁定的釘釘賬號確認…',
   'auth.dingtalkUnbindCodeHint': '請僅使用已綁定的釘釘賬號發送此驗證碼，不要附加其他文字。',
   'auth.dingtalkUnbindExpiredHint': '解綁會話已過期，請重新開始。',

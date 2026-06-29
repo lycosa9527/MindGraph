@@ -37,6 +37,7 @@ from models.responses import (
     RetrievalTestHistoryItem,
     RetrievalTestHistoryResponse,
 )
+from services.knowledge.knowledge_settings import resolve_retrieval_params
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.retrieval_test_service import get_retrieval_test_service
 from services.llm.rag_service import get_rag_service
@@ -61,14 +62,22 @@ async def test_retrieval(
     """
     service = get_retrieval_test_service()
 
+    method, top_k, score_threshold = await resolve_retrieval_params(
+        db,
+        current_user.id,
+        method=request.method,
+        top_k=request.top_k,
+        score_threshold=request.score_threshold,
+    )
+
     try:
         result = await service.test_retrieval(
             db=db,
             user_id=current_user.id,
             query=request.query,
-            method=request.method,
-            top_k=request.top_k,
-            score_threshold=request.score_threshold,
+            method=method,
+            top_k=top_k,
+            score_threshold=score_threshold,
         )
         return result
     except ValueError as e:

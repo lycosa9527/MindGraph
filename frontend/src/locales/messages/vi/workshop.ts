@@ -1,5 +1,5 @@
 /**
- * en UI � workshop
+ * vi UI � workshop
  */
 
 export default {

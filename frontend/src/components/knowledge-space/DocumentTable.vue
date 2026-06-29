@@ -6,7 +6,6 @@
 import { computed } from 'vue'
 
 import {
-  ElBadge,
   ElButton,
   ElCheckbox,
   ElEmpty,
@@ -20,6 +19,12 @@ import {
 import { Close, Delete, Document, View } from '@element-plus/icons-vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
+import {
+  ragBadgeView,
+  resolveRagStatus,
+  resolveWikiStatus,
+  wikiBadgeView,
+} from '@/composables/knowledge/usePipelineStatusBadge'
 import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
@@ -48,32 +53,7 @@ const sortedDocuments = computed(() => {
   })
 })
 
-const statusConfig = (status: string) => {
-  type BadgeType = 'success' | 'warning' | 'info' | 'danger'
-  let type: BadgeType = 'info'
-  let text = t('knowledge.doc.statusUnknown')
-
-  switch (status) {
-    case 'pending':
-      text = t('knowledge.doc.statusPending')
-      type = 'info'
-      break
-    case 'processing':
-      text = t('knowledge.doc.statusProcessing')
-      type = 'warning'
-      break
-    case 'completed':
-      text = t('knowledge.doc.statusCompleted')
-      type = 'success'
-      break
-    case 'failed':
-      text = t('knowledge.doc.statusFailed')
-      type = 'danger'
-      break
-  }
-
-  return { text, type }
-}
+const pipelineBadgeLabel = (labelKey: string) => t(labelKey)
 
 const formatFileSize = (size: number) => {
   if (size < 1024) return `${size} B`
@@ -297,15 +277,30 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
 
       <ElTableColumn
         :label="t('knowledge.doc.colStatus')"
-        width="110"
+        width="168"
         align="center"
       >
         <template #default="{ row }">
-          <ElBadge
-            :type="statusConfig(row.status).type"
-            :value="statusConfig(row.status).text"
-            class="status-badge"
-          />
+          <div class="pipeline-status-badges">
+            <ElTag
+              size="small"
+              effect="light"
+              :type="ragBadgeView(resolveRagStatus(row)).type"
+              class="pipeline-badge"
+            >
+              {{ t('knowledge.pipelineBadge.rag.label') }} ·
+              {{ pipelineBadgeLabel(ragBadgeView(resolveRagStatus(row)).labelKey) }}
+            </ElTag>
+            <ElTag
+              size="small"
+              effect="light"
+              :type="wikiBadgeView(resolveWikiStatus(row)).type"
+              class="pipeline-badge"
+            >
+              {{ t('knowledge.pipelineBadge.wiki.label') }} ·
+              {{ pipelineBadgeLabel(wikiBadgeView(resolveWikiStatus(row)).labelKey) }}
+            </ElTag>
+          </div>
         </template>
       </ElTableColumn>
 
@@ -423,9 +418,18 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
   background-color: #fafaf9;
 }
 
-.status-badge {
-  font-size: 12px;
-  padding: 2px 8px;
+.pipeline-status-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.pipeline-badge {
+  font-size: 11px;
+  line-height: 1.2;
+  padding: 0 6px;
+  border-radius: 9999px;
 }
 
 .action-btn-view {

@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 # Recognised ingest sources for a package (UI badges, lifecycle).
 PACKAGE_SOURCES = ("canvas", "knowledge_space", "chrome_extension", "doc_summary")
 
+MAX_PACKAGES_PER_USER = 3
+
 # Text-source MIME type stored on disk as markdown.
 TEXT_SOURCE_FILE_TYPE = "text/markdown"
 
@@ -57,6 +59,10 @@ class KnowledgePackageService:
         source: str = "canvas",
     ) -> DocumentBatch:
         """Create a named package (DocumentBatch) for this user."""
+        existing = await self.list_packages()
+        if len(existing) >= MAX_PACKAGES_PER_USER:
+            raise ValueError(f"Maximum {MAX_PACKAGES_PER_USER} packages allowed per user")
+
         clean_name = (name or "").strip() or "Untitled package"
         package_source = source if source in PACKAGE_SOURCES else "canvas"
 
@@ -143,8 +149,13 @@ class KnowledgePackageService:
         diagram_id: Optional[str] = None,
         diagram_title: Optional[str] = None,
         package_id: Optional[int] = None,
+        create_if_missing: bool = False,
     ) -> DocumentBatch:
-        """Idempotently return the Document Summary package for a canvas session."""
+        """Return the Document Summary package for a canvas session.
+
+        Resumes an existing package linked by ``package_id`` or ``diagram_id``.
+        Creates a new package only when ``create_if_missing`` is true (first ingest).
+        """
         if package_id is not None:
             existing = await self.get_package(package_id)
             if not existing:
@@ -157,6 +168,9 @@ class KnowledgePackageService:
             linked = await self.find_package_for_diagram(diagram_id)
             if linked:
                 return linked
+
+        if not create_if_missing:
+            raise ValueError("No Document Summary package for this session")
 
         name = (diagram_title or "").strip() or "Untitled package"
         return await self.create_package(name=name, diagram_id=diagram_id, source="doc_summary")
@@ -190,6 +204,39 @@ class KnowledgePackageService:
             .order_by(KnowledgeDocument.created_at.desc())
         )
         return list(result.scalars().all())
+
+    async def reindex_package_sections(self, package_id: int) -> Dict[str, Any]:
+        """Queue full reprocessing for completed sources to refresh section metadata."""
+        package = await self.get_package(package_id)
+        if not package:
+            raise ValueError(f"Package {package_id} not found or access denied")
+
+        documents = await self.get_package_documents(package_id)
+        completed = [doc for doc in documents if doc.status == "completed"]
+        if not completed:
+            return {"message": "No completed documents to reindex", "enqueued_ids": [], "count": 0}
+
+        enqueued_ids: List[int] = []
+        for document in completed:
+            document.status = "pending"
+            document.processing_progress = "queued"
+            document.processing_progress_percent = 0
+            document.error_message = None
+            self.db.add(document)
+            enqueued_ids.append(document.id)
+
+        await self.db.commit()
+        logger.info(
+            "[FileCenter] Queued section reindex for package=%s docs=%s user=%s",
+            package_id,
+            enqueued_ids,
+            self.user_id,
+        )
+        return {
+            "message": f"Queued section reindex for {len(enqueued_ids)} document(s)",
+            "enqueued_ids": enqueued_ids,
+            "count": len(enqueued_ids),
+        }
 
     async def get_package_stats(self, package_ids: List[int]) -> Dict[int, Dict[str, int]]:
         """Return live ``{package_id: {"total", "completed"}}`` source counts.
@@ -283,8 +330,8 @@ class KnowledgePackageService:
         """Create a markdown source from pasted text or web content in a package.
 
         The text is written to disk as a ``.md`` file and registered as a
-        ``KnowledgeDocument`` linked to the package. Processing is enqueued by
-        the caller (router) after this returns.
+        ``KnowledgeDocument`` linked to the package. Indexing is started later
+        via ``/packages/{id}/documents/start-processing`` (e.g. on Generate).
         """
         package = await self.get_package(package_id)
         if not package:

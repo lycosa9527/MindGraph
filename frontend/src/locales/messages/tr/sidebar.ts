@@ -1,5 +1,5 @@
 /**
- * en UI � sidebar
+ * tr UI � sidebar
  */
 
 export default {
@@ -69,6 +69,10 @@ export default {
   'sidebar.history.pinned': 'Pinned',
   'sidebar.history.untitled': 'Untitled',
   'sidebar.knowledgeSpace': 'Knowledge base',
+  'sidebar.knowledgeSpaceHistory.capacity': 'Up to {n} packages',
+  'sidebar.knowledgeSpaceHistory.deleted': 'Package deleted',
+  'sidebar.knowledgeSpaceHistory.empty': 'No packages yet',
+  'sidebar.knowledgeSpaceHistory.title': 'Packages',
   'sidebar.languageSettings': 'Language Settings',
   'sidebar.library': 'Library',
   'sidebar.mindGraph': 'MindGraph',

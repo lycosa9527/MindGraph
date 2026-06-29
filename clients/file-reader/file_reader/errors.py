@@ -29,7 +29,6 @@ class ErrorCode(str, Enum):
     SERVER_URL_INVALID = "server_url_invalid"
     SMARTEDU_PARSE_FAILED = "smartedu_parse_failed"
     SMARTEDU_DOWNLOAD_FAILED = "smartedu_download_failed"
-    SMARTEDU_LOGIN_FAILED = "smartedu_login_failed"
     SMARTEDU_TOKEN_SAVE_FAILED = "smartedu_token_save_failed"
     ORG_LOCKED = "org_locked"
     RATE_LIMIT = "rate_limit"
@@ -58,7 +57,6 @@ class AppError:
         if self.code in (
             ErrorCode.SMARTEDU_PARSE_FAILED,
             ErrorCode.SMARTEDU_DOWNLOAD_FAILED,
-            ErrorCode.SMARTEDU_LOGIN_FAILED,
             ErrorCode.SMARTEDU_TOKEN_SAVE_FAILED,
         ):
             return i18n.translate(key, detail=detail or "—")
@@ -80,8 +78,14 @@ def classify_http_error(status: int, detail: str) -> AppError:
         return AppError(code=ErrorCode.AUTH_FAILED, raw_detail=detail)
     if status == 404 and "feature is disabled" in lowered:
         return AppError(code=ErrorCode.FEATURE_DISABLED, raw_detail=detail)
+    if status == 404 and "pairing" in lowered:
+        return AppError(code=ErrorCode.PAIRING_FAILED, raw_detail=detail)
     if status == 404:
         return AppError(code=ErrorCode.API_MISSING, raw_detail=detail)
+    if status == 409 and "pairing" in lowered:
+        return AppError(code=ErrorCode.PAIRING_FAILED, raw_detail=detail)
+    if status == 422:
+        return AppError(code=ErrorCode.UPLOAD_FAILED, raw_detail=detail)
     if status == 429:
         return AppError(code=ErrorCode.RATE_LIMIT, raw_detail=detail)
     if status >= 500:

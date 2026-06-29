@@ -56,6 +56,9 @@ def test_apply_page_actions_writes_files_and_manifest():
     assert "CNNs" in body
     assert "source_document_ids" in body  # frontmatter present
 
+    stripped = store.read_page_body(1, 9, "chapter-5")
+    assert stripped == "CNNs"
+
     # source_document_ids carries the originating document.
     overview = next(page for page in index if page["slug"] == "overview")
     assert overview["source_document_ids"] == [42]
@@ -163,6 +166,48 @@ class _FakeSession:
     async def get(self, _model, _pk):
         """Return the canned document."""
         return self._document
+
+
+@pytest.mark.asyncio
+async def test_compile_spine_subject_standard(monkeypatch):
+    """Curriculum 课标 sources use spine binding and per-section summaries."""
+    package = SimpleNamespace(id=9, name="课标包", user_id=1)
+    block = "说明文字，用于满足章节正文最小长度要求。" * 10
+    sample = (
+        "前言\n" + block + "\n"
+        "一、课程性质\n" + block + "\n"
+        "二、课程理念\n" + block + "\n"
+        "三、课程目标\n" + block + "\n"
+        "四、课程内容\n" + block + "\n"
+        "五、学业质量\n" + block + "\n"
+        "六、课程实施\n" + block + "\n"
+    )
+    document = SimpleNamespace(
+        id=42,
+        language="zh",
+        file_name="义务教育数学课程标准（2022年版）.pdf",
+        doc_metadata={},
+    )
+    session = _FakeSession(package, document, chunk_texts=[sample])
+
+    calls = {"n": 0}
+
+    async def _fake_chat(*_args, **_kwargs):
+        calls["n"] += 1
+        return f"note-{calls['n']}"
+
+    monkeypatch.setattr(compiler.llm_service, "chat", _fake_chat)
+
+    ok = await compiler.compile_package_wiki(cast(AsyncSession, session), user_id=1, package_id=9, document_id=42)
+    assert ok is True
+
+    index = store.list_pages(1, 9)
+    slugs = {page["slug"] for page in index}
+    assert "overview" in slugs
+    assert "san-kecheng-mubiao" in slugs
+    mubiao = next(page for page in index if page["slug"] == "san-kecheng-mubiao")
+    assert mubiao["section_key"] == "san-kecheng-mubiao"
+    assert calls["n"] >= 7
 
 
 @pytest.mark.asyncio

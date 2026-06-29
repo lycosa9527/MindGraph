@@ -71,7 +71,7 @@ const completedCount = computed(
   () => documents.value.filter((doc) => doc.status === 'completed').length
 )
 const isIndexing = computed(() =>
-  documents.value.some((doc) => doc.status === 'pending' || doc.status === 'processing')
+  documents.value.some((doc) => doc.status === 'processing')
 )
 const ragActive = computed(
   () => activeDiagramId.value !== null && completedCount.value > 0
@@ -192,8 +192,10 @@ function statusLabel(status: string): string {
       return t('fileCenter.statusReady')
     case 'failed':
       return t('fileCenter.statusFailed')
-    default:
+    case 'processing':
       return t('fileCenter.statusIndexing')
+    default:
+      return t('fileCenter.statusPending')
   }
 }
 

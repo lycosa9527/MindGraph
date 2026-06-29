@@ -1,5 +1,5 @@
 /**
- * en UI � thinkingCoins
+ * xh UI � thinkingCoins
  */
 
 export const thinkingCoinsMessages = {

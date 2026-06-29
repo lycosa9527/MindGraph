@@ -16,6 +16,13 @@ from config.settings import config
 from llm_chunking.ingest_context import ingest_attribution
 from models.domain.knowledge_space import KnowledgeDocument
 from services.knowledge.chunking_service import ChunkingService
+from services.knowledge.document_structure import (
+    StructureHeading,
+    extract_docx_headings,
+    extract_document_structure,
+)
+from services.knowledge.knowledge_settings import segmentation_from_rules, server_defaults
+from services.knowledge.section_query import parse_section_hint
 from services.llm.embedding_cache import get_embedding_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, QDRANT_ERRORS
 from utils.dashscope_error_handler import DashScopeError
@@ -29,23 +36,21 @@ async def extract_and_clean_text(
     document: KnowledgeDocument,
     db,
     processing_rules: Optional[dict],
-) -> Tuple[str, Optional[List[Dict[str, Any]]]]:
+) -> Tuple[str, Optional[List[Dict[str, Any]]], List[StructureHeading]]:
     """
     Extract and clean text from document.
 
-    Args:
-        processor: Document processor instance
-        cleaner: Document cleaner instance
-        document: KnowledgeDocument instance
-        db: Database session
-        processing_rules: Optional processing rules
-
     Returns:
-        Tuple of (cleaned_text, page_info)
+        Tuple of (cleaned_text, page_info, structure_headings)
     """
-    # Extract text with page information for PDFs
+    structure_headings: List[StructureHeading] = []
+    docx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     if document.file_type == "application/pdf":
         text, page_info = processor.extract_text_with_pages(document.file_path, document.file_type)
+        structure_headings = extract_document_structure(document.file_path, document.file_type)
+    elif document.file_type == docx:
+        text, structure_headings = extract_docx_headings(document.file_path)
+        page_info = None
     else:
         text = processor.extract_text(document.file_path, document.file_type)
         page_info = None
@@ -92,7 +97,7 @@ async def extract_and_clean_text(
         )
         raise ValueError(error_msg) from clean_error
 
-    return cleaned_text, page_info
+    return cleaned_text, page_info, structure_headings
 
 
 async def chunk_text_with_mode(
@@ -103,6 +108,7 @@ async def chunk_text_with_mode(
     page_info: Optional[List[Dict[str, Any]]],
     document_id: int,
     user_id: Optional[int] = None,
+    structure_headings: Optional[List[StructureHeading]] = None,
 ) -> List[Any]:
     """
     Chunk text based on processing mode and rules.
@@ -129,13 +135,14 @@ async def chunk_text_with_mode(
     if processing_rules:
         mode = processing_rules.get("mode", "automatic")
         chunking_strategy = processing_rules.get("chunking_strategy", "recursive")
-        if "rules" in processing_rules:
-            rules = processing_rules.get("rules", {})
-            if "segmentation" in rules:
-                seg = rules["segmentation"]
-                chunk_size = seg.get("max_tokens", 500)
-                chunk_overlap = seg.get("chunk_overlap", 50)
-                separator = seg.get("separator") or seg.get("delimiter")
+        chunk_size, chunk_overlap = segmentation_from_rules(processing_rules)
+        rules = processing_rules.get("rules") or {}
+        segmentation = rules.get("segmentation") or {}
+        separator = segmentation.get("separator") or segmentation.get("delimiter")
+    else:
+        defaults = server_defaults()
+        chunk_size = defaults["chunk_size"]
+        chunk_overlap = defaults["chunk_overlap"]
 
     # Log chunking configuration
     chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
@@ -201,7 +208,7 @@ async def chunk_text_with_mode(
                 hierarchical_chunking = ChunkingService(
                     chunk_size=chunk_size or 500,
                     overlap=chunk_overlap or 50,
-                    mode="automatic",
+                    mode="hierarchical",
                 )
                 chunks = hierarchical_chunking.chunk_text(
                     cleaned_text,
@@ -210,6 +217,7 @@ async def chunk_text_with_mode(
                     extract_structure=True,
                     page_info=page_info,
                     language=document.language,
+                    structure_headings=structure_headings,
                 )
             else:
                 logger.warning(
@@ -224,6 +232,7 @@ async def chunk_text_with_mode(
                     extract_structure=True,
                     page_info=page_info,
                     language=document.language,
+                    structure_headings=structure_headings,
                 )
         elif mode == "custom" and (chunk_size or chunk_overlap or separator):
             if chunking_engine == "semchunk":
@@ -239,6 +248,7 @@ async def chunk_text_with_mode(
                     extract_structure=True,
                     page_info=page_info,
                     language=document.language,
+                    structure_headings=structure_headings,
                 )
             else:
                 logger.warning(
@@ -253,6 +263,7 @@ async def chunk_text_with_mode(
                     extract_structure=True,
                     page_info=page_info,
                     language=document.language,
+                    structure_headings=structure_headings,
                 )
         else:
             # Automatic mode (default) - respects CHUNKING_ENGINE via chunking_service
@@ -287,6 +298,7 @@ async def chunk_text_with_mode(
                     extract_structure=True,
                     page_info=page_info,
                     language=document.language,
+                    structure_headings=structure_headings,
                 )
                 logger.info(
                     "[RAG] chunk_text returned: doc_id=%s, chunks_count=%s, chunks_type=%s",
@@ -434,6 +446,15 @@ def prepare_qdrant_metadata(chunks: List[Any], document: KnowledgeDocument) -> L
                 chunk_meta["section_title"] = chunk_data["section_title"]
             if "section_level" in chunk_data:
                 chunk_meta["section_level"] = chunk_data["section_level"]
+            if "section_key" in chunk_data:
+                chunk_meta["section_key"] = chunk_data["section_key"]
+            if "section_number" in chunk_data:
+                chunk_meta["section_number"] = chunk_data["section_number"]
+            if "section_key" not in chunk_meta and "section_title" in chunk_data:
+                title_hint = parse_section_hint(str(chunk_data["section_title"]))
+                if title_hint is not None:
+                    chunk_meta["section_key"] = title_hint.section_key
+                    chunk_meta.setdefault("section_number", title_hint.section_number)
             if "has_table" in chunk_data:
                 chunk_meta["has_table"] = chunk_data["has_table"]
             if "has_code" in chunk_data:

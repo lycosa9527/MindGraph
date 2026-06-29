@@ -69,6 +69,32 @@ function Ensure-WxKeyDll {
 $wxKeyDll = Join-Path $here "tools\wx_key.dll"
 Ensure-WxKeyDll -Destination $wxKeyDll
 
+python -m pip install pillow
+python (Join-Path $here "scripts\generate_icon.py")
+if ($LASTEXITCODE -ne 0) {
+    throw "Icon generation failed with exit code $LASTEXITCODE"
+}
+
+$playwrightDriver = python -c "import pathlib, playwright; print(pathlib.Path(playwright.__file__).resolve().parent / 'driver')"
+if (-not (Test-Path $playwrightDriver)) {
+    throw "Playwright driver not found at $playwrightDriver — run: python -m pip install playwright"
+}
+
+$env:PLAYWRIGHT_BROWSERS_PATH = "0"
+Write-Host "Installing bundled Chromium into Playwright driver (PLAYWRIGHT_BROWSERS_PATH=0)..."
+python -m playwright install chromium
+if ($LASTEXITCODE -ne 0) {
+    throw "playwright install chromium failed with exit code $LASTEXITCODE"
+}
+
+$localBrowsers = Join-Path $playwrightDriver "package\.local-browsers"
+$chromeExe = Get-ChildItem -Path $localBrowsers -Recurse -Filter "chrome.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+if (-not $chromeExe) {
+    throw "Bundled Chromium not found under $localBrowsers — expected playwright install chromium with PLAYWRIGHT_BROWSERS_PATH=0"
+}
+$chromeMb = [math]::Round($chromeExe.Length / 1MB, 1)
+Write-Host "Bundling Playwright driver + Chromium from $playwrightDriver ($($chromeExe.FullName), chrome.exe $chromeMb MB)"
+
 pyinstaller --noconfirm mindgraph-file-reader.spec
 if ($LASTEXITCODE -ne 0) {
     throw "PyInstaller failed with exit code $LASTEXITCODE"
@@ -80,7 +106,7 @@ if (-not (Test-Path $dist)) {
 }
 
 $distMb = [math]::Round((Get-Item $dist).Length / 1MB, 1)
-Write-Host "Built onefile $dist ($distMb MB, ffmpeg embedded)"
+Write-Host "Built onefile $dist ($distMb MB, ffmpeg + Playwright driver + bundled Chromium)"
 
 $zipRoot = Join-Path $here "..\..\frontend\public\downloads"
 New-Item -ItemType Directory -Force -Path $zipRoot | Out-Null

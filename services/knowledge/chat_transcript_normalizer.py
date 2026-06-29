@@ -1,4 +1,4 @@
-"""Normalize WeChat / DingTalk chat exports into markdown for Knowledge Space ingest.
+"""Normalize WeChat / DingTalk / WeCom chat exports into markdown for Knowledge Space ingest.
 
 Author: lycosa9527
 Made by: MindSpring Team

@@ -92,13 +92,19 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
     queryClient.setQueryData<PackageListResponse>(fileCenterKeys.packages(), (existing) => {
       const packages = existing?.packages ?? []
       const found = packages.some((item) => item.id === pkg.id)
+      const wikiCompileEnabled = existing?.wiki_compile_enabled ?? false
       if (found) {
         return {
           packages: packages.map((item) => (item.id === pkg.id ? { ...item, ...pkg } : item)),
           total: existing?.total ?? packages.length,
+          wiki_compile_enabled: wikiCompileEnabled,
         }
       }
-      return { packages: [pkg, ...packages], total: (existing?.total ?? 0) + 1 }
+      return {
+        packages: [pkg, ...packages],
+        total: (existing?.total ?? 0) + 1,
+        wiki_compile_enabled: wikiCompileEnabled,
+      }
     })
   }
 
@@ -112,7 +118,40 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
     clearPendingPackage()
   }
 
-  /** Idempotently create or resume the Document Summary session package. */
+  /** Resume an existing session package without creating an empty one. */
+  async function resolveSession(): Promise<KnowledgePackage | null> {
+    if (!enabled.value) {
+      return null
+    }
+    sessionStarting.value = true
+    try {
+      const pkg = await apiRequestJson<KnowledgePackage>(
+        '/api/knowledge-space/doc-summary/session/start',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            diagram_id: activeDiagramId.value ?? undefined,
+            diagram_title: diagramStore.effectiveTitle || undefined,
+            package_id: pendingPackageId.value ?? linkedPackage.value?.id ?? undefined,
+            create_if_missing: false,
+          }),
+        }
+      )
+      sessionPackageId.value = pkg.id
+      mergeSessionPackageIntoCache(pkg)
+      if (!activeDiagramId.value) {
+        rememberPendingPackage(pkg.id)
+      }
+      void queryClient.invalidateQueries({ queryKey: fileCenterKeys.packages() })
+      return pkg
+    } catch {
+      return null
+    } finally {
+      sessionStarting.value = false
+    }
+  }
+
+  /** Create the session package on first ingest (or chat pairing). */
   async function ensureSession(): Promise<KnowledgePackage> {
     if (!enabled.value) {
       throw new Error('Document Summary is disabled')
@@ -133,6 +172,7 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
             diagram_id: activeDiagramId.value ?? undefined,
             diagram_title: diagramStore.effectiveTitle || undefined,
             package_id: pendingPackageId.value ?? linkedPackage.value?.id ?? undefined,
+            create_if_missing: true,
           }),
         }
       )
@@ -165,6 +205,7 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
     sessionStarting,
     rememberPendingPackage,
     clearPendingPackage,
+    resolveSession,
     ensureSession,
   }
 }

@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from config.settings import config
 from models.domain.knowledge_space import DocumentChunk, KnowledgeDocument
 from services.knowledge.chunking_service import ChunkingService
+from services.knowledge.document_structure import StructureHeading
 from services.llm.embedding_cache import get_embedding_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 
@@ -26,6 +27,7 @@ def chunk_text_for_reindexing(
     document: KnowledgeDocument,
     processing_rules: Optional[dict],
     page_info: Optional[List[Dict[str, Any]]],
+    structure_headings: Optional[List[StructureHeading]] = None,
 ) -> List[Any]:
     """
     Chunk text for reindexing based on processing mode.
@@ -81,6 +83,7 @@ def chunk_text_for_reindexing(
             "extract_structure": True,
             "page_info": page_info,
             "language": document.language,
+            "structure_headings": structure_headings,
         }
         try:
             result = chunking_service.chunk_text(cleaned_text, **kwargs)
@@ -118,6 +121,7 @@ def chunk_text_for_reindexing(
                     extract_structure=True,
                     page_info=page_info,
                     language=document.language,
+                    structure_headings=structure_headings,
                 )
             else:
                 logger.warning(

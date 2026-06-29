@@ -25,9 +25,13 @@ Proprietary License
 import json
 import logging
 import os
+import re
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+from services.knowledge.section_query import parse_section_hint
+from services.knowledge.wiki_spine import rank_pages_for_query, resolve_query_to_wiki_slug
 
 logger = logging.getLogger(__name__)
 
@@ -82,28 +86,67 @@ def read_page(user_id: int, package_id: int, slug: str) -> Optional[str]:
         return None
 
 
-def find_relevant_pages(user_id: int, package_id: int, query: str, top_k: int = 3) -> List[Dict[str, Any]]:
-    """Find wiki pages whose title or slug best matches a query (substring score).
+def read_page_body(user_id: int, package_id: int, slug: str) -> Optional[str]:
+    """Return wiki page markdown without YAML frontmatter."""
+    raw = read_page(user_id, package_id, slug)
+    if raw is None:
+        return None
+    body = strip_frontmatter(raw).strip()
+    return body or None
 
-    A lightweight match by title/slug keywords — no embeddings. The overview
-    page is always considered a candidate so global context is available.
+
+def strip_frontmatter(text: str) -> str:
+    """Remove optional YAML frontmatter from a markdown page file."""
+    if not text.startswith("---"):
+        return text
+    end = text.find("\n---", 3)
+    if end < 0:
+        return text
+    return text[end + 4 :].lstrip("\n")
+
+
+def find_relevant_pages(user_id: int, package_id: int, query: str, top_k: int = 3) -> List[Dict[str, Any]]:
+    """Find wiki pages whose slug/title/section_key best match a query.
+
+    Uses canonical curriculum spine keyword routing when available, then falls
+    back to substring scoring. The overview page stays a low-priority candidate.
     """
     pages = read_index(user_id, package_id)
     if not pages:
         return []
 
-    terms = [term for term in query.lower().split() if term]
+    ranked = rank_pages_for_query(query, pages)
+    if ranked:
+        return ranked[:top_k]
+
+    section_hint = parse_section_hint(query)
+    primary_slug = resolve_query_to_wiki_slug(query, pages)
+    terms = _query_terms(query)
     scored: List[tuple[int, Dict[str, Any]]] = []
     for page in pages:
-        haystack = f"{page.get('slug', '')} {page.get('title', '')}".lower()
+        slug = str(page.get("slug", ""))
+        section_key = str(page.get("section_key") or slug)
+        haystack = f"{slug} {page.get('title', '')} {section_key}".lower()
         score = sum(1 for term in terms if term in haystack)
+        if primary_slug and slug == primary_slug:
+            score += 100
+        if section_hint is not None and section_key == section_hint.section_key:
+            score += 10
         if page.get("slug") == "overview":
-            score += 1  # always keep big-picture context available
+            score += 1
         if score > 0:
             scored.append((score, page))
 
     scored.sort(key=lambda item: item[0], reverse=True)
     return [page for _, page in scored[:top_k]]
+
+
+def _query_terms(query: str) -> List[str]:
+    """Return lowercase Latin and CJK terms for lightweight wiki matching."""
+    text = (query or "").strip().lower()
+    latin = [term for term in text.split() if len(term) >= 2]
+    cjk = re.findall(r"[\u4e00-\u9fff]{2,}", query or "")
+    return latin + cjk
 
 
 def delete_wiki(user_id: int, package_id: int) -> None:

@@ -222,5 +222,5 @@ class KnowledgeConfigMixin:
 
     @property
     def FILE_CENTER_WIKI_COMPILE(self) -> bool:
-        """Compile a per-package wiki (markdown on disk) after chunk indexing (v2a, opt-in)."""
-        return self._get_cached_value("FILE_CENTER_WIKI_COMPILE", "false").lower() == "true"
+        """Compile a per-package wiki (markdown on disk) after chunk indexing (v2a)."""
+        return self._get_cached_value("FILE_CENTER_WIKI_COMPILE", "true").lower() == "true"

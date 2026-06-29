@@ -281,6 +281,8 @@ class DocumentResponse(BaseModel):
     processing_progress_percent: int = 0
     chunking_engine: Optional[str] = None
     chunking_mode: Optional[str] = None
+    rag_status: Optional[str] = None
+    wiki_status: Optional[str] = None
     created_at: str
     updated_at: str
 
@@ -333,6 +335,29 @@ class RetrievalTestHistoryResponse(BaseModel):
     total: int
 
 
+class KnowledgeSpaceSettingsResponse(BaseModel):
+    """Effective Knowledge Space settings for the current user."""
+
+    default_method: str
+    top_k: int
+    score_threshold: float
+    chunk_size: int
+    chunk_overlap: int
+    vector_weight: float
+    keyword_weight: float
+    reranking_mode: str
+    wiki_compile_enabled: bool
+    chunking_engine: str
+    has_user_overrides: bool
+
+
+class KnowledgeSpaceSettingsUpdateResponse(BaseModel):
+    """Response after updating Knowledge Space settings."""
+
+    settings: KnowledgeSpaceSettingsResponse
+    reindex_required: bool
+
+
 class CompressionMetricsResponse(BaseModel):
     """Response model for compression metrics."""
 
@@ -369,6 +394,9 @@ class PackageResponse(BaseModel):
     status: str
     document_count: int = 0
     completed_count: int = 0
+    rag_status: str = "empty"
+    wiki_page_count: int = 0
+    wiki_status: str = "none"
     created_at: str
     updated_at: str
 
@@ -378,6 +406,7 @@ class PackageListResponse(BaseModel):
 
     packages: List[PackageResponse]
     total: int
+    wiki_compile_enabled: bool = False
 
 
 class PackageDetailResponse(BaseModel):

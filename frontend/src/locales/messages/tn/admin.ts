@@ -1,5 +1,5 @@
 /**
- * en UI � admin
+ * tn UI � admin
  */
 
 export default {
@@ -226,13 +226,10 @@ export default {
   'admin.mindbot.managerNoOrg': 'Your account has no organization assigned.',
   'admin.mindbot.tabDingtalk': 'DingTalk API auth',
   'admin.oauth.sectionTitle': 'QR sign-in',
-  'admin.oauth.intro':
-    'Enable WeChat or DingTalk QR login for this school. WeChat AppID/Secret are in server .env; DingTalk requires school IT credentials.',
-  'admin.oauth.officialDocsHint':
-    'Matches official docs: WeChat WxLogin + code exchange; DingTalk OAuth 2.0 DTFrameLogin + immediate authCode exchange (not legacy oapi.dingtalk.com).',
+  'admin.oauth.intro': 'Enable WeChat or DingTalk QR login for this school. WeChat AppID/Secret are in server .env; DingTalk requires school IT credentials.',
+  'admin.oauth.officialDocsHint': 'Matches official docs: WeChat WxLogin + code exchange; DingTalk OAuth 2.0 DTFrameLogin + immediate authCode exchange (not legacy oapi.dingtalk.com).',
   'admin.oauth.wechatToggle': 'Enable WeChat QR login',
-  'admin.oauth.wechatHint':
-    'Teachers must link WeChat under Account linking first. Platform AppID/Secret are set in server .env.',
+  'admin.oauth.wechatHint': 'Teachers must link WeChat under Account linking first. Platform AppID/Secret are set in server .env.',
   'admin.oauth.dingtalkToggle': 'Enable DingTalk QR login',
   'admin.oauth.dingtalkAppKey': 'DingTalk AppKey (client_id)',
   'admin.oauth.dingtalkAppSecret': 'DingTalk AppSecret',
@@ -246,8 +243,7 @@ export default {
   'admin.oauth.wechatCallback': 'WeChat',
   'admin.oauth.dingtalkCallback': 'DingTalk',
   'admin.oauth.schoolItChecklistTitle': 'DingTalk IT checklist',
-  'admin.oauth.schoolItChecklist':
-    'DingTalk IT checklist:\n1. Enable third-party website / QR login\n2. Set the DingTalk callback URL above in DingTalk console (exact match)\n3. Request scopes: permission-open_app_api_base, Contact.User.Read\n4. Provide AppKey, AppSecret, optional CorpId to MindGraph admin',
+  'admin.oauth.schoolItChecklist': 'DingTalk IT checklist:\n1. Enable third-party website / QR login\n2. Set the DingTalk callback URL above in DingTalk console (exact match)\n3. Request scopes: permission-open_app_api_base, Contact.User.Read\n4. Provide AppKey, AppSecret, optional CorpId to MindGraph admin',
   'admin.oauth.loadError': 'Could not load QR login settings',
   'admin.oauth.saveSuccess': 'QR login settings saved',
   'admin.oauth.saveError': 'Could not save. Please try again.',
@@ -855,16 +851,14 @@ export default {
   'admin.mindmateExport.jobDownload': 'Download export',
   'admin.mindmateExport.requiresJobNotice': 'This scope is large; use a background export job instead of a direct download.',
   'admin.mindmateExport.loadMore': 'Load more',
-  'admin.mindmateExport.dumps.intro':
-    'Upload dify-dump_*.zip from each Dify host and import. Each import merges into the cumulative library used by Search & filters. Snapshot archives are kept for audit.',
+  'admin.mindmateExport.dumps.intro': 'Upload dify-dump_*.zip from each Dify host and import. Each import merges into the cumulative library used by Search & filters. Snapshot archives are kept for audit.',
   'admin.mindmateExport.dumps.libraryDify': 'Dify library (Server 1)',
   'admin.mindmateExport.dumps.libraryNeodify': 'NeoDify library (Server 2)',
   'admin.mindmateExport.dumps.libraryEmpty': 'No library yet — import a dump to start.',
   'admin.mindmateExport.dumps.libraryMergedSnapshots': 'Merged snapshots',
   'admin.mindmateExport.dumps.libraryConversations': 'Conversations',
   'admin.mindmateExport.dumps.libraryLastMerged': 'Last merged',
-  'admin.mindmateExport.dumps.librarySearchNote':
-    'Search & filters always read from this merged library.',
+  'admin.mindmateExport.dumps.librarySearchNote': 'Search & filters always read from this merged library.',
   'admin.mindmateExport.dumps.sourceLibrary': 'library',
   'admin.mindmateExport.dumps.sourceMissing': 'missing',
   'admin.mindmateExport.dumps.archiveDify': 'Dify snapshot archive',

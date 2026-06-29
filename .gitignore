@@ -260,7 +260,9 @@ archive/
 # File-reader build artifacts and bundled ffmpeg (download before build; see tools/README.md)
 clients/file-reader/tools/ffmpeg.exe
 clients/file-reader/dist/
+clients/file-reader/dist/mindgraph-file-reader.exe
 clients/file-reader/build/
+frontend/public/downloads/mindgraph-file-reader.zip
 *.otf
 *.woff
 *.woff2

@@ -49,19 +49,23 @@ async def start_doc_summary_session(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Create or resume the Document Summary package for the current canvas session."""
+    """Resume or create the Document Summary package for the current canvas session."""
     service = KnowledgePackageService(db, current_user.id)
     try:
         package = await service.ensure_doc_summary_session(
             diagram_id=request.diagram_id,
             diagram_title=request.diagram_title,
             package_id=request.package_id,
+            create_if_missing=request.create_if_missing,
         )
         stats_map = await service.get_package_stats([package.id])
         stats = stats_map.get(package.id, {"total": 0, "completed": 0})
         return _package_response(package, stats)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        detail = str(exc)
+        if detail == "No Document Summary package for this session":
+            raise HTTPException(status_code=404, detail=detail) from exc
+        raise HTTPException(status_code=400, detail=detail) from exc
     except DATABASE_ERRORS as exc:
         logger.error("[DocSummary] session/start failed user=%s: %s", current_user.id, exc)
         raise HTTPException(status_code=500, detail="Session start failed") from exc

@@ -1,547 +1,924 @@
-"""SmartEdu tab panel for the file-reader desktop app."""
+"""国家智慧教育平台 tab — platform browser with multi-site download detection."""
 
 from __future__ import annotations
 
+import json
 import threading
 import tkinter as tk
 from pathlib import Path
-from tkinter import filedialog, messagebox, simpledialog, ttk
-from typing import Callable, Dict, List, Optional
+from tkinter import messagebox
+from typing import Any, List, Optional
 
-from file_reader.api_client import FileReaderApiClient, PackageItem
 from file_reader.dpapi_store import DpapiError
 from file_reader.i18n import I18n
-from file_reader.smartedu import metadata as smartedu_metadata
-from file_reader.smartedu.downloader import download_asset
-from file_reader.smartedu.models import SmartEduAsset, SmartEduLesson
-from file_reader.smartedu.token_store import (
-    clear_smartedu_token,
-    load_smartedu_token,
-    save_smartedu_token,
+from file_reader.platform_browser.cookie_jar import cleanup_stale_cookie_files
+from file_reader.platform_browser.download_runner import download_detected_assets
+from file_reader.platform_browser.models import DetectedAsset, ProbeContext
+from file_reader.platform_browser.registry import probe_assets
+from file_reader.platform_browser.sites import detect_platform, download_auth_ready, format_status_line
+from file_reader.platform_browser.browser_factory import create_platform_browser
+from file_reader.platform_browser.webview_host import webview_init_error_types
+from file_reader.platform_browser.youtube_po import (
+    YOUTUBE_PO_CLEANUP_JS,
+    YOUTUBE_PO_HOOK_JS,
+    YOUTUBE_PO_READ_JS,
+    YouTubePoCapture,
+    is_youtube_stream_capture_url,
+    merge_youtube_po_capture,
 )
-from file_reader.smartedu.url_parser import parse_smartedu_url
-from file_reader.smartedu_login import open_smartedu_login_async, pywebview_available
+from file_reader.tencent_meeting.url_parser import MEDIA_PROBE_JS, is_tencent_media_url, parse_media_urls
+from file_reader.wechat_channels.models import CapturedChannelVideo
+from file_reader.wechat_channels.url_parser import (
+    CHANNELS_CLEANUP_JS,
+    CHANNELS_HOOK_JS,
+    CHANNELS_KEYSTREAM_JS,
+    CHANNELS_READ_JS,
+    is_channels_media_url,
+    merge_channels_captures,
+)
+from file_reader.smartedu.debug_log import debug_log_path_display, log_platform_browser
+from file_reader.smartedu.token_store import load_smartedu_token, save_smartedu_token
+from file_reader.smartedu_browser import (
+    DEFAULT_HOME_URL,
+    LOGIN_STATE_JS,
+    merge_cookie_login_flags,
+    normalize_nav_url,
+    parse_login_state,
+)
+from file_reader.smartedu_panel_download import open_asset_download_dialog, show_download_result
 from file_reader.theme import (
     ACCENT,
     BG_APP,
     BG_CARD,
-    BG_DISABLED,
     BG_MUTED,
     BORDER,
     FONT_BODY,
     FONT_CAPTION,
-    FONT_HEADER,
-    TEXT_MUTED,
     TEXT_PRIMARY,
     TEXT_SECONDARY,
 )
 
-StatusCallback = Callable[[str, str, str], None]
+_POLL_MS = 3000
+_PROBE_DEBOUNCE_MS = 1000
+_IDLE_PROBE_MS = 2500
+_NAV_SYNC_MS = 400
 
 
 class SmartEduPanel(tk.Frame):
-    """Paste SmartEdu URL, pick assets, download locally, optional MindGraph upload."""
+    """Browser-style panel for multi-platform browsing and downloads."""
 
-    def __init__(
-        self,
-        master: tk.Misc,
-        i18n: I18n,
-        client_factory: Callable[[], FileReaderApiClient],
-        on_status: StatusCallback,
-        *,
-        authenticated: bool = False,
-    ) -> None:
+    def __init__(self, master: tk.Misc, i18n: I18n) -> None:
         super().__init__(master, bg=BG_APP)
         self._i18n = i18n
-        self._client_factory = client_factory
-        self._on_status = on_status
-        self._authenticated = authenticated
-        self._lesson: Optional[SmartEduLesson] = None
-        self._packages: List[PackageItem] = []
-        self._asset_vars: Dict[str, tk.BooleanVar] = {}
+        self._browser: Any = None
         self._busy = False
+        self._probing = False
+        self._pending_probe = False
+        self._badge_count = 0
         self._token = load_smartedu_token()
+        self._login_state: dict[str, Any] = {}
+        self._detected_assets: List[DetectedAsset] = []
+        self._captured_media_urls: tuple[str, ...] = ()
+        self._captured_channels_videos: tuple = ()
+        self._youtube_po_capture: YouTubePoCapture | None = None
+        self._probe_status_hint = ""
+        self._last_probe_url = ""
+        self._poll_after_id: Optional[str] = None
+        self._probe_after_id: Optional[str] = None
+        self._idle_probe_after_id: Optional[str] = None
+        self._nav_sync_after_id: Optional[str] = None
+        self._probe_generation = 0
+        self._resource_capture_enabled = True
+        self._download_cancel = threading.Event()
+        self._browser_init_state = "pending"
+        self._browser_init_timeout_id: Optional[str] = None
 
-        default_dir = Path.home() / "Downloads" / "MindGraph" / "SmartEdu"
-        self._save_dir = tk.StringVar(value=str(default_dir))
-        self._upload_var = tk.BooleanVar(value=False)
+        self._url_var = tk.StringVar(value=DEFAULT_HOME_URL)
 
-        card = tk.Frame(self, bg=BG_CARD, highlightbackground=BORDER, highlightthickness=1)
-        card.pack(fill="both", expand=True)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
 
-        inner = tk.Frame(card, bg=BG_CARD, padx=16, pady=14)
-        inner.pack(fill="both", expand=True)
+        toolbar = tk.Frame(self, bg=BG_CARD, highlightbackground=BORDER, highlightthickness=1)
+        toolbar.grid(row=0, column=0, sticky="ew", padx=0, pady=(0, 4))
+        toolbar.columnconfigure(3, weight=1)
 
-        self._title = tk.Label(inner, bg=BG_CARD, fg=TEXT_PRIMARY, font=FONT_HEADER)
-        self._title.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 10))
+        self._back_btn = tk.Button(
+            toolbar,
+            text="←",
+            font=FONT_BODY,
+            relief="flat",
+            bg=BG_MUTED,
+            fg=TEXT_PRIMARY,
+            padx=8,
+            pady=4,
+            command=self._nav_back,
+        )
+        self._back_btn.grid(row=0, column=0, padx=(8, 2), pady=8)
+        self._forward_btn = tk.Button(
+            toolbar,
+            text="→",
+            font=FONT_BODY,
+            relief="flat",
+            bg=BG_MUTED,
+            fg=TEXT_PRIMARY,
+            padx=8,
+            pady=4,
+            command=self._nav_forward,
+        )
+        self._forward_btn.grid(row=0, column=1, padx=2, pady=8)
+        self._refresh_btn = tk.Button(
+            toolbar,
+            text="↻",
+            font=FONT_BODY,
+            relief="flat",
+            bg=BG_MUTED,
+            fg=TEXT_PRIMARY,
+            padx=8,
+            pady=4,
+            command=self._nav_refresh,
+        )
+        self._refresh_btn.grid(row=0, column=2, padx=(2, 8), pady=8)
 
-        self._url_label = tk.Label(inner, bg=BG_CARD, fg=TEXT_SECONDARY, font=FONT_CAPTION)
-        self._url_label.grid(row=1, column=0, sticky="w")
-        self._url_var = tk.StringVar()
-        url_entry = tk.Entry(
-            inner,
+        self._address = tk.Entry(
+            toolbar,
             textvariable=self._url_var,
             font=FONT_BODY,
             relief="flat",
             bg=BG_MUTED,
             fg=TEXT_PRIMARY,
+            insertbackground=TEXT_PRIMARY,
         )
-        url_entry.grid(row=1, column=1, columnspan=2, sticky="ew", padx=(8, 0), ipady=6)
-        url_entry.bind("<FocusOut>", lambda _event: self._parse_url_quiet())
+        self._address.grid(row=0, column=3, sticky="ew", ipady=6, pady=8)
+        self._address.bind("<Return>", lambda _event: self._navigate_address())
 
-        login_row = tk.Frame(inner, bg=BG_CARD)
-        login_row.grid(row=2, column=0, columnspan=3, sticky="w", pady=(10, 0))
-        self._login_btn = tk.Button(
-            login_row,
-            font=FONT_BODY,
-            relief="flat",
-            bg=BG_MUTED,
-            fg=TEXT_PRIMARY,
-            padx=12,
-            pady=6,
-            command=self._open_login,
-        )
-        self._login_btn.pack(side="left")
-        self._token_label = tk.Label(login_row, bg=BG_CARD, fg=TEXT_MUTED, font=FONT_CAPTION)
-        self._token_label.pack(side="left", padx=(12, 0))
-        self._paste_btn = tk.Button(
-            login_row,
-            font=FONT_BODY,
-            relief="flat",
-            bg=BG_MUTED,
-            fg=TEXT_PRIMARY,
-            padx=10,
-            pady=6,
-            command=self._paste_token,
-        )
-        self._paste_btn.pack(side="left", padx=(8, 0))
-        self._clear_token_btn = tk.Button(
-            login_row,
-            font=FONT_BODY,
-            relief="flat",
-            bg=BG_MUTED,
-            fg=TEXT_PRIMARY,
-            padx=10,
-            pady=6,
-            command=self._clear_token,
-        )
-        self._clear_token_btn.pack(side="left", padx=(8, 0))
-
-        self._lesson_label = tk.Label(inner, bg=BG_CARD, fg=TEXT_PRIMARY, font=FONT_BODY, anchor="w", justify="left")
-        self._lesson_label.grid(row=3, column=0, columnspan=3, sticky="w", pady=(12, 4))
-
-        self._asset_frame = tk.Frame(inner, bg=BG_CARD)
-        self._asset_frame.grid(row=4, column=0, columnspan=3, sticky="w")
-
-        self._folder_label = tk.Label(inner, bg=BG_CARD, fg=TEXT_SECONDARY, font=FONT_CAPTION)
-        self._folder_label.grid(row=5, column=0, sticky="w", pady=(12, 0))
-        tk.Entry(
-            inner,
-            textvariable=self._save_dir,
-            font=FONT_BODY,
-            relief="flat",
-            bg=BG_MUTED,
-            fg=TEXT_PRIMARY,
-        ).grid(row=5, column=1, sticky="ew", padx=(8, 8), pady=(12, 0), ipady=6)
-        self._browse_btn = tk.Button(
-            inner,
-            font=FONT_BODY,
-            relief="flat",
-            bg=BG_MUTED,
-            fg=TEXT_PRIMARY,
-            padx=12,
-            pady=6,
-            command=self._browse_folder,
-        )
-        self._browse_btn.grid(row=5, column=2, pady=(12, 0))
-
-        upload_row = tk.Frame(inner, bg=BG_CARD)
-        upload_row.grid(row=6, column=0, columnspan=3, sticky="ew", pady=(10, 0))
-        self._upload_check = tk.Checkbutton(
-            upload_row,
-            variable=self._upload_var,
-            bg=BG_CARD,
-            fg=TEXT_PRIMARY,
-            font=FONT_BODY,
-            selectcolor=BG_MUTED,
-            activebackground=BG_CARD,
-            command=self._sync_upload_controls,
-        )
-        self._upload_check.pack(side="left")
-        self._package_label = tk.Label(upload_row, bg=BG_CARD, fg=TEXT_SECONDARY, font=FONT_CAPTION)
-        self._package_label.pack(side="left", padx=(12, 4))
-        self._package_combo = ttk.Combobox(upload_row, state="disabled", width=36)
-        self._package_combo.pack(side="left", fill="x", expand=True)
-
+        download_wrap = tk.Frame(toolbar, bg=BG_CARD)
+        download_wrap.grid(row=0, column=4, padx=(8, 8), pady=8)
         self._download_btn = tk.Button(
-            inner,
+            download_wrap,
             font=FONT_BODY,
+            relief="flat",
             bg=ACCENT,
             fg="#ffffff",
             activebackground="#1d4ed8",
             activeforeground="#ffffff",
-            relief="flat",
-            padx=16,
-            pady=10,
-            command=self._download_selected,
+            padx=12,
+            pady=6,
+            command=self._download_current,
         )
-        self._download_btn.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(14, 0))
+        self._download_btn.pack()
+        self._badge = tk.Label(
+            download_wrap,
+            text="",
+            bg="#dc2626",
+            fg="#ffffff",
+            font=FONT_CAPTION,
+            padx=4,
+            pady=0,
+        )
+        self._badge.place(relx=1.0, x=4, y=-4, anchor="ne")
+        self._badge.place_forget()
 
-        self._hint = tk.Label(inner, bg=BG_CARD, fg=TEXT_MUTED, font=FONT_CAPTION, wraplength=640, justify="left")
-        self._hint.grid(row=8, column=0, columnspan=3, sticky="w", pady=(8, 0))
+        self._cancel_btn = tk.Button(
+            toolbar,
+            font=FONT_BODY,
+            relief="flat",
+            bg=BG_MUTED,
+            fg=TEXT_PRIMARY,
+            padx=10,
+            pady=6,
+            command=self._cancel_download,
+        )
+        self._cancel_btn.grid(row=0, column=5, padx=(0, 8), pady=8)
+        self._cancel_btn.grid_remove()
 
-        inner.columnconfigure(1, weight=1)
-        self.apply_texts()
-        self._refresh_token_badge()
-        self._sync_upload_controls()
+        self._browser_host = tk.Frame(self, bg=BG_MUTED, highlightbackground=BORDER, highlightthickness=1)
+        self._browser_host.grid(row=1, column=0, sticky="nsew")
 
-        self._overlay = tk.Frame(self, bg=BG_DISABLED)
-        self._overlay_label = tk.Label(
-            self._overlay,
-            bg=BG_DISABLED,
+        self._fallback = tk.Label(
+            self._browser_host,
+            bg=BG_MUTED,
             fg=TEXT_SECONDARY,
             font=FONT_BODY,
-            wraplength=640,
+            wraplength=520,
             justify="center",
         )
-        self._overlay_label.place(relx=0.5, rely=0.5, anchor="center")
-        if not self._authenticated:
-            self._show_auth_overlay()
+        self._fallback.place(relx=0.5, rely=0.5, anchor="center")
 
-    def _show_auth_overlay(self) -> None:
-        self._overlay_label.configure(text=self._i18n.translate("smartedu.overlay"))
-        self._overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
-        self._overlay.lift()
+        status = tk.Frame(self, bg=BG_CARD, highlightbackground=BORDER, highlightthickness=1)
+        status.grid(row=2, column=0, sticky="ew", pady=(4, 0))
+        status.columnconfigure(0, weight=1)
 
-    def _hide_auth_overlay(self) -> None:
-        self._overlay.place_forget()
+        self._platform_status = tk.Label(
+            status,
+            bg=BG_CARD,
+            fg=TEXT_PRIMARY,
+            font=FONT_BODY,
+            anchor="w",
+            justify="left",
+        )
+        self._platform_status.grid(row=0, column=0, sticky="ew", padx=12, pady=8)
+
+        self.apply_texts()
+        self._refresh_status_labels()
+        self._fallback.configure(text=self._i18n.translate("smartedu.browser_tab_pending"))
+
+    def _browser_is_ready(self) -> bool:
+        if self._browser is None:
+            return False
+        if hasattr(self._browser, "is_operational"):
+            return bool(self._browser.is_operational)
+        return self._browser.widget is not None
+
+    def _browser_supports_resource_hook_failure(self) -> bool:
+        if self._browser is None:
+            return False
+        return bool(getattr(self._browser, "supports_resource_hook_failure", False))
+
+    def set_tab_visible(self, visible: bool) -> None:
+        """Lazy-init the platform browser when the SmartEdu tab is shown."""
+        if not visible:
+            return
+        if self._browser_init_state == "ready":
+            return
+        if self._browser_init_state == "loading":
+            return
+        if self._browser_init_state == "failed":
+            if self._browser is not None:
+                self._browser.destroy()
+                self._browser = None
+            log_platform_browser("browser init retry after failure")
+        self._browser_init_state = "loading"
+        self._fallback.configure(text=self._i18n.translate("smartedu.browser_loading"))
+        self._fallback.place(relx=0.5, rely=0.5, anchor="center")
+        if self._browser_init_timeout_id is not None:
+            self.after_cancel(self._browser_init_timeout_id)
+        self._browser_init_timeout_id = self.after(45000, self._browser_init_timeout)
+        self.after(200, self._begin_browser_init)
 
     def apply_texts(self) -> None:
         """Refresh labels for the active locale."""
-        self._title.configure(text=self._i18n.translate("smartedu.title"))
-        self._url_label.configure(text=self._i18n.translate("smartedu.url"))
-        self._login_btn.configure(text=self._i18n.translate("smartedu.login"))
-        self._paste_btn.configure(text=self._i18n.translate("smartedu.paste_token"))
-        self._clear_token_btn.configure(text=self._i18n.translate("smartedu.clear_token"))
-        self._folder_label.configure(text=self._i18n.translate("smartedu.save_folder"))
-        self._browse_btn.configure(text=self._i18n.translate("smartedu.browse"))
-        self._upload_check.configure(text=self._i18n.translate("smartedu.upload"))
-        self._package_label.configure(text=self._i18n.translate("smartedu.package"))
-        self._download_btn.configure(text=self._i18n.translate("smartedu.download"))
-        self._hint.configure(text=self._i18n.translate("smartedu.hint"))
-        self._refresh_token_badge()
-        self._render_assets()
-
-    def set_authenticated(self, authenticated: bool, packages: Optional[List[PackageItem]] = None) -> None:
-        """Update MindGraph auth state and package dropdown."""
-        self._authenticated = authenticated
-        if authenticated:
-            self._hide_auth_overlay()
-        else:
-            self._show_auth_overlay()
-        if packages is not None:
-            self._packages = packages
-        names = [pkg.name.strip() or self._i18n.translate("packages.untitled") for pkg in self._packages]
-        self._package_combo.configure(values=names)
-        if names:
-            self._package_combo.current(0)
-        self._sync_upload_controls()
+        self._download_btn.configure(text=self._i18n.translate("smartedu.browser_download"))
+        self._cancel_btn.configure(text=self._i18n.translate("smartedu.download_cancel"))
+        if self._browser_init_state == "pending":
+            self._fallback.configure(text=self._i18n.translate("smartedu.browser_tab_pending"))
+        if self._browser is not None and hasattr(self._browser, "set_hint_text"):
+            self._browser.set_hint_text(self._i18n.translate("smartedu.browser_external_hint"))
+        self._refresh_status_labels()
 
     def is_busy(self) -> bool:
-        """True while parse/download/upload is running."""
+        """True while a download is running."""
         return self._busy
 
-    def _sync_upload_controls(self) -> None:
-        enabled = self._upload_var.get() and self._authenticated and bool(self._packages)
-        state = "readonly" if enabled else "disabled"
-        self._package_combo.configure(state=state)
+    def shutdown(self) -> None:
+        """Stop background polling and close the platform browser."""
+        if self._browser_init_timeout_id is not None:
+            self.after_cancel(self._browser_init_timeout_id)
+            self._browser_init_timeout_id = None
+        if self._poll_after_id is not None:
+            self.after_cancel(self._poll_after_id)
+            self._poll_after_id = None
+        if self._probe_after_id is not None:
+            self.after_cancel(self._probe_after_id)
+            self._probe_after_id = None
+        if self._idle_probe_after_id is not None:
+            self.after_cancel(self._idle_probe_after_id)
+            self._idle_probe_after_id = None
+        if self._nav_sync_after_id is not None:
+            self.after_cancel(self._nav_sync_after_id)
+            self._nav_sync_after_id = None
+        if self._browser is not None:
+            self._browser.destroy()
+            self._browser = None
+        log_platform_browser("panel shutdown")
 
-    def _refresh_token_badge(self) -> None:
-        if self._token:
-            self._token_label.configure(
-                text=self._i18n.translate("smartedu.token_connected"),
-                fg="#059669",
+    def _begin_browser_init(self) -> None:
+        if self._browser_init_state != "loading":
+            return
+        self._browser_host.update_idletasks()
+        log_platform_browser("browser init from visible tab")
+        try:
+            self._init_browser()
+        except webview_init_error_types() as exc:
+            log_platform_browser(f"browser init crashed: {exc}", level="ERROR")
+            self._show_browser_failed(str(exc))
+
+    def _finish_browser_init(self) -> None:
+        if self._browser_init_state != "loading":
+            return
+        if not self._browser_is_ready():
+            log_platform_browser("browser host not operational after ready callback", level="ERROR")
+            self._show_browser_failed("browser not operational")
+            return
+        if self._browser_init_timeout_id is not None:
+            self.after_cancel(self._browser_init_timeout_id)
+            self._browser_init_timeout_id = None
+        self._browser_init_state = "ready"
+        self._fallback.place_forget()
+        self._set_toolbar_state(True)
+        self._schedule_poll()
+        self._schedule_idle_probe()
+        log_platform_browser("platform browser ready")
+
+    def _browser_init_timeout(self) -> None:
+        self._browser_init_timeout_id = None
+        if self._browser_init_state == "loading":
+            log_platform_browser("browser init timed out", level="ERROR")
+            self._show_browser_failed("timeout")
+
+    def _show_browser_failed(self, detail: str) -> None:
+        if self._browser_init_timeout_id is not None:
+            self.after_cancel(self._browser_init_timeout_id)
+            self._browser_init_timeout_id = None
+        self._browser_init_state = "failed"
+        message = self._i18n.translate("smartedu.browser_unavailable")
+        message = f"{message}\n{detail}\n{debug_log_path_display()}"
+        self._fallback.configure(text=message)
+        self._fallback.place(relx=0.5, rely=0.5, anchor="center")
+        self._set_toolbar_state(False)
+
+    def _init_browser(self) -> None:
+        cleanup_stale_cookie_files()
+        log_platform_browser("browser init start")
+        try:
+            self._browser = create_platform_browser(
+                self._browser_host,
+                on_loaded=self._on_page_loaded,
+                on_resource_url=self._capture_resource_url,
+                on_resource_hook_failed=self._on_resource_hook_failed,
+                on_ready=self._finish_browser_init,
+                on_init_failed=self._show_browser_failed,
+                hint_text=self._i18n.translate("smartedu.browser_external_hint"),
             )
+        except (RuntimeError, OSError, ValueError, TypeError) as exc:
+            log_platform_browser(f"create_platform_browser failed: {exc}", level="ERROR")
+            self._show_browser_failed(str(exc))
+            return
+        if self._browser.is_operational:
+            self._finish_browser_init()
+            return
+        if self._browser.widget is None:
+            self._show_browser_failed("browser backend unavailable")
+            return
+        self._fallback.place_forget()
+
+    def _compute_download_ready(self) -> bool:
+        """Return True when the current page has downloadable assets and auth."""
+        if self._busy or not self._browser_is_ready():
+            return False
+        if not self._detected_assets:
+            return False
+        site = detect_platform(self._url_var.get())
+        return download_auth_ready(
+            site,
+            self._login_state,
+            smartedu_token=self._token,
+            asset_count=len(self._detected_assets),
+        )
+
+    def _set_toolbar_state(self, enabled: bool) -> None:
+        state = tk.NORMAL if enabled and not self._busy else tk.DISABLED
+        for widget in (
+            self._back_btn,
+            self._forward_btn,
+            self._refresh_btn,
+            self._address,
+        ):
+            widget.configure(state=state)
+        download_state = tk.NORMAL if enabled and self._compute_download_ready() else tk.DISABLED
+        self._download_btn.configure(state=download_state)
+        if self._busy:
+            self._cancel_btn.grid()
         else:
-            self._token_label.configure(
-                text=self._i18n.translate("smartedu.token_missing"),
-                fg="#dc2626",
-            )
+            self._cancel_btn.grid_remove()
+
+    def _cancel_download(self) -> None:
+        self._download_cancel.set()
+        log_platform_browser("download cancel requested", level="WARN")
 
     def _set_busy(self, busy: bool) -> None:
         self._busy = busy
-        state = tk.DISABLED if busy else tk.NORMAL
-        self._download_btn.configure(state=state)
-        self._login_btn.configure(state=state)
+        self._set_toolbar_state(True)
 
-    def _open_login(self) -> None:
+    def _update_badge(self) -> None:
+        count = self._badge_count
+        if count <= 0:
+            self._badge.place_forget()
+            return
+        self._badge.configure(text=str(count))
+        self._badge.place(relx=1.0, x=4, y=-4, anchor="ne")
+
+    def _clear_download_detection(self) -> None:
+        """Drop stale asset detection state for the previous page."""
+        self._detected_assets = []
+        self._badge_count = 0
+        self._probe_status_hint = ""
+        self._update_badge()
+        self._set_toolbar_state(self._browser_is_ready())
+
+    def _reset_detection_for_url(self, new_url: str) -> None:
+        """Invalidate in-flight probes and platform capture when the page changes."""
         if self._busy:
             return
-        if not pywebview_available():
-            messagebox.showinfo(
-                self._i18n.translate("dialog.title"),
-                self._i18n.translate("smartedu.pywebview_missing"),
-            )
+        normalized = new_url.strip()
+        if not normalized or normalized == self._last_probe_url:
             return
-        self._on_status("connecting", self._i18n.translate("smartedu.status.login_primary"), "")
-        self._set_busy(True)
+        previous_site = detect_platform(self._last_probe_url) if self._last_probe_url else None
+        self._last_probe_url = normalized
+        self._probe_generation += 1
+        self._clear_download_detection()
+        new_site = detect_platform(normalized)
+        if previous_site is not None and previous_site.site_id != new_site.site_id:
+            self._cleanup_platform_hooks(previous_site.site_id)
+        if new_site.site_id != "tencent_meeting":
+            self._captured_media_urls = ()
+        if new_site.site_id != "wechat_channels":
+            self._captured_channels_videos = ()
+        if new_site.site_id != "youtube":
+            self._youtube_po_capture = None
+        log_platform_browser(f"page context reset url={normalized[:120]}")
 
-        def on_done(token: str) -> None:
-            self.after(0, lambda: self._finish_login(token))
+    def _apply_browser_url(self, raw_url: str) -> bool:
+        """Sync the address bar and reset detection when navigation changes the page."""
+        current = (raw_url or "").strip()
+        if not current:
+            return False
+        previous = self._url_var.get().strip()
+        if current != previous:
+            self._url_var.set(current)
+        if self._busy:
+            return current != previous
+        if current != previous or current != self._last_probe_url:
+            self._reset_detection_for_url(current)
+            return True
+        return False
 
-        open_smartedu_login_async(on_done)
-
-    def _finish_login(self, token: str) -> None:
-        self._set_busy(False)
-        if not token:
-            self._on_status("warning", self._i18n.translate("smartedu.status.login_cancel"), "")
+    def _cleanup_platform_hooks(self, site_id: str) -> None:
+        if self._browser is None:
             return
+        if site_id == "youtube":
+            try:
+                self._browser.evaluate_js(YOUTUBE_PO_CLEANUP_JS)
+            except (RuntimeError, OSError, ValueError, TypeError):
+                pass
+        if site_id == "wechat_channels":
+            try:
+                self._browser.evaluate_js(CHANNELS_CLEANUP_JS)
+            except (RuntimeError, OSError, ValueError, TypeError):
+                pass
+
+    def _on_resource_hook_failed(self) -> None:
+        self._resource_capture_enabled = False
+        self._probe_status_hint = "resource_capture_disabled"
+        self._refresh_status_labels()
+
+    def _sync_page_from_browser(self) -> bool:
+        """Read the live document URL and react to SPA or history navigations."""
+        if self._browser is None:
+            return False
         try:
-            save_smartedu_token(token)
-        except DpapiError:
-            messagebox.showerror(
-                self._i18n.translate("dialog.title"),
-                self._i18n.translate("error.credentials_encrypt_failed"),
-            )
-            return
-        self._token = token
-        self._refresh_token_badge()
-        self._on_status("success", self._i18n.translate("smartedu.status.login_ok"), "")
+            current = self._browser.get_current_url()
+        except (RuntimeError, OSError, ValueError, TypeError):
+            return False
+        return self._apply_browser_url(current)
 
-    def _paste_token(self) -> None:
-        if self._busy:
-            return
-        token = simpledialog.askstring(
-            self._i18n.translate("smartedu.paste_token_title"),
-            self._i18n.translate("smartedu.paste_token_body"),
-            parent=self,
-        )
-        if not token or not token.strip():
-            return
-        try:
-            save_smartedu_token(token.strip())
-        except DpapiError:
-            messagebox.showerror(
-                self._i18n.translate("dialog.title"),
-                self._i18n.translate("error.credentials_encrypt_failed"),
-            )
-            return
-        self._token = token.strip()
-        self._refresh_token_badge()
+    def _schedule_nav_sync(self) -> None:
+        if self._nav_sync_after_id is not None:
+            self.after_cancel(self._nav_sync_after_id)
+        self._nav_sync_after_id = self.after(_NAV_SYNC_MS, self._sync_nav_and_probe)
 
-    def _clear_token(self) -> None:
-        if self._busy:
+    def _sync_nav_and_probe(self) -> None:
+        self._nav_sync_after_id = None
+        if self._browser is None:
             return
-        if not messagebox.askyesno(
-            self._i18n.translate("smartedu.clear_token_title"),
-            self._i18n.translate("smartedu.clear_token_body"),
-        ):
-            return
-        clear_smartedu_token()
-        self._token = ""
-        self._refresh_token_badge()
+        changed = self._sync_page_from_browser()
+        if changed:
+            self._inject_platform_hooks()
+            self._refresh_status_labels()
+            self._schedule_asset_probe(immediate=True)
+        self._schedule_idle_probe()
 
-    def _browse_folder(self) -> None:
-        chosen = filedialog.askdirectory()
-        if chosen:
-            self._save_dir.set(chosen)
+    def _schedule_idle_probe(self) -> None:
+        """Keep probing downloadable pages until resources appear or the user leaves."""
+        if self._idle_probe_after_id is not None:
+            self.after_cancel(self._idle_probe_after_id)
+        self._idle_probe_after_id = self.after(_IDLE_PROBE_MS, self._run_idle_probe)
 
-    def _parse_url_quiet(self) -> None:
-        if self._busy:
+    def _run_idle_probe(self) -> None:
+        self._idle_probe_after_id = None
+        if self._browser is None or self._busy:
+            self._schedule_idle_probe()
             return
-        url = self._url_var.get().strip()
-        if not url:
+        self._sync_page_from_browser()
+        site = detect_platform(self._url_var.get())
+        if not site.supports_download:
             return
-        try:
-            parsed = parse_smartedu_url(url)
-            lesson = smartedu_metadata.fetch_lesson(parsed)
-        except ValueError:
+        skip_reprobe = {"youtube", "tencent_meeting", "wechat_channels", "douyin", "tiktok"}
+        if self._detected_assets and site.site_id not in skip_reprobe:
             return
-        self._apply_lesson(lesson)
+        self._schedule_asset_probe()
+        self._schedule_idle_probe()
 
-    def _ensure_lesson(self) -> Optional[SmartEduLesson]:
-        url = self._url_var.get().strip()
-        if not url:
-            messagebox.showwarning(
-                self._i18n.translate("dialog.title"),
-                self._i18n.translate("smartedu.error.no_url"),
-            )
-            return None
-        try:
-            parsed = parse_smartedu_url(url)
-            lesson = smartedu_metadata.fetch_lesson(parsed)
-        except ValueError as exc:
-            messagebox.showerror(self._i18n.translate("dialog.title"), str(exc))
-            return None
-        self._apply_lesson(lesson)
-        return lesson
-
-    def _apply_lesson(self, lesson: SmartEduLesson) -> None:
-        self._lesson = lesson
-        self._lesson_label.configure(text=self._i18n.translate("smartedu.lesson", title=lesson.title))
-        self._render_assets()
-
-    def _render_assets(self) -> None:
-        for child in self._asset_frame.winfo_children():
-            child.destroy()
-        self._asset_vars.clear()
-        if self._lesson is None:
-            return
-        for index, asset in enumerate(self._lesson.assets):
-            var = tk.BooleanVar(value=asset.selected)
-            self._asset_vars[asset.asset_id] = var
-            label = self._asset_label(asset)
-            row = index // 2
-            col = index % 2
-            tk.Checkbutton(
-                self._asset_frame,
-                text=label,
-                variable=var,
-                bg=BG_CARD,
-                fg=TEXT_PRIMARY,
-                font=FONT_BODY,
-                selectcolor=BG_MUTED,
-                activebackground=BG_CARD,
-                anchor="w",
-            ).grid(row=row, column=col, sticky="w", padx=(0, 24), pady=2)
-
-    def _asset_label(self, asset: SmartEduAsset) -> str:
-        key = f"smartedu.asset.{asset.resource_type}"
-        fmt = asset.format.upper()
-        translated = self._i18n.translate(key)
-        if translated == key:
-            translated = asset.alias
-        return f"{translated} ({fmt})"
-
-    def _selected_assets(self) -> List[SmartEduAsset]:
-        if self._lesson is None:
-            return []
-        selected: List[SmartEduAsset] = []
-        for asset in self._lesson.assets:
-            var = self._asset_vars.get(asset.asset_id)
-            if var is not None and var.get():
-                selected.append(asset)
-        return selected
-
-    def _download_selected(self) -> None:
-        if self._busy:
-            return
-        lesson = self._ensure_lesson()
-        if lesson is None:
-            return
-        assets = self._selected_assets()
-        if not assets:
-            messagebox.showwarning(
-                self._i18n.translate("dialog.title"),
-                self._i18n.translate("smartedu.error.no_assets"),
-            )
-            return
-        folder = Path(self._save_dir.get().strip() or str(Path.home() / "Downloads"))
-        upload = self._upload_var.get() and self._authenticated
-        package_id = 0
-        if upload:
-            if not self._packages:
-                messagebox.showwarning(
-                    self._i18n.translate("dialog.title"),
-                    self._i18n.translate("smartedu.error.no_package"),
-                )
+    def _capture_resource_url(self, url: str) -> None:
+        if is_tencent_media_url(url):
+            merged = parse_media_urls([url], captured=self._captured_media_urls)
+            if merged == self._captured_media_urls:
                 return
-            index = max(self._package_combo.current(), 0)
-            package_id = self._packages[index].id
-
-        token = self._token or load_smartedu_token()
-        if not token:
-            messagebox.showwarning(
-                self._i18n.translate("dialog.title"),
-                self._i18n.translate("smartedu.error.no_token"),
-            )
+            self._captured_media_urls = merged
+            log_platform_browser(f"media URL captured count={len(merged)}")
+            self._schedule_asset_probe(immediate=True)
             return
+        if is_youtube_stream_capture_url(url):
+            merged_po = merge_youtube_po_capture(self._youtube_po_capture, stream_url=url)
+            if merged_po == self._youtube_po_capture:
+                return
+            self._youtube_po_capture = merged_po
+            self._probe_status_hint = "youtube_po_ready"
+            self._refresh_status_labels()
+            self._schedule_asset_probe(immediate=True)
+            return
+        if is_channels_media_url(url):
+            self._capture_channels_resource(url)
 
-        self._set_busy(True)
-        self._on_status(
-            "sending",
-            self._i18n.translate("smartedu.status.download_primary"),
-            self._i18n.translate("smartedu.status.download_secondary", count=len(assets)),
-        )
+    def _capture_channels_resource(self, url: str) -> None:
+        merged = merge_channels_captures(self._captured_channels_videos, network_url=url)
+        if merged == self._captured_channels_videos:
+            return
+        self._captured_channels_videos = merged
+        log_platform_browser(f"WeChat Channels URL captured count={len(merged)}")
+        self._schedule_asset_probe(immediate=True)
+
+    def _inject_platform_hooks(self) -> None:
+        if self._browser is None:
+            return
+        site = detect_platform(self._url_var.get())
+        if site.site_id == "youtube":
+            try:
+                self._browser.evaluate_js(YOUTUBE_PO_HOOK_JS)
+            except (RuntimeError, OSError, ValueError, TypeError) as exc:
+                log_platform_browser(f"YouTube PO hook failed: {exc}", level="WARN")
+        if site.site_id == "wechat_channels":
+            try:
+                self._browser.evaluate_js(CHANNELS_HOOK_JS)
+            except (RuntimeError, OSError, ValueError, TypeError) as exc:
+                log_platform_browser(f"Channels hook failed: {exc}", level="WARN")
+
+    def _schedule_poll(self) -> None:
+        if self._poll_after_id is not None:
+            self.after_cancel(self._poll_after_id)
+        self._poll_after_id = self.after(_POLL_MS, self._poll_login_state)
+
+    def _schedule_asset_probe(self, *, immediate: bool = False) -> None:
+        if self._probe_after_id is not None:
+            self.after_cancel(self._probe_after_id)
+        delay = 0 if immediate else _PROBE_DEBOUNCE_MS
+        self._probe_after_id = self.after(delay, self._start_asset_probe)
+
+    def _on_page_loaded(self) -> None:
+        if self._browser is None:
+            return
+        current = self._browser.get_current_url()
+        if current:
+            log_platform_browser(f"page loaded {current}")
+        self._apply_browser_url(current or self._url_var.get())
+        self._inject_platform_hooks()
+        self._poll_login_state()
+        self._schedule_asset_probe(immediate=True)
+        self._schedule_idle_probe()
+
+    def _poll_login_state(self) -> None:
+        self._poll_after_id = None
+        if self._browser is None:
+            return
 
         def run() -> None:
-            errors: List[str] = []
-            saved: List[Path] = []
-            for index, asset in enumerate(assets):
-                fraction = index / max(len(assets), 1)
-                asset_alias = asset.alias
-                self.after(
-                    0,
-                    lambda f=fraction, name=asset_alias: self._on_status(
-                        "sending",
-                        self._i18n.translate("smartedu.status.download_item", name=name),
-                        "",
-                    ),
-                )
-
-                def make_progress(alias: str) -> Callable[[str, float], None]:
-                    def progress(_name: str, frac: float) -> None:
-                        self.after(
-                            0,
-                            lambda ff=frac, nm=alias: self._on_status(
-                                "sending",
-                                self._i18n.translate("smartedu.status.download_item", name=nm),
-                                f"{int(ff * 100)}%",
-                            ),
-                        )
-
-                    return progress
-
+            state: dict[str, Any] = {}
+            media_raw: Any = None
+            try:
+                raw = self._browser.evaluate_js(LOGIN_STATE_JS)
+                state = parse_login_state(raw)
+            except (RuntimeError, OSError, ValueError, TypeError) as exc:
+                log_platform_browser(f"login JS failed: {exc}", level="WARN")
+                state = {}
+            try:
+                cookies = self._browser.get_cookies()
+                state = merge_cookie_login_flags(state, cookies)
+            except (RuntimeError, OSError, AttributeError, TypeError):
+                pass
+            site = detect_platform(self._url_var.get())
+            youtube_po_raw: Any = None
+            channels_raw: Any = None
+            if site.site_id == "tencent_meeting":
                 try:
-                    path = download_asset(
-                        asset,
-                        folder,
-                        lesson.title,
-                        token,
-                        progress=make_progress(asset_alias),
-                    )
-                    saved.append(path)
-                    asset.local_path = path
-                except ValueError as exc:
-                    errors.append(f"{asset.alias}: {exc}")
+                    media_raw = self._browser.evaluate_js(MEDIA_PROBE_JS)
+                except (RuntimeError, OSError, ValueError, TypeError):
+                    media_raw = None
+            if site.site_id == "youtube":
+                try:
+                    youtube_po_raw = self._browser.evaluate_js(YOUTUBE_PO_READ_JS)
+                except (RuntimeError, OSError, ValueError, TypeError):
+                    youtube_po_raw = None
+            if site.site_id == "wechat_channels":
+                try:
+                    channels_raw = self._browser.evaluate_js(CHANNELS_READ_JS)
+                except (RuntimeError, OSError, ValueError, TypeError):
+                    channels_raw = None
+            browser_url = ""
+            try:
+                browser_url = self._browser.get_current_url()
+            except (RuntimeError, OSError, ValueError, TypeError):
+                browser_url = ""
+            self.after(
+                0,
+                lambda: self._apply_login_state(
+                    state,
+                    media_raw,
+                    youtube_po_raw,
+                    channels_raw,
+                    browser_url=browser_url,
+                ),
+            )
 
-            upload_errors: List[str] = []
-            if upload and package_id and saved:
-                client = self._client_factory()
-                for path in saved:
-                    if path.suffix.lower() != ".pdf":
-                        continue
-                    self.after(
-                        0,
-                        lambda p=path.name: self._on_status(
-                            "sending",
-                            self._i18n.translate("smartedu.status.upload_item", name=p),
-                            "",
-                        ),
-                    )
-                    result = client.upload_package_document(package_id, path)
-                    if not result.ok:
-                        detail = result.error.message(self._i18n) if result.error else "upload failed"
-                        upload_errors.append(f"{path.name}: {detail}")
+        threading.Thread(target=run, daemon=True).start()
+        self._schedule_poll()
 
-            self.after(0, lambda: self._finish_download(saved, errors, upload_errors))
+    def _apply_login_state(
+        self,
+        state: dict[str, Any],
+        media_raw: Any,
+        youtube_po_raw: Any = None,
+        channels_raw: Any = None,
+        *,
+        browser_url: str = "",
+    ) -> None:
+        if browser_url:
+            self._apply_browser_url(browser_url)
+        self._login_state = state
+        token = str(state.get("access_token") or "").strip()
+        if token and token != self._token:
+            try:
+                save_smartedu_token(token)
+                self._token = token
+                log_platform_browser("SmartEdu token saved")
+                self._schedule_asset_probe(immediate=True)
+            except DpapiError as exc:
+                log_platform_browser(f"token save failed: {exc}", level="WARN")
+        media_changed = False
+        if media_raw is not None:
+            previous = self._captured_media_urls
+            self._captured_media_urls = parse_media_urls(media_raw, captured=self._captured_media_urls)
+            media_changed = self._captured_media_urls != previous
+        if youtube_po_raw is not None:
+            merged_po = merge_youtube_po_capture(self._youtube_po_capture, probe_raw=youtube_po_raw)
+            if merged_po != self._youtube_po_capture:
+                self._youtube_po_capture = merged_po
+                if merged_po is not None and merged_po.usable_for_ytdlp():
+                    self._probe_status_hint = "youtube_po_ready"
+        channels_changed = False
+        if channels_raw is not None:
+            previous_channels = self._captured_channels_videos
+            self._captured_channels_videos = merge_channels_captures(
+                self._captured_channels_videos,
+                hook_raw=channels_raw,
+            )
+            channels_changed = self._captured_channels_videos != previous_channels
+        self._refresh_status_labels()
+        if (
+            media_changed
+            or channels_changed
+            or (
+                youtube_po_raw is not None
+                and self._youtube_po_capture is not None
+                and self._youtube_po_capture.usable_for_ytdlp()
+            )
+        ):
+            self._schedule_asset_probe(immediate=True)
+        else:
+            self._schedule_asset_probe()
+        self._schedule_idle_probe()
+
+    def _refresh_status_labels(self) -> None:
+        site = detect_platform(self._url_var.get())
+        status_hint = self._probe_status_hint
+        if (
+            not self._resource_capture_enabled
+            and self._browser_supports_resource_hook_failure()
+            and not self._compute_download_ready()
+        ):
+            status_hint = "resource_capture_disabled"
+        line = format_status_line(
+            self._i18n,
+            site,
+            self._login_state,
+            smartedu_token=self._token,
+            page_url=self._url_var.get(),
+            status_hint=status_hint,
+            download_ready=self._compute_download_ready(),
+        )
+        if self._probing:
+            line = f"{line} · {self._i18n.translate('smartedu.platform.probing')}"
+        self._platform_status.configure(text=line)
+        self._set_toolbar_state(self._browser_is_ready())
+
+    def _probe_context(self) -> ProbeContext:
+        cookies: list[Any] = []
+        if self._browser is not None:
+            cookies = self._browser.get_cookies()
+        return ProbeContext(
+            page_url=self._url_var.get().strip(),
+            login_state=self._login_state,
+            cookies=cookies,
+            smartedu_token=self._token,
+            captured_media_urls=self._captured_media_urls,
+            youtube_po_capture=self._youtube_po_capture,
+            captured_channels_videos=self._captured_channels_videos,
+            channels_keystreams=(),
+        )
+
+    def _build_channels_keystreams(self, assets: List[DetectedAsset]) -> tuple[tuple[str, str], ...]:
+        if self._browser is None:
+            return ()
+        pairs: list[tuple[str, str]] = []
+        for asset in assets:
+            if asset.extractor != "channels":
+                continue
+            video = asset.meta.get("channels_video")
+            if not isinstance(video, CapturedChannelVideo):
+                continue
+            decode_key = video.decode_key.strip()
+            if not decode_key:
+                continue
+            script = f"({CHANNELS_KEYSTREAM_JS})({json.dumps(decode_key)})"
+            try:
+                raw = self._browser.evaluate_js(script)
+            except (RuntimeError, OSError, ValueError, TypeError):
+                raw = ""
+            hex_value = str(raw or "").strip()
+            if hex_value:
+                pairs.append((video.asset_id(), hex_value))
+        return tuple(pairs)
+
+    def _start_asset_probe(self) -> None:
+        self._probe_after_id = None
+        if self._browser is None:
+            return
+        self._sync_page_from_browser()
+        if self._probing:
+            self._pending_probe = True
+            return
+        url = self._url_var.get().strip()
+        if not url:
+            return
+        self._probing = True
+        self._pending_probe = False
+        self._probe_generation += 1
+        generation = self._probe_generation
+        context = self._probe_context()
+        self._refresh_status_labels()
+
+        def run() -> None:
+            result = probe_assets(context)
+            self.after(0, lambda: self._apply_probe_result(generation, result))
 
         threading.Thread(target=run, daemon=True).start()
 
-    def _finish_download(self, saved: List[Path], errors: List[str], upload_errors: List[str]) -> None:
-        self._set_busy(False)
-        if saved and not errors and not upload_errors:
-            self._on_status(
-                "success",
-                self._i18n.translate("smartedu.status.done_primary", count=len(saved)),
-                self._i18n.translate("smartedu.status.done_secondary", folder=str(saved[0].parent)),
+    def _apply_probe_result(self, generation: int, result: Any) -> None:
+        self._probing = False
+        pending = self._pending_probe
+        self._pending_probe = False
+        if generation == self._probe_generation:
+            self._detected_assets = list(result.assets)
+            self._badge_count = int(result.badge_count)
+            self._probe_status_hint = str(result.status_hint or "")
+            if self._detected_assets:
+                self._probe_status_hint = ""
+            elif (
+                self._youtube_po_capture is not None
+                and self._youtube_po_capture.usable_for_ytdlp()
+                and self._probe_status_hint == "youtube_po_needed"
+            ):
+                self._probe_status_hint = "youtube_po_retry"
+            self._update_badge()
+            self._set_toolbar_state(True)
+            if self._detected_assets:
+                log_platform_browser(
+                    f"download ready count={len(self._detected_assets)} badge={self._badge_count}",
+                )
+        self._refresh_status_labels()
+        if pending:
+            self._schedule_asset_probe()
+
+    def _nav_back(self) -> None:
+        if self._browser is None or self._busy:
+            return
+        self._browser.go_back()
+        self._schedule_nav_sync()
+
+    def _nav_forward(self) -> None:
+        if self._browser is None or self._busy:
+            return
+        self._browser.go_forward()
+        self._schedule_nav_sync()
+
+    def _nav_refresh(self) -> None:
+        if self._browser is None or self._busy:
+            return
+        current = self._url_var.get().strip() or DEFAULT_HOME_URL
+        self._browser.load_url(current)
+
+    def _navigate_address(self) -> None:
+        if self._browser is None or self._busy:
+            return
+        try:
+            url = normalize_nav_url(self._url_var.get())
+        except ValueError:
+            messagebox.showwarning(
+                self._i18n.translate("dialog.title"),
+                self._i18n.translate("smartedu.error.bad_url"),
             )
             return
-        if saved:
-            primary = self._i18n.translate("smartedu.status.partial_primary", ok=len(saved))
-            parts = errors + upload_errors
-            secondary = "; ".join(parts[:3])
-            self._on_status("warning", primary, secondary)
+        self._url_var.set(url)
+        self._reset_detection_for_url(url)
+        self._browser.load_url(url)
+        self._schedule_idle_probe()
+
+    def _download_current(self) -> None:
+        if self._busy or self._browser is None or not self._compute_download_ready():
+            if not self._busy and self._browser is not None:
+                self._schedule_asset_probe(immediate=True)
             return
-        detail = "; ".join((errors + upload_errors)[:2]) or self._i18n.translate("smartedu.status.failed")
-        self._on_status("error", self._i18n.translate("smartedu.status.failed"), detail)
+        open_asset_download_dialog(
+            self,
+            self._i18n,
+            list(self._detected_assets),
+            self._url_var.get(),
+            on_download=self._run_download,
+        )
+
+    def _run_download(self, assets: List[DetectedAsset], folder: Path) -> None:
+        if self._browser is None:
+            return
+        self._download_cancel.clear()
+        keystreams = self._build_channels_keystreams(assets)
+        base_context = self._probe_context()
+        context = ProbeContext(
+            page_url=base_context.page_url,
+            login_state=base_context.login_state,
+            cookies=base_context.cookies,
+            smartedu_token=base_context.smartedu_token,
+            captured_media_urls=base_context.captured_media_urls,
+            youtube_po_capture=base_context.youtube_po_capture,
+            captured_channels_videos=base_context.captured_channels_videos,
+            channels_keystreams=keystreams,
+            download_folder=folder,
+        )
+        self._set_busy(True)
+        log_platform_browser(f"download start count={len(assets)} folder={folder}")
+
+        def run() -> None:
+            saved: List[Path] = []
+            errors: List[str] = []
+            try:
+                saved, errors = download_detected_assets(
+                    assets,
+                    context,
+                    cancel_event=self._download_cancel,
+                )
+                channels_assets = [asset for asset in assets if asset.extractor == "channels"]
+                channel_errors = [error for error in errors if any(asset.title in error for asset in channels_assets)]
+                if channels_assets and channel_errors and not self._download_cancel.is_set():
+                    retry_keys = self._build_channels_keystreams(channels_assets)
+                    if retry_keys:
+                        errors = [
+                            error for error in errors if not any(asset.title in error for asset in channels_assets)
+                        ]
+                        retry_context = ProbeContext(
+                            page_url=context.page_url,
+                            login_state=context.login_state,
+                            cookies=context.cookies,
+                            smartedu_token=context.smartedu_token,
+                            captured_media_urls=context.captured_media_urls,
+                            youtube_po_capture=context.youtube_po_capture,
+                            captured_channels_videos=context.captured_channels_videos,
+                            channels_keystreams=retry_keys,
+                            download_folder=folder,
+                        )
+                        retry_saved, retry_errors = download_detected_assets(
+                            channels_assets,
+                            retry_context,
+                            cancel_event=self._download_cancel,
+                        )
+                        saved.extend(retry_saved)
+                        errors.extend(retry_errors)
+            except OSError as exc:
+                errors.append(str(exc))
+                log_platform_browser(f"download batch failed: {exc}", level="WARN")
+            finally:
+                self.after(0, lambda: self._finish_download(saved, errors))
+
+        threading.Thread(target=run, daemon=True).start()
+
+    def _finish_download(self, saved: List[Path], errors: List[str]) -> None:
+        self._set_busy(False)
+        self._refresh_status_labels()
+        log_platform_browser(f"download done saved={len(saved)} errors={len(errors)}")
+        show_download_result(self, self._i18n, saved, errors)

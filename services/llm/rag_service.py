@@ -36,6 +36,12 @@ from models.domain.knowledge_space import (
 )
 from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.keyword_search_service import get_keyword_search_service
+from services.knowledge.knowledge_settings import resolve_retrieval_params
+from services.knowledge.section_resolver import (
+    best_section_key_match,
+    collect_distinct_section_keys,
+    section_title_matches_hint,
+)
 from services.llm.embedding_cache import get_embedding_cache
 from services.llm.qdrant_service import get_qdrant_service
 from services.monitoring.error_reporting import record_exception
@@ -331,14 +337,120 @@ class RAGService:
 
         return all_texts[: top_k + max_related * 2]  # Limit total results
 
+    async def retrieve_section_context(
+        self,
+        db: AsyncSession,
+        user_id: int,
+        section_key: str,
+        document_ids: List[int],
+        max_chunks: int = 64,
+        max_chars: int = 8000,
+        section_number: Optional[str] = None,
+        section_label: Optional[str] = None,
+    ) -> List[str]:
+        """Return ordered chunk texts for one section (e.g. ``chapter-5``)."""
+        if not section_key or not document_ids:
+            return []
+
+        chunk_ids = await self._scroll_section_chunk_ids(
+            user_id=user_id,
+            section_key=section_key,
+            document_ids=document_ids,
+            max_chunks=max_chunks,
+            section_number=section_number,
+            section_label=section_label,
+        )
+        if not chunk_ids:
+            return []
+
+        return await self._ordered_section_texts(db, chunk_ids, max_chars)
+
+    async def _scroll_section_chunk_ids(
+        self,
+        user_id: int,
+        section_key: str,
+        document_ids: List[int],
+        max_chunks: int,
+        section_number: Optional[str],
+        section_label: Optional[str],
+    ) -> List[int]:
+        """Resolve chunk IDs for a section key, with fuzzy payload fallback."""
+        chunk_ids = await self.qdrant.scroll_chunk_ids(
+            user_id=user_id,
+            metadata_filter={
+                "document_id": document_ids,
+                "section_key": section_key,
+            },
+            limit=max_chunks,
+        )
+        if chunk_ids:
+            return chunk_ids
+
+        payloads = await self.qdrant.scroll_chunk_payloads(
+            user_id=user_id,
+            metadata_filter={"document_id": document_ids},
+            limit=max(max_chunks * 4, 256),
+        )
+        if not payloads:
+            return []
+
+        candidates = collect_distinct_section_keys(payloads)
+        matched_key = best_section_key_match(section_key, candidates)
+        if matched_key:
+            return await self.qdrant.scroll_chunk_ids(
+                user_id=user_id,
+                metadata_filter={
+                    "document_id": document_ids,
+                    "section_key": matched_key,
+                },
+                limit=max_chunks,
+            )
+
+        title_ids: List[int] = []
+        for row in payloads:
+            title = str(row.get("section_title") or "")
+            number = str(row.get("section_number") or section_number or "")
+            if section_title_matches_hint(title, number, section_label or section_key):
+                chunk_id = row.get("chunk_id")
+                if isinstance(chunk_id, int):
+                    title_ids.append(chunk_id)
+        return title_ids[:max_chunks]
+
+    async def _ordered_section_texts(
+        self,
+        db: AsyncSession,
+        chunk_ids: List[int],
+        max_chars: int,
+    ) -> List[str]:
+        result = await db.execute(
+            select(DocumentChunk)
+            .where(DocumentChunk.id.in_(chunk_ids))
+            .order_by(DocumentChunk.document_id, DocumentChunk.chunk_index)
+        )
+        rows = result.scalars().all()
+        texts: List[str] = []
+        total_chars = 0
+        for row in rows:
+            if total_chars >= max_chars:
+                break
+            piece = row.text.strip()
+            if not piece:
+                continue
+            remaining = max_chars - total_chars
+            if len(piece) > remaining:
+                piece = piece[:remaining]
+            texts.append(piece)
+            total_chars += len(piece)
+        return texts
+
     async def retrieve_context(
         self,
         db: AsyncSession,
         user_id: int,
         query: Optional[str] = None,
         method: Optional[str] = None,
-        top_k: int = 5,
-        score_threshold: float = 0.0,
+        top_k: Optional[int] = None,
+        score_threshold: Optional[float] = None,
         source: str = "api",
         source_context: Optional[Dict[str, Any]] = None,
         metadata_filter: Optional[Dict[str, Any]] = None,
@@ -362,12 +474,27 @@ class RAGService:
             List of text chunks
         """
         if attachment_ids and not query:
-            return await self._retrieve_by_images(db, user_id, attachment_ids, top_k, score_threshold, metadata_filter)
+            image_top_k = top_k if top_k is not None else 5
+            image_threshold = score_threshold if score_threshold is not None else 0.0
+            return await self._retrieve_by_images(
+                db,
+                user_id,
+                attachment_ids,
+                image_top_k,
+                image_threshold,
+                metadata_filter,
+            )
 
         if not query or not query.strip():
             return []
 
-        method = method or self.default_method
+        method, top_k, score_threshold = await resolve_retrieval_params(
+            db,
+            user_id,
+            method=method,
+            top_k=top_k,
+            score_threshold=score_threshold,
+        )
 
         # Check KB rate limit for retrieval
         allowed, _, error_msg = await self.kb_rate_limiter.check_retrieval_limit(user_id)

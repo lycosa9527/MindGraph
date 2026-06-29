@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import bisect
-import ctypes
 import re
 import struct
 import subprocess

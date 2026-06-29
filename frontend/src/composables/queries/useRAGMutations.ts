@@ -7,9 +7,10 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
 import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { apiPost } from '@/utils/apiClient'
+import { apiPost, apiRequestJson } from '@/utils/apiClient'
 
 import { ragKeys } from './ragKeys'
+import type { RAGSettingsUpdatePayload, RAGSettingsUpdateResponse } from './useRAGQueries'
 
 // ============================================================================
 // Types
@@ -64,9 +65,32 @@ async function retrievalTestAPI(params: RetrievalTestRequest): Promise<Retrieval
   return await response.json()
 }
 
+async function updateRAGSettingsAPI(
+  payload: RAGSettingsUpdatePayload
+): Promise<RAGSettingsUpdateResponse> {
+  return apiRequestJson<RAGSettingsUpdateResponse>('/api/knowledge-space/settings', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
 // ============================================================================
 // Mutation Composables
 // ============================================================================
+
+/**
+ * Persist Knowledge Space RAG settings for the current user.
+ */
+export function useUpdateRAGSettings() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: RAGSettingsUpdatePayload) => updateRAGSettingsAPI(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ragKeys.settings() })
+    },
+  })
+}
 
 /**
  * Test retrieval functionality

@@ -1,5 +1,5 @@
 /**
- * en UI � common
+ * vi UI � common
  */
 
 export default {

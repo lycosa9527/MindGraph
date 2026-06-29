@@ -1,5 +1,5 @@
 /**
- * en UI � auth
+ * ja UI � auth
  */
 
 export default {
@@ -178,8 +178,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Could not unlink. Please try again.',
   'auth.dingtalkBindRebind': 'Link again',
   'auth.dingtalkBindTitle': 'Link DingTalk account',
-  'auth.dingtalkBindInstructions':
-    'Send the 6-digit code shown below (for example 123-456) as a text message to your school DingTalk MindBot.',
+  'auth.dingtalkBindInstructions': 'Send the 6-digit code shown below (for example 123-456) as a text message to your school DingTalk MindBot.',
   'auth.dingtalkBindPairWaiting': 'Waiting for MindBot to receive your code…',
   'auth.dingtalkBindCodeHint': 'Send this code only — no extra text.',
   'auth.dingtalkBindCountdown': 'Session expires in {s}s',
@@ -194,8 +193,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'Linked ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'Currently linked: {staff}',
   'auth.dingtalkUnbindTitle': 'Unlink DingTalk account',
-  'auth.dingtalkUnbindInstructions':
-    'Send the code below from your linked DingTalk account to MindBot to confirm unlinking.',
+  'auth.dingtalkUnbindInstructions': 'Send the code below from your linked DingTalk account to MindBot to confirm unlinking.',
   'auth.dingtalkUnbindPairWaiting': 'Waiting for your linked DingTalk account to confirm…',
   'auth.dingtalkUnbindCodeHint': 'Send this code only from your linked DingTalk account.',
   'auth.dingtalkUnbindExpiredHint': 'Unlink session expired. Start again.',

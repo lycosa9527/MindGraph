@@ -1,10 +1,11 @@
-"""File Center package wiki compiler (v2a).
+"""File Center package wiki compiler (v2b).
 
-After a source is chunk-indexed, this service asks an LLM to compile or update
-a small set of markdown wiki pages for the package, then writes them to disk
-(atomic temp-and-rename) alongside a ``_index.json`` manifest. The wiki is an
-additive layer; chunk RAG remains the ground truth, so compile failures are
-logged and swallowed rather than failing ingestion.
+After a source is chunk-indexed, this service compiles or updates markdown wiki
+pages for the package. Curriculum documents (课标 / 课程方案) use a TOC-driven
+canonical spine; other sources fall back to a single LLM structure pass.
+
+The wiki is an additive layer; chunk RAG remains the ground truth, so compile
+failures are logged and swallowed rather than failing ingestion.
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -29,18 +30,27 @@ from models.domain.knowledge_space import DocumentBatch, DocumentChunk, Knowledg
 from prompts.knowledge_wiki import (
     KNOWLEDGE_WIKI_COMPILE_SYSTEM_EN,
     KNOWLEDGE_WIKI_COMPILE_SYSTEM_ZH,
+    WIKI_OVERVIEW_FROM_SECTIONS_SYSTEM_EN,
+    WIKI_OVERVIEW_FROM_SECTIONS_SYSTEM_ZH,
+    WIKI_SECTION_SUMMARY_SYSTEM_EN,
+    WIKI_SECTION_SUMMARY_SYSTEM_ZH,
+    build_overview_from_sections_prompt,
+    build_section_summary_user_prompt,
     build_wiki_compile_user_prompt,
 )
 from services.knowledge import package_wiki_store as store
+from services.knowledge.wiki_spine import BoundSection, plan_spine_sections
 from services.llm import llm_service
 from services.utils.error_types import JSON_PARSE_ERRORS
 
 logger = logging.getLogger(__name__)
 
 WIKI_REQUEST_TYPE = "knowledge_wiki"
-# Cap the source text handed to the model so compile cost stays bounded.
 MAX_SOURCE_CHARS = 8000
+MAX_SECTION_INPUT_CHARS = 4000
 MAX_WIKI_PAGES = 30
+SECTION_SUMMARY_MAX_TOKENS = 900
+OVERVIEW_MAX_TOKENS = 800
 
 
 async def compile_package_wiki(
@@ -69,8 +79,57 @@ async def compile_package_wiki(
 
     existing_index = store.read_index(user_id, package_id)
     language = (document.language or "en").lower()
-    system_message = KNOWLEDGE_WIKI_COMPILE_SYSTEM_ZH if language.startswith("zh") else KNOWLEDGE_WIKI_COMPILE_SYSTEM_EN
     source_title = _document_title(document)
+    file_name = document.file_name or source_title
+
+    spine_sections = plan_spine_sections(file_name, source_text)
+    if spine_sections:
+        pages = await _compile_spine_wiki_pages(
+            spine_sections=spine_sections,
+            doc_title=source_title,
+            language=language,
+            user_id=user_id,
+        )
+        if pages:
+            written = _apply_page_actions(user_id, package_id, document_id, existing_index, pages)
+            if written:
+                logger.info(
+                    "[FileCenterWiki] Spine compiled %s page(s) for package=%s from doc_id=%s",
+                    written,
+                    package_id,
+                    document_id,
+                )
+            return written > 0
+
+    return await _compile_legacy_wiki(
+        db=db,
+        user_id=user_id,
+        package_id=package_id,
+        document_id=document_id,
+        package=package,
+        document=document,
+        existing_index=existing_index,
+        language=language,
+        source_title=source_title,
+        source_text=source_text,
+    )
+
+
+async def _compile_legacy_wiki(
+    db: AsyncSession,
+    user_id: int,
+    package_id: int,
+    document_id: int,
+    package: DocumentBatch,
+    document: KnowledgeDocument,
+    existing_index: List[Dict[str, Any]],
+    language: str,
+    source_title: str,
+    source_text: str,
+) -> bool:
+    """Single-pass LLM wiki compile for non-curriculum sources."""
+    del db, document
+    system_message = KNOWLEDGE_WIKI_COMPILE_SYSTEM_ZH if language.startswith("zh") else KNOWLEDGE_WIKI_COMPILE_SYSTEM_EN
     user_prompt = build_wiki_compile_user_prompt(
         package_name=package.name or "Untitled package",
         existing_index=existing_index,
@@ -109,6 +168,99 @@ async def compile_package_wiki(
     return written > 0
 
 
+async def _compile_spine_wiki_pages(
+    spine_sections: List[BoundSection],
+    doc_title: str,
+    language: str,
+    user_id: int,
+) -> List[Dict[str, Any]]:
+    """Summarize spine-bound sections and build wiki page payloads."""
+    section_notes: List[Dict[str, str]] = []
+    pages: List[Dict[str, Any]] = []
+
+    summary_system = WIKI_SECTION_SUMMARY_SYSTEM_ZH if language.startswith("zh") else WIKI_SECTION_SUMMARY_SYSTEM_EN
+    for section in spine_sections:
+        try:
+            summary = await llm_service.chat(
+                prompt=build_section_summary_user_prompt(
+                    section.title,
+                    section.body[:MAX_SECTION_INPUT_CHARS],
+                    language,
+                ),
+                system_message=summary_system,
+                temperature=0.2,
+                max_tokens=SECTION_SUMMARY_MAX_TOKENS,
+                use_knowledge_base=False,
+                user_id=user_id,
+                request_type=WIKI_REQUEST_TYPE,
+            )
+        except JSON_PARSE_ERRORS as exc:
+            logger.warning("[FileCenterWiki] Section summary failed slug=%s: %s", section.slug, exc)
+            summary = _fallback_section_summary(section.body)
+        body = (summary or "").strip() or _fallback_section_summary(section.body)
+        section_notes.append({"title": section.title, "summary": body[:400]})
+        pages.append(
+            {
+                "slug": section.slug,
+                "title": section.title,
+                "body_md": body,
+                "links": [],
+                "section_key": section.section_key,
+            }
+        )
+
+    overview_system = (
+        WIKI_OVERVIEW_FROM_SECTIONS_SYSTEM_ZH if language.startswith("zh") else WIKI_OVERVIEW_FROM_SECTIONS_SYSTEM_EN
+    )
+    overview_title = f"{doc_title}概览" if language.startswith("zh") else f"{doc_title} Overview"
+    try:
+        overview_body = await llm_service.chat(
+            prompt=build_overview_from_sections_prompt(doc_title, section_notes, language),
+            system_message=overview_system,
+            temperature=0.2,
+            max_tokens=OVERVIEW_MAX_TOKENS,
+            use_knowledge_base=False,
+            user_id=user_id,
+            request_type=WIKI_REQUEST_TYPE,
+        )
+    except JSON_PARSE_ERRORS as exc:
+        logger.warning("[FileCenterWiki] Overview compile failed: %s", exc)
+        overview_body = _fallback_overview(doc_title, section_notes, language)
+
+    overview_links = [{"slug": section.slug, "label": section.title} for section in spine_sections]
+    return [
+        {
+            "slug": "overview",
+            "title": overview_title,
+            "body_md": (overview_body or "").strip() or _fallback_overview(doc_title, section_notes, language),
+            "links": overview_links,
+            "section_key": "overview",
+        },
+        *pages,
+    ]
+
+
+def _fallback_section_summary(body: str) -> str:
+    """Extractive fallback when the LLM section summary fails."""
+    collapsed = " ".join((body or "").split())
+    if not collapsed:
+        return ""
+    return collapsed[:600] + ("…" if len(collapsed) > 600 else "")
+
+
+def _fallback_overview(doc_title: str, section_notes: List[Dict[str, str]], language: str) -> str:
+    """Build a minimal overview when the LLM overview pass fails."""
+    if language.startswith("zh"):
+        lines = [f"# {doc_title}概览", ""]
+        for note in section_notes:
+            lines.append(f"- **{note['title']}**：{note['summary'][:120]}")
+        return "\n".join(lines)
+    lines = [f"# {doc_title} Overview", ""]
+    for note in section_notes:
+        lines.append(f"- **{note['title']}**: {note['summary'][:120]}")
+    return "\n".join(lines)
+
+
 async def _load_named_package(db: AsyncSession, user_id: int, package_id: int) -> Optional[DocumentBatch]:
     result = await db.execute(
         select(DocumentBatch).where(
@@ -123,21 +275,16 @@ async def _load_named_package(db: AsyncSession, user_id: int, package_id: int) -
 
 
 async def _load_source_text(db: AsyncSession, document_id: int) -> str:
-    """Concatenate the indexed chunks of a document into a capped excerpt."""
+    """Concatenate all indexed chunks for structure extraction and summarization."""
     result = await db.execute(
         select(DocumentChunk.text)
         .where(DocumentChunk.document_id == document_id)
         .order_by(DocumentChunk.chunk_index.asc())
     )
     parts: List[str] = []
-    total = 0
     for (text,) in result.all():
-        if not text:
-            continue
-        parts.append(text)
-        total += len(text)
-        if total >= MAX_SOURCE_CHARS:
-            break
+        if text:
+            parts.append(text)
     return "\n\n".join(parts)
 
 
@@ -190,11 +337,13 @@ def _apply_page_actions(
         title = str(page.get("title") or slug)
         links = page.get("links") if isinstance(page.get("links"), list) else []
         source_ids = sorted(set(index_by_slug.get(slug, {}).get("source_document_ids", []) + [document_id]))
+        section_key = str(page.get("section_key") or slug)
         entry = {
             "slug": slug,
             "title": title,
             "links": links,
             "source_document_ids": source_ids,
+            "section_key": section_key,
             "updated_at": now,
         }
 

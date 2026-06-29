@@ -20,6 +20,8 @@ from file_reader.errors import AppError, ErrorCode
 from file_reader.i18n import I18n
 from file_reader.server_url import ServerUrlError, normalize_server_url
 from file_reader.settings import DEFAULT_SERVER_URL, FileReaderSettings
+from file_reader.platform_browser.browser_factory import preferred_browser_backend
+from file_reader.smartedu.debug_log import log_platform_browser_section
 from file_reader.smartedu_panel import SmartEduPanel
 from file_reader.status_dock import StatusDock
 from file_reader.auth_dialog import AuthDialog
@@ -83,7 +85,7 @@ class FileReaderApp:
         self.root.title(self.i18n.translate("app.title", version=__version__))
         self.root.configure(bg=BG_APP)
         self.root.minsize(WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT)
-        self.root.geometry("860x780")
+        self.root.geometry("960x820")
 
         self.settings = FileReaderSettings.load()
         self.platform = tk.StringVar(value=self.settings.platform)
@@ -104,7 +106,6 @@ class FileReaderApp:
         self._live_poll_after_id: Optional[str] = None
         self._persisted_error: Optional[AppError] = None
         self._session_load_error: Optional[AppError] = None
-        self._smartedu_status: tuple[str, str, str] = ("", "", "")
         self._wechat_status: WeChatLocalStatus = WeChatLocalStatus(False, None, None, 0)
         self._wechat_poll_after_id: Optional[str] = None
         self._wechat_live_unlocked = False
@@ -216,17 +217,13 @@ class FileReaderApp:
         elif self.platform.get() == "wecom":
             self._publish_wecom_panel(self._wecom_status)
 
-        self._smartedu = SmartEduPanel(
-            smartedu_tab,
-            self.i18n,
-            client_factory=self._client,
-            on_status=self._on_smartedu_status,
-        )
+        self._smartedu = SmartEduPanel(smartedu_tab, self.i18n)
         self._smartedu.pack(fill="both", expand=True)
 
         self.platform.trace_add("write", self._on_platform_changed)
         self._send.file_list.bind("<<ListboxSelect>>", self._on_select_file)
-        self._notebook.bind("<<NotebookTabChanged>>", lambda _event: self._sync_status_dock())
+        self._notebook.bind("<<NotebookTabChanged>>", self._on_notebook_tab_changed)
+        self.root.after(150, lambda: self._smartedu.set_tab_visible(self._active_tab_index() == 1))
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
         self._sync_status_dock()
@@ -1416,6 +1413,7 @@ class FileReaderApp:
         self._stop_wechat_poll()
         self._stop_dingtalk_poll()
         self._stop_wecom_poll()
+        self._smartedu.shutdown()
         self.root.destroy()
 
     def _err_text(self, err: Optional[AppError]) -> str:
@@ -1445,9 +1443,10 @@ class FileReaderApp:
             return self.i18n.translate("status.session.secondary_diagram", diagram=diagram, code=code)
         return self.i18n.translate("status.session.secondary_no_diagram", code=code)
 
-    def _on_smartedu_status(self, kind: str, primary: str, secondary: str = "") -> None:
-        """Receive status updates from the SmartEdu tab."""
-        self._smartedu_status = (kind, primary, secondary)
+    def _on_notebook_tab_changed(self, _event: tk.Event) -> None:
+        """Hide MindGraph status dock on SmartEdu tab; sync browser visibility."""
+        index = self._active_tab_index()
+        self._smartedu.set_tab_visible(index == 1)
         self._sync_status_dock()
 
     def _active_tab_index(self) -> int:
@@ -1459,33 +1458,10 @@ class FileReaderApp:
     def _sync_status_dock(self) -> None:
         """Refresh the bottom status dock from current app state."""
         if self._active_tab_index() == 1:
-            kind, primary, secondary = self._smartedu_status
-            if primary:
-                dock_kind = (
-                    kind
-                    if kind
-                    in (
-                        "offline",
-                        "connecting",
-                        "connected",
-                        "waiting",
-                        "ready",
-                        "sending",
-                        "success",
-                        "warning",
-                        "error",
-                    )
-                    else "waiting"
-                )
-                self._dock.set_context(dock_kind, primary, secondary)
-                return
-            if self._smartedu.is_busy():
-                self._dock.set_context(
-                    "sending",
-                    self.i18n.translate("smartedu.status.download_primary"),
-                    "",
-                )
-                return
+            self._dock.pack_forget()
+            return
+        if not self._dock.winfo_ismapped():
+            self._dock.pack(side="bottom", fill="x")
 
         if self._connecting:
             self._dock.set_context(
@@ -1735,7 +1711,6 @@ class FileReaderApp:
         self._header.set_profile(result.profile if authenticated else None)
         self._send.set_authenticated(authenticated)
         self._send.set_controls_enabled(authenticated)
-        self._smartedu.set_authenticated(authenticated, self._packages)
         self._set_content_blocked(not authenticated)
         if authenticated and not result.ok:
             self._session_load_error = result.error
@@ -1827,7 +1802,7 @@ class FileReaderApp:
             return None
 
     def _clear_credentials(self) -> None:
-        if self._connecting or self._sending or self._smartedu.is_busy():
+        if self._connecting or self._sending:
             return
         if not messagebox.askyesno(
             self.i18n.translate("auth.clear_confirm_title"),
@@ -2373,5 +2348,9 @@ def run_gui() -> None:
     """Launch the file reader window."""
     root = tk.Tk()
     _apply_window_icon(root)
+    log_platform_browser_section(
+        f"MindGraph file-reader startup frozen={getattr(sys, 'frozen', False)} "
+        f"version={__version__} backend={preferred_browser_backend()} exe={sys.executable}",
+    )
     FileReaderApp(root)
     root.mainloop()

@@ -12,17 +12,29 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Dict, Any, List
+from typing import Literal, Optional, Dict, Any, List
 from pydantic import BaseModel, Field, model_validator
+
+ChatHandoffPlatform = Literal["wechat", "dingtalk", "wecom"]
 
 
 class RetrievalTestRequest(BaseModel):
     """Request model for testing retrieval functionality."""
 
     query: str = Field(..., max_length=250)
-    method: str = Field(default="hybrid", pattern="^(semantic|keyword|hybrid)$")
-    top_k: int = Field(default=5, ge=1, le=10)
-    score_threshold: float = Field(default=0.0, ge=0.0, le=1.0)
+    method: Optional[str] = Field(default=None, pattern="^(semantic|keyword|hybrid)$")
+    top_k: Optional[int] = Field(default=None, ge=1, le=20)
+    score_threshold: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+
+
+class KnowledgeSpaceSettingsUpdateRequest(BaseModel):
+    """Request model for updating user Knowledge Space preferences."""
+
+    default_method: str = Field(default="hybrid", pattern="^(semantic|keyword|hybrid)$")
+    top_k: int = Field(default=5, ge=1, le=20)
+    score_threshold: float = Field(default=0.5, ge=0.0, le=1.0)
+    chunk_size: int = Field(default=500, ge=100, le=2000)
+    chunk_overlap: int = Field(default=50, ge=0, le=200)
 
 
 class MetadataUpdateRequest(BaseModel):
@@ -85,6 +97,10 @@ class DocSummarySessionStartRequest(BaseModel):
     diagram_id: Optional[str] = Field(default=None, max_length=36)
     diagram_title: Optional[str] = Field(default=None, max_length=200)
     package_id: Optional[int] = Field(default=None, ge=1)
+    create_if_missing: bool = Field(
+        default=False,
+        description="When true, create a package if none is linked to the session yet.",
+    )
 
 
 class ChatHandoffStartRequest(BaseModel):
@@ -97,7 +113,7 @@ class ChatHandoffIngestRequest(BaseModel):
     """Ingest chat transcript via pairing code (file-reader client)."""
 
     code: str = Field(..., min_length=6, max_length=6, pattern=r"^\d{6}$")
-    platform: str = Field(..., pattern="^(wechat|dingtalk)$")
+    platform: ChatHandoffPlatform
     chat_title: str = Field(..., min_length=1, max_length=200)
     content: Optional[str] = Field(default=None, max_length=200000)
     messages: Optional[List[Dict[str, Any]]] = Field(default=None, max_length=5000)

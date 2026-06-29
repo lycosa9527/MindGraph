@@ -2,8 +2,8 @@
 /**
  * Document Summary (文档总结) — Knowledge Space portal on the mind map canvas.
  *
- * Auto-provisions a session package, ingests sources per tab, then generates
- * a RAG-backed mind map from the indexed corpus.
+ * Resumes an existing session package on open; creates one only on first ingest
+ * or when the user requests a chat pairing code.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
@@ -55,14 +55,21 @@ const {
   linkedPackage,
   activePackageId,
   activeDiagramId,
+  resolveSession,
   ensureSession,
   sessionStarting,
 } = useFileCenterActivePackage(featureEnabled)
 
 const detailQuery = usePackageDetail(activePackageId, { enabled: featureEnabled })
 const { uploadFile, ingestText, ingestWebUrl, deleteSource, updatePackage } = useFileCenterMutations()
-const { isGenerating, isAdding, generateFromPackage, validateDocumentFile, MAX_CONTENT_LENGTH } =
-  useMindMapDocumentSummary()
+const {
+  isGenerating,
+  isIndexingCorpus,
+  isAdding,
+  generateFromPackage,
+  validateDocumentFile,
+  MAX_CONTENT_LENGTH,
+} = useMindMapDocumentSummary()
 
 const {
   pairingCode,
@@ -99,14 +106,16 @@ const documents = computed(() => detailQuery.data.value?.documents ?? [])
 const completedCount = computed(
   () => documents.value.filter((doc) => doc.status === 'completed').length
 )
-const isIndexing = computed(() =>
-  documents.value.some((doc) => doc.status === 'pending' || doc.status === 'processing')
+const isIndexing = computed(
+  () =>
+    isIndexingCorpus.value ||
+    documents.value.some((doc) => doc.status === 'processing')
 )
 const canGenerate = computed(
   () =>
     !isGenerating.value &&
     !collabActive.value &&
-    completedCount.value > 0 &&
+    documents.value.length > 0 &&
     activePackageId.value !== null
 )
 
@@ -115,11 +124,24 @@ const pairingMinutes = computed(() => Math.max(1, Math.round(expiresInSeconds.va
 const fileReaderDownloadUrl = '/api/downloads/mindgraph-file-reader'
 
 async function bootstrapSession(): Promise<void> {
+  await resolveSession()
+}
+
+async function startChatPairing(): Promise<void> {
+  if (collabActive.value || isMinting.value) {
+    return
+  }
   try {
-    await ensureSession()
+    if (activePackageId.value === null) {
+      await ensureSession()
+    }
+    const code = await mintPairingCode()
+    if (!code && mintError.value) {
+      notify.error(t('canvas.mindMapDocumentSummary.chatMintFailed'))
+    }
   } catch (error) {
-    console.error('[DocumentSummary] session start failed:', error)
-    notify.error(t('canvas.mindMapDocumentSummary.sessionStartFailed'))
+    console.error('[DocumentSummary] chat pairing failed:', error)
+    notify.error(t('canvas.mindMapDocumentSummary.chatMintFailed'))
   }
 }
 
@@ -132,22 +154,6 @@ onMounted(() => {
 watch(featureEnabled, (enabled) => {
   if (enabled) {
     void bootstrapSession()
-  }
-})
-
-watch(activeTab, (tab) => {
-  if (tab === 'chat' && activePackageId.value !== null && !pairingCode.value && !collabActive.value) {
-    void mintPairingCode().then((code) => {
-      if (!code && mintError.value) {
-        notify.error(t('canvas.mindMapDocumentSummary.chatMintFailed'))
-      }
-    })
-  }
-})
-
-watch(activePackageId, (packageId) => {
-  if (activeTab.value === 'chat' && packageId !== null && !pairingCode.value && !collabActive.value) {
-    void mintPairingCode()
   }
 })
 
@@ -171,8 +177,10 @@ function statusLabel(status: string): string {
       return t('canvas.mindMapDocumentSummary.statusReady')
     case 'failed':
       return t('canvas.mindMapDocumentSummary.statusFailed')
-    default:
+    case 'processing':
       return t('canvas.mindMapDocumentSummary.statusIndexing')
+    default:
+      return t('canvas.mindMapDocumentSummary.statusPending')
   }
 }
 
@@ -397,7 +405,7 @@ const canAdd = computed(() => {
               class="truncate text-xs font-semibold text-slate-800"
               @click.stop="startEditName"
             >
-              {{ linkedPackage?.name || '…' }}
+              {{ linkedPackage?.name || t('canvas.mindMapDocumentSummary.noPackageYet') }}
             </div>
             <input
               v-else
@@ -686,11 +694,24 @@ const canAdd = computed(() => {
               {{ t('canvas.mindMapDocumentSummary.chatExpired') }}
             </p>
             <button
+              v-if="!pairingCode && handoffStatus !== 'done'"
+              type="button"
+              class="mt-3 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="isMinting || collabActive"
+              @click="startChatPairing()"
+            >
+              {{
+                isMinting
+                  ? '…'
+                  : t('canvas.mindMapDocumentSummary.startPairingCode')
+              }}
+            </button>
+            <button
               v-if="handoffStatus === 'expired' || handoffStatus === 'failed' || mintError"
               type="button"
               class="mt-2 text-[11px] font-medium text-blue-600 hover:underline"
               :disabled="isMinting || collabActive"
-              @click="mintPairingCode()"
+              @click="startChatPairing()"
             >
               {{ t('canvas.mindMapDocumentSummary.refreshPairingCode') }}
             </button>

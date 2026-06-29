@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.133.0] - 2026-06-30
+
+> **Knowledge Space wiki spine, section-aware chunking, pipeline badges, and file-reader Playwright platform browser.**
+
+### Added
+
+- **Knowledge Space — wiki spine (v2b)** — Curriculum documents (课标 / 课程方案) map OCR/extracted headings onto canonical wiki slugs (`san-kecheng-mubiao`, etc.) for TOC-driven compile; other sources fall back to LLM structure pass ([`wiki_spine.py`](services/knowledge/wiki_spine.py), [`package_wiki_compiler.py`](services/knowledge/package_wiki_compiler.py)).
+- **Knowledge Space — section-aware chunking** — Hierarchical semchunk splits on heading boundaries; chunks carry `section_title` and `section_key` for scoped RAG ([`section_parser.py`](services/knowledge/section_parser.py), [`section_keys.py`](services/knowledge/section_keys.py), [`chunking_service.py`](services/knowledge/chunking_service.py)).
+- **Knowledge Space — user settings API** — `GET/PUT /api/knowledge-space/settings` for retrieval method, top-k, score threshold, chunk size/overlap; mirrors into `processing_rules` ([`knowledge_settings.py`](services/knowledge/knowledge_settings.py), [`settings.py`](routers/api/knowledge_space/settings.py)).
+- **Knowledge Space — pipeline status badges** — Per-document RAG and wiki compile states on library table, package groups, and sidebar history ([`package_pipeline_status.py`](services/knowledge/package_pipeline_status.py), [`usePipelineStatusBadge.ts`](frontend/src/composables/knowledge/usePipelineStatusBadge.ts)).
+- **Knowledge Space — section-scoped RAG** — Wiki spine sections and section hints route retrieval to chapter-scoped context ([`section_query.py`](services/knowledge/section_query.py), [`section_resolver.py`](services/knowledge/section_resolver.py), [`package_rag_context.py`](services/knowledge/package_rag_context.py)).
+- **File reader — Playwright platform browser** — Default backend launches **bundled Chromium** via Playwright Python driver; persistent profile at `platform-browser/playwright-edge/`; network capture for Tencent Meeting, YouTube PO tokens, and WeChat Channels ([`playwright_host.py`](clients/file-reader/file_reader/platform_browser/playwright_host.py), [`chromium_launcher.py`](clients/file-reader/file_reader/platform_browser/chromium_launcher.py), [`browser_factory.py`](clients/file-reader/file_reader/platform_browser/browser_factory.py)).
+- **File reader — multi-platform downloads** — SmartEdu, Bilibili, YouTube, Douyin, TikTok, WeChat Channels, and Tencent Meeting probe/download pipeline in the platform browser tab ([`platform_browser/`](clients/file-reader/file_reader/platform_browser/)).
+
+### Changed
+
+- **Knowledge Space — wiki compile default** — `FILE_CENTER_WIKI_COMPILE` defaults to `true` (was opt-in `false`) ([`knowledge_config.py`](config/knowledge_config.py), [`env.example`](env.example)).
+- **Knowledge Space — settings UI** — Retrieval/chunking preferences panel with reindex-required feedback; package page composable and per-tier package limits ([`KnowledgeSpaceSettings.vue`](frontend/src/components/knowledge-space/KnowledgeSpaceSettings.vue), [`useKnowledgeSpacePackagePage.ts`](frontend/src/composables/knowledge/useKnowledgeSpacePackagePage.ts)).
+- **Document Summary — mind map panel** — Package pipeline status and wiki-aware summary context in canvas panel ([`MindMapDocumentSummaryPanel.vue`](frontend/src/components/canvas/MindMapDocumentSummaryPanel.vue)).
+- **File reader — platform browser UX** — Browsing moves to an external Chromium window; the panel toolbar controls navigation and download detection. Set `MINDGRAPH_BROWSER=webview2` to restore embedded WebView2 (legacy).
+- **File reader — build** — PyInstaller bundles Playwright driver + Chromium (`PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium`); onefile exe is larger (~300 MB+) but needs no system browser ([`mindgraph-file-reader.spec`](clients/file-reader/mindgraph-file-reader.spec), [`build_windows.ps1`](clients/file-reader/build_windows.ps1)).
+- **File reader — browser profiles** — Separate storage dirs for Playwright (`playwright-edge/`) and WebView2 (`webview2/`) to avoid profile collisions ([`smartedu_browser.py`](clients/file-reader/file_reader/smartedu_browser.py)).
+
+### Fixed
+
+- **File reader — browser init hang** — Lazy tab init, UI-thread callbacks, and Playwright command queue avoid tkwebview2 hidden-tab / main-thread deadlocks ([`smartedu_panel.py`](clients/file-reader/file_reader/smartedu_panel.py)).
+- **File reader — yt-dlp cookies** — Netscape export preserves path/secure flags; session cookies export as expiry `0` ([`cookie_view.py`](clients/file-reader/file_reader/platform_browser/cookie_view.py), [`cookie_jar.py`](clients/file-reader/file_reader/platform_browser/cookie_jar.py)).
+
+### Tests
+
+- **Knowledge Space** — `test_wiki_spine.py`, `test_section_parser.py`, `test_section_query.py`, `test_section_resolver.py`, `test_hierarchical_semchunk.py`, `test_knowledge_settings.py`, `test_knowledge_settings_api.py`, `test_package_pipeline_status.py`, `test_package_rag_wiki_context.py`.
+- **File reader browser** — `test_browser_factory.py`, `test_webview_init_errors.py`, platform registry/download/cookie tests.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.133.0) on next `npm run build` (`prebuild` → `sync-version`).
+
 ## [5.132.0] - 2026-06-29
 
 > **Chrome extension document extract, SmartEdu file-reader tab, and Celery broker Redis RESP2 hardening.**

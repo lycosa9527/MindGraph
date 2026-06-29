@@ -23,6 +23,8 @@ import semchunk
 import tiktoken
 
 from config.settings import config
+from services.knowledge.document_structure import StructureHeading
+from services.knowledge.section_parser import split_into_sections
 from services.llm import llm_service as llm_svc
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
@@ -88,6 +90,7 @@ class ChunkingService(BaseChunkingService):
     Supports modes:
     - Automatic: 500 tokens, 50 overlap (default)
     - Custom: User-defined chunk size and overlap
+    - Hierarchical: split on chapter/heading boundaries, then semchunk per section
     """
 
     # Automatic segmentation rules (like Dify's AUTOMATIC_RULES)
@@ -105,12 +108,12 @@ class ChunkingService(BaseChunkingService):
         Args:
             chunk_size: Tokens per chunk (default: 500)
             overlap: Overlap tokens (default: 50, used for metadata only)
-            mode: Segmentation mode ('automatic', 'custom')
+            mode: Segmentation mode ('automatic', 'custom', 'hierarchical')
         """
         self.mode = mode
         self.strategy = "semchunk"  # Always use semchunk
 
-        if mode == "automatic":
+        if mode in {"automatic", "hierarchical"}:
             self.chunk_size = chunk_size or self.AUTOMATIC_RULES["max_tokens"]
             self.overlap = overlap or self.AUTOMATIC_RULES["chunk_overlap"]
         else:
@@ -230,6 +233,7 @@ class ChunkingService(BaseChunkingService):
         extract_structure: bool = False,
         page_info: Optional[List[Dict[str, Any]]] = None,
         language: Optional[str] = None,
+        structure_headings: Optional[List[StructureHeading]] = None,
     ) -> List[Chunk]:
         """
         Split text into chunks using semchunk.
@@ -238,14 +242,56 @@ class ChunkingService(BaseChunkingService):
             text: Text to chunk
             metadata: Optional metadata to attach to chunks
             separator: Ignored (semchunk uses its own separators)
-            extract_structure: Ignored (semchunk handles structure)
+            extract_structure: When True, split on headings before semchunk
             page_info: Optional list of page boundaries for PDFs
             language: Ignored (semchunk handles Chinese automatically)
+            structure_headings: PDF outline / DOCX style headings
 
         Returns:
             List of Chunk objects
         """
+        if self.mode == "hierarchical" or extract_structure:
+            return self._chunk_hierarchical(text, metadata, page_info, structure_headings)
         return self._split(text, metadata, page_info)
+
+    def _chunk_hierarchical(
+        self,
+        text: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        page_info: Optional[List[Dict[str, Any]]] = None,
+        structure_headings: Optional[List[StructureHeading]] = None,
+    ) -> List[Chunk]:
+        """Split on detected headings, then semchunk each section body."""
+        sections = split_into_sections(text, structure_headings, page_info)
+        if not sections:
+            return self._split(text, metadata, page_info)
+
+        all_chunks: List[Chunk] = []
+        chunk_index = 0
+        for section in sections:
+            section_meta = dict(metadata or {})
+            section_meta.update(
+                {
+                    "section_title": section.title,
+                    "section_level": section.level,
+                    "section_key": section.section_key,
+                    "section_number": section.section_number,
+                }
+            )
+            section_chunks = self._split(section.body, section_meta, page_info)
+            for chunk in section_chunks:
+                chunk.chunk_index = chunk_index
+                chunk.start_char += section.start
+                chunk.end_char += section.start
+                chunk_index += 1
+                all_chunks.append(chunk)
+
+        logger.info(
+            "[ChunkingService] Hierarchical semchunk: %s sections → %s chunks",
+            len(sections),
+            len(all_chunks),
+        )
+        return all_chunks
 
     def estimate_chunk_count(self, text_length: int) -> int:
         """

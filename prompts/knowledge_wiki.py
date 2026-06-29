@@ -92,3 +92,47 @@ def build_wiki_compile_user_prompt(
         f"New source content (excerpt):\n{new_source_text}\n\n"
         "Output the wiki pages to create or update as JSON."
     )
+
+
+WIKI_SECTION_SUMMARY_SYSTEM_ZH = (
+    "你是课程资料笔记编写者。根据给定章节正文，写一份精简 Markdown 笔记。"
+    "使用要点列表，保留关键术语与数字，不要编造正文中没有的内容。"
+    "不超过 400 字，不要加标题行。"
+)
+
+WIKI_SECTION_SUMMARY_SYSTEM_EN = (
+    "You write compact markdown study notes for one document section. "
+    "Use bullet points, keep key terms and numbers, and do not invent facts. "
+    "Stay under 400 words and do not add a title line."
+)
+
+WIKI_OVERVIEW_FROM_SECTIONS_SYSTEM_ZH = (
+    "你是资料包总览页编写者。根据各章节笔记，写一份连贯的总览 Markdown。"
+    "说明资料包主题、章节结构，并用简短列表指向各章要点。不超过 350 字。"
+)
+
+WIKI_OVERVIEW_FROM_SECTIONS_SYSTEM_EN = (
+    "You write a package overview in markdown from section notes. "
+    "Explain the topic, outline the structure, and bullet the key themes. "
+    "Stay under 350 words."
+)
+
+
+def build_section_summary_user_prompt(section_title: str, section_text: str, language: str = "zh") -> str:
+    """Build a user prompt to summarize one spine-bound section."""
+    excerpt = section_text.strip()
+    if language.startswith("zh"):
+        return f"章节标题：{section_title}\n\n章节正文：\n{excerpt}\n\n请输出该章节的精简笔记。"
+    return f"Section title: {section_title}\n\nSection text:\n{excerpt}\n\nWrite concise notes for this section."
+
+
+def build_overview_from_sections_prompt(
+    doc_title: str,
+    section_notes: List[dict],
+    language: str = "zh",
+) -> str:
+    """Build a user prompt for a package overview from section summaries."""
+    lines = "\n".join(f"- {note['title']}: {note['summary']}" for note in section_notes)
+    if language.startswith("zh"):
+        return f"资料名称：{doc_title}\n\n各章节笔记：\n{lines}\n\n请写总览页 Markdown。"
+    return f"Document: {doc_title}\n\nSection notes:\n{lines}\n\nWrite the overview markdown."
