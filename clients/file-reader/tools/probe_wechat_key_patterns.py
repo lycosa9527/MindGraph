@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import ctypes
+from file_reader.win32_ctypes import windll_module
 import re
 import subprocess
 import sys
@@ -56,7 +56,7 @@ def main() -> None:
     bare = 0
     key_map: dict[str, str] = {}
     remaining = set(salt_to_rels.keys())
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     access = 0x0010 | 0x0400
 
     for pid in _weixin_pids():

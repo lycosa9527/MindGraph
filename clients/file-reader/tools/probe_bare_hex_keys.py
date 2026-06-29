@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import ctypes
+from file_reader.win32_ctypes import windll_module
 import importlib
 import re
 import sys
@@ -31,7 +31,7 @@ def main() -> None:
     found: dict[str, str] = {}
     tried_96 = 0
     tried_64 = 0
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     access = 0x0010 | 0x0400
 
     for pid in _weixin_pids():

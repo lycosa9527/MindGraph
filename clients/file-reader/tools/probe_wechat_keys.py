@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import ctypes
 import importlib
 import sys
 from pathlib import Path
+
+from file_reader.win32_ctypes import windll_module
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -19,7 +20,7 @@ collect_db_files = _wcdb.collect_db_files
 
 
 def main() -> None:
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     db_dir = Path(r"C:\Users\roywa\Documents\xwechat_files\rulerwang_c571\db_storage")
     if len(sys.argv) > 1:
         db_dir = Path(sys.argv[1])

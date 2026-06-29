@@ -5,7 +5,7 @@ from __future__ import annotations
 import tkinter as tk
 from typing import Callable
 
-WheelCallback = Callable[[tk.Event], None]
+WheelCallback = Callable[[tk.Event], str | None]
 
 
 def wheel_scroll_units(event: tk.Event, *, direction: int = -1) -> int:

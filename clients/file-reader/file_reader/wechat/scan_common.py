@@ -9,6 +9,7 @@ import struct
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
+from file_reader.win32_ctypes import windll_module
 from file_reader.wechat.crypto import (
     KEY_SZ,
     derive_enc_key_from_passphrase,
@@ -169,7 +170,7 @@ def build_key_index(
 
 def enum_readable_regions(process_handle: int) -> List[Tuple[int, int]]:
     """Return readable committed memory regions for a process."""
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     regions: List[Tuple[int, int]] = []
     address = 0
     info = MemoryBasicInformation()
@@ -195,7 +196,7 @@ def enum_readable_regions(process_handle: int) -> List[Tuple[int, int]]:
 
 def enum_v4_private_regions(process_handle: int) -> List[Tuple[int, int]]:
     """Writable private regions (>= 1 MiB) used by WeChat 4.1+ key scan."""
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     regions: List[Tuple[int, int]] = []
     address = 0x10000
     info = MemoryBasicInformation()
@@ -226,7 +227,7 @@ def enum_v4_private_regions(process_handle: int) -> List[Tuple[int, int]]:
 
 def read_process_memory(process_handle: int, address: int, size: int) -> Optional[bytes]:
     """Read bytes from another process."""
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     buffer = ctypes.create_string_buffer(size)
     read_size = ctypes.c_size_t(0)
     if kernel32.ReadProcessMemory(

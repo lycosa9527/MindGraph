@@ -12,6 +12,7 @@ from file_reader.wechat.debug_log import clear_wechat_log, log_wechat, log_wecha
 from file_reader.wechat.key_extract import extract_db_keys_with_report, resolve_db_dir
 from file_reader.wechat.key_store import WeChatKeyPersistContext, load_wechat_key_cache
 from file_reader.wechat.version import (
+    WeChatCryptoVariant,
     detect_client_exe_version,
     format_client_version,
     infer_layout_variant,
@@ -40,7 +41,7 @@ def _resolve_crypto(
     account_dir: Path,
     *,
     client_variant: Optional[str],
-) -> tuple[str, str]:
+) -> tuple[WeChatCryptoVariant, str]:
     layout = infer_layout_variant(account_dir)
     version_tuple = detect_client_exe_version(layout=layout)
     version_label = format_client_version(version_tuple)

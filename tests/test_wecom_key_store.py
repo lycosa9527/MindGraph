@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from file_reader.wecom.key_store import (
     WeComIncrementalKeyStore,
@@ -33,7 +34,12 @@ class _FakeIncrementalStore:
         key_hex: str,
         salt_map: dict[str, list[str]],
     ) -> None:
-        WeComIncrementalKeyStore.on_salt_found(self, salt_hex, key_hex, salt_map)
+        WeComIncrementalKeyStore.on_salt_found(
+            cast(WeComIncrementalKeyStore, self),
+            salt_hex,
+            key_hex,
+            salt_map,
+        )
 
     def _flush(self) -> None:
         self.flush_count += 1

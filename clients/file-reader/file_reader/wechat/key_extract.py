@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
+from file_reader.win32_ctypes import windll_module
 from file_reader.wechat.crypto import (
     KEY_SZ,
     WeChatKeyError,
@@ -110,8 +111,8 @@ def _process_pids(*image_names: str) -> List[int]:
 
 
 def _find_module_base(pid: int, module_name: str) -> Optional[Tuple[int, int]]:
-    kernel32 = ctypes.windll.kernel32
-    psapi = ctypes.windll.psapi
+    kernel32 = windll_module("kernel32")
+    psapi = windll_module("psapi")
     access = 0x0010 | 0x0400
     handle = kernel32.OpenProcess(access, False, pid)
     if not handle:
@@ -181,7 +182,7 @@ def _scan_v3_wechatwin(
     reference = _reference_page1(db_files, "v3")
     if reference is None:
         return None
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     access = 0x0010 | 0x0400
     seen: Set[int] = set()
 
@@ -244,13 +245,15 @@ def _scan_v4_raw_keys(
     hex_pattern = re.compile(rb"x'([0-9a-fA-F]{64,192})'")
     key_map: Dict[str, str] = {}
     remaining_salts = set(salt_to_rels.keys())
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     access = 0x0010 | 0x0400
     on_salt_found: Optional[SaltKeyCallback] = None
     if persister is not None:
 
-        def on_salt_found(salt: str, key: str) -> None:
+        def _persist_salt_found(salt: str, key: str) -> None:
             persister.on_salt_found(salt, key, salt_to_rels)
+
+        on_salt_found = _persist_salt_found
 
     for pid in pids:
         handle = kernel32.OpenProcess(access, False, pid)
@@ -289,7 +292,7 @@ def _scan_v41_passphrase(
     if reference is None:
         log_wechat("v4.1 passphrase scan skipped: no reference page1")
         return {}
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     access = 0x0010 | 0x0400
     seen_pointers: Set[int] = set()
     scanned_bytes = 0
@@ -349,7 +352,7 @@ def _rank_weixin_pids(pids: List[int]) -> List[int]:
     """Prefer the Weixin process with the largest private RW heap (main client)."""
     if len(pids) <= 1:
         return pids
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     access = 0x0010 | 0x0400
     scored: List[tuple[int, int, int]] = []
     for pid in pids:

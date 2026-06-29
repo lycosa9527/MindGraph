@@ -8,7 +8,7 @@ import threading
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 from file_reader import __version__
 from file_reader.chat import messages as chat_messages
@@ -112,7 +112,7 @@ class FileReaderApp:
         self._wechat_probe_report: Optional[WeChatProbeReport] = None
         self._chat_preview_token = 0
         self._wechat_cache_restore_running = False
-        self._wechat_saved_keys_cache_key: Optional[tuple[int, str, str]] = None
+        self._wechat_saved_keys_cache_key: Optional[tuple[int, str, str, str]] = None
         self._wechat_saved_keys_cached: Optional[bool] = None
         self._dingtalk_status: DingTalkLocalStatus = DingTalkLocalStatus(
             False, None, None, None, None, None, False, False
@@ -471,14 +471,15 @@ class FileReaderApp:
         self._sync_live_source_mode()
         self._sync_status_dock()
         probe_token = self._platform_status.probe_token("dingtalk")
+        profile = self._profile
 
         def run() -> None:
             current = status
             sessions: List[DingTalkSessionPreview] = []
             chat_error: Optional[Exception] = None
             report: Optional[DingTalkProbeReport] = None
-            user_id = self._profile.user_id
-            phone = self._profile.phone or self.settings.account_phone
+            user_id = profile.user_id
+            phone = profile.phone or self.settings.account_phone
             try:
                 current, sessions, chat_error = load_dingtalk_sessions(
                     status,
@@ -891,7 +892,7 @@ class FileReaderApp:
         self._wecom_cache_restore_running = True
         self._on_wecom_start_probe()
 
-    def _live_sessions_list(self) -> List[LiveChatSession]:
+    def _live_sessions_list(self) -> Sequence[LiveChatSession]:
         platform = self.platform.get()
         if platform == "dingtalk":
             return self._dingtalk_sessions

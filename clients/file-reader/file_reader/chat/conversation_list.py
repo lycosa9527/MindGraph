@@ -58,7 +58,7 @@ class ConversationCheckboxList(tk.Frame):
     def _on_canvas_configure(self, event: tk.Event) -> None:
         self._canvas.itemconfigure(self._window_id, width=event.width)
 
-    def _on_mousewheel(self, event: tk.Event) -> None:
+    def _on_mousewheel(self, event: tk.Event) -> str | None:
         units = wheel_scroll_units(event)
         if units:
             self._canvas.yview_scroll(units, "units")

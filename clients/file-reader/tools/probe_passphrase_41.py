@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import ctypes
+from file_reader.win32_ctypes import windll_module
 import hashlib
 import importlib
 import sqlite3
@@ -84,7 +84,7 @@ def main() -> None:
     candidates = _candidates_from_key_info(login_dir)
     print(f"key_info candidates: {len(candidates)}")
 
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     access = 0x0010 | 0x0400
     anchor_hits = 0
     for pid in _weixin_pids():

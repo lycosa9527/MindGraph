@@ -1078,13 +1078,13 @@ class SendPanel(tk.Frame):
         self._status.grid(row=self._row_status, column=0, columnspan=3, sticky="w", pady=(8, 0))
         self.clear_chat_preview()
 
-    def _on_preview_mousewheel(self, event: tk.Event) -> str:
+    def _on_preview_mousewheel(self, event: tk.Event) -> str | None:
         units = wheel_scroll_units(event)
         if units:
             self._chat_preview.yview_scroll(units, "units")
         return "break"
 
-    def _on_file_list_mousewheel(self, event: tk.Event) -> str:
+    def _on_file_list_mousewheel(self, event: tk.Event) -> str | None:
         units = wheel_scroll_units(event)
         if units:
             self.file_list.yview_scroll(units, "units")

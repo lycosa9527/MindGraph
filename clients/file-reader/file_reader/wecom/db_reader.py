@@ -9,7 +9,7 @@ from contextlib import closing
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Protocol
 
 from file_reader.chat.messages import MAX_EXPORT_MESSAGES, ChatMessage
 from file_reader.wecom.db_cache import WeComDbCache
@@ -84,10 +84,16 @@ def format_chat_preview(messages: List[ChatMessage], *, limit: int = 40) -> str:
     return "\n".join(lines)
 
 
+class _WeComChatCache(Protocol):
+    """Minimal cache surface used by ``WeComDbReader``."""
+
+    def ensure_chat_dbs(self) -> Path: ...
+
+
 class WeComDbReader:
     """Query decrypted WeCom SQLite for sessions and messages."""
 
-    def __init__(self, cache: WeComDbCache, *, self_id: Optional[int] = None) -> None:
+    def __init__(self, cache: _WeComChatCache, *, self_id: Optional[int] = None) -> None:
         self._cache = cache
         self._self_id = self_id
 
@@ -217,7 +223,7 @@ class WeComDbReader:
                                 timestamp=format_session_time(int(row["send_time"] or 0)),
                             )
                         )
-        messages.sort(key=lambda item: item.timestamp)
+        messages.sort(key=lambda item: item.timestamp or "")
         return messages[-max_messages:]
 
 
@@ -405,7 +411,10 @@ def _decode_content(raw: object) -> str:
         return ""
     if isinstance(raw, str):
         return _clean_text(raw)
-    data = bytes(raw)
+    if isinstance(raw, (bytes, bytearray, memoryview)):
+        data = bytes(raw)
+    else:
+        return ""
     if not data:
         return ""
     for encoding in ("utf-8", "gbk"):

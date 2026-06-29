@@ -59,6 +59,21 @@ def _split_msg_type(local_type: int) -> Tuple[int, int]:
     return value, 0
 
 
+def _sql_int(value: object) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, (str, bytes, bytearray)):
+        try:
+            return int(value)
+        except ValueError:
+            return 0
+    return 0
+
+
 def _zstd_decompress(data: bytes) -> Optional[str]:
     if zstd is None:
         return None
@@ -418,7 +433,7 @@ class WeChatDbReader:
                 activity_ts = max(activity_ts, msg_ts)
             by_username[username] = WeChatSessionPreview(
                 username=username,
-                display_name=names.get(username, username),
+                display_name=names.get(username) or username,
                 last_timestamp=activity_ts,
                 summary=_decode_summary(summary, is_group),
                 is_group=is_group,
@@ -532,11 +547,11 @@ class WeChatDbReader:
                 decoded = _decompress_content(content, ct)
                 sender_from_content, _ = _parse_group_sender(decoded or "", is_group)
                 sender = _resolve_sender_label(
-                    int(real_sender_id or 0),
+                    _sql_int(real_sender_id),
                     sender_from_content,
                     is_group=is_group,
                     chat_username=username,
-                    chat_display_name=names.get(username, username),
+                    chat_display_name=names.get(username) or username,
                     self_username=self_username,
                     self_display_name=self_display_name,
                     contacts=contacts,
@@ -544,7 +559,7 @@ class WeChatDbReader:
                 )
                 if not sender:
                     sender = "Unknown"
-                text = _format_message_text(int(local_type or 0), decoded, is_group=is_group)
+                text = _format_message_text(_sql_int(local_type), decoded, is_group=is_group)
                 timestamp = None
                 if create_time:
                     timestamp = datetime.fromtimestamp(create_time).strftime("%Y-%m-%d %H:%M:%S")

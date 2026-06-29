@@ -30,6 +30,7 @@ def patch_kombu_redis_connection_pool() -> None:
     if kombu_redis is None:
         return
 
+    broker_redis = kombu_redis.redis
     channel_cls = kombu_redis.Channel
     if getattr(channel_cls, "_mindgraph_kombu_pool_patch_applied", False):
         return
@@ -40,7 +41,7 @@ def patch_kombu_redis_connection_pool() -> None:
         params = original_connparams(self, asynchronous=asynchronous)
         params.update(KOMBU_BROKER_POOL_OPTS)
         self.keyprefix_fanout = self.keyprefix_fanout.format(db=params["db"])
-        return kombu_redis.redis.ConnectionPool(**params)
+        return broker_redis.ConnectionPool(**params)
 
     setattr(channel_cls, "_get_pool", get_pool_with_resp2)
     setattr(channel_cls, "_mindgraph_kombu_pool_patch_applied", True)

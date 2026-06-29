@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
+from file_reader.win32_ctypes import windll_module
 from file_reader.wecom.crypto import is_plain_sqlite_page, is_wxsqlite3_aes128_page1, verify_wxsqlite3_aes128_key
 from file_reader.wecom.debug_log import log_wecom
 from file_reader.wecom.discovery import (
@@ -85,13 +86,13 @@ def _wxwork_pids() -> List[Tuple[int, int]]:
 
 
 def _open_process(pid: int) -> Optional[int]:
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     handle = kernel32.OpenProcess(_PROCESS_ACCESS, False, pid)
     return handle or None
 
 
 def _close_process(handle: int) -> None:
-    ctypes.windll.kernel32.CloseHandle(handle)
+    windll_module("kernel32").CloseHandle(handle)
 
 
 def _try_record_key(

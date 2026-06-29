@@ -89,7 +89,7 @@ def decrypt_wxsqlite3_aes128_page(raw_key: bytes, page_data: bytes, page_no: int
         raise WeComCryptoError(f"page must be exactly {PAGE_SZ} bytes")
 
     data = bytearray(page_data)
-    if page_no == 1 and has_wxsqlite3_plain_header_fragment(data):
+    if page_no == 1 and has_wxsqlite3_plain_header_fragment(bytes(data)):
         db_header_fragment = bytes(data[16:24])
         data[16:24] = data[8:16]
         decrypted_tail = _decrypt_aes128_cbc(raw_key, page_no, bytes(data[16:]))

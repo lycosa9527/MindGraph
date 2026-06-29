@@ -25,9 +25,9 @@ TOKEN_JS = """
 """
 
 try:
-    import webview as _webview
+    import webview
 except ImportError:
-    _webview = None
+    webview = None
 
 
 class SmartEduLoginError(RuntimeError):
@@ -36,7 +36,7 @@ class SmartEduLoginError(RuntimeError):
 
 def pywebview_available() -> bool:
     """Return True when pywebview can be imported."""
-    return _webview is not None
+    return webview is not None
 
 
 def open_smartedu_login_window(*, on_complete: Optional[Callable[[str], None]] = None) -> None:
@@ -45,7 +45,8 @@ def open_smartedu_login_window(*, on_complete: Optional[Callable[[str], None]] =
 
     Calls on_complete(token_or_empty) when the window closes.
     """
-    if _webview is None:
+    webview_mod = webview
+    if webview_mod is None:
         if on_complete is not None:
             on_complete("")
         return
@@ -53,10 +54,10 @@ def open_smartedu_login_window(*, on_complete: Optional[Callable[[str], None]] =
     token_holder: dict[str, str] = {"token": ""}
 
     def _collect_token() -> None:
-        if not _webview.windows:
+        if not webview_mod.windows:
             return
         try:
-            result = _webview.windows[0].evaluate_js(TOKEN_JS)
+            result = webview_mod.windows[0].evaluate_js(TOKEN_JS)
         except (RuntimeError, OSError, ValueError, json.JSONDecodeError):
             token_holder["token"] = ""
             return
@@ -68,7 +69,7 @@ def open_smartedu_login_window(*, on_complete: Optional[Callable[[str], None]] =
         if on_complete is not None:
             on_complete(token_holder["token"])
 
-    window = _webview.create_window(
+    window = webview_mod.create_window(
         "SmartEdu Login",
         SMARTEDU_LOGIN_URL,
         width=960,
@@ -76,7 +77,7 @@ def open_smartedu_login_window(*, on_complete: Optional[Callable[[str], None]] =
         confirm_close=True,
     )
     window.events.closed += _on_closed
-    _webview.start(gui="edgechromium")
+    webview_mod.start(gui="edgechromium")
 
 
 def open_smartedu_login_async(on_complete: Callable[[str], None]) -> threading.Thread:

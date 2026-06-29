@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from file_reader.wechat.crypto import (
     derive_enc_key_from_passphrase,
     verify_enc_key,
@@ -17,7 +19,7 @@ __all__ = [
 
 def derive_keys_from_passphrase(
     passphrase: bytes,
-    db_files: list[tuple[str, object, int, str, bytes]],
+    db_files: list[tuple[str, Path, int, str, bytes]],
 ) -> dict[str, str]:
     """Derive per-salt encryption keys from a WeChat 4.1+ WCDB passphrase."""
     key_map: dict[str, str] = {}

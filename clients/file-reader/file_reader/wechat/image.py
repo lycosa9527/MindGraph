@@ -17,6 +17,7 @@ from typing import List, Optional
 
 from Crypto.Cipher import AES
 
+from file_reader.win32_ctypes import windll_module
 from file_reader.wechat.scan_common import enum_readable_regions, read_process_memory
 
 _V2_HEADER = bytes([0x07, 0x08, 0x56, 0x32, 0x08, 0x07])
@@ -164,7 +165,7 @@ def _scan_chunk_for_aes(data: bytes, ciphertext: bytes) -> Optional[bytes]:
 
 
 def _aes_key_from_memory(pid: int, ciphertext: bytes) -> Optional[bytes]:
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     handle = kernel32.OpenProcess(0x0010 | 0x0400, False, pid)
     if not handle:
         return None

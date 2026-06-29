@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import ctypes
+from file_reader.win32_ctypes import windll_module
 import struct
 import subprocess
 import sys
@@ -50,7 +50,7 @@ def main() -> None:
     db_files, _salt = collect_db_files(db_dir)
     reference = next(page1 for rel, _p, _s, _salt, page1 in db_files if "message/message_" in rel)
 
-    kernel32 = ctypes.windll.kernel32
+    kernel32 = windll_module("kernel32")
     access = 0x0010 | 0x0400
     pid_list = weixin_pids()
     print(f"weixin_pids={pid_list}")
