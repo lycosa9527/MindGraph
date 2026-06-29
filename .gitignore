@@ -257,8 +257,10 @@ esp32/
 # Archive (most features complete)
 archive/
 
-# Font files (binary fonts should not be tracked)
-*.ttf
+# File-reader build artifacts and bundled ffmpeg (download before build; see tools/README.md)
+clients/file-reader/tools/ffmpeg.exe
+clients/file-reader/dist/
+clients/file-reader/build/
 *.otf
 *.woff
 *.woff2

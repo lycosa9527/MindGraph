@@ -1,12 +1,22 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from pathlib import Path
+
+here = Path(SPECPATH)
+tools_ffmpeg = here / "tools" / "ffmpeg.exe"
+tools_wxkey = here / "tools" / "wx_key.dll"
+datas = [("assets/icon.png", "assets")]
+if tools_ffmpeg.is_file():
+    datas.append(("tools/ffmpeg.exe", "tools"))
+if tools_wxkey.is_file():
+    datas.append(("tools/wx_key.dll", "tools"))
 
 a = Analysis(
     ['file_reader\\__main__.py'],
     pathex=[],
     binaries=[],
-    datas=[('assets/icon.png', 'assets')],
-    hiddenimports=[],
+    datas=datas,
+    hiddenimports=['webview', 'requests', 'Crypto.Cipher.AES', 'zstandard'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

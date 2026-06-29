@@ -12,6 +12,9 @@ redis-py 8.0.0 accepts ``maint_notifications_config`` on sync
 ``redis.asyncio.connection.AbstractConnection``; async pools must omit the
 kwarg until upstream adds parity.
 
+Celery/kombu broker pools use RESP2 only (see ``config.celery_broker_redis``);
+the broker does not need RESP3 and RESP2 avoids the SCH probe entirely.
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License

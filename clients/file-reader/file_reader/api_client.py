@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import json
+import mimetypes
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+
+try:
+    import requests as _requests
+except ImportError:
+    _requests = None
 
 from file_reader.errors import AppError, ErrorCode, classify_http_error, classify_message, classify_network
 from file_reader.server_url import normalize_server_url
@@ -22,6 +29,19 @@ class IngestResult:
     document_id: Optional[int] = None
 
 
+UploadResult = IngestResult
+
+
+@dataclass(frozen=True)
+class OrganizationProfile:
+    """Organization block from GET /api/auth/me (matches web auth store)."""
+
+    id: Optional[int]
+    name: Optional[str]
+    display_name: Optional[str]
+    school_tier: Optional[str]
+
+
 @dataclass(frozen=True)
 class UserProfile:
     """Lightweight profile from GET /api/auth/me."""
@@ -30,6 +50,7 @@ class UserProfile:
     name: str
     phone: str
     avatar: str
+    organization: Optional[OrganizationProfile] = None
 
 
 @dataclass(frozen=True)
@@ -138,6 +159,28 @@ class FileReaderApiClient:
                         return msg
         return raw.strip()
 
+    @staticmethod
+    def _parse_organization(data: dict) -> Optional[OrganizationProfile]:
+        org = data.get("organization")
+        if not isinstance(org, dict):
+            return None
+        org_id = org.get("id")
+        parsed_id = int(org_id) if org_id is not None else None
+        name_raw = org.get("name")
+        name = str(name_raw).strip() if name_raw else None
+        display_raw = org.get("display_name")
+        display = str(display_raw).strip() if display_raw else None
+        tier_raw = org.get("school_tier")
+        tier = str(tier_raw).strip().lower() if tier_raw else None
+        if parsed_id is None and not name and not display:
+            return None
+        return OrganizationProfile(
+            id=parsed_id,
+            name=name or None,
+            display_name=display or None,
+            school_tier=tier or None,
+        )
+
     def fetch_profile(self) -> Tuple[bool, Optional[UserProfile], Optional[AppError]]:
         """Load the signed-in user profile."""
         ok, data, err = self._request_json("GET", "/api/auth/me")
@@ -149,7 +192,18 @@ class FileReaderApiClient:
         phone = str(data.get("phone") or self._settings.account_phone)
         avatar = str(data.get("avatar") or "👤")
         user_id = int(data.get("id") or 0)
-        return True, UserProfile(user_id=user_id, name=name, phone=phone, avatar=avatar), None
+        organization = self._parse_organization(data)
+        return (
+            True,
+            UserProfile(
+                user_id=user_id,
+                name=name,
+                phone=phone,
+                avatar=avatar,
+                organization=organization,
+            ),
+            None,
+        )
 
     def list_packages(self) -> Tuple[bool, List[PackageItem], Optional[AppError]]:
         """List Knowledge Space packages for the authenticated user."""
@@ -286,3 +340,44 @@ class FileReaderApiClient:
         if isinstance(data, dict) and data.get("id") is not None:
             doc_id = int(data["id"])
         return IngestResult(True, document_id=doc_id)
+
+    def upload_package_document(self, package_id: int, file_path: Path) -> UploadResult:
+        """Upload a local file into a Knowledge Space package."""
+        if _requests is None:
+            return UploadResult(False, AppError(code=ErrorCode.UPLOAD_FAILED, raw_detail="requests not installed"))
+        if not self._settings.api_token.strip() or not self._settings.account_phone.strip():
+            return UploadResult(False, AppError(code=ErrorCode.MISSING_CREDENTIALS))
+        if not file_path.is_file():
+            return UploadResult(False, AppError(code=ErrorCode.UPLOAD_FAILED, raw_detail="File not found"))
+
+        url = f"{self._base_url()}/api/knowledge-space/packages/{package_id}/documents/upload"
+        headers = {
+            "Authorization": f"Bearer {self._settings.api_token.strip()}",
+            "X-MG-Account": self._settings.account_phone.strip(),
+            "X-MG-Client": "file-reader",
+            "Accept": "application/json",
+        }
+        mime_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
+        try:
+            with file_path.open("rb") as handle:
+                response = _requests.post(
+                    url,
+                    headers=headers,
+                    files={"file": (file_path.name, handle, mime_type)},
+                    timeout=120,
+                )
+        except _requests.RequestException as exc:
+            return UploadResult(False, classify_network(str(exc)))
+
+        if response.status_code >= 400:
+            message = self._parse_error_message(response.text) or response.reason
+            return UploadResult(False, classify_http_error(response.status_code, message))
+
+        doc_id: Optional[int] = None
+        try:
+            data = response.json()
+        except ValueError:
+            data = None
+        if isinstance(data, dict) and data.get("id") is not None:
+            doc_id = int(data["id"])
+        return UploadResult(True, document_id=doc_id)

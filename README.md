@@ -5,7 +5,7 @@ AI-powered diagram generation platform. Transform natural language into professi
 [![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![Vue](https://img.shields.io/badge/Vue-3.5+-42b883.svg)](https://vuejs.org/)
-[![Version](https://img.shields.io/badge/Version-5.117.41-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-5.132.0-brightgreen.svg)](CHANGELOG.md)
 
 ---
 
@@ -15,7 +15,7 @@ AI-powered diagram generation platform. Transform natural language into professi
 
 - **Thinking Maps** (8 types): Circle, Bubble, Double Bubble, Tree, Brace, Flow, Multi-Flow, Bridge
 - **Tree Map**: Center-aligned vertical group layout with DOM-measured adaptive column widths
-- **Mind Map**: Radial brainstorming with DOM-measured branch layout and drag-to-reparent
+- **Mind Map**: Radial brainstorming with DOM-measured branch layout, drag-to-reparent, five diagram styles (classic, formal, bubble, underline, soft), curated color themes, and post-add inline edit
 - **Concept Map**: Relationship mapping with AI-generated labels, focus questions, and root concept suggestions
 
 **AI Capabilities**
@@ -26,16 +26,27 @@ AI-powered diagram generation platform. Transform natural language into professi
 - Concept Map focus question validation and SSE suggestion streams
 - Multi-LLM support: Qwen, DeepSeek, Kimi, Doubao (Volcengine)
 - Output in 149+ languages (ISO/BCP-47, filterable prompt-language picker)
+- **Thinking coins** (思维币): optional trial-school wallet for LLM usage metering — see [docs/architecture/thinking_coins.md](docs/architecture/thinking_coins.md)
+
+**MindMate & MindBot**
+
+- **MindMate**: Dify-backed AI chat with SSE streaming, diagram preview cache, and canvas navigation handoff
+- **MindBot**: DingTalk HTTP robot → Dify per-organization config; pair-code account binding; unified conversation history with web MindMate
+- **Document Summary** (文档总结): canvas panel that ingests documents, images, web URLs, and chat transcripts into a session package and generates RAG-backed mind maps
+- **Chat handoff**: pairing codes on the 聊天记录 tab; Windows desktop helper at [clients/file-reader/](clients/file-reader/) for WeChat/DingTalk export ingest
 
 **Canvas Editor**
 
 - Interactive canvas with export (PNG, SVG, PDF, JSON)
 - KaTeX math rendering in diagram labels (mhchem for chemistry notation)
 - Branch drag-and-drop (long-press to reparent or swap nodes)
-- Presentation mode with laser pointer, spotlight, highlighter, and pen tools
+- Presentation mode with pointer, hand, laser, spotlight, highlighter, pen, and countdown timer
+- Learning sheet float bar: custom pick and random blank sessions
 - Auto-save with dirty/saving indicators and relative timestamps
 - Diagram snapshots: up to 10 point-in-time versions per diagram with click-to-recall
+- Canvas history baseline: first edit is undoable; session reset clears ephemeral state
 - Text alignment and rich text-style toolbar
+- Mind map v2 canvas (optional, `FEATURE_MINDMAP_V2_CANVAS=True`): side-toolbar chrome, orthogonal edges, Document Summary panel
 - Mobile web shell (`/m/*`) with touch pinch-zoom and pane pan
 
 **Collaboration & Platform**
@@ -50,7 +61,7 @@ AI-powered diagram generation platform. Transform natural language into professi
 
 **Internationalization**
 
-- Full UI in 60+ languages (tier-1: zh, en; tier-2: 50+ bundled locales including RTL Dhivehi)
+- Full UI in 77 bundled locales (tier-1: zh, en; tier-2: 75+ locales including RTL Dhivehi)
 - Interface language picker with parity-checked bundles
 - Prompt output language independent of UI language
 
@@ -58,8 +69,12 @@ AI-powered diagram generation platform. Transform natural language into professi
 
 - Optional **AbuseIPDB** and **Fail2ban** integration — see [docs/FAIL2BAN_SETUP.md](docs/FAIL2BAN_SETUP.md)
 - JWT and API key authentication with Redis cache-aside (5-minute TTL, SHA-256 fingerprinting)
+- **OAuth QR login** (WeChat + DingTalk, `FEATURE_OAUTH_LOGIN=False` by default) — see [docs/architecture/oauth_qr_login.md](docs/architecture/oauth_qr_login.md)
+- **DingTalk pair-code binding** — rotating 6-digit codes via MindBot; see [docs/architecture/dingtalk_account_binding.md](docs/architecture/dingtalk_account_binding.md)
+- CSRF double-submit protection; CSP script nonce on SPA shell (no `'unsafe-inline'` for scripts)
 - Captcha on password change; sessions revoked on password update
 - Per-feature organization/user access rules (DB-backed, Redis-cached)
+- Production startup guards: `DATABASE_URL` required; optional `REQUIRE_REDIS_AUTH`, `ALLOWED_HOSTS`, `COLLAB_FANOUT_ORIGIN_SECRET`
 - OpenAPI schema served only when `DEBUG=True`
 - Health endpoints require JWT; SSE errors do not expose stack traces
 
@@ -72,7 +87,7 @@ AI-powered diagram generation platform. Transform natural language into professi
 | **Frontend** | Vue 3.5, TypeScript, Vite 7, Tailwind CSS 4, Pinia, Vue Flow, KaTeX |
 | **Backend** | Python 3.13, FastAPI, Uvicorn, Alembic |
 | **Data** | PostgreSQL (JSONB), Redis 8+, Qdrant |
-| **AI** | LangGraph, Dashscope (Qwen), Volcengine (Doubao, DeepSeek, Kimi) |
+| **AI** | LangGraph, Dashscope (Qwen), Volcengine (Doubao, DeepSeek, Kimi), Dify |
 
 ---
 
@@ -130,6 +145,7 @@ Default: `http://localhost:9527`
 | `/mindmate` | AI chat and landing (Chinese version) |
 | `/mindgraph` | Diagram gallery |
 | `/canvas` | Interactive diagram editor |
+| `/canvas?openDocSummary=1` | Canvas with Document Summary panel open |
 | `/knowledge-space` | RAG document management |
 | `/library` | Document library |
 | `/workshop-chat` | Workshop Chat — real-time teacher collaboration |
@@ -153,7 +169,18 @@ DEBUG=False
 AUTH_MODE=jwt   # or: enterprise (disables JWT validation, isolated networks only)
 ```
 
-See `env.example` for full options including feature flags (`FEATURE_WORKSHOP_CHAT`, `FEATURE_LIBRARY`, etc.) and multi-worker settings.
+Notable feature flags (see `env.example` for full list):
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `FEATURE_MINDBOT` | `True` | DingTalk MindBot → Dify |
+| `FEATURE_MINDMATE` | `False` | MindMate AI chat |
+| `FEATURE_KNOWLEDGE_SPACE` | `False` | RAG / Document Summary (requires Qdrant + Celery) |
+| `FEATURE_OAUTH_LOGIN` | `False` | WeChat + DingTalk QR login |
+| `FEATURE_THINKING_COINS` | `False` | Trial-school thinking coin wallet |
+| `FEATURE_MINDMAP_V2_CANVAS` | `False` | Mind map v2 side-toolbar canvas |
+
+Production hardening: set `COLLAB_FANOUT_ORIGIN_SECRET` (shared across workers), `ALLOWED_HOSTS`, and see [docs/architecture/production_security_deploy.md](docs/architecture/production_security_deploy.md).
 
 ---
 
@@ -176,6 +203,14 @@ API keys are created in the admin panel (`/admin`). See [docs/API_REFERENCE.md](
 
 - [API Reference](docs/API_REFERENCE.md)
 - [Changelog](CHANGELOG.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [OAuth QR Login](docs/architecture/oauth_qr_login.md)
+- [Thinking Coins](docs/architecture/thinking_coins.md)
+- [DingTalk Account Binding](docs/architecture/dingtalk_account_binding.md)
+- [MindBot Tool Ingress](docs/architecture/mindbot_tool_ingress.md)
+- [Production Security Deploy](docs/architecture/production_security_deploy.md)
+- [Mind Map v2 Separation](docs/architecture/mindmap_v2_separation.md)
+- [File Reader Client](clients/file-reader/README.md)
 - [Redis Setup](docs/REDIS_SETUP.md)
 - [Qdrant Setup](docs/QDRANT_SETUP.md)
 - [PostgreSQL Setup](docs/POSTGRES_SETUP.md)

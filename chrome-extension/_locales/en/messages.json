@@ -171,6 +171,74 @@
     "message": "Generate mind map PNG",
     "description": "Context menu"
   },
+  "contextMenuExtractDocument": {
+    "message": "Extract document (MindGraph)",
+    "description": "Context menu document extract"
+  },
+  "docExtractSectionLabel": {
+    "message": "Extract document",
+    "description": "Document extract section label"
+  },
+  "docExtractDetected": {
+    "message": "Detected: $1 · $2",
+    "description": "Site label and engine; $1 site, $2 engine"
+  },
+  "docExtractAssetCount": {
+    "message": "$1 assets available",
+    "description": "SmartEdu asset count"
+  },
+  "docExtractPageCount": {
+    "message": "Pages: ~$1 (scroll to load all first)",
+    "description": "Canvas page estimate"
+  },
+  "docExtractScrollHint": {
+    "message": "Scroll the preview to load all pages before extracting.",
+    "description": "Autoscroll hint when page count unknown"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "Paste SmartEdu token…",
+    "description": "Fallback token entry"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "Paste SmartEdu access_token (from browser console on basic.smartedu.cn):",
+    "description": "Prompt for manual token"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu token: connected",
+    "description": "Token status"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu token: not set — log in on basic.smartedu.cn or paste token",
+    "description": "Token status"
+  },
+  "btnExtractDocument": {
+    "message": "Extract document",
+    "description": "Start local document download"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "Document download started.",
+    "description": "Status after extract download"
+  },
+  "extractStagePreparing": {
+    "message": "Preparing page…",
+    "description": "Extract progress"
+  },
+  "extractStageScrolling": {
+    "message": "Scrolling to load all pages…",
+    "description": "Extract progress"
+  },
+  "extractStageCollecting": {
+    "message": "Collecting content…",
+    "description": "Extract progress"
+  },
+  "extractStageAssembling": {
+    "message": "Assembling file…",
+    "description": "Extract progress"
+  },
+  "extractStageDownloading": {
+    "message": "Downloading…",
+    "description": "Extract progress"
+  },
   "settingsAdvanced": {
     "message": "Advanced",
     "description": "Settings section"

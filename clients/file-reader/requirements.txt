@@ -1,1 +1,4 @@
-# MindGraph file-reader has no third-party runtime dependencies (stdlib + tkinter).
+pywebview>=5.0
+requests>=2.31
+pycryptodome>=3.20
+zstandard>=0.22

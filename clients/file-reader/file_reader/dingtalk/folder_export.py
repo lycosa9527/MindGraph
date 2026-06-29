@@ -9,11 +9,11 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from file_reader.wechat_reader import (
+from file_reader.chat.messages import (
     ChatMessage,
     ExportPreview,
     MAX_EXPORT_MESSAGES,
-    parse_export_file as parse_wechat_text,
+    parse_text_export_file,
 )
 
 # Backward-compatible alias — same shape as WeChat previews.
@@ -21,15 +21,19 @@ DingTalkPreview = ExportPreview
 
 
 def list_export_files(root: Path) -> List[ExportPreview]:
-    """List DingTalk ``.json`` / ``.txt`` exports under a directory."""
+    """List DingTalk ``.md`` / ``.json`` / ``.txt`` exports under a directory."""
     if not root.is_dir():
         return []
     previews: List[ExportPreview] = []
     seen: set[Path] = set()
-    for path in sorted(list(root.rglob("*.json")) + list(root.rglob("*.txt"))):
-        if path in seen:
+    candidates: List[Path] = []
+    for pattern in ("*.md", "*.json", "*.txt"):
+        candidates.extend(root.rglob(pattern))
+    for path in sorted(candidates, key=lambda item: str(item).lower()):
+        resolved = path.resolve()
+        if resolved in seen:
             continue
-        seen.add(path)
+        seen.add(resolved)
         messages = parse_export_file(path)
         previews.append(ExportPreview(title=path.stem, path=path, message_count=len(messages)))
     return previews
@@ -39,7 +43,7 @@ def parse_export_file(path: Path, max_messages: int = MAX_EXPORT_MESSAGES) -> Li
     """Parse DingTalk JSON or text export."""
     if path.suffix.lower() == ".json":
         return _parse_json_export(path, max_messages)
-    return parse_wechat_text(path, max_messages=max_messages)
+    return parse_text_export_file(path, max_messages=max_messages)
 
 
 def _parse_json_export(path: Path, max_messages: int) -> List[ChatMessage]:

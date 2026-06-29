@@ -337,6 +337,19 @@ body {
   min-height: 1.2em;
 }
 
+.btn-compact {
+  margin-top: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+}
+
+.smartedu-asset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+}
+
 .field-dimensions {
   display: flex;
   flex-direction: row;

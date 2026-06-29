@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>豆丁网 fixture</title></head>
+<body>
+  <div class="docin_header">toolbar</div>
+  <canvas width="800" height="1100"></canvas>
+  <canvas width="800" height="1100"></canvas>
+  <script>
+    document.querySelectorAll("canvas").forEach(function (c) {
+      var ctx = c.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.fillStyle = "#333";
+      ctx.fillText("Fixture page", 40, 60);
+    });
+  </script>
+</body>
+</html>

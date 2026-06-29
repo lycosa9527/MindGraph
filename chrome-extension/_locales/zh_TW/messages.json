@@ -171,6 +171,74 @@
     "message": "產生心智圖 PNG",
     "description": "右鍵選單"
   },
+  "contextMenuExtractDocument": {
+    "message": "擷取文件 (MindGraph)",
+    "description": "右鍵選單文件擷取"
+  },
+  "docExtractSectionLabel": {
+    "message": "擷取文件",
+    "description": "文件擷取區塊"
+  },
+  "docExtractDetected": {
+    "message": "偵測到：$1 · $2",
+    "description": "站點與引擎"
+  },
+  "docExtractAssetCount": {
+    "message": "共 $1 個資源",
+    "description": "智慧教育資源數量"
+  },
+  "docExtractPageCount": {
+    "message": "約 $1 頁（請先捲動載入全部頁面）",
+    "description": "畫布頁數估計"
+  },
+  "docExtractScrollHint": {
+    "message": "擷取前請先捲動預覽區以載入全部頁面。",
+    "description": "自動捲動提示"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "貼上 SmartEdu token…",
+    "description": "手動貼上 token"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "貼上 SmartEdu access_token（在 basic.smartedu.cn 控制台取得）：",
+    "description": "貼上 token 提示"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu token：已連線",
+    "description": "Token 狀態"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu token：未設定 — 請登入 basic.smartedu.cn 或貼上 token",
+    "description": "Token 狀態"
+  },
+  "btnExtractDocument": {
+    "message": "擷取文件",
+    "description": "開始本機下載"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "文件下載已開始。",
+    "description": "擷取下載狀態"
+  },
+  "extractStagePreparing": {
+    "message": "準備頁面…",
+    "description": "擷取進度"
+  },
+  "extractStageScrolling": {
+    "message": "捲動載入全部頁面…",
+    "description": "擷取進度"
+  },
+  "extractStageCollecting": {
+    "message": "採集內容…",
+    "description": "擷取進度"
+  },
+  "extractStageAssembling": {
+    "message": "組裝檔案…",
+    "description": "擷取進度"
+  },
+  "extractStageDownloading": {
+    "message": "下載中…",
+    "description": "擷取進度"
+  },
   "settingsAdvanced": {
     "message": "進階",
     "description": "設定分區"

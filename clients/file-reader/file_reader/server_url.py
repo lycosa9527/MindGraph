@@ -6,6 +6,20 @@ from urllib.parse import urlparse
 
 LOCAL_DEV_HOSTS = frozenset({"localhost", "127.0.0.1"})
 
+SERVER_URL_PRESET_LABELS: tuple[str, ...] = (
+    "mg.mindspringedu.com",
+    "test.mindspringedu.com",
+    "localhost:9527",
+)
+
+SERVER_URL_BY_PRESET_LABEL: dict[str, str] = {
+    "mg.mindspringedu.com": "https://mg.mindspringedu.com",
+    "test.mindspringedu.com": "https://test.mindspringedu.com",
+    "localhost:9527": "http://localhost:9527",
+}
+
+DEFAULT_SERVER_PRESET_LABEL = "test.mindspringedu.com"
+
 
 class ServerUrlError(ValueError):
     """Raised when a server URL is not on the HTTPS allowlist."""
@@ -50,3 +64,23 @@ def normalize_server_url(raw: str) -> str:
         netloc = host
 
     return f"{parsed.scheme}://{netloc}"
+
+
+def server_url_from_preset_label(label: str) -> str:
+    """Return the canonical server URL for a preset dropdown label."""
+    key = (label or "").strip()
+    url = SERVER_URL_BY_PRESET_LABEL.get(key)
+    if url is None:
+        raise ServerUrlError(f"Unknown server preset: {label}")
+    return normalize_server_url(url)
+
+
+def preset_label_for_server_url(raw: str) -> str:
+    """Return the preset label that matches a stored or normalized server URL."""
+    normalized = normalize_server_url(raw)
+    for preset_label, preset_url in SERVER_URL_BY_PRESET_LABEL.items():
+        if normalize_server_url(preset_url) == normalized:
+            return preset_label
+    if normalized == "http://127.0.0.1:9527":
+        return "localhost:9527"
+    return DEFAULT_SERVER_PRESET_LABEL

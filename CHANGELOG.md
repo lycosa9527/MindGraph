@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.132.0] - 2026-06-29
+
+> **Chrome extension document extract, SmartEdu file-reader tab, and Celery broker Redis RESP2 hardening.**
+
+### Added
+
+- **Chrome extension — Extract document** — Popup and context-menu action on ~25 Chinese education/document hosts; four engines (`canvas-pdf`, `html2canvas-pdf`, `api-binary`, `dom-article`) with auto-scroll, progress stages, and local download ([`doc-extract/`](chrome-extension/doc-extract/), [`background.js`](chrome-extension/background.js), [`popup.js`](chrome-extension/popup.js)).
+- **Chrome extension — SmartEdu pipeline** — `doc-extract/smartedu/` URL parser, metadata fetch, binary downloader, and page-token reader; shared fixtures with Python tests ([`tests/fixtures/doc-extract/smartedu/`](tests/fixtures/doc-extract/smartedu/)).
+- **Chrome extension — vitest** — Engine helper tests and npm scripts ([`chrome-extension/package.json`](chrome-extension/package.json), [`vitest.config.js`](chrome-extension/vitest.config.js)).
+- **File reader — SmartEdu tab** — WebView2 login + paste-token fallback, `classActivity` URL parse, four-asset checklist, ffmpeg MP4 merge, optional Document Summary package upload ([`smartedu_panel.py`](clients/file-reader/file_reader/smartedu_panel.py), [`smartedu/`](clients/file-reader/file_reader/smartedu/)).
+- **File reader — chat platform modules** — WeChat, DingTalk, and WeCom split into dedicated packages with DPAPI key stores, DB readers, and export helpers ([`wechat/`](clients/file-reader/file_reader/wechat/), [`dingtalk/`](clients/file-reader/file_reader/dingtalk/), [`wecom/`](clients/file-reader/file_reader/wecom/)).
+- **File reader — GUI notebook** — Two-tab shell (Chat history + SmartEdu) with auth dialog, platform status, edition subtitle, and mousewheel scroll fixes ([`gui.py`](clients/file-reader/file_reader/gui.py)).
+- **Celery broker RESP2 patch** — Force kombu Redis `ConnectionPool` to RESP2 so Celery workers skip redis-py 8 SCH `CLIENT MAINT_NOTIFICATIONS` probes ([`celery_broker_redis.py`](config/celery_broker_redis.py)).
+
+### Changed
+
+- **File reader build** — Embedded ffmpeg essentials in onefile exe (~80–110 MB); `deploy_to_desktop.ps1` for Desktop ship ([`build_windows.ps1`](clients/file-reader/build_windows.ps1)).
+- **Redis connection options** — Document Celery broker RESP2 split; async SCH disable gated on redis-py signature parity ([`redis_connection_options.py`](services/redis/redis_connection_options.py)).
+- **README** — Document Summary chat handoff and SmartEdu/file-reader capabilities.
+
+### Fixed
+
+- **File reader server URL** — Additional localhost/dev origin normalization tests ([`test_file_reader_server_url.py`](tests/test_file_reader_server_url.py)).
+- **Redis connection options tests** — Cover async maint-notifications support probe and RESP3 default toggle ([`test_redis_connection_options.py`](tests/test_redis_connection_options.py)).
+
+### Tests
+
+- **File reader / SmartEdu** — `test_smartedu_*`, `test_wechat_*`, `test_dingtalk_*`, `test_wecom_*`, `test_conversation_list.py`.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.132.0) on next `npm run build` (`prebuild` → `sync-version`).
+
 ## [5.131.0] - 2026-06-28
 
 > **MindMate SSE keepalive, unified Dify conversation routing, DingTalk history badges, and panel RLS create fixes.**

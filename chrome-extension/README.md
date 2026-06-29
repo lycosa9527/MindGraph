@@ -80,6 +80,33 @@ Errors from **page** scripts (e.g. news sites) appear in that **page’s** DevTo
 
 The server must be reachable from your machine and Playwright must be able to render the Vue app for PNG export.
 
+## Extract document (local download)
+
+On supported Chinese education and document sites (~25 hosts — see [`doc-extract/REFERENCES.md`](doc-extract/REFERENCES.md)), the popup shows an **Extract document** section when the active tab matches a known host. You can also right-click the page → **Extract document (MindGraph)**.
+
+**Progress stages:** preparing → scrolling (lazy pages) → collecting → assembling → downloading.
+
+**Engines (by site):**
+
+| Engine | Output | Typical sites |
+|--------|--------|---------------|
+| `canvas-pdf` | Image PDF (or ZIP fallback) | 豆丁网, 道客巴巴, 百度文库, … |
+| `html2canvas-pdf` | Image PDF | 得力文库, MBA智库, 人人文库, … |
+| `api-binary` | Original PDF / m3u8 URL file | 国家智慧教育 SmartEdu |
+| `dom-article` | `.html` / `.txt` | 360doc, 协作文档, generic articles |
+
+**SmartEdu:** Parses `classActivity` URLs, walks lesson `ti_items`, downloads PDFs locally. Video exports an `.m3u8.txt` URL file (use the Windows file-reader for MP4 merge). Token is read from page `localStorage` when logged in on `basic.smartedu.cn`.
+
+**Bundled vendors:** [`vendor/jspdf.umd.min.js`](vendor/jspdf.umd.min.js), [`vendor/html2canvas.min.js`](vendor/html2canvas.min.js), [`vendor/jszip.min.js`](vendor/jszip.min.js) (jsPDF 2.5, html2canvas 1.4, JSZip 3.10).
+
+**Tests:** From repo root (requires Node.js):
+
+```bash
+cd chrome-extension && npm ci && npm test
+```
+
+Fixtures: [`tests/fixtures/doc-extract/`](../tests/fixtures/doc-extract/) (shared with file-reader SmartEdu tests).
+
 ### Server-side requirements (operators)
 
 PNG export is a **two-stage** pipeline on the server: the **LLM** produces a mind map JSON spec, then **Playwright** opens the Vue app **`/export-render`** page and screenshots the canvas ([`routers/api/vueflow_screenshot.py`](../routers/api/vueflow_screenshot.py)).

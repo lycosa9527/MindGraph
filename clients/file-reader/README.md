@@ -1,17 +1,25 @@
 # MindGraph File Reader (Windows)
 
-Desktop helper that sends **WeChat** or **DingTalk** chat exports to **MindGraph Document Summary** (文档总结).
+Desktop helper for **MindGraph Document Summary** (文档总结):
+
+- **Chat history** tab — send **WeChat** or **DingTalk** exports via website pairing
+- **SmartEdu** tab — download lesson assets from **basic.smartedu.cn** (PDFs + MP4 via ffmpeg)
 
 ## Requirements
 
 - Windows 10/11
 - Python 3.13 (development builds)
 - MindGraph account with an **API token** (`mgat_…`) — mint in **Settings → API token**
-- At least one **Document Summary** package on your account
+- **ffmpeg essentials** embedded in the onefile exe for SmartEdu video merge (PDFs work without it at runtime)
+
+Install Python dependencies:
+
+```powershell
+cd clients\file-reader
+python -m pip install -r requirements.txt
+```
 
 ## Authentication
-
-The reader sends:
 
 | Header | Value |
 |--------|--------|
@@ -19,43 +27,44 @@ The reader sends:
 | `X-MG-Account` | Your MindGraph login phone |
 | `X-MG-Client` | `file-reader` |
 
-Credentials are saved under `%TEMP%\mindgraph-file-reader\`:
+Stored under `%TEMP%\mindgraph-file-reader\`:
 
 | File | Contents |
 |------|----------|
-| `settings.json` | Server URL and platform preference only (no secrets) |
-| `credentials.dpapi` | API token + phone encrypted with **Windows DPAPI** (current user) |
+| `settings.json` | Server URL and platform preference |
+| `credentials.dpapi` | MindGraph API token + phone (DPAPI) |
+| `smartedu_token.dpapi` | SmartEdu access token (separate DPAPI blob) |
 
-Legacy plaintext files under `%TEMP%` or `~/.mindgraph/` are migrated on first launch and then deleted.
+Default server: **test.mindspringedu.com** (dropdown also offers **mg.mindspringedu.com** and **localhost:9527** for local dev)
 
-Only **https://** servers on `*.mindspringedu.com` are accepted (`http://localhost` / `127.0.0.1` allowed for local dev). Use **Clear saved credentials** in the app to remove stored tokens from this PC.
+## Usage — Chat history
 
-Default server: `https://test.mindspringedu.com`
+1. Run `mindgraph-file-reader.exe` or `python -m file_reader`.
+2. Connect with API token and phone.
+3. Open Document Summary → Chat history on the website; select the live session card.
+4. Browse to a chat export and click **Send to website session**.
 
-## Usage
+## Usage — SmartEdu
 
-1. Run `mindgraph-file-reader.exe` (or `python -m file_reader` from this directory).
-2. Enter server URL, API token, and phone → **Connect & save**.
-3. Pick a **Document Summary package** card (loaded from Knowledge Space).
-4. Export chats to `.txt` (WeChat) or `.json`/`.txt` (DingTalk), browse to the folder, select a file.
-5. Click **Send to selected package** — pairing is handled automatically.
+1. Connect your MindGraph account.
+2. Open the **SmartEdu** tab → **Open SmartEdu login** (WebView2) or **Paste token**.
+3. Paste a `classActivity` URL from basic.smartedu.cn.
+4. Select assets (video, courseware PDF, lesson plan PDF, task sheet PDF).
+5. Optional: upload PDFs to a Document Summary package.
+6. Click **Download selected**.
 
-## Privacy
+Video uses ffmpeg with `X-ND-AUTH`; DRM merge may fail while PDFs still download.
 
-- Chat text is read **locally** from files you select; only the chosen export is uploaded.
-- Pairing codes come from the website session you select; they expire after **10 minutes**.
-- We do not upload WeChat/DingTalk database files.
-- API tokens are **DPAPI-encrypted** on disk; use **Clear saved credentials** when done on a shared PC.
-
-## Build (Windows)
+## Build
 
 ```powershell
 cd clients\file-reader
 .\build_windows.ps1
 ```
 
-Output: `dist\mindgraph-file-reader.exe` and `frontend/public/downloads/mindgraph-file-reader.zip`.
+Output: `dist\mindgraph-file-reader.exe` (~80–110 MB onefile with embedded ffmpeg essentials) and `frontend/public/downloads/mindgraph-file-reader.zip`.
 
-### SmartScreen
+## Privacy
 
-Unsigned executables may trigger SmartScreen. For production, sign the binary with your code-signing certificate.
+- Chat and SmartEdu content is processed locally; only opted-in PDFs upload to MindGraph.
+- Tokens are DPAPI-encrypted on this PC only.

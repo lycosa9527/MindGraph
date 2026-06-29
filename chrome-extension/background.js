@@ -9,6 +9,23 @@
  */
 
 importScripts("shared-mindgraph.js");
+importScripts("vendor/jspdf.umd.min.js");
+importScripts("vendor/jszip.min.js");
+importScripts("doc-extract/smartedu/models.js");
+importScripts("doc-extract/smartedu/url-parser.js");
+importScripts("doc-extract/smartedu/token.js");
+importScripts("doc-extract/smartedu/metadata.js");
+importScripts("doc-extract/smartedu/downloader.js");
+importScripts("doc-extract/hosts.js");
+importScripts("doc-extract/hosts/wenku.js");
+importScripts("doc-extract/hosts/docin.js");
+importScripts("doc-extract/hosts/smartedu.js");
+importScripts("doc-extract/prepare-download.js");
+importScripts("doc-extract/engines/canvas-pdf.js");
+importScripts("doc-extract/engines/html2canvas-pdf.js");
+importScripts("doc-extract/engines/dom-article.js");
+importScripts("doc-extract/engines/api-binary.js");
+importScripts("doc-extract/extract-core.js");
 
 const MAX_CHARS = MindGraphShared.MAX_PAGE_CHARS;
 const FETCH_TIMEOUT_MS = MindGraphShared.FETCH_TIMEOUT_MS;
@@ -738,6 +755,71 @@ function ensureContextMenu() {
       title: chrome.i18n.getMessage("contextMenuGenerate"),
       contexts: ["page"],
     });
+    chrome.contextMenus.create({
+      id: "mindgraph-extract-document",
+      title: chrome.i18n.getMessage("contextMenuExtractDocument"),
+      contexts: ["page"],
+    });
+  });
+}
+
+/**
+ * @param {{ progressPort?: chrome.runtime.Port, fromContextMenu?: boolean, smarteduAssets?: Array<object>, smarteduToken?: string }} options
+ * @param {number} tabId
+ */
+async function runExtractDocumentJob(tabId, options) {
+  const { progressPort, fromContextMenu, smarteduAssets, smarteduToken } = options;
+  const settings = await chrome.storage.local.get(["saveAs"]);
+  const result = await MindGraphDocExtract.runDocumentExtract(tabId, {
+    progressPort,
+    saveAs: Boolean(settings.saveAs),
+    smarteduAssets,
+    smarteduToken,
+  });
+  if (progressPort) {
+    try {
+      progressPort.postMessage({ type: "extractResult", ...result });
+    } catch {
+      /* popup closed */
+    }
+  }
+  if (fromContextMenu) {
+    if (result.ok) {
+      notifyUser(chrome.i18n.getMessage("statusExtractDownloadStarted"));
+    } else {
+      const errKey = result.error && result.error.startsWith("err") ? result.error : null;
+      notifyUser(errKey ? chrome.i18n.getMessage(errKey) : result.error || chrome.i18n.getMessage("errFailed"));
+    }
+  }
+}
+
+/**
+ * @param {chrome.runtime.Port} port
+ */
+function onDocExtractConnect(port) {
+  const base = MindGraphDocExtract.DOC_EXTRACT_PORT;
+  const prefix = `${base}-`;
+  if (!port.name.startsWith(prefix)) {
+    return;
+  }
+  const rest = port.name.slice(prefix.length);
+  if (!/^\d+$/.test(rest)) {
+    return;
+  }
+  const tabId = parseInt(rest, 10);
+  if (tabId < 1) {
+    return;
+  }
+  port.onMessage.addListener((msg) => {
+    if (!msg || msg.type !== "start") {
+      return;
+    }
+    void runExtractDocumentJob(tabId, {
+      progressPort: port,
+      fromContextMenu: false,
+      smarteduAssets: Array.isArray(msg.smarteduAssets) ? msg.smarteduAssets : undefined,
+      smarteduToken: typeof msg.smarteduToken === "string" ? msg.smarteduToken : undefined,
+    });
   });
 }
 
@@ -765,6 +847,17 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
   if (msg && msg.type === "SAVE_TO_FILE_CENTER" && typeof msg.tabId === "number") {
     runSaveToFileCenter(msg.tabId, msg.packageId).then(sendResponse);
+    return true;
+  }
+  if (msg && msg.type === "PREVIEW_EXTRACT" && typeof msg.pageUrl === "string") {
+    const tabId = typeof msg.tabId === "number" ? msg.tabId : undefined;
+    MindGraphDocExtract.previewExtractTarget(msg.pageUrl, tabId).then(sendResponse);
+    return true;
+  }
+  if (msg && msg.type === "SAVE_SMARTEDU_TOKEN" && typeof msg.token === "string") {
+    chrome.storage.local.set({ smarteduAccessToken: msg.token.trim() }).then(() => {
+      sendResponse({ ok: true });
+    });
     return true;
   }
   return false;
@@ -814,12 +907,19 @@ function onMindmapGenerateConnect(port) {
 }
 
 chrome.runtime.onConnect.addListener(onMindmapGenerateConnect);
+chrome.runtime.onConnect.addListener(onDocExtractConnect);
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId !== "mindgraph-generate" || !tab?.id) {
+  if (!tab?.id) {
     return;
   }
-  runGenerateMindmap(tab.id, { fromContextMenu: true });
+  if (info.menuItemId === "mindgraph-generate") {
+    runGenerateMindmap(tab.id, { fromContextMenu: true });
+    return;
+  }
+  if (info.menuItemId === "mindgraph-extract-document") {
+    void runExtractDocumentJob(tab.id, { fromContextMenu: true });
+  }
 });
 
 chrome.commands.onCommand.addListener((command) => {

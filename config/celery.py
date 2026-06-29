@@ -21,6 +21,7 @@ from celery.app import Celery
 from celery.signals import worker_process_init, worker_ready
 from dotenv import load_dotenv
 
+from config.celery_broker_redis import patch_kombu_redis_connection_pool
 from config.settings import config
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.utils.launch_commands import error_footer_launch_reference
@@ -47,6 +48,9 @@ def _bootstrap_rls_migration_from_env() -> None:
 
 
 _bootstrap_rls_migration_from_env()
+
+# Celery/kombu broker pools use RESP2 (see patch_kombu_redis_connection_pool).
+patch_kombu_redis_connection_pool()
 
 
 # Configure Celery logging to match application format

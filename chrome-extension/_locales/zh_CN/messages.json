@@ -171,6 +171,74 @@
     "message": "生成思维导图 PNG",
     "description": "右键菜单"
   },
+  "contextMenuExtractDocument": {
+    "message": "提取文档 (MindGraph)",
+    "description": "右键菜单文档提取"
+  },
+  "docExtractSectionLabel": {
+    "message": "提取文档",
+    "description": "文档提取区块"
+  },
+  "docExtractDetected": {
+    "message": "检测到：$1 · $2",
+    "description": "站点与引擎"
+  },
+  "docExtractAssetCount": {
+    "message": "共 $1 个资源",
+    "description": "智慧教育资源数量"
+  },
+  "docExtractPageCount": {
+    "message": "约 $1 页（请先滚动加载全部页面）",
+    "description": "画布页数估计"
+  },
+  "docExtractScrollHint": {
+    "message": "提取前请先滚动预览区以加载全部页面。",
+    "description": "自动滚动提示"
+  },
+  "btnPasteSmartEduToken": {
+    "message": "粘贴 SmartEdu token…",
+    "description": "手动粘贴 token"
+  },
+  "smarteduPasteTokenPrompt": {
+    "message": "粘贴 SmartEdu access_token（在 basic.smartedu.cn 控制台获取）：",
+    "description": "粘贴 token 提示"
+  },
+  "smarteduTokenConnected": {
+    "message": "SmartEdu token：已连接",
+    "description": "Token 状态"
+  },
+  "smarteduTokenMissing": {
+    "message": "SmartEdu token：未设置 — 请登录 basic.smartedu.cn 或粘贴 token",
+    "description": "Token 状态"
+  },
+  "btnExtractDocument": {
+    "message": "提取文档",
+    "description": "开始本地下载"
+  },
+  "statusExtractDownloadStarted": {
+    "message": "文档下载已开始。",
+    "description": "提取下载状态"
+  },
+  "extractStagePreparing": {
+    "message": "准备页面…",
+    "description": "提取进度"
+  },
+  "extractStageScrolling": {
+    "message": "滚动加载全部页面…",
+    "description": "提取进度"
+  },
+  "extractStageCollecting": {
+    "message": "采集内容…",
+    "description": "提取进度"
+  },
+  "extractStageAssembling": {
+    "message": "组装文件…",
+    "description": "提取进度"
+  },
+  "extractStageDownloading": {
+    "message": "下载中…",
+    "description": "提取进度"
+  },
   "settingsAdvanced": {
     "message": "高级",
     "description": "设置分区"

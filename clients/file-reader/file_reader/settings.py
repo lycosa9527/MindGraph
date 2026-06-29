@@ -18,6 +18,7 @@ DEFAULT_SERVER_URL = "https://test.mindspringedu.com"
 SETTINGS_DIR = Path(tempfile.gettempdir()) / "mindgraph-file-reader"
 PREFS_PATH = SETTINGS_DIR / "settings.json"
 CREDENTIALS_PATH = SETTINGS_DIR / "credentials.dpapi"
+SMARTEDU_TOKEN_PATH = SETTINGS_DIR / "smartedu_token.dpapi"
 
 # Backward-compatible alias used by the UI status line.
 SETTINGS_PATH = PREFS_PATH

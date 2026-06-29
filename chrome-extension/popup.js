@@ -13,6 +13,22 @@ const STAGE_I18N = {
   saving: "stageSaving",
 };
 
+const EXTRACT_STAGE_I18N = {
+  preparing: "extractStagePreparing",
+  scrolling: "extractStageScrolling",
+  collecting: "extractStageCollecting",
+  assembling: "extractStageAssembling",
+  downloading: "extractStageDownloading",
+};
+
+const EXTRACT_STAGE_WIDTH_PCT = {
+  preparing: 15,
+  scrolling: 35,
+  collecting: 55,
+  assembling: 75,
+  downloading: 100,
+};
+
 const STAGE_WIDTH_PCT = {
   reading: 20,
   sending: 40,
@@ -61,8 +77,8 @@ function t(key, substitutions) {
  * @param {string} stage
  */
 function setProgressStage(stage) {
-  const key = STAGE_I18N[stage];
-  const pct = STAGE_WIDTH_PCT[stage];
+  const key = STAGE_I18N[stage] || EXTRACT_STAGE_I18N[stage];
+  const pct = STAGE_WIDTH_PCT[stage] ?? EXTRACT_STAGE_WIDTH_PCT[stage];
   const elStage = document.getElementById("progress-stage");
   const elFill = document.getElementById("progress-fill");
   if (key && elStage) {
@@ -534,6 +550,215 @@ async function startPopup() {
   }
 
   void loadPackages();
+
+  const docExtractSection = document.getElementById("doc-extract-section");
+  const docExtractDetected = document.getElementById("doc-extract-detected");
+  const docExtractTitle = document.getElementById("doc-extract-title");
+  const docExtractPages = document.getElementById("doc-extract-pages");
+  const smarteduPanel = document.getElementById("smartedu-extract-panel");
+  const smarteduTokenStatus = document.getElementById("smartedu-token-status");
+  const smarteduAssetList = document.getElementById("smartedu-asset-list");
+  const btnPasteSmartEduToken = document.getElementById("btn-paste-smartedu-token");
+  const btnExtractDocument = document.getElementById("btn-extract-document");
+
+  /** @type {Array<object>} */
+  let previewSmartEduAssets = [];
+
+  /**
+   * @param {Array<object>} assets
+   */
+  function renderSmartEduAssetChecklist(assets) {
+    if (!smarteduAssetList) {
+      return;
+    }
+    smarteduAssetList.textContent = "";
+    previewSmartEduAssets = assets.map((a) => ({ ...a, selected: a.selected !== false }));
+    previewSmartEduAssets.forEach((asset, idx) => {
+      const label = document.createElement("label");
+      label.className = "field-row-checkbox";
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = asset.selected !== false;
+      box.dataset.assetIndex = String(idx);
+      box.addEventListener("change", () => {
+        previewSmartEduAssets[idx].selected = box.checked;
+      });
+      const span = document.createElement("span");
+      span.className = "field-row-label";
+      span.textContent = asset.title || asset.alias || `Asset ${idx + 1}`;
+      label.appendChild(box);
+      label.appendChild(span);
+      smarteduAssetList.appendChild(label);
+    });
+  }
+
+  /**
+   * Show extract UI when the active tab matches a known host (not generic-only).
+   * @returns {Promise<void>}
+   */
+  async function loadExtractPreview() {
+    if (!docExtractSection || !docExtractDetected || !btnExtractDocument) {
+      return;
+    }
+    if (smarteduPanel) {
+      smarteduPanel.hidden = true;
+    }
+    if (docExtractPages) {
+      docExtractPages.hidden = true;
+    }
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.url || MindGraphShared.isRestrictedTabUrl(tab.url)) {
+      docExtractSection.hidden = true;
+      return;
+    }
+    const preview = await new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { type: "PREVIEW_EXTRACT", pageUrl: tab.url, tabId: tab.id },
+        (res) => {
+          void chrome.runtime.lastError;
+          resolve(res || { host: { id: "generic" } });
+        },
+      );
+    });
+    const host = preview.host || { id: "generic", label: "网页", engine: "dom-article" };
+    if (host.id === "generic") {
+      docExtractSection.hidden = true;
+      return;
+    }
+    docExtractDetected.textContent = t("docExtractDetected", [host.label, host.engine]);
+    if (docExtractTitle) {
+      docExtractTitle.textContent = preview.title || tab.title || "";
+    }
+    if (
+      docExtractPages &&
+      typeof preview.pageCount === "number" &&
+      preview.pageCount > 0 &&
+      (host.engine === "canvas-pdf" || host.engine === "html2canvas-pdf")
+    ) {
+      docExtractPages.textContent = t("docExtractPageCount", [String(preview.pageCount)]);
+      docExtractPages.hidden = false;
+    } else if (docExtractPages && host.prep && host.prep.includes("autoscroll")) {
+      docExtractPages.textContent = t("docExtractScrollHint");
+      docExtractPages.hidden = false;
+    }
+    if (host.id === "smartedu" && smarteduPanel) {
+      smarteduPanel.hidden = false;
+      if (smarteduTokenStatus) {
+        smarteduTokenStatus.textContent = preview.smarteduTokenSet
+          ? t("smarteduTokenConnected")
+          : t("smarteduTokenMissing");
+      }
+      if (Array.isArray(preview.assets) && preview.assets.length) {
+        renderSmartEduAssetChecklist(preview.assets);
+      }
+    }
+    docExtractSection.hidden = false;
+  }
+
+  if (btnPasteSmartEduToken) {
+    btnPasteSmartEduToken.addEventListener("click", () => {
+      void (async () => {
+        const token = window.prompt(t("smarteduPasteTokenPrompt"), "");
+        if (!token || !token.trim()) {
+          return;
+        }
+        await new Promise((resolve) => {
+          chrome.runtime.sendMessage({ type: "SAVE_SMARTEDU_TOKEN", token: token.trim() }, (res) => {
+            void chrome.runtime.lastError;
+            resolve(res);
+          });
+        });
+        await loadExtractPreview();
+      })();
+    });
+  }
+
+  void loadExtractPreview();
+
+  if (btnExtractDocument) {
+    btnExtractDocument.addEventListener("click", () => {
+      void (async () => {
+        setStatus(statusEl, "", "");
+        setProgressVisible(true);
+        if (progressStage) {
+          progressStage.textContent = t("statusWorking");
+        }
+        btnExtractDocument.disabled = true;
+        btnGenerate.disabled = true;
+        btnSettings.disabled = true;
+
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab?.id) {
+          setStatus(statusEl, t("errNoTab"), "err");
+          setProgressVisible(false);
+          btnExtractDocument.disabled = false;
+          btnGenerate.disabled = false;
+          btnSettings.disabled = false;
+          return;
+        }
+
+        const stored = await chrome.storage.local.get(["smarteduAccessToken"]);
+        const portName = `doc-extract-${tab.id}`;
+        let port;
+        let completed = false;
+        try {
+          port = chrome.runtime.connect({ name: portName });
+        } catch (e) {
+          setStatus(statusEl, e?.message || t("errFailed"), "err");
+          setProgressVisible(false);
+          btnExtractDocument.disabled = false;
+          btnGenerate.disabled = false;
+          btnSettings.disabled = false;
+          return;
+        }
+
+        const finish = (result) => {
+          if (completed) {
+            return;
+          }
+          completed = true;
+          setProgressVisible(false);
+          if (result.ok) {
+            setStatus(statusEl, t("statusExtractDownloadStarted"), "ok");
+          } else {
+            const errText =
+              result.error && result.error.startsWith("err")
+                ? t(result.error)
+                : result.error || t("errFailed");
+            setStatus(statusEl, errText, "err");
+          }
+          btnExtractDocument.disabled = false;
+          btnGenerate.disabled = false;
+          btnSettings.disabled = false;
+        };
+
+        port.onMessage.addListener((msg) => {
+          if (!msg) {
+            return;
+          }
+          if (msg.type === "extractProgress" && typeof msg.stage === "string") {
+            setProgressStage(msg.stage);
+          } else if (msg.type === "extractResult") {
+            finish(msg);
+          }
+        });
+        port.onDisconnect.addListener(() => {
+          if (!completed) {
+            finish({ ok: false, error: t("errPortDisconnected") });
+          }
+        });
+
+        const startPayload = {
+          type: "start",
+          smarteduToken: stored.smarteduAccessToken || "",
+        };
+        if (previewSmartEduAssets.length) {
+          startPayload.smarteduAssets = previewSmartEduAssets.filter((a) => a.selected !== false);
+        }
+        port.postMessage(startPayload);
+      })();
+    });
+  }
 
   if (btnSaveFileCenter && fieldPackage) {
     btnSaveFileCenter.addEventListener("click", () => {
