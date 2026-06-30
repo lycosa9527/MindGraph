@@ -18,6 +18,10 @@
     SMARTEDU_URL_INVALID: "errExtractWrongPage",
     WENKU_API_TIER_MISS: "errExtractWenkuNoPreview",
     API_BINARY_UNSUPPORTED_HOST: "errExtractWrongPage",
+    CNKI_CAPTCHA: "errExtractCnkiCaptcha",
+    CNKI_LOGIN_REQUIRED: "errExtractLoginRequired",
+    CNKI_PDF_URL_MISS: "errExtractNoPages",
+    CNKI_RESOLVE_NOT_LOADED: "errExtractRetry",
   };
 
   /**
@@ -54,6 +58,18 @@
     const hostId = hostEntry && hostEntry.id;
     if (hostId === "wenku" && /EMPTY|NO_IMAGES|CANVAS/i.test(msg)) {
       return "errExtractWenkuNoPreview";
+    }
+    if (hostId === "cnki") {
+      if (/CAPTCHA/i.test(msg)) {
+        return "errExtractCnkiCaptcha";
+      }
+      if (/LOGIN|401|403/i.test(msg)) {
+        return "errExtractLoginRequired";
+      }
+      if (/EMPTY|NO_IMAGES|CANVAS|PDF_URL_MISS/i.test(msg)) {
+        return "errExtractNoPages";
+      }
+      return "errExtractFailed";
     }
     if (hostId === "smartedu") {
       return "errExtractSmartEduDownload";

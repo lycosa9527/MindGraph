@@ -41,6 +41,14 @@ def extract_session_token(connection: HttpOrWebSocket) -> Optional[str]:
     return extract_bearer_token(connection)
 
 
+def has_authorization_mgat_bearer(request: Request) -> bool:
+    """True when the client sent ``Authorization: Bearer mgat_…`` (user API token auth)."""
+    credentials = request.headers.get("Authorization", "")
+    if not credentials.startswith("Bearer "):
+        return False
+    return credentials[7:].strip().startswith("mgat_")
+
+
 def extract_bearer_token(request: Request) -> Optional[str]:
     """
     Session token: Authorization: Bearer, then access_token cookie, then ?token=

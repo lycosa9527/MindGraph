@@ -21,6 +21,171 @@ function loadModule(relPath, exportName) {
   return fn(globalThis, globalThis);
 }
 
+describe("mindmate capture debug", () => {
+  it("redacts token-like debug fields", () => {
+    loadModule("mindmate-capture-debug.js", "MindGraphMindMate");
+    const sanitized = globalThis.MindGraphMindMate.captureDebug.sanitizeDebugValue({
+      smarteduToken: "abcdefgh123456789",
+      title: "课件",
+    });
+    expect(sanitized.smarteduToken).toBe("[redacted]");
+    expect(sanitized.title).toBe("课件");
+  });
+
+  it("formats last capture hint from steps", async () => {
+    loadModule("mindmate-capture-debug.js", "MindGraphMindMate");
+    const dbg = globalThis.MindGraphMindMate.captureDebug;
+    dbg.beginCapture({ tabId: 1, pageUrl: "https://basic.smartedu.cn/x", hostId: "smartedu" });
+    dbg.log("smartedu.token", "no SmartEdu token");
+    await dbg.finishCapture({
+      ok: false,
+      error: "errExtractSmartEduLogin",
+      hostId: "smartedu",
+      pageUrl: "https://basic.smartedu.cn/x",
+      markdownLen: 0,
+    });
+    const hint = await dbg.formatLastCaptureHint();
+    expect(hint).toContain("host=smartedu");
+    expect(hint).toContain("smartedu.token");
+  });
+});
+
+describe("mindmate capture progress", () => {
+  it("formats SmartEdu asset progress messages", async () => {
+    loadModule("mindmate-capture-progress.js", "MindGraphMindMate");
+    const prog = globalThis.MindGraphMindMate.captureProgress;
+    const t = (key, subs) => {
+      if (key === "mindmatePageContextSmarteduAssets") {
+        return `assets:${subs[0]}`;
+      }
+      if (key === "mindmatePageContextSmarteduDownloading") {
+        return `dl:${subs.join(",")}`;
+      }
+      if (key === "mindmatePageContextSmarteduReady") {
+        return `ready:${subs.join(",")}`;
+      }
+      return key;
+    };
+    await prog.publishCaptureProgress({
+      phase: "smartedu_detected",
+      messageKey: "mindmatePageContextSmarteduAssets",
+      messageSubs: ["3"],
+    });
+    const detected = await prog.getCaptureProgress();
+    expect(prog.formatCaptureProgressMessage(t, detected)).toBe("assets:3");
+    await prog.publishCaptureProgress({
+      phase: "smartedu_download",
+      messageKey: "mindmatePageContextSmarteduDownloading",
+      messageSubs: ["1", "3", "课件.pdf"],
+    });
+    const downloading = await prog.getCaptureProgress();
+    expect(prog.formatCaptureProgressMessage(t, downloading)).toBe("dl:1,3,课件.pdf");
+    await prog.finishCaptureProgress({
+      ok: true,
+      source: "smartedu-pdf",
+      title: "小数除法",
+      markdownLen: 4200,
+      assetTotal: 3,
+    });
+    const ready = await prog.getCaptureProgress();
+    expect(prog.formatCaptureProgressMessage(t, ready)).toBe("ready:3,4200,小数除法");
+  });
+
+  it("formats cached page context ready notice", () => {
+    loadModule("mindmate-capture-progress.js", "MindGraphMindMate");
+    const prog = globalThis.MindGraphMindMate.captureProgress;
+    const t = (key, subs) => `${key}:${subs.join("|")}`;
+    const notice = prog.formatCachedPageContextNotice(t, {
+      title: "Article",
+      markdown: "x".repeat(120),
+      source: "page-markdown",
+    });
+    expect(notice).toBe("mindmatePageContextReady:Article|120");
+  });
+});
+
+describe("mindmate markdown render", () => {
+  it("renders headings, lists, code, and links safely", () => {
+    loadModule("mindmate-markdown.js", "MindGraphMindMate");
+    const html = globalThis.MindGraphMindMate.renderMarkdownToHtml(
+      "## 认知冲突\n\n- **迷思概念**：减法一定变小\n- [示例](https://example.com)\n\n```\nPOE\n```",
+    );
+    expect(html).toContain("<h2>");
+    expect(html).toContain("<strong>迷思概念</strong>");
+    expect(html).toContain('<a href="https://example.com"');
+    expect(html).toContain("<pre><code");
+    expect(html).not.toContain("<script");
+  });
+
+  it("rejects unsafe link protocols", () => {
+    loadModule("mindmate-markdown.js", "MindGraphMindMate");
+    const html = globalThis.MindGraphMindMate.renderInlineMarkdown("[x](javascript:alert(1))");
+    expect(html).not.toContain("<a ");
+    expect(html).toContain("[x](javascript:alert(1))");
+  });
+
+  it("escapes raw html in source", () => {
+    loadModule("mindmate-markdown.js", "MindGraphMindMate");
+    const html = globalThis.MindGraphMindMate.renderMarkdownToHtml("<img onerror=alert(1)>");
+    expect(html).toContain("&lt;img");
+    expect(html).not.toContain("<img");
+  });
+
+  it("renders plain assistant text without markdown syntax", () => {
+    loadModule("mindmate-markdown.js", "MindGraphMindMate");
+    const html = globalThis.MindGraphMindMate.renderMarkdownToHtml("你好，这是普通回复。");
+    expect(html).toContain("mindmate-md");
+    expect(html).toContain("你好，这是普通回复。");
+    expect(html).not.toContain("<script");
+  });
+
+  it("leaves empty assistant content unset for markdown mode", () => {
+    loadModule("mindmate-markdown.js", "MindGraphMindMate");
+    const bubble = {
+      classNames: [],
+      classList: {
+        add: (name) => {
+          bubble.classNames.push(name);
+        },
+        remove: (name) => {
+          bubble.classNames = bubble.classNames.filter((c) => c !== name);
+        },
+      },
+      innerHTML: "prev",
+      textContent: "",
+    };
+    Object.defineProperty(bubble, "textContent", {
+      configurable: true,
+      get: () => bubble._text || "",
+      set: (value) => {
+        bubble._text = value;
+        bubble.innerHTML = "";
+      },
+    });
+    globalThis.MindGraphMindMate.applyMessageBubbleContent(bubble, "   ", "assistant");
+    expect(bubble.classNames).not.toContain("mindmate-msg-bubble-md");
+    expect(bubble.textContent).toBe("   ");
+  });
+
+  it("stores raw markdown in session thread, not rendered html", () => {
+    loadModule("mindmate-session.js", "MindGraphMindMate");
+    const stored = globalThis.MindGraphMindMate.buildStoredThread("auth", "conv", 2, [
+      { id: "a1", role: "assistant", text: "## Title\n\n**bold**" },
+      { id: "u1", role: "user", text: "Question?" },
+    ]);
+    expect(stored.messages[0].text).toBe("## Title\n\n**bold**");
+    expect(stored.messages[0].text).not.toContain("<h2>");
+  });
+
+  it("popup script order loads markdown before panel", () => {
+    const html = fs.readFileSync(path.resolve(repoRoot, "chrome-extension/popup.html"), "utf8");
+    const markdownIdx = html.indexOf("mindmate-markdown.js");
+    const panelIdx = html.indexOf("mindmate-panel.js");
+    expect(markdownIdx).toBeGreaterThan(-1);
+    expect(panelIdx).toBeGreaterThan(markdownIdx);
+  });
+});
+
 describe("mindmate sse", () => {
   it("parses data lines and stops when handler returns false", async () => {
     loadModule("mindmate-sse.js", "MindGraphMindMate");
@@ -113,11 +278,23 @@ describe("mindmate compose page context", () => {
       if (key === "mindmatePageContextIntro") {
         return "INTRO";
       }
+      if (key === "mindmatePageContextRouting") {
+        return "ROUTING";
+      }
+      if (key === "mindmatePageContextGuidance") {
+        return "GUIDANCE";
+      }
+      if (key === "mindmatePageContextMaterialHeader") {
+        return "MATERIAL";
+      }
       if (key === "mindmatePageContextMeta") {
-        return `META:${subs[0]}:${subs[1]}`;
+        return `META:${subs[0]}:${subs[1]}:${subs[2]}`;
       }
       if (key === "mindmatePageContextQuestion") {
         return `Q:${subs[0]}`;
+      }
+      if (key === "mindmatePageContextSource_page_markdown") {
+        return "generic-extract";
       }
       return key;
     };
@@ -127,10 +304,34 @@ describe("mindmate compose page context", () => {
       markdown: "## Section\n\nBody text",
     });
     expect(msg).toContain("INTRO");
-    expect(msg).toContain("META:Lesson A:https://example.com/lesson");
+    expect(msg).toContain("ROUTING");
+    expect(msg).toContain("GUIDANCE");
+    expect(msg).toContain("MATERIAL");
+    expect(msg).toContain("META:Lesson A:https://example.com/lesson:generic-extract");
     expect(msg).toContain("## Section");
     expect(msg).toContain("Q:Explain this lesson");
+    expect(msg.indexOf("Q:Explain this lesson")).toBeLessThan(msg.indexOf("GUIDANCE"));
+    expect(msg.indexOf("Q:Explain this lesson")).toBeLessThan(msg.indexOf("## Section"));
     expect(msg.length).toBeLessThanOrEqual(5000);
+  });
+
+  it("maps extract source codes to Dify-facing labels", () => {
+    loadModule("mindmate-compose.js", "MindGraphMindMate");
+    const t = (key) => {
+      if (key === "mindmatePageContextSource_smartedu_pdf") {
+        return "SmartEdu PDF";
+      }
+      if (key === "mindmatePageContextSource_page_markdown") {
+        return "Web extract";
+      }
+      return key;
+    };
+    expect(globalThis.MindGraphMindMate.formatPageContextSourceLabel(t, "smartedu-pdf")).toBe(
+      "SmartEdu PDF",
+    );
+    expect(globalThis.MindGraphMindMate.formatPageContextSourceLabel(t, "page-pdfjs")).toBe(
+      "Web extract",
+    );
   });
 
   it("resolves page context before incrementing user message count", () => {
@@ -153,6 +354,94 @@ describe("mindmate compose page context", () => {
     );
     expect(composed).toContain("Body");
     expect(composed).toContain("Question?");
+  });
+});
+
+describe("mindmate page markdown", () => {
+  /**
+   * @returns {Document}
+   */
+  function loadMarkdownApi(html) {
+    const code = fs.readFileSync(
+      path.resolve(repoRoot, "chrome-extension/mindmate-page-markdown.js"),
+      "utf8",
+    );
+    const dom = new (class {
+      constructor(markup) {
+        this.body = { innerHTML: markup };
+      }
+      querySelector(sel) {
+        if (sel === "#viewer") {
+          return {
+            querySelectorAll: (innerSel) => {
+              if (innerSel.includes("textLayer")) {
+                return [
+                  { textContent: "Hello", getBoundingClientRect: () => ({ top: 10, left: 0 }) },
+                  { textContent: "world", getBoundingClientRect: () => ({ top: 10, left: 40 }) },
+                  { textContent: "Second line", getBoundingClientRect: () => ({ top: 30, left: 0 }) },
+                ];
+              }
+              return [];
+            },
+          };
+        }
+        if (sel === "main") {
+          return {
+            tagName: "MAIN",
+            childNodes: [],
+            querySelectorAll: () => [],
+          };
+        }
+        return null;
+      }
+    })(html);
+    const fn = new Function(
+      "globalThis",
+      "document",
+      `${code}\nreturn globalThis.__MGMindMatePageMarkdown;`,
+    );
+    return fn(globalThis, dom);
+  }
+
+  it("extracts PDF.js text layer in reading order", () => {
+    const api = loadMarkdownApi(`<div id="viewer"><div class="textLayer"></div></div>`);
+    const viewer = { querySelectorAll: () => [] };
+    const md = api.extractPdfJsTextLayerMarkdown({
+      querySelectorAll: (sel) => {
+        if (sel.includes("textLayer")) {
+          return [
+            { textContent: "Hello", getBoundingClientRect: () => ({ top: 10, left: 0 }) },
+            { textContent: "world", getBoundingClientRect: () => ({ top: 10, left: 40 }) },
+            { textContent: "Second line", getBoundingClientRect: () => ({ top: 30, left: 0 }) },
+          ];
+        }
+        return [];
+      },
+    });
+    expect(md).toContain("Hello world");
+    expect(md).toContain("Second line");
+  });
+
+  it("findArticleRoot prefers main on normal pages", () => {
+    const code = fs.readFileSync(
+      path.resolve(repoRoot, "chrome-extension/mindmate-page-markdown.js"),
+      "utf8",
+    );
+    const mainNode = { tagName: "MAIN" };
+    const documentMock = {
+      body: mainNode,
+      location: { pathname: "/article", href: "https://example.com/article" },
+      querySelector: (sel) => (sel === "main" ? mainNode : null),
+    };
+    const fn = new Function(
+      "globalThis",
+      "document",
+      "window",
+      `${code}\nreturn globalThis.__MGMindMatePageMarkdown;`,
+    );
+    const api = fn(globalThis, documentMock, { location: documentMock.location });
+    const root = api.findArticleRoot();
+    expect(root.tagName).toBe("MAIN");
   });
 });
 
@@ -288,8 +577,9 @@ describe("mindmate api auth headers", () => {
     loadModule("mindmate-sse.js", "MindGraphMindMate");
     loadModule("mindmate-api.js", "MindGraphMindMate");
     const originalFetch = globalThis.fetch;
-    globalThis.fetch = async (url) => {
+    globalThis.fetch = async (url, init) => {
       if (String(url).endsWith("/api/auth/me")) {
+        expect(init?.credentials).toBe("omit");
         return { ok: false, status: 401 };
       }
       throw new Error("unexpected fetch");

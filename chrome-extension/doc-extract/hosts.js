@@ -79,6 +79,23 @@
       providerVersion: "437609",
     },
     {
+      id: "cnki",
+      label: "中国知网",
+      hosts: ["cnki.net"],
+      engine: "api-binary",
+      prep: ["hide-chrome"],
+      hideSelectors: [
+        ".reader-toolbar",
+        ".toolbar",
+        ".topbar",
+        ".header-wrap",
+        ".cnki-header",
+        ".operate-btn",
+      ],
+      readerMaxPages: 120,
+      providerVersion: "CNKI-PDF-RIS-Helper",
+    },
+    {
       id: "360doc",
       label: "360个人图书馆",
       hosts: ["360doc.com"],

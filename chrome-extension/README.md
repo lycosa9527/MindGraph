@@ -95,7 +95,8 @@ Errors from **page** scripts (e.g. news sites) appear in that **page’s** DevTo
   - **localhost:9527** uses **HTTP** — tokens and page content sent to the API are **plaintext on the wire**. The Settings server dropdown shows a warning when local is selected; use only on a trusted dev machine.
 - **SmartEdu downloads** append `accessToken=` to some CDN URLs (required by SmartEdu). Do not share download links; tokens are cleared from extension storage on 401.
 - **Host permissions:** MindGraph API origins are listed explicitly in `manifest.json`. `https://*/*` and `http://*/*` remain for document extract fetches to ~25 third-party document hosts and SmartEdu CDNs (`*.smartedu.cn`, `*.cbern.com.cn`, etc.). Details: [`HOST_PERMISSIONS.md`](HOST_PERMISSIONS.md).
-- **Backend deploy:** Extension features need a current server build. See [`DEPLOY_VERIFICATION.md`](DEPLOY_VERIFICATION.md) and [`production_security_deploy.md`](../docs/architecture/production_security_deploy.md) (MindMate SSE `proxy_read_timeout` ≥ 300s).
+- **Session cookies vs mgat:** MindGraph API calls use **`credentials: 'omit'`** so a web login on the same host (e.g. test.mindspringedu.com) does not attach `access_token` / `csrf_token` to extension requests. Auth is **`Authorization: Bearer mgat_…`** + **`X-MG-Account`** only. Reload the unpacked extension after pulling this change.
+- **Backend deploy:** Extension features need a current server build. See [`DEPLOY_VERIFICATION.md`](DEPLOY_VERIFICATION.md) and [`production_security_deploy.md`](../docs/architecture/production_security_deploy.md) (MindMate SSE `proxy_read_timeout` ≥ 300s; mgat CSRF exemption on POST).
 
 ## Usage
 
@@ -107,7 +108,32 @@ The server must be reachable from your machine and Playwright must be able to re
 
 ## Extract document (local download)
 
-On supported Chinese education and document sites (~25 hosts — see [`doc-extract/REFERENCES.md`](doc-extract/REFERENCES.md)), the popup shows an **Extract document** section when the active tab matches a known host. You can also right-click the page → **Extract document (MindGraph)**.
+On supported Chinese education and document sites (~26 hosts — see [`doc-extract/REFERENCES.md`](doc-extract/REFERENCES.md)), the popup shows an **Extract document** section when the active tab matches a known host. You can also right-click the page → **Extract document (MindGraph)**.
+
+**CNKI (知网):** Works on **`kns.cnki.net/reader/flowpdf`** online reader pages, trial-read pages, and **`kcms2` detail** pages. You must be **logged in** with download permission (institutional or personal). If a direct PDF download link is available, the extension uses it; otherwise it captures the flowpdf reader page-by-page into a PDF. Complete any CNKI captcha in the tab before extracting.
+
+## MindMate (popup tab)
+
+- **包含当前网页内容** — On the **first message** of a new chat, when checked, the extension runs the same **doc-extract** pipeline used for PDF download (prep, scroll, site engines), exports **markdown**, and prepends it to your question (API limit **5000** characters total).
+- **CNKI / 百度文库 / 道客巴巴 / …** — Supported hosts from doc-extract: tries PDF download → text, embedded PDF.js reader text, then page text layers with auto page-flip. Allow a few seconds for **正在读取页面内容…** before sending.
+- **国家智慧教育 SmartEdu** — On a `classActivity` lesson page with **包含当前网页内容**, the extension fetches lesson metadata, **downloads all PDF assets in memory** (课件 / 教学设计 / 学习任务单 — video is skipped), extracts text from each PDF, and merges them into one markdown message. You must be logged in on SmartEdu (token auto-syncs from `*.smartedu.cn` tabs).
+- **Selection first** — Highlight text on the page before sending; that selection is used instead of the full document.
+- **Normal web pages** — Article/main DOM → markdown (headings, lists, links).
+- Reload the extension after pulling updates; open MindMate tab on the page you want to discuss.
+
+### MindMate format coverage (包含当前网页内容)
+
+| Source | Original formats | MindMate extraction | Notes |
+|--------|-------------------|---------------------|-------|
+| **Browser PDF tab** | PDF (`https://…/file.pdf`, `file:///…`) | Fetch PDF bytes → pdf.js (offscreen) | Enable **Allow access to file URLs** for local PDFs. |
+| **SmartEdu** | docx / pptx (CDN serves **PDF** transcodes) | PDF text → markdown sections | Skips video (m3u8). Needs SmartEdu login token. |
+| **CNKI** | PDF | PDF download or PDF.js reader text layers | Canvas fallback if no PDF URL. |
+| **百度文库** | doc / pdf / ppt (varies) | **PDF API** text when available; else page text | **~8 preview pages** without VIP (capped + notice). Canvas-only preview may have **no text** — select text manually. |
+| **道客巴巴 / 豆丁 / 原创力 / …** | canvas-rendered | DOM fallback → page text layers | Download saves **images→PDF**; MindMate needs **text** (partial or empty on pure canvas). |
+| **360doc / 知乎 / CSDN / …** | HTML article | DOM `innerText` / markdown | Full text when page exposes copyable DOM. |
+| **协作文档** (腾讯/Docs/语雀/飞书) | HTML | DOM article | Depends on page structure. |
+
+**Not supported for automatic text:** video (m3u8), raw **docx/pptx/xlsx** binaries without PDF/text transcode, OCR from canvas images. **Selection always works** when you highlight text on the page.
 
 **Progress stages:** preparing → scrolling (lazy pages) → collecting → assembling → downloading.
 

@@ -29,6 +29,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from config.settings import config
+from services.auth.http_auth_token import has_authorization_mgat_bearer
 from services.auth.security_logger import security_log
 from services.auth.vpn_geo_enforcement import maybe_enforce_vpn_cn_geo_async
 from services.infrastructure.http.feature_gate import feature_flag_gate
@@ -171,29 +172,33 @@ async def csrf_protection(request: Request, call_next):
             except (ValueError, AttributeError) as e:
                 logger.debug("Origin validation error (non-critical): %s", e)
 
-        # Require double-submit CSRF token for cookie-authenticated mutations.
-        # Migration-safe: when the access_token cookie exists but no csrf_token
-        # cookie has been issued yet (e.g. sessions created before this rollout),
-        # allow the request once and let the response below bootstrap the cookie.
-        # Strict match is enforced as soon as the csrf_token cookie is present.
-        csrf_cookie = request.cookies.get(CSRF_COOKIE_NAME)
-        if request.cookies.get("access_token"):
-            if csrf_cookie:
+        # mgat_ clients (OpenClaw, Chrome extension, file-reader) authenticate via
+        # Authorization header; browsers may still attach session cookies from a
+        # prior web login — skip double-submit CSRF only for explicit mgat_ Bearer.
+        if not has_authorization_mgat_bearer(request):
+            # Require double-submit CSRF token for cookie-authenticated mutations.
+            # Migration-safe: when the access_token cookie exists but no csrf_token
+            # cookie has been issued yet (e.g. sessions created before this rollout),
+            # allow the request once and let the response below bootstrap the cookie.
+            # Strict match is enforced as soon as the csrf_token cookie is present.
+            csrf_cookie = request.cookies.get(CSRF_COOKIE_NAME)
+            if request.cookies.get("access_token"):
+                if csrf_cookie:
+                    csrf_header = request.headers.get(CSRF_HEADER_NAME)
+                    if not csrf_header or csrf_header != csrf_cookie:
+                        logger.warning("CSRF token missing or invalid for %s", request.url.path)
+                        return JSONResponse(
+                            status_code=403,
+                            content={"detail": "Invalid or missing CSRF token"},
+                        )
+                else:
+                    logger.info("CSRF bootstrap: issuing csrf_token cookie for %s", request.url.path)
+                    security_log.csrf_bootstrap(request.url.path, ip=get_client_ip(request))
+            elif request.headers.get(CSRF_HEADER_NAME):
                 csrf_header = request.headers.get(CSRF_HEADER_NAME)
-                if not csrf_header or csrf_header != csrf_cookie:
-                    logger.warning("CSRF token missing or invalid for %s", request.url.path)
-                    return JSONResponse(
-                        status_code=403,
-                        content={"detail": "Invalid or missing CSRF token"},
-                    )
-            else:
-                logger.info("CSRF bootstrap: issuing csrf_token cookie for %s", request.url.path)
-                security_log.csrf_bootstrap(request.url.path, ip=get_client_ip(request))
-        elif request.headers.get(CSRF_HEADER_NAME):
-            csrf_header = request.headers.get(CSRF_HEADER_NAME)
-            if csrf_cookie and csrf_header != csrf_cookie:
-                logger.warning("CSRF token mismatch for %s", request.url.path)
-                return JSONResponse(status_code=403, content={"detail": "Invalid CSRF token"})
+                if csrf_cookie and csrf_header != csrf_cookie:
+                    logger.warning("CSRF token mismatch for %s", request.url.path)
+                    return JSONResponse(status_code=403, content={"detail": "Invalid CSRF token"})
 
     response = await call_next(request)
 

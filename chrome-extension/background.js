@@ -9,7 +9,6 @@
 importScripts("shared-mindgraph.js");
 importScripts("extension-storage.js");
 importScripts("extension-security.js");
-importScripts("mindmate-capture.js");
 importScripts("offscreen-blobs.js");
 importScripts("vendor/jspdf.umd.min.js");
 importScripts("vendor/jszip.min.js");
@@ -29,7 +28,18 @@ importScripts("doc-extract/engines/html2canvas-pdf.js");
 importScripts("doc-extract/engines/dom-article.js");
 importScripts("doc-extract/engines/api-binary.js");
 importScripts("doc-extract/user-messages.js");
+importScripts("doc-extract/cnki/url-parser.js");
+importScripts("doc-extract/engines/cnki.js");
 importScripts("doc-extract/extract-core.js");
+importScripts("mindmate-capture-debug.js");
+importScripts("mindmate-capture-progress.js");
+importScripts("doc-extract/extract-to-markdown.js");
+importScripts("doc-extract/text/blob-to-text.js");
+importScripts("doc-extract/text/markdown-capture-policy.js");
+importScripts("doc-extract/text/browser-pdf-fetch.js");
+importScripts("doc-extract/text/pdf-extract-offscreen.js");
+importScripts("doc-extract/smartedu/markdown-extract.js");
+importScripts("mindmate-capture.js");
 
 const MAX_CHARS = MindGraphShared.MAX_PAGE_CHARS;
 const FETCH_TIMEOUT_MS = MindGraphShared.FETCH_TIMEOUT_MS;
@@ -348,7 +358,7 @@ async function runGenerateMindmap(tabId, options) {
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     let res;
     try {
-      res = await fetch(pngApiUrl, {
+      res = await fetch(pngApiUrl, MindGraphShared.mgatFetchInit({
         method: "POST",
         signal: controller.signal,
         headers: {
@@ -359,7 +369,7 @@ async function runGenerateMindmap(tabId, options) {
           "X-Request-Id": requestId,
         },
         body: JSON.stringify(body),
-      });
+      }));
     } catch (fetchErr) {
       clearTimeout(timeoutId);
       if (fetchErr && fetchErr.name === "AbortError") {
@@ -493,11 +503,11 @@ async function fetchPackages() {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url, {
+    const res = await fetch(url, MindGraphShared.mgatFetchInit({
       method: "GET",
       signal: controller.signal,
       headers: buildAuthHeaders(creds),
-    });
+    }));
     clearTimeout(timeoutId);
     if (!res.ok) {
       const detail = await MindGraphShared.parseErrorDetailFromResponse(res);
@@ -553,7 +563,7 @@ async function runSaveToFileCenter(tabId, packageId) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url, {
+    const res = await fetch(url, MindGraphShared.mgatFetchInit({
       method: "POST",
       signal: controller.signal,
       headers: buildAuthHeaders(creds),
@@ -563,7 +573,7 @@ async function runSaveToFileCenter(tabId, packageId) {
         page_title: payload.page_title,
         language: payload.language,
       }),
-    });
+    }));
     clearTimeout(timeoutId);
     if (!res.ok) {
       const detail = await MindGraphShared.parseErrorDetailFromResponse(res);
@@ -726,7 +736,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg && msg.type === "CAPTURE_MINDMATE_PAGE" && typeof msg.tabId === "number" && msg.tabId > 0) {
     const maxChars = typeof msg.maxMarkdownChars === "number" ? msg.maxMarkdownChars : undefined;
-    MindGraphMindMate.captureMindMatePageContext(msg.tabId, maxChars).then(sendResponse);
+    const captureOptions = {};
+    if (Array.isArray(msg.smarteduAssets)) {
+      captureOptions.smarteduAssets = msg.smarteduAssets;
+    }
+    if (typeof msg.smarteduToken === "string" && msg.smarteduToken.trim()) {
+      captureOptions.smarteduToken = msg.smarteduToken.trim();
+    }
+    MindGraphMindMate.captureMindMatePageContext(msg.tabId, maxChars, captureOptions).then((result) => {
+      const dbg = MindGraphMindMate.captureDebug;
+      if (dbg) {
+        dbg.log("panel.request", "CAPTURE_MINDMATE_PAGE completed", {
+          ok: Boolean(result && result.ok),
+          error: result && result.error,
+          source: result && result.source,
+          markdownLen: result && result.markdown ? result.markdown.length : 0,
+        });
+      }
+      sendResponse(result);
+    });
     return true;
   }
   return false;

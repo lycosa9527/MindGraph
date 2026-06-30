@@ -41,5 +41,43 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     return true;
   }
+  if (msg.type === "MINDGRAPH_PDF_TEXT_EXTRACT") {
+    void (async () => {
+      try {
+        if (
+          !globalThis.__MGDocExtractPdf ||
+          typeof globalThis.__MGDocExtractPdf.extractTextFromPdfBuffer !== "function"
+        ) {
+          sendResponse({ ok: false, error: "PDFJS_NOT_LOADED" });
+          return;
+        }
+        let pdfBuffer = null;
+        if (msg.buffer instanceof ArrayBuffer) {
+          pdfBuffer = msg.buffer;
+        } else if (typeof msg.base64 === "string" && msg.base64.length > 0) {
+          const binaryStr = atob(msg.base64);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i += 1) {
+            bytes[i] = binaryStr.charCodeAt(i);
+          }
+          pdfBuffer = bytes.buffer;
+        } else {
+          sendResponse({ ok: false, error: "NO_PDF_PAYLOAD" });
+          return;
+        }
+        const maxPages = typeof msg.maxPages === "number" ? msg.maxPages : 120;
+        const maxChars = typeof msg.maxChars === "number" ? msg.maxChars : 8000;
+        const text = await globalThis.__MGDocExtractPdf.extractTextFromPdfBuffer(
+          pdfBuffer,
+          maxPages,
+          maxChars,
+        );
+        sendResponse({ ok: true, text: typeof text === "string" ? text : "" });
+      } catch (err) {
+        sendResponse({ ok: false, error: err && err.message ? err.message : String(err) });
+      }
+    })();
+    return true;
+  }
   return false;
 });

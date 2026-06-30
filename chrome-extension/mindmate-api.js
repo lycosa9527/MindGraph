@@ -36,7 +36,7 @@
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), MindGraphShared.VERIFY_TIMEOUT_MS);
     try {
-      const res = await fetch(url, {
+      const res = await fetch(url, MindGraphShared.mgatFetchInit({
         method: "GET",
         signal: controller.signal,
         headers: {
@@ -45,7 +45,7 @@
           "X-MG-Client": MindGraphShared.mgClientHeader(),
           "X-Request-Id": creds.requestId,
         },
-      });
+      }));
       clearTimeout(timeoutId);
       if (res.status === 401 || res.status === 403) {
         return { ok: false, error: "errMindMateLoginExpired" };
@@ -74,7 +74,7 @@
     }
     const url = `${origin}/api/dify/user-id`;
     try {
-      const res = await fetch(url, {
+      const res = await fetch(url, MindGraphShared.mgatFetchInit({
         method: "GET",
         headers: {
           Authorization: `Bearer ${creds.token}`,
@@ -82,7 +82,7 @@
           "X-MG-Client": MindGraphShared.mgClientHeader(),
           "X-Request-Id": creds.requestId,
         },
-      });
+      }));
       if (res.status === 401) {
         return { ok: false, error: "errMindMateLoginExpired" };
       }
@@ -143,7 +143,7 @@
     let conversationId = options.conversationId;
 
     try {
-      const res = await fetch(url, {
+      const res = await fetch(url, MindGraphShared.mgatFetchInit({
         method: "POST",
         headers: buildAuthHeaders(creds.account, creds.token, creds.requestId),
         body: JSON.stringify({
@@ -153,7 +153,7 @@
           auto_generate_name: true,
         }),
         signal: options.signal,
-      });
+      }));
 
       if (res.status === 401) {
         return { ok: false, error: "errMindMateLoginExpired" };
@@ -233,11 +233,11 @@
     const origin = MindGraphShared.normalizeBaseUrl(creds.baseUrl);
     const url = `${origin}/api/dify/conversations/${encodeURIComponent(conversationId)}/name`;
     try {
-      await fetch(url, {
+      await fetch(url, MindGraphShared.mgatFetchInit({
         method: "POST",
         headers: buildAuthHeaders(creds.account, creds.token, creds.requestId),
         body: JSON.stringify({ auto_generate: true }),
-      });
+      }));
     } catch {
       /* title generation is best-effort */
     }

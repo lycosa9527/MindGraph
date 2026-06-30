@@ -78,6 +78,9 @@
    */
   async function runEngine(tabId, hostEntry, pageUrl, postProgress, options) {
     const engine = hostEntry.engine;
+    if (hostEntry.id === "cnki") {
+      return MindGraphDocExtract.runCnkiEngine(tabId, hostEntry, pageUrl, postProgress);
+    }
     if (engine === "api-binary") {
       return MindGraphDocExtract.runApiBinaryEngine(
         tabId,
@@ -283,6 +286,7 @@
 
   MindGraphDocExtract.DOC_EXTRACT_PORT = DOC_EXTRACT_PORT;
   MindGraphDocExtract.resolveTabPageUrl = resolveTabPageUrl;
+  MindGraphDocExtract.runPrepOnTab = runPrepOnTab;
   MindGraphDocExtract.runDocumentExtract = runDocumentExtract;
   MindGraphDocExtract.previewExtractTarget = previewExtractTarget;
   global.MindGraphDocExtract = MindGraphDocExtract;

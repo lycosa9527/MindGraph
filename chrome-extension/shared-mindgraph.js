@@ -258,9 +258,37 @@
     }
     try {
       const parsed = new URL(url);
+      if (parsed.protocol === "file:") {
+        return false;
+      }
       return parsed.protocol !== "http:" && parsed.protocol !== "https:";
     } catch {
       return true;
+    }
+  }
+
+  /**
+   * Chrome/Edge built-in PDF tabs (https://…/file.pdf or file:///…/file.pdf).
+   * @param {string | undefined} url
+   * @returns {boolean}
+   */
+  function isBrowserPdfTabUrl(url) {
+    if (!url || typeof url !== "string") {
+      return false;
+    }
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:" && parsed.protocol !== "file:") {
+        return false;
+      }
+      if (/\.pdf(\?|#|$)/i.test(parsed.pathname)) {
+        return true;
+      }
+      const hinted =
+        parsed.searchParams.get("format") === "pdf" || parsed.searchParams.get("type") === "pdf";
+      return hinted;
+    } catch {
+      return false;
     }
   }
 
@@ -334,6 +362,17 @@
     return "zh";
   }
 
+  /**
+   * Fetch init for MindGraph mgat API calls — never attach site session cookies.
+   * @param {RequestInit} [init]
+   * @returns {RequestInit}
+   */
+  function mgatFetchInit(init) {
+    const base = init && typeof init === "object" ? { ...init } : {};
+    base.credentials = "omit";
+    return base;
+  }
+
   function buildPngRequestBody(payload, sizeOpts) {
     const body = {
       page_content: payload.page_content,
@@ -374,6 +413,7 @@
     sanitizeFilename,
     parseErrorDetailFromResponse,
     isRestrictedTabUrl,
+    isBrowserPdfTabUrl,
     buildPngRequestBody,
     matchPromptLanguageCode,
     resolvePromptLanguageFromUiMode,
@@ -382,6 +422,7 @@
     preferOffscreenBlobUrls,
     offscreenApiAvailable,
     isOffscreenDuplicateError,
+    mgatFetchInit,
   };
   if (global && typeof global === "object") {
     global.MindGraphShared = MindGraphShared;

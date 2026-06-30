@@ -44,6 +44,58 @@ describe("doc-extract hosts", () => {
     );
     expect(entry.id).toBe("smartedu");
   });
+
+  it("matches cnki flowpdf reader", () => {
+    loadModule("doc-extract/hosts.js");
+    const entry = globalThis.MindGraphDocExtract.matchHost(
+      "https://kns.cnki.net/reader/flowpdf?filename=ZLCY2026061500V&tablename=capjlast",
+    );
+    expect(entry.id).toBe("cnki");
+    expect(entry.label).toBe("中国知网");
+  });
+});
+
+describe("cnki url parser", () => {
+  it("classifies flowpdf reader URLs", () => {
+    loadModule("doc-extract/cnki/url-parser.js");
+    const parsed = globalThis.MindGraphDocExtract.parseCnkiPageUrl(
+      "https://kns.cnki.net/reader/flowpdf?filename=ZLCY2026061500V&tablename=capjlast&product=CAPJ",
+    );
+    expect(parsed).not.toBeNull();
+    expect(parsed.kind).toBe("flowpdf");
+    expect(parsed.filename).toBe("ZLCY2026061500V");
+    expect(parsed.tablename).toBe("capjlast");
+  });
+
+  it("classifies kcms detail URLs", () => {
+    loadModule("doc-extract/cnki/url-parser.js");
+    const parsed = globalThis.MindGraphDocExtract.parseCnkiPageUrl(
+      "https://kns.cnki.net/kcms2/article/abstract?v=abc",
+    );
+    expect(parsed).not.toBeNull();
+    expect(parsed.kind).toBe("detail");
+  });
+
+  it("builds flowpdf download candidates without invoice param", () => {
+    loadModule("doc-extract/cnki/url-parser.js");
+    const urls = globalThis.MindGraphDocExtract.buildCnkiReaderDownloadCandidates(
+      "https://kns.cnki.net/reader/flowpdf?filename=ZLCY2026061500V&tablename=capjlast&product=CAPJ",
+    );
+    expect(urls.length).toBeGreaterThanOrEqual(2);
+    expect(urls.some((url) => url.includes("/reader/api/download?"))).toBe(true);
+    expect(urls.some((url) => url.includes("filename=ZLCY2026061500V"))).toBe(true);
+    expect(urls.some((url) => url.includes("tablename=capjlast"))).toBe(true);
+  });
+
+  it("builds invoice-only flowpdf download candidates", () => {
+    loadModule("doc-extract/cnki/url-parser.js");
+    const urls = globalThis.MindGraphDocExtract.buildCnkiReaderDownloadCandidates(
+      "https://kns.cnki.net/reader/flowpdf?invoice=abc123&platform=NZKPT",
+    );
+    expect(urls.length).toBeGreaterThanOrEqual(2);
+    expect(urls.some((url) => url.includes("/reader/api/download?invoice=abc123"))).toBe(true);
+    expect(urls.some((url) => url.includes("/reader/download/pdf?invoice=abc123"))).toBe(true);
+  });
 });
 
 describe("extract user messages", () => {
@@ -159,6 +211,15 @@ describe("shared-mindgraph helpers", () => {
     const sharedChrome = fn(globalThis, globalThis, chromeNav);
     expect(sharedChrome.preferOffscreenBlobUrls()).toBe(false);
   });
+
+  it("mgatFetchInit always omits site session cookies", () => {
+    const sharedPath = path.resolve(repoRoot, "chrome-extension/shared-mindgraph.js");
+    const code = fs.readFileSync(sharedPath, "utf8");
+    const fn = new Function("globalThis", "self", `${code}\nreturn globalThis.MindGraphShared;`);
+    const shared = fn(globalThis, globalThis);
+    expect(shared.mgatFetchInit({ method: "POST" })).toEqual({ method: "POST", credentials: "omit" });
+    expect(shared.mgatFetchInit({ credentials: "include" }).credentials).toBe("omit");
+  });
 });
 
 describe("smartedu token parse", () => {
@@ -175,5 +236,127 @@ describe("smartedu token parse", () => {
     loadModule("doc-extract/smartedu/token.js");
     const raw = JSON.stringify({ access_token: "flat-token" });
     expect(globalThis.MindGraphDocExtract.parseSmartEduAuthStorageValue(raw)).toBe("flat-token");
+  });
+});
+
+describe("extract to markdown", () => {
+  it("formats document title, url, and body", () => {
+    loadModule("doc-extract/hosts.js");
+    loadModule("doc-extract/extract-to-markdown.js");
+    const md = globalThis.MindGraphDocExtract.formatDocumentMarkdown(
+      "Sample Paper",
+      "Abstract line one.\n\nSection two.",
+      "https://kns.cnki.net/reader/flowpdf?filename=abc",
+      8000,
+    );
+    expect(md).toContain("# Sample Paper");
+    expect(md).toContain("https://kns.cnki.net/reader/flowpdf?filename=abc");
+    expect(md).toContain("Abstract line one.");
+    expect(md).toContain("Section two.");
+  });
+
+  it("truncates long bodies to max chars", () => {
+    loadModule("doc-extract/hosts.js");
+    loadModule("doc-extract/extract-to-markdown.js");
+    const body = "x".repeat(500);
+    const md = globalThis.MindGraphDocExtract.formatDocumentMarkdown("T", body, "https://a.test", 120);
+    expect(md.length).toBeLessThanOrEqual(120);
+    expect(md.endsWith("…")).toBe(true);
+  });
+});
+
+describe("smartedu markdown extract", () => {
+  it("keeps only PDF document assets from lesson metadata", () => {
+    loadModule("doc-extract/smartedu/models.js");
+    loadModule("doc-extract/smartedu/metadata.js");
+    loadModule("doc-extract/smartedu/markdown-extract.js");
+    const fixturePath = path.join(
+      repoRoot,
+      "tests/fixtures/doc-extract/smartedu/class_activity_b45c766e.json",
+    );
+    const detailJson = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
+    const assets = globalThis.MindGraphDocExtract.extractAssetsFromDetailJson(detailJson);
+    const pdfs = globalThis.MindGraphDocExtract.filterSmartEduPdfAssets(assets);
+    expect(pdfs.length).toBe(3);
+    expect(pdfs.map((asset) => asset.alias).sort()).toEqual(
+      ["coursewares", "learning_task", "lesson_plandesign"].sort(),
+    );
+  });
+
+  it("combines lesson sections into markdown", () => {
+    loadModule("doc-extract/smartedu/markdown-extract.js");
+    const md = globalThis.MindGraphDocExtract.combineSmartEduLessonMarkdown(
+      "11.拆装玩具",
+      "https://basic.smartedu.cn/syncClassroom/classActivity?activityId=abc",
+      [
+        { title: "课件", text: "Slide one content." },
+        { title: "教学设计", text: "Teaching plan body." },
+        { title: "学习任务单", text: "Worksheet tasks." },
+      ],
+      8000,
+    );
+    expect(md).toContain("# 11.拆装玩具");
+    expect(md).toContain("## 课件");
+    expect(md).toContain("## 教学设计");
+    expect(md).toContain("## 学习任务单");
+    expect(md).toContain("Slide one content.");
+  });
+});
+
+describe("blob to text", () => {
+  it("detects PDF magic bytes", () => {
+    loadModule("doc-extract/extract-to-markdown.js");
+    loadModule("doc-extract/text/blob-to-text.js");
+    const pdfHeader = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31]);
+    expect(globalThis.MindGraphDocExtract.isPdfBytes(pdfHeader.buffer)).toBe(true);
+    expect(globalThis.MindGraphDocExtract.isPdfBytes(new Uint8Array([1, 2, 3, 4]).buffer)).toBe(false);
+  });
+
+  it("strips HTML to plain text", () => {
+    loadModule("doc-extract/text/blob-to-text.js");
+    const text = globalThis.MindGraphDocExtract.stripHtmlToPlainText(
+      "<p>Hello <strong>world</strong></p>",
+    );
+    expect(text).toContain("Hello");
+    expect(text).toContain("world");
+  });
+
+  it("caps wenku pdf pages at preview limit", () => {
+    loadModule("doc-extract/wenku/preview-notice.js");
+    loadModule("doc-extract/text/markdown-capture-policy.js");
+    const limits = globalThis.MindGraphDocExtract.markdownLimitsForHost({ id: "wenku", engine: "canvas-pdf" });
+    expect(limits.pdfMaxPages).toBe(8);
+    expect(limits.previewNotice).toBe("mindmateNoticeWenkuPreview");
+  });
+
+  it("marks smartedu wenku cnki as file-first MindMate hosts", () => {
+    loadModule("doc-extract/text/markdown-capture-policy.js");
+    expect(globalThis.MindGraphDocExtract.hostRequiresFileExtract({ id: "smartedu" })).toBe(true);
+    expect(globalThis.MindGraphDocExtract.hostRequiresFileExtract({ id: "wenku" })).toBe(true);
+    expect(globalThis.MindGraphDocExtract.hostRequiresFileExtract({ id: "cnki" })).toBe(true);
+    expect(globalThis.MindGraphDocExtract.hostRequiresFileExtract({ id: "zhihu" })).toBe(false);
+  });
+
+  it("exports arrayBufferToBase64 for PDF offscreen fallback", () => {
+    const abs = path.resolve(repoRoot, "chrome-extension", "offscreen-blobs.js");
+    const code = fs.readFileSync(abs, "utf8");
+    const fn = new Function("globalThis", "self", code);
+    fn(globalThis, globalThis);
+    const pdfHeader = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]);
+    const base64 = globalThis.MindGraphOffscreenBlobs.arrayBufferToBase64(pdfHeader.buffer);
+    expect(base64).toBe("JVBERi0=");
+  });
+});
+
+describe("browser pdf tab", () => {
+  it("detects https and file PDF tab URLs", () => {
+    const sharedPath = path.resolve(repoRoot, "chrome-extension/shared-mindgraph.js");
+    const code = fs.readFileSync(sharedPath, "utf8");
+    const fn = new Function("globalThis", "self", `${code}\nreturn globalThis.MindGraphShared;`);
+    const shared = fn(globalThis, globalThis);
+    expect(shared.isBrowserPdfTabUrl("https://example.com/docs/report.pdf")).toBe(true);
+    expect(shared.isBrowserPdfTabUrl("file:///C:/Users/me/paper.pdf")).toBe(true);
+    expect(shared.isBrowserPdfTabUrl("https://example.com/article")).toBe(false);
+    expect(shared.isRestrictedTabUrl("file:///C:/local/doc.pdf")).toBe(false);
   });
 });

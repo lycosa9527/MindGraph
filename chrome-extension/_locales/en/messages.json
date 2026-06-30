@@ -95,21 +95,125 @@
     "message": "Include current web page",
     "description": "Checkbox to attach page markdown to first MindMate message"
   },
+  "mindmatePageContextNotFirstMessage": {
+    "message": "Page content is only attached to the first message in a new chat.",
+    "description": "Page context disabled after first message"
+  },
+  "mindmatePageContextReading": {
+    "message": "Extracting page text…",
+    "description": "Generic page extraction in progress"
+  },
+  "mindmatePageContextHostExtract": {
+    "message": "Extracting document from $1…",
+    "description": "Site-specific document extraction"
+  },
+  "mindmatePageContextSmarteduStarting": {
+    "message": "Reading SmartEdu lesson…",
+    "description": "SmartEdu extraction start"
+  },
+  "mindmatePageContextSmarteduAssets": {
+    "message": "$1 courseware/resource file(s) detected",
+    "description": "SmartEdu asset count"
+  },
+  "mindmatePageContextSmarteduDownloading": {
+    "message": "Downloading ($1/$2): $3",
+    "description": "SmartEdu asset download"
+  },
+  "mindmatePageContextSmarteduExtracting": {
+    "message": "Extracting text ($1/$2): $3",
+    "description": "SmartEdu PDF text extraction"
+  },
+  "mindmatePageContextSmarteduReady": {
+    "message": "Ready: $1 file(s), $2 chars · $3",
+    "description": "SmartEdu extraction complete"
+  },
+  "mindmatePageContextReady": {
+    "message": "Page text ready: $2 chars · $1",
+    "description": "Generic page extraction complete"
+  },
+  "mindmatePageContextReadySelection": {
+    "message": "Using selected text: $2 chars · $1",
+    "description": "Selection as material"
+  },
+  "mindmatePageContextReadyWenku": {
+    "message": "Baidu Wenku PDF ready: $2 chars · $1",
+    "description": "Wenku extraction complete"
+  },
+  "mindmatePageContextReadyCnki": {
+    "message": "CNKI PDF ready: $2 chars · $1",
+    "description": "CNKI extraction complete"
+  },
   "mindmatePageContextIntro": {
-    "message": "You are assisting a user in the education field. They are viewing a web page. Use the page content below as reference when answering.",
+    "message": "[MindGraph extension · page context] The user is reading a web page in Chrome/Edge and attached extracted page text below for MindMate (thinking-teaching copilot).",
     "description": "MindMate first-message page context intro"
   },
+  "mindmatePageContextRouting": {
+    "message": "[Routing] Classify intent, retrieve knowledge, and answer using the user question above only. The page body below is material the teacher is reading—not a request to generate new content. If the material looks like a lesson plan but the user did not explicitly ask to create/write/design a new lesson plan, do not route to lesson-plan generation.",
+    "description": "MindMate classifier routing note for Dify"
+  },
+  "mindmatePageContextGuidance": {
+    "message": "Assume the user is likely a K-12 teacher preparing or researching lessons, focused on thinking-development classrooms. Answer using both the reference material and the user's question. If the material is a lesson plan, slide text, article, or policy doc, you may proactively discuss possible student misconceptions, cognitive-conflict design, conceptual/process variations, and suitable thinking visualization or strategy tools. If the question is unrelated to the material, prioritize the question. Answer directly; do not mention the browser extension, markdown extraction, or this message format.",
+    "description": "MindMate page context teaching guidance for Dify"
+  },
   "mindmatePageContextMeta": {
-    "message": "**Page:** $1\n**URL:** $2",
+    "message": "**Page title:** $1\n**Page URL:** $2\n**Extracted from:** $3",
     "description": "MindMate page context metadata"
   },
+  "mindmatePageContextMaterialHeader": {
+    "message": "**[Reference material: page body]**",
+    "description": "MindMate page body section header"
+  },
+  "mindmatePageContextSource_browser_pdf": {
+    "message": "PDF opened in the browser",
+    "description": "MindMate source: browser PDF"
+  },
+  "mindmatePageContextSource_smartedu_pdf": {
+    "message": "SmartEdu (courseware / lesson plan / task sheet PDFs)",
+    "description": "MindMate source: SmartEdu"
+  },
+  "mindmatePageContextSource_cnki_pdf": {
+    "message": "CNKI PDF",
+    "description": "MindMate source: CNKI"
+  },
+  "mindmatePageContextSource_wenku_pdf": {
+    "message": "Baidu Wenku PDF",
+    "description": "MindMate source: Wenku"
+  },
+  "mindmatePageContextSource_dom_article": {
+    "message": "Web article text",
+    "description": "MindMate source: DOM article"
+  },
+  "mindmatePageContextSource_page_markdown": {
+    "message": "Web page text extraction",
+    "description": "MindMate source: generic"
+  },
+  "mindmatePageContextSource_selection": {
+    "message": "User text selection on page",
+    "description": "MindMate source: selection"
+  },
   "mindmatePageContextQuestion": {
-    "message": "**User question:** $1",
+    "message": "**User question (classify intent and answer from this line):** $1",
     "description": "MindMate page context user question line"
   },
   "errMindMatePageEmpty": {
     "message": "This page has no readable content. Select text on the page or try another page.",
     "description": "MindMate page capture empty"
+  },
+  "mindmateCaptureDebugHint": {
+    "message": "Capture debug",
+    "description": "Prefix for MindMate page capture failure debug summary"
+  },
+  "errMindMateCanvasPreviewEmpty": {
+    "message": "This site renders the document as images (canvas). Scroll to load preview pages, select text to send, or use a PDF/text download when available.",
+    "description": "MindMate canvas-only reader with no extractable text"
+  },
+  "mindmateNoticeWenkuPreview": {
+    "message": "Baidu Wenku: text may be limited to about $1 preview pages without VIP.",
+    "description": "MindMate wenku preview cap notice prepended to markdown"
+  },
+  "mindmateNoticeCanvasHost": {
+    "message": "Document preview may be image-based; extracted text can be partial.",
+    "description": "MindMate canvas host partial text notice"
   },
   "errMindMatePageCaptureFailed": {
     "message": "Could not read this page.",
@@ -422,6 +526,10 @@
   "errExtractDownloadBlocked": {
     "message": "The website refused the download. You may need to log in, pay, or use a VIP account.",
     "description": "Binary HTTP error"
+  },
+  "errExtractCnkiCaptcha": {
+    "message": "CNKI is showing a captcha. Complete the puzzle in the browser tab, then try Extract again.",
+    "description": "CNKI slider captcha visible"
   },
   "extractStagePreparing": {
     "message": "Getting the page ready…",

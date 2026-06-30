@@ -214,7 +214,14 @@
   }
 
   global.MindGraphOffscreenBlobs = {
+    arrayBufferToBase64,
     prepareDownloadUrlFromBlob,
     scheduleDownloadUrlRevoke,
+    ensureOffscreenDocumentReady: async () => {
+      const offApi = getOffscreenApi();
+      if (offApi) {
+        await ensureOffscreenDocumentForBlobs(offApi);
+      }
+    },
   };
 })(typeof self !== "undefined" ? self : globalThis);

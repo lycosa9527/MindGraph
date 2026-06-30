@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.134.1] - 2026-07-01
+
+> **Chrome extension v0.4.19 — MindMate page capture UX, SmartEdu PDF text extraction, and CNKI flowpdf fixes.**
+
+### Added
+
+- **Chrome extension v0.4.19 — MindMate capture progress** — Live status line under「包含当前网页内容」for prefetch and send: generic web text, SmartEdu asset detect/download/extract phases, and ready/error summaries via [`mindmate-capture-progress.js`](chrome-extension/mindmate-capture-progress.js) and session storage ([`mindmate-panel.js`](chrome-extension/mindmate-panel.js)).
+- **Chrome extension — CNKI reader surfaces** — Shared wait/capture helpers for canvas, `<img>`, and iframe reader content ([`doc-extract/cnki/reader-surfaces.js`](chrome-extension/doc-extract/cnki/reader-surfaces.js)); reader plain-text collection for MindMate ([`doc-extract/cnki/reader-text.js`](chrome-extension/doc-extract/cnki/reader-text.js)).
+- **Chrome extension — CNKI download URL builder** — `buildCnkiReaderDownloadCandidates()` supports invoice-only flowpdf URLs and classic `kns/download?…&dflag=pdfdown` ([`doc-extract/cnki/url-parser.js`](chrome-extension/doc-extract/cnki/url-parser.js)).
+
+### Changed
+
+- **Backend — CSRF for mgat_ API clients** — Skip double-submit CSRF only when `Authorization: Bearer mgat_…` is present, so Chrome extension / file-reader calls are not blocked by incidental session cookies ([`middleware.py`](services/infrastructure/http/middleware.py), [`http_auth_token.py`](services/auth/http_auth_token.py)); deploy note in [`production_security_deploy.md`](docs/architecture/production_security_deploy.md).
+- **Chrome extension — MindMate Dify prompt** — Question-first layout with routing hints for 思维发展型课堂 / 认知冲突; SmartEdu/Wenku/CNKI file-first capture without silent DOM fallback when extraction fails ([`mindmate-compose.js`](chrome-extension/mindmate-compose.js), [`doc-extract/extract-to-markdown.js`](chrome-extension/doc-extract/extract-to-markdown.js)).
+- **Chrome extension — MindMate assistant markdown** — Safe subset renderer for streamed replies ([`mindmate-markdown.js`](chrome-extension/mindmate-markdown.js)).
+- **Chrome extension — CNKI engine** — PDF fetch runs in tab context (session cookies); merges DOM-resolved and URL-built download candidates ([`doc-extract/engines/cnki.js`](chrome-extension/doc-extract/engines/cnki.js)).
+
+### Fixed
+
+- **Chrome extension — SmartEdu MindMate capture** — PDF text extraction uses offscreen pdf.js with base64 fallback instead of passing `ArrayBuffer`/`Blob` through `chrome.scripting.executeScript` (fixes「Unserializable argument passed.」) ([`doc-extract/text/pdf-extract-offscreen.js`](chrome-extension/doc-extract/text/pdf-extract-offscreen.js), [`offscreen.js`](chrome-extension/offscreen.js)).
+- **Chrome extension — CNKI flowpdf** — Removed infinite recursion in [`page-resolve.js`](chrome-extension/doc-extract/cnki/page-resolve.js) that broke URL resolution; invoice-only reader URLs no longer return `CNKI_PDF_URL_MISS`; canvas/img capture waits for reader content; MindMate no longer maps all CNKI failures to「需要登录」.
+- **Chrome extension — MindMate auth** — Extension API fetches omit cookies; CSRF skip narrowed to `mgat_` Bearer tokens (server + extension alignment from prior session).
+
+### Tests
+
+- **Backend** — `test_csrf_skips_when_mgat_bearer_present_despite_session_cookies` and JWT Bearer still enforces CSRF ([`test_csrf_protection.py`](tests/test_csrf_protection.py)).
+- **Chrome extension** — Capture progress formatting, CNKI invoice URL candidates, offscreen base64 helper; extended [`test/mindmate.spec.js`](chrome-extension/test/mindmate.spec.js) and [`test/doc-extract.spec.js`](chrome-extension/test/doc-extract.spec.js).
+
 ## [5.134.0] - 2026-07-01
 
 > **Chrome extension MindMate + security hardening, Tencent COS admin/sync, and file-reader scope trim.**

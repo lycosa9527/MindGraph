@@ -28,6 +28,7 @@
    * @param {HTMLElement} deps.statusEl
    * @param {HTMLButtonElement} deps.btnGoSettings
    * @param {HTMLInputElement} [deps.includePageCheckbox]
+   * @param {HTMLElement} [deps.pageContextNoticeEl]
    */
   function initMindMatePanel(deps) {
     if (
@@ -60,7 +61,7 @@
     let messages = [];
     /** @type {ReturnType<typeof setTimeout> | null} */
     let saveTimer = null;
-    /** @type {{ tabId: number, url: string, title: string, markdown: string, fromSelection?: boolean } | null} */
+    /** @type {{ tabId: number, url: string, title: string, markdown: string, fromSelection?: boolean, source?: string, assetTotal?: number } | null} */
     let cachedPageContext = null;
     /** @type {ReturnType<typeof setTimeout> | null} */
     let pagePrefetchTimer = null;
@@ -81,17 +82,148 @@
       if (label) {
         label.classList.toggle("is-disabled", deps.includePageCheckbox.disabled);
       }
+      updatePageContextNotice();
+    }
+
+    /**
+     * @param {object | null | undefined} progress
+     */
+    function applyCaptureProgressToNotice(progress) {
+      if (!deps.pageContextNoticeEl) {
+        return;
+      }
+      const el = deps.pageContextNoticeEl;
+      const prog = MindGraphMindMate.captureProgress;
+      if (!isIncludePageEnabled()) {
+        el.hidden = true;
+        el.textContent = "";
+        el.className = "mindmate-page-context-notice";
+        return;
+      }
+      if (!MindGraphMindMate.shouldAttachPageContext(conversationId, userMessageCount)) {
+        el.hidden = false;
+        el.textContent = deps.t("mindmatePageContextNotFirstMessage");
+        el.className = "mindmate-page-context-notice is-disabled";
+        return;
+      }
+      let text = "";
+      let phase = progress && progress.phase ? progress.phase : "idle";
+      if (prog && progress) {
+        text = prog.formatCaptureProgressMessage(deps.t, progress);
+      }
+      if (!text && cachedPageContext && cachedPageContext.markdown && prog) {
+        text = prog.formatCachedPageContextNotice(deps.t, cachedPageContext);
+        phase = "ready";
+      }
+      if (!text) {
+        el.hidden = true;
+        el.textContent = "";
+        el.className = "mindmate-page-context-notice";
+        return;
+      }
+      el.hidden = false;
+      el.textContent = text;
+      el.className = "mindmate-page-context-notice";
+      if (
+        phase === "reading" ||
+        phase === "smartedu_detected" ||
+        phase === "smartedu_download" ||
+        phase === "smartedu_extract"
+      ) {
+        el.classList.add("is-loading");
+      } else if (phase === "ready") {
+        el.classList.add("is-ready");
+      } else if (phase === "error") {
+        el.classList.add("is-error");
+      }
+    }
+
+    async function refreshPageContextNotice() {
+      const prog = MindGraphMindMate.captureProgress;
+      if (!prog) {
+        applyCaptureProgressToNotice(null);
+        return;
+      }
+      const progress = await prog.getCaptureProgress();
+      applyCaptureProgressToNotice(progress);
+    }
+
+    function updatePageContextNotice() {
+      void refreshPageContextNotice();
+    }
+
+    /**
+     * @param {string} cachedUrl
+     * @param {string} tabUrl
+     * @returns {boolean}
+     */
+    function pageContextUrlsMatch(cachedUrl, tabUrl) {
+      if (!cachedUrl || !tabUrl) {
+        return false;
+      }
+      if (cachedUrl === tabUrl) {
+        return true;
+      }
+      try {
+        const left = new URL(cachedUrl);
+        const right = new URL(tabUrl);
+        if (left.hostname.toLowerCase() !== right.hostname.toLowerCase()) {
+          return false;
+        }
+        const activityParam = ["activityId", "contentId", "resourceId"];
+        for (const key of activityParam) {
+          const leftId = left.searchParams.get(key);
+          const rightId = right.searchParams.get(key);
+          if (leftId && rightId && leftId === rightId) {
+            return true;
+          }
+        }
+      } catch {
+        return false;
+      }
+      return false;
+    }
+
+    /**
+     * @returns {Promise<{ smarteduToken?: string, maxMarkdownChars: number }>}
+     */
+    async function buildMindMateCaptureOptions() {
+      const maxMarkdownChars =
+        typeof MindGraphMindMate.API_MESSAGE_MAX_LEN === "number"
+          ? MindGraphMindMate.API_MESSAGE_MAX_LEN
+          : 5000;
+      const options = { maxMarkdownChars };
+      if (
+        MindGraphExtensionStorage &&
+        typeof MindGraphExtensionStorage.getSmartEduTokenIfFresh === "function"
+      ) {
+        const token = await MindGraphExtensionStorage.getSmartEduTokenIfFresh();
+        if (token) {
+          options.smarteduToken = token;
+        }
+      }
+      return options;
     }
 
     /**
      * @param {number} tabId
-     * @returns {Promise<{ ok: true, title: string, url: string, markdown: string, fromSelection?: boolean } | { ok: false }>}
+     * @returns {Promise<{ ok: true, title: string, url: string, markdown: string, fromSelection?: boolean, source?: string } | { ok: false, error?: string }>}
      */
     function capturePageFromTab(tabId) {
       return new Promise((resolve) => {
-        chrome.runtime.sendMessage({ type: "CAPTURE_MINDMATE_PAGE", tabId }, (res) => {
-          void chrome.runtime.lastError;
-          resolve(res || { ok: false });
+        void buildMindMateCaptureOptions().then((captureOptions) => {
+          chrome.runtime.sendMessage(
+            {
+              type: "CAPTURE_MINDMATE_PAGE",
+              tabId,
+              maxMarkdownChars: captureOptions.maxMarkdownChars,
+              smarteduToken: captureOptions.smarteduToken,
+            },
+            (res) => {
+              void chrome.runtime.lastError;
+              resolve(res || { ok: false, error: "errMindMatePageCaptureFailed" });
+            },
+          );
         });
       });
     }
@@ -123,12 +255,16 @@
           title: result.title,
           markdown: result.markdown,
           fromSelection: result.fromSelection,
+          source: result.source,
+          assetTotal: result.assetTotal,
         };
         await MindGraphMindMate.savePageContextToSession(authKey, cachedPageContext);
+        updatePageContextNotice();
         return;
       }
       cachedPageContext = null;
       await MindGraphMindMate.clearPageContextSession();
+      updatePageContextNotice();
     }
 
     function schedulePagePrefetch() {
@@ -159,6 +295,19 @@
     }
 
     /**
+     * @param {HTMLElement} bubble
+     * @param {string} text
+     * @param {"user" | "assistant"} role
+     */
+    function setBubbleContent(bubble, text, role) {
+      if (MindGraphMindMate.applyMessageBubbleContent) {
+        MindGraphMindMate.applyMessageBubbleContent(bubble, text, role);
+        return;
+      }
+      bubble.textContent = text;
+    }
+
+    /**
      * @param {{ id: string, role: "user" | "assistant", text: string }} entry
      */
     function renderMessageRow(entry) {
@@ -167,7 +316,7 @@
       row.dataset.msgId = entry.id;
       const bubble = document.createElement("div");
       bubble.className = "mindmate-msg-bubble";
-      bubble.textContent = entry.text;
+      setBubbleContent(bubble, entry.text, entry.role);
       row.appendChild(bubble);
       deps.messagesEl.appendChild(row);
     }
@@ -205,8 +354,8 @@
         entry.text = text;
       }
       const bubble = deps.messagesEl.querySelector(`[data-msg-id="${id}"] .mindmate-msg-bubble`);
-      if (bubble) {
-        bubble.textContent = text;
+      if (bubble && entry) {
+        setBubbleContent(bubble, text, entry.role);
         deps.messagesEl.scrollTop = deps.messagesEl.scrollHeight;
       }
       scheduleSaveThread();
@@ -254,6 +403,34 @@
       if (kind) {
         deps.statusEl.classList.add(kind);
       }
+    }
+
+    /**
+     * @param {string} errorKey
+     * @returns {Promise<void>}
+     */
+    async function setCaptureErrorStatus(errorKey) {
+      const base = deps.t(errorKey);
+      if (MindGraphMindMate.captureProgress) {
+        await MindGraphMindMate.captureProgress.finishCaptureProgress({
+          ok: false,
+          error: errorKey,
+        });
+        updatePageContextNotice();
+      }
+      const dbg = MindGraphMindMate.captureDebug;
+      if (!dbg) {
+        setStatus(base, "err");
+        return;
+      }
+      const hint = await dbg.formatLastCaptureHint();
+      const payload = await dbg.getLastCaptureDebug();
+      console.warn("[MindMate capture debug]", payload);
+      if (hint) {
+        setStatus(`${base}\n${deps.t("mindmateCaptureDebugHint")}: ${hint}`, "err");
+        return;
+      }
+      setStatus(base, "err");
     }
 
     /**
@@ -387,6 +564,9 @@
       clearMessages();
       cachedPageContext = null;
       pagePrefetchGeneration += 1;
+      if (MindGraphMindMate.captureProgress) {
+        void MindGraphMindMate.captureProgress.clearCaptureProgress();
+      }
       await MindGraphMindMate.clearThreadSession();
       await MindGraphMindMate.clearPageContextSession();
       await MindGraphExtensionStorage.removeLegacySessionKeys();
@@ -399,11 +579,11 @@
 
     /**
      * @param {string} userText
-     * @returns {Promise<string>}
+     * @returns {Promise<{ ok: true, message: string } | { ok: false }>}
      */
     async function resolveApiMessage(userText) {
       if (!isIncludePageEnabled() || !MindGraphMindMate.shouldAttachPageContext(conversationId, userMessageCount)) {
-        return userText;
+        return { ok: true, message: userText };
       }
       let pageCtx = cachedPageContext;
       if (!pageCtx) {
@@ -414,8 +594,11 @@
         try {
           const tab = await chrome.tabs.get(tabId);
           const tabUrl = tab.url || "";
-          if (pageCtx && pageCtx.url === tabUrl && pageCtx.markdown) {
-            return MindGraphMindMate.buildFirstMessageWithPageContext(deps.t, userText, pageCtx);
+          if (pageCtx && pageContextUrlsMatch(pageCtx.url, tabUrl) && pageCtx.markdown) {
+            return {
+              ok: true,
+              message: MindGraphMindMate.buildFirstMessageWithPageContext(deps.t, userText, pageCtx),
+            };
           }
           const fresh = await capturePageFromTab(tabId);
           if (fresh.ok) {
@@ -425,19 +608,32 @@
               title: fresh.title,
               markdown: fresh.markdown,
               fromSelection: fresh.fromSelection,
+              source: fresh.source,
+              assetTotal: fresh.assetTotal,
             };
             await MindGraphMindMate.savePageContextToSession(authKey, cachedPageContext);
-            return MindGraphMindMate.buildFirstMessageWithPageContext(deps.t, userText, cachedPageContext);
+            updatePageContextNotice();
+            return {
+              ok: true,
+              message: MindGraphMindMate.buildFirstMessageWithPageContext(deps.t, userText, cachedPageContext),
+            };
+          }
+          if (fresh.error) {
+            await setCaptureErrorStatus(fresh.error);
+            return { ok: false };
           }
         } catch {
           /* fall through */
         }
       }
       if (pageCtx && pageCtx.markdown) {
-        return MindGraphMindMate.buildFirstMessageWithPageContext(deps.t, userText, pageCtx);
+        return {
+          ok: true,
+          message: MindGraphMindMate.buildFirstMessageWithPageContext(deps.t, userText, pageCtx),
+        };
       }
-      setStatus(deps.t("errMindMatePageEmpty"), "err");
-      return userText;
+      await setCaptureErrorStatus("errMindMatePageEmpty");
+      return { ok: false };
     }
 
     /**
@@ -485,7 +681,12 @@
       }
 
       deps.inputEl.value = "";
-      const apiMessage = await resolveApiMessage(text);
+      const resolved = await resolveApiMessage(text);
+      if (!resolved.ok) {
+        deps.inputEl.value = text;
+        return;
+      }
+
       appendMessage(text, "user");
       userMessageCount += 1;
       await flushSaveThread();
@@ -499,7 +700,7 @@
       streamingBubbleId = appendMessage("", "assistant");
 
       const result = await MindGraphMindMate.streamMessage(creds, {
-        message: apiMessage,
+        message: resolved.message,
         userId: difyUserId,
         conversationId,
         signal: abortController.signal,
@@ -612,7 +813,23 @@
         }
         pagePrefetchGeneration += 1;
         cachedPageContext = null;
+        if (MindGraphMindMate.captureProgress) {
+          void MindGraphMindMate.captureProgress.clearCaptureProgress();
+        }
         void MindGraphMindMate.clearPageContextSession();
+        updatePageContextNotice();
+      });
+    }
+
+    if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== "session" || !changes.mindmateCaptureProgress) {
+          return;
+        }
+        if (!isIncludePageEnabled()) {
+          return;
+        }
+        applyCaptureProgressToNotice(changes.mindmateCaptureProgress.newValue);
       });
     }
 

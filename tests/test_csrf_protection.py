@@ -123,6 +123,39 @@ async def test_csrf_ignores_unauthenticated_requests() -> None:
     assert response.status_code == 200
 
 
+@pytest.mark.asyncio
+async def test_csrf_skips_when_mgat_bearer_present_despite_session_cookies() -> None:
+    """API clients with Bearer mgat_ must not be blocked by incidental session cookies."""
+    request = _make_request(
+        "POST",
+        "/api/ai_assistant/stream",
+        cookies={"access_token": "jwt", CSRF_COOKIE_NAME: "tok-abc"},
+        headers={
+            "Origin": "chrome-extension://hnchjmifggjoialimclegdnfnfobnkkb",
+            "Authorization": "Bearer mgat_test_token",
+            "X-MG-Client": "chrome-extension",
+        },
+    )
+    response = await middleware_module.csrf_protection(request, _passthrough)
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_csrf_enforced_when_jwt_bearer_with_session_cookies() -> None:
+    """Non-mgat Bearer does not bypass double-submit CSRF when session cookies are present."""
+    request = _make_request(
+        "POST",
+        "/api/conversations/rename",
+        cookies={"access_token": "jwt", CSRF_COOKIE_NAME: "tok-abc"},
+        headers={
+            "Origin": "https://testserver",
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload.sig",
+        },
+    )
+    response = await middleware_module.csrf_protection(request, _passthrough)
+    assert response.status_code == 403
+
+
 def test_set_auth_cookies_seeds_csrf_cookie() -> None:
     """Login/refresh cookie helper issues a csrf_token alongside access/refresh."""
     response = JSONResponse(content={"ok": True})

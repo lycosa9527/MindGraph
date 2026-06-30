@@ -40,6 +40,23 @@ curl -sS -o /dev/null -w "%{http_code}\n" \
 
 Expected: **200** with `text/event-stream` (not 502 from proxy timeout).
 
+**CSRF / session cookies:** The extension uses `credentials: 'omit'` on mgat requests so a prior web login on the same host does not attach `access_token` / `csrf_token` cookies. After backend deploy, mgat POSTs also skip double-submit CSRF when `Authorization: Bearer mgat_…` is present (belt-and-suspenders for OpenClaw / file-reader).
+
+Simulate incidental cookies (should still succeed once backend is updated):
+
+```bash
+curl -sS -o /dev/null -w "%{http_code}\n" \
+  -b "access_token=fake; csrf_token=fake" \
+  -H "Authorization: Bearer MGAT" \
+  -H "X-MG-Account: ACCOUNT" \
+  -H "Content-Type: application/json" \
+  -H "X-MG-Client: chrome-extension" \
+  -d '{"message":"ping","user_id":"test","conversation_id":null}' \
+  "https://BASE/api/ai_assistant/stream"
+```
+
+Expected: **200** (not **403** Invalid or missing CSRF token).
+
 ## 3. PNG library header (CORS expose)
 
 Generate a mind map from the extension popup, then in popup DevTools → Network → `web_content_mindmap_png`:

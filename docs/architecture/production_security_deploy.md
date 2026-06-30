@@ -85,7 +85,7 @@ The backend also emits SSE comment keepalives every 25s during Dify silence ([`s
 
 ## Deploy order (same maintenance window)
 
-Deploy **backend and frontend build together**. CSRF double-submit is enforced once the `csrf_token` cookie exists; the SPA must send `X-CSRF-Token` on mutations (global fetch interceptor in `frontend/src/utils/installCsrfFetchInterceptor.ts`).
+Deploy **backend and frontend build together**. CSRF double-submit is enforced once the `csrf_token` cookie exists; the SPA must send `X-CSRF-Token` on mutations (global fetch interceptor in `frontend/src/utils/installCsrfFetchInterceptor.ts`). **mgat_ API clients** (Chrome extension, OpenClaw, file-reader) skip CSRF when `Authorization: Bearer mgat_…` is present; the extension also uses `credentials: 'omit'` so incidental session cookies are not sent.
 
 1. Apply `.env` + proxy headers.
 2. Deploy backend (Python).

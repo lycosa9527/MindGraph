@@ -5,6 +5,7 @@ Audit of GreasyFork / GitHub sources ported into `chrome-extension/doc-extract/`
 | Host id | Site | Engine | Primary OSS | Ported into |
 |---------|------|--------|-------------|-------------|
 | smartedu | 国家智慧教育 | api-binary → `smartedu/` | tchMaterial-parser, FlyEduDownloader | `smartedu/url-parser.js`, `metadata.js`, `downloader.js` |
+| cnki | 中国知网 | api-binary → `cnki/` (+ canvas fallback) | CNKI PDF RIS Helper GF 425133, cnki-download skill | `cnki/url-parser.js`, `page-resolve.js`, `reader-collect.js`, `engines/cnki.js` |
 | wenku | 百度文库 | canvas-pdf (+ api-binary tier) | GreasyFork 437609 `bdwk()`, wks | `hosts/wenku.js`, `engines/canvas-pdf.js`, `engines/api-binary.js` |
 | doc88 | 道客巴巴 | canvas-pdf | 437609, 435884 | `hosts/docin.js` hide lists, `canvas-pdf.js` |
 | docin | 豆丁网 | canvas-pdf | 437609 `docin_ele` | `hosts/docin.js` |

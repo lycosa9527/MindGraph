@@ -293,7 +293,7 @@ async function verifyCredentials(baseUrl, account, token) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
   try {
-    const res = await fetch(url, {
+    const res = await fetch(url, MindGraphShared.mgatFetchInit({
       method: "GET",
       signal: controller.signal,
       headers: {
@@ -302,7 +302,7 @@ async function verifyCredentials(baseUrl, account, token) {
         "X-MG-Client": MindGraphShared.mgClientHeader(),
         "X-Request-Id": newRequestId(),
       },
-    });
+    }));
     clearTimeout(timeoutId);
     if (res.ok) {
       return { ok: true };
@@ -340,7 +340,7 @@ async function updateTokenExpiresHint(baseUrl, account, token, hint) {
   }
   const url = `${origin}/api/auth/api-token`;
   try {
-    const res = await fetch(url, {
+    const res = await fetch(url, MindGraphShared.mgatFetchInit({
       method: "GET",
       headers: {
         Authorization: `Bearer ${tok}`,
@@ -348,7 +348,7 @@ async function updateTokenExpiresHint(baseUrl, account, token, hint) {
         "X-MG-Client": MindGraphShared.mgClientHeader(),
         "X-Request-Id": newRequestId(),
       },
-    });
+    }));
     if (!res.ok) {
       hint.textContent = t("tokenStatusUnknown");
       return;
@@ -567,6 +567,7 @@ async function startPopup() {
     btnNew: document.getElementById("btn-mindmate-new"),
     linkWeb: document.getElementById("link-mindmate-web"),
     statusEl: document.getElementById("mindmate-status"),
+    pageContextNoticeEl: document.getElementById("mindmate-page-context-notice"),
     btnGoSettings: document.getElementById("btn-mindmate-go-settings"),
     includePageCheckbox: document.getElementById("mindmate-include-page"),
   });

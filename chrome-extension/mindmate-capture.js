@@ -1,20 +1,22 @@
 /**
  * Capture active tab markdown for MindMate (runs in the service worker).
+ * Uses doc-extract prep + engines on CNKI, Wenku, and other supported hosts.
  */
 (function (global) {
   "use strict";
 
   const MindGraphShared = global.MindGraphShared;
   const MindGraphMindMate = global.MindGraphMindMate || {};
-  const PAGE_MARKDOWN_SCRIPT = "mindmate-page-markdown.js";
-  const DEFAULT_MAX_MARKDOWN_CHARS = 3200;
+  const MindGraphDocExtract = global.MindGraphDocExtract || {};
+  const DEFAULT_MAX_MARKDOWN_CHARS = 8000;
 
   /**
    * @param {number} tabId
    * @param {number} [maxMarkdownChars]
+   * @param {{ smarteduAssets?: Array<object>, smarteduToken?: string }} [options]
    * @returns {Promise<{ ok: true, title: string, url: string, markdown: string, fromSelection: boolean } | { ok: false, error: string }>}
    */
-  async function captureMindMatePageContext(tabId, maxMarkdownChars) {
+  async function captureMindMatePageContext(tabId, maxMarkdownChars, options) {
     if (!tabId || tabId < 1) {
       return { ok: false, error: "errMindMatePageCaptureFailed" };
     }
@@ -22,6 +24,11 @@
       typeof maxMarkdownChars === "number" && maxMarkdownChars > 0
         ? maxMarkdownChars
         : DEFAULT_MAX_MARKDOWN_CHARS;
+
+    if (typeof MindGraphDocExtract.runDocumentExtractToMarkdown === "function") {
+      return MindGraphDocExtract.runDocumentExtractToMarkdown(tabId, maxChars, options || {});
+    }
+
     try {
       const tab = await chrome.tabs.get(tabId);
       const pageUrl = tab.url || "";
@@ -30,16 +37,16 @@
       }
       await chrome.scripting.executeScript({
         target: { tabId },
-        files: [PAGE_MARKDOWN_SCRIPT],
+        files: ["mindmate-page-markdown.js"],
       });
       const results = await chrome.scripting.executeScript({
         target: { tabId },
-        func: (limit) => {
+        func: async (limit) => {
           if (
             globalThis.__MGMindMatePageMarkdown &&
-            typeof globalThis.__MGMindMatePageMarkdown.extractPageMarkdown === "function"
+            typeof globalThis.__MGMindMatePageMarkdown.extractPageMarkdownAsync === "function"
           ) {
-            return globalThis.__MGMindMatePageMarkdown.extractPageMarkdown(limit);
+            return globalThis.__MGMindMatePageMarkdown.extractPageMarkdownAsync(limit);
           }
           return { title: document.title || "", url: location.href || "", markdown: "", fromSelection: false };
         },
