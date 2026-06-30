@@ -628,7 +628,7 @@ def setup_middleware(app: FastAPI):
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
-        expose_headers=["ETag"],
+        expose_headers=["ETag", "X-MG-Diagram-Id", "X-MG-Save-Error", "Content-Disposition"],
     )
 
     # GZip Compression with PDF exclusion

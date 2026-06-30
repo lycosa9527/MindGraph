@@ -49,22 +49,15 @@
     if (trimmed) {
       return trimmed;
     }
-    const stored = await chrome.storage.local.get(["smarteduAccessToken"]);
-    if (stored.smarteduAccessToken) {
-      return String(stored.smarteduAccessToken);
+    const preferredTabId = typeof tabId === "number" && tabId > 0 ? tabId : undefined;
+    const discovered = await MindGraphDocExtract.discoverSmartEduToken(preferredTabId);
+    if (discovered) {
+      await MindGraphDocExtract.persistSmartEduToken(discovered);
+      return discovered;
     }
-    try {
-      const results = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: MindGraphDocExtract.readSmartEduTokenFromPage,
-      });
-      const token = results && results[0] && results[0].result && results[0].result.accessToken;
-      if (token) {
-        await chrome.storage.local.set({ smarteduAccessToken: token });
-        return token;
-      }
-    } catch {
-      /* ignore */
+    const stored = await MindGraphExtensionStorage.getSmartEduTokenIfFresh();
+    if (stored) {
+      return stored;
     }
     return null;
   }

@@ -4,7 +4,7 @@
     "description": "扩展名称"
   },
   "extDescription": {
-    "message": "将当前网页通过 MindGraph 生成为思维导图 PNG。",
+    "message": "MindGraph 思维导图 PNG 与文档下载 — 支持 Chrome 与 Edge。",
     "description": "商店描述"
   },
   "browserActionTitle": {
@@ -26,6 +26,134 @@
   "btnGenerate": {
     "message": "生成思维导图",
     "description": "主按钮"
+  },
+  "tabGenerate": {
+    "message": "思维导图",
+    "description": "思维导图生成标签页"
+  },
+  "tabDownload": {
+    "message": "下载",
+    "description": "文档下载标签页"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "AI 对话标签页"
+  },
+  "tabSettings": {
+    "message": "设置",
+    "description": "连接设置标签页"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate 标签标题"
+  },
+  "mindmateSetupHint": {
+    "message": "请先连接 MindGraph — 在「设置」中填写服务器地址、账号和 API 令牌。",
+    "description": "未配置提示"
+  },
+  "mindmateGoSettings": {
+    "message": "打开设置",
+    "description": "跳转设置"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "向 MindMate 提问…",
+    "description": "输入框占位"
+  },
+  "btnMindmateSend": {
+    "message": "发送",
+    "description": "发送"
+  },
+  "btnMindmateStop": {
+    "message": "停止",
+    "description": "停止生成"
+  },
+  "btnMindmateNew": {
+    "message": "新对话",
+    "description": "新对话"
+  },
+  "linkMindmateWeb": {
+    "message": "打开网页历史",
+    "description": "打开网页版"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate 正在回复…",
+    "description": "流式状态"
+  },
+  "mindmateNewChatStarted": {
+    "message": "已开始新对话。",
+    "description": "新对话"
+  },
+  "mindmateStopped": {
+    "message": "已停止。",
+    "description": "停止"
+  },
+  "mindmateReadingPage": {
+    "message": "正在读取页面内容…",
+    "description": "首条消息抓取网页"
+  },
+  "mindmateIncludePage": {
+    "message": "包含当前网页内容",
+    "description": "首条 MindMate 消息附带网页"
+  },
+  "mindmatePageContextIntro": {
+    "message": "你正在协助一位教育领域的用户。用户当前正在浏览以下网页，请结合页面内容回答。",
+    "description": "MindMate 首条消息页面上下文"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**页面：** $1\n**URL：** $2",
+    "description": "MindMate 页面元信息"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**用户问题：** $1",
+    "description": "MindMate 用户问题行"
+  },
+  "errMindMatePageEmpty": {
+    "message": "此页面没有可读内容。请先在页面上选中文字，或换一页再试。",
+    "description": "MindMate 页面为空"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "无法读取此页面。",
+    "description": "MindMate 页面抓取失败"
+  },
+  "errMindMateNotConfigured": {
+    "message": "尚未连接。请打开「设置」并保存 MindGraph 凭据。",
+    "description": "未配置"
+  },
+  "errMindMateLoginExpired": {
+    "message": "登录已过期。请在「设置」中更新 API 令牌。",
+    "description": "401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "无法连接 MindMate。请检查服务器地址后重试。",
+    "description": "连接失败"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate 暂时无法回复，请稍后再试。",
+    "description": "流错误"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "今日 AI 用量已达上限，请明天再试或在网页端查看详情。",
+    "description": "每日 token 上限"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "思维币不足，无法发送此消息。",
+    "description": "思维币不足"
+  },
+  "localServerHttpWarning": {
+    "message": "本地开发使用 HTTP，API 令牌与页面内容在网络上未加密。请仅在可信环境使用。",
+    "description": "选择 localhost 服务器时的警告"
+  },
+  "downloadTitle": {
+    "message": "下载",
+    "description": "下载标签页标题"
+  },
+  "downloadTagline": {
+    "message": "从支持的站点保存 PDF 和文档（不含视频）。",
+    "description": "下载标签页副标题"
+  },
+  "downloadUnsupportedPage": {
+    "message": "当前页面不支持下载。请先打开智慧教育、百度文库、360doc、豆丁等文档页，再打开本面板。",
+    "description": "当前标签页不支持文档提取时的提示"
   },
   "fileCenterSectionLabel": {
     "message": "保存到文档总结",
@@ -60,12 +188,20 @@
     "description": "设置说明"
   },
   "labelBaseUrl": {
-    "message": "基础地址",
+    "message": "服务器",
     "description": "标签"
   },
-  "placeholderBaseUrl": {
-    "message": "https://mg.mindspringedu.com",
-    "description": "占位符"
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "生产环境"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "测试环境"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "本地开发"
   },
   "labelAccount": {
     "message": "账号（手机号）",
@@ -120,27 +256,27 @@
     "description": "错误"
   },
   "errFailed": {
-    "message": "发生错误。",
+    "message": "出了点问题。请重试，或在 chrome://extensions 重新加载扩展。",
     "description": "通用错误"
   },
   "errDownloadPrepare": {
-    "message": "无法开始下载。请重新加载扩展，或使用较新的 Google Chrome（109+）或 Microsoft Edge（120+）以获得完整支持。",
+    "message": "无法开始保存文件。请重新加载扩展后再试（需 Chrome 109+ 或 Edge 120+）。",
     "description": "下载准备失败"
   },
   "errSettingsIncomplete": {
-    "message": "请打开「设置」，填写基础地址、账号（手机号）和 API 令牌。",
+    "message": "设置不完整。请打开「设置」，填写 MindGraph 地址、手机号和 API 令牌。",
     "description": "后台错误"
   },
   "errNoPageText": {
-    "message": "无法读取页面文本。请在页面中选中文字，或尝试其他网站。",
+    "message": "页面上没有可读文字。请先选中一段文字，或换一页再试。",
     "description": "后台错误"
   },
   "errApi": {
-    "message": "接口 $1：$2",
+    "message": "MindGraph 服务器出错（$1）。请检查设置后重试。",
     "description": "接口错误"
   },
   "errRestrictedPage": {
-    "message": "无法在此页面使用（仅支持 http/https 网页）。请打开普通网站后重试。",
+    "message": "这种页面不支持。请打开普通网页（http 或 https）后再试。",
     "description": "非网页地址"
   },
   "errRateLimit": {
@@ -181,34 +317,50 @@
   },
   "docExtractDetected": {
     "message": "检测到：$1 · $2",
-    "description": "站点与引擎"
+    "description": "站点与引擎（旧）"
+  },
+  "docExtractDetectedSite": {
+    "message": "当前站点：$1",
+    "description": "下载页友好站点名"
+  },
+  "docExtractActiveTab": {
+    "message": "正在读取标签页：$1",
+    "description": "用于提取预览的标签页域名"
   },
   "docExtractAssetCount": {
     "message": "共 $1 个资源",
     "description": "智慧教育资源数量"
   },
   "docExtractPageCount": {
-    "message": "约 $1 页（请先滚动加载全部页面）",
+    "message": "约 $1 页可见 — 提取前请先滚动预览区加载更多页面。",
     "description": "画布页数估计"
   },
   "docExtractScrollHint": {
-    "message": "提取前请先滚动预览区以加载全部页面。",
+    "message": "请先滚动文档预览以加载页面。百度文库请勿点「展开全文」，会弹出 VIP 付费页。",
     "description": "自动滚动提示"
   },
+  "btnSyncSmartEduToken": {
+    "message": "从 SmartEdu 同步登录",
+    "description": "从已打开的 SmartEdu 标签页读取 token"
+  },
   "btnPasteSmartEduToken": {
-    "message": "粘贴 SmartEdu token…",
+    "message": "手动粘贴 token…",
     "description": "手动粘贴 token"
   },
   "smarteduPasteTokenPrompt": {
-    "message": "粘贴 SmartEdu access_token（在 basic.smartedu.cn 控制台获取）：",
+    "message": "粘贴 SmartEdu access_token（仅在自动同步失败时使用）：",
     "description": "粘贴 token 提示"
   },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu token：正在同步…",
+    "description": "同步进行中"
+  },
   "smarteduTokenConnected": {
-    "message": "SmartEdu token：已连接",
+    "message": "SmartEdu token：已连接（来自您的登录）",
     "description": "Token 状态"
   },
   "smarteduTokenMissing": {
-    "message": "SmartEdu token：未设置 — 请登录 basic.smartedu.cn 或粘贴 token",
+    "message": "SmartEdu token：未找到 — 请在 auth.smartedu.cn 登录并打开 SmartEdu 页面，然后点「同步」",
     "description": "Token 状态"
   },
   "btnExtractDocument": {
@@ -216,27 +368,79 @@
     "description": "开始本地下载"
   },
   "statusExtractDownloadStarted": {
-    "message": "文档下载已开始。",
+    "message": "完成 — 文件马上开始下载。",
     "description": "提取下载状态"
   },
+  "statusWenkuPreviewLimited": {
+    "message": "已开始下载 — 未检测到 VIP，仅保存前 $1 页预览（百度文库免费约 8 页）。",
+    "description": "百度文库预览页数受限时的成功提示"
+  },
+  "errExtractFailed": {
+    "message": "无法下载此文档。请刷新页面后再点「提取文档」。",
+    "description": "文档提取通用失败"
+  },
+  "errExtractNoPages": {
+    "message": "没有找到文档页面。请先滚动预览加载页面，再点「提取文档」。",
+    "description": "画布为空"
+  },
+  "errExtractNoText": {
+    "message": "没有找到正文内容。请换一页或换一个区域再试。",
+    "description": "文章提取为空"
+  },
+  "errExtractRetry": {
+    "message": "页面还没准备好。请刷新标签页后再试。",
+    "description": "注入/准备失败"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "本课没有可下载文件。请换一节课，或勾选要下载的资源。",
+    "description": "智慧教育无资源"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "需要先登录智慧教育。请在 auth.smartedu.cn 登录并打开课程页，再点「从 SmartEdu 同步登录」。",
+    "description": "智慧教育鉴权失败"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "智慧教育拒绝了下载。请重新同步登录，或换一份文件。",
+    "description": "智慧教育下载失败"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "不支持下载视频。请只选择 PDF 或文档类资源。",
+    "description": "智慧教育视频"
+  },
+  "errExtractWrongPage": {
+    "message": "这不是支持的文档页。请打开文档阅读页后再试。",
+    "description": "链接不对"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "还没有可保存的内容。百度文库请先滚动免费预览（不要点「展开全文」），再试。",
+    "description": "文库无预览"
+  },
+  "errExtractLoginRequired": {
+    "message": "需要先在网站上登录。登录后再点「提取文档」。",
+    "description": "需要登录"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "网站拒绝了下载。可能需要登录、付费或 VIP 账号。",
+    "description": "二进制下载被拒"
+  },
   "extractStagePreparing": {
-    "message": "准备页面…",
+    "message": "正在准备页面…",
     "description": "提取进度"
   },
   "extractStageScrolling": {
-    "message": "滚动加载全部页面…",
+    "message": "正在滚动加载页面…",
     "description": "提取进度"
   },
   "extractStageCollecting": {
-    "message": "采集内容…",
+    "message": "正在复制页面内容…",
     "description": "提取进度"
   },
   "extractStageAssembling": {
-    "message": "组装文件…",
+    "message": "正在生成文件…",
     "description": "提取进度"
   },
   "extractStageDownloading": {
-    "message": "下载中…",
+    "message": "正在保存到电脑…",
     "description": "提取进度"
   },
   "settingsAdvanced": {
@@ -276,7 +480,7 @@
     "description": "带详情的网络错误"
   },
   "errPortDisconnected": {
-    "message": "与扩展的连接已断开。请重试；若仍失败，请在 chrome://extensions 中重新加载 MindGraph。",
+    "message": "连接已断开。请再点一次「提取文档」。若仍失败，请在 chrome://extensions 重新加载 MindGraph。",
     "description": "后台连接关闭"
   },
   "commandGenerateDescription": {

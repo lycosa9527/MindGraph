@@ -13,6 +13,10 @@ import {
   fetchAdminConfigFeatures,
   fetchAdminDatabaseOrphans,
   fetchAdminDatabaseStats,
+  fetchAdminCosBackups,
+  fetchAdminCosCrowdsecStatus,
+  fetchAdminCosQdrantStatus,
+  fetchAdminCosStatus,
   fetchAdminFeatureOrgAccess,
   fetchAdminKittyLlmopsArchitecture,
   fetchAdminManagers,
@@ -647,6 +651,47 @@ export function useAdminDatabaseOrphans(options?: { enabled?: MaybeRefOrGetter<b
   return useQuery({
     queryKey: adminKeys.database.orphans(),
     queryFn: fetchAdminDatabaseOrphans,
+    staleTime: ADMIN_STALE_MS.default,
+    enabled: options?.enabled,
+  })
+}
+
+// ============================================================================
+// COS
+// ============================================================================
+
+export function useAdminCosStatus(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
+  return useQuery({
+    queryKey: adminKeys.cos.status(),
+    queryFn: fetchAdminCosStatus,
+    staleTime: ADMIN_STALE_MS.default,
+    refetchInterval: 30_000,
+    enabled: options?.enabled,
+  })
+}
+
+export function useAdminCosBackups(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
+  return useQuery({
+    queryKey: adminKeys.cos.backups(),
+    queryFn: fetchAdminCosBackups,
+    staleTime: ADMIN_STALE_MS.default,
+    enabled: options?.enabled,
+  })
+}
+
+export function useAdminCosCrowdsecStatus(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
+  return useQuery({
+    queryKey: adminKeys.cos.crowdsec(),
+    queryFn: fetchAdminCosCrowdsecStatus,
+    staleTime: ADMIN_STALE_MS.default,
+    enabled: options?.enabled,
+  })
+}
+
+export function useAdminCosQdrantStatus(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
+  return useQuery({
+    queryKey: adminKeys.cos.qdrant(),
+    queryFn: fetchAdminCosQdrantStatus,
     staleTime: ADMIN_STALE_MS.default,
     enabled: options?.enabled,
   })

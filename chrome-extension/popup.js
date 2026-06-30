@@ -3,7 +3,7 @@
  * The Language setting also drives mind map generation language (via the service worker).
  */
 
-/* global MindGraphShared */
+/* global MindGraphShared, MindGraphMindMate, MindGraphExtensionStorage */
 
 const STAGE_I18N = {
   reading: "stageReadingPage",
@@ -73,14 +73,33 @@ function t(key, substitutions) {
 }
 
 /**
+ * @param {string | undefined} code
+ * @returns {string}
+ */
+function userFacingError(code) {
+  if (code && code.startsWith("err")) {
+    return t(code);
+  }
+  return t("errExtractFailed");
+}
+
+/**
  * Progress bar + label; used by the SW progress port while generating.
  * @param {string} stage
  */
 function setProgressStage(stage) {
   const key = STAGE_I18N[stage] || EXTRACT_STAGE_I18N[stage];
   const pct = STAGE_WIDTH_PCT[stage] ?? EXTRACT_STAGE_WIDTH_PCT[stage];
-  const elStage = document.getElementById("progress-stage");
-  const elFill = document.getElementById("progress-fill");
+  applyProgressStage(document.getElementById("progress-stage"), document.getElementById("progress-fill"), key, pct);
+}
+
+/**
+ * @param {HTMLElement | null} elStage
+ * @param {HTMLElement | null} elFill
+ * @param {string | undefined} key
+ * @param {number | undefined} pct
+ */
+function applyProgressStage(elStage, elFill, key, pct) {
   if (key && elStage) {
     elStage.textContent = t(key);
   }
@@ -88,6 +107,21 @@ function setProgressStage(stage) {
     elFill.style.width = `${pct}%`;
     elFill.classList.add("is-active");
   }
+}
+
+/**
+ * Progress bar for the Download tab extract flow.
+ * @param {string} stage
+ */
+function setDownloadExtractProgressStage(stage) {
+  const key = EXTRACT_STAGE_I18N[stage];
+  const pct = EXTRACT_STAGE_WIDTH_PCT[stage];
+  applyProgressStage(
+    document.getElementById("download-progress-stage"),
+    document.getElementById("download-progress-fill"),
+    key,
+    pct,
+  );
 }
 
 /**
@@ -128,6 +162,47 @@ function getEffectiveBcpForIntl() {
     return "zh-TW";
   }
   return chrome.i18n.getUILanguage() || "en";
+}
+
+/**
+ * @param {HTMLSelectElement} selectEl
+ * @param {string | undefined} selectedPresetId
+ */
+function populateBaseUrlSelect(selectEl, selectedPresetId) {
+  if (!selectEl) {
+    return;
+  }
+  const current = selectedPresetId || selectEl.value || "production";
+  selectEl.textContent = "";
+  for (const preset of MindGraphShared.BASE_URL_PRESETS) {
+    const opt = document.createElement("option");
+    opt.value = preset.id;
+    opt.textContent = t(preset.labelKey);
+    selectEl.appendChild(opt);
+  }
+  const resolved = MindGraphShared.resolveBaseUrlPresetId(current);
+  selectEl.value = MindGraphShared.BASE_URL_PRESETS.some((entry) => entry.id === resolved)
+    ? resolved
+    : "production";
+}
+
+/**
+ * @param {HTMLSelectElement} selectEl
+ * @returns {string}
+ */
+function readBaseUrlFromSelect(selectEl) {
+  return MindGraphShared.baseUrlFromPresetId(selectEl ? selectEl.value : "production");
+}
+
+/**
+ * @param {HTMLSelectElement | null} selectEl
+ * @param {HTMLElement | null} warningEl
+ */
+function updateLocalServerWarning(selectEl, warningEl) {
+  if (!selectEl || !warningEl) {
+    return;
+  }
+  warningEl.hidden = selectEl.value !== "local";
 }
 
 /**
@@ -224,7 +299,7 @@ async function verifyCredentials(baseUrl, account, token) {
       headers: {
         Authorization: `Bearer ${token}`,
         "X-MG-Account": account,
-        "X-MG-Client": "chrome-extension",
+        "X-MG-Client": MindGraphShared.mgClientHeader(),
         "X-Request-Id": newRequestId(),
       },
     });
@@ -270,7 +345,7 @@ async function updateTokenExpiresHint(baseUrl, account, token, hint) {
       headers: {
         Authorization: `Bearer ${tok}`,
         "X-MG-Account": acc,
-        "X-MG-Client": "chrome-extension",
+        "X-MG-Client": MindGraphShared.mgClientHeader(),
         "X-Request-Id": newRequestId(),
       },
     });
@@ -307,12 +382,17 @@ async function updateTokenExpiresHint(baseUrl, account, token, hint) {
 
 async function startPopup() {
   await initI18n();
-  const mainView = document.getElementById("main-view");
+  const generateView = document.getElementById("generate-view");
+  const mindmateView = document.getElementById("mindmate-view");
+  const downloadView = document.getElementById("download-view");
   const settingsView = document.getElementById("settings-view");
+  const tabGenerate = document.getElementById("tab-generate");
+  const tabMindmate = document.getElementById("tab-mindmate");
+  const tabDownload = document.getElementById("tab-download");
+  const tabSettings = document.getElementById("tab-settings");
+  const mainView = generateView;
   const btnGenerate = document.getElementById("btn-generate");
-  const btnSettings = document.getElementById("btn-settings");
   const btnSave = document.getElementById("btn-save");
-  const btnBack = document.getElementById("btn-back");
   const statusEl = document.getElementById("status");
   const settingsStatus = document.getElementById("settings-status");
   const fieldBaseUrl = document.getElementById("field-base-url");
@@ -323,6 +403,7 @@ async function startPopup() {
   const fieldPngHeight = document.getElementById("field-png-height");
   const fieldUiLanguage = document.getElementById("field-ui-language");
   const fieldTokenExpires = document.getElementById("field-token-expires");
+  const fieldLocalServerWarning = document.getElementById("field-local-server-warning");
   const progressWrap = document.getElementById("progress-wrap");
   const progressFill = document.getElementById("progress-fill");
   const progressStage = document.getElementById("progress-stage");
@@ -330,12 +411,17 @@ async function startPopup() {
   const libraryFullNote = document.getElementById("library-full-note");
 
   if (
-    !mainView ||
+    !generateView ||
+    !mindmateView ||
+    !downloadView ||
     !settingsView ||
+    !tabGenerate ||
+    !tabMindmate ||
+    !tabDownload ||
+    !tabSettings ||
+    !mainView ||
     !btnGenerate ||
-    !btnSettings ||
     !btnSave ||
-    !btnBack ||
     !fieldBaseUrl ||
     !fieldAccount ||
     !fieldToken ||
@@ -348,7 +434,146 @@ async function startPopup() {
     return;
   }
 
+  /** @type {Array<HTMLButtonElement>} */
+  const mainTabButtons = [tabGenerate, tabMindmate, tabDownload, tabSettings];
+
+  /**
+   * @param {boolean} disabled
+   */
+  function setMainTabsDisabled(disabled) {
+    for (const btn of mainTabButtons) {
+      btn.disabled = disabled;
+    }
+  }
+
+  /** @type {"generate" | "mindmate" | "download" | "settings"} */
+  let activeMainTab = "generate";
+
+  /** @type {{ onTabShown?: () => void } | null} */
+  let mindmatePanel = null;
+
+  function loadSettingsFields() {
+    setStatus(settingsStatus, "", "");
+    chrome.storage.local.get(
+      ["baseUrl", "baseUrlPresetId", "account", "token", "saveAs", "uiLanguage", "pngWidth", "pngHeight"],
+      (data) => {
+        populateBaseUrlSelect(
+          fieldBaseUrl,
+          data.baseUrlPresetId ||
+            MindGraphShared.resolveBaseUrlPresetId(
+              data.baseUrl || MindGraphShared.DEFAULT_MINDGRAPH_BASE_URL,
+            ),
+        );
+        updateLocalServerWarning(fieldBaseUrl, fieldLocalServerWarning);
+        fieldAccount.value = data.account || "";
+        fieldToken.value = data.token || "";
+        fieldSaveAs.checked = Boolean(data.saveAs);
+        if (data.uiLanguage && ["auto", "en", "zh_CN", "zh_TW"].includes(String(data.uiLanguage))) {
+          fieldUiLanguage.value = String(data.uiLanguage);
+        } else {
+          fieldUiLanguage.value = "auto";
+        }
+        if (typeof data.pngWidth === "number") {
+          fieldPngWidth.value = String(data.pngWidth);
+        } else {
+          fieldPngWidth.value = "";
+        }
+        if (typeof data.pngHeight === "number") {
+          fieldPngHeight.value = String(data.pngHeight);
+        } else {
+          fieldPngHeight.value = "";
+        }
+        void updateTokenExpiresHint(
+          readBaseUrlFromSelect(fieldBaseUrl),
+          fieldAccount.value,
+          fieldToken.value,
+          fieldTokenExpires,
+        );
+      },
+    );
+  }
+
+  /**
+   * @param {"generate" | "mindmate" | "download" | "settings"} tab
+   * @returns {Promise<void>}
+   */
+  async function switchMainTab(tab) {
+    activeMainTab = tab;
+    generateView.hidden = tab !== "generate";
+    mindmateView.hidden = tab !== "mindmate";
+    downloadView.hidden = tab !== "download";
+    settingsView.hidden = tab !== "settings";
+    tabGenerate.classList.toggle("is-active", tab === "generate");
+    tabMindmate.classList.toggle("is-active", tab === "mindmate");
+    tabDownload.classList.toggle("is-active", tab === "download");
+    tabSettings.classList.toggle("is-active", tab === "settings");
+    tabGenerate.setAttribute("aria-selected", tab === "generate" ? "true" : "false");
+    tabMindmate.setAttribute("aria-selected", tab === "mindmate" ? "true" : "false");
+    tabDownload.setAttribute("aria-selected", tab === "download" ? "true" : "false");
+    tabSettings.setAttribute("aria-selected", tab === "settings" ? "true" : "false");
+    if (tab === "download") {
+      await loadExtractPreview();
+    }
+    if (tab === "settings") {
+      loadSettingsFields();
+    }
+    if (tab === "mindmate" && mindmatePanel && mindmatePanel.onTabShown) {
+      mindmatePanel.onTabShown();
+    }
+  }
+
+  tabGenerate.addEventListener("click", () => {
+    void switchMainTab("generate");
+  });
+  tabMindmate.addEventListener("click", () => {
+    void switchMainTab("mindmate");
+  });
+  tabDownload.addEventListener("click", () => {
+    void switchMainTab("download");
+  });
+  tabSettings.addEventListener("click", () => {
+    void switchMainTab("settings");
+  });
+
+  mindmatePanel = MindGraphMindMate.initMindMatePanel({
+    t,
+    newRequestId,
+    getCredentials: async () => {
+      const data = await chrome.storage.local.get(["baseUrl", "baseUrlPresetId", "account", "token"]);
+      const resolvedServer = MindGraphShared.resolveMindGraphSettings(data);
+      return {
+        baseUrl: resolvedServer.baseUrl,
+        account: data.account || "",
+        token: data.token || "",
+      };
+    },
+    getActiveTabId: async () => {
+      let tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      if (tabs[0]?.id) {
+        return tabs[0].id;
+      }
+      tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      return tabs[0]?.id ?? null;
+    },
+    setMainTabsDisabled,
+    switchMainTab,
+    view: mindmateView,
+    setupHint: document.getElementById("mindmate-setup-hint"),
+    chatWrap: document.getElementById("mindmate-chat-wrap"),
+    messagesEl: document.getElementById("mindmate-messages"),
+    inputEl: document.getElementById("mindmate-input"),
+    btnSend: document.getElementById("btn-mindmate-send"),
+    btnStop: document.getElementById("btn-mindmate-stop"),
+    btnNew: document.getElementById("btn-mindmate-new"),
+    linkWeb: document.getElementById("link-mindmate-web"),
+    statusEl: document.getElementById("mindmate-status"),
+    btnGoSettings: document.getElementById("btn-mindmate-go-settings"),
+    includePageCheckbox: document.getElementById("mindmate-include-page"),
+  });
+
   applyLocaleToDocument();
+  populateBaseUrlSelect(fieldBaseUrl);
+  updateLocalServerWarning(fieldBaseUrl, fieldLocalServerWarning);
   populateUiLanguageSelect(fieldUiLanguage);
   const storedLang = (await chrome.storage.local.get("uiLanguage")).uiLanguage;
   if (storedLang && ["auto", "en", "zh_CN", "zh_TW"].includes(String(storedLang))) {
@@ -357,6 +582,7 @@ async function startPopup() {
     fieldUiLanguage.value = "auto";
   }
   applyI18n();
+  void MindGraphExtensionStorage.pruneStaleExtensionStorage();
 
   /**
    * @param {boolean} visible
@@ -377,57 +603,34 @@ async function startPopup() {
   }
 
   document.getElementById("btn-close-main")?.addEventListener("click", closePopup);
+  document.getElementById("btn-close-mindmate")?.addEventListener("click", closePopup);
+  document.getElementById("btn-close-download")?.addEventListener("click", closePopup);
   document.getElementById("btn-close-settings")?.addEventListener("click", closePopup);
+
+  fieldBaseUrl.addEventListener("change", () => {
+    updateLocalServerWarning(fieldBaseUrl, fieldLocalServerWarning);
+  });
 
   fieldUiLanguage.addEventListener("change", async () => {
     const v = fieldUiLanguage.value;
     await chrome.storage.local.set({ uiLanguage: v });
     await initI18n();
     applyLocaleToDocument();
+    populateBaseUrlSelect(fieldBaseUrl, fieldBaseUrl.value);
+    updateLocalServerWarning(fieldBaseUrl, fieldLocalServerWarning);
     populateUiLanguageSelect(fieldUiLanguage);
     fieldUiLanguage.value = v;
     applyI18n();
-    await updateTokenExpiresHint(fieldBaseUrl.value, fieldAccount.value, fieldToken.value, fieldTokenExpires);
-  });
-
-  btnSettings.addEventListener("click", () => {
-    mainView.hidden = true;
-    settingsView.hidden = false;
-    setStatus(settingsStatus, "", "");
-    chrome.storage.local.get(
-      ["baseUrl", "account", "token", "saveAs", "uiLanguage", "pngWidth", "pngHeight"],
-      (data) => {
-        fieldBaseUrl.value = data.baseUrl || MindGraphShared.DEFAULT_MINDGRAPH_BASE_URL;
-        fieldAccount.value = data.account || "";
-        fieldToken.value = data.token || "";
-        fieldSaveAs.checked = Boolean(data.saveAs);
-        if (data.uiLanguage && ["auto", "en", "zh_CN", "zh_TW"].includes(String(data.uiLanguage))) {
-          fieldUiLanguage.value = String(data.uiLanguage);
-        } else {
-          fieldUiLanguage.value = "auto";
-        }
-        if (typeof data.pngWidth === "number") {
-          fieldPngWidth.value = String(data.pngWidth);
-        } else {
-          fieldPngWidth.value = "";
-        }
-        if (typeof data.pngHeight === "number") {
-          fieldPngHeight.value = String(data.pngHeight);
-        } else {
-          fieldPngHeight.value = "";
-        }
-        void updateTokenExpiresHint(fieldBaseUrl.value, fieldAccount.value, fieldToken.value, fieldTokenExpires);
-      },
+    await updateTokenExpiresHint(
+      readBaseUrlFromSelect(fieldBaseUrl),
+      fieldAccount.value,
+      fieldToken.value,
+      fieldTokenExpires,
     );
   });
 
-  btnBack.addEventListener("click", () => {
-    settingsView.hidden = true;
-    mainView.hidden = false;
-  });
-
   btnSave.addEventListener("click", async () => {
-    const baseUrl = fieldBaseUrl.value.trim().replace(/\/+$/, "");
+    const baseUrl = readBaseUrlFromSelect(fieldBaseUrl);
     const account = fieldAccount.value.trim();
     const token = fieldToken.value.trim();
     if (!baseUrl || !account || !token) {
@@ -437,8 +640,14 @@ async function startPopup() {
 
     setStatus(settingsStatus, t("statusVerifying"), "loading");
     btnSave.disabled = true;
-    btnBack.disabled = true;
+    setMainTabsDisabled(true);
     try {
+      const previous = await chrome.storage.local.get(["baseUrl", "account"]);
+      const previousAuthKey = MindGraphExtensionStorage.buildMindGraphAuthKey(
+        previous.baseUrl,
+        previous.account,
+      );
+      const nextAuthKey = MindGraphExtensionStorage.buildMindGraphAuthKey(baseUrl, account);
       const verified = await verifyCredentials(baseUrl, account, token);
       if (!verified.ok) {
         console.error("[MindGraph] settings verify failed", verified.error);
@@ -446,10 +655,15 @@ async function startPopup() {
         return;
       }
 
+      if (previousAuthKey !== nextAuthKey) {
+        await MindGraphExtensionStorage.clearMindMateThread();
+      }
+
       const wn = fieldPngWidth.value.trim() === "" ? Number.NaN : parseInt(fieldPngWidth.value, 10);
       const hn = fieldPngHeight.value.trim() === "" ? Number.NaN : parseInt(fieldPngHeight.value, 10);
       const payload = {
         baseUrl,
+        baseUrlPresetId: fieldBaseUrl.value,
         account,
         token,
         saveAs: fieldSaveAs.checked,
@@ -491,8 +705,13 @@ async function startPopup() {
         });
       });
       setStatus(settingsStatus, t("statusSaved"), "ok");
+      if (mindmatePanel && mindmatePanel.onTabShown) {
+        mindmatePanel.onTabShown();
+      }
       await initI18n();
       applyLocaleToDocument();
+      populateBaseUrlSelect(fieldBaseUrl, MindGraphShared.resolveBaseUrlPresetId(baseUrl));
+      updateLocalServerWarning(fieldBaseUrl, fieldLocalServerWarning);
       populateUiLanguageSelect(fieldUiLanguage);
       fieldUiLanguage.value = String(payload.uiLanguage);
       applyI18n();
@@ -502,16 +721,27 @@ async function startPopup() {
       setStatus(settingsStatus, t("errNetwork"), "err");
     } finally {
       btnSave.disabled = false;
-      btnBack.disabled = false;
+      setMainTabsDisabled(false);
     }
   });
 
   if (linkViewDiagram) {
     linkViewDiagram.addEventListener("click", (e) => {
       e.preventDefault();
-      const url = linkViewDiagram.getAttribute("data-href");
-      if (url) {
-        chrome.tabs.create({ url });
+      const diagramId = linkViewDiagram.getAttribute("data-diagram-id");
+      const presetId = linkViewDiagram.getAttribute("data-base-url-preset");
+      let url = linkViewDiagram.getAttribute("data-href") || linkViewDiagram.href;
+      if (diagramId) {
+        const resolved = MindGraphShared.resolveMindGraphSettings({
+          baseUrlPresetId: presetId || undefined,
+        });
+        const rebuilt = MindGraphShared.buildCanvasDiagramUrl(resolved.baseUrl, diagramId);
+        if (rebuilt) {
+          url = rebuilt;
+        }
+      }
+      if (url && url !== "#" && !url.endsWith("#")) {
+        void chrome.tabs.create({ url, active: true });
       }
     });
   }
@@ -552,17 +782,78 @@ async function startPopup() {
   void loadPackages();
 
   const docExtractSection = document.getElementById("doc-extract-section");
+  const downloadUnsupported = document.getElementById("download-unsupported");
   const docExtractDetected = document.getElementById("doc-extract-detected");
+  const docExtractActiveTab = document.getElementById("doc-extract-active-tab");
   const docExtractTitle = document.getElementById("doc-extract-title");
   const docExtractPages = document.getElementById("doc-extract-pages");
   const smarteduPanel = document.getElementById("smartedu-extract-panel");
   const smarteduTokenStatus = document.getElementById("smartedu-token-status");
   const smarteduAssetList = document.getElementById("smartedu-asset-list");
+  const btnSyncSmartEduToken = document.getElementById("btn-sync-smartedu-token");
   const btnPasteSmartEduToken = document.getElementById("btn-paste-smartedu-token");
   const btnExtractDocument = document.getElementById("btn-extract-document");
+  const downloadStatusEl = document.getElementById("download-status");
+  const downloadProgressWrap = document.getElementById("download-progress-wrap");
+  const downloadProgressFill = document.getElementById("download-progress-fill");
+  const downloadProgressStage = document.getElementById("download-progress-stage");
 
   /** @type {Array<object>} */
   let previewSmartEduAssets = [];
+
+  /** @type {ReturnType<typeof setTimeout> | null} */
+  let extractPreviewRefreshTimer = null;
+
+  /**
+   * Active page tab for Download — lastFocusedWindow avoids stale window on Edge/Chrome.
+   * @returns {Promise<chrome.tabs.Tab | undefined>}
+   */
+  async function getActiveContentTab() {
+    let tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (tabs[0]?.id) {
+      return tabs[0];
+    }
+    tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    return tabs[0];
+  }
+
+  /**
+   * @param {string | undefined} url
+   * @returns {string}
+   */
+  function hostnameFromUrl(url) {
+    if (!url) {
+      return "";
+    }
+    try {
+      return new URL(url).hostname;
+    } catch {
+      return url;
+    }
+  }
+
+  /**
+   * Debounced refresh when the user switches tabs while the Download panel is open.
+   */
+  function scheduleExtractPreviewRefresh() {
+    if (activeMainTab !== "download") {
+      return;
+    }
+    if (extractPreviewRefreshTimer) {
+      clearTimeout(extractPreviewRefreshTimer);
+    }
+    extractPreviewRefreshTimer = setTimeout(() => {
+      extractPreviewRefreshTimer = null;
+      void loadExtractPreview();
+    }, 120);
+  }
+
+  chrome.tabs.onActivated.addListener(scheduleExtractPreviewRefresh);
+  chrome.tabs.onUpdated.addListener((_tabId, changeInfo) => {
+    if (changeInfo.url || changeInfo.status === "complete") {
+      scheduleExtractPreviewRefresh();
+    }
+  });
 
   /**
    * @param {Array<object>} assets
@@ -593,6 +884,20 @@ async function startPopup() {
   }
 
   /**
+   * @param {boolean} visible
+   */
+  function setDownloadProgressVisible(visible) {
+    if (!downloadProgressWrap) {
+      return;
+    }
+    downloadProgressWrap.hidden = !visible;
+    if (!visible && downloadProgressFill) {
+      downloadProgressFill.style.width = "0%";
+      downloadProgressFill.classList.remove("is-active");
+    }
+  }
+
+  /**
    * Show extract UI when the active tab matches a known host (not generic-only).
    * @returns {Promise<void>}
    */
@@ -606,9 +911,18 @@ async function startPopup() {
     if (docExtractPages) {
       docExtractPages.hidden = true;
     }
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.url || MindGraphShared.isRestrictedTabUrl(tab.url)) {
-      docExtractSection.hidden = true;
+    if (downloadUnsupported) {
+      downloadUnsupported.hidden = true;
+    }
+    if (docExtractActiveTab) {
+      docExtractActiveTab.textContent = "";
+    }
+    docExtractSection.hidden = true;
+    const tab = await getActiveContentTab();
+    if (!tab?.id || !tab.url || MindGraphShared.isRestrictedTabUrl(tab.url)) {
+      if (downloadUnsupported) {
+        downloadUnsupported.hidden = false;
+      }
       return;
     }
     const preview = await new Promise((resolve) => {
@@ -621,11 +935,17 @@ async function startPopup() {
       );
     });
     const host = preview.host || { id: "generic", label: "网页", engine: "dom-article" };
+    const resolvedPageUrl = preview.pageUrl || tab.url || "";
     if (host.id === "generic") {
-      docExtractSection.hidden = true;
+      if (downloadUnsupported) {
+        downloadUnsupported.hidden = false;
+      }
       return;
     }
-    docExtractDetected.textContent = t("docExtractDetected", [host.label, host.engine]);
+    docExtractDetected.textContent = t("docExtractDetectedSite", [host.label]);
+    if (docExtractActiveTab) {
+      docExtractActiveTab.textContent = t("docExtractActiveTab", [hostnameFromUrl(resolvedPageUrl)]);
+    }
     if (docExtractTitle) {
       docExtractTitle.textContent = preview.title || tab.title || "";
     }
@@ -648,11 +968,41 @@ async function startPopup() {
           ? t("smarteduTokenConnected")
           : t("smarteduTokenMissing");
       }
-      if (Array.isArray(preview.assets) && preview.assets.length) {
-        renderSmartEduAssetChecklist(preview.assets);
+      const docAssets = Array.isArray(preview.assets)
+        ? preview.assets.filter((asset) => asset.localKind !== "m3u8" && asset.alias !== "micro_lesson_video")
+        : [];
+      if (docAssets.length) {
+        renderSmartEduAssetChecklist(docAssets);
       }
     }
     docExtractSection.hidden = false;
+  }
+
+  if (btnSyncSmartEduToken) {
+    btnSyncSmartEduToken.addEventListener("click", () => {
+      void (async () => {
+        const tab = await getActiveContentTab();
+        if (smarteduTokenStatus) {
+          smarteduTokenStatus.textContent = t("smarteduTokenSyncing");
+        }
+        const response = await new Promise((resolve) => {
+          chrome.runtime.sendMessage(
+            { type: "SYNC_SMARTEDU_TOKEN", tabId: tab?.id },
+            (res) => {
+              void chrome.runtime.lastError;
+              resolve(res || { ok: false, tokenSet: false });
+            },
+          );
+        });
+        if (response.tokenSet) {
+          await loadExtractPreview();
+          return;
+        }
+        if (smarteduTokenStatus) {
+          smarteduTokenStatus.textContent = t("smarteduTokenMissing");
+        }
+      })();
+    });
   }
 
   if (btnPasteSmartEduToken) {
@@ -673,42 +1023,43 @@ async function startPopup() {
     });
   }
 
-  void loadExtractPreview();
-
   if (btnExtractDocument) {
     btnExtractDocument.addEventListener("click", () => {
       void (async () => {
-        setStatus(statusEl, "", "");
-        setProgressVisible(true);
-        if (progressStage) {
-          progressStage.textContent = t("statusWorking");
+        if (downloadStatusEl) {
+          setStatus(downloadStatusEl, "", "");
+        }
+        setDownloadProgressVisible(true);
+        if (downloadProgressStage) {
+          downloadProgressStage.textContent = t("statusWorking");
         }
         btnExtractDocument.disabled = true;
-        btnGenerate.disabled = true;
-        btnSettings.disabled = true;
+        setMainTabsDisabled(true);
 
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const tab = await getActiveContentTab();
         if (!tab?.id) {
-          setStatus(statusEl, t("errNoTab"), "err");
-          setProgressVisible(false);
+          if (downloadStatusEl) {
+            setStatus(downloadStatusEl, t("errNoTab"), "err");
+          }
+          setDownloadProgressVisible(false);
           btnExtractDocument.disabled = false;
-          btnGenerate.disabled = false;
-          btnSettings.disabled = false;
+          setMainTabsDisabled(false);
           return;
         }
 
-        const stored = await chrome.storage.local.get(["smarteduAccessToken"]);
+        const stored = await MindGraphExtensionStorage.getSmartEduTokenIfFresh();
         const portName = `doc-extract-${tab.id}`;
         let port;
         let completed = false;
         try {
           port = chrome.runtime.connect({ name: portName });
         } catch (e) {
-          setStatus(statusEl, e?.message || t("errFailed"), "err");
-          setProgressVisible(false);
+          if (downloadStatusEl) {
+            setStatus(downloadStatusEl, t("errPortDisconnected"), "err");
+          }
+          setDownloadProgressVisible(false);
           btnExtractDocument.disabled = false;
-          btnGenerate.disabled = false;
-          btnSettings.disabled = false;
+          setMainTabsDisabled(false);
           return;
         }
 
@@ -717,19 +1068,20 @@ async function startPopup() {
             return;
           }
           completed = true;
-          setProgressVisible(false);
-          if (result.ok) {
-            setStatus(statusEl, t("statusExtractDownloadStarted"), "ok");
-          } else {
-            const errText =
-              result.error && result.error.startsWith("err")
-                ? t(result.error)
-                : result.error || t("errFailed");
-            setStatus(statusEl, errText, "err");
+          setDownloadProgressVisible(false);
+          if (downloadStatusEl) {
+            if (result.ok) {
+              const noticeText =
+                result.notice && t(result.notice, result.noticeArgs || [])
+                  ? t(result.notice, result.noticeArgs || [])
+                  : null;
+              setStatus(downloadStatusEl, noticeText || t("statusExtractDownloadStarted"), "ok");
+            } else {
+              setStatus(downloadStatusEl, userFacingError(result.error), "err");
+            }
           }
           btnExtractDocument.disabled = false;
-          btnGenerate.disabled = false;
-          btnSettings.disabled = false;
+          setMainTabsDisabled(false);
         };
 
         port.onMessage.addListener((msg) => {
@@ -737,20 +1089,20 @@ async function startPopup() {
             return;
           }
           if (msg.type === "extractProgress" && typeof msg.stage === "string") {
-            setProgressStage(msg.stage);
+            setDownloadExtractProgressStage(msg.stage);
           } else if (msg.type === "extractResult") {
             finish(msg);
           }
         });
         port.onDisconnect.addListener(() => {
           if (!completed) {
-            finish({ ok: false, error: t("errPortDisconnected") });
+            finish({ ok: false, error: "errPortDisconnected" });
           }
         });
 
         const startPayload = {
           type: "start",
-          smarteduToken: stored.smarteduAccessToken || "",
+          smarteduToken: stored || "",
         };
         if (previewSmartEduAssets.length) {
           startPayload.smarteduAssets = previewSmartEduAssets.filter((a) => a.selected !== false);
@@ -805,6 +1157,9 @@ async function startPopup() {
       if (linkViewDiagram) {
         linkViewDiagram.hidden = true;
         linkViewDiagram.removeAttribute("data-href");
+        linkViewDiagram.removeAttribute("data-diagram-id");
+        linkViewDiagram.removeAttribute("data-base-url-preset");
+        linkViewDiagram.href = "#";
       }
       if (libraryFullNote) {
         libraryFullNote.hidden = true;
@@ -819,7 +1174,7 @@ async function startPopup() {
         progressStage.textContent = t("statusWorking");
       }
       btnGenerate.disabled = true;
-      btnSettings.disabled = true;
+      setMainTabsDisabled(true);
 
       let port;
       let completed = false;
@@ -854,7 +1209,25 @@ async function startPopup() {
           setProgressVisible(false);
           if (msg.ok) {
             setStatus(statusEl, t("statusDownloadStarted"), "ok");
-            if (linkViewDiagram && msg.diagramUrl && typeof msg.diagramUrl === "string") {
+            if (linkViewDiagram && msg.diagramId && typeof msg.diagramId === "string") {
+              const presetId =
+                typeof msg.baseUrlPresetId === "string" ? msg.baseUrlPresetId : fieldBaseUrl.value;
+              const resolved = MindGraphShared.resolveMindGraphSettings({
+                baseUrlPresetId: presetId,
+              });
+              const diagramUrl =
+                (typeof msg.diagramUrl === "string" && msg.diagramUrl) ||
+                MindGraphShared.buildCanvasDiagramUrl(resolved.baseUrl, msg.diagramId);
+              if (diagramUrl) {
+                linkViewDiagram.href = diagramUrl;
+                linkViewDiagram.setAttribute("data-href", diagramUrl);
+                linkViewDiagram.setAttribute("data-diagram-id", msg.diagramId);
+                linkViewDiagram.setAttribute("data-base-url-preset", resolved.presetId);
+                linkViewDiagram.textContent = t("linkViewInLibrary");
+                linkViewDiagram.hidden = false;
+              }
+            } else if (linkViewDiagram && msg.diagramUrl && typeof msg.diagramUrl === "string") {
+              linkViewDiagram.href = msg.diagramUrl;
               linkViewDiagram.setAttribute("data-href", msg.diagramUrl);
               linkViewDiagram.textContent = t("linkViewInLibrary");
               linkViewDiagram.hidden = false;
@@ -867,7 +1240,7 @@ async function startPopup() {
             setStatus(statusEl, msg.error || t("errFailed"), "err");
           }
           btnGenerate.disabled = false;
-          btnSettings.disabled = false;
+          setMainTabsDisabled(false);
         }
       };
       const onDisc = () => {
@@ -886,7 +1259,7 @@ async function startPopup() {
           "err",
         );
         btnGenerate.disabled = false;
-        btnSettings.disabled = false;
+        setMainTabsDisabled(false);
       };
 
       let tab;
@@ -897,14 +1270,14 @@ async function startPopup() {
         setProgressVisible(false);
         setStatus(statusEl, e?.message || String(e), "err");
         btnGenerate.disabled = false;
-        btnSettings.disabled = false;
+        setMainTabsDisabled(false);
         return;
       }
       if (!tab?.id) {
         setProgressVisible(false);
         setStatus(statusEl, t("errNoTab"), "err");
         btnGenerate.disabled = false;
-        btnSettings.disabled = false;
+        setMainTabsDisabled(false);
         return;
       }
 
@@ -919,7 +1292,7 @@ async function startPopup() {
           "err",
         );
         btnGenerate.disabled = false;
-        btnSettings.disabled = false;
+        setMainTabsDisabled(false);
         return;
       }
 

@@ -515,9 +515,12 @@ async def web_content_mindmap_png(
     elif not isinstance(saved_diagram_id, str):
         saved_diagram_id = None
 
-    response_headers: dict = {"Content-Disposition": 'attachment; filename="mindgraph-web-content.png"'}
+    png_filename = "mindgraph-web-content.png"
+    response_headers: dict = {"Content-Disposition": f'attachment; filename="{png_filename}"'}
     if saved_diagram_id:
         response_headers["X-MG-Diagram-Id"] = saved_diagram_id
+        png_filename = f"mindgraph-{saved_diagram_id}.png"
+        response_headers["Content-Disposition"] = f'attachment; filename="{png_filename}"'
     if save_error_type:
         response_headers["X-MG-Save-Error"] = save_error_type
 

@@ -36,7 +36,10 @@
       label: "百度文库",
       hosts: ["wenku.baidu.com"],
       engine: "canvas-pdf",
-      prep: ["unblock-copy", "hide-chrome", "expand-all", "autoscroll"],
+      // No expand-all: clicking 展开全文 opens Baidu VIP paywall; capture loaded preview + scroll only.
+      prep: ["unblock-copy", "hide-chrome", "autoscroll"],
+      autoscrollStepMs: 350,
+      autoscrollMaxSteps: 18,
       hideSelectors: [".header-wrapper", ".toolbar-wrap", ".reader-tools"],
       providerVersion: "437609",
     },
@@ -258,6 +261,20 @@
   };
 
   /**
+   * @param {string} hostname
+   * @param {string} hostPattern
+   * @returns {boolean}
+   */
+  function hostnameMatchesHostPattern(hostname, hostPattern) {
+    const name = (hostname || "").toLowerCase();
+    const pattern = (hostPattern || "").toLowerCase();
+    if (!name || !pattern) {
+      return false;
+    }
+    return name === pattern || name.endsWith(`.${pattern}`);
+  }
+
+  /**
    * @param {string} pageUrl
    * @returns {HostEntry}
    */
@@ -273,8 +290,7 @@
     }
     for (const entry of HOST_ENTRIES) {
       for (const host of entry.hosts) {
-        const h = host.toLowerCase();
-        if (hostname === h || hostname.endsWith(`.${h}`)) {
+        if (hostnameMatchesHostPattern(hostname, host)) {
           return entry;
         }
       }
@@ -293,6 +309,7 @@
 
   MindGraphDocExtract.HOST_ENTRIES = HOST_ENTRIES;
   MindGraphDocExtract.GENERIC_HOST = GENERIC_HOST;
+  MindGraphDocExtract.hostnameMatchesHostPattern = hostnameMatchesHostPattern;
   MindGraphDocExtract.matchHost = matchHost;
   MindGraphDocExtract.isExtractSupportedUrl = isExtractSupportedUrl;
   global.MindGraphDocExtract = MindGraphDocExtract;

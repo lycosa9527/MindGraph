@@ -1167,13 +1167,37 @@ def install_qdrant_linux_server() -> bool:
             print("[ERROR] Unsupported CPU for Qdrant prebuilt binary; see https://github.com/qdrant/qdrant/releases")
             return False
         url = f"https://github.com/qdrant/qdrant/releases/download/v{QDRANT_GITHUB_VERSION}/qdrant-{arch}.tar.gz"
-        print(f"[INFO] Downloading Qdrant v{QDRANT_GITHUB_VERSION} from GitHub ({arch})...")
         tmp_dir = tempfile.mkdtemp(prefix="mg_qdrant_")
         tar_path = os.path.join(tmp_dir, "qdrant.tgz")
-        if not _qdrant_download_to_file(url, tar_path):
-            print("[ERROR] Failed to download Qdrant tarball")
-            shutil.rmtree(tmp_dir, ignore_errors=True)
-            return False
+        downloaded = False
+        try:
+            from services.infrastructure.sync.cos_sync_env import (
+                is_cos_consumer,
+                qdrant_download_source,
+                qdrant_tarball_cos_key,
+            )
+            from services.infrastructure.sync.qdrant_release import qdrant_target_version
+            from services.utils import tencent_cos_client
+
+            prefer_cos = qdrant_download_source() == "cos" or (qdrant_download_source() == "auto" and is_cos_consumer())
+            if prefer_cos and tencent_cos_client.cos_credentials_configured():
+                version = qdrant_target_version()
+                cos_key = qdrant_tarball_cos_key(version, arch)
+                print(f"[INFO] Downloading Qdrant v{version} from COS ({arch})...")
+                downloaded = tencent_cos_client.download_file(
+                    cos_key,
+                    Path(tar_path),
+                    log_prefix="[Setup]",
+                )
+        except ImportError:
+            downloaded = False
+
+        if not downloaded:
+            print(f"[INFO] Downloading Qdrant v{QDRANT_GITHUB_VERSION} from GitHub ({arch})...")
+            if not _qdrant_download_to_file(url, tar_path):
+                print("[ERROR] Failed to download Qdrant tarball")
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+                return False
         try:
             with tarfile.open(tar_path, "r:gz") as archive:
                 if sys.version_info >= (3, 12):

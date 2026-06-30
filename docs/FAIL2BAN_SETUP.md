@@ -107,6 +107,8 @@ MindGraph stores the **combined** blocklist in a single Redis **SET** key:
 
 Optional metadata: `abuseipdb:blacklist:meta` (AbuseIPDB sync), `crowdsec:blocklist:meta` (last CrowdSec pull time).
 
+**COS mirror (multi-server):** Set **`COS_SYNC_ROLE=publisher`** on one host (pulls CrowdSec once per day, uploads to COS) and **`COS_SYNC_ROLE=consumer`** on others (pull blocklist from COS only — avoids duplicate API pulls and HTTP 429). Manage sync from **Admin → Settings → COS**. See `COS_SYNC_*` in [`env.example`](../env.example).
+
 ### Verifying the request hot path (one `SISMEMBER` per request)
 
 With **`ABUSEIPDB_BLACKLIST_LOOKUP_ENABLED`** and/or CrowdSec lookup enabled, middleware calls **`SISMEMBER`** on **`abuseipdb:blacklist:ips`** once per request for the client IP (no extra Redis round trips for the blacklist check itself).

@@ -1,6 +1,6 @@
-# MindGraph Chrome extension (development)
+# MindGraph browser extension (Chrome & Edge)
 
-This folder is a **Manifest V3** extension. It captures text from the active tab and calls MindGraph **`POST /api/web_content_mindmap_png`** with your **`mgat_`** token and **`X-MG-Account`** (phone), then downloads the PNG.
+This folder is a **Manifest V3** extension for **Google Chrome** and **Microsoft Edge** (Chromium). Same build — load this directory unpacked in either browser. It captures text from the active tab and calls MindGraph **`POST /api/web_content_mindmap_png`** with your **`mgat_`** token and **`X-MG-Account`** (phone), then downloads the PNG.
 
 ## Icons
 
@@ -18,7 +18,9 @@ Locale strings live in **`chrome-extension/_locales/`** (`en`, `zh_CN`, `zh_TW`)
 
 - **Match browser** — Uses `chrome.i18n.getMessage` / UI language to pick copy and, for the API, maps the browser UI language to a registry code in [`shared-mindgraph.js`](shared-mindgraph.js) (`resolvePromptLanguageFromUiMode`).
 
-## Load unpacked (Chrome)
+## Load unpacked (Chrome or Edge)
+
+**Chrome**
 
 1. Open `chrome://extensions`.
 2. Turn on **Developer mode** (top right).
@@ -26,13 +28,31 @@ Locale strings live in **`chrome-extension/_locales/`** (`en`, `zh_CN`, `zh_TW`)
 4. Select this **`chrome-extension`** directory (the folder that contains `manifest.json`).
 5. After editing files, click **Reload** on the extension card.
 
+**Microsoft Edge** (Chromium, **120+** recommended)
+
+1. Open `edge://extensions`.
+2. Turn on **Developer mode** (left sidebar).
+3. Click **Load unpacked**.
+4. Select the **same** **`chrome-extension`** folder (not a separate copy).
+5. Click **Reload** after code changes.
+
+You can install in **both** Chrome and Edge on the same PC — each browser keeps its own extension storage and settings. Use Chrome for one workflow and Edge for another if you prefer; they do not conflict.
+
+**Edge notes (v0.4.3+):**
+
+- Requires **Edge 120+** (`minimum_edge_version` in `manifest.json`).
+- Blob downloads use a **single shared offscreen document** (`offscreen-blobs.js`) so mind-map PNG and document extract do not race to create two offscreen pages (a common Edge failure mode).
+- On Edge, the extension **skips service-worker `blob:` URLs** and uses offscreen **BLOBS** instead (Edge often exposes `createObjectURL` in the worker but downloads fail).
+- Large files are sent to offscreen via **ArrayBuffer** (structured clone), not base64, when the browser supports it — better for multi‑MB PDFs.
+- If offscreen is unavailable, downloads fall back to a **data:** URL (works for small files only). Update Edge and reload the extension if downloads fail.
+
 ## Settings
 
-- **Base URL** — Default **`https://mg.mindspringedu.com`** when nothing is stored; you can change and save any MindGraph `https` (or `http`) origin. No trailing slash required.
+- **Server** — Dropdown: **`mg.mindspringedu.com`** (production), **`test.mindspringedu.com`**, or **`localhost:9527`** (local dev). Stored as full `http`/`https` origin after save. Existing custom URLs map to production on load.
 - **Account (phone)** — Same value as **`X-MG-Account`** for API tokens.
 - **API token** — `mgat_…` from the app (**账户信息** → **API Token**). After save, a line under the token shows **valid-until** from **`GET /api/auth/api-token`** (metadata only; same auth headers as `/me`).
 
-The extension sends **`X-MG-Client: chrome-extension`** on mgat requests so the server can label **`[TokenAudit]`** log lines.
+The extension sends **`X-MG-Client: chrome-extension`** or **`X-MG-Client: edge-extension`** (detected automatically) on mgat requests so the server can label **`[TokenAudit]`** log lines.
 
 **Save** calls **`GET /api/auth/me`** to verify the token, then persists settings. **Credentials are written to `chrome.storage.local` only after that request succeeds**. Network failures show an error and nothing is saved.
 
@@ -43,7 +63,7 @@ The extension sends **`X-MG-Client: chrome-extension`** on mgat requests so the 
 
 **Code layout** — [`shared-mindgraph.js`](shared-mindgraph.js) is loaded by the service worker (`importScripts`) and the popup: shared URL helpers, request body, error parsing, and default base URL. The **long `fetch` (PNG) and `downloads.download` run in the service worker** for toolbar, context menu, and keyboard; the **popup** opens a `runtime.connect` port named **`mindmap-generate-<tabId>`** so the worker **starts in `onConnect`** (avoids missing the first control message while idle); the port delivers **progress** and **result** so you can keep working on the page while the popup is closed. If the popup is gone when the job finishes, you still get a **notification** (same as the context menu path when no port is attached).
 
-**Blob download** — Prefer **`URL.createObjectURL` in the service worker** when the browser exposes it; else **`chrome.offscreen` or `browser.offscreen`** with [`offscreen.html`](offscreen.html) and **reason** **`BLOBS`** ([`chrome.offscreen`](https://developer.chrome.com/docs/extensions/reference/api/offscreen)); if neither is available, the worker builds a **data** URL for **`chrome.downloads.download`** via **`FileReader`**.
+**Blob download** — Prefer **`URL.createObjectURL` in the service worker** when the browser exposes it (Chrome); on **Edge**, prefer **`chrome.offscreen` / `browser.offscreen`** with [`offscreen.html`](offscreen.html) and **reason** **`BLOBS`** ([`offscreen-blobs.js`](offscreen-blobs.js)); if neither is available, the worker builds a **data** URL for **`chrome.downloads.download`** via **`FileReader`**.
 
 **Generate progress** — The popup shows a short progress bar and stage labels from the service worker. The context menu and keyboard path use a **notification** on completion (no progress bar). The toolbar path uses the same notification if the port could not be reached (e.g. popup was closed after starting).
 
@@ -69,8 +89,13 @@ Errors from **page** scripts (e.g. news sites) appear in that **page’s** DevTo
 
 ## Security and privacy
 
-- Credentials are stored in **`chrome.storage.local`** on this device (same as typical extensions). Use only on a machine and profile you trust.
-- Broad **`http*://*/*`** host permissions are required so you can point the extension at your own MindGraph deployment. Enter only origins you intend to use.
+- Credentials (`mgat_` token, phone account, server preset) are stored in **`chrome.storage.local`** on this device (unencrypted, same as typical extensions). Use disk encryption, a trusted browser profile, and **revoke API tokens** on shared machines (MindGraph web app → account → API token).
+- **Wireshark / network sniffing:**
+  - **mg.mindspringedu.com** and **test.mindspringedu.com** use **HTTPS** — Bearer tokens and request bodies are encrypted in transit.
+  - **localhost:9527** uses **HTTP** — tokens and page content sent to the API are **plaintext on the wire**. The Settings server dropdown shows a warning when local is selected; use only on a trusted dev machine.
+- **SmartEdu downloads** append `accessToken=` to some CDN URLs (required by SmartEdu). Do not share download links; tokens are cleared from extension storage on 401.
+- **Host permissions:** MindGraph API origins are listed explicitly in `manifest.json`. `https://*/*` and `http://*/*` remain for document extract fetches to ~25 third-party document hosts and SmartEdu CDNs (`*.smartedu.cn`, `*.cbern.com.cn`, etc.). Details: [`HOST_PERMISSIONS.md`](HOST_PERMISSIONS.md).
+- **Backend deploy:** Extension features need a current server build. See [`DEPLOY_VERIFICATION.md`](DEPLOY_VERIFICATION.md) and [`production_security_deploy.md`](../docs/architecture/production_security_deploy.md) (MindMate SSE `proxy_read_timeout` ≥ 300s).
 
 ## Usage
 
@@ -95,7 +120,7 @@ On supported Chinese education and document sites (~25 hosts — see [`doc-extra
 | `api-binary` | Original PDF / m3u8 URL file | 国家智慧教育 SmartEdu |
 | `dom-article` | `.html` / `.txt` | 360doc, 协作文档, generic articles |
 
-**SmartEdu:** Parses `classActivity` URLs, walks lesson `ti_items`, downloads PDFs locally. Video exports an `.m3u8.txt` URL file (use the Windows file-reader for MP4 merge). Token is read from page `localStorage` when logged in on `basic.smartedu.cn`.
+**SmartEdu:** Parses `classActivity` URLs, walks lesson `ti_items`, downloads PDFs locally. **Token is automatic** when you are logged in on any `*.smartedu.cn` tab — the extension reads `ND_UC_AUTH` from page storage (same as [tchMaterial-parser](https://github.com/happycola233/tchMaterial-parser)) and saves it to `chrome.storage.local`. A content script syncs on every SmartEdu visit; the Download tab also offers **Sync login from SmartEdu** or manual paste as fallback. Tokens expire (~7 days); log in again or tap Sync.
 
 **Bundled vendors:** [`vendor/jspdf.umd.min.js`](vendor/jspdf.umd.min.js), [`vendor/html2canvas.min.js`](vendor/html2canvas.min.js), [`vendor/jszip.min.js`](vendor/jszip.min.js) (jsPDF 2.5, html2canvas 1.4, JSZip 3.10).
 

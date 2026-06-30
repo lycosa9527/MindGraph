@@ -102,6 +102,14 @@ export const adminKeys = {
     orphans: () => [...adminKeys.all, 'database', 'orphans'] as const,
   },
 
+  cos: {
+    all: () => [...adminKeys.all, 'cos'] as const,
+    status: () => [...adminKeys.all, 'cos', 'status'] as const,
+    backups: () => [...adminKeys.all, 'cos', 'backups'] as const,
+    crowdsec: () => [...adminKeys.all, 'cos', 'crowdsec'] as const,
+    qdrant: () => [...adminKeys.all, 'cos', 'qdrant'] as const,
+  },
+
   performance: {
     all: () => [...adminKeys.all, 'performance'] as const,
     live: () => [...adminKeys.all, 'performance', 'live'] as const,

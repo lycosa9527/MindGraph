@@ -6,6 +6,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import AdminErrorsTab from '@/components/admin/AdminErrorsTab.vue'
+import AdminCosTab from '@/components/admin/AdminCosTab.vue'
 import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
 import AdminFeaturesTab from '@/components/admin/AdminFeaturesTab.vue'
 import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
@@ -78,6 +79,7 @@ watch(
     <AdminRolesTab v-else-if="activeSubtab === 'roles'" />
     <AdminLibraryTab v-else-if="activeSubtab === 'library'" />
     <AdminDatabaseTab v-else-if="activeSubtab === 'database'" />
+    <AdminCosTab v-else-if="activeSubtab === 'cos'" />
     <AdminPerformanceTab v-else-if="activeSubtab === 'performance'" />
     <AdminErrorsTab v-else-if="activeSubtab === 'errors'" />
     <AdminThinkingCoinsTab v-else-if="activeSubtab === 'thinking_coins'" />

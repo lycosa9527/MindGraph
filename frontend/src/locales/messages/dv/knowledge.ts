@@ -1,10 +1,10 @@
 /**
- * dv UI � knowledge
+ * en UI � knowledge
  */
 
 export default {
   'fileCenterLibrary.title': 'Packages',
-  'fileCenterLibrary.subtitle': 'Source collections grouped by diagram (File Center).',
+  'fileCenterLibrary.subtitle': 'Source collections grouped by diagram (Document Summary).',
   'fileCenterLibrary.openDiagram': 'Open diagram',
   'fileCenterLibrary.badgeCanvas': 'Canvas',
   'fileCenterLibrary.badgeExtension': 'Extension',
@@ -120,7 +120,7 @@ export default {
   'knowledge.header.retrievalTest': 'Retrieval Test',
   'knowledge.header.selected': '{n} selected',
   'knowledge.header.settings': 'Settings',
-  'knowledge.header.title': 'Knowledge Base',
+  'knowledge.header.title': 'Personal Knowledge Base',
   'knowledge.header.upload': 'Upload Documents',
   'knowledge.ragGuide.title': 'How do packages, RAG, and wiki work?',
   'knowledge.ragGuide.subtitle': 'No jargon needed — think of it as a folder of reference material. We index it for search (RAG), then compile short wiki notes, and the AI reads both when you build a mind map.',

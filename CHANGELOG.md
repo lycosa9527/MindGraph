@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.134.0] - 2026-07-01
+
+> **Chrome extension MindMate + security hardening, Tencent COS admin/sync, and file-reader scope trim.**
+
+### Added
+
+- **Chrome extension — MindMate panel** — In-page chat panel with SSE streaming, session history, and page-context capture via [`mindmate-panel.js`](chrome-extension/mindmate-panel.js), [`mindmate-api.js`](chrome-extension/mindmate-api.js), [`mindmate-sse.js`](chrome-extension/mindmate-sse.js), [`mindmate-capture.js`](chrome-extension/mindmate-capture.js).
+- **Chrome extension — Document Summary save** — Save active page or SmartEdu assets to a Knowledge Space package from the popup; library link reads `X-MG-Diagram-Id` after mind-map PNG generation ([`popup.js`](chrome-extension/popup.js), [`shared-mindgraph.js`](chrome-extension/shared-mindgraph.js)).
+- **Chrome extension — Baidu Wenku tier** — Direct PDF fetch engine for `wkretype.bdimg.com` ([`doc-extract/wenku/`](chrome-extension/doc-extract/wenku/)).
+- **Chrome extension — security helpers** — Sender validation, positive-int package checks, and shared storage utilities ([`extension-security.js`](chrome-extension/extension-security.js), [`extension-storage.js`](chrome-extension/extension-storage.js)).
+- **Chrome extension — Edge offscreen blobs** — Shared offscreen document for large downloads without service-worker blob races ([`offscreen-blobs.js`](chrome-extension/offscreen-blobs.js)).
+- **Admin — Tencent COS tab** — Overview, PostgreSQL backups, CrowdSec blocklist mirror, and Qdrant release status with manual trigger actions ([`AdminCosTab.vue`](frontend/src/components/admin/AdminCosTab.vue), [`cos_admin_service.py`](services/admin/cos_admin_service.py), [`routers/admin/cos.py`](routers/admin/cos.py)).
+- **Infrastructure — COS sync pipeline** — Publisher/consumer roles for CrowdSec blocklist, Qdrant, Celery, and stack artifacts via Tencent COS ([`services/infrastructure/sync/`](services/infrastructure/sync/), [`tencent_cos_client.py`](services/utils/tencent_cos_client.py)).
+- **Setup scripts — COS stack update** — `update_stack_from_cos.py`, `update_qdrant_from_cos.py`, `update_celery_from_cos.py` for consumer nodes ([`scripts/setup/`](scripts/setup/), [`scripts/db/update_stack_from_cos.py`](scripts/db/update_stack_from_cos.py)).
+
+### Changed
+
+- **Chrome extension v0.4.18** — Split MindGraph API host permissions from doc-extract wildcards; localhost HTTP warning in Settings; MindMate SSE errors return `ok: false` instead of false success ([`HOST_PERMISSIONS.md`](chrome-extension/HOST_PERMISSIONS.md), [`DEPLOY_VERIFICATION.md`](chrome-extension/DEPLOY_VERIFICATION.md)).
+- **Chrome extension — SmartEdu token** — Page-injected token reader, improved metadata/downloader flow, and user-facing error messages ([`doc-extract/smartedu/token.js`](chrome-extension/doc-extract/smartedu/token.js), [`user-messages.js`](chrome-extension/doc-extract/user-messages.js)).
+- **File reader — scope trim** — Removed Playwright platform browser, SmartEdu tab, and multi-platform download modules; desktop helper focuses on WeChat/DingTalk/WeCom chat handoff only ([`clients/file-reader/README.md`](clients/file-reader/README.md)).
+- **Backup scheduler — COS integration** — PostgreSQL dumps upload to COS with manifest metadata; admin status and manual backup trigger ([`backup_scheduler.py`](services/utils/backup_scheduler.py)).
+- **HTTP middleware — CORS expose headers** — `X-MG-Diagram-Id`, `X-MG-Save-Error`, and `Content-Disposition` exposed for extension cross-origin fetch ([`middleware.py`](services/infrastructure/http/middleware.py)).
+- **Docs** — COS env vars in [`env.example`](env.example); Celery/Qdrant/Fail2ban setup notes for COS consumer role ([`docs/CELERY_SETUP.md`](docs/CELERY_SETUP.md), [`docs/QDRANT_SETUP.md`](docs/QDRANT_SETUP.md), [`docs/FAIL2BAN_SETUP.md`](docs/FAIL2BAN_SETUP.md)).
+
+### Removed
+
+- **File reader — platform browser stack** — Playwright host, SmartEdu panel, YouTube/WeChat Channels/Tencent Meeting extractors, and related tests (superseded by Chrome extension doc-extract).
+
+### Fixed
+
+- **Chrome extension — MindMate SSE errors** — Panel clears status only on successful stream; quota/coin error types mapped to readable messages ([`test/mindmate.spec.js`](chrome-extension/test/mindmate.spec.js)).
+- **Chrome extension — background message validation** — `sender.id` and payload shape checks on save/token handlers ([`background.js`](chrome-extension/background.js), [`offscreen.js`](chrome-extension/offscreen.js)).
+
+### Tests
+
+- **COS sync** — `test_tencent_cos_client.py`, `test_cos_admin_service.py`, `test_qdrant_cos_sync.py`, `test_celery_cos_sync.py`, `test_crowdsec_cos_sync.py`, `test_stack_cos_plan.py`, `test_release_version.py`, `test_update_stack_from_cos.py`.
+- **Chrome extension** — `test/mindmate.spec.js`, extended `test/doc-extract.spec.js` (29 vitest tests).
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.134.0) on next `npm run build` (`prebuild` → `sync-version`).
+
 ## [5.133.0] - 2026-06-30
 
 > **Knowledge Space wiki spine, section-aware chunking, pipeline badges, and file-reader Playwright platform browser.**

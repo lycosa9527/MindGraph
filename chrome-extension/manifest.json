@@ -1,12 +1,23 @@
 {
   "manifest_version": 3,
   "minimum_chrome_version": "109",
+  "minimum_edge_version": "120",
   "name": "__MSG_extName__",
-  "version": "0.4.0",
+  "version": "0.4.18",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
   "permissions": ["activeTab", "scripting", "storage", "downloads", "tabs", "contextMenus", "notifications", "offscreen"],
-  "host_permissions": ["http://*/*", "https://*/*"],
+  "host_permissions": [
+    "https://mg.mindspringedu.com/*",
+    "https://test.mindspringedu.com/*",
+    "http://localhost:9527/*",
+    "http://127.0.0.1:9527/*",
+    "*://*.smartedu.cn/*",
+    "*://*.cbern.com.cn/*",
+    "https://wkretype.bdimg.com/*",
+    "https://*/*",
+    "http://*/*"
+  ],
   "action": {
     "default_title": "__MSG_browserActionTitle__",
     "default_popup": "popup.html",
@@ -33,5 +44,12 @@
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.smartedu.cn/*", "*://smartedu.cn/*"],
+      "js": ["doc-extract/smartedu/token-read-page.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }

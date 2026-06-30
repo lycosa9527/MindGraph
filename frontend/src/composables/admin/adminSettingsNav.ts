@@ -7,6 +7,7 @@ export type SettingsSubtab =
   | 'features'
   | 'roles'
   | 'database'
+  | 'cos'
   | 'performance'
   | 'library'
   | 'gewe'
@@ -25,6 +26,7 @@ export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
   { kind: 'leaf', name: 'features', labelKey: 'admin.featuresTab' },
   { kind: 'leaf', name: 'roles', labelKey: 'admin.roleControl' },
   { kind: 'leaf', name: 'database', labelKey: 'admin.database.tab' },
+  { kind: 'leaf', name: 'cos', labelKey: 'admin.cos.tab' },
   { kind: 'leaf', name: 'performance', labelKey: 'admin.performance.tab' },
   { kind: 'leaf', name: 'errors', labelKey: 'admin.errors.tab' },
   { kind: 'leaf', name: 'thinking_coins', labelKey: 'thinkingCoins.admin.tab' },

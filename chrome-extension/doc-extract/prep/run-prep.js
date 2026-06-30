@@ -23,7 +23,10 @@
       prepApi.clickExpandAll();
     }
     if (steps.includes("autoscroll") && prepApi.autoScrollToBottom) {
-      await prepApi.autoScrollToBottom(500, 120);
+      const stepMs = config && typeof config.autoscrollStepMs === "number" ? config.autoscrollStepMs : 500;
+      const maxSteps =
+        config && typeof config.autoscrollMaxSteps === "number" ? config.autoscrollMaxSteps : 120;
+      await prepApi.autoScrollToBottom(stepMs, maxSteps);
     }
     return { ok: true };
   };

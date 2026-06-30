@@ -47,14 +47,10 @@
    * @returns {Promise<{ blob: Blob, filename: string, m3u8Url?: string }>}
    */
   async function downloadSmartEduAsset(asset, accessToken, authHeaders) {
-    let url = appendAccessTokenQuery(asset.downloadUrl, accessToken);
     if (asset.localKind === "m3u8") {
-      return {
-        blob: new Blob([url], { type: "text/plain;charset=utf-8" }),
-        filename: sanitizeDownloadBasename(asset.title, ".m3u8.txt"),
-        m3u8Url: url,
-      };
+      throw new Error("SmartEdu video download is not supported");
     }
+    let url = appendAccessTokenQuery(asset.downloadUrl, accessToken);
     const res = await fetch(url, {
       method: "GET",
       headers: {
@@ -62,6 +58,9 @@
       },
     });
     if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        await MindGraphDocExtract.clearSmartEduToken();
+      }
       throw new Error(`SmartEdu download HTTP ${res.status} (${asset.title})`);
     }
     const blob = await res.blob();

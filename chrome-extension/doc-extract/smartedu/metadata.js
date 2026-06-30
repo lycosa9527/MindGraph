@@ -10,11 +10,25 @@
   const createSmartEduAsset = MindGraphDocExtract.createSmartEduAsset;
 
   const ALIAS_LABELS = {
-    micro_lesson_video: "视频课程",
     coursewares: "课件",
     lesson_plandesign: "教学设计",
     learning_task: "学习任务单",
   };
+
+  /**
+   * @param {string} alias
+   * @param {{ localKind?: string }} picked
+   * @returns {boolean}
+   */
+  function isDocumentAsset(alias, picked) {
+    if (alias === "micro_lesson_video") {
+      return false;
+    }
+    if (picked && picked.localKind === "m3u8") {
+      return false;
+    }
+    return true;
+  }
 
   /**
    * Pick best download URL from one ti_item (storages may be URL strings or objects).
@@ -154,7 +168,7 @@
         }
         const alias = blockAlias(block);
         const picked = pickBestFromResourceBlock(block);
-        if (!picked.url) {
+        if (!picked.url || !isDocumentAsset(alias, picked)) {
           return;
         }
         const label = blockTitle(block) || ALIAS_LABELS[alias] || alias;
@@ -176,7 +190,7 @@
       const tiItems = Array.isArray(detailJson.ti_items) ? detailJson.ti_items : [];
       tiItems.forEach((item, idx) => {
         const picked = pickDownloadFromTiItem(item);
-        if (!picked.url) {
+        if (!picked.url || !isDocumentAsset(alias, picked)) {
           return;
         }
         const alias = String(item.alias || item.ti_type || `item_${idx}`);
@@ -211,6 +225,9 @@
       },
     });
     if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        await MindGraphDocExtract.clearSmartEduToken();
+      }
       throw new Error(`SmartEdu metadata HTTP ${res.status}`);
     }
     const detailJson = await res.json();

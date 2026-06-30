@@ -1,5 +1,5 @@
 /**
- * ja UI � canvas
+ * en UI � canvas
  */
 
 export default {
@@ -610,7 +610,7 @@ export default {
   'canvas.mindMapDocumentSummary.pairingExpires': 'Expires in {minutes} min',
   'canvas.mindMapDocumentSummary.downloadReader': 'Download file reader (Windows)',
   'canvas.mindMapDocumentSummary.chatWaiting': 'Waiting for upload…',
-  'canvas.mindMapDocumentSummary.chatReceived': 'Chat history received! Indexing…',
+  'canvas.mindMapDocumentSummary.chatReceived': 'Chat history received and added to corpus',
   'canvas.mindMapDocumentSummary.chatIndexing': 'Indexing chat transcript…',
   'canvas.mindMapDocumentSummary.chatDone': 'Chat added to corpus',
   'canvas.mindMapDocumentSummary.chatHandoffFailed': 'Upload or indexing failed — refresh to try again',
@@ -619,9 +619,9 @@ export default {
   'canvas.mindMapDocumentSummary.refreshPairingCode': 'Refresh pairing code',
   'canvas.mindMapDocumentSummary.sessionStartFailed': 'Could not start Document Summary session',
   'canvas.mindMapDocumentSummary.imageTooLarge': 'Image is too large. Maximum size is 10MB.',
-  'canvas.mindMapDocumentSummary.generateNoCorpus': 'Add and index at least one source first',
+  'canvas.mindMapDocumentSummary.generateNoCorpus': 'Add at least one source, then generate',
   'canvas.mindMapDocumentSummary.collabDisabled': 'Unavailable during live collaboration',
-  'canvas.mindMapDocumentSummary.ingestSuccess': 'Source added — indexing started',
+  'canvas.mindMapDocumentSummary.ingestSuccess': 'Source added to corpus',
   'canvas.mindMapDocumentSummary.ingestFailed': 'Failed to add source',
   'canvas.mindMapDocumentSummary.localDocumentLabel': 'Local document:',
   'canvas.mindMapDocumentSummary.uploadDocHint': 'Click to upload Word or PDF',
@@ -635,7 +635,7 @@ export default {
   'canvas.mindMapDocumentSummary.removeImage': 'Remove image',
   'canvas.mindMapDocumentSummary.webLinkLabel': 'Web link:',
   'canvas.mindMapDocumentSummary.webUrlPlaceholder': 'Paste an article, blog, or news URL',
-  'canvas.mindMapDocumentSummary.webLinkHint': 'We fetch the page text and build a mind map structure.',
+  'canvas.mindMapDocumentSummary.webLinkHint': 'We fetch the page and add it to your corpus for indexing.',
   'canvas.mindMapDocumentSummary.generateButton': 'Generate mind map',
   'canvas.mindMapDocumentSummary.generateSuccess': 'Mind map generated',
   'canvas.mindMapDocumentSummary.generateFailed': 'Generation failed. Please try again.',
@@ -647,7 +647,7 @@ export default {
   'canvas.mindMapDocumentSummary.docTooLarge': 'File is too large. Maximum size is 20MB.',
   'canvas.mindMapSideToolbar.learningSheet': 'Learning sheet',
   'canvas.mindMapSideToolbar.oneSentence': 'One-sentence generate',
-  'canvas.mindMapSideToolbar.documentSummary': 'File Center',
+  'canvas.mindMapSideToolbar.documentSummary': 'Document Summary',
   'fileCenter.intro': 'A package is a curated set of sources for this diagram. Add files, notes, or web pages — the diagram completes its branches from these sources.',
   'fileCenter.defaultPackageName': 'Untitled package',
   'fileCenter.packageNameLabel': 'Package name',
@@ -673,7 +673,7 @@ export default {
   'fileCenter.statusFailed': 'Failed',
   'fileCenter.chunkingTooltip': 'Chunking engine and mode (H = hierarchical)',
   'fileCenter.featureDisabledTitle': 'Knowledge Space is disabled',
-  'fileCenter.featureDisabledHint': 'Enable the Knowledge Space feature to use File Center.',
+  'fileCenter.featureDisabledHint': 'Enable the Knowledge Space feature to use Document Summary.',
   'fileCenter.createFailed': 'Failed to create package',
   'fileCenter.updateFailed': 'Failed to update package',
   'fileCenter.deleteFailed': 'Delete failed',

@@ -4,7 +4,7 @@
     "description": "擴充功能名稱"
   },
   "extDescription": {
-    "message": "將目前網頁透過 MindGraph 產生為心智圖 PNG。",
+    "message": "MindGraph 心智圖 PNG 與文件下載 — 支援 Chrome 與 Edge。",
     "description": "商店描述"
   },
   "browserActionTitle": {
@@ -26,6 +26,134 @@
   "btnGenerate": {
     "message": "產生心智圖",
     "description": "主按鈕"
+  },
+  "tabGenerate": {
+    "message": "心智圖",
+    "description": "心智圖產生分頁"
+  },
+  "tabDownload": {
+    "message": "下載",
+    "description": "文件下載分頁"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "AI 對話分頁"
+  },
+  "tabSettings": {
+    "message": "設定",
+    "description": "連線設定分頁"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate 分頁標題"
+  },
+  "mindmateSetupHint": {
+    "message": "請先連線 MindGraph — 在「設定」中填寫伺服器網址、帳號和 API 權杖。",
+    "description": "未設定提示"
+  },
+  "mindmateGoSettings": {
+    "message": "開啟設定",
+    "description": "跳轉設定"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "向 MindMate 提問…",
+    "description": "輸入框占位"
+  },
+  "btnMindmateSend": {
+    "message": "傳送",
+    "description": "傳送"
+  },
+  "btnMindmateStop": {
+    "message": "停止",
+    "description": "停止生成"
+  },
+  "btnMindmateNew": {
+    "message": "新對話",
+    "description": "新對話"
+  },
+  "linkMindmateWeb": {
+    "message": "開啟網頁歷史",
+    "description": "開啟網頁版"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate 正在回覆…",
+    "description": "串流狀態"
+  },
+  "mindmateNewChatStarted": {
+    "message": "已開始新對話。",
+    "description": "新對話"
+  },
+  "mindmateStopped": {
+    "message": "已停止。",
+    "description": "停止"
+  },
+  "mindmateReadingPage": {
+    "message": "正在讀取頁面內容…",
+    "description": "首則訊息抓取網頁"
+  },
+  "mindmateIncludePage": {
+    "message": "包含目前網頁內容",
+    "description": "首則 MindMate 訊息附帶網頁"
+  },
+  "mindmatePageContextIntro": {
+    "message": "你正在協助一位教育領域的使用者。使用者目前正在瀏覽以下網頁，請結合頁面內容回答。",
+    "description": "MindMate 首則訊息頁面上下文"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**頁面：** $1\n**URL：** $2",
+    "description": "MindMate 頁面元資訊"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**使用者問題：** $1",
+    "description": "MindMate 使用者問題行"
+  },
+  "errMindMatePageEmpty": {
+    "message": "此頁面沒有可讀內容。請先在頁面上選取文字，或換一頁再試。",
+    "description": "MindMate 頁面為空"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "無法讀取此頁面。",
+    "description": "MindMate 頁面抓取失敗"
+  },
+  "errMindMateNotConfigured": {
+    "message": "尚未連線。請開啟「設定」並儲存 MindGraph 憑證。",
+    "description": "未設定"
+  },
+  "errMindMateLoginExpired": {
+    "message": "登入已過期。請在「設定」中更新 API 權杖。",
+    "description": "401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "無法連線 MindMate。請檢查伺服器網址後重試。",
+    "description": "連線失敗"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate 暫時無法回覆，請稍後再試。",
+    "description": "串流錯誤"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "今日 AI 用量已達上限，請明天再試或在網頁端查看詳情。",
+    "description": "每日 token 上限"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "思維幣不足，無法傳送此訊息。",
+    "description": "思維幣不足"
+  },
+  "localServerHttpWarning": {
+    "message": "本機開發使用 HTTP，API 權杖與頁面內容在網路上未加密。請僅在可信環境使用。",
+    "description": "選擇 localhost 伺服器時的警告"
+  },
+  "downloadTitle": {
+    "message": "下載",
+    "description": "下載分頁標題"
+  },
+  "downloadTagline": {
+    "message": "從支援的網站儲存 PDF 與文件（不含影片）。",
+    "description": "下載分頁副標題"
+  },
+  "downloadUnsupportedPage": {
+    "message": "目前頁面不支援下載。請先開啟智慧教育、百度文庫、360doc、豆丁等文件頁，再開啟本面板。",
+    "description": "目前分頁不支援文件擷取時的提示"
   },
   "fileCenterSectionLabel": {
     "message": "儲存到檔案中心",
@@ -60,12 +188,20 @@
     "description": "設定說明"
   },
   "labelBaseUrl": {
-    "message": "基礎網址",
+    "message": "伺服器",
     "description": "標籤"
   },
-  "placeholderBaseUrl": {
-    "message": "https://mg.mindspringedu.com",
-    "description": "預留提示文字"
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "正式環境"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "測試環境"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "本機開發"
   },
   "labelAccount": {
     "message": "帳號（手機號碼）",
@@ -120,27 +256,27 @@
     "description": "錯誤"
   },
   "errFailed": {
-    "message": "發生錯誤。",
+    "message": "出了點問題。請重試，或在 chrome://extensions 重新載入擴充功能。",
     "description": "通用錯誤"
   },
   "errDownloadPrepare": {
-    "message": "無法開始下載。請重新載入擴充功能，或使用較新的 Google Chrome（109+）或 Microsoft Edge（120+）以取得完整支援。",
+    "message": "無法開始儲存檔案。請重新載入擴充功能後再試（需 Chrome 109+ 或 Edge 120+）。",
     "description": "下載準備失敗"
   },
   "errSettingsIncomplete": {
-    "message": "請開啟「設定」，填寫基礎網址、帳號（手機號碼）和 API 權杖。",
+    "message": "設定不完整。請開啟「設定」，填寫 MindGraph 網址、手機號碼和 API 權杖。",
     "description": "背景錯誤"
   },
   "errNoPageText": {
-    "message": "無法讀取頁面文字。請在頁面中選取文字，或嘗試其他網站。",
+    "message": "頁面上沒有可讀文字。請先選取一段文字，或換一頁再試。",
     "description": "背景錯誤"
   },
   "errApi": {
-    "message": "API $1：$2",
+    "message": "MindGraph 伺服器出錯（$1）。請檢查設定後重試。",
     "description": "API 錯誤"
   },
   "errRestrictedPage": {
-    "message": "無法在此頁面使用（僅支援 http/https 網頁）。請開啟一般網站後再試。",
+    "message": "這種頁面不支援。請開啟一般網頁（http 或 https）後再試。",
     "description": "非網頁位址"
   },
   "errRateLimit": {
@@ -181,34 +317,50 @@
   },
   "docExtractDetected": {
     "message": "偵測到：$1 · $2",
-    "description": "站點與引擎"
+    "description": "站點與引擎（舊）"
+  },
+  "docExtractDetectedSite": {
+    "message": "目前站點：$1",
+    "description": "下載頁友好站點名"
+  },
+  "docExtractActiveTab": {
+    "message": "正在讀取分頁：$1",
+    "description": "用於擷取預覽的分頁網域"
   },
   "docExtractAssetCount": {
     "message": "共 $1 個資源",
     "description": "智慧教育資源數量"
   },
   "docExtractPageCount": {
-    "message": "約 $1 頁（請先捲動載入全部頁面）",
+    "message": "約 $1 頁可見 — 擷取前請先捲動預覽區載入更多頁面。",
     "description": "畫布頁數估計"
   },
   "docExtractScrollHint": {
-    "message": "擷取前請先捲動預覽區以載入全部頁面。",
+    "message": "擷取前請先捲動預覽區以載入免費頁面。百度文庫請勿點「展開全文」— 會跳出 VIP 付費牆。",
     "description": "自動捲動提示"
   },
+  "btnSyncSmartEduToken": {
+    "message": "從 SmartEdu 同步登入",
+    "description": "從已開啟的 SmartEdu 分頁讀取 token"
+  },
   "btnPasteSmartEduToken": {
-    "message": "貼上 SmartEdu token…",
+    "message": "手動貼上 token…",
     "description": "手動貼上 token"
   },
   "smarteduPasteTokenPrompt": {
-    "message": "貼上 SmartEdu access_token（在 basic.smartedu.cn 控制台取得）：",
+    "message": "貼上 SmartEdu access_token（僅在自動同步失敗時使用）：",
     "description": "貼上 token 提示"
   },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu token：正在同步…",
+    "description": "同步進行中"
+  },
   "smarteduTokenConnected": {
-    "message": "SmartEdu token：已連線",
+    "message": "SmartEdu token：已連線（來自您的登入）",
     "description": "Token 狀態"
   },
   "smarteduTokenMissing": {
-    "message": "SmartEdu token：未設定 — 請登入 basic.smartedu.cn 或貼上 token",
+    "message": "SmartEdu token：未找到 — 請在 auth.smartedu.cn 登入並開啟 SmartEdu 頁面，再點「同步」",
     "description": "Token 狀態"
   },
   "btnExtractDocument": {
@@ -216,27 +368,79 @@
     "description": "開始本機下載"
   },
   "statusExtractDownloadStarted": {
-    "message": "文件下載已開始。",
+    "message": "完成 — 檔案馬上開始下載。",
     "description": "擷取下載狀態"
   },
+  "statusWenkuPreviewLimited": {
+    "message": "已開始下載 — 未偵測到 VIP，僅儲存前 $1 頁預覽（百度文庫免費約 8 頁）。",
+    "description": "百度文庫預覽頁數受限時的成功提示"
+  },
+  "errExtractFailed": {
+    "message": "無法下載此文件。請重新整理頁面後再點「擷取文件」。",
+    "description": "文件擷取通用失敗"
+  },
+  "errExtractNoPages": {
+    "message": "沒有找到文件頁面。請先捲動預覽載入頁面，再點「擷取文件」。",
+    "description": "畫布為空"
+  },
+  "errExtractNoText": {
+    "message": "沒有找到正文內容。請換一頁或換一個區塊再試。",
+    "description": "文章擷取為空"
+  },
+  "errExtractRetry": {
+    "message": "頁面還沒準備好。請重新整理分頁後再試。",
+    "description": "注入/準備失敗"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "本課沒有可下載檔案。請換一節課，或勾選要下載的資源。",
+    "description": "智慧教育無資源"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "需要先登入智慧教育。請在 auth.smartedu.cn 登入並開啟課程頁，再點「從 SmartEdu 同步登入」。",
+    "description": "智慧教育鑑權失敗"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "智慧教育拒絕了下載。請重新同步登入，或換一份檔案。",
+    "description": "智慧教育下載失敗"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "不支援下載影片。請只選擇 PDF 或文件類資源。",
+    "description": "智慧教育影片"
+  },
+  "errExtractWrongPage": {
+    "message": "這不是支援的文件頁。請開啟文件閱讀頁後再試。",
+    "description": "連結不對"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "還沒有可儲存的內容。百度文庫請先捲動免費預覽（不要點「展開全文」），再試。",
+    "description": "文庫無預覽"
+  },
+  "errExtractLoginRequired": {
+    "message": "需要先在網站上登入。登入後再點「擷取文件」。",
+    "description": "需要登入"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "網站拒絕了下載。可能需要登入、付費或 VIP 帳號。",
+    "description": "二進位下載被拒"
+  },
   "extractStagePreparing": {
-    "message": "準備頁面…",
+    "message": "正在準備頁面…",
     "description": "擷取進度"
   },
   "extractStageScrolling": {
-    "message": "捲動載入全部頁面…",
+    "message": "正在捲動載入頁面…",
     "description": "擷取進度"
   },
   "extractStageCollecting": {
-    "message": "採集內容…",
+    "message": "正在複製頁面內容…",
     "description": "擷取進度"
   },
   "extractStageAssembling": {
-    "message": "組裝檔案…",
+    "message": "正在產生檔案…",
     "description": "擷取進度"
   },
   "extractStageDownloading": {
-    "message": "下載中…",
+    "message": "正在儲存到電腦…",
     "description": "擷取進度"
   },
   "settingsAdvanced": {
@@ -276,7 +480,7 @@
     "description": "含詳情的網路錯誤"
   },
   "errPortDisconnected": {
-    "message": "與擴充功能的連線已中斷。請再試一次；若仍失敗，請在 chrome://extensions 重新載入 MindGraph。",
+    "message": "連線已中斷。請再點一次「擷取文件」。若仍失敗，請在 chrome://extensions 重新載入 MindGraph。",
     "description": "背景連線關閉"
   },
   "commandGenerateDescription": {

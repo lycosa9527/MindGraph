@@ -136,6 +136,16 @@ python -m services.infrastructure.utils.launch_commands
 
 Includes Redis, Qdrant, Celery, PostgreSQL, Playwright, and Tesseract hints in one place.
 
+## COS mirror
+
+When PyPI is unreachable, a publisher host uploads the Celery wheel to COS; consumers install from COS with the same script used for Qdrant:
+
+```bash
+python scripts/db/update_stack_from_cos.py
+```
+
+Choose **1) Check both** or **2) Update both from COS**. See `COS_SYNC_*` and `CELERY_TARGET_VERSION` in [env.example](../env.example).
+
 ## Related files
 
 | File | Role |

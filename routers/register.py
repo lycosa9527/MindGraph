@@ -24,6 +24,7 @@ from routers import (
     public_dashboard,
     relationship_labels,
 )
+from routers.admin import cos_router as admin_cos
 from routers.admin import database_router as admin_database
 from routers.admin import env_router as admin_env
 from routers.admin import logs_router as admin_logs
@@ -236,6 +237,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(admin_logs)  # Admin log streaming
     app.include_router(admin_realtime)  # Admin realtime user activity monitoring
     app.include_router(admin_database)  # Admin database management (merge, export/import)
+    app.include_router(admin_cos)  # Admin COS mirror management
 
     # Feature routers with API endpoints (must be before vue_spa catch-all)
     kitty_routes = importlib.import_module("routers.features.kitty.routes")

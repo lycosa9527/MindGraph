@@ -61,8 +61,8 @@ from services.infrastructure.security.abuseipdb_service import (
 from services.infrastructure.security.crowdsec_blocklist_service import (
     apply_crowdsec_baseline_from_file_async,
     crowdsec_blocklist_sync_enabled,
-    merge_crowdsec_blocklist_from_network,
 )
+from services.infrastructure.sync.crowdsec_cos_sync import merge_crowdsec_blocklist_for_role
 from services.infrastructure.security.fail2ban_integration.startup_gate import (
     enforce_fail2ban_startup_or_exit,
 )
@@ -76,6 +76,10 @@ from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_distributed_lock import (
     acquire_startup_sms_notification_lock,
     release_startup_sms_notification_lock,
+)
+from services.infrastructure.sync.cos_mirror_scheduler import (
+    run_cos_mirror_startup,
+    start_cos_mirror_scheduler,
 )
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -232,10 +236,16 @@ async def lifespan(fastapi_app: FastAPI):
     await apply_crowdsec_baseline_from_file_async()
     if crowdsec_blocklist_sync_enabled():
         try:
-            await merge_crowdsec_blocklist_from_network()
+            await merge_crowdsec_blocklist_for_role()
         except (*BACKGROUND_INFRA_ERRORS, httpx.HTTPError) as crowdsec_exc:
             if is_main_worker:
                 logger.warning("[CrowdSec] Startup blocklist merge failed: %s", crowdsec_exc)
+
+    try:
+        await run_cos_mirror_startup()
+    except BACKGROUND_INFRA_ERRORS as cos_mirror_exc:
+        if is_main_worker:
+            logger.warning("[COSMirror] Startup hook failed: %s", cos_mirror_exc)
 
     clear_ip_reputation_sismember_cache()
 
@@ -443,6 +453,13 @@ async def lifespan(fastapi_app: FastAPI):
         if worker_id == "0" or not worker_id:
             logger.warning("Failed to start AbuseIPDB blacklist scheduler: %s", e)
 
+    cos_mirror_task: Optional[asyncio.Task] = None
+    try:
+        cos_mirror_task = asyncio.create_task(start_cos_mirror_scheduler())
+    except BACKGROUND_INFRA_ERRORS as e:
+        if worker_id == "0" or not worker_id:
+            logger.warning("Failed to start COS mirror scheduler: %s", e)
+
     dify_health_poller_task: Optional[asyncio.Task] = None
     try:
         clear_dify_server_schema_cache()
@@ -545,6 +562,7 @@ async def lifespan(fastapi_app: FastAPI):
         worker_perf_stop=worker_perf_stop,
         backup_scheduler_task=backup_scheduler_task,
         abuseipdb_scheduler_task=abuseipdb_scheduler_task,
+        cos_mirror_task=cos_mirror_task,
         process_monitor_task=process_monitor_task,
         health_monitor_task=health_monitor_task,
         api_key_usage_flush_task=api_key_usage_flush_task,

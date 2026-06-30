@@ -8,7 +8,45 @@
   </head>
   <body>
     <div class="accent-bar" aria-hidden="true"></div>
-    <div id="main-view" class="panel">
+    <nav class="popup-tabs" role="tablist" aria-label="MindGraph">
+      <button
+        type="button"
+        id="tab-generate"
+        class="popup-tab is-active"
+        role="tab"
+        aria-selected="true"
+        aria-controls="generate-view"
+        data-i18n="tabGenerate"
+      ></button>
+      <button
+        type="button"
+        id="tab-mindmate"
+        class="popup-tab"
+        role="tab"
+        aria-selected="false"
+        aria-controls="mindmate-view"
+        data-i18n="tabMindmate"
+      ></button>
+      <button
+        type="button"
+        id="tab-download"
+        class="popup-tab"
+        role="tab"
+        aria-selected="false"
+        aria-controls="download-view"
+        data-i18n="tabDownload"
+      ></button>
+      <button
+        type="button"
+        id="tab-settings"
+        class="popup-tab"
+        role="tab"
+        aria-selected="false"
+        aria-controls="settings-view"
+        data-i18n="tabSettings"
+      ></button>
+    </nav>
+    <div id="generate-view" class="panel" role="tabpanel">
       <header class="panel-head panel-head-with-close">
         <div class="panel-head-titles">
           <h1 class="title" data-i18n="appTitle"></h1>
@@ -25,24 +63,6 @@
       </header>
       <div class="actions">
         <button type="button" id="btn-generate" class="btn btn-primary" data-i18n="btnGenerate"></button>
-        <button type="button" id="btn-settings" class="btn btn-secondary" data-i18n="btnSettings"></button>
-      </div>
-      <div id="doc-extract-section" class="file-center-section" hidden>
-        <p class="eyebrow field-section-label" data-i18n="docExtractSectionLabel"></p>
-        <p id="doc-extract-detected" class="field-hint"></p>
-        <p id="doc-extract-title" class="field-hint"></p>
-        <p id="doc-extract-pages" class="field-hint" hidden></p>
-        <div id="smartedu-extract-panel" hidden>
-          <p id="smartedu-token-status" class="field-hint"></p>
-          <button type="button" id="btn-paste-smartedu-token" class="btn btn-secondary btn-compact" data-i18n="btnPasteSmartEduToken"></button>
-          <div id="smartedu-asset-list" class="smartedu-asset-list"></div>
-        </div>
-        <button
-          type="button"
-          id="btn-extract-document"
-          class="btn btn-secondary"
-          data-i18n="btnExtractDocument"
-        ></button>
       </div>
       <div id="file-center-section" class="file-center-section">
         <p class="eyebrow field-section-label" data-i18n="fileCenterSectionLabel"></p>
@@ -76,6 +96,107 @@
         <p id="library-full-note" class="library-full-note" aria-live="polite" hidden></p>
       </div>
     </div>
+    <div id="mindmate-view" class="panel" role="tabpanel" hidden>
+      <header class="panel-head panel-head-with-close">
+        <div class="panel-head-titles">
+          <h1 class="title title-sm" data-i18n="mindmateTitle"></h1>
+        </div>
+        <button
+          type="button"
+          id="btn-close-mindmate"
+          class="btn-icon-close"
+          data-i18n-aria-label="btnClose"
+        >
+          <span class="btn-icon-close-glyph" aria-hidden="true">×</span>
+        </button>
+      </header>
+      <div id="mindmate-setup-hint" class="mindmate-setup-hint">
+        <p class="field-hint" data-i18n="mindmateSetupHint"></p>
+        <button type="button" id="btn-mindmate-go-settings" class="btn btn-secondary" data-i18n="mindmateGoSettings"></button>
+      </div>
+      <div id="mindmate-chat-wrap" class="mindmate-chat-wrap" hidden>
+        <div class="mindmate-toolbar">
+          <button type="button" id="btn-mindmate-new" class="btn btn-secondary btn-compact" data-i18n="btnMindmateNew"></button>
+          <a
+            id="link-mindmate-web"
+            class="mindmate-web-link"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-i18n="linkMindmateWeb"
+          ></a>
+        </div>
+        <div id="mindmate-messages" class="mindmate-messages" role="log" aria-live="polite"></div>
+        <div class="mindmate-composer">
+          <textarea
+            id="mindmate-input"
+            class="mindmate-input"
+            rows="2"
+            data-i18n-placeholder="mindmateInputPlaceholder"
+          ></textarea>
+          <div class="mindmate-composer-actions">
+            <label class="mindmate-include-page" for="mindmate-include-page">
+              <input type="checkbox" id="mindmate-include-page" checked />
+              <span data-i18n="mindmateIncludePage"></span>
+            </label>
+            <div class="mindmate-composer-buttons">
+              <button type="button" id="btn-mindmate-stop" class="btn btn-secondary" data-i18n="btnMindmateStop" hidden></button>
+              <button type="button" id="btn-mindmate-send" class="btn btn-primary" data-i18n="btnMindmateSend"></button>
+            </div>
+          </div>
+        </div>
+        <p id="mindmate-status" class="status" aria-live="polite"></p>
+      </div>
+    </div>
+    <div id="download-view" class="panel" role="tabpanel" hidden>
+      <header class="panel-head panel-head-with-close">
+        <div class="panel-head-titles">
+          <h1 class="title title-sm" data-i18n="downloadTitle"></h1>
+          <p class="lead" data-i18n="downloadTagline"></p>
+        </div>
+        <button
+          type="button"
+          id="btn-close-download"
+          class="btn-icon-close"
+          data-i18n-aria-label="btnClose"
+        >
+          <span class="btn-icon-close-glyph" aria-hidden="true">×</span>
+        </button>
+      </header>
+      <div id="download-unsupported" class="download-empty" hidden>
+        <p class="field-hint" data-i18n="downloadUnsupportedPage"></p>
+      </div>
+      <div id="doc-extract-section" class="file-center-section" hidden>
+        <p class="eyebrow field-section-label" data-i18n="docExtractSectionLabel"></p>
+        <p id="doc-extract-detected" class="field-hint"></p>
+        <p id="doc-extract-active-tab" class="field-hint"></p>
+        <p id="doc-extract-title" class="field-hint"></p>
+        <p id="doc-extract-pages" class="field-hint" hidden></p>
+        <div id="smartedu-extract-panel" hidden>
+          <p id="smartedu-token-status" class="field-hint"></p>
+          <div class="smartedu-token-actions">
+            <button type="button" id="btn-sync-smartedu-token" class="btn btn-secondary btn-compact" data-i18n="btnSyncSmartEduToken"></button>
+            <button type="button" id="btn-paste-smartedu-token" class="btn btn-secondary btn-compact btn-subtle" data-i18n="btnPasteSmartEduToken"></button>
+          </div>
+          <div id="smartedu-asset-list" class="smartedu-asset-list"></div>
+        </div>
+        <button
+          type="button"
+          id="btn-extract-document"
+          class="btn btn-primary"
+          data-i18n="btnExtractDocument"
+        ></button>
+      </div>
+      <div class="main-status-area">
+        <div id="download-progress-wrap" class="progress-wrap" hidden>
+          <div class="progress-track" aria-hidden="true">
+            <div id="download-progress-fill" class="progress-fill"></div>
+          </div>
+          <p id="download-progress-stage" class="progress-stage"></p>
+        </div>
+        <p id="download-status" class="status" aria-live="polite"></p>
+      </div>
+    </div>
     <div id="settings-view" class="panel" hidden>
       <header class="panel-head panel-head-with-close">
         <div class="panel-head-titles">
@@ -95,7 +216,8 @@
       <div class="fields">
         <label class="field">
           <span class="field-label" data-i18n="labelBaseUrl"></span>
-          <input type="url" id="field-base-url" data-i18n-placeholder="placeholderBaseUrl" autocomplete="off" />
+          <select id="field-base-url" class="field-select"></select>
+          <p id="field-local-server-warning" class="field-hint field-hint-warn" hidden data-i18n="localServerHttpWarning"></p>
         </label>
         <label class="field">
           <span class="field-label" data-i18n="labelAccount"></span>
@@ -144,13 +266,18 @@
       </div>
       <div class="actions">
         <button type="button" id="btn-save" class="btn btn-primary" data-i18n="btnSave"></button>
-        <button type="button" id="btn-back" class="btn btn-secondary" data-i18n="btnBack"></button>
       </div>
       <div class="settings-status-area">
         <p id="settings-status" class="status" aria-live="polite"></p>
       </div>
     </div>
     <script src="shared-mindgraph.js"></script>
+    <script src="extension-storage.js"></script>
+    <script src="mindmate-sse.js"></script>
+    <script src="mindmate-api.js"></script>
+    <script src="mindmate-compose.js"></script>
+    <script src="mindmate-session.js"></script>
+    <script src="mindmate-panel.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

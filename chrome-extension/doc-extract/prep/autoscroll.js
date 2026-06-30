@@ -17,11 +17,20 @@
     const limit = typeof maxSteps === "number" ? maxSteps : 120;
     return new Promise((resolve) => {
       let steps = 0;
+      let lastHeight = 0;
+      let stableTicks = 0;
       const tick = () => {
         steps += 1;
         window.scrollTo(0, document.body.scrollHeight);
-        if (steps >= limit) {
-          resolve({ steps, height: document.body.scrollHeight });
+        const height = document.body.scrollHeight;
+        if (height <= lastHeight) {
+          stableTicks += 1;
+        } else {
+          stableTicks = 0;
+          lastHeight = height;
+        }
+        if (steps >= limit || stableTicks >= 3) {
+          resolve({ steps, height, stoppedEarly: stableTicks >= 3 });
           return;
         }
         setTimeout(tick, delay);

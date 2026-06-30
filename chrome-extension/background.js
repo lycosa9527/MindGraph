@@ -1,14 +1,16 @@
 /**
- * Service worker — MindGraph Chrome extension.
+ * Service worker — MindGraph browser extension (Chrome & Edge).
  * Fetches PNG from /api/web_content_mindmap_png with mgat_ + X-MG-Account headers.
  *
- * Download href: the platform does not expose a usable URL.createObjectURL for Blobs
- * in extension service workers (W3C/Chrome: use offscreen "BLOBS" or data: URLs; see
- * prepareDownloadUrlFromPngBlob). Prompt output language codes: keep in sync with
- * scripts/build_prompt_language_registry.py (_RAW).
+ * Download href: offscreen-blobs.js (offscreen BLOBS, data URL fallback).
+ * Prompt output language codes: keep in sync with scripts/build_prompt_language_registry.py (_RAW).
  */
 
 importScripts("shared-mindgraph.js");
+importScripts("extension-storage.js");
+importScripts("extension-security.js");
+importScripts("mindmate-capture.js");
+importScripts("offscreen-blobs.js");
 importScripts("vendor/jspdf.umd.min.js");
 importScripts("vendor/jszip.min.js");
 importScripts("doc-extract/smartedu/models.js");
@@ -18,6 +20,7 @@ importScripts("doc-extract/smartedu/metadata.js");
 importScripts("doc-extract/smartedu/downloader.js");
 importScripts("doc-extract/hosts.js");
 importScripts("doc-extract/hosts/wenku.js");
+importScripts("doc-extract/wenku/preview-notice.js");
 importScripts("doc-extract/hosts/docin.js");
 importScripts("doc-extract/hosts/smartedu.js");
 importScripts("doc-extract/prepare-download.js");
@@ -25,6 +28,7 @@ importScripts("doc-extract/engines/canvas-pdf.js");
 importScripts("doc-extract/engines/html2canvas-pdf.js");
 importScripts("doc-extract/engines/dom-article.js");
 importScripts("doc-extract/engines/api-binary.js");
+importScripts("doc-extract/user-messages.js");
 importScripts("doc-extract/extract-core.js");
 
 const MAX_CHARS = MindGraphShared.MAX_PAGE_CHARS;
@@ -38,187 +42,6 @@ function newRequestId() {
     return crypto.randomUUID();
   }
   return `mg-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-}
-
-const OFFSCREEN_BLOB_PAGE = "offscreen.html";
-let offscreenBlobReady = false;
-/** @type {Promise<void> | null} */
-let offscreenBlobBootstrapping = null;
-
-/**
- * @returns {object | null}
- */
-function getOffscreenApi() {
-  if (typeof chrome !== "undefined" && chrome.offscreen) {
-    return chrome.offscreen;
-  }
-  if (globalThis.browser && globalThis.browser.offscreen) {
-    return globalThis.browser.offscreen;
-  }
-  return null;
-}
-
-/**
- * Most Chromium service workers do not expose a working createObjectURL for Blobs; some
- * engines may, so we probe and use try/catch in prepare if the call still fails.
- * @returns {boolean}
- */
-function serviceWorkerHasBlobObjectUrl() {
-  const U = globalThis.URL;
-  return Boolean(
-    U && typeof U.createObjectURL === "function" && typeof U.revokeObjectURL === "function",
-  );
-}
-
-/**
- * @param {object} offApi
- * @returns {Promise<void>}
- */
-async function ensureOffscreenDocumentForBlobs(offApi) {
-  if (offscreenBlobReady) {
-    return;
-  }
-  if (offscreenBlobBootstrapping) {
-    return offscreenBlobBootstrapping;
-  }
-  const offscreenUrl = chrome.runtime.getURL(OFFSCREEN_BLOB_PAGE);
-  offscreenBlobBootstrapping = (async () => {
-    if (chrome.runtime.getContexts) {
-      const existing = await chrome.runtime.getContexts({
-        contextTypes: ["OFFSCREEN_DOCUMENT"],
-        documentUrls: [offscreenUrl],
-      });
-      if (existing && existing.length > 0) {
-        offscreenBlobReady = true;
-        return;
-      }
-    }
-    try {
-      await offApi.createDocument({
-        url: OFFSCREEN_BLOB_PAGE,
-        reasons: ["BLOBS"],
-        justification:
-          "Offscreen (reason BLOBS) provides URL.createObjectURL for Blobs in Chrome MV3; this extension uses it when the service worker does not (see prepareDownloadUrlFromPngBlob).",
-      });
-    } catch (e) {
-      if (chrome.runtime.getContexts) {
-        throw e;
-      }
-      const text = (e && e.message) || String(e);
-      if (!/only a single|already exists|offscreen|OFFSCREEN|single offscreen/i.test(text)) {
-        throw e;
-      }
-    }
-    offscreenBlobReady = true;
-  })();
-  try {
-    await offscreenBlobBootstrapping;
-  } finally {
-    offscreenBlobBootstrapping = null;
-  }
-}
-
-/**
- * @param {Blob} blob
- * @returns {Promise<string>}
- */
-function blobToDataUrlInServiceWorker(blob) {
-  return new Promise((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onload = () => {
-      resolve(String(fr.result));
-    };
-    fr.onerror = () => {
-      reject(fr.error || new Error("FileReader"));
-    };
-    fr.readAsDataURL(blob);
-  });
-}
-
-/**
- * 1) Rare: blob: URL in the service worker if the engine exposes a working createObjectURL.
- * 2) Preferred on Chrome: chrome.offscreen / browser.offscreen + offscreen.html (BLOBS).
- * 3) Portable: data: URL via FileReader (e.g. Chromium forks with no `chrome.offscreen`).
- * @param {Blob} blob
- * @returns {Promise<{ href: string, revokeMode: "sw" | "offscreen" | "none" }>}
- */
-async function prepareDownloadUrlFromPngBlob(blob) {
-  if (serviceWorkerHasBlobObjectUrl()) {
-    try {
-      return { href: globalThis.URL.createObjectURL(blob), revokeMode: "sw" };
-    } catch (e) {
-      console.warn("[MindGraph] URL.createObjectURL in service worker failed, using next path", e);
-    }
-  }
-  const offApi = getOffscreenApi();
-  if (offApi) {
-    await ensureOffscreenDocumentForBlobs(offApi);
-    const href = await createBlobObjectUrlInOffscreen(blob);
-    return { href: href, revokeMode: "offscreen" };
-  }
-  return { href: await blobToDataUrlInServiceWorker(blob), revokeMode: "none" };
-}
-
-/**
- * chrome.runtime.sendMessage uses JSON serialization, so Blob objects are lost in transit.
- * Convert to base64 first so the payload is JSON-safe; the offscreen document reconstructs
- * the Blob from base64 + mimeType before calling URL.createObjectURL.
- * @param {Blob} blob
- * @returns {Promise<string>}
- */
-async function createBlobObjectUrlInOffscreen(blob) {
-  const arrayBuffer = await blob.arrayBuffer();
-  const bytes = new Uint8Array(arrayBuffer);
-  // Process in 8 KB chunks: String.fromCharCode.apply converts a typed-array
-  // subarray with a single native call, avoiding O(n²) byte-by-byte concatenation.
-  const chunkSize = 8192;
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
-  }
-  const base64 = btoa(binary);
-  const mimeType = blob.type || "image/png";
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage({ type: "MINDGRAPH_BLOB_URL", base64, mimeType }, (response) => {
-      const last = chrome.runtime.lastError;
-      if (last) {
-        reject(new Error(last.message));
-        return;
-      }
-      if (response && response.ok && typeof response.href === "string") {
-        resolve(response.href);
-        return;
-      }
-      reject(new Error((response && response.error) || "BLOB_URL_FAILED"));
-    });
-  });
-}
-
-/**
- * @param {string} href
- * @param {"sw" | "offscreen" | "none"} revokeMode
- */
-function scheduleDownloadUrlRevoke(href, revokeMode) {
-  if (revokeMode === "none") {
-    return;
-  }
-  if (revokeMode === "sw") {
-    setTimeout(() => {
-      try {
-        if (globalThis.URL && globalThis.URL.revokeObjectURL) {
-          globalThis.URL.revokeObjectURL(href);
-        }
-      } catch {
-        /* ignore */
-      }
-    }, 60_000);
-    return;
-  }
-  setTimeout(() => {
-    chrome.runtime.sendMessage({ type: "MINDGRAPH_REVOKE_BLOB_URL", href: href }, () => {
-      void chrome.runtime.lastError;
-    });
-  }, 60_000);
 }
 
 /** @type {readonly string[]} */
@@ -462,15 +285,16 @@ async function runGenerateMindmap(tabId, options) {
   try {
     const settings = await chrome.storage.local.get([
       "baseUrl",
+      "baseUrlPresetId",
       "account",
       "token",
       "saveAs",
       "pngWidth",
       "pngHeight",
     ]);
-    const baseUrl = normalizeBaseUrl(
-      settings.baseUrl || MindGraphShared.DEFAULT_MINDGRAPH_BASE_URL,
-    );
+    const resolvedServer = MindGraphShared.resolveMindGraphSettings(settings);
+    const baseUrl = resolvedServer.baseUrl;
+    const baseUrlPresetId = resolvedServer.presetId;
     const account = (settings.account || "").trim();
     const token = (settings.token || "").trim();
     if (!baseUrl || !account || !token) {
@@ -531,7 +355,7 @@ async function runGenerateMindmap(tabId, options) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
           "X-MG-Account": account,
-          "X-MG-Client": "chrome-extension",
+          "X-MG-Client": MindGraphShared.mgClientHeader(),
           "X-Request-Id": requestId,
         },
         body: JSON.stringify(body),
@@ -580,17 +404,14 @@ async function runGenerateMindmap(tabId, options) {
       return;
     }
 
-    const savedDiagramId = (res.headers.get("X-MG-Diagram-Id") || "").trim() || null;
-    const diagramUrl = savedDiagramId
-      ? `${baseUrl}/canvas?diagramId=${encodeURIComponent(savedDiagramId)}`
-      : null;
+    const savedDiagramId = MindGraphShared.parseDiagramIdFromPngResponse(res);
     const saveError = (res.headers.get("X-MG-Save-Error") || "").trim() || null;
 
     postProgress(progressPort, "receiving");
     const blob = await res.blob();
     let prepared;
     try {
-      prepared = await prepareDownloadUrlFromPngBlob(blob);
+      prepared = await MindGraphOffscreenBlobs.prepareDownloadUrlFromBlob(blob);
     } catch (e) {
       console.error("[MindGraph] prepare download url", e);
       finish({ ok: false, error: chrome.i18n.getMessage("errDownloadPrepare") });
@@ -611,10 +432,16 @@ async function runGenerateMindmap(tabId, options) {
       finish({ ok: false, error: dlErr?.message || String(dlErr) });
       return;
     }
-    scheduleDownloadUrlRevoke(downloadHref, revokeMode);
+    MindGraphOffscreenBlobs.scheduleDownloadUrlRevoke(downloadHref, revokeMode);
     finish({
       ok: true,
-      ...(diagramUrl ? { diagramUrl } : {}),
+      ...(savedDiagramId
+        ? {
+            diagramId: savedDiagramId,
+            baseUrlPresetId,
+            diagramUrl: MindGraphShared.buildCanvasDiagramUrl(baseUrl, savedDiagramId),
+          }
+        : {}),
       ...(saveError ? { saveError } : {}),
     });
   } catch (err) {
@@ -628,8 +455,9 @@ async function runGenerateMindmap(tabId, options) {
  * @returns {Promise<{ baseUrl: string, account: string, token: string } | null>}
  */
 async function getApiCredentials() {
-  const settings = await chrome.storage.local.get(["baseUrl", "account", "token"]);
-  const baseUrl = normalizeBaseUrl(settings.baseUrl || MindGraphShared.DEFAULT_MINDGRAPH_BASE_URL);
+  const settings = await chrome.storage.local.get(["baseUrl", "baseUrlPresetId", "account", "token"]);
+  const resolvedServer = MindGraphShared.resolveMindGraphSettings(settings);
+  const baseUrl = resolvedServer.baseUrl;
   const account = (settings.account || "").trim();
   const token = (settings.token || "").trim();
   if (!baseUrl || !account || !token) {
@@ -647,7 +475,7 @@ function buildAuthHeaders(creds) {
     "Content-Type": "application/json",
     Authorization: `Bearer ${creds.token}`,
     "X-MG-Account": creds.account,
-    "X-MG-Client": "chrome-extension",
+    "X-MG-Client": MindGraphShared.mgClientHeader(),
     "X-Request-Id": newRequestId(),
   };
 }
@@ -690,6 +518,10 @@ async function fetchPackages() {
  * @returns {Promise<{ ok: true, document: object } | { ok: false, error: string }>}
  */
 async function runSaveToFileCenter(tabId, packageId) {
+  const parsedPackageId = MindGraphExtensionSecurity.parsePositiveInt(packageId);
+  if (!parsedPackageId) {
+    return { ok: false, error: chrome.i18n.getMessage("errFailed") };
+  }
   const creds = await getApiCredentials();
   if (!creds) {
     return { ok: false, error: chrome.i18n.getMessage("errSettingsIncomplete") };
@@ -717,7 +549,7 @@ async function runSaveToFileCenter(tabId, packageId) {
     return { ok: false, error: chrome.i18n.getMessage("errNoPageText") };
   }
 
-  const url = `${creds.baseUrl}/api/knowledge-space/packages/${packageId}/documents/ingest-web`;
+  const url = `${creds.baseUrl}/api/knowledge-space/packages/${parsedPackageId}/documents/ingest-web`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -785,10 +617,14 @@ async function runExtractDocumentJob(tabId, options) {
   }
   if (fromContextMenu) {
     if (result.ok) {
-      notifyUser(chrome.i18n.getMessage("statusExtractDownloadStarted"));
+      const noticeMsg = result.notice
+        ? chrome.i18n.getMessage(result.notice, result.noticeArgs || [])
+        : "";
+      notifyUser(noticeMsg || chrome.i18n.getMessage("statusExtractDownloadStarted"));
     } else {
-      const errKey = result.error && result.error.startsWith("err") ? result.error : null;
-      notifyUser(errKey ? chrome.i18n.getMessage(errKey) : result.error || chrome.i18n.getMessage("errFailed"));
+      const errKey =
+        result.error && result.error.startsWith("err") ? result.error : "errExtractFailed";
+      notifyUser(chrome.i18n.getMessage(errKey) || chrome.i18n.getMessage("errFailed"));
     }
   }
 }
@@ -823,14 +659,20 @@ function onDocExtractConnect(port) {
   });
 }
 
-chrome.runtime.onInstalled.addListener(ensureContextMenu);
+chrome.runtime.onInstalled.addListener(() => {
+  ensureContextMenu();
+  void MindGraphExtensionStorage.pruneStaleExtensionStorage();
+});
 
 /**
  * PING: wake MV3 service worker (see popup for optional wake before actions).
  * PNG generation runs in this worker for toolbar, context menu, and keyboard
  * (popup connects with a port for progress; closing the popup does not cancel).
  */
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!MindGraphExtensionSecurity.isExtensionSender(sender)) {
+    return false;
+  }
   if (msg && msg.type === "PING") {
     setTimeout(() => {
       try {
@@ -846,18 +688,45 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     return true;
   }
   if (msg && msg.type === "SAVE_TO_FILE_CENTER" && typeof msg.tabId === "number") {
-    runSaveToFileCenter(msg.tabId, msg.packageId).then(sendResponse);
+    const packageId = MindGraphExtensionSecurity.parsePositiveInt(msg.packageId);
+    if (!packageId) {
+      sendResponse({ ok: false, error: chrome.i18n.getMessage("errFailed") });
+      return true;
+    }
+    runSaveToFileCenter(msg.tabId, packageId).then(sendResponse);
     return true;
   }
-  if (msg && msg.type === "PREVIEW_EXTRACT" && typeof msg.pageUrl === "string") {
-    const tabId = typeof msg.tabId === "number" ? msg.tabId : undefined;
-    MindGraphDocExtract.previewExtractTarget(msg.pageUrl, tabId).then(sendResponse);
+  if (msg && msg.type === "PREVIEW_EXTRACT" && typeof msg.tabId === "number") {
+    const pageUrl = typeof msg.pageUrl === "string" ? msg.pageUrl : "";
+    MindGraphDocExtract.previewExtractTarget(pageUrl, msg.tabId).then(sendResponse);
     return true;
   }
-  if (msg && msg.type === "SAVE_SMARTEDU_TOKEN" && typeof msg.token === "string") {
-    chrome.storage.local.set({ smarteduAccessToken: msg.token.trim() }).then(() => {
+  if (msg && msg.type === "SAVE_SMARTEDU_TOKEN") {
+    const token = MindGraphExtensionSecurity.parseSmartEduToken(msg.token);
+    if (!token) {
+      sendResponse({ ok: false, error: chrome.i18n.getMessage("errFailed") });
+      return true;
+    }
+    MindGraphDocExtract.persistSmartEduToken(token).then(() => {
       sendResponse({ ok: true });
     });
+    return true;
+  }
+  if (msg && msg.type === "SYNC_SMARTEDU_TOKEN") {
+    const tabId = typeof msg.tabId === "number" ? msg.tabId : undefined;
+    MindGraphDocExtract.discoverSmartEduToken(tabId).then(async (token) => {
+      if (token) {
+        await MindGraphDocExtract.persistSmartEduToken(token);
+        sendResponse({ ok: true, tokenSet: true });
+        return;
+      }
+      sendResponse({ ok: true, tokenSet: false });
+    });
+    return true;
+  }
+  if (msg && msg.type === "CAPTURE_MINDMATE_PAGE" && typeof msg.tabId === "number" && msg.tabId > 0) {
+    const maxChars = typeof msg.maxMarkdownChars === "number" ? msg.maxMarkdownChars : undefined;
+    MindGraphMindMate.captureMindMatePageContext(msg.tabId, maxChars).then(sendResponse);
     return true;
   }
   return false;

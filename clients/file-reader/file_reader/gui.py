@@ -7,7 +7,7 @@ import subprocess
 import threading
 import tkinter as tk
 from pathlib import Path
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox
 from typing import Dict, List, Optional, Sequence
 
 from file_reader import __version__
@@ -20,9 +20,6 @@ from file_reader.errors import AppError, ErrorCode
 from file_reader.i18n import I18n
 from file_reader.server_url import ServerUrlError, normalize_server_url
 from file_reader.settings import DEFAULT_SERVER_URL, FileReaderSettings
-from file_reader.platform_browser.browser_factory import preferred_browser_backend
-from file_reader.smartedu.debug_log import log_platform_browser_section
-from file_reader.smartedu_panel import SmartEduPanel
 from file_reader.status_dock import StatusDock
 from file_reader.auth_dialog import AuthDialog
 from file_reader.chat.paths import default_chat_export_dir, unique_export_path
@@ -158,9 +155,6 @@ class FileReaderApp:
         content_shell = tk.Frame(body, bg=BG_APP)
         content_shell.pack(fill="both", expand=True)
 
-        self._notebook = ttk.Notebook(content_shell)
-        self._notebook.pack(fill="both", expand=True)
-
         self._content_overlay = tk.Frame(content_shell, bg=BG_DISABLED)
         self._content_overlay_label = tk.Label(
             self._content_overlay,
@@ -174,10 +168,8 @@ class FileReaderApp:
         self._content_overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
         self._content_overlay.lift()
 
-        chat_tab = tk.Frame(self._notebook, bg=BG_APP)
-        smartedu_tab = tk.Frame(self._notebook, bg=BG_APP)
-        self._notebook.add(chat_tab, text=self.i18n.translate("tabs.chat"))
-        self._notebook.add(smartedu_tab, text=self.i18n.translate("tabs.smartedu"))
+        chat_tab = tk.Frame(content_shell, bg=BG_APP)
+        chat_tab.pack(fill="both", expand=True)
 
         chat_row = tk.Frame(chat_tab, bg=BG_APP)
         chat_row.pack(fill="both", expand=True)
@@ -217,13 +209,8 @@ class FileReaderApp:
         elif self.platform.get() == "wecom":
             self._publish_wecom_panel(self._wecom_status)
 
-        self._smartedu = SmartEduPanel(smartedu_tab, self.i18n)
-        self._smartedu.pack(fill="both", expand=True)
-
         self.platform.trace_add("write", self._on_platform_changed)
         self._send.file_list.bind("<<ListboxSelect>>", self._on_select_file)
-        self._notebook.bind("<<NotebookTabChanged>>", self._on_notebook_tab_changed)
-        self.root.after(150, lambda: self._smartedu.set_tab_visible(self._active_tab_index() == 1))
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
         self._sync_status_dock()
@@ -1413,7 +1400,6 @@ class FileReaderApp:
         self._stop_wechat_poll()
         self._stop_dingtalk_poll()
         self._stop_wecom_poll()
-        self._smartedu.shutdown()
         self.root.destroy()
 
     def _err_text(self, err: Optional[AppError]) -> str:
@@ -1443,23 +1429,8 @@ class FileReaderApp:
             return self.i18n.translate("status.session.secondary_diagram", diagram=diagram, code=code)
         return self.i18n.translate("status.session.secondary_no_diagram", code=code)
 
-    def _on_notebook_tab_changed(self, _event: tk.Event) -> None:
-        """Hide MindGraph status dock on SmartEdu tab; sync browser visibility."""
-        index = self._active_tab_index()
-        self._smartedu.set_tab_visible(index == 1)
-        self._sync_status_dock()
-
-    def _active_tab_index(self) -> int:
-        try:
-            return int(self._notebook.index(self._notebook.select()))
-        except tk.TclError:
-            return 0
-
     def _sync_status_dock(self) -> None:
         """Refresh the bottom status dock from current app state."""
-        if self._active_tab_index() == 1:
-            self._dock.pack_forget()
-            return
         if not self._dock.winfo_ismapped():
             self._dock.pack(side="bottom", fill="x")
 
@@ -2348,9 +2319,5 @@ def run_gui() -> None:
     """Launch the file reader window."""
     root = tk.Tk()
     _apply_window_icon(root)
-    log_platform_browser_section(
-        f"MindGraph file-reader startup frozen={getattr(sys, 'frozen', False)} "
-        f"version={__version__} backend={preferred_browser_backend()} exe={sys.executable}",
-    )
     FileReaderApp(root)
     root.mainloop()

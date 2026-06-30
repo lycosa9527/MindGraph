@@ -11,9 +11,182 @@
   const DEFAULT_MINDGRAPH_BASE_URL = "https://mg.mindspringedu.com";
   const MINDMAP_GENERATE_PORT = "mindmap-generate";
 
+  /** @type {readonly { id: string, url: string, labelKey: string }[]} */
+  const BASE_URL_PRESETS = Object.freeze([
+    { id: "production", url: "https://mg.mindspringedu.com", labelKey: "baseUrlPresetProduction" },
+    { id: "test", url: "https://test.mindspringedu.com", labelKey: "baseUrlPresetTest" },
+    { id: "local", url: "http://localhost:9527", labelKey: "baseUrlPresetLocal" },
+  ]);
+
+  /**
+   * @returns {"edge" | "chrome" | "chromium"}
+   */
+  function detectExtensionBrowser() {
+    const ua = (typeof navigator !== "undefined" && navigator.userAgent) || "";
+    if (/Edg\//.test(ua)) {
+      return "edge";
+    }
+    if (/Chrome\//.test(ua)) {
+      return "chrome";
+    }
+    return "chromium";
+  }
+
+  /**
+   * Server audit label — same extension build, Chrome or Edge host.
+   * @returns {"chrome-extension" | "edge-extension"}
+   */
+  function mgClientHeader() {
+    return detectExtensionBrowser() === "edge" ? "edge-extension" : "chrome-extension";
+  }
+
+  /**
+   * Edge MV3: prefer offscreen blob URLs over service-worker createObjectURL.
+   * @returns {boolean}
+   */
+  function preferOffscreenBlobUrls() {
+    return detectExtensionBrowser() === "edge";
+  }
+
+  /**
+   * @returns {boolean}
+   */
+  function offscreenApiAvailable() {
+    if (typeof chrome !== "undefined" && chrome.offscreen && typeof chrome.offscreen.createDocument === "function") {
+      return true;
+    }
+    if (global.browser && global.browser.offscreen && typeof global.browser.offscreen.createDocument === "function") {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * @returns {boolean}
+   */
+  function isOffscreenDuplicateError(err) {
+    const text = (err && err.message) || String(err || "");
+    return /only a single|already exists|offscreen|OFFSCREEN|single offscreen/i.test(text);
+  }
+
   function normalizeBaseUrl(url) {
     const trimmed = (url || "").trim().replace(/\/+$/, "");
     return trimmed;
+  }
+
+  /**
+   * Resolve stored settings or preset id to the canonical API origin for one of the
+   * three MindGraph servers (production, test, local).
+   * @param {string | undefined} storedUrlOrPresetId
+   * @returns {string}
+   */
+  function resolveMindGraphBaseUrl(storedUrlOrPresetId) {
+    if (BASE_URL_PRESETS.some((entry) => entry.id === storedUrlOrPresetId)) {
+      return baseUrlFromPresetId(storedUrlOrPresetId);
+    }
+    return baseUrlFromPresetId(resolveBaseUrlPresetId(storedUrlOrPresetId));
+  }
+
+  /**
+   * @param {{ baseUrl?: string, baseUrlPresetId?: string } | null | undefined} settings
+   * @returns {{ presetId: string, baseUrl: string }}
+   */
+  function resolveMindGraphSettings(settings) {
+    const raw = settings && typeof settings === "object" ? settings : {};
+    const presetFromStorage =
+      typeof raw.baseUrlPresetId === "string" &&
+      BASE_URL_PRESETS.some((entry) => entry.id === raw.baseUrlPresetId)
+        ? raw.baseUrlPresetId
+        : resolveBaseUrlPresetId(raw.baseUrl);
+    return {
+      presetId: presetFromStorage,
+      baseUrl: baseUrlFromPresetId(presetFromStorage),
+    };
+  }
+
+  /**
+   * @param {string | undefined} baseUrl
+   * @returns {string}
+   */
+  function ensureAbsoluteBaseUrl(baseUrl) {
+    return resolveMindGraphBaseUrl(baseUrl);
+  }
+
+  /**
+   * @param {Response} res
+   * @returns {string | null}
+   */
+  function parseDiagramIdFromPngResponse(res) {
+    const headerId = (res.headers.get("X-MG-Diagram-Id") || "").trim();
+    if (headerId) {
+      return headerId;
+    }
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const namedMatch = disposition.match(/filename="mindgraph-([^"]+)\.png"/i);
+    if (namedMatch && namedMatch[1] && namedMatch[1] !== "web-content") {
+      return namedMatch[1];
+    }
+    return null;
+  }
+
+  /**
+   * @param {string | undefined} baseUrl
+   * @param {string} diagramId
+   * @returns {string | null}
+   */
+  function buildCanvasDiagramUrl(baseUrl, diagramId) {
+    const id = (diagramId || "").trim();
+    if (!id) {
+      return null;
+    }
+    const origin = resolveMindGraphBaseUrl(baseUrl);
+    return `${origin}/canvas?diagramId=${encodeURIComponent(id)}`;
+  }
+
+  /**
+   * @param {string | undefined} presetId
+   * @returns {string}
+   */
+  function baseUrlFromPresetId(presetId) {
+    const preset = BASE_URL_PRESETS.find((entry) => entry.id === presetId);
+    return preset ? preset.url : DEFAULT_MINDGRAPH_BASE_URL;
+  }
+
+  /**
+   * @param {string | undefined} storedUrl
+   * @returns {string}
+   */
+  function resolveBaseUrlPresetId(storedUrl) {
+    if (BASE_URL_PRESETS.some((entry) => entry.id === storedUrl)) {
+      return storedUrl;
+    }
+    const normalized = normalizeBaseUrl(storedUrl);
+    if (!normalized) {
+      return "production";
+    }
+    for (const preset of BASE_URL_PRESETS) {
+      if (normalizeBaseUrl(preset.url) === normalized) {
+        return preset.id;
+      }
+    }
+    try {
+      const withScheme = normalized.includes("://") ? normalized : `https://${normalized}`;
+      const parsed = new URL(withScheme);
+      if (
+        (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") &&
+        (parsed.port === "9527" || parsed.port === "")
+      ) {
+        return "local";
+      }
+      for (const preset of BASE_URL_PRESETS) {
+        if (new URL(preset.url).host === parsed.host) {
+          return preset.id;
+        }
+      }
+    } catch {
+      /* ignore invalid URL */
+    }
+    return "production";
   }
 
   function sanitizeFilename(title) {
@@ -188,14 +361,27 @@
     FETCH_TIMEOUT_MS,
     VERIFY_TIMEOUT_MS,
     DEFAULT_MINDGRAPH_BASE_URL,
+    BASE_URL_PRESETS,
     MINDMAP_GENERATE_PORT,
     normalizeBaseUrl,
+    resolveMindGraphBaseUrl,
+    resolveMindGraphSettings,
+    ensureAbsoluteBaseUrl,
+    parseDiagramIdFromPngResponse,
+    buildCanvasDiagramUrl,
+    baseUrlFromPresetId,
+    resolveBaseUrlPresetId,
     sanitizeFilename,
     parseErrorDetailFromResponse,
     isRestrictedTabUrl,
     buildPngRequestBody,
     matchPromptLanguageCode,
     resolvePromptLanguageFromUiMode,
+    detectExtensionBrowser,
+    mgClientHeader,
+    preferOffscreenBlobUrls,
+    offscreenApiAvailable,
+    isOffscreenDuplicateError,
   };
   if (global && typeof global === "object") {
     global.MindGraphShared = MindGraphShared;

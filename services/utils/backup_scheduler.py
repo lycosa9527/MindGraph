@@ -35,7 +35,6 @@ import logging
 import os
 import subprocess
 import threading
-import time
 import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -57,34 +56,14 @@ from services.utils.pg_client_binaries import (
     pg_tools_connection_username,
     pg_tools_libpq_url,
 )
+from services.utils import tencent_cos_client
 
 try:
     from config.database import DATABASE_URL
 except ImportError:
     DATABASE_URL = ""
 
-try:
-    from qcloud_cos import CosConfig, CosS3Client
-    from qcloud_cos.cos_exception import CosClientError, CosServiceError
-except ImportError:
-    CosConfig = None
-    CosS3Client = None
-    CosClientError = None
-    CosServiceError = None
-
 logger = logging.getLogger(__name__)
-
-
-def _cos_exc_call(exc: Exception, method: str, default: str) -> str:
-    """Call optional qcloud COS exception method; getattr avoids incomplete stubs."""
-    bound = getattr(exc, method, None)
-    if not callable(bound):
-        return default
-    try:
-        val = bound()
-    except (AttributeError, TypeError, ValueError, RuntimeError):
-        return default
-    return str(val) if val is not None else default
 
 
 # ============================================================================
@@ -497,11 +476,11 @@ BACKUP_DIR = Path(_BACKUP_DIR_ENV) if Path(_BACKUP_DIR_ENV).is_absolute() else _
 # COS (Tencent Cloud Object Storage) configuration
 # Note: Uses same Tencent Cloud credentials as SMS module (TENCENT_SMS_SECRET_ID/SECRET_KEY)
 COS_BACKUP_ENABLED = os.getenv("COS_BACKUP_ENABLED", "false").lower() == "true"
-COS_SECRET_ID = os.getenv("TENCENT_SMS_SECRET_ID", "").strip()  # Reuse SMS credentials
-COS_SECRET_KEY = os.getenv("TENCENT_SMS_SECRET_KEY", "").strip()  # Reuse SMS credentials
-COS_BUCKET = os.getenv("COS_BUCKET", "")
-COS_REGION = os.getenv("COS_REGION", "ap-beijing")
-COS_KEY_PREFIX = os.getenv("COS_KEY_PREFIX", "backups/mindgraph")
+COS_SECRET_ID = tencent_cos_client.COS_SECRET_ID
+COS_SECRET_KEY = tencent_cos_client.COS_SECRET_KEY
+COS_BUCKET = tencent_cos_client.COS_BUCKET
+COS_REGION = tencent_cos_client.COS_REGION
+COS_KEY_PREFIX = tencent_cos_client.COS_KEY_PREFIX
 
 
 def is_backup_in_progress() -> bool:
@@ -697,527 +676,102 @@ def verify_backup(backup_path: Path) -> bool:
 
 
 def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
-    """
-    Upload backup file to Tencent Cloud Object Storage (COS).
-
-    This function uploads the backup file to COS after successful local backup.
-    Uses the advanced upload interface which supports large files and resumable uploads.
-
-    Based on COS SDK demo patterns:
-    https://github.com/tencentyun/cos-python-sdk-v5/tree/master/demo
-
-    Args:
-        backup_path: Path to the backup file to upload
-
-    Returns:
-        True if upload succeeded, False otherwise
-    """
+    """Upload backup file to Tencent Cloud Object Storage (COS)."""
     if not COS_BACKUP_ENABLED:
         logger.debug("[Backup] COS backup disabled, skipping upload")
-        return True  # COS backup disabled, consider it successful
+        return True
 
-    # Validate backup file exists
     if not backup_path.exists():
         logger.error("[Backup] Backup file does not exist: %s", backup_path)
         return False
 
-    # Validate COS configuration
-    # Note: COS uses same Tencent Cloud credentials as SMS (TENCENT_SMS_SECRET_ID/SECRET_KEY)
-    if not COS_SECRET_ID or not COS_SECRET_KEY:
+    if not tencent_cos_client.cos_credentials_configured():
         logger.warning(
             "[Backup] COS backup enabled but Tencent Cloud credentials not configured "
             "(TENCENT_SMS_SECRET_ID/SECRET_KEY), skipping upload"
         )
         return False
 
-    if not COS_BUCKET:
-        logger.warning("[Backup] COS backup enabled but bucket not configured (COS_BUCKET), skipping upload")
-        return False
-
-    if not COS_REGION:
-        logger.warning("[Backup] COS backup enabled but region not configured (COS_REGION), skipping upload")
-        return False
-
-    # Get file information for logging and validation
     try:
-        file_stat = backup_path.stat()
-        file_size_mb = file_stat.st_size / (1024 * 1024)
-        file_size_bytes = file_stat.st_size
-    except (OSError, PermissionError) as e:
-        logger.error("[Backup] Cannot access backup file %s: %s", backup_path, e)
+        file_size_bytes = backup_path.stat().st_size
+    except (OSError, PermissionError) as exc:
+        logger.error("[Backup] Cannot access backup file %s: %s", backup_path, exc)
         return False
 
-    # Validate file is not empty
     if file_size_bytes == 0:
         logger.error("[Backup] Backup file is empty: %s", backup_path)
         return False
 
-    # Construct object key with prefix (before try block for error handling)
-    # Format: {COS_KEY_PREFIX}/mindgraph.postgresql.{timestamp}.dump
-    # Normalize prefix (remove trailing slash) to avoid double slashes
-    normalized_prefix = COS_KEY_PREFIX.rstrip("/")
-    object_key = f"{normalized_prefix}/{backup_path.name}"
-
-    # Remove leading slash if object_key starts with one (shouldn't happen, but safety check)
-    if object_key.startswith("/"):
-        object_key = object_key[1:]
-
-    # Log configuration for debugging
-    logger.debug(
-        "[Backup] COS configuration: bucket=%s, region=%s, prefix=%s, object_key=%s",
-        COS_BUCKET,
-        COS_REGION,
-        COS_KEY_PREFIX,
+    object_key = tencent_cos_client.cos_object_key(backup_path.name)
+    return tencent_cos_client.upload_file(
+        backup_path,
         object_key,
+        max_retries=max_retries,
+        log_prefix="[Backup]",
     )
-
-    if CosConfig is None or CosS3Client is None:
-        logger.error(
-            "[Backup] COS SDK not installed. Install with: pip install cos-python-sdk-v5",
-            exc_info=True,
-        )
-        return False
-
-    try:
-        # Initialize COS client
-        # Following demo pattern: https://github.com/tencentyun/cos-python-sdk-v5/tree/master/demo
-        logger.debug("[Backup] Initializing COS client for region: %s", COS_REGION)
-        config = CosConfig(
-            Region=COS_REGION,
-            SecretId=COS_SECRET_ID,
-            SecretKey=COS_SECRET_KEY,
-            Scheme="https",
-        )
-        client = CosS3Client(config)
-
-        logger.info(
-            "[Backup] Uploading to COS: bucket=%s, key=%s, size=%.2f MB, region=%s",
-            COS_BUCKET,
-            object_key,
-            file_size_mb,
-            COS_REGION,
-        )
-
-        # Retry logic with exponential backoff
-        for attempt in range(max_retries):
-            try:
-                # Use advanced upload interface (supports large files and resumable uploads)
-                # Following demo pattern for large file uploads
-                # PartSize=1 means 1MB per part (good for files up to 5GB)
-                # MAXThread=10 means up to 10 concurrent upload threads
-                # EnableMD5=False for faster upload (MD5 verification optional)
-                response = client.upload_file(
-                    Bucket=COS_BUCKET,
-                    LocalFilePath=str(backup_path),
-                    Key=object_key,
-                    PartSize=1,  # 1MB per part
-                    MAXThread=10,  # Up to 10 concurrent threads
-                    EnableMD5=False,  # Disable MD5 for faster upload
-                )
-
-                # Log upload result with details
-                # Response contains ETag, Location, etc.
-                if "ETag" in response:
-                    logger.info(
-                        "[Backup] Successfully uploaded to COS: %s (ETag: %s, bucket: %s)",
-                        object_key,
-                        response["ETag"],
-                        COS_BUCKET,
-                    )
-                else:
-                    logger.info(
-                        "[Backup] Successfully uploaded to COS: %s (bucket: %s)",
-                        object_key,
-                        COS_BUCKET,
-                    )
-
-                return True
-
-            except BACKGROUND_INFRA_ERRORS as e:
-                # Check if error is retryable
-                # Only handle COS exceptions if SDK is available
-                if CosClientError is None or CosServiceError is None:
-                    raise
-                if not isinstance(e, (CosClientError, CosServiceError)):
-                    raise
-                is_retryable = False
-                # Type narrowing: after isinstance check, e is CosServiceError or CosClientError
-                if CosServiceError is not None and isinstance(e, CosServiceError):
-                    status_code = _cos_exc_call(e, "get_status_code", "")
-                    error_code = _cos_exc_call(e, "get_error_code", "")
-                    if status_code and str(status_code).startswith("5"):
-                        is_retryable = True
-                    elif error_code in ("SlowDown", "RequestLimitExceeded"):
-                        is_retryable = True
-                else:
-                    # Retry on client errors (network issues)
-                    is_retryable = True
-
-                if not is_retryable or attempt == max_retries - 1:
-                    # Not retryable or last attempt - re-raise to be handled by outer exception handler
-                    raise
-
-                # Calculate delay with exponential backoff: 5s, 10s, 20s
-                delay = min(5.0 * (2**attempt), 30.0)
-                logger.warning(
-                    "[Backup] COS upload attempt %s/%s failed: %s. Retrying in %.1fs...",
-                    attempt + 1,
-                    max_retries,
-                    e,
-                    delay,
-                )
-                time.sleep(delay)
-                continue
-
-        # If we get here, all retries failed but exception was caught and handled
-        # This should never happen, but satisfy type checker
-        return False
-
-    except (OSError, PermissionError) as e:
-        # File system errors (permissions, disk errors, etc.)
-        # Handle before general Exception to avoid unreachable code
-        logger.error(
-            "[Backup] File system error uploading %s to COS: %s",
-            backup_path.name,
-            e,
-            exc_info=True,
-        )
-        return False
-    except BACKGROUND_INFRA_ERRORS as e:
-        # Client-side errors (network, configuration, etc.)
-        if CosClientError is not None and isinstance(e, CosClientError):
-            logger.error(
-                "[Backup] COS client error uploading %s to %s/%s: %s",
-                backup_path.name,
-                COS_BUCKET,
-                object_key,
-                e,
-                exc_info=True,
-            )
-            return False
-        # Server-side errors (permissions, bucket not found, etc.)
-        if CosServiceError is not None and isinstance(e, CosServiceError):
-            # Following official COS SDK exception handling pattern:
-            # https://cloud.tencent.com/document/product/436/35154
-            # Error codes reference: https://cloud.tencent.com/document/product/436/7730
-            status_code = _cos_exc_call(e, "get_status_code", "Unknown")
-            error_code = _cos_exc_call(e, "get_error_code", "Unknown")
-            error_msg = _cos_exc_call(e, "get_error_msg", "")
-            if not error_msg:
-                error_msg = str(e)
-            request_id = _cos_exc_call(e, "get_request_id", "N/A")
-            trace_id = _cos_exc_call(e, "get_trace_id", "N/A")
-            resource_location = _cos_exc_call(e, "get_resource_location", "N/A")
-
-            # Provide actionable error messages for common error codes
-            # Reference: https://cloud.tencent.com/document/product/436/7730
-            actionable_msg = ""
-            if error_code == "AccessDenied":
-                actionable_msg = " - Check COS credentials and bucket permissions"
-            elif error_code == "NoSuchBucket":
-                actionable_msg = f" - Bucket '{COS_BUCKET}' does not exist or is inaccessible"
-            elif error_code == "InvalidAccessKeyId":
-                actionable_msg = " - Check TENCENT_SMS_SECRET_ID configuration"
-            elif error_code == "SignatureDoesNotMatch":
-                actionable_msg = " - Check TENCENT_SMS_SECRET_KEY configuration"
-            elif error_code == "EntityTooLarge":
-                actionable_msg = " - Backup file exceeds COS size limit (5GB for single upload)"
-            elif error_code in ("SlowDown", "RequestLimitExceeded"):
-                actionable_msg = " - Rate limit exceeded, backup will retry on next schedule"
-            elif status_code and str(status_code).startswith("5"):
-                actionable_msg = " - Server error, may be transient - backup will retry on next schedule"
-
-            # Log detailed error information
-            logger.error(
-                "[Backup] COS service error uploading %s to %s/%s: HTTP %s, Error %s - %s%s",
-                backup_path.name,
-                COS_BUCKET,
-                object_key,
-                status_code,
-                error_code,
-                error_msg,
-                actionable_msg,
-            )
-            logger.error(
-                "[Backup] COS error details: RequestID=%s, TraceID=%s, Resource=%s",
-                request_id,
-                trace_id,
-                resource_location,
-            )
-            logger.debug("[Backup] COS service error full details", exc_info=True)
-            return False
-        # Unexpected errors
-        logger.error(
-            "[Backup] Unexpected error uploading %s to COS (bucket: %s, key: %s): %s",
-            backup_path.name,
-            COS_BUCKET,
-            object_key,
-            e,
-            exc_info=True,
-        )
-        return False
 
 
 def list_cos_backups() -> List[dict]:
-    """
-    List all backup files in COS bucket with the configured prefix.
-
-    Returns:
-        List of dicts with backup information: {'key': str, 'size': int, 'last_modified': datetime}
-        Returns empty list if COS is disabled or on error
-    """
+    """List PostgreSQL backup dumps in COS under the configured prefix."""
     if not COS_BACKUP_ENABLED:
         return []
-
-    if not COS_SECRET_ID or not COS_SECRET_KEY or not COS_BUCKET:
+    if not tencent_cos_client.cos_credentials_configured():
         return []
 
-    if CosConfig is None or CosS3Client is None:
-        logger.debug("[Backup] COS SDK not installed, cannot list backups")
-        return []
-
-    try:
-        # Initialize COS client
-        config = CosConfig(
-            Region=COS_REGION,
-            SecretId=COS_SECRET_ID,
-            SecretKey=COS_SECRET_KEY,
-            Scheme="https",
+    prefix = tencent_cos_client.normalized_cos_prefix()
+    objects = tencent_cos_client.list_prefix(
+        prefix,
+        suffix_filter=".dump",
+        contains_filter="mindgraph.postgresql.",
+    )
+    backups: List[dict] = []
+    for obj in objects:
+        backups.append(
+            {
+                "key": obj["key"],
+                "size": obj["size"],
+                "last_modified": obj["last_modified"],
+                "filename": obj["filename"],
+            }
         )
-        client = CosS3Client(config)
-
-        # List objects with prefix
-        # IMPORTANT: Only list backups with the configured prefix to prevent cross-environment access
-        # This ensures dev machines (mindgraph-Test) and production (mindgraph-Master) don't mix backups
-        backups = []
-        marker = ""
-        is_truncated = True
-
-        logger.debug(
-            "[Backup] Listing COS backups with prefix: %s (bucket: %s)",
-            COS_KEY_PREFIX,
-            COS_BUCKET,
-        )
-
-        # Normalize prefix (remove trailing slash for consistency)
-        normalized_prefix = COS_KEY_PREFIX.rstrip("/")
-
-        while is_truncated:
-            response = client.list_objects(Bucket=COS_BUCKET, Prefix=normalized_prefix, Marker=marker)
-
-            if "Contents" in response:
-                for obj in response["Contents"]:
-                    obj_key = obj["Key"]
-
-                    # Double-check: ensure key starts with our prefix (security)
-                    if not obj_key.startswith(normalized_prefix):
-                        logger.warning(
-                            "[Backup] Skipping object with unexpected prefix: %s",
-                            obj_key,
-                        )
-                        continue
-
-                    # Only include files matching backup pattern (mindgraph.postgresql.*.dump)
-                    if "mindgraph.postgresql." in obj_key and obj_key.endswith(".dump"):
-                        backups.append(
-                            {
-                                "key": obj_key,
-                                "size": obj["Size"],
-                                "last_modified": obj["LastModified"],
-                            }
-                        )
-
-            is_truncated = response.get("IsTruncated", "false") == "true"
-            if is_truncated:
-                marker = response.get("NextMarker", "")
-
-        logger.debug("[Backup] Found %s backup(s) in COS", len(backups))
-        return backups
-
-    except BACKGROUND_INFRA_ERRORS as e:
-        if CosClientError is not None and isinstance(e, CosClientError):
-            logger.error("[Backup] COS client error listing backups: %s", e, exc_info=True)
-            return []
-        if CosServiceError is not None and isinstance(e, CosServiceError):
-            # Server-side errors - reference: https://cloud.tencent.com/document/product/436/7730
-            status_code = _cos_exc_call(e, "get_status_code", "Unknown")
-            error_code = _cos_exc_call(e, "get_error_code", "Unknown")
-            error_msg = _cos_exc_call(e, "get_error_msg", "") or str(e)
-            request_id = _cos_exc_call(e, "get_request_id", "N/A")
-            logger.error(
-                "[Backup] COS service error listing backups: HTTP %s, Error %s - %s (RequestID: %s)",
-                status_code,
-                error_code,
-                error_msg,
-                request_id,
-                exc_info=True,
-            )
-            return []
-        logger.error("[Backup] Unexpected error listing COS backups: %s", e, exc_info=True)
-        return []
+    logger.debug("[Backup] Found %s backup(s) in COS", len(backups))
+    return backups
 
 
 def cleanup_old_cos_backups(retention_days: int = 2) -> int:
-    """
-    Delete old backups from COS, keeping only backups from the last N days.
-
-    Uses time-based retention (keeps backups from last N days).
-    Deletes backups older than retention_days (e.g., if retention_days=2, deletes backups older than 2 days).
-
-    Args:
-        retention_days: Number of days to keep backups (default: 2)
-
-    Returns:
-        Number of backups deleted
-    """
+    """Delete COS backups older than retention_days."""
     if not COS_BACKUP_ENABLED:
         return 0
-
-    if not COS_SECRET_ID or not COS_SECRET_KEY or not COS_BUCKET:
+    if not tencent_cos_client.cos_credentials_configured():
         return 0
 
-    if CosConfig is None or CosS3Client is None:
-        logger.debug("[Backup] COS SDK not installed, cannot cleanup backups")
+    backups = list_cos_backups()
+    if not backups:
+        logger.debug("[Backup] No COS backups found with prefix: %s", COS_KEY_PREFIX)
         return 0
 
-    try:
-        # Initialize COS client
-        config = CosConfig(
-            Region=COS_REGION,
-            SecretId=COS_SECRET_ID,
-            SecretKey=COS_SECRET_KEY,
-            Scheme="https",
+    cutoff_time = datetime.now() - timedelta(days=retention_days)
+    deleted_count = 0
+    for backup in backups:
+        last_modified = tencent_cos_client.parse_cos_timestamp(backup.get("last_modified"))
+        if last_modified is None:
+            continue
+        if last_modified >= cutoff_time:
+            continue
+        age_days = (datetime.now() - last_modified).days
+        logger.info(
+            "[Backup] Deleting old COS backup: %s (age: %s days)",
+            backup["key"],
+            age_days,
         )
-        client = CosS3Client(config)
+        if tencent_cos_client.delete_object(backup["key"]):
+            deleted_count += 1
+            manifest_key = f"{backup['key']}.manifest.json"
+            tencent_cos_client.delete_object(manifest_key)
 
-        # Get all backups (already filtered by COS_KEY_PREFIX in list_cos_backups)
-        backups = list_cos_backups()
-        if not backups:
-            logger.debug("[Backup] No COS backups found with prefix: %s", COS_KEY_PREFIX)
-            return 0
-
-        logger.debug(
-            "[Backup] Found %s COS backup(s) with prefix: %s",
-            len(backups),
-            COS_KEY_PREFIX,
-        )
-
-        # Calculate cutoff time (backups older than this will be deleted)
-        cutoff_time = datetime.now() - timedelta(days=retention_days)
-
-        # Parse timestamps and filter old backups
-        deleted_count = 0
-        for backup in backups:
-            try:
-                # Parse LastModified timestamp
-                # COS returns timestamps as strings in ISO format: "2023-05-23T15:41:30.000Z"
-                last_modified_value = backup["last_modified"]
-
-                if isinstance(last_modified_value, datetime):
-                    # Already a datetime object
-                    last_modified = last_modified_value
-                elif isinstance(last_modified_value, str):
-                    # Parse string timestamp
-                    # Remove 'Z' suffix if present and parse ISO format
-                    timestamp_str = last_modified_value.replace("Z", "")
-                    try:
-                        # Try parsing with microseconds
-                        if "." in timestamp_str:
-                            last_modified = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S.%f")
-                        else:
-                            last_modified = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S")
-                    except ValueError:
-                        # Fallback: try fromisoformat
-                        try:
-                            last_modified = datetime.fromisoformat(timestamp_str)
-                        except ValueError:
-                            logger.warning(
-                                "[Backup] Cannot parse timestamp: %s",
-                                last_modified_value,
-                            )
-                            continue
-                else:
-                    logger.warning(
-                        "[Backup] Unexpected timestamp type: %s",
-                        type(last_modified_value),
-                    )
-                    continue
-
-                # Delete if older than retention period
-                if last_modified < cutoff_time:
-                    age_days = (datetime.now() - last_modified).days
-                    logger.info(
-                        "[Backup] Deleting old COS backup: %s (age: %s days)",
-                        backup["key"],
-                        age_days,
-                    )
-
-                    try:
-                        client.delete_object(
-                            Bucket=COS_BUCKET,
-                            Key=backup["key"],
-                        )
-                        deleted_count += 1
-                        logger.debug("[Backup] Deleted COS backup: %s", backup["key"])
-
-                        # Also delete the companion manifest if it exists
-                        manifest_key = f"{backup['key']}.manifest.json"
-                        try:
-                            client.delete_object(
-                                Bucket=COS_BUCKET,
-                                Key=manifest_key,
-                            )
-                            logger.debug("[Backup] Deleted COS manifest: %s", manifest_key)
-                        except (AttributeError, TypeError, ValueError, RuntimeError):
-                            pass  # Manifest may not exist for older backups
-                    except BACKGROUND_INFRA_ERRORS as delete_error:
-                        if CosServiceError is not None and isinstance(delete_error, CosServiceError):
-                            error_code = _cos_exc_call(delete_error, "get_error_code", "Unknown")
-                            logger.warning(
-                                "[Backup] Failed to delete COS backup %s: %s",
-                                backup["key"],
-                                error_code,
-                            )
-                        else:
-                            logger.warning(
-                                "[Backup] Failed to delete COS backup %s: %s",
-                                backup["key"],
-                                delete_error,
-                            )
-
-            except BACKGROUND_INFRA_ERRORS as e:
-                logger.warning(
-                    "[Backup] Error processing COS backup %s: %s",
-                    backup.get("key", "unknown"),
-                    e,
-                )
-                continue
-
-        if deleted_count > 0:
-            logger.info("[Backup] Deleted %s old backup(s) from COS", deleted_count)
-
-        return deleted_count
-
-    except BACKGROUND_INFRA_ERRORS as e:
-        if CosClientError is not None and isinstance(e, CosClientError):
-            logger.error("[Backup] COS client error cleaning up backups: %s", e, exc_info=True)
-            return 0
-        if CosServiceError is not None and isinstance(e, CosServiceError):
-            status_code = _cos_exc_call(e, "get_status_code", "Unknown")
-            error_code = _cos_exc_call(e, "get_error_code", "Unknown")
-            error_msg = _cos_exc_call(e, "get_error_msg", "") or str(e)
-            request_id = _cos_exc_call(e, "get_request_id", "N/A")
-            logger.error(
-                "[Backup] COS service error cleaning up backups: HTTP %s, Error %s - %s (RequestID: %s)",
-                status_code,
-                error_code,
-                error_msg,
-                request_id,
-                exc_info=True,
-            )
-            return 0
-        logger.error("[Backup] Unexpected error cleaning up COS backups: %s", e, exc_info=True)
-        return 0
+    if deleted_count > 0:
+        logger.info("[Backup] Deleted %s old backup(s) from COS", deleted_count)
+    return deleted_count
 
 
 def cleanup_old_backups(backup_dir: Path, keep_count: int) -> int:
@@ -1601,6 +1155,30 @@ def get_backup_status() -> dict:
                     entry["manifest"] = manifest
                 backups.append(entry)
 
+    cos_summary: Dict[str, Any] = {
+        "enabled": COS_BACKUP_ENABLED,
+        "configured": tencent_cos_client.cos_credentials_configured(),
+        "count": 0,
+        "latest": None,
+    }
+    if COS_BACKUP_ENABLED and tencent_cos_client.cos_credentials_configured():
+        cos_items = list_cos_backups()
+        cos_summary["count"] = len(cos_items)
+        if cos_items:
+            sorted_items = sorted(
+                cos_items,
+                key=lambda item: tencent_cos_client.parse_cos_timestamp(item.get("last_modified")) or datetime.min,
+                reverse=True,
+            )
+            latest = sorted_items[0]
+            last_mod = tencent_cos_client.parse_cos_timestamp(latest.get("last_modified"))
+            cos_summary["latest"] = {
+                "key": latest.get("key"),
+                "filename": latest.get("filename") or latest.get("key", "").rsplit("/", 1)[-1],
+                "size_mb": round(int(latest.get("size", 0)) / (1024 * 1024), 2),
+                "last_modified": last_mod.isoformat() if last_mod else None,
+            }
+
     return {
         "enabled": BACKUP_ENABLED,
         "schedule_hour": BACKUP_HOUR,
@@ -1608,4 +1186,5 @@ def get_backup_status() -> dict:
         "backup_dir": str(BACKUP_DIR.resolve()),
         "next_backup": get_next_backup_time().isoformat() if BACKUP_ENABLED else None,
         "backups": backups,
+        "cos": cos_summary,
     }

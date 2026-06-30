@@ -4,7 +4,7 @@
     "description": "Extension name"
   },
   "extDescription": {
-    "message": "Turn the current page into a mind map PNG via MindGraph.",
+    "message": "Mind map PNG and document download for MindGraph — Chrome and Edge.",
     "description": "Extension description for store"
   },
   "browserActionTitle": {
@@ -26,6 +26,134 @@
   "btnGenerate": {
     "message": "Generate",
     "description": "Primary button"
+  },
+  "tabGenerate": {
+    "message": "Mind map",
+    "description": "Popup tab for mind map generation"
+  },
+  "tabDownload": {
+    "message": "Download",
+    "description": "Popup tab for document download"
+  },
+  "tabMindmate": {
+    "message": "MindMate",
+    "description": "Popup tab for AI chat"
+  },
+  "tabSettings": {
+    "message": "Settings",
+    "description": "Popup tab for connection settings"
+  },
+  "mindmateTitle": {
+    "message": "MindMate",
+    "description": "MindMate tab title"
+  },
+  "mindmateSetupHint": {
+    "message": "Connect MindGraph first — add your server URL, account, and API token in Settings.",
+    "description": "MindMate not configured hint"
+  },
+  "mindmateGoSettings": {
+    "message": "Open Settings",
+    "description": "Button to open settings tab from MindMate"
+  },
+  "mindmateInputPlaceholder": {
+    "message": "Ask MindMate…",
+    "description": "MindMate input placeholder"
+  },
+  "btnMindmateSend": {
+    "message": "Send",
+    "description": "Send MindMate message"
+  },
+  "btnMindmateStop": {
+    "message": "Stop",
+    "description": "Stop MindMate streaming"
+  },
+  "btnMindmateNew": {
+    "message": "New chat",
+    "description": "Start new MindMate conversation"
+  },
+  "linkMindmateWeb": {
+    "message": "Open web history",
+    "description": "Link to MindGraph web app"
+  },
+  "mindmateStreaming": {
+    "message": "MindMate is typing…",
+    "description": "Streaming status"
+  },
+  "mindmateNewChatStarted": {
+    "message": "New chat started.",
+    "description": "New chat confirmation"
+  },
+  "mindmateStopped": {
+    "message": "Stopped.",
+    "description": "User stopped generation"
+  },
+  "mindmateReadingPage": {
+    "message": "Reading page content…",
+    "description": "Capturing web page for first MindMate message"
+  },
+  "mindmateIncludePage": {
+    "message": "Include current web page",
+    "description": "Checkbox to attach page markdown to first MindMate message"
+  },
+  "mindmatePageContextIntro": {
+    "message": "You are assisting a user in the education field. They are viewing a web page. Use the page content below as reference when answering.",
+    "description": "MindMate first-message page context intro"
+  },
+  "mindmatePageContextMeta": {
+    "message": "**Page:** $1\n**URL:** $2",
+    "description": "MindMate page context metadata"
+  },
+  "mindmatePageContextQuestion": {
+    "message": "**User question:** $1",
+    "description": "MindMate page context user question line"
+  },
+  "errMindMatePageEmpty": {
+    "message": "This page has no readable content. Select text on the page or try another page.",
+    "description": "MindMate page capture empty"
+  },
+  "errMindMatePageCaptureFailed": {
+    "message": "Could not read this page.",
+    "description": "MindMate page capture failed"
+  },
+  "errMindMateNotConfigured": {
+    "message": "Not connected yet. Open Settings and save your MindGraph credentials.",
+    "description": "MindMate missing credentials"
+  },
+  "errMindMateLoginExpired": {
+    "message": "Your login expired. Update your API token in Settings.",
+    "description": "MindMate 401"
+  },
+  "errMindMateConnectFailed": {
+    "message": "Could not reach MindMate. Check your server URL and try again.",
+    "description": "MindMate setup fetch failed"
+  },
+  "errMindMateStreamFailed": {
+    "message": "MindMate could not reply. Please try again.",
+    "description": "MindMate stream error"
+  },
+  "errMindMateDailyTokenCap": {
+    "message": "Daily AI token limit reached. Try again tomorrow or use the web app for details.",
+    "description": "Daily token cap from server SSE"
+  },
+  "errMindMateThinkingCoins": {
+    "message": "Not enough thinking coins for this message.",
+    "description": "Thinking coin insufficient from server SSE"
+  },
+  "localServerHttpWarning": {
+    "message": "Local dev uses HTTP — API tokens and page content are not encrypted on the network. Use only on a trusted machine.",
+    "description": "Warning when localhost server preset is selected"
+  },
+  "downloadTitle": {
+    "message": "Download",
+    "description": "Download tab title"
+  },
+  "downloadTagline": {
+    "message": "Save PDFs and documents from supported sites (no video).",
+    "description": "Download tab subtitle"
+  },
+  "downloadUnsupportedPage": {
+    "message": "This page is not supported for download. Open a document on SmartEdu, Baidu Wenku, 360doc, Docin, etc., then open this panel again.",
+    "description": "Hint when current tab has no document extract host"
   },
   "fileCenterSectionLabel": {
     "message": "Save to Document Summary",
@@ -60,12 +188,20 @@
     "description": "Settings intro"
   },
   "labelBaseUrl": {
-    "message": "Base URL",
+    "message": "Server",
     "description": "Label"
   },
-  "placeholderBaseUrl": {
-    "message": "https://mg.mindspringedu.com",
-    "description": "Placeholder"
+  "baseUrlPresetProduction": {
+    "message": "mg.mindspringedu.com",
+    "description": "Production server preset"
+  },
+  "baseUrlPresetTest": {
+    "message": "test.mindspringedu.com",
+    "description": "Test server preset"
+  },
+  "baseUrlPresetLocal": {
+    "message": "localhost:9527",
+    "description": "Local dev server preset"
   },
   "labelAccount": {
     "message": "Account (phone)",
@@ -120,27 +256,27 @@
     "description": "Error"
   },
   "errFailed": {
-    "message": "Something went wrong.",
+    "message": "Something went wrong. Try again, or reload the extension on chrome://extensions.",
     "description": "Generic error"
   },
   "errDownloadPrepare": {
-    "message": "Could not prepare the download. Reload the extension, or use an up-to-date Google Chrome (109+) or Microsoft Edge (120+) for full support.",
+    "message": "Could not start the file download. Reload the extension, then try again (Chrome 109+ or Edge 120+).",
     "description": "Blob URL, offscreen, or data-URL download prep failed"
   },
   "errSettingsIncomplete": {
-    "message": "Open Settings and enter base URL, account (phone), and API token.",
+    "message": "Settings are incomplete. Open Settings and enter your MindGraph URL, phone number, and API token.",
     "description": "Background error"
   },
   "errNoPageText": {
-    "message": "Could not read text from this page. Select text on the page or try another site.",
+    "message": "No text found on this page. Select some text first, or try a different page.",
     "description": "Background error"
   },
   "errApi": {
-    "message": "API $1: $2",
+    "message": "MindGraph server error ($1). Check Settings and try again.",
     "description": "API error; $1 status, $2 detail"
   },
   "errRestrictedPage": {
-    "message": "This page cannot be used (only http/https pages are supported). Open a normal website and try again.",
+    "message": "This page type is not supported. Open a normal website (http or https) and try again.",
     "description": "Non-web URL"
   },
   "errRateLimit": {
@@ -181,34 +317,50 @@
   },
   "docExtractDetected": {
     "message": "Detected: $1 · $2",
-    "description": "Site label and engine; $1 site, $2 engine"
+    "description": "Legacy site label and engine"
+  },
+  "docExtractDetectedSite": {
+    "message": "This page: $1",
+    "description": "Friendly site label for Download tab"
+  },
+  "docExtractActiveTab": {
+    "message": "Reading from tab: $1",
+    "description": "Hostname of the tab used for extract preview"
   },
   "docExtractAssetCount": {
     "message": "$1 assets available",
     "description": "SmartEdu asset count"
   },
   "docExtractPageCount": {
-    "message": "Pages: ~$1 (scroll to load all first)",
+    "message": "About $1 pages visible — scroll the preview to load more before you extract.",
     "description": "Canvas page estimate"
   },
   "docExtractScrollHint": {
-    "message": "Scroll the preview to load all pages before extracting.",
+    "message": "Scroll the document preview to load pages first. On Baidu Wenku, do not click “Expand full text” — it opens the paid VIP screen.",
     "description": "Autoscroll hint when page count unknown"
   },
+  "btnSyncSmartEduToken": {
+    "message": "Sync login from SmartEdu",
+    "description": "Read ND_UC_AUTH from open SmartEdu tabs"
+  },
   "btnPasteSmartEduToken": {
-    "message": "Paste SmartEdu token…",
+    "message": "Paste token manually…",
     "description": "Fallback token entry"
   },
   "smarteduPasteTokenPrompt": {
-    "message": "Paste SmartEdu access_token (from browser console on basic.smartedu.cn):",
+    "message": "Paste SmartEdu access_token (only if auto-sync fails):",
     "description": "Prompt for manual token"
   },
+  "smarteduTokenSyncing": {
+    "message": "SmartEdu token: syncing…",
+    "description": "Token sync in progress"
+  },
   "smarteduTokenConnected": {
-    "message": "SmartEdu token: connected",
+    "message": "SmartEdu token: connected (from your login)",
     "description": "Token status"
   },
   "smarteduTokenMissing": {
-    "message": "SmartEdu token: not set — log in on basic.smartedu.cn or paste token",
+    "message": "SmartEdu token: not found — log in at auth.smartedu.cn, open a SmartEdu page, then tap Sync",
     "description": "Token status"
   },
   "btnExtractDocument": {
@@ -216,27 +368,79 @@
     "description": "Start local document download"
   },
   "statusExtractDownloadStarted": {
-    "message": "Document download started.",
+    "message": "Done — your file download should start in a moment.",
     "description": "Status after extract download"
   },
+  "statusWenkuPreviewLimited": {
+    "message": "Download started — no VIP found, so only the first $1 preview pages were saved (Baidu Wenku free limit is about 8).",
+    "description": "Success notice when Wenku preview is capped"
+  },
+  "errExtractFailed": {
+    "message": "Could not download this document. Refresh the page and try again.",
+    "description": "Generic document extract failure"
+  },
+  "errExtractNoPages": {
+    "message": "No document pages found. Scroll the preview to load pages, then try Extract again.",
+    "description": "Canvas/html2canvas found nothing"
+  },
+  "errExtractNoText": {
+    "message": "No article text found on this page. Try a different page or section.",
+    "description": "DOM article extract empty"
+  },
+  "errExtractRetry": {
+    "message": "The page was not ready. Refresh the tab and try Extract again.",
+    "description": "Prep/collect injection failed"
+  },
+  "errExtractSmartEduNoFiles": {
+    "message": "No downloadable files found on this SmartEdu lesson. Pick another activity or check asset checkboxes.",
+    "description": "SmartEdu empty asset list"
+  },
+  "errExtractSmartEduLogin": {
+    "message": "SmartEdu login needed. Sign in at auth.smartedu.cn, open the lesson page, then tap Sync login from SmartEdu.",
+    "description": "SmartEdu metadata/auth failure"
+  },
+  "errExtractSmartEduDownload": {
+    "message": "SmartEdu blocked the download. Sync your login again or try another file.",
+    "description": "SmartEdu asset fetch failed"
+  },
+  "errExtractSmartEduVideoUnsupported": {
+    "message": "Video download is not supported. Choose PDF or document files only.",
+    "description": "SmartEdu video asset"
+  },
+  "errExtractWrongPage": {
+    "message": "This link is not a supported document page. Open the document viewer and try again.",
+    "description": "URL/host mismatch"
+  },
+  "errExtractWenkuNoPreview": {
+    "message": "Nothing to save yet. On Baidu Wenku, scroll the free preview (do not click Expand full text), then try again.",
+    "description": "Wenku empty canvas"
+  },
+  "errExtractLoginRequired": {
+    "message": "This site requires you to log in first. Sign in on the website, then try Extract again.",
+    "description": "HTTP 401/403 on binary fetch"
+  },
+  "errExtractDownloadBlocked": {
+    "message": "The website refused the download. You may need to log in, pay, or use a VIP account.",
+    "description": "Binary HTTP error"
+  },
   "extractStagePreparing": {
-    "message": "Preparing page…",
+    "message": "Getting the page ready…",
     "description": "Extract progress"
   },
   "extractStageScrolling": {
-    "message": "Scrolling to load all pages…",
+    "message": "Scrolling to load pages…",
     "description": "Extract progress"
   },
   "extractStageCollecting": {
-    "message": "Collecting content…",
+    "message": "Copying page content…",
     "description": "Extract progress"
   },
   "extractStageAssembling": {
-    "message": "Assembling file…",
+    "message": "Building your file…",
     "description": "Extract progress"
   },
   "extractStageDownloading": {
-    "message": "Downloading…",
+    "message": "Saving to your computer…",
     "description": "Extract progress"
   },
   "settingsAdvanced": {
@@ -276,7 +480,7 @@
     "description": "Fetch failed with detail"
   },
   "errPortDisconnected": {
-    "message": "The extension closed the connection. Try again; if it keeps happening, reload MindGraph on chrome://extensions.",
+    "message": "Connection lost. Click Extract again. If it keeps failing, reload MindGraph on chrome://extensions.",
     "description": "Service worker port closed"
   },
   "commandGenerateDescription": {

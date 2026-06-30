@@ -35,6 +35,7 @@ export type AdminCapability =
   | 'tab.settings.tokens'
   | 'tab.settings.library'
   | 'tab.settings.database'
+  | 'tab.settings.cos'
   | 'tab.settings.performance'
   | 'tab.settings.errors'
   | 'tab.settings.thinking_coins'
@@ -78,6 +79,7 @@ const SUPERADMIN_CAPS: AdminCapability[] = [
   'tab.settings.tokens',
   'tab.settings.library',
   'tab.settings.database',
+  'tab.settings.cos',
   'tab.settings.performance',
   'tab.settings.errors',
   'tab.settings.thinking_coins',
@@ -218,6 +220,7 @@ export function settingsSubtabRequiresCapabilities(subtab: string): AdminCapabil
     tokens: ['tab.settings.tokens'],
     library: ['tab.settings.library'],
     database: ['tab.settings.database'],
+    cos: ['tab.settings.cos'],
     performance: ['tab.settings.performance'],
     errors: ['tab.settings.errors'],
     thinking_coins: ['tab.settings.thinking_coins'],

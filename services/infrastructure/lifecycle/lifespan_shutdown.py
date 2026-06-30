@@ -63,6 +63,7 @@ class LifespanBackgroundTasks:
     worker_perf_stop: Optional[asyncio.Event] = None
     backup_scheduler_task: Optional[asyncio.Task] = None
     abuseipdb_scheduler_task: Optional[asyncio.Task] = None
+    cos_mirror_task: Optional[asyncio.Task] = None
     process_monitor_task: Optional[asyncio.Task] = None
     health_monitor_task: Optional[asyncio.Task] = None
     api_key_usage_flush_task: Optional[asyncio.Task] = None
@@ -152,6 +153,13 @@ async def run_lifespan_shutdown(
         holdings.abuseipdb_scheduler_task.cancel()
         try:
             await holdings.abuseipdb_scheduler_task
+        except asyncio.CancelledError:
+            pass
+
+    if holdings.cos_mirror_task:
+        holdings.cos_mirror_task.cancel()
+        try:
+            await holdings.cos_mirror_task
         except asyncio.CancelledError:
             pass
 

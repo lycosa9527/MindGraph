@@ -27,9 +27,6 @@ class ErrorCode(str, Enum):
     WECHAT_DB_READ = "wechat_db_read"
     CREDENTIALS_ENCRYPT_FAILED = "credentials_encrypt_failed"
     SERVER_URL_INVALID = "server_url_invalid"
-    SMARTEDU_PARSE_FAILED = "smartedu_parse_failed"
-    SMARTEDU_DOWNLOAD_FAILED = "smartedu_download_failed"
-    SMARTEDU_TOKEN_SAVE_FAILED = "smartedu_token_save_failed"
     ORG_LOCKED = "org_locked"
     RATE_LIMIT = "rate_limit"
     SERVER = "server"
@@ -53,12 +50,6 @@ class AppError:
         if self.code in (ErrorCode.PAIRING_FAILED, ErrorCode.UPLOAD_FAILED, ErrorCode.PARSE_FILE):
             return i18n.translate(key, detail=detail or "—")
         if self.code == ErrorCode.WECHAT_DB_READ:
-            return i18n.translate(key, detail=detail or "—")
-        if self.code in (
-            ErrorCode.SMARTEDU_PARSE_FAILED,
-            ErrorCode.SMARTEDU_DOWNLOAD_FAILED,
-            ErrorCode.SMARTEDU_TOKEN_SAVE_FAILED,
-        ):
             return i18n.translate(key, detail=detail or "—")
         if self.code == ErrorCode.SERVER and self.http_status is not None:
             return i18n.translate(key, status=self.http_status)

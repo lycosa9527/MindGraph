@@ -61,6 +61,8 @@
         {
           prep,
           hideSelectors: hostEntry.hideSelectors || [],
+          autoscrollStepMs: hostEntry.autoscrollStepMs,
+          autoscrollMaxSteps: hostEntry.autoscrollMaxSteps,
         },
       ],
     });
@@ -84,6 +86,19 @@
         postProgress,
         options,
       );
+    }
+    if (hostEntry.id === "wenku" && MindGraphDocExtract.guessWenkuReaderPdfUrl(pageUrl)) {
+      try {
+        return await MindGraphDocExtract.runApiBinaryEngine(
+          tabId,
+          hostEntry,
+          pageUrl,
+          postProgress,
+          options,
+        );
+      } catch {
+        /* wkretype closed or doc gated — fall back to canvas preview capture */
+      }
     }
     if (engine === "canvas-pdf") {
       try {
@@ -128,13 +143,32 @@
   }
 
   /**
+   * @param {object} result
+   * @param {object} hostEntry
+   * @returns {object}
+   */
+  function buildExtractSuccessResult(result, hostEntry) {
+    const out = {
+      ok: true,
+      filename: result.filename,
+      host: hostEntry,
+    };
+    if (result.extractNotice && result.extractNotice.key) {
+      out.notice = result.extractNotice.key;
+      out.noticeArgs = [result.extractNotice.pageCount || String(result.pageCount || "")];
+    }
+    return out;
+  }
+
+  /**
    * @param {number} tabId
    * @param {{ progressPort?: chrome.runtime.Port, saveAs?: boolean, smarteduAssets?: Array<object>, smarteduToken?: string }} [options]
-   * @returns {Promise<{ ok: boolean, error?: string, filename?: string, host?: object }>}
+   * @returns {Promise<{ ok: boolean, error?: string, filename?: string, host?: object, notice?: string, noticeArgs?: string[] }>}
    */
   async function runDocumentExtract(tabId, options) {
     const progressPort = options && options.progressPort;
     const postProgress = (stage) => postExtractProgress(progressPort, stage);
+    let hostEntry = null;
 
     try {
       const tab = await chrome.tabs.get(tabId);
@@ -142,7 +176,7 @@
       if (MindGraphShared && MindGraphShared.isRestrictedTabUrl(pageUrl)) {
         return { ok: false, error: "errRestrictedPage" };
       }
-      const hostEntry = MindGraphDocExtract.matchHost(pageUrl);
+      hostEntry = MindGraphDocExtract.matchHost(pageUrl);
       await runPrepOnTab(tabId, hostEntry, postProgress);
       const result = await runEngine(tabId, hostEntry, pageUrl, postProgress, options || {});
       postProgress("downloading");
@@ -158,10 +192,13 @@
         };
       }
       await downloadExtractBlob(result, saveAs);
-      return { ok: true, filename: result.filename, host: hostEntry };
+      return buildExtractSuccessResult(result, hostEntry);
     } catch (err) {
       const message = (err && err.message) || String(err);
-      return { ok: false, error: message };
+      const errorKey = MindGraphDocExtract.resolveExtractErrorKey
+        ? MindGraphDocExtract.resolveExtractErrorKey(message, hostEntry)
+        : message;
+      return { ok: false, error: errorKey };
     }
   }
 
@@ -183,13 +220,33 @@
   }
 
   /**
+   * @param {number | undefined} tabId
+   * @param {string} [fallbackUrl]
+   * @returns {Promise<string>}
+   */
+  async function resolveTabPageUrl(tabId, fallbackUrl) {
+    if (typeof tabId === "number" && tabId > 0) {
+      try {
+        const tab = await chrome.tabs.get(tabId);
+        if (tab.url && MindGraphShared && !MindGraphShared.isRestrictedTabUrl(tab.url)) {
+          return tab.url;
+        }
+      } catch {
+        /* tab closed or inaccessible */
+      }
+    }
+    return typeof fallbackUrl === "string" ? fallbackUrl : "";
+  }
+
+  /**
    * @param {string} pageUrl
    * @param {number} [tabId]
-   * @returns {Promise<{ host: object, title?: string, assets?: Array<object>, pageCount?: number|null, smarteduTokenSet?: boolean }>}
+   * @returns {Promise<{ host: object, title?: string, assets?: Array<object>, pageCount?: number|null, smarteduTokenSet?: boolean, pageUrl?: string }>}
    */
   async function previewExtractTarget(pageUrl, tabId) {
-    const hostEntry = MindGraphDocExtract.matchHost(pageUrl);
-    const out = { host: hostEntry, pageCount: null, smarteduTokenSet: false };
+    const resolvedUrl = await resolveTabPageUrl(tabId, pageUrl);
+    const hostEntry = MindGraphDocExtract.matchHost(resolvedUrl);
+    const out = { host: hostEntry, pageCount: null, smarteduTokenSet: false, pageUrl: resolvedUrl };
 
     if (
       tabId &&
@@ -199,17 +256,17 @@
     }
 
     if (hostEntry.id === "smartedu") {
-      const stored = await chrome.storage.local.get(["smarteduAccessToken"]);
-      out.smarteduTokenSet = Boolean(stored.smarteduAccessToken);
-      const parsed = MindGraphDocExtract.parseSmartEduUrl(pageUrl);
+      const token = await MindGraphExtensionStorage.getSmartEduTokenIfFresh();
+      out.smarteduTokenSet = Boolean(token);
+      const parsed = MindGraphDocExtract.parseSmartEduUrl(resolvedUrl);
       if (parsed) {
-        let token = stored.smarteduAccessToken || "";
-        if (!token && tabId) {
-          token = (await MindGraphDocExtract.resolveSmartEduToken(tabId, "")) || "";
-          out.smarteduTokenSet = Boolean(token);
+        let activeToken = token || "";
+        if (!activeToken && tabId) {
+          activeToken = (await MindGraphDocExtract.resolveSmartEduToken(tabId, "")) || "";
+          out.smarteduTokenSet = Boolean(activeToken);
         }
         try {
-          const authHeaders = MindGraphDocExtract.buildSmartEduAuthHeaders(token);
+          const authHeaders = MindGraphDocExtract.buildSmartEduAuthHeaders(activeToken);
           const meta = await MindGraphDocExtract.fetchSmartEduMetadata(
             parsed.detailUrl,
             authHeaders,
@@ -225,6 +282,7 @@
   }
 
   MindGraphDocExtract.DOC_EXTRACT_PORT = DOC_EXTRACT_PORT;
+  MindGraphDocExtract.resolveTabPageUrl = resolveTabPageUrl;
   MindGraphDocExtract.runDocumentExtract = runDocumentExtract;
   MindGraphDocExtract.previewExtractTarget = previewExtractTarget;
   global.MindGraphDocExtract = MindGraphDocExtract;

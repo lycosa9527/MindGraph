@@ -89,6 +89,7 @@ from utils.auth.admin_panel_permissions import (
     CAP_SCOPE_GLOBAL,
     CAP_SCOPE_INVITED_ORGS,
     CAP_SETTINGS_DATABASE,
+    CAP_SETTINGS_COS,
     CAP_SETTINGS_ERRORS,
     CAP_SETTINGS_FEATURES,
     CAP_SETTINGS_GEWE,
@@ -562,6 +563,7 @@ require_settings_roles = require_panel_capability(CAP_SETTINGS_ROLES)
 require_settings_tokens = require_panel_capability(CAP_SETTINGS_TOKENS)
 require_settings_library = require_panel_capability(CAP_SETTINGS_LIBRARY)
 require_settings_database = require_panel_capability_short_lived(CAP_SETTINGS_DATABASE)
+require_settings_cos = require_panel_capability_short_lived(CAP_SETTINGS_COS)
 require_settings_performance = require_panel_capability_short_lived(CAP_SETTINGS_PERFORMANCE)
 require_settings_errors = require_panel_capability(CAP_SETTINGS_ERRORS)
 require_settings_thinking_coins = require_panel_capability(CAP_SETTINGS_THINKING_COINS)

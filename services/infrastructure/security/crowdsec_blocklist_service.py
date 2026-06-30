@@ -39,6 +39,31 @@ logger = logging.getLogger(__name__)
 
 KEY_CROWDSEC_META = "crowdsec:blocklist:meta"
 
+
+class _LastCrowdsecNetworkMerge:
+    """Holds last successful network merge payload for COS publisher upload."""
+
+    __slots__ = ("body", "count")
+
+    def __init__(self) -> None:
+        """init."""
+        self.body: str = ""
+        self.count: int = 0
+
+
+_last_crowdsec_network_merge = _LastCrowdsecNetworkMerge()
+
+
+def take_last_crowdsec_network_merge_payload() -> Optional[tuple[str, int]]:
+    """Return and clear last network merge body for COS publish (publisher only)."""
+    if not _last_crowdsec_network_merge.body:
+        return None
+    payload = (_last_crowdsec_network_merge.body, _last_crowdsec_network_merge.count)
+    _last_crowdsec_network_merge.body = ""
+    _last_crowdsec_network_merge.count = 0
+    return payload
+
+
 _DEFAULT_CROWDSEC_INTEGRATION_API_BASE = "https://admin.api.crowdsec.net/v1/integrations"
 
 
@@ -302,6 +327,8 @@ async def merge_crowdsec_blocklist_from_network(force: bool = False) -> Dict[str
     await _set_last_merge_meta_async(len(ips))
     result["ok"] = True
     result["count"] = len(ips)
+    _last_crowdsec_network_merge.body = body
+    _last_crowdsec_network_merge.count = len(ips)
     logger.info(
         "[CrowdSec] merged %s IPs into blacklist (new members this round: %s)",
         len(ips),

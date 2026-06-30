@@ -105,7 +105,7 @@
   async function collectCanvasFromTab(tabId, hostEntry) {
     await chrome.scripting.executeScript({
       target: { tabId },
-      files: ["doc-extract/inject/page-collect.js"],
+      files: ["doc-extract/wenku/preview-notice.js", "doc-extract/inject/page-collect.js"],
     });
     const results = await chrome.scripting.executeScript({
       target: { tabId },
@@ -145,11 +145,13 @@
       return {
         blob,
         filename: MindGraphDocExtract.sanitizeDownloadBasename(payload.title, ".zip"),
+        extractNotice: payload.extractNotice || null,
       };
     }
     return {
       blob,
       filename: MindGraphDocExtract.sanitizeDownloadBasename(payload.title, ".pdf"),
+      extractNotice: payload.extractNotice || null,
     };
   }
 

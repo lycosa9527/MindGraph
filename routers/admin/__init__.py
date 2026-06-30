@@ -9,12 +9,14 @@ All Rights Reserved
 Proprietary License
 """
 
+from .cos import router as cos_router
 from .database import router as database_router
 from .env import router as env_router
 from .logs import router as logs_router
 from .realtime import router as realtime_router
 
 __all__ = [
+    "cos_router",
     "database_router",
     "env_router",
     "logs_router",

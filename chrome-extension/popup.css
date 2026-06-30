@@ -337,10 +337,25 @@ body {
   min-height: 1.2em;
 }
 
+.field-hint-warn {
+  color: var(--err, #b45309);
+}
+
 .btn-compact {
   margin-top: 6px;
   padding: 6px 12px;
   font-size: 11px;
+}
+
+.smartedu-token-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.btn-subtle {
+  opacity: 0.85;
 }
 
 .smartedu-asset-list {
@@ -472,4 +487,189 @@ body {
   line-height: 1.45;
   color: var(--ink-muted);
   text-align: center;
+}
+
+.popup-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.popup-tab {
+  flex: 1;
+  margin: 0;
+  padding: 10px 4px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.popup-tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.popup-tab.is-active {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+.popup-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.download-empty {
+  padding: 8px 0 12px;
+}
+
+.mindmate-setup-hint {
+  padding: 0 0 8px;
+}
+
+#mindmate-view.panel {
+  padding-top: 14px;
+}
+
+#mindmate-view .panel-head-with-close {
+  margin-bottom: 8px;
+}
+
+#mindmate-view .panel-head-with-close .title {
+  margin-bottom: 0;
+}
+
+.mindmate-chat-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mindmate-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mindmate-web-link {
+  font-size: 11px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.mindmate-web-link:hover {
+  text-decoration: underline;
+}
+
+.mindmate-messages {
+  max-height: 280px;
+  min-height: 160px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mindmate-msg {
+  display: flex;
+}
+
+.mindmate-msg-user {
+  justify-content: flex-end;
+}
+
+.mindmate-msg-assistant {
+  justify-content: flex-start;
+}
+
+.mindmate-msg-bubble {
+  max-width: 92%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.mindmate-msg-user .mindmate-msg-bubble {
+  background: var(--ink);
+  color: #fff;
+}
+
+.mindmate-msg-assistant .mindmate-msg-bubble {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.mindmate-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mindmate-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.mindmate-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mindmate-composer-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mindmate-include-page {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ink-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.mindmate-include-page input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.mindmate-include-page.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
 }

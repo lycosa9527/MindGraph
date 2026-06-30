@@ -36,6 +36,14 @@
       pageCount: images.length,
       pageWidth: firstWidth,
       pageHeight: firstHeight,
+      extractNotice:
+        global.__MGWenkuPreview && global.__MGWenkuPreview.evaluateWenkuPreviewNotice
+          ? global.__MGWenkuPreview.evaluateWenkuPreviewNotice(
+              images.length,
+              window.location.hostname,
+              document.body ? document.body.innerText || "" : "",
+            )
+          : null,
     };
   }
 

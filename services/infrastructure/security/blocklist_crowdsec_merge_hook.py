@@ -11,13 +11,15 @@ from typing import Any, Dict
 
 from services.infrastructure.security.crowdsec_blocklist_service import (
     apply_crowdsec_baseline_from_file_async,
-    merge_crowdsec_blocklist_from_network,
+)
+from services.infrastructure.sync.crowdsec_cos_sync import (
+    merge_crowdsec_blocklist_for_role,
 )
 
 
 async def merge_crowdsec_after_abuseipdb_sync(*, force: bool = False) -> Dict[str, Any]:
     """Merge CrowdSec blocklist into shared Redis set after AbuseIPDB sync."""
-    result = await merge_crowdsec_blocklist_from_network(force=force)
+    result = await merge_crowdsec_blocklist_for_role(force=force)
     crowdsec_baseline = await apply_crowdsec_baseline_from_file_async()
     if crowdsec_baseline:
         result["baseline_merged"] = crowdsec_baseline

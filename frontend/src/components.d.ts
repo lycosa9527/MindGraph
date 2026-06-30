@@ -12,6 +12,11 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AccountInfoModal: typeof import('./components/auth/AccountInfoModal.vue')['default']
+    AdminCosBackupsPanel: typeof import('./components/admin/AdminCosBackupsPanel.vue')['default']
+    AdminCosCrowdsecPanel: typeof import('./components/admin/AdminCosCrowdsecPanel.vue')['default']
+    AdminCosOverviewPanel: typeof import('./components/admin/AdminCosOverviewPanel.vue')['default']
+    AdminCosQdrantPanel: typeof import('./components/admin/AdminCosQdrantPanel.vue')['default']
+    AdminCosTab: typeof import('./components/admin/AdminCosTab.vue')['default']
     AdminDashboardTab: typeof import('./components/admin/AdminDashboardTab.vue')['default']
     AdminDatabaseTab: typeof import('./components/admin/AdminDatabaseTab.vue')['default']
     AdminDataCenterTab: typeof import('./components/admin/AdminDataCenterTab.vue')['default']

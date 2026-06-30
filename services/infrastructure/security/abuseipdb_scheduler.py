@@ -19,7 +19,9 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from services.infrastructure.security import abuseipdb_service, crowdsec_blocklist_service
+from services.infrastructure.security import abuseipdb_service
+from services.infrastructure.security.crowdsec_blocklist_service import crowdsec_blocklist_sync_enabled
+from services.infrastructure.sync import crowdsec_cos_sync
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.utils.backup_scheduler import BACKUP_HOUR, get_next_backup_time
@@ -158,7 +160,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
     abuseipdb_sync = (
         abuseipdb_service.abuseipdb_master_enabled() and abuseipdb_service.abuseipdb_blacklist_sync_enabled()
     )
-    crowdsec_sync = crowdsec_blocklist_service.crowdsec_blocklist_sync_enabled()
+    crowdsec_sync = crowdsec_blocklist_sync_enabled()
 
     if not abuseipdb_sync and not crowdsec_sync:
         logger.info(
@@ -241,7 +243,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                             result.get("error"),
                         )
                 else:
-                    cs = await crowdsec_blocklist_service.merge_crowdsec_blocklist_from_network(force=True)
+                    cs = await crowdsec_cos_sync.merge_crowdsec_blocklist_for_role(force=True)
                     if cs.get("ok") and not cs.get("skipped"):
                         logger.info(
                             "[Blocklist] Scheduled CrowdSec-only sync completed: status=ok crowdsec_network_ips=%s",

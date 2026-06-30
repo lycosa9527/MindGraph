@@ -888,6 +888,42 @@ export async function cleanupAdminDatabaseOrphans(
 }
 
 // ============================================================================
+// COS mirror
+// ============================================================================
+
+export async function fetchAdminCosStatus(): Promise<Record<string, unknown>> {
+  return adminFetchJson('/api/auth/admin/cos/status')
+}
+
+export async function fetchAdminCosBackups(): Promise<Record<string, unknown>> {
+  return adminFetchJson('/api/auth/admin/cos/backups')
+}
+
+export async function triggerAdminCosBackup(): Promise<Record<string, unknown>> {
+  return adminFetchJson('/api/auth/admin/cos/backups/trigger', { method: 'POST' })
+}
+
+export async function fetchAdminCosCrowdsecStatus(): Promise<Record<string, unknown>> {
+  return adminFetchJson('/api/auth/admin/cos/crowdsec/status')
+}
+
+export async function triggerAdminCosCrowdsecSync(): Promise<Record<string, unknown>> {
+  return adminFetchJson('/api/auth/admin/cos/crowdsec/sync', { method: 'POST' })
+}
+
+export async function fetchAdminCosQdrantStatus(): Promise<Record<string, unknown>> {
+  return adminFetchJson('/api/auth/admin/cos/qdrant/status')
+}
+
+export async function publishAdminCosQdrant(): Promise<Record<string, unknown>> {
+  return adminFetchJson('/api/auth/admin/cos/qdrant/publish', { method: 'POST' })
+}
+
+export async function installAdminCosQdrant(): Promise<Record<string, unknown>> {
+  return adminFetchJson('/api/auth/admin/cos/qdrant/install', { method: 'POST' })
+}
+
+// ============================================================================
 // Performance
 // ============================================================================
 
