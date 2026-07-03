@@ -296,6 +296,13 @@ export const useAuthStore = defineStore('auth', () => {
     if (!user.value) {
       return
     }
+    const current = user.value.thinkingCoins
+    if (
+      current?.balance === summary.balance &&
+      current?.eligible === summary.eligible
+    ) {
+      return
+    }
     user.value = {
       ...user.value,
       thinkingCoins: {

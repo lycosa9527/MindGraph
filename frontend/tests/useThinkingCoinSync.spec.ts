@@ -68,6 +68,22 @@ describe('useThinkingCoinSync', () => {
     })
   })
 
+  it('patchThinkingCoinsSummary skips replace when balance and eligible unchanged', () => {
+    const authStore = useAuthStore()
+    authStore.user = {
+      id: '1',
+      username: 'trial',
+      role: 'personal_trial',
+      thinkingCoins: { balance: 42, eligible: true },
+    }
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
+
+    authStore.patchThinkingCoinsSummary({ balance: 42, eligible: true })
+
+    expect(setItemSpy).not.toHaveBeenCalled()
+    setItemSpy.mockRestore()
+  })
+
   it('patchEarnTasksFromMutation marks completed slugs', () => {
     const tasks: ThinkingCoinEarnTask[] = [
       {

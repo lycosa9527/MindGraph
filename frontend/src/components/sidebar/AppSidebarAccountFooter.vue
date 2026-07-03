@@ -2,7 +2,7 @@
 /**
  * Sidebar bottom: login CTA or user menu with account actions.
  */
-import { computed, inject, onMounted, reactive, ref } from 'vue'
+import { computed, inject, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import {
@@ -46,11 +46,6 @@ const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarTh
   () => s.t('thinkingCoins.invitePromo')
 )
 
-onMounted(() => {
-  if (sidebarCtx.thinkingCoinsEligible.value) {
-    void sidebarCtx.refreshThinkingCoinEarnTasks()
-  }
-})
 </script>
 
 <template>

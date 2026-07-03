@@ -5,7 +5,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { useAuthStore } from '@/stores/auth'
+import { loadThinkingCoinsWallet } from '@/composables/auth/fetchThinkingCoinsWallet'
 import type {
   AdminThinkingCoinTask,
   ThinkingCoinLedgerResponse,
@@ -22,8 +22,6 @@ export function useThinkingCoins() {
   const { t, isZh } = useLanguage()
   const notify = useNotifications()
   const router = useRouter()
-  const authStore = useAuthStore()
-
   const wallet = ref<ThinkingCoinsWallet | null>(null)
   const ledger = ref<ThinkingCoinLedgerResponse | null>(null)
   const loading = ref(false)
@@ -31,16 +29,8 @@ export function useThinkingCoins() {
   async function fetchWallet(): Promise<ThinkingCoinsWallet | null> {
     loading.value = true
     try {
-      const data = await apiRequestJson<ThinkingCoinsWallet>('/api/auth/thinking-coins/wallet', {
-        method: 'GET',
-      })
+      const data = await loadThinkingCoinsWallet()
       wallet.value = data
-      if (data.eligible) {
-        authStore.patchThinkingCoinsSummary({
-          balance: data.balance,
-          eligible: data.eligible,
-        })
-      }
       return data
     } finally {
       loading.value = false

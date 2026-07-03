@@ -5,6 +5,10 @@ import type { InjectionKey } from 'vue'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import {
+  loadThinkingCoinsWallet,
+  thinkingCoinsWalletScopeKey as resolveThinkingCoinsWalletScopeKey,
+} from '@/composables/auth/fetchThinkingCoinsWallet'
 import { formatThinkingCoinBalance } from '@/composables/auth/useThinkingCoins'
 import { patchEarnTasksFromMutation } from '@/composables/auth/useThinkingCoinSync'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -27,8 +31,7 @@ import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
-import type { ThinkingCoinEarnTask, ThinkingCoinsWallet } from '@/types/thinkingCoins'
-import { apiRequestJson } from '@/utils/apiClient'
+import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
@@ -275,19 +278,11 @@ export function useAppSidebar() {
     }
     const generation = ++thinkingCoinWalletFetchGeneration
     try {
-      const data = await apiRequestJson<ThinkingCoinsWallet>('/api/auth/thinking-coins/wallet', {
-        method: 'GET',
-      })
+      const data = await loadThinkingCoinsWallet()
       if (generation !== thinkingCoinWalletFetchGeneration) {
         return
       }
       thinkingCoinEarnTasks.value = data.earn_tasks ?? []
-      if (data.eligible) {
-        authStore.patchThinkingCoinsSummary({
-          balance: data.balance,
-          eligible: data.eligible,
-        })
-      }
     } catch {
       if (generation === thinkingCoinWalletFetchGeneration) {
         thinkingCoinEarnTasks.value = []
@@ -577,14 +572,17 @@ export function useAppSidebar() {
     { immediate: true }
   )
 
+  const thinkingCoinsWalletScopeKey = computed(() =>
+    resolveThinkingCoinsWalletScopeKey(
+      thinkingCoinsEligible.value,
+      authStore.user?.id,
+    )
+  )
+
   watch(
-    () =>
-      [
-        thinkingCoinsEligible.value,
-        authStore.user?.id ?? null,
-      ] as const,
-    ([eligible]) => {
-      if (eligible) {
+    thinkingCoinsWalletScopeKey,
+    (scopeKey) => {
+      if (scopeKey) {
         void refreshThinkingCoinEarnTasks()
         return
       }

@@ -2,14 +2,16 @@
  * MindMate notify WebSocket — org presence + collab poke toasts.
  * Uses /api/ws/mindmate-notify (no workshop chat access required).
  */
-import { onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useWebSocket } from '@vueuse/core'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useMindmateCollabPresenceBridge } from '@/composables/mindmate/mindmateCollabPresenceBridge'
 import { usePresenceActivity } from '@/composables/workshop/usePresenceActivity'
 import { useAuthStore } from '@/stores/auth'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { handleMindmateCollabPokeFrame } from '@/utils/mindmateCollabPokeNotify'
 
 function buildWsUrl(): string {
@@ -19,11 +21,20 @@ function buildWsUrl(): string {
 
 export function useMindmateCollabNotify(): void {
   const authStore = useAuthStore()
+  const featureFlagsStore = useFeatureFlagsStore()
+  const { canUseOnlineCollab } = useSchoolTierFeatures()
   const notify = useNotifications()
   const { t } = useLanguage()
   const { applyPresenceSnapshot, updatePresence } = useMindmateCollabPresenceBridge()
   const wsUrl = ref('')
   const connected = ref(false)
+
+  const shouldConnect = computed(
+    () =>
+      authStore.isAuthenticated &&
+      featureFlagsStore.getFeatureMindmateCollab() &&
+      canUseOnlineCollab.value,
+  )
 
   function resolveOrgId(): number | null {
     const raw = authStore.user?.schoolId
@@ -112,14 +123,31 @@ export function useMindmateCollabNotify(): void {
     }
   })
 
-  if (authStore.isAuthenticated) {
+  function disconnectNotify(): void {
+    close()
+    wsUrl.value = ''
+    connected.value = false
+  }
+
+  function connectNotify(): void {
+    if (!shouldConnect.value) {
+      disconnectNotify()
+      return
+    }
     wsUrl.value = buildWsUrl()
     open()
   }
 
+  watch(shouldConnect, (ok) => {
+    if (ok) {
+      connectNotify()
+    } else {
+      disconnectNotify()
+    }
+  }, { immediate: true })
+
   onUnmounted(() => {
-    close()
-    connected.value = false
+    disconnectNotify()
   })
 }
 
