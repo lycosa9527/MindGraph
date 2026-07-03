@@ -176,8 +176,7 @@ function onToolClick(toolId: MindMapSideToolId): void {
 <style scoped>
 .mind-map-side-toolbar__card {
   border: 1px solid rgb(226 232 240 / 0.95);
-  border-right: none;
-  border-radius: 1rem 0 0 1rem;
+  border-radius: 1rem;
   background: rgb(255 255 255 / 0.97);
   box-shadow:
     -4px 0 16px -4px rgb(15 23 42 / 0.06),

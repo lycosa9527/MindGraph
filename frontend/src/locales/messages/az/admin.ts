@@ -82,6 +82,8 @@ export default {
   'admin.feature.templateHint': 'Şablon qalereyası və API.',
   'admin.feature.workshopChat': 'Seminar (教研坊)',
   'admin.feature.workshopChatHint': 'Məktəb kanalları, mövzular və DM.',
+  'admin.feature.mindmateCollab': 'MindMate collab',
+  'admin.feature.mindmateCollabHint': 'Shared MindMate AI chatroom (org browse + invite code). Requires online_collab tier.',
   'admin.featureLoadFailed': 'Funksiya bayraqları yüklənmədi',
   'admin.featureSaveFailed': 'Parametrlər saxlanılmadı',
   'admin.featuresIntro': 'Modul bayraqlarını dəyişin. Dəyərlər .env-ə yazılır və işlək prosesə yenidən yüklənir; UI və çox API dərhal yenilənir. Proses başlananda yüklənməyən modul üçün tam restart lazım ola bilər.',

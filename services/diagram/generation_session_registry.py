@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from typing import Any, Optional
 
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 SESSION_PREFIX = "mg:gen_session:"
 MINDBOT_ACTIVE_ZSET = "mg:gen_session:mindbot_active"
-SESSION_TTL_SECONDS = 600
+SESSION_TTL_SECONDS = int(os.getenv("GEN_SESSION_TTL_SECONDS", "600"))
 MINDBOT_ACTIVE_ZSET_TTL_SECONDS = 180
 MINDBOT_SOLO_LOOKUP_MAX_AGE_SECONDS = 45.0
 

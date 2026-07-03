@@ -82,6 +82,8 @@ export default {
   'admin.feature.templateHint': 'Sjabloongalery en verwante API\'s.',
   'admin.feature.workshopChat': 'Werkswinkel (Jiao Yan Fang)',
   'admin.feature.workshopChatHint': 'Skoolkanale, onderwerpe en direkte boodskappe.',
+  'admin.feature.mindmateCollab': 'MindMate collab',
+  'admin.feature.mindmateCollabHint': 'Shared MindMate AI chatroom (org browse + invite code). Requires online_collab tier.',
   'admin.featureLoadFailed': 'Kon nie kenmerkvlagte laai nie',
   'admin.featureSaveFailed': 'Kon nie instellings stoor nie',
   'admin.featuresIntro': 'Skakel module-vlagte oor. Waardes word na .env geskryf en in die opererende bediener herlaai sodat die gebruikerskoppelvlak en meeste API-toetse onmiddellik opdateer. Indien \'n module nooit tydens prosesbegin gelaai is nie, kan jy dalk steeds \'n volledige herstart nodig hê om sy roetes te registreer.',

@@ -2,8 +2,6 @@
 import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useTimestamp } from '@vueuse/core'
-
 import { ElMessage } from 'element-plus'
 
 import { CirclePlus } from '@element-plus/icons-vue'
@@ -23,6 +21,7 @@ import TeachingGroupLanding from '@/components/workshop-chat/TeachingGroupLandin
 import WorkshopGearMenu from '@/components/workshop-chat/WorkshopGearMenu.vue'
 import WorkshopInboxWelcome from '@/components/workshop-chat/WorkshopInboxWelcome.vue'
 import WorkshopPersonalMenu from '@/components/workshop-chat/WorkshopPersonalMenu.vue'
+import OrgContactsPanel from '@/components/social/OrgContactsPanel.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useWorkshopChatComposable } from '@/composables/workshop/useWorkshopChat'
@@ -32,11 +31,9 @@ import { useAuthStore } from '@/stores/auth'
 import {
   type ChatMessage,
   type DirectMessageItem,
-  type OrgMember,
   useWorkshopChatStore,
 } from '@/stores/workshopChat'
 import { apiRequest } from '@/utils/apiClient'
-import { formatContactLastOnlineLabel } from '@/utils/formatContactLastOnline'
 import { formatDeadlineRelative, lessonStudyDeadlineBadge } from '@/utils/lessonStudyDeadline'
 import {
   normalizeWorkshopNarrowQuery,
@@ -47,7 +44,6 @@ import {
   workshopQueryFromState,
   workshopRouteQueriesEqual,
 } from '@/utils/workshopChatRoute'
-import { LAST_SEEN_ONLINE_MAX_AGE_MS } from '@/utils/workshopContactLastSeenStorage'
 
 const AccountInfoModal = defineAsyncComponent(
   () => import('@/components/auth/AccountInfoModal.vue')
@@ -75,9 +71,6 @@ const store = useWorkshopChatStore()
 const authStore = useAuthStore()
 const ws = useWorkshopChatComposable()
 
-/** Ticks every minute so "online … ago" labels stay current. */
-const nowMs = useTimestamp({ interval: 60_000 })
-
 const applyingWorkshopRoute = ref(false)
 
 const messageListRef = ref<InstanceType<typeof ChatMessageList>>()
@@ -99,10 +92,6 @@ const topicEditMode = ref<'rename' | 'move'>('rename')
 const topicEditId = ref(0)
 const topicEditChannelId = ref(0)
 const showChannelHeaderPopover = ref(false)
-const contactPopoverUserId = ref<number | null>(null)
-const contactsSearchInput = ref('')
-let contactsSearchDebounce: ReturnType<typeof setTimeout> | null = null
-const loadingMoreContacts = ref(false)
 const showAccountModal = ref(false)
 const showUpdateLogModal = ref(false)
 const showTeachingGroupsManage = ref(false)
@@ -439,178 +428,6 @@ const parentGroupName = computed(() => {
   const group = store.findParentGroup(store.currentChannelId)
   return group?.name ?? null
 })
-
-const selfContactUserId = computed(() => Number(authStore.user?.id) || 0)
-
-/** Max of server `last_seen_at` and client-observed disconnect time. */
-function effectiveContactLastSeenMs(memberId: number): number | undefined {
-  const member = store.orgMembers.find((m) => m.id === memberId)
-  let serverMs: number | undefined
-  if (member?.last_seen_at) {
-    const parsed = Date.parse(member.last_seen_at)
-    if (!Number.isNaN(parsed)) {
-      serverMs = parsed
-    }
-  }
-  const localMs = store.lastSeenOnlineAtByUserId[memberId]
-  if (serverMs === undefined && localMs === undefined) {
-    return undefined
-  }
-  if (serverMs === undefined) {
-    return localMs
-  }
-  if (localMs === undefined) {
-    return serverMs
-  }
-  return Math.max(serverMs, localMs)
-}
-
-function contactPresenceRank(memberId: number): number {
-  void nowMs.value
-  if (store.onlineUserIds.has(memberId)) {
-    return 0
-  }
-  const ts = effectiveContactLastSeenMs(memberId)
-  if (
-    ts !== undefined &&
-    nowMs.value - ts >= 0 &&
-    nowMs.value - ts <= LAST_SEEN_ONLINE_MAX_AGE_MS
-  ) {
-    return 1
-  }
-  return 2
-}
-
-function sortContactsWithSelfFirst(members: OrgMember[]): OrgMember[] {
-  const sid = selfContactUserId.value
-  const copy = [...members]
-  copy.sort((a, b) => {
-    const d = contactPresenceRank(a.id) - contactPresenceRank(b.id)
-    if (d !== 0) return d
-    if (sid) {
-      if (a.id === sid) return -1
-      if (b.id === sid) return 1
-    }
-    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
-  })
-  return copy
-}
-
-/** Recently online: most recently seen first (after self). */
-function sortRecentlyContactsWithSelfFirst(members: OrgMember[]): OrgMember[] {
-  const sid = selfContactUserId.value
-  const copy = [...members]
-  copy.sort((a, b) => {
-    if (sid) {
-      if (a.id === sid) return -1
-      if (b.id === sid) return 1
-    }
-    const ta = effectiveContactLastSeenMs(a.id) ?? 0
-    const tb = effectiveContactLastSeenMs(b.id) ?? 0
-    return tb - ta
-  })
-  return copy
-}
-
-const contactsOnline = computed(() => {
-  void nowMs.value
-  const list = store.orgMembers.filter((m) => contactPresenceRank(m.id) === 0)
-  return sortContactsWithSelfFirst(list)
-})
-
-const contactsRecentlyOnline = computed(() => {
-  void nowMs.value
-  const list = store.orgMembers.filter((m) => contactPresenceRank(m.id) === 1)
-  return sortRecentlyContactsWithSelfFirst(list)
-})
-
-const contactsOffline = computed(() => {
-  void nowMs.value
-  const list = store.orgMembers.filter((m) => contactPresenceRank(m.id) === 2)
-  return sortContactsWithSelfFirst(list)
-})
-
-const contactsOnlineCount = computed(
-  () => store.orgMembers.filter((m) => store.onlineUserIds.has(m.id)).length
-)
-
-function isContactSelf(memberId: number): boolean {
-  const sid = selfContactUserId.value
-  return sid !== 0 && memberId === sid
-}
-
-function contactLastOnlineSubtitle(memberId: number): string {
-  void nowMs.value
-  const ts = effectiveContactLastSeenMs(memberId)
-  if (ts === undefined) {
-    return ''
-  }
-  return formatContactLastOnlineLabel(ts, nowMs.value, t)
-}
-
-interface ContactSection {
-  key: string
-  labelKey: string | null
-  members: OrgMember[]
-}
-
-const contactSections = computed((): ContactSection[] => {
-  void nowMs.value
-  const on = contactsOnline.value
-  const recent = contactsRecentlyOnline.value
-  const off = contactsOffline.value
-  const sections: ContactSection[] = []
-  if (on.length > 0) {
-    sections.push({
-      key: 'online',
-      labelKey: 'workshop.contactsOnlineNow',
-      members: on,
-    })
-  }
-  if (recent.length > 0) {
-    sections.push({
-      key: 'recently_online',
-      labelKey: 'workshop.contactsRecentlyOnline',
-      members: recent,
-    })
-  }
-  if (off.length > 0) {
-    sections.push({
-      key: 'offline',
-      labelKey: 'workshop.contactsOffline',
-      members: off,
-    })
-  }
-  return sections
-})
-
-watch(contactsSearchInput, (val) => {
-  if (contactsSearchDebounce != null) {
-    clearTimeout(contactsSearchDebounce)
-  }
-  contactsSearchDebounce = setTimeout(async () => {
-    contactsSearchDebounce = null
-    const q = val.trim()
-    await store.fetchOrgMembers({ q, offset: 0, limit: 200 })
-  }, 350)
-})
-
-async function loadMoreContacts(): Promise<void> {
-  if (!store.orgMembersHasMore || loadingMoreContacts.value) {
-    return
-  }
-  loadingMoreContacts.value = true
-  try {
-    await store.fetchOrgMembers({
-      q: store.orgMembersListQuery,
-      offset: store.orgMembers.length,
-      append: true,
-      limit: 200,
-    })
-  } finally {
-    loadingMoreContacts.value = false
-  }
-}
 
 function applyOrgScopeFromProfile(): void {
   const raw = authStore.user?.schoolId
@@ -1136,7 +953,7 @@ function handleStartDMPicker(): void {
 }
 
 function handleStartDM(memberId: number): void {
-  if (selfContactUserId.value && memberId === selfContactUserId.value) return
+  if (memberId === Number(authStore.user?.id)) return
   store.selectDMPartner(memberId)
   store.selectChannel(null)
   store.showChannelBrowser = false
@@ -1811,113 +1628,12 @@ function handleTopicMove(topicId: number): void {
           @view-profile="handleContactViewProfile"
           @manage-user="handleManageUserFromDirectory"
         />
-        <div
+        <OrgContactsPanel
           v-else
-          class="ws-right-contacts"
-        >
-          <div class="ws-right-contacts__header">
-            <span class="ws-right-contacts__label">{{ t('workshop.contacts') }}</span>
-            <span class="ws-right-contacts__count">
-              {{ contactsOnlineCount }} {{ t('workshop.online') }}
-            </span>
-          </div>
-          <div class="ws-right-contacts__search">
-            <el-input
-              v-model="contactsSearchInput"
-              type="search"
-              clearable
-              size="small"
-              :placeholder="t('workshop.searchMembers')"
-            />
-          </div>
-          <div class="ws-right-contacts__list">
-            <template
-              v-for="section in contactSections"
-              :key="section.key"
-            >
-              <div
-                v-if="section.labelKey"
-                class="ws-right-contacts__subhead"
-              >
-                {{ t(section.labelKey) }}
-              </div>
-              <div
-                v-for="member in section.members"
-                :key="`${section.key}-${member.id}`"
-              >
-                <UserCardPopover
-                  :user="{ id: member.id, name: member.name, avatar: member.avatar }"
-                  :visible="contactPopoverUserId === member.id"
-                  :channel-context="false"
-                  @update:visible="contactPopoverUserId = $event ? member.id : null"
-                  @start-dm="handleStartDM"
-                  @view-profile="handleContactViewProfile"
-                  @manage-user="handleManageUserFromDirectory"
-                >
-                  <div class="ws-right-contacts__row">
-                    <span
-                      class="ws-right-contacts__presence"
-                      :class="{
-                        'ws-right-contacts__presence--online': section.key === 'online',
-                        'ws-right-contacts__presence--recent': section.key === 'recently_online',
-                        'ws-right-contacts__presence--offline': section.key === 'offline',
-                      }"
-                    />
-                    <div class="ws-right-contacts__row-text">
-                      <span
-                        class="ws-right-contacts__name"
-                        :class="{
-                          'ws-right-contacts__name--online': section.key === 'online',
-                        }"
-                      >
-                        {{ member.name
-                        }}<span
-                          v-if="isContactSelf(member.id)"
-                          class="ws-right-contacts__you"
-                          >{{ t('workshop.you') }}</span
-                        >
-                      </span>
-                      <span
-                        v-if="section.key === 'recently_online'"
-                        class="ws-right-contacts__last-seen"
-                      >
-                        {{ contactLastOnlineSubtitle(member.id) }}
-                      </span>
-                    </div>
-                  </div>
-                </UserCardPopover>
-              </div>
-            </template>
-            <div
-              v-if="store.orgMembers.length === 0"
-              class="ws-right-contacts__empty"
-            >
-              {{ t('workshop.noMembersFound') }}
-            </div>
-          </div>
-          <div
-            v-if="store.orgMembersTotal > 0"
-            class="ws-right-contacts__footer"
-          >
-            <span class="ws-right-contacts__loaded">
-              {{
-                t('workshop.contactsLoadedCount')
-                  .replace('{0}', String(store.orgMembers.length))
-                  .replace('{1}', String(store.orgMembersTotal))
-              }}
-            </span>
-            <el-button
-              v-if="store.orgMembersHasMore"
-              text
-              size="small"
-              type="primary"
-              :loading="loadingMoreContacts"
-              @click="loadMoreContacts"
-            >
-              {{ t('workshop.loadMore') }}
-            </el-button>
-          </div>
-        </div>
+          @start-dm="handleStartDM"
+          @view-profile="handleContactViewProfile"
+          @manage-user="handleManageUserFromDirectory"
+        />
       </div>
     </div>
 

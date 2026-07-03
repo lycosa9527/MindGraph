@@ -73,11 +73,11 @@ async def test_build_user_dify_targets_web_and_mindbot(monkeypatch: pytest.Monke
     )
 
     targets = await build_user_dify_targets(MagicMock(), as_user(user))
-    assert len(targets) == 2
+    assert len(targets) == 3
     assert targets[0].channel == "web"
     assert targets[0].dify_user == "mg_user_7"
-    assert targets[1].channel == "mindbot"
-    assert targets[1].dify_user == "mindbot_5_staff42"
+    mindbot_users = {target.dify_user for target in targets if target.channel == "mindbot"}
+    assert mindbot_users == {"mindbot_5_staff42", "mindbot_5_unknown"}
 
 
 @pytest.mark.asyncio

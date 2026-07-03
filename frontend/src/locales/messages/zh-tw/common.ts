@@ -1,6 +1,4 @@
-/**
- * zh-tw UI � common
- */
+/** zh-tw UI — common */
 
 export default {
   'app.aiDisclaimer': '內容由AI生成，請仔細甄別',
@@ -106,8 +104,10 @@ export default {
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'Kitty',
-  'canvas.kittyMobileIndicatorHint': '手机 Kitty 已通过麦克风与会话启动并与当前图示关联，请在手机上对话与操作。',
-  'canvas.kittyMobileIndicatorAria': '状态：手机 Kitty 已与当前 MindGraph 画布关联，请在手机上使用 Kitty。',
+  'canvas.kittyMobileIndicatorHint':
+    '手机 Kitty 已通过麦克风与会话启动并与当前图示关联，请在手机上对话与操作。',
+  'canvas.kittyMobileIndicatorAria':
+    '状态：手机 Kitty 已与当前 MindGraph 画布关联，请在手机上使用 Kitty。',
   'canvas.kittyMobileIndicatorTitle': '手機 Kitty',
   'canvas.kittyVoiceCommandLogTitle': '語音指令',
   'canvas.kittyVoiceCommandLogAria': '來自手機 Kitty 的最近語音指令',
@@ -139,7 +139,8 @@ export default {
   'mobile.kittyKeyboardToggle': '文字輸入',
   'mobile.kittyEnd': '結束',
   'mobile.kittyWelcomeLine': '說說你的想法',
-  'mobile.kittyWelcomeSub': '语音随问随答，支持拍照识图。请在手机或电脑上打开已保存的图示，便于 Kitty 与 MindGraph 同步。',
+  'mobile.kittyWelcomeSub':
+    '语音随问随答，支持拍照识图。请在手机或电脑上打开已保存的图示，便于 Kitty 与 MindGraph 同步。',
   'mobile.kittyConnecting': '正在連接…',
   'mobile.kittyInputPlaceholder': '輸入消息…',
   'mobile.kittySend': '發送',
@@ -151,7 +152,8 @@ export default {
   'mobile.kittyConnectFailed': '連接失敗，請檢查網絡後重試',
   'mobile.kittyDisconnected': '語音連接已斷開，點按麥克風重新連接',
   'mobile.kittyEnableServerHint': '請在服務端 .env 中設置 FEATURE_KITTY_AGENT=True 並重啟 API。',
-  'mobile.kittyServerDisabledBanner': '当前环境未开启 Kitty 语音后端，拍照与语音不可用。请在 server .env 中启用 FEATURE_KITTY_AGENT 并重启。',
+  'mobile.kittyServerDisabledBanner':
+    '当前环境未开启 Kitty 语音后端，拍照与语音不可用。请在 server .env 中启用 FEATURE_KITTY_AGENT 并重启。',
   'mobile.kittyDiagramPickerTitle': '選擇導圖',
   'mobile.kittyDiagramPickerLoading': '加載中…',
   'mobile.kittyDiagramPickerEmpty': '暫無已保存的導圖',
@@ -168,7 +170,8 @@ export default {
   'mobile.kittyHubSourceLibrary': 'Hub：庫',
   'mobile.kittyHubSourceEmpty': 'Hub：空',
   'mobile.kittyMicPttTitle': '按住麥克風說話，鬆開發送；輸入框外可按住空格鍵說話。',
-  'mobile.kittyMicPttAria': '按住说话：按住麦克风采集语音，松开停止。输入框外可按住空格键；文字输入打开且聚焦输入框时空格仍为输入空格。',
+  'mobile.kittyMicPttAria':
+    '按住说话：按住麦克风采集语音，松开停止。输入框外可按住空格键；文字输入打开且聚焦输入框时空格仍为输入空格。',
   'mobile.kittyMicToggleTitle': '按住麥克風說話，鬆開發送；輸入框外可按住空格鍵說話。',
   'mobile.kittyMicToggleAria': '按住說話：按住麥克風採集語音，鬆開停止。',
   'mobile.kittyClickWheelAria': '滑動轉盤選擇節點',
@@ -200,19 +203,24 @@ export default {
   'settings.version.chinese': '專業模式',
   'settings.version.international': '簡潔模式',
   'landing.international.subtitle': '宇宙中最強大的AI思維圖示生成軟件',
-  'landing.international.promptPlaceholder': '描述主题并指定图示类型，例如「用流程图展示测量密度的实验步骤」…',
+  'landing.international.promptPlaceholder':
+    '描述主题并指定图示类型，例如「用流程图展示测量密度的实验步骤」…',
   'landing.international.examplesTitle': '靈感推薦',
   'landing.international.example1': '生成一張關於「光合作用」的思維導圖',
-  'landing.international.example2': '用树形图分类「脊椎动物」，四个分支：鱼类、两栖类、爬行类、哺乳类',
-  'landing.international.example3': '用流程图展示「测量物体密度」的实验步骤：称质量、量体积、计算、记录结论',
+  'landing.international.example2':
+    '用树形图分类「脊椎动物」，四个分支：鱼类、两栖类、爬行类、哺乳类',
+  'landing.international.example3':
+    '用流程图展示「测量物体密度」的实验步骤：称质量、量体积、计算、记录结论',
   'landing.international.example4': '用雙氣泡圖比較「植物細胞」與「動物細胞」的異同',
-  'landing.international.example5': '用括号图分解「一元二次方程」：标准式、判别式、求根公式、图像与根的关系',
+  'landing.international.example5':
+    '用括号图分解「一元二次方程」：标准式、判别式、求根公式、图像与根的关系',
   'landing.international.example6': '生成氣泡圖，描述「牛頓三大定律」的關鍵概念',
   'landing.international.phaseRequestSent': '請求已發送',
   'landing.international.phaseServerReceived': '服務器已收到請求',
   'landing.international.phaseGenerating': '正在生成圖示…',
   'landing.international.phasePleaseWait': '請稍候，AI 正在組織內容',
-  'landing.international.generatingWithTopic': '主题：{topic}，正在生成{diagramType}，请稍候',
+  'landing.international.generatingWithTopic':
+    '主题：{topic}，正在生成{diagramType}，请稍候',
   'landing.international.topicUnknown': '您的主題',
   'landing.international.diagramTypePending': '圖示',
   'landing.international.errorRateLimit': '請求過於頻繁，請稍後再試',

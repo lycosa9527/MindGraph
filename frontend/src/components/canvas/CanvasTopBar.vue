@@ -39,6 +39,7 @@ import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
 import { CANVAS_TOP_BAR } from '@/config/uiConfig'
 import { CANVAS_STANDARD_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM } from '@/config/canvasExportMenu'
+import { isPdfExportCommand } from '@/utils/diagramPdfExport'
 import { useAuthStore, useDiagramStore, usePanelsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
@@ -500,7 +501,7 @@ async function handleReset() {
                       class="w-4 h-4 mr-2 text-violet-500"
                     />
                     <FileText
-                      v-else-if="item.command === 'pdf'"
+                      v-else-if="isPdfExportCommand(item.command)"
                       class="w-4 h-4 mr-2 text-red-500"
                     />
                     <FileJson

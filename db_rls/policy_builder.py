@@ -204,6 +204,30 @@ WORKSHOP_CHILD = [
     ("user_topic_preferences", "rls_user_visible(user_id)"),
 ]
 
+MINDMATE_COLLAB_SESSION_EXPR = (
+    "owner_user_id = rls_current_user_id() "
+    "OR (visibility = 'network' AND rls_community_read_allowed()) "
+    "OR (organization_id IS NOT NULL AND rls_org_visible(organization_id)) "
+    "OR rls_platform_admin_only() "
+    "OR rls_is_system_mode()"
+)
+MINDMATE_COLLAB_SESSION_CHECK = (
+    "owner_user_id = rls_current_user_id() OR rls_is_system_mode() OR rls_platform_admin_only()"
+)
+MINDMATE_COLLAB_MESSAGE_EXPR = (
+    "EXISTS (SELECT 1 FROM mindmate_collab_sessions s WHERE s.id = session_id AND ("
+    "s.owner_user_id = rls_current_user_id() "
+    "OR (s.visibility = 'network' AND rls_community_read_allowed()) "
+    "OR (s.organization_id IS NOT NULL AND rls_org_visible(s.organization_id)) "
+    "OR rls_platform_admin_only() "
+    "OR rls_is_system_mode()"
+    ")) AND (sender_user_id = rls_current_user_id() OR role = 'assistant' OR rls_is_system_mode())"
+)
+MINDMATE_COLLAB_TABLES = [
+    ("mindmate_collab_sessions", MINDMATE_COLLAB_SESSION_EXPR, MINDMATE_COLLAB_SESSION_CHECK),
+    ("mindmate_collab_messages", MINDMATE_COLLAB_MESSAGE_EXPR, MINDMATE_COLLAB_MESSAGE_EXPR),
+]
+
 # Group C — users: id is NULL on INSERT; panel school managers set organization_id on the new row.
 USERS_EXPR = (
     "rls_user_visible(id) OR (rls_is_panel_mode() AND organization_id IS NOT NULL AND rls_org_visible(organization_id))"
@@ -254,6 +278,13 @@ def upgrade_group_a() -> None:
     for table, expr in MARKET_CHILD_TABLES:
         _enable_force(table)
         _create_all_policy(table, f"{table}_tenant", expr)
+
+
+def upgrade_mindmate_collab_policies() -> None:
+    """MindMate collab sessions and messages (org / network visibility)."""
+    for table, using_expr, check_expr in MINDMATE_COLLAB_TABLES:
+        _enable_force(table)
+        _create_all_policy(table, f"{table}_tenant", using_expr, check_expr)
 
 
 def upgrade_group_b() -> None:
@@ -377,6 +408,8 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
     rows.extend(SHARED_DIAGRAM_CHILD)
     rows.append((WORKSHOP_ROOT, WORKSHOP_CHANNEL_EXPR))
     rows.extend(WORKSHOP_CHILD)
+    for table, using_expr, _check in MINDMATE_COLLAB_TABLES:
+        rows.append((table, using_expr))
     rows.append(("users", USERS_EXPR))
     rows.append(("organizations", ORGS_EXPR))
     rows.append(("community_posts", COMMUNITY_READ))
@@ -429,6 +462,7 @@ def all_rls_tables() -> list[str]:
     tables.extend(t for t, _ in SHARED_DIAGRAM_CHILD)
     tables.append(WORKSHOP_ROOT)
     tables.extend(t for t, _ in WORKSHOP_CHILD)
+    tables.extend(t for t, _, _ in MINDMATE_COLLAB_TABLES)
     tables.extend(["users", "organizations"])
     tables.extend(
         [

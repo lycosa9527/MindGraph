@@ -91,6 +91,11 @@ class Diagram(Base):
         DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
     )
 
+    # Optional provenance (nullable for legacy rows)
+    source_channel: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    conversation_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    dify_user_key: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="diagrams", lazy="selectin")
     snapshots: Mapped[list["DiagramSnapshot"]] = relationship(

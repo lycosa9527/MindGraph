@@ -148,6 +148,9 @@ class RedisDiagramCache:
         thumbnail: Optional[str] = None,
         max_per_user: Optional[int] = None,
         organization_id: Optional[int] = None,
+        source_channel: Optional[str] = None,
+        conversation_id: Optional[str] = None,
+        dify_user_key: Optional[str] = None,
     ) -> Tuple[bool, Optional[str], Optional[str]]:
         """
         Save diagram using write-through pattern: Database first, then Redis cache.
@@ -215,6 +218,9 @@ class RedisDiagramCache:
                 thumbnail,
                 now,
                 organization_id,
+                source_channel=source_channel,
+                conversation_id=conversation_id,
+                dify_user_key=dify_user_key,
             )
         else:
             db_success, db_error = await self._update_in_database(
@@ -290,27 +296,34 @@ class RedisDiagramCache:
         thumbnail: Optional[str],
         created_at: datetime,
         organization_id: Optional[int] = None,
+        *,
+        source_channel: Optional[str] = None,
+        conversation_id: Optional[str] = None,
+        dify_user_key: Optional[str] = None,
     ) -> Tuple[bool, Optional[str]]:
         """Create new diagram in database using INSERT ... RETURNING to confirm in one query."""
         try:
             async with user_rls_session(user_id, organization_id) as db:
                 try:
-                    stmt = (
-                        pg_insert(Diagram)
-                        .values(
-                            id=diagram_id,
-                            user_id=user_id,
-                            title=title,
-                            diagram_type=diagram_type,
-                            spec=spec,
-                            language=language,
-                            thumbnail=thumbnail,
-                            created_at=created_at,
-                            updated_at=created_at,
-                            is_deleted=False,
-                        )
-                        .returning(Diagram.id)
-                    )
+                    values: Dict[str, Any] = {
+                        "id": diagram_id,
+                        "user_id": user_id,
+                        "title": title,
+                        "diagram_type": diagram_type,
+                        "spec": spec,
+                        "language": language,
+                        "thumbnail": thumbnail,
+                        "created_at": created_at,
+                        "updated_at": created_at,
+                        "is_deleted": False,
+                    }
+                    if source_channel:
+                        values["source_channel"] = source_channel.strip()[:32]
+                    if conversation_id:
+                        values["conversation_id"] = conversation_id.strip()[:128]
+                    if dify_user_key:
+                        values["dify_user_key"] = dify_user_key.strip()[:256]
+                    stmt = pg_insert(Diagram).values(**values).returning(Diagram.id)
                     result = await db.execute(stmt)
                     await db.commit()
                     if result.scalar_one_or_none() == diagram_id:

@@ -4,7 +4,7 @@
  * Design: Clean minimalist grouped by time periods
  * Shows a limited batch initially (default 10; higher on fullpage MindMate) with "Show more".
  */
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
 
 import {
   ElDropdown,
@@ -31,6 +31,8 @@ import { type MindMateConversation, useAuthStore, useMindMateStore } from '@/sto
 
 import ChatHistoryConversationTitle from './ChatHistoryConversationTitle.vue'
 
+const MindmateCollabHistory = defineAsyncComponent(() => import('./MindmateCollabHistory.vue'))
+
 const props = withDefaults(
   defineProps<{
     isBlurred?: boolean
@@ -38,10 +40,13 @@ const props = withDefaults(
     compact?: boolean
     /** Items shown before "Show more" (API returns up to 50). */
     initialVisibleLimit?: number
+    /** Live MindMate collab rows pinned above conversation groups. */
+    showCollabSessions?: boolean
   }>(),
   {
     compact: false,
     initialVisibleLimit: 10,
+    showCollabSessions: false,
   }
 )
 
@@ -50,6 +55,7 @@ const _authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 
 const showAll = ref(false)
+const collabHistoryVisible = ref(false)
 
 // Vue Query queries
 const { data: conversationsData, isLoading: isLoadingConversations } = useConversations()
@@ -63,7 +69,7 @@ const { mutate: pinConv } = usePinConversation()
 // Computed - sync conversations from query data
 const conversations = computed(() => {
   if (!conversationsData.value) return []
-  const pinnedIds = pinnedData.value || new Set()
+  const pinnedIds = pinnedData.value?.ids ?? new Set()
 
   // Mark conversations as pinned and sort
   const convs = conversationsData.value.map((conv) => ({
@@ -234,8 +240,7 @@ async function handleDeleteConversation(convId: string): Promise<void> {
 
 // Handle pin/unpin conversation
 async function handlePinConversation(convId: string): Promise<void> {
-  // Call mutation to update server and invalidate cache
-  pinConv(convId)
+  pinConv({ convId, ...mindMateStore.getConversationRoute(convId) })
 }
 
 // Toggle show all
@@ -261,6 +266,12 @@ function toggleShowAll(): void {
       :class="['flex-1 min-h-0', props.compact ? 'chat-history-scroll--compact' : 'px-4 pb-4']"
     >
       <div :class="isBlurred ? 'blur-sm pointer-events-none select-none' : ''">
+        <MindmateCollabHistory
+          v-if="props.showCollabSessions"
+          inline
+          @visible-change="collabHistoryVisible = $event"
+        />
+
         <!-- Loading State -->
         <div
           v-if="isLoading"
@@ -273,7 +284,7 @@ function toggleShowAll(): void {
 
         <!-- Empty State -->
         <div
-          v-else-if="conversations.length === 0"
+          v-else-if="conversations.length === 0 && !collabHistoryVisible"
           class="text-center py-8"
         >
           <MessageCircle class="w-8 h-8 mx-auto mb-2 text-stone-300" />

@@ -7,6 +7,8 @@ import {
   mindMapBranchFontSize,
   mindMapNodeHorizontalExtra,
   mindMapUnderlineVerticalExtra,
+  MINDMAP_UNDERLINE_STROKE_WIDTH,
+  computeMindMapUnderlineBoxMetrics,
 } from '@/config/mindMapGeometry'
 import { MIND_MAP_LEGACY_GEOMETRY } from '@/config/mindMapLegacyGeometry'
 import type { MindMapCanvasMode } from '@/stores/ui'
@@ -89,6 +91,51 @@ export function estimateNodeWidthForCanvasMode(
   return Math.max(minNodeWidth, effectiveTextWidth + nodeHorizontalExtra)
 }
 
+/**
+ * Text block height inside an underline node — matches BranchNode display:
+ * `.diagram-node-md` (line-height 1.35) + markdown pipeline when available.
+ */
+export function measureMindMapUnderlineTextBlockHeight(
+  text: string,
+  nodeId?: string
+): number {
+  const branchFontSize = mindMapBranchFontSize(nodeId)
+  if (typeof document === 'undefined') {
+    return branchFontSize * 1.35
+  }
+  if (!text) return branchFontSize
+  const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
+  const maxTextWidth = computeBalancedMaxWidth(
+    text,
+    wrapThreshold,
+    BRANCH_BASE_MAX_TEXT_WIDTH,
+    branchFontSize
+  )
+  return measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
+}
+
+/** Full underline box metrics — height and line midline offset from the same text measure. */
+export function measureMindMapUnderlineBoxMetrics(
+  text: string,
+  nodeId?: string
+): { textBlockHeight: number; totalHeight: number; lineMidlineOffsetFromTop: number } {
+  const extra = mindMapUnderlineVerticalExtra()
+  const branchFontSize = mindMapBranchFontSize(nodeId)
+  const minTextHeight = branchFontSize
+  const textBlockHeight = Math.max(
+    minTextHeight,
+    measureMindMapUnderlineTextBlockHeight(text, nodeId)
+  )
+  const { totalHeight: rawTotalHeight } = computeMindMapUnderlineBoxMetrics(textBlockHeight)
+  const minHeight = branchFontSize + extra
+  const totalHeight = Math.max(minHeight, Math.ceil(rawTotalHeight))
+  return {
+    textBlockHeight,
+    totalHeight,
+    lineMidlineOffsetFromTop: totalHeight - MINDMAP_UNDERLINE_STROKE_WIDTH / 2,
+  }
+}
+
 export function measureBranchNodeHeightForCanvasMode(
   text: string,
   nodeId?: string,
@@ -149,29 +196,7 @@ export function measureBranchNodeHeightForCanvasMode(
 }
 
 export function measureBranchNodeUnderlineHeight(text: string, nodeId?: string): number {
-  const extra = mindMapUnderlineVerticalExtra()
-  const branchFontSize = mindMapBranchFontSize(nodeId)
-  const minHeight = branchFontSize + extra
-  if (!text) return minHeight
-  const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
-  const maxTextWidth = computeBalancedMaxWidth(
-    text,
-    wrapThreshold,
-    BRANCH_BASE_MAX_TEXT_WIDTH,
-    branchFontSize
-  )
-
-  if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
-    const contentH = measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
-    return Math.max(minHeight, Math.ceil(contentH + extra))
-  }
-
-  const { height: textHeight } = measureTextDimensions(text, branchFontSize, {
-    maxWidth: maxTextWidth,
-    paddingX: 0,
-    paddingY: 0,
-  })
-  return Math.max(minHeight, textHeight + extra)
+  return measureMindMapUnderlineBoxMetrics(text, nodeId).totalHeight
 }
 
 export function estimateTopicNodeWidthForCanvasMode(

@@ -23,11 +23,31 @@ function handle401Response(): void {
   authStore.handleTokenExpired('您的登录已过期，请重新登录')
 }
 
-async function pinConversationAPI(convId: string): Promise<{ is_pinned: boolean }> {
-  // Use credentials (token in httpOnly cookie)
+async function pinConversationAPI(
+  convId: string,
+  route?: ConversationMutationRoute
+): Promise<{ is_pinned: boolean }> {
+  const body: Record<string, unknown> = {}
+  if (route?.difyUser) {
+    body.dify_user = route.difyUser
+  }
+  if (route?.server && route.server >= 1) {
+    body.server = route.server
+  }
+  if (typeof route?.mindbotConfigId === 'number' && route.mindbotConfigId >= 1) {
+    body.mindbot_config_id = route.mindbotConfigId
+  }
+  const channel =
+    route?.difyUser && route.difyUser.startsWith('mindbot_') ? 'mindbot' : route?.difyUser ? 'web' : undefined
+  if (channel) {
+    body.channel = channel
+  }
+
   const response = await fetch(`/api/dify/conversations/${convId}/pin`, {
     method: 'POST',
     credentials: 'same-origin',
+    headers: Object.keys(body).length > 0 ? { 'Content-Type': 'application/json' } : undefined,
+    body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
   })
 
   if (!response.ok) {
@@ -134,7 +154,8 @@ export function usePinConversation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (convId: string) => pinConversationAPI(convId),
+    mutationFn: ({ convId, ...route }: { convId: string } & ConversationMutationRoute) =>
+      pinConversationAPI(convId, route),
     onSuccess: () => {
       // Invalidate both conversations and pinned lists
       queryClient.invalidateQueries({ queryKey: difyKeys.conversations() })

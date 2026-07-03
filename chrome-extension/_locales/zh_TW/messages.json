@@ -71,6 +71,10 @@
     "message": "新對話",
     "description": "新對話"
   },
+  "mindmateHistory": {
+    "message": "歷史記錄",
+    "description": "統一 MindMate 對話歷史"
+  },
   "linkMindmateWeb": {
     "message": "開啟網頁歷史",
     "description": "開啟網頁版"
@@ -100,8 +104,8 @@
     "description": "非首則訊息時頁面上下文說明"
   },
   "mindmatePageContextReading": {
-    "message": "正在提取網頁正文…",
-    "description": "通用頁面提取進行中"
+    "message": "正在掃描並提取網頁正文…",
+    "description": "通用頁面自動提取進行中"
   },
   "mindmatePageContextHostExtract": {
     "message": "正在從 $1 提取文件…",
@@ -129,7 +133,11 @@
   },
   "mindmatePageContextReady": {
     "message": "已提取網頁正文：$2 字 · $1",
-    "description": "通用網頁提取完成"
+    "description": "已知站點網頁提取完成"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "已提取 $1 個字元 · $2",
+    "description": "通用網頁自動提取完成"
   },
   "mindmatePageContextReadySelection": {
     "message": "將使用選中文字：$2 字 · $1",

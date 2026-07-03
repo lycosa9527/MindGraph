@@ -94,4 +94,8 @@ export default {
   'sidebar.roleSuperMember': '超级会员',
   'sidebar.logoSiteQrTitle': '网站二维码',
   'sidebar.logoSiteQrHint': '请使用手机上的相机/微信扫描二维码',
+  'sidebar.mindmateCollabHistory.title': '在线协同',
+  'sidebar.mindmateCollabHistory.stopConfirm': '为所有人结束此 MindMate 协同房间？',
+  'sidebar.mindmateCollabHistory.visibilityOrg': '校内',
+  'sidebar.mindmateCollabHistory.visibilityNetwork': '跨校',
 } as const

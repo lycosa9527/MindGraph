@@ -7,7 +7,7 @@ import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBubbleMapLayout, recalculateMultiFlowMapLayout } from '../specLoader'
-import { LEARNING_SHEET_PLACEHOLDER } from '../specLoader/utils'
+import { isLearningSheetBlankDisplayText } from '../specLoader/utils'
 import {
   estimateNodeWidth as estimateMindMapBranchWidth,
   estimateTopicNodeHeight,
@@ -158,7 +158,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       nodeId !== 'topic'
     ) {
       const currentNode = ctx.data.value.nodes[nodeIndex]
-      const nodeData = currentNode.data as { hiddenAnswer?: string } | undefined
+      const nodeData = currentNode.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
       const newText = updates.text ?? ''
       const diagramData = ctx.data.value as {
         isLearningSheet?: boolean
@@ -168,9 +168,9 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         diagramData.isLearningSheet === true || diagramData.is_learning_sheet === true
       const isLearningSheetBlankUpdate =
         isLearningSheetActive &&
-        newText === LEARNING_SHEET_PLACEHOLDER &&
         typeof nodeData?.hiddenAnswer === 'string' &&
-        nodeData.hiddenAnswer.trim().length > 0
+        nodeData.hiddenAnswer.trim().length > 0 &&
+        (nodeData?.hidden === true || isLearningSheetBlankDisplayText(newText))
 
       if (!isLearningSheetBlankUpdate) {
         const nodeStyle = currentNode.style

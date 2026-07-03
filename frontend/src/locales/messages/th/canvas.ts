@@ -436,7 +436,6 @@ export default {
   'canvas.topBar.editFilename': 'คลิกเพื่อแก้ไขชื่อไฟล์',
   'canvas.topBar.export': 'ส่งออก',
   'canvas.topBar.exportJson': 'ส่งออกเป็นไฟล์ MG',
-  'canvas.topBar.exportPdf': 'ส่งออกเป็น PDF',
   'canvas.topBar.exportPng': 'ส่งออกเป็น PNG',
   'canvas.topBar.exportSvg': 'ส่งออกเป็น SVG',
   'canvas.topBar.reset': 'รีเซ็ต',
@@ -888,4 +887,6 @@ export default {
   'canvasPage.collabConnected': 'Connected',
   'canvas.topBar.viewOnly': 'View only',
   'canvasPage.collabParticipantsMore': 'more',
+  'canvas.topBar.exportPdfLandscape': 'Export as PDF (landscape)',
+  'canvas.topBar.exportPdfPortrait': 'Export as PDF (portrait)',
 } as const

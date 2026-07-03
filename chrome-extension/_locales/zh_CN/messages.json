@@ -71,6 +71,10 @@
     "message": "新对话",
     "description": "新对话"
   },
+  "mindmateHistory": {
+    "message": "历史记录",
+    "description": "统一 MindMate 对话历史"
+  },
   "linkMindmateWeb": {
     "message": "打开网页历史",
     "description": "打开网页版"
@@ -100,8 +104,8 @@
     "description": "非首条消息时页面上下文说明"
   },
   "mindmatePageContextReading": {
-    "message": "正在提取网页正文…",
-    "description": "通用页面提取进行中"
+    "message": "正在扫描并提取网页正文…",
+    "description": "通用页面自动提取进行中"
   },
   "mindmatePageContextHostExtract": {
     "message": "正在从 $1 提取文档…",
@@ -129,7 +133,11 @@
   },
   "mindmatePageContextReady": {
     "message": "已提取网页正文：$2 字 · $1",
-    "description": "通用网页提取完成"
+    "description": "已知站点网页提取完成"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "已提取 $1 个字符 · $2",
+    "description": "通用网页自动提取完成"
   },
   "mindmatePageContextReadySelection": {
     "message": "将使用选中文字：$2 字 · $1",

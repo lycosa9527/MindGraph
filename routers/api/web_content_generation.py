@@ -152,6 +152,7 @@ async def _try_save_to_library(
     language: str,
     http_request_id: Optional[str],
     organization_id: Optional[int] = None,
+    source_channel: Optional[str] = None,
 ) -> Optional[str]:
     """Save generated spec to the user's diagram library.
 
@@ -173,6 +174,7 @@ async def _try_save_to_library(
             language=language,
             thumbnail=None,
             organization_id=organization_id,
+            source_channel=source_channel,
         )
         if save_ok and new_id:
             return str(new_id)
@@ -478,6 +480,7 @@ async def web_content_mindmap_png(
             diagram_data["hidden_node_percentage"] = 0
 
     title = (req.page_title or "").strip()[:200] or "Web Content Mind Map"
+    save_source = "chrome_extension" if client_label.endswith("-extension") else "mindgraph"
 
     screenshot_result, saved_diagram_id = await asyncio.gather(
         capture_diagram_screenshot(
@@ -493,6 +496,7 @@ async def web_content_mindmap_png(
             req.language,
             http_request_id,
             organization_id,
+            source_channel=save_source,
         ),
         return_exceptions=True,
     )

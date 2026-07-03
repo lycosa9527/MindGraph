@@ -234,6 +234,7 @@ async def create_diagram(
         thumbnail=req.thumbnail,
         max_per_user=diagram_cap,
         organization_id=user_org_id,
+        source_channel="mindgraph",
     )
 
     if not success:

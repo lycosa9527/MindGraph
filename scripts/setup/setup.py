@@ -73,6 +73,13 @@ from conda_runtime import (
     run_as_project_user,
     run_as_project_user_streaming,
 )
+from services.infrastructure.sync.cos_sync_env import (
+    is_cos_consumer,
+    qdrant_download_source,
+    qdrant_tarball_cos_key,
+)
+from services.infrastructure.sync.qdrant_release import qdrant_target_version
+from services.utils import tencent_cos_client
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 try:
@@ -1171,14 +1178,6 @@ def install_qdrant_linux_server() -> bool:
         tar_path = os.path.join(tmp_dir, "qdrant.tgz")
         downloaded = False
         try:
-            from services.infrastructure.sync.cos_sync_env import (
-                is_cos_consumer,
-                qdrant_download_source,
-                qdrant_tarball_cos_key,
-            )
-            from services.infrastructure.sync.qdrant_release import qdrant_target_version
-            from services.utils import tencent_cos_client
-
             prefer_cos = qdrant_download_source() == "cos" or (qdrant_download_source() == "auto" and is_cos_consumer())
             if prefer_cos and tencent_cos_client.cos_credentials_configured():
                 version = qdrant_target_version()

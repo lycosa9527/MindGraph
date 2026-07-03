@@ -10,10 +10,16 @@ import { useAuthStore } from '@/stores'
 import { difyConversationRouteQuerySuffix } from '@/utils/difyConversationRoute'
 
 import { difyKeys } from './difyKeys'
+import type { ConversationMutationRoute } from './useDifyMutations'
 
 // ============================================================================
 // Types
 // ============================================================================
+
+export interface PinnedConversationsSnapshot {
+  ids: Set<string>
+  routes: Record<string, ConversationMutationRoute>
+}
 
 export interface DifyAppParameters {
   opening_statement?: string
@@ -83,7 +89,7 @@ async function fetchConversations(): Promise<DifyConversation[]> {
   return result.data || []
 }
 
-async function fetchPinnedConversations(): Promise<Set<string>> {
+async function fetchPinnedConversations(): Promise<PinnedConversationsSnapshot> {
   const response = await fetch('/api/dify/pinned', {
     credentials: 'same-origin',
   })
@@ -97,7 +103,33 @@ async function fetchPinnedConversations(): Promise<Set<string>> {
   }
 
   const result = await response.json()
-  return new Set(result.data || [])
+  const rows = Array.isArray(result.data) ? result.data : []
+  const ids = new Set<string>()
+  const routes: Record<string, ConversationMutationRoute> = {}
+  for (const row of rows) {
+    if (typeof row === 'string' && row.trim()) {
+      ids.add(row.trim())
+      continue
+    }
+    if (!row || typeof row !== 'object') {
+      continue
+    }
+    const convId = typeof row.conversation_id === 'string' ? row.conversation_id.trim() : ''
+    if (!convId) {
+      continue
+    }
+    ids.add(convId)
+    const difyUser = typeof row.dify_user === 'string' ? row.dify_user.trim() : undefined
+    const server = typeof row.server === 'number' && row.server >= 1 ? row.server : undefined
+    const mindbotConfigId =
+      typeof row.mindbot_config_id === 'number' && row.mindbot_config_id >= 1
+        ? row.mindbot_config_id
+        : undefined
+    if (difyUser || server || mindbotConfigId) {
+      routes[convId] = { difyUser, server, mindbotConfigId }
+    }
+  }
+  return { ids, routes }
 }
 
 async function fetchConversationMessages(

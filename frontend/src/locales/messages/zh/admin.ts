@@ -82,6 +82,8 @@ export default {
   'admin.feature.templateHint': '模板库及相关接口。',
   'admin.feature.workshopChat': '教研坊',
   'admin.feature.workshopChatHint': '校级频道、话题与私信。',
+  'admin.feature.mindmateCollab': 'MindMate 在线协同',
+  'admin.feature.mindmateCollabHint': '共享 MindMate AI 聊天室（校内浏览 + 邀请码）。需 online_collab 套餐。',
   'admin.featureLoadFailed': '无法加载功能开关',
   'admin.featureSaveFailed': '无法保存设置',
   'admin.featuresIntro':

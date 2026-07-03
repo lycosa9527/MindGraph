@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import distinct, func, select
+from sqlalchemy import distinct, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.mindbot_usage import MindbotUsageEvent
@@ -435,3 +435,28 @@ class MindbotUsageRepository:
             nick = (nick_raw or "").strip() or None
             out.append((org_id, staff, nick))
         return out
+
+    async def backfill_linked_user(
+        self,
+        organization_id: int,
+        dingtalk_staff_id: str,
+        user_id: int,
+    ) -> int:
+        """Set linked_user_id on historical usage rows after account bind."""
+        staff = _clip(dingtalk_staff_id, 128)
+        uid = int(user_id)
+        org_id = int(organization_id)
+        if not staff or uid <= 0 or org_id <= 0:
+            return 0
+        stmt = (
+            update(MindbotUsageEvent)
+            .where(
+                MindbotUsageEvent.organization_id == org_id,
+                MindbotUsageEvent.dingtalk_staff_id == staff,
+                MindbotUsageEvent.linked_user_id.is_(None),
+            )
+            .values(linked_user_id=uid)
+        )
+        result = await self._session.execute(stmt)
+        rowcount = int(getattr(result, "rowcount", 0) or 0)
+        return rowcount

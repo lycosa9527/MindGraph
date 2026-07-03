@@ -82,6 +82,8 @@ export default {
   'admin.feature.templateHint': 'แกลเลอรีเทมเพลตและ API ที่เกี่ยวข้อง',
   'admin.feature.workshopChat': 'เวิร์กช็อป (教研坊)',
   'admin.feature.workshopChatHint': 'ช่องทางโรงเรียน หัวข้อ และข้อความส่วนตัว',
+  'admin.feature.mindmateCollab': 'MindMate collab',
+  'admin.feature.mindmateCollabHint': 'Shared MindMate AI chatroom (org browse + invite code). Requires online_collab tier.',
   'admin.featureLoadFailed': 'ไม่สามารถโหลดแฟล็กฟีเจอร์',
   'admin.featureSaveFailed': 'ไม่สามารถบันทึกการตั้งค่า',
   'admin.featuresIntro': 'สลับแฟล็กโมดูล ค่าจะถูกเขียนใน .env และโหลดซ้ำในเซิร์ฟเวอร์ที่ทำงานอยู่ ดังนั้น UI และการตรวจสอบ API ส่วนใหญ่จะอัปเดตทันที หากโมดูลไม่เคยถูกโหลดตอนเริ่มต้น คุณอาจยังต้องรีสตาร์ทเต็มรูปแบบ',

@@ -4,7 +4,7 @@
  * Uses useMindMate composable for SSE streaming
  * Features: Markdown rendering, code highlighting, message actions, stop generation
  */
-import { computed, nextTick, onActivated, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onActivated, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { ElButton, ElIcon } from 'element-plus'
@@ -27,6 +27,24 @@ import ShareExportModal from './ShareExportModal.vue'
 import MindmateHeader from './mindmate/MindmateHeader.vue'
 import MindmateInput from './mindmate/MindmateInput.vue'
 import MindmateMessages from './mindmate/MindmateMessages.vue'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
+import {
+  embeddedCollabRoomCode,
+  setEmbeddedCollabRoomCode,
+} from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
+import type { MindMateMessage } from '@/stores/mindmateActiveThread'
+
+const MindmateCollabPanel = defineAsyncComponent(
+  () => import('@/components/mindmate/MindmateCollabPanel.vue'),
+)
+const MindmateCollabEmbed = defineAsyncComponent(
+  () => import('@/components/mindmate/MindmateCollabEmbed.vue'),
+)
+
+interface MindmateCollabPanelHandle {
+  prefillAndAutoJoin: (rawCode: string) => void
+}
 
 // Props for different display modes
 const props = withDefaults(
@@ -50,7 +68,10 @@ const notify = useNotifications()
 const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 const uiStore = useUIStore()
+const featureFlagsStore = useFeatureFlagsStore()
 const { loadPhase: mindMateLoadPhase } = storeToRefs(mindMateStore)
+
+const showMindmateCollab = computed(() => featureFlagsStore.getFeatureMindmateCollab())
 
 const { displayName: defaultMindMateTitle } = useMindMateBranding()
 
@@ -75,6 +96,28 @@ const editingMessageId = ref<string | null>(null)
 const editingContent = ref('')
 const hoveredMessageId = ref<string | null>(null)
 const showShareModal = ref(false)
+const collabPanelRef = ref<MindmateCollabPanelHandle | null>(null)
+const collabRoomCode = ref<string | null>(null)
+const collabRoomTitle = ref<string | null>(null)
+const collabVisibility = ref<string>('organization')
+const collabSeedMessages = ref<MindmateCollabMessage[]>([])
+
+function mapThreadToCollabSeed(msgs: MindMateMessage[]): MindmateCollabMessage[] {
+  return msgs
+    .filter((m) => (m.role === 'user' || m.role === 'assistant') && m.content.trim())
+    .map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+      sender_user_id: m.role === 'user' ? Number(authStore.user?.id) || null : null,
+      username: m.role === 'user' ? authStore.user?.username ?? null : null,
+    }))
+}
+
+function prefillCollabJoin(rawCode: string): void {
+  collabPanelRef.value?.prefillAndAutoJoin(rawCode)
+}
+
+defineExpose({ prefillCollabJoin })
 
 // Computed for loading state
 const isLoading = computed(
@@ -88,6 +131,48 @@ const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar)
 const showWelcome = computed(() => {
   return !mindMate.hasMessages.value && !mindMate.isLoading.value && !mindMate.isStreaming.value
 })
+
+const inConversation = computed(
+  () =>
+    Boolean(mindMateStore.currentConversationId) ||
+    mindMate.hasMessages.value ||
+    mindMate.isLoading.value ||
+    mindMate.isStreaming.value,
+)
+
+const isCollabChatroomMode = computed(() => Boolean(collabRoomCode.value))
+
+const collabToolbarTitle = computed(() => {
+  if (!isCollabChatroomMode.value) {
+    return displayTitle.value
+  }
+  const visLabel =
+    collabVisibility.value === 'network'
+      ? t('mindmate.collabSeminarPublic')
+      : t('mindmate.collabSeminarOrg')
+  const name = collabRoomTitle.value || displayTitle.value
+  return `${visLabel} · ${name}`
+})
+
+function handleCollabSessionStarted(payload: { code: string }) {
+  collabSeedMessages.value = mapThreadToCollabSeed(mindMate.messages.value)
+  collabRoomCode.value = payload.code
+  collabRoomTitle.value = mindMateStore.conversationTitle || null
+  setEmbeddedCollabRoomCode(payload.code)
+}
+
+function exitCollabChatroomMode() {
+  collabRoomCode.value = null
+  collabRoomTitle.value = null
+  collabVisibility.value = 'organization'
+  collabSeedMessages.value = []
+  setEmbeddedCollabRoomCode(null)
+}
+
+function handleCollabRoomMeta(payload: { title: string; visibility: string }) {
+  collabRoomTitle.value = payload.title
+  collabVisibility.value = payload.visibility
+}
 
 function syncHeaderTitleFromBranding() {
   if (isTypingTitle.value) {
@@ -107,6 +192,24 @@ watch(showWelcome, (welcome) => {
     syncHeaderTitleFromBranding()
   }
 })
+
+watch(
+  embeddedCollabRoomCode,
+  (code) => {
+    if (!isFullpageMode.value) {
+      return
+    }
+    if (code && code !== collabRoomCode.value) {
+      if (collabSeedMessages.value.length === 0) {
+        collabSeedMessages.value = mapThreadToCollabSeed(mindMate.messages.value)
+      }
+      collabRoomCode.value = code
+    }
+    if (!code && collabRoomCode.value) {
+      exitCollabChatroomMode()
+    }
+  },
+)
 
 // In panel mode (canvas mini-mindmate): fetch conversations from Dify and sync to store
 // ChatHistory sidebar is not mounted on canvas, so we must fetch here
@@ -179,6 +282,7 @@ function startNewConversation() {
     authStore.handleTokenExpired(undefined, undefined)
     return
   }
+  exitCollabChatroomMode()
   mindMate.startNewConversation()
   displayTitle.value = defaultMindMateTitle.value
 }
@@ -358,8 +462,16 @@ function isLastAssistantMessage(messageId: string): boolean {
         class="flex-1 min-w-0 text-sm font-semibold text-gray-800 dark:text-white truncate text-left"
         :class="{ 'typing-cursor': isTypingTitle }"
       >
-        {{ displayTitle }}
+        {{ isCollabChatroomMode ? collabToolbarTitle : displayTitle }}
       </h1>
+      <MindmateCollabPanel
+        v-if="showMindmateCollab && !isCollabChatroomMode"
+        ref="collabPanelRef"
+        :in-conversation="inConversation"
+        :conversation-title="mindMateStore.conversationTitle || displayTitle"
+        embed-in-panel
+        @session-started="handleCollabSessionStarted"
+      />
       <el-button
         class="new-chat-btn shrink-0"
         size="small"
@@ -385,8 +497,19 @@ function isLastAssistantMessage(messageId: string): boolean {
       @delete-history="deleteConversationFromHistory"
     />
 
-    <!-- Messages -->
-    <MindmateMessages
+    <!-- Collab chatroom mode (chat + right member column) -->
+    <MindmateCollabEmbed
+      v-if="isCollabChatroomMode && collabRoomCode"
+      class="flex-1 min-h-0 min-w-0"
+      :room-code="collabRoomCode"
+      :seed-messages="collabSeedMessages"
+      @ended="exitCollabChatroomMode"
+      @room-meta="handleCollabRoomMeta"
+    />
+
+    <template v-else>
+      <!-- Messages -->
+      <MindmateMessages
       :mode="mode"
       :messages="mindMate.messages.value"
       :user-avatar="userAvatar"
@@ -435,6 +558,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       :messages="mindMate.messages.value"
       :conversation-title="mindMate.conversationTitle.value"
     />
+    </template>
   </div>
 </template>
 

@@ -59,7 +59,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
     }"
   >
     <div class="sidebar-nav-main">
-      <!-- MindMate then its history; MindGraph + diagram history below -->
+      <!-- MindMate: chat history with collab sessions pinned at top of the list -->
       <div
         class="sidebar-nav-mind-section"
         :class="{
@@ -92,7 +92,11 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             v-if="s.showPanel('mindmate')"
             class="sidebar-panel sidebar-panel--fill"
           >
-            <ChatHistory :initial-visible-limit="mindmatePageChatHistoryLimit" />
+            <ChatHistory
+              compact
+              :initial-visible-limit="mindmatePageChatHistoryLimit"
+              :show-collab-sessions="s.featureMindmateCollab"
+            />
           </div>
         </transition>
 

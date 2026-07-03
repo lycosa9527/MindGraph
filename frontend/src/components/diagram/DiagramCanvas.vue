@@ -35,6 +35,8 @@ import {
   useLearningSheetPickKeyboard,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { useMindMapConnectorDebugLog } from '@/composables/mindMap/useMindMapConnectorDebugLog'
+import { isMindMapConnectorDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { registerDiagramLayoutRecalcBootstrap } from '@/composables/core/diagramLayoutRecalcBootstrap'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
@@ -247,6 +249,18 @@ const { nodes, edges, nodesLength } = useDiagramCanvasNodesEdges({
 })
 
 const useMindMapV2 = useMindMapV2Chrome()
+
+const mindMapConnectorDebugEnabled = computed(
+  () =>
+    isMindMapConnectorDebugEnabled() &&
+    useMindMapV2.value &&
+    (diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map')
+)
+useMindMapConnectorDebugLog({
+  enabled: mindMapConnectorDebugEnabled,
+  containerRef: canvasContainer,
+  screenToFlowCoordinate,
+})
 
 const { handlePaste: handleMindMapMultiLinePaste } = useMindMapMultiLinePaste()
 

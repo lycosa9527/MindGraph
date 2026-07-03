@@ -51,6 +51,7 @@ from services.llm import llm_service
 from services.monitoring.activity_stream import get_activity_stream_service
 from services.redis.redis_token_buffer import get_token_tracker
 from services.diagram.dify_user_resolve import (
+    conversation_id_from_request,
     library_save_limit_notice,
     library_save_skip_reason,
     library_save_skip_user_notice,
@@ -615,6 +616,8 @@ async def generate_dingtalk_png(
         temp_path = TEMP_IMAGES_DIR / filename
 
         save_title = prompt[:50].strip() or "Diagram"
+        dify_key = (save_identity.dify_user_key or "").strip()
+        source_channel = "dingtalk" if dify_key.startswith("mindbot_") else "mindmate"
         saved_id = await try_save_diagram_to_library(
             user_id,
             title=save_title,
@@ -624,6 +627,9 @@ async def generate_dingtalk_png(
             organization_id=organization_id,
             http_request_id=getattr(getattr(request, "state", None), "request_id", None),
             log_prefix="generate_dingtalk",
+            source_channel=source_channel,
+            conversation_id=conversation_id_from_request(req),
+            dify_user_key=dify_key or None,
         )
         skip_reason = library_save_skip_reason(
             user_id=user_id,
@@ -690,6 +696,7 @@ async def generate_dingtalk_png(
                 prompt_preview=prompt,
                 diagram_type=diagram_type,
                 diagram_id=stored_diagram_id,
+                conversation_id=conversation_id_from_request(req),
             )
 
         return PlainTextResponse(content=plain_text)

@@ -102,7 +102,7 @@
   /**
    * @param {unknown} raw
    * @param {string | undefined} expectedAuthKey
-   * @returns {{ authKey: string, tabId: number, url: string, title: string, markdown: string, fromSelection?: boolean } | null}
+   * @returns {{ authKey: string, tabId: number, url: string, title: string, markdown: string, fromSelection?: boolean, source?: string, hostId?: string, assetTotal?: number } | null}
    */
   function parseStoredPageContext(raw, expectedAuthKey) {
     if (!raw || typeof raw !== "object") {
@@ -128,12 +128,15 @@
       title: typeof obj.title === "string" ? obj.title : "",
       markdown,
       fromSelection: Boolean(obj.fromSelection),
+      source: typeof obj.source === "string" ? obj.source : "",
+      hostId: typeof obj.hostId === "string" ? obj.hostId : "",
+      assetTotal: typeof obj.assetTotal === "number" ? obj.assetTotal : 0,
     };
   }
 
   /**
    * @param {string | undefined} expectedAuthKey
-   * @returns {Promise<{ authKey: string, tabId: number, url: string, title: string, markdown: string, fromSelection?: boolean } | null>}
+   * @returns {Promise<{ authKey: string, tabId: number, url: string, title: string, markdown: string, fromSelection?: boolean, source?: string, hostId?: string, assetTotal?: number } | null>}
    */
   async function loadPageContextFromSession(expectedAuthKey) {
     const data = await chrome.storage.session.get(SESSION_PAGE_CONTEXT_KEY);
@@ -142,7 +145,7 @@
 
   /**
    * @param {string} authKey
-   * @param {{ tabId: number, url: string, title: string, markdown: string, fromSelection?: boolean }} ctx
+   * @param {{ tabId: number, url: string, title: string, markdown: string, fromSelection?: boolean, source?: string, hostId?: string, assetTotal?: number }} ctx
    * @returns {Promise<void>}
    */
   async function savePageContextToSession(authKey, ctx) {
@@ -154,6 +157,9 @@
         title: ctx.title,
         markdown: ctx.markdown,
         fromSelection: Boolean(ctx.fromSelection),
+        source: typeof ctx.source === "string" ? ctx.source : "",
+        hostId: typeof ctx.hostId === "string" ? ctx.hostId : "",
+        assetTotal: typeof ctx.assetTotal === "number" ? ctx.assetTotal : 0,
       },
     });
   }

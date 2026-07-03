@@ -95,12 +95,37 @@ describe("mindmate capture progress", () => {
     loadModule("mindmate-capture-progress.js", "MindGraphMindMate");
     const prog = globalThis.MindGraphMindMate.captureProgress;
     const t = (key, subs) => `${key}:${subs.join("|")}`;
-    const notice = prog.formatCachedPageContextNotice(t, {
+    const genericNotice = prog.formatCachedPageContextNotice(t, {
       title: "Article",
       markdown: "x".repeat(120),
       source: "page-markdown",
+      hostId: "generic",
     });
-    expect(notice).toBe("mindmatePageContextReady:Article|120");
+    expect(genericNotice).toBe("mindmatePageContextReadyGeneric:120|Article");
+    const knownNotice = prog.formatCachedPageContextNotice(t, {
+      title: "Article",
+      markdown: "x".repeat(120),
+      source: "page-markdown",
+      hostId: "article",
+    });
+    expect(knownNotice).toBe("mindmatePageContextReady:Article|120");
+  });
+
+  it("finishes generic capture with character count notice", async () => {
+    loadModule("mindmate-capture-progress.js", "MindGraphMindMate");
+    const prog = globalThis.MindGraphMindMate.captureProgress;
+    const t = (key, subs) => `${key}:${subs.join("|")}`;
+    await prog.finishCaptureProgress({
+      ok: true,
+      hostId: "generic",
+      title: "News page",
+      markdownLen: 3456,
+      source: "dom-markdown",
+    });
+    const ready = await prog.getCaptureProgress();
+    expect(prog.formatCaptureProgressMessage(t, ready)).toBe(
+      "mindmatePageContextReadyGeneric:3456|News page",
+    );
   });
 });
 
@@ -443,6 +468,73 @@ describe("mindmate page markdown", () => {
     const root = api.findArticleRoot();
     expect(root.tagName).toBe("MAIN");
   });
+
+  it("extractPageMarkdownAsync skips selection when auto-scanning generic pages", async () => {
+    const code = fs.readFileSync(
+      path.resolve(repoRoot, "chrome-extension/mindmate-page-markdown.js"),
+      "utf8",
+    );
+    class MockElement {
+      getAttribute() {
+        return null;
+      }
+      get classList() {
+        return { contains: () => false };
+      }
+    }
+    class MockTextNode {
+      constructor(text) {
+        this.nodeType = 3;
+        this.textContent = text;
+      }
+    }
+    class MockArticle extends MockElement {
+      constructor(text) {
+        super();
+        this.tagName = "ARTICLE";
+        this.innerText = text;
+        this.childNodes = [new MockTextNode(text)];
+      }
+      querySelectorAll() {
+        return [];
+      }
+    }
+    const articleNode = new MockArticle(
+      "Main article body text with enough characters for extraction.",
+    );
+    const documentMock = {
+      body: articleNode,
+      title: "Example",
+      location: { pathname: "/news", href: "https://example.com/news" },
+      querySelector: (sel) => (sel === "article" ? articleNode : null),
+    };
+    const selectionMock = { toString: () => "User highlighted snippet" };
+    const fn = new Function(
+      "globalThis",
+      "document",
+      "window",
+      "Element",
+      "Node",
+      `${code}\nreturn globalThis.__MGMindMatePageMarkdown;`,
+    );
+    const api = fn(
+      globalThis,
+      documentMock,
+      {
+        location: documentMock.location,
+        getSelection: () => selectionMock,
+      },
+      MockElement,
+      { TEXT_NODE: 3, ELEMENT_NODE: 1 },
+    );
+    const withSelection = await api.extractPageMarkdownAsync(8000);
+    expect(withSelection.fromSelection).toBe(true);
+    expect(withSelection.markdown).toContain("User highlighted");
+    const autoScan = await api.extractPageMarkdownAsync(8000, { skipSelection: true });
+    expect(autoScan.fromSelection).toBe(false);
+    expect(autoScan.markdown).toContain("Main article body");
+    expect(autoScan.markdown).not.toContain("User highlighted");
+  });
 });
 
 describe("mindmate stream errors", () => {
@@ -570,6 +662,29 @@ describe("mindmate api auth headers", () => {
     expect(headers.Authorization).toBe("Bearer tok");
     expect(headers["X-MG-Account"]).toBe("13800000000");
     expect(headers["X-MG-Client"]).toMatch(/extension$/);
+  });
+
+  it("builds conversation route query suffix for MindBot rows", () => {
+    loadModule("shared-mindgraph.js", "MindGraphShared");
+    loadModule("mindmate-api.js", "MindGraphMindMate");
+    const suffix = globalThis.MindGraphMindMate.conversationRouteQuerySuffix({
+      difyUser: "mindbot_5_staff42",
+      server: 2,
+      mindbotConfigId: 9,
+    });
+    expect(suffix).toContain("dify_user=mindbot_5_staff42");
+    expect(suffix).toContain("server=2");
+    expect(suffix).toContain("mindbot_config_id=9");
+  });
+
+  it("maps Dify API messages to panel bubbles", () => {
+    loadModule("mindmate-api.js", "MindGraphMindMate");
+    const rows = globalThis.MindGraphMindMate.panelMessagesFromApi([
+      { id: "m1", query: "Hi", answer: "Hello" },
+    ]);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].role).toBe("user");
+    expect(rows[1].role).toBe("assistant");
   });
 
   it("maps 401 from auth/me to login expired", async () => {

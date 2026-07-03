@@ -2,18 +2,22 @@
  * useDiagramExport - Composable for exporting MindGraph diagrams
  * Supports PNG, SVG, PDF (via html-to-image + jspdf), and MG interchange
  */
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'
 import { apiRequestJson } from '@/utils/apiClient'
-import { getDiagramCanvasHtmlToImageOptions } from '@/utils/diagramHtmlToImage'
+import { getDiagramCanvasHtmlToImageOptions, waitForNextPaint } from '@/utils/diagramHtmlToImage'
 import {
-  prepareDiagramCanvasForRasterCapture,
-  waitForDiagramExportFonts,
-} from '@/utils/diagramExportPrep'
+  addRasterImageToA4PdfPage,
+  isPdfExportCommand,
+  resolvePdfOrientationFromCommand,
+  type PdfPageOrientation,
+} from '@/utils/diagramPdfExport'
+import { waitForDiagramExportFonts } from '@/utils/diagramExportPrep'
 import { encodeMgFileContents } from '@/utils/mgInterchange'
 
 function sanitizeFilename(name: string): string {
@@ -55,21 +59,64 @@ export interface UseDiagramExportOptions {
   getTitle: () => string
 }
 
+async function loadImageFromDataUrl(dataUrl: string): Promise<HTMLImageElement> {
+  const img = new Image()
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve()
+    img.onerror = reject
+    img.src = dataUrl
+  })
+  return img
+}
+
 export function useDiagramExport(options: UseDiagramExportOptions) {
   const { getContainer, getDiagramSpec, getTitle } = options
   const { t } = useLanguage()
   const notify = useNotifications()
   const uiStore = useUIStore()
+  const diagramStore = useDiagramStore()
 
   const isExporting = ref(false)
 
-  /** Ensures UI + KaTeX webfonts are ready before rasterizing the canvas (node labels may include math). */
   async function waitForExportFonts(): Promise<void> {
     await waitForDiagramExportFonts(uiStore.promptLanguage)
   }
 
   async function loadHtmlToImage(): Promise<typeof import('html-to-image')> {
     return import('html-to-image')
+  }
+
+  async function captureContainerPng(
+    container: HTMLElement
+  ): Promise<{ dataUrl: string; width: number; height: number }> {
+    const { toPng } = await loadHtmlToImage()
+    const dataUrl = await toPng(container, getDiagramCanvasHtmlToImageOptions({ pixelRatio: 2 }))
+    const img = await loadImageFromDataUrl(dataUrl)
+    return { dataUrl, width: img.width, height: img.height }
+  }
+
+  async function waitForCanvasPaint(): Promise<void> {
+    await nextTick()
+    await waitForNextPaint()
+  }
+
+  async function buildA4PdfFromImages(
+    images: Array<{ dataUrl: string; width: number; height: number }>,
+    orientation: PdfPageOrientation
+  ): Promise<InstanceType<(typeof import('jspdf'))['jsPDF']>> {
+    const { jsPDF } = await import('jspdf')
+    const pdf = new jsPDF({
+      orientation,
+      unit: 'mm',
+      format: 'a4',
+    })
+    images.forEach((image, index) => {
+      if (index > 0) {
+        pdf.addPage('a4', orientation)
+      }
+      addRasterImageToA4PdfPage(pdf, image.dataUrl, image.width, image.height)
+    })
+    return pdf
   }
 
   async function exportAsPng(): Promise<void> {
@@ -129,7 +176,34 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
   }
 
-  async function exportAsPdf(): Promise<void> {
+  async function exportLearningSheetPdf(
+    container: HTMLElement,
+    orientation: PdfPageOrientation,
+    format: string
+  ): Promise<void> {
+    const savedShowAnswers = diagramStore.learningSheetShowAnswers
+    diagramStore.setLearningSheetShowAnswers(false)
+    await waitForCanvasPaint()
+
+    const worksheetCapture = await captureContainerPng(container)
+
+    const answerCapture = await diagramStore.runWithLearningSheetAnswersRevealed(async () => {
+      await waitForCanvasPaint()
+      return captureContainerPng(container)
+    })
+
+    diagramStore.setLearningSheetShowAnswers(savedShowAnswers)
+
+    const pdf = await buildA4PdfFromImages([worksheetCapture, answerCapture], orientation)
+    const baseName = sanitizeFilename(getTitle())
+    const timestamp = new Date().toISOString().slice(0, 10)
+    pdf.save(`${baseName}_${timestamp}.pdf`)
+
+    logDiagramExport(format)
+    notify.success(t('canvas.export.pdfSuccess'))
+  }
+
+  async function exportAsPdf(format: string): Promise<void> {
     const container = getContainer()
     if (!container) {
       notify.warning(t('canvas.export.canvasNotReady'))
@@ -139,29 +213,29 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
-      const { toPng } = await loadHtmlToImage()
-      const dataUrl = await toPng(container, getDiagramCanvasHtmlToImageOptions({ pixelRatio: 1 }))
 
-      const img = new Image()
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve()
-        img.onerror = reject
-        img.src = dataUrl
-      })
+      const isLearningSheetExport =
+        diagramStore.isLearningSheet && diagramStore.hasBlankedLearningSheetNodes()
 
-      const { jsPDF } = await import('jspdf')
-      const pdf = new jsPDF({
-        orientation: img.width > img.height ? 'landscape' : 'portrait',
-        unit: 'px',
-        format: [img.width, img.height],
-      })
+      if (isLearningSheetExport) {
+        const rect = container.getBoundingClientRect()
+        const orientation = resolvePdfOrientationFromCommand(
+          format,
+          Math.round(rect.width),
+          Math.round(rect.height)
+        )
+        await exportLearningSheetPdf(container, orientation, format)
+        return
+      }
 
-      pdf.addImage(dataUrl, 'PNG', 0, 0, img.width, img.height)
+      const probe = await captureContainerPng(container)
+      const orientation = resolvePdfOrientationFromCommand(format, probe.width, probe.height)
+
+      const pdf = await buildA4PdfFromImages([probe], orientation)
       const baseName = sanitizeFilename(getTitle())
       const timestamp = new Date().toISOString().slice(0, 10)
       pdf.save(`${baseName}_${timestamp}.pdf`)
-
-      logDiagramExport('pdf')
+      logDiagramExport(format)
       notify.success(t('canvas.export.pdfSuccess'))
     } catch (error) {
       console.error('PDF export failed:', error)
@@ -171,7 +245,6 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
   }
 
-  /** MindGraph diagram interchange: AES-GCM wrapped payload, `.mg` extension (not plain JSON). */
   async function exportAsMgFile(): Promise<void> {
     const spec = getDiagramSpec()
     if (!spec) {
@@ -207,12 +280,18 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         await exportAsSvg()
         break
       case 'pdf':
-        await exportAsPdf()
+      case 'pdf_landscape':
+      case 'pdf_portrait':
+        await exportAsPdf(format)
         break
       case 'mg':
         await exportAsMgFile()
         break
       default:
+        if (isPdfExportCommand(format)) {
+          await exportAsPdf(format)
+          break
+        }
         notify.warning(t('canvas.export.unknownFormat', { format }))
     }
   }

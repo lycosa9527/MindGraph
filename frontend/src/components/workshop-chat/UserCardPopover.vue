@@ -5,7 +5,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { AtSign, Copy, MessageSquare, ShieldCheck, User } from '@lucide/vue'
+import { AtSign, Copy, Hand, MessageSquare, ShieldCheck, User } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
@@ -24,6 +24,8 @@ const props = defineProps<{
   user: UserCardUser
   visible: boolean
   channelContext?: boolean
+  /** MindMate collab member list — show 戳 (poke) action */
+  collabContext?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -32,6 +34,7 @@ const emit = defineEmits<{
   (e: 'insertMention', name: string): void
   (e: 'viewProfile', userId: number): void
   (e: 'manageUser', userId: number): void
+  (e: 'poke', userId: number): void
 }>()
 
 const { t } = useLanguage()
@@ -108,6 +111,11 @@ function handleCopyMention(): void {
 
 function handleManageUser(): void {
   emit('manageUser', props.user.id)
+  close()
+}
+
+function handlePoke(): void {
+  emit('poke', props.user.id)
   close()
 }
 </script>
@@ -204,6 +212,21 @@ export default { name: 'UserCardPopover' }
             >
               <MessageSquare class="ws-popover-icon" />
               {{ t('workshop.sendDirectMessage') }}
+            </button>
+          </li>
+
+          <li
+            v-if="collabContext"
+            role="none"
+          >
+            <button
+              type="button"
+              class="ws-popover-item ws-popover-item--poke"
+              role="menuitem"
+              @click="handlePoke"
+            >
+              <Hand class="ws-popover-icon" />
+              {{ t('mindmate.collabPoke') }}
             </button>
           </li>
 

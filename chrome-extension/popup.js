@@ -570,6 +570,7 @@ async function startPopup() {
     pageContextNoticeEl: document.getElementById("mindmate-page-context-notice"),
     btnGoSettings: document.getElementById("btn-mindmate-go-settings"),
     includePageCheckbox: document.getElementById("mindmate-include-page"),
+    historyListEl: document.getElementById("mindmate-history-list"),
   });
 
   applyLocaleToDocument();

@@ -103,6 +103,9 @@
       } else if (result.fromSelection) {
         messageKey = "mindmatePageContextReadySelection";
         messageSubs = [String(result.title || ""), String(result.markdownLen || 0)];
+      } else if (result.hostId === "generic") {
+        messageKey = "mindmatePageContextReadyGeneric";
+        messageSubs = [String(result.markdownLen || 0), String(result.title || "")];
       } else if (result.source === "wenku-pdf") {
         messageKey = "mindmatePageContextReadyWenku";
       } else if (result.source === "cnki-pdf") {
@@ -179,6 +182,9 @@
         String(ctx.title || ""),
         String(markdownLen),
       ]);
+    }
+    if (ctx.hostId === "generic") {
+      return t("mindmatePageContextReadyGeneric", [String(markdownLen), String(ctx.title || "")]);
     }
     if (ctx.source === "wenku-pdf") {
       return t("mindmatePageContextReadyWenku", [String(ctx.title || ""), String(markdownLen)]);

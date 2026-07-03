@@ -80,6 +80,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_smart_response: bool
     feature_teacher_usage: bool
     feature_workshop_chat: bool
+    feature_mindmate_collab: bool
     feature_markets: bool
     feature_mindbot: bool
     feature_oauth_login: bool
@@ -127,6 +128,7 @@ async def get_feature_flags(
         feature_smart_response=config.FEATURE_SMART_RESPONSE,
         feature_teacher_usage=config.FEATURE_TEACHER_USAGE,
         feature_workshop_chat=config.FEATURE_WORKSHOP_CHAT,
+        feature_mindmate_collab=config.FEATURE_MINDMATE_COLLAB,
         feature_markets=config.FEATURE_MARKETS,
         feature_mindbot=config.FEATURE_MINDBOT,
         feature_oauth_login=config.FEATURE_OAUTH_LOGIN,

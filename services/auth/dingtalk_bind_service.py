@@ -9,6 +9,7 @@ from typing import Any
 from sqlalchemy.exc import IntegrityError
 
 from repositories.dingtalk_staff_link_repo import DingtalkStaffLinkRepository
+from repositories.mindbot_usage_repo import MindbotUsageRepository
 from services.auth.dingtalk_bind_audit_log import log_claim_failed, log_claim_ok
 from services.auth.dingtalk_bind_constants import (
     BIND_ERROR_INTERNAL,
@@ -277,6 +278,12 @@ async def claim_dingtalk_qr_bind(
                         error_code=result.error_code,
                     )
                     return False, result.error_code
+                usage_repo = MindbotUsageRepository(db)
+                await usage_repo.backfill_linked_user(
+                    token_org_id,
+                    staff_id,
+                    token_user_id,
+                )
                 await db.commit()
         except IntegrityError as exc:
             logger.warning("[DingtalkBind] claim integrity error: %s", exc)

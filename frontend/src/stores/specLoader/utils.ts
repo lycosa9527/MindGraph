@@ -19,8 +19,19 @@ import {
 import { estimateNodeWidth, measureBranchNodeHeight } from './mindMap'
 import type { SpecLoaderResult } from './types'
 
-/** Placeholder text for knocked-out nodes in learning sheet mode */
-export const LEARNING_SHEET_PLACEHOLDER = '___'
+/** Visible text for knocked-out nodes — empty; layout estimates preserve node size. */
+export const LEARNING_SHEET_BLANK_TEXT = ''
+
+/** Legacy knocked-out placeholder from older specs (still recognized on load). */
+export const LEARNING_SHEET_LEGACY_PLACEHOLDER = '___'
+
+/** @deprecated Use LEARNING_SHEET_BLANK_TEXT */
+export const LEARNING_SHEET_PLACEHOLDER = LEARNING_SHEET_BLANK_TEXT
+
+export function isLearningSheetBlankDisplayText(text: string | undefined | null): boolean {
+  const trimmed = String(text ?? '').trim()
+  return trimmed === '' || trimmed === LEARNING_SHEET_LEGACY_PLACEHOLDER
+}
 
 /** Node types that should never be hidden (topic, center, boundary, etc.) */
 const PROTECTED_NODE_TYPES = ['topic', 'center', 'boundary', 'label']
@@ -82,14 +93,14 @@ export function applyLearningSheetHiddenNodes(
     for (const node of result.nodes) {
       const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
       const text = String(node.text ?? '').trim()
-      const isBlanked = nodeData?.hidden === true || text === LEARNING_SHEET_PLACEHOLDER
+      const isBlanked = nodeData?.hidden === true || isLearningSheetBlankDisplayText(text)
       if (!isBlanked) continue
       const answer =
         typeof nodeData?.hiddenAnswer === 'string' && nodeData.hiddenAnswer.trim()
           ? nodeData.hiddenAnswer.trim()
-          : text !== LEARNING_SHEET_PLACEHOLDER
-            ? text
-            : ''
+          : isLearningSheetBlankDisplayText(text)
+            ? ''
+            : text
       if (answer && !hiddenAnswersFromNodes.includes(answer)) {
         hiddenAnswersFromNodes.push(answer)
       }
@@ -141,7 +152,7 @@ export function applyLearningSheetHiddenNodes(
       : {}
     return {
       ...node,
-      text: LEARNING_SHEET_PLACEHOLDER,
+      text: LEARNING_SHEET_BLANK_TEXT,
       data: {
         ...node.data,
         ...layoutEstimates,

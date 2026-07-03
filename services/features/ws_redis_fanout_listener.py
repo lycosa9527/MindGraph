@@ -31,6 +31,7 @@ from typing import Any, Final, Optional, Tuple
 
 from redis.exceptions import RedisError
 
+from config.settings import config
 from services.features.workshop_chat_ws_manager import chat_ws_manager
 from services.features.workshop_ws_fanout_delivery import (
     deliver_local_workshop_broadcast,
@@ -52,6 +53,12 @@ from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
+
+DELIVER_MINDMATE_COLLAB_FANOUT = None
+if config.FEATURE_MINDMATE_COLLAB:
+    from services.features.mindmate_collab.ws_broadcast import (
+        deliver_fanout_envelope as DELIVER_MINDMATE_COLLAB_FANOUT,
+    )
 
 _RECONNECT_DELAY = 2.0
 _KIND_CHAT: Final[str] = "chat"
@@ -218,6 +225,13 @@ async def _handle_workshop_raw(payload: str) -> None:
         )
         return
     exclude = ex if isinstance(ex, int) else None
+
+    if isinstance(code, str) and code.startswith("mmc:"):
+        if DELIVER_MINDMATE_COLLAB_FANOUT is None:
+            return
+        record_ws_fanout_workshop_received()
+        await DELIVER_MINDMATE_COLLAB_FANOUT(env)
+        return
 
     record_ws_fanout_workshop_received()
     try:

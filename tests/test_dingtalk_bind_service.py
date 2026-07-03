@@ -191,6 +191,9 @@ async def test_success_consumes_after_commit() -> None:
             return_value=mock_repo,
         ),
         patch(
+            "services.auth.dingtalk_bind_service.MindbotUsageRepository",
+        ) as mock_usage_cls,
+        patch(
             "services.auth.dingtalk_bind_service.consume_bind_token",
             new_callable=AsyncMock,
             return_value=payload,
@@ -209,6 +212,9 @@ async def test_success_consumes_after_commit() -> None:
         mock_cm.__aenter__ = AsyncMock(return_value=mock_db)
         mock_cm.__aexit__ = AsyncMock(return_value=False)
         mock_rls.return_value = mock_cm
+        mock_usage_repo = MagicMock()
+        mock_usage_repo.backfill_linked_user = AsyncMock(return_value=3)
+        mock_usage_cls.return_value = mock_usage_repo
 
         ok, err = await claim_dingtalk_qr_bind(
             token=token,
@@ -220,6 +226,7 @@ async def test_success_consumes_after_commit() -> None:
     assert ok is True
     assert err == ""
     mock_db.commit.assert_awaited_once()
+    mock_usage_repo.backfill_linked_user.assert_awaited_once_with(5, "staffA", 42)
     mock_consume.assert_awaited_once_with(token)
 
 

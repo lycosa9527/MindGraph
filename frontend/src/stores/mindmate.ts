@@ -9,6 +9,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import type { PinnedConversationsSnapshot } from '@/composables/queries/useDifyQueries'
 import type { ModelLoadPhase } from '@/stores/llmResults'
 import {
   cloneMindMateMessages,
@@ -68,6 +69,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
 
   const conversations = ref<MindMateConversation[]>([])
   const pinnedConversationIds = ref<Set<string>>(new Set())
+  const pinnedConversationRoutes = ref<Record<string, MindMateConversationRoute>>({})
   const currentConversationId = ref<string | null>(null)
   const conversationTitle = ref<string>('MindMate')
   const isLoadingConversations = ref(false)
@@ -250,8 +252,14 @@ export const useMindMateStore = defineStore('mindmate', () => {
    * Sync conversations from Vue Query data
    * Called by components that use useConversations() query
    */
-  function syncConversationsFromQuery(convs: MindMateConversation[], pinnedIds: Set<string>): void {
+  function syncConversationsFromQuery(
+    convs: MindMateConversation[],
+    pinned: Set<string> | PinnedConversationsSnapshot
+  ): void {
+    const pinnedIds = pinned instanceof Set ? pinned : pinned.ids
     pinnedConversationIds.value = pinnedIds
+    pinnedConversationRoutes.value =
+      pinned instanceof Set ? {} : { ...pinned.routes }
     conversations.value = convs.map((conv) => ({
       ...conv,
       is_pinned: pinnedIds.has(conv.id),
@@ -271,12 +279,20 @@ export const useMindMateStore = defineStore('mindmate', () => {
    */
   function getConversationRoute(convId: string): MindMateConversationRoute {
     const conv = conversations.value.find((item) => item.id === convId)
-    const difyUser = conv?.dify_user?.trim() || undefined
-    const server = typeof conv?.server === 'number' && conv.server >= 1 ? conv.server : undefined
+    const pinned = pinnedConversationRoutes.value[convId]
+    const difyUser = conv?.dify_user?.trim() || pinned?.difyUser?.trim() || undefined
+    const server =
+      typeof conv?.server === 'number' && conv.server >= 1
+        ? conv.server
+        : typeof pinned?.server === 'number' && pinned.server >= 1
+          ? pinned.server
+          : undefined
     const mindbotConfigId =
       typeof conv?.mindbot_config_id === 'number' && conv.mindbot_config_id >= 1
         ? conv.mindbot_config_id
-        : undefined
+        : typeof pinned?.mindbotConfigId === 'number' && pinned.mindbotConfigId >= 1
+          ? pinned.mindbotConfigId
+          : undefined
     return { difyUser, server, mindbotConfigId }
   }
 
@@ -525,6 +541,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
   function reset(): void {
     conversations.value = []
     pinnedConversationIds.value.clear()
+    pinnedConversationRoutes.value = {}
     currentConversationId.value = null
     conversationTitle.value = 'MindMate'
     isLoadingConversations.value = false

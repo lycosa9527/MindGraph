@@ -4,14 +4,16 @@
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import type { DiagramType } from '@/types'
 
+import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
+
 import { LEARNING_SHEET_PLACEHOLDER } from './constants'
 
 export { LEARNING_SHEET_PLACEHOLDER }
 
 export function isNodePlaceholder(text: string | undefined): boolean {
   if (!text || !text.trim()) return false
-  const t = text.trim()
-  return t === LEARNING_SHEET_PLACEHOLDER || isPlaceholderText(t)
+  const trimmed = text.trim()
+  return isLearningSheetBlankDisplayText(trimmed) || isPlaceholderText(trimmed)
 }
 
 function normalizeDiagramType(dt: DiagramType | null): DiagramType | null {

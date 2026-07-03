@@ -16,10 +16,11 @@ import {
   requestNotificationPermission,
   useChatNotifications,
 } from '@/composables/core/useChatNotifications'
-import { useLanguage } from '@/composables/core/useLanguage'
+import { useLanguage, useNotifications } from '@/composables'
 import { usePresenceActivity } from '@/composables/workshop/usePresenceActivity'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
+import { handleMindmateCollabPokeFrame } from '@/utils/mindmateCollabPokeNotify'
 import {
   registerWorkshopChatWsDisconnect,
   unregisterWorkshopChatWsDisconnect,
@@ -35,6 +36,7 @@ export function useWorkshopChatComposable() {
   const store = useWorkshopChatStore()
   const authStore = useAuthStore()
   const { t } = useLanguage()
+  const notify = useNotifications()
   const notifications = useChatNotifications()
   const connected = ref(false)
   const wsUrl = ref('')
@@ -127,6 +129,10 @@ export function useWorkshopChatComposable() {
     }
 
     const msgType = data.type as string
+
+    if (handleMindmateCollabPokeFrame(data, t, notify)) {
+      return
+    }
 
     switch (msgType) {
       case 'channel_message': {

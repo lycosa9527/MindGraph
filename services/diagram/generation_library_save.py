@@ -23,6 +23,9 @@ async def try_save_diagram_to_library(
     organization_id: Optional[int] = None,
     http_request_id: Optional[str] = None,
     log_prefix: str = "diagram_save",
+    source_channel: Optional[str] = None,
+    conversation_id: Optional[str] = None,
+    dify_user_key: Optional[str] = None,
 ) -> Optional[str]:
     """
     Save generated spec to the user's diagram library.
@@ -44,6 +47,9 @@ async def try_save_diagram_to_library(
             language=(language or "zh").strip() or "zh",
             thumbnail=None,
             organization_id=organization_id,
+            source_channel=source_channel,
+            conversation_id=conversation_id,
+            dify_user_key=dify_user_key,
         )
         if save_ok and new_id:
             return str(new_id)

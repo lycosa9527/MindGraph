@@ -178,6 +178,15 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_WORKSHOP_CHAT", "False").lower() == "true"
 
     @property
+    def FEATURE_MINDMATE_COLLAB(self):
+        """Enable MindMate shared AI chatroom (online collab for MindMate).
+
+        Disabled by default. Set FEATURE_MINDMATE_COLLAB=True in .env to enable.
+        Requires online_collab school tier for end users when enabled.
+        """
+        return self._get_cached_value("FEATURE_MINDMATE_COLLAB", "False").lower() == "true"
+
+    @property
     def WORKSHOP_CHAT_PREVIEW_ORG_IDS(self) -> frozenset[int]:
         """Organization IDs that may use Workshop Chat without admin/manager role.
 

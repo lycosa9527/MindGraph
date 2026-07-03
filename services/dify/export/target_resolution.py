@@ -398,7 +398,7 @@ async def build_user_dify_targets(db: AsyncSession, user: User) -> List[UserTarg
         scope="users",
         org_id=org_id,
         include_unbound=False,
-        include_cross_org=False,
+        include_cross_org=True,
     )
     return result.targets
 

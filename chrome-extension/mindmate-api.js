@@ -225,6 +225,123 @@
   }
 
   /**
+   * @param {{ difyUser?: string, server?: number, mindbotConfigId?: number | null }} route
+   * @returns {string}
+   */
+  function conversationRouteQuerySuffix(route) {
+    const params = new URLSearchParams();
+    const difyUser = route && typeof route.difyUser === "string" ? route.difyUser.trim() : "";
+    if (difyUser) {
+      params.set("dify_user", difyUser);
+    }
+    if (route && typeof route.server === "number" && route.server >= 1) {
+      params.set("server", String(route.server));
+    }
+    if (route && typeof route.mindbotConfigId === "number" && route.mindbotConfigId >= 1) {
+      params.set("mindbot_config_id", String(route.mindbotConfigId));
+    }
+    const query = params.toString();
+    return query ? `&${query}` : "";
+  }
+
+  /**
+   * @param {{ baseUrl: string, account: string, token: string, requestId: string }} creds
+   * @param {{ limit?: number }} [options]
+   * @returns {Promise<{ ok: true, conversations: Array<object> } | { ok: false, error: string }>}
+   */
+  async function fetchConversations(creds, options) {
+    const origin = MindGraphShared.normalizeBaseUrl(creds.baseUrl);
+    if (!origin || !creds.account || !creds.token) {
+      return { ok: false, error: "errMindMateNotConfigured" };
+    }
+    const limit = options && typeof options.limit === "number" ? options.limit : 50;
+    const url = `${origin}/api/dify/conversations?limit=${limit}`;
+    try {
+      const res = await fetch(url, MindGraphShared.mgatFetchInit({
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${creds.token}`,
+          "X-MG-Account": creds.account,
+          "X-MG-Client": MindGraphShared.mgClientHeader(),
+          "X-Request-Id": creds.requestId,
+        },
+      }));
+      if (res.status === 401) {
+        return { ok: false, error: "errMindMateLoginExpired" };
+      }
+      if (!res.ok) {
+        return { ok: false, error: "errMindMateConnectFailed" };
+      }
+      const body = await res.json();
+      const rows = body && Array.isArray(body.data) ? body.data : [];
+      return { ok: true, conversations: rows };
+    } catch {
+      return { ok: false, error: "errNetwork" };
+    }
+  }
+
+  /**
+   * @param {{ baseUrl: string, account: string, token: string, requestId: string }} creds
+   * @param {string} conversationId
+   * @param {{ difyUser?: string, server?: number, mindbotConfigId?: number | null }} route
+   * @returns {Promise<{ ok: true, messages: Array<object> } | { ok: false, error: string }>}
+   */
+  async function fetchConversationMessages(creds, conversationId, route) {
+    const origin = MindGraphShared.normalizeBaseUrl(creds.baseUrl);
+    if (!origin || !creds.account || !creds.token || !conversationId) {
+      return { ok: false, error: "errMindMateNotConfigured" };
+    }
+    const suffix = conversationRouteQuerySuffix(route || {});
+    const url = `${origin}/api/dify/conversations/${encodeURIComponent(conversationId)}/messages?limit=100${suffix}`;
+    try {
+      const res = await fetch(url, MindGraphShared.mgatFetchInit({
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${creds.token}`,
+          "X-MG-Account": creds.account,
+          "X-MG-Client": MindGraphShared.mgClientHeader(),
+          "X-Request-Id": creds.requestId,
+        },
+      }));
+      if (res.status === 401) {
+        return { ok: false, error: "errMindMateLoginExpired" };
+      }
+      if (!res.ok) {
+        return { ok: false, error: "errMindMateConnectFailed" };
+      }
+      const body = await res.json();
+      const rows = body && Array.isArray(body.data) ? body.data : [];
+      return { ok: true, messages: rows };
+    } catch {
+      return { ok: false, error: "errNetwork" };
+    }
+  }
+
+  /**
+   * @param {Array<object>} apiMessages
+   * @returns {Array<{ id: string, role: "user" | "assistant", text: string }>}
+   */
+  function panelMessagesFromApi(apiMessages) {
+    /** @type {Array<{ id: string, role: "user" | "assistant", text: string }>} */
+    const out = [];
+    for (const row of apiMessages) {
+      if (!row || typeof row !== "object") {
+        continue;
+      }
+      const baseId = typeof row.id === "string" ? row.id : String(out.length);
+      const query = typeof row.query === "string" ? row.query : "";
+      const answer = typeof row.answer === "string" ? row.answer : typeof row.content === "string" ? row.content : "";
+      if (query.trim()) {
+        out.push({ id: `${baseId}-q`, role: "user", text: query });
+      }
+      if (answer.trim()) {
+        out.push({ id: `${baseId}-a`, role: "assistant", text: answer });
+      }
+    }
+    return out;
+  }
+
+  /**
    * @param {{ baseUrl: string, account: string, token: string, requestId: string }} creds
    * @param {string} conversationId
    * @returns {Promise<void>}
@@ -246,6 +363,10 @@
   MindGraphMindMate.buildAuthHeaders = buildAuthHeaders;
   MindGraphMindMate.verifyAuth = verifyAuth;
   MindGraphMindMate.fetchDifyUserId = fetchDifyUserId;
+  MindGraphMindMate.conversationRouteQuerySuffix = conversationRouteQuerySuffix;
+  MindGraphMindMate.fetchConversations = fetchConversations;
+  MindGraphMindMate.fetchConversationMessages = fetchConversationMessages;
+  MindGraphMindMate.panelMessagesFromApi = panelMessagesFromApi;
   MindGraphMindMate.mapStreamErrorFromPayload = mapStreamErrorFromPayload;
   MindGraphMindMate.streamMessage = streamMessage;
   MindGraphMindMate.autoGenerateConversationTitle = autoGenerateConversationTitle;

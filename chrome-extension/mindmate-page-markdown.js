@@ -443,20 +443,24 @@
 
   /**
    * @param {number} maxChars
+   * @param {{ skipSelection?: boolean }} [options]
    * @returns {Promise<{ title: string, url: string, markdown: string, fromSelection: boolean, source?: string }>}
    */
-  async function extractPageMarkdownAsync(maxChars) {
+  async function extractPageMarkdownAsync(maxChars, options) {
     const title = readPageTitle();
     const url = window.location.href || "";
-    const selection = window.getSelection();
-    if (selection && selection.toString().trim()) {
-      return {
-        title,
-        url,
-        markdown: truncateMarkdown(selection.toString().trim(), maxChars),
-        fromSelection: true,
-        source: "selection",
-      };
+    const skipSelection = Boolean(options && options.skipSelection);
+    if (!skipSelection) {
+      const selection = window.getSelection();
+      if (selection && selection.toString().trim()) {
+        return {
+          title,
+          url,
+          markdown: truncateMarkdown(selection.toString().trim(), maxChars),
+          fromSelection: true,
+          source: "selection",
+        };
+      }
     }
 
     const root = findArticleRoot();

@@ -10,6 +10,8 @@ import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { mindMapConnectionAnchorY, mindMapNodeTopYForAnchorY } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
+import { isMindMapConnectorVerboseDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
+import { logMindMapProcess } from '@/utils/mindMapConnectorDebugVerbose'
 
 import type { DiagramContext } from './types'
 
@@ -232,6 +234,15 @@ export function recalculateMindMapV2ColumnPositions(
   const topicNode = nodes.find((n) => n.id === 'topic')
   if (!topicNode?.position) return { nodes, gaps: { left: 0, right: 0 } }
 
+  if (isMindMapConnectorVerboseDebugEnabled()) {
+    logMindMapProcess('layout:recalc:start', {
+      canvasMode: 'v2',
+      nodeCount: nodes.length,
+      connectionCount: connections.length,
+      collapsedCount: collapsedNodeIds.size,
+    })
+  }
+
   const storedEstimate =
     (topicNode.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
   const measuredTopicWidth = topicWidth ?? 0
@@ -324,6 +335,20 @@ export function recalculateMindMapV2ColumnPositions(
       collapsedNodeIds,
       diagramStyleId
     )
+  }
+
+  if (isMindMapConnectorVerboseDebugEnabled()) {
+    logMindMapProcess('layout:recalc:done', {
+      canvasMode: 'v2',
+      movedYCount: correctedNodes.filter((node) => {
+        const prev = nodes.find((item) => item.id === node.id)
+        return (
+          prev?.position?.y != null &&
+          node.position?.y != null &&
+          Math.abs(node.position.y - prev.position.y) >= 0.5
+        )
+      }).length,
+    })
   }
 
   return { nodes: correctedNodes, gaps: { left: leftGap, right: rightGap } }
@@ -527,10 +552,35 @@ function correctYPositions(
 
   if (newY.size === 0) return nodes
 
+  if (isMindMapConnectorVerboseDebugEnabled()) {
+    logMindMapProcess('layout:y-correct:start', {
+      canvasMode: 'v2',
+      nodeCount: nodes.length,
+      assignedCount: newY.size,
+    })
+  }
+
   return nodes.map((node) => {
     const correctedY = newY.get(node.id)
     if (correctedY == null || !node.position) return node
     if (Math.abs(node.position.y - correctedY) < 0.5) return node
+    const prevY = node.position.y
+    const shape = resolveMindMapNodeShape(
+      { id: node.id, type: node.type ?? 'branch', style: node.style },
+      diagramStyleId
+    )
+    const h = getNodeHeight(node.id, nodeMap, nodeHeights)
+    if (isMindMapConnectorVerboseDebugEnabled()) {
+      logMindMapProcess('layout:y-correct:result', {
+        nodeId: node.id,
+        shape,
+        prevY,
+        nextY: correctedY,
+        deltaY: correctedY - prevY,
+        layoutHeight: h,
+        layoutAnchorY: mindMapConnectionAnchorY(correctedY, h, shape),
+      })
+    }
     return { ...node, position: { ...node.position, y: correctedY } }
   })
 }

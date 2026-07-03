@@ -436,7 +436,6 @@ export default {
   'canvas.topBar.editFilename': 'Cliquez pour modifier le nom du fichier',
   'canvas.topBar.export': 'Exporter',
   'canvas.topBar.exportJson': 'Exporter au format MG',
-  'canvas.topBar.exportPdf': 'Exporter au format PDF',
   'canvas.topBar.exportPng': 'Exporter au format PNG',
   'canvas.topBar.exportSvg': 'Exporter au format SVG',
   'canvas.topBar.reset': 'Réinitialiser',
@@ -888,4 +887,6 @@ export default {
   'canvasPage.collabConnected': 'Connected',
   'canvas.topBar.viewOnly': 'View only',
   'canvasPage.collabParticipantsMore': 'more',
+  'canvas.topBar.exportPdfLandscape': 'Export as PDF (landscape)',
+  'canvas.topBar.exportPdfPortrait': 'Export as PDF (portrait)',
 } as const

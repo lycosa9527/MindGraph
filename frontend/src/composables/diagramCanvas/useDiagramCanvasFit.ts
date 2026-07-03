@@ -82,12 +82,16 @@ export function useDiagramCanvasFit(options: {
   const isFittedForPanel = ref(false)
   const hasInitialFitDoneForDiagram = ref(false)
   let fitFromNodesChangeTimeoutId: ReturnType<typeof setTimeout> | null = null
+  const fitEventUnsubscribers: Array<() => void> = []
 
-  watch(
-    () => [diagramStore.type, diagramStore.data] as const,
-    () => {
+  /** One-shot initial fit resets only when a new diagram is loaded, not on edits. */
+  fitEventUnsubscribers.push(
+    eventBus.on('diagram:loaded', () => {
       hasInitialFitDoneForDiagram.value = false
-    }
+    }),
+    eventBus.on('diagram:loaded_from_library', () => {
+      hasInitialFitDoneForDiagram.value = false
+    })
   )
 
   function getRightPanelWidth(): number {
@@ -384,6 +388,7 @@ export function useDiagramCanvasFit(options: {
     if (getNodes().length === 0) return
     if (!fitViewOnInit.value) {
       if (isMindMapDiagramType(diagramStore.type)) {
+        if (hasInitialFitDoneForDiagram.value) return
         hasInitialFitDoneForDiagram.value = true
         setTimeout(() => {
           if (useMindMapV2.value) {
@@ -396,6 +401,7 @@ export function useDiagramCanvasFit(options: {
         return
       }
       if (diagramStore.type === 'concept_map') {
+        if (hasInitialFitDoneForDiagram.value) return
         hasInitialFitDoneForDiagram.value = true
         const dv = diagramStore.data as Record<string, unknown> | null | undefined
         const cmapImportFitPending = dv?.['_import_cmap_fit_view_pending'] === true
@@ -465,6 +471,8 @@ export function useDiagramCanvasFit(options: {
       clearTimeout(fitFromNodesChangeTimeoutId)
       fitFromNodesChangeTimeoutId = null
     }
+    fitEventUnsubscribers.forEach((unsub) => unsub())
+    fitEventUnsubscribers.length = 0
   }
 
   watch(

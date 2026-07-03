@@ -8,6 +8,8 @@ import {
   mindMapBranchFontSize,
   mindMapNodeHorizontalExtra,
   mindMapUnderlineVerticalExtra,
+  MINDMAP_UNDERLINE_STROKE_WIDTH,
+  computeMindMapUnderlineBoxMetrics,
 } from '@/config/mindMapGeometry'
 import type { NodeStyle } from '@/types'
 
@@ -145,11 +147,29 @@ export function measureBranchNodeUnderlineHeightWithTypography(
   nodeId?: string,
   typography?: MindMapMeasureTypography
 ): number {
+  return measureMindMapUnderlineBoxMetricsWithTypography(text, nodeId, typography)
+    .totalHeight
+}
+
+/** Underline box metrics with optional typography overrides. */
+export function measureMindMapUnderlineBoxMetricsWithTypography(
+  text: string,
+  nodeId?: string,
+  typography?: MindMapMeasureTypography
+): { textBlockHeight: number; totalHeight: number; lineMidlineOffsetFromTop: number } {
   const extra = mindMapUnderlineVerticalExtra()
   const branchFontSize = resolveBranchFontSize(nodeId, typography)
   const fontWeight = resolveMeasureFontWeight(typography, 'normal')
   const minHeight = branchFontSize + extra
-  if (!text) return minHeight
+  if (!text) {
+    const emptyMetrics = computeMindMapUnderlineBoxMetrics(branchFontSize)
+    const totalHeight = Math.max(minHeight, Math.ceil(emptyMetrics.totalHeight))
+    return {
+      textBlockHeight: branchFontSize,
+      totalHeight,
+      lineMidlineOffsetFromTop: totalHeight - MINDMAP_UNDERLINE_STROKE_WIDTH / 2,
+    }
+  }
   const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
   const maxTextWidth = computeWrapMaxWidth(
     text,
@@ -158,23 +178,20 @@ export function measureBranchNodeUnderlineHeightWithTypography(
     branchFontSize,
     fontWeight
   )
-
-  if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
-    const contentH = measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth, {
+  const textBlockHeight = Math.max(
+    branchFontSize,
+    measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth, {
       fontWeight,
       fontFamily: typography?.fontFamily,
     })
-    return Math.max(minHeight, Math.ceil(contentH + extra))
+  )
+  const { totalHeight: rawTotalHeight } = computeMindMapUnderlineBoxMetrics(textBlockHeight)
+  const totalHeight = Math.max(minHeight, Math.ceil(rawTotalHeight))
+  return {
+    textBlockHeight,
+    totalHeight,
+    lineMidlineOffsetFromTop: totalHeight - MINDMAP_UNDERLINE_STROKE_WIDTH / 2,
   }
-
-  const { height: textHeight } = measureTextDimensions(text, branchFontSize, {
-    maxWidth: maxTextWidth,
-    paddingX: 0,
-    paddingY: 0,
-    fontWeight,
-    fontFamily: typography?.fontFamily,
-  })
-  return Math.max(minHeight, textHeight + extra)
 }
 
 export function estimateTopicNodeWidthWithTypography(

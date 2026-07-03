@@ -47,6 +47,7 @@ interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
   feature_smart_response: boolean
   feature_teacher_usage: boolean
   feature_workshop_chat: boolean
+  feature_mindmate_collab: boolean
   feature_markets: boolean
   feature_mindbot: boolean
   feature_mindmate_export: boolean
@@ -69,6 +70,12 @@ const ROWS: RowDef[] = [
     envKey: 'FEATURE_WORKSHOP_CHAT',
     labelKey: 'admin.feature.workshopChat',
     hintKey: 'admin.feature.workshopChatHint',
+  },
+  {
+    apiKey: 'feature_mindmate_collab',
+    envKey: 'FEATURE_MINDMATE_COLLAB',
+    labelKey: 'admin.feature.mindmateCollab',
+    hintKey: 'admin.feature.mindmateCollabHint',
   },
   {
     apiKey: 'feature_library',

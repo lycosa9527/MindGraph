@@ -1,6 +1,4 @@
-/**
- * zh-tw UI � sidebar
- */
+/** zh-tw UI — sidebar */
 
 export default {
   'sidebar.actions.delete': '刪除',
@@ -69,10 +67,10 @@ export default {
   'sidebar.history.pinned': '置頂',
   'sidebar.history.untitled': '未命名',
   'sidebar.knowledgeSpace': '個人知識庫',
-  'sidebar.knowledgeSpaceHistory.capacity': 'Up to {n} packages',
-  'sidebar.knowledgeSpaceHistory.deleted': 'Package deleted',
-  'sidebar.knowledgeSpaceHistory.empty': 'No packages yet',
-  'sidebar.knowledgeSpaceHistory.title': 'Packages',
+  'sidebar.knowledgeSpaceHistory.capacity': '最多 {n} 個資料包',
+  'sidebar.knowledgeSpaceHistory.deleted': '資料包已刪除',
+  'sidebar.knowledgeSpaceHistory.empty': '暫無資料包',
+  'sidebar.knowledgeSpaceHistory.title': '資料包',
   'sidebar.languageSettings': '界面UI設置',
   'sidebar.library': '圖書館',
   'sidebar.mindGraph': 'MindGraph',
@@ -96,4 +94,8 @@ export default {
   'sidebar.roleSuperMember': '超級會員',
   'sidebar.logoSiteQrTitle': '網站二維碼',
   'sidebar.logoSiteQrHint': '請使用手機上的相機/微信掃描二維碼',
+  'sidebar.mindmateCollabHistory.title': '在線協同',
+  'sidebar.mindmateCollabHistory.stopConfirm': '為所有人結束此 MindMate 協同房間？',
+  'sidebar.mindmateCollabHistory.visibilityOrg': '校內',
+  'sidebar.mindmateCollabHistory.visibilityNetwork': '跨校',
 } as const

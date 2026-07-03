@@ -6,7 +6,7 @@ import {
   estimateNodeWidth as estimateMindMapBranchWidth,
   measureBranchNodeHeight as measureMindMapBranchHeight,
 } from '../specLoader/mindMap'
-import { LEARNING_SHEET_PLACEHOLDER } from '../specLoader/utils'
+import { LEARNING_SHEET_BLANK_TEXT, isLearningSheetBlankDisplayText } from '../specLoader/utils'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -107,11 +107,11 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     const node = data.value?.nodes?.find((n) => n.id === nodeId)
     if (!node) return false
     const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string } | undefined
+    if (nodeData?.hidden === true && nodeHiddenAnswer(node) !== undefined) {
+      return true
+    }
     const text = String(node.text ?? '').trim()
-    return (
-      nodeData?.hidden === true ||
-      (text === LEARNING_SHEET_PLACEHOLDER && nodeHiddenAnswer(node) !== undefined)
-    )
+    return isLearningSheetBlankDisplayText(text) && nodeHiddenAnswer(node) !== undefined
   }
 
   function restoreNodeFromLearningSheet(nodeId: string): boolean {
@@ -158,7 +158,9 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     const node = data.value.nodes[nodeIndex]
     const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string; label?: string } | undefined
     const originalText = String(node.text ?? nodeData?.label ?? '').trim()
-    if (!originalText || originalText === LEARNING_SHEET_PLACEHOLDER || nodeData?.hidden) return false
+    if (!originalText || isLearningSheetBlankDisplayText(originalText) || nodeData?.hidden) {
+      return false
+    }
 
     const layoutData = mindMapLayoutEstimates(
       node.data as Record<string, unknown>,
@@ -169,11 +171,12 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
 
     data.value.nodes[nodeIndex] = {
       ...node,
-      text: LEARNING_SHEET_PLACEHOLDER,
+      text: LEARNING_SHEET_BLANK_TEXT,
       data: {
         ...layoutData,
         hidden: true,
         hiddenAnswer: originalText,
+        label: LEARNING_SHEET_BLANK_TEXT,
       },
     }
 
@@ -187,8 +190,8 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
 
     reconcileHiddenAnswersFromBlankedNodes()
 
-    emitEvent('diagram:node_updated', { nodeId, updates: { text: LEARNING_SHEET_PLACEHOLDER } })
-    eventBus.emit('node:text_updated', { nodeId, text: LEARNING_SHEET_PLACEHOLDER })
+    emitEvent('diagram:node_updated', { nodeId, updates: { text: LEARNING_SHEET_BLANK_TEXT } })
+    eventBus.emit('node:text_updated', { nodeId, text: LEARNING_SHEET_BLANK_TEXT })
     return true
   }
 
@@ -275,11 +278,12 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
 
       dv.nodes[idx] = {
         ...node,
-        text: LEARNING_SHEET_PLACEHOLDER,
+        text: LEARNING_SHEET_BLANK_TEXT,
         data: {
           ...layoutData,
           hidden: true,
           hiddenAnswer: originalText,
+          label: LEARNING_SHEET_BLANK_TEXT,
         },
       }
       if (layoutData.estimatedWidth && layoutData.estimatedHeight) {
@@ -291,7 +295,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
       }
       emitEvent('diagram:node_updated', {
         nodeId: node.id,
-        updates: { text: LEARNING_SHEET_PLACEHOLDER },
+        updates: { text: LEARNING_SHEET_BLANK_TEXT },
       })
     })
 
@@ -323,6 +327,60 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     syncLearningSheetFlags(d, false)
   }
 
+  function hasBlankedLearningSheetNodes(): boolean {
+    if (!data.value?.nodes?.length) return false
+    return data.value.nodes.some((node) => isNodeBlankedForLearningSheet(node.id))
+  }
+
+  /** Temporarily fill knocked-out nodes with answers (for PDF answer page); restores after run. */
+  async function runWithLearningSheetAnswersRevealed<T>(run: () => T | Promise<T>): Promise<T> {
+    const dv = data.value
+    if (!dv?.nodes?.length) {
+      return run()
+    }
+
+    const savedShowAnswers = learningSheetShowAnswers.value
+    setLearningSheetShowAnswers(false)
+
+    const snapshots: Array<{ idx: number; node: (typeof dv.nodes)[number] }> = []
+    dv.nodes.forEach((node, idx) => {
+      if (!isNodeBlankedForLearningSheet(node.id)) return
+      const answer = nodeHiddenAnswer(node)
+      if (!answer) return
+      snapshots.push({ idx, node: { ...node, data: { ...(node.data as Record<string, unknown>) } } })
+      dv.nodes[idx] = {
+        ...node,
+        text: answer,
+        data: {
+          ...(node.data as Record<string, unknown>),
+          label: answer,
+          hidden: false,
+        },
+      }
+      emitEvent('diagram:node_updated', { nodeId: node.id, updates: { text: answer } })
+    })
+
+    const restore = (): void => {
+      snapshots.forEach(({ idx, node }) => {
+        dv.nodes[idx] = node
+        emitEvent('diagram:node_updated', {
+          nodeId: node.id,
+          updates: { text: node.text ?? LEARNING_SHEET_BLANK_TEXT },
+        })
+      })
+      setLearningSheetShowAnswers(savedShowAnswers)
+    }
+
+    try {
+      const result = await run()
+      restore()
+      return result
+    } catch (error) {
+      restore()
+      throw error
+    }
+  }
+
   return {
     isLearningSheet,
     hiddenAnswers,
@@ -338,5 +396,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     applyLearningSheetView,
     hasPreservedLearningSheet,
     clearLearningSheetPreservation,
+    hasBlankedLearningSheetNodes,
+    runWithLearningSheetAnswersRevealed,
   }
 }

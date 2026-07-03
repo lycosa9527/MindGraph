@@ -15,7 +15,7 @@ Proprietary License
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -40,6 +40,10 @@ class PinnedConversation(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     conversation_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
     pinned_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    dify_user: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    channel: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    server: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    mindbot_config_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     user: Mapped["User"] = relationship("User", backref="pinned_conversations", lazy="selectin")
 

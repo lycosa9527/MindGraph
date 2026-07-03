@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.135.0] - 2026-07-03
+
+> **MindMate online collab, diagram provenance, canvas PDF export, and identity unification.**
+
+### Added
+
+- **MindMate online collab** — Shared AI chatroom for teachers: one room, one Dify conversation, streaming assistant replies fan-out to all participants. REST at `/api/mindmate/collab/*`, WebSocket at `/api/ws/mindmate-collab/{code}`, feature flag `FEATURE_MINDMATE_COLLAB` (default off). See [`docs/architecture/mindmate_collab.md`](docs/architecture/mindmate_collab.md).
+- **MindMate collab UI** — `MindmateCollabPage.vue`, toolbar panel on `/mindmate`, sidebar history (`MindmateCollabHistory.vue`), org contacts + DM drawer (shared social layer with Workshop Chat).
+- **MindMate collab backend** — Session manager, idle monitor, Dify stream lock, resume tokens, Redis fan-out (`mmc:` prefix), Alembic `rev_0076` + RLS `rev_0077`.
+- **Diagram provenance** — Optional `source_channel`, `conversation_id`, `dify_user_key` columns on `diagrams` (Alembic `rev_0074`); populated on library save from MindMate/MindBot flows.
+- **Pinned conversation routing** — `dify_user`, `server`, `mindbot_config_id` on pinned rows (Alembic `rev_0075`) for unified inbox message/delete/rename routing.
+- **Canvas PDF export** — A4 landscape/portrait PDF via `diagramPdfExport.ts`; multi-page learning-sheet PDF; export menu entries in all locale buckets.
+- **Identity unification docs** — [`docs/architecture/identity_unification.md`](docs/architecture/identity_unification.md) for MindGraph ↔ Dify ↔ DingTalk identity, generation session registry, and diagram provenance.
+- **Mind map connector debug** — Optional verbose connector logging (`useMindMapConnectorDebugLog.ts`, `mindMapConnectorDebug*.ts`).
+- **Chrome extension v0.4.20 — unified conversation list** — `fetchConversations`, routed message/history/delete/rename via `dify_user` + `server` + `mindbot_config_id` query params ([`mindmate-api.js`](chrome-extension/mindmate-api.js), [`mindmate-panel.js`](chrome-extension/mindmate-panel.js)).
+
+### Changed
+
+- **Unified conversations** — Web MindMate and bound MindBot threads merged in sidebar; cross-org group threads supplemented from usage telemetry ([`unified_conversations.py`](services/dify/unified_conversations.py)).
+- **Workshop Chat social layer** — Org contacts, presence, and DM drawer extracted to shared `frontend/src/components/social/` composables; `WorkshopChatPage.vue` slimmed down.
+- **Mind map layout** — Improved typography measurement, connector geometry, and learning-sheet blank-node handling ([`mindMapMeasurements.ts`](frontend/src/stores/specLoader/mindMapMeasurements.ts), [`learningSheet.ts`](frontend/src/stores/diagram/learningSheet.ts)).
+- **Canvas toolbar** — Mind map side toolbar refactor; PNG export prep waits for paint/fonts before rasterize.
+- **Generation session registry** — DingTalk identity resolution and library-save provenance wiring ([`generation_session_registry.py`](services/diagram/generation_session_registry.py), [`generation_library_save.py`](services/diagram/generation_library_save.py)).
+- **DingTalk bind** — Usage-event backfill on successful staff bind ([`dingtalk_bind_service.py`](services/auth/dingtalk_bind_service.py)).
+- **Admin features tab** — Toggle for `FEATURE_MINDMATE_COLLAB`.
+
+### Fixed
+
+- **Learning sheet blanks** — Placeholder nodes no longer leak into export or palette data ([`placeholderHelpers.ts`](frontend/src/composables/nodePalette/placeholderHelpers.ts)).
+- **Dify export targets** — Pinned conversation routing alignment for multi-server MindBot configs.
+
+### Tests
+
+- **Backend** — `tests/test_mindmate_collab_*.py` (backend, hardening, lifecycle, visibility, WS broadcast); extended `test_unified_conversations.py`, `test_dingtalk_bind_service.py`, `test_generation_session_registry.py`.
+- **Frontend** — `useMindmateCollab.spec.ts`, `MindmateCollabPanel.spec.ts`, `MindmateCollabHistory.spec.ts`, `learningSheetBlank.spec.ts`, `mindmateCollabMention.spec.ts`, `mindmateCollabPokeNotify.spec.ts`, extended `canvasExportMenu.spec.ts`.
+- **Chrome extension** — Extended [`test/mindmate.spec.js`](chrome-extension/test/mindmate.spec.js) for conversation routing helpers.
+
 ## [5.134.1] - 2026-07-01
 
 > **Chrome extension v0.4.19 — MindMate page capture UX, SmartEdu PDF text extraction, and CNKI flowpdf fixes.**

@@ -17,9 +17,10 @@ import {
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { Edit3, FileImage, Lock, MoreHorizontal, Pin, Power, Trash2, Users } from '@lucide/vue'
+import { Edit3, FileImage, Lock, MoreHorizontal, Pin, Power, Trash2 } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import CollabLiveBadge from '@/components/social/CollabLiveBadge.vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAuthStore } from '@/stores'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -296,13 +297,10 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
                 <span class="diagram-name">
                   <Pin class="w-3 h-3 inline-block mr-1 text-amber-500" />
                   {{ diagram.title || t('mindmate.untitled') }}
-                  <span
+                  <CollabLiveBadge
                     v-if="diagram.workshop_active"
-                    class="collab-live-badge"
                     :title="t('sidebar.diagramHistory.collabLive')"
-                  >
-                    <Users class="w-2.5 h-2.5" />
-                  </span>
+                  />
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -382,13 +380,10 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
               <div class="diagram-info">
                 <span class="diagram-name">
                   {{ diagram.title || t('mindmate.untitled') }}
-                  <span
+                  <CollabLiveBadge
                     v-if="diagram.workshop_active"
-                    class="collab-live-badge"
                     :title="t('sidebar.diagramHistory.collabLive')"
-                  >
-                    <Users class="w-2.5 h-2.5" />
-                  </span>
+                  />
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -468,13 +463,10 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
               <div class="diagram-info">
                 <span class="diagram-name">
                   {{ diagram.title || t('mindmate.untitled') }}
-                  <span
+                  <CollabLiveBadge
                     v-if="diagram.workshop_active"
-                    class="collab-live-badge"
                     :title="t('sidebar.diagramHistory.collabLive')"
-                  >
-                    <Users class="w-2.5 h-2.5" />
-                  </span>
+                  />
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -554,13 +546,10 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
               <div class="diagram-info">
                 <span class="diagram-name">
                   {{ diagram.title || t('mindmate.untitled') }}
-                  <span
+                  <CollabLiveBadge
                     v-if="diagram.workshop_active"
-                    class="collab-live-badge"
                     :title="t('sidebar.diagramHistory.collabLive')"
-                  >
-                    <Users class="w-2.5 h-2.5" />
-                  </span>
+                  />
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -640,13 +629,10 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
               <div class="diagram-info">
                 <span class="diagram-name">
                   {{ diagram.title || t('mindmate.untitled') }}
-                  <span
+                  <CollabLiveBadge
                     v-if="diagram.workshop_active"
-                    class="collab-live-badge"
                     :title="t('sidebar.diagramHistory.collabLive')"
-                  >
-                    <Users class="w-2.5 h-2.5" />
-                  </span>
+                  />
                 </span>
                 <span class="diagram-type">
                   {{ getDiagramTypeLabel(diagram.diagram_type) }}
@@ -888,31 +874,6 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
   color: #57534e;
 }
 
-/* Live collab indicator */
-.collab-live-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background-color: #22c55e;
-  color: #fff;
-  margin-left: 4px;
-  vertical-align: middle;
-  flex-shrink: 0;
-  animation: collab-pulse 2s ease-in-out infinite;
-}
-
-@keyframes collab-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
-  }
-  50% {
-    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0);
-  }
-}
 </style>
 
 <!-- Teleported dropdown — Swiss popper; width via --narrow / --wide (collab extras) -->

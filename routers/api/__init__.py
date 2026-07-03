@@ -69,6 +69,22 @@ if app_config.FEATURE_MINDBOT:
 else:
     logger.debug("[API] MindBot feature disabled via FEATURE_MINDBOT flag")
 
+mindmate_collab_routes_module = None
+mindmate_collab_ws_module = None
+mindmate_notify_ws_module = None
+if app_config.FEATURE_MINDMATE_COLLAB:
+    try:
+        from . import mindmate_collab_routes as mindmate_collab_routes_module
+        from . import mindmate_collab_ws as mindmate_collab_ws_module
+        from . import mindmate_notify_ws as mindmate_notify_ws_module
+    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
+        mindmate_collab_routes_module = None
+        mindmate_collab_ws_module = None
+        mindmate_notify_ws_module = None
+        logger.debug("[API] Failed to import mindmate collab routers: %s", e, exc_info=True)
+else:
+    logger.debug("[API] MindMate collab feature disabled via FEATURE_MINDMATE_COLLAB flag")
+
 # Create main router with prefix and tags
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -93,6 +109,12 @@ router.include_router(mindmate_export_jobs.router)
 router.include_router(diagrams.router)
 router.include_router(diagram_node_ops.router)
 router.include_router(workshop_ws.router)
+if mindmate_collab_routes_module is not None:
+    router.include_router(mindmate_collab_routes_module.router)
+if mindmate_collab_ws_module is not None:
+    router.include_router(mindmate_collab_ws_module.router)
+if mindmate_notify_ws_module is not None:
+    router.include_router(mindmate_notify_ws_module.router)
 router.include_router(asr_realtime_ws.router)
 router.include_router(live_translate_ws.router)
 
@@ -117,5 +139,11 @@ else:
         logger.warning("[API] MindBot router NOT registered - import failed or router is None.")
     else:
         logger.debug("[API] MindBot router not registered - feature disabled")
+
+if mindmate_collab_routes_module is None:
+    if app_config.FEATURE_MINDMATE_COLLAB:
+        logger.warning("[API] MindMate collab routers NOT registered - import failed or router is None.")
+    else:
+        logger.debug("[API] MindMate collab routers not registered - feature disabled")
 
 __all__ = ["router"]

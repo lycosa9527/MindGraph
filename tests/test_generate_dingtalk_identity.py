@@ -224,7 +224,7 @@ async def test_resolve_diagram_save_identity_from_mindmate_session() -> None:
         new_callable=AsyncMock,
     ) as lookup_mock:
         lookup_mock.return_value = {
-            "channel": "mindmate",
+            "channel": "web",
             "user_id": 3,
             "organization_id": 9,
             "dify_user_id": "mg_user_3",

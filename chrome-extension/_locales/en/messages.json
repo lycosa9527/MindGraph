@@ -71,6 +71,10 @@
     "message": "New chat",
     "description": "Start new MindMate conversation"
   },
+  "mindmateHistory": {
+    "message": "History",
+    "description": "Unified MindMate conversation history"
+  },
   "linkMindmateWeb": {
     "message": "Open web history",
     "description": "Link to MindGraph web app"
@@ -100,8 +104,8 @@
     "description": "Page context disabled after first message"
   },
   "mindmatePageContextReading": {
-    "message": "Extracting page text…",
-    "description": "Generic page extraction in progress"
+    "message": "Scanning page and extracting main content…",
+    "description": "Generic page auto-extraction in progress"
   },
   "mindmatePageContextHostExtract": {
     "message": "Extracting document from $1…",
@@ -129,7 +133,11 @@
   },
   "mindmatePageContextReady": {
     "message": "Page text ready: $2 chars · $1",
-    "description": "Generic page extraction complete"
+    "description": "Known-host page extraction complete"
+  },
+  "mindmatePageContextReadyGeneric": {
+    "message": "Extracted $1 characters · $2",
+    "description": "Generic page auto-extraction complete"
   },
   "mindmatePageContextReadySelection": {
     "message": "Using selected text: $2 chars · $1",

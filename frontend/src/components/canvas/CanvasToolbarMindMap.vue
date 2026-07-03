@@ -24,7 +24,6 @@ import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
-import { useCanvasReset } from '@/composables/canvasPage/useCanvasReset'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar'
 import { useFeatureFlags } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -55,7 +54,6 @@ const { handleAddChild, handleAddSibling, handleDeleteNode, handleAddBranch } = 
 })
 
 const { isAIGenerating, handleAIGenerate } = useCanvasToolbarApps()
-const { resetToDefaultTemplate } = useCanvasReset()
 
 const structureDropdownOpen = ref(false)
 const exportDropdownOpen = ref(false)
@@ -157,67 +155,52 @@ function handleAddChildClick() {
 
       <span class="mm-sep" />
 
-      <!-- Undo / Redo — combined control; reset as text button -->
-      <div class="mm-history-wrap">
-        <div
-          class="mm-history-group"
-          role="group"
-          :aria-label="t('canvas.toolbar.historyGroup')"
-        >
-          <ElTooltip
-            placement="bottom"
-            :show-arrow="true"
-            popper-class="mm-shortcut-tooltip"
-          >
-            <template #content>
-              <div class="mm-shortcut-tooltip__row">
-                <span>{{ t('canvas.toolbar.undo') }}</span>
-                <kbd class="mm-shortcut-tooltip__kbd">{{ t('canvas.toolbar.undoShortcut') }}</kbd>
-              </div>
-            </template>
-            <button
-              type="button"
-              class="mm-history-btn"
-              :disabled="!diagramStore.canUndo"
-              :aria-label="t('canvas.toolbar.undo')"
-              @click="handleUndo"
-            >
-              <RotateCcw class="mm-history-btn__icon" />
-            </button>
-          </ElTooltip>
-          <ElTooltip
-            placement="bottom"
-            :show-arrow="true"
-            popper-class="mm-shortcut-tooltip"
-          >
-            <template #content>
-              <div class="mm-shortcut-tooltip__row">
-                <span>{{ t('canvas.toolbar.redo') }}</span>
-                <kbd class="mm-shortcut-tooltip__kbd">{{ t('canvas.toolbar.redoShortcut') }}</kbd>
-              </div>
-            </template>
-            <button
-              type="button"
-              class="mm-history-btn"
-              :disabled="!diagramStore.canRedo"
-              :aria-label="t('canvas.toolbar.redo')"
-              @click="handleRedo"
-            >
-              <RotateCw class="mm-history-btn__icon" />
-            </button>
-          </ElTooltip>
-        </div>
+      <!-- Undo / Redo -->
+      <div
+        class="mm-history-group"
+        role="group"
+        :aria-label="t('canvas.toolbar.historyGroup')"
+      >
         <ElTooltip
-          :content="t('canvas.topBar.resetTemplate')"
           placement="bottom"
+          :show-arrow="true"
+          popper-class="mm-shortcut-tooltip"
         >
+          <template #content>
+            <div class="mm-shortcut-tooltip__row">
+              <span>{{ t('canvas.toolbar.undo') }}</span>
+              <kbd class="mm-shortcut-tooltip__kbd">{{ t('canvas.toolbar.undoShortcut') }}</kbd>
+            </div>
+          </template>
           <button
             type="button"
-            class="mm-btn mm-btn--reset"
-            :aria-label="t('canvas.topBar.reset')"
-            @click="resetToDefaultTemplate"
+            class="mm-history-btn"
+            :disabled="!diagramStore.canUndo"
+            :aria-label="t('canvas.toolbar.undo')"
+            @click="handleUndo"
           >
-            {{ t('canvas.topBar.reset') }}
+            <RotateCcw class="mm-history-btn__icon" />
+          </button>
+        </ElTooltip>
+        <ElTooltip
+          placement="bottom"
+          :show-arrow="true"
+          popper-class="mm-shortcut-tooltip"
+        >
+          <template #content>
+            <div class="mm-shortcut-tooltip__row">
+              <span>{{ t('canvas.toolbar.redo') }}</span>
+              <kbd class="mm-shortcut-tooltip__kbd">{{ t('canvas.toolbar.redoShortcut') }}</kbd>
+            </div>
+          </template>
+          <button
+            type="button"
+            class="mm-history-btn"
+            :disabled="!diagramStore.canRedo"
+            :aria-label="t('canvas.toolbar.redo')"
+            @click="handleRedo"
+          >
+            <RotateCw class="mm-history-btn__icon" />
           </button>
         </ElTooltip>
       </div>
@@ -420,14 +403,8 @@ function handleAddChildClick() {
   flex-shrink: 0;
 }
 
-.mm-history-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
 .mm-history-group {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: stretch;
   height: 32px;
@@ -487,33 +464,6 @@ function handleAddChildClick() {
 .mm-history-btn__icon {
   width: 16px;
   height: 16px;
-}
-
-.mm-btn--reset {
-  min-width: 52px;
-  padding: 0 12px;
-  font-weight: 500;
-  color: #6b7280;
-  background: #fff;
-  border-color: #e5e7eb;
-}
-
-.mm-btn--reset:hover:not(:disabled) {
-  color: #374151;
-  background: #f9fafb;
-  border-color: #d1d5db;
-}
-
-:global(.dark) .mm-btn--reset {
-  color: #9ca3af;
-  background: #1f2937;
-  border-color: #374151;
-}
-
-:global(.dark) .mm-btn--reset:hover:not(:disabled) {
-  color: #e5e7eb;
-  background: #374151;
-  border-color: #4b5563;
 }
 
 .mm-btn {

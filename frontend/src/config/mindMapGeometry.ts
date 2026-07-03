@@ -124,6 +124,20 @@ export function mindMapUnderlineVerticalExtra(): number {
   return top + textGap + MINDMAP_UNDERLINE_STROKE_WIDTH
 }
 
+/** Box height + line midline offset from a measured text-block height (matches DOM stacking). */
+export function computeMindMapUnderlineBoxMetrics(textBlockHeight: number): {
+  totalHeight: number
+  lineMidlineOffsetFromTop: number
+} {
+  const { top, textGap } = mindMapUnderlineContentPadding()
+  const stroke = MINDMAP_UNDERLINE_STROKE_WIDTH
+  const totalHeight = top + textBlockHeight + textGap + stroke
+  return {
+    totalHeight,
+    lineMidlineOffsetFromTop: top + textBlockHeight + textGap + stroke / 2,
+  }
+}
+
 /** Y coordinate where branch connectors meet the node (center or underline midline). */
 export function mindMapConnectionAnchorY(
   nodeTopY: number,

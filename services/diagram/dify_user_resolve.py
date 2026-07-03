@@ -23,6 +23,7 @@ from utils.dify_user_key import resolve_user_and_org_from_dify_key
 
 __all__ = [
     "DiagramSaveIdentity",
+    "conversation_id_from_request",
     "library_save_limit_notice",
     "library_save_skip_reason",
     "library_save_skip_user_notice",
@@ -59,7 +60,8 @@ def _dify_user_key_from_request(
     return ""
 
 
-def _conversation_id_from_request(req: Optional[GenerateDingTalkRequest]) -> Optional[str]:
+def conversation_id_from_request(req: Optional[GenerateDingTalkRequest]) -> Optional[str]:
+    """Read Dify conversation id from generate_dingtalk body fields."""
     if req is None:
         return None
     for field_name in ("conversation_id", "mg_conversation_id"):
@@ -67,6 +69,10 @@ def _conversation_id_from_request(req: Optional[GenerateDingTalkRequest]) -> Opt
         if isinstance(conv, str) and conv.strip():
             return conv.strip()[:100]
     return None
+
+
+def _conversation_id_from_request(req: Optional[GenerateDingTalkRequest]) -> Optional[str]:
+    return conversation_id_from_request(req)
 
 
 def _identity_from_session_user(

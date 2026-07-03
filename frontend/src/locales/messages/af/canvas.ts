@@ -436,7 +436,6 @@ export default {
   'canvas.topBar.editFilename': 'Klik om lêernaam te redigeer',
   'canvas.topBar.export': 'Voer uit',
   'canvas.topBar.exportJson': 'Voer uit as MG-lêer',
-  'canvas.topBar.exportPdf': 'Voer uit as PDF',
   'canvas.topBar.exportPng': 'Voer uit as PNG',
   'canvas.topBar.exportSvg': 'Voer uit as SVG',
   'canvas.topBar.reset': 'Herstel',
@@ -888,4 +887,6 @@ export default {
   'canvasPage.collabConnected': 'Gekoppel',
   'canvas.topBar.viewOnly': 'Slegs bekyk',
   'canvasPage.collabParticipantsMore': 'meer',
+  'canvas.topBar.exportPdfLandscape': 'Export as PDF (landscape)',
+  'canvas.topBar.exportPdfPortrait': 'Export as PDF (portrait)',
 } as const

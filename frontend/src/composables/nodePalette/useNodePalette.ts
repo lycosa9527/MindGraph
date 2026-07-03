@@ -17,13 +17,13 @@ import { storeToRefs } from 'pinia'
 import { type EventTypes, eventBus } from '@/composables/core/useEventBus'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
+import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import type { NodeSuggestion } from '@/types/panels'
 
 import { applySelectionToDiagram } from './applySelection'
 import {
-  LEARNING_SHEET_PLACEHOLDER,
   MINDMAP_WATERFALL_NODES_PER_LLM,
   NODE_PALETTE_NEXT,
   NODE_PALETTE_START,
@@ -618,7 +618,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     }
 
     const topic = topicText.value.trim()
-    if (!topic || isPlaceholderText(topic) || topic === LEARNING_SHEET_PLACEHOLDER) {
+    if (!topic || isPlaceholderText(topic) || isLearningSheetBlankDisplayText(topic)) {
       errorMessage.value = t('nodePalette.error.replacePlaceholder')
       return false
     }
@@ -730,7 +730,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     }
     if (
       !canStartWithoutTopic &&
-      (isPlaceholderText(topic) || topic.trim() === LEARNING_SHEET_PLACEHOLDER)
+      (isPlaceholderText(topic) || isLearningSheetBlankDisplayText(topic))
     ) {
       isWaitingForTopicInput.value = true
       errorMessage.value = t('nodePalette.error.replacePlaceholder')

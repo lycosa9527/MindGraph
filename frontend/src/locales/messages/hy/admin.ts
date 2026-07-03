@@ -82,6 +82,8 @@ export default {
   'admin.feature.templateHint': 'Template gallery and related APIs.',
   'admin.feature.workshopChat': 'Workshop (教研坊)',
   'admin.feature.workshopChatHint': 'School channels, topics, and direct messages.',
+  'admin.feature.mindmateCollab': 'MindMate collab',
+  'admin.feature.mindmateCollabHint': 'Shared MindMate AI chatroom (org browse + invite code). Requires online_collab tier.',
   'admin.featureLoadFailed': 'Could not load feature flags',
   'admin.featureSaveFailed': 'Could not save settings',
   'admin.featuresIntro': 'Toggle module flags. Values are written to .env and reloaded into the running server so the UI and most API checks update immediately. If a module was never loaded at process start, you may still need a full restart to register its routes.',

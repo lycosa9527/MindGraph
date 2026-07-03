@@ -167,6 +167,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     applyLearningSheetView,
     hasPreservedLearningSheet,
     clearLearningSheetPreservation,
+    hasBlankedLearningSheetNodes,
+    runWithLearningSheetAnswersRevealed,
   } = learningSheetSlice
   const {
     effectiveTitle,
@@ -494,6 +496,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     applyLearningSheetView,
     hasPreservedLearningSheet,
     clearLearningSheetPreservation,
+    hasBlankedLearningSheetNodes,
+    runWithLearningSheetAnswersRevealed,
     addNode,
     addConnection,
     updateConnectionLabel,
@@ -573,6 +577,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     clearMindMapNodeWidths,
     mindMapNodeWidths,
     mindMapNodeHeights,
+    mindMapRecalcTrigger,
     mindMapTopicBranchGaps,
     mindMapPendingEditNodeId,
     nodeDimensions,

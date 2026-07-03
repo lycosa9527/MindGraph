@@ -19,7 +19,6 @@ import {
   estimateTopicNodeHeightForCanvasMode,
   estimateTopicNodeWidthForCanvasMode,
   measureBranchNodeHeightForCanvasMode,
-  measureBranchNodeUnderlineHeight as measureBranchNodeUnderlineHeightForCanvasMode,
 } from './mindMapMeasurements'
 import { layoutMindMapSideV2 } from './mindMapV2Layout'
 import type { SpecLoaderResult } from './types'
@@ -30,8 +29,12 @@ import {
   hasCustomMindMapTypography,
   measureBranchNodeHeightWithTypography,
   measureBranchNodeUnderlineHeightWithTypography,
+  measureMindMapUnderlineBoxMetricsWithTypography,
   type MindMapMeasureTypography,
 } from './mindMapTypographyMeasure'
+import {
+  measureMindMapUnderlineBoxMetrics as measureMindMapUnderlineBoxMetricsForCanvasMode,
+} from './mindMapMeasurements'
 
 export type { MindMapMeasureTypography }
 export type MindMapBranch = MindMapBranchSpec
@@ -67,10 +70,18 @@ export function measureBranchNodeUnderlineHeight(
   nodeId?: string,
   typography?: MindMapMeasureTypography
 ): number {
+  return measureMindMapUnderlineBoxMetrics(text, nodeId, typography).totalHeight
+}
+
+export function measureMindMapUnderlineBoxMetrics(
+  text: string,
+  nodeId?: string,
+  typography?: MindMapMeasureTypography
+): { textBlockHeight: number; totalHeight: number; lineMidlineOffsetFromTop: number } {
   if (hasCustomMindMapTypography(typography)) {
-    return measureBranchNodeUnderlineHeightWithTypography(text, nodeId, typography)
+    return measureMindMapUnderlineBoxMetricsWithTypography(text, nodeId, typography)
   }
-  return measureBranchNodeUnderlineHeightForCanvasMode(text, nodeId)
+  return measureMindMapUnderlineBoxMetricsForCanvasMode(text, nodeId)
 }
 
 export function estimateTopicNodeWidth(

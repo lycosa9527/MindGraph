@@ -79,6 +79,15 @@ class RenameRequest(BaseModel):
     auto_generate: bool = False
 
 
+class PinRequest(BaseModel):
+    """Optional routing metadata when pinning a conversation."""
+
+    dify_user: Optional[str] = None
+    channel: Optional[str] = None
+    server: Optional[int] = None
+    mindbot_config_id: Optional[int] = None
+
+
 class FeedbackRequest(BaseModel):
     """Request body for message feedback (like/dislike)"""
 
@@ -391,7 +400,18 @@ async def list_pinned_conversations(
         )
         pinned = result.scalars().all()
 
-        return {"success": True, "data": [p.conversation_id for p in pinned]}
+        data = [
+            {
+                "conversation_id": row.conversation_id,
+                "dify_user": row.dify_user,
+                "channel": row.channel,
+                "server": row.server,
+                "mindbot_config_id": row.mindbot_config_id,
+            }
+            for row in pinned
+        ]
+
+        return {"success": True, "data": data}
 
     except DATABASE_ERRORS as e:
         logger.error("Failed to fetch pinned conversations: %s", e)
@@ -401,6 +421,7 @@ async def list_pinned_conversations(
 @router.post("/dify/conversations/{conversation_id}/pin")
 async def toggle_pin_conversation(
     conversation_id: str,
+    request: Optional[PinRequest] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -430,6 +451,17 @@ async def toggle_pin_conversation(
             }
 
         pinned = PinnedConversation(user_id=current_user.id, conversation_id=conversation_id)
+        if request is not None:
+            dify_user = (request.dify_user or "").strip()
+            if dify_user:
+                pinned.dify_user = dify_user[:256]
+            channel = (request.channel or "").strip()
+            if channel:
+                pinned.channel = channel[:16]
+            if request.server is not None and int(request.server) >= 1:
+                pinned.server = int(request.server)
+            if request.mindbot_config_id is not None and int(request.mindbot_config_id) >= 1:
+                pinned.mindbot_config_id = int(request.mindbot_config_id)
         db.add(pinned)
         await db.commit()
         logger.info("User %s pinned conversation %s", current_user.id, conversation_id)

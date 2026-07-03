@@ -258,7 +258,6 @@ async def list_unified_conversations(
             org_by_id[org_id] = org
 
     flat: List[ExportConversationSummary] = []
-    any_has_more = False
     for target in targets:
         endpoint_summaries = await _fetch_target_summaries_page(
             db,
@@ -267,8 +266,6 @@ async def list_unified_conversations(
             limit=page_size,
         )
         flat.extend(endpoint_summaries)
-        if len(endpoint_summaries) >= page_size:
-            any_has_more = True
 
     supplemented, supplement_warnings = await supplement_mindbot_summaries_from_usage(
         db,
@@ -280,7 +277,7 @@ async def list_unified_conversations(
 
     ordered = sorted(supplemented, key=lambda row: row.updated_at, reverse=True)
     page = ordered[:page_size]
-    has_more = any_has_more or len(ordered) > page_size
+    has_more = len(ordered) > page_size
     mindbot_count = sum(1 for row in page if row.channel == "mindbot")
     logger.info(
         "[UnifiedConversations] listed user=%s targets=%d rows=%d mindbot=%d",

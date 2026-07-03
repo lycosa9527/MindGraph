@@ -436,7 +436,6 @@ export default {
   'canvas.topBar.editFilename': 'Fayl adını redaktə etmək üçün klikləyin',
   'canvas.topBar.export': 'İxrac',
   'canvas.topBar.exportJson': 'JSON kimi ixrac',
-  'canvas.topBar.exportPdf': 'PDF kimi ixrac',
   'canvas.topBar.exportPng': 'PNG kimi ixrac',
   'canvas.topBar.exportSvg': 'SVG kimi ixrac',
   'canvas.topBar.reset': 'Sıfırla',
@@ -888,4 +887,6 @@ export default {
   'canvasPage.collabConnected': 'Qoşuldu',
   'canvas.topBar.viewOnly': 'Yalnız baxış',
   'canvasPage.collabParticipantsMore': 'daha çox',
+  'canvas.topBar.exportPdfLandscape': 'Export as PDF (landscape)',
+  'canvas.topBar.exportPdfPortrait': 'Export as PDF (portrait)',
 } as const

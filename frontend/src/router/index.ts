@@ -87,6 +87,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'main', ...pageTitle('mindmate') },
   },
   {
+    path: '/mindmate/collab',
+    name: 'MindmateCollab',
+    component: () => import('@/pages/MindmateCollabPage.vue'),
+    meta: { requiresAuth: true, layout: 'main', ...pageTitle('mindmate') },
+  },
+  {
     path: '/mindgraph',
     name: 'MindGraph',
     component: () => import('@/pages/MindGraphPage.vue'),
@@ -408,6 +414,9 @@ router.beforeEach(async (to, from) => {
     return { name: 'MindMate' }
   }
 
+  if (to.name === 'MindmateCollab' && !featureFlagsStore.getFeatureMindmateCollab()) {
+    return { name: 'MindMate' }
+  }
   if (to.meta.requiresWorkshopChatAccess) {
     if (!featureFlagsStore.getFeatureWorkshopChat()) {
       return { name: 'MindMate' }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import zipfile
 from pathlib import Path
 
 from services.infrastructure.sync import celery_cos_sync, celery_release
@@ -18,8 +19,6 @@ def test_resolve_celery_wheel_path_whls(tmp_path):
 
 
 def test_resolve_celery_wheel_path_zip_without_wheel(tmp_path):
-    import zipfile
-
     archive = tmp_path / "celery-5.6.3.zip"
     with zipfile.ZipFile(archive, "w") as zf:
         zf.writestr("celery-5.6.3/README.rst", "source only")

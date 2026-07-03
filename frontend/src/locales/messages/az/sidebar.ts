@@ -96,4 +96,8 @@ export default {
   'sidebar.roleSuperMember': 'Super Member',
   'sidebar.logoSiteQrTitle': 'Site QR code',
   'sidebar.logoSiteQrHint': 'Scan with your phone camera or WeChat',
+  'sidebar.mindmateCollabHistory.title': 'Online collab',
+  'sidebar.mindmateCollabHistory.stopConfirm': 'End this MindMate collab room for everyone?',
+  'sidebar.mindmateCollabHistory.visibilityOrg': 'Org',
+  'sidebar.mindmateCollabHistory.visibilityNetwork': 'Network',
 } as const

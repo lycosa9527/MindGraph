@@ -300,6 +300,49 @@ async def test_resolve_dify_user_raises_when_no_identity_matches(
         )
 
 
+@pytest.mark.asyncio
+async def test_resolve_dify_user_cross_org_hint_with_unknown_target(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cross-org list rows use mindbot_{org}_unknown; resolve must probe that identity."""
+    user = SimpleNamespace(id=7, organization_id=5, name="Alice", phone="", email="")
+    web_target, mindbot_target = _web_and_mindbot_targets()
+    cross_org_target = SimpleNamespace(
+        organization_id=5,
+        user_id=7,
+        dify_user="mindbot_5_unknown",
+        label="Cross-org DingTalk groups · DingTalk (unbound)",
+        channel="mindbot",
+    )
+
+    async def _fake_targets(_db, _user):
+        return [web_target, mindbot_target, cross_org_target]
+
+    async def _fake_resolve(_db, target, conversation_id, dify_user, **_kwargs):
+        del _db, conversation_id, _kwargs
+        if target.dify_user == "mindbot_5_unknown" and dify_user == "mindbot_5_unknown":
+            return _FAKE_ENDPOINT
+        return None
+
+    monkeypatch.setattr(
+        "services.dify.unified_conversations.build_user_dify_targets",
+        _fake_targets,
+    )
+    monkeypatch.setattr(
+        "services.dify.unified_conversations._resolve_endpoint_for_conversation",
+        _fake_resolve,
+    )
+
+    dify_user = await resolve_dify_user_for_conversation(
+        MagicMock(),
+        as_user(user),
+        "xorg-conv-1",
+        dify_user_hint="mindbot_5_unknown",
+    )
+
+    assert dify_user == "mindbot_5_unknown"
+
+
 def test_raise_for_dify_http_error_maps_conversation_not_exists_message() -> None:
     """Dify sometimes returns conversation-not-found without a structured code."""
     with pytest.raises(DifyConversationNotFoundError):

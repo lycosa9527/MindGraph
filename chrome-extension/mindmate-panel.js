@@ -46,6 +46,12 @@
     /** @type {string | null} */
     let difyUserId = null;
     /** @type {string | null} */
+    let streamDifyUserId = null;
+    /** @type {{ difyUser?: string, server?: number, mindbotConfigId?: number | null } | null} */
+    let activeConversationRoute = null;
+    /** @type {Array<object>} */
+    let historyItems = [];
+    /** @type {string | null} */
     let conversationId = null;
     /** @type {AbortController | null} */
     let abortController = null;
@@ -61,7 +67,7 @@
     let messages = [];
     /** @type {ReturnType<typeof setTimeout> | null} */
     let saveTimer = null;
-    /** @type {{ tabId: number, url: string, title: string, markdown: string, fromSelection?: boolean, source?: string, assetTotal?: number } | null} */
+    /** @type {{ tabId: number, url: string, title: string, markdown: string, fromSelection?: boolean, source?: string, assetTotal?: number, hostId?: string } | null} */
     let cachedPageContext = null;
     /** @type {ReturnType<typeof setTimeout> | null} */
     let pagePrefetchTimer = null;
@@ -257,6 +263,7 @@
           fromSelection: result.fromSelection,
           source: result.source,
           assetTotal: result.assetTotal,
+          hostId: result.hostId || "generic",
         };
         await MindGraphMindMate.savePageContextToSession(authKey, cachedPageContext);
         updatePageContextNotice();
@@ -492,9 +499,113 @@
         return false;
       }
       difyUserId = result.userId;
+      if (!activeConversationRoute || !activeConversationRoute.difyUser) {
+        streamDifyUserId = result.userId;
+      }
       setChatEnabled(true);
       setStatus("", "");
       return true;
+    }
+
+    function renderHistoryList() {
+      if (!deps.historyListEl) {
+        return;
+      }
+      deps.historyListEl.innerHTML = "";
+      for (const item of historyItems) {
+        if (!item || typeof item !== "object") {
+          continue;
+        }
+        const id = typeof item.id === "string" ? item.id : "";
+        if (!id) {
+          continue;
+        }
+        const li = document.createElement("li");
+        li.className = "mindmate-history-item";
+        if (conversationId === id) {
+          li.classList.add("is-active");
+        }
+        const title = document.createElement("span");
+        title.className = "mindmate-history-title";
+        title.textContent = (typeof item.name === "string" && item.name.trim()) || id.slice(0, 8);
+        const badge = document.createElement("span");
+        badge.className = "mindmate-history-badge";
+        badge.textContent = item.channel === "mindbot" ? "DT" : "Web";
+        li.appendChild(title);
+        li.appendChild(badge);
+        li.addEventListener("click", () => {
+          void selectHistoryConversation(item);
+        });
+        deps.historyListEl.appendChild(li);
+      }
+    }
+
+    /**
+     * @param {{ baseUrl: string, account: string, token: string, requestId: string }} creds
+     */
+    async function loadConversationHistory(creds) {
+      if (!deps.historyListEl) {
+        return;
+      }
+      const result = await MindGraphMindMate.fetchConversations({
+        ...creds,
+        requestId: deps.newRequestId(),
+      });
+      if (!result.ok) {
+        historyItems = [];
+        renderHistoryList();
+        return;
+      }
+      historyItems = result.conversations.slice().sort((a, b) => {
+        const aTs = typeof a.updated_at === "number" ? a.updated_at : 0;
+        const bTs = typeof b.updated_at === "number" ? b.updated_at : 0;
+        return bTs - aTs;
+      });
+      renderHistoryList();
+    }
+
+    /**
+     * @param {object} item
+     */
+    async function selectHistoryConversation(item) {
+      if (streaming) {
+        return;
+      }
+      const creds = await loadCredentials();
+      if (!creds || !(await ensureAuth(creds))) {
+        return;
+      }
+      if (!difyUserId && !(await ensureDifyUser(creds))) {
+        return;
+      }
+      const convId = typeof item.id === "string" ? item.id : "";
+      if (!convId) {
+        return;
+      }
+      activeConversationRoute = {
+        difyUser: typeof item.dify_user === "string" ? item.dify_user : undefined,
+        server: typeof item.server === "number" ? item.server : undefined,
+        mindbotConfigId: typeof item.mindbot_config_id === "number" ? item.mindbot_config_id : undefined,
+      };
+      streamDifyUserId = activeConversationRoute.difyUser || difyUserId;
+      setStatus(deps.t("statusVerifying"), "is-loading");
+      const loaded = await MindGraphMindMate.fetchConversationMessages(
+        { ...creds, requestId: deps.newRequestId() },
+        convId,
+        activeConversationRoute
+      );
+      if (!loaded.ok) {
+        setStatus(deps.t(loaded.error), "err");
+        return;
+      }
+      conversationId = convId;
+      messages = MindGraphMindMate.panelMessagesFromApi(loaded.messages);
+      userMessageCount = messages.filter((row) => row.role === "user").length;
+      authKey = buildAuthKey(creds);
+      renderAllMessages();
+      renderHistoryList();
+      await flushSaveThread();
+      setStatus("", "");
     }
 
     async function restoreThreadFromSession(creds) {
@@ -533,6 +644,7 @@
         return;
       }
       await ensureDifyUser(creds);
+      await loadConversationHistory(creds);
       updateIncludePageControl();
       if (isIncludePageEnabled()) {
         schedulePagePrefetch();
@@ -560,6 +672,8 @@
       }
       conversationId = null;
       userMessageCount = 0;
+      activeConversationRoute = null;
+      streamDifyUserId = difyUserId;
       authKey = buildAuthKey(creds);
       clearMessages();
       cachedPageContext = null;
@@ -610,6 +724,7 @@
               fromSelection: fresh.fromSelection,
               source: fresh.source,
               assetTotal: fresh.assetTotal,
+              hostId: fresh.hostId || "generic",
             };
             await MindGraphMindMate.savePageContextToSession(authKey, cachedPageContext);
             updatePageContextNotice();
@@ -701,7 +816,7 @@
 
       const result = await MindGraphMindMate.streamMessage(creds, {
         message: resolved.message,
-        userId: difyUserId,
+        userId: streamDifyUserId || difyUserId,
         conversationId,
         signal: abortController.signal,
         onConversationId: (id) => {

@@ -6,7 +6,7 @@ import { stripConceptMapFocusQuestionPrefix } from '@/stores/diagram/diagramDefa
 import type { Connection, DiagramType } from '@/types'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
-import { LEARNING_SHEET_PLACEHOLDER } from './constants'
+import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 
 /** Optional context for concept_map (focus question + root concept for palette prompts) */
 export type BuildDiagramDataOptions = {
@@ -105,8 +105,8 @@ export function buildDiagramData(
           right &&
           !isPlaceholderText(left) &&
           !isPlaceholderText(right) &&
-          left !== LEARNING_SHEET_PLACEHOLDER &&
-          right !== LEARNING_SHEET_PLACEHOLDER
+          !isLearningSheetBlankDisplayText(left) &&
+          !isLearningSheetBlankDisplayText(right)
         ) {
           analogies.push({ left, right })
         }

@@ -68,6 +68,9 @@
         });
       }
     }
+    if (result.ok && !result.hostId) {
+      return { ...result, hostId: ctx.hostId };
+    }
     return result;
   }
 
@@ -136,25 +139,29 @@
    * @param {number} maxChars
    * @param {string} pageUrl
    * @param {string} tabTitle
+   * @param {{ skipSelection?: boolean }} [options]
    * @returns {Promise<{ title: string, url: string, markdown: string, fromSelection: boolean, source: string }>}
    */
-  async function collectInPageMarkdown(tabId, maxChars, pageUrl, tabTitle) {
+  async function collectInPageMarkdown(tabId, maxChars, pageUrl, tabTitle, options) {
+    const skipSelection = Boolean(options && options.skipSelection);
     await chrome.scripting.executeScript({
       target: { tabId },
       files: [PAGE_MARKDOWN_SCRIPT],
     });
     const results = await chrome.scripting.executeScript({
       target: { tabId },
-      func: async (limit) => {
+      func: async (limit, skipSel) => {
         if (
           globalThis.__MGMindMatePageMarkdown &&
           typeof globalThis.__MGMindMatePageMarkdown.extractPageMarkdownAsync === "function"
         ) {
-          return globalThis.__MGMindMatePageMarkdown.extractPageMarkdownAsync(limit);
+          return globalThis.__MGMindMatePageMarkdown.extractPageMarkdownAsync(limit, {
+            skipSelection: skipSel,
+          });
         }
         return { title: document.title || "", url: location.href || "", markdown: "", fromSelection: false };
       },
-      args: [maxChars],
+      args: [maxChars, skipSelection],
     });
     const payload = results && results[0] && results[0].result;
     const markdown = payload && typeof payload.markdown === "string" ? payload.markdown.trim() : "";
@@ -643,7 +650,8 @@
         });
       }
 
-      if (!fileFirst) {
+      const autoScanGeneric = hostEntry.id === "generic";
+      if (!fileFirst && !autoScanGeneric) {
         const selectionPayload = await captureSelectionMarkdown(tabId, maxChars);
         if (selectionPayload && selectionPayload.markdown) {
           if (dbg) {
@@ -664,7 +672,10 @@
           dbg.log("selection", "no selection text");
         }
       } else if (dbg) {
-        dbg.log("selection", "skipped for file-first host");
+        dbg.log(
+          "selection",
+          autoScanGeneric ? "skipped for generic auto-scan" : "skipped for file-first host",
+        );
       }
 
       const browserPdf = await tryBrowserPdfTabMarkdown(
@@ -831,7 +842,13 @@
         }
       }
 
-      const pagePayload = await collectInPageMarkdown(tabId, maxChars, pageUrl, tab.title || "");
+      const pagePayload = await collectInPageMarkdown(
+        tabId,
+        maxChars,
+        pageUrl,
+        tab.title || "",
+        { skipSelection: autoScanGeneric },
+      );
       if (pagePayload.markdown) {
         if (dbg) {
           dbg.log("page-markdown", "generic page markdown", {

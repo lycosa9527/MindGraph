@@ -136,7 +136,7 @@ async def ai_assistant_stream(
 
     if current_user and hasattr(current_user, "id"):
         await register_generation_session(
-            channel="mindmate",
+            channel="web",
             dify_user_id=dify_user_id,
             user_id=int(current_user.id),
             organization_id=organization_id_for_tracking,
@@ -256,7 +256,7 @@ async def ai_assistant_stream(
                     captured_conversation_id = chunk_conversation_id
                     if current_user and hasattr(current_user, "id"):
                         await register_generation_session(
-                            channel="mindmate",
+                            channel="web",
                             dify_user_id=dify_user_id,
                             user_id=int(current_user.id),
                             organization_id=organization_id_for_tracking,

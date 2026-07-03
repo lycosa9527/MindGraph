@@ -26,7 +26,7 @@ async def test_register_generation_session_mindmate() -> None:
         return_value=redis,
     ):
         ok = await register_generation_session(
-            channel="mindmate",
+            channel="web",
             dify_user_id="mg_user_3",
             user_id=3,
             organization_id=9,

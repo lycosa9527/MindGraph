@@ -16,10 +16,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.sql.functions import count as sa_count
-
 from config.database import get_async_db
 from models.domain.auth import User
 from routers.auth.dependencies import require_admin_or_manager
@@ -34,13 +31,13 @@ from routers.features.workshop_chat.dependencies import (
 from routers.features.workshop_chat.schemas import (
     CreateChannelRequest,
     InviteChannelMemberRequest,
-    OrgMemberRow,
     OrgMembersPage,
     ReorderTeachingGroupsRequest,
     UpdateChannelPermissionsRequest,
     UpdateChannelRequest,
     UpdateMemberPrefsRequest,
 )
+from services.features.org_member_roster import fetch_org_members_page
 from services.features.workshop_chat import channel_service
 from services.features.workshop_chat.default_channels import (
     seed_announce_channel,
@@ -58,11 +55,6 @@ router = APIRouter()
 _ORG_MEMBER_Q_MAX_LEN = 100
 _ORG_MEMBER_LIMIT_DEFAULT = 200
 _ORG_MEMBER_LIMIT_MAX = 200
-
-
-def _escape_ilike_literal(text: str) -> str:
-    """Escape ``%``, ``_``, ``\\`` for use in ILIKE with PostgreSQL ESCAPE '\\'."""
-    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 # ── Organization members ─────────────────────────────────────────
@@ -86,36 +78,12 @@ async def list_org_members(
     filters display names with case-insensitive substring match (ILIKE).
     """
     effective_org_id = get_effective_org_id(current_user, org_id)
-    lim = min(max(limit, 1), _ORG_MEMBER_LIMIT_MAX)
-    off = max(offset, 0)
-
-    raw_q = (q or "").strip()
-    if raw_q and len(raw_q) > _ORG_MEMBER_Q_MAX_LEN:
-        raw_q = raw_q[:_ORG_MEMBER_Q_MAX_LEN]
-
-    filters = [User.organization_id == effective_org_id]
-    if raw_q:
-        pattern = f"%{_escape_ilike_literal(raw_q)}%"
-        filters.append(User.name.ilike(pattern, escape="\\"))
-
-    count_result = await db.execute(select(sa_count()).select_from(User).where(*filters))
-    total = count_result.scalar_one()
-    users_result = await db.execute(select(User).where(*filters).order_by(User.name).offset(off).limit(lim))
-    users = users_result.scalars().all()
-    items = [
-        OrgMemberRow(
-            id=u.id,
-            name=u.name or f"User {u.id}",
-            avatar=u.avatar,
-            last_seen_at=u.workshop_last_seen_at,
-        )
-        for u in users
-    ]
-    return OrgMembersPage(
-        items=items,
-        total=int(total),
-        limit=lim,
-        offset=off,
+    return await fetch_org_members_page(
+        db,
+        effective_org_id,
+        q=q or "",
+        limit=limit,
+        offset=offset,
     )
 
 
