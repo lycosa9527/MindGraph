@@ -35,12 +35,16 @@ export function registerCanvasPageDiagramEventBus(options: {
     () => {
       diagramStore.seedHistoryBaselineIfEmpty()
       panelsStore.clearNodePaletteState({ clearSessions: false })
+      panelsStore.clearConceptParkingLotState({ clearSessions: false })
     },
     'CanvasPage'
   )
   eventBus.onWithOwner(
     'diagram:type_changed',
-    () => panelsStore.clearNodePaletteState(),
+    () => {
+      panelsStore.clearNodePaletteState()
+      panelsStore.clearConceptParkingLotState()
+    },
     'CanvasPage'
   )
 

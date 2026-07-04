@@ -17,6 +17,8 @@ import { useAuthStore } from '@/stores/auth'
 import type { ModelLoadPhase } from '@/stores/llmResults'
 import { authFetch } from '@/utils/api'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
+import { extractMindmatePreviewCacheKey } from '@/utils/mindmateDiagramPreviewCache'
+import { notifyMindmateDiagramPreviewExpired } from '@/utils/mindmateDiagramPreviewExpiredNotify'
 import {
   extractMindmatePreviewUniqueId,
   hasGeneratedDiagramImage,
@@ -235,12 +237,37 @@ const pageHost = computed(() =>
   typeof window !== 'undefined' ? window.location.host : undefined
 )
 
-const { displayContent: mindmateDisplayContent } = useMindmateDiagramPreviewImage({
+const { displayContent: mindmateDisplayContent, previewUnavailable } = useMindmateDiagramPreviewImage({
   content: () => props.message.content,
   isStreaming: () => Boolean(props.message.isStreaming),
   pageHost: () => pageHost.value,
   libraryDiagramId: () => libraryDiagramId.value,
 })
+
+watch(
+  () =>
+    [
+      previewUnavailable.value,
+      libraryDiagramId.value,
+      props.message.isStreaming,
+      props.message.content,
+    ] as const,
+  ([unavailable, diagramId, isStreaming]) => {
+    if (isStreaming || !unavailable || !diagramId) {
+      return
+    }
+    const cacheKey = extractMindmatePreviewCacheKey(props.message.content)
+    if (!cacheKey) {
+      return
+    }
+    notifyMindmateDiagramPreviewExpired({
+      cacheKey,
+      message: t('mindmate.diagramPreviewExpired'),
+      onOpenCanvas: openInCanvas,
+      notify,
+    })
+  }
+)
 
 const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => mindmateDisplayContent.value, {
   stripThinkBlocks: true,

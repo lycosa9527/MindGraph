@@ -3,12 +3,14 @@ import { nextTick } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { ANIMATION } from '@/config/uiConfig'
+import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import { useDiagramStore } from '@/stores'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramNode, DiagramType, MindGraphNode } from '@/types'
 import { isManualViewportMode } from '@/utils/conceptMapDesktopViewport'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
+import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
 
 type FitApi = {
   fitToFullCanvas: (animate?: boolean) => void
@@ -35,8 +37,9 @@ export interface DiagramCanvasEventBusContext {
   zoomOut: () => void
   fitApi: FitApi
   emit: (e: 'nodeDoubleClick', node: MindGraphNode) => void
-  exportByFormat: (format: string) => Promise<void>
+  exportByFormat: (format: string, options?: CanvasExportOptions) => Promise<void>
   showExportToCommunityModal: Ref<boolean>
+  getExportContainer: () => HTMLElement | null
   prepareForCommunityExport: () => Promise<void>
   restoreViewportAfterCommunityExport: () => void
   regenerateForNodeIfNeeded: (nodeId: string) => void
@@ -85,6 +88,7 @@ export function useDiagramCanvasEventBus(): {
       emit,
       exportByFormat,
       showExportToCommunityModal,
+      getExportContainer,
       prepareForCommunityExport,
       restoreViewportAfterCommunityExport,
       regenerateForNodeIfNeeded,
@@ -165,9 +169,9 @@ export function useDiagramCanvasEventBus(): {
     )
 
     unsubscribers.push(
-      eventBus.on('toolbar:export_requested', async ({ format }) => {
+      eventBus.on('toolbar:export_requested', async ({ format, options }) => {
         if (format === 'mg') {
-          await exportByFormat(format)
+          await exportByFormat(format, options)
           return
         }
 
@@ -181,7 +185,9 @@ export function useDiagramCanvasEventBus(): {
         fitApi.fitForExport()
         await nextTick()
         await waitForNextPaint()
-        await exportByFormat(format)
+        await runWithExportVisualMode(uiStore, getExportContainer(), options, async () => {
+          await exportByFormat(format, options)
+        })
         setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
       })
     )

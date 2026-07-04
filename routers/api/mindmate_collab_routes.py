@@ -22,6 +22,7 @@ from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.auth.dependencies import get_language_dependency
 from routers.features.workshop_chat.schemas import OrgMembersPage
+from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
 from services.features.mindmate_collab.poke_notify import send_mindmate_collab_poke
@@ -151,8 +152,9 @@ async def join_collab_by_code(
 
     thinking_footer = None
     async with actor_rls_session(current_user) as db:
-        org = await track_client_event(db, current_user, None, EVENT_WORKSHOP_JOIN)
-        thinking_footer = mutation_to_footer(org)
+        org = await load_user_org(current_user)
+        join_mutation = await track_client_event(db, current_user, org, EVENT_WORKSHOP_JOIN)
+        thinking_footer = mutation_to_footer(join_mutation)
     response = {"success": True, **payload}
     if thinking_footer:
         response["thinking_coins"] = thinking_footer
@@ -177,8 +179,9 @@ async def join_collab_organization(
 
     thinking_footer = None
     async with actor_rls_session(current_user) as db:
-        org = await track_client_event(db, current_user, None, EVENT_WORKSHOP_JOIN)
-        thinking_footer = mutation_to_footer(org)
+        org = await load_user_org(current_user)
+        join_mutation = await track_client_event(db, current_user, org, EVENT_WORKSHOP_JOIN)
+        thinking_footer = mutation_to_footer(join_mutation)
     response = {"success": True, **payload}
     if thinking_footer:
         response["thinking_coins"] = thinking_footer

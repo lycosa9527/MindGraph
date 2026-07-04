@@ -3,7 +3,8 @@ import { useRoute } from 'vue-router'
 
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { getNodePaletteDiagramKey } from '@/composables/nodePalette/sessionKeys'
+import { getConceptParkingLotDiagramKey } from '@/composables/nodePalette/sessionKeys'
+import { getConceptParkingLot } from '@/composables/conceptParkingLot/useConceptParkingLot'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import { useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
 
@@ -46,12 +47,11 @@ export function useMindMapSideToolbarState() {
     activeTool.value = toolId
 
     if (toolId === 'waterfall') {
-      const diagramKey = getNodePaletteDiagramKey(
-        'mindmap',
+      const diagramKey = getConceptParkingLotDiagramKey(
         savedDiagramsStore.activeDiagramId,
         route.query.diagramId as string | undefined
       )
-      panelsStore.openNodePalette({ mindMapWaterfallMode: true, diagramKey })
+      panelsStore.openConceptParkingLot({ diagramKey })
     }
   }
 
@@ -59,8 +59,8 @@ export function useMindMapSideToolbarState() {
     const closing = activeTool.value
     activeTool.value = null
     sidebarExpanded.value = true
-    if (closing === 'waterfall' && panelsStore.nodePalettePanel.isOpen) {
-      panelsStore.closeNodePalette()
+    if (closing === 'waterfall' && panelsStore.conceptParkingLotPanel.isOpen) {
+      getConceptParkingLot().dismiss()
     }
   }
 
@@ -126,11 +126,11 @@ export function useMindMapSideToolbarState() {
 
 /** Close waterfall when its external panel closes. */
 export function bindMindMapExternalPanelClose(
-  isNodePaletteOpen: () => boolean,
+  isConceptParkingLotOpen: () => boolean,
   onClose: () => void
 ): () => void {
-  return watch(isNodePaletteOpen, (paletteOpen) => {
-    if (!paletteOpen && activeTool.value === 'waterfall') {
+  return watch(isConceptParkingLotOpen, (open) => {
+    if (!open && activeTool.value === 'waterfall') {
       onClose()
     }
   })

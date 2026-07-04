@@ -75,7 +75,7 @@ const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarTh
 
     <!-- Authenticated: Show user info with dropdown -->
     <template v-else>
-      <!-- Thinking coins widget (trial teachers only) -->
+      <!-- Thinking coins widget (trial org members) -->
       <div
         v-if="s.thinkingCoinsEligible"
         :class="s.isCollapsed ? 'px-2 pt-2' : 'px-2.5 pt-2.5 pb-2'"

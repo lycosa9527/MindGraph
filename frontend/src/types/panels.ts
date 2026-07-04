@@ -65,10 +65,24 @@ export interface NodePalettePanelState {
   conceptMapTabs?: ConceptMapTab[]
   /** True when palette opened from concept map 「生成概念」 — modal shows concept-list title */
   useConceptListHeader?: boolean
-  /** Mind map waterfall: panel-only suggestions, drag to canvas (no Finish apply) */
-  mindMapWaterfallMode?: boolean
-  /** Mind map waterfall: one tab per canvas source node used for generation */
-  mindMapSourceTabs?: ConceptMapTab[]
+}
+
+/** Mind map concept parking lot (概念停车场) — separate from staged node palette */
+export interface ConceptParkingLotPanelState {
+  open: boolean
+  suggestions: NodeSuggestion[]
+  selected: string[]
+  /** Active tab: 'topic' or branch-* id matching generation source */
+  mode: string | null
+  /** One tab per canvas source node used for generation */
+  sourceTabs?: ConceptMapTab[]
+}
+
+export interface ConceptParkingLotSessionSnapshot {
+  suggestions: NodeSuggestion[]
+  selected: string[]
+  mode: string | null
+  sourceTabs?: ConceptMapTab[]
 }
 
 /** Saved session state when user dismisses (X) node palette - restored on reopen */
@@ -79,8 +93,6 @@ export interface NodePaletteSessionSnapshot {
   stage?: string | null
   stage_data?: Record<string, unknown> | null
   conceptMapTabs?: ConceptMapTab[]
-  mindMapWaterfallMode?: boolean
-  mindMapSourceTabs?: ConceptMapTab[]
 }
 
 export interface PropertyPanelState {

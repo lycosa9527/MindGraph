@@ -98,6 +98,8 @@ export default {
   'mindmate.openCanvasNoLibraryId': '導圖未保存到圖庫。請先登錄後再試。',
   'mindmate.openCanvasSaveRetry': '導圖未能自動保存到圖庫。請重新生成；若仍失敗請聯繫管理員。',
   'mindmate.diagramLibraryFull': '圖庫已滿，請刪除舊圖後再試。',
+  'mindmate.diagramPreviewExpired':
+    '臨時預覽圖已從瀏覽器快取中清除。點擊此通知或下方「在畫布中編輯」開啟導圖。',
   'mindmate.tooltip.copy': '複製',
   'mindmate.tooltip.dislike': '踩',
   'mindmate.tooltip.edit': '編輯',

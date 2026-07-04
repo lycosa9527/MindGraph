@@ -1,12 +1,13 @@
 # Thinking Coins (思维币)
 
-Production economy for **trial-org teachers and school admins** when `FEATURE_THINKING_COINS=true`.
+Production economy for **all members of trial-tier organizations** when `FEATURE_THINKING_COINS=true`.
 
 ## Eligibility
 
 - Feature flag: `FEATURE_THINKING_COINS` (default off)
-- Org tier: trial (`SCHOOL_TIER_TRIAL`)
-- Roles: teacher, school admin
+- User must belong to an organization (`organization_id` matches org)
+- Org effective tier: trial (`SCHOOL_TIER_TRIAL`)
+- Role-agnostic: teacher, school admin, platform roles, and other org members on trial all qualify
 
 ## Architecture
 

@@ -175,7 +175,8 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
 
   function buildSaveEligibility(bypassGeneratingGuard = false) {
     return {
-      authenticated: authStore.isAuthenticated,
+      authenticated:
+        authStore.isAuthenticated && !authStore.authVerificationBlockedByNetwork,
       llmGenerating: llmResultsStore.isGenerating,
       subgraphPreviewActive: hasPreview.value,
       subgraphGenerating: isSubgraphGenerating.value,
@@ -268,6 +269,11 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
 
       if (result.action === 'skipped' && result.error === 'No available slots') {
         return { saved: false, reason: 'skipped_slots_full' }
+      }
+      if (!authStore.isAuthenticated) {
+        cancelDebounce()
+        isDirty.value = false
+        return { saved: false, reason: 'skipped_guards' }
       }
       consecutiveSaveFailures += 1
       if (consecutiveSaveFailures >= MAX_CONSECUTIVE_SAVE_FAILURES) {

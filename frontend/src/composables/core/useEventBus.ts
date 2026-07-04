@@ -13,6 +13,8 @@ import { onUnmounted } from 'vue'
 
 import mitt, { type Emitter, type Handler } from 'mitt'
 
+import type { CanvasExportOptions } from '@/config/canvasExportOptions'
+
 // ============================================================================
 // Event Type Definitions
 // ============================================================================
@@ -50,6 +52,12 @@ export type EventTypes = {
   }
   /** Stop all node-palette SSE requests (e.g. panel closed or canvas exited). */
   'node_palette:streaming_stop_requested': Record<string, never>
+  'concept_parking_lot:opened': {
+    diagramKey?: string
+    hasRestoredSession: boolean
+  }
+  /** Stop concept parking lot SSE requests (panel closed or canvas exited). */
+  'concept_parking_lot:streaming_stop_requested': Record<string, never>
 
   // Diagram Events
   'diagram:render_requested': { source?: string }
@@ -497,7 +505,7 @@ export type EventTypes = {
   'window:resized': { width: number; height: number }
 
   // Toolbar Events
-  'toolbar:export_requested': { format: string }
+  'toolbar:export_requested': { format: string; options?: CanvasExportOptions }
   'toolbar:import_file': { file: File }
 
   // File Events

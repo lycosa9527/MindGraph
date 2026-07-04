@@ -59,12 +59,7 @@ export function handleLearningSheetPickNodeClick(nodeId: string): boolean {
     return true
   }
 
-  const result = diagramStore.toggleLearningSheetNodeBlank(nodeId)
-  if (result === 'blanked') {
-    diagramStore.pushHistory(t('canvas.mindMapSideToolbar.learningSheetBlankHistory'))
-  } else if (result === 'restored') {
-    diagramStore.pushHistory(t('canvas.mindMapSideToolbar.learningSheetRestoreHistory'))
-  }
+  diagramStore.toggleLearningSheetNodeBlank(nodeId)
   return true
 }
 
@@ -153,6 +148,7 @@ export function useLearningSheetCustomMode() {
         },
         diagramStore.type
       )
+      diagramStore.pushHistory(t('canvas.mindMapSideToolbar.learningSheetRandomBlankHistory'))
       learningSheetFloatBarOpen.value = true
       notify.success(t('canvas.toolbar.switchedLearningSheetMode'))
       void claimThinkingCoinEvent('learning_sheet_enable')
@@ -164,6 +160,7 @@ export function useLearningSheetCustomMode() {
     learningSheetFloatBarBeforePresentation.value = false
     if (diagramStore.isLearningSheet) {
       diagramStore.restoreFromLearningSheetMode()
+      diagramStore.pushHistory(t('canvas.toolbar.learningSheetRestored'))
       notify.success(t('canvas.toolbar.switchedToRegular'))
     } else if (diagramStore.hasPreservedLearningSheet()) {
       diagramStore.clearLearningSheetPreservation()

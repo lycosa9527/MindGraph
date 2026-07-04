@@ -1,4 +1,4 @@
-"""Claim client events for eligible trial users."""
+"""Claim client events for eligible trial-org members."""
 
 from __future__ import annotations
 

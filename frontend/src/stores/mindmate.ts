@@ -18,6 +18,7 @@ import {
 } from '@/stores/mindmateActiveThread'
 import { isLlmGenerating } from '@/utils/llmLoadPhase'
 import { clearMindmateDiagramPreviewCache } from '@/utils/mindmateDiagramPreviewCache'
+import { resetMindmateDiagramPreviewExpiredNotifies } from '@/utils/mindmateDiagramPreviewExpiredNotify'
 
 // ============================================================================
 // Types
@@ -552,6 +553,7 @@ export const useMindMateStore = defineStore('mindmate', () => {
     clearAllMessagesFromStorage()
     clearActiveThread()
     void clearMindmateDiagramPreviewCache()
+    resetMindmateDiagramPreviewExpiredNotifies()
   }
 
   // =========================================================================

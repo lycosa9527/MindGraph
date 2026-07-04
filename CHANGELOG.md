@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [5.135.0] - 2026-07-03
+### Changed
+
+- **MindMate diagram preview cache** — Eagerly persist generate_dingtalk PNGs to IndexedDB when a stream completes and when conversation history loads, so previews survive server temp cleanup even if the user closes the tab before chat bubbles render ([`mindmateDiagramPreviewPersist.ts`](frontend/src/utils/mindmateDiagramPreviewPersist.ts), [`useMindMate.ts`](frontend/src/composables/mindmate/useMindMate.ts)).
+- **MindMate stale preview toast** — When a diagram preview cannot be resolved from browser cache and the server temp PNG is gone, show a clickable warning that opens the saved diagram in canvas ([`mindmateDiagramPreviewExpiredNotify.ts`](frontend/src/utils/mindmateDiagramPreviewExpiredNotify.ts), [`MessageBubble.vue`](frontend/src/components/panels/mindmate/MessageBubble.vue)).
+
 
 > **MindMate online collab, diagram provenance, canvas PDF export, and identity unification.**
 

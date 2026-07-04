@@ -25,7 +25,7 @@ export interface UseDiagramCanvasVueFlowUiResult {
   nodesDraggable: ComputedRef<boolean>
   elementsSelectable: ComputedRef<boolean>
   selectNodesOnDrag: ComputedRef<boolean>
-  selectionKeyCode: ComputedRef<boolean | 'Shift'>
+  selectionKeyCode: ComputedRef<boolean | null>
   vueFlowBackgroundClasses: ComputedRef<string[]>
 }
 
@@ -108,8 +108,10 @@ export function useDiagramCanvasVueFlowUi(
     return true
   })
 
-  const selectionKeyCode = computed<boolean | 'Shift'>(() =>
-    selectNodesOnDrag.value ? true : 'Shift'
+  // Vue Flow 1.48 runtime prop check accepts boolean | null only (not key strings).
+  // null keeps the library default (Shift) for hand-tool / pick modes where drag-select is off.
+  const selectionKeyCode = computed<boolean | null>(() =>
+    selectNodesOnDrag.value ? true : null
   )
 
   const vueFlowBackgroundClasses = computed(() => {

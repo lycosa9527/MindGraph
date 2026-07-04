@@ -93,6 +93,8 @@ export default {
   'mindmate.openCanvasNoLibraryId': 'Diagram was not saved to your library. Sign in and try again.',
   'mindmate.openCanvasSaveRetry': 'Could not save this diagram to your library automatically. Regenerate; contact your administrator if it persists.',
   'mindmate.diagramLibraryFull': 'Diagram library is full. Delete old diagrams and try again.',
+  'mindmate.diagramPreviewExpired':
+    'This preview is no longer in your browser cache—the temporary image was cleared. Tap this notice or use «Edit in canvas» below to open the diagram.',
   'mindmate.tooltip.copy': 'คัดลอก',
   'mindmate.tooltip.dislike': 'ไม่ชอบ',
   'mindmate.tooltip.edit': 'แก้ไข',

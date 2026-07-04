@@ -24,7 +24,6 @@ import type { NodeSuggestion } from '@/types/panels'
 
 import { applySelectionToDiagram } from './applySelection'
 import {
-  MINDMAP_WATERFALL_NODES_PER_LLM,
   NODE_PALETTE_NEXT,
   NODE_PALETTE_START,
   STAGED_DIAGRAM_TYPES,
@@ -34,10 +33,6 @@ import {
 import { buildDiagramData } from './diagramDataBuilder'
 import { isAbortError } from './errors'
 import { getNodePaletteDiagramKey } from './sessionKeys'
-import {
-  resolveMindMapWaterfallSources,
-  tabLabel,
-} from './mindMapWaterfallHelpers'
 import {
   type Stage2Parent,
   buildStageDataForParent,
@@ -146,6 +141,12 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     paletteStreamPhase,
     streamBatchDepth,
     firstNodeReceivedInBatch,
+    suggestionSink: {
+      getSuggestions: () => panelsStore.nodePalettePanel.suggestions,
+      clearSuggestions: () => panelsStore.setNodePaletteSuggestions([]),
+      appendSuggestion: (suggestion: NodeSuggestion) =>
+        panelsStore.appendNodePaletteSuggestion(suggestion),
+    },
   }
 
   function streamBatch(
@@ -198,9 +199,6 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         dt === 'bridge_map') &&
       mode
     ) {
-      if (dt === 'mindmap' && panelsStore.nodePalettePanel.mindMapWaterfallMode) {
-        return all.filter((s) => (s.parent_id ?? s.mode ?? '') === mode)
-      }
       const parentId = getParentIdFromStageData(
         dt ?? '',
         stage ?? undefined,
@@ -609,102 +607,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
   const isWaitingForTopicInput = ref(false)
 
-  async function startMindMapWaterfallSession(options?: {
-    keepSessionId?: boolean
-  }): Promise<boolean> {
-    if (diagramType.value !== 'mindmap' || !diagramStore.data?.nodes?.length) {
-      errorMessage.value = t('nodePalette.error.createDiagramFirst')
-      return false
-    }
-
-    const topic = topicText.value.trim()
-    if (!topic || isPlaceholderText(topic) || isLearningSheetBlankDisplayText(topic)) {
-      errorMessage.value = t('nodePalette.error.replacePlaceholder')
-      return false
-    }
-
-    const nodes = diagramStore.data.nodes
-    const sources = resolveMindMapWaterfallSources(diagramStore.selectedNodes, nodes)
-    const tabs = sources.map((s) => ({ id: s.id, name: tabLabel(s.name) }))
-
-    const keepSessionId = options?.keepSessionId ?? false
-    if (!keepSessionId || !sessionId.value) {
-      sessionId.value = generateSessionId()
-      const diagramKey = getNodePaletteDiagramKey(
-        'mindmap',
-        savedDiagramsStore.activeDiagramId,
-        route.query.diagramId as string | undefined
-      )
-      panelsStore.clearNodePaletteSession(diagramKey)
-      panelsStore.setNodePaletteSuggestions([])
-    }
-
-    centerTopic.value = topic
-    errorMessage.value = null
-    panelsStore.updateNodePalette({
-      mindMapWaterfallMode: true,
-      mindMapSourceTabs: tabs,
-      mode: tabs[0]?.id ?? 'topic',
-      selected: keepSessionId ? panelsStore.nodePalettePanel.selected : [],
-      stage: null,
-      stage_data: null,
-    })
-
-    isLoading.value = true
-    try {
-      ensurePaletteStreamSession()
-      const sharedIds = new Set(panelsStore.nodePalettePanel.suggestions.map((s) => s.id))
-      const results = await Promise.allSettled(
-        sources.map((source) => {
-          const stageData = {
-            ...(source.stageData ?? {}),
-            source_node_id: source.id,
-          }
-          const payload: Record<string, unknown> = {
-            session_id: `${sessionId.value}_${source.id}`,
-            diagram_type: 'mindmap',
-            diagram_data: diagramData.value,
-            language: promptLanguage.value,
-            nodes_per_llm: MINDMAP_WATERFALL_NODES_PER_LLM,
-            stage: source.stage,
-            stage_data: stageData,
-            mode: source.id,
-          }
-          return streamBatch(NODE_PALETTE_START, payload, {
-            append: true,
-            sharedExistingIds: sharedIds,
-            useGlobalAbort: false,
-          })
-        })
-      )
-      const firstRejection = results.find((r) => r.status === 'rejected')
-      if (
-        firstRejection &&
-        firstRejection.status === 'rejected' &&
-        !isAbortError(firstRejection.reason)
-      ) {
-        errorMessage.value =
-          firstRejection.reason instanceof Error
-            ? firstRejection.reason.message
-            : String(firstRejection.reason)
-        onError?.(errorMessage.value)
-      }
-      return true
-    } catch (err) {
-      if (isAbortError(err)) return false
-      const msg = err instanceof Error ? err.message : String(err)
-      errorMessage.value = msg
-      onError?.(msg)
-      return false
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   async function startSession(options?: { keepSessionId?: boolean }): Promise<boolean> {
-    if (diagramType.value === 'mindmap' && panelsStore.nodePalettePanel.mindMapWaterfallMode) {
-      return startMindMapWaterfallSession(options)
-    }
     if (!diagramType.value || !diagramStore.data?.nodes?.length) {
       errorMessage.value = t('nodePalette.error.createDiagramFirst')
       return false
@@ -936,7 +839,6 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   }
 
   async function finishSelection(): Promise<boolean> {
-    if (panelsStore.nodePalettePanel.mindMapWaterfallMode) return false
     const selected = panelsStore.nodePalettePanel.selected
     const suggestionsList = panelsStore.nodePalettePanel.suggestions
     const stage = panelsStore.nodePalettePanel.stage ?? undefined
@@ -1247,27 +1149,6 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     return buildStageDataForParent(parent, diagramType.value, { dimension: dim })
   }
 
-  function switchMindMapWaterfallTab(tabId: string): void {
-    if (panelsStore.nodePalettePanel.mode === tabId) return
-    panelsStore.updateNodePalette({ mode: tabId })
-  }
-
-  async function refreshMindMapWaterfall(): Promise<boolean> {
-    return startMindMapWaterfallSession({ keepSessionId: false })
-  }
-
-  function removeDroppedSuggestions(suggestionIds: string[]): void {
-    panelsStore.removeNodePaletteSuggestions(suggestionIds)
-  }
-
-  const isMindMapWaterfallMode = computed(
-    () => panelsStore.nodePalettePanel.mindMapWaterfallMode === true
-  )
-
-  const mindMapSourceTabs = computed(
-    () => panelsStore.nodePalettePanel.mindMapSourceTabs ?? []
-  )
-
   return {
     sessionId,
     centerTopic,
@@ -1300,11 +1181,5 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     initializeConceptMapRootModal,
     refreshConceptMapRootModal,
     addConceptMapDomainTab,
-    isMindMapWaterfallMode,
-    mindMapSourceTabs,
-    switchMindMapWaterfallTab,
-    refreshMindMapWaterfall,
-    removeDroppedSuggestions,
-    startMindMapWaterfallSession,
   }
 }

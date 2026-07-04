@@ -107,6 +107,10 @@ export const useUIStore = defineStore('ui', () => {
 
   /** Wireframe mode: black & white / line sketch view for diagram canvas */
   const wireframeMode = ref(false)
+  /** Temporary outline-only styling while a mind-map export capture runs. */
+  const exportWireframeOutline = ref(false)
+  /** Hide canvas chrome (dot grid, pane fill) during raster export capture. */
+  const exportRasterCapture = ref(false)
   const selectedChartType = ref<string>('选择具体图示')
   const templateSlots = ref<Record<string, string>>({})
   const freeInputValue = ref<string>('')
@@ -408,6 +412,14 @@ export const useUIStore = defineStore('ui', () => {
     wireframeMode.value = !wireframeMode.value
   }
 
+  function setExportWireframeOutline(active: boolean): void {
+    exportWireframeOutline.value = active
+  }
+
+  function setExportRasterCapture(active: boolean): void {
+    exportRasterCapture.value = active
+  }
+
   // Mode management
   function setCurrentMode(mode: AppMode): void {
     currentMode.value = mode
@@ -513,6 +525,9 @@ export const useUIStore = defineStore('ui', () => {
     browserLocaleHintDismissed.value = false
     isMobile.value = false
     sidebarCollapsed.value = false
+    wireframeMode.value = false
+    exportWireframeOutline.value = false
+    exportRasterCapture.value = false
     currentMode.value = 'mindmate'
     selectedChartType.value = '选择具体图示'
     templateSlots.value = {}
@@ -547,6 +562,8 @@ export const useUIStore = defineStore('ui', () => {
     isMobile,
     sidebarCollapsed,
     wireframeMode,
+    exportWireframeOutline,
+    exportRasterCapture,
     currentMode,
     selectedChartType,
     templateSlots,
@@ -578,6 +595,8 @@ export const useUIStore = defineStore('ui', () => {
     setSidebarCollapsed,
     toggleSidebar,
     toggleWireframe,
+    setExportWireframeOutline,
+    setExportRasterCapture,
     setCurrentMode,
     toggleMode,
     setSelectedChartType,

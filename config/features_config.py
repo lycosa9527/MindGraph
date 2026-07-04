@@ -247,7 +247,7 @@ class FeaturesConfigMixin:
 
     @property
     def FEATURE_THINKING_COINS(self):
-        """Enable thinking coin (思维币) wallet for trial school teachers.
+        """Enable thinking coin (思维币) wallet for trial-tier org members.
 
         Disabled by default. Set FEATURE_THINKING_COINS=True in .env to enable.
         """

@@ -79,6 +79,21 @@ describe('diagram save guards and feedback', () => {
     expect(canPerformDiagramSave({ ...duringGeneration, bypassGeneratingGuard: true })).toBe(true)
   })
 
+  it('blocks save when auth is blocked by offline verification', () => {
+    expect(
+      canPerformDiagramSave({
+        authenticated: false,
+        llmGenerating: false,
+        subgraphPreviewActive: false,
+        subgraphGenerating: false,
+        collabSessionActive: false,
+        isCollabGuest: false,
+        suppressed: false,
+        hasTypeAndData: true,
+      })
+    ).toBe(false)
+  })
+
   it('schedules autosave only after successful LLM model completion', () => {
     expect(shouldAutoSaveAfterLlmModelCompleted(true)).toBe(true)
     expect(shouldAutoSaveAfterLlmModelCompleted(false)).toBe(false)

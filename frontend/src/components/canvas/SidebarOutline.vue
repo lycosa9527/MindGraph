@@ -6,7 +6,9 @@ import { computed, nextTick, ref } from 'vue'
 
 import { ElTooltip } from 'element-plus'
 
-import { ChevronDown, FileText, GitCommit, GripVertical, Plus, Trash2, X } from '@lucide/vue'
+import { ChevronDown, FileText, GitCommit, GripVertical, Plus, Trash2 } from '@lucide/vue'
+
+import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelCloseButton.vue'
 
 import { useLanguage } from '@/composables'
 import { useMindMapOutlineMirror } from '@/composables/mindMap/useMindMapOutlineMirror'
@@ -185,17 +187,7 @@ function showActions(nodeId: string): boolean {
             {{ t('canvas.mindMapSideToolbar.outline') }}
           </span>
         </div>
-        <button
-          type="button"
-          class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-gray-200 text-gray-400 transition-all hover:border-gray-300 hover:bg-gray-50 hover:text-gray-600"
-          :aria-label="t('canvas.mindMapSideToolbar.closePanel')"
-          @click="handleClose"
-        >
-          <X
-            class="h-3.5 w-3.5"
-            :stroke-width="2"
-          />
-        </button>
+        <MindMapSidePanelCloseButton @close="handleClose" />
       </div>
 
       <div class="mt-2.5 flex flex-col gap-1">

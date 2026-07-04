@@ -699,6 +699,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       if (saved) {
         activeDiagramId.value = saved.id
         usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
+        if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+          usePanelsStore().migrateConceptParkingLotSessionToSavedDiagram(saved.id)
+        }
         return { success: true, action: 'saved', diagramId: saved.id }
       } else {
         return { success: false, action: 'error', error: error.value || 'Failed to save diagram' }
@@ -812,6 +815,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       activeDiagramId.value = saved.id
       llmResultsStore.updateCurrentModelSpec(spec)
       usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
+      if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+        usePanelsStore().migrateConceptParkingLotSessionToSavedDiagram(saved.id)
+      }
       return { success: true, action: 'saved', diagramId: saved.id }
     } else {
       return { success: false, action: 'error', error: error.value || 'Failed to save diagram' }
@@ -843,6 +849,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       activeDiagramId.value = saved.id
       llmResultsStore.updateCurrentModelSpec(spec)
       usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
+      if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+        usePanelsStore().migrateConceptParkingLotSessionToSavedDiagram(saved.id)
+      }
       return { success: true, action: 'saved', diagramId: saved.id }
     } else {
       return { success: false, action: 'error', error: error.value || 'Failed to save diagram' }

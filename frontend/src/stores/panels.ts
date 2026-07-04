@@ -17,6 +17,8 @@ import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'
 import type {
   ConceptMapTab,
+  ConceptParkingLotPanelState,
+  ConceptParkingLotSessionSnapshot,
   MindmateMessage,
   MindmatePanelState,
   NodePalettePanelState,
@@ -49,6 +51,17 @@ export const usePanelsStore = defineStore('panels', () => {
 
   const nodePaletteSessionsByDiagram = ref<Map<string, NodePaletteSessionSnapshot>>(new Map())
 
+  const conceptParkingLot = ref<ConceptParkingLotPanelState>({
+    open: false,
+    suggestions: [],
+    selected: [],
+    mode: null,
+  })
+
+  const conceptParkingLotSessionsByDiagram = ref<Map<string, ConceptParkingLotSessionSnapshot>>(
+    new Map()
+  )
+
   const property = ref<PropertyPanelState>({
     open: false,
     nodeId: null,
@@ -78,6 +91,11 @@ export const usePanelsStore = defineStore('panels', () => {
   const nodePalettePanel = computed(() => ({
     isOpen: nodePalette.value.open,
     ...nodePalette.value,
+  }))
+
+  const conceptParkingLotPanel = computed(() => ({
+    isOpen: conceptParkingLot.value.open,
+    ...conceptParkingLot.value,
   }))
 
   const propertyPanel = computed(() => ({
@@ -167,8 +185,6 @@ export const usePanelsStore = defineStore('panels', () => {
         stage: snapshot.stage ?? null,
         stage_data: snapshot.stage_data ?? null,
         conceptMapTabs,
-        mindMapWaterfallMode: snapshot.mindMapWaterfallMode === true,
-        mindMapSourceTabs: snapshot.mindMapSourceTabs,
         open: true,
         useConceptListHeader: restOptions.useConceptListHeader === true,
       }
@@ -206,15 +222,7 @@ export const usePanelsStore = defineStore('panels', () => {
   }
 
   function saveNodePaletteSession(diagramKey: string): void {
-    const {
-      suggestions,
-      selected,
-      stage,
-      stage_data,
-      conceptMapTabs,
-      mindMapWaterfallMode,
-      mindMapSourceTabs,
-    } = nodePalette.value
+    const { suggestions, selected, stage, stage_data, conceptMapTabs } = nodePalette.value
     let mode = nodePalette.value.mode
     if (suggestions.length > 0 && diagramKey) {
       let tabsToSave = conceptMapTabs ? [...conceptMapTabs] : undefined
@@ -237,8 +245,6 @@ export const usePanelsStore = defineStore('panels', () => {
         stage: stage ?? null,
         stage_data: stage_data ?? null,
         conceptMapTabs: tabsToSave,
-        mindMapWaterfallMode: mindMapWaterfallMode === true,
-        mindMapSourceTabs: mindMapSourceTabs ? [...mindMapSourceTabs] : undefined,
       })
       nodePaletteSessionsByDiagram.value = map
     }
@@ -251,6 +257,134 @@ export const usePanelsStore = defineStore('panels', () => {
       nodePaletteSessionsByDiagram.value = map
     } else {
       nodePaletteSessionsByDiagram.value = new Map()
+    }
+  }
+
+  function openConceptParkingLot(
+    options: Partial<ConceptParkingLotPanelState> & { diagramKey?: string } = {}
+  ): void {
+    const wasOpen = conceptParkingLot.value.open
+    const { diagramKey, ...restOptions } = options
+    const snapshot = diagramKey && conceptParkingLotSessionsByDiagram.value.get(diagramKey)
+    const hasRestoredSession = !!(snapshot && snapshot.suggestions.length > 0)
+    if (hasRestoredSession && snapshot) {
+      conceptParkingLot.value = {
+        ...conceptParkingLot.value,
+        suggestions: snapshot.suggestions,
+        selected: snapshot.selected,
+        mode: snapshot.mode,
+        sourceTabs: snapshot.sourceTabs,
+        open: true,
+      }
+    } else {
+      conceptParkingLot.value = {
+        ...conceptParkingLot.value,
+        open: true,
+        ...restOptions,
+      }
+    }
+    if (!wasOpen) {
+      eventBus.emit('panel:opened', { panel: 'conceptParkingLot', isOpen: true, options })
+      eventBus.emit('concept_parking_lot:opened', { diagramKey, hasRestoredSession })
+    }
+  }
+
+  function saveConceptParkingLotSession(diagramKey: string): void {
+    const { suggestions, selected, mode, sourceTabs } = conceptParkingLot.value
+    if (suggestions.length > 0 && diagramKey) {
+      const map = new Map(conceptParkingLotSessionsByDiagram.value)
+      map.set(diagramKey, {
+        suggestions: [...suggestions],
+        selected: [...selected],
+        mode,
+        sourceTabs: sourceTabs ? [...sourceTabs] : undefined,
+      })
+      conceptParkingLotSessionsByDiagram.value = map
+    }
+  }
+
+  function clearConceptParkingLotSession(diagramKey?: string): void {
+    if (diagramKey) {
+      const map = new Map(conceptParkingLotSessionsByDiagram.value)
+      map.delete(diagramKey)
+      conceptParkingLotSessionsByDiagram.value = map
+    } else {
+      conceptParkingLotSessionsByDiagram.value = new Map()
+    }
+  }
+
+  function migrateConceptParkingLotSessionToSavedDiagram(newDiagramId: string): void {
+    const oldKey = 'concept-parking-lot-mindmap-new'
+    const newKey = `concept-parking-lot-mindmap-${newDiagramId}`
+    const snapshot = conceptParkingLotSessionsByDiagram.value.get(oldKey)
+    if (snapshot) {
+      const map = new Map(conceptParkingLotSessionsByDiagram.value)
+      map.set(newKey, snapshot)
+      map.delete(oldKey)
+      conceptParkingLotSessionsByDiagram.value = map
+    }
+  }
+
+  function closeConceptParkingLot(): void {
+    const wasOpen = conceptParkingLot.value.open
+    if (wasOpen) {
+      eventBus.emit('concept_parking_lot:streaming_stop_requested', {})
+    }
+    conceptParkingLot.value.open = false
+    if (wasOpen) {
+      eventBus.emit('panel:closed', { panel: 'conceptParkingLot', isOpen: false })
+    }
+  }
+
+  function updateConceptParkingLot(updates: Partial<ConceptParkingLotPanelState>): void {
+    conceptParkingLot.value = {
+      ...conceptParkingLot.value,
+      ...updates,
+    }
+  }
+
+  function setConceptParkingLotSuggestions(suggestions: NodeSuggestion[]): void {
+    conceptParkingLot.value.suggestions = suggestions
+  }
+
+  function appendConceptParkingLotSuggestion(suggestion: NodeSuggestion): void {
+    conceptParkingLot.value = {
+      ...conceptParkingLot.value,
+      suggestions: [...conceptParkingLot.value.suggestions, suggestion],
+    }
+  }
+
+  function removeConceptParkingLotSuggestions(suggestionIds: string[]): void {
+    if (suggestionIds.length === 0) return
+    const remove = new Set(suggestionIds)
+    conceptParkingLot.value = {
+      ...conceptParkingLot.value,
+      suggestions: conceptParkingLot.value.suggestions.filter((s) => !remove.has(s.id)),
+      selected: conceptParkingLot.value.selected.filter((id) => !remove.has(id)),
+    }
+  }
+
+  function toggleConceptParkingLotSelection(nodeId: string): void {
+    const index = conceptParkingLot.value.selected.indexOf(nodeId)
+    if (index > -1) {
+      conceptParkingLot.value.selected.splice(index, 1)
+    } else {
+      conceptParkingLot.value.selected.push(nodeId)
+    }
+  }
+
+  function clearConceptParkingLotState(options?: { clearSessions?: boolean }): void {
+    const clearSessions = options?.clearSessions ?? true
+    eventBus.emit('concept_parking_lot:streaming_stop_requested', {})
+    conceptParkingLot.value = {
+      ...conceptParkingLot.value,
+      suggestions: [],
+      selected: [],
+      mode: null,
+      sourceTabs: undefined,
+    }
+    if (clearSessions) {
+      conceptParkingLotSessionsByDiagram.value = new Map()
     }
   }
 
@@ -340,8 +474,6 @@ export const usePanelsStore = defineStore('panels', () => {
       stage_data: null,
       conceptMapTabs: undefined,
       useConceptListHeader: false,
-      mindMapWaterfallMode: false,
-      mindMapSourceTabs: undefined,
     }
     if (clearSessions) {
       nodePaletteSessionsByDiagram.value = new Map()
@@ -432,6 +564,7 @@ export const usePanelsStore = defineStore('panels', () => {
    */
   function reset(): void {
     eventBus.emit('node_palette:streaming_stop_requested', {})
+    eventBus.emit('concept_parking_lot:streaming_stop_requested', {})
     mindmate.value = {
       open: false,
       conversationId: null,
@@ -449,6 +582,13 @@ export const usePanelsStore = defineStore('panels', () => {
       useConceptListHeader: false,
     }
     nodePaletteSessionsByDiagram.value = new Map()
+    conceptParkingLot.value = {
+      open: false,
+      suggestions: [],
+      selected: [],
+      mode: null,
+    }
+    conceptParkingLotSessionsByDiagram.value = new Map()
     property.value = {
       open: false,
       nodeId: null,
@@ -460,6 +600,7 @@ export const usePanelsStore = defineStore('panels', () => {
     // State
     mindmate,
     nodePalette,
+    conceptParkingLot,
     property,
 
     // Getters
@@ -468,6 +609,7 @@ export const usePanelsStore = defineStore('panels', () => {
     openPanelCount,
     mindmatePanel,
     nodePalettePanel,
+    conceptParkingLotPanel,
     propertyPanel,
 
     // Actions
@@ -494,6 +636,17 @@ export const usePanelsStore = defineStore('panels', () => {
     removeNodePaletteSuggestions,
     clearNodePaletteState,
     toggleNodePaletteSelection,
+    openConceptParkingLot,
+    closeConceptParkingLot,
+    updateConceptParkingLot,
+    setConceptParkingLotSuggestions,
+    appendConceptParkingLotSuggestion,
+    removeConceptParkingLotSuggestions,
+    toggleConceptParkingLotSelection,
+    saveConceptParkingLotSession,
+    clearConceptParkingLotSession,
+    migrateConceptParkingLotSessionToSavedDiagram,
+    clearConceptParkingLotState,
     openProperty,
     closeProperty,
     closePropertyPanel,

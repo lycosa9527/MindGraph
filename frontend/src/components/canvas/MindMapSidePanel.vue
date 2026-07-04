@@ -4,7 +4,9 @@
  */
 import { computed } from 'vue'
 
-import { Hammer, RotateCcw, Shuffle, X } from '@lucide/vue'
+import { Hammer, RotateCcw, Shuffle } from '@lucide/vue'
+
+import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelCloseButton.vue'
 
 import { useLanguage } from '@/composables'
 import { type MindMapSideToolId } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
@@ -97,17 +99,7 @@ function handleExitLearningSheet(): void {
       <h3 class="truncate text-sm font-semibold tracking-wide text-gray-800">
         {{ panelTitle }}
       </h3>
-      <button
-        type="button"
-        class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-slate-100 hover:text-gray-600"
-        :aria-label="t('canvas.mindMapSideToolbar.closePanel')"
-        @click="handleClose"
-      >
-        <X
-          class="h-4 w-4"
-          :stroke-width="2"
-        />
-      </button>
+      <MindMapSidePanelCloseButton @close="handleClose" />
     </header>
 
     <!-- Learning sheet -->

@@ -4,7 +4,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElDropdown } from 'element-plus'
+import { ElDropdown, ElTooltip } from 'element-plus'
 
 import { Check, ChevronDown, Palette } from '@lucide/vue'
 
@@ -23,6 +23,8 @@ import {
 } from '@/config/mindMapThemes'
 import { MIND_MAP_RAINBOW_THEME_ID } from '@/config/mindMapVibrantThemes'
 import { useDiagramStore } from '@/stores'
+
+const props = withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -91,28 +93,41 @@ function handlePickRainbow(): void {
 </script>
 
 <template>
-  <ElDropdown
-    v-model:visible="dropdownOpen"
-    trigger="click"
+  <ElTooltip
+    :content="t('canvas.toolbar.mindMapAppearanceLabel')"
     placement="bottom"
-    popper-class="mm-toolbar-popper mm-toolbar-popper--appearance"
+    :disabled="!props.compact"
   >
-    <button
-      type="button"
-      class="mm-btn mm-btn--select"
-      :aria-label="t('canvas.toolbar.mindMapAppearanceLabel')"
-    >
-      <Palette class="w-4 h-4 text-gray-500 shrink-0" />
-      <span
-        class="mm-btn__color-dot"
-        :class="{ 'mm-btn__color-dot--rainbow': isRainbowActive }"
-        :style="isRainbowActive ? undefined : { backgroundColor: activeTheme.topicBorderColor }"
-        aria-hidden="true"
-      />
-      <span class="mm-btn__label">{{ t('canvas.toolbar.mindMapAppearanceLabel') }}</span>
-      <ChevronDown class="mm-btn__chevron" />
-    </button>
-    <template #dropdown>
+    <span class="inline-flex shrink-0">
+      <ElDropdown
+        v-model:visible="dropdownOpen"
+        trigger="click"
+        placement="bottom"
+        popper-class="mm-toolbar-popper mm-toolbar-popper--appearance"
+      >
+        <button
+          type="button"
+          class="mm-btn mm-btn--select"
+          :class="{ 'mm-btn--appearance-compact': props.compact }"
+          :aria-label="t('canvas.toolbar.mindMapAppearanceLabel')"
+        >
+          <Palette class="w-4 h-4 text-gray-500 shrink-0" />
+          <span
+            class="mm-btn__color-dot"
+            :class="{ 'mm-btn__color-dot--rainbow': isRainbowActive }"
+            :style="isRainbowActive ? undefined : { backgroundColor: activeTheme.topicBorderColor }"
+            aria-hidden="true"
+          />
+          <span
+            v-if="!props.compact"
+            class="mm-btn__label"
+          >{{ t('canvas.toolbar.mindMapAppearanceLabel') }}</span>
+          <ChevronDown
+            v-if="!props.compact"
+            class="mm-btn__chevron"
+          />
+        </button>
+        <template #dropdown>
       <div class="mm-appearance-card">
         <div class="mm-appearance-card__title">
           {{ t('canvas.toolbar.mindMapAppearanceLabel') }}
@@ -195,7 +210,9 @@ function handlePickRainbow(): void {
         </div>
       </div>
     </template>
-  </ElDropdown>
+      </ElDropdown>
+    </span>
+  </ElTooltip>
 </template>
 
 <style scoped>
@@ -223,6 +240,12 @@ function handlePickRainbow(): void {
 
 .mm-btn__label {
   font-weight: 500;
+}
+
+.mm-btn--appearance-compact {
+  width: auto;
+  max-width: none;
+  padding: 0 8px;
 }
 
 .mm-btn__color-dot {

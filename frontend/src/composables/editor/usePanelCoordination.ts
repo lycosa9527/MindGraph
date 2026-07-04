@@ -118,13 +118,9 @@ export function usePanelCoordination(options: UsePanelCoordinationOptions = {}) 
           savedDiagramsStore.activeDiagramId,
           route.query.diagramId as string | undefined
         )
-        const isMindMap = dt === 'mindmap' || diagramStore.type === 'mind_map'
         panelsStore.openNodePalette({
           ...data,
           diagramKey,
-          ...(isMindMap && data?.mindMapWaterfallMode !== false
-            ? { mindMapWaterfallMode: true }
-            : {}),
         })
         break
       }

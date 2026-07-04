@@ -30,8 +30,26 @@
   transition: filter 0.2s ease;
 }
 
+.vue-flow-wrapper.wireframe-mode--export-instant {
+  transition: none !important;
+}
+
 .vue-flow-wrapper.wireframe-mode {
   filter: grayscale(1);
+}
+
+.vue-flow-wrapper.export-raster-capture .vue-flow,
+.vue-flow-wrapper.export-raster-capture .vue-flow__pane {
+  background: transparent !important;
+}
+
+.vue-flow-wrapper.export-raster-capture .vue-flow__background {
+  display: none !important;
+}
+
+/* Mind map export outline — structural B&W; styles come from node/edge inline overrides. */
+.diagram-canvas.mind-map-canvas .vue-flow-wrapper.export-outline-wireframe {
+  filter: none;
 }
 
 /* Concept map link preview pill (matches ConceptNode styling) */

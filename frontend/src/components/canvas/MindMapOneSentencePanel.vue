@@ -4,7 +4,9 @@
  */
 import { ref } from 'vue'
 
-import { Lightbulb, Sparkles, X } from '@lucide/vue'
+import { Lightbulb, Sparkles } from '@lucide/vue'
+
+import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelCloseButton.vue'
 
 import { useLanguage } from '@/composables'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
@@ -50,17 +52,7 @@ function handleGenerate(): void {
       <h3 class="truncate text-sm font-semibold text-slate-800">
         {{ t('canvas.mindMapSideToolbar.oneSentence') }}
       </h3>
-      <button
-        type="button"
-        class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-        :aria-label="t('canvas.mindMapSideToolbar.closePanel')"
-        @click="handleClose"
-      >
-        <X
-          class="h-4 w-4"
-          :stroke-width="2"
-        />
-      </button>
+      <MindMapSidePanelCloseButton @close="handleClose" />
     </header>
 
     <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 py-3">

@@ -31,6 +31,10 @@ import {
 } from '@/stores/mindmateActiveThread'
 import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
+import {
+  queueMindmateDiagramPreviewPersist,
+  queueMindmateDiagramPreviewsForMessages,
+} from '@/utils/mindmateDiagramPreviewPersist'
 import { mindmateDifyUserIdFromSession } from '@/utils/mindmateDifyUserId'
 import {
   appendDifyConversationRouteQuery,
@@ -180,7 +184,9 @@ export function useMindMate(options: MindMateOptions = {}) {
       return
     }
     if (currentStreamingId.value) {
-      updateMessage(currentStreamingId.value, streamingBuffer.value, false)
+      const finalContent = streamingBuffer.value
+      updateMessage(currentStreamingId.value, finalContent, false)
+      queueMindmateDiagramPreviewPersist(finalContent)
     }
     state.value = 'idle'
     applyLoadPhase(mindMateLoadPhaseOnComplete())
@@ -303,6 +309,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     conversationId.value = snapshot.conversationId
     hasGreeted.value = snapshot.hasGreeted
     isRestoringThread.value = false
+    queueMindmateDiagramPreviewsForMessages(snapshot.messages)
 
     if (mindMateStore.currentConversationId !== snapshot.conversationId) {
       mindMateStore.setCurrentConversation(snapshot.conversationId)
@@ -715,8 +722,10 @@ export function useMindMate(options: MindMateOptions = {}) {
 
       case 'message_end':
         if (currentStreamingId.value) {
+          const finalContent = streamingBuffer.value
           // Capture the Dify message ID for feedback functionality
-          updateMessage(currentStreamingId.value, streamingBuffer.value, false, data.message_id)
+          updateMessage(currentStreamingId.value, finalContent, false, data.message_id)
+          queueMindmateDiagramPreviewPersist(finalContent)
         }
 
         // Update conversation ID if needed (conversation was already added in 'message' event)
@@ -936,6 +945,7 @@ export function useMindMate(options: MindMateOptions = {}) {
     hasGreeted.value = true
     isRestoringThread.value = false
     mindMateStore.setActiveThread(convId, mapped, true)
+    queueMindmateDiagramPreviewsForMessages(mapped)
   }
 
   async function revalidateConversationInBackground(convId: string): Promise<void> {
@@ -977,6 +987,7 @@ export function useMindMate(options: MindMateOptions = {}) {
       hasGreeted.value = cached.hasGreeted
       isRestoringThread.value = false
       mindMateStore.setCurrentConversation(convId)
+      queueMindmateDiagramPreviewsForMessages(cached.messages)
       void revalidateConversationInBackground(convId)
       return
     }

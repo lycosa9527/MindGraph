@@ -14,8 +14,8 @@ def _user(role: str = "teacher", org_id: int | None = 1) -> object:
     return SimpleNamespace(id=42, role=role, organization_id=org_id)
 
 
-def _org(school_tier: str | None = "trial") -> object:
-    return SimpleNamespace(id=1, school_tier=school_tier, expires_at=None)
+def _org(org_id: int = 1, school_tier: str | None = "trial") -> object:
+    return SimpleNamespace(id=org_id, school_tier=school_tier, expires_at=None)
 
 
 def test_feature_flag_off_disables_eligibility(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -36,7 +36,7 @@ def test_trial_teacher_is_eligible(monkeypatch: pytest.MonkeyPatch) -> None:
     assert (
         eligibility_mod.user_eligible_for_thinking_coins(
             as_user(_user("teacher")),
-            as_organization(_org("trial")),
+            as_organization(_org()),
         )
         is True
     )
@@ -48,10 +48,23 @@ def test_trial_school_admin_is_eligible(monkeypatch: pytest.MonkeyPatch) -> None
     assert (
         eligibility_mod.user_eligible_for_thinking_coins(
             as_user(_user("school_admin")),
-            as_organization(_org("trial")),
+            as_organization(_org()),
         )
         is True
     )
+
+
+def test_trial_org_member_any_role_is_eligible(monkeypatch: pytest.MonkeyPatch) -> None:
+    """All roles in a trial org qualify, not only teacher/school_admin."""
+    monkeypatch.setenv("FEATURE_THINKING_COINS", "true")
+    for role in ("superadmin", "platform_bd", "expert", "personal_trial", "personal_paid"):
+        assert (
+            eligibility_mod.user_eligible_for_thinking_coins(
+                as_user(_user(role)),
+                as_organization(_org()),
+            )
+            is True
+        ), role
 
 
 def test_lite_org_not_eligible(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -60,7 +73,7 @@ def test_lite_org_not_eligible(monkeypatch: pytest.MonkeyPatch) -> None:
     assert (
         eligibility_mod.user_eligible_for_thinking_coins(
             as_user(_user("teacher")),
-            as_organization(_org("lite")),
+            as_organization(_org(school_tier="lite")),
         )
         is False
     )
@@ -78,13 +91,13 @@ def test_c2c_personal_trial_without_org_not_eligible(monkeypatch: pytest.MonkeyP
     )
 
 
-def test_platform_superadmin_not_eligible(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Platform roles on a trial org still do not earn/spend trial coins."""
+def test_user_org_mismatch_not_eligible(monkeypatch: pytest.MonkeyPatch) -> None:
+    """User must belong to the org being evaluated."""
     monkeypatch.setenv("FEATURE_THINKING_COINS", "true")
     assert (
         eligibility_mod.user_eligible_for_thinking_coins(
-            as_user(_user("superadmin")),
-            as_organization(_org("trial")),
+            as_user(_user("teacher", org_id=2)),
+            as_organization(_org(org_id=1, school_tier="trial")),
         )
         is False
     )

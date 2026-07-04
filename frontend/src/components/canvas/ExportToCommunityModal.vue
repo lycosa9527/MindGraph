@@ -11,6 +11,7 @@ import { ElButton, ElDialog, ElForm, ElFormItem, ElInput, ElOption, ElSelect } f
 
 import { useLanguage, useNotifications } from '@/composables'
 import { type CommunityPost, createCommunityPost, updateCommunityPost } from '@/utils/apiClient'
+import { captureDiagramPngBlob } from '@/utils/diagramExportRasterCapture'
 import { getDiagramCanvasHtmlToImageOptions } from '@/utils/diagramHtmlToImage'
 
 /** Stored category values (Chinese) — API / existing posts use these strings */
@@ -112,8 +113,10 @@ async function generateThumbnail(): Promise<Blob | null> {
     if (props.prepareForThumbnail) {
       await props.prepareForThumbnail()
     }
-    const { toBlob } = await import('html-to-image')
-    const blob = await toBlob(container, getDiagramCanvasHtmlToImageOptions())
+    const blob = await captureDiagramPngBlob(
+      container,
+      getDiagramCanvasHtmlToImageOptions({ pixelRatio: 1 })
+    )
     return blob
   } catch (e) {
     console.error('[ExportToCommunity] Thumbnail generation failed:', e)

@@ -48,6 +48,12 @@ function requestSignal(
   return request.signal
 }
 
+export interface NodePaletteSuggestionSink {
+  getSuggestions: () => Array<{ id: string }>
+  clearSuggestions: () => void
+  appendSuggestion: (suggestion: import('@/types/panels').NodeSuggestion) => void
+}
+
 export interface NodePaletteStreamDeps {
   panelsStore: PanelsStoreForStream
   promptLanguage: Ref<string>
@@ -63,6 +69,7 @@ export interface NodePaletteStreamDeps {
   streamBatchDepth: { value: number }
   /** Mutable: first node in current outermost batch */
   firstNodeReceivedInBatch: { value: boolean }
+  suggestionSink: NodePaletteSuggestionSink
 }
 
 export interface StreamNodePaletteBatchOptions {
@@ -110,7 +117,8 @@ export async function streamNodePaletteBatch(
   let nodeCount = 0
   const onConceptMapDomains = options?.onConceptMapDomains
   const existingIds =
-    options?.sharedExistingIds ?? new Set(panelsStore.nodePalettePanel.suggestions.map((s) => s.id))
+    options?.sharedExistingIds ??
+    new Set(deps.suggestionSink.getSuggestions().map((s) => s.id))
   const doAppend = options?.append ?? false
 
   try {
@@ -134,7 +142,7 @@ export async function streamNodePaletteBatch(
     if (!reader) throw new Error('No response body')
 
     if (!doAppend) {
-      panelsStore.setNodePaletteSuggestions([])
+      deps.suggestionSink.clearSuggestions()
     }
 
     try {
@@ -185,7 +193,7 @@ export async function streamNodePaletteBatch(
                 paletteStreamPhase.value = 'streaming'
               }
 
-              panelsStore.appendNodePaletteSuggestion({
+              deps.suggestionSink.appendSuggestion({
                 id: node.id,
                 text: node.text,
                 type: (node.type ?? 'bubble') as 'bubble' | 'branch' | 'label',

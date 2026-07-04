@@ -1,19 +1,21 @@
 <script setup lang="ts">
 /**
- * Mind map waterfall panel — w-80 side tool shell with AI suggestions (panel-only, drag to canvas).
+ * Mind map concept parking lot panel — w-80 side tool shell with AI suggestions (drag to canvas).
  */
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import { Loader2, RefreshCw, X } from '@lucide/vue'
+import { Loader2, RefreshCw } from '@lucide/vue'
+
+import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelCloseButton.vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { getConceptParkingLot } from '@/composables/conceptParkingLot/useConceptParkingLot'
 import { PALETTE_MINDMAP_DRAG_MIME } from '@/composables/nodePalette/constants'
 import {
   beginMindMapPaletteDrag,
   endMindMapPaletteDrag,
   setEmptyNativeDragImage,
 } from '@/composables/nodePalette/mindMapPaletteDragSession'
-import { getNodePalette } from '@/composables/nodePalette/useNodePalette'
 import { getLLMColor } from '@/config/llmModelColors'
 import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
@@ -34,17 +36,16 @@ const {
   errorMessage,
   suggestions,
   selectedIds,
-  mindMapSourceTabs,
+  sourceTabs,
   toggleSelection,
-  dismiss,
-  switchMindMapWaterfallTab,
-  refreshMindMapWaterfall,
-  startMindMapWaterfallSession,
-} = getNodePalette({
+  switchTab,
+  refreshSession,
+  startSession,
+} = getConceptParkingLot({
   onError: (err) => notify.error(err),
 })
 
-const activeTabId = computed(() => panelsStore.nodePalettePanel.mode ?? 'topic')
+const activeTabId = computed(() => panelsStore.conceptParkingLotPanel.mode ?? 'topic')
 
 const panelHint = computed(() => t('canvas.mindMapWaterfall.panelHint'))
 
@@ -56,12 +57,11 @@ const paletteTabStripGlowClass = computed(() => {
 })
 
 function handleClose(): void {
-  dismiss()
   emit('close')
 }
 
 async function handleRefresh(): Promise<void> {
-  await refreshMindMapWaterfall()
+  await refreshSession()
 }
 
 function getNodeCardStyle(suggestion: { source_llm?: string }, isSelected: boolean) {
@@ -111,10 +111,9 @@ function handleDragEnd(): void {
 const skipSelectionWatch = ref(true)
 
 onMounted(async () => {
-  panelsStore.updateNodePalette({ mindMapWaterfallMode: true })
   await nextTick()
-  if (panelsStore.nodePalettePanel.suggestions.length === 0 && !isLoading.value) {
-    await startMindMapWaterfallSession()
+  if (panelsStore.conceptParkingLotPanel.suggestions.length === 0 && !isLoading.value) {
+    await startSession()
   }
   skipSelectionWatch.value = false
 })
@@ -124,11 +123,9 @@ watch(
   async (ids, prev) => {
     if (skipSelectionWatch.value || !prev) return
     if (ids.join(',') === prev.join(',')) return
-    if (!panelsStore.nodePalettePanel.isOpen || !panelsStore.nodePalettePanel.mindMapWaterfallMode) {
-      return
-    }
+    if (!panelsStore.conceptParkingLotPanel.isOpen) return
     if (isLoading.value) return
-    await startMindMapWaterfallSession()
+    await startSession()
   }
 )
 </script>
@@ -156,17 +153,7 @@ watch(
             :stroke-width="2"
           />
         </button>
-        <button
-          type="button"
-          class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-slate-100 hover:text-gray-600"
-          :aria-label="t('canvas.mindMapSideToolbar.closePanel')"
-          @click="handleClose"
-        >
-          <X
-            class="h-4 w-4"
-            :stroke-width="2"
-          />
-        </button>
+        <MindMapSidePanelCloseButton @close="handleClose" />
       </div>
     </header>
 
@@ -175,7 +162,7 @@ watch(
     </p>
 
     <div
-      v-if="mindMapSourceTabs.length > 1"
+      v-if="sourceTabs.length > 1"
       class="shrink-0 border-b border-slate-100 px-2 py-2"
     >
       <div
@@ -183,7 +170,7 @@ watch(
         :class="paletteTabStripGlowClass"
       >
         <button
-          v-for="tab in mindMapSourceTabs"
+          v-for="tab in sourceTabs"
           :key="tab.id"
           type="button"
           class="shrink-0 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors"
@@ -192,7 +179,7 @@ watch(
               ? 'bg-blue-100 text-blue-800'
               : 'text-slate-600 hover:bg-slate-100'
           "
-          @click="switchMindMapWaterfallTab(tab.id)"
+          @click="switchTab(tab.id)"
         >
           {{ tab.name }}
         </button>

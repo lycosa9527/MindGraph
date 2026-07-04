@@ -18,7 +18,7 @@ export type CanvasExportCommand =
   | CanvasCommunityExportCommand
 
 export type CanvasExportMenuItem = {
-  command: CanvasRasterExportCommand | CanvasSpecExportCommand
+  command: CanvasRasterExportCommand | CanvasLegacyPdfExportCommand | CanvasSpecExportCommand
   labelKey: string
   divided?: boolean
 }
@@ -43,3 +43,11 @@ export const CANVAS_COMMUNITY_EXPORT_MENU_ITEM = {
   labelKey: 'canvas.topBar.shareCommunity',
   divided: true,
 }
+
+/** Mind map v2 export menu — PDF orientation comes from export options panel. */
+export const CANVAS_MINDMAP_EXPORT_MENU_ITEMS: readonly CanvasExportMenuItem[] = [
+  { command: 'png', labelKey: 'canvas.topBar.exportPng' },
+  { command: 'svg', labelKey: 'canvas.topBar.exportSvg' },
+  { command: 'pdf', labelKey: 'canvas.topBar.exportPdf' },
+  { command: 'mg', labelKey: 'canvas.topBar.exportJson', divided: true },
+]

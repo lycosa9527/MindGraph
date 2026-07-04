@@ -19,8 +19,20 @@ export function useMindmateDiagramPreviewImage(options: {
   libraryDiagramId?: () => string | null
 }) {
   const previewBlobUrl = ref<string | null>(null)
+  const previewResolveComplete = ref(false)
   let activeBlobUrl: string | null = null
   let resolveRequestId = 0
+
+  const previewUnavailable = computed(() => {
+    if (options.isStreaming()) {
+      return false
+    }
+    const rawContent = options.content()
+    if (!hasGeneratedDiagramImage(rawContent)) {
+      return false
+    }
+    return previewResolveComplete.value && previewBlobUrl.value === null
+  })
 
   function setPreviewBlob(blob: Blob): void {
     if (activeBlobUrl) {
@@ -42,14 +54,17 @@ export function useMindmateDiagramPreviewImage(options: {
 
   async function resolvePreview(): Promise<void> {
     if (options.isStreaming()) {
+      previewResolveComplete.value = false
       return
     }
     const rawContent = options.content()
     if (!hasGeneratedDiagramImage(rawContent)) {
+      previewResolveComplete.value = false
       clearPreviewBlob()
       return
     }
 
+    previewResolveComplete.value = false
     const requestId = ++resolveRequestId
     const blob = await resolveMindmateDiagramPreviewBlob({
       content: rawContent,
@@ -59,6 +74,7 @@ export function useMindmateDiagramPreviewImage(options: {
     if (requestId !== resolveRequestId) {
       return
     }
+    previewResolveComplete.value = true
     if (blob) {
       setPreviewBlob(blob)
       return
@@ -96,5 +112,5 @@ export function useMindmateDiagramPreviewImage(options: {
     return stripMindmateDiagramIdComments(text)
   })
 
-  return { displayContent, previewBlobUrl }
+  return { displayContent, previewBlobUrl, previewUnavailable }
 }

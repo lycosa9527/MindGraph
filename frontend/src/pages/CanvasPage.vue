@@ -545,10 +545,7 @@ const showLearningSheetExportNudge = computed(
 const { activeTool, sidebarVisible, closeActiveTool } = useMindMapSideToolbarState()
 
 watch(
-  () =>
-    useMindMapV2.value &&
-    panelsStore.nodePalettePanel.isOpen &&
-    panelsStore.nodePalettePanel.mindMapWaterfallMode === true,
+  () => useMindMapV2.value && panelsStore.conceptParkingLotPanel.isOpen,
   (shouldShowWaterfallPanel) => {
     if (shouldShowWaterfallPanel && activeTool.value !== 'waterfall') {
       activeTool.value = 'waterfall'
@@ -556,7 +553,7 @@ watch(
   }
 )
 
-bindMindMapExternalPanelClose(() => panelsStore.nodePalettePanel.isOpen, closeActiveTool)
+bindMindMapExternalPanelClose(() => panelsStore.conceptParkingLotPanel.isOpen, closeActiveTool)
 
 watch(
   () => diagramStore.type,

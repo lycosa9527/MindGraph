@@ -177,7 +177,7 @@ Notable feature flags (see `env.example` for full list):
 | `FEATURE_MINDMATE` | `False` | MindMate AI chat |
 | `FEATURE_KNOWLEDGE_SPACE` | `False` | RAG / Document Summary (requires Qdrant + Celery) |
 | `FEATURE_OAUTH_LOGIN` | `False` | WeChat + DingTalk QR login |
-| `FEATURE_THINKING_COINS` | `False` | Trial-school thinking coin wallet |
+| `FEATURE_THINKING_COINS` | `False` | Trial-tier org thinking coin wallet |
 | `FEATURE_MINDMAP_V2_CANVAS` | `False` | Mind map v2 side-toolbar canvas |
 
 Production hardening: set `COLLAB_FANOUT_ORIGIN_SECRET` (shared across workers), `ALLOWED_HOSTS`, and see [docs/architecture/production_security_deploy.md](docs/architecture/production_security_deploy.md).

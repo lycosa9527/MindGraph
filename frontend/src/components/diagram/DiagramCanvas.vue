@@ -486,6 +486,7 @@ onMounted(() => {
     },
     emit,
     exportByFormat,
+    getExportContainer,
     showExportToCommunityModal,
     prepareForCommunityExport,
     restoreViewportAfterCommunityExport,
@@ -527,11 +528,14 @@ defineExpose({
     @contextmenu.capture="handleContextMenuEvent"
     @paste.capture="onCanvasPaste"
   >
-    <LearningSheetFloatBar v-if="useMindMapV2" />
+    <LearningSheetFloatBar v-if="useMindMapV2 && !uiStore.exportWireframeOutline" />
     <div
       ref="vueFlowWrapper"
       class="vue-flow-wrapper w-full h-full"
-      :class="{ 'wireframe-mode': uiStore.wireframeMode }"
+      :class="{
+        'wireframe-mode': uiStore.wireframeMode,
+        'export-outline-wireframe': uiStore.exportWireframeOutline,
+      }"
       @dragover="handleCanvasDragOver"
       @dragleave="handleCanvasDragLeave"
       @drop="handleCanvasDrop"
@@ -557,13 +561,13 @@ defineExpose({
         :zoom-on-double-click="false"
         :pan-on-drag="effectivePanOnDrag"
         :class="vueFlowBackgroundClasses"
-        :style="{ backgroundColor: backgroundColor }"
+        :style="{ backgroundColor: uiStore.exportRasterCapture ? 'transparent' : backgroundColor }"
         @pane-click="handlePaneClick"
         @nodes-initialized="handleNodesInitialized"
         @viewport-change="handleViewportChangeWithToolbar"
       >
         <Background
-          v-if="showBackground"
+          v-if="showBackground && !uiStore.exportRasterCapture"
           :gap="diagramCanvasGridConfig.backgroundGap"
           :size="diagramCanvasGridConfig.backgroundDotSize"
           pattern-color="#e5e7eb"
@@ -626,12 +630,12 @@ defineExpose({
     />
 
     <MindMapDirectionalAddOverlay
-      v-if="useMindMapV2 && !presentationDiagramEditLocked"
+      v-if="useMindMapV2 && !presentationDiagramEditLocked && !uiStore.exportWireframeOutline"
       :container-ref="canvasContainer"
       :teleport-target="presentationTeleportTarget"
     />
     <MindMapCollapseToggleOverlay
-      v-if="useMindMapV2 && !presentationDiagramEditLocked"
+      v-if="useMindMapV2 && !presentationDiagramEditLocked && !uiStore.exportWireframeOutline"
       :container-ref="canvasContainer"
       :teleport-target="presentationTeleportTarget"
     />
