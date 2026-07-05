@@ -30,6 +30,7 @@ def _account(tmp_path: Path) -> DingTalkAccountCandidate:
 
 
 def test_build_unlock_cache_key_separates_accounts_and_users(tmp_path: Path) -> None:
+    """Unlock cache keys differ by user id, folder id, and data directory."""
     account = _account(tmp_path)
     other_dir = tmp_path / "other_v3"
     other_dir.mkdir()
@@ -62,6 +63,7 @@ def test_build_unlock_cache_key_separates_accounts_and_users(tmp_path: Path) -> 
 
 
 def test_load_dingtalk_unlock_cache_clears_stale_mtime(tmp_path: Path) -> None:
+    """Stale db_mtime in unlock cache triggers load failure and file removal."""
     account = _account(tmp_path)
     cache_key = build_unlock_cache_key(
         mindgraph_user_id=9,

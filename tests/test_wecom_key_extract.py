@@ -14,6 +14,7 @@ def _db_entry(rel: str, salt_hex: str, page1: bytes) -> DbFileEntry:
 
 
 def test_chat_unlock_requires_session_db_key() -> None:
+    """Chat unlock needs a session.db key, not only message shard keys."""
     db_files = [
         _db_entry("session/session.db", "aa" * 16, b"\x00" * 16),
         _db_entry("message/message_0.db", "bb" * 16, b"\x00" * 16),
@@ -26,6 +27,7 @@ def test_chat_unlock_requires_session_db_key() -> None:
 
 
 def test_chat_unlock_accepts_flat_session_db() -> None:
+    """Flat session.db path satisfies chat unlock requirements."""
     db_files = [
         _db_entry("session.db", "aa" * 16, b"\x00" * 16),
     ]
@@ -33,6 +35,7 @@ def test_chat_unlock_accepts_flat_session_db() -> None:
 
 
 def test_chat_unlock_accepts_plain_session_db() -> None:
+    """Unencrypted session.db counts as unlocked without a cached key."""
     db_files = [
         _db_entry(
             "session.db",

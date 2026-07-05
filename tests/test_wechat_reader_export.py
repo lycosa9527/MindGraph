@@ -16,6 +16,7 @@ from services.knowledge.chat_transcript_normalizer import normalize_chat_message
 
 
 def test_messages_to_markdown_matches_server_normalizer() -> None:
+    """Client markdown export matches server chat transcript normalizer."""
     messages = [
         ChatMessage(sender="Alice", text="Hello", timestamp="2026-06-29 10:00"),
         ChatMessage(sender="Bob", text="Hi", timestamp=None),
@@ -27,6 +28,7 @@ def test_messages_to_markdown_matches_server_normalizer() -> None:
 
 
 def test_write_export_file_creates_md(tmp_path: Path) -> None:
+    """``write_export_file`` writes a markdown file beside the txt path."""
     messages = [ChatMessage(sender="Alice", text="One", timestamp="2026-06-29 10:00")]
     path = tmp_path / "sample.txt"
     count = write_export_file(path, messages, title="Sample", platform="wechat")
@@ -39,6 +41,7 @@ def test_write_export_file_creates_md(tmp_path: Path) -> None:
 
 
 def test_parse_markdown_roundtrip(tmp_path: Path) -> None:
+    """Exported markdown round-trips through ``parse_text_export_file``."""
     messages = [
         ChatMessage(sender="Alice", text="Hello", timestamp="2026-06-29 10:00"),
         ChatMessage(sender="Bob", text="Hi", timestamp=None),
@@ -53,6 +56,7 @@ def test_parse_markdown_roundtrip(tmp_path: Path) -> None:
 
 
 def test_export_content_for_upload_preserves_md(tmp_path: Path) -> None:
+    """Upload helper returns existing markdown body unchanged."""
     path = tmp_path / "ready.md"
     body = "# Saved chat (wechat)\n\nAlice: Hello\n"
     path.write_text(body, encoding="utf-8")

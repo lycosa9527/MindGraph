@@ -8,11 +8,13 @@ from file_reader.dingtalk.db_reader import _message_text
 
 
 def test_message_text_plain() -> None:
+    """Plain JSON text payloads decode to the message body."""
     payload = json.dumps({"text": "hello"})
     assert _message_text(1, payload) == "hello"
 
 
 def test_message_text_skips_system_types() -> None:
+    """System and join-card message types yield empty text."""
     join_card = json.dumps(
         {
             "attachments": [

@@ -35,6 +35,7 @@ def _make_v4_tree(base: Path) -> Path:
 
 
 def test_v3_message_db_count(tmp_path: Path) -> None:
+    """v3 layout counts MSG shards under Msg/Multi."""
     wxid = _make_v3_tree(tmp_path)
     count, variant = _message_db_count(wxid)
     assert count == 2
@@ -42,6 +43,7 @@ def test_v3_message_db_count(tmp_path: Path) -> None:
 
 
 def test_v4_message_db_count_and_key(tmp_path: Path) -> None:
+    """v4 layout counts message shards and detects key_info.db."""
     account = _make_v4_tree(tmp_path)
     count, variant = _message_db_count(account)
     assert count == 2
@@ -51,6 +53,7 @@ def test_v4_message_db_count_and_key(tmp_path: Path) -> None:
 
 
 def test_iter_account_dirs_v3_and_v4(tmp_path: Path) -> None:
+    """Account iteration finds v3 wxid dirs and v4 user labels."""
     v3_root = tmp_path / "WeChat Files"
     _make_v3_tree(tmp_path)
     v3_accounts = list(_iter_account_dirs(v3_root))
@@ -65,6 +68,7 @@ def test_iter_account_dirs_v3_and_v4(tmp_path: Path) -> None:
 
 
 def test_v3_micromsg_db(tmp_path: Path) -> None:
+    """MicroMsg.db alone counts as a v3 message database."""
     wxid = tmp_path / "WeChat Files" / "wxid_abc"
     wxid.mkdir(parents=True)
     (wxid / "MicroMsg.db").write_bytes(b"")
@@ -74,6 +78,7 @@ def test_v3_micromsg_db(tmp_path: Path) -> None:
 
 
 def test_live_db_ready_v4_without_key_info(tmp_path: Path) -> None:
+    """v4 live DB is ready when process runs even without key_info.db."""
     account = _make_v4_tree(tmp_path)
     status = WeChatLocalStatus(
         process_running=True,
@@ -88,5 +93,6 @@ def test_live_db_ready_v4_without_key_info(tmp_path: Path) -> None:
 
 
 def test_detect_wechat_local_returns_status() -> None:
+    """``detect_wechat_local`` returns a ``WeChatLocalStatus`` instance."""
     status = detect_wechat_local()
     assert isinstance(status, WeChatLocalStatus)

@@ -12,6 +12,7 @@ from file_reader.wecom.key_store import (
 
 
 def test_build_cache_key_separates_accounts_and_users() -> None:
+    """Cache keys differ by MindGraph user, account label, and data directory."""
     account_a = Path("C:/Users/demo/Documents/WXWork/1688")
     account_b = Path("C:/Users/demo/Documents/WXWork/9999")
     same = build_cache_key(mindgraph_user_id=1, account_label="corp_a", data_dir=account_a)
@@ -34,6 +35,7 @@ class _FakeIncrementalStore:
         key_hex: str,
         salt_map: dict[str, list[str]],
     ) -> None:
+        """Delegate salt merge to the real store implementation."""
         WeComIncrementalKeyStore.on_salt_found(
             cast(WeComIncrementalKeyStore, self),
             salt_hex,
@@ -46,10 +48,12 @@ class _FakeIncrementalStore:
 
     @property
     def rel_keys(self) -> dict[str, str]:
+        """Return a copy of cached rel-to-key mappings."""
         return dict(self._rel_keys)
 
 
 def test_on_salt_found_persists_all_rels_for_salt() -> None:
+    """Each salt maps keys to every rel listed in the salt map."""
     store = _FakeIncrementalStore()
     salt_map = {
         "aa" * 16: ["session.db", "message.db", "user.db"],
@@ -68,6 +72,7 @@ def test_on_salt_found_persists_all_rels_for_salt() -> None:
 
 
 def test_on_salt_found_skips_duplicate_flush() -> None:
+    """Repeated identical salt updates do not flush twice."""
     store = _FakeIncrementalStore()
     salt_map = {"aa" * 16: ["session.db"]}
     store.on_salt_found("aa" * 16, "cc" * 16, salt_map)

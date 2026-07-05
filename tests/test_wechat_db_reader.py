@@ -22,6 +22,7 @@ from file_reader.wechat.wcdb import PAGE_SZ, collect_db_files, verify_enc_key
 
 
 def test_is_official_account_username() -> None:
+    """Official account usernames are detected by prefix patterns."""
     assert _is_official_account_username("gh_deadbeeffeed") is True
     assert _is_official_account_username("BrandSessionHolder") is True
     assert _is_official_account_username("wxid_alice") is False
@@ -29,6 +30,7 @@ def test_is_official_account_username() -> None:
 
 
 def test_self_display_name_prefers_remark() -> None:
+    """Self display name prefers remark over nickname."""
     contacts = ContactDirectory(
         display_names={"wxid_me": "昵称王老师", "wxid_alice": "Alice"},
         remarks={"wxid_me": "备注王老师"},
@@ -39,6 +41,7 @@ def test_self_display_name_prefers_remark() -> None:
 
 
 def test_display_name_for_self_uses_remark() -> None:
+    """Display name for self username returns the remark label."""
     contacts = ContactDirectory(
         display_names={"wxid_me": "昵称王老师", "wxid_alice": "Alice"},
         remarks={"wxid_me": "备注王老师"},
@@ -54,6 +57,7 @@ def test_display_name_for_self_uses_remark() -> None:
 
 
 def test_display_name_for_other_prefers_remark() -> None:
+    """Display name for contacts prefers remark over nickname."""
     contacts = ContactDirectory(
         display_names={"wxid_alice": "Alice昵称"},
         remarks={"wxid_alice": "Alice备注"},
@@ -69,26 +73,31 @@ def test_display_name_for_other_prefers_remark() -> None:
 
 
 def test_split_msg_type_packed() -> None:
+    """Packed message type splits into base and sub type components."""
     base, sub = _split_msg_type(0x100000001)
     assert base == 1
     assert sub == 1
 
 
 def test_format_message_text_plain() -> None:
+    """Plain text messages pass through unchanged."""
     text = _format_message_text(1, "hello", is_group=False)
     assert text == "hello"
 
 
 def test_format_message_text_image() -> None:
+    """Image message type renders as a localized placeholder."""
     text = _format_message_text(3, "ignored", is_group=False)
     assert text == "[图片]"
 
 
 def test_format_session_time_zero() -> None:
+    """Zero timestamp formats to an empty string."""
     assert format_session_time(0) == ""
 
 
 def test_live_db_ready_v3_and_v4_when_process_and_dbs() -> None:
+    """Live DB readiness requires running process and non-zero DB count."""
     ready_v4 = WeChatLocalStatus(
         process_running=True,
         data_root=Path("/tmp/account"),
@@ -131,6 +140,7 @@ def test_live_db_ready_v3_and_v4_when_process_and_dbs() -> None:
 
 
 def test_collect_db_files_skips_small_files(tmp_path: Path) -> None:
+    """DB collection ignores files smaller than one WCDB page."""
     db_dir = tmp_path / "db_storage"
     db_dir.mkdir()
     (db_dir / "session").mkdir()
@@ -142,11 +152,13 @@ def test_collect_db_files_skips_small_files(tmp_path: Path) -> None:
 
 
 def test_verify_enc_key_rejects_garbage() -> None:
+    """Encryption key verification rejects keys that do not decrypt page 1."""
     page1 = b"\x00" * PAGE_SZ
     assert verify_enc_key(b"\x01" * 32, page1) is False
 
 
 def test_format_chat_preview() -> None:
+    """Chat preview includes sender names from message list."""
     messages = [
         ChatMessage(sender="Alice", text="hello", timestamp="2026-01-01 12:00:00"),
         ChatMessage(sender="Bob", text="hi", timestamp=None),
@@ -157,12 +169,14 @@ def test_format_chat_preview() -> None:
 
 
 def test_username_to_msg_table() -> None:
+    """Username hashes to a fixed-length Msg_ table name."""
     table = _username_to_msg_table("wxid_test")
     assert table.startswith("Msg_")
     assert len(table) == 36
 
 
 def test_session_preview_fields() -> None:
+    """Session preview exposes display name and formatted last timestamp."""
     preview = WeChatSessionPreview(
         username="wxid_test",
         display_name="Test",

@@ -6,12 +6,14 @@ from file_reader.wecom.discovery import is_chat_db_rel, is_session_db_rel
 
 
 def test_session_db_rel_flat_and_nested() -> None:
+    """Session DB paths match flat and nested layouts."""
     assert is_session_db_rel("session.db")
     assert is_session_db_rel("session/session.db")
     assert not is_session_db_rel("calendar_r7.db")
 
 
 def test_chat_db_rel_excludes_calendar() -> None:
+    """Chat DB detection excludes calendar and avatar stores."""
     assert is_chat_db_rel("message.db")
     assert is_chat_db_rel("user.db")
     assert not is_chat_db_rel("calendar_r7.db")

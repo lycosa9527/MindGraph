@@ -11,12 +11,12 @@ from services.knowledge.section_keys import build_section_key, chinese_numeral_t
 
 logger = logging.getLogger(__name__)
 
-_PdfReaderCls: Any = None
+_pypdf_mod: Any = None
 _pypdf_available = False
 try:
-    from pypdf import PdfReader as _PdfReaderImport
+    import pypdf as _pypdf_import
 
-    _PdfReaderCls = _PdfReaderImport
+    _pypdf_mod = _pypdf_import
     _pypdf_available = True
 except ImportError:
     pass
@@ -85,13 +85,13 @@ def _infer_section_fields(title: str) -> tuple[str, str, int]:
 
 def extract_pdf_outline(file_path: str) -> List[StructureHeading]:
     """Read embedded PDF bookmarks/outline when available."""
-    if not _pypdf_available or _PdfReaderCls is None:
+    if not _pypdf_available or _pypdf_mod is None:
         logger.debug("[DocumentStructure] pypdf unavailable for outline extraction")
         return []
 
     headings: List[StructureHeading] = []
     try:
-        reader = _PdfReaderCls(file_path)
+        reader = _pypdf_mod.PdfReader(file_path)
 
         def walk(items: Any, level: int = 1) -> None:
             if not items:

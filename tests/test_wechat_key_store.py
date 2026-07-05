@@ -16,6 +16,7 @@ from file_reader.wechat.wcdb import PAGE_SZ
 
 
 def test_build_cache_key_stable() -> None:
+    """WeChat cache keys are stable for the same user, wxid, and account dir."""
     account = Path("C:/Users/demo/xwechat_files/user_ab12")
     first = build_cache_key(mindgraph_user_id=42, wxid="user", account_dir=account)
     second = build_cache_key(mindgraph_user_id=42, wxid="user", account_dir=account)
@@ -25,6 +26,7 @@ def test_build_cache_key_stable() -> None:
 
 
 def test_validate_cached_keys_rejects_garbage(tmp_path: Path) -> None:
+    """Invalid hex keys fail validation against real DB page headers."""
     db_dir = tmp_path / "db_storage"
     session_dir = db_dir / "session"
     session_dir.mkdir(parents=True)
@@ -36,6 +38,7 @@ def test_validate_cached_keys_rejects_garbage(tmp_path: Path) -> None:
 
 
 def test_validate_cached_keys_requires_full_coverage(tmp_path: Path) -> None:
+    """Validation fails when no keys are provided for discovered DB files."""
     db_dir = tmp_path / "db_storage"
     session_dir = db_dir / "session"
     session_dir.mkdir(parents=True)
@@ -45,6 +48,7 @@ def test_validate_cached_keys_requires_full_coverage(tmp_path: Path) -> None:
 
 
 def test_load_wechat_key_cache_rejects_version_mismatch(tmp_path: Path) -> None:
+    """Cached keys are cleared when Weixin version no longer matches."""
     account_dir = tmp_path / "account"
     db_dir = account_dir / "db_storage"
     session_dir = db_dir / "session"
@@ -94,6 +98,7 @@ def test_load_wechat_key_cache_rejects_version_mismatch(tmp_path: Path) -> None:
 
 
 def test_load_wechat_key_cache_accepts_matching_version(tmp_path: Path) -> None:
+    """Matching Weixin version loads a valid ``WeChatKeyCacheRecord``."""
     account_dir = tmp_path / "account"
     db_dir = account_dir / "db_storage"
     session_dir = db_dir / "session"

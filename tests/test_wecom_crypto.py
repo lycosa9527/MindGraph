@@ -10,12 +10,14 @@ from file_reader.wecom.crypto import (
 
 
 def test_derive_page_key_stable() -> None:
+    """Page key derivation is deterministic and 16 bytes."""
     raw_key = b"0123456789abcdef"
     assert derive_wxsqlite3_aes128_page_key(raw_key, 1) == derive_wxsqlite3_aes128_page_key(raw_key, 1)
     assert len(derive_wxsqlite3_aes128_page_key(raw_key, 1)) == 16
 
 
 def test_generate_initial_vector_changes_with_page() -> None:
+    """Initial vectors differ per page and are 16 bytes."""
     first = generate_initial_vector(1)
     second = generate_initial_vector(2)
     assert first != second
@@ -23,6 +25,7 @@ def test_generate_initial_vector_changes_with_page() -> None:
 
 
 def test_verify_rejects_wrong_key() -> None:
+    """Verification fails when the AES key does not match the page."""
     wrong_key = b"fedcba9876543210"
     encrypted = b"\x00" * 16 + b"\x00\x10\x00\x01\x01\x40\x20\x20" + (b"\x01" * (4096 - 24))
     assert verify_wxsqlite3_aes128_key(wrong_key, encrypted) is False

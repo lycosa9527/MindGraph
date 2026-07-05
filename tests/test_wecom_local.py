@@ -6,6 +6,7 @@ from file_reader.wecom.local import WeComLocalStatus, detect_wecom_local
 
 
 def test_detect_wecom_local_returns_status() -> None:
+    """``detect_wecom_local`` returns a populated ``WeComLocalStatus``."""
     status = detect_wecom_local()
     assert isinstance(status, WeComLocalStatus)
     assert isinstance(status.process_running, bool)

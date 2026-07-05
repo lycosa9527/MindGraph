@@ -14,6 +14,7 @@ class _FakeCache:
         self._cache_root = cache_root
 
     def ensure_chat_dbs(self) -> Path:
+        """Return the fake cache root as decrypted chat DB directory."""
         return self._cache_root
 
 
@@ -139,11 +140,13 @@ def _write_group_session_db(path: Path) -> None:
 
 
 def test_is_chat_db_rel_includes_flat_message_shards() -> None:
+    """Flat message shard paths are treated as chat databases."""
     assert is_chat_db_rel("message_0.db")
     assert is_chat_db_rel("message/message_1.db")
 
 
 def test_list_sessions_without_conversation_table_uses_message_db(tmp_path: Path) -> None:
+    """Sessions fall back to message DB when conversation_table is absent."""
     _write_session_db(tmp_path / "session.db", with_conversation_table=False)
     _write_message_db(tmp_path / "message.db", "S:1001_2002", 1_700_000_000)
 
@@ -156,6 +159,7 @@ def test_list_sessions_without_conversation_table_uses_message_db(tmp_path: Path
 
 
 def test_list_sessions_merges_flat_message_shard(tmp_path: Path) -> None:
+    """Flat message shards merge into session list alongside session.db."""
     _write_session_db(tmp_path / "session.db", with_conversation_table=True)
     _write_message_db(tmp_path / "message_0.db", "R:999", 1_700_000_100)
 
@@ -167,6 +171,7 @@ def test_list_sessions_merges_flat_message_shard(tmp_path: Path) -> None:
 
 
 def test_group_session_prefers_roomname_remark(tmp_path: Path) -> None:
+    """Group sessions prefer roomname_remark over default group name."""
     _write_group_session_db(tmp_path / "session.db")
     _write_message_db(tmp_path / "message.db", "R:100", 1_700_000_000)
 
@@ -178,6 +183,7 @@ def test_group_session_prefers_roomname_remark(tmp_path: Path) -> None:
 
 
 def test_group_sender_prefers_remark_over_nick(tmp_path: Path) -> None:
+    """Group message senders prefer contact remark over group nick."""
     _write_group_session_db(tmp_path / "session.db")
     _write_user_db(tmp_path / "user.db")
     _write_message_db(tmp_path / "message.db", "R:100", 1_700_000_000, sender_id=2002)
@@ -190,6 +196,7 @@ def test_group_sender_prefers_remark_over_nick(tmp_path: Path) -> None:
 
 
 def test_user_directory_sender_label() -> None:
+    """User directory resolves sender labels with remark precedence."""
     directory = WeComUserDirectory(
         remarks={2002: "Bob Remark"},
         display_names={2002: "Bob"},

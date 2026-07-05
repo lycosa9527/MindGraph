@@ -8,6 +8,7 @@ from file_reader.dingtalk.crypto import decrypt_aes_ecb_pages, generate_key_v3
 
 
 def test_generate_key_v3_stable() -> None:
+    """DingTalk v3 key derivation is stable for the same uid and salt."""
     uid = "123456789"
     salt = "a" * 32
     assert generate_key_v3(uid, salt) == generate_key_v3(uid, salt)
@@ -15,6 +16,7 @@ def test_generate_key_v3_stable() -> None:
 
 
 def test_decrypt_aes_ecb_page_header() -> None:
+    """AES-ECB page decrypt restores the SQLite header."""
     key = b"0123456789abcdef"
     cipher = AES.new(key, AES.MODE_ECB)
     plain_page = b"SQLite format 3\x00" + b"\x00" * (4096 - 16)
