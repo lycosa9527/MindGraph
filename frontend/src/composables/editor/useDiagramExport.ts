@@ -8,6 +8,7 @@ import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composa
 import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
+import { hasActiveWorksheetHeader } from '@/config/canvasWorksheetText'
 import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'
 import { apiRequestJson } from '@/utils/apiClient'
@@ -29,11 +30,16 @@ import {
 } from '@/utils/diagramHtmlToImage'
 import {
   addRasterImageToA4PdfPage,
+  addWorksheetPageToPdf,
   compressRasterDataUrlForA4Pdf,
   isPdfExportCommand,
   resolvePdfOrientationFromExportOptions,
   type PdfPageOrientation,
 } from '@/utils/diagramPdfExport'
+import {
+  captureWorksheetHeader,
+  type WorksheetHeaderLabels,
+} from '@/utils/diagramWorksheetHeader'
 import { encodeMgFileContents } from '@/utils/mgInterchange'
 
 function sanitizeFilename(name: string): string {
@@ -105,7 +111,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
 
   async function buildA4PdfFromImages(
     images: PdfRasterCapture[],
-    orientation: PdfPageOrientation
+    orientation: PdfPageOrientation,
+    headerCapture: PdfRasterCapture | null = null
   ): Promise<InstanceType<(typeof import('jspdf'))['jsPDF']>> {
     const { jsPDF } = await import('jspdf')
     const pdf = new jsPDF({
@@ -125,9 +132,42 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
         orientation,
         image.image
       )
-      addRasterImageToA4PdfPage(pdf, compressed.dataUrl, compressed.width, compressed.height)
+      const includeHeader = headerCapture !== null && index === 0
+      if (includeHeader && headerCapture) {
+        addWorksheetPageToPdf(
+          pdf,
+          compressed.dataUrl,
+          compressed.width,
+          compressed.height,
+          headerCapture.dataUrl,
+          headerCapture.width,
+          headerCapture.height
+        )
+      } else {
+        addRasterImageToA4PdfPage(pdf, compressed.dataUrl, compressed.width, compressed.height)
+      }
     }
     return pdf
+  }
+
+  function worksheetHeaderLabels(): WorksheetHeaderLabels {
+    return {
+      name: t('canvas.worksheetText.fieldName'),
+      className: t('canvas.worksheetText.fieldClass'),
+      date: t('canvas.worksheetText.fieldDate'),
+      instructionPrefix: t('canvas.worksheetText.instructionPrefix'),
+      defaultInstruction: t('canvas.worksheetText.defaultInstruction'),
+    }
+  }
+
+  async function resolveWorksheetHeaderCapture(
+    exportOptions?: CanvasExportOptions
+  ): Promise<PdfRasterCapture | null> {
+    const worksheetText = exportOptions?.worksheetText
+    if (!hasActiveWorksheetHeader(worksheetText) || !worksheetText) {
+      return null
+    }
+    return captureWorksheetHeader(getTitle(), worksheetText, worksheetHeaderLabels())
   }
 
   function resolvePdfOrientation(
@@ -230,7 +270,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
 
     diagramStore.setLearningSheetShowAnswers(savedShowAnswers)
 
-    const pdf = await buildA4PdfFromImages(captures, orientation)
+    const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
+    const pdf = await buildA4PdfFromImages(captures, orientation, headerCapture)
     const baseName = sanitizeFilename(getTitle())
     const timestamp = new Date().toISOString().slice(0, 10)
     pdf.save(`${baseName}_${timestamp}.pdf`)
@@ -258,7 +299,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
 
       const capture = await captureContainerForPdf(container, exportOptions)
       const orientation = resolvePdfOrientation(format, container, exportOptions, capture)
-      const pdf = await buildA4PdfFromImages([capture], orientation)
+      const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
+      const pdf = await buildA4PdfFromImages([capture], orientation, headerCapture)
       const baseName = sanitizeFilename(getTitle())
       const timestamp = new Date().toISOString().slice(0, 10)
       pdf.save(`${baseName}_${timestamp}.pdf`)

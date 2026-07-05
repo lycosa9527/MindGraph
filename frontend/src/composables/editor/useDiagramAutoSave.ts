@@ -43,9 +43,43 @@ type DiagramDataLike = { nodes?: unknown[]; connections?: unknown[] } | null
 interface NodeLike {
   id?: string
   text?: string
-  data?: { label?: string }
+  data?: { label?: string; hidden?: boolean; hiddenAnswer?: string }
   position?: { x?: number; y?: number }
   style?: unknown
+}
+
+type DiagramDataRecord = DiagramDataLike & {
+  isLearningSheet?: boolean
+  is_learning_sheet?: boolean
+  learningSheetShowAnswers?: boolean
+  learning_sheet_show_answers?: boolean
+  hiddenAnswers?: string[]
+}
+
+function learningSheetFingerprint(data: DiagramDataLike): string {
+  if (!data) return ''
+  const record = data as DiagramDataRecord
+  const nodes = data.nodes || []
+  const blankedNodes = nodes
+    .map((n) => {
+      const node = n as NodeLike
+      return JSON.stringify({
+        id: node.id,
+        hidden: node.data?.hidden === true,
+        hiddenAnswer: node.data?.hiddenAnswer ?? '',
+      })
+    })
+    .sort()
+  return JSON.stringify({
+    isLearningSheet:
+      record.isLearningSheet === true || record.is_learning_sheet === true,
+    showAnswers: !(
+      record.learningSheetShowAnswers === false ||
+      record.learning_sheet_show_answers === false
+    ),
+    hiddenAnswers: Array.isArray(record.hiddenAnswers) ? [...record.hiddenAnswers].sort() : [],
+    blankedNodes,
+  })
 }
 
 interface ConnectionLike {
@@ -65,6 +99,8 @@ function getContentFingerprint(data: DiagramDataLike): string {
     return JSON.stringify({
       id: node.id,
       text: node.text ?? node.data?.label ?? '',
+      hidden: node.data?.hidden === true,
+      hiddenAnswer: node.data?.hiddenAnswer ?? '',
     })
   }
   const connContent = (c: unknown) => {
@@ -79,7 +115,11 @@ function getContentFingerprint(data: DiagramDataLike): string {
   }
   const nodeFingerprints = nodes.map(nodeContent).sort()
   const connFingerprints = conns.map(connContent).sort()
-  return JSON.stringify({ nodes: nodeFingerprints, conns: connFingerprints })
+  return JSON.stringify({
+    nodes: nodeFingerprints,
+    conns: connFingerprints,
+    learningSheet: learningSheetFingerprint(data),
+  })
 }
 
 function getFullFingerprint(data: DiagramDataLike): string {
@@ -94,6 +134,8 @@ function getFullFingerprint(data: DiagramDataLike): string {
     return JSON.stringify({
       id: node.id,
       text: node.text ?? node.data?.label ?? '',
+      hidden: node.data?.hidden === true,
+      hiddenAnswer: node.data?.hiddenAnswer ?? '',
       pos: posKey,
       style: node.style ?? null,
     })
@@ -110,7 +152,11 @@ function getFullFingerprint(data: DiagramDataLike): string {
   }
   const nodeFingerprints = nodes.map(nodeFull).sort()
   const connFingerprints = conns.map(connFull).sort()
-  return JSON.stringify({ nodes: nodeFingerprints, conns: connFingerprints })
+  return JSON.stringify({
+    nodes: nodeFingerprints,
+    conns: connFingerprints,
+    learningSheet: learningSheetFingerprint(data),
+  })
 }
 
 export interface SaveFlushResult {
@@ -406,6 +452,10 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     isDirty.value = true
   })
 
+  const stopLearningSheetChanged = eventBus.on('diagram:learning_sheet_changed', () => {
+    trigger()
+  })
+
   startInterval()
 
   function teardown(): void {
@@ -425,6 +475,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     stopOperationCompleted()
     stopPositionChanged()
     stopStyleChanged()
+    stopLearningSheetChanged()
   }
 
   onUnmounted(teardown)

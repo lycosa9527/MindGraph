@@ -51,3 +51,8 @@ export const CANVAS_MINDMAP_EXPORT_MENU_ITEMS: readonly CanvasExportMenuItem[] =
   { command: 'pdf', labelKey: 'canvas.topBar.exportPdf' },
   { command: 'mg', labelKey: 'canvas.topBar.exportJson', divided: true },
 ]
+
+export const CANVAS_WORKSHEET_TEXT_MENU_ITEM = {
+  labelKey: 'canvas.topBar.addWorksheetText',
+  divided: true,
+} as const

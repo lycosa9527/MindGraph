@@ -1,7 +1,6 @@
 import {
   MIND_MAP_GEOMETRY,
-  MINDMAP_UNDERLINE_STROKE_WIDTH,
-  mindMapConnectionAnchorY,
+  mindMapUnderlineHandleAnchorY,
 } from '@/config/mindMapGeometry'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import type { MindGraphNodeData, NodeStyle } from '@/types'
@@ -55,17 +54,29 @@ function nodeBoxSize(node: FlowNodeLike, measured?: MeasuredNodeSize): { w: numb
   }
 }
 
-/** Nudge endpoint slightly into the underline so stroke meets the bar (anti-alias gap). */
-function joinOverlapX(
+/** Underline target X: node side edge (stroke meets bar; no inset gap or overlap nudge). */
+function underlineTargetJoinX(
   x: number,
-  side: 'left' | 'right',
-  role: 'source' | 'target'
+  _side: 'left' | 'right',
+  _role: 'source' | 'target'
 ): number {
-  const overlap = MINDMAP_UNDERLINE_STROKE_WIDTH / 2
-  if (role === 'target') {
-    return side === 'right' ? x + overlap : x - overlap
+  return x
+}
+
+/**
+ * Underline connector Y: prefer vue-flow handle center when provided; otherwise match
+ * handle CSS (not mindMapConnectionAnchorY, which assumes the bar sits at box bottom).
+ */
+function resolveMindMapUnderlineAnchorY(
+  nodeTopY: number,
+  nodeHeight: number,
+  fallbackY: number | undefined
+): number {
+  const minHandleY = nodeTopY + 8
+  if (fallbackY != null && Number.isFinite(fallbackY) && fallbackY >= minHandleY) {
+    return fallbackY
   }
-  return side === 'right' ? x - overlap : x + overlap
+  return mindMapUnderlineHandleAnchorY(nodeTopY, nodeHeight)
 }
 
 /**
@@ -92,12 +103,12 @@ export function resolveMindMapEdgeEndpoint(
   if (shape !== 'underline') return fallback
 
   const { w, h } = nodeBoxSize(node, measured)
-  const y = mindMapConnectionAnchorY(node.position.y, h, shape)
+  const y = resolveMindMapUnderlineAnchorY(node.position.y, h, fallback.y)
 
   if (node.id === 'topic') {
     const side: 'left' | 'right' =
       fallback.x <= node.position.x + w / 2 ? 'left' : 'right'
-    return { x: joinOverlapX(fallback.x, side, role), y }
+    return { x: underlineTargetJoinX(fallback.x, side, role), y }
   }
 
   const side = mindMapBranchSide(node.id)
@@ -112,6 +123,6 @@ export function resolveMindMapEdgeEndpoint(
         ? node.position.x
         : node.position.x + w
 
-  x = joinOverlapX(x, side, role)
+  x = underlineTargetJoinX(x, side, role)
   return { x, y }
 }

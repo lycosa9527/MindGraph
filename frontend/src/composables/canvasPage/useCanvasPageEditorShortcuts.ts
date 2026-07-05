@@ -10,6 +10,9 @@ import {
   tryCollabGuardedUndo,
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
+import {
+  toggleLearningSheetAnswersVisibility,
+} from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useEditorShortcuts, useKeyboard } from '@/composables/core/useKeyboard'
@@ -244,6 +247,11 @@ export function useCanvasPageEditorShortcuts(options: {
     }
   }
 
+  function handleToggleLearningSheetAnswersKey() {
+    if (isTypingInInput()) return
+    toggleLearningSheetAnswersVisibility()
+  }
+
   async function handleSaveKey() {
     if (!authStore.isAuthenticated) {
       notify.warning(t('editor.saveNeedsLogin'))
@@ -283,6 +291,7 @@ export function useCanvasPageEditorShortcuts(options: {
     { key: 'ArrowDown', handler: () => handleMindMapArrowKey('ArrowDown') },
     { key: 'ArrowLeft', handler: () => handleMindMapArrowKey('ArrowLeft') },
     { key: 'ArrowRight', handler: () => handleMindMapArrowKey('ArrowRight') },
+    { key: 'h', ctrl: true, shift: true, handler: handleToggleLearningSheetAnswersKey },
   ])
 
   return { handleSaveKey }

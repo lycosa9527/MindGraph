@@ -53,6 +53,31 @@ describe('learning sheet undo/redo', () => {
     expect(restored?.text).toBe(branchText)
   })
 
+  it('undoes restore via exit learning sheet', () => {
+    const diagramStore = useDiagramStore()
+    const { branchId, branchText } = loadMindMapWithBranch()
+
+    diagramStore.setLearningSheetMode(true)
+    learningSheetPickActive.value = true
+    handleLearningSheetPickNodeClick(branchId)
+
+    expect(diagramStore.isLearningSheet).toBe(true)
+    expect(diagramStore.canUndo).toBe(true)
+
+    diagramStore.restoreFromLearningSheetMode()
+    diagramStore.pushHistory('Learning sheet restored')
+
+    expect(diagramStore.isLearningSheet).toBe(false)
+    const restored = diagramStore.data?.nodes.find((node) => node.id === branchId)
+    expect(restored?.text).toBe(branchText)
+
+    tryCollabGuardedUndo()
+
+    expect(diagramStore.isLearningSheet).toBe(true)
+    const reblanked = diagramStore.data?.nodes.find((node) => node.id === branchId)
+    expect(reblanked?.text).toBe(LEARNING_SHEET_BLANK_TEXT)
+  })
+
   it('undoes random learning sheet blank batch', () => {
     const diagramStore = useDiagramStore()
     loadMindMapWithBranch()

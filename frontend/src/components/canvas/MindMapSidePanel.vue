@@ -11,6 +11,7 @@ import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelClo
 import { useLanguage } from '@/composables'
 import { type MindMapSideToolId } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { useDiagramStore } from '@/stores'
 
 import MindMapDocumentSummaryPanel from './MindMapDocumentSummaryPanel.vue'
 import MindMapOneSentencePanel from './MindMapOneSentencePanel.vue'
@@ -26,6 +27,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+const diagramStore = useDiagramStore()
 
 const {
   isPickActive,
@@ -34,6 +36,24 @@ const {
   startRandomLearningSheet,
   exitLearningSheet,
 } = useLearningSheetCustomMode()
+
+type AnswerVisibility = 'show' | 'hide'
+
+const answerVisibility = computed<AnswerVisibility>({
+  get: () => (diagramStore.learningSheetShowAnswers ? 'show' : 'hide'),
+  set: (value) => {
+    diagramStore.setLearningSheetShowAnswers(value === 'show')
+  },
+})
+
+const answerVisibilityOptions = computed(() => [
+  { label: t('canvas.mindMapSideToolbar.learningSheetAnswersShow'), value: 'show' as const },
+  { label: t('canvas.mindMapSideToolbar.learningSheetAnswersHide'), value: 'hide' as const },
+])
+
+function setAnswerVisibility(value: AnswerVisibility): void {
+  answerVisibility.value = value
+}
 
 const panelTitle = computed(() => {
   switch (props.tool) {
@@ -155,18 +175,49 @@ function handleExitLearningSheet(): void {
           </span>
         </button>
 
-        <button
+        <div
           v-if="isLearningSheetActive"
-          type="button"
-          class="learning-sheet-restore-btn mt-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
-          @click="handleExitLearningSheet"
+          class="learning-sheet-session-controls mt-1 flex flex-col gap-2"
         >
-          <RotateCcw
-            class="h-4 w-4"
-            :stroke-width="2.25"
-          />
-          {{ t('canvas.mindMapSideToolbar.restoreFullDiagram') }}
-        </button>
+          <div class="learning-sheet-answers-control">
+            <span class="learning-sheet-answers-control__label">
+              {{ t('canvas.mindMapSideToolbar.learningSheetAnswersLabel') }}
+            </span>
+            <div
+              class="learning-sheet-answers-seg"
+              role="radiogroup"
+              :aria-label="t('canvas.mindMapSideToolbar.learningSheetAnswersLabel')"
+            >
+              <button
+                v-for="opt in answerVisibilityOptions"
+                :key="opt.value"
+                type="button"
+                role="radio"
+                class="learning-sheet-answers-seg__btn"
+                :class="{ 'is-active': answerVisibility === opt.value }"
+                :aria-checked="answerVisibility === opt.value"
+                @click="setAnswerVisibility(opt.value)"
+              >
+                {{ opt.label }}
+              </button>
+            </div>
+            <p class="learning-sheet-answers-control__shortcut">
+              {{ t('canvas.mindMapSideToolbar.learningSheetAnswersShortcut') }}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="learning-sheet-restore-btn inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
+            @click="handleExitLearningSheet"
+          >
+            <RotateCcw
+              class="h-4 w-4"
+              :stroke-width="2.25"
+            />
+            {{ t('canvas.mindMapSideToolbar.restoreFullDiagram') }}
+          </button>
+        </div>
       </div>
     </div>
   </aside>
@@ -241,5 +292,74 @@ function handleExitLearningSheet(): void {
 
 .learning-sheet-restore-btn:hover {
   background: linear-gradient(180deg, rgb(251 191 36) 0%, rgb(245 158 11) 100%);
+}
+
+.learning-sheet-answers-control {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.learning-sheet-answers-control__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgb(29 78 216);
+}
+
+.learning-sheet-answers-control__shortcut {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.35;
+  color: rgb(37 99 235 / 0.85);
+}
+
+.learning-sheet-answers-seg {
+  display: flex;
+  width: 100%;
+  padding: 3px;
+  gap: 3px;
+  border-radius: 12px;
+  border: 1px solid rgb(59 130 246 / 0.35);
+  background: rgb(239 246 255);
+  box-shadow: 0 1px 2px rgb(37 99 235 / 0.08);
+}
+
+.learning-sheet-answers-seg__btn {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: rgb(29 78 216);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.learning-sheet-answers-seg__btn:not(.is-active):hover {
+  background: rgb(191 219 254 / 0.75);
+}
+
+.learning-sheet-answers-seg__btn.is-active {
+  color: rgb(255 255 255);
+  background: linear-gradient(180deg, rgb(59 130 246) 0%, rgb(37 99 235) 100%);
+  box-shadow: 0 1px 2px rgb(29 78 216 / 0.28);
+}
+
+.learning-sheet-answers-seg__btn:focus {
+  outline: none;
+}
+
+.learning-sheet-answers-seg__btn:focus-visible {
+  outline: 2px solid rgb(59 130 246);
+  outline-offset: 1px;
 }
 </style>

@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { restoreLearningSheetUiFromDiagram } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramStore, usePanelsStore } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
@@ -36,6 +37,15 @@ export function registerCanvasPageDiagramEventBus(options: {
       diagramStore.seedHistoryBaselineIfEmpty()
       panelsStore.clearNodePaletteState({ clearSessions: false })
       panelsStore.clearConceptParkingLotState({ clearSessions: false })
+      restoreLearningSheetUiFromDiagram()
+    },
+    'CanvasPage'
+  )
+
+  eventBus.onWithOwner(
+    'diagram:learning_sheet_changed',
+    () => {
+      diagramStore.sessionEditCount += 1
     },
     'CanvasPage'
   )

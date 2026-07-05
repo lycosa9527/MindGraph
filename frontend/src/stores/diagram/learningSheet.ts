@@ -78,6 +78,10 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     return true
   })
 
+  function notifyLearningSheetChanged(): void {
+    eventBus.emit('diagram:learning_sheet_changed', {})
+  }
+
   function setLearningSheetShowAnswers(show: boolean): void {
     if (!data.value) return
     const d = data.value as Record<string, unknown>
@@ -87,6 +91,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     } else {
       d.learning_sheet_show_answers = false
     }
+    notifyLearningSheetChanged()
   }
 
   function syncLearningSheetFlags(d: Record<string, unknown>, enabled: boolean): void {
@@ -226,6 +231,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     } else {
       d.hiddenAnswers = []
     }
+    notifyLearningSheetChanged()
   }
 
   function restoreFromLearningSheetMode(): void {
@@ -258,6 +264,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
 
     syncLearningSheetFlags(d, false)
     d.hiddenAnswers = []
+    notifyLearningSheetChanged()
   }
 
   function applyLearningSheetView(): void {
@@ -300,6 +307,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     })
 
     syncLearningSheetFlags(d, true)
+    notifyLearningSheetChanged()
   }
 
   function hasPreservedLearningSheet(): boolean {
@@ -325,6 +333,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     })
 
     syncLearningSheetFlags(d, false)
+    notifyLearningSheetChanged()
   }
 
   function hasBlankedLearningSheetNodes(): boolean {

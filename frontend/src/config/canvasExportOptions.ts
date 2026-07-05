@@ -2,6 +2,7 @@
  * Shared export preferences for the new canvas (mind map v2) export dropdown.
  * Persisted in sessionStorage for the current browser tab session.
  */
+import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
 
 export type CanvasExportColorMode = 'color' | 'wireframe'
 
@@ -13,6 +14,8 @@ export interface CanvasExportOptions {
   colorMode: CanvasExportColorMode
   layout: CanvasExportLayout
   answerMode: CanvasExportAnswerMode
+  /** Worksheet header fields — merged at export time from worksheet text settings. */
+  worksheetText?: CanvasWorksheetTextOptions
 }
 
 export const DEFAULT_CANVAS_EXPORT_OPTIONS: CanvasExportOptions = {

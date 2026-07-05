@@ -7,11 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.136.0] - 2026-07-05
+
+> **Learning sheet persistence, classroom worksheet headers, mind map connector geometry, canvas export polish, and thinking-coins fixes.**
+
+### Added
+
+- **Canvas worksheet text** — Classroom header fields (topic, name, class, date, instructions) via `CanvasWorksheetTextModal.vue`; session-persisted options ([`canvasWorksheetText.ts`](frontend/src/config/canvasWorksheetText.ts), [`useCanvasWorksheetText.ts`](frontend/src/composables/canvas/useCanvasWorksheetText.ts)); rasterized into A4 PDF export ([`diagramWorksheetHeader.ts`](frontend/src/utils/diagramWorksheetHeader.ts)).
+- **Canvas export options panel** — Wireframe/outline, color mode, layout, and answer visibility in `MindMapExportOptionsPanel.vue`; preferences in [`canvasExportOptions.ts`](frontend/src/config/canvasExportOptions.ts).
+- **Concept parking lot** — Mind map side panel for staging ideas before placement ([`useConceptParkingLot.ts`](frontend/src/composables/conceptParkingLot/useConceptParkingLot.ts)).
+- **MindMate diagram preview cache** — Eagerly persist generate_dingtalk PNGs to IndexedDB when a stream completes and when conversation history loads ([`mindmateDiagramPreviewPersist.ts`](frontend/src/utils/mindmateDiagramPreviewPersist.ts), [`useMindMate.ts`](frontend/src/composables/mindmate/useMindMate.ts)).
+- **MindMate stale preview toast** — Clickable warning when server temp PNG is gone but the diagram can still open in canvas ([`mindmateDiagramPreviewExpiredNotify.ts`](frontend/src/utils/mindmateDiagramPreviewExpiredNotify.ts), [`MessageBubble.vue`](frontend/src/components/panels/mindmate/MessageBubble.vue)).
+- **Thinking-coins wallet fetch helper** — Shared deduped refetch in [`fetchThinkingCoinsWallet.ts`](frontend/src/composables/auth/fetchThinkingCoinsWallet.ts).
+
 ### Changed
 
-- **MindMate diagram preview cache** — Eagerly persist generate_dingtalk PNGs to IndexedDB when a stream completes and when conversation history loads, so previews survive server temp cleanup even if the user closes the tab before chat bubbles render ([`mindmateDiagramPreviewPersist.ts`](frontend/src/utils/mindmateDiagramPreviewPersist.ts), [`useMindMate.ts`](frontend/src/composables/mindmate/useMindMate.ts)).
-- **MindMate stale preview toast** — When a diagram preview cannot be resolved from browser cache and the server temp PNG is gone, show a clickable warning that opens the saved diagram in canvas ([`mindmateDiagramPreviewExpiredNotify.ts`](frontend/src/utils/mindmateDiagramPreviewExpiredNotify.ts), [`MessageBubble.vue`](frontend/src/components/panels/mindmate/MessageBubble.vue)).
+- **Learning sheet answer visibility** — Show/hide reference answers from the side panel (segmented control + `Ctrl+Shift+H`); preference and `hiddenAnswers` round-trip in spec save/load and auto-save ([`learningSheet.ts`](frontend/src/stores/diagram/learningSheet.ts), [`MindMapSidePanel.vue`](frontend/src/components/canvas/MindMapSidePanel.vue)).
+- **Learning sheet undo** — Blank/restore node picks push history entries; undo after reload restores full diagram text ([`useLearningSheetCustomMode.ts`](frontend/src/composables/mindMap/useLearningSheetCustomMode.ts)).
+- **Mind map connectors** — Orthogonal bracket paths with flat horizontal segments near parent Y; underline handle anchor Y aligned with Vue Flow DOM probe ([`mindMapOrthogonalPath.ts`](frontend/src/utils/mindMapOrthogonalPath.ts), [`mindMapGeometry.ts`](frontend/src/config/mindMapGeometry.ts), [`mindMapEdgeEndpoints.ts`](frontend/src/utils/mindMapEdgeEndpoints.ts)).
+- **Canvas PDF export** — Worksheet header page prepended when active; learning-sheet show-answers preference applied before rasterize ([`useDiagramExport.ts`](frontend/src/composables/editor/useDiagramExport.ts), [`diagramPdfExport.ts`](frontend/src/utils/diagramPdfExport.ts)).
+- **Mind map shortcut guide** — Learning-sheet answer toggle row pinned while mode is active ([`mindMapShortcutGuide.ts`](frontend/src/config/mindMapShortcutGuide.ts), [`CanvasMindMapShortcutGuide.vue`](frontend/src/components/canvas/CanvasMindMapShortcutGuide.vue)).
+- **Trial-org thinking coins** — All org members on trial tier earn coins, not only teacher/school_admin roles ([`eligibility.py`](services/auth/thinking_coin/eligibility.py)).
 
+### Fixed
+
+- **Thinking-coins wallet refetch loop** — Sidebar auth sync no longer hammers `/api/thinking-coins/wallet` on every navigation ([`useAppSidebar.ts`](frontend/src/composables/sidebar/useAppSidebar.ts), [`fetchThinkingCoinsWallet.ts`](frontend/src/composables/auth/fetchThinkingCoinsWallet.ts)).
+- **MindMate collab notify WS** — Real-time poke/mention socket connects only when `FEATURE_MINDMATE_COLLAB` is enabled ([`useMindmateCollabNotify.ts`](frontend/src/composables/social/useMindmateCollabNotify.ts)).
+- **Learning sheet layout** — Preserve pre-blank node dimensions so restored text does not shrink branches ([`learningSheet.ts`](frontend/src/stores/diagram/learningSheet.ts)).
+
+### Tests
+
+- **Frontend** — `canvasWorksheetText.spec.ts`, `learningSheetPersist.spec.ts`, `mindMapOrthogonalPath.spec.ts`, `mindMapUnderlineAnchorY.spec.ts`; extended `learningSheetUndo.spec.ts`, `mindMapShortcutGuide.spec.ts`, `canvasExportMenu.spec.ts`, `diagramExportLearningSheet.spec.ts`, `fetchThinkingCoinsWallet.spec.ts`, `mindmateDiagramPreviewPersist.spec.ts`, `mindmateDiagramPreviewExpiredNotify.spec.ts`.
+- **Backend** — `test_thinking_coin_eligibility.py`, `test_thinking_coin_task_wiring_audit.py`, [`thinking_coin_wiring_manifest.py`](tests/thinking_coin_wiring_manifest.py).
+
+## [5.135.0] - 2026-07-03
 
 > **MindMate online collab, diagram provenance, canvas PDF export, and identity unification.**
 

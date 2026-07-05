@@ -59,7 +59,12 @@ export function handleLearningSheetPickNodeClick(nodeId: string): boolean {
     return true
   }
 
-  diagramStore.toggleLearningSheetNodeBlank(nodeId)
+  const result = diagramStore.toggleLearningSheetNodeBlank(nodeId)
+  if (result === 'blanked') {
+    diagramStore.pushHistory(t('canvas.mindMapSideToolbar.learningSheetBlankHistory'))
+  } else if (result === 'restored') {
+    diagramStore.pushHistory(t('canvas.mindMapSideToolbar.learningSheetRestoreHistory'))
+  }
   return true
 }
 
@@ -77,6 +82,26 @@ export function resetLearningSheetCustomModeUi(): void {
   learningSheetPickActive.value = false
   learningSheetFloatBarOpen.value = false
   learningSheetFloatBarBeforePresentation.value = false
+}
+
+export function toggleLearningSheetAnswersVisibility(): boolean {
+  const diagramStore = useDiagramStore()
+  if (!diagramStore.isLearningSheet) {
+    return false
+  }
+  diagramStore.setLearningSheetShowAnswers(!diagramStore.learningSheetShowAnswers)
+  return true
+}
+
+/** Re-open float bar after reload when diagram spec still has learning-sheet mode. */
+export function restoreLearningSheetUiFromDiagram(): void {
+  const diagramStore = useDiagramStore()
+  if (!diagramStore.isLearningSheet) {
+    resetLearningSheetCustomModeUi()
+    return
+  }
+  learningSheetFloatBarOpen.value = true
+  learningSheetPickActive.value = false
 }
 
 /**

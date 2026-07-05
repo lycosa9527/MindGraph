@@ -7,15 +7,17 @@ import { computed, onMounted, ref } from 'vue'
 import { ChevronDown, ChevronUp, Hand, Keyboard, MousePointer2 } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
-import { MIND_MAP_SHORTCUT_GUIDE_ROWS } from '@/config/mindMapShortcutGuide'
+import { resolveMindMapShortcutGuideRows } from '@/config/mindMapShortcutGuide'
+import { useDiagramStore } from '@/stores'
 
 const STORAGE_KEY = 'mindgraph.mindmap.shortcutGuide.expanded'
 
 const { t } = useLanguage()
+const diagramStore = useDiagramStore()
 
 const expanded = ref(true)
 
-const rows = computed(() => MIND_MAP_SHORTCUT_GUIDE_ROWS)
+const rows = computed(() => resolveMindMapShortcutGuideRows(diagramStore.isLearningSheet))
 
 onMounted(() => {
   try {
@@ -100,7 +102,12 @@ function toggleExpanded(): void {
           <li
             v-for="row in rows"
             :key="row.id"
-            class="flex items-center justify-between gap-2 rounded-md border border-slate-100 bg-slate-50/80 px-2 py-1.5 dark:border-slate-700/80 dark:bg-slate-800/60"
+            class="flex items-center justify-between gap-2 rounded-md border px-2 py-1.5"
+            :class="
+              row.id === 'learningSheetAnswers' && diagramStore.isLearningSheet
+                ? 'border-amber-200 bg-amber-50/90 dark:border-amber-700/60 dark:bg-amber-950/40'
+                : 'border-slate-100 bg-slate-50/80 dark:border-slate-700/80 dark:bg-slate-800/60'
+            "
           >
             <span class="text-xs text-slate-700 dark:text-slate-200">
               {{ t(row.labelKey) }}

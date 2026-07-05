@@ -7,7 +7,7 @@
  */
 /** Options shape shared by html-to-image export helpers (avoids static import). */
 export interface HtmlToImageOptions {
-  backgroundColor?: string | null
+  backgroundColor?: string
   pixelRatio?: number
   style?: Record<string, string>
   filter?: (node: Node) => boolean
@@ -56,7 +56,7 @@ export function getDiagramCanvasPdfHtmlToImageOptions(
 ): HtmlToImageOptions {
   const { style: styleOverride, ...restOverrides } = overrides ?? {}
   return {
-    backgroundColor: null,
+    backgroundColor: undefined,
     pixelRatio: 1,
     style: {
       transform: 'none',

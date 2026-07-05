@@ -111,11 +111,16 @@ function buildRoundedTeeBranch(
   fromY: number,
   toX: number,
   toY: number,
-  maxRadius: number
+  maxRadius: number,
+  flatThreshold: number
 ): string {
   const sx = toX >= trunkX ? 1 : -1
   const hLen = Math.abs(toX - trunkX)
   if (hLen < 0.5) {
+    return `M ${trunkX} ${toY} L ${toX} ${toY}`
+  }
+
+  if (Math.abs(toY - fromY) < flatThreshold) {
     return `M ${trunkX} ${toY} L ${toX} ${toY}`
   }
 
@@ -125,7 +130,11 @@ function buildRoundedTeeBranch(
     return `M ${trunkX} ${toY} L ${toX} ${toY}`
   }
 
-  const approachY = toY < fromY ? toY + r : toY - r
+  const approachY = branchApproachY(toY, fromY, trunkX, toX, maxRadius, flatThreshold)
+  if (Math.abs(approachY - toY) < 0.5) {
+    return `M ${trunkX} ${toY} L ${toX} ${toY}`
+  }
+
   return [
     `M ${trunkX} ${approachY}`,
     `Q ${trunkX} ${toY} ${trunkX + sx * r} ${toY}`,
@@ -150,9 +159,9 @@ export function buildMindMapBracketBusPath(
   const drawSpine = options.drawSpine ?? false
   const branchYs = siblingYs.length > 0 ? siblingYs : [toY]
 
-  // Sole underline child: flat horizontal at the shared connection anchor Y.
+  // Sole underline child: flat horizontal at the underline midline (parent → child).
   if (options.singleUnderlineChild && branchYs.length === 1) {
-    return `M ${fromX} ${fromY} L ${toX} ${fromY}`
+    return `M ${fromX} ${fromY} L ${toX} ${toY}`
   }
 
   // Sole topic-side L1 branch: orthogonal segments only (no Q-rounded tee).
@@ -183,7 +192,7 @@ export function buildMindMapBracketBusPath(
     maxR,
     flatThreshold
   )
-  const branch = buildRoundedTeeBranch(trunkX, fromY, toX, toY, maxR)
+  const branch = buildRoundedTeeBranch(trunkX, fromY, toX, toY, maxR, flatThreshold)
 
   if (!drawSpine) {
     return branch
@@ -197,7 +206,10 @@ export function buildMindMapBracketBusPath(
     if (Math.abs(toY - fromY) < flatThreshold) {
       return `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${toX} ${toY}`
     }
-    const approachY = toY < fromY ? toY + r : toY - r
+    const approachY = branchApproachY(toY, fromY, trunkX, toX, maxR, flatThreshold)
+    if (Math.abs(approachY - toY) < 0.5) {
+      return `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${toX} ${toY}`
+    }
     return [
       `M ${fromX} ${fromY}`,
       `L ${trunkX} ${fromY}`,

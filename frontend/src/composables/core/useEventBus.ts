@@ -115,6 +115,7 @@ export type EventTypes = {
     isCustom?: boolean
   }
   'diagram:style_changed': { nodeId?: string; style?: unknown; all?: boolean; preset?: boolean }
+  'diagram:learning_sheet_changed': Record<string, never>
   'diagram:loaded': { diagramType: string; spec?: unknown }
   'diagram:loaded_from_library': { diagramId: string; diagramType: string }
   'diagram:double_bubble_relayout_requested': Record<string, never>

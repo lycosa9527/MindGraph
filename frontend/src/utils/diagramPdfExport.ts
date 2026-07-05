@@ -169,3 +169,76 @@ export function addRasterImageToA4PdfPage(
     rect.height
   )
 }
+
+export function fitImageRectInA4Region(
+  pdf: JsPdfLike,
+  imageWidthPx: number,
+  imageHeightPx: number,
+  regionTopMm: number,
+  marginMm = 10
+): { x: number; y: number; width: number; height: number } {
+  const pageW = pdf.internal.pageSize.getWidth()
+  const pageH = pdf.internal.pageSize.getHeight()
+  const maxW = pageW - marginMm * 2
+  const maxH = pageH - regionTopMm - marginMm
+  const aspect = imageWidthPx / imageHeightPx
+  let drawW = maxW
+  let drawH = drawW / aspect
+  if (drawH > maxH) {
+    drawH = maxH
+    drawW = drawH * aspect
+  }
+  return {
+    x: (pageW - drawW) / 2,
+    y: regionTopMm + (maxH - drawH) / 2,
+    width: drawW,
+    height: drawH,
+  }
+}
+
+export function addWorksheetPageToPdf(
+  pdf: JsPdfLike,
+  diagramDataUrl: string,
+  diagramWidthPx: number,
+  diagramHeightPx: number,
+  headerDataUrl: string | null,
+  headerWidthPx: number,
+  headerHeightPx: number,
+  marginMm = 10,
+  headerGapMm = 4
+): void {
+  const pageW = pdf.internal.pageSize.getWidth()
+  let regionTopMm = marginMm
+
+  if (headerDataUrl && headerWidthPx > 0 && headerHeightPx > 0) {
+    const headerMaxW = pageW - marginMm * 2
+    const headerAspect = headerWidthPx / headerHeightPx
+    const headerDrawW = headerMaxW
+    const headerDrawH = headerDrawW / headerAspect
+    pdf.addImage(
+      headerDataUrl,
+      pdfRasterFormatFromDataUrl(headerDataUrl),
+      marginMm,
+      regionTopMm,
+      headerDrawW,
+      headerDrawH
+    )
+    regionTopMm += headerDrawH + headerGapMm
+  }
+
+  const diagramRect = fitImageRectInA4Region(
+    pdf,
+    diagramWidthPx,
+    diagramHeightPx,
+    regionTopMm,
+    marginMm
+  )
+  pdf.addImage(
+    diagramDataUrl,
+    pdfRasterFormatFromDataUrl(diagramDataUrl),
+    diagramRect.x,
+    diagramRect.y,
+    diagramRect.width,
+    diagramRect.height
+  )
+}

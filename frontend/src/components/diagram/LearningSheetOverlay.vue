@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * LearningSheetOverlay — dashed separator and answer chips below diagram.
- * Show/hide is controlled from the learning-sheet side panel.
+ * Show/hide is controlled from the learning-sheet side panel (segmented control).
  */
 import { computed } from 'vue'
 

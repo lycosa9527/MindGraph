@@ -8,6 +8,7 @@ import { collabHistoryWouldBlock } from '@/composables/canvasPage/useCanvasColla
 import {
   MIND_MAP_SHORTCUT_GUIDE_ROWS,
   MIND_MAP_SHORTCUT_GUIDE_WIRED_ROW_IDS,
+  resolveMindMapShortcutGuideRows,
 } from '@/config/mindMapShortcutGuide'
 
 describe('canvasPageEditorShortcutRouting', () => {
@@ -101,9 +102,24 @@ describe('mindMapShortcutGuide parity', () => {
     if (clearText?.kind === 'keys') {
       expect(clearText.keys).toEqual(['-'])
     }
+    const learningSheetAnswers = MIND_MAP_SHORTCUT_GUIDE_ROWS.find(
+      (row) => row.id === 'learningSheetAnswers'
+    )
+    expect(learningSheetAnswers?.kind).toBe('keys')
+    if (learningSheetAnswers?.kind === 'keys') {
+      expect(learningSheetAnswers.keys).toEqual(['Ctrl+Shift+H'])
+    }
     if (cancel?.kind === 'keys') {
       expect(cancel.keys).toEqual(['Esc'])
     }
+  })
+
+  it('pins learning sheet answers shortcut at top while learning sheet mode is active', () => {
+    const pinned = resolveMindMapShortcutGuideRows(true)
+    expect(pinned[0]?.id).toBe('learningSheetAnswers')
+
+    const normal = resolveMindMapShortcutGuideRows(false)
+    expect(normal.map((row) => row.id)).toEqual(MIND_MAP_SHORTCUT_GUIDE_ROWS.map((row) => row.id))
   })
 })
 
