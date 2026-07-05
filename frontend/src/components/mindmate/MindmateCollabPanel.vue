@@ -20,6 +20,7 @@ import { ArrowLeft, ChevronDown, Loader2, RefreshCw, Users } from '@lucide/vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
+import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
 import { authFetch } from '@/utils/api'
 import {
   formatMindmateCollabCode,
@@ -31,16 +32,22 @@ const props = withDefaults(
     inConversation?: boolean
     conversationTitle?: string
     embedInPanel?: boolean
+    getSeedMessages?: () => MindmateCollabMessage[]
   }>(),
   {
     inConversation: false,
     conversationTitle: '',
     embedInPanel: false,
+    getSeedMessages: undefined,
   },
 )
 
 const emit = defineEmits<{
-  (e: 'session-started', payload: { code: string; visibility: 'organization' | 'network' }): void
+  (e: 'session-started', payload: {
+    code: string
+    visibility?: 'organization' | 'network'
+    ownerUserId?: number
+  }): void
 }>()
 
 const ORG_REFRESH_INTERVAL_MS = 30_000
@@ -65,7 +72,6 @@ const orgSessions = ref<
 >([])
 const joinCode = ref(['', '', '', '', '', ''])
 const isJoining = ref(false)
-const isStarting = ref(false)
 const codeInputRefs = ref<(HTMLInputElement | null)[]>([])
 let orgRefreshTimer: ReturnType<typeof setInterval> | null = null
 let autoJoinTimeout: ReturnType<typeof setTimeout> | null = null
@@ -129,38 +135,11 @@ function navigateToRoom(code: string, sessionMeta?: Record<string, unknown>) {
     emit('session-started', {
       code: formatted,
       visibility: (sessionMeta?.visibility as 'organization' | 'network') || 'organization',
+      ownerUserId: Number(sessionMeta?.owner_user_id || 0) || undefined,
     })
     return
   }
   void router.push({ path: '/mindmate/collab', query: { code: formatted } })
-}
-
-async function startRoom(visibility: 'organization' | 'network') {
-  isStarting.value = true
-  try {
-    const title = props.conversationTitle.trim() || undefined
-    const response = await authFetch('/api/mindmate/collab/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ visibility, duration: 'today', title }),
-    })
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      notify.error((err as { detail?: string }).detail || t('mindmate.collabStartFailed'))
-      return
-    }
-    const data = (await response.json()) as Record<string, unknown>
-    notify.success(t('mindmate.collabStarted'))
-    navigateToRoom(String(data.code || ''), {
-      ...data,
-      visibility,
-      title: title || data.title,
-    })
-  } catch {
-    notify.error(t('mindgraphLanding.networkError'))
-  } finally {
-    isStarting.value = false
-  }
 }
 
 async function joinByCode() {
@@ -173,21 +152,39 @@ async function joinByCode() {
     notify.warning(t('mindgraphLanding.codeFormatInvalid'))
     return
   }
+  navigateToRoom(code)
+}
+
+async function startSeminar(visibility: 'organization' | 'network') {
+  if (!props.inConversation) {
+    return
+  }
   isJoining.value = true
   try {
-    const response = await authFetch(`/api/mindmate/collab/join?code=${encodeURIComponent(code)}`, {
+    const seedMessages = (props.getSeedMessages?.() ?? []).map((message) => ({
+      role: message.role,
+      content: message.content,
+    }))
+    const response = await authFetch('/api/mindmate/collab/start', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visibility,
+        title: props.conversationTitle || undefined,
+        seed_messages: seedMessages,
+      }),
     })
     if (response.ok) {
-      const data = await response.json()
-      applyThinkingCoinMutation(extractThinkingCoinsFooter(data as Record<string, unknown>))
-      navigateToRoom(code)
+      const data = (await response.json()) as Record<string, unknown>
+      applyThinkingCoinMutation(extractThinkingCoinsFooter(data))
+      notify.success(t('mindmate.collabStarted'))
+      navigateToRoom(String(data.code || ''), data)
     } else {
       const err = await response.json().catch(() => ({}))
-      notify.error((err as { detail?: string }).detail || t('mindgraphLanding.joinFailed'))
+      notify.error((err as { detail?: string }).detail || t('mindmate.collabStartFailed'))
     }
   } catch {
-    notify.error(t('mindgraphLanding.networkErrorJoin'))
+    notify.error(t('mindmate.collabStartFailed'))
   } finally {
     isJoining.value = false
   }
@@ -225,38 +222,36 @@ async function openOrgPanel() {
   orgRefreshTimer = setInterval(() => void fetchOrgSessions(false), ORG_REFRESH_INTERVAL_MS)
 }
 
-async function joinOrgSession(session: { session_id: string; code: string }) {
-  isJoining.value = true
-  try {
-    const response = await authFetch('/api/mindmate/collab/join-organization', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: session.session_id }),
-    })
-    if (response.ok) {
-      const data = await response.json()
-      applyThinkingCoinMutation(extractThinkingCoinsFooter(data as Record<string, unknown>))
-      navigateToRoom(String(data.code || session.code))
-    } else {
-      notify.error(t('mindgraphLanding.joinFailed'))
-    }
-  } catch {
-    notify.error(t('mindgraphLanding.networkError'))
-  } finally {
-    isJoining.value = false
-  }
+function joinOrgSession(session: {
+  session_id: string
+  code: string
+  title?: string
+  owner_user_id?: number
+  participant_count?: number
+  visibility?: string
+}) {
+  navigateToRoom(session.code, {
+    session_id: session.session_id,
+    code: session.code,
+    title: session.title,
+    owner_user_id: session.owner_user_id,
+    participant_count: session.participant_count,
+    visibility: session.visibility || 'organization',
+  })
 }
 
 function onCollabDropdownCommand(command: string) {
-  if (command === 'start-organization') {
-    void startRoom('organization')
+  if (command === 'launch-org') {
+    void startSeminar('organization')
     return
   }
-  if (command === 'start-network') {
-    void startRoom('network')
+  if (command === 'launch-network') {
+    void startSeminar('network')
     return
   }
-  if (command !== 'organization' && command !== 'network') return
+  if (command !== 'organization' && command !== 'network') {
+    return
+  }
   collabPanelMode.value = command
   collabPopoverVisible.value = true
   if (command === 'organization') {
@@ -272,8 +267,7 @@ function closeCollabPopover() {
 function prefillAndAutoJoin(rawCode: string) {
   const chars = sanitizeChar(rawCode).slice(0, 6)
   if (props.inConversation && props.embedInPanel && chars.length === 6) {
-    const formatted = formatMindmateCollabCode(chars)
-    emit('session-started', { code: formatted, visibility: 'network' })
+    emit('session-started', { code: formatMindmateCollabCode(chars) })
     return
   }
   chars.split('').forEach((ch, index) => {
@@ -299,71 +293,27 @@ defineExpose({ prefillAndAutoJoin })
 </script>
 
 <template>
-  <div
+  <ElPopover
     v-if="canUseOnlineCollab"
-    class="collab-trigger-wrap inline-flex"
+    v-model:visible="collabPopoverVisible"
+    :trigger="'manual' as 'click'"
+    placement="bottom-end"
+    width="min(360px, calc(100vw - 48px))"
+    popper-class="collab-panel-popper"
+    :hide-after="0"
+    @click-outside="closeCollabPopover"
   >
-    <ElDropdown
-      v-if="inConversation"
-      trigger="click"
-      placement="bottom-end"
-      popper-class="user-dropdown-popper"
-      @command="onCollabDropdownCommand"
-    >
-      <span class="inline-flex">
-        <ElTooltip
-          :content="t('mindmate.collabLaunchTooltip')"
-          placement="bottom"
-        >
-          <ElButton
-            type="default"
-            class="join-workshop-btn join-workshop-btn--pill"
-            size="small"
-            :aria-haspopup="true"
-            :aria-label="t('mindmate.collabLaunchTooltip')"
-            :loading="isStarting"
-          >
-            <Users class="collab-trigger-icon-users" />
-            <ChevronDown
-              class="collab-trigger-icon-chevron"
-              aria-hidden="true"
-            />
-          </ElButton>
-        </ElTooltip>
-      </span>
-      <template #dropdown>
-        <ElDropdownMenu class="user-dropdown-menu">
-          <ElDropdownItem command="start-organization">
-            {{ t('mindmate.collabLaunchOrg') }}
-          </ElDropdownItem>
-          <ElDropdownItem command="start-network">
-            {{ t('mindmate.collabLaunchNetwork') }}
-          </ElDropdownItem>
-        </ElDropdownMenu>
-      </template>
-    </ElDropdown>
-
-    <ElPopover
-      v-else
-      v-model:visible="collabPopoverVisible"
-      :trigger="'manual' as 'click'"
-      placement="bottom-end"
-      width="min(360px, calc(100vw - 48px))"
-      popper-class="collab-panel-popper"
-      :hide-after="0"
-      @click-outside="closeCollabPopover"
-    >
     <template #reference>
       <div class="collab-trigger-wrap inline-flex">
         <ElDropdown
           trigger="click"
           placement="bottom-end"
-          popper-class="user-dropdown-popper"
+          popper-class="collab-trigger-dropdown-popper"
           @command="onCollabDropdownCommand"
         >
           <span class="inline-flex">
             <ElTooltip
-              :content="t('mindgraphLanding.collaborate')"
+              :content="inConversation ? t('mindmate.collabLaunchTooltip') : t('mindgraphLanding.collaborate')"
               placement="bottom"
             >
               <ElButton
@@ -371,7 +321,7 @@ defineExpose({ prefillAndAutoJoin })
                 class="join-workshop-btn join-workshop-btn--pill"
                 size="small"
                 :aria-haspopup="true"
-                :aria-label="t('mindgraphLanding.collaborate')"
+                :aria-label="inConversation ? t('mindmate.collabLaunchTooltip') : t('mindgraphLanding.collaborate')"
               >
                 <Users class="collab-trigger-icon-users" />
                 <ChevronDown
@@ -382,13 +332,32 @@ defineExpose({ prefillAndAutoJoin })
             </ElTooltip>
           </span>
           <template #dropdown>
-            <ElDropdownMenu class="user-dropdown-menu">
-              <ElDropdownItem command="organization">
-                {{ t('mindgraphLanding.schoolCollab') }}
-              </ElDropdownItem>
-              <ElDropdownItem command="network">
-                {{ t('mindmate.collabJoinChatroom') }}
-              </ElDropdownItem>
+            <ElDropdownMenu>
+              <template v-if="inConversation">
+                <ElDropdownItem command="launch-org">
+                  {{ t('mindmate.collabLaunchOrg') }}
+                </ElDropdownItem>
+                <ElDropdownItem command="launch-network">
+                  {{ t('mindmate.collabLaunchNetwork') }}
+                </ElDropdownItem>
+                <ElDropdownItem
+                  divided
+                  command="organization"
+                >
+                  {{ t('mindmate.collabJoinOrgSeminar') }}
+                </ElDropdownItem>
+                <ElDropdownItem command="network">
+                  {{ t('mindmate.collabJoinPublicSeminar') }}
+                </ElDropdownItem>
+              </template>
+              <template v-else>
+                <ElDropdownItem command="organization">
+                  {{ t('mindmate.collabJoinOrgSeminar') }}
+                </ElDropdownItem>
+                <ElDropdownItem command="network">
+                  {{ t('mindmate.collabJoinPublicSeminar') }}
+                </ElDropdownItem>
+              </template>
             </ElDropdownMenu>
           </template>
         </ElDropdown>
@@ -426,20 +395,6 @@ defineExpose({ prefillAndAutoJoin })
         </button>
       </div>
 
-      <button
-        type="button"
-        class="sw-start-btn"
-        :disabled="isStarting"
-        @click="startRoom('organization')"
-      >
-        <Loader2
-          v-if="isStarting"
-          class="sw-start-btn__spinner"
-          aria-hidden="true"
-        />
-        {{ t('mindmate.collabStartOrg') }}
-      </button>
-
       <div
         v-if="orgSessionsLoading"
         class="sw-panel__loading"
@@ -468,10 +423,17 @@ defineExpose({ prefillAndAutoJoin })
           class="sw-session-row"
         >
           <div class="sw-session-body">
-            <div class="sw-session-title">{{ session.title }}</div>
-            <div class="sw-session-owner">
-              {{ session.owner_name || '—' }} · {{ session.participant_count }}
-              {{ t('mindmate.collabParticipants') }}
+            <div
+              v-if="session.owner_name"
+              class="sw-session-title"
+            >
+              {{ session.owner_name }}
+            </div>
+            <div :class="session.owner_name ? 'sw-session-owner' : 'sw-session-title'">
+              {{ session.title }}
+              <template v-if="session.owner_name">
+                · {{ session.participant_count }} {{ t('mindmate.collabParticipants') }}
+              </template>
             </div>
           </div>
           <button
@@ -510,20 +472,6 @@ defineExpose({ prefillAndAutoJoin })
       </div>
 
       <p class="sw-panel__hint">{{ t('mindmate.collabSharedCodeHint') }}</p>
-
-      <button
-        type="button"
-        class="sw-start-btn"
-        :disabled="isStarting"
-        @click="startRoom('network')"
-      >
-        <Loader2
-          v-if="isStarting"
-          class="sw-start-btn__spinner"
-          aria-hidden="true"
-        />
-        {{ t('mindmate.collabStartNetwork') }}
-      </button>
 
       <div class="code-input-container">
         <div class="code-input-boxes">
@@ -587,8 +535,7 @@ defineExpose({ prefillAndAutoJoin })
         {{ t('mindgraphLanding.join') }}
       </button>
     </div>
-    </ElPopover>
-  </div>
+  </ElPopover>
 </template>
 
 <style scoped>
@@ -992,5 +939,51 @@ defineExpose({ prefillAndAutoJoin })
   padding: 12px !important;
   box-sizing: border-box;
   max-width: calc(100vw - 24px);
+}
+
+.collab-trigger-dropdown-popper.el-popper {
+  padding: 4px !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 10px !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.07),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden;
+}
+
+.collab-trigger-dropdown-popper .el-dropdown-menu {
+  padding: 0;
+  border: none;
+  background: transparent;
+  min-width: 100%;
+}
+
+.collab-trigger-dropdown-popper .el-dropdown-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #44403c;
+  border-radius: 6px;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  text-align: center;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.collab-trigger-dropdown-popper .el-dropdown-menu__item:hover,
+.collab-trigger-dropdown-popper .el-dropdown-menu__item:focus {
+  background: #f5f5f4;
+  color: #1c1917;
+}
+
+.collab-trigger-dropdown-popper .el-dropdown-menu__item:active {
+  background: #e7e5e4;
 }
 </style>

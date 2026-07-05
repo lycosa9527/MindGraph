@@ -36,8 +36,26 @@ Redis keys under `mindmate_collab:*`; fan-out room prefix `mmc:{CODE}`.
 - **Owner stop:** `POST /stop` → **4011**.
 - **Resume tokens:** `{u,c,s}` in `joined` frame; subprotocol `mg-resume.{token}`.
 - **Dify stream lock:** one AI response per room; concurrent `chat` → `mindmate_responding` error.
+- **Dify abort signal:** cooperative cross-worker abort via Redis `dify_abort:{CODE}`; checked each stream chunk; lock released only in stream `finally`.
+- **Message retention:** ended sessions and messages are kept indefinitely (history API gated; live rooms only while `ended_at IS NULL`).
 
 Operational parity with canvas collab: see [`docs/operations/online-collab-runbook.md`](../operations/online-collab-runbook.md) for Redis/registry/idle patterns (MindMate uses separate key prefix and omits diagram live-spec merge).
+
+## Security and identifiers
+
+| Identifier | Scope | Client-visible? | Notes |
+|------------|-------|-----------------|-------|
+| `session_id` (UUID) | One collab room | Yes — join/browse/history | Unguessable; route-level visibility checks before access |
+| `code` (XXX-XXX) | One live room | Yes — invite link, WS path | Network rooms: code-as-secret (~32^6 combinations) + rate limits |
+| `dify_conversation_id` | One shared AI thread per room | **No** — server-internal only | Stable Dify user: `mindmate_collab_{orgId}_{sessionId}` |
+| `resume_token` | One reconnect | Yes — `joined` frame | Bound to `{user, code, session}`; one-time Redis consume |
+
+**Org join parity (canvas collab):** when the host has no `organization_id`, any authenticated org member may join an `organization`-visible room ([`online_collab_visibility_helpers.py`](../../services/online_collab/lifecycle/online_collab_visibility_helpers.py)).
+
+**Network rooms:** anyone with `TIER_FEATURE_ONLINE_COLLAB` and a valid code may join and see room history — intentional secret-link model.
+
+**Access layers:** feature flag → school tier → visibility rules → per-route authorization → PostgreSQL RLS on user-scoped reads.
+
 
 ## WebSocket frames
 
@@ -47,8 +65,10 @@ Server → client: `joined`, `snapshot`, `user_message`, `ai_message_chunk`, `ai
 
 ## Social layer in collab room
 
-- **Org contacts:** `OrgContactsPanel` + `useOrgContacts` / `useOrgPresence` (shared with Workshop Chat).
-- **DMs:** `MindmateDmDrawer` via existing `/api/chat/dm/*`; org isolation enforced by `access_dm_partner`.
+- **Org contacts:** shared `frontend/src/composables/social/` module — `OrgContactsPanel` with `source="mindmate-collab"` (collab API + notify WS presence; no `FEATURE_WORKSHOP_CHAT` required for roster).
+- **Workshop parity:** same panel/composables with `source="workshop"` (workshop store + chat WS presence).
+- **Future IM widget:** mount `OrgContactsPanel` or call `useOrgRosterPanel()` from any page.
+- **DMs:** `MindmateDmDrawer` via `/api/chat/dm/*` (requires `FEATURE_WORKSHOP_CHAT`); org isolation enforced by `access_dm_partner`.
 
 ## Deep links
 

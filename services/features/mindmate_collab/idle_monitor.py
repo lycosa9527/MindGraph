@@ -18,6 +18,7 @@ from redis.exceptions import RedisError
 from services.features.mindmate_collab.config import (
     MINDMATE_COLLAB_IDLE_GRACE_SECONDS,
     MINDMATE_COLLAB_IDLE_SILENCE_SECONDS,
+    MINDMATE_COLLAB_MONITOR_CONCURRENCY,
     MINDMATE_COLLAB_MONITOR_INTERVAL_SECONDS,
     MINDMATE_COLLAB_ZOMBIE_GRACE_SECONDS,
 )
@@ -29,6 +30,7 @@ from services.features.mindmate_collab.redis_keys import (
     room_idle_warning_key,
 )
 from services.features.mindmate_collab.ws_broadcast import broadcast_to_all
+from services.infrastructure.monitoring.ws_metrics import record_ws_idle_monitor_cycle
 from services.online_collab.redis.online_collab_redis_locks import acquire_nx_lock, new_lock_token
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
@@ -112,9 +114,38 @@ async def _monitor_loop(stop_event: asyncio.Event) -> None:
             try:
                 cutoff = time.time() - MINDMATE_COLLAB_ZOMBIE_GRACE_SECONDS
                 stale = await redis.zrangebyscore(idle_scores_key(), "-inf", cutoff)
+                stale_codes: list[str] = []
                 for raw_code in stale or []:
                     code = raw_code.decode("utf-8") if isinstance(raw_code, bytes) else str(raw_code)
-                    await _evaluate_code(code)
+                    stale_codes.append(code)
+                if stale_codes:
+                    record_ws_idle_monitor_cycle()
+                    sem = asyncio.Semaphore(MINDMATE_COLLAB_MONITOR_CONCURRENCY)
+
+                    async def _evaluate_isolated(room_code: str) -> None:
+                        async with sem:
+                            try:
+                                await _evaluate_code(room_code)
+                            except (
+                                RedisError,
+                                OSError,
+                                RuntimeError,
+                                TypeError,
+                                ValueError,
+                                AttributeError,
+                            ) as exc:
+                                logger.warning(
+                                    "[MindmateCollabIdle] evaluate failed code=%s: %s",
+                                    room_code,
+                                    exc,
+                                )
+
+                    async with asyncio.TaskGroup() as tg:
+                        for room_code in stale_codes:
+                            tg.create_task(
+                                _evaluate_isolated(room_code),
+                                name=f"mindmate-idle-eval:{room_code}",
+                            )
             except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("[MindmateCollabIdle] scan error: %s", exc)
         try:

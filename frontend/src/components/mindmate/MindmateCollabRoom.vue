@@ -3,21 +3,21 @@
  * MindMate collab chatroom — inline seminar mode inside MindMate (/mindmate).
  * Swiss-style layout aligned with MindmateInput; generic chat vs @MindMate AI.
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
-
-import { MoreHorizontal, Power } from '@lucide/vue'
+import { ElButton } from 'element-plus'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useMindmateCollab, type MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
+import MindmateCollabBreadcrumb from '@/components/mindmate/MindmateCollabBreadcrumb.vue'
 import { authFetch } from '@/utils/api'
+import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
 import {
-  collabMessageMentionsMindmate,
-  insertMindmateMention,
-} from '@/utils/mindmateCollabMention'
+  requestMindmateCollabStop,
+  teardownMindmateCollabClient,
+} from '@/utils/mindmateCollabTeardown'
 import {
   formatMindmateCollabCode,
   trackLocalMindmateCollabSession,
@@ -39,7 +39,13 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'ended', reason: 'idle' | 'host' | 'left'): void
-  (e: 'room-meta', payload: { title: string; visibility: string; sessionId: string; code: string }): void
+  (e: 'room-meta', payload: {
+    title: string
+    visibility: string
+    sessionId: string
+    code: string
+    ownerId: number
+  }): void
 }>()
 
 const { t } = useLanguage()
@@ -52,13 +58,17 @@ const {
   messages,
   room,
   connected,
+  connectionStatus,
   isStreaming,
   idleWarningSeconds,
   isHost,
+  canSend,
   connect,
   disconnect,
   sendChat,
   seedRoom,
+  resetForRoomChange,
+  retryConnection,
 } = useMindmateCollab(() => normalizedCode.value, {
   onSessionEnded: (reason) => {
     emit('ended', reason)
@@ -67,21 +77,44 @@ const {
   seedMessages: () => props.seedMessages ?? [],
 })
 
+let joinGeneration = 0
+
 const inputText = ref('')
 const joining = ref(false)
+type CollabRecipientMode = 'mindmate' | 'all'
+const recipientMode = ref<CollabRecipientMode>('all')
 
-const visibilityLabel = computed(() => {
-  const vis = room.value?.visibility || 'organization'
-  return vis === 'network'
-    ? t('mindmate.collabSeminarPublic')
-    : t('mindmate.collabSeminarOrg')
+const inputPlaceholder = computed(() =>
+  recipientMode.value === 'mindmate'
+    ? t('mindmate.collabInputPlaceholderMindmate')
+    : t('mindmate.collabInputPlaceholderAll'),
+)
+
+const showConnectionBanner = computed(
+  () => connectionStatus.value === 'reconnecting' || connectionStatus.value === 'failed',
+)
+
+const connectionBannerText = computed(() => {
+  if (connectionStatus.value === 'reconnecting') {
+    return t('mindmate.collabReconnecting')
+  }
+  return t('mindmate.collabConnectionLost')
 })
 
 const roomTitle = computed(() => room.value?.title || t('mindmate.collabPill'))
 
+async function parseJoinErrorDetail(response: Response): Promise<string> {
+  try {
+    const err = (await response.json()) as { detail?: string }
+    return err.detail?.trim() || t('mindmate.collabJoinFailed')
+  } catch {
+    return t('mindmate.collabJoinFailed')
+  }
+}
+
 const headerSubtitle = computed(() => {
-  if (props.embedded) {
-    return roomTitle.value
+  if (room.value?.visibility === 'network') {
+    return ''
   }
   return `${normalizedCode.value} · ${room.value?.visibility || ''}`
 })
@@ -91,18 +124,25 @@ async function joinRoomAndConnect(): Promise<void> {
   if (!code) {
     return
   }
+  const generation = ++joinGeneration
   joining.value = true
   try {
     const response = await authFetch(
       `/api/mindmate/collab/join?code=${encodeURIComponent(code)}`,
       { method: 'POST' },
     )
+    if (generation !== joinGeneration) {
+      return
+    }
     if (!response.ok) {
-      notify.error(t('mindmate.collabJoinFailed'))
+      notify.error(await parseJoinErrorDetail(response))
       emit('ended', 'left')
       return
     }
     const data = (await response.json()) as Record<string, unknown>
+    if (generation !== joinGeneration) {
+      return
+    }
     trackLocalMindmateCollabSession({
       session_id: String(data.session_id || ''),
       code: String(data.code || code),
@@ -120,10 +160,17 @@ async function joinRoomAndConnect(): Promise<void> {
       ownerId: Number(data.owner_user_id || 0),
     })
     connect()
+  } catch {
+    notify.error(t('mindgraphLanding.networkErrorJoin'))
+    emit('ended', 'left')
   } finally {
     joining.value = false
   }
 }
+
+onUnmounted(() => {
+  joinGeneration += 1
+})
 
 onMounted(() => {
   void joinRoomAndConnect()
@@ -132,6 +179,7 @@ onMounted(() => {
 watch(normalizedCode, (code, prev) => {
   if (code && code !== prev) {
     disconnect()
+    resetForRoomChange()
     void joinRoomAndConnect()
   }
 })
@@ -140,11 +188,19 @@ watch(
   room,
   (value) => {
     if (value) {
+      trackLocalMindmateCollabSession({
+        session_id: value.sessionId,
+        code: value.code,
+        title: value.title,
+        owner_user_id: value.ownerId,
+        visibility: value.visibility,
+      })
       emit('room-meta', {
         title: value.title,
         visibility: value.visibility,
         sessionId: value.sessionId,
         code: value.code,
+        ownerId: value.ownerId,
       })
     }
   },
@@ -152,38 +208,51 @@ watch(
 )
 
 async function stopRoom() {
-  if (!room.value?.sessionId) {
+  const sessionId = room.value?.sessionId
+  if (!sessionId) {
     return
   }
-  const response = await authFetch('/api/mindmate/collab/stop', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_id: room.value.sessionId }),
-  })
-  if (response.ok) {
-    notify.success(t('mindmate.collabStopped'))
-    disconnect()
-    emit('ended', 'host')
-  } else {
-    notify.error(t('collab.endFailed'))
+  const confirmed = await confirmMindmateCollabStop(t)
+  if (!confirmed) {
+    return
   }
+  const code = normalizedCode.value
+  disconnect()
+  teardownMindmateCollabClient(code, { removeFromHistory: true })
+  emit('ended', 'host')
+  void requestMindmateCollabStop(sessionId).then((ok) => {
+    if (ok) {
+      notify.success(t('mindmate.collabStopped'))
+    } else {
+      notify.error(t('collab.endFailed'))
+    }
+  }).catch(() => {
+    notify.error(t('collab.endFailed'))
+  })
 }
 
 function handleSend() {
   const trimmed = inputText.value.trim()
-  if (!trimmed || isStreaming.value || joining.value) {
+  if (!trimmed || !canSend.value || joining.value) {
     return
   }
-  const toMindmate = collabMessageMentionsMindmate(trimmed, mindmateAgentName.value)
+  const toMindmate = recipientMode.value === 'mindmate'
   sendChat(trimmed, { toMindmate })
   inputText.value = ''
 }
 
-function mentionMindmate() {
-  inputText.value = insertMindmateMention(inputText.value, mindmateAgentName.value)
+function handleRetryConnection(): void {
+  if (joining.value) {
+    return
+  }
+  if (room.value?.sessionId) {
+    retryConnection()
+    return
+  }
+  void joinRoomAndConnect()
 }
 
-defineExpose({ stopRoom })
+defineExpose({ stopRoom, handleRetryConnection })
 </script>
 
 <template>
@@ -192,49 +261,30 @@ defineExpose({ stopRoom })
     :class="{ 'mindmate-collab-room--embedded': embedded }"
   >
     <header
-      class="mindmate-collab-room__header shrink-0 px-4 py-3 border-b border-stone-200 bg-white flex items-start justify-between gap-3"
+      v-if="!embedded"
+      class="mindmate-collab-room__header shrink-0 px-4 py-3 border-b border-stone-200 bg-white flex items-center justify-between gap-3"
     >
-      <div class="min-w-0">
-        <p class="text-[11px] font-medium uppercase tracking-wide text-stone-500">
-          {{ visibilityLabel }}
-        </p>
-        <h2 class="text-sm font-semibold text-stone-900 truncate leading-snug">
-          {{ roomTitle }}
-        </h2>
+      <div class="min-w-0 flex-1">
+        <MindmateCollabBreadcrumb
+          :visibility="room?.visibility || 'organization'"
+          :session-title="roomTitle"
+          :invite-code="normalizedCode"
+        />
         <p
-          v-if="!embedded"
+          v-if="headerSubtitle"
           class="text-[11px] text-stone-400 truncate mt-0.5"
         >
           {{ headerSubtitle }}
         </p>
       </div>
-      <ElDropdown
+      <ElButton
         v-if="isHost"
-        trigger="click"
-        placement="bottom-end"
-        popper-class="user-dropdown-popper"
-        teleported
-        class="shrink-0"
+        class="mindmate-collab-room__end-btn shrink-0"
+        size="small"
+        @click="stopRoom"
       >
-        <button
-          type="button"
-          class="mindmate-collab-room__more-btn"
-          :aria-label="t('mindmate.collabEnd')"
-        >
-          <MoreHorizontal class="w-4 h-4" />
-        </button>
-        <template #dropdown>
-          <ElDropdownMenu class="user-dropdown-menu">
-            <ElDropdownItem
-              class="user-dropdown-item--logout"
-              @click="stopRoom"
-            >
-              <Power class="w-4 h-4 mr-2" />
-              {{ t('sidebar.actions.turnOffOnlineCollab') }}
-            </ElDropdownItem>
-          </ElDropdownMenu>
-        </template>
-      </ElDropdown>
+        {{ t('mindmate.collabEndSeminar') }}
+      </ElButton>
     </header>
 
     <div
@@ -242,6 +292,26 @@ defineExpose({ stopRoom })
       class="bg-amber-50 text-amber-800 text-xs px-4 py-2 text-center shrink-0 border-b border-amber-100"
     >
       {{ t('mindmate.collabIdleWarning', { n: idleWarningSeconds }) }}
+    </div>
+
+    <div
+      v-else-if="showConnectionBanner"
+      class="text-xs px-4 py-2 text-center shrink-0 border-b flex items-center justify-center gap-3"
+      :class="
+        connectionStatus === 'reconnecting'
+          ? 'bg-sky-50 text-sky-800 border-sky-100'
+          : 'bg-rose-50 text-rose-800 border-rose-100'
+      "
+    >
+      <span>{{ connectionBannerText }}</span>
+      <button
+        v-if="connectionStatus === 'failed'"
+        type="button"
+        class="underline font-medium hover:opacity-80"
+        @click="handleRetryConnection"
+      >
+        {{ t('mindmate.collabRetryConnection') }}
+      </button>
     </div>
 
     <div class="flex-1 overflow-y-auto min-h-0">
@@ -255,7 +325,7 @@ defineExpose({ stopRoom })
 
         <div
           v-for="(msg, idx) in messages"
-          :key="idx"
+          :key="msg.id ?? `local-${idx}-${msg.role}`"
           class="flex gap-2.5"
           :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'"
         >
@@ -300,77 +370,132 @@ defineExpose({ stopRoom })
       </div>
     </div>
 
-    <div class="mindmate-collab-room__input shrink-0 border-t border-stone-200 bg-white">
-      <div class="max-w-3xl mx-auto px-4 pt-2">
-        <div class="flex items-center gap-2 pb-1">
+    <div class="mindmate-collab-room__input shrink-0 bg-white mt-auto">
+      <div class="mindmate-collab-room__input-inner">
+        <div
+          class="mindmate-collab-room__recipient-tabs"
+          role="tablist"
+          :aria-label="t('mindmate.collabRecipientTabsLabel')"
+        >
           <button
             type="button"
-            class="mindmate-collab-room__mention-btn"
-            @click="mentionMindmate"
+            role="tab"
+            class="mindmate-collab-room__recipient-tab"
+            :class="{ 'mindmate-collab-room__recipient-tab--active': recipientMode === 'mindmate' }"
+            :aria-selected="recipientMode === 'mindmate'"
+            :title="mindmateAgentName"
+            @click="recipientMode = 'mindmate'"
           >
-            @{{ mindmateAgentName }}
+            {{ mindmateAgentName }}
           </button>
-          <span class="text-[11px] text-stone-400">
-            {{ t('mindmate.collabInputHint') }}
-          </span>
+          <button
+            type="button"
+            role="tab"
+            class="mindmate-collab-room__recipient-tab"
+            :class="{ 'mindmate-collab-room__recipient-tab--active': recipientMode === 'all' }"
+            :aria-selected="recipientMode === 'all'"
+            @click="recipientMode = 'all'"
+          >
+            {{ t('mindmate.collabRecipientAll') }}
+          </button>
         </div>
+        <MindmateInput
+          :input-text="inputText"
+          mode="fullpage"
+          :is-loading="joining || connectionStatus === 'connecting'"
+          :is-streaming="isStreaming || !canSend"
+          :show-file-upload="false"
+          :placeholder="inputPlaceholder"
+          @update:input-text="inputText = $event"
+          @send="handleSend"
+        />
       </div>
-      <MindmateInput
-        :input-text="inputText"
-        mode="fullpage"
-        :is-loading="joining"
-        :is-streaming="isStreaming"
-        :show-file-upload="false"
-        :placeholder="t('mindmate.collabInputPlaceholder')"
-        @update:input-text="inputText = $event"
-        @send="handleSend"
-      />
     </div>
   </div>
 </template>
 
 <style scoped>
-.mindmate-collab-room__more-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: #78716c;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-}
-
-.mindmate-collab-room__more-btn:hover {
-  background: #f5f5f4;
-  color: #1c1917;
-}
-
-.mindmate-collab-room__mention-btn {
-  font-size: 12px;
+.mindmate-collab-room__end-btn {
+  --el-button-bg-color: #fef3c7;
+  --el-button-border-color: #fcd34d;
+  --el-button-hover-bg-color: #fde68a;
+  --el-button-hover-border-color: #fbbf24;
+  --el-button-hover-text-color: #78350f;
+  --el-button-active-bg-color: #fcd34d;
+  --el-button-active-border-color: #f59e0b;
+  --el-button-text-color: #92400e;
   font-weight: 500;
-  color: #44403c;
-  background: #f5f5f4;
-  border: 1px solid #e7e5e4;
   border-radius: 9999px;
-  padding: 4px 10px;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
 }
 
-.mindmate-collab-room__mention-btn:hover {
-  background: #e7e5e4;
-  border-color: #d6d3d1;
+.mindmate-collab-room__input-inner {
+  max-width: 680px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0.5rem 20px 1.25rem;
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+.mindmate-collab-room:not(.mindmate-collab-room--embedded) .mindmate-collab-room__input-inner {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
 }
 
 .mindmate-collab-room__input :deep(.input-area-fullpage) {
   padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  max-width: none;
+  margin: 0;
+  width: 100%;
+}
+
+.mindmate-collab-room__recipient-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 3px;
+  margin-bottom: 0.625rem;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  border-radius: 9999px;
+}
+
+.mindmate-collab-room__recipient-tab {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+  padding: 0.35rem 0.75rem;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: #78716c;
+  cursor: pointer;
+  max-width: min(9.5rem, 42vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.mindmate-collab-room__recipient-tab:hover:not(.mindmate-collab-room__recipient-tab--active) {
+  color: #44403c;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.mindmate-collab-room__recipient-tab--active {
+  background: #ffffff;
+  color: #1c1917;
+  box-shadow: 0 1px 2px rgba(28, 25, 23, 0.06);
+}
+
+.mindmate-collab-room__recipient-tab:focus-visible {
+  outline: 2px solid #a8a29e;
+  outline-offset: 1px;
 }
 </style>

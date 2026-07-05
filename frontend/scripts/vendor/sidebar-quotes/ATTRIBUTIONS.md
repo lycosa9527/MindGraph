@@ -20,6 +20,12 @@
 - **Commercial use:** confirm with product owner before shipping echoes-derived lines
   in a commercial product, or remove the extracted echoes JSON from vendor/.
 
+## MindGraph curated (mindgrowth)
+
+- Source: `scripts/vendor/sidebar-quotes/mindgraph/mindgrowth-quotes-zh.jsonl`
+- Curated Chinese quotes on thinking, learning, education, and personal growth
+- Categories: `thinking`, `learning`, `education`, `growth`
+
 ## MindGraph
 
 - Import script: `frontend/scripts/import-sidebar-quotes/`

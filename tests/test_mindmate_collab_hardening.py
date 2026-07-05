@@ -7,7 +7,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from services.features.mindmate_collab.config import MINDMATE_COLLAB_MAX_CHAT_CONTENT_CHARS
-from services.features.mindmate_collab.dify_stream_control import acquire_dify_stream_lock
+from services.features.mindmate_collab.dify_stream_control import (
+    abort_dify_stream,
+    acquire_dify_stream_lock,
+    is_dify_stream_aborted,
+)
 from services.features.mindmate_collab.manager import MindmateCollabManager
 
 
@@ -60,6 +64,41 @@ async def test_session_is_closing_false_when_marker_absent() -> None:
 
 
 @pytest.mark.asyncio
+async def test_abort_dify_stream_sets_abort_flag_without_releasing_lock() -> None:
+    """Abort signals cooperative stop and does not delete the stream lock."""
+    redis = AsyncMock()
+    redis.set = AsyncMock(return_value=True)
+    redis.delete = AsyncMock()
+    with patch(
+        "services.features.mindmate_collab.dify_stream_control.get_async_redis",
+        return_value=redis,
+    ):
+        await abort_dify_stream("ABC-DEF")
+
+    redis.set.assert_awaited_once()
+    redis.delete.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_is_dify_stream_aborted_true_when_abort_or_closing_marker() -> None:
+    """Stream abort probe returns true for abort flag or closing marker."""
+    redis = AsyncMock()
+    redis.get = AsyncMock(side_effect=[b"1", None])
+    with patch(
+        "services.features.mindmate_collab.dify_stream_control.get_async_redis",
+        return_value=redis,
+    ):
+        assert await is_dify_stream_aborted("ABC-DEF") is True
+
+    redis.get = AsyncMock(side_effect=[None, b"1"])
+    with patch(
+        "services.features.mindmate_collab.dify_stream_control.get_async_redis",
+        return_value=redis,
+    ):
+        assert await is_dify_stream_aborted("ABC-DEF") is True
+
+
+@pytest.mark.asyncio
 async def test_start_session_rolls_back_db_when_redis_write_fails() -> None:
     """Start flow marks the DB row ended when Redis session write fails."""
     mgr = MindmateCollabManager()
@@ -106,6 +145,7 @@ async def test_start_session_rolls_back_db_when_redis_write_fails() -> None:
             AsyncMock(),
         ),
         patch.object(mgr, "stop_hosted_sessions_for_user", AsyncMock(return_value=0)),
+        patch.object(mgr, "_count_live_org_sessions", AsyncMock(return_value=0)),
         patch(
             "services.features.mindmate_collab.manager.user_rls_session",
             return_value=user_ctx,

@@ -76,6 +76,18 @@ export function tierFeaturesForSchoolTier(
   return PREMIUM_SCHOOL_TIER_FEATURES
 }
 
+/** Resolve online collab tier access for router guards and deep links. */
+export function userCanUseOnlineCollab(
+  schoolId: string | null | undefined,
+  schoolTier: SchoolTier | null | undefined,
+  fromApi: Partial<SchoolTierFeatures> | null | undefined,
+): boolean {
+  if (!schoolId) {
+    return true
+  }
+  return mergeSchoolTierFeatures(schoolTier, fromApi).online_collab
+}
+
 /** Merge partial API flags with tier defaults (handles stale login payloads). */
 export function mergeSchoolTierFeatures(
   tier: SchoolTier | null | undefined,

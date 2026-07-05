@@ -12,7 +12,12 @@ import asyncio
 from typing import Dict
 
 from services.features.mindmate_collab.config import MINDMATE_COLLAB_DIFY_STREAM_TTL_SEC
-from services.features.mindmate_collab.redis_keys import dify_stream_lock_key, normalize_collab_code
+from services.features.mindmate_collab.redis_keys import (
+    closing_key,
+    dify_stream_abort_key,
+    dify_stream_lock_key,
+    normalize_collab_code,
+)
 from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import REDIS_ERRORS
 
@@ -46,6 +51,20 @@ async def acquire_dify_stream_lock(code: str) -> bool:
         return False
 
 
+async def refresh_dify_stream_lock(code: str) -> None:
+    """Extend the per-room Dify stream lock TTL during long upstream streams."""
+    redis = get_async_redis()
+    if not redis:
+        return
+    try:
+        await redis.expire(
+            dify_stream_lock_key(code),
+            MINDMATE_COLLAB_DIFY_STREAM_TTL_SEC,
+        )
+    except REDIS_ERRORS:
+        pass
+
+
 async def release_dify_stream_lock(code: str) -> None:
     """Release the per-room Dify stream lock if held."""
     redis = get_async_redis()
@@ -57,10 +76,54 @@ async def release_dify_stream_lock(code: str) -> None:
         pass
 
 
-async def abort_dify_stream(code: str) -> None:
-    """Cancel an in-flight Dify stream and release its lock."""
+def _marker_present(raw: object) -> bool:
+    return raw is not None and raw not in (b"", "", b"0", "0")
+
+
+async def signal_dify_stream_abort(code: str) -> None:
+    """Set a cross-worker abort flag and cancel the local stream task if present."""
+    redis = get_async_redis()
+    if redis:
+        try:
+            await redis.set(
+                dify_stream_abort_key(code),
+                "1",
+                ex=MINDMATE_COLLAB_DIFY_STREAM_TTL_SEC,
+            )
+        except REDIS_ERRORS:
+            pass
     norm = normalize_collab_code(code)
-    task = _active_tasks.pop(norm, None)
-    if task and not task.done():
+    task = _active_tasks.get(norm)
+    if task is not None and not task.done():
         task.cancel()
-    await release_dify_stream_lock(code)
+
+
+async def clear_dify_stream_abort(code: str) -> None:
+    """Remove the cooperative abort marker after a stream finishes."""
+    redis = get_async_redis()
+    if not redis:
+        return
+    try:
+        await redis.delete(dify_stream_abort_key(code))
+    except REDIS_ERRORS:
+        pass
+
+
+async def is_dify_stream_aborted(code: str) -> bool:
+    """Return True when the room stream should stop (abort flag or closing marker)."""
+    redis = get_async_redis()
+    if not redis:
+        return False
+    try:
+        abort_raw = await redis.get(dify_stream_abort_key(code))
+        if _marker_present(abort_raw):
+            return True
+        closing_raw = await redis.get(closing_key(code))
+        return _marker_present(closing_raw)
+    except REDIS_ERRORS:
+        return False
+
+
+async def abort_dify_stream(code: str) -> None:
+    """Signal all workers to abort the in-flight Dify stream for this room."""
+    await signal_dify_stream_abort(code)

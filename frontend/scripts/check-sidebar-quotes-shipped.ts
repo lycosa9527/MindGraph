@@ -15,9 +15,11 @@ import {
   OUTPUT_EN,
   OUTPUT_ZH,
   VENDOR_LOCK_PATH,
+  VENDOR_MINDGROWTH_ZH,
   VENDOR_WISDOM_EN,
   VENDOR_WISDOM_ZH,
   WISDOM_QUOTES_REF,
+  MIN_MINDGROWTH_ZH_QUOTES,
 } from './import-sidebar-quotes/config.ts'
 
 const frontendDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -95,6 +97,7 @@ assertLazyLoadImplementation()
 
 assertRequiredFile(VENDOR_WISDOM_ZH, 'wisdom-quotes vendor snapshot')
 assertRequiredFile(VENDOR_WISDOM_EN, 'wisdom-quotes vendor snapshot')
+assertRequiredFile(VENDOR_MINDGROWTH_ZH, 'mindgrowth curated zh snapshot')
 assertRequiredFile(VENDOR_LOCK_PATH, 'sidebar quote vendor lock')
 assertRequiredFile(ATTRIBUTIONS_PATH, 'sidebar quote attributions')
 assertRequiredFile(EXTRACTED_ECHOES_ZH, 'extracted echoes zh snapshot')
@@ -106,6 +109,14 @@ const vendorLock = JSON.parse(readFileSync(VENDOR_LOCK_PATH, 'utf8')) as {
 }
 if (vendorLock['wisdom-quotes']?.ref !== WISDOM_QUOTES_REF) {
   throw new Error(`VENDOR_LOCK.json wisdom-quotes ref mismatch: expected ${WISDOM_QUOTES_REF}`)
+}
+
+const mindgrowthRaw = readFileSync(VENDOR_MINDGROWTH_ZH, 'utf8')
+const mindgrowthCount = mindgrowthRaw.split(/\r?\n/).filter((line) => line.trim()).length
+if (mindgrowthCount < MIN_MINDGROWTH_ZH_QUOTES) {
+  throw new Error(
+    `mindgrowth vendor has ${mindgrowthCount} rows; expected at least ${MIN_MINDGROWTH_ZH_QUOTES}`
+  )
 }
 
 const echoesManifest = JSON.parse(readFileSync(EXTRACTED_ECHOES_MANIFEST, 'utf8')) as {

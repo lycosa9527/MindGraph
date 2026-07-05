@@ -85,3 +85,124 @@ async def test_session_payload_includes_owner_and_expiry() -> None:
     assert payload["owner_user_id"] == 7
     assert payload["participant_count"] == 4
     assert payload["expires_at"].startswith("2026-07-03")
+
+
+@pytest.mark.asyncio
+async def test_join_by_code_rejected_when_room_closing() -> None:
+    """REST join fails while the closing marker is set."""
+    mgr = MindmateCollabManager()
+    session = MagicMock()
+    session.code = "ABC-DEF"
+    session.visibility = "organization"
+    session.expires_at = None
+    session.owner_user_id = 1
+    session.organization_id = 10
+
+    with (
+        patch.object(mgr, "load_session_by_code", AsyncMock(return_value=session)),
+        patch.object(mgr, "session_is_closing", AsyncMock(return_value=True)),
+    ):
+        payload = await mgr.join_by_code(2, "ABC-DEF")
+
+    assert payload is None
+
+
+@pytest.mark.asyncio
+async def test_join_by_code_registers_participant_before_payload() -> None:
+    """REST join adds the user to the Redis roster so roster/poke work before WS connect."""
+    mgr = MindmateCollabManager()
+    session = MagicMock()
+    session.code = "ABC-DEF"
+    session.visibility = "organization"
+    session.expires_at = None
+    session.owner_user_id = 1
+    session.organization_id = 10
+
+    fake_sess = AsyncMock()
+    fake_result = MagicMock()
+    fake_result.scalar_one_or_none.return_value = True
+    fake_sess.execute = AsyncMock(return_value=fake_result)
+    context = AsyncMock()
+
+    async def _enter(*_a, **_k):
+        return fake_sess
+
+    context.__aenter__.side_effect = _enter
+    context.__aexit__.return_value = None
+
+    register_mock = AsyncMock(return_value=True)
+    payload_mock = AsyncMock(return_value={"code": "ABC-DEF", "participant_count": 2})
+
+    with (
+        patch.object(mgr, "load_session_by_code", AsyncMock(return_value=session)),
+        patch.object(mgr, "session_is_closing", AsyncMock(return_value=False)),
+        patch(
+            "services.features.mindmate_collab.manager.user_rls_session",
+            return_value=context,
+        ),
+        patch(
+            "services.features.mindmate_collab.manager.user_may_join_mindmate_collab",
+            AsyncMock(return_value=True),
+        ),
+        patch.object(mgr, "_register_join_participant", register_mock),
+        patch.object(mgr, "_session_payload", payload_mock),
+    ):
+        payload = await mgr.join_by_code(2, "ABC-DEF")
+
+    register_mock.assert_awaited_once_with("ABC-DEF", 2)
+    assert payload == {"code": "ABC-DEF", "participant_count": 2}
+
+
+@pytest.mark.asyncio
+async def test_join_by_code_rejected_when_room_full() -> None:
+    """REST join fails when the participant cap is reached."""
+    mgr = MindmateCollabManager()
+    session = MagicMock()
+    session.code = "ABC-DEF"
+    session.visibility = "network"
+    session.expires_at = None
+    session.owner_user_id = 1
+    session.organization_id = 10
+
+    with (
+        patch.object(mgr, "load_session_by_code", AsyncMock(return_value=session)),
+        patch.object(mgr, "session_is_closing", AsyncMock(return_value=False)),
+        patch.object(mgr, "_register_join_participant", AsyncMock(return_value=False)),
+    ):
+        payload = await mgr.join_by_code(2, "ABC-DEF")
+
+    assert payload is None
+
+
+@pytest.mark.asyncio
+async def test_resolve_dify_conversation_id_prefers_redis_meta() -> None:
+    """WS chat uses the latest Dify conversation id from Redis session meta."""
+    mgr = MindmateCollabManager()
+    with patch.object(
+        mgr,
+        "get_session_meta",
+        AsyncMock(return_value={"dify_conversation_id": "conv-redis"}),
+    ):
+        conv_id = await mgr.resolve_dify_conversation_id("ABC-DEF", fallback="conv-stale")
+
+    assert conv_id == "conv-redis"
+
+
+@pytest.mark.asyncio
+async def test_participant_counts_for_codes_batches_hlen() -> None:
+    """Org browse uses one Redis pipeline for many participant counts."""
+    mgr = MindmateCollabManager()
+    redis = AsyncMock()
+    pipe = AsyncMock()
+    pipe.hlen = MagicMock(return_value=pipe)
+    pipe.execute = AsyncMock(return_value=[3, 5])
+    redis.pipeline = MagicMock(return_value=pipe)
+
+    with patch(
+        "services.features.mindmate_collab.manager.get_async_redis",
+        return_value=redis,
+    ):
+        counts = await mgr.participant_counts_for_codes(["ABC-DEF", "GHI-JKL"])
+
+    assert counts == {"ABC-DEF": 3, "GHI-JKL": 5}
+    assert pipe.hlen.call_count == 2

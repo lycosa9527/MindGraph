@@ -69,6 +69,11 @@ def dify_stream_lock_key(code: str) -> str:
     return f"{MINDMATE_COLLAB_REDIS_PREFIX}:dify_stream:{normalize_collab_code(code)}"
 
 
+def dify_stream_abort_key(code: str) -> str:
+    """Redis marker requesting cooperative abort of an in-flight Dify stream."""
+    return f"{MINDMATE_COLLAB_REDIS_PREFIX}:dify_abort:{normalize_collab_code(code)}"
+
+
 def room_idle_warning_key(code: str) -> str:
     """Redis marker that an idle warning was broadcast."""
     return f"{MINDMATE_COLLAB_REDIS_PREFIX}:idle_warn:{normalize_collab_code(code)}"
@@ -98,6 +103,7 @@ def purge_session_redis_keys(_redis: Any, code: str, org_id: int | None, visibil
         code_to_session_key(norm),
         closing_key(norm),
         dify_stream_lock_key(norm),
+        dify_stream_abort_key(norm),
         room_idle_warning_key(norm),
         room_idle_kick_lock_key(norm),
     ]

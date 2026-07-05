@@ -66,3 +66,50 @@ async def fetch_org_members_page(
         limit=lim,
         offset=off,
     )
+
+
+async def fetch_session_participants_page(
+    db: AsyncSession,
+    participant_ids: list[int],
+    *,
+    q: str = "",
+    limit: int = 200,
+    offset: int = 0,
+) -> OrgMembersPage:
+    """Paginated roster limited to active MindMate collab session participants."""
+    lim = min(max(limit, 1), _ORG_MEMBER_LIMIT_MAX)
+    off = max(offset, 0)
+    unique_ids = sorted({int(uid) for uid in participant_ids if uid})
+    if not unique_ids:
+        return OrgMembersPage(items=[], total=0, limit=lim, offset=off)
+
+    raw_q = (q or "").strip()
+    if raw_q and len(raw_q) > _ORG_MEMBER_Q_MAX_LEN:
+        raw_q = raw_q[:_ORG_MEMBER_Q_MAX_LEN]
+
+    filters = [User.id.in_(unique_ids)]
+    if raw_q:
+        pattern = f"%{escape_ilike_literal(raw_q)}%"
+        filters.append(User.name.ilike(pattern, escape="\\"))
+
+    count_result = await db.execute(select(sa_count()).select_from(User).where(*filters))
+    total = count_result.scalar_one()
+    users_result = await db.execute(
+        select(User).where(*filters).order_by(User.name).offset(off).limit(lim),
+    )
+    users = users_result.scalars().all()
+    items = [
+        OrgMemberRow(
+            id=u.id,
+            name=u.name or f"User {u.id}",
+            avatar=u.avatar,
+            last_seen_at=u.workshop_last_seen_at,
+        )
+        for u in users
+    ]
+    return OrgMembersPage(
+        items=items,
+        total=int(total),
+        limit=lim,
+        offset=off,
+    )

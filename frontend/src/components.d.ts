@@ -277,6 +277,7 @@ declare module 'vue' {
     MindMapSubgraphPreviewBar: typeof import('./components/canvas/MindMapSubgraphPreviewBar.vue')['default']
     MindMapWaterfallPanel: typeof import('./components/canvas/MindMapWaterfallPanel.vue')['default']
     MindmateAgentAvatar: typeof import('./components/panels/mindmate/MindmateAgentAvatar.vue')['default']
+    MindmateCollabBreadcrumb: typeof import('./components/mindmate/MindmateCollabBreadcrumb.vue')['default']
     MindmateCollabEmbed: typeof import('./components/mindmate/MindmateCollabEmbed.vue')['default']
     MindmateCollabHistory: typeof import('./components/sidebar/MindmateCollabHistory.vue')['default']
     MindmateCollabMembersPanel: typeof import('./components/mindmate/MindmateCollabMembersPanel.vue')['default']

@@ -60,6 +60,8 @@ async def test_envelope_publish_injects_msg_id(monkeypatch):
     monkeypatch.setattr(pub_core, "get_async_redis", _any_redis_client)
     monkeypatch.setattr(pub_core, "is_ws_fanout_enabled", _truthy)
     monkeypatch.setattr(pub_core, "use_streams_audit", _falsy_audit)
+    monkeypatch.setenv("COLLAB_FANOUT_ORIGIN_SECRET", "test-origin-secret")
+    monkeypatch.setattr(pub_core, "_FANOUT_ORIGIN_SECRET", "test-origin-secret")
 
     envelope = {
         "v": 1,
@@ -75,6 +77,7 @@ async def test_envelope_publish_injects_msg_id(monkeypatch):
     inner = json.loads(outer["d"])
     assert isinstance(inner.get("msg_id"), str)
     assert inner["msg_id"]
+    assert outer.get("origin") == "test-origin-secret"
 
 
 @pytest.mark.asyncio
@@ -123,6 +126,8 @@ async def test_handle_workshop_raw_dispatches_deliver(monkeypatch):
 
     monkeypatch.setattr(lst, "deliver_local_workshop_broadcast", fake_deliver)
     monkeypatch.setattr(lst, "record_ws_fanout_workshop_received", record_received)
+    monkeypatch.setenv("COLLAB_FANOUT_ORIGIN_SECRET", "test-origin-secret")
+    monkeypatch.setattr(lst, "_FANOUT_ORIGIN_SECRET", "test-origin-secret")
 
     payload_obj = {
         "v": 1,
@@ -130,6 +135,7 @@ async def test_handle_workshop_raw_dispatches_deliver(monkeypatch):
         "code": "ROOM-XYZ",
         "mode": "others",
         "ex": 5,
+        "origin": "test-origin-secret",
         "d": json.dumps({"seq": 2}, ensure_ascii=False),
     }
     await _handle_workshop_raw(json.dumps(payload_obj))
@@ -140,6 +146,36 @@ async def test_handle_workshop_raw_dispatches_deliver(monkeypatch):
     assert mode == "others"
     assert exclude == 5
     assert json.loads(blob)["seq"] == 2
+
+
+@pytest.mark.asyncio
+async def test_handle_workshop_raw_rejects_mmc_without_origin(monkeypatch):
+    """MindMate collab fan-out requires a valid origin when enforcement is on."""
+    calls: List[Dict[str, Any]] = []
+
+    async def fake_mmc_deliver(envelope: Dict[str, Any]) -> None:
+        calls.append(dict(envelope))
+
+    monkeypatch.setenv("COLLAB_FANOUT_ORIGIN_SECRET", "test-origin-secret")
+    monkeypatch.setattr(lst, "_FANOUT_ORIGIN_SECRET", "test-origin-secret")
+    monkeypatch.setattr(lst, "DELIVER_MINDMATE_COLLAB_FANOUT", fake_mmc_deliver)
+    monkeypatch.setattr(lst, "record_ws_fanout_workshop_received", lambda: None)
+
+    missing_origin = {
+        "v": 1,
+        "k": "ws",
+        "code": "mmc:ABCDEF",
+        "mode": "all",
+        "d": json.dumps({"type": "ai_message_chunk", "content": "hi"}, ensure_ascii=False),
+    }
+    await _handle_workshop_raw(json.dumps(missing_origin))
+    assert not calls
+
+    valid_origin = dict(missing_origin)
+    valid_origin["origin"] = "test-origin-secret"
+    await _handle_workshop_raw(json.dumps(valid_origin))
+    assert len(calls) == 1
+    assert calls[0]["code"] == "mmc:ABCDEF"
 
 
 @pytest.mark.asyncio

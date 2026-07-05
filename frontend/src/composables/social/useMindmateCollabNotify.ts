@@ -33,7 +33,7 @@ export function useMindmateCollabNotify(): void {
     () =>
       authStore.isAuthenticated &&
       featureFlagsStore.getFeatureMindmateCollab() &&
-      canUseOnlineCollab.value,
+      canUseOnlineCollab.value
   )
 
   function resolveOrgId(): number | null {
@@ -138,13 +138,17 @@ export function useMindmateCollabNotify(): void {
     open()
   }
 
-  watch(shouldConnect, (ok) => {
-    if (ok) {
-      connectNotify()
-    } else {
-      disconnectNotify()
-    }
-  }, { immediate: true })
+  watch(
+    shouldConnect,
+    (ok) => {
+      if (ok) {
+        connectNotify()
+      } else {
+        disconnectNotify()
+      }
+    },
+    { immediate: true }
+  )
 
   onUnmounted(() => {
     disconnectNotify()

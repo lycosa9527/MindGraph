@@ -2,7 +2,7 @@
 /**
  * MindMate collab layout — chat (left) + school members (right column).
  */
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import MindmateCollabMembersPanel from '@/components/mindmate/MindmateCollabMembersPanel.vue'
 import MindmateDmDrawer from '@/components/mindmate/MindmateDmDrawer.vue'
@@ -10,20 +10,36 @@ import MindmateCollabRoom from '@/components/mindmate/MindmateCollabRoom.vue'
 import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
 import { useLanguage } from '@/composables'
 
-defineProps<{
+const props = defineProps<{
   roomCode: string
   seedMessages?: MindmateCollabMessage[]
 }>()
 
 const emit = defineEmits<{
   (e: 'ended', reason: 'idle' | 'host' | 'left'): void
-  (e: 'room-meta', payload: { title: string; visibility: string }): void
+  (e: 'room-meta', payload: {
+    title: string
+    visibility: string
+    sessionId: string
+    code: string
+    ownerId: number
+  }): void
 }>()
 
 const { t } = useLanguage()
 
 const sessionId = ref('')
 const roomTitle = ref('')
+const roomVisibility = ref('organization')
+
+watch(
+  () => props.roomCode,
+  () => {
+    sessionId.value = ''
+    roomTitle.value = ''
+    roomVisibility.value = 'organization'
+  },
+)
 
 const dmPartnerId = ref<number | null>(null)
 const showDm = ref(false)
@@ -38,10 +54,18 @@ function onRoomMeta(payload: {
   visibility: string
   sessionId: string
   code: string
+  ownerId: number
 }) {
   sessionId.value = payload.sessionId
   roomTitle.value = payload.title
-  emit('room-meta', { title: payload.title, visibility: payload.visibility })
+  roomVisibility.value = payload.visibility
+  emit('room-meta', {
+    title: payload.title,
+    visibility: payload.visibility,
+    sessionId: payload.sessionId,
+    code: payload.code,
+    ownerId: payload.ownerId,
+  })
 }
 </script>
 
@@ -62,9 +86,11 @@ function onRoomMeta(payload: {
       :aria-label="t('mindmate.collabMembersTitle')"
     >
       <MindmateCollabMembersPanel
+        v-if="sessionId"
         :session-id="sessionId"
         :room-code="roomCode"
         :room-title="roomTitle"
+        :visibility="roomVisibility"
         @message="openDm"
       />
     </aside>

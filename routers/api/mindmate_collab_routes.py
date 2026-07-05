@@ -9,7 +9,7 @@ Proprietary License
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
@@ -24,12 +24,17 @@ from routers.auth.dependencies import get_language_dependency
 from routers.features.workshop_chat.schemas import OrgMembersPage
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
+from services.features.mindmate_collab.config import MINDMATE_COLLAB_DEFAULT_DURATION
 from services.features.mindmate_collab.manager_access import get_mindmate_collab_manager
 from services.features.mindmate_collab.poke_notify import send_mindmate_collab_poke
 from services.features.mindmate_collab.visibility import user_may_join_mindmate_collab
-from services.features.org_member_roster import fetch_org_members_page
+from services.features.org_member_roster import (
+    fetch_org_members_page,
+    fetch_session_participants_page,
+)
 from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_NETWORK,
+    ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
 )
 from utils.auth import get_current_user
 from utils.auth.school_tier import (
@@ -55,12 +60,20 @@ router = APIRouter(
 )
 
 
+class CollabSeedMessage(BaseModel):
+    """One message copied into a new collab room from the host's MindMate thread."""
+
+    role: str = Field(default="user")
+    content: str = Field(default="")
+
+
 class StartCollabRequest(BaseModel):
     """Body for POST /mindmate/collab/start."""
 
     visibility: str = Field(default="organization")
     title: Optional[str] = None
-    duration: str = Field(default="today")
+    duration: str = Field(default=MINDMATE_COLLAB_DEFAULT_DURATION)
+    seed_messages: List[CollabSeedMessage] = Field(default_factory=list)
 
 
 class StopCollabRequest(BaseModel):
@@ -105,11 +118,18 @@ async def start_collab_room(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_collab_start", identifier, max_requests=10, window_seconds=60)
 
+    if body.visibility not in (
+        ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
+        ONLINE_COLLAB_VISIBILITY_NETWORK,
+    ):
+        raise HTTPException(status_code=400, detail="Invalid visibility mode")
+
     payload, error = await get_mindmate_collab_manager().start_session(
         current_user.id,
         visibility=body.visibility,
         title=body.title,
         duration=body.duration,
+        seed_messages=[item.model_dump() for item in body.seed_messages],
     )
     if not payload:
         raise HTTPException(status_code=400, detail=error or "Failed to start room")
@@ -241,6 +261,57 @@ async def poke_collab_member(
     return {"success": True, "delivered": delivered}
 
 
+@router.get("/session-members", response_model=OrgMembersPage)
+async def list_collab_session_members(
+    request: Request,
+    code: str = Query(..., min_length=7, max_length=7),
+    q: Optional[str] = None,
+    limit: int = Query(default=200, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+):
+    """List teachers who joined a public MindMate collab room (network visibility)."""
+    await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_session_members",
+        identifier,
+        max_requests=60,
+        window_seconds=60,
+    )
+
+    mgr = get_mindmate_collab_manager()
+    session = await mgr.load_session_by_code(code)
+    if not session or session.ended_at is not None:
+        raise HTTPException(status_code=404, detail="Room not found")
+    if session.visibility != ONLINE_COLLAB_VISIBILITY_NETWORK:
+        raise HTTPException(status_code=400, detail="Session roster is org-only")
+
+    participant_ids = await mgr.list_participant_user_ids(code)
+    is_member = current_user.id in participant_ids
+    if not is_member:
+        async with actor_rls_session(current_user) as rls_db:
+            may_join = await user_may_join_mindmate_collab(
+                rls_db,
+                visibility=session.visibility,
+                owner_user_id=session.owner_user_id,
+                owner_org_id=session.organization_id,
+                joiner_id=current_user.id,
+            )
+        if not may_join:
+            raise HTTPException(status_code=403, detail="Not allowed to view this room roster")
+
+    return await fetch_session_participants_page(
+        db,
+        participant_ids,
+        q=q or "",
+        limit=limit,
+        offset=offset,
+    )
+
+
 @router.get("/org-members", response_model=OrgMembersPage)
 async def list_collab_org_members(
     request: Request,
@@ -322,17 +393,26 @@ async def collab_status(
 
 @router.get("/my/hosted")
 async def my_hosted_session(
+    request: Request,
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ):
     """Return the caller's currently hosted MindMate collab session, if any."""
     await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_my_hosted",
+        identifier,
+        max_requests=30,
+        window_seconds=60,
+    )
     hosted = await get_mindmate_collab_manager().get_hosted_session(current_user.id)
     return {"session": hosted}
 
 
 @router.get("/{session_id}/history")
 async def collab_history(
+    request: Request,
     session_id: str,
     limit: int = Query(100, ge=1, le=200),
     current_user: User = Depends(get_current_user),
@@ -340,8 +420,15 @@ async def collab_history(
 ):
     """Paginated message history for reconnecting or auditing a room."""
     await _require_collab_tier(current_user, lang)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "mindmate_collab_history",
+        identifier,
+        max_requests=30,
+        window_seconds=60,
+    )
     mgr = get_mindmate_collab_manager()
-    session = await mgr.load_session_by_id(session_id)
+    session = await mgr.load_session_by_id_any(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Room not found")
     async with actor_rls_session(current_user) as db:
@@ -352,7 +439,7 @@ async def collab_history(
             owner_org_id=session.organization_id,
             joiner_id=current_user.id,
         )
-    if not allowed and session.visibility != "network":
+    if not allowed and session.visibility != ONLINE_COLLAB_VISIBILITY_NETWORK:
         raise HTTPException(status_code=403, detail="Access denied")
     messages = await mgr.fetch_message_history(session_id, limit=limit)
     return {"messages": messages}

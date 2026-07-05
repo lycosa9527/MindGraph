@@ -12,6 +12,7 @@ import {
 import { formatThinkingCoinBalance } from '@/composables/auth/useThinkingCoins'
 import { patchEarnTasksFromMutation } from '@/composables/auth/useThinkingCoinSync'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
@@ -57,6 +58,7 @@ export function useAppSidebar() {
   const mindMateStore = useMindMateStore()
   const askOnceStore = useAskOnceStore()
   const { displayName: mindMateNavLabel } = useMindMateBranding()
+  const { canUseOnlineCollab } = useSchoolTierFeatures()
   const {
     featureRagChunkTest,
     featureCourse,
@@ -600,6 +602,10 @@ export function useAppSidebar() {
   })
   onScopeDispose(offThinkingCoinMutation)
 
+  const showMindmateCollabSessions = computed(
+    () => featureMindmateCollab.value && canUseOnlineCollab.value,
+  )
+
   return {
     t,
     router,
@@ -619,6 +625,7 @@ export function useAppSidebar() {
     featureTeacherUsage,
     featureWorkshopChat,
     featureMindmateCollab,
+    showMindmateCollabSessions,
     featureMindbot,
     isCollapsed,
     currentMode,

@@ -1,4 +1,9 @@
-export type SidebarQuoteSource = 'wisdom-quotes-zh' | 'wisdom-quotes-en' | 'echoes-zh' | 'echoes-en'
+export type SidebarQuoteSource =
+  | 'wisdom-quotes-zh'
+  | 'wisdom-quotes-en'
+  | 'echoes-zh'
+  | 'echoes-en'
+  | 'mindgrowth-zh'
 
 export interface SidebarQuote {
   id: string

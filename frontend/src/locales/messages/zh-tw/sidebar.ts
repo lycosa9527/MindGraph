@@ -95,7 +95,8 @@ export default {
   'sidebar.logoSiteQrTitle': '網站二維碼',
   'sidebar.logoSiteQrHint': '請使用手機上的相機/微信掃描二維碼',
   'sidebar.mindmateCollabHistory.title': '在線協同',
-  'sidebar.mindmateCollabHistory.stopConfirm': '為所有人結束此 MindMate 協同房間？',
+  'sidebar.mindmateCollabHistory.stopConfirmTitle': '結束研討會',
+  'sidebar.mindmateCollabHistory.stopConfirm': '將為所有參與者結束此研討房間，所有人將退出房間。',
   'sidebar.mindmateCollabHistory.visibilityOrg': '校內',
   'sidebar.mindmateCollabHistory.visibilityNetwork': '跨校',
 } as const

@@ -14,7 +14,10 @@ from typing import Optional
 
 from services.dify.org_mindmate_client import resolve_mindmate_dify_client_short_lived
 from services.features.mindmate_collab.dify_stream_control import (
+    clear_dify_stream_abort,
     clear_dify_stream_task,
+    is_dify_stream_aborted,
+    refresh_dify_stream_lock,
     register_dify_stream_task,
     release_dify_stream_lock,
 )
@@ -32,6 +35,17 @@ def mindmate_collab_dify_user_id(org_id: Optional[int], session_id: str) -> str:
     return f"mindmate_collab_{org_part}_{session_id}"
 
 
+async def _broadcast_aborted_end(code: str, partial: str) -> None:
+    await broadcast_to_all(
+        code,
+        {
+            "type": "ai_message_end",
+            "content": partial,
+            "aborted": True,
+        },
+    )
+
+
 async def stream_assistant_reply(
     *,
     code: str,
@@ -45,8 +59,13 @@ async def stream_assistant_reply(
     mgr = get_mindmate_collab_manager()
     dify_user = mindmate_collab_dify_user_id(org_id, session_id)
     full_answer: list[str] = []
+    aborted = False
 
     try:
+        if await is_dify_stream_aborted(code):
+            aborted = True
+            return
+
         client = await resolve_mindmate_dify_client_short_lived(org_id, detail="AI service not configured")
         stream = client.stream_chat(
             message=user_message,
@@ -55,6 +74,9 @@ async def stream_assistant_reply(
             inputs={"mg_dify_user": dify_user},
         )
         async for chunk in iter_upstream_with_keepalive(stream, interval_seconds=15.0):
+            if await is_dify_stream_aborted(code):
+                aborted = True
+                break
             if not chunk:
                 continue
             event = chunk.get("event") if isinstance(chunk, dict) else None
@@ -70,6 +92,7 @@ async def stream_assistant_reply(
                 conversation_id = str(conv_id)
                 await mgr.set_dify_conversation_id(session_id, conversation_id)
             if answer:
+                await refresh_dify_stream_lock(code)
                 full_answer.append(str(answer))
                 await broadcast_to_all(
                     code,
@@ -79,38 +102,36 @@ async def stream_assistant_reply(
                         "sender_user_id": sender_user_id,
                     },
                 )
+        if aborted:
+            await _broadcast_aborted_end(code, "".join(full_answer))
+            return
         final_text = "".join(full_answer)
+        assistant_id: Optional[int] = None
         if final_text.strip():
-            await mgr.persist_message(
+            saved = await mgr.persist_message(
                 session_id,
                 role="assistant",
                 content=final_text,
                 sender_user_id=None,
             )
+            assistant_id = saved.id
         await broadcast_to_all(
             code,
             {
                 "type": "ai_message_end",
                 "content": final_text,
-                "conversation_id": conversation_id,
+                "id": assistant_id,
             },
         )
     except asyncio.CancelledError:
-        partial = "".join(full_answer)
-        await broadcast_to_all(
-            code,
-            {
-                "type": "ai_message_end",
-                "content": partial,
-                "aborted": True,
-            },
-        )
+        await _broadcast_aborted_end(code, "".join(full_answer))
         raise
     except (OSError, RuntimeError, ValueError, TypeError, KeyError) as exc:
         logger.warning("[MindmateCollabDify] stream failed code=%s: %s", code, exc)
         await broadcast_to_all(code, {"type": "error", "code": "dify_error", "message": "AI response failed"})
     finally:
         await release_dify_stream_lock(code)
+        await clear_dify_stream_abort(code)
         clear_dify_stream_task(code)
 
 

@@ -15,6 +15,7 @@ import {
   WISDOM_QUOTES_REPO,
 } from './config.ts'
 import { normalizeEchoesFromExtracted } from './normalize-echoes.ts'
+import { normalizeMindgrowthQuotesZhFromFile } from './normalize-mindgrowth.ts'
 import {
   normalizeWisdomQuotesEnFromFile,
   normalizeWisdomQuotesZhFromFile,
@@ -55,6 +56,12 @@ function buildAttributionsContent(manifest: EchoesExtractManifest): string {
 - **Commercial use:** confirm with product owner before shipping echoes-derived lines
   in a commercial product, or remove the extracted echoes JSON from vendor/.
 
+## MindGraph curated (mindgrowth)
+
+- Source: \`scripts/vendor/sidebar-quotes/mindgraph/mindgrowth-quotes-zh.jsonl\`
+- Curated Chinese quotes on thinking, learning, education, and personal growth
+- Categories: \`thinking\`, \`learning\`, \`education\`, \`growth\`
+
 ## MindGraph
 
 - Import script: \`frontend/scripts/import-sidebar-quotes/\`
@@ -86,12 +93,13 @@ function writeJson(path: string, quotes: SidebarQuote[]): void {
 }
 
 export function runImport(): { zhCount: number; enCount: number } {
+  const mindgrowthZh = normalizeMindgrowthQuotesZhFromFile()
   const wisdomZh = normalizeWisdomQuotesZhFromFile()
   const wisdomEn = normalizeWisdomQuotesEnFromFile()
   const echoes = normalizeEchoesFromExtracted()
   const manifest = readEchoesManifest()
 
-  const zhQuotes = dedupeQuotes([...wisdomZh, ...echoes.zh], 'zh')
+  const zhQuotes = dedupeQuotes([...mindgrowthZh, ...wisdomZh, ...echoes.zh], 'zh')
   const enQuotes = dedupeQuotes([...wisdomEn, ...echoes.en], 'en')
 
   validateQuoteRows(zhQuotes, 'zh')

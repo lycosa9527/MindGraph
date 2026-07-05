@@ -17,9 +17,7 @@ from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
 )
 from utils.auth.role_constants import (
-    PLATFORM_LEVEL_ROLES,
     ROLE_EXPERT,
-    ROLE_SUPERADMIN,
     SCHOOL_ADMIN_ROLES,
     SUPERADMIN_ROLES,
 )
@@ -59,8 +57,6 @@ async def user_may_join_mindmate_collab(
         return True
     if role in SCHOOL_ADMIN_ROLES:
         return True
-    if role in PLATFORM_LEVEL_ROLES and role not in (ROLE_EXPERT, ROLE_SUPERADMIN):
-        pass
 
     org_joiner = joiner_row.organization_id
     org_owner = owner_row.organization_id if owner_row else owner_org_id

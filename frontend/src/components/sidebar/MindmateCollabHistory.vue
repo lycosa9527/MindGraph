@@ -5,7 +5,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElIcon, ElMessageBox } from 'element-plus'
+import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElIcon } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
 
@@ -22,11 +22,17 @@ import { authFetch } from '@/utils/api'
 import {
   formatMindmateCollabCode,
   loadLocalMindmateCollabSessions,
+  MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT,
   normalizeMindmateCollabCode,
   persistLocalMindmateCollabSessions,
   trackLocalMindmateCollabSession,
   type LocalMindmateCollabSession,
 } from '@/utils/mindmateCollabSessions'
+import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
+import {
+  requestMindmateCollabStop,
+  teardownMindmateCollabClient,
+} from '@/utils/mindmateCollabTeardown'
 
 const ORG_REFRESH_INTERVAL_MS = 30_000
 
@@ -47,6 +53,7 @@ const emit = defineEmits<{
 interface CollabSessionRow extends LocalMindmateCollabSession {
   owner_name: string | null
   participant_count: number
+  live?: boolean
 }
 
 const route = useRoute()
@@ -113,7 +120,7 @@ async function pruneStaleLocalSessions(): Promise<void> {
   for (const row of localSessions.value) {
     const key = normalizeCode(row.code)
     if (orgKeys.has(key)) {
-      survivors.push(row)
+      survivors.push({ ...row, live: true })
       continue
     }
     const formatted = formatCode(row.code)
@@ -126,7 +133,7 @@ async function pruneStaleLocalSessions(): Promise<void> {
       }
       const status = (await response.json()) as { live?: boolean }
       if (status.live) {
-        survivors.push(row)
+        survivors.push({ ...row, live: true })
       }
     } catch {
       survivors.push(row)
@@ -145,7 +152,12 @@ async function fetchSessions(showSpinner = true): Promise<void> {
     const response = await authFetch('/api/mindmate/collab/organization/sessions')
     if (response.ok) {
       const data = await response.json()
-      orgSessions.value = (data.sessions || []) as CollabSessionRow[]
+      orgSessions.value = ((data.sessions || []) as CollabSessionRow[]).map((row) => ({
+        ...row,
+        live: true,
+      }))
+    } else {
+      notify.error(t('mindgraphLanding.loadOrgSessionsFailed'))
     }
     const hostedRes = await authFetch('/api/mindmate/collab/my/hosted')
     if (hostedRes.ok) {
@@ -157,6 +169,8 @@ async function fetchSessions(showSpinner = true): Promise<void> {
       }
     }
     await pruneStaleLocalSessions()
+  } catch {
+    notify.error(t('mindgraphLanding.networkError'))
   } finally {
     if (showSpinner) loading.value = false
   }
@@ -190,43 +204,42 @@ function isRowActive(row: CollabSessionRow): boolean {
 }
 
 async function stopSession(row: CollabSessionRow): Promise<void> {
-  try {
-    await ElMessageBox.confirm(t('sidebar.mindmateCollabHistory.stopConfirm'), {
-      type: 'warning',
-    })
-  } catch {
+  const confirmed = await confirmMindmateCollabStop(t)
+  if (!confirmed) {
     return
   }
-  const response = await authFetch('/api/mindmate/collab/stop', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_id: row.session_id }),
-  })
-  if (response.ok) {
-    notify.success(t('collab.ended'))
-    orgSessions.value = orgSessions.value.filter((s) => s.session_id !== row.session_id)
-    localSessions.value = localSessions.value.filter((s) => s.session_id !== row.session_id)
-    persistLocalSessions()
-    const rowKey = normalizeCode(row.code)
-    if (rowKey === activeCode.value || rowKey === normalizeCode(embeddedCollabRoomCode.value || '')) {
-      setEmbeddedCollabRoomCode(null)
-      if (inMindmateCollabRoute.value) {
-        void router.push('/mindmate')
-      }
+  const rowKey = normalizeCode(row.code)
+  const wasActive =
+    rowKey === activeCode.value
+    || rowKey === normalizeCode(embeddedCollabRoomCode.value || '')
+  orgSessions.value = orgSessions.value.filter((s) => s.session_id !== row.session_id)
+  localSessions.value = localSessions.value.filter((s) => s.session_id !== row.session_id)
+  persistLocalSessions()
+  if (wasActive) {
+    teardownMindmateCollabClient(row.code, { removeFromHistory: true })
+    if (inMindmateCollabRoute.value) {
+      void router.push('/mindmate')
     }
-  } else {
-    notify.error(t('collab.endFailed'))
   }
+  void requestMindmateCollabStop(row.session_id).then((ok) => {
+    if (ok) {
+      notify.success(t('mindmate.collabStopped'))
+    } else {
+      notify.error(t('collab.endFailed'))
+    }
+  })
 }
 
 onMounted(() => {
   loadLocalSessions()
   void fetchSessions(true)
   refreshTimer = setInterval(() => void fetchSessions(false), ORG_REFRESH_INTERVAL_MS)
+  window.addEventListener(MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT, loadLocalSessions)
 })
 
 onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
+  window.removeEventListener(MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT, loadLocalSessions)
 })
 </script>
 
@@ -263,7 +276,10 @@ onUnmounted(() => {
           <span class="conv-name-text">
             {{ session.title || t('mindmate.collabPill') }}
           </span>
-          <CollabLiveBadge :title="t('sidebar.diagramHistory.collabLive')" />
+          <CollabLiveBadge
+            v-if="session.live"
+            :title="t('sidebar.diagramHistory.collabLive')"
+          />
         </button>
         <ElDropdown
           v-if="isHost(session)"
@@ -287,7 +303,7 @@ onUnmounted(() => {
                 @click="stopSession(session)"
               >
                 <Power class="w-4 h-4 mr-2" />
-                {{ t('sidebar.actions.turnOffOnlineCollab') }}
+                {{ t('mindmate.collabEndSeminar') }}
               </ElDropdownItem>
             </ElDropdownMenu>
           </template>

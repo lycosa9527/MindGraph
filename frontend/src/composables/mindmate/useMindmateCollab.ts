@@ -8,6 +8,13 @@ import { useWebSocket } from '@vueuse/core'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { shouldReconnectMindmateCollab } from '@/utils/mindmateCollabSessions'
+import {
+  MINDMATE_COLLAB_MAX_WS_RECONNECT,
+  mindmateCollabDisconnectShouldNotify,
+  mindmateCollabWsErrorLocaleKey,
+  mindmateCollabWsErrorRollsBackSend,
+  type MindmateCollabConnectionStatus,
+} from '@/utils/mindmateCollabWsErrors'
 
 export interface MindmateCollabMessage {
   id?: number
@@ -54,15 +61,27 @@ export function useMindmateCollab(
   const messages = shallowRef<MindmateCollabMessage[]>([])
   const room = ref<MindmateCollabRoomInfo | null>(null)
   const connected = ref(false)
+  const connectionStatus = ref<MindmateCollabConnectionStatus>('idle')
   const isStreaming = ref(false)
   const idleWarningSeconds = ref<number | null>(null)
   const resumeToken = ref<string | null>(null)
-  const wsUrl = ref('')
+  /** Mutated before each `open()`; VueUse reads this array reference at connect time. */
+  const wsProtocolList: string[] = []
   const suppressReconnect = ref(false)
+
+  const wsUrl = computed(() => {
+    const code = roomCode()
+    if (!code) {
+      return ''
+    }
+    return buildWsUrl(code, resumeToken.value)
+  })
 
   let streamingAssistant: MindmateCollabMessage | null = null
   let idleDeadlineUnix: number | null = null
   let idleTickInterval: ReturnType<typeof setInterval> | null = null
+  let pendingReconnectFailedNotify = false
+  let lastOptimisticSendContent: string | null = null
 
   function stopIdleCountdownTick(): void {
     if (idleTickInterval) {
@@ -93,14 +112,96 @@ export function useMindmateCollab(
     idleTickInterval = setInterval(() => syncIdleSecondsFromDeadline(), 1000)
   }
 
+  function removeLastOptimisticUserMessage(content: string): void {
+    const selfId = Number(authStore.user?.id)
+    const next = [...messages.value]
+    for (let index = next.length - 1; index >= 0; index -= 1) {
+      const candidate = next[index]
+      if (
+        candidate.role === 'user'
+        && candidate.sender_user_id === selfId
+        && candidate.id == null
+        && candidate.content === content
+      ) {
+        next.splice(index, 1)
+        messages.value = next
+        return
+      }
+    }
+  }
+
+  function handleServerErrorFrame(parsed: Record<string, unknown>): void {
+    const errorCode = String(parsed.code || '')
+    const localeKey = mindmateCollabWsErrorLocaleKey(errorCode)
+    if (localeKey) {
+      const serverMessage = String(parsed.message || '').trim()
+      if (errorCode === 'dify_error' && serverMessage) {
+        notify.error(serverMessage)
+      } else if (errorCode === 'mindmate_responding') {
+        notify.warning(t(localeKey))
+      } else {
+        notify.warning(t(localeKey))
+      }
+    } else {
+      const fallback = String(parsed.message || '').trim()
+      notify.warning(fallback || t('mindmate.collabErrorUnknown'))
+    }
+    if (mindmateCollabWsErrorRollsBackSend(errorCode) && lastOptimisticSendContent) {
+      removeLastOptimisticUserMessage(lastOptimisticSendContent)
+      lastOptimisticSendContent = null
+    }
+    if (errorCode === 'room_closed') {
+      suppressReconnect.value = true
+      connectionStatus.value = 'failed'
+    }
+  }
+
+  function notifyDisconnect(closeCode: number, reason: string): void {
+    const action = mindmateCollabDisconnectShouldNotify(
+      closeCode,
+      suppressReconnect.value,
+      pendingReconnectFailedNotify,
+    )
+    pendingReconnectFailedNotify = false
+
+    if (action === 'none') {
+      return
+    }
+    if (action === 'reconnect_failed') {
+      connectionStatus.value = 'failed'
+      notify.error(t('mindmate.collabReconnectFailed'))
+      return
+    }
+    if (action === 'closed_reason') {
+      connectionStatus.value = 'failed'
+      const label = reason.trim() || t('mindmate.collabConnectionClosed')
+      notify.warning(t('mindmate.collabConnectionClosedReason', { reason: label }))
+      return
+    }
+    connectionStatus.value = 'reconnecting'
+  }
+
   const { open, close, send } = useWebSocket(wsUrl, {
     immediate: false,
+    protocols: wsProtocolList,
     autoReconnect: {
-      retries: (retried) => !suppressReconnect.value && retried < 8,
+      retries: (retried) => {
+        if (suppressReconnect.value) {
+          return false
+        }
+        if (retried >= MINDMATE_COLLAB_MAX_WS_RECONNECT) {
+          pendingReconnectFailedNotify = true
+          return false
+        }
+        connectionStatus.value = 'reconnecting'
+        return true
+      },
       delay: 2000,
     },
     onConnected() {
       connected.value = true
+      connectionStatus.value = 'connected'
+      pendingReconnectFailedNotify = false
     },
     onDisconnected(_ws, event) {
       connected.value = false
@@ -108,20 +209,31 @@ export function useMindmateCollab(
         suppressReconnect.value = true
       }
       if (event.code === 4010) {
+        connectionStatus.value = 'failed'
         notify.warning(t('mindmate.collabRoomEndedIdle'))
         if (options.onSessionEnded) {
           options.onSessionEnded('idle')
         } else if (!options.embedded) {
           window.location.href = '/mindmate'
         }
-      } else if (event.code === 4011) {
+        return
+      }
+      if (event.code === 4011) {
+        connectionStatus.value = 'failed'
         notify.info(t('mindmate.collabRoomEndedHost'))
         if (options.onSessionEnded) {
           options.onSessionEnded('host')
         } else if (!options.embedded) {
           window.location.href = '/mindmate'
         }
+        return
       }
+      if (event.code === 4003) {
+        connectionStatus.value = 'failed'
+        notify.info(t('mindmate.collabDuplicateTab'))
+        return
+      }
+      notifyDisconnect(event.code, event.reason || '')
     },
     onMessage(_ws, event) {
       handleFrame(event.data)
@@ -155,17 +267,82 @@ export function useMindmateCollab(
     isStreaming.value = true
   }
 
-  function finalizeAssistant(endContent?: string, aborted?: boolean) {
+  function applyUserMessageFrame(parsed: Record<string, unknown>): void {
+    const senderId = Number(parsed.sender_user_id || 0)
+    const msgId = parsed.id as number | undefined
+    const content = String(parsed.content || '')
+    const username = (parsed.username as string) || null
+    const selfId = Number(authStore.user?.id)
+
+    if (senderId === selfId) {
+      if (msgId == null) {
+        return
+      }
+      const next = [...messages.value]
+      for (let index = next.length - 1; index >= 0; index -= 1) {
+        const candidate = next[index]
+        if (
+          candidate.role === 'user'
+          && candidate.sender_user_id === selfId
+          && candidate.id == null
+          && candidate.content === content
+        ) {
+          next[index] = {
+            ...candidate,
+            id: msgId,
+            username: username ?? candidate.username ?? null,
+          }
+          messages.value = next
+          lastOptimisticSendContent = null
+          return
+        }
+      }
+      if (messages.value.some((item) => item.id === msgId)) {
+        return
+      }
+    } else if (msgId != null && messages.value.some((item) => item.id === msgId)) {
+      return
+    }
+
+    messages.value = [
+      ...messages.value,
+      {
+        id: msgId,
+        role: 'user',
+        content,
+        sender_user_id: senderId,
+        username,
+      },
+    ]
+  }
+
+  function finalizeAssistant(
+    endContent?: string,
+    aborted?: boolean,
+    messageId?: number,
+  ) {
     if (streamingAssistant) {
       if (endContent && !streamingAssistant.content) {
         streamingAssistant.content = endContent
       }
       streamingAssistant.streaming = false
+      if (messageId != null) {
+        streamingAssistant.id = messageId
+      }
       if (aborted) {
         streamingAssistant.content += `\n\n_${t('mindmate.collabStreamAborted')}_`
       }
       streamingAssistant = null
       messages.value = [...messages.value]
+    } else if (messageId != null && endContent && !messages.value.some((item) => item.id === messageId)) {
+      messages.value = [
+        ...messages.value,
+        {
+          id: messageId,
+          role: 'assistant',
+          content: endContent,
+        },
+      ]
     }
     isStreaming.value = false
   }
@@ -180,8 +357,9 @@ export function useMindmateCollab(
     const type = String(parsed.type || '')
     if (type === 'snapshot') {
       const rows = (parsed.messages as MindmateCollabMessage[]) || []
-      const seed = readSeedMessages()
-      messages.value = [...seed, ...rows.map((m) => ({ ...m }))]
+      messages.value = rows.map((message) => ({ ...message }))
+      streamingAssistant = null
+      isStreaming.value = false
       return
     }
     if (type === 'joined') {
@@ -193,22 +371,11 @@ export function useMindmateCollab(
         ownerId: Number(parsed.owner_id || 0),
       }
       resumeToken.value = String(parsed.resume_token || '') || null
+      syncWsResumeProtocols()
       return
     }
     if (type === 'user_message') {
-      const senderId = Number(parsed.sender_user_id || 0)
-      if (senderId === Number(authStore.user?.id)) {
-        return
-      }
-      messages.value = [
-        ...messages.value,
-        {
-          role: 'user',
-          content: String(parsed.content || ''),
-          sender_user_id: senderId,
-          username: (parsed.username as string) || null,
-        },
-      ]
+      applyUserMessageFrame(parsed)
       return
     }
     if (type === 'ai_message_chunk') {
@@ -216,22 +383,66 @@ export function useMindmateCollab(
       return
     }
     if (type === 'ai_message_end') {
-      finalizeAssistant(String(parsed.content || ''), Boolean(parsed.aborted))
+      const messageId = parsed.id as number | undefined
+      finalizeAssistant(String(parsed.content || ''), Boolean(parsed.aborted), messageId)
       return
     }
     if (type === 'room_idle_warning') {
       applyIdleWarning(Number(parsed.grace_seconds || 120))
       return
     }
-    if (type === 'session_closing' || type === 'room_idle_shutdown' || type === 'session_ended_shutdown') {
+    if (type === 'session_closing') {
       suppressReconnect.value = true
       connected.value = false
+      connectionStatus.value = 'failed'
       clearIdleCountdown()
       close()
+      return
     }
-    if (type === 'error' && parsed.code === 'mindmate_responding') {
-      notify.warning(t('mindmate.collabMindmateResponding'))
+    if (type === 'room_idle_shutdown') {
+      suppressReconnect.value = true
+      connected.value = false
+      connectionStatus.value = 'failed'
+      clearIdleCountdown()
+      close()
+      notify.warning(t('mindmate.collabRoomEndedIdle'))
+      options.onSessionEnded?.('idle')
+      return
     }
+    if (type === 'session_ended_shutdown') {
+      suppressReconnect.value = true
+      connected.value = false
+      connectionStatus.value = 'failed'
+      clearIdleCountdown()
+      close()
+      notify.info(t('mindmate.collabRoomEndedHost'))
+      options.onSessionEnded?.('host')
+      return
+    }
+    if (type === 'error') {
+      handleServerErrorFrame(parsed)
+    }
+  }
+
+  function syncWsResumeProtocols(): void {
+    wsProtocolList.length = 0
+    const token = resumeToken.value?.trim()
+    if (token) {
+      wsProtocolList.push(`mg-resume.${token}`)
+    }
+  }
+
+  function resetForRoomChange(): void {
+    resumeToken.value = null
+    wsProtocolList.length = 0
+    messages.value = []
+    room.value = null
+    streamingAssistant = null
+    isStreaming.value = false
+    lastOptimisticSendContent = null
+    pendingReconnectFailedNotify = false
+    connectionStatus.value = 'idle'
+    clearIdleCountdown()
   }
 
   function connect() {
@@ -240,22 +451,31 @@ export function useMindmateCollab(
       return
     }
     suppressReconnect.value = false
+    pendingReconnectFailedNotify = false
+    connectionStatus.value = 'connecting'
+    syncWsResumeProtocols()
     applySeedMessages()
-    wsUrl.value = buildWsUrl(code, resumeToken.value)
     open()
   }
 
   function disconnect() {
+    suppressReconnect.value = true
     close()
     connected.value = false
+    connectionStatus.value = 'idle'
     clearIdleCountdown()
   }
 
-  function sendChat(content: string, options?: { toMindmate?: boolean }) {
+  function sendChat(content: string, sendOptions?: { toMindmate?: boolean }) {
     const trimmed = content.trim()
     if (!trimmed || isStreaming.value) {
       return
     }
+    if (!connected.value) {
+      notify.warning(t('mindmate.collabNotConnected'))
+      return
+    }
+    lastOptimisticSendContent = trimmed
     messages.value = [
       ...messages.value,
       {
@@ -269,12 +489,27 @@ export function useMindmateCollab(
       JSON.stringify({
         type: 'chat',
         content: trimmed,
-        to_mindmate: Boolean(options?.toMindmate),
+        to_mindmate: Boolean(sendOptions?.toMindmate),
       }),
     )
   }
 
+  function retryConnection(): void {
+    if (!roomCode()) {
+      return
+    }
+    suppressReconnect.value = false
+    pendingReconnectFailedNotify = false
+    connectionStatus.value = 'connecting'
+    syncWsResumeProtocols()
+    open()
+  }
+
   const isHost = computed(() => room.value?.ownerId === Number(authStore.user?.id))
+
+  const canSend = computed(
+    () => connected.value && connectionStatus.value === 'connected' && !isStreaming.value,
+  )
 
   onUnmounted(() => {
     disconnect()
@@ -284,12 +519,16 @@ export function useMindmateCollab(
     messages,
     room,
     connected,
+    connectionStatus,
     isStreaming,
     idleWarningSeconds,
     isHost,
+    canSend,
     connect,
     disconnect,
     sendChat,
     seedRoom,
+    resetForRoomChange,
+    retryConnection,
   }
 }

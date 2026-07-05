@@ -58,6 +58,15 @@ def stamp_chat_fanout_origin(envelope: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def stamp_workshop_fanout_origin(envelope: Dict[str, Any]) -> Dict[str, Any]:
+    """Stamp workshop/mindmate-collab fan-out envelopes with the origin secret."""
+    if not _FANOUT_ORIGIN_SECRET:
+        return dict(envelope)
+    out = dict(envelope)
+    out["origin"] = _FANOUT_ORIGIN_SECRET
+    return out
+
+
 def _envelope_with_workshop_msg_id(envelope: Dict[str, Any]) -> Dict[str, Any]:
     """Guarantee every workshop fan-out JSON frame inside envelope field ``d`` has msg_id."""
     out = dict(envelope)
@@ -151,7 +160,7 @@ async def publish_workshop_fanout_async(envelope: Dict[str, Any]) -> None:
     """Publish a workshop fan-out envelope via pub/sub (no PG NOTIFY fallback)."""
     if not is_ws_fanout_enabled():
         return
-    out = _envelope_with_workshop_msg_id(dict(envelope))
+    out = _envelope_with_workshop_msg_id(stamp_workshop_fanout_origin(dict(envelope)))
     try:
         body = json.dumps(out, ensure_ascii=False)
     except (TypeError, ValueError):

@@ -22,6 +22,18 @@ import { useAuthStore, useMindMateStore } from '@/stores'
 import { useUIStore } from '@/stores/ui'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 import { copyMindmateAssistantMessage } from '@/utils/copyMindmateMessage'
+import { authFetch } from '@/utils/api'
+import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
+import {
+  loadLocalMindmateCollabSessions,
+  normalizeMindmateCollabCode,
+} from '@/utils/mindmateCollabSessions'
+import {
+  requestMindmateCollabStop,
+  resolveMindmateCollabSessionId,
+  shouldRemoveCollabFromHistory,
+  teardownMindmateCollabClient,
+} from '@/utils/mindmateCollabTeardown'
 
 import ShareExportModal from './ShareExportModal.vue'
 import MindmateHeader from './mindmate/MindmateHeader.vue'
@@ -40,6 +52,9 @@ const MindmateCollabPanel = defineAsyncComponent(
 )
 const MindmateCollabEmbed = defineAsyncComponent(
   () => import('@/components/mindmate/MindmateCollabEmbed.vue'),
+)
+const MindmateCollabBreadcrumb = defineAsyncComponent(
+  () => import('@/components/mindmate/MindmateCollabBreadcrumb.vue'),
 )
 
 interface MindmateCollabPanelHandle {
@@ -99,7 +114,9 @@ const showShareModal = ref(false)
 const collabPanelRef = ref<MindmateCollabPanelHandle | null>(null)
 const collabRoomCode = ref<string | null>(null)
 const collabRoomTitle = ref<string | null>(null)
-const collabVisibility = ref<string>('organization')
+const collabVisibility = ref<'organization' | 'network'>('organization')
+const collabSessionId = ref('')
+const collabOwnerId = ref<number | null>(null)
 const collabSeedMessages = ref<MindmateCollabMessage[]>([])
 
 function mapThreadToCollabSeed(msgs: MindMateMessage[]): MindmateCollabMessage[] {
@@ -142,36 +159,99 @@ const inConversation = computed(
 
 const isCollabChatroomMode = computed(() => Boolean(collabRoomCode.value))
 
-const collabToolbarTitle = computed(() => {
-  if (!isCollabChatroomMode.value) {
-    return displayTitle.value
+const collabSessionTitle = computed(
+  () =>
+    collabRoomTitle.value ||
+    mindMateStore.conversationTitle ||
+    t('mindmate.collabPill'),
+)
+
+const canStopCollabSession = computed(() => {
+  const userId = Number(authStore.user?.id)
+  if (!userId || collabOwnerId.value == null) {
+    return false
   }
-  const visLabel =
-    collabVisibility.value === 'network'
-      ? t('mindmate.collabSeminarPublic')
-      : t('mindmate.collabSeminarOrg')
-  const name = collabRoomTitle.value || displayTitle.value
-  return `${visLabel} · ${name}`
+  return collabOwnerId.value === userId
 })
 
-function handleCollabSessionStarted(payload: { code: string }) {
+function handleCollabSessionStarted(payload: {
+  code: string
+  visibility?: 'organization' | 'network'
+  ownerUserId?: number
+}) {
   collabSeedMessages.value = mapThreadToCollabSeed(mindMate.messages.value)
   collabRoomCode.value = payload.code
+  if (payload.visibility === 'network' || payload.visibility === 'organization') {
+    collabVisibility.value = payload.visibility
+  }
+  if (payload.ownerUserId != null && payload.ownerUserId > 0) {
+    collabOwnerId.value = payload.ownerUserId
+  } else {
+    collabOwnerId.value = null
+  }
   collabRoomTitle.value = mindMateStore.conversationTitle || null
   setEmbeddedCollabRoomCode(payload.code)
 }
 
-function exitCollabChatroomMode() {
+function exitCollabChatroomMode(options: { removeFromHistory?: boolean } = {}) {
+  const code = collabRoomCode.value
   collabRoomCode.value = null
   collabRoomTitle.value = null
   collabVisibility.value = 'organization'
+  collabSessionId.value = ''
+  collabOwnerId.value = null
   collabSeedMessages.value = []
-  setEmbeddedCollabRoomCode(null)
+  teardownMindmateCollabClient(code, options)
 }
 
-function handleCollabRoomMeta(payload: { title: string; visibility: string }) {
+function handleCollabEnded(reason: 'idle' | 'host' | 'left' = 'left') {
+  exitCollabChatroomMode({ removeFromHistory: shouldRemoveCollabFromHistory(reason) })
+}
+
+function handleCollabRoomMeta(payload: {
+  title: string
+  visibility: string
+  sessionId?: string
+  ownerId?: number
+}) {
   collabRoomTitle.value = payload.title
-  collabVisibility.value = payload.visibility
+  if (payload.visibility === 'network' || payload.visibility === 'organization') {
+    collabVisibility.value = payload.visibility
+  }
+  if (payload.sessionId) {
+    collabSessionId.value = payload.sessionId
+  }
+  if (payload.ownerId != null) {
+    collabOwnerId.value = payload.ownerId
+  }
+}
+
+async function endCollabSession(): Promise<void> {
+  if (!isCollabChatroomMode.value) {
+    return
+  }
+  const confirmed = await confirmMindmateCollabStop(t)
+  if (!confirmed) {
+    return
+  }
+  const sessionId = resolveMindmateCollabSessionId(
+    collabSessionId.value,
+    collabRoomCode.value,
+  )
+  exitCollabChatroomMode({ removeFromHistory: true })
+  if (!sessionId) {
+    notify.success(t('mindmate.collabStopped'))
+    return
+  }
+  void requestMindmateCollabStop(sessionId).then((ok) => {
+    if (ok) {
+      notify.success(t('mindmate.collabStopped'))
+    } else {
+      notify.error(t('collab.endFailed'))
+    }
+  }).catch(() => {
+    notify.error(t('collab.endFailed'))
+  })
 }
 
 function syncHeaderTitleFromBranding() {
@@ -204,6 +284,15 @@ watch(
         collabSeedMessages.value = mapThreadToCollabSeed(mindMate.messages.value)
       }
       collabRoomCode.value = code
+      const localRow = loadLocalMindmateCollabSessions().find(
+        (row) => normalizeMindmateCollabCode(row.code) === normalizeMindmateCollabCode(code),
+      )
+      if (localRow?.visibility === 'network' || localRow?.visibility === 'organization') {
+        collabVisibility.value = localRow.visibility
+      }
+      if (localRow?.title) {
+        collabRoomTitle.value = localRow.title
+      }
     }
     if (!code && collabRoomCode.value) {
       exitCollabChatroomMode()
@@ -277,12 +366,27 @@ async function animateTitleChange(newTitle: string, oldTitle?: string) {
 }
 
 // Start a new conversation
-function startNewConversation() {
+async function startNewConversation() {
   if (!authStore.isAuthenticated) {
     authStore.handleTokenExpired(undefined, undefined)
     return
   }
-  exitCollabChatroomMode()
+  if (isCollabChatroomMode.value && canStopCollabSession.value) {
+    const confirmed = await confirmMindmateCollabStop(t)
+    if (!confirmed) {
+      return
+    }
+    const sessionId = resolveMindmateCollabSessionId(
+      collabSessionId.value,
+      collabRoomCode.value,
+    )
+    exitCollabChatroomMode({ removeFromHistory: true })
+    if (sessionId) {
+      void requestMindmateCollabStop(sessionId)
+    }
+  } else if (isCollabChatroomMode.value) {
+    exitCollabChatroomMode()
+  }
   mindMate.startNewConversation()
   displayTitle.value = defaultMindMateTitle.value
 }
@@ -458,29 +562,49 @@ function isLastAssistantMessage(messageId: string): boolean {
       >
         <PanelLeftOpen class="w-[18px] h-[18px]" />
       </el-button>
+      <MindmateCollabBreadcrumb
+        v-if="isCollabChatroomMode"
+        class="flex-1 min-w-0 text-left"
+        tone="toolbar"
+        :visibility="collabVisibility"
+        :session-title="collabSessionTitle"
+        :invite-code="collabRoomCode || ''"
+      />
       <h1
+        v-else
         class="flex-1 min-w-0 text-sm font-semibold text-gray-800 dark:text-white truncate text-left"
         :class="{ 'typing-cursor': isTypingTitle }"
       >
-        {{ isCollabChatroomMode ? collabToolbarTitle : displayTitle }}
+        {{ displayTitle }}
       </h1>
       <MindmateCollabPanel
         v-if="showMindmateCollab && !isCollabChatroomMode"
         ref="collabPanelRef"
         :in-conversation="inConversation"
         :conversation-title="mindMateStore.conversationTitle || displayTitle"
+        :get-seed-messages="() => mapThreadToCollabSeed(mindMate.messages.value)"
         embed-in-panel
         @session-started="handleCollabSessionStarted"
       />
-      <el-button
-        class="new-chat-btn shrink-0"
-        size="small"
-        :disabled="!authStore.isAuthenticated"
-        @click="startNewConversation"
-      >
-        <ElIcon class="mr-1"><Plus /></ElIcon>
-        {{ t('mindmate.newChat') }}
-      </el-button>
+      <div class="mindmate-toolbar-actions flex items-center gap-1.5 shrink-0">
+        <el-button
+          v-if="isCollabChatroomMode && canStopCollabSession"
+          class="end-seminar-btn shrink-0"
+          size="small"
+          @click="endCollabSession"
+        >
+          {{ t('mindmate.collabEndSeminar') }}
+        </el-button>
+        <el-button
+          class="new-chat-btn shrink-0"
+          size="small"
+          :disabled="!authStore.isAuthenticated"
+          @click="startNewConversation"
+        >
+          <ElIcon class="mr-1"><Plus /></ElIcon>
+          {{ t('mindmate.newChat') }}
+        </el-button>
+      </div>
     </div>
     <MindmateHeader
       v-else
@@ -503,7 +627,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       class="flex-1 min-h-0 min-w-0"
       :room-code="collabRoomCode"
       :seed-messages="collabSeedMessages"
-      @ended="exitCollabChatroomMode"
+      @ended="handleCollabEnded"
       @room-meta="handleCollabRoomMeta"
     />
 
@@ -583,6 +707,30 @@ function isLastAssistantMessage(messageId: string): boolean {
   --el-button-text-color: #1c1917;
   font-weight: 500;
   border-radius: 9999px;
+}
+
+.end-seminar-btn {
+  --el-button-bg-color: #fef3c7;
+  --el-button-border-color: #fcd34d;
+  --el-button-hover-bg-color: #fde68a;
+  --el-button-hover-border-color: #fbbf24;
+  --el-button-hover-text-color: #78350f;
+  --el-button-active-bg-color: #fcd34d;
+  --el-button-active-border-color: #f59e0b;
+  --el-button-text-color: #92400e;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+.dark .end-seminar-btn {
+  --el-button-bg-color: #78350f;
+  --el-button-border-color: #b45309;
+  --el-button-hover-bg-color: #92400e;
+  --el-button-hover-border-color: #d97706;
+  --el-button-hover-text-color: #fef3c7;
+  --el-button-active-bg-color: #b45309;
+  --el-button-active-border-color: #f59e0b;
+  --el-button-text-color: #fde68a;
 }
 
 .dark .new-chat-btn {

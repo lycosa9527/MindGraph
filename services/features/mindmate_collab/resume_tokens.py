@@ -31,7 +31,7 @@ async def mint_join_resume_token_async(
     redis = get_async_redis()
     token = _new_token()
     if not redis:
-        return token
+        return ""
     payload = json.dumps(
         {"u": int(user_id), "c": normalize_collab_code(code), "s": session_id},
         separators=(",", ":"),
@@ -62,11 +62,22 @@ async def peek_join_resume_claims_async(token: str) -> Optional[Dict[str, Any]]:
     return parsed if isinstance(parsed, dict) else None
 
 
-def join_resume_claims_match_user_room(user_id: int, code: str, claims: Dict[str, Any]) -> bool:
-    """Return True when resume claims match the joining user and room code."""
-    return int(claims.get("u") or 0) == int(user_id) and str(claims.get("c") or "").upper() == normalize_collab_code(
-        code
-    )
+def join_resume_claims_match_user_room(
+    user_id: int,
+    code: str,
+    claims: Dict[str, Any],
+    session_id: str | None = None,
+) -> bool:
+    """Return True when resume claims match the joining user, room code, and session."""
+    if int(claims.get("u") or 0) != int(user_id):
+        return False
+    if str(claims.get("c") or "").upper() != normalize_collab_code(code):
+        return False
+    if session_id is not None:
+        claim_session = str(claims.get("s") or "").strip()
+        if claim_session and claim_session != session_id:
+            return False
+    return True
 
 
 async def try_consume_join_resume_token_async(token: str) -> Optional[Dict[str, Any]]:

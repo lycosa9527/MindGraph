@@ -1,8 +1,11 @@
 /**
- * Local MindMate collab session tracking (sidebar + room page).
+ * Local MindMate collab session tracking (sidebar rejoin list).
+ *
+ * Persisted in localStorage so public (network) rooms survive tab refresh.
  */
 
 export const LOCAL_MINDMATE_COLLAB_SESSIONS_KEY = 'mindmate_collab_recent_sessions'
+export const MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT = 'mindmate-collab-sessions-changed'
 
 export interface LocalMindmateCollabSession {
   session_id: string
@@ -13,6 +16,29 @@ export interface LocalMindmateCollabSession {
   participant_count?: number
   visibility?: string
   expires_at?: string | null
+}
+
+function notifySessionsChanged(): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+  window.dispatchEvent(new CustomEvent(MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT))
+}
+
+function migrateLegacySessionStorage(): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+  try {
+    const legacy = sessionStorage.getItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY)
+    if (!legacy || localStorage.getItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY)) {
+      return
+    }
+    localStorage.setItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY, legacy)
+    sessionStorage.removeItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY)
+  } catch {
+    // ignore quota / privacy mode
+  }
 }
 
 export function normalizeMindmateCollabCode(code: string): string {
@@ -28,8 +54,9 @@ export function formatMindmateCollabCode(code: string): string {
 }
 
 export function loadLocalMindmateCollabSessions(): LocalMindmateCollabSession[] {
+  migrateLegacySessionStorage()
   try {
-    const raw = sessionStorage.getItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY)
+    const raw = localStorage.getItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY)
     if (!raw) {
       return []
     }
@@ -40,7 +67,12 @@ export function loadLocalMindmateCollabSessions(): LocalMindmateCollabSession[] 
 }
 
 export function persistLocalMindmateCollabSessions(rows: LocalMindmateCollabSession[]): void {
-  sessionStorage.setItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY, JSON.stringify(rows))
+  try {
+    localStorage.setItem(LOCAL_MINDMATE_COLLAB_SESSIONS_KEY, JSON.stringify(rows))
+    notifySessionsChanged()
+  } catch {
+    // quota exceeded or private browsing — skip persist
+  }
 }
 
 export function trackLocalMindmateCollabSession(row: LocalMindmateCollabSession): void {

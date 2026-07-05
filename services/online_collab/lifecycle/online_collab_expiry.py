@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 BEIJING_TZ = ZoneInfo("Asia/Shanghai")
 
 DURATION_1H = "1h"
+DURATION_10H = "10h"
 DURATION_TODAY = "today"
 DURATION_2D = "2d"
 
@@ -20,8 +21,8 @@ ONLINE_COLLAB_VISIBILITY_ORGANIZATION = "organization"
 ONLINE_COLLAB_VISIBILITY_NETWORK = "network"
 ONLINE_COLLAB_VISIBILITY_PRIVATE = "private"
 
-_VALID_ORG = frozenset({DURATION_1H, DURATION_TODAY, DURATION_2D})
-_VALID_NETWORK = frozenset({DURATION_TODAY, DURATION_2D})
+_VALID_ORG = frozenset({DURATION_1H, DURATION_10H, DURATION_TODAY, DURATION_2D})
+_VALID_NETWORK = frozenset({DURATION_10H, DURATION_TODAY, DURATION_2D})
 
 
 def duration_allowed_for_visibility(visibility: str, duration: str) -> bool:
@@ -67,11 +68,13 @@ def compute_online_collab_expires_at(
 
     Args:
         start_utc: Start time (naive UTC or aware).
-        duration: 1h | today | 2d
+        duration: 1h | 10h | today | 2d
     """
     start = _as_utc_aware(start_utc)
     if duration == DURATION_1H:
         result = start + timedelta(hours=1)
+    elif duration == DURATION_10H:
+        result = start + timedelta(hours=10)
     elif duration == DURATION_TODAY:
         result = end_of_calendar_day_beijing_utc(start)
     elif duration == DURATION_2D:

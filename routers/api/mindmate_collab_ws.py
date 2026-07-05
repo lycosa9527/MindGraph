@@ -29,7 +29,7 @@ from services.features.mindmate_collab.resume_tokens import (
     peek_join_resume_claims_async,
     try_consume_join_resume_token_async,
 )
-from services.features.mindmate_collab.ws_broadcast import broadcast_to_others
+from services.features.mindmate_collab.ws_broadcast import broadcast_to_all, broadcast_to_others
 from services.features.mindmate_collab.ws_registry import (
     MindmateCollabWsHandle,
     close_superseded_connection,
@@ -37,6 +37,7 @@ from services.features.mindmate_collab.ws_registry import (
     shutdown_connection_handle,
     unregister_connection,
 )
+from services.redis.redis_async_client import get_async_redis
 from services.online_collab.participant.online_collab_ws_rate_limit import (
     check_canvas_collab_join_rate_limits,
 )
@@ -161,7 +162,13 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
     if resume_raw:
         claims = await peek_join_resume_claims_async(resume_raw)
         has_resume = bool(
-            claims and join_resume_claims_match_user_room(int(user.id), norm_code, claims),
+            claims
+            and join_resume_claims_match_user_room(
+                int(user.id),
+                norm_code,
+                claims,
+                session.id,
+            ),
         )
 
     if not has_resume:
@@ -191,8 +198,11 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
     if not await mgr.add_participant(norm_code, int(user.id)):
         unregister_connection(norm_code, int(user.id))
         await shutdown_connection_handle(handle)
+        close_reason = "Room full"
+        if not get_async_redis():
+            close_reason = "Collaboration service unavailable"
         try:
-            await websocket.close(code=1008, reason="Room full")
+            await websocket.close(code=1008, reason=close_reason)
         except (RuntimeError, OSError):
             pass
         return
@@ -210,7 +220,7 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
         participants = await mgr.participant_count(norm_code)
         resume_token = await mint_join_resume_token_async(int(user.id), norm_code, session.id)
 
-        joined_payload = {
+        joined_payload: dict[str, object] = {
             "type": "joined",
             "user_id": int(user.id),
             "owner_id": session.owner_user_id,
@@ -219,8 +229,9 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
             "title": session.title,
             "visibility": session.visibility,
             "participants": participants,
-            "resume_token": resume_token,
         }
+        if resume_token:
+            joined_payload["resume_token"] = resume_token
         await websocket.send_json(joined_payload)
         await websocket.send_json({"type": "snapshot", "messages": history})
 
@@ -264,6 +275,15 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                     continue
                 if msg_type != "chat":
                     continue
+                if not await mgr.session_accepts_chat(norm_code):
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "code": "room_closed",
+                            "message": "Room is no longer active",
+                        },
+                    )
+                    continue
                 content = str(msg.get("content") or "").strip()
                 if not content:
                     continue
@@ -287,7 +307,7 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
 
                 await mgr.refresh_participant_ttl(norm_code, int(user.id))
                 await mgr.touch_activity(norm_code)
-                await mgr.persist_message(
+                saved = await mgr.persist_message(
                     session.id,
                     role="user",
                     content=content,
@@ -295,12 +315,13 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                 )
                 user_frame = {
                     "type": "user_message",
+                    "id": saved.id,
                     "content": content,
                     "sender_user_id": int(user.id),
                     "username": getattr(user, "username", None) or getattr(user, "name", None),
                     "to_mindmate": to_mindmate,
                 }
-                await broadcast_to_others(norm_code, int(user.id), user_frame)
+                await broadcast_to_all(norm_code, user_frame)
 
                 if not to_mindmate:
                     continue
@@ -316,7 +337,12 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
                     continue
 
                 dify_query = extract_mindmate_query(content, agent_aliases)
-                conv_id = session.dify_conversation_id
+                conv_id = await mgr.resolve_dify_conversation_id(
+                    norm_code,
+                    fallback=session.dify_conversation_id,
+                )
+                if conv_id:
+                    session.dify_conversation_id = conv_id
                 schedule_assistant_reply(
                     code=norm_code,
                     session_id=session.id,

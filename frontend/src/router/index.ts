@@ -13,6 +13,7 @@ import {
   resolveMobileRouteRedirect,
   shouldSkipMobileRouteRedirect,
 } from '@/utils/mobileRouteRedirect'
+import { userCanUseOnlineCollab } from '@/constants/schoolTier'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
 /** Localized `document.title` via `meta.pageTitle.*` keys. */
@@ -414,8 +415,17 @@ router.beforeEach(async (to, from) => {
     return { name: 'MindMate' }
   }
 
-  if (to.name === 'MindmateCollab' && !featureFlagsStore.getFeatureMindmateCollab()) {
-    return { name: 'MindMate' }
+  if (to.name === 'MindmateCollab') {
+    if (!featureFlagsStore.getFeatureMindmateCollab()) {
+      return { name: 'MindMate' }
+    }
+    const user = authStore.user
+    if (
+      user &&
+      !userCanUseOnlineCollab(user.schoolId, user.schoolTier, user.schoolTierFeatures)
+    ) {
+      return { name: 'MindMate' }
+    }
   }
   if (to.meta.requiresWorkshopChatAccess) {
     if (!featureFlagsStore.getFeatureWorkshopChat()) {

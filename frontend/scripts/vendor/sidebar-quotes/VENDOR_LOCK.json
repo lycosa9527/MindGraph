@@ -8,5 +8,10 @@
     "ref": "4cee3e9bb71ff24ec63f53a77381f5dee82da1ab",
     "note": "Frozen in extracted/echoes-*.json; refresh via --refresh-echoes --extract-echoes"
   },
+  "mindgrowth": {
+    "source": "mindgraph/mindgrowth-quotes-zh.jsonl",
+    "count": 300,
+    "note": "Curated Chinese quotes on thinking, learning, education, and personal growth"
+  },
   "refreshedAt": "2026-06-16T03:53:00.000Z"
 }

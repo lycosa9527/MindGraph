@@ -26,6 +26,8 @@ const props = defineProps<{
   channelContext?: boolean
   /** MindMate collab member list — show 戳 (poke) action */
   collabContext?: boolean
+  /** When set, overrides workshop-store presence (collab / future IM widget). */
+  memberOnline?: boolean | null
 }>()
 
 const emit = defineEmits<{
@@ -47,6 +49,9 @@ const isAdmin = computed(() => authStore.isAdmin || authStore.isManager)
 type PresenceStatus = 'active' | 'offline'
 
 const presence = computed<PresenceStatus>(() => {
+  if (props.memberOnline != null) {
+    return props.memberOnline ? 'active' : 'offline'
+  }
   if (store.onlineUserIds.has(props.user.id)) return 'active'
   return 'offline'
 })
@@ -184,83 +189,30 @@ export default { name: 'UserCardPopover' }
         </div>
       </div>
 
-      <div class="ws-popover-divider" />
+      <div
+        v-if="!(collabContext && isSelf)"
+        class="ws-popover-divider"
+      />
 
       <ul
+        v-if="collabContext && !isSelf"
         class="user-card__menu"
         role="menu"
       >
         <li role="none">
           <button
             type="button"
-            class="ws-popover-item"
+            class="ws-popover-item ws-popover-item--poke"
             role="menuitem"
-            @click="handleViewProfile"
+            @click="handlePoke"
           >
-            <User class="ws-popover-icon" />
-            {{ isSelf ? t('workshop.profile') : t('workshop.viewProfile') }}
+            <Hand class="ws-popover-icon" />
+            {{ t('mindmate.collabPoke') }}
           </button>
         </li>
-
-        <template v-if="!isSelf">
-          <li role="none">
-            <button
-              type="button"
-              class="ws-popover-item"
-              role="menuitem"
-              @click="handleStartDm"
-            >
-              <MessageSquare class="ws-popover-icon" />
-              {{ t('workshop.sendDirectMessage') }}
-            </button>
-          </li>
-
-          <li
-            v-if="collabContext"
-            role="none"
-          >
-            <button
-              type="button"
-              class="ws-popover-item ws-popover-item--poke"
-              role="menuitem"
-              @click="handlePoke"
-            >
-              <Hand class="ws-popover-icon" />
-              {{ t('mindmate.collabPoke') }}
-            </button>
-          </li>
-
-          <li
-            v-if="channelContext"
-            role="none"
-          >
-            <button
-              type="button"
-              class="ws-popover-item"
-              role="menuitem"
-              @click="handleInsertMention"
-            >
-              <AtSign class="ws-popover-icon" />
-              {{ t('workshop.replyMentioning') }}
-            </button>
-          </li>
-
-          <li role="none">
-            <button
-              type="button"
-              class="ws-popover-item"
-              role="menuitem"
-              @click="handleCopyMention"
-            >
-              <Copy class="ws-popover-icon" />
-              {{ t('workshop.copyMentionSyntax') }}
-            </button>
-          </li>
-        </template>
       </ul>
 
-      <template v-if="isAdmin && !isSelf">
-        <div class="ws-popover-divider" />
+      <template v-else-if="!collabContext">
         <ul
           class="user-card__menu"
           role="menu"
@@ -270,13 +222,74 @@ export default { name: 'UserCardPopover' }
               type="button"
               class="ws-popover-item"
               role="menuitem"
-              @click="handleManageUser"
+              @click="handleViewProfile"
             >
-              <ShieldCheck class="ws-popover-icon" />
-              {{ t('workshop.manageUser') }}
+              <User class="ws-popover-icon" />
+              {{ isSelf ? t('workshop.profile') : t('workshop.viewProfile') }}
             </button>
           </li>
+
+          <template v-if="!isSelf">
+            <li role="none">
+              <button
+                type="button"
+                class="ws-popover-item"
+                role="menuitem"
+                @click="handleStartDm"
+              >
+                <MessageSquare class="ws-popover-icon" />
+                {{ t('workshop.sendDirectMessage') }}
+              </button>
+            </li>
+
+            <li
+              v-if="channelContext"
+              role="none"
+            >
+              <button
+                type="button"
+                class="ws-popover-item"
+                role="menuitem"
+                @click="handleInsertMention"
+              >
+                <AtSign class="ws-popover-icon" />
+                {{ t('workshop.replyMentioning') }}
+              </button>
+            </li>
+
+            <li role="none">
+              <button
+                type="button"
+                class="ws-popover-item"
+                role="menuitem"
+                @click="handleCopyMention"
+              >
+                <Copy class="ws-popover-icon" />
+                {{ t('workshop.copyMentionSyntax') }}
+              </button>
+            </li>
+          </template>
         </ul>
+
+        <template v-if="isAdmin && !isSelf">
+          <div class="ws-popover-divider" />
+          <ul
+            class="user-card__menu"
+            role="menu"
+          >
+            <li role="none">
+              <button
+                type="button"
+                class="ws-popover-item"
+                role="menuitem"
+                @click="handleManageUser"
+              >
+                <ShieldCheck class="ws-popover-icon" />
+                {{ t('workshop.manageUser') }}
+              </button>
+            </li>
+          </ul>
+        </template>
       </template>
     </div>
   </el-popover>
@@ -324,12 +337,7 @@ export default { name: 'UserCardPopover' }
   font-size: 22px;
   line-height: 1;
   font-family:
-    'Apple Color Emoji',
-    'Segoe UI Emoji',
-    'Segoe UI Symbol',
-    'Noto Color Emoji',
-    emoji,
-    sans-serif;
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', emoji, sans-serif;
   font-weight: normal;
   font-style: normal;
 }

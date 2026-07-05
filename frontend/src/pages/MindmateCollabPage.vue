@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import MindmateCollabRoom from '@/components/mindmate/MindmateCollabRoom.vue'
 import MindmateCollabMembersPanel from '@/components/mindmate/MindmateCollabMembersPanel.vue'
 import MindmateDmDrawer from '@/components/mindmate/MindmateDmDrawer.vue'
 import { useMindmateCollabNotify } from '@/composables/social/useMindmateCollabNotify'
+import { teardownMindmateCollabClient, shouldRemoveCollabFromHistory } from '@/utils/mindmateCollabTeardown'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,6 +20,13 @@ const roomCode = computed(() => {
 
 const sessionId = ref('')
 const roomTitle = ref('')
+const roomVisibility = ref('organization')
+
+watch(roomCode, () => {
+  sessionId.value = ''
+  roomTitle.value = ''
+  roomVisibility.value = 'organization'
+})
 
 const dmPartnerId = ref<number | null>(null)
 const showDm = ref(false)
@@ -34,7 +42,10 @@ function openDm(partnerId: number) {
   showDm.value = true
 }
 
-function handleEnded() {
+function handleEnded(reason: 'idle' | 'host' | 'left' = 'left') {
+  teardownMindmateCollabClient(roomCode.value, {
+    removeFromHistory: shouldRemoveCollabFromHistory(reason),
+  })
   void router.push('/mindmate')
 }
 
@@ -46,6 +57,7 @@ function onRoomMeta(payload: {
 }) {
   sessionId.value = payload.sessionId
   roomTitle.value = payload.title
+  roomVisibility.value = payload.visibility
 }
 </script>
 
@@ -67,9 +79,11 @@ function onRoomMeta(payload: {
       class="shrink-0 w-[17.5rem] max-w-[38vw] border-l border-stone-200 flex flex-col min-h-0 bg-stone-50"
     >
       <MindmateCollabMembersPanel
+        v-if="sessionId"
         :session-id="sessionId"
         :room-code="roomCode"
         :room-title="roomTitle"
+        :visibility="roomVisibility"
         @message="openDm"
       />
     </aside>

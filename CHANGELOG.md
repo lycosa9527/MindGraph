@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.137.0] - 2026-07-05
+
+> **MindMate collab hardening, unified org roster, seed-message handoff, and sidebar quote vendor refresh.**
+
+### Added
+
+- **MindMate collab seed messages** — Starting a room copies the host's MindMate thread into the shared room (`seed_messages` on `POST /start`; [`message_history.py`](services/features/mindmate_collab/message_history.py), [`MindmatePanel.vue`](frontend/src/components/panels/MindmatePanel.vue)).
+- **Org concurrent session cap** — `MINDMATE_COLLAB_MAX_ORG_CONCURRENT_SESSIONS` (default 10) limits live organization-visible rooms per org ([`manager.py`](services/features/mindmate_collab/manager.py), [`config.py`](services/features/mindmate_collab/config.py)).
+- **Network room session members** — `GET /session-members` lists teachers who joined a public collab room ([`mindmate_collab_routes.py`](routers/api/mindmate_collab_routes.py), [`org_member_roster.py`](services/features/org_member_roster.py)).
+- **Unified org roster composables** — Shared `useOrgRosterPanel`, `useOrgPresenceCore`, and backend adapters for Workshop Chat and MindMate collab ([`frontend/src/composables/social/`](frontend/src/composables/social/)).
+- **MindMate collab breadcrumb** — In-room navigation back to personal MindMate thread ([`MindmateCollabBreadcrumb.vue`](frontend/src/components/mindmate/MindmateCollabBreadcrumb.vue)).
+- **Collab teardown helpers** — Shared stop/confirm/WS error utilities ([`mindmateCollabTeardown.ts`](frontend/src/utils/mindmateCollabTeardown.ts), [`mindmateCollabConfirm.ts`](frontend/src/utils/mindmateCollabConfirm.ts), [`mindmateCollabWsErrors.ts`](frontend/src/utils/mindmateCollabWsErrors.ts)).
+- **MindGrowth sidebar quotes** — Chinese vendor bucket via `normalize-mindgrowth.ts`; shipped in `sidebar-quotes-zh.json` ([`frontend/scripts/vendor/sidebar-quotes/mindgraph/`](frontend/scripts/vendor/sidebar-quotes/mindgraph/)).
+- **Local CI script** — [`scripts/ci-local.sh`](scripts/ci-local.sh) mirrors GitHub Actions workflow.
+
+### Changed
+
+- **MindMate collab defaults** — Default room duration 10h (was end-of-day); idle warning after 43m silence + 2m grace ([`config.py`](services/features/mindmate_collab/config.py)).
+- **Collab room UX** — Embed panel, members panel, and history refactored; Swiss-style confirm dialogs ([`mindmate-swiss-messagebox.css`](frontend/src/styles/mindmate-swiss-messagebox.css)); host stop from toolbar.
+- **Org contacts panel** — Sectioned roster via `useOrgContactSections`; `UserCardPopover` shared across Workshop and collab ([`OrgContactsPanel.vue`](frontend/src/components/social/OrgContactsPanel.vue)).
+- **Dify stream control** — Cooperative abort signal, chat guard while closing, system-stop path ([`dify_stream_control.py`](services/features/mindmate_collab/dify_stream_control.py), [`dify_stream.py`](services/features/mindmate_collab/dify_stream.py)).
+- **Idle monitor** — Configurable concurrency; fan-out publish core alignment ([`idle_monitor.py`](services/features/mindmate_collab/idle_monitor.py), [`ws_redis_fanout_publish_core.py`](services/features/ws_redis_fanout_publish_core.py)).
+- **Resume tokens** — Tighter binding and one-time consume ([`resume_tokens.py`](services/features/mindmate_collab/resume_tokens.py)).
+- **AGENTS.md** — Canonical pointers to Cursor rules and `ci-local.sh`; lint policy consolidated.
+
+### Fixed
+
+- **Collab join while closing** — Reject joins and chat when session is shutting down ([`manager.py`](services/features/mindmate_collab/manager.py)).
+- **Participant registration** — Enforce max participants on join ([`manager.py`](services/features/mindmate_collab/manager.py)).
+- **Visibility validation** — Reject invalid `visibility` on room start ([`mindmate_collab_routes.py`](routers/api/mindmate_collab_routes.py)).
+
+### Tests
+
+- **Backend** — `test_mindmate_collab_dify_stream.py`, `test_mindmate_collab_message_history.py`, `test_mindmate_collab_org_limits.py`, `test_mindmate_collab_resume_tokens.py`, `test_mindmate_collab_session_chat_guard.py`, `test_mindmate_collab_system_stop.py`; extended `test_mindmate_collab_backend.py`, `test_mindmate_collab_hardening.py`, `test_ws_fanout.py`.
+- **Frontend** — `mindmateCollabWsErrors.spec.ts`, `orgContactSections.spec.ts`; extended `useMindmateCollab.spec.ts`, `import-sidebar-quotes.spec.ts`.
+
 ## [5.136.0] - 2026-07-05
 
 > **Learning sheet persistence, classroom worksheet headers, mind map connector geometry, canvas export polish, and thinking-coins fixes.**

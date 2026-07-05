@@ -47,6 +47,11 @@ export function rawGitHubUrl(repo: string, ref: string, filePath: string): strin
 
 export const VENDOR_WISDOM_ZH = resolve(VENDOR_DIR, 'wisdom-quotes/chinese_sentences.json')
 export const VENDOR_WISDOM_EN = resolve(VENDOR_DIR, 'wisdom-quotes/quotes_database.json')
+export const VENDOR_MINDGROWTH_ZH = resolve(
+  VENDOR_DIR,
+  'mindgraph/mindgrowth-quotes-zh.jsonl'
+)
+export const MIN_MINDGROWTH_ZH_QUOTES = 250
 export const VENDOR_ECHOES_DIR = resolve(VENDOR_DIR, 'echoes')
 export const EXTRACTED_ECHOES_DIR = resolve(VENDOR_DIR, 'extracted')
 export const EXTRACTED_ECHOES_ZH = resolve(EXTRACTED_ECHOES_DIR, 'echoes-zh.json')
