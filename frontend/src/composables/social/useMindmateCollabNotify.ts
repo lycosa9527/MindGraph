@@ -32,6 +32,8 @@ export function useMindmateCollabNotify(): void {
   const shouldConnect = computed(
     () =>
       authStore.isAuthenticated &&
+      authStore.isAuthSessionVerified &&
+      featureFlagsStore.flags !== null &&
       featureFlagsStore.getFeatureMindmateCollab() &&
       canUseOnlineCollab.value
   )
@@ -85,7 +87,7 @@ export function useMindmateCollabNotify(): void {
     }
   }
 
-  const { send, close, open } = useWebSocket(wsUrl, {
+  const { send, close, open, status } = useWebSocket(wsUrl, {
     immediate: false,
     autoReconnect: { retries: 6, delay: 2500 },
     heartbeat: {
@@ -124,14 +126,20 @@ export function useMindmateCollabNotify(): void {
   })
 
   function disconnectNotify(): void {
+    if (status.value === 'CLOSED') {
+      connected.value = false
+      return
+    }
     close()
-    wsUrl.value = ''
     connected.value = false
   }
 
   function connectNotify(): void {
     if (!shouldConnect.value) {
       disconnectNotify()
+      return
+    }
+    if (status.value === 'OPEN' || status.value === 'CONNECTING') {
       return
     }
     wsUrl.value = buildWsUrl()

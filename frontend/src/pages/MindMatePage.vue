@@ -52,7 +52,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="mindmate-page flex-1 flex flex-col bg-white">
+  <div class="mindmate-page flex-1 flex flex-col min-h-0 min-w-0 bg-white">
     <MindmatePanel
       ref="mindmatePanelRef"
       mode="fullpage"

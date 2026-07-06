@@ -1,6 +1,6 @@
 import {
   MIND_MAP_GEOMETRY,
-  mindMapUnderlineHandleAnchorY,
+  mindMapConnectionAnchorY,
 } from '@/config/mindMapGeometry'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import type { MindGraphNodeData, NodeStyle } from '@/types'
@@ -54,7 +54,11 @@ function nodeBoxSize(node: FlowNodeLike, measured?: MeasuredNodeSize): { w: numb
   }
 }
 
-/** Underline target X: node side edge (stroke meets bar; no inset gap or overlap nudge). */
+/**
+ * Underline join X: the node's side edge. The bar (drawn in the SVG edge layer, spanning the
+ * full node width) and the connector are collinear in one SVG coordinate space, so meeting
+ * exactly at the edge is seamless — no overlap nudge, which would double-draw the stroke.
+ */
 function underlineTargetJoinX(
   x: number,
   _side: 'left' | 'right',
@@ -64,19 +68,31 @@ function underlineTargetJoinX(
 }
 
 /**
- * Underline connector Y: prefer vue-flow handle center when provided; otherwise match
- * handle CSS (not mindMapConnectionAnchorY, which assumes the bar sits at box bottom).
+ * Underline connector Y: deterministic midline of the underline bar.
+ *
+ * The bar is the bottom-most element of the node (padding-top → text → gap → 2px bar,
+ * no bottom padding), so its midline is `nodeTopY + nodeHeight - stroke/2` — exactly
+ * `mindMapConnectionAnchorY`. This is the same source the layout and the DOM bar use,
+ * so the connector, the bar, and the node position all evaluate to one Y.
+ *
+ * Vue Flow's handle-bounds Y (`fallbackY`) is only a last resort when the node height
+ * is unknown: it is measured asynchronously, is never force-refreshed after a height
+ * change (no `updateNodeInternals`), and can lag the bar by a few pixels on the live
+ * canvas — the drift the headless export never shows because it fully settles first.
  */
 function resolveMindMapUnderlineAnchorY(
   nodeTopY: number,
   nodeHeight: number,
   fallbackY: number | undefined
 ): number {
+  if (Number.isFinite(nodeHeight) && nodeHeight > 0) {
+    return mindMapConnectionAnchorY(nodeTopY, nodeHeight, 'underline')
+  }
   const minHandleY = nodeTopY + 8
   if (fallbackY != null && Number.isFinite(fallbackY) && fallbackY >= minHandleY) {
     return fallbackY
   }
-  return mindMapUnderlineHandleAnchorY(nodeTopY, nodeHeight)
+  return mindMapConnectionAnchorY(nodeTopY, nodeHeight, 'underline')
 }
 
 /**

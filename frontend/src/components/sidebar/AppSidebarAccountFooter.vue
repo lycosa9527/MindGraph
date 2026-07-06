@@ -83,21 +83,25 @@ const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarTh
         <div
           v-if="!s.isCollapsed"
           class="tc-sidebar-widget"
+          role="button"
+          tabindex="0"
+          @click="s.openThinkingCoinsUpgrade()"
+          @keydown.enter="s.openThinkingCoinsUpgrade()"
+          @keydown.space.prevent="s.openThinkingCoinsUpgrade()"
         >
           <div class="flex items-center justify-between gap-2.5">
-            <button
-              type="button"
-              class="tc-balance-label min-w-0"
-              @click="s.openThinkingCoinsUpgrade()"
-            >
+            <div class="tc-balance-label min-w-0">
               <span class="leading-tight truncate">
                 <span class="text-xs font-medium text-stone-600">{{ s.t('thinkingCoins.balanceUnit') }}:</span>
                 <span class="text-base font-bold tabular-nums tracking-tight text-stone-900">
                   {{ s.thinkingCoinsBalanceFormatted }}
                 </span>
               </span>
-            </button>
-            <div class="tc-upgrade-orbit shrink-0">
+            </div>
+            <div
+              class="tc-upgrade-orbit shrink-0"
+              @click.stop
+            >
               <span
                 class="tc-upgrade-orbit__ring"
                 aria-hidden="true"
@@ -105,18 +109,14 @@ const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarTh
               <button
                 type="button"
                 class="tc-sidebar-upgrade"
-                @click="s.openThinkingCoinsUpgrade()"
+                @click="s.openThinkingCoinsUpgradeSchool()"
               >
                 <Star class="h-3 w-3 fill-current" />
                 {{ s.t('thinkingCoins.upgrade') }}
               </button>
             </div>
           </div>
-          <button
-            type="button"
-            class="tc-sidebar-promo mt-2.5 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left transition hover:brightness-[0.98]"
-            @click="s.openThinkingCoinsUpgrade()"
-          >
+          <div class="tc-sidebar-promo mt-2.5 flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left">
             <Gift class="h-4 w-4 shrink-0 text-orange-500" />
             <div class="tc-task-promo-viewport min-w-0 flex-1">
               <Transition
@@ -148,7 +148,7 @@ const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarTh
                 +{{ promoReward }}
               </span>
             </Transition>
-          </button>
+          </div>
         </div>
         <el-tooltip
           v-else
@@ -403,36 +403,36 @@ const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarTh
   box-shadow:
     0 1px 2px rgba(28, 25, 23, 0.05),
     0 4px 14px rgba(28, 25, 23, 0.06);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.tc-sidebar-widget:hover {
+  background: #fafaf9;
+}
+
+.tc-sidebar-widget:focus-visible {
+  outline: 2px solid #d6d3d1;
+  outline-offset: 2px;
 }
 
 .tc-balance-label {
   margin: 0;
   padding: 0;
-  border: none;
-  background: transparent;
   text-align: left;
-  cursor: pointer;
   font: inherit;
   color: inherit;
 }
 
 .tc-balance-label:focus-visible {
-  outline: 2px solid #d6d3d1;
-  outline-offset: 2px;
-  border-radius: 6px;
+  outline: none;
 }
 
 .tc-sidebar-promo {
   background: #fff8eb;
   border: none;
-  cursor: pointer;
   font: inherit;
   color: inherit;
-}
-
-.tc-sidebar-promo:focus-visible {
-  outline: 2px solid #fcd34d;
-  outline-offset: 1px;
 }
 
 .tc-upgrade-orbit {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * MindmateCollabPanel — shared AI chatroom entry (org browse + invite code).
- * Swiss-style trigger dropdown aligned with MindGraphCollabPanel.
+ * Landing / welcome: join org or public seminar. In an open conversation: launch only.
  */
 import { onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -152,7 +152,12 @@ async function joinByCode() {
     notify.warning(t('mindgraphLanding.codeFormatInvalid'))
     return
   }
-  navigateToRoom(code)
+  isJoining.value = true
+  try {
+    navigateToRoom(code)
+  } finally {
+    isJoining.value = false
+  }
 }
 
 async function startSeminar(visibility: 'organization' | 'network') {
@@ -339,15 +344,6 @@ defineExpose({ prefillAndAutoJoin })
                 </ElDropdownItem>
                 <ElDropdownItem command="launch-network">
                   {{ t('mindmate.collabLaunchNetwork') }}
-                </ElDropdownItem>
-                <ElDropdownItem
-                  divided
-                  command="organization"
-                >
-                  {{ t('mindmate.collabJoinOrgSeminar') }}
-                </ElDropdownItem>
-                <ElDropdownItem command="network">
-                  {{ t('mindmate.collabJoinPublicSeminar') }}
                 </ElDropdownItem>
               </template>
               <template v-else>

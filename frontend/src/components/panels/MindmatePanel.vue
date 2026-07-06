@@ -46,6 +46,7 @@ import {
   setEmbeddedCollabRoomCode,
 } from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
 import type { MindMateMessage } from '@/stores/mindmateActiveThread'
+import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
 
 const MindmateCollabPanel = defineAsyncComponent(
   () => import('@/components/mindmate/MindmateCollabPanel.vue'),
@@ -124,7 +125,7 @@ function mapThreadToCollabSeed(msgs: MindMateMessage[]): MindmateCollabMessage[]
     .filter((m) => (m.role === 'user' || m.role === 'assistant') && m.content.trim())
     .map((m) => ({
       role: m.role as 'user' | 'assistant',
-      content: m.content,
+      content: m.role === 'user' ? displayMindmateUserQueryForUi(m.content) : m.content,
       sender_user_id: m.role === 'user' ? Number(authStore.user?.id) || null : null,
       username: m.role === 'user' ? authStore.user?.username ?? null : null,
     }))
@@ -538,7 +539,7 @@ function isLastAssistantMessage(messageId: string): boolean {
 
 <template>
   <div
-    class="mindmate-panel bg-white dark:bg-gray-800 flex flex-col h-full overflow-hidden"
+    class="mindmate-panel bg-white dark:bg-gray-800 flex flex-col h-full min-w-0 overflow-hidden"
     :class="{
       'border-l border-gray-200 dark:border-gray-700 shadow-lg': !isFullpageMode,
       'panel-mode': !isFullpageMode,

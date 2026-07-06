@@ -27,7 +27,6 @@ import {
   mindMapBranchFontSize,
   mindMapHorizontalPadding,
   mindMapUnderlineContentPadding,
-  resolveMindMapTopicBorderColor,
 } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { useDiagramStore } from '@/stores/diagram'
@@ -183,11 +182,11 @@ const underlineLineStyle = computed((): CSSProperties => {
   const style = resolvedStyle.value
   const { textGap } = mindMapUnderlineContentPadding()
   if (isMindMap.value) {
+    // The visible bar is painted in the SVG edge layer (MindMapOrthogonalEdge) so it shares
+    // the connector's pixel grid and never seams under the fractional viewport transform.
+    // Keep this box's height so node measurement/layout stays identical; just don't paint.
     return {
-      backgroundColor: resolveMindMapTopicBorderColor(
-        diagramStore.data?.nodes?.find((n) => n.id === 'topic')
-      ),
-      opacity: MIND_MAP_GEOMETRY.edgeStrokeOpacity,
+      backgroundColor: 'transparent',
       marginTop: `${textGap}px`,
       height: `${MINDMAP_UNDERLINE_STROKE_WIDTH}px`,
     }

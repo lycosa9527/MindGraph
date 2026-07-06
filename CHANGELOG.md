@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.138.0] - 2026-07-07
+
+> **MindMate collab WebSocket reliability, thinking-coins school subscription and WeCom consult, mind map underline connectors, and extension page-context display.**
+
+### Added
+
+- **WeCom outbound notifications** — Profile-based webhook + optional app-message client under [`services/integrations/wecom/`](services/integrations/wecom/); env vars in [`env.example`](env.example).
+- **School consultation API** — `POST /api/thinking-coins/school-consultation` validates the form, rate-limits, and forwards leads via WeCom ([`thinking_coins.py`](routers/auth/thinking_coins.py), [`school_consult_notify.py`](services/auth/thinking_coin/school_consult_notify.py), [`school_consult_validation.py`](services/auth/thinking_coin/school_consult_validation.py)).
+- **Thinking-coins school subscription UI** — School consult form in upgrade modal ([`ThinkingCoinsSchoolSubscriptionPanel.vue`](frontend/src/components/auth/ThinkingCoinsSchoolSubscriptionPanel.vue), [`ThinkingCoinsSubscriptionSection.vue`](frontend/src/components/auth/ThinkingCoinsSubscriptionSection.vue)); deep-link `?tab=school` on `/thinking-coins/upgrade`.
+- **Ledger enrichment** — Wallet ledger rows include `task_title` / `task_title_en` from earn-task refs ([`ledger_enrichment.py`](services/auth/thinking_coin/ledger_enrichment.py), [`thinkingCoinsLedgerLabel.ts`](frontend/src/composables/auth/thinkingCoinsLedgerLabel.ts)).
+- **Collab reconnect helpers** — Permanent close-code denylist, exponential backoff, and resume-token refresh ([`mindmateCollabReconnect.ts`](frontend/src/utils/mindmateCollabReconnect.ts)).
+- **Extension page-context display** — Strip embedded page markdown for MindMate bubbles, collab seed, and history ([`mindmateExtensionPageContext.ts`](frontend/src/utils/mindmateExtensionPageContext.ts)).
+- **WS disconnect cleanup module** — Superseded-socket teardown without evicting the active Redis/registry connection ([`ws_disconnect_cleanup.py`](services/features/mindmate_collab/ws_disconnect_cleanup.py)).
+
+### Changed
+
+- **MindMate collab WebSocket join flow** — `add_participant` runs only after `ws_managed_session` accepts; REST join validates permissions without incrementing counts until WS connect ([`mindmate_collab_ws.py`](routers/api/mindmate_collab_ws.py), [`manager.py`](services/features/mindmate_collab/manager.py)).
+- **Collab room UX** — Connection status banner, retry control, mobile members drawer, and embed layout polish ([`MindmateCollabRoom.vue`](frontend/src/components/mindmate/MindmateCollabRoom.vue), [`MindmateCollabEmbed.vue`](frontend/src/components/mindmate/MindmateCollabEmbed.vue), [`MindmateCollabPage.vue`](frontend/src/pages/MindmateCollabPage.vue)).
+- **Thinking-coins upgrade panel** — Ledger preview row, expandable earn-task cards, and school subscription section ([`ThinkingCoinsUpgradePanel.vue`](frontend/src/components/auth/ThinkingCoinsUpgradePanel.vue)).
+- **Mind map underline connectors** — Underline-bar anchor Y aligned with branch node geometry; orthogonal edge path uses shared endpoint resolver ([`BranchNode.vue`](frontend/src/components/diagram/nodes/BranchNode.vue), [`MindMapOrthogonalEdge.vue`](frontend/src/components/diagram/edges/MindMapOrthogonalEdge.vue), [`mindMapEdgeEndpoints.ts`](frontend/src/utils/mindMapEdgeEndpoints.ts)).
+- **Chrome extension compose** — Panel bubbles and history show the teacher question only when page context is embedded ([`mindmate-compose.js`](chrome-extension/mindmate-compose.js), [`mindmate-api.js`](chrome-extension/mindmate-api.js)).
+- **MindMate collab architecture doc** — WebSocket frame and participant-registration notes ([`mindmate_collab.md`](docs/architecture/mindmate_collab.md)).
+
+### Fixed
+
+- **Duplicate-tab WebSocket cleanup** — Second connection for the same user no longer evicts the active socket from Redis/registry ([`ws_disconnect_cleanup.py`](services/features/mindmate_collab/ws_disconnect_cleanup.py)).
+- **Connection-cap ghost participants** — Failed WS joins roll back; counts update only on successful connect.
+- **REST join ghost participants** — Participant counts no longer increment on permission-only REST join.
+- **Collab reconnect policy** — Denylist permanent close codes (1008, 4029); `session_closing` and auth-failure UX ([`useMindmateCollab.ts`](frontend/src/composables/mindmate/useMindmateCollab.ts)).
+- **Extension page context in collab seed** — Seed messages display the extracted question, not raw page markdown ([`MindmatePanel.vue`](frontend/src/components/panels/MindmatePanel.vue)).
+- **Mobile collab members panel** — Drawer toggle on narrow viewports.
+
+### Tests
+
+- **Backend** — `test_mindmate_collab_ws_disconnect.py`, `test_school_consult_route.py`, `test_school_consult_validation.py`, `test_thinking_coin_ledger_enrichment.py`, `test_wecom_*.py`; extended `test_mindmate_collab_backend.py`, `test_mindmate_collab_hardening.py`, `test_mindmate_collab_resume_tokens.py`.
+- **Frontend** — `mindmateCollabReconnect.spec.ts`, `mindmateExtensionPageContext.spec.ts`, `thinkingCoinsLedgerLabel.spec.ts`; extended `mindMapUnderlineAnchorY.spec.ts`, `useMindmateCollab.spec.ts`.
+- **Chrome extension** — Extended [`test/mindmate.spec.js`](chrome-extension/test/mindmate.spec.js) for page-context display helpers.
+
 ## [5.137.0] - 2026-07-05
 
 > **MindMate collab hardening, unified org roster, seed-message handoff, and sidebar quote vendor refresh.**

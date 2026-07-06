@@ -59,6 +59,7 @@ const {
   fetchLedger,
   taskTitle,
   taskSubtitle,
+  ledgerItemLabel,
   handleTaskClick,
 } = useThinkingCoins()
 
@@ -141,12 +142,6 @@ const earnTasks = computed(() => wallet.value?.earn_tasks ?? [])
 
 function taskTheme(index: number): TaskTheme {
   return TASK_THEMES[index % TASK_THEMES.length]
-}
-
-function reasonLabel(reason: string): string {
-  const key = `thinkingCoins.reason.${reason}`
-  const translated = t(key)
-  return translated === key ? reason : translated
 }
 
 function taskIcon(slug: string) {
@@ -411,7 +406,7 @@ function onUpgradeClick() {
                     :key="item.id"
                     class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
                   >
-                    <span class="truncate text-stone-600">{{ reasonLabel(item.reason) }}</span>
+                    <span class="truncate text-stone-600">{{ ledgerItemLabel(item) }}</span>
                     <span
                       class="shrink-0 font-semibold tabular-nums"
                       :class="item.delta >= 0 ? 'text-emerald-600' : 'text-stone-800'"

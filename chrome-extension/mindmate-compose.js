@@ -118,11 +118,71 @@
     return composed.slice(0, API_MESSAGE_MAX_LEN);
   }
 
+  const MATERIAL_HEADER_MARKERS = [
+    "**【参考材料：网页正文】**",
+    "**【參考材料：網頁正文】**",
+    "**[Reference material: page body]**",
+  ];
+
+  const PAGE_CONTEXT_INTRO_MARKERS = [
+    "MindGraph extension · page context",
+    "MindGraph 浏览器扩展 · 网页上下文",
+    "MindGraph 瀏覽器擴充 · 網頁上下文",
+  ];
+
+  const USER_QUESTION_LINE_RES = [
+    /^\*\*用户问题[^*]*\*\*\s*(.*)$/m,
+    /^\*\*使用者問題[^*]*\*\*\s*(.*)$/m,
+    /^\*\*User question[^*]*\*\*\s*(.*)$/im,
+  ];
+
+  /**
+   * @param {string} text
+   * @returns {boolean}
+   */
+  function isExtensionPageContextMessage(text) {
+    if (MATERIAL_HEADER_MARKERS.some((marker) => text.includes(marker))) {
+      return true;
+    }
+    return PAGE_CONTEXT_INTRO_MARKERS.some((marker) => text.includes(marker));
+  }
+
+  /**
+   * @param {string} text
+   * @returns {string | null}
+   */
+  function extractUserQuestionFromPageContext(text) {
+    for (const pattern of USER_QUESTION_LINE_RES) {
+      const match = pattern.exec(text);
+      if (match && match[1]) {
+        const question = match[1].trim();
+        if (question) {
+          return question;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * @param {string | null | undefined} query
+   * @returns {string}
+   */
+  function displayUserMessageFromDifyQuery(query) {
+    const text = (query || "").trim();
+    if (!text || !isExtensionPageContextMessage(text)) {
+      return query || "";
+    }
+    const question = extractUserQuestionFromPageContext(text);
+    return question || text;
+  }
+
   MindGraphMindMate.API_MESSAGE_MAX_LEN = API_MESSAGE_MAX_LEN;
   MindGraphMindMate.shouldAttachPageContext = shouldAttachPageContext;
   MindGraphMindMate.truncateMarkdownForBudget = truncateMarkdownForBudget;
   MindGraphMindMate.normalizeSourceCode = normalizeSourceCode;
   MindGraphMindMate.formatPageContextSourceLabel = formatPageContextSourceLabel;
   MindGraphMindMate.buildFirstMessageWithPageContext = buildFirstMessageWithPageContext;
+  MindGraphMindMate.displayUserMessageFromDifyQuery = displayUserMessageFromDifyQuery;
   global.MindGraphMindMate = MindGraphMindMate;
 })(typeof self !== "undefined" ? self : globalThis);

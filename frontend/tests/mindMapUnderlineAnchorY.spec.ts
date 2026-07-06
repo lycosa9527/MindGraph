@@ -1,21 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  mindMapConnectionAnchorY,
-  mindMapUnderlineHandleAnchorY,
-} from '@/config/mindMapGeometry'
+import { mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
 import { resolveMindMapEdgeEndpoint } from '@/utils/mindMapEdgeEndpoints'
-
-describe('mindMapUnderlineHandleAnchorY', () => {
-  it('places handle center below box-bottom formula (matches domHandle probe)', () => {
-    const top = 209.5
-    const height = 29
-    const formula = mindMapConnectionAnchorY(top, height, 'underline')
-    const handle = mindMapUnderlineHandleAnchorY(top, height)
-    expect(formula).toBe(237.5)
-    expect(handle).toBe(240.5)
-  })
-})
 
 describe('resolveMindMapEdgeEndpoint underline Y', () => {
   const node = {
@@ -23,37 +9,62 @@ describe('resolveMindMapEdgeEndpoint underline Y', () => {
     position: { x: 644.5, y: 209.5 },
     data: { style: { nodeShape: 'underline' as const } },
   }
+  const measured = { width: 90, height: 29 }
+  // Bar midline: top + height - stroke/2 = 209.5 + 29 - 1.
+  const barMidline = mindMapConnectionAnchorY(node.position.y, measured.height, 'underline')
 
-  it('uses vue-flow handle Y when provided', () => {
+  it('anchors to the deterministic bar midline (matches layout + DOM bar)', () => {
+    expect(barMidline).toBe(237.5)
+  })
+
+  it('ignores the vue-flow handle Y and uses the bar midline', () => {
     const resolved = resolveMindMapEdgeEndpoint(
       node,
       'target',
       { x: 644.5, y: 240 },
       node.data?.style,
-      { width: 90, height: 29 }
+      measured
     )
-    expect(resolved.y).toBe(240)
+    expect(resolved.y).toBe(barMidline)
   })
 
-  it('rejects node-top fallback and uses handle CSS formula', () => {
+  it('does not drift to a stale/low fallback Y', () => {
     const resolved = resolveMindMapEdgeEndpoint(
       node,
       'target',
       { x: 644.5, y: 209.5 },
       node.data?.style,
-      { width: 90, height: 29 }
+      measured
     )
-    expect(resolved.y).toBe(240.5)
+    expect(resolved.y).toBe(barMidline)
   })
 
-  it('uses node side edge X for underline targets (no flush inset gap)', () => {
+  it('joins exactly at the side edge (right-side child = left edge, no overlap)', () => {
     const resolved = resolveMindMapEdgeEndpoint(
       node,
       'target',
       { x: 644.5, y: 240 },
       node.data?.style,
-      { width: 90, height: 29 }
+      measured
     )
+    // Right-side child target joins the left edge (position.x = 644.5), flush with the bar.
     expect(resolved.x).toBe(644.5)
+  })
+
+  it('joins exactly at the side edge for a left-side child (right edge, no overlap)', () => {
+    const leftNode = {
+      id: 'branch-l-2-1',
+      position: { x: 100, y: 209.5 },
+      data: { style: { nodeShape: 'underline' as const } },
+    }
+    const resolved = resolveMindMapEdgeEndpoint(
+      leftNode,
+      'target',
+      { x: 100, y: 240 },
+      leftNode.data?.style,
+      measured
+    )
+    // Left-side child target joins the right edge (position.x + width = 190), flush with the bar.
+    expect(resolved.x).toBe(190)
   })
 })

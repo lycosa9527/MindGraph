@@ -9,7 +9,7 @@ export type MindmateCollabConnectionStatus =
   | 'reconnecting'
   | 'failed'
 
-export const MINDMATE_COLLAB_MAX_WS_RECONNECT = 8
+export const MINDMATE_COLLAB_MAX_WS_RECONNECT = 5
 
 /** Locale key for a server `type: error` frame `code` field. */
 export function mindmateCollabWsErrorLocaleKey(errorCode: string): string | null {
@@ -50,7 +50,7 @@ export function mindmateCollabDisconnectShouldNotify(
   suppressReconnect: boolean,
   reconnectExhausted: boolean,
 ): 'none' | 'reconnecting' | 'closed_reason' | 'reconnect_failed' {
-  if (closeCode === 4010 || closeCode === 4011 || closeCode === 4003) {
+  if (closeCode === 4010 || closeCode === 4011 || closeCode === 4003 || closeCode === 1008 || closeCode === 4029) {
     return 'none'
   }
   if (closeCode === 1000 || closeCode === 1001) {

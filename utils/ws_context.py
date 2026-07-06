@@ -117,7 +117,7 @@ async def ws_managed_session(
             return
 
     redis_cap_acquired = False
-    if redis_collab_cap and endpoint == "collab":
+    if redis_collab_cap and endpoint in ("collab", "mindmate_collab"):
         if redis_collab_socket_cap_enabled():
             if not await try_acquire_collab_redis_socket_slot(user_id):
                 logger.warning(

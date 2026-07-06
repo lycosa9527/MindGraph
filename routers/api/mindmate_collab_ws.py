@@ -30,11 +30,15 @@ from services.features.mindmate_collab.resume_tokens import (
     try_consume_join_resume_token_async,
 )
 from services.features.mindmate_collab.ws_broadcast import broadcast_to_all, broadcast_to_others
+from services.features.mindmate_collab.ws_disconnect_cleanup import (
+    finalize_mindmate_collab_disconnect,
+)
 from services.features.mindmate_collab.ws_registry import (
     MindmateCollabWsHandle,
     close_superseded_connection,
     register_connection,
     shutdown_connection_handle,
+    teardown_superseded_connection,
     unregister_connection,
 )
 from services.redis.redis_async_client import get_async_redis
@@ -191,174 +195,190 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
 
     handle = MindmateCollabWsHandle(websocket)
     handle.writer_task = asyncio.create_task(_writer_loop(handle), name="mindmate-collab-writer")
-    previous = register_connection(norm_code, int(user.id), handle)
-    if previous is not None:
-        await close_superseded_connection(previous)
 
-    if not await mgr.add_participant(norm_code, int(user.id)):
-        unregister_connection(norm_code, int(user.id))
-        await shutdown_connection_handle(handle)
-        close_reason = "Room full"
-        if not get_async_redis():
-            close_reason = "Collaboration service unavailable"
-        try:
-            await websocket.close(code=1008, reason=close_reason)
-        except (RuntimeError, OSError):
-            pass
-        return
-
+    join_committed = False
+    participant_added = False
     rate_limiter = WebsocketMessageRateLimiter(DEFAULT_MAX_WS_MESSAGES_PER_SECOND)
 
-    async with ws_managed_session(
-        websocket,
-        user_id=int(user.id),
-        endpoint="mindmate_collab",
-        max_per_user_endpoint=_COLLAB_WS_MAX_PER_USER_ENDPOINT,
-        max_per_user_global=_COLLAB_WS_MAX_PER_USER_GLOBAL,
-    ):
-        history = await mgr.fetch_message_history(session.id)
-        participants = await mgr.participant_count(norm_code)
-        resume_token = await mint_join_resume_token_async(int(user.id), norm_code, session.id)
+    try:
+        async with ws_managed_session(
+            websocket,
+            user_id=int(user.id),
+            endpoint="mindmate_collab",
+            max_per_user_endpoint=_COLLAB_WS_MAX_PER_USER_ENDPOINT,
+            max_per_user_global=_COLLAB_WS_MAX_PER_USER_GLOBAL,
+            redis_collab_cap=True,
+        ):
+            previous = register_connection(norm_code, int(user.id), handle)
+            if previous is not None:
+                await close_superseded_connection(previous)
+                teardown_superseded_connection(norm_code, int(user.id), previous)
 
-        joined_payload: dict[str, object] = {
-            "type": "joined",
-            "user_id": int(user.id),
-            "owner_id": session.owner_user_id,
-            "session_id": session.id,
-            "code": session.code,
-            "title": session.title,
-            "visibility": session.visibility,
-            "participants": participants,
-        }
-        if resume_token:
-            joined_payload["resume_token"] = resume_token
-        await websocket.send_json(joined_payload)
-        await websocket.send_json({"type": "snapshot", "messages": history})
-
-        await broadcast_to_others(
-            norm_code,
-            int(user.id),
-            {
-                "type": "user_joined",
-                "user_id": int(user.id),
-                "username": getattr(user, "username", None) or getattr(user, "name", None),
-            },
-        )
-
-        try:
-            while True:
-                raw = await websocket.receive_text()
-                if inbound_text_exceeds_limit(raw, DEFAULT_MAX_WS_TEXT_BYTES):
-                    await websocket.send_json(
-                        {"type": "error", "code": "message_too_large", "message": "Message too large"},
-                    )
-                    continue
-                if not rate_limiter.allow():
-                    await websocket.send_json(
-                        {"type": "error", "code": "rate_limit", "message": "Too many messages"},
-                    )
-                    continue
+            if not await mgr.add_participant(norm_code, int(user.id)):
+                unregister_connection(norm_code, int(user.id), handle=handle)
+                await shutdown_connection_handle(handle)
+                close_reason = "Room full"
+                if not get_async_redis():
+                    close_reason = "Collaboration service unavailable"
                 try:
-                    msg = json.loads(raw)
-                except json.JSONDecodeError:
-                    continue
-                if not isinstance(msg, dict):
-                    continue
-                if collab_json_exceeds_depth(msg, MAX_COLLAB_INBOUND_JSON_DEPTH):
-                    await websocket.send_json(
-                        {"type": "error", "code": "invalid_payload", "message": "Invalid payload"},
-                    )
-                    continue
-                msg_type = msg.get("type")
-                if msg_type == "ping":
-                    await _handle_ping(websocket, norm_code, int(user.id))
-                    continue
-                if msg_type != "chat":
-                    continue
-                if not await mgr.session_accepts_chat(norm_code):
-                    await websocket.send_json(
-                        {
-                            "type": "error",
-                            "code": "room_closed",
-                            "message": "Room is no longer active",
-                        },
-                    )
-                    continue
-                content = str(msg.get("content") or "").strip()
-                if not content:
-                    continue
-                if len(content) > MINDMATE_COLLAB_MAX_CHAT_CONTENT_CHARS:
-                    await websocket.send_json(
-                        {
-                            "type": "error",
-                            "code": "content_too_long",
-                            "message": "Message too long",
-                        },
-                    )
-                    continue
+                    await websocket.close(code=1008, reason=close_reason)
+                except (RuntimeError, OSError):
+                    pass
+                return
 
-                to_mindmate = bool(msg.get("to_mindmate"))
-                agent_aliases: tuple[str, ...] = ()
-                agent_name = getattr(user, "mindmate_agent_name", None)
-                if agent_name:
-                    agent_aliases = (str(agent_name),)
-                if not to_mindmate:
-                    to_mindmate = message_mentions_mindmate(content, agent_aliases)
+            participant_added = True
 
-                await mgr.refresh_participant_ttl(norm_code, int(user.id))
-                await mgr.touch_activity(norm_code)
-                saved = await mgr.persist_message(
-                    session.id,
-                    role="user",
-                    content=content,
-                    sender_user_id=int(user.id),
-                )
-                user_frame = {
-                    "type": "user_message",
-                    "id": saved.id,
-                    "content": content,
-                    "sender_user_id": int(user.id),
-                    "username": getattr(user, "username", None) or getattr(user, "name", None),
-                    "to_mindmate": to_mindmate,
-                }
-                await broadcast_to_all(norm_code, user_frame)
+            history = await mgr.fetch_message_history(session.id)
+            participants = await mgr.participant_count(norm_code)
+            resume_token = await mint_join_resume_token_async(int(user.id), norm_code, session.id)
 
-                if not to_mindmate:
-                    continue
+            joined_payload: dict[str, object] = {
+                "type": "joined",
+                "user_id": int(user.id),
+                "owner_id": session.owner_user_id,
+                "session_id": session.id,
+                "code": session.code,
+                "title": session.title,
+                "visibility": session.visibility,
+                "participants": participants,
+            }
+            if resume_token:
+                joined_payload["resume_token"] = resume_token
+            await websocket.send_json(joined_payload)
+            await websocket.send_json({"type": "snapshot", "messages": history})
 
-                if not await acquire_dify_stream_lock(norm_code):
-                    await websocket.send_json(
-                        {
-                            "type": "error",
-                            "code": "mindmate_responding",
-                            "message": "MindMate is responding",
-                        },
-                    )
-                    continue
-
-                dify_query = extract_mindmate_query(content, agent_aliases)
-                conv_id = await mgr.resolve_dify_conversation_id(
-                    norm_code,
-                    fallback=session.dify_conversation_id,
-                )
-                if conv_id:
-                    session.dify_conversation_id = conv_id
-                schedule_assistant_reply(
-                    code=norm_code,
-                    session_id=session.id,
-                    org_id=session.organization_id,
-                    user_message=dify_query,
-                    sender_user_id=int(user.id),
-                    conversation_id=conv_id,
-                )
-        except WebSocketDisconnect:
-            pass
-        finally:
-            await shutdown_connection_handle(handle)
-            unregister_connection(norm_code, int(user.id))
-            await mgr.remove_participant(norm_code, int(user.id))
             await broadcast_to_others(
                 norm_code,
                 int(user.id),
-                {"type": "user_left", "user_id": int(user.id)},
+                {
+                    "type": "user_joined",
+                    "user_id": int(user.id),
+                    "username": getattr(user, "username", None) or getattr(user, "name", None),
+                },
             )
+            join_committed = True
+
+            try:
+                while True:
+                    raw = await websocket.receive_text()
+                    if inbound_text_exceeds_limit(raw, DEFAULT_MAX_WS_TEXT_BYTES):
+                        await websocket.send_json(
+                            {"type": "error", "code": "message_too_large", "message": "Message too large"},
+                        )
+                        continue
+                    if not rate_limiter.allow():
+                        await websocket.send_json(
+                            {"type": "error", "code": "rate_limit", "message": "Too many messages"},
+                        )
+                        continue
+                    try:
+                        msg = json.loads(raw)
+                    except json.JSONDecodeError:
+                        continue
+                    if not isinstance(msg, dict):
+                        continue
+                    if collab_json_exceeds_depth(msg, MAX_COLLAB_INBOUND_JSON_DEPTH):
+                        await websocket.send_json(
+                            {"type": "error", "code": "invalid_payload", "message": "Invalid payload"},
+                        )
+                        continue
+                    msg_type = msg.get("type")
+                    if msg_type == "ping":
+                        await _handle_ping(websocket, norm_code, int(user.id))
+                        continue
+                    if msg_type != "chat":
+                        continue
+                    if not await mgr.session_accepts_chat(norm_code):
+                        await websocket.send_json(
+                            {
+                                "type": "error",
+                                "code": "room_closed",
+                                "message": "Room is no longer active",
+                            },
+                        )
+                        continue
+                    content = str(msg.get("content") or "").strip()
+                    if not content:
+                        continue
+                    if len(content) > MINDMATE_COLLAB_MAX_CHAT_CONTENT_CHARS:
+                        await websocket.send_json(
+                            {
+                                "type": "error",
+                                "code": "content_too_long",
+                                "message": "Message too long",
+                            },
+                        )
+                        continue
+
+                    to_mindmate = bool(msg.get("to_mindmate"))
+                    agent_aliases: tuple[str, ...] = ()
+                    agent_name = getattr(user, "mindmate_agent_name", None)
+                    if agent_name:
+                        agent_aliases = (str(agent_name),)
+                    if not to_mindmate:
+                        to_mindmate = message_mentions_mindmate(content, agent_aliases)
+
+                    await mgr.refresh_participant_ttl(norm_code, int(user.id))
+                    await mgr.touch_activity(norm_code)
+                    saved = await mgr.persist_message(
+                        session.id,
+                        role="user",
+                        content=content,
+                        sender_user_id=int(user.id),
+                    )
+                    user_frame = {
+                        "type": "user_message",
+                        "id": saved.id,
+                        "content": content,
+                        "sender_user_id": int(user.id),
+                        "username": getattr(user, "username", None) or getattr(user, "name", None),
+                        "to_mindmate": to_mindmate,
+                    }
+                    await broadcast_to_all(norm_code, user_frame)
+
+                    if not to_mindmate:
+                        continue
+
+                    if not await acquire_dify_stream_lock(norm_code):
+                        await websocket.send_json(
+                            {
+                                "type": "error",
+                                "code": "mindmate_responding",
+                                "message": "MindMate is responding",
+                            },
+                        )
+                        continue
+
+                    dify_query = extract_mindmate_query(content, agent_aliases)
+                    conv_id = await mgr.resolve_dify_conversation_id(
+                        norm_code,
+                        fallback=session.dify_conversation_id,
+                    )
+                    if conv_id:
+                        session.dify_conversation_id = conv_id
+                    schedule_assistant_reply(
+                        code=norm_code,
+                        session_id=session.id,
+                        org_id=session.organization_id,
+                        user_message=dify_query,
+                        sender_user_id=int(user.id),
+                        conversation_id=conv_id,
+                    )
+            except WebSocketDisconnect:
+                pass
+            finally:
+                if join_committed:
+                    await finalize_mindmate_collab_disconnect(
+                        code=norm_code,
+                        user_id=int(user.id),
+                        handle=handle,
+                    )
+    except BaseException:
+        if participant_added and not join_committed:
+            unregister_connection(norm_code, int(user.id), handle=handle)
+            await mgr.remove_participant(norm_code, int(user.id))
+            await shutdown_connection_handle(handle)
+        raise
+    finally:
+        if not join_committed:
+            await shutdown_connection_handle(handle)

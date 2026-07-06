@@ -41,6 +41,8 @@ export interface ThinkingCoinLedgerItem {
   reason: string
   ref_type?: string | null
   ref_id?: string | null
+  task_title?: string | null
+  task_title_en?: string | null
   created_at: string
 }
 

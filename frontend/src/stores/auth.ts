@@ -113,6 +113,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Getters
   const isAuthenticated = computed(() => !!user.value)
+  const isAuthSessionVerified = computed(() => hasVerifiedAuthThisSession.value)
   const userRole = computed((): UserRole | null =>
     user.value?.role ? normalizeUserRole(user.value.role) : null
   )
@@ -1070,6 +1071,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Getters
     isAuthenticated,
+    isAuthSessionVerified,
     userRole,
     isSuperAdmin,
     isPlatformBd,

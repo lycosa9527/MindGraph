@@ -138,18 +138,6 @@ export function computeMindMapUnderlineBoxMetrics(textBlockHeight: number): {
   }
 }
 
-/** Hidden vue-flow handle diameter on underline nodes (default @vue-flow/core handle). */
-export const MINDMAP_UNDERLINE_VUE_FLOW_HANDLE_PX = 6
-
-/**
- * Y of the hidden vue-flow handle center for underline nodes — matches
- * mindMapUnderlineHandleStyle (bottom: stroke/2 + translateY(50%) on the handle).
- */
-export function mindMapUnderlineHandleAnchorY(nodeTopY: number, nodeHeight: number): number {
-  const half = MINDMAP_UNDERLINE_STROKE_WIDTH / 2
-  return nodeTopY + nodeHeight - half + MINDMAP_UNDERLINE_VUE_FLOW_HANDLE_PX / 2
-}
-
 /** Y coordinate where branch connectors meet the node (center or underline midline). */
 export function mindMapConnectionAnchorY(
   nodeTopY: number,

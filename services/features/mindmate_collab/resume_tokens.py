@@ -18,6 +18,16 @@ from services.redis.redis_async_client import get_async_redis
 from services.utils.error_types import REDIS_ERRORS
 
 
+_MAX_RESUME_QUERY_LEN = 96
+
+
+def _normalize_resume_token(token: str) -> str:
+    trimmed = token.strip()
+    if not trimmed or len(trimmed) > _MAX_RESUME_QUERY_LEN:
+        return ""
+    return trimmed
+
+
 def _new_token() -> str:
     return secrets.token_hex(16)
 
@@ -45,11 +55,14 @@ async def mint_join_resume_token_async(
 
 async def peek_join_resume_claims_async(token: str) -> Optional[Dict[str, Any]]:
     """Read join resume claims without consuming the token."""
+    normalized = _normalize_resume_token(token)
+    if not normalized:
+        return None
     redis = get_async_redis()
-    if not redis or not token:
+    if not redis:
         return None
     try:
-        raw = await redis.get(join_resume_key(token.strip()))
+        raw = await redis.get(join_resume_key(normalized))
     except REDIS_ERRORS:
         return None
     if not raw:
@@ -82,14 +95,17 @@ def join_resume_claims_match_user_room(
 
 async def try_consume_join_resume_token_async(token: str) -> Optional[Dict[str, Any]]:
     """Atomically read and delete join resume claims when present."""
-    redis = get_async_redis()
-    if not redis or not token:
+    normalized = _normalize_resume_token(token)
+    if not normalized:
         return None
-    key = join_resume_key(token.strip())
+    redis = get_async_redis()
+    if not redis:
+        return None
+    key = join_resume_key(normalized)
     try:
         raw = await redis.getdel(key)
     except REDIS_ERRORS:
-        claims = await peek_join_resume_claims_async(token)
+        claims = await peek_join_resume_claims_async(normalized)
         if claims:
             try:
                 await redis.delete(key)

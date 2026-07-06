@@ -8,7 +8,12 @@ import { type EdgeProps, useVueFlow } from '@vue-flow/core'
 
 import type { MindGraphEdgeData, MindGraphNodeData, NodeStyle } from '@/types'
 import { useDiagramStore } from '@/stores'
-import { MIND_MAP_GEOMETRY, mindMapConnectionAnchorY, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
+import {
+  MIND_MAP_GEOMETRY,
+  MINDMAP_UNDERLINE_STROKE_WIDTH,
+  mindMapConnectionAnchorY,
+  resolveMindMapTopicBorderColor,
+} from '@/config/mindMapGeometry'
 import {
   buildMindMapBracketBusPath,
   computeMindMapSharedTrunkX,
@@ -262,6 +267,35 @@ const edgeStyle = computed(() => ({
   strokeLinejoin: 'round' as const,
   transition: 'stroke-width 0.15s ease, stroke-opacity 0.15s ease',
 }))
+
+/**
+ * Underline bar for the target node, drawn here (in the SVG edge layer) instead of as an
+ * HTML div in the node. Sharing the connector's SVG coordinate space means the join can
+ * never seam under the fractional viewport transform (HTML and SVG layers snap to device
+ * pixels independently). Spans the full node width at the same midline Y the connector
+ * targets. The topic (no incoming edge) still paints its own HTML bar.
+ */
+const underlineBar = computed(() => {
+  if (targetShape.value !== 'underline') return null
+  const node = targetNode.value
+  if (!node?.position) return null
+  const size = measuredSize(node.id)
+  const w =
+    size?.width ??
+    node.dimensions?.width ??
+    (node.data?.estimatedWidth as number | undefined) ??
+    MIND_MAP_GEOMETRY.minWidth
+  const y = targetPoint.value.y
+  return { d: `M ${node.position.x} ${y} L ${node.position.x + w} ${y}` }
+})
+
+const underlineBarStyle = computed(() => ({
+  fill: 'none',
+  stroke: topicBorderColor.value,
+  strokeWidth: MINDMAP_UNDERLINE_STROKE_WIDTH,
+  strokeOpacity: MIND_MAP_GEOMETRY.edgeStrokeOpacity,
+  strokeLinecap: 'butt' as const,
+}))
 </script>
 
 <template>
@@ -273,6 +307,13 @@ const edgeStyle = computed(() => ({
     :style="edgeStyle"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
+  />
+  <path
+    v-if="underlineBar"
+    class="mindmap-underline-bar"
+    :d="underlineBar.d"
+    fill="none"
+    :style="underlineBarStyle"
   />
 </template>
 

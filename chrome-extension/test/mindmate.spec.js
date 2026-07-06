@@ -380,6 +380,45 @@ describe("mindmate compose page context", () => {
     expect(composed).toContain("Body");
     expect(composed).toContain("Question?");
   });
+
+  it("displayUserMessageFromDifyQuery hides extraction body for history", () => {
+    loadModule("mindmate-compose.js", "MindGraphMindMate");
+    const t = (key, subs) => {
+      if (key === "mindmatePageContextIntro") {
+        return "INTRO";
+      }
+      if (key === "mindmatePageContextRouting") {
+        return "ROUTING";
+      }
+      if (key === "mindmatePageContextGuidance") {
+        return "GUIDANCE";
+      }
+      if (key === "mindmatePageContextMaterialHeader") {
+        return "**[Reference material: page body]**";
+      }
+      if (key === "mindmatePageContextMeta") {
+        return `META:${subs[0]}:${subs[1]}:${subs[2]}`;
+      }
+      if (key === "mindmatePageContextQuestion") {
+        return `**User question (classify intent and answer from this line):** ${subs[0]}`;
+      }
+      if (key === "mindmatePageContextSource_page_markdown") {
+        return "generic-extract";
+      }
+      return key;
+    };
+    const composed = globalThis.MindGraphMindMate.buildFirstMessageWithPageContext(t, "Explain this lesson", {
+      title: "Lesson A",
+      url: "https://example.com/lesson",
+      markdown: "## Section\n\nBody text",
+    });
+    expect(globalThis.MindGraphMindMate.displayUserMessageFromDifyQuery(composed)).toBe(
+      "Explain this lesson",
+    );
+    expect(globalThis.MindGraphMindMate.displayUserMessageFromDifyQuery("Plain follow-up")).toBe(
+      "Plain follow-up",
+    );
+  });
 });
 
 describe("mindmate page markdown", () => {
@@ -678,12 +717,46 @@ describe("mindmate api auth headers", () => {
   });
 
   it("maps Dify API messages to panel bubbles", () => {
+    loadModule("mindmate-compose.js", "MindGraphMindMate");
     loadModule("mindmate-api.js", "MindGraphMindMate");
+    const composed = globalThis.MindGraphMindMate.buildFirstMessageWithPageContext(
+      (key, subs) => {
+        if (key === "mindmatePageContextIntro") {
+          return "INTRO";
+        }
+        if (key === "mindmatePageContextRouting") {
+          return "ROUTING";
+        }
+        if (key === "mindmatePageContextGuidance") {
+          return "GUIDANCE";
+        }
+        if (key === "mindmatePageContextMaterialHeader") {
+          return "**[Reference material: page body]**";
+        }
+        if (key === "mindmatePageContextMeta") {
+          return `META:${subs[0]}:${subs[1]}:${subs[2]}`;
+        }
+        if (key === "mindmatePageContextQuestion") {
+          return `**User question (classify intent and answer from this line):** ${subs[0]}`;
+        }
+        if (key === "mindmatePageContextSource_page_markdown") {
+          return "generic-extract";
+        }
+        return key;
+      },
+      "Explain this lesson",
+      {
+        title: "Lesson A",
+        url: "https://example.com/lesson",
+        markdown: "## Section\n\nBody text",
+      },
+    );
     const rows = globalThis.MindGraphMindMate.panelMessagesFromApi([
-      { id: "m1", query: "Hi", answer: "Hello" },
+      { id: "m1", query: composed, answer: "Hello" },
     ]);
     expect(rows).toHaveLength(2);
     expect(rows[0].role).toBe("user");
+    expect(rows[0].text).toBe("Explain this lesson");
     expect(rows[1].role).toBe("assistant");
   });
 

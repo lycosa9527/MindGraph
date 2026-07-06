@@ -476,16 +476,11 @@ function handleAddChildClick() {
   padding: 2px 4px;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: thin;
+  scrollbar-width: none;
 }
 
 .mm-toolbar__track::-webkit-scrollbar {
-  height: 4px;
-}
-
-.mm-toolbar__track::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
+  display: none;
 }
 
 .mm-sep {
@@ -608,6 +603,20 @@ function handleAddChildClick() {
 .mm-btn:hover:not(:disabled) {
   background: #f9fafb;
   border-color: #d1d5db;
+}
+
+.mm-btn:focus {
+  outline: none;
+}
+
+.mm-btn:focus-visible {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    inset 0 0 0 2px #3b82f6;
+}
+
+:global(.dark) .mm-btn:focus-visible {
+  box-shadow: inset 0 0 0 2px #60a5fa;
 }
 
 .mm-btn:disabled {
@@ -772,7 +781,7 @@ function handleAddChildClick() {
 .mm-panel--structure {
   display: flex;
   align-items: stretch;
-  padding: 8px;
+  padding: 10px;
   gap: 0;
 }
 
@@ -799,27 +808,48 @@ function handleAddChildClick() {
   border-radius: 10px;
   background: transparent;
   cursor: pointer;
+  outline: none;
   transition:
     background 0.15s ease,
-    border-color 0.15s ease;
+    box-shadow 0.15s ease;
 }
 
 .mm-structure-card:hover {
   background: #f3f4f6;
+  box-shadow: inset 0 0 0 2px #93c5fd;
 }
 
 .mm-structure-card.is-active {
   background: #eff6ff;
-  border-color: #bfdbfe;
+  box-shadow: inset 0 0 0 2px #3b82f6;
+}
+
+.mm-structure-card.is-active:hover {
+  background: #dbeafe;
+  box-shadow: inset 0 0 0 2px #2563eb;
+}
+
+.mm-structure-card:focus-visible {
+  box-shadow: inset 0 0 0 2px #2563eb;
 }
 
 .dark .mm-structure-card:hover {
   background: #374151;
+  box-shadow: inset 0 0 0 2px #60a5fa;
 }
 
 .dark .mm-structure-card.is-active {
   background: #1e3a5f;
-  border-color: #3b82f6;
+  box-shadow: inset 0 0 0 2px #3b82f6;
+}
+
+.dark .mm-structure-card.is-active:hover {
+  background: #1e40af;
+  box-shadow: inset 0 0 0 2px #60a5fa;
+}
+
+.dark .mm-structure-card:focus-visible {
+  box-shadow: inset 0 0 0 2px #60a5fa;
 }
 
 .mm-structure-card__label {

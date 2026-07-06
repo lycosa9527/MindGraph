@@ -4,6 +4,7 @@
  * Supersedes the legacy messageCache localStorage prefetch for the hot path
  * (MindMate → canvas → back). Prefetch cache remains for other use cases.
  */
+import { displayMindmateUserQueryForUi } from '@/utils/mindmateExtensionPageContext'
 
 export type FeedbackRating = 'like' | 'dislike' | null
 
@@ -87,7 +88,7 @@ export function mapDifyMessagesToMindMate(difyMessages: DifyHistoryMessage[]): M
       result.push({
         id: `hist_user_${msg.id}_${seq}`,
         role: 'user',
-        content: msg.query,
+        content: displayMindmateUserQueryForUi(msg.query),
         timestamp: baseTs,
       })
       seq += 1

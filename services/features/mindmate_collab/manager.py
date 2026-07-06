@@ -319,8 +319,18 @@ class MindmateCollabManager:
             return None
         if session.expires_at and is_online_collab_expired(session.expires_at):
             return None
-        if await self.session_is_closing(session.code):
+        if not await self._validate_join_permissions(session, user_id):
             return None
+        return await self._session_payload(session)
+
+    async def _validate_join_permissions(
+        self,
+        session: MindmateCollabSession,
+        user_id: int,
+    ) -> bool:
+        """Return True when the user may join; participant registration happens on WS connect."""
+        if await self.session_is_closing(session.code):
+            return False
         async with user_rls_session(user_id) as db:
             allowed = await user_may_join_mindmate_collab(
                 db,
@@ -330,10 +340,8 @@ class MindmateCollabManager:
                 joiner_id=user_id,
             )
         if not allowed and session.visibility != ONLINE_COLLAB_VISIBILITY_NETWORK:
-            return None
-        if not await self._register_join_participant(session.code, user_id):
-            return None
-        return await self._session_payload(session)
+            return False
+        return True
 
     async def join_by_session_id(self, user_id: int, session_id: str) -> Optional[Dict[str, Any]]:
         """Validate org-room join permissions and return session payload."""
@@ -342,37 +350,9 @@ class MindmateCollabManager:
             return None
         if session.visibility != ONLINE_COLLAB_VISIBILITY_ORGANIZATION:
             return None
-        if await self.session_is_closing(session.code):
-            return None
-        async with user_rls_session(user_id) as db:
-            allowed = await user_may_join_mindmate_collab(
-                db,
-                visibility=session.visibility,
-                owner_user_id=session.owner_user_id,
-                owner_org_id=session.organization_id,
-                joiner_id=user_id,
-            )
-        if not allowed:
-            return None
-        if not await self._register_join_participant(session.code, user_id):
+        if not await self._validate_join_permissions(session, user_id):
             return None
         return await self._session_payload(session)
-
-    async def _register_join_participant(self, code: str, user_id: int) -> bool:
-        """Register joiner in Redis roster on REST join (idempotent with WS connect).
-
-        Returns False only when Redis is available and the room is at capacity.
-        When Redis is down, join is allowed and the WebSocket path surfaces the outage.
-        """
-        if await self.is_participant(code, user_id):
-            await self.touch_activity(code)
-            return True
-        if await self.add_participant(code, user_id):
-            return True
-        if not get_async_redis():
-            return True
-        count = await self.participant_count(code)
-        return count < MINDMATE_COLLAB_MAX_PARTICIPANTS
 
     async def user_may_connect(self, user_id: int, session: MindmateCollabSession) -> bool:
         """Return True when user may open a WebSocket to this room."""
@@ -540,12 +520,12 @@ class MindmateCollabManager:
         """True when the room is in a stop/teardown window and must reject new joins."""
         redis = get_async_redis()
         if not redis:
-            return False
+            return True
         norm = normalize_collab_code(code)
         try:
             raw = await redis.get(closing_key(norm))
         except REDIS_ERRORS:
-            return False
+            return True
         return raw is not None and raw not in (b"", "", b"0", "0")
 
     async def refresh_participant_ttl(self, code: str, user_id: int) -> None:

@@ -63,6 +63,7 @@ const {
   idleWarningSeconds,
   isHost,
   canSend,
+  canRetryConnection,
   connect,
   disconnect,
   sendChat,
@@ -257,7 +258,7 @@ defineExpose({ stopRoom, handleRetryConnection })
 
 <template>
   <div
-    class="mindmate-collab-room flex flex-col flex-1 min-h-0 min-w-0 bg-white"
+    class="mindmate-collab-room flex flex-col flex-1 min-h-0 min-w-0 w-full overflow-hidden bg-white"
     :class="{ 'mindmate-collab-room--embedded': embedded }"
   >
     <header
@@ -305,7 +306,7 @@ defineExpose({ stopRoom, handleRetryConnection })
     >
       <span>{{ connectionBannerText }}</span>
       <button
-        v-if="connectionStatus === 'failed'"
+        v-if="canRetryConnection"
         type="button"
         class="underline font-medium hover:opacity-80"
         @click="handleRetryConnection"
@@ -314,8 +315,9 @@ defineExpose({ stopRoom, handleRetryConnection })
       </button>
     </div>
 
-    <div class="flex-1 overflow-y-auto min-h-0">
-      <div class="max-w-3xl mx-auto px-4 py-4 space-y-4">
+    <div class="mindmate-collab-room__messages">
+      <div class="mindmate-collab-room__messages-scroll">
+        <div class="mindmate-collab-room__messages-inner">
         <div
           v-if="joining && !connected"
           class="text-sm text-stone-500 text-center py-12"
@@ -325,9 +327,9 @@ defineExpose({ stopRoom, handleRetryConnection })
 
         <div
           v-for="(msg, idx) in messages"
-          :key="msg.id ?? `local-${idx}-${msg.role}`"
-          class="flex gap-2.5"
-          :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'"
+          :key="msg.id ?? msg.clientKey ?? `msg-${idx}-${msg.role}`"
+          class="mindmate-collab-room__msg-row"
+          :class="msg.role === 'user' ? 'mindmate-collab-room__msg-row--user' : 'mindmate-collab-room__msg-row--assistant'"
         >
           <div
             v-if="msg.role === 'assistant'"
@@ -339,10 +341,7 @@ defineExpose({ stopRoom, handleRetryConnection })
               class="w-full h-full object-cover"
             />
           </div>
-          <div
-            class="min-w-0 max-w-[min(85%,42rem)]"
-            :class="msg.role === 'user' ? 'text-right' : 'text-left'"
-          >
+          <div class="mindmate-collab-room__msg-body">
             <div
               v-if="msg.role === 'user' && msg.username"
               class="text-[11px] text-stone-500 mb-1 px-1"
@@ -356,10 +355,10 @@ defineExpose({ stopRoom, handleRetryConnection })
               {{ mindmateAgentName }}
             </div>
             <div
-              class="text-sm rounded-2xl px-3.5 py-2.5 whitespace-pre-wrap leading-relaxed"
+              class="mindmate-collab-room__bubble text-sm rounded-2xl px-3.5 py-2.5 whitespace-pre-wrap leading-relaxed"
               :class="
                 msg.role === 'user'
-                  ? 'bg-stone-800 text-stone-50 inline-block text-left'
+                  ? 'bg-stone-800 text-stone-50 text-left'
                   : 'bg-stone-100 text-stone-800 border border-stone-200/80'
               "
             >
@@ -367,10 +366,11 @@ defineExpose({ stopRoom, handleRetryConnection })
             </div>
           </div>
         </div>
+        </div>
       </div>
     </div>
 
-    <div class="mindmate-collab-room__input shrink-0 bg-white mt-auto">
+    <div class="mindmate-collab-room__input shrink-0 bg-white mt-auto min-w-0 w-full">
       <div class="mindmate-collab-room__input-inner">
         <div
           class="mindmate-collab-room__recipient-tabs"
@@ -415,6 +415,70 @@ defineExpose({ stopRoom, handleRetryConnection })
 </template>
 
 <style scoped>
+.mindmate-collab-room__messages {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mindmate-collab-room__messages-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.mindmate-collab-room__messages-inner {
+  width: 100%;
+  min-width: 0;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mindmate-collab-room__msg-row {
+  display: flex;
+  gap: 0.625rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.mindmate-collab-room__msg-row--user {
+  flex-direction: row-reverse;
+}
+
+.mindmate-collab-room__msg-body {
+  min-width: 0;
+  max-width: min(85%, 42rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.mindmate-collab-room__msg-row--user .mindmate-collab-room__msg-body {
+  align-items: flex-end;
+}
+
+.mindmate-collab-room__msg-row--assistant .mindmate-collab-room__msg-body {
+  align-items: flex-start;
+}
+
+.mindmate-collab-room__bubble {
+  max-width: 100%;
+  width: fit-content;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .mindmate-collab-room__end-btn {
   --el-button-bg-color: #fef3c7;
   --el-button-border-color: #fcd34d;
@@ -429,8 +493,9 @@ defineExpose({ stopRoom, handleRetryConnection })
 }
 
 .mindmate-collab-room__input-inner {
-  max-width: 680px;
+  max-width: min(680px, 100%);
   width: 100%;
+  min-width: 0;
   margin: 0 auto;
   padding: 0.5rem 20px 1.25rem;
   padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));

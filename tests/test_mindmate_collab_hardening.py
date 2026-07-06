@@ -64,6 +64,30 @@ async def test_session_is_closing_false_when_marker_absent() -> None:
 
 
 @pytest.mark.asyncio
+async def test_session_is_closing_true_when_redis_unavailable() -> None:
+    """When Redis is down, reject joins (fail-closed)."""
+    mgr = MindmateCollabManager()
+    with patch(
+        "services.features.mindmate_collab.manager.get_async_redis",
+        return_value=None,
+    ):
+        assert await mgr.session_is_closing("abc-def") is True
+
+
+@pytest.mark.asyncio
+async def test_session_is_closing_true_on_redis_error() -> None:
+    """Redis errors during closing probe reject joins (fail-closed)."""
+    mgr = MindmateCollabManager()
+    redis = AsyncMock()
+    redis.get = AsyncMock(side_effect=ConnectionError("down"))
+    with patch(
+        "services.features.mindmate_collab.manager.get_async_redis",
+        return_value=redis,
+    ):
+        assert await mgr.session_is_closing("abc-def") is True
+
+
+@pytest.mark.asyncio
 async def test_abort_dify_stream_sets_abort_flag_without_releasing_lock() -> None:
     """Abort signals cooperative stop and does not delete the stream lock."""
     redis = AsyncMock()

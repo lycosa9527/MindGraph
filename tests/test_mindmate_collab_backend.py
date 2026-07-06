@@ -108,8 +108,8 @@ async def test_join_by_code_rejected_when_room_closing() -> None:
 
 
 @pytest.mark.asyncio
-async def test_join_by_code_registers_participant_before_payload() -> None:
-    """REST join adds the user to the Redis roster so roster/poke work before WS connect."""
+async def test_join_by_code_returns_payload_after_permission_check() -> None:
+    """REST join validates permissions and returns session payload without WS registration."""
     mgr = MindmateCollabManager()
     session = MagicMock()
     session.code = "ABC-DEF"
@@ -118,44 +118,23 @@ async def test_join_by_code_registers_participant_before_payload() -> None:
     session.owner_user_id = 1
     session.organization_id = 10
 
-    fake_sess = AsyncMock()
-    fake_result = MagicMock()
-    fake_result.scalar_one_or_none.return_value = True
-    fake_sess.execute = AsyncMock(return_value=fake_result)
-    context = AsyncMock()
-
-    async def _enter(*_a, **_k):
-        return fake_sess
-
-    context.__aenter__.side_effect = _enter
-    context.__aexit__.return_value = None
-
-    register_mock = AsyncMock(return_value=True)
+    validate_mock = AsyncMock(return_value=True)
     payload_mock = AsyncMock(return_value={"code": "ABC-DEF", "participant_count": 2})
 
     with (
         patch.object(mgr, "load_session_by_code", AsyncMock(return_value=session)),
-        patch.object(mgr, "session_is_closing", AsyncMock(return_value=False)),
-        patch(
-            "services.features.mindmate_collab.manager.user_rls_session",
-            return_value=context,
-        ),
-        patch(
-            "services.features.mindmate_collab.manager.user_may_join_mindmate_collab",
-            AsyncMock(return_value=True),
-        ),
-        patch.object(mgr, "_register_join_participant", register_mock),
+        patch.object(mgr, "_validate_join_permissions", validate_mock),
         patch.object(mgr, "_session_payload", payload_mock),
     ):
         payload = await mgr.join_by_code(2, "ABC-DEF")
 
-    register_mock.assert_awaited_once_with("ABC-DEF", 2)
+    validate_mock.assert_awaited_once_with(session, 2)
     assert payload == {"code": "ABC-DEF", "participant_count": 2}
 
 
 @pytest.mark.asyncio
-async def test_join_by_code_rejected_when_room_full() -> None:
-    """REST join fails when the participant cap is reached."""
+async def test_join_by_code_rejected_when_not_allowed() -> None:
+    """REST join fails when the user may not join the room."""
     mgr = MindmateCollabManager()
     session = MagicMock()
     session.code = "ABC-DEF"
@@ -166,8 +145,7 @@ async def test_join_by_code_rejected_when_room_full() -> None:
 
     with (
         patch.object(mgr, "load_session_by_code", AsyncMock(return_value=session)),
-        patch.object(mgr, "session_is_closing", AsyncMock(return_value=False)),
-        patch.object(mgr, "_register_join_participant", AsyncMock(return_value=False)),
+        patch.object(mgr, "_validate_join_permissions", AsyncMock(return_value=False)),
     ):
         payload = await mgr.join_by_code(2, "ABC-DEF")
 

@@ -416,6 +416,10 @@ router.beforeEach(async (to, from) => {
   }
 
   if (to.name === 'MindmateCollab') {
+    const collabCode = to.query.code
+    if (typeof collabCode !== 'string' || !collabCode.trim()) {
+      return { name: 'MindMate' }
+    }
     if (!featureFlagsStore.getFeatureMindmateCollab()) {
       return { name: 'MindMate' }
     }

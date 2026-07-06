@@ -59,9 +59,17 @@ Operational parity with canvas collab: see [`docs/operations/online-collab-runbo
 
 ## WebSocket frames
 
-Client → server: `join`, `chat`, `ping`.
+Join is **implicit** on WebSocket connect (after auth, tier, and visibility checks). There is no server handler for a client `join` frame.
 
-Server → client: `joined`, `snapshot`, `user_message`, `ai_message_chunk`, `ai_message_end`, `room_idle_warning`, `room_idle_shutdown`, `session_closing`, `session_ended_shutdown`, presence/error frames.
+Client → server: `chat`, `ping`.
+
+Server → client: `joined`, `snapshot`, `user_message`, `ai_message_chunk`, `ai_message_end`, `room_idle_warning`, `session_closing`, presence/error frames.
+
+**Shutdown delivery:** the server sends `session_closing` as JSON, then force-closes all sockets with **4010** (idle) or **4011** (host stop). The `room_idle_shutdown` / `session_ended_shutdown` frame types are internal fan-out signals and are not delivered as JSON to clients.
+
+**Participant registration:** REST `POST /join` validates permissions only; Redis participant counts increment when the WebSocket connects (`add_participant` inside `ws_managed_session`).
+
+**Duplicate tab:** a second connection for the same user closes the prior socket with **4003**; superseded disconnect cleanup skips participant removal when a newer handle is active ([`ws_disconnect_cleanup.py`](../../services/features/mindmate_collab/ws_disconnect_cleanup.py)).
 
 ## Social layer in collab room
 
@@ -77,4 +85,4 @@ Server → client: `joined`, `snapshot`, `user_message`, `ai_message_chunk`, `ai
 ## Tests
 
 - Backend: `tests/test_mindmate_collab_*.py`
-- Frontend: `frontend/tests/useMindmateCollab.spec.ts`, `MindmateCollabPanel.spec.ts`, `MindmateCollabHistory.spec.ts`
+- Frontend: `frontend/tests/useMindmateCollab.spec.ts`, `mindmateCollabReconnect.spec.ts`, `MindmateCollabPanel.spec.ts`, `MindmateCollabHistory.spec.ts`

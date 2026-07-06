@@ -327,6 +327,8 @@ declare module 'vue' {
     TeachingGroupLanding: typeof import('./components/workshop-chat/TeachingGroupLanding.vue')['default']
     TeachingGroupsManageDialog: typeof import('./components/workshop-chat/TeachingGroupsManageDialog.vue')['default']
     ThinkingCoinsModal: typeof import('./components/auth/ThinkingCoinsModal.vue')['default']
+    ThinkingCoinsSchoolSubscriptionPanel: typeof import('./components/auth/ThinkingCoinsSchoolSubscriptionPanel.vue')['default']
+    ThinkingCoinsSubscriptionSection: typeof import('./components/auth/ThinkingCoinsSubscriptionSection.vue')['default']
     ThinkingCoinsUpgradePanel: typeof import('./components/auth/ThinkingCoinsUpgradePanel.vue')['default']
     TopicActionsPopover: typeof import('./components/workshop-chat/TopicActionsPopover.vue')['default']
     TopicCard: typeof import('./components/workshop-chat/TopicCard.vue')['default']

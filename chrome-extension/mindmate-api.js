@@ -332,7 +332,10 @@
       const query = typeof row.query === "string" ? row.query : "";
       const answer = typeof row.answer === "string" ? row.answer : typeof row.content === "string" ? row.content : "";
       if (query.trim()) {
-        out.push({ id: `${baseId}-q`, role: "user", text: query });
+        const displayText = MindGraphMindMate.displayUserMessageFromDifyQuery
+          ? MindGraphMindMate.displayUserMessageFromDifyQuery(query)
+          : query;
+        out.push({ id: `${baseId}-q`, role: "user", text: displayText });
       }
       if (answer.trim()) {
         out.push({ id: `${baseId}-a`, role: "assistant", text: answer });

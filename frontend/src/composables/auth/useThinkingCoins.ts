@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { loadThinkingCoinsWallet } from '@/composables/auth/fetchThinkingCoinsWallet'
+import { ledgerItemLabel as resolveLedgerItemLabel } from '@/composables/auth/thinkingCoinsLedgerLabel'
 import type {
   AdminThinkingCoinTask,
   ThinkingCoinLedgerResponse,
@@ -67,6 +68,10 @@ export function useThinkingCoins() {
     return task.subtitle ?? ''
   }
 
+  function ledgerItemLabel(item: ThinkingCoinLedgerResponse['items'][number]): string {
+    return resolveLedgerItemLabel(item, t, isZh.value)
+  }
+
   async function handleTaskClick(task: ThinkingCoinsWallet['earn_tasks'][number]): Promise<void> {
     if (task.handler_key === 'navigate') {
       const route = String(task.action_config?.route ?? '/community')
@@ -93,6 +98,7 @@ export function useThinkingCoins() {
     fetchLedger,
     taskTitle,
     taskSubtitle,
+    ledgerItemLabel,
     handleTaskClick,
     formatBalance: formatThinkingCoinBalance,
   }

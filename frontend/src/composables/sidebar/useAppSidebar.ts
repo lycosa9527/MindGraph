@@ -114,7 +114,8 @@ export function useAppSidebar() {
       return 'admin'
     }
     if (path.startsWith('/workshop-chat')) return 'workshop-chat'
-    return 'mindmate'
+    if (path.startsWith('/thinking-coins')) return 'thinking-coins'
+    return ''
   })
 
   const isAuthenticated = computed(() => authStore.isAuthenticated)
@@ -414,20 +415,34 @@ export function useAppSidebar() {
     }
   }
 
+  function isOnRouteForMode(mode: string): boolean {
+    const routePath = routeMap[mode]
+    if (!routePath) {
+      return false
+    }
+    const path = router.currentRoute.value.path
+    return path === routePath || path.startsWith(`${routePath}/`)
+  }
+
   function setMode(index: string) {
     if (index === 'admin') {
       toggleManagementPanel()
       return
     }
+    const targetRoute = routeMap[index]
     if (currentMode.value === index) {
+      if (!isOnRouteForMode(index) && targetRoute) {
+        expandedPanel.value = index
+        void router.push(targetRoute)
+        return
+      }
       expandedPanel.value = expandedPanel.value === index ? null : index
       return
     }
 
     expandedPanel.value = index
-    const r = routeMap[index]
-    if (r) {
-      router.push(r)
+    if (targetRoute) {
+      void router.push(targetRoute)
     }
   }
 
@@ -440,9 +455,21 @@ export function useAppSidebar() {
     void router.push('/thinking-coins/upgrade')
   }
 
+  function openThinkingCoinsUpgradeSchool() {
+    void refreshThinkingCoinEarnTasks()
+    if (router.currentRoute.value.path === '/thinking-coins/upgrade') {
+      eventBus.emit('thinking_coins:focus_school', {})
+      void router.replace({
+        query: { ...router.currentRoute.value.query, tab: 'school' },
+      })
+      return
+    }
+    void router.push({ path: '/thinking-coins/upgrade', query: { tab: 'school' } })
+  }
+
   function openThinkingCoinsModal(tab: 'wallet' | 'subscription' = 'wallet') {
     if (tab === 'subscription') {
-      openThinkingCoinsUpgrade()
+      openThinkingCoinsUpgradeSchool()
       return
     }
     thinkingCoinsModalTab.value = tab
@@ -687,6 +714,7 @@ export function useAppSidebar() {
     openAccountModal,
     openThinkingCoinsModal,
     openThinkingCoinsUpgrade,
+    openThinkingCoinsUpgradeSchool,
     openUpdateLogModal,
     openLanguageSettingsModal,
     handleLogout,

@@ -9,7 +9,11 @@ import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { shouldReconnectMindmateCollab } from '@/utils/mindmateCollabSessions'
 import {
-  MINDMATE_COLLAB_MAX_WS_RECONNECT,
+  computeMindmateCollabReconnectDelayMs,
+  mindmateCollabPermanentFailureLocaleKey,
+  shouldScheduleMindmateCollabReconnect,
+} from '@/utils/mindmateCollabReconnect'
+import {
   mindmateCollabDisconnectShouldNotify,
   mindmateCollabWsErrorLocaleKey,
   mindmateCollabWsErrorRollsBackSend,
@@ -23,6 +27,7 @@ export interface MindmateCollabMessage {
   sender_user_id?: number | null
   username?: string | null
   streaming?: boolean
+  clientKey?: string
 }
 
 export interface MindmateCollabRoomInfo {
@@ -68,20 +73,27 @@ export function useMindmateCollab(
   /** Mutated before each `open()`; VueUse reads this array reference at connect time. */
   const wsProtocolList: string[] = []
   const suppressReconnect = ref(false)
+  const shutdownPending = ref(false)
 
-  const wsUrl = computed(() => {
+  /** Set only at connect/reconnect time — not reactive to resumeToken while open. */
+  const wsUrl = ref('')
+
+  function refreshWsUrlForConnect(): void {
     const code = roomCode()
     if (!code) {
-      return ''
+      wsUrl.value = ''
+      return
     }
-    return buildWsUrl(code, resumeToken.value)
-  })
+    wsUrl.value = buildWsUrl(code, resumeToken.value)
+  }
 
   let streamingAssistant: MindmateCollabMessage | null = null
   let idleDeadlineUnix: number | null = null
   let idleTickInterval: ReturnType<typeof setInterval> | null = null
   let pendingReconnectFailedNotify = false
   let lastOptimisticSendContent: string | null = null
+  let reconnectAttempt = 0
+  let lastCloseCode = 1006
 
   function stopIdleCountdownTick(): void {
     if (idleTickInterval) {
@@ -186,17 +198,23 @@ export function useMindmateCollab(
     protocols: wsProtocolList,
     autoReconnect: {
       retries: (retried) => {
-        if (suppressReconnect.value) {
+        if (suppressReconnect.value || shutdownPending.value) {
           return false
         }
-        if (retried >= MINDMATE_COLLAB_MAX_WS_RECONNECT) {
+        if (!shouldScheduleMindmateCollabReconnect(retried, lastCloseCode)) {
           pendingReconnectFailedNotify = true
           return false
         }
+        reconnectAttempt = retried + 1
         connectionStatus.value = 'reconnecting'
+        syncWsResumeProtocols()
+        refreshWsUrlForConnect()
         return true
       },
-      delay: 2000,
+      delay: (retried) => {
+        const base = computeMindmateCollabReconnectDelayMs(retried)
+        return base + Math.floor(Math.random() * 1000)
+      },
     },
     onConnected() {
       connected.value = true
@@ -205,10 +223,12 @@ export function useMindmateCollab(
     },
     onDisconnected(_ws, event) {
       connected.value = false
+      lastCloseCode = event.code
       if (!shouldReconnectMindmateCollab(event.code)) {
         suppressReconnect.value = true
       }
       if (event.code === 4010) {
+        shutdownPending.value = false
         connectionStatus.value = 'failed'
         notify.warning(t('mindmate.collabRoomEndedIdle'))
         if (options.onSessionEnded) {
@@ -219,6 +239,7 @@ export function useMindmateCollab(
         return
       }
       if (event.code === 4011) {
+        shutdownPending.value = false
         connectionStatus.value = 'failed'
         notify.info(t('mindmate.collabRoomEndedHost'))
         if (options.onSessionEnded) {
@@ -229,8 +250,26 @@ export function useMindmateCollab(
         return
       }
       if (event.code === 4003) {
+        shutdownPending.value = false
         connectionStatus.value = 'failed'
         notify.info(t('mindmate.collabDuplicateTab'))
+        return
+      }
+      if (event.code === 1008 || event.code === 4029) {
+        shutdownPending.value = false
+        connectionStatus.value = 'failed'
+        const localeKey = mindmateCollabPermanentFailureLocaleKey(
+          event.code,
+          event.reason || '',
+        )
+        if (localeKey) {
+          notify.warning(t(localeKey))
+        } else {
+          notify.warning(t('mindmate.collabConnectionDenied'))
+        }
+        return
+      }
+      if (shutdownPending.value) {
         return
       }
       notifyDisconnect(event.code, event.reason || '')
@@ -291,6 +330,7 @@ export function useMindmateCollab(
             ...candidate,
             id: msgId,
             username: username ?? candidate.username ?? null,
+            clientKey: undefined,
           }
           messages.value = next
           lastOptimisticSendContent = null
@@ -371,7 +411,6 @@ export function useMindmateCollab(
         ownerId: Number(parsed.owner_id || 0),
       }
       resumeToken.value = String(parsed.resume_token || '') || null
-      syncWsResumeProtocols()
       return
     }
     if (type === 'user_message') {
@@ -393,30 +432,11 @@ export function useMindmateCollab(
     }
     if (type === 'session_closing') {
       suppressReconnect.value = true
+      shutdownPending.value = true
       connected.value = false
       connectionStatus.value = 'failed'
       clearIdleCountdown()
-      close()
-      return
-    }
-    if (type === 'room_idle_shutdown') {
-      suppressReconnect.value = true
-      connected.value = false
-      connectionStatus.value = 'failed'
-      clearIdleCountdown()
-      close()
-      notify.warning(t('mindmate.collabRoomEndedIdle'))
-      options.onSessionEnded?.('idle')
-      return
-    }
-    if (type === 'session_ended_shutdown') {
-      suppressReconnect.value = true
-      connected.value = false
-      connectionStatus.value = 'failed'
-      clearIdleCountdown()
-      close()
-      notify.info(t('mindmate.collabRoomEndedHost'))
-      options.onSessionEnded?.('host')
+      notify.info(t('mindmate.collabRoomClosing'))
       return
     }
     if (type === 'error') {
@@ -434,6 +454,7 @@ export function useMindmateCollab(
 
   function resetForRoomChange(): void {
     resumeToken.value = null
+    wsUrl.value = ''
     wsProtocolList.length = 0
     messages.value = []
     room.value = null
@@ -441,6 +462,9 @@ export function useMindmateCollab(
     isStreaming.value = false
     lastOptimisticSendContent = null
     pendingReconnectFailedNotify = false
+    shutdownPending.value = false
+    reconnectAttempt = 0
+    lastCloseCode = 1006
     connectionStatus.value = 'idle'
     clearIdleCountdown()
   }
@@ -452,8 +476,11 @@ export function useMindmateCollab(
     }
     suppressReconnect.value = false
     pendingReconnectFailedNotify = false
+    shutdownPending.value = false
+    reconnectAttempt = 0
     connectionStatus.value = 'connecting'
     syncWsResumeProtocols()
+    refreshWsUrlForConnect()
     applySeedMessages()
     open()
   }
@@ -476,6 +503,7 @@ export function useMindmateCollab(
       return
     }
     lastOptimisticSendContent = trimmed
+    const clientKey = `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
     messages.value = [
       ...messages.value,
       {
@@ -483,6 +511,7 @@ export function useMindmateCollab(
         content: trimmed,
         sender_user_id: Number(authStore.user?.id) || null,
         username: authStore.user?.username ?? null,
+        clientKey,
       },
     ]
     send(
@@ -500,8 +529,11 @@ export function useMindmateCollab(
     }
     suppressReconnect.value = false
     pendingReconnectFailedNotify = false
+    shutdownPending.value = false
+    reconnectAttempt = 0
     connectionStatus.value = 'connecting'
     syncWsResumeProtocols()
+    refreshWsUrlForConnect()
     open()
   }
 
@@ -509,6 +541,10 @@ export function useMindmateCollab(
 
   const canSend = computed(
     () => connected.value && connectionStatus.value === 'connected' && !isStreaming.value,
+  )
+
+  const canRetryConnection = computed(
+    () => connectionStatus.value === 'failed' && !shutdownPending.value,
   )
 
   onUnmounted(() => {
@@ -524,6 +560,7 @@ export function useMindmateCollab(
     idleWarningSeconds,
     isHost,
     canSend,
+    canRetryConnection,
     connect,
     disconnect,
     sendChat,

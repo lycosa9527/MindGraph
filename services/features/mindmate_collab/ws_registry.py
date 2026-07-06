@@ -52,15 +52,42 @@ def register_connection(code: str, user_id: int, handle: MindmateCollabWsHandle)
     return previous if previous is not handle else None
 
 
-def unregister_connection(code: str, user_id: int) -> None:
+def unregister_connection(
+    code: str,
+    user_id: int,
+    *,
+    handle: MindmateCollabWsHandle | None = None,
+) -> None:
     """Remove a local WebSocket handle when the client disconnects."""
     key = room_key_for_code(code)
     bucket = ACTIVE_CONNECTIONS.get(key)
     if not bucket:
         return
-    bucket.pop(int(user_id), None)
+    uid = int(user_id)
+    if handle is not None and bucket.get(uid) is not handle:
+        return
+    bucket.pop(uid, None)
     if not bucket:
         ACTIVE_CONNECTIONS.pop(key, None)
+
+
+def teardown_superseded_connection(
+    code: str,
+    user_id: int,
+    superseded: MindmateCollabWsHandle,
+) -> None:
+    """
+    Remove a superseded handle from ACTIVE_CONNECTIONS if still registered.
+
+    Call when the same user opens a new tab so the prior socket's disconnect
+    cleanup does not evict the active connection.
+    """
+    key = room_key_for_code(code)
+    bucket = ACTIVE_CONNECTIONS.get(key)
+    if bucket is not None and bucket.get(int(user_id)) is superseded:
+        bucket.pop(int(user_id), None)
+        if not bucket:
+            ACTIVE_CONNECTIONS.pop(key, None)
 
 
 def local_participant_count(code: str) -> int:

@@ -393,6 +393,7 @@ export type EventTypes = {
   'mindmate:error': { error: string }
   'mindmate:stream_error': { error: string | undefined; error_type?: string; message?: string }
   'thinking_coins:insufficient': Record<string, never>
+  'thinking_coins:focus_school': Record<string, never>
   'thinking_coins:mutation': import('@/types/thinkingCoins').ThinkingCoinMutationPayload
   'mindmate:file_uploaded': { file: unknown }
   'mindmate:file_received': { id?: string; type?: string; url?: string; belongs_to?: string }

@@ -83,7 +83,7 @@ export function trackLocalMindmateCollabSession(row: LocalMindmateCollabSession)
 }
 
 export function shouldReconnectMindmateCollab(code: number): boolean {
-  if (code === 4010 || code === 4011 || code === 4003) {
+  if (code === 4010 || code === 4011 || code === 4003 || code === 1008 || code === 4029) {
     return false
   }
   return code !== 1000
