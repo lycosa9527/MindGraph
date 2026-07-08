@@ -318,6 +318,7 @@ declare module 'vue' {
     SidebarOutline: typeof import('./components/canvas/SidebarOutline.vue')['default']
     SidebarQuoteMarquee: typeof import('./components/sidebar/SidebarQuoteMarquee.vue')['default']
     SmartResponsePanel: typeof import('./components/admin/SmartResponsePanel.vue')['default']
+    SoftwareAgreementDocument: typeof import('./components/auth/SoftwareAgreementDocument.vue')['default']
     SoftwareAgreementModal: typeof import('./components/auth/SoftwareAgreementModal.vue')['default']
     StepEdge: typeof import('./components/diagram/edges/StepEdge.vue')['default']
     StraightEdge: typeof import('./components/diagram/edges/StraightEdge.vue')['default']

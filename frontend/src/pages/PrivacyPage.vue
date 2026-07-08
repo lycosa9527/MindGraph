@@ -1,21 +1,24 @@
 <script setup lang="ts">
 /**
  * Public Terms + Privacy page (same content as /auth modal, plus browser extension appendix).
+ * Language: browser default with manual zh/en segmented control.
  */
-import { computed } from 'vue'
+import { onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import SoftwareAgreementDocument from '@/components/auth/SoftwareAgreementDocument.vue'
-import { useLanguage } from '@/composables'
 import {
-  browserExtensionPrivacyForUiCode,
-  softwareAgreementForUiCode,
-} from '@/content/authSoftwareAgreement'
+  PRIVACY_PAGE_LANGUAGE_OPTIONS,
+  usePrivacyPageLocale,
+} from '@/composables/usePrivacyPageLocale'
 
-const { t, currentLanguage } = useLanguage()
+const { privacyPageUiCode, chrome, agreement, extensionSections, updatedLabel, syncFromBrowser } =
+  usePrivacyPageLocale()
 
-const agreement = computed(() => softwareAgreementForUiCode(currentLanguage.value))
-const extensionSections = computed(() => browserExtensionPrivacyForUiCode(currentLanguage.value))
+onMounted(() => {
+  syncFromBrowser()
+})
 </script>
 
 <template>
@@ -32,7 +35,7 @@ const extensionSections = computed(() => browserExtensionPrivacyForUiCode(curren
           to="/auth"
           class="privacy-page__back"
         >
-          {{ t('privacy.backToSignIn') }}
+          {{ chrome.backToSignIn }}
         </RouterLink>
       </div>
     </header>
@@ -40,11 +43,19 @@ const extensionSections = computed(() => browserExtensionPrivacyForUiCode(curren
     <main class="privacy-page__main">
       <article class="privacy-page__article">
         <header class="privacy-page__title-block">
-          <h1 class="privacy-page__title">
-            {{ agreement.title }}
-          </h1>
+          <div class="privacy-page__title-row">
+            <h1 class="privacy-page__title">
+              {{ agreement.title }}
+            </h1>
+            <AdminSwissSegmented
+              v-model="privacyPageUiCode"
+              :options="PRIVACY_PAGE_LANGUAGE_OPTIONS"
+              aria-label="Language / 语言"
+              equal
+            />
+          </div>
           <p class="privacy-page__updated">
-            {{ t('auth.softwareAgreementUpdated', { date: agreement.updated }) }}
+            {{ updatedLabel }}
           </p>
         </header>
 
@@ -112,8 +123,22 @@ const extensionSections = computed(() => browserExtensionPrivacyForUiCode(curren
   box-shadow: 0 1px 3px rgba(28, 25, 23, 0.06);
 }
 
+.privacy-page__title-block {
+  margin-bottom: 0;
+}
+
+.privacy-page__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .privacy-page__title {
   margin: 0;
+  flex: 1 1 12rem;
+  min-width: 0;
   font-size: 1.35rem;
   font-weight: 600;
   line-height: 1.35;

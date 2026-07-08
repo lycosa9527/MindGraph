@@ -21,6 +21,11 @@ import { useAuthStore, useUIStore } from '@/stores'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import { isGuestAuthPath, getSafePostAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
+import {
+  privacyPageDocumentTitle,
+  privacyPageHtmlLang,
+} from '@/utils/privacyPageLocale'
+import { privacyPageUiCode } from '@/composables/usePrivacyPageLocale'
 
 const notify = useNotifications()
 
@@ -136,8 +141,14 @@ watch(
 )
 
 watch(
-  () => [route.meta.titleKey, uiStore.language] as const,
+  () => [route.meta.titleKey, uiStore.language, route.name, privacyPageUiCode.value] as const,
   () => {
+    if (route.name === 'Privacy') {
+      document.title = privacyPageDocumentTitle(privacyPageUiCode.value)
+      document.documentElement.lang = privacyPageHtmlLang(privacyPageUiCode.value)
+      document.documentElement.dir = 'ltr'
+      return
+    }
     const raw = route.meta.titleKey
     const key = typeof raw === 'string' && raw.length > 0 ? raw : 'meta.pageTitle.default'
     const page = t(key)
