@@ -78,6 +78,20 @@ if config.FEATURE_COMMUNITY:
 else:
     logger.debug("[RouterRegistration] Community feature disabled via FEATURE_COMMUNITY flag")
 
+CASE_SQUARE_MODULE = None
+if config.FEATURE_CASE_SQUARE:
+    try:
+        CASE_SQUARE_MODULE = importlib.import_module("routers.features.case_square").router
+    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
+        CASE_SQUARE_MODULE = None
+        logger.debug(
+            "[RouterRegistration] Failed to import case square router: %s",
+            e,
+            exc_info=True,
+        )
+else:
+    logger.debug("[RouterRegistration] Case Square feature disabled via FEATURE_CASE_SQUARE flag")
+
 GEWE_MODULE = None
 if config.FEATURE_GEWE:
     try:
@@ -185,6 +199,8 @@ def register_routers(app: FastAPI) -> None:
     # Community (社区分享) - global diagram sharing
     if COMMUNITY_MODULE is not None:
         app.include_router(COMMUNITY_MODULE)
+    if CASE_SQUARE_MODULE is not None:
+        app.include_router(CASE_SQUARE_MODULE)
         registered_feature_paths.append("/api/community")
     else:
         if config.FEATURE_COMMUNITY:

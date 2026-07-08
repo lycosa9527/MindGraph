@@ -20,6 +20,16 @@ import { refreshSessionAccessToken } from '@/utils/sessionRefresh'
 
 const API_BASE = '/api'
 
+/** Dev: bypass Vite proxy for multipart uploads (large case-square publishes). */
+function resolveUploadFetchTarget(endpoint: string): { url: string; credentials: RequestCredentials } {
+  const path = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
+  const devOrigin = typeof __DEV_API_ORIGIN__ === 'string' ? __DEV_API_ORIGIN__.trim() : ''
+  if (import.meta.env.PROD || !devOrigin) {
+    return { url: path, credentials: 'same-origin' }
+  }
+  return { url: `${devOrigin}${path}`, credentials: 'include' }
+}
+
 /** True only for the session token refresh route (not e.g. refresh-invitation-code). */
 function isSessionTokenRefreshEndpoint(endpointOrUrl: string): boolean {
   const path = endpointOrUrl.split('?')[0] ?? endpointOrUrl
@@ -65,6 +75,11 @@ function mergeApiHeaders(
  */
 async function refreshAccessToken(): Promise<boolean> {
   return refreshSessionAccessToken()
+}
+
+function handleUploadUnauthorizedAfterRetry(): void {
+  const authStore = useAuthStore()
+  authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined)
 }
 
 /**
@@ -140,6 +155,22 @@ function parseApiErrorDetail(payload: unknown, fallback: string): string {
     const detail = (payload as { detail?: unknown }).detail
     if (typeof detail === 'string' && detail.trim()) {
       return detail
+    }
+    if (Array.isArray(detail) && detail.length > 0) {
+      const lines = detail
+        .map((item) => {
+          if (!item || typeof item !== 'object') return null
+          const loc = Array.isArray((item as { loc?: unknown }).loc)
+            ? (item as { loc: unknown[] }).loc
+                .filter((part) => part !== 'body')
+                .join('.')
+            : ''
+          const msg = (item as { msg?: unknown }).msg
+          if (typeof msg !== 'string' || !msg.trim()) return null
+          return loc ? `${loc}: ${msg}` : msg
+        })
+        .filter((line): line is string => Boolean(line))
+      if (lines.length > 0) return lines.join('\n')
     }
   }
   return fallback
@@ -220,6 +251,21 @@ export async function apiPatch(
 }
 
 /**
+ * Clone FormData so uploads can be retried (browser streams are single-use).
+ */
+function cloneFormData(formData: FormData): FormData {
+  const copy = new FormData()
+  for (const [key, value] of formData.entries()) {
+    if (value instanceof File) {
+      copy.append(key, value, value.name)
+    } else {
+      copy.append(key, value)
+    }
+  }
+  return copy
+}
+
+/**
  * Upload a file with automatic token refresh
  */
 export async function apiUpload(
@@ -227,19 +273,28 @@ export async function apiUpload(
   formData: FormData,
   options: RequestInit = {}
 ): Promise<Response> {
-  const url = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
+  const { url, credentials } = resolveUploadFetchTarget(endpoint)
 
   const merged = mergeApiHeaders({}, options)
   // Remove Content-Type if it was set, let browser handle it
   delete merged['Content-Type']
 
-  let response = await fetch(url, {
-    ...options,
-    method: 'POST',
-    headers: merged,
-    body: formData,
-    credentials: 'same-origin',
-  })
+  const uploadOnce = () =>
+    fetch(url, {
+      ...options,
+      method: 'POST',
+      headers: merged,
+      body: cloneFormData(formData),
+      credentials,
+    })
+
+  let response: Response
+  try {
+    response = await uploadOnce()
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to fetch'
+    throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message)
+  }
 
   // If unauthorized, attempt token refresh and retry
   if (response.status === 401) {
@@ -249,13 +304,16 @@ export async function apiUpload(
     const refreshed = await refreshAccessToken()
 
     if (refreshed) {
-      response = await fetch(url, {
-        ...options,
-        method: 'POST',
-        headers: merged,
-        body: formData,
-        credentials: 'same-origin',
-      })
+      try {
+        response = await uploadOnce()
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch'
+        throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message)
+      }
+      if (response.status === 401) {
+        handleUploadUnauthorizedAfterRetry()
+        throw new Error('SESSION_EXPIRED')
+      }
     } else {
       const authStore = useAuthStore()
       // Pass null to stay on current page (no redirect)
@@ -274,18 +332,27 @@ export async function apiPutFormData(
   formData: FormData,
   options: RequestInit = {}
 ): Promise<Response> {
-  const url = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
+  const { url, credentials } = resolveUploadFetchTarget(endpoint)
 
   const merged = mergeApiHeaders({}, options)
   delete merged['Content-Type']
 
-  let response = await fetch(url, {
-    ...options,
-    method: 'PUT',
-    headers: merged,
-    body: formData,
-    credentials: 'same-origin',
-  })
+  const uploadOnce = () =>
+    fetch(url, {
+      ...options,
+      method: 'PUT',
+      headers: merged,
+      body: cloneFormData(formData),
+      credentials,
+    })
+
+  let response: Response
+  try {
+    response = await uploadOnce()
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to fetch'
+    throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message)
+  }
 
   if (response.status === 401) {
     if (isMindgraphHeadlessExportSession()) {
@@ -294,13 +361,16 @@ export async function apiPutFormData(
     const refreshed = await refreshAccessToken()
 
     if (refreshed) {
-      response = await fetch(url, {
-        ...options,
-        method: 'PUT',
-        headers: merged,
-        body: formData,
-        credentials: 'same-origin',
-      })
+      try {
+        response = await uploadOnce()
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to fetch'
+        throw new Error(message === 'Failed to fetch' ? 'NETWORK_ERROR' : message)
+      }
+      if (response.status === 401) {
+        handleUploadUnauthorizedAfterRetry()
+        throw new Error('SESSION_EXPIRED')
+      }
     } else {
       const authStore = useAuthStore()
       authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined)
@@ -637,6 +707,558 @@ export async function deleteCommunityPostComment(
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to delete comment' }))
     throw new Error(err.detail || 'Failed to delete comment')
+  }
+  return response.json()
+}
+
+// =============================================================================
+// Case Square API Methods
+// =============================================================================
+
+export interface CaseSquarePost {
+  id: string
+  title: string
+  description: string | null
+  tags: string[]
+  case_type: 'teaching_design' | 'diagram_case' | 'diagram_template'
+  subject: string | null
+  grade: string | null
+  diagram_type: string | null
+  thumbnail_url: string | null
+  spec_json_url?: string | null
+  attachment_url?: string | null
+  classroom_video_url?: string | null
+  reflection_video_url?: string | null
+  source_file_url?: string | null
+  gallery_items?: Array<{
+    kind: 'image' | 'diagram'
+    url?: string | null
+    missing?: boolean
+    filename?: string | null
+    diagram_id?: string | null
+    title?: string | null
+    diagram_type?: string | null
+    spec?: Record<string, unknown>
+  }>
+  status: 'pending' | 'approved' | 'rejected' | 'withdrawn'
+  is_expert_recommended: boolean
+  publish_source?: 'self' | 'proxy'
+  attribution?: { display_name?: string; organization?: string | null; is_external?: boolean } | null
+  rejection_reason?: string | null
+  author: CommunityPostAuthor & { is_proxy?: boolean }
+  likes_count: number
+  views_count: number
+  created_at: string
+  reviewed_at?: string | null
+  reviewer?: { id: number; name: string } | null
+  expert_recommender?: { id: number; name: string } | null
+  expert_recommended_at?: string | null
+  is_liked: boolean
+  is_favorited: boolean
+  can_edit?: boolean
+  can_delete?: boolean
+  can_withdraw?: boolean
+  can_delist?: boolean
+  can_resubmit?: boolean
+  can_review?: boolean
+  can_expert_recommend?: boolean
+}
+
+export interface CaseSquareMeta {
+  subjects: string[]
+  grades: string[]
+  recommended_tags: string[]
+  diagram_types: string[]
+  case_types: string[]
+}
+
+export interface CaseSquarePostList {
+  posts: CaseSquarePost[]
+  total: number
+  page: number
+  page_size: number
+  total_pages: number
+}
+
+function normalizeCaseSquarePost(post: CaseSquarePost): CaseSquarePost {
+  return {
+    ...post,
+    is_favorited: Boolean(post.is_favorited),
+    is_liked: Boolean(post.is_liked),
+  }
+}
+
+export async function getCaseSquarePosts(
+  params: {
+    page?: number
+    pageSize?: number
+    caseType?: string
+    expertRecommended?: boolean
+    subject?: string
+    grade?: string
+    diagramType?: string
+    publishSource?: string
+    sort?: string
+    search?: string
+    mine?: boolean
+    favorited?: boolean
+    status?: string
+  } = {}
+): Promise<CaseSquarePostList> {
+  const searchParams = new URLSearchParams()
+  searchParams.set('page', String(params.page ?? 1))
+  searchParams.set('page_size', String(params.pageSize ?? 20))
+  if (params.caseType) searchParams.set('case_type', params.caseType)
+  if (params.expertRecommended) searchParams.set('expert_recommended', 'true')
+  if (params.subject) searchParams.set('subject', params.subject)
+  if (params.grade) searchParams.set('grade', params.grade)
+  if (params.diagramType) searchParams.set('diagram_type', params.diagramType)
+  if (params.publishSource) searchParams.set('publish_source', params.publishSource)
+  if (params.sort) searchParams.set('sort', params.sort)
+  if (params.search) searchParams.set('search', params.search)
+  if (params.mine) searchParams.set('mine', '1')
+  if (params.favorited) searchParams.set('favorited', '1')
+  if (params.status) searchParams.set('status', params.status)
+
+  const response = await apiGet(`/api/case-square/posts?${searchParams.toString()}`)
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to fetch cases' }))
+    throw new Error(err.detail || 'Failed to fetch cases')
+  }
+  const data = (await response.json()) as CaseSquarePostList
+  return {
+    ...data,
+    posts: data.posts.map(normalizeCaseSquarePost),
+  }
+}
+
+export async function getCaseSquarePost(
+  postId: string
+): Promise<CaseSquarePost & { spec?: unknown }> {
+  const response = await apiGet(`/api/case-square/posts/${postId}`)
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to fetch case' }))
+    throw new Error(parseApiErrorDetail(err, 'Failed to fetch case'))
+  }
+  const data = (await response.json()) as CaseSquarePost & { spec?: unknown }
+  return normalizeCaseSquarePost(data)
+}
+
+export async function createCaseSquarePost(formData: FormData): Promise<{ message: string; post: CaseSquarePost }> {
+  let response: Response
+  try {
+    response = await apiUpload('/api/case-square/posts', formData)
+  } catch (e) {
+    if (e instanceof Error && e.message === 'NETWORK_ERROR') {
+      throw new Error('NETWORK_ERROR')
+    }
+    throw e
+  }
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('SESSION_EXPIRED')
+    }
+    const err = await response.json().catch(() => ({ detail: 'Failed to publish case' }))
+    const detail = err.detail
+    const message =
+      typeof detail === 'string'
+        ? detail
+        : Array.isArray(detail) && detail[0]?.msg
+          ? String(detail[0].msg)
+          : 'Failed to publish case'
+    throw new Error(message)
+  }
+  return response.json()
+}
+
+async function parseCaseSquareFormError(response: Response, fallback: string): Promise<never> {
+  const err = await response.json().catch(() => ({ detail: fallback }))
+  const detail = err.detail
+  const message =
+    typeof detail === 'string'
+      ? detail
+      : Array.isArray(detail) && detail[0]?.msg
+        ? String(detail[0].msg)
+        : fallback
+  throw new Error(message)
+}
+
+export async function updateCaseSquarePost(
+  postId: string,
+  formData: FormData
+): Promise<{ message: string; post: CaseSquarePost }> {
+  const id = postId.trim()
+  if (!id) {
+    throw new Error('Missing case id')
+  }
+  let response: Response
+  try {
+    response = await apiPutFormData(`/api/case-square/posts/${id}`, formData)
+  } catch (e) {
+    if (e instanceof Error && e.message === 'NETWORK_ERROR') {
+      throw new Error('NETWORK_ERROR')
+    }
+    throw e
+  }
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('SESSION_EXPIRED')
+    }
+    await parseCaseSquareFormError(response, 'Failed to update case')
+  }
+  return response.json()
+}
+
+export async function uploadCaseSquareGalleryImages(
+  postId: string,
+  formData: FormData
+): Promise<{ message: string; post: CaseSquarePost }> {
+  const id = postId.trim()
+  if (!id) {
+    throw new Error('Missing case id')
+  }
+  let response: Response
+  try {
+    response = await apiUpload(`/api/case-square/posts/${id}/gallery-images`, formData)
+  } catch (e) {
+    if (e instanceof Error && e.message === 'NETWORK_ERROR') {
+      throw new Error('NETWORK_ERROR')
+    }
+    throw e
+  }
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('SESSION_EXPIRED')
+    }
+    const err = await response.json().catch(() => ({ detail: 'Failed to upload gallery images' }))
+    const detail = err.detail
+    const message =
+      typeof detail === 'string'
+        ? detail
+        : Array.isArray(detail) && detail[0]?.msg
+          ? String(detail[0].msg)
+          : 'Failed to upload gallery images'
+    throw new Error(`${response.status}: ${message}`)
+  }
+  const data = await response.json()
+  return {
+    message: data.message,
+    post: normalizeCaseSquarePost(data.post),
+  }
+}
+
+export async function withdrawCaseSquarePost(postId: string): Promise<{ message: string }> {
+  const id = postId.trim()
+  if (!id) {
+    throw new Error('Missing case id')
+  }
+  const response = await apiPost(`/api/case-square/posts/${id}/withdraw`, {})
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to withdraw case' }))
+    throw new Error(err.detail || 'Failed to withdraw case')
+  }
+  return response.json()
+}
+
+export async function delistCaseSquarePost(
+  postId: string
+): Promise<{ message: string; post: CaseSquarePost }> {
+  const id = postId.trim()
+  if (!id) {
+    throw new Error('Missing case id')
+  }
+  const response = await apiPost(`/api/case-square/posts/${id}/delist`, {})
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to delist case' }))
+    throw new Error(err.detail || 'Failed to delist case')
+  }
+  const data = (await response.json()) as { message: string; post: CaseSquarePost }
+  return { ...data, post: normalizeCaseSquarePost(data.post) }
+}
+
+export async function deleteCaseSquarePost(postId: string): Promise<{ message: string }> {
+  const id = postId.trim()
+  if (!id) {
+    throw new Error('Missing case id')
+  }
+  const response = await apiPost(`/api/case-square/posts/${id}/delete`, {})
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to delete case' }))
+    throw new Error(err.detail || 'Failed to delete case')
+  }
+  return response.json()
+}
+
+export async function deleteAdminCaseSquarePost(postId: string): Promise<{ message: string }> {
+  const id = postId.trim()
+  if (!id) {
+    throw new Error('Missing case id')
+  }
+  const response = await apiPost(`/api/auth/admin/case-square/posts/${id}/delete`, {})
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to delete case' }))
+    throw new Error(err.detail || 'Failed to delete case')
+  }
+  return response.json()
+}
+
+export async function toggleCaseSquarePostLike(
+  postId: string
+): Promise<{ liked: boolean; likes_count: number }> {
+  const response = await apiPost(`/api/case-square/posts/${postId}/like`, {})
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to toggle like' }))
+    throw new Error(err.detail || 'Failed to toggle like')
+  }
+  return response.json()
+}
+
+export async function getCaseSquareFavoritePosts(
+  params: { page?: number; pageSize?: number } = {}
+): Promise<CaseSquarePostList> {
+  const searchParams = new URLSearchParams()
+  searchParams.set('page', String(params.page ?? 1))
+  searchParams.set('page_size', String(params.pageSize ?? 100))
+  const response = await apiGet(`/api/case-square/favorites?${searchParams.toString()}`)
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to fetch favorite cases' }))
+    throw new Error(parseApiErrorDetail(err, 'Failed to fetch favorite cases'))
+  }
+  const data = (await response.json()) as CaseSquarePostList
+  return {
+    ...data,
+    posts: data.posts.map((post) => ({ ...post, is_favorited: true })),
+  }
+}
+
+export async function toggleCaseSquarePostFavorite(
+  postId: string
+): Promise<{ favorited: boolean }> {
+  const response = await apiPost(`/api/case-square/posts/${postId}/favorite`, {})
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to toggle favorite' }))
+    throw new Error(parseApiErrorDetail(err, 'Failed to toggle favorite'))
+  }
+  return response.json()
+}
+
+export async function toggleCaseSquareExpertRecommend(
+  postId: string
+): Promise<{ is_expert_recommended: boolean; post: CaseSquarePost }> {
+  const response = await apiPost(`/api/case-square/posts/${postId}/recommend`, {})
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to update recommendation' }))
+    throw new Error(parseApiErrorDetail(err, 'Failed to update recommendation'))
+  }
+  return response.json()
+}
+
+export async function reviewCaseSquarePost(
+  postId: string,
+  action: 'approve' | 'reject',
+  rejectionReason?: string
+): Promise<{ message: string; credited_coins: number; post: CaseSquarePost }> {
+  const id = postId.trim()
+  if (!id) {
+    throw new Error('Missing case id')
+  }
+  const response = await apiPost(`/api/case-square/posts/${id}/review`, {
+    action,
+    rejection_reason: rejectionReason ?? null,
+  })
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to review case' }))
+    throw new Error(err.detail || 'Failed to review case')
+  }
+  return response.json()
+}
+
+export async function reviewAdminCaseSquarePost(
+  postId: string,
+  action: 'approve' | 'reject',
+  rejectionReason?: string
+): Promise<{ message: string; credited_coins: number; post: CaseSquarePost }> {
+  const id = postId.trim()
+  if (!id) {
+    throw new Error('Missing case id')
+  }
+  const response = await apiPost(`/api/auth/admin/case-square/posts/${id}/review`, {
+    action,
+    rejection_reason: rejectionReason ?? null,
+  })
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to review case' }))
+    throw new Error(err.detail || 'Failed to review case')
+  }
+  return response.json()
+}
+
+export async function getCaseSquarePendingCount(): Promise<{
+  count: number
+  pending: number
+  rejected: number
+}> {
+  const response = await apiGet('/api/case-square/pending/count')
+  if (!response.ok) {
+    return { count: 0, pending: 0, rejected: 0 }
+  }
+  const data = (await response.json()) as { count?: number; pending?: number; rejected?: number }
+  const pending = data.pending ?? data.count ?? 0
+  const rejected = data.rejected ?? 0
+  return { count: pending, pending, rejected }
+}
+
+export async function getCaseSquareMeta(): Promise<CaseSquareMeta> {
+  const response = await apiGet('/api/case-square/meta')
+  if (!response.ok) {
+    throw new Error('Failed to load case square meta')
+  }
+  return response.json()
+}
+
+export interface CaseSquareStatsOverview {
+  pending: number
+  approved_total: number
+  rejected_total: number
+  total_posts?: number
+  created_recent: number
+  approved_recent: number
+  rejected_recent?: number
+  proxy_total: number
+  self_total?: number
+  expert_recommended_total: number
+  rejection_rate_recent: number
+  by_case_type?: Record<string, number>
+  total_views?: number
+  total_likes?: number
+  period_days: number
+}
+
+export async function getAdminCaseSquareStats(): Promise<CaseSquareStatsOverview> {
+  const response = await apiGet('/api/auth/admin/case-square/stats/overview')
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to load case square stats' }))
+    const detail = err.detail
+    throw new Error(typeof detail === 'string' ? detail : 'Failed to load case square stats')
+  }
+  return response.json()
+}
+
+export interface CaseSquareStaffGrantRow {
+  id: number | null
+  user_id: number
+  user_name: string | null
+  user_phone: string | null
+  organization: string | null
+  permissions: string[]
+  note: string | null
+  expires_at: string | null
+  granted_by_name?: string | null
+  source?: 'grant' | 'builtin'
+  builtin_role?: string | null
+  editable?: boolean
+}
+
+export async function getAdminCaseSquareStaffGrants(): Promise<{
+  grants: CaseSquareStaffGrantRow[]
+  builtin: CaseSquareStaffGrantRow[]
+}> {
+  const response = await apiGet('/api/auth/admin/case-square/staff-grants')
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to load staff grants' }))
+    throw new Error(typeof err.detail === 'string' ? err.detail : 'Failed to load staff grants')
+  }
+  return response.json()
+}
+
+export async function saveAdminCaseSquareStaffGrant(body: {
+  user_id: number
+  permissions: string[]
+  note?: string
+}): Promise<void> {
+  const response = await apiPost('/api/auth/admin/case-square/staff-grants', body)
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to save grant' }))
+    const detail = err.detail
+    throw new Error(typeof detail === 'string' ? detail : 'Failed to save grant')
+  }
+}
+
+export async function deleteAdminCaseSquareStaffGrant(userId: number): Promise<void> {
+  const response = await apiDelete(`/api/auth/admin/case-square/staff-grants/${userId}`)
+  if (!response.ok) {
+    throw new Error('Failed to delete grant')
+  }
+}
+
+export interface CaseSquareFieldOptionRow {
+  id: number
+  category: string
+  value: string
+  label_zh: string
+  label_en: string | null
+  sort_order: number
+  is_active: boolean
+}
+
+export async function getAdminCaseSquareFieldOptions(includeInactive = true): Promise<{
+  options: CaseSquareFieldOptionRow[]
+}> {
+  const params = includeInactive ? '?include_inactive=true' : ''
+  const response = await apiGet(`/api/auth/admin/case-square/field-options${params}`)
+  if (!response.ok) {
+    throw new Error('Failed to load field options')
+  }
+  return response.json()
+}
+
+export async function createAdminCaseSquareFieldOption(body: {
+  category: string
+  value: string
+  label_zh?: string
+  sort_order?: number
+  is_active?: boolean
+}): Promise<void> {
+  const response = await apiPost('/api/auth/admin/case-square/field-options', body)
+  if (!response.ok) {
+    throw new Error('Failed to create field option')
+  }
+}
+
+export async function patchAdminCaseSquareFieldOption(
+  id: number,
+  body: Partial<{ label_zh: string; sort_order: number; is_active: boolean }>
+): Promise<void> {
+  const response = await apiRequest(`/api/auth/admin/case-square/field-options/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!response.ok) {
+    throw new Error('Failed to update field option')
+  }
+}
+
+export async function deleteAdminCaseSquareFieldOption(id: number): Promise<void> {
+  const response = await apiDelete(`/api/auth/admin/case-square/field-options/${id}`)
+  if (!response.ok) {
+    throw new Error('Failed to delete field option')
+  }
+}
+
+export async function proxyCreateCaseSquarePost(formData: FormData): Promise<{ post: CaseSquarePost }> {
+  let response: Response
+  try {
+    response = await apiUpload('/api/auth/admin/case-square/posts/proxy', formData)
+  } catch (e) {
+    if (e instanceof Error && e.message === 'NETWORK_ERROR') {
+      throw new Error('NETWORK_ERROR')
+    }
+    throw e
+  }
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to create proxy case' }))
+    throw new Error(parseApiErrorDetail(err, 'Failed to create proxy case'))
   }
   return response.json()
 }

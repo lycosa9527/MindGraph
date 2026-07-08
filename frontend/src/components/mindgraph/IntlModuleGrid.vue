@@ -34,6 +34,7 @@ const {
   featureCourse,
   featureTemplate,
   featureCommunity,
+  featureCaseSquare,
   featureAskOnce,
   featureSchoolZone,
   featureDebateverse,
@@ -123,6 +124,13 @@ const modules = computed<ModuleItem[]>(() => [
     route: '/community',
     icon: Share,
     visible: featureCommunity.value,
+  },
+  {
+    key: 'case-square',
+    labelKey: 'sidebar.caseSquare',
+    route: '/case-square',
+    icon: LayoutGrid,
+    visible: featureCaseSquare.value,
   },
   {
     key: 'library',

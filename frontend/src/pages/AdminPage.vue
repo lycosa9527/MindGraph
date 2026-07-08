@@ -14,6 +14,7 @@ import AdminInviteUsersTab from '@/components/admin/AdminInviteUsersTab.vue'
 import AdminMarketsTab from '@/components/admin/AdminMarketsTab.vue'
 import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
 import AdminFeatureDevTab from '@/components/admin/AdminFeatureDevTab.vue'
+import AdminCaseSquareTab from '@/components/admin/AdminCaseSquareTab.vue'
 import AdminSystemSettingsTab from '@/components/admin/AdminSystemSettingsTab.vue'
 import AdminFeaturesHeaderToolbar from '@/components/admin/AdminFeaturesHeaderToolbar.vue'
 import AdminMindMateExportHeaderToolbar from '@/components/admin/AdminMindMateExportHeaderToolbar.vue'
@@ -190,6 +191,7 @@ onMounted(async () => {
         />
         <AdminInviteUsersTab v-else-if="activeTab === 'invites'" />
         <AdminMarketsTab v-else-if="activeTab === 'billing'" />
+        <AdminCaseSquareTab v-else-if="activeTab === 'case_square'" />
         <AdminFeatureDevTab v-else-if="activeTab === 'feature_dev'" />
         <AdminSystemSettingsTab v-else-if="activeTab === 'settings'" />
       </div>

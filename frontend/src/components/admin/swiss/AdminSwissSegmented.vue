@@ -7,6 +7,8 @@
 export type AdminSwissSegmentOption<T extends string | number = string | number> = {
   label: string
   value: T
+  /** Optional count badge (e.g. moderation queue totals). */
+  count?: number
 }
 
 withDefaults(
@@ -52,7 +54,13 @@ const model = defineModel<T>({ required: true })
       :aria-checked="model === opt.value"
       @click="model = opt.value"
     >
-      {{ opt.label }}
+      <span class="admin-swiss-segment-label">{{ opt.label }}</span>
+      <span
+        v-if="opt.count != null && opt.count > 0"
+        class="admin-swiss-segment-badge"
+      >
+        {{ opt.count }}
+      </span>
     </button>
   </div>
 </template>

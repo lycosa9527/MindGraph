@@ -12,7 +12,7 @@ import { storeToRefs } from 'pinia'
 
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { useLanguage, useNotifications } from '@/composables'
-import { presentationDiagramEditLockedRef } from '@/composables/presentation/presentationDiagramEdit'
+import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { eventBus } from '@/composables/core/useEventBus'
 import {
   handleLearningSheetPickNodeClick,
@@ -53,7 +53,7 @@ const diagramStore = useDiagramStore()
 const isTextReadonly = computed(
   () =>
     (props.data.hidden === true && diagramStore.isLearningSheet) ||
-    presentationDiagramEditLockedRef.value
+    diagramPresentationReadOnlyRef.value
 )
 const branchNodeRef = ref<HTMLDivElement | null>(null)
 const useMindMapV2Visuals = useMindMapV2Chrome()
@@ -454,7 +454,7 @@ function handleEditCancel() {
 
 function handleBranchNodeDoubleClick(): void {
   if (isLearningSheetCustomPickActive()) return
-  if (presentationDiagramEditLockedRef.value) return
+  if (diagramPresentationReadOnlyRef.value) return
   if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))

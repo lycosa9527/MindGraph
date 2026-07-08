@@ -14,6 +14,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { mindMapBranchFontSize, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { useDiagramStore } from '@/stores'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { estimateNodeWidth, measureBranchNodeHeight } from '@/stores/specLoader/mindMap'
 import type { MindGraphNode } from '@/types'
 
@@ -210,6 +211,7 @@ export function useDiagramCanvasMindMapPaletteDrop(
   }
 
   function handleMindMapPaletteDrop(event: DragEvent): void {
+    if (isDiagramPresentationReadOnly()) return
     if (!isMindMapType()) return
     const raw = event.dataTransfer?.getData(PALETTE_MINDMAP_DRAG_MIME)
     resetPreview()

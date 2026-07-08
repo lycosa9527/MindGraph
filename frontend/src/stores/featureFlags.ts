@@ -37,6 +37,7 @@ interface FeatureFlagsResponse {
   feature_course: boolean
   feature_template: boolean
   feature_community: boolean
+  feature_case_square: boolean
   feature_askonce: boolean
   feature_school_zone: boolean
   feature_debateverse: boolean
@@ -92,6 +93,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_course: false,
           feature_template: false,
           feature_community: false,
+          feature_case_square: false,
           feature_askonce: true,
           feature_school_zone: false,
           feature_debateverse: false,
@@ -151,6 +153,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_course: false,
         feature_template: false,
         feature_community: false,
+        feature_case_square: false,
         feature_askonce: true,
         feature_school_zone: false,
         feature_debateverse: false,
@@ -198,6 +201,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
 
   function getFeatureCommunity(): boolean {
     return flags.value?.feature_community ?? true
+  }
+
+  function getFeatureCaseSquare(): boolean {
+    return flags.value?.feature_case_square ?? false
   }
 
   function getFeatureAskOnce(): boolean {
@@ -289,6 +296,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureCourse,
     getFeatureTemplate,
     getFeatureCommunity,
+    getFeatureCaseSquare,
     getFeatureAskOnce,
     getFeatureSchoolZone,
     getFeatureDebateverse,

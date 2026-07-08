@@ -26,6 +26,7 @@ from models.domain.auth import Base
 
 if TYPE_CHECKING:
     from models.domain.auth import User
+    from models.domain.diagram_folders import DiagramFolder
     from models.domain.diagram_snapshots import DiagramSnapshot
 
 
@@ -76,6 +77,14 @@ class Diagram(Base):
     # ``WHERE is_pinned`` access pattern; no standalone btree needed.
     is_pinned: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Optional archive folder (NULL = uncategorized in sidebar timeline)
+    folder_id: Mapped[Optional[str]] = mapped_column(
+        String(36),
+        ForeignKey("diagram_folders.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     # Workshop support - shareable code for collaborative editing
     workshop_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     # organization = 校内 (same-org / list join); network = 共同 (code + any authenticated user)
@@ -98,6 +107,11 @@ class Diagram(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="diagrams", lazy="selectin")
+    folder: Mapped[Optional["DiagramFolder"]] = relationship(
+        "DiagramFolder",
+        back_populates="diagrams",
+        lazy="selectin",
+    )
     snapshots: Mapped[list["DiagramSnapshot"]] = relationship(
         "DiagramSnapshot",
         back_populates="diagram",

@@ -45,6 +45,12 @@ export type AdminCapability =
   | 'tab.settings.mindmate_export'
   | 'tab.settings.smart_response'
   | 'tab.settings.teacher_usage'
+  | 'tab.case_square.view'
+  | 'tab.case_square.edit'
+  | 'tab.case_square.recommend'
+  | 'tab.case_square.fields'
+  | 'tab.case_square.permissions'
+  | 'tab.case_square.dashboard'
   | 'scope.global'
   | 'scope.org'
   | 'scope.invited_orgs'
@@ -89,6 +95,12 @@ const SUPERADMIN_CAPS: AdminCapability[] = [
   'tab.settings.mindmate_export',
   'tab.settings.smart_response',
   'tab.settings.teacher_usage',
+  'tab.case_square.view',
+  'tab.case_square.edit',
+  'tab.case_square.recommend',
+  'tab.case_square.fields',
+  'tab.case_square.permissions',
+  'tab.case_square.dashboard',
   'scope.global',
 ]
 
@@ -102,6 +114,11 @@ const PLATFORM_BD_CAPS: AdminCapability[] = [
   'tab.invites.view',
   'tab.invites.edit',
   'tab.billing.view',
+  'tab.case_square.view',
+  'tab.case_square.edit',
+  'tab.case_square.recommend',
+  'tab.case_square.fields',
+  'tab.case_square.dashboard',
   'scope.global',
   'scope.invited_orgs',
 ]
@@ -162,6 +179,7 @@ const TAB_EDIT_CAPABILITY: Record<string, AdminCapability> = {
   billing: 'tab.billing.edit',
   feature_dev: 'tab.settings.edit',
   settings: 'tab.settings.edit',
+  case_square: 'tab.case_square.edit',
 }
 
 export function tabEditCapability(tabKey: string): AdminCapability | null {
@@ -176,6 +194,7 @@ export function tabRequiresCapabilities(tabKey: string): AdminCapability[] {
     invites: ['tab.invites.view'],
     billing: ['tab.billing.view'],
     settings: ['tab.settings.view'],
+    case_square: ['tab.case_square.view'],
   }
   return map[tabKey] ?? ['panel.access']
 }

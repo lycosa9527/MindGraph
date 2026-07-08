@@ -473,6 +473,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.133.0) on next `npm run build` (`prebuild` → `sync-version`).
 
+> **Case Square (案例广场) and diagram archive folders.**
+
+### Added
+
+- **Case Square** — Moderated public gallery for teaching designs, diagram cases, and diagram templates (`FEATURE_CASE_SQUARE`, migrations `0074`–`0077`, `/api/case-square`). Browse with filters (subject, grade, type, sort), likes, favorites, expert recommendations, and infinite-scroll listing ([`CaseSquarePage.vue`](frontend/src/pages/CaseSquarePage.vue)). Authors publish via a two-step modal (document upload for teaching designs; multi-image / history-diagram gallery for diagram cases; `.mg` templates); detail view supports document preview (PDF/DOCx), diagram carousel, watermark, fullscreen reader, and canvas actions (apply template / open diagram). Users manage **My published** and **My favorites** from the page header. Admin panel tab: dashboard stats, published cases, moderation queues (pending/rejected), proxy publish with attribution, configurable field options (subject/grade/tags), and staff permission grants ([`AdminCaseSquareTab.vue`](frontend/src/components/admin/AdminCaseSquareTab.vue), [`routers/auth/admin/case_square.py`](routers/auth/admin/case_square.py)). Sidebar entry and full **zh/en** i18n; other UI locales re-export English `caseSquare` strings. Upload body limit and same-origin PDF/doc iframe rules for teaching attachments ([`middleware.py`](services/infrastructure/http/middleware.py)).
+- **Diagram archive folders** — Create folders in the saved-diagram sidebar, move diagrams in/out, rename/delete folders (`diagram_folders` table, `diagrams.folder_id`, `/api/diagram-folders`, `/api/diagrams/{id}/folder`). Sidebar **Folders** / **Uncategorized** sections, full diagram list fetch (no 50-item cap), optimistic moves, persisted collapse state, hover **Move to folder** on each row, **New folder and move here** from the diagram menu, and folder badges on the international landing dropdown ([`DiagramHistory.vue`](frontend/src/components/sidebar/DiagramHistory.vue), [`useDiagramArchiveHistory.ts`](frontend/src/composables/sidebar/useDiagramArchiveHistory.ts)).
+
+### Changed
+
+- **Case Square — teaching-design content** — Removed **教学实录** (class recording) upload/tab and reflection **video** upload/playback; teaching reflection is **text-only**. **课堂应用** for diagram-type cases is unchanged.
+- **Diagram archive folders** — Unlimited folder count (removed 50-folder cap); folders list in creation order with **no manual reorder**; **新建文件夹** control shows icon + label instead of icon-only.
+
+### Fixed
+
+- **Case Square — diagram-case gallery** — `POST /api/case-square/posts/{id}/gallery-images` persists slot-aligned gallery images; carousel and detail modal load multi-image posts reliably ([`case_square_helpers.py`](routers/features/case_square_helpers.py)).
+- **Diagram folders** — Folder rename/delete and move-to-folder use correct DB session and cache invalidation; API errors surface in the UI; folder names no longer collapse to a vertical sliver when action buttons appear on hover.
+- **Saved diagrams sidebar** — Restored missing `useAuthStore` import that broke `/mindmate` when folder store changes landed ([`savedDiagrams.ts`](frontend/src/stores/savedDiagrams.ts)).
+
+### Tests
+
+- [`tests/test_case_square_create_response.py`](tests/test_case_square_create_response.py) — create response shape, gallery upload, slot-aligned `_format_gallery_items`.
+- [`tests/test_diagram_folders_api.py`](tests/test_diagram_folders_api.py) — folder create → move diagram → delete folder lifecycle.
+- [`tests/test_security_production_hardening.py`](tests/test_security_production_hardening.py) — Case Square PDF/doc same-origin frame and publish body-size paths.
+
 ## [5.132.0] - 2026-06-29
 
 > **Chrome extension document extract, SmartEdu file-reader tab, and Celery broker Redis RESP2 hardening.**

@@ -11,6 +11,12 @@ import {
   isDataCenterView,
 } from '@/composables/admin/adminDataCenterViews'
 import { LEGACY_FEATURE_DEV_SETTINGS_SUBTABS } from '@/composables/admin/adminFeatureDevNav'
+import {
+  defaultCaseSquareSubtab,
+  isCaseSquareSubtab,
+  resolveCaseSquareSubtab,
+  caseSquareSubtabLabelKey,
+} from '@/composables/admin/adminCaseSquareNav'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAdminPanelStore, useAuthStore } from '@/stores'
@@ -106,10 +112,19 @@ export function useAdminRouteSync(options: UseAdminRouteSyncOptions) {
   watch(activeTab, (tab) => {
     const current = route.query.tab as string
     const query: Record<string, string | string[]> = { ...route.query, tab }
-    if (tab !== 'settings' && tab !== 'feature_dev') {
+    if (tab !== 'settings' && tab !== 'feature_dev' && tab !== 'case_square') {
       delete query.subtab
       delete query.role_tab
       activeSubtab.value = null
+    }
+    if (tab === 'case_square') {
+      const rawSubtab = query.subtab
+      const resolved =
+        typeof rawSubtab === 'string' && isCaseSquareSubtab(rawSubtab)
+          ? rawSubtab
+          : defaultCaseSquareSubtab()
+      query.subtab = resolved
+      activeSubtab.value = resolved
     }
     if (tab !== 'data_center') {
       delete query.view

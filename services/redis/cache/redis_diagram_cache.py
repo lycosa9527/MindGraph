@@ -35,6 +35,7 @@ from sqlalchemy import desc, select
 from sqlalchemy import update as sa_update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+from models.domain.diagram_folders import DiagramFolder
 from models.domain.diagrams import Diagram
 from services.redis.cache._redis_diagram_cache_helpers import (
     CACHE_TTL,
@@ -52,7 +53,7 @@ from services.redis.cache.diagram_save_errors import describe_diagram_db_error
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
-from services.utils.error_types import REDIS_ERRORS
+from services.utils.error_types import DATABASE_ERRORS, REDIS_ERRORS
 from services.utils.typing_helpers import result_rowcount
 from utils.auth.school_tier import (
     format_diagram_save_limit_error,
@@ -249,6 +250,7 @@ class RedisDiagramCache:
             "updated_at": now.isoformat(),
             "is_deleted": False,
             "is_pinned": existing_data.get("is_pinned", False) if existing_data else False,
+            "folder_id": existing_data.get("folder_id") if existing_data else None,
         }
 
         # Then update Redis cache — all four Redis operations in a single pipeline.
@@ -552,6 +554,7 @@ class RedisDiagramCache:
                     "updated_at": (updated_at_val.isoformat() if updated_at_val is not None else None),
                     "is_deleted": getattr(diagram, "is_deleted", False),
                     "is_pinned": getattr(diagram, "is_pinned", False),
+                    "folder_id": getattr(diagram, "folder_id", None),
                 }
 
             if self._use_redis():
@@ -692,6 +695,7 @@ class RedisDiagramCache:
                             "thumbnail": getattr(d, "thumbnail", None),
                             "updated_at": (updated_at_val.isoformat() if updated_at_val is not None else None),
                             "is_pinned": getattr(d, "is_pinned", False),
+                            "folder_id": getattr(d, "folder_id", None),
                             "workshop_code": getattr(d, "workshop_code", None) or None,
                             "workshop_expires_at": (expires_at_val.isoformat() if expires_at_val is not None else None),
                         }
@@ -883,6 +887,116 @@ class RedisDiagramCache:
                     logger.warning(
                         "[DiagramCache] Redis cache update failed (pin saved to database): %s",
                         e,
+                    )
+
+        return True, None
+
+    async def move_diagram_to_folder(
+        self,
+        user_id: int,
+        diagram_id: str,
+        folder_id: Optional[str],
+        organization_id: Optional[int] = None,
+    ) -> Tuple[bool, Optional[str]]:
+        """Assign a diagram to an archive folder, or clear folder_id when None."""
+        now = datetime.now(UTC)
+
+        try:
+            async with user_rls_session(user_id, organization_id) as db:
+                try:
+                    if folder_id is not None:
+                        folder_result = await db.execute(
+                            select(DiagramFolder.id).where(
+                                DiagramFolder.id == folder_id,
+                                DiagramFolder.user_id == user_id,
+                            )
+                        )
+                        if folder_result.scalar_one_or_none() is None:
+                            return False, "Folder not found"
+
+                    stmt = (
+                        sa_update(Diagram)
+                        .where(
+                            Diagram.id == diagram_id,
+                            Diagram.user_id == user_id,
+                            Diagram.is_deleted.is_(False),
+                        )
+                        .values(folder_id=folder_id, updated_at=now)
+                    )
+                    result = await db.execute(stmt)
+                    if result_rowcount(result) == 0:
+                        return False, "Diagram not found"
+                    await db.commit()
+                except DATABASE_ERRORS as exc:
+                    await db.rollback()
+                    logger.error("[DiagramCache] move to folder DB failed: %s", exc)
+                    return False, "Failed to move diagram"
+        except DATABASE_ERRORS as exc:
+            logger.error("[DiagramCache] move to folder connection failed: %s", exc)
+            return False, "Database error"
+
+        diagram_key = self._get_diagram_key(user_id, diagram_id)
+        if self._use_redis():
+            redis = get_async_redis()
+            if redis:
+                try:
+                    list_key = self._get_user_list_key(user_id)
+                    await _redis_json_set_paths(
+                        redis,
+                        diagram_key,
+                        [
+                            ("$.folder_id", folder_id),
+                            ("$.updated_at", now.isoformat()),
+                        ],
+                        CACHE_TTL,
+                    )
+                    await redis.delete(list_key)
+                except REDIS_ERRORS as exc:
+                    logger.warning(
+                        "[DiagramCache] Redis cache update failed (folder move saved to DB): %s",
+                        exc,
+                    )
+
+        return True, None
+
+    async def delete_diagram_folder(
+        self,
+        user_id: int,
+        folder_id: str,
+    ) -> Tuple[bool, Optional[str]]:
+        """Delete folder; diagrams.folder_id is cleared via ON DELETE SET NULL."""
+        try:
+            async with user_rls_session(user_id) as db:
+                try:
+                    result = await db.execute(
+                        select(DiagramFolder).where(
+                            DiagramFolder.id == folder_id,
+                            DiagramFolder.user_id == user_id,
+                        )
+                    )
+                    folder = result.scalar_one_or_none()
+                    if not folder:
+                        return False, "Folder not found"
+                    await db.delete(folder)
+                    await db.commit()
+                except REDIS_ERRORS as exc:
+                    await db.rollback()
+                    logger.error("[DiagramCache] delete folder DB failed: %s", exc)
+                    return False, "Failed to delete folder"
+        except REDIS_ERRORS as exc:
+            logger.error("[DiagramCache] delete folder connection failed: %s", exc)
+            return False, "Database error"
+
+        if self._use_redis():
+            redis = get_async_redis()
+            if redis:
+                try:
+                    list_key = self._get_user_list_key(user_id)
+                    await redis.delete(list_key)
+                except REDIS_ERRORS as exc:
+                    logger.warning(
+                        "[DiagramCache] Redis list invalidate failed after folder delete: %s",
+                        exc,
                     )
 
         return True, None

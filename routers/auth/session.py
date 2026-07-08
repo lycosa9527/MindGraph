@@ -254,7 +254,17 @@ async def refresh_token(request: Request, response: Response):
         await session_manager.delete_session(user_id, token=old_access_token)
 
     # Store new session with device hash for same-device session tracking
-    await session_manager.store_session(user_id, new_access_token, device_hash=current_device_hash)
+    stored = await session_manager.store_session(user_id, new_access_token, device_hash=current_device_hash)
+    if not stored:
+        logger.error(
+            "[TokenAudit] Refresh FAILED - could not store session: user=%s, ip=%s",
+            user_id,
+            client_ip,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Session storage unavailable. Please try again or log in again.",
+        )
 
     await _record_vpn_refresh_last_ip(user_id, request)
 

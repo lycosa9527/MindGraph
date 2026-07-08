@@ -38,6 +38,7 @@ interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
   feature_course: boolean
   feature_template: boolean
   feature_community: boolean
+  feature_case_square: boolean
   feature_askonce: boolean
   feature_school_zone: boolean
   feature_debateverse: boolean
@@ -106,6 +107,12 @@ const ROWS: RowDef[] = [
     envKey: 'FEATURE_COMMUNITY',
     labelKey: 'admin.feature.community',
     hintKey: 'admin.feature.communityHint',
+  },
+  {
+    apiKey: 'feature_case_square',
+    envKey: 'FEATURE_CASE_SQUARE',
+    labelKey: 'admin.feature.caseSquare',
+    hintKey: 'admin.feature.caseSquareHint',
   },
   {
     apiKey: 'feature_knowledge_space',

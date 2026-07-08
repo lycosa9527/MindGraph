@@ -25,6 +25,7 @@ export function useAdminPanelTabs(options?: { loadOnMount?: boolean }) {
     if (!featureMarkets.value) {
       visible = visible.filter((tab) => tab.name !== 'billing')
     }
+    // Case Square admin is capability-gated only (not hidden when FEATURE_CASE_SQUARE is off).
     if (!can('tab.billing.view')) {
       visible = visible.filter((tab) => tab.name !== 'billing')
     }

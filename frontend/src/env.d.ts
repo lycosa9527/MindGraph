@@ -3,6 +3,7 @@
 
 declare const __APP_VERSION__: string
 declare const __BUILD_TIME__: number
+declare const __DEV_API_ORIGIN__: string
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>

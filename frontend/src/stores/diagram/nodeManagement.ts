@@ -18,6 +18,7 @@ import {
 } from '../specLoader/mindMap'
 import { applyTreeMapTopicLayoutToNodes } from '../specLoader/treeMapTopicLayout'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -71,6 +72,7 @@ function shouldInvalidateNodeDimensionsOnTextEdit(
 
 export function useNodeManagementSlice(ctx: DiagramContext) {
   function updateNode(nodeId: string, updates: Partial<DiagramNode>): boolean {
+    if (isDiagramPresentationReadOnly()) return false
     if (!ctx.data.value?.nodes) return false
 
     const nodeIndex = ctx.data.value.nodes.findIndex((n) => n.id === nodeId)
@@ -352,6 +354,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
   }
 
   function addNode(node: DiagramNode): void {
+    if (isDiagramPresentationReadOnly()) return
     if (ctx.collabSessionActive.value && node.id) {
       const suffix = safeRandomUUID().slice(0, 8)
       node.id = `${node.id}-c${suffix}`
@@ -456,6 +459,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
   }
 
   function removeNode(nodeId: string): boolean {
+    if (isDiagramPresentationReadOnly()) return false
     if (!ctx.data.value?.nodes) return false
 
     if (collabForeignLockBlocksAnyId(ctx, [nodeId])) {

@@ -30,6 +30,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
 if TYPE_CHECKING:
+    from models.domain.diagram_folders import DiagramFolder
     from models.domain.diagrams import Diagram
 
 
@@ -155,6 +156,13 @@ class User(Base):
     )
     diagrams: Mapped[list["Diagram"]] = relationship(
         "Diagram",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="select",
+    )
+    diagram_folders: Mapped[list["DiagramFolder"]] = relationship(
+        "DiagramFolder",
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,

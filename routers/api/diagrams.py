@@ -40,6 +40,7 @@ from models.domain.diagrams import Diagram
 from models.domain.messages import Language
 from models.requests.requests_diagram import (
     DiagramCreateRequest,
+    DiagramMoveFolderRequest,
     DiagramUpdateRequest,
     SnapshotTakeRequest,
 )
@@ -324,6 +325,7 @@ async def list_diagrams(
                 updated_at=datetime.fromisoformat(d["updated_at"]) if d.get("updated_at") else datetime.now(UTC),
                 is_pinned=d.get("is_pinned", False),
                 workshop_active=workshop_active,
+                folder_id=d.get("folder_id"),
             )
         )
 
@@ -613,6 +615,40 @@ async def pin_diagram(
         "message": f"Diagram {action.lower()}",
         "is_pinned": pinned,
     }
+
+
+@router.post("/diagrams/{diagram_id}/folder")
+async def move_diagram_to_folder(
+    diagram_id: str,
+    req: DiagramMoveFolderRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Move a diagram into an archive folder, or back to uncategorized (folder_id=null).
+    """
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
+
+    cache = get_diagram_cache()
+    success, error = await cache.move_diagram_to_folder(
+        current_user.id,
+        diagram_id,
+        req.folder_id,
+        organization_id=getattr(current_user, "organization_id", None),
+    )
+    if not success:
+        if "not found" in (error or "").lower():
+            raise HTTPException(status_code=404, detail=error)
+        raise HTTPException(status_code=400, detail=error or "Failed to move diagram")
+
+    logger.info(
+        "[Diagrams] Moved diagram %s to folder %s for user %s",
+        diagram_id,
+        req.folder_id,
+        current_user.id,
+    )
+    return {"success": True, "folder_id": req.folder_id}
 
 
 @router.get("/qrcode")

@@ -29,6 +29,7 @@ import { mindMapBranchFontSize, resolveMindMapTopicBorderColor } from '@/config/
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { ANIMATION } from '@/config/uiConfig'
 import { useDiagramStore } from '@/stores'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindGraphNode } from '@/types'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
@@ -613,6 +614,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     clientY?: number,
     fromTouch?: boolean
   ): boolean {
+    if (isDiagramPresentationReadOnly()) return false
     if (isLearningSheetCustomPickActive()) return false
     if (options?.allowNodeMove && !options.allowNodeMove()) return false
     const dt = diagramStore.type

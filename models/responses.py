@@ -215,6 +215,7 @@ class DiagramListItem(BaseModel):
     updated_at: datetime = Field(..., description="Last update timestamp")
     is_pinned: bool = Field(False, description="Whether diagram is pinned to top")
     workshop_active: bool = Field(False, description="Whether diagram has a live collab session")
+    folder_id: Optional[str] = Field(None, description="Archive folder UUID, if assigned")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -225,9 +226,37 @@ class DiagramListItem(BaseModel):
                 "thumbnail": None,
                 "updated_at": "2026-01-07T12:00:00",
                 "is_pinned": False,
+                "folder_id": None,
             }
         }
     )
+
+
+class DiagramFolderItem(BaseModel):
+    """User-owned archive folder for saved diagrams."""
+
+    id: str = Field(..., description="Folder UUID")
+    name: str = Field(..., description="Folder display name")
+    sort_order: int = Field(0, description="User-defined ordering")
+    diagram_count: int = Field(0, description="Number of diagrams in this folder")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+
+class DiagramFolderListResponse(BaseModel):
+    """List of diagram archive folders."""
+
+    folders: List[DiagramFolderItem] = Field(default_factory=list)
+
+
+class DiagramFolderResponse(BaseModel):
+    """Single diagram archive folder."""
+
+    id: str = Field(..., description="Folder UUID")
+    name: str = Field(..., description="Folder display name")
+    sort_order: int = Field(0, description="User-defined ordering")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
 
 
 class DiagramListResponse(BaseModel):

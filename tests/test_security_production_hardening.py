@@ -215,3 +215,45 @@ def test_production_guard_rejects_unauthenticated_redis_when_required() -> None:
         ):
             with pytest.raises(RuntimeError, match="REDIS_URL"):
                 guard.enforce_production_security_guards()
+
+
+def test_allows_same_origin_case_square_frame_for_teaching_attachments() -> None:
+    """Teaching design PDFs/Docs under /static/case_square/ may be same-origin iframed."""
+    assert middleware_module.allows_same_origin_case_square_frame("/static/case_square/abc_doc.pdf")
+    assert middleware_module.allows_same_origin_case_square_frame("/static/case_square/abc_doc.docx")
+    assert not middleware_module.allows_same_origin_case_square_frame("/static/case_square/abc.json")
+    assert not middleware_module.allows_same_origin_case_square_frame("/static/community/thumb.png")
+
+
+def test_case_square_publish_body_size_limit_paths() -> None:
+    """Create, update, and admin proxy publish allow large multipart bodies."""
+    limit = middleware_module.CASE_SQUARE_MAX_BODY_SIZE
+    default = middleware_module.MAX_REQUEST_BODY_SIZE
+    resolver = middleware_module.max_request_body_size_for_path
+    assert resolver("/api/case-square/posts") == limit
+    assert resolver("/api/case-square/posts/abc-123") == limit
+    assert resolver("/api/auth/admin/case-square/posts/proxy") == limit
+    assert resolver("/api/case-square/favorites") == default
+
+
+@pytest.mark.asyncio
+async def test_security_headers_allow_same_origin_frame_for_case_square_pdf() -> None:
+    """Case Square PDF static responses must not send X-Frame-Options: DENY."""
+    request = MagicMock()
+    request.url.scheme = "http"
+    request.url.path = "/static/case_square/post_doc.pdf"
+    request.state = SimpleNamespace()
+    response = MagicMock()
+    response.headers = {}
+
+    async def _call_next(_req):
+        return response
+
+    with patch.object(middleware_module, "is_https", return_value=False):
+        with patch.object(middleware_module, "config") as mock_config:
+            mock_config.debug = True
+            result = await middleware_module.add_security_headers(request, _call_next)
+
+    assert result.headers["X-Frame-Options"] == "SAMEORIGIN"
+    assert "frame-ancestors 'self'" in result.headers["Content-Security-Policy"]
+    assert "frame-src 'self' blob: https://view.officeapps.live.com" in result.headers["Content-Security-Policy"]

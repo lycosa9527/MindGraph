@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 import { nextTick } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { ANIMATION } from '@/config/uiConfig'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import { useDiagramStore } from '@/stores'
@@ -231,6 +232,7 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       eventBus.on('node:text_updated', ({ nodeId, text }) => {
+        if (isDiagramPresentationReadOnly()) return
         const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
         const currentText = (node?.text ?? (node?.data as { label?: string })?.label ?? '').trim()
         const alreadyUpdated = currentText === text.trim()

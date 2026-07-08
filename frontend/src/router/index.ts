@@ -172,6 +172,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'main', ...pageTitle('course') },
   },
   {
+    path: '/case-square',
+    name: 'CaseSquare',
+    component: () => import('@/pages/CaseSquarePage.vue'),
+    meta: { requiresAuth: true, layout: 'main', ...pageTitle('caseSquare') },
+  },
+  {
     path: '/community',
     name: 'Community',
     component: () => import('@/pages/CommunityPage.vue'),
@@ -478,6 +484,9 @@ router.beforeEach(async (to, from) => {
     return { name: 'MindMate' }
   }
   if (to.name === 'Template' && !featureFlagsStore.getFeatureTemplate()) {
+    return { name: 'MindMate' }
+  }
+  if (to.name === 'CaseSquare' && !featureFlagsStore.getFeatureCaseSquare()) {
     return { name: 'MindMate' }
   }
   if (to.name === 'Community' && !featureFlagsStore.getFeatureCommunity()) {

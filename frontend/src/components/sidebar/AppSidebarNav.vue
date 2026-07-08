@@ -12,6 +12,7 @@ import {
   ChevronDown,
   FileText,
   Files,
+  LayoutGrid,
   MessageCircle,
   MessageSquare,
   MessagesSquare,
@@ -371,6 +372,30 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </el-tooltip>
 
+        <!-- Case Square -->
+        <el-tooltip
+          v-if="s.featureCaseSquare"
+          :content="s.t('sidebar.caseSquare')"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('case-square')"
+            @click="s.setMode('case-square')"
+          >
+            <LayoutGrid
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.caseSquare') }}</span
+            >
+          </div>
+        </el-tooltip>
+
         <!-- Library -->
         <el-tooltip
           v-if="s.featureLibrary"
@@ -424,6 +449,12 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               class="nav-label"
             >
               {{ s.singleAdminNavTab.label }}
+              <span
+                v-if="s.singleAdminNavTab.name === 'case_square' && s.caseSquarePendingCount > 0"
+                class="nav-item-badge"
+              >
+                {{ s.caseSquarePendingCount }}
+              </span>
             </span>
           </div>
         </el-tooltip>
@@ -449,6 +480,12 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               class="nav-label admin-menu-title"
             >
               {{ s.t('admin.title') }}
+              <span
+                v-if="s.caseSquarePendingCount > 0"
+                class="nav-item-badge"
+              >
+                {{ s.caseSquarePendingCount }}
+              </span>
               <ChevronDown
                 class="admin-expand-chevron"
                 :class="{ 'admin-expand-chevron--open': s.managementPanelExpanded }"
@@ -559,7 +596,13 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
                 :class="s.adminSubItemClass(tab.name)"
                 @click="s.navigateAdminTab(tab.name)"
               >
-                {{ tab.label }}
+                <span class="admin-subitem-label">{{ tab.label }}</span>
+                <span
+                  v-if="tab.name === 'case_square' && s.caseSquarePendingCount > 0"
+                  class="admin-subitem-badge"
+                >
+                  {{ s.caseSquarePendingCount }}
+                </span>
               </button>
             </template>
           </div>
@@ -840,6 +883,38 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 .nav-subitem.is-active {
   background-color: #e7e5e4;
   color: #1c1917;
+}
+
+.admin-subitem-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-subitem-badge {
+  margin-left: auto;
+  min-width: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+.nav-item-badge {
+  margin-left: 0.375rem;
+  min-width: 1.125rem;
+  padding: 0 0.35rem;
+  border-radius: 9999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.125rem;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .nav-subitem--parent {

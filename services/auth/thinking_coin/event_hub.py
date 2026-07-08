@@ -16,7 +16,7 @@ from services.auth.thinking_coin.client_event_earn import try_client_event_earn
 from services.auth.thinking_coin.eligibility import user_eligible_for_thinking_coins
 from services.auth.thinking_coin.wallet_service import get_balance, safe_commit
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.auth.thinking_coin_config import SLUG_DAILY_CHECKIN, SLUG_PUBLISH_CASE, feature_thinking_coins_enabled
+from utils.auth.thinking_coin_config import SLUG_DAILY_CHECKIN, feature_thinking_coins_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -216,8 +216,8 @@ def attach_footer(payload: dict[str, Any], mutation: ThinkingCoinMutation) -> di
 
 
 def is_publish_case_coming_soon(slug: str) -> bool:
-    """Publish case has no moderation credit path yet."""
-    return slug == SLUG_PUBLISH_CASE
+    """Publish case is available when Case Square moderation is enabled."""
+    return False
 
 
 async def build_eligible_mutation(

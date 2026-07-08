@@ -8,6 +8,7 @@ import {
   resolveBraceMapSubpartAttachParentId,
 } from './braceMapParentResolve'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -82,6 +83,7 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
   }
 
   function removeBraceMapNodes(nodeIds: string[]): number {
+    if (isDiagramPresentationReadOnly()) return 0
     if (type.value !== 'brace_map' || !data.value?.nodes) return 0
 
     const connections = data.value.connections ?? []
