@@ -10,7 +10,7 @@ import json
 import logging
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 
 from fastapi import HTTPException, Request, UploadFile, status
 
@@ -142,7 +142,7 @@ async def collect_gallery_images_from_request(request: Request) -> list[UploadFi
     for value in form.getlist("gallery_images"):
         upload = _form_upload_file(value)
         if upload is not None:
-            images.append(upload)
+            images.append(cast(UploadFile, upload))
     if images:
         return images
     for key, value in form.multi_items():
@@ -150,7 +150,7 @@ async def collect_gallery_images_from_request(request: Request) -> list[UploadFi
             continue
         upload = _form_upload_file(value)
         if upload is not None:
-            images.append(upload)
+            images.append(cast(UploadFile, upload))
     return images
 
 

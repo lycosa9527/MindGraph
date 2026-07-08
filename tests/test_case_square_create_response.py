@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from collections.abc import Generator
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -54,7 +55,7 @@ def fixture_client() -> TestClient:
 
 
 @pytest.fixture(autouse=True)
-def clear_dependency_overrides() -> None:
+def clear_dependency_overrides() -> Generator[None, None, None]:
     app.dependency_overrides.clear()
     yield
     app.dependency_overrides.clear()

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from types import SimpleNamespace
 
 import pytest
@@ -51,7 +52,7 @@ def fixture_client() -> TestClient:
 
 
 @pytest.fixture(autouse=True)
-def clear_dependency_overrides() -> None:
+def clear_dependency_overrides() -> Generator[None, None, None]:
     app.dependency_overrides.clear()
     yield
     app.dependency_overrides.clear()
