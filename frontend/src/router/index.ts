@@ -139,6 +139,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/privacy',
+    name: 'Privacy',
+    component: () => import('@/pages/PrivacyPage.vue'),
+    meta: { layout: 'canvas', ...pageTitle('privacy') },
+  },
+  {
+    path: '/privacy/extension',
+    redirect: { path: '/privacy', hash: '#browser-extension' },
+  },
+  {
     path: '/demo',
     redirect: '/bayi/passkey',
   },

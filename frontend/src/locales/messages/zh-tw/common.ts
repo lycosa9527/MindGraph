@@ -179,6 +179,7 @@ export default {
   'mobile.kittyClickWheelEmptyLabel': '未命名節點',
   'mobile.kittyClickWheelPosition': '{current} / {total}',
   'meta.pageTitle.notFound': '頁面未找到',
+  'meta.pageTitle.privacy': '用戶協議與隱私政策',
   'meta.pageTitle.publicDashboard': '統計',
   'meta.pageTitle.schoolDashboard': '學校儀表盤',
   'meta.pageTitle.schoolZone': '學校專區',

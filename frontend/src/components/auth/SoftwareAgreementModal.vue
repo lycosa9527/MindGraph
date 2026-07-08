@@ -6,6 +6,7 @@ import { computed } from 'vue'
 
 import { ElDialog, ElScrollbar } from 'element-plus'
 
+import SoftwareAgreementDocument from '@/components/auth/SoftwareAgreementDocument.vue'
 import { useLanguage } from '@/composables'
 import { softwareAgreementForUiCode } from '@/content/authSoftwareAgreement'
 
@@ -53,28 +54,7 @@ const agreement = computed(() => softwareAgreementForUiCode(currentLanguage.valu
       class="sa-scrollbar"
       max-height="70vh"
     >
-      <div class="sa-body">
-        <p class="sa-preamble">
-          {{ agreement.preamble }}
-        </p>
-
-        <section
-          v-for="(section, idx) in agreement.sections"
-          :key="idx"
-          class="sa-section"
-        >
-          <h3 class="sa-section__title">
-            {{ section.title }}
-          </h3>
-          <p
-            v-for="(paragraph, pIdx) in section.paragraphs"
-            :key="pIdx"
-            class="sa-section__paragraph"
-          >
-            {{ paragraph }}
-          </p>
-        </section>
-      </div>
+      <SoftwareAgreementDocument :agreement="agreement" />
     </ElScrollbar>
   </ElDialog>
 </template>
@@ -98,41 +78,6 @@ const agreement = computed(() => softwareAgreementForUiCode(currentLanguage.valu
   font-size: 0.75rem;
   color: rgb(120 113 108);
 }
-
-.sa-body {
-  padding: 0.25rem 0.5rem 0.75rem 0;
-  color: rgb(41 37 36);
-}
-
-.sa-preamble {
-  margin: 0 0 1.25rem;
-  font-size: 0.875rem;
-  line-height: 1.65;
-  color: rgb(68 64 60);
-}
-
-.sa-section + .sa-section {
-  margin-top: 1.1rem;
-}
-
-.sa-section__title {
-  margin: 0 0 0.45rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.45;
-  color: rgb(28 25 23);
-}
-
-.sa-section__paragraph {
-  margin: 0 0 0.5rem;
-  font-size: 0.8125rem;
-  line-height: 1.7;
-  color: rgb(68 64 60);
-}
-
-.sa-section__paragraph:last-child {
-  margin-bottom: 0;
-}
 </style>
 
 <style>
@@ -151,6 +96,10 @@ const agreement = computed(() => softwareAgreementForUiCode(currentLanguage.valu
 
 .software-agreement-dialog .el-dialog__body {
   padding: 0.5rem 1.25rem 1.25rem;
+}
+
+.software-agreement-dialog .sa-body {
+  padding: 0.25rem 0.5rem 0.75rem 0;
 }
 
 .software-agreement-modal-backdrop {

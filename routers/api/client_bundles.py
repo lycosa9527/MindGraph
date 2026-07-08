@@ -27,6 +27,7 @@ from utils.auth.school_tier import (
     assert_user_has_school_tier_feature,
 )
 from utils.db.session_open import actor_rls_session
+from utils.extension_store_packaging import build_store_zip_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,6 @@ router = APIRouter(tags=["api"])
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _OPENCLAW_SKILL_DIR = _PROJECT_ROOT / "openclaw" / "skills" / "mindgraph"
-_CHROME_EXTENSION_DIR = _PROJECT_ROOT / "chrome-extension"
 _FILE_READER_DIR = _PROJECT_ROOT / "clients" / "file-reader"
 _FILE_READER_EXE = _FILE_READER_DIR / "dist" / "mindgraph-file-reader.exe"
 _FILE_READER_ZIP = _PROJECT_ROOT / "frontend" / "public" / "downloads" / "mindgraph-file-reader.zip"
@@ -108,7 +108,7 @@ async def download_chrome_extension_zip(
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> Response:
-    """Zip of `chrome-extension` for Load unpacked (or inspection)."""
+    """Store-ready zip (manifest at root) for Chrome, Edge, or Partner Center upload."""
     async with actor_rls_session(current_user) as db:
         await assert_user_has_school_tier_feature(
             db,
@@ -117,11 +117,23 @@ async def download_chrome_extension_zip(
             lang,
         )
     try:
-        data = _zip_directory(_CHROME_EXTENSION_DIR, "chrome-extension")
-    except FileNotFoundError:
-        logger.warning("[ClientBundles] Chrome extension dir missing: %s", _CHROME_EXTENSION_DIR)
-        raise HTTPException(status_code=404, detail="Chrome extension bundle not available on this server") from None
+        data = build_store_zip_bytes()
+    except (FileNotFoundError, RuntimeError) as exc:
+        logger.warning("[ClientBundles] Chrome extension store zip failed: %s", exc)
+        raise HTTPException(
+            status_code=404,
+            detail="Chrome extension bundle not available on this server",
+        ) from None
     return _bundle_response(data, "mindgraph-chrome-extension.zip")
+
+
+@router.get("/downloads/mindgraph-extension")
+async def download_extension_zip(
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+) -> Response:
+    """Alias for mindgraph-chrome-extension (same store-ready zip)."""
+    return await download_chrome_extension_zip(current_user=current_user, lang=lang)
 
 
 @router.get("/downloads/mindgraph-file-reader")

@@ -67,6 +67,21 @@
   }
 
   /**
+   * @param {string} token
+   * @returns {Promise<void>}
+   */
+  async function persistSmartEduToken(token) {
+    const trimmed = typeof token === "string" ? token.trim() : "";
+    if (!trimmed) {
+      return;
+    }
+    await chrome.storage.local.set({
+      [SMARTEDU_TOKEN_KEY]: trimmed,
+      [SMARTEDU_TOKEN_SYNCED_AT_KEY]: Date.now(),
+    });
+  }
+
+  /**
    * @returns {Promise<void>}
    */
   async function clearSmartEduToken() {
@@ -106,6 +121,7 @@
   MindGraphExtensionStorage.pruneStaleExtensionStorage = pruneStaleExtensionStorage;
   MindGraphExtensionStorage.isUnauthorizedHttpStatus = isUnauthorizedHttpStatus;
   MindGraphExtensionStorage.clearSmartEduToken = clearSmartEduToken;
+  MindGraphExtensionStorage.persistSmartEduToken = persistSmartEduToken;
   MindGraphExtensionStorage.getSmartEduTokenIfFresh = getSmartEduTokenIfFresh;
   MindGraphExtensionStorage.clearSmartEduTokenIfUnauthorized = clearSmartEduTokenIfUnauthorized;
   global.MindGraphExtensionStorage = MindGraphExtensionStorage;

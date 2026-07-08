@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "package:store": "cd ../.. && PYTHONPATH=. python scripts/package_extension.py",
+    "publish:edge": "cd ../.. && PYTHONPATH=. python scripts/publish_edge_addon.py"
   },
   "devDependencies": {
     "vitest": "^4.1.7"

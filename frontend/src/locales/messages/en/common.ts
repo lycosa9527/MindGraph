@@ -176,6 +176,7 @@ export default {
   'mobile.kittyClickWheelEmptyLabel': 'Untitled node',
   'mobile.kittyClickWheelPosition': '{current} / {total}',
   'meta.pageTitle.notFound': 'Page not found',
+  'meta.pageTitle.privacy': 'Terms & Privacy',
   'meta.pageTitle.publicDashboard': 'Statistics',
   'meta.pageTitle.schoolDashboard': 'School dashboard',
   'meta.pageTitle.schoolZone': 'School zone',

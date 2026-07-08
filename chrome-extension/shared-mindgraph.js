@@ -6,6 +6,10 @@
   "use strict";
 
   const MAX_PAGE_CHARS = 32000;
+  /** MindMate page capture default when caller omits max length. */
+  const DEFAULT_MINDMATE_CAPTURE_CHARS = 8000;
+  /** Max composed user message length sent to MindMate (Dify). */
+  const MINDMATE_API_MESSAGE_MAX_LEN = 5000;
   const FETCH_TIMEOUT_MS = 180000;
   const VERIFY_TIMEOUT_MS = 60000;
   const DEFAULT_MINDGRAPH_BASE_URL = "https://mg.mindspringedu.com";
@@ -395,8 +399,37 @@
     return body;
   }
 
+  /**
+   * @returns {string}
+   */
+  function newRequestId() {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return `mg-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+  }
+
+  /**
+   * Wake the MV3 service worker before long connect/sendMessage calls.
+   * @returns {Promise<boolean>}
+   */
+  function pingServiceWorker() {
+    return new Promise((resolve) => {
+      if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMessage) {
+        resolve(false);
+        return;
+      }
+      chrome.runtime.sendMessage({ type: "PING" }, (res) => {
+        void chrome.runtime.lastError;
+        resolve(Boolean(res && res.ok));
+      });
+    });
+  }
+
   const MindGraphShared = {
     MAX_PAGE_CHARS,
+    DEFAULT_MINDMATE_CAPTURE_CHARS,
+    MINDMATE_API_MESSAGE_MAX_LEN,
     FETCH_TIMEOUT_MS,
     VERIFY_TIMEOUT_MS,
     DEFAULT_MINDGRAPH_BASE_URL,
@@ -415,6 +448,8 @@
     isRestrictedTabUrl,
     isBrowserPdfTabUrl,
     buildPngRequestBody,
+    newRequestId,
+    pingServiceWorker,
     matchPromptLanguageCode,
     resolvePromptLanguageFromUiMode,
     detectExtensionBrowser,

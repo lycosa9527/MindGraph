@@ -383,6 +383,10 @@
     "message": "页面上没有可读文字。请先选中一段文字，或换一页再试。",
     "description": "后台错误"
   },
+  "errJobAlreadyRunning": {
+    "message": "此标签页已有捕获或下载任务在进行，请等待完成后再试。",
+    "description": "后台拒绝重叠任务"
+  },
   "errApi": {
     "message": "MindGraph 服务器出错（$1）。请检查设置后重试。",
     "description": "接口错误"

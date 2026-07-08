@@ -6,7 +6,11 @@
   "use strict";
 
   const MindGraphMindMate = global.MindGraphMindMate || {};
-  const API_MESSAGE_MAX_LEN = 5000;
+  const MindGraphShared = global.MindGraphShared;
+  const API_MESSAGE_MAX_LEN =
+    MindGraphShared && typeof MindGraphShared.MINDMATE_API_MESSAGE_MAX_LEN === "number"
+      ? MindGraphShared.MINDMATE_API_MESSAGE_MAX_LEN
+      : 5000;
 
   /**
    * @param {string | null} conversationId

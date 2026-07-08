@@ -66,13 +66,17 @@ Generate a mind map from the extension popup, then in popup DevTools → Network
 
 Popup should show **View in library** linking to `https://BASE/canvas?diagramId=...`.
 
-## 4. nginx / openresty (MindMate SSE)
+## 4. nginx / openresty (MindMate SSE + extension PNG)
 
-On the reverse proxy, set `proxy_read_timeout` ≥ **300s** for `/api/ai_assistant/stream`.
+On the reverse proxy, set `proxy_read_timeout` / `proxy_send_timeout` ≥ **300s** for `/api` (covers MindMate SSE and extension mind-map PNG; extension client aborts PNG at **180s**).
 
 See [production_security_deploy.md](../docs/architecture/production_security_deploy.md).
 
-## 5. Per-environment checklist
+## 5. Edge extension client label (optional)
+
+Repeat §2 with `X-MG-Client: edge-extension` — same **200** responses; server logs distinguish Edge from Chrome.
+
+## 6. Per-environment checklist
 
 | Check | test | mg |
 |-------|------|-----|
@@ -80,4 +84,6 @@ See [production_security_deploy.md](../docs/architecture/production_security_dep
 | `/api/knowledge-space/packages` → 200 | | |
 | Web MindMate chat works (same account) | | |
 | Extension preset + token from **same** server | | |
-| `proxy_read_timeout` ≥ 300s | | |
+| `proxy_read_timeout` ≥ 300s (or ≥ 180s for PNG only) | | |
+| `FEATURE_KNOWLEDGE_SPACE=true` (File Center tab) | | |
+| Cert test account: `api_token` + `chrome_extension` tier features | | |

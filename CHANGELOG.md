@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.139.0] - 2026-07-08
+
+> **Chrome extension v0.4.20 store packaging and page capture refactor, public Terms/Privacy page with browser extension appendix, and Edge Add-ons publish tooling.**
+
+### Added
+
+- **Store-ready extension zip** — Manifest-at-root zip builder for Chrome, Edge, and Partner Center upload ([`extension_store_packaging.py`](utils/extension_store_packaging.py), [`client_bundles.py`](routers/api/client_bundles.py)).
+- **Edge Add-ons publish tooling** — `publish_edge_addon.py`, `package_extension.py`, manual push script, and certification notes example ([`scripts/publish_edge_addon.py`](scripts/publish_edge_addon.py), [`chrome-extension/scripts/manual_push_edge.sh`](chrome-extension/scripts/manual_push_edge.sh)).
+- **Chrome extension v0.4.20 — page content capture pipeline** — Shared file-first + DOM text capture for MindMate, mind map, and File Center ingest ([`page-content-capture.js`](chrome-extension/doc-extract/page-content-capture.js), [`page-content.js`](chrome-extension/doc-extract/text/page-content.js)).
+- **Extension per-tab job locks** — MV3 service worker rejects overlapping capture/download work on the same tab ([`extension-jobs.js`](chrome-extension/extension-jobs.js)).
+- **Public Terms + Privacy page** — `/privacy` with shared agreement renderer and browser-extension privacy appendix ([`PrivacyPage.vue`](frontend/src/pages/PrivacyPage.vue), [`SoftwareAgreementDocument.vue`](frontend/src/components/auth/SoftwareAgreementDocument.vue), [`authSoftwareAgreement.ts`](frontend/src/content/authSoftwareAgreement.ts)).
+- **Chrome extension icon300** — 300×300 store logo asset ([`icons/icon300.png`](chrome-extension/icons/icon300.png)).
+
+### Changed
+
+- **Client bundle download** — `GET /api/downloads/mindgraph-chrome-extension` serves the store-ready zip from [`build_store_zip_bytes()`](utils/extension_store_packaging.py) (alias `/mindgraph-extension`).
+- **Software agreement UI** — Modal and `/privacy` share [`SoftwareAgreementDocument.vue`](frontend/src/components/auth/SoftwareAgreementDocument.vue); auth footer links to the public page ([`SoftwareAgreementModal.vue`](frontend/src/components/auth/SoftwareAgreementModal.vue), [`AuthLayout.vue`](frontend/src/layouts/AuthLayout.vue)).
+- **Chrome extension capture** — Removed [`mindmate-page-markdown.js`](chrome-extension/mindmate-page-markdown.js); MindMate and background flows delegate to the shared page-content pipeline ([`mindmate-capture.js`](chrome-extension/mindmate-capture.js), [`background.js`](chrome-extension/background.js)).
+- **SmartEdu extract helpers** — Metadata block dedup keys and token/page capture alignment ([`metadata.js`](chrome-extension/doc-extract/smartedu/metadata.js), [`token.js`](chrome-extension/doc-extract/smartedu/token.js)).
+- **Chrome extension branding** — Regenerated icon sizes and manifest metadata for Edge listing ([`manifest.json`](chrome-extension/manifest.json), [`generate_icons.py`](chrome-extension/scripts/generate_icons.py)).
+- **CI** — Chrome extension vitest job in GitHub Actions and [`ci-local.sh`](scripts/ci-local.sh) ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+
+### Fixed
+
+- **Overlapping extension jobs** — Same-tab capture/download returns `errJobAlreadyRunning` instead of racing the service worker ([`extension-jobs.js`](chrome-extension/extension-jobs.js), locale strings in [`_locales/`](chrome-extension/_locales/)).
+- **Extension API errors** — User-facing `errApi` / job-busy messages in popup and compose flows ([`popup.js`](chrome-extension/popup.js), [`mindmate-compose.js`](chrome-extension/mindmate-compose.js)).
+
+### Tests
+
+- **Backend** — [`test_extension_store_packaging.py`](tests/test_extension_store_packaging.py) (manifest at zip root, runtime scripts included).
+- **Chrome extension** — Extended [`test/doc-extract.spec.js`](chrome-extension/test/doc-extract.spec.js) and [`test/mindmate.spec.js`](chrome-extension/test/mindmate.spec.js) for page-content capture, job locks, and shared helpers.
+
 ## [5.138.0] - 2026-07-07
 
 > **MindMate collab WebSocket reliability, thinking-coins school subscription and WeCom consult, mind map underline connectors, and extension page-context display.**

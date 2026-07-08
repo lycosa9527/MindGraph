@@ -427,7 +427,7 @@ describe("mindmate page markdown", () => {
    */
   function loadMarkdownApi(html) {
     const code = fs.readFileSync(
-      path.resolve(repoRoot, "chrome-extension/mindmate-page-markdown.js"),
+      path.resolve(repoRoot, "chrome-extension/doc-extract/text/page-content.js"),
       "utf8",
     );
     const dom = new (class {
@@ -488,7 +488,7 @@ describe("mindmate page markdown", () => {
 
   it("findArticleRoot prefers main on normal pages", () => {
     const code = fs.readFileSync(
-      path.resolve(repoRoot, "chrome-extension/mindmate-page-markdown.js"),
+      path.resolve(repoRoot, "chrome-extension/doc-extract/text/page-content.js"),
       "utf8",
     );
     const mainNode = { tagName: "MAIN" };
@@ -510,7 +510,7 @@ describe("mindmate page markdown", () => {
 
   it("extractPageMarkdownAsync skips selection when auto-scanning generic pages", async () => {
     const code = fs.readFileSync(
-      path.resolve(repoRoot, "chrome-extension/mindmate-page-markdown.js"),
+      path.resolve(repoRoot, "chrome-extension/doc-extract/text/page-content.js"),
       "utf8",
     );
     class MockElement {

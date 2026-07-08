@@ -45,16 +45,6 @@ let i18nMode = "auto";
 const VERIFY_TIMEOUT_MS = MindGraphShared.VERIFY_TIMEOUT_MS;
 
 /**
- * @returns {string}
- */
-function newRequestId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `mg-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-}
-
-/**
  * @param {string} key
  * @param {string[] | undefined} substitutions
  * @returns {string}
@@ -300,7 +290,7 @@ async function verifyCredentials(baseUrl, account, token) {
         Authorization: `Bearer ${token}`,
         "X-MG-Account": account,
         "X-MG-Client": MindGraphShared.mgClientHeader(),
-        "X-Request-Id": newRequestId(),
+        "X-Request-Id": MindGraphShared.newRequestId(),
       },
     }));
     clearTimeout(timeoutId);
@@ -346,7 +336,7 @@ async function updateTokenExpiresHint(baseUrl, account, token, hint) {
         Authorization: `Bearer ${tok}`,
         "X-MG-Account": acc,
         "X-MG-Client": MindGraphShared.mgClientHeader(),
-        "X-Request-Id": newRequestId(),
+        "X-Request-Id": MindGraphShared.newRequestId(),
       },
     }));
     if (!res.ok) {
@@ -537,7 +527,7 @@ async function startPopup() {
 
   mindmatePanel = MindGraphMindMate.initMindMatePanel({
     t,
-    newRequestId,
+    newRequestId: MindGraphShared.newRequestId,
     getCredentials: async () => {
       const data = await chrome.storage.local.get(["baseUrl", "baseUrlPresetId", "account", "token"]);
       const resolvedServer = MindGraphShared.resolveMindGraphSettings(data);
@@ -806,6 +796,62 @@ async function startPopup() {
   /** @type {ReturnType<typeof setTimeout> | null} */
   let extractPreviewRefreshTimer = null;
 
+  /** Monotonic guard so overlapping preview fetches do not append the checklist twice. */
+  let extractPreviewGeneration = 0;
+
+  let extractPreviewCacheKey = "";
+  /** @type {object | null} */
+  let extractPreviewCache = null;
+
+  /**
+   * @param {object} preview
+   * @param {chrome.tabs.Tab} tab
+   */
+  function applyExtractPreview(preview, tab) {
+    const host = preview.host || { id: "generic", label: "网页", engine: "dom-article" };
+    const resolvedPageUrl = preview.pageUrl || tab.url || "";
+    if (host.id === "generic") {
+      if (downloadUnsupported) {
+        downloadUnsupported.hidden = false;
+      }
+      return;
+    }
+    docExtractDetected.textContent = t("docExtractDetectedSite", [host.label]);
+    if (docExtractActiveTab) {
+      docExtractActiveTab.textContent = t("docExtractActiveTab", [hostnameFromUrl(resolvedPageUrl)]);
+    }
+    if (docExtractTitle) {
+      docExtractTitle.textContent = preview.title || tab.title || "";
+    }
+    if (
+      docExtractPages &&
+      typeof preview.pageCount === "number" &&
+      preview.pageCount > 0 &&
+      (host.engine === "canvas-pdf" || host.engine === "html2canvas-pdf")
+    ) {
+      docExtractPages.textContent = t("docExtractPageCount", [String(preview.pageCount)]);
+      docExtractPages.hidden = false;
+    } else if (docExtractPages && host.prep && host.prep.includes("autoscroll")) {
+      docExtractPages.textContent = t("docExtractScrollHint");
+      docExtractPages.hidden = false;
+    }
+    if (host.id === "smartedu" && smarteduPanel) {
+      smarteduPanel.hidden = false;
+      if (smarteduTokenStatus) {
+        smarteduTokenStatus.textContent = preview.smarteduTokenSet
+          ? t("smarteduTokenConnected")
+          : t("smarteduTokenMissing");
+      }
+      const docAssets = Array.isArray(preview.assets)
+        ? preview.assets.filter((asset) => asset.localKind !== "m3u8" && asset.alias !== "micro_lesson_video")
+        : [];
+      if (docAssets.length) {
+        renderSmartEduAssetChecklist(docAssets);
+      }
+    }
+    docExtractSection.hidden = false;
+  }
+
   /**
    * Active page tab for Download — lastFocusedWindow avoids stale window on Edge/Chrome.
    * @returns {Promise<chrome.tabs.Tab | undefined>}
@@ -907,6 +953,8 @@ async function startPopup() {
     if (!docExtractSection || !docExtractDetected || !btnExtractDocument) {
       return;
     }
+    const generation = extractPreviewGeneration + 1;
+    extractPreviewGeneration = generation;
     if (smarteduPanel) {
       smarteduPanel.hidden = true;
     }
@@ -921,10 +969,18 @@ async function startPopup() {
     }
     docExtractSection.hidden = true;
     const tab = await getActiveContentTab();
+    if (generation !== extractPreviewGeneration) {
+      return;
+    }
     if (!tab?.id || !tab.url || MindGraphShared.isRestrictedTabUrl(tab.url)) {
       if (downloadUnsupported) {
         downloadUnsupported.hidden = false;
       }
+      return;
+    }
+    const cacheKey = `${tab.id}:${tab.url}`;
+    if (cacheKey === extractPreviewCacheKey && extractPreviewCache) {
+      applyExtractPreview(extractPreviewCache, tab);
       return;
     }
     const preview = await new Promise((resolve) => {
@@ -936,48 +992,12 @@ async function startPopup() {
         },
       );
     });
-    const host = preview.host || { id: "generic", label: "网页", engine: "dom-article" };
-    const resolvedPageUrl = preview.pageUrl || tab.url || "";
-    if (host.id === "generic") {
-      if (downloadUnsupported) {
-        downloadUnsupported.hidden = false;
-      }
+    if (generation !== extractPreviewGeneration) {
       return;
     }
-    docExtractDetected.textContent = t("docExtractDetectedSite", [host.label]);
-    if (docExtractActiveTab) {
-      docExtractActiveTab.textContent = t("docExtractActiveTab", [hostnameFromUrl(resolvedPageUrl)]);
-    }
-    if (docExtractTitle) {
-      docExtractTitle.textContent = preview.title || tab.title || "";
-    }
-    if (
-      docExtractPages &&
-      typeof preview.pageCount === "number" &&
-      preview.pageCount > 0 &&
-      (host.engine === "canvas-pdf" || host.engine === "html2canvas-pdf")
-    ) {
-      docExtractPages.textContent = t("docExtractPageCount", [String(preview.pageCount)]);
-      docExtractPages.hidden = false;
-    } else if (docExtractPages && host.prep && host.prep.includes("autoscroll")) {
-      docExtractPages.textContent = t("docExtractScrollHint");
-      docExtractPages.hidden = false;
-    }
-    if (host.id === "smartedu" && smarteduPanel) {
-      smarteduPanel.hidden = false;
-      if (smarteduTokenStatus) {
-        smarteduTokenStatus.textContent = preview.smarteduTokenSet
-          ? t("smarteduTokenConnected")
-          : t("smarteduTokenMissing");
-      }
-      const docAssets = Array.isArray(preview.assets)
-        ? preview.assets.filter((asset) => asset.localKind !== "m3u8" && asset.alias !== "micro_lesson_video")
-        : [];
-      if (docAssets.length) {
-        renderSmartEduAssetChecklist(docAssets);
-      }
-    }
-    docExtractSection.hidden = false;
+    extractPreviewCacheKey = cacheKey;
+    extractPreviewCache = preview;
+    applyExtractPreview(preview, tab);
   }
 
   if (btnSyncSmartEduToken) {
@@ -997,6 +1017,8 @@ async function startPopup() {
           );
         });
         if (response.tokenSet) {
+          extractPreviewCacheKey = "";
+          extractPreviewCache = null;
           await loadExtractPreview();
           return;
         }
@@ -1020,6 +1042,8 @@ async function startPopup() {
             resolve(res);
           });
         });
+        extractPreviewCacheKey = "";
+        extractPreviewCache = null;
         await loadExtractPreview();
       })();
     });
@@ -1054,6 +1078,7 @@ async function startPopup() {
         let port;
         let completed = false;
         try {
+          await MindGraphShared.pingServiceWorker();
           port = chrome.runtime.connect({ name: portName });
         } catch (e) {
           if (downloadStatusEl) {
@@ -1142,7 +1167,7 @@ async function startPopup() {
             setStatus(statusEl, t("statusSavedToFileCenter"), "ok");
           } else {
             console.error("[MindGraph] save to file center failed", response.error);
-            setStatus(statusEl, response.error || t("errFailed"), "err");
+            setStatus(statusEl, userFacingError(response.error), "err");
           }
         } catch (e) {
           setStatus(statusEl, e?.message || String(e), "err");
@@ -1239,7 +1264,7 @@ async function startPopup() {
             }
           } else {
             console.error("[MindGraph] generate failed", msg.error);
-            setStatus(statusEl, msg.error || t("errFailed"), "err");
+            setStatus(statusEl, userFacingError(msg.error), "err");
           }
           btnGenerate.disabled = false;
           setMainTabsDisabled(false);
@@ -1282,6 +1307,8 @@ async function startPopup() {
         setMainTabsDisabled(false);
         return;
       }
+
+      await MindGraphShared.pingServiceWorker();
 
       const connectName = `${MindGraphShared.MINDMAP_GENERATE_PORT}-${tab.id}`;
       try {

@@ -383,6 +383,10 @@
     "message": "頁面上沒有可讀文字。請先選取一段文字，或換一頁再試。",
     "description": "背景錯誤"
   },
+  "errJobAlreadyRunning": {
+    "message": "此分頁已有擷取或下載工作進行中，請等待完成後再試。",
+    "description": "背景拒絕重疊工作"
+  },
   "errApi": {
     "message": "MindGraph 伺服器出錯（$1）。請檢查設定後重試。",
     "description": "API 錯誤"

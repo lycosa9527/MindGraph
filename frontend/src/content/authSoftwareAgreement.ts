@@ -356,3 +356,41 @@ export function softwareAgreementForUiCode(uiCode: string): SoftwareAgreementCon
   }
   return SOFTWARE_AGREEMENT_EN
 }
+
+const BROWSER_EXTENSION_PRIVACY_ZH: SoftwareAgreementSection[] = [
+  {
+    title: '附录：MindGraph 浏览器扩展（Chrome / Edge）',
+    paragraphs: [
+      '本附录适用于 MindGraph 浏览器扩展（以下简称「扩展」），是对上文隐私政策的补充说明。',
+      '扩展在您的设备本地（chrome.storage.local）存储：MindGraph 服务器地址、API 令牌（mgat_…）、账户手机号、界面语言、SmartEdu 登录令牌（仅在您访问国家智慧教育平台相关网站且已登录时自动同步）及 MindMate 会话缓存。',
+      '扩展仅在您主动操作时读取或处理网页内容，包括：生成思维导图 PNG、提取文档下载、MindMate「包含当前网页内容」、保存至文档总结（File Center）。我们不会后台爬取或监控您的浏览行为。',
+      '读取到的页面正文、文档文本或下载的文件内容，会通过 HTTPS 发送至您在扩展设置中选择并已验证的 MindGraph 服务器，用于您请求的功能（导图生成、智能对话、知识库入库等）。扩展 API 请求使用 Bearer 令牌认证，不附带网页登录 Cookie。',
+      '扩展可能向第三方文档或 CDN 地址发起 fetch 以下载您请求的教育资源（如 SmartEdu、知网、百度文库等），不会向无关第三方出售或共享您的个人身份信息。',
+      '您可在 MindGraph 网页应用的账户信息中撤销 API 令牌；卸载扩展或清除扩展数据将删除本地存储的凭证。SmartEdu 令牌在失效（如 401）时由扩展自动清除。',
+      '生产环境请使用 https://mg.mindspringedu.com；本地开发服务器（localhost）使用 HTTP，仅建议在可信开发机上使用。',
+    ],
+  },
+]
+
+const BROWSER_EXTENSION_PRIVACY_EN: SoftwareAgreementSection[] = [
+  {
+    title: 'Appendix: MindGraph browser extension (Chrome / Edge)',
+    paragraphs: [
+      'This appendix applies to the MindGraph browser extension and supplements the Privacy Policy above.',
+      'The extension stores locally on your device (chrome.storage.local): MindGraph server URL, API token (mgat_…), account phone number, UI language, SmartEdu login token (synced only when you visit SmartEdu sites while signed in), and optional MindMate session cache.',
+      'The extension reads or processes web content only when you take action: generate a mind-map PNG, extract/download documents, use MindMate “include current page content”, or save to Document Summary (File Center). We do not crawl or monitor browsing in the background.',
+      'Extracted page text, document content, or downloaded files are sent over HTTPS to the MindGraph server you configure and verify in extension Settings, solely to perform the feature you requested. Extension API calls use Bearer token auth and do not attach web login cookies.',
+      'The extension may fetch document assets from third-party education or CDN hosts (e.g. SmartEdu, CNKI, Baidu Wenku) when you start an extract action. We do not sell or share personally identifiable information with unrelated third parties.',
+      'You may revoke API tokens in the MindGraph web app (Account). Uninstalling the extension or clearing its data removes locally stored credentials. SmartEdu tokens are cleared automatically when they expire (e.g. HTTP 401).',
+      'Use https://mg.mindspringedu.com in production. The localhost dev preset uses HTTP and is intended for trusted development machines only.',
+    ],
+  },
+]
+
+/** Browser-extension supplement for /privacy and store listings. */
+export function browserExtensionPrivacyForUiCode(uiCode: string): SoftwareAgreementSection[] {
+  if (isChineseUiLocale(uiCode)) {
+    return BROWSER_EXTENSION_PRIVACY_ZH
+  }
+  return BROWSER_EXTENSION_PRIVACY_EN
+}

@@ -1,5 +1,6 @@
 /**
- * Injected into the active tab — article / PDF.js reader DOM to markdown for MindMate.
+ * Injected into the active tab — shared article / PDF.js reader text extraction
+ * for MindMate page context and generic web pages (mind map, File Center).
  */
 (function (global) {
   "use strict";
@@ -529,7 +530,7 @@
     };
   }
 
-  global.__MGMindMatePageMarkdown = {
+  const pageContentApi = {
     extractPageMarkdown,
     extractPageMarkdownAsync,
     domToMarkdown,
@@ -538,4 +539,7 @@
     extractPdfJsTextLayerMarkdown,
     extractPlainTextMarkdown,
   };
+
+  global.__MGPageContent = pageContentApi;
+  global.__MGMindMatePageMarkdown = pageContentApi;
 })(typeof globalThis !== "undefined" ? globalThis : window);

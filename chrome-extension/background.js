@@ -1,6 +1,7 @@
 /**
  * Service worker — MindGraph browser extension (Chrome & Edge).
  * Fetches PNG from /api/web_content_mindmap_png with mgat_ + X-MG-Account headers.
+ * Page capture uses doc-extract/page-content-capture.js (file-first + shared DOM text).
  *
  * Download href: offscreen-blobs.js (offscreen BLOBS, data URL fallback).
  * Prompt output language codes: keep in sync with scripts/build_prompt_language_registry.py (_RAW).
@@ -9,6 +10,7 @@
 importScripts("shared-mindgraph.js");
 importScripts("extension-storage.js");
 importScripts("extension-security.js");
+importScripts("extension-jobs.js");
 importScripts("offscreen-blobs.js");
 importScripts("vendor/jspdf.umd.min.js");
 importScripts("vendor/jszip.min.js");
@@ -34,6 +36,7 @@ importScripts("doc-extract/extract-core.js");
 importScripts("mindmate-capture-debug.js");
 importScripts("mindmate-capture-progress.js");
 importScripts("doc-extract/extract-to-markdown.js");
+importScripts("doc-extract/page-content-capture.js");
 importScripts("doc-extract/text/blob-to-text.js");
 importScripts("doc-extract/text/markdown-capture-policy.js");
 importScripts("doc-extract/text/browser-pdf-fetch.js");
@@ -43,16 +46,6 @@ importScripts("mindmate-capture.js");
 
 const MAX_CHARS = MindGraphShared.MAX_PAGE_CHARS;
 const FETCH_TIMEOUT_MS = MindGraphShared.FETCH_TIMEOUT_MS;
-
-/**
- * @returns {string}
- */
-function newRequestId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `mg-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
-}
 
 /** @type {readonly string[]} */
 const PROMPT_OUTPUT_LANGUAGE_CODES = Object.freeze([
@@ -255,6 +248,20 @@ function postProgress(port, stage) {
 }
 
 /**
+ * @param {string | undefined} error
+ * @returns {string}
+ */
+function resolveNotifyError(error) {
+  if (!error) {
+    return chrome.i18n.getMessage("errFailed");
+  }
+  if (error.startsWith("err")) {
+    return chrome.i18n.getMessage(error) || error;
+  }
+  return error;
+}
+
+/**
  * @param {number} tabId
  * @param {{ progressPort?: chrome.runtime.Port, fromContextMenu?: boolean, fromPopup?: boolean }} options
  */
@@ -280,18 +287,19 @@ async function runGenerateMindmap(tabId, options) {
       if (result.ok) {
         notifyUser(chrome.i18n.getMessage("statusDownloadStarted"));
       } else {
-        notifyUser(result.error || chrome.i18n.getMessage("errFailed"));
+        notifyUser(resolveNotifyError(result.error));
       }
     } else if (fromPopup && !delivered) {
       if (result.ok) {
         notifyUser(chrome.i18n.getMessage("statusDownloadStarted"));
       } else {
-        notifyUser(result.error || chrome.i18n.getMessage("errFailed"));
+        notifyUser(resolveNotifyError(result.error));
       }
     }
   };
 
   let apiUrl = "";
+  const lockOutcome = await MindGraphExtensionJobs.withTabJobLock(tabId, async () => {
   try {
     const settings = await chrome.storage.local.get([
       "baseUrl",
@@ -321,25 +329,15 @@ async function runGenerateMindmap(tabId, options) {
 
     postProgress(progressPort, "reading");
     const resolvedLang = await getResolvedLanguageForCapture();
-    let results;
-    try {
-      results = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: capturePageContent,
-        args: [MAX_CHARS, PROMPT_OUTPUT_LANGUAGE_CODES, resolvedLang],
-      });
-    } catch (scriptErr) {
-      console.error("[MindGraph] executeScript failed", scriptErr);
+    const captureResult = await MindGraphDocExtract.capturePageContentMarkdown(tabId, MAX_CHARS, {
+      suppressMindMateUi: true,
+    });
+    const payload = MindGraphDocExtract.captureResultToWebContentPayload(captureResult, resolvedLang);
+    if (!payload) {
       finish({
         ok: false,
-        error: scriptErr?.message || String(scriptErr),
+        error: MindGraphDocExtract.localizedCaptureErrorKey(captureResult),
       });
-      return;
-    }
-
-    const payload = results?.[0]?.result;
-    if (!payload || typeof payload.page_content !== "string" || !payload.page_content.trim()) {
-      finish({ ok: false, error: chrome.i18n.getMessage("errNoPageText") });
       return;
     }
 
@@ -353,7 +351,7 @@ async function runGenerateMindmap(tabId, options) {
     const body = MindGraphShared.buildPngRequestBody(payload, sizeOpts);
 
     postProgress(progressPort, "sending");
-    const requestId = newRequestId();
+    const requestId = MindGraphShared.newRequestId();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     let res;
@@ -428,7 +426,7 @@ async function runGenerateMindmap(tabId, options) {
       return;
     }
     const { href: downloadHref, revokeMode } = prepared;
-    const filename = sanitizeFilename(payload.page_title);
+    const filename = sanitizeFilename(payload.page_title || tab.title || "mindmap");
     const saveAs = Boolean(settings.saveAs);
     postProgress(progressPort, "saving");
     try {
@@ -458,6 +456,12 @@ async function runGenerateMindmap(tabId, options) {
     console.error("[MindGraph] runGenerateMindmap", apiUrl || "(before URL)", err);
     finish({ ok: false, error: err?.message || String(err) });
   }
+  return { lockComplete: true };
+  });
+
+  if (lockOutcome && lockOutcome.ok === false && lockOutcome.error === "errJobAlreadyRunning") {
+    finish({ ok: false, error: "errJobAlreadyRunning" });
+  }
 }
 
 /**
@@ -486,7 +490,7 @@ function buildAuthHeaders(creds) {
     Authorization: `Bearer ${creds.token}`,
     "X-MG-Account": creds.account,
     "X-MG-Client": MindGraphShared.mgClientHeader(),
-    "X-Request-Id": newRequestId(),
+    "X-Request-Id": MindGraphShared.newRequestId(),
   };
 }
 
@@ -542,28 +546,21 @@ async function runSaveToFileCenter(tabId, packageId) {
     return { ok: false, error: chrome.i18n.getMessage("errRestrictedPage") };
   }
 
+  const outcome = await MindGraphExtensionJobs.withTabJobLock(tabId, async () => {
   const resolvedLang = await getResolvedLanguageForCapture();
-  let results;
-  try {
-    results = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: capturePageContent,
-      args: [MAX_CHARS, PROMPT_OUTPUT_LANGUAGE_CODES, resolvedLang],
-    });
-  } catch (scriptErr) {
-    return { ok: false, error: scriptErr?.message || String(scriptErr) };
+  const captureResult = await MindGraphDocExtract.capturePageContentMarkdown(tabId, MAX_CHARS, {
+    suppressMindMateUi: true,
+  });
+  const payload = MindGraphDocExtract.captureResultToWebContentPayload(captureResult, resolvedLang);
+  if (!payload) {
+    return { ok: false, error: MindGraphDocExtract.localizedCaptureErrorKey(captureResult) };
   }
 
-  const payload = results?.[0]?.result;
-  if (!payload || typeof payload.page_content !== "string" || !payload.page_content.trim()) {
-    return { ok: false, error: chrome.i18n.getMessage("errNoPageText") };
-  }
-
-  const url = `${creds.baseUrl}/api/knowledge-space/packages/${parsedPackageId}/documents/ingest-web`;
+  const ingestUrl = `${creds.baseUrl}/api/knowledge-space/packages/${parsedPackageId}/documents/ingest-web`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url, MindGraphShared.mgatFetchInit({
+    const res = await fetch(ingestUrl, MindGraphShared.mgatFetchInit({
       method: "POST",
       signal: controller.signal,
       headers: buildAuthHeaders(creds),
@@ -588,6 +585,12 @@ async function runSaveToFileCenter(tabId, packageId) {
     }
     return { ok: false, error: e?.message || String(e) };
   }
+  });
+
+  if (outcome && outcome.ok === false && outcome.error === "errJobAlreadyRunning") {
+    return { ok: false, error: "errJobAlreadyRunning" };
+  }
+  return outcome;
 }
 
 function ensureContextMenu() {
@@ -611,6 +614,7 @@ function ensureContextMenu() {
  */
 async function runExtractDocumentJob(tabId, options) {
   const { progressPort, fromContextMenu, smarteduAssets, smarteduToken } = options;
+  const lockOutcome = await MindGraphExtensionJobs.withTabJobLock(tabId, async () => {
   const settings = await chrome.storage.local.get(["saveAs"]);
   const result = await MindGraphDocExtract.runDocumentExtract(tabId, {
     progressPort,
@@ -635,6 +639,18 @@ async function runExtractDocumentJob(tabId, options) {
       const errKey =
         result.error && result.error.startsWith("err") ? result.error : "errExtractFailed";
       notifyUser(chrome.i18n.getMessage(errKey) || chrome.i18n.getMessage("errFailed"));
+    }
+  }
+  return { lockComplete: true };
+  });
+
+  if (lockOutcome && lockOutcome.ok === false && lockOutcome.error === "errJobAlreadyRunning") {
+    if (progressPort) {
+      try {
+        progressPort.postMessage({ type: "extractResult", ok: false, error: "errJobAlreadyRunning" });
+      } catch {
+        /* popup closed */
+      }
     }
   }
 }
@@ -736,14 +752,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg && msg.type === "CAPTURE_MINDMATE_PAGE" && typeof msg.tabId === "number" && msg.tabId > 0) {
     const maxChars = typeof msg.maxMarkdownChars === "number" ? msg.maxMarkdownChars : undefined;
-    const captureOptions = {};
-    if (Array.isArray(msg.smarteduAssets)) {
-      captureOptions.smarteduAssets = msg.smarteduAssets;
-    }
-    if (typeof msg.smarteduToken === "string" && msg.smarteduToken.trim()) {
-      captureOptions.smarteduToken = msg.smarteduToken.trim();
-    }
-    MindGraphMindMate.captureMindMatePageContext(msg.tabId, maxChars, captureOptions).then((result) => {
+    MindGraphExtensionJobs.withTabJobLock(msg.tabId, async () => {
+      const captureOptions = {};
+      if (Array.isArray(msg.smarteduAssets)) {
+        captureOptions.smarteduAssets = msg.smarteduAssets;
+      }
+      const parsedToken = MindGraphExtensionSecurity.parseSmartEduToken(msg.smarteduToken);
+      if (parsedToken) {
+        captureOptions.smarteduToken = parsedToken;
+      }
+      return MindGraphMindMate.captureMindMatePageContext(msg.tabId, maxChars, captureOptions);
+    }).then((result) => {
       const dbg = MindGraphMindMate.captureDebug;
       if (dbg) {
         dbg.log("panel.request", "CAPTURE_MINDMATE_PAGE completed", {
@@ -831,39 +850,3 @@ chrome.commands.onCommand.addListener((command) => {
     runGenerateMindmap(tab.id, { fromContextMenu: true });
   });
 });
-
-/**
- * Injected into the page — returns serializable capture payload.
- * Page text only; `language` comes from extension setting (same as UI language).
- * @param {number} maxChars
- * @param {string[]} allowedCodes
- * @param {string} resolvedLanguage
- */
-function capturePageContent(maxChars, allowedCodes, resolvedLanguage) {
-  const allowedSet = new Set(allowedCodes);
-  const language = allowedSet.has(resolvedLanguage) ? resolvedLanguage : "zh";
-
-  const sel = window.getSelection();
-  let text = "";
-  if (sel && sel.toString().trim()) {
-    text = sel.toString();
-  } else {
-    const itempropBody = document.querySelector('[itemprop="articleBody"]');
-    const roleArticle = document.querySelector('[role="article"]');
-    const article = document.querySelector("article");
-    const main = document.querySelector("main,[role='main']");
-    const root = itempropBody || roleArticle || article || main || document.body;
-    text = root ? root.innerText || "" : "";
-  }
-  if (text.length > maxChars) {
-    text = text.slice(0, maxChars);
-  }
-
-  return {
-    page_content: text,
-    content_format: "text/plain",
-    page_title: document.title || "",
-    page_url: window.location.href || "",
-    language,
-  };
-}

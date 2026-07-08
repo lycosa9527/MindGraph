@@ -8,8 +8,9 @@
   const MindGraphDocExtract = global.MindGraphDocExtract || {};
   const MindGraphShared = global.MindGraphShared;
   const PDF_EXTRACT_FILES = ["vendor/pdfjs/pdf.min.js", "doc-extract/text/pdf-extract-in-tab.js"];
-  const PAGE_MARKDOWN_SCRIPT = "mindmate-page-markdown.js";
-  const DEFAULT_MAX_MARKDOWN_CHARS = 8000;
+  const PAGE_MARKDOWN_SCRIPT =
+    MindGraphDocExtract.PAGE_CONTENT_INJECT_SCRIPT || "doc-extract/text/page-content.js";
+  const DEFAULT_MAX_MARKDOWN_CHARS = MindGraphShared.DEFAULT_MINDMATE_CAPTURE_CHARS;
   const PDF_MAX_PAGES = 120;
 
   /**
@@ -29,12 +30,21 @@
   }
 
   /**
-   * @param {{ pageUrl: string, hostId: string }} ctx
+   * @param {{ suppressMindMateUi?: boolean }} [options]
+   * @returns {boolean}
+   */
+  function shouldTrackMindMateUi(options) {
+    return !(options && options.suppressMindMateUi);
+  }
+
+  /**
+   * @param {{ pageUrl: string, hostId: string, captureOptions?: { suppressMindMateUi?: boolean } }} ctx
    * @param {{ ok: boolean, error?: string, source?: string, markdown?: string, fromSelection?: boolean, title?: string, url?: string, assetTotal?: number }} result
    * @returns {Promise<object>}
    */
   async function finalizeCaptureResult(ctx, result) {
-    const dbg = captureDebug();
+    const trackUi = shouldTrackMindMateUi(ctx.captureOptions);
+    const dbg = trackUi ? captureDebug() : null;
     if (dbg) {
       await dbg.finishCapture({
         pageUrl: ctx.pageUrl,
@@ -46,7 +56,7 @@
         fromSelection: Boolean(result.fromSelection),
       });
     }
-    const prog = captureProgress();
+    const prog = trackUi ? captureProgress() : null;
     if (prog) {
       if (result.ok) {
         await prog.finishCaptureProgress({
@@ -119,10 +129,13 @@
         const url = location.href || "";
         const text = selection.toString().trim();
         const markdown =
-          globalThis.__MGMindMatePageMarkdown &&
-          typeof globalThis.__MGMindMatePageMarkdown.truncateMarkdown === "function"
-            ? globalThis.__MGMindMatePageMarkdown.truncateMarkdown(text, limit)
-            : text.slice(0, limit);
+          globalThis.__MGPageContent &&
+          typeof globalThis.__MGPageContent.truncateMarkdown === "function"
+            ? globalThis.__MGPageContent.truncateMarkdown(text, limit)
+            : globalThis.__MGMindMatePageMarkdown &&
+                typeof globalThis.__MGMindMatePageMarkdown.truncateMarkdown === "function"
+              ? globalThis.__MGMindMatePageMarkdown.truncateMarkdown(text, limit)
+              : text.slice(0, limit);
         return { title, url, markdown, fromSelection: true, source: "selection" };
       },
       args: [maxChars],
@@ -151,11 +164,9 @@
     const results = await chrome.scripting.executeScript({
       target: { tabId },
       func: async (limit, skipSel) => {
-        if (
-          globalThis.__MGMindMatePageMarkdown &&
-          typeof globalThis.__MGMindMatePageMarkdown.extractPageMarkdownAsync === "function"
-        ) {
-          return globalThis.__MGMindMatePageMarkdown.extractPageMarkdownAsync(limit, {
+        const api = globalThis.__MGPageContent || globalThis.__MGMindMatePageMarkdown;
+        if (api && typeof api.extractPageMarkdownAsync === "function") {
+          return api.extractPageMarkdownAsync(limit, {
             skipSelection: skipSel,
           });
         }
@@ -584,12 +595,13 @@
   /**
    * @param {number} tabId
    * @param {number} [maxMarkdownChars]
-   * @param {{ smarteduAssets?: Array<object>, smarteduToken?: string }} [options]
+   * @param {{ smarteduAssets?: Array<object>, smarteduToken?: string, suppressMindMateUi?: boolean }} [options]
    * @returns {Promise<{ ok: true, title: string, url: string, markdown: string, fromSelection: boolean, source?: string } | { ok: false, error: string }>}
    */
   async function runDocumentExtractToMarkdown(tabId, maxMarkdownChars, options) {
-    /** @type {{ pageUrl: string, hostId: string }} */
-    const ctx = { pageUrl: "", hostId: "generic" };
+    const captureOptions = options && typeof options === "object" ? options : {};
+    /** @type {{ pageUrl: string, hostId: string, captureOptions: typeof captureOptions }} */
+    const ctx = { pageUrl: "", hostId: "generic", captureOptions };
     const dbg = captureDebug();
 
     if (!tabId || tabId < 1) {
@@ -622,7 +634,7 @@
         typeof MindGraphDocExtract.hostRequiresFileExtract === "function" &&
         MindGraphDocExtract.hostRequiresFileExtract(hostEntry);
 
-      const prog = captureProgress();
+      const prog = shouldTrackMindMateUi(captureOptions) ? captureProgress() : null;
       if (prog) {
         await prog.beginCaptureProgress({ hostId: hostEntry.id, pageUrl, tabId });
         if (fileFirst && hostEntry.id === "smartedu") {
@@ -646,7 +658,7 @@
           engine: hostEntry.engine,
           fileFirst,
           maxChars,
-          hasSmarteduToken: Boolean(options && options.smarteduToken),
+          hasSmarteduToken: Boolean(captureOptions.smarteduToken),
         });
       }
 

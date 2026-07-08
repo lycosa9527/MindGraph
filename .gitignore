@@ -122,6 +122,8 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
+chrome-extension/.env.edge-publish
+chrome-extension/dist/
 
 # API Keys and sensitive data
 *API_KEY*.txt

@@ -191,12 +191,25 @@ run_frontend() {
   npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts
 }
 
+run_chrome_extension() {
+  log "=== chrome-extension (vitest unit tests) ==="
+  activate_frontend_node
+  cd "${REPO_ROOT}/chrome-extension"
+
+  log "npm ci"
+  npm ci
+
+  log "Vitest (doc-extract + mindmate)"
+  npm test
+}
+
 if [[ "${RUN_BACKEND}" -eq 1 ]]; then
   run_backend
 fi
 
 if [[ "${RUN_FRONTEND}" -eq 1 ]]; then
   run_frontend
+  run_chrome_extension
 fi
 
 log "OK — local CI passed (same steps as .github/workflows/ci.yml)"

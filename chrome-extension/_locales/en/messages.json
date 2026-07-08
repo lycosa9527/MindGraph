@@ -383,6 +383,10 @@
     "message": "No text found on this page. Select some text first, or try a different page.",
     "description": "Background error"
   },
+  "errJobAlreadyRunning": {
+    "message": "A capture or download is already running for this tab. Wait for it to finish.",
+    "description": "Service worker rejected overlapping tab job"
+  },
   "errApi": {
     "message": "MindGraph server error ($1). Check Settings and try again.",
     "description": "API error; $1 status, $2 detail"

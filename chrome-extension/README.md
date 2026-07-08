@@ -10,7 +10,85 @@ PNG sizes are generated for Chrome from that design. Regenerate after changing t
 
 `python chrome-extension/scripts/generate_icons.py`
 
-## Language (i18n) and mind map output
+Regenerated sizes: 16, 32, 48, 128, and **300** (Edge Add-ons store logo).
+
+## Publish to Microsoft Edge Add-ons (REST API v1.1)
+
+Initial listing is done in [Partner Center](https://partner.microsoft.com/dashboard/microsoftedge/public/login?ref=dd). **Updates** to an existing product can be automated with the [Edge Add-ons Update REST API](https://learn.microsoft.com/en-us/microsoft-edge/extensions/update/api/using-addons-api?tabs=v1-1).
+
+### One-time Partner Center setup
+
+1. Partner Center → **Microsoft Edge** → **Publish API**.
+2. Click **Enable** next to “enable the new experience” (API v1.1).
+3. **Create API credentials** — save **Client ID** and **API key**.
+4. Copy the extension **Product ID** from **Extension overview** (GUID in the URL between `microsoftedge/` and `/packages`).
+
+### Local credentials
+
+Set in repo root `.env` (or `chrome-extension/.env.edge-publish`):
+
+```bash
+EDGE_ADDON_CLIENT_ID=...
+EDGE_ADDON_API_KEY=...
+EDGE_ADDON_PRODUCT_ID=...   # Partner Center → Extension overview → Product ID
+```
+
+Never commit API keys. `EDGE_ADDON_API_KEY` values with `$` must be single-quoted in `.env` when using `source`.
+
+### Manual push while under review (recommended now)
+
+Microsoft returns `InProgressSubmission` if you API-publish while a submission is already in review. **Package locally and upload in Partner Center:**
+
+```bash
+bash chrome-extension/scripts/manual_push_edge.sh
+```
+
+Then Partner Center → your extension → upload `chrome-extension/dist/mindgraph-extension.zip` → submit from the UI.
+
+Same store zip is also served by the backend: `GET /api/downloads/mindgraph-chrome-extension` (or `/api/downloads/mindgraph-extension`).
+
+### Package only (store zip)
+
+Builds `chrome-extension/dist/mindgraph-extension.zip` with `manifest.json` at the archive root (excludes `node_modules/`, tests, dev scripts):
+
+```bash
+cd /mnt/d/MindGraph
+PYTHONPATH=. python scripts/package_extension.py
+```
+
+### Upload + publish via API (after current review completes)
+
+```bash
+set -a && source .env && set +a
+cd /mnt/d/MindGraph
+PYTHONPATH=. python scripts/publish_edge_addon.py \
+  --notes-file chrome-extension/scripts/edge_certification_notes.example.txt
+```
+
+Use `--upload-only` to refresh the draft package without submitting for review.
+
+Stages:
+
+1. **Package** — zip extension sources (`utils/extension_store_packaging.py`).
+2. **Upload** — `POST /v1/products/{productId}/submissions/draft/package` (headers: `Authorization: ApiKey …`, `X-ClientID`, `Content-Type: application/zip`).
+3. **Poll** `GET .../draft/package/operations/{operationId}` until `status` is `Succeeded`.
+4. **Publish** — `POST /v1/products/{productId}/submissions` with body `{"notes":"..."}` (`Content-Type: application/json`).
+5. **Poll** `GET .../submissions/operations/{operationId}` until `Succeeded`.
+
+Per [Microsoft API reference](https://learn.microsoft.com/en-us/microsoft-edge/extensions/update/api/addons-api-reference): initial listing and store metadata (description, logo, screenshots) remain Partner Center only; the REST API updates the **package** and submits the draft for certification.
+
+Useful flags:
+
+- `--package-only` — zip only, no API calls.
+- `--upload-only` — upload draft package without submitting for review.
+- `--zip path/to/existing.zip` — skip repackaging.
+
+Environment variables: `EDGE_ADDON_CLIENT_ID`, `EDGE_ADDON_API_KEY`, `EDGE_ADDON_PRODUCT_ID`; optional `EDGE_ADDON_API_BASE`, `EDGE_ADDON_RETRY_LIMIT`, `EDGE_ADDON_RETRY_SECONDS`, `EDGE_ADDON_PUBLISH_NOTES`.
+
+Certification notes must be **under 2000 characters**. Edit [`scripts/edge_certification_notes.example.txt`](scripts/edge_certification_notes.example.txt) (test phone/token/contact) before publishing.
+
+This API updates the **package** only. Store metadata (description, screenshots, logo) still requires Partner Center.
+
 
 Locale strings live in **`chrome-extension/_locales/`** (`en`, `zh_CN`, `zh_TW`). The manifest `default_locale` is **`en`**.
 
@@ -89,6 +167,7 @@ Errors from **page** scripts (e.g. news sites) appear in that **page’s** DevTo
 
 ## Security and privacy
 
+- Privacy policy (web + browser extension): **`/privacy`** on your MindGraph server (e.g. `https://mg.mindspringedu.com/privacy`). Extension-specific details are in the appendix at `/privacy#browser-extension`.
 - Credentials (`mgat_` token, phone account, server preset) are stored in **`chrome.storage.local`** on this device (unencrypted, same as typical extensions). Use disk encryption, a trusted browser profile, and **revoke API tokens** on shared machines (MindGraph web app → account → API token).
 - **Wireshark / network sniffing:**
   - **mg.mindspringedu.com** and **test.mindspringedu.com** use **HTTPS** — Bearer tokens and request bodies are encrypted in transit.

@@ -152,11 +152,79 @@
   }
 
   /**
+   * Stable resource id for dedup when the same block appears under multiple relation keys.
+   * @param {object} block
+   * @returns {string}
+   */
+  function blockResourceId(block) {
+    if (block.id) {
+      return String(block.id);
+    }
+    if (block.version_id) {
+      return String(block.version_id);
+    }
+    const globalId = block.custom_properties && block.custom_properties.global_resource_id;
+    if (globalId) {
+      return String(globalId);
+    }
+    return "";
+  }
+
+  /**
+   * Normalize download URL to a path-only key (CDN host may differ for the same file).
+   * @param {string} url
+   * @returns {string}
+   */
+  function downloadUrlDedupeKey(url) {
+    if (!url) {
+      return "";
+    }
+    try {
+      return new URL(url).pathname.toLowerCase();
+    } catch {
+      return url.trim().toLowerCase();
+    }
+  }
+
+  /**
+   * @param {string} resourceId
+   * @param {string} downloadUrl
+   * @returns {string}
+   */
+  function buildAssetDedupeKey(resourceId, downloadUrl) {
+    if (resourceId) {
+      return `id:${resourceId}`;
+    }
+    const urlKey = downloadUrlDedupeKey(downloadUrl);
+    if (urlKey) {
+      return `url:${urlKey}`;
+    }
+    return "";
+  }
+
+  /**
+   * @param {Set<string>} seenKeys
+   * @param {string} dedupeKey
+   * @returns {boolean} true when this asset should be skipped as a duplicate
+   */
+  function isDuplicateAssetKey(seenKeys, dedupeKey) {
+    if (!dedupeKey) {
+      return false;
+    }
+    if (seenKeys.has(dedupeKey)) {
+      return true;
+    }
+    seenKeys.add(dedupeKey);
+    return false;
+  }
+
+  /**
    * @param {object} detailJson
    * @returns {Array<object>}
    */
   function extractAssetsFromDetailJson(detailJson) {
     const assets = [];
+    const seenKeys = new Set();
     const relations = detailJson && detailJson.relations ? detailJson.relations : {};
 
     Object.keys(relations).forEach((relKey) => {
@@ -169,6 +237,10 @@
         const alias = blockAlias(block);
         const picked = pickBestFromResourceBlock(block);
         if (!picked.url || !isDocumentAsset(alias, picked)) {
+          return;
+        }
+        const dedupeKey = buildAssetDedupeKey(blockResourceId(block), picked.url);
+        if (isDuplicateAssetKey(seenKeys, dedupeKey)) {
           return;
         }
         const label = blockTitle(block) || ALIAS_LABELS[alias] || alias;
@@ -189,11 +261,16 @@
     if (!assets.length && detailJson && detailJson.ti_items) {
       const tiItems = Array.isArray(detailJson.ti_items) ? detailJson.ti_items : [];
       tiItems.forEach((item, idx) => {
+        const alias = String(item.alias || item.ti_type || `item_${idx}`);
         const picked = pickDownloadFromTiItem(item);
         if (!picked.url || !isDocumentAsset(alias, picked)) {
           return;
         }
-        const alias = String(item.alias || item.ti_type || `item_${idx}`);
+        const itemId = item.id ? String(item.id) : "";
+        const dedupeKey = buildAssetDedupeKey(itemId, picked.url);
+        if (isDuplicateAssetKey(seenKeys, dedupeKey)) {
+          return;
+        }
         assets.push(
           createSmartEduAsset({
             id: String(item.id || `root-${idx}`),

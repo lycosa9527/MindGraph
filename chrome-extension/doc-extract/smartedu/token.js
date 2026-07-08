@@ -6,6 +6,8 @@
   "use strict";
 
   const MindGraphDocExtract = global.MindGraphDocExtract || {};
+  const MindGraphExtensionStorage = global.MindGraphExtensionStorage;
+  const MindGraphExtensionSecurity = global.MindGraphExtensionSecurity;
   const TOKEN_READ_PAGE = "doc-extract/smartedu/token-read-page.js";
   const SMARTEDU_HOST_SUFFIX = "smartedu.cn";
 
@@ -158,12 +160,24 @@
    * @returns {Promise<void>}
    */
   async function persistSmartEduToken(token) {
-    const trimmed = (token || "").trim();
-    if (!trimmed) {
+    let parsed = null;
+    if (MindGraphExtensionSecurity && typeof MindGraphExtensionSecurity.parseSmartEduToken === "function") {
+      parsed = MindGraphExtensionSecurity.parseSmartEduToken(token);
+    } else {
+      parsed = typeof token === "string" ? token.trim() : "";
+      if (!parsed) {
+        parsed = null;
+      }
+    }
+    if (!parsed) {
+      return;
+    }
+    if (MindGraphExtensionStorage && typeof MindGraphExtensionStorage.persistSmartEduToken === "function") {
+      await MindGraphExtensionStorage.persistSmartEduToken(parsed);
       return;
     }
     await chrome.storage.local.set({
-      smarteduAccessToken: trimmed,
+      smarteduAccessToken: parsed,
       smarteduAccessTokenSyncedAt: Date.now(),
     });
   }
@@ -172,6 +186,10 @@
    * @returns {Promise<void>}
    */
   async function clearSmartEduToken() {
+    if (MindGraphExtensionStorage && typeof MindGraphExtensionStorage.clearSmartEduToken === "function") {
+      await MindGraphExtensionStorage.clearSmartEduToken();
+      return;
+    }
     await chrome.storage.local.remove(["smarteduAccessToken", "smarteduAccessTokenSyncedAt"]);
   }
 

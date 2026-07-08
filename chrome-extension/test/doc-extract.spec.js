@@ -168,6 +168,73 @@ describe("smartedu metadata fixture", () => {
     const cw = assets.find((a) => a.alias === "coursewares");
     expect(cw.format).toBe("pdf");
   });
+
+  it("dedupes assets when duplicate relation keys repeat the same blocks", () => {
+    loadModule("doc-extract/smartedu/models.js");
+    loadModule("doc-extract/smartedu/metadata.js");
+    const fixturePath = path.join(
+      repoRoot,
+      "tests/fixtures/doc-extract/smartedu/class_activity_b45c766e.json",
+    );
+    const detailJson = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
+    detailJson.relations["lesson_1.national_course_resource"] =
+      detailJson.relations.national_course_resource;
+    const assets = globalThis.MindGraphDocExtract.extractAssetsFromDetailJson(detailJson);
+    expect(assets.length).toBe(3);
+    expect(new Set(assets.map((asset) => asset.id)).size).toBe(3);
+  });
+});
+
+describe("extension tab job lock", () => {
+  it("rejects overlapping jobs on the same tab", async () => {
+    const jobsPath = path.resolve(repoRoot, "chrome-extension/extension-jobs.js");
+    const code = fs.readFileSync(jobsPath, "utf8");
+    const fn = new Function("globalThis", `${code}\nreturn globalThis.MindGraphExtensionJobs;`);
+    const jobs = fn(globalThis);
+    jobs.resetTabLocksForTests();
+    let releaseFirst = () => {};
+    const firstGate = new Promise((resolve) => {
+      releaseFirst = resolve;
+    });
+    const first = jobs.withTabJobLock(12, async () => {
+      await firstGate;
+      return { ok: true, value: "first" };
+    });
+    const second = await jobs.withTabJobLock(12, async () => ({
+      ok: true,
+      value: "second",
+    }));
+    expect(second).toEqual({ ok: false, error: "errJobAlreadyRunning" });
+    releaseFirst();
+    await expect(first).resolves.toEqual({ ok: true, value: "first" });
+  });
+});
+
+describe("page content capture helpers", () => {
+  it("maps capture failures to i18n error keys", () => {
+    loadModule("doc-extract/page-content-capture.js");
+    expect(
+      globalThis.MindGraphDocExtract.localizedCaptureErrorKey({ ok: false, error: "errExtractSmartEduLogin" }),
+    ).toBe("errExtractSmartEduLogin");
+    expect(globalThis.MindGraphDocExtract.localizedCaptureErrorKey({ ok: false })).toBe("errNoPageText");
+  });
+
+  it("builds web content payload from markdown capture", () => {
+    loadModule("doc-extract/page-content-capture.js");
+    const payload = globalThis.MindGraphDocExtract.captureResultToWebContentPayload(
+      {
+        ok: true,
+        title: "Article",
+        url: "https://example.com/a",
+        markdown: "# Article\n\nBody",
+      },
+      "zh",
+    );
+    expect(payload).not.toBeNull();
+    expect(payload.content_format).toBe("text/markdown");
+    expect(payload.page_content).toContain("Body");
+    expect(payload.language).toBe("zh");
+  });
 });
 
 describe("shared-mindgraph helpers", () => {

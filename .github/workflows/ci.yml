@@ -86,3 +86,19 @@ jobs:
         run: npm audit --audit-level=high
       - name: Vitest (workshop reconnect + diagram meta)
         run: npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts
+
+  chrome-extension:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: chrome-extension
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: chrome-extension/package-lock.json
+      - run: npm ci
+      - name: Vitest (doc-extract + mindmate)
+        run: npm test

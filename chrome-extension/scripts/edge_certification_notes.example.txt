@@ -1,0 +1,35 @@
+OVERVIEW
+MindGraph connects Edge to our AI diagram platform. Page content is read only when the user explicitly triggers an action (generate map, extract document, MindMate page context, or Document Summary save). No background monitoring.
+
+REQUIREMENTS
+- Edge 120+
+- MindGraph account + API token (mgat_…)
+- HTTPS to our server
+
+SETUP
+1. Sign in at https://test.mindspringedu.com (or https://mg.mindspringedu.com).
+2. Web app → Account → API Token → create mgat_ token.
+3. Extension → Settings: Server, Account (phone), API token → Save (verifies via GET /api/auth/me).
+
+TEST CREDENTIALS
+Server: https://test.mindspringedu.com
+Account: [INSERT TEST PHONE]
+API token: [INSERT mgat_ TOKEN]
+Contact: [INSERT EMAIL] if credentials expire.
+
+PRIMARY TEST — MIND MAP PNG
+1. Open a public https article (e.g. https://en.wikipedia.org/wiki/Mind_map).
+2. Extension → Mind map → Generate (or right-click → Generate mind map PNG, or Ctrl+Shift+Y).
+3. Allow up to 3 minutes. PNG downloads on success.
+
+OPTIONAL
+- MindMate tab: chat with Include current web page on first message of new chat.
+- Download / Extract document: Chinese doc/education hosts only (SmartEdu, CNKI, Baidu Wenku); needs site logins. Skip for core review.
+
+HOST PERMISSIONS
+- mg/test.mindspringedu.com: MindGraph API.
+- https://*/* and http://*/*: third-party CDN fetches only on user-initiated document extract. Page scripts use activeTab on the tab the user activated.
+
+PRIVACY: https://mg.mindspringedu.com/privacy#browser-extension
+
+NOTES: Do not use localhost:9527 (HTTP dev). Auth is Bearer mgat_ + X-MG-Account; no web login cookies. Client header: edge-extension.

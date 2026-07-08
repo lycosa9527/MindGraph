@@ -3,11 +3,11 @@
  * Auth Layout - Centered card layout for login/auth pages
  */
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
 import { Moon, Sunny } from '@element-plus/icons-vue'
 
-import { AuthPixelBattleBg, SoftwareAgreementModal } from '@/components/auth'
+import { AuthPixelBattleBg } from '@/components/auth'
 import { useLanguage } from '@/composables'
 import { toolbarShortForUiCode } from '@/i18n/locales'
 import { useFeatureFlagsStore, useUIStore } from '@/stores'
@@ -17,11 +17,9 @@ const uiStore = useUIStore()
 const featureFlagsStore = useFeatureFlagsStore()
 const { t } = useLanguage()
 
-const showSoftwareAgreementModal = ref(false)
-const flagsReady = ref(false)
-
-/** `/auth`: no brand row, no manual language control — locale comes from browser on that page. */
 const authLayoutMinimal = computed(() => route.meta.authLayoutMinimal === true)
+
+const flagsReady = ref(false)
 
 const showPixelBattle = computed(
   () => flagsReady.value && featureFlagsStore.getFeatureAuthPixelBattle()
@@ -134,16 +132,16 @@ const icpRegistrationNumber = '京ICP备2025126228号'
           >·</span>
           <span>
             {{ t('auth.softwareAgreementConsentPrefix') }}
-            <button
-              type="button"
+            <RouterLink
+              to="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
               class="auth-footer-legal__link"
-              @click="showSoftwareAgreementModal = true"
             >
               {{ t('auth.softwareAgreementLink') }}
-            </button>
+            </RouterLink>
           </span>
         </div>
-        <SoftwareAgreementModal v-model:visible="showSoftwareAgreementModal" />
       </template>
       <template v-else>
         <p>MindGraph Pro - Intelligent Diagram Creation</p>
@@ -336,6 +334,7 @@ const icpRegistrationNumber = '京ICP备2025126228号'
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
+  display: inline;
 }
 
 .auth-footer-legal__link:hover {
