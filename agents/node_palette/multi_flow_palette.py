@@ -13,7 +13,7 @@ Proprietary License
 
 import asyncio
 import logging
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 from utils.prompt_locale import is_chinese_prompt_shell_language
@@ -49,6 +49,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         organization_id: Optional[int] = None,
         diagram_type: Optional[str] = None,
         endpoint_path: Optional[str] = None,
+        llm_models: Optional[List[str]] = None,
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with mode support.
@@ -69,6 +70,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
                 organization_id=organization_id,
                 diagram_type=diagram_type,
                 endpoint_path=endpoint_path,
+                llm_models=llm_models,
             ):
                 yield chunk
             return
@@ -76,17 +78,18 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         ctx = dict(educational_context or {})
         ctx["_mode"] = mode
         async for chunk in self._stream_single_mode(
-            session_id,
-            center_topic,
-            ctx,
-            nodes_per_llm,
-            mode,
-            _stage,
-            _stage_data,
-            user_id,
-            organization_id,
-            diagram_type,
-            endpoint_path,
+            session_id=session_id,
+            center_topic=center_topic,
+            educational_context=ctx,
+            nodes_per_llm=nodes_per_llm,
+            mode=mode,
+            _stage=_stage,
+            _stage_data=_stage_data,
+            user_id=user_id,
+            organization_id=organization_id,
+            diagram_type=diagram_type,
+            endpoint_path=endpoint_path,
+            llm_models=llm_models,
         ):
             yield chunk
 
@@ -103,6 +106,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         organization_id: Optional[int],
         diagram_type: Optional[str],
         endpoint_path: Optional[str],
+        llm_models: Optional[List[str]] = None,
     ) -> AsyncGenerator[Dict, None]:
         """Stream nodes for a single mode (causes or effects)."""
         async for chunk in super().generate_batch(
@@ -117,6 +121,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
             organization_id=organization_id,
             diagram_type=diagram_type,
             endpoint_path=endpoint_path,
+            llm_models=llm_models,
         ):
             if chunk.get("event") == "node_generated":
                 node = chunk.get("node", {})
@@ -139,6 +144,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         organization_id: Optional[int],
         diagram_type: Optional[str],
         endpoint_path: Optional[str],
+        llm_models: Optional[List[str]] = None,
     ) -> AsyncGenerator[Dict, None]:
         """Run causes and effects generation concurrently, merge streams."""
         queue: asyncio.Queue = asyncio.Queue()
@@ -151,6 +157,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
             "organization_id": organization_id,
             "diagram_type": diagram_type,
             "endpoint_path": endpoint_path,
+            "llm_models": llm_models,
         }
 
         async def run_mode(mode_val: str) -> None:
@@ -166,6 +173,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
                     organization_id=opts["organization_id"],
                     diagram_type=opts["diagram_type"],
                     endpoint_path=opts["endpoint_path"],
+                    llm_models=opts["llm_models"],
                 ):
                     await queue.put(("chunk", chunk))
             finally:

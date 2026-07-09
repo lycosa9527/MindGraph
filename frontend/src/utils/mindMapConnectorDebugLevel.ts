@@ -7,13 +7,12 @@ function readStoredLevel(): string | null {
   return localStorage.getItem(STORAGE_KEY)
 }
 
-/** Dev default: basic tables; set localStorage mindgraph.debugMindMapConnectors = '0' to disable. */
+/** Default off; opt in via localStorage mindgraph.debugMindMapConnectors = '1' | 'verbose'. */
 export function getMindMapConnectorDebugLevel(): MindMapConnectorDebugLevel {
   const raw = readStoredLevel()
   if (raw === '0') return 'off'
   if (raw === 'verbose') return 'verbose'
   if (raw === '1') return 'basic'
-  if (import.meta.env.DEV) return 'basic'
   return 'off'
 }
 

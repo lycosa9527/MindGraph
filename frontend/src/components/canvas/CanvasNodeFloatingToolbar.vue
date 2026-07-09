@@ -29,6 +29,7 @@ const props = defineProps<{
   nodeId: string | null
   aiGenerating?: boolean
   aiDisabled?: boolean
+  showAiSubgraph?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -68,6 +69,8 @@ const {
 
 const activeColorPanel = ref<'fill' | 'border' | 'text' | null>(null)
 const typographyOpen = ref(false)
+
+const aiSubgraphVisible = computed(() => props.showAiSubgraph !== false)
 
 const toolbarStyle = computed(() => ({
   left: `${props.position.left}px`,
@@ -122,8 +125,9 @@ function onShapePick(shape: NodeShape) {
       @click.stop
     >
       <div class="node-floating-toolbar__inner">
-        <!-- AI subgraph generation -->
+        <!-- AI subgraph generation (branch / child nodes only; hidden on central topic) -->
         <button
+          v-if="aiSubgraphVisible"
           type="button"
           class="nft-btn nft-btn--ai"
           :class="{ 'nft-btn--ai-loading': aiGenerating }"
@@ -134,7 +138,10 @@ function onShapePick(shape: NodeShape) {
           <MindMapSubgraphAiMark :loading="aiGenerating" />
         </button>
 
-        <span class="nft-divider" />
+        <span
+          v-if="aiSubgraphVisible"
+          class="nft-divider"
+        />
 
         <!-- Shape selector -->
         <ElDropdown

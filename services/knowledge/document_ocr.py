@@ -1,7 +1,7 @@
 """OCR helpers: DashScope vision model with a Tesseract fallback.
 
 Shared by the document processor for image-file OCR and scanned-PDF page OCR.
-Uses the configurable ``DASHSCOPE_VISION_MODEL`` (default ``qwen3.6-flash``) via
+Uses the configurable ``DASHSCOPE_VISION_MODEL`` (default ``qwen3.7-plus``) via
 the DashScope multimodal-generation endpoint; falls back to Tesseract when the
 provider call fails. Rasterizes scanned PDFs with PyMuPDF (fitz).
 
@@ -81,7 +81,7 @@ else:
 def dashscope_vision_ocr(image_bytes: bytes, mime_type: str = "image/png") -> str:
     """Run OCR on raw image bytes via the DashScope multimodal endpoint.
 
-    Uses the configurable ``DASHSCOPE_VISION_MODEL`` (default ``qwen3.6-flash``).
+    Uses the configurable ``DASHSCOPE_VISION_MODEL`` (default ``qwen3.7-plus``).
     Returns the extracted text (possibly empty); raises on transport errors.
     """
     if not _httpx_available or not _config_available or _httpx_mod is None or _settings_config is None:

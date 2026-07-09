@@ -71,3 +71,15 @@ def kitty_mobile_active_key(user_id: int) -> str:
 def kitty_desktop_wake_channel(user_id: int) -> str:
     """Redis pub/sub channel: push mobile_active changes to desktop SSE subscribers."""
     return f"kitty:desktop_wake:{user_id}"
+
+
+def kitty_one_sentence_turns_key(ws_session_id: str) -> str:
+    """Append-only turn log for 一句话生成 panel (scoped to diagram library / ephemeral id)."""
+    tag = str(ws_session_id).strip()
+    return f"{{{tag}}}kitty:one_sentence:turns"
+
+
+def kitty_one_sentence_meta_key(ws_session_id: str) -> str:
+    """Owner + session metadata for one-sentence turn log (same Redis slot as turns)."""
+    tag = str(ws_session_id).strip()
+    return f"{{{tag}}}kitty:one_sentence:meta"

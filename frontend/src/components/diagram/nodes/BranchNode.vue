@@ -8,7 +8,9 @@ import { computed, inject, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
+import { storeToRefs } from 'pinia'
 
+import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { presentationDiagramEditLockedRef } from '@/composables/presentation/presentationDiagramEdit'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -30,6 +32,7 @@ import {
 } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { useDiagramStore } from '@/stores/diagram'
+import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
@@ -338,7 +341,21 @@ const nodeStyle = computed((): CSSProperties => {
 // Inline editing state
 const isEditing = ref(false)
 
-const isSubgraphPreview = computed(() => Boolean(props.data.subgraphPreview))
+const previewStore = useMindMapSubgraphPreviewStore()
+const { isGenerating: subgraphPreviewGenerating, generatingNodeId } = storeToRefs(previewStore)
+const isSubgraphGenerating = computed(
+  () => subgraphPreviewGenerating.value && generatingNodeId.value === props.id
+)
+const subgraphRingBorderRadius = computed(() => {
+  const radius = nodeStyle.value.borderRadius
+  if (typeof radius === 'string' && radius.length > 0) {
+    return radius
+  }
+  if (typeof radius === 'number') {
+    return `${radius}px`
+  }
+  return '4.5px'
+})
 
 const collabCanvas = inject<{ isNodeLockedByOther?: (nodeId: string) => boolean } | undefined>(
   'collabCanvas',
@@ -449,31 +466,38 @@ function handleBranchNodeClick(event: MouseEvent): void {
 </script>
 
 <template>
-  <div
-    ref="branchNodeRef"
-    class="branch-node flex select-none border-solid relative"
-    :class="[
-      isUnderlineShape ? 'flex-col items-stretch' : 'items-center',
-      contentJustifyClass,
-      {
-        'tree-map-node': isTreeMap,
-        'mind-map-node': isMindMap && useMindMapV2Visuals,
-        'mind-map-legacy-node': isMindMap && !useMindMapV2Visuals,
-        'mind-map-underline-node': isUnderlineShape,
-        'border-none': isBridgeMap,
-        'px-4 py-2': !isMindMap || !useMindMapV2Visuals,
-        'cursor-grab': !isSheetPickActive,
-        'branch-node--sheet-pick': isSheetPickActive,
-        'branch-node--subgraph-preview': isSubgraphPreview,
-      },
-    ]"
-    :style="nodeStyle"
-    @mousedown.capture="handleBranchMovePointerDown"
-    @mouseup.capture="handleBranchMovePointerUp"
-    @touchstart.capture="handleBranchMoveTouchStart"
-    @click.capture="handleBranchNodeClick"
-    @dblclick="handleBranchNodeDoubleClick"
+  <LlmPhaseRing
+    :phase="isSubgraphGenerating ? 'waiting' : 'idle'"
+    :active="isSubgraphGenerating"
+    :border-radius="subgraphRingBorderRadius"
+    streaming-variant="primary"
+    ring-padding="3px"
+    class="branch-node-ring"
   >
+    <div
+      ref="branchNodeRef"
+      class="branch-node flex select-none border-solid relative"
+      :class="[
+        isUnderlineShape ? 'flex-col items-stretch' : 'items-center',
+        contentJustifyClass,
+        {
+          'tree-map-node': isTreeMap,
+          'mind-map-node': isMindMap && useMindMapV2Visuals,
+          'mind-map-legacy-node': isMindMap && !useMindMapV2Visuals,
+          'mind-map-underline-node': isUnderlineShape,
+          'border-none': isBridgeMap,
+          'px-4 py-2': !isMindMap || !useMindMapV2Visuals,
+          'cursor-grab': !isSheetPickActive,
+          'branch-node--sheet-pick': isSheetPickActive,
+        },
+      ]"
+      :style="nodeStyle"
+      @mousedown.capture="handleBranchMovePointerDown"
+      @mouseup.capture="handleBranchMovePointerUp"
+      @touchstart.capture="handleBranchMoveTouchStart"
+      @click.capture="handleBranchNodeClick"
+      @dblclick="handleBranchNodeDoubleClick"
+    >
     <template v-if="isUnderlineShape">
       <div
         class="mind-map-underline-text"
@@ -575,7 +599,8 @@ function handleBranchNodeClick(event: MouseEvent): void {
       :position="Position.Bottom"
       class="bg-blue-400!"
     />
-  </div>
+    </div>
+  </LlmPhaseRing>
 </template>
 
 <style scoped>
@@ -644,10 +669,9 @@ function handleBranchNodeClick(event: MouseEvent): void {
   cursor: grabbing;
 }
 
-.branch-node--subgraph-preview {
-  outline: 2px dashed rgba(59, 130, 246, 0.65);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+.branch-node-ring {
+  width: fit-content;
+  height: fit-content;
 }
 
 /* Hide handle dots visually while keeping them functional */

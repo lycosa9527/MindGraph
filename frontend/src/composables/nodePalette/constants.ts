@@ -11,8 +11,8 @@ export const PALETTE_CONCEPT_DRAG_MIME = 'application/mindgraph-palette-concept'
 /** Drag payload MIME for mind-map waterfall palette → canvas drops */
 export const PALETTE_MINDMAP_DRAG_MIME = 'application/mindgraph-palette-mindmap'
 
-/** 3 LLMs × 3 nodes ≈ 9 suggestions per source (within 6–10 target range) */
-export const MINDMAP_WATERFALL_NODES_PER_LLM = 3
+/** Single LLM × 6 nodes ≈ 6 suggestions per parking-lot source (concept parking lot uses one model). */
+export const MINDMAP_WATERFALL_NODES_PER_LLM = 6
 
 export const RELATIONSHIP_LABELS_START = '/thinking_mode/relationship_labels/start'
 export const RELATIONSHIP_LABELS_NEXT = '/thinking_mode/relationship_labels/next_batch'

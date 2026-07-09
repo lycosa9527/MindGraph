@@ -16,6 +16,8 @@ from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
     KITTY_DIAGRAM_CATALOG_PROMPT,
     KITTY_VOICE_COMMAND_PROMPT,
 )
+from services.kitty.ack.ack_library import render_ack_for_diagram_update
+from services.kitty.ack.ack_slots import enrich_ack_session_context
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log, summarize_diagram_update
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_diagram_update
 from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
@@ -296,8 +298,28 @@ async def send_kitty_diagram_update(
 
     Desktop canvas applies incremental mutations; it must not reload voice-shaped live_spec.
     """
-    sent = await safe_websocket_send(websocket, message)
-    if message.get("type") != "diagram_update":
+    outbound = dict(message)
+    if outbound.get("type") == "diagram_update" and not outbound.get("user_summary"):
+        sess = voice_sessions.get(voice_session_id)
+        ctx = sess.get("context") if isinstance(sess, dict) else {}
+        if not isinstance(ctx, dict):
+            ctx = {}
+        lang = resolve_voice_interaction_language(ctx)
+        command = sess.get("last_diagram_command") if isinstance(sess, dict) else None
+        cmd_dict = command if isinstance(command, dict) else None
+        action_raw = outbound.get("action")
+        updates_raw = outbound.get("updates")
+        if isinstance(action_raw, str) and action_raw.strip():
+            outbound["user_summary"] = render_ack_for_diagram_update(
+                action_raw.strip(),
+                updates_raw,
+                lang=lang,
+                command=cmd_dict,
+                session_context=enrich_ack_session_context(ctx, sess if isinstance(sess, dict) else None),
+            )
+
+    sent = await safe_websocket_send(websocket, outbound)
+    if outbound.get("type") != "diagram_update":
         return sent
 
     sess = voice_sessions.get(voice_session_id)
@@ -311,13 +333,13 @@ async def send_kitty_diagram_update(
         uid = int(user_id)
     except (TypeError, ValueError):
         return sent
-    await publish_kitty_diagram_update(uid, scope.strip(), message)
-    action_raw = message.get("action")
+    await publish_kitty_diagram_update(uid, scope.strip(), outbound)
+    action_raw = outbound.get("action")
     if isinstance(action_raw, str) and action_raw.strip():
         act = action_raw.strip()
         kitty_wf_log(
             "ws_out",
-            summarize_diagram_update(act, message.get("updates")),
+            summarize_diagram_update(act, outbound.get("updates")),
             voice_session_id=voice_session_id,
             scope=scope.strip() if isinstance(scope, str) else None,
             action=act,
@@ -325,7 +347,7 @@ async def send_kitty_diagram_update(
         await fanout_voice_command_from_session(
             voice_session_id,
             action_raw.strip(),
-            updates=message.get("updates"),
+            updates=outbound.get("updates"),
         )
     return sent
 
@@ -461,6 +483,12 @@ You can help with:
 4. Understanding relationships between nodes
 5. **EXECUTING CHANGES**: Short spoken confirmation only; the system applies edits from the conversation.
 
+【Programmatic acknowledgments】
+When the system executes a diagram tool, a short confirmation is already sent automatically.
+Do **not** repeat or expand that confirmation; move on unless the user asks a follow-up question.
+Fishbone, org chart, Gantt, Venn, and SWOT diagrams are **not supported** — the system sends an
+in-development message; suggest mind map or flow map instead of improvising unsupported canvas types.
+
 【Important: Executing Changes】
 When the user asks to change the diagram, give a **one short sentence** acknowledgment
 (e.g. "Done, updating node 1."). The system applies the change; **do not lecture or repeat long examples**.
@@ -496,6 +524,11 @@ When the user asks to change the diagram, give a **one short sentence** acknowle
 3. 建议可以新增哪些节点
 4. 帮助理解节点之间的关系
 5. **执行修改**：用户口头改图时用**一句话**确认即可，系统会根据对话自动执行。
+
+【系统自动确认】
+图示工具执行后，系统会自动发送简短确认；**勿重复或展开**该确认，除非用户继续追问。
+鱼骨图、组织架构图、甘特图、韦恩图、SWOT 等**尚未支持**——系统会发送「开发中」提示；
+请建议用思维导图或流程图代替，勿假装能打开不支持的画布类型。
 
 【关于执行修改】
 用户口头改图时：**用一句话确认即可**（例如「好，改第一个节点。」），系统会自动落地；**勿长篇举例、勿反复铺陈**。

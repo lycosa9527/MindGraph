@@ -12,6 +12,8 @@ import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import type { Connection, DiagramNode } from '@/types'
 
+import { mindMapNodePathKey } from '@/stores/diagram/mindMapStylePreservation'
+
 import { layoutMindMapSideLegacy } from './mindMapLegacyLayout'
 import type { MindMapBranchSpec } from './mindMapLegacyLayout'
 import {
@@ -211,11 +213,7 @@ export function nodesAndConnectionsToMindMapSpec(
 
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
 
-  const sortByGlobalIndex = (a: string, b: string): number => {
-    const aIdx = parseInt(a.split('-')[3] ?? '0', 10)
-    const bIdx = parseInt(b.split('-')[3] ?? '0', 10)
-    return aIdx - bIdx
-  }
+  const sortByGlobalIndex = sortMindMapNodeIdsByGlobalIndex
 
   function buildBranch(nodeId: string): MindMapBranch | null {
     const node = nodeMap.get(nodeId)
@@ -250,30 +248,86 @@ export interface FindBranchResult {
   indexInParent: number
 }
 
+export function sortMindMapNodeIdsByGlobalIndex(a: string, b: string): number {
+  const aIdx = parseInt(a.split('-')[3] ?? '0', 10)
+  const bIdx = parseInt(b.split('-')[3] ?? '0', 10)
+  return aIdx - bIdx
+}
+
+function buildMindMapChildrenMap(connections: Connection[]): Map<string, string[]> {
+  const childrenMap = new Map<string, string[]>()
+  connections.forEach((c) => {
+    if (!childrenMap.has(c.source)) {
+      childrenMap.set(c.source, [])
+    }
+    const sourceChildren = childrenMap.get(c.source)
+    if (sourceChildren) {
+      sourceChildren.push(c.target)
+    }
+  })
+  return childrenMap
+}
+
+function findBranchByPathKey(
+  rightBranches: MindMapBranch[],
+  leftBranches: MindMapBranch[],
+  pathKey: string
+): FindBranchResult | null {
+  const slash = pathKey.indexOf('/')
+  if (slash < 0) return null
+  const side = pathKey.slice(0, slash)
+  if (side !== 'l' && side !== 'r') return null
+  const indexParts = pathKey
+    .slice(slash + 1)
+    .split('/')
+    .filter((part) => part.length > 0)
+  const indices = indexParts.map((part) => parseInt(part, 10))
+  if (indices.length === 0 || indices.some((n) => Number.isNaN(n))) return null
+
+  let parentArray = side === 'l' ? leftBranches : rightBranches
+  let branch: MindMapBranch | null = null
+  for (let depth = 0; depth < indices.length; depth += 1) {
+    const idx = indices[depth]
+    if (idx < 0 || idx >= parentArray.length) return null
+    branch = parentArray[idx]
+    if (depth < indices.length - 1) {
+      const children = branch.children
+      if (!children || children.length === 0) return null
+      parentArray = children
+    }
+  }
+  if (!branch) return null
+  return { branch, parentArray, indexInParent: indices[indices.length - 1] }
+}
+
+/** Resolve a branch spec entry by the diagram's actual node id (not a regenerated counter). */
 export function findBranchByNodeId(
   rightBranches: MindMapBranch[],
   leftBranches: MindMapBranch[],
-  nodeId: string
+  nodeId: string,
+  connections: Connection[]
 ): FindBranchResult | null {
-  const counter = { value: 0 }
+  const childrenMap = buildMindMapChildrenMap(connections)
   let result: FindBranchResult | null = null
 
-  function traverse(
+  function walkLevel(
+    nodeIds: string[],
     branches: MindMapBranch[],
-    side: 'r' | 'l',
-    depth: number,
     parentArray: MindMapBranch[]
   ): boolean {
-    for (let i = 0; i < branches.length; i++) {
-      const id = `branch-${side}-${depth}-${counter.value}`
-      counter.value++
-      if (id === nodeId) {
+    const limit = Math.min(nodeIds.length, branches.length)
+    for (let i = 0; i < limit; i++) {
+      const currentId = nodeIds[i]
+      if (currentId === nodeId) {
         result = { branch: branches[i], parentArray, indexInParent: i }
         return true
       }
+      const childIds = (childrenMap.get(currentId) ?? [])
+        .slice()
+        .sort(sortMindMapNodeIdsByGlobalIndex)
       const childBranches = branches[i].children
-      if (childBranches?.length) {
-        if (traverse(childBranches, side, depth + 1, childBranches)) {
+      if (childIds.length > 0 && childBranches && childBranches.length > 0) {
+        if (walkLevel(childIds, childBranches, childBranches)) {
           return true
         }
       }
@@ -281,9 +335,21 @@ export function findBranchByNodeId(
     return false
   }
 
-  if (traverse(rightBranches, 'r', 1, rightBranches)) return result
-  counter.value = 0
-  if (traverse(leftBranches, 'l', 1, leftBranches)) return result
+  const topicChildIds = childrenMap.get('topic') ?? []
+  const rightIds = topicChildIds
+    .filter((id) => id.startsWith('branch-r-'))
+    .sort(sortMindMapNodeIdsByGlobalIndex)
+  const leftIds = topicChildIds
+    .filter((id) => id.startsWith('branch-l-'))
+    .sort(sortMindMapNodeIdsByGlobalIndex)
+
+  if (walkLevel(rightIds, rightBranches, rightBranches)) return result
+  if (walkLevel(leftIds, leftBranches, leftBranches)) return result
+
+  const pathKey = mindMapNodePathKey(nodeId, connections)
+  if (pathKey && pathKey !== 'topic') {
+    return findBranchByPathKey(rightBranches, leftBranches, pathKey)
+  }
   return null
 }
 

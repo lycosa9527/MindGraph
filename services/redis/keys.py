@@ -160,8 +160,13 @@ BAYI_TOKEN_VALID = "bayi:token:valid:{sha256}"
 TTL_BAYI_TOKEN = 300
 
 # ---------------------------------------------------------------------------
-# Admin performance — MindBot Dify SSE streaming high-water (24h, UTC hours)
+# Document Summary (doc_summary lite) — extracted markdown cache
 # ---------------------------------------------------------------------------
+DOC_SUMMARY_PKG_STATUS = "doc_summary:pkg:{package_id}:status"
+DOC_SUMMARY_PKG_TEXT = "doc_summary:pkg:{package_id}:text"
+TTL_DOC_SUMMARY_STATUS = 3_600  # 1 h
+TTL_DOC_SUMMARY_TEXT = 86_400  # 24 h
+
 MINDBOT_STREAMING_HOUR_MAX = "admin:mindbot:streaming_max:{hour_utc}"
 # Keep keys a bit past 24h so rolling MGET of the last 24 hour buckets is safe.
 TTL_MINDBOT_STREAMING_HOUR_MAX = 100_800

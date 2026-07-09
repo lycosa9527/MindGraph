@@ -76,6 +76,7 @@ class RedisActivityTracker:
         "node_palette": "Using Node Palette",
         "autocomplete": "Auto-complete",
         "voice_conversation": "Voice Conversation",
+        "one_sentence_turn": "One-Sentence Generate",
         "ai_assistant": "AI Assistant",
         "export_png": "Exporting PNG",
         "export_dingtalk": "Exporting DingTalk",

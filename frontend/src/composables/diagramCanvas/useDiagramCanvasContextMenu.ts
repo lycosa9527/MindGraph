@@ -10,7 +10,11 @@ export interface DiagramCanvasContextMenuStore {
   type: string | null
   addNode: (node: DiagramNode) => void
   pushHistory: (label: string) => void
-  pasteNodesAt: (pos: { x: number; y: number }) => void
+  pasteClipboardAt: (options: {
+    anchorNodeId?: string
+    flowPosition?: { x: number; y: number }
+  }) => boolean
+  canPaste: boolean
 }
 
 export function useDiagramCanvasContextMenu(options: {
@@ -154,9 +158,16 @@ export function useDiagramCanvasContextMenu(options: {
     contextMenuNode.value = null
   }
 
-  function handleContextMenuPaste(position: { x: number; y: number }) {
+  function handleContextMenuPaste(position: {
+    x: number
+    y: number
+    anchorNodeId?: string
+  }) {
     const flowPos = screenToFlowCoordinate({ x: position.x, y: position.y })
-    diagramStore.pasteNodesAt(flowPos)
+    diagramStore.pasteClipboardAt({
+      anchorNodeId: position.anchorNodeId,
+      flowPosition: flowPos,
+    })
   }
 
   function handleContextMenuAddConcept(position: { x: number; y: number }) {

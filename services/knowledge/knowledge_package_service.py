@@ -60,7 +60,8 @@ class KnowledgePackageService:
     ) -> DocumentBatch:
         """Create a named package (DocumentBatch) for this user."""
         existing = await self.list_packages()
-        if len(existing) >= MAX_PACKAGES_PER_USER:
+        non_summary = [pkg for pkg in existing if pkg.source != "doc_summary"]
+        if len(non_summary) >= MAX_PACKAGES_PER_USER:
             raise ValueError(f"Maximum {MAX_PACKAGES_PER_USER} packages allowed per user")
 
         clean_name = (name or "").strip() or "Untitled package"

@@ -40,6 +40,8 @@ USER_OWNED_TABLES = [
     "user_usage_stats",
     "user_activity_log",
     "user_usage_activities",
+    "kitty_one_sentence_sessions",
+    "kitty_one_sentence_turns",
     "debate_sessions",
     "library_bookmarks",
     "market_orders",

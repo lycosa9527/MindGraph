@@ -345,11 +345,12 @@ async def dispatch_kitty_ws_inbound_message(
             for item in sel_raw:
                 if isinstance(item, str) and item.strip():
                     selected_nodes.append(item.strip())
-        await publish_kitty_selection_update(
-            int(current_user.id),
-            diagram_session_id,
-            selected_nodes,
-        )
+        if selected_nodes:
+            await publish_kitty_selection_update(
+                int(current_user.id),
+                diagram_session_id,
+                selected_nodes,
+            )
         return "continue"
 
     if msg_type == "stop":

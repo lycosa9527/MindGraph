@@ -22,13 +22,15 @@ import re
 import time
 from abc import ABC, abstractmethod
 from difflib import SequenceMatcher
-from typing import Any, AsyncGenerator, Dict, Optional, Tuple
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 from services.llm import llm_service
 from utils.prompt_locale import is_chinese_prompt_shell_language, output_language_instruction
 from utils.prompt_output_languages import is_prompt_output_language
 
 logger = logging.getLogger(__name__)
+
+_PALETTE_LLM_WHITELIST = frozenset({"qwen", "deepseek", "doubao"})
 
 
 class BasePaletteGenerator(ABC):
@@ -77,6 +79,19 @@ class BasePaletteGenerator(ABC):
             ", ".join(self.llm_models),
         )
 
+    def _resolve_batch_llm_models(self, llm_models: Optional[List[str]]) -> List[str]:
+        """Use caller-provided models when valid; otherwise default to all palette LLMs."""
+        if not llm_models:
+            return self.llm_models.copy()
+        resolved: List[str] = []
+        for raw in llm_models:
+            key = str(raw).strip().lower()
+            if key in _PALETTE_LLM_WHITELIST and key not in resolved:
+                resolved.append(key)
+        if not resolved:
+            return self.llm_models.copy()
+        return resolved
+
     async def generate_batch(
         self,
         session_id: str,
@@ -91,6 +106,7 @@ class BasePaletteGenerator(ABC):
         organization_id: Optional[int] = None,
         diagram_type: Optional[str] = None,
         endpoint_path: Optional[str] = None,
+        llm_models: Optional[List[str]] = None,
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch of nodes using 3 LLMs (qwen, deepseek, doubao) with concurrent token streaming.
@@ -128,6 +144,7 @@ class BasePaletteGenerator(ABC):
 
         batch_num = self.batch_counts[session_id] + 1
         self.batch_counts[session_id] = batch_num
+        active_models = self._resolve_batch_llm_models(llm_models)
 
         total_before = len(self.generated_nodes.get(session_id, []))
         logger.debug(
@@ -141,7 +158,7 @@ class BasePaletteGenerator(ABC):
         yield {
             "event": "batch_start",
             "batch_number": batch_num,
-            "llm_count": len(self.llm_models),
+            "llm_count": len(active_models),
             "nodes_per_llm": nodes_per_llm,
         }
 
@@ -158,26 +175,26 @@ class BasePaletteGenerator(ABC):
         llm_stats = {}
 
         # Track current lines being built for each LLM
-        current_lines = {llm: "" for llm in self.llm_models}
-        llm_unique_counts = {llm: 0 for llm in self.llm_models}
-        llm_duplicate_counts = {llm: 0 for llm in self.llm_models}
+        current_lines = {llm: "" for llm in active_models}
+        llm_unique_counts = {llm: 0 for llm in active_models}
+        llm_duplicate_counts = {llm: 0 for llm in active_models}
 
         # Round-robin buffering: collect nodes from each LLM and yield in interleaved order
         # This ensures users see nodes from all LLMs mixed together, not grouped by LLM
-        pending_nodes = {llm: [] for llm in self.llm_models}
-        llm_active = {llm: True for llm in self.llm_models}  # Track which LLMs are still streaming
-        llm_yield_order = self.llm_models.copy()  # Round-robin order
+        pending_nodes = {llm: [] for llm in active_models}
+        llm_active = {llm: True for llm in active_models}  # Track which LLMs are still streaming
+        llm_yield_order = active_models.copy()  # Round-robin order
         next_llm_index = 0
 
         # 🚀 CONCURRENT TOKEN STREAMING - 3 LLMs fire simultaneously (qwen, deepseek, doubao)!
         logger.debug(
             "[NodePalette] Streaming from %d LLMs with progressive rendering (round-robin interleaving)...",
-            len(self.llm_models),
+            len(active_models),
         )
 
         async for chunk in self.llm_service.stream_progressive(
             prompt=prompt,
-            models=self.llm_models,
+            models=active_models,
             temperature=temperature,
             max_tokens=500,
             timeout=20.0,
@@ -257,7 +274,7 @@ class BasePaletteGenerator(ABC):
 
                             # Yield nodes in round-robin order (ensures interleaving)
                             # Yield up to 4 nodes (one from each LLM if available)
-                            for _ in range(len(self.llm_models)):
+                            for _ in range(len(active_models)):
                                 llm = llm_yield_order[next_llm_index]
                                 next_llm_index = (next_llm_index + 1) % len(llm_yield_order)
 
@@ -308,7 +325,7 @@ class BasePaletteGenerator(ABC):
                             pending_nodes[llm_name].append({"event": "node_generated", "node": node})
 
                             # Yield any pending nodes in round-robin order
-                            for _ in range(len(self.llm_models)):
+                            for _ in range(len(active_models)):
                                 llm = llm_yield_order[next_llm_index]
                                 next_llm_index = (next_llm_index + 1) % len(llm_yield_order)
 
@@ -352,7 +369,7 @@ class BasePaletteGenerator(ABC):
                 )
 
                 # After LLM completes, yield any remaining nodes from other LLMs in round-robin
-                for _ in range(len(self.llm_models)):
+                for _ in range(len(active_models)):
                     llm = llm_yield_order[next_llm_index]
                     next_llm_index = (next_llm_index + 1) % len(llm_yield_order)
 

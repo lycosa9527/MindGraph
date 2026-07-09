@@ -121,20 +121,25 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
                 last_client_inbound=last_client_inbound,
             )
         )
-        omni_task = asyncio.create_task(
-            run_kitty_omni_event_loop(
-                websocket,
-                voice_session_id,
-                start_result.omni_generator,
-                event_bus,
+        omni_task: asyncio.Task[None] | None = None
+        if start_result.omni_generator is not None:
+            omni_task = asyncio.create_task(
+                run_kitty_omni_event_loop(
+                    websocket,
+                    voice_session_id,
+                    start_result.omni_generator,
+                    event_bus,
+                )
             )
-        )
 
         idle_timeout_sec = kitty_ws_idle_timeout_seconds()
 
         try:
             if idle_timeout_sec is None:
-                await asyncio.gather(client_task, omni_task)
+                if omni_task is not None:
+                    await asyncio.gather(client_task, omni_task)
+                else:
+                    await client_task
             else:
                 idle_task = asyncio.create_task(
                     run_kitty_idle_watchdog(
@@ -146,18 +151,24 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
                         last_client_inbound=last_client_inbound,
                     )
                 )
+                wait_set: set[asyncio.Task[None]] = {client_task, idle_task}
+                if omni_task is not None:
+                    wait_set.add(omni_task)
                 _done, _pending = await asyncio.wait(
-                    {client_task, omni_task, idle_task},
+                    wait_set,
                     return_when=asyncio.FIRST_COMPLETED,
                 )
                 if idle_task in _done:
                     if not client_task.done():
                         client_task.cancel()
-                    if not omni_task.done():
+                    if omni_task is not None and not omni_task.done():
                         omni_task.cancel()
                 else:
                     idle_task.cancel()
-                await asyncio.gather(client_task, omni_task, idle_task, return_exceptions=True)
+                gather_targets: list[asyncio.Task[None]] = [client_task, idle_task]
+                if omni_task is not None:
+                    gather_targets.append(omni_task)
+                await asyncio.gather(*gather_targets, return_exceptions=True)
         finally:
             if voice_session_id:
                 await teardown_session_event_handlers(voice_session_id)

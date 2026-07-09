@@ -177,7 +177,12 @@ export type EventTypes = {
   'voice:response_done': Record<string, never>
   'voice:assistant_text_done': { text: string }
   'voice:action_executed': { action: string; params?: unknown }
-  'voice:diagram_update_executed': { action: string; updates?: unknown; summary?: string }
+  'voice:diagram_update_executed': {
+    action: string
+    updates?: unknown
+    summary?: string
+    userSummary?: string
+  }
   'voice:context_mutation_ack': {
     ok?: boolean
     revision?: number

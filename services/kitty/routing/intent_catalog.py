@@ -56,7 +56,7 @@ KITTY_INTENT_ROWS: List[IntentRow] = [
         "kind": "diagram",
         "channel": "hub_patch",
         "hub_op": "patch_context",
-        "notes": "Structured deletes for tree/brace/flow etc. share same intent name.",
+        "notes": "Structured deletes for tree/brace/flow etc. share same intent name. Success ack via ack_library.",
     },
     {
         "name": "open_thinkguide",
@@ -173,6 +173,12 @@ KITTY_INTENT_ROWS: List[IntentRow] = [
 ]
 
 KITTY_SPECIAL_FLOWS: List[Dict[str, Any]] = [
+    {
+        "name": "unsupported_diagram_type",
+        "channel": "ws_action",
+        "hub_op": None,
+        "notes": "Fishbone, org chart, etc. — templated in-development ack via ack_library.",
+    },
     {
         "name": "paragraph_path",
         "channel": "mixed",

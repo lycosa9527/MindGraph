@@ -24,9 +24,10 @@ import {
 } from '@/composables/nodePalette/mindMapWaterfallHelpers'
 import { getConceptParkingLotDiagramKey } from '@/composables/nodePalette/sessionKeys'
 import { streamNodePaletteBatch } from '@/composables/nodePalette/streamNodePaletteBatch'
-import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
+import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { resolveDiagramLlmModel } from '@/utils/resolveDiagramLlmModel'
 import type { NodeSuggestion } from '@/types/panels'
 
 export interface UseConceptParkingLotOptions {
@@ -50,6 +51,7 @@ export function useConceptParkingLot(options: UseConceptParkingLotOptions = {}) 
   const diagramStore = useDiagramStore()
   const panelsStore = usePanelsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
+  const llmResultsStore = useLLMResultsStore()
   const uiStore = useUIStore()
   const { promptLanguage } = storeToRefs(uiStore)
 
@@ -221,6 +223,7 @@ export function useConceptParkingLot(options: UseConceptParkingLotOptions = {}) 
             diagram_data: diagramData.value,
             language: promptLanguage.value,
             nodes_per_llm: MINDMAP_WATERFALL_NODES_PER_LLM,
+            llm_models: [resolveDiagramLlmModel(llmResultsStore.selectedModel)],
             stage: source.stage,
             stage_data: stageData,
             mode: source.id,

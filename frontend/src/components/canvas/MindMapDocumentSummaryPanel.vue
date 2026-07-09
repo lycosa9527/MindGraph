@@ -12,7 +12,6 @@ import {
   ChevronUp,
   Download,
   FileText,
-  ImageUp,
   Link2,
   Loader2,
   MessageSquare,
@@ -33,12 +32,10 @@ import { useFileCenterActivePackage } from '@/composables/fileCenter/useFileCent
 import { useChatHandoff } from '@/composables/mindMap/useChatHandoff'
 import { useMindMapDocumentSummary } from '@/composables/mindMap/useMindMapDocumentSummary'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useDiagramStore } from '@/stores'
 
-type SummaryTab = 'document' | 'image' | 'web' | 'chat'
-
-const ALLOWED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/jpg'])
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+type SummaryTab = 'file' | 'chat' | 'document' | 'image' | 'web'
 
 const emit = defineEmits<{
   (e: 'close'): void
@@ -68,7 +65,9 @@ const {
   isIndexingCorpus,
   isAdding,
   generateFromPackage,
-  validateDocumentFile,
+  validateUploadFile,
+  isImageUploadFile,
+  DOC_SUMMARY_UPLOAD_ACCEPT,
   MAX_CONTENT_LENGTH,
 } = useMindMapDocumentSummary()
 
@@ -81,26 +80,31 @@ const {
   mintPairingCode,
 } = useChatHandoff(activePackageId)
 
-const activeTab = ref<SummaryTab>('document')
+const activeTab = ref<SummaryTab>(DOC_SUMMARY_LITE_UI ? 'file' : 'document')
 const corpusExpanded = ref(true)
 const pastedText = ref('')
-const uploadedDocName = ref('')
-const uploadedDocFile = ref<File | null>(null)
+const uploadedFileName = ref('')
+const uploadedFile = ref<File | null>(null)
+const filePreviewUrl = ref<string | null>(null)
 const webUrl = ref('')
-const imageFile = ref<File | null>(null)
-const imagePreviewUrl = ref<string | null>(null)
 const editingName = ref(false)
 const nameDraft = ref('')
 
-const docInputRef = ref<HTMLInputElement | null>(null)
-const imageInputRef = ref<HTMLInputElement | null>(null)
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
-const tabs: Array<{ id: SummaryTab; labelKey: string }> = [
-  { id: 'document', labelKey: 'canvas.mindMapDocumentSummary.tabDocument' },
-  { id: 'image', labelKey: 'canvas.mindMapDocumentSummary.tabImage' },
-  { id: 'web', labelKey: 'canvas.mindMapDocumentSummary.tabWeb' },
-  { id: 'chat', labelKey: 'canvas.mindMapDocumentSummary.tabChat' },
-]
+const tabs: Array<{ id: SummaryTab; labelKey: string }> = DOC_SUMMARY_LITE_UI
+  ? [
+      { id: 'file', labelKey: 'canvas.mindMapDocumentSummary.tabFileUpload' },
+      { id: 'chat', labelKey: 'canvas.mindMapDocumentSummary.tabChatHistory' },
+    ]
+  : [
+      { id: 'document', labelKey: 'canvas.mindMapDocumentSummary.tabDocument' },
+      { id: 'image', labelKey: 'canvas.mindMapDocumentSummary.tabImage' },
+      { id: 'web', labelKey: 'canvas.mindMapDocumentSummary.tabWeb' },
+      { id: 'chat', labelKey: 'canvas.mindMapDocumentSummary.tabChat' },
+    ]
+
+const docSummaryLiteUi = DOC_SUMMARY_LITE_UI
 
 const collabActive = computed(() => diagramStore.collabSessionActive)
 const documents = computed(() => detailQuery.data.value?.documents ?? [])
@@ -116,7 +120,7 @@ const canGenerate = computed(
   () =>
     !isGenerating.value &&
     !collabActive.value &&
-    documents.value.length > 0 &&
+    completedCount.value > 0 &&
     activePackageId.value !== null
 )
 
@@ -159,8 +163,8 @@ watch(featureEnabled, (enabled) => {
 })
 
 onUnmounted(() => {
-  if (imagePreviewUrl.value) {
-    URL.revokeObjectURL(imagePreviewUrl.value)
+  if (filePreviewUrl.value) {
+    URL.revokeObjectURL(filePreviewUrl.value)
   }
 })
 
@@ -179,7 +183,11 @@ function statusLabel(status: string): string {
     case 'failed':
       return t('canvas.mindMapDocumentSummary.statusFailed')
     case 'processing':
-      return t('canvas.mindMapDocumentSummary.statusIndexing')
+      return t(
+        docSummaryLiteUi
+          ? 'canvas.mindMapDocumentSummary.statusExtracting'
+          : 'canvas.mindMapDocumentSummary.statusIndexing'
+      )
     default:
       return t('canvas.mindMapDocumentSummary.statusPending')
   }
@@ -210,53 +218,55 @@ async function handleDeleteSource(documentId: number): Promise<void> {
   await deleteSource.mutateAsync({ packageId: id, documentId })
 }
 
+function openFilePicker(): void {
+  fileInputRef.value?.click()
+}
+
+function clearUploadedFile(): void {
+  if (filePreviewUrl.value) {
+    URL.revokeObjectURL(filePreviewUrl.value)
+  }
+  uploadedFile.value = null
+  uploadedFileName.value = ''
+  filePreviewUrl.value = null
+}
+
+function handleFileChange(event: Event): void {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  if (!validateUploadFile(file)) return
+
+  if (filePreviewUrl.value) {
+    URL.revokeObjectURL(filePreviewUrl.value)
+    filePreviewUrl.value = null
+  }
+  uploadedFile.value = file
+  uploadedFileName.value = file.name
+  if (isImageUploadFile(file)) {
+    filePreviewUrl.value = URL.createObjectURL(file)
+  }
+}
+
 function openDocPicker(): void {
-  docInputRef.value?.click()
+  fileInputRef.value?.click()
 }
 
 function openImagePicker(): void {
-  imageInputRef.value?.click()
+  fileInputRef.value?.click()
 }
 
 async function handleDocFileChange(event: Event): Promise<void> {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ''
-  if (!file) return
-  if (!validateDocumentFile(file)) return
-  uploadedDocFile.value = file
-  uploadedDocName.value = file.name
+  handleFileChange(event)
 }
 
 function handleImageFileChange(event: Event): void {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ''
-  if (!file) return
-
-  const ext = file.name.includes('.') ? `.${file.name.split('.').pop()?.toLowerCase()}` : ''
-  if (!ALLOWED_IMAGE_MIME.has(file.type) && ext !== '.jpg' && ext !== '.jpeg' && ext !== '.png') {
-    notify.warning(t('canvas.mindMapDocumentSummary.invalidImageType'))
-    return
-  }
-  if (file.size > MAX_IMAGE_BYTES) {
-    notify.warning(t('canvas.mindMapDocumentSummary.imageTooLarge'))
-    return
-  }
-
-  if (imagePreviewUrl.value) {
-    URL.revokeObjectURL(imagePreviewUrl.value)
-  }
-  imageFile.value = file
-  imagePreviewUrl.value = URL.createObjectURL(file)
+  handleFileChange(event)
 }
 
 function clearImage(): void {
-  if (imagePreviewUrl.value) {
-    URL.revokeObjectURL(imagePreviewUrl.value)
-  }
-  imageFile.value = null
-  imagePreviewUrl.value = null
+  clearUploadedFile()
 }
 
 async function handleAddToCorpus(): Promise<void> {
@@ -273,11 +283,10 @@ async function handleAddToCorpus(): Promise<void> {
       id = pkg.id
     }
 
-    if (activeTab.value === 'document') {
-      if (uploadedDocFile.value) {
-        await uploadFile.mutateAsync({ packageId: id, file: uploadedDocFile.value })
-        uploadedDocFile.value = null
-        uploadedDocName.value = ''
+    if (docSummaryLiteUi && activeTab.value === 'file') {
+      if (uploadedFile.value) {
+        await uploadFile.mutateAsync({ packageId: id, file: uploadedFile.value })
+        clearUploadedFile()
       } else {
         const content = pastedText.value.trim().slice(0, MAX_CONTENT_LENGTH)
         if (!content) {
@@ -286,13 +295,29 @@ async function handleAddToCorpus(): Promise<void> {
         }
         await ingestText.mutateAsync({
           packageId: id,
-          payload: { content, title: uploadedDocName.value.trim() || undefined },
+          payload: { content, title: uploadedFileName.value.trim() || undefined },
         })
         pastedText.value = ''
       }
-    } else if (activeTab.value === 'image' && imageFile.value) {
-      await uploadFile.mutateAsync({ packageId: id, file: imageFile.value })
-      clearImage()
+    } else if (activeTab.value === 'document') {
+      if (uploadedFile.value) {
+        await uploadFile.mutateAsync({ packageId: id, file: uploadedFile.value })
+        clearUploadedFile()
+      } else {
+        const content = pastedText.value.trim().slice(0, MAX_CONTENT_LENGTH)
+        if (!content) {
+          notify.warning(t('canvas.mindMapDocumentSummary.emptyDocument'))
+          return
+        }
+        await ingestText.mutateAsync({
+          packageId: id,
+          payload: { content, title: uploadedFileName.value.trim() || undefined },
+        })
+        pastedText.value = ''
+      }
+    } else if (activeTab.value === 'image' && uploadedFile.value) {
+      await uploadFile.mutateAsync({ packageId: id, file: uploadedFile.value })
+      clearUploadedFile()
     } else if (activeTab.value === 'web') {
       const url = webUrl.value.trim()
       if (!url) {
@@ -304,7 +329,13 @@ async function handleAddToCorpus(): Promise<void> {
     } else {
       return
     }
-    notify.success(t('canvas.mindMapDocumentSummary.ingestSuccess'))
+    notify.success(
+      t(
+        docSummaryLiteUi
+          ? 'canvas.mindMapDocumentSummary.ingestSuccessLite'
+          : 'canvas.mindMapDocumentSummary.ingestSuccess'
+      )
+    )
   } catch (error) {
     console.error('[DocumentSummary] ingest failed:', error)
   } finally {
@@ -323,11 +354,15 @@ async function handleGenerate(): Promise<void> {
 
 const canAdd = computed(() => {
   if (collabActive.value || isAdding.value || sessionStarting.value) return false
+  if (activeTab.value === 'chat') return false
+  if (docSummaryLiteUi && activeTab.value === 'file') {
+    return uploadedFile.value !== null || pastedText.value.trim().length > 0
+  }
   if (activeTab.value === 'document') {
-    return pastedText.value.trim().length > 0 || uploadedDocFile.value !== null
+    return pastedText.value.trim().length > 0 || uploadedFile.value !== null
   }
   if (activeTab.value === 'image') {
-    return imageFile.value !== null
+    return uploadedFile.value !== null
   }
   if (activeTab.value === 'web') {
     return webUrl.value.trim().length > 0
@@ -373,18 +408,24 @@ const canAdd = computed(() => {
       </div>
 
       <div
-        v-if="!activeDiagramId"
+        v-if="!activeDiagramId && !docSummaryLiteUi"
         class="border-b border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800"
       >
         {{ t('canvas.mindMapDocumentSummary.saveDiagramHint') }}
       </div>
 
-      <p class="shrink-0 px-3 pt-3 text-[11px] leading-relaxed text-slate-500">
+      <p
+        v-if="!docSummaryLiteUi"
+        class="shrink-0 px-3 pt-3 text-[11px] leading-relaxed text-slate-500"
+      >
         {{ t('canvas.mindMapDocumentSummary.intro') }}
       </p>
 
-      <!-- Corpus header -->
-      <div class="mx-3 mt-2 shrink-0 rounded-xl border border-slate-100 bg-slate-50/80">
+      <!-- Corpus header (full RAG mode only) -->
+      <div
+        v-if="!docSummaryLiteUi"
+        class="mx-3 mt-2 shrink-0 rounded-xl border border-slate-100 bg-slate-50/80"
+      >
         <button
           type="button"
           class="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
@@ -481,6 +522,18 @@ const canAdd = computed(() => {
         </div>
       </div>
 
+      <div
+        v-else-if="completedCount > 0 && documents[0]"
+        class="mx-3 mt-2 shrink-0 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2"
+      >
+        <p class="truncate text-xs font-medium text-emerald-900">
+          {{ documents[0].file_name }}
+        </p>
+        <p class="mt-0.5 text-[10px] text-emerald-700">
+          {{ t('canvas.mindMapDocumentSummary.statusReady') }}
+        </p>
+      </div>
+
       <div class="doc-summary-tab-strip mx-3 mt-3 shrink-0">
         <button
           v-for="tab in tabs"
@@ -495,9 +548,72 @@ const canAdd = computed(() => {
       </div>
 
       <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3">
-        <!-- Document -->
+        <!-- Lite: unified file upload -->
         <div
-          v-if="activeTab === 'document'"
+          v-if="docSummaryLiteUi && activeTab === 'file'"
+          class="flex flex-col gap-3"
+        >
+          <button
+            v-if="!filePreviewUrl"
+            type="button"
+            class="doc-summary-upload-box"
+            @click="openFilePicker"
+          >
+            <Upload
+              class="mb-2 h-5 w-5 text-slate-400"
+              :stroke-width="1.75"
+            />
+            <span class="text-sm font-medium text-slate-700">
+              {{ t('canvas.mindMapDocumentSummary.uploadFileHint') }}
+            </span>
+            <span class="mt-1 text-[11px] text-slate-400">
+              {{ t('canvas.mindMapDocumentSummary.uploadFileSubhint') }}
+            </span>
+            <span
+              v-if="uploadedFileName"
+              class="mt-2 max-w-full truncate text-xs font-medium text-blue-600"
+            >
+              {{ uploadedFileName }}
+            </span>
+          </button>
+          <div
+            v-else
+            class="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+          >
+            <img
+              :src="filePreviewUrl"
+              alt=""
+              class="max-h-32 w-full object-contain"
+            />
+            <button
+              type="button"
+              class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-slate-500 shadow-sm"
+              @click="clearUploadedFile"
+            >
+              <X
+                class="h-3.5 w-3.5"
+                :stroke-width="2"
+              />
+            </button>
+          </div>
+          <input
+            ref="fileInputRef"
+            type="file"
+            class="hidden"
+            :accept="DOC_SUMMARY_UPLOAD_ACCEPT"
+            @change="handleFileChange"
+          />
+          <textarea
+            v-model="pastedText"
+            class="doc-summary-textarea w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            :placeholder="t('canvas.mindMapDocumentSummary.pastePlaceholder')"
+            rows="4"
+          />
+        </div>
+
+        <!-- Document (legacy) -->
+        <div
+          v-else-if="activeTab === 'document'"
           class="flex flex-col gap-3"
         >
           <button
@@ -513,14 +629,14 @@ const canAdd = computed(() => {
               {{ t('canvas.mindMapDocumentSummary.uploadDocHint') }}
             </span>
             <span
-              v-if="uploadedDocName"
+              v-if="uploadedFileName"
               class="mt-2 max-w-full truncate text-xs font-medium text-blue-600"
             >
-              {{ uploadedDocName }}
+              {{ uploadedFileName }}
             </span>
           </button>
           <input
-            ref="docInputRef"
+            ref="fileInputRef"
             type="file"
             class="hidden"
             accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -534,18 +650,18 @@ const canAdd = computed(() => {
           />
         </div>
 
-        <!-- Image -->
+        <!-- Image (legacy) -->
         <div
           v-else-if="activeTab === 'image'"
           class="flex flex-col gap-3"
         >
           <button
-            v-if="!imagePreviewUrl"
+            v-if="!filePreviewUrl"
             type="button"
             class="doc-summary-upload-box"
             @click="openImagePicker"
           >
-            <ImageUp
+            <Upload
               class="mb-2 h-5 w-5 text-slate-400"
               :stroke-width="1.75"
             />
@@ -558,7 +674,7 @@ const canAdd = computed(() => {
             class="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
           >
             <img
-              :src="imagePreviewUrl"
+              :src="filePreviewUrl"
               alt=""
               class="max-h-32 w-full object-contain"
             />
@@ -574,7 +690,7 @@ const canAdd = computed(() => {
             </button>
           </div>
           <input
-            ref="imageInputRef"
+            ref="fileInputRef"
             type="file"
             class="hidden"
             accept="image/jpeg,image/png,.jpg,.jpeg,.png"
@@ -606,11 +722,17 @@ const canAdd = computed(() => {
 
         <!-- Chat -->
         <div
-          v-else
+          v-else-if="activeTab === 'chat'"
           class="flex flex-col gap-3"
         >
           <p class="text-[11px] leading-relaxed text-slate-500">
-            {{ t('canvas.mindMapDocumentSummary.chatIntro') }}
+            {{
+              t(
+                docSummaryLiteUi
+                  ? 'canvas.mindMapDocumentSummary.chatIntroLite'
+                  : 'canvas.mindMapDocumentSummary.chatIntro'
+              )
+            }}
           </p>
           <a
             :href="fileReaderDownloadUrl"
@@ -658,19 +780,37 @@ const canAdd = computed(() => {
               v-else-if="handoffStatus === 'received'"
               class="mt-2 text-[11px] font-medium text-emerald-600 animate-pulse"
             >
-              {{ t('canvas.mindMapDocumentSummary.chatReceived') }}
+              {{
+                t(
+                  docSummaryLiteUi
+                    ? 'canvas.mindMapDocumentSummary.chatReceivedLite'
+                    : 'canvas.mindMapDocumentSummary.chatReceived'
+                )
+              }}
             </p>
             <p
               v-else-if="handoffStatus === 'indexing'"
               class="mt-2 text-[11px] text-blue-600"
             >
-              {{ t('canvas.mindMapDocumentSummary.chatIndexing') }}
+              {{
+                t(
+                  docSummaryLiteUi
+                    ? 'canvas.mindMapDocumentSummary.statusExtracting'
+                    : 'canvas.mindMapDocumentSummary.chatIndexing'
+                )
+              }}
             </p>
             <p
               v-else-if="handoffStatus === 'done'"
               class="mt-2 text-[11px] text-emerald-600"
             >
-              {{ t('canvas.mindMapDocumentSummary.chatDone') }}
+              {{
+                t(
+                  docSummaryLiteUi
+                    ? 'canvas.mindMapDocumentSummary.chatDoneLite'
+                    : 'canvas.mindMapDocumentSummary.chatDone'
+                )
+              }}
             </p>
             <p
               v-else-if="handoffStatus === 'failed'"
@@ -716,7 +856,13 @@ const canAdd = computed(() => {
           :disabled="!canAdd"
           @click="handleAddToCorpus"
         >
-          {{ t('canvas.mindMapDocumentSummary.addToCorpus') }}
+          {{
+            t(
+              docSummaryLiteUi
+                ? 'canvas.mindMapDocumentSummary.saveContent'
+                : 'canvas.mindMapDocumentSummary.addToCorpus'
+            )
+          }}
         </button>
       </div>
 

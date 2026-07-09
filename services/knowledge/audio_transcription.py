@@ -7,7 +7,7 @@ chunked and indexed like any other File Center source.
 
 The async API only accepts a **publicly reachable** audio URL (no direct upload),
 so callers must provide a URL DashScope can fetch (see ``audio_hosting``). The
-model is configurable via ``DASHSCOPE_ASR_FILETRANS_MODEL`` (default ``fun-asr``).
+model is configurable via ``DASHSCOPE_ASR_FILETRANS_MODEL`` (default ``fun-asr-flash-2026-06-15``).
 
 Author: lycosa9527
 Made by: MindSpring Team

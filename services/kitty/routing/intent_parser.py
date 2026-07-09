@@ -15,6 +15,9 @@ from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
     KITTY_DIAGRAM_CATALOG_PROMPT,
     KITTY_VOICE_COMMAND_PROMPT,
 )
+from services.kitty.infra.bootstrap.kitty_unsupported_diagram_types import (
+    resolve_unsupported_diagram_type,
+)
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.omni.tools import build_omni_diagram_tools, omni_function_call_to_command
 from services.kitty.session.memory import get_session_memory
@@ -128,4 +131,17 @@ async def parse_voice_intent_with_tools(
         "no tool match → conversational",
         voice_session_id=voice_session_id,
     )
+    unsupported = resolve_unsupported_diagram_type(text=command_text.strip())
+    if unsupported is not None:
+        kitty_wf_log(
+            "intent_parse",
+            f"unsupported diagram {unsupported.get('entry_id')}",
+            voice_session_id=voice_session_id,
+            action="unsupported_diagram_type",
+        )
+        return {
+            "action": "unsupported_diagram_type",
+            "requested_label": unsupported.get("requested_type"),
+            "confidence": 0.85,
+        }
     return {"action": "none", "confidence": 0.0}

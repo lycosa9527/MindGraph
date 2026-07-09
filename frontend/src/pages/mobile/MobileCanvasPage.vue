@@ -152,7 +152,6 @@ const {
   diagramAutoSave,
   saveGuardState: () => ({
     llmGenerating: llmResultsStore.isGenerating,
-    subgraphPreviewActive: previewStore.hasPreview,
     subgraphGenerating: previewStore.isGenerating,
     collabSessionActive: diagramStore.collabSessionActive,
     isCollabGuest: false,
@@ -390,11 +389,11 @@ onUnmounted(() => {
         <button
           class="toolbar-btn toolbar-btn--purple"
           :class="{ 'toolbar-btn--active': showNodePalette }"
-          :aria-label="t('canvas.toolbar.nodePalette', '节点面板')"
+          :aria-label="t('panel.nodePalette')"
           @click="toggleNodePalette"
         >
           <LayoutGrid :size="18" />
-          <span class="toolbar-label">{{ t('canvas.toolbar.nodePalette', '节点面板') }}</span>
+          <span class="toolbar-label">{{ t('panel.nodePalette') }}</span>
         </button>
       </template>
       </div>

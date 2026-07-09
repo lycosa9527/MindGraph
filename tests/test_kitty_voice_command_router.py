@@ -138,7 +138,7 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
 
     enqueue_mock = AsyncMock(return_value=True)
     wake_mock = AsyncMock()
-    omni_mock = AsyncMock()
+    ack_mock = AsyncMock(return_value=True)
 
     try:
         with (
@@ -159,8 +159,8 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
                 wake_mock,
             ),
             patch(
-                "services.kitty.routing.command_router.get_session_omni_client",
-                return_value=omni_mock,
+                "services.kitty.routing.command_router.emit_user_ack",
+                ack_mock,
             ),
             patch(
                 "services.kitty.routing.command_router.redis_user_cache.get_by_id",
@@ -181,7 +181,7 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
         assert payload["diagram_type"] == "mindmap"
         assert payload["topic"] == "运动会"
         wake_mock.assert_awaited_once_with(42)
-        omni_mock.create_response.assert_awaited()
+        ack_mock.assert_awaited()
     finally:
         voice_sessions.pop(vid, None)
 
@@ -199,7 +199,7 @@ async def test_route_omni_function_call_inline_recommendations_selected() -> Non
     }
 
     send_mock = AsyncMock(return_value=True)
-    omni_mock = AsyncMock()
+    ack_mock = AsyncMock(return_value=True)
 
     try:
         with (
@@ -216,8 +216,12 @@ async def test_route_omni_function_call_inline_recommendations_selected() -> Non
                 send_mock,
             ),
             patch(
-                "services.kitty.routing.command_router.get_session_omni_client",
-                return_value=omni_mock,
+                "services.kitty.routing.command_router.emit_user_ack",
+                ack_mock,
+            ),
+            patch(
+                "services.kitty.routing.command_router.fanout_voice_command_from_session",
+                new=AsyncMock(),
             ),
             patch(
                 "services.kitty.routing.command_router.redis_user_cache.get_by_id",
@@ -236,7 +240,286 @@ async def test_route_omni_function_call_inline_recommendations_selected() -> Non
         payload = mock_await_args(send_mock)[1]
         assert payload["action"] == "start_inline_recommendations"
         assert payload["params"]["node_id"] == "branch-l-1-0"
-        omni_mock.create_response.assert_awaited()
+        ack_mock.assert_awaited()
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_route_update_node_emits_success_ack() -> None:
+    """Diagram update success emits templated user acknowledgment."""
+    ws = MagicMock()
+    vid = create_voice_session(user_id="7", diagram_session_id="lib-ack-1", diagram_type="mind_map")
+    voice_sessions[vid]["context"] = {
+        "interaction_language": "zh",
+        "diagram_data": {
+            "children": [{"id": "branch-0", "text": "食"}],
+            "center": {"text": "北京三日游"},
+        },
+    }
+    ack_mock = AsyncMock(return_value=True)
+
+    try:
+        with (
+            patch(
+                "services.kitty.routing.command_router.load_kitty_live_context",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.throttled_refresh_voice_context_from_library",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.parse_voice_intent_with_tools",
+                new=AsyncMock(
+                    return_value={
+                        "action": "update_node",
+                        "node_identifier": "食",
+                        "target": "小吃",
+                        "confidence": 0.95,
+                    }
+                ),
+            ),
+            patch(
+                "services.kitty.routing.command_router.execute_diagram_update",
+                new=AsyncMock(return_value=True),
+            ),
+            patch(
+                "services.kitty.routing.command_router.emit_user_ack",
+                ack_mock,
+            ),
+            patch(
+                "services.kitty.routing.command_router.redis_user_cache.get_by_id",
+                new=AsyncMock(return_value=None),
+            ),
+        ):
+            result = await route_voice_command(
+                ws,
+                vid,
+                "把食改成小吃",
+                dict(voice_sessions[vid]["context"]),
+                is_text_message=True,
+                from_voice=False,
+            )
+
+        assert result.outcome == RouteOutcome.EXECUTED
+        ack_mock.assert_awaited_once()
+        ack_text = mock_await_args(ack_mock)[2]
+        assert "食" in ack_text
+        assert "小吃" in ack_text
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_route_low_confidence_diagram_emits_clarify_ack() -> None:
+    """Low-confidence diagram intent emits echo-back clarify ack."""
+    ws = MagicMock()
+    vid = create_voice_session(user_id="8", diagram_session_id="lib-ack-2", diagram_type="mind_map")
+    voice_sessions[vid]["context"] = {
+        "interaction_language": "zh",
+        "diagram_data": {"children": [], "center": {"text": "Topic"}},
+    }
+    ack_mock = AsyncMock(return_value=True)
+
+    try:
+        with (
+            patch(
+                "services.kitty.routing.command_router.load_kitty_live_context",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.throttled_refresh_voice_context_from_library",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.parse_voice_intent_with_tools",
+                new=AsyncMock(
+                    return_value={
+                        "action": "update_node",
+                        "node_identifier": "食",
+                        "target": "小吃",
+                        "confidence": 0.2,
+                    }
+                ),
+            ),
+            patch(
+                "services.kitty.routing.command_router.emit_user_ack",
+                ack_mock,
+            ),
+            patch(
+                "services.kitty.routing.command_router.redis_user_cache.get_by_id",
+                new=AsyncMock(return_value=None),
+            ),
+        ):
+            result = await route_voice_command(
+                ws,
+                vid,
+                "把食改成小吃",
+                dict(voice_sessions[vid]["context"]),
+                is_text_message=True,
+                from_voice=False,
+            )
+
+        assert result.outcome == RouteOutcome.FAILED
+        assert result.reason == "low_confidence_diagram"
+        ack_mock.assert_awaited_once()
+        ack_text = mock_await_args(ack_mock)[2]
+        assert "食" in ack_text
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_route_open_desktop_canvas_fishbone_emits_unsupported_ack() -> None:
+    """Rejected fishbone desktop open emits in-development ack with mind map alternative."""
+    ws = MagicMock()
+    vid = create_voice_session(user_id="9", diagram_session_id="scope-fish", diagram_type="mind_map")
+    voice_sessions[vid]["context"] = {"interaction_language": "zh", "diagram_data": {"children": []}}
+    ack_mock = AsyncMock(return_value=True)
+
+    try:
+        with (
+            patch(
+                "services.kitty.routing.command_router.load_kitty_live_context",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.throttled_refresh_voice_context_from_library",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.emit_user_ack",
+                ack_mock,
+            ),
+            patch(
+                "services.kitty.routing.command_router.redis_user_cache.get_by_id",
+                new=AsyncMock(return_value=None),
+            ),
+        ):
+            result = await route_omni_function_call(
+                ws,
+                vid,
+                "open_desktop_canvas",
+                '{"diagram_type": "fishbone", "target": "质量问题"}',
+                dict(voice_sessions[vid]["context"]),
+            )
+
+        assert result.outcome == RouteOutcome.FAILED
+        assert result.reason == "unsupported_diagram_type"
+        ack_mock.assert_awaited_once()
+        ack_text = mock_await_args(ack_mock)[2]
+        assert "鱼骨" in ack_text or "开发" in ack_text
+        assert "思维导图" in ack_text
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_route_unsupported_diagram_type_from_text() -> None:
+    """Parser-routed unsupported diagram intent emits templated fallback."""
+    ws = MagicMock()
+    vid = create_voice_session(user_id="10", diagram_session_id="scope-fish-2", diagram_type="mind_map")
+    voice_sessions[vid]["context"] = {"interaction_language": "zh", "diagram_data": {"children": []}}
+    ack_mock = AsyncMock(return_value=True)
+
+    try:
+        with (
+            patch(
+                "services.kitty.routing.command_router.load_kitty_live_context",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.throttled_refresh_voice_context_from_library",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.parse_voice_intent_with_tools",
+                new=AsyncMock(
+                    return_value={
+                        "action": "unsupported_diagram_type",
+                        "requested_label": "鱼骨图",
+                        "confidence": 0.85,
+                    }
+                ),
+            ),
+            patch(
+                "services.kitty.routing.command_router.emit_user_ack",
+                ack_mock,
+            ),
+            patch(
+                "services.kitty.routing.command_router.redis_user_cache.get_by_id",
+                new=AsyncMock(return_value=None),
+            ),
+        ):
+            result = await route_voice_command(
+                ws,
+                vid,
+                "帮我画一张鱼骨图",
+                dict(voice_sessions[vid]["context"]),
+                is_text_message=True,
+                from_voice=False,
+            )
+
+        assert result.outcome == RouteOutcome.FAILED
+        assert result.reason == "unsupported_diagram_type"
+        ack_mock.assert_awaited_once()
+        ack_text = mock_await_args(ack_mock)[2]
+        assert "思维导图" in ack_text
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_route_unknown_action_text_emits_not_understood_ack() -> None:
+    """Unknown structured action on text path clarifies supported node edits."""
+    ws = MagicMock()
+    vid = create_voice_session(user_id="11", diagram_session_id="scope-unk", diagram_type="mind_map")
+    voice_sessions[vid]["context"] = {"interaction_language": "zh", "diagram_data": {"children": []}}
+    ack_mock = AsyncMock(return_value=True)
+
+    try:
+        with (
+            patch(
+                "services.kitty.routing.command_router.load_kitty_live_context",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.throttled_refresh_voice_context_from_library",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.parse_voice_intent_with_tools",
+                new=AsyncMock(
+                    return_value={
+                        "action": "rotate_canvas",
+                        "confidence": 0.9,
+                    }
+                ),
+            ),
+            patch(
+                "services.kitty.routing.command_router.emit_user_ack",
+                ack_mock,
+            ),
+            patch(
+                "services.kitty.routing.command_router.redis_user_cache.get_by_id",
+                new=AsyncMock(return_value=None),
+            ),
+        ):
+            result = await route_voice_command(
+                ws,
+                vid,
+                "旋转画布",
+                dict(voice_sessions[vid]["context"]),
+                is_text_message=True,
+                from_voice=False,
+            )
+
+        assert result.outcome == RouteOutcome.FAILED
+        assert result.reason == "action_not_understood"
+        ack_mock.assert_awaited_once()
+        ack_text = mock_await_args(ack_mock)[2]
+        assert "节点" in ack_text
     finally:
         voice_sessions.pop(vid, None)
 
@@ -271,6 +554,14 @@ async def test_route_voice_select_node_syncs_hub_and_fanout() -> None:
 
     try:
         with (
+            patch(
+                "services.kitty.routing.command_router.load_kitty_live_context",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.throttled_refresh_voice_context_from_library",
+                new=AsyncMock(return_value=None),
+            ),
             patch(
                 "services.kitty.routing.command_router.safe_websocket_send",
                 new=AsyncMock(return_value=True),

@@ -1,10 +1,13 @@
-import type { Router } from 'vue-router'
+import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 
 import { ElMessageBox } from 'element-plus'
 
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
+import { isCanvasPristineForTypeSwitch } from '@/composables/canvasPage/isCanvasPristineForTypeSwitch'
+import { switchCanvasDiagramType } from '@/composables/canvasPage/switchCanvasDiagramType'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
-import type { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { useDiagramStore, useLLMResultsStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 
 type SavedDiagramsStore = ReturnType<typeof useSavedDiagramsStore>
@@ -89,7 +92,11 @@ export async function handleKittyOpenLibraryDiagramAction(
   })
 }
 
-export async function handleKittyOpenCanvasAction(action: unknown, router: Router): Promise<void> {
+export async function handleKittyOpenCanvasAction(
+  action: unknown,
+  router: Router,
+  options?: { routePath?: string; route?: RouteLocationNormalizedLoaded }
+): Promise<void> {
   if (action == null || typeof action !== 'object') {
     return
   }
@@ -102,13 +109,38 @@ export async function handleKittyOpenCanvasAction(action: unknown, router: Route
     return
   }
 
-  const q: Record<string, string> = { type: dt }
   const topic = typeof act.topic === 'string' ? act.topic.trim() : ''
+  const left = typeof act.left === 'string' ? act.left.trim() : ''
+  const right = typeof act.right === 'string' ? act.right.trim() : ''
+  const topicSeed = {
+    topic: topic.length > 0 ? topic.slice(0, 512) : undefined,
+    left: left.length > 0 ? left.slice(0, 256) : undefined,
+    right: right.length > 0 ? right.slice(0, 256) : undefined,
+  }
+
+  const routePath = options?.routePath ?? ''
+  const onCanvas = routePath === '/canvas' || routePath.startsWith('/canvas/')
+  if (onCanvas) {
+    const diagramStore = useDiagramStore()
+    const savedDiagramsStore = useSavedDiagramsStore()
+    const llmResultsStore = useLLMResultsStore()
+    if (isCanvasPristineForTypeSwitch(diagramStore, savedDiagramsStore, llmResultsStore)) {
+      const switched = switchCanvasDiagramType(dt, {
+        topicSeed,
+        router,
+        route: options?.route,
+      })
+      if (switched) {
+        traceKittyWorkflow('desktop', 'desktop_nav', `switch_canvas type=${dt}`)
+        return
+      }
+    }
+  }
+
+  const q: Record<string, string> = { type: dt }
   if (topic.length > 0) {
     q.kitty_topic = topic.slice(0, 512)
   }
-  const left = typeof act.left === 'string' ? act.left.trim() : ''
-  const right = typeof act.right === 'string' ? act.right.trim() : ''
   if (left.length > 0) {
     q.kitty_left = left.slice(0, 256)
   }
@@ -125,6 +157,7 @@ export async function handleKittyDesktopQueuedAction(
     routePath: string
     savedDiagramsStore: SavedDiagramsStore
     router: Router
+    route?: RouteLocationNormalizedLoaded
     t: (key: string, fallback?: string) => string
   }
 ): Promise<void> {
@@ -133,7 +166,10 @@ export async function handleKittyDesktopQueuedAction(
   }
   const kind = (action as { kind?: unknown }).kind
   if (kind === 'open_canvas') {
-    await handleKittyOpenCanvasAction(action, options.router)
+    await handleKittyOpenCanvasAction(action, options.router, {
+      routePath: options.routePath,
+      route: options.route,
+    })
     return
   }
   if (kind === 'open_library_diagram') {

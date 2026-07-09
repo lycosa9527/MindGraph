@@ -28,7 +28,17 @@ from services.kitty.context.library_refresh import (
     should_skip_library_refresh,
     throttled_refresh_voice_context_from_library,
 )
+from services.kitty.ack.ack_emit import emit_user_ack
+from services.kitty.ack.ack_library import (
+    render_ack,
+    render_ack_for_command,
+    render_low_confidence_ack,
+    render_not_understood_ack,
+    render_unsupported_diagram_ack,
+)
+from services.kitty.ack.ack_slots import enrich_ack_session_context
 from services.kitty.context.messaging import (
+    resolve_voice_interaction_language,
     safe_websocket_send,
     user_requests_diagram_pedagogical_review,
 )
@@ -40,6 +50,11 @@ from services.kitty.diagram.diagram_utils import (
 )
 from services.kitty.diagram.hub_bridge import try_sync_voice_diagram_to_hub
 from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import normalize_voice_desktop_canvas_diagram_type
+from services.kitty.infra.bootstrap.kitty_unsupported_diagram_types import (
+    UnsupportedDiagramMatch,
+    resolve_unsupported_diagram_type,
+    unsupported_match_from_unknown_slug,
+)
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.infra.desktop.kitty_desktop_action_queue import enqueue_kitty_desktop_action
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
@@ -55,7 +70,6 @@ from services.kitty.omni.context_refresh import schedule_omni_context_refresh
 from services.kitty.omni.tools import omni_function_call_to_command, parse_node_index_from_identifier
 from services.kitty.routing.intent_parser import parse_voice_intent_with_tools
 from services.kitty.session.memory import get_session_memory
-from services.kitty.session.omni_client_access import get_session_omni_client
 from services.kitty.session.ops import (
     get_agent_session_id,
     get_voice_session,
@@ -80,6 +94,7 @@ class RouteResult:
 
     outcome: RouteOutcome
     reason: Optional[str] = None
+    action: Optional[str] = None
 
 
 def _finish_route(
@@ -99,17 +114,49 @@ def _finish_route(
         voice_session_id=voice_session_id,
         action=str(action) if action else None,
     )
-    return RouteResult(outcome=outcome, reason=reason)
+    return RouteResult(outcome=outcome, reason=reason, action=action)
 
 
-async def _send_diagram_failure_ack(voice_session_id: str, message: str) -> None:
-    """Send diagram failure ack."""
-    omni_client = get_session_omni_client(voice_session_id)
-    if omni_client:
-        try:
-            await omni_client.create_response(instructions=message)
-        except (RuntimeError, ConnectionError, AttributeError) as exc:
-            logger.debug("Diagram failure ack skipped: %s", exc)
+async def _send_diagram_failure_ack(
+    websocket: WebSocket,
+    voice_session_id: str,
+    message: str,
+    *,
+    one_sentence_action: str | None = None,
+    one_sentence_outcome: str | None = None,
+    one_sentence_user_text: str | None = None,
+) -> None:
+    """Send diagram failure or clarify ack via text_chunk and optional Omni."""
+    await emit_user_ack(
+        websocket,
+        voice_session_id,
+        message,
+        one_sentence_action=one_sentence_action,
+        one_sentence_outcome=one_sentence_outcome,
+        one_sentence_user_text=one_sentence_user_text,
+    )
+
+
+async def _emit_unsupported_diagram_route(
+    websocket: WebSocket,
+    voice_session_id: str,
+    session_context: Dict[str, Any],
+    match: UnsupportedDiagramMatch,
+    *,
+    desktop_open: bool = False,
+) -> RouteResult:
+    """Emit in-development ack and stop routing (no Omni conversational handoff)."""
+    lang = resolve_voice_interaction_language(session_context)
+    ack_text = render_unsupported_diagram_ack(match, lang=lang, desktop_open=desktop_open)
+    await emit_user_ack(websocket, voice_session_id, ack_text)
+    memory = get_session_memory(voice_session_id)
+    memory.append_action_turn(ack_text, action="unsupported_diagram_type")
+    return _finish_route(
+        voice_session_id,
+        RouteOutcome.FAILED,
+        reason="unsupported_diagram_type",
+        action="unsupported_diagram_type",
+    )
 
 
 def _normalize_open_panel_action(command: Dict[str, Any]) -> Dict[str, Any]:
@@ -472,6 +519,10 @@ async def route_voice_command(
         ]
         if action in diagram_update_actions:
             if confidence >= confidence_threshold:
+                live_voice = voice_sessions.get(voice_session_id)
+                if isinstance(live_voice, dict):
+                    live_voice["last_diagram_command"] = copy.deepcopy(command)
+                lang = resolve_voice_interaction_language(session_context)
                 executed = await execute_diagram_update(websocket, voice_session_id, action, command, session_context)
                 if executed:
                     kitty_wf_log(
@@ -480,19 +531,35 @@ async def route_voice_command(
                         voice_session_id=voice_session_id,
                         action=str(action),
                     )
-                    memory = get_session_memory(voice_session_id)
-                    memory.append_action_turn(
-                        f"{action}: {target or node_index or ''}".strip(),
-                        action=str(action),
+                    ack_text = render_ack_for_command(
+                        str(action),
+                        command,
+                        enrich_ack_session_context(session_context, live_session),
+                        lang=lang,
                     )
+                    await emit_user_ack(
+                        websocket,
+                        voice_session_id,
+                        ack_text,
+                        one_sentence_action=str(action) if action else None,
+                        one_sentence_outcome="executed",
+                        one_sentence_user_text=command_text,
+                    )
+                    memory = get_session_memory(voice_session_id)
+                    memory.append_action_turn(ack_text, action=str(action))
                     return _finish_route(
                         voice_session_id,
                         RouteOutcome.EXECUTED,
                         action=str(action) if action else None,
                     )
+                fail_text = render_ack("diagram.execute_failed", lang=lang)
                 await _send_diagram_failure_ack(
+                    websocket,
                     voice_session_id,
-                    "抱歉，我没能更新这张导图，请换个说法再试一次。",
+                    fail_text,
+                    one_sentence_action=str(action) if action else None,
+                    one_sentence_outcome="failed",
+                    one_sentence_user_text=command_text,
                 )
                 return _finish_route(
                     voice_session_id,
@@ -506,9 +573,19 @@ async def route_voice_command(
                 action,
                 confidence_threshold,
             )
+            lang = resolve_voice_interaction_language(session_context)
+            clarify_text = render_low_confidence_ack(
+                command,
+                lang=lang,
+                session_context=session_context,
+            )
             await _send_diagram_failure_ack(
+                websocket,
                 voice_session_id,
-                "我不太确定要怎么改这张导图，请再说具体一点。",
+                clarify_text,
+                one_sentence_action=str(action) if action else None,
+                one_sentence_outcome="low_confidence",
+                one_sentence_user_text=command_text,
             )
             return _finish_route(
                 voice_session_id,
@@ -581,14 +658,12 @@ async def route_voice_command(
             logger.info("Triggering AI auto-complete from text/voice command")
             await safe_websocket_send(websocket, {"type": "action", "action": "auto_complete", "params": {}})
             await fanout_voice_command_from_session(voice_session_id, "auto_complete")
-            # Send acknowledgment message to user via Omni
-            try:
-                # Create a response acknowledging the action
-                omni_client = get_session_omni_client(voice_session_id)
-                if omni_client:
-                    await omni_client.create_response(instructions="收到，正在自动补全。")
-            except (RuntimeError, ConnectionError, AttributeError) as e:
-                logger.debug("Could not send acknowledgment to Omni: %s", e)
+            lang = resolve_voice_interaction_language(session_context)
+            await emit_user_ack(
+                websocket,
+                voice_session_id,
+                render_ack("ui.auto_complete", lang=lang),
+            )
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         if action == "start_inline_recommendations":
@@ -617,15 +692,12 @@ async def route_voice_command(
                 "start_inline_recommendations",
                 params=inline_rec_params,
             )
-            try:
-                omni_client = get_session_omni_client(voice_session_id)
-                if omni_client:
-                    if inline_rec_params.get("node_id"):
-                        await omni_client.create_response(instructions="好，打开联想建议。")
-                    else:
-                        await omni_client.create_response(instructions="请先在画布上选中一个节点，再说要推荐的内容。")
-            except (RuntimeError, ConnectionError, AttributeError) as e:
-                logger.debug("Could not send acknowledgment to Omni: %s", e)
+            lang = resolve_voice_interaction_language(session_context)
+            if inline_rec_params.get("node_id"):
+                ack_key = "ui.start_inline_recommendations"
+            else:
+                ack_key = "ui.start_inline_recommendations_no_selection"
+            await emit_user_ack(websocket, voice_session_id, render_ack(ack_key, lang=lang))
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         if action == "add_node_with_recommendations":
@@ -647,12 +719,12 @@ async def route_voice_command(
                 "add_node_with_recommendations",
                 params=add_node_params,
             )
-            try:
-                omni_client = get_session_omni_client(voice_session_id)
-                if omni_client:
-                    await omni_client.create_response(instructions="好，已添加节点，请从推荐里选一个。")
-            except (RuntimeError, ConnectionError, AttributeError) as e:
-                logger.debug("Could not send acknowledgment to Omni: %s", e)
+            lang = resolve_voice_interaction_language(session_context)
+            await emit_user_ack(
+                websocket,
+                voice_session_id,
+                render_ack("ui.add_node_with_recommendations", lang=lang),
+            )
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         if action == "ask_thinkguide" and target:
@@ -806,6 +878,29 @@ async def route_voice_command(
             slug = normalize_voice_desktop_canvas_diagram_type(raw_slug if isinstance(raw_slug, str) else None)
             if slug is None:
                 logger.info("Kitty open_desktop_canvas: rejected diagram_type=%s", raw_slug)
+                lang = resolve_voice_interaction_language(session_context)
+                unsupported = resolve_unsupported_diagram_type(
+                    text=command_text,
+                    raw_slug=raw_slug if isinstance(raw_slug, str) else None,
+                    lang=lang,
+                )
+                if unsupported is not None:
+                    return await _emit_unsupported_diagram_route(
+                        websocket,
+                        voice_session_id,
+                        session_context,
+                        unsupported,
+                        desktop_open=True,
+                    )
+                if isinstance(raw_slug, str) and raw_slug.strip():
+                    unknown_match = unsupported_match_from_unknown_slug(raw_slug.strip(), lang=lang)
+                    return await _emit_unsupported_diagram_route(
+                        websocket,
+                        voice_session_id,
+                        session_context,
+                        unknown_match,
+                        desktop_open=True,
+                    )
                 return _finish_route(
                     voice_session_id,
                     RouteOutcome.CONVERSATIONAL_FALLBACK,
@@ -829,13 +924,9 @@ async def route_voice_command(
             ok = await enqueue_kitty_desktop_action(user_id, payload)
             if ok:
                 await publish_kitty_desktop_action_pending(user_id)
-            try:
-                omni_client = get_session_omni_client(voice_session_id)
-                if omni_client:
-                    ack = "好，已在电脑端打开画布。" if ok else "电脑端暂时打不开画布，请稍后重试。"
-                    await omni_client.create_response(instructions=ack)
-            except (RuntimeError, ConnectionError, AttributeError) as e:
-                logger.debug("open_desktop_canvas Omni ack skipped: %s", e)
+            lang = resolve_voice_interaction_language(session_context)
+            ack_key = "ui.open_desktop_canvas.ok" if ok else "ui.open_desktop_canvas.fail"
+            await emit_user_ack(websocket, voice_session_id, render_ack(ack_key, lang=lang))
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
         if action == "help":
@@ -843,7 +934,30 @@ async def route_voice_command(
             await safe_websocket_send(websocket, {"type": "action", "action": "open_mindmate", "params": {}})
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
 
+        if action == "unsupported_diagram_type":
+            lang = resolve_voice_interaction_language(session_context)
+            unsupported = resolve_unsupported_diagram_type(text=command_text, lang=lang)
+            if unsupported is None:
+                raw_label = command.get("requested_label") or command.get("target")
+                label_text = str(raw_label) if raw_label else "diagram"
+                unsupported = unsupported_match_from_unknown_slug(label_text, lang=lang)
+            return await _emit_unsupported_diagram_route(
+                websocket,
+                voice_session_id,
+                session_context,
+                unsupported,
+            )
+
         if action == "none":
+            lang = resolve_voice_interaction_language(session_context)
+            unsupported = resolve_unsupported_diagram_type(text=command_text, lang=lang)
+            if unsupported is not None:
+                return await _emit_unsupported_diagram_route(
+                    websocket,
+                    voice_session_id,
+                    session_context,
+                    unsupported,
+                )
             logger.debug("No command detected - should send to Omni for conversational response")
             return _finish_route(
                 voice_session_id,
@@ -851,7 +965,32 @@ async def route_voice_command(
                 action=str(action) if action else None,
             )
 
-        # Unknown action - send to Omni
+        # Unknown action — clarify supported node edits for text; voice may fall back to Omni
+        lang = resolve_voice_interaction_language(session_context)
+        unsupported = resolve_unsupported_diagram_type(
+            text=command_text,
+            raw_slug=str(action) if action else None,
+            lang=lang,
+        )
+        if unsupported is not None:
+            return await _emit_unsupported_diagram_route(
+                websocket,
+                voice_session_id,
+                session_context,
+                unsupported,
+            )
+        if is_text_message:
+            clarify = render_not_understood_ack(lang=lang)
+            await emit_user_ack(websocket, voice_session_id, clarify)
+            memory = get_session_memory(voice_session_id)
+            memory.append_action_turn(clarify, action=str(action) if action else "unknown")
+            return _finish_route(
+                voice_session_id,
+                RouteOutcome.FAILED,
+                reason="action_not_understood",
+                action=str(action) if action else None,
+            )
+
         return _finish_route(
             voice_session_id,
             RouteOutcome.CONVERSATIONAL_FALLBACK,

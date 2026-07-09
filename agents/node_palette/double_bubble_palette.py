@@ -14,7 +14,7 @@ Proprietary License
 import logging
 from asyncio import Queue, create_task, gather
 from dataclasses import dataclass
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 from utils.prompt_locale import is_chinese_prompt_shell_language
@@ -66,6 +66,7 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
         organization_id: Optional[int] = None,
         diagram_type: Optional[str] = None,
         endpoint_path: Optional[str] = None,
+        llm_models: Optional[List[str]] = None,
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with mode support.
@@ -108,6 +109,7 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
             organization_id=organization_id,
             diagram_type=diagram_type,
             endpoint_path=endpoint_path,
+            llm_models=llm_models,
         ):
             # Add mode field to every node for explicit tracking
             if chunk.get("event") == "node_generated":

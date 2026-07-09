@@ -12,7 +12,6 @@ function baseState(overrides: Partial<BranchAutoExpandState> = {}): BranchAutoEx
     isMindMap: true,
     collabActive: false,
     isGenerating: false,
-    hasPreview: false,
     alreadyAttempted: false,
     completedSourceCount: 1,
     trimmedText: 'Chapter 5',
@@ -43,9 +42,8 @@ describe('shouldAutoExpandBranch', () => {
     expect(shouldAutoExpandBranch(baseState({ collabActive: true }))).toBe(false)
   })
 
-  it('does not expand while another generation or preview is in flight', () => {
+  it('does not expand while another generation is in flight', () => {
     expect(shouldAutoExpandBranch(baseState({ isGenerating: true }))).toBe(false)
-    expect(shouldAutoExpandBranch(baseState({ hasPreview: true }))).toBe(false)
   })
 
   it('expands a branch only once (cost guard)', () => {

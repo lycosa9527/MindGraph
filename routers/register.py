@@ -20,6 +20,7 @@ from routers import (
     auth,
     concept_map_focus,
     inline_recommendations,
+    mindmap_node_explain,
     node_palette,
     public_dashboard,
     relationship_labels,
@@ -158,6 +159,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(node_palette.router)  # Node Palette endpoints
     app.include_router(relationship_labels.router)  # Relationship labels (concept map)
     app.include_router(inline_recommendations.router)  # Inline recommendations (mindmap, flow, etc.)
+    app.include_router(mindmap_node_explain.router)  # Mind map node explain (Kitty helper)
     app.include_router(
         concept_map_focus.router,
         prefix="/api",

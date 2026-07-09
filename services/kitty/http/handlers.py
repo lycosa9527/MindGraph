@@ -37,7 +37,18 @@ from services.kitty.infra.redis.kitty_session_redis import (
     kitty_sessionmeta_active_for_user,
     load_kitty_live_context,
 )
+from services.kitty.infra.scope.kitty_scope_access import user_may_access_kitty_scope
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
+from services.kitty.session.one_sentence_session_pg import (
+    get_one_sentence_session,
+    list_one_sentence_sessions,
+)
+from services.kitty.session.one_sentence_turns import (
+    append_one_sentence_turn,
+    append_one_sentence_turns_batch,
+    list_one_sentence_turns,
+    migrate_one_sentence_scope,
+)
 
 _INACTIVE_MOBILE_ACTIVE: Dict[str, Any] = {
     "active": False,
@@ -215,6 +226,135 @@ async def kitty_rest_mobile_lane_hint(
         raise HTTPException(status_code=400, detail="Invalid diagram session id")
     armed = await kitty_mobile_indicator_armed_for_user(scope, int(current_user.id))
     return {"armed": armed}
+
+
+async def kitty_rest_one_sentence_turns_get(
+    current_user: User,
+    diagram_session_id: str,
+    *,
+    limit: int = 100,
+) -> Dict[str, Any]:
+    """Return persisted one-sentence panel turns for session restore and analytics."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": False, "reason": "feature_disabled", "turns": []}
+    if not await kitty_http_allowed(current_user):
+        return {"ok": False, "reason": "access_denied", "turns": []}
+    scope = normalize_kitty_diagram_session_id(diagram_session_id)
+    if scope is None:
+        raise HTTPException(status_code=400, detail="Invalid diagram session id")
+    return await list_one_sentence_turns(scope, int(current_user.id), limit=limit, include_meta=True)
+
+
+async def kitty_rest_one_sentence_turns_post(
+    current_user: User,
+    diagram_session_id: str,
+    body: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Append create-phase turns from the one-sentence panel (first message uses REST auto-complete)."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": False, "reason": "feature_disabled", "stored": []}
+    if not await kitty_http_allowed(current_user):
+        return {"ok": False, "reason": "access_denied", "stored": []}
+    scope = normalize_kitty_diagram_session_id(diagram_session_id)
+    if scope is None:
+        raise HTTPException(status_code=400, detail="Invalid diagram session id")
+    if not await user_may_access_kitty_scope(int(current_user.id), scope):
+        return {"ok": False, "reason": "access_denied", "stored": []}
+
+    turns_in = body.get("turns")
+    org_id = getattr(current_user, "organization_id", None)
+    if isinstance(turns_in, list) and len(turns_in) > 0:
+        stored = await append_one_sentence_turns_batch(
+            scope,
+            int(current_user.id),
+            turns_in,
+            organization_id=org_id,
+        )
+        return {"ok": True, "stored": stored}
+
+    single = body.get("turn")
+    if isinstance(single, dict):
+        row = await append_one_sentence_turn(
+            scope,
+            int(current_user.id),
+            single,
+            organization_id=org_id,
+        )
+        if row is None:
+            return {"ok": False, "reason": "invalid_turn", "stored": []}
+        return {"ok": True, "stored": [row]}
+
+    raise HTTPException(status_code=400, detail="Expected turn or turns payload")
+
+
+async def kitty_rest_one_sentence_sessions_list(
+    current_user: User,
+    *,
+    limit: int = 50,
+    before_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """List trackable one-sentence sessions for the authenticated user (analytics-ready)."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": False, "reason": "feature_disabled", "sessions": []}
+    if not await kitty_http_allowed(current_user):
+        return {"ok": False, "reason": "access_denied", "sessions": []}
+    sessions = await list_one_sentence_sessions(
+        user_id=int(current_user.id),
+        limit=limit,
+        before_id=before_id,
+    )
+    return {"ok": True, "sessions": sessions}
+
+
+async def kitty_rest_one_sentence_session_get(
+    current_user: User,
+    session_id: str,
+    *,
+    limit: int = 100,
+) -> Dict[str, Any]:
+    """Return one session summary plus its turns (backend analytics / future UI)."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": False, "reason": "feature_disabled"}
+    if not await kitty_http_allowed(current_user):
+        return {"ok": False, "reason": "access_denied"}
+    summary = await get_one_sentence_session(session_id=session_id, user_id=int(current_user.id))
+    if summary is None:
+        return {"ok": False, "reason": "not_found"}
+    turns_payload = await list_one_sentence_turns(
+        summary["diagram_scope"],
+        int(current_user.id),
+        limit=limit,
+        include_meta=False,
+        session_id=session_id,
+    )
+    return {
+        "ok": True,
+        "session": summary,
+        "turns": turns_payload.get("turns", []),
+        "storage": turns_payload.get("storage"),
+    }
+
+
+async def kitty_rest_one_sentence_migrate_scope(
+    current_user: User,
+    body: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Move one-sentence history from ephemeral Kitty scope to saved diagram id."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": False, "reason": "feature_disabled"}
+    if not await kitty_http_allowed(current_user):
+        return {"ok": False, "reason": "access_denied"}
+
+    from_scope = normalize_kitty_diagram_session_id(str(body.get("from_scope") or ""))
+    to_scope = normalize_kitty_diagram_session_id(str(body.get("to_scope") or ""))
+    if from_scope is None or to_scope is None:
+        raise HTTPException(status_code=400, detail="Invalid from_scope or to_scope")
+
+    return await migrate_one_sentence_scope(
+        user_id=int(current_user.id),
+        from_scope=from_scope,
+        to_scope=to_scope,
+    )
 
 
 async def kitty_rest_desktop_action_enqueue(

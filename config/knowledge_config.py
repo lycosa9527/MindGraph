@@ -146,20 +146,20 @@ class KnowledgeConfigMixin:
         """DashScope multimodal model for image OCR / understanding (document ingestion).
 
         Native vision-language model used by the document processor to read image
-        sources and OCR rasterized scanned-PDF pages. Defaults to ``qwen3.6-flash``;
-        override with ``DASHSCOPE_VISION_MODEL`` (e.g. ``qwen3.6-plus``).
+        sources and OCR rasterized scanned-PDF pages. Defaults to ``qwen3.7-plus``;
+        override with ``DASHSCOPE_VISION_MODEL``.
         """
-        return self._get_cached_value("DASHSCOPE_VISION_MODEL", "qwen3.6-flash")
+        return self._get_cached_value("DASHSCOPE_VISION_MODEL", "qwen3.7-plus")
 
     @property
     def DASHSCOPE_ASR_FILETRANS_MODEL(self) -> str:
         """DashScope async recording-file transcription model for audio sources.
 
-        Used for batch (submit/poll) transcription of uploaded audio files up to
-        ~12h. Defaults to ``fun-asr``; override with ``DASHSCOPE_ASR_FILETRANS_MODEL``
-        (e.g. ``qwen3-asr-flash-filetrans``).
+        Used for batch (submit/poll) transcription of uploaded audio files.
+        Defaults to ``fun-asr-flash-2026-06-15``; override with
+        ``DASHSCOPE_ASR_FILETRANS_MODEL``.
         """
-        return self._get_cached_value("DASHSCOPE_ASR_FILETRANS_MODEL", "fun-asr")
+        return self._get_cached_value("DASHSCOPE_ASR_FILETRANS_MODEL", "fun-asr-flash-2026-06-15")
 
     @property
     def KNOWLEDGE_AUDIO_PUBLIC_BASE(self) -> str:
@@ -219,6 +219,16 @@ class KnowledgeConfigMixin:
     def KNOWLEDGE_STORAGE_DIR(self) -> str:
         """Directory for storing knowledge documents"""
         return self._get_cached_value("KNOWLEDGE_STORAGE_DIR", "./storage/knowledge_documents")
+
+    @property
+    def COS_DOCUMENTS_ENABLED(self) -> bool:
+        """Store Document Summary extracted markdown in Tencent COS when configured."""
+        return self._get_cached_value("COS_DOCUMENTS_ENABLED", "true").lower() == "true"
+
+    @property
+    def COS_DOCUMENTS_PREFIX(self) -> str:
+        """COS key prefix for Document Summary extracted markdown."""
+        return self._get_cached_value("COS_DOCUMENTS_PREFIX", "documents/mindgraph").strip().rstrip("/")
 
     @property
     def FILE_CENTER_WIKI_COMPILE(self) -> bool:

@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -68,8 +68,26 @@ class NodePaletteStartRequest(BaseModel):
         None,
         ge=1,
         le=20,
-        description="Nodes to request from each LLM (default 15; mind-map waterfall uses 3 for 6–10 total)",
+        description="Nodes to request from each LLM (default 15; mind-map waterfall uses 6 with a single model)",
     )
+    llm_models: Optional[List[str]] = Field(
+        None,
+        description="Optional subset of palette LLMs to run (e.g. single model for mind-map concept parking lot)",
+    )
+
+    @field_validator("llm_models")
+    @classmethod
+    def validate_llm_models(cls, value: Optional[List[str]]) -> Optional[List[str]]:
+        """Allow only known palette LLM keys."""
+        if not value:
+            return value
+        allowed = {"qwen", "deepseek", "doubao"}
+        resolved: List[str] = []
+        for item in value:
+            key = str(item).strip().lower()
+            if key in allowed and key not in resolved:
+                resolved.append(key)
+        return resolved or None
 
     @field_validator("language")
     @classmethod
@@ -375,3 +393,61 @@ class NodePaletteCleanupRequest(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={"example": {"session_id": "palette_abc123", "diagram_type": "circle_map"}}
     )
+
+
+class MindMapNodeExplainHistoryTurn(BaseModel):
+    """One turn in a node-explain follow-up conversation."""
+
+    role: Literal["user", "assistant"]
+    content: str = Field(..., min_length=1, max_length=4000)
+
+
+class MindMapNodeExplainRequest(BaseModel):
+    """Request model for /thinking_mode/mindmap/explain_node."""
+
+    node_id: str = Field(..., min_length=1, max_length=120, description="Selected node id")
+    node_label: str = Field(..., min_length=1, max_length=500, description="Selected node display text")
+    topic: str = Field("", max_length=500, description="Central topic text")
+    diagram_type: str = Field("mindmap", max_length=40, description="Diagram type key")
+    top_level_branches: Optional[List[str]] = Field(
+        None,
+        max_length=24,
+        description="Main branches attached to the topic",
+    )
+    ancestor_path: Optional[List[str]] = Field(
+        None,
+        max_length=12,
+        description="Labels from topic to parent of selected node",
+    )
+    sibling_branches: Optional[List[str]] = Field(
+        None,
+        max_length=24,
+        description="Sibling labels under the same parent",
+    )
+    child_branches: Optional[List[str]] = Field(
+        None,
+        max_length=24,
+        description="Child labels under the selected node",
+    )
+    language: str = Field(
+        "en",
+        description="Prompt / generation language code (see prompt output registry)",
+    )
+    diagram_id: Optional[str] = Field(None, max_length=64, description="Saved diagram id for collab guard")
+    history: Optional[List[MindMapNodeExplainHistoryTurn]] = Field(
+        None,
+        max_length=30,
+        description="Prior user/assistant turns for follow-up chat",
+    )
+    user_message: Optional[str] = Field(
+        None,
+        min_length=1,
+        max_length=2000,
+        description="Follow-up user message; omit for the initial explain turn",
+    )
+
+    @field_validator("language")
+    @classmethod
+    def validate_language(cls, value: str) -> str:
+        """Normalize and validate generation language code."""
+        return _validate_node_palette_language(value)

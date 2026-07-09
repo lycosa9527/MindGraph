@@ -6,6 +6,8 @@ All Rights Reserved
 Proprietary License
 """
 
+from typing import Any, Dict
+
 from fastapi import Body, Depends, HTTPException, Query, WebSocket
 
 from config.settings import config
@@ -26,6 +28,11 @@ from services.kitty.http.handlers import (
     kitty_rest_mobile_active_get,
     kitty_rest_mobile_lane_hint,
     kitty_rest_mobile_open_bootstrap,
+    kitty_rest_one_sentence_turns_get,
+    kitty_rest_one_sentence_turns_post,
+    kitty_rest_one_sentence_sessions_list,
+    kitty_rest_one_sentence_session_get,
+    kitty_rest_one_sentence_migrate_scope,
 )
 from services.kitty.infra.control.kitty_control_fanout import KITTY_CONTROL_REASON_HTTP_CLEANUP
 from services.kitty.infra.desktop.kitty_desktop_wake_stream import kitty_desktop_wake_stream_response
@@ -158,6 +165,73 @@ async def kitty_mobile_lane_hint(diagram_session_id: str, current_user: User = D
     show the pairing indicator without opening a WebSocket.
     """
     return await kitty_rest_mobile_lane_hint(current_user, diagram_session_id)
+
+
+@router.get("/api/kitty/one_sentence/{diagram_session_id}/turns")
+async def kitty_one_sentence_turns_get(
+    diagram_session_id: str,
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(default=100, ge=1, le=200),
+):
+    """
+    Load persisted 一句话生成 chat turns for this diagram scope.
+
+    Used to restore the panel after reopen and for teacher follow-up command analytics.
+    """
+    return await kitty_rest_one_sentence_turns_get(current_user, diagram_session_id, limit=limit)
+
+
+@router.post("/api/kitty/one_sentence/{diagram_session_id}/turns")
+async def kitty_one_sentence_turns_post(
+    diagram_session_id: str,
+    current_user: User = Depends(get_current_user),
+    body: dict = Body(...),
+):
+    """
+    Append create-phase turns (first auto-complete message) from the one-sentence panel.
+
+    Edit-phase turns are recorded server-side via Kitty WS when ``active_panel`` is
+    ``one_sentence``.
+    """
+    return await kitty_rest_one_sentence_turns_post(current_user, diagram_session_id, body)
+
+
+@router.get("/api/kitty/one_sentence/sessions")
+async def kitty_one_sentence_sessions_list(
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(default=50, ge=1, le=100),
+    before_id: str | None = Query(default=None),
+):
+    """
+    List trackable 一句话生成 sessions for the signed-in user (newest first).
+
+    Each session has a stable ``session_id`` plus diagram scope, turn counts, and previews.
+    Intended for teacher analytics; frontend UI can adopt later.
+    """
+    return await kitty_rest_one_sentence_sessions_list(
+        current_user,
+        limit=limit,
+        before_id=before_id,
+    )
+
+
+@router.get("/api/kitty/one_sentence/sessions/{session_id}")
+async def kitty_one_sentence_session_get(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(default=100, ge=1, le=200),
+):
+    """Return one session summary and its full turn history."""
+    return await kitty_rest_one_sentence_session_get(current_user, session_id, limit=limit)
+
+
+@router.post("/api/kitty/one_sentence/migrate_scope")
+async def kitty_one_sentence_migrate_scope(
+    body: Dict[str, Any] = Body(...),
+    current_user: User = Depends(get_current_user),
+):
+    """Re-key one-sentence chat history when an ephemeral diagram is saved to the library."""
+    return await kitty_rest_one_sentence_migrate_scope(current_user, body)
 
 
 @router.post("/api/kitty/cleanup/{diagram_session_id}")

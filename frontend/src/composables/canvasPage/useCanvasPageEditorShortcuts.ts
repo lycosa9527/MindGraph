@@ -261,7 +261,6 @@ export function useCanvasPageEditorShortcuts(options: {
       flush: () => diagramAutoSave.flush(),
       guardState: buildDiagramSaveGuardState({
         llmGenerating: llmResultsStore.isGenerating,
-        subgraphPreviewActive: previewStore.hasPreview,
         subgraphGenerating: previewStore.isGenerating,
         collabSessionActive: diagramStore.collabSessionActive,
         isCollabGuest: isCollabGuest.value,
@@ -273,6 +272,23 @@ export function useCanvasPageEditorShortcuts(options: {
     })
   }
 
+  function handleCopyKey(): void {
+    if (isTypingInInput()) return
+    diagramStore.copySelectedNodes()
+  }
+
+  function handleCutKey(): void {
+    if (isTypingInInput()) return
+    diagramStore.cutSelectedNodes()
+  }
+
+  function handlePasteKey(): void {
+    if (isTypingInInput()) return
+    if (!diagramStore.canPaste) return
+    const anchor = diagramStore.selectedNodes[0]
+    diagramStore.pasteClipboardAt({ anchorNodeId: anchor })
+  }
+
   useEditorShortcuts({
     undo: handleUndoKey,
     redo: handleRedoKey,
@@ -281,6 +297,9 @@ export function useCanvasPageEditorShortcuts(options: {
     escape: handleEscapeKey,
     addNode: handleAddNodeKey,
     clearNodeText: handleClearNodeTextKey,
+    copy: handleCopyKey,
+    cut: handleCutKey,
+    paste: handlePasteKey,
   })
 
   useKeyboard([

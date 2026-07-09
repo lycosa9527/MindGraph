@@ -16,6 +16,7 @@ import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
+import { HIDE_KNOWLEDGE_SPACE_NAV } from '@/config/docSummaryLite'
 import {
   canViewDataCenterSubView,
   DATA_CENTER_VIEWS,
@@ -646,6 +647,7 @@ export function useAppSidebar() {
     featureSchoolZone,
     featureDebateverse,
     featureKnowledgeSpace,
+    hideKnowledgeSpaceNav: HIDE_KNOWLEDGE_SPACE_NAV,
     featureLibrary,
     featureGewe,
     featureSmartResponse,

@@ -28,6 +28,8 @@ from models.domain.auth import User
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.api.vueflow_screenshot import capture_diagram_screenshot
 from services.knowledge.document_processor import DocumentProcessor
+from services.knowledge.doc_summary_ingest import DocSummaryIngestService
+from services.knowledge.knowledge_package_service import KnowledgePackageService
 from services.knowledge.package_rag_context import (
     resolve_package_context_for_scope,
 )
@@ -363,7 +365,7 @@ async def canvas_generate_mindmap_from_package(
     request: Request,
     current_user: User = Depends(get_current_user),
 ):
-    """Generate mind map from a Document Summary package corpus (RAG-backed)."""
+    """Generate mind map from a Document Summary package (extracted markdown or RAG)."""
     if not config.FEATURE_KNOWLEDGE_SPACE:
         raise HTTPException(status_code=403, detail="Knowledge Space is disabled")
 
@@ -373,6 +375,31 @@ async def canvas_generate_mindmap_from_package(
 
     try:
         async with actor_rls_session(current_user) as db:
+            ingest_service = DocSummaryIngestService(db, user_id)
+            package = None
+            if req.package_id:
+                package = await ingest_service.get_package(int(req.package_id))
+            elif req.diagram_id:
+                pkg_service = KnowledgePackageService(db, user_id)
+                package = await pkg_service.find_package_for_diagram(str(req.diagram_id))
+
+            if package is not None and package.source == "doc_summary":
+                markdown = await ingest_service.fetch_package_markdown(package.id)
+                if not markdown:
+                    raise HTTPException(status_code=422, detail="No extracted content in package yet")
+                return await _generate_mindmap_from_resolved_content(
+                    page_content=markdown,
+                    language=language,
+                    content_format="text/markdown",
+                    page_title=req.topic_hint or "Document Summary",
+                    page_url=None,
+                    request=request,
+                    current_user=current_user,
+                    endpoint_path="/api/canvas/generate_mindmap_from_package",
+                    rate_limit_key="canvas_generate_mindmap_from_package",
+                    require_chrome_tier=False,
+                )
+
             if req.package_id:
                 scope = await resolve_package_rag_scope_by_id(db, user_id, int(req.package_id))
             else:

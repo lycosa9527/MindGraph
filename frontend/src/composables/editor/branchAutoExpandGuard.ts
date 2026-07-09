@@ -17,8 +17,6 @@ export interface BranchAutoExpandState {
   collabActive: boolean
   /** A subgraph generation is already running. */
   isGenerating: boolean
-  /** A subgraph preview is already shown (awaiting accept/discard). */
-  hasPreview: boolean
   /** This branch was already auto-expanded (or attempted) this session. */
   alreadyAttempted: boolean
   /** Number of indexed (completed) sources in the linked package. */
@@ -48,7 +46,7 @@ export function shouldAutoExpandBranch(state: BranchAutoExpandState): boolean {
   if (!state.diagramSaved) return false
   if (state.liveTranslationActive) return false
   if (state.collabActive) return false
-  if (state.isGenerating || state.hasPreview) return false
+  if (state.isGenerating) return false
   if (state.alreadyAttempted) return false
   if (state.completedSourceCount < 1) return false
   if (!state.trimmedText || state.isPlaceholder) return false

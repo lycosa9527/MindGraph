@@ -22,7 +22,8 @@ import { MiniMap } from '@vue-flow/minimap'
 
 import { storeToRefs } from 'pinia'
 
-import { ExportToCommunityModal, CanvasNodeFloatingToolbar, MindMapSubgraphPreviewBar } from '@/components/canvas'
+import { ExportToCommunityModal, CanvasNodeFloatingToolbar } from '@/components/canvas'
+import MindMapNodeExplainModal from '@/components/canvas/MindMapNodeExplainModal.vue'
 import { useBranchMoveDrag, useLanguage } from '@/composables'
 import {
   presentationDiagramEditLockedRef,
@@ -30,6 +31,7 @@ import {
 } from '@/composables/presentation/presentationDiagramEdit'
 import { useNodeFloatingToolbarPosition } from '@/composables/canvasToolbar'
 import { useMindMapSubgraphSuggest } from '@/composables/editor/useMindMapSubgraphSuggest'
+import { isMindMapSubgraphExpandable } from '@/utils/mindMapSubgraphContext'
 import {
   useLearningSheetCustomMode,
   useLearningSheetPickKeyboard,
@@ -57,6 +59,7 @@ import {
 } from '@/composables/diagramCanvas'
 import { useDiagramCanvasMindMapPaletteDrop } from '@/composables/diagramCanvas/useDiagramCanvasMindMapPaletteDrop'
 import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
+import { useMindMapNodeExplain } from '@/composables/mindMap/useMindMapNodeExplain'
 import {
   CONCEPT_MAP_GENERATING_KEY,
   useConceptMapRelationship,
@@ -265,6 +268,12 @@ useMindMapConnectorDebugLog({
 const { handlePaste: handleMindMapMultiLinePaste } = useMindMapMultiLinePaste()
 
 function onCanvasPaste(event: ClipboardEvent): void {
+  if (diagramStore.canPaste) {
+    event.preventDefault()
+    const anchor = diagramStore.selectedNodes[0]
+    diagramStore.pasteClipboardAt({ anchorNodeId: anchor })
+    return
+  }
   if (!useMindMapV2.value) return
   handleMindMapMultiLinePaste(event)
 }
@@ -295,14 +304,16 @@ const floatingToolbarEnabled = computed(() => floatingToolbarNodeIds.value.lengt
 
 const floatingToolbarAnchorId = computed(() => floatingToolbarNodeIds.value[0] ?? null)
 
+const floatingToolbarShowAiSubgraph = computed(() =>
+  isMindMapSubgraphExpandable(floatingToolbarAnchorId.value)
+)
+
 const { position: floatingToolbarPosition, scheduleMeasure: scheduleFloatingToolbarMeasure } =
   useNodeFloatingToolbarPosition({
     containerRef: canvasContainer,
     selectedNodeIds: floatingToolbarNodeIds,
     enabled: floatingToolbarEnabled,
   })
-
-const subgraphPreviewLayoutTick = ref(0)
 
 watch(
   () =>
@@ -311,18 +322,10 @@ watch(
       .join('|'),
   () => {
     scheduleFloatingToolbarMeasure()
-    subgraphPreviewLayoutTick.value += 1
   }
 )
 
-const {
-  isGenerating: subgraphGenerating,
-  hasPreview: subgraphPreviewActive,
-  anchorNodeId: subgraphPreviewAnchorId,
-  generateSubgraph,
-  acceptPreview: acceptSubgraphPreview,
-  discardPreview: discardSubgraphPreview,
-} = useMindMapSubgraphSuggest()
+const { isGenerating: subgraphGenerating, generateSubgraph } = useMindMapSubgraphSuggest()
 
 async function handleAiSubgraphGenerate() {
   await generateSubgraph(floatingToolbarAnchorId.value)
@@ -441,6 +444,23 @@ const {
   handleContextMenuPaste,
   handleContextMenuAddConcept,
 } = contextMenu
+
+const nodeExplain = useMindMapNodeExplain()
+const {
+  visible: nodeExplainVisible,
+  messages: nodeExplainMessages,
+  draft: nodeExplainDraft,
+  loading: nodeExplainLoading,
+  errorMessage: nodeExplainError,
+  kittyAgentState: nodeExplainKittyAgentState,
+  openExplain: openNodeExplain,
+  close: closeNodeExplain,
+  sendDraft: sendNodeExplainDraft,
+} = nodeExplain
+
+function handleContextMenuExplainNode(payload: { nodeId: string; nodeLabel: string }): void {
+  openNodeExplain(payload.nodeId, payload.nodeLabel)
+}
 
 const { mountSubscriptions, clearDoubleBubbleTimer } = useDiagramCanvasEventBus()
 
@@ -615,18 +635,8 @@ defineExpose({
       :position="floatingToolbarPosition"
       :node-id="floatingToolbarAnchorId"
       :ai-generating="subgraphGenerating"
-      :ai-disabled="subgraphPreviewActive"
+      :show-ai-subgraph="floatingToolbarShowAiSubgraph"
       @ai-subgraph-generate="handleAiSubgraphGenerate"
-    />
-
-    <MindMapSubgraphPreviewBar
-      v-if="useMindMapV2"
-      :visible="subgraphPreviewActive"
-      :anchor-node-id="subgraphPreviewAnchorId"
-      :container-ref="canvasContainer"
-      :layout-tick="subgraphPreviewLayoutTick"
-      @accept="acceptSubgraphPreview"
-      @discard="discardSubgraphPreview"
     />
 
     <MindMapDirectionalAddOverlay
@@ -649,6 +659,18 @@ defineExpose({
       @close="closeContextMenu"
       @paste="handleContextMenuPaste"
       @add-concept="handleContextMenuAddConcept"
+      @explain-node="handleContextMenuExplainNode"
+    />
+
+    <MindMapNodeExplainModal
+      v-model:visible="nodeExplainVisible"
+      v-model:draft="nodeExplainDraft"
+      :messages="nodeExplainMessages"
+      :loading="nodeExplainLoading"
+      :error-message="nodeExplainError"
+      :kitty-agent-state="nodeExplainKittyAgentState"
+      @close="closeNodeExplain"
+      @send="sendNodeExplainDraft"
     />
 
     <ExportToCommunityModal

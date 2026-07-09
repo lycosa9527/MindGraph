@@ -187,7 +187,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   const llmResultsStore = useLLMResultsStore()
   const authStore = useAuthStore()
   const previewStore = useMindMapSubgraphPreviewStore()
-  const { hasPreview, isGenerating: isSubgraphGenerating } = storeToRefs(previewStore)
+  const { isGenerating: isSubgraphGenerating } = storeToRefs(previewStore)
   const getDiagramSpec = useDiagramSpecForSave()
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -224,7 +224,6 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       authenticated:
         authStore.isAuthenticated && !authStore.authVerificationBlockedByNetwork,
       llmGenerating: llmResultsStore.isGenerating,
-      subgraphPreviewActive: hasPreview.value,
       subgraphGenerating: isSubgraphGenerating.value,
       suppressed: isSuppressed.value,
       isCollabGuest: Boolean(options.isCollabGuest?.value),

@@ -19,16 +19,13 @@ const STORAGE_KEY = 'kitty_workflow_trace'
 
 export function kittyWorkflowTraceEnabled(): boolean {
   if (typeof window === 'undefined') {
-    return true
+    return false
   }
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (raw === '0') {
-      return false
-    }
-    return true
+    return raw === '1' || raw === 'verbose'
   } catch {
-    return true
+    return false
   }
 }
 

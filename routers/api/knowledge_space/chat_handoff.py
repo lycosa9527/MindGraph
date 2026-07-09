@@ -28,6 +28,7 @@ from services.knowledge.chat_handoff_service import (
     update_handoff_status,
 )
 from services.knowledge.chat_transcript_normalizer import normalize_chat_messages, normalize_raw_content
+from services.knowledge.doc_summary_ingest import DocSummaryIngestService
 from services.knowledge.knowledge_package_service import KnowledgePackageService
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
@@ -177,14 +178,25 @@ async def ingest_chat_handoff(
         if message_count is not None:
             extra_metadata["message_count"] = message_count
 
-        document = await service.add_text_source(
-            record.package_id,
-            content=body,
-            title=request.chat_title,
-            source_kind=request.platform,
-            language=request.language,
-            extra_metadata=extra_metadata,
-        )
+        if package.source == "doc_summary":
+            ingest = DocSummaryIngestService(db, current_user.id)
+            document = await ingest.ingest_text(
+                record.package_id,
+                content=body,
+                title=request.chat_title,
+                source_kind=request.platform,
+                language=request.language,
+                extra_metadata=extra_metadata,
+            )
+        else:
+            document = await service.add_text_source(
+                record.package_id,
+                content=body,
+                title=request.chat_title,
+                source_kind=request.platform,
+                language=request.language,
+                extra_metadata=extra_metadata,
+            )
         await update_handoff_status(request.code, "done", document.id)
         logger.info(
             "[ChatHandoff] Ingested doc_id=%s package=%s user=%s",

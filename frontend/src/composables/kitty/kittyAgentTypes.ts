@@ -4,6 +4,8 @@ export interface KittyAgentOptions {
   ownerId?: string
   sampleRate?: number
   kittyClientLane?: 'mobile'
+  /** Text-only panel: no mic, playback, or Omni realtime session. */
+  textOnly?: boolean
   onTranscription?: (text: string) => void
   onTextChunk?: (text: string) => void
   onError?: (error: string) => void

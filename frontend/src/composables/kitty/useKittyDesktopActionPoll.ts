@@ -159,6 +159,7 @@ export function useKittyDesktopActionPoll(): void {
           routePath: route.path,
           savedDiagramsStore,
           router,
+          route,
           t,
         })
       }
@@ -273,6 +274,7 @@ export function useKittyDesktopActionPoll(): void {
           routePath: route.path,
           savedDiagramsStore,
           router,
+          route,
           t,
         })
       }
@@ -304,6 +306,7 @@ export function useKittyDesktopActionPoll(): void {
             routePath: route.path,
             savedDiagramsStore,
             router,
+            route,
             t,
           })
         }

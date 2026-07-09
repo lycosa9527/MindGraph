@@ -4,19 +4,43 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import type { PackageDetailResponse } from '@/composables/fileCenter/useFileCenter'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 import { authFetch } from '@/utils/api'
 import { apiRequestJson } from '@/utils/apiClient'
 
 const PACKAGES_BASE = '/api/knowledge-space/packages'
-const PACKAGE_INDEX_POLL_MS = 2500
-const PACKAGE_INDEX_TIMEOUT_MS = 10 * 60 * 1000
 
 const MAX_CONTENT_LENGTH = 32000
-const ALLOWED_DOC_EXTENSIONS = new Set(['.pdf', '.docx'])
-const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/jpg'])
-const MAX_DOC_BYTES = 20 * 1024 * 1024
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+
+/** File picker accept list for Document Summary lite uploads. */
+export const DOC_SUMMARY_UPLOAD_ACCEPT =
+  '.pdf,.docx,.pptx,.jpg,.jpeg,.png,.mp3,.wav,.m4a,.aac,.flac,.ogg,.opus,.amr,.wma,' +
+  'application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,' +
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation,' +
+  'image/jpeg,image/png,audio/mpeg,audio/wav,audio/mp4,audio/aac,audio/flac,audio/ogg,audio/opus,audio/amr'
+
+const ALLOWED_UPLOAD_EXTENSIONS = new Set([
+  '.pdf',
+  '.docx',
+  '.pptx',
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.mp3',
+  '.wav',
+  '.m4a',
+  '.aac',
+  '.flac',
+  '.ogg',
+  '.opus',
+  '.amr',
+  '.wma',
+])
+
+const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png'])
 
 type WebContentResult = {
   success?: boolean
@@ -25,44 +49,17 @@ type WebContentResult = {
   detail?: string
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
-}
-
-function packageNeedsIndexing(documents: KnowledgeDocument[]): boolean {
-  return documents.some((doc) => doc.status === 'pending' || doc.status === 'processing')
-}
-
-function packageHasIndexedCorpus(documents: KnowledgeDocument[]): boolean {
-  return documents.some((doc) => doc.status === 'completed')
-}
-
 async function fetchPackageDetail(packageId: number): Promise<PackageDetailResponse> {
   return apiRequestJson<PackageDetailResponse>(`${PACKAGES_BASE}/${packageId}`)
 }
 
-async function ensurePackageIndexed(packageId: number): Promise<boolean> {
-  let detail = await fetchPackageDetail(packageId)
-  const hasUnindexed = detail.documents.some(
-    (doc) => doc.status === 'pending' || doc.status === 'failed'
-  )
-  if (hasUnindexed) {
-    await apiRequestJson(`${PACKAGES_BASE}/${packageId}/documents/start-processing`, {
-      method: 'POST',
-    })
-  }
+function packageHasReadyCorpus(documents: KnowledgeDocument[]): boolean {
+  return documents.some((doc) => doc.status === 'completed')
+}
 
-  const deadline = Date.now() + PACKAGE_INDEX_TIMEOUT_MS
-  while (Date.now() < deadline) {
-    detail = await fetchPackageDetail(packageId)
-    if (!packageNeedsIndexing(detail.documents)) {
-      return packageHasIndexedCorpus(detail.documents)
-    }
-    await sleep(PACKAGE_INDEX_POLL_MS)
-  }
-  return false
+async function ensurePackageReady(packageId: number): Promise<boolean> {
+  const detail = await fetchPackageDetail(packageId)
+  return packageHasReadyCorpus(detail.documents)
 }
 
 export function useMindMapDocumentSummary() {
@@ -103,18 +100,30 @@ export function useMindMapDocumentSummary() {
     const packageId = options.packageId ?? undefined
     const diagramId = options.diagramId ?? savedDiagramsStore.activeDiagramId ?? undefined
     if (!packageId && !diagramId) {
-      notify.warning(t('canvas.mindMapDocumentSummary.generateNoCorpus'))
+      notify.warning(
+        t(
+          DOC_SUMMARY_LITE_UI
+            ? 'canvas.mindMapDocumentSummary.generateNoCorpusLite'
+            : 'canvas.mindMapDocumentSummary.generateNoCorpus'
+        )
+      )
       return false
     }
 
     isGenerating.value = true
     try {
-      if (packageId) {
+      if (packageId && !DOC_SUMMARY_LITE_UI) {
         isIndexingCorpus.value = true
-        const indexed = await ensurePackageIndexed(packageId)
+        const ready = await ensurePackageReady(packageId)
         isIndexingCorpus.value = false
-        if (!indexed) {
-          notify.error(t('canvas.mindMapDocumentSummary.generateNoCorpus'))
+        if (!ready) {
+          notify.error(
+            t(
+              DOC_SUMMARY_LITE_UI
+                ? 'canvas.mindMapDocumentSummary.generateNoCorpusLite'
+                : 'canvas.mindMapDocumentSummary.generateNoCorpus'
+            )
+          )
           return false
         }
       }
@@ -146,17 +155,33 @@ export function useMindMapDocumentSummary() {
     }
   }
 
-  function validateDocumentFile(file: File): boolean {
+  function validateUploadFile(file: File): boolean {
     const ext = file.name.includes('.') ? `.${file.name.split('.').pop()?.toLowerCase()}` : ''
-    if (!ALLOWED_DOC_EXTENSIONS.has(ext)) {
-      notify.warning(t('canvas.mindMapDocumentSummary.invalidDocType'))
+    if (!ALLOWED_UPLOAD_EXTENSIONS.has(ext)) {
+      notify.warning(
+        t(
+          DOC_SUMMARY_LITE_UI
+            ? 'canvas.mindMapDocumentSummary.invalidFileType'
+            : 'canvas.mindMapDocumentSummary.invalidDocType'
+        )
+      )
       return false
     }
-    if (file.size > MAX_DOC_BYTES) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       notify.warning(t('canvas.mindMapDocumentSummary.docTooLarge'))
       return false
     }
     return true
+  }
+
+  function isImageUploadFile(file: File): boolean {
+    const ext = file.name.includes('.') ? `.${file.name.split('.').pop()?.toLowerCase()}` : ''
+    return IMAGE_EXTENSIONS.has(ext) || file.type.startsWith('image/')
+  }
+
+  /** @deprecated Use validateUploadFile — kept for non-lite panel paths. */
+  function validateDocumentFile(file: File): boolean {
+    return validateUploadFile(file)
   }
 
   return {
@@ -164,9 +189,10 @@ export function useMindMapDocumentSummary() {
     isIndexingCorpus,
     isAdding,
     generateFromPackage,
+    validateUploadFile,
     validateDocumentFile,
-    ALLOWED_DOC_EXTENSIONS,
-    ALLOWED_IMAGE_TYPES,
+    isImageUploadFile,
+    DOC_SUMMARY_UPLOAD_ACCEPT,
     MAX_CONTENT_LENGTH,
   }
 }

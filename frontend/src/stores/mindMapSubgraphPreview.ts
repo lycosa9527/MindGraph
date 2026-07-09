@@ -1,25 +1,12 @@
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import type { Connection, DiagramNode, NodeStyle } from '@/types'
-
-export interface MindMapSubgraphSnapshot {
-  nodes: DiagramNode[]
-  connections: Connection[]
-  nodeStyles?: Record<string, NodeStyle>
-  collapsedPaths?: string[]
-}
-
+/** Tracks in-flight mind-map AI subgraph generation (loading state + abort). */
 export const useMindMapSubgraphPreviewStore = defineStore('mindMapSubgraphPreview', () => {
-  const active = ref(false)
-  const anchorNodeId = ref<string | null>(null)
-  const previewNodeIds = ref<string[]>([])
   const isGenerating = ref(false)
-  const snapshot = ref<MindMapSubgraphSnapshot | null>(null)
+  const generatingNodeId = ref<string | null>(null)
   const streamAbortController = ref<AbortController | null>(null)
-
-  const hasPreview = computed(() => active.value && previewNodeIds.value.length > 0)
 
   function abortGeneration(): void {
     if (streamAbortController.value) {
@@ -27,56 +14,35 @@ export const useMindMapSubgraphPreviewStore = defineStore('mindMapSubgraphPrevie
       streamAbortController.value = null
     }
     isGenerating.value = false
+    generatingNodeId.value = null
   }
 
-  function beginGeneration(nodeId: string) {
+  function beginGeneration(nodeId: string): void {
     abortGeneration()
     streamAbortController.value = new AbortController()
+    generatingNodeId.value = nodeId
     isGenerating.value = true
-    anchorNodeId.value = nodeId
   }
 
   function generationSignal(): AbortSignal | undefined {
     return streamAbortController.value?.signal
   }
 
-  function setPreview(
-    nodeId: string,
-    nodeIds: string[],
-    stateSnapshot: MindMapSubgraphSnapshot
-  ) {
-    active.value = true
-    anchorNodeId.value = nodeId
-    previewNodeIds.value = nodeIds
-    snapshot.value = stateSnapshot
+  function finishGeneration(): void {
     isGenerating.value = false
     streamAbortController.value = null
   }
 
-  function clear() {
+  function clear(): void {
     abortGeneration()
-    active.value = false
-    anchorNodeId.value = null
-    previewNodeIds.value = []
-    snapshot.value = null
-  }
-
-  function finishGenerationWithoutPreview() {
-    isGenerating.value = false
-    streamAbortController.value = null
   }
 
   return {
-    active,
-    anchorNodeId,
-    previewNodeIds,
     isGenerating,
-    snapshot,
-    hasPreview,
+    generatingNodeId,
     beginGeneration,
     generationSignal,
-    setPreview,
+    finishGeneration,
     clear,
-    finishGenerationWithoutPreview,
   }
 })

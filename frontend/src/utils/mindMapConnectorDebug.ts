@@ -531,7 +531,7 @@ export function dumpMindMapConnectorDebug(options: MindMapConnectorDebugDumpOpti
     'Columns: formulaVsLivePx = formula−live | resolvedVsLivePx = SVG−live | vueFlowVsLivePx = handle−live | domHandleVsLivePx = DOM handle−live'
   )
   console.info(
-    'Levels: localStorage mindgraph.debugMindMapConnectors = "0" | "1" | "verbose" (or window.mindMapConnectorDebug.enableVerbose())'
+    'Levels: localStorage mindgraph.debugMindMapConnectors = "1" | "verbose" (or window.mindMapConnectorDebug.enableBasic())'
   )
   console.info(
     'Inspect: mindMapConnectorDebug.inspect("branch-r-2-1") | mindMapConnectorDebug.inspectEdges("branch-r-2-1")'

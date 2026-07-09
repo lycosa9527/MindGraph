@@ -211,7 +211,7 @@ class KittySessionStartResult:
 
     voice_session_id: str
     agent_session_id: str
-    omni_generator: Any
+    omni_generator: Any | None
     start_client_lane: str | None
     inbound_ctx: KittyWsInboundContext
 
@@ -259,6 +259,9 @@ async def start_kitty_session(
 
     voice_sessions[voice_session_id]["context"] = copy.deepcopy(merged_ctx)
     voice_sessions[voice_session_id]["_kitty_client_lane"] = start_client_lane
+    raw_client_mode = start_msg.get("client_mode")
+    start_client_mode = "text" if raw_client_mode == "text" else "voice"
+    voice_sessions[voice_session_id]["_kitty_client_mode"] = start_client_mode
     voice_sessions[voice_session_id]["_hub_session_id"] = hub_session_id
     voice_sessions[voice_session_id]["_hub_scope_revision"] = 0
     await hub.set_kitty_runtime(
@@ -311,30 +314,37 @@ async def start_kitty_session(
     if start_ts is not None:
         session["_kitty_redis_seen_ts"] = start_ts
 
-    omni_client = session.get("omni_client")
-    if not omni_client:
-        await clear_mobile_lane_if_start_aborted(
-            int(auth.current_user.id),
-            diagram_session_id,
-            start_client_lane,
-        )
-        await websocket.close(code=1008, reason="OmniClient not initialized")
-        return None
+    omni_generator = None
+    if start_client_mode != "text":
+        omni_client = session.get("omni_client")
+        if not omni_client:
+            await clear_mobile_lane_if_start_aborted(
+                int(auth.current_user.id),
+                diagram_session_id,
+                start_client_lane,
+            )
+            await websocket.close(code=1008, reason="OmniClient not initialized")
+            return None
 
-    omni_generator = omni_middleware.wrap_start_conversation(
-        omni_client=omni_client,
-        instructions=instructions,
-        user_id=int(user_id) if user_id else None,
-        organization_id=(
-            getattr(auth.current_user, "organization_id", None)
-            if auth.current_user and hasattr(auth.current_user, "id")
-            else None
-        ),
-        session_id=voice_session_id,
-        request_type="voice_omni",
-        endpoint_path="/ws/kitty",
-    )
-    voice_sessions[voice_session_id]["omni_generator"] = omni_generator
+        omni_generator = omni_middleware.wrap_start_conversation(
+            omni_client=omni_client,
+            instructions=instructions,
+            user_id=int(user_id) if user_id else None,
+            organization_id=(
+                getattr(auth.current_user, "organization_id", None)
+                if auth.current_user and hasattr(auth.current_user, "id")
+                else None
+            ),
+            session_id=voice_session_id,
+            request_type="voice_omni",
+            endpoint_path="/ws/kitty",
+        )
+        voice_sessions[voice_session_id]["omni_generator"] = omni_generator
+    else:
+        logger.debug(
+            "Text-only Kitty session %s — skipping Omni realtime",
+            voice_session_id,
+        )
 
     refcount_ok = await hub.register_kitty_connection(diagram_session_id, int(auth.current_user.id))
     if not getattr(config, "DEBUG", True) and not refcount_ok:

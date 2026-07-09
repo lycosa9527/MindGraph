@@ -6,7 +6,17 @@ import {
 } from '@/config/mindMapThemes'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
+import {
+  mergeGeneratedBranchesIntoSpec,
+  type MindMapBranchSpec,
+} from '@/utils/mindMapSubgraphMerge'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import {
+  debugMindMapSubgraphMergeLookup,
+  isMindMapSubgraphDebugEnabled,
+  mindMapSubgraphDebug,
+  mindMapSubgraphDebugError,
+} from '@/utils/mindMapSubgraphDebug'
 
 import { useInlineRecommendationsStore } from '../inlineRecommendations'
 import {
@@ -223,6 +233,11 @@ function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): voi
   ctx.data.value.connections = result.connections
   ctx.data.value._node_styles = mergedNodeStyles
 
+  if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
+    ctx.mindMapRecalcTrigger.value += 1
+    ctx.scheduleMindMapRecalc()
+  }
+
   if (v2Visuals) {
     const collapsedBefore = ctx.data.value._collapsed_paths ?? []
     const remapped = remapMindMapCollapsedPathsAfterReload(
@@ -311,7 +326,12 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     const connections = data.value.connections
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
-    const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, parentNodeId)
+    const found = findBranchByNodeId(
+      spec.rightBranches,
+      spec.leftBranches,
+      parentNodeId,
+      connections
+    )
     if (!found) return false
 
     const { branch } = found
@@ -335,7 +355,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return 0
     if (!data.value?.nodes || !data.value?.connections) return 0
 
-    const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
+    const connections = data.value.connections
+    const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
     const idsToRemove = new Set(nodeIds.filter((id) => id.startsWith('branch-')))
 
     if (collabForeignLockBlocksAnyId(ctx, idsToRemove)) {
@@ -349,7 +370,12 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       indexInParent: number
     }[] = []
     idsToRemove.forEach((nodeId) => {
-      const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, nodeId)
+      const found = findBranchByNodeId(
+        spec.rightBranches,
+        spec.leftBranches,
+        nodeId,
+        connections
+      )
       if (found) {
         toRemoveWithParent.push({
           nodeId,
@@ -428,8 +454,14 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       mindMapCurveExtentBaseline.value = { ...extentsBefore }
     }
 
-    const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
-    const sourceFound = findBranchByNodeId(spec.rightBranches, spec.leftBranches, branchNodeId)
+    const connections = data.value.connections
+    const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
+    const sourceFound = findBranchByNodeId(
+      spec.rightBranches,
+      spec.leftBranches,
+      branchNodeId,
+      connections
+    )
     if (!sourceFound) return false
 
     const { branch, parentArray, indexInParent } = sourceFound
@@ -448,13 +480,23 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
         spec.rightBranches.push(branch)
       }
     } else if (targetType === 'child' && targetId) {
-      const targetFound = findBranchByNodeId(spec.rightBranches, spec.leftBranches, targetId)
+      const targetFound = findBranchByNodeId(
+        spec.rightBranches,
+        spec.leftBranches,
+        targetId,
+        connections
+      )
       if (!targetFound) return false
       parentArray.splice(indexInParent, 1)
       if (!targetFound.branch.children) targetFound.branch.children = []
       targetFound.branch.children.push(branch)
     } else if ((targetType === 'before' || targetType === 'after') && targetId) {
-      const targetFound = findBranchByNodeId(spec.rightBranches, spec.leftBranches, targetId)
+      const targetFound = findBranchByNodeId(
+        spec.rightBranches,
+        spec.leftBranches,
+        targetId,
+        connections
+      )
       if (!targetFound) return false
 
       const [removed] = parentArray.splice(indexInParent, 1)
@@ -467,7 +509,12 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       }
       targetParentArray.splice(insertIdx, 0, removed)
     } else if (targetType === 'sibling' && targetId !== undefined) {
-      const targetFound = findBranchByNodeId(spec.rightBranches, spec.leftBranches, targetId)
+      const targetFound = findBranchByNodeId(
+        spec.rightBranches,
+        spec.leftBranches,
+        targetId,
+        connections
+      )
       if (!targetFound) return false
       if (descendantIds.has(targetId)) return false
 
@@ -572,7 +619,12 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     const connections = data.value.connections
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
-    const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, nodeId)
+    const found = findBranchByNodeId(
+      spec.rightBranches,
+      spec.leftBranches,
+      nodeId,
+      connections
+    )
     if (!found) return false
 
     const insertIndex =
@@ -621,7 +673,12 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       branches.push(...labels.map((text) => ({ text })))
       selectPathKey = `${side === 'left' ? 'l' : 'r'}/${startIndex + labels.length - 1}`
     } else {
-      const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, anchorNodeId)
+      const found = findBranchByNodeId(
+        spec.rightBranches,
+        spec.leftBranches,
+        anchorNodeId,
+        connections
+      )
       if (!found) return 0
 
       const insertIndex = found.indexInParent + 1
@@ -656,7 +713,12 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     const connections = data.value.connections
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
-    const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, nodeId)
+    const found = findBranchByNodeId(
+      spec.rightBranches,
+      spec.leftBranches,
+      nodeId,
+      connections
+    )
     if (!found) return false
 
     const pathKey = mindMapNodePathKey(nodeId, connections)
@@ -708,7 +770,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     let paths = [...(data.value._collapsed_paths ?? [])]
     let changed = false
 
-    const idsToExpand = new Set<string>()
+    const idsToExpand = new Set<string>([nodeId])
     let current: string | undefined = nodeId
     while (current && current !== 'topic') {
       const parent = connections.find((c) => c.target === current)?.source
@@ -790,6 +852,84 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     return true
   }
 
+  function pasteMindMapClipboardBranches(
+    anchorNodeId: string,
+    branches: MindMapBranchSpec[],
+    historyLabel?: string
+  ): boolean {
+    if (type.value !== 'mindmap' && type.value !== 'mind_map') {
+      if (isMindMapSubgraphDebugEnabled()) {
+        mindMapSubgraphDebugError('paste: wrong diagram type', { type: type.value })
+      }
+      return false
+    }
+    if (!data.value?.nodes || !data.value?.connections || branches.length === 0) {
+      if (isMindMapSubgraphDebugEnabled()) {
+        mindMapSubgraphDebugError('paste: missing data or empty branches', {
+          hasNodes: Boolean(data.value?.nodes),
+          hasConnections: Boolean(data.value?.connections),
+          branchCount: branches.length,
+        })
+      }
+      return false
+    }
+
+    const nodesBefore = data.value.nodes.length
+    const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
+    if (isMindMapSubgraphDebugEnabled()) {
+      mindMapSubgraphDebug('paste', 'spec snapshot before merge', {
+        anchorNodeId,
+        topic: spec.topic,
+        branchPayload: branches.map((b) => b.text),
+        lookup: debugMindMapSubgraphMergeLookup(
+          data.value.nodes,
+          data.value.connections,
+          anchorNodeId
+        ),
+      })
+    }
+
+    const merged = mergeGeneratedBranchesIntoSpec(
+      spec,
+      anchorNodeId,
+      branches,
+      data.value.connections
+    )
+    if (!merged) {
+      if (isMindMapSubgraphDebugEnabled()) {
+        mindMapSubgraphDebugError('paste: mergeGeneratedBranchesIntoSpec returned null', {
+          anchorNodeId,
+          branches: branches.map((b) => b.text),
+        })
+      }
+      return false
+    }
+
+    const label =
+      historyLabel ?? String(i18n.global.t('diagram.history.pasteNodes'))
+    const reloaded = applyMindMapSpecReload(
+      merged.topic,
+      merged.leftBranches,
+      merged.rightBranches,
+      label
+    )
+    if (isMindMapSubgraphDebugEnabled()) {
+      const afterNodes = data.value?.nodes ?? []
+      const afterConnections = data.value?.connections ?? []
+      mindMapSubgraphDebug('paste', 'applyMindMapSpecReload', {
+        anchorNodeId,
+        reloaded,
+        nodesBefore,
+        nodesAfter: afterNodes.length,
+        branchIdsAfter: afterNodes.filter((n) => n.id.startsWith('branch-')).map((n) => ({
+          id: n.id,
+          text: n.text,
+        })),
+      })
+    }
+    return reloaded
+  }
+
   return {
     addMindMapBranch,
     addMindMapBranchOnSide,
@@ -808,5 +948,6 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     applyMindMapSubgraphPreview,
     restoreMindMapSubgraphSnapshot,
     clearMindMapSubgraphPreviewTags,
+    pasteMindMapClipboardBranches,
   }
 }

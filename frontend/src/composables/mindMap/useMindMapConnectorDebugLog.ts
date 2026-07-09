@@ -15,7 +15,7 @@ const MIND_MAP_LAYOUT_SETTLE_MS = 100
  * After layout settles, dump node/connector positions to the console.
  * Read-only — does not measure anchors into Pinia or trigger recalc.
  *
- * Enabled in dev unless localStorage mindgraph.debugMindMapConnectors = '0'.
+ * Opt-in: localStorage mindgraph.debugMindMapConnectors = '1' | 'verbose', or window.mindMapConnectorDebug in dev.
  */
 export function useMindMapConnectorDebugLog(options: {
   enabled: Ref<boolean>

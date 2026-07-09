@@ -17,6 +17,7 @@ from contextlib import nullcontext
 from typing import TYPE_CHECKING
 
 from agents.concept_maps.concept_map_agent import ConceptMapAgent
+from agents.mind_maps.mind_map_agent import build_mind_map_branch_expand_user_message
 from agents.core.diagram_detection import _detect_diagram_type_from_prompt
 from agents.core.generate_events import (
     EventEmitter,
@@ -27,6 +28,7 @@ from agents.core.generate_events import (
 from agents.core.agent_result import artifact_metadata, artifact_to_spec_or_error, normalize_agent_generation_result
 from agents.core.agent_routing import AgentGenerateRoute, resolve_agent_generate_route
 from agents.core.prompt_requirements import (
+    AgentRequirementParams,
     build_generation_user_message,
     extract_prompt_requirements,
     map_to_agent_params,
@@ -160,6 +162,11 @@ async def _generate_spec_with_agent(
     structure_mode: str = "free",
     fixed_nodes: dict | None = None,
     constraints: str = "",
+    mind_map_topic: str | None = None,
+    expand_branch: str | None = None,
+    reference_branches: list | None = None,
+    existing_branch_children: list | None = None,
+    parent_branch: str | None = None,
     phase_emit: PhaseEmitter | None = None,
 ) -> dict:
     """
@@ -199,6 +206,13 @@ async def _generate_spec_with_agent(
             endpoint_path=endpoint_path,
             phase_emit=phase_emit,
         )
+        expand_label = (expand_branch or "").strip()
+        if expand_label:
+            route.kwargs["expand_branch"] = expand_label
+            route.kwargs["mind_map_topic"] = (mind_map_topic or "").strip()
+            route.kwargs["reference_branches"] = reference_branches or []
+            route.kwargs["existing_branch_children"] = existing_branch_children or []
+            route.kwargs["parent_branch"] = (parent_branch or "").strip()
         logger.debug("Agent route mode: %s", route.mode)
 
         result = await _invoke_agent_route(
@@ -246,6 +260,11 @@ async def agent_graph_workflow_with_styles(
     # File Center: diagram-linked package scoping for RAG
     diagram_id=None,
     rag_document_ids=None,
+    mind_map_topic=None,
+    expand_branch=None,
+    reference_branches=None,
+    existing_branch_children=None,
+    parent_branch=None,
     phase_emit: PhaseEmitter | None = None,
     event_emit: EventEmitter | None = None,
     cancel_event: asyncio.Event | None = None,
@@ -360,39 +379,60 @@ auto-complete - user has dimension but no topic (generate topic and children)
         # Stage 2: extract type-native requirements from raw prompt (before learning sheet / RAG)
         _check_cancelled(cancel_event)
         requirements_start = time.time()
-        parsed = await extract_prompt_requirements(
-            user_prompt,
-            diagram_type,
-            language,
-            model,
-            user_id=user_id,
-            organization_id=organization_id,
-            request_type=request_type,
-            endpoint_path=endpoint_path,
-            phase_emit=agent_phase_emit,
-        )
-        agent_params = merge_agent_params(
-            {
-                "fixed_dimension": fixed_dimension,
-                "existing_analogies": existing_analogies,
-                "dimension_only_mode": dimension_only_mode,
-                "dimension_preference": dimension_preference,
-            },
-            map_to_agent_params(diagram_type, parsed),
-        )
-        generation_central = parsed.central_for_type(diagram_type) or user_prompt.strip()
-        topic_time = time.time() - requirements_start
+        expand_label = (expand_branch or "").strip()
+        is_mind_map_branch_expand = expand_label and diagram_type in ("mind_map", "mindmap")
+        if is_mind_map_branch_expand:
+            agent_params = merge_agent_params(
+                {
+                    "fixed_dimension": fixed_dimension,
+                    "existing_analogies": existing_analogies,
+                    "dimension_only_mode": dimension_only_mode,
+                    "dimension_preference": dimension_preference,
+                },
+                AgentRequirementParams(),
+            )
+            generation_central = expand_label
+            topic_time = 0.0
+            logger.info(
+                "Mind map branch expand (skipped requirements extraction): topic=%r, expand=%r, refs=%d",
+                (mind_map_topic or "").strip()[:80],
+                expand_label[:80],
+                len(reference_branches or []),
+            )
+        else:
+            parsed = await extract_prompt_requirements(
+                user_prompt,
+                diagram_type,
+                language,
+                model,
+                user_id=user_id,
+                organization_id=organization_id,
+                request_type=request_type,
+                endpoint_path=endpoint_path,
+                phase_emit=agent_phase_emit,
+            )
+            agent_params = merge_agent_params(
+                {
+                    "fixed_dimension": fixed_dimension,
+                    "existing_analogies": existing_analogies,
+                    "dimension_only_mode": dimension_only_mode,
+                    "dimension_preference": dimension_preference,
+                },
+                map_to_agent_params(diagram_type, parsed),
+            )
+            generation_central = parsed.central_for_type(diagram_type) or user_prompt.strip()
+            topic_time = time.time() - requirements_start
+            logger.info(
+                "Requirements extraction completed in %.2fs: structure_mode=%s, central=%r",
+                topic_time,
+                agent_params.structure_mode,
+                generation_central[:80] if generation_central else "",
+            )
         await emit_progress(
             event_emit,
             topic=generation_central[:80] if generation_central else user_prompt[:80],
             diagram_type=diagram_type,
             model=model,
-        )
-        logger.info(
-            "Requirements extraction completed in %.2fs: structure_mode=%s, central=%r",
-            topic_time,
-            agent_params.structure_mode,
-            generation_central[:80] if generation_central else "",
         )
 
         effective_fixed_dimension = agent_params.fixed_dimension
@@ -507,12 +547,24 @@ auto-complete - user has dimension but no topic (generate topic and children)
 Please generate a more accurate and detailed diagram based on the above context."""
             logger.debug("[RAG] Prepared %d characters of context block", len(rag_context))
 
-        agent_user_message = build_generation_user_message(
-            generation_central,
-            agent_params,
-            language,
-            rag_context_block,
-        )
+        if is_mind_map_branch_expand:
+            agent_user_message = build_mind_map_branch_expand_user_message(
+                expand_branch=expand_label,
+                mind_map_topic=(mind_map_topic or "").strip(),
+                reference_branches=list(reference_branches or []),
+                existing_branch_children=list(existing_branch_children or []),
+                parent_branch=(parent_branch or "").strip(),
+                language=language,
+            )
+            if rag_context_block.strip():
+                agent_user_message = f"{agent_user_message}\n\n{rag_context_block.strip()}"
+        else:
+            agent_user_message = build_generation_user_message(
+                generation_central,
+                agent_params,
+                language,
+                rag_context_block,
+            )
 
         # Generate specification using the appropriate agent.
         # When package-scoped RAG is active, suppress implicit whole-library RAG
@@ -537,6 +589,11 @@ Please generate a more accurate and detailed diagram based on the above context.
                 structure_mode=agent_params.structure_mode,
                 fixed_nodes=agent_params.fixed_nodes,
                 constraints=agent_params.constraints,
+                mind_map_topic=mind_map_topic,
+                expand_branch=expand_branch,
+                reference_branches=reference_branches,
+                existing_branch_children=existing_branch_children,
+                parent_branch=parent_branch,
                 phase_emit=agent_phase_emit,
             )
         generation_time = time.time() - generation_start

@@ -3,6 +3,7 @@
  */
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 
+import { applyKittyTopicSeedToDiagram } from '@/composables/canvasPage/applyKittyTopicSeedToDiagram'
 import { useDiagramStore } from '@/stores'
 import type { DiagramType } from '@/types'
 
@@ -26,26 +27,6 @@ export function canvasKittySeedQueryKeysPresent(
   )
 }
 
-function patchTopicNode(store: DiagramPiniaStore, nodeId: string, text: string): boolean {
-  const trimmed = text.trim()
-  if (!trimmed || !store.data?.nodes.some((n) => n.id === nodeId)) {
-    return false
-  }
-  return store.updateNode(nodeId, { text: trimmed })
-}
-
-/** First topic/center/root-like node — brace maps may omit ``brace-whole`` id depending on template. */
-function patchFirstTopicLike(store: DiagramPiniaStore, text: string): boolean {
-  const trimmed = text.trim()
-  if (!trimmed) return false
-  const nodes = store.data?.nodes ?? []
-  const hit =
-    nodes.find((n) => n.type === 'topic' || n.type === 'center') ??
-    nodes.find((n) => n.id.endsWith('-topic') || n.id === 'event')
-  if (!hit) return false
-  return store.updateNode(hit.id, { text: trimmed })
-}
-
 /**
  * Applies ``kitty_topic`` / ``kitty_left`` / ``kitty_right`` onto default template centers when present.
  *
@@ -61,50 +42,13 @@ export function applyCanvasKittySeedFromRoute(
   const right = stringQuery(query, 'kitty_right')
   if (!topic && !left && !right) return
 
-  const tslice = topic?.slice(0, 480) ?? ''
-  const lslice = left?.slice(0, 240) ?? ''
-  const rslice = right?.slice(0, 240) ?? ''
-
-  switch (diagramType) {
-    case 'double_bubble_map': {
-      if (lslice) patchTopicNode(diagramStore, 'left-topic', lslice)
-      if (rslice) patchTopicNode(diagramStore, 'right-topic', rslice)
-      if (tslice && !lslice) patchTopicNode(diagramStore, 'left-topic', tslice)
-      break
-    }
-    case 'tree_map':
-      if (!patchTopicNode(diagramStore, 'tree-topic', tslice)) {
-        patchFirstTopicLike(diagramStore, tslice)
-      }
-      break
-    case 'flow_map':
-      if (!patchTopicNode(diagramStore, 'flow-topic', tslice)) {
-        patchFirstTopicLike(diagramStore, tslice)
-      }
-      break
-    case 'multi_flow_map':
-      if (!patchTopicNode(diagramStore, 'event', tslice)) {
-        patchFirstTopicLike(diagramStore, tslice)
-      }
-      break
-    case 'brace_map':
-      if (!patchTopicNode(diagramStore, 'brace-whole', tslice)) {
-        patchFirstTopicLike(diagramStore, tslice)
-      }
-      break
-    case 'bridge_map':
-      patchTopicNode(diagramStore, 'dimension-label', tslice)
-      break
-    case 'circle_map':
-    case 'bubble_map':
-    case 'mindmap':
-    case 'mind_map':
-    case 'concept_map':
-      if (!patchTopicNode(diagramStore, 'topic', tslice)) {
-        patchFirstTopicLike(diagramStore, tslice)
-      }
-      break
-    default:
-      patchFirstTopicLike(diagramStore, tslice)
-  }
+  applyKittyTopicSeedToDiagram(
+    diagramType,
+    {
+      topic: topic?.slice(0, 480),
+      left: left?.slice(0, 240),
+      right: right?.slice(0, 240),
+    },
+    diagramStore
+  )
 }

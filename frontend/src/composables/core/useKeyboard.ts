@@ -42,8 +42,10 @@ export function useKeyboard(shortcuts: KeyboardShortcut[]) {
 
       if (keyMatch && ctrlMatch && shiftMatch && altMatch) {
         const hasChordModifier = !!(shortcut.ctrl || shortcut.alt || shortcut.meta)
-        const allowDefaultWhileTyping = typing && !hasChordModifier
-        if (shortcut.preventDefault !== false && !allowDefaultWhileTyping) {
+        if (typing && !hasChordModifier) {
+          return
+        }
+        if (shortcut.preventDefault !== false) {
           event.preventDefault()
         }
         shortcut.handler(event)
@@ -71,6 +73,7 @@ export function useEditorShortcuts(handlers: {
   delete?: () => void
   selectAll?: () => void
   copy?: () => void
+  cut?: () => void
   paste?: () => void
   escape?: () => void
   addNode?: () => void
@@ -104,6 +107,10 @@ export function useEditorShortcuts(handlers: {
 
   if (handlers.copy) {
     shortcuts.push({ key: 'c', ctrl: true, handler: handlers.copy, preventDefault: false })
+  }
+
+  if (handlers.cut) {
+    shortcuts.push({ key: 'x', ctrl: true, handler: handlers.cut, preventDefault: false })
   }
 
   if (handlers.paste) {

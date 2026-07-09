@@ -203,6 +203,7 @@ def _build_batch_kwargs(
     user_id = current_user.id if current_user else None
     org_id = current_user.organization_id if current_user else None
     nodes_per_llm = getattr(req, "nodes_per_llm", None)
+    llm_models = getattr(req, "llm_models", None)
     base = {
         "session_id": session_id,
         "center_topic": center_topic,
@@ -213,6 +214,8 @@ def _build_batch_kwargs(
         "diagram_type": req.diagram_type,
         "endpoint_path": endpoint_path,
     }
+    if isinstance(llm_models, list) and llm_models:
+        base["llm_models"] = llm_models
     if req.diagram_type in ["double_bubble_map", "multi_flow_map"]:
         mode = getattr(
             req,

@@ -32,6 +32,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     ownerId = `KittyAgent_${Date.now()}`,
     sampleRate = 24000,
     kittyClientLane,
+    textOnly = false,
     onTranscription,
     onTextChunk,
     onError,
@@ -95,6 +96,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     }
     handleKittyServerMessage(data, {
       ...lifecycle,
+      textOnly,
       isVoiceActive,
       state,
       sessionId,
@@ -169,6 +171,9 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
           active_panel: context?.active_panel || 'none',
           context: context || {},
         }
+        if (textOnly) {
+          startPayload.client_mode = 'text'
+        }
         if (kittyClientLane === 'mobile') {
           startPayload.client_lane = 'mobile'
         }
@@ -221,7 +226,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       throw new Error('Kitty Agent has been destroyed')
     }
 
-    if (!audioContext.value) {
+    if (!audioContext.value && !textOnly) {
       const AudioCtx =
         window.AudioContext ||
         (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
@@ -317,7 +322,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     if (!text.trim() || !ws.value || ws.value.readyState !== WebSocket.OPEN) return
     traceKittyWorkflow('mobile', 'text_send', text.trim().slice(0, 120))
     ws.value.send(JSON.stringify({ type: 'text', text: text.trim() }))
-    state.value = 'speaking'
+    state.value = textOnly ? 'active' : 'speaking'
   }
 
   function updateContext(context: KittyAgentContext, options?: KittyContextUpdateOptions): void {

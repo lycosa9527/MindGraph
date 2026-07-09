@@ -42,9 +42,11 @@ from models.responses import (
 )
 from services.knowledge import package_wiki_store
 from services.knowledge.audio_hosting import resolve_audio_path
+from services.knowledge.doc_summary_ingest import DOC_SUMMARY_SOURCE, DocSummaryIngestService
 from services.knowledge.knowledge_package_service import KnowledgePackageService
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.package_pipeline_status import (
+    WIKI_STATUS_DISABLED,
     count_wiki_pages,
     derive_document_rag_status,
     derive_document_wiki_statuses,
@@ -91,8 +93,13 @@ def _documents_to_responses(
     user_id: int,
     package_id: int,
     documents: List[KnowledgeDocument],
+    *,
+    package_source: Optional[str] = None,
 ) -> List[DocumentResponse]:
-    wiki_statuses = derive_document_wiki_statuses(user_id, package_id, documents)
+    if package_source == DOC_SUMMARY_SOURCE:
+        wiki_statuses = {doc.id: WIKI_STATUS_DISABLED for doc in documents}
+    else:
+        wiki_statuses = derive_document_wiki_statuses(user_id, package_id, documents)
     return [
         _document_to_response(
             doc,
@@ -106,8 +113,13 @@ def _package_document_response(
     user_id: int,
     package_id: int,
     document: KnowledgeDocument,
+    *,
+    package_source: Optional[str] = None,
 ) -> DocumentResponse:
-    wiki_status = derive_document_wiki_statuses(user_id, package_id, [document]).get(document.id)
+    if package_source == DOC_SUMMARY_SOURCE:
+        wiki_status = WIKI_STATUS_DISABLED
+    else:
+        wiki_status = derive_document_wiki_statuses(user_id, package_id, [document]).get(document.id)
     return _document_to_response(document, wiki_status=wiki_status)
 
 
@@ -131,6 +143,10 @@ def _package_to_response(
 ) -> PackageResponse:
     rag_status = _derive_status(document_count, completed_count, processing_count)
     pages = count_wiki_pages(user_id, package.id)
+    if package.source == DOC_SUMMARY_SOURCE:
+        wiki_status = WIKI_STATUS_DISABLED
+    else:
+        wiki_status = derive_wiki_status(completed_count, pages)
     return PackageResponse(
         id=package.id,
         name=package.name,
@@ -141,7 +157,7 @@ def _package_to_response(
         completed_count=completed_count,
         rag_status=rag_status,
         wiki_page_count=pages,
-        wiki_status=derive_wiki_status(completed_count, pages),
+        wiki_status=wiki_status,
         created_at=package.created_at.isoformat(),
         updated_at=package.updated_at.isoformat(),
     )
@@ -219,7 +235,12 @@ async def get_package(
             completed_count=completed,
             processing_count=processing,
         ),
-        documents=_documents_to_responses(current_user.id, package_id, documents),
+        documents=_documents_to_responses(
+            current_user.id,
+            package_id,
+            documents,
+            package_source=package.source,
+        ),
     )
 
 
@@ -297,15 +318,26 @@ async def upload_package_document(
             tmp_path = tmp_file.name
 
         file_type = ks_service.processor.get_file_type(file.filename)
-        document = await ks_service.upload_document(
-            file_name=file.filename,
-            file_path=tmp_path,
-            file_type=file_type,
-            file_size=len(content),
-            batch_id=package_id,
-        )
 
-        return _package_document_response(current_user.id, package_id, document)
+        if package.source == "doc_summary":
+            ingest = DocSummaryIngestService(db, current_user.id)
+            document = await ingest.ingest_file(
+                package_id=package_id,
+                tmp_path=tmp_path,
+                file_name=file.filename,
+                file_type=file_type,
+                file_size=len(content),
+            )
+        else:
+            document = await ks_service.upload_document(
+                file_name=file.filename,
+                file_path=tmp_path,
+                file_type=file_type,
+                file_size=len(content),
+                batch_id=package_id,
+            )
+
+        return _package_document_response(current_user.id, package_id, document, package_source=package.source)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except DATABASE_ERRORS as e:
@@ -321,16 +353,29 @@ async def ingest_text(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Ingest pasted text as a markdown source in a package."""
-    service = KnowledgePackageService(db, current_user.id)
+    package_service = KnowledgePackageService(db, current_user.id)
+    package = await package_service.get_package(package_id)
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
     try:
-        document = await service.add_text_source(
-            package_id,
-            content=request.content,
-            title=request.title or "Pasted note",
-            source_kind="paste",
-            language=request.language,
-        )
-        return _package_document_response(current_user.id, package_id, document)
+        if package.source == "doc_summary":
+            ingest = DocSummaryIngestService(db, current_user.id)
+            document = await ingest.ingest_text(
+                package_id,
+                content=request.content,
+                title=request.title or "Pasted note",
+                source_kind="paste",
+                language=request.language,
+            )
+        else:
+            document = await package_service.add_text_source(
+                package_id,
+                content=request.content,
+                title=request.title or "Pasted note",
+                source_kind="paste",
+                language=request.language,
+            )
+        return _package_document_response(current_user.id, package_id, document, package_source=package.source)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except DATABASE_ERRORS as e:
@@ -346,22 +391,36 @@ async def ingest_web(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Ingest a web content snapshot (text + URL) as a source in a package."""
-    service = KnowledgePackageService(db, current_user.id)
+    package_service = KnowledgePackageService(db, current_user.id)
+    package = await package_service.get_package(package_id)
+    if not package:
+        raise HTTPException(status_code=404, detail="Package not found")
     try:
         if request.page_url:
-            existing = await service.find_document_by_url(package_id, request.page_url)
+            existing = await package_service.find_document_by_url(package_id, request.page_url)
             if existing:
-                return _package_document_response(current_user.id, package_id, existing)
+                return _package_document_response(current_user.id, package_id, existing, package_source=package.source)
 
-        document = await service.add_text_source(
-            package_id,
-            content=request.page_content,
-            title=request.page_title or request.page_url or "Web snapshot",
-            source_kind="web",
-            page_url=request.page_url,
-            language=request.language,
-        )
-        return _package_document_response(current_user.id, package_id, document)
+        if package.source == "doc_summary":
+            ingest = DocSummaryIngestService(db, current_user.id)
+            document = await ingest.ingest_text(
+                package_id,
+                content=request.page_content,
+                title=request.page_title or request.page_url or "Web snapshot",
+                source_kind="web",
+                page_url=request.page_url,
+                language=request.language,
+            )
+        else:
+            document = await package_service.add_text_source(
+                package_id,
+                content=request.page_content,
+                title=request.page_title or request.page_url or "Web snapshot",
+                source_kind="web",
+                page_url=request.page_url,
+                language=request.language,
+            )
+        return _package_document_response(current_user.id, package_id, document, package_source=package.source)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except DATABASE_ERRORS as e:
@@ -385,18 +444,29 @@ async def ingest_web_url(
     try:
         existing = await service.find_document_by_url(package_id, page_url)
         if existing:
-            return _package_document_response(current_user.id, package_id, existing)
+            return _package_document_response(current_user.id, package_id, existing, package_source=package.source)
 
         page_content, page_title = await fetch_url_page_text(page_url)
-        document = await service.add_text_source(
-            package_id,
-            content=page_content,
-            title=page_title or page_url,
-            source_kind="web",
-            page_url=page_url,
-            language=request.language,
-        )
-        return _package_document_response(current_user.id, package_id, document)
+        if package.source == "doc_summary":
+            ingest = DocSummaryIngestService(db, current_user.id)
+            document = await ingest.ingest_text(
+                package_id,
+                content=page_content,
+                title=page_title or page_url,
+                source_kind="web",
+                page_url=page_url,
+                language=request.language,
+            )
+        else:
+            document = await service.add_text_source(
+                package_id,
+                content=page_content,
+                title=page_title or page_url,
+                source_kind="web",
+                page_url=page_url,
+                language=request.language,
+            )
+        return _package_document_response(current_user.id, package_id, document, package_source=package.source)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except DATABASE_ERRORS as e:

@@ -88,7 +88,13 @@ export const fileCenterKeys = {
 const PACKAGES_BASE = '/api/knowledge-space/packages'
 
 /** Poll while any source is still indexing or wiki compile is pending. */
-function hasProcessingDocuments(documents: KnowledgeDocument[]): boolean {
+function hasProcessingDocuments(
+  documents: KnowledgeDocument[],
+  packageSource?: string | null
+): boolean {
+  if (packageSource === 'doc_summary') {
+    return documents.some((doc) => doc.status === 'processing' || doc.status === 'pending')
+  }
   return documentNeedsPipelinePoll(documents)
 }
 
@@ -98,11 +104,15 @@ function hasProcessingDocuments(documents: KnowledgeDocument[]): boolean {
 
 /** Poll while sources index or wiki pages are still compiling. */
 function shouldPollPackages(packages: KnowledgePackage[]): boolean {
-  return packages.some(
-    (pkg) =>
+  return packages.some((pkg) => {
+    if (pkg.source === 'doc_summary') {
+      return pkg.status === 'processing'
+    }
+    return (
       pkg.status === 'processing' ||
       (pkg.wiki_status === 'pending' && pkg.rag_status === 'completed')
-  )
+    )
+  })
 }
 
 export function usePackages(options?: { enabled?: MaybeRef<boolean> }) {
@@ -137,7 +147,7 @@ export function usePackageDetail(
     // Poll while any source is still indexing so the UI reflects progress.
     refetchInterval: (query) => {
       const data = query.state.data as PackageDetailResponse | undefined
-      return data && hasProcessingDocuments(data.documents) ? 4000 : false
+      return data && hasProcessingDocuments(data.documents, data.package.source) ? 4000 : false
     },
   })
 }

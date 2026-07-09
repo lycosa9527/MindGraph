@@ -41,6 +41,7 @@ from services.knowledge.document_processing import (
     prepare_qdrant_metadata,
 )
 from services.knowledge.document_processor import get_document_processor
+from services.knowledge.doc_summary_storage import clear_package_redis, delete_extracted_content
 from services.utils.safe_upload import ensure_within_directory, safe_upload_basename
 from services.knowledge.document_reindexing import (
     chunk_text_for_reindexing,
@@ -609,10 +610,16 @@ class KnowledgeSpaceService:
             raise ValueError(f"Document {document_id} not found or access denied")
 
         try:
-            await self.qdrant.delete_document(self.user_id, document_id)
+            metadata = document.doc_metadata or {}
+            if metadata.get("doc_summary_lite"):
+                await delete_extracted_content(metadata)
+                if document.batch_id is not None:
+                    await clear_package_redis(document.batch_id)
+            else:
+                await self.qdrant.delete_document(self.user_id, document_id)
 
-            if document.file_path and Path(document.file_path).exists():
-                Path(document.file_path).unlink()
+                if document.file_path and Path(document.file_path).exists():
+                    Path(document.file_path).unlink()
 
             await self.db.delete(document)
             await self.db.commit()

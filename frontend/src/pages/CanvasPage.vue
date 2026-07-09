@@ -106,6 +106,7 @@ import {
 } from '@/composables/core/diagramMarkdownPipeline'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useMindMapRagBranchExpand } from '@/composables/editor/useMindMapRagBranchExpand'
+import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import {
   createFileCenterActivePackage,
   FILE_CENTER_ACTIVE_PACKAGE_KEY,
@@ -465,7 +466,9 @@ provide(
   FILE_CENTER_ACTIVE_PACKAGE_KEY,
   createFileCenterActivePackage(fileCenterEnabled)
 )
-const ragBranchExpandEnabled = computed(() => fileCenterEnabled.value)
+const ragBranchExpandEnabled = computed(
+  () => fileCenterEnabled.value && !DOC_SUMMARY_LITE_UI
+)
 useMindMapRagBranchExpand(ragBranchExpandEnabled)
 
 const isMindMapPresentationMode = computed(

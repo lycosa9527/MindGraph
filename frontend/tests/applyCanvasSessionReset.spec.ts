@@ -57,6 +57,7 @@ describe('applyCanvasSessionReset', () => {
     expect(llmStore.isGenerating).toBe(false)
     expect(inlineRecStore.streamPhase).toBe('idle')
     expect(previewStore.isGenerating).toBe(false)
+    expect(previewStore.generatingNodeId).toBeNull()
     expect(diagramStore.selectedNodes).toEqual([])
     expect(diagramStore.canPaste).toBe(false)
     expect(usePanelsStore().mindmatePanel.isOpen).toBe(false)

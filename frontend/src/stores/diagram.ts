@@ -209,6 +209,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     applyMindMapSubgraphPreview,
     restoreMindMapSubgraphSnapshot,
     clearMindMapSubgraphPreviewTags,
+    pasteMindMapClipboardBranches,
   } = mindMapOpsSlice
   const { removeBubbleMapNodes } = bubbleMapOpsSlice
   const { addBraceMapPart, removeBraceMapNodes } = braceMapOpsSlice
@@ -293,8 +294,21 @@ export const useDiagramStore = defineStore('diagram', () => {
   const { addNode, updateNode, emptyNode, removeNode } = nodeManagementSlice
   ctx.addNode = addNode
 
-  const copyPasteSlice = useCopyPasteSlice(ctx)
-  const { canPaste, copySelectedNodes, pasteNodesAt, clearCopiedNodes } = copyPasteSlice
+  const copyPasteSlice = useCopyPasteSlice(ctx, {
+    removeMindMapNodes,
+    removeTreeMapNodes,
+    removeBraceMapNodes,
+    removeNode,
+    pasteMindMapClipboardBranches,
+  })
+  const {
+    canPaste,
+    copySelectedNodes,
+    cutSelectedNodes,
+    pasteClipboardAt,
+    pasteNodesAt,
+    clearCopiedNodes,
+  } = copyPasteSlice
 
   const vueFlowSlice = useVueFlowIntegrationSlice(ctx)
   const {
@@ -523,10 +537,13 @@ export const useDiagramStore = defineStore('diagram', () => {
     applyMindMapSubgraphPreview,
     restoreMindMapSubgraphSnapshot,
     clearMindMapSubgraphPreviewTags,
+    pasteMindMapClipboardBranches,
     getMindMapDescendantIds,
     resyncMindMapConnectionStrokeColors,
     reconcileMindMapCanvasMode,
     copySelectedNodes,
+    cutSelectedNodes,
+    pasteClipboardAt,
     pasteNodesAt,
     clearCopiedNodes,
     reset,

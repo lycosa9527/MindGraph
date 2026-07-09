@@ -65,7 +65,6 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
         guardState: saveGuardState?.() ??
           buildDiagramSaveGuardState({
             llmGenerating: llmResultsStore.isGenerating,
-            subgraphPreviewActive: false,
             subgraphGenerating: false,
             collabSessionActive: diagramStore.collabSessionActive,
             isCollabGuest: false,

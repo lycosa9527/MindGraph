@@ -67,7 +67,7 @@ export function extractFailureFromPayload(
       showGuidance: result.show_guidance === true,
     }
   }
-  if (!result.success || !result.spec) {
+  if (!result.spec) {
     return { error: 'Generation failed' }
   }
   return null

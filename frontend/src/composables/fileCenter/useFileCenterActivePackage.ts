@@ -6,6 +6,7 @@ import { type InjectionKey, type Ref, computed, inject, ref, watch } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 import { storeToRefs } from 'pinia'
 
+import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useSavedDiagramsStore, useDiagramStore } from '@/stores'
 import { apiRequestJson } from '@/utils/apiClient'
 
@@ -46,13 +47,20 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
   const { activeDiagramId } = storeToRefs(savedDiagramsStore)
   const { updatePackage } = useFileCenterMutations()
 
-  const packagesQuery = usePackages({ enabled })
+  const packagesQuery = usePackages({
+    enabled: computed(() => enabled.value && !DOC_SUMMARY_LITE_UI),
+  })
   const pendingPackageId = ref<number | null>(readPendingPackageId())
   const sessionStarting = ref(false)
   /** Immediately updated after session/start so ingest does not wait on query refetch. */
   const sessionPackageId = ref<number | null>(null)
+  const sessionPackage = ref<KnowledgePackage | null>(null)
 
   const linkedPackage = computed<KnowledgePackage | null>(() => {
+    if (sessionPackage.value !== null && sessionPackageId.value === sessionPackage.value.id) {
+      return sessionPackage.value
+    }
+
     const diagramId = activeDiagramId.value
     const packages = packagesQuery.data.value?.packages ?? []
 
@@ -138,6 +146,7 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
         }
       )
       sessionPackageId.value = pkg.id
+      sessionPackage.value = pkg
       mergeSessionPackageIntoCache(pkg)
       if (!activeDiagramId.value) {
         rememberPendingPackage(pkg.id)
@@ -177,6 +186,7 @@ export function createFileCenterActivePackage(enabled: Ref<boolean>) {
         }
       )
       sessionPackageId.value = pkg.id
+      sessionPackage.value = pkg
       mergeSessionPackageIntoCache(pkg)
       if (!activeDiagramId.value) {
         rememberPendingPackage(pkg.id)

@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.140.0] - 2026-07-09
+
+> **Mind map one-sentence Kitty chat with persisted turns, node learning notes, hierarchical clipboard, Document Summary lite ingest, branch-expand AI subgraphs, and canvas diagram-type switching.**
+
+### Added
+
+- **One-sentence generate → Kitty chat panel** — Text-only chat UI with Kitty avatar; first message generates the diagram, follow-ups route to Kitty for edits ([`MindMapOneSentencePanel.vue`](frontend/src/components/canvas/MindMapOneSentencePanel.vue), [`OneSentenceKittyAvatar.vue`](frontend/src/components/canvas/OneSentenceKittyAvatar.vue), [`useMindMapOneSentenceChat.ts`](frontend/src/composables/canvasToolbar/useMindMapOneSentenceChat.ts), [`one_sentence_text_reply.py`](services/kitty/session/one_sentence_text_reply.py)).
+- **One-sentence session persistence** — Chat turns stored in Redis + PostgreSQL with REST list/get/append and scope migration ([`one_sentence_turns.py`](services/kitty/session/one_sentence_turns.py), [`one_sentence_session_pg.py`](services/kitty/session/one_sentence_session_pg.py), Alembic [`rev_0078`](alembic/versions/rev_0078_kitty_one_sentence_turns.py)–[`0081`](alembic/versions/rev_0081_rls_kitty_one_sentence_sessions.py), [`kitty_routes.py`](routers/features/kitty/kitty_routes.py)).
+- **Mind map node learning note** — Context-menu action opens explain modal; Kitty streams educational reflection on a selected node via SSE ([`MindMapNodeExplainModal.vue`](frontend/src/components/canvas/MindMapNodeExplainModal.vue), [`node_explain.py`](agents/mind_maps/node_explain.py), [`mindmap_node_explain.py`](routers/mindmap_node_explain.py), [`useMindMapNodeExplain.ts`](frontend/src/composables/mindMap/useMindMapNodeExplain.ts)).
+- **Hierarchical clipboard** — Structure-aware copy/cut/paste for mind map branches, tree map, brace map, and flow map; paste anchors onto a target node ([`hierarchicalClipboardExtract.ts`](frontend/src/stores/diagram/hierarchicalClipboardExtract.ts), [`hierarchicalClipboardPaste.ts`](frontend/src/stores/diagram/hierarchicalClipboardPaste.ts), [`copyPaste.ts`](frontend/src/stores/diagram/copyPaste.ts)).
+- **Document Summary lite** — Extract-only ingest: upload Word/PDF/PPT/images/audio, store extracted markdown to COS, skip RAG/wiki indexing ([`doc_summary_ingest.py`](services/knowledge/doc_summary_ingest.py), [`doc_summary_storage.py`](services/knowledge/doc_summary_storage.py), [`docSummaryLite.ts`](frontend/src/config/docSummaryLite.ts)).
+- **Mind map branch-expand API** — Dedicated LLM path for expanding one branch with 4–6 direct children using topic/reference/sibling context ([`mind_map_agent.py`](agents/mind_maps/mind_map_agent.py), [`workflow.py`](agents/core/workflow.py), [`prompts/mind_maps.py`](prompts/mind_maps.py)).
+- **AI subgraph generation (canvas)** — Floating toolbar / context menu generates child nodes for a branch; accept/discard preview flow ([`useMindMapSubgraphSuggest.ts`](frontend/src/composables/editor/useMindMapSubgraphSuggest.ts), [`mindMapSubgraphContext.ts`](frontend/src/utils/mindMapSubgraphContext.ts), [`BranchNode.vue`](frontend/src/components/diagram/nodes/BranchNode.vue)).
+- **Diagram type switching from natural language** — Detect diagram type aliases in one-sentence prompts and switch pristine canvas while preserving topic seed ([`diagramTypeFromPrompt.ts`](frontend/src/composables/canvasPage/diagramTypeFromPrompt.ts), [`switchCanvasDiagramType.ts`](frontend/src/composables/canvasPage/switchCanvasDiagramType.ts)).
+- **Kitty acknowledgment library** — Centralized zh/en ack templates for diagram commands, low-confidence, and unsupported types ([`services/kitty/ack/`](services/kitty/ack/), [`kitty_unsupported_diagram_types.py`](services/kitty/infra/bootstrap/kitty_unsupported_diagram_types.py)).
+- **Canvas LLM model resolution** — Subgraph and related flows honor the user's selected model via [`resolveDiagramLlmModel.ts`](frontend/src/utils/resolveDiagramLlmModel.ts).
+- **Node palette multi-model batches** — Callers can pass `llm_models` to limit which LLMs run in palette generation ([`base_palette_generator.py`](agents/node_palette/base_palette_generator.py)).
+
+### Changed
+
+- **One-sentence panel UX** — Chat-style message list with streaming Kitty replies, collab-aware input blocking, and automatic scope migration when the diagram is saved to the library.
+- **Document Summary panel** — Lite mode defaults to file upload; simplified status copy; sidebar hides Knowledge Space nav while lite mode is on ([`MindMapDocumentSummaryPanel.vue`](frontend/src/components/canvas/MindMapDocumentSummaryPanel.vue), [`useAppSidebar.ts`](frontend/src/composables/sidebar/useAppSidebar.ts)).
+- **Knowledge package API** — `doc_summary` packages report wiki/RAG as disabled; ingest uses extract-only pipeline ([`packages.py`](routers/api/knowledge_space/packages.py)).
+- **Kitty command router** — Richer routing, ack emission, unsupported-diagram handling, and text-only one-sentence conversational path ([`command_router.py`](services/kitty/routing/command_router.py)).
+- **Subgraph merge pipeline** — Direct-children-only merge, debug logging, and context collection refactored ([`mindMapSubgraphMerge.ts`](frontend/src/utils/mindMapSubgraphMerge.ts), [`mindMapOps.ts`](frontend/src/stores/diagram/mindMapOps.ts)).
+- **Save / keyboard guards** — Save blocked while AI subgraph is generating; subgraph preview must be accepted or discarded before save ([`diagramSaveFeedback.ts`](frontend/src/composables/editor/diagramSaveFeedback.ts)).
+
+### Fixed
+
+- **Clipboard paste semantics** — Paste attaches hierarchical content to the context node instead of dropping flat copies at canvas coordinates.
+- **Subgraph generation quality** — Branch expand sends explicit branch context to avoid duplicate children and deep nesting.
+- **Collab + AI** — Node explain and one-sentence flows respect live-collaboration AI blocks.
+- **Kitty unsupported diagram requests** — Clear fallback when users ask for unsupported types (e.g. fishbone) instead of failing silently.
+
+### Tests
+
+- **Backend** — [`test_kitty_one_sentence_*.py`](tests/), [`test_one_sentence_text_reply.py`](tests/test_one_sentence_text_reply.py), [`test_doc_summary_ingest.py`](tests/test_doc_summary_ingest.py), [`test_doc_summary_storage.py`](tests/test_doc_summary_storage.py), [`test_mind_map_branch_expand.py`](tests/test_mind_map_branch_expand.py), [`test_kitty_ack_library.py`](tests/test_kitty_ack_library.py), [`test_kitty_unsupported_diagram_types.py`](tests/test_kitty_unsupported_diagram_types.py); extended [`test_kitty_voice_command_router.py`](tests/test_kitty_voice_command_router.py).
+- **Frontend** — [`oneSentenceSessionTurns.spec.ts`](frontend/tests/oneSentenceSessionTurns.spec.ts), [`hierarchicalClipboard.spec.ts`](frontend/tests/hierarchicalClipboard.spec.ts), [`diagramTypeFromPrompt.spec.ts`](frontend/tests/diagramTypeFromPrompt.spec.ts), [`mindMapSubgraphContext.spec.ts`](frontend/tests/mindMapSubgraphContext.spec.ts), [`mindMapSubgraphMerge.spec.ts`](frontend/tests/mindMapSubgraphMerge.spec.ts), [`resolveDiagramLlmModel.spec.ts`](frontend/tests/resolveDiagramLlmModel.spec.ts); extended [`branchAutoExpandGuard.spec.ts`](frontend/tests/branchAutoExpandGuard.spec.ts), [`diagramSaveFlow.spec.ts`](frontend/tests/diagramSaveFlow.spec.ts).
+
 ## [5.139.0] - 2026-07-08
 
 > **Chrome extension v0.4.20 store packaging and page capture refactor, public Terms/Privacy page with browser extension appendix, and Edge Add-ons publish tooling.**

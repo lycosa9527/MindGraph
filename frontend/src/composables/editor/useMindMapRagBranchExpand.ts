@@ -27,7 +27,7 @@ export function useMindMapRagBranchExpand(enabled: Ref<boolean>) {
   const liveTranslationStore = useLiveTranslationStore()
   const { activePackageId, activeDiagramId } = useFileCenterActivePackage(enabled)
   const detailQuery = usePackageDetail(activePackageId, { enabled })
-  const { generateSubgraph, hasPreview, isGenerating } = useMindMapSubgraphSuggest()
+  const { generateSubgraph, isGenerating } = useMindMapSubgraphSuggest()
 
   const completedSourceCount = computed(
     () => (detailQuery.data.value?.documents ?? []).filter((d) => d.status === 'completed').length
@@ -58,7 +58,6 @@ export function useMindMapRagBranchExpand(enabled: Ref<boolean>) {
       isMindMap: isMindMap(),
       collabActive: diagramStore.collabSessionActive,
       isGenerating: isGenerating.value,
-      hasPreview: hasPreview.value,
       alreadyAttempted: attempted.value.has(nodeId),
       completedSourceCount: completedSourceCount.value,
       trimmedText: trimmed,

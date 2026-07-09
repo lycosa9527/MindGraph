@@ -26,6 +26,10 @@ from services.kitty.session.events import (
     get_session_event_bus,
 )
 from services.kitty.session.memory import get_session_memory
+from services.kitty.session.one_sentence_text_reply import reply_text_only_conversational
+from services.kitty.session.one_sentence_turns import (
+    persist_one_sentence_turn_from_voice_session,
+)
 from services.kitty.session.omni_client_access import get_session_omni_client
 from services.kitty.session.runtime_state import voice_sessions
 
@@ -112,6 +116,15 @@ async def _handle_text_inbound(runtime: KittySessionRuntime, payload: Dict[str, 
     mem.append_user_turn(text, source="text")
 
     session = voice_sessions.get(runtime.voice_session_id) or {}
+    if str(session.get("active_panel") or "") == "one_sentence":
+        await persist_one_sentence_turn_from_voice_session(
+            runtime.voice_session_id,
+            role="user",
+            content=text,
+            source="ws_text",
+            phase="edit",
+        )
+
     session_context = dict(session.get("context") or {})
     result = await route_voice_command(
         runtime.websocket,
@@ -124,6 +137,14 @@ async def _handle_text_inbound(runtime: KittySessionRuntime, payload: Dict[str, 
     if result.outcome == RouteOutcome.EXECUTED:
         return
     if result.outcome != RouteOutcome.CONVERSATIONAL_FALLBACK:
+        return
+
+    if await reply_text_only_conversational(
+        runtime.websocket,
+        runtime.voice_session_id,
+        text,
+        session_context,
+    ):
         return
 
     try:

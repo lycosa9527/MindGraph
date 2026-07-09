@@ -16,6 +16,7 @@ import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 export interface KittyInboundHandlerDeps {
   destroyed: () => boolean
   cleaningUp: () => boolean
+  textOnly?: boolean
   isVoiceActive: Ref<boolean>
   state: Ref<KittyAgentState>
   sessionId: Ref<string | null>
@@ -56,6 +57,7 @@ export function handleKittyServerMessage(
       break
 
     case 'audio_chunk':
+      if (deps.textOnly) break
       if (!deps.destroyed() && !deps.cleaningUp() && !deps.isVoiceActive.value) {
         void deps.playAudioChunk(String(data.audio ?? ''))
         deps.state.value = 'speaking'
@@ -103,11 +105,19 @@ export function handleKittyServerMessage(
     case 'diagram_update': {
       const diagramAction = String(data.action ?? '')
       const diagramUpdates = (data.updates as Record<string, unknown>) ?? {}
-      const summary = formatKittyDiagramUpdateDebug(diagramAction, diagramUpdates)
+      const userSummary =
+        typeof data.user_summary === 'string' && data.user_summary.trim() !== ''
+          ? data.user_summary.trim()
+          : ''
+      const summary =
+        userSummary !== ''
+          ? userSummary
+          : formatKittyDiagramUpdateDebug(diagramAction, diagramUpdates)
       eventBus.emit('voice:diagram_update_executed', {
         action: diagramAction,
         updates: diagramUpdates,
         summary,
+        userSummary: userSummary !== '' ? userSummary : undefined,
       })
       traceKittyWorkflow('mobile', 'diagram_ws', summary, { action: diagramAction })
       applyKittyDiagramUpdate(diagramAction, diagramUpdates)

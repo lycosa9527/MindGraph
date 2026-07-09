@@ -28,7 +28,6 @@ describe('resolveDiagramTitleForSave', () => {
 describe('diagram save guards and feedback', () => {
   const openGuard = {
     llmGenerating: false,
-    subgraphPreviewActive: false,
     subgraphGenerating: false,
     collabSessionActive: false,
     isCollabGuest: false,
@@ -40,10 +39,7 @@ describe('diagram save guards and feedback', () => {
     )
   })
 
-  it('blocks save while subgraph preview is active or generating', () => {
-    expect(
-      resolveDiagramSaveBlockReason({ ...openGuard, subgraphPreviewActive: true })
-    ).toBe('subgraph_busy')
+  it('blocks save while subgraph generation is in flight', () => {
     expect(
       resolveDiagramSaveBlockReason({ ...openGuard, subgraphGenerating: true })
     ).toBe('subgraph_busy')
@@ -68,7 +64,6 @@ describe('diagram save guards and feedback', () => {
     const duringGeneration = {
       authenticated: true,
       llmGenerating: true,
-      subgraphPreviewActive: false,
       subgraphGenerating: false,
       collabSessionActive: false,
       isCollabGuest: false,
@@ -84,7 +79,6 @@ describe('diagram save guards and feedback', () => {
       canPerformDiagramSave({
         authenticated: false,
         llmGenerating: false,
-        subgraphPreviewActive: false,
         subgraphGenerating: false,
         collabSessionActive: false,
         isCollabGuest: false,
@@ -104,7 +98,6 @@ describe('diagram save guards and feedback', () => {
     expect(
       buildDiagramSaveGuardState({
         llmGenerating: true,
-        subgraphPreviewActive: false,
         subgraphGenerating: false,
         collabSessionActive: false,
         isCollabGuest: false,

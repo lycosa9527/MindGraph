@@ -139,7 +139,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
       >
         <!-- Knowledge Space -->
         <el-tooltip
-          v-if="s.isAuthenticated && s.featureKnowledgeSpace"
+          v-if="s.isAuthenticated && s.featureKnowledgeSpace && !s.hideKnowledgeSpaceNav"
           :content="s.t('sidebar.knowledgeSpace')"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -162,7 +162,12 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </el-tooltip>
         <transition name="panel-slide">
           <div
-            v-if="s.isAuthenticated && s.featureKnowledgeSpace && s.showPanel('knowledge-space')"
+            v-if="
+              s.isAuthenticated &&
+              s.featureKnowledgeSpace &&
+              !s.hideKnowledgeSpaceNav &&
+              s.showPanel('knowledge-space')
+            "
             class="sidebar-panel"
           >
             <KnowledgeSpaceHistory />
@@ -171,7 +176,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- Chunk Test -->
         <el-tooltip
-          v-if="s.isAuthenticated && s.featureRagChunkTest"
+          v-if="s.isAuthenticated && s.featureRagChunkTest && !s.hideKnowledgeSpaceNav"
           :content="s.t('sidebar.chunkTest')"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -194,7 +199,12 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </el-tooltip>
         <transition name="panel-slide">
           <div
-            v-if="s.isAuthenticated && s.featureRagChunkTest && s.showPanel('chunk-test')"
+            v-if="
+              s.isAuthenticated &&
+              s.featureRagChunkTest &&
+              !s.hideKnowledgeSpaceNav &&
+              s.showPanel('chunk-test')
+            "
             class="sidebar-panel"
           >
             <ChunkTestHistory />

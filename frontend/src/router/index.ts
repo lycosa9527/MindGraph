@@ -4,6 +4,7 @@
 import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 
 import { useMobileDetect } from '@/composables/core/useMobileDetect'
+import { HIDE_KNOWLEDGE_SPACE_NAV } from '@/config/docSummaryLite'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
@@ -469,7 +470,7 @@ router.beforeEach(async (to, from) => {
   // Check feature flags
   if (
     to.meta.requiresFeatureFlag === 'ragChunkTest' &&
-    !featureFlagsStore.getFeatureRagChunkTest()
+    (!featureFlagsStore.getFeatureRagChunkTest() || HIDE_KNOWLEDGE_SPACE_NAV)
   ) {
     return { name: 'MindMate' }
   }
@@ -491,7 +492,7 @@ router.beforeEach(async (to, from) => {
   if (to.name === 'SchoolZone' && !featureFlagsStore.getFeatureSchoolZone()) {
     return { name: 'MindMate' }
   }
-  if (to.name === 'KnowledgeSpace' && !featureFlagsStore.getFeatureKnowledgeSpace()) {
+  if (to.name === 'KnowledgeSpace' && (!featureFlagsStore.getFeatureKnowledgeSpace() || HIDE_KNOWLEDGE_SPACE_NAV)) {
     return { name: 'MindMate' }
   }
   if (to.name === 'Library' && !featureFlagsStore.getFeatureLibrary()) {

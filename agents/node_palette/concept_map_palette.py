@@ -437,6 +437,7 @@ Output one branch name per line, no numbering, no extra text. Exactly {count} li
         organization_id: Optional[int],
         diagram_type: Optional[str],
         endpoint_path: Optional[str],
+        llm_models: Optional[List[str]] = None,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Stream concept nodes with per-tab parent_id and dedup scope."""
         parent_id, merged_edu = self._parent_id_and_merged_edu(stage, _mode, educational_context)
@@ -453,6 +454,7 @@ Output one branch name per line, no numbering, no extra text. Exactly {count} li
             organization_id=organization_id,
             diagram_type=diagram_type,
             endpoint_path=endpoint_path,
+            llm_models=llm_models,
         ):
             if chunk.get("event") == "node_generated":
                 node = chunk.get("node")
@@ -473,7 +475,7 @@ Output one branch name per line, no numbering, no extra text. Exactly {count} li
         organization_id: Optional[int] = None,
         diagram_type: Optional[str] = None,
         endpoint_path: Optional[str] = None,
-        **_kwargs: Any,
+        llm_models: Optional[List[str]] = None,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Bootstrap domain names or stream concepts with per-tab dedup scope."""
         stage = _stage_data if isinstance(_stage_data, dict) else {}
@@ -505,6 +507,7 @@ Output one branch name per line, no numbering, no extra text. Exactly {count} li
             organization_id,
             diagram_type,
             endpoint_path,
+            llm_models,
         ):
             yield chunk
 

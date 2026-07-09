@@ -119,12 +119,49 @@ class GenerateRequest(BaseModel):
         max_length=5000,
         description="Optional generation requirements separate from the main prompt (canvas one-sentence)",
     )
+    # Mind map branch sub-graph expansion (canvas floating toolbar)
+    mind_map_topic: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Central mind map topic when expanding a branch with AI",
+    )
+    expand_branch: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Branch label to expand with AI-generated sub-branches",
+    )
+    reference_branches: Optional[List[str]] = Field(
+        None,
+        description="Sibling or top-level branch labels for LLM context during branch expand",
+    )
+    existing_branch_children: Optional[List[str]] = Field(
+        None,
+        description="Existing child labels under expand_branch to avoid duplicating",
+    )
+    parent_branch: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Parent branch label when expand_branch is not a top-level branch",
+    )
 
     @field_validator("language")
     @classmethod
     def validate_generate_language(cls, value: str) -> str:
         """Reject unknown generation language codes."""
         return _validate_prompt_output_language(value)
+
+    @field_validator("reference_branches", "existing_branch_children")
+    @classmethod
+    def cap_branch_context_lists(cls, value: Optional[List[str]]) -> Optional[List[str]]:
+        """Bound branch-context list size and label length for LLM prompts."""
+        if not value:
+            return value
+        capped: List[str] = []
+        for item in value[:24]:
+            label = str(item).strip()[:200]
+            if label and label not in capped:
+                capped.append(label)
+        return capped or None
 
     @field_validator("diagram_type", mode="before")
     @classmethod
@@ -149,8 +186,9 @@ class GenerateRequest(BaseModel):
         prompt_empty = not (self.prompt or "").strip()
         has_fixed_dimension = self.fixed_dimension and str(self.fixed_dimension).strip()
         dimension_only_mode = self.dimension_only_mode is True
+        has_expand_branch = bool((self.expand_branch or "").strip())
 
-        if prompt_empty and not (has_fixed_dimension or dimension_only_mode):
+        if prompt_empty and not (has_fixed_dimension or dimension_only_mode or has_expand_branch):
             raise ValueError("Prompt is required unless fixed_dimension or dimension_only_mode is provided")
         return self
 

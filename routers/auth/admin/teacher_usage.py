@@ -486,6 +486,7 @@ async def get_user_detail(
         edit_by_date: dict[str, int] = {}
         export_by_date: dict[str, int] = {}
         autocomplete_by_date: dict[str, int] = {}
+        one_sentence_by_date: dict[str, int] = {}
 
         edit_rows = (
             await db.execute(
@@ -495,7 +496,7 @@ async def get_user_detail(
                 )
                 .where(
                     UserActivityLog.user_id == user_id,
-                    UserActivityLog.activity_type == "diagram_edit",
+                    UserActivityLog.activity_type.in_(["diagram_edit", "one_sentence_edit"]),
                     UserActivityLog.created_at >= beijing_start,
                 )
                 .group_by(func.date(UserActivityLog.created_at))
@@ -554,6 +555,28 @@ async def get_user_detail(
             beijing_dt = utc_dt.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
             autocomplete_by_date[str(beijing_dt.date())] = int(row.cnt or 0)
 
+        one_sentence_rows = (
+            await db.execute(
+                select(
+                    func.date(UserActivityLog.created_at).label("d"),
+                    sa_count(UserActivityLog.id).label("cnt"),
+                )
+                .where(
+                    UserActivityLog.user_id == user_id,
+                    UserActivityLog.activity_type == "one_sentence_generate",
+                    UserActivityLog.created_at >= beijing_start,
+                )
+                .group_by(func.date(UserActivityLog.created_at))
+            )
+        ).all()
+        for row in one_sentence_rows:
+            utc_date = row.d
+            if isinstance(utc_date, str):
+                utc_date = datetime.strptime(utc_date, "%Y-%m-%d").date()
+            utc_dt = datetime.combine(utc_date, datetime.min.time())
+            beijing_dt = utc_dt.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
+            one_sentence_by_date[str(beijing_dt.date())] = int(row.cnt or 0)
+
         for d in date_list:
             date_str = str(d)
             activity_trends.append(
@@ -562,6 +585,7 @@ async def get_user_detail(
                     "editCount": edit_by_date.get(date_str, 0),
                     "exportCount": export_by_date.get(date_str, 0),
                     "autocompleteCount": autocomplete_by_date.get(date_str, 0),
+                    "oneSentenceCount": one_sentence_by_date.get(date_str, 0),
                 }
             )
 

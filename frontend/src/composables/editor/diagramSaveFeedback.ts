@@ -8,7 +8,6 @@ export type DiagramSaveBlockReason =
 
 export interface DiagramSaveGuardState {
   llmGenerating: boolean
-  subgraphPreviewActive: boolean
   subgraphGenerating: boolean
   collabSessionActive: boolean
   isCollabGuest: boolean
@@ -25,7 +24,7 @@ export interface DiagramSaveEligibility extends DiagramSaveGuardState {
 export function canPerformDiagramSave(state: DiagramSaveEligibility): boolean {
   if (!state.authenticated || !state.hasTypeAndData) return false
   if (!state.bypassGeneratingGuard && state.llmGenerating) return false
-  if (state.subgraphPreviewActive || state.subgraphGenerating) return false
+  if (state.subgraphGenerating) return false
   if (state.suppressed) return false
   if (state.isCollabGuest || state.collabSessionActive) return false
   return true
@@ -37,14 +36,12 @@ export function shouldAutoSaveAfterLlmModelCompleted(success: boolean | undefine
 
 export function buildDiagramSaveGuardState(deps: {
   llmGenerating: boolean
-  subgraphPreviewActive: boolean
   subgraphGenerating: boolean
   collabSessionActive: boolean
   isCollabGuest: boolean
 }): DiagramSaveGuardState {
   return {
     llmGenerating: deps.llmGenerating,
-    subgraphPreviewActive: deps.subgraphPreviewActive,
     subgraphGenerating: deps.subgraphGenerating,
     collabSessionActive: deps.collabSessionActive,
     isCollabGuest: deps.isCollabGuest,
@@ -55,7 +52,7 @@ export function resolveDiagramSaveBlockReason(
   state: DiagramSaveGuardState
 ): DiagramSaveBlockReason | null {
   if (state.llmGenerating) return 'llm_generating'
-  if (state.subgraphGenerating || state.subgraphPreviewActive) return 'subgraph_busy'
+  if (state.subgraphGenerating) return 'subgraph_busy'
   if (state.collabSessionActive) return 'collab_active'
   if (state.isCollabGuest) return 'collab_guest'
   return null

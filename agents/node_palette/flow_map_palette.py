@@ -11,7 +11,7 @@ Proprietary License
 """
 
 import logging
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
 from prompts.node_palette import (
@@ -57,6 +57,7 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         organization_id: Optional[int] = None,
         diagram_type: Optional[str] = None,
         endpoint_path: Optional[str] = None,
+        llm_models: Optional[List[str]] = None,
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with multi-stage workflow and step sequencing.
@@ -102,6 +103,7 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
             organization_id=organization_id,
             diagram_type=diagram_type,
             endpoint_path=endpoint_path,
+            llm_models=llm_models,
         ):
             if event.get("event") == "node_generated":
                 self._tag_node_with_mode(event, stage, stage_data)

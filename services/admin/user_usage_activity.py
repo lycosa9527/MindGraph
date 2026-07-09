@@ -35,6 +35,8 @@ _VALID_ACTIONS = frozenset(
         "diagram_save",
         "chat_turn",
         "dingtalk_diagram",
+        "one_sentence_generate",
+        "one_sentence_edit",
     }
 )
 

@@ -94,6 +94,10 @@ KITTY_DIAGRAM_CATALOG_PROMPT = """
 - mindmap OR mind_map — Mind map branches and children / 分支、子项
 - concept_map — Concept map; concepts and labeled relationships / 概念、命题关系
 
+【Unsupported / in development】Do NOT call open_desktop_canvas for: fishbone (鱼骨图), org chart,
+Gantt, Venn, SWOT, or other slugs not listed above. They are not available yet — suggest mind map,
+flow map, or bubble map as alternatives.
+
 
 【Desktop canvas open intent】When the user wants the COMPUTER/desktop app (电脑、桌面、PC、浏览器画布)
 to open or switch to a **new blank** diagram of a given type (especially when no diagram is open

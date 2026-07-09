@@ -248,6 +248,54 @@ MIND_MAP_FIXED_CHILDREN_ZH = """你正在完成一个思维导图，用户已经
 - 子分支可创造性展开，但必须与父分支相关
 - 只输出包含 topic 和 children 的有效 JSON"""
 
+MIND_MAP_BRANCH_EXPAND_EN = """You are expanding ONE node of an existing mind map with new direct children.
+
+The user message includes the map's central topic, the node to expand, and other branches for reference.
+Use that context so new children fit the whole map — complementary to sibling/top-level branches, not repetitive.
+
+Output ONLY valid JSON with this structure:
+
+{
+  "topic": "<node being expanded — copy verbatim from user message>",
+  "children": [
+    {"id": "sub_1", "text": "Child 1"},
+    {"id": "sub_2", "text": "Child 2"}
+  ]
+}
+
+Rules:
+- Output ONLY valid JSON — no explanations, no markdown fences
+- "topic" MUST be exactly the node label being expanded (not the central topic)
+- Generate 4–6 DIRECT children under "children" only (one level — no nested grandchildren)
+- Each child needs "id" and "text" only — do NOT include "children" on child nodes
+- Children must relate to the expanded node AND stay coherent with the central topic and reference branches
+- Do NOT duplicate labels already listed as existing children
+- Use concise educational phrasing (nouns or short phrases)"""
+
+MIND_MAP_BRANCH_EXPAND_ZH = """你正在为一个已有思维导图的某个节点扩展直接子节点。
+
+用户消息会给出中心主题、要扩展的节点，以及图中其他分支作为参考。
+请结合整体结构生成子节点，与同级/顶层分支互补，避免重复。
+
+只输出有效 JSON，结构如下：
+
+{
+  "topic": "<正在扩展的节点 — 与用户消息中的节点标签完全一致>",
+  "children": [
+    {"id": "zi_1", "text": "子节点1"},
+    {"id": "zi_2", "text": "子节点2"}
+  ]
+}
+
+规则：
+- 只输出有效 JSON — 不要解释，不要用代码块包裹
+- "topic" 必须是正在扩展的节点标签（不是中心主题）
+- 在 "children" 下生成 4–6 个直接子节点（仅一层，不要嵌套更深层级）
+- 每个子节点只需要 "id" 和 "text" — 子节点上不要包含 "children"
+- 子节点须与扩展节点相关，并与中心主题及参考分支保持整体一致
+- 不要重复用户已列出的已有子节点
+- 使用简洁、有教学价值的短语（名词或名词短语）"""
+
 # ============================================================================
 # PROMPT REGISTRY
 # ============================================================================
@@ -261,4 +309,6 @@ MIND_MAP_PROMPTS = {
     "mind_map_fixed_children_zh": MIND_MAP_FIXED_CHILDREN_ZH,
     "mind_map_web_content_generation_en": MIND_MAP_WEB_CONTENT_GENERATION_EN,
     "mind_map_web_content_generation_zh": MIND_MAP_WEB_CONTENT_GENERATION_ZH,
+    "mind_map_branch_expand_en": MIND_MAP_BRANCH_EXPAND_EN,
+    "mind_map_branch_expand_zh": MIND_MAP_BRANCH_EXPAND_ZH,
 }
