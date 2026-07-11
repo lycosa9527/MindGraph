@@ -8,6 +8,7 @@ Proprietary License
 from __future__ import annotations
 
 import copy
+import sys
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Optional
@@ -31,12 +32,11 @@ from services.kitty.context.library_refresh import (
 from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.ack.ack_library import (
     render_ack,
-    render_ack_for_command,
-    render_low_confidence_ack,
+    render_clarify_options_ack,
     render_not_understood_ack,
     render_unsupported_diagram_ack,
 )
-from services.kitty.ack.ack_slots import enrich_ack_session_context
+from services.kitty.adapters.diagram_command import apply_kitty_legacy_diagram_command
 from services.kitty.context.messaging import (
     resolve_voice_interaction_language,
     safe_websocket_send,
@@ -68,13 +68,41 @@ from services.kitty.infra.redis.kitty_session_redis import (
 )
 from services.kitty.omni.context_refresh import schedule_omni_context_refresh
 from services.kitty.omni.tools import omni_function_call_to_command, parse_node_index_from_identifier
-from services.kitty.routing.intent_parser import parse_voice_intent_with_tools
+from services.kitty.routing.intent_parser import (
+    parse_one_sentence_edit_intent,
+    parse_voice_intent_with_tools,
+)
+from services.kitty.routing.node_action_debug import log_node_action
+from services.kitty.routing.one_sentence_edit_helpers import (
+    is_one_sentence_edit_mode,
+    should_use_verified_diagram_edit,
+)
+from services.kitty.routing.pending_branch_autocomplete import (
+    emit_auto_complete_branch,
+    maybe_start_background_branch_autocomplete,
+    try_consume_pending_branch_autocomplete,
+)
+from services.kitty.routing.pending_clarify_options import (
+    arm_pending_clarify_options,
+    try_consume_pending_clarify_options,
+)
+from services.kitty.routing.structural_diagram_route import route_structural_diagram_command
 from services.kitty.session.memory import get_session_memory
 from services.kitty.session.ops import (
     get_agent_session_id,
     get_voice_session,
 )
 from services.kitty.session.runtime_state import logger, voice_sessions
+
+# Re-exports for tests that patch ``services.kitty.routing.command_router.*``
+# and for ``structural_diagram_route`` via ``sys.modules[__name__]``.
+_should_use_verified_diagram_edit = should_use_verified_diagram_edit
+_PATCHABLE_DIAGRAM_CALLABLES = (
+    apply_kitty_legacy_diagram_command,
+    execute_diagram_update,
+    maybe_start_background_branch_autocomplete,
+    parse_one_sentence_edit_intent,
+)
 
 VOICE_COMMAND_CONFIDENCE_TEXT = 0.5
 VOICE_COMMAND_CONFIDENCE_VOICE = 0.5
@@ -117,6 +145,9 @@ def _finish_route(
     return RouteResult(outcome=outcome, reason=reason, action=action)
 
 
+finish_route = _finish_route
+
+
 async def _send_diagram_failure_ack(
     websocket: WebSocket,
     voice_session_id: str,
@@ -135,6 +166,9 @@ async def _send_diagram_failure_ack(
         one_sentence_outcome=one_sentence_outcome,
         one_sentence_user_text=one_sentence_user_text,
     )
+
+
+send_diagram_failure_ack = _send_diagram_failure_ack
 
 
 async def _emit_unsupported_diagram_route(
@@ -359,6 +393,30 @@ async def route_voice_command(
             except (RuntimeError, ConnectionError, AttributeError, ValueError) as hydrate_exc:
                 logger.debug("[Kitty] diagram review instruction refresh skipped: %s", hydrate_exc)
 
+        pending_action = await try_consume_pending_branch_autocomplete(
+            websocket,
+            voice_session_id,
+            command_text,
+            session_context,
+        )
+        if pending_action:
+            return _finish_route(
+                voice_session_id,
+                RouteOutcome.EXECUTED,
+                action=pending_action,
+            )
+
+        resolved_preparse = pre_parsed_command
+        if resolved_preparse is None:
+            picked_cmd = await try_consume_pending_clarify_options(
+                websocket,
+                voice_session_id,
+                command_text,
+                session_context,
+            )
+            if picked_cmd is not None:
+                resolved_preparse = picked_cmd
+
         # CRITICAL: Check if input is a paragraph (long text for processing)
         # Common case: Teachers paste whole paragraphs expecting diagram generation
         if is_paragraph_text(command_text):
@@ -442,13 +500,23 @@ async def route_voice_command(
             except (RuntimeError, ConnectionError, AttributeError, ValueError, TypeError) as ann_exc:
                 logger.debug("[Kitty] diagram review annotations skipped: %s", ann_exc)
 
-        if pre_parsed_command is not None:
-            command = dict(pre_parsed_command)
+        live_for_edit = live_session if isinstance(live_session, dict) else None
+        if resolved_preparse is not None:
+            command = dict(resolved_preparse)
         elif from_voice:
             return _finish_route(
                 voice_session_id,
                 RouteOutcome.CONVERSATIONAL_FALLBACK,
                 reason="from_voice_no_preparse",
+            )
+        elif is_one_sentence_edit_mode(session_context, live_for_edit):
+            command = await parse_one_sentence_edit_intent(
+                command_text,
+                voice_session_id=voice_session_id,
+                diagram_type=str(diagram_type),
+                session_context=session_context,
+                user_id=user_id,
+                organization_id=organization_id,
             )
         else:
             command = await parse_voice_intent_with_tools(
@@ -491,6 +559,27 @@ async def route_voice_command(
 
         confidence_threshold = VOICE_COMMAND_CONFIDENCE_TEXT if is_text_message else VOICE_COMMAND_CONFIDENCE_VOICE
 
+        if action == "none" and is_one_sentence_edit_mode(
+            session_context,
+            live_session if isinstance(live_session, dict) else None,
+        ):
+            lang = resolve_voice_interaction_language(session_context)
+            clarify = render_not_understood_ack(lang=lang)
+            await _send_diagram_failure_ack(
+                websocket,
+                voice_session_id,
+                clarify,
+                one_sentence_action="none",
+                one_sentence_outcome="failed",
+                one_sentence_user_text=command_text,
+            )
+            return _finish_route(
+                voice_session_id,
+                RouteOutcome.FAILED,
+                reason="edit_not_parsed",
+                action="none",
+            )
+
         ui_actions = [
             "open_thinkguide",
             "close_thinkguide",
@@ -504,11 +593,47 @@ async def route_voice_command(
             "ask_thinkguide",
             "ask_mindmate",
             "auto_complete",
+            "auto_complete_branch",
+            "clarify_options",
+            "decline_branch_autocomplete",
             "start_inline_recommendations",
             "add_node_with_recommendations",
             "help",
             "open_desktop_canvas",
         ]
+
+        if action == "clarify_options":
+            lang = resolve_voice_interaction_language(session_context)
+            ack_text = render_clarify_options_ack(command, lang=lang)
+            live_voice = voice_sessions.get(voice_session_id)
+            armed = False
+            if isinstance(live_voice, dict):
+                armed = arm_pending_clarify_options(live_voice, command)
+            log_node_action(
+                "router_clarify_emit",
+                voice_session_id=voice_session_id,
+                detail=f"armed={armed} options={len(command.get('options') or [])}",
+                action="clarify_options",
+                extra={
+                    "question": command.get("question"),
+                    "labels": (command.get("options") or [])[:3],
+                },
+            )
+            await emit_user_ack(
+                websocket,
+                voice_session_id,
+                ack_text,
+                one_sentence_action="clarify_options",
+                one_sentence_outcome="executed",
+                one_sentence_user_text=command_text,
+            )
+            memory = get_session_memory(voice_session_id)
+            memory.append_action_turn(ack_text, action="clarify_options")
+            return _finish_route(
+                voice_session_id,
+                RouteOutcome.EXECUTED,
+                action="clarify_options",
+            )
 
         # Check if this is a diagram update action
         diagram_update_actions = [
@@ -518,80 +643,22 @@ async def route_voice_command(
             "delete_node",
         ]
         if action in diagram_update_actions:
-            if confidence >= confidence_threshold:
-                live_voice = voice_sessions.get(voice_session_id)
-                if isinstance(live_voice, dict):
-                    live_voice["last_diagram_command"] = copy.deepcopy(command)
-                lang = resolve_voice_interaction_language(session_context)
-                executed = await execute_diagram_update(websocket, voice_session_id, action, command, session_context)
-                if executed:
-                    kitty_wf_log(
-                        "diagram_execute",
-                        f"{action} ok target={target or node_index or '—'}",
-                        voice_session_id=voice_session_id,
-                        action=str(action),
-                    )
-                    ack_text = render_ack_for_command(
-                        str(action),
-                        command,
-                        enrich_ack_session_context(session_context, live_session),
-                        lang=lang,
-                    )
-                    await emit_user_ack(
-                        websocket,
-                        voice_session_id,
-                        ack_text,
-                        one_sentence_action=str(action) if action else None,
-                        one_sentence_outcome="executed",
-                        one_sentence_user_text=command_text,
-                    )
-                    memory = get_session_memory(voice_session_id)
-                    memory.append_action_turn(ack_text, action=str(action))
-                    return _finish_route(
-                        voice_session_id,
-                        RouteOutcome.EXECUTED,
-                        action=str(action) if action else None,
-                    )
-                fail_text = render_ack("diagram.execute_failed", lang=lang)
-                await _send_diagram_failure_ack(
-                    websocket,
-                    voice_session_id,
-                    fail_text,
-                    one_sentence_action=str(action) if action else None,
-                    one_sentence_outcome="failed",
-                    one_sentence_user_text=command_text,
-                )
-                return _finish_route(
-                    voice_session_id,
-                    RouteOutcome.FAILED,
-                    reason="diagram_execute_failed",
-                    action=str(action) if action else None,
-                )
-            logger.info(
-                "VOIC | Low confidence (%.2f) for diagram update '%s', threshold=%.2f",
-                confidence,
-                action,
-                confidence_threshold,
-            )
-            lang = resolve_voice_interaction_language(session_context)
-            clarify_text = render_low_confidence_ack(
-                command,
-                lang=lang,
-                session_context=session_context,
-            )
-            await _send_diagram_failure_ack(
+            return await route_structural_diagram_command(
+                sys.modules[__name__],
                 websocket,
                 voice_session_id,
-                clarify_text,
-                one_sentence_action=str(action) if action else None,
-                one_sentence_outcome="low_confidence",
-                one_sentence_user_text=command_text,
-            )
-            return _finish_route(
-                voice_session_id,
-                RouteOutcome.FAILED,
-                reason="low_confidence_diagram",
-                action=str(action) if action else None,
+                command,
+                session_context,
+                action=action,
+                target=target,
+                node_index=node_index,
+                command_text=command_text,
+                diagram_type=diagram_type,
+                user_id=user_id if isinstance(user_id, int) else None,
+                live_session=live_session if isinstance(live_session, dict) else None,
+                is_text_message=is_text_message,
+                confidence=float(confidence) if isinstance(confidence, (int, float)) else 0.0,
+                confidence_threshold=confidence_threshold,
             )
 
         # For non-diagram-update actions, check confidence
@@ -665,6 +732,43 @@ async def route_voice_command(
                 render_ack("ui.auto_complete", lang=lang),
             )
             return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
+
+        if action == "auto_complete_branch":
+            lang = resolve_voice_interaction_language(session_context)
+            target_raw = command.get("target") or command.get("node_label") or command.get("text")
+            target = str(target_raw).strip() if isinstance(target_raw, str) else ""
+            node_id_raw = command.get("node_id")
+            node_id = str(node_id_raw).strip() if isinstance(node_id_raw, str) else ""
+            if not target and not node_id:
+                await emit_user_ack(
+                    websocket,
+                    voice_session_id,
+                    render_ack("diagram.branch_autocomplete.failed", {"target": ""}, lang=lang),
+                )
+                return _finish_route(
+                    voice_session_id,
+                    RouteOutcome.FAILED,
+                    reason="missing_branch_label",
+                    action="auto_complete_branch",
+                )
+            logger.info(
+                "Triggering branch auto-complete for %s (node_id=%s)",
+                target or node_id,
+                node_id or "—",
+            )
+            await emit_auto_complete_branch(
+                websocket,
+                voice_session_id,
+                target,
+                command_text=command_text,
+                lang=lang,
+                node_id=node_id or None,
+            )
+            return _finish_route(
+                voice_session_id,
+                RouteOutcome.EXECUTED,
+                action="auto_complete_branch",
+            )
 
         if action == "start_inline_recommendations":
             logger.info("Kitty: start inline recommendations action")

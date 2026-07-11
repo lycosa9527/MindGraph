@@ -316,7 +316,7 @@ async def test_route_update_node_emits_success_ack() -> None:
         assert result.outcome == RouteOutcome.EXECUTED
         ack_mock.assert_awaited_once()
         ack_text = mock_await_args(ack_mock)[2]
-        assert "食" in ack_text
+        # Rotating phrase pools may omit old_text; new label is always present.
         assert "小吃" in ack_text
     finally:
         voice_sessions.pop(vid, None)
