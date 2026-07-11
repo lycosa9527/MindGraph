@@ -9,11 +9,15 @@ All Rights Reserved
 Proprietary License
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 from typing import Dict, Optional
 
 import httpx
+
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +31,16 @@ class HTTPXClientManager:
     - Connection pooling across requests
     - Lazy initialization (clients created on first use)
     - Proper cleanup on shutdown
+    - Recreates clients when the asyncio event loop changes (pytest)
     """
 
     _instance: Optional["HTTPXClientManager"] = None
 
-    def __init__(self):
-        """init  ."""
+    def __init__(self) -> None:
+        """init."""
         self._clients: Dict[str, httpx.AsyncClient] = {}
-        self._lock = asyncio.Lock()
+        self._lock: Optional[asyncio.Lock] = None
+        self._loop_id: Optional[int] = None
 
     @classmethod
     def get_instance(cls) -> "HTTPXClientManager":
@@ -42,6 +48,27 @@ class HTTPXClientManager:
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
+
+    def _ensure_loop_affinity(self) -> None:
+        """Drop clients bound to a closed/previous event loop."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        loop_id = id(loop)
+        if self._loop_id is None:
+            self._loop_id = loop_id
+            self._lock = asyncio.Lock()
+            return
+        if self._loop_id == loop_id:
+            if self._lock is None:
+                self._lock = asyncio.Lock()
+            return
+        # New event loop (common under pytest-asyncio): abandon old clients.
+        self._clients.clear()
+        self._loop_id = loop_id
+        self._lock = asyncio.Lock()
+        logger.debug("[HTTPXClientManager] Reset clients for new event loop")
 
     async def get_client(
         self,
@@ -62,37 +89,58 @@ class HTTPXClientManager:
         Returns:
             Shared httpx.AsyncClient instance
         """
+        self._ensure_loop_affinity()
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+
         async with self._lock:
-            if provider not in self._clients or self._clients[provider].is_closed:
-                self._clients[provider] = httpx.AsyncClient(
-                    base_url=base_url,
-                    timeout=httpx.Timeout(
-                        timeout,
-                        connect=10.0,
-                        read=stream_timeout,  # Longer read timeout for streaming
-                    ),
-                    http2=True,  # Enable HTTP/2 for better multiplexing
-                    limits=httpx.Limits(
-                        max_connections=100,
-                        max_keepalive_connections=20,
-                        keepalive_expiry=30.0,
-                    ),
-                )
-                logger.debug("[HTTPXClientManager] Created client for %s", provider)
+            existing = self._clients.get(provider)
+            if existing is not None and not existing.is_closed:
+                return existing
+
+            self._clients[provider] = httpx.AsyncClient(
+                base_url=base_url,
+                timeout=httpx.Timeout(
+                    timeout,
+                    connect=30.0,
+                    read=stream_timeout,
+                ),
+                http2=True,
+                limits=httpx.Limits(
+                    max_connections=100,
+                    max_keepalive_connections=20,
+                    keepalive_expiry=30.0,
+                ),
+            )
+            logger.debug("[HTTPXClientManager] Created client for %s", provider)
             return self._clients[provider]
 
     async def close_all(self) -> None:
         """Close all client connections. Call on app shutdown."""
+        self._ensure_loop_affinity()
+        if self._lock is None:
+            self._lock = asyncio.Lock()
         async with self._lock:
-            for provider, client in self._clients.items():
+            for provider, client in list(self._clients.items()):
                 if not client.is_closed:
-                    await client.aclose()
+                    try:
+                        await client.aclose()
+                    except BACKGROUND_INFRA_ERRORS as exc:
+                        logger.debug(
+                            "[HTTPXClientManager] Close %s ignored: %s",
+                            provider,
+                            exc,
+                        )
                     logger.debug("[HTTPXClientManager] Closed client for %s", provider)
             self._clients.clear()
 
+    def reset_for_tests(self) -> None:
+        """Drop cached clients without awaiting (pytest between loops)."""
+        self._clients.clear()
+        self._lock = None
+        self._loop_id = None
 
-# Global httpx client manager instance
-# Using closure to avoid global statements and protected member access
+
 def _create_manager_functions():
     """Create closure functions to manage httpx manager instance."""
     manager_instance: Optional[HTTPXClientManager] = None
@@ -122,3 +170,12 @@ async def close_httpx_clients() -> None:
     manager = _get_manager_for_close_func()
     if manager is not None:
         await manager.close_all()
+
+
+def reset_httpx_clients_for_tests() -> None:
+    """Clear shared httpx clients between pytest event loops."""
+    manager = _get_manager_for_close_func()
+    if manager is not None:
+        manager.reset_for_tests()
+    singleton = HTTPXClientManager.get_instance()
+    singleton.reset_for_tests()

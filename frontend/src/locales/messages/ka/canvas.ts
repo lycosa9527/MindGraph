@@ -1,5 +1,5 @@
 /**
- * en UI � canvas
+ * ka UI � canvas
  */
 
 export default {
@@ -352,6 +352,7 @@ export default {
   'canvas.subgraphPreview.emptyResult': 'AI returned no usable child nodes',
   'canvas.subgraphPreview.mergeFailed': 'Could not merge subgraph into this node',
   'canvas.subgraphPreview.enterNodeTextFirst': 'Enter valid topic text for this node first',
+  'canvas.subgraphPreview.topicNodeNotSupported': 'Select a branch node to generate a sub-graph',
   'canvas.subgraphPreview.historyLabel': 'AI subgraph',
   'canvas.inlineRecPicker.prevPage': 'Previous page',
   'canvas.inlineRecPicker.nextPage': 'Next page',
@@ -466,8 +467,8 @@ export default {
   'canvas.topBar.collabTooltip': 'Collaborate (school or shared)',
   'canvas.topBar.editFilename': 'Click to edit filename',
   'canvas.topBar.export': 'Export',
-  'canvas.topBar.exportPdf': 'Export as PDF',
   'canvas.topBar.exportJson': 'Export as MG file',
+  'canvas.topBar.exportPdf': 'Export as PDF',
   'canvas.topBar.exportPdfLandscape': 'Export as PDF (landscape)',
   'canvas.topBar.exportPdfPortrait': 'Export as PDF (portrait)',
   'canvas.topBar.exportPng': 'Export as PNG',
@@ -578,8 +579,10 @@ export default {
   'diagram.contextMenu.bridgeItemB': 'New item B',
   'diagram.contextMenu.circleNewIdea': 'New idea',
   'diagram.contextMenu.copy': 'Copy',
+  'diagram.contextMenu.cut': 'Cut',
   'diagram.contextMenu.delete': 'Delete',
   'diagram.contextMenu.edit': 'Edit',
+  'diagram.contextMenu.explain': 'Learning note',
   'diagram.contextMenu.lineBreak': 'Line break',
   'diagram.contextMenu.infoAddNodeSoon': 'Add node feature coming soon',
   'diagram.contextMenu.paste': 'Paste',
@@ -620,11 +623,38 @@ export default {
   'canvas.mindMapOneSentence.example1': '3-day Beijing trip plan with four branches: clothing, food, lodging, transport',
   'canvas.mindMapOneSentence.example2': 'SWOT analysis for a new product launch: strengths, weaknesses, opportunities, threats',
   'canvas.mindMapOneSentence.example3': 'Elementary science: states of water — simple labels, max 6 characters per node',
+  'canvas.mindMapOneSentence.inputPlaceholder': 'Describe a topic or edit request…',
+  'canvas.mindMapOneSentence.sendButton': 'Send',
+  'canvas.mindMapOneSentence.kittyWelcome': 'Hi — tell me what diagram to create, or keep chatting to edit branches and nodes.',
+  'canvas.mindMapOneSentence.switchDiagramType': 'Switching to {type}…',
+  'canvas.mindMapOneSentence.kittyGenerating': 'Got it — generating your diagram…',
+  'canvas.mindMapOneSentence.kittyGenerateDone': 'Diagram ready. Keep typing to edit branches or nodes.',
+  'canvas.mindMapOneSentence.kittyGenerateFailed': 'Diagram generation failed. Try again or refine your description.',
+  'canvas.mindMapOneSentence.kittyEditFailed': 'Could not apply that edit. Try rephrasing your request.',
+  'canvas.mindMapOneSentence.kittyWorking': 'OK — working on that…',
+  'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty is unavailable. Check that FEATURE_KITTY_AGENT is enabled on the server.',
+  'canvas.mindMapNodeExplain.title': 'Kitty learning note',
+  'canvas.mindMapNodeExplain.userPrompt': 'Why might "{node}" spark questions or cognitive conflict on this diagram?',
+  'canvas.mindMapNodeExplain.thinking': 'Looking at your diagram…',
+  'canvas.mindMapNodeExplain.inputPlaceholder': 'Ask a follow-up or share your thoughts…',
+  'canvas.mindMapNodeExplain.sendButton': 'Send',
+  'canvas.mindMapNodeExplain.close': 'Got it',
+  'canvas.mindMapNodeExplain.requestFailed': 'Could not get an explanation. Please try again.',
   'canvas.mindMapDocumentSummary.tabDocument': 'Document extract',
   'canvas.mindMapDocumentSummary.tabImage': 'Image upload',
   'canvas.mindMapDocumentSummary.tabWeb': 'Web link',
   'canvas.mindMapDocumentSummary.tabChat': 'Chat history',
+  'canvas.mindMapDocumentSummary.tabFileUpload': 'File upload',
+  'canvas.mindMapDocumentSummary.tabChatHistory': 'Chat history',
   'canvas.mindMapDocumentSummary.intro': 'Curate sources for this diagram — add documents, images, web pages, or chat exports, then generate a more accurate mind map.',
+  'canvas.mindMapDocumentSummary.uploadFileHint': 'Click to upload a file',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'Word, PDF, PPT, images, audio — extracted text only is stored',
+  'canvas.mindMapDocumentSummary.invalidFileType': 'Unsupported file type',
+  'canvas.mindMapDocumentSummary.saveContent': 'Save content',
+  'canvas.mindMapDocumentSummary.statusExtracting': 'Extracting…',
+  'canvas.mindMapDocumentSummary.chatIntroLite': 'Download the file reader, enter the pairing code, and send WeChat or DingTalk history for this diagram.',
+  'canvas.mindMapDocumentSummary.chatReceivedLite': 'Chat history received',
+  'canvas.mindMapDocumentSummary.chatDoneLite': 'Chat saved — tap Generate when ready',
   'canvas.mindMapDocumentSummary.corpusStatus': '{completed} of {total} sources indexed',
   'canvas.mindMapDocumentSummary.noSources': 'No sources yet. Add one in the tabs below.',
   'canvas.mindMapDocumentSummary.noPackageYet': 'No corpus yet',
@@ -653,8 +683,10 @@ export default {
   'canvas.mindMapDocumentSummary.sessionStartFailed': 'Could not start Document Summary session',
   'canvas.mindMapDocumentSummary.imageTooLarge': 'Image is too large. Maximum size is 10MB.',
   'canvas.mindMapDocumentSummary.generateNoCorpus': 'Add at least one source, then generate',
+  'canvas.mindMapDocumentSummary.generateNoCorpusLite': 'Add content first, then tap Generate',
   'canvas.mindMapDocumentSummary.collabDisabled': 'Unavailable during live collaboration',
   'canvas.mindMapDocumentSummary.ingestSuccess': 'Source added to corpus',
+  'canvas.mindMapDocumentSummary.ingestSuccessLite': 'Content saved — tap Generate when ready',
   'canvas.mindMapDocumentSummary.ingestFailed': 'Failed to add source',
   'canvas.mindMapDocumentSummary.localDocumentLabel': 'Local document:',
   'canvas.mindMapDocumentSummary.uploadDocHint': 'Click to upload Word or PDF',
@@ -765,6 +797,8 @@ export default {
   'diagram.history.addChild': 'Add child',
   'diagram.history.addEffect': 'Add effect',
   'diagram.history.addNode': 'Add node',
+  'diagram.history.pasteNodes': 'Paste nodes',
+  'diagram.history.cutNodes': 'Cut nodes',
   'diagram.history.pasteSiblings': 'Paste {count} sibling nodes',
   'diagram.history.deleteAnalogyPair': 'Delete analogy pair',
   'diagram.history.deleteNode': 'Delete node',
@@ -926,4 +960,46 @@ export default {
   'canvasPage.collabConnected': 'Connected',
   'canvas.topBar.viewOnly': 'View only',
   'canvasPage.collabParticipantsMore': 'more',
+  'canvas.mindMapOneSentence.listeningPlaceholder': 'Listening…',
+  'canvas.mindMapOneSentence.micButton': 'Voice input',
+  'canvas.mindMapOneSentence.micDenied': 'Microphone unavailable — check browser permission',
+  'canvas.mindMapOneSentence.ttsToggle': 'Toggle speech',
+  'canvas.mindMapOneSentence.kittyEditStale':
+    'That edit did not take effect on the canvas (stale or no-op). Try again.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
+    'The canvas could not verify that edit. Your diagram was left unchanged.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed':
+    'The edit applied locally but failed to sync. Try again in a moment.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed':
+    'Could not sync the canvas. Please try again in a moment.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
+    'Could not sync the canvas ({detail}). Please try again in a moment.',
+  'canvas.mindMapOneSentence.kittyEditBusy':
+    'The diagram is still generating — please wait, then try again.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued':
+    '{models} results are still streaming — I will run your request automatically when they finish.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
+    'Other model results are still streaming — I will run your request automatically when they finish.',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming':
+    'Other models finished — continuing with your request…',
+  'canvas.mindMapOneSentence.requestQueued': 'Queued',
+  'canvas.mindMapOneSentence.requestFailed': 'Failed',
+  'canvas.mindMapOneSentence.kittyEditAccessDenied': "You don't have permission to edit this diagram.",
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    'The diagram was just updated, so that edit is stale. Please repeat your change.',
+  'canvas.mindMapOneSentence.kittyEditTimeout':
+    'That edit timed out — the diagram may be unchanged. Please try again.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner':
+    "I couldn't find an editable canvas. Open the canvas, then try again.",
+  'canvas.mindMapOneSentence.kittyEditAddFailed':
+    "Sorry — I couldn't add that node. Check the name and try again.",
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
+    "Sorry — I couldn't rename that node. Check the name and try again.",
+  'canvas.mindMapOneSentence.kittyEditCenterFailed':
+    "Sorry — I couldn't update the topic. Please try again.",
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
+    "Sorry — I couldn't remove that node. Check the name and try again.",
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    "Sorry — I couldn't auto-complete that branch. You can ask again.",
+  'canvas.mindMapOneSentence.clarifyChoices': 'Choose an option',
 } as const

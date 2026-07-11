@@ -311,7 +311,6 @@ function handleBranchMoveTouchStart(event: TouchEvent): void {
   )
   if (consumed) {
     event.stopPropagation()
-    event.preventDefault()
   }
 }
 
@@ -335,7 +334,7 @@ function handleBranchMovePointerUp(): void {
     :style="nodeStyle"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
-    @touchstart.capture="handleBranchMoveTouchStart"
+    @touchstart.passive.capture="handleBranchMoveTouchStart"
   >
     <!-- Handles for double bubble map curved edges (connect at node boundary) -->
     <template v-if="isDoubleBubbleMap">

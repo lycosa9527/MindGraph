@@ -4,6 +4,7 @@
 import { eventBus } from '@/composables/core/useEventBus'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
+import { handleKittyAutoCompleteBranchRequest } from '@/composables/kitty/handleKittyAutoCompleteBranchRequest'
 import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
@@ -27,7 +28,10 @@ export interface UseMobileCanvasEventHandlersOptions {
   isAIGenerating: { value: boolean }
   startNodePaletteSession: (opts: { keepSessionId?: boolean; mode?: string }) => void
   startRecommendations: (nodeId: string) => Promise<{ success: boolean; error?: string }>
-  handleAIGenerate: () => void | Promise<void>
+  handleAIGenerate: (options?: {
+    generationInstructions?: string
+    topicOverride?: string
+  }) => void | Promise<void>
   handleConceptGeneration: () => void
   translate: (key: string, fallback?: string) => string
   notifyWarning: (message: string) => void
@@ -120,7 +124,7 @@ export function useMobileCanvasEventHandlers(
 
   eventBus.onWithOwner(
     'diagram:auto_complete_requested',
-    () => {
+    (data?: { source?: string; topic?: string; diagramType?: string }) => {
       if (!authStore.isAuthenticated) {
         notifyWarning(translate('notification.signInToUse'))
         return
@@ -130,7 +134,21 @@ export function useMobileCanvasEventHandlers(
         handleConceptGeneration()
         return
       }
-      void handleAIGenerate()
+      const topicOverride =
+        typeof data?.topic === 'string' && data.topic.trim() !== '' ? data.topic.trim() : undefined
+      void handleAIGenerate({ topicOverride })
+    },
+    OWNER
+  )
+
+  eventBus.onWithOwner(
+    'diagram:auto_complete_branch_requested',
+    (data: { nodeId?: string; nodeLabel?: string }) => {
+      if (!authStore.isAuthenticated) {
+        notifyWarning(translate('notification.signInToUse'))
+        return
+      }
+      void handleKittyAutoCompleteBranchRequest(data)
     },
     OWNER
   )

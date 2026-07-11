@@ -257,11 +257,12 @@ defineExpose({ saveOauthSettings })
         <el-date-picker
           v-model="expiresAtEdit"
           type="date"
+          size="small"
           :disabled="props.readOnly"
           :placeholder="t('admin.noExpiration')"
           value-format="YYYY-MM-DD"
           clearable
-          class="mindbot-swiss-input flex-1 min-w-0 max-w-2xl"
+          class="mindbot-swiss-input school-general-expires-picker flex-1 min-w-0 max-w-2xl"
         />
       </div>
 

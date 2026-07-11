@@ -14,6 +14,10 @@ import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { handleMindmateCollabPokeFrame } from '@/utils/mindmateCollabPokeNotify'
 
+const CONNECT_DEBOUNCE_MS = 200
+const PING_MESSAGE = JSON.stringify({ type: 'ping' })
+const PONG_MESSAGE = JSON.stringify({ type: 'pong' })
+
 function buildWsUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
   return `${proto}://${window.location.host}/api/ws/mindmate-notify`
@@ -28,6 +32,11 @@ export function useMindmateCollabNotify(): void {
   const { applyPresenceSnapshot, updatePresence } = useMindmateCollabPresenceBridge()
   const wsUrl = ref('')
   const connected = ref(false)
+  /** Bumped on every intentional disconnect; stale handshakes must not stay open. */
+  let connectGeneration = 0
+  let connectTimer: ReturnType<typeof setTimeout> | null = null
+  /** True when we wanted to drop a socket that was still handshaking. */
+  let cancelConnecting = false
 
   const shouldConnect = computed(
     () =>
@@ -89,13 +98,25 @@ export function useMindmateCollabNotify(): void {
 
   const { send, close, open, status } = useWebSocket(wsUrl, {
     immediate: false,
+    // URL is set manually before open(); default autoConnect watches url and would
+    // call open() again → close() on the still-CONNECTING socket (Chrome console noise).
+    autoConnect: false,
+    // Own lifecycle in onUnmounted — VueUse autoClose would close() mid-handshake on dispose.
+    autoClose: false,
     autoReconnect: { retries: 6, delay: 2500 },
     heartbeat: {
-      message: JSON.stringify({ type: 'ping' }),
+      message: PING_MESSAGE,
+      responseMessage: PONG_MESSAGE,
       interval: 30000,
       pongTimeout: 10000,
     },
     onConnected() {
+      if (cancelConnecting || !shouldConnect.value) {
+        cancelConnecting = false
+        close()
+        connected.value = false
+        return
+      }
       connected.value = true
       sendSubscribePresence(send)
       const userId = Number(authStore.user?.id)
@@ -105,6 +126,10 @@ export function useMindmateCollabNotify(): void {
     },
     onDisconnected() {
       connected.value = false
+      // close() sets VueUse explicitlyClosed so autoReconnect does not revive a cancelled session.
+      if (cancelConnecting || !shouldConnect.value) {
+        close()
+      }
       const userId = Number(authStore.user?.id)
       if (userId) {
         updatePresence(userId, 'offline')
@@ -115,18 +140,36 @@ export function useMindmateCollabNotify(): void {
     },
   })
 
-  usePresenceActivity((status) => {
+  usePresenceActivity((presenceStatus) => {
     if (connected.value) {
-      send(JSON.stringify({ type: 'presence', status }))
+      send(JSON.stringify({ type: 'presence', status: presenceStatus }))
     }
     const userId = Number(authStore.user?.id)
     if (userId) {
-      updatePresence(userId, status)
+      updatePresence(userId, presenceStatus)
     }
   })
 
+  function clearConnectTimer(): void {
+    if (connectTimer != null) {
+      clearTimeout(connectTimer)
+      connectTimer = null
+    }
+  }
+
+  /**
+   * Avoid Chrome "WebSocket is closed before the connection is established"
+   * by never calling close() while status is CONNECTING.
+   */
   function disconnectNotify(): void {
+    clearConnectTimer()
+    connectGeneration += 1
+    cancelConnecting = true
     if (status.value === 'CLOSED') {
+      connected.value = false
+      return
+    }
+    if (status.value === 'CONNECTING') {
       connected.value = false
       return
     }
@@ -134,11 +177,12 @@ export function useMindmateCollabNotify(): void {
     connected.value = false
   }
 
-  function connectNotify(): void {
+  function connectNotifyNow(): void {
     if (!shouldConnect.value) {
       disconnectNotify()
       return
     }
+    cancelConnecting = false
     if (status.value === 'OPEN' || status.value === 'CONNECTING') {
       return
     }
@@ -146,11 +190,23 @@ export function useMindmateCollabNotify(): void {
     open()
   }
 
+  function scheduleConnectNotify(): void {
+    clearConnectTimer()
+    const generation = connectGeneration
+    connectTimer = setTimeout(() => {
+      connectTimer = null
+      if (generation !== connectGeneration || !shouldConnect.value) {
+        return
+      }
+      connectNotifyNow()
+    }, CONNECT_DEBOUNCE_MS)
+  }
+
   watch(
     shouldConnect,
     (ok) => {
       if (ok) {
-        connectNotify()
+        scheduleConnectNotify()
       } else {
         disconnectNotify()
       }

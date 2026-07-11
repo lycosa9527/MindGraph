@@ -69,6 +69,14 @@ class ClientManager:
                 self._clients["qwen"] = QwenClient("generation")
                 self._clients["qwen-turbo"] = QwenClient("classification")
                 self._clients["qwen-plus"] = QwenClient("generation")
+                self._clients["qwen3.6-flash"] = QwenClient(
+                    "classification",
+                    pinned_dashscope_model="qwen3.6-flash",
+                )
+                self._clients["qwen3.7-plus"] = QwenClient(
+                    "generation",
+                    pinned_dashscope_model="qwen3.7-plus",
+                )
 
                 # Initialize other LLM clients
                 self._clients["deepseek"] = DeepSeekClient()

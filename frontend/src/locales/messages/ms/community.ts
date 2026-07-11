@@ -1,5 +1,5 @@
 /**
- * en UI � community
+ * ms UI � community
  */
 
 export default {

@@ -17,8 +17,11 @@ import '@/styles/admin-schools-swiss.css'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminOrganizations } from '@/composables/queries'
+import { formatBeijingDate } from '@/utils/formatBeijingDateTime'
 import { isOrgPrivatized } from '@/utils/orgPrivatization'
 
+import AdminSchoolCreateDialog from './AdminSchoolCreateDialog.vue'
+import AdminSchoolShareDialog from './AdminSchoolShareDialog.vue'
 import AdminTrendChartModal from './AdminTrendChartModal.vue'
 
 const SWISS_FILTER_POPPER = 'admin-swiss-school-filter-popper'
@@ -35,12 +38,23 @@ const props = withDefaults(
   }
 )
 
-const { t } = useLanguage()
+const { t, isZh } = useLanguage()
 const notify = useNotifications()
 const { can } = useAdminAccess()
 const { on: onAdminEvent } = useAdminEventBus('AdminSchoolsTab')
 
+const dateLocale = computed(() => (isZh.value ? 'zh-CN' : 'en-US'))
+
 const canEditOrganizations = computed(() => can('tab.organizations.edit'))
+/** Experts (invited-org scope, no global): usage / teachers / activity only. */
+const schoolDialogMode = computed<'manage' | 'insights'>(() =>
+  can('scope.invited_orgs') && !can('scope.global') ? 'insights' : 'manage'
+)
+const canCreateSchool = computed(
+  () =>
+    (can('tab.invites.edit') || can('tab.organizations.edit')) &&
+    (can('scope.global') || can('scope.invited_orgs'))
+)
 
 const organizationsQuery = useAdminOrganizations()
 
@@ -48,6 +62,17 @@ const isLoading = computed(() => organizationsQuery.isFetching.value)
 const schools = computed(
   () => (organizationsQuery.data.value ?? []) as unknown as Record<string, unknown>[]
 )
+const createModalVisible = ref(false)
+const shareModalVisible = ref(false)
+const shareInvitationCode = ref('')
+const shareOrganizationName = ref('')
+
+const orgTableEmptyText = computed(() => {
+  if (can('scope.invited_orgs') && !can('scope.global')) {
+    return t('admin.inviteOrgsEmpty')
+  }
+  return t('admin.noData')
+})
 const privatizedFilter = ref<PrivatizedFilterValue>('')
 const tokenSortOrder = ref<ColumnSortOrder>('none')
 const expiresAtSortOrder = ref<ColumnSortOrder>('none')
@@ -103,7 +128,7 @@ function expiresAtLabel(row: Record<string, unknown>): string {
   if (!datePart) {
     return t('admin.noExpiration') as string
   }
-  return datePart
+  return formatBeijingDate(datePart, dateLocale.value)
 }
 
 function compareExpiresAt(
@@ -343,6 +368,31 @@ async function loadSchools(options?: { silent?: boolean }): Promise<void> {
   }
 }
 
+function openCreateModal(): void {
+  createModalVisible.value = true
+}
+
+function openShareModalWithCode(code: string, orgName = ''): void {
+  shareInvitationCode.value = code
+  shareOrganizationName.value = orgName
+  shareModalVisible.value = true
+}
+
+function onSchoolCreated(payload: { invitation_code?: string; name?: string }): void {
+  void loadSchools({ silent: true })
+  if (payload.invitation_code) {
+    openShareModalWithCode(payload.invitation_code, payload.name ?? '')
+  }
+}
+
+onAdminEvent('admin:toolbar_action', (payload) => {
+  if (payload.action === 'open_create_school' && payload.tab === 'organizations') {
+    if (canCreateSchool.value) {
+      openCreateModal()
+    }
+  }
+})
+
 onAdminEvent('admin:refresh_requested', ({ domain }) => {
   if (domain === 'organizations' || domain === 'all') {
     void loadSchools({ silent: true })
@@ -373,7 +423,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
         :data="displayedSchools"
         row-key="id"
         class="admin-schools-table w-full"
-        :empty-text="t('admin.noData')"
+        :empty-text="orgTableEmptyText"
         stripe
         size="small"
       >
@@ -643,6 +693,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
     <AdminTrendChartModal
       v-model:visible="trendModalVisible"
       type="org"
+      :school-dialog-mode="schoolDialogMode"
       :org-name="trendOrg?.name"
       :org-id="trendOrg?.id"
       :org-display-name="trendOrg?.display_name"
@@ -666,6 +717,17 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
       :initial-trend-period="trendOrg?.initial_trend_period ?? 'week'"
       :read-only="!canEditOrganizations"
       @refresh="() => loadSchools({ silent: true })"
+    />
+
+    <AdminSchoolCreateDialog
+      v-model="createModalVisible"
+      @created="onSchoolCreated"
+    />
+
+    <AdminSchoolShareDialog
+      v-model="shareModalVisible"
+      :invitation-code="shareInvitationCode"
+      :organization-name="shareOrganizationName"
     />
   </div>
 </template>

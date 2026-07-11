@@ -146,5 +146,7 @@ def resolve_delete_node_ack_key(
     if variant == "child":
         if slots.get("branch_label"):
             return "diagram.delete_child.branch.done" if done else "diagram.delete_child.branch.progress"
+        if slots.get("target"):
+            return "diagram.delete_child.target.done" if done else "diagram.delete_child.target.progress"
         return "diagram.delete_child.done" if done else "diagram.delete_child.progress"
     return "diagram.delete_node.done" if done else "diagram.delete_node.progress"

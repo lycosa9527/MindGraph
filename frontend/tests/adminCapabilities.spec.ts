@@ -55,11 +55,14 @@ describe('adminCapabilities', () => {
     expect(caps).not.toContain('tab.organizations.edit')
   })
 
-  it('expert has invites and invited-org scope only', () => {
+  it('expert has organizations view, invites, and invited-org scope only', () => {
     const caps = fallbackCapabilitiesForRole('expert')
+    expect(caps).toContain('tab.organizations.view')
     expect(caps).toContain('tab.invites.view')
     expect(caps).toContain('tab.invites.edit')
     expect(caps).toContain('scope.invited_orgs')
+    expect(caps).not.toContain('tab.organizations.edit')
+    expect(caps).not.toContain('scope.global')
     expect(caps).not.toContain('tab.data_center.view')
   })
 

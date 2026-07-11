@@ -88,6 +88,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_thinking_coins: bool
     feature_kitty_agent: bool
     feature_auth_pixel_battle: bool
+    feature_test_server_banner: bool
     workshop_chat_preview_org_ids: list[int]
     feature_org_access: dict[str, FeatureOrgAccessEntry] = Field(default_factory=dict)
 
@@ -136,6 +137,7 @@ async def get_feature_flags(
         feature_thinking_coins=config.FEATURE_THINKING_COINS,
         feature_kitty_agent=kitty_agent_flag,
         feature_auth_pixel_battle=config.FEATURE_AUTH_PIXEL_BATTLE,
+        feature_test_server_banner=config.FEATURE_TEST_SERVER_BANNER,
         workshop_chat_preview_org_ids=sorted(config.WORKSHOP_CHAT_PREVIEW_ORG_IDS),
         feature_org_access=access_map,
     )

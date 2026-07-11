@@ -9,11 +9,45 @@ from typing import Any, Dict
 
 from fastapi import WebSocket
 
+from services.diagram_edit.transport.kitty_ws import verified_edit_extras_pending
 from services.kitty.context.messaging import safe_websocket_send, send_kitty_diagram_update
 from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
+from services.kitty.routing.diagram_agent_context import resolve_diagram_node_ref
 from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.ops import get_agent_session_id
 from services.kitty.session.runtime_state import logger, voice_sessions
+
+
+def _resolve_add_parent_id(
+    command: Dict[str, Any],
+    session_context: Dict[str, Any],
+) -> str | None:
+    """Resolve ``parent_ref`` to a stable canvas node id for child inserts."""
+    parent_ref = command.get("parent_ref")
+    if not isinstance(parent_ref, str) or not parent_ref.strip():
+        return None
+    ref = parent_ref.strip()
+    if ref in ("topic", "center"):
+        return None
+    diagram_data = session_context.get("diagram_data")
+    if not isinstance(diagram_data, dict):
+        diagram_data = {}
+    resolved = resolve_diagram_node_ref(diagram_data, label=ref)
+    if not resolved:
+        resolved = resolve_diagram_node_ref(diagram_data, node_id=ref)
+    if not resolved:
+        return None
+    node_id = resolved.get("node_id")
+    if isinstance(node_id, str) and node_id.strip() and node_id.strip() not in ("topic", "center"):
+        return node_id.strip()
+    return None
+
+
+def _mindmap_side(command: Dict[str, Any]) -> str:
+    side = command.get("side")
+    if isinstance(side, str) and side.strip().lower() in ("left", "right"):
+        return side.strip().lower()
+    return "right"
 
 
 async def voice_apply_add_node_action(
@@ -413,24 +447,48 @@ async def voice_apply_add_node_action(
                     },
                 )
         else:
-            # No position specified - add to end (default behavior)
-            logger.info("Adding node to end: %s", target)
+            # No position specified - add under parent_ref when set, else top-level branch
+            parent_id = _resolve_add_parent_id(command, session_context)
+            side = _mindmap_side(command)
+            if parent_id:
+                logger.info("Adding child under parent_id=%s: %s", parent_id, target)
+            else:
+                logger.info("Adding node to end (side=%s): %s", side, target)
             new_node = {
                 "id": f"{prefix}_{len(nodes)}",
                 "index": len(nodes),
                 "text": target,
             }
-            nodes.append(new_node)
+            if parent_id:
+                # Keep voice-shaped children list best-effort; Pinia is SoT on verified path.
+                for branch in nodes:
+                    if not isinstance(branch, dict):
+                        continue
+                    branch_text = branch.get("text") or branch.get("label")
+                    branch_id = branch.get("id")
+                    if branch_id == parent_id or (
+                        isinstance(branch_text, str)
+                        and branch_text.strip() == str(command.get("parent_ref") or "").strip()
+                    ):
+                        kids = branch.get("children")
+                        if not isinstance(kids, list):
+                            branch["children"] = []
+                            kids = branch["children"]
+                        kids.append({"text": target, "children": []})
+                        break
+            else:
+                nodes.append(new_node)
 
-            # Build update payload with diagram-specific fields
-            update_payload = {"text": target}
+            update_payload: Dict[str, Any] = {"text": target}
+            if parent_id:
+                update_payload["parent_id"] = parent_id
+            else:
+                update_payload["side"] = side
 
-            # Add category if specified (for double bubble map, multi-flow map)
             category = command.get("category")
             if category:
                 update_payload["category"] = category
 
-            # Add left/right if specified (for bridge map analogies)
             left = command.get("left")
             right = command.get("right")
             if left and right:
@@ -457,6 +515,11 @@ async def voice_apply_add_node_action(
 
         logger.debug("Node added: %s", target)
         return True
+    # Empty target: legacy path opens the node palette. Verified diagram_edit
+    # must not — palette never sends diagram_mutation_ack → ack_timeout.
+    if verified_edit_extras_pending(voice_session_id):
+        logger.warning("add_node missing target during verified edit; refusing palette open")
+        return False
     count = command.get("count", 1)
     logger.debug("Opening node palette for adding %d node(s)", count)
     await safe_websocket_send(

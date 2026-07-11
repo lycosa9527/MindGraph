@@ -158,7 +158,10 @@ export function useCanvasToolbarApps() {
     return list
   })
 
-  async function handleAIGenerate(options?: { generationInstructions?: string }) {
+  async function handleAIGenerate(options?: {
+    generationInstructions?: string
+    topicOverride?: string
+  }) {
     if (!authStore.isAuthenticated) {
       notify.warning(t('notification.signInToUse'))
       return
@@ -169,6 +172,7 @@ export function useCanvasToolbarApps() {
     }
     const validation = validateForAutoComplete({
       generationInstructions: options?.generationInstructions,
+      topicOverride: options?.topicOverride,
     })
     if (!validation.valid) {
       notify.warning(validation.error || t('canvas.toolbar.cannotGenerate'))
@@ -178,6 +182,7 @@ export function useCanvasToolbarApps() {
     const result = await autoComplete({
       promptSuffix: diagramStore.isLearningSheet ? ' 半成品' : undefined,
       generationInstructions: options?.generationInstructions,
+      topicOverride: options?.topicOverride,
     })
     if (!result.success && result.error) {
       console.error('Auto-complete failed:', result.error)

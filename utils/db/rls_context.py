@@ -184,11 +184,29 @@ def resolve_rls_context_for_transaction() -> RlsContext:
 
 
 _SET_CONFIG_SQL = text("SELECT set_config(:key, :value, true)")
+_SESSION_RLS_KEY = "rls_context"
+
+
+def bind_session_rls_context(session: Any, ctx: RlsContext) -> None:
+    """Pin RLS context on the SQLAlchemy session (survives ContextVar loss)."""
+    session.info[_SESSION_RLS_KEY] = ctx
+
+
+def resolve_rls_context_for_session(session: Session) -> RlsContext:
+    """Prefer session.info, then ContextVar, then deny-default."""
+    stored = session.info.get(_SESSION_RLS_KEY)
+    if isinstance(stored, RlsContext):
+        return stored
+    return resolve_rls_context_for_transaction()
 
 
 async def apply_rls_context_async(session: AsyncSession, ctx: Optional[RlsContext] = None) -> None:
     """Apply SET LOCAL app.* on the session's connection (same transaction)."""
-    effective = ctx if ctx is not None else resolve_rls_context_for_transaction()
+    if ctx is not None:
+        bind_session_rls_context(session, ctx)
+        effective = ctx
+    else:
+        effective = resolve_rls_context_for_session(session.sync_session)
     for key, value in effective.session_vars().items():
         await session.execute(
             _SET_CONFIG_SQL,
@@ -206,9 +224,9 @@ def apply_rls_context_sync(connection: Any, ctx: Optional[RlsContext] = None) ->
         )
 
 
-def _after_begin_apply_rls(_session: Session, _transaction, connection) -> None:
-    """After begin apply rls."""
-    apply_rls_context_sync(connection)
+def _after_begin_apply_rls(session: Session, _transaction, connection) -> None:
+    """Re-apply session-pinned or ContextVar RLS GUCs on every new transaction."""
+    apply_rls_context_sync(connection, resolve_rls_context_for_session(session))
 
 
 def register_rls_listeners(async_engine: Any, sync_engine: Any) -> None:
@@ -231,6 +249,7 @@ async def rls_async_session(ctx: RlsContext) -> AsyncIterator[AsyncSession]:
     token = set_rls_context(ctx)
     try:
         async with open_async_session() as session:
+            bind_session_rls_context(session, ctx)
             yield session
     finally:
         reset_rls_context(token)
@@ -243,6 +262,7 @@ def rls_sync_session(ctx: RlsContext) -> Iterator[Session]:
     try:
         session = open_sync_session()
         try:
+            bind_session_rls_context(session, ctx)
             yield session
         finally:
             session.close()

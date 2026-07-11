@@ -93,6 +93,15 @@ def normalize_role(role: str | None) -> str:
     return LEGACY_TO_CANONICAL.get(role, role)
 
 
+def db_roles_for_canonical_filter(canonical: str) -> frozenset[str]:
+    """DB role values that match a canonical role filter (includes legacy slugs)."""
+    matching = {canonical}
+    for legacy, mapped in LEGACY_TO_CANONICAL.items():
+        if mapped == canonical:
+            matching.add(legacy)
+    return frozenset(matching)
+
+
 def role_in(current_user, roles: frozenset[str]) -> bool:
     """True when the user's stored role is in the given set (with legacy fallbacks)."""
     if not hasattr(current_user, "role"):

@@ -49,6 +49,7 @@ from services.kitty.session.one_sentence_turns import (
     list_one_sentence_turns,
     migrate_one_sentence_scope,
 )
+from services.kitty.session.one_sentence_turn_pg import list_one_sentence_diagram_activity_pg
 
 _INACTIVE_MOBILE_ACTIVE: Dict[str, Any] = {
     "active": False,
@@ -355,6 +356,84 @@ async def kitty_rest_one_sentence_migrate_scope(
         from_scope=from_scope,
         to_scope=to_scope,
     )
+
+
+async def kitty_rest_one_sentence_diagram_activity(
+    current_user: User,
+    diagram_id: str,
+    *,
+    limit: int = 100,
+    actions_only: bool = True,
+) -> Dict[str, Any]:
+    """
+    Diagram-scoped one-sentence activity feed (backend analytics / future UI).
+
+    Returns kitty turns that recorded node actions (``action`` + ``command_detail``)
+    for the saved diagram, so callers can answer what the user did and which
+    node operations ran.
+    """
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": False, "reason": "feature_disabled", "events": []}
+    if not await kitty_http_allowed(current_user):
+        return {"ok": False, "reason": "access_denied", "events": []}
+    scope = normalize_kitty_diagram_session_id(diagram_id)
+    if scope is None:
+        raise HTTPException(status_code=400, detail="Invalid diagram id")
+    if not await user_may_access_kitty_scope(int(current_user.id), scope):
+        return {"ok": False, "reason": "access_denied", "events": []}
+
+    cap = max(1, min(int(limit or 100), 200))
+    rows = await list_one_sentence_diagram_activity_pg(
+        diagram_id=scope,
+        user_id=int(current_user.id),
+        limit=cap,
+        actions_only=actions_only,
+    )
+    events: list[Dict[str, Any]] = []
+    for row in rows:
+        raw_detail = row.get("command_detail")
+        detail: Dict[str, Any] = raw_detail if isinstance(raw_detail, dict) else {}
+        raw_command = detail.get("command")
+        command: Dict[str, Any] = raw_command if isinstance(raw_command, dict) else {}
+        raw_bus = detail.get("bus")
+        bus: Dict[str, Any] = raw_bus if isinstance(raw_bus, dict) else {}
+        events.append(
+            {
+                "turn_id": row.get("turn_id"),
+                "ts": row.get("ts"),
+                "request_id": row.get("request_id"),
+                "phase": row.get("phase"),
+                "action": row.get("action") or detail.get("action"),
+                "outcome": row.get("outcome") or detail.get("outcome"),
+                "user_text": row.get("user_text"),
+                "content": row.get("content"),
+                "node_id": command.get("node_id") or _first_applied_node_id(bus),
+                "target": command.get("target"),
+                "new_text": command.get("new_text") or command.get("text"),
+                "mutation_id": bus.get("mutation_id"),
+                "error_code": bus.get("error_code"),
+                "applied_ops": bus.get("applied_ops") or [],
+                "command_detail": detail or None,
+                "session_id": row.get("session_id"),
+                "diagram_type": row.get("diagram_type"),
+            }
+        )
+    return {
+        "ok": True,
+        "diagram_id": scope,
+        "events": events,
+        "count": len(events),
+    }
+
+
+def _first_applied_node_id(bus: Dict[str, Any]) -> Optional[str]:
+    ops = bus.get("applied_ops")
+    if not isinstance(ops, list):
+        return None
+    for item in ops:
+        if isinstance(item, dict) and item.get("node_id"):
+            return str(item["node_id"])
+    return None
 
 
 async def kitty_rest_desktop_action_enqueue(

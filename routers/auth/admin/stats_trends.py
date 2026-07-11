@@ -42,6 +42,7 @@ from utils.auth.token_stats_queries import (
 from ..dependencies import (
     get_language_dependency,
     require_admin_stats_read,
+    require_organization_trends_read,
     require_school_dashboard_read,
 )
 from ..helpers import BEIJING_TIMEZONE, get_beijing_now
@@ -357,7 +358,7 @@ async def get_organization_token_trends_admin(
     days: Optional[int] = 30,  # Number of days to look back
     hourly: bool = False,  # If True, return hourly data (only for days=1)
     service: Optional[str] = None,  # 'mindgraph' | 'mindmate' to filter by service
-    scope: AdminScope = Depends(require_admin_stats_read),
+    scope: AdminScope = Depends(require_organization_trends_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:

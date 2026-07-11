@@ -21,6 +21,7 @@ import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import type { NodeSuggestion } from '@/types/panels'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 import { applySelectionToDiagram } from './applySelection'
 import {
@@ -301,10 +302,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   }
 
   function generateDomainTabId(): string {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-      return `domain_${crypto.randomUUID()}`
-    }
-    return `domain_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+    return `domain_${safeRandomUUID()}`
   }
 
   async function startSessionsForAllParents(

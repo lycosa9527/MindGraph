@@ -10,7 +10,7 @@ See also [`alembic/README.md`](../alembic/README.md) for migration roles and ope
 |------|---------------------------------------------|------------|------------------|
 | **superadmin** | Full read/write; RLS `panel_global_read=1` | Full | Full |
 | **platform_bd** | Read-only global; RLS `panel_global_read=1` | Invited orgs + legacy NULL `invited_by_user_id` | Read (data center) |
-| **expert** | Denied (403) | Invited orgs only (no legacy) | Denied |
+| **expert** | Organizations tab: invited orgs only (no legacy); other global tabs Denied (403) | Invited orgs only (no legacy) | Denied |
 | **school_admin** | Denied (403) | Denied | Own org only; RLS `readable_org_ids=<org>` |
 
 **Filter helpers (application layer):**
@@ -18,7 +18,7 @@ See also [`alembic/README.md`](../alembic/README.md) for migration roles and ope
 | Helper | Used on | Effect |
 |--------|---------|--------|
 | `true()` / no filter | Superadmin global lists | All rows (RLS still applies) |
-| `panel_org_table_filter` | `GET /admin/organizations` | Global cap → all orgs; else invite-scoped |
+| `panel_org_table_filter` | `GET /admin/organizations` | Global cap → all orgs; expert → invited-only |
 | `invite_org_filter` | `GET /admin/invites/organizations` | BD: invited + legacy; expert: invited only |
 | `org_filter` | Token stats with org scope | Org ID subquery for invited-org roles |
 | IDOR guards | Detail/mutation routes | `assert_panel_org_readable`, `assert_resource_org_in_scope` |
@@ -50,9 +50,10 @@ Built by [`admin_scope_to_session_vars()`](../utils/db/rls_admin_scope.py) and a
 2. **Route dependencies** override `request.state.rls_context`:
    - `get_admin_scope` → panel context from AdminScope + `set_rls_context(ctx)`
    - `require_superadmin` → `bind_panel_superadmin_rls` + `set_rls_context(ctx)`
-3. **`get_async_db`** reads `request.state.rls_context` and sets context var.
-4. **`after_begin`** on each transaction runs `set_config` for all GUCs (transaction-local).
-5. **After `commit`:** new transaction re-applies GUCs from context var — must stay in panel mode for admin mutations.
+3. **`get_async_db`** reads `request.state.rls_context`, sets context var, and pins the same `RlsContext` on `session.info["rls_context"]`.
+4. **`after_begin`** on each transaction runs `set_config` for all GUCs (transaction-local), preferring `session.info` over the ContextVar (survives BaseHTTPMiddleware / nested `rls_*_session` ContextVar resets).
+5. **After `commit`:** new transaction re-applies GUCs from `session.info` (and ContextVar when still set) — must stay in panel mode for admin mutations.
+6. **Expert org create** also needs Alembic **`0072`** (`rls_panel_org_invited_by_actor`) so `INSERT` WITH CHECK passes when `invited_by_user_id = app.user_id`.
 
 ## 5. User-owned table policies (rev 0051+)
 
@@ -85,7 +86,7 @@ pytest tests/db/test_rls_explain_hot_paths.py -q
 **Manual smoke:**
 
 - Log in as **platform_bd** → data center user/org counts match superadmin (read-only).
-- Log in as **expert** → invite tab lists only created orgs; global stats 403.
+- Log in as **expert** → **组织管理** lists only created orgs; create school works; global stats 403.
 - **Expert creates org** → refresh succeeds after commit (panel GUC persists).
 
 ## 7. Performance

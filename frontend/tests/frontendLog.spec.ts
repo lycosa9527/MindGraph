@@ -44,4 +44,40 @@ describe('frontendLog', () => {
     expect(body.message).toContain('boom')
     expect(body.message).toContain('source=vue')
   })
+
+  it('skips benign ResizeObserver loop noise', () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+    vi.stubEnv('PROD', true)
+    vi.stubEnv('DEV', false)
+
+    reportFrontendError(
+      new Error('ResizeObserver loop completed with undelivered notifications.'),
+      { source: 'window.onerror' }
+    )
+
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('skips opaque Script error noise', () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+    vi.stubEnv('PROD', true)
+    vi.stubEnv('DEV', false)
+
+    reportFrontendError('Script error.', { source: 'window.onerror' })
+
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('skips stale chunk load errors from reporting', () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+    vi.stubEnv('PROD', true)
+    vi.stubEnv('DEV', false)
+
+    reportFrontendError(
+      new Error('Failed to fetch dynamically imported module: https://x/a.js'),
+      { source: 'unhandledrejection' }
+    )
+
+    expect(fetch).not.toHaveBeenCalled()
+  })
 })

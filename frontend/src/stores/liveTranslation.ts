@@ -10,6 +10,7 @@ import { defineStore } from 'pinia'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { i18n } from '@/i18n'
 import { useUIStore } from '@/stores/ui'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 const TARGET_SAMPLE_RATE = 16000
 const SCRIPT_PROCESS_BUFFER_SIZE = 2048
@@ -105,10 +106,7 @@ function float32ToPcm16Base64(input: Float32Array, inputRate: number): string {
 }
 
 function nextEventId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return `evt_${crypto.randomUUID().replace(/-/g, '')}`
-  }
-  return `evt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 11)}`
+  return `evt_${safeRandomUUID().replace(/-/g, '')}`
 }
 
 export const useLiveTranslationStore = defineStore('liveTranslation', () => {

@@ -76,9 +76,10 @@ class DashScopeRerankClient:
         # - qwen3-rerank: uses new compatible API (flat structure)
         # - gte-rerank-v2: uses old API (nested input/parameters structure)
         if self.is_qwen3:
-            self.rerank_url = "https://dashscope.aliyuncs.com/compatible-api/v1/reranks"
+            self.rerank_url = config.DASHSCOPE_RERANK_URL_QWEN3
         else:
-            self.rerank_url = "https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank"
+            base = config.DASHSCOPE_API_URL.rstrip("/")
+            self.rerank_url = f"{base}/services/rerank/text-rerank/text-rerank"
 
         # Rerank cache configuration (10 minutes TTL for query-document pairs)
         self.cache_enabled = os.getenv("RERANK_CACHE_ENABLED", "true").lower() == "true"

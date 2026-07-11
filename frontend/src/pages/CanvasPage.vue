@@ -75,6 +75,8 @@ import {
   applyCanvasKittySeedFromRoute,
   canvasKittySeedQueryKeysPresent,
 } from '@/composables/canvasPage/applyCanvasKittySeedFromRoute'
+import { handleKittyAutoCompleteBranchRequest } from '@/composables/kitty/handleKittyAutoCompleteBranchRequest'
+import { registerKittyDiagramMutationBus } from '@/composables/kitty/registerKittyDiagramMutationBus'
 import {
   VALID_DIAGRAM_TYPES,
   diagramTypeMap,
@@ -85,6 +87,7 @@ import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/regi
 import { registerCanvasPageResetHandler } from '@/composables/canvasPage/registerCanvasPageResetHandler'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
+import { shouldSkipLibraryReloadDuringGeneration } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
 import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvasPageMountedHandlers'
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
@@ -630,10 +633,11 @@ useCanvasPageMountedHandlers({
 
 useKittyDiagramReviewAnnotationBus('CanvasPage')
 useKittyVoiceSelectionBus('CanvasPage')
+registerKittyDiagramMutationBus()
 
 eventBus.onWithOwner(
   'diagram:auto_complete_requested',
-  () => {
+  (data?: { source?: string; topic?: string; diagramType?: string }) => {
     if (!authStore.isAuthenticated) {
       notify.warning(t('notification.signInToUse'))
       return
@@ -647,7 +651,25 @@ eventBus.onWithOwner(
       handleConceptGeneration()
       return
     }
-    void handleAIGenerate()
+    const topicOverride =
+      typeof data?.topic === 'string' && data.topic.trim() !== '' ? data.topic.trim() : undefined
+    void handleAIGenerate({ topicOverride })
+  },
+  'CanvasPage'
+)
+
+eventBus.onWithOwner(
+  'diagram:auto_complete_branch_requested',
+  (data: { nodeId?: string; nodeLabel?: string }) => {
+    if (!authStore.isAuthenticated) {
+      notify.warning(t('notification.signInToUse'))
+      return
+    }
+    if (diagramStore.collabSessionActive) {
+      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+      return
+    }
+    void handleKittyAutoCompleteBranchRequest(data)
   },
   'CanvasPage'
 )
@@ -997,6 +1019,17 @@ watch(
   },
   async (newId, oldId) => {
     if (newId && typeof newId === 'string' && newId !== oldId) {
+      // First AutoComplete save only syncs ?diagramId= — do not reload/clearCache or
+      // in-flight parallel LLM streams are aborted before they finish.
+      if (
+        shouldSkipLibraryReloadDuringGeneration(
+          llmResultsStore.isGenerating,
+          newId,
+          savedDiagramsStore.activeDiagramId
+        )
+      ) {
+        return
+      }
       const loaded = await loadDiagramFromLibrary(newId)
       if (loaded) {
         void checkAndReconnectWorkshop(newId)

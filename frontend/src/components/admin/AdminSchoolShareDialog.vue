@@ -13,6 +13,7 @@ import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 const props = defineProps<{
   modelValue: boolean
   invitationCode: string
+  organizationName?: string
 }>()
 
 const emit = defineEmits<{
@@ -28,8 +29,13 @@ const isVisible = computed({
   set: (value) => emit('update:modelValue', value),
 })
 
+const resolvedOrgName = computed(
+  () => props.organizationName?.trim() || (t('admin.organizationName') as string)
+)
+
 const shareMessageText = computed(() =>
   t('admin.shareInviteMessage', {
+    orgName: resolvedOrgName.value,
     code: props.invitationCode,
     siteUrl: publicSiteUrl.value,
   })
@@ -37,6 +43,7 @@ const shareMessageText = computed(() =>
 
 const shortInviteText = computed(() =>
   t('admin.schoolInviteCopyPayload', {
+    orgName: resolvedOrgName.value,
     code: props.invitationCode,
     siteUrl: publicSiteUrl.value,
   })

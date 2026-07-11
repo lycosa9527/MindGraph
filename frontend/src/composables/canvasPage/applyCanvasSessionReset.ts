@@ -5,6 +5,7 @@ import {
   useDiagramStore,
   useInlineRecommendationsStore,
   useLLMResultsStore,
+  useOneSentenceStore,
   usePanelsStore,
 } from '@/stores'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
@@ -35,6 +36,8 @@ export function applyCanvasSessionReset(): void {
   diagramStore.resetSessionEditCount()
 
   useSavedDiagramsStore().clearActiveDiagram()
+  // Keep durable library chat in Redis/PG; rotate ephemeral UI scope.
+  useOneSentenceStore().onCanvasReset()
 
   eventBus.emit('diagram:reset_requested', {})
 }

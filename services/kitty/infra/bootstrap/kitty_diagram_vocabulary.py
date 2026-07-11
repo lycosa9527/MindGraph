@@ -143,6 +143,7 @@ Node reference tips:
 - When the user says「这个节点/当前节点/选中的节点」, omit node_identifier (uses selected_nodes).
 Examples:
 - 「添加节点 光合作用」→ add_node(text="光合作用")
+- 「增加一个DIY分支」/「加一个叫DIY的分支」→ add_node(text="DIY")
 - 「删除第二个节点」→ delete_node(node_identifier="第二个")
 - 「把第一个改成 发动机」→ update_node(node_identifier="第一个", new_text="发动机")
 - 「自动补全」→ auto_complete()

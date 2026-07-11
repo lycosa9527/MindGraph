@@ -276,6 +276,12 @@ const { html: renderedMarkdownHtml } = useRenderedMarkdown(() => mindmateDisplay
 // Local editing state
 const localEditingContent = ref(props.editingContent || props.message.content)
 
+/** Fixed rows from content — avoid Element Plus autosize unmount race. */
+const editTextareaRows = computed(() => {
+  const lines = localEditingContent.value.split('\n').length
+  return Math.min(6, Math.max(2, lines))
+})
+
 // Watch editingContent prop
 watch(
   () => props.editingContent,
@@ -365,9 +371,10 @@ function handleMarkdownClick(event: MouseEvent) {
         <template v-if="message.role === 'user' && isEditing">
           <div class="edit-input-wrapper w-full max-w-[70%]">
             <ElInput
+              :key="`${message.id}-edit`"
               v-model="localEditingContent"
               type="textarea"
-              :autosize="{ minRows: 1, maxRows: 6 }"
+              :rows="editTextareaRows"
               @keydown.enter.exact.prevent="handleSaveEdit"
               @keydown.esc.prevent="handleCancelEdit"
             />

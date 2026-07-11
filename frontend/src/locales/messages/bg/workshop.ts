@@ -1,5 +1,5 @@
 /**
- * en UI � workshop
+ * bg UI � workshop
  */
 
 export default {

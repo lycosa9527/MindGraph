@@ -1,17 +1,13 @@
 import type { Ref, ShallowRef } from 'vue'
 
 import { type EventTypes, eventBus } from '@/composables/core/useEventBus'
-import {
-  applyKittyDiagramUpdate,
-  executeKittyAgentAction,
-} from '@/composables/kitty/kittyAgentActions'
+import { executeKittyAgentAction } from '@/composables/kitty/kittyAgentActions'
+import type { DiagramEditExpectedEffect } from '@/utils/diagramEditVerify'
 import { arrayBufferToBase64, base64ToArrayBuffer } from '@/composables/kitty/kittyAgentAudioCodec'
-import {
-  formatKittyDiagramUpdateDebug,
-  normalizeKittyDebugText,
-} from '@/composables/kitty/kittyAgentDebug'
+import { normalizeKittyDebugText } from '@/composables/kitty/kittyAgentDebug'
 import type { KittyAgentState } from '@/composables/kitty/kittyAgentTypes'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
+import { useKittySessionStore } from '@/stores/kittySession'
 
 export interface KittyInboundHandlerDeps {
   destroyed: () => boolean
@@ -25,6 +21,14 @@ export interface KittyInboundHandlerDeps {
   onTranscription?: (text: string) => void
   onTextChunk?: (text: string) => void
   onError?: (error: string) => void
+  sendDiagramMutationAck?: (payload: Record<string, unknown>) => void
+  hubScopeRevision?: number | null
+  diagramSessionId?: string | null
+  buildDiagramContext?: () => import('@/composables/kitty/kittyAgentTypes').KittyAgentContext
+  updateContext?: (
+    context: import('@/composables/kitty/kittyAgentTypes').KittyAgentContext,
+    options?: import('@/composables/kitty/kittyAgentTypes').KittyContextUpdateOptions
+  ) => void
   playAudioChunk: (audioBase64: string) => Promise<void>
   stopAudioPlayback: () => void
 }
@@ -52,16 +56,91 @@ export function handleKittyServerMessage(
 
     case 'text_chunk':
       if (deps.isVoiceActive.value) break
-      eventBus.emit('voice:text_chunk', { text: String(data.text ?? '') })
-      deps.onTextChunk?.(String(data.text ?? ''))
+      {
+        const text = String(data.text ?? '')
+        const replyKindRaw = data.reply_kind
+        const kind =
+          replyKindRaw === 'progress'
+            ? 'progress'
+            : replyKindRaw === 'final'
+              ? 'final'
+              : 'conversational'
+        const actionRaw = data.action
+        const clarifyQuestion =
+          typeof data.clarify_question === 'string' ? data.clarify_question.trim() : ''
+        const clarifyRaw = data.clarify_options
+        const choices: Array<{ index: number; label: string }> = []
+        if (Array.isArray(clarifyRaw)) {
+          for (const item of clarifyRaw) {
+            if (typeof item !== 'string' || !item.trim()) {
+              continue
+            }
+            choices.push({ index: choices.length + 1, label: item.trim() })
+            if (choices.length >= 3) {
+              break
+            }
+          }
+        }
+        eventBus.emit('kitty:one_sentence_reply', {
+          text: clarifyQuestion || text,
+          kind,
+          action: typeof actionRaw === 'string' ? actionRaw : undefined,
+          choices: choices.length >= 2 ? choices : undefined,
+          requestId:
+            typeof data.request_id === 'string' && data.request_id.trim()
+              ? data.request_id.trim()
+              : undefined,
+        })
+        eventBus.emit('voice:text_chunk', { text })
+      }
       break
 
     case 'audio_chunk':
-      if (deps.textOnly) break
-      if (!deps.destroyed() && !deps.cleaningUp() && !deps.isVoiceActive.value) {
-        void deps.playAudioChunk(String(data.audio ?? ''))
-        deps.state.value = 'speaking'
+      {
+        const kittySession = useKittySessionStore()
+        if (!kittySession.ttsEnabled) break
+        if (!deps.destroyed() && !deps.cleaningUp() && !deps.isVoiceActive.value) {
+          void deps.playAudioChunk(String(data.audio ?? ''))
+          deps.state.value = 'speaking'
+        }
       }
+      break
+
+    case 'tts_done':
+      deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
+      break
+
+    case 'tts_interrupted':
+      deps.stopAudioPlayback()
+      deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
+      break
+
+    case 'asr_partial':
+      {
+        const kittySession = useKittySessionStore()
+        const text = String(data.text ?? '')
+        kittySession.setAsrPartialTranscript(text)
+        eventBus.emit('kitty:asr_partial', { text })
+      }
+      break
+
+    case 'asr_final':
+      {
+        const kittySession = useKittySessionStore()
+        const text = String(data.text ?? '')
+        kittySession.setAsrPartialTranscript(text)
+        eventBus.emit('kitty:asr_final', { text })
+      }
+      break
+
+    case 'asr_started':
+      useKittySessionStore().setAsrListening(true)
+      eventBus.emit('kitty:asr_started', {})
+      break
+
+    case 'asr_stopped':
+      useKittySessionStore().setAsrListening(false)
+      eventBus.emit('kitty:asr_stopped', {})
       break
 
     case 'speech_started':
@@ -105,22 +184,46 @@ export function handleKittyServerMessage(
     case 'diagram_update': {
       const diagramAction = String(data.action ?? '')
       const diagramUpdates = (data.updates as Record<string, unknown>) ?? {}
+      const mutationId =
+        typeof data.mutation_id === 'string' && data.mutation_id.trim() !== ''
+          ? data.mutation_id.trim()
+          : ''
       const userSummary =
         typeof data.user_summary === 'string' && data.user_summary.trim() !== ''
           ? data.user_summary.trim()
           : ''
-      const summary =
-        userSummary !== ''
-          ? userSummary
-          : formatKittyDiagramUpdateDebug(diagramAction, diagramUpdates)
-      eventBus.emit('voice:diagram_update_executed', {
+      const expectedEffect = data.expected_effect as DiagramEditExpectedEffect | undefined
+      const beforeRaw = data.before_fingerprint as
+        | { nodes?: unknown[]; connections?: unknown[] }
+        | undefined
+      const beforeFingerprint =
+        beforeRaw &&
+        Array.isArray(beforeRaw.nodes) &&
+        Array.isArray(beforeRaw.connections)
+          ? {
+              nodes: beforeRaw.nodes as import('@/types').DiagramNode[],
+              connections: beforeRaw.connections as import('@/types').Connection[],
+            }
+          : undefined
+
+      eventBus.emit('kitty:diagram_mutation_requested', {
         action: diagramAction,
         updates: diagramUpdates,
-        summary,
+        mutationId: mutationId !== '' ? mutationId : undefined,
         userSummary: userSummary !== '' ? userSummary : undefined,
+        expectedEffect,
+        beforeFingerprint,
+        sendAck: deps.sendDiagramMutationAck,
+        hubPersist:
+          deps.buildDiagramContext && deps.updateContext
+            ? {
+                buildContext: deps.buildDiagramContext,
+                updateContext: deps.updateContext,
+                scope: deps.diagramSessionId ?? null,
+              }
+            : undefined,
+        lane: 'mobile',
       })
-      traceKittyWorkflow('mobile', 'diagram_ws', summary, { action: diagramAction })
-      applyKittyDiagramUpdate(diagramAction, diagramUpdates)
       break
     }
 
@@ -190,6 +293,9 @@ export function createKittyPlayback(deps: KittyPlaybackDeps) {
     if (deps.isVoiceActive.value) return
 
     try {
+      if (deps.audioContext.value.state === 'suspended') {
+        await deps.audioContext.value.resume()
+      }
       const audioData = base64ToArrayBuffer(audioBase64)
       const pcm16 = new Int16Array(audioData)
       const float32 = new Float32Array(pcm16.length)

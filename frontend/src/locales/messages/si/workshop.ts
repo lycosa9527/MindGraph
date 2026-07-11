@@ -1,5 +1,5 @@
 /**
- * en UI � workshop
+ * si UI � workshop
  */
 
 export default {

@@ -137,6 +137,10 @@ def echo_hint_from_slots(slots: Dict[str, str], *, lang: str) -> str:
         if lang == "en":
             return f'change "{slots["old_text"]}" to "{slots["new_text"]}"'
         return f"把「{slots['old_text']}」改为「{slots['new_text']}」"
+    if slots.get("branch_label") and slots.get("target"):
+        if lang == "en":
+            return f'add "{slots["target"]}" under "{slots["branch_label"]}"'
+        return f"在「{slots['branch_label']}」下添加「{slots['target']}」"
     if slots.get("target"):
         if lang == "en":
             return f'work on "{slots["target"]}"'

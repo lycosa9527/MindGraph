@@ -31,6 +31,7 @@ from services.knowledge.doc_summary_storage import (
 from services.knowledge.document_processor import DocumentProcessor
 from services.utils.error_types import DATABASE_ERRORS, FILE_IO_ERRORS, REDIS_ERRORS
 from services.utils.safe_upload import safe_upload_basename
+from utils.db.session_open import release_open_transaction
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,7 @@ class DocSummaryIngestService:
         safe_name = safe_upload_basename(file_name)
         await set_package_status(package_id, "processing")
         try:
+            await release_open_transaction(self.db)
             extracted = await asyncio.to_thread(
                 self.processor.extract_text,
                 tmp_path,

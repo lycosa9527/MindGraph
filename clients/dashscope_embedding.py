@@ -65,7 +65,7 @@ class DashScopeEmbeddingClient:
             or os.getenv("DASHSCOPE_EMBEDDING_MODEL")
             or getattr(config, "DASHSCOPE_EMBEDDING_MODEL", "text-embedding-v4")
         )
-        self.base_url = config.DASHSCOPE_API_URL or "https://dashscope.aliyuncs.com/api/v1/"
+        self.base_url = config.DASHSCOPE_API_URL
 
         # Determine if multimodal model
         self.is_multimodal = self._is_multimodal_model(self.model)
@@ -76,8 +76,7 @@ class DashScopeEmbeddingClient:
         if self.is_multimodal:
             self.embedding_url = f"{self.base_url}services/embeddings/multimodal-embedding/multimodal-embedding"
         elif self.use_openai_compatible:
-            # OpenAI compatible endpoint
-            self.embedding_url = "https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings"
+            self.embedding_url = config.DASHSCOPE_EMBEDDINGS_URL
         else:
             # Standard DashScope API endpoint
             self.embedding_url = f"{self.base_url}services/embeddings/text-embedding/text-embedding"

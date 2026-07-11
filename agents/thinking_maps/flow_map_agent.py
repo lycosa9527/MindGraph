@@ -150,7 +150,9 @@ class FlowMapAgent(BaseAgent):
             if not system_prompt:
                 logger.error("FlowMapAgent: No prompt found for language %s type %s", language, prompt_type)
                 return None
-            system_prompt = system_prompt.format(topic=prompt)
+            # generation templates use {topic}; fixed_steps does not.
+            if prompt_type == "generation":
+                system_prompt = system_prompt.format(topic=prompt)
 
             base_user = (
                 f"请为以下描述创建一个流程图：{prompt}"

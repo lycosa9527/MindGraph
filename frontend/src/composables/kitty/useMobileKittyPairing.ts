@@ -12,6 +12,7 @@ import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { useKittyDesktopFocusHint } from '@/composables/kitty/useKittyDesktopFocus'
 import { useAuthStore, useDiagramStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 export type MobileKittyAgentApi = ReturnType<typeof useKittyAgent>
 
@@ -44,10 +45,7 @@ export interface MobileKittyBootstrapPayload {
 }
 
 function createKittySessionId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-  return `kitty_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+  return safeRandomUUID()
 }
 
 const KITTY_CONTEXT_SYNC_MS = 220

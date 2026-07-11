@@ -12,6 +12,9 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Dict, Literal, Optional
 
+from services.infrastructure.http.error_handler import LLMServiceError
+from services.utils.error_types import DATABASE_ERRORS, LLM_PIPELINE_ERRORS
+
 logger = logging.getLogger(__name__)
 
 KittyEventKind = Literal[
@@ -97,7 +100,17 @@ class SessionEventBus:
             for handler in self._handlers:
                 try:
                     await handler(event)
-                except (RuntimeError, ValueError, KeyError, AttributeError, TypeError, OSError) as exc:
+                except (
+                    *DATABASE_ERRORS,
+                    *LLM_PIPELINE_ERRORS,
+                    LLMServiceError,
+                    RuntimeError,
+                    ValueError,
+                    KeyError,
+                    AttributeError,
+                    TypeError,
+                    OSError,
+                ) as exc:
                     logger.error(
                         "Kitty event handler error kind=%s session=%s: %s",
                         event.kind,

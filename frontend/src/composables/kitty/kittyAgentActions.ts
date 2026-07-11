@@ -28,9 +28,34 @@ export function executeKittyAgentAction(action: string, params: Record<string, u
       eventBus.emit('panel:close_all_requested', { source: 'kitty_agent' })
       break
 
-    case 'auto_complete':
-      eventBus.emit('diagram:auto_complete_requested', { source: 'kitty_agent' })
+    case 'auto_complete': {
+      const topicRaw = params.topic
+      const topic =
+        typeof topicRaw === 'string' && topicRaw.trim() !== '' ? topicRaw.trim() : undefined
+      eventBus.emit('diagram:auto_complete_requested', {
+        source: 'kitty_agent',
+        topic,
+      })
       break
+    }
+
+    case 'auto_complete_branch': {
+      const nodeId =
+        typeof params.node_id === 'string' && params.node_id.trim() !== ''
+          ? params.node_id.trim()
+          : undefined
+      const nodeLabelRaw = params.node_label ?? params.target ?? params.text
+      const nodeLabel =
+        typeof nodeLabelRaw === 'string' && nodeLabelRaw.trim() !== ''
+          ? nodeLabelRaw.trim()
+          : undefined
+      eventBus.emit('diagram:auto_complete_branch_requested', {
+        source: 'kitty_agent',
+        nodeId,
+        nodeLabel,
+      })
+      break
+    }
 
     case 'start_inline_recommendations':
       eventBus.emit('kitty:inline_recommendations_requested', {

@@ -9,6 +9,7 @@ from typing import Any, Dict
 
 from fastapi import WebSocket
 
+from services.diagram_edit.transport.kitty_ws import verified_edit_extras_pending
 from services.kitty.diagram.diagram_add import voice_apply_add_node_action
 from services.kitty.diagram.diagram_delete import voice_apply_delete_node_action
 from services.kitty.diagram.diagram_handlers import (
@@ -32,8 +33,15 @@ async def execute_diagram_update(
     """
     Execute a diagram update action (update_center, update_node, add_node, delete_node).
     Returns True if update was executed, False otherwise.
+
+    Verified edits (mutation_id extras stashed) skip server ``try_sync_voice_diagram_to_hub``:
+    Hub revision must bump only after the owning client persists Pinia via ``context_update``.
     """
     target = command.get("target")
+    if not (isinstance(target, str) and target.strip()):
+        new_text = command.get("new_text")
+        if isinstance(new_text, str) and new_text.strip():
+            target = new_text.strip()
     node_index = command.get("node_index")
     node_identifier = command.get("node_identifier")
 
@@ -76,7 +84,7 @@ async def execute_diagram_update(
             )
             return False
 
-        palette_only = action == "add_node" and not command.get("target")
+        palette_only = action == "add_node" and not (isinstance(target, str) and target.strip())
         if executed and not palette_only:
             session = voice_sessions.get(voice_session_id)
             if session:
@@ -91,13 +99,21 @@ async def execute_diagram_update(
                 action=action,
                 delta=f"{action} applied",
             )
-            await try_sync_voice_diagram_to_hub(voice_session_id)
-            kitty_wf_log(
-                "hub_sync",
-                "diagram mutation queued to hub",
-                voice_session_id=voice_session_id,
-                action=action,
-            )
+            if verified_edit_extras_pending(voice_session_id):
+                kitty_wf_log(
+                    "hub_sync_skip",
+                    "verified edit — client Pinia persist owns Hub",
+                    voice_session_id=voice_session_id,
+                    action=action,
+                )
+            else:
+                await try_sync_voice_diagram_to_hub(voice_session_id)
+                kitty_wf_log(
+                    "hub_sync",
+                    "diagram mutation queued to hub",
+                    voice_session_id=voice_session_id,
+                    action=action,
+                )
 
         if not executed:
             kitty_wf_log(

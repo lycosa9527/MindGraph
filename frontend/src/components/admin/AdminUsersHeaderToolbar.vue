@@ -8,6 +8,7 @@ import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useLanguage } from '@/composables'
 import { useAdminOrganizations } from '@/composables/queries'
 import { useAdminPanelStore } from '@/stores'
+import { userRoleLabel, userRoleSelectTiers } from '@/utils/userRoleDisplay'
 
 const { t } = useLanguage()
 const adminPanel = useAdminPanelStore()
@@ -15,6 +16,7 @@ const { usersToolbar } = storeToRefs(adminPanel)
 const { emit: emitAdminEvent } = useAdminEventBus('AdminUsersHeaderToolbar')
 const orgsQuery = useAdminOrganizations()
 const organizations = computed(() => orgsQuery.data.value ?? [])
+const roleSelectTiers = computed(() => userRoleSelectTiers())
 
 const searchQuery = computed({
   get: () => usersToolbar.value?.searchQuery ?? '',
@@ -30,9 +32,18 @@ const orgFilter = computed({
   },
 })
 
+const roleFilter = computed({
+  get: () => usersToolbar.value?.roleFilter ?? '',
+  set: (value: string) => {
+    adminPanel.patchUsersToolbar({ roleFilter: value || '' })
+  },
+})
+
 const showSchoolFilter = computed(() => usersToolbar.value?.showSchoolFilter === true)
+const showRoleFilter = computed(() => usersToolbar.value?.showRoleFilter === true)
 
 const SCHOOL_SELECT_POPPER_CLASS = 'admin-swiss-school-select-popper'
+const ROLE_SELECT_POPPER_CLASS = 'admin-swiss-role-select-popper'
 
 onMounted(() => {
   if (showSchoolFilter.value) {
@@ -59,6 +70,14 @@ function onOrgFilterChange(value: number | ''): void {
     action: 'users_org_filter_change',
     tab: 'users',
     payload: { value },
+  })
+}
+
+function onRoleFilterChange(value: string): void {
+  emitAdminEvent('admin:toolbar_action', {
+    action: 'users_role_filter_change',
+    tab: 'users',
+    payload: { value: value || '' },
   })
 }
 </script>
@@ -105,6 +124,34 @@ function onOrgFilterChange(value: number | ''): void {
       >
         <span class="admin-swiss-school-option__label">{{ org.name }}</span>
       </el-option>
+    </el-select>
+    <el-select
+      v-if="showRoleFilter"
+      v-model="roleFilter"
+      filterable
+      :placeholder="t('admin.filterByUserType')"
+      clearable
+      size="small"
+      class="admin-swiss-select admin-swiss-select--role"
+      :popper-class="ROLE_SELECT_POPPER_CLASS"
+      @change="onRoleFilterChange"
+    >
+      <el-option
+        :label="t('admin.allUserTypes')"
+        value=""
+      />
+      <el-option-group
+        v-for="tier in roleSelectTiers"
+        :key="tier.tierLabelKey"
+        :label="t(tier.tierLabelKey)"
+      >
+        <el-option
+          v-for="role in tier.roles"
+          :key="role"
+          :label="userRoleLabel(t, role)"
+          :value="role"
+        />
+      </el-option-group>
     </el-select>
     <el-button
       size="small"

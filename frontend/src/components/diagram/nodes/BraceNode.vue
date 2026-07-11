@@ -156,7 +156,6 @@ function handleBranchMoveTouchStart(event: TouchEvent): void {
   )
   if (consumed) {
     event.stopPropagation()
-    event.preventDefault()
   }
 }
 
@@ -175,7 +174,7 @@ function handleBranchMovePointerUp(): void {
     :style="nodeStyle"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
-    @touchstart.capture="handleBranchMoveTouchStart"
+    @touchstart.passive.capture="handleBranchMoveTouchStart"
   >
     <InlineEditableText
       :text="data.label || ''"

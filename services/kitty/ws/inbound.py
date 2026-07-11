@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import copy
 import logging
-import random
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -17,6 +16,13 @@ from fastapi import WebSocket
 
 from models.domain.auth import User
 from services.agent_hub import build_desktop_pairing_snapshot, get_mind_graph_agent_hub
+from services.diagram_edit.ack import complete_mutation_ack_from_client
+from services.kitty.audio.session_bridge import (
+    feed_session_asr_audio,
+    interrupt_kitty_tts,
+    start_session_asr,
+    stop_session_asr,
+)
 from services.kitty.context.hub_context import apply_kitty_ws_context_patch
 from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.infra.bootstrap.kitty_context_hydrate import (
@@ -29,11 +35,9 @@ from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.events import KittyEvent, get_session_event_bus
 from services.kitty.session.ops import (
     get_agent_session_id,
-    get_session_omni_client,
     update_panel_context,
 )
 from services.kitty.session.runtime_state import voice_sessions
-from services.kitty.ws.append_image import kitty_ws_handle_append_image
 from services.kitty.ws.guards import KITTY_WS_MAX_AUDIO_B64_CHARS, KITTY_WS_MAX_TEXT_CHARS
 
 logger = logging.getLogger(__name__)
@@ -76,30 +80,58 @@ async def dispatch_kitty_ws_inbound_message(
     msg_type = message.get("type")
 
     if msg_type == "audio":
+        # Omni duplex retired; mic PCM uses asr_start / asr_audio / asr_stop (Fun-ASR).
+        logger.debug("Ignoring legacy Omni audio frame on text-first Kitty session")
+        return "continue"
+
+    if msg_type == "asr_start":
+        hints_raw = message.get("language_hints")
+        language_hints: list[str] | None = None
+        if isinstance(hints_raw, list):
+            language_hints = [str(item) for item in hints_raw if str(item).strip()]
+        elif str(message.get("language") or "").strip().lower().startswith("zh"):
+            language_hints = ["zh"]
+        await start_session_asr(
+            websocket,
+            voice_session_id,
+            language_hints=language_hints,
+        )
+        return "continue"
+
+    if msg_type == "asr_audio":
         audio_data = message.get("data")
-        if audio_data:
-            if not isinstance(audio_data, str) or len(audio_data) > KITTY_WS_MAX_AUDIO_B64_CHARS:
+        if isinstance(audio_data, str) and audio_data:
+            if len(audio_data) > KITTY_WS_MAX_AUDIO_B64_CHARS:
                 await safe_websocket_send(
                     websocket,
                     {"type": "error", "error": "Audio frame too large"},
                 )
                 return "continue"
-            if random.random() < 0.05:
-                logger.debug(
-                    "Forwarding audio to Omni: %d bytes (base64)",
-                    len(audio_data),
-                )
-            omni_client = get_session_omni_client(voice_session_id)
-            if omni_client:
-                await omni_client.send_audio(audio_data)
-            else:
-                logger.warning(
-                    "Cannot send audio: OmniClient not found for session %s",
-                    voice_session_id,
-                )
+            await feed_session_asr_audio(voice_session_id, audio_data)
+        return "continue"
+
+    if msg_type == "asr_stop":
+        await stop_session_asr(voice_session_id)
+        await safe_websocket_send(websocket, {"type": "asr_stopped"})
+        return "continue"
+
+    if msg_type == "tts_interrupt":
+        await interrupt_kitty_tts(voice_session_id)
+        await safe_websocket_send(websocket, {"type": "tts_interrupted"})
+        return "continue"
+
+    if msg_type == "tts_set_enabled":
+        enabled = bool(message.get("enabled", True))
+        voice_sessions[voice_session_id]["_kitty_tts_enabled"] = enabled
+        await safe_websocket_send(
+            websocket,
+            {"type": "tts_enabled", "enabled": enabled},
+        )
         return "continue"
 
     if msg_type == "text":
+        await interrupt_kitty_tts(voice_session_id)
+        await safe_websocket_send(websocket, {"type": "tts_interrupted"})
         text = message.get("text", "").strip()
         if len(text) > KITTY_WS_MAX_TEXT_CHARS:
             await safe_websocket_send(
@@ -115,12 +147,21 @@ async def dispatch_kitty_ws_inbound_message(
                 voice_session_id=voice_session_id,
             )
             voice_sessions[voice_session_id]["conversation_history"].append({"role": "user", "content": text})
+            raw_request_id = message.get("request_id")
+            request_id = (
+                str(raw_request_id).strip() if isinstance(raw_request_id, str) and str(raw_request_id).strip() else None
+            )
+            if request_id:
+                voice_sessions[voice_session_id]["_one_sentence_request_id"] = request_id
             bus = get_session_event_bus(voice_session_id)
+            inbound_payload: dict[str, Any] = {"text": text}
+            if request_id:
+                inbound_payload["request_id"] = request_id
             await bus.emit(
                 KittyEvent(
                     kind="text_inbound",
                     voice_session_id=voice_session_id,
-                    payload={"text": text},
+                    payload=inbound_payload,
                 )
             )
         return "continue"
@@ -311,12 +352,17 @@ async def dispatch_kitty_ws_inbound_message(
         new_rev = mutation_out.get("revision")
         if isinstance(new_rev, int):
             voice_sessions[voice_session_id]["_hub_scope_revision"] = new_rev
+        live_ts = mutation_out.get("live_spec_updated_at")
+        if isinstance(live_ts, int) and live_ts > 0:
+            voice_sessions[voice_session_id]["_kitty_redis_seen_ts"] = live_ts
 
+        nodes_raw = diagram_data.get("nodes")
+        nodes_count = len(nodes_raw) if isinstance(nodes_raw, list) else 0
         children_count = len(diagram_data.get("children", []))
 
         kitty_wf_log(
             "hub_context",
-            f"ack ok rev={new_rev} persist={persist_library} nodes={children_count}",
+            f"ack ok rev={new_rev} persist={persist_library} nodes={nodes_count or children_count}",
             voice_session_id=voice_session_id,
             scope=diagram_session_id,
         )
@@ -337,7 +383,7 @@ async def dispatch_kitty_ws_inbound_message(
         logger.debug(
             "Context updated for %s with %d nodes",
             voice_session_id,
-            children_count,
+            nodes_count or children_count,
         )
         sel_raw = merged_ctx.get("selected_nodes")
         selected_nodes: list[str] = []
@@ -353,54 +399,37 @@ async def dispatch_kitty_ws_inbound_message(
             )
         return "continue"
 
+    if msg_type == "diagram_mutation_ack":
+        matched = complete_mutation_ack_from_client(message)
+        kitty_wf_log(
+            "diagram_ack",
+            "matched" if matched else "orphan",
+            voice_session_id=voice_session_id,
+        )
+        return "continue"
+
     if msg_type == "stop":
         return "stop"
 
     if msg_type == "cancel_response":
-        logger.debug("User requested to cancel response")
-        omni_client = get_session_omni_client(voice_session_id)
-        if omni_client:
-            await omni_client.cancel_response()
-            await safe_websocket_send(websocket, {"type": "response_cancelled"})
-        else:
-            logger.warning(
-                "Cannot cancel response: OmniClient not found for session %s",
-                voice_session_id,
-            )
+        logger.debug("User requested to cancel response (no Omni; CosyVoice interrupt separate)")
+        await safe_websocket_send(websocket, {"type": "response_cancelled"})
         return "continue"
 
     if msg_type == "clear_audio_buffer":
-        logger.debug("User requested to clear audio buffer")
-        omni_client = get_session_omni_client(voice_session_id)
-        if omni_client:
-            await omni_client.clear_audio_buffer()
-            await safe_websocket_send(websocket, {"type": "audio_buffer_cleared"})
-        else:
-            logger.warning(
-                "Cannot clear audio buffer: OmniClient not found for session %s",
-                voice_session_id,
-            )
+        logger.debug("Ignoring clear_audio_buffer (Omni retired)")
+        await safe_websocket_send(websocket, {"type": "audio_buffer_cleared"})
         return "continue"
 
     if msg_type == "commit_audio_buffer":
-        logger.debug("User requested to commit audio buffer")
-        omni_client = get_session_omni_client(voice_session_id)
-        if omni_client:
-            await omni_client.commit_audio_buffer()
-            await safe_websocket_send(websocket, {"type": "audio_buffer_committed"})
-        else:
-            logger.warning(
-                "Cannot commit audio buffer: OmniClient not found for session %s",
-                voice_session_id,
-            )
+        logger.debug("Ignoring commit_audio_buffer (Omni retired)")
+        await safe_websocket_send(websocket, {"type": "audio_buffer_committed"})
         return "continue"
 
     if msg_type == "append_image":
-        await kitty_ws_handle_append_image(
+        await safe_websocket_send(
             websocket,
-            voice_session_id,
-            message,
-            voice_sessions,
+            {"type": "error", "error": "Image append requires Omni (retired)"},
         )
         return "continue"
 

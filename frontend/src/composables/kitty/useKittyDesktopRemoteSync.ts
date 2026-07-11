@@ -20,6 +20,7 @@ import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { KITTY_PAIR_POLL_MS } from '@/composables/kitty/runKittyIntervalPoll'
 import { syncDiagramStoreFromVoiceContext } from '@/composables/kitty/syncDiagramStoreFromVoiceContext'
 import { useDiagramStore } from '@/stores/diagram'
+import { useKittySessionStore } from '@/stores/kittySession'
 import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import type { DiagramType } from '@/types'
 
@@ -55,7 +56,10 @@ export function useKittyDesktopRemoteSync(options: {
   const lastAppliedUpdatedAt = ref<number | null>(null)
   const lastDiagramSseAt = ref(0)
   let pollTickCount = 0
-  let intervalId: ReturnType<typeof setInterval> | null = null
+  let pollTimer: ReturnType<typeof setTimeout> | null = null
+  let pollingActive = false
+  let tickInFlight = false
+  let visibilityBound = false
   let releaseHub: (() => void) | null = null
 
   function scopeMatches(scope: string): boolean {
@@ -71,8 +75,16 @@ export function useKittyDesktopRemoteSync(options: {
     scope?: unknown
     action?: unknown
     updates?: unknown
+    mutation_id?: unknown
   }): void {
     if (!options.syncEnabled.value || collabBlocksDiagramEdits()) {
+      return
+    }
+    if (typeof data.mutation_id === 'string' && data.mutation_id.trim() !== '') {
+      return
+    }
+    // Owning tab already applied via Kitty WS / Pinia; observers use live_context recovery.
+    if (useKittySessionStore().ownsKittySession) {
       return
     }
     const scope = typeof data.scope === 'string' ? data.scope.trim() : ''
@@ -133,20 +145,57 @@ export function useKittyDesktopRemoteSync(options: {
     }
 
     const diagramData = isRecord(data.diagram_data) ? data.diagram_data : null
+    const localNodes = diagramStore.data?.nodes ?? []
+    const hubHasCanonicalNodes =
+      diagramData != null && Array.isArray(diagramData.nodes) && diagramData.nodes.length > 0
+    // Children-only Hub snapshots (server voice preview) must not overwrite Pinia SoT.
+    if (!hubHasCanonicalNodes && localNodes.length > 0) {
+      if (
+        Array.isArray(data.selected_nodes) &&
+        data.selected_nodes.every((x) => typeof x === 'string')
+      ) {
+        applyKittyRemoteCanvasSelection(data.selected_nodes as string[], {
+          canvasHighlight: true,
+        })
+      }
+      lastAppliedUpdatedAt.value = ua
+      traceKittyWorkflow(
+        'desktop',
+        'live_context_skip',
+        `hub lacks nodes[] — keep Pinia SoT updated_at=${ua}`,
+        { scope: options.libraryDiagramId.value?.trim() }
+      )
+      return
+    }
+
     const voiceFp = getKittyVoiceDiagramFingerprint(diagramData)
     const localFp = getKittyDiagramContentFingerprint(diagramStore.data)
+    const hubContentFp = hubHasCanonicalNodes
+      ? getKittyDiagramContentFingerprint({
+          nodes: (diagramData as Record<string, unknown>).nodes as unknown[],
+          connections: Array.isArray((diagramData as Record<string, unknown>).connections)
+            ? ((diagramData as Record<string, unknown>).connections as unknown[])
+            : [],
+        })
+      : voiceFp
+    const contentDiverged = hubContentFp.length > 0 && hubContentFp !== localFp
     const sseMissed =
       forceRecovery ||
-      (Date.now() - lastDiagramSseAt.value > KITTY_PAIR_POLL_MS * 2 &&
-        voiceFp.length > 0 &&
-        voiceFp !== localFp)
+      (Date.now() - lastDiagramSseAt.value > KITTY_PAIR_POLL_MS * 2 && contentDiverged)
 
-    if (sseMissed && diagramData != null) {
+    if (sseMissed && diagramData != null && contentDiverged) {
       syncDiagramStoreFromVoiceContext(String(data.diagram_type ?? storeType), diagramData)
       traceKittyWorkflow(
         'desktop',
         'live_context_recovery',
         `updated_at=${ua} force=${forceRecovery}`,
+        { scope: options.libraryDiagramId.value?.trim() }
+      )
+    } else if (sseMissed && diagramData != null && !contentDiverged) {
+      traceKittyWorkflow(
+        'desktop',
+        'live_context_skip',
+        `pinia already matches hub updated_at=${ua}`,
         { scope: options.libraryDiagramId.value?.trim() }
       )
     }
@@ -160,7 +209,7 @@ export function useKittyDesktopRemoteSync(options: {
     lastAppliedUpdatedAt.value = ua
   }
 
-  async function tick(): Promise<void> {
+  async function tick(tickOpts?: { forceRecovery?: boolean }): Promise<void> {
     if (
       !options.syncEnabled.value ||
       options.collabSessionActive.value ||
@@ -174,7 +223,7 @@ export function useKittyDesktopRemoteSync(options: {
     }
 
     pollTickCount += 1
-    const forceRecovery = pollTickCount % 4 === 0
+    const forceRecovery = tickOpts?.forceRecovery === true || pollTickCount % 4 === 0
     const mobileFresh = isKittyMobileActiveHubFresh()
     if (mobileFresh && !forceRecovery) {
       return
@@ -206,27 +255,75 @@ export function useKittyDesktopRemoteSync(options: {
     }
   }
 
-  function startPolling(): void {
-    stopPolling()
-    if (releaseHub == null) {
-      releaseHub = acquireKittyMobileActiveHub()
-    }
-    pollTickCount = 0
-    void tick()
-    intervalId = setInterval(() => {
-      void tick()
-    }, KITTY_PAIR_POLL_MS)
-  }
-
   function stopPolling(): void {
+    pollingActive = false
+    if (visibilityBound && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      visibilityBound = false
+    }
     if (releaseHub != null) {
       releaseHub()
       releaseHub = null
     }
-    if (intervalId != null) {
-      clearInterval(intervalId)
-      intervalId = null
+    if (pollTimer != null) {
+      clearTimeout(pollTimer)
+      pollTimer = null
     }
+  }
+
+  function armNextPoll(): void {
+    if (!pollingActive) {
+      return
+    }
+    if (pollTimer != null) {
+      clearTimeout(pollTimer)
+    }
+    pollTimer = setTimeout(() => {
+      pollTimer = null
+      void runPollCycle()
+    }, KITTY_PAIR_POLL_MS)
+  }
+
+  async function runPollCycle(): Promise<void> {
+    if (!pollingActive) {
+      return
+    }
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      armNextPoll()
+      return
+    }
+    if (!tickInFlight) {
+      tickInFlight = true
+      try {
+        await tick()
+      } finally {
+        tickInFlight = false
+      }
+    }
+    armNextPoll()
+  }
+
+  function onVisibilityChange(): void {
+    if (!pollingActive) {
+      return
+    }
+    if (document.visibilityState === 'visible') {
+      void runPollCycle()
+    }
+  }
+
+  function startPolling(): void {
+    stopPolling()
+    pollingActive = true
+    if (releaseHub == null) {
+      releaseHub = acquireKittyMobileActiveHub()
+    }
+    pollTickCount = 0
+    if (typeof document !== 'undefined' && !visibilityBound) {
+      document.addEventListener('visibilitychange', onVisibilityChange)
+      visibilityBound = true
+    }
+    void runPollCycle()
   }
 
   watch(
@@ -272,6 +369,28 @@ export function useKittyDesktopRemoteSync(options: {
     'kitty:desktop_selection_update',
     (payload) => {
       handleSelectionFanout(payload)
+    },
+    'KittyDesktopRemoteSync'
+  )
+  eventBus.onWithOwner(
+    'kitty:hub_diagram_persisted',
+    (payload: { scope?: string; revision?: number; source?: string }) => {
+      if (!options.syncEnabled.value || collabBlocksDiagramEdits()) {
+        return
+      }
+      const scope = typeof payload.scope === 'string' ? payload.scope.trim() : ''
+      if (!scopeMatches(scope)) {
+        return
+      }
+      // Owning tab already applied + verified into Pinia — reloading live_context
+      // would clobber SoT with a stale/voice-shaped snapshot.
+      if (payload.source === 'owning_tab') {
+        traceKittyWorkflow('desktop', 'live_context_skip', 'owning_tab persist — keep Pinia', {
+          scope,
+        })
+        return
+      }
+      void tick({ forceRecovery: true })
     },
     'KittyDesktopRemoteSync'
   )

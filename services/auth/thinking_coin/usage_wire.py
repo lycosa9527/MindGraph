@@ -7,7 +7,6 @@ from typing import Any, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.db_sessions import open_async_session
 from models.domain.auth import Organization, User
 from models.domain.messages import Language, Messages
 from services.auth.thinking_coin.activity_earn import try_daily_activity_earn
@@ -38,6 +37,7 @@ from utils.auth.thinking_coin_config import (
     THINKING_COIN_MODE_NORMAL,
     feature_thinking_coins_enabled,
 )
+from utils.db.session_open import user_rls_session
 from utils.auth.user_daily_token_quota import assert_user_daily_token_budget
 
 logger = logging.getLogger(__name__)
@@ -114,7 +114,7 @@ async def assert_thinking_coin_llm_budget(
         return False
     assert user_id is not None
 
-    async with open_async_session() as db:
+    async with user_rls_session(int(user_id), organization_id) as db:
         await _assert_balance_with_lock(db, int(user_id), request_type, lang)
         await db.commit()
     return True
@@ -174,7 +174,7 @@ async def thinking_coin_post_llm_success_mutation(
         return empty_mutation()
     assert user_id is not None
 
-    async with open_async_session() as db:
+    async with user_rls_session(int(user_id), organization_id) as db:
         cost = await get_cost_for_request_type(db, request_type)
         ref_type = "request_type"
         ref_id: str = request_type
@@ -260,7 +260,7 @@ async def thinking_coin_post_diagram_generation_mutation(
         return empty_mutation()
     assert user_id is not None
 
-    async with open_async_session() as db:
+    async with user_rls_session(int(user_id), organization_id) as db:
         events = await try_learning_sheet_diagram_earn(db, int(user_id), result)
         balance = await get_balance(db, int(user_id))
         if events:

@@ -24,7 +24,10 @@ export interface UseMobileCanvasToolbarOptions {
   saveGuardState?: () => DiagramSaveGuardState
   isConceptMap: { value: boolean }
   isAIGenerating: { value: boolean }
-  handleAIGenerate: () => void | Promise<void>
+  handleAIGenerate: (options?: {
+    generationInstructions?: string
+    topicOverride?: string
+  }) => void | Promise<void>
   handleConceptGeneration: () => void
   translate: (key: string, fallback?: string) => string
   notifySuccess: (message: string) => void

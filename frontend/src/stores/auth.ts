@@ -13,11 +13,11 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { useQueryClient } from '@tanstack/vue-query'
-
+import { eventBus } from '@/composables/core/useEventBus'
 import { notify } from '@/composables/core/notifications'
 import { difyKeys } from '@/composables/queries/difyKeys'
 import { i18n } from '@/i18n'
+import { getAppQueryClient } from '@/utils/appQueryClient'
 import { isPromptOutputLanguageCode, isUiLocale } from '@/i18n/locales'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
@@ -61,17 +61,9 @@ const MODE_KEY = 'auth_mode'
 const API_BASE = '/api/auth'
 
 export const useAuthStore = defineStore('auth', () => {
-  // Lazy getter for query client - only gets it when needed and in proper Vue context
-  // This prevents calling useQueryClient() outside of setup/effect scope
-  function getQueryClient(): ReturnType<typeof useQueryClient> | null {
-    try {
-      // Only call useQueryClient when actually needed, not at store initialization
-      // This ensures we're in a proper Vue context (component setup or effect)
-      return useQueryClient()
-    } catch {
-      // Vue Query not available or not in proper context
-      return null
-    }
+  /** App QueryClient from main.ts — safe outside setup/injection context. */
+  function getQueryClient() {
+    return getAppQueryClient()
   }
 
   // Helper to get translated message
@@ -498,6 +490,7 @@ export const useAuthStore = defineStore('auth', () => {
         setUser(normalizedUser)
         hasVerifiedAuthThisSession.value = true // Login is verification
         startSessionMonitoring()
+        eventBus.emit('auth:login_success', {})
         return { success: true, user: normalizedUser }
       }
 
@@ -532,6 +525,7 @@ export const useAuthStore = defineStore('auth', () => {
         setUser(normalizedUser)
         hasVerifiedAuthThisSession.value = true
         startSessionMonitoring()
+        eventBus.emit('auth:login_success', {})
         return { success: true, user: normalizedUser }
       }
 

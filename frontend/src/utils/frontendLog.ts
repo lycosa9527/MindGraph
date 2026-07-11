@@ -2,6 +2,7 @@
  * Report frontend errors to the backend error collection pipeline.
  */
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
+import { isStaleChunkLoadError } from '@/utils/staleChunkReload'
 
 type FrontendLogLevel = 'debug' | 'info' | 'warn' | 'error'
 
@@ -74,6 +75,21 @@ function formatError(err: unknown, context?: { source?: string; info?: string })
   return `${message.slice(0, MAX_MESSAGE_LEN)}\n... [truncated]`
 }
 
+/** Browser quirk / opaque cross-origin noise that floods error collection. */
+function isBenignBrowserNoise(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err)
+  if (
+    /ResizeObserver loop (limit exceeded|completed with undelivered notifications)/i.test(message)
+  ) {
+    return true
+  }
+  // Cross-origin sanitized errors have no useful stack.
+  if (message === 'Script error.' || message === 'Script error') {
+    return true
+  }
+  return false
+}
+
 export function reportFrontendLog(
   level: FrontendLogLevel,
   message: string,
@@ -100,6 +116,12 @@ export function reportFrontendError(
   context?: { source?: string; info?: string }
 ): void {
   if (shouldSkipReporting()) {
+    return
+  }
+  if (isBenignBrowserNoise(err)) {
+    return
+  }
+  if (isStaleChunkLoadError(err)) {
     return
   }
   const message = formatError(err, context)

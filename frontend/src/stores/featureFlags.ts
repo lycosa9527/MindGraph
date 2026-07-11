@@ -53,6 +53,7 @@ interface FeatureFlagsResponse {
   feature_mindmate_export: boolean
   feature_kitty_agent: boolean
   feature_auth_pixel_battle: boolean
+  feature_test_server_banner: boolean
   feature_oauth_login: boolean
   feature_thinking_coins: boolean
   workshop_chat_preview_org_ids: number[]
@@ -107,6 +108,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_mindmate_export: false,
           feature_kitty_agent: false,
           feature_auth_pixel_battle: false,
+          feature_test_server_banner: false,
           feature_oauth_login: false,
           feature_thinking_coins: false,
           workshop_chat_preview_org_ids: [],
@@ -128,6 +130,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_mindmate_export: raw.feature_mindmate_export ?? false,
         feature_kitty_agent: raw.feature_kitty_agent ?? false,
         feature_auth_pixel_battle: raw.feature_auth_pixel_battle ?? false,
+        feature_test_server_banner: raw.feature_test_server_banner ?? false,
         feature_oauth_login: raw.feature_oauth_login ?? false,
         feature_thinking_coins: raw.feature_thinking_coins ?? false,
         feature_mindmap_v2_canvas: raw.feature_mindmap_v2_canvas ?? false,
@@ -164,6 +167,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_mindmate_export: false,
         feature_kitty_agent: false,
         feature_auth_pixel_battle: false,
+        feature_test_server_banner: false,
         feature_oauth_login: false,
         feature_thinking_coins: false,
         workshop_chat_preview_org_ids: [],
@@ -260,6 +264,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_auth_pixel_battle ?? false
   }
 
+  function getFeatureTestServerBanner(): boolean {
+    return flags.value?.feature_test_server_banner ?? false
+  }
+
   /**
    * Initialize flags (call this early in app lifecycle)
    */
@@ -296,6 +304,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureMindbot,
     getFeatureKittyAgent,
     getFeatureAuthPixelBattle,
+    getFeatureTestServerBanner,
     getWorkshopChatPreviewOrgIds,
     init,
     markStale,

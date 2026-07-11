@@ -16,6 +16,7 @@ import { useMindMapOutlineDrag } from '@/composables/mindMap/useMindMapOutlineDr
 import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore } from '@/stores'
+import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
 import type { MindMapOutlineNode } from '@/utils/mindMapOutlineTree'
 
 const emit = defineEmits<{
@@ -116,8 +117,9 @@ async function startEdit(nodeId: string, text: string): Promise<void> {
   editDraft.value = text
   diagramStore.selectNodes(nodeId)
   await nextTick()
-  editInputRef.value?.focus()
-  editInputRef.value?.select()
+  if (focusHtmlControl(editInputRef.value)) {
+    selectHtmlControl(editInputRef.value)
+  }
 }
 
 function commitEdit(): void {

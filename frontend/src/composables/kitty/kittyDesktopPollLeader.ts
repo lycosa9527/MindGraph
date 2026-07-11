@@ -1,5 +1,7 @@
 /** One desktop tab per browser profile polls Kitty desktop pairing (BroadcastChannel). */
 
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
+
 const CHANNEL_NAME = 'mindgraph-kitty-desktop-poll-leader'
 const LEADER_HEARTBEAT_MS = 2000
 const LEADER_STALE_MS = 5500
@@ -51,7 +53,7 @@ export function createKittyDesktopPollLeader(onChange: (isLeader: boolean) => vo
     }
   }
 
-  const tabId = crypto.randomUUID()
+  const tabId = safeRandomUUID()
   const channel = new BroadcastChannel(CHANNEL_NAME)
   let isLeader = false
   let heartbeatId: ReturnType<typeof setInterval> | null = null

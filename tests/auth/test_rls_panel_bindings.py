@@ -73,13 +73,22 @@ async def test_get_async_db_with_request_rls_applies_request_state(
 ) -> None:
     """When auth binds panel scope on request.state, refresh SET LOCAL on the session."""
     applied: list[str] = []
+    set_modes: list[str] = []
 
     async def _capture_apply(_db: object, ctx: object) -> None:
         applied.append(getattr(ctx, "mode", ""))
 
+    def _capture_set(ctx: object) -> object:
+        set_modes.append(getattr(ctx, "mode", ""))
+        return object()
+
     monkeypatch.setattr(
         "routers.auth.dependencies.apply_rls_context_async",
         _capture_apply,
+    )
+    monkeypatch.setattr(
+        "routers.auth.dependencies.set_rls_context",
+        _capture_set,
     )
 
     request = MagicMock()
@@ -91,3 +100,4 @@ async def test_get_async_db_with_request_rls_applies_request_state(
 
     assert result is db
     assert applied == [MODE_PANEL_SUPERADMIN]
+    assert set_modes == [MODE_PANEL_SUPERADMIN]

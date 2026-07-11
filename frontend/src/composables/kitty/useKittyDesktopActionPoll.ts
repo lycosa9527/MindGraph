@@ -78,16 +78,43 @@ export function useKittyDesktopActionPoll(): void {
     return featureFlagsStore.flags != null
   }
 
-  function pollingAllowed(): boolean {
+  /** Elect a desktop poll leader only when this surface could actually poll. */
+  function pollLeaderEligible(): boolean {
     return (
       flagsReady() &&
-      isPollLeader &&
       kittyFeatureEnabled() &&
       isAuthenticated.value &&
       !surfaceIsMobileKittyLane() &&
-      !isHeadlessExportSurface() &&
-      !document.hidden
+      !isHeadlessExportSurface()
     )
+  }
+
+  function pollingAllowed(): boolean {
+    return pollLeaderEligible() && isPollLeader && !document.hidden
+  }
+
+  function ensurePollLeader(): void {
+    if (!pollLeaderEligible()) {
+      tearDownPollLeader()
+      return
+    }
+    if (stopPollLeader != null) {
+      return
+    }
+    stopPollLeader = createKittyDesktopPollLeader((leader) => {
+      isPollLeader = leader
+      syncPolling()
+    })
+  }
+
+  function tearDownPollLeader(): void {
+    if (stopPollLeader == null) {
+      isPollLeader = false
+      return
+    }
+    stopPollLeader()
+    stopPollLeader = null
+    isPollLeader = false
   }
 
   function clearIntervalId(): void {
@@ -208,6 +235,8 @@ export function useKittyDesktopActionPoll(): void {
           scope,
           action,
           updates: payload.updates,
+          mutation_id:
+            typeof payload.mutation_id === 'string' ? payload.mutation_id : undefined,
         })
       },
       onSelectionUpdate: (payload) => {
@@ -361,6 +390,7 @@ export function useKittyDesktopActionPoll(): void {
   }
 
   function syncPolling(): void {
+    ensurePollLeader()
     if (!pollingAllowed()) {
       stop()
       return
@@ -384,10 +414,6 @@ export function useKittyDesktopActionPoll(): void {
 
   onMounted(() => {
     document.addEventListener('visibilitychange', onVisibilityChange)
-    stopPollLeader = createKittyDesktopPollLeader((leader) => {
-      isPollLeader = leader
-      syncPolling()
-    })
     const flagsPromise =
       featureFlagsStore.flags != null
         ? Promise.resolve()
@@ -414,10 +440,7 @@ export function useKittyDesktopActionPoll(): void {
 
   onUnmounted(() => {
     document.removeEventListener('visibilitychange', onVisibilityChange)
-    if (stopPollLeader != null) {
-      stopPollLeader()
-      stopPollLeader = null
-    }
+    tearDownPollLeader()
     stop()
   })
 }

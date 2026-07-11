@@ -112,7 +112,7 @@ def dashscope_vision_ocr(image_bytes: bytes, mime_type: str = "image/png") -> st
         "parameters": {},
     }
 
-    base_url = _settings_config.DASHSCOPE_API_URL or "https://dashscope.aliyuncs.com/api/v1/"
+    base_url = _settings_config.DASHSCOPE_API_URL
     ocr_url = f"{base_url}services/aigc/multimodal-generation/generation"
 
     with _httpx_mod.Client(timeout=120.0) as client:

@@ -6,6 +6,7 @@ import { type ComputedRef, type Ref, computed, onUnmounted, ref, watch } from 'v
 import { scopeMatchesKittyMobileActive } from '@/composables/kitty/kittyDesktopMobileActiveHub'
 import { useKittyDesktopFocusPublish } from '@/composables/kitty/useKittyDesktopFocus'
 import { useKittyUserMobileActive } from '@/composables/kitty/useKittyUserMobileActive'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 export function useCanvasKittyDesktopPairing(options: {
   currentDiagramId: ComputedRef<string | null>
@@ -15,7 +16,7 @@ export function useCanvasKittyDesktopPairing(options: {
   kittyFeatureEnabled: ComputedRef<boolean>
   onLibraryScopeSwitchedCleanup: (previousScope: string) => void
 }) {
-  const kittyEphemeralScope = ref(crypto.randomUUID())
+  const kittyEphemeralScope = ref(safeRandomUUID())
   const kittyWsSessionScope = computed(
     () => options.currentDiagramId.value ?? kittyEphemeralScope.value
   )
@@ -70,7 +71,7 @@ export function useCanvasKittyDesktopPairing(options: {
     const oldScope =
       typeof prevId === 'string' && prevId.length > 0 ? prevId : kittyEphemeralScope.value
     if (nextId == null || nextId === '') {
-      kittyEphemeralScope.value = crypto.randomUUID()
+      kittyEphemeralScope.value = safeRandomUUID()
     }
     options.onLibraryScopeSwitchedCleanup(oldScope)
   })

@@ -624,20 +624,59 @@ export default {
   'canvas.mindMapOneSentence.example2': 'SWOT analysis for a new product launch: strengths, weaknesses, opportunities, threats',
   'canvas.mindMapOneSentence.example3': 'Elementary science: states of water — simple labels, max 6 characters per node',
   'canvas.mindMapOneSentence.inputPlaceholder': 'Describe a topic or edit request…',
+  'canvas.mindMapOneSentence.listeningPlaceholder': 'Listening…',
   'canvas.mindMapOneSentence.sendButton': 'Send',
-  'canvas.mindMapOneSentence.kittyWelcome':
-    'Hi — tell me what diagram to create, or keep chatting to edit branches and nodes.',
+  'canvas.mindMapOneSentence.micButton': 'Voice input',
+  'canvas.mindMapOneSentence.micDenied': 'Microphone unavailable — check browser permission',
+  'canvas.mindMapOneSentence.ttsToggle': 'Toggle speech',
+  'canvas.mindMapOneSentence.kittyWelcome': 'Hi — tell me what diagram to create, or keep chatting to edit branches and nodes.',
   'canvas.mindMapOneSentence.switchDiagramType': 'Switching to {type}…',
   'canvas.mindMapOneSentence.kittyGenerating': 'Got it — generating your diagram…',
   'canvas.mindMapOneSentence.kittyGenerateDone': 'Diagram ready. Keep typing to edit branches or nodes.',
   'canvas.mindMapOneSentence.kittyGenerateFailed': 'Diagram generation failed. Try again or refine your description.',
+  'canvas.mindMapOneSentence.kittyEditFailed': 'Could not apply that edit. Try rephrasing your request.',
+  'canvas.mindMapOneSentence.kittyEditStale':
+    'That edit did not take effect on the canvas (stale or no-op). Try again.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
+    'The canvas could not verify that edit. Your diagram was left unchanged.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed':
+    'The edit applied locally but failed to sync. Try again in a moment.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailed':
+    'Could not sync the canvas. Please try again in a moment.',
+  'canvas.mindMapOneSentence.kittyContextSyncFailedDetail':
+    'Could not sync the canvas ({detail}). Please try again in a moment.',
+  'canvas.mindMapOneSentence.kittyEditBusy':
+    'The diagram is still generating — please wait, then try again.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued':
+    '{models} results are still streaming — I will run your request automatically when they finish.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
+    'Other model results are still streaming — I will run your request automatically when they finish.',
+  'canvas.mindMapOneSentence.kittyEditBusyResuming':
+    'Other models finished — continuing with your request…',
+  'canvas.mindMapOneSentence.requestQueued': 'Queued',
+  'canvas.mindMapOneSentence.requestFailed': 'Failed',
+  'canvas.mindMapOneSentence.kittyEditAccessDenied': "You don't have permission to edit this diagram.",
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    'The diagram was just updated, so that edit is stale. Please repeat your change.',
+  'canvas.mindMapOneSentence.kittyEditTimeout':
+    'That edit timed out — the diagram may be unchanged. Please try again.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner':
+    "I couldn't find an editable canvas. Open the canvas, then try again.",
+  'canvas.mindMapOneSentence.kittyEditAddFailed':
+    "Sorry — I couldn't add that node. Check the name and try again.",
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
+    "Sorry — I couldn't rename that node. Check the name and try again.",
+  'canvas.mindMapOneSentence.kittyEditCenterFailed':
+    "Sorry — I couldn't update the topic. Please try again.",
+  'canvas.mindMapOneSentence.kittyEditDeleteFailed':
+    "Sorry — I couldn't remove that node. Check the name and try again.",
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    "Sorry — I couldn't auto-complete that branch. You can ask again.",
   'canvas.mindMapOneSentence.kittyWorking': 'OK — working on that…',
-  'canvas.mindMapOneSentence.inputBlockedGenerating': 'Generating your diagram — please wait…',
-  'canvas.mindMapOneSentence.kittyUnavailable':
-    'Kitty is unavailable. Check that FEATURE_KITTY_AGENT is enabled on the server.',
+  'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty is unavailable. Check that FEATURE_KITTY_AGENT is enabled on the server.',
+  'canvas.mindMapOneSentence.clarifyChoices': 'Choose an option',
   'canvas.mindMapNodeExplain.title': 'Kitty learning note',
-  'canvas.mindMapNodeExplain.userPrompt':
-    'Why might "{node}" spark questions or cognitive conflict on this diagram?',
+  'canvas.mindMapNodeExplain.userPrompt': 'Why might "{node}" spark questions or cognitive conflict on this diagram?',
   'canvas.mindMapNodeExplain.thinking': 'Looking at your diagram…',
   'canvas.mindMapNodeExplain.inputPlaceholder': 'Ask a follow-up or share your thoughts…',
   'canvas.mindMapNodeExplain.sendButton': 'Send',
@@ -655,8 +694,7 @@ export default {
   'canvas.mindMapDocumentSummary.invalidFileType': 'Unsupported file type',
   'canvas.mindMapDocumentSummary.saveContent': 'Save content',
   'canvas.mindMapDocumentSummary.statusExtracting': 'Extracting…',
-  'canvas.mindMapDocumentSummary.chatIntroLite':
-    'Download the file reader, enter the pairing code, and send WeChat or DingTalk history for this diagram.',
+  'canvas.mindMapDocumentSummary.chatIntroLite': 'Download the file reader, enter the pairing code, and send WeChat or DingTalk history for this diagram.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'Chat history received',
   'canvas.mindMapDocumentSummary.chatDoneLite': 'Chat saved — tap Generate when ready',
   'canvas.mindMapDocumentSummary.corpusStatus': '{completed} of {total} sources indexed',

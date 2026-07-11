@@ -295,12 +295,17 @@ export function applyVoiceDiagramAddNodes(
     if (dt === 'mindmap' || dt === 'mind_map') {
       const branchIdx = typeof p.branch_index === 'number' ? p.branch_index : undefined
       const childIdx = typeof p.child_index === 'number' ? p.child_index : undefined
+      const parentId = typeof p.parent_id === 'string' ? p.parent_id.trim() : ''
+      const sideRaw = typeof p.side === 'string' ? p.side.trim().toLowerCase() : ''
+      const side = sideRaw === 'left' ? 'left' : 'right'
       if (branchIdx !== undefined && childIdx !== undefined && text) {
         const parents = topLevelMindmapBranchIds(store.data.nodes)
-        const parentId = parents[branchIdx]
-        if (parentId && store.addMindMapChild(parentId, text)) count++
+        const parentFromIndex = parents[branchIdx]
+        if (parentFromIndex && store.addMindMapChild(parentFromIndex, text)) count++
+      } else if (parentId !== '' && text) {
+        if (store.addMindMapChild(parentId, text)) count++
       } else if (text) {
-        if (store.addMindMapBranch('right', text)) count++
+        if (store.addMindMapBranch(side, text)) count++
       }
       continue
     }

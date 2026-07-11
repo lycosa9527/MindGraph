@@ -19,6 +19,7 @@ import {
 } from '@/utils/mindMapSubgraphDebug'
 
 import { useInlineRecommendationsStore } from '../inlineRecommendations'
+import { useMindMapSubgraphPreviewStore } from '../mindMapSubgraphPreview'
 import {
   distributeBranchesClockwise,
   findBranchByNodeId,
@@ -37,6 +38,8 @@ import {
   mindMapNodeHasChildren,
   pruneMindMapCollapsedPaths,
   remapMindMapCollapsedPathsAfterReload,
+  remapMindMapNodeIdAfterReload,
+  remapMindMapNodeIdsAfterReload,
   setMindMapCollapsedPaths,
 } from './mindMapCollapse'
 import type { DiagramContext } from './types'
@@ -228,6 +231,10 @@ function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): voi
 
   const oldNodes = ctx.data.value.nodes
   const oldConnections = ctx.data.value.connections
+  const previousSelected = [...ctx.selectedNodes.value]
+  const previousPendingEdit = ctx.mindMapPendingEditNodeId.value
+  const previewStore = useMindMapSubgraphPreviewStore()
+  const previousGeneratingId = previewStore.generatingNodeId
 
   ctx.data.value.nodes = result.nodes
   ctx.data.value.connections = result.connections
@@ -249,6 +256,32 @@ function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): voi
     )
     const pruned = pruneMindMapCollapsedPaths(result.nodes, result.connections, remapped)
     setMindMapCollapsedPaths(ctx.data.value as Record<string, unknown>, pruned)
+  }
+
+  ctx.selectedNodes.value = remapMindMapNodeIdsAfterReload(
+    previousSelected,
+    oldNodes,
+    oldConnections,
+    result.nodes,
+    result.connections
+  )
+  if (previousPendingEdit) {
+    ctx.mindMapPendingEditNodeId.value = remapMindMapNodeIdAfterReload(
+      previousPendingEdit,
+      oldNodes,
+      oldConnections,
+      result.nodes,
+      result.connections
+    )
+  }
+  if (previousGeneratingId) {
+    previewStore.generatingNodeId = remapMindMapNodeIdAfterReload(
+      previousGeneratingId,
+      oldNodes,
+      oldConnections,
+      result.nodes,
+      result.connections
+    )
   }
 }
 

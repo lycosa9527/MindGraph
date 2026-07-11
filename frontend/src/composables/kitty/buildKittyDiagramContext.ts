@@ -3,6 +3,7 @@
  */
 import { buildKittyChildren, kittyNodeDisplayText } from '@/composables/kitty/kittyDiagramChildren'
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
+import { getDiagramWriteLockHolder } from '@/composables/kitty/useDiagramWriteLock'
 import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
 import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
@@ -41,7 +42,8 @@ function nodeDisplayText(node: VoiceContextNode): string {
 
 export function buildKittyDiagramContext(
   diagramStore: ReturnType<typeof useDiagramStore>,
-  activePanel: string
+  activePanel: string,
+  options?: { oneSentencePhase?: 'create' | 'edit' }
 ): KittyAgentContext {
   const savedDiagramsStore = useSavedDiagramsStore()
   const dt = (diagramStore.type ?? 'circle_map') as DiagramType
@@ -58,10 +60,14 @@ export function buildKittyDiagramContext(
       typeof data?.focus_question === 'string' ? data.focus_question : undefined,
   })
   const children = buildKittyChildren(dt, nodes)
+  // Pinia nodes/connections are the live SoT for Hub + live_context recovery.
+  // Flat children[] remains for Kitty indexing / Omni prompts only.
   const diagram_data: Record<string, unknown> = {
     ...base,
     diagram_type: dt,
     children,
+    nodes: nodes.map((n) => ({ ...n })),
+    connections: (data?.connections ?? []).map((c) => ({ ...c })),
     selected_nodes: [...diagramStore.selectedNodes],
   }
   if (dt === 'concept_map' && data?.connections?.length) {
@@ -85,6 +91,8 @@ export function buildKittyDiagramContext(
     diagram_library_id: savedDiagramsStore.activeDiagramId ?? null,
     diagram_display_title: displayTitle,
     interaction_language: kittyInteractionLanguageFromUi(),
+    one_sentence_phase: options?.oneSentencePhase,
+    diagram_write_lock: { holder: getDiagramWriteLockHolder() },
   }
 }
 

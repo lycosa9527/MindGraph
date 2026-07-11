@@ -18,6 +18,7 @@ from sqlalchemy import select
 from models.domain.auth import User
 from models.domain.kitty_one_sentence import KittyOneSentenceTurn
 from repositories.kitty_one_sentence_turn_repo import KittyOneSentenceTurnRepository
+from services.kitty.session.one_sentence_command_detail import normalize_command_detail
 from services.kitty.session.one_sentence_session_pg import (
     ensure_one_sentence_session,
     record_session_turn_metadata,
@@ -60,6 +61,8 @@ def turn_dict_to_row(
         user_text=str(turn.get("user_text")).strip() if turn.get("user_text") else None,
         diagram_type=str(turn.get("diagram_type")).strip() if turn.get("diagram_type") else None,
         voice_session_id=str(turn.get("voice_session_id")).strip() if turn.get("voice_session_id") else None,
+        request_id=str(turn.get("request_id")).strip() if turn.get("request_id") else None,
+        command_detail=normalize_command_detail(turn.get("command_detail")),
         created_at=_epoch_to_datetime(int(turn.get("ts") or 0)),
     )
 
@@ -86,6 +89,10 @@ def serialize_turn_row(row: KittyOneSentenceTurn) -> Dict[str, Any]:
         payload["diagram_type"] = row.diagram_type
     if row.voice_session_id:
         payload["voice_session_id"] = row.voice_session_id
+    if row.request_id:
+        payload["request_id"] = row.request_id
+    if row.command_detail:
+        payload["command_detail"] = row.command_detail
     if row.session_id:
         payload["session_id"] = row.session_id
     return payload
@@ -135,6 +142,15 @@ async def persist_one_sentence_turn_pg(
             inserted = await repo.insert_ignore_duplicate(row)
             if inserted:
                 await session.commit()
+                logger.info(
+                    "[OneSentencePG] logged role=%s phase=%s request_id=%s scope=%s turn=%s session=%s",
+                    row.role,
+                    row.phase,
+                    (row.request_id or "-")[:12],
+                    scope[:16],
+                    turn_id[:12],
+                    (session_id or "-")[:12],
+                )
                 await record_session_turn_metadata(
                     session_id=session_id,
                     phase=str(turn.get("phase") or "edit"),
@@ -150,6 +166,13 @@ async def persist_one_sentence_turn_pg(
                     scope=scope,
                     turn=turn_with_session,
                     session_id=session_id,
+                )
+            else:
+                logger.debug(
+                    "[OneSentencePG] duplicate skipped scope=%s turn=%s request_id=%s",
+                    scope[:16],
+                    turn_id[:12],
+                    (row.request_id or "-")[:12],
                 )
             return inserted
     except BACKGROUND_INFRA_ERRORS as exc:
@@ -202,4 +225,31 @@ async def list_one_sentence_turns_pg(
             return [serialize_turn_row(row) for row in rows]
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[OneSentencePG] list failed scope=%s: %s", scope[:16], exc)
+        return []
+
+
+async def list_one_sentence_diagram_activity_pg(
+    *,
+    diagram_id: str,
+    user_id: int,
+    limit: int = 100,
+    actions_only: bool = True,
+) -> List[Dict[str, Any]]:
+    """Load diagram-scoped activity rows (node actions) from PostgreSQL."""
+    try:
+        async with system_rls_session() as session:
+            repo = KittyOneSentenceTurnRepository(session)
+            rows = await repo.list_for_diagram_id(
+                diagram_id=diagram_id,
+                user_id=user_id,
+                limit=limit,
+                actions_only=actions_only,
+            )
+            return [serialize_turn_row(row) for row in rows]
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning(
+            "[OneSentencePG] diagram activity list failed diagram=%s: %s",
+            str(diagram_id)[:16],
+            exc,
+        )
         return []

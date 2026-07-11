@@ -1,5 +1,5 @@
 /**
- * en UI � admin
+ * st UI � admin
  */
 
 export default {
@@ -26,8 +26,9 @@ export default {
   'admin.confirm': 'Confirm',
   'admin.copyShareMessage': 'Copy',
   'admin.copyInvitationCode': 'Copy invitation code',
-  'admin.schoolInviteCopyPayload': 'URL: {siteUrl}\nInvitation code: {code}',
+  'admin.schoolInviteCopyPayload': '{orgName}: Welcome to the Mind thinking & teaching AI agent platform!\nGuided by BNU Thinking Training Center and co-built with 100+ thinking-development alliance schools — join us to grow thinking skills in the AI era.\nHow: open on computer or phone; register with phone number + invitation code the first time, then sign in with SMS verification.\nURL: {siteUrl}\nOrganization invitation code: {code}',
   'admin.createApiKey': 'Create API Key',
+  'admin.createOrganization': 'Create Organization',
   'admin.createSchool': 'Create School',
   'admin.created': 'Created',
   'admin.dangerZone': 'Danger Zone',
@@ -109,7 +110,11 @@ export default {
   'admin.featurePermissionsUserIdsPlaceholder': 'e.g. 12, 34, 56',
   'admin.expirationDate': 'Expiration Date',
   'admin.expirationDateHint': 'Organization will be locked after this date. Leave empty for no limit.',
+  'admin.validityPeriod': 'Validity Period',
+  'admin.validityPeriodRequired': 'Please select a validity period',
   'admin.filterBySchool': 'Filter by School',
+  'admin.filterByUserType': 'Filter by User Type',
+  'admin.allUserTypes': 'All User Types',
   'admin.geweWechat': 'Gewe WeChat',
   'admin.grantAdmin': 'Grant Admin',
   'admin.grantRole': 'Grant role',
@@ -386,6 +391,9 @@ export default {
   'admin.noUsersFound': 'No users found',
   'admin.orgManagement': 'Organization Management',
   'admin.organizationName': 'Organization name',
+  'admin.organizationNamePlaceholder': 'e.g. Beijing High School',
+  'admin.organizationNameRequired': 'Organization name is required',
+  'admin.organizationCreateFailed': 'Failed to create organization',
   'admin.orgPrivateDify': 'Private Dify',
   'admin.orgPrivateDifyYes': 'Yes',
   'admin.orgPrivateDifyNo': 'No',
@@ -903,7 +911,7 @@ export default {
   'admin.userSearchFailed': 'User search failed',
   'admin.selectSchool': 'Select school',
   'admin.setManager': 'Set as Manager',
-  'admin.shareInviteMessage': 'Dear School Administrator,\n\nWe cordially invite you and your school team to experience MindGraph — our AI-powered mind map software for teaching and learning. Your school\'s exclusive invitation code is: {code}\n\nPlease visit {siteUrl} to register and begin efficient, intuitive visual collaboration. We look forward to supporting your school\'s educational innovation.',
+  'admin.shareInviteMessage': '{orgName}: Welcome to the Mind thinking & teaching AI agent platform!\nGuided by BNU Thinking Training Center and co-built with 100+ thinking-development alliance schools — join us to grow thinking skills in the AI era.\nHow: open on computer or phone; register with phone number + invitation code the first time, then sign in with SMS verification.\nURL: {siteUrl}\nOrganization invitation code: {code}',
   'admin.shareInviteTitle': 'Share Invitation',
   'admin.source': 'Source',
   'admin.sourceDatabase': 'Database',

@@ -15,6 +15,7 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 
 import { diagramTypeMap } from './diagramTypeMaps'
+import { shouldSkipLibraryReloadDuringGeneration } from './skipLibraryReloadDuringGeneration'
 
 type SnapshotHistoryApi = ReturnType<typeof useSnapshotHistory>
 
@@ -37,6 +38,17 @@ export function useCanvasPageLibrarySnapshots(options: {
   const { t } = useLanguage()
 
   async function loadDiagramFromLibrary(diagramId: string): Promise<boolean> {
+    // URL sync after first AutoComplete save: keep live canvas + in-flight LLM streams.
+    if (
+      shouldSkipLibraryReloadDuringGeneration(
+        llmResultsStore.isGenerating,
+        diagramId,
+        savedDiagramsStore.activeDiagramId
+      )
+    ) {
+      return true
+    }
+
     const result = await savedDiagramsStore.getDiagram(diagramId)
     if (!result.ok) {
       notify.error(t('canvas.library.diagramNotFound'))

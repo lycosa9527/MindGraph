@@ -29,7 +29,6 @@ from sqlalchemy.sql.functions import count as sa_count
 from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
-from routers.auth.dependencies import get_async_db_with_request_rls as _PANEL_MUTATE_DB
 from models.domain.auth import Organization, User
 from models.domain.messages import Language, Messages
 
@@ -38,6 +37,7 @@ try:
 except ImportError:
     TokenUsage = None
 
+from routers.auth.dependencies import get_async_db_with_request_rls as _PANEL_MUTATE_DB
 from services.admin.user_usage_activity import activity_to_admin_dict, list_org_usage_activities
 from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.redis.cache.redis_org_cache import org_cache
@@ -67,6 +67,7 @@ from utils.auth.school_tier import (
     member_count_for_org,
     school_tier_list_fields,
 )
+from utils.db.rls_context import RlsContext, apply_rls_context_async, set_rls_context
 from utils.invitations import generate_invitation_code, normalize_or_generate
 from utils.sensitive_mask import mask_invitation_code
 
@@ -76,6 +77,7 @@ from ..dependencies import (
     require_global_organizations_edit,
     require_global_organizations_read,
     require_invite_org_create,
+    require_organizations_read,
 )
 from ..helpers import utc_to_beijing_iso
 from .organization_dify import (
@@ -105,11 +107,11 @@ router = APIRouter()
 @router.get("/admin/organizations")
 async def list_organizations_admin(
     _request: Request,
-    scope: AdminScope = Depends(require_global_organizations_read),
+    scope: AdminScope = Depends(require_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     _lang: Language = Depends(get_language_dependency),
 ):
-    """List all organizations (ADMIN ONLY)"""
+    """List organizations (global roles: all; experts: invited/created only)."""
     orgs = (
         (await db.execute(select(Organization).where(panel_org_table_filter(scope)).order_by(Organization.id)))
         .scalars()
@@ -337,12 +339,26 @@ async def create_organization_admin(
             error_msg = Messages.error("failed_generate_invitation_code", lang)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg)
 
+    expires_at_value = None
+    if "expires_at" in request:
+        expires_str = request.get("expires_at")
+        if expires_str:
+            try:
+                expires_at_value = datetime.fromisoformat(str(expires_str).replace("Z", "+00:00"))
+            except ValueError as exc:
+                error_msg = Messages.error("invalid_date_format", lang)
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=error_msg,
+                ) from exc
+
     new_org = Organization(
         code=request["code"],
         name=request["name"],
         invitation_code=invitation_code,
         invited_by_user_id=int(current_user.id),
         created_at=datetime.now(UTC),
+        expires_at=expires_at_value,
     )
     apply_dify_on_create(new_org, request, lang)
     apply_school_tier_on_create(
@@ -350,6 +366,12 @@ async def create_organization_admin(
         request,
         allow_explicit_tier=is_superadmin(current_user),
     )
+
+    # Panel RLS must be active for expert INSERT (rev 0072 invited_by_actor).
+    # Re-apply from AdminScope in case ContextVar was lost under BaseHTTPMiddleware.
+    panel_ctx = RlsContext.from_admin_scope(scope)
+    set_rls_context(panel_ctx)
+    await apply_rls_context_async(db, panel_ctx)
 
     db.add(new_org)
     try:
@@ -371,11 +393,13 @@ async def create_organization_admin(
         logger.warning("[Auth] Failed to cache new org ID %s: %s", new_org.id, e)
 
     logger.info("Admin %s created organization: %s", current_user.phone, new_org.code)
+    created_expires = cast(Optional[datetime], new_org.expires_at)
     return {
         "id": new_org.id,
         "code": new_org.code,
         "name": new_org.name,
         "invitation_code": new_org.invitation_code,
+        "expires_at": created_expires.isoformat() if created_expires else None,
         "created_at": new_org.created_at.isoformat(),
     }
 
@@ -807,7 +831,7 @@ async def list_all_managers(
 @router.get("/admin/organizations/{org_id}/activity")
 async def list_organization_activity_admin(
     org_id: int,
-    scope: AdminScope = Depends(require_global_organizations_read),
+    scope: AdminScope = Depends(require_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
     source: Optional[str] = Query(None),
@@ -867,12 +891,12 @@ async def list_organization_activity_admin(
 async def list_organization_users(
     org_id: int,
     _request: Request,
-    scope: AdminScope = Depends(require_global_organizations_read),
+    scope: AdminScope = Depends(require_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
-    List all users in an organization (ADMIN ONLY)
+    List all users in an organization (scoped: global or expert invited orgs).
 
     Used for manager selection dropdown in admin panel.
     """
@@ -911,12 +935,12 @@ async def list_organization_users(
 async def list_organization_managers(
     org_id: int,
     _request: Request,
-    scope: AdminScope = Depends(require_global_organizations_read),
+    scope: AdminScope = Depends(require_organizations_read),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
-    List managers of an organization (ADMIN ONLY)
+    List managers of an organization (scoped: global or expert invited orgs).
     """
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:

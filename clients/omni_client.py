@@ -67,9 +67,8 @@ class OmniRealtimeClient:
     Integrates directly with middleware for rate limiting, error handling, etc.
     """
 
-    # Omni Realtime API WebSocket URL
-    # Format: wss://dashscope.aliyuncs.com/api-ws/v1/realtime?model={model}
-    BASE_URL = "wss://dashscope.aliyuncs.com/api-ws/v1/realtime"
+    # Omni Realtime API WebSocket URL (resolved from config at connect time).
+    # Format: wss://{host}/api-ws/v1/realtime?model={model}
 
     def __init__(
         self,
@@ -170,7 +169,7 @@ class OmniRealtimeClient:
             logger.warning("Already connected")
             return
 
-        url = f"{self.BASE_URL}?model={self.model}"
+        url = f"{config.DASHSCOPE_REALTIME_WS_BASE.rstrip('/')}?model={self.model}"
         headers = {"Authorization": f"Bearer {self.api_key}"}
 
         try:

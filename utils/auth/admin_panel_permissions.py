@@ -139,6 +139,8 @@ _PLATFORM_BD_CAPS: frozenset[str] = frozenset(
 _EXPERT_CAPS: frozenset[str] = frozenset(
     {
         CAP_PANEL_ACCESS,
+        # Org management is invite-scoped (created schools only); no global edit.
+        CAP_TAB_ORGANIZATIONS_VIEW,
         CAP_TAB_INVITES_VIEW,
         CAP_TAB_INVITES_EDIT,
         CAP_SCOPE_INVITED_ORGS,

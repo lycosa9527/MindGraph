@@ -108,6 +108,8 @@ const PLATFORM_BD_CAPS: AdminCapability[] = [
 
 const EXPERT_CAPS: AdminCapability[] = [
   'panel.access',
+  // Org management is invite-scoped (created schools only); no global edit.
+  'tab.organizations.view',
   'tab.invites.view',
   'tab.invites.edit',
   'scope.invited_orgs',

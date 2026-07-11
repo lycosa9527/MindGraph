@@ -36,6 +36,7 @@ from services.utils.error_types import DATABASE_ERRORS
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
 from utils.db.rls_context import (
     RlsContext,
+    bind_session_rls_context,
     register_rls_listeners,
     reset_rls_context,
     resolve_rls_context_for_transaction,
@@ -562,6 +563,7 @@ async def get_async_db(request: Request):
     token = set_rls_context(ctx)
     try:
         async with AsyncSessionLocal() as session:
+            bind_session_rls_context(session, ctx)
             try:
                 yield session
             except DATABASE_ERRORS:

@@ -98,8 +98,7 @@ export default {
   'sidebar.logoSiteQrHint': 'Scan with your phone camera or WeChat',
   'sidebar.mindmateCollabHistory.title': 'Online collab',
   'sidebar.mindmateCollabHistory.stopConfirmTitle': 'End seminar',
-  'sidebar.mindmateCollabHistory.stopConfirm':
-    'This will end the session for everyone. Participants will leave the room.',
+  'sidebar.mindmateCollabHistory.stopConfirm': 'This will end the session for everyone. Participants will leave the room.',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Org',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Network',
 } as const

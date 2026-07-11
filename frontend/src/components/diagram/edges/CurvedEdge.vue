@@ -22,6 +22,7 @@ import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import type { DiagramType, MindGraphEdgeData } from '@/types'
 import { splitBezierPathAtMidpoint } from '@/utils/bezierSplit'
 import { isTopicToRootConceptConnection } from '@/utils/conceptMapTopicRootEdge'
+import { focusHtmlControl } from '@/utils/focusHtmlControl'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
@@ -101,7 +102,11 @@ function startEditing() {
   isEditing.value = true
   editText.value = props.data?.label || ''
   useConceptMapRelationshipStore().clearAll()
-  nextTick(() => inputRef.value?.focus())
+  nextTick(() => {
+    if (isEditing.value) {
+      focusHtmlControl(inputRef.value)
+    }
+  })
 }
 
 function saveLabel() {

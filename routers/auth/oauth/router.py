@@ -111,11 +111,16 @@ def _home_redirect(
     return RedirectResponse(url="/", status_code=303)
 
 
-def _auth_redirect(error: Optional[str] = None) -> RedirectResponse:
-    """Redirect to login page (OAuth login failures)."""
-    base = "/auth"
+def _auth_redirect(
+    error: Optional[str] = None,
+    *,
+    oauth_login: bool = False,
+) -> RedirectResponse:
+    """Redirect to login page (OAuth login failures) or home after login success."""
     if error:
-        return RedirectResponse(url=f"{base}?error={error}", status_code=303)
+        return RedirectResponse(url=f"/auth?error={error}", status_code=303)
+    if oauth_login:
+        return RedirectResponse(url="/?oauth_login=1", status_code=303)
     return RedirectResponse(url="/", status_code=303)
 
 
@@ -245,7 +250,7 @@ async def wechat_oauth_callback(
         )
         await issue_oauth_browser_session(user, request, response, db, method="oauth_wechat")
         await db.commit()
-        return _auth_redirect()
+        return _auth_redirect(oauth_login=True)
     except ValueError as exc:
         await db.rollback()
         return _oauth_failure_redirect(payload.mode, normalize_oauth_error_code(exc))
@@ -353,7 +358,7 @@ async def _complete_dingtalk_flow(
         await db.commit()
         if json_response:
             return {"ok": True}
-        return _auth_redirect()
+        return _auth_redirect(oauth_login=True)
     except ValueError as exc:
         await db.rollback()
         if json_response:

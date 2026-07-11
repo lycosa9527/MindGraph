@@ -19,7 +19,8 @@
 }
 
 /* School picker / filter — compact pill, centered label */
-.admin-swiss-select--school.el-select {
+.admin-swiss-select--school.el-select,
+.admin-swiss-select--role.el-select {
   max-width: min(168px, 38vw);
 }
 

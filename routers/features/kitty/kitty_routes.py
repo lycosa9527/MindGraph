@@ -33,6 +33,7 @@ from services.kitty.http.handlers import (
     kitty_rest_one_sentence_sessions_list,
     kitty_rest_one_sentence_session_get,
     kitty_rest_one_sentence_migrate_scope,
+    kitty_rest_one_sentence_diagram_activity,
 )
 from services.kitty.infra.control.kitty_control_fanout import KITTY_CONTROL_REASON_HTTP_CLEANUP
 from services.kitty.infra.desktop.kitty_desktop_wake_stream import kitty_desktop_wake_stream_response
@@ -165,6 +166,22 @@ async def kitty_mobile_lane_hint(diagram_session_id: str, current_user: User = D
     show the pairing indicator without opening a WebSocket.
     """
     return await kitty_rest_mobile_lane_hint(current_user, diagram_session_id)
+
+
+@router.get("/api/kitty/one_sentence/diagrams/{diagram_id}/activity")
+async def kitty_one_sentence_diagram_activity(
+    diagram_id: str,
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(100, ge=1, le=200),
+    actions_only: bool = Query(True),
+):
+    """Diagram-scoped one-sentence activity tracker (node actions + Bus proof)."""
+    return await kitty_rest_one_sentence_diagram_activity(
+        current_user,
+        diagram_id,
+        limit=limit,
+        actions_only=actions_only,
+    )
 
 
 @router.get("/api/kitty/one_sentence/{diagram_session_id}/turns")

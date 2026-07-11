@@ -1,5 +1,5 @@
 /**
- * zh UI — mindmate
+ * zh-tw UI � mindmate
  */
 
 export default {
@@ -15,15 +15,12 @@ export default {
   'aiModel.tabFocusBadge': 'Tab焦點',
   'aiModel.tabFocusTooltip': '編輯焦點問題時按 Tab 檢驗；之後在底部用數字鍵與 − / = 備選',
   'aiModel.tabFocusQuestionBadge': 'Tab焦點問題',
-  'aiModel.conceptMapFocusQuestionTabTooltip':
-    '选中或编辑焦点问题时：按 Tab 进行 AI 检验（须先写有实质内容的焦点问题，并需登录）。',
+  'aiModel.conceptMapFocusQuestionTabTooltip': '选中或编辑焦点问题时：按 Tab 进行 AI 检验（须先写有实质内容的焦点问题，并需登录）。',
   'aiModel.tabRecBadge': 'Tab推薦',
   'aiModel.tabContentRecBadge': 'Tab內容推薦',
   'aiModel.tabRelationshipRecBadge': 'Tab關係推薦',
-  'aiModel.conceptMapConceptTabTooltip':
-    '编辑模式（独立概念）：按 Tab 获取备选措辞（须已写好主题）。',
-  'aiModel.conceptMapRelationshipTabTooltip':
-    '编辑模式或选中已连线概念（选择模式）：按 Tab 获取关系标签备选。',
+  'aiModel.conceptMapConceptTabTooltip': '编辑模式（独立概念）：按 Tab 获取备选措辞（须已写好主题）。',
+  'aiModel.conceptMapRelationshipTabTooltip': '编辑模式或选中已连线概念（选择模式）：按 Tab 获取关系标签备选。',
   'aiModel.tooltip.clickDeselect': '點擊取消選擇 {name}',
   'aiModel.tooltip.clickSelect': '點擊選擇 {name}',
   'aiModel.tooltip.clickSwitch': '點擊切換到 {name} 結果',
@@ -51,11 +48,9 @@ export default {
   'focusQuestion.cannotReadStream': '無法讀取建議流',
   'focusQuestion.confirm': '確認並進入畫布',
   'focusQuestion.emptyOwn': '（尚未輸入）',
-  'focusQuestion.help':
-    '焦点问题是概念图试图解决或回答的具体问题。它界定了概念图的领域和范围，例如如果构建一个关于「水」的概念图，焦点问题可以是「水在地球上的循环过程是怎样的？」或者「水的物理性质有哪些？」',
+  'focusQuestion.help': '焦点问题是概念图试图解决或回答的具体问题。它界定了概念图的领域和范围，例如如果构建一个关于「水」的概念图，焦点问题可以是「水在地球上的循环过程是怎样的？」或者「水的物理性质有哪些？」',
   'focusQuestion.loadMoreFailed': '加載更多失敗',
-  'focusQuestion.loginHint':
-    '登录后可使用 AI 检验焦点问题并获取建议。您仍可先输入问题并直接进入画布。',
+  'focusQuestion.loginHint': '登录后可使用 AI 检验焦点问题并获取建议。您仍可先输入问题并直接进入画布。',
   'focusQuestion.needValidate': '請先完成檢驗或選擇跳過 AI',
   'focusQuestion.networkError': '網絡錯誤',
   'focusQuestion.noResult': '無結果',
@@ -98,8 +93,7 @@ export default {
   'mindmate.openCanvasNoLibraryId': '導圖未保存到圖庫。請先登錄後再試。',
   'mindmate.openCanvasSaveRetry': '導圖未能自動保存到圖庫。請重新生成；若仍失敗請聯繫管理員。',
   'mindmate.diagramLibraryFull': '圖庫已滿，請刪除舊圖後再試。',
-  'mindmate.diagramPreviewExpired':
-    '臨時預覽圖已從瀏覽器快取中清除。點擊此通知或下方「在畫布中編輯」開啟導圖。',
+  'mindmate.diagramPreviewExpired': '臨時預覽圖已從瀏覽器快取中清除。點擊此通知或下方「在畫布中編輯」開啟導圖。',
   'mindmate.tooltip.copy': '複製',
   'mindmate.tooltip.dislike': '踩',
   'mindmate.tooltip.edit': '編輯',
@@ -165,8 +159,7 @@ export default {
   'panels.share.title': '分享對話',
   'rootConceptModal.addBranchAria': '添加分支',
   'rootConceptModal.addBranchTooltip': '添加知識分支（不重複已有）',
-  'rootConceptModal.helpFooter':
-    '每个标签页对应一个知识分支；概念可在图中与根概念及其他分支交叉连接。拖拽到画布会自动连到根概念。',
+  'rootConceptModal.helpFooter': '每个标签页对应一个知识分支；概念可在图中与根概念及其他分支交叉连接。拖拽到画布会自动连到根概念。',
   'rootConceptModal.splittingLoading': '正在劃分知識分支並生成概念…',
   'rootConceptModal.tabTitleRoot': '根概念：{text}',
   'rootConceptModal.title': '根概念',
@@ -190,12 +183,12 @@ export default {
   'mindmate.collabPokeSent': '已戳一下，對方上線後會收到提醒',
   'mindmate.collabPokeOffline': '對方當前不在線，已嘗試發送提醒',
   'mindmate.collabPokeFailed': '戳一下失敗，請稍後再試',
-  'mindmate.collabInputPlaceholder': "發送消息，或使用 {'@'}MindMate 向 AI 提問…",
+  'mindmate.collabInputPlaceholder': '發送消息，或使用 {\'@\'}MindMate 向 AI 提問…',
   'mindmate.collabRecipientTabsLabel': '消息對象',
   'mindmate.collabRecipientAll': '所有人',
   'mindmate.collabInputPlaceholderMindmate': '向 AI 提問…',
   'mindmate.collabInputPlaceholderAll': '發送消息，僅教師可見…',
-  'mindmate.collabInputHint': "普通消息僅教師可見；{'@'}MindMate 會觸發 AI 回覆（同一對話上下文）",
+  'mindmate.collabInputHint': '普通消息僅教師可見；{\'@\'}MindMate 會觸發 AI 回覆（同一對話上下文）',
   'mindmate.collabSharedPanelTitle': '加入教研會',
   'mindmate.collabSharedCodeHint': '輸入邀請碼（xxx-xxx），加入對方的 MindMate 教研會。',
   'mindmate.collabStartOrg': '發起校內房間',
@@ -239,4 +232,4 @@ export default {
   'mindmate.dmDrawerTitle': '私信',
   'mindmate.dmDrawerPlaceholder': '輸入消息…',
   'mindmate.dmSendFailed': '消息發送失敗',
-}
+} as const

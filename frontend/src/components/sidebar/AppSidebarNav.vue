@@ -403,7 +403,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </transition>
 
-        <!-- Single management tab (e.g. invite users for experts) -->
+        <!-- Single management tab (e.g. school_admin users-only) -->
         <el-tooltip
           v-if="s.isManagementPanelUser && s.singleAdminNavTab"
           :content="s.singleAdminNavTab.label"

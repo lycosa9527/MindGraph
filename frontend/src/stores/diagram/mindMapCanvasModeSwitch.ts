@@ -12,6 +12,7 @@ import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from '../specLoader
 import {
   pruneMindMapCollapsedPaths,
   remapMindMapCollapsedPathsAfterReload,
+  remapMindMapNodeIdsAfterReload,
   setMindMapCollapsedPaths,
 } from './mindMapCollapse'
 import { emitEvent, getMindMapCurveExtents } from './events'
@@ -251,6 +252,8 @@ export function reconcileMindMapCanvasModeSwitch(
 
   retainMeasuredDimensions(ctx, result.nodes)
 
+  const previousSelected = [...ctx.selectedNodes.value]
+
   data.nodes = result.nodes
   data.connections = result.connections
   data._node_styles = mergedNodeStyles
@@ -269,6 +272,14 @@ export function reconcileMindMapCanvasModeSwitch(
   } else {
     setMindMapCollapsedPaths(data as Record<string, unknown>, [])
   }
+
+  ctx.selectedNodes.value = remapMindMapNodeIdsAfterReload(
+    previousSelected,
+    oldNodes,
+    oldConnections,
+    result.nodes,
+    result.connections
+  )
 
   snapshotMindMapCanvasBucket(data, newMode)
 

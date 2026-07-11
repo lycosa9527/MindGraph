@@ -11,7 +11,7 @@ import copy
 import time
 from typing import Any, Dict, Optional
 
-from services.agent_hub import get_mind_graph_agent_hub
+from services.agent_hub.scope_lifecycle import get_mind_graph_agent_hub
 from services.kitty.context.hub_context import apply_kitty_ws_context_patch
 from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_shape
 from services.kitty.diagram.diagram_utils import get_diagram_prefix_map

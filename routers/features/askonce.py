@@ -30,6 +30,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
+from services.infrastructure.http.error_handler import LLMServiceError
 from services.llm import llm_service
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
@@ -183,6 +184,9 @@ async def stream_from_llm(
     except asyncio.CancelledError:
         logger.info("[ASKONCE:%s] Stream cancelled by client", model_id.upper())
         raise
+    except LLMServiceError as e:
+        logger.error("[ASKONCE:%s] Streaming error: %s", model_id.upper(), e)
+        yield f"data: {json.dumps({'type': 'error', 'error': 'Model request failed'})}\n\n"
     except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[ASKONCE:%s] Streaming error: %s", model_id.upper(), e)
         yield f"data: {json.dumps({'type': 'error', 'error': 'Internal server error'})}\n\n"

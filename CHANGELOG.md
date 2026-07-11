@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.141.0] - 2026-07-11
+
+> **Verified diagram-edit tool + Command Bus, Kitty Fun-ASR/CosyVoice voice I/O, one-sentence node-action edits, admin expert org scope and role filter, post-deploy stale-chunk reload, and LLM timeout preservation.**
+
+### Added
+
+- **Diagram Edit Tool** — Agent-driven mindmap mutations with verified canvas ack (`applied` only after owning tab proves the effect): schema, executor, pending futures, postcondition verify, mindmap handlers, and `CanvasTransport` / `KittyWsTransport` ([`services/diagram_edit/`](services/diagram_edit/), [`docs/architecture/diagram_edit_tool.md`](docs/architecture/diagram_edit_tool.md)).
+- **Diagram Command Bus spine** — Single front door in `services/agent_hub/diagram_spine/` (policy, Bus, origins); Kitty adapter routes verified edits; FE apply via `registerKittyDiagramMutationBus` + Hub persist ack (`hub_persist_ok` + `hub_revision`) ([`diagramEditApply.ts`](frontend/src/composables/kitty/diagramEditApply.ts), [`diagramEditHubPersist.ts`](frontend/src/composables/kitty/diagramEditHubPersist.ts)).
+- **Kitty Fun-ASR + CosyVoice** — Text-first voice I/O on shared DashScope MaaS realtime WebSocket (mic PCM processor + CosyVoice TTS); Omni duplex not used for Kitty commands ([`services/kitty/asr/`](services/kitty/asr/), [`services/kitty/tts/`](services/kitty/tts/), [`useKittyFunAsrMic.ts`](frontend/src/composables/kitty/useKittyFunAsrMic.ts)).
+- **One-sentence node-action agent** — Structural edit parse (`update_center` / `add_node` / `update_node` / `delete_node`) with library tools, pending branch autocomplete / clarify options, and edit heuristics ([`node_action_agent.py`](services/kitty/routing/node_action_agent.py), [`node_action_library.py`](services/kitty/routing/node_action_library.py)).
+- **One-sentence session depth** — Command-detail + turn `request_id` migrations; memory hydrate; richer turn/activity tracking ([`rev_0082`](alembic/versions/rev_0082_kitty_one_sentence_turn_request_id.py), [`rev_0083`](alembic/versions/rev_0083_kitty_one_sentence_command_detail.py), [`one_sentence_memory_hydrate.py`](services/kitty/session/one_sentence_memory_hydrate.py)).
+- **DashScope workspace URLs** — Central endpoint builders for legacy vs workspace MaaS domains when `DASHSCOPE_WORKSPACE_ID` is set ([`dashscope_urls.py`](config/dashscope_urls.py), [`dashscope_endpoint_config.py`](config/dashscope_endpoint_config.py)).
+- **Expert organizations tab (invite scope)** — Experts with `scope.invited_orgs` can view organizations they created, open insights-mode school dialogs, and create schools when invite/org edit caps allow ([`admin_panel_permissions.py`](utils/auth/admin_panel_permissions.py), [`adminCapabilities.ts`](frontend/src/utils/adminCapabilities.ts), [`AdminSchoolsTab.vue`](frontend/src/components/admin/AdminSchoolsTab.vue)).
+- **Admin user role filter** — Canonical role query param (with legacy slug matching) plus toolbar role select on the Users tab ([`users.py`](routers/auth/admin/users.py), [`db_roles_for_canonical_filter`](utils/auth/role_constants.py), [`AdminUsersHeaderToolbar.vue`](frontend/src/components/admin/AdminUsersHeaderToolbar.vue)).
+- **Org member role sort** — School/org member lists order by 超级管理员 → 学校管理员 → 专家 → 教研员 → 学校版, then newest ([`admin_user_role_sort.py`](services/auth/admin_user_role_sort.py)).
+- **Stale chunk / PWA reload** — Detect Vite dynamic-import and CSS preload failures after deploy; one-shot hard reload with cooldown; PWA `onNeedRefresh` reloads ([`staleChunkReload.ts`](frontend/src/utils/staleChunkReload.ts)).
+- **BrowserUnavailableError** — Playwright missing-binary / launch failures map to a typed error; PNG/DingTalk generation returns 503 with `browser_unavailable` ([`browser.py`](services/infrastructure/utils/browser.py), [`png_export.py`](routers/api/png_export.py)).
+- **Safe UUID + focus helpers** — `safeRandomUUID` for older WebViews / non-secure contexts; guarded `focusHtmlControl` / `selectHtmlControl` ([`safeRandomUUID.ts`](frontend/src/utils/safeRandomUUID.ts), [`focusHtmlControl.ts`](frontend/src/utils/focusHtmlControl.ts)).
+- **App QueryClient holder** — Pinia auth and other non-setup code resolve Vue Query via [`appQueryClient.ts`](frontend/src/utils/appQueryClient.ts) instead of `useQueryClient()` outside injection context.
+- **Test-server watermark** — Optional banner/watermark for non-production frontends ([`TestServerWatermark.vue`](frontend/src/components/common/TestServerWatermark.vue), [`testServerBanner.ts`](frontend/src/utils/testServerBanner.ts)).
+
+### Changed
+
+- **Kitty command router** — Richer routing into verified diagram-edit / node-action paths, ack phrase pools, and write-lock vs LLM generate ([`command_router.py`](services/kitty/routing/command_router.py)).
+- **Org trends auth** — Token-trend reads allow data-center global readers or organizations-tab readers with global/invited scope ([`require_organization_trends_read`](routers/auth/dependencies.py)).
+- **Kitty desktop poll leader** — Elect a poll leader only when the surface is eligible to poll (auth + feature + non-mobile / non-headless); tear down when ineligible ([`useKittyDesktopActionPoll.ts`](frontend/src/composables/kitty/useKittyDesktopActionPoll.ts)).
+- **Error monitoring DB sessions** — Alert dispatch, error collector, and retention purge use `system_rls_session` ([`alert_dispatcher.py`](services/monitoring/alert_dispatcher.py), [`error_collector.py`](services/monitoring/error_collector.py), [`error_retention_scheduler.py`](services/monitoring/error_retention_scheduler.py)).
+- **Chromium diagnostics** — Startup launch probe logs clear install guidance when Playwright Chromium cannot start.
+- **LLM / DashScope clients** — Shared HTTP client manager and workspace-aware endpoint resolution across chat, embedding, rerank, Omni, and realtime TTS ([`http_client_manager.py`](clients/llm/http_client_manager.py), [`dashscope.py`](clients/llm/dashscope.py)).
+
+### Fixed
+
+- **LLM timeouts** — Chat / stream pipeline re-raises `LLMTimeoutError` instead of wrapping as generic `LLMServiceError` ([`services/llm/__init__.py`](services/llm/__init__.py)); diagram generation surfaces timeout distinctly ([`diagram_generation.py`](routers/api/diagram_generation.py)).
+- **Frontend error noise** — Skip reporting ResizeObserver loops, opaque `Script error.`, and stale-chunk load failures ([`frontendLog.ts`](frontend/src/utils/frontendLog.ts)).
+- **Kitty event handlers** — Session event bus catches database errors from handlers without aborting the bus ([`events.py`](services/kitty/session/events.py)).
+- **Canvas / MindMate robustness** — Safer focus/select and UUID usage across inline edit, edges, outline, MindMate input/bubbles, live subtitle/translation, and collab outbound queue.
+
+### Tests
+
+- **Backend** — [`test_diagram_edit.py`](tests/test_diagram_edit.py), [`test_diagram_command_bus.py`](tests/test_diagram_command_bus.py), [`test_one_sentence_verified_edit_flow.py`](tests/test_one_sentence_verified_edit_flow.py), [`test_kitty_fun_asr_cosyvoice.py`](tests/test_kitty_fun_asr_cosyvoice.py), [`test_node_action_*.py`](tests/), [`test_role_filter_slugs.py`](tests/auth/test_role_filter_slugs.py), [`test_browser_unavailable.py`](tests/test_browser_unavailable.py), [`test_llm_timeout_raise.py`](tests/test_llm_timeout_raise.py), [`test_dashscope_urls.py`](tests/test_dashscope_urls.py); extended admin org-scope and one-sentence session tests.
+- **Frontend** — [`diagramEditApply.spec.ts`](frontend/tests/diagramEditApply.spec.ts), [`diagramEditHubPersist.spec.ts`](frontend/tests/diagramEditHubPersist.spec.ts), [`focusAndChunkReload.spec.ts`](frontend/tests/focusAndChunkReload.spec.ts), [`safeRandomUUID.spec.ts`](frontend/tests/safeRandomUUID.spec.ts), [`oneSentence*.spec.ts`](frontend/tests/); extended [`adminCapabilities.spec.ts`](frontend/tests/adminCapabilities.spec.ts), [`frontendLog.spec.ts`](frontend/tests/frontendLog.spec.ts).
+
 ## [5.140.0] - 2026-07-09
 
 > **Mind map one-sentence Kitty chat with persisted turns, node learning notes, hierarchical clipboard, Document Summary lite ingest, branch-expand AI subgraphs, and canvas diagram-type switching.**

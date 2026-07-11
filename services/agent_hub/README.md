@@ -29,7 +29,9 @@ Authoritative canvas merges use **exactly two** string ops on `mutation_cmd["op"
 current `diagram_library_id`. Bridge code under `services/kitty/` MUST NOT invent other op names.
 
 Kitty realtime paths that call the hub today include `context.hub_context.apply_kitty_ws_context_patch`
-(`context_update` WS) and `diagram.hub_bridge.try_sync_voice_diagram_to_hub` (after voice diagram edits).
+(`context_update` WS). Verified diagram edits persist via **client** `context_update` after canvas
+proof (`diagramEditHubPersist`); legacy non-verified voice edits may still use
+`diagram.hub_bridge.try_sync_voice_diagram_to_hub`.
 
 ## Kitty WebSocket → hub call sequence (reference)
 
@@ -55,7 +57,13 @@ and Omni native tool calling.
 |------|------|
 | [`scope_lifecycle.py`](scope_lifecycle.py) | `MindGraphAgentHub`, control dispatch, refcount policy |
 | [`snapshot.py`](snapshot.py) | `build_desktop_pairing_snapshot` for mobile introspection |
-| [`matrix_bus.py`](matrix_bus.py) | Stub `DiagramCommandBus` for `P3` channel spine |
+| [`matrix_bus.py`](matrix_bus.py) | Re-export of `diagram_spine.DiagramCommandBus` |
+| [`diagram_spine/`](diagram_spine/) | Bus front door: policy, types, channel origins |
+
+### MindMate integration (stub)
+
+Register at startup: `register_channel_adapter("mindmate")`. Future MindMate diagram edits use the same
+`DiagramCommandRequest` envelope with `origin=MINDMATE` and a canvas transport when wired.
 
 **Primitives** (Redis keys, pub/sub publish, Lua refcount helpers) live under [`services/kitty/`](../kitty/).
 

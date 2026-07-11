@@ -28,6 +28,8 @@
  */
 import { type Ref, computed, ref } from 'vue'
 
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -132,11 +134,7 @@ export interface CollabOutboundQueue {
 // ---------------------------------------------------------------------------
 
 function defaultGenerateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-  // Fallback for environments without crypto.randomUUID.
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+  return safeRandomUUID()
 }
 
 // ---------------------------------------------------------------------------

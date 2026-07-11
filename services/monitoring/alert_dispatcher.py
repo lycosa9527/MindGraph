@@ -17,7 +17,6 @@ from typing import Any
 import httpx
 from sqlalchemy import select
 
-from config.db_sessions import open_async_session
 from models.domain.error_event import ErrorGroup
 from services.monitoring.error_alert_config import (
     error_collection_enabled,
@@ -36,6 +35,8 @@ except ImportError:
     get_async_redis = None
     is_redis_available = None
     _REDIS_AVAILABLE = False
+
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +162,7 @@ class AlertDispatcher:
         if not fingerprint:
             return False
         try:
-            async with open_async_session() as session:
+            async with system_rls_session() as session:
                 muted = (
                     await session.execute(select(ErrorGroup.muted).where(ErrorGroup.fingerprint == fingerprint))
                 ).scalar_one_or_none()

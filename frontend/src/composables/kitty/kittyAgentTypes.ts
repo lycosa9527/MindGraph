@@ -9,6 +9,8 @@ export interface KittyAgentOptions {
   onTranscription?: (text: string) => void
   onTextChunk?: (text: string) => void
   onError?: (error: string) => void
+  /** Pinia → WS context builder for verified diagram hub persist. */
+  buildContext?: () => KittyAgentContext
 }
 
 export interface KittyAgentContext {
@@ -19,6 +21,8 @@ export interface KittyAgentContext {
   diagram_library_id?: string | null
   diagram_display_title?: string
   interaction_language?: 'zh' | 'en'
+  one_sentence_phase?: 'create' | 'edit'
+  diagram_write_lock?: { holder: 'llm' | 'tool' | null }
 }
 
 export interface KittyLibrarySnapshot {

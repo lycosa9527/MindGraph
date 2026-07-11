@@ -73,6 +73,62 @@ function findNodeIdByTextSegmentsOnSide(
   return null
 }
 
+/** Resolve a node id across a mind-map tree rebuild (path key, then text path). */
+export function remapMindMapNodeIdAfterReload(
+  oldId: string,
+  oldNodes: DiagramNode[],
+  oldConnections: Connection[],
+  newNodes: DiagramNode[],
+  newConnections: Connection[]
+): string | null {
+  if (oldId === 'topic') {
+    return newNodes.some((node) => node.id === 'topic') ? 'topic' : null
+  }
+  if (!oldId.startsWith('branch-')) {
+    return newNodes.some((node) => node.id === oldId) ? oldId : null
+  }
+
+  const pathKey = mindMapNodePathKey(oldId, oldConnections)
+  if (pathKey) {
+    const byPath = findNodeIdByPathKey(newNodes, newConnections, pathKey)
+    if (byPath) return byPath
+  }
+
+  const segments = getMindMapTextSegments(oldId, oldNodes, oldConnections)
+  if (!segments) return null
+
+  const side: 'l' | 'r' = oldId.startsWith('branch-l-') ? 'l' : 'r'
+  const sameSide = findNodeIdByTextSegmentsOnSide(segments, side, newNodes, newConnections)
+  if (sameSide) return sameSide
+  const otherSide: 'l' | 'r' = side === 'l' ? 'r' : 'l'
+  return findNodeIdByTextSegmentsOnSide(segments, otherSide, newNodes, newConnections)
+}
+
+/** Remap a selection list across a mind-map tree rebuild; drops unresolved ids. */
+export function remapMindMapNodeIdsAfterReload(
+  oldIds: string[],
+  oldNodes: DiagramNode[],
+  oldConnections: Connection[],
+  newNodes: DiagramNode[],
+  newConnections: Connection[]
+): string[] {
+  const remapped: string[] = []
+  const seen = new Set<string>()
+  for (const oldId of oldIds) {
+    const next = remapMindMapNodeIdAfterReload(
+      oldId,
+      oldNodes,
+      oldConnections,
+      newNodes,
+      newConnections
+    )
+    if (!next || seen.has(next)) continue
+    seen.add(next)
+    remapped.push(next)
+  }
+  return remapped
+}
+
 /** Keep collapse state across mind-map tree rebuilds (add/delete/reload). */
 export function remapMindMapCollapsedPathsAfterReload(
   oldNodes: DiagramNode[],

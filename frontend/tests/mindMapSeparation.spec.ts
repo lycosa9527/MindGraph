@@ -52,6 +52,7 @@ function enableMindMapV2CanvasFlag(): void {
     feature_mindmate_export: false,
     feature_kitty_agent: false,
     feature_auth_pixel_battle: false,
+    feature_test_server_banner: false,
     feature_thinking_coins: false,
     workshop_chat_preview_org_ids: [],
     feature_org_access: {},

@@ -519,9 +519,23 @@ class EnvManager:
             "QWEN_API_URL": {
                 "type": "url",
                 "category": "Qwen API",
-                "description": "Qwen API endpoint URL",
+                "description": "Qwen chat completions URL (optional when DASHSCOPE_WORKSPACE_ID is set)",
                 "default": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
-                "required": True,
+                "required": False,
+            },
+            "DASHSCOPE_WORKSPACE_ID": {
+                "type": "string",
+                "category": "Qwen API",
+                "description": "DashScope workspace id for MaaS subdomain endpoints",
+                "default": "",
+                "required": False,
+            },
+            "DASHSCOPE_REGION": {
+                "type": "string",
+                "category": "Qwen API",
+                "description": "DashScope region (cn-beijing, ap-southeast-1, us, eu-central-1, ap-northeast-1)",
+                "default": "cn-beijing",
+                "required": False,
             },
             "QWEN_MODEL_CLASSIFICATION": {
                 "type": "string",

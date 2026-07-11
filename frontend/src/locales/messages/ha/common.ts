@@ -1,5 +1,5 @@
 /**
- * en UI � common
+ * ha UI � common
  */
 
 export default {
@@ -11,6 +11,13 @@ export default {
   'app.browserLocale.keepChinese': 'Keep Chinese',
   'app.browserLocale.switch': 'Switch',
   'app.browserLocale.title': 'Switch interface language?',
+  'app.testServer.badge': 'TEST',
+  'app.testServer.body': 'Roy, hands on hips, reminds you: you are on the test server. This site goes offline often for testing—use the live site for real work.',
+  'app.testServer.confirm': 'Stay on test',
+  'app.testServer.jump': 'Go to live site',
+  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.title': 'Test environment',
+  'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'Apply',
   'askOnce.clearDraft': 'Clear',
   'askOnce.newChat': 'New Chat',
@@ -176,6 +183,7 @@ export default {
   'mobile.kittyClickWheelEmptyLabel': 'Untitled node',
   'mobile.kittyClickWheelPosition': '{current} / {total}',
   'meta.pageTitle.notFound': 'Page not found',
+  'meta.pageTitle.privacy': 'Terms & Privacy',
   'meta.pageTitle.publicDashboard': 'Statistics',
   'meta.pageTitle.schoolDashboard': 'School dashboard',
   'meta.pageTitle.schoolZone': 'School zone',

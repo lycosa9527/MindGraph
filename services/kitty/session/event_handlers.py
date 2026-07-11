@@ -14,6 +14,7 @@ from typing import Any, Dict
 
 from fastapi import WebSocket
 
+from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.content.paragraph import process_paragraph_with_qwen_plus
 from services.kitty.context.library_refresh import bump_voice_mutation_freshness
 from services.kitty.context.messaging import safe_websocket_send
@@ -30,7 +31,6 @@ from services.kitty.session.one_sentence_text_reply import reply_text_only_conve
 from services.kitty.session.one_sentence_turns import (
     persist_one_sentence_turn_from_voice_session,
 )
-from services.kitty.session.omni_client_access import get_session_omni_client
 from services.kitty.session.runtime_state import voice_sessions
 
 logger = logging.getLogger(__name__)
@@ -112,20 +112,33 @@ async def _handle_text_inbound(runtime: KittySessionRuntime, payload: Dict[str, 
     if not text:
         return
 
+    raw_request_id = payload.get("request_id")
+    request_id = (
+        str(raw_request_id).strip() if isinstance(raw_request_id, str) and str(raw_request_id).strip() else None
+    )
+
     mem = get_session_memory(runtime.voice_session_id)
     mem.append_user_turn(text, source="text")
 
     session = voice_sessions.get(runtime.voice_session_id) or {}
+    if request_id:
+        session["_one_sentence_request_id"] = request_id
+    session_context = dict(session.get("context") or {})
+    ctx_phase = str(session_context.get("one_sentence_phase") or "").strip()
+    user_phase = ctx_phase if ctx_phase in ("create", "edit") else "edit"
     if str(session.get("active_panel") or "") == "one_sentence":
         await persist_one_sentence_turn_from_voice_session(
             runtime.voice_session_id,
             role="user",
             content=text,
             source="ws_text",
-            phase="edit",
+            phase=user_phase,
+            request_id=request_id,
         )
 
-    session_context = dict(session.get("context") or {})
+    edit_phase = session_context.get("one_sentence_phase")
+    if str(session.get("active_panel") or "") == "one_sentence" and edit_phase != "create":
+        edit_phase = edit_phase or "edit"
     result = await route_voice_command(
         runtime.websocket,
         runtime.voice_session_id,
@@ -139,6 +152,11 @@ async def _handle_text_inbound(runtime: KittySessionRuntime, payload: Dict[str, 
     if result.outcome != RouteOutcome.CONVERSATIONAL_FALLBACK:
         return
 
+    if str(session.get("active_panel") or "") == "one_sentence":
+        ctx_phase = session_context.get("one_sentence_phase")
+        if ctx_phase == "edit" or ctx_phase is None:
+            return
+
     if await reply_text_only_conversational(
         runtime.websocket,
         runtime.voice_session_id,
@@ -147,26 +165,21 @@ async def _handle_text_inbound(runtime: KittySessionRuntime, payload: Dict[str, 
     ):
         return
 
-    try:
-        logger.debug("Text message is conversational, sending to Omni")
-        omni_client = get_session_omni_client(runtime.voice_session_id)
-        if omni_client:
-            await omni_client.send_text_message(text)
-            return
-        logger.warning(
-            "Cannot send text: OmniClient not found for session %s",
-            runtime.voice_session_id,
-        )
-        await safe_websocket_send(
-            runtime.websocket,
-            {"type": "error", "error": "Voice session not initialized"},
-        )
-    except (RuntimeError, ConnectionError, AttributeError) as text_error:
-        logger.error("Text message processing error: %s", text_error, exc_info=True)
-        await safe_websocket_send(
-            runtime.websocket,
-            {"type": "error", "error": str(text_error)},
-        )
+    # Omni duplex retired — conversational fallback without Omni uses text reply only.
+    logger.info(
+        "[OneSentence] clarify fallback voice=%s request_id=%s",
+        runtime.voice_session_id[:12],
+        (request_id or "-")[:12],
+    )
+    await emit_user_ack(
+        runtime.websocket,
+        runtime.voice_session_id,
+        "我暂时只能帮你改图或回答和这张图相关的问题，请再说具体一点。",
+        also_omni=False,
+        reply_kind="final",
+        one_sentence_outcome="clarify",
+        request_id=request_id,
+    )
 
 
 async def _handle_function_call(runtime: KittySessionRuntime, payload: Dict[str, Any]) -> None:

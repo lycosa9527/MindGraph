@@ -92,6 +92,9 @@ function openUserTrend(userName: string, userId: number | undefined): void {
 async function copyInvitationCode(event: MouseEvent): Promise<void> {
   event.stopPropagation()
   const text = t('admin.schoolInviteCopyPayload', {
+    orgName:
+      (stats.value.organization?.name || '').trim() ||
+      (t('admin.organizationName') as string),
     siteUrl: publicSiteUrl.value,
     code: (stats.value.organization?.invitation_code || '').trim(),
   })

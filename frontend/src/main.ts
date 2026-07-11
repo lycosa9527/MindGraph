@@ -21,10 +21,12 @@ import router from './router'
 import { useUIStore } from './stores/ui'
 // Styles
 import './styles/index.css'
+import { setAppQueryClient } from './utils/appQueryClient'
 import { isGuestAuthPath } from './utils/authRedirect'
 import { installCsrfFetchInterceptor } from './utils/installCsrfFetchInterceptor'
 import { installFrontendErrorReporting } from './utils/installFrontendErrorReporting'
 import { bindPwaInstallListeners } from './utils/pwaInstall'
+import { reloadForStaleChunk } from './utils/staleChunkReload'
 
 // Attach X-CSRF-Token to same-origin mutations before any request is made.
 installCsrfFetchInterceptor()
@@ -32,7 +34,12 @@ installCsrfFetchInterceptor()
 const pwaDevEnabled = import.meta.env.VITE_PWA_DEV === '1'
 
 if (import.meta.env.PROD || pwaDevEnabled) {
-  registerSW({ immediate: true })
+  registerSW({
+    immediate: true,
+    onNeedRefresh() {
+      window.location.reload()
+    },
+  })
 }
 bindPwaInstallListeners()
 
@@ -78,9 +85,14 @@ async function bootstrap(): Promise<void> {
       },
     },
   })
+  setAppQueryClient(queryClient)
   app.use(VueQueryPlugin, { queryClient })
 
   installFrontendErrorReporting(app)
+
+  router.onError((error) => {
+    reloadForStaleChunk(error)
+  })
 
   // Avoid flashing DefaultLayout on `/` before the guard redirects (e.g. to `/mindmate`).
   await router.isReady()

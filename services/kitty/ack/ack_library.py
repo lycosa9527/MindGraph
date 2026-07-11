@@ -10,6 +10,7 @@ from services.kitty.ack.ack_action_resolve import (
     resolve_update_center_ack_key,
     resolve_update_node_ack_key,
 )
+from services.kitty.ack.ack_phrase_pool import pick_ack_template
 from services.kitty.ack.ack_slots import (
     echo_hint_from_slots,
     slots_from_command,
@@ -31,12 +32,20 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": 'OK — updating the node to "{new_text}"…',
     },
     "diagram.update_node.done": {
-        "zh": "已将「{old_text}」改为「{new_text}」。",
-        "en": 'Changed "{old_text}" to "{new_text}".',
+        "zh": "已将「{old_text}」改为「{new_text}」。还需要改别的吗？",
+        "en": 'Changed "{old_text}" to "{new_text}". Anything else to change?',
     },
     "diagram.update_node.done_no_old": {
-        "zh": "节点已更新为「{new_text}」。",
-        "en": 'Node updated to "{new_text}".',
+        "zh": "节点已更新为「{new_text}」。还需要改别的吗？",
+        "en": 'Node updated to "{new_text}". Anything else to change?',
+    },
+    "diagram.update_node.failed": {
+        "zh": "抱歉，没能把「{old_text}」改为「{new_text}」。请确认节点名称后再试。",
+        "en": 'Sorry — I couldn\'t change "{old_text}" to "{new_text}". Check the node name and try again.',
+    },
+    "diagram.update_node.failed_no_old": {
+        "zh": "抱歉，没能把节点改为「{new_text}」。请再说具体一点。",
+        "en": 'Sorry — I couldn\'t update the node to "{new_text}". Please be more specific.',
     },
     "diagram.update_center.progress": {
         "zh": "好的，正在把主题更新为「{new_text}」…",
@@ -46,6 +55,10 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "主题已更新为「{new_text}」。",
         "en": 'Topic updated to "{new_text}".',
     },
+    "diagram.update_center.failed": {
+        "zh": "抱歉，没能把主题更新为「{new_text}」。请再试一次。",
+        "en": 'Sorry — I couldn\'t update the topic to "{new_text}". Please try again.',
+    },
     "diagram.update_center.double_bubble.progress": {
         "zh": "好的，正在更新为「{left}」和「{right}」…",
         "en": 'OK — updating to "{left}" and "{right}"…',
@@ -53,6 +66,10 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
     "diagram.update_center.double_bubble.done": {
         "zh": "已更新为「{left}」和「{right}」。",
         "en": 'Updated to "{left}" and "{right}".',
+    },
+    "diagram.update_center.double_bubble.failed": {
+        "zh": "抱歉，没能更新为「{left}」和「{right}」。请再试一次。",
+        "en": 'Sorry — I couldn\'t update to "{left}" and "{right}". Please try again.',
     },
     "diagram.add_node.progress": {
         "zh": "好的，正在添加「{target}」…",
@@ -62,13 +79,41 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "「{target}」已添加。",
         "en": '"{target}" added.',
     },
+    "diagram.add_node.failed": {
+        "zh": "抱歉，没能添加「{target}」。请换个说法再试。",
+        "en": 'Sorry — I couldn\'t add "{target}". Try rephrasing.',
+    },
     "diagram.add_branch.progress": {
-        "zh": "好的，正在添加{target}分支并补完…",
-        "en": 'OK — adding the "{target}" branch and filling it in…',
+        "zh": "好的，正在添加「{target}」分支…",
+        "en": 'OK — adding the "{target}" branch…',
     },
     "diagram.add_branch.done": {
-        "zh": "{target}分支已补完。",
-        "en": 'The "{target}" branch is ready.',
+        "zh": "「{target}」分支已添加，正在自动补全…",
+        "en": 'Branch "{target}" added — auto-completing…',
+    },
+    "diagram.add_branch.failed": {
+        "zh": "抱歉，没能添加「{target}」分支。请再试一次。",
+        "en": 'Sorry — I couldn\'t add the "{target}" branch. Please try again.',
+    },
+    "diagram.branch_autocomplete.accepted": {
+        "zh": "好的，正在自动补全「{target}」分支…",
+        "en": 'OK — auto-completing the "{target}" branch…',
+    },
+    "diagram.branch_autocomplete.declined": {
+        "zh": "好的，先不补全。还需要改别的吗？",
+        "en": "OK — skipping auto-complete for now. Anything else?",
+    },
+    "diagram.branch_autocomplete.failed": {
+        "zh": "抱歉，没能为「{target}」分支自动补全。你可以再说一次「自动补全」。",
+        "en": 'Sorry — I couldn\'t auto-complete the "{target}" branch. You can ask again to auto-complete.',
+    },
+    "diagram.clarify_options": {
+        "zh": "{question}\n{options_list}\n请回复序号或选项内容。",
+        "en": "{question}\n{options_list}\nReply with the number or option text.",
+    },
+    "diagram.clarify_options.picked": {
+        "zh": "好的，{label}。",
+        "en": "OK — {label}.",
     },
     "diagram.add_child.progress": {
         "zh": "好的，正在添加子项「{target}」…",
@@ -78,6 +123,10 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "子项「{target}」已添加。",
         "en": 'Sub-item "{target}" added.',
     },
+    "diagram.add_child.failed": {
+        "zh": "抱歉，没能添加子项「{target}」。请确认要加在哪个分支下。",
+        "en": 'Sorry — I couldn\'t add sub-item "{target}". Which branch should it go under?',
+    },
     "diagram.add_child.branch.progress": {
         "zh": "好的，正在向「{branch_label}」分支添加「{target}」…",
         "en": 'OK — adding "{target}" under branch "{branch_label}"…',
@@ -86,21 +135,33 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "「{target}」已添加到「{branch_label}」分支。",
         "en": 'Added "{target}" under branch "{branch_label}".',
     },
+    "diagram.add_child.branch.failed": {
+        "zh": "抱歉，没能向「{branch_label}」分支添加「{target}」。请确认分支名称后再试。",
+        "en": 'Sorry — I couldn\'t add "{target}" under "{branch_label}". Check the branch name and try again.',
+    },
     "diagram.delete_node.progress": {
         "zh": "好的，正在删除「{target}」…",
         "en": 'OK — removing "{target}"…',
     },
     "diagram.delete_node.done": {
-        "zh": "「{target}」已删除。",
-        "en": '"{target}" removed.',
+        "zh": "「{target}」已删除。还需要改别的吗？",
+        "en": '"{target}" removed. Anything else to change?',
+    },
+    "diagram.delete_node.failed": {
+        "zh": "抱歉，没能删除「{target}」。请确认节点名称后再试。",
+        "en": 'Sorry — I couldn\'t remove "{target}". Check the node name and try again.',
     },
     "diagram.delete_branch.progress": {
         "zh": "好的，正在删除「{target}」分支…",
         "en": 'OK — removing branch "{target}"…',
     },
     "diagram.delete_branch.done": {
-        "zh": "「{target}」分支已删除。",
-        "en": 'Branch "{target}" removed.',
+        "zh": "「{target}」分支已删除。还需要改别的吗？",
+        "en": 'Branch "{target}" removed. Anything else to change?',
+    },
+    "diagram.delete_branch.failed": {
+        "zh": "抱歉，没能删除「{target}」分支。请确认分支名称后再试。",
+        "en": 'Sorry — I couldn\'t remove branch "{target}". Check the name and try again.',
     },
     "diagram.delete_child.progress": {
         "zh": "好的，正在删除子项…",
@@ -110,6 +171,18 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "子项已删除。",
         "en": "Sub-item removed.",
     },
+    "diagram.delete_child.target.progress": {
+        "zh": "好的，正在删除子项「{target}」…",
+        "en": 'OK — removing sub-item "{target}"…',
+    },
+    "diagram.delete_child.target.done": {
+        "zh": "子项「{target}」已删除。",
+        "en": 'Sub-item "{target}" removed.',
+    },
+    "diagram.delete_child.failed": {
+        "zh": "抱歉，没能删除子项。请说明要删哪个。",
+        "en": "Sorry — I couldn't remove that sub-item. Which one should I delete?",
+    },
     "diagram.delete_child.branch.progress": {
         "zh": "好的，正在删除「{branch_label}」分支下的子项…",
         "en": 'OK — removing a sub-item under branch "{branch_label}"…',
@@ -118,23 +191,58 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "「{branch_label}」分支下的子项已删除。",
         "en": 'Sub-item under branch "{branch_label}" removed.',
     },
+    "diagram.delete_child.branch.failed": {
+        "zh": "抱歉，没能删除「{branch_label}」分支下的子项。请再说具体一点。",
+        "en": 'Sorry — I couldn\'t remove a sub-item under "{branch_label}". Please be more specific.',
+    },
     "diagram.execute_failed": {
-        "zh": "抱歉，没能更新这张导图，请换个说法试试。",
-        "en": "Sorry, I couldn't update the diagram. Try rephrasing.",
+        "zh": "抱歉，这次没能改好导图。请换个说法再试，或告诉我要改哪个节点。",
+        "en": "Sorry — I couldn't update the diagram. Try rephrasing, or tell me which node to change.",
+    },
+    "diagram.failed.busy_llm": {
+        "zh": "其他模型的结果还在生成中，完成后会自动执行你刚才的请求。",
+        "en": "Other model results are still streaming — I will run your request automatically when they finish.",
+    },
+    "diagram.failed.access_denied": {
+        "zh": "当前没有权限修改这张导图。",
+        "en": "You don't have permission to edit this diagram.",
+    },
+    "diagram.failed.stale_revision": {
+        "zh": "导图刚被更新过，这次修改过期了。请再说一次你的修改。",
+        "en": "The diagram was just updated, so that edit is stale. Please repeat your change.",
+    },
+    "diagram.failed.timeout": {
+        "zh": "这次修改超时了，导图可能未更新。请再试一次。",
+        "en": "That edit timed out — the diagram may be unchanged. Please try again.",
+    },
+    "diagram.failed.persist": {
+        "zh": "本地可能已改好，但同步失败。请稍后再试，或刷新后检查。",
+        "en": "The local edit may have applied, but sync failed. Try again shortly, or refresh to check.",
+    },
+    "diagram.failed.no_owner": {
+        "zh": "暂时找不到可编辑的画布，请确认画布已打开后再试。",
+        "en": "I couldn't find an editable canvas. Open the canvas, then try again.",
+    },
+    "diagram.failed.compensate": {
+        "zh": "修改未能确认，已尽量恢复原样。请再试一次。",
+        "en": "The edit couldn't be confirmed and was rolled back. Please try again.",
     },
     "diagram.low_confidence": {
         "zh": "你是想{echo}吗？请再说具体一点。",
         "en": "Did you mean to {echo}? Please be a bit more specific.",
     },
     "diagram.low_confidence_generic": {
-        "zh": "我不太确定要怎么改这张导图，请再说具体一点。",
-        "en": "I'm not sure what to change. Can you be more specific?",
+        "zh": "我不太确定要怎么改这张导图，请再说具体一点——比如改哪个节点、加哪条分支。",
+        "en": "I'm not sure what to change. Tell me which node to edit, or which branch to add.",
     },
     "diagram.not_understood": {
-        "zh": ("没太明白您的意思。我可以帮您改节点、添加或删除分支、更换主题，或打开联想建议——请说一下要改哪个节点。"),
+        "zh": (
+            "没太明白您的意思。我可以帮您改节点、添加或删除分支、更换主题，"
+            "自动补全，或打开联想建议——请说一下要改哪个节点。"
+        ),
         "en": (
             "I didn't quite catch that. I can rename nodes, add or remove branches, "
-            "change the topic, or show inline suggestions — which node should I change?"
+            "change the topic, auto-complete, or show suggestions — which node should I change?"
         ),
     },
     "diagram.unsupported_type": {
@@ -158,23 +266,23 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         ),
     },
     "ui.auto_complete": {
-        "zh": "收到，正在自动补全。",
-        "en": "OK — running auto-complete.",
+        "zh": "好的，正在自动补全整张导图…",
+        "en": "OK — auto-completing the whole diagram…",
     },
     "ui.start_inline_recommendations": {
-        "zh": "好，打开联想建议。",
-        "en": "OK — showing inline suggestions.",
+        "zh": "好的，已打开联想建议，请从推荐里选一个。",
+        "en": "OK — inline suggestions are open. Pick one when ready.",
     },
     "ui.start_inline_recommendations_no_selection": {
         "zh": "请先在画布上选中一个节点，再说要推荐的内容。",
         "en": "Select a node on the canvas first, then ask for suggestions.",
     },
     "ui.add_node_with_recommendations": {
-        "zh": "好，已添加节点，请从推荐里选一个。",
-        "en": "OK — node added. Pick one of the suggestions.",
+        "zh": "好的，已添加节点并打开推荐，请选一个。",
+        "en": "OK — node added with suggestions. Pick one.",
     },
     "ui.open_desktop_canvas.ok": {
-        "zh": "好，已在电脑端打开画布。",
+        "zh": "好的，已在电脑端打开画布。",
         "en": "OK — opening the canvas on desktop.",
     },
     "ui.open_desktop_canvas.fail": {
@@ -235,16 +343,28 @@ class _SlotDict(dict[str, str]):
         return ""
 
 
-def render_ack(key: str, slots: Optional[Dict[str, str]] = None, *, lang: str = "zh") -> str:
-    """Render a template by key with optional slots."""
+def render_ack(
+    key: str,
+    slots: Optional[Dict[str, str]] = None,
+    *,
+    lang: str = "zh",
+    variant_index: Optional[int] = None,
+) -> str:
+    """Render a template by key with optional slots (rotating variants when pooled)."""
     picked = _pick_lang(lang)
     row = _ACK_TEMPLATES.get(key)
     if not row:
         return key
-    template = row.get(picked) or row.get("zh") or ""
-    if not slots:
-        return template
-    return _apply_slots(template, slots).strip()
+    fallback = row.get(picked) or row.get("zh") or ""
+    template = pick_ack_template(
+        key,
+        picked,
+        fallback,
+        variant_index=variant_index,
+    )
+    # Always format: empty ``{}`` must still clear ``{target}`` placeholders
+    # (``if not slots`` would leave literal ``{target}`` in the UI).
+    return _apply_slots(template, slots or {}).strip()
 
 
 def _resolve_diagram_ack_key(
@@ -291,14 +411,15 @@ def render_ack_for_command(
     *,
     lang: str = "zh",
     phase: Literal["progress", "done"] = "progress",
+    variant_index: Optional[int] = None,
 ) -> str:
     """Render success/clarify ack for a router-level command."""
     act = str(action or "").strip()
     slots = slots_from_command(act, command, session_context)
     key = _resolve_diagram_ack_key(act, command, session_context, slots, phase=phase)
     if key == "diagram.not_understood":
-        return render_ack(key, lang=lang)
-    return render_ack(key, slots, lang=lang)
+        return render_ack(key, lang=lang, variant_index=variant_index)
+    return render_ack(key, slots, lang=lang, variant_index=variant_index)
 
 
 def render_ack_for_diagram_update(
@@ -308,6 +429,7 @@ def render_ack_for_diagram_update(
     lang: str = "zh",
     command: Optional[Dict[str, Any]] = None,
     session_context: Optional[Dict[str, Any]] = None,
+    variant_index: Optional[int] = None,
 ) -> str:
     """Render user_summary for diagram_update WS payloads."""
     if command and session_context is not None:
@@ -319,6 +441,7 @@ def render_ack_for_diagram_update(
                 session_context,
                 lang=lang,
                 phase="done",
+                variant_index=variant_index,
             )
 
     act = str(action or "").strip()
@@ -334,7 +457,7 @@ def render_ack_for_diagram_update(
             phase="done",
         )
         if key != "diagram.not_understood":
-            return render_ack(key, slots, lang=lang)
+            return render_ack(key, slots, lang=lang, variant_index=variant_index)
 
     key = _WS_ACTION_TO_DONE_KEY.get(act)
     if act == "update_nodes" and slots.get("old_text") and slots.get("new_text"):
@@ -343,7 +466,7 @@ def render_ack_for_diagram_update(
         key = "diagram.update_center.double_bubble.done"
     if not key:
         key = "diagram.update_center.done"
-    return render_ack(key, slots, lang=lang)
+    return render_ack(key, slots, lang=lang, variant_index=variant_index)
 
 
 def render_low_confidence_ack(
@@ -385,6 +508,39 @@ def render_unsupported_diagram_ack(
 def render_not_understood_ack(*, lang: str = "zh") -> str:
     """Render clarify ack when intent is outside the node-action catalog."""
     return render_ack("diagram.not_understood", lang=lang)
+
+
+def render_clarify_options_ack(
+    command: Dict[str, Any],
+    *,
+    lang: str = "zh",
+) -> str:
+    """Render numbered clarify options for ambiguous node-action routing."""
+    use_en = lang == "en"
+    question_raw = command.get("question")
+    if isinstance(question_raw, str) and question_raw.strip():
+        question = question_raw.strip()
+    elif use_en:
+        question = "Which did you mean?"
+    else:
+        question = "你是想："
+
+    labels: list[str] = []
+    raw_options = command.get("options")
+    if isinstance(raw_options, list):
+        for item in raw_options:
+            if isinstance(item, str) and item.strip():
+                labels.append(item.strip())
+
+    lines: list[str] = []
+    for idx, label in enumerate(labels[:3], start=1):
+        lines.append(f"{idx}) {label}")
+    options_list = "\n".join(lines)
+    return render_ack(
+        "diagram.clarify_options",
+        {"question": question, "options_list": options_list},
+        lang=lang,
+    )
 
 
 def _ws_action_to_router_action(ws_action: str) -> Optional[str]:

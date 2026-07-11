@@ -132,6 +132,7 @@ async def test_production_csp_uses_nonce_when_request_state_has_nonce() -> None:
     csp = result.headers["Content-Security-Policy"]
     assert "script-src 'self' 'nonce-testnonce123'" in csp
     assert "script-src 'self' 'unsafe-inline'" not in csp
+    assert "worker-src 'self'" in csp
     # Styles intentionally keep 'unsafe-inline' for runtime-injected Vue/Element Plus styles.
     assert "style-src 'self' 'unsafe-inline'" in csp
 
@@ -155,6 +156,7 @@ async def test_production_csp_falls_back_to_unsafe_inline_without_nonce() -> Non
 
     csp = result.headers["Content-Security-Policy"]
     assert "script-src 'self' 'unsafe-inline'" in csp
+    assert "worker-src 'self'" in csp
     assert "nonce-" not in csp
 
 

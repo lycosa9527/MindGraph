@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional
 
+from services.diagram_edit.schema import diagram_edit_function_call_to_legacy_command
 from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
     normalize_voice_desktop_canvas_diagram_type,
 )
@@ -179,6 +180,19 @@ def build_omni_diagram_tools() -> List[Dict[str, Any]]:
 
 def omni_function_call_to_command(name: str, arguments_json: str) -> Dict[str, Any]:
     """Map Omni function call to legacy command dict used by diagram_execute."""
+    diagram_tool = name if name.startswith("diagram.") else f"diagram.{name}"
+    if name in ("update_center", "add_node", "update_node", "delete_node") or name.startswith("diagram."):
+        mapped = diagram_edit_function_call_to_legacy_command(diagram_tool, arguments_json)
+        act = mapped.get("action")
+        if act == "add_node" and mapped.get("target"):
+            return mapped
+        if act == "update_node" and mapped.get("target"):
+            return mapped
+        if act == "delete_node" and (mapped.get("target") or mapped.get("node_index") is not None):
+            return mapped
+        if act == "update_center" and mapped.get("target"):
+            return mapped
+
     try:
         args = json.loads(arguments_json) if arguments_json else {}
     except json.JSONDecodeError:

@@ -38,21 +38,44 @@ logger = logging.getLogger(__name__)
 class QwenClient:
     """Async client for Qwen LLM API using httpx with HTTP/2 support."""
 
-    def __init__(self, model_type="classification"):
+    def __init__(
+        self,
+        model_type: str = "classification",
+        *,
+        pinned_dashscope_model: Optional[str] = None,
+    ):
         """
         Initialize QwenClient with specific model type
 
         Args:
             model_type (str): 'classification' uses ``QWEN_MODEL_CLASSIFICATION``;
                 'generation' uses ``QWEN_MODEL_GENERATION``
+            pinned_dashscope_model: When set, always send this DashScope model id
+                unless ``dashscope_model`` is passed per request.
         """
         self.api_url = config.QWEN_API_URL
         self.api_key = config.QWEN_API_KEY
         self.timeout = 30  # seconds
         self.stream_timeout = 120  # Longer timeout for streaming (thinking models)
         self.model_type = model_type
+        self._pinned_dashscope_model = (
+            pinned_dashscope_model.strip()
+            if isinstance(pinned_dashscope_model, str) and pinned_dashscope_model.strip()
+            else None
+        )
         # DIVERSITY FIX: Use higher temperature for generation to increase variety
         self.default_temperature = 0.9 if model_type == "generation" else 0.7
+
+    def _resolve_model_name(self, kwargs: Dict[str, Any]) -> str:
+        """Resolve DashScope model id from per-request override, pin, or env."""
+        dashscope_model = kwargs.pop("dashscope_model", None)
+        if isinstance(dashscope_model, str) and dashscope_model.strip():
+            return dashscope_model.strip()
+        if self._pinned_dashscope_model:
+            return self._pinned_dashscope_model
+        if self.model_type == "classification":
+            return config.QWEN_MODEL_CLASSIFICATION
+        return config.QWEN_MODEL_GENERATION
 
     async def chat_completion(
         self,
@@ -113,13 +136,7 @@ class QwenClient:
                 temperature = self.default_temperature
 
             # Select appropriate model based on task type
-            if self.model_type == "classification":
-                model_name = config.QWEN_MODEL_CLASSIFICATION
-            else:  # generation
-                model_name = config.QWEN_MODEL_GENERATION
-            dashscope_model = kwargs.pop("dashscope_model", None)
-            if dashscope_model:
-                model_name = dashscope_model
+            model_name = self._resolve_model_name(kwargs)
 
             # Build extra_body for DashScope-specific parameters
             extra_body: Dict[str, Any] = {"enable_thinking": False}
@@ -321,13 +338,7 @@ class QwenClient:
                 temperature = self.default_temperature
 
             # Select appropriate model
-            if self.model_type == "classification":
-                model_name = config.QWEN_MODEL_CLASSIFICATION
-            else:
-                model_name = config.QWEN_MODEL_GENERATION
-            dashscope_model = kwargs.pop("dashscope_model", None)
-            if dashscope_model:
-                model_name = dashscope_model
+            model_name = self._resolve_model_name(kwargs)
 
             # Build extra_body for DashScope-specific parameters
             extra_body: Dict[str, Any] = {"enable_thinking": enable_thinking}

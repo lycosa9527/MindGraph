@@ -18,7 +18,7 @@ from services.kitty.session.one_sentence_turn_pg import (
 
 
 def test_turn_dict_to_row_maps_fields() -> None:
-    """Normalized turn dict maps to ORM columns."""
+    """Normalized turn dict maps to ORM columns including request_id."""
     row = turn_dict_to_row(
         user_id=7,
         organization_id=3,
@@ -32,11 +32,13 @@ def test_turn_dict_to_row_maps_fields() -> None:
             "phase": "edit",
             "source": "ws_text",
             "diagram_type": "mindmap",
+            "request_id": "req-xyz",
         },
     )
     assert row.turn_id == "abc"
     assert row.role == "user"
     assert row.diagram_type == "mindmap"
+    assert row.request_id == "req-xyz"
 
 
 def test_resolve_usage_action_create_user() -> None:

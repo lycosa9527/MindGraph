@@ -17,12 +17,12 @@ from datetime import UTC, datetime
 from sqlalchemy import select, update
 from sqlalchemy.exc import SQLAlchemyError
 
-from config.db_sessions import open_async_session
 from models.domain.error_event import ErrorEvent, ErrorGroup
 from services.monitoring.alert_dispatcher import AlertDispatcher
 from services.monitoring.error_alert_config import error_collection_enabled
 from services.monitoring.error_record import ErrorRecord
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ def _normalize_record(record: ErrorRecord) -> ErrorRecord:
 
 async def _persist_record(record: ErrorRecord) -> int | None:
     now = datetime.now(UTC)
-    async with open_async_session() as session:
+    async with system_rls_session() as session:
         group_result = await session.execute(select(ErrorGroup).where(ErrorGroup.fingerprint == record.fingerprint))
         group = group_result.scalar_one_or_none()
         if group is None:

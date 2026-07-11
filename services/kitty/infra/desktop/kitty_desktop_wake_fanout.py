@@ -88,6 +88,10 @@ async def publish_kitty_diagram_update(
         "action": message.get("action"),
         "updates": message.get("updates"),
     }
+    mutation_id = message.get("mutation_id")
+    if isinstance(mutation_id, str) and mutation_id.strip():
+        # Owning canvas applies via verified WS path; observers must not re-apply.
+        body["mutation_id"] = mutation_id.strip()
     payload = json.dumps(body, ensure_ascii=False)
     try:
         await redis.publish(channel, payload)

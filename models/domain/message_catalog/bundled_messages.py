@@ -27,6 +27,11 @@ ERRORS = {
         "en": "Failed to generate graph: {}",
         "az": "Qrafik yaratmaq mümkün olmadı: {}",
     },
+    "browser_unavailable": {
+        "zh": "浏览器引擎未就绪，无法生成图片。请联系管理员安装 Playwright Chromium。",
+        "en": "Browser engine unavailable for image generation. Ask an admin to install Playwright Chromium.",
+        "az": "Şəkil yaratmaq üçün brauzer mühərriki əlçatan deyil. Administratora Playwright Chromium quraşdırmağı bildirin.",
+    },
     "export_failed": {"zh": "导出PNG失败：{}", "en": "PNG export failed: {}", "az": "PNG ixracı uğursuz oldu: {}"},
     "internal_error": {"zh": "服务器内部错误", "en": "Internal server error", "az": "Daxili server xətası"},
     "invalid_request": {"zh": "请求无效", "en": "Invalid request", "az": "Etibarsız sorğu"},

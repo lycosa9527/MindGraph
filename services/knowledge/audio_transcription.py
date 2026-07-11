@@ -81,7 +81,7 @@ def _resolve_api_key() -> str:
 
 
 def _base_url() -> str:
-    return config.DASHSCOPE_API_URL or "https://dashscope.aliyuncs.com/api/v1/"
+    return config.DASHSCOPE_API_URL
 
 
 def _submit_task(client: httpx.Client, file_url: str, language_hints: Optional[List[str]]) -> str:

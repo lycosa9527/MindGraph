@@ -78,6 +78,7 @@ export interface AdminUsersQuery {
   page_size?: number
   search?: string
   organization_id?: number | string
+  role?: string
 }
 
 export interface AdminTokenPeriodStats {
@@ -371,6 +372,7 @@ export async function fetchAdminUsers(query: AdminUsersQuery = {}): Promise<Admi
     page_size: query.page_size ?? 20,
     search: query.search ?? '',
     organization_id: query.organization_id,
+    role: query.role,
   })
   return adminFetchJson(`/api/auth/admin/users${qs}`)
 }

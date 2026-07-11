@@ -35,12 +35,20 @@ def clear_dependency_overrides():
     app.dependency_overrides.clear()
 
 
-def test_expert_denied_global_organizations(client: TestClient) -> None:
-    """Test expert denied global organizations."""
+def test_expert_can_list_scoped_organizations(client: TestClient) -> None:
+    """Experts may hit organizations list (invite-scoped; not global-only gate)."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("expert", user_id=5)
     app.dependency_overrides[get_language_dependency] = lambda: "en"
     response = client.get("/api/auth/admin/organizations")
-    assert response.status_code == 403
+    assert response.status_code != 403
+
+
+def test_expert_can_read_organization_trends(client: TestClient) -> None:
+    """Experts may request org trends; IDOR still enforced for foreign orgs."""
+    app.dependency_overrides[get_current_user] = lambda: _make_user("expert", user_id=5)
+    app.dependency_overrides[get_language_dependency] = lambda: "en"
+    response = client.get("/api/auth/admin/stats/trends/organization?organization_id=1")
+    assert response.status_code != 403
 
 
 def test_expert_denied_global_user_detail(client: TestClient) -> None:
@@ -51,11 +59,11 @@ def test_expert_denied_global_user_detail(client: TestClient) -> None:
     assert response.status_code == 403
 
 
-def test_expert_denied_organization_trends(client: TestClient) -> None:
-    """Test expert denied organization trends."""
+def test_expert_denied_organization_edit(client: TestClient) -> None:
+    """Experts cannot mutate org settings (no tab.organizations.edit)."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("expert", user_id=5)
     app.dependency_overrides[get_language_dependency] = lambda: "en"
-    response = client.get("/api/auth/admin/stats/trends/organization?organization_id=1")
+    response = client.put("/api/auth/admin/organizations/1", json={"name": "Nope"})
     assert response.status_code == 403
 
 

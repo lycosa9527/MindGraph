@@ -16,7 +16,7 @@ import { loadConceptMapSpec } from './conceptMap'
 import { loadDoubleBubbleMapSpec } from './doubleBubbleMap'
 import { loadFlowMapSpec } from './flowMap'
 import { loadGenericSpec } from './generic'
-import { loadMindMapSpec } from './mindMap'
+import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from './mindMap'
 import { loadMultiFlowMapSpec } from './multiFlowMap'
 import { loadTreeMapSpec } from './treeMap'
 import { ensureTreeMapTopicLayout } from './treeMapTopicLayout'
@@ -62,7 +62,16 @@ export function loadSpecForDiagramType(
   // Saved diagrams use generic format: { nodes: [...], connections: [...] }
   // LLM-generated specs use type-specific format: { topic, attributes, ... }
   if (Array.isArray(spec.nodes) && spec.nodes.length > 0) {
-    result = loadGenericSpec(spec)
+    if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+      const generic = loadGenericSpec(spec)
+      const mindSpec = nodesAndConnectionsToMindMapSpec(
+        generic.nodes,
+        generic.connections
+      )
+      result = loadMindMapSpec(mindSpec)
+    } else {
+      result = loadGenericSpec(spec)
+    }
     if (diagramType === 'tree_map') {
       result = { ...result, nodes: ensureTreeMapTopicLayout(result.nodes) }
     }

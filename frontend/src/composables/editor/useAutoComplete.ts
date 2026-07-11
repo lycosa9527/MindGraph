@@ -336,6 +336,7 @@ export function useAutoComplete() {
    */
   function validateForAutoComplete(options?: {
     generationInstructions?: string
+    topicOverride?: string
   }): { valid: boolean; error?: string } {
     const spec = diagramStore.data as Record<string, unknown> | null
     const nodes = (spec?.nodes as NodeWithText[] | undefined) ?? []
@@ -343,6 +344,9 @@ export function useAutoComplete() {
     const rightNode = nodes.find((n) => n.id === 'right-topic')
     const left = getNodeText(leftNode)
     const right = getNodeText(rightNode)
+    const override =
+      typeof options?.topicOverride === 'string' ? options.topicOverride.trim() : ''
+    const mainTopic = override || extractMainTopic()
 
     const result = validateAutoCompleteRules({
       isGenerating: llmResultsStore.isGenerating,
@@ -351,7 +355,7 @@ export function useAutoComplete() {
       bridgeAnalogiesCount: extractBridgeMapAnalogies().length,
       fixedDimension: extractFixedDimension(),
       generationInstructions: (options?.generationInstructions ?? '').trim(),
-      mainTopic: extractMainTopic(),
+      mainTopic,
       doubleBubbleLeftValid: Boolean(left && !isPlaceholderText(left)),
       doubleBubbleRightValid: Boolean(right && !isPlaceholderText(right)),
     })
@@ -610,6 +614,8 @@ export function useAutoComplete() {
       promptSuffix?: string
       /** User-specified mind map / diagram generation requirements */
       generationInstructions?: string
+      /** Prefer this topic over canvas extractMainTopic (Kitty parallel rename). */
+      topicOverride?: string
     } = {}
   ): Promise<{ success: boolean; error?: string }> {
     const {
@@ -618,6 +624,7 @@ export function useAutoComplete() {
       onAllComplete,
       promptSuffix,
       generationInstructions,
+      topicOverride,
     } = options
 
     if (diagramStore.collabSessionActive) {
@@ -626,7 +633,7 @@ export function useAutoComplete() {
     }
 
     // Validate
-    const validation = validateForAutoComplete({ generationInstructions })
+    const validation = validateForAutoComplete({ generationInstructions, topicOverride })
     if (!validation.valid) {
       const validationError = validation.error || 'Validation failed'
       notify.warning(validationError)
@@ -636,7 +643,8 @@ export function useAutoComplete() {
 
     // Build simple request - backend handles prompt construction
     const language = promptLanguage.value
-    const baseTopic = extractMainTopic() || ''
+    const override = typeof topicOverride === 'string' ? topicOverride.trim() : ''
+    const baseTopic = override || extractMainTopic() || ''
     const instructions = (generationInstructions ?? '').trim()
     const reqLabel = t('autoComplete.generationInstructionsLabel')
     let topic = baseTopic

@@ -15,9 +15,9 @@ Proprietary License
 
 import logging
 import time
-from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
+from typing import Any, AsyncGenerator, Dict, List, NoReturn, Optional, Tuple
 
-from services.infrastructure.http.error_handler import LLMServiceError
+from services.infrastructure.http.error_handler import LLMServiceError, LLMTimeoutError
 from services.monitoring.error_reporting import record_failure
 from services.infrastructure.utils.client_manager import client_manager
 from services.llm.llm_health import LLMHealthChecker
@@ -107,6 +107,23 @@ class LLMService:
             http_path=endpoint_path,
             request_id=request_id,
         )
+
+    def _raise_chat_pipeline_error(
+        self,
+        model: str,
+        detail: str,
+        exc: BaseException,
+        *,
+        stream: bool = False,
+    ) -> NoReturn:
+        """Re-raise pipeline failures; preserve timeouts as LLMTimeoutError."""
+        kind = "Chat stream failed" if stream else "Chat failed"
+        message = f"{kind} for model {model}: {detail}"
+        if isinstance(exc, LLMTimeoutError):
+            raise LLMTimeoutError(message) from exc
+        if isinstance(exc, TimeoutError):
+            raise LLMTimeoutError(message) from exc
+        raise LLMServiceError(message) from exc
 
     def initialize(self) -> None:
         """Initialize LLM Service (called at app startup)."""
@@ -416,7 +433,186 @@ class LLMService:
                 request_id=http_request_id,
             )
 
-            raise LLMServiceError(f"Chat failed for model {model}: {detail}") from e
+            self._raise_chat_pipeline_error(model, detail, e)
+
+    async def chat_raw(
+        self,
+        prompt: str = "",
+        model: str = "qwen",
+        temperature: Optional[float] = None,
+        max_tokens: int = 2000,
+        system_message: Optional[str] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
+        timeout: Optional[float] = None,
+        # Token tracking parameters
+        user_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+        api_key_id: Optional[int] = None,
+        request_type: str = "diagram_generation",
+        diagram_type: Optional[str] = None,
+        endpoint_path: Optional[str] = None,
+        session_id: Optional[str] = None,
+        conversation_id: Optional[str] = None,
+        http_request_id: Optional[str] = None,
+        skip_load_balancing: bool = False,
+        use_knowledge_base: bool = True,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        Chat completion that returns the full provider response dict.
+
+        Preserves ``tool_calls`` for function-calling routers (Kitty intent parse).
+        Same kwargs as ``chat()`` (including ``tools`` / ``tool_choice`` /
+        ``dashscope_model``).
+        """
+        start_time = time.time()
+        provider: str | None = None
+        thinking_coin_mode = pop_thinking_coin_mode(kwargs)
+
+        if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
+            await assert_llm_usage_budget(
+                user_id,
+                organization_id,
+                request_type,
+                estimated_tokens=max_tokens,
+            )
+
+        chat_messages = await self.message_builder.build_with_rag(
+            prompt=prompt,
+            system_message=system_message,
+            messages=messages,
+            user_id=user_id,
+            use_knowledge_base=use_knowledge_base,
+        )
+
+        try:
+            logger.debug(
+                "[LLMService] chat_raw() - model=%s, messages_count=%s",
+                model,
+                len(chat_messages),
+            )
+
+            actual_model, provider = await self.load_balancer_helper.apply_load_balancing(
+                model=model,
+                skip_load_balancing=skip_load_balancing,
+                load_balancer=self.load_balancer,
+            )
+
+            client = self.client_manager.get_client(actual_model)
+
+            if timeout is None:
+                timeout = LLMUtils.get_default_timeout(model)
+
+            rate_limiter = LLMUtils.get_rate_limiter(
+                model=model,
+                actual_model=actual_model,
+                provider=provider,
+                rate_limiter=self.rate_limiter,
+                load_balancer_rate_limiter=self.load_balancer_rate_limiter,
+                kimi_rate_limiter=self.kimi_rate_limiter,
+                doubao_rate_limiter=self.doubao_rate_limiter,
+            )
+
+            response = await self.request_executor.execute_chat_request(
+                client=client,
+                messages=chat_messages,
+                rate_limiter=rate_limiter,
+                timeout=timeout,
+                model=model,
+                actual_model=actual_model,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                **kwargs,
+            )
+
+            duration = time.time() - start_time
+
+            if isinstance(response, dict):
+                usage_data = response.get("usage", {})
+                result: Dict[str, Any] = dict(response)
+            else:
+                usage_data = {}
+                result = {"content": str(response), "usage": {}}
+
+            logger.info("[LLMService] %s chat_raw responded in %.2fs", model, duration)
+
+            metadata = {
+                "user_id": user_id,
+                "organization_id": organization_id,
+                "api_key_id": api_key_id,
+                "request_type": request_type,
+                "diagram_type": diagram_type,
+                "endpoint_path": endpoint_path,
+                "session_id": session_id,
+                "conversation_id": conversation_id,
+                "http_request_id": http_request_id,
+            }
+            coins_user = await thinking_coins_apply_to_user(user_id, organization_id)
+            await self.metrics_tracker.track_all(
+                model=model,
+                usage_data=usage_data if isinstance(usage_data, dict) else {},
+                metadata=metadata,
+                provider=provider,
+                load_balancer=self.load_balancer,
+                success=True,
+                duration=duration,
+                skip_token_buffer=coins_user,
+            )
+            if not is_batch_inner_thinking_coin_mode(thinking_coin_mode):
+                await self._settle_thinking_coins_after_success(
+                    user_id,
+                    organization_id,
+                    request_type,
+                    usage_data if isinstance(usage_data, dict) else {},
+                    metadata,
+                    model,
+                    duration,
+                )
+
+            return result
+
+        except ValueError as value_error:
+            raise value_error
+        except LLM_PIPELINE_ERRORS as e:
+            duration = time.time() - start_time
+            detail = LLMUtils.format_request_failure(e)
+            logger.error("[LLMService] %s chat_raw failed after %.2fs: %s", model, duration, detail)
+
+            metadata = {
+                "user_id": user_id,
+                "organization_id": organization_id,
+                "api_key_id": api_key_id,
+                "request_type": request_type,
+                "diagram_type": diagram_type,
+                "endpoint_path": endpoint_path,
+                "session_id": session_id,
+                "conversation_id": conversation_id,
+                "http_request_id": http_request_id,
+            }
+            await self.metrics_tracker.track_all(
+                model=model,
+                usage_data=None,
+                metadata=metadata,
+                provider=provider,
+                load_balancer=self.load_balancer,
+                success=False,
+                duration=duration,
+                error=detail,
+            )
+
+            self._record_chat_failure(
+                detail=detail,
+                exc=e,
+                model=model,
+                provider=provider,
+                request_type=request_type,
+                organization_id=organization_id,
+                user_id=user_id,
+                endpoint_path=endpoint_path,
+                request_id=http_request_id,
+            )
+
+            self._raise_chat_pipeline_error(model, detail, e)
 
     async def chat_with_usage(
         self,
@@ -589,7 +785,7 @@ class LLMService:
                 provider=provider,
             )
 
-            raise LLMServiceError(f"Chat failed for model {model}: {detail}") from e
+            self._raise_chat_pipeline_error(model, detail, e)
 
     async def chat_stream(
         self,
@@ -828,7 +1024,7 @@ class LLMService:
                 endpoint_path=endpoint_path,
             )
 
-            raise LLMServiceError(f"Chat stream failed for model {model}: {detail}") from e
+            self._raise_chat_pipeline_error(model, detail, e, stream=True)
 
     # ============================================================================
     # UTILITY METHODS

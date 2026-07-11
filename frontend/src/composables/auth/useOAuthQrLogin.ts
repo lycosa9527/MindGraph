@@ -4,6 +4,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useAuthStore } from '@/stores'
 import { notifyOAuthError } from '@/utils/oauthLoginUi'
 import apiClient from '@/utils/apiClient'
@@ -137,6 +138,9 @@ export function useOAuthQrLogin(options: {
   }
 
   function notifySuccess(): void {
+    if (!isBindMode.value) {
+      eventBus.emit('auth:login_success', {})
+    }
     notify.success(
       isBindMode.value ? t('auth.oauthBindSuccess') : t('auth.qrLoginSuccess')
     )

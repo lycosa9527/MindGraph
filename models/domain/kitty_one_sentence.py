@@ -11,6 +11,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.domain.auth import Base
@@ -113,6 +114,8 @@ class KittyOneSentenceTurn(Base):
     user_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     diagram_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
     voice_session_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    request_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    command_detail: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -124,6 +127,7 @@ class KittyOneSentenceTurn(Base):
         Index("ix_kitty_one_sentence_turns_scope_created", "scope", "created_at"),
         Index("ix_kitty_one_sentence_turns_user_created", "user_id", "created_at"),
         Index("ix_kitty_one_sentence_turns_session_created", "session_id", "created_at"),
+        Index("ix_kitty_one_sentence_turns_scope_action", "scope", "action"),
     )
 
     def __repr__(self) -> str:

@@ -9,6 +9,8 @@ import pytest
 from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_shape
 from services.kitty.diagram.diagram_utils import is_paragraph_text
 from services.kitty.omni.tools import omni_function_call_to_command
+from services.agent_hub.diagram_spine.types import DiagramCommandResult
+from services.diagram_edit.types import ToolResult
 from services.kitty.routing.command_router import (
     RouteOutcome,
     route_omni_function_call,
@@ -281,8 +283,17 @@ async def test_route_update_node_emits_success_ack() -> None:
                 ),
             ),
             patch(
-                "services.kitty.routing.command_router.execute_diagram_update",
-                new=AsyncMock(return_value=True),
+                "services.kitty.routing.command_router.apply_kitty_legacy_diagram_command",
+                new=AsyncMock(
+                    return_value=DiagramCommandResult(
+                        tool_result=ToolResult(
+                            status="applied",
+                            mutation_id="legacy-mut",
+                            revision=0,
+                        ),
+                        hub_revision=0,
+                    )
+                ),
             ),
             patch(
                 "services.kitty.routing.command_router.emit_user_ack",

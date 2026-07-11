@@ -25,6 +25,71 @@ def test_fixed_structure_prompts_registered() -> None:
     assert get_prompt("flow_map_agent", "zh", "fixed_steps")
 
 
+@pytest.mark.asyncio
+async def test_fixed_children_prompt_build_keeps_json_braces() -> None:
+    """fixed_children is used as-is (no str.format); topic lives in the user prompt.
+
+    Prod 2026-07-09: ``.format(topic=...)`` on this template raised KeyError '"text"'
+    because JSON examples use ``{"text": ...}`` and the template has no ``{topic}``.
+    """
+    captured: dict[str, Any] = {}
+
+    def fake_get_prompt(_diagram_type: str, _language: str, prompt_type: str) -> str:
+        captured["prompt_type"] = prompt_type
+        return get_prompt("tree_map_agent", "zh", "fixed_children") or ""
+
+    async def fake_dispatch(**kwargs: Any) -> str:
+        captured["system_message"] = kwargs.get("system_message")
+        captured["prompt"] = kwargs.get("prompt")
+        return (
+            '{"topic":"项目式学习实施流程","dimension":"流程步骤","children":['
+            '{"text":"项目启动","children":[{"text":"选题"}]},'
+            '{"text":"计划制定","children":[{"text":"排期"}]},'
+            '{"text":"探究执行","children":[{"text":"调研"}]},'
+            '{"text":"成果制作","children":[{"text":"成稿"}]},'
+            '{"text":"展示分享","children":[{"text":"汇报"}]},'
+            '{"text":"评价反思","children":[{"text":"复盘"}]}'
+            '],"alternative_dimensions":[]}'
+        )
+
+    agent = TreeMapAgent(model="qwen")
+    with patch("agents.thinking_maps.tree_map_agent.get_prompt", side_effect=fake_get_prompt):
+        with patch(
+            "agents.thinking_maps.tree_map_agent.dispatch_llm_chat",
+            new=AsyncMock(side_effect=fake_dispatch),
+        ):
+            result = await agent.generate_graph(
+                "项目式学习实施流程",
+                "zh",
+                structure_mode="fixed",
+                fixed_nodes={
+                    "children": [
+                        "项目启动",
+                        "计划制定",
+                        "探究执行",
+                        "成果制作",
+                        "展示分享",
+                        "评价反思",
+                    ],
+                    "dimension": "流程步骤",
+                },
+            )
+
+    assert captured.get("prompt_type") == "fixed_children"
+    assert '{"text"' in str(captured.get("system_message"))
+    assert "项目启动" in str(captured.get("prompt"))
+    assert "流程步骤" in str(captured.get("prompt"))
+    assert result["success"] is True
+
+
+def test_fixed_parts_prompt_has_no_topic_placeholder() -> None:
+    """fixed_parts is used as-is; topic lives in the user prompt."""
+    template = get_prompt("brace_map_agent", "zh", "fixed_parts")
+    assert template
+    assert '{"name"' in template
+    assert "{topic}" not in template
+
+
 def test_validate_fixed_labels_order_and_count() -> None:
     """Fixed label validation enforces count and order."""
     ok, _ = validate_fixed_labels(["A", "B"], ["A", "B"], "steps")

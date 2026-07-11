@@ -26,6 +26,7 @@ export interface KittyDesktopDiagramUpdateFanout {
   scope?: unknown
   action?: unknown
   updates?: unknown
+  mutation_id?: unknown
 }
 
 export interface KittyDesktopSelectionUpdateFanout {

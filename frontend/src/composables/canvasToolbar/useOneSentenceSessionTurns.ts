@@ -13,6 +13,7 @@ export type OneSentenceTurnRecord = {
   action?: string
   outcome?: string
   diagram_type?: string
+  request_id?: string
 }
 
 export type OneSentenceTurnInput = {
@@ -21,6 +22,9 @@ export type OneSentenceTurnInput = {
   phase: 'create' | 'edit'
   source: string
   diagram_type?: string
+  request_id?: string
+  outcome?: string
+  action?: string
 }
 
 function turnsUrl(scope: string): string {

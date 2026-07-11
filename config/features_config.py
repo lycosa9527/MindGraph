@@ -33,7 +33,7 @@ class FeaturesConfigMixin:
 
     @property
     def FEATURE_KITTY_AGENT(self):
-        """Enable Kitty Agent — Qwen-Omni-Realtime multimodal canvas control."""
+        """Enable Kitty Agent — text-first canvas control (Fun-ASR + CosyVoice)."""
         return self._get_cached_value("FEATURE_KITTY_AGENT", "False").lower() == "true"
 
     @property
@@ -260,6 +260,18 @@ class FeaturesConfigMixin:
         Disabled by default. Set FEATURE_AUTH_PIXEL_BATTLE=True in .env to enable.
         """
         return self._get_cached_value("FEATURE_AUTH_PIXEL_BATTLE", "False").lower() == "true"
+
+    @property
+    def FEATURE_TEST_SERVER_BANNER(self):
+        """Enable SwissWarningModal + diagonal watermark on the test deployment.
+
+        Disabled by default. Set FEATURE_TEST_SERVER_BANNER=True on the test server
+        so visitors see SwissWarningModal (once/day + on login + always on /auth) and a persistent
+        watermark, with a jump link to production (mg.mindspringedu.com).
+
+        Frontend: frontend/src/components/common/SwissWarningModal.vue
+        """
+        return self._get_cached_value("FEATURE_TEST_SERVER_BANNER", "False").lower() == "true"
 
     @property
     def MINDBOT_DIFY_HEALTH_BASE_URL(self) -> str:

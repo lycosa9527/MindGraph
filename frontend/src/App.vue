@@ -3,7 +3,7 @@
  * MindGraph App Component
  * Handles dynamic layout switching based on route meta
  */
-import { computed, defineAsyncComponent, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
@@ -14,10 +14,11 @@ import type { Language } from 'element-plus/es/locale'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useKittyDesktopActionPoll, useLanguage, useNotifications } from '@/composables'
 import { useOAuthRouteFeedback } from '@/composables/auth/useOAuthRouteFeedback'
+import { eventBus } from '@/composables/core/useEventBus'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
 import { isRtlUiLocale } from '@/i18n/locales'
-import { useAuthStore, useUIStore } from '@/stores'
+import { useAuthStore, useFeatureFlagsStore, useUIStore } from '@/stores'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import { isGuestAuthPath, getSafePostAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
@@ -26,10 +27,10 @@ import {
   privacyPageHtmlLang,
 } from '@/utils/privacyPageLocale'
 import { privacyPageUiCode } from '@/composables/usePrivacyPageLocale'
+import { shouldShowTestServerBannerOnVisit } from '@/utils/testServerBanner'
 
 const notify = useNotifications()
 
-useOAuthRouteFeedback()
 useKittyDesktopActionPoll()
 
 const LoginModal = defineAsyncComponent(() => import('@/components/auth/LoginModal.vue'))
@@ -47,6 +48,12 @@ const VersionNotification = defineAsyncComponent(
 )
 const BrowserLocaleHintDialog = defineAsyncComponent(
   () => import('@/components/settings/BrowserLocaleHintDialog.vue')
+)
+const SwissWarningModal = defineAsyncComponent(
+  () => import('@/components/common/SwissWarningModal.vue')
+)
+const TestServerWatermark = defineAsyncComponent(
+  () => import('@/components/common/TestServerWatermark.vue')
 )
 
 const route = useRoute()
@@ -88,6 +95,39 @@ const translationLive = translationInterimText
 const elLocale = shallowRef<Language | undefined>(undefined)
 
 const showBrowserLocaleHint = ref(false)
+/** Visibility for SwissWarningModal (@/components/common/SwissWarningModal.vue). */
+const showSwissWarning = ref(false)
+const showTestServerWatermark = ref(false)
+/** Login succeeded before feature flags finished loading. */
+const pendingLoginBanner = ref(false)
+const testServerFlagsReady = ref(false)
+
+function openSwissWarningModal(): void {
+  showSwissWarning.value = true
+}
+
+function onAuthLoginSuccess(): void {
+  if (!testServerFlagsReady.value) {
+    pendingLoginBanner.value = true
+    return
+  }
+  if (showTestServerWatermark.value) {
+    openSwissWarningModal()
+  }
+}
+
+eventBus.on('auth:login_success', onAuthLoginSuccess)
+useOAuthRouteFeedback()
+
+watch(
+  () => route.path,
+  (path) => {
+    if (!showTestServerWatermark.value || !isGuestAuthPath(path)) {
+      return
+    }
+    openSwissWarningModal()
+  }
+)
 
 async function syncElementPlusLocale(): Promise<void> {
   elLocale.value = await loadElementPlusLocale(uiStore.language)
@@ -184,38 +224,64 @@ function handleSessionExpiredLoginSuccess() {
 onMounted(async () => {
   const isExportRender = route.path === '/export-render' || isMindgraphHeadlessExportSession()
 
-  if (!isExportRender) {
-    await authStore.checkAuth().catch(() => false)
-
-    const onGuestAuthPage = isGuestAuthPath(route.path)
-
-    if (!onGuestAuthPage) {
-      setTimeout(() => {
-        notify.info(t('app.aiDisclaimer'))
-      }, 500)
-    }
-
-    setTimeout(() => {
-      if (
-        uiStore.browserLocaleHintDismissed ||
-        uiStore.uiLanguageExplicit ||
-        uiStore.language !== 'zh'
-      ) {
-        return
-      }
-      const current = router.currentRoute.value
-      if (onGuestAuthPage || isGuestAuthPath(current.path)) {
-        return
-      }
-      if (current.meta.layout === 'mobile' || current.path.startsWith('/m')) {
-        return
-      }
-      const nav = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : ''
-      if (nav.startsWith('en') || nav.startsWith('az') || nav.startsWith('th')) {
-        showBrowserLocaleHint.value = true
-      }
-    }, 800)
+  if (isExportRender) {
+    testServerFlagsReady.value = true
+    return
   }
+
+  await authStore.checkAuth().catch(() => false)
+
+  const featureFlagsStore = useFeatureFlagsStore()
+  try {
+    await featureFlagsStore.fetchFlags()
+    if (featureFlagsStore.getFeatureTestServerBanner()) {
+      showTestServerWatermark.value = true
+      if (
+        pendingLoginBanner.value ||
+        shouldShowTestServerBannerOnVisit(route.path)
+      ) {
+        openSwissWarningModal()
+      }
+    }
+  } catch {
+    // Banner is best-effort; do not block app boot if flags fail.
+  } finally {
+    testServerFlagsReady.value = true
+    pendingLoginBanner.value = false
+  }
+
+  const onGuestAuthPage = isGuestAuthPath(route.path)
+
+  if (!onGuestAuthPage) {
+    setTimeout(() => {
+      notify.info(t('app.aiDisclaimer'))
+    }, 500)
+  }
+
+  setTimeout(() => {
+    if (
+      uiStore.browserLocaleHintDismissed ||
+      uiStore.uiLanguageExplicit ||
+      uiStore.language !== 'zh'
+    ) {
+      return
+    }
+    const current = router.currentRoute.value
+    if (onGuestAuthPage || isGuestAuthPath(current.path)) {
+      return
+    }
+    if (current.meta.layout === 'mobile' || current.path.startsWith('/m')) {
+      return
+    }
+    const nav = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : ''
+    if (nav.startsWith('en') || nav.startsWith('az') || nav.startsWith('th')) {
+      showBrowserLocaleHint.value = true
+    }
+  }, 800)
+})
+
+onUnmounted(() => {
+  eventBus.off('auth:login_success', onAuthLoginSuccess)
 })
 </script>
 
@@ -244,6 +310,11 @@ onMounted(async () => {
     />
 
     <BrowserLocaleHintDialog v-model="showBrowserLocaleHint" />
+
+    <!-- SwissWarningModal: reusable Swiss Design warning chrome; see component file header. -->
+    <SwissWarningModal v-model="showSwissWarning" />
+
+    <TestServerWatermark v-if="showTestServerWatermark" />
 
     <CanvasLiveSubtitleOverlay
       :visible="translationEnabled || translationConnecting"

@@ -43,6 +43,9 @@ async def test_assert_llm_budget_raises_when_balance_low(
         return True
 
     class _FakeDbSession:
+        def __init__(self, *_args, **_kwargs) -> None:
+            pass
+
         async def __aenter__(self):
             return AsyncMock()
 
@@ -53,7 +56,7 @@ async def test_assert_llm_budget_raises_when_balance_low(
         raise ThinkingCoinInsufficientError(balance=2, cost=6, user_message="low")
 
     monkeypatch.setattr(usage_wire_mod, "thinking_coins_apply_to_user", always_apply)
-    monkeypatch.setattr(usage_wire_mod, "open_async_session", _FakeDbSession)
+    monkeypatch.setattr(usage_wire_mod, "user_rls_session", _FakeDbSession)
     monkeypatch.setattr(usage_wire_mod, "_assert_balance_with_lock", locked_assert_fail)
 
     with pytest.raises(ThinkingCoinInsufficientError) as exc_info:

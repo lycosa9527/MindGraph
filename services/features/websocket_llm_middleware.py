@@ -35,7 +35,7 @@ from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter, get_rate_limiter
 from services.monitoring.performance_tracker import performance_tracker
 from services.redis.redis_token_buffer import get_token_tracker
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -376,7 +376,7 @@ class WebSocketLLMMiddleware:
                 str(ctx.get("request_type") or "voice_omni"),
                 snapshot,
             )
-        except BACKGROUND_INFRA_ERRORS as exc:
+        except (*DATABASE_ERRORS, *BACKGROUND_INFRA_ERRORS) as exc:
             logger.debug("[WebSocketLLMMiddleware] Thinking coin settle failed: %s", exc)
 
     def _track_performance(self, duration: float, success: bool, error: Optional[str] = None):

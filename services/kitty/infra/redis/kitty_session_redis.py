@@ -328,16 +328,50 @@ async def schedule_persist_kitty_live_debounced(
         _coalesce_tasks[ws_session_id] = asyncio.create_task(_coalesce_worker(ws_session_id))
 
 
-def apply_redis_live_to_voice_session(session: Dict[str, Any], live: Dict[str, Any]) -> None:
-    """Last-write-wins merge from Redis ``live_spec`` into in-memory voice session."""
+def _diagram_data_has_canonical_nodes(diagram_data: Any) -> bool:
+    """True when diagram_data carries Pinia-style nodes with ids."""
+    if not isinstance(diagram_data, dict):
+        return False
+    nodes = diagram_data.get("nodes")
+    if not isinstance(nodes, list) or not nodes:
+        return False
+    for item in nodes:
+        if isinstance(item, dict) and isinstance(item.get("id"), str) and item["id"].strip():
+            return True
+    return False
+
+
+def apply_redis_live_to_voice_session(
+    session: Dict[str, Any],
+    live: Dict[str, Any],
+    *,
+    prefer_live_diagram: bool = False,
+) -> bool:
+    """
+    Overlay Redis ``live_spec`` diagram fields into the in-memory voice session.
+
+    Ephemeral WS fields (language, phase, panels, write_lock, memory) are never
+    taken from Redis.
+
+    When ``prefer_live_diagram`` is True (route entry), also heal a children-only
+    or empty WS diagram from a Redis payload that has canonical ``nodes[]``.
+    Timestamp last-write-wins still applies when both sides have nodes so a
+    newer WS flush is not overwritten by stale Redis.
+
+    Returns True when diagram fields were applied.
+    """
     rts = int(live.get("updated_at") or 0)
     seen = int(session.get("_kitty_redis_seen_ts") or 0)
-    if rts <= seen:
-        return
+    live_dd = live.get("diagram_data")
+    live_has_nodes = _diagram_data_has_canonical_nodes(live_dd)
     ctx = dict(session.get("context") or {})
-    dd = live.get("diagram_data")
-    if isinstance(dd, dict):
-        ctx["diagram_data"] = dd
+    ws_has_nodes = _diagram_data_has_canonical_nodes(ctx.get("diagram_data"))
+
+    if not (rts > seen or (prefer_live_diagram and live_has_nodes and not ws_has_nodes)):
+        return False
+
+    if isinstance(live_dd, dict):
+        ctx["diagram_data"] = live_dd
     sn = live.get("selected_nodes")
     if isinstance(sn, list):
         ctx["selected_nodes"] = sn
@@ -356,5 +390,7 @@ def apply_redis_live_to_voice_session(session: Dict[str, Any], live: Dict[str, A
     session["context"] = ctx
     if isinstance(dt, str) and dt:
         session["diagram_type"] = dt
-    session["_kitty_redis_seen_ts"] = rts
+    if rts > 0:
+        session["_kitty_redis_seen_ts"] = max(seen, rts)
     record_kitty_command_context_merge()
+    return True

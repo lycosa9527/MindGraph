@@ -61,10 +61,6 @@ function rolePillForRow(row: Record<string, unknown>) {
   return userRolePillView(t, role, schoolTierFromUserRow(row))
 }
 
-const sortedUsers = computed(() =>
-  [...users.value].sort((a, b) => tokenTotal(b) - tokenTotal(a))
-)
-
 const pageInfo = computed(() => {
   if (total.value <= 0) {
     return t('admin.listRangeEmpty')
@@ -158,7 +154,7 @@ watch(
     </div>
 
     <div
-      v-else-if="sortedUsers.length === 0"
+      v-else-if="users.length === 0"
       class="school-modal-empty"
     >
       {{ t('admin.schoolTeachersTab.empty') }}
@@ -184,7 +180,7 @@ watch(
         </thead>
         <tbody>
           <tr
-            v-for="row in sortedUsers"
+            v-for="row in users"
             :key="String(row.id)"
             class="school-modal-table__row school-modal-table__row--clickable"
             role="button"
@@ -225,7 +221,7 @@ watch(
     </div>
 
     <AdminSwissPagination
-      v-if="sortedUsers.length > 0 && totalPages > 1 && !loading"
+      v-if="users.length > 0 && totalPages > 1 && !loading"
       class="school-modal-pagination"
       :page-info="pageInfo"
       :page="page"

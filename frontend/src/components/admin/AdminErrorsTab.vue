@@ -155,7 +155,15 @@ function formatEventLogLine(row: AdminErrorEventItem): string {
   return `[${time}] ${sev} ${src} ${comp} ${typ} id=${row.id}${path}${req}${fp} :: ${msg}`
 }
 
+function hasTextSelection(): boolean {
+  const selection = window.getSelection()
+  return Boolean(selection && selection.toString().trim().length > 0)
+}
+
 async function openEventDetail(eventId: number): Promise<void> {
+  if (hasTextSelection()) {
+    return
+  }
   detailEvent.value = null
   try {
     detailEvent.value = await fetchAdminErrorEventDetail(eventId)
@@ -163,6 +171,14 @@ async function openEventDetail(eventId: number): Promise<void> {
   } catch {
     notify.error(t('admin.errors.detailLoadError'))
   }
+}
+
+function onEventLogKeydown(event: KeyboardEvent, eventId: number): void {
+  if (event.key !== 'Enter' && event.key !== ' ') {
+    return
+  }
+  event.preventDefault()
+  void openEventDetail(eventId)
 }
 
 async function toggleGroupMute(group: AdminErrorGroupItem): Promise<void> {
@@ -382,16 +398,18 @@ function onNextPage(): void {
         <div
           class="divide-y divide-stone-100 dark:divide-stone-700 max-h-[min(420px,55vh)] overflow-y-auto"
         >
-          <button
+          <div
             v-for="row in events"
             :key="row.id"
-            type="button"
-            class="admin-error-log-line w-full text-left px-3 py-1.5 font-mono text-[11px] leading-snug hover:bg-stone-50 dark:hover:bg-stone-800/80 transition-colors"
+            role="button"
+            tabindex="0"
+            class="admin-error-log-line w-full text-left px-3 py-1.5 font-mono text-[11px] leading-snug hover:bg-stone-50 dark:hover:bg-stone-800/80 transition-colors cursor-pointer select-text"
             :class="severityLineClass(row.severity)"
             @click="openEventDetail(row.id)"
+            @keydown="onEventLogKeydown($event, row.id)"
           >
             {{ formatEventLogLine(row) }}
-          </button>
+          </div>
         </div>
       </div>
 

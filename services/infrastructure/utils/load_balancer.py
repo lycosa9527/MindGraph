@@ -59,12 +59,14 @@ class LLMLoadBalancer:
         "kimi": "ark-kimi",
         "doubao": "ark-doubao",  # → Volcengine Doubao via endpoint (higher RPM than Dashscope)
         # DeepSeek load balancing:
-        # - Dashscope route (deepseek-v3.1/v3.2): 15,000 RPM, 1,200,000-1,500,000 TPM
+        # - Dashscope route (deepseek-v3.2 / deepseek-v3): 15,000 RPM, 1,200,000-1,500,000 TPM
         # - Volcengine route (ark-deepseek v3.2): 15,000 RPM, 1,500,000 TPM
         # Internal aliases (resolved model id from ``QWEN_MODEL_*`` env)
         "qwen-turbo": "qwen-turbo",
         "qwen-plus": "qwen-plus",
         "qwen-plus-latest": "qwen-plus",
+        "qwen3.6-flash": "qwen3.6-flash",
+        "qwen3.7-plus": "qwen3.7-plus",
         # Unaffected
         "hunyuan": "hunyuan",  # → Tencent hunyuan
         "omni": "omni",  # → Voice agent

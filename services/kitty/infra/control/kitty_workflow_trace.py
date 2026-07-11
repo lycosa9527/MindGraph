@@ -116,7 +116,8 @@ def kitty_wf_log(
     Log one step in the voice → hub → canvas pipeline.
 
     Stages include: transcription, route, diagram_execute, ws_out, sse_fanout,
-    hub_sync, hub_context, hub_persist, library_refresh, selection_fanout, voice_command.
+    hub_sync, hub_context, hub_persist, library_refresh, selection_fanout, voice_command,
+    node_action.
     """
     if not kitty_workflow_trace_enabled():
         return

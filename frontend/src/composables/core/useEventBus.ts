@@ -103,6 +103,11 @@ export type EventTypes = {
   'diagram:add_nodes': { nodes: unknown[]; source?: string }
   'diagram:remove_nodes': { nodeIds: unknown[]; source?: string }
   'diagram:auto_complete_requested': { source?: string; topic?: string; diagramType?: string }
+  'diagram:auto_complete_branch_requested': {
+    source?: string
+    nodeId?: string
+    nodeLabel?: string
+  }
   'diagram:position_saved': {
     nodeId: string
     position: { x: number; y: number }
@@ -182,6 +187,8 @@ export type EventTypes = {
     updates?: unknown
     summary?: string
     userSummary?: string
+    verified?: boolean
+    errorCode?: string
   }
   'voice:context_mutation_ack': {
     ok?: boolean
@@ -205,12 +212,39 @@ export type EventTypes = {
     type: string
     line: string
   }
+  'kitty:asr_partial': { text: string }
+  'kitty:asr_final': { text: string }
+  'kitty:asr_started': Record<string, never>
+  'kitty:asr_stopped': Record<string, never>
+  /** Inbound diagram mutation — single apply path owns Pinia + Hub persist. */
+  'kitty:diagram_mutation_requested': {
+    action: string
+    updates: Record<string, unknown>
+    mutationId?: string
+    userSummary?: string
+    expectedEffect?: import('@/utils/diagramEditVerify').DiagramEditExpectedEffect
+    beforeFingerprint?: {
+      nodes: import('@/types').DiagramNode[]
+      connections: import('@/types').Connection[]
+    }
+    sendAck?: (payload: Record<string, unknown>) => void
+    hubPersist?: {
+      buildContext: () => import('@/composables/kitty/kittyAgentTypes').KittyAgentContext
+      updateContext: (
+        context: import('@/composables/kitty/kittyAgentTypes').KittyAgentContext,
+        options?: import('@/composables/kitty/kittyAgentTypes').KittyContextUpdateOptions
+      ) => void
+      scope?: string | null
+    }
+    lane?: 'mobile' | 'desktop'
+  }
   'kitty:inline_recommendations_requested': { nodeId?: string; nodeIndex?: number }
   'kitty:add_node_with_recommendations_requested': { text?: string }
   'kitty:desktop_diagram_update': {
     scope?: string
     action?: string
     updates?: unknown
+    mutation_id?: string
   }
   'kitty:desktop_selection_update': {
     scope?: string
@@ -232,6 +266,64 @@ export type EventTypes = {
   'kitty:diagram_review_annotation': {
     summary: string
     items: Array<{ node_id: string; reason: string; suggestion?: string }>
+  }
+  /** Owning tab finished Hub persist from Pinia; observers may recover, owner must not. */
+  'kitty:hub_diagram_persisted': {
+    scope: string
+    revision?: number
+    source?: 'owning_tab' | 'observer'
+  }
+  'kitty:diagram_edit_failed': {
+    action: string
+    errorCode: string
+    message?: string
+    scope?: string | null
+  }
+  /** Chat reply lane — decoupled from diagram mutations. */
+  'kitty:one_sentence_reply': {
+    text: string
+    kind: 'progress' | 'final' | 'conversational'
+    action?: string
+    choices?: Array<{ index: number; label: string }>
+    requestId?: string
+  }
+
+  // One-sentence mini-chat (Pinia SoT + cooperators)
+  'oneSentence:request_queued': {
+    requestId: string
+    status: 'queued'
+    text?: string
+    scope?: string
+  }
+  'oneSentence:request_inflight': {
+    requestId: string
+    status: 'inflight'
+    text?: string
+    scope?: string
+  }
+  'oneSentence:request_done': {
+    requestId: string
+    status: 'done'
+    text?: string
+    scope?: string
+  }
+  'oneSentence:request_failed': {
+    requestId: string
+    status: 'failed'
+    text?: string
+    errorCode?: string
+    scope?: string
+  }
+  'oneSentence:session_ready': { scope: string }
+  'oneSentence:session_migrated': { fromScope: string; toScope: string }
+  'oneSentence:session_reset': { scope: string }
+  'oneSentence:messages_changed': { scope?: string }
+  /** Async canvas action finished (e.g. branch subgraph LLM). */
+  'kitty:diagram_action_completed': {
+    action: string
+    ok: boolean
+    userSummary?: string
+    errorCode?: string
   }
 
   // History Events
@@ -386,6 +478,8 @@ export type EventTypes = {
 
   // Auth Events
   'auth:session_expired': { message?: string }
+  /** Fired after an interactive sign-in (password, SMS, passkey, OAuth), not session restore. */
+  'auth:login_success': Record<string, never>
 
   // MindMate Events
   'mindmate:opened': { diagramSessionId?: string }

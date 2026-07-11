@@ -27,6 +27,7 @@ from typing import Any, AsyncGenerator, Callable, Dict, Optional
 import websockets
 from websockets.exceptions import ConnectionClosed, WebSocketException
 
+from config.settings import config
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger("TTS")
@@ -56,9 +57,6 @@ class TTSRealtimeClient:
 
     Provides full async control over TTS generation with streaming audio output.
     """
-
-    # Base URL for Beijing region (use dashscope-intl.aliyuncs.com for Singapore)
-    BASE_URL = "wss://dashscope.aliyuncs.com/api-ws/v1/realtime"
 
     def __init__(
         self,
@@ -125,7 +123,7 @@ class TTSRealtimeClient:
 
         try:
             # Build WebSocket URL with model parameter
-            url = f"{self.BASE_URL}?model={self.model}"
+            url = f"{config.DASHSCOPE_REALTIME_WS_BASE.rstrip('/')}?model={self.model}"
 
             # Connect with API key in headers
             # Note: websockets library uses 'additional_headers' parameter

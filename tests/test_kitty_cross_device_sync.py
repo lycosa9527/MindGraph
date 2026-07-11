@@ -46,6 +46,32 @@ async def test_publish_kitty_diagram_update_payload_shape() -> None:
 
 
 @pytest.mark.asyncio
+async def test_publish_kitty_diagram_update_includes_mutation_id() -> None:
+    """Verified WS edits must fan out mutation_id so desktop skips duplicate apply."""
+    fake_redis = MagicMock()
+    fake_redis.publish = AsyncMock()
+    with patch(
+        "services.kitty.infra.desktop.kitty_desktop_wake_fanout.get_async_redis",
+        return_value=fake_redis,
+    ):
+        await publish_kitty_diagram_update(
+            7,
+            "lib-uuid-1",
+            {
+                "type": "diagram_update",
+                "action": "add_nodes",
+                "updates": [{"text": "node"}],
+                "mutation_id": "mut-abc-123",
+            },
+        )
+
+    fake_redis.publish.assert_awaited_once()
+    _channel, raw = mock_await_args(fake_redis.publish)
+    body = json.loads(raw)
+    assert body["mutation_id"] == "mut-abc-123"
+
+
+@pytest.mark.asyncio
 async def test_publish_kitty_selection_update_payload_shape() -> None:
     """Test publish kitty selection update payload shape."""
     fake_redis = MagicMock()

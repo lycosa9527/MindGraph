@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from services.agent_hub import MindGraphAgentHub
+from services.agent_hub.scope_lifecycle import MindGraphAgentHub
 
 
 async def apply_kitty_ws_context_patch(

@@ -27,12 +27,41 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import playwright
+from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import async_playwright
 from playwright.sync_api import sync_playwright
 
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
+
+
+class BrowserUnavailableError(RuntimeError):
+    """Raised when Playwright Chromium cannot be launched (missing binaries)."""
+
+
+def is_browser_unavailable_message(message: str) -> bool:
+    """True when Playwright reports missing browser binaries."""
+    lower = message.lower()
+    if "executable doesn't exist" in lower:
+        return True
+    if "browsers are not installed" in lower:
+        return True
+    if "doesn't exist" in lower and "chromium" in lower:
+        return True
+    return False
+
+
+def wrap_browser_launch_error(exc: BaseException) -> BaseException:
+    """Map Playwright launch failures to BrowserUnavailableError when appropriate."""
+    if isinstance(exc, BrowserUnavailableError):
+        return exc
+    message = str(exc)
+    if isinstance(exc, PlaywrightError) or is_browser_unavailable_message(message):
+        return BrowserUnavailableError(
+            "Playwright Chromium is not installed or cannot be launched. Run: python -m playwright install chromium"
+        )
+    return exc
 
 
 def _get_chromium_version(executable_path: str) -> Optional[str]:
@@ -390,9 +419,25 @@ async def log_browser_diagnostics():
                 else:
                     # Only log warning from main process to avoid spam in multi-worker setups
                     if is_main_process:
-                        logger.warning("[Browser] Chromium executable exists: NO (will be installed on first use)")
+                        logger.warning(
+                            "[Browser] Chromium executable exists: NO — run: python -m playwright install chromium"
+                        )
                     else:
-                        logger.debug("[Browser] Chromium executable exists: NO (will be installed on first use)")
+                        logger.debug("[Browser] Chromium executable exists: NO")
+                # Launch probe: catch pip/browser revision mismatch before first request.
+                try:
+                    browser = await playwright_instance.chromium.launch(headless=True)
+                    await browser.close()
+                    if is_main_process:
+                        logger.info("[Browser] Chromium launch probe: OK")
+                except (PlaywrightError, OSError, RuntimeError) as launch_exc:
+                    wrapped = wrap_browser_launch_error(launch_exc)
+                    if is_main_process:
+                        logger.error("[Browser] Chromium launch probe FAILED: %s", wrapped)
+                        logger.error(
+                            "[Browser] PNG/DingTalk generation will return 503 until fixed. "
+                            "Run: python -m playwright install chromium"
+                        )
             finally:
                 await playwright_instance.stop()
         except BACKGROUND_INFRA_ERRORS as e:
@@ -485,7 +530,14 @@ class BrowserContextManager:
             logger.debug("Using Chromium executable: %s", chromium_executable)
             launch_options["executable_path"] = chromium_executable
 
-        self.browser = await self.playwright.chromium.launch(**launch_options)
+        try:
+            self.browser = await self.playwright.chromium.launch(**launch_options)
+        except (PlaywrightError, OSError, RuntimeError) as launch_exc:
+            wrapped = wrap_browser_launch_error(launch_exc)
+            if isinstance(wrapped, BrowserUnavailableError):
+                logger.error("[Browser] %s", wrapped)
+                raise wrapped from launch_exc
+            raise
 
         # Create fresh context with high resolution for crisp PNG output
         self.context = await self.browser.new_context(

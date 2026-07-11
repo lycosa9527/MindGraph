@@ -59,6 +59,7 @@ const pagination = ref({
   total_pages: 0,
 })
 const searchQuery = ref('')
+const roleFilter = ref('')
 
 function buildUsersQueryParams(): AdminUsersQuery {
   const params: AdminUsersQuery = {
@@ -68,6 +69,9 @@ function buildUsersQueryParams(): AdminUsersQuery {
   }
   if (orgFilter.value !== '') {
     params.organization_id = orgFilter.value
+  }
+  if (roleFilter.value !== '') {
+    params.role = roleFilter.value
   }
   return params
 }
@@ -117,6 +121,15 @@ watch(orgFilter, (value, oldValue) => {
   resetPaginationMeta()
 })
 
+watch(roleFilter, (value, oldValue) => {
+  adminPanel.patchUsersToolbar({ roleFilter: value })
+  if (value === oldValue) {
+    return
+  }
+  pagination.value.page = 1
+  resetPaginationMeta()
+})
+
 async function loadUsers() {
   try {
     await usersQuery.refetch()
@@ -143,6 +156,7 @@ function doSearch() {
 function resetFilters() {
   searchQuery.value = ''
   orgFilter.value = ''
+  roleFilter.value = ''
   if (can('scope.global')) {
     syncOrgFilterToRoute('')
   }
@@ -150,6 +164,10 @@ function resetFilters() {
 
 function onOrgFilterChange(value: number | ''): void {
   applyOrgFilterChange(value)
+}
+
+function onRoleFilterChange(value: string): void {
+  roleFilter.value = value
 }
 
 function goToPreviousUserPage() {
@@ -186,7 +204,9 @@ function syncUsersToolbarState(): void {
   adminPanel.setUsersToolbar({
     searchQuery: searchQuery.value,
     orgFilter: orgFilter.value,
+    roleFilter: roleFilter.value,
     showSchoolFilter: true,
+    showRoleFilter: true,
     scopedOrgId: null,
     hasResetFilters: true,
   })
@@ -214,6 +234,15 @@ watch(
   }
 )
 
+watch(
+  () => adminPanel.usersToolbar?.roleFilter,
+  (value) => {
+    if (value !== undefined && value !== roleFilter.value) {
+      roleFilter.value = value
+    }
+  }
+)
+
 onAdminEvent('admin:toolbar_action', (payload) => {
   if (payload.tab !== 'users') {
     return
@@ -226,6 +255,10 @@ onAdminEvent('admin:toolbar_action', (payload) => {
     const raw = payload.payload?.value
     const value = raw === '' || typeof raw === 'number' ? raw : orgFilter.value
     onOrgFilterChange(value)
+  } else if (payload.action === 'users_role_filter_change') {
+    const raw = payload.payload?.value
+    const value = typeof raw === 'string' ? raw : ''
+    onRoleFilterChange(value)
   }
 })
 

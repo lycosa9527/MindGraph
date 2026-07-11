@@ -47,6 +47,7 @@ const organizations = computed(() => {
 const createModalVisible = ref(false)
 const shareModalVisible = ref(false)
 const shareInvitationCode = ref('')
+const shareOrganizationName = ref('')
 
 const canEditInvites = computed(() => canEditTab('invites'))
 
@@ -103,11 +104,14 @@ async function loadOrganizations(): Promise<void> {
   }
 }
 
-async function copyInvite(code: string): Promise<void> {
+async function copyInvite(row: Record<string, unknown>): Promise<void> {
+  const code = invitationCodeFor(row)
   if (!code) {
     return
   }
+  const orgName = String(row.name ?? '').trim() || (t('admin.organizationName') as string)
   const text = t('admin.schoolInviteCopyPayload', {
+    orgName,
     siteUrl: publicSiteUrl.value,
     code,
   })
@@ -123,15 +127,16 @@ function openCreateModal(): void {
   createModalVisible.value = true
 }
 
-function openShareModalWithCode(code: string): void {
+function openShareModalWithCode(code: string, orgName = ''): void {
   shareInvitationCode.value = code
+  shareOrganizationName.value = orgName
   shareModalVisible.value = true
 }
 
-function onSchoolCreated(payload: { invitation_code?: string }): void {
+function onSchoolCreated(payload: { invitation_code?: string; name?: string }): void {
   void loadOrganizations()
   if (payload.invitation_code) {
-    openShareModalWithCode(payload.invitation_code)
+    openShareModalWithCode(payload.invitation_code, payload.name ?? '')
   }
 }
 
@@ -287,7 +292,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
                   link
                   size="small"
                   :title="t('admin.copyShareMessage')"
-                  @click="copyInvite(invitationCodeFor(row))"
+                  @click="copyInvite(row)"
                 >
                   <el-icon><DocumentCopy /></el-icon>
                 </el-button>
@@ -306,6 +311,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
     <AdminSchoolShareDialog
       v-model="shareModalVisible"
       :invitation-code="shareInvitationCode"
+      :organization-name="shareOrganizationName"
     />
   </div>
 </template>

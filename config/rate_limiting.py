@@ -32,7 +32,7 @@ class RateLimitingConfigMixin:
         """
         Dashscope Queries Per Minute limit.
 
-        Default: 13,500 (90% of official 15,000 RPM limit for qwen-plus/deepseek-v3.1).
+        Default: 13,500 (90% of official 15,000 RPM limit for qwen-plus/deepseek-v3.2).
         """
         try:
             return int(self._get_cached_value("DASHSCOPE_QPM_LIMIT", "13500"))

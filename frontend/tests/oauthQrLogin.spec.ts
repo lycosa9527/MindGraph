@@ -6,6 +6,7 @@ import {
   isOAuthRedirectError,
   oauthErrorFromRouteQuery,
   oauthBindFromRouteQuery,
+  oauthLoginFromRouteQuery,
   shouldShowAccountBindingsSection,
   shouldShowQrLoginLink,
 } from '@/utils/oauthLoginUi'
@@ -99,5 +100,13 @@ describe('oauthLoginUi', () => {
     expect(oauthBindFromRouteQuery('wechat')).toBe('wechat')
     expect(oauthBindFromRouteQuery(['dingtalk'])).toBe('dingtalk')
     expect(oauthBindFromRouteQuery('other')).toBe('')
+  })
+
+  it('oauthLoginFromRouteQuery accepts oauth_login=1', () => {
+    expect(oauthLoginFromRouteQuery('1')).toBe(true)
+    expect(oauthLoginFromRouteQuery('true')).toBe(true)
+    expect(oauthLoginFromRouteQuery(['1'])).toBe(true)
+    expect(oauthLoginFromRouteQuery('0')).toBe(false)
+    expect(oauthLoginFromRouteQuery(undefined)).toBe(false)
   })
 })

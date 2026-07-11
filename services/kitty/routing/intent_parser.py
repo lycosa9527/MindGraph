@@ -11,6 +11,7 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
+from services.infrastructure.http.error_handler import LLMServiceError, LLMTimeoutError
 from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
     KITTY_DIAGRAM_CATALOG_PROMPT,
     KITTY_VOICE_COMMAND_PROMPT,
@@ -20,8 +21,18 @@ from services.kitty.infra.bootstrap.kitty_unsupported_diagram_types import (
 )
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.omni.tools import build_omni_diagram_tools, omni_function_call_to_command
+from services.kitty.routing.diagram_agent_context import enrich_node_action_command
+from services.kitty.routing.node_action_agent import parse_node_action_intent
+from services.kitty.routing.node_action_debug import (
+    log_node_action,
+    summarize_legacy_command,
+)
+from services.kitty.routing.one_sentence_edit_heuristics import (
+    heuristic_one_sentence_edit_command,
+)
 from services.kitty.session.memory import get_session_memory
 from services.llm import llm_service
+from services.utils.error_types import LLM_PIPELINE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +87,7 @@ async def parse_voice_intent_with_tools(
     user_prompt = f"Diagram type: {diagram_type}\nRecent turns:\n{recent or '(none)'}\nUser: {command_text.strip()}"
 
     try:
-        result = await llm_service.chat(
+        result = await llm_service.chat_raw(
             prompt=user_prompt,
             model="qwen-turbo",
             temperature=0.1,
@@ -91,6 +102,7 @@ async def parse_voice_intent_with_tools(
             diagram_type=diagram_type,
             session_id=voice_session_id,
             endpoint_path="/ws/kitty",
+            use_knowledge_base=False,
         )
         cmd = _extract_tool_call(result)
         if cmd and cmd.get("action") not in (None, "none"):
@@ -118,7 +130,11 @@ async def parse_voice_intent_with_tools(
                     return parsed
             except json.JSONDecodeError:
                 pass
-    except (RuntimeError, ValueError, TypeError, KeyError) as exc:
+    except (
+        LLMTimeoutError,
+        LLMServiceError,
+        *LLM_PIPELINE_ERRORS,
+    ) as exc:
         logger.debug("Tool intent parse failed: %s", exc)
         kitty_wf_log(
             "intent_parse",
@@ -144,4 +160,59 @@ async def parse_voice_intent_with_tools(
             "requested_label": unsupported.get("requested_type"),
             "confidence": 0.85,
         }
+    return {"action": "none", "confidence": 0.0}
+
+
+async def parse_one_sentence_edit_intent(
+    command_text: str,
+    *,
+    voice_session_id: str,
+    diagram_type: str,
+    session_context: Optional[Dict[str, Any]] = None,
+    user_id: Optional[int] = None,
+    organization_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """
+    Parse one-sentence EDIT phase text via node-action agent.
+
+    Uses ``qwen3.6-flash`` (text chat, not Omni). The LLM agent is primary;
+    regex heuristics run only on timeout or empty tool result. Compound
+    intents may include ``follow_up_actions`` (e.g. update_center then
+    auto_complete).
+    """
+    cmd = await parse_node_action_intent(
+        command_text,
+        voice_session_id=voice_session_id,
+        diagram_type=diagram_type,
+        session_context=session_context,
+        user_id=user_id,
+        organization_id=organization_id,
+    )
+    if cmd is not None:
+        log_node_action(
+            "parse_agent_hit",
+            voice_session_id=voice_session_id,
+            detail=summarize_legacy_command(cmd),
+            action=str(cmd.get("action") or "") or None,
+        )
+        return cmd
+
+    heuristic = heuristic_one_sentence_edit_command(command_text)
+    if heuristic is not None:
+        if session_context:
+            heuristic = enrich_node_action_command(heuristic, session_context)
+        act = str(heuristic.get("action") or "")
+        log_node_action(
+            "parse_heuristic_fallback",
+            voice_session_id=voice_session_id,
+            detail=summarize_legacy_command(heuristic),
+            action=act,
+        )
+        return heuristic
+
+    log_node_action(
+        "parse_none",
+        voice_session_id=voice_session_id,
+        detail=f"text={command_text.strip()[:80]}",
+    )
     return {"action": "none", "confidence": 0.0}

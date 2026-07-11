@@ -43,6 +43,7 @@ export function useWorkshopChatComposable() {
 
   const { send, close, open, status } = useWebSocket(wsUrl, {
     immediate: false,
+    autoConnect: false,
     autoReconnect: {
       retries: 10,
       delay: 2000,

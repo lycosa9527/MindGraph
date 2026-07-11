@@ -221,12 +221,17 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     return false
   }
 
-  // Clear all cached results and abort any in-flight auto-complete requests.
-  function clearCache(): void {
-    cancelAllRequests()
+  // Clear cached model results without aborting in-flight AutoComplete streams.
+  function clearCachedResultsOnly(): void {
     results.value = {}
     selectedModel.value = null
     totalModels.value = null
+  }
+
+  // Clear all cached results and abort any in-flight auto-complete requests.
+  function clearCache(): void {
+    cancelAllRequests()
+    clearCachedResultsOnly()
   }
 
   // Set selected model (for pre-selection, e.g. concept map relationship)
@@ -468,6 +473,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     switchToModel,
     setSelectedModel,
     clearCache,
+    clearCachedResultsOnly,
     cancelAllRequests,
     startGeneration,
     handleModelSuccess,

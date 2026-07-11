@@ -57,6 +57,12 @@ const authStore = useAuthStore()
 const isFullpageMode = computed(() => props.mode === 'fullpage')
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
+/** Grow with newlines without Element Plus autosize (avoids unmount nextTick race). */
+const textareaRows = computed(() => {
+  const lines = props.inputText.split('\n').length
+  return Math.min(4, Math.max(1, lines))
+})
+
 // Computed for send button disabled state
 const isSendDisabled = computed(() => {
   const hasContent =
@@ -235,7 +241,7 @@ function handleSuggestionSelect(suggestion: string) {
             :model-value="inputText"
             type="textarea"
             name="mindmate-chat-input"
-            :autosize="{ minRows: 1, maxRows: 4 }"
+            :rows="textareaRows"
             :placeholder="placeholder || t('mindmate.input.placeholder')"
             :disabled="isLoading || !authStore.isAuthenticated"
             :maxlength="maxlength"

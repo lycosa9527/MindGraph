@@ -321,9 +321,12 @@ async def get_async_db_with_request_rls(
     ``get_admin_scope``) bind panel scope on ``request.state``. Declare them
     **before** this dependency so ``get_async_db`` opens with the correct context;
     this call refreshes SET LOCAL when ``after_begin`` already ran with a stale context.
+    Also pins the context on ``session.info`` so post-commit ``after_begin``
+    re-applies panel GUCs even if the ContextVar was cleared.
     """
     ctx = getattr(request.state, "rls_context", None)
     if ctx is not None:
+        set_rls_context(ctx)
         await apply_rls_context_async(db, ctx)
     return db
 
@@ -482,11 +485,25 @@ def require_global_users_edit(
     return scope
 
 
+def require_organizations_read(
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_ORGANIZATIONS_VIEW)),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    """
+    Organizations tab read: global platform roles, or expert invited-org scope.
+
+    List/detail filters still apply via ``panel_org_table_filter`` / RLS
+    ``readable_org_ids`` so experts only see orgs they created.
+    """
+    _assert_invite_org_scope(scope, lang)
+    return scope
+
+
 def require_global_organizations_read(
     scope: AdminScope = Depends(require_panel_capability(CAP_TAB_ORGANIZATIONS_VIEW)),
     lang: Language = Depends(get_language_dependency),
 ) -> AdminScope:
-    """Require global organizations read."""
+    """Require global organizations read (all orgs; not expert invite scope)."""
     _assert_global_scope(scope, lang)
     return scope
 
@@ -498,6 +515,23 @@ def require_global_organizations_edit(
     """Require global organizations edit."""
     _assert_global_scope(scope, lang)
     return scope
+
+
+def require_organization_trends_read(
+    scope: AdminScope = Depends(get_admin_scope),
+    lang: Language = Depends(get_language_dependency),
+) -> AdminScope:
+    """
+    Org token trends: data-center global readers, or organizations-tab readers
+    with global/invited scope (experts: own created orgs only via IDOR guards).
+    """
+    if CAP_TAB_DATA_CENTER_VIEW in scope.capabilities and CAP_SCOPE_GLOBAL in scope.capabilities:
+        return scope
+    if CAP_TAB_ORGANIZATIONS_VIEW in scope.capabilities:
+        _assert_invite_org_scope(scope, lang)
+        return scope
+    error_msg = Messages.error("admin_access_required", lang)
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
 
 def require_global_billing_read(

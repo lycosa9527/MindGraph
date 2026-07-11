@@ -2,12 +2,13 @@
 /**
  * School-tier subscription pitch and consultation form.
  */
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 
 import { Building2, Headphones, Server, Settings, UserRound } from '@lucide/vue'
 
 import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables'
+import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 import {
   SCHOOL_CONSULT_LIMITS,
@@ -16,6 +17,7 @@ import {
 } from '@/utils/schoolConsultValidation'
 
 const { t } = useLanguage()
+const authStore = useAuthStore()
 
 const submitting = ref(false)
 
@@ -49,12 +51,57 @@ const SCHOOL_FEATURES = [
   },
 ] as const
 
+function profilePrefill(): { name: string; phone: string; organization: string } {
+  const user = authStore.user
+  const username = (user?.username || '').trim()
+  const phone = (user?.phone || '').trim()
+  const organization = (user?.schoolName || '').trim()
+  // Skip name when username is just a phone (common for SMS-only accounts).
+  const looksLikePhone =
+    /^\d{7,15}$/.test(username) || (phone !== '' && username === phone)
+  const name = looksLikePhone ? '' : username
+  return {
+    name: name.slice(0, SCHOOL_CONSULT_LIMITS.name),
+    phone: phone.slice(0, SCHOOL_CONSULT_LIMITS.phone),
+    organization: organization.slice(0, SCHOOL_CONSULT_LIMITS.organization),
+  }
+}
+
+function applyProfilePrefill(options?: { onlyEmpty?: boolean }): void {
+  const onlyEmpty = options?.onlyEmpty === true
+  const prefill = profilePrefill()
+  if (!onlyEmpty || !form.name.trim()) {
+    form.name = prefill.name
+  }
+  if (!onlyEmpty || !form.phone.trim()) {
+    form.phone = prefill.phone
+  }
+  if (!onlyEmpty || !form.organization.trim()) {
+    form.organization = prefill.organization
+  }
+}
+
 function resetForm(): void {
-  form.name = ''
-  form.phone = ''
-  form.organization = ''
+  applyProfilePrefill()
   form.note = ''
 }
+
+onMounted(() => {
+  applyProfilePrefill()
+})
+
+// Fill blanks if /me arrives after mount; never overwrite user edits.
+watch(
+  () =>
+    [
+      authStore.user?.username,
+      authStore.user?.phone,
+      authStore.user?.schoolName,
+    ] as const,
+  () => {
+    applyProfilePrefill({ onlyEmpty: true })
+  }
+)
 
 async function submitConsultation(): Promise<void> {
   if (submitting.value) {

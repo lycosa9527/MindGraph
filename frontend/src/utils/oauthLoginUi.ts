@@ -111,6 +111,17 @@ export function oauthBindFromRouteQuery(oauthBind: unknown): 'wechat' | 'dingtal
   return ''
 }
 
+/** True when OAuth redirect login completed (`/?oauth_login=1`). */
+export function oauthLoginFromRouteQuery(oauthLogin: unknown): boolean {
+  if (oauthLogin === '1' || oauthLogin === 'true') {
+    return true
+  }
+  if (Array.isArray(oauthLogin) && (oauthLogin[0] === '1' || oauthLogin[0] === 'true')) {
+    return true
+  }
+  return false
+}
+
 /** Normalize route query.error to a single string code. */
 export function oauthErrorFromRouteQuery(error: unknown): string {
   if (typeof error === 'string') {

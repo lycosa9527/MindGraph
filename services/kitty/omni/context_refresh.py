@@ -32,7 +32,15 @@ async def schedule_omni_context_refresh(
     reason: str = "diagram_mutation",
     delta: Optional[str] = None,
 ) -> None:
-    """Debounce Omni instruction/context updates (~300ms)."""
+    """Debounce Omni instruction/context updates (~300ms).
+
+    No-op for text-first Kitty (no OmniClient). Kept for call-site compat.
+    """
+    session = voice_sessions.get(voice_session_id)
+    if not session or session.get("omni_client") is None:
+        return
+    if str(session.get("_kitty_client_mode") or "") == "text":
+        return
     if reason in _full_refresh_reasons:
         await _apply_omni_refresh(voice_session_id, reason=reason, delta=None)
         return

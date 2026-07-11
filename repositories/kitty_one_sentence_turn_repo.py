@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.domain.kitty_one_sentence import KittyOneSentenceTurn
+from models.domain.kitty_one_sentence import KittyOneSentenceSession, KittyOneSentenceTurn
 from services.utils.typing_helpers import result_rowcount
 
 
@@ -41,6 +41,8 @@ class KittyOneSentenceTurnRepository:
                 user_text=row.user_text,
                 diagram_type=row.diagram_type,
                 voice_session_id=row.voice_session_id,
+                request_id=row.request_id,
+                command_detail=row.command_detail,
                 created_at=row.created_at,
             )
             .on_conflict_do_nothing(constraint="uq_kitty_one_sentence_turn_scope_turn")
@@ -87,6 +89,69 @@ class KittyOneSentenceTurnRepository:
             .order_by(KittyOneSentenceTurn.created_at.asc(), KittyOneSentenceTurn.id.asc())
             .limit(cap)
         )
+        result = await self._session.execute(q)
+        return list(result.scalars().all())
+
+    async def list_actions_for_scope(
+        self,
+        *,
+        scope: str,
+        user_id: int,
+        limit: int,
+    ) -> list[KittyOneSentenceTurn]:
+        """Return kitty action turns (non-null action) oldest-first for activity feed."""
+        cap = min(max(limit, 1), 200)
+        q = (
+            select(KittyOneSentenceTurn)
+            .where(
+                KittyOneSentenceTurn.scope == scope,
+                KittyOneSentenceTurn.user_id == int(user_id),
+                KittyOneSentenceTurn.role == "kitty",
+                KittyOneSentenceTurn.action.is_not(None),
+            )
+            .order_by(KittyOneSentenceTurn.created_at.asc(), KittyOneSentenceTurn.id.asc())
+            .limit(cap)
+        )
+        result = await self._session.execute(q)
+        return list(result.scalars().all())
+
+    async def list_for_diagram_id(
+        self,
+        *,
+        diagram_id: str,
+        user_id: int,
+        limit: int,
+        actions_only: bool = False,
+    ) -> list[KittyOneSentenceTurn]:
+        """Return turns for a saved diagram id (scope or session.diagram_id)."""
+        cap = min(max(limit, 1), 200)
+        diagram = str(diagram_id or "").strip()
+        if not diagram:
+            return []
+        q = (
+            select(KittyOneSentenceTurn)
+            .outerjoin(
+                KittyOneSentenceSession,
+                KittyOneSentenceTurn.session_id == KittyOneSentenceSession.id,
+            )
+            .where(
+                KittyOneSentenceTurn.user_id == int(user_id),
+                (
+                    (KittyOneSentenceTurn.scope == diagram)
+                    | (KittyOneSentenceSession.diagram_id == diagram)
+                    | (KittyOneSentenceSession.diagram_scope == diagram)
+                ),
+            )
+        )
+        if actions_only:
+            q = q.where(
+                KittyOneSentenceTurn.role == "kitty",
+                KittyOneSentenceTurn.action.is_not(None),
+            )
+        q = q.order_by(
+            KittyOneSentenceTurn.created_at.asc(),
+            KittyOneSentenceTurn.id.asc(),
+        ).limit(cap)
         result = await self._session.execute(q)
         return list(result.scalars().all())
 

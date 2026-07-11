@@ -75,10 +75,15 @@ def _normalize_turn_payload(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]
         "diagram_type",
         "voice_session_id",
         "user_text",
+        "request_id",
     ):
         value = payload.get(optional_key)
         if value is not None and str(value).strip():
             turn[optional_key] = str(value).strip()
+
+    detail = payload.get("command_detail")
+    if isinstance(detail, dict) and detail:
+        turn["command_detail"] = detail
 
     return turn
 
@@ -127,7 +132,7 @@ async def append_one_sentence_turn(
     *,
     organization_id: Optional[int] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Append one turn to the scoped one-sentence log. Returns normalized turn or None."""
+    """Append one turn to Redis (best-effort) and always schedule PostgreSQL logging."""
     turn = _normalize_turn_payload(payload)
     if turn is None:
         return None
@@ -142,52 +147,102 @@ async def append_one_sentence_turn(
         turn["session_id"] = session_id
 
     redis = get_async_redis()
-    if redis is None:
-        return None
+    redis_ok = False
+    if redis is not None:
+        ttl = kitty_redis_ttl_seconds()
+        meta_key = kitty_one_sentence_meta_key(scope)
+        turns_key = kitty_one_sentence_turns_key(scope)
+        try:
+            meta = await _read_meta(scope)
+            if meta is not None:
+                owner = int(meta.get("user_id", -1))
+                if owner != int(user_id):
+                    return None
+            else:
+                if not await user_may_access_kitty_scope(user_id, scope):
+                    return None
+                meta = {
+                    "user_id": int(user_id),
+                    "scope": scope,
+                    "created_at": int(time.time()),
+                }
 
-    ttl = kitty_redis_ttl_seconds()
-    meta_key = kitty_one_sentence_meta_key(scope)
-    turns_key = kitty_one_sentence_turns_key(scope)
+            request_id = str(turn.get("request_id") or "").strip()
+            if request_id and turn.get("role") == "user":
+                recent = await redis.lrange(turns_key, -40, -1)
+                for raw in recent or []:
+                    text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
+                    try:
+                        parsed = json.loads(text)
+                    except (TypeError, ValueError, json.JSONDecodeError):
+                        continue
+                    if (
+                        isinstance(parsed, dict)
+                        and str(parsed.get("role") or "") == "user"
+                        and str(parsed.get("request_id") or "").strip() == request_id
+                    ):
+                        deduped = dict(parsed)
+                        if session_id and not deduped.get("session_id"):
+                            deduped["session_id"] = session_id
+                        schedule_one_sentence_turn_pg(
+                            user_id=user_id,
+                            organization_id=organization_id,
+                            scope=scope,
+                            turn=deduped,
+                        )
+                        logger.info(
+                            "[OneSentenceTurns] dedupe user request_id=%s scope=%s turn=%s",
+                            request_id[:12],
+                            scope[:16],
+                            str(deduped.get("turn_id") or "")[:12],
+                        )
+                        return deduped
 
-    try:
-        meta = await _read_meta(scope)
-        if meta is not None:
-            owner = int(meta.get("user_id", -1))
-            if owner != int(user_id):
-                return None
-        else:
-            if not await user_may_access_kitty_scope(user_id, scope):
-                return None
-            meta = {
-                "user_id": int(user_id),
-                "scope": scope,
-                "created_at": int(time.time()),
-            }
+            if turn.get("diagram_type"):
+                meta["diagram_type"] = turn["diagram_type"]
+            if session_id:
+                meta["session_id"] = session_id
+            meta["updated_at"] = int(time.time())
+            meta["turn_count"] = int(meta.get("turn_count", 0)) + 1
 
-        if turn.get("diagram_type"):
-            meta["diagram_type"] = turn["diagram_type"]
-        if session_id:
-            meta["session_id"] = session_id
-        meta["updated_at"] = int(time.time())
-        meta["turn_count"] = int(meta.get("turn_count", 0)) + 1
-
-        encoded_turn = json.dumps(turn, ensure_ascii=False)
-        async with redis.pipeline(transaction=False) as pipe:
-            pipe.set(meta_key, json.dumps(meta, ensure_ascii=False), ex=ttl)
-            pipe.rpush(turns_key, encoded_turn)
-            pipe.ltrim(turns_key, -MAX_ONE_SENTENCE_TURNS, -1)
-            pipe.expire(turns_key, ttl)
-            await pipe.execute()
-        schedule_one_sentence_turn_pg(
-            user_id=user_id,
-            organization_id=organization_id,
-            scope=scope,
-            turn=turn,
+            encoded_turn = json.dumps(turn, ensure_ascii=False)
+            async with redis.pipeline(transaction=False) as pipe:
+                pipe.set(meta_key, json.dumps(meta, ensure_ascii=False), ex=ttl)
+                pipe.rpush(turns_key, encoded_turn)
+                pipe.ltrim(turns_key, -MAX_ONE_SENTENCE_TURNS, -1)
+                pipe.expire(turns_key, ttl)
+                await pipe.execute()
+            redis_ok = True
+        except (RedisError, TypeError, ValueError) as exc:
+            logger.warning(
+                "[OneSentenceTurns] redis append failed scope=%s; continuing with PG: %s",
+                scope[:16],
+                exc,
+            )
+    else:
+        if not await user_may_access_kitty_scope(user_id, scope):
+            return None
+        logger.warning(
+            "[OneSentenceTurns] redis unavailable scope=%s; logging turn to PG only",
+            scope[:16],
         )
-        return turn
-    except (RedisError, TypeError, ValueError) as exc:
-        logger.warning("[OneSentenceTurns] append failed scope=%s: %s", scope[:16], exc)
-        return None
+
+    schedule_one_sentence_turn_pg(
+        user_id=user_id,
+        organization_id=organization_id,
+        scope=scope,
+        turn=turn,
+    )
+    logger.info(
+        "[OneSentenceTurns] append role=%s phase=%s request_id=%s scope=%s turn=%s redis=%s",
+        turn.get("role"),
+        turn.get("phase"),
+        str(turn.get("request_id") or "")[:12] or "-",
+        scope[:16],
+        str(turn.get("turn_id") or "")[:12],
+        redis_ok,
+    )
+    return turn
 
 
 async def append_one_sentence_turns_batch(
@@ -213,41 +268,11 @@ async def append_one_sentence_turns_batch(
     return stored
 
 
-async def list_one_sentence_turns(
-    scope: str,
-    user_id: int,
-    *,
-    limit: int = 100,
-    include_meta: bool = False,
-    session_id: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Return turns oldest-first for UI restore and analytics export."""
-    cap = max(1, min(limit, MAX_ONE_SENTENCE_TURNS))
-
-    pg_turns = await list_one_sentence_turns_pg(
-        scope=scope,
-        user_id=user_id,
-        limit=cap,
-        session_id=session_id,
-    )
-    if pg_turns:
-        payload: Dict[str, Any] = {"ok": True, "turns": pg_turns, "storage": "postgres"}
-        if include_meta:
-            meta = await _read_meta(scope)
-            if session_id and meta is not None:
-                meta["session_id"] = session_id
-            payload["meta"] = meta
-            if session_id:
-                payload["session_id"] = session_id
-        return payload
-
-    if not await _user_may_read_scope(scope, user_id):
-        return {"ok": False, "reason": "access_denied", "turns": []}
-
+async def _read_redis_turns(scope: str, cap: int) -> List[Dict[str, Any]]:
+    """Load recent Redis turns oldest-first (empty when Redis unavailable)."""
     redis = get_async_redis()
     if redis is None:
-        return {"ok": False, "reason": "redis_unavailable", "turns": []}
-
+        return []
     turns_key = kitty_one_sentence_turns_key(scope)
     try:
         raw_rows = await redis.lrange(turns_key, -cap, -1)
@@ -260,14 +285,90 @@ async def list_one_sentence_turns(
                 continue
             if isinstance(parsed, dict):
                 turns.append(parsed)
-
-        redis_payload: Dict[str, Any] = {"ok": True, "turns": turns, "storage": "redis"}
-        if include_meta:
-            redis_payload["meta"] = await _read_meta(scope)
-        return redis_payload
+        return turns
     except (RedisError, TypeError, ValueError, UnicodeDecodeError) as exc:
-        logger.warning("[OneSentenceTurns] list failed scope=%s: %s", scope[:16], exc)
-        return {"ok": False, "reason": "read_failed", "turns": []}
+        logger.debug("[OneSentenceTurns] redis list failed scope=%s: %s", scope[:16], exc)
+        return []
+
+
+def _merge_turns_by_id(
+    primary: List[Dict[str, Any]],
+    secondary: List[Dict[str, Any]],
+    *,
+    cap: int,
+) -> List[Dict[str, Any]]:
+    """Merge secondary into primary by turn_id; sort by ts; keep last ``cap`` rows."""
+    by_id: Dict[str, Dict[str, Any]] = {}
+    order: List[str] = []
+    for row in primary + secondary:
+        turn_id = str(row.get("turn_id") or "").strip()
+        if not turn_id:
+            continue
+        if turn_id not in by_id:
+            order.append(turn_id)
+        # Prefer primary (PG) fields; fill gaps from secondary.
+        existing = by_id.get(turn_id)
+        if existing is None:
+            by_id[turn_id] = dict(row)
+        else:
+            merged = dict(row)
+            merged.update({k: v for k, v in existing.items() if v not in (None, "")})
+            by_id[turn_id] = merged
+    merged_rows = [by_id[tid] for tid in order if tid in by_id]
+    merged_rows.sort(key=lambda item: int(item.get("ts") or 0))
+    if len(merged_rows) > cap:
+        return merged_rows[-cap:]
+    return merged_rows
+
+
+async def list_one_sentence_turns(
+    scope: str,
+    user_id: int,
+    *,
+    limit: int = 100,
+    include_meta: bool = False,
+    session_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Return turns oldest-first for UI restore and analytics export.
+
+    Prefers PostgreSQL, then merges any Redis-only turns so a partial PG
+    backfill cannot hide the live Redis thread.
+    """
+    cap = max(1, min(limit, MAX_ONE_SENTENCE_TURNS))
+
+    pg_turns = await list_one_sentence_turns_pg(
+        scope=scope,
+        user_id=user_id,
+        limit=cap,
+        session_id=session_id,
+    )
+    may_read = await _user_may_read_scope(scope, user_id)
+    redis_turns = await _read_redis_turns(scope, cap) if may_read else []
+
+    if not pg_turns and not redis_turns:
+        if not may_read:
+            return {"ok": False, "reason": "access_denied", "turns": []}
+        return {"ok": True, "turns": [], "storage": "empty"}
+
+    if pg_turns and redis_turns:
+        turns = _merge_turns_by_id(pg_turns, redis_turns, cap=cap)
+        storage = "postgres_and_redis"
+    elif pg_turns:
+        turns = pg_turns
+        storage = "postgres"
+    else:
+        turns = redis_turns
+        storage = "redis"
+
+    payload: Dict[str, Any] = {"ok": True, "turns": turns, "storage": storage}
+    if include_meta:
+        meta = await _read_meta(scope)
+        if session_id and meta is not None:
+            meta["session_id"] = session_id
+        payload["meta"] = meta
+        if session_id:
+            payload["session_id"] = session_id
+    return payload
 
 
 def _is_one_sentence_panel(session: Dict[str, Any]) -> bool:
@@ -286,6 +387,8 @@ async def persist_one_sentence_turn_from_voice_session(
     outcome: Optional[str] = None,
     user_text: Optional[str] = None,
     organization_id: Optional[int] = None,
+    request_id: Optional[str] = None,
+    command_detail: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Persist a turn when the Kitty WS session is the one-sentence panel."""
     session = voice_sessions.get(voice_session_id)
@@ -304,10 +407,23 @@ async def persist_one_sentence_turn_from_voice_session(
     except (TypeError, ValueError):
         return
 
+    resolved_request_id = request_id
+    if not resolved_request_id:
+        raw = session.get("_one_sentence_request_id")
+        if isinstance(raw, str) and raw.strip():
+            resolved_request_id = raw.strip()
+
+    raw_ctx = session.get("context")
+    ctx: Dict[str, Any] = raw_ctx if isinstance(raw_ctx, dict) else {}
+    resolved_phase = str(phase or "edit").strip()
+    if resolved_phase not in _VALID_PHASES:
+        ctx_phase = str(ctx.get("one_sentence_phase") or "").strip()
+        resolved_phase = ctx_phase if ctx_phase in _VALID_PHASES else "edit"
+
     payload: Dict[str, Any] = {
         "role": role,
         "content": content,
-        "phase": phase,
+        "phase": resolved_phase,
         "source": source,
         "diagram_type": session.get("diagram_type"),
         "voice_session_id": voice_session_id,
@@ -319,6 +435,10 @@ async def persist_one_sentence_turn_from_voice_session(
         payload["outcome"] = str(outcome).strip()
     if user_text and str(user_text).strip():
         payload["user_text"] = _trim_content(str(user_text))
+    if resolved_request_id and str(resolved_request_id).strip():
+        payload["request_id"] = str(resolved_request_id).strip()
+    if isinstance(command_detail, dict) and command_detail:
+        payload["command_detail"] = command_detail
 
     await append_one_sentence_turn(
         scope,
@@ -380,8 +500,33 @@ async def migrate_one_sentence_scope(
         if source_meta:
             merged_meta["turn_count"] = int(merged_meta.get("turn_count", 0)) + int(source_meta.get("turn_count", 0))
 
+        existing_turn_ids: set[str] = set()
+        target_rows = await redis.lrange(target_turns_key, 0, -1)
+        for raw in target_rows or []:
+            text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
+            try:
+                parsed = json.loads(text)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                continue
+            if isinstance(parsed, dict):
+                turn_id = str(parsed.get("turn_id") or "").strip()
+                if turn_id:
+                    existing_turn_ids.add(turn_id)
+
         async with redis.pipeline(transaction=False) as pipe:
             for raw in source_rows:
+                text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
+                try:
+                    parsed = json.loads(text)
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    pipe.rpush(target_turns_key, raw)
+                    continue
+                if isinstance(parsed, dict):
+                    turn_id = str(parsed.get("turn_id") or "").strip()
+                    if turn_id and turn_id in existing_turn_ids:
+                        continue
+                    if turn_id:
+                        existing_turn_ids.add(turn_id)
                 pipe.rpush(target_turns_key, raw)
             pipe.ltrim(target_turns_key, -MAX_ONE_SENTENCE_TURNS, -1)
             pipe.expire(target_turns_key, ttl)

@@ -33,7 +33,12 @@ export function traceKittyWorkflow(
   lane: KittyWorkflowLane,
   stage: string,
   detail: string,
-  options?: { scope?: string; action?: string }
+  options?: {
+    scope?: string
+    action?: string
+    verified?: boolean
+    hubPersistOk?: boolean
+  }
 ): void {
   const row: KittyWorkflowTracePayload = {
     lane,
@@ -49,6 +54,12 @@ export function traceKittyWorkflow(
   }
   const scopePart = row.scope ? ` scope=${row.scope.slice(0, 12)}` : ''
   const actionPart = row.action ? ` action=${row.action}` : ''
-  const line = `[KittyWF:${lane}] ${stage}${actionPart}${scopePart} | ${row.detail}`
+  const verifiedPart =
+    typeof options?.verified === 'boolean' ? ` verified=${String(options.verified)}` : ''
+  const hubPart =
+    typeof options?.hubPersistOk === 'boolean'
+      ? ` hubPersistOk=${String(options.hubPersistOk)}`
+      : ''
+  const line = `[KittyWF:${lane}] ${stage}${actionPart}${scopePart}${verifiedPart}${hubPart} | ${row.detail}`
   console.debug(line)
 }

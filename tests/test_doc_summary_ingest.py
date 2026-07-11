@@ -44,6 +44,30 @@ async def test_ingest_text_persists_completed_document() -> None:
 
 
 @pytest.mark.asyncio
+async def test_ingest_file_releases_db_before_ocr() -> None:
+    """Slow OCR must not hold the request-scoped SQLAlchemy transaction open."""
+    db = AsyncMock()
+    db.commit = AsyncMock()
+    pkg = _package()
+    db.execute = AsyncMock(
+        return_value=MagicMock(scalars=MagicMock(return_value=MagicMock(first=MagicMock(return_value=pkg))))
+    )
+
+    service = DocSummaryIngestService(db, user_id=1)
+    release = AsyncMock()
+    with (
+        patch("services.knowledge.doc_summary_ingest.release_open_transaction", release),
+        patch.object(service.processor, "extract_text", return_value="extracted text"),
+        patch.object(service, "_persist_extracted", new_callable=AsyncMock) as persist,
+        patch("services.knowledge.doc_summary_ingest.set_package_status", new_callable=AsyncMock),
+        patch("pathlib.Path.unlink"),
+    ):
+        persist.return_value = SimpleNamespace(id=12, status="completed")
+        await service.ingest_file(9, "/tmp/x.png", "x.png", "image/png", 128)
+    release.assert_awaited_once_with(db)
+
+
+@pytest.mark.asyncio
 async def test_ingest_file_rejects_non_doc_summary_package() -> None:
     """Upload ingest rejects packages that are not doc_summary source."""
     db = AsyncMock()

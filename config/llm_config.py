@@ -27,6 +27,11 @@ class LLMConfigMixin:
             """Type stub: method provided by BaseConfig."""
             return _default
 
+        @property
+        def QWEN_API_URL(self) -> str:
+            """Type stub: provided by DashScopeEndpointConfigMixin."""
+            return ""
+
     @property
     def QWEN_API_KEY(self):
         """Get Qwen API key from environment."""
@@ -35,12 +40,6 @@ class LLMConfigMixin:
             logger.warning("Invalid or missing QWEN_API_KEY")
             return None
         return api_key.strip()
-
-    @property
-    def QWEN_API_URL(self):
-        """Get Qwen API URL."""
-        default_url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
-        return self._get_cached_value("QWEN_API_URL", default_url)
 
     @property
     def QWEN_MODEL(self):
@@ -58,14 +57,13 @@ class LLMConfigMixin:
         return self._get_cached_value("QWEN_MODEL_GENERATION", "qwen3.6-flash")
 
     @property
-    def DASHSCOPE_API_URL(self):
-        """Dashscope API URL for all supported models"""
-        return self._get_cached_value("DASHSCOPE_API_URL", "https://dashscope.aliyuncs.com/api/v1/")
-
-    @property
     def DEEPSEEK_MODEL(self):
-        """DeepSeek model name - v3.1 is faster than R1 (no reasoning overhead)"""
-        return self._get_cached_value("DEEPSEEK_MODEL", "deepseek-v3.1")
+        """DeepSeek model name on DashScope (non-reasoning; faster than R1).
+
+        Default ``deepseek-v3.2``: ``deepseek-v3.1`` returns a misleading
+        ``logprobs is not supported`` 400 on workspace MaaS endpoints.
+        """
+        return self._get_cached_value("DEEPSEEK_MODEL", "deepseek-v3.2")
 
     @property
     def KIMI_MODEL(self):
@@ -255,26 +253,6 @@ class LLMConfigMixin:
             "QWEN_LIVE_TRANSLATE_MODEL",
             "qwen3-livetranslate-flash-realtime",
         )
-
-    @property
-    def DASHSCOPE_REALTIME_WS_BASE(self) -> str:
-        """
-        DashScope realtime WebSocket origin (no path/query).
-
-        Override with ``DASHSCOPE_REALTIME_WS_BASE`` (full ``wss://...`` URL
-        without ``?model=``). Otherwise ``DASHSCOPE_REALTIME_REGION`` selects:
-        ``cn`` -> Beijing, ``intl`` -> international endpoint.
-        """
-        override = self._get_cached_value("DASHSCOPE_REALTIME_WS_BASE", "")
-        if isinstance(override, str):
-            cleaned = override.strip().rstrip("/")
-            if cleaned.lower().startswith("wss://"):
-                return cleaned
-        region_raw = self._get_cached_value("DASHSCOPE_REALTIME_REGION", "cn")
-        region = str(region_raw or "cn").strip().lower()
-        if region in ("intl", "international", "sg", "singapore"):
-            return "wss://dashscope-intl.aliyuncs.com/api-ws/v1/realtime"
-        return "wss://dashscope.aliyuncs.com/api-ws/v1/realtime"
 
     def get_qwen_headers(self) -> dict:
         """

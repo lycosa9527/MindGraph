@@ -71,6 +71,7 @@ from services.diagram.generation_skip_registry import (
 )
 from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.diagram.library_save_user_notices import library_save_user_notice
+from services.infrastructure.utils.browser import BrowserUnavailableError
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user, get_current_user_or_api_key
 from .helpers import (
@@ -83,6 +84,19 @@ from .helpers import (
 from .vueflow_screenshot import capture_diagram_screenshot
 
 logger = logging.getLogger(__name__)
+
+
+def _raise_png_generation_http(exc: Exception, lang: Language) -> None:
+    """Map browser/infra failures to HTTP errors for PNG generation routes."""
+    if isinstance(exc, BrowserUnavailableError):
+        raise HTTPException(
+            status_code=503,
+            detail=Messages.error("browser_unavailable", lang=lang),
+        ) from exc
+    raise HTTPException(
+        status_code=500,
+        detail=Messages.error("generation_failed", lang, str(exc)),
+    ) from exc
 
 
 def _prompt_meta_for_log(text: str) -> str:
@@ -218,6 +232,12 @@ async def export_png(
             headers={"Content-Disposition": 'attachment; filename="diagram.png"'},
         )
 
+    except BrowserUnavailableError as e:
+        logger.error("PNG export browser unavailable: %s", e)
+        raise HTTPException(
+            status_code=503,
+            detail=Messages.error("browser_unavailable", lang=lang),
+        ) from e
     except BACKGROUND_INFRA_ERRORS as e:
         logger.error("PNG export error: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=Messages.error("export_failed", lang, str(e))) from e
@@ -429,9 +449,12 @@ async def generate_png_from_prompt(
             headers={"Content-Disposition": 'attachment; filename="diagram.png"'},
         )
 
+    except BrowserUnavailableError as e:
+        logger.error("[GeneratePNG] Browser unavailable: %s", e)
+        _raise_png_generation_http(e, lang)
     except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[GeneratePNG] Error: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, str(e))) from e
+        _raise_png_generation_http(e, lang)
 
 
 @router.post("/generate_dingtalk")
@@ -701,9 +724,12 @@ async def generate_dingtalk_png(
 
         return PlainTextResponse(content=plain_text)
 
+    except BrowserUnavailableError as e:
+        logger.error("[GenerateDingTalk] Browser unavailable: %s", e)
+        _raise_png_generation_http(e, lang)
     except BACKGROUND_INFRA_ERRORS as e:
         logger.error("[GenerateDingTalk] Error: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=Messages.error("generation_failed", lang, str(e))) from e
+        _raise_png_generation_http(e, lang)
 
 
 @router.get("/generation_library_skip/{unique_id}")

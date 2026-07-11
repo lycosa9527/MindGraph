@@ -35,6 +35,7 @@ from services.auth.admin_user_list_rows import (
     diagram_quota_for_user,
     enrich_admin_user_list_rows,
 )
+from services.auth.admin_user_role_sort import org_member_role_sort_key
 from services.auth.phone_uniqueness import other_user_id_with_phone
 from services.auth.school_dashboard_logger import get_school_dashboard_logger
 from services.auth.school_user_create import (
@@ -107,7 +108,14 @@ async def list_school_users(
 
     filt = and_(*conditions)
     total_stmt = select(sa_count()).select_from(User).where(filt)
-    list_stmt = select(User).where(filt).order_by(User.created_at.desc())
+    list_stmt = (
+        select(User)
+        .where(filt)
+        .order_by(
+            org_member_role_sort_key(),
+            User.created_at.desc(),
+        )
+    )
     total = (await db.execute(total_stmt)).scalar_one()
     skip = (page - 1) * page_size
     total_pages = (total + page_size - 1) // page_size

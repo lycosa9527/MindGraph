@@ -325,6 +325,49 @@
   letter-spacing: 0.02em;
 }
 
+/* Date picker defaults to Element Plus 14px; match sibling swiss inputs. */
+.mindbot-swiss-dialog .el-date-editor.el-input,
+.mindbot-swiss-dialog .el-date-editor.el-input__wrapper,
+.mindbot-swiss-dialog .mindbot-swiss-input.el-date-editor,
+.mindbot-swiss-dialog .school-general-expires-picker.el-date-editor {
+  --el-date-editor-width: 100%;
+  --el-font-size-base: 0.8125rem;
+  --el-input-font-size: 0.8125rem;
+  --el-component-size-small: 28px;
+  width: 100%;
+  max-width: 100%;
+  font-family: var(--geek-ulog-font);
+  font-size: 0.8125rem;
+}
+
+.mindbot-swiss-dialog .el-date-editor.el-input__wrapper,
+.mindbot-swiss-dialog .el-date-editor .el-input__wrapper {
+  font-family: var(--geek-ulog-font);
+  font-size: 0.8125rem;
+}
+
+.mindbot-swiss-dialog .el-date-editor .el-input__inner,
+.mindbot-swiss-dialog .el-date-editor .el-range-input,
+.mindbot-swiss-dialog .el-date-editor .el-range-separator,
+.mindbot-swiss-dialog .school-general-expires-picker .el-input__inner {
+  font-family: var(--geek-ulog-font) !important;
+  font-size: 0.8125rem !important;
+  letter-spacing: 0.02em;
+  color: #f1f5f9;
+}
+
+.mindbot-swiss-dialog .el-date-editor .el-input__inner::placeholder {
+  color: rgba(148, 163, 184, 0.92);
+}
+
+.mindbot-swiss-dialog .el-date-editor .el-input__prefix,
+.mindbot-swiss-dialog .el-date-editor .el-input__suffix,
+.mindbot-swiss-dialog .el-date-editor .el-input__icon,
+.mindbot-swiss-dialog .el-date-editor .el-range__icon {
+  font-size: 0.8125rem;
+  color: rgba(148, 163, 184, 0.92);
+}
+
 .mindbot-swiss-dialog .el-input__inner::placeholder,
 .mindbot-swiss-dialog .el-textarea__inner::placeholder {
   color: rgba(148, 163, 184, 0.92);

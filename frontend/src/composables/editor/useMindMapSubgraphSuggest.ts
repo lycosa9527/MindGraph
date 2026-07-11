@@ -3,10 +3,14 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { notify } from '@/composables/core/notifications'
+import { eventBus } from '@/composables/core/useEventBus'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { i18n } from '@/i18n'
 import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
+import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
 import {
   extractFailureFromPayload,
@@ -38,6 +42,12 @@ import { resolveDiagramLlmModel } from '@/utils/resolveDiagramLlmModel'
 
 const MAX_SUBGRAPH_CHILDREN = 6
 
+type SubgraphNotifier = {
+  warning: (message: string) => void
+  error: (message: string) => void
+  success: (message: string) => void
+}
+
 function formatSubgraphErrorMessage(
   rawError: string,
   errorType: string | undefined,
@@ -59,12 +69,12 @@ function notifySubgraphError(
   rawError: string,
   errorType: string | undefined,
   t: (key: string) => string,
-  notify: ReturnType<typeof useNotifications>
+  subgraphNotify: SubgraphNotifier
 ): void {
   if (!shouldNotifyGenerateGraphError(rawError, errorType)) {
     return
   }
-  notify.error(formatSubgraphErrorMessage(rawError, errorType, t))
+  subgraphNotify.error(formatSubgraphErrorMessage(rawError, errorType, t))
 }
 
 function buildResponseDebug(
@@ -92,6 +102,338 @@ function buildResponseDebug(
   }
 }
 
+function isMindMapDiagramType(diagramType: string | null | undefined): boolean {
+  return diagramType === 'mindmap' || diagramType === 'mind_map'
+}
+
+async function runMindMapSubgraphGeneration(
+  nodeId: string | null,
+  deps: {
+    diagramStore: ReturnType<typeof useDiagramStore>
+    savedDiagramsStore: ReturnType<typeof useSavedDiagramsStore>
+    authStore: ReturnType<typeof useAuthStore>
+    previewStore: ReturnType<typeof useMindMapSubgraphPreviewStore>
+    llmResultsStore: ReturnType<typeof useLLMResultsStore>
+    promptLanguage: string
+    t: (key: string) => string
+    subgraphNotify: SubgraphNotifier
+  }
+): Promise<boolean> {
+  const {
+    diagramStore,
+    savedDiagramsStore,
+    authStore,
+    previewStore,
+    llmResultsStore,
+    promptLanguage,
+    t,
+    subgraphNotify,
+  } = deps
+
+  beginMindMapSubgraphDebugRun(nodeId ?? '(null)')
+
+  if (!nodeId || !isMindMapDiagramType(diagramStore.type)) {
+    mindMapSubgraphDebug('guard', 'aborted: missing nodeId or not a mind map', {
+      nodeId,
+      diagramType: diagramStore.type,
+    })
+    endMindMapSubgraphDebugRun(false)
+    return false
+  }
+  if (previewStore.isGenerating) {
+    mindMapSubgraphDebug('guard', 'aborted: generation already in flight')
+    endMindMapSubgraphDebugRun(false)
+    return false
+  }
+  if (!isMindMapSubgraphExpandable(nodeId)) {
+    mindMapSubgraphDebug('guard', 'aborted: node not expandable', { nodeId })
+    endMindMapSubgraphDebugRun(false)
+    return false
+  }
+
+  if (!authStore.isAuthenticated) {
+    mindMapSubgraphDebug('guard', 'aborted: not authenticated')
+    subgraphNotify.warning(t('notification.signInToUse'))
+    endMindMapSubgraphDebugRun(false)
+    return false
+  }
+  if (diagramStore.collabSessionActive) {
+    mindMapSubgraphDebug('guard', 'aborted: collab session active')
+    subgraphNotify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+    endMindMapSubgraphDebugRun(false)
+    return false
+  }
+
+  const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+  const nodeText = (node?.text ?? '').trim()
+  if (!nodeText || isPlaceholderText(nodeText)) {
+    mindMapSubgraphDebug('guard', 'aborted: empty or placeholder anchor text', {
+      nodeId,
+      nodeText,
+    })
+    subgraphNotify.warning(t('canvas.subgraphPreview.enterNodeTextFirst'))
+    endMindMapSubgraphDebugRun(false)
+    return false
+  }
+
+  const data = diagramStore.data
+  if (!data?.nodes || !data?.connections) {
+    mindMapSubgraphDebug('guard', 'aborted: diagram has no nodes/connections')
+    endMindMapSubgraphDebugRun(false)
+    return false
+  }
+
+  mindMapSubgraphDebug('context', 'diagram before request', {
+    anchor: { nodeId, nodeText },
+    diagram: summarizeMindMapNodesForDebug(data.nodes, data.connections),
+    mergeLookup: debugMindMapSubgraphMergeLookup(data.nodes, data.connections, nodeId),
+  })
+
+  const subgraphContext = collectMindMapSubgraphContext(data.nodes, data.connections, nodeId)
+  if (!subgraphContext) {
+    mindMapSubgraphDebug('guard', 'aborted: could not build subgraph context', { nodeId })
+    subgraphNotify.warning(t('canvas.subgraphPreview.enterNodeTextFirst'))
+    endMindMapSubgraphDebugRun(false)
+    return false
+  }
+
+  mindMapSubgraphDebug('context', 'subgraph context', subgraphContext)
+
+  previewStore.beginGeneration(nodeId)
+  const nodesBeforeCount = data.nodes.length
+
+  try {
+    const diagramId = savedDiagramsStore.activeDiagramId
+    const llmModel = resolveDiagramLlmModel(llmResultsStore.selectedModel)
+    const signal = previewStore.generationSignal()
+    const subgraphPrompt = formatMindMapSubgraphPrompt(subgraphContext, promptLanguage)
+
+    const requestBody: Record<string, unknown> = {
+      prompt: subgraphPrompt,
+      diagram_type: 'mindmap',
+      language: promptLanguage,
+      request_type: 'autocomplete',
+      llm: llmModel,
+      mind_map_topic: subgraphContext.topic || undefined,
+      expand_branch: subgraphContext.expandBranch,
+      reference_branches:
+        subgraphContext.referenceBranches.length > 0
+          ? subgraphContext.referenceBranches
+          : undefined,
+      existing_branch_children:
+        subgraphContext.existingChildren.length > 0
+          ? subgraphContext.existingChildren
+          : undefined,
+      parent_branch: subgraphContext.parentBranch,
+      ...(diagramId ? { diagram_id: diagramId } : {}),
+    }
+
+    const requestDebug: MindMapSubgraphRequestDebug = {
+      endpoint: '/api/generate_graph',
+      llm: llmModel,
+      language: promptLanguage,
+      diagramId,
+      prompt: subgraphPrompt,
+      body: requestBody,
+      context: subgraphContext,
+    }
+    mindMapSubgraphDebug('request', `POST /api/generate_graph → llm=${llmModel}`, requestDebug)
+
+    const response = await authFetch('/api/generate_graph', {
+      method: 'POST',
+      signal,
+      body: JSON.stringify(requestBody),
+    })
+
+    if (!response.ok) {
+      if (signal?.aborted) {
+        mindMapSubgraphDebug('error', 'request aborted')
+        previewStore.finishGeneration()
+        endMindMapSubgraphDebugRun(false)
+        return false
+      }
+      const errorData = await response.json().catch(() => ({ detail: 'Request failed' }))
+      const failure = extractFailureFromPayload(errorData)
+      mindMapSubgraphFailureDump({
+        stage: 'http_error',
+        httpStatus: response.status,
+        nodeId,
+        llm: llmModel,
+        prompt: subgraphPrompt,
+        errorData,
+        failure,
+      })
+      if (failure) {
+        notifySubgraphError(failure.error, failure.errorType, t, subgraphNotify)
+      } else {
+        notifySubgraphError(`HTTP ${response.status}`, undefined, t, subgraphNotify)
+      }
+      previewStore.finishGeneration()
+      endMindMapSubgraphDebugRun(false)
+      return false
+    }
+
+    const result = (await response.json()) as Record<string, unknown>
+    const responseDebug = buildResponseDebug(response.status, result)
+    mindMapSubgraphDebug('response', 'API JSON response', responseDebug)
+
+    if (signal?.aborted) {
+      mindMapSubgraphDebug('error', 'aborted after response received')
+      previewStore.finishGeneration()
+      endMindMapSubgraphDebugRun(false)
+      return false
+    }
+    const payloadFailure = extractFailureFromPayload(result)
+    if (payloadFailure) {
+      mindMapSubgraphFailureDump({
+        stage: 'payload_failure',
+        nodeId,
+        llm: llmModel,
+        prompt: subgraphPrompt,
+        response: responseDebug,
+        failure: payloadFailure,
+      })
+      notifySubgraphError(payloadFailure.error, payloadFailure.errorType, t, subgraphNotify)
+      previewStore.finishGeneration()
+      endMindMapSubgraphDebugRun(false)
+      return false
+    }
+
+    const rawExtracted = extractBranchesFromGeneratedSpec(result.spec as Record<string, unknown>)
+    const generatedBranches = toDirectChildrenOnly(rawExtracted).slice(0, MAX_SUBGRAPH_CHILDREN)
+    const extractDebug: MindMapSubgraphExtractDebug = {
+      extractedCount: rawExtracted.length,
+      extractedTexts: rawExtracted.map((b) => b.text),
+      afterDirectChildrenOnly: generatedBranches,
+    }
+    mindMapSubgraphDebug('extract', 'branches extracted from spec', extractDebug)
+
+    if (generatedBranches.length === 0) {
+      mindMapSubgraphFailureDump({
+        stage: 'empty_extract',
+        nodeId,
+        llm: llmModel,
+        prompt: subgraphPrompt,
+        response: responseDebug,
+        extract: extractDebug,
+      })
+      subgraphNotify.warning(t('canvas.subgraphPreview.emptyResult'))
+      previewStore.finishGeneration()
+      endMindMapSubgraphDebugRun(false)
+      return false
+    }
+
+    const expanded = diagramStore.expandMindMapPathToNode(nodeId)
+    mindMapSubgraphDebug('paste', 'expandMindMapPathToNode', { nodeId, expanded })
+
+    const mergeLookupBeforePaste = debugMindMapSubgraphMergeLookup(
+      diagramStore.data?.nodes ?? [],
+      diagramStore.data?.connections ?? [],
+      nodeId
+    )
+    mindMapSubgraphDebug('merge', 'lookup immediately before paste', mergeLookupBeforePaste)
+
+    const applied = diagramStore.pasteMindMapClipboardBranches(
+      nodeId,
+      generatedBranches,
+      t('canvas.subgraphPreview.historyLabel')
+    )
+    const nodesAfterCount = diagramStore.data?.nodes?.length ?? 0
+
+    mindMapSubgraphDebug('paste', 'pasteMindMapClipboardBranches result', {
+      anchorNodeId: nodeId,
+      applied,
+      nodesBeforeCount,
+      nodesAfterCount,
+      nodesAdded: nodesAfterCount - nodesBeforeCount,
+      diagramAfter: diagramStore.data?.nodes
+        ? summarizeMindMapNodesForDebug(
+            diagramStore.data.nodes,
+            diagramStore.data.connections ?? []
+          )
+        : null,
+    })
+
+    previewStore.finishGeneration()
+    if (!applied) {
+      mindMapSubgraphFailureDump({
+        stage: 'merge_failed',
+        nodeId,
+        llm: llmModel,
+        prompt: subgraphPrompt,
+        response: responseDebug,
+        extract: extractDebug,
+        mergeLookup: mergeLookupBeforePaste,
+        generatedBranches,
+      })
+      subgraphNotify.error(t('canvas.subgraphPreview.mergeFailed'))
+      eventBus.emit('kitty:diagram_action_completed', {
+        action: 'auto_complete_branch',
+        ok: false,
+        errorCode: 'merge_failed',
+      })
+      endMindMapSubgraphDebugRun(false)
+      return false
+    }
+
+    diagramStore.expandMindMapPathToNode(nodeId)
+    const successSummary = `${t('canvas.subgraphPreview.historyLabel')}：${generatedBranches.map((b) => b.text).join('、')}`
+    subgraphNotify.success(successSummary)
+    eventBus.emit('kitty:diagram_action_completed', {
+      action: 'auto_complete_branch',
+      ok: true,
+      userSummary: successSummary,
+    })
+    mindMapSubgraphDebug('done', 'subgraph applied successfully', {
+      nodeId,
+      childCount: generatedBranches.length,
+      childTexts: generatedBranches.map((b) => b.text),
+    })
+    endMindMapSubgraphDebugRun(true)
+    return true
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      mindMapSubgraphDebug('error', 'fetch aborted', { name: error.name })
+      previewStore.finishGeneration()
+      endMindMapSubgraphDebugRun(false)
+      return false
+    }
+    const message =
+      error instanceof Error ? error.message : t('canvas.subgraphPreview.generationFailed')
+    mindMapSubgraphDebugError('unexpected exception', {
+      message,
+      error,
+      nodeId,
+    })
+    mindMapSubgraphFailureDump({
+      stage: 'exception',
+      nodeId,
+      message,
+      error: error instanceof Error ? { name: error.name, stack: error.stack } : error,
+    })
+    subgraphNotify.error(message)
+    previewStore.finishGeneration()
+    endMindMapSubgraphDebugRun(false)
+    return false
+  }
+}
+
+/** Kitty event-bus entry — safe outside Vue ``setup`` (no ``useI18n``). */
+export async function generateMindMapSubgraphForNode(nodeId: string | null): Promise<boolean> {
+  const uiStore = useUIStore()
+  const t = i18n.global.t.bind(i18n.global) as (key: string) => string
+  return runMindMapSubgraphGeneration(nodeId, {
+    diagramStore: useDiagramStore(),
+    savedDiagramsStore: useSavedDiagramsStore(),
+    authStore: useAuthStore(),
+    previewStore: useMindMapSubgraphPreviewStore(),
+    llmResultsStore: useLLMResultsStore(),
+    promptLanguage: uiStore.promptLanguage,
+    t,
+    subgraphNotify: notify,
+  })
+}
+
 export function useMindMapSubgraphSuggest() {
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
@@ -99,7 +441,7 @@ export function useMindMapSubgraphSuggest() {
   const previewStore = useMindMapSubgraphPreviewStore()
   const llmResultsStore = useLLMResultsStore()
   const { isGenerating } = storeToRefs(previewStore)
-  const notify = useNotifications()
+  const notifyComposable = useNotifications()
   const { promptLanguage, t } = useLanguage()
 
   const isMindMap = computed(
@@ -107,287 +449,21 @@ export function useMindMapSubgraphSuggest() {
   )
 
   async function generateSubgraph(nodeId: string | null): Promise<boolean> {
-    beginMindMapSubgraphDebugRun(nodeId ?? '(null)')
-
-    if (!nodeId || !isMindMap.value) {
-      mindMapSubgraphDebug('guard', 'aborted: missing nodeId or not a mind map', {
-        nodeId,
-        diagramType: diagramStore.type,
-      })
-      endMindMapSubgraphDebugRun(false)
-      return false
-    }
-    if (previewStore.isGenerating) {
-      mindMapSubgraphDebug('guard', 'aborted: generation already in flight')
-      endMindMapSubgraphDebugRun(false)
-      return false
-    }
-    if (!isMindMapSubgraphExpandable(nodeId)) {
-      mindMapSubgraphDebug('guard', 'aborted: node not expandable', { nodeId })
-      endMindMapSubgraphDebugRun(false)
-      return false
-    }
-
-    if (!authStore.isAuthenticated) {
-      mindMapSubgraphDebug('guard', 'aborted: not authenticated')
-      notify.warning(t('notification.signInToUse'))
-      endMindMapSubgraphDebugRun(false)
-      return false
-    }
-    if (diagramStore.collabSessionActive) {
-      mindMapSubgraphDebug('guard', 'aborted: collab session active')
-      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
-      endMindMapSubgraphDebugRun(false)
-      return false
-    }
-
-    const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
-    const nodeText = (node?.text ?? '').trim()
-    if (!nodeText || isPlaceholderText(nodeText)) {
-      mindMapSubgraphDebug('guard', 'aborted: empty or placeholder anchor text', {
-        nodeId,
-        nodeText,
-      })
-      notify.warning(t('canvas.subgraphPreview.enterNodeTextFirst'))
-      endMindMapSubgraphDebugRun(false)
-      return false
-    }
-
-    const data = diagramStore.data
-    if (!data?.nodes || !data?.connections) {
-      mindMapSubgraphDebug('guard', 'aborted: diagram has no nodes/connections')
-      endMindMapSubgraphDebugRun(false)
-      return false
-    }
-
-    mindMapSubgraphDebug('context', 'diagram before request', {
-      anchor: { nodeId, nodeText },
-      diagram: summarizeMindMapNodesForDebug(data.nodes, data.connections),
-      mergeLookup: debugMindMapSubgraphMergeLookup(data.nodes, data.connections, nodeId),
+    return runMindMapSubgraphGeneration(nodeId, {
+      diagramStore,
+      savedDiagramsStore,
+      authStore,
+      previewStore,
+      llmResultsStore,
+      promptLanguage: promptLanguage.value,
+      t,
+      subgraphNotify: notifyComposable,
     })
-
-    const subgraphContext = collectMindMapSubgraphContext(data.nodes, data.connections, nodeId)
-    if (!subgraphContext) {
-      mindMapSubgraphDebug('guard', 'aborted: could not build subgraph context', { nodeId })
-      notify.warning(t('canvas.subgraphPreview.enterNodeTextFirst'))
-      endMindMapSubgraphDebugRun(false)
-      return false
-    }
-
-    mindMapSubgraphDebug('context', 'subgraph context', subgraphContext)
-
-    previewStore.beginGeneration(nodeId)
-    const nodesBeforeCount = data.nodes.length
-
-    try {
-      const diagramId = savedDiagramsStore.activeDiagramId
-      const llmModel = resolveDiagramLlmModel(llmResultsStore.selectedModel)
-      const signal = previewStore.generationSignal()
-      const subgraphPrompt = formatMindMapSubgraphPrompt(subgraphContext, promptLanguage.value)
-
-      const requestBody: Record<string, unknown> = {
-        prompt: subgraphPrompt,
-        diagram_type: 'mindmap',
-        language: promptLanguage.value,
-        request_type: 'autocomplete',
-        llm: llmModel,
-        mind_map_topic: subgraphContext.topic || undefined,
-        expand_branch: subgraphContext.expandBranch,
-        reference_branches:
-          subgraphContext.referenceBranches.length > 0
-            ? subgraphContext.referenceBranches
-            : undefined,
-        existing_branch_children:
-          subgraphContext.existingChildren.length > 0
-            ? subgraphContext.existingChildren
-            : undefined,
-        parent_branch: subgraphContext.parentBranch,
-        ...(diagramId ? { diagram_id: diagramId } : {}),
-      }
-
-      const requestDebug: MindMapSubgraphRequestDebug = {
-        endpoint: '/api/generate_graph',
-        llm: llmModel,
-        language: promptLanguage.value,
-        diagramId,
-        prompt: subgraphPrompt,
-        body: requestBody,
-        context: subgraphContext,
-      }
-      mindMapSubgraphDebug('request', `POST /api/generate_graph → llm=${llmModel}`, requestDebug)
-
-      const response = await authFetch('/api/generate_graph', {
-        method: 'POST',
-        signal,
-        body: JSON.stringify(requestBody),
-      })
-
-      if (!response.ok) {
-        if (signal?.aborted) {
-          mindMapSubgraphDebug('error', 'request aborted')
-          previewStore.finishGeneration()
-          endMindMapSubgraphDebugRun(false)
-          return false
-        }
-        const errorData = await response.json().catch(() => ({ detail: 'Request failed' }))
-        const failure = extractFailureFromPayload(errorData)
-        mindMapSubgraphFailureDump({
-          stage: 'http_error',
-          httpStatus: response.status,
-          nodeId,
-          llm: llmModel,
-          prompt: subgraphPrompt,
-          errorData,
-          failure,
-        })
-        if (failure) {
-          notifySubgraphError(failure.error, failure.errorType, t, notify)
-        } else {
-          notifySubgraphError(`HTTP ${response.status}`, undefined, t, notify)
-        }
-        previewStore.finishGeneration()
-        endMindMapSubgraphDebugRun(false)
-        return false
-      }
-
-      const result = (await response.json()) as Record<string, unknown>
-      const responseDebug = buildResponseDebug(response.status, result)
-      mindMapSubgraphDebug('response', 'API JSON response', responseDebug)
-
-      if (signal?.aborted) {
-        mindMapSubgraphDebug('error', 'aborted after response received')
-        previewStore.finishGeneration()
-        endMindMapSubgraphDebugRun(false)
-        return false
-      }
-      const payloadFailure = extractFailureFromPayload(result)
-      if (payloadFailure) {
-        mindMapSubgraphFailureDump({
-          stage: 'payload_failure',
-          nodeId,
-          llm: llmModel,
-          prompt: subgraphPrompt,
-          response: responseDebug,
-          failure: payloadFailure,
-        })
-        notifySubgraphError(payloadFailure.error, payloadFailure.errorType, t, notify)
-        previewStore.finishGeneration()
-        endMindMapSubgraphDebugRun(false)
-        return false
-      }
-
-      const rawExtracted = extractBranchesFromGeneratedSpec(result.spec as Record<string, unknown>)
-      const generatedBranches = toDirectChildrenOnly(rawExtracted).slice(0, MAX_SUBGRAPH_CHILDREN)
-      const extractDebug: MindMapSubgraphExtractDebug = {
-        extractedCount: rawExtracted.length,
-        extractedTexts: rawExtracted.map((b) => b.text),
-        afterDirectChildrenOnly: generatedBranches,
-      }
-      mindMapSubgraphDebug('extract', 'branches extracted from spec', extractDebug)
-
-      if (generatedBranches.length === 0) {
-        mindMapSubgraphFailureDump({
-          stage: 'empty_extract',
-          nodeId,
-          llm: llmModel,
-          prompt: subgraphPrompt,
-          response: responseDebug,
-          extract: extractDebug,
-        })
-        notify.warning(t('canvas.subgraphPreview.emptyResult'))
-        previewStore.finishGeneration()
-        endMindMapSubgraphDebugRun(false)
-        return false
-      }
-
-      const expanded = diagramStore.expandMindMapPathToNode(nodeId)
-      mindMapSubgraphDebug('paste', 'expandMindMapPathToNode', { nodeId, expanded })
-
-      const mergeLookupBeforePaste = debugMindMapSubgraphMergeLookup(
-        diagramStore.data?.nodes ?? [],
-        diagramStore.data?.connections ?? [],
-        nodeId
-      )
-      mindMapSubgraphDebug('merge', 'lookup immediately before paste', mergeLookupBeforePaste)
-
-      const applied = diagramStore.pasteMindMapClipboardBranches(
-        nodeId,
-        generatedBranches,
-        t('canvas.subgraphPreview.historyLabel')
-      )
-      const nodesAfterCount = diagramStore.data?.nodes?.length ?? 0
-
-      mindMapSubgraphDebug('paste', 'pasteMindMapClipboardBranches result', {
-        anchorNodeId: nodeId,
-        applied,
-        nodesBeforeCount,
-        nodesAfterCount,
-        nodesAdded: nodesAfterCount - nodesBeforeCount,
-        diagramAfter: diagramStore.data?.nodes
-          ? summarizeMindMapNodesForDebug(
-              diagramStore.data.nodes,
-              diagramStore.data.connections ?? []
-            )
-          : null,
-      })
-
-      previewStore.finishGeneration()
-      if (!applied) {
-        mindMapSubgraphFailureDump({
-          stage: 'merge_failed',
-          nodeId,
-          llm: llmModel,
-          prompt: subgraphPrompt,
-          response: responseDebug,
-          extract: extractDebug,
-          mergeLookup: mergeLookupBeforePaste,
-          generatedBranches,
-        })
-        notify.error(t('canvas.subgraphPreview.mergeFailed'))
-        endMindMapSubgraphDebugRun(false)
-        return false
-      }
-
-      diagramStore.expandMindMapPathToNode(nodeId)
-      notify.success(
-        `${t('canvas.subgraphPreview.historyLabel')}：${generatedBranches.map((b) => b.text).join('、')}`
-      )
-      mindMapSubgraphDebug('done', 'subgraph applied successfully', {
-        nodeId,
-        childCount: generatedBranches.length,
-        childTexts: generatedBranches.map((b) => b.text),
-      })
-      endMindMapSubgraphDebugRun(true)
-      return true
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        mindMapSubgraphDebug('error', 'fetch aborted', { name: error.name })
-        previewStore.finishGeneration()
-        endMindMapSubgraphDebugRun(false)
-        return false
-      }
-      const message =
-        error instanceof Error ? error.message : t('canvas.subgraphPreview.generationFailed')
-      mindMapSubgraphDebugError('unexpected exception', {
-        message,
-        error,
-        nodeId,
-      })
-      mindMapSubgraphFailureDump({
-        stage: 'exception',
-        nodeId,
-        message,
-        error: error instanceof Error ? { name: error.name, stack: error.stack } : error,
-      })
-      notify.error(message)
-      previewStore.finishGeneration()
-      endMindMapSubgraphDebugRun(false)
-      return false
-    }
   }
 
   return {
     isGenerating,
+    isMindMap,
     generateSubgraph,
   }
 }

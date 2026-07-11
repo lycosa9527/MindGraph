@@ -83,6 +83,8 @@ async def _record_redis_activity(
             "action": turn.get("action"),
             "outcome": turn.get("outcome"),
             "diagram_type": turn.get("diagram_type"),
+            "request_id": turn.get("request_id"),
+            "command_detail": turn.get("command_detail"),
         },
     )
 
@@ -141,16 +143,26 @@ async def record_one_sentence_turn_activity(
         reply_preview = content if role == "kitty" else None
         outcome = str(turn.get("outcome") or "")
         success = outcome not in ("failed", "low_confidence")
+        node_action = str(turn.get("action") or "").strip() or None
+        request_id = str(turn.get("request_id") or "").strip() or None
+        # Title carries the node action name for admin timeline drill-down.
+        title = clip_activity_preview(node_action, max_len=64) if node_action else None
+        conversation_id = track_session_id or scope
+        if request_id and conversation_id:
+            conversation_id = f"{conversation_id}:{request_id}"
+        elif request_id:
+            conversation_id = request_id
         schedule_user_usage_activity(
             user_id=user_id,
             organization_id=organization_id,
             source="mindgraph",
             action=usage_action,
+            title=title,
             prompt_preview=prompt_preview,
             reply_preview=reply_preview,
             diagram_type=str(turn.get("diagram_type") or "") or None,
             diagram_id=_diagram_id_from_scope(scope),
-            conversation_id=track_session_id or scope,
+            conversation_id=conversation_id,
             success=success,
         )
 

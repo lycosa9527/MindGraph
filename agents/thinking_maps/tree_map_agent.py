@@ -171,9 +171,11 @@ class TreeMapAgent(BaseAgent):
         system_prompt = get_prompt("tree_map_agent", language, "fixed_children")
         if not system_prompt:
             logger.warning("TreeMapAgent: No fixed_children prompt found, using generation fallback")
+            # generation templates use {topic}; fixed_children does not — never
+            # str.format the fixed template (JSON braces like {"text":...} KeyError).
             system_prompt = get_prompt("tree_map_agent", language, "generation") or ""
-        if system_prompt:
-            system_prompt = system_prompt.format(topic=prompt)
+            if system_prompt:
+                system_prompt = system_prompt.format(topic=prompt)
         base_user = (
             f"请为以下描述创建一个树形图：{prompt}"
             if is_chinese_prompt_shell_language(language)

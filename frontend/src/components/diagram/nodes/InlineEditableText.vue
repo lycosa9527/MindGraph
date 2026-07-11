@@ -31,6 +31,7 @@ import {
   isWhitespaceOnlyNodeText,
   resolveInlineNodeTextForSave,
 } from '@/utils/nodeEditableText'
+import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
 
 const props = withDefaults(
   defineProps<{
@@ -464,9 +465,8 @@ function startEditing(): void {
 
   // Focus and select text after DOM update
   nextTick(() => {
-    if (inputRef.value) {
-      inputRef.value.focus()
-      inputRef.value.select()
+    if (focusHtmlControl(inputRef.value)) {
+      selectHtmlControl(inputRef.value)
     }
     updateInputWidth()
     syncFontMetrics()
@@ -700,7 +700,7 @@ function handleTouchEnd(event: TouchEvent): void {
 
   const now = Date.now()
   if (now - lastTapTime < DOUBLE_TAP_THRESHOLD) {
-    event.preventDefault()
+    // Passive is passive (scroll-friendly); stopPropagation still blocks Vue Flow pan.
     event.stopPropagation()
     lastTapTime = 0
     startEditing()
@@ -768,9 +768,11 @@ function insertSnippetAtCaret(snippet: string): boolean {
     }
     const lenField = split ? editBody : editText
     nextTick(() => {
-      el.focus()
+      focusHtmlControl(el)
       const len = lenField.value.length
-      el.setSelectionRange(len, len)
+      if (typeof el.setSelectionRange === 'function') {
+        el.setSelectionRange(len, len)
+      }
       updateInputWidth()
     })
     return true
@@ -792,8 +794,10 @@ function insertSnippetAtCaret(snippet: string): boolean {
   }
   const newPos = Math.min(start + (middle.length - before.length), merged.length)
   nextTick(() => {
-    el.focus()
-    el.setSelectionRange(newPos, newPos)
+    focusHtmlControl(el)
+    if (typeof el.setSelectionRange === 'function') {
+      el.setSelectionRange(newPos, newPos)
+    }
     updateInputWidth()
   })
   return true
@@ -882,8 +886,8 @@ onUnmounted(() => {
       { 'inline-editable-text--full-width': fullWidth },
     ]"
     @dblclick="handleDoubleClick"
-    @touchstart="handleTouchStart"
-    @touchend="handleTouchEnd"
+    @touchstart.passive="handleTouchStart"
+    @touchend.passive="handleTouchEnd"
     @mousedown="handleMouseDown"
   >
     <!-- Hidden span for measuring text width -->

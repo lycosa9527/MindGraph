@@ -26,10 +26,13 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
         "  Client[Browser_WS] --> Routes[kitty_routes]\n"
         "  Routes --> HubOpen[hub_open_prepare]\n"
         "  Routes --> Inbound[ws_inbound]\n"
-        "  Inbound --> Omni[OmniClient]\n"
+        "  Inbound --> FunASR[FunAsrRealtime]\n"
+        "  Inbound --> TextCmd[text_inbound]\n"
         "  Inbound --> HubPatch[apply_kitty_ws_context_patch]\n"
-        "  Omni --> Commands[route_voice_command]\n"
+        "  TextCmd --> Commands[route_voice_command]\n"
+        "  FunASR --> TextCmd\n"
         "  Commands --> HubBridge[diagram_hub_bridge]\n"
+        "  Commands --> Cosy[CosyVoiceRealtime]\n"
         "  HubPatch --> AgentHub[MindGraphAgentHub]\n"
         "  HubBridge --> AgentHub\n"
         "  AgentHub --> Redis[(Redis_live_spec)]\n"
@@ -49,7 +52,7 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
                     "services/kitty/ws/realtime.py",
                     "services/kitty/ws/guards.py",
                 ],
-                "role": "Auth, rate limits, start frame, dual tasks (client + Omni).",
+                "role": "Auth, rate limits, start frame, text-first client loop.",
                 "hub_calls": [
                     "open_session",
                     "preempt_handshake",
@@ -67,18 +70,39 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
                     "services/kitty/ws/inbound.py",
                     "services/kitty/ws/lifecycle.py",
                 ],
-                "role": "audio/text/context_update/append_image/control messages.",
+                "role": "text / asr_* / tts_* / context_update / control messages (Omni retired).",
                 "hub_calls": ["apply_diagram_spec_mutation via apply_kitty_ws_context_patch on context_update"],
             },
             {
+                "id": "fun_asr_realtime",
+                "title": "Fun-ASR realtime",
+                "paths": [
+                    "services/kitty/asr/fun_asr_realtime.py",
+                    "services/kitty/audio/session_bridge.py",
+                    "config/dashscope_urls.py",
+                ],
+                "role": "Mic PCM → MaaS inference WS → asr_partial/asr_final; FE owns user bubble send.",
+                "hub_calls": [],
+            },
+            {
+                "id": "cosyvoice_realtime",
+                "title": "CosyVoice realtime TTS",
+                "paths": [
+                    "services/kitty/tts/cosyvoice_realtime.py",
+                    "services/kitty/ack/ack_emit.py",
+                    "services/kitty/audio/session_bridge.py",
+                ],
+                "role": "Final reply text → CosyVoice → audio_chunk (not DebateVerse qwen3-tts).",
+                "hub_calls": [],
+            },
+            {
                 "id": "omni_realtime",
-                "title": "Qwen Omni",
+                "title": "Qwen Omni (retired for Kitty)",
                 "paths": [
                     "clients/omni_client.py",
                     "services/kitty/omni/event_loop.py",
-                    "services/features/websocket_llm_middleware.py",
                 ],
-                "role": "Streaming audio/text; transcriptions feed command path.",
+                "role": "Quarantined; Kitty sessions no longer start Omni duplex.",
                 "hub_calls": [],
             },
             {
@@ -87,10 +111,17 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
                 "paths": [
                     "services/kitty/session/agent_state.py",
                     "services/kitty/routing/command_router.py",
-                    "services/kitty/diagram/hub_bridge.py",
+                    "services/kitty/adapters/diagram_command.py",
+                    "services/agent_hub/diagram_spine/bus.py",
+                    "services/diagram_edit/executor.py",
                 ],
-                "role": "NL to structured action; diagram_execute + hub bridge on mutations.",
-                "hub_calls": ["try_sync_voice_diagram_to_hub after diagram_execute (voice bridge)"],
+                "role": (
+                    "NL to structured action; DiagramCommandBus → diagram_edit (verified) or legacy diagram_execute."
+                ),
+                "hub_calls": [
+                    "client context_update after verified canvas (diagramEditHubPersist)",
+                    "try_sync_voice_diagram_to_hub on legacy non-verified voice bridge",
+                ],
             },
             {
                 "id": "hub",

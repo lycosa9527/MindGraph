@@ -11,7 +11,6 @@ import uuid
 from datetime import datetime
 from typing import Any, Awaitable, Callable, Dict, Optional, cast
 
-from clients.omni_client import OmniClient
 from services.agent_hub.scope_lifecycle import (
     configure_kitty_control_state,
     configure_kitty_scope_cleanup,
@@ -19,8 +18,10 @@ from services.agent_hub.scope_lifecycle import (
 from services.kitty.infra.redis.kitty_session_redis import configure_voice_session_getter
 from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.omni_client_access import get_session_omni_client as _get_session_omni_client_impl
+from services.kitty.session.one_sentence_session_pg import soft_close_one_sentence_session
 from services.kitty.session.runtime_state import active_websockets, logger, voice_sessions
 from services.kitty.session.session_teardown import teardown_session_event_handlers
+from services.kitty.audio.session_bridge import teardown_session_audio
 
 
 def get_agent_session_id(voice_session_id: str) -> str:
@@ -59,26 +60,14 @@ def create_voice_session(
     active_panel: Optional[str] = None,
 ) -> str:
     """
-    Create new voice session (session-bound to diagram session).
+    Create new Kitty session (session-bound to diagram session).
 
-    CRITICAL: Creates a NEW OmniClient instance for this session to support
-    multiple concurrent users. Each voice session gets its own OmniClient,
-    preventing cross-contamination between users.
-
-    Kitty Agent session lifecycle is controlled by:
-    1. Black cat click (activation)
-    2. Black cat click again (deactivation)
-    3. Session manager cleanup (when diagram session ends)
-    4. Navigation to gallery (session manager triggers cleanup)
+    Text-first Kitty: no OmniClient. Mic uses Fun-ASR realtime; speech uses
+    CosyVoice realtime. Session lifecycle is controlled by panel open/close,
+    session manager cleanup, and navigation away from the canvas.
     """
     ensure_kitty_hub_wired()
     session_id = f"voice_{uuid.uuid4().hex[:12]}"
-
-    # CRITICAL: Create a NEW OmniClient instance for this voice session
-    # This ensures each user gets their own isolated Omni conversation
-    # Without this, multiple users would share the same OmniClient singleton,
-    # causing cross-contamination (User A's messages going to User B's conversation)
-    omni_client = OmniClient()
 
     voice_sessions[session_id] = {
         "session_id": session_id,
@@ -89,11 +78,11 @@ def create_voice_session(
         "created_at": datetime.now(),
         "last_activity": datetime.now(),
         "conversation_history": [],
-        "omni_client": omni_client,  # Per-session OmniClient instance
+        "omni_client": None,
     }
 
     logger.debug(
-        "Session created: %s (linked to diagram=%s, has own OmniClient)",
+        "Session created: %s (linked to diagram=%s, text-first, no Omni)",
         session_id,
         diagram_session_id,
     )
@@ -173,11 +162,23 @@ async def end_voice_session_async(session_id: str, reason: str = "completed") ->
     Idempotent and safe under concurrent cleanup (e.g. WebSocket teardown vs HTTP).
     """
     await teardown_session_event_handlers(session_id)
+    await teardown_session_audio(session_id)
     session = voice_sessions.pop(session_id, None)
     if session is None:
         return
 
     logger.debug("VOIC | Session ended: %s (reason=%s)", session_id, reason)
+
+    if str(session.get("active_panel") or "").strip() == "one_sentence":
+        scope = str(session.get("diagram_session_id") or "").strip()
+        user_raw = session.get("user_id")
+        try:
+            uid = int(user_raw) if user_raw is not None else 0
+        except (TypeError, ValueError):
+            uid = 0
+        if uid > 0 and scope:
+            await soft_close_one_sentence_session(user_id=uid, diagram_scope=scope)
+
     await _close_omni_generator_for_session(session, session_id)
     diagram_session_id = session.get("diagram_session_id")
     omni_client = session.get("omni_client")

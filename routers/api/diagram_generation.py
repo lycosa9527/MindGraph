@@ -414,6 +414,32 @@ async def generate_graph(
         )
         result = await agent_graph_workflow_with_styles(**prepared["workflow_kwargs"])
         return await _finalize_generate_graph_result(result, prepared)
+    except LLMTimeoutError as e:
+        request_id = f"gen_{int(time.time() * 1000)}"
+        accept_language = request.headers.get("Accept-Language", "")
+        lang = get_request_language(x_language, accept_language)
+        logger.warning("[%s] generate_graph timeout: %s", request_id, e)
+        msg = getattr(e, "user_message", None) or Messages.error("internal_error", lang)
+        return GenerateResponse.model_validate(
+            {
+                "success": False,
+                "error": msg,
+                "error_type": "timeout",
+            }
+        )
+    except LLMServiceError as e:
+        request_id = f"gen_{int(time.time() * 1000)}"
+        accept_language = request.headers.get("Accept-Language", "")
+        lang = get_request_language(x_language, accept_language)
+        logger.error("[%s] generate_graph LLM error: %s", request_id, e, exc_info=True)
+        msg = getattr(e, "user_message", None) or Messages.error("internal_error", lang)
+        return GenerateResponse.model_validate(
+            {
+                "success": False,
+                "error": msg,
+                "error_type": "service_error",
+            }
+        )
     except BACKGROUND_INFRA_ERRORS as e:
         request_id = f"gen_{int(time.time() * 1000)}"
         accept_language = request.headers.get("Accept-Language", "")

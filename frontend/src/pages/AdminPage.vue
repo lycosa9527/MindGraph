@@ -63,12 +63,15 @@ const showSchoolAddMemberButton = computed(
       (can('scope.org') && (can('tab.school_dashboard.view') || can('tab.data_center.view'))))
 )
 
-const showSchoolsCreateButton = computed(
-  () =>
-    activeTab.value === 'invites' &&
-    canEditTab('invites') &&
-    (can('scope.global') || can('scope.invited_orgs'))
-)
+const showSchoolsCreateButton = computed(() => {
+  const onCreateTab =
+    activeTab.value === 'invites' || activeTab.value === 'organizations'
+  if (!onCreateTab) {
+    return false
+  }
+  const canCreate = canEditTab('invites') || canEditTab('organizations')
+  return canCreate && (can('scope.global') || can('scope.invited_orgs'))
+})
 
 const showFeaturesApplyButton = computed(
   () =>
@@ -90,7 +93,7 @@ const showTabReadOnlyBadge = computed(() => isTabReadOnly(activeTab.value))
 function onHeaderCreateSchool(): void {
   emitAdminEvent('admin:toolbar_action', {
     action: 'open_create_school',
-    tab: 'invites',
+    tab: activeTab.value === 'organizations' ? 'organizations' : 'invites',
   })
 }
 
@@ -169,7 +172,7 @@ onMounted(async () => {
           @click="onHeaderCreateSchool"
         >
           <el-icon class="mr-1"><Plus /></el-icon>
-          {{ t('admin.createSchool') }}
+          {{ t('admin.createOrganization') }}
         </el-button>
       </div>
     </div>

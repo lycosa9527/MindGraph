@@ -4,6 +4,7 @@
 import type { App } from 'vue'
 
 import { reportFrontendError } from '@/utils/frontendLog'
+import { reloadForStaleChunk } from '@/utils/staleChunkReload'
 
 export function installFrontendErrorReporting(app: App): void {
   app.config.errorHandler = (err, instance, info) => {
@@ -11,6 +12,9 @@ export function installFrontendErrorReporting(app: App): void {
       console.error('Vue Error:', err)
       console.error('Component:', instance)
       console.error('Info:', info)
+    }
+    if (reloadForStaleChunk(err)) {
+      return
     }
     const componentName =
       instance && typeof instance === 'object' && '$options' in instance
@@ -26,10 +30,17 @@ export function installFrontendErrorReporting(app: App): void {
     if (event.target && event.target !== window) {
       return
     }
-    reportFrontendError(event.error ?? event.message, { source: 'window.onerror' })
+    const payload = event.error ?? event.message
+    if (reloadForStaleChunk(payload)) {
+      return
+    }
+    reportFrontendError(payload, { source: 'window.onerror' })
   })
 
   window.addEventListener('unhandledrejection', (event) => {
+    if (reloadForStaleChunk(event.reason)) {
+      return
+    }
     reportFrontendError(event.reason, { source: 'unhandledrejection' })
   })
 }

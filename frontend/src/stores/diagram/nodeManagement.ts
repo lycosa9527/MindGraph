@@ -4,6 +4,7 @@ import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBubbleMapLayout, recalculateMultiFlowMapLayout } from '../specLoader'
@@ -352,10 +353,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
 
   function addNode(node: DiagramNode): void {
     if (ctx.collabSessionActive.value && node.id) {
-      const suffix =
-        typeof crypto !== 'undefined' && crypto.randomUUID
-          ? crypto.randomUUID().slice(0, 8)
-          : `${Date.now().toString(36)}`
+      const suffix = safeRandomUUID().slice(0, 8)
       node.id = `${node.id}-c${suffix}`
     }
     if (!ctx.data.value) {

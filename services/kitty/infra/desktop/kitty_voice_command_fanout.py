@@ -25,7 +25,7 @@ def _detail_from_params(params: Optional[Dict[str, Any]]) -> Optional[str]:
     """Detail from params."""
     if not isinstance(params, dict):
         return None
-    for key in ("target", "new_text", "text", "message", "node_label", "node_id"):
+    for key in ("target", "new_text", "text", "message", "node_label", "node_id", "topic"):
         raw = params.get(key)
         if isinstance(raw, str) and raw.strip():
             return _clip(raw.strip())

@@ -8,6 +8,7 @@ import {
   eventBus,
   useDiagramSpecForSave,
 } from '@/composables'
+import { shouldSkipLibraryReloadDuringGeneration } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
@@ -74,6 +75,17 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
   } = options
 
   async function loadDiagramFromLibrary(diagramId: string): Promise<boolean> {
+    // URL sync after first AutoComplete save: keep live canvas + in-flight LLM streams.
+    if (
+      shouldSkipLibraryReloadDuringGeneration(
+        llmResultsStore.isGenerating,
+        diagramId,
+        savedDiagramsStore.activeDiagramId
+      )
+    ) {
+      return true
+    }
+
     const result = await savedDiagramsStore.getDiagram(diagramId)
     if (!result.ok) {
       notifyError(translate('canvas.library.diagramNotFound'))

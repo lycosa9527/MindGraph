@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, TypedDict
 
-Channel = Literal["hub_patch", "ws_action", "omni", "desktop_queue", "mixed"]
+Channel = Literal["hub_patch", "ws_action", "omni", "desktop_queue", "mixed", "bus"]
 
 
 class IntentRow(TypedDict):
@@ -33,30 +33,30 @@ KITTY_INTENT_ROWS: List[IntentRow] = [
     {
         "name": "update_center",
         "kind": "diagram",
-        "channel": "hub_patch",
+        "channel": "bus",
         "hub_op": "patch_context",
-        "notes": "Center/title/topic fields vary by ``diagram_type`` (e.g. double_bubble left/right).",
+        "notes": "Verified mindmap edit: Bus → diagram_edit → canvas ack → client context_update.",
     },
     {
         "name": "update_node",
         "kind": "diagram",
-        "channel": "hub_patch",
+        "channel": "bus",
         "hub_op": "patch_context",
-        "notes": "``node_index``, ``node_id``, ``node_identifier``; diagram-specific keys on command.",
+        "notes": "``node_index``, ``node_id``, ``node_identifier``; legacy non-verified uses verify_required=false.",
     },
     {
         "name": "add_node",
         "kind": "diagram",
-        "channel": "hub_patch",
+        "channel": "bus",
         "hub_op": "patch_context",
-        "notes": "Palette-open (no target) is WS-only UX; no hub sync.",
+        "notes": "Palette-open (no target) is WS-only UX; verified path persists via client context_update.",
     },
     {
         "name": "delete_node",
         "kind": "diagram",
-        "channel": "hub_patch",
+        "channel": "bus",
         "hub_op": "patch_context",
-        "notes": "Structured deletes for tree/brace/flow etc. share same intent name. Success ack via ack_library.",
+        "notes": "Structured deletes for tree/brace/flow etc. share same intent name.",
     },
     {
         "name": "open_thinkguide",
@@ -141,6 +141,34 @@ KITTY_INTENT_ROWS: List[IntentRow] = [
         "channel": "ws_action",
         "hub_op": None,
         "notes": "Optional Omni ack.",
+    },
+    {
+        "name": "auto_complete_branch",
+        "kind": "ui",
+        "channel": "ws_action",
+        "hub_op": None,
+        "notes": "Canvas subgraph glow fill for an existing branch label.",
+    },
+    {
+        "name": "clarify_options",
+        "kind": "ui",
+        "channel": "ws_action",
+        "hub_op": None,
+        "notes": "Ambiguous edit — numbered options in chat; optional pending pick.",
+    },
+    {
+        "name": "decline_branch_autocomplete",
+        "kind": "ui",
+        "channel": "ws_action",
+        "hub_op": None,
+        "notes": "User declined post-add branch auto-complete offer.",
+    },
+    {
+        "name": "add_node_with_recommendations",
+        "kind": "ui",
+        "channel": "ws_action",
+        "hub_op": None,
+        "notes": "Add node then start inline recommendations on that node.",
     },
     {
         "name": "start_inline_recommendations",

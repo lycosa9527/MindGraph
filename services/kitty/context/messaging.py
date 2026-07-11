@@ -12,6 +12,7 @@ from fastapi import WebSocket
 
 from models.domain.messages import Language
 
+from services.diagram_edit.transport.kitty_ws import OUTBOUND_EXTRAS_KEY
 from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
     KITTY_DIAGRAM_CATALOG_PROMPT,
     KITTY_VOICE_COMMAND_PROMPT,
@@ -299,8 +300,12 @@ async def send_kitty_diagram_update(
     Desktop canvas applies incremental mutations; it must not reload voice-shaped live_spec.
     """
     outbound = dict(message)
+    sess = voice_sessions.get(voice_session_id)
+    if isinstance(sess, dict):
+        extras_raw = sess.get(OUTBOUND_EXTRAS_KEY)
+        if isinstance(extras_raw, dict):
+            outbound = {**outbound, **extras_raw}
     if outbound.get("type") == "diagram_update" and not outbound.get("user_summary"):
-        sess = voice_sessions.get(voice_session_id)
         ctx = sess.get("context") if isinstance(sess, dict) else {}
         if not isinstance(ctx, dict):
             ctx = {}

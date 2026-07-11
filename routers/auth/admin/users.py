@@ -36,6 +36,7 @@ from services.auth.admin_user_list_rows import (
     diagram_quota_for_user,
     enrich_admin_user_list_rows,
 )
+from services.auth.admin_user_role_sort import org_member_role_sort_key
 from services.auth.password_security import (
     invalidate_user_cache_after_password_write,
     revoke_refresh_tokens_and_sessions,
@@ -47,6 +48,7 @@ from services.redis.cache.redis_user_cache import user_cache
 from services.utils.error_types import DATABASE_ERRORS, REDIS_ERRORS
 from utils.auth import hash_password
 from utils.auth.admin_scope import AdminScope, assert_panel_user_readable
+from utils.auth.role_constants import ALL_USER_ROLES, db_roles_for_canonical_filter, normalize_role
 from utils.auth.user_daily_token_quota import resolve_daily_usage
 from utils.auth.school_tier import assert_organization_has_member_capacity
 from utils.email_validation import validate_email_for_api
@@ -74,6 +76,7 @@ async def list_users_admin(
     page_size: int = Query(50, ge=1, le=100),
     search: str = Query(""),
     organization_id: Optional[int] = Query(None),
+    role: Optional[str] = Query(None),
 ):
     """
     List users with pagination and filtering (ADMIN ONLY)
@@ -83,16 +86,32 @@ async def list_users_admin(
     - page_size: Number of items per page (default: 50)
     - search: Search by name or phone number
     - organization_id: Filter by organization
+    - role: Filter by canonical user role (includes legacy slug matches)
     """
     conditions = []
     if organization_id:
         conditions.append(User.organization_id == organization_id)
+    if role:
+        canonical_role = normalize_role(role)
+        if canonical_role not in ALL_USER_ROLES:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid role filter: {role}",
+            )
+        conditions.append(User.role.in_(tuple(db_roles_for_canonical_filter(canonical_role))))
     if search:
         search_term = f"%{search}%"
         conditions.append((User.name.like(search_term)) | (User.phone.like(search_term)))
 
     total_stmt = select(sa_count()).select_from(User)
-    list_stmt = select(User).order_by(User.created_at.desc())
+    # Org-scoped lists (school modal Teachers tab): role order, then newest first.
+    if organization_id:
+        list_stmt = select(User).order_by(
+            org_member_role_sort_key(),
+            User.created_at.desc(),
+        )
+    else:
+        list_stmt = select(User).order_by(User.created_at.desc())
     if conditions:
         filt = and_(*conditions)
         total_stmt = total_stmt.where(filt)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Create school dialog — Swiss minimal (stone palette, borderless inputs).
+ * Create organization dialog — Swiss minimal (stone palette, borderless inputs).
  */
 import { computed, ref, watch } from 'vue'
 
@@ -8,7 +8,7 @@ import { Close } from '@element-plus/icons-vue'
 
 import { Copy, Loader2, RefreshCw } from '@lucide/vue'
 
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { useCreateAdminOrganization } from '@/composables/queries'
 import {
   generateInvitationCode,
@@ -23,11 +23,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
-  (e: 'created', payload: { invitation_code?: string }): void
+  (e: 'created', payload: { invitation_code?: string; name?: string }): void
 }>()
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const { publicSiteUrl } = usePublicSiteUrl()
 const createOrganization = useCreateAdminOrganization()
 
 const isVisible = computed({
@@ -39,12 +40,23 @@ const isSubmitting = ref(false)
 const form = ref({
   name: '',
   invitation_code: '',
+  expires_at: '',
 })
+
+function defaultExpiresAtDate(): string {
+  const date = new Date()
+  date.setFullYear(date.getFullYear() + 1)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 function resetForm() {
   form.value = {
     name: '',
     invitation_code: generateInvitationCode(),
+    expires_at: defaultExpiresAtDate(),
   }
 }
 
@@ -65,8 +77,14 @@ async function copyInvitationCode() {
   if (!code) {
     return
   }
+  const orgName = form.value.name.trim() || t('admin.organizationName')
+  const text = t('admin.schoolInviteCopyPayload', {
+    orgName,
+    siteUrl: publicSiteUrl.value,
+    code,
+  })
   try {
-    await navigator.clipboard.writeText(code)
+    await navigator.clipboard.writeText(text)
     notify.success(t('notification.copied'))
   } catch {
     notify.error(t('notification.copyFailed'))
@@ -76,7 +94,7 @@ async function copyInvitationCode() {
 async function submitCreate() {
   const name = form.value.name.trim()
   if (!name) {
-    notify.error(t('admin.schoolNameRequired'))
+    notify.error(t('admin.organizationNameRequired'))
     return
   }
 
@@ -87,18 +105,28 @@ async function submitCreate() {
     return
   }
 
+  const expiresDate = form.value.expires_at.trim()
+  if (!expiresDate) {
+    notify.error(t('admin.validityPeriodRequired'))
+    return
+  }
+
   isSubmitting.value = true
   try {
-    const payload: Record<string, string> = { name, code }
+    const payload: Record<string, string> = {
+      name,
+      code,
+      expires_at: `${expiresDate}T23:59:59+08:00`,
+    }
     if (inviteRaw) {
       payload.invitation_code = inviteRaw.toUpperCase()
     }
     const data = (await createOrganization.mutateAsync(payload)) as { invitation_code?: string }
     notify.success(t('notification.saved'))
     isVisible.value = false
-    emit('created', { invitation_code: data.invitation_code })
+    emit('created', { invitation_code: data.invitation_code, name })
   } catch (err) {
-    const message = err instanceof Error ? err.message : t('admin.schoolCreateFailed')
+    const message = err instanceof Error ? err.message : t('admin.organizationCreateFailed')
     notify.error(message)
   } finally {
     isSubmitting.value = false
@@ -143,7 +171,7 @@ watch(
                 @click="closeModal"
               />
               <h2 class="text-lg font-semibold text-stone-900 tracking-tight">
-                {{ t('admin.createSchool') }}
+                {{ t('admin.createOrganization') }}
               </h2>
             </div>
 
@@ -154,17 +182,17 @@ watch(
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="create-school-name"
+                  for="create-org-name"
                 >
-                  {{ t('admin.schoolName') }}
+                  {{ t('admin.organizationName') }}
                   <span class="text-stone-400">*</span>
                 </label>
                 <input
-                  id="create-school-name"
+                  id="create-org-name"
                   v-model="form.name"
                   type="text"
-                  name="create-school-name"
-                  :placeholder="t('admin.schoolNamePlaceholder')"
+                  name="create-org-name"
+                  :placeholder="t('admin.organizationNamePlaceholder')"
                   autocomplete="organization"
                   class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                 />
@@ -173,16 +201,16 @@ watch(
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="create-school-invitation"
+                  for="create-org-invitation"
                 >
                   {{ t('admin.invitationCode') }}
                 </label>
                 <div class="flex gap-2">
                   <input
-                    id="create-school-invitation"
+                    id="create-org-invitation"
                     v-model="form.invitation_code"
                     type="text"
-                    name="create-school-invitation"
+                    name="create-org-invitation"
                     autocomplete="off"
                     spellcheck="false"
                     class="min-w-0 flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all uppercase tracking-wider"
@@ -198,6 +226,23 @@ watch(
                     <RefreshCw class="w-4 h-4" />
                   </button>
                 </div>
+              </div>
+
+              <div>
+                <label
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                  for="create-org-expires"
+                >
+                  {{ t('admin.validityPeriod') }}
+                  <span class="text-stone-400">*</span>
+                </label>
+                <input
+                  id="create-org-expires"
+                  v-model="form.expires_at"
+                  type="date"
+                  name="create-org-expires"
+                  class="admin-school-create-date w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-sm text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                />
               </div>
 
               <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-1">
@@ -226,7 +271,7 @@ watch(
                     v-if="isSubmitting"
                     class="w-4 h-4 animate-spin"
                   />
-                  {{ t('admin.createSchool') }}
+                  {{ t('admin.createOrganization') }}
                 </button>
               </div>
             </form>
@@ -265,5 +310,39 @@ watch(
   --el-button-text-color: #a8a29e;
   --el-button-hover-text-color: #57534e;
   --el-button-hover-bg-color: #f5f5f4;
+}
+
+/*
+ * Native date controls often paint larger than text inputs at the same CSS size.
+ * Lock to text-sm (0.875rem) so visual weight matches the name / invite fields.
+ */
+.admin-school-create-date {
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  color: #1c1917;
+}
+
+.admin-school-create-date::-webkit-datetime-edit,
+.admin-school-create-date::-webkit-datetime-edit-fields-wrapper,
+.admin-school-create-date::-webkit-datetime-edit-text,
+.admin-school-create-date::-webkit-datetime-edit-month-field,
+.admin-school-create-date::-webkit-datetime-edit-day-field,
+.admin-school-create-date::-webkit-datetime-edit-year-field {
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+  color: inherit;
+}
+
+.admin-school-create-date::-webkit-calendar-picker-indicator {
+  opacity: 0.55;
+  cursor: pointer;
 }
 </style>

@@ -13,7 +13,9 @@ export type AdminPollKey = 'performance' | 'gewe_qr'
 export interface AdminUsersToolbarState {
   searchQuery: string
   orgFilter: number | ''
+  roleFilter: string
   showSchoolFilter: boolean
+  showRoleFilter: boolean
   scopedOrgId: number | null
   hasResetFilters: boolean
 }

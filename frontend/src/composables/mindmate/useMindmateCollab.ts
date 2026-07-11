@@ -195,6 +195,7 @@ export function useMindmateCollab(
 
   const { open, close, send } = useWebSocket(wsUrl, {
     immediate: false,
+    autoConnect: false,
     protocols: wsProtocolList,
     autoReconnect: {
       retries: (retried) => {

@@ -9,7 +9,9 @@ import { computed, nextTick, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
+import { storeToRefs } from 'pinia'
 
+import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { presentationDiagramEditLockedRef } from '@/composables/presentation/presentationDiagramEdit'
 import {
@@ -19,7 +21,7 @@ import {
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
-import { useDiagramStore } from '@/stores'
+import { useDiagramStore, useLLMResultsStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
@@ -44,6 +46,8 @@ import InlineEditableText from './InlineEditableText.vue'
 const props = defineProps<MindGraphNodeProps>()
 
 const diagramStore = useDiagramStore()
+const llmResultsStore = useLLMResultsStore()
+const { isGenerating: isWholeDiagramGenerating } = storeToRefs(llmResultsStore)
 const useMindMapV2Visuals = useMindMapV2Chrome()
 const isTextReadonly = computed(
   () => props.data.hidden === true || presentationDiagramEditLockedRef.value
@@ -80,6 +84,10 @@ const isBraceMap = computed(() => props.data.diagramType === 'brace_map')
 const isMultiFlowMap = computed(() => props.data.diagramType === 'multi_flow_map')
 const isMindMap = computed(
   () => props.data.diagramType === 'mindmap' || props.data.diagramType === 'mind_map'
+)
+
+const isTopicAutoCompleteGlowing = computed(
+  () => isMindMap.value && isWholeDiagramGenerating.value
 )
 
 const topicNodeShape = computed((): NodeShape => {
@@ -398,6 +406,17 @@ const nodeStyle = computed(() => {
   return withMindMapBox
 })
 
+const topicRingBorderRadius = computed(() => {
+  const radius = nodeStyle.value.borderRadius
+  if (typeof radius === 'string' && radius.length > 0) {
+    return radius
+  }
+  if (typeof radius === 'number') {
+    return `${radius}px`
+  }
+  return '9999px'
+})
+
 const TOPIC_MAX_TEXT_WIDTH = 300
 
 const topicMaxWidth = computed(() => `${TOPIC_MAX_TEXT_WIDTH}px`)
@@ -500,6 +519,14 @@ function handleWidthChange(width: number) {
 </script>
 
 <template>
+  <LlmPhaseRing
+    :phase="isTopicAutoCompleteGlowing ? 'waiting' : 'idle'"
+    :active="isTopicAutoCompleteGlowing"
+    :border-radius="topicRingBorderRadius"
+    streaming-variant="primary"
+    ring-padding="3px"
+    class="topic-node-ring"
+  >
   <div
     ref="topicNodeRef"
     class="topic-node flex border-solid cursor-default select-none relative"
@@ -678,9 +705,15 @@ function handleWidthChange(width: number) {
       />
     </template>
   </div>
+  </LlmPhaseRing>
 </template>
 
 <style scoped>
+.topic-node-ring {
+  width: fit-content;
+  height: fit-content;
+}
+
 .topic-node {
   min-width: 120px;
   min-height: 48px;

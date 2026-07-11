@@ -251,7 +251,6 @@ function handleBranchMoveTouchStart(event: TouchEvent): void {
   )
   if (consumed) {
     event.stopPropagation()
-    event.preventDefault()
   }
 }
 
@@ -272,7 +271,7 @@ function handleBranchMovePointerUp(): void {
     @mouseleave="isHovering = false"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
-    @touchstart.capture="handleBranchMoveTouchStart"
+    @touchstart.passive.capture="handleBranchMoveTouchStart"
   >
     <!-- Delete button - positioned using Vue Flow handle positioning system (Top + Right) -->
     <!-- Positioned at top-right corner using same absolute positioning as handles -->

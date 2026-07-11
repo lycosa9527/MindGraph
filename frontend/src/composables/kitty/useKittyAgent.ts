@@ -1,5 +1,5 @@
 /**
- * useKittyAgent — Kitty Agent (Qwen Omni realtime) WebSocket client.
+ * useKittyAgent — Kitty Agent WebSocket client (text-first; Fun-ASR / CosyVoice).
  */
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
 
@@ -18,6 +18,7 @@ import type {
   KittyContextUpdateOptions,
 } from '@/composables/kitty/kittyAgentTypes'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
+import { useKittySessionStore } from '@/stores/kittySession'
 
 export type {
   KittyAgentContext,
@@ -32,11 +33,14 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     ownerId = `KittyAgent_${Date.now()}`,
     sampleRate = 24000,
     kittyClientLane,
-    textOnly = false,
+    textOnly = true,
     onTranscription,
     onTextChunk,
     onError,
+    buildContext: initialBuildContext,
   } = options
+
+  const diagramContextBuilder = { fn: initialBuildContext as (() => KittyAgentContext) | undefined }
 
   const state = ref<KittyAgentState>('idle')
   const sessionId = ref<string | null>(null)
@@ -46,7 +50,13 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
   const isPlaying = ref(false)
   const lastTranscription = ref<string | null>(null)
   const lastError = ref<string | null>(null)
-  const hubScopeRevision = ref<number | null>(null)
+  const kittySession = useKittySessionStore()
+  const hubScopeRevision = computed({
+    get: () => kittySession.hubScopeRevision,
+    set: (value: number | null) => {
+      kittySession.setHubScopeRevision(value)
+    },
+  })
 
   const audioContext = shallowRef<AudioContext | null>(null)
   const audioWorkletNode = shallowRef<AudioWorkletNode | null>(null)
@@ -92,7 +102,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
 
   function handleServerMessage(data: Record<string, unknown>): void {
     if (data.type === 'context_mutation_ack' && typeof data.revision === 'number') {
-      hubScopeRevision.value = data.revision
+      kittySession.setHubScopeRevision(data.revision)
     }
     handleKittyServerMessage(data, {
       ...lifecycle,
@@ -107,6 +117,17 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       onError,
       playAudioChunk,
       stopAudioPlayback,
+      hubScopeRevision: kittySession.hubScopeRevision,
+      diagramSessionId: diagramSessionId.value,
+      buildDiagramContext: diagramContextBuilder.fn
+        ? () => diagramContextBuilder.fn!()
+        : undefined,
+      updateContext,
+      sendDiagramMutationAck: (payload) => {
+        if (ws.value?.readyState === WebSocket.OPEN) {
+          ws.value.send(JSON.stringify(payload))
+        }
+      },
     })
   }
 
@@ -135,6 +156,8 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     }
 
     diagramSessionId.value = diagSessionId
+    // New Kitty WS → Hub scope revision may restart; never carry a stale expected_revision.
+    kittySession.setHubScopeRevision(null)
     state.value = 'connecting'
     traceKittyWorkflow('mobile', 'ws_connect', `scope=${diagSessionId.slice(0, 12)}`, {
       scope: diagSessionId,
@@ -226,7 +249,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       throw new Error('Kitty Agent has been destroyed')
     }
 
-    if (!audioContext.value && !textOnly) {
+    if (!audioContext.value) {
       const AudioCtx =
         window.AudioContext ||
         (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
@@ -235,8 +258,12 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       }
       audioContext.value = new AudioCtx({ sampleRate })
     }
+    if (audioContext.value.state === 'suspended') {
+      await audioContext.value.resume()
+    }
 
     await connect(diagSessionId, context)
+    kittySession.setOwnsKittySession(true)
     eventBus.emit('voice:started', { sessionId: sessionId.value ?? '' })
   }
 
@@ -318,11 +345,31 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     state.value = isActive.value ? 'active' : 'idle'
   }
 
-  function sendTextMessage(text: string): void {
+  function sendTextMessage(text: string, requestId?: string): void {
     if (!text.trim() || !ws.value || ws.value.readyState !== WebSocket.OPEN) return
+    stopAudioPlayback()
+    try {
+      ws.value.send(JSON.stringify({ type: 'tts_interrupt' }))
+    } catch {
+      /* ignore */
+    }
     traceKittyWorkflow('mobile', 'text_send', text.trim().slice(0, 120))
-    ws.value.send(JSON.stringify({ type: 'text', text: text.trim() }))
+    const payload: Record<string, string> = { type: 'text', text: text.trim() }
+    if (requestId && requestId.trim()) {
+      payload.request_id = requestId.trim()
+    }
+    ws.value.send(JSON.stringify(payload))
     state.value = textOnly ? 'active' : 'speaking'
+  }
+
+  function setTtsEnabled(enabled: boolean): void {
+    kittySession.setTtsEnabled(enabled)
+    if (!ws.value || ws.value.readyState !== WebSocket.OPEN) return
+    ws.value.send(JSON.stringify({ type: 'tts_set_enabled', enabled }))
+    if (!enabled) {
+      stopAudioPlayback()
+      ws.value.send(JSON.stringify({ type: 'tts_interrupt' }))
+    }
   }
 
   function updateContext(context: KittyAgentContext, options?: KittyContextUpdateOptions): void {
@@ -429,6 +476,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     isActive.value = false
     isVoiceActive.value = false
     state.value = 'idle'
+    kittySession.setOwnsKittySession(false)
     eventBus.emit('voice:cleanup_started', {
       diagramSessionId: diagramSessionId.value ?? undefined,
     })
@@ -466,6 +514,10 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     destroy()
   })
 
+  function registerDiagramContextBuilder(fn: () => KittyAgentContext): void {
+    diagramContextBuilder.fn = fn
+  }
+
   return {
     state,
     sessionId,
@@ -477,12 +529,16 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     lastError,
     isConnected,
     canSpeak,
+    ws,
     startConversation,
     stopConversation,
     startVoiceInput,
     stopVoiceInput,
     sendTextMessage,
+    setTtsEnabled,
+    stopAudioPlayback,
     updateContext,
+    registerDiagramContextBuilder,
     sendAppendImage,
     sendMinimalAudioPreamble,
     cleanup,

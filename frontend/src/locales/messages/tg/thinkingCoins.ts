@@ -1,5 +1,5 @@
 /**
- * en UI � thinkingCoins
+ * tg UI � thinkingCoins
  */
 
 export const thinkingCoinsMessages = {
@@ -25,6 +25,30 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.usageDoneToday': 'Completed today',
   'thinkingCoins.casePendingHint': 'Coming soon',
   'thinkingCoins.schoolInfo': 'Contact your school admin for school plans',
+  'thinkingCoins.school.headline': 'AI-powered thinking · school solutions',
+  'thinkingCoins.school.description': 'Private deployment, custom features, and full operations support for schools and institutions — built for scale, branding, and data security.',
+  'thinkingCoins.school.feature.accountManager': 'Dedicated account manager',
+  'thinkingCoins.school.feature.accountManagerDesc': 'One-on-one consultation',
+  'thinkingCoins.school.feature.privateDeploy': 'Private deployment',
+  'thinkingCoins.school.feature.privateDeployDesc': 'Secure, controllable data',
+  'thinkingCoins.school.feature.customization': 'Custom features',
+  'thinkingCoins.school.feature.customizationDesc': 'Flexible on-demand setup',
+  'thinkingCoins.school.feature.opsSupport': 'Full operations support',
+  'thinkingCoins.school.feature.opsSupportDesc': '24/7 availability',
+  'thinkingCoins.school.consultTitle': 'Book a consultation — we will reach out to you',
+  'thinkingCoins.school.fieldName': 'Your name',
+  'thinkingCoins.school.fieldPhone': 'Phone number',
+  'thinkingCoins.school.fieldOrg': 'School / organization',
+  'thinkingCoins.school.fieldNote': 'Additional notes (optional)',
+  'thinkingCoins.school.submit': 'Submit inquiry',
+  'thinkingCoins.school.submitSuccess': 'Submitted — we will contact you soon',
+  'thinkingCoins.school.submitFailed': 'Submission failed — please try again later',
+  'thinkingCoins.school.submitRateLimit': 'Too many submissions — please try again later',
+  'thinkingCoins.school.submitNotConfigured': 'Consultation is temporarily unavailable',
+  'thinkingCoins.school.validationRequired': 'Please fill in all required fields',
+  'thinkingCoins.school.validationPhone': 'Please enter a valid phone number',
+  'thinkingCoins.school.validationTooLong': 'One or more fields are too long',
+  'thinkingCoins.school.validationInvalid': 'Some fields are invalid — please check and try again',
   'thinkingCoins.tier.trial': 'Trial',
   'thinkingCoins.tier.monthly': 'Monthly',
   'thinkingCoins.tier.sub': 'Monthly subscription',
@@ -74,6 +98,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.ledgerLoadMore': 'Load more',
   'thinkingCoins.ledgerLoading': 'Loading…',
   'thinkingCoins.ledgerExpandHint': 'Tap to expand',
+  'thinkingCoins.tasksExpandHint': 'Tap to expand',
   'thinkingCoins.plan.free': 'Free',
   'thinkingCoins.plan.priceMonthly': '¥59/mo',
   'thinkingCoins.plan.priceSub': '¥49/mo',

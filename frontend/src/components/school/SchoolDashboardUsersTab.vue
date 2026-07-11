@@ -125,7 +125,9 @@ function syncUsersToolbarState(): void {
   adminPanel.setUsersToolbar({
     searchQuery: searchQuery.value,
     orgFilter: orgFilter.value,
+    roleFilter: '',
     showSchoolFilter: showSchoolFilterInHeader.value,
+    showRoleFilter: false,
     scopedOrgId: props.orgId,
     hasResetFilters: false,
   })

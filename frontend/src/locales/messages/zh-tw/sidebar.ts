@@ -1,4 +1,6 @@
-/** zh-tw UI — sidebar */
+/**
+ * zh-tw UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': '刪除',

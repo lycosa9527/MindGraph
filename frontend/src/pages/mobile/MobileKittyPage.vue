@@ -21,6 +21,7 @@ import {
   useLanguage,
   useNotifications,
 } from '@/composables'
+import { registerKittyDiagramMutationBus } from '@/composables/kitty/registerKittyDiagramMutationBus'
 import { compressImageFileForKitty } from '@/composables/kitty/compressImageForKitty'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
 import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrateMobileKittyStoreFromBootstrap'
@@ -32,7 +33,7 @@ import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSele
 import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
 import { useMobileKittyPageLifecycle } from '@/composables/mobile/useMobileKittyPageLifecycle'
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
-import { useAuthStore, useDiagramStore, useFeatureFlagsStore } from '@/stores'
+import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 
 const router = useRouter()
 const { t } = useLanguage()
@@ -71,6 +72,7 @@ const kitty = useKittyAgent({
 
 /** Apply Kitty ``diagram_update`` WS payloads to Pinia (same bridge as canvas pages). */
 getDiagramOperations()
+registerKittyDiagramMutationBus()
 
 const {
   kittyPairScope,
@@ -87,6 +89,8 @@ const {
   kittyServerEnabled,
   onDebugLine: pushKittyDebugLine,
 })
+
+kitty.registerDiagramContextBuilder(buildMobileKittyContext)
 
 useKittyMobileDebugBus({
   ownerId: 'MobileKittyPage_Debug',
@@ -170,23 +174,7 @@ const kittyDiagramCardAccessibleLabel = computed(() => {
   return bits.filter(Boolean).join('. ')
 })
 
-const diagramStore = useDiagramStore()
-let lastDiagramNodeCount = 0
 let connectInFlight: Promise<boolean> | null = null
-
-watch(
-  () => diagramStore.data?.nodes?.length ?? 0,
-  (count) => {
-    if (!kitty.isConnected.value) {
-      lastDiagramNodeCount = count
-      return
-    }
-    if (count !== lastDiagramNodeCount) {
-      notify.success(t('mobile.kittyDiagramUpdated', 'Diagram updated'))
-      lastDiagramNodeCount = count
-    }
-  }
-)
 
 const ephemeralScopeWarned = ref(false)
 

@@ -16,7 +16,6 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import delete, func, select
 
-from config.db_sessions import open_async_session
 from models.domain.error_event import ErrorEvent, ErrorGroup
 from services.monitoring.error_alert_config import error_collection_enabled, error_retention_days
 from services.monitoring.error_reporting import record_exception
@@ -31,6 +30,8 @@ except ImportError:
     get_async_redis = None
     is_redis_available = None
     _REDIS_AVAILABLE = False
+
+from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ async def purge_expired_error_events() -> int:
         return 0
     cutoff = datetime.now(UTC) - timedelta(days=error_retention_days())
     deleted = 0
-    async with open_async_session() as session:
+    async with system_rls_session() as session:
         result = await session.execute(
             delete(ErrorEvent).where(ErrorEvent.created_at < cutoff).returning(ErrorEvent.id)
         )
@@ -122,6 +123,6 @@ async def start_error_retention_scheduler(interval_hours: int = DEFAULT_INTERVAL
 
 async def count_error_events() -> int:
     """Return total persisted error event count."""
-    async with open_async_session() as session:
+    async with system_rls_session() as session:
         result = await session.execute(select(func.count()).select_from(ErrorEvent))
         return int(result.scalar_one())

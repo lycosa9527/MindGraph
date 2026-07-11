@@ -31,6 +31,7 @@ import logging
 from dotenv import load_dotenv
 
 from config.base_config import BaseConfig
+from config.dashscope_endpoint_config import DashScopeEndpointConfigMixin
 from config.features_config import FeaturesConfigMixin
 from config.knowledge_config import KnowledgeConfigMixin
 from config.llm_config import LLMConfigMixin
@@ -47,6 +48,7 @@ load_dotenv()  # Load environment variables from .env file
 
 class Config(
     BaseConfig,
+    DashScopeEndpointConfigMixin,
     LLMConfigMixin,
     RateLimitingConfigMixin,
     KnowledgeConfigMixin,
@@ -75,6 +77,14 @@ class Config(
         logger.debug("   Version: %s", self.version)
         logger.debug("   FastAPI: %s:%s (Debug: %s)", self.host, self.port, self.debug)
         logger.debug("   Qwen: %s", self.QWEN_API_URL)
+        endpoint = self.DASHSCOPE_ENDPOINT_SUMMARY
+        logger.debug(
+            "   DashScope HTTP: mode=%s region=%s workspace=%s",
+            endpoint.get("mode"),
+            endpoint.get("region"),
+            endpoint.get("workspace_id") or "—",
+        )
+        logger.debug("     - Realtime WS: %s", endpoint.get("realtime_ws_base"))
         logger.debug("     - Classification: %s", self.QWEN_MODEL_CLASSIFICATION)
         logger.debug("     - Generation: %s", self.QWEN_MODEL_GENERATION)
 
