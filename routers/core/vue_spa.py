@@ -26,6 +26,7 @@ from services.infrastructure.utils.spa_handler import (
     inject_csp_nonce,
     media_type_for_vue_dist_relpath,
 )
+from utils.privacy_policy_static import privacy_policy_source_path
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +101,17 @@ async def vue_login(request: Request):
 async def vue_auth(request: Request):
     """Serve Vue SPA for auth route."""
     return await _serve_index(request)
+
+
+@router.get("/privacy", response_class=HTMLResponse)
+async def privacy_policy_static():
+    """Serve crawlable static privacy policy (Chrome Web Store, no JS required)."""
+    policy_path = privacy_policy_source_path()
+    if not policy_path.is_file():
+        raise HTTPException(status_code=503, detail="Privacy policy page not generated")
+    response = FileResponse(path=str(policy_path), media_type="text/html")
+    apply_no_cache_headers(response)
+    return response
 
 
 @router.get("/bayi/passkey", response_class=HTMLResponse)

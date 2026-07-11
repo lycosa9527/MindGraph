@@ -125,6 +125,10 @@ run_backend() {
   log "App import smoke"
   python -c "from main import app; assert app.title"
 
+  log "Privacy policy (static HTML for Chrome Web Store crawlers)"
+  PYTHONPATH=. python scripts/render_privacy_policy_html.py
+  PYTHONPATH=. python scripts/check_privacy_policy_crawlable.py
+
   log "Pylint (full Python tree; minimal policy disables)"
   python -m pylint services routers agents clients config utils scripts tests loadtests tasks alembic/env.py \
     --fail-under=10.0
@@ -163,6 +167,8 @@ run_backend() {
     tests/test_refresh_token_reuse.py \
     tests/test_security_production_hardening.py \
     tests/test_csrf_protection.py \
+    tests/test_privacy_policy_static.py \
+    tests/test_privacy_policy_http.py \
     tests/test_workshop_chat_file_service.py \
     tests/test_dingtalk_bind_service.py
 }

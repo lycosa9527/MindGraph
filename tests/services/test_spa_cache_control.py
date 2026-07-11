@@ -64,9 +64,8 @@ def test_is_spa_route_true_for_client_routes(path: str) -> None:
         "/health",
         "/docs",
         "/openapi.json",
-        "/favicon.svg",
-        "/robots.txt",
-        "/pwa-512x512.png",
+        "/privacy",
+        "/privacy-policy.html",
         "/nested/offline.html",
     ],
 )

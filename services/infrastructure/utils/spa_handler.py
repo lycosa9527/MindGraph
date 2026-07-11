@@ -249,6 +249,7 @@ _NON_SPA_EXACT_PATHS = frozenset(
         "/docs",
         "/redoc",
         "/openapi.json",
+        "/privacy",
     }
 )
 

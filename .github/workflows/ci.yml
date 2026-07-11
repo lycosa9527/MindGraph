@@ -38,6 +38,10 @@ jobs:
         run: python -m basedpyright .
       - name: App import smoke
         run: python -c "from main import app; assert app.title"
+      - name: Privacy policy (static HTML for Chrome Web Store crawlers)
+        run: |
+          PYTHONPATH=. python scripts/render_privacy_policy_html.py
+          PYTHONPATH=. python scripts/check_privacy_policy_crawlable.py
       - name: Pylint (full Python tree; minimal policy disables)
         run: |
           pylint services routers agents clients config utils scripts tests loadtests tasks alembic/env.py \
@@ -61,6 +65,7 @@ jobs:
             tests/test_get_client_ip.py tests/test_gewe_webhook_auth.py \
             tests/test_refresh_token_reuse.py tests/test_security_production_hardening.py \
             tests/test_csrf_protection.py \
+            tests/test_privacy_policy_static.py tests/test_privacy_policy_http.py \
             tests/test_workshop_chat_file_service.py tests/test_dingtalk_bind_service.py
 
   frontend:

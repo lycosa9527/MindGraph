@@ -76,7 +76,27 @@ See [production_security_deploy.md](../docs/architecture/production_security_dep
 
 Repeat §2 with `X-MG-Client: edge-extension` — same **200** responses; server logs distinguish Edge from Chrome.
 
-## 6. Per-environment checklist
+## 6. Privacy policy (Chrome Web Store)
+
+Google's crawler does **not** run JavaScript. `/privacy` must return static HTML (not the Vue `Mind Platform` shell).
+
+```bash
+curl -sS --compressed "https://BASE/privacy" | head -5
+curl -sS --compressed "https://BASE/privacy-policy.html" | head -5
+```
+
+Expected: `<!DOCTYPE html>` and `MindGraph Terms of Use` — **not** `<title>Mind Platform</title>`.
+
+Regenerate before deploy:
+
+```bash
+PYTHONPATH=. python scripts/render_privacy_policy_html.py
+PYTHONPATH=. python scripts/check_privacy_policy_crawlable.py
+```
+
+Chrome Web Store privacy URL (test): `https://test.mindspringedu.com/privacy` (after backend deploy) or `https://test.mindspringedu.com/privacy-policy.html` (dist file only).
+
+## 7. Per-environment checklist
 
 | Check | test | mg |
 |-------|------|-----|
@@ -87,3 +107,5 @@ Repeat §2 with `X-MG-Client: edge-extension` — same **200** responses; server
 | `proxy_read_timeout` ≥ 300s (or ≥ 180s for PNG only) | | |
 | `FEATURE_KNOWLEDGE_SPACE=true` (File Center tab) | | |
 | Cert test account: `api_token` + `chrome_extension` tier features | | |
+| Privacy `/privacy` static HTML (not SPA shell) | | |
+| Privacy `/privacy-policy.html` static HTML | | |

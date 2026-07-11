@@ -167,7 +167,7 @@ Errors from **page** scripts (e.g. news sites) appear in that **page’s** DevTo
 
 ## Security and privacy
 
-- Privacy policy (web + browser extension): **`/privacy`** on your MindGraph server (e.g. `https://mg.mindspringedu.com/privacy`). Extension-specific details are in the appendix at `/privacy#browser-extension`.
+- Privacy policy (web + browser extension): **`/privacy`** or **`/privacy-policy.html`** on your MindGraph server (e.g. `https://test.mindspringedu.com/privacy` after backend deploy, or `https://test.mindspringedu.com/privacy-policy.html` from dist only). Must be **static HTML** for Chrome Web Store (no SPA shell). Extension appendix: `#browser-extension`.
 - Credentials (`mgat_` token, phone account, server preset) are stored in **`chrome.storage.local`** on this device (unencrypted, same as typical extensions). Use disk encryption, a trusted browser profile, and **revoke API tokens** on shared machines (MindGraph web app → account → API token).
 - **Wireshark / network sniffing:**
   - **mg.mindspringedu.com** and **test.mindspringedu.com** use **HTTPS** — Bearer tokens and request bodies are encrypted in transit.
