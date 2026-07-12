@@ -6,6 +6,8 @@ import { type Ref, onUnmounted, ref, watch } from 'vue'
 import { KITTY_PAIR_POLL_MS } from '@/composables/kitty/runKittyIntervalPoll'
 
 const DEBOUNCE_MS = 480
+/** Keep Redis focus fresh while canvas stays open (mobile freshness checks). */
+const FOCUS_HEARTBEAT_MS = 60_000
 
 async function putDesktopFocusDiagram(diagramLibraryId: string | null): Promise<void> {
   try {
@@ -67,8 +69,8 @@ export function useKittyDesktopFocusHint(pollEnabled: Ref<boolean>) {
   function stopPolling(): void {
     if (intervalId != null) {
       clearInterval(intervalId)
-      intervalId = null
     }
+    intervalId = null
   }
 
   watch(
@@ -95,6 +97,7 @@ export function useKittyDesktopFocusPublish(options: {
   enabled: Ref<boolean>
 }): void {
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
+  let heartbeatTimer: ReturnType<typeof setInterval> | null = null
 
   function flush(): void {
     const idRaw = options.libraryDiagramId.value
@@ -112,10 +115,32 @@ export function useKittyDesktopFocusPublish(options: {
     }, DEBOUNCE_MS)
   }
 
+  function stopHeartbeat(): void {
+    if (heartbeatTimer != null) {
+      clearInterval(heartbeatTimer)
+      heartbeatTimer = null
+    }
+  }
+
+  function startHeartbeat(): void {
+    stopHeartbeat()
+    heartbeatTimer = setInterval(() => {
+      if (!options.enabled.value) {
+        return
+      }
+      flush()
+    }, FOCUS_HEARTBEAT_MS)
+  }
+
   watch(
     () => [options.libraryDiagramId.value, options.enabled.value] as const,
-    () => {
+    ([, enabled]) => {
       schedule()
+      if (enabled) {
+        startHeartbeat()
+      } else {
+        stopHeartbeat()
+      }
     },
     { flush: 'post', immediate: true }
   )
@@ -125,6 +150,7 @@ export function useKittyDesktopFocusPublish(options: {
       clearTimeout(debounceTimer)
       debounceTimer = null
     }
+    stopHeartbeat()
     void putDesktopFocusDiagram(null)
   })
 }

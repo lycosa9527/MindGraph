@@ -15,6 +15,9 @@ from fastapi import WebSocket
 
 from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.context.messaging import resolve_voice_interaction_language, safe_websocket_send
+from services.kitty.infra.desktop.kitty_voice_phase_fanout import (
+    fanout_voice_phase_from_outbound_type,
+)
 from services.kitty.session.memory import get_session_memory
 from services.kitty.session.runtime_state import voice_sessions
 from services.llm import llm_service
@@ -115,6 +118,7 @@ async def reply_text_only_conversational(
         await emit_user_ack(websocket, voice_session_id, fallback, also_omni=False)
         await safe_websocket_send(websocket, {"type": "response_text_done", "text": fallback})
         await safe_websocket_send(websocket, {"type": "response_done"})
+        await fanout_voice_phase_from_outbound_type(voice_session_id, "response_done")
         return True
 
     reply = _extract_reply_text(result)
@@ -130,4 +134,5 @@ async def reply_text_only_conversational(
     memory.flush_assistant_turn()
     await safe_websocket_send(websocket, {"type": "response_text_done", "text": reply})
     await safe_websocket_send(websocket, {"type": "response_done"})
+    await fanout_voice_phase_from_outbound_type(voice_session_id, "response_done")
     return True

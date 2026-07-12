@@ -21,6 +21,7 @@ import {
   pickOneSentenceWelcome,
 } from '@/composables/canvasToolbar/oneSentenceChatLines'
 import { shouldUseOneSentenceEditFlow } from '@/composables/canvasToolbar/mindMapOneSentencePhase'
+import { shouldLockDesktopOneSentenceForMobileKitty } from '@/composables/canvasToolbar/desktopOneSentenceMobileKittyLock'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import {
   appendOneSentenceTurn,
@@ -46,7 +47,9 @@ import {
 import { setDiagramWriteLockHolder } from '@/composables/kitty/useDiagramWriteLock'
 import { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
 import { useKittyAgent } from '@/composables/kitty/useKittyAgent'
+import { useKittyUserMobileActive } from '@/composables/kitty/useKittyUserMobileActive'
 import {
+  useAuthStore,
   useDiagramStore,
   useFeatureFlagsStore,
   useLLMResultsStore,
@@ -68,6 +71,7 @@ export function useMindMapOneSentenceChat() {
   const { t, isZh, currentLanguage } = useLanguage()
   const route = useRoute()
   const router = useRouter()
+  const authStore = useAuthStore()
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const llmResultsStore = useLLMResultsStore()
@@ -91,17 +95,40 @@ export function useMindMapOneSentenceChat() {
     () => isAIGenerating.value && !llmResultsStore.selectedModel
   )
 
+  const kittyEnabled = computed(() => featureFlagsStore.getFeatureKittyAgent())
+
+  const mobileActivePollOn = computed(
+    () => kittyEnabled.value && authStore.isAuthenticated
+  )
+  const {
+    active: userMobileKittyActive,
+    scopes: userMobileKittyScopes,
+    primaryScope: userMobileKittyPrimaryScope,
+  } = useKittyUserMobileActive(mobileActivePollOn)
+
+  /** Edit-phase only: phone owns input when Mobile Kitty WS is on this diagram scope. */
+  const mobileKittyOwnsEditInput = computed(() =>
+    shouldLockDesktopOneSentenceForMobileKitty({
+      phase: phase.value,
+      diagramScope: diagramScope.value,
+      mobile: {
+        active: userMobileKittyActive.value,
+        scopes: userMobileKittyScopes.value,
+        primaryScope: userMobileKittyPrimaryScope.value,
+      },
+    })
+  )
+
   const isInputBlocked = computed(
     () =>
       !oneSentence.sessionReady ||
       isWaitingForFirstResult.value ||
       connecting.value ||
-      diagramStore.collabSessionActive
+      diagramStore.collabSessionActive ||
+      mobileKittyOwnsEditInput.value
   )
 
   const chatScrollEl = { value: null as HTMLElement | null }
-
-  const kittyEnabled = computed(() => featureFlagsStore.getFeatureKittyAgent())
 
   let pendingGenerateReply = false
   let generateWatchReady = false
@@ -228,6 +255,19 @@ export function useMindMapOneSentenceChat() {
       pushKittyMessage(t('canvas.mindMapOneSentence.kittyUnavailable'))
     },
   })
+
+  watch(mobileKittyOwnsEditInput, (locked) => {
+    if (locked) {
+      funAsr.stopListening()
+    }
+  })
+
+  async function toggleMic(): Promise<void> {
+    if (mobileKittyOwnsEditInput.value || isInputBlocked.value) {
+      return
+    }
+    await funAsr.toggleListening()
+  }
 
   function buildKittyContext() {
     return buildKittyDiagramContext(diagramStore, 'one_sentence', {
@@ -489,13 +529,20 @@ export function useMindMapOneSentenceChat() {
         oneSentence.setScopeMigrated(true)
       }
       scrollChatToBottom()
+    } else if (messages.value.length === 0) {
+      // Server empty: seed welcome only when local thread is also empty (avoid stacking on refresh).
+      if (
+        shouldUseOneSentenceEditFlow(diagramStore, savedDiagramsStore, llmResultsStore, phase.value)
+      ) {
+        oneSentence.setPhase('edit')
+        pushKittyMessage(pickOneSentenceGenerateDone(currentLanguage.value))
+      } else {
+        pushKittyMessage(pickOneSentenceWelcome(currentLanguage.value))
+      }
     } else if (
       shouldUseOneSentenceEditFlow(diagramStore, savedDiagramsStore, llmResultsStore, phase.value)
     ) {
       oneSentence.setPhase('edit')
-      pushKittyMessage(pickOneSentenceGenerateDone(currentLanguage.value))
-    } else {
-      pushKittyMessage(pickOneSentenceWelcome(currentLanguage.value))
     }
     oneSentence.markSessionReady(diagramScope.value)
   }
@@ -546,7 +593,8 @@ export function useMindMapOneSentenceChat() {
       oneSentence.setLibraryScope(libraryId)
       void (async () => {
         await maybeMigrateScope(libraryId)
-        // Do not force create→edit here; wait for generate result or restored history.
+        // Re-pull shared Redis/PG history so desktop matches mobile Kitty for this diagram.
+        await bootstrapSession()
       })()
     },
     { immediate: true }
@@ -638,14 +686,31 @@ export function useMindMapOneSentenceChat() {
     }
   }
 
-  const onAsrFinal = (payload: { text: string }) => {
-    const text = payload.text.trim()
+  let lastAsrCommitText = ''
+  let lastAsrCommitAt = 0
+
+  function commitAsrTranscript(raw: string): void {
+    const text = raw.trim()
     if (!text) {
       return
     }
+    const now = Date.now()
+    if (text === lastAsrCommitText && now - lastAsrCommitAt < 2500) {
+      return
+    }
+    lastAsrCommitText = text
+    lastAsrCommitAt = now
     oneSentence.setDraft(text)
     funAsr.stopListening()
     void sendDraft()
+  }
+
+  const onAsrFinal = (payload: { text: string }) => {
+    commitAsrTranscript(payload.text)
+  }
+
+  const onAsrStopped = () => {
+    commitAsrTranscript(draft.value)
   }
 
   const onDiagramEditFailed = (payload: { action: string; errorCode: string }) => {
@@ -713,9 +778,19 @@ export function useMindMapOneSentenceChat() {
     scrollChatToBottom()
   }
 
+  const onVisibilityChange = () => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      void bootstrapSession()
+    }
+  }
+
   onMounted(() => {
     generateWatchReady = true
     void bootstrapSession()
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibilityChange)
+    }
 
     bus.on('kitty:one_sentence_reply', onOneSentenceReply)
     bus.on('voice:assistant_text_done', onAssistantDone)
@@ -729,6 +804,7 @@ export function useMindMapOneSentenceChat() {
     bus.on('oneSentence:request_failed', onRequestSettled)
     bus.on('kitty:asr_partial', onAsrPartial)
     bus.on('kitty:asr_final', onAsrFinal)
+    bus.on('kitty:asr_stopped', onAsrStopped)
     bus.on('oneSentence:messages_changed', onMessagesChanged)
     bus.on('oneSentence:session_reset', () => {
       void bootstrapSession()
@@ -736,6 +812,9 @@ export function useMindMapOneSentenceChat() {
   })
 
   onUnmounted(() => {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
     bootstrapGeneration += 1
     if (hubSyncTimer != null) {
       clearTimeout(hubSyncTimer)
@@ -751,11 +830,12 @@ export function useMindMapOneSentenceChat() {
     phase,
     connecting,
     isInputBlocked,
+    mobileKittyOwnsEditInput,
     kittyAgentState,
     kittyEnabled,
     asrListening,
     asrPartialTranscript,
-    toggleMic: funAsr.toggleListening,
+    toggleMic,
     sendDraft,
     selectClarifyChoice,
     bindChatScroll,

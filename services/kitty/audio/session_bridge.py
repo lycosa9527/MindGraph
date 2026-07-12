@@ -17,6 +17,10 @@ from websockets.exceptions import ConnectionClosed, ConnectionClosedError, Conne
 
 from services.kitty.asr.fun_asr_realtime import FunAsrRealtimeClient
 from services.kitty.context.messaging import safe_websocket_send
+from services.kitty.infra.desktop.kitty_voice_phase_fanout import (
+    fanout_voice_phase_from_outbound_type,
+    fanout_voice_phase_from_session,
+)
 from services.kitty.session.runtime_state import voice_sessions
 from services.kitty.tts.cosyvoice_realtime import CosyVoiceRealtimeClient, resolve_kitty_tts_enabled
 from services.utils.error_types import LLM_PIPELINE_ERRORS
@@ -72,6 +76,7 @@ async def interrupt_kitty_tts(voice_session_id: str) -> None:
         except LLM_PIPELINE_ERRORS as exc:
             logger.debug("CosyVoice close after interrupt skipped: %s", exc)
         session[_COSYVOICE_KEY] = None
+    await fanout_voice_phase_from_outbound_type(voice_session_id, "tts_interrupted")
 
 
 async def _get_or_create_cosyvoice_client(
@@ -90,9 +95,11 @@ async def _get_or_create_cosyvoice_client(
             websocket,
             {"type": "audio_chunk", "audio": audio_b64, "format": fmt},
         )
+        await fanout_voice_phase_from_outbound_type(voice_session_id, "audio_chunk")
 
     async def on_done() -> None:
         await safe_websocket_send(websocket, {"type": "tts_done"})
+        await fanout_voice_phase_from_outbound_type(voice_session_id, "tts_done")
 
     async def on_error(err: str) -> None:
         logger.warning("CosyVoice error session=%s: %s", voice_session_id, err)
@@ -216,6 +223,7 @@ async def start_session_asr(
     try:
         await client.start()
         await safe_websocket_send(websocket, {"type": "asr_started"})
+        await fanout_voice_phase_from_session(voice_session_id, "listening")
     except LLM_PIPELINE_ERRORS as exc:
         session["_fun_asr_client"] = None
         logger.warning("Fun-ASR start failed: %s", exc)
@@ -248,18 +256,26 @@ async def _finish_asr_client_background(client: FunAsrRealtimeClient) -> None:
 
 
 async def stop_session_asr(voice_session_id: str) -> None:
-    """Detach Fun-ASR immediately; finish upstream off the Kitty WS loop.
+    """Finish Fun-ASR and flush ``asr_final`` before returning (bounded).
 
-    The inbound handler is sequential: awaiting DashScope close here blocked
-    later frames (e.g. ``context_update``) for ~10s. Teardown is independent
-    of Hub/content updates — keep it off the receive path.
+    Awaiting DashScope forever would block later Kitty frames, so finish is
+    capped. We still wait long enough for the final transcript — fire-and-forget
+    teardown was dropping ``asr_final`` on PTT release.
     """
     session = voice_sessions.get(voice_session_id)
     if not session:
         return
     client = session.get("_fun_asr_client")
     session["_fun_asr_client"] = None
-    if isinstance(client, FunAsrRealtimeClient):
+    if not isinstance(client, FunAsrRealtimeClient):
+        return
+    try:
+        await asyncio.wait_for(client.finish(), timeout=3.0)
+    except asyncio.TimeoutError:
+        logger.warning("Fun-ASR finish timed out for session %s", voice_session_id[:12])
+        asyncio.create_task(_finish_asr_client_background(client))
+    except LLM_PIPELINE_ERRORS as exc:
+        logger.debug("Fun-ASR stop pipeline error: %s", exc)
         asyncio.create_task(_finish_asr_client_background(client))
 
 

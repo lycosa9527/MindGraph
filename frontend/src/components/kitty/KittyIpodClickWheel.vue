@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * Edge-frame click wheel: large rounded rectangle near screen edges; mascot stays centered.
+ * Swipeable node chip row for Kitty — mirrors inline-recommendations tab chips.
  */
-import { computed, useTemplateRef } from 'vue'
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useKittyClickWheel } from '@/composables/kitty/useKittyClickWheel'
@@ -12,22 +12,12 @@ const props = defineProps<{
 }>()
 
 const { t } = useLanguage()
-const wheelRef = useTemplateRef<HTMLDivElement>('wheelRef')
+const scrollerRef = useTemplateRef<HTMLDivElement>('scrollerRef')
 
-const {
-  children,
-  hasNodes,
-  activeIndex,
-  activeChild,
-  wheelRotationDeg,
-  isDragging,
-  onWheelRingPointerDown,
-  onWheelRingPointerMove,
-  onWheelRingPointerUp,
-  onWheelRingWheel,
-  tickRotationDeg,
-} = useKittyClickWheel({
+const { children, hasNodes, activeIndex, activeChild, selectById } = useKittyClickWheel({
   onSelectionChange: () => props.onSelectionChange?.(),
+  // Mobile has no Vue Flow; canvasHighlight would loop through voice selection bus.
+  canvasHighlight: false,
 })
 
 const displayLabel = computed(() => {
@@ -49,246 +39,250 @@ const positionLabel = computed(() => {
   })
 })
 
-function handlePointerDown(ev: PointerEvent): void {
-  const el = wheelRef.value
-  if (!el) {
-    return
+let programmaticScroll = false
+let programmaticScrollClear: ReturnType<typeof setTimeout> | null = null
+let scrollEndTimer: ReturnType<typeof setTimeout> | null = null
+
+function chipLabel(text: string): string {
+  const trimmed = text.trim()
+  if (trimmed.length > 0) {
+    return trimmed
   }
-  onWheelRingPointerDown(ev, el)
+  return t('mobile.kittyClickWheelEmptyLabel', '未命名节点')
 }
 
-function handlePointerMove(ev: PointerEvent): void {
-  const el = wheelRef.value
-  if (!el) {
+function scrollActiveIntoView(smooth: boolean): void {
+  const root = scrollerRef.value
+  if (!root) {
     return
   }
-  onWheelRingPointerMove(ev, el)
+  const chip = root.querySelector<HTMLElement>(`[data-chip-index="${activeIndex.value}"]`)
+  if (!chip) {
+    return
+  }
+  programmaticScroll = true
+  if (programmaticScrollClear != null) {
+    clearTimeout(programmaticScrollClear)
+  }
+  chip.scrollIntoView({
+    behavior: smooth ? 'smooth' : 'instant',
+    inline: 'center',
+    block: 'nearest',
+  })
+  programmaticScrollClear = setTimeout(() => {
+    programmaticScroll = false
+    programmaticScrollClear = null
+  }, 280)
 }
 
-function handlePointerUp(ev: PointerEvent): void {
-  const el = wheelRef.value
-  if (!el) {
+function onChipClick(nodeId: string): void {
+  selectById(nodeId)
+  void nextTick(() => scrollActiveIntoView(true))
+}
+
+/** Select the chip closest to the scroller center when its id changes. */
+function selectNearestChip(): void {
+  if (programmaticScroll) {
     return
   }
-  onWheelRingPointerUp(ev, el)
+  const root = scrollerRef.value
+  if (!root || children.value.length === 0) {
+    return
+  }
+  const mid = root.scrollLeft + root.clientWidth / 2
+  let bestIdx = activeIndex.value
+  let bestDist = Number.POSITIVE_INFINITY
+  const chips = root.querySelectorAll<HTMLElement>('[data-chip-index]')
+  chips.forEach((el) => {
+    const idxRaw = el.dataset.chipIndex
+    if (idxRaw == null) {
+      return
+    }
+    const idx = Number(idxRaw)
+    if (!Number.isFinite(idx)) {
+      return
+    }
+    const center = el.offsetLeft + el.offsetWidth / 2
+    const dist = Math.abs(center - mid)
+    if (dist < bestDist) {
+      bestDist = dist
+      bestIdx = idx
+    }
+  })
+  const nearestId = children.value[bestIdx]?.id ?? ''
+  if (!nearestId || bestIdx === activeIndex.value) {
+    return
+  }
+  selectById(nearestId)
 }
+
+function onScrollerScroll(): void {
+  selectNearestChip()
+  if (scrollEndTimer != null) {
+    clearTimeout(scrollEndTimer)
+  }
+  scrollEndTimer = setTimeout(() => {
+    scrollEndTimer = null
+    selectNearestChip()
+  }, 120)
+}
+
+watch(
+  activeIndex,
+  () => {
+    void nextTick(() => scrollActiveIntoView(true))
+  },
+  { flush: 'post' }
+)
 </script>
 
 <template>
   <div
     v-if="hasNodes"
-    class="kitty-frame-wheel-host"
+    class="kitty-chip-host"
   >
-    <div
-      ref="wheelRef"
-      class="kitty-frame-wheel"
-      :class="{ 'kitty-frame-wheel--dragging': isDragging }"
-      role="slider"
-      :aria-label="t('mobile.kittyClickWheelAria', '滑动转盘选择节点')"
-      :aria-valuemin="1"
-      :aria-valuemax="children.length"
-      :aria-valuenow="activeIndex + 1"
-      :aria-valuetext="displayLabel"
-      tabindex="0"
-      @pointerdown="handlePointerDown"
-      @pointermove="handlePointerMove"
-      @pointerup="handlePointerUp"
-      @pointercancel="handlePointerUp"
-      @wheel.prevent="onWheelRingWheel"
-    >
-      <div
-        class="kitty-frame-wheel__dial"
-        :style="{ transform: `rotate(${wheelRotationDeg}deg)` }"
-        aria-hidden="true"
-      >
-        <span
-          v-for="(child, idx) in children"
-          :key="child.id"
-          class="kitty-frame-wheel__tick"
-          :class="{ 'kitty-frame-wheel__tick--active': idx === activeIndex }"
-          :style="{ transform: `rotate(${tickRotationDeg(idx, children.length)}deg)` }"
-        />
-        <span class="kitty-frame-wheel__indicator" />
-      </div>
-
-      <div class="kitty-frame-wheel__readout">
-        <span class="kitty-frame-wheel__label">{{ displayLabel }}</span>
-        <span class="kitty-frame-wheel__meta">{{ positionLabel }}</span>
-      </div>
+    <div class="kitty-chip-readout">
+      <span class="kitty-chip-readout__label">{{ displayLabel }}</span>
+      <span class="kitty-chip-readout__meta">{{ positionLabel }}</span>
     </div>
-    <p class="kitty-frame-wheel__hint">
-      {{ t('mobile.kittyClickWheelHint', '沿外框滑动切换节点') }}
-    </p>
+
+    <div
+      ref="scrollerRef"
+      class="kitty-chip-scroller"
+      role="listbox"
+      :aria-label="t('mobile.kittyClickWheelAria', '滑动选择节点')"
+      @scroll="onScrollerScroll"
+    >
+      <button
+        v-for="(child, idx) in children"
+        :key="child.id"
+        type="button"
+        class="kitty-chip"
+        :class="{ 'kitty-chip--active': idx === activeIndex }"
+        role="option"
+        :aria-selected="idx === activeIndex"
+        :data-chip-index="idx"
+        @click="onChipClick(child.id)"
+      >
+        <span class="kitty-chip__index">{{ idx + 1 }}</span>
+        <span class="kitty-chip__text">{{ chipLabel(child.text) }}</span>
+      </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.kitty-frame-wheel-host {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
+.kitty-chip-host {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  justify-content: stretch;
-  pointer-events: none;
-}
-
-.kitty-frame-wheel {
-  --frame-radius: clamp(1.1rem, 4vw, 1.75rem);
-  --frame-band: clamp(2.75rem, 11vw, 4.25rem);
-  position: relative;
-  flex: 1;
-  min-height: 0;
+  gap: 0.3rem;
   width: 100%;
-  border-radius: var(--frame-radius);
-  pointer-events: auto;
-  touch-action: none;
-  user-select: none;
-  background: transparent;
-  border: 3px solid rgba(148, 163, 184, 0.42);
-  box-shadow:
-    0 2px 10px rgba(15, 23, 42, 0.06),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.45),
-    inset 0 0 24px rgba(248, 250, 252, 0.35);
-  backdrop-filter: blur(4px);
-  transition:
-    box-shadow 0.18s ease,
-    border-color 0.18s ease,
-    transform 0.18s ease;
+  padding: 0 0.25rem;
 }
 
-.kitty-frame-wheel::before {
-  content: '';
-  position: absolute;
-  inset: var(--frame-band);
-  border-radius: calc(var(--frame-radius) * 0.72);
-  border: 1px dashed rgba(148, 163, 184, 0.28);
-  pointer-events: none;
-}
-
-.kitty-frame-wheel--dragging {
-  border-color: rgba(109, 40, 217, 0.55);
-  box-shadow:
-    0 6px 20px rgba(79, 70, 229, 0.14),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
-    inset 0 0 28px rgba(237, 233, 254, 0.45);
-  transform: scale(1.005);
-}
-
-.kitty-frame-wheel__dial {
-  position: absolute;
-  inset: var(--frame-band);
-  border-radius: inherit;
-  transition: transform 0.08s linear;
-  pointer-events: none;
-}
-
-.kitty-frame-wheel__tick {
-  position: absolute;
-  left: 50%;
-  top: 0.15rem;
-  width: 2px;
-  height: clamp(0.45rem, 2vw, 0.65rem);
-  margin-left: -1px;
-  transform-origin: 50% calc(100% + 50% - 0.15rem);
-  border-radius: 9999px;
-  background: rgba(148, 163, 184, 0.5);
-}
-
-.kitty-frame-wheel__tick--active {
-  background: rgba(109, 40, 217, 0.9);
-  height: clamp(0.55rem, 2.4vw, 0.82rem);
-  width: 3px;
-  margin-left: -1.5px;
-}
-
-.kitty-frame-wheel__indicator {
-  position: absolute;
-  left: 50%;
-  top: 0.05rem;
-  width: 4px;
-  height: clamp(0.55rem, 2.5vw, 0.85rem);
-  margin-left: -2px;
-  transform-origin: 50% calc(100% + 50% - 0.05rem);
-  border-radius: 9999px;
-  background: linear-gradient(to bottom, #8b5cf6, #6366f1);
-  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
-}
-
-.kitty-frame-wheel__readout {
-  position: absolute;
-  left: 50%;
-  bottom: clamp(0.55rem, 2.5vh, 1rem);
-  transform: translateX(-50%);
+.kitty-chip-readout {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.12rem;
-  max-width: min(72%, 16rem);
-  padding: 0.35rem 0.65rem;
+  gap: 0.05rem;
   text-align: center;
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(226, 232, 240, 0.85);
-  pointer-events: none;
-  backdrop-filter: blur(6px);
+  min-height: 2.1rem;
 }
 
-.kitty-frame-wheel__label {
+.kitty-chip-readout__label {
   width: 100%;
-  font-size: clamp(0.6875rem, 2.8vw, 0.8125rem);
-  font-weight: 600;
+  font-size: clamp(0.875rem, 3.4vw, 1rem);
+  font-weight: 650;
   line-height: 1.25;
-  color: #334155;
+  color: #0f172a;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
 }
 
-.kitty-frame-wheel__meta {
+.kitty-chip-readout__meta {
   font-size: 0.625rem;
   color: #64748b;
   font-variant-numeric: tabular-nums;
 }
 
-.kitty-frame-wheel__hint {
-  position: absolute;
-  left: 50%;
-  bottom: -1.35rem;
-  transform: translateX(-50%);
-  margin: 0;
-  font-size: 0.6875rem;
-  color: rgba(100, 116, 139, 0.85);
-  pointer-events: none;
+.kitty-chip-scroller {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.2rem 0.5rem;
+  scrollbar-width: none;
+}
+
+.kitty-chip-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.kitty-chip {
+  flex: 0 0 auto;
+  scroll-snap-align: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 9.5rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: rgba(248, 250, 252, 0.95);
+  color: #64748b;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kitty-chip__index {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.kitty-chip__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.dark .kitty-frame-wheel {
-  border-color: rgba(71, 85, 105, 0.55);
-  box-shadow:
-    0 2px 10px rgba(0, 0, 0, 0.2),
-    inset 0 0 0 1px rgba(51, 65, 85, 0.65),
-    inset 0 0 24px rgba(15, 23, 42, 0.35);
+.kitty-chip--active {
+  color: #0f172a;
+  background: rgba(220, 252, 231, 0.95);
+  border-color: rgba(74, 222, 128, 0.85);
 }
 
-.dark .kitty-frame-wheel::before {
-  border-color: rgba(71, 85, 105, 0.45);
+.kitty-chip--active .kitty-chip__index {
+  color: #16a34a;
 }
 
-.dark .kitty-frame-wheel__readout {
-  background: rgba(15, 23, 42, 0.72);
-  border-color: rgba(51, 65, 85, 0.85);
+.dark .kitty-chip-readout__label {
+  color: #f1f5f9;
 }
 
-.dark .kitty-frame-wheel__label {
-  color: #e2e8f0;
-}
-
-.dark .kitty-frame-wheel__meta,
-.dark .kitty-frame-wheel__hint {
+.dark .kitty-chip-readout__meta {
   color: rgba(148, 163, 184, 0.9);
+}
+
+.dark .kitty-chip {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(71, 85, 105, 0.9);
+  color: #94a3b8;
+}
+
+.dark .kitty-chip--active {
+  color: #ecfdf5;
+  background: rgba(6, 78, 59, 0.55);
+  border-color: rgba(52, 211, 153, 0.65);
 }
 </style>

@@ -116,12 +116,20 @@ class FunAsrRealtimeClient:
         self._task_id = ""
         self._reader_task: Optional[asyncio.Task[None]] = None
         self._started = asyncio.Event()
+        self._task_finished = asyncio.Event()
         self._closed = False
+        self._last_text = ""
+        self._emitted_sentence_end = False
 
     @property
     def task_id(self) -> str:
         """Active DashScope task id."""
         return self._task_id
+
+    @property
+    def last_text(self) -> str:
+        """Most recent non-empty ASR transcript for this mic session."""
+        return self._last_text
 
     async def start(self) -> None:
         """Connect, send run-task, wait for task-started."""
@@ -172,22 +180,40 @@ class FunAsrRealtimeClient:
             logger.debug("Fun-ASR WS closed while sending PCM")
 
     async def finish(self) -> None:
-        """Send finish-task then tear down (bounded; must not block Kitty WS loop)."""
+        """Send finish-task, wait for final transcript, then tear down.
+
+        PTT release must not cancel the reader before DashScope emits the last
+        ``result-generated`` / ``task-finished`` — otherwise FE never gets
+        ``asr_final`` and Mobile Kitty never sends the edit.
+        """
         if self._closed or self._ws is None or not self._task_id:
             await self.close()
             return
         try:
             await self._ws.send(json.dumps(build_fun_asr_finish_task(self._task_id)))
-            await asyncio.sleep(0.05)
+            try:
+                await asyncio.wait_for(self._task_finished.wait(), timeout=2.5)
+            except asyncio.TimeoutError:
+                logger.debug("Fun-ASR finish wait timed out task_id=%s", self._task_id)
+            if self._last_text and not self._emitted_sentence_end:
+                await self._on_partial(self._last_text, True)
+                self._emitted_sentence_end = True
         except (ConnectionClosed, ConnectionClosedError, ConnectionClosedOK):
-            pass
-        await self.close()
+            if self._last_text and not self._emitted_sentence_end:
+                try:
+                    await self._on_partial(self._last_text, True)
+                    self._emitted_sentence_end = True
+                except LLM_PIPELINE_ERRORS as exc:
+                    logger.debug("Fun-ASR promote last text after close: %s", exc)
+        finally:
+            await self.close()
 
     async def close(self) -> None:
         """Tear down reader + WebSocket with short timeouts (DashScope close can hang ~10s)."""
         if self._closed:
             return
         self._closed = True
+        self._task_finished.set()
         reader = self._reader_task
         self._reader_task = None
         if reader is not None and not reader.done():
@@ -229,6 +255,8 @@ class FunAsrRealtimeClient:
             logger.warning("Fun-ASR read loop error: %s", exc)
             if self._on_error:
                 await self._on_error(str(exc))
+        finally:
+            self._task_finished.set()
 
     async def _handle_server_event(self, data: dict[str, Any]) -> None:
         raw_header = data.get("header")
@@ -242,14 +270,19 @@ class FunAsrRealtimeClient:
             payload: dict[str, Any] = raw_payload if isinstance(raw_payload, dict) else {}
             text, sentence_end = _extract_asr_text(payload)
             if text:
+                self._last_text = text
+                if sentence_end:
+                    self._emitted_sentence_end = True
                 await self._on_partial(text, sentence_end)
             return
         if event == "task-failed":
             raw_payload = data.get("payload")
             payload = raw_payload if isinstance(raw_payload, dict) else {}
             err = str(payload.get("message") or header.get("error_message") or "Fun-ASR failed")
+            self._task_finished.set()
             if self._on_error:
                 await self._on_error(err)
             return
         if event == "task-finished":
+            self._task_finished.set()
             return

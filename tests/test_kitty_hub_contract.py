@@ -50,6 +50,36 @@ async def test_resolve_mobile_bootstrap_prefers_fresher_focus_scope() -> None:
 
 
 @pytest.mark.asyncio
+async def test_resolve_mobile_bootstrap_bare_focus_without_live_is_empty() -> None:
+    """Stale desktop_focus alone must not library-bind mobile when no live session."""
+    with (
+        patch(
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.get_kitty_desktop_focus_diagram",
+            AsyncMock(return_value=("stale_focus_lib", 50)),
+        ),
+        patch(
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.fetch_kitty_sessionmeta_for_user",
+            AsyncMock(return_value={"updated_at": 50}),
+        ),
+        patch(
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.try_build_context_from_live_spec",
+            AsyncMock(return_value=None),
+        ) as try_live,
+        patch(
+            "services.kitty.infra.bootstrap.kitty_context_hydrate.merge_voice_context_with_library",
+            AsyncMock(),
+        ) as merge_library,
+    ):
+        out = await resolve_mobile_open_bootstrap(1)
+
+    assert out["source"] == "empty"
+    assert out["recommended_scope"] is None
+    assert out["desktop_focus"]["diagram_library_id"] == "stale_focus_lib"
+    try_live.assert_awaited()
+    merge_library.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_hub_mutation_idempotency_and_revision_guard() -> None:
     """Repeated idempotency key replays result; stale revision is rejected."""
     hub = MindGraphAgentHub()
@@ -172,3 +202,63 @@ async def test_hub_persist_library_from_mutation_cmd() -> None:
     save_args = mock_await_kwargs(save_mock)
     assert save_args["diagram_id"] == "lib-persist-1"
     assert save_args["title"] == "Voice save"
+
+
+@pytest.mark.asyncio
+async def test_prepare_kitty_start_preserves_mobile_one_sentence_panel() -> None:
+    """Mobile client one_sentence panel/phase wins over bootstrap active_panel=none."""
+    hub = MindGraphAgentHub()
+    client_context = {
+        "active_panel": "one_sentence",
+        "one_sentence_phase": "edit",
+        "interaction_language": "zh",
+        "diagram_data": {},
+        "selected_nodes": [],
+    }
+    with (
+        patch.object(
+            hub,
+            "get_diagram_context",
+            AsyncMock(
+                return_value={
+                    "source": "library",
+                    "diagram_type": "mindmap",
+                    "active_panel": "none",
+                    "context": {
+                        "active_panel": "none",
+                        "diagram_data": {"children": [{"id": "n1"}]},
+                        "selected_nodes": [],
+                        "diagram_library_id": "lib-boot-1",
+                    },
+                }
+            ),
+        ),
+        patch(
+            "services.agent_hub.scope_lifecycle.merge_voice_context_with_library",
+            AsyncMock(
+                return_value=(
+                    {
+                        "active_panel": "none",
+                        "diagram_data": {"children": [{"id": "n1"}]},
+                        "selected_nodes": [],
+                        "diagram_library_id": "lib-boot-1",
+                    },
+                    "mindmap",
+                    "none",
+                )
+            ),
+        ),
+    ):
+        out = await hub.prepare_kitty_start_context(
+            user_id=1,
+            hub_session_id=None,
+            diagram_scope="ephemeral-mobile",
+            start_context=client_context,
+            start_diagram_type="mindmap",
+            start_active_panel="one_sentence",
+            start_client_lane="mobile",
+        )
+
+    assert out["active_panel"] == "one_sentence"
+    assert out["context"]["active_panel"] == "one_sentence"
+    assert out["context"]["one_sentence_phase"] == "edit"

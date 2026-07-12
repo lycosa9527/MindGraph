@@ -7,6 +7,7 @@ import { getDiagramWriteLockHolder } from '@/composables/kitty/useDiagramWriteLo
 import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
 import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
+import { useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 
@@ -82,6 +83,7 @@ export function buildKittyDiagramContext(
     diagram_data.focus_question = data.focus_question
   }
   const displayTitle = String(diagramStore.effectiveTitle ?? diagramStore.title ?? '').trim()
+  const selectedLlmModel = useLLMResultsStore().selectedModel
 
   return {
     diagram_type: dt,
@@ -93,6 +95,7 @@ export function buildKittyDiagramContext(
     interaction_language: kittyInteractionLanguageFromUi(),
     one_sentence_phase: options?.oneSentencePhase,
     diagram_write_lock: { holder: getDiagramWriteLockHolder() },
+    selected_llm_model: selectedLlmModel,
   }
 }
 
@@ -112,6 +115,7 @@ export function buildStandaloneKittyLandingContext(): KittyAgentContext {
     diagram_library_id: null,
     diagram_display_title: '',
     interaction_language: kittyInteractionLanguageFromUi(),
+    selected_llm_model: useLLMResultsStore().selectedModel,
   }
 }
 

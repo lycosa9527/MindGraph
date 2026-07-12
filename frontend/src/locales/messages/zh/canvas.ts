@@ -673,6 +673,9 @@ export default {
   'canvas.mindMapOneSentence.kittyWorking': '好的，正在处理…',
   'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty 暂不可用，请确认已开启 FEATURE_KITTY_AGENT。',
   'canvas.mindMapOneSentence.clarifyChoices': '请选择一项',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
+    '已检测到手机 Kitty 正在连接本图。请在手机上按住说话或输入，电脑端输入已暂停。',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': '请在手机 Kitty 中输入…',
   'canvas.mindMapNodeExplain.title': 'Kitty 学习提示',
   'canvas.mindMapNodeExplain.userPrompt': '「{node}」可能带来哪些疑问或认知冲突？',
   'canvas.mindMapNodeExplain.thinking': '正在看你的导图…',

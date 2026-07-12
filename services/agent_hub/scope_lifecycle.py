@@ -337,6 +337,8 @@ class MindGraphAgentHub:
         """Prepare kitty start context."""
         request_id = _new_hub_request_id()
         initial_context_in = copy.deepcopy(start_context) if isinstance(start_context, dict) else {}
+        client_active_panel = initial_context_in.get("active_panel")
+        client_one_sentence_phase = initial_context_in.get("one_sentence_phase")
         if start_client_lane == "mobile":
             lib_raw = initial_context_in.get("diagram_library_id")
             if not (isinstance(lib_raw, str) and lib_raw.strip()):
@@ -356,7 +358,15 @@ class MindGraphAgentHub:
                     if isinstance(lang, str) and lang.strip():
                         initial_context_in["interaction_language"] = lang.strip()
                     start_diagram_type = str(boot.get("diagram_type") or start_diagram_type)
-                    start_active_panel = str(boot.get("active_panel") or start_active_panel)
+                    # Prefer client panel/phase when FE sent them so bootstrap "none"
+                    # does not stomp mobile one_sentence routing.
+                    if isinstance(client_active_panel, str) and client_active_panel.strip():
+                        start_active_panel = client_active_panel.strip()
+                        initial_context_in["active_panel"] = start_active_panel
+                    else:
+                        start_active_panel = str(boot.get("active_panel") or start_active_panel)
+                    if isinstance(client_one_sentence_phase, str) and client_one_sentence_phase.strip():
+                        initial_context_in["one_sentence_phase"] = client_one_sentence_phase.strip()
 
         prefer_mobile_server = start_client_lane == "mobile" and not diagram_data_has_visible_content(
             initial_context_in.get("diagram_data") or {}
@@ -368,6 +378,15 @@ class MindGraphAgentHub:
             active_panel=start_active_panel,
             prefer_server_diagram_nodes=prefer_mobile_server,
         )
+        if start_client_lane == "mobile" and isinstance(client_active_panel, str) and client_active_panel.strip():
+            res_panel = client_active_panel.strip()
+            merged_ctx["active_panel"] = res_panel
+        if (
+            start_client_lane == "mobile"
+            and isinstance(client_one_sentence_phase, str)
+            and client_one_sentence_phase.strip()
+        ):
+            merged_ctx["one_sentence_phase"] = client_one_sentence_phase.strip()
         scope_norm = normalize_kitty_diagram_session_id(diagram_scope) or diagram_scope
         if hub_session_id:
             await self.bind_scope(

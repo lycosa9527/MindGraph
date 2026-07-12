@@ -23,6 +23,8 @@ export interface KittyAgentContext {
   interaction_language?: 'zh' | 'en'
   one_sentence_phase?: 'create' | 'edit'
   diagram_write_lock?: { holder: 'llm' | 'tool' | null }
+  /** Active multi-LLM pill: qwen | deepseek | doubao (null clears). */
+  selected_llm_model?: string | null
 }
 
 export interface KittyLibrarySnapshot {

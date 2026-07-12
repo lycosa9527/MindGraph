@@ -141,6 +141,7 @@ async def persist_kitty_live_for_ws(
             "active_panel": active_panel,
             "diagram_data": merged_context.get("diagram_data") or {},
             "selected_nodes": merged_context.get("selected_nodes") or [],
+            "selected_llm_model": merged_context.get("selected_llm_model"),
             "diagram_library_id": lib_str,
             "diagram_display_title": merged_context.get("diagram_display_title"),
         },

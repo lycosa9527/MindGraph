@@ -25,12 +25,19 @@ from services.kitty.audio.session_bridge import (
 )
 from services.kitty.context.hub_context import apply_kitty_ws_context_patch
 from services.kitty.context.messaging import safe_websocket_send
+from services.kitty.infra.desktop.kitty_voice_phase_fanout import (
+    fanout_voice_phase_from_outbound_type,
+)
 from services.kitty.infra.bootstrap.kitty_context_hydrate import (
     diagram_data_has_visible_content,
     merge_voice_context_with_library,
 )
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_selection_update
+from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
+    kitty_llm_model_update_from_context,
+    publish_kitty_llm_model_update,
+    publish_kitty_selection_update,
+)
 from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.events import KittyEvent, get_session_event_bus
 from services.kitty.session.ops import (
@@ -113,6 +120,7 @@ async def dispatch_kitty_ws_inbound_message(
     if msg_type == "asr_stop":
         await stop_session_asr(voice_session_id)
         await safe_websocket_send(websocket, {"type": "asr_stopped"})
+        await fanout_voice_phase_from_outbound_type(voice_session_id, "asr_stopped")
         return "continue"
 
     if msg_type == "tts_interrupt":
@@ -396,6 +404,13 @@ async def dispatch_kitty_ws_inbound_message(
                 int(current_user.id),
                 diagram_session_id,
                 selected_nodes,
+            )
+        should_llm, llm_model = kitty_llm_model_update_from_context(merged_ctx)
+        if should_llm:
+            await publish_kitty_llm_model_update(
+                int(current_user.id),
+                diagram_session_id,
+                llm_model,
             )
         return "continue"
 

@@ -1,5 +1,5 @@
 /**
- * ca UI � common
+ * en UI � common
  */
 
 export default {
@@ -164,6 +164,10 @@ export default {
   'mobile.kittyDiagramPickerEmpty': 'No saved diagrams',
   'mobile.kittyDiagramPickerSearch': 'Search diagrams…',
   'mobile.kittyDiagramPickerNoMatch': 'No matching diagrams',
+  'mobile.kittyCreateNewMindmap': 'Create new mind map',
+  'mobile.kittyNewMindmapCreated': 'New mind map started; desktop will open a blank canvas.',
+  'mobile.kittyNewMindmapDesktopFailed':
+    'New mind map started, but desktop could not be notified.',
   'mobile.kittyDiagramPinned': 'Pinned',
   'mobile.kittyDiagramPickFailed': 'Could not load that diagram. Try again later.',
   'mobile.kittyDesktopJumpFailed': 'Diagram switched, but desktop could not be notified.',
@@ -174,14 +178,28 @@ export default {
   'mobile.kittyHubSourceLive': 'Hub: live',
   'mobile.kittyHubSourceLibrary': 'Hub: library',
   'mobile.kittyHubSourceEmpty': 'Hub: empty',
-  'mobile.kittyMicPttTitle': 'Hold the mic to speak; release to send. Hold Space when not typing in a field.',
-  'mobile.kittyMicPttAria': 'Push to talk: hold the microphone button to speak, release to stop. Hold Space when not typing in the message field.',
-  'mobile.kittyMicToggleTitle': 'Hold the mic to speak; release to send. Hold Space when not typing in a field.',
-  'mobile.kittyMicToggleAria': 'Push to talk: hold the microphone button to speak, release to stop.',
-  'mobile.kittyClickWheelAria': 'Spin the wheel to select a node',
-  'mobile.kittyClickWheelHint': 'Drag around the outer ring to switch nodes',
+  'mobile.kittyMicPttTitle': 'Hold to speak; release to send. Hold Space when not typing in a field.',
+  'mobile.kittyMicPttAria': 'Hold to speak: press and hold the microphone to talk, release to send. Hold Space when not typing in the message field.',
+  'mobile.kittyHoldToSpeak': 'Hold to speak',
+  'mobile.kittyReleaseToSend': 'Release to send',
+  'mobile.kittyMicToggleTitle': 'Hold to speak; release to send. Hold Space when not typing in a field.',
+  'mobile.kittyMicToggleAria': 'Hold to speak: press and hold the microphone to talk, release to stop.',
+  'mobile.kittyClickWheelAria': 'Swipe or tap to select a node',
+  'mobile.kittyClickWheelHint': 'Swipe or tap chips: branch → children',
   'mobile.kittyClickWheelEmptyLabel': 'Untitled node',
   'mobile.kittyClickWheelPosition': '{current} / {total}',
+  'mobile.kittyClickWheelMenu': 'Jump to first node',
+  'mobile.kittyClickWheelPrev': 'Previous node',
+  'mobile.kittyClickWheelNext': 'Next node',
+  'mobile.kittyClickWheelSelect': 'Select current node',
+  'mobile.kittyLlmRowAria': 'Choose AI model',
+  'mobile.kittyPhotoOcrComingSoon':
+    'Photo OCR is coming soon. Use hold-to-speak or text to edit the diagram.',
+  'mobile.kittyPickDiagramToEdit':
+    'Open or pick a saved diagram first, then hold to speak or type to edit it.',
+  'mobile.kittyHubSyncFailed':
+    'Could not sync the diagram to Kitty. Check your connection and try again.',
+  'mobile.kittyDesktopDiagramFollowed': 'Switched to the diagram open on desktop',
   'meta.pageTitle.notFound': 'Page not found',
   'meta.pageTitle.privacy': 'Terms & Privacy',
   'meta.pageTitle.publicDashboard': 'Statistics',

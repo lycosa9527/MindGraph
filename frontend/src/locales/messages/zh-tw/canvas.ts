@@ -660,6 +660,9 @@ export default {
   'canvas.mindMapOneSentence.kittyWorking': '好的，正在處理…',
   'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty 暫不可用，請確認已開啟 FEATURE_KITTY_AGENT。',
   'canvas.mindMapOneSentence.clarifyChoices': '請選擇一項',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
+    '已偵測到手機 Kitty 正在連接本圖。請在手機上按住說話或輸入，電腦端輸入已暫停。',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': '請在手機 Kitty 中輸入…',
   'canvas.mindMapNodeExplain.title': 'Kitty 學習提示',
   'canvas.mindMapNodeExplain.userPrompt': '「{node}」可能帶來哪些疑問或認知衝突？',
   'canvas.mindMapNodeExplain.thinking': '正在看你的導圖…',

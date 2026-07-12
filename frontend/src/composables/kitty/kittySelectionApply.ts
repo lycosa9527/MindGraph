@@ -39,10 +39,10 @@ export function applyKittySelectionTarget(
   if (!resolved) {
     return undefined
   }
+  // Always update Pinia so Vue Flow `.selected` (pulse glow) stays in sync.
+  diagramStore.selectNodes([resolved])
   if (options.canvasHighlight) {
     eventBus.emit('selection:select_requested', { nodeId: resolved, nodeIndex: target.nodeIndex })
-  } else {
-    diagramStore.selectNodes([resolved])
   }
   return resolved
 }
@@ -55,10 +55,9 @@ export function applyKittyRemoteCanvasSelection(
   const diagramStore = useDiagramStore()
   const nodes = diagramStore.data?.nodes ?? []
   if (selectedNodes.length === 0) {
+    diagramStore.clearSelection()
     if (options.canvasHighlight) {
       eventBus.emit('interaction:clear_selection_requested', {})
-    } else {
-      diagramStore.clearSelection()
     }
     return
   }
@@ -66,9 +65,8 @@ export function applyKittyRemoteCanvasSelection(
   if (resolved.length === 0) {
     return
   }
-  if (options.canvasHighlight) {
+  diagramStore.selectNodes(resolved)
+  if (options.canvasHighlight && resolved[0]) {
     eventBus.emit('selection:select_requested', { nodeId: resolved[0] })
-  } else {
-    diagramStore.selectNodes(resolved)
   }
 }

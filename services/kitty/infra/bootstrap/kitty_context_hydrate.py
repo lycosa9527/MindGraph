@@ -289,24 +289,25 @@ async def resolve_mobile_open_bootstrap(
                 "source": "live",
             }
 
-    library_id = client_norm or focus_norm
-    if library_id:
+    # Library hydrate only for an explicit mobile suggestion (already on a diagram).
+    # Bare desktop_focus must not bind mobile to a stale library when no live desktop session.
+    if client_norm:
         merged, dt, panel = await merge_voice_context_with_library(
             user_id,
-            {"diagram_library_id": library_id, "diagram_data": {}},
+            {"diagram_library_id": client_norm, "diagram_data": {}},
             diagram_type="circle_map",
             active_panel="none",
             prefer_server_diagram_nodes=True,
         )
         try:
-            cached = await get_diagram_cache().get_diagram(user_id, library_id)
+            cached = await get_diagram_cache().get_diagram(user_id, client_norm)
         except (RuntimeError, ValueError, TypeError, OSError):
             cached = None
         has_row = cached is not None
         has_visible = diagram_data_has_visible_content(merged.get("diagram_data") or {})
         source: str = "library" if has_row or has_visible else "empty"
         return {
-            "recommended_scope": library_id,
+            "recommended_scope": client_norm if source != "empty" else None,
             "desktop_focus": desktop_focus,
             "context": merged,
             "diagram_type": dt,

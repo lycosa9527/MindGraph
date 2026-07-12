@@ -20,6 +20,9 @@ from services.kitty.context.messaging import (
     safe_websocket_send,
 )
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
+from services.kitty.infra.desktop.kitty_voice_phase_fanout import (
+    fanout_voice_phase_from_outbound_type,
+)
 from services.kitty.session.events import KittyEvent, SessionEventBus, emit_kitty_session_event
 from services.kitty.session.omni_client_access import get_session_omni_client
 from services.kitty.session.runtime_state import logger, voice_sessions
@@ -88,10 +91,12 @@ async def run_kitty_omni_event_loop(
                     )
                 )
                 await safe_websocket_send(websocket, {"type": "text_chunk", "text": text_chunk})
+                await fanout_voice_phase_from_outbound_type(voice_session_id, "text_chunk")
                 continue
 
             if event_type == "audio_chunk":
                 await _forward_audio_chunk(websocket, event)
+                await fanout_voice_phase_from_outbound_type(voice_session_id, "audio_chunk")
                 continue
 
             if event_type == "speech_started":
@@ -126,6 +131,7 @@ async def run_kitty_omni_event_loop(
                     )
                 )
                 await safe_websocket_send(websocket, {"type": "response_done"})
+                await fanout_voice_phase_from_outbound_type(voice_session_id, "response_done")
                 continue
 
             if event_type == "error":

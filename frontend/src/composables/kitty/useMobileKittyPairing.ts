@@ -1,16 +1,22 @@
 /**
  * Mobile Kitty: WebSocket scope, desktop-focus hint, hub preflight bootstrap, and debounced context sync.
  */
-import { type ComputedRef, computed, onUnmounted, ref, watch } from 'vue'
+import { type ComputedRef, computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { buildKittyContextPreferStore } from '@/composables/kitty/buildKittyDiagramContext'
-import { kittyInteractionLanguageFromUi } from '@/composables/kitty/buildKittyDiagramContext'
+import { shouldUseOneSentenceEditFlow } from '@/composables/canvasToolbar/mindMapOneSentencePhase'
+import {
+  buildKittyContextPreferStore,
+  buildKittyDiagramContext,
+  kittyInteractionLanguageFromUi,
+} from '@/composables/kitty/buildKittyDiagramContext'
+import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { useKittyDesktopFocusHint } from '@/composables/kitty/useKittyDesktopFocus'
 import { useAuthStore, useDiagramStore } from '@/stores'
+import { useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
@@ -49,23 +55,64 @@ function createKittySessionId(): string {
 }
 
 const KITTY_CONTEXT_SYNC_MS = 220
+/** Ignore desktop_focus switches briefly after the user picks a diagram on mobile. */
+const USER_DIAGRAM_OVERRIDE_MS = 3000
+/**
+ * Desktop focus is trusted only when recently refreshed (canvas heartbeat keeps it warm).
+ * Stale Redis leftovers after a crash/logout must not bind mobile to an old diagram.
+ */
+const DESKTOP_FOCUS_FRESH_SEC = 180
+
+function isDesktopFocusFresh(updatedAtEpochSec: number | null): boolean {
+  if (updatedAtEpochSec == null || !Number.isFinite(updatedAtEpochSec)) {
+    return false
+  }
+  const ageSec = Math.floor(Date.now() / 1000) - updatedAtEpochSec
+  return ageSec >= 0 && ageSec <= DESKTOP_FOCUS_FRESH_SEC
+}
 
 export function useMobileKittyPairing(
   kitty: MobileKittyAgentApi,
   options: {
     kittyServerEnabled: ComputedRef<boolean>
     onDebugLine?: (prefix: string, detail: string) => void
+    /** Fired after mobile follows a new desktop library diagram. */
+    onDesktopDiagramFollow?: (libraryId: string) => void
   }
 ) {
   const authStore = useAuthStore()
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
+  const llmResultsStore = useLLMResultsStore()
   const {
     type: diagramTypeRef,
     data: diagramDataRef,
     selectedNodes: selectedNodesRef,
   } = storeToRefs(diagramStore)
   const { activeDiagramId } = storeToRefs(savedDiagramsStore)
+
+  /** Mobile Kitty uses the one-sentence edit pipeline for verified diagram mutations. */
+  function resolveMobileOneSentencePhase(): 'create' | 'edit' {
+    if (
+      shouldUseOneSentenceEditFlow(
+        diagramStore,
+        savedDiagramsStore,
+        llmResultsStore,
+        'create'
+      )
+    ) {
+      return 'edit'
+    }
+    return 'create'
+  }
+
+  function withOneSentencePanel(ctx: KittyAgentContext): KittyAgentContext {
+    return {
+      ...ctx,
+      active_panel: 'one_sentence',
+      one_sentence_phase: resolveMobileOneSentencePhase(),
+    }
+  }
 
   const sessionId = ref(createKittySessionId())
   const bootstrapPayload = ref<MobileKittyBootstrapPayload | null>(null)
@@ -75,85 +122,121 @@ export function useMobileKittyPairing(
     const lib = bootstrapPayload.value?.desktop_focus?.diagram_library_id
     return typeof lib === 'string' && lib.trim() !== '' ? lib.trim() : null
   })
-  const desktopFocusPollActive = ref(true)
+  const pageVisible = ref(typeof document === 'undefined' ? true : !document.hidden)
+  let userDiagramOverrideUntil = 0
+  let desktopFollowInFlight: Promise<void> | null = null
+  /** User tapped “new mindmap”: stay on ephemeral scope until they pick a library diagram. */
+  const forceEphemeralSession = ref(false)
 
-  /** Poll desktop_focus only until pre-connect scope is known (not while connected). */
+  function markUserDiagramOverride(): void {
+    userDiagramOverrideUntil = Date.now() + USER_DIAGRAM_OVERRIDE_MS
+  }
+
+  function clearForceEphemeralSession(): void {
+    forceEphemeralSession.value = false
+  }
+
+  /**
+   * Fresh mobile session (no library binding). Optionally pin against desktop_focus
+   * until the user picks a saved diagram (create-new mindmap).
+   */
+  function resetToFreshEphemeralSession(optionsReset?: {
+    pinAgainstDesktopFocus?: boolean
+    loadMindmapTemplate?: boolean
+  }): string {
+    const pin = optionsReset?.pinAgainstDesktopFocus === true
+    const loadTemplate = optionsReset?.loadMindmapTemplate !== false
+    if (pin) {
+      markUserDiagramOverride()
+      forceEphemeralSession.value = true
+    } else {
+      forceEphemeralSession.value = false
+    }
+    savedDiagramsStore.clearActiveDiagram()
+    bootstrapRecommendedScope.value = null
+    bootstrapPayload.value = {
+      recommended_scope: null,
+      desktop_focus: { diagram_library_id: null, updated_at: null },
+      context: {
+        diagram_type: 'mindmap',
+        active_panel: 'one_sentence',
+        selected_nodes: [],
+        diagram_data: {},
+        one_sentence_phase: 'create',
+      },
+      diagram_type: 'mindmap',
+      active_panel: 'one_sentence',
+      source: 'empty',
+    }
+    sessionId.value = createKittySessionId()
+    if (loadTemplate) {
+      diagramStore.clearHistory()
+      diagramStore.setDiagramType('mindmap')
+      diagramStore.loadDefaultTemplate('mindmap')
+    }
+    options.onDebugLine?.('#sess', `ephemeral ${sessionId.value.slice(0, 8)}`)
+    return sessionId.value
+  }
+
+  /** Start a blank mindmap session on mobile (ephemeral scope). */
+  function startNewEphemeralMindmapSession(): string {
+    return resetToFreshEphemeralSession({
+      pinAgainstDesktopFocus: true,
+      loadMindmapTemplate: true,
+    })
+  }
+
+  function handleVisibilityForFocusPoll(): void {
+    pageVisible.value = !document.hidden
+  }
+
+  /**
+   * Keep polling desktop_focus while Mobile Kitty is open (including while connected)
+   * so opening a diagram on desktop can switch mobile scope.
+   */
   const kittyDesktopPollOn = computed(() => {
-    if (!desktopFocusPollActive.value) {
+    if (!pageVisible.value) {
       return false
     }
     if (!options.kittyServerEnabled.value || !authStore.isAuthenticated) {
       return false
     }
-    if (activeDiagramId.value != null && activeDiagramId.value !== '') {
-      return false
-    }
-    if (kitty.isConnected.value) {
-      return false
-    }
-    if (bootstrapRecommendedScope.value != null && bootstrapRecommendedScope.value !== '') {
-      return false
-    }
-    if (bootstrapDesktopLibraryId.value != null) {
-      return false
-    }
     return true
   })
-  const { diagramLibraryId: kittyDesktopLibraryId } = useKittyDesktopFocusHint(kittyDesktopPollOn)
+  const { diagramLibraryId: kittyDesktopLibraryId, updatedAt: kittyDesktopFocusUpdatedAt } =
+    useKittyDesktopFocusHint(kittyDesktopPollOn)
   const bootstrapLastFailureAt = ref(0)
   let bootstrapInFlight: Promise<void> | null = null
 
-  watch(kittyDesktopLibraryId, (libraryId) => {
-    if (libraryId != null && libraryId !== '') {
-      desktopFocusPollActive.value = false
-    }
-  })
-
-  watch([bootstrapRecommendedScope, bootstrapDesktopLibraryId], ([scope, bootLib]) => {
-    if ((scope != null && scope !== '') || bootLib != null) {
-      desktopFocusPollActive.value = false
-    }
-  })
-
-  watch(
-    () => kitty.isConnected.value,
-    (connected, wasConnected) => {
-      if (wasConnected && !connected && desktopFocusPollActive.value === false) {
-        const hasLocalScope =
-          (activeDiagramId.value != null && activeDiagramId.value !== '') ||
-          (bootstrapRecommendedScope.value != null && bootstrapRecommendedScope.value !== '') ||
-          bootstrapDesktopLibraryId.value != null ||
-          (kittyDesktopLibraryId.value != null && kittyDesktopLibraryId.value !== '')
-        if (!hasLocalScope) {
-          desktopFocusPollActive.value = true
-        }
-      }
-    }
-  )
-
+  /**
+   * Pairing scope rules:
+   * - force ephemeral / create-new → page session id
+   * - user/follow library id → that id
+   * - bootstrap live|library recommended_scope → that id
+   * - never bind from bare stale desktop_focus alone
+   */
   const kittyPairScope = computed(() => {
+    if (forceEphemeralSession.value) {
+      return sessionId.value
+    }
     if (activeDiagramId.value != null && activeDiagramId.value !== '') {
       return activeDiagramId.value
     }
     if (bootstrapRecommendedScope.value != null && bootstrapRecommendedScope.value !== '') {
       return bootstrapRecommendedScope.value
     }
-    if (bootstrapDesktopLibraryId.value != null) {
-      return bootstrapDesktopLibraryId.value
-    }
-    if (kittyDesktopLibraryId.value != null && kittyDesktopLibraryId.value !== '') {
-      return kittyDesktopLibraryId.value
-    }
     return sessionId.value
   })
 
-  const kittyPairScopeIsEphemeral = computed(
-    () =>
-      (activeDiagramId.value == null || activeDiagramId.value === '') &&
-      (bootstrapRecommendedScope.value == null || bootstrapRecommendedScope.value === '') &&
-      bootstrapDesktopLibraryId.value == null &&
-      (kittyDesktopLibraryId.value == null || kittyDesktopLibraryId.value === '')
-  )
+  const kittyPairScopeIsEphemeral = computed(() => {
+    if (forceEphemeralSession.value) {
+      return true
+    }
+    const scope = kittyPairScope.value
+    const active = activeDiagramId.value?.trim() ?? ''
+    const recommended = bootstrapRecommendedScope.value?.trim() ?? ''
+    return scope !== active && scope !== recommended
+  })
 
   const kittyPairScopeWarning = computed(() => {
     if (!kittyPairScopeIsEphemeral.value) {
@@ -168,7 +251,10 @@ export function useMobileKittyPairing(
     }
     try {
       const params = new URLSearchParams()
-      const sid = (scopeId ?? activeDiagramId.value)?.trim()
+      // Only pass an explicit scope (follow / hydrate). Never send sticky local
+      // activeDiagramId on cold open — that re-bound mobile to the last diagram
+      // when desktop had no live canvas.
+      const sid = scopeId?.trim()
       if (sid) {
         params.set('suggested_scope', sid)
       }
@@ -181,10 +267,12 @@ export function useMobileKittyPairing(
       }
       const data = (await res.json()) as MobileKittyBootstrapPayload
       bootstrapPayload.value = data
-      if (data.recommended_scope && data.source !== 'empty') {
+      if (data.recommended_scope && (data.source === 'live' || data.source === 'library')) {
         bootstrapRecommendedScope.value = data.recommended_scope
-      } else if (scopeId != null && scopeId !== '') {
+      } else if (scopeId != null && scopeId !== '' && data.source !== 'empty') {
         bootstrapRecommendedScope.value = scopeId
+      } else if (data.source === 'empty' && (scopeId == null || scopeId === '')) {
+        bootstrapRecommendedScope.value = null
       }
       if (options.onDebugLine) {
         const sc =
@@ -216,6 +304,22 @@ export function useMobileKittyPairing(
     }
     bootstrapInFlight = (async () => {
       const success = await fetchMobileKittyBootstrap()
+      if (success && !forceEphemeralSession.value) {
+        const boot = bootstrapPayload.value
+        if (boot?.source === 'empty') {
+          resetToFreshEphemeralSession({
+            pinAgainstDesktopFocus: false,
+            loadMindmapTemplate: true,
+          })
+        } else if (
+          (boot?.source === 'live' || boot?.source === 'library') &&
+          boot.recommended_scope
+        ) {
+          clearForceEphemeralSession()
+          savedDiagramsStore.setActiveDiagram(boot.recommended_scope)
+          await hydrateMobileKittyFromLibrary(boot.recommended_scope)
+        }
+      }
       bootstrapDone.value = success
       bootstrapInFlight = null
     })()
@@ -229,65 +333,127 @@ export function useMobileKittyPairing(
     bootstrapDone.value = true
   }
 
+  async function applyDesktopFocusLibrary(libraryId: string): Promise<void> {
+    if (forceEphemeralSession.value) {
+      return
+    }
+    const id = libraryId.trim()
+    if (!id) {
+      return
+    }
+    if (Date.now() < userDiagramOverrideUntil) {
+      return
+    }
+    if (activeDiagramId.value === id) {
+      return
+    }
+    if (desktopFollowInFlight) {
+      await desktopFollowInFlight
+      if (activeDiagramId.value === id) {
+        return
+      }
+    }
+    desktopFollowInFlight = (async () => {
+      try {
+        clearForceEphemeralSession()
+        savedDiagramsStore.setActiveDiagram(id)
+        await refreshMobileKittyBootstrap(id)
+        await hydrateMobileKittyFromLibrary(id)
+        options.onDebugLine?.('#desk', `follow ${id.slice(0, 12)}`)
+        options.onDesktopDiagramFollow?.(id)
+      } finally {
+        desktopFollowInFlight = null
+      }
+    })()
+    await desktopFollowInFlight
+  }
+
+  async function hydrateLibraryScopeIfNeeded(scope: string): Promise<void> {
+    const id = scope.trim()
+    if (!id || id === sessionId.value) {
+      return
+    }
+    const isActiveLibrary = activeDiagramId.value === id
+    const isKnownLibraryHint =
+      bootstrapRecommendedScope.value === id ||
+      bootstrapDesktopLibraryId.value === id ||
+      kittyDesktopLibraryId.value === id
+    if (!isActiveLibrary && !isKnownLibraryHint) {
+      return
+    }
+    await refreshMobileKittyBootstrap(id)
+    await hydrateMobileKittyFromLibrary(id)
+  }
+
   let contextSyncTimer: ReturnType<typeof setTimeout> | null = null
 
   function resolveMobileLibraryDiagramId(): string | null {
+    if (forceEphemeralSession.value) {
+      return null
+    }
     const active = activeDiagramId.value?.trim()
     if (active) {
       return active
     }
-    const bootCtx = bootstrapPayload.value?.context
-    const fromBoot =
-      typeof bootCtx?.diagram_library_id === 'string' && bootCtx.diagram_library_id.trim() !== ''
-        ? bootCtx.diagram_library_id.trim()
-        : null
-    if (fromBoot) {
-      return fromBoot
-    }
-    const desk = kittyDesktopLibraryId.value?.trim()
-    if (desk) {
-      return desk
-    }
     const boot = bootstrapPayload.value
     const scope = bootstrapRecommendedScope.value?.trim()
-    if (boot?.source === 'library' && scope && scope !== sessionId.value) {
+    if (
+      (boot?.source === 'live' || boot?.source === 'library') &&
+      scope &&
+      scope !== sessionId.value
+    ) {
       return scope
     }
     return null
   }
 
   function buildMinimalLibraryKittyContext(libId: string): KittyAgentContext {
+    if (diagramStore.type != null && diagramStore.data != null) {
+      return withOneSentencePanel(
+        buildKittyDiagramContext(diagramStore, 'one_sentence', {
+          oneSentencePhase: resolveMobileOneSentencePhase(),
+        })
+      )
+    }
     const boot = bootstrapPayload.value
     const bootCtx = boot?.context
     const selected = [...diagramStore.selectedNodes]
-    const displayTitle = String(bootCtx?.diagram_display_title ?? '').trim()
+    const displayTitle = String(
+      bootCtx?.diagram_display_title ?? diagramStore.effectiveTitle ?? diagramStore.title ?? ''
+    ).trim()
     const diagramType = (bootCtx?.diagram_type ??
       boot?.diagram_type ??
       'circle_map') as KittyAgentContext['diagram_type']
     const diagramData: Record<string, unknown> =
       selected.length > 0 ? { selected_nodes: selected } : {}
-    return {
+    return withOneSentencePanel({
       diagram_type: diagramType,
-      active_panel: 'none',
+      active_panel: 'one_sentence',
       selected_nodes: selected,
       diagram_data: diagramData,
       diagram_library_id: libId,
       diagram_display_title: displayTitle,
       interaction_language: kittyInteractionLanguageFromUi(),
-    }
+      one_sentence_phase: resolveMobileOneSentencePhase(),
+      selected_llm_model: llmResultsStore.selectedModel,
+    })
   }
 
   function buildMobileKittyContext(): KittyAgentContext {
     const libId = resolveMobileLibraryDiagramId()
     if (libId) {
-      return buildMinimalLibraryKittyContext(libId)
+      const libCtx = buildMinimalLibraryKittyContext(libId)
+      if (libCtx.diagram_library_id == null || libCtx.diagram_library_id === '') {
+        return { ...libCtx, diagram_library_id: libId }
+      }
+      return libCtx
     }
 
-    const base = buildKittyContextPreferStore('none')
+    const base = withOneSentencePanel(buildKittyContextPreferStore('one_sentence'))
     const boot = bootstrapPayload.value
     if (boot && boot.source !== 'empty' && boot.context) {
       const serverCtx = boot.context
-      const merged: KittyAgentContext = {
+      const merged: KittyAgentContext = withOneSentencePanel({
         ...base,
         ...serverCtx,
         diagram_data: {
@@ -296,9 +462,10 @@ export function useMobileKittyPairing(
         },
         diagram_type:
           (serverCtx.diagram_type as KittyAgentContext['diagram_type']) ?? base.diagram_type,
-        active_panel: serverCtx.active_panel ?? base.active_panel,
+        active_panel: 'one_sentence',
         selected_nodes: [...(base.selected_nodes ?? [])],
-      }
+        one_sentence_phase: resolveMobileOneSentencePhase(),
+      })
       const pairLib =
         (typeof serverCtx.diagram_library_id === 'string' && serverCtx.diagram_library_id !== ''
           ? serverCtx.diagram_library_id
@@ -317,22 +484,23 @@ export function useMobileKittyPairing(
     }
 
     const ctx = base
-    const pairLib =
-      kittyDesktopLibraryId.value != null && kittyDesktopLibraryId.value !== ''
-        ? kittyDesktopLibraryId.value
-        : null
-    if (pairLib != null && pairLib !== '' && ctx.diagram_library_id == null) {
-      return { ...ctx, diagram_library_id: pairLib }
-    }
     return ctx
   }
 
   const mobileKittyContextPreview = computed<MobileKittyContextPreview>(() => {
     const boot = bootstrapPayload.value
     const bootCtx = boot?.context
-    const libRaw = activeDiagramId.value ?? bootCtx?.diagram_library_id
+    const libRaw =
+      forceEphemeralSession.value
+        ? null
+        : (activeDiagramId.value ??
+          (boot?.source === 'live' || boot?.source === 'library'
+            ? bootCtx?.diagram_library_id
+            : null))
     const lib = typeof libRaw === 'string' && libRaw.trim() !== '' ? libRaw.trim() : null
-    const title = String(bootCtx?.diagram_display_title ?? '').trim()
+    const liveTitle = String(diagramStore.effectiveTitle ?? diagramStore.title ?? '').trim()
+    const title =
+      liveTitle !== '' ? liveTitle : String(bootCtx?.diagram_display_title ?? '').trim()
     const scope = kittyPairScope.value
     const scopeForHint = lib ?? scope
     const hubSrc = boot?.source
@@ -342,7 +510,7 @@ export function useMobileKittyPairing(
     return {
       diagramDisplayTitle: title,
       diagramLibraryId: lib,
-      diagramType: String(bootCtx?.diagram_type ?? boot?.diagram_type ?? ''),
+      diagramType: String(diagramStore.type ?? bootCtx?.diagram_type ?? boot?.diagram_type ?? ''),
       pairScopeShort: shortenDiagramScopeHint(String(scope)),
       scopeHintShort: shortenDiagramScopeHint(String(scopeForHint)),
       hubSource,
@@ -360,6 +528,10 @@ export function useMobileKittyPairing(
   }
 
   function syncMobileKittyContextNow(): void {
+    if (contextSyncTimer != null) {
+      clearTimeout(contextSyncTimer)
+      contextSyncTimer = null
+    }
     if (!kitty.isConnected.value) {
       return
     }
@@ -373,11 +545,44 @@ export function useMobileKittyPairing(
   }
 
   watch(
+    [kittyDesktopLibraryId, kittyDesktopFocusUpdatedAt],
+    ([libraryId, focusUpdatedAt], previous) => {
+      if (forceEphemeralSession.value) {
+        return
+      }
+      const previousId = Array.isArray(previous) ? previous[0] : undefined
+      if (libraryId == null || libraryId === '') {
+        const hadPrevious = typeof previousId === 'string' && previousId.trim() !== ''
+        if (hadPrevious || (activeDiagramId.value != null && activeDiagramId.value !== '')) {
+          resetToFreshEphemeralSession({
+            pinAgainstDesktopFocus: false,
+            loadMindmapTemplate: true,
+          })
+          options.onDebugLine?.('#desk', 'focus cleared → ephemeral')
+        }
+        return
+      }
+      if (!isDesktopFocusFresh(focusUpdatedAt)) {
+        options.onDebugLine?.('#desk', `stale focus ignored ${libraryId.slice(0, 8)}`)
+        return
+      }
+      void applyDesktopFocusLibrary(libraryId)
+    }
+  )
+
+  watch(
     [diagramTypeRef, diagramDataRef, selectedNodesRef, activeDiagramId, kittyDesktopLibraryId],
     () => {
       scheduleMobileKittyContextSync()
     },
     { deep: true }
+  )
+
+  watch(
+    () => llmResultsStore.selectedModel,
+    () => {
+      scheduleMobileKittyContextSync()
+    }
   )
 
   watch(
@@ -387,7 +592,16 @@ export function useMobileKittyPairing(
     }
   )
 
+  onMounted(() => {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityForFocusPoll)
+    }
+  })
+
   onUnmounted(() => {
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', handleVisibilityForFocusPoll)
+    }
     if (contextSyncTimer != null) {
       clearTimeout(contextSyncTimer)
       contextSyncTimer = null
@@ -404,7 +618,13 @@ export function useMobileKittyPairing(
     mobileKittyContextPreview,
     ensureMobileKittyBootstrap,
     refreshMobileKittyBootstrap,
+    hydrateLibraryScopeIfNeeded,
+    markUserDiagramOverride,
+    startNewEphemeralMindmapSession,
+    clearForceEphemeralSession,
+    applyDesktopFocusLibrary,
     buildMobileKittyContext,
+    resolveMobileOneSentencePhase,
     scheduleMobileKittyContextSync,
     syncMobileKittyContextNow,
   }

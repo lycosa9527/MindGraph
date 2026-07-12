@@ -87,6 +87,26 @@ Refcount Lua defaults to **EVALSHA** (per-worker script cache). Set **`KITTY_REF
 
 Use **sticky sessions** (cookie- or IP-based) to `/ws/kitty` so the same client reconnects the same worker during a session. Preempt and refcount still coordinate across workers, but sticky routing reduces redundant churn. For metrics, `ws_kitty_refcount_meta_drift_total` bumps when `build_desktop_pairing_snapshot` sees sessionmeta and refcount disagree (investigate stale clients or partial failures).
 
+## Cross-device sync contract (mobile ↔ desktop)
+
+Treat Mobile Kitty, desktop canvas, and the one-sentence panel as **one session** when linked on the same library diagram scope.
+
+| Domain | Direction | Channel | Notes |
+|--------|-----------|---------|-------|
+| Scope / pairing | Desktop → Mobile | `desktop_focus` + bootstrap `live`/`library`/`empty` | Stale focus ignored (≤180s); empty → ephemeral |
+| Open diagram | Mobile → Desktop | `desktop_action` queue | Library pick / create-new opens canvas |
+| Diagram mutations (voice/Kitty) | Mobile → Desktop | WS `diagram_update` + SSE fanout | Mic edits appear on canvas |
+| Manual desktop canvas edits | Desktop → Mobile | Hub/`live_spec` + mobile `live_context` poll | Phone chips stay honest after desktop edits |
+| Selection | **Bidirectional** | Mobile `context_update` → SSE; desktop `PUT /api/kitty/selection/{scope}` → mobile WS | Chips ↔ canvas highlight |
+| LLM model | **Bidirectional** | `PUT /api/kitty/llm_model/{scope}` + WS/SSE | Both sides update pills |
+| Voice phase FAB | Mobile → Desktop | SSE `voice_phase_update` | Listening / speaking glow |
+| Mobile active indicator | Mobile → Desktop | SSE `mobile_active` | Canvas FAB / lock one-sentence |
+| Chat turns | Shared store | REST `one_sentence/turns` | Hydrate on scope change / reopen (not live stream) |
+
+**Not bidirectional (by design):** desktop mic voice phase → mobile; collab blocks remote Kitty apply; ephemeral mobile has no canvas chrome (no chips / LLM).
+
+**Unlinked** (ephemeral / no library id): mobile is chat + large mascot only.
+
 ## Desktop action poll (mobile gate)
 
 The desktop SPA (`useKittyDesktopActionPoll` in `App.vue`) **does not** consume the action queue unless:
@@ -101,7 +121,7 @@ While mobile Kitty is **off**, desktop opens **SSE** on `GET /api/kitty/desktop_
 
 **Tab leader:** `BroadcastChannel` (`kittyDesktopPollLeader.ts`) elects one desktop tab per browser profile to run the watch/consume loop so multiple open MindGraph tabs do not multiply pairing traffic.
 
-**Mobile `desktop_focus` poll:** `useMobileKittyPairing` polls `GET /api/kitty/desktop_focus` only before the mobile WebSocket connects and only while local scope is still unresolved (no saved diagram id, no bootstrap scope, no bootstrap desktop focus). After connect, polling stops.
+**Mobile `desktop_focus` poll:** `useMobileKittyPairing` polls `GET /api/kitty/desktop_focus` while Mobile Kitty is visible (including while connected) so opening a diagram on desktop can switch mobile scope. Focus is trusted only when recently refreshed (desktop canvas heartbeat). After focus clear, mobile resets to an ephemeral session.
 
 Desktop **start** on a scope clears `client_lane: mobile` in sessionmeta (`preserve_mobile_lane=False`) and removes that scope from `kitty:mobile_active:{user_id}` so the pairing indicator does not stay stale after handoff.
 

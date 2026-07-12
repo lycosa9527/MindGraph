@@ -28,6 +28,7 @@ const {
   draft,
   messages,
   isInputBlocked,
+  mobileKittyOwnsEditInput,
   kittyAgentState,
   asrListening,
   sendDraft,
@@ -48,6 +49,16 @@ const inputDisabled = computed(
 )
 
 const sendDisabled = computed(() => inputDisabled.value || !draft.value.trim())
+
+const inputPlaceholder = computed(() => {
+  if (mobileKittyOwnsEditInput.value) {
+    return t('canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder')
+  }
+  if (asrListening.value) {
+    return t('canvas.mindMapOneSentence.listeningPlaceholder')
+  }
+  return t('canvas.mindMapOneSentence.inputPlaceholder')
+})
 
 function handleClose(): void {
   emit('close')
@@ -159,6 +170,13 @@ function handleInputKeydown(event: KeyboardEvent): void {
     </div>
 
     <footer class="one-sentence-footer shrink-0 bg-white px-3 pb-3 pt-2">
+      <p
+        v-if="mobileKittyOwnsEditInput"
+        class="one-sentence-mobile-lock mb-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[11px] leading-snug text-violet-900"
+        role="status"
+      >
+        {{ t('canvas.mindMapOneSentence.mobileKittyOwnsInput') }}
+      </p>
       <div class="one-sentence-input-stack">
         <div
           class="one-sentence-input-container"
@@ -172,13 +190,10 @@ function handleInputKeydown(event: KeyboardEvent): void {
           <textarea
             v-model="draft"
             class="one-sentence-input-field"
-            :placeholder="
-              asrListening
-                ? t('canvas.mindMapOneSentence.listeningPlaceholder')
-                : t('canvas.mindMapOneSentence.inputPlaceholder')
-            "
+            :placeholder="inputPlaceholder"
             rows="2"
             :disabled="inputDisabled"
+            :aria-disabled="inputDisabled"
             @keydown="handleInputKeydown"
           />
           <div class="one-sentence-input-actions">

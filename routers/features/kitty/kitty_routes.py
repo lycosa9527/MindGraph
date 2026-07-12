@@ -25,6 +25,8 @@ from services.kitty.http.handlers import (
     kitty_rest_desktop_focus_put,
     kitty_rest_desktop_pairing,
     kitty_rest_live_context_snapshot,
+    kitty_rest_live_context_put,
+    kitty_rest_llm_model_push,
     kitty_rest_mobile_active_get,
     kitty_rest_mobile_lane_hint,
     kitty_rest_mobile_open_bootstrap,
@@ -34,6 +36,7 @@ from services.kitty.http.handlers import (
     kitty_rest_one_sentence_session_get,
     kitty_rest_one_sentence_migrate_scope,
     kitty_rest_one_sentence_diagram_activity,
+    kitty_rest_selection_push,
 )
 from services.kitty.infra.control.kitty_control_fanout import KITTY_CONTROL_REASON_HTTP_CLEANUP
 from services.kitty.infra.desktop.kitty_desktop_wake_stream import kitty_desktop_wake_stream_response
@@ -146,16 +149,63 @@ async def kitty_desktop_focus_put(
     return await kitty_rest_desktop_focus_put(current_user, diagram_library_id)
 
 
+@router.put("/api/kitty/llm_model/{diagram_session_id}")
+async def kitty_llm_model_push(
+    diagram_session_id: str,
+    current_user: User = Depends(get_current_user),
+    selected_llm_model: str | None = Body(default=None, embed=True),
+):
+    """
+    Desktop canvas LLM selection → paired mobile Kitty WebSocket.
+
+    Body: ``{"selected_llm_model": "qwen"|"deepseek"|"doubao"|null}``.
+    """
+    return await kitty_rest_llm_model_push(current_user, diagram_session_id, selected_llm_model)
+
+
+@router.put("/api/kitty/selection/{diagram_session_id}")
+async def kitty_selection_push(
+    diagram_session_id: str,
+    current_user: User = Depends(get_current_user),
+    selected_nodes: list[str] | None = Body(default=None, embed=True),
+):
+    """
+    Desktop canvas node selection → paired mobile Kitty WebSocket.
+
+    Body: ``{"selected_nodes": ["node-id", ...]}`` (empty list clears).
+    """
+    return await kitty_rest_selection_push(
+        current_user,
+        diagram_session_id,
+        selected_nodes if selected_nodes is not None else [],
+    )
+
+
 @router.get("/api/kitty/live_context/{diagram_session_id}")
 async def kitty_live_context_snapshot(diagram_session_id: str, current_user: User = Depends(get_current_user)):
     """
     Return the current Redis ``kitty:live_spec`` for this library scope when the caller
-    owns an active Kitty session on that scope (sessionmeta gate).
+    may access that scope.
 
-    Desktop uses this to apply hub-grounded diagram state (voice / context_update /
-    ``apply_diagram_spec_mutation`` writes) without relying on phone-only WebSocket frames.
+    Desktop and mobile use this to apply hub-grounded diagram state without relying
+    solely on WebSocket frames.
     """
     return await kitty_rest_live_context_snapshot(current_user, diagram_session_id)
+
+
+@router.put("/api/kitty/live_context/{diagram_session_id}")
+async def kitty_live_context_put(
+    diagram_session_id: str,
+    current_user: User = Depends(get_current_user),
+    body: Dict[str, Any] = Body(...),
+):
+    """
+    Desktop canvas publishes diagram snapshot into ``live_spec`` for linked mobile hydrate.
+
+    Body: ``diagram_type``, ``diagram_data``, optional ``selected_nodes``, ``active_panel``,
+    ``selected_llm_model``.
+    """
+    return await kitty_rest_live_context_put(current_user, diagram_session_id, body)
 
 
 @router.get("/api/kitty/mobile_lane/{diagram_session_id}")

@@ -53,7 +53,6 @@ import LearningSheetExportNudge from '@/components/canvas/LearningSheetExportNud
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
 import KittyDesktopVoiceCommandLog from '@/components/kitty/KittyDesktopVoiceCommandLog.vue'
-import KittyDesktopWorkflowDebugLog from '@/components/kitty/KittyDesktopWorkflowDebugLog.vue'
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
   eventBus,
@@ -117,7 +116,10 @@ import {
 import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
 import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
 import { useKittyDesktopVoiceCommandLog } from '@/composables/kitty/useKittyDesktopVoiceCommandLog'
-import { useKittyDesktopWorkflowDebug } from '@/composables/kitty/useKittyDesktopWorkflowDebug'
+import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesktopLlmModelPublish'
+import { useKittyDesktopSelectionPublish } from '@/composables/kitty/useKittyDesktopSelectionPublish'
+import { useKittyDesktopLiveSpecPublish } from '@/composables/kitty/useKittyDesktopLiveSpecPublish'
+import { useKittyDesktopVoicePhase } from '@/composables/kitty/useKittyDesktopVoicePhase'
 import { useKittyDiagramReviewAnnotationBus } from '@/composables/kitty/useKittyDiagramReviewAnnotationBus'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
@@ -602,7 +604,22 @@ const { entries: kittyVoiceCommandEntries } = useKittyDesktopVoiceCommandLog({
   scopeId: currentDiagramId,
 })
 
-const { entries: kittyWorkflowDebugEntries } = useKittyDesktopWorkflowDebug({
+const { phase: kittyVoicePhase } = useKittyDesktopVoicePhase({
+  enabled: showKittyDesktopIndicator,
+  scopeId: currentDiagramId,
+})
+
+useKittyDesktopLlmModelPublish({
+  enabled: showKittyDesktopIndicator,
+  scopeId: currentDiagramId,
+})
+
+useKittyDesktopSelectionPublish({
+  enabled: showKittyDesktopIndicator,
+  scopeId: currentDiagramId,
+})
+
+useKittyDesktopLiveSpecPublish({
   enabled: showKittyDesktopIndicator,
   scopeId: currentDiagramId,
 })
@@ -1421,14 +1438,9 @@ onUnmounted(() => {
       :entries="kittyVoiceCommandEntries"
     />
 
-    <KittyDesktopWorkflowDebugLog
-      :visible="showKittyDesktopIndicator"
-      :entries="kittyWorkflowDebugEntries"
-    />
-
     <KittyCanvasAnchor
       :visible="showKittyDesktopIndicator"
-      state="active"
+      :state="kittyVoicePhase"
       variant="fab"
       :interactive="false"
     />

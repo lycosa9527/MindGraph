@@ -25,7 +25,15 @@ from services.kitty.infra.desktop.kitty_desktop_focus import (
     set_kitty_desktop_focus_diagram,
 )
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
+    normalize_kitty_llm_model,
     publish_kitty_desktop_action_pending,
+    publish_kitty_llm_model_update,
+    publish_kitty_selection_update,
+)
+from services.kitty.infra.desktop.kitty_llm_model_push import push_kitty_llm_model_to_mobile_scope
+from services.kitty.infra.desktop.kitty_selection_push import (
+    normalize_kitty_selected_nodes,
+    push_kitty_selection_to_mobile_scope,
 )
 from services.kitty.infra.desktop.kitty_mobile_active import read_kitty_mobile_active
 from services.kitty.infra.guards.http_guards import (
@@ -34,8 +42,8 @@ from services.kitty.infra.guards.http_guards import (
 )
 from services.kitty.infra.redis.kitty_session_redis import (
     kitty_mobile_indicator_armed_for_user,
-    kitty_sessionmeta_active_for_user,
     load_kitty_live_context,
+    upsert_kitty_redis_session,
 )
 from services.kitty.infra.scope.kitty_scope_access import user_may_access_kitty_scope
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
@@ -185,11 +193,67 @@ async def kitty_rest_desktop_focus_put(
     return {"ok": True, "diagram_library_id": lib_id, "updated_at": updated_at}
 
 
+async def kitty_rest_llm_model_push(
+    current_user: User,
+    diagram_session_id: str,
+    selected_llm_model: Any,
+) -> Dict[str, Any]:
+    """Bidirectional LLM pill sync: live_spec + mobile WS + desktop SSE wake."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": False, "reason": "feature_disabled", "sent": 0}
+    if not await kitty_http_allowed(current_user):
+        return {"ok": False, "reason": "access_denied", "sent": 0}
+    scope = normalize_kitty_diagram_session_id(diagram_session_id)
+    if scope is None:
+        raise HTTPException(status_code=400, detail="Invalid diagram session id")
+    uid = int(current_user.id)
+    if not await user_may_access_kitty_scope(uid, scope):
+        return {"ok": False, "reason": "access_denied", "sent": 0}
+    if selected_llm_model is None:
+        model: Optional[str] = None
+    elif isinstance(selected_llm_model, str) and selected_llm_model.strip().lower() in {
+        "",
+        "null",
+        "none",
+    }:
+        model = None
+    else:
+        model = normalize_kitty_llm_model(selected_llm_model)
+        if model is None:
+            raise HTTPException(status_code=400, detail="Invalid selected_llm_model")
+    sent = await push_kitty_llm_model_to_mobile_scope(scope, uid, model)
+    # Fan out to desktop canvas listeners (mobile→desktop; desktop echo is a no-op apply).
+    await publish_kitty_llm_model_update(uid, scope, model)
+    return {"ok": True, "selected_llm_model": model, "sent": sent}
+
+
+async def kitty_rest_selection_push(
+    current_user: User,
+    diagram_session_id: str,
+    selected_nodes: Any,
+) -> Dict[str, Any]:
+    """Bidirectional selection sync: live_spec + mobile WS + desktop SSE wake."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": False, "reason": "feature_disabled", "sent": 0}
+    if not await kitty_http_allowed(current_user):
+        return {"ok": False, "reason": "access_denied", "sent": 0}
+    scope = normalize_kitty_diagram_session_id(diagram_session_id)
+    if scope is None:
+        raise HTTPException(status_code=400, detail="Invalid diagram session id")
+    uid = int(current_user.id)
+    if not await user_may_access_kitty_scope(uid, scope):
+        return {"ok": False, "reason": "access_denied", "sent": 0}
+    nodes = normalize_kitty_selected_nodes(selected_nodes)
+    sent = await push_kitty_selection_to_mobile_scope(scope, uid, nodes)
+    await publish_kitty_selection_update(uid, scope, nodes)
+    return {"ok": True, "selected_nodes": nodes, "sent": sent}
+
+
 async def kitty_rest_live_context_snapshot(
     current_user: User,
     diagram_session_id: str,
 ) -> Dict[str, Any]:
-    """Redis ``kitty:live_spec`` snapshot for desktop canvas sync."""
+    """Redis ``kitty:live_spec`` snapshot for desktop/mobile cross-device sync."""
     if not config.FEATURE_KITTY_WS_ENABLED:
         return {"ok": False, "reason": "feature_disabled"}
     if not await kitty_http_allowed(current_user):
@@ -198,8 +262,8 @@ async def kitty_rest_live_context_snapshot(
     if scope is None:
         raise HTTPException(status_code=400, detail="Invalid diagram session id")
     uid = int(current_user.id)
-    if not await kitty_sessionmeta_active_for_user(scope, uid):
-        return {"ok": False, "reason": "no_session"}
+    if not await user_may_access_kitty_scope(uid, scope):
+        return {"ok": False, "reason": "access_denied"}
     live = await load_kitty_live_context(scope)
     if not live:
         return {"ok": False, "reason": "no_live"}
@@ -210,7 +274,52 @@ async def kitty_rest_live_context_snapshot(
         "active_panel": live.get("active_panel"),
         "diagram_data": live.get("diagram_data") or {},
         "selected_nodes": live.get("selected_nodes") or [],
+        "selected_llm_model": live.get("selected_llm_model"),
     }
+
+
+async def kitty_rest_live_context_put(
+    current_user: User,
+    diagram_session_id: str,
+    body: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Desktop canvas → live_spec so linked mobile can hydrate manual edits."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": False, "reason": "feature_disabled"}
+    if not await kitty_http_allowed(current_user):
+        return {"ok": False, "reason": "access_denied"}
+    scope = normalize_kitty_diagram_session_id(diagram_session_id)
+    if scope is None:
+        raise HTTPException(status_code=400, detail="Invalid diagram session id")
+    uid = int(current_user.id)
+    if not await user_may_access_kitty_scope(uid, scope):
+        return {"ok": False, "reason": "access_denied"}
+    diagram_type = body.get("diagram_type")
+    if not isinstance(diagram_type, str) or not diagram_type.strip():
+        raise HTTPException(status_code=400, detail="diagram_type required")
+    diagram_data = body.get("diagram_data")
+    if not isinstance(diagram_data, dict):
+        raise HTTPException(status_code=400, detail="diagram_data required")
+    selected_nodes = normalize_kitty_selected_nodes(body.get("selected_nodes"))
+    active_panel = body.get("active_panel")
+    panel = active_panel if isinstance(active_panel, str) and active_panel.strip() else "none"
+    live_existing = await load_kitty_live_context(scope)
+    live_payload: Dict[str, Any] = dict(live_existing) if isinstance(live_existing, dict) else {}
+    live_payload["diagram_type"] = diagram_type.strip()
+    live_payload["diagram_data"] = diagram_data
+    live_payload["selected_nodes"] = selected_nodes
+    live_payload["active_panel"] = panel
+    live_payload["diagram_library_id"] = scope
+    if "selected_llm_model" in body:
+        live_payload["selected_llm_model"] = normalize_kitty_llm_model(body.get("selected_llm_model"))
+    updated_at = await upsert_kitty_redis_session(
+        scope,
+        uid,
+        active_diagram_library_id=scope,
+        preserve_mobile_lane=True,
+        live_payload=live_payload,
+    )
+    return {"ok": True, "updated_at": updated_at}
 
 
 async def kitty_rest_mobile_lane_hint(

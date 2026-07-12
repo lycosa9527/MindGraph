@@ -1002,4 +1002,7 @@ export default {
   'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
     "Sorry — I couldn't auto-complete that branch. You can ask again.",
   'canvas.mindMapOneSentence.clarifyChoices': 'Choose an option',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
+    'Mobile Kitty is connected to this diagram. Use your phone to speak or type — desktop input is paused.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'Use Mobile Kitty on your phone…',
 } as const

@@ -2,6 +2,8 @@ import type { Ref, ShallowRef } from 'vue'
 
 import { type EventTypes, eventBus } from '@/composables/core/useEventBus'
 import { executeKittyAgentAction } from '@/composables/kitty/kittyAgentActions'
+import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
+import { applyKittyRemoteCanvasSelection } from '@/composables/kitty/kittySelectionApply'
 import type { DiagramEditExpectedEffect } from '@/utils/diagramEditVerify'
 import { arrayBufferToBase64, base64ToArrayBuffer } from '@/composables/kitty/kittyAgentAudioCodec'
 import { normalizeKittyDebugText } from '@/composables/kitty/kittyAgentDebug'
@@ -45,6 +47,20 @@ export function handleKittyServerMessage(
       deps.state.value = 'active'
       eventBus.emit('voice:connected', { sessionId: String(data.session_id ?? '') })
       break
+
+    case 'llm_model_update': {
+      void applyKittyRemoteLlmModel(data.selected_llm_model)
+      break
+    }
+
+    case 'selection_update': {
+      const raw = data.selected_nodes
+      const selectedNodes = Array.isArray(raw)
+        ? raw.filter((item): item is string => typeof item === 'string')
+        : []
+      applyKittyRemoteCanvasSelection(selectedNodes, { canvasHighlight: false })
+      break
+    }
 
     case 'transcription':
       deps.lastTranscription.value = String(data.text ?? '')

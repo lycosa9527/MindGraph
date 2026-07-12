@@ -15,7 +15,9 @@ export interface KittyDesktopWakeStreamOptions {
   onDesktopActionPending?: () => void
   onDiagramUpdate?: (payload: KittyDesktopDiagramUpdateFanout) => void
   onSelectionUpdate?: (payload: KittyDesktopSelectionUpdateFanout) => void
+  onLlmModelUpdate?: (payload: KittyDesktopLlmModelUpdateFanout) => void
   onVoiceCommand?: (payload: KittyDesktopVoiceCommandFanout) => void
+  onVoicePhaseUpdate?: (payload: KittyDesktopVoicePhaseUpdateFanout) => void
   onOpen?: () => void
   onClose?: () => void
   onError?: (event: Event) => void
@@ -35,11 +37,23 @@ export interface KittyDesktopSelectionUpdateFanout {
   selected_nodes?: unknown
 }
 
+export interface KittyDesktopLlmModelUpdateFanout {
+  type?: unknown
+  scope?: unknown
+  selected_llm_model?: unknown
+}
+
 export interface KittyDesktopVoiceCommandFanout {
   type?: unknown
   scope?: unknown
   action?: unknown
   detail?: unknown
+}
+
+export interface KittyDesktopVoicePhaseUpdateFanout {
+  type?: unknown
+  scope?: unknown
+  phase?: unknown
 }
 
 function parseMobileActivePayload(raw: unknown): KittyDesktopWakeMobileActive | null {
@@ -120,8 +134,16 @@ export function createKittyDesktopWakeStream(options: KittyDesktopWakeStreamOpti
             options.onSelectionUpdate?.(parsed as KittyDesktopSelectionUpdateFanout)
             return
           }
+          if (row.type === 'llm_model_update') {
+            options.onLlmModelUpdate?.(parsed as KittyDesktopLlmModelUpdateFanout)
+            return
+          }
           if (row.type === 'voice_command') {
             options.onVoiceCommand?.(parsed as KittyDesktopVoiceCommandFanout)
+            return
+          }
+          if (row.type === 'voice_phase_update') {
+            options.onVoicePhaseUpdate?.(parsed as KittyDesktopVoicePhaseUpdateFanout)
             return
           }
         }

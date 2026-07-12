@@ -1,12 +1,16 @@
 /**
- * Push-to-talk mic and Space-key handling for MobileKittyPage.
+ * Push-to-talk mic and Space-key handling for MobileKittyPage (Fun-ASR).
  */
-import { onUnmounted, ref } from 'vue'
+import { type Ref, onUnmounted, ref } from 'vue'
 
-import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
+export interface UseMobileKittyMicPttFunAsr {
+  listening: Ref<boolean>
+  startListening: () => Promise<void>
+  stopListening: () => void
+}
 
 export interface UseMobileKittyMicPttOptions {
-  kitty: ReturnType<typeof useKittyAgent>
+  funAsr: UseMobileKittyMicPttFunAsr
   kittyServerEnabled: { value: boolean }
   connecting: { value: boolean }
   micDenied: { value: boolean }
@@ -19,7 +23,7 @@ export interface UseMobileKittyMicPttOptions {
 
 export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
   const {
-    kitty,
+    funAsr,
     kittyServerEnabled,
     connecting,
     micDenied,
@@ -97,7 +101,7 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     if (!kittyServerEnabled.value || connecting.value || micDenied.value) {
       return
     }
-    if (kitty.isVoiceActive.value || voiceStartInFlight.value) {
+    if (funAsr.listening.value || voiceStartInFlight.value) {
       return
     }
     voiceStartInFlight.value = true
@@ -106,9 +110,9 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       if (!ok || !isKittyMicHoldActive()) {
         return
       }
-      await kitty.startVoiceInput()
+      await funAsr.startListening()
       if (!isKittyMicHoldActive()) {
-        kitty.stopVoiceInput()
+        funAsr.stopListening()
       } else {
         onMicAllowed()
       }
@@ -122,8 +126,8 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
   function endKittyMicFromUser(): void {
     pttPointerActive.value = false
     spacePttActive = false
-    if (kitty.isVoiceActive.value) {
-      kitty.stopVoiceInput()
+    if (funAsr.listening.value) {
+      funAsr.stopListening()
     }
   }
 
@@ -145,8 +149,8 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
 
   function onKittyMicPointerUp(ev: PointerEvent): void {
     pttPointerActive.value = false
-    if (kitty.isVoiceActive.value) {
-      kitty.stopVoiceInput()
+    if (funAsr.listening.value) {
+      funAsr.stopListening()
     }
     const el = ev.currentTarget
     if (el instanceof HTMLElement && el.hasPointerCapture(ev.pointerId)) {
@@ -187,8 +191,8 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       return
     }
     spacePttActive = false
-    if (kitty.isVoiceActive.value) {
-      kitty.stopVoiceInput()
+    if (funAsr.listening.value) {
+      funAsr.stopListening()
     }
   }
 

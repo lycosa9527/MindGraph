@@ -13,7 +13,59 @@ from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
     publish_kitty_diagram_update,
     publish_kitty_selection_update,
 )
+from services.kitty.infra.desktop.kitty_selection_push import (
+    normalize_kitty_selected_nodes,
+    push_kitty_selection_to_mobile_scope,
+)
 from tests.typing_helpers import mock_await_args, mock_await_kwargs
+
+
+@pytest.mark.asyncio
+async def test_normalize_kitty_selected_nodes_dedupes() -> None:
+    """Selection push normalizes and dedupes node ids."""
+    assert normalize_kitty_selected_nodes(["a", " a ", "b", "a", "", 1]) == ["a", "b"]
+    assert not normalize_kitty_selected_nodes(None)
+
+
+@pytest.mark.asyncio
+async def test_push_kitty_selection_to_mobile_scope_sends_ws() -> None:
+    """Desktop selection PUT path notifies mobile WebSocket clients."""
+    websocket = MagicMock()
+    with (
+        patch(
+            "services.kitty.infra.desktop.kitty_selection_push.load_kitty_live_context",
+            AsyncMock(return_value={"diagram_type": "mindmap", "diagram_data": {}}),
+        ),
+        patch(
+            "services.kitty.infra.desktop.kitty_selection_push.upsert_kitty_redis_session",
+            AsyncMock(return_value=123),
+        ),
+        patch(
+            "services.kitty.infra.desktop.kitty_selection_push.safe_websocket_send",
+            AsyncMock(return_value=True),
+        ) as safe_send,
+        patch(
+            "services.kitty.infra.desktop.kitty_selection_push.active_websockets",
+            {"lib-sel-1": [websocket]},
+        ),
+        patch(
+            "services.kitty.infra.desktop.kitty_selection_push.voice_sessions",
+            {
+                "vs1": {
+                    "user_id": 3,
+                    "diagram_session_id": "lib-sel-1",
+                    "context": {"selected_nodes": []},
+                }
+            },
+        ),
+    ):
+        sent = await push_kitty_selection_to_mobile_scope("lib-sel-1", 3, ["n1", "n2"])
+
+    assert sent == 1
+    safe_send.assert_awaited_once()
+    _ws, body = mock_await_args(safe_send)
+    assert body["type"] == "selection_update"
+    assert body["selected_nodes"] == ["n1", "n2"]
 
 
 @pytest.mark.asyncio
@@ -76,9 +128,15 @@ async def test_publish_kitty_selection_update_payload_shape() -> None:
     """Test publish kitty selection update payload shape."""
     fake_redis = MagicMock()
     fake_redis.publish = AsyncMock()
-    with patch(
-        "services.kitty.infra.desktop.kitty_desktop_wake_fanout.get_async_redis",
-        return_value=fake_redis,
+    with (
+        patch(
+            "services.kitty.infra.desktop.kitty_desktop_wake_fanout.get_async_redis",
+            return_value=fake_redis,
+        ),
+        patch(
+            "services.kitty.infra.desktop.kitty_desktop_wake_fanout.publish_kitty_voice_command_log",
+            AsyncMock(),
+        ),
     ):
         await publish_kitty_selection_update(
             9,
@@ -110,11 +168,11 @@ async def test_send_kitty_diagram_update_fanouts_when_voice_session_known() -> N
             AsyncMock(return_value=True),
         ) as safe_send,
         patch(
-            "services.kitty.infra.desktop.kitty_desktop_wake_fanout.publish_kitty_diagram_update",
+            "services.kitty.context.messaging.publish_kitty_diagram_update",
             AsyncMock(),
         ) as fanout,
         patch(
-            "services.kitty.session.runtime_state.voice_sessions",
+            "services.kitty.context.messaging.voice_sessions",
             {
                 "vs1": {
                     "user_id": 42,
@@ -122,12 +180,20 @@ async def test_send_kitty_diagram_update_fanouts_when_voice_session_known() -> N
                 }
             },
         ),
+        patch(
+            "services.kitty.context.messaging.render_ack_for_diagram_update",
+            return_value="摘要",
+        ),
     ):
         ok = await send_kitty_diagram_update(websocket, "vs1", message)
 
     assert ok is True
-    safe_send.assert_awaited_once_with(websocket, message)
-    fanout.assert_awaited_once_with(42, "lib-uuid-2", message)
+    assert safe_send.await_count == 1
+    sent_msg = mock_await_args(safe_send)[1]
+    assert sent_msg["type"] == "diagram_update"
+    assert sent_msg["action"] == "update_center"
+    assert sent_msg["updates"] == {"new_text": "Topic"}
+    fanout.assert_awaited_once_with(42, "lib-uuid-2", sent_msg)
 
 
 @pytest.mark.asyncio

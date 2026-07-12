@@ -50,7 +50,14 @@ const statusDotClass = computed(() => {
 
 const statusSubtitle = computed(() => {
   if (!props.interactive) {
-    return t('canvas.kittyMobileIndicatorHint')
+    switch (props.state) {
+      case 'listening':
+        return t('canvas.kittyMobileIndicatorListening', '手机正在聆听')
+      case 'speaking':
+        return t('canvas.kittyMobileIndicatorSpeaking', '手机正在回复')
+      default:
+        return t('canvas.kittyMobileIndicatorHint')
+    }
   }
   switch (props.state) {
     case 'error':
@@ -70,7 +77,14 @@ const statusSubtitle = computed(() => {
 
 const ariaLabel = computed(() => {
   if (!props.interactive) {
-    return t('canvas.kittyMobileIndicatorAria')
+    switch (props.state) {
+      case 'listening':
+        return t('canvas.kittyMobileIndicatorListeningAria', 'Kitty 手机端正在聆听')
+      case 'speaking':
+        return t('canvas.kittyMobileIndicatorSpeakingAria', 'Kitty 手机端正在回复')
+      default:
+        return t('canvas.kittyMobileIndicatorAria')
+    }
   }
   switch (props.state) {
     case 'error':
@@ -92,13 +106,24 @@ const inlineTitle = computed(() =>
   props.interactive ? 'Kitty 智能体' : t('canvas.kittyMobileIndicatorTitle')
 )
 
+const fabPhaseClass = computed(() => {
+  if (props.state === 'listening') {
+    return 'kitty-anchor--phase-listening'
+  }
+  if (props.state === 'speaking') {
+    return 'kitty-anchor--phase-speaking'
+  }
+  return ''
+})
+
 const fabShellClass = computed(() => {
   const base =
     'kitty-anchor fixed z-[60] w-14 h-14 rounded-full shadow-lg bg-white border-2 border-gray-200 dark:bg-gray-800 dark:border-gray-600 flex items-center justify-center text-2xl select-none'
+  const phase = fabPhaseClass.value
   if (props.interactive) {
-    return `${base} touch-manipulation hover:border-violet-300 dark:hover:border-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2`
+    return `${base} ${phase} touch-manipulation hover:border-violet-300 dark:hover:border-violet-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2`.trim()
   }
-  return `${base} pointer-events-none cursor-default`
+  return `${base} ${phase} pointer-events-none cursor-default`.trim()
 })
 
 const inlineShellClass = computed(() => {
@@ -131,7 +156,7 @@ const inlineShellClass = computed(() => {
         aria-hidden="true"
       />
       <span
-        class="relative z-0"
+        class="relative z-[1]"
         :class="{
           'kitty-anchor__emoji--pulse': state === 'listening' || state === 'speaking',
         }"
@@ -157,7 +182,7 @@ const inlineShellClass = computed(() => {
         aria-hidden="true"
       />
       <span
-        class="relative z-0"
+        class="relative z-[1]"
         :class="{
           'kitty-anchor__emoji--pulse': state === 'listening' || state === 'speaking',
         }"
@@ -331,12 +356,104 @@ const inlineShellClass = computed(() => {
 }
 
 .kitty-voice-status--speaking {
-  background-color: rgb(139 92 246);
+  background-color: rgb(34 197 94);
   animation: kitty-dot-pulse 0.75s ease-in-out infinite;
 }
 
 .kitty-voice-status--error {
   background-color: rgb(239 68 68);
+}
+
+@property --kitty-fab-ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.kitty-anchor--phase-listening,
+.kitty-anchor--phase-speaking {
+  position: relative;
+  padding: 2px;
+  border-color: transparent !important;
+}
+
+.kitty-anchor--phase-listening::before,
+.kitty-anchor--phase-speaking::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  padding: 2px;
+  --kitty-fab-ring-angle: 0deg;
+  pointer-events: none;
+  z-index: 0;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  animation: kitty-fab-ring-travel 2.5s linear infinite;
+}
+
+.kitty-anchor--phase-listening::before {
+  background: conic-gradient(
+    from var(--kitty-fab-ring-angle) at 50% 50%,
+    rgba(59, 130, 246, 0.12) 0deg,
+    rgba(59, 130, 246, 0.08) 50deg,
+    #93c5fd 130deg,
+    #3b82f6 180deg,
+    #60a5fa 230deg,
+    rgba(59, 130, 246, 0.08) 310deg,
+    rgba(59, 130, 246, 0.12) 360deg
+  );
+}
+
+.kitty-anchor--phase-speaking::before {
+  background: conic-gradient(
+    from var(--kitty-fab-ring-angle) at 50% 50%,
+    rgba(34, 197, 94, 0.12) 0deg,
+    rgba(34, 197, 94, 0.08) 50deg,
+    #86efac 130deg,
+    #22c55e 180deg,
+    #4ade80 230deg,
+    rgba(34, 197, 94, 0.08) 310deg,
+    rgba(34, 197, 94, 0.12) 360deg
+  );
+}
+
+.dark .kitty-anchor--phase-listening::before {
+  background: conic-gradient(
+    from var(--kitty-fab-ring-angle) at 50% 50%,
+    rgba(96, 165, 250, 0.12) 0deg,
+    rgba(96, 165, 250, 0.08) 50deg,
+    #93c5fd 130deg,
+    #60a5fa 180deg,
+    #3b82f6 230deg,
+    rgba(96, 165, 250, 0.08) 310deg,
+    rgba(96, 165, 250, 0.12) 360deg
+  );
+}
+
+.dark .kitty-anchor--phase-speaking::before {
+  background: conic-gradient(
+    from var(--kitty-fab-ring-angle) at 50% 50%,
+    rgba(52, 211, 153, 0.12) 0deg,
+    rgba(52, 211, 153, 0.08) 50deg,
+    #6ee7b7 130deg,
+    #34d399 180deg,
+    #4ade80 230deg,
+    rgba(52, 211, 153, 0.08) 310deg,
+    rgba(52, 211, 153, 0.12) 360deg
+  );
+}
+
+@keyframes kitty-fab-ring-travel {
+  to {
+    --kitty-fab-ring-angle: 360deg;
+  }
 }
 
 @keyframes kitty-dot-pulse {

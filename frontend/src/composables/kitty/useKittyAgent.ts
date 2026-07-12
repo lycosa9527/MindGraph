@@ -70,9 +70,22 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
 
   let destroyed = false
   let cleaningUp = false
+  /** Serializes startConversation so two callers cannot open two sockets for one agent. */
+  let startInFlight: Promise<void> | null = null
 
   const isConnected = computed(() => ws.value?.readyState === WebSocket.OPEN)
   const canSpeak = computed(() => isActive.value && isConnected.value)
+
+  function isLiveOnScope(scope: string): boolean {
+    if (diagramSessionId.value !== scope) {
+      return false
+    }
+    const socket = ws.value
+    if (!socket) {
+      return false
+    }
+    return socket.readyState === WebSocket.OPEN && isActive.value
+  }
 
   const lifecycle = {
     destroyed: () => destroyed,
@@ -249,22 +262,53 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       throw new Error('Kitty Agent has been destroyed')
     }
 
-    if (!audioContext.value) {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-      if (!AudioCtx) {
-        throw new Error('Web Audio API is not supported')
-      }
-      audioContext.value = new AudioCtx({ sampleRate })
-    }
-    if (audioContext.value.state === 'suspended') {
-      await audioContext.value.resume()
+    const scope = diagSessionId.trim()
+    if (!scope) {
+      throw new Error('Missing Kitty diagram session id')
     }
 
-    await connect(diagSessionId, context)
-    kittySession.setOwnsKittySession(true)
-    eventBus.emit('voice:started', { sessionId: sessionId.value ?? '' })
+    // Join any in-flight start so we never open a second socket for this agent.
+    const prior = startInFlight
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    startInFlight = gate
+
+    try {
+      if (prior) {
+        await prior.catch(() => undefined)
+      }
+
+      if (isLiveOnScope(scope)) {
+        if (context) {
+          updateContext(context)
+        }
+        return
+      }
+
+      if (!audioContext.value) {
+        const AudioCtx =
+          window.AudioContext ||
+          (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+        if (!AudioCtx) {
+          throw new Error('Web Audio API is not supported')
+        }
+        audioContext.value = new AudioCtx({ sampleRate })
+      }
+      if (audioContext.value.state === 'suspended') {
+        await audioContext.value.resume()
+      }
+
+      await connect(scope, context)
+      kittySession.setOwnsKittySession(true)
+      eventBus.emit('voice:started', { sessionId: sessionId.value ?? '' })
+    } finally {
+      release()
+      if (startInFlight === gate) {
+        startInFlight = null
+      }
+    }
   }
 
   async function startVoiceInput(): Promise<void> {

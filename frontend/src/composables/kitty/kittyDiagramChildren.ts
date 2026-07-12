@@ -2,14 +2,27 @@
  * Pure Kitty diagram child indexing — shared by voice context, click wheel, and canvas actions.
  */
 import { resolveVoiceNodeId } from '@/composables/editor/diagramVoiceMutations'
-import type { DiagramNode, DiagramType } from '@/types'
+import {
+  sortMindMapChildIds,
+  sortMindMapTopicChildIds,
+} from '@/config/mindMapGeometry'
+import type { Connection, DiagramNode, DiagramType } from '@/types'
 
 export type KittyVoiceContextNode = {
   id: string
   text?: string
   type?: string
   data?: Record<string, unknown>
+  childIds?: string[]
 }
+
+export type KittyClickWheelNode = {
+  id: string
+  index: number
+  text: string
+}
+
+type ConnectionLike = Pick<Connection, 'source' | 'target'>
 
 export function kittyNodeDisplayText(node: KittyVoiceContextNode): string {
   const raw = (node.text ?? '').trim()
@@ -94,6 +107,129 @@ export function buildKittyChildren(
         )
         .map(toChild)
   }
+}
+
+function directChildIds(
+  parentId: string,
+  connections: ConnectionLike[],
+  nodes: KittyVoiceContextNode[]
+): string[] {
+  const fromConn = connections.filter((c) => c.source === parentId).map((c) => c.target)
+  if (fromConn.length > 0) {
+    return fromConn
+  }
+  const node = nodes.find((n) => n.id === parentId)
+  return node?.childIds ?? []
+}
+
+function wheelRootId(
+  dt: DiagramType,
+  nodes: KittyVoiceContextNode[],
+  connections: ConnectionLike[]
+): string | null {
+  const kind = dt === 'mind_map' ? 'mindmap' : dt
+  if (kind === 'mindmap') {
+    return nodes.find((n) => n.id === 'topic')?.id ?? nodes.find((n) => n.type === 'topic')?.id ?? null
+  }
+  if (kind === 'tree_map') {
+    return (
+      nodes.find((n) => n.id === 'tree-topic')?.id ??
+      nodes.find((n) => n.type === 'topic')?.id ??
+      null
+    )
+  }
+  if (kind === 'brace_map') {
+    const targets = new Set(connections.map((c) => c.target))
+    return (
+      nodes.find((n) => n.type === 'topic')?.id ??
+      nodes.find((n) => n.id === 'brace-whole')?.id ??
+      nodes.find((n) => !targets.has(n.id))?.id ??
+      null
+    )
+  }
+  return null
+}
+
+function sortWheelSiblings(
+  dt: DiagramType,
+  parentId: string,
+  childIds: string[]
+): string[] {
+  const kind = dt === 'mind_map' ? 'mindmap' : dt
+  if (kind === 'mindmap') {
+    if (parentId === 'topic') {
+      return sortMindMapTopicChildIds(childIds)
+    }
+    return sortMindMapChildIds(childIds)
+  }
+  return childIds
+}
+
+function isWheelVisitableNode(dt: DiagramType, nodeId: string, rootId: string): boolean {
+  if (nodeId === rootId || nodeId === 'dimension-label') {
+    return false
+  }
+  const kind = dt === 'mind_map' ? 'mindmap' : dt
+  if (kind === 'mindmap') {
+    return nodeId.startsWith('branch-')
+  }
+  if (kind === 'tree_map') {
+    return nodeId.startsWith('tree-cat-') || nodeId.startsWith('tree-leaf-')
+  }
+  if (kind === 'brace_map') {
+    return true
+  }
+  return false
+}
+
+/**
+ * Click-wheel order: pre-order DFS — branch 1, its descendants, branch 2, …
+ * Falls back to flat `buildKittyChildren` when the diagram has no hierarchy edges.
+ */
+export function buildKittyClickWheelNodes(
+  dt: DiagramType,
+  nodes: KittyVoiceContextNode[],
+  connections: ConnectionLike[] = []
+): KittyClickWheelNode[] {
+  const rootId = wheelRootId(dt, nodes, connections)
+  const hasHierarchy =
+    rootId != null &&
+    (connections.length > 0 || nodes.some((n) => (n.childIds?.length ?? 0) > 0))
+
+  if (!hasHierarchy || rootId == null) {
+    return buildKittyChildren(dt, nodes)
+  }
+
+  const nodeById = new Map(nodes.map((n) => [n.id, n]))
+  const ordered: KittyClickWheelNode[] = []
+  const visited = new Set<string>()
+
+  const walk = (parentId: string): void => {
+    const siblings = sortWheelSiblings(dt, parentId, directChildIds(parentId, connections, nodes))
+    for (const id of siblings) {
+      if (visited.has(id) || !isWheelVisitableNode(dt, id, rootId)) {
+        continue
+      }
+      const node = nodeById.get(id)
+      if (!node) {
+        continue
+      }
+      visited.add(id)
+      ordered.push({
+        id: node.id,
+        index: ordered.length,
+        text: kittyNodeDisplayText(node),
+      })
+      walk(id)
+    }
+  }
+
+  walk(rootId)
+
+  if (ordered.length === 0) {
+    return buildKittyChildren(dt, nodes)
+  }
+  return ordered
 }
 
 /** Resolve Kitty child node id from voice params (matches backend `children[]` indexing). */

@@ -9,9 +9,13 @@ from fastapi import WebSocket
 
 from services.kitty.audio.session_bridge import speak_kitty_final_reply
 from services.kitty.context.messaging import safe_websocket_send
+from services.kitty.infra.desktop.kitty_voice_phase_fanout import (
+    fanout_voice_phase_from_session,
+)
 from services.kitty.session.one_sentence_command_detail import normalize_command_detail
 from services.kitty.session.one_sentence_turns import persist_one_sentence_turn_from_voice_session
 from services.kitty.session.runtime_state import voice_sessions
+from services.kitty.tts.cosyvoice_realtime import resolve_kitty_tts_enabled
 
 
 def _normalize_clarify_options(raw: Optional[list[Any]]) -> list[str]:
@@ -88,6 +92,8 @@ async def emit_user_ack(
             payload["clarify_question"] = question
 
     sent = await safe_websocket_send(websocket, payload)
+    if sent:
+        await fanout_voice_phase_from_session(voice_session_id, "speaking")
 
     # One durable kitty row per request — skip progress UI-only acks.
     if kind != "progress":
@@ -105,6 +111,13 @@ async def emit_user_ack(
         )
 
     # Chat text and TTS start together; serial queue + barge-in handle overlap.
+    session = voice_sessions.get(voice_session_id)
+    tts_will_run = (
+        resolve_kitty_tts_enabled() and isinstance(session, dict) and session.get("_kitty_tts_enabled") is not False
+    )
     asyncio.create_task(speak_kitty_final_reply(websocket, voice_session_id, message))
+    if sent and not tts_will_run:
+        # Text-only / TTS off: reply is a single chunk, not a stream — return to idle.
+        await fanout_voice_phase_from_session(voice_session_id, "active")
 
     return sent

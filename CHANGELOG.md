@@ -5,7 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.142.0] - 2026-07-12
+
+> **Kitty mobile ↔ desktop cross-device sync: bidirectional selection and LLM model, live-context poll, voice-phase FAB, one-sentence desktop lock while phone Kitty is active, and mobile chat transcript.**
+
+### Added
+
+- **Cross-device sync contract** — Documented mobile ↔ desktop pairing domains (scope, selection, LLM model, live_spec, voice phase, chat turns) in [`services/kitty/README.md`](services/kitty/README.md).
+- **Bidirectional selection sync** — Desktop `PUT /api/kitty/selection/{scope}` pushes chips to mobile WS; mobile `context_update` fans out to desktop SSE ([`kitty_selection_push.py`](services/kitty/infra/desktop/kitty_selection_push.py), [`useKittyDesktopSelectionPublish.ts`](frontend/src/composables/kitty/useKittyDesktopSelectionPublish.ts)).
+- **Bidirectional LLM model sync** — `PUT /api/kitty/llm_model/{scope}` + WS/SSE so canvas and phone pills stay aligned ([`kitty_llm_model_push.py`](services/kitty/infra/desktop/kitty_llm_model_push.py), [`useKittyDesktopLlmModelPublish.ts`](frontend/src/composables/kitty/useKittyDesktopLlmModelPublish.ts), [`applyKittyRemoteLlmModel.ts`](frontend/src/composables/kitty/applyKittyRemoteLlmModel.ts), [`KittyMobileLlmModelRow.vue`](frontend/src/components/kitty/KittyMobileLlmModelRow.vue)).
+- **Live-context snapshot / put** — `GET`/`PUT /api/kitty/live_context/{scope}` plus mobile poll so phone chips stay honest after desktop canvas edits ([`handlers.py`](services/kitty/http/handlers.py), [`useMobileKittyLiveContextPoll.ts`](frontend/src/composables/kitty/useMobileKittyLiveContextPoll.ts), [`useKittyDesktopLiveSpecPublish.ts`](frontend/src/composables/kitty/useKittyDesktopLiveSpecPublish.ts)).
+- **Voice-phase FAB fanout** — Mobile listening/speaking phase publishes to desktop SSE ([`kitty_voice_phase_fanout.py`](services/kitty/infra/desktop/kitty_voice_phase_fanout.py), [`useKittyDesktopVoicePhase.ts`](frontend/src/composables/kitty/useKittyDesktopVoicePhase.ts)).
+- **Desktop one-sentence lock** — When Mobile Kitty holds the same library scope, desktop one-sentence *edit* input yields to the phone (create/generate stays on desktop) ([`desktopOneSentenceMobileKittyLock.ts`](frontend/src/composables/canvasToolbar/desktopOneSentenceMobileKittyLock.ts)).
+- **Mobile Kitty chat transcript** — Shared one-sentence turns UI on `/m/kitty` with hydrate on scope change ([`KittyMobileChatTranscript.vue`](frontend/src/components/kitty/KittyMobileChatTranscript.vue), [`useMobileKittyChat.ts`](frontend/src/composables/mobile/useMobileKittyChat.ts)).
+- **Mobile photo capture prep** — Shared helper for Kitty photo capture flow ([`prepareMobileKittyPhotoCapture.ts`](frontend/src/composables/mobile/prepareMobileKittyPhotoCapture.ts)).
+
+### Changed
+
+- **Mobile Kitty page** — Pairing, library pick, LLM row, chat transcript, and mic PTT refactored onto focused composables ([`MobileKittyPage.vue`](frontend/src/pages/mobile/MobileKittyPage.vue), [`useMobileKittyPairing.ts`](frontend/src/composables/kitty/useMobileKittyPairing.ts)).
+- **Desktop Kitty remote sync** — Canvas anchor / remote sync publish selection, live_spec, LLM model, and consume wake/selection/voice-phase SSE ([`KittyCanvasAnchor.vue`](frontend/src/components/kitty/KittyCanvasAnchor.vue), [`useKittyDesktopRemoteSync.ts`](frontend/src/composables/kitty/useKittyDesktopRemoteSync.ts)).
+- **Click wheel / diagram children** — Cleaner iPod wheel wiring and richer child-node resolution for selection chips ([`KittyIpodClickWheel.vue`](frontend/src/components/kitty/KittyIpodClickWheel.vue), [`kittyDiagramChildren.ts`](frontend/src/composables/kitty/kittyDiagramChildren.ts)).
+- **Desktop wake fanout** — Extended Redis pub/sub payloads for diagram_update, selection, and LLM model ([`kitty_desktop_wake_fanout.py`](services/kitty/infra/desktop/kitty_desktop_wake_fanout.py)).
+- **Fun-ASR / session bridge** — Hardening around realtime ASR and audio session lifecycle ([`fun_asr_realtime.py`](services/kitty/asr/fun_asr_realtime.py), [`session_bridge.py`](services/kitty/audio/session_bridge.py)).
+
+### Removed
+
+- **Kitty desktop workflow debug UI** — Dropped debug log panel and composable ([`KittyDesktopWorkflowDebugLog.vue`](frontend/src/components/kitty/KittyDesktopWorkflowDebugLog.vue), [`useKittyDesktopWorkflowDebug.ts`](frontend/src/composables/kitty/useKittyDesktopWorkflowDebug.ts)).
+
+### Tests
+
+- **Backend** — Extended [`test_kitty_cross_device_sync.py`](tests/test_kitty_cross_device_sync.py), [`test_kitty_hub_contract.py`](tests/test_kitty_hub_contract.py), [`test_kitty_fun_asr_cosyvoice.py`](tests/test_kitty_fun_asr_cosyvoice.py).
+- **Frontend** — [`desktopOneSentenceMobileKittyLock.spec.ts`](frontend/tests/desktopOneSentenceMobileKittyLock.spec.ts), [`kittyLlmModelSync.spec.ts`](frontend/tests/kittyLlmModelSync.spec.ts), [`useKittyDesktopSelectionPublish.spec.ts`](frontend/tests/useKittyDesktopSelectionPublish.spec.ts), [`useMobileKittyChat.spec.ts`](frontend/tests/useMobileKittyChat.spec.ts), [`useMobileKittyLiveContextPoll.spec.ts`](frontend/tests/useMobileKittyLiveContextPoll.spec.ts), [`useMobileKittyMicPtt.spec.ts`](frontend/tests/useMobileKittyMicPtt.spec.ts), [`useMobileKittyPairingContext.spec.ts`](frontend/tests/useMobileKittyPairingContext.spec.ts), [`prepareMobileKittyPhotoCapture.spec.ts`](frontend/tests/prepareMobileKittyPhotoCapture.spec.ts); extended [`kittyChildNodeResolution.spec.ts`](frontend/tests/kittyChildNodeResolution.spec.ts).
+
 ## [5.141.0] - 2026-07-11
+
 
 > **Verified diagram-edit tool + Command Bus, Kitty Fun-ASR/CosyVoice voice I/O, one-sentence node-action edits, admin expert org scope and role filter, post-deploy stale-chunk reload, and LLM timeout preservation.**
 

@@ -154,6 +154,125 @@ async def publish_kitty_selection_update(
     )
 
 
+_VALID_KITTY_LLM_MODELS = frozenset({"qwen", "deepseek", "doubao"})
+
+
+def normalize_kitty_llm_model(raw: Any) -> Optional[str]:
+    """Return qwen|deepseek|doubao, or None when value is absent/invalid/clear."""
+    if raw is None:
+        return None
+    if not isinstance(raw, str):
+        return None
+    key = raw.strip().lower()
+    if key in {"", "null", "none"}:
+        return None
+    if key in _VALID_KITTY_LLM_MODELS:
+        return key
+    return None
+
+
+def kitty_llm_model_update_from_context(
+    merged_ctx: Dict[str, Any],
+) -> tuple[bool, Optional[str]]:
+    """
+    Parse ``selected_llm_model`` from a context patch.
+
+    Returns ``(should_publish, model_or_none)``. When the key is present with a
+    clear/null value, publishes a clear (``None``).
+    """
+    if "selected_llm_model" not in merged_ctx:
+        return False, None
+    raw = merged_ctx.get("selected_llm_model")
+    if raw is None:
+        return True, None
+    if isinstance(raw, str) and raw.strip().lower() in {"", "null", "none"}:
+        return True, None
+    normalized = normalize_kitty_llm_model(raw)
+    if normalized is None:
+        return False, None
+    return True, normalized
+
+
+async def publish_kitty_llm_model_update(
+    user_id: int,
+    scope: str,
+    selected_llm_model: Optional[str],
+) -> None:
+    """Fan out mobile LLM pill choice to desktop SSE wake listeners."""
+    redis = get_async_redis()
+    if redis is None:
+        return
+    channel = kitty_desktop_wake_channel(int(user_id))
+    body: Dict[str, Any] = {
+        "type": "llm_model_update",
+        "scope": scope,
+        "selected_llm_model": selected_llm_model,
+    }
+    payload = json.dumps(body, ensure_ascii=False)
+    try:
+        await redis.publish(channel, payload)
+        kitty_wf_log(
+            "llm_model_fanout",
+            str(selected_llm_model or "cleared"),
+            scope=scope,
+            user_id=user_id,
+            action="select_llm_model",
+        )
+    except (RedisError, TypeError, ValueError) as exc:
+        logger.debug(
+            "[KittyDesktopWake] llm_model_update publish failed user=%s scope=%s: %s",
+            user_id,
+            scope,
+            exc,
+        )
+    await publish_kitty_voice_command_log(
+        int(user_id),
+        scope,
+        action="select_llm_model",
+        detail=selected_llm_model,
+    )
+
+
+_VALID_KITTY_VOICE_PHASES = frozenset({"listening", "speaking", "active"})
+
+
+async def publish_kitty_voice_phase_update(
+    user_id: int,
+    scope: str,
+    phase: str,
+) -> None:
+    """Fan out mobile Kitty mic/reply phase to desktop SSE wake listeners."""
+    normalized = str(phase or "").strip().lower()
+    if normalized not in _VALID_KITTY_VOICE_PHASES:
+        return
+    redis = get_async_redis()
+    if redis is None:
+        return
+    channel = kitty_desktop_wake_channel(int(user_id))
+    body: Dict[str, Any] = {
+        "type": "voice_phase_update",
+        "scope": scope,
+        "phase": normalized,
+    }
+    payload = json.dumps(body, ensure_ascii=False)
+    try:
+        await redis.publish(channel, payload)
+        kitty_wf_log(
+            "voice_phase_fanout",
+            normalized,
+            scope=scope,
+            user_id=user_id,
+            action=normalized,
+        )
+    except (RedisError, TypeError, ValueError) as exc:
+        logger.debug(
+            "[KittyDesktopWake] voice_phase_update publish failed user=%s scope=%s: %s",
+            user_id,
+            scope,
+            exc,
+        )
+
+
 async def publish_kitty_voice_command_log(
     user_id: int,
     scope: str,

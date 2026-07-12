@@ -251,6 +251,25 @@ export function useKittyDesktopActionPoll(): void {
           selected_nodes,
         })
       },
+      onLlmModelUpdate: (payload) => {
+        const scope = typeof payload.scope === 'string' ? payload.scope : undefined
+        const raw = payload.selected_llm_model
+        const selected_llm_model =
+          raw === null || typeof raw === 'string' ? raw : undefined
+        traceKittyWorkflow(
+          'hub',
+          'sse_llm_model',
+          selected_llm_model == null || selected_llm_model === ''
+            ? 'cleared'
+            : String(selected_llm_model),
+          { scope }
+        )
+        eventBus.emit('kitty:desktop_llm_model_update', {
+          scope,
+          selected_llm_model:
+            selected_llm_model === undefined ? undefined : selected_llm_model,
+        })
+      },
       onVoiceCommand: (payload) => {
         const scope = typeof payload.scope === 'string' ? payload.scope : undefined
         const action = typeof payload.action === 'string' ? payload.action : undefined
@@ -263,6 +282,15 @@ export function useKittyDesktopActionPoll(): void {
           scope,
           action,
           detail,
+        })
+      },
+      onVoicePhaseUpdate: (payload) => {
+        const scope = typeof payload.scope === 'string' ? payload.scope : undefined
+        const phase = typeof payload.phase === 'string' ? payload.phase : undefined
+        traceKittyWorkflow('hub', 'sse_voice_phase', String(phase ?? ''), { scope })
+        eventBus.emit('kitty:desktop_voice_phase_update', {
+          scope,
+          phase,
         })
       },
       onOpen: () => {

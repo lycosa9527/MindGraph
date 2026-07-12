@@ -6,7 +6,7 @@ import { computed, ref, watch } from 'vue'
 
 import { ElPopover } from 'element-plus'
 
-import { Check, Loader2, Pin, Search } from '@lucide/vue'
+import { Check, Loader2, Plus, Pin, Search } from '@lucide/vue'
 
 import KittyMobileDiagramContextCard from '@/components/kitty/KittyMobileDiagramContextCard.vue'
 import { useLanguage } from '@/composables'
@@ -26,6 +26,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'select', diagram: SavedDiagram): void
+  (e: 'create-new'): void
 }>()
 
 const { t } = useLanguage()
@@ -75,6 +76,14 @@ function handleSelect(diagram: SavedDiagram): void {
   emit('select', diagram)
   open.value = false
 }
+
+function handleCreateNew(): void {
+  if (props.selecting) {
+    return
+  }
+  emit('create-new')
+  open.value = false
+}
 </script>
 
 <template>
@@ -110,6 +119,20 @@ function handleSelect(diagram: SavedDiagram): void {
           {{ t('mobile.kittyDiagramPickerTitle', '选择导图') }}
         </span>
       </div>
+
+      <button
+        type="button"
+        class="kitty-diagram-picker-create"
+        :disabled="selecting"
+        @click="handleCreateNew"
+      >
+        <Plus
+          :size="16"
+          class="kitty-diagram-picker-create__icon"
+          aria-hidden="true"
+        />
+        <span>{{ t('mobile.kittyCreateNewMindmap', '新建思维导图') }}</span>
+      </button>
 
       <div
         v-if="diagrams.length > 0 || isLoading"
@@ -244,6 +267,38 @@ function handleSelect(diagram: SavedDiagram): void {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #78716c;
+}
+
+.kitty-diagram-picker-create {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.65rem;
+  border: 1px dashed rgba(120, 113, 108, 0.55);
+  background: rgba(250, 250, 249, 0.95);
+  color: #44403c;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kitty-diagram-picker-create:active:not(:disabled) {
+  background: #f5f5f4;
+}
+
+.kitty-diagram-picker-create:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.kitty-diagram-picker-create__icon {
+  flex-shrink: 0;
+  color: #57534e;
 }
 
 .kitty-diagram-picker-panel__search {
@@ -432,6 +487,20 @@ function handleSelect(diagram: SavedDiagram): void {
 }
 
 .dark .kitty-diagram-picker-panel__label {
+  color: #9ca3af;
+}
+
+.dark .kitty-diagram-picker-create {
+  border-color: rgba(156, 163, 175, 0.45);
+  background: rgba(17, 24, 39, 0.92);
+  color: #e5e7eb;
+}
+
+.dark .kitty-diagram-picker-create:active:not(:disabled) {
+  background: rgba(55, 65, 81, 0.95);
+}
+
+.dark .kitty-diagram-picker-create__icon {
   color: #9ca3af;
 }
 

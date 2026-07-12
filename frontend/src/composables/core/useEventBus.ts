@@ -250,10 +250,18 @@ export type EventTypes = {
     scope?: string
     selected_nodes?: string[]
   }
+  'kitty:desktop_llm_model_update': {
+    scope?: string
+    selected_llm_model?: string | null
+  }
   'kitty:desktop_voice_command': {
     scope?: string
     action?: string
     detail?: string
+  }
+  'kitty:desktop_voice_phase_update': {
+    scope?: string
+    phase?: string
   }
   'kitty:workflow_trace': {
     lane: 'mobile' | 'desktop' | 'hub'

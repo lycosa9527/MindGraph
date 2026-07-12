@@ -15,6 +15,7 @@ import {
   getKittyDiagramContentFingerprint,
   getKittyVoiceDiagramFingerprint,
 } from '@/composables/kitty/kittyDiagramFingerprint'
+import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
 import { applyKittyRemoteCanvasSelection } from '@/composables/kitty/kittySelectionApply'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { KITTY_PAIR_POLL_MS } from '@/composables/kitty/runKittyIntervalPoll'
@@ -119,6 +120,32 @@ export function useKittyDesktopRemoteSync(options: {
     )
   }
 
+  function handleLlmModelFanout(data: {
+    scope?: string
+    selected_llm_model?: string | null
+  }): void {
+    if (!options.syncEnabled.value || options.collabSessionActive.value) {
+      return
+    }
+    const scope = typeof data.scope === 'string' ? data.scope.trim() : ''
+    if (!scopeMatches(scope)) {
+      return
+    }
+    void applyKittyRemoteLlmModel(data.selected_llm_model).then((changed) => {
+      if (!changed) {
+        return
+      }
+      traceKittyWorkflow(
+        'desktop',
+        'llm_model_apply',
+        data.selected_llm_model == null || data.selected_llm_model === ''
+          ? 'cleared'
+          : String(data.selected_llm_model),
+        { scope }
+      )
+    })
+  }
+
   async function tryRecoverDiagramFromLiveContext(
     data: {
       updated_at?: number
@@ -157,6 +184,9 @@ export function useKittyDesktopRemoteSync(options: {
         applyKittyRemoteCanvasSelection(data.selected_nodes as string[], {
           canvasHighlight: true,
         })
+      }
+      if ('selected_llm_model' in data) {
+        void applyKittyRemoteLlmModel(data.selected_llm_model)
       }
       lastAppliedUpdatedAt.value = ua
       traceKittyWorkflow(
@@ -206,6 +236,9 @@ export function useKittyDesktopRemoteSync(options: {
     ) {
       applyKittyRemoteCanvasSelection(data.selected_nodes as string[], { canvasHighlight: true })
     }
+    if ('selected_llm_model' in data) {
+      void applyKittyRemoteLlmModel(data.selected_llm_model)
+    }
     lastAppliedUpdatedAt.value = ua
   }
 
@@ -243,6 +276,7 @@ export function useKittyDesktopRemoteSync(options: {
         diagram_type?: string
         diagram_data?: unknown
         selected_nodes?: unknown
+        selected_llm_model?: unknown
       }
 
       if (!data.ok) {
@@ -369,6 +403,13 @@ export function useKittyDesktopRemoteSync(options: {
     'kitty:desktop_selection_update',
     (payload) => {
       handleSelectionFanout(payload)
+    },
+    'KittyDesktopRemoteSync'
+  )
+  eventBus.onWithOwner(
+    'kitty:desktop_llm_model_update',
+    (payload) => {
+      handleLlmModelFanout(payload)
     },
     'KittyDesktopRemoteSync'
   )

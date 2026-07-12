@@ -205,8 +205,8 @@ def test_tts_voice_default_yumi(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_stop_session_asr_does_not_await_hanging_finish() -> None:
-    """asr_stop must return immediately so context_update is not blocked."""
+async def test_stop_session_asr_bounds_hanging_finish() -> None:
+    """asr_stop must bound DashScope finish so inbound cannot hang forever."""
     vid = "voice-asr-stop-noblock"
     hung = asyncio.Event()
 
@@ -224,11 +224,43 @@ async def test_stop_session_asr_does_not_await_hanging_finish() -> None:
 
     voice_sessions[vid] = {"_fun_asr_client": HangingAsrClient()}
     try:
-        await asyncio.wait_for(bridge.stop_session_asr(vid), timeout=0.5)
+        await asyncio.wait_for(bridge.stop_session_asr(vid), timeout=4.0)
         assert voice_sessions[vid].get("_fun_asr_client") is None
         await asyncio.wait_for(hung.wait(), timeout=0.5)
     finally:
         voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_fun_asr_finish_promotes_last_partial_to_final() -> None:
+    """PTT stop must emit sentence_end when DashScope never sets it."""
+    emitted: list[tuple[str, bool]] = []
+
+    async def on_partial(text: str, sentence_end: bool) -> None:
+        """Collect partial/final ASR callbacks."""
+        emitted.append((text, sentence_end))
+
+    class DummyWs:
+        """WebSocket stub that accepts finish-task without a live socket."""
+
+        async def send(self, _payload: str) -> None:
+            """Accept outbound ASR control frames."""
+            return None
+
+        async def close(self) -> None:
+            """No-op close for finish promotion test."""
+            return None
+
+    client = FunAsrRealtimeClient(on_partial=on_partial)
+    setattr(client, "_last_text", "添加一个广东民族文化的分支，并补完")
+    setattr(client, "_emitted_sentence_end", False)
+    setattr(client, "_task_id", "task-promote")
+    setattr(client, "_closed", False)
+    setattr(client, "_ws", DummyWs())
+    getattr(client, "_task_finished").set()
+    await client.finish()
+    assert emitted == [("添加一个广东民族文化的分支，并补完", True)]
+    assert getattr(client, "_closed") is True
 
 
 @pytest.mark.asyncio
