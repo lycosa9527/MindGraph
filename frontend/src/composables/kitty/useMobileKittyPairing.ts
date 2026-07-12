@@ -1,7 +1,7 @@
 /**
  * Mobile Kitty: WebSocket scope, desktop-focus hint, hub preflight bootstrap, and debounced context sync.
  */
-import { type ComputedRef, computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { type ComputedRef, type Ref, computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
@@ -78,6 +78,8 @@ export function useMobileKittyPairing(
     onDebugLine?: (prefix: string, detail: string) => void
     /** Fired after mobile follows a new desktop library diagram. */
     onDesktopDiagramFollow?: (libraryId: string) => void
+    /** Skip debounced WS context sync while voice edit pipeline is active. */
+    editPipelineActive?: Ref<boolean> | ComputedRef<boolean>
   }
 ) {
   const authStore = useAuthStore()
@@ -522,6 +524,10 @@ export function useMobileKittyPairing(
   }
 
   function syncMobileKittyContextNow(): void {
+    if (options.editPipelineActive?.value) {
+      scheduleMobileKittyContextSync()
+      return
+    }
     if (contextSyncTimer != null) {
       clearTimeout(contextSyncTimer)
       contextSyncTimer = null
@@ -585,6 +591,14 @@ export function useMobileKittyPairing(
       scheduleMobileKittyContextSync()
     }
   )
+
+  if (options.editPipelineActive != null) {
+    watch(options.editPipelineActive, (active, wasActive) => {
+      if (wasActive && !active) {
+        scheduleMobileKittyContextSync()
+      }
+    })
+  }
 
   onMounted(() => {
     if (typeof document !== 'undefined') {

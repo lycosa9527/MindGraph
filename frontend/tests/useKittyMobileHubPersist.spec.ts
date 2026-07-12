@@ -7,13 +7,34 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useKittyMobileHubPersist } from '@/composables/kitty/useKittyMobileHubPersist'
 
-const { getDiagramSpec, onWithOwnerMock, removeAllListenersForOwnerMock, emitMock } = vi.hoisted(
-  () => ({
-    getDiagramSpec: vi.fn(() => ({ topic: 'A', context: ['b'] })),
-    onWithOwnerMock: vi.fn(),
-    removeAllListenersForOwnerMock: vi.fn(),
-    emitMock: vi.fn(),
-  })
+const { getDiagramSpec, onWithOwnerMock, removeAllListenersForOwnerMock, eventBusMock } = vi.hoisted(
+  () => {
+    const ackListeners = new Map<string, Set<(payload: unknown) => void>>()
+    const onWithOwner = vi.fn()
+    return {
+      getDiagramSpec: vi.fn(() => ({ topic: 'A', context: ['b'] })),
+      onWithOwnerMock: onWithOwner,
+      removeAllListenersForOwnerMock: vi.fn(),
+      eventBusMock: {
+        onWithOwner,
+        removeAllListenersForOwner: vi.fn(),
+        on: (event: string, handler: (payload: unknown) => void) => {
+          if (!ackListeners.has(event)) {
+            ackListeners.set(event, new Set())
+          }
+          ackListeners.get(event)?.add(handler)
+        },
+        off: (event: string, handler: (payload: unknown) => void) => {
+          ackListeners.get(event)?.delete(handler)
+        },
+        emit: (event: string, payload: unknown) => {
+          ackListeners.get(event)?.forEach((handler) => {
+            handler(payload)
+          })
+        },
+      },
+    }
+  }
 )
 
 vi.mock('@/composables/editor/useDiagramSpecForSave', () => ({
@@ -25,11 +46,7 @@ vi.mock('@/composables/core/useLanguage', () => ({
 }))
 
 vi.mock('@/composables/core/useEventBus', () => ({
-  eventBus: {
-    onWithOwner: onWithOwnerMock,
-    removeAllListenersForOwner: removeAllListenersForOwnerMock,
-    emit: emitMock,
-  },
+  eventBus: eventBusMock,
 }))
 
 vi.mock('@/stores/diagram', () => ({
@@ -42,6 +59,13 @@ vi.mock('@/stores/diagram', () => ({
   }),
 }))
 
+vi.mock('@/stores/kittySession', () => ({
+  useKittySessionStore: () => ({
+    hubScopeRevision: 1,
+    setHubScopeRevision: vi.fn(),
+  }),
+}))
+
 vi.mock('@/config', () => ({
   SAVE: { AUTO_SAVE_DEBOUNCE_MS: 2000 },
 }))
@@ -51,7 +75,6 @@ describe('useKittyMobileHubPersist', () => {
     getDiagramSpec.mockClear()
     onWithOwnerMock.mockClear()
     removeAllListenersForOwnerMock.mockClear()
-    emitMock.mockClear()
   })
 
   it('sends persist payload and advances fingerprint only after ack', () => {
@@ -105,5 +128,38 @@ describe('useKittyMobileHubPersist', () => {
 
     flushHubLibraryPersist()
     expect(updateContext).toHaveBeenCalledTimes(1)
+  })
+
+  it('awaitHubLibraryPersistBeforeEdit resolves after matching persist ack', async () => {
+    const updateContext = vi.fn()
+    const { awaitHubLibraryPersistBeforeEdit } = useKittyMobileHubPersist({
+      libraryDiagramId: computed(() => 'lib-abc'),
+      diagramDisplayTitle: computed(() => 'Title'),
+      isConnected: ref(true),
+      buildContext: () => ({
+        diagram_type: 'circle_map',
+        active_panel: 'none',
+        selected_nodes: [],
+        diagram_data: {},
+        diagram_library_id: 'lib-abc',
+      }),
+      updateContext,
+    })
+
+    const promise = awaitHubLibraryPersistBeforeEdit(500)
+    expect(updateContext).toHaveBeenCalledTimes(1)
+    const idemKey = updateContext.mock.calls[0][1]?.idempotencyKey as string
+
+    eventBusMock.emit('voice:context_mutation_ack', {
+      ok: true,
+      revision: 4,
+      idempotency_key: idemKey,
+      persist_library: true,
+      library_snapshot_saved: true,
+    })
+
+    const result = await promise
+    expect(result.ok).toBe(true)
+    expect(result.revision).toBe(4)
   })
 })

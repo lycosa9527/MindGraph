@@ -13,7 +13,7 @@ const {
   migrateOneSentenceScopeMock,
   onWithOwnerMock,
   removeAllListenersForOwnerMock,
-  persistVerifiedDiagramToHubMock,
+  awaitHubLibraryPersistBeforeEditMock,
   setHubScopeRevisionMock,
 } = vi.hoisted(() => ({
   appendOneSentenceTurnMock: vi.fn(async () => true),
@@ -21,7 +21,7 @@ const {
   migrateOneSentenceScopeMock: vi.fn(async () => true),
   onWithOwnerMock: vi.fn(),
   removeAllListenersForOwnerMock: vi.fn(),
-  persistVerifiedDiagramToHubMock: vi.fn(async () => ({ ok: true, revision: 3 })),
+  awaitHubLibraryPersistBeforeEditMock: vi.fn(async () => ({ ok: true, revision: 3 })),
   setHubScopeRevisionMock: vi.fn(),
 }))
 
@@ -36,10 +36,6 @@ vi.mock('@/composables/core/useEventBus', () => ({
     onWithOwner: onWithOwnerMock,
     removeAllListenersForOwner: removeAllListenersForOwnerMock,
   },
-}))
-
-vi.mock('@/composables/kitty/diagramEditHubPersist', () => ({
-  persistVerifiedDiagramToHub: persistVerifiedDiagramToHubMock,
 }))
 
 vi.mock('@/composables/core/useLanguage', () => ({
@@ -92,10 +88,10 @@ describe('useMobileKittyChat', () => {
     migrateOneSentenceScopeMock.mockClear()
     onWithOwnerMock.mockClear()
     removeAllListenersForOwnerMock.mockClear()
-    persistVerifiedDiagramToHubMock.mockClear()
+    awaitHubLibraryPersistBeforeEditMock.mockClear()
     setHubScopeRevisionMock.mockClear()
     fetchOneSentenceTurnsMock.mockResolvedValue([])
-    persistVerifiedDiagramToHubMock.mockResolvedValue({ ok: true, revision: 3 })
+    awaitHubLibraryPersistBeforeEditMock.mockResolvedValue({ ok: true, revision: 3 })
   })
 
   afterEach(() => {
@@ -130,6 +126,8 @@ describe('useMobileKittyChat', () => {
       phase: computed(() => phase),
       draft,
       ensureConnected: vi.fn(async () => true),
+      editPipelineActive: ref(false),
+      awaitHubLibraryPersistBeforeEdit: awaitHubLibraryPersistBeforeEditMock,
       buildContext: () =>
         ({
           diagram_type: 'mindmap',
@@ -181,7 +179,7 @@ describe('useMobileKittyChat', () => {
     await vi.waitFor(() => {
       expect(sendTextMessage).toHaveBeenCalledWith('把中心改成秋天', expect.any(String))
     })
-    expect(persistVerifiedDiagramToHubMock).toHaveBeenCalled()
+    expect(awaitHubLibraryPersistBeforeEditMock).toHaveBeenCalled()
     expect(chat.messages.value.some((m) => m.role === 'user' && m.text === '把中心改成秋天')).toBe(
       true
     )
@@ -263,7 +261,7 @@ describe('useMobileKittyChat', () => {
     const ok = await chat.sendUserText('生成一张秋天的图')
     expect(ok).toBe(false)
     expect(sendTextMessage).not.toHaveBeenCalled()
-    expect(persistVerifiedDiagramToHubMock).not.toHaveBeenCalled()
+    expect(awaitHubLibraryPersistBeforeEditMock).not.toHaveBeenCalled()
     expect(
       chat.messages.value.some(
         (m) => m.role === 'kitty' && m.text.toLowerCase().includes('diagram')
@@ -271,8 +269,8 @@ describe('useMobileKittyChat', () => {
     ).toBe(true)
   })
 
-  it('hub pre-sync failure blocks sendTextMessage', async () => {
-    persistVerifiedDiagramToHubMock.mockResolvedValue({ ok: false, error: 'hub_persist_timeout' })
+  it('hub edit gate failure blocks sendTextMessage', async () => {
+    awaitHubLibraryPersistBeforeEditMock.mockResolvedValue({ ok: false, error: 'hub_persist_timeout' })
     const { chat, sendTextMessage } = mountChat('edit')
     await nextTick()
     await Promise.resolve()
@@ -320,6 +318,8 @@ describe('useMobileKittyChat', () => {
       phase: computed(() => 'edit'),
       draft,
       ensureConnected: vi.fn(async () => true),
+      editPipelineActive: ref(false),
+      awaitHubLibraryPersistBeforeEdit: awaitHubLibraryPersistBeforeEditMock,
       buildContext: () =>
         ({
           diagram_type: 'mindmap',

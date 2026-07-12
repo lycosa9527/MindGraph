@@ -53,6 +53,7 @@ const kittyServerEnabled = computed(() => flags.value?.feature_kitty_agent ?? fa
 
 const showKeyboard = ref(false)
 const draft = ref('')
+const editPipelineActive = ref(false)
 const micDenied = ref(false)
 const cameraDenied = ref(false)
 const isDevBuild = import.meta.env.DEV
@@ -106,6 +107,7 @@ const {
   sessionId: mobileKittyEphemeralSessionId,
 } = useMobileKittyPairing(kitty, {
   kittyServerEnabled,
+  editPipelineActive,
   onDebugLine: pushKittyDebugLine,
   onDesktopDiagramFollow: () => {
     notify.info(t('mobile.kittyDesktopDiagramFollowed', 'Switched to the diagram open on desktop'))
@@ -178,12 +180,13 @@ const kittyVoiceState = computed(() => kitty.state.value)
 const kittyLibraryDiagramId = computed(() => mobileKittyContextPreview.value.diagramLibraryId)
 const kittyDiagramDisplayTitle = computed(() => mobileKittyContextPreview.value.diagramDisplayTitle)
 
-const { flushHubLibraryPersist } = useKittyMobileHubPersist({
+const { flushHubLibraryPersist, awaitHubLibraryPersistBeforeEdit } = useKittyMobileHubPersist({
   libraryDiagramId: kittyLibraryDiagramId,
   diagramDisplayTitle: kittyDiagramDisplayTitle,
   isConnected: connected,
   buildContext: buildMobileKittyContext,
   updateContext: (ctx, opts) => kitty.updateContext(ctx, opts),
+  editPipelineActive,
   onDebugLine: pushKittyDebugLine,
 })
 
@@ -370,7 +373,6 @@ const chatPhase = computed(() => resolveMobileOneSentencePhase())
 
 const {
   messages: chatMessages,
-  editPipelineActive,
   sendDraft,
   selectClarifyChoice,
   bindChatScroll,
@@ -383,6 +385,9 @@ const {
   draft,
   ensureConnected,
   buildContext: buildMobileKittyContext,
+  editPipelineActive,
+  awaitHubLibraryPersistBeforeEdit,
+  onDebugLine: pushKittyDebugLine,
 })
 
 // Chat turns refetch whenever kittyPairScope changes (library follow / pick / ephemeral).

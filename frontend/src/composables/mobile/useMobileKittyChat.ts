@@ -18,7 +18,7 @@ import {
 } from '@/composables/canvasToolbar/useOneSentenceSessionTurns'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { persistVerifiedDiagramToHub } from '@/composables/kitty/diagramEditHubPersist'
+import type { HubPersistResult } from '@/composables/kitty/diagramEditHubPersist'
 import type { KittyAgentContext } from '@/composables/kitty/kittyAgentTypes'
 import { resolveKittyEditFailureMessage } from '@/composables/kitty/kittyDiagramEditFeedback'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
@@ -44,6 +44,11 @@ export type UseMobileKittyChatOptions = {
   draft: Ref<string>
   ensureConnected: () => Promise<boolean>
   buildContext: () => KittyAgentContext
+  /** Shared with hub persist / context sync so PTT release cannot race the edit gate. */
+  editPipelineActive: Ref<boolean>
+  /** Await library persist ack — mobile edit gate (replaces duplicate pre-edit context sync). */
+  awaitHubLibraryPersistBeforeEdit: (timeoutMs?: number) => Promise<HubPersistResult>
+  onDebugLine?: (prefix: string, detail: string) => void
 }
 
 export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
@@ -56,6 +61,9 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
     draft,
     ensureConnected,
     buildContext,
+    editPipelineActive,
+    awaitHubLibraryPersistBeforeEdit,
+    onDebugLine,
   } = options
 
   const { t, currentLanguage } = useLanguage()
@@ -65,8 +73,6 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
   const activeRequestId = ref<string | null>(null)
   const chatScrollEl = ref<HTMLElement | null>(null)
   const sessionHydrated = ref(false)
-  /** True while ASR→hub-sync→sendText is running; blocks scope-watch WS reconnect. */
-  const editPipelineActive = ref(false)
   let bootstrapGeneration = 0
   let messageSeq = 0
 
@@ -179,42 +185,6 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
     })
   }
 
-  async function syncHubBeforeEdit(): Promise<boolean> {
-    if (!kitty.isConnected.value) {
-      return false
-    }
-    const attempt = async (): Promise<boolean> => {
-      const result = await persistVerifiedDiagramToHub({
-        buildContext,
-        updateContext: kitty.updateContext,
-        hubScopeRevision: kittySession.hubScopeRevision,
-        scope: diagramScope.value,
-        // Mobile competes with debounced hub persist + scheduled context sync.
-        timeoutMs: 8000,
-      })
-      if (result.ok && typeof result.revision === 'number') {
-        kittySession.setHubScopeRevision(result.revision)
-        return true
-      }
-      return false
-    }
-
-    if (await attempt()) {
-      return true
-    }
-    // One retry after a brief settle — covers transient WS preempt during context_update.
-    if (!kitty.isConnected.value) {
-      const reconnected = await ensureConnected()
-      if (!reconnected) {
-        return false
-      }
-    }
-    await new Promise<void>((resolve) => {
-      window.setTimeout(resolve, 200)
-    })
-    return attempt()
-  }
-
   async function sendUserText(raw: string): Promise<boolean> {
     const text = raw.trim()
     if (!text) {
@@ -249,8 +219,16 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
         return false
       }
 
-      const hubOk = await syncHubBeforeEdit()
-      if (!hubOk) {
+      let hubResult = await awaitHubLibraryPersistBeforeEdit()
+      if (!hubResult.ok) {
+        if (!kitty.isConnected.value) {
+          const reconnected = await ensureConnected()
+          if (reconnected) {
+            hubResult = await awaitHubLibraryPersistBeforeEdit()
+          }
+        }
+      }
+      if (!hubResult.ok) {
         replyState.showFinalReply(t('canvas.mindMapOneSentence.kittyContextSyncFailed'))
         markActiveRequest('failed')
         return false
@@ -434,6 +412,8 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
     if (funAsr.listening.value) {
       funAsr.stopListening()
     }
+    // Block debounced library persist / scheduled context sync before async sendUserText runs.
+    editPipelineActive.value = true
     void sendUserText(text)
   }
 
