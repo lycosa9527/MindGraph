@@ -27,6 +27,52 @@ describe('diagramEditHubPersist', () => {
     expect(result.error).toBe('hub_persist_timeout')
   })
 
+  it('waitForContextMutationAck accepts same-revision ack when idempotency key matches', async () => {
+    const promise = waitForContextMutationAck({
+      expectedRevision: 12,
+      idempotencyKey: 'kitty-hub-sync-scope-abc',
+      timeoutMs: 500,
+    })
+    eventBus.emit('voice:context_mutation_ack', {
+      ok: true,
+      revision: 12,
+      idempotency_key: 'kitty-hub-sync-scope-abc',
+    })
+    const result = await promise
+    expect(result.ok).toBe(true)
+    expect(result.revision).toBe(12)
+  })
+
+  it('waitForContextMutationAck accepts hub stale-revision retry suffix on idempotency key', async () => {
+    const promise = waitForContextMutationAck({
+      idempotencyKey: 'kitty-hub-sync-scope-abc',
+      timeoutMs: 500,
+    })
+    eventBus.emit('voice:context_mutation_ack', {
+      ok: true,
+      revision: 4,
+      idempotency_key: 'kitty-hub-sync-scope-abc-retry',
+    })
+    const result = await promise
+    expect(result.ok).toBe(true)
+    expect(result.revision).toBe(4)
+  })
+
+  it('waitForContextMutationAck ignores ack with mismatched idempotency key', async () => {
+    const promise = waitForContextMutationAck({
+      idempotencyKey: 'kitty-hub-sync-scope-abc',
+      timeoutMs: 80,
+    })
+    eventBus.emit('voice:context_mutation_ack', {
+      ok: true,
+      revision: 9,
+      idempotency_key: 'kitty-mobile-persist-other',
+    })
+    const result = await promise
+    expect(result.ok).toBe(false)
+    expect(result.error).toBe('hub_persist_timeout')
+  })
+
   it('waitForContextMutationAck accepts Hub revision reset below expected', async () => {
     const promise = waitForContextMutationAck({ expectedRevision: 5, timeoutMs: 500 })
     eventBus.emit('voice:context_mutation_ack', { ok: true, revision: 1 })
@@ -59,7 +105,13 @@ describe('diagramEditHubPersist', () => {
     })
 
     expect(updateContext).toHaveBeenCalledTimes(1)
-    eventBus.emit('voice:context_mutation_ack', { ok: true, revision: 2 })
+    const syncOpts = updateContext.mock.calls[0]?.[1] as { idempotencyKey?: string }
+    expect(syncOpts?.idempotencyKey).toMatch(/^kitty-hub-sync-scope-abc-/)
+    eventBus.emit('voice:context_mutation_ack', {
+      ok: true,
+      revision: 2,
+      idempotency_key: syncOpts?.idempotencyKey,
+    })
 
     const result = await promise
     expect(result.ok).toBe(true)

@@ -6,6 +6,7 @@ import type {
   KittyAgentContext,
   KittyContextUpdateOptions,
 } from '@/composables/kitty/kittyAgentTypes'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 export type HubPersistResult = {
   ok: boolean
@@ -26,9 +27,11 @@ const DEFAULT_HUB_PERSIST_TIMEOUT_MS = 3000
 
 export function waitForContextMutationAck(options: {
   expectedRevision?: number
+  idempotencyKey?: string
   timeoutMs?: number
 }): Promise<HubPersistResult> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_HUB_PERSIST_TIMEOUT_MS
+  const syncKey = options.idempotencyKey?.trim() ?? ''
 
   return new Promise((resolve) => {
     let settled = false
@@ -42,12 +45,24 @@ export function waitForContextMutationAck(options: {
       resolve(result)
     }
 
+    const ackKeyMatches = (data: { idempotency_key?: string }): boolean => {
+      if (!syncKey) {
+        return true
+      }
+      const ackKey = typeof data.idempotency_key === 'string' ? data.idempotency_key.trim() : ''
+      return ackKey === syncKey || ackKey === `${syncKey}-retry`
+    }
+
     const onAck = (data: {
       ok?: boolean
       revision?: number
       error?: string
       library_snapshot_error?: string
+      idempotency_key?: string
     }): void => {
+      if (syncKey && !ackKeyMatches(data)) {
+        return
+      }
       if (data.ok === false) {
         settle({
           ok: false,
@@ -56,6 +71,10 @@ export function waitForContextMutationAck(options: {
         return
       }
       const revision = typeof data.revision === 'number' ? data.revision : undefined
+      if (syncKey) {
+        settle({ ok: true, revision })
+        return
+      }
       // Ignore duplicate acks at the same known revision. Accept a *lower*
       // revision as a Hub/session reset (e.g. Kitty WS reconnected → rev=1
       // while the FE still held a stale expectedRevision from before).
@@ -82,12 +101,18 @@ export async function persistVerifiedDiagramToHub(
 ): Promise<HubPersistResult> {
   const ctx = deps.buildContext()
   const expectedRevision = deps.hubScopeRevision ?? undefined
+  const scopeHint = deps.scope?.trim() || 'scope'
+  const idempotencyKey = `kitty-hub-sync-${scopeHint}-${safeRandomUUID()}`
   const waitPromise = waitForContextMutationAck({
     expectedRevision,
+    idempotencyKey,
     timeoutMs: deps.timeoutMs,
   })
 
-  deps.updateContext(ctx, { expectedRevision: deps.hubScopeRevision ?? undefined })
+  deps.updateContext(ctx, {
+    expectedRevision: deps.hubScopeRevision ?? undefined,
+    idempotencyKey,
+  })
 
   const result = await waitPromise
   if (result.ok && deps.scope?.trim()) {

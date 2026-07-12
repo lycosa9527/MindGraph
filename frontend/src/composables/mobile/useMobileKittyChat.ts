@@ -189,6 +189,8 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
         updateContext: kitty.updateContext,
         hubScopeRevision: kittySession.hubScopeRevision,
         scope: diagramScope.value,
+        // Mobile competes with debounced hub persist + scheduled context sync.
+        timeoutMs: 8000,
       })
       if (result.ok && typeof result.revision === 'number') {
         kittySession.setHubScopeRevision(result.revision)
