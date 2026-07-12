@@ -1,7 +1,25 @@
 /**
  * Unified Kitty pipeline error catalog — errorCode → module/step/i18n.
  */
+import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
 import type { KittyErrorCode, KittyModule, KittyStep } from '@/composables/kitty/pipeline/types'
+
+export type KittyTranslateFn = (
+  key: string,
+  fallbackOrParams?: string | Record<string, string>
+) => string
+
+export function adaptKittyTranslate(translate: UseLanguageTranslate): KittyTranslateFn {
+  return (key, fallbackOrParams) => {
+    if (fallbackOrParams === undefined) {
+      return translate(key)
+    }
+    if (typeof fallbackOrParams === 'string') {
+      return translate(key, fallbackOrParams)
+    }
+    return translate(key, fallbackOrParams)
+  }
+}
 
 export type KittyErrorCatalogEntry = {
   errorCode: KittyErrorCode
@@ -226,7 +244,7 @@ export function resolveKittyErrorCode(raw: string | undefined | null): KittyErro
 
 export function resolveKittyFailMessage(
   errorCode: KittyErrorCode,
-  t: (key: string, fallbackOrParams?: string | Record<string, string>) => string,
+  t: KittyTranslateFn,
   detail?: string
 ): string {
   const entry = getKittyErrorCatalogEntry(errorCode)

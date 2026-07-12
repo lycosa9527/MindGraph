@@ -6,6 +6,7 @@ import type {
   KittyAgentContext,
   KittyContextUpdateOptions,
 } from '@/composables/kitty/kittyAgentTypes'
+import type { KittyTranslateFn } from '@/composables/kitty/pipeline/errorCatalog'
 import { ensureKittySessionConnected } from '@/composables/kitty/pipeline/session'
 import { runKittyHubSync } from '@/composables/kitty/pipeline/hubSyncWorker'
 import {
@@ -32,7 +33,7 @@ export type RunKittyEditTurnDeps = {
   ensureConnected?: () => Promise<boolean>
   appendUserTurn: (text: string, requestId: string, ctx: KittyTurnContext) => Promise<boolean>
   onFailMessage: (message: string) => void
-  t: (key: string, fallbackOrParams?: string | Record<string, string>) => string
+  t: KittyTranslateFn
   /** Skip create-phase / busy guards — caller already validated. */
   skipSessionEnsure?: boolean
 }

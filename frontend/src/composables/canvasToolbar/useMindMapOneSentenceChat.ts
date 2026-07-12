@@ -39,6 +39,7 @@ import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
 import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
 import { KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS } from '@/composables/kitty/syncKittyHubContext'
 import { runKittyEditTurn } from '@/composables/kitty/pipeline/editTurn'
+import { adaptKittyTranslate } from '@/composables/kitty/pipeline/errorCatalog'
 import {
   markKittyHubSyncFingerprint,
   runKittyHubSync,
@@ -75,6 +76,7 @@ const PANEL_OWNER = 'MindMapOneSentencePanel'
 
 export function useMindMapOneSentenceChat() {
   const { t, isZh, currentLanguage } = useLanguage()
+  const kittyT = adaptKittyTranslate(t)
   const route = useRoute()
   const router = useRouter()
   const authStore = useAuthStore()
@@ -439,7 +441,7 @@ export function useMindMapOneSentenceChat() {
           oneSentence.markRequestFailed(requestId, 'context_sync_failed')
           void persistKittyUiTurn(msg, requestId, 'failed', 'ui_failed')
         },
-        t: (key, fallback) => t(key, fallback),
+        t: kittyT,
       },
       {
         text,

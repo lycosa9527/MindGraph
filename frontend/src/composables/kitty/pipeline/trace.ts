@@ -8,6 +8,7 @@ import {
   getKittyErrorCatalogEntry,
   resolveKittyErrorCode,
   resolveKittyFailMessage,
+  type KittyTranslateFn,
 } from '@/composables/kitty/pipeline/errorCatalog'
 import type {
   KittyErrorCode,
@@ -192,7 +193,7 @@ export function dumpTurnTrace(requestId: string): KittyPipelineEvent[] {
 
 export function messageForKittyFail(
   fail: KittyTurnFail,
-  t: (key: string, fallbackOrParams?: string | Record<string, string>) => string
+  t: KittyTranslateFn
 ): string {
   return resolveKittyFailMessage(fail.errorCode, t, fail.detail)
 }

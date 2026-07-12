@@ -14,6 +14,7 @@ import {
   markKittyServerStepOk,
   runKittyEditTurn,
 } from '@/composables/kitty/pipeline/editTurn'
+import { adaptKittyTranslate } from '@/composables/kitty/pipeline/errorCatalog'
 import { messageForKittyFail } from '@/composables/kitty/pipeline/trace'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import type { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
@@ -57,6 +58,7 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
   } = options
 
   const { t } = useLanguage()
+  const kittyT = adaptKittyTranslate(t)
   const diagramStore = useDiagramStore()
   const pipelineStore = useKittyPipelineStore()
 
@@ -133,7 +135,7 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
           history.markActiveRequest('failed')
           onDebugLine?.('#trace', msg.slice(0, 80))
         },
-        t: (key, fallback) => t(key, fallback),
+        t: kittyT,
       },
       {
         text,
@@ -236,7 +238,7 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
       if (ctx) {
         const fail = pipelineStore.getLastFail()
         if (fail) {
-          history.replyState.showFinalReply(messageForKittyFail(fail, t))
+          history.replyState.showFinalReply(messageForKittyFail(fail, kittyT))
         }
       }
     }

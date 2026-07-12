@@ -28,10 +28,12 @@ export type {
 } from '@/composables/kitty/pipeline/types'
 export { KITTY_STEP_ORDER } from '@/composables/kitty/pipeline/types'
 export {
+  adaptKittyTranslate,
   getKittyErrorCatalogEntry,
   resolveKittyErrorCode,
   resolveKittyFailMessage,
 } from '@/composables/kitty/pipeline/errorCatalog'
+export type { KittyTranslateFn } from '@/composables/kitty/pipeline/errorCatalog'
 export { runKittyEditTurn } from '@/composables/kitty/pipeline/editTurn'
 export { runKittyHubSync, scheduleKittyHubContextSync } from '@/composables/kitty/pipeline/hubSyncWorker'
 export { ensureKittySessionConnected } from '@/composables/kitty/pipeline/session'
