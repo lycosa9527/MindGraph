@@ -132,9 +132,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       stopAudioPlayback,
       hubScopeRevision: kittySession.hubScopeRevision,
       diagramSessionId: diagramSessionId.value,
-      buildDiagramContext: diagramContextBuilder.fn
-        ? () => diagramContextBuilder.fn!()
-        : undefined,
+      buildDiagramContext: diagramContextBuilder.fn,
       updateContext,
       sendDiagramMutationAck: (payload) => {
         if (ws.value?.readyState === WebSocket.OPEN) {
@@ -296,10 +294,11 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
         }
         audioContext.value = new AudioCtx({ sampleRate })
       }
-      if (audioContext.value.state === 'suspended') {
-        await audioContext.value.resume()
-      }
 
+      // Opening a text-first Kitty session must not depend on Web Audio. Safari
+      // can leave resume() pending outside a user gesture, which previously
+      // prevented connect() from creating the WebSocket at all. Playback and
+      // legacy capture resume the context when they actually need audio.
       await connect(scope, context)
       kittySession.setOwnsKittySession(true)
       eventBus.emit('voice:started', { sessionId: sessionId.value ?? '' })

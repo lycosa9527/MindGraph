@@ -398,6 +398,9 @@ const {
   onPttAborted: (reason) => {
     pushKittyDebugLine('#ptt', `abort:${reason}`)
   },
+  onPttDebug: (detail) => {
+    pushKittyDebugLine('#ptt', detail)
+  },
 })
 
 let scopeReconnectTimer: ReturnType<typeof setTimeout> | null = null

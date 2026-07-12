@@ -83,8 +83,10 @@ describe('useMobileKittyMicPtt', () => {
     await nextTick()
     await Promise.resolve()
     await Promise.resolve()
+    await Promise.resolve()
     expect(ensureConnected).toHaveBeenCalled()
     expect(startListening).toHaveBeenCalled()
+    expect(pttPointerActive.value).toBe(true)
     expect(onMicAllowed).toHaveBeenCalled()
     expect(stopListening).not.toHaveBeenCalled()
 

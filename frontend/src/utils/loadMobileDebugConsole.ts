@@ -128,8 +128,13 @@ export async function loadMobileDebugConsole(): Promise<void> {
       throw new Error('Eruda global missing after script load')
     }
     window.eruda.init()
+    // Default Eruda entry is bottom-right — same corner as Kitty PTT. Park it
+    // top-left under the status area so holds hit the mic, not Eruda.
+    const safeTop = 56
+    const safeLeft = 12
+    window.eruda.position({ x: safeLeft, y: safeTop })
     console.info(
-      '[MG] Eruda ready — tap the floating button for Console. Disable: ?eruda=0'
+      '[MG] Eruda ready (entry top-left) — tap it for Console. Disable: ?eruda=0'
     )
   } catch (err) {
     loadStarted = false

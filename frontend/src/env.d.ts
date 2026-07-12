@@ -32,6 +32,7 @@ declare module 'vue3-carousel-3d' {
 interface ErudaApi {
   init: (options?: Record<string, unknown>) => void
   destroy: () => void
+  position: (pos?: { x: number; y: number }) => { x: number; y: number } | ErudaApi
 }
 
 interface Window {

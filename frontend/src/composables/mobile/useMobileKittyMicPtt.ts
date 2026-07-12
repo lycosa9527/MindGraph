@@ -45,6 +45,8 @@ export interface UseMobileKittyMicPttOptions {
   onMicAllowed: () => void
   /** Fired when PTT warm-up completes but listening never starts. */
   onPttAborted?: (reason: MobileKittyPttAbortReason) => void
+  /** Optional trace for on-device consoles (Eruda). */
+  onPttDebug?: (detail: string) => void
 }
 
 export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
@@ -58,7 +60,12 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     onMicDenied,
     onMicAllowed,
     onPttAborted,
+    onPttDebug,
   } = options
+
+  function pttDebug(detail: string): void {
+    onPttDebug?.(detail)
+  }
 
   const voiceStartInFlight = ref(false)
   const pttPointerActive = ref(false)
@@ -174,17 +181,34 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
 
   async function beginKittyMicFromUser(warmPromise: Promise<boolean>): Promise<void> {
     if (!kittyServerEnabled.value || micDenied.value) {
+      pttDebug('begin skip:disabled')
       return
     }
     // A prior startListening hang used to leave voiceStartInFlight stuck true so
     // later holds only flipped hold:1 / LED and never sent asr_start.
     if (funAsr.listening.value) {
+      pttDebug('begin skip:already_listening')
       return
     }
     const generation = pttGeneration
     voiceStartInFlight.value = true
+    pttDebug(`begin gen=${generation}`)
     try {
-      const [connectedOk, warmOk] = await Promise.all([ensureConnected(), warmPromise])
+      // Keep mic warm and WS connect in parallel (warm already started on pointerdown).
+      const connectedOkPromise = new Promise<boolean>((resolve) => {
+        const timer = setTimeout(() => resolve(false), 10000)
+        void ensureConnected().then(
+          (ok) => {
+            clearTimeout(timer)
+            resolve(ok)
+          },
+          () => {
+            clearTimeout(timer)
+            resolve(false)
+          }
+        )
+      })
+      const [connectedOk, warmOk] = await Promise.all([connectedOkPromise, warmPromise])
       if (generation !== pttGeneration || !isKittyMicHoldActive()) {
         onPttAborted?.('released_early')
         return
@@ -203,8 +227,10 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       await funAsr.startListening()
       if (generation !== pttGeneration || !isKittyMicHoldActive()) {
         funAsr.stopListening()
+        pttDebug('stop:released_during_start')
       } else {
         onMicAllowed()
+        pttDebug('listening')
       }
     } catch {
       onMicDenied()
@@ -233,11 +259,17 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       // Touch/pen pointerup is activation-triggering — unlock Web Audio here.
       blessIfActivationTriggering(ev)
     }
+    const wasActive = pttPointerActive.value
     pttGeneration += 1
     pttPointerActive.value = false
     voiceStartInFlight.value = false
     unbindWindowPointerEnd()
     releasePointerCaptureSafe()
+    if (wasActive) {
+      pttDebug(
+        `up type=${ev?.pointerType ?? '—'} cancel=${ev?.type === 'pointercancel' ? 1 : 0}`
+      )
+    }
     if (funAsr.listening.value) {
       funAsr.stopListening()
     }
@@ -253,22 +285,41 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     finishPointerPtt(ev)
   }
 
+  function isPrimaryPointerDown(ev: PointerEvent): boolean {
+    // Mouse: only primary button. Touch/pen: WebKit has historically reported
+    // incorrect `button` values — accept the contact regardless.
+    if (ev.pointerType === 'mouse') {
+      return ev.button === 0
+    }
+    return ev.button === 0 || ev.button === -1 || ev.buttons > 0 || ev.isPrimary !== false
+  }
+
   function onKittyMicPointerDown(ev: PointerEvent): void {
-    if (ev.button !== 0) {
+    if (!isPrimaryPointerDown(ev)) {
+      pttDebug(`down skip:button=${ev.button} type=${ev.pointerType}`)
       return
     }
     if (!kittyServerEnabled.value || micDenied.value) {
+      pttDebug(
+        `down skip:flag server=${kittyServerEnabled.value ? 1 : 0} denied=${micDenied.value ? 1 : 0}`
+      )
       return
     }
     if (pttPointerActive.value) {
+      pttDebug('down skip:already_held')
       return
     }
     pttPointerActive.value = true
     activePointerId = ev.pointerId
+    pttDebug(`down type=${ev.pointerType} btn=${ev.button} id=${ev.pointerId}`)
     const el = ev.currentTarget
     if (el instanceof HTMLElement) {
       captureEl = el
-      el.setPointerCapture(ev.pointerId)
+      try {
+        el.setPointerCapture(ev.pointerId)
+      } catch {
+        /* iOS may reject capture — window pointerup still ends the hold */
+      }
     }
     ev.preventDefault()
     bindWindowPointerEnd()
