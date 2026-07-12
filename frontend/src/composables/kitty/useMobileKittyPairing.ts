@@ -6,11 +6,7 @@ import { type ComputedRef, type Ref, computed, onMounted, onUnmounted, ref, watc
 import { storeToRefs } from 'pinia'
 
 import { shouldUseOneSentenceEditFlow } from '@/composables/canvasToolbar/mindMapOneSentencePhase'
-import {
-  buildKittyContextPreferStore,
-  buildKittyDiagramContext,
-  kittyInteractionLanguageFromUi,
-} from '@/composables/kitty/buildKittyDiagramContext'
+import { kittyInteractionLanguageFromUi } from '@/composables/kitty/buildKittyDiagramContext'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
@@ -407,13 +403,7 @@ export function useMobileKittyPairing(
   }
 
   function buildMinimalLibraryKittyContext(libId: string): KittyAgentContext {
-    if (diagramStore.type != null && diagramStore.data != null) {
-      return withOneSentencePanel(
-        buildKittyDiagramContext(diagramStore, 'one_sentence', {
-          oneSentencePhase: resolveMobileOneSentencePhase(),
-        })
-      )
-    }
+    // Thin mobile: never push full Pinia diagram_data — server prefers live_spec/library.
     const boot = bootstrapPayload.value
     const bootCtx = boot?.context
     const selected = [...diagramStore.selectedNodes]
@@ -422,6 +412,7 @@ export function useMobileKittyPairing(
     ).trim()
     const diagramType = (bootCtx?.diagram_type ??
       boot?.diagram_type ??
+      diagramStore.type ??
       'circle_map') as KittyAgentContext['diagram_type']
     const diagramData: Record<string, unknown> =
       selected.length > 0 ? { selected_nodes: selected } : {}
@@ -448,42 +439,35 @@ export function useMobileKittyPairing(
       return libCtx
     }
 
-    const base = withOneSentencePanel(buildKittyContextPreferStore('one_sentence'))
+    // Ephemeral / unpaired: metadata only (no full store diagram push).
+    const selected = [...diagramStore.selectedNodes]
     const boot = bootstrapPayload.value
-    if (boot && boot.source !== 'empty' && boot.context) {
-      const serverCtx = boot.context
-      const merged: KittyAgentContext = withOneSentencePanel({
-        ...base,
-        ...serverCtx,
-        diagram_data: {
-          ...(serverCtx.diagram_data ?? {}),
-          selected_nodes: [...(base.selected_nodes ?? [])],
-        },
-        diagram_type:
-          (serverCtx.diagram_type as KittyAgentContext['diagram_type']) ?? base.diagram_type,
-        active_panel: 'one_sentence',
-        selected_nodes: [...(base.selected_nodes ?? [])],
-        one_sentence_phase: resolveMobileOneSentencePhase(),
-      })
-      const pairLib =
-        (typeof serverCtx.diagram_library_id === 'string' && serverCtx.diagram_library_id !== ''
-          ? serverCtx.diagram_library_id
-          : null) ??
-        (kittyDesktopLibraryId.value != null && kittyDesktopLibraryId.value !== ''
-          ? kittyDesktopLibraryId.value
-          : null)
-      if (
-        pairLib != null &&
-        pairLib !== '' &&
-        (merged.diagram_library_id == null || merged.diagram_library_id === '')
-      ) {
-        return { ...merged, diagram_library_id: pairLib }
-      }
-      return merged
-    }
-
-    const ctx = base
-    return ctx
+    const bootCtx = boot?.context
+    const displayTitle = String(
+      diagramStore.effectiveTitle ?? diagramStore.title ?? bootCtx?.diagram_display_title ?? ''
+    ).trim()
+    const diagramType = (bootCtx?.diagram_type ??
+      boot?.diagram_type ??
+      diagramStore.type ??
+      'circle_map') as KittyAgentContext['diagram_type']
+    const pairLib =
+      (typeof bootCtx?.diagram_library_id === 'string' && bootCtx.diagram_library_id !== ''
+        ? bootCtx.diagram_library_id
+        : null) ??
+      (kittyDesktopLibraryId.value != null && kittyDesktopLibraryId.value !== ''
+        ? kittyDesktopLibraryId.value
+        : null)
+    return withOneSentencePanel({
+      diagram_type: diagramType,
+      active_panel: 'one_sentence',
+      selected_nodes: selected,
+      diagram_data: selected.length > 0 ? { selected_nodes: selected } : {},
+      diagram_library_id: pairLib ?? undefined,
+      diagram_display_title: displayTitle,
+      interaction_language: kittyInteractionLanguageFromUi(),
+      one_sentence_phase: resolveMobileOneSentencePhase(),
+      selected_llm_model: llmResultsStore.selectedModel,
+    })
   }
 
   const mobileKittyContextPreview = computed<MobileKittyContextPreview>(() => {

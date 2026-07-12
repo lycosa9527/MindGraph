@@ -1,5 +1,6 @@
 /**
- * Edit pipeline worker — S06 history → S07 hub sync → S08 text send.
+ * Edit pipeline worker — S06 history → (desktop S07 hub sync) → S08 text send.
+ * Mobile lane skips S07: phone is mic+chat; Redis live_spec comes from desktop/server.
  */
 import { eventBus } from '@/composables/core/useEventBus'
 import type {
@@ -19,9 +20,6 @@ import {
 import type { KittyTurnContext } from '@/composables/kitty/pipeline/types'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
-import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
-import { useDiagramStore } from '@/stores/diagram'
-import { markKittyHubSyncFingerprint } from '@/composables/kitty/pipeline/hubSyncWorker'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 export type RunKittyEditTurnDeps = {
@@ -131,60 +129,68 @@ export async function runKittyEditTurn(
     }
   }
 
-  let hub = await runKittyHubSync({
-    deps: {
-      buildContext: deps.buildContext,
-      updateContext: deps.updateContext,
-      getScope: deps.getScope,
-      isConnected: () => deps.kitty.isConnected.value,
-      lane: deps.lane,
-    },
-    ctx,
-    reason: 'edit_gate',
-  })
+  // Mobile is mic+chat only — server prefers live_spec/library; no phone pre-edit push.
+  if (deps.lane !== 'mobile') {
+    let hub = await runKittyHubSync({
+      deps: {
+        buildContext: deps.buildContext,
+        updateContext: deps.updateContext,
+        getScope: deps.getScope,
+        isConnected: () => deps.kitty.isConnected.value,
+        lane: deps.lane,
+      },
+      ctx,
+      reason: 'edit_gate',
+    })
 
-  if (!hub.ok && !deps.kitty.isConnected.value) {
-    const reconnected = deps.ensureConnected
-      ? await deps.ensureConnected()
-      : (
-          await ensureKittySessionConnected({
-            kitty: deps.kitty,
-            getScope: deps.getScope,
+    if (!hub.ok && !deps.kitty.isConnected.value) {
+      const reconnected = deps.ensureConnected
+        ? await deps.ensureConnected()
+        : (
+            await ensureKittySessionConnected({
+              kitty: deps.kitty,
+              getScope: deps.getScope,
+              buildContext: deps.buildContext,
+              lane: deps.lane,
+              turnCtx: ctx,
+            })
+          ).ok
+      if (reconnected) {
+        hub = await runKittyHubSync({
+          deps: {
             buildContext: deps.buildContext,
+            updateContext: deps.updateContext,
+            getScope: deps.getScope,
+            isConnected: () => deps.kitty.isConnected.value,
             lane: deps.lane,
-            turnCtx: ctx,
-          })
-        ).ok
-    if (reconnected) {
-      hub = await runKittyHubSync({
-        deps: {
-          buildContext: deps.buildContext,
-          updateContext: deps.updateContext,
-          getScope: deps.getScope,
-          isConnected: () => deps.kitty.isConnected.value,
-          lane: deps.lane,
-        },
-        ctx,
-        reason: 'edit_gate',
-      })
+          },
+          ctx,
+          reason: 'edit_gate',
+        })
+      }
     }
-  }
 
-  if (!hub.ok) {
-    const fail = pipeline.getLastFail()
-    deps.onFailMessage(
-      fail
-        ? messageForKittyFail(fail, deps.t)
-        : deps.t(
-            'canvas.mindMapOneSentence.kittyContextSyncFailed',
-            'Could not sync the canvas. Please try again in a moment.'
-          )
-    )
-    return { ok: false, ctx, sent: false }
+    if (!hub.ok) {
+      const fail = pipeline.getLastFail()
+      deps.onFailMessage(
+        fail
+          ? messageForKittyFail(fail, deps.t)
+          : deps.t(
+              'canvas.mindMapOneSentence.kittyContextSyncFailed',
+              'Could not sync the canvas. Please try again in a moment.'
+            )
+      )
+      return { ok: false, ctx, sent: false }
+    }
+  } else {
+    recordPipelineEvent({
+      ctx,
+      module: 'hub_sync',
+      step: 'S07_hub_sync',
+      status: 'skip',
+      detail: 'mobile thin ingress — server live_spec',
+    })
   }
-
-  const diagramStore = useDiagramStore()
-  markKittyHubSyncFingerprint(getKittyDiagramContentFingerprint(diagramStore.data))
 
   pipeline.setPhase('sending')
   recordPipelineEvent({

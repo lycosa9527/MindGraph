@@ -31,11 +31,12 @@ from services.kitty.infra.scope.kitty_scope_access import user_may_access_kitty_
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
 from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.ops import (
-    cleanup_voice_by_diagram_session,
+    cleanup_voice_sessions_for_diagram_lane,
     create_voice_session,
     end_voice_session_async,
     get_voice_session,
 )
+from services.kitty.session.canvas_owner import agent_session_id_for_scope
 from services.kitty.session.one_sentence_memory_hydrate import (
     hydrate_one_sentence_session_memory,
 )
@@ -170,36 +171,72 @@ async def prepare_diagram_voice_lock(
     websocket: WebSocket,
     diagram_session_id: str,
     agent_session_id: str,
+    *,
+    client_lane: str | None = None,
 ) -> None:
-    """Close stale sockets and evict prior voice/agent state for this diagram."""
+    """
+    Register this socket for the diagram scope.
+
+    Mobile and desktop canvas-owner may coexist on the same scope. Same-lane
+    reconnects still replace the prior peer (e.g. second desktop tab).
+    """
+    is_mobile = client_lane == "mobile"
+    lane_agent_id = agent_session_id_for_scope(diagram_session_id, client_lane=client_lane)
+    del agent_session_id  # callers may still pass legacy id; use lane-suffixed
+
     async with diagram_session_voice_lock(diagram_session_id):
-        if diagram_session_id in active_websockets:
-            existing_ws_list = list(active_websockets[diagram_session_id])
-            logger.debug(
-                "Closing %d existing WebSocket connection(s) for diagram %s",
-                len(existing_ws_list),
-                diagram_session_id,
-            )
-            for existing_ws in existing_ws_list:
-                if existing_ws is websocket:
+        existing_ws_list = list(active_websockets.get(diagram_session_id, []))
+        peers_to_close: list[WebSocket] = []
+        for existing_ws in existing_ws_list:
+            if existing_ws is websocket:
+                continue
+            peer_is_mobile = False
+            for _sid, sess in list(voice_sessions.items()):
+                if not isinstance(sess, dict):
                     continue
+                if sess.get("_client_websocket") is existing_ws:
+                    peer_is_mobile = sess.get("_kitty_client_lane") == "mobile"
+                    break
+            if peer_is_mobile == is_mobile:
+                peers_to_close.append(existing_ws)
+
+        if peers_to_close:
+            logger.debug(
+                "Closing %d same-lane WebSocket connection(s) for diagram %s lane=%s",
+                len(peers_to_close),
+                diagram_session_id,
+                "mobile" if is_mobile else "desktop",
+            )
+            for existing_ws in peers_to_close:
                 try:
                     await existing_ws.close(code=1001, reason="Diagram session ended")
                 except (RuntimeError, ConnectionError, AttributeError) as exc:
                     logger.debug("Error closing existing WebSocket: %s", exc)
-            active_websockets[diagram_session_id] = []
+                try:
+                    if diagram_session_id in active_websockets:
+                        active_websockets[diagram_session_id].remove(existing_ws)
+                except ValueError:
+                    pass
 
-        existing_cleaned = await cleanup_voice_by_diagram_session(diagram_session_id)
+        existing_cleaned = await cleanup_voice_sessions_for_diagram_lane(
+            diagram_session_id,
+            client_lane=client_lane,
+        )
         if existing_cleaned:
-            logger.debug("Cleaned up existing voice session for diagram %s", diagram_session_id)
+            logger.debug(
+                "Cleaned up same-lane voice session for diagram %s lane=%s",
+                diagram_session_id,
+                "mobile" if is_mobile else "desktop",
+            )
 
-        if kitty_agent_manager.get(agent_session_id) is not None:
-            logger.debug("Removing existing agent for diagram session %s", diagram_session_id)
-            kitty_agent_manager.remove(agent_session_id)
+        if kitty_agent_manager.get(lane_agent_id) is not None:
+            logger.debug("Removing existing agent %s", lane_agent_id)
+            kitty_agent_manager.remove(lane_agent_id)
 
         if diagram_session_id not in active_websockets:
             active_websockets[diagram_session_id] = []
-        active_websockets[diagram_session_id].append(websocket)
+        if websocket not in active_websockets[diagram_session_id]:
+            active_websockets[diagram_session_id].append(websocket)
         logger.debug(
             "Registered WebSocket for diagram %s (total: %d)",
             diagram_session_id,
@@ -229,13 +266,15 @@ async def start_kitty_session(
     diagram_session_id = auth.diagram_session_id
     hub = auth.hub
     hub_session_id = auth.hub_session_id
-    agent_session_id = f"diagram_{diagram_session_id}"
 
     logger.debug("Starting voice conversation for user %s", user_id)
 
     initial_context_in = start_msg.get("context", {}) or {}
     raw_start_lane = start_msg.get("client_lane")
     start_client_lane: str | None = "mobile" if raw_start_lane == "mobile" else None
+    agent_session_id = agent_session_id_for_scope(
+        diagram_session_id, client_lane=start_client_lane
+    )
     start_diagram_type = start_msg.get("diagram_type") or "circle_map"
     start_active_panel = start_msg.get("active_panel", "none")
     start_resolved = await hub.prepare_kitty_start_context(
@@ -261,6 +300,11 @@ async def start_kitty_session(
 
     voice_sessions[voice_session_id]["context"] = copy.deepcopy(merged_ctx)
     voice_sessions[voice_session_id]["_kitty_client_lane"] = start_client_lane
+    voice_sessions[voice_session_id]["_kitty_canvas_owner"] = start_client_lane != "mobile"
+    voice_sessions[voice_session_id]["_client_websocket"] = websocket
+    # Explicit start flag (desktop one-sentence / canvas owner agent).
+    if start_msg.get("canvas_owner") is True:
+        voice_sessions[voice_session_id]["_kitty_canvas_owner"] = True
     # Text-first Kitty: commands always use client_mode text (no Omni duplex).
     start_client_mode = "text"
     voice_sessions[voice_session_id]["_kitty_client_mode"] = start_client_mode
@@ -290,8 +334,7 @@ async def start_kitty_session(
         client_lane=start_client_lane,
         preserve_mobile_lane=start_client_lane == "mobile",
     )
-    if start_client_lane != "mobile":
-        await clear_kitty_mobile_scope(int(auth.current_user.id), diagram_session_id)
+    # Desktop canvas_owner coexists with mobile ingress — do not clear mobile_active.
 
     session = get_voice_session(voice_session_id)
     if not session:

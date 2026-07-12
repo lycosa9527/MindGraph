@@ -232,6 +232,9 @@ describe('useMobileKittyPairing one-sentence context', () => {
     expect(ctx.active_panel).toBe('one_sentence')
     expect(ctx.one_sentence_phase).toBe('edit')
     expect(ctx.diagram_library_id).toBe('lib-diagram-1')
+    // Thin mobile: never push full Pinia nodes[] — server prefers live_spec.
+    expect(ctx.diagram_data).not.toHaveProperty('nodes')
+    expect(ctx.diagram_data).not.toHaveProperty('connections')
   })
 
   it('uses create phase when edit flow is not ready', () => {

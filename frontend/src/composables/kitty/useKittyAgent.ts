@@ -222,6 +222,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     handleKittyServerMessage(data, {
       ...lifecycle,
       textOnly,
+      clientLane: kittyClientLane === 'mobile' ? 'mobile' : 'desktop',
       isVoiceActive,
       state,
       sessionId,
@@ -351,6 +352,9 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
         }
         if (kittyClientLane === 'mobile') {
           startPayload.client_lane = 'mobile'
+        } else {
+          // Desktop canvas / one-sentence — owns verified diagram apply + ack.
+          startPayload.canvas_owner = true
         }
         socket.send(JSON.stringify(startPayload))
       }

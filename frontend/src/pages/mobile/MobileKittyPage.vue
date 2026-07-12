@@ -16,7 +16,6 @@ import KittyMobileChatTranscript from '@/components/kitty/KittyMobileChatTranscr
 import KittyMobileDiagramPickerDropdown from '@/components/kitty/KittyMobileDiagramPickerDropdown.vue'
 import KittyMobileLlmModelRow from '@/components/kitty/KittyMobileLlmModelRow.vue'
 import {
-  getDiagramOperations,
   useKittyAgent,
   useKittyDiagramReviewAnnotationBus,
   useLanguage,
@@ -25,15 +24,12 @@ import {
 import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
 import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrateMobileKittyStoreFromBootstrap'
-import { registerKittyDiagramMutationBus } from '@/composables/kitty/registerKittyDiagramMutationBus'
 import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesktopLlmModelPublish'
 import { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
 import { useKittyMobileDebugBus } from '@/composables/kitty/useKittyMobileDebugBus'
 import { useKittyMobileHubActionBridge } from '@/composables/kitty/useKittyMobileHubActionBridge'
-import { useKittyMobileHubPersist } from '@/composables/kitty/useKittyMobileHubPersist'
 import { useKittyMobileLibraryDiagramSelect } from '@/composables/kitty/useKittyMobileLibraryDiagramSelect'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
-import { useMobileKittyLiveContextPoll } from '@/composables/kitty/useMobileKittyLiveContextPoll'
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
 import { prepareMobileKittyPhotoCapture } from '@/composables/mobile/prepareMobileKittyPhotoCapture'
 import { useMobileKittyChat } from '@/composables/mobile/useMobileKittyChat'
@@ -86,9 +82,7 @@ const kitty = useKittyAgent({
   },
 })
 
-/** Apply Kitty ``diagram_update`` WS payloads to Pinia (same bridge as canvas pages). */
-getDiagramOperations()
-registerKittyDiagramMutationBus()
+// Thin mobile: mic+chat only — desktop canvas owns mutation bus / library persist / live_spec.
 
 const {
   kittyPairScope,
@@ -178,19 +172,6 @@ const {
 const connected = computed(() => kitty.isConnected.value)
 const connecting = computed(() => kitty.state.value === 'connecting')
 const kittyVoiceState = computed(() => kitty.state.value)
-
-const kittyLibraryDiagramId = computed(() => mobileKittyContextPreview.value.diagramLibraryId)
-const kittyDiagramDisplayTitle = computed(() => mobileKittyContextPreview.value.diagramDisplayTitle)
-
-const { flushHubLibraryPersist } = useKittyMobileHubPersist({
-  libraryDiagramId: kittyLibraryDiagramId,
-  diagramDisplayTitle: kittyDiagramDisplayTitle,
-  isConnected: connected,
-  buildContext: buildMobileKittyContext,
-  updateContext: (ctx, opts) => kitty.updateContext(ctx, opts),
-  editPipelineActive,
-  onDebugLine: pushKittyDebugLine,
-})
 
 const kittyDiagramCardPrimary = computed(() => {
   const p = mobileKittyContextPreview.value
@@ -387,22 +368,11 @@ const {
   draft,
   ensureConnected,
   buildContext: buildMobileKittyContext,
-  editPipelineActive,
   onDebugLine: pushKittyDebugLine,
 })
 
 // Chat turns refetch whenever kittyPairScope changes (library follow / pick / ephemeral).
 // useMobileKittyChat watches diagramScope → bootstrapChat (shared one-sentence REST store).
-
-const liveContextPollEnabled = computed(
-  () => authStore.isAuthenticated && kittyServerEnabled.value && showDiagramChrome.value
-)
-useMobileKittyLiveContextPoll({
-  libraryDiagramId: kittyLibraryDiagramId,
-  enabled: liveContextPollEnabled,
-  editPipelineActive,
-  onDebugLine: pushKittyDebugLine,
-})
 
 const {
   voiceStartInFlight,
@@ -486,7 +456,6 @@ function scheduleScopeReconnect(scope: string): void {
         syncMobileKittyContextNow()
         return
       }
-      flushHubLibraryPersist()
       syncMobileKittyContextNow()
       await kitty.stopConversation()
       if (isKittyMicSessionBusy()) {

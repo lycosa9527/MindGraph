@@ -15,7 +15,6 @@ const {
   onWithOwnerMock,
   removeAllListenersForOwnerMock,
   runKittyEditTurnMock,
-  setHubScopeRevisionMock,
 } = vi.hoisted(() => ({
   appendOneSentenceTurnMock: vi.fn(async () => true),
   fetchOneSentenceTurnsMock: vi.fn(async () => []),
@@ -27,7 +26,6 @@ const {
     sent: true,
     ctx: { requestId: 'r1', scope: 'scope-abc', lane: 'mobile' as const },
   })),
-  setHubScopeRevisionMock: vi.fn(),
 }))
 
 vi.mock('@/composables/canvasToolbar/useOneSentenceSessionTurns', () => ({
@@ -88,13 +86,6 @@ vi.mock('@/stores/diagram', () => ({
   }),
 }))
 
-vi.mock('@/stores/kittySession', () => ({
-  useKittySessionStore: () => ({
-    hubScopeRevision: 1,
-    setHubScopeRevision: setHubScopeRevisionMock,
-  }),
-}))
-
 describe('useMobileKittyChat', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -104,7 +95,6 @@ describe('useMobileKittyChat', () => {
     onWithOwnerMock.mockClear()
     removeAllListenersForOwnerMock.mockClear()
     runKittyEditTurnMock.mockClear()
-    setHubScopeRevisionMock.mockClear()
     fetchOneSentenceTurnsMock.mockResolvedValue([])
     runKittyEditTurnMock.mockResolvedValue({
       ok: true,
@@ -145,7 +135,6 @@ describe('useMobileKittyChat', () => {
       phase: computed(() => phase),
       draft,
       ensureConnected: vi.fn(async () => true),
-      editPipelineActive: ref(false),
       buildContext: () =>
         ({
           diagram_type: 'mindmap',
@@ -165,7 +154,7 @@ describe('useMobileKittyChat', () => {
     return { chat, draft, sendTextMessage, stopListening, handlers, funAsr, updateContext }
   }
 
-  it('registers reply and diagram bus handlers on mount', async () => {
+  it('registers shared reply bus handlers on mount', async () => {
     mountChat()
     await nextTick()
     const events = onWithOwnerMock.mock.calls.map((c) => c[0])
@@ -213,7 +202,7 @@ describe('useMobileKittyChat', () => {
     ).toBe(true)
   })
 
-  it('hub edit gate failure blocks send', async () => {
+  it('edit turn failure blocks send', async () => {
     runKittyEditTurnMock.mockResolvedValue({
       ok: false,
       sent: false,
@@ -251,7 +240,6 @@ describe('useMobileKittyChat', () => {
       phase: computed(() => 'edit'),
       draft,
       ensureConnected: vi.fn(async () => true),
-      editPipelineActive: ref(false),
       buildContext: () =>
         ({
           diagram_type: 'mindmap',

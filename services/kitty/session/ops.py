@@ -17,6 +17,7 @@ from services.agent_hub.scope_lifecycle import (
 )
 from services.kitty.infra.redis.kitty_session_redis import configure_voice_session_getter
 from services.kitty.session.agent_state import kitty_agent_manager
+from services.kitty.session.canvas_owner import agent_session_id_for_scope
 from services.kitty.session.omni_client_access import get_session_omni_client as _get_session_omni_client_impl
 from services.kitty.session.one_sentence_session_pg import soft_close_one_sentence_session
 from services.kitty.session.runtime_state import active_websockets, logger, voice_sessions
@@ -26,31 +27,60 @@ from services.kitty.audio.session_bridge import teardown_session_audio
 
 def get_agent_session_id(voice_session_id: str) -> str:
     """
-    Get the agent session ID scoped to diagram_session_id.
+    Get the agent session ID scoped to diagram_session_id (+ mobile lane suffix).
 
-    CRITICAL: Voice agent sessions must be scoped to diagram_session_id, not voice_session_id.
-    This ensures:
-    - One agent per diagram session (not per WebSocket connection)
-    - Proper cleanup when switching diagrams
-    - No cross-contamination between diagram sessions
-
-    Args:
-        voice_session_id: The voice session ID (WebSocket connection identifier)
-
-    Returns:
-        Agent session ID (scoped to diagram_session_id)
+    Mobile and desktop canvas-owner may share a diagram scope; agent ids are
+    lane-suffixed so they do not clear each other's conversation state.
     """
     if voice_session_id in voice_sessions:
         diagram_session_id = voice_sessions[voice_session_id].get("diagram_session_id")
         if diagram_session_id:
-            return f"diagram_{diagram_session_id}"
+            lane = voice_sessions[voice_session_id].get("_kitty_client_lane")
+            lane_str = lane if isinstance(lane, str) else None
+            return agent_session_id_for_scope(str(diagram_session_id), client_lane=lane_str)
 
-    # Fallback: use voice_session_id if diagram_session_id not available (shouldn't happen)
     logger.warning(
         "Voice session %s has no diagram_session_id, using voice_session_id as fallback",
         voice_session_id,
     )
     return voice_session_id
+
+
+def end_voice_sessions_for_diagram_lane(
+    diagram_session_id: str,
+    *,
+    client_lane: str | None,
+) -> list[str]:
+    """End in-memory voice sessions on this scope that match ``client_lane`` (mobile vs desktop)."""
+    is_mobile = client_lane == "mobile"
+    ended: list[str] = []
+    for sid, session in list(voice_sessions.items()):
+        if not isinstance(session, dict):
+            continue
+        if session.get("diagram_session_id") != diagram_session_id:
+            continue
+        peer_mobile = session.get("_kitty_client_lane") == "mobile"
+        if peer_mobile != is_mobile:
+            continue
+        ended.append(sid)
+    return ended
+
+
+async def cleanup_voice_sessions_for_diagram_lane(
+    diagram_session_id: str,
+    *,
+    client_lane: str | None,
+) -> bool:
+    """Cleanup same-lane voice sessions for a diagram (leaves the peer lane intact)."""
+    sids = end_voice_sessions_for_diagram_lane(diagram_session_id, client_lane=client_lane)
+    if not sids:
+        return False
+    for voice_session_id in sids:
+        await end_voice_session_async(voice_session_id, reason="diagram_lane_replaced")
+    kitty_agent_manager.remove(
+        agent_session_id_for_scope(diagram_session_id, client_lane=client_lane)
+    )
+    return True
 
 
 def create_voice_session(
@@ -188,9 +218,16 @@ async def end_voice_session_async(session_id: str, reason: str = "completed") ->
         logger.debug("VOIC | Closed Omni client for session %s", session_id)
 
     if diagram_session_id:
-        agent_session_id = f"diagram_{diagram_session_id}"
-        kitty_agent_manager.remove(agent_session_id)
-        logger.debug("VOIC | Removed agent for diagram session %s", diagram_session_id)
+        lane = session.get("_kitty_client_lane")
+        lane_str = lane if isinstance(lane, str) else None
+        kitty_agent_manager.remove(
+            agent_session_id_for_scope(str(diagram_session_id), client_lane=lane_str)
+        )
+        logger.debug(
+            "VOIC | Removed agent for diagram session %s lane=%s",
+            diagram_session_id,
+            lane_str or "desktop",
+        )
 
 
 async def cleanup_voice_by_diagram_session(diagram_session_id: str) -> bool:

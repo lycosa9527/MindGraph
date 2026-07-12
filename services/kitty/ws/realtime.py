@@ -31,6 +31,7 @@ from services.kitty.ws.lifecycle import (
     run_kitty_idle_watchdog,
     start_kitty_session,
 )
+from services.kitty.session.canvas_owner import agent_session_id_for_scope
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.ws_limits import kitty_ws_idle_timeout_seconds
 from utils.ws_session_registry import _registry as _ws_registry
@@ -90,8 +91,17 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
         if start_msg is None:
             return
 
-        agent_session_id = f"diagram_{diagram_session_id}"
-        await prepare_diagram_voice_lock(websocket, diagram_session_id, agent_session_id)
+        raw_start_lane = start_msg.get("client_lane")
+        start_client_lane: str | None = "mobile" if raw_start_lane == "mobile" else None
+        agent_session_id = agent_session_id_for_scope(
+            diagram_session_id, client_lane=start_client_lane
+        )
+        await prepare_diagram_voice_lock(
+            websocket,
+            diagram_session_id,
+            agent_session_id,
+            client_lane=start_client_lane,
+        )
 
         start_result = await start_kitty_session(
             websocket=websocket,

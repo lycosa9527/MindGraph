@@ -22,6 +22,7 @@ from services.kitty.ack.ack_slots import enrich_ack_session_context
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log, summarize_diagram_update
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_diagram_update
 from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
+from services.kitty.session.canvas_owner import find_canvas_owner_websocket
 from services.kitty.session.runtime_state import logger, voice_sessions
 
 _DIAGRAM_HINT_ZH: tuple[str, ...] = (
@@ -323,7 +324,44 @@ async def send_kitty_diagram_update(
                 session_context=enrich_ack_session_context(ctx, sess if isinstance(sess, dict) else None),
             )
 
-    sent = await safe_websocket_send(websocket, outbound)
+    sent = False
+    mutation_raw = outbound.get("mutation_id")
+    has_verified_mutation = isinstance(mutation_raw, str) and bool(mutation_raw.strip())
+
+    # Verified apply/ack belongs on desktop canvas_owner; mobile ingress gets chat summary only.
+    if has_verified_mutation and isinstance(sess, dict):
+        user_id = sess.get("user_id")
+        scope = sess.get("diagram_session_id")
+        try:
+            uid = int(user_id) if user_id is not None else None
+        except (TypeError, ValueError):
+            uid = None
+        if uid is not None and isinstance(scope, str) and scope.strip():
+            owner_ws = find_canvas_owner_websocket(uid, scope.strip())
+            if owner_ws is not None and owner_ws is not websocket:
+                owner_sent = await safe_websocket_send(owner_ws, outbound)
+                chat_only = {
+                    "type": "diagram_update",
+                    "action": outbound.get("action"),
+                    "updates": {},
+                    "user_summary": outbound.get("user_summary"),
+                }
+                ingress_sent = await safe_websocket_send(websocket, chat_only)
+                sent = owner_sent or ingress_sent
+                kitty_wf_log(
+                    "ws_out",
+                    "canvas_owner_apply",
+                    voice_session_id=voice_session_id,
+                    scope=scope.strip(),
+                    action=str(outbound.get("action") or ""),
+                )
+            else:
+                sent = await safe_websocket_send(websocket, outbound)
+        else:
+            sent = await safe_websocket_send(websocket, outbound)
+    else:
+        sent = await safe_websocket_send(websocket, outbound)
+
     if outbound.get("type") != "diagram_update":
         return sent
 

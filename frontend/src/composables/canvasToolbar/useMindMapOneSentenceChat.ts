@@ -2,7 +2,7 @@
  * One-sentence panel chat wiring — thin view layer over ``useOneSentenceStore``.
  * First message → prompt-to-diagram; follow-ups → Kitty text (tracked requests).
  */
-import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
@@ -37,11 +37,11 @@ import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
 import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
+import { KITTY_CANVAS_OWNER_KEY } from '@/composables/kitty/kittyCanvasOwnerKey'
 import { KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS } from '@/composables/kitty/syncKittyHubContext'
 import { runKittyEditTurn } from '@/composables/kitty/pipeline/editTurn'
 import { adaptKittyTranslate } from '@/composables/kitty/pipeline/errorCatalog'
 import {
-  markKittyHubSyncFingerprint,
   runKittyHubSync,
 } from '@/composables/kitty/pipeline/hubSyncWorker'
 import { recordPipelineEvent } from '@/composables/kitty/pipeline/trace'
@@ -53,7 +53,6 @@ import {
 } from '@/composables/kitty/kittyEditAfterLlmQueue'
 import { setDiagramWriteLockHolder } from '@/composables/kitty/useDiagramWriteLock'
 import { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
-import { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { useKittyUserMobileActive } from '@/composables/kitty/useKittyUserMobileActive'
 import {
   useAuthStore,
@@ -239,14 +238,11 @@ export function useMindMapOneSentenceChat() {
     scrollChatToBottom,
   })
 
-  const kitty = useKittyAgent({
-    ownerId: PANEL_OWNER,
-    textOnly: true,
-    sampleRate: 22050,
-    onError: (err) => {
-      pushKittyMessage(err)
-    },
-  })
+  const canvasOwner = inject(KITTY_CANVAS_OWNER_KEY, null)
+  if (!canvasOwner) {
+    throw new Error('MindMapOneSentenceChat requires Kitty canvas owner from CanvasPage')
+  }
+  const kitty = canvasOwner.kitty
 
   const kittySession = useKittySessionStore()
   const { asrListening, asrPartialTranscript } = storeToRefs(kittySession)
@@ -321,15 +317,13 @@ export function useMindMapOneSentenceChat() {
       pushKittyMessage(t('canvas.mindMapOneSentence.kittyUnavailable'))
       return false
     }
-    if (kitty.isConnected.value) return true
-
     oneSentence.setConnecting(true)
     try {
-      await kitty.startConversation(diagramScope.value, buildKittyContext())
-      return true
-    } catch {
-      pushKittyMessage(t('canvas.mindMapOneSentence.kittyUnavailable'))
-      return false
+      const ok = await canvasOwner.ensureConnected()
+      if (!ok) {
+        pushKittyMessage(t('canvas.mindMapOneSentence.kittyUnavailable'))
+      }
+      return ok
     } finally {
       oneSentence.setConnecting(false)
     }
@@ -356,9 +350,7 @@ export function useMindMapOneSentenceChat() {
     const ok = await migrateOneSentenceScope(fromScope, libraryId)
     if (ok) {
       oneSentence.emitSessionMigrated(fromScope, libraryId)
-      if (kitty.isConnected.value) {
-        await kitty.stopConversation()
-      }
+      void canvasOwner.ensureConnected()
     }
   }
 
@@ -684,7 +676,6 @@ export function useMindMapOneSentenceChat() {
       }).then((result) => {
         if (result.ok) {
           lastHubFingerprint = fingerprint
-          markKittyHubSyncFingerprint(fingerprint)
         }
       })
     }, 500)
@@ -741,7 +732,6 @@ export function useMindMapOneSentenceChat() {
       }).then((result) => {
         if (result.ok) {
           lastHubFingerprint = getKittyDiagramContentFingerprint(diagramStore.data)
-          markKittyHubSyncFingerprint(lastHubFingerprint)
         }
       })
       if (payload.userSummary?.trim()) {
@@ -830,6 +820,25 @@ export function useMindMapOneSentenceChat() {
     }
   }
 
+  // When phone owns mic/chat for this scope, refresh shared turns so desktop panel stays in sync.
+  let peerHistoryTimer: ReturnType<typeof setInterval> | null = null
+  watch(
+    mobileKittyOwnsEditInput,
+    (locked) => {
+      if (peerHistoryTimer != null) {
+        clearInterval(peerHistoryTimer)
+        peerHistoryTimer = null
+      }
+      if (!locked) {
+        return
+      }
+      peerHistoryTimer = setInterval(() => {
+        void bootstrapSession()
+      }, 4000)
+    },
+    { immediate: true }
+  )
+
   onMounted(() => {
     generateWatchReady = true
     void bootstrapSession()
@@ -863,8 +872,12 @@ export function useMindMapOneSentenceChat() {
       clearTimeout(hubSyncTimer)
       hubSyncTimer = null
     }
+    if (peerHistoryTimer != null) {
+      clearInterval(peerHistoryTimer)
+      peerHistoryTimer = null
+    }
     funAsr.stopListening()
-    void kitty.stopConversation()
+    // Canvas owner (CanvasPage) owns Kitty WS lifecycle — do not stop on panel close.
   })
 
   return {

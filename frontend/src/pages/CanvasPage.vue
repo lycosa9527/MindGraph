@@ -75,7 +75,9 @@ import {
   canvasKittySeedQueryKeysPresent,
 } from '@/composables/canvasPage/applyCanvasKittySeedFromRoute'
 import { handleKittyAutoCompleteBranchRequest } from '@/composables/kitty/handleKittyAutoCompleteBranchRequest'
+import { KITTY_CANVAS_OWNER_KEY } from '@/composables/kitty/kittyCanvasOwnerKey'
 import { registerKittyDiagramMutationBus } from '@/composables/kitty/registerKittyDiagramMutationBus'
+import { useKittyCanvasOwnerAgent } from '@/composables/kitty/useKittyCanvasOwnerAgent'
 import {
   VALID_DIAGRAM_TYPES,
   diagramTypeMap,
@@ -638,6 +640,12 @@ useKittyDesktopRemoteSync({
   syncEnabled: kittyRemoteSyncEnabled,
   collabSessionActive: computed(() => diagramStore.collabSessionActive),
 })
+
+const kittyCanvasOwner = useKittyCanvasOwnerAgent({
+  libraryDiagramId: currentDiagramId,
+  enabled: kittyRemoteSyncEnabled,
+})
+provide(KITTY_CANVAS_OWNER_KEY, kittyCanvasOwner)
 
 useConceptMapRelationshipTabFromSelection({ startRecommendations })
 

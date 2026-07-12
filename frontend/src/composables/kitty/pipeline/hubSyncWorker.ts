@@ -18,8 +18,6 @@ import type { KittyStep, KittyTurnContext } from '@/composables/kitty/pipeline/t
 import { resolveKittyErrorCode } from '@/composables/kitty/pipeline/errorCatalog'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 import { useKittySessionStore } from '@/stores/kittySession'
-import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
-import { useDiagramStore } from '@/stores/diagram'
 
 export type KittyHubSyncWorkerDeps = {
   buildContext: () => KittyAgentContext
@@ -28,9 +26,6 @@ export type KittyHubSyncWorkerDeps = {
   isConnected: () => boolean
   lane: 'mobile' | 'desktop'
 }
-
-let fingerprintDebounce: ReturnType<typeof setTimeout> | null = null
-let lastHubFingerprint = ''
 
 export async function runKittyHubSync(options: {
   deps: KittyHubSyncWorkerDeps
@@ -119,52 +114,4 @@ export async function runKittyHubSync(options: {
     })
   }
   return { ok: false, errorCode }
-}
-
-export function scheduleKittyHubContextSync(
-  deps: KittyHubSyncWorkerDeps,
-  options?: { debounceMs?: number; ctx?: KittyTurnContext }
-): void {
-  const debounceMs = options?.debounceMs ?? 500
-  if (fingerprintDebounce != null) {
-    clearTimeout(fingerprintDebounce)
-  }
-  fingerprintDebounce = setTimeout(() => {
-    fingerprintDebounce = null
-    if (getActivePinia() && useKittyPipelineStore().editPipelineActive) {
-      return
-    }
-    if (!deps.isConnected()) {
-      return
-    }
-    const diagramStore = useDiagramStore()
-    const fingerprint = getKittyDiagramContentFingerprint(diagramStore.data)
-    if (!fingerprint || fingerprint === lastHubFingerprint) {
-      return
-    }
-    const ctx =
-      options?.ctx ??
-      ({
-        requestId: `hub-bg-${Date.now()}`,
-        scope: deps.getScope()?.trim() || 'scope',
-        lane: deps.lane,
-      } satisfies KittyTurnContext)
-    void runKittyHubSync({
-      deps,
-      ctx,
-      reason: 'background',
-    }).then((r) => {
-      if (r.ok) {
-        lastHubFingerprint = fingerprint
-      }
-    })
-  }, debounceMs)
-}
-
-export function resetKittyHubSyncFingerprint(): void {
-  lastHubFingerprint = ''
-}
-
-export function markKittyHubSyncFingerprint(fingerprint: string): void {
-  lastHubFingerprint = fingerprint
 }

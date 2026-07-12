@@ -1,33 +1,33 @@
 /**
- * Mobile Kitty conversation — ASR + history + edit pipeline (protocol-managed).
+ * Mobile Kitty conversation — ASR + shared history + edit pipeline (protocol-managed).
  */
 import { type ComputedRef, type Ref, onUnmounted, ref, watch } from 'vue'
+
+import { storeToRefs } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
 import { useKittyConversationHistory } from '@/composables/kitty/conversation/useKittyConversationHistory'
+import { useKittyEditReplyBus } from '@/composables/kitty/conversation/useKittyEditReplyBus'
 import type { KittyAgentContext } from '@/composables/kitty/kittyAgentTypes'
-import { resolveKittyEditFailureMessage } from '@/composables/kitty/kittyDiagramEditFeedback'
 import {
-  markKittyEditTurnCompleted,
-  markKittyServerStepOk,
   runKittyEditTurn,
 } from '@/composables/kitty/pipeline/editTurn'
 import { adaptKittyTranslate } from '@/composables/kitty/pipeline/errorCatalog'
-import { messageForKittyFail } from '@/composables/kitty/pipeline/trace'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import type { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
 import { useDiagramStore } from '@/stores/diagram'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
+import { useOneSentenceStore } from '@/stores/oneSentence'
 import type {
   OneSentenceClarifyChoice,
   OneSentencePhase,
 } from '@/stores/oneSentence'
-import type { OneSentenceReplyPayload } from '@/composables/canvasToolbar/oneSentenceReplyState'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 const OWNER_ID = 'MobileKittyChat'
+const PEER_HISTORY_POLL_MS = 4000
 
 export type UseMobileKittyChatOptions = {
   kitty: ReturnType<typeof useKittyAgent>
@@ -38,8 +38,6 @@ export type UseMobileKittyChatOptions = {
   draft: Ref<string>
   ensureConnected: () => Promise<boolean>
   buildContext: () => KittyAgentContext
-  /** Prefer store-backed flag; kept for page wiring compat. */
-  editPipelineActive: Ref<boolean>
   onDebugLine?: (prefix: string, detail: string) => void
 }
 
@@ -53,7 +51,6 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
     draft,
     ensureConnected,
     buildContext,
-    editPipelineActive,
     onDebugLine,
   } = options
 
@@ -61,20 +58,14 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
   const kittyT = adaptKittyTranslate(t)
   const diagramStore = useDiagramStore()
   const pipelineStore = useKittyPipelineStore()
+  const oneSentence = useOneSentenceStore()
+  const { messages: oneSentenceMessages } = storeToRefs(oneSentence)
 
   const history = useKittyConversationHistory({
     diagramScope,
     phase,
+    messages: oneSentenceMessages,
   })
-
-  // Mirror store pipeline activity onto the page-owned ref (pairing/poll/persist).
-  watch(
-    () => pipelineStore.editPipelineActive,
-    (active) => {
-      editPipelineActive.value = active
-    },
-    { immediate: true }
-  )
 
   const asr = useKittyAsrSession({
     mode: 'release_only',
@@ -195,118 +186,61 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
     { immediate: true, flush: 'post' }
   )
 
-  const onOneSentenceReply = (payload: OneSentenceReplyPayload) => {
-    history.replyState.handleReplyPayload(payload)
-    if (payload.kind === 'final') {
-      if (!payload.requestId || history.activeRequestId.value === payload.requestId) {
-        history.markActiveRequest('done')
-      }
-      const ctx = pipelineStore.activeTurn
-      if (ctx) {
-        markKittyServerStepOk(ctx, 'reply')
-        markKittyEditTurnCompleted(ctx)
-      }
-    }
-  }
+  const replyBus = useKittyEditReplyBus(OWNER_ID, {
+    showFinalReply: (text) => history.replyState.showFinalReply(text),
+    handleReplyPayload: (payload) => history.replyState.handleReplyPayload(payload),
+    markActiveRequest: (status, requestId) => history.markActiveRequest(status, requestId),
+    activeRequestId: history.activeRequestId,
+    finalizeConversationalStream: () => history.replyState.finalizeConversationalStream(),
+    t,
+    kittyT,
+  })
 
-  const onDiagramUpdate = (payload: {
-    verified?: boolean
+  const onPipelineStep = (event: {
+    module: string
+    step: string
+    status: string
     errorCode?: string
-    action?: string
-    userSummary?: string
   }) => {
-    const ctx = pipelineStore.activeTurn
-    if (ctx) {
-      markKittyServerStepOk(ctx, payload.action)
-    }
-    if (payload.verified === true) {
-      const summary = payload.userSummary?.trim()
-      if (summary) {
-        history.replyState.showFinalReply(summary)
-      }
-      history.markActiveRequest('done')
-      if (ctx) {
-        markKittyEditTurnCompleted(ctx)
-      }
-      return
-    }
-    if (payload.verified === false) {
-      history.replyState.showFinalReply(
-        resolveKittyEditFailureMessage(payload.errorCode, t, payload.action)
-      )
-      history.markActiveRequest('failed')
-      if (ctx) {
-        const fail = pipelineStore.getLastFail()
-        if (fail) {
-          history.replyState.showFinalReply(messageForKittyFail(fail, kittyT))
-        }
-      }
-    }
-  }
-
-  const onDiagramActionCompleted = (payload: {
-    ok: boolean
-    userSummary?: string
-    errorCode?: string
-    action: string
-  }) => {
-    if (payload.ok) {
-      if (payload.userSummary?.trim()) {
-        history.replyState.showFinalReply(payload.userSummary.trim())
-      }
-      history.markActiveRequest('done')
-      const ctx = pipelineStore.activeTurn
-      if (ctx) {
-        markKittyEditTurnCompleted(ctx)
-      }
-      return
-    }
-    history.replyState.showFinalReply(
-      resolveKittyEditFailureMessage(payload.errorCode, t, payload.action)
-    )
-    history.markActiveRequest('failed')
-  }
-
-  const onDiagramEditFailed = (payload: { action: string; errorCode: string }) => {
-    history.replyState.showFinalReply(
-      resolveKittyEditFailureMessage(payload.errorCode, t, payload.action)
-    )
-    history.markActiveRequest('failed')
-  }
-
-  const onAssistantTextDone = () => {
-    history.replyState.finalizeConversationalStream()
-  }
-
-  const onPipelineStep = (event: { module: string; step: string; status: string; errorCode?: string }) => {
     onDebugLine?.(
       '#trace',
       `${event.module} ${event.step} ${event.status}${event.errorCode ? ` ${event.errorCode}` : ''}`
     )
   }
+  eventBus.onWithOwner('kitty:pipeline_step', onPipelineStep, `${OWNER_ID}:trace`)
 
-  const bus = eventBus
-  bus.onWithOwner('kitty:one_sentence_reply', onOneSentenceReply, OWNER_ID)
-  bus.onWithOwner('voice:diagram_update_executed', onDiagramUpdate, OWNER_ID)
-  bus.onWithOwner('kitty:diagram_action_completed', onDiagramActionCompleted, OWNER_ID)
-  bus.onWithOwner('kitty:diagram_edit_failed', onDiagramEditFailed, OWNER_ID)
-  bus.onWithOwner('voice:assistant_text_done', onAssistantTextDone, OWNER_ID)
-  bus.onWithOwner('voice:response_done', onAssistantTextDone, OWNER_ID)
-  bus.onWithOwner('kitty:pipeline_step', onPipelineStep, OWNER_ID)
+  // Peer history refresh — desktop may append replies while phone waits.
+  let peerPollTimer: ReturnType<typeof setInterval> | null = null
+  function startPeerHistoryPoll(): void {
+    stopPeerHistoryPoll()
+    peerPollTimer = setInterval(() => {
+      if (pipelineStore.editPipelineActive) {
+        return
+      }
+      void history.bootstrapHistory()
+    }, PEER_HISTORY_POLL_MS)
+  }
+  function stopPeerHistoryPoll(): void {
+    if (peerPollTimer != null) {
+      clearInterval(peerPollTimer)
+      peerPollTimer = null
+    }
+  }
+  startPeerHistoryPoll()
 
   onUnmounted(() => {
-    eventBus.removeAllListenersForOwner(OWNER_ID)
+    stopPeerHistoryPoll()
+    replyBus.dispose()
+    eventBus.removeAllListenersForOwner(`${OWNER_ID}:trace`)
     funAsr.stopListening()
   })
 
   return {
     messages: history.messages,
     sessionHydrated: history.sessionHydrated,
-    editPipelineActive,
     sendDraft,
     sendUserText,
     selectClarifyChoice,
     bindChatScroll: history.bindChatScroll,
-    bootstrapChat: history.bootstrapHistory,
   }
 }

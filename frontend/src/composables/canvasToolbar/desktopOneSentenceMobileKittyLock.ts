@@ -1,6 +1,7 @@
 /**
- * When Mobile Kitty holds the same diagram scope, desktop one-sentence edit input yields to the phone.
- * Create/generate stays on desktop (mobile cannot run create).
+ * When Mobile Kitty holds the same diagram scope, desktop one-sentence *typed/mic input*
+ * yields to the phone. Canvas mutation apply stays on desktop (canvas_owner) — this lock
+ * must not block S10–S13 apply/ack.
  */
 import type { KittyMobileActiveSnapshot } from '@/composables/kitty/kittyDesktopMobileActiveHub'
 import { scopeMatchesKittyMobileActive } from '@/composables/kitty/kittyDesktopMobileActiveHub'

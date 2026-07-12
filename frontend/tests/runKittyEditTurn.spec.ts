@@ -1,5 +1,5 @@
 /**
- * runKittyEditTurn: hub fail blocks text send; success sends text.
+ * runKittyEditTurn: desktop hub fail blocks text; mobile skips S07 and sends text.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
@@ -49,7 +49,7 @@ describe('runKittyEditTurn', () => {
     syncKittyHubContextMock.mockReset()
   })
 
-  it('does not send text when hub sync fails', async () => {
+  it('desktop does not send text when hub sync fails', async () => {
     syncKittyHubContextMock.mockResolvedValue({ ok: false, error: 'hub_persist_timeout' })
     const sendTextMessage = vi.fn(() => true)
     const onFailMessage = vi.fn()
@@ -74,7 +74,7 @@ describe('runKittyEditTurn', () => {
           }) as never,
         updateContext: kitty.updateContext,
         getScope: () => 'scope-1',
-        lane: 'mobile',
+        lane: 'desktop',
         ensureConnected: async () => true,
         appendUserTurn: async () => true,
         onFailMessage,
@@ -90,8 +90,8 @@ describe('runKittyEditTurn', () => {
     expect(onFailMessage).toHaveBeenCalled()
   })
 
-  it('sends text after successful hub sync', async () => {
-    syncKittyHubContextMock.mockResolvedValue({ ok: true, revision: 4 })
+  it('mobile skips hub sync and sends text', async () => {
+    syncKittyHubContextMock.mockResolvedValue({ ok: false, error: 'hub_persist_timeout' })
     const sendTextMessage = vi.fn(() => true)
     const kitty = {
       sendTextMessage,
@@ -115,6 +115,47 @@ describe('runKittyEditTurn', () => {
         updateContext: kitty.updateContext,
         getScope: () => 'scope-1',
         lane: 'mobile',
+        ensureConnected: async () => true,
+        appendUserTurn: async () => true,
+        onFailMessage: vi.fn(),
+        t: (_k, fb) => fb ?? _k,
+      },
+      { text: '添加广东分支', source: 'text', requestId: 'req-mobile-skip' }
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.sent).toBe(true)
+    expect(syncKittyHubContextMock).not.toHaveBeenCalled()
+    expect(sendTextMessage).toHaveBeenCalledWith('添加广东分支', 'req-mobile-skip')
+    // Mobile records S07 as skip (not a fail) so the turn can proceed to S08.
+    expect(getLastFail()).toBeNull()
+  })
+
+  it('desktop sends text after successful hub sync', async () => {
+    syncKittyHubContextMock.mockResolvedValue({ ok: true, revision: 4 })
+    const sendTextMessage = vi.fn(() => true)
+    const kitty = {
+      sendTextMessage,
+      updateContext: vi.fn(),
+      isConnected: ref(true),
+      isLiveForScope: () => true,
+      reconcileLiveState: vi.fn(),
+      startConversation: vi.fn(),
+    }
+
+    const result = await runKittyEditTurn(
+      {
+        kitty: kitty as never,
+        buildContext: () =>
+          ({
+            diagram_type: 'mindmap',
+            active_panel: 'none',
+            selected_nodes: [],
+            diagram_data: {},
+          }) as never,
+        updateContext: kitty.updateContext,
+        getScope: () => 'scope-1',
+        lane: 'desktop',
         ensureConnected: async () => true,
         appendUserTurn: async () => true,
         onFailMessage: vi.fn(),

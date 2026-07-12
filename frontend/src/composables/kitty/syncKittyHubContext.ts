@@ -1,6 +1,6 @@
 /**
  * Push Pinia canvas truth to Agent Hub (Redis live_spec) via Kitty WS context_update.
- * Shared by desktop and mobile Kitty before edit turns and for debounced background sync.
+ * Used by desktop edit-gate / background hub sync. Mobile edit turns skip this gate.
  * Pipeline Eruda/status comes from hubSyncWorker → recordPipelineEvent (#trace), not #hub.
  */
 import type {
@@ -32,7 +32,8 @@ export type KittyHubContextSyncDeps = {
 
 /**
  * Sync current diagram context to Agent Hub and wait for context_mutation_ack.
- * Does not write Postgres library rows (use useKittyMobileHubPersist for that).
+ * Writes Redis live_spec only; Postgres library snapshot persist is owned by
+ * desktop canvas mutation apply (diagramEditApply hubPersist), not mobile.
  */
 export async function syncKittyHubContext(
   deps: KittyHubContextSyncDeps

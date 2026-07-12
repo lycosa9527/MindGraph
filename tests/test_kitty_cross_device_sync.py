@@ -197,6 +197,61 @@ async def test_send_kitty_diagram_update_fanouts_when_voice_session_known() -> N
 
 
 @pytest.mark.asyncio
+async def test_send_kitty_diagram_update_routes_verified_to_canvas_owner() -> None:
+    """Verified mutation apply goes to canvas_owner; ingress gets chat summary only."""
+    ingress_ws = MagicMock()
+    owner_ws = MagicMock()
+    message = {
+        "type": "diagram_update",
+        "action": "add_child_node",
+        "updates": {"text": "中国移动"},
+        "mutation_id": "mut-1",
+        "user_summary": "已添加分支",
+    }
+    with (
+        patch(
+            "services.kitty.context.messaging.safe_websocket_send",
+            AsyncMock(return_value=True),
+        ) as safe_send,
+        patch(
+            "services.kitty.context.messaging.publish_kitty_diagram_update",
+            AsyncMock(),
+        ) as fanout,
+        patch(
+            "services.kitty.context.messaging.find_canvas_owner_websocket",
+            return_value=owner_ws,
+        ),
+        patch(
+            "services.kitty.context.messaging.voice_sessions",
+            {
+                "vs-mobile": {
+                    "user_id": 7,
+                    "diagram_session_id": "lib-owner-1",
+                    "_kitty_client_lane": "mobile",
+                }
+            },
+        ),
+        patch(
+            "services.kitty.context.messaging.fanout_voice_command_from_session",
+            AsyncMock(),
+        ),
+    ):
+        ok = await send_kitty_diagram_update(ingress_ws, "vs-mobile", message)
+
+    assert ok is True
+    assert safe_send.await_count == 2
+    owner_call = safe_send.await_args_list[0]
+    ingress_call = safe_send.await_args_list[1]
+    assert owner_call.args[0] is owner_ws
+    assert owner_call.args[1]["mutation_id"] == "mut-1"
+    assert owner_call.args[1]["updates"] == {"text": "中国移动"}
+    assert ingress_call.args[0] is ingress_ws
+    assert ingress_call.args[1].get("mutation_id") is None
+    assert ingress_call.args[1]["user_summary"] == "已添加分支"
+    fanout.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_mobile_patch_context_prefers_library_when_delta_empty() -> None:
     """Test mobile patch context prefers library when delta empty."""
     hub = MindGraphAgentHub()

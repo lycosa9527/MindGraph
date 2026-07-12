@@ -15,6 +15,8 @@ export interface KittyInboundHandlerDeps {
   destroyed: () => boolean
   cleaningUp: () => boolean
   textOnly?: boolean
+  /** Mobile lane is mic+chat only — never owns canvas mutation apply. */
+  clientLane?: 'mobile' | 'desktop'
   isVoiceActive: Ref<boolean>
   state: Ref<KittyAgentState>
   sessionId: Ref<string | null>
@@ -33,6 +35,72 @@ export interface KittyInboundHandlerDeps {
   ) => void
   playAudioChunk: (audioBase64: string) => Promise<void>
   stopAudioPlayback: () => void
+}
+
+/** Dispatch verified diagram_update: canvas owners apply; thin mobile shows chat only. */
+export function dispatchKittyDiagramUpdateInbound(
+  data: Record<string, unknown>,
+  deps: Pick<
+    KittyInboundHandlerDeps,
+    | 'clientLane'
+    | 'sendDiagramMutationAck'
+    | 'buildDiagramContext'
+    | 'updateContext'
+    | 'diagramSessionId'
+  >
+): void {
+  const diagramAction = String(data.action ?? '')
+  const diagramUpdates = (data.updates as Record<string, unknown>) ?? {}
+  const mutationId =
+    typeof data.mutation_id === 'string' && data.mutation_id.trim() !== ''
+      ? data.mutation_id.trim()
+      : ''
+  const userSummary =
+    typeof data.user_summary === 'string' && data.user_summary.trim() !== ''
+      ? data.user_summary.trim()
+      : ''
+  const expectedEffect = data.expected_effect as DiagramEditExpectedEffect | undefined
+  const beforeRaw = data.before_fingerprint as
+    | { nodes?: unknown[]; connections?: unknown[] }
+    | undefined
+  const beforeFingerprint =
+    beforeRaw && Array.isArray(beforeRaw.nodes) && Array.isArray(beforeRaw.connections)
+      ? {
+          nodes: beforeRaw.nodes as import('@/types').DiagramNode[],
+          connections: beforeRaw.connections as import('@/types').Connection[],
+        }
+      : undefined
+
+  // Thin mobile: chat summary only — desktop canvas_owner applies + acks.
+  if (deps.clientLane === 'mobile') {
+    if (userSummary !== '') {
+      eventBus.emit('kitty:one_sentence_reply', {
+        text: userSummary,
+        kind: 'final',
+        action: diagramAction || undefined,
+      })
+    }
+    return
+  }
+
+  eventBus.emit('kitty:diagram_mutation_requested', {
+    action: diagramAction,
+    updates: diagramUpdates,
+    mutationId: mutationId !== '' ? mutationId : undefined,
+    userSummary: userSummary !== '' ? userSummary : undefined,
+    expectedEffect,
+    beforeFingerprint,
+    sendAck: deps.sendDiagramMutationAck,
+    hubPersist:
+      deps.buildDiagramContext && deps.updateContext
+        ? {
+            buildContext: deps.buildDiagramContext,
+            updateContext: deps.updateContext,
+            scope: deps.diagramSessionId ?? null,
+          }
+        : undefined,
+    lane: deps.clientLane === 'desktop' ? 'desktop' : 'mobile',
+  })
 }
 
 export function handleKittyServerMessage(
@@ -220,46 +288,7 @@ export function handleKittyServerMessage(
       break
 
     case 'diagram_update': {
-      const diagramAction = String(data.action ?? '')
-      const diagramUpdates = (data.updates as Record<string, unknown>) ?? {}
-      const mutationId =
-        typeof data.mutation_id === 'string' && data.mutation_id.trim() !== ''
-          ? data.mutation_id.trim()
-          : ''
-      const userSummary =
-        typeof data.user_summary === 'string' && data.user_summary.trim() !== ''
-          ? data.user_summary.trim()
-          : ''
-      const expectedEffect = data.expected_effect as DiagramEditExpectedEffect | undefined
-      const beforeRaw = data.before_fingerprint as
-        | { nodes?: unknown[]; connections?: unknown[] }
-        | undefined
-      const beforeFingerprint =
-        beforeRaw && Array.isArray(beforeRaw.nodes) && Array.isArray(beforeRaw.connections)
-          ? {
-              nodes: beforeRaw.nodes as import('@/types').DiagramNode[],
-              connections: beforeRaw.connections as import('@/types').Connection[],
-            }
-          : undefined
-
-      eventBus.emit('kitty:diagram_mutation_requested', {
-        action: diagramAction,
-        updates: diagramUpdates,
-        mutationId: mutationId !== '' ? mutationId : undefined,
-        userSummary: userSummary !== '' ? userSummary : undefined,
-        expectedEffect,
-        beforeFingerprint,
-        sendAck: deps.sendDiagramMutationAck,
-        hubPersist:
-          deps.buildDiagramContext && deps.updateContext
-            ? {
-                buildContext: deps.buildDiagramContext,
-                updateContext: deps.updateContext,
-                scope: deps.diagramSessionId ?? null,
-              }
-            : undefined,
-        lane: 'mobile',
-      })
+      dispatchKittyDiagramUpdateInbound(data, deps)
       break
     }
 
