@@ -37,7 +37,10 @@ import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
 import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
-import { KITTY_CANVAS_OWNER_KEY } from '@/composables/kitty/kittyCanvasOwnerKey'
+import {
+  KITTY_CANVAS_OWNER_KEY,
+  type KittyCanvasOwnerApi,
+} from '@/composables/kitty/kittyCanvasOwnerKey'
 import { KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS } from '@/composables/kitty/syncKittyHubContext'
 import { runKittyEditTurn } from '@/composables/kitty/pipeline/editTurn'
 import { adaptKittyTranslate } from '@/composables/kitty/pipeline/errorCatalog'
@@ -238,10 +241,11 @@ export function useMindMapOneSentenceChat() {
     scrollChatToBottom,
   })
 
-  const canvasOwner = inject(KITTY_CANVAS_OWNER_KEY, null)
-  if (!canvasOwner) {
+  const canvasOwnerInjected = inject(KITTY_CANVAS_OWNER_KEY, null)
+  if (canvasOwnerInjected === null) {
     throw new Error('MindMapOneSentenceChat requires Kitty canvas owner from CanvasPage')
   }
+  const canvasOwner: KittyCanvasOwnerApi = canvasOwnerInjected
   const kitty = canvasOwner.kitty
 
   const kittySession = useKittySessionStore()
