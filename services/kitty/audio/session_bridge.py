@@ -100,7 +100,12 @@ async def _get_or_create_cosyvoice_client(
     async def on_audio(audio_b64: str, fmt: str) -> None:
         await safe_websocket_send(
             websocket,
-            {"type": "audio_chunk", "audio": audio_b64, "format": fmt},
+            {
+                "type": "audio_chunk",
+                "audio": audio_b64,
+                "format": fmt,
+                "sample_rate": 22050,
+            },
         )
         await fanout_voice_phase_from_outbound_type(voice_session_id, "audio_chunk")
 
@@ -342,12 +347,7 @@ async def feed_session_asr_audio(
     if not session:
         return
     active_utt = session.get(_ASR_UTTERANCE_ID_KEY)
-    if (
-        utterance_id
-        and isinstance(active_utt, str)
-        and active_utt.strip()
-        and utterance_id != active_utt
-    ):
+    if utterance_id and isinstance(active_utt, str) and active_utt.strip() and utterance_id != active_utt:
         return
     client = session.get("_fun_asr_client")
     if not isinstance(client, FunAsrRealtimeClient):
@@ -419,12 +419,7 @@ async def stop_session_asr(
     if not session:
         return ""
     active_utt = session.get(_ASR_UTTERANCE_ID_KEY)
-    if (
-        utterance_id
-        and isinstance(active_utt, str)
-        and active_utt.strip()
-        and utterance_id != active_utt
-    ):
+    if utterance_id and isinstance(active_utt, str) and active_utt.strip() and utterance_id != active_utt:
         return ""
     client = session.get("_fun_asr_client")
     session["_fun_asr_client"] = None

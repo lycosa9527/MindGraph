@@ -272,9 +272,7 @@ async def start_kitty_session(
     initial_context_in = start_msg.get("context", {}) or {}
     raw_start_lane = start_msg.get("client_lane")
     start_client_lane: str | None = "mobile" if raw_start_lane == "mobile" else None
-    agent_session_id = agent_session_id_for_scope(
-        diagram_session_id, client_lane=start_client_lane
-    )
+    agent_session_id = agent_session_id_for_scope(diagram_session_id, client_lane=start_client_lane)
     start_diagram_type = start_msg.get("diagram_type") or "circle_map"
     start_active_panel = start_msg.get("active_panel", "none")
     start_resolved = await hub.prepare_kitty_start_context(

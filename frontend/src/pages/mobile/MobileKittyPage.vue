@@ -15,6 +15,7 @@ import KittyIpodClickWheel from '@/components/kitty/KittyIpodClickWheel.vue'
 import KittyMobileChatTranscript from '@/components/kitty/KittyMobileChatTranscript.vue'
 import KittyMobileDiagramPickerDropdown from '@/components/kitty/KittyMobileDiagramPickerDropdown.vue'
 import KittyMobileLlmModelRow from '@/components/kitty/KittyMobileLlmModelRow.vue'
+import MindMapNodeExplainModal from '@/components/canvas/MindMapNodeExplainModal.vue'
 import {
   useKittyAgent,
   useKittyDiagramReviewAnnotationBus,
@@ -31,6 +32,7 @@ import { useKittyMobileHubActionBridge } from '@/composables/kitty/useKittyMobil
 import { useKittyMobileLibraryDiagramSelect } from '@/composables/kitty/useKittyMobileLibraryDiagramSelect'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
+import { useMindMapNodeExplain } from '@/composables/mindMap/useMindMapNodeExplain'
 import { prepareMobileKittyPhotoCapture } from '@/composables/mobile/prepareMobileKittyPhotoCapture'
 import { useMobileKittyChat } from '@/composables/mobile/useMobileKittyChat'
 import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
@@ -594,6 +596,22 @@ async function handleSendDraft(): Promise<void> {
 function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
   void selectClarifyChoice(choice)
 }
+
+const {
+  visible: nodeExplainVisible,
+  messages: nodeExplainMessages,
+  draft: nodeExplainDraft,
+  loading: nodeExplainLoading,
+  errorMessage: nodeExplainError,
+  kittyAgentState: nodeExplainKittyAgentState,
+  openExplain: openNodeExplain,
+  close: closeNodeExplain,
+  sendDraft: sendNodeExplainDraft,
+} = useMindMapNodeExplain()
+
+function handleChipActiveRetap(node: { id: string; text: string }): void {
+  openNodeExplain(node.id, node.text)
+}
 </script>
 
 <template>
@@ -735,6 +753,7 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
           <KittyIpodClickWheel
             class="kitty-stage__wheel w-full"
             :on-selection-change="syncMobileKittyContextNow"
+            :on-active-retap="handleChipActiveRetap"
           />
           <KittyMobileLlmModelRow
             v-if="authStore.isAuthenticated && kittyServerEnabled"
@@ -861,6 +880,17 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
         <span v-if="cameraDenied">{{ t('mobile.kittyCameraDenied', '相机或图片不可用') }}</span>
       </p>
     </div>
+
+    <MindMapNodeExplainModal
+      v-model:visible="nodeExplainVisible"
+      v-model:draft="nodeExplainDraft"
+      :messages="nodeExplainMessages"
+      :loading="nodeExplainLoading"
+      :error-message="nodeExplainError"
+      :kitty-agent-state="nodeExplainKittyAgentState"
+      @close="closeNodeExplain"
+      @send="sendNodeExplainDraft"
+    />
   </div>
 </template>
 

@@ -214,7 +214,7 @@ async def test_route_omni_function_call_inline_recommendations_selected() -> Non
                 new=AsyncMock(return_value=None),
             ),
             patch(
-                "services.kitty.routing.command_router.safe_websocket_send",
+                "services.kitty.routing.command_router.send_kitty_ws_action",
                 send_mock,
             ),
             patch(
@@ -239,7 +239,7 @@ async def test_route_omni_function_call_inline_recommendations_selected() -> Non
             )
         assert result.outcome == RouteOutcome.EXECUTED
         send_mock.assert_awaited()
-        payload = mock_await_args(send_mock)[1]
+        payload = mock_await_args(send_mock)[2]
         assert payload["action"] == "start_inline_recommendations"
         assert payload["params"]["node_id"] == "branch-l-1-0"
         ack_mock.assert_awaited()

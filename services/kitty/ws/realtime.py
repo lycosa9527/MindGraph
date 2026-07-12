@@ -93,9 +93,7 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
 
         raw_start_lane = start_msg.get("client_lane")
         start_client_lane: str | None = "mobile" if raw_start_lane == "mobile" else None
-        agent_session_id = agent_session_id_for_scope(
-            diagram_session_id, client_lane=start_client_lane
-        )
+        agent_session_id = agent_session_id_for_scope(diagram_session_id, client_lane=start_client_lane)
         await prepare_diagram_voice_lock(
             websocket,
             diagram_session_id,

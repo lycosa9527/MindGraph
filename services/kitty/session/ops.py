@@ -77,9 +77,7 @@ async def cleanup_voice_sessions_for_diagram_lane(
         return False
     for voice_session_id in sids:
         await end_voice_session_async(voice_session_id, reason="diagram_lane_replaced")
-    kitty_agent_manager.remove(
-        agent_session_id_for_scope(diagram_session_id, client_lane=client_lane)
-    )
+    kitty_agent_manager.remove(agent_session_id_for_scope(diagram_session_id, client_lane=client_lane))
     return True
 
 
@@ -220,9 +218,7 @@ async def end_voice_session_async(session_id: str, reason: str = "completed") ->
     if diagram_session_id:
         lane = session.get("_kitty_client_lane")
         lane_str = lane if isinstance(lane, str) else None
-        kitty_agent_manager.remove(
-            agent_session_id_for_scope(str(diagram_session_id), client_lane=lane_str)
-        )
+        kitty_agent_manager.remove(agent_session_id_for_scope(str(diagram_session_id), client_lane=lane_str))
         logger.debug(
             "VOIC | Removed agent for diagram session %s lane=%s",
             diagram_session_id,

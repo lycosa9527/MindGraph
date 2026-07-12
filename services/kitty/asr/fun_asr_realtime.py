@@ -266,9 +266,7 @@ class FunAsrRealtimeClient:
         except (ConnectionClosed, ConnectionClosedError, ConnectionClosedOK) as exc:
             if not self._closed and not self._task_finished.is_set():
                 logger.warning("Fun-ASR provider disconnected: %s", exc)
-                await self._emit_provider_disconnect(
-                    "Fun-ASR provider disconnected before task finished"
-                )
+                await self._emit_provider_disconnect("Fun-ASR provider disconnected before task finished")
             return
         except LLM_PIPELINE_ERRORS as exc:
             logger.warning("Fun-ASR read loop error: %s", exc)

@@ -94,6 +94,7 @@ declare module 'vue' {
     BubbleNode: typeof import('./components/diagram/nodes/BubbleNode.vue')['default']
     CanvasChrome: typeof import('./components/canvas/CanvasChrome.vue')['default']
     CanvasCollabOverlay: typeof import('./components/canvas/CanvasCollabOverlay.vue')['default']
+    CanvasKittyVoiceCommandGuide: typeof import('./components/canvas/CanvasKittyVoiceCommandGuide.vue')['default']
     CanvasLiveSubtitleOverlay: typeof import('./components/canvas/CanvasLiveSubtitleOverlay.vue')['default']
     CanvasMathInsertDialog: typeof import('./components/canvas/CanvasMathInsertDialog.vue')['default']
     CanvasMindMapShortcutGuide: typeof import('./components/canvas/CanvasMindMapShortcutGuide.vue')['default']

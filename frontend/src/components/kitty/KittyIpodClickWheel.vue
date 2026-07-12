@@ -9,6 +9,8 @@ import { useKittyClickWheel } from '@/composables/kitty/useKittyClickWheel'
 
 const props = defineProps<{
   onSelectionChange?: () => void
+  /** Re-tap active chip (e.g. open 学习提示). */
+  onActiveRetap?: (node: { id: string; text: string }) => void
 }>()
 
 const { t } = useLanguage()
@@ -16,6 +18,7 @@ const scrollerRef = useTemplateRef<HTMLDivElement>('scrollerRef')
 
 const { children, hasNodes, activeIndex, activeChild, selectById } = useKittyClickWheel({
   onSelectionChange: () => props.onSelectionChange?.(),
+  onActiveRetap: (node) => props.onActiveRetap?.({ id: node.id, text: node.text }),
   // Mobile has no Vue Flow; canvasHighlight would loop through voice selection bus.
   canvasHighlight: false,
 })

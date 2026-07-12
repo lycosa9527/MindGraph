@@ -129,6 +129,7 @@ export default {
   'kitty.voiceCommand.remove_nodes': 'Remove nodes: {detail}',
   'kitty.voiceCommand.select_node': 'Select node: {detail}',
   'kitty.voiceCommand.auto_complete': 'Run auto-complete',
+  'kitty.voiceCommand.auto_complete_branch': 'Complete branch: {detail}',
   'kitty.voiceCommand.start_inline_recommendations': 'Inline recommendations',
   'kitty.voiceCommand.add_node_with_recommendations': 'Add node with recommendations: {detail}',
   'kitty.voiceCommand.explain_node': 'Explain node: {detail}',

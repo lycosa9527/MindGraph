@@ -100,9 +100,7 @@ async def dispatch_kitty_ws_inbound_message(
             language_hints = ["zh"]
         utterance_raw = message.get("utterance_id")
         utterance_id = (
-            str(utterance_raw).strip()
-            if isinstance(utterance_raw, str) and str(utterance_raw).strip()
-            else None
+            str(utterance_raw).strip() if isinstance(utterance_raw, str) and str(utterance_raw).strip() else None
         )
         sess = voice_sessions.get(voice_session_id) or {}
         lane_raw = sess.get("_kitty_client_lane")
@@ -119,8 +117,7 @@ async def dispatch_kitty_ws_inbound_message(
         )
         kitty_wf_log(
             "asr_start",
-            f"lane={lane} hints={language_hints or ['zh']} ctx={ctx_label} "
-            f"utt={utterance_id or '—'}",
+            f"lane={lane} hints={language_hints or ['zh']} ctx={ctx_label} utt={utterance_id or '—'}",
             voice_session_id=voice_session_id,
         )
         await start_session_asr(
@@ -147,9 +144,7 @@ async def dispatch_kitty_ws_inbound_message(
                 return "continue"
             utterance_raw = message.get("utterance_id")
             utterance_id = (
-                str(utterance_raw).strip()
-                if isinstance(utterance_raw, str) and str(utterance_raw).strip()
-                else None
+                str(utterance_raw).strip() if isinstance(utterance_raw, str) and str(utterance_raw).strip() else None
             )
             await feed_session_asr_audio(
                 voice_session_id,
@@ -164,9 +159,7 @@ async def dispatch_kitty_ws_inbound_message(
         lane = lane_raw if isinstance(lane_raw, str) and lane_raw.strip() else "—"
         utterance_raw = message.get("utterance_id")
         utterance_id = (
-            str(utterance_raw).strip()
-            if isinstance(utterance_raw, str) and str(utterance_raw).strip()
-            else None
+            str(utterance_raw).strip() if isinstance(utterance_raw, str) and str(utterance_raw).strip() else None
         )
         logger.info(
             "Kitty PTT asr_stop sid=%s lane=%s utt=%s",

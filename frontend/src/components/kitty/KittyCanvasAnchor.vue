@@ -372,7 +372,7 @@ const inlineShellClass = computed(() => {
 
 .kitty-anchor--phase-listening,
 .kitty-anchor--phase-speaking {
-  position: relative;
+  /* Keep Tailwind `fixed` — do not set position:relative (breaks viewport FAB). */
   padding: 2px;
   border-color: transparent !important;
 }

@@ -9,6 +9,7 @@ import {
   createKittyCapture,
   createKittyPlayback,
   handleKittyServerMessage,
+  KITTY_TTS_PCM_SAMPLE_RATE,
 } from '@/composables/kitty/kittyAgentInbound'
 import type {
   KittyAgentContext,
@@ -33,7 +34,7 @@ const KITTY_CONNECT_TIMEOUT_MS = 10000
 export function useKittyAgent(options: KittyAgentOptions = {}) {
   const {
     ownerId = `KittyAgent_${Date.now()}`,
-    sampleRate = 24000,
+    sampleRate = KITTY_TTS_PCM_SAMPLE_RATE,
     kittyClientLane,
     textOnly = true,
     onTranscription,

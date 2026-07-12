@@ -1005,4 +1005,14 @@ export default {
   'canvas.mindMapOneSentence.mobileKittyOwnsInput':
     'Mobile Kitty is connected to this diagram. Use your phone to speak or type — desktop input is paused.',
   'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'Use Mobile Kitty on your phone…',
+  'canvas.voiceCommandGuide.title': 'Voice command guide',
+  'canvas.voiceCommandGuide.collapse': 'Collapse voice command guide',
+  'canvas.voiceCommandGuide.example.add_node': '“Add a China branch”',
+  'canvas.voiceCommandGuide.example.auto_complete_branch': '“Auto-complete the China branch”',
+  'canvas.voiceCommandGuide.example.auto_complete': '“Auto-complete the whole map”',
+  'canvas.voiceCommandGuide.example.select_node': '“Select China”',
+  'canvas.voiceCommandGuide.example.update_center': '“Change the topic to vocational education”',
+  'canvas.voiceCommandGuide.example.delete_node': '“Delete the China branch”',
+  'canvas.voiceCommandGuide.example.explain_node': '“Explain China”',
+  'canvas.voiceCommandGuide.example.start_inline_recommendations': '“Suggest ideas for this node”',
 } as const

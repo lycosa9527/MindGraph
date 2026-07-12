@@ -21,6 +21,7 @@ export { default as PresentationTimerOverlay } from './PresentationTimerOverlay.
 export { default as PresentationTimerHud } from './PresentationTimerHud.vue'
 export { default as CanvasCollabOverlay } from './CanvasCollabOverlay.vue'
 export { default as CanvasMindMapShortcutGuide } from './CanvasMindMapShortcutGuide.vue'
+export { default as CanvasKittyVoiceCommandGuide } from './CanvasKittyVoiceCommandGuide.vue'
 export { default as MindMapSideToolbar } from './MindMapSideToolbar.vue'
 export { default as MindMapSidePanel } from './MindMapSidePanel.vue'
 export { default as SidebarOutline } from './SidebarOutline.vue'

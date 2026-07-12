@@ -17,7 +17,7 @@ from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.ack.ack_library import render_ack
 from services.kitty.context.messaging import (
     resolve_voice_interaction_language,
-    safe_websocket_send,
+    send_kitty_ws_action,
 )
 from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
 from services.kitty.routing.one_sentence_edit_heuristics import (
@@ -158,14 +158,19 @@ async def emit_auto_complete_branch(
     lang: str = "zh",
     node_id: str | None = None,
     silent_ack: bool = False,
-) -> None:
-    """Send canvas branch auto-complete action; optionally skip chat progress ack."""
+) -> bool:
+    """
+    Send canvas branch auto-complete action; optionally skip chat progress ack.
+
+    Returns False when no canvas owner can execute the action (thin mobile alone).
+    """
     label = str(target or "").strip()
     params: Dict[str, Any] = {"node_label": label}
     if isinstance(node_id, str) and node_id.strip():
         params["node_id"] = node_id.strip()
-    await safe_websocket_send(
+    sent = await send_kitty_ws_action(
         websocket,
+        voice_session_id,
         {"type": "action", "action": "auto_complete_branch", "params": params},
     )
     await fanout_voice_command_from_session(
@@ -173,8 +178,26 @@ async def emit_auto_complete_branch(
         "auto_complete_branch",
         params=params,
     )
+    if not sent:
+        if not silent_ack:
+            ack_text = render_ack(
+                "diagram.branch_autocomplete.failed",
+                {"target": label},
+                lang=lang,
+            )
+            await emit_user_ack(
+                websocket,
+                voice_session_id,
+                ack_text,
+                one_sentence_action="auto_complete_branch",
+                one_sentence_outcome="failed",
+                one_sentence_user_text=command_text or None,
+            )
+            memory = get_session_memory(voice_session_id)
+            memory.append_action_turn(ack_text, action="auto_complete_branch")
+        return False
     if silent_ack:
-        return
+        return True
     ack_text = render_ack(
         "diagram.branch_autocomplete.accepted",
         {"target": label},
@@ -191,6 +214,7 @@ async def emit_auto_complete_branch(
     )
     memory = get_session_memory(voice_session_id)
     memory.append_action_turn(ack_text, action="auto_complete_branch")
+    return True
 
 
 async def maybe_start_background_branch_autocomplete(
@@ -215,7 +239,7 @@ async def maybe_start_background_branch_autocomplete(
         return False
     resolved_id = node_id.strip() if isinstance(node_id, str) and node_id.strip() else None
     lang = resolve_voice_interaction_language(session_context if isinstance(session_context, dict) else {})
-    await emit_auto_complete_branch(
+    return await emit_auto_complete_branch(
         websocket,
         voice_session_id,
         target.strip(),
@@ -224,7 +248,6 @@ async def maybe_start_background_branch_autocomplete(
         node_id=resolved_id,
         silent_ack=True,
     )
-    return True
 
 
 async def try_consume_pending_branch_autocomplete(

@@ -33,7 +33,7 @@ export interface KittyInboundHandlerDeps {
     context: import('@/composables/kitty/kittyAgentTypes').KittyAgentContext,
     options?: import('@/composables/kitty/kittyAgentTypes').KittyContextUpdateOptions
   ) => void
-  playAudioChunk: (audioBase64: string) => Promise<void>
+  playAudioChunk: (audioBase64: string, sampleRateHz?: number) => Promise<void>
   stopAudioPlayback: () => void
 }
 
@@ -184,7 +184,12 @@ export function handleKittyServerMessage(
         const kittySession = useKittySessionStore()
         if (!kittySession.ttsEnabled) break
         if (!deps.destroyed() && !deps.cleaningUp() && !deps.isVoiceActive.value) {
-          void deps.playAudioChunk(String(data.audio ?? ''))
+          const rateRaw = data.sample_rate
+          const sampleRateHz =
+            typeof rateRaw === 'number' && Number.isFinite(rateRaw) && rateRaw > 0
+              ? rateRaw
+              : undefined
+          void deps.playAudioChunk(String(data.audio ?? ''), sampleRateHz)
           deps.state.value = 'speaking'
         }
       }
@@ -343,6 +348,7 @@ export function handleKittyServerMessage(
 export interface KittyPlaybackDeps {
   destroyed: () => boolean
   cleaningUp: () => boolean
+  /** Default CosyVoice PCM rate when chunk omits sample_rate (22050). */
   sampleRate: number
   audioContext: ShallowRef<AudioContext | null>
   isVoiceActive: Ref<boolean>
@@ -352,8 +358,98 @@ export interface KittyPlaybackDeps {
   audioQueue: Array<{ buffer: AudioBuffer }>
 }
 
+/** CosyVoice realtime PCM default (matches services/kitty/tts/cosyvoice_realtime.py). */
+export const KITTY_TTS_PCM_SAMPLE_RATE = 22050
+
 export function createKittyPlayback(deps: KittyPlaybackDeps) {
-  async function playAudioChunk(audioBase64: string): Promise<void> {
+  let nextPlayTime = 0
+  const scheduledSources = new Set<AudioBufferSourceNode>()
+
+  function resolvePlaybackRate(sampleRateHz?: number): number {
+    if (typeof sampleRateHz === 'number' && Number.isFinite(sampleRateHz) && sampleRateHz > 0) {
+      return sampleRateHz
+    }
+    return deps.sampleRate > 0 ? deps.sampleRate : KITTY_TTS_PCM_SAMPLE_RATE
+  }
+
+  function markIdleIfDone(): void {
+    if (scheduledSources.size > 0 || deps.audioQueue.length > 0) {
+      return
+    }
+    deps.isPlaying.value = false
+    deps.currentAudioSource.value = null
+    deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
+  }
+
+  function stopSource(source: AudioBufferSourceNode): void {
+    try {
+      source.onended = null
+      source.stop()
+      source.disconnect()
+    } catch {
+      /* already stopped */
+    }
+    scheduledSources.delete(source)
+  }
+
+  function scheduleQueuedChunks(): void {
+    const ctx = deps.audioContext.value
+    if (!ctx || deps.destroyed() || ctx.state === 'closed') {
+      deps.audioQueue.length = 0
+      for (const source of [...scheduledSources]) {
+        stopSource(source)
+      }
+      deps.isPlaying.value = false
+      deps.currentAudioSource.value = null
+      return
+    }
+    if (deps.isVoiceActive.value) {
+      deps.audioQueue.length = 0
+      for (const source of [...scheduledSources]) {
+        stopSource(source)
+      }
+      deps.isPlaying.value = false
+      deps.currentAudioSource.value = null
+      deps.state.value = 'listening'
+      return
+    }
+
+    while (deps.audioQueue.length > 0) {
+      const chunk = deps.audioQueue.shift()
+      if (!chunk) {
+        break
+      }
+      const source = ctx.createBufferSource()
+      source.buffer = chunk.buffer
+      source.connect(ctx.destination)
+      const startAt = Math.max(ctx.currentTime, nextPlayTime)
+      nextPlayTime = startAt + chunk.buffer.duration
+      deps.isPlaying.value = true
+      deps.state.value = 'speaking'
+      deps.currentAudioSource.value = source
+      scheduledSources.add(source)
+      source.onended = () => {
+        scheduledSources.delete(source)
+        if (deps.currentAudioSource.value === source) {
+          deps.currentAudioSource.value = null
+        }
+        if (deps.destroyed()) {
+          deps.isPlaying.value = false
+          return
+        }
+        markIdleIfDone()
+      }
+      try {
+        source.start(startAt)
+      } catch (error) {
+        console.error('[KittyAgent] Audio schedule error:', error)
+        scheduledSources.delete(source)
+        markIdleIfDone()
+      }
+    }
+  }
+
+  async function playAudioChunk(audioBase64: string, sampleRateHz?: number): Promise<void> {
     if (!deps.audioContext.value || deps.destroyed() || deps.cleaningUp()) return
     if (deps.isVoiceActive.value) return
 
@@ -369,83 +465,24 @@ export function createKittyPlayback(deps: KittyPlaybackDeps) {
         float32[i] = pcm16[i] / (pcm16[i] < 0 ? 0x8000 : 0x7fff)
       }
 
-      const audioBuffer = deps.audioContext.value.createBuffer(1, float32.length, deps.sampleRate)
+      const rate = resolvePlaybackRate(sampleRateHz)
+      const audioBuffer = deps.audioContext.value.createBuffer(1, float32.length, rate)
       audioBuffer.getChannelData(0).set(float32)
 
       deps.audioQueue.push({ buffer: audioBuffer })
-
-      if (!deps.isPlaying.value) {
-        playNextAudio()
-      }
+      scheduleQueuedChunks()
     } catch (error) {
       console.error('[KittyAgent] Audio playback error:', error)
     }
   }
 
-  function playNextAudio(): void {
-    if (
-      deps.destroyed() ||
-      !deps.audioContext.value ||
-      deps.audioContext.value.state === 'closed'
-    ) {
-      deps.isPlaying.value = false
-      deps.currentAudioSource.value = null
-      deps.audioQueue.length = 0
-      return
-    }
-
-    if (deps.audioQueue.length === 0) {
-      deps.isPlaying.value = false
-      deps.currentAudioSource.value = null
-      deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
-      return
-    }
-
-    if (deps.isVoiceActive.value) {
-      deps.audioQueue.length = 0
-      deps.isPlaying.value = false
-      deps.currentAudioSource.value = null
-      deps.state.value = 'listening'
-      return
-    }
-
-    deps.isPlaying.value = true
-    deps.state.value = 'speaking'
-
-    const chunk = deps.audioQueue.shift()
-    if (!chunk) return
-
-    const source = deps.audioContext.value.createBufferSource()
-    source.buffer = chunk.buffer
-    source.connect(deps.audioContext.value.destination)
-
-    deps.currentAudioSource.value = source
-
-    source.onended = () => {
-      if (deps.destroyed()) {
-        deps.currentAudioSource.value = null
-        deps.isPlaying.value = false
-        return
-      }
-      deps.currentAudioSource.value = null
-      playNextAudio()
-    }
-
-    source.start()
-  }
-
   function stopAudioPlayback(): void {
-    if (deps.currentAudioSource.value) {
-      try {
-        deps.currentAudioSource.value.onended = null
-        deps.currentAudioSource.value.stop()
-        deps.currentAudioSource.value.disconnect()
-      } catch {
-        /* already stopped */
-      }
-      deps.currentAudioSource.value = null
+    for (const source of [...scheduledSources]) {
+      stopSource(source)
     }
+    deps.currentAudioSource.value = null
     deps.audioQueue.length = 0
+    nextPlayTime = 0
     deps.isPlaying.value = false
   }
 

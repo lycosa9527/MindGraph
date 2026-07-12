@@ -33,6 +33,7 @@ import { ElMessageBox } from 'element-plus'
 import {
   AIModelSelector,
   CanvasChrome,
+  CanvasKittyVoiceCommandGuide,
   CanvasMindMapShortcutGuide,
   CanvasTopBar,
   ConceptMapFocusReviewPicker,
@@ -52,7 +53,6 @@ import CanvasTranslateProgressBanner from '@/components/canvas/CanvasTranslatePr
 import LearningSheetExportNudge from '@/components/canvas/LearningSheetExportNudge.vue'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
-import KittyDesktopVoiceCommandLog from '@/components/kitty/KittyDesktopVoiceCommandLog.vue'
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
   eventBus,
@@ -117,7 +117,6 @@ import {
 } from '@/composables/fileCenter/useFileCenterActivePackage'
 import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
 import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
-import { useKittyDesktopVoiceCommandLog } from '@/composables/kitty/useKittyDesktopVoiceCommandLog'
 import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesktopLlmModelPublish'
 import { useKittyDesktopSelectionPublish } from '@/composables/kitty/useKittyDesktopSelectionPublish'
 import { useKittyDesktopLiveSpecPublish } from '@/composables/kitty/useKittyDesktopLiveSpecPublish'
@@ -599,11 +598,6 @@ const { showKittyDesktopIndicator } = useCanvasKittyDesktopPairing({
       }).catch(() => {})
     }
   },
-})
-
-const { entries: kittyVoiceCommandEntries } = useKittyDesktopVoiceCommandLog({
-  enabled: showKittyDesktopIndicator,
-  scopeId: currentDiagramId,
 })
 
 const { phase: kittyVoicePhase } = useKittyDesktopVoicePhase({
@@ -1441,11 +1435,6 @@ onUnmounted(() => {
 
     <CanvasTranslateProgressBanner />
 
-    <KittyDesktopVoiceCommandLog
-      :visible="showKittyDesktopIndicator"
-      :entries="kittyVoiceCommandEntries"
-    />
-
     <KittyCanvasAnchor
       :visible="showKittyDesktopIndicator"
       :state="kittyVoicePhase"
@@ -1541,7 +1530,8 @@ onUnmounted(() => {
       <div
         class="bottom-bar-cluster pointer-events-auto flex items-end gap-2 sm:gap-3 max-w-[95vw] min-w-0"
       >
-        <CanvasMindMapShortcutGuide v-if="showMindMapShortcutGuide" />
+        <CanvasKittyVoiceCommandGuide v-if="showKittyDesktopIndicator" />
+        <CanvasMindMapShortcutGuide v-else-if="showMindMapShortcutGuide" />
         <div
           class="bottom-controls-card flex flex-col items-center md:flex-row md:flex-nowrap md:items-center gap-1.5 md:gap-0 rounded-xl shadow-lg p-1 md:p-1.5 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md w-fit min-w-0 shrink-0"
         >

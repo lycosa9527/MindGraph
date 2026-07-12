@@ -40,6 +40,7 @@ from services.kitty.adapters.diagram_command import apply_kitty_legacy_diagram_c
 from services.kitty.context.messaging import (
     resolve_voice_interaction_language,
     safe_websocket_send,
+    send_kitty_ws_action,
     user_requests_diagram_pedagogical_review,
 )
 from services.kitty.diagram.diagram_execute import execute_diagram_update
@@ -723,9 +724,25 @@ async def route_voice_command(
         # Interaction control
         if action == "auto_complete":
             logger.info("Triggering AI auto-complete from text/voice command")
-            await safe_websocket_send(websocket, {"type": "action", "action": "auto_complete", "params": {}})
+            sent = await send_kitty_ws_action(
+                websocket,
+                voice_session_id,
+                {"type": "action", "action": "auto_complete", "params": {}},
+            )
             await fanout_voice_command_from_session(voice_session_id, "auto_complete")
             lang = resolve_voice_interaction_language(session_context)
+            if not sent:
+                await emit_user_ack(
+                    websocket,
+                    voice_session_id,
+                    render_ack("diagram.branch_autocomplete.failed", {"target": ""}, lang=lang),
+                )
+                return _finish_route(
+                    voice_session_id,
+                    RouteOutcome.FAILED,
+                    reason="canvas_owner_missing",
+                    action="auto_complete",
+                )
             await emit_user_ack(
                 websocket,
                 voice_session_id,
@@ -756,7 +773,7 @@ async def route_voice_command(
                 target or node_id,
                 node_id or "—",
             )
-            await emit_auto_complete_branch(
+            sent = await emit_auto_complete_branch(
                 websocket,
                 voice_session_id,
                 target,
@@ -764,6 +781,13 @@ async def route_voice_command(
                 lang=lang,
                 node_id=node_id or None,
             )
+            if not sent:
+                return _finish_route(
+                    voice_session_id,
+                    RouteOutcome.FAILED,
+                    reason="canvas_owner_missing",
+                    action="auto_complete_branch",
+                )
             return _finish_route(
                 voice_session_id,
                 RouteOutcome.EXECUTED,
@@ -783,8 +807,9 @@ async def route_voice_command(
                 inline_rec_params["node_id"] = resolved["node_id"]
                 if resolved.get("node_index") is not None:
                     inline_rec_params["node_index"] = resolved["node_index"]
-            await safe_websocket_send(
+            await send_kitty_ws_action(
                 websocket,
+                voice_session_id,
                 {
                     "type": "action",
                     "action": "start_inline_recommendations",
@@ -810,8 +835,9 @@ async def route_voice_command(
             seed = command.get("target")
             if isinstance(seed, str) and seed.strip():
                 add_node_params["text"] = seed.strip()
-            await safe_websocket_send(
+            await send_kitty_ws_action(
                 websocket,
+                voice_session_id,
                 {
                     "type": "action",
                     "action": "add_node_with_recommendations",

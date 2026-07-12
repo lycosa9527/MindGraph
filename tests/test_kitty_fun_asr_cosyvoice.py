@@ -349,10 +349,7 @@ async def test_start_session_asr_echoes_utterance_id(monkeypatch) -> None:
             language_hints=["zh"],
             utterance_id="utt-hold-9",
         )
-        assert any(
-            frame.get("type") == "asr_started" and frame.get("utterance_id") == "utt-hold-9"
-            for frame in sent
-        )
+        assert any(frame.get("type") == "asr_started" and frame.get("utterance_id") == "utt-hold-9" for frame in sent)
         client = voice_sessions[vid]["_fun_asr_client"]
         assert isinstance(client, ImmediateAsr)
         await client.partial_cb("你好", True)

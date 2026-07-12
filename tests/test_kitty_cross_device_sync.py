@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from services.agent_hub.scope_lifecycle import MindGraphAgentHub
-from services.kitty.context.messaging import send_kitty_diagram_update
+from services.kitty.context.messaging import send_kitty_diagram_update, send_kitty_ws_action
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
     publish_kitty_diagram_update,
     publish_kitty_selection_update,
@@ -249,6 +249,112 @@ async def test_send_kitty_diagram_update_routes_verified_to_canvas_owner() -> No
     assert ingress_call.args[1].get("mutation_id") is None
     assert ingress_call.args[1]["user_summary"] == "已添加分支"
     fanout.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_send_kitty_ws_action_routes_to_canvas_owner_only() -> None:
+    """Canvas action goes to canvas_owner; mobile ingress does not get the action."""
+    ingress_ws = MagicMock()
+    owner_ws = MagicMock()
+    message = {
+        "type": "action",
+        "action": "auto_complete_branch",
+        "params": {"node_label": "中国", "node_id": "branch-r-1-6"},
+    }
+    with (
+        patch(
+            "services.kitty.context.messaging.safe_websocket_send",
+            AsyncMock(return_value=True),
+        ) as safe_send,
+        patch(
+            "services.kitty.context.messaging.find_canvas_owner_websocket",
+            return_value=owner_ws,
+        ),
+        patch(
+            "services.kitty.context.messaging.voice_sessions",
+            {
+                "vs-mobile": {
+                    "user_id": 7,
+                    "diagram_session_id": "lib-owner-1",
+                    "_kitty_client_lane": "mobile",
+                }
+            },
+        ),
+    ):
+        ok = await send_kitty_ws_action(ingress_ws, "vs-mobile", message)
+
+    assert ok is True
+    safe_send.assert_awaited_once()
+    target_ws, body = mock_await_args(safe_send)
+    assert target_ws is owner_ws
+    assert body["action"] == "auto_complete_branch"
+    assert body["params"]["node_id"] == "branch-r-1-6"
+
+
+@pytest.mark.asyncio
+async def test_send_kitty_ws_action_falls_back_to_ingress_without_owner() -> None:
+    """Without canvas_owner lookup hit, desktop owner ingress still receives the action."""
+    ingress_ws = MagicMock()
+    message = {"type": "action", "action": "auto_complete", "params": {}}
+    with (
+        patch(
+            "services.kitty.context.messaging.safe_websocket_send",
+            AsyncMock(return_value=True),
+        ) as safe_send,
+        patch(
+            "services.kitty.context.messaging.find_canvas_owner_websocket",
+            return_value=None,
+        ),
+        patch(
+            "services.kitty.context.messaging.voice_sessions",
+            {
+                "vs-solo": {
+                    "user_id": 3,
+                    "diagram_session_id": "lib-solo",
+                    "_kitty_canvas_owner": True,
+                }
+            },
+        ),
+    ):
+        ok = await send_kitty_ws_action(ingress_ws, "vs-solo", message)
+
+    assert ok is True
+    safe_send.assert_awaited_once_with(ingress_ws, message)
+
+
+@pytest.mark.asyncio
+async def test_send_kitty_ws_action_rejects_mobile_without_owner() -> None:
+    """Thin mobile without canvas owner must not receive canvas actions."""
+    ingress_ws = MagicMock()
+    message = {
+        "type": "action",
+        "action": "auto_complete_branch",
+        "params": {"node_label": "中国"},
+    }
+    with (
+        patch(
+            "services.kitty.context.messaging.safe_websocket_send",
+            AsyncMock(return_value=True),
+        ) as safe_send,
+        patch(
+            "services.kitty.context.messaging.find_canvas_owner_websocket",
+            return_value=None,
+        ),
+        patch(
+            "services.kitty.context.messaging.voice_sessions",
+            {
+                "vs-mobile": {
+                    "user_id": 7,
+                    "diagram_session_id": "lib-alone",
+                    "_kitty_client_lane": "mobile",
+                }
+            },
+        ),
+    ):
+        ok = await send_kitty_ws_action(ingress_ws, "vs-mobile", message)
+
+    assert ok is False
+    safe_send.assert_not_awaited()
 
 
 @pytest.mark.asyncio

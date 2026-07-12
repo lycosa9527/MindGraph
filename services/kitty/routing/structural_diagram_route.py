@@ -56,8 +56,9 @@ async def execute_follow_up_actions(
             params: Dict[str, Any] = {}
             if topic_text:
                 params["topic"] = topic_text
-            await router.safe_websocket_send(
+            await router.send_kitty_ws_action(
                 websocket,
+                voice_session_id,
                 {"type": "action", "action": "auto_complete", "params": params},
             )
             await router.fanout_voice_command_from_session(

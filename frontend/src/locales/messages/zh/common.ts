@@ -130,6 +130,7 @@ export default {
   'kitty.voiceCommand.remove_nodes': '删除节点：{detail}',
   'kitty.voiceCommand.select_node': '选中节点：{detail}',
   'kitty.voiceCommand.auto_complete': '自动补全',
+  'kitty.voiceCommand.auto_complete_branch': '补全分支：{detail}',
   'kitty.voiceCommand.start_inline_recommendations': '联想推荐',
   'kitty.voiceCommand.add_node_with_recommendations': '添加节点并推荐：{detail}',
   'kitty.voiceCommand.explain_node': '解释节点：{detail}',

@@ -11,6 +11,7 @@ import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobile
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { useKittyDesktopFocusHint } from '@/composables/kitty/useKittyDesktopFocus'
+import { useMobileKittyLiveContextPoll } from '@/composables/kitty/useMobileKittyLiveContextPoll'
 import { runKittyHubSync } from '@/composables/kitty/pipeline/hubSyncWorker'
 import { useAuthStore, useDiagramStore } from '@/stores'
 import { useLLMResultsStore } from '@/stores/llmResults'
@@ -235,6 +236,28 @@ export function useMobileKittyPairing(
       return null
     }
     return 'Using a temporary session scope — desktop pairing sync may not work until you open a saved diagram.'
+  })
+
+  const liveContextLibraryId = computed(() => {
+    if (kittyPairScopeIsEphemeral.value) {
+      return null
+    }
+    const scope = kittyPairScope.value?.trim() ?? ''
+    return scope !== '' ? scope : null
+  })
+  const liveContextPollEnabled = computed(
+    () =>
+      options.kittyServerEnabled.value &&
+      authStore.isAuthenticated &&
+      pageVisible.value &&
+      liveContextLibraryId.value != null
+  )
+  const liveContextEditPipelineActive = computed(() => options.editPipelineActive?.value === true)
+  useMobileKittyLiveContextPoll({
+    libraryDiagramId: liveContextLibraryId,
+    enabled: liveContextPollEnabled,
+    editPipelineActive: liveContextEditPipelineActive,
+    onDebugLine: options.onDebugLine,
   })
 
   async function fetchMobileKittyBootstrap(scopeId?: string): Promise<boolean> {
