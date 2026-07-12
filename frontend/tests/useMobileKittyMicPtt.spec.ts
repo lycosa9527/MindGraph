@@ -48,21 +48,17 @@ describe('useMobileKittyMicPtt', () => {
       stopListening,
     })
 
-    const {
-      pttPointerActive,
-      onKittyMicPointerDown,
-      onKittyMicPointerUp,
-      teardownMicPtt,
-    } = useMobileKittyMicPtt({
-      funAsr,
-      kittyServerEnabled: { value: true },
-      micDenied: { value: false },
-      showKeyboard: { value: false },
-      connected: { value: true },
-      ensureConnected,
-      onMicDenied,
-      onMicAllowed,
-    })
+    const { pttPointerActive, onKittyMicPointerDown, onKittyMicPointerUp, teardownMicPtt } =
+      useMobileKittyMicPtt({
+        funAsr,
+        kittyServerEnabled: { value: true },
+        micDenied: { value: false },
+        showKeyboard: { value: false },
+        connected: { value: true },
+        ensureConnected,
+        onMicDenied,
+        onMicAllowed,
+      })
 
     const btn = document.createElement('button')
     btn.setPointerCapture = vi.fn()
@@ -159,6 +155,60 @@ describe('useMobileKittyMicPtt', () => {
     expect(funAsr.blessFromUserActivation).toHaveBeenCalled()
     expect(stopListening).toHaveBeenCalled()
 
+    teardownMicPtt()
+  })
+
+  it('starts ASR when iOS rejects pointer capture', async () => {
+    const listening = ref(false)
+    const prepareMicFromUserGesture = vi.fn(async () => true)
+    const startListening = vi.fn(async () => {
+      listening.value = true
+    })
+    const funAsr = makeFunAsr({
+      listening,
+      prepareMicFromUserGesture,
+      startListening,
+      stopListening: vi.fn(() => {
+        listening.value = false
+      }),
+    })
+
+    const { onKittyMicPointerDown, pttPointerActive, teardownMicPtt } = useMobileKittyMicPtt({
+      funAsr,
+      kittyServerEnabled: { value: true },
+      micDenied: { value: false },
+      showKeyboard: { value: false },
+      connected: { value: true },
+      ensureConnected: vi.fn(async () => true),
+      onMicDenied: vi.fn(),
+      onMicAllowed: vi.fn(),
+    })
+
+    const btn = document.createElement('button')
+    btn.setPointerCapture = vi.fn(() => {
+      throw new DOMException('Invalid pointer id', 'NotFoundError')
+    })
+    btn.hasPointerCapture = vi.fn(() => false)
+
+    const down = new PointerEvent('pointerdown', {
+      button: 0,
+      pointerId: 7,
+      pointerType: 'touch',
+    })
+    Object.defineProperty(down, 'currentTarget', { value: btn })
+    onKittyMicPointerDown(down)
+
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(pttPointerActive.value).toBe(true)
+    expect(prepareMicFromUserGesture).toHaveBeenCalled()
+    expect(prepareMicFromUserGesture.mock.invocationCallOrder[0]).toBeLessThan(
+      btn.setPointerCapture.mock.invocationCallOrder[0] ?? Number.MAX_SAFE_INTEGER
+    )
+    expect(startListening).toHaveBeenCalled()
     teardownMicPtt()
   })
 
@@ -279,11 +329,7 @@ describe('useMobileKittyMicPtt', () => {
       stopListening,
     })
 
-    const {
-      onKittyMicPointerDown,
-      onKittyMicPointerUp,
-      teardownMicPtt,
-    } = useMobileKittyMicPtt({
+    const { onKittyMicPointerDown, onKittyMicPointerUp, teardownMicPtt } = useMobileKittyMicPtt({
       funAsr,
       kittyServerEnabled: { value: true },
       micDenied: { value: false },

@@ -29,10 +29,7 @@ export interface UseMobileKittyMicPttFunAsr {
   stopListening: () => void
 }
 
-export type MobileKittyPttAbortReason =
-  | 'released_early'
-  | 'connect_failed'
-  | 'mic_denied'
+export type MobileKittyPttAbortReason = 'released_early' | 'connect_failed' | 'mic_denied'
 
 export interface UseMobileKittyMicPttOptions {
   funAsr: UseMobileKittyMicPttFunAsr
@@ -160,12 +157,12 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       activePointerId = null
       return
     }
-    if (captureEl.hasPointerCapture(activePointerId)) {
-      try {
+    try {
+      if (captureEl.hasPointerCapture(activePointerId)) {
         captureEl.releasePointerCapture(activePointerId)
-      } catch {
-        /* ignore */
       }
+    } catch {
+      /* Pointer capture is optional; WebKit may reject stale pointer ids. */
     }
     captureEl = null
     activePointerId = null
@@ -266,9 +263,7 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     unbindWindowPointerEnd()
     releasePointerCaptureSafe()
     if (wasActive) {
-      pttDebug(
-        `up type=${ev?.pointerType ?? '—'} cancel=${ev?.type === 'pointercancel' ? 1 : 0}`
-      )
+      pttDebug(`up type=${ev?.pointerType ?? '—'} cancel=${ev?.type === 'pointercancel' ? 1 : 0}`)
     }
     if (funAsr.listening.value) {
       funAsr.stopListening()
@@ -312,19 +307,11 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     pttPointerActive.value = true
     activePointerId = ev.pointerId
     pttDebug(`down type=${ev.pointerType} btn=${ev.button} id=${ev.pointerId}`)
-    const el = ev.currentTarget
-    if (el instanceof HTMLElement) {
-      captureEl = el
-      try {
-        el.setPointerCapture(ev.pointerId)
-      } catch {
-        /* iOS may reject capture — window pointerup still ends the hold */
-      }
-    }
     ev.preventDefault()
     bindWindowPointerEnd()
 
-    // Start getUserMedia + AudioContext from this call stack (no await before).
+    // Start required microphone work before optional pointer capture. WebKit can
+    // throw from setPointerCapture(); that must never prevent ASR warm-up.
     // Mouse pointerdown grants activation; touch relies on sticky/capturing/pointerup.
     let warmPromise: Promise<boolean>
     try {
@@ -336,6 +323,16 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       finishPointerPtt()
       onMicDenied()
       return
+    }
+
+    const el = ev.currentTarget
+    if (el instanceof HTMLElement) {
+      captureEl = el
+      try {
+        el.setPointerCapture(ev.pointerId)
+      } catch {
+        /* Window pointerup remains the release fallback on WebKit. */
+      }
     }
     void beginKittyMicFromUser(warmPromise)
   }
