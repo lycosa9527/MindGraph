@@ -1,6 +1,10 @@
 /**
  * Fun-ASR mic capture for Kitty one-sentence panel (PCM 16 kHz mono → Kitty WS).
  * Prefers AudioWorklet; falls back to ScriptProcessor only when Worklet is unavailable.
+ *
+ * iOS Safari: getUserMedia + AudioContext must be kicked off inside the user-gesture
+ * turn (pointerdown). Call kickoffKittyMicGestureAssets() synchronously from the
+ * handler, then pass the resolved assets into startListening().
  */
 import { type Ref, type ShallowRef, onUnmounted, ref, shallowRef } from 'vue'
 
@@ -12,6 +16,46 @@ const FRAME_SAMPLES = 1600 // ~100 ms at 16 kHz
 const WORKLET_NAME = 'kitty-fun-asr-pcm-processor'
 /** Same-origin public asset — CSP blocks blob: worklets under script-src 'self'. */
 const WORKLET_URL = '/kitty-fun-asr-pcm-processor.js'
+
+export interface KittyMicGestureAssets {
+  stream: MediaStream
+  audioContext: AudioContext
+}
+
+/**
+ * Start getUserMedia + AudioContext in the current call stack (user-gesture window).
+ * Safe to await the returned promise after later async work (WS connect).
+ */
+export function kickoffKittyMicGestureAssets(): Promise<KittyMicGestureAssets> {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return Promise.reject(new Error('mic_unavailable'))
+  }
+  const streamPromise = navigator.mediaDevices.getUserMedia({
+    audio: {
+      channelCount: 1,
+      echoCancellation: true,
+      noiseSuppression: true,
+    },
+  })
+  const audioContext = new AudioContext()
+  const resumePromise =
+    audioContext.state === 'suspended' ? audioContext.resume() : Promise.resolve()
+  return (async () => {
+    try {
+      const stream = await streamPromise
+      await resumePromise
+      return { stream, audioContext }
+    } catch (err) {
+      void audioContext.close()
+      throw err
+    }
+  })()
+}
+
+export function releaseKittyMicGestureAssets(assets: KittyMicGestureAssets): void {
+  assets.stream.getTracks().forEach((track) => track.stop())
+  void assets.audioContext.close()
+}
 
 function downsampleTo16k(input: Float32Array, inputRate: number): Int16Array {
   if (inputRate === TARGET_SAMPLE_RATE) {
@@ -199,17 +243,26 @@ export function useKittyFunAsrMic(options: {
     silentGain.value = mute
   }
 
-  async function startListening(): Promise<void> {
+  async function startListening(gestureAssets?: KittyMicGestureAssets): Promise<void> {
     if (listening.value) {
+      if (gestureAssets) {
+        releaseKittyMicGestureAssets(gestureAssets)
+      }
       return
     }
     if (options.ensureConnected) {
       const ok = await options.ensureConnected()
       if (!ok) {
+        if (gestureAssets) {
+          releaseKittyMicGestureAssets(gestureAssets)
+        }
         return
       }
     }
     if (!options.ws.value || options.ws.value.readyState !== WebSocket.OPEN) {
+      if (gestureAssets) {
+        releaseKittyMicGestureAssets(gestureAssets)
+      }
       options.onError?.('not_connected')
       return
     }
@@ -218,20 +271,25 @@ export function useKittyFunAsrMic(options: {
     sendJson({ type: 'tts_interrupt' })
 
     let stream: MediaStream
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      })
-    } catch {
-      options.onError?.('mic_denied')
-      return
+    let ctx: AudioContext
+    if (gestureAssets) {
+      stream = gestureAssets.stream
+      ctx = gestureAssets.audioContext
+    } else {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+          },
+        })
+      } catch {
+        options.onError?.('mic_denied')
+        return
+      }
+      ctx = new AudioContext()
     }
-
-    const ctx = new AudioContext()
     if (ctx.state === 'suspended') {
       await ctx.resume()
     }

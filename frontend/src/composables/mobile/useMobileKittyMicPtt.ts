@@ -1,18 +1,28 @@
 /**
  * Push-to-talk mic and Space-key handling for MobileKittyPage (Fun-ASR).
+ *
+ * iOS Safari requires getUserMedia/AudioContext to start inside the user-gesture
+ * turn. We kick those off on pointerdown before awaiting WebSocket connect.
+ * Never disable the mic button while connecting — disabling cancels the pointer
+ * on iOS and aborts hold-to-talk.
  */
 import { type Ref, onUnmounted, ref } from 'vue'
 
+import {
+  kickoffKittyMicGestureAssets,
+  releaseKittyMicGestureAssets,
+  type KittyMicGestureAssets,
+} from '@/composables/kitty/useKittyFunAsrMic'
+
 export interface UseMobileKittyMicPttFunAsr {
   listening: Ref<boolean>
-  startListening: () => Promise<void>
+  startListening: (gestureAssets?: KittyMicGestureAssets) => Promise<void>
   stopListening: () => void
 }
 
 export interface UseMobileKittyMicPttOptions {
   funAsr: UseMobileKittyMicPttFunAsr
   kittyServerEnabled: { value: boolean }
-  connecting: { value: boolean }
   micDenied: { value: boolean }
   showKeyboard: { value: boolean }
   connected: { value: boolean }
@@ -25,7 +35,6 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
   const {
     funAsr,
     kittyServerEnabled,
-    connecting,
     micDenied,
     showKeyboard,
     connected,
@@ -38,6 +47,9 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
   const pttPointerActive = ref(false)
   let spacePttActive = false
   let kittyMicKbBound = false
+  let activePointerId: number | null = null
+  let captureEl: HTMLElement | null = null
+  let windowPointerBound = false
 
   function isKittyTextInputTarget(): boolean {
     if (!showKeyboard.value || !connected.value) {
@@ -97,20 +109,84 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     return pttPointerActive.value || spacePttActive
   }
 
-  async function beginKittyMicFromUser(): Promise<void> {
-    if (!kittyServerEnabled.value || connecting.value || micDenied.value) {
+  function unbindWindowPointerEnd(): void {
+    if (!windowPointerBound || typeof window === 'undefined') {
+      return
+    }
+    windowPointerBound = false
+    window.removeEventListener('pointerup', onWindowPointerEnd)
+    window.removeEventListener('pointercancel', onWindowPointerEnd)
+  }
+
+  function bindWindowPointerEnd(): void {
+    if (windowPointerBound || typeof window === 'undefined') {
+      return
+    }
+    windowPointerBound = true
+    window.addEventListener('pointerup', onWindowPointerEnd)
+    window.addEventListener('pointercancel', onWindowPointerEnd)
+  }
+
+  function releasePointerCaptureSafe(): void {
+    if (!captureEl || activePointerId === null) {
+      captureEl = null
+      activePointerId = null
+      return
+    }
+    if (captureEl.hasPointerCapture(activePointerId)) {
+      try {
+        captureEl.releasePointerCapture(activePointerId)
+      } catch {
+        /* ignore */
+      }
+    }
+    captureEl = null
+    activePointerId = null
+  }
+
+  async function beginKittyMicFromUser(
+    gestureAssetsPromise?: Promise<KittyMicGestureAssets>
+  ): Promise<void> {
+    if (!kittyServerEnabled.value || micDenied.value) {
+      if (gestureAssetsPromise) {
+        void gestureAssetsPromise
+          .then(releaseKittyMicGestureAssets)
+          .catch(() => undefined)
+      }
       return
     }
     if (funAsr.listening.value || voiceStartInFlight.value) {
+      if (gestureAssetsPromise) {
+        void gestureAssetsPromise
+          .then(releaseKittyMicGestureAssets)
+          .catch(() => undefined)
+      }
       return
     }
     voiceStartInFlight.value = true
+    let ownedAssets: KittyMicGestureAssets | undefined
     try {
       const ok = await ensureConnected()
       if (!ok || !isKittyMicHoldActive()) {
+        if (gestureAssetsPromise) {
+          try {
+            ownedAssets = await gestureAssetsPromise
+          } catch {
+            ownedAssets = undefined
+          }
+        }
         return
       }
-      await funAsr.startListening()
+      if (gestureAssetsPromise) {
+        ownedAssets = await gestureAssetsPromise
+        if (!isKittyMicHoldActive()) {
+          return
+        }
+        await funAsr.startListening(ownedAssets)
+        ownedAssets = undefined
+      } else {
+        await funAsr.startListening()
+      }
       if (!isKittyMicHoldActive()) {
         funAsr.stopListening()
       } else {
@@ -119,6 +195,9 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     } catch {
       onMicDenied()
     } finally {
+      if (ownedAssets) {
+        releaseKittyMicGestureAssets(ownedAssets)
+      }
       voiceStartInFlight.value = false
     }
   }
@@ -126,40 +205,69 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
   function endKittyMicFromUser(): void {
     pttPointerActive.value = false
     spacePttActive = false
+    unbindWindowPointerEnd()
+    releasePointerCaptureSafe()
     if (funAsr.listening.value) {
       funAsr.stopListening()
     }
+  }
+
+  function finishPointerPtt(): void {
+    pttPointerActive.value = false
+    unbindWindowPointerEnd()
+    releasePointerCaptureSafe()
+    if (funAsr.listening.value) {
+      funAsr.stopListening()
+    }
+  }
+
+  function onWindowPointerEnd(ev: PointerEvent): void {
+    if (!pttPointerActive.value) {
+      return
+    }
+    if (activePointerId !== null && ev.pointerId !== activePointerId) {
+      return
+    }
+    finishPointerPtt()
   }
 
   function onKittyMicPointerDown(ev: PointerEvent): void {
     if (ev.button !== 0) {
       return
     }
-    if (!kittyServerEnabled.value || connecting.value || micDenied.value) {
+    // Do not gate on `connecting` — disabling/bailing mid-hold cancels iOS pointers.
+    if (!kittyServerEnabled.value || micDenied.value) {
+      return
+    }
+    if (pttPointerActive.value) {
       return
     }
     pttPointerActive.value = true
+    activePointerId = ev.pointerId
     const el = ev.currentTarget
     if (el instanceof HTMLElement) {
+      captureEl = el
       el.setPointerCapture(ev.pointerId)
     }
     ev.preventDefault()
-    void beginKittyMicFromUser()
+    bindWindowPointerEnd()
+
+    let gesturePromise: Promise<KittyMicGestureAssets>
+    try {
+      gesturePromise = kickoffKittyMicGestureAssets()
+    } catch {
+      finishPointerPtt()
+      onMicDenied()
+      return
+    }
+    void beginKittyMicFromUser(gesturePromise)
   }
 
   function onKittyMicPointerUp(ev: PointerEvent): void {
-    pttPointerActive.value = false
-    if (funAsr.listening.value) {
-      funAsr.stopListening()
+    if (activePointerId !== null && ev.pointerId !== activePointerId) {
+      return
     }
-    const el = ev.currentTarget
-    if (el instanceof HTMLElement && el.hasPointerCapture(ev.pointerId)) {
-      try {
-        el.releasePointerCapture(ev.pointerId)
-      } catch {
-        /* ignore */
-      }
-    }
+    finishPointerPtt()
   }
 
   function onKittySpacePttKeyDown(ev: KeyboardEvent): void {
@@ -172,7 +280,7 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     if (shouldReserveSpaceForTarget(ev)) {
       return
     }
-    if (!kittyServerEnabled.value || connecting.value || micDenied.value) {
+    if (!kittyServerEnabled.value || micDenied.value) {
       return
     }
     ev.preventDefault()
@@ -180,7 +288,15 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       return
     }
     spacePttActive = true
-    void beginKittyMicFromUser()
+    let gesturePromise: Promise<KittyMicGestureAssets> | undefined
+    try {
+      gesturePromise = kickoffKittyMicGestureAssets()
+    } catch {
+      spacePttActive = false
+      onMicDenied()
+      return
+    }
+    void beginKittyMicFromUser(gesturePromise)
   }
 
   function onKittySpacePttKeyUp(ev: KeyboardEvent): void {

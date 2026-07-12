@@ -430,6 +430,7 @@ watch(
 )
 
 const {
+  voiceStartInFlight,
   pttPointerActive,
   onKittyMicPointerDown,
   onKittyMicPointerUp,
@@ -438,7 +439,6 @@ const {
 } = useMobileKittyMicPtt({
   funAsr,
   kittyServerEnabled,
-  connecting,
   micDenied,
   showKeyboard,
   connected,
@@ -480,9 +480,11 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
 
 <template>
   <div
-    class="mobile-kitty flex flex-col flex-1 min-h-0 w-full bg-gradient-to-b from-slate-100 via-white to-violet-50/40"
+    class="mobile-kitty flex flex-col h-full flex-1 min-h-0 w-full overflow-hidden overscroll-none bg-gradient-to-b from-slate-100 via-white to-violet-50/40"
   >
-    <header class="mobile-kitty-header flex items-center gap-2 h-12 px-2 bg-white/90 backdrop-blur-md shrink-0">
+    <header
+      class="mobile-kitty-header sticky top-0 z-30 flex items-center gap-2 h-12 px-2 bg-white/95 backdrop-blur-md shrink-0 border-b border-gray-200/70"
+    >
       <button
         type="button"
         class="flex items-center justify-center w-10 h-10 rounded-xl active:bg-gray-100 text-gray-700"
@@ -546,9 +548,9 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
       }}
     </div>
 
-    <div class="flex-1 min-h-0 overflow-hidden flex flex-col">
+    <div class="flex-1 min-h-0 overflow-hidden flex flex-col overscroll-none">
       <div
-        class="kitty-stage-shell relative z-[2] flex flex-1 flex-col min-h-0 w-full self-stretch"
+        class="kitty-stage-shell relative z-[2] flex flex-1 flex-col min-h-0 w-full self-stretch overflow-hidden"
         :class="{ 'kitty-stage-shell--unlinked': !showDiagramChrome }"
       >
         <!-- Unlinked: large Kitty behind the conversation -->
@@ -625,7 +627,7 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
       </div>
     </div>
 
-    <div class="shrink-0 bg-white/90 backdrop-blur-md safe-pb">
+    <div class="kitty-bottom-bar shrink-0 sticky bottom-0 z-30 bg-white/95 backdrop-blur-md border-t border-gray-200/70 safe-pb">
       <div
         v-if="connected && showKeyboard"
         class="flex gap-2 items-center px-4 pt-3 pb-1"
@@ -692,7 +694,8 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
           data-kitty-mic-ptt
           class="kitty-side-control kitty-side-control--mic kitty-side-control--mic-ptt"
           :class="{ 'kitty-side-control--mic-hold': kittyVoiceInputActive || pttPointerActive }"
-          :disabled="!kittyServerEnabled || connecting || micDenied"
+          :disabled="!kittyServerEnabled || micDenied"
+          :aria-busy="connecting || voiceStartInFlight"
           :aria-label="t('mobile.kittyMicPttAria', '按住说话')"
           :title="t('mobile.kittyMicPttTitle', '按住说话，松开发送')"
           @pointerdown="onKittyMicPointerDown"
@@ -736,6 +739,15 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
 <style scoped>
 .mobile-kitty-header {
   padding-top: env(safe-area-inset-top);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.kitty-bottom-bar {
+  /* Keep controls pinned above the home indicator; chat scrolls above this. */
+  flex-shrink: 0;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .safe-pb {
@@ -806,6 +818,7 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
   justify-self: center;
   touch-action: manipulation;
   user-select: none;
+  -webkit-user-select: none;
   transition: transform 0.15s ease;
 }
 
@@ -838,6 +851,9 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
   gap: 0.35rem;
   padding: 0 0.65rem;
   justify-self: stretch;
+  /* Prevent scroll/pan from stealing the hold on iOS Safari */
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 .kitty-side-control__icon--mic-ptt {
