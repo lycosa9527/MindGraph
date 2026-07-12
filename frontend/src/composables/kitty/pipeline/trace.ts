@@ -192,7 +192,7 @@ export function dumpTurnTrace(requestId: string): KittyPipelineEvent[] {
 
 export function messageForKittyFail(
   fail: KittyTurnFail,
-  t: (key: string, fallback?: string) => string
+  t: (key: string, fallbackOrParams?: string | Record<string, string>) => string
 ): string {
   return resolveKittyFailMessage(fail.errorCode, t, fail.detail)
 }

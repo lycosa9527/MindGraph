@@ -32,7 +32,7 @@ export type RunKittyEditTurnDeps = {
   ensureConnected?: () => Promise<boolean>
   appendUserTurn: (text: string, requestId: string, ctx: KittyTurnContext) => Promise<boolean>
   onFailMessage: (message: string) => void
-  t: (key: string, fallback?: string) => string
+  t: (key: string, fallbackOrParams?: string | Record<string, string>) => string
   /** Skip create-phase / busy guards — caller already validated. */
   skipSessionEnsure?: boolean
 }

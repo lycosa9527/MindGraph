@@ -122,7 +122,7 @@ export const useKittyPipelineStore = defineStore('kittyPipeline', () => {
             detail: failEvent.detail,
             at: failEvent.at,
           }
-        : lastFail.value?.requestId === id
+        : lastFail.value != null && lastFail.value.requestId === id
           ? lastFail.value
           : undefined
 
@@ -170,7 +170,8 @@ export const useKittyPipelineStore = defineStore('kittyPipeline', () => {
       rows = rows.filter((r) => r.requestId === id)
     }
     if (typeof options.since === 'number') {
-      rows = rows.filter((r) => r.at >= options.since)
+      const since = options.since
+      rows = rows.filter((r) => r.at >= since)
     }
     return rows
   }
