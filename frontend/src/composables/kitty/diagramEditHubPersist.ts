@@ -1,5 +1,6 @@
 /**
- * After verified canvas apply: persist Pinia truth to Agent Hub via context_update.
+ * Low-level hub persist: context_update send + context_mutation_ack wait.
+ * Callers should prefer syncKittyHubContext for pre-edit / background Redis sync.
  */
 import { eventBus } from '@/composables/core/useEventBus'
 import type {

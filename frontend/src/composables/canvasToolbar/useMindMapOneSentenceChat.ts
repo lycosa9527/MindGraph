@@ -35,9 +35,15 @@ import {
 } from '@/composables/canvasToolbar/oneSentenceReplyState'
 import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
 import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
-import { persistVerifiedDiagramToHub } from '@/composables/kitty/diagramEditHubPersist'
-import type { HubPersistResult } from '@/composables/kitty/diagramEditHubPersist'
+import { KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS } from '@/composables/kitty/syncKittyHubContext'
+import { runKittyEditTurn } from '@/composables/kitty/pipeline/editTurn'
+import {
+  markKittyHubSyncFingerprint,
+  runKittyHubSync,
+} from '@/composables/kitty/pipeline/hubSyncWorker'
+import { recordPipelineEvent } from '@/composables/kitty/pipeline/trace'
 import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
 import { resolveKittyEditFailureMessage } from '@/composables/kitty/kittyDiagramEditFeedback'
 import {
@@ -256,6 +262,23 @@ export function useMindMapOneSentenceChat() {
     },
   })
 
+  const asr = useKittyAsrSession({
+    mode: 'final_or_stopped',
+    lane: 'desktop',
+    getScope: () => diagramScope.value,
+    draft,
+    ownerId: `${PANEL_OWNER}:asr`,
+    onCommit: (_text, ctx) => {
+      funAsr.stopListening()
+      void sendDraft({
+        requestId: ctx.requestId,
+        utteranceId: ctx.utteranceId,
+        source: 'asr',
+      })
+    },
+  })
+  asr.bindBus()
+
   watch(mobileKittyOwnsEditInput, (locked) => {
     if (locked) {
       funAsr.stopListening()
@@ -310,20 +333,14 @@ export function useMindMapOneSentenceChat() {
     }
   }
 
-  async function syncKittyContext(): Promise<HubPersistResult> {
-    if (!kitty.isConnected.value) {
-      return { ok: false, error: 'not_connected' }
-    }
-    const result = await persistVerifiedDiagramToHub({
+  function desktopHubSyncDeps() {
+    return {
       buildContext: buildKittyContext,
       updateContext: kitty.updateContext,
-      hubScopeRevision: kittySession.hubScopeRevision,
-      scope: diagramScope.value,
-    })
-    if (result.ok && typeof result.revision === 'number') {
-      kittySession.setHubScopeRevision(result.revision)
+      getScope: () => diagramScope.value,
+      isConnected: () => kitty.isConnected.value,
+      lane: 'desktop' as const,
     }
-    return result
   }
 
   async function maybeMigrateScope(libraryId: string): Promise<void> {
@@ -381,7 +398,11 @@ export function useMindMapOneSentenceChat() {
     return buildKittyEditQueuedForLlmMessage(t, names, isZh.value ? 'zh' : 'en')
   }
 
-  async function runEditFlow(text: string, requestId: string): Promise<boolean> {
+  async function runEditFlow(
+    text: string,
+    requestId: string,
+    options?: { source?: 'asr' | 'text'; utteranceId?: string }
+  ): Promise<boolean> {
     // Always log the user utterance to PG/Redis before attempting Kitty.
     if (llmResultsStore.isGenerating) {
       oneSentence.enqueueBusyEdit(requestId)
@@ -392,31 +413,47 @@ export function useMindMapOneSentenceChat() {
     }
     await persistEditUserTurn(text, requestId)
     replyState.resetForNewTurn()
-    const ok = await ensureKittyConnected()
-    if (!ok) {
-      oneSentence.markRequestFailed(requestId, 'kitty_unavailable')
-      await persistKittyUiTurn(
-        t('canvas.mindMapOneSentence.kittyUnavailable'),
+
+    const result = await runKittyEditTurn(
+      {
+        kitty,
+        buildContext: buildKittyContext,
+        updateContext: kitty.updateContext,
+        getScope: () => diagramScope.value,
+        lane: 'desktop',
+        ensureConnected: ensureKittyConnected,
+        skipSessionEnsure: false,
+        appendUserTurn: async (_turnText, turnId, ctx) => {
+          // Already persisted above; record protocol step only.
+          recordPipelineEvent({
+            ctx,
+            module: 'history',
+            step: 'S06_history_user',
+            status: 'ok',
+            detail: `pre-persisted ${turnId.slice(0, 8)}`,
+          })
+          return true
+        },
+        onFailMessage: (msg) => {
+          replyState.showFinalReply(msg)
+          oneSentence.markRequestFailed(requestId, 'context_sync_failed')
+          void persistKittyUiTurn(msg, requestId, 'failed', 'ui_failed')
+        },
+        t: (key, fallback) => t(key, fallback),
+      },
+      {
+        text,
+        source: options?.source ?? 'text',
         requestId,
-        'failed',
-        'ui_failed'
-      )
-      return false
-    }
-    const flushed = await syncKittyContext()
-    if (!flushed.ok) {
-      const detail = flushed.error?.trim() || 'unknown'
-      console.warn(`[OneSentence] hub context sync failed detail=${detail}`)
-      const msg = t('canvas.mindMapOneSentence.kittyContextSyncFailedDetail', { detail })
-      replyState.showFinalReply(msg)
-      oneSentence.markRequestFailed(requestId, 'context_sync_failed')
-      await persistKittyUiTurn(msg, requestId, 'failed', 'ui_failed')
+        utteranceId: options?.utteranceId,
+      }
+    )
+    if (!result.ok) {
       return false
     }
     lastHubFingerprint = getKittyDiagramContentFingerprint(diagramStore.data)
     lastEditRequestId = requestId
     oneSentence.markRequestInflight(requestId)
-    kitty.sendTextMessage(text, requestId)
     return true
   }
 
@@ -466,7 +503,11 @@ export function useMindMapOneSentenceChat() {
     void flushQueuedAfterGeneration()
   }
 
-  async function sendDraft(): Promise<void> {
+  async function sendDraft(options?: {
+    requestId?: string
+    utteranceId?: string
+    source?: 'asr' | 'text'
+  }): Promise<void> {
     const text = draft.value.trim()
     if (!text) return
     if (isInputBlocked.value) return
@@ -483,8 +524,15 @@ export function useMindMapOneSentenceChat() {
     )
     if (useEditFlow) {
       oneSentence.setPhase('edit')
-      const req = oneSentence.registerUserRequest(text, 'inflight')
-      const sent = await runEditFlow(text, req.requestId)
+      const req = oneSentence.registerUserRequest(
+        text,
+        'inflight',
+        options?.requestId
+      )
+      const sent = await runEditFlow(text, req.requestId, {
+        source: options?.source ?? 'text',
+        utteranceId: options?.utteranceId,
+      })
       if (!sent) {
         oneSentence.setDraft(text)
       }
@@ -493,7 +541,7 @@ export function useMindMapOneSentenceChat() {
 
     recordingCreatePhase = true
     // Stay in create until first generate result (phase 3).
-    const req = oneSentence.registerUserRequest(text, 'inflight')
+    const req = oneSentence.registerUserRequest(text, 'inflight', options?.requestId)
     await persistCreateTurn('user', text, 'ui_create', req.requestId)
     await runCreateFlow(text)
   }
@@ -566,13 +614,22 @@ export function useMindMapOneSentenceChat() {
   watch(isAIGenerating, (generating) => {
     setDiagramWriteLockHolder(generating ? 'llm' : null)
     if (kitty.isConnected.value && phase.value === 'edit') {
-      kitty.updateContext(buildKittyContext())
+      scheduleDebouncedHubSync()
     }
   })
 
   watch(phase, () => {
     if (kitty.isConnected.value) {
-      void syncKittyContext()
+      void runKittyHubSync({
+        deps: desktopHubSyncDeps(),
+        ctx: {
+          requestId: `desk-phase-${Date.now()}`,
+          scope: diagramScope.value || 'scope',
+          lane: 'desktop',
+        },
+        reason: 'background',
+        timeoutMs: KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS,
+      })
     }
   })
 
@@ -613,9 +670,19 @@ export function useMindMapOneSentenceChat() {
       if (!fingerprint || fingerprint === lastHubFingerprint) {
         return
       }
-      void syncKittyContext().then((result) => {
+      void runKittyHubSync({
+        deps: desktopHubSyncDeps(),
+        ctx: {
+          requestId: `desk-bg-${Date.now()}`,
+          scope: diagramScope.value || 'scope',
+          lane: 'desktop',
+        },
+        reason: 'background',
+        timeoutMs: KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS,
+      }).then((result) => {
         if (result.ok) {
           lastHubFingerprint = fingerprint
+          markKittyHubSyncFingerprint(fingerprint)
         }
       })
     }, 500)
@@ -660,9 +727,19 @@ export function useMindMapOneSentenceChat() {
     action: string
   }) => {
     if (payload.ok) {
-      void syncKittyContext().then((result) => {
+      void runKittyHubSync({
+        deps: desktopHubSyncDeps(),
+        ctx: {
+          requestId: activeRequestId.value || `desk-post-${Date.now()}`,
+          scope: diagramScope.value || 'scope',
+          lane: 'desktop',
+        },
+        reason: 'post_mutation',
+        timeoutMs: KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS,
+      }).then((result) => {
         if (result.ok) {
           lastHubFingerprint = getKittyDiagramContentFingerprint(diagramStore.data)
+          markKittyHubSyncFingerprint(lastHubFingerprint)
         }
       })
       if (payload.userSummary?.trim()) {
@@ -678,39 +755,6 @@ export function useMindMapOneSentenceChat() {
       resolveKittyEditFailureMessage(payload.errorCode, t, payload.action)
     )
     oneSentence.applyAckOutcome(activeRequestId.value, 'failed', payload.errorCode)
-  }
-
-  const onAsrPartial = (payload: { text: string }) => {
-    if (payload.text.trim()) {
-      oneSentence.setDraft(payload.text.trim())
-    }
-  }
-
-  let lastAsrCommitText = ''
-  let lastAsrCommitAt = 0
-
-  function commitAsrTranscript(raw: string): void {
-    const text = raw.trim()
-    if (!text) {
-      return
-    }
-    const now = Date.now()
-    if (text === lastAsrCommitText && now - lastAsrCommitAt < 2500) {
-      return
-    }
-    lastAsrCommitText = text
-    lastAsrCommitAt = now
-    oneSentence.setDraft(text)
-    funAsr.stopListening()
-    void sendDraft()
-  }
-
-  const onAsrFinal = (payload: { text: string }) => {
-    commitAsrTranscript(payload.text)
-  }
-
-  const onAsrStopped = () => {
-    commitAsrTranscript(draft.value)
   }
 
   const onDiagramEditFailed = (payload: { action: string; errorCode: string }) => {
@@ -802,9 +846,6 @@ export function useMindMapOneSentenceChat() {
     bus.on('llm:generation_completed', onGenerationCompleted)
     bus.on('oneSentence:request_done', onRequestSettled)
     bus.on('oneSentence:request_failed', onRequestSettled)
-    bus.on('kitty:asr_partial', onAsrPartial)
-    bus.on('kitty:asr_final', onAsrFinal)
-    bus.on('kitty:asr_stopped', onAsrStopped)
     bus.on('oneSentence:messages_changed', onMessagesChanged)
     bus.on('oneSentence:session_reset', () => {
       void bootstrapSession()

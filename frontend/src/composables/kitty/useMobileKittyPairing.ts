@@ -15,6 +15,7 @@ import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobile
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { useKittyDesktopFocusHint } from '@/composables/kitty/useKittyDesktopFocus'
+import { runKittyHubSync } from '@/composables/kitty/pipeline/hubSyncWorker'
 import { useAuthStore, useDiagramStore } from '@/stores'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -535,13 +536,29 @@ export function useMobileKittyPairing(
     if (!kitty.isConnected.value) {
       return
     }
-    const ctx = buildMobileKittyContext()
-    kitty.updateContext(ctx)
-    if (options.onDebugLine) {
-      const titleShort = (ctx.diagram_display_title ?? '').slice(0, 28)
-      const lib = ctx.diagram_library_id != null ? String(ctx.diagram_library_id).slice(0, 8) : '—'
-      options.onDebugLine('#ctx', `${String(ctx.diagram_type)} lib=${lib} ${titleShort}`)
-    }
+    void runKittyHubSync({
+      deps: {
+        buildContext: buildMobileKittyContext,
+        updateContext: kitty.updateContext,
+        getScope: () => kittyPairScope.value,
+        isConnected: () => kitty.isConnected.value,
+        lane: 'mobile',
+      },
+      ctx: {
+        requestId: `pair-sync-${Date.now()}`,
+        scope: kittyPairScope.value || 'scope',
+        lane: 'mobile',
+      },
+      reason: 'background',
+    }).then(() => {
+      if (options.onDebugLine) {
+        const built = buildMobileKittyContext()
+        const titleShort = (built.diagram_display_title ?? '').slice(0, 28)
+        const lib =
+          built.diagram_library_id != null ? String(built.diagram_library_id).slice(0, 8) : '—'
+        options.onDebugLine('#ctx', `${String(built.diagram_type)} lib=${lib} ${titleShort}`)
+      }
+    })
   }
 
   watch(

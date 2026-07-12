@@ -1,8 +1,11 @@
 /**
- * Kitty voice → hub → canvas workflow trace (console + event bus; no audio chunks).
+ * Kitty workflow trace — compat bus for non-pipeline debug lines.
+ * Pipeline status must use recordPipelineEvent / failKittyTurn only.
+ * This shim must not write the pipeline store (avoids polluting mid-turn status).
  */
 import { eventBus } from '@/composables/core/useEventBus'
 import { normalizeKittyDebugText } from '@/composables/kitty/kittyAgentDebug'
+import { kittyPipelineTraceEnabled } from '@/composables/kitty/pipeline/trace'
 
 export type KittyWorkflowLane = 'mobile' | 'desktop' | 'hub'
 
@@ -15,20 +18,14 @@ export interface KittyWorkflowTracePayload {
   at: number
 }
 
-const STORAGE_KEY = 'kitty_workflow_trace'
-
 export function kittyWorkflowTraceEnabled(): boolean {
-  if (typeof window === 'undefined') {
-    return false
-  }
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    return raw === '1' || raw === 'verbose'
-  } catch {
-    return false
-  }
+  return kittyPipelineTraceEnabled()
 }
 
+/**
+ * @deprecated Prefer recordPipelineEvent / failKittyTurn from pipeline protocol.
+ * Emits kitty:workflow_trace only — does not append pipeline steps.
+ */
 export function traceKittyWorkflow(
   lane: KittyWorkflowLane,
   stage: string,
@@ -40,26 +37,22 @@ export function traceKittyWorkflow(
     hubPersistOk?: boolean
   }
 ): void {
+  const at = Date.now()
   const row: KittyWorkflowTracePayload = {
     lane,
     stage,
     detail: normalizeKittyDebugText(detail, 240),
     scope: options?.scope,
     action: options?.action,
-    at: Date.now(),
+    at,
   }
   eventBus.emit('kitty:workflow_trace', row)
-  if (!kittyWorkflowTraceEnabled()) {
-    return
+
+  if (kittyPipelineTraceEnabled()) {
+    const scope = options?.scope ? ` scope=${options.scope.slice(0, 12)}` : ''
+    const action = options?.action ? ` action=${options.action}` : ''
+    console.debug(
+      `[KittyWF:legacy] lane=${lane} stage=${stage}${scope}${action} | ${row.detail}`
+    )
   }
-  const scopePart = row.scope ? ` scope=${row.scope.slice(0, 12)}` : ''
-  const actionPart = row.action ? ` action=${row.action}` : ''
-  const verifiedPart =
-    typeof options?.verified === 'boolean' ? ` verified=${String(options.verified)}` : ''
-  const hubPart =
-    typeof options?.hubPersistOk === 'boolean'
-      ? ` hubPersistOk=${String(options.hubPersistOk)}`
-      : ''
-  const line = `[KittyWF:${lane}] ${stage}${actionPart}${scopePart}${verifiedPart}${hubPart} | ${row.detail}`
-  console.debug(line)
 }

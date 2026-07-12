@@ -1,6 +1,6 @@
 /**
- * Hub library persist for mobile Kitty — flush after verified diagram edits and
- * await sync before voice/text edit turns (single hub gate; no duplicate pre-edit sync).
+ * Hub library persist for mobile Kitty — flush after verified diagram edits.
+ * Pre-edit hub gate uses context-only sync in useMobileKittyChat (Redis live_spec).
  */
 import { type ComputedRef, type Ref, onUnmounted, watch } from 'vue'
 
@@ -11,17 +11,11 @@ import type {
   KittyAgentContext,
   KittyContextUpdateOptions,
 } from '@/composables/kitty/kittyAgentTypes'
-import {
-  type HubPersistResult,
-  waitForContextMutationAck,
-} from '@/composables/kitty/diagramEditHubPersist'
 import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
-import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
+import { recordPipelineEvent } from '@/composables/kitty/pipeline/trace'
 import { SAVE } from '@/config'
 import { useDiagramStore } from '@/stores/diagram'
 import { useKittySessionStore } from '@/stores/kittySession'
-
-const DEFAULT_EDIT_GATE_TIMEOUT_MS = 8000
 
 export function useKittyMobileHubPersist(options: {
   libraryDiagramId: ComputedRef<string | null>
@@ -34,7 +28,6 @@ export function useKittyMobileHubPersist(options: {
   editPipelineActive?: Ref<boolean> | ComputedRef<boolean>
 }): {
   flushHubLibraryPersist: () => void
-  awaitHubLibraryPersistBeforeEdit: (timeoutMs?: number) => Promise<HubPersistResult>
 } {
   const diagramStore = useDiagramStore()
   const kittySession = useKittySessionStore()
@@ -66,6 +59,14 @@ export function useKittyMobileHubPersist(options: {
       }
       flushHubLibraryPersist()
     }, SAVE.AUTO_SAVE_DEBOUNCE_MS)
+  }
+
+  function libraryTurnCtx(requestId: string, libId: string) {
+    return {
+      requestId,
+      scope: libId,
+      lane: 'mobile' as const,
+    }
   }
 
   function sendHubLibraryPersist(fingerprint: string): boolean {
@@ -105,8 +106,13 @@ export function useKittyMobileHubPersist(options: {
       },
     })
 
-    options.onDebugLine?.('#hub', `persist lib=${libId.slice(0, 8)} pending`)
-    traceKittyWorkflow('hub', 'persist_send', `lib=${libId.slice(0, 12)}`, { scope: libId })
+    recordPipelineEvent({
+      ctx: libraryTurnCtx(idempotencyKey, libId),
+      module: 'library',
+      step: 'S15_library_persist',
+      status: 'started',
+      detail: `lib=${libId.slice(0, 12)}`,
+    })
     return true
   }
 
@@ -116,53 +122,6 @@ export function useKittyMobileHubPersist(options: {
     }
     const fingerprint = getKittyDiagramContentFingerprint(diagramStore.data)
     sendHubLibraryPersist(fingerprint)
-  }
-
-  async function awaitHubLibraryPersistBeforeEdit(
-    timeoutMs = DEFAULT_EDIT_GATE_TIMEOUT_MS
-  ): Promise<HubPersistResult> {
-    const libId = options.libraryDiagramId.value?.trim() ?? ''
-    if (!libId || diagramStore.type == null) {
-      return { ok: false, error: 'no_library_scope' }
-    }
-    if (!options.isConnected.value) {
-      options.onDebugLine?.('#hub', 'edit gate skip ws closed')
-      return { ok: false, error: 'not_connected' }
-    }
-
-    clearDebounce()
-    const fingerprint = getKittyDiagramContentFingerprint(diagramStore.data)
-    const rev = kittySession.hubScopeRevision
-    if (fingerprint && fingerprint === lastPersistedFingerprint && pendingFingerprint == null) {
-      options.onDebugLine?.('#hub', `edit gate ok cached rev=${rev ?? '?'}`)
-      return { ok: true, revision: rev ?? undefined }
-    }
-
-    if (!sendHubLibraryPersist(fingerprint)) {
-      if (fingerprint === lastPersistedFingerprint) {
-        options.onDebugLine?.('#hub', `edit gate ok rev=${rev ?? '?'}`)
-        return { ok: true, revision: rev ?? undefined }
-      }
-      options.onDebugLine?.('#hub', 'edit gate skip no spec')
-      return { ok: false, error: 'hub_persist_skipped' }
-    }
-
-    const syncKey = pendingIdempotencyKey ?? ''
-    options.onDebugLine?.('#hub', `edit gate pending rev=${rev ?? '?'}`)
-    const result = await waitForContextMutationAck({
-      idempotencyKey: syncKey,
-      timeoutMs,
-    })
-    if (result.ok) {
-      if (typeof result.revision === 'number') {
-        kittySession.setHubScopeRevision(result.revision)
-      }
-      options.onDebugLine?.('#hub', `edit gate ok rev=${result.revision ?? '?'}`)
-    } else {
-      const err = result.error?.trim() || 'unknown'
-      options.onDebugLine?.('#hub', `edit gate fail ${err.slice(0, 48)}`)
-    }
-    return result
   }
 
   function onContextMutationAck(data: {
@@ -183,16 +142,17 @@ export function useKittyMobileHubPersist(options: {
       return
     }
     if (data.ok === false || data.library_snapshot_saved === false) {
-      options.onDebugLine?.(
-        '#hub',
-        `persist failed ${String(data.library_snapshot_error ?? 'mutation rejected').slice(0, 40)}`
-      )
-      traceKittyWorkflow(
-        'hub',
-        'persist_ack',
-        String(data.library_snapshot_error ?? 'mutation rejected').slice(0, 80),
-        { scope: options.libraryDiagramId.value?.trim() }
-      )
+      const detail = String(data.library_snapshot_error ?? 'mutation rejected').slice(0, 80)
+      const libId = options.libraryDiagramId.value?.trim() ?? 'scope'
+      // Soft fail: ring-buffer only — must not failKittyTurn / mutate active edit turn.
+      recordPipelineEvent({
+        ctx: libraryTurnCtx(key || `lib-${Date.now()}`, libId),
+        module: 'library',
+        step: 'S15_library_persist',
+        status: 'fail',
+        errorCode: 'library_snapshot_failed',
+        detail,
+      })
       pendingFingerprint = null
       pendingIdempotencyKey = null
       scheduleHubLibraryPersist()
@@ -203,9 +163,13 @@ export function useKittyMobileHubPersist(options: {
     }
     pendingFingerprint = null
     pendingIdempotencyKey = null
-    options.onDebugLine?.('#hub', 'persist ack ok')
-    traceKittyWorkflow('hub', 'persist_ack', 'library snapshot saved', {
-      scope: options.libraryDiagramId.value?.trim(),
+    const libId = options.libraryDiagramId.value?.trim() ?? 'scope'
+    recordPipelineEvent({
+      ctx: libraryTurnCtx(key || `lib-${Date.now()}`, libId),
+      module: 'library',
+      step: 'S15_library_persist',
+      status: 'ok',
+      detail: 'library snapshot saved',
     })
   }
 
@@ -225,6 +189,18 @@ export function useKittyMobileHubPersist(options: {
       }
     })
   }
+
+  let wasConnected = options.isConnected.value
+  watch(options.isConnected, (connected) => {
+    // Clear on drop or reconnect so the next flush is not skipped by a stale fingerprint
+    // (Vue may coalesce false→true in one tick, so do not rely on !wasConnected alone).
+    if (!connected || (connected && !wasConnected)) {
+      lastPersistedFingerprint = ''
+      pendingFingerprint = null
+      pendingIdempotencyKey = null
+    }
+    wasConnected = connected
+  })
 
   function onVoiceDiagramUpdate(): void {
     if (!options.libraryDiagramId.value?.trim()) {
@@ -247,5 +223,5 @@ export function useKittyMobileHubPersist(options: {
     eventBus.removeAllListenersForOwner('KittyMobileHubPersist')
   })
 
-  return { flushHubLibraryPersist, awaitHubLibraryPersistBeforeEdit }
+  return { flushHubLibraryPersist }
 }

@@ -244,9 +244,10 @@ export const useOneSentenceStore = defineStore('oneSentence', () => {
 
   function registerUserRequest(
     text: string,
-    status: OneSentenceRequestStatus = 'inflight'
+    status: OneSentenceRequestStatus = 'inflight',
+    preferredRequestId?: string
   ): OneSentenceRequestState {
-    const requestId = safeRandomUUID()
+    const requestId = preferredRequestId?.trim() || safeRandomUUID()
     const messageId = pushMessage('user', text, false, { requestId, status })
     const state: OneSentenceRequestState = {
       requestId,

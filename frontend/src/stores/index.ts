@@ -37,6 +37,7 @@ export { useKnowledgeSpaceStore, type KnowledgeDocument } from './knowledgeSpace
 export { useFeatureFlagsStore } from './featureFlags'
 export { useAdminPanelStore, type AdminPollKey } from './adminPanel'
 export { useKittySessionStore, type KittyWriteLockHolder } from './kittySession'
+export { useKittyPipelineStore } from './kittyPipeline'
 export {
   useOneSentenceStore,
   type OneSentenceChatMessage,

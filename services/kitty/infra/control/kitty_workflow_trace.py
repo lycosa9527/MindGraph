@@ -131,6 +131,18 @@ def kitty_wf_log(
         parts.append(f"uid={uid}")
     if action:
         parts.append(f"action={action}")
+    request_id = None
+    if isinstance(extra, dict):
+        raw_req = extra.get("request_id")
+        if isinstance(raw_req, str) and raw_req.strip():
+            request_id = raw_req.strip()
+            parts.append(f"request={request_id[:8]}")
+        step = extra.get("step")
+        if isinstance(step, str) and step.strip():
+            parts.append(f"step={step.strip()}")
+        module = extra.get("module")
+        if isinstance(module, str) and module.strip():
+            parts.append(f"module={module.strip()}")
     msg_detail = _clip(detail)
     if msg_detail:
         parts.append(f"detail={msg_detail}")

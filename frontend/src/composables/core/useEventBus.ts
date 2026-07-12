@@ -271,6 +271,33 @@ export type EventTypes = {
     action?: string
     at: number
   }
+  /** Unified pipeline step (status / logging protocol). */
+  'kitty:pipeline_step': import('@/composables/kitty/pipeline/types').KittyPipelineEvent
+  'kitty:turn_failed': {
+    ctx: import('@/composables/kitty/pipeline/types').KittyTurnContext
+    module: import('@/composables/kitty/pipeline/types').KittyModule
+    step: import('@/composables/kitty/pipeline/types').KittyStep
+    errorCode: import('@/composables/kitty/pipeline/types').KittyErrorCode
+    detail?: string
+  }
+  'kitty:turn_completed': {
+    ctx: import('@/composables/kitty/pipeline/types').KittyTurnContext
+    lastStep: import('@/composables/kitty/pipeline/types').KittyStep
+  }
+  'kitty:edit_turn_requested': {
+    ctx: import('@/composables/kitty/pipeline/types').KittyTurnContext
+    text: string
+    source: 'asr' | 'text'
+  }
+  'kitty:hub_sync_requested': {
+    ctx: import('@/composables/kitty/pipeline/types').KittyTurnContext
+    reason: 'edit_gate' | 'background' | 'post_mutation'
+  }
+  'kitty:library_persist_requested': {
+    ctx?: import('@/composables/kitty/pipeline/types').KittyTurnContext
+    scope: string
+    reason: 'post_edit' | 'scope_reconnect' | 'unmount'
+  }
   'kitty:diagram_review_annotation': {
     summary: string
     items: Array<{ node_id: string; reason: string; suggestion?: string }>

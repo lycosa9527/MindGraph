@@ -6,6 +6,11 @@ import { applyVerifiedDiagramUpdate } from '@/composables/kitty/diagramEditApply
 import { applyKittyDiagramUpdate } from '@/composables/kitty/kittyAgentActions'
 import { reportKittyDiagramEditFailure } from '@/composables/kitty/kittyDiagramEditFeedback'
 import { formatKittyDiagramUpdateDebug } from '@/composables/kitty/kittyAgentDebug'
+import {
+  recordKittyMutationApply,
+  resolveTurnCtxFromActive,
+} from '@/composables/kitty/pipeline/actionJournal'
+import { markKittyServerStepOk } from '@/composables/kitty/pipeline/editTurn'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import type { DiagramEditExpectedEffect } from '@/utils/diagramEditVerify'
 import type { Connection, DiagramNode } from '@/types'
@@ -55,6 +60,8 @@ async function applyKittyDiagramMutationRequest(
       : formatKittyDiagramUpdateDebug(diagramAction, diagramUpdates)
   const kittySession = useKittySessionStore()
   const lane = payload.lane ?? 'mobile'
+  const ctx = resolveTurnCtxFromActive(payload.hubPersist?.scope?.trim() ?? 'scope', lane)
+  markKittyServerStepOk(ctx, diagramAction)
 
     if (mutationId !== '') {
       const sendAck =
@@ -76,6 +83,17 @@ async function applyKittyDiagramMutationRequest(
               scope: payload.hubPersist.scope ?? null,
             }
           : undefined,
+      })
+
+      recordKittyMutationApply({
+        ctx,
+        action: diagramAction,
+        ok: applyResult.verified,
+        verified: applyResult.verified,
+        hubPersistOk: applyResult.hubPersistOk,
+        ackOk: true,
+        errorCode: applyResult.verificationError,
+        summary,
       })
 
       if (applyResult.verified) {
@@ -116,6 +134,13 @@ async function applyKittyDiagramMutationRequest(
     updates: diagramUpdates,
     summary,
     userSummary: userSummary !== '' ? userSummary : undefined,
+  })
+  recordKittyMutationApply({
+    ctx,
+    action: diagramAction,
+    ok: true,
+    verified: true,
+    summary,
   })
   traceKittyWorkflow(lane, 'diagram_ws', summary, { action: diagramAction })
   applyKittyDiagramUpdate(diagramAction, diagramUpdates)

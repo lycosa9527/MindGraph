@@ -40,6 +40,7 @@ import { useMobileKittyChat } from '@/composables/mobile/useMobileKittyChat'
 import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
 import { useMobileKittyPageLifecycle } from '@/composables/mobile/useMobileKittyPageLifecycle'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
+import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 import type { OneSentenceClarifyChoice } from '@/stores/oneSentence'
 import { mobileDebugLog } from '@/utils/loadMobileDebugConsole'
 
@@ -50,10 +51,11 @@ const authStore = useAuthStore()
 const featureFlagsStore = useFeatureFlagsStore()
 const { flags } = storeToRefs(featureFlagsStore)
 const kittyServerEnabled = computed(() => flags.value?.feature_kitty_agent ?? false)
+const kittyPipelineStore = useKittyPipelineStore()
+const { editPipelineActive } = storeToRefs(kittyPipelineStore)
 
 const showKeyboard = ref(false)
 const draft = ref('')
-const editPipelineActive = ref(false)
 const micDenied = ref(false)
 const cameraDenied = ref(false)
 const isDevBuild = import.meta.env.DEV
@@ -180,7 +182,7 @@ const kittyVoiceState = computed(() => kitty.state.value)
 const kittyLibraryDiagramId = computed(() => mobileKittyContextPreview.value.diagramLibraryId)
 const kittyDiagramDisplayTitle = computed(() => mobileKittyContextPreview.value.diagramDisplayTitle)
 
-const { flushHubLibraryPersist, awaitHubLibraryPersistBeforeEdit } = useKittyMobileHubPersist({
+const { flushHubLibraryPersist } = useKittyMobileHubPersist({
   libraryDiagramId: kittyLibraryDiagramId,
   diagramDisplayTitle: kittyDiagramDisplayTitle,
   isConnected: connected,
@@ -386,7 +388,6 @@ const {
   ensureConnected,
   buildContext: buildMobileKittyContext,
   editPipelineActive,
-  awaitHubLibraryPersistBeforeEdit,
   onDebugLine: pushKittyDebugLine,
 })
 

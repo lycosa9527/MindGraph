@@ -1,7 +1,7 @@
 /**
  * Hub persist waits for context_mutation_ack before advancing fingerprint.
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -130,12 +130,13 @@ describe('useKittyMobileHubPersist', () => {
     expect(updateContext).toHaveBeenCalledTimes(1)
   })
 
-  it('awaitHubLibraryPersistBeforeEdit resolves after matching persist ack', async () => {
+  it('resets library persist fingerprint on Kitty reconnect', async () => {
     const updateContext = vi.fn()
-    const { awaitHubLibraryPersistBeforeEdit } = useKittyMobileHubPersist({
+    const isConnected = ref(false)
+    const { flushHubLibraryPersist } = useKittyMobileHubPersist({
       libraryDiagramId: computed(() => 'lib-abc'),
       diagramDisplayTitle: computed(() => 'Title'),
-      isConnected: ref(true),
+      isConnected,
       buildContext: () => ({
         diagram_type: 'circle_map',
         active_panel: 'none',
@@ -146,20 +147,37 @@ describe('useKittyMobileHubPersist', () => {
       updateContext,
     })
 
-    const promise = awaitHubLibraryPersistBeforeEdit(500)
+    isConnected.value = true
+    flushHubLibraryPersist()
     expect(updateContext).toHaveBeenCalledTimes(1)
-    const idemKey = updateContext.mock.calls[0][1]?.idempotencyKey as string
 
-    eventBusMock.emit('voice:context_mutation_ack', {
+    const ackHandler = onWithOwnerMock.mock.calls.find(
+      (call) => call[0] === 'voice:context_mutation_ack'
+    )?.[1] as
+      | ((data: {
+          ok?: boolean
+          idempotency_key?: string
+          persist_library?: boolean
+          library_snapshot_saved?: boolean
+        }) => void)
+      | undefined
+    const idemKey = updateContext.mock.calls[0][1]?.idempotencyKey as string
+    ackHandler?.({
       ok: true,
-      revision: 4,
       idempotency_key: idemKey,
       persist_library: true,
       library_snapshot_saved: true,
     })
 
-    const result = await promise
-    expect(result.ok).toBe(true)
-    expect(result.revision).toBe(4)
+    updateContext.mockClear()
+    flushHubLibraryPersist()
+    expect(updateContext).not.toHaveBeenCalled()
+
+    isConnected.value = false
+    await nextTick()
+    isConnected.value = true
+    await nextTick()
+    flushHubLibraryPersist()
+    expect(updateContext).toHaveBeenCalledTimes(1)
   })
 })

@@ -172,21 +172,6 @@ export function useKittyMobileDebugBus(options: {
     ownerId
   )
 
-  eventBus.onWithOwner(
-    'voice:context_mutation_ack',
-    (p) => {
-      const ok = p.ok !== false
-      const rev = typeof p.revision === 'number' ? ` rev=${p.revision}` : ''
-      const persist = p.persist_library === true ? ' persist' : ''
-      const err = typeof p.library_snapshot_error === 'string' ? p.library_snapshot_error : p.error
-      const detail = ok
-        ? `hub ack ok${rev}${persist}`
-        : `hub ack failed ${normalizeKittyDebugText(String(err ?? 'rejected'), 80)}`
-      pushLine('#hub', detail)
-    },
-    ownerId
-  )
-
   onUnmounted(() => {
     eventBus.removeAllListenersForOwner(ownerId)
   })
