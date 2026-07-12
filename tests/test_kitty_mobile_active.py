@@ -397,13 +397,15 @@ async def test_kitty_rest_desktop_pairing_active_long_poll_pop() -> None:
 
 
 @pytest.mark.asyncio
-async def test_pop_wait_uses_blpop_when_blocking(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test pop wait uses blpop when blocking."""
+async def test_pop_wait_chunks_blpop_under_socket_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """BLPOP block stays under REDIS_SOCKET_TIMEOUT to avoid client read timeouts."""
 
     class _QueueRedis:
         def __init__(self) -> None:
             """init  ."""
-            self.blpop_timeout: int | None = None
+            self.blpop_timeouts: list[int] = []
 
         async def lpop(self, _key: str) -> None:
             """Lpop."""
@@ -411,14 +413,28 @@ async def test_pop_wait_uses_blpop_when_blocking(monkeypatch: pytest.MonkeyPatch
 
         async def blpop(self, _key: str, timeout: int = 0) -> None:
             """Blpop."""
-            self.blpop_timeout = timeout
+            self.blpop_timeouts.append(timeout)
             return None
 
     fake = _QueueRedis()
+    clock = {"now": 100.0}
+
+    async def blpop_advance(_key: str, timeout: int = 0) -> None:
+        fake.blpop_timeouts.append(timeout)
+        clock["now"] += float(timeout)
+        return None
+
     monkeypatch.setattr(queue, "get_async_redis", lambda: fake)
+    monkeypatch.setattr(queue, "get_async_redis_socket_timeout", lambda: 5.0)
+    monkeypatch.setattr(queue.time, "monotonic", lambda: clock["now"])
+    monkeypatch.setattr(fake, "blpop", blpop_advance)
+
     result = await queue.pop_kitty_desktop_action_wait(3, wait_sec=25)
     assert result is None
-    assert fake.blpop_timeout == 25
+    assert fake.blpop_timeouts
+    assert all(timeout <= 4 for timeout in fake.blpop_timeouts)
+    assert fake.blpop_timeouts[0] == 4
+    assert len(fake.blpop_timeouts) >= 6
 
 
 @pytest.mark.asyncio

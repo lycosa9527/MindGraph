@@ -17,6 +17,7 @@ from websockets.exceptions import ConnectionClosed, ConnectionClosedError, Conne
 
 from services.kitty.asr.fun_asr_realtime import FunAsrRealtimeClient
 from services.kitty.context.messaging import safe_websocket_send
+from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.infra.desktop.kitty_voice_phase_fanout import (
     fanout_voice_phase_from_outbound_type,
     fanout_voice_phase_from_session,
@@ -33,6 +34,10 @@ _TTS_WORKER_KEY = "_kitty_tts_worker"
 _TTS_GENERATION_KEY = "_kitty_tts_generation"
 _TTS_SPEAKING_KEY = "_kitty_tts_speaking"
 _COSYVOICE_KEY = "_cosyvoice_client"
+_ASR_AUDIO_FRAMES_KEY = "_fun_asr_audio_frames"
+_ASR_AUDIO_BYTES_KEY = "_fun_asr_audio_bytes"
+_ASR_FIRST_AUDIO_LOGGED_KEY = "_fun_asr_first_audio_logged"
+_ASR_DROPPED_BEFORE_START_KEY = "_fun_asr_dropped_before_start"
 
 
 def _tts_generation(session: dict[str, Any]) -> int:
@@ -189,6 +194,20 @@ async def speak_kitty_final_reply(
     await queue.put((websocket, message, _tts_generation(session)))
 
 
+def _reset_asr_audio_counters(session: dict[str, Any]) -> None:
+    """Clear per-hold PCM counters used for PTT debug logs."""
+    session[_ASR_AUDIO_FRAMES_KEY] = 0
+    session[_ASR_AUDIO_BYTES_KEY] = 0
+    session[_ASR_FIRST_AUDIO_LOGGED_KEY] = False
+    session[_ASR_DROPPED_BEFORE_START_KEY] = 0
+
+
+def _session_client_lane(session: dict[str, Any]) -> str:
+    """Session client lane."""
+    lane = session.get("_kitty_client_lane")
+    return lane if isinstance(lane, str) and lane.strip() else "—"
+
+
 async def start_session_asr(
     websocket: WebSocket,
     voice_session_id: str,
@@ -200,7 +219,18 @@ async def start_session_asr(
     await safe_websocket_send(websocket, {"type": "tts_interrupted"})
     session = voice_sessions.get(voice_session_id)
     if not session:
+        logger.warning(
+            "Fun-ASR start ignored — no voice session %s",
+            voice_session_id[:12],
+        )
+        kitty_wf_log(
+            "asr_start_rejected",
+            "no_session",
+            voice_session_id=voice_session_id,
+        )
         return
+    lane = _session_client_lane(session)
+    _reset_asr_audio_counters(session)
     existing = session.get("_fun_asr_client")
     session["_fun_asr_client"] = None
     if isinstance(existing, FunAsrRealtimeClient):
@@ -209,9 +239,32 @@ async def start_session_asr(
 
     async def on_partial(text: str, sentence_end: bool) -> None:
         msg_type = "asr_final" if sentence_end else "asr_partial"
+        if sentence_end:
+            kitty_wf_log(
+                "asr_final",
+                text[:120],
+                voice_session_id=voice_session_id,
+            )
+            logger.info(
+                "Fun-ASR final sid=%s lane=%s text=%s",
+                voice_session_id[:12],
+                lane,
+                text[:80],
+            )
         await safe_websocket_send(websocket, {"type": msg_type, "text": text})
 
     async def on_error(err: str) -> None:
+        logger.warning(
+            "Fun-ASR runtime error sid=%s lane=%s: %s",
+            voice_session_id[:12],
+            lane,
+            err,
+        )
+        kitty_wf_log(
+            "asr_error",
+            err,
+            voice_session_id=voice_session_id,
+        )
         await safe_websocket_send(websocket, {"type": "error", "error": f"ASR failed: {err}"})
 
     client = FunAsrRealtimeClient(
@@ -224,9 +277,31 @@ async def start_session_asr(
         await client.start()
         await safe_websocket_send(websocket, {"type": "asr_started"})
         await fanout_voice_phase_from_session(voice_session_id, "listening")
+        hints = language_hints or ["zh"]
+        logger.info(
+            "Fun-ASR started sid=%s lane=%s hints=%s",
+            voice_session_id[:12],
+            lane,
+            hints,
+        )
+        kitty_wf_log(
+            "asr_started",
+            f"lane={lane} hints={hints}",
+            voice_session_id=voice_session_id,
+        )
     except LLM_PIPELINE_ERRORS as exc:
         session["_fun_asr_client"] = None
-        logger.warning("Fun-ASR start failed: %s", exc)
+        logger.warning(
+            "Fun-ASR start failed sid=%s lane=%s: %s",
+            voice_session_id[:12],
+            lane,
+            exc,
+        )
+        kitty_wf_log(
+            "asr_start_failed",
+            str(exc),
+            voice_session_id=voice_session_id,
+        )
         await safe_websocket_send(websocket, {"type": "error", "error": f"ASR start failed: {exc}"})
 
 
@@ -237,11 +312,44 @@ async def feed_session_asr_audio(voice_session_id: str, audio_b64: str) -> None:
         return
     client = session.get("_fun_asr_client")
     if not isinstance(client, FunAsrRealtimeClient):
+        dropped = int(session.get(_ASR_DROPPED_BEFORE_START_KEY) or 0) + 1
+        session[_ASR_DROPPED_BEFORE_START_KEY] = dropped
+        if dropped == 1:
+            lane = _session_client_lane(session)
+            logger.info(
+                "Fun-ASR audio before ready sid=%s lane=%s (client will keep sending)",
+                voice_session_id[:12],
+                lane,
+            )
+            kitty_wf_log(
+                "asr_audio_dropped",
+                f"lane={lane} before_asr_ready",
+                voice_session_id=voice_session_id,
+            )
         return
     try:
         pcm = base64.b64decode(audio_b64)
     except (ValueError, TypeError):
+        logger.debug("Fun-ASR invalid base64 audio sid=%s", voice_session_id[:12])
         return
+    frames = int(session.get(_ASR_AUDIO_FRAMES_KEY) or 0) + 1
+    nbytes = int(session.get(_ASR_AUDIO_BYTES_KEY) or 0) + len(pcm)
+    session[_ASR_AUDIO_FRAMES_KEY] = frames
+    session[_ASR_AUDIO_BYTES_KEY] = nbytes
+    if not session.get(_ASR_FIRST_AUDIO_LOGGED_KEY):
+        session[_ASR_FIRST_AUDIO_LOGGED_KEY] = True
+        lane = _session_client_lane(session)
+        logger.info(
+            "Fun-ASR first audio frame sid=%s lane=%s bytes=%d",
+            voice_session_id[:12],
+            lane,
+            len(pcm),
+        )
+        kitty_wf_log(
+            "asr_audio_first",
+            f"lane={lane} bytes={len(pcm)}",
+            voice_session_id=voice_session_id,
+        )
     await client.send_pcm(pcm)
 
 
@@ -267,6 +375,24 @@ async def stop_session_asr(voice_session_id: str) -> None:
         return
     client = session.get("_fun_asr_client")
     session["_fun_asr_client"] = None
+    frames = int(session.get(_ASR_AUDIO_FRAMES_KEY) or 0)
+    nbytes = int(session.get(_ASR_AUDIO_BYTES_KEY) or 0)
+    dropped = int(session.get(_ASR_DROPPED_BEFORE_START_KEY) or 0)
+    lane = _session_client_lane(session)
+    logger.info(
+        "Fun-ASR stop sid=%s lane=%s frames=%d bytes=%d dropped_before_ready=%d has_client=%s",
+        voice_session_id[:12],
+        lane,
+        frames,
+        nbytes,
+        dropped,
+        isinstance(client, FunAsrRealtimeClient),
+    )
+    kitty_wf_log(
+        "asr_stop_summary",
+        f"lane={lane} frames={frames} bytes={nbytes} dropped={dropped}",
+        voice_session_id=voice_session_id,
+    )
     if not isinstance(client, FunAsrRealtimeClient):
         return
     try:

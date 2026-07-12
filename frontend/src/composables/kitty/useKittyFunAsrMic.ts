@@ -257,7 +257,7 @@ export function useKittyFunAsrMic(options: {
     refreshDebugCtxState()
   }
 
-  /** Sync entry from pointerdown — bless warm ctx or start first getUserMedia. */
+  /** Sync entry from an activation-capable call stack (see kittyWebKitUserActivation). */
   function prepareMicFromUserGesture(): Promise<boolean> {
     if (warmReady && audioContext.value && micStream.value) {
       if (audioContext.value.state !== 'closed') {
@@ -285,6 +285,19 @@ export function useKittyFunAsrMic(options: {
       }
     })()
     return warmInFlight
+  }
+
+  /**
+   * Re-bless an existing AudioContext inside an activation-triggering handler
+   * (touch pointerup / touchend / keydown / mouse pointerdown).
+   */
+  function blessFromUserActivation(): void {
+    const ctx = audioContext.value
+    if (!ctx || ctx.state === 'closed') {
+      return
+    }
+    blessAudioContextSync(ctx)
+    refreshDebugCtxState()
   }
 
   async function ensureCaptureGraph(): Promise<boolean> {
@@ -431,6 +444,7 @@ export function useKittyFunAsrMic(options: {
     debugFramesSent,
     debugLastError,
     prepareMicFromUserGesture,
+    blessFromUserActivation,
     startListening,
     stopListening,
     toggleListening,

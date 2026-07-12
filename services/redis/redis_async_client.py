@@ -179,6 +179,16 @@ def get_async_redis() -> aioredis.Redis:
     return _AsyncRedisState.client
 
 
+def get_async_redis_socket_timeout() -> float:
+    """Return the configured async Redis socket timeout (seconds).
+
+    Blocking commands such as BLPOP must use a shorter block than this value
+    (or a dedicated client) to avoid ``Timeout reading from ...`` errors.
+    """
+
+    return float(os.getenv("REDIS_SOCKET_TIMEOUT", str(_DEFAULT_SOCKET_TIMEOUT)))
+
+
 async def async_ping(timeout: float = 1.0) -> bool:
     """Return ``True`` when the async pool can round-trip a PING within ``timeout``.
 

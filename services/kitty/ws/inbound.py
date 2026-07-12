@@ -98,6 +98,20 @@ async def dispatch_kitty_ws_inbound_message(
             language_hints = [str(item) for item in hints_raw if str(item).strip()]
         elif str(message.get("language") or "").strip().lower().startswith("zh"):
             language_hints = ["zh"]
+        sess = voice_sessions.get(voice_session_id) or {}
+        lane_raw = sess.get("_kitty_client_lane")
+        lane = lane_raw if isinstance(lane_raw, str) and lane_raw.strip() else "—"
+        logger.info(
+            "Kitty PTT asr_start sid=%s lane=%s hints=%s",
+            voice_session_id[:12],
+            lane,
+            language_hints or ["zh"],
+        )
+        kitty_wf_log(
+            "asr_start",
+            f"lane={lane} hints={language_hints or ['zh']}",
+            voice_session_id=voice_session_id,
+        )
         await start_session_asr(
             websocket,
             voice_session_id,
@@ -109,6 +123,11 @@ async def dispatch_kitty_ws_inbound_message(
         audio_data = message.get("data")
         if isinstance(audio_data, str) and audio_data:
             if len(audio_data) > KITTY_WS_MAX_AUDIO_B64_CHARS:
+                logger.warning(
+                    "Kitty PTT asr_audio too large sid=%s chars=%d",
+                    voice_session_id[:12],
+                    len(audio_data),
+                )
                 await safe_websocket_send(
                     websocket,
                     {"type": "error", "error": "Audio frame too large"},
@@ -118,6 +137,19 @@ async def dispatch_kitty_ws_inbound_message(
         return "continue"
 
     if msg_type == "asr_stop":
+        sess = voice_sessions.get(voice_session_id) or {}
+        lane_raw = sess.get("_kitty_client_lane")
+        lane = lane_raw if isinstance(lane_raw, str) and lane_raw.strip() else "—"
+        logger.info(
+            "Kitty PTT asr_stop sid=%s lane=%s",
+            voice_session_id[:12],
+            lane,
+        )
+        kitty_wf_log(
+            "asr_stop",
+            f"lane={lane} client release",
+            voice_session_id=voice_session_id,
+        )
         await stop_session_asr(voice_session_id)
         await safe_websocket_send(websocket, {"type": "asr_stopped"})
         await fanout_voice_phase_from_outbound_type(voice_session_id, "asr_stopped")

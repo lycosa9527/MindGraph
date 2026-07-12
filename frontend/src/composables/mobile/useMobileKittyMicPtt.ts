@@ -1,20 +1,38 @@
 /**
  * Push-to-talk for MobileKittyPage (Fun-ASR).
  *
- * Solid mobile path (GAIA + BotFramework-WebChat + ptt-radio):
- * - pointerdown / pointerup / pointercancel only (covers touch + mouse)
- * - Sync AudioContext bless + mic warm on pointerdown (before any await)
- * - WS connect runs in parallel with mic warm
- * - Never disable the mic button while connecting (iOS pointercancel)
+ * Follows WebKit / HTML user-activation rules:
+ * https://webkit.org/blog/13862/the-user-activation-api/
+ *
+ * - Mouse: pointerdown is activation-triggering → warm/bless here.
+ * - Touch/pen: pointerdown is NOT activation-triggering; pointerup / touchend are.
+ *   We still start getUserMedia on pointerdown (same call stack), then re-bless on
+ *   pointerup/touchend and rely on sticky activation + capturing unlock
+ *   (WebKit bug 180680) so PCM can flow during the hold after the stream is live.
+ * - Space keydown is activation-triggering.
+ * - Never disable the mic button while connecting (iOS pointercancel).
  */
 import { type Ref, onUnmounted, ref } from 'vue'
+
+import {
+  hasStickyUserActivation,
+  isActivationTriggeringEvent,
+  pointerDownGrantsActivation,
+  pointerUpGrantsActivation,
+} from '@/composables/kitty/kittyWebKitUserActivation'
 
 export interface UseMobileKittyMicPttFunAsr {
   listening: Ref<boolean>
   prepareMicFromUserGesture: () => Promise<boolean>
+  blessFromUserActivation: () => void
   startListening: () => Promise<void>
   stopListening: () => void
 }
+
+export type MobileKittyPttAbortReason =
+  | 'released_early'
+  | 'connect_failed'
+  | 'mic_denied'
 
 export interface UseMobileKittyMicPttOptions {
   funAsr: UseMobileKittyMicPttFunAsr
@@ -25,6 +43,8 @@ export interface UseMobileKittyMicPttOptions {
   ensureConnected: () => Promise<boolean>
   onMicDenied: () => void
   onMicAllowed: () => void
+  /** Fired when PTT warm-up completes but listening never starts. */
+  onPttAborted?: (reason: MobileKittyPttAbortReason) => void
 }
 
 export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
@@ -37,12 +57,14 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     ensureConnected,
     onMicDenied,
     onMicAllowed,
+    onPttAborted,
   } = options
 
   const voiceStartInFlight = ref(false)
   const pttPointerActive = ref(false)
   let spacePttActive = false
   let kittyMicKbBound = false
+  let activationPrimeBound = false
   let activePointerId: number | null = null
   let captureEl: HTMLElement | null = null
   let windowPointerBound = false
@@ -140,6 +162,14 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     activePointerId = null
   }
 
+  /** Bless only inside activation-triggering events (WebKit list). */
+  function blessIfActivationTriggering(ev: Event): void {
+    if (!isActivationTriggeringEvent(ev)) {
+      return
+    }
+    funAsr.blessFromUserActivation()
+  }
+
   async function beginKittyMicFromUser(warmPromise: Promise<boolean>): Promise<void> {
     if (!kittyServerEnabled.value || micDenied.value) {
       return
@@ -150,12 +180,22 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     voiceStartInFlight.value = true
     try {
       const [connectedOk, warmOk] = await Promise.all([ensureConnected(), warmPromise])
-      if (!connectedOk || !warmOk || !isKittyMicHoldActive()) {
-        if (!warmOk) {
-          onMicDenied()
-        }
+      if (!warmOk) {
+        onMicDenied()
+        onPttAborted?.('mic_denied')
         return
       }
+      if (!connectedOk) {
+        onPttAborted?.('connect_failed')
+        return
+      }
+      if (!isKittyMicHoldActive()) {
+        // Finger lifted during warm/connect — common on first mic permission prompt.
+        onPttAborted?.('released_early')
+        return
+      }
+      // Sticky / capturing unlock may have made the context runnable while we awaited.
+      funAsr.blessFromUserActivation()
       await funAsr.startListening()
       if (!isKittyMicHoldActive()) {
         funAsr.stopListening()
@@ -164,6 +204,7 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       }
     } catch {
       onMicDenied()
+      onPttAborted?.('mic_denied')
     } finally {
       voiceStartInFlight.value = false
     }
@@ -179,7 +220,11 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     }
   }
 
-  function finishPointerPtt(): void {
+  function finishPointerPtt(ev?: PointerEvent): void {
+    if (ev && pointerUpGrantsActivation(ev)) {
+      // Touch/pen pointerup is activation-triggering — unlock Web Audio here.
+      blessIfActivationTriggering(ev)
+    }
     pttPointerActive.value = false
     unbindWindowPointerEnd()
     releasePointerCaptureSafe()
@@ -195,7 +240,7 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     if (activePointerId !== null && ev.pointerId !== activePointerId) {
       return
     }
-    finishPointerPtt()
+    finishPointerPtt(ev)
   }
 
   function onKittyMicPointerDown(ev: PointerEvent): void {
@@ -218,10 +263,14 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     ev.preventDefault()
     bindWindowPointerEnd()
 
-    // Must stay synchronous in this handler (iOS user-activation).
+    // Start getUserMedia + AudioContext from this call stack (no await before).
+    // Mouse pointerdown grants activation; touch relies on sticky/capturing/pointerup.
     let warmPromise: Promise<boolean>
     try {
       warmPromise = funAsr.prepareMicFromUserGesture()
+      if (pointerDownGrantsActivation(ev) || hasStickyUserActivation()) {
+        funAsr.blessFromUserActivation()
+      }
     } catch {
       finishPointerPtt()
       onMicDenied()
@@ -234,7 +283,15 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     if (activePointerId !== null && ev.pointerId !== activePointerId) {
       return
     }
-    finishPointerPtt()
+    finishPointerPtt(ev)
+  }
+
+  /** WebKit lists touchend explicitly as activation-triggering. */
+  function onKittyMicTouchEnd(ev: TouchEvent): void {
+    if (!pttPointerActive.value) {
+      return
+    }
+    blessIfActivationTriggering(ev)
   }
 
   function onKittySpacePttKeyDown(ev: KeyboardEvent): void {
@@ -255,6 +312,7 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       return
     }
     spacePttActive = true
+    // keydown is activation-triggering.
     let warmPromise: Promise<boolean>
     try {
       warmPromise = funAsr.prepareMicFromUserGesture()
@@ -286,6 +344,52 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     endKittyMicFromUser()
   }
 
+  /**
+   * Page-level prime: first activation-triggering gesture (any control) warms mic
+   * so a later touch PTT hold already has sticky activation + running context.
+   */
+  function onActivationPrimeEvent(ev: Event): void {
+    if (!kittyServerEnabled.value || micDenied.value) {
+      return
+    }
+    if (!isActivationTriggeringEvent(ev)) {
+      return
+    }
+    try {
+      void funAsr.prepareMicFromUserGesture()
+    } catch {
+      /* ignore prime failures */
+    }
+    funAsr.blessFromUserActivation()
+  }
+
+  function bindMicActivationPrime(): void {
+    if (activationPrimeBound || typeof window === 'undefined') {
+      return
+    }
+    activationPrimeBound = true
+    // Exact WebKit activation-triggering set (plus click, which follows a gesture).
+    window.addEventListener('keydown', onActivationPrimeEvent, true)
+    window.addEventListener('mousedown', onActivationPrimeEvent, true)
+    window.addEventListener('pointerdown', onActivationPrimeEvent, true)
+    window.addEventListener('pointerup', onActivationPrimeEvent, true)
+    window.addEventListener('touchend', onActivationPrimeEvent, true)
+    window.addEventListener('click', onActivationPrimeEvent, true)
+  }
+
+  function unbindMicActivationPrime(): void {
+    if (!activationPrimeBound || typeof window === 'undefined') {
+      return
+    }
+    activationPrimeBound = false
+    window.removeEventListener('keydown', onActivationPrimeEvent, true)
+    window.removeEventListener('mousedown', onActivationPrimeEvent, true)
+    window.removeEventListener('pointerdown', onActivationPrimeEvent, true)
+    window.removeEventListener('pointerup', onActivationPrimeEvent, true)
+    window.removeEventListener('touchend', onActivationPrimeEvent, true)
+    window.removeEventListener('click', onActivationPrimeEvent, true)
+  }
+
   function bindKittyMicKeyboard(): void {
     if (kittyMicKbBound || typeof window === 'undefined') {
       return
@@ -294,6 +398,7 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     window.addEventListener('keydown', onKittySpacePttKeyDown, true)
     window.addEventListener('keyup', onKittySpacePttKeyUp, true)
     document.addEventListener('visibilitychange', handleKittyVisibilityForMic)
+    bindMicActivationPrime()
   }
 
   function unbindKittyMicKeyboard(): void {
@@ -304,6 +409,7 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     window.removeEventListener('keydown', onKittySpacePttKeyDown, true)
     window.removeEventListener('keyup', onKittySpacePttKeyUp, true)
     document.removeEventListener('visibilitychange', handleKittyVisibilityForMic)
+    unbindMicActivationPrime()
   }
 
   function teardownMicPtt(): void {
@@ -321,6 +427,7 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     pttPointerActive,
     onKittyMicPointerDown,
     onKittyMicPointerUp,
+    onKittyMicTouchEnd,
     bindKittyMicKeyboard,
     teardownMicPtt,
   }

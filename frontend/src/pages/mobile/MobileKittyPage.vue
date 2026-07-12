@@ -365,7 +365,85 @@ useMobileKittyLiveContextPoll({
   onDebugLine: pushKittyDebugLine,
 })
 
+const {
+  voiceStartInFlight,
+  pttPointerActive,
+  onKittyMicPointerDown,
+  onKittyMicPointerUp,
+  onKittyMicTouchEnd,
+  bindKittyMicKeyboard,
+  teardownMicPtt,
+} = useMobileKittyMicPtt({
+  funAsr: {
+    listening: funAsr.listening,
+    prepareMicFromUserGesture: funAsr.prepareMicFromUserGesture,
+    blessFromUserActivation: funAsr.blessFromUserActivation,
+    startListening: funAsr.startListening,
+    stopListening: funAsr.stopListening,
+  },
+  kittyServerEnabled,
+  micDenied,
+  showKeyboard,
+  connected,
+  ensureConnected,
+  onMicDenied: () => {
+    micDenied.value = true
+  },
+  onMicAllowed: () => {
+    micDenied.value = false
+  },
+  onPttAborted: (reason) => {
+    pushKittyDebugLine('#ptt', `abort:${reason}`)
+  },
+})
+
 let scopeReconnectTimer: ReturnType<typeof setTimeout> | null = null
+let deferredScopeReconnect: string | null = null
+
+function isKittyMicSessionBusy(): boolean {
+  return (
+    funAsr.listening.value ||
+    kitty.isVoiceActive.value ||
+    editPipelineActive.value ||
+    pttPointerActive.value ||
+    voiceStartInFlight.value
+  )
+}
+
+function scheduleScopeReconnect(scope: string): void {
+  if (scopeReconnectTimer != null) {
+    clearTimeout(scopeReconnectTimer)
+  }
+  scopeReconnectTimer = setTimeout(() => {
+    scopeReconnectTimer = null
+    void (async () => {
+      if (isKittyMicSessionBusy()) {
+        deferredScopeReconnect = scope
+        pushKittyDebugLine('#scope', 'defer reconnect — PTT/voice busy')
+        return
+      }
+      if (scope !== kittyPairScope.value) {
+        return
+      }
+      await hydrateLibraryScopeIfNeeded(scope)
+      const wasConnected = kitty.isConnected.value
+      const wasConnecting = kitty.state.value === 'connecting'
+      if (!wasConnected && !wasConnecting) {
+        return
+      }
+      if (kitty.diagramSessionId.value === scope && kitty.isConnected.value) {
+        syncMobileKittyContextNow()
+        return
+      }
+      flushHubLibraryPersist()
+      syncMobileKittyContextNow()
+      await kitty.stopConversation()
+      if (wasConnected || wasConnecting) {
+        void ensureConnected()
+      }
+    })()
+  }, 350)
+}
 
 watch(
   () => bootstrapPayload.value?.context?.selected_llm_model,
@@ -387,69 +465,50 @@ watch(
 
     // Already on this scope's socket — hydrate only, do not tear down WS.
     if (kitty.diagramSessionId.value === scope && kitty.isConnected.value) {
+      deferredScopeReconnect = null
       void hydrateLibraryScopeIfNeeded(scope)
       syncMobileKittyContextNow()
       return
     }
 
-    // Never preempt ASR / edit pipeline with a scope reconnect.
-    if (funAsr.listening.value || kitty.isVoiceActive.value || editPipelineActive.value) {
-      pushKittyDebugLine('#scope', 'defer reconnect — voice/edit active')
+    // Never preempt ASR / PTT warm-up / edit pipeline with a scope reconnect.
+    if (isKittyMicSessionBusy()) {
+      deferredScopeReconnect = scope
+      pushKittyDebugLine('#scope', 'defer reconnect — PTT/voice/edit active')
       return
     }
 
-    if (scopeReconnectTimer != null) {
-      clearTimeout(scopeReconnectTimer)
-    }
-    scopeReconnectTimer = setTimeout(() => {
-      scopeReconnectTimer = null
-      void (async () => {
-        if (funAsr.listening.value || kitty.isVoiceActive.value || editPipelineActive.value) {
-          return
-        }
-        await hydrateLibraryScopeIfNeeded(scope)
-        const wasConnected = kitty.isConnected.value
-        const wasConnecting = kitty.state.value === 'connecting'
-        if (!wasConnected && !wasConnecting) {
-          return
-        }
-        if (kitty.diagramSessionId.value === scope && kitty.isConnected.value) {
-          syncMobileKittyContextNow()
-          return
-        }
-        flushHubLibraryPersist()
-        syncMobileKittyContextNow()
-        await kitty.stopConversation()
-        if (wasConnected || wasConnecting) {
-          void ensureConnected()
-        }
-      })()
-    }, 350)
+    deferredScopeReconnect = null
+    scheduleScopeReconnect(scope)
   },
   { flush: 'post' }
 )
 
-const {
-  voiceStartInFlight,
-  pttPointerActive,
-  onKittyMicPointerDown,
-  onKittyMicPointerUp,
-  bindKittyMicKeyboard,
-  teardownMicPtt,
-} = useMobileKittyMicPtt({
-  funAsr,
-  kittyServerEnabled,
-  micDenied,
-  showKeyboard,
-  connected,
-  ensureConnected,
-  onMicDenied: () => {
-    micDenied.value = true
-  },
-  onMicAllowed: () => {
-    micDenied.value = false
-  },
-})
+// Flush scope reconnect after PTT / ASR / edit pipeline goes idle.
+watch(
+  [pttPointerActive, voiceStartInFlight, () => funAsr.listening.value, editPipelineActive],
+  () => {
+    if (isKittyMicSessionBusy()) {
+      return
+    }
+    const pending = deferredScopeReconnect
+    if (pending == null || pending === '') {
+      return
+    }
+    if (pending !== kittyPairScope.value) {
+      deferredScopeReconnect = null
+      return
+    }
+    if (kitty.diagramSessionId.value === pending && kitty.isConnected.value) {
+      deferredScopeReconnect = null
+      syncMobileKittyContextNow()
+      return
+    }
+    deferredScopeReconnect = null
+    pushKittyDebugLine('#scope', 'flush deferred reconnect')
+    scheduleScopeReconnect(pending)
+  }
+)
 
 const kittyMicDebugLine = computed(() => {
   const wsState = kitty.ws.value?.readyState
@@ -728,6 +787,7 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
           @pointerdown="onKittyMicPointerDown"
           @pointerup="onKittyMicPointerUp"
           @pointercancel="onKittyMicPointerUp"
+          @touchend="onKittyMicTouchEnd"
           @contextmenu.prevent
         >
           <Loader2

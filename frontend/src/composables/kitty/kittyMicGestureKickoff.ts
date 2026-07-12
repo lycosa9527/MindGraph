@@ -1,12 +1,21 @@
 /**
- * iOS-safe Kitty mic kickoff helpers (gesture-stack unlock).
+ * iOS Safari Kitty mic kickoff — follows WebKit user-activation rules.
  *
- * Cross-checked patterns:
- * - Microsoft BotFramework-WebChat: reuse one AudioContext; resume() on pointerdown
- * - ptt-radio: warm getUserMedia once; PTT toggles track.enabled
- * - AMD GAIA mobile voice: getUserMedia sync in pointerdown; pointer events only
+ * References:
+ * - https://webkit.org/blog/13862/the-user-activation-api/
+ * - https://webkit.org/blog/6784/new-video-policies-for-ios/
+ * - https://bugs.webkit.org/show_bug.cgi?id=180680 (AudioContext while capturing)
  *
- * Orange mic LED ≠ PCM flowing. Web Audio must be blessed in the gesture stack.
+ * Rules we follow:
+ * 1. Start getUserMedia from the gesture call stack (no await before the call).
+ * 2. Create AudioContext in that same stack; bless sync (silent buffer + resume).
+ * 3. After the stream resolves, the document is capturing — bless again (WebKit
+ *    allows AudioContext start while getUserMedia capture is active).
+ * 4. Do not treat touch pointerdown as activation; callers must also bless on
+ *    pointerup / touchend (activation-triggering for non-mouse) or rely on sticky
+ *    activation from a prior qualifying gesture.
+ *
+ * Orange mic LED ≠ PCM flowing. Web Audio must be running (state === "running").
  */
 export interface KittyMicGestureAssets {
   stream: MediaStream
@@ -44,7 +53,10 @@ export function connectMutedDestination(ctx: AudioContext, node: AudioNode): Gai
   return mute
 }
 
-/** Sync Web Audio unlock — must run inside pointerdown (no await before this). */
+/**
+ * Sync Web Audio unlock — call only inside an activation-triggering handler
+ * (or after sticky activation / while media capture is active).
+ */
 export function blessAudioContextSync(ctx: AudioContext): void {
   if (ctx.state === 'closed') {
     return
@@ -69,15 +81,26 @@ export function setMicTracksEnabled(stream: MediaStream, enabled: boolean): void
 }
 
 /**
- * Create AudioContext + ScriptProcessor (synced to destination) + getUserMedia
- * from the current user-gesture turn. Attach MediaStream when the permission
- * promise resolves.
+ * Kick off getUserMedia + AudioContext from the current call stack.
+ * The returned promise resolves after the stream is attached; callers may await
+ * it after other async work (WS connect) without losing the initial gesture call.
  */
 export function kickoffKittyMicGestureAssets(): Promise<KittyMicGestureAssets> {
   if (!navigator.mediaDevices?.getUserMedia) {
     return Promise.reject(new Error('mic_unavailable'))
   }
 
+  // 1) Start permission / capture from this call stack (no await before this).
+  const streamPromise = navigator.mediaDevices.getUserMedia({
+    audio: {
+      channelCount: 1,
+      echoCancellation: true,
+      noiseSuppression: true,
+    },
+  })
+
+  // 2) Build the Web Audio graph in the same stack; may stay suspended until
+  //    sticky activation, a later activation-triggering event, or capturing unlock.
   const AudioCtx = resolveAudioContextConstructor()
   const audioContext = new AudioCtx()
   const scriptProcessor = audioContext.createScriptProcessor(
@@ -88,18 +111,14 @@ export function kickoffKittyMicGestureAssets(): Promise<KittyMicGestureAssets> {
   const silentGain = connectMutedDestination(audioContext, scriptProcessor)
   blessAudioContextSync(audioContext)
 
-  const streamPromise = navigator.mediaDevices.getUserMedia({
-    audio: {
-      channelCount: 1,
-      echoCancellation: true,
-      noiseSuppression: true,
-    },
-  })
-
   return (async () => {
     try {
-      blessAudioContextSync(audioContext)
       const stream = await streamPromise
+      // 3) Document is now capturing — WebKit allows AudioContext start (180680).
+      blessAudioContextSync(audioContext)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume().catch(() => undefined)
+      }
       const mediaSource = audioContext.createMediaStreamSource(stream)
       mediaSource.connect(scriptProcessor)
       blessAudioContextSync(audioContext)

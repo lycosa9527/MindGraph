@@ -7,6 +7,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
 
+function makeFunAsr(overrides: {
+  listening: { value: boolean }
+  prepareMicFromUserGesture: ReturnType<typeof vi.fn>
+  startListening: ReturnType<typeof vi.fn>
+  stopListening: ReturnType<typeof vi.fn>
+}) {
+  return {
+    ...overrides,
+    blessFromUserActivation: vi.fn(),
+  }
+}
+
 describe('useMobileKittyMicPtt', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -29,6 +41,12 @@ describe('useMobileKittyMicPtt', () => {
     const ensureConnected = vi.fn(async () => true)
     const onMicAllowed = vi.fn()
     const onMicDenied = vi.fn()
+    const funAsr = makeFunAsr({
+      listening,
+      prepareMicFromUserGesture,
+      startListening,
+      stopListening,
+    })
 
     const {
       pttPointerActive,
@@ -36,7 +54,7 @@ describe('useMobileKittyMicPtt', () => {
       onKittyMicPointerUp,
       teardownMicPtt,
     } = useMobileKittyMicPtt({
-      funAsr: { listening, prepareMicFromUserGesture, startListening, stopListening },
+      funAsr,
       kittyServerEnabled: { value: true },
       micDenied: { value: false },
       showKeyboard: { value: false },
@@ -51,11 +69,16 @@ describe('useMobileKittyMicPtt', () => {
     btn.releasePointerCapture = vi.fn()
     btn.hasPointerCapture = vi.fn(() => true)
 
-    const down = new PointerEvent('pointerdown', { button: 0, pointerId: 1 })
+    const down = new PointerEvent('pointerdown', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'mouse',
+    })
     Object.defineProperty(down, 'currentTarget', { value: btn })
     onKittyMicPointerDown(down)
     expect(pttPointerActive.value).toBe(true)
     expect(prepareMicFromUserGesture).toHaveBeenCalled()
+    expect(funAsr.blessFromUserActivation).toHaveBeenCalled()
 
     await nextTick()
     await Promise.resolve()
@@ -65,10 +88,73 @@ describe('useMobileKittyMicPtt', () => {
     expect(onMicAllowed).toHaveBeenCalled()
     expect(stopListening).not.toHaveBeenCalled()
 
-    const up = new PointerEvent('pointerup', { button: 0, pointerId: 1 })
+    const up = new PointerEvent('pointerup', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'mouse',
+    })
     Object.defineProperty(up, 'currentTarget', { value: btn })
     onKittyMicPointerUp(up)
     expect(pttPointerActive.value).toBe(false)
+    expect(stopListening).toHaveBeenCalled()
+
+    teardownMicPtt()
+  })
+
+  it('blesses on touch pointerup (WebKit activation-triggering)', async () => {
+    const listening = ref(false)
+    const prepareMicFromUserGesture = vi.fn(async () => true)
+    const startListening = vi.fn(async () => {
+      listening.value = true
+    })
+    const stopListening = vi.fn(() => {
+      listening.value = false
+    })
+    const funAsr = makeFunAsr({
+      listening,
+      prepareMicFromUserGesture,
+      startListening,
+      stopListening,
+    })
+
+    const { onKittyMicPointerDown, onKittyMicPointerUp, teardownMicPtt } = useMobileKittyMicPtt({
+      funAsr,
+      kittyServerEnabled: { value: true },
+      micDenied: { value: false },
+      showKeyboard: { value: false },
+      connected: { value: true },
+      ensureConnected: vi.fn(async () => true),
+      onMicDenied: vi.fn(),
+      onMicAllowed: vi.fn(),
+    })
+
+    const btn = document.createElement('button')
+    btn.setPointerCapture = vi.fn()
+    btn.releasePointerCapture = vi.fn()
+    btn.hasPointerCapture = vi.fn(() => true)
+
+    const down = new PointerEvent('pointerdown', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'touch',
+    })
+    Object.defineProperty(down, 'currentTarget', { value: btn })
+    onKittyMicPointerDown(down)
+    expect(prepareMicFromUserGesture).toHaveBeenCalled()
+
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    funAsr.blessFromUserActivation.mockClear()
+    const up = new PointerEvent('pointerup', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'touch',
+    })
+    Object.defineProperty(up, 'currentTarget', { value: btn })
+    onKittyMicPointerUp(up)
+    expect(funAsr.blessFromUserActivation).toHaveBeenCalled()
     expect(stopListening).toHaveBeenCalled()
 
     teardownMicPtt()
@@ -88,9 +174,15 @@ describe('useMobileKittyMicPtt', () => {
           resolveConnect = resolve
         })
     )
+    const funAsr = makeFunAsr({
+      listening,
+      prepareMicFromUserGesture,
+      startListening,
+      stopListening,
+    })
 
     const { pttPointerActive, onKittyMicPointerDown, teardownMicPtt } = useMobileKittyMicPtt({
-      funAsr: { listening, prepareMicFromUserGesture, startListening, stopListening },
+      funAsr,
       kittyServerEnabled: { value: true },
       micDenied: { value: false },
       showKeyboard: { value: false },
@@ -103,7 +195,11 @@ describe('useMobileKittyMicPtt', () => {
     const btn = document.createElement('button')
     btn.setPointerCapture = vi.fn()
     btn.hasPointerCapture = vi.fn(() => true)
-    const down = new PointerEvent('pointerdown', { button: 0, pointerId: 1 })
+    const down = new PointerEvent('pointerdown', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'mouse',
+    })
     Object.defineProperty(down, 'currentTarget', { value: btn })
     onKittyMicPointerDown(down)
 
@@ -128,9 +224,15 @@ describe('useMobileKittyMicPtt', () => {
       listening.value = true
     })
     const stopListening = vi.fn()
+    const funAsr = makeFunAsr({
+      listening,
+      prepareMicFromUserGesture,
+      startListening,
+      stopListening,
+    })
 
     const { onKittyMicPointerDown, teardownMicPtt } = useMobileKittyMicPtt({
-      funAsr: { listening, prepareMicFromUserGesture, startListening, stopListening },
+      funAsr,
       kittyServerEnabled: { value: false },
       micDenied: { value: false },
       showKeyboard: { value: false },
@@ -142,7 +244,11 @@ describe('useMobileKittyMicPtt', () => {
 
     const btn = document.createElement('button')
     btn.setPointerCapture = vi.fn()
-    const down = new PointerEvent('pointerdown', { button: 0, pointerId: 1 })
+    const down = new PointerEvent('pointerdown', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'touch',
+    })
     Object.defineProperty(down, 'currentTarget', { value: btn })
     onKittyMicPointerDown(down)
     await Promise.resolve()
@@ -156,6 +262,7 @@ describe('useMobileKittyMicPtt', () => {
     const prepareMicFromUserGesture = vi.fn(async () => true)
     const startListening = vi.fn()
     const stopListening = vi.fn()
+    const onPttAborted = vi.fn()
     let resolveConnect: ((ok: boolean) => void) | undefined
     const ensureConnected = vi.fn(
       () =>
@@ -163,13 +270,19 @@ describe('useMobileKittyMicPtt', () => {
           resolveConnect = resolve
         })
     )
+    const funAsr = makeFunAsr({
+      listening,
+      prepareMicFromUserGesture,
+      startListening,
+      stopListening,
+    })
 
     const {
       onKittyMicPointerDown,
       onKittyMicPointerUp,
       teardownMicPtt,
     } = useMobileKittyMicPtt({
-      funAsr: { listening, prepareMicFromUserGesture, startListening, stopListening },
+      funAsr,
       kittyServerEnabled: { value: true },
       micDenied: { value: false },
       showKeyboard: { value: false },
@@ -177,6 +290,7 @@ describe('useMobileKittyMicPtt', () => {
       ensureConnected,
       onMicDenied: vi.fn(),
       onMicAllowed: vi.fn(),
+      onPttAborted,
     })
 
     const btn = document.createElement('button')
@@ -184,11 +298,19 @@ describe('useMobileKittyMicPtt', () => {
     btn.releasePointerCapture = vi.fn()
     btn.hasPointerCapture = vi.fn(() => true)
 
-    const down = new PointerEvent('pointerdown', { button: 0, pointerId: 1 })
+    const down = new PointerEvent('pointerdown', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'touch',
+    })
     Object.defineProperty(down, 'currentTarget', { value: btn })
     onKittyMicPointerDown(down)
 
-    const up = new PointerEvent('pointerup', { button: 0, pointerId: 1 })
+    const up = new PointerEvent('pointerup', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'touch',
+    })
     Object.defineProperty(up, 'currentTarget', { value: btn })
     onKittyMicPointerUp(up)
 
@@ -198,6 +320,7 @@ describe('useMobileKittyMicPtt', () => {
     await Promise.resolve()
 
     expect(startListening).not.toHaveBeenCalled()
+    expect(onPttAborted).toHaveBeenCalledWith('released_early')
     teardownMicPtt()
   })
 })

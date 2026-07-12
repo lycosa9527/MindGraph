@@ -30,7 +30,7 @@ from services.kitty.infra.redis.kitty_redis_keys import (
     kitty_desktop_action_queue_key,
 )
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
-from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_async_client import get_async_redis, get_async_redis_socket_timeout
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,19 @@ _KITTY_DESKTOP_ACTION_QUEUE_MAX_LEN = 32
 _KITTY_DESKTOP_ACTION_BLPOP_MAX_SEC = 30
 _KITTY_DESKTOP_ACTION_EXPLICIT_TTL = 120
 _KITTY_DESKTOP_ACTION_MAX_AGE_SEC = 120
+
+
+def _blpop_chunk_timeout_sec(wait_remaining: float) -> int:
+    """BLPOP block must stay under Redis ``socket_timeout`` or the client raises.
+
+    Shared async pool defaults to ``REDIS_SOCKET_TIMEOUT=5``. A single BLPOP with
+    ``timeout=25`` then retries (~15s) and logs ``Timeout reading from localhost:6379``.
+    Chunk under the socket timeout and loop for the caller's ``wait_sec``.
+    """
+    socket_timeout = get_async_redis_socket_timeout()
+    # Leave 1s headroom so the server returns before the client socket deadline.
+    max_chunk = max(1, min(_KITTY_DESKTOP_ACTION_BLPOP_MAX_SEC, int(socket_timeout) - 1))
+    return max(1, min(max_chunk, int(max(1.0, wait_remaining))))
 
 
 def _decode_action_raw(raw: Any) -> Optional[Dict[str, Any]]:
@@ -237,37 +250,42 @@ async def pop_kitty_desktop_action_wait(
                     user_id,
                     data.get("kind"),
                 )
-        block = min(max(1, int(wait_sec)), _KITTY_DESKTOP_ACTION_BLPOP_MAX_SEC)
-        result = await cast(Awaitable[Any], redis.blpop(key, timeout=block))
-        if not result:
-            return None
-        if isinstance(result, (list, tuple)) and len(result) >= 2:
-            raw = result[1]
-        else:
-            raw = result
-        data = _decode_action_raw(raw)
-        if data is None:
-            return None
-        if not discard_stale or _action_is_fresh(data, max_age_sec=max_age_sec):
-            kind = str(data.get("kind") or "")
-            kitty_wf_log(
-                "desktop_queue_pop",
-                kind,
-                user_id=user_id,
-                action=kind or None,
+        deadline = time.monotonic() + min(float(wait_sec), float(_KITTY_DESKTOP_ACTION_BLPOP_MAX_SEC))
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return None
+            block = _blpop_chunk_timeout_sec(remaining)
+            result = await cast(Awaitable[Any], redis.blpop(key, timeout=block))
+            if not result:
+                continue
+            if isinstance(result, (list, tuple)) and len(result) >= 2:
+                raw = result[1]
+            else:
+                raw = result
+            data = _decode_action_raw(raw)
+            if data is None:
+                return None
+            if not discard_stale or _action_is_fresh(data, max_age_sec=max_age_sec):
+                kind = str(data.get("kind") or "")
+                kitty_wf_log(
+                    "desktop_queue_pop",
+                    kind,
+                    user_id=user_id,
+                    action=kind or None,
+                )
+                return data
+            logger.debug(
+                "[KittyDesktopActions] discarded stale action user=%s kind=%s",
+                user_id,
+                data.get("kind"),
             )
-            return data
-        logger.debug(
-            "[KittyDesktopActions] discarded stale action user=%s kind=%s",
-            user_id,
-            data.get("kind"),
-        )
-        return await pop_kitty_desktop_action_wait(
-            user_id,
-            0,
-            discard_stale=discard_stale,
-            max_age_sec=max_age_sec,
-        )
+            return await pop_kitty_desktop_action_wait(
+                user_id,
+                0,
+                discard_stale=discard_stale,
+                max_age_sec=max_age_sec,
+            )
     except (RedisError, TypeError, ValueError) as exc:
         logger.debug("[KittyDesktopActions] pop failed user=%s: %s", user_id, exc)
         return None

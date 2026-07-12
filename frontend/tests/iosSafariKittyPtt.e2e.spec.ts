@@ -27,6 +27,8 @@ type FakeState = 'suspended' | 'running' | 'closed'
 
 /** Tracks whether code is executing inside a simulated pointerdown stack. */
 let gestureStackDepth = 0
+/** WebKit bug 180680: AudioContext may start while getUserMedia capture is active. */
+let mediaCapturing = false
 
 function runInUserGesture<T>(fn: () => T): T {
   gestureStackDepth += 1
@@ -133,14 +135,14 @@ class FakeAudioContext {
   }
 
   /**
-   * iOS Safari: resume() only unlocks when called from a user-gesture stack.
-   * Calling it after an await (microtask) leaves the context suspended.
+   * iOS Safari: resume() unlocks from a user-gesture stack, or while the
+   * document is capturing via getUserMedia (WebKit bug 180680).
    */
   resume(): Promise<void> {
     if (this.state === 'closed') {
       return Promise.reject(new Error('InvalidStateError'))
     }
-    if (isInUserGesture()) {
+    if (isInUserGesture() || mediaCapturing) {
       this.state = 'running'
     }
     return Promise.resolve()
@@ -204,6 +206,7 @@ function installIosSafariAudioMocks(): {
 
   const getUserMedia = vi.fn(async () => {
     micLedOn.value = true
+    mediaCapturing = true
     return stream
   })
 
@@ -218,6 +221,7 @@ function installIosSafariAudioMocks(): {
 describe('iOS Safari PTT end-to-end (Web Audio policy simulator)', () => {
   beforeEach(() => {
     gestureStackDepth = 0
+    mediaCapturing = false
   })
 
   afterEach(() => {
@@ -227,16 +231,18 @@ describe('iOS Safari PTT end-to-end (Web Audio policy simulator)', () => {
   it('proves the broken pattern: await before resume → LED on, zero PCM', async () => {
     const { micLedOn, contexts } = installIosSafariAudioMocks()
 
-    // Simulate old buggy flow: getUserMedia OK, then await, then resume outside gesture.
+    // Simulate old buggy flow: getUserMedia OK, then await, then resume outside gesture
+    // without treating capture as an unlock (disable capturing flag for this case).
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     expect(micLedOn.value).toBe(true)
     expect(stream).toBeTruthy()
+    mediaCapturing = false
 
     await Promise.resolve() // user activation expired (iOS)
 
     const ctx = new window.AudioContext() as unknown as FakeAudioContext
     expect(contexts.length).toBeGreaterThan(0)
-    await ctx.resume() // NOT in gesture stack
+    await ctx.resume() // NOT in gesture stack, not capturing
     expect(ctx.state).toBe('suspended')
 
     const processor = ctx.createScriptProcessor()
@@ -271,6 +277,7 @@ describe('iOS Safari PTT end-to-end (Web Audio policy simulator)', () => {
       funAsr: {
         listening: funAsr.listening,
         prepareMicFromUserGesture: funAsr.prepareMicFromUserGesture,
+        blessFromUserActivation: funAsr.blessFromUserActivation,
         startListening: funAsr.startListening,
         stopListening: funAsr.stopListening,
       },
@@ -288,7 +295,12 @@ describe('iOS Safari PTT end-to-end (Web Audio policy simulator)', () => {
     btn.releasePointerCapture = vi.fn()
     btn.hasPointerCapture = vi.fn(() => true)
 
-    const down = new PointerEvent('pointerdown', { button: 0, pointerId: 1 })
+    // Mouse pointerdown is activation-triggering (WebKit User Activation API).
+    const down = new PointerEvent('pointerdown', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'mouse',
+    })
     Object.defineProperty(down, 'currentTarget', { value: btn })
 
     runInUserGesture(() => {
@@ -324,7 +336,11 @@ describe('iOS Safari PTT end-to-end (Web Audio policy simulator)', () => {
     expect(funAsr.debugFramesSent.value).toBeGreaterThan(0)
     expect(sent.map((m) => m.type)).toContain('asr_audio')
 
-    const up = new PointerEvent('pointerup', { button: 0, pointerId: 1 })
+    const up = new PointerEvent('pointerup', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'mouse',
+    })
     Object.defineProperty(up, 'currentTarget', { value: btn })
     onKittyMicPointerUp(up)
 
@@ -350,6 +366,7 @@ describe('iOS Safari PTT end-to-end (Web Audio policy simulator)', () => {
       funAsr: {
         listening: funAsr.listening,
         prepareMicFromUserGesture: funAsr.prepareMicFromUserGesture,
+        blessFromUserActivation: funAsr.blessFromUserActivation,
         startListening: funAsr.startListening,
         stopListening: funAsr.stopListening,
       },
@@ -368,7 +385,11 @@ describe('iOS Safari PTT end-to-end (Web Audio policy simulator)', () => {
     btn.hasPointerCapture = vi.fn(() => true)
 
     const press = async (pointerId: number) => {
-      const down = new PointerEvent('pointerdown', { button: 0, pointerId })
+      const down = new PointerEvent('pointerdown', {
+        button: 0,
+        pointerId,
+        pointerType: 'mouse',
+      })
       Object.defineProperty(down, 'currentTarget', { value: btn })
       runInUserGesture(() => {
         ptt.onKittyMicPointerDown(down)
@@ -377,7 +398,11 @@ describe('iOS Safari PTT end-to-end (Web Audio policy simulator)', () => {
       await Promise.resolve()
       await Promise.resolve()
       await Promise.resolve()
-      const up = new PointerEvent('pointerup', { button: 0, pointerId })
+      const up = new PointerEvent('pointerup', {
+        button: 0,
+        pointerId,
+        pointerType: 'mouse',
+      })
       Object.defineProperty(up, 'currentTarget', { value: btn })
       ptt.onKittyMicPointerUp(up)
     }
@@ -414,6 +439,7 @@ describe('iOS Safari PTT end-to-end (Web Audio policy simulator)', () => {
       funAsr: {
         listening: funAsr.listening,
         prepareMicFromUserGesture: funAsr.prepareMicFromUserGesture,
+        blessFromUserActivation: funAsr.blessFromUserActivation,
         startListening: funAsr.startListening,
         stopListening: funAsr.stopListening,
       },
@@ -431,13 +457,21 @@ describe('iOS Safari PTT end-to-end (Web Audio policy simulator)', () => {
     btn.releasePointerCapture = vi.fn()
     btn.hasPointerCapture = vi.fn(() => true)
 
-    const down = new PointerEvent('pointerdown', { button: 0, pointerId: 1 })
+    const down = new PointerEvent('pointerdown', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'touch',
+    })
     Object.defineProperty(down, 'currentTarget', { value: btn })
     runInUserGesture(() => {
       ptt.onKittyMicPointerDown(down)
     })
 
-    const up = new PointerEvent('pointerup', { button: 0, pointerId: 1 })
+    const up = new PointerEvent('pointerup', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'touch',
+    })
     Object.defineProperty(up, 'currentTarget', { value: btn })
     ptt.onKittyMicPointerUp(up)
 
