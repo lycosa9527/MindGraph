@@ -6,9 +6,11 @@
  * - Or set ``localStorage.setItem('mg_eruda', '1')`` then reload
  * - Auto-on for ``test.*`` / localhost hosts (disable with ``?eruda=0``)
  *
- * Eruda is loaded only when enabled (separate chunk / no cost for normal users).
+ * Eruda is served from ``public/debug/eruda.js`` and injected only when enabled
+ * (not a Vite/Rolldown dependency — avoids build failures if npm install is stale).
  */
 const STORAGE_KEY = 'mg_eruda'
+const ERUDA_SCRIPT_ATTR = 'data-mg-eruda'
 
 let loadStarted = false
 
@@ -71,6 +73,42 @@ export function mobileDebugLog(...args: unknown[]): void {
   console.info('[MG]', ...args)
 }
 
+function erudaScriptSrc(): string {
+  const base = import.meta.env.BASE_URL || '/'
+  const prefix = base.endsWith('/') ? base : `${base}/`
+  return `${prefix}debug/eruda.js`
+}
+
+function loadErudaScript(): Promise<void> {
+  if (window.eruda) {
+    return Promise.resolve()
+  }
+  const existing = document.querySelector(`script[${ERUDA_SCRIPT_ATTR}]`)
+  if (existing instanceof HTMLScriptElement) {
+    return new Promise((resolve, reject) => {
+      if (window.eruda) {
+        resolve()
+        return
+      }
+      existing.addEventListener('load', () => resolve(), { once: true })
+      existing.addEventListener(
+        'error',
+        () => reject(new Error('Eruda script failed to load')),
+        { once: true }
+      )
+    })
+  }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = erudaScriptSrc()
+    script.async = true
+    script.setAttribute(ERUDA_SCRIPT_ATTR, '1')
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error(`Failed to load ${script.src}`))
+    document.head.appendChild(script)
+  })
+}
+
 /**
  * Dynamically load Eruda and show the floating green button.
  * Safe to call multiple times; no-op when disabled.
@@ -85,9 +123,11 @@ export async function loadMobileDebugConsole(): Promise<void> {
   }
   loadStarted = true
   try {
-    const mod = await import('eruda')
-    const eruda = mod.default
-    eruda.init()
+    await loadErudaScript()
+    if (!window.eruda) {
+      throw new Error('Eruda global missing after script load')
+    }
+    window.eruda.init()
     console.info(
       '[MG] Eruda ready — tap the floating button for Console. Disable: ?eruda=0'
     )

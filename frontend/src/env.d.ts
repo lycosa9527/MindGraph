@@ -28,15 +28,14 @@ declare module 'vue3-carousel-3d' {
   >
 }
 
-/** Eruda ships eruda.d.ts but no package.json "types" — bundler resolution needs this. */
-declare module 'eruda' {
-  interface ErudaApi {
-    init: (options?: Record<string, unknown>) => void
-    destroy: () => void
-  }
+/** Loaded at runtime from `/debug/eruda.js` (not bundled). */
+interface ErudaApi {
+  init: (options?: Record<string, unknown>) => void
+  destroy: () => void
+}
 
-  const eruda: ErudaApi
-  export default eruda
+interface Window {
+  eruda?: ErudaApi
 }
 
 declare module 'element-plus/es/components/loading/style/css'
