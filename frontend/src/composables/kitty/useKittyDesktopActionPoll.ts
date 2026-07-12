@@ -1,7 +1,10 @@
 /**
- * Consumes Kitty cross-device Redis queue when mobile Kitty is active: SSE wake on
- * ``GET /api/kitty/desktop_wake/stream``, fallback watch on ``desktop_pairing?wait_sec=0``,
- * then long-poll chains ``desktop_pairing?wait_sec=25`` and navigates on ``open_canvas``.
+ * Desktop Kitty leader tab: SSE wake on ``GET /api/kitty/desktop_wake/stream``,
+ * instant ``desktop_pairing?wait_sec=0`` drain on ``desktop_action_pending``,
+ * and a 12s fallback watch only when SSE is disconnected.
+ *
+ * Actions stay in Redis FIFO (multi-worker safe via LPOP). Long-poll BLPOP chains
+ * are no longer used — SSE carries the wake; REST only pops.
  */
 import { onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -18,15 +21,12 @@ import { handleKittyDesktopQueuedAction } from '@/composables/kitty/kittyDesktop
 import { publishKittyMobileActiveHub } from '@/composables/kitty/kittyDesktopMobileActiveHub'
 import { createKittyDesktopPollLeader } from '@/composables/kitty/kittyDesktopPollLeader'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
-import {
-  KITTY_DESKTOP_PAIR_WAIT_SEC,
-  KITTY_MOBILE_WATCH_MS,
-} from '@/composables/kitty/runKittyIntervalPoll'
+import { KITTY_MOBILE_WATCH_MS } from '@/composables/kitty/runKittyIntervalPoll'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
-type PollPhase = 'off' | 'watching' | 'consuming'
+type PollPhase = 'off' | 'watching'
 
 interface DesktopPairingResponse {
   active?: unknown
@@ -52,13 +52,13 @@ export function useKittyDesktopActionPoll(): void {
 
   let phase: PollPhase = 'off'
   let intervalId: ReturnType<typeof setInterval> | null = null
-  let consumeRunId = 0
   let isPollLeader = false
   let stopPollLeader: (() => void) | null = null
   let stopWakeStream: (() => void) | null = null
   let wakeStreamConnected = false
   let pairingAbort: AbortController | null = null
   let watchTickInFlight = false
+  let drainInFlight = false
 
   function surfaceIsMobileKittyLane(): boolean {
     if (route.meta.layout === 'mobile') return true
@@ -128,10 +128,6 @@ export function useKittyDesktopActionPoll(): void {
     phase = next
   }
 
-  function cancelConsumeLoop(): void {
-    consumeRunId += 1
-  }
-
   function abortPairingFetch(): void {
     if (pairingAbort != null) {
       pairingAbort.abort()
@@ -175,40 +171,66 @@ export function useKittyDesktopActionPoll(): void {
     wakeStreamConnected = false
   }
 
+  async function applyQueuedAction(action: unknown): Promise<void> {
+    await handleKittyDesktopQueuedAction(action, {
+      routePath: route.path,
+      savedDiagramsStore,
+      router,
+      route,
+      t,
+    })
+  }
+
+  /** Instant LPOP drain (no BLPOP). Safe across workers — Redis list is shared. */
   async function drainPendingDesktopAction(): Promise<void> {
-    if (!pollingAllowed()) {
+    if (!pollingAllowed() || drainInFlight) {
       return
     }
+    drainInFlight = true
     try {
-      const data = await fetchDesktopPairing(0)
-      if (data?.action != null) {
-        await handleKittyDesktopQueuedAction(data.action, {
-          routePath: route.path,
-          savedDiagramsStore,
-          router,
-          route,
-          t,
-        })
+      // Drain a few items in case several were enqueued while SSE was down.
+      for (let i = 0; i < 8; i += 1) {
+        if (!pollingAllowed()) {
+          return
+        }
+        const data = await fetchDesktopPairing(0)
+        if (data?.action == null) {
+          if (data != null && data.active !== true) {
+            publishKittyMobileActiveHub({
+              type: 'mobile_active',
+              active: false,
+              scopes: data.scopes ?? [],
+              primary_scope: data.primary_scope ?? null,
+            })
+          } else if (data?.active === true) {
+            publishKittyMobileActiveHub({
+              type: 'mobile_active',
+              active: true,
+              scopes: data.scopes,
+              primary_scope: data.primary_scope,
+            })
+          }
+          return
+        }
+        if (data.active === true) {
+          publishKittyMobileActiveHub({
+            type: 'mobile_active',
+            active: true,
+            scopes: data.scopes,
+            primary_scope: data.primary_scope,
+          })
+        }
+        await applyQueuedAction(data.action)
       }
     } catch {
       /* ignore transient network failures */
+    } finally {
+      drainInFlight = false
     }
   }
 
   function handleWakeMobileActive(payload: KittyDesktopWakeMobileActive): void {
     publishKittyMobileActiveHub(payload)
-    if (!pollingAllowed()) {
-      return
-    }
-    if (payload.active === true) {
-      if (phase !== 'consuming') {
-        startConsuming()
-      }
-      return
-    }
-    if (phase === 'consuming') {
-      startWatching()
-    }
   }
 
   function startWakeStreamConnection(): void {
@@ -237,6 +259,26 @@ export function useKittyDesktopActionPoll(): void {
           updates: payload.updates,
           mutation_id:
             typeof payload.mutation_id === 'string' ? payload.mutation_id : undefined,
+          expected_effect: payload.expected_effect,
+          before_fingerprint: payload.before_fingerprint,
+        })
+      },
+      onCanvasAction: (payload) => {
+        const scope = typeof payload.scope === 'string' ? payload.scope : undefined
+        const action = typeof payload.action === 'string' ? payload.action : undefined
+        const paramsRaw = payload.params
+        const params =
+          paramsRaw && typeof paramsRaw === 'object' && !Array.isArray(paramsRaw)
+            ? (paramsRaw as Record<string, unknown>)
+            : {}
+        traceKittyWorkflow('hub', 'sse_canvas_action', String(action ?? 'canvas_action'), {
+          scope,
+          action,
+        })
+        eventBus.emit('kitty:desktop_canvas_action', {
+          scope,
+          action,
+          params,
         })
       },
       onSelectionUpdate: (payload) => {
@@ -286,15 +328,17 @@ export function useKittyDesktopActionPoll(): void {
       },
       onVoicePhaseUpdate: (payload) => {
         const scope = typeof payload.scope === 'string' ? payload.scope : undefined
-        const phase = typeof payload.phase === 'string' ? payload.phase : undefined
-        traceKittyWorkflow('hub', 'sse_voice_phase', String(phase ?? ''), { scope })
+        const voicePhase = typeof payload.phase === 'string' ? payload.phase : undefined
+        traceKittyWorkflow('hub', 'sse_voice_phase', String(voicePhase ?? ''), { scope })
         eventBus.emit('kitty:desktop_voice_phase_update', {
           scope,
-          phase,
+          phase: voicePhase,
         })
       },
       onOpen: () => {
         wakeStreamConnected = true
+        // Catch actions enqueued while SSE was down (multi-worker Redis queue).
+        void drainPendingDesktopAction()
       },
       onClose: () => {
         wakeStreamConnected = false
@@ -323,24 +367,17 @@ export function useKittyDesktopActionPoll(): void {
           scopes: data.scopes,
           primary_scope: data.primary_scope,
         })
-        startConsuming()
-        return
-      }
-      if (data?.action != null) {
-        await handleKittyDesktopQueuedAction(data.action, {
-          routePath: route.path,
-          savedDiagramsStore,
-          router,
-          route,
-          t,
+      } else {
+        publishKittyMobileActiveHub({
+          type: 'mobile_active',
+          active: false,
+          scopes: [],
+          primary_scope: null,
         })
       }
-      publishKittyMobileActiveHub({
-        type: 'mobile_active',
-        active: false,
-        scopes: [],
-        primary_scope: null,
-      })
+      if (data?.action != null) {
+        await applyQueuedAction(data.action)
+      }
     } catch {
       /* ignore transient network failures */
     } finally {
@@ -348,48 +385,7 @@ export function useKittyDesktopActionPoll(): void {
     }
   }
 
-  async function runConsumeLoop(runId: number): Promise<void> {
-    while (runId === consumeRunId && phase === 'consuming') {
-      if (!pollingAllowed()) {
-        return
-      }
-      try {
-        const data = await fetchDesktopPairing(KITTY_DESKTOP_PAIR_WAIT_SEC)
-        if (runId !== consumeRunId) {
-          return
-        }
-        if (data?.action != null) {
-          await handleKittyDesktopQueuedAction(data.action, {
-            routePath: route.path,
-            savedDiagramsStore,
-            router,
-            route,
-            t,
-          })
-        }
-        if (runId !== consumeRunId || !pollingAllowed() || phase !== 'consuming') {
-          return
-        }
-        if (data == null) {
-          continue
-        }
-        if (data.active !== true) {
-          startWatching()
-          return
-        }
-      } catch {
-        if (runId !== consumeRunId) {
-          return
-        }
-        await new Promise((resolve) => {
-          setTimeout(resolve, 1000)
-        })
-      }
-    }
-  }
-
   function startWatching(): void {
-    cancelConsumeLoop()
     clearIntervalId()
     setPhase('watching')
     startWakeStreamConnection()
@@ -401,16 +397,7 @@ export function useKittyDesktopActionPoll(): void {
     }, KITTY_MOBILE_WATCH_MS)
   }
 
-  function startConsuming(): void {
-    cancelConsumeLoop()
-    clearIntervalId()
-    setPhase('consuming')
-    const runId = consumeRunId
-    void runConsumeLoop(runId)
-  }
-
   function stop(): void {
-    cancelConsumeLoop()
     clearIntervalId()
     abortPairingFetch()
     stopWakeStreamConnection()
@@ -421,9 +408,6 @@ export function useKittyDesktopActionPoll(): void {
     ensurePollLeader()
     if (!pollingAllowed()) {
       stop()
-      return
-    }
-    if (phase === 'consuming') {
       return
     }
     if (phase === 'watching' && intervalId != null && stopWakeStream != null) {

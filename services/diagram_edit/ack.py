@@ -1,4 +1,4 @@
-"""Inbound mutation ack completion (no Kitty imports).
+"""Inbound mutation ack completion.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -7,13 +7,35 @@ Proprietary License
 
 from __future__ import annotations
 
-from typing import Any, Dict
+import asyncio
+import logging
+from typing import Any, Awaitable, Callable, Dict
 
 from services.diagram_edit.pending import MutationAckPayload, complete_pending
 
+logger = logging.getLogger(__name__)
 
-def complete_mutation_ack_from_client(payload: Dict[str, Any]) -> bool:
-    """Complete pending future from inbound WS ``diagram_mutation_ack``."""
+MutationAckPublishFn = Callable[[Dict[str, Any]], Awaitable[bool]]
+
+_MUTATION_ACK_PUBLISH_SLOT: list[MutationAckPublishFn] = []
+
+
+def configure_mutation_ack_relay(*, publish: MutationAckPublishFn) -> None:
+    """Register Redis publish used when a local pending mutation future is missing."""
+    _MUTATION_ACK_PUBLISH_SLOT.clear()
+    _MUTATION_ACK_PUBLISH_SLOT.append(publish)
+
+
+def complete_mutation_ack_from_client(
+    payload: Dict[str, Any],
+    *,
+    allow_relay: bool = True,
+) -> bool:
+    """Complete pending future from inbound WS ``diagram_mutation_ack``.
+
+    When the pending future lives on another Uvicorn worker, optionally publish a
+    Redis relay so that worker can complete it (``allow_relay=True``).
+    """
     mutation_id = payload.get("mutation_id")
     if not isinstance(mutation_id, str) or not mutation_id.strip():
         return False
@@ -45,4 +67,23 @@ def complete_mutation_ack_from_client(payload: Dict[str, Any]) -> bool:
         evidence=evidence_dict,
         created_node_ids=created_node_ids,
     )
-    return complete_pending(ack)
+    if complete_pending(ack):
+        return True
+
+    if not allow_relay or not _MUTATION_ACK_PUBLISH_SLOT:
+        return False
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+
+    publish_fn = _MUTATION_ACK_PUBLISH_SLOT[0]
+
+    async def _relay() -> None:
+        await publish_fn(dict(payload))
+
+    try:
+        loop.create_task(_relay())
+    except RuntimeError:
+        logger.debug("mutation ack relay skipped: no running loop")
+    return False

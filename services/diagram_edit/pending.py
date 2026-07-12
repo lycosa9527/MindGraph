@@ -119,6 +119,33 @@ def clear_pending_for_session(voice_session_id: str) -> None:
             entry.future.cancel()
 
 
+def detach_pending_for_tests(mutation_id: str) -> Optional[asyncio.Future]:
+    """
+    Remove a pending entry without completing it (multi-worker test isolation).
+
+    Returns the future so the test can reattach via ``reattach_pending_for_tests``.
+    """
+    entry = _pending.pop(mutation_id, None)
+    if entry is None:
+        return None
+    return entry.future
+
+
+def reattach_pending_for_tests(
+    mutation_id: str,
+    future: asyncio.Future,
+    *,
+    voice_session_id: str = "test",
+) -> None:
+    """Restore a previously detached pending future (multi-worker tests)."""
+    _pending[mutation_id] = _PendingEntry(
+        future=future,
+        created_at=time.monotonic(),
+        voice_session_id=voice_session_id,
+        idempotency_key=None,
+    )
+
+
 def reset_pending_state_for_tests() -> None:
     """Clear all pending state (tests only)."""
     for entry in _pending.values():

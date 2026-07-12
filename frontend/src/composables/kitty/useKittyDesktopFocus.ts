@@ -1,9 +1,16 @@
 /**
- * Desktop focus discovery (mobile poll) and publish (desktop PUT) for Kitty pairing.
+ * Desktop focus discovery (mobile) and publish (desktop PUT) for Kitty pairing.
+ *
+ * Primary path while mobile Kitty WS is up: server pushes ``desktop_focus_update``
+ * (local WS + Redis control relay across workers). REST poll is recovery / pre-WS only.
  */
 import { type Ref, onUnmounted, ref, watch } from 'vue'
 
-import { KITTY_PAIR_POLL_MS } from '@/composables/kitty/runKittyIntervalPoll'
+import { eventBus } from '@/composables/core/useEventBus'
+import {
+  KITTY_FOCUS_RECOVERY_POLL_MS,
+  KITTY_PAIR_POLL_MS,
+} from '@/composables/kitty/runKittyIntervalPoll'
 
 const DEBOUNCE_MS = 480
 /** Keep Redis focus fresh while canvas stays open (mobile freshness checks). */
@@ -22,10 +29,19 @@ async function putDesktopFocusDiagram(diagramLibraryId: string | null): Promise<
   }
 }
 
-export function useKittyDesktopFocusHint(pollEnabled: Ref<boolean>) {
+export function useKittyDesktopFocusHint(
+  pollEnabled: Ref<boolean>,
+  /** When true (mobile Kitty WS connected), poll slowly as recovery only. */
+  pushPreferred?: Ref<boolean>
+) {
   const diagramLibraryId = ref<string | null>(null)
   const updatedAt = ref<number | null>(null)
   let intervalId: ReturnType<typeof setInterval> | null = null
+
+  function applyFocus(lib: string | null, ts: number | null): void {
+    diagramLibraryId.value = lib
+    updatedAt.value = ts
+  }
 
   async function tick(): Promise<void> {
     if (!pollEnabled.value) {
@@ -36,26 +52,34 @@ export function useKittyDesktopFocusHint(pollEnabled: Ref<boolean>) {
         credentials: 'same-origin',
       })
       if (!res.ok) {
-        diagramLibraryId.value = null
-        updatedAt.value = null
+        applyFocus(null, null)
         return
       }
       const data: unknown = await res.json()
       if (typeof data !== 'object' || data === null || !('diagram_library_id' in data)) {
-        diagramLibraryId.value = null
-        updatedAt.value = null
+        applyFocus(null, null)
         return
       }
       const raw = data as Record<string, unknown>
       const lib = raw.diagram_library_id
       const ts = raw.updated_at
-      diagramLibraryId.value = typeof lib === 'string' && lib.length > 0 ? lib : null
-      updatedAt.value =
-        typeof ts === 'number' ? ts : typeof ts === 'string' && /^\d+$/.test(ts) ? Number(ts) : null
+      applyFocus(
+        typeof lib === 'string' && lib.length > 0 ? lib : null,
+        typeof ts === 'number'
+          ? ts
+          : typeof ts === 'string' && /^\d+$/.test(ts)
+            ? Number(ts)
+            : null
+      )
     } catch {
-      diagramLibraryId.value = null
-      updatedAt.value = null
+      applyFocus(null, null)
     }
+  }
+
+  function pollIntervalMs(): number {
+    return pushPreferred != null && pushPreferred.value
+      ? KITTY_FOCUS_RECOVERY_POLL_MS
+      : KITTY_PAIR_POLL_MS
   }
 
   function startPolling(): void {
@@ -63,7 +87,7 @@ export function useKittyDesktopFocusHint(pollEnabled: Ref<boolean>) {
     void tick()
     intervalId = setInterval(() => {
       void tick()
-    }, KITTY_PAIR_POLL_MS)
+    }, pollIntervalMs())
   }
 
   function stopPolling(): void {
@@ -73,8 +97,18 @@ export function useKittyDesktopFocusHint(pollEnabled: Ref<boolean>) {
     intervalId = null
   }
 
+  function onFocusPush(payload: {
+    diagram_library_id: string | null
+    updated_at: number | null
+  }): void {
+    applyFocus(payload.diagram_library_id, payload.updated_at)
+  }
+
+  eventBus.on('kitty:desktop_focus_update', onFocusPush)
+
   watch(
-    pollEnabled,
+    () =>
+      [pollEnabled.value, pushPreferred != null ? pushPreferred.value : false] as const,
     () => {
       if (pollEnabled.value) {
         startPolling()
@@ -86,6 +120,7 @@ export function useKittyDesktopFocusHint(pollEnabled: Ref<boolean>) {
   )
 
   onUnmounted(() => {
+    eventBus.off('kitty:desktop_focus_update', onFocusPush)
     stopPolling()
   })
 

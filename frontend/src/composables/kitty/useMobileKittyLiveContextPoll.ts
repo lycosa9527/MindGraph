@@ -11,7 +11,7 @@ import {
   getKittyVoiceDiagramFingerprint,
 } from '@/composables/kitty/kittyDiagramFingerprint'
 import { applyKittyRemoteCanvasSelection } from '@/composables/kitty/kittySelectionApply'
-import { KITTY_PAIR_POLL_MS } from '@/composables/kitty/runKittyIntervalPoll'
+import { KITTY_LIVE_CONTEXT_POLL_MS } from '@/composables/kitty/runKittyIntervalPoll'
 import { syncDiagramStoreFromVoiceContext } from '@/composables/kitty/syncDiagramStoreFromVoiceContext'
 import { useDiagramStore } from '@/stores/diagram'
 
@@ -126,7 +126,7 @@ export function useMobileKittyLiveContextPoll(options: {
     void tick()
     intervalId = setInterval(() => {
       void tick()
-    }, KITTY_PAIR_POLL_MS)
+    }, KITTY_LIVE_CONTEXT_POLL_MS)
   }
 
   function stop(): void {

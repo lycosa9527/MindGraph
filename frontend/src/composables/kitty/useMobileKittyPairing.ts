@@ -184,8 +184,8 @@ export function useMobileKittyPairing(
   }
 
   /**
-   * Keep polling desktop_focus while Mobile Kitty is open (including while connected)
-   * so opening a diagram on desktop can switch mobile scope.
+   * Focus discovery: WS ``desktop_focus_update`` while connected (incl. cross-worker
+   * Redis relay); REST poll is faster pre-WS and slow recovery after connect.
    */
   const kittyDesktopPollOn = computed(() => {
     if (!pageVisible.value) {
@@ -196,8 +196,9 @@ export function useMobileKittyPairing(
     }
     return true
   })
+  const kittyFocusPushPreferred = computed(() => kitty.isConnected.value === true)
   const { diagramLibraryId: kittyDesktopLibraryId, updatedAt: kittyDesktopFocusUpdatedAt } =
-    useKittyDesktopFocusHint(kittyDesktopPollOn)
+    useKittyDesktopFocusHint(kittyDesktopPollOn, kittyFocusPushPreferred)
   const bootstrapLastFailureAt = ref(0)
   let bootstrapInFlight: Promise<void> | null = null
 

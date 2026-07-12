@@ -139,6 +139,7 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
     voice_sessions[vid]["context"] = {"diagram_data": {"children": [], "center": {"text": ""}}}
 
     enqueue_mock = AsyncMock(return_value=True)
+    drain_mock = AsyncMock()
     wake_mock = AsyncMock()
     ack_mock = AsyncMock(return_value=True)
 
@@ -155,6 +156,10 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
             patch(
                 "services.kitty.routing.command_router.enqueue_kitty_desktop_action",
                 enqueue_mock,
+            ),
+            patch(
+                "services.kitty.routing.command_router.mark_kitty_desktop_action_explicit_drain",
+                drain_mock,
             ),
             patch(
                 "services.kitty.routing.command_router.publish_kitty_desktop_action_pending",
@@ -177,6 +182,7 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
                 dict(voice_sessions[vid]["context"]),
             )
         assert result.outcome == RouteOutcome.EXECUTED
+        drain_mock.assert_awaited_once()
         enqueue_mock.assert_awaited_once()
         payload = mock_await_args(enqueue_mock)[1]
         assert payload["kind"] == "open_canvas"

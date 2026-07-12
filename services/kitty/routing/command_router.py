@@ -57,7 +57,10 @@ from services.kitty.infra.bootstrap.kitty_unsupported_diagram_types import (
     unsupported_match_from_unknown_slug,
 )
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-from services.kitty.infra.desktop.kitty_desktop_action_queue import enqueue_kitty_desktop_action
+from services.kitty.infra.desktop.kitty_desktop_action_queue import (
+    enqueue_kitty_desktop_action,
+    mark_kitty_desktop_action_explicit_drain,
+)
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
     publish_kitty_desktop_action_pending,
     publish_kitty_selection_update,
@@ -735,7 +738,7 @@ async def route_voice_command(
                 await emit_user_ack(
                     websocket,
                     voice_session_id,
-                    render_ack("diagram.branch_autocomplete.failed", {"target": ""}, lang=lang),
+                    render_ack("ui.auto_complete.failed", lang=lang),
                 )
                 return _finish_route(
                     voice_session_id,
@@ -1053,6 +1056,8 @@ async def route_voice_command(
 
             ok = await enqueue_kitty_desktop_action(user_id, payload)
             if ok:
+                # Same as REST enqueue: allow instant LPOP if mobile_active races off.
+                await mark_kitty_desktop_action_explicit_drain(user_id)
                 await publish_kitty_desktop_action_pending(user_id)
             lang = resolve_voice_interaction_language(session_context)
             ack_key = "ui.open_desktop_canvas.ok" if ok else "ui.open_desktop_canvas.fail"

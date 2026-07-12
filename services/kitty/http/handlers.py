@@ -24,6 +24,9 @@ from services.kitty.infra.desktop.kitty_desktop_focus import (
     get_kitty_desktop_focus_diagram,
     set_kitty_desktop_focus_diagram,
 )
+from services.kitty.infra.desktop.kitty_desktop_focus_push import (
+    notify_kitty_desktop_focus_changed,
+)
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
     normalize_kitty_llm_model,
     publish_kitty_desktop_action_pending,
@@ -188,8 +191,10 @@ async def kitty_rest_desktop_focus_put(
         return {"ok": True, "diagram_library_id": None, "updated_at": None}
     if not await kitty_http_allowed(current_user):
         return {"ok": True, "diagram_library_id": None, "updated_at": None}
-    await set_kitty_desktop_focus_diagram(int(current_user.id), diagram_library_id)
-    lib_id, updated_at = await get_kitty_desktop_focus_diagram(int(current_user.id))
+    uid = int(current_user.id)
+    await set_kitty_desktop_focus_diagram(uid, diagram_library_id)
+    lib_id, updated_at = await get_kitty_desktop_focus_diagram(uid)
+    await notify_kitty_desktop_focus_changed(uid, lib_id, updated_at)
     return {"ok": True, "diagram_library_id": lib_id, "updated_at": updated_at}
 
 

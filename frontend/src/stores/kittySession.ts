@@ -7,6 +7,8 @@ import { defineStore } from 'pinia'
 
 export type KittyWriteLockHolder = 'llm' | 'tool' | null
 
+export type KittyMutationAckSender = (payload: Record<string, unknown>) => void
+
 export const useKittySessionStore = defineStore('kittySession', () => {
   const hubScopeRevision = ref<number | null>(null)
   const writeLockHolder = ref<KittyWriteLockHolder>(null)
@@ -15,6 +17,10 @@ export const useKittySessionStore = defineStore('kittySession', () => {
   const asrPartialTranscript = ref('')
   /** True while this browser tab holds the Kitty WS (owning tab). */
   const ownsKittySession = ref(false)
+  /** Desktop canvas owner ack sink for verified SSE apply (cross-worker). */
+  let mutationAckSender: KittyMutationAckSender | null = null
+  /** Dedup verified mutation_ids applied via WS or SSE. */
+  const appliedMutationIds = new Set<string>()
 
   const isWriteLocked = computed(() => writeLockHolder.value !== null)
 
@@ -45,12 +51,37 @@ export const useKittySessionStore = defineStore('kittySession', () => {
     ownsKittySession.value = owns
   }
 
+  function setMutationAckSender(sender: KittyMutationAckSender | null): void {
+    mutationAckSender = sender
+  }
+
+  function getMutationAckSender(): KittyMutationAckSender | null {
+    return mutationAckSender
+  }
+
+  function claimMutationId(mutationId: string): boolean {
+    const id = mutationId.trim()
+    if (!id || appliedMutationIds.has(id)) {
+      return false
+    }
+    appliedMutationIds.add(id)
+    if (appliedMutationIds.size > 64) {
+      const first = appliedMutationIds.values().next().value
+      if (typeof first === 'string') {
+        appliedMutationIds.delete(first)
+      }
+    }
+    return true
+  }
+
   function resetSessionUi(): void {
     hubScopeRevision.value = null
     writeLockHolder.value = null
     asrListening.value = false
     asrPartialTranscript.value = ''
     ownsKittySession.value = false
+    mutationAckSender = null
+    appliedMutationIds.clear()
   }
 
   return {
@@ -67,6 +98,9 @@ export const useKittySessionStore = defineStore('kittySession', () => {
     setAsrListening,
     setAsrPartialTranscript,
     setOwnsKittySession,
+    setMutationAckSender,
+    getMutationAckSender,
+    claimMutationId,
     resetSessionUi,
   }
 })

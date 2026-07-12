@@ -245,6 +245,13 @@ export type EventTypes = {
     action?: string
     updates?: unknown
     mutation_id?: string
+    expected_effect?: unknown
+    before_fingerprint?: unknown
+  }
+  'kitty:desktop_canvas_action': {
+    scope?: string
+    action?: string
+    params?: Record<string, unknown>
   }
   'kitty:desktop_selection_update': {
     scope?: string
@@ -262,6 +269,11 @@ export type EventTypes = {
   'kitty:desktop_voice_phase_update': {
     scope?: string
     phase?: string
+  }
+  /** Mobile Kitty WS: desktop library focus changed (cross-worker Redis relay). */
+  'kitty:desktop_focus_update': {
+    diagram_library_id: string | null
+    updated_at: number | null
   }
   'kitty:workflow_trace': {
     lane: 'mobile' | 'desktop' | 'hub'

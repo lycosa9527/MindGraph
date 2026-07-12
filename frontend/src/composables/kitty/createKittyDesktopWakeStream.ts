@@ -14,6 +14,7 @@ export interface KittyDesktopWakeStreamOptions {
   onMobileActive: (payload: KittyDesktopWakeMobileActive) => void
   onDesktopActionPending?: () => void
   onDiagramUpdate?: (payload: KittyDesktopDiagramUpdateFanout) => void
+  onCanvasAction?: (payload: KittyDesktopCanvasActionFanout) => void
   onSelectionUpdate?: (payload: KittyDesktopSelectionUpdateFanout) => void
   onLlmModelUpdate?: (payload: KittyDesktopLlmModelUpdateFanout) => void
   onVoiceCommand?: (payload: KittyDesktopVoiceCommandFanout) => void
@@ -29,6 +30,15 @@ export interface KittyDesktopDiagramUpdateFanout {
   action?: unknown
   updates?: unknown
   mutation_id?: unknown
+  expected_effect?: unknown
+  before_fingerprint?: unknown
+}
+
+export interface KittyDesktopCanvasActionFanout {
+  type?: unknown
+  scope?: unknown
+  action?: unknown
+  params?: unknown
 }
 
 export interface KittyDesktopSelectionUpdateFanout {
@@ -128,6 +138,10 @@ export function createKittyDesktopWakeStream(options: KittyDesktopWakeStreamOpti
           }
           if (row.type === 'diagram_update') {
             options.onDiagramUpdate?.(parsed as KittyDesktopDiagramUpdateFanout)
+            return
+          }
+          if (row.type === 'canvas_action') {
+            options.onCanvasAction?.(parsed as KittyDesktopCanvasActionFanout)
             return
           }
           if (row.type === 'selection_update') {

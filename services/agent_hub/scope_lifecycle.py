@@ -18,6 +18,7 @@ from uuid import uuid4
 
 from fastapi import WebSocket
 
+from services.diagram_edit.ack import configure_mutation_ack_relay
 from services.infrastructure.monitoring.ws_metrics import (
     record_kitty_refcount_attach,
     record_kitty_refcount_attach_failed,
@@ -30,6 +31,7 @@ from services.kitty.infra.bootstrap.kitty_context_hydrate import (
     merge_voice_context_with_library,
     resolve_mobile_open_bootstrap,
 )
+from services.kitty.infra.control.kitty_canvas_owner_relay import publish_mutation_ack_relay
 from services.kitty.infra.control.kitty_control_fanout import (
     KITTY_CONTROL_REASON_HANDSHAKE_PREEMPT,
     KITTY_CONTROL_REASON_IDLE_TIMEOUT,
@@ -136,6 +138,7 @@ def configure_kitty_control_state(
         active_websockets=active_websockets,
         voice_sessions=voice_sessions,
     )
+    configure_mutation_ack_relay(publish=publish_mutation_ack_relay)
 
 
 def get_mind_graph_agent_hub() -> "MindGraphAgentHub":

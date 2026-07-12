@@ -77,7 +77,11 @@ async def publish_kitty_diagram_update(
     scope: str,
     message: Dict[str, Any],
 ) -> None:
-    """Fan out voice ``diagram_update`` payloads to desktop SSE wake listeners."""
+    """Fan out voice ``diagram_update`` payloads to desktop SSE wake listeners.
+
+    Verified edits include ``mutation_id`` (and optional verify metadata). The
+    desktop canvas owner applies those frames; observers must not re-apply.
+    """
     redis = get_async_redis()
     if redis is None:
         return
@@ -90,8 +94,13 @@ async def publish_kitty_diagram_update(
     }
     mutation_id = message.get("mutation_id")
     if isinstance(mutation_id, str) and mutation_id.strip():
-        # Owning canvas applies via verified WS path; observers must not re-apply.
         body["mutation_id"] = mutation_id.strip()
+        expected = message.get("expected_effect")
+        if isinstance(expected, dict):
+            body["expected_effect"] = expected
+        before = message.get("before_fingerprint")
+        if isinstance(before, dict):
+            body["before_fingerprint"] = before
     payload = json.dumps(body, ensure_ascii=False)
     try:
         await redis.publish(channel, payload)
@@ -110,6 +119,52 @@ async def publish_kitty_diagram_update(
             scope,
             exc,
         )
+
+
+async def publish_kitty_canvas_action(
+    user_id: int,
+    scope: str,
+    message: Dict[str, Any],
+) -> bool:
+    """
+    Fan out a canvas ``action`` (auto_complete, etc.) to desktop SSE listeners.
+
+    Used when the desktop canvas_owner WebSocket lives on another worker —
+    Redis desktop_wake already reaches the browser regardless of WS affinity.
+    """
+    redis = get_async_redis()
+    if redis is None:
+        return False
+    action = message.get("action")
+    if not isinstance(action, str) or not action.strip():
+        return False
+    params = message.get("params")
+    body: Dict[str, Any] = {
+        "type": "canvas_action",
+        "scope": scope,
+        "action": action.strip(),
+        "params": params if isinstance(params, dict) else {},
+    }
+    channel = kitty_desktop_wake_channel(int(user_id))
+    payload = json.dumps(body, ensure_ascii=False)
+    try:
+        await redis.publish(channel, payload)
+        kitty_wf_log(
+            "sse_fanout",
+            "canvas_action",
+            scope=scope,
+            user_id=user_id,
+            action=action.strip(),
+        )
+        return True
+    except (RedisError, TypeError, ValueError) as exc:
+        logger.debug(
+            "[KittyDesktopWake] canvas_action publish failed user=%s scope=%s: %s",
+            user_id,
+            scope,
+            exc,
+        )
+        return False
 
 
 async def publish_kitty_selection_update(

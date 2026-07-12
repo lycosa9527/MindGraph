@@ -16,8 +16,6 @@ import hashlib
 import hmac
 import json
 import logging
-import os
-import socket
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from fastapi import WebSocket
@@ -33,8 +31,20 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_kitty_control_received,
     record_kitty_control_voice_cleanup_failed,
 )
+from services.kitty.infra.control.kitty_canvas_owner_relay import (
+    handle_mutation_ack_relay,
+)
+from services.kitty.infra.control.kitty_control_channel import (
+    KITTY_CONTROL_PAYLOAD_VERSION,
+    get_kitty_control_instance_id,
+    kitty_control_channel,
+)
 from services.kitty.infra.control.kitty_control_secret import get_kitty_control_shared_secret
 from services.kitty.infra.control.kitty_observability import kitty_extra
+from services.kitty.infra.desktop.kitty_desktop_focus_push import (
+    KITTY_CONTROL_ACTION_DESKTOP_FOCUS,
+    handle_desktop_focus_relay,
+)
 from services.kitty.infra.redis.kitty_session_redis import kitty_sessionmeta_active_for_user
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
 from services.redis.redis_async_client import get_async_redis
@@ -42,29 +52,19 @@ from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
-KITTY_CONTROL_PAYLOAD_VERSION = 1
 KITTY_CONTROL_ACTION_CLOSE_SCOPE = "close_scope"
+KITTY_CONTROL_ACTION_MUTATION_ACK = "mutation_ack"
 KITTY_CONTROL_REASON_HTTP_CLEANUP = "http_cleanup"
 KITTY_CONTROL_REASON_HANDSHAKE_PREEMPT = "handshake_preempt"
 KITTY_CONTROL_REASON_IDLE_TIMEOUT = "idle_timeout"
 KITTY_CONTROL_REASON_MAX_LEN = 256
-
-
-def kitty_control_channel() -> str:
-    """Redis pub/sub channel for Kitty control messages (override via env)."""
-    return os.getenv("KITTY_CONTROL_CHANNEL", "mg:kitty:control").strip() or "mg:kitty:control"
-
-
-def get_kitty_control_instance_id() -> str:
-    """
-    Per-process instance tag used to skip local subscriber handling for
-    handshake preemption (same worker already runs the in-process lock path).
-    """
-    explicit = os.getenv("KITTY_CONTROL_INSTANCE_ID", "").strip()
-    if explicit:
-        return explicit[:128]
-    hn = socket.gethostname()
-    return f"{hn}:{os.getpid()}"[:128]
+_KITTY_CONTROL_ACTIONS = frozenset(
+    {
+        KITTY_CONTROL_ACTION_CLOSE_SCOPE,
+        KITTY_CONTROL_ACTION_MUTATION_ACK,
+        KITTY_CONTROL_ACTION_DESKTOP_FOCUS,
+    }
+)
 
 
 def verify_kitty_control_shared_secret(envelope: Dict[str, Any]) -> bool:
@@ -182,8 +182,13 @@ def parse_kitty_control_envelope(raw: str) -> Optional[Dict[str, Any]]:
         return None
     if data.get("v") != KITTY_CONTROL_PAYLOAD_VERSION:
         return None
-    if data.get("action") != KITTY_CONTROL_ACTION_CLOSE_SCOPE:
+    action = data.get("action")
+    if action not in _KITTY_CONTROL_ACTIONS:
         return None
+    # Relay envelopes are validated in their own handlers (ack shape + auth).
+    if action in {KITTY_CONTROL_ACTION_MUTATION_ACK, KITTY_CONTROL_ACTION_DESKTOP_FOCUS}:
+        data["_parsed_action"] = action
+        return data
     scope = data.get("scope")
     if not isinstance(scope, str) or not scope.strip():
         return None
@@ -211,6 +216,7 @@ def parse_kitty_control_envelope(raw: str) -> Optional[Dict[str, Any]]:
     if scope_norm is None:
         logger.debug("[KittyControl] rejected envelope: scope failed normalization")
         return None
+    data["_parsed_action"] = KITTY_CONTROL_ACTION_CLOSE_SCOPE
     data["_parsed_scope"] = scope_norm
     data["_parsed_user_id"] = uid
     data["_parsed_reason"] = reason
@@ -272,6 +278,15 @@ async def handle_kitty_control_dispatch(raw: str, local_instance: str) -> None:
     if envelope is None:
         record_kitty_control_message_ignored()
         return
+
+    parsed_action = envelope.get("_parsed_action")
+    if parsed_action == KITTY_CONTROL_ACTION_MUTATION_ACK:
+        await handle_mutation_ack_relay(envelope)
+        return
+    if parsed_action == KITTY_CONTROL_ACTION_DESKTOP_FOCUS:
+        await handle_desktop_focus_relay(envelope)
+        return
+
     if not verify_kitty_control_shared_secret(envelope):
         env_uid: Optional[int] = None
         raw_uid = envelope.get("user_id")

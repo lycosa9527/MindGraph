@@ -341,6 +341,10 @@ async def test_send_kitty_ws_action_rejects_mobile_without_owner() -> None:
             return_value=None,
         ),
         patch(
+            "services.kitty.context.messaging.publish_kitty_canvas_action",
+            AsyncMock(return_value=False),
+        ) as sse,
+        patch(
             "services.kitty.context.messaging.voice_sessions",
             {
                 "vs-mobile": {
@@ -355,6 +359,100 @@ async def test_send_kitty_ws_action_rejects_mobile_without_owner() -> None:
 
     assert ok is False
     safe_send.assert_not_awaited()
+    sse.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_send_kitty_ws_action_uses_sse_when_owner_on_other_worker() -> None:
+    """Mobile ingress publishes desktop_wake canvas_action when local owner WS misses."""
+    ingress_ws = MagicMock()
+    message = {
+        "type": "action",
+        "action": "auto_complete_branch",
+        "params": {"node_label": "中国", "node_id": "branch-r-1-6"},
+    }
+    with (
+        patch(
+            "services.kitty.context.messaging.safe_websocket_send",
+            AsyncMock(return_value=True),
+        ) as safe_send,
+        patch(
+            "services.kitty.context.messaging.find_canvas_owner_websocket",
+            return_value=None,
+        ),
+        patch(
+            "services.kitty.context.messaging.publish_kitty_canvas_action",
+            AsyncMock(return_value=True),
+        ) as sse,
+        patch(
+            "services.kitty.context.messaging.voice_sessions",
+            {
+                "vs-mobile": {
+                    "user_id": 7,
+                    "diagram_session_id": "lib-cross",
+                    "_kitty_client_lane": "mobile",
+                }
+            },
+        ),
+    ):
+        ok = await send_kitty_ws_action(ingress_ws, "vs-mobile", message)
+
+    assert ok is True
+    safe_send.assert_not_awaited()
+    sse.assert_awaited_once()
+    assert mock_await_args(sse)[0] == 7
+    assert mock_await_args(sse)[1] == "lib-cross"
+    assert mock_await_args(sse)[2]["action"] == "auto_complete_branch"
+
+
+@pytest.mark.asyncio
+async def test_send_kitty_diagram_update_sse_fallback_when_owner_missing() -> None:
+    """Verified mutation: chat on mobile; Redis desktop_wake SSE carries apply."""
+    ingress_ws = MagicMock()
+    message = {
+        "type": "diagram_update",
+        "action": "add_nodes",
+        "updates": {"nodes": [{"text": "江苏"}]},
+        "mutation_id": "mut-cross",
+        "user_summary": "已添加「江苏」",
+    }
+    with (
+        patch(
+            "services.kitty.context.messaging.safe_websocket_send",
+            AsyncMock(return_value=True),
+        ) as safe_send,
+        patch(
+            "services.kitty.context.messaging.publish_kitty_diagram_update",
+            AsyncMock(),
+        ) as fanout,
+        patch(
+            "services.kitty.context.messaging.find_canvas_owner_websocket",
+            return_value=None,
+        ),
+        patch(
+            "services.kitty.context.messaging.voice_sessions",
+            {
+                "vs-mobile": {
+                    "user_id": 7,
+                    "diagram_session_id": "lib-cross-2",
+                    "_kitty_client_lane": "mobile",
+                }
+            },
+        ),
+        patch(
+            "services.kitty.context.messaging.fanout_voice_command_from_session",
+            AsyncMock(),
+        ),
+    ):
+        ok = await send_kitty_diagram_update(ingress_ws, "vs-mobile", message)
+
+    assert ok is True
+    safe_send.assert_awaited_once()
+    _ws, chat_only = mock_await_args(safe_send)
+    assert chat_only.get("mutation_id") is None
+    assert chat_only["user_summary"] == "已添加「江苏」"
+    fanout.assert_awaited_once()
+    assert mock_await_args(fanout)[2]["mutation_id"] == "mut-cross"
 
 
 @pytest.mark.asyncio

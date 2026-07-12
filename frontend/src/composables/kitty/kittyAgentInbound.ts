@@ -130,6 +130,24 @@ export function handleKittyServerMessage(
       break
     }
 
+    case 'desktop_focus_update': {
+      const libRaw = data.diagram_library_id
+      const lib =
+        typeof libRaw === 'string' && libRaw.trim() !== '' ? libRaw.trim() : null
+      const tsRaw = data.updated_at
+      let updatedAt: number | null = null
+      if (typeof tsRaw === 'number' && Number.isFinite(tsRaw)) {
+        updatedAt = Math.trunc(tsRaw)
+      } else if (typeof tsRaw === 'string' && /^\d+$/.test(tsRaw)) {
+        updatedAt = Number(tsRaw)
+      }
+      eventBus.emit('kitty:desktop_focus_update', {
+        diagram_library_id: lib,
+        updated_at: updatedAt,
+      })
+      break
+    }
+
     case 'transcription':
       deps.lastTranscription.value = String(data.text ?? '')
       eventBus.emit('voice:transcription', { text: String(data.text ?? '') })

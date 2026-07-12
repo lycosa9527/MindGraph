@@ -20,7 +20,10 @@ from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
 from services.kitty.ack.ack_library import render_ack_for_diagram_update
 from services.kitty.ack.ack_slots import enrich_ack_session_context
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log, summarize_diagram_update
-from services.kitty.infra.desktop.kitty_desktop_wake_fanout import publish_kitty_diagram_update
+from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
+    publish_kitty_canvas_action,
+    publish_kitty_diagram_update,
+)
 from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
 from services.kitty.session.canvas_owner import find_canvas_owner_websocket, is_canvas_owner_session
 from services.kitty.session.runtime_state import logger, voice_sessions
@@ -332,6 +335,17 @@ async def send_kitty_ws_action(
                 )
             return owner_sent
         if not is_canvas_owner_session(sess):
+            # Cross-worker: Redis desktop_wake reaches the browser (not process-local WS).
+            relayed = await publish_kitty_canvas_action(uid, scope.strip(), outbound)
+            if relayed:
+                kitty_wf_log(
+                    "ws_out",
+                    "canvas_action_sse",
+                    voice_session_id=voice_session_id,
+                    scope=scope.strip(),
+                    action=str(outbound.get("action") or ""),
+                )
+                return True
             kitty_wf_log(
                 "ws_out",
                 "canvas_owner_missing",
@@ -405,6 +419,22 @@ async def send_kitty_diagram_update(
                 kitty_wf_log(
                     "ws_out",
                     "canvas_owner_apply",
+                    voice_session_id=voice_session_id,
+                    scope=scope.strip(),
+                    action=str(outbound.get("action") or ""),
+                )
+            elif owner_ws is None and not is_canvas_owner_session(sess):
+                # No local owner WS — chat on mobile; Redis SSE carries verified apply.
+                chat_only = {
+                    "type": "diagram_update",
+                    "action": outbound.get("action"),
+                    "updates": {},
+                    "user_summary": outbound.get("user_summary"),
+                }
+                sent = await safe_websocket_send(websocket, chat_only)
+                kitty_wf_log(
+                    "ws_out",
+                    "canvas_owner_sse_fallback",
                     voice_session_id=voice_session_id,
                     scope=scope.strip(),
                     action=str(outbound.get("action") or ""),

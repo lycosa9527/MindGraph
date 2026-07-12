@@ -85,7 +85,7 @@ Refcount Lua defaults to **EVALSHA** (per-worker script cache). Set **`KITTY_REF
 
 ## Load balancing
 
-Use **sticky sessions** (cookie- or IP-based) to `/ws/kitty` so the same client reconnects the same worker during a session. Preempt and refcount still coordinate across workers, but sticky routing reduces redundant churn. For metrics, `ws_kitty_refcount_meta_drift_total` bumps when `build_desktop_pairing_snapshot` sees sessionmeta and refcount disagree (investigate stale clients or partial failures).
+Use **sticky sessions** (cookie- or IP-based) to `/ws/kitty` so the same client reconnects the same worker during a session. Preempt and refcount still coordinate across workers, but sticky routing reduces redundant churn. Cross-device **apply** does not depend on sticky WS affinity: Redis ``kitty:desktop_wake:{user_id}`` already reaches the desktop browser SSE. Verified edits and canvas actions fan out on that channel; only the pending mutation **ack** future needs a small Redis control relay when the desktop Kitty WS and mobile ingress sit on different workers. For metrics, `ws_kitty_refcount_meta_drift_total` bumps when `build_desktop_pairing_snapshot` sees sessionmeta and refcount disagree (investigate stale clients or partial failures).
 
 ## Cross-device sync contract (mobile ↔ desktop)
 
@@ -93,9 +93,11 @@ Treat Mobile Kitty, desktop canvas, and the one-sentence panel as **one session*
 
 | Domain | Direction | Channel | Notes |
 |--------|-----------|---------|-------|
-| Scope / pairing | Desktop → Mobile | `desktop_focus` + bootstrap `live`/`library`/`empty` | Stale focus ignored (≤180s); empty → ephemeral |
-| Open diagram | Mobile → Desktop | `desktop_action` queue | Library pick / create-new opens canvas |
-| Diagram mutations (voice/Kitty) | Mobile → Desktop | WS `diagram_update` + SSE fanout | Mic edits appear on canvas |
+| Scope / pairing | Desktop → Mobile | Redis ``desktop_focus`` + WS ``desktop_focus_update`` (+ slow REST recovery) | Stale focus ignored (≤180s); empty → ephemeral |
+| Open diagram | Mobile → Desktop | Redis action queue + SSE ``desktop_action_pending`` → instant LPOP | Library pick / create-new opens canvas |
+| Diagram mutations (voice/Kitty) | Mobile → Desktop | Redis ``desktop_wake`` SSE ``diagram_update`` (+ local owner WS when same worker) | Verified ``mutation_id`` applied by canvas owner tab; observers skip |
+| Canvas actions (auto_complete…) | Mobile → Desktop | Redis ``desktop_wake`` SSE ``canvas_action`` (+ local owner WS when same worker) | Browser executes; no cross-worker WS lookup required |
+| Verified mutation ack | Desktop → Mobile worker | Kitty WS ack + Redis ``mutation_ack`` control relay | Completes pending future when WS landed on another worker |
 | Manual desktop canvas edits | Desktop → Mobile | Hub/`live_spec` + mobile `live_context` poll | Phone chips stay honest after desktop edits |
 | Selection | **Bidirectional** | Mobile `context_update` → SSE; desktop `PUT /api/kitty/selection/{scope}` → mobile WS | Chips ↔ canvas highlight |
 | LLM model | **Bidirectional** | `PUT /api/kitty/llm_model/{scope}` + WS/SSE | Both sides update pills |
@@ -115,13 +117,13 @@ The desktop SPA (`useKittyDesktopActionPoll` in `App.vue`) **does not** consume 
 2. The user is authenticated on a **desktop** surface (not `/m/*`).
 3. `GET /api/kitty/mobile_active` reports `active: true` (phone Kitty WebSocket started with `client_lane: mobile`).
 
-Both `GET /api/kitty/desktop_pairing` and legacy `GET /api/kitty/desktop_action/pop` gate **long-poll** BLPOP on ``mobile_active`` (live mobile Kitty WS). **Instant** pop (``wait_sec=0``) runs only after mobile REST enqueue sets a one-shot explicit-drain flag (library diagram pick). Stale queue items are discarded on pop.
+Both `GET /api/kitty/desktop_pairing` and legacy `GET /api/kitty/desktop_action/pop` gate **long-poll** BLPOP on ``mobile_active`` (live mobile Kitty WS) for API compatibility. The **desktop SPA** no longer chains ``wait_sec=25``: Redis queue stays shared across workers; enqueue publishes SSE ``desktop_action_pending`` on ``kitty:desktop_wake:{user_id}``, and the leader tab drains with instant ``desktop_pairing?wait_sec=0`` (LPOP). Stale queue items are discarded on pop. Instant pop while mobile is inactive still requires the one-shot explicit-drain flag (library diagram pick).
 
-While mobile Kitty is **off**, desktop opens **SSE** on `GET /api/kitty/desktop_wake/stream` (EventSource + cookie auth) for instant wake when phone Kitty connects. Redis pub/sub on `kitty:desktop_wake:{user_id}` fires on `mark_kitty_mobile_active` / `clear_kitty_mobile_scope`. A **12s fallback** poll on `GET /api/kitty/desktop_pairing?wait_sec=0` runs only when SSE is disconnected. When mobile connects, the leader tab chains long-poll requests to `GET /api/kitty/desktop_pairing?wait_sec=25` (Redis BLPOP on the action queue) until mobile disconnects. Legacy `GET /api/kitty/desktop_action/pop` remains available with optional `wait_sec`.
+While mobile Kitty is **off**, desktop opens **SSE** on `GET /api/kitty/desktop_wake/stream` (EventSource + cookie auth) for instant wake when phone Kitty connects. Redis pub/sub on `kitty:desktop_wake:{user_id}` fires on `mark_kitty_mobile_active` / `clear_kitty_mobile_scope`. A **12s fallback** poll on `GET /api/kitty/desktop_pairing?wait_sec=0` runs only when SSE is disconnected. On SSE reconnect the leader also drains any queued actions.
 
-**Tab leader:** `BroadcastChannel` (`kittyDesktopPollLeader.ts`) elects one desktop tab per browser profile to run the watch/consume loop so multiple open MindGraph tabs do not multiply pairing traffic.
+**Tab leader:** `BroadcastChannel` (`kittyDesktopPollLeader.ts`) elects one desktop tab per browser profile to run the watch/SSE loop so multiple open MindGraph tabs do not multiply pairing traffic.
 
-**Mobile `desktop_focus` poll:** `useMobileKittyPairing` polls `GET /api/kitty/desktop_focus` while Mobile Kitty is visible (including while connected) so opening a diagram on desktop can switch mobile scope. Focus is trusted only when recently refreshed (desktop canvas heartbeat). After focus clear, mobile resets to an ephemeral session.
+**Mobile `desktop_focus`:** Desktop `PUT /api/kitty/desktop_focus` writes Redis and pushes ``desktop_focus_update`` to mobile Kitty WS on this worker, plus Redis control ``desktop_focus`` so other workers can push to their local mobile sockets. Mobile keeps a slow REST recovery poll while WS is connected (fast poll only pre-WS). Focus is trusted only when recently refreshed (desktop canvas heartbeat). After focus clear, mobile resets to an ephemeral session.
 
 Desktop **start** on a scope clears `client_lane: mobile` in sessionmeta (`preserve_mobile_lane=False`) and removes that scope from `kitty:mobile_active:{user_id}` so the pairing indicator does not stay stale after handoff.
 
@@ -131,7 +133,7 @@ Canvas uses the shared **mobile_active** hub (fed by the leader tab's desktop wa
 
 ## Desktop focus (`desktop_focus`)
 
-`GET/PUT /api/kitty/desktop_focus` publishes the library id the user last had open on **desktop** MindGraph so mobile Kitty can pair when local Pinia has no `activeDiagramId`. See `services/kitty/infra/desktop/kitty_desktop_focus.py`.
+`GET/PUT /api/kitty/desktop_focus` publishes the library id the user last had open on **desktop** MindGraph. PUT also notifies mobile Kitty via WS + cross-worker Redis control (see `kitty_desktop_focus_push.py`). Mobile may still GET for recovery / pre-WS pairing.
 
 ## Context parity (desktop-only edits while mobile Kitty is open)
 

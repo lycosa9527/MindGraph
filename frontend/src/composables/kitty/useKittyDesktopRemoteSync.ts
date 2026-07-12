@@ -4,7 +4,10 @@
 import { type ComputedRef, type Ref, onUnmounted, ref, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { applyKittyDiagramUpdate } from '@/composables/kitty/kittyAgentActions'
+import {
+  applyKittyDiagramUpdate,
+  executeKittyAgentAction,
+} from '@/composables/kitty/kittyAgentActions'
 import { formatKittyDiagramUpdateDebug } from '@/composables/kitty/kittyAgentDebug'
 import {
   acquireKittyMobileActiveHub,
@@ -18,7 +21,10 @@ import {
 import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
 import { applyKittyRemoteCanvasSelection } from '@/composables/kitty/kittySelectionApply'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
-import { KITTY_PAIR_POLL_MS } from '@/composables/kitty/runKittyIntervalPoll'
+import {
+  KITTY_LIVE_CONTEXT_POLL_MS,
+} from '@/composables/kitty/runKittyIntervalPoll'
+import type { KittyAgentContext } from '@/composables/kitty/kittyAgentTypes'
 import { syncDiagramStoreFromVoiceContext } from '@/composables/kitty/syncDiagramStoreFromVoiceContext'
 import { useDiagramStore } from '@/stores/diagram'
 import { useKittySessionStore } from '@/stores/kittySession'
@@ -51,6 +57,11 @@ export function useKittyDesktopRemoteSync(options: {
   libraryDiagramId: Ref<string | null> | ComputedRef<string | null>
   syncEnabled: ComputedRef<boolean>
   collabSessionActive: ComputedRef<boolean>
+  /** Canvas-owner hub persist for verified SSE apply (parity with WS inbound). */
+  hubPersist?: {
+    buildContext: () => KittyAgentContext
+    updateContext: (ctx: KittyAgentContext) => void | Promise<void>
+  }
 }): { refresh: () => Promise<void> } {
   const diagramStore = useDiagramStore()
   const mobileActiveHub = useKittyMobileActiveHubSnapshot()
@@ -77,15 +88,10 @@ export function useKittyDesktopRemoteSync(options: {
     action?: unknown
     updates?: unknown
     mutation_id?: unknown
+    expected_effect?: unknown
+    before_fingerprint?: unknown
   }): void {
     if (!options.syncEnabled.value || collabBlocksDiagramEdits()) {
-      return
-    }
-    if (typeof data.mutation_id === 'string' && data.mutation_id.trim() !== '') {
-      return
-    }
-    // Owning tab already applied via Kitty WS / Pinia; observers use live_context recovery.
-    if (useKittySessionStore().ownsKittySession) {
       return
     }
     const scope = typeof data.scope === 'string' ? data.scope.trim() : ''
@@ -96,11 +102,89 @@ export function useKittyDesktopRemoteSync(options: {
     if (!action) {
       return
     }
+    const mutationId =
+      typeof data.mutation_id === 'string' && data.mutation_id.trim() !== ''
+        ? data.mutation_id.trim()
+        : ''
+    const kittySession = useKittySessionStore()
+
+    // Verified edits: Redis SSE is the cross-worker apply path when owner WS
+    // is on another Uvicorn process. Observers must not re-apply.
+    if (mutationId !== '') {
+      if (!kittySession.ownsKittySession) {
+        return
+      }
+      lastDiagramSseAt.value = Date.now()
+      const updates = isRecord(data.updates) || Array.isArray(data.updates) ? data.updates : {}
+      const summary = formatKittyDiagramUpdateDebug(action, updates as Record<string, unknown>)
+      traceKittyWorkflow('desktop', 'canvas_apply_verified_sse', summary, { scope, action })
+      eventBus.emit('kitty:diagram_mutation_requested', {
+        action,
+        updates: updates as Record<string, unknown>,
+        mutationId,
+        expectedEffect:
+          data.expected_effect && typeof data.expected_effect === 'object'
+            ? (data.expected_effect as import('@/utils/diagramEditVerify').DiagramEditExpectedEffect)
+            : undefined,
+        beforeFingerprint:
+          data.before_fingerprint &&
+          typeof data.before_fingerprint === 'object' &&
+          Array.isArray((data.before_fingerprint as { nodes?: unknown }).nodes) &&
+          Array.isArray((data.before_fingerprint as { connections?: unknown }).connections)
+            ? {
+                nodes: (data.before_fingerprint as { nodes: import('@/types').DiagramNode[] })
+                  .nodes,
+                connections: (
+                  data.before_fingerprint as { connections: import('@/types').Connection[] }
+                ).connections,
+              }
+            : undefined,
+        sendAck: kittySession.getMutationAckSender() ?? undefined,
+        hubPersist: options.hubPersist
+          ? {
+              buildContext: options.hubPersist.buildContext,
+              updateContext: options.hubPersist.updateContext,
+              scope: scope || options.libraryDiagramId.value?.trim() || null,
+            }
+          : undefined,
+        lane: 'desktop',
+      })
+      return
+    }
+
+    // Owning tab already applied via Kitty WS / Pinia; observers use live_context recovery.
+    if (kittySession.ownsKittySession) {
+      return
+    }
     lastDiagramSseAt.value = Date.now()
     const updates = isRecord(data.updates) || Array.isArray(data.updates) ? data.updates : {}
     const summary = formatKittyDiagramUpdateDebug(action, updates as Record<string, unknown>)
     traceKittyWorkflow('desktop', 'canvas_apply', summary, { scope, action })
     applyKittyDiagramUpdate(action, updates as Record<string, unknown>)
+  }
+
+  function handleCanvasActionFanout(data: {
+    scope?: string
+    action?: string
+    params?: Record<string, unknown>
+  }): void {
+    if (!options.syncEnabled.value || collabBlocksDiagramEdits()) {
+      return
+    }
+    const kittySession = useKittySessionStore()
+    if (!kittySession.ownsKittySession) {
+      return
+    }
+    const scope = typeof data.scope === 'string' ? data.scope.trim() : ''
+    if (!scopeMatches(scope)) {
+      return
+    }
+    const action = typeof data.action === 'string' ? data.action.trim() : ''
+    if (!action) {
+      return
+    }
+    traceKittyWorkflow('desktop', 'canvas_action_sse', action, { scope, action })
+    executeKittyAgentAction(action, data.params ?? {})
   }
 
   function handleSelectionFanout(data: { scope?: string; selected_nodes?: string[] }): void {
@@ -211,7 +295,7 @@ export function useKittyDesktopRemoteSync(options: {
     const contentDiverged = hubContentFp.length > 0 && hubContentFp !== localFp
     const sseMissed =
       forceRecovery ||
-      (Date.now() - lastDiagramSseAt.value > KITTY_PAIR_POLL_MS * 2 && contentDiverged)
+      (Date.now() - lastDiagramSseAt.value > KITTY_LIVE_CONTEXT_POLL_MS * 2 && contentDiverged)
 
     if (sseMissed && diagramData != null && contentDiverged) {
       syncDiagramStoreFromVoiceContext(String(data.diagram_type ?? storeType), diagramData)
@@ -256,8 +340,13 @@ export function useKittyDesktopRemoteSync(options: {
     }
 
     pollTickCount += 1
-    const forceRecovery = tickOpts?.forceRecovery === true || pollTickCount % 4 === 0
+    // SSE carries hot diagram/selection; poll is recovery (every ~8 ticks ≈ 96s when live).
+    const forceRecovery = tickOpts?.forceRecovery === true || pollTickCount % 8 === 0
     const mobileFresh = isKittyMobileActiveHubFresh()
+    const sseFresh = Date.now() - lastDiagramSseAt.value < KITTY_LIVE_CONTEXT_POLL_MS * 2
+    if (mobileFresh && sseFresh && !forceRecovery) {
+      return
+    }
     if (mobileFresh && !forceRecovery) {
       return
     }
@@ -315,7 +404,7 @@ export function useKittyDesktopRemoteSync(options: {
     pollTimer = setTimeout(() => {
       pollTimer = null
       void runPollCycle()
-    }, KITTY_PAIR_POLL_MS)
+    }, KITTY_LIVE_CONTEXT_POLL_MS)
   }
 
   async function runPollCycle(): Promise<void> {
@@ -396,6 +485,13 @@ export function useKittyDesktopRemoteSync(options: {
     'kitty:desktop_diagram_update',
     (payload) => {
       handleDiagramFanout(payload)
+    },
+    'KittyDesktopRemoteSync'
+  )
+  eventBus.onWithOwner(
+    'kitty:desktop_canvas_action',
+    (payload) => {
+      handleCanvasActionFanout(payload)
     },
     'KittyDesktopRemoteSync'
   )

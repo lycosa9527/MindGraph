@@ -66,9 +66,13 @@ async function applyKittyDiagramMutationRequest(
     if (mutationId !== '') {
       const sendAck =
         payload.sendAck ??
+        useKittySessionStore().getMutationAckSender() ??
         ((_ackPayload: Record<string, unknown>) => {
           /* verified mutation without WS ack sink — still apply Pinia */
         })
+      if (!useKittySessionStore().claimMutationId(mutationId)) {
+        return
+      }
       const applyResult = await applyVerifiedDiagramUpdate(diagramAction, diagramUpdates, {
         mutationId,
         expectedEffect: payload.expectedEffect,

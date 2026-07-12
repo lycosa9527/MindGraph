@@ -269,6 +269,10 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "好的，正在自动补全整张导图…",
         "en": "OK — auto-completing the whole diagram…",
     },
+    "ui.auto_complete.failed": {
+        "zh": "抱歉，没能自动补全整张导图。请确认电脑端画布已打开后再试一次。",
+        "en": "Sorry — I couldn't auto-complete the diagram. Make sure the desktop canvas is open, then try again.",
+    },
     "ui.start_inline_recommendations": {
         "zh": "好的，已打开联想建议，请从推荐里选一个。",
         "en": "OK — inline suggestions are open. Pick one when ready.",

@@ -246,6 +246,14 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     })
   }
 
+  function bindMutationAckSender(): void {
+    kittySession.setMutationAckSender((payload) => {
+      if (ws.value?.readyState === WebSocket.OPEN) {
+        ws.value.send(JSON.stringify(payload))
+      }
+    })
+  }
+
   async function connect(diagSessionId: string, context?: KittyAgentContext): Promise<void> {
     if (destroyed) {
       throw new Error('Kitty Agent has been destroyed')
@@ -400,6 +408,9 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
         isActive.value = false
         isVoiceActive.value = false
         state.value = 'idle'
+        // Preempt / drop must clear owner so observer tabs never apply SSE mutations.
+        kittySession.setOwnsKittySession(false)
+        kittySession.setMutationAckSender(null)
         eventBus.emit('voice:ws_closed', {
           code: event.code,
           reason: event.reason,
@@ -488,7 +499,11 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
         return
       }
 
-      kittySession.setOwnsKittySession(true)
+      // Canvas-owner tabs own verified apply/ack. Mobile is mic/chat only.
+      if (kittyClientLane !== 'mobile') {
+        kittySession.setOwnsKittySession(true)
+        bindMutationAckSender()
+      }
       eventBus.emit('voice:started', { sessionId: sessionId.value ?? '' })
     } finally {
       finishGate()
@@ -717,6 +732,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     isVoiceActive.value = false
     state.value = 'idle'
     kittySession.setOwnsKittySession(false)
+    kittySession.setMutationAckSender(null)
     eventBus.emit('voice:cleanup_started', {
       diagramSessionId: diagramSessionId.value ?? undefined,
     })

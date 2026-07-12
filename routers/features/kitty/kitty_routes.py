@@ -101,9 +101,10 @@ async def kitty_desktop_pairing(
     wait_sec: float = Query(default=0, ge=0, le=30),
 ):
     """
-    Combined desktop poll: ``mobile_active`` plus optional long-poll ``action`` pop.
+    Combined desktop poll: ``mobile_active`` plus optional ``action`` pop.
 
-    Desktop SPA uses ``wait_sec=0`` while watching and ``wait_sec=25`` while consuming.
+    Desktop SPA uses ``wait_sec=0`` (instant LPOP) after SSE ``desktop_action_pending``
+    and as SSE-down fallback. ``wait_sec>0`` BLPOP remains for API compatibility.
     """
     return await kitty_rest_desktop_pairing(current_user, wait_sec=wait_sec)
 
@@ -113,8 +114,9 @@ async def kitty_desktop_wake_stream(current_user: User = Depends(get_current_use
     """
     SSE stream: instant ``mobile_active`` wake when phone Kitty connects or disconnects.
 
-    Desktop SPA uses EventSource (cookie auth) to enter consume mode without waiting for
-    the 12s watch poll. Action delivery still uses ``desktop_pairing`` long-poll BLPOP.
+    Desktop SPA uses EventSource (cookie auth) for ``mobile_active`` and action wake.
+    Action delivery: SSE ``desktop_action_pending`` then instant ``desktop_pairing`` LPOP
+    (no long-poll BLPOP chain on the SPA).
     """
     return await kitty_desktop_wake_stream_response(current_user)
 

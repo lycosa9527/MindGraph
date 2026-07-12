@@ -136,6 +136,7 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
                 "paths": [
                     "services/kitty/infra/redis/",
                     "services/kitty/infra/desktop/kitty_desktop_focus.py",
+                    "services/kitty/infra/desktop/kitty_desktop_focus_push.py",
                     "services/kitty/infra/desktop/kitty_desktop_action_queue.py",
                     "services/kitty/infra/desktop/kitty_mobile_active.py",
                     "services/kitty/infra/control/",

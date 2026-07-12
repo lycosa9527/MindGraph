@@ -75,6 +75,7 @@ import {
   canvasKittySeedQueryKeysPresent,
 } from '@/composables/canvasPage/applyCanvasKittySeedFromRoute'
 import { handleKittyAutoCompleteBranchRequest } from '@/composables/kitty/handleKittyAutoCompleteBranchRequest'
+import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
 import { KITTY_CANVAS_OWNER_KEY } from '@/composables/kitty/kittyCanvasOwnerKey'
 import { registerKittyDiagramMutationBus } from '@/composables/kitty/registerKittyDiagramMutationBus'
 import { useKittyCanvasOwnerAgent } from '@/composables/kitty/useKittyCanvasOwnerAgent'
@@ -166,6 +167,7 @@ import {
 } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
+import { useOneSentenceStore } from '@/stores/oneSentence'
 import { usePresentationPointerStore } from '@/stores/presentationPointer'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -178,6 +180,7 @@ import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 const route = useRoute()
 const router = useRouter()
 const diagramStore = useDiagramStore()
+const oneSentenceStore = useOneSentenceStore()
 getDiagramOperations()
 const relationshipStore = useConceptMapRelationshipStore()
 const uiStore = useUIStore()
@@ -629,17 +632,24 @@ const kittyRemoteSyncEnabled = computed(
     currentDiagramId.value !== ''
 )
 
-useKittyDesktopRemoteSync({
-  libraryDiagramId: currentDiagramId,
-  syncEnabled: kittyRemoteSyncEnabled,
-  collabSessionActive: computed(() => diagramStore.collabSessionActive),
-})
-
 const kittyCanvasOwner = useKittyCanvasOwnerAgent({
   libraryDiagramId: currentDiagramId,
   enabled: kittyRemoteSyncEnabled,
 })
 provide(KITTY_CANVAS_OWNER_KEY, kittyCanvasOwner)
+
+useKittyDesktopRemoteSync({
+  libraryDiagramId: currentDiagramId,
+  syncEnabled: kittyRemoteSyncEnabled,
+  collabSessionActive: computed(() => diagramStore.collabSessionActive),
+  hubPersist: {
+    buildContext: () =>
+      buildKittyDiagramContext(diagramStore, 'one_sentence', {
+        oneSentencePhase: oneSentenceStore.phase,
+      }),
+    updateContext: (ctx) => kittyCanvasOwner.kitty.updateContext(ctx),
+  },
+})
 
 useConceptMapRelationshipTabFromSelection({ startRecommendations })
 
