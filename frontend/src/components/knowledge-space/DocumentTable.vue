@@ -205,7 +205,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
         <template #default="{ row }">
           <ElCheckbox
             :model-value="isRowSelected(row.id)"
-            @change="(val) => toggleSelectRow(row.id, val)"
+            @change="(val: boolean | string | number) => toggleSelectRow(row.id, val)"
           />
         </template>
       </ElTableColumn>

@@ -24,7 +24,8 @@
       "@data/*": ["../data/*"]
     },
 
-    /* Types */
+    /* `vite/client` lives under node_modules/vite, not @types. */
+    "typeRoots": ["./node_modules/@types", "./node_modules"],
     "types": ["vite/client"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.d.ts"],

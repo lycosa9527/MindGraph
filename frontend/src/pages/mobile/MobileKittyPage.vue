@@ -451,6 +451,31 @@ const {
   },
 })
 
+const kittyMicDebugLine = computed(() => {
+  const wsState = kitty.ws.value?.readyState
+  const wsLabel =
+    wsState === WebSocket.OPEN
+      ? 'ws:open'
+      : wsState === WebSocket.CONNECTING
+        ? 'ws:connecting'
+        : wsState === WebSocket.CLOSING
+          ? 'ws:closing'
+          : wsState === WebSocket.CLOSED
+            ? 'ws:closed'
+            : 'ws:none'
+  const err = funAsr.debugLastError.value
+  return [
+    `ctx:${funAsr.debugCtxState.value}`,
+    `frames:${funAsr.debugFramesSent.value}`,
+    wsLabel,
+    funAsr.listening.value ? 'tx:1' : 'tx:0',
+    pttPointerActive.value ? 'hold:1' : 'hold:0',
+    err ? `err:${err}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+})
+
 useMobileKittyPageLifecycle({
   router,
   authStore,
@@ -459,6 +484,8 @@ useMobileKittyPageLifecycle({
   kittyPairScope,
   bootstrapPayload,
   ensureMobileKittyBootstrap,
+  ensureConnected,
+  kittyServerEnabled,
   bindKittyMicKeyboard,
   teardownMicPtt,
   pushKittyDebugLine,
@@ -724,6 +751,13 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
           />
         </button>
       </div>
+
+      <p
+        class="text-center text-[10px] text-slate-400 pb-1 px-3 font-mono leading-tight break-all"
+        aria-live="polite"
+      >
+        {{ kittyMicDebugLine }}
+      </p>
 
       <p
         v-if="micDenied || cameraDenied"

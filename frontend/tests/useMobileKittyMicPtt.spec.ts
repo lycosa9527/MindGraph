@@ -1,36 +1,15 @@
 /**
- * Mobile Kitty PTT drives Fun-ASR start/stop (not legacy Omni voice).
- * iOS: getUserMedia must kick off on pointerdown before await connect.
+ * Mobile Kitty PTT: warm mic on pointerdown, parallel WS connect, stop on release.
  */
 import { nextTick, ref } from 'vue'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const releaseMock = vi.fn()
-const kickoffMock = vi.fn()
-
-vi.mock('@/composables/kitty/useKittyFunAsrMic', () => ({
-  kickoffKittyMicGestureAssets: (...args: unknown[]) => kickoffMock(...args),
-  releaseKittyMicGestureAssets: (...args: unknown[]) => releaseMock(...args),
-}))
-
 import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
-
-function makeGestureAssets() {
-  return {
-    stream: {
-      getTracks: () => [{ stop: vi.fn() }],
-    } as unknown as MediaStream,
-    audioContext: { close: vi.fn(), state: 'running' } as unknown as AudioContext,
-  }
-}
 
 describe('useMobileKittyMicPtt', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    releaseMock.mockReset()
-    kickoffMock.mockReset()
-    kickoffMock.mockImplementation(async () => makeGestureAssets())
   })
 
   afterEach(() => {
@@ -40,6 +19,7 @@ describe('useMobileKittyMicPtt', () => {
 
   it('starts Fun-ASR on pointer hold and stops on release', async () => {
     const listening = ref(false)
+    const prepareMicFromUserGesture = vi.fn(async () => true)
     const startListening = vi.fn(async () => {
       listening.value = true
     })
@@ -56,7 +36,7 @@ describe('useMobileKittyMicPtt', () => {
       onKittyMicPointerUp,
       teardownMicPtt,
     } = useMobileKittyMicPtt({
-      funAsr: { listening, startListening, stopListening },
+      funAsr: { listening, prepareMicFromUserGesture, startListening, stopListening },
       kittyServerEnabled: { value: true },
       micDenied: { value: false },
       showKeyboard: { value: false },
@@ -75,7 +55,7 @@ describe('useMobileKittyMicPtt', () => {
     Object.defineProperty(down, 'currentTarget', { value: btn })
     onKittyMicPointerDown(down)
     expect(pttPointerActive.value).toBe(true)
-    expect(kickoffMock).toHaveBeenCalled()
+    expect(prepareMicFromUserGesture).toHaveBeenCalled()
 
     await nextTick()
     await Promise.resolve()
@@ -94,8 +74,9 @@ describe('useMobileKittyMicPtt', () => {
     teardownMicPtt()
   })
 
-  it('kicks off mic during connecting and does not abort the hold', async () => {
+  it('warms mic while connect is in flight and keeps the hold', async () => {
     const listening = ref(false)
+    const prepareMicFromUserGesture = vi.fn(async () => true)
     const startListening = vi.fn(async () => {
       listening.value = true
     })
@@ -109,7 +90,7 @@ describe('useMobileKittyMicPtt', () => {
     )
 
     const { pttPointerActive, onKittyMicPointerDown, teardownMicPtt } = useMobileKittyMicPtt({
-      funAsr: { listening, startListening, stopListening },
+      funAsr: { listening, prepareMicFromUserGesture, startListening, stopListening },
       kittyServerEnabled: { value: true },
       micDenied: { value: false },
       showKeyboard: { value: false },
@@ -127,7 +108,7 @@ describe('useMobileKittyMicPtt', () => {
     onKittyMicPointerDown(down)
 
     expect(pttPointerActive.value).toBe(true)
-    expect(kickoffMock).toHaveBeenCalled()
+    expect(prepareMicFromUserGesture).toHaveBeenCalled()
     expect(ensureConnected).toHaveBeenCalled()
 
     resolveConnect?.(true)
@@ -142,13 +123,14 @@ describe('useMobileKittyMicPtt', () => {
 
   it('does not start Fun-ASR when server flag is off', async () => {
     const listening = ref(false)
+    const prepareMicFromUserGesture = vi.fn(async () => true)
     const startListening = vi.fn(async () => {
       listening.value = true
     })
     const stopListening = vi.fn()
 
     const { onKittyMicPointerDown, teardownMicPtt } = useMobileKittyMicPtt({
-      funAsr: { listening, startListening, stopListening },
+      funAsr: { listening, prepareMicFromUserGesture, startListening, stopListening },
       kittyServerEnabled: { value: false },
       micDenied: { value: false },
       showKeyboard: { value: false },
@@ -164,13 +146,14 @@ describe('useMobileKittyMicPtt', () => {
     Object.defineProperty(down, 'currentTarget', { value: btn })
     onKittyMicPointerDown(down)
     await Promise.resolve()
-    expect(kickoffMock).not.toHaveBeenCalled()
+    expect(prepareMicFromUserGesture).not.toHaveBeenCalled()
     expect(startListening).not.toHaveBeenCalled()
     teardownMicPtt()
   })
 
-  it('releases gesture assets when hold ends before connect finishes', async () => {
+  it('does not start listening when hold ends before connect finishes', async () => {
     const listening = ref(false)
+    const prepareMicFromUserGesture = vi.fn(async () => true)
     const startListening = vi.fn()
     const stopListening = vi.fn()
     let resolveConnect: ((ok: boolean) => void) | undefined
@@ -180,15 +163,13 @@ describe('useMobileKittyMicPtt', () => {
           resolveConnect = resolve
         })
     )
-    const assets = makeGestureAssets()
-    kickoffMock.mockImplementation(async () => assets)
 
     const {
       onKittyMicPointerDown,
       onKittyMicPointerUp,
       teardownMicPtt,
     } = useMobileKittyMicPtt({
-      funAsr: { listening, startListening, stopListening },
+      funAsr: { listening, prepareMicFromUserGesture, startListening, stopListening },
       kittyServerEnabled: { value: true },
       micDenied: { value: false },
       showKeyboard: { value: false },
@@ -217,7 +198,6 @@ describe('useMobileKittyMicPtt', () => {
     await Promise.resolve()
 
     expect(startListening).not.toHaveBeenCalled()
-    expect(releaseMock).toHaveBeenCalledWith(assets)
     teardownMicPtt()
   })
 })

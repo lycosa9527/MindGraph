@@ -1,22 +1,18 @@
 /**
- * Push-to-talk mic and Space-key handling for MobileKittyPage (Fun-ASR).
+ * Push-to-talk for MobileKittyPage (Fun-ASR).
  *
- * iOS Safari requires getUserMedia/AudioContext to start inside the user-gesture
- * turn. We kick those off on pointerdown before awaiting WebSocket connect.
- * Never disable the mic button while connecting — disabling cancels the pointer
- * on iOS and aborts hold-to-talk.
+ * Solid mobile path (GAIA + BotFramework-WebChat + ptt-radio):
+ * - pointerdown / pointerup / pointercancel only (covers touch + mouse)
+ * - Sync AudioContext bless + mic warm on pointerdown (before any await)
+ * - WS connect runs in parallel with mic warm
+ * - Never disable the mic button while connecting (iOS pointercancel)
  */
 import { type Ref, onUnmounted, ref } from 'vue'
 
-import {
-  kickoffKittyMicGestureAssets,
-  releaseKittyMicGestureAssets,
-  type KittyMicGestureAssets,
-} from '@/composables/kitty/useKittyFunAsrMic'
-
 export interface UseMobileKittyMicPttFunAsr {
   listening: Ref<boolean>
-  startListening: (gestureAssets?: KittyMicGestureAssets) => Promise<void>
+  prepareMicFromUserGesture: () => Promise<boolean>
+  startListening: () => Promise<void>
   stopListening: () => void
 }
 
@@ -144,49 +140,23 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     activePointerId = null
   }
 
-  async function beginKittyMicFromUser(
-    gestureAssetsPromise?: Promise<KittyMicGestureAssets>
-  ): Promise<void> {
+  async function beginKittyMicFromUser(warmPromise: Promise<boolean>): Promise<void> {
     if (!kittyServerEnabled.value || micDenied.value) {
-      if (gestureAssetsPromise) {
-        void gestureAssetsPromise
-          .then(releaseKittyMicGestureAssets)
-          .catch(() => undefined)
-      }
       return
     }
     if (funAsr.listening.value || voiceStartInFlight.value) {
-      if (gestureAssetsPromise) {
-        void gestureAssetsPromise
-          .then(releaseKittyMicGestureAssets)
-          .catch(() => undefined)
-      }
       return
     }
     voiceStartInFlight.value = true
-    let ownedAssets: KittyMicGestureAssets | undefined
     try {
-      const ok = await ensureConnected()
-      if (!ok || !isKittyMicHoldActive()) {
-        if (gestureAssetsPromise) {
-          try {
-            ownedAssets = await gestureAssetsPromise
-          } catch {
-            ownedAssets = undefined
-          }
+      const [connectedOk, warmOk] = await Promise.all([ensureConnected(), warmPromise])
+      if (!connectedOk || !warmOk || !isKittyMicHoldActive()) {
+        if (!warmOk) {
+          onMicDenied()
         }
         return
       }
-      if (gestureAssetsPromise) {
-        ownedAssets = await gestureAssetsPromise
-        if (!isKittyMicHoldActive()) {
-          return
-        }
-        await funAsr.startListening(ownedAssets)
-        ownedAssets = undefined
-      } else {
-        await funAsr.startListening()
-      }
+      await funAsr.startListening()
       if (!isKittyMicHoldActive()) {
         funAsr.stopListening()
       } else {
@@ -195,9 +165,6 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     } catch {
       onMicDenied()
     } finally {
-      if (ownedAssets) {
-        releaseKittyMicGestureAssets(ownedAssets)
-      }
       voiceStartInFlight.value = false
     }
   }
@@ -235,7 +202,6 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     if (ev.button !== 0) {
       return
     }
-    // Do not gate on `connecting` — disabling/bailing mid-hold cancels iOS pointers.
     if (!kittyServerEnabled.value || micDenied.value) {
       return
     }
@@ -252,15 +218,16 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     ev.preventDefault()
     bindWindowPointerEnd()
 
-    let gesturePromise: Promise<KittyMicGestureAssets>
+    // Must stay synchronous in this handler (iOS user-activation).
+    let warmPromise: Promise<boolean>
     try {
-      gesturePromise = kickoffKittyMicGestureAssets()
+      warmPromise = funAsr.prepareMicFromUserGesture()
     } catch {
       finishPointerPtt()
       onMicDenied()
       return
     }
-    void beginKittyMicFromUser(gesturePromise)
+    void beginKittyMicFromUser(warmPromise)
   }
 
   function onKittyMicPointerUp(ev: PointerEvent): void {
@@ -288,15 +255,15 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       return
     }
     spacePttActive = true
-    let gesturePromise: Promise<KittyMicGestureAssets> | undefined
+    let warmPromise: Promise<boolean>
     try {
-      gesturePromise = kickoffKittyMicGestureAssets()
+      warmPromise = funAsr.prepareMicFromUserGesture()
     } catch {
       spacePttActive = false
       onMicDenied()
       return
     }
-    void beginKittyMicFromUser(gesturePromise)
+    void beginKittyMicFromUser(warmPromise)
   }
 
   function onKittySpacePttKeyUp(ev: KeyboardEvent): void {

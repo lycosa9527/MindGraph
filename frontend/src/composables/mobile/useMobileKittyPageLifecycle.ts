@@ -20,6 +20,9 @@ export interface UseMobileKittyPageLifecycleOptions {
   kittyPairScope: Ref<string>
   bootstrapPayload: Ref<MobileKittyBootstrapPayload | null | undefined>
   ensureMobileKittyBootstrap: () => Promise<void>
+  /** Pre-open Kitty WS so first PTT hold is not racing connect. */
+  ensureConnected?: () => Promise<boolean>
+  kittyServerEnabled?: { value: boolean }
   bindKittyMicKeyboard: () => void
   teardownMicPtt: () => void
   pushKittyDebugLine: (prefix: string, detail: string) => void
@@ -36,6 +39,8 @@ export function useMobileKittyPageLifecycle(options: UseMobileKittyPageLifecycle
     kittyPairScope,
     bootstrapPayload,
     ensureMobileKittyBootstrap,
+    ensureConnected,
+    kittyServerEnabled,
     bindKittyMicKeyboard,
     teardownMicPtt,
     pushKittyDebugLine,
@@ -63,6 +68,9 @@ export function useMobileKittyPageLifecycle(options: UseMobileKittyPageLifecycle
       } else if (boot.context) {
         hydrateMobileKittyStoreFromBootstrap(boot.context, boot.diagram_type ?? 'circle_map')
       }
+    }
+    if (kittyServerEnabled?.value && ensureConnected) {
+      void ensureConnected()
     }
     eventBus.onWithOwner(
       'voice:ws_closed',
