@@ -19,6 +19,7 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import { useDiagramStore } from '@/stores'
+import { consumeMindMapPostEditSiblingAnchor } from '@/composables/mindMap/mindMapCanvasEnterGuard'
 import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
 import type { DiagramNode } from '@/types'
 
@@ -190,13 +191,13 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
 
-    const selectedId = diagramStore.selectedNodes[0]
-    if (!selectedId || selectedId === 'topic') {
+    const anchorId = consumeMindMapPostEditSiblingAnchor(diagramStore.selectedNodes[0])
+    if (!anchorId) {
       notify.warning(t('canvas.toolbar.selectBranchForSibling'))
       return
     }
     if (
-      diagramStore.addMindMapSibling(selectedId, t('canvas.toolbar.newBranch'))
+      diagramStore.addMindMapSibling(anchorId, t('canvas.toolbar.newBranch'))
     ) {
       notify.success(t('canvas.toolbar.siblingAdded'))
     } else {

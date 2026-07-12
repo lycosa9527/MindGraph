@@ -28,7 +28,8 @@ export function useKeyboard(shortcuts: KeyboardShortcut[]) {
     if (!active) return false
     const tag = active.tagName
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
-    return active.isContentEditable
+    if (active.isContentEditable) return true
+    return !!active.closest?.('.inline-edit-input, .inline-edit-wrapper')
   }
 
   function handleKeydown(event: KeyboardEvent): void {

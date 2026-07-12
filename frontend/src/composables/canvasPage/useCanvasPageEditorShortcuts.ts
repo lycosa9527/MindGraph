@@ -30,6 +30,12 @@ import {
   mindMapArrowKeyToDirection,
   resolveMindMapNavStartId,
 } from '@/composables/mindMap/mindMapArrowNavigation'
+import {
+  clearMindMapPostEditSiblingAnchor,
+  initInlineEditEnterGuard,
+  isMindMapCanvasEnterGuarded,
+  shouldBlockCanvasEnterShortcut,
+} from '@/composables/mindMap/mindMapCanvasEnterGuard'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, usePanelsStore } from '@/stores'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 
@@ -43,6 +49,8 @@ export function useCanvasPageEditorShortcuts(options: {
   diagramAutoSave: DiagramAutoSaveApi
   isCollabGuest: Ref<boolean>
 }): { handleSaveKey: () => Promise<void> } {
+  initInlineEditEnterGuard()
+
   const { workshopCode, activeEditors, relationshipActiveEntry, diagramAutoSave, isCollabGuest } =
     options
   const diagramStore = useDiagramStore()
@@ -60,9 +68,14 @@ export function useCanvasPageEditorShortcuts(options: {
 
   function isTypingInInput(): boolean {
     const active = document.activeElement as HTMLElement
-    return (
-      active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA' || !!active?.isContentEditable
-    )
+    if (
+      active?.tagName === 'INPUT' ||
+      active?.tagName === 'TEXTAREA' ||
+      !!active?.isContentEditable
+    ) {
+      return true
+    }
+    return !!active?.closest?.('.inline-edit-input, .inline-edit-wrapper')
   }
 
   function handleDeleteKey() {
@@ -121,6 +134,8 @@ export function useCanvasPageEditorShortcuts(options: {
 
   function handleEnterKey(event: KeyboardEvent) {
     if (event.repeat) return
+    if (shouldBlockCanvasEnterShortcut(event)) return
+    if (isMindMapCanvasEnterGuarded()) return
     if (isTypingInInput()) return
     const routed = resolveEnterKeyEvent(diagramStore.type)
     if (routed) {
@@ -157,6 +172,7 @@ export function useCanvasPageEditorShortcuts(options: {
 
     const nextId = findMindMapNodeInDirection(startId, direction, rects)
     if (nextId) {
+      clearMindMapPostEditSiblingAnchor()
       diagramStore.selectNodes(nextId)
     }
   }

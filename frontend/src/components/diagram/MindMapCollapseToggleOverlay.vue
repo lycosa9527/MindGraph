@@ -6,7 +6,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Teleport } from 'vue'
 
 import { useLanguage } from '@/composables'
-import { useMindMapCollapseOverlayPositions } from '@/composables/canvasToolbar/useMindMapCollapseTogglePosition'
+import { useMindMapCollapseOverlayPositions, resolveMindMapCollapseHoverNodeId, isMindMapCollapseEligibleNode } from '@/composables/canvasToolbar/useMindMapCollapseTogglePosition'
 import { eventBus } from '@/composables/core/useEventBus'
 import { MIND_MAP_GEOMETRY, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import {
@@ -25,6 +25,11 @@ const { t } = useLanguage()
 
 const editingNodeId = ref<string | null>(null)
 const hoveredNodeId = ref<string | null>(null)
+const pinnedCollapseNodeId = ref<string | null>(null)
+
+const activeCollapseNodeId = computed(
+  () => hoveredNodeId.value ?? pinnedCollapseNodeId.value
+)
 
 let hoverClearTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -52,13 +57,29 @@ function isCollapseOverlayTarget(target: EventTarget | null): boolean {
 }
 
 function onContainerMouseOver(event: MouseEvent): void {
-  const nodeEl = (event.target as Element).closest('.vue-flow__node')
-  const id = nodeEl?.getAttribute('data-id')
+  const id = resolveMindMapCollapseHoverNodeId(
+    event.target,
+    diagramStore.data?.connections
+  )
   if (id) {
     setHoveredNodeId(id)
     return
   }
   setHoveredNodeId(null)
+}
+
+function onContainerClick(event: MouseEvent): void {
+  if (isCollapseOverlayTarget(event.target)) return
+  const id = resolveMindMapCollapseHoverNodeId(
+    event.target,
+    diagramStore.data?.connections
+  )
+  if (id && isMindMapCollapseEligibleNode(id, diagramStore.data?.connections)) {
+    pinnedCollapseNodeId.value = id
+    setHoveredNodeId(id)
+    return
+  }
+  pinnedCollapseNodeId.value = null
 }
 
 function onContainerMouseLeave(event: MouseEvent): void {
@@ -76,6 +97,11 @@ function onCollapseButtonLeave(nodeId: string, event: PointerEvent): void {
     const relatedNodeId = related.closest('.vue-flow__node')?.getAttribute('data-id')
     if (relatedNodeId === nodeId) return
     if (related.closest('.mind-map-collapse-overlay__btn')) return
+    const edgeParentId = resolveMindMapCollapseHoverNodeId(
+      related,
+      diagramStore.data?.connections
+    )
+    if (edgeParentId === nodeId) return
   }
   setHoveredNodeId(null)
 }
@@ -104,7 +130,7 @@ const diagramStyleId = computed(
 
 const { handles, visible, scheduleMeasure } = useMindMapCollapseOverlayPositions({
   containerRef,
-  hoveredNodeId,
+  activeCollapseNodeId,
   collapsedPaths,
   nodes,
   connections,
@@ -152,6 +178,7 @@ function handleClick(
   if (handle.mode === 'expand' && !isNodeCollapsed(handle.nodeId)) return
   if (handle.mode === 'collapse' && isNodeCollapsed(handle.nodeId)) return
   diagramStore.toggleMindMapCollapse(handle.nodeId)
+  pinnedCollapseNodeId.value = null
   scheduleMeasure()
 }
 
@@ -169,6 +196,7 @@ function buttonStyle(handle: { strokeColor: string }): Record<string, string> {
 
 let unsubOpen: (() => void) | undefined
 let unsubClose: (() => void) | undefined
+let unsubPaneClick: (() => void) | undefined
 let containerHoverEl: HTMLElement | null = null
 
 function bindContainerHoverListeners(el: HTMLElement | null): void {
@@ -176,11 +204,13 @@ function bindContainerHoverListeners(el: HTMLElement | null): void {
   if (containerHoverEl) {
     containerHoverEl.removeEventListener('mouseover', onContainerMouseOver)
     containerHoverEl.removeEventListener('mouseleave', onContainerMouseLeave)
+    containerHoverEl.removeEventListener('click', onContainerClick)
   }
   containerHoverEl = el
   if (!el) return
   el.addEventListener('mouseover', onContainerMouseOver)
   el.addEventListener('mouseleave', onContainerMouseLeave)
+  el.addEventListener('click', onContainerClick)
 }
 
 watch(containerRef, bindContainerHoverListeners, { immediate: true })
@@ -196,6 +226,10 @@ onMounted(() => {
   eventBus.on('view:zoom_changed', scheduleMeasure)
   eventBus.on('view:fit_completed', scheduleMeasure)
   eventBus.on('diagram:operation_completed', scheduleMeasure)
+  unsubPaneClick = eventBus.on('canvas:pane_clicked', () => {
+    pinnedCollapseNodeId.value = null
+    setHoveredNodeId(null, true)
+  })
   window.addEventListener('scroll', scheduleMeasure, true)
   window.addEventListener('resize', scheduleMeasure)
 })
@@ -203,6 +237,7 @@ onMounted(() => {
 onUnmounted(() => {
   unsubOpen?.()
   unsubClose?.()
+  unsubPaneClick?.()
   bindContainerHoverListeners(null)
   if (hoverClearTimer) clearTimeout(hoverClearTimer)
   window.removeEventListener('scroll', scheduleMeasure, true)

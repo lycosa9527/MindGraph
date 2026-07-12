@@ -38,6 +38,7 @@ import {
   mindMapNodeHasChildren,
   pruneMindMapCollapsedPaths,
   remapMindMapCollapsedPathsAfterReload,
+  remapMindMapMeasuredDimensionsAfterReload,
   remapMindMapNodeIdAfterReload,
   remapMindMapNodeIdsAfterReload,
   setMindMapCollapsedPaths,
@@ -87,26 +88,27 @@ function resolvePathKeyForBranchSpec(
 }
 
 /**
- * Retain DOM-measured widths/heights for node IDs that still exist after a
- * tree rebuild.  Nodes whose IDs survived the rebuild kept the same text, so
- * their DOM dimensions are unchanged.  Dropping only the stale entries avoids
- * a flicker where `recalculateMindMapColumnPositions` falls back to the less
- * accurate `estimateNodeWidth` heuristic for nodes whose ResizeObservers
- * won't re-fire (the DOM size didn't change, so the observer stays silent).
+ * Retain DOM-measured widths/heights across a tree rebuild by remapping to new
+ * node ids, then seeding any gaps from build-time estimates so layout does not
+ * fall back to defaults and jump when the first post-edit measurement arrives.
  */
-function retainMeasuredDimensions(ctx: DiagramContext, newNodes: DiagramNode[]): void {
-  const surviving = new Set(newNodes.map((n) => n.id))
-
-  const widths = ctx.mindMapNodeWidths.value
-  for (const id of Object.keys(widths)) {
-    if (!surviving.has(id)) delete widths[id]
-  }
-
-  const heights = ctx.mindMapNodeHeights.value
-  for (const id of Object.keys(heights)) {
-    if (!surviving.has(id)) delete heights[id]
-  }
-
+function retainMeasuredDimensions(
+  ctx: DiagramContext,
+  oldNodes: DiagramNode[],
+  oldConnections: Connection[],
+  newNodes: DiagramNode[],
+  newConnections: Connection[]
+): void {
+  const { widths, heights } = remapMindMapMeasuredDimensionsAfterReload(
+    ctx.mindMapNodeWidths.value,
+    ctx.mindMapNodeHeights.value,
+    oldNodes,
+    oldConnections,
+    newNodes,
+    newConnections
+  )
+  ctx.mindMapNodeWidths.value = widths
+  ctx.mindMapNodeHeights.value = heights
   ctx.scheduleMindMapRecalc()
 }
 
@@ -227,10 +229,11 @@ function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): voi
     ctx.data.value._mindmap_diagram_style
   )
 
-  retainMeasuredDimensions(ctx, result.nodes)
-
   const oldNodes = ctx.data.value.nodes
   const oldConnections = ctx.data.value.connections
+
+  retainMeasuredDimensions(ctx, oldNodes, oldConnections, result.nodes, result.connections)
+
   const previousSelected = [...ctx.selectedNodes.value]
   const previousPendingEdit = ctx.mindMapPendingEditNodeId.value
   const previewStore = useMindMapSubgraphPreviewStore()

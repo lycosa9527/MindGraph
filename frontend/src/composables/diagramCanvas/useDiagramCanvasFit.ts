@@ -43,6 +43,7 @@ export function useDiagramCanvasFit(options: {
    */
   conceptMapInitialTopicFit: Ref<boolean>
   presentationRailOpen: Ref<boolean>
+  presentationSideToolbarVisible: Ref<boolean>
   presentationToolIsNotTimer: Ref<boolean>
   nodesLength: Ref<number>
 }): {
@@ -72,6 +73,7 @@ export function useDiagramCanvasFit(options: {
     fitViewOnInit,
     conceptMapInitialTopicFit,
     presentationRailOpen,
+    presentationSideToolbarVisible,
     presentationToolIsNotTimer,
     nodesLength,
   } = options
@@ -156,7 +158,10 @@ export function useDiagramCanvasFit(options: {
   }
 
   function getFitViewRightPx(): string {
-    const railVisible = presentationRailOpen.value && presentationToolIsNotTimer.value
+    const railVisible =
+      presentationRailOpen.value &&
+      presentationToolIsNotTimer.value &&
+      presentationSideToolbarVisible.value
     const px = railVisible
       ? Math.max(FIT_PADDING.STANDARD_PX, FIT_PADDING.PRESENTATION_SIDE_TOOLBAR_RIGHT_PX)
       : FIT_PADDING.STANDARD_PX

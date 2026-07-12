@@ -211,13 +211,30 @@ export function useDiagramCanvasEventBus(): {
       })
     )
 
+    let slideShowViewportSnapshot: { x: number; y: number; zoom: number } | null = null
+
+    unsubscribers.push(
+      eventBus.on('view:viewport_snapshot_save', () => {
+        slideShowViewportSnapshot = getViewport()
+      })
+    )
+
+    unsubscribers.push(
+      eventBus.on('view:viewport_snapshot_restore', (data) => {
+        if (!slideShowViewportSnapshot) return
+        setViewport(slideShowViewportSnapshot, {
+          duration: data?.animate === false ? 0 : (data?.duration ?? ANIMATION.DURATION_FAST),
+        })
+        slideShowViewportSnapshot = null
+      })
+    )
+
     unsubscribers.push(
       eventBus.on('node:text_updated', ({ nodeId, text }) => {
         const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
         const currentText = (node?.text ?? (node?.data as { label?: string })?.label ?? '').trim()
         const alreadyUpdated = currentText === text.trim()
         if (!alreadyUpdated) {
-          diagramStore.pushHistory('Edit node text')
           diagramStore.updateNode(nodeId, { text })
           if (diagramStore.type === 'flow_map') {
             const spec = diagramStore.buildFlowMapSpecFromNodes()
@@ -231,6 +248,7 @@ export function useDiagramCanvasEventBus(): {
               )
             }
           }
+          diagramStore.pushHistory('Edit node text')
         }
         if (diagramStore.type === 'concept_map') {
           void nextTick(() => {

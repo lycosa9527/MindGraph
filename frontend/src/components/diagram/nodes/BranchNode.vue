@@ -18,6 +18,10 @@ import {
   handleLearningSheetPickNodeClick,
   isLearningSheetCustomPickActive,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
+import {
+  useMindMapExportOutlineWireframeActive,
+  wrapMindMapNodeStyleForExport,
+} from '@/composables/mindMap/useMindMapExportOutlineWireframe'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
@@ -53,6 +57,14 @@ const isTextReadonly = computed(
 )
 const branchNodeRef = ref<HTMLDivElement | null>(null)
 const useMindMapV2Visuals = useMindMapV2Chrome()
+const exportOutlineActive = useMindMapExportOutlineWireframeActive()
+
+function finalizeMindMapExportNodeStyle(style: CSSProperties): CSSProperties {
+  return wrapMindMapNodeStyleForExport(style, exportOutlineActive.value, {
+    isMindMapV2: isMindMap.value && useMindMapV2Visuals.value,
+    isUnderlineShape: isUnderlineShape.value,
+  })
+}
 
 // Get theme defaults matching old StyleManager
 const { getNodeStyle } = useTheme({
@@ -238,7 +250,7 @@ const nodeStyle = computed((): CSSProperties => {
       borderRadius: '9999px',
       boxShadow: shouldHaveShadow ? undefined : 'none',
     }
-    return legacy
+    return finalizeMindMapExportNodeStyle(legacy)
   }
 
   const bgColor = shouldHaveBackground
@@ -334,7 +346,7 @@ const nodeStyle = computed((): CSSProperties => {
     result.minWidth = `${props.data.style.width}px`
     result.maxWidth = `${props.data.style.width}px`
   }
-  return result
+  return finalizeMindMapExportNodeStyle(result)
 })
 
 // Inline editing state
@@ -447,6 +459,9 @@ function handleBranchNodeDoubleClick(): void {
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))
     return
+  }
+  if (isMindMap.value) {
+    diagramStore.selectNodes(props.id)
   }
   isEditing.value = true
 }

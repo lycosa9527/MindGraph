@@ -7,7 +7,9 @@ import { computed, ref } from 'vue'
 import { type EdgeProps, useVueFlow } from '@vue-flow/core'
 
 import type { MindGraphEdgeData, MindGraphNodeData, NodeStyle } from '@/types'
+import { useMindMapExportOutlineWireframeActive } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
 import { useDiagramStore } from '@/stores'
+import { resolveMindMapOutlineWireframeEdgeStroke } from '@/utils/mindMapOutlineWireframeStyle'
 import {
   MIND_MAP_GEOMETRY,
   MINDMAP_UNDERLINE_STROKE_WIDTH,
@@ -32,6 +34,7 @@ const isHovered = ref(false)
 const { edges: vueFlowEdges, nodes: vueFlowNodes } = useVueFlow()
 
 const diagramStore = useDiagramStore()
+const exportOutlineActive = useMindMapExportOutlineWireframeActive()
 const preservedNodeStyles = computed(
   () => (diagramStore.data?._node_styles ?? {}) as Record<string, NodeStyle>
 )
@@ -255,13 +258,17 @@ const topicBorderColor = computed(() => {
   return fromTopic || resolveMindMapTopicBorderColor(null)
 })
 
+const edgeStrokeColor = computed(() =>
+  exportOutlineActive.value ? resolveMindMapOutlineWireframeEdgeStroke() : topicBorderColor.value
+)
+
 const edgeStyle = computed(() => ({
   fill: 'none',
-  stroke: topicBorderColor.value,
+  stroke: edgeStrokeColor.value,
   strokeWidth: isHovered.value
     ? MIND_MAP_GEOMETRY.edgeStrokeWidthHover
     : (props.data?.style?.strokeWidth ?? MIND_MAP_GEOMETRY.edgeStrokeWidth),
-  strokeOpacity: isHovered.value ? 1 : MIND_MAP_GEOMETRY.edgeStrokeOpacity,
+  strokeOpacity: exportOutlineActive.value || isHovered.value ? 1 : MIND_MAP_GEOMETRY.edgeStrokeOpacity,
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
   strokeLinecap: 'butt' as const,
   strokeLinejoin: 'round' as const,
@@ -291,9 +298,9 @@ const underlineBar = computed(() => {
 
 const underlineBarStyle = computed(() => ({
   fill: 'none',
-  stroke: topicBorderColor.value,
+  stroke: edgeStrokeColor.value,
   strokeWidth: MINDMAP_UNDERLINE_STROKE_WIDTH,
-  strokeOpacity: MIND_MAP_GEOMETRY.edgeStrokeOpacity,
+  strokeOpacity: exportOutlineActive.value ? 1 : MIND_MAP_GEOMETRY.edgeStrokeOpacity,
   strokeLinecap: 'butt' as const,
 }))
 </script>
