@@ -28,6 +28,8 @@ export type {
   KittyLibrarySnapshot,
 } from '@/composables/kitty/kittyAgentTypes'
 
+const KITTY_CONNECT_TIMEOUT_MS = 10000
+
 export function useKittyAgent(options: KittyAgentOptions = {}) {
   const {
     ownerId = `KittyAgent_${Date.now()}`,
@@ -72,6 +74,17 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
   let cleaningUp = false
   /** Serializes startConversation so two callers cannot open two sockets for one agent. */
   let startInFlight: Promise<void> | null = null
+  /** Bumped on every start/stop so queued starts can detect supersession. */
+  let startGeneration = 0
+  /**
+   * Active handshake owner. stop/cleanup/supersede must settle this immediately —
+   * never leave the promise hanging until the 10s wall-clock timeout.
+   */
+  let activeConnectAttempt: {
+    socket: WebSocket
+    scope: string
+    settleReject: (err: Error) => void
+  } | null = null
 
   const isConnected = computed(() => ws.value?.readyState === WebSocket.OPEN)
   const canSpeak = computed(() => isActive.value && isConnected.value)
@@ -90,6 +103,31 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
   const lifecycle = {
     destroyed: () => destroyed,
     cleaningUp: () => cleaningUp,
+  }
+
+  function detachSocketHandlers(socket: WebSocket): void {
+    socket.onopen = null
+    socket.onmessage = null
+    socket.onerror = null
+    socket.onclose = null
+  }
+
+  function cancelActiveConnectAttempt(reason: string): void {
+    const attempt = activeConnectAttempt
+    if (!attempt) {
+      return
+    }
+    activeConnectAttempt = null
+    if (ws.value === attempt.socket) {
+      ws.value = null
+    }
+    detachSocketHandlers(attempt.socket)
+    try {
+      attempt.socket.close(1000, reason)
+    } catch {
+      /* ignore */
+    }
+    attempt.settleReject(new Error(reason))
   }
 
   const { playAudioChunk, stopAudioPlayback } = createKittyPlayback({
@@ -151,39 +189,57 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       cleaningUp = false
     }
 
-    if (ws.value) {
+    cancelActiveConnectAttempt('Connection superseded by a newer socket')
+
+    const previousSocket = ws.value
+    if (previousSocket) {
       stopVoiceInput()
       stopAudioPlayback()
+      if (ws.value === previousSocket) {
+        ws.value = null
+      }
       try {
-        ws.value.onopen = null
-        ws.value.onmessage = null
-        ws.value.onerror = null
-        ws.value.onclose = null
-        ws.value.close(1001, 'Reconnecting')
+        detachSocketHandlers(previousSocket)
+        previousSocket.close(1001, 'Reconnecting')
       } catch {
         /* ignore */
       }
-      ws.value = null
     }
 
     diagramSessionId.value = diagSessionId
     // New Kitty WS → Hub scope revision may restart; never carry a stale expected_revision.
     kittySession.setHubScopeRevision(null)
     state.value = 'connecting'
+    isActive.value = false
     traceKittyWorkflow('mobile', 'ws_connect', `scope=${diagSessionId.slice(0, 12)}`, {
       scope: diagSessionId,
     })
 
     return new Promise((resolve, reject) => {
       let settled = false
+      let handshakeTimeout: ReturnType<typeof setTimeout> | null = null
+      const clearHandshakeTimeout = (): void => {
+        if (handshakeTimeout != null) {
+          clearTimeout(handshakeTimeout)
+          handshakeTimeout = null
+        }
+      }
       const settleResolve = (): void => {
         if (settled) return
         settled = true
+        if (activeConnectAttempt?.socket === socket) {
+          activeConnectAttempt = null
+        }
+        clearHandshakeTimeout()
         resolve()
       }
       const settleReject = (err: Error): void => {
         if (settled) return
         settled = true
+        if (activeConnectAttempt?.socket === socket) {
+          activeConnectAttempt = null
+        }
+        clearHandshakeTimeout()
         reject(err)
       }
 
@@ -191,8 +247,29 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       const wsUrl = `${protocol}//${window.location.host}/ws/kitty/${diagSessionId}`
       const socket = new WebSocket(wsUrl)
       ws.value = socket
+      activeConnectAttempt = { socket, scope: diagSessionId, settleReject }
+      handshakeTimeout = setTimeout(() => {
+        if (ws.value === socket) {
+          ws.value = null
+          isActive.value = false
+          state.value = 'error'
+          lastError.value = 'WebSocket connection timed out'
+          detachSocketHandlers(socket)
+          try {
+            socket.close(1000, 'Connection timeout')
+          } catch {
+            /* ignore */
+          }
+          eventBus.emit('voice:ws_error', { error: lastError.value })
+        }
+        settleReject(new Error('WebSocket connection timed out'))
+      }, KITTY_CONNECT_TIMEOUT_MS)
 
       socket.onopen = () => {
+        if (ws.value !== socket) {
+          settleReject(new Error('Connection superseded by a newer socket'))
+          return
+        }
         if (cleaningUp || destroyed) {
           socket.close()
           settleReject(new Error('Cleanup started during connection'))
@@ -215,19 +292,26 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       }
 
       socket.onmessage = (event) => {
+        if (ws.value !== socket) {
+          return
+        }
         try {
           const data = JSON.parse(event.data)
-          handleServerMessage(data)
           if (data.type === 'connected') {
             isActive.value = true
             settleResolve()
           }
+          handleServerMessage(data)
         } catch (error) {
           console.error('[KittyAgent] Message parse error:', error)
         }
       }
 
       socket.onerror = () => {
+        if (ws.value !== socket) {
+          settleReject(new Error('Connection superseded by a newer socket'))
+          return
+        }
         state.value = 'error'
         lastError.value = 'WebSocket connection failed'
         eventBus.emit('voice:ws_error', { error: lastError.value })
@@ -235,6 +319,13 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       }
 
       socket.onclose = (event) => {
+        if (ws.value !== socket) {
+          if (!settled) {
+            settleReject(new Error('Connection superseded by a newer socket'))
+          }
+          return
+        }
+        ws.value = null
         stopVoiceInput()
         stopAudioPlayback()
         isActive.value = false
@@ -265,6 +356,8 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       throw new Error('Missing Kitty diagram session id')
     }
 
+    const myGeneration = ++startGeneration
+
     // Join any in-flight start so we never open a second socket for this agent.
     const prior = startInFlight
     let release!: () => void
@@ -276,6 +369,11 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     try {
       if (prior) {
         await prior.catch(() => undefined)
+      }
+
+      // A newer startConversation superseded this waiter — let that owner connect.
+      if (myGeneration !== startGeneration) {
+        return
       }
 
       if (isLiveOnScope(scope)) {
@@ -300,6 +398,11 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       // prevented connect() from creating the WebSocket at all. Playback and
       // legacy capture resume the context when they actually need audio.
       await connect(scope, context)
+
+      if (myGeneration !== startGeneration) {
+        return
+      }
+
       kittySession.setOwnsKittySession(true)
       eventBus.emit('voice:started', { sessionId: sessionId.value ?? '' })
     } finally {
@@ -388,8 +491,10 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     state.value = isActive.value ? 'active' : 'idle'
   }
 
-  function sendTextMessage(text: string, requestId?: string): void {
-    if (!text.trim() || !ws.value || ws.value.readyState !== WebSocket.OPEN) return
+  function sendTextMessage(text: string, requestId?: string): boolean {
+    if (!text.trim() || !ws.value || ws.value.readyState !== WebSocket.OPEN) {
+      return false
+    }
     stopAudioPlayback()
     try {
       ws.value.send(JSON.stringify({ type: 'tts_interrupt' }))
@@ -401,8 +506,13 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     if (requestId && requestId.trim()) {
       payload.request_id = requestId.trim()
     }
-    ws.value.send(JSON.stringify(payload))
+    try {
+      ws.value.send(JSON.stringify(payload))
+    } catch {
+      return false
+    }
     state.value = textOnly ? 'active' : 'speaking'
+    return true
   }
 
   function setTtsEnabled(enabled: boolean): void {
@@ -469,19 +579,25 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
   }
 
   async function stopConversation(): Promise<void> {
+    startGeneration += 1
+    cancelActiveConnectAttempt('Conversation stopped')
     stopVoiceInput()
     stopAudioPlayback()
 
-    if (ws.value) {
+    const socket = ws.value
+    if (socket) {
+      if (ws.value === socket) {
+        ws.value = null
+      }
       try {
-        if (ws.value.readyState === WebSocket.OPEN) {
-          ws.value.send(JSON.stringify({ type: 'stop' }))
+        detachSocketHandlers(socket)
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: 'stop' }))
         }
-        ws.value.close()
+        socket.close()
       } catch {
         /* ignore */
       }
-      ws.value = null
     }
 
     isActive.value = false
@@ -492,6 +608,8 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
 
   function cleanup(): void {
     cleaningUp = true
+    startGeneration += 1
+    cancelActiveConnectAttempt('Cleanup started during connection')
     eventBus.removeAllListenersForOwner(ownerId)
     stopAudioPlayback()
     stopVoiceInput()
@@ -502,10 +620,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
 
     if (ws.value) {
       try {
-        ws.value.onopen = null
-        ws.value.onmessage = null
-        ws.value.onerror = null
-        ws.value.onclose = null
+        detachSocketHandlers(ws.value)
         if (ws.value.readyState === WebSocket.OPEN) {
           ws.value.send(JSON.stringify({ type: 'stop' }))
         }

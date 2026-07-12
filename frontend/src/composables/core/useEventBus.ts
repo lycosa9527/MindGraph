@@ -212,10 +212,10 @@ export type EventTypes = {
     type: string
     line: string
   }
-  'kitty:asr_partial': { text: string }
-  'kitty:asr_final': { text: string }
-  'kitty:asr_started': Record<string, never>
-  'kitty:asr_stopped': Record<string, never>
+  'kitty:asr_partial': { text: string; utteranceId?: string }
+  'kitty:asr_final': { text: string; utteranceId?: string }
+  'kitty:asr_started': { utteranceId?: string }
+  'kitty:asr_stopped': { utteranceId?: string; text?: string }
   /** Inbound diagram mutation — single apply path owns Pinia + Hub persist. */
   'kitty:diagram_mutation_requested': {
     action: string

@@ -34,6 +34,7 @@ describe('useMobileKittyMicPtt', () => {
     const prepareMicFromUserGesture = vi.fn(async () => true)
     const startListening = vi.fn(async () => {
       listening.value = true
+      return { ok: true as const, utteranceId: 'utt-1' }
     })
     const stopListening = vi.fn(() => {
       listening.value = false
@@ -104,6 +105,7 @@ describe('useMobileKittyMicPtt', () => {
     const prepareMicFromUserGesture = vi.fn(async () => true)
     const startListening = vi.fn(async () => {
       listening.value = true
+      return { ok: true as const, utteranceId: 'utt-1' }
     })
     const stopListening = vi.fn(() => {
       listening.value = false
@@ -163,6 +165,7 @@ describe('useMobileKittyMicPtt', () => {
     const prepareMicFromUserGesture = vi.fn(async () => true)
     const startListening = vi.fn(async () => {
       listening.value = true
+      return { ok: true as const, utteranceId: 'utt-1' }
     })
     const funAsr = makeFunAsr({
       listening,
@@ -217,6 +220,7 @@ describe('useMobileKittyMicPtt', () => {
     const prepareMicFromUserGesture = vi.fn(async () => true)
     const startListening = vi.fn(async () => {
       listening.value = true
+      return { ok: true as const, utteranceId: 'utt-1' }
     })
     const stopListening = vi.fn()
     let resolveConnect: ((ok: boolean) => void) | undefined
@@ -274,6 +278,7 @@ describe('useMobileKittyMicPtt', () => {
     const prepareMicFromUserGesture = vi.fn(async () => true)
     const startListening = vi.fn(async () => {
       listening.value = true
+      return { ok: true as const, utteranceId: 'utt-1' }
     })
     const stopListening = vi.fn()
     const funAsr = makeFunAsr({
@@ -369,6 +374,113 @@ describe('useMobileKittyMicPtt', () => {
 
     expect(startListening).not.toHaveBeenCalled()
     expect(onPttAborted).toHaveBeenCalledWith('released_early')
+    teardownMicPtt()
+  })
+
+  it('aborts with context_dead when startListening reports a dead capture graph', async () => {
+    const listening = ref(false)
+    const onPttAborted = vi.fn()
+    const startListening = vi.fn(async () => ({
+      ok: false as const,
+      reason: 'context_dead' as const,
+    }))
+    const funAsr = makeFunAsr({
+      listening,
+      prepareMicFromUserGesture: vi.fn(async () => true),
+      startListening,
+      stopListening: vi.fn(),
+    })
+
+    const { onKittyMicPointerDown, teardownMicPtt } = useMobileKittyMicPtt({
+      funAsr,
+      kittyServerEnabled: { value: true },
+      micDenied: { value: false },
+      showKeyboard: { value: false },
+      connected: { value: true },
+      ensureConnected: vi.fn(async () => true),
+      onMicDenied: vi.fn(),
+      onMicAllowed: vi.fn(),
+      onPttAborted,
+    })
+
+    const btn = document.createElement('button')
+    btn.setPointerCapture = vi.fn()
+    btn.hasPointerCapture = vi.fn(() => true)
+    const down = new PointerEvent('pointerdown', {
+      button: 0,
+      pointerId: 1,
+      pointerType: 'touch',
+    })
+    Object.defineProperty(down, 'currentTarget', { value: btn })
+    onKittyMicPointerDown(down)
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(onPttAborted).toHaveBeenCalledWith('context_dead')
+    expect(listening.value).toBe(false)
+    teardownMicPtt()
+  })
+
+  it('stops listening when the hold ends during startListening', async () => {
+    const listening = ref(false)
+    let resolveStart: ((value: { ok: true; utteranceId: string }) => void) | undefined
+    const startListening = vi.fn(
+      () =>
+        new Promise<{ ok: true; utteranceId: string }>((resolve) => {
+          resolveStart = resolve
+        })
+    )
+    const stopListening = vi.fn(() => {
+      listening.value = false
+    })
+    const funAsr = makeFunAsr({
+      listening,
+      prepareMicFromUserGesture: vi.fn(async () => true),
+      startListening,
+      stopListening,
+    })
+
+    const { onKittyMicPointerDown, onKittyMicPointerUp, teardownMicPtt } = useMobileKittyMicPtt({
+      funAsr,
+      kittyServerEnabled: { value: true },
+      micDenied: { value: false },
+      showKeyboard: { value: false },
+      connected: { value: true },
+      ensureConnected: vi.fn(async () => true),
+      onMicDenied: vi.fn(),
+      onMicAllowed: vi.fn(),
+    })
+
+    const btn = document.createElement('button')
+    btn.setPointerCapture = vi.fn()
+    btn.releasePointerCapture = vi.fn()
+    btn.hasPointerCapture = vi.fn(() => true)
+    const down = new PointerEvent('pointerdown', {
+      button: 0,
+      pointerId: 3,
+      pointerType: 'touch',
+    })
+    Object.defineProperty(down, 'currentTarget', { value: btn })
+    onKittyMicPointerDown(down)
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(startListening).toHaveBeenCalled()
+
+    const up = new PointerEvent('pointerup', {
+      button: 0,
+      pointerId: 3,
+      pointerType: 'touch',
+    })
+    Object.defineProperty(up, 'currentTarget', { value: btn })
+    onKittyMicPointerUp(up)
+
+    resolveStart?.({ ok: true, utteranceId: 'utt-late' })
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(stopListening).toHaveBeenCalled()
     teardownMicPtt()
   })
 })

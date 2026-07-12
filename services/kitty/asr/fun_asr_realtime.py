@@ -120,6 +120,7 @@ class FunAsrRealtimeClient:
         self._closed = False
         self._last_text = ""
         self._emitted_sentence_end = False
+        self._error_notified = False
 
     @property
     def task_id(self) -> str:
@@ -176,8 +177,9 @@ class FunAsrRealtimeClient:
             return
         try:
             await self._ws.send(pcm)
-        except (ConnectionClosed, ConnectionClosedError, ConnectionClosedOK):
-            logger.debug("Fun-ASR WS closed while sending PCM")
+        except (ConnectionClosed, ConnectionClosedError, ConnectionClosedOK) as exc:
+            logger.debug("Fun-ASR WS closed while sending PCM: %s", exc)
+            await self._emit_provider_disconnect("Fun-ASR connection closed while sending audio")
 
     async def finish(self) -> None:
         """Send finish-task, wait for final transcript, then tear down.
@@ -238,6 +240,18 @@ class FunAsrRealtimeClient:
             ):
                 pass
 
+    async def _emit_provider_disconnect(self, message: str) -> None:
+        """Surface unexpected provider close/send failures to the matching utterance."""
+        if self._closed or self._error_notified:
+            return
+        self._error_notified = True
+        self._task_finished.set()
+        if self._on_error:
+            try:
+                await self._on_error(message)
+            except LLM_PIPELINE_ERRORS as exc:
+                logger.debug("Fun-ASR on_error callback failed: %s", exc)
+
     async def _read_loop(self) -> None:
         assert self._ws is not None
         try:
@@ -249,11 +263,17 @@ class FunAsrRealtimeClient:
                 except json.JSONDecodeError:
                     continue
                 await self._handle_server_event(data)
-        except (ConnectionClosed, ConnectionClosedError, ConnectionClosedOK):
+        except (ConnectionClosed, ConnectionClosedError, ConnectionClosedOK) as exc:
+            if not self._closed and not self._task_finished.is_set():
+                logger.warning("Fun-ASR provider disconnected: %s", exc)
+                await self._emit_provider_disconnect(
+                    "Fun-ASR provider disconnected before task finished"
+                )
             return
         except LLM_PIPELINE_ERRORS as exc:
             logger.warning("Fun-ASR read loop error: %s", exc)
-            if self._on_error:
+            if self._on_error and not self._error_notified:
+                self._error_notified = True
                 await self._on_error(str(exc))
         finally:
             self._task_finished.set()
@@ -280,7 +300,8 @@ class FunAsrRealtimeClient:
             payload = raw_payload if isinstance(raw_payload, dict) else {}
             err = str(payload.get("message") or header.get("error_message") or "Fun-ASR failed")
             self._task_finished.set()
-            if self._on_error:
+            if self._on_error and not self._error_notified:
+                self._error_notified = True
                 await self._on_error(err)
             return
         if event == "task-finished":

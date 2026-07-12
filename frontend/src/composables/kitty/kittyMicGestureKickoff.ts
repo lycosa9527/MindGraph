@@ -47,7 +47,8 @@ export function resolveAudioContextConstructor(): AudioContextConstructor {
 
 export function connectMutedDestination(ctx: AudioContext, node: AudioNode): GainNode {
   const mute = ctx.createGain()
-  mute.gain.value = 0
+  // Safari can suspend graphs with exact zero gain; keep a near-silent tap.
+  mute.gain.value = 0.001
   node.connect(mute)
   mute.connect(ctx.destination)
   return mute
@@ -101,19 +102,28 @@ export function kickoffKittyMicGestureAssets(): Promise<KittyMicGestureAssets> {
 
   // 2) Build the Web Audio graph in the same stack; may stay suspended until
   //    sticky activation, a later activation-triggering event, or capturing unlock.
-  const AudioCtx = resolveAudioContextConstructor()
-  const audioContext = new AudioCtx()
-  const scriptProcessor = audioContext.createScriptProcessor(
-    KITTY_SCRIPT_PROCESSOR_BUFFER,
-    1,
-    1
-  )
-  const silentGain = connectMutedDestination(audioContext, scriptProcessor)
-  blessAudioContextSync(audioContext)
+  let audioContext: AudioContext
+  let scriptProcessor: ScriptProcessorNode
+  let silentGain: GainNode
+  try {
+    const AudioCtx = resolveAudioContextConstructor()
+    audioContext = new AudioCtx()
+    scriptProcessor = audioContext.createScriptProcessor(KITTY_SCRIPT_PROCESSOR_BUFFER, 1, 1)
+    silentGain = connectMutedDestination(audioContext, scriptProcessor)
+    blessAudioContextSync(audioContext)
+  } catch (err) {
+    void streamPromise
+      .then((granted) => {
+        granted.getTracks().forEach((track) => track.stop())
+      })
+      .catch(() => undefined)
+    throw err
+  }
 
   return (async () => {
+    let stream: MediaStream | null = null
     try {
-      const stream = await streamPromise
+      stream = await streamPromise
       // 3) Document is now capturing — WebKit allows AudioContext start (180680).
       blessAudioContextSync(audioContext)
       if (audioContext.state === 'suspended') {
@@ -135,6 +145,15 @@ export function kickoffKittyMicGestureAssets(): Promise<KittyMicGestureAssets> {
         silentGain,
       }
     } catch (err) {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop())
+      } else {
+        void streamPromise
+          .then((granted) => {
+            granted.getTracks().forEach((track) => track.stop())
+          })
+          .catch(() => undefined)
+      }
       try {
         scriptProcessor.disconnect()
       } catch {

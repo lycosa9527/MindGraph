@@ -25,11 +25,19 @@ export interface UseMobileKittyMicPttFunAsr {
   listening: Ref<boolean>
   prepareMicFromUserGesture: () => Promise<boolean>
   blessFromUserActivation: () => void
-  startListening: () => Promise<void>
+  startListening: () => Promise<
+    | { ok: true; utteranceId: string }
+    | { ok: false; reason: 'not_connected' | 'mic_denied' | 'context_dead' }
+  >
   stopListening: () => void
 }
 
-export type MobileKittyPttAbortReason = 'released_early' | 'connect_failed' | 'mic_denied'
+export type MobileKittyPttAbortReason =
+  | 'released_early'
+  | 'connect_failed'
+  | 'mic_denied'
+  | 'context_dead'
+  | 'start_failed'
 
 export interface UseMobileKittyMicPttOptions {
   funAsr: UseMobileKittyMicPttFunAsr
@@ -192,20 +200,10 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     pttDebug(`begin gen=${generation}`)
     try {
       // Keep mic warm and WS connect in parallel (warm already started on pointerdown).
-      const connectedOkPromise = new Promise<boolean>((resolve) => {
-        const timer = setTimeout(() => resolve(false), 10000)
-        void ensureConnected().then(
-          (ok) => {
-            clearTimeout(timer)
-            resolve(ok)
-          },
-          () => {
-            clearTimeout(timer)
-            resolve(false)
-          }
-        )
-      })
-      const [connectedOk, warmOk] = await Promise.all([connectedOkPromise, warmPromise])
+      // Connection timeout and socket ownership live in useKittyAgent. A second
+      // timer here could report failure while a scope replacement socket had
+      // already completed its server handshake.
+      const [connectedOk, warmOk] = await Promise.all([ensureConnected(), warmPromise])
       if (generation !== pttGeneration || !isKittyMicHoldActive()) {
         onPttAborted?.('released_early')
         return
@@ -221,17 +219,39 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       }
       // Sticky / capturing unlock may have made the context runnable while we awaited.
       funAsr.blessFromUserActivation()
-      await funAsr.startListening()
+      const started = await funAsr.startListening()
       if (generation !== pttGeneration || !isKittyMicHoldActive()) {
         funAsr.stopListening()
         pttDebug('stop:released_during_start')
-      } else {
-        onMicAllowed()
-        pttDebug('listening')
+        return
       }
-    } catch {
-      onMicDenied()
-      onPttAborted?.('mic_denied')
+      if (!started.ok) {
+        if (started.reason === 'mic_denied') {
+          onMicDenied()
+          onPttAborted?.('mic_denied')
+          return
+        }
+        if (started.reason === 'context_dead') {
+          onPttAborted?.('context_dead')
+          return
+        }
+        onPttAborted?.('connect_failed')
+        return
+      }
+      onMicAllowed()
+      pttDebug(`listening utt=${started.utteranceId.slice(0, 12)}`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message.toLowerCase() : ''
+      const isPermission =
+        message.includes('permission') ||
+        message.includes('notallowed') ||
+        message.includes('denied')
+      if (isPermission) {
+        onMicDenied()
+        onPttAborted?.('mic_denied')
+      } else {
+        onPttAborted?.('start_failed')
+      }
     } finally {
       if (generation === pttGeneration) {
         voiceStartInFlight.value = false
@@ -405,8 +425,8 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
   }
 
   /**
-   * Page-level prime: first activation-triggering gesture (any control) warms mic
-   * so a later touch PTT hold already has sticky activation + running context.
+   * Page-level prime: re-bless an already-warmed AudioContext on activation
+   * events. Do not call getUserMedia here — unrelated taps must not prompt.
    */
   function onActivationPrimeEvent(ev: Event): void {
     if (!kittyServerEnabled.value || micDenied.value) {
@@ -414,11 +434,6 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     }
     if (!isActivationTriggeringEvent(ev)) {
       return
-    }
-    try {
-      void funAsr.prepareMicFromUserGesture()
-    } catch {
-      /* ignore prime failures */
     }
     funAsr.blessFromUserActivation()
   }

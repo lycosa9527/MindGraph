@@ -98,27 +98,36 @@ async def dispatch_kitty_ws_inbound_message(
             language_hints = [str(item) for item in hints_raw if str(item).strip()]
         elif str(message.get("language") or "").strip().lower().startswith("zh"):
             language_hints = ["zh"]
+        utterance_raw = message.get("utterance_id")
+        utterance_id = (
+            str(utterance_raw).strip()
+            if isinstance(utterance_raw, str) and str(utterance_raw).strip()
+            else None
+        )
         sess = voice_sessions.get(voice_session_id) or {}
         lane_raw = sess.get("_kitty_client_lane")
         lane = lane_raw if isinstance(lane_raw, str) and lane_raw.strip() else "—"
         debug_ctx = message.get("debug_ctx")
         ctx_label = str(debug_ctx) if debug_ctx is not None else "—"
         logger.info(
-            "Kitty PTT asr_start sid=%s lane=%s hints=%s ctx=%s",
+            "Kitty PTT asr_start sid=%s lane=%s hints=%s ctx=%s utt=%s",
             voice_session_id[:12],
             lane,
             language_hints or ["zh"],
             ctx_label,
+            (utterance_id or "—")[:16],
         )
         kitty_wf_log(
             "asr_start",
-            f"lane={lane} hints={language_hints or ['zh']} ctx={ctx_label}",
+            f"lane={lane} hints={language_hints or ['zh']} ctx={ctx_label} "
+            f"utt={utterance_id or '—'}",
             voice_session_id=voice_session_id,
         )
         await start_session_asr(
             websocket,
             voice_session_id,
             language_hints=language_hints,
+            utterance_id=utterance_id,
         )
         return "continue"
 
@@ -136,25 +145,47 @@ async def dispatch_kitty_ws_inbound_message(
                     {"type": "error", "error": "Audio frame too large"},
                 )
                 return "continue"
-            await feed_session_asr_audio(voice_session_id, audio_data)
+            utterance_raw = message.get("utterance_id")
+            utterance_id = (
+                str(utterance_raw).strip()
+                if isinstance(utterance_raw, str) and str(utterance_raw).strip()
+                else None
+            )
+            await feed_session_asr_audio(
+                voice_session_id,
+                audio_data,
+                utterance_id=utterance_id,
+            )
         return "continue"
 
     if msg_type == "asr_stop":
         sess = voice_sessions.get(voice_session_id) or {}
         lane_raw = sess.get("_kitty_client_lane")
         lane = lane_raw if isinstance(lane_raw, str) and lane_raw.strip() else "—"
+        utterance_raw = message.get("utterance_id")
+        utterance_id = (
+            str(utterance_raw).strip()
+            if isinstance(utterance_raw, str) and str(utterance_raw).strip()
+            else None
+        )
         logger.info(
-            "Kitty PTT asr_stop sid=%s lane=%s",
+            "Kitty PTT asr_stop sid=%s lane=%s utt=%s",
             voice_session_id[:12],
             lane,
+            (utterance_id or "—")[:16],
         )
         kitty_wf_log(
             "asr_stop",
-            f"lane={lane} client release",
+            f"lane={lane} client release utt={utterance_id or '—'}",
             voice_session_id=voice_session_id,
         )
-        await stop_session_asr(voice_session_id)
-        await safe_websocket_send(websocket, {"type": "asr_stopped"})
+        final_text = await stop_session_asr(voice_session_id, utterance_id=utterance_id)
+        stopped_payload: dict[str, object] = {"type": "asr_stopped"}
+        if utterance_id:
+            stopped_payload["utterance_id"] = utterance_id
+        if final_text:
+            stopped_payload["text"] = final_text
+        await safe_websocket_send(websocket, stopped_payload)
         await fanout_voice_phase_from_outbound_type(voice_session_id, "asr_stopped")
         return "continue"
 

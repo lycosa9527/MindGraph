@@ -93,14 +93,7 @@ export function useMobileKittyPairing(
 
   /** Mobile Kitty uses the one-sentence edit pipeline for verified diagram mutations. */
   function resolveMobileOneSentencePhase(): 'create' | 'edit' {
-    if (
-      shouldUseOneSentenceEditFlow(
-        diagramStore,
-        savedDiagramsStore,
-        llmResultsStore,
-        'create'
-      )
-    ) {
+    if (shouldUseOneSentenceEditFlow(diagramStore, savedDiagramsStore, llmResultsStore, 'create')) {
       return 'edit'
     }
     return 'create'
@@ -303,25 +296,28 @@ export function useMobileKittyPairing(
       return
     }
     bootstrapInFlight = (async () => {
-      const success = await fetchMobileKittyBootstrap()
-      if (success && !forceEphemeralSession.value) {
-        const boot = bootstrapPayload.value
-        if (boot?.source === 'empty') {
-          resetToFreshEphemeralSession({
-            pinAgainstDesktopFocus: false,
-            loadMindmapTemplate: true,
-          })
-        } else if (
-          (boot?.source === 'live' || boot?.source === 'library') &&
-          boot.recommended_scope
-        ) {
-          clearForceEphemeralSession()
-          savedDiagramsStore.setActiveDiagram(boot.recommended_scope)
-          await hydrateMobileKittyFromLibrary(boot.recommended_scope)
+      try {
+        const success = await fetchMobileKittyBootstrap()
+        if (success && !forceEphemeralSession.value) {
+          const boot = bootstrapPayload.value
+          if (boot?.source === 'empty') {
+            resetToFreshEphemeralSession({
+              pinAgainstDesktopFocus: false,
+              loadMindmapTemplate: true,
+            })
+          } else if (
+            (boot?.source === 'live' || boot?.source === 'library') &&
+            boot.recommended_scope
+          ) {
+            clearForceEphemeralSession()
+            savedDiagramsStore.setActiveDiagram(boot.recommended_scope)
+            await hydrateMobileKittyFromLibrary(boot.recommended_scope)
+          }
         }
+        bootstrapDone.value = success
+      } finally {
+        bootstrapInFlight = null
       }
-      bootstrapDone.value = success
-      bootstrapInFlight = null
     })()
     await bootstrapInFlight
   }
@@ -490,17 +486,15 @@ export function useMobileKittyPairing(
   const mobileKittyContextPreview = computed<MobileKittyContextPreview>(() => {
     const boot = bootstrapPayload.value
     const bootCtx = boot?.context
-    const libRaw =
-      forceEphemeralSession.value
-        ? null
-        : (activeDiagramId.value ??
-          (boot?.source === 'live' || boot?.source === 'library'
-            ? bootCtx?.diagram_library_id
-            : null))
+    const libRaw = forceEphemeralSession.value
+      ? null
+      : (activeDiagramId.value ??
+        (boot?.source === 'live' || boot?.source === 'library'
+          ? bootCtx?.diagram_library_id
+          : null))
     const lib = typeof libRaw === 'string' && libRaw.trim() !== '' ? libRaw.trim() : null
     const liveTitle = String(diagramStore.effectiveTitle ?? diagramStore.title ?? '').trim()
-    const title =
-      liveTitle !== '' ? liveTitle : String(bootCtx?.diagram_display_title ?? '').trim()
+    const title = liveTitle !== '' ? liveTitle : String(bootCtx?.diagram_display_title ?? '').trim()
     const scope = kittyPairScope.value
     const scopeForHint = lib ?? scope
     const hubSrc = boot?.source

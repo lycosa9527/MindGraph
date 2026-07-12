@@ -5,6 +5,8 @@ import { computed, nextTick, ref } from 'vue'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useMobileKittyChat } from '@/composables/mobile/useMobileKittyChat'
+
 const {
   appendOneSentenceTurnMock,
   fetchOneSentenceTurnsMock,
@@ -83,8 +85,6 @@ vi.mock('@/stores/kittySession', () => ({
   }),
 }))
 
-import { useMobileKittyChat } from '@/composables/mobile/useMobileKittyChat'
-
 describe('useMobileKittyChat', () => {
   beforeEach(() => {
     appendOneSentenceTurnMock.mockClear()
@@ -108,7 +108,7 @@ describe('useMobileKittyChat', () => {
     const stopListening = vi.fn(() => {
       listening.value = false
     })
-    const sendTextMessage = vi.fn()
+    const sendTextMessage = vi.fn(() => true)
     const updateContext = vi.fn()
     const kitty = {
       sendTextMessage,
@@ -117,9 +117,7 @@ describe('useMobileKittyChat', () => {
     } as unknown as Parameters<typeof useMobileKittyChat>[0]['kitty']
     const funAsr = {
       listening,
-      startListening: vi.fn(async () => {
-        listening.value = true
-      }),
+      startListening: vi.fn(async () => ({ ok: true as const, utteranceId: 'utt-1' })),
       stopListening,
       toggleListening: vi.fn(),
     } as unknown as Parameters<typeof useMobileKittyChat>[0]['funAsr']
@@ -163,14 +161,44 @@ describe('useMobileKittyChat', () => {
     expect(events).toContain('voice:context_mutation_ack')
   })
 
-  it('on asr_stopped flushes draft when asr_final never arrived', async () => {
+  it('on asr_final only buffers until asr_stopped (release-only submit)', async () => {
+    const { chat, draft, sendTextMessage, stopListening, handlers } = mountChat()
+    await nextTick()
+    await Promise.resolve()
+
+    const onFinal = handlers.get('kitty:asr_final')
+    expect(onFinal).toBeTypeOf('function')
+    onFinal?.({ text: '把中心改成秋天', utteranceId: 'utt-hold-1' })
+
+    expect(draft.value).toBe('把中心改成秋天')
+    expect(sendTextMessage).not.toHaveBeenCalled()
+    expect(stopListening).not.toHaveBeenCalled()
+
+    const onStopped = handlers.get('kitty:asr_stopped')
+    expect(onStopped).toBeTypeOf('function')
+    onStopped?.({ utteranceId: 'utt-hold-1', text: '把中心改成秋天' })
+
+    await vi.waitFor(() => {
+      expect(sendTextMessage).toHaveBeenCalledWith('把中心改成秋天', expect.any(String))
+    })
+    expect(persistVerifiedDiagramToHubMock).toHaveBeenCalled()
+    expect(chat.messages.value.some((m) => m.role === 'user' && m.text === '把中心改成秋天')).toBe(
+      true
+    )
+    expect(appendOneSentenceTurnMock).toHaveBeenCalled()
+    expect(draft.value).toBe('')
+  })
+
+  it('on asr_stopped flushes buffered partial when asr_final never arrived', async () => {
     const { chat, draft, sendTextMessage, handlers } = mountChat()
     await nextTick()
     await Promise.resolve()
-    draft.value = '添加一个广东民族文化的分支，并补完'
-    const onStopped = handlers.get('kitty:asr_stopped')
-    expect(onStopped).toBeTypeOf('function')
-    onStopped?.({})
+    handlers.get('kitty:asr_partial')?.({
+      text: '添加一个广东民族文化的分支，并补完',
+      utteranceId: 'utt-hold-2',
+    })
+    expect(draft.value).toBe('添加一个广东民族文化的分支，并补完')
+    handlers.get('kitty:asr_stopped')?.({ utteranceId: 'utt-hold-2' })
     await vi.waitFor(() => {
       expect(sendTextMessage).toHaveBeenCalledWith(
         '添加一个广东民族文化的分支，并补完',
@@ -180,25 +208,41 @@ describe('useMobileKittyChat', () => {
     expect(chat.messages.value.some((m) => m.role === 'user')).toBe(true)
   })
 
-  it('on asr_final stops mic and sends text with user bubble', async () => {
-    const { chat, draft, sendTextMessage, stopListening, handlers } = mountChat()
+  it('ignores stale asr events from a prior utterance', async () => {
+    const { draft, sendTextMessage, handlers } = mountChat()
     await nextTick()
     await Promise.resolve()
-
-    const onFinal = handlers.get('kitty:asr_final')
-    expect(onFinal).toBeTypeOf('function')
-    onFinal?.({ text: '把中心改成秋天' })
-
+    handlers.get('kitty:asr_final')?.({ text: 'hold-a', utteranceId: 'utt-a' })
+    handlers.get('kitty:asr_final')?.({ text: 'hold-b-ignored', utteranceId: 'utt-b' })
+    expect(draft.value).toBe('hold-a')
+    handlers.get('kitty:asr_stopped')?.({ utteranceId: 'utt-b' })
+    await Promise.resolve()
+    expect(sendTextMessage).not.toHaveBeenCalled()
+    handlers.get('kitty:asr_stopped')?.({ utteranceId: 'utt-a' })
     await vi.waitFor(() => {
-      expect(sendTextMessage).toHaveBeenCalledWith('把中心改成秋天', expect.any(String))
+      expect(sendTextMessage).toHaveBeenCalledWith('hold-a', expect.any(String))
     })
-    expect(stopListening).toHaveBeenCalled()
-    expect(persistVerifiedDiagramToHubMock).toHaveBeenCalled()
-    expect(chat.messages.value.some((m) => m.role === 'user' && m.text === '把中心改成秋天')).toBe(
-      true
-    )
-    expect(appendOneSentenceTurnMock).toHaveBeenCalled()
-    expect(draft.value).toBe('')
+  })
+
+  it('does not submit an unrelated keyboard draft on empty asr_stopped', async () => {
+    const { draft, sendTextMessage, handlers } = mountChat()
+    await nextTick()
+    await Promise.resolve()
+    draft.value = 'typed keyboard draft'
+    handlers.get('kitty:asr_stopped')?.({})
+    await Promise.resolve()
+    expect(sendTextMessage).not.toHaveBeenCalled()
+    expect(draft.value).toBe('typed keyboard draft')
+  })
+
+  it('retries sendTextMessage once after a failed delivery', async () => {
+    const { chat, sendTextMessage } = mountChat()
+    sendTextMessage.mockReturnValueOnce(false).mockReturnValueOnce(true)
+    await nextTick()
+    await Promise.resolve()
+    const ok = await chat.sendUserText('改成春天')
+    expect(ok).toBe(true)
+    expect(sendTextMessage).toHaveBeenCalledTimes(2)
   })
 
   it('seeds opening line from one-sentence chat pools', async () => {
@@ -207,9 +251,7 @@ describe('useMobileKittyChat', () => {
     await Promise.resolve()
     await chat.bootstrapChat()
     expect(
-      chat.messages.value.some(
-        (m) => m.role === 'kitty' && m.text.includes('tell me what diagram')
-      )
+      chat.messages.value.some((m) => m.role === 'kitty' && m.text.includes('tell me what diagram'))
     ).toBe(true)
   })
 

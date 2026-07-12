@@ -6,18 +6,19 @@
  * - pointerdown: blessAudioContextSync + prepareMicFromUserGesture (gesture stack)
  * - Hold: track.enabled=true + asr_start; release: asr_stop + track.enabled=false
  * - teardownWarmMic() only on page leave
+ * - Every ASR message carries utterance_id for hold correlation
  */
 import { type Ref, type ShallowRef, onUnmounted, ref, shallowRef } from 'vue'
 
 import { arrayBufferToBase64 } from '@/composables/kitty/kittyAgentAudioCodec'
 import {
   KITTY_SCRIPT_PROCESSOR_BUFFER,
+  type KittyMicGestureAssets,
   blessAudioContextSync,
   kickoffKittyMicGestureAssets,
   releaseKittyMicGestureAssets,
   resolveAudioContextConstructor,
   setMicTracksEnabled,
-  type KittyMicGestureAssets,
 } from '@/composables/kitty/kittyMicGestureKickoff'
 import { useKittySessionStore } from '@/stores/kittySession'
 
@@ -32,6 +33,11 @@ const TARGET_SAMPLE_RATE = 16000
 const FRAME_SAMPLES = 1600
 const WORKLET_NAME = 'kitty-fun-asr-pcm-processor'
 const WORKLET_URL = '/kitty-fun-asr-pcm-processor.js'
+
+export type KittyFunAsrStartFailure = 'not_connected' | 'mic_denied' | 'context_dead'
+export type KittyFunAsrStartResult =
+  | { ok: true; utteranceId: string }
+  | { ok: false; reason: KittyFunAsrStartFailure }
 
 function downsampleTo16k(input: Float32Array, inputRate: number): Int16Array {
   if (inputRate === TARGET_SAMPLE_RATE) {
@@ -53,15 +59,29 @@ function downsampleTo16k(input: Float32Array, inputRate: number): Int16Array {
   return out
 }
 
+function nextUtteranceId(): string {
+  return `utt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
+}
+
+function isAudioContextUsable(ctx: AudioContext): boolean {
+  const state = ctx.state as AudioContextState | 'interrupted'
+  return state !== 'closed' && state !== 'interrupted'
+}
+
+function hasLiveMicTrack(stream: MediaStream): boolean {
+  return stream.getAudioTracks().some((track) => track.readyState !== 'ended')
+}
+
 export function useKittyFunAsrMic(options: {
   ws: ShallowRef<WebSocket | null>
   stopPlayback: () => void
   languageHints?: Ref<string[] | undefined>
   ensureConnected?: () => Promise<boolean>
-  onError?: (code: 'not_connected' | 'mic_denied') => void
+  onError?: (code: KittyFunAsrStartFailure) => void
 }) {
   const kittySession = useKittySessionStore()
   const listening = ref(false)
+  const activeUtteranceId = ref<string | null>(null)
   const audioContext = shallowRef<AudioContext | null>(null)
   const micStream = shallowRef<MediaStream | null>(null)
   const workletNode = shallowRef<AudioWorkletNode | null>(null)
@@ -74,6 +94,8 @@ export function useKittyFunAsrMic(options: {
   let pcmBuffer = new Int16Array(0)
   let warmReady = false
   let warmInFlight: Promise<boolean> | null = null
+  /** Invalidates pending getUserMedia adoption after teardown. */
+  let acquisitionGeneration = 0
 
   function refreshDebugCtxState(): void {
     const ctx = audioContext.value
@@ -85,8 +107,12 @@ export function useKittyFunAsrMic(options: {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       return false
     }
-    socket.send(JSON.stringify(payload))
-    return true
+    try {
+      socket.send(JSON.stringify(payload))
+      return true
+    } catch {
+      return false
+    }
   }
 
   function appendPcm(input: Float32Array, inputRate: number): void {
@@ -103,20 +129,21 @@ export function useKittyFunAsrMic(options: {
   }
 
   function flushPcm(force = false): void {
+    const utteranceId = activeUtteranceId.value
     while (pcmBuffer.length >= FRAME_SAMPLES || (force && pcmBuffer.length > 0)) {
-      const take = force
-        ? Math.min(FRAME_SAMPLES, pcmBuffer.length)
-        : FRAME_SAMPLES
+      const take = force ? Math.min(FRAME_SAMPLES, pcmBuffer.length) : FRAME_SAMPLES
       const frame = pcmBuffer.slice(0, take)
       pcmBuffer = pcmBuffer.slice(take)
-      if (
-        sendJson({
-          type: 'asr_audio',
-          data: arrayBufferToBase64(
-            frame.buffer.slice(frame.byteOffset, frame.byteOffset + frame.byteLength)
-          ),
-        })
-      ) {
+      const payload: Record<string, unknown> = {
+        type: 'asr_audio',
+        data: arrayBufferToBase64(
+          frame.buffer.slice(frame.byteOffset, frame.byteOffset + frame.byteLength)
+        ),
+      }
+      if (utteranceId) {
+        payload.utterance_id = utteranceId
+      }
+      if (sendJson(payload)) {
         debugFramesSent.value += 1
       }
       if (force && pcmBuffer.length === 0) {
@@ -163,7 +190,9 @@ export function useKittyFunAsrMic(options: {
   }
 
   function teardownWarmMic(): void {
+    acquisitionGeneration += 1
     listening.value = false
+    activeUtteranceId.value = null
     kittySession.setAsrListening(false)
     teardownCaptureNodesOnly()
     if (micStream.value) {
@@ -186,17 +215,15 @@ export function useKittyFunAsrMic(options: {
     node: AudioNode
   ): GainNode {
     const mute = ctx.createGain()
-    mute.gain.value = 0
+    // Safari can suspend graphs with exact zero gain; keep a near-silent tap.
+    mute.gain.value = 0.001
     mediaSource.connect(node)
     node.connect(mute)
     mute.connect(ctx.destination)
     return mute
   }
 
-  async function startWorkletCapture(
-    ctx: AudioContext,
-    stream: MediaStream
-  ): Promise<boolean> {
+  async function startWorkletCapture(ctx: AudioContext, stream: MediaStream): Promise<boolean> {
     try {
       await ctx.audioWorklet.addModule(WORKLET_URL)
       const mediaSource = ctx.createMediaStreamSource(stream)
@@ -257,21 +284,50 @@ export function useKittyFunAsrMic(options: {
     refreshDebugCtxState()
   }
 
+  function invalidateWarmCapture(): void {
+    teardownCaptureNodesOnly()
+    if (micStream.value) {
+      micStream.value.getTracks().forEach((track) => track.stop())
+      micStream.value = null
+    }
+    if (audioContext.value && audioContext.value.state !== 'closed') {
+      void audioContext.value.close()
+    }
+    audioContext.value = null
+    warmReady = false
+    refreshDebugCtxState()
+  }
+
+  function isWarmCaptureHealthy(): boolean {
+    const ctx = audioContext.value
+    const stream = micStream.value
+    if (!warmReady || !ctx || !stream) {
+      return false
+    }
+    return isAudioContextUsable(ctx) && hasLiveMicTrack(stream)
+  }
+
   /** Sync entry from an activation-capable call stack (see kittyWebKitUserActivation). */
   function prepareMicFromUserGesture(): Promise<boolean> {
-    if (warmReady && audioContext.value && micStream.value) {
-      if (audioContext.value.state !== 'closed') {
-        blessAudioContextSync(audioContext.value)
-      }
+    if (isWarmCaptureHealthy() && audioContext.value) {
+      blessAudioContextSync(audioContext.value)
       refreshDebugCtxState()
       return Promise.resolve(true)
+    }
+    if (warmReady) {
+      invalidateWarmCapture()
     }
     if (warmInFlight) {
       return warmInFlight
     }
+    const generation = acquisitionGeneration
     warmInFlight = (async () => {
       try {
         const assets = await kickoffKittyMicGestureAssets()
+        if (generation !== acquisitionGeneration) {
+          releaseKittyMicGestureAssets(assets)
+          return false
+        }
         adoptGestureCapture(assets)
         debugLastError.value = ''
         return true
@@ -301,7 +357,7 @@ export function useKittyFunAsrMic(options: {
   }
 
   async function ensureCaptureGraph(): Promise<boolean> {
-    if (warmReady && micStream.value && audioContext.value) {
+    if (isWarmCaptureHealthy() && micStream.value && audioContext.value) {
       if (audioContext.value.state === 'suspended') {
         blessAudioContextSync(audioContext.value)
         // iOS can leave resume() pending forever — never block PTT on it.
@@ -313,10 +369,13 @@ export function useKittyFunAsrMic(options: {
         ])
       }
       refreshDebugCtxState()
-      return true
+      return isWarmCaptureHealthy()
+    }
+    if (warmReady) {
+      invalidateWarmCapture()
     }
     const warmed = await prepareMicFromUserGesture()
-    if (warmed && micStream.value && audioContext.value) {
+    if (warmed && isWarmCaptureHealthy()) {
       return true
     }
     // Desktop toggle cold path (no prior pointerdown warm)
@@ -354,12 +413,18 @@ export function useKittyFunAsrMic(options: {
     }
   }
 
-  async function startListening(gestureAssets?: KittyMicGestureAssets): Promise<void> {
+  async function startListening(
+    gestureAssets?: KittyMicGestureAssets
+  ): Promise<KittyFunAsrStartResult> {
     if (listening.value) {
       if (gestureAssets) {
         releaseKittyMicGestureAssets(gestureAssets)
       }
-      return
+      const existing = activeUtteranceId.value
+      if (existing) {
+        return { ok: true, utteranceId: existing }
+      }
+      return { ok: false, reason: 'not_connected' }
     }
     // Only reconnect when the socket is not already open. Re-entering
     // startConversation during PTT can hang the hold and skip asr_start.
@@ -373,7 +438,8 @@ export function useKittyFunAsrMic(options: {
           releaseKittyMicGestureAssets(gestureAssets)
         }
         debugLastError.value = 'not_connected'
-        return
+        options.onError?.('not_connected')
+        return { ok: false, reason: 'not_connected' }
       }
     }
     if (!options.ws.value || options.ws.value.readyState !== WebSocket.OPEN) {
@@ -382,7 +448,7 @@ export function useKittyFunAsrMic(options: {
       }
       debugLastError.value = 'not_connected'
       options.onError?.('not_connected')
-      return
+      return { ok: false, reason: 'not_connected' }
     }
 
     options.stopPlayback()
@@ -393,22 +459,24 @@ export function useKittyFunAsrMic(options: {
     } else {
       const ok = await ensureCaptureGraph()
       if (!ok) {
-        return
+        return { ok: false, reason: 'mic_denied' }
       }
     }
 
-    if (!micStream.value || !audioContext.value) {
-      debugLastError.value = 'mic_denied'
-      options.onError?.('mic_denied')
-      return
+    if (!micStream.value || !audioContext.value || !isWarmCaptureHealthy()) {
+      debugLastError.value = 'context_dead'
+      options.onError?.('context_dead')
+      return { ok: false, reason: 'context_dead' }
     }
 
     // Send asr_start even if context is still suspended — capturing unlock /
     // later activation-triggering bless may start PCM; server must see the hold.
+    const utteranceId = nextUtteranceId()
     blessAudioContextSync(audioContext.value)
     setMicTracksEnabled(micStream.value, true)
     debugFramesSent.value = 0
     listening.value = true
+    activeUtteranceId.value = utteranceId
     kittySession.setAsrListening(true)
     refreshDebugCtxState()
 
@@ -416,19 +484,24 @@ export function useKittyFunAsrMic(options: {
     if (
       !sendJson({
         type: 'asr_start',
+        utterance_id: utteranceId,
         language_hints: hints && hints.length > 0 ? hints : ['zh'],
         debug_ctx: audioContext.value.state,
       })
     ) {
       listening.value = false
+      activeUtteranceId.value = null
       kittySession.setAsrListening(false)
       setMicTracksEnabled(micStream.value, false)
       debugLastError.value = 'not_connected'
       options.onError?.('not_connected')
+      return { ok: false, reason: 'not_connected' }
     }
+    return { ok: true, utteranceId }
   }
 
   function stopListening(): void {
+    const utteranceId = activeUtteranceId.value
     if (!listening.value) {
       if (micStream.value) {
         setMicTracksEnabled(micStream.value, false)
@@ -437,7 +510,12 @@ export function useKittyFunAsrMic(options: {
     }
     listening.value = false
     flushPcm(true)
-    sendJson({ type: 'asr_stop' })
+    const payload: Record<string, unknown> = { type: 'asr_stop' }
+    if (utteranceId) {
+      payload.utterance_id = utteranceId
+    }
+    sendJson(payload)
+    activeUtteranceId.value = null
     kittySession.setAsrListening(false)
     if (micStream.value) {
       setMicTracksEnabled(micStream.value, false)
@@ -460,6 +538,7 @@ export function useKittyFunAsrMic(options: {
 
   return {
     listening,
+    activeUtteranceId,
     debugCtxState,
     debugFramesSent,
     debugLastError,

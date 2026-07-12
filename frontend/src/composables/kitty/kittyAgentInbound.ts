@@ -1,15 +1,15 @@
 import type { Ref, ShallowRef } from 'vue'
 
 import { type EventTypes, eventBus } from '@/composables/core/useEventBus'
-import { executeKittyAgentAction } from '@/composables/kitty/kittyAgentActions'
 import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
-import { applyKittyRemoteCanvasSelection } from '@/composables/kitty/kittySelectionApply'
-import type { DiagramEditExpectedEffect } from '@/utils/diagramEditVerify'
+import { executeKittyAgentAction } from '@/composables/kitty/kittyAgentActions'
 import { arrayBufferToBase64, base64ToArrayBuffer } from '@/composables/kitty/kittyAgentAudioCodec'
 import { normalizeKittyDebugText } from '@/composables/kitty/kittyAgentDebug'
 import type { KittyAgentState } from '@/composables/kitty/kittyAgentTypes'
+import { applyKittyRemoteCanvasSelection } from '@/composables/kitty/kittySelectionApply'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { useKittySessionStore } from '@/stores/kittySession'
+import type { DiagramEditExpectedEffect } from '@/utils/diagramEditVerify'
 
 export interface KittyInboundHandlerDeps {
   destroyed: () => boolean
@@ -135,8 +135,12 @@ export function handleKittyServerMessage(
       {
         const kittySession = useKittySessionStore()
         const text = String(data.text ?? '')
+        const utteranceId =
+          typeof data.utterance_id === 'string' && data.utterance_id.trim()
+            ? data.utterance_id.trim()
+            : undefined
         kittySession.setAsrPartialTranscript(text)
-        eventBus.emit('kitty:asr_partial', { text })
+        eventBus.emit('kitty:asr_partial', { text, utteranceId })
       }
       break
 
@@ -144,19 +148,37 @@ export function handleKittyServerMessage(
       {
         const kittySession = useKittySessionStore()
         const text = String(data.text ?? '')
+        const utteranceId =
+          typeof data.utterance_id === 'string' && data.utterance_id.trim()
+            ? data.utterance_id.trim()
+            : undefined
         kittySession.setAsrPartialTranscript(text)
-        eventBus.emit('kitty:asr_final', { text })
+        eventBus.emit('kitty:asr_final', { text, utteranceId })
       }
       break
 
     case 'asr_started':
-      useKittySessionStore().setAsrListening(true)
-      eventBus.emit('kitty:asr_started', {})
+      {
+        const utteranceId =
+          typeof data.utterance_id === 'string' && data.utterance_id.trim()
+            ? data.utterance_id.trim()
+            : undefined
+        useKittySessionStore().setAsrListening(true)
+        eventBus.emit('kitty:asr_started', { utteranceId })
+      }
       break
 
     case 'asr_stopped':
-      useKittySessionStore().setAsrListening(false)
-      eventBus.emit('kitty:asr_stopped', {})
+      {
+        const utteranceId =
+          typeof data.utterance_id === 'string' && data.utterance_id.trim()
+            ? data.utterance_id.trim()
+            : undefined
+        const text =
+          typeof data.text === 'string' && data.text.trim() ? data.text.trim() : undefined
+        useKittySessionStore().setAsrListening(false)
+        eventBus.emit('kitty:asr_stopped', { utteranceId, text })
+      }
       break
 
     case 'speech_started':
@@ -213,9 +235,7 @@ export function handleKittyServerMessage(
         | { nodes?: unknown[]; connections?: unknown[] }
         | undefined
       const beforeFingerprint =
-        beforeRaw &&
-        Array.isArray(beforeRaw.nodes) &&
-        Array.isArray(beforeRaw.connections)
+        beforeRaw && Array.isArray(beforeRaw.nodes) && Array.isArray(beforeRaw.connections)
           ? {
               nodes: beforeRaw.nodes as import('@/types').DiagramNode[],
               connections: beforeRaw.connections as import('@/types').Connection[],

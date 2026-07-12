@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+from typing import Any, Awaitable, Callable, Optional, cast
 from unittest.mock import MagicMock
 
 import pytest
+from websockets.exceptions import ConnectionClosedOK
 
 from services.kitty.asr.fun_asr_realtime import (
     FunAsrRealtimeClient,
@@ -21,6 +24,9 @@ from services.kitty.tts.cosyvoice_realtime import (
     build_cosyvoice_run_task,
     resolve_kitty_tts_model_and_voice,
 )
+
+PartialCb = Callable[[str, bool], Awaitable[None]]
+ErrorCb = Callable[[str], Awaitable[None]]
 
 
 def test_fun_asr_run_task_payload() -> None:
@@ -281,3 +287,149 @@ async def test_fun_asr_close_times_out_hanging_ws() -> None:
     await asyncio.wait_for(client.close(), timeout=2.0)
     assert getattr(client, "_closed") is True
     assert getattr(client, "_ws") is None
+
+
+@pytest.mark.asyncio
+async def test_start_session_asr_echoes_utterance_id(monkeypatch) -> None:
+    """asr_started / partial / final / error must carry the hold utterance_id."""
+    vid = "voice-asr-utt-echo"
+    sent: list[dict[str, object]] = []
+
+    class FakeWs:
+        """Collect outbound Kitty websocket payloads."""
+
+        async def send_json(self, message: dict[str, object]) -> None:
+            """Capture JSON frames."""
+            sent.append(dict(message))
+
+    class ImmediateAsr(FunAsrRealtimeClient):
+        """ASR stub that exposes the session partial callback."""
+
+        def __init__(
+            self,
+            *,
+            on_partial: PartialCb,
+            on_error: Optional[ErrorCb] = None,
+            language_hints: Optional[list[str]] = None,
+        ) -> None:
+            """Capture callbacks then no-op start."""
+            super().__init__(
+                on_partial=on_partial,
+                on_error=on_error,
+                language_hints=language_hints,
+            )
+            self.partial_cb = on_partial
+
+        async def start(self) -> None:
+            """Mark started without DashScope."""
+            return None
+
+        async def finish(self) -> None:
+            """No-op finish."""
+            return None
+
+    async def _noop_interrupt(_sid: str) -> None:
+        """Skip TTS interrupt in unit test."""
+        return None
+
+    async def _noop_fanout(*_args: object, **_kwargs: object) -> None:
+        """Skip voice-phase fanout in unit test."""
+        return None
+
+    monkeypatch.setattr(bridge, "FunAsrRealtimeClient", ImmediateAsr)
+    monkeypatch.setattr(bridge, "interrupt_kitty_tts", _noop_interrupt)
+    monkeypatch.setattr(bridge, "fanout_voice_phase_from_session", _noop_fanout)
+
+    voice_sessions[vid] = {"_kitty_client_lane": "mobile"}
+    try:
+        fake_ws = FakeWs()
+        await bridge.start_session_asr(
+            cast(Any, fake_ws),
+            vid,
+            language_hints=["zh"],
+            utterance_id="utt-hold-9",
+        )
+        assert any(
+            frame.get("type") == "asr_started" and frame.get("utterance_id") == "utt-hold-9"
+            for frame in sent
+        )
+        client = voice_sessions[vid]["_fun_asr_client"]
+        assert isinstance(client, ImmediateAsr)
+        await client.partial_cb("你好", True)
+        assert any(
+            frame.get("type") == "asr_final"
+            and frame.get("text") == "你好"
+            and frame.get("utterance_id") == "utt-hold-9"
+            for frame in sent
+        )
+        assert await bridge.stop_session_asr(vid, utterance_id="utt-hold-9") == "你好"
+        assert await bridge.stop_session_asr(vid, utterance_id="utt-other") == ""
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_feed_session_asr_ignores_stale_utterance() -> None:
+    """Audio frames from a prior hold must not reach the active Fun-ASR client."""
+    vid = "voice-asr-utt-stale"
+    sent_pcm: list[bytes] = []
+
+    class TrackingAsr(FunAsrRealtimeClient):
+        """Record PCM frames."""
+
+        def __init__(self) -> None:
+            """Initialize with a no-op partial callback."""
+            super().__init__(on_partial=lambda _t, _e: asyncio.sleep(0))
+
+        async def send_pcm(self, pcm: bytes) -> None:
+            """Capture PCM."""
+            sent_pcm.append(pcm)
+
+    voice_sessions[vid] = {
+        "_fun_asr_client": TrackingAsr(),
+        "_fun_asr_utterance_id": "utt-current",
+        "_fun_asr_audio_frames": 0,
+        "_fun_asr_audio_bytes": 0,
+        "_fun_asr_first_audio_logged": False,
+        "_fun_asr_dropped_before_start": 0,
+    }
+    try:
+        payload = base64.b64encode(b"\x00\x01").decode("ascii")
+        await bridge.feed_session_asr_audio(vid, payload, utterance_id="utt-stale")
+        assert not sent_pcm
+        await bridge.feed_session_asr_audio(vid, payload, utterance_id="utt-current")
+        assert sent_pcm == [b"\x00\x01"]
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_fun_asr_send_pcm_reports_provider_disconnect() -> None:
+    """Closed provider socket while sending audio must invoke on_error once."""
+    errors: list[str] = []
+
+    async def on_error(message: str) -> None:
+        """Collect provider disconnect errors."""
+        errors.append(message)
+
+    class ClosedWs:
+        """WebSocket stub that rejects sends as already closed."""
+
+        async def send(self, _payload: bytes) -> None:
+            """Raise connection closed."""
+            raise ConnectionClosedOK(None, None)
+
+        async def close(self) -> None:
+            """No-op close."""
+            return None
+
+    client = FunAsrRealtimeClient(
+        on_partial=lambda _t, _e: asyncio.sleep(0),
+        on_error=on_error,
+    )
+    setattr(client, "_ws", ClosedWs())
+    setattr(client, "_closed", False)
+    await client.send_pcm(b"\x00\x01\x02\x03")
+    await client.send_pcm(b"\x00\x01\x02\x03")
+    assert len(errors) == 1
+    assert "closed" in errors[0].lower() or "sending" in errors[0].lower()

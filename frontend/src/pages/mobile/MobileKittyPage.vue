@@ -3,7 +3,7 @@
  * MobileKittyPage — Full-screen Kitty agent from the mobile hub.
  * Fun-ASR voice + one-sentence edit routing + on-page conversation (no side panel).
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
@@ -22,26 +22,26 @@ import {
   useLanguage,
   useNotifications,
 } from '@/composables'
-import { registerKittyDiagramMutationBus } from '@/composables/kitty/registerKittyDiagramMutationBus'
+import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
 import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrateMobileKittyStoreFromBootstrap'
-import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
+import { registerKittyDiagramMutationBus } from '@/composables/kitty/registerKittyDiagramMutationBus'
+import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesktopLlmModelPublish'
 import { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
 import { useKittyMobileDebugBus } from '@/composables/kitty/useKittyMobileDebugBus'
 import { useKittyMobileHubActionBridge } from '@/composables/kitty/useKittyMobileHubActionBridge'
 import { useKittyMobileHubPersist } from '@/composables/kitty/useKittyMobileHubPersist'
 import { useKittyMobileLibraryDiagramSelect } from '@/composables/kitty/useKittyMobileLibraryDiagramSelect'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
+import { useMobileKittyLiveContextPoll } from '@/composables/kitty/useMobileKittyLiveContextPoll'
+import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
 import { prepareMobileKittyPhotoCapture } from '@/composables/mobile/prepareMobileKittyPhotoCapture'
 import { useMobileKittyChat } from '@/composables/mobile/useMobileKittyChat'
 import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
 import { useMobileKittyPageLifecycle } from '@/composables/mobile/useMobileKittyPageLifecycle'
-import { mobileDebugLog } from '@/utils/loadMobileDebugConsole'
-import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
-import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesktopLlmModelPublish'
-import { useMobileKittyLiveContextPoll } from '@/composables/kitty/useMobileKittyLiveContextPoll'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 import type { OneSentenceClarifyChoice } from '@/stores/oneSentence'
+import { mobileDebugLog } from '@/utils/loadMobileDebugConsole'
 
 const router = useRouter()
 const { t } = useLanguage()
@@ -132,10 +132,7 @@ const mobileLlmPublishScope = computed(() => {
   return scope !== '' ? scope : null
 })
 const mobileLlmPublishEnabled = computed(
-  () =>
-    authStore.isAuthenticated &&
-    kittyServerEnabled.value &&
-    mobileLlmPublishScope.value != null
+  () => authStore.isAuthenticated && kittyServerEnabled.value && mobileLlmPublishScope.value != null
 )
 useKittyDesktopLlmModelPublish({
   enabled: mobileLlmPublishEnabled,
@@ -228,8 +225,6 @@ const kittyDiagramCardAccessibleLabel = computed(() => {
   return bits.filter(Boolean).join('. ')
 })
 
-let connectInFlight: Promise<boolean> | null = null
-
 const ephemeralScopeWarned = ref(false)
 
 function maybeWarnEphemeralKittyScope(): void {
@@ -245,7 +240,12 @@ function maybeWarnEphemeralKittyScope(): void {
 }
 
 async function ensureConnected(): Promise<boolean> {
-  if (kitty.isConnected.value && kitty.isActive.value) {
+  const requestedScope = kittyPairScope.value
+  if (
+    kitty.isConnected.value &&
+    kitty.isActive.value &&
+    kitty.diagramSessionId.value === requestedScope
+  ) {
     return true
   }
   if (!authStore.isAuthenticated) {
@@ -261,26 +261,38 @@ async function ensureConnected(): Promise<boolean> {
     )
     return false
   }
-  if (connectInFlight) {
-    return connectInFlight
-  }
-  connectInFlight = (async () => {
-    try {
-      micDenied.value = false
-      await ensureMobileKittyBootstrap()
-      await kitty.startConversation(kittyPairScope.value, buildMobileKittyContext())
-      // Prefer FE one_sentence panel/phase over bootstrap "none" immediately after start.
-      syncMobileKittyContextNow()
-      maybeWarnEphemeralKittyScope()
-      return kitty.isConnected.value && kitty.isActive.value
-    } catch {
-      notify.warning(t('mobile.kittyConnectFailed', '连接失败，请检查网络后重试'))
-      return false
-    } finally {
-      connectInFlight = null
+  try {
+    micDenied.value = false
+    await ensureMobileKittyBootstrap()
+    const scope = kittyPairScope.value
+    if (
+      !kitty.isConnected.value ||
+      !kitty.isActive.value ||
+      kitty.diagramSessionId.value !== scope
+    ) {
+      // useKittyAgent serializes concurrent starts. Do not cache this page-level
+      // request: a scope change must join the prior start and then connect the
+      // current scope instead of inheriting a stale false result.
+      await kitty.startConversation(scope, buildMobileKittyContext())
     }
-  })()
-  return connectInFlight
+    // Prefer FE one_sentence panel/phase over bootstrap "none" immediately after start.
+    syncMobileKittyContextNow()
+    maybeWarnEphemeralKittyScope()
+    const connectedOk =
+      kitty.isConnected.value && kitty.isActive.value && kitty.diagramSessionId.value === scope
+    if (!connectedOk) {
+      pushKittyDebugLine(
+        '#connect',
+        `state=${kitty.state.value} active=${kitty.isActive.value ? 1 : 0} scope=${scope.slice(0, 8)} socket=${kitty.diagramSessionId.value?.slice(0, 8) ?? '—'}`
+      )
+    }
+    return connectedOk
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    pushKittyDebugLine('#connect', `fail ${detail.slice(0, 100)}`)
+    notify.warning(t('mobile.kittyConnectFailed', '连接失败，请检查网络后重试'))
+    return false
+  }
 }
 
 async function goHome(): Promise<void> {
@@ -356,10 +368,7 @@ const {
 // useMobileKittyChat watches diagramScope → bootstrapChat (shared one-sentence REST store).
 
 const liveContextPollEnabled = computed(
-  () =>
-    authStore.isAuthenticated &&
-    kittyServerEnabled.value &&
-    showDiagramChrome.value
+  () => authStore.isAuthenticated && kittyServerEnabled.value && showDiagramChrome.value
 )
 useMobileKittyLiveContextPoll({
   libraryDiagramId: kittyLibraryDiagramId,
@@ -432,6 +441,15 @@ function scheduleScopeReconnect(scope: string): void {
         return
       }
       await hydrateLibraryScopeIfNeeded(scope)
+      // Hydration is async — never stop a socket that became busy while we waited.
+      if (isKittyMicSessionBusy()) {
+        deferredScopeReconnect = scope
+        pushKittyDebugLine('#scope', 'defer reconnect — PTT/voice busy after hydrate')
+        return
+      }
+      if (scope !== kittyPairScope.value) {
+        return
+      }
       const wasConnected = kitty.isConnected.value
       const wasConnecting = kitty.state.value === 'connecting'
       if (!wasConnected && !wasConnecting) {
@@ -444,12 +462,24 @@ function scheduleScopeReconnect(scope: string): void {
       flushHubLibraryPersist()
       syncMobileKittyContextNow()
       await kitty.stopConversation()
+      if (isKittyMicSessionBusy()) {
+        deferredScopeReconnect = kittyPairScope.value
+        return
+      }
       if (wasConnected || wasConnecting) {
         void ensureConnected()
       }
     })()
   }, 350)
 }
+
+onUnmounted(() => {
+  if (scopeReconnectTimer != null) {
+    clearTimeout(scopeReconnectTimer)
+    scopeReconnectTimer = null
+  }
+  deferredScopeReconnect = null
+})
 
 watch(
   () => bootstrapPayload.value?.context?.selected_llm_model,
@@ -719,7 +749,9 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
       </div>
     </div>
 
-    <div class="kitty-bottom-bar shrink-0 sticky bottom-0 z-30 bg-white/95 backdrop-blur-md border-t border-gray-200/70 safe-pb">
+    <div
+      class="kitty-bottom-bar shrink-0 sticky bottom-0 z-30 bg-white/95 backdrop-blur-md border-t border-gray-200/70 safe-pb"
+    >
       <div
         v-if="connected && showKeyboard"
         class="flex gap-2 items-center px-4 pt-3 pb-1"

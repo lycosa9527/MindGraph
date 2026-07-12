@@ -1,42 +1,35 @@
 /**
  * Mobile Kitty conversation — local message list + one-sentence turn REST + Kitty reply bus.
  */
-import {
-  type ComputedRef,
-  type Ref,
-  nextTick,
-  onUnmounted,
-  ref,
-  watch,
-} from 'vue'
+import { type ComputedRef, type Ref, nextTick, onUnmounted, ref, watch } from 'vue'
 
-import {
-  type OneSentenceReplyPayload,
-  createOneSentenceReplyState,
-} from '@/composables/canvasToolbar/oneSentenceReplyState'
 import {
   pickOneSentenceGenerateDone,
   pickOneSentenceWelcome,
 } from '@/composables/canvasToolbar/oneSentenceChatLines'
 import {
+  type OneSentenceReplyPayload,
+  createOneSentenceReplyState,
+} from '@/composables/canvasToolbar/oneSentenceReplyState'
+import {
   appendOneSentenceTurn,
   fetchOneSentenceTurns,
   migrateOneSentenceScope,
 } from '@/composables/canvasToolbar/useOneSentenceSessionTurns'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { persistVerifiedDiagramToHub } from '@/composables/kitty/diagramEditHubPersist'
-import { resolveKittyEditFailureMessage } from '@/composables/kitty/kittyDiagramEditFeedback'
 import type { KittyAgentContext } from '@/composables/kitty/kittyAgentTypes'
+import { resolveKittyEditFailureMessage } from '@/composables/kitty/kittyDiagramEditFeedback'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import type { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
+import { useDiagramStore } from '@/stores/diagram'
+import { useKittySessionStore } from '@/stores/kittySession'
 import type {
   OneSentenceChatMessage,
   OneSentenceClarifyChoice,
   OneSentencePhase,
 } from '@/stores/oneSentence'
-import { useDiagramStore } from '@/stores/diagram'
-import { useKittySessionStore } from '@/stores/kittySession'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 const OWNER_ID = 'MobileKittyChat'
@@ -261,7 +254,18 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
         return false
       }
 
-      kitty.sendTextMessage(text, requestId)
+      let sent = kitty.sendTextMessage(text, requestId)
+      if (!sent) {
+        const reconnected = await ensureConnected()
+        if (reconnected) {
+          sent = kitty.sendTextMessage(text, requestId)
+        }
+      }
+      if (!sent) {
+        replyState.showFinalReply(t('mobile.kittyConnectFailed', '连接失败，请检查网络后重试'))
+        markActiveRequest('failed')
+        return false
+      }
       return true
     } finally {
       editPipelineActive.value = false
@@ -325,7 +329,10 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
 
   const migratedFromEphemeral = ref(false)
 
-  async function maybeMigrateEphemeralToScope(nextScope: string, prevScope: string | undefined): Promise<void> {
+  async function maybeMigrateEphemeralToScope(
+    nextScope: string,
+    prevScope: string | undefined
+  ): Promise<void> {
     if (migratedFromEphemeral.value) {
       return
     }
@@ -369,6 +376,13 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
   let lastAsrCommitText = ''
   let lastAsrCommitAt = 0
   let asrFinalCommitted = false
+  /** Latest hold correlation — ignore stale finals/stops from a prior utterance. */
+  let activeAsrUtteranceId: string | null = null
+  /** Buffered transcript while the button is still held (release-only submit). */
+  let holdTranscript = ''
+  let holdListening = false
+  /** True once this hold received non-empty ASR text (partial or final). */
+  let holdHadSpeech = false
 
   function normalizeAsrCommitKey(text: string): string {
     return text
@@ -377,12 +391,31 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
       .trim()
   }
 
-  function commitAsrTranscript(raw: string, source: 'final' | 'stopped'): void {
+  function utteranceMatches(utteranceId?: string): boolean {
+    if (!utteranceId) {
+      // Legacy servers without utterance_id — accept only while we have an open hold.
+      return holdListening || funAsr.listening.value
+    }
+    if (activeAsrUtteranceId == null) {
+      activeAsrUtteranceId = utteranceId
+      return true
+    }
+    return utteranceId === activeAsrUtteranceId
+  }
+
+  function resetHoldCorrelation(): void {
+    holdTranscript = ''
+    holdListening = false
+    holdHadSpeech = false
+    activeAsrUtteranceId = null
+  }
+
+  function commitAsrTranscript(raw: string): void {
     const text = raw.trim()
     if (!text) {
       return
     }
-    if (source === 'stopped' && asrFinalCommitted) {
+    if (asrFinalCommitted) {
       return
     }
     const key = normalizeAsrCommitKey(text)
@@ -394,30 +427,70 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
       lastAsrCommitText = key
     }
     lastAsrCommitAt = now
-    if (source === 'final') {
-      asrFinalCommitted = true
-    }
+    asrFinalCommitted = true
     draft.value = text
-    funAsr.stopListening()
+    if (funAsr.listening.value) {
+      funAsr.stopListening()
+    }
     void sendUserText(text)
   }
 
-  const onAsrPartial = (payload: { text: string }) => {
+  const onAsrPartial = (payload: { text: string; utteranceId?: string }) => {
+    if (!utteranceMatches(payload.utteranceId)) {
+      return
+    }
+    if (payload.utteranceId) {
+      activeAsrUtteranceId = payload.utteranceId
+    }
     if (payload.text.trim()) {
-      // New utterance started — allow a later final after a prior hold.
       asrFinalCommitted = false
-      draft.value = payload.text.trim()
+      holdListening = true
+      holdHadSpeech = true
+      holdTranscript = payload.text.trim()
+      draft.value = holdTranscript
     }
   }
 
-  const onAsrFinal = (payload: { text: string }) => {
-    commitAsrTranscript(payload.text, 'final')
+  const onAsrFinal = (payload: { text: string; utteranceId?: string }) => {
+    if (!utteranceMatches(payload.utteranceId)) {
+      return
+    }
+    if (payload.utteranceId) {
+      activeAsrUtteranceId = payload.utteranceId
+    }
+    const text = payload.text.trim()
+    if (!text) {
+      return
+    }
+    // Release-only: while holding, only buffer. Submit on asr_stopped / pointer release.
+    holdListening = true
+    holdHadSpeech = true
+    holdTranscript = text
+    draft.value = text
+    asrFinalCommitted = false
   }
 
-  /** PTT release may get asr_stopped before asr_final if DashScope is slow — flush draft. */
-  const onAsrStopped = () => {
-    commitAsrTranscript(draft.value, 'stopped')
-    // Allow a later final in the same hold only if stopped flushed nothing useful.
+  /** PTT release → asr_stop → asr_stopped; flush buffered transcript once. */
+  const onAsrStopped = (payload?: { utteranceId?: string; text?: string }) => {
+    if (
+      payload?.utteranceId &&
+      activeAsrUtteranceId &&
+      payload.utteranceId !== activeAsrUtteranceId
+    ) {
+      return
+    }
+    const payloadText = typeof payload?.text === 'string' ? payload.text.trim() : ''
+    const text = (payloadText || holdTranscript).trim()
+    // Only submit ASR-captured speech — never an unrelated keyboard draft.
+    if (!holdHadSpeech || !text) {
+      resetHoldCorrelation()
+      window.setTimeout(() => {
+        asrFinalCommitted = false
+      }, 3000)
+      return
+    }
+    commitAsrTranscript(text)
+    resetHoldCorrelation()
     window.setTimeout(() => {
       asrFinalCommitted = false
     }, 3000)
@@ -467,16 +540,12 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
       markActiveRequest('done')
       return
     }
-    replyState.showFinalReply(
-      resolveKittyEditFailureMessage(payload.errorCode, t, payload.action)
-    )
+    replyState.showFinalReply(resolveKittyEditFailureMessage(payload.errorCode, t, payload.action))
     markActiveRequest('failed')
   }
 
   const onDiagramEditFailed = (payload: { action: string; errorCode: string }) => {
-    replyState.showFinalReply(
-      resolveKittyEditFailureMessage(payload.errorCode, t, payload.action)
-    )
+    replyState.showFinalReply(resolveKittyEditFailureMessage(payload.errorCode, t, payload.action))
     markActiveRequest('failed')
   }
 

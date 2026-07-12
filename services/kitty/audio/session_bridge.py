@@ -38,6 +38,8 @@ _ASR_AUDIO_FRAMES_KEY = "_fun_asr_audio_frames"
 _ASR_AUDIO_BYTES_KEY = "_fun_asr_audio_bytes"
 _ASR_FIRST_AUDIO_LOGGED_KEY = "_fun_asr_first_audio_logged"
 _ASR_DROPPED_BEFORE_START_KEY = "_fun_asr_dropped_before_start"
+_ASR_UTTERANCE_ID_KEY = "_fun_asr_utterance_id"
+_ASR_LAST_TEXT_KEY = "_fun_asr_last_text"
 
 
 def _tts_generation(session: dict[str, Any]) -> int:
@@ -200,6 +202,8 @@ def _reset_asr_audio_counters(session: dict[str, Any]) -> None:
     session[_ASR_AUDIO_BYTES_KEY] = 0
     session[_ASR_FIRST_AUDIO_LOGGED_KEY] = False
     session[_ASR_DROPPED_BEFORE_START_KEY] = 0
+    session[_ASR_LAST_TEXT_KEY] = ""
+    session[_ASR_UTTERANCE_ID_KEY] = None
 
 
 def _session_client_lane(session: dict[str, Any]) -> str:
@@ -213,6 +217,7 @@ async def start_session_asr(
     voice_session_id: str,
     *,
     language_hints: Optional[list[str]] = None,
+    utterance_id: Optional[str] = None,
 ) -> None:
     """Start Fun-ASR for this Kitty session (one task per mic session)."""
     await interrupt_kitty_tts(voice_session_id)
@@ -231,6 +236,7 @@ async def start_session_asr(
         return
     lane = _session_client_lane(session)
     _reset_asr_audio_counters(session)
+    session[_ASR_UTTERANCE_ID_KEY] = utterance_id
     existing = session.get("_fun_asr_client")
     session["_fun_asr_client"] = None
     if isinstance(existing, FunAsrRealtimeClient):
@@ -238,7 +244,9 @@ async def start_session_asr(
         asyncio.create_task(_finish_asr_client_background(existing))
 
     async def on_partial(text: str, sentence_end: bool) -> None:
+        # Provider sentence_end is still a partial hold update — FE submits on stop.
         msg_type = "asr_final" if sentence_end else "asr_partial"
+        session[_ASR_LAST_TEXT_KEY] = text
         if sentence_end:
             kitty_wf_log(
                 "asr_final",
@@ -251,7 +259,11 @@ async def start_session_asr(
                 lane,
                 text[:80],
             )
-        await safe_websocket_send(websocket, {"type": msg_type, "text": text})
+        payload: dict[str, object] = {"type": msg_type, "text": text}
+        active_utt = session.get(_ASR_UTTERANCE_ID_KEY)
+        if isinstance(active_utt, str) and active_utt.strip():
+            payload["utterance_id"] = active_utt
+        await safe_websocket_send(websocket, payload)
 
     async def on_error(err: str) -> None:
         logger.warning(
@@ -265,7 +277,11 @@ async def start_session_asr(
             err,
             voice_session_id=voice_session_id,
         )
-        await safe_websocket_send(websocket, {"type": "error", "error": f"ASR failed: {err}"})
+        err_payload: dict[str, object] = {"type": "error", "error": f"ASR failed: {err}"}
+        active_utt = session.get(_ASR_UTTERANCE_ID_KEY)
+        if isinstance(active_utt, str) and active_utt.strip():
+            err_payload["utterance_id"] = active_utt
+        await safe_websocket_send(websocket, err_payload)
 
     client = FunAsrRealtimeClient(
         on_partial=on_partial,
@@ -275,18 +291,22 @@ async def start_session_asr(
     session["_fun_asr_client"] = client
     try:
         await client.start()
-        await safe_websocket_send(websocket, {"type": "asr_started"})
+        started_payload: dict[str, object] = {"type": "asr_started"}
+        if utterance_id:
+            started_payload["utterance_id"] = utterance_id
+        await safe_websocket_send(websocket, started_payload)
         await fanout_voice_phase_from_session(voice_session_id, "listening")
         hints = language_hints or ["zh"]
         logger.info(
-            "Fun-ASR started sid=%s lane=%s hints=%s",
+            "Fun-ASR started sid=%s lane=%s hints=%s utt=%s",
             voice_session_id[:12],
             lane,
             hints,
+            (utterance_id or "—")[:16],
         )
         kitty_wf_log(
             "asr_started",
-            f"lane={lane} hints={hints}",
+            f"lane={lane} hints={hints} utt={utterance_id or '—'}",
             voice_session_id=voice_session_id,
         )
     except LLM_PIPELINE_ERRORS as exc:
@@ -302,13 +322,32 @@ async def start_session_asr(
             str(exc),
             voice_session_id=voice_session_id,
         )
-        await safe_websocket_send(websocket, {"type": "error", "error": f"ASR start failed: {exc}"})
+        fail_payload: dict[str, object] = {
+            "type": "error",
+            "error": f"ASR start failed: {exc}",
+        }
+        if utterance_id:
+            fail_payload["utterance_id"] = utterance_id
+        await safe_websocket_send(websocket, fail_payload)
 
 
-async def feed_session_asr_audio(voice_session_id: str, audio_b64: str) -> None:
+async def feed_session_asr_audio(
+    voice_session_id: str,
+    audio_b64: str,
+    *,
+    utterance_id: Optional[str] = None,
+) -> None:
     """Decode base64 PCM and forward to Fun-ASR."""
     session = voice_sessions.get(voice_session_id)
     if not session:
+        return
+    active_utt = session.get(_ASR_UTTERANCE_ID_KEY)
+    if (
+        utterance_id
+        and isinstance(active_utt, str)
+        and active_utt.strip()
+        and utterance_id != active_utt
+    ):
         return
     client = session.get("_fun_asr_client")
     if not isinstance(client, FunAsrRealtimeClient):
@@ -363,16 +402,30 @@ async def _finish_asr_client_background(client: FunAsrRealtimeClient) -> None:
         logger.debug("Fun-ASR background finish pipeline error: %s", exc)
 
 
-async def stop_session_asr(voice_session_id: str) -> None:
+async def stop_session_asr(
+    voice_session_id: str,
+    *,
+    utterance_id: Optional[str] = None,
+) -> str:
     """Finish Fun-ASR and flush ``asr_final`` before returning (bounded).
 
     Awaiting DashScope forever would block later Kitty frames, so finish is
     capped. We still wait long enough for the final transcript — fire-and-forget
     teardown was dropping ``asr_final`` on PTT release.
+
+    Returns the last transcript text for this utterance (may be empty).
     """
     session = voice_sessions.get(voice_session_id)
     if not session:
-        return
+        return ""
+    active_utt = session.get(_ASR_UTTERANCE_ID_KEY)
+    if (
+        utterance_id
+        and isinstance(active_utt, str)
+        and active_utt.strip()
+        and utterance_id != active_utt
+    ):
+        return ""
     client = session.get("_fun_asr_client")
     session["_fun_asr_client"] = None
     frames = int(session.get(_ASR_AUDIO_FRAMES_KEY) or 0)
@@ -394,7 +447,8 @@ async def stop_session_asr(voice_session_id: str) -> None:
         voice_session_id=voice_session_id,
     )
     if not isinstance(client, FunAsrRealtimeClient):
-        return
+        last = session.get(_ASR_LAST_TEXT_KEY)
+        return last if isinstance(last, str) else ""
     try:
         await asyncio.wait_for(client.finish(), timeout=3.0)
     except asyncio.TimeoutError:
@@ -403,6 +457,8 @@ async def stop_session_asr(voice_session_id: str) -> None:
     except LLM_PIPELINE_ERRORS as exc:
         logger.debug("Fun-ASR stop pipeline error: %s", exc)
         asyncio.create_task(_finish_asr_client_background(client))
+    last = session.get(_ASR_LAST_TEXT_KEY)
+    return last if isinstance(last, str) else ""
 
 
 async def teardown_session_audio(voice_session_id: str) -> None:

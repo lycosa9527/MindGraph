@@ -14,14 +14,14 @@ import { nextTick, shallowRef } from 'vue'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
+import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
+
 vi.mock('@/stores/kittySession', () => ({
   useKittySessionStore: () => ({
     setAsrListening: vi.fn(),
   }),
 }))
-
-import { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
-import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
 
 type FakeState = 'suspended' | 'running' | 'closed'
 
@@ -178,6 +178,7 @@ function installIosSafariAudioMocks(): {
   const micLedOn = { value: false }
   const track = {
     enabled: true,
+    readyState: 'live' as const,
     stop: vi.fn(),
   }
 
@@ -268,27 +269,23 @@ describe('iOS Safari PTT end-to-end (Web Audio policy simulator)', () => {
       onError,
     })
 
-    const {
-      pttPointerActive,
-      onKittyMicPointerDown,
-      onKittyMicPointerUp,
-      teardownMicPtt,
-    } = useMobileKittyMicPtt({
-      funAsr: {
-        listening: funAsr.listening,
-        prepareMicFromUserGesture: funAsr.prepareMicFromUserGesture,
-        blessFromUserActivation: funAsr.blessFromUserActivation,
-        startListening: funAsr.startListening,
-        stopListening: funAsr.stopListening,
-      },
-      kittyServerEnabled: { value: true },
-      micDenied: { value: false },
-      showKeyboard: { value: false },
-      connected: { value: true },
-      ensureConnected: async () => true,
-      onMicDenied,
-      onMicAllowed: vi.fn(),
-    })
+    const { pttPointerActive, onKittyMicPointerDown, onKittyMicPointerUp, teardownMicPtt } =
+      useMobileKittyMicPtt({
+        funAsr: {
+          listening: funAsr.listening,
+          prepareMicFromUserGesture: funAsr.prepareMicFromUserGesture,
+          blessFromUserActivation: funAsr.blessFromUserActivation,
+          startListening: funAsr.startListening,
+          stopListening: funAsr.stopListening,
+        },
+        kittyServerEnabled: { value: true },
+        micDenied: { value: false },
+        showKeyboard: { value: false },
+        connected: { value: true },
+        ensureConnected: async () => true,
+        onMicDenied,
+        onMicAllowed: vi.fn(),
+      })
 
     const btn = document.createElement('button')
     btn.setPointerCapture = vi.fn()
