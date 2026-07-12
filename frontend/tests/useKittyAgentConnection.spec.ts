@@ -150,31 +150,23 @@ describe('useKittyAgent connection', () => {
     agent.destroy()
   })
 
-  it('rejects a superseded queued start when a newer scope wins', async () => {
+  it('lets a superseded waiter succeed when the winner connects the same scope', async () => {
     vi.stubGlobal('AudioContext', SuspendedAudioContext)
     vi.stubGlobal('WebSocket', FakeWebSocket)
 
     const agent = useKittyAgent({ kittyClientLane: 'mobile' })
-    const first = agent.startConversation('scope-a')
+    const first = agent.startConversation('shared-scope')
     await Promise.resolve()
-    expect(FakeWebSocket.instances.length).toBeGreaterThanOrEqual(1)
+    const second = agent.startConversation('shared-scope')
+
     const firstSocket = FakeWebSocket.instances[0]
-    const second = agent.startConversation('scope-b')
-
-    // Complete the first handshake so the queued second start can run; the
-    // older waiter must still settle without hanging on the 10s connect timer.
     firstSocket?.open()
-    firstSocket?.receive({ type: 'connected', session_id: 'session-a' })
-    await expect(first).resolves.toBeUndefined()
+    firstSocket?.receive({ type: 'connected', session_id: 'session-shared' })
 
-    await Promise.resolve()
-    const secondSocket = FakeWebSocket.instances[FakeWebSocket.instances.length - 1]
-    expect(secondSocket).not.toBe(firstSocket)
-    secondSocket?.open()
-    secondSocket?.receive({ type: 'connected', session_id: 'session-b' })
-    await second
-    expect(agent.diagramSessionId.value).toBe('scope-b')
-    expect(agent.isConnected.value).toBe(true)
+    await expect(first).resolves.toBeUndefined()
+    await expect(second).resolves.toBeUndefined()
+    expect(agent.isLiveForScope('shared-scope')).toBe(true)
+    expect(FakeWebSocket.instances).toHaveLength(1)
     agent.destroy()
   })
 

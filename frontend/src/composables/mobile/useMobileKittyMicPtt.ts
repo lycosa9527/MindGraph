@@ -214,6 +214,7 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
         return
       }
       if (!connectedOk) {
+        pttDebug('abort:connect_failed (ensureConnected)')
         onPttAborted?.('connect_failed')
         return
       }
@@ -235,6 +236,7 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
           onPttAborted?.('context_dead')
           return
         }
+        pttDebug(`abort:connect_failed (startListening:${started.reason})`)
         onPttAborted?.('connect_failed')
         return
       }

@@ -239,13 +239,31 @@ function maybeWarnEphemeralKittyScope(): void {
   notify.warning(msg)
 }
 
+function kittyWsReadyLabel(): string {
+  const wsState = kitty.ws.value?.readyState
+  if (wsState === WebSocket.OPEN) {
+    return 'open'
+  }
+  if (wsState === WebSocket.CONNECTING) {
+    return 'connecting'
+  }
+  if (wsState === WebSocket.CLOSING) {
+    return 'closing'
+  }
+  if (wsState === WebSocket.CLOSED) {
+    return 'closed'
+  }
+  return 'none'
+}
+
+function isKittyLiveForScope(scope: string): boolean {
+  return kitty.isLiveForScope(scope)
+}
+
 async function ensureConnected(): Promise<boolean> {
   const requestedScope = kittyPairScope.value
-  if (
-    kitty.isConnected.value &&
-    kitty.isActive.value &&
-    kitty.diagramSessionId.value === requestedScope
-  ) {
+  kitty.reconcileLiveState()
+  if (isKittyLiveForScope(requestedScope)) {
     return true
   }
   if (!authStore.isAuthenticated) {
@@ -263,12 +281,16 @@ async function ensureConnected(): Promise<boolean> {
   }
   try {
     micDenied.value = false
-    await ensureMobileKittyBootstrap()
+    if (!bootstrapPayload.value) {
+      await ensureMobileKittyBootstrap()
+    }
     const scope = kittyPairScope.value
+    kitty.reconcileLiveState()
     if (
-      !kitty.isConnected.value ||
-      !kitty.isActive.value ||
-      kitty.diagramSessionId.value !== scope
+      !isKittyLiveForScope(scope) &&
+      (!kitty.isConnected.value ||
+        !kitty.isActive.value ||
+        kitty.diagramSessionId.value !== scope)
     ) {
       // useKittyAgent serializes concurrent starts. Do not cache this page-level
       // request: a scope change must join the prior start and then connect the
@@ -278,12 +300,11 @@ async function ensureConnected(): Promise<boolean> {
     // Prefer FE one_sentence panel/phase over bootstrap "none" immediately after start.
     syncMobileKittyContextNow()
     maybeWarnEphemeralKittyScope()
-    const connectedOk =
-      kitty.isConnected.value && kitty.isActive.value && kitty.diagramSessionId.value === scope
+    const connectedOk = isKittyLiveForScope(scope)
     if (!connectedOk) {
       pushKittyDebugLine(
         '#connect',
-        `state=${kitty.state.value} active=${kitty.isActive.value ? 1 : 0} scope=${scope.slice(0, 8)} socket=${kitty.diagramSessionId.value?.slice(0, 8) ?? '—'}`
+        `state=${kitty.state.value} active=${kitty.isActive.value ? 1 : 0} ws=${kittyWsReadyLabel()} scope=${scope.slice(0, 8)} socket=${kitty.diagramSessionId.value?.slice(0, 8) ?? '—'}`
       )
     }
     return connectedOk
@@ -455,7 +476,7 @@ function scheduleScopeReconnect(scope: string): void {
       if (!wasConnected && !wasConnecting) {
         return
       }
-      if (kitty.diagramSessionId.value === scope && kitty.isConnected.value) {
+      if (kitty.diagramSessionId.value === scope && kitty.isLiveForScope(scope)) {
         syncMobileKittyContextNow()
         return
       }
@@ -500,7 +521,7 @@ watch(
     pushKittyDebugLine('#scope', `${String(prev).slice(0, 12)} → ${String(scope).slice(0, 12)}`)
 
     // Already on this scope's socket — hydrate only, do not tear down WS.
-    if (kitty.diagramSessionId.value === scope && kitty.isConnected.value) {
+    if (kitty.diagramSessionId.value === scope && kitty.isLiveForScope(scope)) {
       deferredScopeReconnect = null
       void hydrateLibraryScopeIfNeeded(scope)
       syncMobileKittyContextNow()
@@ -535,7 +556,7 @@ watch(
       deferredScopeReconnect = null
       return
     }
-    if (kitty.diagramSessionId.value === pending && kitty.isConnected.value) {
+    if (kitty.diagramSessionId.value === pending && kitty.isLiveForScope(pending)) {
       deferredScopeReconnect = null
       syncMobileKittyContextNow()
       return

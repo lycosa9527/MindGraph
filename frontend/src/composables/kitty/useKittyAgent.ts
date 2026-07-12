@@ -100,6 +100,66 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     return socket.readyState === WebSocket.OPEN && isActive.value
   }
 
+  /** Drop isActive/state when the socket is gone or no longer OPEN. */
+  function reconcileLiveState(): void {
+    const socket = ws.value
+    if (socket?.readyState === WebSocket.OPEN && isActive.value) {
+      return
+    }
+    if (!isActive.value) {
+      return
+    }
+    isActive.value = false
+    if (
+      state.value === 'connecting' ||
+      state.value === 'active' ||
+      state.value === 'listening'
+    ) {
+      state.value = 'idle'
+    }
+  }
+
+  async function joinSupersedingStart(
+    scope: string,
+    myGeneration: number,
+    context?: KittyAgentContext
+  ): Promise<void> {
+    const targetGeneration = startGeneration
+    const deadline = Date.now() + KITTY_CONNECT_TIMEOUT_MS
+    let winnerStarted = false
+    while (Date.now() < deadline) {
+      if (startInFlight !== null) {
+        winnerStarted = true
+      }
+      if (
+        winnerStarted &&
+        startInFlight === null &&
+        startGeneration === targetGeneration
+      ) {
+        if (isLiveOnScope(scope)) {
+          if (context) {
+            updateContext(context)
+          }
+          return
+        }
+        break
+      }
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 25)
+      })
+    }
+    if (isLiveOnScope(scope)) {
+      if (context) {
+        updateContext(context)
+      }
+      return
+    }
+    throw new Error(
+      `Kitty connection superseded (gen ${myGeneration} → ${startGeneration}) ` +
+        `before ${scope.slice(0, 8)} became live`
+    )
+  }
+
   const lifecycle = {
     destroyed: () => destroyed,
     cleaningUp: () => cleaningUp,
@@ -120,6 +180,10 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     activeConnectAttempt = null
     if (ws.value === attempt.socket) {
       ws.value = null
+      isActive.value = false
+      if (state.value === 'connecting' || state.value === 'active') {
+        state.value = 'idle'
+      }
     }
     detachSocketHandlers(attempt.socket)
     try {
@@ -365,14 +429,28 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       release = resolve
     })
     startInFlight = gate
+    let gateReleased = false
+    const finishGate = (): void => {
+      if (gateReleased) {
+        return
+      }
+      gateReleased = true
+      release()
+      if (startInFlight === gate) {
+        startInFlight = null
+      }
+    }
 
     try {
       if (prior) {
         await prior.catch(() => undefined)
       }
 
-      // A newer startConversation superseded this waiter — let that owner connect.
+      // A newer startConversation superseded this waiter — join the winner so
+      // callers (PTT ensureConnected) never return while the socket is still dead.
       if (myGeneration !== startGeneration) {
+        finishGate()
+        await joinSupersedingStart(scope, myGeneration, context)
         return
       }
 
@@ -400,16 +478,15 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
       await connect(scope, context)
 
       if (myGeneration !== startGeneration) {
+        finishGate()
+        await joinSupersedingStart(scope, myGeneration, context)
         return
       }
 
       kittySession.setOwnsKittySession(true)
       eventBus.emit('voice:started', { sessionId: sessionId.value ?? '' })
     } finally {
-      release()
-      if (startInFlight === gate) {
-        startInFlight = null
-      }
+      finishGate()
     }
   }
 
@@ -687,6 +764,8 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     lastError,
     isConnected,
     canSpeak,
+    isLiveForScope: isLiveOnScope,
+    reconcileLiveState,
     ws,
     startConversation,
     stopConversation,
