@@ -83,6 +83,7 @@
     "dompurify": "^3.2.4",
     "echarts": "^6.1.0",
     "element-plus": "^2.13.1",
+    "eruda": "^3.4.3",
     "fflate": "^0.8.2",
     "highlight.js": "^11.11.1",
     "html-to-image": "^1.11.11",

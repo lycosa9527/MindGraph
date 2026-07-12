@@ -36,6 +36,7 @@ import { prepareMobileKittyPhotoCapture } from '@/composables/mobile/prepareMobi
 import { useMobileKittyChat } from '@/composables/mobile/useMobileKittyChat'
 import { useMobileKittyMicPtt } from '@/composables/mobile/useMobileKittyMicPtt'
 import { useMobileKittyPageLifecycle } from '@/composables/mobile/useMobileKittyPageLifecycle'
+import { mobileDebugLog } from '@/utils/loadMobileDebugConsole'
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
 import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesktopLlmModelPublish'
 import { useMobileKittyLiveContextPoll } from '@/composables/kitty/useMobileKittyLiveContextPoll'
@@ -60,13 +61,15 @@ const KITTY_DEBUG_MAX = 42
 const kittyDebugLines = ref<string[]>([])
 
 function pushKittyDebugLine(prefix: string, detail: string): void {
-  if (!import.meta.env.DEV) {
-    return
-  }
   const d = new Date()
   const pad = (n: number, w: number) => String(n).padStart(w, '0')
   const stamp = `${pad(d.getHours(), 2)}:${pad(d.getMinutes(), 2)}:${pad(d.getSeconds(), 2)}.${pad(d.getMilliseconds(), 3)}`
   const row = `${stamp} ${prefix} ${detail}`.trim()
+  // Always mirror to console when Eruda / test debug host is on (iOS Safari).
+  mobileDebugLog(prefix, detail)
+  if (!import.meta.env.DEV) {
+    return
+  }
   const cur = kittyDebugLines.value
   kittyDebugLines.value =
     cur.length >= KITTY_DEBUG_MAX ? [...cur.slice(-(KITTY_DEBUG_MAX - 1)), row] : [...cur, row]

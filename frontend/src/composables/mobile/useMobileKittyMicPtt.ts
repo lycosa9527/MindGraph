@@ -68,6 +68,8 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
   let activePointerId: number | null = null
   let captureEl: HTMLElement | null = null
   let windowPointerBound = false
+  /** Bumped on every pointer/space end so in-flight startListening is abandoned. */
+  let pttGeneration = 0
 
   function isKittyTextInputTarget(): boolean {
     if (!showKeyboard.value || !connected.value) {
@@ -174,12 +176,19 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     if (!kittyServerEnabled.value || micDenied.value) {
       return
     }
-    if (funAsr.listening.value || voiceStartInFlight.value) {
+    // A prior startListening hang used to leave voiceStartInFlight stuck true so
+    // later holds only flipped hold:1 / LED and never sent asr_start.
+    if (funAsr.listening.value) {
       return
     }
+    const generation = pttGeneration
     voiceStartInFlight.value = true
     try {
       const [connectedOk, warmOk] = await Promise.all([ensureConnected(), warmPromise])
+      if (generation !== pttGeneration || !isKittyMicHoldActive()) {
+        onPttAborted?.('released_early')
+        return
+      }
       if (!warmOk) {
         onMicDenied()
         onPttAborted?.('mic_denied')
@@ -189,15 +198,10 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
         onPttAborted?.('connect_failed')
         return
       }
-      if (!isKittyMicHoldActive()) {
-        // Finger lifted during warm/connect — common on first mic permission prompt.
-        onPttAborted?.('released_early')
-        return
-      }
       // Sticky / capturing unlock may have made the context runnable while we awaited.
       funAsr.blessFromUserActivation()
       await funAsr.startListening()
-      if (!isKittyMicHoldActive()) {
+      if (generation !== pttGeneration || !isKittyMicHoldActive()) {
         funAsr.stopListening()
       } else {
         onMicAllowed()
@@ -206,13 +210,17 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       onMicDenied()
       onPttAborted?.('mic_denied')
     } finally {
-      voiceStartInFlight.value = false
+      if (generation === pttGeneration) {
+        voiceStartInFlight.value = false
+      }
     }
   }
 
   function endKittyMicFromUser(): void {
+    pttGeneration += 1
     pttPointerActive.value = false
     spacePttActive = false
+    voiceStartInFlight.value = false
     unbindWindowPointerEnd()
     releasePointerCaptureSafe()
     if (funAsr.listening.value) {
@@ -225,7 +233,9 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
       // Touch/pen pointerup is activation-triggering — unlock Web Audio here.
       blessIfActivationTriggering(ev)
     }
+    pttGeneration += 1
     pttPointerActive.value = false
+    voiceStartInFlight.value = false
     unbindWindowPointerEnd()
     releasePointerCaptureSafe()
     if (funAsr.listening.value) {
@@ -331,7 +341,9 @@ export function useMobileKittyMicPtt(options: UseMobileKittyMicPttOptions) {
     if (!spacePttActive) {
       return
     }
+    pttGeneration += 1
     spacePttActive = false
+    voiceStartInFlight.value = false
     if (funAsr.listening.value) {
       funAsr.stopListening()
     }

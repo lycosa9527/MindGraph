@@ -25,11 +25,15 @@ import { setAppQueryClient } from './utils/appQueryClient'
 import { isGuestAuthPath } from './utils/authRedirect'
 import { installCsrfFetchInterceptor } from './utils/installCsrfFetchInterceptor'
 import { installFrontendErrorReporting } from './utils/installFrontendErrorReporting'
+import { loadMobileDebugConsole } from './utils/loadMobileDebugConsole'
 import { bindPwaInstallListeners } from './utils/pwaInstall'
 import { reloadForStaleChunk } from './utils/staleChunkReload'
 
 // Attach X-CSRF-Token to same-origin mutations before any request is made.
 installCsrfFetchInterceptor()
+
+// iOS Safari on-device console (Eruda) when ?eruda=1 / test.* host.
+void loadMobileDebugConsole()
 
 const pwaDevEnabled = import.meta.env.VITE_PWA_DEV === '1'
 

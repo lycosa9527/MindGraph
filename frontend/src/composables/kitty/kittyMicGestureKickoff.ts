@@ -117,7 +117,12 @@ export function kickoffKittyMicGestureAssets(): Promise<KittyMicGestureAssets> {
       // 3) Document is now capturing — WebKit allows AudioContext start (180680).
       blessAudioContextSync(audioContext)
       if (audioContext.state === 'suspended') {
-        await audioContext.resume().catch(() => undefined)
+        await Promise.race([
+          audioContext.resume().catch(() => undefined),
+          new Promise<void>((resolve) => {
+            setTimeout(resolve, 400)
+          }),
+        ])
       }
       const mediaSource = audioContext.createMediaStreamSource(stream)
       mediaSource.connect(scriptProcessor)

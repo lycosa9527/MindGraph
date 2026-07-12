@@ -304,7 +304,13 @@ export function useKittyFunAsrMic(options: {
     if (warmReady && micStream.value && audioContext.value) {
       if (audioContext.value.state === 'suspended') {
         blessAudioContextSync(audioContext.value)
-        await audioContext.value.resume().catch(() => undefined)
+        // iOS can leave resume() pending forever — never block PTT on it.
+        await Promise.race([
+          audioContext.value.resume().catch(() => undefined),
+          new Promise<void>((resolve) => {
+            setTimeout(resolve, 400)
+          }),
+        ])
       }
       refreshDebugCtxState()
       return true
@@ -326,7 +332,12 @@ export function useKittyFunAsrMic(options: {
       const ctx = new AudioCtx()
       blessAudioContextSync(ctx)
       if (ctx.state === 'suspended') {
-        await ctx.resume().catch(() => undefined)
+        await Promise.race([
+          ctx.resume().catch(() => undefined),
+          new Promise<void>((resolve) => {
+            setTimeout(resolve, 400)
+          }),
+        ])
       }
       const workletOk = await startWorkletCapture(ctx, stream)
       if (!workletOk) {
@@ -350,7 +361,12 @@ export function useKittyFunAsrMic(options: {
       }
       return
     }
-    if (options.ensureConnected) {
+    // Only reconnect when the socket is not already open. Re-entering
+    // startConversation during PTT can hang the hold and skip asr_start.
+    if (
+      options.ensureConnected &&
+      (!options.ws.value || options.ws.value.readyState !== WebSocket.OPEN)
+    ) {
       const ok = await options.ensureConnected()
       if (!ok) {
         if (gestureAssets) {
@@ -387,6 +403,9 @@ export function useKittyFunAsrMic(options: {
       return
     }
 
+    // Send asr_start even if context is still suspended — capturing unlock /
+    // later activation-triggering bless may start PCM; server must see the hold.
+    blessAudioContextSync(audioContext.value)
     setMicTracksEnabled(micStream.value, true)
     debugFramesSent.value = 0
     listening.value = true
@@ -398,6 +417,7 @@ export function useKittyFunAsrMic(options: {
       !sendJson({
         type: 'asr_start',
         language_hints: hints && hints.length > 0 ? hints : ['zh'],
+        debug_ctx: audioContext.value.state,
       })
     ) {
       listening.value = false

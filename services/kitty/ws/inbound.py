@@ -101,15 +101,18 @@ async def dispatch_kitty_ws_inbound_message(
         sess = voice_sessions.get(voice_session_id) or {}
         lane_raw = sess.get("_kitty_client_lane")
         lane = lane_raw if isinstance(lane_raw, str) and lane_raw.strip() else "—"
+        debug_ctx = message.get("debug_ctx")
+        ctx_label = str(debug_ctx) if debug_ctx is not None else "—"
         logger.info(
-            "Kitty PTT asr_start sid=%s lane=%s hints=%s",
+            "Kitty PTT asr_start sid=%s lane=%s hints=%s ctx=%s",
             voice_session_id[:12],
             lane,
             language_hints or ["zh"],
+            ctx_label,
         )
         kitty_wf_log(
             "asr_start",
-            f"lane={lane} hints={language_hints or ['zh']}",
+            f"lane={lane} hints={language_hints or ['zh']} ctx={ctx_label}",
             voice_session_id=voice_session_id,
         )
         await start_session_asr(
