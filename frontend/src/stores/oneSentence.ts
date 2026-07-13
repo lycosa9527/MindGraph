@@ -428,6 +428,30 @@ export const useOneSentenceStore = defineStore('oneSentence', () => {
     eventBus.emit('oneSentence:session_reset', { scope: ephemeralScope.value })
   }
 
+  /**
+   * Adopt a shared Kitty session scope (mobile open_canvas → desktop).
+   * Clears UI chat and binds ephemeral scope to the mobile-issued id so
+   * canvas-owner WS and one-sentence turns share one SoT.
+   */
+  function adoptEphemeralScope(scope: string): void {
+    const normalized = scope.trim()
+    if (!normalized) {
+      return
+    }
+    messages.value = []
+    requests.value = {}
+    busyQueue.value = []
+    activeRequestId.value = null
+    draft.value = ''
+    phase.value = 'create'
+    connecting.value = false
+    sessionReady.value = false
+    scopeMigrated.value = false
+    libraryScope.value = null
+    ephemeralScope.value = normalized
+    eventBus.emit('oneSentence:session_reset', { scope: normalized })
+  }
+
   function resetChatUiForWelcome(): void {
     messages.value = []
     requests.value = {}
@@ -474,6 +498,7 @@ export const useOneSentenceStore = defineStore('oneSentence', () => {
     markSessionReady,
     emitSessionMigrated,
     onCanvasReset,
+    adoptEphemeralScope,
     resetChatUiForWelcome,
   }
 })

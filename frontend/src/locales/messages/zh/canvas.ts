@@ -682,6 +682,8 @@ export default {
   'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': '抱歉，没能为该分支自动补全。你可以再说一次「自动补全」。',
   'canvas.mindMapOneSentence.kittyWorking': '好的，正在处理…',
   'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty 暂不可用，请确认已开启 FEATURE_KITTY_AGENT。',
+  'canvas.mindMapOneSentence.kittyConnectFailed':
+    '暂时无法连接画布 Kitty。请确认电脑端已打开该导图，然后重试。',
   'canvas.mindMapOneSentence.clarifyChoices': '请选择一项',
   'canvas.mindMapOneSentence.mobileKittyOwnsInput':
     '已检测到手机 Kitty 正在连接本图。请在手机上按住说话或输入，电脑端输入已暂停。',

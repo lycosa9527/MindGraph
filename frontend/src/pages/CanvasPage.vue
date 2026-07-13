@@ -603,24 +603,34 @@ const { showKittyDesktopIndicator } = useCanvasKittyDesktopPairing({
   },
 })
 
+/** Library id when saved; else shared ephemeral / mobile open_canvas session scope. */
+const kittyOwnerScope = computed(() => {
+  const lib = currentDiagramId.value?.trim()
+  if (lib) {
+    return lib
+  }
+  const ephemeral = oneSentenceStore.diagramScope?.trim()
+  return ephemeral && ephemeral.length > 0 ? ephemeral : null
+})
+
 const { phase: kittyVoicePhase } = useKittyDesktopVoicePhase({
   enabled: showKittyDesktopIndicator,
-  scopeId: currentDiagramId,
+  scopeId: kittyOwnerScope,
 })
 
 useKittyDesktopLlmModelPublish({
   enabled: showKittyDesktopIndicator,
-  scopeId: currentDiagramId,
+  scopeId: kittyOwnerScope,
 })
 
 useKittyDesktopSelectionPublish({
   enabled: showKittyDesktopIndicator,
-  scopeId: currentDiagramId,
+  scopeId: kittyOwnerScope,
 })
 
 useKittyDesktopLiveSpecPublish({
   enabled: showKittyDesktopIndicator,
-  scopeId: currentDiagramId,
+  scopeId: kittyOwnerScope,
 })
 
 const kittyRemoteSyncEnabled = computed(
@@ -628,18 +638,18 @@ const kittyRemoteSyncEnabled = computed(
     featureFlagsStore.getFeatureKittyAgent() &&
     authStore.isAuthenticated &&
     !isViewer.value &&
-    currentDiagramId.value != null &&
-    currentDiagramId.value !== ''
+    kittyOwnerScope.value != null &&
+    kittyOwnerScope.value !== ''
 )
 
 const kittyCanvasOwner = useKittyCanvasOwnerAgent({
-  libraryDiagramId: currentDiagramId,
+  libraryDiagramId: kittyOwnerScope,
   enabled: kittyRemoteSyncEnabled,
 })
 provide(KITTY_CANVAS_OWNER_KEY, kittyCanvasOwner)
 
 useKittyDesktopRemoteSync({
-  libraryDiagramId: currentDiagramId,
+  libraryDiagramId: kittyOwnerScope,
   syncEnabled: kittyRemoteSyncEnabled,
   collabSessionActive: computed(() => diagramStore.collabSessionActive),
   hubPersist: {
@@ -1239,6 +1249,7 @@ onMounted(async () => {
       delete restQuery.kitty_topic
       delete restQuery.kitty_left
       delete restQuery.kitty_right
+      delete restQuery.kitty_scope
       await router.replace({ path: route.path, query: restQuery })
     }
     return

@@ -90,6 +90,15 @@ def _normalize_open_canvas_payload(payload: Dict[str, Any]) -> Optional[Dict[str
     _take_optional_str(payload, "topic", 512)
     _take_optional_str(payload, "left", 256)
     _take_optional_str(payload, "right", 256)
+    raw_scope = payload.get("session_scope")
+    if isinstance(raw_scope, str):
+        normalized_scope = normalize_kitty_diagram_session_id(raw_scope)
+        if normalized_scope is not None:
+            payload["session_scope"] = normalized_scope
+        else:
+            payload.pop("session_scope", None)
+    else:
+        payload.pop("session_scope", None)
     return payload
 
 

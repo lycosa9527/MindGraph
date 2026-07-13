@@ -684,6 +684,8 @@ export default {
     "Sorry — I couldn't auto-complete that branch. You can ask again.",
   'canvas.mindMapOneSentence.kittyWorking': 'OK — working on that…',
   'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty is unavailable. Check that FEATURE_KITTY_AGENT is enabled on the server.',
+  'canvas.mindMapOneSentence.kittyConnectFailed':
+    'Could not connect canvas Kitty. Open this diagram on desktop, then try again.',
   'canvas.mindMapOneSentence.clarifyChoices': 'Choose an option',
   'canvas.mindMapOneSentence.mobileKittyOwnsInput':
     'Mobile Kitty is connected to this diagram. Use your phone to speak or type — desktop input is paused.',

@@ -11,6 +11,9 @@ from typing import Any, Optional
 
 from fastapi import WebSocket
 
+from services.kitty.infra.desktop.kitty_canvas_owner_presence import (
+    has_kitty_canvas_owner_present,
+)
 from services.kitty.session.runtime_state import voice_sessions
 
 
@@ -55,6 +58,20 @@ def find_canvas_owner_websocket(
             continue
         return ws
     return None
+
+
+async def canvas_owner_available(user_id: int, diagram_scope: str) -> bool:
+    """
+    True when a desktop canvas owner is reachable for apply/ack.
+
+    Checks process-local owner WS first, then Redis presence (cross-worker).
+    """
+    scope = str(diagram_scope or "").strip()
+    if not scope:
+        return False
+    if find_canvas_owner_websocket(user_id, scope) is not None:
+        return True
+    return await has_kitty_canvas_owner_present(user_id, scope)
 
 
 def agent_session_id_for_scope(diagram_session_id: str, *, client_lane: str | None) -> str:

@@ -68,6 +68,12 @@ def kitty_mobile_active_key(user_id: int) -> str:
     return f"kitty:mobile_active:{user_id}"
 
 
+def kitty_canvas_owner_presence_key(user_id: int, scope: str) -> str:
+    """Desktop canvas-owner WS live for user+scope (verified-edit fail-closed gate)."""
+    tag = str(scope).strip()
+    return f"kitty:canvas_owner_presence:{int(user_id)}:{tag}"
+
+
 def kitty_desktop_wake_channel(user_id: int) -> str:
     """Redis pub/sub channel: push mobile_active changes to desktop SSE subscribers."""
     return f"kitty:desktop_wake:{user_id}"

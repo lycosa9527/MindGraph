@@ -4,13 +4,17 @@
  */
 import { type ComputedRef, type Ref, onUnmounted, watch } from 'vue'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
 import { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { useDiagramStore } from '@/stores/diagram'
 import { useOneSentenceStore } from '@/stores/oneSentence'
 import { useKittySessionStore } from '@/stores/kittySession'
 
+const RECONNECT_DEBOUNCE_MS = 400
+
 export function useKittyCanvasOwnerAgent(options: {
+  /** Kitty scope SoT: library id when saved, else shared ephemeral / open_canvas scope. */
   libraryDiagramId: Ref<string | null> | ComputedRef<string | null>
   enabled: ComputedRef<boolean>
 }): {
@@ -29,6 +33,8 @@ export function useKittyCanvasOwnerAgent(options: {
     },
   })
 
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+
   function buildContext() {
     return buildKittyDiagramContext(diagramStore, 'one_sentence', {
       oneSentencePhase: oneSentence.phase,
@@ -36,6 +42,24 @@ export function useKittyCanvasOwnerAgent(options: {
   }
 
   kitty.registerDiagramContextBuilder(buildContext)
+
+  function clearReconnectTimer(): void {
+    if (reconnectTimer != null) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
+  }
+
+  function scheduleReconnect(): void {
+    if (!options.enabled.value) {
+      return
+    }
+    clearReconnectTimer()
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null
+      void ensureConnected()
+    }, RECONNECT_DEBOUNCE_MS)
+  }
 
   async function ensureConnected(): Promise<boolean> {
     if (!options.enabled.value) {
@@ -69,7 +93,40 @@ export function useKittyCanvasOwnerAgent(options: {
     { immediate: true }
   )
 
+  eventBus.onWithOwner(
+    'voice:ws_closed',
+    () => {
+      if (!options.enabled.value) {
+        return
+      }
+      scheduleReconnect()
+    },
+    'KittyCanvasOwnerAgent'
+  )
+
+  function onVisibilityChange(): void {
+    if (typeof document === 'undefined') {
+      return
+    }
+    if (document.visibilityState !== 'visible') {
+      return
+    }
+    if (!options.enabled.value) {
+      return
+    }
+    scheduleReconnect()
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onVisibilityChange)
+  }
+
   onUnmounted(() => {
+    clearReconnectTimer()
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+    eventBus.removeAllListenersForOwner('KittyCanvasOwnerAgent')
     kittySession.setOwnsKittySession(false)
     void kitty.stopConversation()
   })

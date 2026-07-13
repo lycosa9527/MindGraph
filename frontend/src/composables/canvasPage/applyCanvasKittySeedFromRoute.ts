@@ -4,6 +4,7 @@
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 
 import { applyKittyTopicSeedToDiagram } from '@/composables/canvasPage/applyKittyTopicSeedToDiagram'
+import { adoptOpenCanvasSessionScope } from '@/composables/kitty/kittyDesktopActionHandlers'
 import { useDiagramStore } from '@/stores'
 import type { DiagramType } from '@/types'
 
@@ -23,12 +24,14 @@ export function canvasKittySeedQueryKeysPresent(
   return (
     typeof query.kitty_topic !== 'undefined' ||
     typeof query.kitty_left !== 'undefined' ||
-    typeof query.kitty_right !== 'undefined'
+    typeof query.kitty_right !== 'undefined' ||
+    typeof query.kitty_scope !== 'undefined'
   )
 }
 
 /**
  * Applies ``kitty_topic`` / ``kitty_left`` / ``kitty_right`` onto default template centers when present.
+ * Adopts ``kitty_scope`` so desktop canvas-owner WS shares mobile's session id.
  *
  * Diagram-type-specific IDs follow ``stores/specLoader/*`` defaults.
  */
@@ -37,6 +40,11 @@ export function applyCanvasKittySeedFromRoute(
   query: RouteLocationNormalizedLoaded['query'],
   diagramStore: DiagramPiniaStore
 ): void {
+  const sessionScope = stringQuery(query, 'kitty_scope')
+  if (sessionScope) {
+    adoptOpenCanvasSessionScope(sessionScope.slice(0, 128))
+  }
+
   const topic = stringQuery(query, 'kitty_topic')
   const left = stringQuery(query, 'kitty_left')
   const right = stringQuery(query, 'kitty_right')

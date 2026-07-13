@@ -224,6 +224,10 @@ async def test_mobile_send_falls_back_to_sse_when_owner_not_local() -> None:
             return_value=None,
         ),
         patch(
+            "services.kitty.context.messaging.canvas_owner_available",
+            AsyncMock(return_value=True),
+        ),
+        patch(
             "services.kitty.context.messaging.publish_kitty_canvas_action",
             AsyncMock(return_value=True),
         ) as sse,
@@ -267,6 +271,10 @@ async def test_verified_send_without_local_owner_still_publishes_sse() -> None:
         patch(
             "services.kitty.context.messaging.find_canvas_owner_websocket",
             return_value=None,
+        ),
+        patch(
+            "services.kitty.context.messaging.canvas_owner_available",
+            AsyncMock(return_value=True),
         ),
         patch(
             "services.kitty.context.messaging.voice_sessions",

@@ -1044,6 +1044,11 @@ async def route_voice_command(
                 "kind": "open_canvas",
                 "diagram_type": slug,
             }
+            voice_sess = voice_sessions.get(voice_session_id)
+            if isinstance(voice_sess, dict):
+                sess_scope = voice_sess.get("diagram_session_id")
+                if isinstance(sess_scope, str) and sess_scope.strip():
+                    payload["session_scope"] = sess_scope.strip()
             targ = command.get("target")
             if isinstance(targ, str) and targ.strip():
                 payload["topic"] = targ.strip()

@@ -77,7 +77,8 @@ Written after a successful `start` and on debounced `context_update`. Teardown u
 User-scoped keys (no hash tag):
 
 - `kitty:desktop_focus:{user_id}` — last library diagram id open on desktop (mobile pairs via GET).
-- `kitty:desktop_actions:{user_id}` — FIFO queue for mobile → desktop navigation (`open_canvas`).
+- `kitty:desktop_actions:{user_id}` — FIFO queue for mobile → desktop navigation (`open_canvas` with optional `session_scope`, `open_library_diagram`).
+- `kitty:canvas_owner_presence:{user_id}:{scope}` — desktop canvas-owner WS lease; verified edits fail closed with `no_owner` when missing (avoids `ack_timeout`).
 - `kitty:mobile_active:{user_id}` — JSON `{ scopes, primary_scope, updated_at }` for active mobile-lane Kitty sessions (`services/kitty/infra/desktop/kitty_mobile_active.py`).
 - `kitty:desktop_wake:{user_id}` — Redis pub/sub channel; publishes `mobile_active` JSON when phone Kitty connects/disconnects (desktop SSE wake).
 

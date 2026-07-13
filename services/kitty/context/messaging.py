@@ -13,6 +13,7 @@ from fastapi import WebSocket
 from models.domain.messages import Language
 
 from services.diagram_edit.transport.kitty_ws import OUTBOUND_EXTRAS_KEY
+from services.diagram_edit.pending import MutationAckPayload, complete_pending
 from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
     KITTY_DIAGRAM_CATALOG_PROMPT,
     KITTY_VOICE_COMMAND_PROMPT,
@@ -25,7 +26,11 @@ from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
     publish_kitty_diagram_update,
 )
 from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
-from services.kitty.session.canvas_owner import find_canvas_owner_websocket, is_canvas_owner_session
+from services.kitty.session.canvas_owner import (
+    canvas_owner_available,
+    find_canvas_owner_websocket,
+    is_canvas_owner_session,
+)
 from services.kitty.session.runtime_state import logger, voice_sessions
 
 _DIAGRAM_HINT_ZH: tuple[str, ...] = (
@@ -335,6 +340,15 @@ async def send_kitty_ws_action(
                 )
             return owner_sent
         if not is_canvas_owner_session(sess):
+            if not await canvas_owner_available(uid, scope.strip()):
+                kitty_wf_log(
+                    "ws_out",
+                    "canvas_owner_missing",
+                    voice_session_id=voice_session_id,
+                    scope=scope.strip(),
+                    action=str(outbound.get("action") or ""),
+                )
+                return False
             # Cross-worker: Redis desktop_wake reaches the browser (not process-local WS).
             relayed = await publish_kitty_canvas_action(uid, scope.strip(), outbound)
             if relayed:
@@ -424,13 +438,34 @@ async def send_kitty_diagram_update(
                     action=str(outbound.get("action") or ""),
                 )
             elif owner_ws is None and not is_canvas_owner_session(sess):
-                # No local owner WS — chat on mobile; Redis SSE carries verified apply.
+                # No local owner WS — chat on mobile; Redis SSE carries verified apply
+                # only when a desktop owner lease exists (cross-worker).
                 chat_only = {
                     "type": "diagram_update",
                     "action": outbound.get("action"),
                     "updates": {},
                     "user_summary": outbound.get("user_summary"),
                 }
+                if not await canvas_owner_available(uid, scope.strip()):
+                    mid = str(mutation_raw).strip()
+                    complete_pending(
+                        MutationAckPayload(
+                            mutation_id=mid,
+                            verified=False,
+                            error_code="no_owner",
+                            message="Desktop canvas owner not connected for this scope",
+                        )
+                    )
+                    sent = await safe_websocket_send(websocket, chat_only)
+                    kitty_wf_log(
+                        "ws_out",
+                        "canvas_owner_missing",
+                        voice_session_id=voice_session_id,
+                        scope=scope.strip(),
+                        action=str(outbound.get("action") or ""),
+                    )
+                    # Skip verified SSE publish — nobody will ack.
+                    return sent
                 sent = await safe_websocket_send(websocket, chat_only)
                 kitty_wf_log(
                     "ws_out",

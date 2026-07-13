@@ -1,12 +1,12 @@
 /**
  * Desktop canvas: Kitty mobile-session indicator, ephemeral WS scope, desktop_focus publish.
  */
-import { type ComputedRef, type Ref, computed, onUnmounted, ref, watch } from 'vue'
+import { type ComputedRef, type Ref, computed, onUnmounted, watch } from 'vue'
 
 import { scopeMatchesKittyMobileActive } from '@/composables/kitty/kittyDesktopMobileActiveHub'
 import { useKittyDesktopFocusPublish } from '@/composables/kitty/useKittyDesktopFocus'
 import { useKittyUserMobileActive } from '@/composables/kitty/useKittyUserMobileActive'
-import { safeRandomUUID } from '@/utils/safeRandomUUID'
+import { useOneSentenceStore } from '@/stores/oneSentence'
 
 export function useCanvasKittyDesktopPairing(options: {
   currentDiagramId: ComputedRef<string | null>
@@ -16,9 +16,11 @@ export function useCanvasKittyDesktopPairing(options: {
   kittyFeatureEnabled: ComputedRef<boolean>
   onLibraryScopeSwitchedCleanup: (previousScope: string) => void
 }) {
-  const kittyEphemeralScope = ref(safeRandomUUID())
+  const oneSentence = useOneSentenceStore()
+
+  /** Same SoT as canvas-owner / one-sentence: library id or shared ephemeral. */
   const kittyWsSessionScope = computed(
-    () => options.currentDiagramId.value ?? kittyEphemeralScope.value
+    () => options.currentDiagramId.value ?? oneSentence.diagramScope
   )
 
   const kittyUserMobilePollOn = computed(
@@ -34,9 +36,7 @@ export function useCanvasKittyDesktopPairing(options: {
     primaryScope: userMobileKittyPrimaryScope,
   } = useKittyUserMobileActive(kittyUserMobilePollOn)
 
-  const desktopPairingScopeId = computed(
-    () => options.currentDiagramId.value ?? kittyEphemeralScope.value
-  )
+  const desktopPairingScopeId = computed(() => kittyWsSessionScope.value)
 
   const showKittyDesktopIndicator = computed(() => {
     if (
@@ -69,10 +69,7 @@ export function useCanvasKittyDesktopPairing(options: {
   watch(options.currentDiagramId, (nextId, prevId) => {
     if (nextId === prevId) return
     const oldScope =
-      typeof prevId === 'string' && prevId.length > 0 ? prevId : kittyEphemeralScope.value
-    if (nextId == null || nextId === '') {
-      kittyEphemeralScope.value = safeRandomUUID()
-    }
+      typeof prevId === 'string' && prevId.length > 0 ? prevId : oneSentence.diagramScope
     options.onLibraryScopeSwitchedCleanup(oldScope)
   })
 
@@ -93,7 +90,7 @@ export function useCanvasKittyDesktopPairing(options: {
   })
 
   return {
-    kittyEphemeralScope,
+    kittyEphemeralScope: computed(() => oneSentence.ephemeralScope),
     kittyWsSessionScope,
     showKittyDesktopIndicator,
   }

@@ -260,7 +260,7 @@ export function useMindMapOneSentenceChat() {
         pushKittyMessage(t('canvas.mindMapOneSentence.micDenied'))
         return
       }
-      pushKittyMessage(t('canvas.mindMapOneSentence.kittyUnavailable'))
+      pushKittyMessage(t('canvas.mindMapOneSentence.kittyConnectFailed'))
     },
   })
 
@@ -325,7 +325,7 @@ export function useMindMapOneSentenceChat() {
     try {
       const ok = await canvasOwner.ensureConnected()
       if (!ok) {
-        pushKittyMessage(t('canvas.mindMapOneSentence.kittyUnavailable'))
+        pushKittyMessage(t('canvas.mindMapOneSentence.kittyConnectFailed'))
       }
       return ok
     } finally {

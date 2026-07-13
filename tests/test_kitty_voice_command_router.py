@@ -188,6 +188,7 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
         assert payload["kind"] == "open_canvas"
         assert payload["diagram_type"] == "mindmap"
         assert payload["topic"] == "运动会"
+        assert payload["session_scope"] == "scope_test"
         wake_mock.assert_awaited_once_with(42)
         ack_mock.assert_awaited()
     finally:

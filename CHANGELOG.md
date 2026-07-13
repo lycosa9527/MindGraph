@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.143.0] - 2026-07-13
+
+> **Kitty open_canvas session scope: desktop adopts mobile ephemeral SoT, Redis canvas-owner presence lease, and fail-closed `no_owner` when verified edits have no desktop owner.**
+
+### Added
+
+- **open_canvas `session_scope`** — Mobile voice `open_canvas` and desktop action queue carry the ephemeral Kitty scope so desktop adopts the same SoT ([`command_router.py`](services/kitty/routing/command_router.py), [`kitty_desktop_action_queue.py`](services/kitty/infra/desktop/kitty_desktop_action_queue.py), [`kittyDesktopActionHandlers.ts`](frontend/src/composables/kitty/kittyDesktopActionHandlers.ts)).
+- **Desktop scope adoption** — `adoptOpenCanvasSessionScope` + `kitty_scope` route query bind one-sentence ephemeral scope; dirty-canvas confirm before jump ([`applyCanvasKittySeedFromRoute.ts`](frontend/src/composables/canvasPage/applyCanvasKittySeedFromRoute.ts), [`oneSentence.ts`](frontend/src/stores/oneSentence.ts)).
+- **Canvas-owner presence lease** — Redis `kitty:canvas_owner_presence:{user_id}:{scope}` marks live desktop owner WS; cleared on session end ([`kitty_canvas_owner_presence.py`](services/kitty/infra/desktop/kitty_canvas_owner_presence.py), [`lifecycle.py`](services/kitty/ws/lifecycle.py), [`ops.py`](services/kitty/session/ops.py)).
+- **Canvas-owner reconnect** — Debounced WS reconnect on `voice:ws_closed` and tab visibility return ([`useKittyCanvasOwnerAgent.ts`](frontend/src/composables/kitty/useKittyCanvasOwnerAgent.ts)).
+- **Clearer connect-failure copy** — `kittyConnectFailed` when canvas-owner WS cannot connect ([`en/canvas.ts`](frontend/src/locales/messages/en/canvas.ts), [`zh/canvas.ts`](frontend/src/locales/messages/zh/canvas.ts)).
+
+### Changed
+
+- **Desktop pairing scope SoT** — Ephemeral scope comes from `oneSentence.diagramScope` instead of a per-tab random UUID ([`useCanvasKittyDesktopPairing.ts`](frontend/src/composables/kitty/useCanvasKittyDesktopPairing.ts)).
+- **Canvas Kitty remote sync scope** — `kittyOwnerScope` uses library id or shared ephemeral scope for voice phase, selection, LLM model, live_spec, and canvas-owner agent ([`CanvasPage.vue`](frontend/src/pages/CanvasPage.vue)).
+
+### Fixed
+
+- **Verified edit `ack_timeout` / scope mismatch** — `canvas_owner_available` checks process-local owner WS plus Redis presence; mobile verified edits fail closed with `no_owner` instead of waiting when no desktop owner exists ([`canvas_owner.py`](services/kitty/session/canvas_owner.py), [`messaging.py`](services/kitty/context/messaging.py)).
+
+### Tests
+
+- **Backend** — [`test_kitty_open_canvas_owner_e2e.py`](tests/test_kitty_open_canvas_owner_e2e.py); extended [`test_kitty_cross_worker_canvas_owner.py`](tests/test_kitty_cross_worker_canvas_owner.py), [`test_kitty_voice_command_router.py`](tests/test_kitty_voice_command_router.py).
+- **Frontend** — [`kittyDesktopOpenCanvasScope.spec.ts`](frontend/tests/kittyDesktopOpenCanvasScope.spec.ts).
+
 ## [5.142.0] - 2026-07-12
 
 > **Kitty mobile ↔ desktop cross-device sync: bidirectional selection and LLM model, live-context poll, voice-phase FAB, one-sentence desktop lock while phone Kitty is active, and mobile chat transcript.**

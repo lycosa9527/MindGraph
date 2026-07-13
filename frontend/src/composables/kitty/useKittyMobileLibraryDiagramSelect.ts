@@ -114,6 +114,7 @@ export function useKittyMobileLibraryDiagramSelect(options: {
         body: JSON.stringify({
           kind: 'open_canvas',
           diagram_type: 'mindmap',
+          session_scope: scope,
         }),
       })
 
