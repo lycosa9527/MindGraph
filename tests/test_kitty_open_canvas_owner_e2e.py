@@ -35,11 +35,12 @@ from services.kitty.session.runtime_state import voice_sessions
 
 
 class _FakeRedis:
-    """Minimal async Redis for presence + pub/sub tests."""
+    """Minimal async Redis for presence + pub/sub + journal tests."""
 
     def __init__(self) -> None:
         """Init in-memory store and publish log."""
         self.store: Dict[str, str] = {}
+        self.lists: Dict[str, List[str]] = {}
         self.published: List[tuple[str, str]] = []
 
     async def set(self, key: str, value: str, ex: Optional[int] = None) -> bool:
@@ -60,6 +61,33 @@ class _FakeRedis:
         """PUBLISH to channel."""
         self.published.append((channel, payload))
         return 1
+
+    async def lpush(self, key: str, value: str) -> int:
+        """LPUSH for Session Manager action journal."""
+        bucket = self.lists.setdefault(key, [])
+        bucket.insert(0, value)
+        return len(bucket)
+
+    async def ltrim(self, key: str, start: int, end: int) -> bool:
+        """LTRIM journal list."""
+        bucket = self.lists.get(key)
+        if bucket is None:
+            return True
+        # Redis end is inclusive; Python slice end is exclusive.
+        self.lists[key] = bucket[start : end + 1]
+        return True
+
+    async def expire(self, key: str, _seconds: int) -> bool:
+        """EXPIRE no-op for fake Redis."""
+        del key
+        return True
+
+    async def lrange(self, key: str, start: int, end: int) -> List[str]:
+        """LRANGE journal list."""
+        bucket = self.lists.get(key, [])
+        if end == -1:
+            return list(bucket[start:])
+        return list(bucket[start : end + 1])
 
 
 @pytest.fixture(autouse=True)
@@ -159,13 +187,31 @@ async def test_verified_edit_fail_closed_without_owner_presence() -> None:
 
     with (
         patch(
-            "services.kitty.context.messaging.canvas_owner_available",
-            new=AsyncMock(return_value=False),
+            "services.kitty.context.messaging.require_aligned_for_verified_edit",
+            new=AsyncMock(
+                return_value=MagicMock(
+                    ok=False,
+                    error_code="no_owner",
+                    message="Desktop canvas owner not connected for this scope",
+                )
+            ),
         ),
         patch(
             "services.kitty.context.messaging.publish_kitty_diagram_update",
             new=AsyncMock(return_value=True),
         ) as publish_mock,
+        patch(
+            "services.kitty.session.manager.action_journal.get_async_redis",
+            return_value=_FakeRedis(),
+        ),
+        patch(
+            "services.kitty.context.messaging.safe_websocket_send",
+            new=AsyncMock(return_value=True),
+        ),
+        patch(
+            "services.kitty.context.messaging.find_canvas_owner_websocket",
+            return_value=None,
+        ),
     ):
         sent = await send_kitty_diagram_update(
             mobile_ws,
@@ -276,6 +322,18 @@ async def test_e2e_open_canvas_scope_to_verified_center_update(
     monkeypatch.setattr(presence_mod, "get_async_redis", lambda: fake)
     monkeypatch.setattr(
         "services.kitty.infra.desktop.kitty_desktop_wake_fanout.get_async_redis",
+        lambda: fake,
+    )
+    monkeypatch.setattr(
+        "services.kitty.infra.desktop.kitty_desktop_focus.get_async_redis",
+        lambda: fake,
+    )
+    monkeypatch.setattr(
+        "services.kitty.infra.desktop.kitty_mobile_active.get_async_redis",
+        lambda: fake,
+    )
+    monkeypatch.setattr(
+        "services.kitty.session.manager.action_journal.get_async_redis",
         lambda: fake,
     )
 

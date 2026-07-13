@@ -30,6 +30,7 @@ import { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
 import { useKittyMobileDebugBus } from '@/composables/kitty/useKittyMobileDebugBus'
 import { useKittyMobileHubActionBridge } from '@/composables/kitty/useKittyMobileHubActionBridge'
 import { useKittyMobileLibraryDiagramSelect } from '@/composables/kitty/useKittyMobileLibraryDiagramSelect'
+import { useKittySessionManager } from '@/composables/kitty/useKittySessionManager'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { useMobileKittyPairing } from '@/composables/kitty/useMobileKittyPairing'
 import { useMindMapNodeExplain } from '@/composables/mindMap/useMindMapNodeExplain'
@@ -102,6 +103,7 @@ const {
   markUserDiagramOverride,
   startNewEphemeralMindmapSession,
   clearForceEphemeralSession,
+  applyDesktopFocusLibrary,
   sessionId: mobileKittyEphemeralSessionId,
 } = useMobileKittyPairing(kitty, {
   kittyServerEnabled,
@@ -174,6 +176,107 @@ const {
 const connected = computed(() => kitty.isConnected.value)
 const connecting = computed(() => kitty.state.value === 'connecting')
 const kittyVoiceState = computed(() => kitty.state.value)
+
+const sessionMgrEnabled = computed(
+  () => authStore.isAuthenticated && kittyServerEnabled.value && connected.value
+)
+const {
+  divergence: kittySessionDivergence,
+  refresh: refreshKittySessionSnapshot,
+} = useKittySessionManager({
+  scope: kittyPairScope,
+  enabled: sessionMgrEnabled,
+  pollIntervalMs: 12000,
+})
+
+const showScopeDivergenceBanner = ref(false)
+const divergenceDismissedKey = ref<string | null>(null)
+const divergenceSyncBusy = ref(false)
+
+watch(
+  [kittyPairScope, connected],
+  () => {
+    if (!connected.value) {
+      showScopeDivergenceBanner.value = false
+      return
+    }
+    void refreshKittySessionSnapshot().then(() => {
+      const div = kittySessionDivergence.value
+      if (div == null) {
+        showScopeDivergenceBanner.value = false
+        return
+      }
+      const key = `${div.mobileScope}:${div.desktopScope}`
+      if (divergenceDismissedKey.value === key) {
+        return
+      }
+      showScopeDivergenceBanner.value = true
+      pushKittyDebugLine(
+        '#align',
+        `divergence mobile=${div.mobileScope.slice(0, 8)} desk=${div.desktopScope.slice(0, 8)}`
+      )
+    })
+  },
+  { flush: 'post' }
+)
+
+async function handleScopeSyncChoice(
+  choice: 'follow_desktop' | 'open_on_desktop' | 'keep_split'
+): Promise<void> {
+  const div = kittySessionDivergence.value
+  if (div == null || divergenceSyncBusy.value) {
+    return
+  }
+  const key = `${div.mobileScope}:${div.desktopScope}`
+  divergenceSyncBusy.value = true
+  try {
+    if (choice === 'follow_desktop') {
+      await applyDesktopFocusLibrary(div.desktopScope)
+      notify.info(t('mobile.kittyDesktopDiagramFollowed', 'Switched to the diagram open on desktop'))
+      showScopeDivergenceBanner.value = false
+      divergenceDismissedKey.value = key
+      void refreshKittySessionSnapshot()
+      return
+    }
+    if (choice === 'open_on_desktop') {
+      markUserDiagramOverride()
+      const res = await fetch('/api/kitty/desktop_action/enqueue', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'open_library_diagram',
+          diagram_library_id: div.mobileScope,
+        }),
+      })
+      if (!res.ok) {
+        notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
+      } else {
+        const data = (await res.json()) as { ok?: boolean }
+        if (data.ok) {
+          notify.success(
+            t('mobile.kittyDiagramSelected', '已选择导图，电脑端将同步打开')
+          )
+        } else {
+          notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
+        }
+      }
+      showScopeDivergenceBanner.value = false
+      divergenceDismissedKey.value = key
+      void refreshKittySessionSnapshot()
+      return
+    }
+    markUserDiagramOverride()
+    showScopeDivergenceBanner.value = false
+    divergenceDismissedKey.value = key
+    notify.info(
+      t('mobile.kittyScopeKeepSplit', '保持手机与电脑各自打开不同导图')
+    )
+    void refreshKittySessionSnapshot()
+  } finally {
+    divergenceSyncBusy.value = false
+  }
+}
 
 const kittyDiagramCardPrimary = computed(() => {
   const p = mobileKittyContextPreview.value
@@ -682,6 +785,47 @@ function handleChipActiveRetap(node: { id: string; text: string }): void {
           '当前环境未开启 Kitty 语音后端，拍照与语音不可用。开发者请在 server .env 中启用 FEATURE_KITTY_AGENT 并重启。'
         )
       }}
+    </div>
+
+    <div
+      v-if="showScopeDivergenceBanner && kittySessionDivergence"
+      class="shrink-0 mx-3 mt-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-950 leading-relaxed"
+      role="status"
+    >
+      <p class="mb-2">
+        {{
+          t(
+            'mobile.kittyScopeDivergence',
+            '电脑端打开了另一张导图。请选择如何同步：'
+          )
+        }}
+      </p>
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="rounded-lg bg-sky-600 text-white px-2.5 py-1.5 text-xs disabled:opacity-50"
+          :disabled="divergenceSyncBusy"
+          @click="handleScopeSyncChoice('follow_desktop')"
+        >
+          {{ t('mobile.kittyScopeFollowDesktop', '跟随电脑导图') }}
+        </button>
+        <button
+          type="button"
+          class="rounded-lg bg-white border border-sky-300 text-sky-900 px-2.5 py-1.5 text-xs disabled:opacity-50"
+          :disabled="divergenceSyncBusy"
+          @click="handleScopeSyncChoice('open_on_desktop')"
+        >
+          {{ t('mobile.kittyScopeOpenOnDesktop', '在电脑打开手机导图') }}
+        </button>
+        <button
+          type="button"
+          class="rounded-lg bg-transparent text-sky-800 underline px-1 py-1.5 text-xs disabled:opacity-50"
+          :disabled="divergenceSyncBusy"
+          @click="handleScopeSyncChoice('keep_split')"
+        >
+          {{ t('mobile.kittyScopeKeepSplitAction', '暂不同步') }}
+        </button>
+      </div>
     </div>
 
     <div class="flex-1 min-h-0 overflow-hidden flex flex-col overscroll-none">

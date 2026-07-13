@@ -29,6 +29,7 @@ const {
   messages,
   isInputBlocked,
   mobileKittyOwnsEditInput,
+  kittySessionDivergence,
   kittyAgentState,
   asrListening,
   sendDraft,
@@ -170,6 +171,18 @@ function handleInputKeydown(event: KeyboardEvent): void {
     </div>
 
     <footer class="one-sentence-footer shrink-0 bg-white px-3 pb-3 pt-2">
+      <p
+        v-if="kittySessionDivergence"
+        class="one-sentence-scope-divergence mb-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-[11px] leading-snug text-sky-950"
+        role="status"
+      >
+        {{
+          t(
+            'canvas.mindMapOneSentence.scopeDivergenceHint',
+            'Phone Kitty is on a different diagram. Sync from the phone, or open that diagram here.'
+          )
+        }}
+      </p>
       <p
         v-if="mobileKittyOwnsEditInput"
         class="one-sentence-mobile-lock mb-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[11px] leading-snug text-violet-900"

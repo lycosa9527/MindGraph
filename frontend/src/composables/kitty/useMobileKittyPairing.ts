@@ -8,6 +8,7 @@ import { storeToRefs } from 'pinia'
 import { shouldUseOneSentenceEditFlow } from '@/composables/canvasToolbar/mindMapOneSentencePhase'
 import { kittyInteractionLanguageFromUi } from '@/composables/kitty/buildKittyDiagramContext'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
+import { reportKittySessionPromote } from '@/composables/kitty/useKittySessionManager'
 import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { useKittyDesktopFocusHint } from '@/composables/kitty/useKittyDesktopFocus'
@@ -118,7 +119,7 @@ export function useMobileKittyPairing(
   const pageVisible = ref(typeof document === 'undefined' ? true : !document.hidden)
   let userDiagramOverrideUntil = 0
   let desktopFollowInFlight: Promise<void> | null = null
-  /** User tapped “new mindmap”: stay on ephemeral scope until they pick a library diagram. */
+  /** User tapped “new mindmap”: ephemeral scope until desktop saves (focus promote) or picker pick. */
   const forceEphemeralSession = ref(false)
 
   function markUserDiagramOverride(): void {
@@ -353,32 +354,44 @@ export function useMobileKittyPairing(
   }
 
   async function applyDesktopFocusLibrary(libraryId: string): Promise<void> {
-    if (forceEphemeralSession.value) {
-      return
-    }
     const id = libraryId.trim()
     if (!id) {
       return
     }
-    if (Date.now() < userDiagramOverrideUntil) {
-      return
-    }
-    if (activeDiagramId.value === id) {
-      return
+    const promotingEphemeralCreate = forceEphemeralSession.value
+    if (promotingEphemeralCreate) {
+      clearForceEphemeralSession()
+    } else {
+      if (Date.now() < userDiagramOverrideUntil) {
+        return
+      }
+      if (activeDiagramId.value === id) {
+        return
+      }
     }
     if (desktopFollowInFlight) {
       await desktopFollowInFlight
-      if (activeDiagramId.value === id) {
+      if (!promotingEphemeralCreate && activeDiagramId.value === id) {
         return
       }
     }
     desktopFollowInFlight = (async () => {
       try {
+        const fromScope = promotingEphemeralCreate
+          ? (sessionId.value?.trim() || kittyPairScope.value?.trim() || '')
+          : ''
         clearForceEphemeralSession()
         savedDiagramsStore.setActiveDiagram(id)
+        await savedDiagramsStore.fetchDiagrams()
         await refreshMobileKittyBootstrap(id)
         await hydrateMobileKittyFromLibrary(id)
-        options.onDebugLine?.('#desk', `follow ${id.slice(0, 12)}`)
+        if (promotingEphemeralCreate && fromScope && fromScope !== id) {
+          void reportKittySessionPromote(id, fromScope, 'mobile')
+        }
+        options.onDebugLine?.(
+          '#desk',
+          promotingEphemeralCreate ? `promote ${id.slice(0, 12)}` : `follow ${id.slice(0, 12)}`
+        )
         options.onDesktopDiagramFollow?.(id)
       } finally {
         desktopFollowInFlight = null
@@ -572,9 +585,6 @@ export function useMobileKittyPairing(
   watch(
     [kittyDesktopLibraryId, kittyDesktopFocusUpdatedAt],
     ([libraryId, focusUpdatedAt], previous) => {
-      if (forceEphemeralSession.value) {
-        return
-      }
       const previousId = Array.isArray(previous) ? previous[0] : undefined
       if (libraryId == null || libraryId === '') {
         const hadPrevious = typeof previousId === 'string' && previousId.trim() !== ''

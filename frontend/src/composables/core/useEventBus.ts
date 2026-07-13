@@ -299,7 +299,7 @@ export type EventTypes = {
   'kitty:edit_turn_requested': {
     ctx: import('@/composables/kitty/pipeline/types').KittyTurnContext
     text: string
-    source: 'asr' | 'text'
+    source: 'asr' | 'text' | 'clarify_choice'
   }
   'kitty:hub_sync_requested': {
     ctx: import('@/composables/kitty/pipeline/types').KittyTurnContext

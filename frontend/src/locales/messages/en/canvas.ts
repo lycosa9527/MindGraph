@@ -689,6 +689,8 @@ export default {
   'canvas.mindMapOneSentence.clarifyChoices': 'Choose an option',
   'canvas.mindMapOneSentence.mobileKittyOwnsInput':
     'Mobile Kitty is connected to this diagram. Use your phone to speak or type — desktop input is paused.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint':
+    'Phone Kitty is on a different diagram. Sync from the phone, or open that diagram here.',
   'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'Use Mobile Kitty on your phone…',
   'canvas.mindMapNodeExplain.title': 'Kitty learning note',
   'canvas.mindMapNodeExplain.userPrompt': 'Why might "{node}" spark questions or cognitive conflict on this diagram?',

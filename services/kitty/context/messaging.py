@@ -27,11 +27,54 @@ from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
 )
 from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
 from services.kitty.session.canvas_owner import (
-    canvas_owner_available,
     find_canvas_owner_websocket,
     is_canvas_owner_session,
 )
+from services.kitty.session.manager import get_kitty_session_manager, require_aligned_for_verified_edit
 from services.kitty.session.runtime_state import logger, voice_sessions
+
+
+def _session_one_sentence_request_id(sess: dict) -> str | None:
+    raw = sess.get("_one_sentence_request_id")
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return None
+
+
+def _stamp_request_id(payload: Dict[str, Any], request_id: str | None) -> Dict[str, Any]:
+    if request_id:
+        payload["request_id"] = request_id
+    return payload
+
+
+async def _journal_mutation_out(
+    sess: dict,
+    *,
+    voice_session_id: str,
+    scope: str,
+    mutation_id: str,
+    action: str | None,
+    request_id: str | None,
+) -> None:
+    user_id = sess.get("user_id")
+    try:
+        uid = int(user_id) if user_id is not None else None
+    except (TypeError, ValueError):
+        uid = None
+    if uid is None:
+        return
+    lane_raw = sess.get("_kitty_client_lane")
+    lane = lane_raw.strip() if isinstance(lane_raw, str) and lane_raw.strip() else None
+    await get_kitty_session_manager().link_mutation(
+        user_id=uid,
+        scope=scope,
+        mutation_id=mutation_id,
+        request_id=request_id,
+        action=action,
+        voice_session_id=voice_session_id,
+        lane=lane,
+        outcome="out",
+    )
 
 _DIAGRAM_HINT_ZH: tuple[str, ...] = (
     "图",
@@ -340,7 +383,13 @@ async def send_kitty_ws_action(
                 )
             return owner_sent
         if not is_canvas_owner_session(sess):
-            if not await canvas_owner_available(uid, scope.strip()):
+            align = await require_aligned_for_verified_edit(
+                uid,
+                scope.strip(),
+                voice_session_id=voice_session_id,
+                action=str(outbound.get("action") or "") or None,
+            )
+            if not align.ok:
                 kitty_wf_log(
                     "ws_out",
                     "canvas_owner_missing",
@@ -409,6 +458,9 @@ async def send_kitty_diagram_update(
     sent = False
     mutation_raw = outbound.get("mutation_id")
     has_verified_mutation = isinstance(mutation_raw, str) and bool(mutation_raw.strip())
+    request_id = _session_one_sentence_request_id(sess) if isinstance(sess, dict) else None
+    if request_id:
+        outbound["request_id"] = request_id
 
     # Verified apply/ack belongs on desktop canvas_owner; mobile ingress gets chat summary only.
     if has_verified_mutation and isinstance(sess, dict):
@@ -419,41 +471,72 @@ async def send_kitty_diagram_update(
         except (TypeError, ValueError):
             uid = None
         if uid is not None and isinstance(scope, str) and scope.strip():
-            owner_ws = find_canvas_owner_websocket(uid, scope.strip())
+            scope_key = scope.strip()
+            mid = str(mutation_raw).strip()
+            action_name = (
+                str(outbound.get("action")).strip()
+                if isinstance(outbound.get("action"), str) and str(outbound.get("action")).strip()
+                else None
+            )
+            await _journal_mutation_out(
+                sess,
+                voice_session_id=voice_session_id,
+                scope=scope_key,
+                mutation_id=mid,
+                action=action_name,
+                request_id=request_id,
+            )
+            owner_ws = find_canvas_owner_websocket(uid, scope_key)
             if owner_ws is not None and owner_ws is not websocket:
                 owner_sent = await safe_websocket_send(owner_ws, outbound)
-                chat_only = {
-                    "type": "diagram_update",
-                    "action": outbound.get("action"),
-                    "updates": {},
-                    "user_summary": outbound.get("user_summary"),
-                }
+                chat_only = _stamp_request_id(
+                    {
+                        "type": "diagram_update",
+                        "action": outbound.get("action"),
+                        "updates": {},
+                        "user_summary": outbound.get("user_summary"),
+                        "mutation_id": mid,
+                    },
+                    request_id,
+                )
                 ingress_sent = await safe_websocket_send(websocket, chat_only)
                 sent = owner_sent or ingress_sent
                 kitty_wf_log(
                     "ws_out",
                     "canvas_owner_apply",
                     voice_session_id=voice_session_id,
-                    scope=scope.strip(),
+                    scope=scope_key,
                     action=str(outbound.get("action") or ""),
                 )
             elif owner_ws is None and not is_canvas_owner_session(sess):
                 # No local owner WS — chat on mobile; Redis SSE carries verified apply
                 # only when a desktop owner lease exists (cross-worker).
-                chat_only = {
-                    "type": "diagram_update",
-                    "action": outbound.get("action"),
-                    "updates": {},
-                    "user_summary": outbound.get("user_summary"),
-                }
-                if not await canvas_owner_available(uid, scope.strip()):
-                    mid = str(mutation_raw).strip()
+                chat_only = _stamp_request_id(
+                    {
+                        "type": "diagram_update",
+                        "action": outbound.get("action"),
+                        "updates": {},
+                        "user_summary": outbound.get("user_summary"),
+                        "mutation_id": mid,
+                    },
+                    request_id,
+                )
+                align = await require_aligned_for_verified_edit(
+                    uid,
+                    scope_key,
+                    voice_session_id=voice_session_id,
+                    request_id=request_id,
+                    action=action_name,
+                )
+                if not align.ok:
+                    err = align.error_code or "no_owner"
                     complete_pending(
                         MutationAckPayload(
                             mutation_id=mid,
                             verified=False,
-                            error_code="no_owner",
-                            message="Desktop canvas owner not connected for this scope",
+                            error_code=err,
+                            message=align.message
+                            or "Desktop canvas owner not connected for this scope",
                         )
                     )
                     sent = await safe_websocket_send(websocket, chat_only)
@@ -461,7 +544,7 @@ async def send_kitty_diagram_update(
                         "ws_out",
                         "canvas_owner_missing",
                         voice_session_id=voice_session_id,
-                        scope=scope.strip(),
+                        scope=scope_key,
                         action=str(outbound.get("action") or ""),
                     )
                     # Skip verified SSE publish — nobody will ack.
@@ -471,7 +554,7 @@ async def send_kitty_diagram_update(
                     "ws_out",
                     "canvas_owner_sse_fallback",
                     voice_session_id=voice_session_id,
-                    scope=scope.strip(),
+                    scope=scope_key,
                     action=str(outbound.get("action") or ""),
                 )
             else:

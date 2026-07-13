@@ -201,6 +201,12 @@ export default {
   'mobile.kittyHubSyncFailed':
     'Could not sync the diagram to Kitty. Check your connection and try again.',
   'mobile.kittyDesktopDiagramFollowed': 'Switched to the diagram open on desktop',
+  'mobile.kittyScopeDivergence':
+    'Desktop opened a different diagram. Choose how to sync:',
+  'mobile.kittyScopeFollowDesktop': 'Follow desktop diagram',
+  'mobile.kittyScopeOpenOnDesktop': 'Open phone diagram on desktop',
+  'mobile.kittyScopeKeepSplitAction': 'Keep separate',
+  'mobile.kittyScopeKeepSplit': 'Keep phone and desktop on different diagrams',
   'meta.pageTitle.notFound': 'Page not found',
   'meta.pageTitle.privacy': 'Terms & Privacy',
   'meta.pageTitle.publicDashboard': 'Statistics',

@@ -20,10 +20,6 @@ from services.kitty.infra.desktop.kitty_desktop_action_queue import (
     mark_kitty_desktop_action_explicit_drain,
     pop_kitty_desktop_action_wait,
 )
-from services.kitty.infra.desktop.kitty_desktop_focus import (
-    get_kitty_desktop_focus_diagram,
-    set_kitty_desktop_focus_diagram,
-)
 from services.kitty.infra.desktop.kitty_desktop_focus_push import (
     notify_kitty_desktop_focus_changed,
 )
@@ -43,13 +39,14 @@ from services.kitty.infra.guards.http_guards import (
     KITTY_MOBILE_BOOTSTRAP_DISABLED_BODY,
     kitty_http_allowed,
 )
+from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
+from services.kitty.session.manager import get_kitty_session_manager
 from services.kitty.infra.redis.kitty_session_redis import (
     kitty_mobile_indicator_armed_for_user,
     load_kitty_live_context,
     upsert_kitty_redis_session,
 )
 from services.kitty.infra.scope.kitty_scope_access import user_may_access_kitty_scope
-from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
 from services.kitty.session.one_sentence_session_pg import (
     get_one_sentence_session,
     list_one_sentence_sessions,
@@ -178,7 +175,9 @@ async def kitty_rest_desktop_focus_get(current_user: User) -> Dict[str, Any]:
         return {"diagram_library_id": None, "updated_at": None}
     if not await kitty_http_allowed(current_user):
         return {"diagram_library_id": None, "updated_at": None}
-    lib_id, updated_at = await get_kitty_desktop_focus_diagram(int(current_user.id))
+    lib_id, updated_at = await get_kitty_session_manager().get_desktop_focus(
+        int(current_user.id)
+    )
     return {"diagram_library_id": lib_id, "updated_at": updated_at}
 
 
@@ -192,10 +191,136 @@ async def kitty_rest_desktop_focus_put(
     if not await kitty_http_allowed(current_user):
         return {"ok": True, "diagram_library_id": None, "updated_at": None}
     uid = int(current_user.id)
-    await set_kitty_desktop_focus_diagram(uid, diagram_library_id)
-    lib_id, updated_at = await get_kitty_desktop_focus_diagram(uid)
+    lib_id, updated_at = await get_kitty_session_manager().set_desktop_focus(
+        uid, diagram_library_id
+    )
     await notify_kitty_desktop_focus_changed(uid, lib_id, updated_at)
     return {"ok": True, "diagram_library_id": lib_id, "updated_at": updated_at}
+
+
+async def kitty_rest_session_get(
+    current_user: User,
+    diagram_session_id: str,
+    *,
+    include_journal: bool = False,
+) -> Dict[str, Any]:
+    """Session Manager snapshot (+ optional hot journal) for pairing / debug."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": False, "reason": "kitty_disabled"}
+    if not await kitty_http_allowed(current_user):
+        return {"ok": False, "reason": "forbidden"}
+    scope = normalize_kitty_diagram_session_id(diagram_session_id)
+    if scope is None:
+        raise HTTPException(status_code=400, detail="Invalid diagram_session_id")
+    mgr = get_kitty_session_manager()
+    snap = await mgr.snapshot(int(current_user.id), scope)
+    body: Dict[str, Any] = {"ok": True, "session": snap.to_dict()}
+    promote = mgr.resolve_promote_target(snap, scope)
+    if promote:
+        body["promote_target"] = promote
+    if include_journal:
+        body["journal"] = await mgr.journal_actions(int(current_user.id), scope, limit=40)
+    return body
+
+
+_INGRESS_SOURCES = frozenset({"asr", "text", "clarify_choice", "ui_create"})
+
+
+async def kitty_rest_session_ingress(
+    current_user: User,
+    diagram_session_id: str,
+    payload: Dict[str, Any],
+) -> Dict[str, Any]:
+    """FE-reported ingress for paths that do not go through WS text (ui_create, rejected)."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": False, "reason": "kitty_disabled"}
+    if not await kitty_http_allowed(current_user):
+        return {"ok": False, "reason": "forbidden"}
+    scope = normalize_kitty_diagram_session_id(diagram_session_id)
+    if scope is None:
+        raise HTTPException(status_code=400, detail="Invalid diagram_session_id")
+    mgr = get_kitty_session_manager()
+    uid = int(current_user.id)
+    raw_req = payload.get("request_id")
+    request_id = (
+        str(raw_req).strip() if isinstance(raw_req, str) and str(raw_req).strip() else None
+    )
+    raw_source = payload.get("ingress_source") or payload.get("source")
+    source = (
+        str(raw_source).strip()
+        if isinstance(raw_source, str) and str(raw_source).strip() in _INGRESS_SOURCES
+        else "text"
+    )
+    text = str(payload.get("text") or "").strip()
+    lane_raw = payload.get("lane")
+    lane = lane_raw.strip() if isinstance(lane_raw, str) and lane_raw.strip() else None
+    rejected = payload.get("rejected") is True
+    reason_raw = payload.get("reason")
+    reason = (
+        str(reason_raw).strip()
+        if isinstance(reason_raw, str) and str(reason_raw).strip()
+        else "rejected"
+    )
+    if rejected:
+        await mgr.reject_ingress(
+            user_id=uid,
+            scope=scope,
+            request_id=request_id,
+            reason=reason,
+            text=text or None,
+            lane=lane,
+            ingress_source=source,
+        )
+        return {"ok": True, "kind": "ingress_rejected"}
+    if not request_id or not text:
+        raise HTTPException(status_code=400, detail="request_id and text required")
+    await mgr.begin_ingress(
+        user_id=uid,
+        scope=scope,
+        request_id=request_id,
+        source=source,
+        text=text,
+        lane=lane,
+        utterance_id=(
+            str(payload.get("utterance_id")).strip()
+            if isinstance(payload.get("utterance_id"), str)
+            and str(payload.get("utterance_id")).strip()
+            else None
+        ),
+    )
+    return {"ok": True, "kind": "ingress"}
+
+
+async def kitty_rest_session_promote(
+    current_user: User,
+    diagram_session_id: str,
+    payload: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Journal ephemeral → library promote after mobile/desktop rebond."""
+    if not config.FEATURE_KITTY_WS_ENABLED:
+        return {"ok": False, "reason": "kitty_disabled"}
+    if not await kitty_http_allowed(current_user):
+        return {"ok": False, "reason": "forbidden"}
+    to_scope = normalize_kitty_diagram_session_id(diagram_session_id)
+    if to_scope is None:
+        raise HTTPException(status_code=400, detail="Invalid diagram_session_id")
+    from_raw = payload.get("from_scope")
+    from_scope = (
+        normalize_kitty_diagram_session_id(str(from_raw))
+        if isinstance(from_raw, str)
+        else None
+    )
+    if from_scope is None:
+        raise HTTPException(status_code=400, detail="Invalid from_scope")
+    lane_raw = payload.get("lane")
+    lane = lane_raw.strip() if isinstance(lane_raw, str) and lane_raw.strip() else "mobile"
+    await get_kitty_session_manager().journal_promote(
+        user_id=int(current_user.id),
+        from_scope=from_scope,
+        library_id=to_scope,
+        lane=lane,
+    )
+    return {"ok": True, "from_scope": from_scope, "library_id": to_scope}
 
 
 async def kitty_rest_llm_model_push(

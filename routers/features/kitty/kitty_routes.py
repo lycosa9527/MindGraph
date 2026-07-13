@@ -28,6 +28,9 @@ from services.kitty.http.handlers import (
     kitty_rest_live_context_put,
     kitty_rest_llm_model_push,
     kitty_rest_mobile_active_get,
+    kitty_rest_session_get,
+    kitty_rest_session_ingress,
+    kitty_rest_session_promote,
     kitty_rest_mobile_lane_hint,
     kitty_rest_mobile_open_bootstrap,
     kitty_rest_one_sentence_turns_get,
@@ -149,6 +152,44 @@ async def kitty_desktop_focus_put(
 ):
     """Publish or clear desktop MindGraph library focus for the authenticated user."""
     return await kitty_rest_desktop_focus_put(current_user, diagram_library_id)
+
+
+@router.get("/api/kitty/session/{diagram_session_id}")
+async def kitty_session_get(
+    diagram_session_id: str,
+    current_user: User = Depends(get_current_user),
+    include_journal: bool = Query(default=False),
+):
+    """
+    Kitty Session Manager snapshot for alignment / ingress_owner / divergence debug.
+
+    Optional ``include_journal=true`` returns recent hot action-journal entries.
+    """
+    return await kitty_rest_session_get(
+        current_user,
+        diagram_session_id,
+        include_journal=include_journal,
+    )
+
+
+@router.post("/api/kitty/session/{diagram_session_id}/ingress")
+async def kitty_session_ingress(
+    diagram_session_id: str,
+    current_user: User = Depends(get_current_user),
+    payload: Dict[str, Any] = Body(default_factory=dict),
+):
+    """Report non-WS ingress (ui_create) or rejected attempts for Session Manager journal."""
+    return await kitty_rest_session_ingress(current_user, diagram_session_id, payload)
+
+
+@router.post("/api/kitty/session/{diagram_session_id}/promote")
+async def kitty_session_promote(
+    diagram_session_id: str,
+    current_user: User = Depends(get_current_user),
+    payload: Dict[str, Any] = Body(default_factory=dict),
+):
+    """Journal ephemeral → library promote (body: ``from_scope``, optional ``lane``)."""
+    return await kitty_rest_session_promote(current_user, diagram_session_id, payload)
 
 
 @router.put("/api/kitty/llm_model/{diagram_session_id}")

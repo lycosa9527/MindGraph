@@ -78,6 +78,10 @@ export function dispatchKittyDiagramUpdateInbound(
         text: userSummary,
         kind: 'final',
         action: diagramAction || undefined,
+        requestId:
+          typeof data.request_id === 'string' && data.request_id.trim()
+            ? data.request_id.trim()
+            : undefined,
       })
     }
     return

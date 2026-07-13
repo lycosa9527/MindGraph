@@ -17,10 +17,8 @@ from services.agent_hub.scope_lifecycle import (
 )
 from services.kitty.infra.redis.kitty_session_redis import configure_voice_session_getter
 from services.kitty.session.agent_state import kitty_agent_manager
-from services.kitty.infra.desktop.kitty_canvas_owner_presence import (
-    clear_kitty_canvas_owner_present,
-)
 from services.kitty.session.canvas_owner import agent_session_id_for_scope
+from services.kitty.session.manager import get_kitty_session_manager
 from services.kitty.session.omni_client_access import get_session_omni_client as _get_session_omni_client_impl
 from services.kitty.session.one_sentence_session_pg import soft_close_one_sentence_session
 from services.kitty.session.runtime_state import active_websockets, logger, voice_sessions
@@ -206,8 +204,17 @@ async def end_voice_session_async(session_id: str, reason: str = "completed") ->
         uid = int(user_raw) if user_raw is not None else 0
     except (TypeError, ValueError):
         uid = 0
-    if uid > 0 and scope and session.get("_kitty_canvas_owner") is True:
-        await clear_kitty_canvas_owner_present(uid, scope)
+    is_owner = session.get("_kitty_canvas_owner") is True
+    lane_raw = session.get("_kitty_client_lane")
+    detach_lane = "mobile" if lane_raw == "mobile" else "desktop"
+    if uid > 0 and scope and (is_owner or detach_lane == "mobile"):
+        await get_kitty_session_manager().detach(
+            user_id=uid,
+            scope=scope,
+            lane=detach_lane,
+            voice_session_id=session_id,
+            canvas_owner=is_owner,
+        )
 
     if str(session.get("active_panel") or "").strip() == "one_sentence":
         if uid > 0 and scope:

@@ -25,10 +25,8 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_kitty_ws_rate_limit_close,
 )
 from services.kitty.context.messaging import safe_websocket_send
-from services.kitty.infra.desktop.kitty_canvas_owner_presence import (
-    mark_kitty_canvas_owner_present,
-)
 from services.kitty.infra.desktop.kitty_mobile_active import clear_kitty_mobile_scope
+from services.kitty.session.manager import get_kitty_session_manager
 from services.kitty.infra.redis.kitty_session_redis import persist_kitty_live_for_ws
 from services.kitty.infra.scope.kitty_scope_access import user_may_access_kitty_scope
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
@@ -374,8 +372,16 @@ async def start_kitty_session(
 
     await safe_websocket_send(websocket, {"type": "connected", "session_id": voice_session_id})
 
-    if voice_sessions.get(voice_session_id, {}).get("_kitty_canvas_owner") is True:
-        await mark_kitty_canvas_owner_present(int(auth.current_user.id), diagram_session_id)
+    sess_row = voice_sessions.get(voice_session_id) or {}
+    is_canvas_owner = sess_row.get("_kitty_canvas_owner") is True
+    lane = "mobile" if start_client_lane == "mobile" else "desktop"
+    await get_kitty_session_manager().attach(
+        user_id=int(auth.current_user.id),
+        scope=diagram_session_id,
+        lane=lane,
+        voice_session_id=voice_session_id,
+        canvas_owner=is_canvas_owner,
+    )
 
     if start_active_panel == "one_sentence":
         await hydrate_one_sentence_session_memory(

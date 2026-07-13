@@ -17,6 +17,7 @@ import {
 import { adaptKittyTranslate } from '@/composables/kitty/pipeline/errorCatalog'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import type { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
+import { reportKittySessionIngress } from '@/composables/kitty/useKittySessionManager'
 import { useDiagramStore } from '@/stores/diagram'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 import { useOneSentenceStore } from '@/stores/oneSentence'
@@ -85,7 +86,8 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
   async function sendUserText(
     raw: string,
     requestId?: string,
-    utteranceId?: string
+    utteranceId?: string,
+    source?: 'asr' | 'text' | 'clarify_choice'
   ): Promise<boolean> {
     const text = raw.trim()
     if (!text) {
@@ -97,6 +99,9 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
     history.activeRequestId.value = rid
     draft.value = ''
 
+    const ingressSource: 'asr' | 'text' | 'clarify_choice' =
+      source ?? (utteranceId || requestId ? 'asr' : 'text')
+
     if (phase.value === 'create') {
       history.replyState.showFinalReply(
         t(
@@ -105,6 +110,15 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
         )
       )
       history.markActiveRequest('failed', rid)
+      void reportKittySessionIngress(diagramScope.value, {
+        requestId: rid,
+        source: ingressSource === 'clarify_choice' ? 'clarify_choice' : ingressSource,
+        text,
+        lane: 'mobile',
+        utteranceId,
+        rejected: true,
+        reason: 'phase_create',
+      })
       return false
     }
 
@@ -130,7 +144,7 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
       },
       {
         text,
-        source: utteranceId || requestId ? 'asr' : 'text',
+        source: ingressSource,
         requestId: rid,
         utteranceId,
       }
@@ -148,7 +162,7 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
 
   async function selectClarifyChoice(choice: OneSentenceClarifyChoice): Promise<void> {
     draft.value = String(choice.index)
-    await sendDraft()
+    await sendUserText(String(choice.index), undefined, undefined, 'clarify_choice')
   }
 
   const migratedFromEphemeral = ref(false)

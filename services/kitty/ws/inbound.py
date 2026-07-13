@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import uuid
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -40,12 +41,15 @@ from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
 )
 from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.events import KittyEvent, get_session_event_bus
+from services.kitty.session.manager import get_kitty_session_manager
 from services.kitty.session.ops import (
     get_agent_session_id,
     update_panel_context,
 )
 from services.kitty.session.runtime_state import voice_sessions
 from services.kitty.ws.guards import KITTY_WS_MAX_AUDIO_B64_CHARS, KITTY_WS_MAX_TEXT_CHARS
+
+_INGRESS_SOURCES = frozenset({"asr", "text", "clarify_choice", "ui_create"})
 
 logger = logging.getLogger(__name__)
 
@@ -216,14 +220,63 @@ async def dispatch_kitty_ws_inbound_message(
             voice_sessions[voice_session_id]["conversation_history"].append({"role": "user", "content": text})
             raw_request_id = message.get("request_id")
             request_id = (
-                str(raw_request_id).strip() if isinstance(raw_request_id, str) and str(raw_request_id).strip() else None
+                str(raw_request_id).strip() if isinstance(raw_request_id, str) and str(raw_request_id).strip() else ""
             )
-            if request_id:
-                voice_sessions[voice_session_id]["_one_sentence_request_id"] = request_id
+            if not request_id:
+                request_id = str(uuid.uuid4())
+            voice_sessions[voice_session_id]["_one_sentence_request_id"] = request_id
+            raw_source = message.get("ingress_source")
+            ingress_source = (
+                str(raw_source).strip()
+                if isinstance(raw_source, str) and str(raw_source).strip() in _INGRESS_SOURCES
+                else "text"
+            )
+            raw_utt = message.get("utterance_id")
+            utterance_id = (
+                str(raw_utt).strip() if isinstance(raw_utt, str) and str(raw_utt).strip() else None
+            )
+            if utterance_id:
+                voice_sessions[voice_session_id]["_one_sentence_utterance_id"] = utterance_id
+            lane_raw = voice_sessions[voice_session_id].get("_kitty_client_lane")
+            lane = lane_raw.strip() if isinstance(lane_raw, str) and lane_raw.strip() else None
+            # S14: desktop must not send edit text while mobile owns same-scope ingress.
+            if lane != "mobile":
+                gate = await get_kitty_session_manager().require_desktop_ingress_allowed(
+                    int(current_user.id),
+                    diagram_session_id,
+                    voice_session_id=voice_session_id,
+                    request_id=request_id,
+                )
+                if not gate.ok:
+                    await safe_websocket_send(
+                        websocket,
+                        {
+                            "type": "error",
+                            "error": gate.error_code or "mobile_owns_ingress",
+                            "message": gate.message
+                            or "Mobile Kitty owns edit input for this diagram",
+                            "request_id": request_id,
+                        },
+                    )
+                    return "continue"
+            await get_kitty_session_manager().begin_ingress(
+                user_id=int(current_user.id),
+                scope=diagram_session_id,
+                request_id=request_id,
+                source=ingress_source,
+                text=text,
+                lane=lane,
+                voice_session_id=voice_session_id,
+                utterance_id=utterance_id,
+            )
             bus = get_session_event_bus(voice_session_id)
-            inbound_payload: dict[str, Any] = {"text": text}
-            if request_id:
-                inbound_payload["request_id"] = request_id
+            inbound_payload: dict[str, Any] = {
+                "text": text,
+                "request_id": request_id,
+                "ingress_source": ingress_source,
+            }
+            if utterance_id:
+                inbound_payload["utterance_id"] = utterance_id
             await bus.emit(
                 KittyEvent(
                     kind="text_inbound",
@@ -475,6 +528,25 @@ async def dispatch_kitty_ws_inbound_message(
 
     if msg_type == "diagram_mutation_ack":
         matched = complete_mutation_ack_from_client(message)
+        mid_raw = message.get("mutation_id")
+        mid = mid_raw.strip() if isinstance(mid_raw, str) and mid_raw.strip() else None
+        sess = voice_sessions.get(voice_session_id)
+        if mid and isinstance(sess, dict):
+            req_raw = sess.get("_one_sentence_request_id")
+            req_id = req_raw.strip() if isinstance(req_raw, str) and req_raw.strip() else None
+            lane_raw = sess.get("_kitty_client_lane")
+            lane = lane_raw.strip() if isinstance(lane_raw, str) and lane_raw.strip() else None
+            verified = message.get("verified") is True or message.get("ok") is True
+            await get_kitty_session_manager().link_mutation(
+                user_id=int(current_user.id),
+                scope=diagram_session_id,
+                mutation_id=mid,
+                request_id=req_id,
+                voice_session_id=voice_session_id,
+                lane=lane,
+                outcome="ack",
+                detail={"matched": matched, "verified": verified},
+            )
         kitty_wf_log(
             "diagram_ack",
             "matched" if matched else "orphan",

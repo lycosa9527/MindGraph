@@ -9,12 +9,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const shouldUseEditFlowMock = vi.hoisted(() => vi.fn(() => true))
 const setActiveDiagramMock = vi.hoisted(() => vi.fn())
 const clearActiveDiagramMock = vi.hoisted(() => vi.fn())
+const fetchDiagramsMock = vi.hoisted(() => vi.fn(async () => undefined))
 const hydrateFromLibraryMock = vi.hoisted(() => vi.fn(async () => true))
 const loadDefaultTemplateMock = vi.hoisted(() => vi.fn(() => true))
 const setDiagramTypeMock = vi.hoisted(() => vi.fn(() => true))
 const clearHistoryMock = vi.hoisted(() => vi.fn())
 const activeState = vi.hoisted(() => ({
   id: 'lib-diagram-1' as string | null,
+}))
+const activeDiagramRefHolder = vi.hoisted(() => ({
+  ref: null as { value: string | null } | null,
 }))
 const focusApi = vi.hoisted(() => ({
   setLibraryId: (_id: string | null, _updatedAt?: number | null) => {
@@ -107,12 +111,19 @@ vi.mock('@/stores/savedDiagrams', () => ({
     },
     setActiveDiagram: (id: string | null) => {
       activeState.id = id
+      if (activeDiagramRefHolder.ref != null) {
+        activeDiagramRefHolder.ref.value = id
+      }
       setActiveDiagramMock(id)
     },
     clearActiveDiagram: () => {
       activeState.id = null
+      if (activeDiagramRefHolder.ref != null) {
+        activeDiagramRefHolder.ref.value = null
+      }
       clearActiveDiagramMock()
     },
+    fetchDiagrams: fetchDiagramsMock,
   }),
 }))
 
@@ -152,16 +163,9 @@ vi.mock('pinia', async () => {
       const out: Record<string, unknown> = {}
       for (const [k, v] of Object.entries(store)) {
         if (k === 'activeDiagramId') {
-          out[k] = vue.customRef((track, trigger) => ({
-            get() {
-              track()
-              return activeState.id
-            },
-            set(id: string | null) {
-              activeState.id = id
-              trigger()
-            },
-          }))
+          const diagramRef = vue.ref(activeState.id)
+          activeDiagramRefHolder.ref = diagramRef
+          out[k] = diagramRef
           continue
         }
         out[k] = vue.ref(v)
@@ -182,9 +186,11 @@ describe('useMobileKittyPairing one-sentence context', () => {
     shouldUseEditFlowMock.mockReturnValue(true)
     focusApi.setLibraryId(null, null)
     activeState.id = 'lib-diagram-1'
+    activeDiagramRefHolder.ref = null
     setActiveDiagramMock.mockClear()
     clearActiveDiagramMock.mockClear()
     hydrateFromLibraryMock.mockClear()
+    fetchDiagramsMock.mockClear()
     loadDefaultTemplateMock.mockClear()
     setDiagramTypeMock.mockClear()
     clearHistoryMock.mockClear()
@@ -316,6 +322,40 @@ describe('useMobileKittyPairing one-sentence context', () => {
     focusApi.setLibraryId('lib-diagram-stale', Math.floor(Date.now() / 1000) - 10_000)
     await new Promise((r) => setTimeout(r, 50))
     expect(onFollow).not.toHaveBeenCalled()
+  })
+
+  it('promotes ephemeral create-new when desktop saves (desktop_focus follow)', async () => {
+    const onFollow = vi.fn()
+    const kitty = {
+      isConnected: ref(true),
+      updateContext: vi.fn(),
+    } as unknown as Parameters<typeof useMobileKittyPairing>[0]
+
+    const {
+      kittyPairScopeIsEphemeral,
+      startNewEphemeralMindmapSession,
+      kittyPairScope,
+    } = scope.run(() =>
+      useMobileKittyPairing(kitty, {
+        kittyServerEnabled: computed(() => true),
+        onDesktopDiagramFollow: onFollow,
+      })
+    )!
+
+    const ephemeralScope = startNewEphemeralMindmapSession()
+    expect(kittyPairScopeIsEphemeral.value).toBe(true)
+    expect(kittyPairScope.value).toBe(ephemeralScope)
+
+    focusApi.setLibraryId('lib-saved-from-desktop', Math.floor(Date.now() / 1000))
+    await vi.waitFor(() => {
+      expect(onFollow).toHaveBeenCalledWith('lib-saved-from-desktop')
+    })
+
+    expect(setActiveDiagramMock).toHaveBeenCalledWith('lib-saved-from-desktop')
+    expect(fetchDiagramsMock).toHaveBeenCalled()
+    expect(hydrateFromLibraryMock).toHaveBeenCalledWith('lib-saved-from-desktop')
+    expect(kittyPairScopeIsEphemeral.value).toBe(false)
+    expect(kittyPairScope.value).toBe('lib-saved-from-desktop')
   })
 
   it('clears to ephemeral session when desktop_focus goes null', async () => {

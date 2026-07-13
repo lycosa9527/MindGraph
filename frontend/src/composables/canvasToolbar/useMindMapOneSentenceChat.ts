@@ -21,7 +21,11 @@ import {
   pickOneSentenceWelcome,
 } from '@/composables/canvasToolbar/oneSentenceChatLines'
 import { shouldUseOneSentenceEditFlow } from '@/composables/canvasToolbar/mindMapOneSentencePhase'
-import { shouldLockDesktopOneSentenceForMobileKitty } from '@/composables/canvasToolbar/desktopOneSentenceMobileKittyLock'
+import {
+  reportKittySessionIngress,
+  shouldLockDesktopIngressForMobileKitty,
+  useKittySessionManager,
+} from '@/composables/kitty/useKittySessionManager'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import {
   appendOneSentenceTurn,
@@ -116,9 +120,22 @@ export function useMindMapOneSentenceChat() {
     primaryScope: userMobileKittyPrimaryScope,
   } = useKittyUserMobileActive(mobileActivePollOn)
 
+  const sessionMgrEnabled = computed(
+    () => kittyEnabled.value && authStore.isAuthenticated && Boolean(diagramScope.value?.trim())
+  )
+  const {
+    snapshot: kittySessionSnapshot,
+    divergence: kittySessionDivergence,
+    refresh: refreshKittySessionSnapshot,
+  } = useKittySessionManager({
+    scope: diagramScope,
+    enabled: sessionMgrEnabled,
+    pollIntervalMs: 12000,
+  })
+
   /** Edit-phase only: phone owns input when Mobile Kitty WS is on this diagram scope. */
   const mobileKittyOwnsEditInput = computed(() =>
-    shouldLockDesktopOneSentenceForMobileKitty({
+    shouldLockDesktopIngressForMobileKitty({
       phase: phase.value,
       diagramScope: diagramScope.value,
       mobile: {
@@ -126,6 +143,7 @@ export function useMindMapOneSentenceChat() {
         scopes: userMobileKittyScopes.value,
         primaryScope: userMobileKittyPrimaryScope.value,
       },
+      sessionSnapshot: kittySessionSnapshot.value,
     })
   )
 
@@ -399,7 +417,7 @@ export function useMindMapOneSentenceChat() {
   async function runEditFlow(
     text: string,
     requestId: string,
-    options?: { source?: 'asr' | 'text'; utteranceId?: string }
+    options?: { source?: 'asr' | 'text' | 'clarify_choice'; utteranceId?: string }
   ): Promise<boolean> {
     // Always log the user utterance to PG/Redis before attempting Kitty.
     if (llmResultsStore.isGenerating) {
@@ -504,7 +522,7 @@ export function useMindMapOneSentenceChat() {
   async function sendDraft(options?: {
     requestId?: string
     utteranceId?: string
-    source?: 'asr' | 'text'
+    source?: 'asr' | 'text' | 'clarify_choice'
   }): Promise<void> {
     const text = draft.value.trim()
     if (!text) return
@@ -541,6 +559,12 @@ export function useMindMapOneSentenceChat() {
     // Stay in create until first generate result (phase 3).
     const req = oneSentence.registerUserRequest(text, 'inflight', options?.requestId)
     await persistCreateTurn('user', text, 'ui_create', req.requestId)
+    void reportKittySessionIngress(diagramScope.value, {
+      requestId: req.requestId,
+      source: 'ui_create',
+      text,
+      lane: 'desktop',
+    })
     await runCreateFlow(text)
   }
 
@@ -549,7 +573,7 @@ export function useMindMapOneSentenceChat() {
       return
     }
     oneSentence.setDraft(String(choice.index))
-    await sendDraft()
+    await sendDraft({ source: 'clarify_choice' })
   }
 
   function bindChatScroll(el: HTMLElement | null): void {
@@ -891,6 +915,8 @@ export function useMindMapOneSentenceChat() {
     connecting,
     isInputBlocked,
     mobileKittyOwnsEditInput,
+    kittySessionDivergence,
+    refreshKittySessionSnapshot,
     kittyAgentState,
     kittyEnabled,
     asrListening,

@@ -224,8 +224,8 @@ async def test_mobile_send_falls_back_to_sse_when_owner_not_local() -> None:
             return_value=None,
         ),
         patch(
-            "services.kitty.context.messaging.canvas_owner_available",
-            AsyncMock(return_value=True),
+            "services.kitty.context.messaging.require_aligned_for_verified_edit",
+            AsyncMock(return_value=MagicMock(ok=True, error_code=None, message="")),
         ),
         patch(
             "services.kitty.context.messaging.publish_kitty_canvas_action",
@@ -273,8 +273,8 @@ async def test_verified_send_without_local_owner_still_publishes_sse() -> None:
             return_value=None,
         ),
         patch(
-            "services.kitty.context.messaging.canvas_owner_available",
-            AsyncMock(return_value=True),
+            "services.kitty.context.messaging.require_aligned_for_verified_edit",
+            AsyncMock(return_value=MagicMock(ok=True, error_code=None, message="")),
         ),
         patch(
             "services.kitty.context.messaging.voice_sessions",
@@ -297,7 +297,10 @@ async def test_verified_send_without_local_owner_still_publishes_sse() -> None:
     fanout.assert_awaited_once()
     assert mock_await_args(fanout)[2]["mutation_id"] == "mut-js"
     _ws, chat = mock_await_args(safe_send)
-    assert chat.get("mutation_id") is None
+    # Chat-only mobile frame still carries mutation_id for Session Manager correlation.
+    assert chat.get("mutation_id") == "mut-js"
+    assert chat.get("updates") == {}
+    assert chat.get("user_summary") == "已添加"
 
 
 @pytest.mark.asyncio

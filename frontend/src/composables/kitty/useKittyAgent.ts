@@ -588,7 +588,16 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     state.value = isActive.value ? 'active' : 'idle'
   }
 
-  function sendTextMessage(text: string, requestId?: string): boolean {
+  function sendTextMessage(
+    text: string,
+    requestIdOrMeta?:
+      | string
+      | {
+          requestId?: string
+          ingressSource?: 'asr' | 'text' | 'clarify_choice' | 'ui_create'
+          utteranceId?: string
+        }
+  ): boolean {
     if (!text.trim() || !ws.value || ws.value.readyState !== WebSocket.OPEN) {
       return false
     }
@@ -600,8 +609,23 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     }
     traceKittyWorkflow('mobile', 'text_send', text.trim().slice(0, 120))
     const payload: Record<string, string> = { type: 'text', text: text.trim() }
-    if (requestId && requestId.trim()) {
-      payload.request_id = requestId.trim()
+    if (typeof requestIdOrMeta === 'string') {
+      if (requestIdOrMeta.trim()) {
+        payload.request_id = requestIdOrMeta.trim()
+      }
+    } else if (requestIdOrMeta != null) {
+      const rid = requestIdOrMeta.requestId?.trim()
+      if (rid) {
+        payload.request_id = rid
+      }
+      const source = requestIdOrMeta.ingressSource?.trim()
+      if (source) {
+        payload.ingress_source = source
+      }
+      const utt = requestIdOrMeta.utteranceId?.trim()
+      if (utt) {
+        payload.utterance_id = utt
+      }
     }
     try {
       ws.value.send(JSON.stringify(payload))

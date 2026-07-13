@@ -9,6 +9,7 @@ One backend package. There is no separate `kitty_voice` module.
 | `services/kitty/ws/` | WebSocket transport (connect, lifecycle, inbound) |
 | `services/kitty/omni/` | Qwen Omni realtime loop + tools |
 | `services/kitty/session/` | Per-scope session registry, events, cleanup |
+| `services/kitty/session/manager/` | **Session Manager** — alignment snapshot, WS pairing leases, action journal, verified-edit gate |
 | `services/kitty/routing/` | Intent catalog + command router |
 | `services/kitty/ack/` | User-facing acknowledgment templates (`text_chunk` + optional Omni) |
 | `services/kitty/diagram/` | Diagram mutations via agent hub |
@@ -34,6 +35,28 @@ Diagram edits, UI actions, low-confidence clarifications, and **unsupported diag
 - **`ack_emit.py`** — `emit_user_ack()` sends `text_chunk` for text clients (一句话 panel) and optional short Omni `create_response` on voice.
 
 The command router calls `emit_user_ack` after successful `execute_diagram_update`; `send_kitty_diagram_update` adds the same text as `user_summary` on the WebSocket payload so canvas and chat stay aligned.
+
+## Session Manager (`services/kitty/session/manager/`)
+
+Central control plane for cross-device Kitty identity and pairing (not AgentHub diagram mutations).
+
+| API | Role |
+|-----|------|
+| `build_kitty_session_snapshot` / `GET /api/kitty/session/{scope}` | Alignment + `ingress_owner` + focus/mobile/owner presence |
+| `require_aligned_for_verified_edit` | Gate in `messaging.py` before verified apply / SSE |
+| `begin_ingress` / `link_mutation` | Journal ASR/typed `request_id` then correlate `mutation_id` (out + ack) |
+| `require_desktop_ingress_allowed` | S14: reject desktop WS `text` when mobile owns same-scope ingress |
+| `set_desktop_focus` / `get_desktop_focus` | SoT wrappers for Redis `desktop_focus` (REST PUT/GET) |
+| `journal_promote` / REST `…/promote` | Ephemeral → library promote journal (S3) |
+| REST `POST …/ingress` | FE-reported `ui_create` / `ingress_rejected` (create-phase) |
+| `attach` / `detach` | WS start/end → Redis `mobile_active` / `canvas_owner_presence` + journal |
+| Action journal | Hot Redis list `kitty:session_journal:{user}:{scope}` (ingress, mutation_out/ack, align, attach, …) |
+
+**Scenarios (summary):** S1–S12 create/edit/promote; **S13** mobile library A vs desktop B → `scope_divergence` (mobile banner + desktop hint; poll snapshot); **S14** same scope + mobile active → desktop one-sentence edit input locked (`ingress_owner=mobile`; BE rejects desktop WS text).
+
+**Ingress correlation:** WS `text` (typed or ASR-committed) calls `begin_ingress`; verified `diagram_update` journals `mutation_out` with the same `request_id` and stamps it on mobile chat-only replies; `diagram_mutation_ack` journals `mutation_ack`. Non-WS create uses `POST /api/kitty/session/{scope}/ingress` (`ui_create`).
+
+FE facade: `frontend/src/composables/kitty/useKittySessionManager.ts` (`beginKittySessionIngress` → WS; `reportKittySessionIngress` / `reportKittySessionPromote`; desktop + mobile poll snapshot).
 
 ## Session scopes (`diagram_session_id`)
 
@@ -108,7 +131,7 @@ Treat Mobile Kitty, desktop canvas, and the one-sentence panel as **one session*
 
 **Not bidirectional (by design):** desktop mic voice phase → mobile; collab blocks remote Kitty apply; ephemeral mobile has no canvas chrome (no chips / LLM).
 
-**Unlinked** (ephemeral / no library id): mobile is chat + large mascot only.
+**Unlinked** (ephemeral / no library id): mobile is chat + large mascot only — until desktop auto-saves the new mindmap, then mobile **promotes** via fresh ``desktop_focus`` (library id, hydrate, dropdown refresh, scope reconnect).
 
 ## Desktop action poll (mobile gate)
 

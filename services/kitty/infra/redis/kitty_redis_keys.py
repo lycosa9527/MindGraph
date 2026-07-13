@@ -74,6 +74,12 @@ def kitty_canvas_owner_presence_key(user_id: int, scope: str) -> str:
     return f"kitty:canvas_owner_presence:{int(user_id)}:{tag}"
 
 
+def kitty_session_journal_key(user_id: int, scope: str) -> str:
+    """Hot action journal list for Session Manager (TTL-aligned with Kitty sessions)."""
+    tag = str(scope).strip()
+    return f"kitty:session_journal:{int(user_id)}:{tag}"
+
+
 def kitty_desktop_wake_channel(user_id: int) -> str:
     """Redis pub/sub channel: push mobile_active changes to desktop SSE subscribers."""
     return f"kitty:desktop_wake:{user_id}"

@@ -687,6 +687,8 @@ export default {
   'canvas.mindMapOneSentence.clarifyChoices': '请选择一项',
   'canvas.mindMapOneSentence.mobileKittyOwnsInput':
     '已检测到手机 Kitty 正在连接本图。请在手机上按住说话或输入，电脑端输入已暂停。',
+  'canvas.mindMapOneSentence.scopeDivergenceHint':
+    '手机 Kitty 打开了另一张导图。请在手机上同步，或在此打开那张导图。',
   'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': '请在手机 Kitty 中输入…',
   'canvas.mindMapNodeExplain.title': 'Kitty 学习提示',
   'canvas.mindMapNodeExplain.userPrompt': '「{node}」可能带来哪些疑问或认知冲突？',

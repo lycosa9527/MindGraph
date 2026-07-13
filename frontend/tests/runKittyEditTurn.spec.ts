@@ -126,7 +126,11 @@ describe('runKittyEditTurn', () => {
     expect(result.ok).toBe(true)
     expect(result.sent).toBe(true)
     expect(syncKittyHubContextMock).not.toHaveBeenCalled()
-    expect(sendTextMessage).toHaveBeenCalledWith('添加广东分支', 'req-mobile-skip')
+    expect(sendTextMessage).toHaveBeenCalledWith('添加广东分支', {
+      requestId: 'req-mobile-skip',
+      ingressSource: 'text',
+      utteranceId: undefined,
+    })
     // Mobile records S07 as skip (not a fail) so the turn can proceed to S08.
     expect(getLastFail()).toBeNull()
   })
@@ -166,6 +170,10 @@ describe('runKittyEditTurn', () => {
 
     expect(result.ok).toBe(true)
     expect(result.sent).toBe(true)
-    expect(sendTextMessage).toHaveBeenCalledWith('添加广东分支', 'req-ok')
+    expect(sendTextMessage).toHaveBeenCalledWith('添加广东分支', {
+      requestId: 'req-ok',
+      ingressSource: 'text',
+      utteranceId: undefined,
+    })
   })
 })

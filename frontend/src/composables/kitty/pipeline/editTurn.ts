@@ -18,6 +18,7 @@ import {
   recordPipelineEvent,
 } from '@/composables/kitty/pipeline/trace'
 import type { KittyTurnContext } from '@/composables/kitty/pipeline/types'
+import { beginKittySessionIngress } from '@/composables/kitty/useKittySessionManager'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
@@ -38,7 +39,7 @@ export type RunKittyEditTurnDeps = {
 
 export type RunKittyEditTurnInput = {
   text: string
-  source: 'asr' | 'text'
+  source: 'asr' | 'text' | 'clarify_choice'
   ctx?: KittyTurnContext
   requestId?: string
   utteranceId?: string
@@ -200,7 +201,13 @@ export async function runKittyEditTurn(
     status: 'started',
   })
 
-  let sent = deps.kitty.sendTextMessage(text, requestId)
+  const ingress = beginKittySessionIngress({
+    requestId,
+    source: input.source,
+    text,
+    utteranceId: ctx.utteranceId,
+  })
+  let sent = deps.kitty.sendTextMessage(text, ingress)
   if (!sent) {
     const reconnected = deps.ensureConnected
       ? await deps.ensureConnected()
@@ -214,7 +221,7 @@ export async function runKittyEditTurn(
           })
         ).ok
     if (reconnected) {
-      sent = deps.kitty.sendTextMessage(text, requestId)
+      sent = deps.kitty.sendTextMessage(text, ingress)
     }
   }
 
