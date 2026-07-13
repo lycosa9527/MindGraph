@@ -18,7 +18,7 @@ from services.kitty.routing.command_router import (
 )
 from services.kitty.session.ops import create_voice_session
 from services.kitty.session.runtime_state import voice_sessions
-from tests.typing_helpers import mock_await_args
+from tests.typing_helpers import mock_await_args, mock_await_kwargs
 
 
 def test_sync_circle_map_children_to_context() -> None:
@@ -133,7 +133,7 @@ def test_omni_open_desktop_canvas_double_bubble() -> None:
 
 @pytest.mark.asyncio
 async def test_route_omni_function_call_open_desktop_canvas() -> None:
-    """Test route omni function call open desktop canvas."""
+    """Voice open_desktop_canvas creates a library draft then open_library_diagram."""
     ws = MagicMock()
     vid = create_voice_session(user_id="42", diagram_session_id="scope_test", diagram_type="circle_map")
     voice_sessions[vid]["context"] = {"diagram_data": {"children": [], "center": {"text": ""}}}
@@ -142,6 +142,13 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
     drain_mock = AsyncMock()
     wake_mock = AsyncMock()
     ack_mock = AsyncMock(return_value=True)
+    save_mock = AsyncMock(return_value="lib-draft-001")
+    focus_mock = AsyncMock(return_value=("lib-draft-001", 1_700_000_000))
+    notify_mock = AsyncMock()
+    ingress_mock = AsyncMock()
+    mgr = MagicMock()
+    mgr.set_desktop_focus = focus_mock
+    mgr.begin_ingress = ingress_mock
 
     try:
         with (
@@ -154,20 +161,32 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
                 new=AsyncMock(return_value=None),
             ),
             patch(
-                "services.kitty.routing.command_router.enqueue_kitty_desktop_action",
+                "services.kitty.routing.open_desktop_canvas.try_save_diagram_to_library",
+                save_mock,
+            ),
+            patch(
+                "services.kitty.routing.open_desktop_canvas.enqueue_kitty_desktop_action",
                 enqueue_mock,
             ),
             patch(
-                "services.kitty.routing.command_router.mark_kitty_desktop_action_explicit_drain",
+                "services.kitty.routing.open_desktop_canvas.mark_kitty_desktop_action_explicit_drain",
                 drain_mock,
             ),
             patch(
-                "services.kitty.routing.command_router.publish_kitty_desktop_action_pending",
+                "services.kitty.routing.open_desktop_canvas.publish_kitty_desktop_action_pending",
                 wake_mock,
             ),
             patch(
-                "services.kitty.routing.command_router.emit_user_ack",
+                "services.kitty.routing.open_desktop_canvas.emit_user_ack",
                 ack_mock,
+            ),
+            patch(
+                "services.kitty.routing.open_desktop_canvas.notify_kitty_desktop_focus_changed",
+                notify_mock,
+            ),
+            patch(
+                "services.kitty.routing.open_desktop_canvas.get_kitty_session_manager",
+                return_value=mgr,
             ),
             patch(
                 "services.kitty.routing.command_router.redis_user_cache.get_by_id",
@@ -182,14 +201,25 @@ async def test_route_omni_function_call_open_desktop_canvas() -> None:
                 dict(voice_sessions[vid]["context"]),
             )
         assert result.outcome == RouteOutcome.EXECUTED
+        save_mock.assert_awaited_once()
+        save_kwargs = mock_await_kwargs(save_mock)
+        assert save_kwargs["title"] == "运动会"
+        assert save_kwargs["diagram_type"] == "mindmap"
+        assert save_kwargs["spec"] == {"topic": "运动会", "children": []}
         drain_mock.assert_awaited_once()
         enqueue_mock.assert_awaited_once()
         payload = mock_await_args(enqueue_mock)[1]
-        assert payload["kind"] == "open_canvas"
-        assert payload["diagram_type"] == "mindmap"
-        assert payload["topic"] == "运动会"
-        assert payload["session_scope"] == "scope_test"
+        assert payload["kind"] == "open_library_diagram"
+        assert payload["diagram_library_id"] == "lib-draft-001"
+        assert payload["title"] == "运动会"
         wake_mock.assert_awaited_once_with(42)
+        focus_mock.assert_awaited_once_with(42, "lib-draft-001")
+        notify_mock.assert_awaited_once()
+        ingress_mock.assert_awaited_once()
+        ingress_kwargs = mock_await_kwargs(ingress_mock)
+        assert ingress_kwargs["source"] == "ui_create"
+        assert ingress_kwargs["scope"] == "lib-draft-001"
+        assert voice_sessions[vid]["diagram_session_id"] == "lib-draft-001"
         ack_mock.assert_awaited()
     finally:
         voice_sessions.pop(vid, None)

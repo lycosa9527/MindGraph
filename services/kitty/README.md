@@ -65,7 +65,7 @@ The URL path `/ws/kitty/{diagram_session_id}` defines a **scope**:
 | Client | Typical scope | Notes |
 |--------|----------------|-------|
 | Mobile Kitty (`/m/kitty`) with a library diagram loaded | `activeDiagramId` (UUID) | Same Redis keys as desktop editing that file. |
-| Mobile Kitty without a library row | Random client UUID | Desktop `mobile_lane` for a library id stays off until scope matches a saved id + phone sends `start`. |
+| Mobile Kitty without a library row | Random client UUID | Cold open / focus-cleared only; **create-new** allocates a library draft first. |
 | Desktop MindGraph canvas | `savedDiagramsStore.activeDiagramId` or ephemeral UUID | Ephemeral when the canvas has no saved diagram yet. |
 
 Validation: `services.kitty.infra.scope.kitty_ws_scope.normalize_kitty_diagram_session_id` — ASCII alphanumeric, `_`, `-`, max 128 chars.
@@ -100,7 +100,7 @@ Written after a successful `start` and on debounced `context_update`. Teardown u
 User-scoped keys (no hash tag):
 
 - `kitty:desktop_focus:{user_id}` — last library diagram id open on desktop (mobile pairs via GET).
-- `kitty:desktop_actions:{user_id}` — FIFO queue for mobile → desktop navigation (`open_canvas` with optional `session_scope`, `open_library_diagram`).
+- `kitty:desktop_actions:{user_id}` — FIFO queue for mobile → desktop navigation (`open_library_diagram` for pick/create; residual `open_canvas` for blank type switch).
 - `kitty:canvas_owner_presence:{user_id}:{scope}` — desktop canvas-owner WS lease; verified edits fail closed with `no_owner` when missing (avoids `ack_timeout`).
 - `kitty:mobile_active:{user_id}` — JSON `{ scopes, primary_scope, updated_at }` for active mobile-lane Kitty sessions (`services/kitty/infra/desktop/kitty_mobile_active.py`).
 - `kitty:desktop_wake:{user_id}` — Redis pub/sub channel; publishes `mobile_active` JSON when phone Kitty connects/disconnects (desktop SSE wake).
@@ -118,7 +118,7 @@ Treat Mobile Kitty, desktop canvas, and the one-sentence panel as **one session*
 | Domain | Direction | Channel | Notes |
 |--------|-----------|---------|-------|
 | Scope / pairing | Desktop → Mobile | Redis ``desktop_focus`` + WS ``desktop_focus_update`` (+ slow REST recovery) | Stale focus ignored (≤180s); empty → ephemeral |
-| Open diagram | Mobile → Desktop | Redis action queue + SSE ``desktop_action_pending`` → instant LPOP | Library pick / create-new opens canvas |
+| Open diagram | Mobile → Desktop | Redis action queue + SSE ``desktop_action_pending`` → instant LPOP | Library pick / durable create-new → ``open_library_diagram`` |
 | Diagram mutations (voice/Kitty) | Mobile → Desktop | Redis ``desktop_wake`` SSE ``diagram_update`` (+ local owner WS when same worker) | Verified ``mutation_id`` applied by canvas owner tab; observers skip |
 | Canvas actions (auto_complete…) | Mobile → Desktop | Redis ``desktop_wake`` SSE ``canvas_action`` (+ local owner WS when same worker) | Browser executes; no cross-worker WS lookup required |
 | Verified mutation ack | Desktop → Mobile worker | Kitty WS ack + Redis ``mutation_ack`` control relay | Completes pending future when WS landed on another worker |
@@ -131,7 +131,9 @@ Treat Mobile Kitty, desktop canvas, and the one-sentence panel as **one session*
 
 **Not bidirectional (by design):** desktop mic voice phase → mobile; collab blocks remote Kitty apply; ephemeral mobile has no canvas chrome (no chips / LLM).
 
-**Unlinked** (ephemeral / no library id): mobile is chat + large mascot only — until desktop auto-saves the new mindmap, then mobile **promotes** via fresh ``desktop_focus`` (library id, hydrate, dropdown refresh, scope reconnect).
+**Create-new SoT (durable library draft):** Mobile dropdown create and voice ``open_desktop_canvas`` both **POST a library draft first**, bind that UUID as Kitty scope, journal ``ui_create``, then enqueue ``open_library_diagram``. Desktop opens the same id; verified edits use the library path (canvas-owner present after load). There is **no** ephemeral UUID + ``journal_promote`` on this path.
+
+**Unlinked residual ephemeral** (cold open / ``desktop_focus`` cleared): mobile is chat + large mascot only. If desktop later auto-saves an old ephemeral canvas, mobile may still **promote** via fresh ``desktop_focus`` (library id, hydrate, dropdown refresh, scope reconnect) — that path is legacy recovery, not create-new.
 
 ## Desktop action poll (mobile gate)
 

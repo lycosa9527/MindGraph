@@ -1,12 +1,16 @@
 /**
  * Mobile Kitty: pick a saved diagram from the library, sync voice context, queue desktop jump.
- * Also supports starting a blank mindmap session (ephemeral) and opening canvas on desktop.
+ * Create-new allocates a durable library draft first (industry standard), then open_library_diagram.
  */
 import { ref } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { reportKittySessionIngress } from '@/composables/kitty/useKittySessionManager'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
+import { useDiagramStore } from '@/stores/diagram'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { useUIStore } from '@/stores/ui'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 export function useKittyMobileLibraryDiagramSelect(options: {
   scheduleContextSync: () => void
@@ -16,12 +20,12 @@ export function useKittyMobileLibraryDiagramSelect(options: {
   onDebugLine?: (prefix: string, detail: string) => void
   /** Ignore desktop_focus follow briefly after a mobile picker selection. */
   onUserDiagramOverride?: () => void
-  /** Start blank mindmap on mobile (ephemeral scope). Returns new scope id. */
-  startNewEphemeralMindmapSession?: () => string
-  /** Clear ephemeral pin after picking a library diagram. */
+  /** Clear ephemeral pin after picking / creating a library diagram. */
   clearForceEphemeralSession?: () => void
 }) {
   const savedDiagramsStore = useSavedDiagramsStore()
+  const diagramStore = useDiagramStore()
+  const uiStore = useUIStore()
   const notify = useNotifications()
   const { t } = useLanguage()
   const showPicker = ref(false)
@@ -34,6 +38,27 @@ export function useKittyMobileLibraryDiagramSelect(options: {
 
   function closePicker(): void {
     showPicker.value = false
+  }
+
+  async function enqueueOpenLibraryDiagram(
+    diagramId: string,
+    title: string
+  ): Promise<boolean> {
+    const res = await fetch('/api/kitty/desktop_action/enqueue', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        kind: 'open_library_diagram',
+        diagram_library_id: diagramId,
+        title,
+      }),
+    })
+    if (!res.ok) {
+      return false
+    }
+    const data = (await res.json()) as { ok?: boolean }
+    return data.ok === true
   }
 
   async function selectDiagram(diagram: SavedDiagram): Promise<void> {
@@ -60,30 +85,14 @@ export function useKittyMobileLibraryDiagramSelect(options: {
         options.hydrateStoreFromBootstrap()
       }
 
-      const res = await fetch('/api/kitty/desktop_action/enqueue', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          kind: 'open_library_diagram',
-          diagram_library_id: diagram.id,
-          title: diagram.title,
-        }),
-      })
-
-      if (!res.ok) {
-        notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
+      const ok = await enqueueOpenLibraryDiagram(diagram.id, diagram.title)
+      if (ok) {
+        notify.success(t('mobile.kittyDiagramSelected', '已选择导图，电脑端将同步打开'))
+        traceKittyWorkflow('mobile', 'desktop_enqueue', 'open_library_diagram', {
+          scope: diagram.id,
+        })
       } else {
-        const data = (await res.json()) as { ok?: boolean }
-
-        if (data.ok) {
-          notify.success(t('mobile.kittyDiagramSelected', '已选择导图，电脑端将同步打开'))
-          traceKittyWorkflow('mobile', 'desktop_enqueue', 'open_library_diagram', {
-            scope: diagram.id,
-          })
-        } else {
-          notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
-        }
+        notify.warning(t('mobile.kittyDesktopJumpFailed', '已切换导图，但无法通知电脑端'))
       }
 
       options.scheduleContextSync()
@@ -94,48 +103,86 @@ export function useKittyMobileLibraryDiagramSelect(options: {
     }
   }
 
+  /**
+   * Durable create: POST library draft → bind scope → open_library_diagram.
+   * No ephemeral UUID / open_canvas / promote dance.
+   */
   async function createNewMindmap(): Promise<void> {
     if (selecting.value) {
-      return
-    }
-    if (options.startNewEphemeralMindmapSession == null) {
       return
     }
 
     selecting.value = true
     try {
-      const scope = options.startNewEphemeralMindmapSession()
-      traceKittyWorkflow('mobile', 'new_mindmap', 'ephemeral mindmap', { scope })
+      if (!savedDiagramsStore.canSaveMore) {
+        notify.warning(
+          t('editor.slotsFull', '空间已满，暂无法自动保存。请删除现有图示以释放空间。')
+        )
+        return
+      }
 
-      const res = await fetch('/api/kitty/desktop_action/enqueue', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          kind: 'open_canvas',
-          diagram_type: 'mindmap',
-          session_scope: scope,
-        }),
+      options.clearForceEphemeralSession?.()
+      options.onUserDiagramOverride?.()
+
+      diagramStore.clearHistory()
+      diagramStore.setDiagramType('mindmap')
+      if (!diagramStore.loadDefaultTemplate('mindmap')) {
+        notify.error(t('mobile.kittyNewMindmapCreateFailed', '新建思维导图失败，请重试'))
+        return
+      }
+      const spec = diagramStore.getSpecForSave()
+      if (spec == null) {
+        notify.error(t('mobile.kittyNewMindmapCreateFailed', '新建思维导图失败，请重试'))
+        return
+      }
+
+      const title = t('mobile.kittyNewMindmapTitle', '新建思维导图')
+      const saved = await savedDiagramsStore.saveDiagram(
+        title,
+        'mindmap',
+        spec,
+        uiStore.language || 'zh'
+      )
+      if (saved == null) {
+        notify.error(
+          savedDiagramsStore.error ||
+            t('mobile.kittyNewMindmapCreateFailed', '新建思维导图失败，请重试')
+        )
+        return
+      }
+
+      savedDiagramsStore.setActiveDiagram(saved.id)
+      traceKittyWorkflow('mobile', 'new_mindmap', 'library draft', { scope: saved.id })
+
+      void reportKittySessionIngress(saved.id, {
+        requestId: safeRandomUUID(),
+        source: 'ui_create',
+        text: title,
+        lane: 'mobile',
       })
 
-      if (!res.ok) {
-        notify.warning(
-          t('mobile.kittyNewMindmapDesktopFailed', '已新建导图，但无法通知电脑端打开画布')
+      await options.refreshBootstrap(saved.id)
+      const hydrated = await options.hydrateFromLibrary(saved.id)
+      if (!hydrated) {
+        options.hydrateStoreFromBootstrap()
+      }
+
+      const ok = await enqueueOpenLibraryDiagram(saved.id, saved.title || title)
+      if (ok) {
+        notify.success(
+          t('mobile.kittyNewMindmapCreated', '已新建思维导图，电脑端将打开该导图')
         )
+        traceKittyWorkflow('mobile', 'desktop_enqueue', 'open_library_diagram', {
+          scope: saved.id,
+        })
       } else {
-        const data = (await res.json()) as { ok?: boolean }
-        if (data.ok) {
-          notify.success(t('mobile.kittyNewMindmapCreated', '已新建思维导图，电脑端将打开空白画布'))
-          traceKittyWorkflow('mobile', 'desktop_enqueue', 'open_canvas mindmap', { scope })
-        } else {
-          notify.warning(
-            t('mobile.kittyNewMindmapDesktopFailed', '已新建导图，但无法通知电脑端打开画布')
-          )
-        }
+        notify.warning(
+          t('mobile.kittyNewMindmapDesktopFailed', '已新建导图，但无法通知电脑端打开')
+        )
       }
 
       options.scheduleContextSync()
-      options.onDebugLine?.('#new', `mindmap ${scope.slice(0, 8)}`)
+      options.onDebugLine?.('#new', `draft ${saved.id.slice(0, 8)}`)
       showPicker.value = false
     } finally {
       selecting.value = false

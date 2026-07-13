@@ -169,7 +169,6 @@ const {
   },
   onDebugLine: pushKittyDebugLine,
   onUserDiagramOverride: markUserDiagramOverride,
-  startNewEphemeralMindmapSession,
   clearForceEphemeralSession,
 })
 

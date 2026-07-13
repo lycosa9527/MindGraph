@@ -119,7 +119,10 @@ export function useMobileKittyPairing(
   const pageVisible = ref(typeof document === 'undefined' ? true : !document.hidden)
   let userDiagramOverrideUntil = 0
   let desktopFollowInFlight: Promise<void> | null = null
-  /** User tapped “new mindmap”: ephemeral scope until desktop saves (focus promote) or picker pick. */
+  /**
+   * Pin ephemeral scope against desktop_focus (cold open / focus-cleared).
+   * Durable create-new does **not** set this — it binds a library draft id instead.
+   */
   const forceEphemeralSession = ref(false)
 
   function markUserDiagramOverride(): void {
@@ -132,7 +135,7 @@ export function useMobileKittyPairing(
 
   /**
    * Fresh mobile session (no library binding). Optionally pin against desktop_focus
-   * until the user picks a saved diagram (create-new mindmap).
+   * until the user picks a saved diagram (not used by durable create-new).
    */
   function resetToFreshEphemeralSession(optionsReset?: {
     pinAgainstDesktopFocus?: boolean

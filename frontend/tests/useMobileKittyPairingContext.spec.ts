@@ -324,7 +324,7 @@ describe('useMobileKittyPairing one-sentence context', () => {
     expect(onFollow).not.toHaveBeenCalled()
   })
 
-  it('promotes ephemeral create-new when desktop saves (desktop_focus follow)', async () => {
+  it('promotes residual ephemeral session when desktop saves (desktop_focus follow)', async () => {
     const onFollow = vi.fn()
     const kitty = {
       isConnected: ref(true),

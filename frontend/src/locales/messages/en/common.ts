@@ -166,9 +166,11 @@ export default {
   'mobile.kittyDiagramPickerSearch': 'Search diagrams…',
   'mobile.kittyDiagramPickerNoMatch': 'No matching diagrams',
   'mobile.kittyCreateNewMindmap': 'Create new mind map',
-  'mobile.kittyNewMindmapCreated': 'New mind map started; desktop will open a blank canvas.',
+  'mobile.kittyNewMindmapTitle': 'New mind map',
+  'mobile.kittyNewMindmapCreated': 'New mind map saved; desktop will open it.',
+  'mobile.kittyNewMindmapCreateFailed': 'Could not create the mind map. Please try again.',
   'mobile.kittyNewMindmapDesktopFailed':
-    'New mind map started, but desktop could not be notified.',
+    'Mind map saved, but desktop could not be notified.',
   'mobile.kittyDiagramPinned': 'Pinned',
   'mobile.kittyDiagramPickFailed': 'Could not load that diagram. Try again later.',
   'mobile.kittyDesktopJumpFailed': 'Diagram switched, but desktop could not be notified.',

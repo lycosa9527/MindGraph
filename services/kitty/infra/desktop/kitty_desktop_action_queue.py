@@ -2,8 +2,10 @@
 
 Accepted payload kinds:
 
-- ``open_canvas`` — diagram slug + optional topic seeds (new blank canvas).
 - ``open_library_diagram`` — saved MindGraph library id (+ optional title for UX).
+  Preferred for create-new / voice ``open_desktop_canvas`` (durable library draft first).
+- ``open_canvas`` — residual blank-canvas open (diagram slug + optional topic / session_scope).
+  Not used for durable create-new.
 
 This queue must **not** carry full diagram specs or hub patches — avoid duplicating diagram
 mutation alongside ``apply_diagram_spec_mutation`` / ``live_spec``; use hub + Redis live spec

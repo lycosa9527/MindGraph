@@ -57,12 +57,7 @@ from services.kitty.infra.bootstrap.kitty_unsupported_diagram_types import (
     unsupported_match_from_unknown_slug,
 )
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
-from services.kitty.infra.desktop.kitty_desktop_action_queue import (
-    enqueue_kitty_desktop_action,
-    mark_kitty_desktop_action_explicit_drain,
-)
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
-    publish_kitty_desktop_action_pending,
     publish_kitty_selection_update,
 )
 from services.kitty.infra.desktop.kitty_voice_command_fanout import fanout_voice_command_from_session
@@ -81,6 +76,7 @@ from services.kitty.routing.one_sentence_edit_helpers import (
     is_one_sentence_edit_mode,
     should_use_verified_diagram_edit,
 )
+from services.kitty.routing.open_desktop_canvas import execute_open_desktop_canvas_library_draft
 from services.kitty.routing.pending_branch_autocomplete import (
     emit_auto_complete_branch,
     maybe_start_background_branch_autocomplete,
@@ -1040,34 +1036,37 @@ async def route_voice_command(
                     action=str(action) if action else None,
                 )
 
-            payload: Dict[str, Any] = {
-                "kind": "open_canvas",
-                "diagram_type": slug,
-            }
-            voice_sess = voice_sessions.get(voice_session_id)
-            if isinstance(voice_sess, dict):
-                sess_scope = voice_sess.get("diagram_session_id")
-                if isinstance(sess_scope, str) and sess_scope.strip():
-                    payload["session_scope"] = sess_scope.strip()
-            targ = command.get("target")
-            if isinstance(targ, str) and targ.strip():
-                payload["topic"] = targ.strip()
-            left_val = command.get("left")
-            if isinstance(left_val, str) and left_val.strip():
-                payload["left"] = left_val.strip()
-            right_val = command.get("right")
-            if isinstance(right_val, str) and right_val.strip():
-                payload["right"] = right_val.strip()
-
-            ok = await enqueue_kitty_desktop_action(user_id, payload)
-            if ok:
-                # Same as REST enqueue: allow instant LPOP if mobile_active races off.
-                await mark_kitty_desktop_action_explicit_drain(user_id)
-                await publish_kitty_desktop_action_pending(user_id)
+            # Durable create SoT (same as mobile dropdown): library draft + open_library_diagram.
+            if not isinstance(user_id, int):
+                logger.warning("Kitty open_desktop_canvas: non-int user_id=%r", user_id)
+                return _finish_route(
+                    voice_session_id,
+                    RouteOutcome.CONVERSATIONAL_FALLBACK,
+                    action=str(action) if action else None,
+                )
             lang = resolve_voice_interaction_language(session_context)
-            ack_key = "ui.open_desktop_canvas.ok" if ok else "ui.open_desktop_canvas.fail"
-            await emit_user_ack(websocket, voice_session_id, render_ack(ack_key, lang=lang))
-            return _finish_route(voice_session_id, RouteOutcome.EXECUTED, action=str(action) if action else None)
+            org_id = organization_id if isinstance(organization_id, int) else None
+            executed, fail_reason = await execute_open_desktop_canvas_library_draft(
+                websocket=websocket,
+                voice_session_id=voice_session_id,
+                user_id=user_id,
+                slug=slug,
+                command=command,
+                lang=lang,
+                organization_id=org_id,
+            )
+            if not executed:
+                return _finish_route(
+                    voice_session_id,
+                    RouteOutcome.FAILED,
+                    reason=fail_reason,
+                    action=str(action) if action else None,
+                )
+            return _finish_route(
+                voice_session_id,
+                RouteOutcome.EXECUTED,
+                action=str(action) if action else None,
+            )
 
         if action == "help":
             logger.debug("User requested help - opening MindMate")

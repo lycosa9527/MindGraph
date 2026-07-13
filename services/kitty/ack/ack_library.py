@@ -220,8 +220,8 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": "The local edit may have applied, but sync failed. Try again shortly, or refresh to check.",
     },
     "diagram.failed.no_owner": {
-        "zh": "暂时找不到可编辑的画布，请确认画布已打开后再试。",
-        "en": "I couldn't find an editable canvas. Open the canvas, then try again.",
+        "zh": "电脑端画布还没就绪，请确认电脑已打开该导图后再试。",
+        "en": "The desktop canvas is not ready yet. Open that diagram on the computer, then try again.",
     },
     "diagram.failed.compensate": {
         "zh": "修改未能确认，已尽量恢复原样。请再试一次。",
@@ -286,12 +286,16 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "en": "OK — node added with suggestions. Pick one.",
     },
     "ui.open_desktop_canvas.ok": {
-        "zh": "好的，已在电脑端打开画布。",
-        "en": "OK — opening the canvas on desktop.",
+        "zh": "好的，已新建导图并在电脑端打开。",
+        "en": "OK — created a library diagram and opening it on desktop.",
     },
     "ui.open_desktop_canvas.fail": {
-        "zh": "电脑端暂时打不开画布，请稍后重试。",
-        "en": "Couldn't open the desktop canvas right now. Try again shortly.",
+        "zh": "暂时无法新建或打开导图，请稍后重试。",
+        "en": "Couldn't create or open the diagram right now. Try again shortly.",
+    },
+    "ui.open_desktop_canvas.library_full": {
+        "zh": "图库空间已满，请先删除一些导图再新建。",
+        "en": "Your diagram library is full. Delete some diagrams, then try again.",
     },
     "ui.open_desktop_canvas.unsupported_type": {
         "zh": (

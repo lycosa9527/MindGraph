@@ -1,4 +1,7 @@
-"""End-to-end: open_canvas scope SoT → canvas-owner presence → verified edit ack.
+"""End-to-end: residual open_canvas scope SoT → canvas-owner presence → verified edit ack.
+
+Durable create-new uses ``open_library_diagram`` instead; these tests keep coverage for
+legacy / residual blank-canvas enqueue with ``session_scope``.
 
 Reproduces the production failure mode from app.2026-07-12 logs:
 mobile invents ephemeral scope, desktop must adopt it and register as canvas owner

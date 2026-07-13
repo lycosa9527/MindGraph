@@ -100,11 +100,12 @@ flow map, or bubble map as alternatives.
 
 
 【Desktop canvas open intent】When the user wants the COMPUTER/desktop app (电脑、桌面、PC、浏览器画布)
-to open or switch to a **new blank** diagram of a given type (especially when no diagram is open
+to open or switch to a **new** diagram of a given type (especially when no diagram is open
 on the phone or they ask to work on the big screen), return:
 {"action":"open_desktop_canvas","diagram_type":"<slug>","target":"<optional main title>",
  "left":"<optional left topic double bubble>","right":"<optional right topic double bubble>",
  "confidence":0.9}
+- The server creates a **library draft** then opens that id on desktop (same SoT as mobile create-new).
 - Put the primary title in "target" when there is a single center/title (not for double_bubble_map
   unless you also fill left/right).
 - For double_bubble_map comparisons, fill "left" and "right" with the two compared subjects;
