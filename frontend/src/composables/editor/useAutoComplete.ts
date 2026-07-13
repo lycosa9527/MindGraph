@@ -694,9 +694,7 @@ export function useAutoComplete() {
       diagramType = 'mindmap'
     }
 
-    await ensureFontsForLanguageCode(language)
-
-    // Start generation
+    // Start generation before font wait so the topic LlmPhaseRing shows immediately.
     llmResultsStore.startGeneration(newSessionId, diagramType, modelsToRun)
 
     eventBus.emit('llm:generation_started', {
@@ -707,6 +705,8 @@ export function useAutoComplete() {
     })
 
     try {
+      await ensureFontsForLanguageCode(language)
+
       const abortControllers = modelsToRun.map(() => new AbortController())
       abortControllers.forEach((controller) => llmResultsStore.addAbortController(controller))
 

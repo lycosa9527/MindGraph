@@ -158,20 +158,6 @@ export function useKittyMobileDebugBus(options: {
     ownerId
   )
 
-  eventBus.onWithOwner(
-    'kitty:diagram_review_annotation',
-    (p) => {
-      const summary = normalizeKittyDebugText(p.summary, 160)
-      const count = Array.isArray(p.items) ? p.items.length : 0
-      const detail =
-        summary !== ''
-          ? `${summary} (${count} nodes)`
-          : `review ${count} node${count === 1 ? '' : 's'}`
-      pushLine('review', detail)
-    },
-    ownerId
-  )
-
   onUnmounted(() => {
     eventBus.removeAllListenersForOwner(ownerId)
   })

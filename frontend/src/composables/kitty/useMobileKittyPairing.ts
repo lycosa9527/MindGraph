@@ -5,6 +5,7 @@ import { type ComputedRef, type Ref, computed, onMounted, onUnmounted, ref, watc
 
 import { storeToRefs } from 'pinia'
 
+import { useLanguage } from '@/composables'
 import { shouldUseOneSentenceEditFlow } from '@/composables/canvasToolbar/mindMapOneSentencePhase'
 import { kittyInteractionLanguageFromUi } from '@/composables/kitty/buildKittyDiagramContext'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
@@ -81,6 +82,7 @@ export function useMobileKittyPairing(
     editPipelineActive?: Ref<boolean> | ComputedRef<boolean>
   }
 ) {
+  const { t } = useLanguage()
   const authStore = useAuthStore()
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
@@ -236,11 +238,30 @@ export function useMobileKittyPairing(
     return scope !== active && scope !== recommended
   })
 
+  /**
+   * Cold open with bootstrap ``source: empty`` is an intentional blank session, not a
+   * pairing failure. Warn only when ephemeral scope blocks expected desktop sync.
+   */
   const kittyPairScopeWarning = computed(() => {
     if (!kittyPairScopeIsEphemeral.value) {
       return null
     }
-    return 'Using a temporary session scope — desktop pairing sync may not work until you open a saved diagram.'
+    if (!forceEphemeralSession.value) {
+      const source = bootstrapPayload.value?.source
+      if (source === 'empty' || source == null) {
+        return null
+      }
+    }
+    if (forceEphemeralSession.value) {
+      return t(
+        'mobile.kittyEphemeralScopePinned',
+        'Using a temporary session — choose or create a saved diagram to sync with desktop.'
+      )
+    }
+    return t(
+      'mobile.kittyEphemeralScopeDegraded',
+      'Desktop pairing may be out of sync. Open a saved diagram to reconnect.'
+    )
   })
 
   const liveContextLibraryId = computed(() => {

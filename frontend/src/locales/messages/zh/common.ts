@@ -175,6 +175,10 @@ export default {
   'mobile.kittyNewMindmapDesktopFailed': '已新建导图，但无法通知电脑端打开',
   'mobile.kittyDiagramPinned': '置顶',
   'mobile.kittyDiagramPickFailed': '无法加载该导图，请稍后重试',
+  'mobile.kittyEphemeralScopePinned':
+    '当前为临时会话，请选择或新建已保存的导图以与电脑端同步。',
+  'mobile.kittyEphemeralScopeDegraded':
+    '与电脑端的配对可能不同步，请打开已保存的导图以重新连接。',
   'mobile.kittyDesktopJumpFailed': '已切换导图，但无法通知电脑端',
   'mobile.kittyDiagramSelected': '已选择导图，电脑端将同步打开',
   'mobile.kittyCurrentDiagramLabel': '当前图示',

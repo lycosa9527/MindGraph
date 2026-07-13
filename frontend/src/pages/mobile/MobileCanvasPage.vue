@@ -42,7 +42,6 @@ import {
   useCanvasToolbarApps,
   useInlineRecommendations,
   useInlineRecommendationsCoordinator,
-  useKittyDiagramReviewAnnotationBus,
   useLanguage,
   useNodeActions,
   useNotifications,
@@ -110,7 +109,6 @@ const { startRecommendations, selectOptionByGlobalIndex, fetchNextBatch } =
   useInlineRecommendations()
 
 useConceptMapRelationshipTabFromSelection({ startRecommendations })
-useKittyDiagramReviewAnnotationBus('MobileCanvasPage')
 useKittyVoiceSelectionBus('MobileCanvasPage')
 
 const chartType = computed(() => uiStore.selectedChartType)

@@ -15,7 +15,6 @@ from typing import Any, Dict, Optional
 
 from fastapi import WebSocket
 
-from services.kitty.diagram.review_annotate import compute_kitty_diagram_review_annotations
 from services.kitty.session.agent_state import kitty_agent_manager
 
 try:
@@ -41,7 +40,6 @@ from services.kitty.context.messaging import (
     resolve_voice_interaction_language,
     safe_websocket_send,
     send_kitty_ws_action,
-    user_requests_diagram_pedagogical_review,
 )
 from services.kitty.diagram.diagram_execute import execute_diagram_update
 from services.kitty.diagram.diagram_utils import (
@@ -65,7 +63,6 @@ from services.kitty.infra.redis.kitty_session_redis import (
     apply_redis_live_to_voice_session,
     load_kitty_live_context,
 )
-from services.kitty.omni.context_refresh import schedule_omni_context_refresh
 from services.kitty.omni.tools import omni_function_call_to_command, parse_node_index_from_identifier
 from services.kitty.routing.intent_parser import (
     parse_one_sentence_edit_intent,
@@ -384,15 +381,6 @@ async def route_voice_command(
                     )
                     session_context = dict(live_session.get("context") or session_context)
 
-        if user_requests_diagram_pedagogical_review(command_text):
-            try:
-                await schedule_omni_context_refresh(
-                    voice_session_id,
-                    reason="pedagogical_review",
-                )
-            except (RuntimeError, ConnectionError, AttributeError, ValueError) as hydrate_exc:
-                logger.debug("[Kitty] diagram review instruction refresh skipped: %s", hydrate_exc)
-
         pending_action = await try_consume_pending_branch_autocomplete(
             websocket,
             voice_session_id,
@@ -477,28 +465,6 @@ async def route_voice_command(
         logger.debug("VOIC | Using diagram_type=%s for voice command processing", diagram_type)
 
         _sync_agent_diagram_from_session(voice_session_id, session_context, str(diagram_type))
-
-        if user_requests_diagram_pedagogical_review(command_text):
-            try:
-                annotations = await compute_kitty_diagram_review_annotations(
-                    command_text,
-                    diagram_type=str(diagram_type),
-                    diagram_data=dict(session_context.get("diagram_data") or {}),
-                    user_id=user_id,
-                    organization_id=organization_id,
-                    voice_session_id=voice_session_id,
-                )
-                if annotations.get("items") or str(annotations.get("summary") or "").strip():
-                    await safe_websocket_send(
-                        websocket,
-                        {
-                            "type": "diagram_review_annotation",
-                            "summary": annotations.get("summary", ""),
-                            "items": annotations.get("items", []),
-                        },
-                    )
-            except (RuntimeError, ConnectionError, AttributeError, ValueError, TypeError) as ann_exc:
-                logger.debug("[Kitty] diagram review annotations skipped: %s", ann_exc)
 
         live_for_edit = live_session if isinstance(live_session, dict) else None
         if resolved_preparse is not None:

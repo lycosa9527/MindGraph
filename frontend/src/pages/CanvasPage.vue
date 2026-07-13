@@ -122,7 +122,6 @@ import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesk
 import { useKittyDesktopSelectionPublish } from '@/composables/kitty/useKittyDesktopSelectionPublish'
 import { useKittyDesktopLiveSpecPublish } from '@/composables/kitty/useKittyDesktopLiveSpecPublish'
 import { useKittyDesktopVoicePhase } from '@/composables/kitty/useKittyDesktopVoicePhase'
-import { useKittyDiagramReviewAnnotationBus } from '@/composables/kitty/useKittyDiagramReviewAnnotationBus'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
@@ -670,7 +669,6 @@ useCanvasPageMountedHandlers({
   isDiagramOwner,
 })
 
-useKittyDiagramReviewAnnotationBus('CanvasPage')
 useKittyVoiceSelectionBus('CanvasPage')
 registerKittyDiagramMutationBus()
 

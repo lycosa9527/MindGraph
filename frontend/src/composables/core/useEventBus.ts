@@ -310,10 +310,6 @@ export type EventTypes = {
     scope: string
     reason: 'post_edit' | 'scope_reconnect' | 'unmount'
   }
-  'kitty:diagram_review_annotation': {
-    summary: string
-    items: Array<{ node_id: string; reason: string; suggestion?: string }>
-  }
   /** Owning tab finished Hub persist from Pinia; observers may recover, owner must not. */
   'kitty:hub_diagram_persisted': {
     scope: string

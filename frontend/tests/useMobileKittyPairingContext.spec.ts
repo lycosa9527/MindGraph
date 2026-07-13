@@ -30,6 +30,12 @@ vi.mock('@/composables/canvasToolbar/mindMapOneSentencePhase', () => ({
   shouldUseOneSentenceEditFlow: shouldUseEditFlowMock,
 }))
 
+vi.mock('@/composables', () => ({
+  useLanguage: () => ({
+    t: (_key: string, fallback?: string) => fallback ?? _key,
+  }),
+}))
+
 vi.mock('@/composables/kitty/useKittyDesktopFocus', async () => {
   const vue = await import('vue')
   const diagramLibraryId = vue.ref<string | null>(null)
@@ -335,6 +341,7 @@ describe('useMobileKittyPairing one-sentence context', () => {
       kittyPairScopeIsEphemeral,
       startNewEphemeralMindmapSession,
       kittyPairScope,
+      kittyPairScopeWarning,
     } = scope.run(() =>
       useMobileKittyPairing(kitty, {
         kittyServerEnabled: computed(() => true),
@@ -345,6 +352,7 @@ describe('useMobileKittyPairing one-sentence context', () => {
     const ephemeralScope = startNewEphemeralMindmapSession()
     expect(kittyPairScopeIsEphemeral.value).toBe(true)
     expect(kittyPairScope.value).toBe(ephemeralScope)
+    expect(kittyPairScopeWarning.value).toContain('temporary session')
 
     focusApi.setLibraryId('lib-saved-from-desktop', Math.floor(Date.now() / 1000))
     await vi.waitFor(() => {
@@ -411,7 +419,8 @@ describe('useMobileKittyPairing one-sentence context', () => {
       updateContext: vi.fn(),
     } as unknown as Parameters<typeof useMobileKittyPairing>[0]
 
-    const { ensureMobileKittyBootstrap, kittyPairScopeIsEphemeral, kittyPairScope } = scope.run(
+    const { ensureMobileKittyBootstrap, kittyPairScopeIsEphemeral, kittyPairScope, kittyPairScopeWarning } =
+      scope.run(
       () =>
         useMobileKittyPairing(kitty, {
           kittyServerEnabled: computed(() => true),
@@ -426,6 +435,7 @@ describe('useMobileKittyPairing one-sentence context', () => {
     )
     expect(clearActiveDiagramMock).toHaveBeenCalled()
     expect(kittyPairScopeIsEphemeral.value).toBe(true)
+    expect(kittyPairScopeWarning.value).toBeNull()
     expect(kittyPairScope.value).not.toBe('stale-lib')
     expect(kittyPairScope.value).not.toBe('lib-diagram-1')
     expect(loadDefaultTemplateMock).toHaveBeenCalledWith('mindmap')

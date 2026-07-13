@@ -22,7 +22,7 @@ _DEBOUNCE_SEC = 0.3
 _pending: Dict[str, asyncio.Task] = {}
 _delta_notes: Dict[str, str] = {}
 _full_refresh_reasons = frozenset(
-    {"session_start", "diagram_type_change", "pedagogical_review", "context_update", "library_refresh"}
+    {"session_start", "diagram_type_change", "context_update", "library_refresh"}
 )
 
 
@@ -95,8 +95,6 @@ async def _apply_omni_refresh(
         "diagram_display_title": ctx.get("diagram_display_title"),
     }
 
-    diagram_review_deep = reason == "pedagogical_review"
-
     if delta and reason == "diagram_mutation":
         children = diagram_data.get("children", [])
         child_count = len(children) if isinstance(children, list) else 0
@@ -110,10 +108,7 @@ async def _apply_omni_refresh(
         base_instructions = build_voice_instructions(updated_context)
         new_instructions = f"{base_instructions}{append_note}"
     else:
-        new_instructions = build_voice_instructions(
-            updated_context,
-            diagram_review_deep=diagram_review_deep,
-        )
+        new_instructions = build_voice_instructions(updated_context)
 
     try:
         await omni_client.update_instructions(new_instructions)

@@ -214,12 +214,6 @@ KITTY_SPECIAL_FLOWS: List[Dict[str, Any]] = [
         "notes": "Qwen Plus extraction; large specs may use replace or batched patch (bridge policy).",
     },
     {
-        "name": "pedagogical_review",
-        "channel": "ws_action",
-        "hub_op": None,
-        "notes": "``diagram_review_annotation`` WS; diagram may be unchanged.",
-    },
-    {
         "name": "append_image_vision",
         "channel": "omni",
         "hub_op": "optional patch_context",

@@ -319,22 +319,6 @@ export function handleKittyServerMessage(
       break
     }
 
-    case 'diagram_review_annotation': {
-      const rawItems = data.items
-      const rows = Array.isArray(rawItems)
-        ? (rawItems as Array<Record<string, unknown>>).map((row) => ({
-            node_id: String(row.node_id ?? ''),
-            reason: typeof row.reason === 'string' ? row.reason : String(row.reason ?? ''),
-            suggestion: typeof row.suggestion === 'string' ? row.suggestion : undefined,
-          }))
-        : []
-      eventBus.emit('kitty:diagram_review_annotation', {
-        summary: String(data.summary ?? ''),
-        items: rows,
-      })
-      break
-    }
-
     case 'context_mutation_ack': {
       const ackPayload = {
         ok: data.ok !== false,

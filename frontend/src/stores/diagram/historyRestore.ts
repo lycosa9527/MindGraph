@@ -13,7 +13,6 @@ export function reconcileAfterHistoryRestore(ctx: DiagramContext): void {
     selectedNodes,
     selectedConnectionId,
     copiedNodes,
-    kittyReviewByNodeId,
     nodeDimensions,
     layoutRecalcTrigger,
     mindMapNodeWidths,
@@ -40,7 +39,6 @@ export function reconcileAfterHistoryRestore(ctx: DiagramContext): void {
   }
 
   copiedNodes.value = []
-  kittyReviewByNodeId.value = {}
 
   nodeDimensions.value = {}
   for (const node of data.value.nodes) {

@@ -173,6 +173,10 @@ export default {
     'Mind map saved, but desktop could not be notified.',
   'mobile.kittyDiagramPinned': 'Pinned',
   'mobile.kittyDiagramPickFailed': 'Could not load that diagram. Try again later.',
+  'mobile.kittyEphemeralScopePinned':
+    'Using a temporary session — choose or create a saved diagram to sync with desktop.',
+  'mobile.kittyEphemeralScopeDegraded':
+    'Desktop pairing may be out of sync. Open a saved diagram to reconnect.',
   'mobile.kittyDesktopJumpFailed': 'Diagram switched, but desktop could not be notified.',
   'mobile.kittyDiagramSelected': 'Diagram selected; desktop will open it.',
   'mobile.kittyCurrentDiagramLabel': 'Current diagram',

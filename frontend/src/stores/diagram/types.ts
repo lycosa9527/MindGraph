@@ -79,8 +79,6 @@ export interface DiagramContext {
   collabSessionActive: Ref<boolean>
   /** Node ids another participant is inline-editing; blocks delete while collab active. */
   collabForeignLockedNodeIds: Ref<Set<string>>
-  /** Kitty voice diagram review: per-node reason (and optional suggestion) for UI highlighting. */
-  kittyReviewByNodeId: Ref<Record<string, { reason: string; suggestion?: string }>>
 
   // Cross-cutting functions (filled during two-phase init)
   pushHistory: (action: string) => void

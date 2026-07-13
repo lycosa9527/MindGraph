@@ -18,7 +18,6 @@ import KittyMobileLlmModelRow from '@/components/kitty/KittyMobileLlmModelRow.vu
 import MindMapNodeExplainModal from '@/components/canvas/MindMapNodeExplainModal.vue'
 import {
   useKittyAgent,
-  useKittyDiagramReviewAnnotationBus,
   useLanguage,
   useNotifications,
 } from '@/composables'
@@ -101,7 +100,6 @@ const {
   refreshMobileKittyBootstrap,
   hydrateLibraryScopeIfNeeded,
   markUserDiagramOverride,
-  startNewEphemeralMindmapSession,
   clearForceEphemeralSession,
   applyDesktopFocusLibrary,
   sessionId: mobileKittyEphemeralSessionId,
@@ -147,7 +145,6 @@ useKittyMobileDebugBus({
   scheduleContextSync: scheduleMobileKittyContextSync,
 })
 
-useKittyDiagramReviewAnnotationBus('MobileKittyPageKittyReviewBus')
 useKittyVoiceSelectionBus('MobileKittyPage', {
   onSelectionApplied: syncMobileKittyContextNow,
 })

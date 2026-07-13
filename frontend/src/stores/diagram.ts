@@ -75,7 +75,6 @@ export const useDiagramStore = defineStore('diagram', () => {
   const sessionEditCount = ref(0)
   const collabSessionActive = ref(false)
   const collabForeignLockedNodeIds = ref<Set<string>>(new Set())
-  const kittyReviewByNodeId = ref<Record<string, { reason: string; suggestion?: string }>>({})
 
   function resetSessionEditCount(): void {
     sessionEditCount.value = 0
@@ -118,7 +117,6 @@ export const useDiagramStore = defineStore('diagram', () => {
     sessionEditCount,
     collabSessionActive,
     collabForeignLockedNodeIds,
-    kittyReviewByNodeId,
   } as DiagramContext
 
   ctx.scheduleMindMapRecalc = createMindMapRecalcScheduler(type, mindMapRecalcTrigger)
@@ -312,37 +310,12 @@ export const useDiagramStore = defineStore('diagram', () => {
 
   const vueFlowSlice = useVueFlowIntegrationSlice(ctx)
   const {
-    vueFlowNodes: vueFlowNodesFromLayout,
+    vueFlowNodes,
     vueFlowEdges,
     updateNodePosition,
     updateNodesFromVueFlow,
     syncFromVueFlow,
   } = vueFlowSlice
-
-  const KITTY_REVIEW_VF_CLASS = 'kitty-diagram-review-issue'
-
-  const vueFlowNodes = computed<MindGraphNode[]>(() => {
-    void kittyReviewByNodeId.value
-    const marks = kittyReviewByNodeId.value
-    const base = vueFlowNodesFromLayout.value
-    return base.map((vf) => {
-      const hasMark = Boolean(marks[vf.id])
-      const cur = vf.class
-      const curStr = typeof cur === 'string' ? cur : ''
-      const parts = curStr.split(/\s+/).filter(Boolean)
-      const hasCls = parts.includes(KITTY_REVIEW_VF_CLASS)
-      if (!hasMark) {
-        if (!hasCls) return vf
-        const nextParts = parts.filter((p) => p !== KITTY_REVIEW_VF_CLASS)
-        const stripped = nextParts.join(' ')
-        if (stripped === curStr) return vf
-        return { ...vf, class: stripped || undefined }
-      }
-      if (hasCls) return vf
-      const nextCls = curStr.trim() ? `${curStr} ${KITTY_REVIEW_VF_CLASS}` : KITTY_REVIEW_VF_CLASS
-      return { ...vf, class: nextCls }
-    })
-  })
 
   const nodeSwapSlice = useNodeSwapOpsSlice(ctx)
   const { getNodeGroupIds, moveNodeBySwap } = nodeSwapSlice
@@ -406,16 +379,6 @@ export const useDiagramStore = defineStore('diagram', () => {
     data.value = { ...data.value, focus_question: trimmed }
   }
 
-  function applyKittyDiagramReviewAnnotations(
-    next: Record<string, { reason: string; suggestion?: string }>
-  ): void {
-    kittyReviewByNodeId.value = { ...next }
-  }
-
-  function clearKittyDiagramReviewAnnotations(): void {
-    kittyReviewByNodeId.value = {}
-  }
-
   function reconcileAfterHistoryRestore(): void {
     reconcileDiagramAfterHistoryRestore(ctx)
   }
@@ -444,7 +407,6 @@ export const useDiagramStore = defineStore('diagram', () => {
     sessionEditCount.value = 0
     collabSessionActive.value = false
     collabForeignLockedNodeIds.value = new Set()
-    kittyReviewByNodeId.value = {}
     useConceptMapRelationshipStore().clearAll()
     title.value = ''
     isUserEditedTitle.value = false
@@ -494,9 +456,6 @@ export const useDiagramStore = defineStore('diagram', () => {
     setCollabSessionActive,
     collabForeignLockedNodeIds,
     setCollabForeignLockedNodeIds,
-    kittyReviewByNodeId,
-    applyKittyDiagramReviewAnnotations,
-    clearKittyDiagramReviewAnnotations,
     updateNode,
     emptyNodeForLearningSheet,
     isNodeBlankedForLearningSheet,

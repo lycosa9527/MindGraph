@@ -32,7 +32,6 @@ export type {
   MobileKittyBootstrapPayload,
   MobileKittyContextPreview,
 } from './kitty/useMobileKittyPairing'
-export { useKittyDiagramReviewAnnotationBus } from './kitty/useKittyDiagramReviewAnnotationBus'
 export { useKittyDesktopActionPoll } from './kitty/useKittyDesktopActionPoll'
 export { useCanvasKittyDesktopPairing } from './kitty/useCanvasKittyDesktopPairing'
 export { useKittyDesktopRemoteSync } from './kitty/useKittyDesktopRemoteSync'

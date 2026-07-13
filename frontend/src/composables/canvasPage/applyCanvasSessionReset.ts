@@ -32,7 +32,6 @@ export function applyCanvasSessionReset(): void {
   diagramStore.clearSelection()
   diagramStore.clearHistory()
   diagramStore.clearCopiedNodes()
-  diagramStore.clearKittyDiagramReviewAnnotations()
   diagramStore.resetSessionEditCount()
 
   useSavedDiagramsStore().clearActiveDiagram()

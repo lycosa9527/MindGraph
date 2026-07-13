@@ -86,9 +86,8 @@ const isMindMap = computed(
   () => props.data.diagramType === 'mindmap' || props.data.diagramType === 'mind_map'
 )
 
-const isTopicAutoCompleteGlowing = computed(
-  () => isMindMap.value && isWholeDiagramGenerating.value
-)
+/** Whole-diagram auto-complete: traveling ring on the center/topic node. */
+const isTopicAutoCompleteGlowing = computed(() => isWholeDiagramGenerating.value)
 
 const topicNodeShape = computed((): NodeShape => {
   if (isMindMap.value && !useMindMapV2Visuals.value) {

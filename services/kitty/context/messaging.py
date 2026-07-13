@@ -5,7 +5,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import json
 from typing import Any, Dict, List, Optional
 
 from fastapi import WebSocket
@@ -75,159 +74,6 @@ async def _journal_mutation_out(
         lane=lane,
         outcome="out",
     )
-
-_DIAGRAM_HINT_ZH: tuple[str, ...] = (
-    "图",
-    "导图",
-    "圆圈",
-    "气泡",
-    "流程",
-    "括号",
-    "桥形",
-    "树形",
-    "双气泡",
-    "类比",
-)
-_REVIEW_TERM_ZH: tuple[str, ...] = (
-    "评价",
-    "评估",
-    "评析",
-    "点评",
-    "批改",
-)
-_IMPROVE_TERM_ZH: tuple[str, ...] = (
-    "改进",
-    "优化",
-    "完善",
-    "查漏补缺",
-    "修整",
-)
-_EDU_FACT_ZH: tuple[str, ...] = (
-    "教学",
-    "教案",
-    "课堂",
-    "学生",
-    "事实",
-    "科学",
-    "对不对",
-    "正确吗",
-    "严谨",
-    "错误",
-)
-
-_ENGLISH_REVIEW_SUBSTRINGS: tuple[str, ...] = (
-    "evaluate this diagram",
-    "evaluate my diagram",
-    "evaluate the diagram",
-    "assess this diagram",
-    "assess my diagram",
-    "diagram evaluation",
-    "diagram review",
-    "review this diagram",
-    "review my diagram",
-    "review my mind map",
-    "review this mind map",
-    "review my map",
-    "critique this diagram",
-    "critique my diagram",
-    "pedagogical",
-    "curriculum fit",
-    "educationally appropriate",
-    "factually correct",
-    "fact check",
-    "improve this diagram",
-    "improve my diagram",
-    "improve my map",
-)
-
-
-def user_requests_diagram_pedagogical_review(text: str) -> bool:
-    """
-    Detect questions asking Kitty to critique, evaluate, improve, or fact-check the diagram.
-
-    When True the realtime Omni session receives the full serialized diagram specification
-    inside system instructions before the conversational reply.
-    """
-    if not isinstance(text, str):
-        return False
-    trimmed = text.strip()
-    if len(trimmed) < 4:
-        return False
-
-    lower = trimmed.lower()
-
-    if any(pat in lower for pat in _ENGLISH_REVIEW_SUBSTRINGS):
-        return True
-
-    zh_diagram_focus = (("这张" in trimmed or "这幅" in trimmed or "这个" in trimmed) and "图" in trimmed) or any(
-        h in trimmed for h in _DIAGRAM_HINT_ZH
-    )
-
-    if not zh_diagram_focus:
-        return False
-
-    if any(t in trimmed for t in _REVIEW_TERM_ZH):
-        return True
-    if any(t in trimmed for t in _IMPROVE_TERM_ZH):
-        return True
-    if any(t in trimmed for t in _EDU_FACT_ZH):
-        return True
-
-    return False
-
-
-def _diagram_spec_bundle_for_voice_llm(diagram_type: str, diagram_data: Any) -> Dict[str, Any]:
-    """Diagram spec bundle for voice llm."""
-    bundle: Dict[str, Any] = {"diagram_type": diagram_type}
-    if isinstance(diagram_data, dict):
-        for key, val in diagram_data.items():
-            bundle[key] = val
-    return bundle
-
-
-def _serialize_diagram_spec_for_prompt(bundle: Dict[str, Any], max_chars: int) -> str:
-    """Serialize diagram spec for prompt."""
-    raw = json.dumps(bundle, ensure_ascii=False, separators=(",", ":"), default=str)
-    if len(raw) <= max_chars:
-        return raw
-    return f"{raw[: max_chars - 24]}\n…[truncated for length]…"
-
-
-def _diagram_review_instruction_addon(lang: str, spec_text: str) -> str:
-    """Diagram review instruction addon."""
-    if lang == "en":
-        return f"""
-
-【Complete diagram specification (JSON) — authoritative】
-This block is the full diagram payload from the editor (types, topics, nodes, relationships, etc.).
-Use it as ground truth when evaluating structure, labels, and links.
-
-```json
-{spec_text}
-```
-
-【Pedagogical / factual review mode】
-When the user asks to evaluate, improve, fact-check, or judge whether the diagram is suitable for
-teaching (K12), respond with **clear, structured feedback** (brief summary first, then bullet points).
-Check: alignment with the graphic organizer type; clarity for learners; coherence of links;
-obvious misconceptions or factual risks. If unsure, explicitly say **you are not certain**.
-You may exceed the usual ultra-short reply style for these requests only."""
-
-    return f"""
-
-【完整图示规范（JSON，权威数据源）】
-以下为画布导出的图示结构数据（包含类型、主题、节点、连线/关系字段等）。
-评价结构、用词、关系时请以此为准。
-
-```json
-{spec_text}
-```
-
-【教学评析 / 事实核查模式】
-当用户希望你**评析、打分、给出改进意见、判断是否适合课堂教学、核对事实是否合理**等时，
-可作**结构化、适度展开**的口语回复（先总评再分条），不必强行一两句带过。
-关注点：是否符合该图示类型的教学用法；低年级可读性；概念联系是否贴切；是否存在明显史实/科学硬伤。
-如对事实不确定请**明说拿不准**。这类请求下可放宽「极简回复」限制。"""
 
 
 def _diagram_extras_for_instructions(diagram_type: str, diagram_data: Dict[str, Any]) -> str:
@@ -610,8 +456,6 @@ def resolve_voice_interaction_language(context: Dict[str, Any]) -> Language:
 
 def build_voice_instructions(
     context: Dict[str, Any],
-    *,
-    diagram_review_deep: bool = False,
 ) -> str:
     """Build voice instructions from context with full diagram data."""
     diagram_type = context.get("diagram_type", "unknown")
@@ -673,31 +517,23 @@ def build_voice_instructions(
             selected_lines.append(f"  - {label}")
         if selected_lines:
             selected_nodes_block = "\n- Selected nodes:\n" + "\n".join(selected_lines)
-    if diagram_review_deep:
-        extras = ""
-        detail_block = ""
-        if children:
-            nodes_list = f"\n  ({len(children)} nodes; exact content is in the Complete JSON specification below.)"
-        else:
-            nodes_list = "\n  (No children array; see JSON for other fields.)"
-    else:
-        extras = _diagram_extras_for_instructions(diagram_type, diagram_data)
-        # Format nodes list for Omni to understand (with IDs for precise selection)
-        nodes_list = ""
-        if children:
-            for i, node in enumerate(children[:15]):  # Limit to 15 nodes
-                if isinstance(node, str):
-                    nodes_list += f'\n  {i + 1}. "{node}"'
-                elif isinstance(node, dict):
-                    node_id = node.get("id", f"node_{i}")
-                    text = node.get("text") or node.get("label") or str(node)
-                    nodes_list += f'\n  {i + 1}. "{text}" (id: {node_id})'
-            if len(children) > 15:
-                nodes_list += f"\n  ... and {len(children) - 15} more nodes"
+    extras = _diagram_extras_for_instructions(diagram_type, diagram_data)
+    # Format nodes list for Omni to understand (with IDs for precise selection)
+    nodes_list = ""
+    if children:
+        for i, node in enumerate(children[:15]):  # Limit to 15 nodes
+            if isinstance(node, str):
+                nodes_list += f'\n  {i + 1}. "{node}"'
+            elif isinstance(node, dict):
+                node_id = node.get("id", f"node_{i}")
+                text = node.get("text") or node.get("label") or str(node)
+                nodes_list += f'\n  {i + 1}. "{text}" (id: {node_id})'
+        if len(children) > 15:
+            nodes_list += f"\n  ... and {len(children) - 15} more nodes"
 
-        detail_block = ""
-        if extras:
-            detail_block = f"\n【Type-specific detail】\n{extras}"
+    detail_block = ""
+    if extras:
+        detail_block = f"\n【Type-specific detail】\n{extras}"
 
     library_id = context.get("diagram_library_id")
     display_title = (context.get("diagram_display_title") or "").strip()
@@ -787,15 +623,8 @@ When the user asks to change the diagram, give a **one short sentence** acknowle
 
 **默认请使用简体中文**进行口语和文字回复；仅当用户**明确**使用其他语言（如英语）时，再用该语言自然回复。"""
 
-    review_addon = ""
-    if diagram_review_deep:
-        bundle = _diagram_spec_bundle_for_voice_llm(diagram_type, diagram_data)
-        spec_text = _serialize_diagram_spec_for_prompt(bundle, 48000)
-        review_addon = _diagram_review_instruction_addon(lang, spec_text)
-
     return (
         instructions
-        + review_addon
         + KITTY_DIAGRAM_CATALOG_PROMPT
         + KITTY_VOICE_COMMAND_PROMPT
         + (
