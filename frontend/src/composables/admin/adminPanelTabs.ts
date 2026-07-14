@@ -26,7 +26,7 @@ export const ADMIN_PANEL_TAB_CONFIG: readonly AdminPanelTabConfig[] = [
   { name: 'organizations', labelKey: 'admin.orgManagement', icon: School },
   { name: 'invites', labelKey: 'admin.inviteUsers', icon: Promotion },
   { name: 'billing', labelKey: 'admin.billing', icon: ShoppingCart },
-  { name: 'case_square', labelKey: 'admin.caseSquare.title', icon: Document },
+  { name: 'showcase', labelKey: 'admin.showcase.title', icon: Document },
   { name: 'settings', labelKey: 'admin.systemSettings', icon: Setting },
   { name: 'feature_dev', labelKey: 'admin.featureDevTab', icon: MagicStick },
 ]

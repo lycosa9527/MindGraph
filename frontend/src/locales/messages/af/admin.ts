@@ -71,8 +71,6 @@ export default {
   'admin.feature.mindmateExportHint': 'Superadmin panel to view and export web MindMate and DingTalk MindBot Dify history.',
   'admin.feature.ragChunkTest': 'RAG-stuk-toets',
   'admin.feature.ragChunkTestHint': 'Maatstaf-gereedskap binne die kennishuis.',
-  'admin.feature.schoolZone': 'Skoolgebied',
-  'admin.feature.schoolZoneHint': 'Organisasie-omvang-deling.',
   'admin.feature.smartResponse': 'Slim antwoord (toestelle)',
   'admin.feature.smartResponseHint': 'ESP32 / onderwyserhorlosie-integrasie.',
   'admin.feature.teacherUsage': 'Onderwysergebruik-analitiese data',

@@ -65,7 +65,7 @@ def test_vue_router_extensionless_paths_are_spa_routes(path: str) -> None:
         "/template",
         "/course",
         "/community",
-        "/school-zone",
+        "/showcase",
         "/knowledge-space",
         "/askonce",
         "/debateverse",

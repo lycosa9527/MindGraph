@@ -25,7 +25,7 @@ const NS_FILES = [
   'admin.ts',
   'auth.ts',
   'canvas.ts',
-  'caseSquare.ts',
+  'showcase.ts',
   'common.ts',
   'community.ts',
   'knowledge.ts',

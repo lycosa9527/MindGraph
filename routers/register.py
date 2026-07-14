@@ -33,7 +33,7 @@ from routers.admin import realtime_router as admin_realtime
 from routers.core import changelog, pages, update_notification
 from routers.core.health import router as health_router
 from routers.core.vue_spa import router as vue_spa
-from routers.features import askonce, kitty, school_zone
+from routers.features import askonce, kitty
 from services.mcp.mount import mount_mindgraph_mcp
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
@@ -78,13 +78,13 @@ if config.FEATURE_COMMUNITY:
 else:
     logger.debug("[RouterRegistration] Community feature disabled via FEATURE_COMMUNITY flag")
 
-CASE_SQUARE_MODULE = None
+SHOWCASE_MODULE = None
 try:
-    CASE_SQUARE_MODULE = importlib.import_module("routers.features.case_square").router
+    SHOWCASE_MODULE = importlib.import_module("routers.features.showcase").router
 except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
-    CASE_SQUARE_MODULE = None
+    SHOWCASE_MODULE = None
     logger.debug(
-        "[RouterRegistration] Failed to import case square router: %s",
+        "[RouterRegistration] Failed to import showcase router: %s",
         e,
         exc_info=True,
     )
@@ -206,13 +206,13 @@ def register_routers(app: FastAPI) -> None:
         else:
             logger.debug("[RouterRegistration] Community feature disabled via FEATURE_COMMUNITY flag")
 
-    # Case Square (案例广场) — always mount; feature_gate enforces FEATURE_CASE_SQUARE
-    if CASE_SQUARE_MODULE is not None:
-        app.include_router(CASE_SQUARE_MODULE)
-        registered_feature_paths.append("/api/case-square")
+    # Showcase (案例广场) — always mount; feature_gate enforces FEATURE_SHOWCASE
+    if SHOWCASE_MODULE is not None:
+        app.include_router(SHOWCASE_MODULE)
+        registered_feature_paths.append("/api/showcase")
     else:
         logger.warning(
-            "[RouterRegistration] Case Square router NOT registered - import failed or router is None. "
+            "[RouterRegistration] Showcase router NOT registered - import failed or router is None. "
             "Check DEBUG logs for details."
         )
 
@@ -271,7 +271,6 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(kitty)  # Kitty Agent (realtime WebSocket + REST)
     app.include_router(update_notification)  # Update notification system
     app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])
-    app.include_router(school_zone)  # School Zone (organization-scoped sharing)
     app.include_router(askonce)  # AskOnce (多应) - Multi-LLM streaming chat
 
     # Workshop Chat WebSocket

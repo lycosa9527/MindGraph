@@ -1,5 +1,5 @@
 /**
- * Resolve `/static/…` URLs for dev playback of large binaries (case-square videos).
+ * Resolve `/static/…` URLs for dev playback of large binaries (showcase videos).
  *
  * Vite's `/static` proxy can gzip MP4 bodies without a matching Content-Encoding header,
  * which breaks HTML5 video. In dev, point media at the API origin directly.

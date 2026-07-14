@@ -73,7 +73,17 @@ function findNodeIdByTextSegmentsOnSide(
   return null
 }
 
-/** Resolve a node id across a mind-map tree rebuild (path key, then text path). */
+function textSegmentsEqual(a: string[] | null, b: string[] | null): boolean {
+  if (!a || !b || a.length !== b.length) return false
+  return a.every((segment, index) => segment === b[index])
+}
+
+/**
+ * Resolve a node id across a mind-map tree rebuild.
+ * Prefer path key when the text identity still matches; otherwise follow text path.
+ * Sibling inserts shift path indices, so trusting path alone would remap sizes/selection
+ * onto the newly inserted node.
+ */
 export function remapMindMapNodeIdAfterReload(
   oldId: string,
   oldNodes: DiagramNode[],
@@ -88,13 +98,18 @@ export function remapMindMapNodeIdAfterReload(
     return newNodes.some((node) => node.id === oldId) ? oldId : null
   }
 
+  const segments = getMindMapTextSegments(oldId, oldNodes, oldConnections)
   const pathKey = mindMapNodePathKey(oldId, oldConnections)
   if (pathKey) {
     const byPath = findNodeIdByPathKey(newNodes, newConnections, pathKey)
-    if (byPath) return byPath
+    if (byPath) {
+      const pathSegments = getMindMapTextSegments(byPath, newNodes, newConnections)
+      if (!segments || textSegmentsEqual(segments, pathSegments)) {
+        return byPath
+      }
+    }
   }
 
-  const segments = getMindMapTextSegments(oldId, oldNodes, oldConnections)
   if (!segments) return null
 
   const side: 'l' | 'r' = oldId.startsWith('branch-l-') ? 'l' : 'r'
@@ -104,7 +119,11 @@ export function remapMindMapNodeIdAfterReload(
   return findNodeIdByTextSegmentsOnSide(segments, otherSide, newNodes, newConnections)
 }
 
-/** Carry DOM-measured sizes across a mind-map tree rebuild (add/delete/reload). */
+/**
+ * Carry DOM-measured sizes across a mind-map tree rebuild (add/delete/reload).
+ * Remapped measurements win; build-time estimates only fill gaps (usually the new node)
+ * so Enter/Tab reloads do not jump from measured layout back to estimate layout.
+ */
 export function remapMindMapMeasuredDimensionsAfterReload(
   oldWidths: Record<string, number>,
   oldHeights: Record<string, number>,
@@ -141,10 +160,10 @@ export function remapMindMapMeasuredDimensionsAfterReload(
   for (const node of newNodes) {
     const estimatedWidth = node.data?.estimatedWidth as number | undefined
     const estimatedHeight = node.data?.estimatedHeight as number | undefined
-    if (estimatedWidth !== undefined) {
+    if (estimatedWidth !== undefined && widths[node.id] === undefined) {
       widths[node.id] = estimatedWidth
     }
-    if (estimatedHeight !== undefined) {
+    if (estimatedHeight !== undefined && heights[node.id] === undefined) {
       heights[node.id] = estimatedHeight
     }
   }

@@ -70,9 +70,8 @@ class FeatureFlagsResponse(BaseModel):
     feature_course: bool
     feature_template: bool
     feature_community: bool
-    feature_case_square: bool
+    feature_showcase: bool
     feature_askonce: bool
-    feature_school_zone: bool
     feature_debateverse: bool
     feature_knowledge_space: bool
     feature_mindmap_v2_canvas: bool
@@ -120,9 +119,8 @@ async def get_feature_flags(
         feature_course=config.FEATURE_COURSE,
         feature_template=config.FEATURE_TEMPLATE,
         feature_community=config.FEATURE_COMMUNITY,
-        feature_case_square=config.FEATURE_CASE_SQUARE,
+        feature_showcase=config.FEATURE_SHOWCASE,
         feature_askonce=config.FEATURE_ASKONCE,
-        feature_school_zone=config.FEATURE_SCHOOL_ZONE,
         feature_debateverse=config.FEATURE_DEBATEVERSE,
         feature_knowledge_space=config.FEATURE_KNOWLEDGE_SPACE,
         feature_mindmap_v2_canvas=config.FEATURE_MINDMAP_V2_CANVAS,

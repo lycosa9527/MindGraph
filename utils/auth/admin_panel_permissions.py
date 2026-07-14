@@ -55,12 +55,12 @@ CAP_TAB_BILLING_VIEW: Final[str] = "tab.billing.view"
 CAP_TAB_BILLING_EDIT: Final[str] = "tab.billing.edit"
 CAP_TAB_SETTINGS_VIEW: Final[str] = "tab.settings.view"
 CAP_TAB_SETTINGS_EDIT: Final[str] = "tab.settings.edit"
-CAP_TAB_CASE_SQUARE_VIEW: Final[str] = "tab.case_square.view"
-CAP_TAB_CASE_SQUARE_EDIT: Final[str] = "tab.case_square.edit"
-CAP_TAB_CASE_SQUARE_RECOMMEND: Final[str] = "tab.case_square.recommend"
-CAP_TAB_CASE_SQUARE_FIELDS: Final[str] = "tab.case_square.fields"
-CAP_TAB_CASE_SQUARE_PERMISSIONS: Final[str] = "tab.case_square.permissions"
-CAP_TAB_CASE_SQUARE_DASHBOARD: Final[str] = "tab.case_square.dashboard"
+CAP_TAB_SHOWCASE_VIEW: Final[str] = "tab.showcase.view"
+CAP_TAB_SHOWCASE_EDIT: Final[str] = "tab.showcase.edit"
+CAP_TAB_SHOWCASE_RECOMMEND: Final[str] = "tab.showcase.recommend"
+CAP_TAB_SHOWCASE_FIELDS: Final[str] = "tab.showcase.fields"
+CAP_TAB_SHOWCASE_PERMISSIONS: Final[str] = "tab.showcase.permissions"
+CAP_TAB_SHOWCASE_DASHBOARD: Final[str] = "tab.showcase.dashboard"
 
 CAP_SETTINGS_FEATURES: Final[str] = "tab.settings.features"
 CAP_SETTINGS_ROLES: Final[str] = "tab.settings.roles"
@@ -120,12 +120,12 @@ _SUPERADMIN_CAPS: frozenset[str] = (
             CAP_TAB_INVITES_EDIT,
             CAP_TAB_BILLING_VIEW,
             CAP_TAB_BILLING_EDIT,
-            CAP_TAB_CASE_SQUARE_VIEW,
-            CAP_TAB_CASE_SQUARE_EDIT,
-            CAP_TAB_CASE_SQUARE_RECOMMEND,
-            CAP_TAB_CASE_SQUARE_FIELDS,
-            CAP_TAB_CASE_SQUARE_PERMISSIONS,
-            CAP_TAB_CASE_SQUARE_DASHBOARD,
+            CAP_TAB_SHOWCASE_VIEW,
+            CAP_TAB_SHOWCASE_EDIT,
+            CAP_TAB_SHOWCASE_RECOMMEND,
+            CAP_TAB_SHOWCASE_FIELDS,
+            CAP_TAB_SHOWCASE_PERMISSIONS,
+            CAP_TAB_SHOWCASE_DASHBOARD,
             CAP_SCOPE_GLOBAL,
         }
     )
@@ -143,11 +143,11 @@ _PLATFORM_BD_CAPS: frozenset[str] = frozenset(
         CAP_TAB_INVITES_VIEW,
         CAP_TAB_INVITES_EDIT,
         CAP_TAB_BILLING_VIEW,
-        CAP_TAB_CASE_SQUARE_VIEW,
-        CAP_TAB_CASE_SQUARE_EDIT,
-        CAP_TAB_CASE_SQUARE_RECOMMEND,
-        CAP_TAB_CASE_SQUARE_FIELDS,
-        CAP_TAB_CASE_SQUARE_DASHBOARD,
+        CAP_TAB_SHOWCASE_VIEW,
+        CAP_TAB_SHOWCASE_EDIT,
+        CAP_TAB_SHOWCASE_RECOMMEND,
+        CAP_TAB_SHOWCASE_FIELDS,
+        CAP_TAB_SHOWCASE_DASHBOARD,
         CAP_SCOPE_GLOBAL,
         CAP_SCOPE_INVITED_ORGS,
     }

@@ -16,7 +16,7 @@ describe('mobileRouteRedirect', () => {
 
   it('falls back to mobile hub for unmapped desktop paths', () => {
     expect(resolveMobileRouteRedirect('/library')).toBe('/m')
-    expect(resolveMobileRouteRedirect('/school-zone')).toBe('/m')
+    expect(resolveMobileRouteRedirect('/showcase')).toBe('/m')
   })
 
   it('recognizes mobile route paths', () => {

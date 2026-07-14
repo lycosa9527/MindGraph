@@ -216,7 +216,6 @@ export default {
   'meta.pageTitle.privacy': 'Terms & Privacy',
   'meta.pageTitle.publicDashboard': 'Statistiques',
   'meta.pageTitle.schoolDashboard': 'Tableau de bord de l’école',
-  'meta.pageTitle.schoolZone': 'Zone scolaire',
   'meta.pageTitle.smartResponse': 'Réponse intelligente',
   'meta.pageTitle.template': 'Modèles',
   'meta.pageTitle.thinkingCoinsUpgrade': 'Upgrade membership',

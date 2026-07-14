@@ -211,7 +211,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   const activeDiagramId = ref<string | null>(null)
   const isAutoSaving = ref(false)
 
-  /** In-memory cache so case-square / history picker can show previews instantly. */
+  /** In-memory cache so showcase / history picker can show previews instantly. */
   const diagramDetailCache = new Map<string, SavedDiagramFull>()
 
   // Getters

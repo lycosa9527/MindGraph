@@ -71,8 +71,6 @@ export default {
   'admin.feature.mindmateExportHint': 'Superadmin panel to view and export web MindMate and DingTalk MindBot Dify history.',
   'admin.feature.ragChunkTest': 'ทดสอบ RAG chunk',
   'admin.feature.ragChunkTestHint': 'เครื่องมือเปรียบเทียบในคลังความรู้',
-  'admin.feature.schoolZone': 'โซนโรงเรียน',
-  'admin.feature.schoolZoneHint': 'การแชร์ระดับองค์กร',
   'admin.feature.smartResponse': 'การตอบสนองอัจฉริยะ (อุปกรณ์)',
   'admin.feature.smartResponseHint': 'การเชื่อมต่อ ESP32 / นาฬิกาครู',
   'admin.feature.teacherUsage': 'การวิเคราะห์การใช้งานของครู',

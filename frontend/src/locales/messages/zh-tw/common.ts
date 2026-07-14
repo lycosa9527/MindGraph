@@ -212,7 +212,6 @@ export default {
   'meta.pageTitle.privacy': '用戶協議與隱私政策',
   'meta.pageTitle.publicDashboard': '統計',
   'meta.pageTitle.schoolDashboard': '學校儀表盤',
-  'meta.pageTitle.schoolZone': '學校專區',
   'meta.pageTitle.smartResponse': '智能應答',
   'meta.pageTitle.template': '模板',
   'meta.pageTitle.thinkingCoinsUpgrade': '升級會員',

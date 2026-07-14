@@ -102,9 +102,12 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_COMMUNITY", "False").lower() == "true"
 
     @property
-    def FEATURE_CASE_SQUARE(self):
-        """Enable Case Square (案例广场) moderated public case gallery."""
-        return self._get_cached_value("FEATURE_CASE_SQUARE", "False").lower() == "true"
+    def FEATURE_SHOWCASE(self):
+        """Enable Showcase (案例广场) moderated public case gallery.
+
+        Enabled by default. Set FEATURE_SHOWCASE=False in .env to disable.
+        """
+        return self._get_cached_value("FEATURE_SHOWCASE", "True").lower() == "true"
 
     @property
     def FEATURE_ASKONCE(self):
@@ -113,14 +116,6 @@ class FeaturesConfigMixin:
         Enabled by default. Set FEATURE_ASKONCE=False in .env to disable.
         """
         return self._get_cached_value("FEATURE_ASKONCE", "True").lower() == "true"
-
-    @property
-    def FEATURE_SCHOOL_ZONE(self):
-        """Enable School Zone (学校专区) organization sharing feature.
-
-        Disabled by default. Set FEATURE_SCHOOL_ZONE=True in .env to enable.
-        """
-        return self._get_cached_value("FEATURE_SCHOOL_ZONE", "False").lower() == "true"
 
     @property
     def FEATURE_LIBRARY(self):

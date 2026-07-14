@@ -79,7 +79,6 @@ export default {
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',
-  'sidebar.schoolZone': 'Skoolgebied',
   'sidebar.smartResponse': 'Slim reaksie',
   'sidebar.teacherUsage': 'Onderwysergebruik',
   'sidebar.templateResources': 'Sjablone',

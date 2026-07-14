@@ -200,7 +200,7 @@ export function useAdminAccess() {
 
   const visibleTabKeys = computed(() => {
 
-    const keys = ['data_center', 'users', 'organizations', 'invites', 'billing', 'case_square', 'settings', 'feature_dev']
+    const keys = ['data_center', 'users', 'organizations', 'invites', 'billing', 'showcase', 'settings', 'feature_dev']
 
     return keys.filter((key) => canViewTab(key))
 

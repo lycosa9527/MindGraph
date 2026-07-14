@@ -79,7 +79,6 @@ export default {
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',
-  'sidebar.schoolZone': 'โซนโรงเรียน',
   'sidebar.smartResponse': 'การตอบสนองอัจฉริยะ',
   'sidebar.teacherUsage': 'การใช้งานของครู',
   'sidebar.templateResources': 'เทมเพลต',

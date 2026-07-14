@@ -8,7 +8,6 @@ import { useRoute } from 'vue-router'
 import {
   BookOpen,
   Bot,
-  Building2,
   ChevronDown,
   FileText,
   Files,
@@ -276,30 +275,6 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </transition>
 
-        <!-- School Zone -->
-        <el-tooltip
-          v-if="s.hasOrganization && s.featureSchoolZone"
-          :content="s.t('sidebar.schoolZone')"
-          placement="right"
-          :disabled="!s.isCollapsed"
-        >
-          <div
-            class="nav-item"
-            :class="s.navItemClass('school-zone')"
-            @click="s.setMode('school-zone')"
-          >
-            <Building2
-              class="nav-icon"
-              :size="NAV_ICON_SIZE"
-            />
-            <span
-              v-if="!s.isCollapsed"
-              class="nav-label"
-              >{{ s.t('sidebar.schoolZone') }}</span
-            >
-          </div>
-        </el-tooltip>
-
         <!-- Templates -->
         <el-tooltip
           v-if="s.featureTemplate"
@@ -372,17 +347,17 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </el-tooltip>
 
-        <!-- Case Square -->
+        <!-- Showcase -->
         <el-tooltip
-          v-if="s.featureCaseSquare"
-          :content="s.t('sidebar.caseSquare')"
+          v-if="s.featureShowcase"
+          :content="s.t('sidebar.showcase')"
           placement="right"
           :disabled="!s.isCollapsed"
         >
           <div
             class="nav-item"
-            :class="s.navItemClass('case-square')"
-            @click="s.setMode('case-square')"
+            :class="s.navItemClass('showcase')"
+            @click="s.setMode('showcase')"
           >
             <LayoutGrid
               class="nav-icon"
@@ -391,7 +366,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.caseSquare') }}</span
+              >{{ s.t('sidebar.showcase') }}</span
             >
           </div>
         </el-tooltip>
@@ -450,10 +425,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             >
               {{ s.singleAdminNavTab.label }}
               <span
-                v-if="s.singleAdminNavTab.name === 'case_square' && s.caseSquarePendingCount > 0"
+                v-if="s.singleAdminNavTab.name === 'showcase' && s.showcasePendingCount > 0"
                 class="nav-item-badge"
               >
-                {{ s.caseSquarePendingCount }}
+                {{ s.showcasePendingCount }}
               </span>
             </span>
           </div>
@@ -481,10 +456,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             >
               {{ s.t('admin.title') }}
               <span
-                v-if="s.caseSquarePendingCount > 0"
+                v-if="s.showcasePendingCount > 0"
                 class="nav-item-badge"
               >
-                {{ s.caseSquarePendingCount }}
+                {{ s.showcasePendingCount }}
               </span>
               <ChevronDown
                 class="admin-expand-chevron"
@@ -598,10 +573,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               >
                 <span class="admin-subitem-label">{{ tab.label }}</span>
                 <span
-                  v-if="tab.name === 'case_square' && s.caseSquarePendingCount > 0"
+                  v-if="tab.name === 'showcase' && s.showcasePendingCount > 0"
                   class="admin-subitem-badge"
                 >
-                  {{ s.caseSquarePendingCount }}
+                  {{ s.showcasePendingCount }}
                 </span>
               </button>
             </template>

@@ -193,15 +193,11 @@ class FeatureFlagSettings(BaseModel):
     FEATURE_COURSE: bool = Field(default=False, description="Enable Thinking Course (思维课程) feature")
     FEATURE_TEMPLATE: bool = Field(default=False, description="Enable Template Resources (模板资源) feature")
     FEATURE_COMMUNITY: bool = Field(default=False, description="Enable Community Sharing (社区分享) feature")
-    FEATURE_CASE_SQUARE: bool = Field(
-        default=False,
-        description="Enable Case Square (案例广场) moderated public case gallery",
+    FEATURE_SHOWCASE: bool = Field(
+        default=True,
+        description="Enable Showcase (案例广场) moderated public case gallery",
     )
     FEATURE_ASKONCE: bool = Field(default=True, description="Enable AskOnce (多应) multi-LLM chat feature")
-    FEATURE_SCHOOL_ZONE: bool = Field(
-        default=False,
-        description="Enable School Zone (学校专区) organization sharing feature",
-    )
     FEATURE_MARKETS: bool = Field(default=False, description="Enable Market (市场) catalog and Alipay checkout")
     FEATURE_MINDBOT: bool = Field(
         default=True,

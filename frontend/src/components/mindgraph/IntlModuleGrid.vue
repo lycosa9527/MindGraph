@@ -11,7 +11,6 @@ import {
   Document,
   Files,
   MagicStick,
-  OfficeBuilding,
   Reading,
   Share,
   Tools,
@@ -34,9 +33,8 @@ const {
   featureCourse,
   featureTemplate,
   featureCommunity,
-  featureCaseSquare,
+  featureShowcase,
   featureAskOnce,
-  featureSchoolZone,
   featureDebateverse,
   featureKnowledgeSpace,
   featureLibrary,
@@ -61,7 +59,6 @@ interface ModuleItem {
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
 const isAdminOrManager = computed(() => authStore.isAdminOrManager)
-const hasOrg = computed(() => isAuthenticated.value && !!authStore.user?.schoolId)
 
 const canWorkshop = computed(() => {
   if (!featureWorkshopChat.value) return false
@@ -98,13 +95,6 @@ const modules = computed<ModuleItem[]>(() => [
     visible: featureDebateverse.value,
   },
   {
-    key: 'school-zone',
-    labelKey: 'sidebar.schoolZone',
-    route: '/school-zone',
-    icon: OfficeBuilding,
-    visible: hasOrg.value && featureSchoolZone.value,
-  },
-  {
     key: 'template',
     labelKey: 'sidebar.templateResources',
     route: '/template',
@@ -126,11 +116,11 @@ const modules = computed<ModuleItem[]>(() => [
     visible: featureCommunity.value,
   },
   {
-    key: 'case-square',
-    labelKey: 'sidebar.caseSquare',
-    route: '/case-square',
+    key: 'showcase',
+    labelKey: 'sidebar.showcase',
+    route: '/showcase',
     icon: LayoutGrid,
-    visible: featureCaseSquare.value,
+    visible: featureShowcase.value,
   },
   {
     key: 'library',

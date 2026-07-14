@@ -112,7 +112,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.plan.feature.trialCoins': '200 思维币',
   'thinkingCoins.plan.feature.trialDiagrams': '20 个导图存储位',
   'thinkingCoins.plan.feature.nonAi': '全部非 AI 功能',
-  'thinkingCoins.plan.feature.caseSquare': '案例广场',
+  'thinkingCoins.plan.feature.showcase': '案例广场',
   'thinkingCoins.plan.feature.paidCoins800': '每月 800 思维币',
   'thinkingCoins.plan.feature.paidCoins900': '每月 900 思维币',
   'thinkingCoins.plan.feature.storage1gb': '1GB 云存储',

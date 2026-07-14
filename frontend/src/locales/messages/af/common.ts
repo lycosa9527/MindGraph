@@ -216,7 +216,6 @@ export default {
   'meta.pageTitle.privacy': 'Terms & Privacy',
   'meta.pageTitle.publicDashboard': 'Statistieke',
   'meta.pageTitle.schoolDashboard': 'Skool-dashbord',
-  'meta.pageTitle.schoolZone': 'Skool-gebied',
   'meta.pageTitle.smartResponse': 'Slimme reaksie',
   'meta.pageTitle.template': 'Sjablone',
   'meta.pageTitle.thinkingCoinsUpgrade': 'Upgrade membership',

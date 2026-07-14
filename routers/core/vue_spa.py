@@ -192,15 +192,15 @@ async def vue_community(request: Request):
     return await _serve_index(request)
 
 
-@router.get("/school-zone", response_class=HTMLResponse)
-async def vue_school_zone(request: Request):
-    """Serve Vue SPA for school-zone route."""
+@router.get("/showcase", response_class=HTMLResponse)
+async def vue_showcase(request: Request):
+    """Serve Vue SPA for showcase route."""
     return await _serve_index(request)
 
 
-@router.get("/school-zone/{path:path}", response_class=HTMLResponse)
-async def vue_school_zone_sub(request: Request, path: str):
-    """Serve Vue SPA for school-zone sub-routes."""
+@router.get("/showcase/{path:path}", response_class=HTMLResponse)
+async def vue_showcase_sub(request: Request, path: str):
+    """Serve Vue SPA for showcase sub-routes."""
     _ = path  # Path parameter required by FastAPI but not used
     return await _serve_index(request)
 

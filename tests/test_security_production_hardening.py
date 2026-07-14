@@ -217,28 +217,28 @@ def test_production_guard_rejects_unauthenticated_redis_when_required() -> None:
                 guard.enforce_production_security_guards()
 
 
-def test_allows_same_origin_case_square_frame_for_teaching_attachments() -> None:
-    """Teaching design PDFs/Docs under case-square asset URLs may be same-origin iframed."""
-    assert middleware_module.allows_same_origin_case_square_frame("/api/case-square/assets/case_square/abc_doc.pdf")
-    assert middleware_module.allows_same_origin_case_square_frame("/api/case-square/assets/case_square/abc_doc.docx")
-    assert middleware_module.allows_same_origin_case_square_frame("/static/case_square/abc_doc.pdf")
-    assert not middleware_module.allows_same_origin_case_square_frame("/api/case-square/assets/case_square/abc.json")
-    assert not middleware_module.allows_same_origin_case_square_frame("/static/community/thumb.png")
+def test_allows_same_origin_showcase_frame_for_teaching_attachments() -> None:
+    """Teaching design PDFs/Docs under showcase asset URLs may be same-origin iframed."""
+    assert middleware_module.allows_same_origin_showcase_frame("/api/showcase/assets/case_square/abc_doc.pdf")
+    assert middleware_module.allows_same_origin_showcase_frame("/api/showcase/assets/case_square/abc_doc.docx")
+    assert middleware_module.allows_same_origin_showcase_frame("/static/case_square/abc_doc.pdf")
+    assert not middleware_module.allows_same_origin_showcase_frame("/api/showcase/assets/case_square/abc.json")
+    assert not middleware_module.allows_same_origin_showcase_frame("/static/community/thumb.png")
 
 
-def test_case_square_publish_body_size_limit_paths() -> None:
+def test_showcase_publish_body_size_limit_paths() -> None:
     """Create, update, and admin proxy publish allow large multipart bodies."""
-    limit = middleware_module.CASE_SQUARE_MAX_BODY_SIZE
+    limit = middleware_module.SHOWCASE_MAX_BODY_SIZE
     default = middleware_module.MAX_REQUEST_BODY_SIZE
     resolver = middleware_module.max_request_body_size_for_path
-    assert resolver("/api/case-square/posts") == limit
-    assert resolver("/api/case-square/posts/abc-123") == limit
-    assert resolver("/api/auth/admin/case-square/posts/proxy") == limit
-    assert resolver("/api/case-square/favorites") == default
+    assert resolver("/api/showcase/posts") == limit
+    assert resolver("/api/showcase/posts/abc-123") == limit
+    assert resolver("/api/auth/admin/showcase/posts/proxy") == limit
+    assert resolver("/api/showcase/favorites") == default
 
 
 @pytest.mark.asyncio
-async def test_block_case_square_static_uploads_returns_404() -> None:
+async def test_block_showcase_static_uploads_returns_404() -> None:
     """Direct /static/case_square/ access must be denied (use authenticated assets API)."""
     request = MagicMock()
     request.url.path = "/static/case_square/pending_doc.pdf"
@@ -246,16 +246,16 @@ async def test_block_case_square_static_uploads_returns_404() -> None:
     async def _call_next(_req):
         raise AssertionError("should not reach static mount")
 
-    result = await middleware_module.block_case_square_static_uploads(request, _call_next)
+    result = await middleware_module.block_showcase_static_uploads(request, _call_next)
     assert result.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_security_headers_allow_same_origin_frame_for_case_square_pdf() -> None:
-    """Case Square PDF asset responses must not send X-Frame-Options: DENY."""
+async def test_security_headers_allow_same_origin_frame_for_showcase_pdf() -> None:
+    """Showcase PDF asset responses must not send X-Frame-Options: DENY."""
     request = MagicMock()
     request.url.scheme = "http"
-    request.url.path = "/api/case-square/assets/case_square/post_doc.pdf"
+    request.url.path = "/api/showcase/assets/case_square/post_doc.pdf"
     request.state = SimpleNamespace()
     response = MagicMock()
     response.headers = {}

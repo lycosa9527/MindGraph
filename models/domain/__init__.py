@@ -103,7 +103,7 @@ __all__ = [
     "DebateSession",
     "DebateMessage",
     "DebateParticipant",
-    # School Zone
+    # Legacy org shared diagrams (School Zone tables; feature removed)
     "SharedDiagram",
     "SharedDiagramLike",
     "SharedDiagramComment",

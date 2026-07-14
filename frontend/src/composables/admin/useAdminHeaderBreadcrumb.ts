@@ -22,9 +22,9 @@ import {
   settingsSubtabLabelKey,
 } from '@/composables/admin/adminSettingsNav'
 import {
-  caseSquareSubtabLabelKey,
-  resolveCaseSquareSubtab,
-} from '@/composables/admin/adminCaseSquareNav'
+  showcaseSubtabLabelKey,
+  resolveShowcaseSubtab,
+} from '@/composables/admin/adminShowcaseNav'
 import { useLanguage } from '@/composables'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useAdminOrganizations } from '@/composables/queries'
@@ -152,9 +152,9 @@ export function useAdminHeaderBreadcrumb(options: {
       }
     }
 
-    if (options.activeTab.value === 'case_square') {
-      const subtabName = resolveCaseSquareSubtab(options.route.query.subtab)
-      const subtabLabel = t(caseSquareSubtabLabelKey(subtabName))
+    if (options.activeTab.value === 'showcase') {
+      const subtabName = resolveShowcaseSubtab(options.route.query.subtab)
+      const subtabLabel = t(showcaseSubtabLabelKey(subtabName))
       return [{ label: tabLabel }, { label: subtabLabel }]
     }
 

@@ -23,9 +23,9 @@ from config.database import get_async_db
 from models.domain.auth import Organization, User
 from models.domain.messages import Language, Messages
 from models.domain.token_usage import TokenUsage
-from services.case_square.staff_permissions import (
-    case_square_panel_capabilities,
-    load_user_case_square_permissions,
+from services.showcase.staff_permissions import (
+    showcase_panel_capabilities,
+    load_user_showcase_permissions,
 )
 from services.auth.school_dashboard_logger import (
     get_school_dashboard_logger,
@@ -98,8 +98,8 @@ async def get_admin_capabilities(
     """
     role = get_user_role(current_user)
     caps = set(user_panel_capabilities(current_user))
-    sq_perms = await load_user_case_square_permissions(db, current_user)
-    caps |= case_square_panel_capabilities(sq_perms)
+    sq_perms = await load_user_showcase_permissions(db, current_user)
+    caps |= showcase_panel_capabilities(sq_perms)
     org_id = getattr(current_user, "organization_id", None)
     panel_access = CAP_PANEL_ACCESS in caps or is_management_panel_user(current_user) or bool(sq_perms)
     read_only = panel_read_only_for_user(current_user) if panel_access else False
@@ -110,7 +110,7 @@ async def get_admin_capabilities(
         "read_only": read_only,
         "default_org_id": int(org_id) if org_id is not None else None,
         "panel_access": panel_access,
-        "case_square_permissions": sorted(sq_perms),
+        "showcase_permissions": sorted(sq_perms),
     }
 
 

@@ -216,7 +216,6 @@ export default {
   'meta.pageTitle.privacy': '用户协议与隐私政策',
   'meta.pageTitle.publicDashboard': '统计',
   'meta.pageTitle.schoolDashboard': '学校仪表盘',
-  'meta.pageTitle.schoolZone': '学校专区',
   'meta.pageTitle.smartResponse': '智能应答',
   'meta.pageTitle.template': '模板',
   'meta.pageTitle.thinkingCoinsUpgrade': '升级会员',

@@ -27,9 +27,8 @@ export function useFeatureFlags() {
   const featureCourse = computed(() => data.value?.feature_course ?? false)
   const featureTemplate = computed(() => data.value?.feature_template ?? false)
   const featureCommunity = computed(() => data.value?.feature_community ?? false)
-  const featureCaseSquare = computed(() => data.value?.feature_case_square ?? false)
+  const featureShowcase = computed(() => data.value?.feature_showcase ?? true)
   const featureAskOnce = computed(() => data.value?.feature_askonce ?? true)
-  const featureSchoolZone = computed(() => data.value?.feature_school_zone ?? false)
   const featureDebateverse = computed(() => data.value?.feature_debateverse ?? false)
   const featureKnowledgeSpace = computed(() => data.value?.feature_knowledge_space ?? false)
   const featureMindmapV2Canvas = computed(() => data.value?.feature_mindmap_v2_canvas ?? false)
@@ -53,9 +52,8 @@ export function useFeatureFlags() {
     featureCourse,
     featureTemplate,
     featureCommunity,
-    featureCaseSquare,
+    featureShowcase,
     featureAskOnce,
-    featureSchoolZone,
     featureDebateverse,
     featureKnowledgeSpace,
     featureMindmapV2Canvas,

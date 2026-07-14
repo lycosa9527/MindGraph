@@ -96,7 +96,6 @@ export default {
   'meta.pageTitle.notFound': 'Page not found',
   'meta.pageTitle.publicDashboard': 'Statistics',
   'meta.pageTitle.schoolDashboard': 'School dashboard',
-  'meta.pageTitle.schoolZone': 'School zone',
   'meta.pageTitle.smartResponse': 'Smart response',
   'meta.pageTitle.template': 'Templates',
   'meta.pageTitle.teacherUsage': 'Teacher usage',

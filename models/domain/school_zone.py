@@ -1,5 +1,6 @@
 """
-School Zone Models for MindGraph
+Legacy School Zone models for MindGraph (feature removed; tables retained for cleanup).
+
 Author: lycosa9527
 Made by: MindSpring Team
 

@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/locales/messages')
 const en = path.join(root, 'en')
 const dedicated = ['az', 'th', 'fr', 'af']
-const files = ['auth.ts', 'common.ts', 'mindmate.ts', 'sidebar.ts', 'thinkingCoins.ts', 'caseSquare.ts']
+const files = ['auth.ts', 'common.ts', 'mindmate.ts', 'sidebar.ts', 'thinkingCoins.ts', 'showcase.ts']
 
 for (const code of dedicated) {
   const destDir = path.join(root, code)

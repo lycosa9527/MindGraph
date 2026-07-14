@@ -72,8 +72,6 @@ export default {
   'admin.feature.mindmateExportHint': 'Superadmin panel to view and export web MindMate and DingTalk MindBot Dify history.',
   'admin.feature.ragChunkTest': 'RAG chunk test',
   'admin.feature.ragChunkTestHint': 'Benchmark tools inside knowledge space.',
-  'admin.feature.schoolZone': 'School zone',
-  'admin.feature.schoolZoneHint': 'Organization-scoped sharing.',
   'admin.feature.smartResponse': 'Smart response (devices)',
   'admin.feature.smartResponseHint': 'ESP32 / teacher watch integration.',
   'admin.feature.teacherUsage': 'Teacher usage analytics',

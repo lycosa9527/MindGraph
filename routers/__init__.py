@@ -27,7 +27,7 @@ from .admin import env_router as admin_env
 from .admin import logs_router as admin_logs
 from .admin import realtime_router as admin_realtime
 from .core import pages, update_notification, vue_spa
-from .features import askonce, debateverse, gewe, kitty, library, school_zone
+from .features import askonce, debateverse, gewe, kitty, library
 
 __all__ = [
     "api",
@@ -42,7 +42,6 @@ __all__ = [
     "kitty",
     "update_notification",
     "public_dashboard",
-    "school_zone",
     "askonce",
     "debateverse",
     "library",

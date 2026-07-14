@@ -726,7 +726,7 @@ export type EventTypes = {
   'admin:refresh_requested': { domain: string }
   'admin:mutation_completed': { domain: string; entityId?: number | string }
   'admin:toolbar_action': { action: string; tab: string; payload?: Record<string, unknown> }
-  'admin:case_square_updated': Record<string, never>
+  'admin:showcase_updated': Record<string, never>
 
   // Wildcard for any event (for debugging)
   '*': { event: string; data: unknown }

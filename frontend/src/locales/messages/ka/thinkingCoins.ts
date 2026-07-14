@@ -115,7 +115,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.plan.feature.trialCoins': '200 thinking tokens',
   'thinkingCoins.plan.feature.trialDiagrams': '20 diagram slots',
   'thinkingCoins.plan.feature.nonAi': 'All non-AI features',
-  'thinkingCoins.plan.feature.caseSquare': 'Case gallery',
+  'thinkingCoins.plan.feature.showcase': 'Case gallery',
   'thinkingCoins.plan.feature.paidCoins800': '800 tokens / month',
   'thinkingCoins.plan.feature.paidCoins900': '900 tokens / month',
   'thinkingCoins.plan.feature.storage1gb': '1 GB cloud storage',

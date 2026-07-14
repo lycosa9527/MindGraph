@@ -19,10 +19,9 @@ from config.settings import config
 _PATH_FLAG_ATTRS: tuple[tuple[str, str], ...] = (
     ("/api/auth/admin/teacher-usage", "FEATURE_TEACHER_USAGE"),
     ("/api/knowledge-space", "FEATURE_KNOWLEDGE_SPACE"),
-    ("/api/school-zone", "FEATURE_SCHOOL_ZONE"),
     ("/api/debateverse", "FEATURE_DEBATEVERSE"),
-    ("/api/auth/admin/case-square", "FEATURE_CASE_SQUARE"),
-    ("/api/case-square", "FEATURE_CASE_SQUARE"),
+    ("/api/auth/admin/showcase", "FEATURE_SHOWCASE"),
+    ("/api/showcase", "FEATURE_SHOWCASE"),
     ("/api/community", "FEATURE_COMMUNITY"),
     ("/api/library", "FEATURE_LIBRARY"),
     ("/api/askonce", "FEATURE_ASKONCE"),

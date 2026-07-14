@@ -23,7 +23,7 @@ async def _already_credited_for_case(db: AsyncSession, user_id: int, case_id: st
             select(ThinkingCoinLedger.id).where(
                 ThinkingCoinLedger.user_id == user_id,
                 ThinkingCoinLedger.reason == LEDGER_CASE,
-                ThinkingCoinLedger.ref_type == "case_square_post",
+                ThinkingCoinLedger.ref_type == "showcase_post",
                 ThinkingCoinLedger.ref_id == case_id,
             )
         )
@@ -80,7 +80,7 @@ async def try_publish_case_earn(
         user_id,
         amount,
         LEDGER_CASE,
-        ref_type="case_square_post",
+        ref_type="showcase_post",
         ref_id=case_id,
     )
     return amount, task.slug

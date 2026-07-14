@@ -141,7 +141,7 @@ export function planBadgeKeys(tier: PersonalPlanTier): string[] {
 export function planFeatureKeys(tier: PersonalPlanTier): string[] {
   const common = [
     'thinkingCoins.plan.feature.nonAi',
-    'thinkingCoins.plan.feature.caseSquare',
+    'thinkingCoins.plan.feature.showcase',
   ]
   if (tier === 'trial') {
     return [

@@ -20,7 +20,7 @@ import { refreshSessionAccessToken } from '@/utils/sessionRefresh'
 
 const API_BASE = '/api'
 
-/** Dev: bypass Vite proxy for multipart uploads (large case-square publishes). */
+/** Dev: bypass Vite proxy for multipart uploads (large showcase publishes). */
 function resolveUploadFetchTarget(endpoint: string): { url: string; credentials: RequestCredentials } {
   const path = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
   const devOrigin = typeof __DEV_API_ORIGIN__ === 'string' ? __DEV_API_ORIGIN__.trim() : ''
@@ -712,10 +712,10 @@ export async function deleteCommunityPostComment(
 }
 
 // =============================================================================
-// Case Square API Methods
+// Showcase API Methods
 // =============================================================================
 
-export interface CaseSquarePost {
+export interface ShowcasePost {
   id: string
   title: string
   description: string | null
@@ -764,7 +764,7 @@ export interface CaseSquarePost {
   can_expert_recommend?: boolean
 }
 
-export interface CaseSquareMeta {
+export interface ShowcaseMeta {
   subjects: string[]
   grades: string[]
   recommended_tags: string[]
@@ -772,15 +772,15 @@ export interface CaseSquareMeta {
   case_types: string[]
 }
 
-export interface CaseSquarePostList {
-  posts: CaseSquarePost[]
+export interface ShowcasePostList {
+  posts: ShowcasePost[]
   total: number
   page: number
   page_size: number
   total_pages: number
 }
 
-function normalizeCaseSquarePost(post: CaseSquarePost): CaseSquarePost {
+function normalizeShowcasePost(post: ShowcasePost): ShowcasePost {
   return {
     ...post,
     is_favorited: Boolean(post.is_favorited),
@@ -788,7 +788,7 @@ function normalizeCaseSquarePost(post: CaseSquarePost): CaseSquarePost {
   }
 }
 
-export async function getCaseSquarePosts(
+export async function getShowcasePosts(
   params: {
     page?: number
     pageSize?: number
@@ -804,7 +804,7 @@ export async function getCaseSquarePosts(
     favorited?: boolean
     status?: string
   } = {}
-): Promise<CaseSquarePostList> {
+): Promise<ShowcasePostList> {
   const searchParams = new URLSearchParams()
   searchParams.set('page', String(params.page ?? 1))
   searchParams.set('page_size', String(params.pageSize ?? 20))
@@ -820,34 +820,34 @@ export async function getCaseSquarePosts(
   if (params.favorited) searchParams.set('favorited', '1')
   if (params.status) searchParams.set('status', params.status)
 
-  const response = await apiGet(`/api/case-square/posts?${searchParams.toString()}`)
+  const response = await apiGet(`/api/showcase/posts?${searchParams.toString()}`)
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to fetch cases' }))
     throw new Error(err.detail || 'Failed to fetch cases')
   }
-  const data = (await response.json()) as CaseSquarePostList
+  const data = (await response.json()) as ShowcasePostList
   return {
     ...data,
-    posts: data.posts.map(normalizeCaseSquarePost),
+    posts: data.posts.map(normalizeShowcasePost),
   }
 }
 
-export async function getCaseSquarePost(
+export async function getShowcasePost(
   postId: string
-): Promise<CaseSquarePost & { spec?: unknown }> {
-  const response = await apiGet(`/api/case-square/posts/${postId}`)
+): Promise<ShowcasePost & { spec?: unknown }> {
+  const response = await apiGet(`/api/showcase/posts/${postId}`)
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to fetch case' }))
     throw new Error(parseApiErrorDetail(err, 'Failed to fetch case'))
   }
-  const data = (await response.json()) as CaseSquarePost & { spec?: unknown }
-  return normalizeCaseSquarePost(data)
+  const data = (await response.json()) as ShowcasePost & { spec?: unknown }
+  return normalizeShowcasePost(data)
 }
 
-export async function createCaseSquarePost(formData: FormData): Promise<{ message: string; post: CaseSquarePost }> {
+export async function createShowcasePost(formData: FormData): Promise<{ message: string; post: ShowcasePost }> {
   let response: Response
   try {
-    response = await apiUpload('/api/case-square/posts', formData)
+    response = await apiUpload('/api/showcase/posts', formData)
   } catch (e) {
     if (e instanceof Error && e.message === 'NETWORK_ERROR') {
       throw new Error('NETWORK_ERROR')
@@ -871,7 +871,7 @@ export async function createCaseSquarePost(formData: FormData): Promise<{ messag
   return response.json()
 }
 
-async function parseCaseSquareFormError(response: Response, fallback: string): Promise<never> {
+async function parseShowcaseFormError(response: Response, fallback: string): Promise<never> {
   const err = await response.json().catch(() => ({ detail: fallback }))
   const detail = err.detail
   const message =
@@ -883,17 +883,17 @@ async function parseCaseSquareFormError(response: Response, fallback: string): P
   throw new Error(message)
 }
 
-export async function updateCaseSquarePost(
+export async function updateShowcasePost(
   postId: string,
   formData: FormData
-): Promise<{ message: string; post: CaseSquarePost }> {
+): Promise<{ message: string; post: ShowcasePost }> {
   const id = postId.trim()
   if (!id) {
     throw new Error('Missing case id')
   }
   let response: Response
   try {
-    response = await apiPutFormData(`/api/case-square/posts/${id}`, formData)
+    response = await apiPutFormData(`/api/showcase/posts/${id}`, formData)
   } catch (e) {
     if (e instanceof Error && e.message === 'NETWORK_ERROR') {
       throw new Error('NETWORK_ERROR')
@@ -904,22 +904,22 @@ export async function updateCaseSquarePost(
     if (response.status === 401) {
       throw new Error('SESSION_EXPIRED')
     }
-    await parseCaseSquareFormError(response, 'Failed to update case')
+    await parseShowcaseFormError(response, 'Failed to update case')
   }
   return response.json()
 }
 
-export async function uploadCaseSquareGalleryImages(
+export async function uploadShowcaseGalleryImages(
   postId: string,
   formData: FormData
-): Promise<{ message: string; post: CaseSquarePost }> {
+): Promise<{ message: string; post: ShowcasePost }> {
   const id = postId.trim()
   if (!id) {
     throw new Error('Missing case id')
   }
   let response: Response
   try {
-    response = await apiUpload(`/api/case-square/posts/${id}/gallery-images`, formData)
+    response = await apiUpload(`/api/showcase/posts/${id}/gallery-images`, formData)
   } catch (e) {
     if (e instanceof Error && e.message === 'NETWORK_ERROR') {
       throw new Error('NETWORK_ERROR')
@@ -943,16 +943,16 @@ export async function uploadCaseSquareGalleryImages(
   const data = await response.json()
   return {
     message: data.message,
-    post: normalizeCaseSquarePost(data.post),
+    post: normalizeShowcasePost(data.post),
   }
 }
 
-export async function withdrawCaseSquarePost(postId: string): Promise<{ message: string }> {
+export async function withdrawShowcasePost(postId: string): Promise<{ message: string }> {
   const id = postId.trim()
   if (!id) {
     throw new Error('Missing case id')
   }
-  const response = await apiPost(`/api/case-square/posts/${id}/withdraw`, {})
+  const response = await apiPost(`/api/showcase/posts/${id}/withdraw`, {})
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to withdraw case' }))
     throw new Error(err.detail || 'Failed to withdraw case')
@@ -960,28 +960,28 @@ export async function withdrawCaseSquarePost(postId: string): Promise<{ message:
   return response.json()
 }
 
-export async function delistCaseSquarePost(
+export async function delistShowcasePost(
   postId: string
-): Promise<{ message: string; post: CaseSquarePost }> {
+): Promise<{ message: string; post: ShowcasePost }> {
   const id = postId.trim()
   if (!id) {
     throw new Error('Missing case id')
   }
-  const response = await apiPost(`/api/case-square/posts/${id}/delist`, {})
+  const response = await apiPost(`/api/showcase/posts/${id}/delist`, {})
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to delist case' }))
     throw new Error(err.detail || 'Failed to delist case')
   }
-  const data = (await response.json()) as { message: string; post: CaseSquarePost }
-  return { ...data, post: normalizeCaseSquarePost(data.post) }
+  const data = (await response.json()) as { message: string; post: ShowcasePost }
+  return { ...data, post: normalizeShowcasePost(data.post) }
 }
 
-export async function deleteCaseSquarePost(postId: string): Promise<{ message: string }> {
+export async function deleteShowcasePost(postId: string): Promise<{ message: string }> {
   const id = postId.trim()
   if (!id) {
     throw new Error('Missing case id')
   }
-  const response = await apiPost(`/api/case-square/posts/${id}/delete`, {})
+  const response = await apiPost(`/api/showcase/posts/${id}/delete`, {})
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to delete case' }))
     throw new Error(err.detail || 'Failed to delete case')
@@ -989,12 +989,12 @@ export async function deleteCaseSquarePost(postId: string): Promise<{ message: s
   return response.json()
 }
 
-export async function deleteAdminCaseSquarePost(postId: string): Promise<{ message: string }> {
+export async function deleteAdminShowcasePost(postId: string): Promise<{ message: string }> {
   const id = postId.trim()
   if (!id) {
     throw new Error('Missing case id')
   }
-  const response = await apiPost(`/api/auth/admin/case-square/posts/${id}/delete`, {})
+  const response = await apiPost(`/api/auth/admin/showcase/posts/${id}/delete`, {})
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to delete case' }))
     throw new Error(err.detail || 'Failed to delete case')
@@ -1002,10 +1002,10 @@ export async function deleteAdminCaseSquarePost(postId: string): Promise<{ messa
   return response.json()
 }
 
-export async function toggleCaseSquarePostLike(
+export async function toggleShowcasePostLike(
   postId: string
 ): Promise<{ liked: boolean; likes_count: number }> {
-  const response = await apiPost(`/api/case-square/posts/${postId}/like`, {})
+  const response = await apiPost(`/api/showcase/posts/${postId}/like`, {})
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to toggle like' }))
     throw new Error(err.detail || 'Failed to toggle like')
@@ -1013,28 +1013,28 @@ export async function toggleCaseSquarePostLike(
   return response.json()
 }
 
-export async function getCaseSquareFavoritePosts(
+export async function getShowcaseFavoritePosts(
   params: { page?: number; pageSize?: number } = {}
-): Promise<CaseSquarePostList> {
+): Promise<ShowcasePostList> {
   const searchParams = new URLSearchParams()
   searchParams.set('page', String(params.page ?? 1))
   searchParams.set('page_size', String(params.pageSize ?? 100))
-  const response = await apiGet(`/api/case-square/favorites?${searchParams.toString()}`)
+  const response = await apiGet(`/api/showcase/favorites?${searchParams.toString()}`)
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to fetch favorite cases' }))
     throw new Error(parseApiErrorDetail(err, 'Failed to fetch favorite cases'))
   }
-  const data = (await response.json()) as CaseSquarePostList
+  const data = (await response.json()) as ShowcasePostList
   return {
     ...data,
     posts: data.posts.map((post) => ({ ...post, is_favorited: true })),
   }
 }
 
-export async function toggleCaseSquarePostFavorite(
+export async function toggleShowcasePostFavorite(
   postId: string
 ): Promise<{ favorited: boolean }> {
-  const response = await apiPost(`/api/case-square/posts/${postId}/favorite`, {})
+  const response = await apiPost(`/api/showcase/posts/${postId}/favorite`, {})
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to toggle favorite' }))
     throw new Error(parseApiErrorDetail(err, 'Failed to toggle favorite'))
@@ -1042,10 +1042,10 @@ export async function toggleCaseSquarePostFavorite(
   return response.json()
 }
 
-export async function toggleCaseSquareExpertRecommend(
+export async function toggleShowcaseExpertRecommend(
   postId: string
-): Promise<{ is_expert_recommended: boolean; post: CaseSquarePost }> {
-  const response = await apiPost(`/api/case-square/posts/${postId}/recommend`, {})
+): Promise<{ is_expert_recommended: boolean; post: ShowcasePost }> {
+  const response = await apiPost(`/api/showcase/posts/${postId}/recommend`, {})
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to update recommendation' }))
     throw new Error(parseApiErrorDetail(err, 'Failed to update recommendation'))
@@ -1053,16 +1053,16 @@ export async function toggleCaseSquareExpertRecommend(
   return response.json()
 }
 
-export async function reviewCaseSquarePost(
+export async function reviewShowcasePost(
   postId: string,
   action: 'approve' | 'reject',
   rejectionReason?: string
-): Promise<{ message: string; credited_coins: number; post: CaseSquarePost }> {
+): Promise<{ message: string; credited_coins: number; post: ShowcasePost }> {
   const id = postId.trim()
   if (!id) {
     throw new Error('Missing case id')
   }
-  const response = await apiPost(`/api/case-square/posts/${id}/review`, {
+  const response = await apiPost(`/api/showcase/posts/${id}/review`, {
     action,
     rejection_reason: rejectionReason ?? null,
   })
@@ -1073,16 +1073,16 @@ export async function reviewCaseSquarePost(
   return response.json()
 }
 
-export async function reviewAdminCaseSquarePost(
+export async function reviewAdminShowcasePost(
   postId: string,
   action: 'approve' | 'reject',
   rejectionReason?: string
-): Promise<{ message: string; credited_coins: number; post: CaseSquarePost }> {
+): Promise<{ message: string; credited_coins: number; post: ShowcasePost }> {
   const id = postId.trim()
   if (!id) {
     throw new Error('Missing case id')
   }
-  const response = await apiPost(`/api/auth/admin/case-square/posts/${id}/review`, {
+  const response = await apiPost(`/api/auth/admin/showcase/posts/${id}/review`, {
     action,
     rejection_reason: rejectionReason ?? null,
   })
@@ -1093,12 +1093,12 @@ export async function reviewAdminCaseSquarePost(
   return response.json()
 }
 
-export async function getCaseSquarePendingCount(): Promise<{
+export async function getShowcasePendingCount(): Promise<{
   count: number
   pending: number
   rejected: number
 }> {
-  const response = await apiGet('/api/case-square/pending/count')
+  const response = await apiGet('/api/showcase/pending/count')
   if (!response.ok) {
     return { count: 0, pending: 0, rejected: 0 }
   }
@@ -1108,15 +1108,15 @@ export async function getCaseSquarePendingCount(): Promise<{
   return { count: pending, pending, rejected }
 }
 
-export async function getCaseSquareMeta(): Promise<CaseSquareMeta> {
-  const response = await apiGet('/api/case-square/meta')
+export async function getShowcaseMeta(): Promise<ShowcaseMeta> {
+  const response = await apiGet('/api/showcase/meta')
   if (!response.ok) {
-    throw new Error('Failed to load case square meta')
+    throw new Error('Failed to load showcase meta')
   }
   return response.json()
 }
 
-export interface CaseSquareStatsOverview {
+export interface ShowcaseStatsOverview {
   pending: number
   approved_total: number
   rejected_total: number
@@ -1134,17 +1134,17 @@ export interface CaseSquareStatsOverview {
   period_days: number
 }
 
-export async function getAdminCaseSquareStats(): Promise<CaseSquareStatsOverview> {
-  const response = await apiGet('/api/auth/admin/case-square/stats/overview')
+export async function getAdminShowcaseStats(): Promise<ShowcaseStatsOverview> {
+  const response = await apiGet('/api/auth/admin/showcase/stats/overview')
   if (!response.ok) {
-    const err = await response.json().catch(() => ({ detail: 'Failed to load case square stats' }))
+    const err = await response.json().catch(() => ({ detail: 'Failed to load showcase stats' }))
     const detail = err.detail
-    throw new Error(typeof detail === 'string' ? detail : 'Failed to load case square stats')
+    throw new Error(typeof detail === 'string' ? detail : 'Failed to load showcase stats')
   }
   return response.json()
 }
 
-export interface CaseSquareStaffGrantRow {
+export interface ShowcaseStaffGrantRow {
   id: number | null
   user_id: number
   user_name: string | null
@@ -1159,11 +1159,11 @@ export interface CaseSquareStaffGrantRow {
   editable?: boolean
 }
 
-export async function getAdminCaseSquareStaffGrants(): Promise<{
-  grants: CaseSquareStaffGrantRow[]
-  builtin: CaseSquareStaffGrantRow[]
+export async function getAdminShowcaseStaffGrants(): Promise<{
+  grants: ShowcaseStaffGrantRow[]
+  builtin: ShowcaseStaffGrantRow[]
 }> {
-  const response = await apiGet('/api/auth/admin/case-square/staff-grants')
+  const response = await apiGet('/api/auth/admin/showcase/staff-grants')
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to load staff grants' }))
     throw new Error(typeof err.detail === 'string' ? err.detail : 'Failed to load staff grants')
@@ -1171,12 +1171,12 @@ export async function getAdminCaseSquareStaffGrants(): Promise<{
   return response.json()
 }
 
-export async function saveAdminCaseSquareStaffGrant(body: {
+export async function saveAdminShowcaseStaffGrant(body: {
   user_id: number
   permissions: string[]
   note?: string
 }): Promise<void> {
-  const response = await apiPost('/api/auth/admin/case-square/staff-grants', body)
+  const response = await apiPost('/api/auth/admin/showcase/staff-grants', body)
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to save grant' }))
     const detail = err.detail
@@ -1184,14 +1184,14 @@ export async function saveAdminCaseSquareStaffGrant(body: {
   }
 }
 
-export async function deleteAdminCaseSquareStaffGrant(userId: number): Promise<void> {
-  const response = await apiDelete(`/api/auth/admin/case-square/staff-grants/${userId}`)
+export async function deleteAdminShowcaseStaffGrant(userId: number): Promise<void> {
+  const response = await apiDelete(`/api/auth/admin/showcase/staff-grants/${userId}`)
   if (!response.ok) {
     throw new Error('Failed to delete grant')
   }
 }
 
-export interface CaseSquareFieldOptionRow {
+export interface ShowcaseFieldOptionRow {
   id: number
   category: string
   value: string
@@ -1201,35 +1201,35 @@ export interface CaseSquareFieldOptionRow {
   is_active: boolean
 }
 
-export async function getAdminCaseSquareFieldOptions(includeInactive = true): Promise<{
-  options: CaseSquareFieldOptionRow[]
+export async function getAdminShowcaseFieldOptions(includeInactive = true): Promise<{
+  options: ShowcaseFieldOptionRow[]
 }> {
   const params = includeInactive ? '?include_inactive=true' : ''
-  const response = await apiGet(`/api/auth/admin/case-square/field-options${params}`)
+  const response = await apiGet(`/api/auth/admin/showcase/field-options${params}`)
   if (!response.ok) {
     throw new Error('Failed to load field options')
   }
   return response.json()
 }
 
-export async function createAdminCaseSquareFieldOption(body: {
+export async function createAdminShowcaseFieldOption(body: {
   category: string
   value: string
   label_zh?: string
   sort_order?: number
   is_active?: boolean
 }): Promise<void> {
-  const response = await apiPost('/api/auth/admin/case-square/field-options', body)
+  const response = await apiPost('/api/auth/admin/showcase/field-options', body)
   if (!response.ok) {
     throw new Error('Failed to create field option')
   }
 }
 
-export async function patchAdminCaseSquareFieldOption(
+export async function patchAdminShowcaseFieldOption(
   id: number,
   body: Partial<{ label_zh: string; sort_order: number; is_active: boolean }>
 ): Promise<void> {
-  const response = await apiRequest(`/api/auth/admin/case-square/field-options/${id}`, {
+  const response = await apiRequest(`/api/auth/admin/showcase/field-options/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -1239,17 +1239,17 @@ export async function patchAdminCaseSquareFieldOption(
   }
 }
 
-export async function deleteAdminCaseSquareFieldOption(id: number): Promise<void> {
-  const response = await apiDelete(`/api/auth/admin/case-square/field-options/${id}`)
+export async function deleteAdminShowcaseFieldOption(id: number): Promise<void> {
+  const response = await apiDelete(`/api/auth/admin/showcase/field-options/${id}`)
   if (!response.ok) {
     throw new Error('Failed to delete field option')
   }
 }
 
-export async function proxyCreateCaseSquarePost(formData: FormData): Promise<{ post: CaseSquarePost }> {
+export async function proxyCreateShowcasePost(formData: FormData): Promise<{ post: ShowcasePost }> {
   let response: Response
   try {
-    response = await apiUpload('/api/auth/admin/case-square/posts/proxy', formData)
+    response = await apiUpload('/api/auth/admin/showcase/posts/proxy', formData)
   } catch (e) {
     if (e instanceof Error && e.message === 'NETWORK_ERROR') {
       throw new Error('NETWORK_ERROR')

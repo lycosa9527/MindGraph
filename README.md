@@ -56,8 +56,8 @@ AI-powered diagram generation platform. Transform natural language into professi
 - International landing page with Chinese / International UI version toggle
 - Knowledge Space (RAG) for document management and retrieval
 - Library with image-based document viewing
-- DebateVerse and AskOnce AI features
-- School Zone and teacher usage tracking
+- DebateVerse, AskOnce, and Showcase AI features
+- Teacher usage tracking
 
 **Internationalization**
 

@@ -37,9 +37,8 @@ interface FeatureFlagsResponse {
   feature_course: boolean
   feature_template: boolean
   feature_community: boolean
-  feature_case_square: boolean
+  feature_showcase: boolean
   feature_askonce: boolean
-  feature_school_zone: boolean
   feature_debateverse: boolean
   feature_knowledge_space: boolean
   feature_mindmap_v2_canvas: boolean
@@ -93,9 +92,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_course: false,
           feature_template: false,
           feature_community: false,
-          feature_case_square: false,
+          feature_showcase: true,
           feature_askonce: true,
-          feature_school_zone: false,
           feature_debateverse: false,
           feature_knowledge_space: false,
           feature_mindmap_v2_canvas: false,
@@ -153,9 +151,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_course: false,
         feature_template: false,
         feature_community: false,
-        feature_case_square: false,
+        feature_showcase: true,
         feature_askonce: true,
-        feature_school_zone: false,
         feature_debateverse: false,
         feature_knowledge_space: false,
         feature_mindmap_v2_canvas: false,
@@ -203,16 +200,12 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_community ?? true
   }
 
-  function getFeatureCaseSquare(): boolean {
-    return flags.value?.feature_case_square ?? false
+  function getFeatureShowcase(): boolean {
+    return flags.value?.feature_showcase ?? true
   }
 
   function getFeatureAskOnce(): boolean {
     return flags.value?.feature_askonce ?? true
-  }
-
-  function getFeatureSchoolZone(): boolean {
-    return flags.value?.feature_school_zone ?? true
   }
 
   function getFeatureDebateverse(): boolean {
@@ -296,9 +289,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureCourse,
     getFeatureTemplate,
     getFeatureCommunity,
-    getFeatureCaseSquare,
+    getFeatureShowcase,
     getFeatureAskOnce,
-    getFeatureSchoolZone,
     getFeatureDebateverse,
     getFeatureKnowledgeSpace,
     getFeatureMindmapV2Canvas,

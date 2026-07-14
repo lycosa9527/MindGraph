@@ -1,0 +1,63 @@
+"""
+Showcase permission helpers — re-exports async grant-aware checks.
+"""
+
+from __future__ import annotations
+
+from services.showcase.staff_permissions import (
+    ALL_SHOWCASE_PERMS,
+    PERM_DASHBOARD,
+    PERM_DELETE,
+    PERM_FIELDS,
+    PERM_PERMISSIONS,
+    PERM_PUBLISH_PROXY,
+    PERM_RECOMMEND,
+    PERM_REVIEW,
+    can_delete_case,
+    can_delist_case,
+    can_edit_case,
+    can_expert_recommend,
+    can_manage_fields,
+    can_manage_permissions,
+    can_publish_case,
+    can_publish_proxy,
+    can_resubmit_case,
+    can_review_case,
+    can_user_review_post,
+    can_view_case_staff_meta,
+    can_view_dashboard,
+    can_view_non_approved_post,
+    can_withdraw_case,
+    showcase_panel_capabilities,
+    load_user_showcase_permissions,
+    VALID_GRANT_PERMISSIONS,
+)
+
+__all__ = [
+    "ALL_SHOWCASE_PERMS",
+    "PERM_DASHBOARD",
+    "PERM_DELETE",
+    "PERM_FIELDS",
+    "PERM_PERMISSIONS",
+    "PERM_PUBLISH_PROXY",
+    "PERM_RECOMMEND",
+    "PERM_REVIEW",
+    "can_delete_case",
+    "can_delist_case",
+    "can_edit_case",
+    "can_expert_recommend",
+    "can_manage_fields",
+    "can_manage_permissions",
+    "can_publish_case",
+    "can_publish_proxy",
+    "can_resubmit_case",
+    "can_review_case",
+    "can_user_review_post",
+    "can_view_case_staff_meta",
+    "can_view_dashboard",
+    "can_view_non_approved_post",
+    "can_withdraw_case",
+    "showcase_panel_capabilities",
+    "load_user_showcase_permissions",
+    "VALID_GRANT_PERMISSIONS",
+]

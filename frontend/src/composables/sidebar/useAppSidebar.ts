@@ -28,14 +28,14 @@ import {
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminFeatureDevNav } from '@/composables/admin/useAdminFeatureDevNav'
 import { defaultFeatureDevSubtab } from '@/composables/admin/adminFeatureDevNav'
-import { defaultCaseSquareSubtab } from '@/composables/admin/adminCaseSquareNav'
+import { defaultShowcaseSubtab } from '@/composables/admin/adminShowcaseNav'
 import { useAdminSettingsNav } from '@/composables/admin/useAdminSettingsNav'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
-import { getCaseSquarePendingCount } from '@/utils/apiClient'
+import { getShowcasePendingCount } from '@/utils/apiClient'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
@@ -67,9 +67,8 @@ export function useAppSidebar() {
     featureCourse,
     featureTemplate,
     featureCommunity,
-    featureCaseSquare,
+    featureShowcase,
     featureAskOnce,
-    featureSchoolZone,
     featureDebateverse,
     featureKnowledgeSpace,
     featureLibrary,
@@ -103,10 +102,9 @@ export function useAppSidebar() {
     if (path.startsWith('/chunk-test')) return 'chunk-test'
     if (path.startsWith('/askonce')) return 'askonce'
     if (path.startsWith('/debateverse')) return 'debateverse'
-    if (path.startsWith('/school-zone')) return 'school-zone'
     if (path.startsWith('/template')) return 'template'
     if (path.startsWith('/course')) return 'course'
-    if (path.startsWith('/case-square')) return 'case-square'
+    if (path.startsWith('/showcase')) return 'showcase'
     if (path.startsWith('/community')) return 'community'
     if (path.startsWith('/library')) return 'library'
     if (
@@ -142,22 +140,22 @@ export function useAppSidebar() {
   const { can, canViewSettingsSubtab, capabilities } = useAdminAccess()
   const expandedPanel = ref<string | null>(null)
   const dataCenterNavExpanded = ref(false)
-  const caseSquarePendingCount = ref(0)
-  const caseSquareRejectedCount = ref(0)
+  const showcasePendingCount = ref(0)
+  const showcaseRejectedCount = ref(0)
 
-  async function refreshCaseSquarePendingCount(): Promise<void> {
-    if (!featureCaseSquare.value || !can('tab.case_square.edit') || !authStore.isAuthenticated) {
-      caseSquarePendingCount.value = 0
-      caseSquareRejectedCount.value = 0
+  async function refreshShowcasePendingCount(): Promise<void> {
+    if (!featureShowcase.value || !can('tab.showcase.edit') || !authStore.isAuthenticated) {
+      showcasePendingCount.value = 0
+      showcaseRejectedCount.value = 0
       return
     }
     try {
-      const res = await getCaseSquarePendingCount()
-      caseSquarePendingCount.value = res.pending
-      caseSquareRejectedCount.value = res.rejected
+      const res = await getShowcasePendingCount()
+      showcasePendingCount.value = res.pending
+      showcaseRejectedCount.value = res.rejected
     } catch {
-      caseSquarePendingCount.value = 0
-      caseSquareRejectedCount.value = 0
+      showcasePendingCount.value = 0
+      showcaseRejectedCount.value = 0
     }
   }
 
@@ -327,11 +325,10 @@ export function useAppSidebar() {
     'chunk-test': '/chunk-test',
     askonce: '/askonce',
     debateverse: '/debateverse',
-    'school-zone': '/school-zone',
     template: '/template',
     course: '/course',
     community: '/community',
-    'case-square': '/case-square',
+    'showcase': '/showcase',
     library: '/library',
     admin: '/admin',
     'workshop-chat': '/workshop-chat',
@@ -377,11 +374,11 @@ export function useAppSidebar() {
     if (tabName === 'settings') {
       query.subtab = settingsNav.currentSettingsSubtab.value ?? 'roles'
     }
-    if (tabName === 'case_square') {
+    if (tabName === 'showcase') {
       query.subtab =
         typeof router.currentRoute.value.query.subtab === 'string'
           ? router.currentRoute.value.query.subtab
-          : defaultCaseSquareSubtab()
+          : defaultShowcaseSubtab()
       if (query.subtab === 'moderation') {
         query.queue = 'pending'
       }
@@ -662,15 +659,15 @@ export function useAppSidebar() {
   })
   onScopeDispose(offThinkingCoinMutation)
 
-  const offCaseSquareUpdated = eventBus.on('admin:case_square_updated', () => {
-    void refreshCaseSquarePendingCount()
+  const offShowcaseUpdated = eventBus.on('admin:showcase_updated', () => {
+    void refreshShowcasePendingCount()
   })
-  onScopeDispose(offCaseSquareUpdated)
+  onScopeDispose(offShowcaseUpdated)
 
   watch(
-    () => [authStore.isAuthenticated, featureCaseSquare.value, can('tab.case_square.edit')] as const,
+    () => [authStore.isAuthenticated, featureShowcase.value, can('tab.showcase.edit')] as const,
     () => {
-      void refreshCaseSquarePendingCount()
+      void refreshShowcasePendingCount()
     },
     { immediate: true }
   )
@@ -679,7 +676,7 @@ export function useAppSidebar() {
     () => authStore.adminCapabilitiesLoaded,
     (loaded) => {
       if (loaded) {
-        void refreshCaseSquarePendingCount()
+        void refreshShowcasePendingCount()
       }
     }
   )
@@ -697,9 +694,8 @@ export function useAppSidebar() {
     featureCourse,
     featureTemplate,
     featureCommunity,
-    featureCaseSquare,
+    featureShowcase,
     featureAskOnce,
-    featureSchoolZone,
     featureDebateverse,
     featureKnowledgeSpace,
     hideKnowledgeSpaceNav: HIDE_KNOWLEDGE_SPACE_NAV,
@@ -720,8 +716,8 @@ export function useAppSidebar() {
     isManagementPanelUser,
     adminNavTabs,
     singleAdminNavTab,
-    caseSquarePendingCount,
-    caseSquareRejectedCount,
+    showcasePendingCount,
+    showcaseRejectedCount,
     showManagementPanelSubnav,
     openDirectAdminTab,
     currentAdminTab,

@@ -1,7 +1,7 @@
 import { type ComputedRef, type Ref, computed } from 'vue'
 
 import {
-  caseSquareReaderLockRef,
+  showcaseReaderLockRef,
   presentationDiagramEditLockedRef,
 } from '@/composables/presentation/presentationDiagramEdit'
 import { learningSheetPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
@@ -58,7 +58,7 @@ export function useDiagramCanvasVueFlowUi(
   const presentationDiagramEditLocked = computed(
     () =>
       presentationDiagramEditLockedRef.value ||
-      caseSquareReaderLockRef.value ||
+      showcaseReaderLockRef.value ||
       (presentationRailOpen.value && !presentationPointerEditMode.value)
   )
 

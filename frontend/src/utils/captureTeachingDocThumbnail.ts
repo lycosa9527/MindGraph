@@ -5,7 +5,7 @@ import {
   acceptThumbnailBlob,
   dataUrlToPngBlob,
   isValidThumbnailBlob,
-} from '@/components/caseSquare/caseSquareShared'
+} from '@/components/showcase/showcaseShared'
 import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
 import { renderDocxPreview } from '@/utils/renderDocxPreview'
 
@@ -57,9 +57,9 @@ async function waitForDocxPreviewPaint(host: HTMLElement): Promise<HTMLElement |
   while (Date.now() < deadline) {
     await waitForNextPaint()
     const firstPage =
-      (host.querySelector('.case-square-docx-wrapper section') as HTMLElement | null) ??
-      (host.querySelector('.case-square-docx-wrapper article') as HTMLElement | null) ??
-      (host.querySelector('.case-square-docx-wrapper') as HTMLElement | null)
+      (host.querySelector('.showcase-docx-wrapper section') as HTMLElement | null) ??
+      (host.querySelector('.showcase-docx-wrapper article') as HTMLElement | null) ??
+      (host.querySelector('.showcase-docx-wrapper') as HTMLElement | null)
     if (firstPage && firstPage.scrollHeight > 48 && firstPage.textContent?.trim()) {
       await new Promise((resolve) => setTimeout(resolve, 250))
       return firstPage

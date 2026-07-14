@@ -172,27 +172,16 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'main', ...pageTitle('course') },
   },
   {
-    path: '/case-square',
-    name: 'CaseSquare',
-    component: () => import('@/pages/CaseSquarePage.vue'),
-    meta: { requiresAuth: true, layout: 'main', ...pageTitle('caseSquare') },
+    path: '/showcase',
+    name: 'Showcase',
+    component: () => import('@/pages/ShowcasePage.vue'),
+    meta: { requiresAuth: true, layout: 'main', ...pageTitle('showcase') },
   },
   {
     path: '/community',
     name: 'Community',
     component: () => import('@/pages/CommunityPage.vue'),
     meta: { requiresAuth: true, layout: 'main', ...pageTitle('community') },
-  },
-  {
-    path: '/school-zone',
-    name: 'SchoolZone',
-    component: () => import('@/pages/SchoolZonePage.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresOrganization: true,
-      layout: 'main',
-      ...pageTitle('schoolZone'),
-    },
   },
   {
     path: '/school-dashboard',
@@ -486,7 +475,7 @@ router.beforeEach(async (to, from) => {
   if (to.name === 'Template' && !featureFlagsStore.getFeatureTemplate()) {
     return { name: 'MindMate' }
   }
-  if (to.name === 'CaseSquare' && !featureFlagsStore.getFeatureCaseSquare()) {
+  if (to.name === 'Showcase' && !featureFlagsStore.getFeatureShowcase()) {
     return { name: 'MindMate' }
   }
   if (to.name === 'Community' && !featureFlagsStore.getFeatureCommunity()) {
@@ -496,9 +485,6 @@ router.beforeEach(async (to, from) => {
     return { name: 'MindMate' }
   }
   if (to.name === 'DebateVerse' && !featureFlagsStore.getFeatureDebateverse()) {
-    return { name: 'MindMate' }
-  }
-  if (to.name === 'SchoolZone' && !featureFlagsStore.getFeatureSchoolZone()) {
     return { name: 'MindMate' }
   }
   if (to.name === 'KnowledgeSpace' && (!featureFlagsStore.getFeatureKnowledgeSpace() || HIDE_KNOWLEDGE_SPACE_NAV)) {

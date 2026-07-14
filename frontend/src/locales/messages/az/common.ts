@@ -216,7 +216,6 @@ export default {
   'meta.pageTitle.privacy': 'Terms & Privacy',
   'meta.pageTitle.publicDashboard': 'Statistika',
   'meta.pageTitle.schoolDashboard': 'Məktəb paneli',
-  'meta.pageTitle.schoolZone': 'Məktəb zonası',
   'meta.pageTitle.smartResponse': 'Ağıllı cavab',
   'meta.pageTitle.template': 'Şablonlar',
   'meta.pageTitle.thinkingCoinsUpgrade': 'Upgrade membership',

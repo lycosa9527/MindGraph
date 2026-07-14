@@ -85,7 +85,8 @@ describe('remapMindMapNodeIdAfterReload', () => {
     ).toBe('branch-l-1-0')
   })
 
-  it('remaps measured dimensions and seeds estimates after tree rebuild', () => {
+  it('keeps measured sizes across sibling insert and only estimates the new node', () => {
+    // Before: A, B. Enter below A → A, New Branch, B (path indices for B shift).
     const oldNodes: DiagramNode[] = [
       { id: 'topic', text: 'Root', type: 'topic' },
       { id: 'branch-r-1-0', text: 'A', type: 'branch' },
@@ -96,16 +97,21 @@ describe('remapMindMapNodeIdAfterReload', () => {
       { id: 'c1', source: 'topic', target: 'branch-r-1-1' },
     ]
     const newNodes: DiagramNode[] = [
-      { id: 'topic', text: 'Root', type: 'topic' },
+      {
+        id: 'topic',
+        text: 'Root',
+        type: 'topic',
+        data: { estimatedWidth: 100, estimatedHeight: 40 },
+      },
       {
         id: 'branch-r-1-0',
-        text: '你好',
+        text: 'A',
         type: 'branch',
-        data: { estimatedWidth: 88, estimatedHeight: 28 },
+        data: { estimatedWidth: 60, estimatedHeight: 28 },
       },
       {
         id: 'branch-r-1-1',
-        text: '新分支',
+        text: 'New Branch',
         type: 'branch',
         data: { estimatedWidth: 96, estimatedHeight: 28 },
       },
@@ -113,7 +119,7 @@ describe('remapMindMapNodeIdAfterReload', () => {
         id: 'branch-r-1-2',
         text: 'B',
         type: 'branch',
-        data: { estimatedWidth: 72, estimatedHeight: 28 },
+        data: { estimatedWidth: 50, estimatedHeight: 28 },
       },
     ]
     const newConnections: Connection[] = [
@@ -122,18 +128,32 @@ describe('remapMindMapNodeIdAfterReload', () => {
       { id: 'c2', source: 'topic', target: 'branch-r-1-2' },
     ]
 
+    expect(
+      remapMindMapNodeIdAfterReload(
+        'branch-r-1-1',
+        oldNodes,
+        oldConnections,
+        newNodes,
+        newConnections
+      )
+    ).toBe('branch-r-1-2')
+
     const remapped = remapMindMapMeasuredDimensionsAfterReload(
-      { 'branch-r-1-0': 120, 'branch-r-1-1': 80 },
-      { 'branch-r-1-0': 34, 'branch-r-1-1': 34 },
+      { topic: 180, 'branch-r-1-0': 120, 'branch-r-1-1': 80 },
+      { topic: 48, 'branch-r-1-0': 34, 'branch-r-1-1': 34 },
       oldNodes,
       oldConnections,
       newNodes,
       newConnections
     )
 
-    expect(remapped.widths['branch-r-1-0']).toBe(88)
-    expect(remapped.heights['branch-r-1-0']).toBe(28)
+    expect(remapped.widths.topic).toBe(180)
+    expect(remapped.heights.topic).toBe(48)
+    expect(remapped.widths['branch-r-1-0']).toBe(120)
+    expect(remapped.heights['branch-r-1-0']).toBe(34)
+    expect(remapped.widths['branch-r-1-2']).toBe(80)
+    expect(remapped.heights['branch-r-1-2']).toBe(34)
     expect(remapped.widths['branch-r-1-1']).toBe(96)
-    expect(remapped.widths['branch-r-1-2']).toBe(72)
+    expect(remapped.heights['branch-r-1-1']).toBe(28)
   })
 })

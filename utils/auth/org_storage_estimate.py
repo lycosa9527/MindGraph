@@ -89,7 +89,7 @@ async def org_diagram_storage_estimate(db: AsyncSession, org_id: int) -> dict[st
     Sums PostgreSQL stored bytes for:
     - active member diagrams (spec + thumbnail)
     - diagram version snapshots (spec)
-    - active school-zone shared diagrams (diagram_data + thumbnail)
+    - legacy org shared diagrams (diagram_data + thumbnail)
 
     Uses pg_column_size on PostgreSQL (includes JSONB/TOAST storage). This is an
     estimate: it excludes indexes, row metadata, and other non-diagram org assets.

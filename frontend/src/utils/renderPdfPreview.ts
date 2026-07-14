@@ -1,7 +1,7 @@
 import { gunzipSync } from 'fflate'
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
 
-import { stampWatermarkOnElement } from '@/utils/caseSquareWatermark'
+import { stampWatermarkOnElement } from '@/utils/showcaseWatermark'
 
 let workerConfigured = false
 
@@ -72,7 +72,7 @@ async function renderPdfCanvas(
     const page = await pdf.getPage(pageNum)
     const viewport = page.getViewport({ scale })
     const canvas = document.createElement('canvas')
-    canvas.className = 'case-square-pdf-page mx-auto block max-w-full shadow-sm'
+    canvas.className = 'showcase-pdf-page mx-auto block max-w-full shadow-sm'
     const context = canvas.getContext('2d')
     if (!context) continue
     canvas.width = viewport.width
@@ -80,7 +80,7 @@ async function renderPdfCanvas(
     await page.render({ canvasContext: context, viewport }).promise
 
     const pageWrap = document.createElement('div')
-    pageWrap.className = 'case-square-pdf-page-wrap case-square-watermark-host relative mx-auto mb-4 max-w-full'
+    pageWrap.className = 'showcase-pdf-page-wrap showcase-watermark-host relative mx-auto mb-4 max-w-full'
     pageWrap.appendChild(canvas)
     if (watermarkText?.trim()) {
       stampWatermarkOnElement(pageWrap, watermarkText.trim())
@@ -95,7 +95,7 @@ function renderPdfBlobIframe(data: Uint8Array, container: HTMLElement): () => vo
   const blob = new Blob([data.slice()], { type: 'application/pdf' })
   const objectUrl = URL.createObjectURL(blob)
   const iframe = document.createElement('iframe')
-  iframe.className = 'case-square-pdf-frame block w-full min-h-[70vh] border-0 bg-white'
+  iframe.className = 'showcase-pdf-frame block w-full min-h-[70vh] border-0 bg-white'
   iframe.title = 'PDF preview'
   iframe.src = `${objectUrl}#toolbar=0&navpanes=0&view=FitH`
   container.appendChild(iframe)

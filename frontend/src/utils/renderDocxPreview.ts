@@ -1,6 +1,6 @@
 import { renderAsync } from 'docx-preview'
 
-import { stampWatermarksInContainer } from '@/utils/caseSquareWatermark'
+import { stampWatermarksInContainer } from '@/utils/showcaseWatermark'
 
 function normalizeDocxSurfaceColors(container: HTMLElement): void {
   container.querySelectorAll<HTMLElement>('[style]').forEach((el) => {
@@ -27,7 +27,7 @@ export async function renderDocxPreview(
 ): Promise<void> {
   container.replaceChildren()
   await renderAsync(blob, container, container, {
-    className: 'case-square-docx',
+    className: 'showcase-docx',
     inWrapper: true,
     ignoreWidth: false,
     ignoreHeight: false,
@@ -44,11 +44,11 @@ export async function renderDocxPreview(
     stampWatermarksInContainer(
       container,
       watermarkText.trim(),
-      '.case-square-docx-wrapper section, .case-square-docx-wrapper article, .case-square-docx-wrapper .docx, .case-square-docx-wrapper > div'
+      '.showcase-docx-wrapper section, .showcase-docx-wrapper article, .showcase-docx-wrapper .docx, .showcase-docx-wrapper > div'
     )
-    if (!container.querySelector('.case-square-page-watermark')) {
+    if (!container.querySelector('.showcase-page-watermark')) {
       const host =
-        container.querySelector<HTMLElement>('.case-square-docx-wrapper') ?? container
+        container.querySelector<HTMLElement>('.showcase-docx-wrapper') ?? container
       stampWatermarksInContainer(host, watermarkText.trim(), ':scope > section, :scope > article, :scope > div')
     }
   }

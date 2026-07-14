@@ -54,18 +54,18 @@ logger = logging.getLogger(__name__)
 
 # Maximum request body size (5MB) - prevents DoS attacks via large payloads
 MAX_REQUEST_BODY_SIZE = 5 * 1024 * 1024  # 5MB
-# Case Square publish: doc + optional videos (see case_square_helpers VIDEO_MAX_BYTES)
-CASE_SQUARE_MAX_BODY_SIZE = 105 * 1024 * 1024  # 100MB + multipart overhead
+# Showcase publish: doc + optional videos (see showcase_helpers VIDEO_MAX_BYTES)
+SHOWCASE_MAX_BODY_SIZE = 105 * 1024 * 1024  # 100MB + multipart overhead
 
 
 def max_request_body_size_for_path(path: str) -> int:
-    """Per-route body limit; case-square publish allows large teaching attachments."""
-    if path == "/api/case-square/posts":
-        return CASE_SQUARE_MAX_BODY_SIZE
-    if path.startswith("/api/case-square/posts/"):
-        return CASE_SQUARE_MAX_BODY_SIZE
-    if path == "/api/auth/admin/case-square/posts/proxy":
-        return CASE_SQUARE_MAX_BODY_SIZE
+    """Per-route body limit; showcase publish allows large teaching attachments."""
+    if path == "/api/showcase/posts":
+        return SHOWCASE_MAX_BODY_SIZE
+    if path.startswith("/api/showcase/posts/"):
+        return SHOWCASE_MAX_BODY_SIZE
+    if path == "/api/auth/admin/showcase/posts/proxy":
+        return SHOWCASE_MAX_BODY_SIZE
     return MAX_REQUEST_BODY_SIZE
 
 
@@ -74,20 +74,20 @@ def is_https(request: Request) -> bool:
     return request_is_https(request)
 
 
-_EMBEDDABLE_CASE_SQUARE_SUFFIXES = (".pdf", ".doc", ".docx")
+_EMBEDDABLE_SHOWCASE_SUFFIXES = (".pdf", ".doc", ".docx")
 _STREAMING_STATIC_SUFFIXES = (".mp4", ".webm", ".mov", ".m4v", ".m4a")
 
 
-def allows_same_origin_case_square_frame(path: str) -> bool:
-    """Case Square teaching attachments may be previewed in same-origin iframes."""
+def allows_same_origin_showcase_frame(path: str) -> bool:
+    """Showcase teaching attachments may be previewed in same-origin iframes."""
     # Public static mount is blocked; assets are served via authenticated API.
-    if path.startswith("/api/case-square/assets/"):
+    if path.startswith("/api/showcase/assets/"):
         lower = path.lower()
-        return lower.endswith(_EMBEDDABLE_CASE_SQUARE_SUFFIXES)
+        return lower.endswith(_EMBEDDABLE_SHOWCASE_SUFFIXES)
     if not path.startswith("/static/case_square/"):
         return False
     lower = path.lower()
-    return lower.endswith(_EMBEDDABLE_CASE_SQUARE_SUFFIXES)
+    return lower.endswith(_EMBEDDABLE_SHOWCASE_SUFFIXES)
 
 
 async def block_chat_static_uploads(request: Request, call_next):
@@ -103,12 +103,12 @@ async def block_chat_static_uploads(request: Request, call_next):
     return await call_next(request)
 
 
-async def block_case_square_static_uploads(request: Request, call_next):
+async def block_showcase_static_uploads(request: Request, call_next):
     """
-    Block direct HTTP access to Case Square files on disk.
+    Block direct HTTP access to Showcase files on disk.
 
     Pending and approved assets must be fetched via authenticated
-    ``/api/case-square/assets/...`` so non-approved posts are not world-readable.
+    ``/api/showcase/assets/...`` so non-approved posts are not world-readable.
     """
     if request.url.path.startswith("/static/case_square/"):
         return JSONResponse(status_code=404, content={"detail": "Not found"})
@@ -275,7 +275,7 @@ async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
 
     path = request.url.path
-    same_origin_frame = allows_same_origin_case_square_frame(path)
+    same_origin_frame = allows_same_origin_showcase_frame(path)
 
     # Prevent clickjacking (stops site being embedded in iframes)
     response.headers["X-Frame-Options"] = "SAMEORIGIN" if same_origin_frame else "DENY"
@@ -365,7 +365,7 @@ async def add_cache_control_headers(request: Request, call_next):
         apply_no_cache_headers(response)
     elif path.startswith("/static/case_square/") and path.lower().endswith(".pdf"):
         apply_no_cache_headers(response)
-    elif path.startswith("/api/case-square/assets/") and path.lower().endswith(".pdf"):
+    elif path.startswith("/api/showcase/assets/") and path.lower().endswith(".pdf"):
         apply_no_cache_headers(response)
 
     return response
@@ -697,7 +697,7 @@ def setup_middleware(app: FastAPI):
     # Note: Middleware executes in reverse order of registration
     # So log_requests runs first, then add_cache_control_headers, etc.
     app.middleware("http")(block_chat_static_uploads)
-    app.middleware("http")(block_case_square_static_uploads)
+    app.middleware("http")(block_showcase_static_uploads)
     app.middleware("http")(enforce_streaming_body_limit)
     app.middleware("http")(limit_request_body_size)
     app.middleware("http")(abuseipdb_middleware)

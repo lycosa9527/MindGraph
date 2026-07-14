@@ -216,7 +216,6 @@ export default {
   'meta.pageTitle.privacy': 'Terms & Privacy',
   'meta.pageTitle.publicDashboard': 'สถิติ',
   'meta.pageTitle.schoolDashboard': 'แดชบอร์ดโรงเรียน',
-  'meta.pageTitle.schoolZone': 'โซนโรงเรียน',
   'meta.pageTitle.smartResponse': 'การตอบสนองอัจฉริยะ',
   'meta.pageTitle.template': 'เทมเพลต',
   'meta.pageTitle.thinkingCoinsUpgrade': 'Upgrade membership',

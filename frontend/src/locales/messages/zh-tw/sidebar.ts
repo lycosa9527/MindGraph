@@ -79,7 +79,6 @@ export default {
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',
-  'sidebar.schoolZone': '學校專區',
   'sidebar.smartResponse': 'Smart Response 智回',
   'sidebar.teacherUsage': '教師使用度',
   'sidebar.templateResources': '模板資源',

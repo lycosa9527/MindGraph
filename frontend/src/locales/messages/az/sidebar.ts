@@ -79,7 +79,6 @@ export default {
   'sidebar.mindMate': 'MindMate',
   'sidebar.mindMateAgent': 'Agent {name}',
   'sidebar.mindbot': 'MindBot',
-  'sidebar.schoolZone': 'Məktəb zonası',
   'sidebar.smartResponse': 'Ağıllı Cavab',
   'sidebar.teacherUsage': 'Müəllim istifadəsi',
   'sidebar.templateResources': 'Şablonlar',

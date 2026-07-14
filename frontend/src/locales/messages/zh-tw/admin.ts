@@ -72,8 +72,6 @@ export default {
   'admin.feature.mindmateExportHint': '超級管理員面板：查看並導出網頁 MindMate 與釘釘 MindBot 的 Dify 對話記錄。',
   'admin.feature.ragChunkTest': 'RAG 分塊測試',
   'admin.feature.ragChunkTestHint': '知識空間內的評測工具。',
-  'admin.feature.schoolZone': '學校專區',
-  'admin.feature.schoolZoneHint': '按校組織的分享。',
   'admin.feature.smartResponse': '智回（設備）',
   'admin.feature.smartResponseHint': 'ESP32 / 教師手錶等接入。',
   'admin.feature.teacherUsage': '教師使用度分析',
