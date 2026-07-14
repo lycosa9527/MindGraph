@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.143.1] - 2026-07-14
+
+> **CI hygiene on main: Ruff format, Kitty ephemeral-scope i18n parity, and document review-annotation removal.**
+
+### Removed
+
+- **Kitty diagram review annotations** — Dropped review-annotation messaging, routing, and canvas bus wiring from the tip of 5.143.0 ([`services/kitty/diagram/`](services/kitty/diagram/), canvas Kitty composables).
+
+### Fixed
+
+- **Ruff format drift** — Reformatted Kitty session/messaging modules and open-canvas owner tests that failed `ruff format --check` on CI.
+- **i18n key parity** — Propagated `mobile.kittyEphemeralScopePinned` / `mobile.kittyEphemeralScopeDegraded` plus remaining Kitty scope/create keys and canvas one-sentence strings to all UI locale bundles.
+
+### Changed
+
+- **Kitty README socket model** — Document mobile + desktop canvas-owner coexistence on the same scope (same-lane replace only).
+- **Kitty diagram package docstring** — Removed stale “review annotations” wording.
+
 ## [5.143.0] - 2026-07-13
 
 > **Kitty open_canvas session scope: desktop adopts mobile ephemeral SoT, Redis canvas-owner presence lease, and fail-closed `no_owner` when verified edits have no desktop owner.**

@@ -381,14 +381,9 @@ async def test_e2e_open_canvas_scope_to_verified_center_update(
     assert sent is True
 
     wake_payloads = [json.loads(p) for _ch, p in fake.published]
-    assert any(
-        m.get("type") == "diagram_update" and m.get("mutation_id") == mutation_id
-        for m in wake_payloads
-    )
+    assert any(m.get("type") == "diagram_update" and m.get("mutation_id") == mutation_id for m in wake_payloads)
 
-    complete_pending(
-        MutationAckPayload(mutation_id=mutation_id, verified=True, revision=2)
-    )
+    complete_pending(MutationAckPayload(mutation_id=mutation_id, verified=True, revision=2))
     assert fut.done()
     ack = fut.result()
     assert isinstance(ack, MutationAckPayload)

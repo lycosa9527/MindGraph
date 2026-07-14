@@ -659,9 +659,11 @@ export default {
   'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': '抱歉，沒能為該分支自動補全。你可以再說一次「自動補全」。',
   'canvas.mindMapOneSentence.kittyWorking': '好的，正在處理…',
   'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty 暫不可用，請確認已開啟 FEATURE_KITTY_AGENT。',
+  'canvas.mindMapOneSentence.kittyConnectFailed': '無法連接畫布 Kitty。請在電腦端打開此導圖後重試。',
   'canvas.mindMapOneSentence.clarifyChoices': '請選擇一項',
   'canvas.mindMapOneSentence.mobileKittyOwnsInput':
     '已偵測到手機 Kitty 正在連接本圖。請在手機上按住說話或輸入，電腦端輸入已暫停。',
+  'canvas.mindMapOneSentence.scopeDivergenceHint': '手機 Kitty 位於不同的導圖。請在手機端同步，或在此處打開該導圖。',
   'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': '請在手機 Kitty 中輸入…',
   'canvas.mindMapNodeExplain.title': 'Kitty 學習提示',
   'canvas.mindMapNodeExplain.userPrompt': '「{node}」可能帶來哪些疑問或認知衝突？',

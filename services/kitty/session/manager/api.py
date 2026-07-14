@@ -72,15 +72,9 @@ class KittySessionManager:
         scope_key = snapshot.requested_scope
         mobile_on_scope = bool(
             snapshot.mobile_active
-            and (
-                snapshot.mobile_primary_scope == scope_key
-                or scope_key in snapshot.mobile_scopes
-            )
+            and (snapshot.mobile_primary_scope == scope_key or scope_key in snapshot.mobile_scopes)
         )
-        if (
-            snapshot.ingress_owner == KittyIngressOwner.MOBILE
-            and mobile_on_scope
-        ):
+        if snapshot.ingress_owner == KittyIngressOwner.MOBILE and mobile_on_scope:
             await append_journal_simple(
                 kind="ingress_rejected",
                 user_id=user_id,

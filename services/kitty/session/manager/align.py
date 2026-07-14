@@ -78,16 +78,9 @@ async def build_kitty_session_snapshot(
     if uid > 0 and scope:
         owner_present = await canvas_owner_available(uid, scope)
 
-    cross_library = bool(
-        mobile_active
-        and mobile_primary
-        and focus_lib
-        and mobile_primary != focus_lib
-    )
+    cross_library = bool(mobile_active and mobile_primary and focus_lib and mobile_primary != focus_lib)
 
-    ingress_owner = (
-        KittyIngressOwner.MOBILE if mobile_on_scope else KittyIngressOwner.DESKTOP
-    )
+    ingress_owner = KittyIngressOwner.MOBILE if mobile_on_scope else KittyIngressOwner.DESKTOP
     error_code: Optional[str] = None
 
     if not scope:
@@ -97,11 +90,7 @@ async def build_kitty_session_snapshot(
         alignment = KittyAlignment.SCOPE_DIVERGENCE
         error_code = "scope_divergence"
     elif owner_present and mobile_on_scope:
-        alignment = (
-            KittyAlignment.ALIGNED_LIBRARY
-            if focus_lib == scope
-            else KittyAlignment.ALIGNED_EPHEMERAL
-        )
+        alignment = KittyAlignment.ALIGNED_LIBRARY if focus_lib == scope else KittyAlignment.ALIGNED_EPHEMERAL
     elif owner_present and not mobile_active:
         alignment = KittyAlignment.DESKTOP_ONLY
     elif owner_present and mobile_active and not mobile_on_scope:

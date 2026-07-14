@@ -82,9 +82,9 @@ Validation: `services.kitty.infra.scope.kitty_ws_scope.normalize_kitty_diagram_s
 - **Sessionmeta** (`kitty:sessionmeta:{scope}`) JSON includes `user_id`, `updated_at`, optional `active_diagram_library_id`, and optional `client_lane: "mobile"`.
 - **mobile_lane** uses `kitty_mobile_indicator_armed_for_user(scope, user_id)` — meta exists, user matches, and `client_lane == "mobile"`.
 
-## Single active socket per scope
+## Socket lanes per scope (mobile + desktop coexist)
 
-On **start**, the server holds `diagram_session_voice_lock(scope)`, closes any other WebSocket registered for that scope, runs `cleanup_voice_by_diagram_session`, then attaches the new socket. Opening Kitty on **desktop** while **mobile** holds the same library scope **replaces** the mobile connection (intended handoff).
+On **start**, the server holds `diagram_session_voice_lock(scope)`. **Same-lane** reconnects replace the prior socket for that lane (mobile replaces mobile; desktop canvas-owner replaces desktop). **Mobile and desktop canvas-owner may coexist** on the same library scope: verified edits apply on the desktop owner tab while mobile owns mic/chat ingress (`client_lane: "mobile"`). Desktop typed/ASR ingress is rejected while mobile is active on the scope (S14); canvas-owner mutation apply remains separate.
 
 ## Redis
 
@@ -151,7 +151,7 @@ While mobile Kitty is **off**, desktop opens **SSE** on `GET /api/kitty/desktop_
 
 **Mobile `desktop_focus`:** Desktop `PUT /api/kitty/desktop_focus` writes Redis and pushes ``desktop_focus_update`` to mobile Kitty WS on this worker, plus Redis control ``desktop_focus`` so other workers can push to their local mobile sockets. Mobile keeps a slow REST recovery poll while WS is connected (fast poll only pre-WS). Focus is trusted only when recently refreshed (desktop canvas heartbeat). After focus clear, mobile resets to an ephemeral session.
 
-Desktop **start** on a scope clears `client_lane: mobile` in sessionmeta (`preserve_mobile_lane=False`) and removes that scope from `kitty:mobile_active:{user_id}` so the pairing indicator does not stay stale after handoff.
+Desktop **canvas-owner start** on a scope **coexists** with mobile: sessionmeta may keep `client_lane: mobile` when the phone is still connected (`preserve_mobile_lane` for mobile starts), and desktop start does **not** clear `kitty:mobile_active` for that scope (see `lifecycle.py`).
 
 ## Desktop pairing hint (poll)
 

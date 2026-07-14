@@ -21,9 +21,7 @@ logger = logging.getLogger(__name__)
 _DEBOUNCE_SEC = 0.3
 _pending: Dict[str, asyncio.Task] = {}
 _delta_notes: Dict[str, str] = {}
-_full_refresh_reasons = frozenset(
-    {"session_start", "diagram_type_change", "context_update", "library_refresh"}
-)
+_full_refresh_reasons = frozenset({"session_start", "diagram_type_change", "context_update", "library_refresh"})
 
 
 async def schedule_omni_context_refresh(

@@ -166,11 +166,17 @@ export default {
   'mobile.kittyDiagramPickerSearch': 'Search diagrams…',
   'mobile.kittyDiagramPickerNoMatch': 'No matching diagrams',
   'mobile.kittyCreateNewMindmap': 'Create new mind map',
+  'mobile.kittyNewMindmapTitle': 'New mind map',
   'mobile.kittyNewMindmapCreated': 'New mind map started; desktop will open a blank canvas.',
+  'mobile.kittyNewMindmapCreateFailed': 'Could not create the mind map. Please try again.',
   'mobile.kittyNewMindmapDesktopFailed':
     'New mind map started, but desktop could not be notified.',
   'mobile.kittyDiagramPinned': 'Pinned',
   'mobile.kittyDiagramPickFailed': 'Could not load that diagram. Try again later.',
+  'mobile.kittyEphemeralScopePinned':
+    'Using a temporary session — choose or create a saved diagram to sync with desktop.',
+  'mobile.kittyEphemeralScopeDegraded':
+    'Desktop pairing may be out of sync. Open a saved diagram to reconnect.',
   'mobile.kittyDesktopJumpFailed': 'Diagram switched, but desktop could not be notified.',
   'mobile.kittyDiagramSelected': 'Diagram selected; desktop will open it.',
   'mobile.kittyCurrentDiagramLabel': 'Current diagram',
@@ -201,6 +207,11 @@ export default {
   'mobile.kittyHubSyncFailed':
     'Could not sync the diagram to Kitty. Check your connection and try again.',
   'mobile.kittyDesktopDiagramFollowed': 'Switched to the diagram open on desktop',
+  'mobile.kittyScopeDivergence': 'Desktop opened a different diagram. Choose how to sync:',
+  'mobile.kittyScopeFollowDesktop': 'Follow desktop diagram',
+  'mobile.kittyScopeOpenOnDesktop': 'Open phone diagram on desktop',
+  'mobile.kittyScopeKeepSplitAction': 'Keep separate',
+  'mobile.kittyScopeKeepSplit': 'Keep phone and desktop on different diagrams',
   'meta.pageTitle.notFound': 'Səhifə tapılmadı',
   'meta.pageTitle.privacy': 'Terms & Privacy',
   'meta.pageTitle.publicDashboard': 'Statistika',

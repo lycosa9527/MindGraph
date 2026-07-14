@@ -633,6 +633,8 @@ export default {
   'canvas.mindMapOneSentence.kittyEditFailed': 'Could not apply that edit. Try rephrasing your request.',
   'canvas.mindMapOneSentence.kittyWorking': 'OK — working on that…',
   'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty is unavailable. Check that FEATURE_KITTY_AGENT is enabled on the server.',
+  'canvas.mindMapOneSentence.kittyConnectFailed':
+    'Could not connect canvas Kitty. Open this diagram on desktop, then try again.',
   'canvas.mindMapNodeExplain.title': 'Kitty learning note',
   'canvas.mindMapNodeExplain.userPrompt': 'Why might "{node}" spark questions or cognitive conflict on this diagram?',
   'canvas.mindMapNodeExplain.thinking': 'Looking at your diagram…',
@@ -1004,6 +1006,8 @@ export default {
   'canvas.mindMapOneSentence.clarifyChoices': 'Choose an option',
   'canvas.mindMapOneSentence.mobileKittyOwnsInput':
     'Mobile Kitty is connected to this diagram. Use your phone to speak or type — desktop input is paused.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint':
+    'Phone Kitty is on a different diagram. Sync from the phone, or open that diagram here.',
   'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'Use Mobile Kitty on your phone…',
   'canvas.voiceCommandGuide.title': 'Voice command guide',
   'canvas.voiceCommandGuide.collapse': 'Collapse voice command guide',

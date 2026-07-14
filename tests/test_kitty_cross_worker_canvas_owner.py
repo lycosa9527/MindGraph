@@ -43,6 +43,7 @@ from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
 from services.kitty.session.canvas_owner import find_canvas_owner_websocket
 from tests.typing_helpers import mock_await_args
 
+
 class _FakeRedisPubSub:
     """In-memory pub/sub that delivers to every subscribed handler (multi-worker)."""
 
@@ -342,15 +343,19 @@ async def test_cross_worker_desktop_focus_relay_pushes_mobile_ws() -> None:
     }
 
     async def worker_b_control_listener(raw: str) -> None:
-        with patch(
-            "services.kitty.infra.desktop.kitty_desktop_focus_push.voice_sessions",
-            worker_b_sessions,
-        ), patch(
-            "services.kitty.infra.desktop.kitty_desktop_focus_push.safe_websocket_send",
-            AsyncMock(return_value=True),
-        ) as safe_send, patch(
-            "services.kitty.infra.desktop.kitty_desktop_focus_push.get_kitty_control_instance_id",
-            return_value="worker-b",
+        with (
+            patch(
+                "services.kitty.infra.desktop.kitty_desktop_focus_push.voice_sessions",
+                worker_b_sessions,
+            ),
+            patch(
+                "services.kitty.infra.desktop.kitty_desktop_focus_push.safe_websocket_send",
+                AsyncMock(return_value=True),
+            ) as safe_send,
+            patch(
+                "services.kitty.infra.desktop.kitty_desktop_focus_push.get_kitty_control_instance_id",
+                return_value="worker-b",
+            ),
         ):
             await handle_kitty_control_dispatch(raw, local_instance="worker-b")
             safe_send.assert_awaited()
@@ -380,9 +385,7 @@ async def test_cross_worker_desktop_focus_relay_pushes_mobile_ws() -> None:
         ),
     ):
         # Same-worker push finds nothing on A.
-        sent_local = await push_kitty_desktop_focus_to_local_mobile(
-            42, "lib-focus-1", 1_700_000_000
-        )
+        sent_local = await push_kitty_desktop_focus_to_local_mobile(42, "lib-focus-1", 1_700_000_000)
         assert sent_local == 0
         ok = await publish_desktop_focus_relay(42, "lib-focus-1", 1_700_000_000)
         assert ok is True

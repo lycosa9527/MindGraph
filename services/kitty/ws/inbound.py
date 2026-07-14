@@ -232,9 +232,7 @@ async def dispatch_kitty_ws_inbound_message(
                 else "text"
             )
             raw_utt = message.get("utterance_id")
-            utterance_id = (
-                str(raw_utt).strip() if isinstance(raw_utt, str) and str(raw_utt).strip() else None
-            )
+            utterance_id = str(raw_utt).strip() if isinstance(raw_utt, str) and str(raw_utt).strip() else None
             if utterance_id:
                 voice_sessions[voice_session_id]["_one_sentence_utterance_id"] = utterance_id
             lane_raw = voice_sessions[voice_session_id].get("_kitty_client_lane")
@@ -253,8 +251,7 @@ async def dispatch_kitty_ws_inbound_message(
                         {
                             "type": "error",
                             "error": gate.error_code or "mobile_owns_ingress",
-                            "message": gate.message
-                            or "Mobile Kitty owns edit input for this diagram",
+                            "message": gate.message or "Mobile Kitty owns edit input for this diagram",
                             "request_id": request_id,
                         },
                     )

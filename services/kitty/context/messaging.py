@@ -381,8 +381,7 @@ async def send_kitty_diagram_update(
                             mutation_id=mid,
                             verified=False,
                             error_code=err,
-                            message=align.message
-                            or "Desktop canvas owner not connected for this scope",
+                            message=align.message or "Desktop canvas owner not connected for this scope",
                         )
                     )
                     sent = await safe_websocket_send(websocket, chat_only)
