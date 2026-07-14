@@ -687,7 +687,7 @@ function syncDocumentOutsideEditListeners(editing: boolean): void {
   }
 }
 
-let inputEnterCaptureHandler: ((event: KeyboardEvent) => void) | null = null
+let inputEnterCaptureHandler: ((event: Event) => void) | null = null
 
 function detachInputEnterCapture(): void {
   const el = inputRef.value
@@ -702,7 +702,8 @@ function attachInputEnterCapture(): void {
   const el = inputRef.value
   if (!el) return
 
-  inputEnterCaptureHandler = (event: KeyboardEvent): void => {
+  inputEnterCaptureHandler = (event: Event): void => {
+    if (!(event instanceof KeyboardEvent)) return
     if (event.key !== 'Enter' || event.shiftKey) return
     if (event.isComposing || event.keyCode === 229) return
 
