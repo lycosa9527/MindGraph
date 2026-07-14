@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.143.0",
+  "version": "5.145.0",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"
@@ -92,7 +92,7 @@
     "markdown-it": "^14.1.0",
     "mathlive": "^0.109.0",
     "mitt": "^3.0.1",
-    "pdfjs-dist": "^4.8.69",
+    "pdfjs-dist": "^4.10.38",
     "pinia": "^3.0.4",
     "simple-keyboard": "^3.8.125",
     "simple-keyboard-layouts": "^3.4.188",

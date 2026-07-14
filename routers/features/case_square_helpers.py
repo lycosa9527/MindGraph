@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Optional, cast
 
 from fastapi import HTTPException, Request, UploadFile, status
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from routers.features.community_helpers import (
     PNG_MAGIC,
@@ -33,6 +34,106 @@ ALLOWED_SOURCE_SUFFIXES = frozenset({".mg", ".png", ".jpg", ".jpeg", ".webp", ".
 GALLERY_IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp", ".gif"})
 GALLERY_MAX_ITEMS = 12
 ALLOWED_VIDEO_SUFFIXES = frozenset({".mp4", ".webm", ".mov", ".m4v"})
+
+PDF_MAGIC = b"%PDF"
+JPEG_MAGIC = b"\xff\xd8\xff"
+GIF_MAGIC_87A = b"GIF87a"
+GIF_MAGIC_89A = b"GIF89a"
+WEBP_RIFF = b"RIFF"
+WEBP_WEBP = b"WEBP"
+ZIP_LOCAL_FILE_HEADER = b"PK\x03\x04"
+ZIP_EMPTY = b"PK\x05\x06"
+_ISO_BMFF_FTYP = b"ftyp"
+WEBM_EBML = b"\x1a\x45\xdf\xa3"
+MG_JSON_STARTS = (b"{", b"[")
+OLE_COMPOUND_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+
+
+def case_square_public_asset_url(rel_path: str) -> str:
+    """Build authenticated asset URL for a stored ``case_square/...`` relative path."""
+    normalized = rel_path.lstrip("/").replace("\\", "/")
+    if not normalized.startswith("case_square/"):
+        raise ValueError(f"Not a case_square path: {rel_path}")
+    return f"/api/case-square/assets/{normalized}"
+
+
+def post_id_from_case_square_filename(filename: str) -> str | None:
+    """Extract post UUID from ``{uuid}`` or ``{uuid}_suffix`` asset names."""
+    name = Path(filename).name
+    if len(name) < 36:
+        return None
+    candidate = name[:36]
+    try:
+        uuid.UUID(candidate)
+    except ValueError:
+        return None
+    if len(name) > 36 and name[36] not in "._":
+        return None
+    return candidate
+
+
+def resolve_case_square_disk_path(rel_path: str) -> Path:
+    """Resolve a stored relative path under ``static/case_square`` with traversal checks."""
+    normalized = rel_path.lstrip("/").replace("\\", "/")
+    if not normalized.startswith("case_square/"):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    root = CASE_SQUARE_DIR.resolve()
+    candidate = (Path("static") / normalized).resolve()
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found") from exc
+    if not candidate.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    return candidate
+
+
+def _validate_magic_bytes(content: bytes, suffix: str) -> None:
+    """Reject uploads whose content does not match the declared suffix."""
+    if suffix == ".png":
+        if not content.startswith(PNG_MAGIC):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid PNG file format")
+        return
+    if suffix in {".jpg", ".jpeg"}:
+        if not content.startswith(JPEG_MAGIC):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JPEG file format")
+        return
+    if suffix == ".gif":
+        if not (content.startswith(GIF_MAGIC_87A) or content.startswith(GIF_MAGIC_89A)):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid GIF file format")
+        return
+    if suffix == ".webp":
+        if len(content) < 12 or not content.startswith(WEBP_RIFF) or content[8:12] != WEBP_WEBP:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid WebP file format")
+        return
+    if suffix == ".pdf":
+        if not content.startswith(PDF_MAGIC):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid PDF file format")
+        return
+    if suffix == ".docx":
+        if not (content.startswith(ZIP_LOCAL_FILE_HEADER) or content.startswith(ZIP_EMPTY)):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid DOCX file format")
+        return
+    if suffix == ".doc":
+        if not content.startswith(OLE_COMPOUND_MAGIC):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid DOC file format")
+        return
+    if suffix in {".mp4", ".m4v", ".mov"}:
+        if len(content) < 8 or content[4:8] != _ISO_BMFF_FTYP:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid video file format")
+        return
+    if suffix == ".webm":
+        if not content.startswith(WEBM_EBML):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid WebM file format")
+        return
+    if suffix == ".mg":
+        stripped = content.lstrip()
+        if not stripped or stripped[:1] not in MG_JSON_STARTS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid MindGraph source format",
+            )
+        return
 
 
 def _validate_thumbnail(content: bytes) -> None:
@@ -59,12 +160,14 @@ def _suffix_or_raise(filename: Optional[str], allowed: frozenset[str]) -> str:
 
 
 def save_thumbnail(post_id: str, content: bytes) -> str:
+    """Write PNG thumbnail bytes and return the stored relative path."""
     path = CASE_SQUARE_DIR / f"{post_id}.png"
     path.write_bytes(content)
     return f"case_square/{post_id}.png"
 
 
 async def save_thumbnail_from_upload(post_id: str, thumbnail: UploadFile) -> str:
+    """Validate and persist an uploaded thumbnail for a post."""
     content = await thumbnail.read()
     _validate_thumbnail(content)
     return save_thumbnail(post_id, content)
@@ -103,6 +206,7 @@ def resolve_gallery_image_storage_path(post_id: str, slot: int, entry: dict) -> 
 
 
 def count_pending_gallery_images(spec_obj: dict) -> int:
+    """Count gallery image slots awaiting upload."""
     gallery = spec_obj.get("gallery")
     if not isinstance(gallery, list):
         return 0
@@ -122,9 +226,6 @@ def assert_gallery_uploads_resolved(spec_obj: dict) -> None:
 def gallery_uploads_from_binding(bound: list[UploadFile]) -> list[UploadFile]:
     """Return non-empty gallery file parts from FastAPI File() binding."""
     return [upload for upload in bound if getattr(upload, "filename", None)]
-
-
-from starlette.datastructures import UploadFile as StarletteUploadFile
 
 
 def _form_upload_file(value: object) -> StarletteUploadFile | None:
@@ -256,6 +357,7 @@ async def save_case_file(
     name_prefix: str,
     max_bytes: int,
 ) -> str:
+    """Validate and save an attachment or video under case_square/."""
     content = await upload.read()
     suffix = _suffix_or_raise(upload.filename, allowed_suffixes)
     if len(content) > max_bytes:
@@ -263,6 +365,7 @@ async def save_case_file(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File too large. Max {max_bytes // 1024 // 1024}MB",
         )
+    _validate_magic_bytes(content, suffix)
     rel_name = f"{post_id}_{name_prefix}{suffix}"
     path = CASE_SQUARE_DIR / rel_name
     path.write_bytes(content)
@@ -270,6 +373,7 @@ async def save_case_file(
 
 
 def save_spec_json(post_id: str, spec_obj: dict) -> None:
+    """Persist diagram spec JSON for a post."""
     path = CASE_SQUARE_DIR / f"{post_id}.json"
     try:
         path.write_text(json.dumps(spec_obj, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -278,6 +382,7 @@ def save_spec_json(post_id: str, spec_obj: dict) -> None:
 
 
 def delete_thumbnail(post_id: str) -> None:
+    """Remove stored PNG thumbnail for a post (best-effort)."""
     path = CASE_SQUARE_DIR / f"{post_id}.png"
     if path.exists():
         try:
@@ -287,6 +392,7 @@ def delete_thumbnail(post_id: str) -> None:
 
 
 def delete_spec_json(post_id: str) -> None:
+    """Remove stored spec JSON for a post (best-effort)."""
     path = CASE_SQUARE_DIR / f"{post_id}.json"
     if path.exists():
         try:
@@ -310,6 +416,7 @@ def delete_case_file(rel_path: str) -> None:
 
 
 def prepare_post_id_and_spec(spec: str) -> tuple[str, dict]:
+    """Parse diagram spec JSON and assign a new post UUID."""
     if len(spec.encode("utf-8")) > SPEC_MAX_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -319,6 +426,7 @@ def prepare_post_id_and_spec(spec: str) -> tuple[str, dict]:
 
 
 def parse_tags_json(tags: str) -> list[str]:
+    """Parse tags form field into a deduplicated list of strings."""
     if not tags or not tags.strip():
         return []
     try:

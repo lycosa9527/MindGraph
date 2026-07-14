@@ -80,6 +80,10 @@ _STREAMING_STATIC_SUFFIXES = (".mp4", ".webm", ".mov", ".m4v", ".m4a")
 
 def allows_same_origin_case_square_frame(path: str) -> bool:
     """Case Square teaching attachments may be previewed in same-origin iframes."""
+    # Public static mount is blocked; assets are served via authenticated API.
+    if path.startswith("/api/case-square/assets/"):
+        lower = path.lower()
+        return lower.endswith(_EMBEDDABLE_CASE_SQUARE_SUFFIXES)
     if not path.startswith("/static/case_square/"):
         return False
     lower = path.lower()
@@ -95,6 +99,18 @@ async def block_chat_static_uploads(request: Request, call_next):
     ``/static/chat/`` URLs.
     """
     if request.url.path.startswith("/static/chat/"):
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
+    return await call_next(request)
+
+
+async def block_case_square_static_uploads(request: Request, call_next):
+    """
+    Block direct HTTP access to Case Square files on disk.
+
+    Pending and approved assets must be fetched via authenticated
+    ``/api/case-square/assets/...`` so non-approved posts are not world-readable.
+    """
+    if request.url.path.startswith("/static/case_square/"):
         return JSONResponse(status_code=404, content={"detail": "Not found"})
     return await call_next(request)
 
@@ -349,6 +365,8 @@ async def add_cache_control_headers(request: Request, call_next):
         apply_no_cache_headers(response)
     elif path.startswith("/static/case_square/") and path.lower().endswith(".pdf"):
         apply_no_cache_headers(response)
+    elif path.startswith("/api/case-square/assets/") and path.lower().endswith(".pdf"):
+        apply_no_cache_headers(response)
 
     return response
 
@@ -358,14 +376,12 @@ async def enforce_streaming_body_limit(request: Request, call_next):
     Enforce body size when Content-Length is absent (chunked uploads).
 
     Complements ``limit_request_body_size`` which only inspects Content-Length.
+    Multipart is included so omitting Content-Length cannot bypass the cap.
     """
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         content_length = request.headers.get("content-length")
         max_size = max_request_body_size_for_path(request.url.path)
         if not content_length:
-            content_type = (request.headers.get("content-type") or "").lower()
-            if content_type.startswith("multipart/form-data"):
-                return await call_next(request)
             body = await request.body()
             if len(body) > max_size:
                 client_ip = get_client_ip(request)
@@ -681,6 +697,7 @@ def setup_middleware(app: FastAPI):
     # Note: Middleware executes in reverse order of registration
     # So log_requests runs first, then add_cache_control_headers, etc.
     app.middleware("http")(block_chat_static_uploads)
+    app.middleware("http")(block_case_square_static_uploads)
     app.middleware("http")(enforce_streaming_body_limit)
     app.middleware("http")(limit_request_body_size)
     app.middleware("http")(abuseipdb_middleware)

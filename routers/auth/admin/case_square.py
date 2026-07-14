@@ -14,10 +14,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from routers.auth.dependencies import get_async_db_with_request_rls, require_panel_capability
 from models.domain.auth import User
 from models.domain.case_square import CaseSquarePost
 from models.domain.case_square_admin import CaseSquareFieldOption, CaseSquareStaffGrant
+from routers.auth.dependencies import get_async_db_with_request_rls, require_panel_capability
 from routers.features.case_square import (
     CaseReviewBody,
     _delete_case_post_in_session,
@@ -69,6 +69,8 @@ router = APIRouter()
 
 
 class StaffGrantBody(BaseModel):
+    """Request body to create or update a Case Square staff grant."""
+
     user_id: int
     permissions: list[str] = Field(default_factory=list)
     note: Optional[str] = None
@@ -76,12 +78,16 @@ class StaffGrantBody(BaseModel):
 
 
 class StaffGrantPatchBody(BaseModel):
+    """Partial update payload for an existing staff grant."""
+
     permissions: Optional[list[str]] = None
     note: Optional[str] = None
     expires_at: Optional[datetime] = None
 
 
 class FieldOptionBody(BaseModel):
+    """Request body to create a subject, grade, or recommended-tag option."""
+
     category: str
     value: str = Field(..., min_length=1, max_length=100)
     label_zh: Optional[str] = None
@@ -91,6 +97,8 @@ class FieldOptionBody(BaseModel):
 
 
 class FieldOptionPatchBody(BaseModel):
+    """Partial update payload for a field option."""
+
     label_zh: Optional[str] = None
     label_en: Optional[str] = None
     sort_order: Optional[int] = None
@@ -162,6 +170,7 @@ async def case_square_stats_overview(
     db: AsyncSession = Depends(get_async_db_with_request_rls),
     _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_CASE_SQUARE_VIEW)),
 ):
+    """Return Case Square moderation and engagement stats for the admin dashboard."""
     if not await can_view_case_square_dashboard(db, current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient Case Square permission")
     now = datetime.now(UTC)
@@ -268,6 +277,7 @@ async def list_staff_grants(
     db: AsyncSession = Depends(get_async_db_with_request_rls),
     _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_CASE_SQUARE_VIEW)),
 ):
+    """List custom staff grants and built-in role permissions."""
     await _require_perm(db, current_user, PERM_PERMISSIONS)
     rows = (
         (
@@ -314,6 +324,7 @@ async def upsert_staff_grant(
     db: AsyncSession = Depends(get_async_db_with_request_rls),
     _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_CASE_SQUARE_VIEW)),
 ):
+    """Create or update a user's Case Square staff grant."""
     await _require_perm(db, current_user, PERM_PERMISSIONS)
     perms = _sanitize_grant_permissions(body.permissions)
     if not perms:
@@ -352,6 +363,7 @@ async def delete_staff_grant(
     db: AsyncSession = Depends(get_async_db_with_request_rls),
     _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_CASE_SQUARE_VIEW)),
 ):
+    """Revoke a custom staff grant for a user."""
     await _require_perm(db, current_user, PERM_PERMISSIONS)
     row = (
         await db.execute(select(CaseSquareStaffGrant).where(CaseSquareStaffGrant.user_id == user_id))
@@ -377,6 +389,7 @@ async def list_field_options(
     db: AsyncSession = Depends(get_async_db_with_request_rls),
     _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_CASE_SQUARE_VIEW)),
 ):
+    """List Case Square subject, grade, and recommended-tag options."""
     perms = await load_user_case_square_permissions(db, current_user)
     if PERM_FIELDS not in perms and PERM_REVIEW not in perms:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permission")
@@ -414,6 +427,7 @@ async def create_field_option(
     db: AsyncSession = Depends(get_async_db_with_request_rls),
     _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_CASE_SQUARE_VIEW)),
 ):
+    """Create a new Case Square field option."""
     await _require_perm(db, current_user, PERM_FIELDS)
     if body.category not in ("subject", "grade", "recommended_tag"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid category")
@@ -446,6 +460,7 @@ async def patch_field_option(
     db: AsyncSession = Depends(get_async_db_with_request_rls),
     _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_CASE_SQUARE_VIEW)),
 ):
+    """Update labels, sort order, or active flag for a field option."""
     await _require_perm(db, current_user, PERM_FIELDS)
     row = (
         await db.execute(select(CaseSquareFieldOption).where(CaseSquareFieldOption.id == option_id))
@@ -479,6 +494,7 @@ async def delete_field_option(
     db: AsyncSession = Depends(get_async_db_with_request_rls),
     _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_CASE_SQUARE_VIEW)),
 ):
+    """Remove a Case Square field option."""
     await _require_perm(db, current_user, PERM_FIELDS)
     row = (
         await db.execute(select(CaseSquareFieldOption).where(CaseSquareFieldOption.id == option_id))
@@ -523,8 +539,6 @@ async def _admin_delete_case_post_handler(
             actor=current_user,
             title=post.title,
         )
-    except HTTPException:
-        raise
     except DATABASE_ERRORS as exc:
         logger.error("[CaseSquare] Admin delete failed for %s: %s", post_id, exc)
         raise HTTPException(

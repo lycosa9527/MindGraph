@@ -1,7 +1,7 @@
 """Case Square tables and RLS policies.
 
-Revision ID: 0074
-Revises: 0073
+Revision ID: 0084
+Revises: 0083
 """
 
 from typing import Sequence, Union
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql as pg
 
-revision: str = "0074"
-down_revision: Union[str, None] = "0073"
+revision: str = "0084"
+down_revision: Union[str, None] = "0083"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

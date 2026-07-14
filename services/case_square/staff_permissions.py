@@ -114,10 +114,13 @@ def can_delist_case(post: CaseSquarePost, user: User) -> bool:
 
 
 async def can_edit_case(post: CaseSquarePost, user: User, db: AsyncSession) -> bool:
+    """Staff/authors may edit pending or rejected cases; approved posts are immutable here."""
+    if post.status not in ("pending", "rejected"):
+        return False
     perms = await load_user_case_square_permissions(db, user)
     if PERM_DELETE in perms or PERM_REVIEW in perms:
         return True
-    if post.author_id == user.id and post.status in ("pending", "rejected"):
+    if post.author_id == user.id:
         return True
     return False
 

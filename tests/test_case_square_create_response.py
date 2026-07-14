@@ -10,14 +10,31 @@ from types import SimpleNamespace
 import pytest
 from fastapi import Request
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
-from config.database import AsyncSessionLocal, get_async_db
+from config.database import AsyncSessionLocal, engine, get_async_db
+from config.settings import config
 from main import app
 from routers.features.case_square import _format_gallery_items
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
 from utils.db.rls_context import RlsContext, reset_rls_context, set_rls_context
+
+
+def _case_square_schema_ready() -> bool:
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1 FROM case_square_posts LIMIT 0"))
+        return True
+    except DATABASE_ERRORS:
+        return False
+
+
+requires_case_square_schema = pytest.mark.skipif(
+    not _case_square_schema_ready(),
+    reason="case_square schema not migrated (CI has no Postgres)",
+)
 
 
 def _make_user(user_id: int = 6) -> SimpleNamespace:
@@ -51,18 +68,29 @@ async def _override_get_async_db(request: Request):
 
 @pytest.fixture(name="client")
 def fixture_client() -> TestClient:
+    """Fixture client."""
     return TestClient(app)
 
 
 @pytest.fixture(autouse=True)
 def clear_dependency_overrides() -> Generator[None, None, None]:
+    """Clear dependency overrides."""
     app.dependency_overrides.clear()
     yield
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(autouse=True)
+def enable_case_square(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Enable FEATURE_CASE_SQUARE for every test in this module."""
+    monkeypatch.setenv("FEATURE_CASE_SQUARE", "true")
+    config.refresh_env_cache()
+
+
+@requires_case_square_schema
 def test_create_teaching_design_response_is_json(client: TestClient) -> None:
-    app.dependency_overrides[get_current_user] = lambda: _make_user()
+    """Create teaching_design post returns JSON-serializable response."""
+    app.dependency_overrides[get_current_user] = _make_user
     app.dependency_overrides[get_async_db] = _override_get_async_db
 
     pdf = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
@@ -90,8 +118,10 @@ def test_create_teaching_design_response_is_json(client: TestClient) -> None:
     assert isinstance(post["can_resubmit"], bool)
 
 
+@requires_case_square_schema
 def test_create_diagram_case_without_thumbnail_response_is_json(client: TestClient) -> None:
-    app.dependency_overrides[get_current_user] = lambda: _make_user()
+    """Create diagram_case without thumbnail returns JSON-serializable response."""
+    app.dependency_overrides[get_current_user] = _make_user
     app.dependency_overrides[get_async_db] = _override_get_async_db
 
     response = client.post(
@@ -115,8 +145,10 @@ def test_create_diagram_case_without_thumbnail_response_is_json(client: TestClie
     assert post["thumbnail_url"] is None
 
 
+@requires_case_square_schema
 def test_create_diagram_case_gallery_images_persist(client: TestClient) -> None:
-    app.dependency_overrides[get_current_user] = lambda: _make_user()
+    """Gallery images uploaded at create time persist on the post."""
+    app.dependency_overrides[get_current_user] = _make_user
     app.dependency_overrides[get_async_db] = _override_get_async_db
 
     png = (
@@ -155,8 +187,10 @@ def test_create_diagram_case_gallery_images_persist(client: TestClient) -> None:
     assert all(item["url"].endswith(".png") for item in post["gallery_items"])
 
 
+@requires_case_square_schema
 def test_upload_post_gallery_images_endpoint(client: TestClient) -> None:
-    app.dependency_overrides[get_current_user] = lambda: _make_user()
+    """Deferred gallery upload endpoint attaches images to pending slots."""
+    app.dependency_overrides[get_current_user] = _make_user
     app.dependency_overrides[get_async_db] = _override_get_async_db
 
     png = (
@@ -200,6 +234,7 @@ def test_upload_post_gallery_images_endpoint(client: TestClient) -> None:
 
 
 def test_format_gallery_items_preserves_slot_alignment() -> None:
+    """Gallery formatter keeps slot order and marks missing image files."""
     post_id = "post-123"
     spec = {
         "gallery": [
@@ -227,7 +262,7 @@ def test_format_gallery_items_preserves_slot_alignment() -> None:
         assert items[0].get("missing") is True
         assert items[0].get("url") is None
         assert items[1]["kind"] == "image"
-        assert items[1]["url"].endswith(".png")
+        assert items[1]["url"] == (f"/api/case-square/assets/case_square/{post_id}_gallery_1.png")
         assert items[2]["kind"] == "diagram"
     finally:
         if target.exists():

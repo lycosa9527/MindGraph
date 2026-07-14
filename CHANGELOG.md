@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.145.0] - 2026-07-14
+
+> **Case Square gallery and diagram archive folders, with Alembic 0084–0088 and security hardening.**
+
+### Added
+
+- **Case Square** — Moderated public gallery for teaching designs, diagram cases, and diagram templates (`FEATURE_CASE_SQUARE`, migrations `0084`–`0087`, `/api/case-square`). Browse with filters, likes, favorites, expert recommendations; authors publish via modal; admin moderation, field options, and staff grants. Default **off** via feature flag.
+- **Diagram archive folders** — Always-on sidebar folders (`0088`, `/api/diagram-folders`) with create/rename/delete and diagram move.
+- **Authenticated Case Square assets** — Files served via `/api/case-square/assets/...` (author/staff for non-approved; any auth user for approved). Direct `/static/case_square/` access is blocked.
+
+### Security
+
+- **Multipart body-limit bypass** — Streaming body limit now applies to multipart when `Content-Length` is absent (path-scoped 105MB only for Case Square publish routes).
+- **Admin feature gate** — `/api/auth/admin/case-square` requires `FEATURE_CASE_SQUARE`.
+- **Staff edit policy** — Staff may edit pending/rejected posts only (approved posts are immutable via the edit API).
+- **Upload magic-byte checks** — Docs, images, videos, and `.mg` sources validated beyond extension/size.
+
+### Changed
+
+- **CSP** — `frame-src` includes Office Online viewer for teaching-doc preview; `worker-src` / `media-src` retained from main.
+- **Router size** — Case Square backend split into feed/posts/actions/common modules; publish modal script extracted to composables.
+
+### Tests
+
+- **CI** — [`test_case_square_create_response.py`](tests/test_case_square_create_response.py), [`test_diagram_folders_api.py`](tests/test_diagram_folders_api.py) (incl. folder IDOR negative); extended security hardening tests.
+
 ## [5.144.0] - 2026-07-14
 
 > **Mind map slide show with traversal modes and focus dimming, B&W export wireframe wired to nodes and edges, inline-edit Enter sibling guard, and presentation toolbar polish.**
@@ -472,30 +498,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Frontend package version
 
 - ([`frontend/package.json`](frontend/package.json)): syncs with root **`VERSION`** (5.133.0) on next `npm run build` (`prebuild` → `sync-version`).
-
-> **Case Square (案例广场) and diagram archive folders.**
-
-### Added
-
-- **Case Square** — Moderated public gallery for teaching designs, diagram cases, and diagram templates (`FEATURE_CASE_SQUARE`, migrations `0074`–`0077`, `/api/case-square`). Browse with filters (subject, grade, type, sort), likes, favorites, expert recommendations, and infinite-scroll listing ([`CaseSquarePage.vue`](frontend/src/pages/CaseSquarePage.vue)). Authors publish via a two-step modal (document upload for teaching designs; multi-image / history-diagram gallery for diagram cases; `.mg` templates); detail view supports document preview (PDF/DOCx), diagram carousel, watermark, fullscreen reader, and canvas actions (apply template / open diagram). Users manage **My published** and **My favorites** from the page header. Admin panel tab: dashboard stats, published cases, moderation queues (pending/rejected), proxy publish with attribution, configurable field options (subject/grade/tags), and staff permission grants ([`AdminCaseSquareTab.vue`](frontend/src/components/admin/AdminCaseSquareTab.vue), [`routers/auth/admin/case_square.py`](routers/auth/admin/case_square.py)). Sidebar entry and full **zh/en** i18n; other UI locales re-export English `caseSquare` strings. Upload body limit and same-origin PDF/doc iframe rules for teaching attachments ([`middleware.py`](services/infrastructure/http/middleware.py)).
-- **Diagram archive folders** — Create folders in the saved-diagram sidebar, move diagrams in/out, rename/delete folders (`diagram_folders` table, `diagrams.folder_id`, `/api/diagram-folders`, `/api/diagrams/{id}/folder`). Sidebar **Folders** / **Uncategorized** sections, full diagram list fetch (no 50-item cap), optimistic moves, persisted collapse state, hover **Move to folder** on each row, **New folder and move here** from the diagram menu, and folder badges on the international landing dropdown ([`DiagramHistory.vue`](frontend/src/components/sidebar/DiagramHistory.vue), [`useDiagramArchiveHistory.ts`](frontend/src/composables/sidebar/useDiagramArchiveHistory.ts)).
-
-### Changed
-
-- **Case Square — teaching-design content** — Removed **教学实录** (class recording) upload/tab and reflection **video** upload/playback; teaching reflection is **text-only**. **课堂应用** for diagram-type cases is unchanged.
-- **Diagram archive folders** — Unlimited folder count (removed 50-folder cap); folders list in creation order with **no manual reorder**; **新建文件夹** control shows icon + label instead of icon-only.
-
-### Fixed
-
-- **Case Square — diagram-case gallery** — `POST /api/case-square/posts/{id}/gallery-images` persists slot-aligned gallery images; carousel and detail modal load multi-image posts reliably ([`case_square_helpers.py`](routers/features/case_square_helpers.py)).
-- **Diagram folders** — Folder rename/delete and move-to-folder use correct DB session and cache invalidation; API errors surface in the UI; folder names no longer collapse to a vertical sliver when action buttons appear on hover.
-- **Saved diagrams sidebar** — Restored missing `useAuthStore` import that broke `/mindmate` when folder store changes landed ([`savedDiagrams.ts`](frontend/src/stores/savedDiagrams.ts)).
-
-### Tests
-
-- [`tests/test_case_square_create_response.py`](tests/test_case_square_create_response.py) — create response shape, gallery upload, slot-aligned `_format_gallery_items`.
-- [`tests/test_diagram_folders_api.py`](tests/test_diagram_folders_api.py) — folder create → move diagram → delete folder lifecycle.
-- [`tests/test_security_production_hardening.py`](tests/test_security_production_hardening.py) — Case Square PDF/doc same-origin frame and publish body-size paths.
 
 ## [5.132.0] - 2026-06-29
 

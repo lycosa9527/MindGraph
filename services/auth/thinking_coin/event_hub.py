@@ -215,8 +215,8 @@ def attach_footer(payload: dict[str, Any], mutation: ThinkingCoinMutation) -> di
     return merged
 
 
-def is_publish_case_coming_soon(slug: str) -> bool:
-    """Publish case is available when Case Square moderation is enabled."""
+def is_publish_case_coming_soon(_slug: str) -> bool:
+    """Publish-case earn is live; keep the hook for callers that pass a task slug."""
     return False
 
 

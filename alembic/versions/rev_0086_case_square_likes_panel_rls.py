@@ -1,7 +1,7 @@
 """Case Square RLS: allow panel/system mode for post and like writes (moderation delete).
 
-Revision ID: 0076
-Revises: 0075
+Revision ID: 0086
+Revises: 0085
 """
 
 from typing import Sequence, Union
@@ -11,8 +11,8 @@ from alembic import op
 
 from db_rls.policy_builder import _drop_policy
 
-revision: str = "0076"
-down_revision: Union[str, None] = "0075"
+revision: str = "0086"
+down_revision: Union[str, None] = "0085"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

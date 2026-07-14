@@ -6,19 +6,13 @@ Re-run safe: removes prior rows tagged with ``demo_seed_v1`` then inserts fresh 
 
 Usage (from repo root, with DATABASE_URL configured):
 
-    python scripts/seed_case_square_demo.py
+    PYTHONPATH=. python scripts/seed_case_square_demo.py
 """
 
 from __future__ import annotations
 
-import sys
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from typing import Any
-
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import joinedload
@@ -268,6 +262,7 @@ def _purge_demo_posts(db) -> int:
 
 
 def seed() -> None:
+    """Insert demo Case Square posts for local UI development."""
     now = datetime.now(UTC)
     with rls_sync_session(RlsContext.system_bootstrap()) as db:
         author = _find_author(db)

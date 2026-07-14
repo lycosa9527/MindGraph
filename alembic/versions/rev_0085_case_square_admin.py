@@ -1,7 +1,7 @@
 """Case Square admin: grants, field options, audit, proxy publish columns.
 
-Revision ID: 0075
-Revises: 0074
+Revision ID: 0085
+Revises: 0084
 """
 
 from typing import Sequence, Union
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql as pg
 
-revision: str = "0075"
-down_revision: Union[str, None] = "0074"
+revision: str = "0085"
+down_revision: Union[str, None] = "0084"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

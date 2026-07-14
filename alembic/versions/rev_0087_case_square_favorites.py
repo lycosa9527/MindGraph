@@ -1,7 +1,7 @@
 """Case Square post favorites (user bookmarks).
 
-Revision ID: 0077
-Revises: 0076
+Revision ID: 0087
+Revises: 0086
 """
 
 from typing import Sequence, Union
@@ -9,8 +9,8 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0077"
-down_revision: Union[str, None] = "0076"
+revision: str = "0087"
+down_revision: Union[str, None] = "0086"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

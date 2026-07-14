@@ -1,7 +1,7 @@
 """Diagram archive folders and diagrams.folder_id.
 
-Revision ID: 0078
-Revises: 0077
+Revision ID: 0088
+Revises: 0087
 """
 
 from typing import Sequence, Union
@@ -9,8 +9,8 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0078"
-down_revision: Union[str, None] = "0077"
+revision: str = "0088"
+down_revision: Union[str, None] = "0087"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
