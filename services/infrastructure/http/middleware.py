@@ -40,6 +40,7 @@ from services.infrastructure.utils.spa_handler import (
     should_apply_api_no_cache,
     should_apply_no_cache,
 )
+from services.showcase.storage import cos_showcase_enabled
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR, resolve_authenticated_user_optional
 from utils.auth.request_helpers import (
     CSRF_COOKIE_NAME,
@@ -59,12 +60,16 @@ SHOWCASE_MAX_BODY_SIZE = 105 * 1024 * 1024  # 100MB + multipart overhead
 
 
 def max_request_body_size_for_path(path: str) -> int:
-    """Per-route body limit; showcase publish allows large teaching attachments."""
-    if path == "/api/showcase/posts":
-        return SHOWCASE_MAX_BODY_SIZE
-    if path.startswith("/api/showcase/posts/"):
-        return SHOWCASE_MAX_BODY_SIZE
-    if path == "/api/auth/admin/showcase/posts/proxy":
+    """Per-route body limit; shrink Showcase when COS mode (no large multipart)."""
+    showcase_paths = (
+        path == "/api/showcase/posts"
+        or path.startswith("/api/showcase/posts/")
+        or path == "/api/auth/admin/showcase/posts/proxy"
+    )
+    if showcase_paths:
+        if cos_showcase_enabled():
+            # Metadata + init/complete JSON only — large bytes go browser→COS
+            return MAX_REQUEST_BODY_SIZE
         return SHOWCASE_MAX_BODY_SIZE
     return MAX_REQUEST_BODY_SIZE
 
@@ -84,7 +89,7 @@ def allows_same_origin_showcase_frame(path: str) -> bool:
     if path.startswith("/api/showcase/assets/"):
         lower = path.lower()
         return lower.endswith(_EMBEDDABLE_SHOWCASE_SUFFIXES)
-    if not path.startswith("/static/case_square/"):
+    if not (path.startswith("/static/case_square/") or path.startswith("/static/showcase/")):
         return False
     lower = path.lower()
     return lower.endswith(_EMBEDDABLE_SHOWCASE_SUFFIXES)
@@ -110,7 +115,8 @@ async def block_showcase_static_uploads(request: Request, call_next):
     Pending and approved assets must be fetched via authenticated
     ``/api/showcase/assets/...`` so non-approved posts are not world-readable.
     """
-    if request.url.path.startswith("/static/case_square/"):
+    static_path = request.url.path
+    if static_path.startswith("/static/case_square/") or static_path.startswith("/static/showcase/"):
         return JSONResponse(status_code=404, content={"detail": "Not found"})
     return await call_next(request)
 

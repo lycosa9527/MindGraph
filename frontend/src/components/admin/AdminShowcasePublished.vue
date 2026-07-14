@@ -172,12 +172,14 @@ function onDetailUpdated(updated: ShowcasePost): void {
   }
   patchPost(updated)
   eventBus.emit('admin:showcase_updated', {})
+  eventBus.emit('showcase:feed_invalidate', { reason: 'admin_published' })
 }
 
 function onDetailDeleted(): void {
   showDetailModal.value = false
   void loadPosts()
   eventBus.emit('admin:showcase_updated', {})
+  eventBus.emit('showcase:feed_invalidate', { reason: 'admin_delete' })
 }
 
 async function confirmDeletePost(post: ShowcasePost): Promise<void> {
@@ -202,6 +204,7 @@ async function confirmDeletePost(post: ShowcasePost): Promise<void> {
     posts.value = posts.value.filter((p) => p.id !== post.id)
     total.value = Math.max(0, total.value - 1)
     eventBus.emit('admin:showcase_updated', {})
+    eventBus.emit('showcase:feed_invalidate', { reason: 'admin_delete' })
   } catch (e) {
     notify.error(e instanceof Error ? e.message : 'Failed')
   }
@@ -221,6 +224,7 @@ async function toggleRecommend(post: ShowcasePost): Promise<void> {
       2000
     )
     eventBus.emit('admin:showcase_updated', {})
+    eventBus.emit('showcase:feed_invalidate', { reason: 'admin_recommend' })
   } catch (e) {
     notify.error(e instanceof Error ? e.message : 'Failed')
   }

@@ -16,6 +16,7 @@ from sqlalchemy.orm import joinedload
 
 from models.domain.auth import User
 from models.domain.showcase import ShowcasePost, ShowcasePostFavorite, ShowcasePostLike
+from routers.features.community_helpers import parse_spec_json
 from routers.features.showcase_constants import (
     CASE_TYPES,
     DIAGRAM_TYPE_LABELS,
@@ -52,8 +53,8 @@ from routers.features.showcase_permissions import (
     can_view_case_staff_meta,
     can_withdraw_case,
 )
-from routers.features.community_helpers import parse_spec_json
 from services.auth.thinking_coin.case_earn import try_publish_case_earn
+from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.showcase.audit import write_showcase_audit
 from services.showcase.post_delete import showcase_post_still_exists, delete_showcase_post_rows
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
@@ -269,9 +270,8 @@ async def _review_case_post_handler(
             detail="Failed to review case",
         ) from exc
 
-    refreshed = (
-        await db.execute(select(ShowcasePost.status).where(ShowcasePost.id == post_id))
-    ).scalar_one_or_none()
+    await showcase_cache.invalidate_post(post_id)
+    refreshed = (await db.execute(select(ShowcasePost.status).where(ShowcasePost.id == post_id))).scalar_one_or_none()
     expected = "approved" if action == "approve" else "rejected"
     if refreshed != expected:
         raise HTTPException(
@@ -441,6 +441,7 @@ async def _format_post(
         is_favorited = fav_row is not None
 
     thumbnail_url = showcase_public_asset_url(post.thumbnail_path) if post.thumbnail_path else None
+    # Spec is PG-backed; URL hits authenticated assets route which synthesizes JSON
     spec_json_url = showcase_public_asset_url(f"case_square/{post.id}.json") if post.spec else None
 
     attachment_url = None
@@ -589,11 +590,6 @@ async def _apply_author_case_update(
         diagram_type = None
         if not spec_obj:
             spec_obj = {"type": "teaching_design"}
-        if not spec_obj.get("attachment_path") and (not attachment or not attachment.filename):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="attachment is required for teaching design",
-            )
         if attachment and attachment.filename:
             attachment_path = await save_case_file(
                 post_id,
@@ -602,6 +598,9 @@ async def _apply_author_case_update(
                 "doc",
                 ATTACHMENT_MAX_BYTES,
             )
+            old_path = spec_obj.get("attachment_path")
+            if isinstance(old_path, str) and old_path and old_path != attachment_path:
+                delete_case_file(old_path)
             spec_obj["attachment_path"] = attachment_path
             spec_obj["attachment_filename"] = Path(attachment.filename).name
         if description.strip():

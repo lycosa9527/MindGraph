@@ -27,6 +27,7 @@ from routers.features.showcase_permissions import (
     can_expert_recommend,
     can_review_case,
 )
+from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user
 from utils.db.rls_context import RlsContext, apply_rls_context_async
@@ -90,6 +91,7 @@ async def toggle_like(
     if likes_count is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
+    await showcase_cache.invalidate_post(post_id)
     return {"liked": liked, "likes_count": likes_count}
 
 
@@ -134,6 +136,7 @@ async def toggle_favorite(
             detail="Failed to update favorite",
         ) from exc
 
+    await showcase_cache.invalidate_post(post_id)
     return {"favorited": favorited}
 
 
@@ -174,6 +177,8 @@ async def toggle_expert_recommend(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update recommendation",
         ) from exc
+
+    await showcase_cache.invalidate_post(post_id)
 
     with db.no_autoflush:
         refreshed = await _load_post_for_format(db, post_id)

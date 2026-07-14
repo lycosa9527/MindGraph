@@ -226,20 +226,25 @@ def test_allows_same_origin_showcase_frame_for_teaching_attachments() -> None:
     assert not middleware_module.allows_same_origin_showcase_frame("/static/community/thumb.png")
 
 
-def test_showcase_publish_body_size_limit_paths() -> None:
-    """Create, update, and admin proxy publish allow large multipart bodies."""
+def test_showcase_publish_body_size_limit_paths(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Local mode allows large multipart; COS mode shrinks to default API limit."""
     limit = middleware_module.SHOWCASE_MAX_BODY_SIZE
     default = middleware_module.MAX_REQUEST_BODY_SIZE
     resolver = middleware_module.max_request_body_size_for_path
+    monkeypatch.setattr(middleware_module, "cos_showcase_enabled", lambda: False)
     assert resolver("/api/showcase/posts") == limit
     assert resolver("/api/showcase/posts/abc-123") == limit
     assert resolver("/api/auth/admin/showcase/posts/proxy") == limit
     assert resolver("/api/showcase/favorites") == default
+    monkeypatch.setattr(middleware_module, "cos_showcase_enabled", lambda: True)
+    assert resolver("/api/showcase/posts") == default
+    assert resolver("/api/showcase/posts/abc/uploads/init") == default
+    assert resolver("/api/auth/admin/showcase/posts/proxy") == default
 
 
 @pytest.mark.asyncio
 async def test_block_showcase_static_uploads_returns_404() -> None:
-    """Direct /static/case_square/ access must be denied (use authenticated assets API)."""
+    """Direct /static/case_square/ and /static/showcase/ access must be denied."""
     request = MagicMock()
     request.url.path = "/static/case_square/pending_doc.pdf"
 
@@ -248,6 +253,10 @@ async def test_block_showcase_static_uploads_returns_404() -> None:
 
     result = await middleware_module.block_showcase_static_uploads(request, _call_next)
     assert result.status_code == 404
+
+    request.url.path = "/static/showcase/posts/x/thumbnail.png"
+    result2 = await middleware_module.block_showcase_static_uploads(request, _call_next)
+    assert result2.status_code == 404
 
 
 @pytest.mark.asyncio

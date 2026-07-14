@@ -1,7 +1,11 @@
 """
 Tencent Cloud Object Storage (COS) client helpers.
 
-Shared upload/download/list utilities used by backup scheduler and COS mirror sync.
+Auth: reuses TENCENT_SMS_SECRET_ID / TENCENT_SMS_SECRET_KEY (same CAM key as SMS/SES).
+Bucket/region: COS_BUCKET / COS_REGION. Feature prefixes: COS_KEY_PREFIX, COS_DOCUMENTS_*,
+COS_SHOWCASE_*.
+
+Used by backup scheduler, document summary, Showcase media, and COS mirror sync.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -238,8 +242,14 @@ def get_object_bytes(
     *,
     max_retries: int = 3,
     log_prefix: str = "[COS]",
+    max_bytes: Optional[int] = None,
 ) -> Optional[bytes]:
-    """Fetch object body as bytes."""
+    """
+    Fetch object body as bytes.
+
+    When ``max_bytes`` is set, only the first N bytes are read (Range request)
+    so large Showcase objects are not pulled through the API process.
+    """
     client = get_cos_client()
     if client is None:
         return None
@@ -248,8 +258,14 @@ def get_object_bytes(
     last_error: Optional[Exception] = None
     for attempt in range(max_retries):
         try:
-            response = client.get_object(Bucket=COS_BUCKET, Key=object_key)
-            return response["Body"].get_raw_stream().read()
+            params: Dict[str, Any] = {"Bucket": COS_BUCKET, "Key": object_key}
+            if max_bytes is not None and max_bytes > 0:
+                params["Range"] = f"bytes=0-{max_bytes - 1}"
+            response = client.get_object(**params)
+            data = response["Body"].get_raw_stream().read()
+            if max_bytes is not None and len(data) > max_bytes:
+                return data[:max_bytes]
+            return data
         except fetch_errors as exc:
             last_error = exc
             if CosServiceError is not None and isinstance(exc, CosServiceError):
@@ -316,6 +332,69 @@ def delete_object(object_key: str) -> bool:
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[COS] delete_object failed key=%s: %s", object_key, exc)
         return False
+
+
+def generate_presigned_put_url(
+    object_key: str,
+    *,
+    expired: int = 900,
+    content_type: Optional[str] = None,
+    headers: Optional[Dict[str, str]] = None,
+) -> Optional[str]:
+    """
+    Short-lived presigned PUT URL for browser→COS uploads (private bucket).
+
+    ``expired`` is TTL in seconds. Callers must not embed durable COS URLs in API JSON.
+    """
+    client = get_cos_client()
+    if client is None:
+        return None
+    params: Dict[str, Any] = {}
+    if content_type:
+        params["ContentType"] = content_type
+    if headers:
+        params.update(headers)
+    try:
+        return client.get_presigned_url(
+            Method="PUT",
+            Bucket=COS_BUCKET,
+            Key=object_key,
+            Expired=expired,
+            Params=params or None,
+        )
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error("[COS] presigned PUT failed key=%s: %s", object_key, exc)
+        return None
+
+
+def generate_presigned_get_url(
+    object_key: str,
+    *,
+    expired: int = 300,
+    response_content_disposition: Optional[str] = None,
+) -> Optional[str]:
+    """
+    Short-lived presigned GET URL for authenticated downloads (private bucket).
+
+    Prefer returning this only as a redirect Location, never as a durable API field.
+    """
+    client = get_cos_client()
+    if client is None:
+        return None
+    params: Dict[str, Any] = {}
+    if response_content_disposition:
+        params["response-content-disposition"] = response_content_disposition
+    try:
+        return client.get_presigned_url(
+            Method="GET",
+            Bucket=COS_BUCKET,
+            Key=object_key,
+            Expired=expired,
+            Params=params or None,
+        )
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error("[COS] presigned GET failed key=%s: %s", object_key, exc)
+        return None
 
 
 def list_prefix(

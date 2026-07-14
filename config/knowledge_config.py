@@ -231,6 +231,26 @@ class KnowledgeConfigMixin:
         return self._get_cached_value("COS_DOCUMENTS_PREFIX", "documents/mindgraph").strip().rstrip("/")
 
     @property
+    def COS_SHOWCASE_ENABLED(self) -> bool:
+        """Private-bucket Showcase media (presigned PUT/GET). Default on; local if COS auth missing."""
+        return self._get_cached_value("COS_SHOWCASE_ENABLED", "true").lower() == "true"
+
+    @property
+    def COS_SHOWCASE_PREFIX(self) -> str:
+        """COS key prefix for Showcase posts (private bucket objects)."""
+        return self._get_cached_value("COS_SHOWCASE_PREFIX", "showcase/mindgraph").strip().rstrip("/")
+
+    @property
+    def COS_SHOWCASE_PRESIGN_PUT_TTL(self) -> int:
+        """Seconds for browser→COS presigned PUT URLs (short-lived)."""
+        return int(self._get_cached_value("COS_SHOWCASE_PRESIGN_PUT_TTL", "900"))
+
+    @property
+    def COS_SHOWCASE_PRESIGN_GET_TTL(self) -> int:
+        """Seconds for COS→browser presigned GET URLs (short-lived)."""
+        return int(self._get_cached_value("COS_SHOWCASE_PRESIGN_GET_TTL", "300"))
+
+    @property
     def FILE_CENTER_WIKI_COMPILE(self) -> bool:
         """Compile a per-package wiki (markdown on disk) after chunk indexing (v2a)."""
         return self._get_cached_value("FILE_CENTER_WIKI_COMPILE", "true").lower() == "true"

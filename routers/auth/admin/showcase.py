@@ -26,6 +26,7 @@ from routers.features.showcase import (
     _review_case_post_handler,
 )
 from routers.features.showcase_permissions import (
+    PERM_DELETE,
     PERM_FIELDS,
     PERM_PERMISSIONS,
     PERM_PUBLISH_PROXY,
@@ -33,6 +34,7 @@ from routers.features.showcase_permissions import (
     VALID_GRANT_PERMISSIONS,
     can_delete_case,
     can_review_case,
+    load_user_showcase_permissions,
 )
 from routers.features.showcase_constants import CASE_TYPES, DIAGRAM_TYPE_LABELS
 from routers.features.showcase_helpers import (
@@ -41,22 +43,31 @@ from routers.features.showcase_helpers import (
     ALLOWED_VIDEO_SUFFIXES,
     ATTACHMENT_MAX_BYTES,
     VIDEO_MAX_BYTES,
-    delete_spec_json,
-    delete_thumbnail,
     parse_tags_json,
     prepare_post_id_and_spec,
     save_case_file,
     save_spec_json,
     save_thumbnail_from_upload,
 )
+from routers.features.showcase_routes_uploads import reject_if_cos_multipart_files_present
+from services.redis.cache import redis_showcase_cache as showcase_cache
+from services.showcase.audit import write_showcase_audit
+from services.showcase.field_options import (
+    invalidate_field_options_cache_async,
+    validate_grade,
+    validate_subject,
+)
 from services.showcase.staff_permissions import (
     ALL_SHOWCASE_PERMS,
     PLATFORM_BD_DEFAULT,
     can_view_dashboard as can_view_showcase_dashboard,
-    load_user_showcase_permissions,
 )
-from services.showcase.audit import write_showcase_audit
-from services.showcase.field_options import invalidate_field_options_cache, validate_grade, validate_subject
+from services.showcase.storage import delete_post_assets, cos_showcase_enabled
+from services.showcase.sync import (
+    build_storage_status,
+    purge_orphans_from_reconcile,
+    reconcile_showcase_storage,
+)
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user
 from utils.auth.admin_panel_permissions import CAP_TAB_SHOWCASE_EDIT, CAP_TAB_SHOWCASE_VIEW
@@ -196,9 +207,7 @@ async def showcase_stats_overview(
         )
     ).scalar_one()
     proxy_total = (
-        await db.execute(
-            select(func.count()).select_from(ShowcasePost).where(ShowcasePost.publish_source == "proxy")
-        )
+        await db.execute(select(func.count()).select_from(ShowcasePost).where(ShowcasePost.publish_source == "proxy"))
     ).scalar_one()
     expert_total = (
         await db.execute(
@@ -230,9 +239,7 @@ async def showcase_stats_overview(
         rejection_rate = round(rejected_recent / reviewed_recent, 4)
 
     self_total = (
-        await db.execute(
-            select(func.count()).select_from(ShowcasePost).where(ShowcasePost.publish_source == "self")
-        )
+        await db.execute(select(func.count()).select_from(ShowcasePost).where(ShowcasePost.publish_source == "self"))
     ).scalar_one()
     total_posts = int(pending) + int(approved_total) + int(rejected_total)
 
@@ -447,7 +454,7 @@ async def create_field_option(
         payload={"category": body.category, "value": body.value},
     )
     await db.commit()
-    invalidate_field_options_cache()
+    await invalidate_field_options_cache_async()
     await db.refresh(row)
     return {"message": "Created", "id": row.id}
 
@@ -483,7 +490,7 @@ async def patch_field_option(
         payload={"id": option_id, "category": row.category, "value": row.value},
     )
     await db.commit()
-    invalidate_field_options_cache()
+    await invalidate_field_options_cache_async()
     return {"message": "Updated"}
 
 
@@ -509,7 +516,7 @@ async def delete_field_option(
         payload={"id": option_id, "category": row.category, "value": row.value},
     )
     await db.commit()
-    invalidate_field_options_cache()
+    await invalidate_field_options_cache_async()
     return {"message": "Deleted"}
 
 
@@ -532,6 +539,8 @@ async def _admin_delete_case_post_handler(
     if not await can_delete_case(post, current_user, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot delete this case")
 
+    thumb_path = post.thumbnail_path
+    spec_snapshot = dict(post.spec) if isinstance(post.spec, dict) else None
     try:
         await _delete_case_post_in_session(
             db,
@@ -546,8 +555,8 @@ async def _admin_delete_case_post_handler(
             detail="Failed to delete case",
         ) from exc
 
-    delete_thumbnail(post_id)
-    delete_spec_json(post_id)
+    await delete_post_assets(post_id=post_id, thumbnail_path=thumb_path, spec=spec_snapshot)
+    await showcase_cache.invalidate_post(post_id)
     return {"message": "Case deleted"}
 
 
@@ -632,20 +641,34 @@ async def proxy_create_post(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     tag_list = parse_tags_json(tags)
+    reject_if_cos_multipart_files_present(
+        any(
+            [
+                bool(thumbnail and thumbnail.filename),
+                bool(attachment and attachment.filename),
+                bool(source_file and source_file.filename),
+                bool(reflection_video and reflection_video.filename),
+                bool(classroom_video and classroom_video.filename),
+            ]
+        )
+    )
     post_id = str(uuid_module.uuid4())
     thumbnail_path = None
     spec_obj: Optional[dict] = None
 
     if case_type == "teaching_design":
         diagram_type = None
-        if not attachment or not attachment.filename:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="attachment required")
-        attachment_path = await save_case_file(post_id, attachment, ALLOWED_DOC_SUFFIXES, "doc", ATTACHMENT_MAX_BYTES)
-        spec_obj = {
-            "type": "teaching_design",
-            "attachment_path": attachment_path,
-            "attachment_filename": Path(attachment.filename).name,
-        }
+        spec_obj = {"type": "teaching_design"}
+        if attachment and attachment.filename:
+            attachment_path = await save_case_file(
+                post_id,
+                attachment,
+                ALLOWED_DOC_SUFFIXES,
+                "doc",
+                ATTACHMENT_MAX_BYTES,
+            )
+            spec_obj["attachment_path"] = attachment_path
+            spec_obj["attachment_filename"] = Path(attachment.filename).name
         if description.strip():
             spec_obj["body"] = description.strip()
         if teaching_reflection.strip():
@@ -674,9 +697,10 @@ async def proxy_create_post(
             spec_obj["source_file_path"] = await save_case_file(
                 post_id, source_file, ALLOWED_SOURCE_SUFFIXES, "source", ATTACHMENT_MAX_BYTES
             )
-        if not thumbnail or not thumbnail.filename:
+        if thumbnail and thumbnail.filename:
+            thumbnail_path = await save_thumbnail_from_upload(post_id, thumbnail)
+        elif not cos_showcase_enabled():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="thumbnail required")
-        thumbnail_path = await save_thumbnail_from_upload(post_id, thumbnail)
 
     if spec_obj:
         save_spec_json(post_id, spec_obj)
@@ -717,8 +741,56 @@ async def proxy_create_post(
         payload={"attribution": attribution, "auto_approve": auto_approve},
     )
     await db.commit()
+    await showcase_cache.invalidate_post(post_id)
     post = await _load_post_for_format(db, post_id)
     return {
         "message": "Proxy case created",
         "post": await _format_post(post, current_user, db),
     }
+
+
+class PurgeOrphansBody(BaseModel):
+    """Body for orphan COS purge (dry_run defaults true)."""
+
+    dry_run: bool = True
+
+
+@router.get("/admin/showcase/storage/status")
+async def admin_showcase_storage_status(
+    _current_user: User = Depends(get_current_user),
+    _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_SHOWCASE_VIEW)),
+):
+    """COS / local storage health for Showcase media."""
+    return build_storage_status().to_dict()
+
+
+@router.get("/admin/showcase/storage/reconcile")
+async def admin_showcase_storage_reconcile(
+    _current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
+    _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_SHOWCASE_VIEW)),
+):
+    """Diff Postgres media keys vs COS objects under the Showcase prefix."""
+    report = await reconcile_showcase_storage(db)
+    return report.to_dict()
+
+
+@router.post("/admin/showcase/storage/purge-orphans")
+async def admin_showcase_storage_purge_orphans(
+    body: PurgeOrphansBody,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
+    _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_SHOWCASE_EDIT)),
+):
+    """
+    Purge COS objects not referenced by any Showcase post.
+
+    dry_run=true (default) only reports planned deletes.
+    """
+    perms = await load_user_showcase_permissions(db, current_user)
+    if PERM_DELETE not in perms:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Showcase delete permission required to purge orphans",
+        )
+    return await purge_orphans_from_reconcile(db, dry_run=body.dry_run)

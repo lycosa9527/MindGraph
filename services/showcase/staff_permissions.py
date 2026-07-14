@@ -168,6 +168,6 @@ async def can_user_review_post(post: ShowcasePost, user: User, db: AsyncSession)
 
 
 async def can_view_non_approved_post(post: ShowcasePost, user: User, db: AsyncSession) -> bool:
-    if post.author_id == user.id or post.submitted_by_id == user.id:
+    if user.id in (post.author_id, post.submitted_by_id):
         return True
     return await can_review_case(db, user)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useInfiniteScroll } from '@vueuse/core'
 
@@ -33,6 +33,7 @@ import {
   type ShowcaseCaseType,
 } from '@/components/showcase/showcaseShared'
 import { useLanguage } from '@/composables'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
 import { useAuthStore } from '@/stores'
 import {
@@ -265,8 +266,24 @@ function handlePublishSuccess() {
   void reload()
 }
 
+const offFeedInvalidate = eventBus.on('showcase:feed_invalidate', () => {
+  void reload()
+})
+const offPostUpdated = eventBus.on('showcase:post_updated', () => {
+  void reload()
+})
+const offAdminShowcase = eventBus.on('admin:showcase_updated', () => {
+  void reload()
+})
+
 onMounted(() => {
   void fetchPosts()
+})
+
+onUnmounted(() => {
+  offFeedInvalidate()
+  offPostUpdated()
+  offAdminShowcase()
 })
 
 watch(

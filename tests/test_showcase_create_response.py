@@ -82,9 +82,17 @@ def clear_dependency_overrides() -> Generator[None, None, None]:
 
 @pytest.fixture(autouse=True)
 def enable_showcase(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Enable FEATURE_SHOWCASE for every test in this module."""
+    """Enable FEATURE_SHOWCASE and force local storage for multipart create tests."""
     monkeypatch.setenv("FEATURE_SHOWCASE", "true")
     config.refresh_env_cache()
+    monkeypatch.setattr(
+        "services.showcase.storage.backend.cos_showcase_enabled",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "routers.features.showcase_routes_uploads.cos_showcase_enabled",
+        lambda: False,
+    )
 
 
 @requires_showcase_schema

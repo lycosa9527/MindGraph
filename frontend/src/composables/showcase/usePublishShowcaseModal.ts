@@ -91,6 +91,7 @@ export function usePublishShowcaseModal(
   const teachingReflection = ref('')
   const classroomApplication = ref('')
   const isSubmitting = ref(false)
+  const submitPhaseLabel = ref('')
   const isGenerating = ref(false)
   const isHistorySpecLoading = ref(false)
   const showHistoryPicker = ref(false)
@@ -172,11 +173,25 @@ export function usePublishShowcaseModal(
     if (props.proxyMode) return String(t('admin.showcase.proxyFormTitle'))
     return String(t('showcase.publishModal.title'))
   })
-  const submitButtonLabel = computed(() =>
-    isEditMode.value
-      ? String(t('showcase.publishModal.resubmit'))
-      : String(t('showcase.publishModal.submit'))
-  )
+  const submitButtonLabel = computed(() => {
+    if (isSubmitting.value) {
+      if (submitPhaseLabel.value) return submitPhaseLabel.value
+      return String(
+        t(
+          isEditMode.value
+            ? 'showcase.publishModal.resubmitting'
+            : 'showcase.publishModal.submitting',
+        ),
+      )
+    }
+    return String(
+      t(
+        isEditMode.value
+          ? 'showcase.publishModal.resubmit'
+          : 'showcase.publishModal.submit',
+      ),
+    )
+  })
   const isDiagramType = computed(
     () => caseType.value === 'diagram_case' || caseType.value === 'diagram_template'
   )
@@ -657,6 +672,7 @@ export function usePublishShowcaseModal(
     notify,
     can,
     isSubmitting,
+    submitPhaseLabel,
     isEditMode,
     fromCanvas,
     title,

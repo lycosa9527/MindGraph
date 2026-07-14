@@ -64,6 +64,22 @@ TTL_COMMUNITY_POST = 300
 TTL_COMMUNITY_VERSION = 86_400
 
 # ---------------------------------------------------------------------------
+# Showcase cache  (redis_showcase_cache.py)
+# ---------------------------------------------------------------------------
+SHOWCASE_VERSION = "showcase:version"
+SHOWCASE_LIST = "showcase:list:{hash16}:v{version}"
+SHOWCASE_POST = "showcase:post:{post_id}"
+SHOWCASE_META = "showcase:meta"
+SHOWCASE_PENDING_COUNT = "showcase:pending_count"
+SHOWCASE_UPLOAD_GRANT = "showcase:upload_grant:{user_id}:{post_id}:{role}"
+TTL_SHOWCASE_LIST = 60
+TTL_SHOWCASE_POST = 300
+TTL_SHOWCASE_VERSION = 86_400
+TTL_SHOWCASE_META = 300
+TTL_SHOWCASE_PENDING = 60
+# Upload grant TTL follows COS_SHOWCASE_PRESIGN_PUT_TTL at runtime (default 900)
+
+# ---------------------------------------------------------------------------
 # Feature org access cache  (redis_feature_org_access_cache.py)
 # ---------------------------------------------------------------------------
 FEATURE_ORG_ACCESS = "cache:feature_org_access:v1"

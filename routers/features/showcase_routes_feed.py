@@ -1,10 +1,13 @@
-"""Showcase routes: meta, listing, favorites, and post detail."""
+"""Showcase routes: meta, listing, favorites, and authenticated asset download."""
 
 from __future__ import annotations
 
+import mimetypes
+from pathlib import Path
 
+import orjson
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,15 +19,39 @@ from routers.features.showcase_constants import (
     DIAGRAM_TYPE_LABELS,
 )
 from routers.features.showcase_helpers import (
-    post_id_from_showcase_filename,
+    post_id_from_showcase_asset_path,
     resolve_showcase_disk_path,
 )
 from routers.features.showcase_permissions import can_view_non_approved_post
 from routers.features.showcase_routes_posts import list_posts
 from services.showcase.field_options import load_meta_payload
+from services.showcase.infra.observability import showcase_wf_log
+from services.showcase.storage import (
+    collect_keys_from_post,
+    cos_showcase_enabled,
+    create_presigned_get,
+    get_bytes,
+    is_showcase_logical_key,
+    storage_backend,
+)
 from utils.auth import get_current_user
 
 router = APIRouter()
+
+
+def _key_belongs_to_post(post: ShowcasePost, logical_key: str) -> bool:
+    """True if the requested key is referenced by the post (or is legacy/spec JSON)."""
+    normalized = logical_key.lstrip("/").replace("\\", "/")
+    keys = collect_keys_from_post(thumbnail_path=post.thumbnail_path, spec=post.spec)
+    if normalized in keys:
+        return True
+    # Spec JSON is PG-backed; allow legacy/synthetic paths when post has spec
+    if normalized in {
+        f"case_square/{post.id}.json",
+        f"showcase/posts/{post.id}/spec.json",
+    }:
+        return bool(post.spec)
+    return False
 
 
 @router.get("/assets/{asset_path:path}")
@@ -33,20 +60,142 @@ async def download_showcase_asset(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Serve Showcase files with auth; non-approved posts are author/staff only."""
+    """
+    Serve Showcase files with AuthZ.
+
+    COS: 302 to short-TTL presigned GET. Local/legacy: FileResponse or bytes.
+    API never embeds durable COS host URLs in JSON — only redirect Location.
+    """
     normalized = asset_path.lstrip("/").replace("\\", "/")
-    if not normalized.startswith("case_square/"):
-        normalized = f"case_square/{normalized}"
-    disk_path = resolve_showcase_disk_path(normalized)
-    post_id = post_id_from_showcase_filename(disk_path.name)
+    if not is_showcase_logical_key(normalized):
+        # Backward compat: bare filenames under legacy case_square/
+        if "/" not in normalized:
+            normalized = f"case_square/{normalized}"
+        elif not normalized.startswith("case_square/") and not normalized.startswith("showcase/posts/"):
+            showcase_wf_log(
+                "download_deny",
+                "invalid_path",
+                user_id=current_user.id,
+                key=normalized,
+            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    post_id = post_id_from_showcase_asset_path(normalized)
     if not post_id:
+        showcase_wf_log(
+            "download_deny",
+            "no_post_id",
+            user_id=current_user.id,
+            key=normalized,
+        )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
     post = (await db.execute(select(ShowcasePost).where(ShowcasePost.id == post_id))).scalar_one_or_none()
     if not post:
+        showcase_wf_log(
+            "download_deny",
+            "post_missing",
+            post_id=post_id,
+            user_id=current_user.id,
+            key=normalized,
+        )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     if post.status != "approved" and not await can_view_non_approved_post(post, current_user, db):
+        showcase_wf_log(
+            "download_deny",
+            "forbidden_status",
+            post_id=post_id,
+            user_id=current_user.id,
+            key=normalized,
+        )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    return FileResponse(path=str(disk_path), filename=disk_path.name)
+    if not _key_belongs_to_post(post, normalized):
+        showcase_wf_log(
+            "download_deny",
+            "key_not_member",
+            post_id=post_id,
+            user_id=current_user.id,
+            key=normalized,
+        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    filename = Path(normalized).name
+    media_type, _ = mimetypes.guess_type(filename)
+    disposition = f'inline; filename="{filename}"'
+
+    # Legacy / local-only spec JSON: synthesize from Postgres
+    if normalized.endswith(f"{post.id}.json") or normalized.endswith("/spec.json"):
+        if post.spec and isinstance(post.spec, dict):
+            showcase_wf_log(
+                "download",
+                "spec_json",
+                post_id=post_id,
+                user_id=current_user.id,
+                key=normalized,
+                backend=storage_backend(),
+            )
+            return Response(
+                content=orjson.dumps(post.spec),
+                media_type="application/json",
+                headers={"Content-Disposition": disposition},
+            )
+
+    if cos_showcase_enabled() and normalized.startswith("showcase/posts/"):
+        url = create_presigned_get(normalized, filename=filename)
+        if url:
+            showcase_wf_log(
+                "download",
+                "presign_redirect",
+                post_id=post_id,
+                user_id=current_user.id,
+                key=normalized,
+                backend="cos",
+            )
+            return RedirectResponse(url=url, status_code=status.HTTP_302_FOUND)
+
+    # Local file path
+    try:
+        disk_path = resolve_showcase_disk_path(normalized)
+        showcase_wf_log(
+            "download",
+            "local_file",
+            post_id=post_id,
+            user_id=current_user.id,
+            key=normalized,
+            backend="local",
+        )
+        return FileResponse(
+            path=str(disk_path),
+            filename=filename,
+            media_type=media_type,
+            headers={"Content-Disposition": disposition},
+        )
+    except HTTPException:
+        pass
+
+    data = await get_bytes(normalized)
+    if data is None:
+        showcase_wf_log(
+            "download_deny",
+            "bytes_missing",
+            post_id=post_id,
+            user_id=current_user.id,
+            key=normalized,
+        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    showcase_wf_log(
+        "download",
+        "bytes",
+        post_id=post_id,
+        user_id=current_user.id,
+        key=normalized,
+        backend=storage_backend(),
+    )
+    return Response(
+        content=data,
+        media_type=media_type or "application/octet-stream",
+        headers={"Content-Disposition": disposition},
+    )
 
 
 @router.get("/meta")

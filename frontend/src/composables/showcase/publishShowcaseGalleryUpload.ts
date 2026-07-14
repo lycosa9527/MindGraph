@@ -1,12 +1,11 @@
 /**
- * Gallery upload retry helpers for Showcase publish.
+ * Gallery upload helpers for Showcase publish (init → PUT → complete).
  */
 import {
-  getShowcasePost,
-  updateShowcasePost,
-  uploadShowcaseGalleryImages,
-  type ShowcasePost,
-} from '@/utils/apiClient'
+  uploadShowcaseFile,
+  type ShowcaseUploadRole,
+} from '@/composables/showcase/uploadShowcaseFile'
+import { getShowcasePost, type ShowcasePost } from '@/utils/apiClient'
 
 export function countResolvedGalleryImages(post: {
   gallery_items?: Array<{ kind: string; url?: string | null; missing?: boolean }>
@@ -16,38 +15,6 @@ export function countResolvedGalleryImages(post: {
       (item) => item.kind === 'image' && item.url && !item.missing
     ).length ?? 0
   )
-}
-
-export async function buildGalleryRetryFormData(
-  post: ShowcasePost,
-  drafts: Array<{ file: File; filename: string }>
-): Promise<FormData> {
-  const formData = new FormData()
-  formData.append('title', post.title)
-  formData.append('description', post.description ?? '')
-  formData.append('tags', JSON.stringify(post.tags ?? []))
-  formData.append('case_type', post.case_type)
-  formData.append('subject', post.subject ?? '')
-  formData.append('grade', post.grade ?? '')
-  if (post.diagram_type) {
-    formData.append('diagram_type', post.diagram_type)
-  }
-
-  let specObj: Record<string, unknown> = { type: post.case_type, source: 'gallery' }
-  if (post.spec_json_url) {
-    const specRes = await fetch(post.spec_json_url, { credentials: 'include' })
-    if (specRes.ok) {
-      const parsed: unknown = await specRes.json()
-      if (parsed && typeof parsed === 'object') {
-        specObj = parsed as Record<string, unknown>
-      }
-    }
-  }
-  formData.append('spec', JSON.stringify(specObj))
-  for (const draft of drafts) {
-    formData.append('gallery_images', draft.file, draft.filename)
-  }
-  return formData
 }
 
 export async function ensureGalleryImagesPersisted(
@@ -60,38 +27,47 @@ export async function ensureGalleryImagesPersisted(
   let post = await getShowcasePost(postId)
   if (countResolvedGalleryImages(post) >= drafts.length) return
 
-  const uploadFormData = new FormData()
-  for (const draft of drafts) {
-    uploadFormData.append('gallery_images', draft.file, draft.filename)
-  }
-  let dedicatedEndpointFailed = false
-  try {
-    const uploaded = await uploadShowcaseGalleryImages(postId, uploadFormData)
-    post = uploaded.post
-  } catch (error) {
-    const message = error instanceof Error ? error.message : ''
-    const endpointUnavailable =
-      message.includes('405') ||
-      message.includes('404') ||
-      message.toLowerCase().includes('not found') ||
-      message.toLowerCase().includes('method not allowed')
-    if (!endpointUnavailable) {
-      throw error
-    }
-    dedicatedEndpointFailed = true
-    post = await getShowcasePost(postId)
+  const specObj =
+    post.spec && typeof post.spec === 'object' && !Array.isArray(post.spec)
+      ? (post.spec as { gallery?: unknown })
+      : null
+  const galleryList = Array.isArray(specObj?.gallery) ? specObj.gallery : []
+
+  let draftIdx = 0
+  for (let slot = 0; slot < Math.max(galleryList.length, drafts.length); slot += 1) {
+    const entry = galleryList[slot] as { kind?: string; path?: string; pending?: boolean } | undefined
+    const needsUpload =
+      !entry || (entry.kind === 'image' && (!entry.path || entry.pending))
+    if (!needsUpload) continue
+    const draft = drafts[draftIdx]
+    if (!draft) break
+    draftIdx += 1
+    await uploadShowcaseFile({
+      postId,
+      role: `gallery_${slot}` as ShowcaseUploadRole,
+      file: draft.file,
+      filename: draft.filename,
+    })
   }
 
-  if (countResolvedGalleryImages(post) < drafts.length) {
-    const retryForm = await buildGalleryRetryFormData(post, drafts)
-    const updated = await updateShowcasePost(postId, retryForm)
-    post = updated.post
+  // Fallback: upload remaining drafts into sequential slots
+  while (draftIdx < drafts.length) {
+    const draft = drafts[draftIdx]
+    await uploadShowcaseFile({
+      postId,
+      role: `gallery_${draftIdx}` as ShowcaseUploadRole,
+      file: draft.file,
+      filename: draft.filename,
+    })
+    draftIdx += 1
   }
 
+  post = await getShowcasePost(postId)
   if (countResolvedGalleryImages(post) < drafts.length) {
-    const hint = dedicatedEndpointFailed ? messages.reuploadHint : ''
     throw new Error(
-      hint ? `${messages.uploadFailed} ${hint}` : messages.uploadFailed
+      messages.reuploadHint
+        ? `${messages.uploadFailed} ${messages.reuploadHint}`
+        : messages.uploadFailed,
     )
   }
 }

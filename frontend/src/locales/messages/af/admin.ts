@@ -1218,4 +1218,6 @@ export default {
   'admin.cos.installOk': 'Qdrant installed',
   'admin.cos.installFailed': 'Qdrant install failed',
   'admin.cos.installNeedsRoot': 'Install requires root on the server',
+  'admin.feature.showcase': 'Showcase',
+  'admin.feature.showcaseHint': 'Moderated public case gallery.',
 } as const

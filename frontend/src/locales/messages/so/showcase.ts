@@ -193,4 +193,20 @@ export default {
   'showcase.deleteConfirmBody': 'Delete this case?',
   'showcase.deleted': 'Deleted',
   'meta.pageTitle.showcase': 'Showcase',
+  'showcase.publishModal.submitting': 'Submitting…',
+  'showcase.publishModal.creatingCase': 'Creating case…',
+  'showcase.publishModal.uploadingFiles': 'Uploading files ({current}/{total})…',
+  'showcase.publishModal.uploadingFile': 'Uploading {name} ({current}/{total})…',
+  'showcase.publishModal.finishing': 'Finishing…',
+  'showcase.publishModal.uploadFailedRolledBack': 
+    'Upload failed — the draft was discarded. Please try again.',
+  'showcase.publishModal.uploadFailed': 'Upload failed. Please try again.',
+  'showcase.publishModal.directUploadDisabled': 
+    'Direct file upload is temporarily unavailable. You can still pick a saved diagram from history.',
+  'showcase.publishModal.uploadViaStorage': 
+    'Files upload directly to secure storage (short-lived URL).',
+  'showcase.detail.actionFailed': 'Action failed. Please try again.',
+  'showcase.detail.recommendedOn': 'Marked as recommended',
+  'showcase.detail.recommendedOff': 'Recommendation removed',
+  'showcase.publishModal.resubmitting': 'Resubmitting…',
 } as const

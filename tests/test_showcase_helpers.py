@@ -18,12 +18,17 @@ from routers.features.showcase_helpers import (
 def test_showcase_public_asset_url() -> None:
     """Build public asset URL for a showcase relative path."""
     assert showcase_public_asset_url("case_square/abc.png") == ("/api/showcase/assets/case_square/abc.png")
+    post_id = "12345678-1234-4234-8234-123456789abc"
+    key = f"showcase/posts/{post_id}/thumbnail.png"
+    assert showcase_public_asset_url(key) == f"/api/showcase/assets/{key}"
 
 
 def test_showcase_public_asset_url_rejects_other_prefixes() -> None:
-    """Reject asset URLs for paths outside case_square/."""
+    """Reject asset URLs for paths outside showcase prefixes."""
     with pytest.raises(ValueError, match="Not a showcase path"):
         showcase_public_asset_url("chat/abc.png")
+    with pytest.raises(ValueError, match="Not a showcase path"):
+        showcase_public_asset_url("https://bucket.cos.ap-guangzhou.myqcloud.com/x.png")
 
 
 def test_post_id_from_showcase_filename() -> None:

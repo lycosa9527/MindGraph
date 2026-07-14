@@ -1,5 +1,6 @@
 /**
  * Thumbnail resolve + submit handlers for the Showcase publish modal.
+ * Flow: create/update metadata → init → PUT (or local complete) → complete.
  */
 import { type Ref } from 'vue'
 
@@ -17,7 +18,10 @@ import {
 } from '@/components/showcase/showcaseShared'
 import type { AdminCapability } from '@/utils/adminCapabilities'
 import type { UseLanguageTranslate } from '@/composables/core/useLanguage'
-import { ensureGalleryImagesPersisted } from '@/composables/showcase/publishShowcaseGalleryUpload'
+import {
+  uploadShowcaseFile,
+  type ShowcaseUploadRole,
+} from '@/composables/showcase/uploadShowcaseFile'
 import { resolvePublishThumbnail } from '@/composables/showcase/publishShowcaseThumbnails'
 import type {
   GalleryDiagramDraft,
@@ -25,10 +29,12 @@ import type {
   GalleryImageDraft,
 } from '@/composables/showcase/usePublishShowcaseGalleryDrafts'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
+import { useShowcaseStore } from '@/stores/showcase'
 import {
   createShowcasePost,
   proxyCreateShowcasePost,
   updateShowcasePost,
+  withdrawShowcasePost,
 } from '@/utils/apiClient'
 import {
   cloneShowcaseDiagramSpec,
@@ -52,9 +58,12 @@ export type PublishSubmitDeps = {
   notify: {
     error: (message: string) => void
     success: (message: string, duration?: number) => void
+    showLoading: (message?: string) => void
+    hideLoading: () => void
   }
   can: (cap: AdminCapability) => boolean
   isSubmitting: Ref<boolean>
+  submitPhaseLabel: Ref<string>
   isEditMode: { value: boolean }
   fromCanvas: { value: boolean }
   title: Ref<string>
@@ -94,6 +103,10 @@ export type PublishSubmitDeps = {
   isSessionExpiredMessage: (message: string) => boolean
 }
 
+function blobToPngFile(blob: Blob, name = 'thumbnail.png'): File {
+  return new File([blob], name, { type: 'image/png' })
+}
+
 export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
   const {
     props,
@@ -102,6 +115,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     notify,
     can,
     isSubmitting,
+    submitPhaseLabel,
     isEditMode,
     fromCanvas,
     title,
@@ -141,6 +155,26 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     isSessionExpiredMessage,
   } = deps
 
+  const showcaseStore = useShowcaseStore()
+
+  function setSubmitProgress(message: string): void {
+    submitPhaseLabel.value = message
+    notify.showLoading(message)
+  }
+
+  function clearSubmitProgress(): void {
+    submitPhaseLabel.value = ''
+    notify.hideLoading()
+  }
+
+  function displayNameForUpload(item: {
+    role: ShowcaseUploadRole
+    file: File
+    filename?: string
+  }): string {
+    return item.filename || item.file.name || String(item.role)
+  }
+
   async function resolveThumbnail(): Promise<Blob | null> {
     return resolvePublishThumbnail({
       fromCanvas: fromCanvas.value,
@@ -155,16 +189,6 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
       publishPreviewDiagramType: publishPreviewDiagramType.value,
       thumbnailCaptureHost,
       showThumbnailCapture,
-    })
-  }
-
-  async function persistGalleryImages(
-    postId: string,
-    drafts: Array<{ file: File; filename: string }>,
-  ): Promise<void> {
-    await ensureGalleryImagesPersisted(postId, drafts, {
-      uploadFailed: String(t('showcase.publishModal.galleryUploadFailed')),
-      reuploadHint: String(t('showcase.publishModal.galleryReuploadHint')),
     })
   }
 
@@ -210,6 +234,86 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     return null
   }
 
+  async function uploadPendingMedia(
+    postId: string,
+    pending: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }>,
+  ): Promise<void> {
+    const total = pending.length
+    for (let index = 0; index < total; index += 1) {
+      const item = pending[index]
+      if (!item) continue
+      setSubmitProgress(
+        String(
+          t('showcase.publishModal.uploadingFile', {
+            name: displayNameForUpload(item),
+            current: index + 1,
+            total,
+          }),
+        ),
+      )
+      await uploadShowcaseFile({
+        postId,
+        role: item.role,
+        file: item.file,
+        filename: item.filename,
+      })
+    }
+  }
+
+  async function rollbackCreatedPost(postId: string): Promise<void> {
+    try {
+      // Pending author posts use withdraw (hard-delete + asset cleanup)
+      await withdrawShowcasePost(postId)
+    } catch {
+      // Best-effort: leave orphan pending for author/admin cleanup
+    }
+  }
+
+  async function createThenUpload(
+    createFn: () => Promise<{ post: { id: string } }>,
+    pending: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }>,
+  ): Promise<string> {
+    setSubmitProgress(String(t('showcase.publishModal.creatingCase')))
+    const result = await createFn()
+    const postId = result.post.id
+    if (pending.length === 0) {
+      setSubmitProgress(String(t('showcase.publishModal.finishing')))
+      return postId
+    }
+    try {
+      await uploadPendingMedia(postId, pending)
+      setSubmitProgress(String(t('showcase.publishModal.finishing')))
+    } catch {
+      await rollbackCreatedPost(postId)
+      throw new Error('SHOWCASE_UPLOAD_ROLLED_BACK')
+    }
+    return postId
+  }
+
+  function mapSubmitError(error: unknown): string {
+    const message = error instanceof Error ? error.message : ''
+    if (isSessionExpiredMessage(message)) {
+      return String(t('auth.sessionExpired'))
+    }
+    if (message === 'SHOWCASE_UPLOAD_ROLLED_BACK') {
+      return String(t('showcase.publishModal.uploadFailedRolledBack'))
+    }
+    if (
+      message === 'NETWORK_ERROR' ||
+      message === 'Failed to fetch' ||
+      /network|fetch failed/i.test(message)
+    ) {
+      return String(t('showcase.publishModal.networkError'))
+    }
+    if (
+      message.startsWith('SHOWCASE_STORAGE_PUT_FAILED') ||
+      /Upload to storage failed|upload failed|presigned|COS|storage/i.test(message)
+    ) {
+      return String(t('showcase.publishModal.uploadFailed'))
+    }
+    return message || String(t('showcase.publishModal.uploadFailed'))
+  }
+
   async function submit() {
     if (isSubmitting.value) return
     isSubmitting.value = true
@@ -226,7 +330,8 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
       }
 
       const formData = new FormData()
-      let galleryUploadDrafts: Array<{ file: File; filename: string }> = []
+      const pendingUploads: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }> = []
+
       formData.append('title', title.value.trim())
       formData.append('description', description.value.trim())
       formData.append('tags', JSON.stringify(formTags))
@@ -258,13 +363,20 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
           return
         }
         if (uploadedFile.value) {
-          formData.append('attachment', uploadedFile.value, uploadedFile.value.name)
+          pendingUploads.push({
+            role: 'attachment',
+            file: uploadedFile.value,
+            filename: uploadedFile.value.name,
+          })
         }
         const teachingThumb = uploadedFile.value
           ? await captureTeachingDocThumbnail(uploadedFile.value)
           : null
         if (teachingThumb) {
-          formData.append('thumbnail', teachingThumb, 'thumbnail.png')
+          pendingUploads.push({
+            role: 'thumbnail',
+            file: blobToPngFile(teachingThumb),
+          })
         }
       } else {
         if (caseType.value === 'diagram_template' && selectedDiagram.value && !selectedDiagramSpec.value) {
@@ -322,16 +434,26 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
             specObj.classroom_application = classroomApplication.value.trim()
           }
           formData.append('spec', JSON.stringify(specObj))
-          galleryUploadDrafts = galleryImageDrafts.value.map((draft) => ({
-            file: draft.file,
-            filename: draft.filename,
-          }))
-          for (const draft of galleryUploadDrafts) {
-            formData.append('gallery_images', draft.file, draft.filename)
+
+          // Match pending image slots to gallery indices
+          let imageDraftIdx = 0
+          const payloadGallery = buildGallerySpecPayload(galleryItems)
+          for (let slot = 0; slot < payloadGallery.length; slot += 1) {
+            const item = payloadGallery[slot]
+            if (item.kind !== 'image' || !item.pending) continue
+            const draft = galleryImageDrafts.value[imageDraftIdx]
+            imageDraftIdx += 1
+            if (!draft) continue
+            pendingUploads.push({
+              role: `gallery_${slot}` as ShowcaseUploadRole,
+              file: draft.file,
+              filename: draft.filename,
+            })
           }
+
           const thumb = await resolveThumbnail()
           if (thumb) {
-            formData.append('thumbnail', thumb, 'thumbnail.png')
+            pendingUploads.push({ role: 'thumbnail', file: blobToPngFile(thumb) })
           }
         } else {
           let specObj: Record<string, unknown> | null = null
@@ -343,7 +465,11 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
           } else if (uploadedMgSpec.value) {
             specObj = cloneShowcaseDiagramSpec(uploadedMgSpec.value)
             if (uploadedFile.value) {
-              formData.append('source_file', uploadedFile.value, uploadedFile.value.name)
+              pendingUploads.push({
+                role: 'source',
+                file: uploadedFile.value,
+                filename: uploadedFile.value.name,
+              })
             }
           } else if (caseType.value === 'diagram_template') {
             notify.error(String(t('showcase.publishModal.validationFile')))
@@ -367,52 +493,65 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
           Object.assign(specObj, buildSpecExtras())
           formData.append('spec', JSON.stringify(specObj))
 
-          if (uploadedFile.value && !uploadedFile.value.name.toLowerCase().endsWith('.mg')) {
-            formData.append('source_file', uploadedFile.value, uploadedFile.value.name)
+          if (
+            uploadedFile.value &&
+            !uploadedFile.value.name.toLowerCase().endsWith('.mg') &&
+            !pendingUploads.some((u) => u.role === 'source')
+          ) {
+            pendingUploads.push({
+              role: 'source',
+              file: uploadedFile.value,
+              filename: uploadedFile.value.name,
+            })
           }
 
           const thumb = await resolveThumbnail()
           if (thumb) {
-            formData.append('thumbnail', thumb, 'thumbnail.png')
+            pendingUploads.push({ role: 'thumbnail', file: blobToPngFile(thumb) })
           }
         }
       }
 
+      let savedPostId = props.editPostId?.trim() ?? ''
       if (props.proxyMode) {
-        await proxyCreateShowcasePost(formData)
+        savedPostId = await createThenUpload(
+          () => proxyCreateShowcasePost(formData),
+          pendingUploads,
+        )
+        clearSubmitProgress()
         notify.success(String(t('admin.showcase.proxySuccess')), 3000)
+        showcaseStore.emitAdminUpdated()
+      } else if (isEditMode.value && savedPostId) {
+        setSubmitProgress(String(t('showcase.publishModal.submitting')))
+        await updateShowcasePost(savedPostId, formData)
+        if (pendingUploads.length > 0) {
+          await uploadPendingMedia(savedPostId, pendingUploads)
+        }
+        setSubmitProgress(String(t('showcase.publishModal.finishing')))
+        clearSubmitProgress()
+        notify.success(String(t('showcase.resubmitted')), 3000)
+        showcaseStore.emitPostUpdated(savedPostId)
+        showcaseStore.emitFeedInvalidate('resubmit')
       } else {
-        let savedPostId = props.editPostId?.trim() ?? ''
-        if (isEditMode.value && savedPostId) {
-          await updateShowcasePost(savedPostId, formData)
-          notify.success(String(t('showcase.resubmitted')), 3000)
-        } else {
-          const result = await createShowcasePost(formData)
-          savedPostId = result.post.id
-          notify.success(String(t('showcase.publishModal.success')), 3000)
-        }
-
-        if (galleryUploadDrafts.length > 0 && savedPostId) {
-          await persistGalleryImages(savedPostId, galleryUploadDrafts)
-        }
+        savedPostId = await createThenUpload(
+          () => createShowcasePost(formData),
+          pendingUploads,
+        )
+        clearSubmitProgress()
+        notify.success(String(t('showcase.publishModal.success')), 3000)
+        showcaseStore.emitFeedInvalidate('publish')
       }
       emit('update:visible', false)
       emit('success')
       resetForm()
     } catch (e) {
-      const message = e instanceof Error ? e.message : ''
-      if (isSessionExpiredMessage(message)) {
-        notify.error(String(t('auth.sessionExpired')))
-      } else if (message === 'NETWORK_ERROR' || message === 'Failed to fetch') {
-        notify.error(String(t('showcase.publishModal.networkError')))
-      } else {
-        notify.error(message || 'Failed')
-      }
+      clearSubmitProgress()
+      notify.error(mapSubmitError(e))
     } finally {
+      clearSubmitProgress()
       isSubmitting.value = false
     }
   }
-
 
   return { resolveThumbnail, submit }
 }

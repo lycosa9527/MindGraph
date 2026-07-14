@@ -55,8 +55,6 @@ from routers.features.showcase_helpers import (
     assert_gallery_uploads_resolved,
     collect_gallery_images_from_request,
     count_pending_gallery_images,
-    delete_spec_json,
-    delete_thumbnail,
     parse_tags_json,
     prepare_post_id_and_spec,
     resolve_gallery_image_uploads,
@@ -65,6 +63,7 @@ from routers.features.showcase_helpers import (
     save_thumbnail_from_upload,
     validate_gallery_spec,
 )
+from routers.features.showcase_routes_uploads import reject_if_cos_multipart_files_present
 from routers.features.showcase_permissions import (
     can_delete_case,
     can_delist_case,
@@ -74,8 +73,17 @@ from routers.features.showcase_permissions import (
     can_view_non_approved_post,
     can_withdraw_case,
 )
+from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.showcase.field_options import validate_grade, validate_subject
 from services.showcase.post_delete import showcase_post_still_exists, delete_showcase_post_rows
+from services.showcase.posts.lifecycle import (
+    log_cache_invalidate,
+    log_create_success,
+    log_delete,
+    log_withdraw,
+    rollback_created_post_assets,
+)
+from services.showcase.storage import delete_post_assets
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user
 from utils.db.rls_context import RlsContext, apply_rls_context_async
@@ -104,6 +112,28 @@ async def list_posts(
     db: AsyncSession = Depends(get_async_db),
 ):
     """List showcase posts. Public feed shows approved only."""
+    cacheable = (
+        not mine
+        and not favorited
+        and not search
+        and not status_filter
+        and not expert_recommended
+        and not publish_source
+        and not diagram_type
+    )
+    if cacheable:
+        cached = await showcase_cache.get_cached_list(
+            user_id=current_user.id,
+            mine=False,
+            case_type=case_type,
+            subject=subject,
+            grade=grade,
+            sort=sort,
+            page=page,
+            page_size=page_size,
+        )
+        if cached is not None:
+            return cached
     _validate_sort(sort)
     if case_type:
         _validate_case_type(case_type)
@@ -244,13 +274,26 @@ async def list_posts(
         favorited_post_ids = set()
 
     formatted = [await _format_post(p, current_user, db, liked_post_ids, favorited_post_ids) for p in posts]
-    return {
+    payload = {
         "posts": formatted,
         "total": total,
         "page": page,
         "page_size": page_size,
         "total_pages": (total + page_size - 1) // page_size if page_size else 0,
     }
+    if cacheable:
+        await showcase_cache.set_cached_list(
+            payload,
+            user_id=current_user.id,
+            mine=False,
+            case_type=case_type,
+            subject=subject,
+            grade=grade,
+            sort=sort,
+            page=page,
+            page_size=page_size,
+        )
+    return payload
 
 
 @router.post("/posts")
@@ -297,29 +340,35 @@ async def create_post(
     _validate_optional_diagram_type(diagram_type)
     tag_list = parse_tags_json(tags)
 
+    reject_if_cos_multipart_files_present(
+        any(
+            [
+                bool(thumbnail and thumbnail.filename),
+                bool(attachment and attachment.filename),
+                bool(source_file and source_file.filename),
+                bool(reflection_video and reflection_video.filename),
+                bool(classroom_video and classroom_video.filename),
+            ]
+        )
+    )
+
     post_id = str(uuid_module.uuid4())
     thumbnail_path = None
     spec_obj: Optional[dict] = None
 
     if case_type == "teaching_design":
         diagram_type = None
-        if not attachment or not attachment.filename:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="attachment is required for teaching design",
+        spec_obj = {"type": "teaching_design"}
+        if attachment and attachment.filename:
+            attachment_path = await save_case_file(
+                post_id,
+                attachment,
+                ALLOWED_DOC_SUFFIXES,
+                "doc",
+                ATTACHMENT_MAX_BYTES,
             )
-        attachment_path = await save_case_file(
-            post_id,
-            attachment,
-            ALLOWED_DOC_SUFFIXES,
-            "doc",
-            ATTACHMENT_MAX_BYTES,
-        )
-        spec_obj = {
-            "type": "teaching_design",
-            "attachment_path": attachment_path,
-            "attachment_filename": Path(attachment.filename).name,
-        }
+            spec_obj["attachment_path"] = attachment_path
+            spec_obj["attachment_filename"] = Path(attachment.filename).name
         if description.strip():
             spec_obj["body"] = description.strip()
         if teaching_reflection.strip():
@@ -364,6 +413,7 @@ async def create_post(
             pending_images = count_pending_gallery_images(spec_obj)
             resolved_gallery = await resolve_gallery_image_uploads(gallery_images, request)
             if resolved_gallery:
+                reject_if_cos_multipart_files_present(True)
                 logger.info(
                     "[Showcase] create_post gallery_images=%s pending=%s post=%s",
                     len(resolved_gallery),
@@ -425,13 +475,27 @@ async def create_post(
         await db.refresh(post)
     except DATABASE_ERRORS as exc:
         await db.rollback()
-        delete_thumbnail(post_id)
-        delete_spec_json(post_id)
+        await rollback_created_post_assets(
+            post_id=post_id,
+            thumbnail_path=thumbnail_path,
+            spec=spec_obj,
+            user_id=current_user.id,
+            reason="db_commit_failed",
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create case",
         ) from exc
 
+    await showcase_cache.invalidate_post(post_id)
+    log_cache_invalidate(post_id=post_id)
+    log_create_success(post_id=post_id, user_id=current_user.id, case_type=case_type)
+    logger.info(
+        "[Showcase] create_post ok post=%s user=%s case_type=%s",
+        post_id,
+        current_user.id,
+        case_type,
+    )
     post = await _load_post_for_format(db, post_id)
     return {
         "message": "Case submitted for review",
@@ -488,7 +552,21 @@ async def update_post(
         panel_ctx = RlsContext.panel_superadmin(current_user)
         await apply_rls_context_async(db, panel_ctx)
 
+    reject_if_cos_multipart_files_present(
+        any(
+            [
+                bool(thumbnail and thumbnail.filename),
+                bool(attachment and attachment.filename),
+                bool(source_file and source_file.filename),
+                bool(reflection_video and reflection_video.filename),
+                bool(classroom_video and classroom_video.filename),
+            ]
+        )
+    )
+
     resolved_gallery = await resolve_gallery_image_uploads(gallery_images, request)
+    if resolved_gallery:
+        reject_if_cos_multipart_files_present(True)
     try:
         await _apply_author_case_update(
             post,
@@ -526,6 +604,7 @@ async def update_post(
             detail="Failed to update case",
         ) from exc
 
+    await showcase_cache.invalidate_post(post_id)
     post = await _load_post_for_format(db, post_id)
     message = "Case resubmitted for review" if was_rejected and is_author else "Case updated"
     return {
@@ -563,6 +642,7 @@ async def upload_post_gallery_images(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="gallery_images required",
         )
+    reject_if_cos_multipart_files_present(True)
 
     spec_obj = post.spec if isinstance(post.spec, dict) else None
     if not spec_obj or not isinstance(spec_obj.get("gallery"), list):
@@ -592,6 +672,7 @@ async def upload_post_gallery_images(
             detail="Failed to save gallery images",
         ) from exc
 
+    await showcase_cache.invalidate_post(post_id)
     post = await _load_post_for_format(db, post_id)
     return {
         "message": "Gallery images uploaded",
@@ -626,6 +707,7 @@ async def get_post(
 
     if post.status == "approved":
         bumped_views = await _increment_approved_post_views(post_id)
+        await showcase_cache.invalidate_post(post_id)
     else:
         bumped_views = None
 
@@ -651,6 +733,9 @@ async def _withdraw_case_post_handler(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
     if not can_withdraw_case(post, current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot withdraw this case")
+
+    thumb_path = post.thumbnail_path
+    spec_snapshot = dict(post.spec) if isinstance(post.spec, dict) else None
 
     panel_ctx = RlsContext.panel_superadmin(current_user)
     await apply_rls_context_async(db, panel_ctx)
@@ -681,8 +766,10 @@ async def _withdraw_case_post_handler(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to withdraw case",
         ) from exc
-    delete_thumbnail(post_id)
-    delete_spec_json(post_id)
+    await delete_post_assets(post_id=post_id, thumbnail_path=thumb_path, spec=spec_snapshot)
+    await showcase_cache.invalidate_post(post_id)
+    log_withdraw(post_id=post_id, user_id=current_user.id)
+    log_cache_invalidate(post_id=post_id)
     return {"message": "Case withdrawn"}
 
 
@@ -734,6 +821,7 @@ async def _delist_case_post_handler(
             detail="Failed to delist case",
         ) from exc
 
+    await showcase_cache.invalidate_post(post_id)
     post = await _load_post_for_format(db, post_id)
     return {
         "message": "Case delisted",
@@ -763,6 +851,9 @@ async def _delete_case_post_handler(
     if not await can_delete_case(post, current_user, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot delete this case")
 
+    thumb_path = post.thumbnail_path
+    spec_snapshot = dict(post.spec) if isinstance(post.spec, dict) else None
+
     await _delete_case_post_with_panel_rls(
         db,
         post_id,
@@ -770,8 +861,10 @@ async def _delete_case_post_handler(
         title=post.title,
     )
 
-    delete_thumbnail(post_id)
-    delete_spec_json(post_id)
+    await delete_post_assets(post_id=post_id, thumbnail_path=thumb_path, spec=spec_snapshot)
+    await showcase_cache.invalidate_post(post_id)
+    log_delete(post_id=post_id, user_id=current_user.id)
+    log_cache_invalidate(post_id=post_id)
     return {"message": "Case deleted"}
 
 

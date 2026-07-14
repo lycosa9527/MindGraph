@@ -868,7 +868,72 @@ export async function createShowcasePost(formData: FormData): Promise<{ message:
           : 'Failed to publish case'
     throw new Error(message)
   }
-  return response.json()
+  const data = (await response.json()) as { message: string; post: ShowcasePost }
+  return { ...data, post: normalizeShowcasePost(data.post) }
+}
+
+export interface ShowcaseUploadInitResponse {
+  key: string
+  put_url: string | null
+  storage: string
+  headers: Record<string, string>
+  expires_in: number
+  role: string
+  max_bytes: number
+}
+
+export async function initShowcaseUpload(
+  postId: string,
+  body: {
+    role: string
+    filename: string
+    content_type: string
+    size_bytes: number
+  },
+): Promise<ShowcaseUploadInitResponse> {
+  const id = postId.trim()
+  if (!id) throw new Error('Missing case id')
+  const response = await apiPost(`/api/showcase/posts/${id}/uploads/init`, body)
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('SESSION_EXPIRED')
+    await parseShowcaseFormError(response, 'Failed to start upload')
+  }
+  return response.json() as Promise<ShowcaseUploadInitResponse>
+}
+
+export async function completeShowcaseUpload(
+  postId: string,
+  options: {
+    role: string
+    key: string
+    filename?: string
+    file?: File
+  },
+): Promise<{ key: string; url: string; post: ShowcasePost }> {
+  const id = postId.trim()
+  if (!id) throw new Error('Missing case id')
+
+  let response: Response
+  if (options.file) {
+    const formData = new FormData()
+    formData.append('role', options.role)
+    formData.append('key', options.key)
+    if (options.filename) formData.append('filename', options.filename)
+    formData.append('file', options.file, options.filename || options.file.name)
+    response = await apiUpload(`/api/showcase/posts/${id}/uploads/complete`, formData)
+  } else {
+    response = await apiPost(`/api/showcase/posts/${id}/uploads/complete`, {
+      role: options.role,
+      key: options.key,
+      filename: options.filename,
+    })
+  }
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('SESSION_EXPIRED')
+    await parseShowcaseFormError(response, 'Failed to complete upload')
+  }
+  const data = (await response.json()) as { key: string; url: string; post: ShowcasePost }
+  return { ...data, post: normalizeShowcasePost(data.post) }
 }
 
 async function parseShowcaseFormError(response: Response, fallback: string): Promise<never> {

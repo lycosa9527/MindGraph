@@ -179,6 +179,7 @@ function onDetailUpdated(updated: ShowcasePost): void {
   }
   void refreshQueueCounts()
   eventBus.emit('admin:showcase_updated', {})
+  eventBus.emit('showcase:feed_invalidate', { reason: 'admin_moderation' })
 }
 
 function onDetailDeleted(): void {
@@ -186,6 +187,7 @@ function onDetailDeleted(): void {
   void loadPosts()
   void refreshQueueCounts()
   eventBus.emit('admin:showcase_updated', {})
+  eventBus.emit('showcase:feed_invalidate', { reason: 'admin_delete' })
 }
 
 function goPrevPage(): void {

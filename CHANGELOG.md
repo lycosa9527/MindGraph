@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.146.0] - 2026-07-14
+
+> **Showcase private COS uploads, Kitty-style control plane, workflow logging, and COS↔DB reconcile.**
+
+### Added
+
+- **Showcase COS media** — Private bucket with short-TTL browser PUT/GET; Postgres stores keys only under `showcase/posts/{id}/…`; create is metadata-only when COS is on, then `uploads/init` → PUT → `uploads/complete` with Redis anti-swap grants ([`services/showcase/storage/`](services/showcase/storage/), [`routers/features/showcase_routes_uploads.py`](routers/features/showcase_routes_uploads.py)).
+- **Showcase package layout** — Kitty-style domain modules: `storage/`, `uploads/`, `posts/`, `sync/`, `infra/` plus package README ([`services/showcase/README.md`](services/showcase/README.md)).
+- **Workflow logging** — `SHOWCASE_WF` stages via `showcase_wf_log` / `showcase_extra` (create, upload, download, withdraw/delete, sync); disable with `SHOWCASE_WORKFLOW_TRACE=0` ([`services/showcase/infra/observability.py`](services/showcase/infra/observability.py)).
+- **COS ↔ DB sync** — Inventory/reconcile report (`matched`, `orphan_cos`, `missing_in_cos`, `unscoped`); admin status/reconcile/purge-orphans APIs (purge dry-run by default); CLI [`scripts/showcase_cos_reconcile.py`](scripts/showcase_cos_reconcile.py).
+- **Publish progress UX** — Loading toast + submit-button phase labels through create/upload; clearer upload-failure messages with draft rollback ([`submitPublishShowcasePost.ts`](frontend/src/composables/showcase/submitPublishShowcasePost.ts)).
+- **Detail action busy state** — Approve/reject/withdraw/delist/like/favorite/recommend disable while in flight with success/error toasts.
+
+### Changed
+
+- **Download AuthZ** — Asset membership uses collected post keys only (no prefix leak); COS downloads 302 to short GET.
+- **Partial-publish safety** — Failed post-create uploads withdraw the draft and delete assets.
+- **Env** — Shared Tencent secrets document COS Showcase flags in [`env.example`](env.example); `COS_SHOWCASE_ENABLED` defaults on when credentials exist.
+
+### Tests
+
+- **CI** — [`test_showcase_storage_cos.py`](tests/test_showcase_storage_cos.py), [`test_showcase_e2e_smoke.py`](tests/test_showcase_e2e_smoke.py) (local E2E always; live COS when `COS_SHOWCASE_SMOKE=1`).
+
 ## [5.145.0] - 2026-07-14
 
 > **Showcase gallery and diagram archive folders, with Alembic 0084–0088 and security hardening.**

@@ -1220,4 +1220,6 @@ export default {
   'admin.cos.installOk': 'Qdrant 已安裝',
   'admin.cos.installFailed': 'Qdrant 安裝失敗',
   'admin.cos.installNeedsRoot': '安裝需要服務器 root 權限',
+  'admin.feature.showcase': '案例广场',
+  'admin.feature.showcaseHint': '经审核的公开案例展厅。',
 } as const

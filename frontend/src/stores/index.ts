@@ -54,4 +54,5 @@ export {
   PRESENTATION_POINTER_SCALE_STEP,
 } from './presentationPointer'
 export { useLibraryStore } from './library'
+export { useShowcaseStore } from './showcase'
 export { useSmartResponseStore, type Watch, type SmartResponseSession } from './smartResponse'

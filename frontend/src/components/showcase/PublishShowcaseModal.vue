@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Loader2 } from '@lucide/vue'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import ShowcaseInlineDiagramPreview from './ShowcaseInlineDiagramPreview.vue'
 import ShowcaseHistoryDiagramPicker from './ShowcaseHistoryDiagramPicker.vue'
@@ -776,11 +777,16 @@ const {
             <button
               v-else
               type="button"
-              class="rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+              class="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="isSubmitting"
               @click="submit"
             >
-              {{ submitButtonLabel }}
+              <Loader2
+                v-if="isSubmitting"
+                class="h-4 w-4 shrink-0 animate-spin"
+                aria-hidden="true"
+              />
+              <span class="max-w-[16rem] truncate">{{ submitButtonLabel }}</span>
             </button>
           </div>
         </div>

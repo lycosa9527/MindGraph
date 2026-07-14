@@ -727,6 +727,8 @@ export type EventTypes = {
   'admin:mutation_completed': { domain: string; entityId?: number | string }
   'admin:toolbar_action': { action: string; tab: string; payload?: Record<string, unknown> }
   'admin:showcase_updated': Record<string, never>
+  'showcase:feed_invalidate': { reason?: string }
+  'showcase:post_updated': { postId: string }
 
   // Wildcard for any event (for debugging)
   '*': { event: string; data: unknown }

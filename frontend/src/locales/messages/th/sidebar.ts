@@ -100,4 +100,5 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': 'End this MindMate collab room for everyone?',
   'sidebar.mindmateCollabHistory.visibilityOrg': 'Org',
   'sidebar.mindmateCollabHistory.visibilityNetwork': 'Network',
+  'sidebar.showcase': 'Showcase',
 } as const

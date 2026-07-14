@@ -15,11 +15,13 @@ from routers.features.showcase_common import (
 from routers.features.showcase_routes_actions import router as actions_router
 from routers.features.showcase_routes_feed import router as feed_router
 from routers.features.showcase_routes_posts import router as posts_router
+from routers.features.showcase_routes_uploads import router as uploads_router
 
 router = APIRouter(prefix="/api/showcase", tags=["Showcase"])
 router.include_router(feed_router)
 router.include_router(posts_router)
 router.include_router(actions_router)
+router.include_router(uploads_router)
 
 __all__ = [
     "CaseReviewBody",

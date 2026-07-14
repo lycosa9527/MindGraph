@@ -106,6 +106,7 @@ const {
 
 const post = ref<ShowcasePost | null>(null)
 const isLoading = ref(false)
+const isActionBusy = ref(false)
 const loadError = ref<string | null>(null)
 const rejectReason = ref('')
 const showRejectInput = ref(false)
@@ -292,18 +293,22 @@ async function loadPost() {
 }
 
 async function toggleLike() {
-  if (!post.value) return
+  if (!post.value || isActionBusy.value) return
+  isActionBusy.value = true
   try {
     const res = await toggleShowcasePostLike(post.value.id)
     post.value = { ...post.value, is_liked: res.liked, likes_count: res.likes_count }
     emit('updated', post.value)
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : 'Failed')
+    notify.error(e instanceof Error ? e.message : String(t('showcase.detail.actionFailed')))
+  } finally {
+    isActionBusy.value = false
   }
 }
 
 async function toggleFavorite() {
-  if (!post.value || post.value.status !== 'approved') return
+  if (!post.value || post.value.status !== 'approved' || isActionBusy.value) return
+  isActionBusy.value = true
   try {
     const res = await toggleShowcasePostFavorite(post.value.id)
     post.value = { ...post.value, is_favorited: res.favorited }
@@ -315,24 +320,38 @@ async function toggleFavorite() {
       2000
     )
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : 'Failed')
+    notify.error(e instanceof Error ? e.message : String(t('showcase.detail.actionFailed')))
+  } finally {
+    isActionBusy.value = false
   }
 }
 
 async function toggleRecommend() {
-  if (!post.value) return
+  if (!post.value || isActionBusy.value) return
+  isActionBusy.value = true
   try {
     const res = await toggleShowcaseExpertRecommend(post.value.id)
     post.value = res.post
     emit('updated', post.value)
+    notify.success(
+      String(
+        res.is_expert_recommended
+          ? t('showcase.detail.recommendedOn')
+          : t('showcase.detail.recommendedOff')
+      ),
+      2000
+    )
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : 'Failed')
+    notify.error(e instanceof Error ? e.message : String(t('showcase.detail.actionFailed')))
+  } finally {
+    isActionBusy.value = false
   }
 }
 
 async function approve() {
   const postId = (props.postId ?? post.value?.id ?? '').trim()
-  if (!postId) return
+  if (!postId || isActionBusy.value) return
+  isActionBusy.value = true
   try {
     if (isAdminMode.value) {
       await reviewAdminShowcasePost(postId, 'approve')
@@ -343,13 +362,16 @@ async function approve() {
     await loadPost()
     if (post.value) emit('updated', post.value)
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : 'Failed')
+    notify.error(e instanceof Error ? e.message : String(t('showcase.detail.actionFailed')))
+  } finally {
+    isActionBusy.value = false
   }
 }
 
 async function reject() {
   const postId = (props.postId ?? post.value?.id ?? '').trim()
-  if (!postId) return
+  if (!postId || isActionBusy.value) return
+  isActionBusy.value = true
   try {
     if (isAdminMode.value) {
       await reviewAdminShowcasePost(postId, 'reject', rejectReason.value)
@@ -361,7 +383,9 @@ async function reject() {
     await loadPost()
     if (post.value) emit('updated', post.value)
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : 'Failed')
+    notify.error(e instanceof Error ? e.message : String(t('showcase.detail.actionFailed')))
+  } finally {
+    isActionBusy.value = false
   }
 }
 
@@ -389,26 +413,30 @@ async function confirmAuthorAction(
 
 async function withdrawCase() {
   const postId = (props.postId ?? post.value?.id ?? '').trim()
-  if (!postId) return
+  if (!postId || isActionBusy.value) return
   if (!(await confirmAuthorAction('showcase.detail.withdrawTitle', 'showcase.detail.withdrawConfirm'))) {
     return
   }
+  isActionBusy.value = true
   try {
     await withdrawShowcasePost(postId)
     notify.success(t('showcase.withdrawn'))
     emit('deleted')
     emit('update:visible', false)
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : 'Failed')
+    notify.error(e instanceof Error ? e.message : String(t('showcase.detail.actionFailed')))
+  } finally {
+    isActionBusy.value = false
   }
 }
 
 async function delistCase() {
   const postId = (props.postId ?? post.value?.id ?? '').trim()
-  if (!postId) return
+  if (!postId || isActionBusy.value) return
   if (!(await confirmAuthorAction('showcase.detail.delistTitle', 'showcase.detail.delistConfirm'))) {
     return
   }
+  isActionBusy.value = true
   try {
     const res = await delistShowcasePost(postId)
     notify.success(t('showcase.delisted'))
@@ -416,7 +444,9 @@ async function delistCase() {
     emit('updated', res.post)
     emit('update:visible', false)
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : 'Failed')
+    notify.error(e instanceof Error ? e.message : String(t('showcase.detail.actionFailed')))
+  } finally {
+    isActionBusy.value = false
   }
 }
 
@@ -433,6 +463,7 @@ async function remove() {
     notify.error(String(t('showcase.detail.loadFailed')))
     return
   }
+  if (isActionBusy.value) return
   if (props.publishedManage) {
     const title = post.value?.title?.trim() || postId
     try {
@@ -450,6 +481,7 @@ async function remove() {
       return
     }
   }
+  isActionBusy.value = true
   try {
     if (isAdminMode.value || props.publishedManage) {
       await deleteAdminShowcasePost(postId)
@@ -460,7 +492,9 @@ async function remove() {
     emit('deleted')
     emit('update:visible', false)
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : 'Failed')
+    notify.error(e instanceof Error ? e.message : String(t('showcase.detail.actionFailed')))
+  } finally {
+    isActionBusy.value = false
   }
 }
 
@@ -590,6 +624,7 @@ function close() {
                       ? 'bg-red-500 text-white shadow-sm hover:bg-red-600'
                       : 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600',
                   ]"
+                  :disabled="isActionBusy"
                   @click="toggleLike"
                 >
                   <Heart class="h-4 w-4" :class="post.is_liked ? 'fill-current' : ''" />
@@ -607,6 +642,7 @@ function close() {
                       ? 'bg-amber-500 text-white shadow-sm hover:bg-amber-600'
                       : 'bg-gray-100 text-gray-700 hover:bg-amber-50 hover:text-amber-600',
                   ]"
+                  :disabled="isActionBusy"
                   @click="toggleFavorite"
                 >
                   <Star class="h-4 w-4" :class="post.is_favorited ? 'fill-current' : ''" />
@@ -648,6 +684,7 @@ function close() {
                     ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
                     : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50',
                 ]"
+                :disabled="isActionBusy"
                 @click="toggleRecommend"
               >
                 <Award class="h-4 w-4" />
@@ -656,7 +693,8 @@ function close() {
               <button
                 v-if="showDeleteButton"
                 type="button"
-                class="detail-delete-btn flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium text-red-600"
+                class="detail-delete-btn flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="isActionBusy"
                 @click="remove"
               >
                 <Trash2 class="h-4 w-4" />
@@ -680,7 +718,8 @@ function close() {
               <button
                 v-if="showAuthorWithdraw"
                 type="button"
-                class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-100"
+                class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="isActionBusy"
                 @click="withdrawCase"
               >
                 <Undo2 class="h-4 w-4" />
@@ -689,7 +728,8 @@ function close() {
               <button
                 v-if="showAuthorDelist"
                 type="button"
-                class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100"
+                class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="isActionBusy"
                 @click="delistCase"
               >
                 <Trash2 class="h-4 w-4" />
@@ -744,7 +784,8 @@ function close() {
                   <div class="flex gap-2">
                     <button
                       type="button"
-                      class="flex-1 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+                      class="flex-1 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      :disabled="isActionBusy"
                       @click="approve"
                     >
                       {{ t('showcase.detail.approve') }}
@@ -766,7 +807,8 @@ function close() {
                     />
                     <button
                       type="button"
-                      class="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100"
+                      class="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      :disabled="isActionBusy"
                       @click="reject"
                     >
                       {{ t('showcase.detail.reject') }}
@@ -884,6 +926,7 @@ function close() {
                       ? 'bg-red-500 text-white shadow-sm hover:bg-red-600'
                       : 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600',
                   ]"
+                  :disabled="isActionBusy"
                   @click="toggleLike"
                 >
                   <Heart class="h-4 w-4" :class="post.is_liked ? 'fill-current' : ''" />
@@ -901,6 +944,7 @@ function close() {
                       ? 'bg-amber-500 text-white shadow-sm hover:bg-amber-600'
                       : 'bg-gray-100 text-gray-700 hover:bg-amber-50 hover:text-amber-600',
                   ]"
+                  :disabled="isActionBusy"
                   @click="toggleFavorite"
                 >
                   <Star class="h-4 w-4" :class="post.is_favorited ? 'fill-current' : ''" />
@@ -940,6 +984,7 @@ function close() {
                     ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
                     : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50',
                 ]"
+                :disabled="isActionBusy"
                 @click="toggleRecommend"
               >
                 <Award class="h-3.5 w-3.5" />
@@ -948,7 +993,8 @@ function close() {
               <button
                 v-if="showDeleteButton"
                 type="button"
-                class="flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100"
+                class="flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="isActionBusy"
                 @click="remove"
               >
                 <Trash2 class="h-3.5 w-3.5" />
@@ -972,7 +1018,8 @@ function close() {
               <button
                 v-if="showAuthorWithdraw"
                 type="button"
-                class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100"
+                class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="isActionBusy"
                 @click="withdrawCase"
               >
                 <Undo2 class="h-3.5 w-3.5" />
@@ -981,7 +1028,8 @@ function close() {
               <button
                 v-if="showAuthorDelist"
                 type="button"
-                class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100"
+                class="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="isActionBusy"
                 @click="delistCase"
               >
                 <Trash2 class="h-3.5 w-3.5" />
@@ -1022,7 +1070,8 @@ function close() {
                   <div class="flex gap-2">
                     <button
                       type="button"
-                      class="flex-1 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+                      class="flex-1 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      :disabled="isActionBusy"
                       @click="approve"
                     >
                       {{ t('showcase.detail.approve') }}
@@ -1044,7 +1093,8 @@ function close() {
                     />
                     <button
                       type="button"
-                      class="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100"
+                      class="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      :disabled="isActionBusy"
                       @click="reject"
                     >
                       {{ t('showcase.detail.reject') }}

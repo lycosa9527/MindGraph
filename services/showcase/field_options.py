@@ -1,10 +1,15 @@
 """
 Showcase field options — DB-backed subjects, grades, recommended tags.
+
+Meta payload is cached in Redis (multi-worker safe).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
 """
 
 from __future__ import annotations
 
-import time
 from typing import Optional
 
 from sqlalchemy import select
@@ -17,28 +22,12 @@ from routers.features.showcase_constants import (
     SUBJECT_ORDER,
     SUBJECTS,
 )
-
-_CACHE_TTL_SECONDS = 300.0
-_cache: dict[str, tuple[float, object]] = {}
+from services.redis.cache import redis_showcase_cache as showcase_cache
 
 
-def _cache_get(key: str):
-    entry = _cache.get(key)
-    if not entry:
-        return None
-    ts, value = entry
-    if time.monotonic() - ts > _CACHE_TTL_SECONDS:
-        _cache.pop(key, None)
-        return None
-    return value
-
-
-def _cache_set(key: str, value: object) -> None:
-    _cache[key] = (time.monotonic(), value)
-
-
-def invalidate_field_options_cache() -> None:
-    _cache.clear()
+async def invalidate_field_options_cache_async() -> None:
+    """Async Redis meta invalidation."""
+    await showcase_cache.invalidate_meta()
 
 
 def _sort_by_canonical_order(values: list[str], canonical: tuple[str, ...]) -> list[str]:
@@ -47,11 +36,6 @@ def _sort_by_canonical_order(values: list[str], canonical: tuple[str, ...]) -> l
 
 
 async def load_active_values(db: AsyncSession, category: str) -> list[str]:
-    cache_key = f"values:{category}"
-    cached = _cache_get(cache_key)
-    if isinstance(cached, list):
-        return cached
-
     rows = (
         await db.execute(
             select(ShowcaseFieldOption.value)
@@ -67,13 +51,11 @@ async def load_active_values(db: AsyncSession, category: str) -> list[str]:
         values = _sort_by_canonical_order(values, GRADE_ORDER)
     elif category == "subject":
         values = _sort_by_canonical_order(values, SUBJECT_ORDER)
-    _cache_set(cache_key, values)
     return values
 
 
 async def load_meta_payload(db: AsyncSession) -> dict:
-    cache_key = "meta"
-    cached = _cache_get(cache_key)
+    cached = await showcase_cache.get_cached_meta()
     if isinstance(cached, dict):
         return cached
 
@@ -91,7 +73,7 @@ async def load_meta_payload(db: AsyncSession) -> dict:
         "grades": grades,
         "recommended_tags": recommended_tags,
     }
-    _cache_set(cache_key, payload)
+    await showcase_cache.set_cached_meta(payload)
     return payload
 
 

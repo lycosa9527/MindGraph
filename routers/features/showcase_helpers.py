@@ -21,6 +21,15 @@ from routers.features.community_helpers import (
     THUMBNAIL_MAX_BYTES,
     parse_spec_json,
 )
+from services.showcase.storage import (
+    build_object_key,
+    delete_key_sync,
+    is_showcase_logical_key,
+    local_path_for_key,
+    put_bytes,
+    put_bytes_sync,
+    showcase_public_asset_url as storage_public_asset_url,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +59,26 @@ OLE_COMPOUND_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
 
 def showcase_public_asset_url(rel_path: str) -> str:
-    """Build authenticated asset URL for a stored ``case_square/...`` relative path."""
-    normalized = rel_path.lstrip("/").replace("\\", "/")
-    if not normalized.startswith("case_square/"):
-        raise ValueError(f"Not a showcase path: {rel_path}")
-    return f"/api/showcase/assets/{normalized}"
+    """Build authenticated asset URL for a stored Showcase relative path."""
+    return storage_public_asset_url(rel_path)
+
+
+def post_id_from_showcase_asset_path(asset_path: str) -> str | None:
+    """Extract post UUID from new or legacy asset path."""
+    normalized = asset_path.lstrip("/").replace("\\", "/")
+    # New: showcase/posts/{uuid}/role.ext
+    if normalized.startswith("showcase/posts/"):
+        parts = normalized.split("/")
+        if len(parts) >= 3:
+            candidate = parts[2]
+            try:
+                uuid.UUID(candidate)
+            except ValueError:
+                return None
+            return candidate
+    # Legacy: case_square/{uuid}_doc.pdf or case_square/{uuid}.png
+    name = Path(normalized).name
+    return post_id_from_showcase_filename(name)
 
 
 def post_id_from_showcase_filename(filename: str) -> str | None:
@@ -73,14 +97,12 @@ def post_id_from_showcase_filename(filename: str) -> str | None:
 
 
 def resolve_showcase_disk_path(rel_path: str) -> Path:
-    """Resolve a stored relative path under ``static/case_square`` with traversal checks."""
+    """Resolve a stored relative path under static showcase dirs with traversal checks."""
     normalized = rel_path.lstrip("/").replace("\\", "/")
-    if not normalized.startswith("case_square/"):
+    if not is_showcase_logical_key(normalized):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    root = SHOWCASE_DIR.resolve()
-    candidate = (Path("static") / normalized).resolve()
     try:
-        candidate.relative_to(root)
+        candidate = local_path_for_key(normalized)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found") from exc
     if not candidate.is_file():
@@ -160,24 +182,33 @@ def _suffix_or_raise(filename: Optional[str], allowed: frozenset[str]) -> str:
 
 
 def save_thumbnail(post_id: str, content: bytes) -> str:
-    """Write PNG thumbnail bytes and return the stored relative path."""
-    path = SHOWCASE_DIR / f"{post_id}.png"
-    path.write_bytes(content)
-    return f"case_square/{post_id}.png"
+    """Write PNG thumbnail bytes and return the stored logical key (sync helper)."""
+
+    _validate_thumbnail(content)
+    logical_key = build_object_key(post_id, "thumbnail", ".png")
+    put_bytes_sync(logical_key, content)
+    return logical_key
 
 
 async def save_thumbnail_from_upload(post_id: str, thumbnail: UploadFile) -> str:
     """Validate and persist an uploaded thumbnail for a post."""
+
     content = await thumbnail.read()
     _validate_thumbnail(content)
-    return save_thumbnail(post_id, content)
+    logical_key = build_object_key(post_id, "thumbnail", ".png")
+    await put_bytes(logical_key, content)
+    return logical_key
 
 
 def _gallery_file_exists(rel_path: str) -> bool:
+
     normalized = rel_path.lstrip("/").replace("\\", "/")
-    if not normalized.startswith("case_square/"):
+    if not is_showcase_logical_key(normalized):
         return False
-    return (Path("static") / normalized).is_file()
+    try:
+        return local_path_for_key(normalized).is_file()
+    except ValueError:
+        return False
 
 
 def resolve_gallery_image_storage_path(post_id: str, slot: int, entry: dict) -> str | None:
@@ -187,11 +218,18 @@ def resolve_gallery_image_storage_path(post_id: str, slot: int, entry: dict) -> 
         rel = path.lstrip("/")
         if _gallery_file_exists(rel):
             return rel
+        # COS-backed keys may not exist locally — trust stored path when well-formed
+
+        if is_showcase_logical_key(rel) and f"/{post_id}/" in f"/{rel}/":
+            return rel
 
     for ext in GALLERY_IMAGE_SUFFIXES:
-        rel = f"case_square/{post_id}_gallery_{slot}{ext}"
-        if _gallery_file_exists(rel):
-            return rel
+        for candidate in (
+            f"showcase/posts/{post_id}/gallery_{slot}{ext}",
+            f"case_square/{post_id}_gallery_{slot}{ext}",
+        ):
+            if _gallery_file_exists(candidate):
+                return candidate
 
     filename = entry.get("filename")
     if isinstance(filename, str) and filename.strip():
@@ -350,6 +388,13 @@ def validate_gallery_spec(spec_obj: dict) -> None:
             )
 
 
+def _role_from_name_prefix(name_prefix: str) -> str:
+    """Map legacy save_case_file prefixes to storage roles."""
+    if name_prefix == "doc":
+        return "attachment"
+    return name_prefix
+
+
 async def save_case_file(
     post_id: str,
     upload: UploadFile,
@@ -357,7 +402,8 @@ async def save_case_file(
     name_prefix: str,
     max_bytes: int,
 ) -> str:
-    """Validate and save an attachment or video under showcase/."""
+    """Validate and save an attachment or video via Showcase storage layer."""
+
     content = await upload.read()
     suffix = _suffix_or_raise(upload.filename, allowed_suffixes)
     if len(content) > max_bytes:
@@ -366,33 +412,34 @@ async def save_case_file(
             detail=f"File too large. Max {max_bytes // 1024 // 1024}MB",
         )
     _validate_magic_bytes(content, suffix)
-    rel_name = f"{post_id}_{name_prefix}{suffix}"
-    path = SHOWCASE_DIR / rel_name
-    path.write_bytes(content)
-    return f"case_square/{rel_name}"
+    role = _role_from_name_prefix(name_prefix)
+    logical_key = build_object_key(post_id, role, suffix)
+    await put_bytes(logical_key, content)
+    return logical_key
 
 
-def save_spec_json(post_id: str, spec_obj: dict) -> None:
-    """Persist diagram spec JSON for a post."""
-    path = SHOWCASE_DIR / f"{post_id}.json"
-    try:
-        path.write_text(json.dumps(spec_obj, ensure_ascii=False, indent=2), encoding="utf-8")
-    except OSError as err:
-        logger.warning("[Showcase] Failed to save spec JSON %s: %s", path, err)
+def save_spec_json(_post_id: str, _spec_obj: dict) -> None:
+    """No-op: diagram spec lives in Postgres JSONB (no dual-write to disk)."""
+    return
 
 
 def delete_thumbnail(post_id: str) -> None:
-    """Remove stored PNG thumbnail for a post (best-effort)."""
-    path = SHOWCASE_DIR / f"{post_id}.png"
-    if path.exists():
+    """Remove stored thumbnail for a post (best-effort; prefer delete_post_assets)."""
+
+    try:
+        delete_key_sync(build_object_key(post_id, "thumbnail", ".png"))
+    except ValueError:
+        pass
+    legacy = SHOWCASE_DIR / f"{post_id}.png"
+    if legacy.exists():
         try:
-            path.unlink()
+            legacy.unlink()
         except OSError as err:
-            logger.warning("[Showcase] Failed to delete thumbnail %s: %s", path, err)
+            logger.warning("[Showcase] Failed to delete legacy thumbnail %s: %s", legacy, err)
 
 
 def delete_spec_json(post_id: str) -> None:
-    """Remove stored spec JSON for a post (best-effort)."""
+    """Remove legacy on-disk spec JSON if present (spec is PG-backed now)."""
     path = SHOWCASE_DIR / f"{post_id}.json"
     if path.exists():
         try:
@@ -402,17 +449,13 @@ def delete_spec_json(post_id: str) -> None:
 
 
 def delete_case_file(rel_path: str) -> None:
-    """Delete a stored case attachment/video under static/ (best-effort)."""
+    """Delete a stored case attachment/video (best-effort)."""
+
     normalized = rel_path.lstrip("/").replace("\\", "/")
-    if not normalized.startswith("case_square/"):
+    if not is_showcase_logical_key(normalized):
         logger.warning("[Showcase] Refusing to delete path outside showcase: %s", rel_path)
         return
-    path = Path("static") / normalized
-    if path.exists():
-        try:
-            path.unlink()
-        except OSError as err:
-            logger.warning("[Showcase] Failed to delete case file %s: %s", path, err)
+    delete_key_sync(normalized)
 
 
 def prepare_post_id_and_spec(spec: str) -> tuple[str, dict]:

@@ -132,7 +132,7 @@ async function withdrawPost(post: ShowcasePost) {
     posts.value = posts.value.filter((p) => p.id !== post.id)
     emit('deleted', post.id)
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : 'Failed')
+    notify.error(e instanceof Error ? e.message : String(t('showcase.detail.actionFailed')))
   } finally {
     actingPostId.value = null
   }
@@ -151,7 +151,7 @@ async function delistPost(post: ShowcasePost) {
     if (idx >= 0) posts.value[idx] = res.post
     emit('updated', res.post)
   } catch (e) {
-    notify.error(e instanceof Error ? e.message : 'Failed')
+    notify.error(e instanceof Error ? e.message : String(t('showcase.detail.actionFailed')))
   } finally {
     actingPostId.value = null
   }

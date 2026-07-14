@@ -233,11 +233,10 @@ export const TAG_MAX_LENGTH = 10
 export const TAG_MAX_COUNT = 5
 
 /**
- * Direct browser→API file uploads for Showcase publish.
- * Disabled while attachments move to COS to cut app-server bandwidth.
- * History / canvas diagram picks stay available (no file upload).
+ * Direct browser file uploads for Showcase publish (init → PUT → complete).
+ * Large bytes go to private COS when enabled; local fallback uses the same API.
  */
-export const SHOWCASE_DIRECT_FILE_UPLOADS_ENABLED = false
+export const SHOWCASE_DIRECT_FILE_UPLOADS_ENABLED = true
 
 /** Client-side limits aligned with showcase_helpers.py */
 export const CASE_ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024
