@@ -4,10 +4,13 @@
  * Usage:
  *   node scripts/audit-element-plus-usage.ts
  *
- * Bundle verification (after vite.config manualChunks split):
+ * Bundle verification:
  *   ANALYZE=1 npm run build
- *   Open dist/stats.html â€?confirm vendor-ep-data is not imported by index/App entry.
- *   DevTools â†?Network â†?hard refresh /mindmate â€?vendor-ep-data should not load on cold visit.
+ *   Open dist/stats.html — EP should not appear as one catch-all vendor-ep-core.
+ *   DevTools ? Network ? hard refresh guest /auth — overlay CSS/JS should wait
+ *   until first toast / message-box; table/upload should wait for those routes.
+ *   Avoid `from 'element-plus'` barrels on the App/entry graph — use deep ESM
+ *   paths or loadElNotification / loadElMessageBox helpers.
  */
 import { readFileSync, readdirSync, statSync } from 'fs'
 import { join, relative } from 'path'

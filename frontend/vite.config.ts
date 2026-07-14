@@ -157,38 +157,6 @@ function devCspConnectSrcPlugin(apiOrigin: string): Plugin {
   }
 }
 
-/** Split Element Plus into route-friendly chunks (data-heavy vs shell). */
-function elementPlusManualChunk(id: string): string | undefined {
-  if (!id.includes('node_modules/element-plus')) {
-    return undefined
-  }
-  if (
-    id.includes('/es/components/table') ||
-    id.includes('/es/components/table-column') ||
-    id.includes('/es/components/upload') ||
-    id.includes('/es/components/pagination') ||
-    id.includes('/es/components/tabs') ||
-    id.includes('/es/components/tab-pane') ||
-    id.includes('/es/components/progress')
-  ) {
-    return 'vendor-ep-data'
-  }
-  if (
-    id.includes('/es/components/dialog') ||
-    id.includes('/es/components/drawer') ||
-    id.includes('/es/components/message') ||
-    id.includes('/es/components/message-box') ||
-    id.includes('/es/components/notification') ||
-    id.includes('/es/components/loading') ||
-    id.includes('/es/components/popover') ||
-    id.includes('/es/components/popconfirm')
-  ) {
-    return 'vendor-ep-overlay'
-  }
-  // Form controls stay in core — a separate form chunk caused circular deps with core.
-  return 'vendor-ep-core'
-}
-
 export default defineConfig({
   cacheDir,
   optimizeDeps: {
@@ -396,8 +364,12 @@ export default defineConfig({
       output: {
         /**
          * App routes already use dynamic import() (see `src/router/index.ts`).
-         * Splits here isolate large `node_modules` for caching and to avoid a
-         * single >1.3 MB vendor blob (notably: Element Plus, icons, echarts, …).
+         * Splits here isolate large non-EP `node_modules` for caching (icons,
+         * echarts, …). Element Plus is NOT force-chunked: a former catch-all
+         * `vendor-ep-core` / data+overlay split pulled heavy widgets into the
+         * entry graph via cross-chunk static imports. EP loads via deep ESM
+         * paths + deferred overlay helpers (`notifications.ts`) and Rollup
+         * places the rest with the routes that import them.
          * Order: more specific sub-packages before broader matches.
          */
         manualChunks(id) {
@@ -407,13 +379,9 @@ export default defineConfig({
           if (id.includes('node_modules/@element-plus/icons-vue')) {
             return 'vendor-ep-icons'
           }
-          const epChunk = elementPlusManualChunk(id)
-          if (epChunk) {
-            return epChunk
-          }
-          if (id.includes('node_modules/echarts')) {
-            return 'vendor-echarts'
-          }
+          // Do not force-chunk echarts/jspdf: they are only used from route-level
+          // code (dynamic import / lazy pages). Naming them via manualChunks caused
+          // Rolldown to static-import those chunks from the entry for sharing.
           if (id.includes('node_modules/chart.js')) {
             return 'vendor-chartjs'
           }
@@ -431,9 +399,6 @@ export default defineConfig({
           }
           if (id.includes('node_modules/mathlive')) {
             return 'vendor-mathlive'
-          }
-          if (id.includes('node_modules/jspdf')) {
-            return 'vendor-jspdf'
           }
           if (
             id.includes('node_modules/markdown-it') ||

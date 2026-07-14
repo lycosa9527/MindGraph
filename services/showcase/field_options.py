@@ -16,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.showcase_admin import ShowcaseFieldOption
-from routers.features.showcase_constants import (
+from routers.features.showcase.constants import (
     GRADE_ORDER,
     GRADES,
     SUBJECT_ORDER,

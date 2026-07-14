@@ -77,7 +77,7 @@ Requires **systemd** (`systemctl` on PATH). On WSL2, enable systemd in `/etc/wsl
 sudo python3 scripts/setup/update_qdrant_server.py
 ```
 
-**COS mirror:** When GitHub is unreachable, set **`COS_SYNC_ROLE=consumer`** and **`QDRANT_DOWNLOAD_SOURCE=cos`** (or `auto`). A publisher host uploads the release tarball to COS; consumers run **`python scripts/db/update_stack_from_cos.py`** and choose check or update from the menu (or **Admin → Settings → COS**). See `COS_SYNC_*` / `QDRANT_*` in [`env.example`](../env.example).
+**COS mirror:** When GitHub is unreachable, set **`COS_SYNC_ROLE=consumer`** and **`QDRANT_DOWNLOAD_SOURCE=cos`** (or `auto`). A publisher host uploads the release tarball under **`COS_SYNC_KEY_PREFIX`** (falls back to `COS_KEY_PREFIX`); consumers run **`python scripts/db/update_stack_from_cos.py`** (or **Admin → Settings → COS**). See `COS_SYNC_*` / `QDRANT_*` in [`env.example`](../env.example).
 
 ---
 

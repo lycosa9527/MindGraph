@@ -37,7 +37,6 @@ from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.infrastructure.security.abuseipdb_service import (
     schedule_abuseipdb_report_on_lockout,
 )
-from services.monitoring.dashboard_session import get_dashboard_session_manager
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
@@ -60,7 +59,6 @@ from utils.auth import (
     EMAIL_LOGIN_CN_BLOCK_ENABLED,
     LOCKOUT_DURATION_MINUTES,
     MAX_LOGIN_ATTEMPTS,
-    PUBLIC_DASHBOARD_PASSKEY,
     RATE_LIMIT_WINDOW_MINUTES,
     check_account_lockout,
     compute_device_hash,
@@ -73,7 +71,6 @@ from utils.auth import (
     is_https,
     reset_failed_attempts,
     verify_bayi_passkey,
-    verify_dashboard_passkey,
     verify_password,
     verify_password_timing_dummy,
 )
@@ -890,78 +887,3 @@ async def verify_bayi_passkey_login(
     }
 
 
-@router.post("/public-dashboard/verify")
-async def verify_public_dashboard(
-    passkey_request: PasskeyVerifyRequest,
-    request: Request,
-    response: Response,
-    lang: Language = Depends(get_language_dependency),
-):
-    """
-    Verify public dashboard passkey and return dashboard session token
-
-    Public dashboard allows access with a 6-digit passkey.
-    Creates a simple dashboard session (not a full user account).
-    """
-    if not PUBLIC_DASHBOARD_PASSKEY:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Public dashboard is not enabled (set PUBLIC_DASHBOARD_PASSKEY)",
-        )
-
-    client_ip = get_client_ip(request)
-
-    # Rate limiting: 5 attempts per IP per 15 minutes
-    rate_limiter = RedisRateLimiter()
-    is_allowed, attempt_count, error_msg = await rate_limiter.check_and_record(
-        category="dashboard_passkey",
-        identifier=client_ip,
-        max_attempts=5,
-        window_seconds=15 * 60,  # 15 minutes
-    )
-
-    if not is_allowed:
-        logger.warning(
-            "Dashboard passkey rate limit exceeded for IP %s (%s attempts)",
-            client_ip,
-            attempt_count,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=error_msg or Messages.error("too_many_login_attempts", lang, 15),
-        )
-
-    # Enhanced logging for debugging (without revealing actual passkeys)
-    received_length = len(passkey_request.passkey) if passkey_request.passkey else 0
-    expected_length = len(PUBLIC_DASHBOARD_PASSKEY)
-    logger.info(
-        "Dashboard passkey verification attempt - Received: %s chars, Expected: %s chars",
-        received_length,
-        expected_length,
-    )
-
-    if not verify_dashboard_passkey(passkey_request.passkey):
-        logger.warning("Dashboard passkey verification failed for IP %s", client_ip)
-        error_msg = Messages.error("invalid_passkey", lang)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
-
-    # Create dashboard session
-    session_manager = get_dashboard_session_manager()
-    dashboard_token = await session_manager.create_session(client_ip)
-
-    # Set dashboard access cookie
-    response.set_cookie(
-        key="dashboard_access_token",
-        value=dashboard_token,
-        httponly=True,
-        secure=is_https(request),  # Auto-detect HTTPS
-        samesite="lax",
-        max_age=24 * 60 * 60,  # 24 hours
-    )
-
-    logger.info("Dashboard access granted for IP %s", client_ip)
-
-    return {
-        "success": True,
-        "message": "Access granted",
-    }

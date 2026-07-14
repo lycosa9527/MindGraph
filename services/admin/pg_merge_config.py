@@ -205,6 +205,25 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "pk_type": "uuid",
         "fk_remaps": {"author_id": "users"},
     },
+    # Showcase (case_square_*): remap user FKs by phone via users id_map so
+    # test↔prod MG id mismatches (same phone, different users.id) merge cleanly.
+    "case_square_posts": {
+        "order": 3,
+        "pk_type": "string_pk",
+        "pk_column": "id",
+        "fk_remaps": {
+            "author_id": "users",
+            "submitted_by_id": "users",
+            "expert_recommended_by": "users",
+            "reviewed_by": "users",
+        },
+    },
+    "case_square_field_options": {
+        "order": 3,
+        "pk_type": "serial",
+        "dedup_columns": ("category", "value"),
+        "fk_remaps": {},
+    },
     "shared_diagrams": {
         "order": 3,
         "pk_type": "uuid",
@@ -295,6 +314,30 @@ TABLE_MERGE_CONFIG: Dict[str, Dict[str, Any]] = {
         "pk_type": "serial",
         "dedup_columns": ("post_id", "user_id"),
         "fk_remaps": {"user_id": "users", "post_id": "community_posts"},
+    },
+    "case_square_post_likes": {
+        "order": 4,
+        "pk_type": "serial",
+        "dedup_columns": ("post_id", "user_id"),
+        "fk_remaps": {"user_id": "users", "post_id": "case_square_posts"},
+    },
+    "case_square_post_favorites": {
+        "order": 4,
+        "pk_type": "serial",
+        "dedup_columns": ("post_id", "user_id"),
+        "fk_remaps": {"user_id": "users", "post_id": "case_square_posts"},
+    },
+    "case_square_staff_grants": {
+        "order": 4,
+        "pk_type": "serial",
+        "singleton_user": True,
+        "fk_remaps": {"user_id": "users", "granted_by": "users"},
+    },
+    "case_square_audit_log": {
+        "order": 4,
+        "pk_type": "serial",
+        "incremental_watermark": "created_at",
+        "fk_remaps": {"actor_id": "users", "post_id": "case_square_posts"},
     },
     "community_post_comments": {
         "order": 4,

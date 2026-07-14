@@ -16,7 +16,7 @@ from services.redis.session.redis_session_manager import RedisSessionManager
 from utils.auth.config import JWT_ALGORITHM
 from utils.auth import request_helpers
 from utils.auth.connection_types import HttpOrWebSocket
-from utils.auth.passkey_utils import verify_dashboard_passkey
+from utils.auth.passkey_utils import verify_bayi_passkey
 from utils.auth.tokens import decode_access_token
 
 
@@ -160,34 +160,24 @@ async def test_production_csp_falls_back_to_unsafe_inline_without_nonce() -> Non
     assert "nonce-" not in csp
 
 
-def test_production_guard_rejects_placeholder_dashboard_passkey() -> None:
-    """Startup guard must reject env.example-style placeholder passkeys when dashboard is enabled."""
+def test_production_guard_rejects_weak_bayi_passkey() -> None:
+    """Startup guard must reject weak Bayi passkeys in non-debug deployments."""
     guard = production_secrets_guard_module
     with patch.object(guard, "_require_non_debug", return_value=True):
         with patch.object(guard, "_guard_database_url", return_value=None):
             with patch.object(guard, "_guard_redis_url", return_value=None):
-                with patch.object(guard, "AUTH_MODE", "standard"):
-                    with patch.object(guard, "PUBLIC_DASHBOARD_PASSKEY", "CHANGE-ME-before-production"):
-                        with pytest.raises(RuntimeError, match="PUBLIC_DASHBOARD_PASSKEY"):
-                            guard.enforce_production_security_guards()
+                with patch.object(guard, "AUTH_MODE", "bayi"):
+                    with patch.object(guard, "BAYI_PASSKEY", "123456"):
+                        with patch.object(guard, "BAYI_DECRYPTION_KEY", "strong-bayi-key-value"):
+                            with pytest.raises(RuntimeError, match="BAYI_PASSKEY"):
+                                guard.enforce_production_security_guards()
 
 
-def test_production_guard_allows_unset_dashboard_passkey() -> None:
-    """Startup guard must not require PUBLIC_DASHBOARD_PASSKEY when dashboard is disabled."""
-    guard = production_secrets_guard_module
-    with patch.object(guard, "_require_non_debug", return_value=True):
-        with patch.object(guard, "_guard_database_url", return_value=None):
-            with patch.object(guard, "_guard_redis_url", return_value=None):
-                with patch.object(guard, "AUTH_MODE", "standard"):
-                    with patch.object(guard, "PUBLIC_DASHBOARD_PASSKEY", ""):
-                        guard.enforce_production_security_guards()
-
-
-def test_verify_dashboard_passkey_rejects_when_disabled() -> None:
-    """Empty configured passkey must not accept an empty submitted passkey."""
-    with patch("utils.auth.passkey_utils.config.PUBLIC_DASHBOARD_PASSKEY", ""):
-        assert verify_dashboard_passkey("") is False
-        assert verify_dashboard_passkey("123456") is False
+def test_verify_bayi_passkey_rejects_when_unset() -> None:
+    """Empty configured Bayi passkey must not accept a submitted passkey."""
+    with patch("utils.auth.passkey_utils.config.BAYI_PASSKEY", ""):
+        assert verify_bayi_passkey("") is False
+        assert verify_bayi_passkey("123456") is False
 
 
 def test_production_guard_allows_default_db_password() -> None:

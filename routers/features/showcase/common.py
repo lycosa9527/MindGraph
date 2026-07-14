@@ -16,15 +16,22 @@ from sqlalchemy.orm import joinedload
 
 from models.domain.auth import User
 from models.domain.showcase import ShowcasePost, ShowcasePostFavorite, ShowcasePostLike
-from routers.features.community_helpers import parse_spec_json
-from routers.features.showcase_constants import (
+from routers.features.community.helpers import parse_spec_json
+from services.auth.thinking_coin.case_earn import try_publish_case_earn
+from services.redis.cache import redis_showcase_cache as showcase_cache
+from services.showcase.audit import write_showcase_audit
+from services.showcase.post_delete import delete_showcase_post_rows, showcase_post_still_exists
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
+from utils.db.rls_context import RlsContext, apply_rls_context_async, rls_async_session
+
+from .constants import (
     CASE_TYPES,
     DIAGRAM_TYPE_LABELS,
     GRADES,
     PUBLISH_SOURCES,
     SORT_OPTIONS,
 )
-from routers.features.showcase_helpers import (
+from .helpers import (
     ALLOWED_DOC_SUFFIXES,
     ALLOWED_SOURCE_SUFFIXES,
     ALLOWED_VIDEO_SUFFIXES,
@@ -32,7 +39,7 @@ from routers.features.showcase_helpers import (
     VIDEO_MAX_BYTES,
     apply_gallery_image_uploads,
     assert_gallery_uploads_resolved,
-    showcase_public_asset_url,
+    assert_post_ready_for_approval,
     count_pending_gallery_images,
     delete_case_file,
     parse_tags_json,
@@ -40,9 +47,10 @@ from routers.features.showcase_helpers import (
     save_case_file,
     save_spec_json,
     save_thumbnail_from_upload,
+    showcase_public_asset_url,
     validate_gallery_spec,
 )
-from routers.features.showcase_permissions import (
+from .permissions import (
     can_delete_case,
     can_delist_case,
     can_edit_case,
@@ -53,12 +61,6 @@ from routers.features.showcase_permissions import (
     can_view_case_staff_meta,
     can_withdraw_case,
 )
-from services.auth.thinking_coin.case_earn import try_publish_case_earn
-from services.redis.cache import redis_showcase_cache as showcase_cache
-from services.showcase.audit import write_showcase_audit
-from services.showcase.post_delete import showcase_post_still_exists, delete_showcase_post_rows
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
-from utils.db.rls_context import RlsContext, apply_rls_context_async, rls_async_session
 
 logger = logging.getLogger(__name__)
 
@@ -226,8 +228,19 @@ async def _review_case_post_handler(
     if action not in ("approve", "reject"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="action must be approve or reject")
 
+    if post.status != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only pending cases can be reviewed",
+        )
+
+    if action == "approve":
+        assert_post_ready_for_approval(
+            case_type=post.case_type,
+            spec=post.spec if isinstance(post.spec, dict) else None,
+        )
+
     now = datetime.now(UTC)
-    was_pending = post.status == "pending"
 
     panel_ctx = RlsContext.panel_superadmin(current_user)
     await apply_rls_context_async(db, panel_ctx)
@@ -246,7 +259,7 @@ async def _review_case_post_handler(
     post.reviewed_at = now
 
     credited = 0
-    if action == "approve" and was_pending:
+    if action == "approve":
         try:
             credited, _ = await try_publish_case_earn(db, post.author_id, post.id)
         except BACKGROUND_INFRA_ERRORS as exc:

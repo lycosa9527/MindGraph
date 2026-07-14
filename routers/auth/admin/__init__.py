@@ -11,9 +11,10 @@ Proprietary License
 
 from fastapi import APIRouter
 
+from routers.features.showcase import admin as showcase
+
 from . import (
     api_keys,
-    showcase,
     errors,
     feature_org_access,
     geolite,

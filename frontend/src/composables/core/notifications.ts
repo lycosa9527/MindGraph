@@ -2,17 +2,24 @@
  * Unified Notifications — ElNotification with RTL-aware corner placement
  * (LTR: top-right, RTL: top-left). Matches `document.documentElement.dir`.
  *
+ * Element Plus overlay APIs load on first use via deep ESM paths so the entry
+ * graph does not pull `vendor-ep-overlay` (or the full EP barrel) at boot.
+ *
  * Use: import { notify } from '@/composables/core/notifications' for stores/outside setup
  * Or: useNotifications() composable for components
  */
 import { h } from 'vue'
 
-import { ElMessage, ElNotification } from 'element-plus'
 import type { MessageHandler } from 'element-plus'
 
 import { AlertTriangle, Check, CircleX, Info } from '@lucide/vue'
 
+type ElNotificationFn = (typeof import('element-plus/es/components/notification/index.mjs'))['ElNotification']
+type ElMessageFn = (typeof import('element-plus/es/components/message/index.mjs'))['ElMessage']
+
 let programmaticStylesPromise: Promise<void> | null = null
+let elNotificationPromise: Promise<ElNotificationFn> | null = null
+let elMessagePromise: Promise<ElMessageFn> | null = null
 
 /** Load Message / MessageBox / Notification / Loading CSS once (not auto-resolved by unplugin). */
 export function ensureElementPlusProgrammaticStyles(): Promise<void> {
@@ -25,6 +32,41 @@ export function ensureElementPlusProgrammaticStyles(): Promise<void> {
     ]).then(() => undefined)
   }
   return programmaticStylesPromise
+}
+
+export async function loadElNotification(): Promise<ElNotificationFn> {
+  if (!elNotificationPromise) {
+    elNotificationPromise = ensureElementPlusProgrammaticStyles().then(async () => {
+      const mod = await import('element-plus/es/components/notification/index.mjs')
+      return mod.ElNotification
+    })
+  }
+  return elNotificationPromise
+}
+
+export async function loadElMessage(): Promise<ElMessageFn> {
+  if (!elMessagePromise) {
+    elMessagePromise = ensureElementPlusProgrammaticStyles().then(async () => {
+      const mod = await import('element-plus/es/components/message/index.mjs')
+      return mod.ElMessage
+    })
+  }
+  return elMessagePromise
+}
+
+type ElMessageBoxApi = (typeof import('element-plus/es/components/message-box/index.mjs'))['ElMessageBox']
+
+let elMessageBoxPromise: Promise<ElMessageBoxApi> | null = null
+
+/** MessageBox + programmatic CSS — safe for call sites that must not import the EP barrel. */
+export async function loadElMessageBox(): Promise<ElMessageBoxApi> {
+  if (!elMessageBoxPromise) {
+    elMessageBoxPromise = ensureElementPlusProgrammaticStyles().then(async () => {
+      const mod = await import('element-plus/es/components/message-box/index.mjs')
+      return mod.ElMessageBox
+    })
+  }
+  return elMessageBoxPromise
 }
 
 export type NotificationType = 'success' | 'warning' | 'info' | 'error'
@@ -63,12 +105,14 @@ function showNotification(
 ): void {
   const IconComponent = iconMap[type]
   const durationMs = duration > 0 ? duration : DEFAULT_DURATION_MS
-  ElNotification({
-    message,
-    type,
-    duration: durationMs,
-    ...getDefaultElNotificationOptions(),
-    icon: h(IconComponent, { size: 20 }),
+  void loadElNotification().then((ElNotification) => {
+    ElNotification({
+      message,
+      type,
+      duration: durationMs,
+      ...getDefaultElNotificationOptions(),
+      icon: h(IconComponent, { size: 20 }),
+    })
   })
 }
 
@@ -87,11 +131,28 @@ export const notify = {
   },
 }
 
+/**
+ * Sync API: returns a close handle immediately; the real ElMessage mounts once
+ * the overlay chunk is loaded (close before then is a no-op).
+ */
 export function showLoading(message = 'Loading...'): MessageHandler {
-  return ElMessage({
-    message,
-    type: 'info',
-    duration: 0,
-    showClose: false,
+  let real: MessageHandler | null = null
+  let closed = false
+  void loadElMessage().then((ElMessage) => {
+    if (closed) {
+      return
+    }
+    real = ElMessage({
+      message,
+      type: 'info',
+      duration: 0,
+      showClose: false,
+    })
   })
+  return {
+    close: () => {
+      closed = true
+      real?.close()
+    },
+  } as MessageHandler
 }

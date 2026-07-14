@@ -1,4 +1,4 @@
-import { ElMessageBox } from 'element-plus'
+import { loadElMessageBox } from '@/composables/core/notifications'
 import { useRouter } from 'vue-router'
 
 import { applyCanvasSessionReset } from '@/composables/canvasPage/applyCanvasSessionReset'
@@ -24,6 +24,7 @@ export function useCanvasReset() {
     }
 
     try {
+      const ElMessageBox = await loadElMessageBox()
       await ElMessageBox.confirm(t('canvas.reset.confirmBody'), t('canvas.reset.confirmTitle'), {
         confirmButtonText: t('canvas.reset.confirmButton'),
         cancelButtonText: t('common.cancel'),

@@ -7,6 +7,7 @@ from utils.auth.admin_panel_permissions import (
     CAP_PANEL_ACCESS,
     CAP_SCOPE_GLOBAL,
     CAP_SCOPE_INVITED_ORGS,
+    CAP_SETTINGS_COS,
     CAP_SETTINGS_DATABASE,
     CAP_SETTINGS_FEATURES,
     CAP_SETTINGS_GEWE,
@@ -16,9 +17,11 @@ from utils.auth.admin_panel_permissions import (
     CAP_SETTINGS_MINDBOT,
     CAP_SETTINGS_PERFORMANCE,
     CAP_SETTINGS_ERRORS,
+    CAP_SETTINGS_PUBLIC_DASHBOARD,
     CAP_SETTINGS_ROLES,
     CAP_SETTINGS_SMART_RESPONSE,
     CAP_SETTINGS_TEACHER_USAGE,
+    CAP_SETTINGS_THINKING_COINS,
     CAP_SETTINGS_TOKENS,
     CAP_TAB_BILLING_VIEW,
     CAP_TAB_DATA_CENTER_VIEW,
@@ -248,8 +251,11 @@ _ALL_SETTINGS_CAPABILITY_KEYS = frozenset(
         CAP_SETTINGS_TOKENS,
         CAP_SETTINGS_LIBRARY,
         CAP_SETTINGS_DATABASE,
+        CAP_SETTINGS_COS,
         CAP_SETTINGS_PERFORMANCE,
         CAP_SETTINGS_ERRORS,
+        CAP_SETTINGS_THINKING_COINS,
+        CAP_SETTINGS_PUBLIC_DASHBOARD,
         CAP_SETTINGS_GEWE,
         CAP_SETTINGS_KITTY_LLMOPS,
         CAP_SETTINGS_MINDBOT,
@@ -257,6 +263,15 @@ _ALL_SETTINGS_CAPABILITY_KEYS = frozenset(
         CAP_SETTINGS_SMART_RESPONSE,
         CAP_SETTINGS_TEACHER_USAGE,
     }
+)
+
+_NON_SUPERADMIN_PANEL_ROLES = (
+    "platform_bd",
+    "expert",
+    "school_admin",
+    "teacher",
+    "personal_trial",
+    "personal_paid",
 )
 
 
@@ -267,3 +282,10 @@ def test_all_settings_caps_superadmin_only():
     for cap in _ALL_SETTINGS_CAPABILITY_KEYS:
         assert cap in super_caps
         assert cap not in school_caps
+
+
+def test_public_dashboard_settings_cap_superadmin_only():
+    """全国数据中心 settings subtab is super-admin only (not BD / school / expert)."""
+    assert CAP_SETTINGS_PUBLIC_DASHBOARD in capabilities_for_role("superadmin")
+    for role in _NON_SUPERADMIN_PANEL_ROLES:
+        assert CAP_SETTINGS_PUBLIC_DASHBOARD not in capabilities_for_role(role)

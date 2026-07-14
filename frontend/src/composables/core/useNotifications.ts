@@ -3,13 +3,13 @@
  */
 import { h, ref } from 'vue'
 
-import { ElNotification } from 'element-plus'
 import type { MessageHandler } from 'element-plus'
 
 import { AlertTriangle } from '@lucide/vue'
 
 import {
   getDefaultElNotificationOptions,
+  loadElNotification,
   notify,
   showLoading as showLoadingImpl,
 } from './notifications'
@@ -39,14 +39,16 @@ export function useNotifications() {
   }
 
   function showNotification(options: NotificationOptions): void {
-    ElNotification({
-      ...getDefaultElNotificationOptions(),
-      title: options.title,
-      message: options.message,
-      type: options.type || 'info',
-      duration: options.duration ?? 4000,
-      showClose: options.showClose ?? true,
-      onClick: options.onClick,
+    void loadElNotification().then((ElNotification) => {
+      ElNotification({
+        ...getDefaultElNotificationOptions(),
+        title: options.title,
+        message: options.message,
+        type: options.type || 'info',
+        duration: options.duration ?? 4000,
+        showClose: options.showClose ?? true,
+        onClick: options.onClick,
+      })
     })
   }
 
@@ -70,19 +72,22 @@ export function useNotifications() {
     title = 'Confirm',
     type: NotificationType = 'warning'
   ): Promise<boolean> {
-    return new Promise((resolve) => {
-      ElNotification({
-        ...getDefaultElNotificationOptions(),
-        title,
-        message,
-        type,
-        duration: 0,
-        showClose: true,
-        onClose: () => resolve(false),
-        onClick: () => resolve(true),
-        icon: h(AlertTriangle, { size: 20 }),
-      })
-    })
+    return loadElNotification().then(
+      (ElNotification) =>
+        new Promise<boolean>((resolve) => {
+          ElNotification({
+            ...getDefaultElNotificationOptions(),
+            title,
+            message,
+            type,
+            duration: 0,
+            showClose: true,
+            onClose: () => resolve(false),
+            onClick: () => resolve(true),
+            icon: h(AlertTriangle, { size: 20 }),
+          })
+        })
+    )
   }
 
   return {

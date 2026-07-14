@@ -65,7 +65,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   const flags = ref<FeatureFlagsResponse | null>(null)
   const isLoading = ref(false)
   const lastFetchTime = ref<number>(0)
-  const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+  const CACHE_DURATION = 60 * 1000 // 1 minute — keep nav close to admin hot toggles
 
   /**
    * Fetch feature flags directly (for use in router guards)
@@ -92,8 +92,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_course: false,
           feature_template: false,
           feature_community: false,
-          feature_showcase: true,
-          feature_askonce: true,
+          feature_showcase: false,
+          feature_askonce: false,
           feature_debateverse: false,
           feature_knowledge_space: false,
           feature_mindmap_v2_canvas: false,
@@ -151,8 +151,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_course: false,
         feature_template: false,
         feature_community: false,
-        feature_showcase: true,
-        feature_askonce: true,
+        feature_showcase: false,
+        feature_askonce: false,
         feature_debateverse: false,
         feature_knowledge_space: false,
         feature_mindmap_v2_canvas: false,
@@ -193,19 +193,19 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   }
 
   function getFeatureTemplate(): boolean {
-    return flags.value?.feature_template ?? true
+    return flags.value?.feature_template ?? false
   }
 
   function getFeatureCommunity(): boolean {
-    return flags.value?.feature_community ?? true
+    return flags.value?.feature_community ?? false
   }
 
   function getFeatureShowcase(): boolean {
-    return flags.value?.feature_showcase ?? true
+    return flags.value?.feature_showcase ?? false
   }
 
   function getFeatureAskOnce(): boolean {
-    return flags.value?.feature_askonce ?? true
+    return flags.value?.feature_askonce ?? false
   }
 
   function getFeatureDebateverse(): boolean {

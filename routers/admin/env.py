@@ -23,10 +23,13 @@ Proprietary License
 import logging
 from typing import Dict
 
-from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from config.settings import config
+from services.infrastructure.sync.env_reload_fanout import (
+    get_env_reload_instance_id,
+    publish_env_reload_fanout,
+    reload_runtime_config_from_dotenv,
+)
 from services.infrastructure.utils.env_manager import EnvManager
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from routers.auth.dependencies import require_tab_settings_edit
@@ -35,15 +38,6 @@ from utils.auth.admin_scope import AdminScope
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth/admin/env", tags=["Admin - Environment Settings"])
-
-
-def reload_runtime_config_from_dotenv() -> None:
-    """Reload ``.env`` into ``os.environ`` and clear the in-process config cache."""
-    env_manager = EnvManager()
-    env_path = env_manager.env_path.resolve()
-    if env_path.is_file():
-        load_dotenv(env_path, override=True)
-    config.refresh_env_cache()
 
 
 @router.get("/settings", dependencies=[Depends(require_tab_settings_edit)])
@@ -342,20 +336,23 @@ async def restore_env_from_backup(backup_filename: str, scope: AdminScope = Depe
 
         if success:
             reload_runtime_config_from_dotenv()
+            fanout_ok = await publish_env_reload_fanout(origin=get_env_reload_instance_id())
             logger.warning(
-                "Admin %s restored .env from backup: %s",
+                "Admin %s restored .env from backup: %s (fanout=%s)",
                 scope.actor.phone,
                 backup_filename,
+                fanout_ok,
             )
 
             return {
                 "message": "Restored successfully from backup",
                 "restored_from": backup_filename,
                 "runtime_reloaded": True,
+                "fanout_published": fanout_ok,
                 "warning": (
                     "Runtime config reloaded from restored file. "
-                    "A full server restart may still be required if you changed "
-                    "settings that only apply at process startup (e.g. new routers)."
+                    "A full server restart may still be required for settings that "
+                    "only apply at process startup (e.g. Knowledge Space/Qdrant)."
                 ),
             }
         raise HTTPException(
@@ -415,22 +412,25 @@ async def reload_runtime_env(
     """
     Reload .env into ``os.environ`` and clear the in-process config cache (ADMIN ONLY).
 
-    Use after updating FEATURE_* (or other) keys via PUT /settings so the running
-    process picks up new values without a full process restart. Router modules that
-    were not imported at startup still require a restart to appear.
+    Reloads this worker, then publishes a Redis fan-out so sibling uvicorn workers
+    reload as well. Feature routers are mounted at startup and gated at runtime;
+    Knowledge Space still needs Qdrant/Celery that were initialized at process start.
     """
     try:
         env_manager = EnvManager()
         env_path = env_manager.env_path.resolve()
         reload_runtime_config_from_dotenv()
+        fanout_ok = await publish_env_reload_fanout(origin=get_env_reload_instance_id())
         logger.warning(
-            "Admin %s triggered runtime .env reload (%s)",
+            "Admin %s triggered runtime .env reload (%s, fanout=%s)",
             scope.actor.phone,
             env_path,
+            fanout_ok,
         )
         return {
             "message": "Runtime configuration reloaded from .env",
             "env_path": str(env_path),
+            "fanout_published": fanout_ok,
         }
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("Runtime env reload failed: %s", exc)

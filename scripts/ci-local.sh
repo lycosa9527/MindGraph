@@ -175,6 +175,9 @@ run_backend() {
     tests/test_showcase_create_response.py \
     tests/test_showcase_storage_cos.py \
     tests/test_showcase_e2e_smoke.py \
+    tests/test_showcase_cos_live_matrix.py \
+    tests/test_showcase_lifecycle_gates.py \
+    tests/test_pg_merge_showcase_remap.py \
     tests/test_diagram_folders_api.py
 }
 

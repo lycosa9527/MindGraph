@@ -68,7 +68,7 @@ def bind_public_org_list_rls_dependency(request: Request) -> None:
 
 
 def bind_dashboard_rls_dependency(request: Request) -> None:
-    """Public dashboard passkey stats — declare before ``Depends(get_async_db)``."""
+    """National data center stats — declare before ``Depends(get_async_db)``."""
     bind_dashboard_rls(request)
 
 

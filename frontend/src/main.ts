@@ -8,7 +8,6 @@ import { createPinia } from 'pinia'
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { registerSW } from 'virtual:pwa-register'
 
-import { ensureElementPlusProgrammaticStyles } from '@/composables/core/notifications'
 import { preloadMarkdownRendererForRoute } from '@/composables/core/useMarkdown'
 import { useAuthStore } from '@/stores/auth'
 
@@ -99,8 +98,8 @@ async function bootstrap(): Promise<void> {
   })
 
   // Avoid flashing DefaultLayout on `/` before the guard redirects (e.g. to `/mindmate`).
+  // Element Plus overlay CSS/JS loads on first notify / message-box (see notifications.ts).
   await router.isReady()
-  await ensureElementPlusProgrammaticStyles()
   preloadMarkdownRendererForRoute(router.currentRoute.value.path)
   app.mount('#app')
 }

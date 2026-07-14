@@ -5,7 +5,6 @@
 export { default as BayiPasskeyPage } from './BayiPasskeyPage.vue'
 export { default as AdminPage } from './AdminPage.vue'
 export { default as PublicDashboardPage } from './PublicDashboardPage.vue'
-export { default as DashboardLoginPage } from './DashboardLoginPage.vue'
 export { default as NotFoundPage } from './NotFoundPage.vue'
 export { default as MindMatePage } from './MindMatePage.vue'
 export { default as MindGraphPage } from './MindGraphPage.vue'

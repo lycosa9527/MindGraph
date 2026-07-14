@@ -1,7 +1,7 @@
 /**
  * Optional in-page mobile console (Eruda) for iOS Safari debugging.
  *
- * Enable:
+ * Currently hard-disabled (`ERUDA_ENABLED = false`). When re-enabled:
  * - Open any page with ``?eruda=1`` (persists in localStorage)
  * - Or set ``localStorage.setItem('mg_eruda', '1')`` then reload
  * - Auto-on for ``test.*`` / localhost hosts (disable with ``?eruda=0``)
@@ -9,6 +9,7 @@
  * Eruda is served from ``public/debug/eruda.js`` and injected only when enabled
  * (not a Vite/Rolldown dependency — avoids build failures if npm install is stale).
  */
+const ERUDA_ENABLED = false
 const STORAGE_KEY = 'mg_eruda'
 const ERUDA_SCRIPT_ATTR = 'data-mg-eruda'
 
@@ -28,7 +29,7 @@ function hostnameSuggestsDebugHost(): boolean {
 }
 
 export function isMobileDebugConsoleEnabled(): boolean {
-  if (typeof window === 'undefined') {
+  if (!ERUDA_ENABLED || typeof window === 'undefined') {
     return false
   }
   try {

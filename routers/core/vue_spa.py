@@ -32,6 +32,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Vue SPA"])
 
+_PUBLIC_DASHBOARD_ADMIN = "/admin?tab=settings&subtab=public_dashboard"
+
 
 @router.get("/_diagnostic/static-files")
 async def diagnostic_static_files():
@@ -127,21 +129,21 @@ async def vue_demo_redirect():
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-async def vue_dashboard(request: Request):
-    """Serve Vue SPA for dashboard route."""
-    return await _serve_index(request)
+async def vue_dashboard(_request: Request):
+    """Legacy URL — national data center lives in the admin panel."""
+    return RedirectResponse(url=_PUBLIC_DASHBOARD_ADMIN, status_code=301)
 
 
 @router.get("/dashboard/login", response_class=HTMLResponse)
-async def vue_dashboard_login(request: Request):
-    """Serve Vue SPA for dashboard login route."""
-    return await _serve_index(request)
+async def vue_dashboard_login(_request: Request):
+    """Legacy passkey login URL — redirect to the admin national data center."""
+    return RedirectResponse(url=_PUBLIC_DASHBOARD_ADMIN, status_code=301)
 
 
 @router.get("/pub-dash", response_class=HTMLResponse)
-async def vue_pub_dash(request: Request):
-    """Serve Vue SPA for public dashboard route."""
-    return await _serve_index(request)
+async def vue_pub_dash(_request: Request):
+    """Legacy public dashboard URL — redirect to the admin national data center."""
+    return RedirectResponse(url=_PUBLIC_DASHBOARD_ADMIN, status_code=301)
 
 
 @router.get("/debug", response_class=HTMLResponse)

@@ -178,7 +178,12 @@ async def can_user_review_post(post: ShowcasePost, user: User, db: AsyncSession)
 
 
 async def can_view_non_approved_post(post: ShowcasePost, user: User, db: AsyncSession) -> bool:
-    """Return True when the user may view a non-approved post."""
+    """Return True when the user may view a non-approved post.
+
+    Aligns with ``can_edit_case`` staff path: reviewers and delete staff may
+    inspect pending media they are allowed to manage.
+    """
     if user.id in (post.author_id, post.submitted_by_id):
         return True
-    return await can_review_case(db, user)
+    perms = await load_user_showcase_permissions(db, user)
+    return PERM_REVIEW in perms or PERM_DELETE in perms

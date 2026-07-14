@@ -20,8 +20,6 @@ import logging
 
 from fastapi import APIRouter
 
-from config.settings import config as app_config
-
 from . import (
     activity,
     asr_realtime_ws,
@@ -50,41 +48,33 @@ from . import (
 
 logger = logging.getLogger(__name__)
 
+# Always import when possible; feature_flag_gate + per-route checks enforce FEATURE_*.
 KNOWLEDGE_SPACE_MODULE = None
-if app_config.FEATURE_KNOWLEDGE_SPACE:
-    try:
-        from . import knowledge_space as KNOWLEDGE_SPACE_MODULE
-    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
-        KNOWLEDGE_SPACE_MODULE = None
-        logger.debug("[API] Failed to import knowledge_space router: %s", e, exc_info=True)
-else:
-    logger.debug("[API] Knowledge Space feature disabled via FEATURE_KNOWLEDGE_SPACE flag")
+try:
+    from . import knowledge_space as KNOWLEDGE_SPACE_MODULE
+except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
+    KNOWLEDGE_SPACE_MODULE = None
+    logger.debug("[API] Failed to import knowledge_space router: %s", e, exc_info=True)
 
 MINDBOT_MODULE = None
-if app_config.FEATURE_MINDBOT:
-    try:
-        from . import mindbot as MINDBOT_MODULE
-    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
-        MINDBOT_MODULE = None
-        logger.debug("[API] Failed to import mindbot router: %s", e, exc_info=True)
-else:
-    logger.debug("[API] MindBot feature disabled via FEATURE_MINDBOT flag")
+try:
+    from . import mindbot as MINDBOT_MODULE
+except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
+    MINDBOT_MODULE = None
+    logger.debug("[API] Failed to import mindbot router: %s", e, exc_info=True)
 
 mindmate_collab_routes_module = None
 mindmate_collab_ws_module = None
 mindmate_notify_ws_module = None
-if app_config.FEATURE_MINDMATE_COLLAB:
-    try:
-        from . import mindmate_collab_routes as mindmate_collab_routes_module
-        from . import mindmate_collab_ws as mindmate_collab_ws_module
-        from . import mindmate_notify_ws as mindmate_notify_ws_module
-    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
-        mindmate_collab_routes_module = None
-        mindmate_collab_ws_module = None
-        mindmate_notify_ws_module = None
-        logger.debug("[API] Failed to import mindmate collab routers: %s", e, exc_info=True)
-else:
-    logger.debug("[API] MindMate collab feature disabled via FEATURE_MINDMATE_COLLAB flag")
+try:
+    from . import mindmate_collab_routes as mindmate_collab_routes_module
+    from . import mindmate_collab_ws as mindmate_collab_ws_module
+    from . import mindmate_notify_ws as mindmate_notify_ws_module
+except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
+    mindmate_collab_routes_module = None
+    mindmate_collab_ws_module = None
+    mindmate_notify_ws_module = None
+    logger.debug("[API] Failed to import mindmate collab routers: %s", e, exc_info=True)
 
 # Create main router with prefix and tags
 router = APIRouter(prefix="/api", tags=["api"])
@@ -125,27 +115,18 @@ if KNOWLEDGE_SPACE_MODULE is not None:
     router.include_router(KNOWLEDGE_SPACE_MODULE.router)
     logger.info("[API] Knowledge Space router registered at /api/knowledge-space")
 else:
-    if app_config.FEATURE_KNOWLEDGE_SPACE:
-        logger.warning(
-            "[API] Knowledge Space router NOT registered - import failed or router is None. "
-            "Check DEBUG logs for details. This may be due to missing dependencies (Qdrant, Celery)."
-        )
-    else:
-        logger.debug("[API] Knowledge Space router NOT registered - feature disabled")
+    logger.warning(
+        "[API] Knowledge Space router NOT registered - import failed or router is None. "
+        "Check DEBUG logs for details. This may be due to missing dependencies (Qdrant, Celery)."
+    )
 
 if MINDBOT_MODULE is not None:
     router.include_router(MINDBOT_MODULE.router)
     logger.info("[API] MindBot router registered at /api/mindbot")
 else:
-    if app_config.FEATURE_MINDBOT:
-        logger.warning("[API] MindBot router NOT registered - import failed or router is None.")
-    else:
-        logger.debug("[API] MindBot router not registered - feature disabled")
+    logger.warning("[API] MindBot router NOT registered - import failed or router is None.")
 
 if mindmate_collab_routes_module is None:
-    if app_config.FEATURE_MINDMATE_COLLAB:
-        logger.warning("[API] MindMate collab routers NOT registered - import failed or router is None.")
-    else:
-        logger.debug("[API] MindMate collab routers not registered - feature disabled")
+    logger.warning("[API] MindMate collab routers NOT registered - import failed or router is None.")
 
 __all__ = ["router"]

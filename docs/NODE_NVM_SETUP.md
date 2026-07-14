@@ -58,6 +58,8 @@ cd ~/MindGraph/frontend
 npm install
 ```
 
+`frontend/.npmrc` pins **`registry=https://registry.npmjs.org`**. Do not switch the project registry to npmmirror (or another mirror) when regenerating `package-lock.json` — a mixed-origin lockfile breaks `npm install` on npm 12+ (`EALLOWREMOTE`) when the machine registry differs from lockfile `resolved` URLs.
+
 `frontend/package.json` includes an **`allowScripts`** allowlist (pinned versions) for dependencies that run install/postinstall scripts (`esbuild`, `vue-demi`, `core-js`, and optional `fsevents` on macOS). This satisfies npm 11+ install-script policy and avoids `npm warn allow-scripts` noise.
 
 If you still see allow-script warnings after `git pull`, either your tree is behind or a dependency bump added a new script package. Fix it:
@@ -167,3 +169,4 @@ Do **not** rely on `npm run lint:fix` to mass-convert the tree — fix Git + edi
 | `node` still from `/usr/bin` | Repeat step 2; confirm `which node` shows nvm |
 | Global npm upgrade still fails | Fix step 4 first; ensure `npm -v` works before `npm install -g npm@latest` |
 | `npm warn allow-scripts` after install | Pull latest `frontend/package.json`, or run `npm approve-scripts` / update `allowScripts` (see step 5) |
+| `EALLOWREMOTE` / refusing registry tarball URLs | Ensure Node ≥26 and pull latest `frontend/package-lock.json` + `frontend/.npmrc`. Do not set a global npmmirror registry for this repo. Temporary unblock only: `npm install --allow-remote=all` |

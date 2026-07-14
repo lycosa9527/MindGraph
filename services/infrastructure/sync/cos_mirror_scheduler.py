@@ -21,9 +21,14 @@ from services.infrastructure.sync.cos_sync_env import (
     is_cos_publisher,
 )
 from services.infrastructure.sync.crowdsec_cos_sync import merge_crowdsec_blocklist_from_cos
+from services.infrastructure.sync.abuseipdb_cos_sync import merge_abuseipdb_blocklist_from_cos
 from services.infrastructure.sync.celery_cos_sync import (
     install_celery_from_cos,
     publish_celery_release_to_cos,
+)
+from services.infrastructure.sync.geolite_cos_sync import (
+    install_geolite_from_cos,
+    publish_geolite_to_cos,
 )
 from services.infrastructure.sync.qdrant_cos_sync import (
     install_qdrant_from_cos,
@@ -118,6 +123,12 @@ async def _run_mirror_tick() -> None:
         cs = await merge_crowdsec_blocklist_from_cos(force=True)
         if cs.get("ok") and not cs.get("skipped"):
             logger.info("[COSMirror] CrowdSec consumer sync: %s IPs", cs.get("count"))
+        ab = await merge_abuseipdb_blocklist_from_cos(force=True)
+        if ab.get("ok") and not ab.get("skipped"):
+            logger.info("[COSMirror] AbuseIPDB consumer sync: %s IPs", ab.get("count"))
+        gl = await install_geolite_from_cos()
+        if gl.get("ok") and not gl.get("skipped"):
+            logger.info("[COSMirror] GeoLite installed from COS")
         qd = await install_qdrant_from_cos()
         if qd.get("ok") and not qd.get("skipped"):
             logger.info("[COSMirror] Qdrant installed v%s from COS", qd.get("version"))
@@ -133,6 +144,11 @@ async def _run_mirror_tick() -> None:
         cl_pub = await publish_celery_release_to_cos()
         if cl_pub.get("ok") and not cl_pub.get("skipped"):
             logger.info("[COSMirror] Celery published v%s to COS", cl_pub.get("version"))
+        gl_pub = await publish_geolite_to_cos()
+        if gl_pub.get("ok") and not gl_pub.get("skipped"):
+            logger.info("[COSMirror] GeoLite published to COS")
+        elif gl_pub.get("error") == "local_mmdb_missing":
+            logger.debug("[COSMirror] GeoLite local MMDB missing; skip publish")
 
 
 async def start_cos_mirror_scheduler() -> None:

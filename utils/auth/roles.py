@@ -49,11 +49,23 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_smart_response": "FEATURE_SMART_RESPONSE",
     "feature_teacher_usage": "FEATURE_TEACHER_USAGE",
     "feature_workshop_chat": "FEATURE_WORKSHOP_CHAT",
+    "feature_mindmate_collab": "FEATURE_MINDMATE_COLLAB",
     "feature_markets": "FEATURE_MARKETS",
     "feature_mindbot": "FEATURE_MINDBOT",
     "feature_mindmate_export": "FEATURE_MINDMATE_EXPORT",
     "feature_kitty_agent": "FEATURE_KITTY_AGENT",
 }
+
+# Keys whose Permissions UI is enforced by ``user_has_feature_access`` on the API.
+FEATURE_KEYS_WITH_ORG_ACCESS = frozenset(
+    {
+        "feature_workshop_chat",
+        "feature_mindmate_collab",
+        "feature_mindbot",
+        "feature_mindmate_export",
+        "feature_kitty_agent",
+    }
+)
 
 
 def is_superadmin(current_user) -> bool:

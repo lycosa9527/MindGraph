@@ -8,25 +8,31 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
-import { ElConfigProvider } from 'element-plus'
+import { ElConfigProvider } from 'element-plus/es/components/config-provider/index.mjs'
 import type { Language } from 'element-plus/es/locale'
+import 'element-plus/es/components/config-provider/style/css'
 
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
-import { useKittyDesktopActionPoll, useLanguage, useNotifications } from '@/composables'
 import { useOAuthRouteFeedback } from '@/composables/auth/useOAuthRouteFeedback'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
+import { useKittyDesktopActionPoll } from '@/composables/kitty/useKittyDesktopActionPoll'
+import { privacyPageUiCode } from '@/composables/usePrivacyPageLocale'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
 import { isRtlUiLocale } from '@/i18n/locales'
-import { useAuthStore, useFeatureFlagsStore, useUIStore } from '@/stores'
+import { useAuthStore } from '@/stores/auth'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useLiveTranslationStore } from '@/stores/liveTranslation'
+import { useUIStore } from '@/stores/ui'
 import { isGuestAuthPath, getSafePostAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import {
   privacyPageDocumentTitle,
   privacyPageHtmlLang,
 } from '@/utils/privacyPageLocale'
-import { privacyPageUiCode } from '@/composables/usePrivacyPageLocale'
+import { isAdminPublicDashboardRoute } from '@/utils/publicDashboardRoute'
 import { shouldShowTestServerBannerOnVisit } from '@/utils/testServerBanner'
 
 const notify = useNotifications()
@@ -181,7 +187,15 @@ watch(
 )
 
 watch(
-  () => [route.meta.titleKey, uiStore.language, route.name, privacyPageUiCode.value] as const,
+  () =>
+    [
+      route.meta.titleKey,
+      uiStore.language,
+      route.name,
+      route.query.tab,
+      route.query.subtab,
+      privacyPageUiCode.value,
+    ] as const,
   () => {
     if (route.name === 'Privacy') {
       document.title = privacyPageDocumentTitle(privacyPageUiCode.value)
@@ -189,7 +203,9 @@ watch(
       document.documentElement.dir = 'ltr'
       return
     }
-    const raw = route.meta.titleKey
+    const raw = isAdminPublicDashboardRoute(route)
+      ? 'meta.pageTitle.publicDashboard'
+      : route.meta.titleKey
     const key = typeof raw === 'string' && raw.length > 0 ? raw : 'meta.pageTitle.default'
     const page = t(key)
     const brand = t('app.brandName')

@@ -296,6 +296,8 @@ async def save_upload_grant(
         return
     try:
         await redis.set(grant_key, orjson.dumps(payload), ex=ttl_seconds)
+        # Prefer Redis; drop any stale memory fallback from an earlier Redis outage.
+        _MEMORY_GRANTS.pop(grant_key, None)
     except REDIS_ERRORS as exc:
         logger.warning("[ShowcaseCache] grant save failed: %s", exc)
         _MEMORY_GRANTS[grant_key] = (time.monotonic() + float(ttl_seconds), payload)
@@ -307,26 +309,34 @@ async def pop_upload_grant(
     post_id: str,
     role: str,
 ) -> Optional[dict[str, Any]]:
-    """Load and delete upload grant (one-shot)."""
+    """Load and delete upload grant (one-shot). Prefer Redis when available."""
     grant_key = _memory_grant_key(user_id, post_id, role)
     _purge_expired_memory_grants()
+
+    if is_redis_available():
+        redis = get_async_redis()
+        if redis is not None:
+            try:
+                raw = None
+                try:
+                    raw = await redis.getdel(grant_key)
+                except REDIS_ERRORS as getdel_exc:
+                    if "GETDEL" not in str(getdel_exc).upper():
+                        raise
+                    async with redis.pipeline(transaction=True) as pipe:
+                        pipe.get(grant_key)
+                        pipe.delete(grant_key)
+                        results = await pipe.execute()
+                    raw = results[0] if results else None
+                if raw:
+                    _MEMORY_GRANTS.pop(grant_key, None)
+                    data = orjson.loads(raw)
+                    return data if isinstance(data, dict) else None
+            except (*REDIS_ERRORS, ValueError, TypeError) as exc:
+                logger.warning("[ShowcaseCache] grant pop failed: %s", exc)
+
     mem = _MEMORY_GRANTS.pop(grant_key, None)
     if mem is not None:
         _, payload = mem
         return payload
-
-    if not is_redis_available():
-        return None
-    redis = get_async_redis()
-    if not redis:
-        return None
-    try:
-        raw = await redis.get(grant_key)
-        if not raw:
-            return None
-        await redis.delete(grant_key)
-        data = orjson.loads(raw)
-        return data if isinstance(data, dict) else None
-    except (*REDIS_ERRORS, ValueError, TypeError) as exc:
-        logger.warning("[ShowcaseCache] grant pop failed: %s", exc)
-        return None
+    return None

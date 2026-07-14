@@ -8,7 +8,6 @@ Use this when rolling hardened MindGraph to **mg.mindspringedu.com** (or any TLS
 
 | Variable | When required |
 |----------|----------------|
-| `PUBLIC_DASHBOARD_PASSKEY` | Only when the public stats dashboard is enabled (non-empty passkey) |
 | `BAYI_PASSKEY`, `BAYI_DECRYPTION_KEY` | `AUTH_MODE=bayi` |
 | `DEVICE_REGISTRATION_SECRET` | `FEATURE_SMART_RESPONSE=True` |
 | `GEWE_WEBHOOK_SECRET` | `FEATURE_GEWE=True` |

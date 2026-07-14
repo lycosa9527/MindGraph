@@ -13,6 +13,7 @@ export type SettingsSubtab =
   | 'gewe'
   | 'errors'
   | 'thinking_coins'
+  | 'public_dashboard'
 
 export interface SettingsNavLeafItem {
   kind: 'leaf'
@@ -30,6 +31,7 @@ export const SETTINGS_NAV_ITEMS: readonly SettingsNavItem[] = [
   { kind: 'leaf', name: 'performance', labelKey: 'admin.performance.tab' },
   { kind: 'leaf', name: 'errors', labelKey: 'admin.errors.tab' },
   { kind: 'leaf', name: 'thinking_coins', labelKey: 'thinkingCoins.admin.tab' },
+  { kind: 'leaf', name: 'public_dashboard', labelKey: 'admin.publicDashboard.tab' },
   { kind: 'leaf', name: 'library', labelKey: 'admin.library' },
   { kind: 'leaf', name: 'gewe', labelKey: 'admin.geweWechat' },
 ]
@@ -66,9 +68,7 @@ function canViewLeaf(name: SettingsSubtab, options: SettingsNavVisibilityOptions
   return true
 }
 
-export function visibleSettingsNavItems(
-  options: SettingsNavVisibilityOptions
-): SettingsNavItem[] {
+export function visibleSettingsNavItems(options: SettingsNavVisibilityOptions): SettingsNavItem[] {
   return SETTINGS_NAV_ITEMS.filter((item) => canViewLeaf(item.name, options))
 }
 

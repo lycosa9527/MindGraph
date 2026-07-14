@@ -60,9 +60,7 @@ from .config import (
     LOCKOUT_DURATION_MINUTES,
     MAX_CAPTCHA_ATTEMPTS,
     MAX_LOGIN_ATTEMPTS,
-    PUBLIC_DASHBOARD_PASSKEY,
     RATE_LIMIT_WINDOW_MINUTES,
-    is_public_dashboard_enabled,
     REFRESH_TOKEN_EXPIRY_DAYS,
     TRUSTED_PROXY_IPS,
 )
@@ -76,10 +74,9 @@ from .invitations import load_invitation_codes, validate_invitation_code
 # JWT Secret exports
 from .jwt_secret import get_jwt_secret, warmup_jwt_secret_async
 
-# Passkey helpers (Bayi 6-digit login, public dashboard)
+# Passkey helpers (Bayi 6-digit login)
 from .passkey_utils import (
     verify_bayi_passkey,
-    verify_dashboard_passkey,
 )
 
 # Password exports
@@ -149,8 +146,6 @@ __all__ = [
     "ENTERPRISE_DEFAULT_ORG_CODE",
     "ENTERPRISE_DEFAULT_USER_PHONE",
     "BAYI_PASSKEY",
-    "PUBLIC_DASHBOARD_PASSKEY",
-    "is_public_dashboard_enabled",
     "BAYI_DECRYPTION_KEY",
     "BAYI_DEFAULT_ORG_CODE",
     "BAYI_DEFAULT_ORG_ID",
@@ -194,7 +189,6 @@ __all__ = [
     "get_enterprise_user",
     # Passkey auth
     "verify_bayi_passkey",
-    "verify_dashboard_passkey",
     # Bayi mode
     "decrypt_bayi_token",
     "validate_bayi_token_body",

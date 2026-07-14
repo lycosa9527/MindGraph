@@ -107,7 +107,39 @@ MindGraph stores the **combined** blocklist in a single Redis **SET** key:
 
 Optional metadata: `abuseipdb:blacklist:meta` (AbuseIPDB sync), `crowdsec:blocklist:meta` (last CrowdSec pull time).
 
-**COS mirror (multi-server):** Set **`COS_SYNC_ROLE=publisher`** on one host (pulls CrowdSec once per day, uploads to COS) and **`COS_SYNC_ROLE=consumer`** on others (pull blocklist from COS only — avoids duplicate API pulls and HTTP 429). Manage sync from **Admin → Settings → COS**. See `COS_SYNC_*` in [`env.example`](../env.example).
+**COS mirror (multi-server):** Prod/test/dev may share the **same** `.env` secrets (COS + AbuseIPDB + CrowdSec). The control plane is **`COS_SYNC_ROLE`**, not stripping keys:
+
+| Host | Settings |
+|------|----------|
+| **One publisher** | `COS_SYNC_ENABLED=true`, `COS_SYNC_ROLE=publisher` — pulls CrowdSec / AbuseIPDB APIs once per day, uploads to COS |
+| **All other hosts** | `COS_SYNC_ENABLED=true`, `COS_SYNC_ROLE=consumer` — pull blocklists from COS only (avoids CrowdSec ~1-pull/day HTTP 429) |
+
+Use a shared sync prefix so every env reads the same objects (PG dumps can stay per-env):
+
+```bash
+COS_KEY_PREFIX=backups/mindgraph-CHANGE          # optional per-env dumps
+COS_SYNC_KEY_PREFIX=backups/mindgraph-shared     # shared blocklists / Qdrant / Celery / GeoLite
+```
+
+Layout under `COS_SYNC_KEY_PREFIX`:
+
+```
+sync/crowdsec/blocklist.txt + meta.json
+sync/abuseipdb/blocklist.txt + meta.json
+sync/geolite/GeoLite2-Country.mmdb + meta.json
+sync/qdrant/…  sync/celery/…
+```
+
+**Seed / force publish** (publisher host only; do not run CrowdSec force-pull on more than one machine the same day):
+
+```bash
+python scripts/db/publish_blocklists_to_cos.py --as-publisher
+python scripts/db/publish_blocklists_to_cos.py --as-publisher --prune-orphan-qdrant
+```
+
+Manage sync from **Admin → Settings → COS** (`/api/auth/admin/cos/crowdsec|abuseipdb|geolite/...`). See `COS_SYNC_*` in [`env.example`](../env.example).
+
+Blocklist COS **publish** runs via the in-process blocklist scheduler (`BACKUP_HOUR`). The COS mirror scheduler publishes Qdrant/Celery/GeoLite on the publisher and pulls blocklists + stack artifacts on consumers.
 
 ### Verifying the request hot path (one `SISMEMBER` per request)
 

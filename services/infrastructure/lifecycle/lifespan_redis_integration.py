@@ -28,6 +28,11 @@ from services.infrastructure.security.ip_reputation_env_snapshot import (
     log_ip_reputation_startup_summary,
     warm_ip_reputation_env_snapshot,
 )
+from services.infrastructure.sync.env_reload_fanout import (
+    await_env_reload_listener_stopped,
+    start_env_reload_listener,
+    stop_env_reload_listener,
+)
 from services.kitty.infra.control.kitty_control_listener import (
     await_kitty_control_listener_stopped,
     start_kitty_control_listener,
@@ -116,6 +121,14 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                     "[LIFESPAN] Kitty control Redis listener: %s",
                     kitty_fan_exc,
                 )
+        try:
+            start_env_reload_listener(loop)
+        except BACKGROUND_INFRA_ERRORS as env_reload_exc:
+            if is_main_worker:
+                logger.warning(
+                    "[LIFESPAN] Env reload Redis listener: %s",
+                    env_reload_exc,
+                )
         if is_main_worker:
             try:
                 redis_async = get_async_redis()
@@ -163,6 +176,12 @@ async def stop_fanout_listeners(is_main_worker: bool) -> None:
     except BACKGROUND_INFRA_ERRORS as exc:
         if is_main_worker:
             logger.warning("Failed to stop Kitty control listener: %s", exc)
+    try:
+        stop_env_reload_listener()
+        await await_env_reload_listener_stopped(timeout=5.0)
+    except BACKGROUND_INFRA_ERRORS as exc:
+        if is_main_worker:
+            logger.warning("Failed to stop env reload listener: %s", exc)
     try:
         stop_pg_notify_listener()
     except BACKGROUND_INFRA_ERRORS as exc:

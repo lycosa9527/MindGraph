@@ -5,16 +5,15 @@ import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 
 import { useMobileDetect } from '@/composables/core/useMobileDetect'
 import { HIDE_KNOWLEDGE_SPACE_NAV } from '@/config/docSummaryLite'
+import { userCanUseOnlineCollab } from '@/constants/schoolTier'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
 import { CANVAS_ENTRY_PATH_KEY } from '@/utils/canvasBackNavigation'
 import {
-  isMobileRoutePath,
   resolveMobileRouteRedirect,
   shouldSkipMobileRouteRedirect,
 } from '@/utils/mobileRouteRedirect'
-import { userCanUseOnlineCollab } from '@/constants/schoolTier'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
 /** Localized `document.title` via `meta.pageTitle.*` keys. */
@@ -281,15 +280,15 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/dashboard',
-    name: 'PublicDashboard',
-    component: () => import('@/pages/PublicDashboardPage.vue'),
-    meta: { layout: 'default', ...pageTitle('publicDashboard') },
+    redirect: { path: '/admin', query: { tab: 'settings', subtab: 'public_dashboard' } },
   },
   {
     path: '/dashboard/login',
-    name: 'DashboardLogin',
-    component: () => import('@/pages/DashboardLoginPage.vue'),
-    meta: { layout: 'auth', ...pageTitle('dashboardLogin') },
+    redirect: { path: '/admin', query: { tab: 'settings', subtab: 'public_dashboard' } },
+  },
+  {
+    path: '/pub-dash',
+    redirect: { path: '/admin', query: { tab: 'settings', subtab: 'public_dashboard' } },
   },
   {
     path: '/export-render',
@@ -360,7 +359,6 @@ router.beforeEach(async (to, from) => {
   }
 
   // Auto-redirect mobile users to /m/* routes (skip for auth, export, dashboard pages)
-  const isMobileRoute = isMobileRoutePath(to.path)
   const skipMobileRedirect = shouldSkipMobileRouteRedirect(to.path)
 
   if (isMobile.value && !skipMobileRedirect) {
@@ -430,10 +428,7 @@ router.beforeEach(async (to, from) => {
       return { name: 'MindMate' }
     }
     const user = authStore.user
-    if (
-      user &&
-      !userCanUseOnlineCollab(user.schoolId, user.schoolTier, user.schoolTierFeatures)
-    ) {
+    if (user && !userCanUseOnlineCollab(user.schoolId, user.schoolTier, user.schoolTierFeatures)) {
       return { name: 'MindMate' }
     }
   }
@@ -487,7 +482,10 @@ router.beforeEach(async (to, from) => {
   if (to.name === 'DebateVerse' && !featureFlagsStore.getFeatureDebateverse()) {
     return { name: 'MindMate' }
   }
-  if (to.name === 'KnowledgeSpace' && (!featureFlagsStore.getFeatureKnowledgeSpace() || HIDE_KNOWLEDGE_SPACE_NAV)) {
+  if (
+    to.name === 'KnowledgeSpace' &&
+    (!featureFlagsStore.getFeatureKnowledgeSpace() || HIDE_KNOWLEDGE_SPACE_NAV)
+  ) {
     return { name: 'MindMate' }
   }
   if (to.name === 'Library' && !featureFlagsStore.getFeatureLibrary()) {

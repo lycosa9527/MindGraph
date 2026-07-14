@@ -28,10 +28,12 @@ import { useAdminPanelTabs } from '@/composables/admin/useAdminPanelTabs'
 import { useAdminRouteSync } from '@/composables/admin/useAdminRouteSync'
 import { useLanguage } from '@/composables'
 import { useAdminPanelStore } from '@/stores'
+import { isAdminPublicDashboardRoute } from '@/utils/publicDashboardRoute'
 
 const route = useRoute()
 const { t } = useLanguage()
-const { can, canEditTab, isTabReadOnly, loadCapabilities, isReadOnly } = useAdminAccess()
+const { can, canEditTab, isTabReadOnly, loadCapabilities, isReadOnly, canViewSettingsSubtab } =
+  useAdminAccess()
 const { tabs } = useAdminPanelTabs({ loadOnMount: false })
 const { activeTab } = useAdminRouteSync({ tabs })
 const adminPanel = useAdminPanelStore()
@@ -91,6 +93,11 @@ const showMindMateExportHeaderToolbar = computed(
 
 const showTabReadOnlyBadge = computed(() => isTabReadOnly(activeTab.value))
 
+/** Super-admin national map dashboard: full-bleed, no admin chrome. */
+const isPublicDashboardFullscreen = computed(
+  () => isAdminPublicDashboardRoute(route) && canViewSettingsSubtab('public_dashboard')
+)
+
 function onHeaderCreateSchool(): void {
   emitAdminEvent('admin:toolbar_action', {
     action: 'open_create_school',
@@ -111,8 +118,12 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="admin-page flex-1 flex flex-col bg-gray-50 overflow-hidden">
+  <div
+    class="admin-page flex-1 flex flex-col bg-gray-50 overflow-hidden"
+    :class="{ 'admin-page--fullscreen': isPublicDashboardFullscreen }"
+  >
     <div
+      v-if="!isPublicDashboardFullscreen"
       class="admin-header h-14 px-4 flex items-center justify-between gap-3 bg-white border-b border-gray-200 shrink-0"
     >
       <nav
@@ -178,8 +189,18 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div class="admin-body flex-1 overflow-y-auto">
-      <div class="admin-content px-6 py-6">
+    <div
+      class="admin-body flex-1"
+      :class="isPublicDashboardFullscreen ? 'overflow-hidden' : 'overflow-y-auto'"
+    >
+      <div
+        class="admin-content"
+        :class="
+          isPublicDashboardFullscreen
+            ? 'admin-content--fullscreen'
+            : 'px-6 py-6'
+        "
+      >
         <AdminDataCenterTab
           v-if="activeTab === 'data_center'"
           :read-only="isTabReadOnly('data_center')"
@@ -211,6 +232,24 @@ onMounted(async () => {
 .admin-page .admin-content {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.admin-page--fullscreen {
+  background: #0a0e27;
+}
+
+.admin-page--fullscreen .admin-body {
+  position: relative;
+}
+
+.admin-page .admin-content--fullscreen {
+  position: absolute;
+  inset: 0;
+  max-width: none;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
 }
 
 .admin-breadcrumb {

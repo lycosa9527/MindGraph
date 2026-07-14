@@ -4,12 +4,13 @@
  */
 import { h, watch } from 'vue'
 
-import { ElNotification } from 'element-plus'
-
 import { AlertTriangle } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
-import { getDefaultElNotificationOptions } from '@/composables/core/notifications'
+import {
+  getDefaultElNotificationOptions,
+  loadElNotification,
+} from '@/composables/core/notifications'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -21,7 +22,9 @@ const FALLBACK_DOWNLOAD_URL =
 const authStore = useAuthStore()
 const { t } = useLanguage()
 
-let notificationInstance: ReturnType<typeof ElNotification> | null = null
+type NotificationHandle = { close: () => void }
+
+let notificationInstance: NotificationHandle | null = null
 
 function closeNotification() {
   if (notificationInstance) {
@@ -63,17 +66,18 @@ async function checkAndNotify() {
     if (dismissed) {
       return
     }
-    showNotification(data)
+    await showNotification(data)
   } catch {
     // ignore
   }
 }
 
-function showNotification(data: { expected_path: string; download_url: string }) {
+async function showNotification(data: { expected_path: string; download_url: string }) {
   if (notificationInstance) {
     return
   }
   const url = data.download_url || FALLBACK_DOWNLOAD_URL
+  const ElNotification = await loadElNotification()
   notificationInstance = ElNotification({
     ...getDefaultElNotificationOptions(),
     title: t('notification.geoLiteMissingTitle'),

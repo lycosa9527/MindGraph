@@ -1,5 +1,4 @@
-import { ElMessageBox } from 'element-plus'
-
+import { loadElMessageBox } from '@/composables/core/notifications'
 import '@/styles/mindmate-swiss-messagebox.css'
 
 type TranslateFn = (key: string) => string
@@ -7,6 +6,7 @@ type TranslateFn = (key: string) => string
 /** Swiss-styled confirm before ending a MindMate collab session for all participants. */
 export async function confirmMindmateCollabStop(t: TranslateFn): Promise<boolean> {
   try {
+    const ElMessageBox = await loadElMessageBox()
     await ElMessageBox.confirm(
       t('sidebar.mindmateCollabHistory.stopConfirm'),
       t('sidebar.mindmateCollabHistory.stopConfirmTitle'),

@@ -2,7 +2,8 @@
 Router Registration Module
 
 Centralized router registration for all FastAPI routes.
-This module handles the registration order and conditional feature flags.
+Feature routers are always mounted when importable; ``feature_flag_gate`` and
+per-route checks enforce ``FEATURE_*`` at runtime (supports hot on/off).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -33,102 +34,64 @@ from routers.admin import realtime_router as admin_realtime
 from routers.core import changelog, pages, update_notification
 from routers.core.health import router as health_router
 from routers.core.vue_spa import router as vue_spa
-from routers.features import askonce, kitty
+from routers.features.askonce import router as askonce
+from routers.features.kitty import router as kitty
 from services.mcp.mount import mount_mindgraph_mcp
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
-# Conditionally import feature routers based on feature flags
-LIBRARY_MODULE = None
-if config.FEATURE_LIBRARY:
-    try:
-        LIBRARY_MODULE = importlib.import_module("routers.features.library")
-    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
-        LIBRARY_MODULE = None
-        logger.debug("[RouterRegistration] Failed to import library router: %s", e, exc_info=True)
-else:
-    logger.debug("[RouterRegistration] Library feature disabled via FEATURE_LIBRARY flag")
 
-DEBATEVERSE_MODULE = None
-if config.FEATURE_DEBATEVERSE:
+def _try_import_module(module_path: str, label: str):
+    """Import a feature module; return None on failure."""
     try:
-        DEBATEVERSE_MODULE = importlib.import_module("routers.features.debateverse")
-    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
-        DEBATEVERSE_MODULE = None
+        return importlib.import_module(module_path)
+    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as exc:
         logger.debug(
-            "[RouterRegistration] Failed to import debateverse router: %s",
-            e,
+            "[RouterRegistration] Failed to import %s (%s): %s",
+            label,
+            module_path,
+            exc,
             exc_info=True,
         )
-else:
-    logger.debug("[RouterRegistration] DebateVerse feature disabled via FEATURE_DEBATEVERSE flag")
+        return None
 
-COMMUNITY_MODULE = None
-if config.FEATURE_COMMUNITY:
-    try:
-        COMMUNITY_MODULE = importlib.import_module("routers.features.community").router
-    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
-        COMMUNITY_MODULE = None
-        logger.debug(
-            "[RouterRegistration] Failed to import community router: %s",
-            e,
-            exc_info=True,
-        )
-else:
-    logger.debug("[RouterRegistration] Community feature disabled via FEATURE_COMMUNITY flag")
 
-SHOWCASE_MODULE = None
-try:
-    SHOWCASE_MODULE = importlib.import_module("routers.features.showcase").router
-except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
-    SHOWCASE_MODULE = None
-    logger.debug(
-        "[RouterRegistration] Failed to import showcase router: %s",
-        e,
-        exc_info=True,
+LIBRARY_MODULE = _try_import_module("routers.features.library", "library")
+DEBATEVERSE_MODULE = _try_import_module("routers.features.debateverse", "debateverse")
+
+_community_mod = _try_import_module("routers.features.community", "community")
+COMMUNITY_MODULE = getattr(_community_mod, "router", None) if _community_mod else None
+
+_showcase_mod = _try_import_module("routers.features.showcase", "showcase")
+SHOWCASE_MODULE = getattr(_showcase_mod, "router", None) if _showcase_mod else None
+
+_gewe_mod = _try_import_module("routers.features.gewe", "gewe")
+GEWE_MODULE = getattr(_gewe_mod, "router", None) if _gewe_mod else None
+
+_wc_mod = _try_import_module("routers.features.workshop_chat", "workshop_chat")
+_wc_ws_mod = _try_import_module("routers.features.workshop_chat.ws", "workshop_chat_ws")
+WORKSHOP_CHAT_MODULE = getattr(_wc_mod, "router", None) if _wc_mod else None
+WORKSHOP_CHAT_WS_MODULE = getattr(_wc_ws_mod, "router", None) if _wc_ws_mod else None
+if _wc_mod is None or _wc_ws_mod is None:
+    logger.warning(
+        "[RouterRegistration] Workshop Chat routers incomplete — "
+        "/api/chat/* or /api/ws/chat may be unavailable until import errors are fixed."
     )
 
-GEWE_MODULE = None
-if config.FEATURE_GEWE:
-    try:
-        GEWE_MODULE = importlib.import_module("routers.features.gewe").router
-    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
-        GEWE_MODULE = None
-        logger.debug("[RouterRegistration] Failed to import gewe router: %s", e, exc_info=True)
-else:
-    logger.debug("[RouterRegistration] Gewe feature disabled via FEATURE_GEWE flag")
+MARKETS_MODULE = _try_import_module("routers.features.markets", "markets")
 
-WORKSHOP_CHAT_MODULE = None
-WORKSHOP_CHAT_WS_MODULE = None
-if config.FEATURE_WORKSHOP_CHAT:
-    try:
-        _wc_mod = importlib.import_module("routers.features.workshop_chat")
-        _wc_ws_mod = importlib.import_module("routers.features.workshop_chat_ws")
 
-        WORKSHOP_CHAT_MODULE = _wc_mod.router
-        WORKSHOP_CHAT_WS_MODULE = _wc_ws_mod.router
-    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
-        WORKSHOP_CHAT_MODULE = None
-        WORKSHOP_CHAT_WS_MODULE = None
+def _mount_feature(app: FastAPI, router_obj, path_label: str, registered: list[str]) -> None:
+    """Include a feature router when present and record its API prefix."""
+    if router_obj is None:
         logger.warning(
-            "[RouterRegistration] Failed to import workshop chat routers: %s. "
-            "Workshop Chat API (/api/chat/*) will not be available. Fix the error and restart.",
-            e,
-            exc_info=True,
+            "[RouterRegistration] %s router NOT registered - import failed or router is None.",
+            path_label,
         )
-else:
-    logger.debug("[RouterRegistration] Workshop Chat feature disabled via FEATURE_WORKSHOP_CHAT flag")
-
-MARKETS_MODULE = None
-if config.FEATURE_MARKETS:
-    try:
-        MARKETS_MODULE = importlib.import_module("routers.features.markets")
-    except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
-        MARKETS_MODULE = None
-        logger.debug("[RouterRegistration] Failed to import markets router: %s", e, exc_info=True)
-else:
-    logger.debug("[RouterRegistration] Markets feature disabled via FEATURE_MARKETS flag")
+        return
+    app.include_router(router_obj)
+    registered.append(path_label)
 
 
 def register_routers(app: FastAPI) -> None:
@@ -138,7 +101,7 @@ def register_routers(app: FastAPI) -> None:
     Router registration order is critical:
     1. Health check endpoints (no prefix)
     2. Core API routes (must be before vue_spa catch-all)
-    3. Feature routers with feature flags (must be before vue_spa)
+    3. Feature routers (must be before vue_spa)
     4. Admin routers (must be before vue_spa)
     5. Remaining feature routers with API endpoints (before vue_spa)
     6. Vue SPA catch-all route (MUST be last)
@@ -146,13 +109,10 @@ def register_routers(app: FastAPI) -> None:
     Args:
         app: FastAPI application instance
     """
-    # Health check endpoints
     app.include_router(health_router)
 
     app.include_router(changelog.router, prefix="/api")
 
-    # API routes must be registered BEFORE vue_spa catch-all route
-    # Authentication & utility routes (loginByXz, favicon)
     app.include_router(pages)
     app.include_router(api.router)
 
@@ -167,129 +127,62 @@ def register_routers(app: FastAPI) -> None:
                 exc_info=True,
             )
 
-    app.include_router(node_palette.router)  # Node Palette endpoints
-    app.include_router(relationship_labels.router)  # Relationship labels (concept map)
-    app.include_router(inline_recommendations.router)  # Inline recommendations (mindmap, flow, etc.)
-    app.include_router(mindmap_node_explain.router)  # Mind map node explain (Kitty helper)
+    app.include_router(node_palette.router)
+    app.include_router(relationship_labels.router)
+    app.include_router(inline_recommendations.router)
+    app.include_router(mindmap_node_explain.router)
     app.include_router(
         concept_map_focus.router,
         prefix="/api",
-    )  # Concept map focus question (standard mode)
-    app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])  # Authentication system
+    )
+    app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 
-    # Feature routers that must be registered BEFORE vue_spa catch-all
-    registered_feature_paths = []
+    registered_feature_paths: list[str] = []
 
-    # Library (图书馆) - PDF viewing with danmaku comments
     if LIBRARY_MODULE is not None:
-        app.include_router(LIBRARY_MODULE.router)
-        registered_feature_paths.append("/api/library")
-    else:
-        if config.FEATURE_LIBRARY:
-            logger.warning(
-                "[RouterRegistration] Library router NOT registered - import failed or router is None. "
-                "Check DEBUG logs for details."
-            )
-        else:
-            logger.debug("[RouterRegistration] Library feature disabled via FEATURE_LIBRARY flag")
-
-    # Community (社区分享) - global diagram sharing
-    if COMMUNITY_MODULE is not None:
-        app.include_router(COMMUNITY_MODULE)
-        registered_feature_paths.append("/api/community")
-    else:
-        if config.FEATURE_COMMUNITY:
-            logger.warning(
-                "[RouterRegistration] Community router NOT registered - import failed or router is None. "
-                "Check DEBUG logs for details."
-            )
-        else:
-            logger.debug("[RouterRegistration] Community feature disabled via FEATURE_COMMUNITY flag")
-
-    # Showcase (案例广场) — always mount; feature_gate enforces FEATURE_SHOWCASE
-    if SHOWCASE_MODULE is not None:
-        app.include_router(SHOWCASE_MODULE)
-        registered_feature_paths.append("/api/showcase")
+        _mount_feature(app, LIBRARY_MODULE.router, "/api/library", registered_feature_paths)
     else:
         logger.warning(
-            "[RouterRegistration] Showcase router NOT registered - import failed or router is None. "
-            "Check DEBUG logs for details."
+            "[RouterRegistration] Library router NOT registered - import failed or router is None."
         )
 
-    # Market (市场) - catalog, orders, Alipay
+    _mount_feature(app, COMMUNITY_MODULE, "/api/community", registered_feature_paths)
+    _mount_feature(app, SHOWCASE_MODULE, "/api/showcase", registered_feature_paths)
+
     if MARKETS_MODULE is not None:
-        app.include_router(MARKETS_MODULE.router)
-        registered_feature_paths.append("/api/markets")
+        _mount_feature(app, MARKETS_MODULE.router, "/api/markets", registered_feature_paths)
     else:
-        if config.FEATURE_MARKETS:
-            logger.warning(
-                "[RouterRegistration] Markets router NOT registered - import failed or router is None. "
-                "Check DEBUG logs for details."
-            )
-        else:
-            logger.debug("[RouterRegistration] Markets feature disabled via FEATURE_MARKETS flag")
+        logger.warning(
+            "[RouterRegistration] Markets router NOT registered - import failed or router is None."
+        )
 
-    # Gewe WeChat integration (admin only) - must be before vue_spa
-    if GEWE_MODULE is not None:
-        app.include_router(GEWE_MODULE)
-        registered_feature_paths.append("/api/gewe")
-    else:
-        if config.FEATURE_GEWE:
-            logger.warning(
-                "[RouterRegistration] Gewe router NOT registered - import failed or router is None. "
-                "Check DEBUG logs for details."
-            )
-        else:
-            logger.debug("[RouterRegistration] Gewe feature disabled via FEATURE_GEWE flag")
+    _mount_feature(app, GEWE_MODULE, "/api/gewe", registered_feature_paths)
+    _mount_feature(app, WORKSHOP_CHAT_MODULE, "/api/chat", registered_feature_paths)
 
-    # Workshop Chat (工作坊) - school-scoped communication
-    if WORKSHOP_CHAT_MODULE is not None:
-        app.include_router(WORKSHOP_CHAT_MODULE)
-        registered_feature_paths.append("/api/chat")
-    else:
-        if config.FEATURE_WORKSHOP_CHAT:
-            logger.warning(
-                "[RouterRegistration] Workshop Chat REST router NOT registered - import failed. "
-                "Check DEBUG logs for details."
-            )
-        else:
-            logger.debug("[RouterRegistration] Workshop Chat feature disabled via FEATURE_WORKSHOP_CHAT flag")
+    app.include_router(admin_env)
+    app.include_router(admin_logs)
+    app.include_router(admin_realtime)
+    app.include_router(admin_database)
+    app.include_router(admin_cos)
 
-    # Admin routers (must be before vue_spa catch-all)
-    app.include_router(admin_env)  # Admin environment settings management
-    app.include_router(admin_logs)  # Admin log streaming
-    app.include_router(admin_realtime)  # Admin realtime user activity monitoring
-    app.include_router(admin_database)  # Admin database management (merge, export/import)
-    app.include_router(admin_cos)  # Admin COS mirror management
-
-    # Feature routers with API endpoints (must be before vue_spa catch-all)
     kitty_routes = importlib.import_module("routers.features.kitty.routes")
     logger.debug(
         "[RouterRegistration] Kitty Agent routes registered via %s",
         kitty_routes.__name__,
     )
-    app.include_router(kitty)  # Kitty Agent (realtime WebSocket + REST)
-    app.include_router(update_notification)  # Update notification system
+    app.include_router(kitty)
+    app.include_router(update_notification)
     app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])
-    app.include_router(askonce)  # AskOnce (多应) - Multi-LLM streaming chat
+    app.include_router(askonce)
 
-    # Workshop Chat WebSocket
-    if WORKSHOP_CHAT_WS_MODULE is not None:
-        app.include_router(WORKSHOP_CHAT_WS_MODULE)
-        registered_feature_paths.append("/api/ws/chat")
+    _mount_feature(app, WORKSHOP_CHAT_WS_MODULE, "/api/ws/chat", registered_feature_paths)
 
-    # DebateVerse (论境) - US-style debate system
     if DEBATEVERSE_MODULE is not None:
-        app.include_router(DEBATEVERSE_MODULE.router)
-        registered_feature_paths.append("/api/debateverse")
+        _mount_feature(app, DEBATEVERSE_MODULE.router, "/api/debateverse", registered_feature_paths)
     else:
-        if config.FEATURE_DEBATEVERSE:
-            logger.warning(
-                "[RouterRegistration] DebateVerse router NOT registered - import failed or router is None. "
-                "Check DEBUG logs for details."
-            )
-        else:
-            logger.debug("[RouterRegistration] DebateVerse feature disabled via FEATURE_DEBATEVERSE flag")
+        logger.warning(
+            "[RouterRegistration] DebateVerse router NOT registered - import failed or router is None."
+        )
 
     if registered_feature_paths:
         logger.info(
@@ -297,5 +190,4 @@ def register_routers(app: FastAPI) -> None:
             ", ".join(registered_feature_paths),
         )
 
-    # Vue SPA catch-all - MUST be registered LAST (after all API routes)
     app.include_router(vue_spa)

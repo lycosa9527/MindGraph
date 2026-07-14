@@ -3,11 +3,9 @@
  *
  * Vue Query mutations for knowledge space operations with automatic cache invalidation.
  */
-import { ElMessageBox } from 'element-plus'
-
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
-import { notify } from '@/composables/core/notifications'
+import { loadElMessageBox, notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 import { apiRequest, apiUpload } from '@/utils/apiClient'
@@ -261,6 +259,7 @@ export function useDeleteDocumentWithConfirmation() {
 
   const deleteWithConfirmation = async (documentId: number) => {
     try {
+      const ElMessageBox = await loadElMessageBox()
       await ElMessageBox.confirm(
         t('knowledgeSpace.confirmDeleteBody'),
         t('knowledgeSpace.confirmDeleteTitle'),

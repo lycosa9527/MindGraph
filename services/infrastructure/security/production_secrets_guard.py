@@ -16,13 +16,11 @@ from utils.auth.config import (
     AUTH_MODE,
     BAYI_DECRYPTION_KEY,
     BAYI_PASSKEY,
-    PUBLIC_DASHBOARD_PASSKEY,
 )
 
 logger = logging.getLogger(__name__)
 
 _KNOWN_WEAK_PASSKEYS = frozenset({"888888", "123456", "000000", "111111"})
-_KNOWN_WEAK_DASHBOARD_PASSKEYS = frozenset({"123456", "000000", "888888"})
 _KNOWN_WEAK_BAYI_KEYS = frozenset({"v8IT7XujLPsM7FYuDPRhPtZk"})
 _PLACEHOLDER_SUBSTRINGS = ("change-me", "changeme", "replace-me", "example", "placeholder")
 _ENTERPRISE_ACK = "I_UNDERSTAND_PUBLIC_EXPOSURE_RISK"
@@ -101,13 +99,6 @@ def enforce_production_security_guards() -> None:
     if AUTH_MODE == "bayi":
         _require_strong_secret("BAYI_PASSKEY", BAYI_PASSKEY, _KNOWN_WEAK_PASSKEYS)
         _require_strong_secret("BAYI_DECRYPTION_KEY", BAYI_DECRYPTION_KEY, _KNOWN_WEAK_BAYI_KEYS)
-
-    if PUBLIC_DASHBOARD_PASSKEY:
-        _require_strong_secret(
-            "PUBLIC_DASHBOARD_PASSKEY",
-            PUBLIC_DASHBOARD_PASSKEY,
-            _KNOWN_WEAK_DASHBOARD_PASSKEYS,
-        )
 
     device_secret = os.getenv("DEVICE_REGISTRATION_SECRET", "").strip()
     if os.getenv("FEATURE_SMART_RESPONSE", "False").strip().lower() in ("true", "1", "yes"):

@@ -77,6 +77,7 @@ CAP_SETTINGS_SMART_RESPONSE: Final[str] = "tab.settings.smart_response"
 CAP_SETTINGS_TEACHER_USAGE: Final[str] = "tab.settings.teacher_usage"
 CAP_SETTINGS_ERRORS: Final[str] = "tab.settings.errors"
 CAP_SETTINGS_THINKING_COINS: Final[str] = "tab.settings.thinking_coins"
+CAP_SETTINGS_PUBLIC_DASHBOARD: Final[str] = "tab.settings.public_dashboard"
 
 CAP_SCOPE_GLOBAL: Final[str] = "scope.global"
 CAP_SCOPE_ORG: Final[str] = "scope.org"
@@ -101,6 +102,7 @@ _ALL_SETTINGS_CAPS: frozenset[str] = frozenset(
         CAP_SETTINGS_TEACHER_USAGE,
         CAP_SETTINGS_ERRORS,
         CAP_SETTINGS_THINKING_COINS,
+        CAP_SETTINGS_PUBLIC_DASHBOARD,
     }
 )
 

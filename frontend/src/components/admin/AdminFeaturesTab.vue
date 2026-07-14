@@ -64,6 +64,15 @@ type RowDef = {
   hintKey: string
 }
 
+/** Permissions UI only for keys enforced by ``user_has_feature_access`` on the API. */
+const ORG_ACCESS_SUPPORTED_KEYS = new Set<ApiKey>([
+  'feature_workshop_chat',
+  'feature_mindmate_collab',
+  'feature_mindbot',
+  'feature_mindmate_export',
+  'feature_kitty_agent',
+])
+
 const ROWS: RowDef[] = [
   {
     apiKey: 'feature_workshop_chat',
@@ -213,6 +222,10 @@ function orgLabel(org: OrgOption): string {
     return display
   }
   return org.name
+}
+
+function supportsOrgAccess(key: ApiKey): boolean {
+  return ORG_ACCESS_SUPPORTED_KEYS.has(key)
 }
 
 function formatHttpErrorDetail(err: unknown): string {
@@ -439,6 +452,12 @@ onUnmounted(() => {
       v-else
       class="space-y-4"
     >
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+        {{ t('admin.featuresIntro') }}
+      </p>
+      <p class="text-xs text-gray-500 dark:text-gray-500 mb-4">
+        {{ t('admin.featuresIntroAccess') }}
+      </p>
       <div
         v-for="row in ROWS"
         :key="row.apiKey"
@@ -451,7 +470,7 @@ onUnmounted(() => {
                 {{ t(row.labelKey) }}
               </span>
               <el-tag
-                v-if="isRestricted(row.apiKey)"
+                v-if="supportsOrgAccess(row.apiKey) && isRestricted(row.apiKey)"
                 size="small"
                 type="warning"
               >
@@ -464,6 +483,7 @@ onUnmounted(() => {
           </div>
           <div class="flex flex-row items-center gap-2 shrink-0">
             <el-button
+              v-if="supportsOrgAccess(row.apiKey)"
               size="small"
               class="admin-swiss-btn admin-swiss-btn--ghost"
               :disabled="saving"

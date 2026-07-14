@@ -35,17 +35,6 @@ from config.settings import config
 from models.domain.auth import User
 from models.domain.showcase import ShowcasePost
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.features.showcase_common import (
-    _format_post,
-    _load_post_for_format,
-    _validate_post_id,
-)
-from routers.features.showcase_helpers import (
-    _validate_magic_bytes,
-    _validate_thumbnail,
-    showcase_public_asset_url,
-)
-from routers.features.showcase_permissions import can_edit_case
 from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.showcase.infra.observability import showcase_extra
 from services.showcase.storage import (
@@ -74,6 +63,18 @@ from services.showcase.uploads.roles import (
 )
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user
+
+from .common import (
+    _format_post,
+    _load_post_for_format,
+    _validate_post_id,
+)
+from .helpers import (
+    _validate_magic_bytes,
+    _validate_thumbnail,
+    showcase_public_asset_url,
+)
+from .permissions import can_edit_case
 
 logger = logging.getLogger(__name__)
 
@@ -326,6 +327,9 @@ async def complete_showcase_upload(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
+    # AuthZ before consuming the one-shot grant / validating COS objects.
+    await _load_editable_post(db, post_id, current_user)
+
     grant = await pop_upload_grant(
         user_id=current_user.id,
         post_id=post_id,
@@ -478,6 +482,8 @@ async def complete_showcase_upload(
         await db.commit()
     except DATABASE_ERRORS as exc:
         await db.rollback()
+        # Grant already consumed; drop the verified object so it does not become orphan_cos.
+        await delete_key(key)
         log_upload_complete_fail(
             post_id=post_id,
             user_id=current_user.id,

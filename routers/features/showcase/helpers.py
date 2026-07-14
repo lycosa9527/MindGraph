@@ -15,7 +15,7 @@ from typing import Optional, cast
 from fastapi import HTTPException, Request, UploadFile, status
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
-from routers.features.community_helpers import (
+from routers.features.community.helpers import (
     PNG_MAGIC,
     SPEC_MAX_BYTES,
     THUMBNAIL_MAX_BYTES,
@@ -156,6 +156,18 @@ def _validate_magic_bytes(content: bytes, suffix: str) -> None:
                 detail="Invalid MindGraph source format",
             )
         return
+    if suffix == ".json":
+        stripped = content.lstrip()
+        if not stripped or stripped[:1] not in MG_JSON_STARTS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid JSON file format",
+            )
+        return
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"Unsupported file type for validation: {suffix}",
+    )
 
 
 def _validate_thumbnail(content: bytes) -> None:
@@ -259,6 +271,38 @@ def assert_gallery_uploads_resolved(spec_obj: dict) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Gallery image uploads incomplete; please retry publishing",
         )
+
+
+def assert_post_ready_for_approval(
+    *,
+    case_type: str,
+    spec: Optional[dict],
+) -> None:
+    """
+    Reject approval when required media is still missing.
+
+    COS create is metadata-first; gallery/attachment uploads complete later.
+    Approving early makes the post immutable and can publish incomplete cases.
+    """
+    spec_obj = spec if isinstance(spec, dict) else {}
+    if case_type == "teaching_design":
+        attachment = spec_obj.get("attachment_path")
+        if not isinstance(attachment, str) or not attachment.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Teaching design attachment is required before approval",
+            )
+    if isinstance(spec_obj.get("gallery"), list):
+        assert_gallery_uploads_resolved(spec_obj)
+
+
+def post_media_ready_for_approval(*, case_type: str, spec: Optional[dict]) -> bool:
+    """True when approve would pass media completeness checks."""
+    try:
+        assert_post_ready_for_approval(case_type=case_type, spec=spec)
+    except HTTPException:
+        return False
+    return True
 
 
 def gallery_uploads_from_binding(bound: list[UploadFile]) -> list[UploadFile]:

@@ -11,11 +11,17 @@ from __future__ import annotations
 from typing import Any, Dict
 
 from services.infrastructure.sync.cos_sync_env import (
+    abuseipdb_meta_cos_key,
     celery_meta_cos_key,
     cos_config_snapshot,
     cos_sync_role,
     crowdsec_meta_cos_key,
+    geolite_meta_cos_key,
     qdrant_meta_cos_key,
+)
+from services.infrastructure.sync.abuseipdb_cos_sync import (
+    get_abuseipdb_cos_status,
+    sync_blacklist_for_role,
 )
 from services.infrastructure.sync.celery_cos_sync import (
     get_celery_cos_status,
@@ -25,6 +31,10 @@ from services.infrastructure.sync.celery_cos_sync import (
 from services.infrastructure.sync.crowdsec_cos_sync import (
     get_crowdsec_cos_status,
     merge_crowdsec_blocklist_for_role,
+)
+from services.infrastructure.sync.geolite_cos_sync import (
+    get_geolite_cos_status,
+    sync_geolite_for_role,
 )
 from services.infrastructure.sync.qdrant_cos_sync import (
     get_qdrant_cos_status,
@@ -58,6 +68,8 @@ def get_cos_overview_status() -> Dict[str, Any]:
     """Overview payload for admin GET /cos/status."""
     connection = tencent_cos_client.test_cos_connection()
     crowdsec_meta = tencent_cos_client.get_json(crowdsec_meta_cos_key())
+    abuseipdb_meta = tencent_cos_client.get_json(abuseipdb_meta_cos_key())
+    geolite_meta = tencent_cos_client.get_json(geolite_meta_cos_key())
     qdrant_meta = tencent_cos_client.get_json(qdrant_meta_cos_key())
     celery_meta = tencent_cos_client.get_json(celery_meta_cos_key())
     local_backup = get_backup_status()
@@ -91,6 +103,14 @@ def get_cos_overview_status() -> Dict[str, Any]:
             "crowdsec": {
                 "health": _artifact_health(crowdsec_meta is not None),
                 "cos_meta": crowdsec_meta,
+            },
+            "abuseipdb": {
+                "health": _artifact_health(abuseipdb_meta is not None),
+                "cos_meta": abuseipdb_meta,
+            },
+            "geolite": {
+                "health": _artifact_health(geolite_meta is not None),
+                "cos_meta": geolite_meta,
             },
             "qdrant": {
                 "health": _artifact_health(qdrant_meta is not None),
@@ -129,6 +149,26 @@ async def trigger_crowdsec_sync_admin() -> Dict[str, Any]:
     """Role-aware CrowdSec sync."""
     result = await merge_crowdsec_blocklist_for_role(force=True)
     return result
+
+
+async def trigger_abuseipdb_sync_admin() -> Dict[str, Any]:
+    """Role-aware AbuseIPDB sync (API+upload or COS pull)."""
+    return await sync_blacklist_for_role(force=True, force_crowdsec_merge=True)
+
+
+async def get_abuseipdb_status_admin() -> Dict[str, Any]:
+    """AbuseIPDB COS status."""
+    return await get_abuseipdb_cos_status()
+
+
+async def trigger_geolite_sync_admin() -> Dict[str, Any]:
+    """Role-aware GeoLite publish or install."""
+    return await sync_geolite_for_role(force=True)
+
+
+async def get_geolite_status_admin() -> Dict[str, Any]:
+    """GeoLite COS status."""
+    return await get_geolite_cos_status()
 
 
 async def trigger_qdrant_publish_admin() -> Dict[str, Any]:

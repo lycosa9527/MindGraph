@@ -99,6 +99,22 @@ def get_geoip_country_reader() -> Optional[geoip2.database.Reader]:
     return _STATE.reader
 
 
+def reload_geolite_country_reader() -> bool:
+    """
+    Close and reopen the GeoLite reader after replacing the MMDB on disk.
+
+    Returns True when a reader is available after reload.
+    """
+    if _STATE.reader is not None:
+        try:
+            _STATE.reader.close()
+        except OSError as exc:
+            logger.debug("[GeoLite] reader close failed: %s", exc)
+    _STATE.reader = None
+    _STATE.unavailable = False
+    return get_geoip_country_reader() is not None
+
+
 def resolve_country_iso_from_connection(connection: HttpOrWebSocket) -> Optional[str]:
     """
     Prefer Cloudflare CF-IPCountry when present; otherwise GeoIP lookup on client IP.

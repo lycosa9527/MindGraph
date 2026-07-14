@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from fastapi import HTTPException
 
-from routers.features.showcase_helpers import (
+from routers.features.showcase.helpers import (
     _validate_magic_bytes,
     showcase_public_asset_url,
     post_id_from_showcase_filename,

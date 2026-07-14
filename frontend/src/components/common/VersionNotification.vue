@@ -1,30 +1,45 @@
 <script setup lang="ts">
 /**
  * Version Update Notification
- * Shows a non-blocking notification (top corner; mirrors for RTL) when a new app version is available
- * Uses Element Plus ElNotification
+ * Shows a non-blocking notification (top corner; mirrors for RTL) when a new app version is available.
+ * Loads Element Plus overlay + button only when an update is actually available.
  */
 import { h, watch } from 'vue'
 
-import { ElButton, ElNotification } from 'element-plus'
-
-import { Refresh } from '@element-plus/icons-vue'
-
 import { useLanguage, useVersionCheck } from '@/composables'
-import { getDefaultElNotificationOptions } from '@/composables/core/notifications'
+import {
+  getDefaultElNotificationOptions,
+  loadElNotification,
+} from '@/composables/core/notifications'
 
 const { t } = useLanguage()
 const { needsUpdate, currentVersion, serverVersion, forceRefresh, dismissUpdate } =
   useVersionCheck()
 
-let notificationInstance: ReturnType<typeof ElNotification> | null = null
+type NotificationHandle = { close: () => void }
 
-function showUpdateNotification() {
-  // Close existing notification if any
+let notificationInstance: NotificationHandle | null = null
+let showGeneration = 0
+
+async function showUpdateNotification() {
+  const generation = ++showGeneration
   if (notificationInstance) {
     notificationInstance.close()
+    notificationInstance = null
   }
 
+  const [ElNotification, buttonMod, iconsMod] = await Promise.all([
+    loadElNotification(),
+    import('element-plus/es/components/button/index.mjs'),
+    import('@element-plus/icons-vue'),
+    import('element-plus/es/components/button/style/css'),
+  ])
+  if (generation !== showGeneration || !needsUpdate.value) {
+    return
+  }
+
+  const { ElButton } = buttonMod
+  const { Refresh } = iconsMod
   notificationInstance = ElNotification({
     ...getDefaultElNotificationOptions(),
     title: t('notification.newVersionAvailable'),
@@ -44,7 +59,7 @@ function showUpdateNotification() {
       ),
     ]),
     icon: h(Refresh),
-    duration: 0, // Don't auto-close
+    duration: 0,
     onClose: () => {
       dismissUpdate()
       notificationInstance = null
@@ -52,12 +67,11 @@ function showUpdateNotification() {
   })
 }
 
-// Watch for needsUpdate changes and show notification
 watch(
   needsUpdate,
   (newValue) => {
     if (newValue) {
-      showUpdateNotification()
+      void showUpdateNotification()
     } else if (notificationInstance) {
       notificationInstance.close()
       notificationInstance = null

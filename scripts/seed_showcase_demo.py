@@ -19,7 +19,7 @@ from sqlalchemy.orm import joinedload
 
 from models.domain.auth import User
 from models.domain.showcase import ShowcasePost, ShowcasePostFavorite, ShowcasePostLike
-from routers.features.showcase_helpers import delete_spec_json, delete_thumbnail, save_spec_json
+from routers.features.showcase.helpers import delete_spec_json, delete_thumbnail, save_spec_json
 from utils.db.rls_context import RlsContext, rls_sync_session
 
 DEMO_TAG = "demo_seed_v1"

@@ -35,4 +35,7 @@ def test_get_cos_overview_status_structure():
     assert "connection" in payload
     assert "artifacts" in payload
     assert "celery" in payload["artifacts"]
+    assert "abuseipdb" in payload["artifacts"]
+    assert "geolite" in payload["artifacts"]
     assert payload["sync_role"] in ("off", "publisher", "consumer")
+    assert "sync_key_prefix" in payload["config"]

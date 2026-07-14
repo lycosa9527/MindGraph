@@ -90,7 +90,7 @@ def enable_showcase(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda: False,
     )
     monkeypatch.setattr(
-        "routers.features.showcase_routes_uploads.cos_showcase_enabled",
+        "routers.features.showcase.routes_uploads.cos_showcase_enabled",
         lambda: False,
     )
 

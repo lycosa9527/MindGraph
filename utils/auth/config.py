@@ -106,14 +106,6 @@ ENTERPRISE_DEFAULT_USER_PHONE = os.getenv("ENTERPRISE_DEFAULT_USER_PHONE", "ente
 # Elevated access: include the Bayi login identity (default bayi@system.com) in ADMIN_PHONES.
 BAYI_PASSKEY = os.getenv("BAYI_PASSKEY", "").strip()
 
-# Public Dashboard Configuration (unset/empty disables passkey login and /api/public/*)
-PUBLIC_DASHBOARD_PASSKEY = os.getenv("PUBLIC_DASHBOARD_PASSKEY", "").strip()
-
-
-def is_public_dashboard_enabled() -> bool:
-    """True when a non-empty passkey is configured for the public stats dashboard."""
-    return bool(PUBLIC_DASHBOARD_PASSKEY)
-
 
 # ============================================================================
 # Bayi Mode Configuration

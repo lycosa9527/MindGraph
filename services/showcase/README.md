@@ -74,6 +74,24 @@ PYTHONPATH=. python scripts/showcase_cos_reconcile.py --purge --i-know-what-im-d
 python -m pytest tests/test_showcase_storage_cos.py tests/test_showcase_helpers.py \
   tests/test_showcase_e2e_smoke.py -q
 
-# Live COS (credentials + COS_SHOWCASE_ENABLED):
-COS_SHOWCASE_SMOKE=1 python -m pytest tests/test_showcase_e2e_smoke.py -q -k cos
+# Live COS (TENCENT_SMS_SECRET_* + COS_BUCKET + COS_SHOWCASE_ENABLED):
+COS_SHOWCASE_SMOKE=1 python -m pytest tests/test_showcase_e2e_smoke.py \
+  tests/test_showcase_cos_live_matrix.py -q
 ```
+
+Smoke / matrix use isolated prefixes (`showcase/mindgraph-e2e-smoke`,
+`showcase/mindgraph-e2e-matrix`) and a phone-keyed teacher (`19900000661`) so
+live objects stay out of shared prod/test prefixes. Prefer distinct
+`COS_SHOWCASE_PREFIX` per environment (`showcase/mindgraph` vs
+`showcase/mindgraph-Test`).
+
+## Test ↔ prod MG id mismatch
+
+Same phone can have different `users.id` on test vs production (teachers who
+registered on test only). PG merge remaps Showcase FKs via phone:
+
+- `case_square_posts`: `author_id`, `submitted_by_id`, `reviewed_by`, `expert_recommended_by`
+- likes / favorites / staff grants / audit: `user_id` / `actor_id`
+
+COS object keys are `…/showcase/posts/{post_uuid}/…` (not MG id), so media
+survives id remap; keep env prefixes separate so reconcile/purge stay scoped.

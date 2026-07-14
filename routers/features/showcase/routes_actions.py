@@ -14,7 +14,12 @@ from sqlalchemy.sql.functions import count as sa_count
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.showcase import ShowcasePost, ShowcasePostFavorite, ShowcasePostLike
-from routers.features.showcase_common import (
+from services.redis.cache import redis_showcase_cache as showcase_cache
+from services.utils.error_types import DATABASE_ERRORS
+from utils.auth import get_current_user
+from utils.db.rls_context import RlsContext, apply_rls_context_async
+
+from .common import (
     CaseReviewBody,
     _adjust_approved_post_likes_count,
     _format_post,
@@ -23,14 +28,10 @@ from routers.features.showcase_common import (
     _review_case_post_handler,
     _validate_post_id,
 )
-from routers.features.showcase_permissions import (
+from .permissions import (
     can_expert_recommend,
     can_review_case,
 )
-from services.redis.cache import redis_showcase_cache as showcase_cache
-from services.utils.error_types import DATABASE_ERRORS
-from utils.auth import get_current_user
-from utils.db.rls_context import RlsContext, apply_rls_context_async
 
 logger = logging.getLogger(__name__)
 

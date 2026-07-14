@@ -1,11 +1,10 @@
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 
-import { ElMessageBox } from 'element-plus'
-
 import { applyCanvasSessionReset } from '@/composables/canvasPage/applyCanvasSessionReset'
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { isCanvasPristineForTypeSwitch } from '@/composables/canvasPage/isCanvasPristineForTypeSwitch'
 import { switchCanvasDiagramType } from '@/composables/canvasPage/switchCanvasDiagramType'
+import { loadElMessageBox } from '@/composables/core/notifications'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { useDiagramStore, useLLMResultsStore, useOneSentenceStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -92,6 +91,7 @@ export async function handleKittyOpenLibraryDiagramAction(
     const currentTitle =
       options.savedDiagramsStore.diagrams.find((row) => row.id === currentId)?.title ?? currentId
     try {
+      const ElMessageBox = await loadElMessageBox()
       await ElMessageBox.confirm(
         options.t(
           'kitty.desktopJumpConfirmBody',
@@ -160,6 +160,7 @@ export async function handleKittyOpenCanvasAction(
     const t = options?.t
     if (t != null) {
       try {
+        const ElMessageBox = await loadElMessageBox()
         await ElMessageBox.confirm(
           t(
             'kitty.desktopJumpConfirmBody',

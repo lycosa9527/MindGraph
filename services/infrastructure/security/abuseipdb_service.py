@@ -15,6 +15,7 @@ import ipaddress
 import json
 import logging
 import os
+import time
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -50,6 +51,36 @@ KEY_CHECK_PREFIX = "abuseipdb:check:"
 KEY_REPORT_DEDUPE_PREFIX = "abuseipdb:report:dedupe:"
 
 CATEGORY_BRUTE_FORCE = 18
+
+
+class _LastAbuseipdbNetworkSync:
+    """Holds last successful API blacklist body for COS publisher upload."""
+
+    __slots__ = ("body", "count")
+
+    def __init__(self) -> None:
+        """init."""
+        self.body: str = ""
+        self.count: int = 0
+
+
+_last_abuseipdb_network_sync = _LastAbuseipdbNetworkSync()
+
+
+def take_last_abuseipdb_network_sync_payload() -> Optional[Tuple[str, int]]:
+    """Return and clear last API blacklist body for COS publish (publisher only)."""
+    if not _last_abuseipdb_network_sync.body:
+        return None
+    payload = (_last_abuseipdb_network_sync.body, _last_abuseipdb_network_sync.count)
+    _last_abuseipdb_network_sync.body = ""
+    _last_abuseipdb_network_sync.count = 0
+    return payload
+
+
+def remember_abuseipdb_network_sync_payload(body: str, count: int) -> None:
+    """Store plaintext for a subsequent COS publish on the publisher host."""
+    _last_abuseipdb_network_sync.body = body
+    _last_abuseipdb_network_sync.count = count
 
 
 def get_abuseipdb_api_base() -> str:
@@ -586,6 +617,11 @@ async def _store_blacklist_ips_async(ips: Set[str]) -> bool:
     return True
 
 
+async def replace_shared_blacklist_ips_async(ips: Set[str]) -> bool:
+    """Replace shared Redis blacklist SET (API sync and COS consumer)."""
+    return await _store_blacklist_ips_async(ips)
+
+
 async def sync_blacklist_to_redis(force_crowdsec_merge: bool = False) -> Dict[str, Any]:
     """GET /blacklist and replace Redis SET KEY_BLACKLIST.
 
@@ -658,6 +694,8 @@ async def sync_blacklist_to_redis(force_crowdsec_merge: bool = False) -> Dict[st
         )
         return result
 
+    remember_abuseipdb_network_sync_payload(body, len(ips))
+
     if not await _store_blacklist_ips_async(ips):
         result["error"] = "redis_store_failed"
         logger.warning(
@@ -670,6 +708,8 @@ async def sync_blacklist_to_redis(force_crowdsec_merge: bool = False) -> Dict[st
             "count": len(ips),
             "confidenceMinimum": get_blacklist_confidence_minimum(),
             "limit": get_blacklist_limit(),
+            "last_merge_unix": time.time(),
+            "source": "api",
         }
     )
     async_r = get_async_redis()

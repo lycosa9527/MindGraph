@@ -28,7 +28,26 @@ from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.showcase import ShowcasePost, ShowcasePostFavorite, ShowcasePostLike
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.features.showcase_common import (
+from services.redis.cache import redis_showcase_cache as showcase_cache
+from services.showcase.field_options import validate_grade, validate_subject
+from services.showcase.post_delete import (
+    clear_showcase_post_engagement,
+    delete_showcase_post_rows,
+    showcase_post_still_exists,
+)
+from services.showcase.posts.lifecycle import (
+    log_cache_invalidate,
+    log_create_success,
+    log_delete,
+    log_withdraw,
+    rollback_created_post_assets,
+)
+from services.showcase.storage import delete_post_assets
+from services.utils.error_types import DATABASE_ERRORS
+from utils.auth import get_current_user
+from utils.db.rls_context import RlsContext, apply_rls_context_async
+
+from .common import (
     _apply_author_case_update,
     _delete_case_post_with_panel_rls,
     _form_flag_true,
@@ -44,8 +63,8 @@ from routers.features.showcase_common import (
     _validate_post_id,
     _validate_sort,
 )
-from routers.features.showcase_constants import CASE_STATUSES
-from routers.features.showcase_helpers import (
+from .constants import CASE_STATUSES
+from .helpers import (
     ALLOWED_DOC_SUFFIXES,
     ALLOWED_SOURCE_SUFFIXES,
     ALLOWED_VIDEO_SUFFIXES,
@@ -63,8 +82,7 @@ from routers.features.showcase_helpers import (
     save_thumbnail_from_upload,
     validate_gallery_spec,
 )
-from routers.features.showcase_routes_uploads import reject_if_cos_multipart_files_present
-from routers.features.showcase_permissions import (
+from .permissions import (
     can_delete_case,
     can_delist_case,
     can_edit_case,
@@ -73,20 +91,7 @@ from routers.features.showcase_permissions import (
     can_view_non_approved_post,
     can_withdraw_case,
 )
-from services.redis.cache import redis_showcase_cache as showcase_cache
-from services.showcase.field_options import validate_grade, validate_subject
-from services.showcase.post_delete import showcase_post_still_exists, delete_showcase_post_rows
-from services.showcase.posts.lifecycle import (
-    log_cache_invalidate,
-    log_create_success,
-    log_delete,
-    log_withdraw,
-    rollback_created_post_assets,
-)
-from services.showcase.storage import delete_post_assets
-from services.utils.error_types import DATABASE_ERRORS
-from utils.auth import get_current_user
-from utils.db.rls_context import RlsContext, apply_rls_context_async
+from .routes_uploads import reject_if_cos_multipart_files_present
 
 logger = logging.getLogger(__name__)
 
@@ -396,6 +401,13 @@ async def create_post(
                 thumbnail_path = await save_thumbnail_from_upload(post_id, thumbnail)
             except OSError as err:
                 logger.warning("[Showcase] Failed to save teaching thumbnail for %s: %s", post_id, err)
+                await rollback_created_post_assets(
+                    post_id=post_id,
+                    thumbnail_path=thumbnail_path,
+                    spec=spec_obj,
+                    user_id=current_user.id,
+                    reason="thumbnail_save_failed",
+                )
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to save thumbnail",
@@ -445,6 +457,13 @@ async def create_post(
                 thumbnail_path = await save_thumbnail_from_upload(post_id, thumbnail)
             except OSError as err:
                 logger.warning("[Showcase] Failed to save thumbnail for %s: %s", post_id, err)
+                await rollback_created_post_assets(
+                    post_id=post_id,
+                    thumbnail_path=thumbnail_path,
+                    spec=spec_obj,
+                    user_id=current_user.id,
+                    reason="thumbnail_save_failed",
+                )
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to save thumbnail",
@@ -806,7 +825,9 @@ async def _delist_case_post_handler(
             post_id=post_id,
             payload={"title": post.title},
         )
+        await clear_showcase_post_engagement(db, post_id)
         post.status = "withdrawn"
+        post.likes_count = 0
         post.is_expert_recommended = False
         post.expert_recommended_by = None
         post.expert_recommended_at = None

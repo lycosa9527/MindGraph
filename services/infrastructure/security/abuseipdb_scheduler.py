@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional
 
 from services.infrastructure.security import abuseipdb_service
 from services.infrastructure.security.crowdsec_blocklist_service import crowdsec_blocklist_sync_enabled
-from services.infrastructure.sync import crowdsec_cos_sync
+from services.infrastructure.sync import abuseipdb_cos_sync, crowdsec_cos_sync
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.utils.backup_scheduler import BACKUP_HOUR, get_next_backup_time
@@ -217,7 +217,10 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
         while True:
             try:
                 if abuseipdb_sync:
-                    result = await abuseipdb_service.sync_blacklist_to_redis(force_crowdsec_merge=True)
+                    result = await abuseipdb_cos_sync.sync_blacklist_for_role(
+                        force=True,
+                        force_crowdsec_merge=True,
+                    )
                     if result.get("ok"):
                         _log_blocklist_scheduled_abuseipdb_summary(result)
                     elif result.get("error") == "disabled":

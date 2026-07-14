@@ -14,16 +14,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.showcase import ShowcasePost
-from routers.features.showcase_constants import (
-    CASE_TYPES,
-    DIAGRAM_TYPE_LABELS,
-)
-from routers.features.showcase_helpers import (
-    post_id_from_showcase_asset_path,
-    resolve_showcase_disk_path,
-)
-from routers.features.showcase_permissions import can_view_non_approved_post
-from routers.features.showcase_routes_posts import list_posts
 from services.showcase.field_options import load_meta_payload
 from services.showcase.infra.observability import showcase_wf_log
 from services.showcase.storage import (
@@ -35,6 +25,17 @@ from services.showcase.storage import (
     storage_backend,
 )
 from utils.auth import get_current_user
+
+from .constants import (
+    CASE_TYPES,
+    DIAGRAM_TYPE_LABELS,
+)
+from .helpers import (
+    post_id_from_showcase_asset_path,
+    resolve_showcase_disk_path,
+)
+from .permissions import can_view_non_approved_post
+from .routes_posts import list_posts
 
 router = APIRouter()
 

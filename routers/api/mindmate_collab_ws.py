@@ -15,7 +15,6 @@ import os
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from config.settings import config
 from models.domain.auth import User
 from services.features.mindmate_collab.config import MINDMATE_COLLAB_MAX_CHAT_CONTENT_CHARS
 from services.features.mindmate_collab.dify_stream_control import acquire_dify_stream_lock
@@ -45,6 +44,7 @@ from services.redis.redis_async_client import get_async_redis
 from services.online_collab.participant.online_collab_ws_rate_limit import (
     check_canvas_collab_join_rate_limits,
 )
+from utils.auth import user_has_feature_access
 from utils.auth_ws import authenticate_websocket_user
 from utils.auth.school_tier import TIER_FEATURE_ONLINE_COLLAB, user_has_school_tier_feature
 from utils.collab_ws_origin import close_ws_if_origin_disallowed
@@ -112,13 +112,6 @@ async def _handle_ping(websocket: WebSocket, code: str, user_id: int) -> None:
 @router.websocket("/ws/mindmate-collab/{code}")
 async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
     """MindMate shared chatroom WebSocket — join, chat, Dify stream fan-out."""
-    if not config.FEATURE_MINDMATE_COLLAB:
-        try:
-            await websocket.close(code=1008, reason="Feature disabled")
-        except (RuntimeError, OSError):
-            pass
-        return
-
     if await close_ws_if_origin_disallowed(websocket, "MindmateCollab"):
         return
 
@@ -126,6 +119,13 @@ async def mindmate_collab_websocket(websocket: WebSocket, code: str) -> None:
     if auth_err or not user:
         try:
             await websocket.close(code=1008, reason=auth_err or "Unauthorized")
+        except (RuntimeError, OSError):
+            pass
+        return
+
+    if not await user_has_feature_access(user, "feature_mindmate_collab"):
+        try:
+            await websocket.close(code=1008, reason="Feature disabled")
         except (RuntimeError, OSError):
             pass
         return

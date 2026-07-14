@@ -33,6 +33,11 @@ describe('Vite 8 module interop smoke', () => {
     expect(mod.ElButton).toBeDefined()
   })
 
+  it('imports element-plus notification via deep ESM path', async () => {
+    const mod = await import('element-plus/es/components/notification/index.mjs')
+    expect(mod.ElNotification).toBeDefined()
+  })
+
   it('imports element-plus locale via deep ESM path', async () => {
     const mod = await import('element-plus/es/locale/lang/en')
     expect(mod.default).toBeDefined()

@@ -38,16 +38,6 @@ from models.domain.community import (
     CommunityPostLike,
 )
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.features.community_helpers import (
-    COMMUNITY_THUMBNAIL_DIR,
-    delete_spec_json,
-    delete_thumbnail,
-    prepare_post_id_and_spec,
-    resolve_update_thumbnail_path,
-    save_spec_json,
-    save_thumbnail_from_upload,
-    validate_and_parse_spec,
-)
 from services.redis.cache.redis_community_cache import (
     get_cached_list,
     get_cached_post,
@@ -58,6 +48,17 @@ from services.redis.cache.redis_community_cache import (
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user, is_school_admin, is_superadmin
+
+from .helpers import (
+    COMMUNITY_THUMBNAIL_DIR,
+    delete_spec_json,
+    delete_thumbnail,
+    prepare_post_id_and_spec,
+    resolve_update_thumbnail_path,
+    save_spec_json,
+    save_thumbnail_from_upload,
+    validate_and_parse_spec,
+)
 
 logger = logging.getLogger(__name__)
 

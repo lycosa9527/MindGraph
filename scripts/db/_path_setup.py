@@ -17,6 +17,7 @@ _COS_ENV_OVERRIDE_KEYS = frozenset(
         "COS_BUCKET",
         "COS_REGION",
         "COS_KEY_PREFIX",
+        "COS_SYNC_KEY_PREFIX",
         "COS_SYNC_ENABLED",
         "COS_SYNC_ROLE",
         "CELERY_TARGET_VERSION",

@@ -144,7 +144,7 @@ When PyPI is unreachable, a publisher host uploads the Celery wheel to COS; cons
 python scripts/db/update_stack_from_cos.py
 ```
 
-Choose **1) Check both** or **2) Update both from COS**. See `COS_SYNC_*` and `CELERY_TARGET_VERSION` in [env.example](../env.example).
+Choose **1) Check both** or **2) Update both from COS**. Artifacts live under **`COS_SYNC_KEY_PREFIX`** (falls back to `COS_KEY_PREFIX`). See `COS_SYNC_*` and `CELERY_TARGET_VERSION` in [env.example](../env.example).
 
 ## Related files
 

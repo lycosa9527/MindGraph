@@ -2,8 +2,8 @@
 Public Dashboard Router
 =======================
 
-Public dashboard endpoints for real-time analytics visualization.
-Requires dashboard session authentication (passkey-protected).
+China-map dashboard endpoints for real-time analytics visualization.
+Requires platform super-admin (``tab.settings.public_dashboard``).
 
 Endpoints:
 - GET /api/public/stats - Get dashboard statistics
@@ -34,17 +34,18 @@ from config.database import get_async_db
 from config.settings import config
 from models.domain.auth import User
 from models.domain.token_usage import TokenUsage
+from routers.auth.dependencies import require_settings_public_dashboard_short_lived
 from routers.auth.helpers import get_beijing_now, get_beijing_today_start_utc
 from services.auth.ip_geolocation import get_geolocation_service
 from services.monitoring.activity_stream import get_activity_stream_service
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
-from services.monitoring.dashboard_session import get_dashboard_session_manager
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
-from utils.auth import get_client_ip, is_public_dashboard_enabled
+from utils.auth import get_client_ip
+from utils.auth.admin_scope import AdminScope
 from utils.db.rls_request import bind_dashboard_rls_dependency
 
 logger = logging.getLogger(__name__)
@@ -137,39 +138,6 @@ def count_non_localhost_users(active_users: List[Dict]) -> int:
         for user in active_users
         if (ip_address := user.get("ip_address", "")) and ip_address != "unknown" and not is_localhost_ip(ip_address)
     )
-
-
-async def verify_dashboard_session(request: Request) -> bool:
-    """
-    Verify dashboard session from cookie.
-
-    Returns True if valid, raises HTTPException if invalid.
-    """
-    if not is_public_dashboard_enabled():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Public dashboard is not enabled (set PUBLIC_DASHBOARD_PASSKEY)",
-        )
-
-    dashboard_token = request.cookies.get("dashboard_access_token")
-
-    if not dashboard_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Dashboard session required",
-        )
-
-    # Get client IP for validation (handles reverse proxies)
-    client_ip = get_client_ip(request) if request else None
-
-    session_manager = get_dashboard_session_manager()
-    if not await session_manager.verify_session(dashboard_token, client_ip=client_ip):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired dashboard session",
-        )
-
-    return True
 
 
 async def check_dashboard_rate_limit(
@@ -265,6 +233,7 @@ async def get_cached_stats(tracker) -> Dict:
 @router.get("/stats")
 async def get_dashboard_stats(
     request: Request,
+    _scope: AdminScope = Depends(require_settings_public_dashboard_short_lived),
     _dashboard_rls: None = Depends(bind_dashboard_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ) -> Dict[str, Any]:
@@ -274,9 +243,6 @@ async def get_dashboard_stats(
     Returns:
         Dict with connected_users, registered_users, tokens_used_today, total_tokens_used
     """
-    # Verify dashboard session
-    await verify_dashboard_session(request)
-
     # Rate limiting: 60 requests per minute per IP
     await check_dashboard_rate_limit(request, "stats", max_requests=60, window_seconds=60)
 
@@ -396,7 +362,10 @@ async def get_dashboard_stats(
 
 
 @router.get("/map-data")
-async def get_map_data(request: Request) -> Dict[str, Any]:
+async def get_map_data(
+    request: Request,
+    _scope: AdminScope = Depends(require_settings_public_dashboard_short_lived),
+) -> Dict[str, Any]:
     """
     Get active users by province and city for map visualization.
 
@@ -405,9 +374,6 @@ async def get_map_data(request: Request) -> Dict[str, Any]:
         - map_data: [{name: "北京", value: count}] for province highlighting
         - series_data: [{name: "北京", value: [lng, lat, count]}] for scatter points
     """
-    # Verify dashboard session
-    await verify_dashboard_session(request)
-
     # Rate limiting: 30 requests per minute per IP (more expensive endpoint)
     await check_dashboard_rate_limit(request, "map_data", max_requests=30, window_seconds=60)
 
@@ -598,7 +564,11 @@ async def get_map_data(request: Request) -> Dict[str, Any]:
 
 
 @router.get("/activity-history")
-async def get_activity_history(request: Request, limit: int = 100) -> Dict[str, Any]:
+async def get_activity_history(
+    request: Request,
+    limit: int = 100,
+    _scope: AdminScope = Depends(require_settings_public_dashboard_short_lived),
+) -> Dict[str, Any]:
     """
     Get historical activity data for the dashboard.
 
@@ -612,9 +582,6 @@ async def get_activity_history(request: Request, limit: int = 100) -> Dict[str, 
     Returns:
         Dict with 'activities' list containing activity objects
     """
-    # Verify dashboard session
-    await verify_dashboard_session(request)
-
     # Rate limiting: 30 requests per minute per IP
     await check_dashboard_rate_limit(request, "activity_history", max_requests=30, window_seconds=60)
 
@@ -648,7 +615,10 @@ async def get_activity_history(request: Request, limit: int = 100) -> Dict[str, 
 
 
 @router.get("/activity-stream")
-async def stream_activity_updates(request: Request):
+async def stream_activity_updates(
+    request: Request,
+    _scope: AdminScope = Depends(require_settings_public_dashboard_short_lived),
+):
     """
     Stream real-time activity updates using Server-Sent Events.
 
@@ -663,9 +633,6 @@ async def stream_activity_updates(request: Request):
     - 'stats_update': Statistics update
     - 'heartbeat': Keep-alive ping
     """
-    # Verify dashboard session
-    await verify_dashboard_session(request)
-
     # Rate limiting: Check concurrent connections per IP (Redis-based)
     client_ip = get_client_ip(request) if request else "unknown"
     connection_key = f"{SSE_CONNECTION_PREFIX}{client_ip}"

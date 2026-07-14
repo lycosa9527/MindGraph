@@ -32,7 +32,9 @@ import type { SavedDiagram } from '@/stores/savedDiagrams'
 import { useShowcaseStore } from '@/stores/showcase'
 import {
   createShowcasePost,
+  deleteAdminShowcasePost,
   proxyCreateShowcasePost,
+  reviewAdminShowcasePost,
   updateShowcasePost,
   withdrawShowcasePost,
 } from '@/utils/apiClient'
@@ -260,19 +262,30 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     }
   }
 
-  async function rollbackCreatedPost(postId: string): Promise<void> {
+  async function rollbackCreatedPost(postId: string, proxyMode: boolean): Promise<void> {
     try {
       // Pending author posts use withdraw (hard-delete + asset cleanup)
       await withdrawShowcasePost(postId)
     } catch {
-      // Best-effort: leave orphan pending for author/admin cleanup
+      if (!proxyMode) {
+        return
+      }
+      try {
+        // Auto-approved / staff proxy posts cannot be withdrawn by author rules
+        await deleteAdminShowcasePost(postId)
+      } catch {
+        // Best-effort: leave orphan for author/admin cleanup
+      }
     }
   }
 
   async function createThenUpload(
     createFn: () => Promise<{ post: { id: string } }>,
     pending: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }>,
+    options: { proxyMode?: boolean; approveAfterUpload?: boolean } = {},
   ): Promise<string> {
+    const proxyMode = options.proxyMode === true
+    const approveAfterUpload = options.approveAfterUpload === true
     setSubmitProgress(String(t('showcase.publishModal.creatingCase')))
     const result = await createFn()
     const postId = result.post.id
@@ -282,9 +295,13 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     }
     try {
       await uploadPendingMedia(postId, pending)
+      if (approveAfterUpload) {
+        setSubmitProgress(String(t('showcase.publishModal.finishing')))
+        await reviewAdminShowcasePost(postId, 'approve')
+      }
       setSubmitProgress(String(t('showcase.publishModal.finishing')))
     } catch {
-      await rollbackCreatedPost(postId)
+      await rollbackCreatedPost(postId, proxyMode)
       throw new Error('SHOWCASE_UPLOAD_ROLLED_BACK')
     }
     return postId
@@ -352,9 +369,6 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
       if (props.proxyMode) {
         formData.append('attribution_name', attributionName.value.trim())
         formData.append('attribution_org', attributionOrg.value.trim())
-        if (autoApprove.value && can('tab.showcase.edit')) {
-          formData.append('auto_approve', 'true')
-        }
       }
 
       if (caseType.value === 'teaching_design') {
@@ -514,9 +528,15 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
 
       let savedPostId = props.editPostId?.trim() ?? ''
       if (props.proxyMode) {
+        const canAutoApprove = autoApprove.value && can('tab.showcase.edit')
+        const approveAfterUpload = canAutoApprove && pendingUploads.length > 0
+        if (canAutoApprove && pendingUploads.length === 0) {
+          formData.append('auto_approve', 'true')
+        }
         savedPostId = await createThenUpload(
           () => proxyCreateShowcasePost(formData),
           pendingUploads,
+          { proxyMode: true, approveAfterUpload },
         )
         clearSubmitProgress()
         notify.success(String(t('admin.showcase.proxySuccess')), 3000)

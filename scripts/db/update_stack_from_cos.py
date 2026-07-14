@@ -5,12 +5,15 @@ Install or upgrade Qdrant and Celery from Tencent COS (interactive).
 When COS ``meta.json`` for each artifact reports a newer version than locally
 installed, choose **Update both** to pull from COS (Qdrant requires root).
 
-COS layout (under ``COS_KEY_PREFIX``)::
+COS layout (under ``COS_SYNC_KEY_PREFIX``, else ``COS_KEY_PREFIX``)::
 
-  sync/qdrant/meta.json
-  sync/qdrant/v{version}/qdrant-{arch}.tar.gz
-  sync/celery/meta.json
-  sync/celery/v{version}/celery-{version}-py3-none-any.whl
+    sync/qdrant/meta.json
+    sync/qdrant/v{version}/qdrant-{arch}.tar.gz
+    sync/celery/meta.json
+    sync/celery/v{version}/celery-{version}-py3-none-any.whl
+    sync/crowdsec/blocklist.txt
+    sync/abuseipdb/blocklist.txt
+    sync/geolite/GeoLite2-Country.mmdb
 
 Usage (repo root, WSL + conda python313)::
 

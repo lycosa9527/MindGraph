@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.147.0] - 2026-07-15
+
+> **Public dashboard embedded in admin, feature-flag hot reload, COS mirrors for GeoLite/AbuseIPDB, and Showcase router package layout.**
+
+### Added
+
+- **Public dashboard in admin** — China-map analytics live under Admin → Settings → 全国数据中心; super-admin capability `tab.settings.public_dashboard`; legacy `/dashboard`, `/dashboard/login`, and `/pub-dash` redirect to the admin URL; separate dashboard login/session flow removed ([`AdminPublicDashboardTab.vue`](frontend/src/components/admin/AdminPublicDashboardTab.vue), [`usePublicDashboard.ts`](frontend/src/composables/dashboard/usePublicDashboard.ts)).
+- **Feature-flag hot reload** — HTTP `feature_flag_gate` middleware returns 404 when admin toggles features off without restart; routers stay mounted at startup; cross-worker `.env` reload via Redis pub/sub on admin `reload-runtime` ([`feature_gate.py`](services/infrastructure/http/feature_gate.py), [`env_reload_fanout.py`](services/infrastructure/sync/env_reload_fanout.py)).
+- **COS security asset mirrors** — GeoLite2-Country MMDB and AbuseIPDB blocklist publisher/consumer sync via Tencent COS; one-shot CLI [`scripts/db/publish_blocklists_to_cos.py`](scripts/db/publish_blocklists_to_cos.py).
+- **Showcase approval gates** — Teaching designs require an attachment; diagram cases require resolved gallery uploads before approve ([`test_showcase_lifecycle_gates.py`](tests/test_showcase_lifecycle_gates.py)).
+- **Showcase pg-merge remap** — `case_square_*` tables registered for phone-based user FK remap in stack merge ([`test_pg_merge_showcase_remap.py`](tests/test_pg_merge_showcase_remap.py)).
+
+### Changed
+
+- **Showcase router package** — Feature routers reorganized into package folders (`routers/features/showcase/`, `community/`, etc.); admin showcase routes colocated under [`routers/features/showcase/admin.py`](routers/features/showcase/admin.py).
+- **Public dashboard auth** — Short-lived admin capability dependency replaces dashboard session manager; [`dashboard_session.py`](services/monitoring/dashboard_session.py) removed.
+- **Vite 8 HMR** — `server.hmr.host` set to `localhost` when binding `0.0.0.0` for WSL/LAN dev ([`vite.config.ts`](frontend/vite.config.ts)).
+
+### Tests
+
+- **CI** — [`test_public_dashboard_e2e.py`](tests/test_public_dashboard_e2e.py), [`test_feature_flag_hot_reload.py`](tests/test_feature_flag_hot_reload.py), [`test_showcase_cos_live_matrix.py`](tests/test_showcase_cos_live_matrix.py), [`test_abuseipdb_cos_sync.py`](tests/services/test_abuseipdb_cos_sync.py), [`test_geolite_cos_sync.py`](tests/services/test_geolite_cos_sync.py); smoke [`scripts/smoke_public_dashboard_live.py`](scripts/smoke_public_dashboard_live.py).
+
 ## [5.146.1] - 2026-07-14
 
 > **Showcase pylint docstring fix so GitHub CI treats convention score as green.**

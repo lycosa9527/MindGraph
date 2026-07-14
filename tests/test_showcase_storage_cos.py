@@ -11,12 +11,12 @@ import pytest
 from fastapi import HTTPException
 
 from models.domain.showcase import ShowcasePost
-from routers.features.showcase_helpers import (
+from routers.features.showcase.helpers import (
     post_id_from_showcase_asset_path,
     showcase_public_asset_url,
 )
-from routers.features.showcase_routes_feed import _key_belongs_to_post
-from routers.features.showcase_routes_uploads import reject_if_cos_multipart_files_present
+from routers.features.showcase.routes_feed import _key_belongs_to_post
+from routers.features.showcase.routes_uploads import reject_if_cos_multipart_files_present
 from services.infrastructure.http import middleware as middleware_module
 from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.showcase import storage
@@ -73,6 +73,73 @@ def test_resolve_upload_role_gallery_and_attachment() -> None:
     assert gal.gallery_slot == 3
     with pytest.raises(ValueError):
         resolve_upload_role("gallery_99")
+    with pytest.raises(ValueError, match="Postgres"):
+        resolve_upload_role("spec")
+
+
+@pytest.mark.asyncio
+async def test_upload_grant_prefers_redis_over_stale_memory(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Successful Redis save clears memory; pop must not return a stale memory grant."""
+    showcase_cache.clear_memory_upload_grants()
+    stored: dict[str, bytes] = {}
+
+    class _FakeRedis:
+        """Minimal async Redis stand-in for grant save/pop tests."""
+
+        async def set(self, key: str, value: bytes, **_kwargs: object) -> None:
+            """Store grant payload bytes."""
+            stored[key] = value
+
+        async def get(self, key: str):
+            """Return stored grant payload or None."""
+            return stored.get(key)
+
+        async def getdel(self, key: str):
+            """Atomically get and delete grant payload."""
+            return stored.pop(key, None)
+
+        async def delete(self, key: str) -> None:
+            """Drop grant key."""
+            stored.pop(key, None)
+
+    fake = _FakeRedis()
+
+    def _redis_available() -> bool:
+        return True
+
+    def _get_fake_redis() -> _FakeRedis:
+        return fake
+
+    monkeypatch.setattr(showcase_cache, "is_redis_available", lambda: False)
+    await showcase_cache.save_upload_grant(
+        user_id=9,
+        post_id="p9",
+        role="thumbnail",
+        logical_key="showcase/posts/p9/stale.png",
+        content_type="image/png",
+        max_bytes=1,
+        ttl_seconds=60,
+    )
+
+    monkeypatch.setattr(showcase_cache, "is_redis_available", _redis_available)
+    monkeypatch.setattr(showcase_cache, "get_async_redis", _get_fake_redis)
+    await showcase_cache.save_upload_grant(
+        user_id=9,
+        post_id="p9",
+        role="thumbnail",
+        logical_key="showcase/posts/p9/fresh.png",
+        content_type="image/png",
+        max_bytes=2048,
+        ttl_seconds=60,
+    )
+
+    grant = await showcase_cache.pop_upload_grant(user_id=9, post_id="p9", role="thumbnail")
+    assert grant is not None
+    assert grant["key"] == "showcase/posts/p9/fresh.png"
+
+    # Redis grant consumed; memory must not still hold the earlier stale key.
+    monkeypatch.setattr(showcase_cache, "is_redis_available", lambda: False)
+    assert await showcase_cache.pop_upload_grant(user_id=9, post_id="p9", role="thumbnail") is None
 
 
 @pytest.mark.asyncio
@@ -194,7 +261,7 @@ def test_key_belongs_helper_via_collect() -> None:
 def test_reject_cos_multipart_helper(monkeypatch: pytest.MonkeyPatch) -> None:
     """COS mode rejects direct multipart file uploads."""
     monkeypatch.setattr(
-        "routers.features.showcase_routes_uploads.cos_showcase_enabled",
+        "routers.features.showcase.routes_uploads.cos_showcase_enabled",
         lambda: True,
     )
     with pytest.raises(HTTPException) as exc:

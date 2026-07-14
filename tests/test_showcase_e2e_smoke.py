@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import io
 import os
 import urllib.request
@@ -24,12 +25,19 @@ from services.utils.tencent_cos_client import list_prefix
 from utils.auth import get_current_user
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
 from utils.db.rls_context import RlsContext, reset_rls_context, set_rls_context
+from utils.db.session_open import system_rls_session
 
 PNG_BYTES = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
     b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01"
     b"\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
 )
+
+# Stable phone used as cross-env identity (prod/test MG ids often differ).
+SMOKE_PHONE = "19900000661"
+SMOKE_ORG_CODE = "showcase-cos-smoke"
+# Isolate live COS objects from prod/test shared prefixes during smoke.
+SMOKE_COS_PREFIX = "showcase/mindgraph-e2e-smoke"
 
 
 def _showcase_schema_ready() -> bool:
@@ -52,33 +60,103 @@ requires_cos_smoke = pytest.mark.skipif(
 )
 
 
-def _make_user(user_id: int = 61) -> SimpleNamespace:
+def _make_user(user_id: int, organization_id: int) -> SimpleNamespace:
     org = SimpleNamespace(name="Smoke School")
     user = SimpleNamespace()
     user.id = user_id
     user.name = "Showcase Smoke"
-    user.phone = None
+    user.phone = SMOKE_PHONE
     user.avatar = None
     user.role = "teacher"
-    user.organization_id = 1
+    user.organization_id = organization_id
     user.organization = org
     return user
 
 
-async def _override_get_async_db(request: Request):
-    user = _make_user()
-    setattr(request.state, AUTH_CONTEXT_USER_ATTR, user)
-    ctx = RlsContext.from_user(user)
-    token = set_rls_context(ctx)
-    try:
-        async with AsyncSessionLocal() as session:
-            try:
-                yield session
-            except DATABASE_ERRORS:
-                await session.rollback()
-                raise
-    finally:
-        reset_rls_context(token)
+async def _ensure_smoke_identity() -> tuple[int, int]:
+    """Create org+user keyed by phone so MG id can differ across envs."""
+    async with system_rls_session() as session:
+        org = (
+            await session.execute(
+                text("SELECT id FROM organizations WHERE code = :code"),
+                {"code": SMOKE_ORG_CODE},
+            )
+        ).fetchone()
+        if org is None:
+            org_id = (
+                await session.execute(
+                    text(
+                        """
+                        INSERT INTO organizations (code, name, school_tier, is_active, created_at)
+                        VALUES (
+                            :code, 'Showcase COS Smoke', 'trial', true,
+                            now() AT TIME ZONE 'utc'
+                        )
+                        RETURNING id
+                        """
+                    ),
+                    {"code": SMOKE_ORG_CODE},
+                )
+            ).scalar_one()
+        else:
+            org_id = int(org[0])
+
+        user = (
+            await session.execute(
+                text("SELECT id FROM users WHERE phone = :phone"),
+                {"phone": SMOKE_PHONE},
+            )
+        ).fetchone()
+        if user is None:
+            user_id = (
+                await session.execute(
+                    text(
+                        """
+                        INSERT INTO users (
+                            phone, password_hash, name, organization_id, role,
+                            created_at, login_password_set,
+                            allows_simplified_chinese, email_login_whitelisted_from_cn,
+                            match_prompt_to_ui
+                        )
+                        VALUES (
+                            :phone, 'smoke-hash', 'Showcase COS Smoke', :org_id, 'teacher',
+                            now() AT TIME ZONE 'utc', false,
+                            true, false, true
+                        )
+                        RETURNING id
+                        """
+                    ),
+                    {"phone": SMOKE_PHONE, "org_id": org_id},
+                )
+            ).scalar_one()
+        else:
+            user_id = int(user[0])
+        await session.commit()
+        return int(user_id), int(org_id)
+
+
+@pytest.fixture(name="smoke_identity")
+def fixture_smoke_identity() -> tuple[int, int]:
+    """Ensure a real DB user exists (FK + RLS) for Showcase smoke routes."""
+    return asyncio.run(_ensure_smoke_identity())
+
+
+def _override_get_async_db_factory(user: SimpleNamespace):
+    async def _override_get_async_db(request: Request):
+        setattr(request.state, AUTH_CONTEXT_USER_ATTR, user)
+        ctx = RlsContext.from_user(user)
+        token = set_rls_context(ctx)
+        try:
+            async with AsyncSessionLocal() as session:
+                try:
+                    yield session
+                except DATABASE_ERRORS:
+                    await session.rollback()
+                    raise
+        finally:
+            reset_rls_context(token)
+
+    return _override_get_async_db
 
 
 @pytest.fixture(name="client")
@@ -107,21 +185,25 @@ def test_local_e2e_create_upload_download_withdraw(
     client: TestClient,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    smoke_identity: tuple[int, int],
 ) -> None:
     """Local backend: metadata create → init → complete → GET asset → withdraw."""
+    user_id, org_id = smoke_identity
+    user = _make_user(user_id, org_id)
+
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(storage_backend, "cos_showcase_enabled", lambda: False)
     monkeypatch.setattr(
-        "routers.features.showcase_routes_uploads.cos_showcase_enabled",
+        "routers.features.showcase.routes_uploads.cos_showcase_enabled",
         lambda: False,
     )
     monkeypatch.setattr(
-        "routers.features.showcase_routes_feed.cos_showcase_enabled",
+        "routers.features.showcase.routes_feed.cos_showcase_enabled",
         lambda: False,
     )
 
-    app.dependency_overrides[get_current_user] = _make_user
-    app.dependency_overrides[get_async_db] = _override_get_async_db
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[get_async_db] = _override_get_async_db_factory(user)
 
     create = client.post(
         "/api/showcase/posts",
@@ -176,13 +258,24 @@ def test_local_e2e_create_upload_download_withdraw(
 
 @requires_showcase_schema
 @requires_cos_smoke
-def test_cos_e2e_presign_put_complete_and_cleanup(client: TestClient) -> None:
+def test_cos_e2e_presign_put_complete_and_cleanup(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    smoke_identity: tuple[int, int],
+) -> None:
     """Live COS: init → PUT → complete → withdraw leaves no post prefix objects."""
     if not storage.cos_showcase_enabled():
         pytest.skip("COS showcase not enabled / credentials missing")
 
-    app.dependency_overrides[get_current_user] = _make_user
-    app.dependency_overrides[get_async_db] = _override_get_async_db
+    user_id, org_id = smoke_identity
+    user = _make_user(user_id, org_id)
+
+    # Keep smoke objects out of the shared prod/test Showcase prefix.
+    monkeypatch.setenv("COS_SHOWCASE_PREFIX", SMOKE_COS_PREFIX)
+    config.refresh_env_cache()
+
+    app.dependency_overrides[get_current_user] = lambda: user
+    app.dependency_overrides[get_async_db] = _override_get_async_db_factory(user)
 
     create = client.post(
         "/api/showcase/posts",

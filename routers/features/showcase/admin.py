@@ -18,38 +18,6 @@ from models.domain.auth import User
 from models.domain.showcase import ShowcasePost
 from models.domain.showcase_admin import ShowcaseFieldOption, ShowcaseStaffGrant
 from routers.auth.dependencies import get_async_db_with_request_rls, require_panel_capability
-from routers.features.showcase import (
-    CaseReviewBody,
-    _delete_case_post_in_session,
-    _format_post,
-    _load_post_for_format,
-    _review_case_post_handler,
-)
-from routers.features.showcase_permissions import (
-    PERM_DELETE,
-    PERM_FIELDS,
-    PERM_PERMISSIONS,
-    PERM_PUBLISH_PROXY,
-    PERM_REVIEW,
-    VALID_GRANT_PERMISSIONS,
-    can_delete_case,
-    can_review_case,
-    load_user_showcase_permissions,
-)
-from routers.features.showcase_constants import CASE_TYPES, DIAGRAM_TYPE_LABELS
-from routers.features.showcase_helpers import (
-    ALLOWED_DOC_SUFFIXES,
-    ALLOWED_SOURCE_SUFFIXES,
-    ALLOWED_VIDEO_SUFFIXES,
-    ATTACHMENT_MAX_BYTES,
-    VIDEO_MAX_BYTES,
-    parse_tags_json,
-    prepare_post_id_and_spec,
-    save_case_file,
-    save_spec_json,
-    save_thumbnail_from_upload,
-)
-from routers.features.showcase_routes_uploads import reject_if_cos_multipart_files_present
 from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.showcase.audit import write_showcase_audit
 from services.showcase.field_options import (
@@ -57,12 +25,13 @@ from services.showcase.field_options import (
     validate_grade,
     validate_subject,
 )
+from services.showcase.posts.lifecycle import rollback_created_post_assets
 from services.showcase.staff_permissions import (
     ALL_SHOWCASE_PERMS,
     PLATFORM_BD_DEFAULT,
     can_view_dashboard as can_view_showcase_dashboard,
 )
-from services.showcase.storage import delete_post_assets, cos_showcase_enabled
+from services.showcase.storage import cos_showcase_enabled, delete_post_assets
 from services.showcase.sync import (
     build_storage_status,
     purge_orphans_from_reconcile,
@@ -73,6 +42,40 @@ from utils.auth import get_current_user
 from utils.auth.admin_panel_permissions import CAP_TAB_SHOWCASE_EDIT, CAP_TAB_SHOWCASE_VIEW
 from utils.auth.admin_scope import AdminScope
 from utils.auth.role_constants import ROLE_PLATFORM_BD, SUPERADMIN_ROLES
+
+from .common import (
+    CaseReviewBody,
+    _delete_case_post_in_session,
+    _format_post,
+    _load_post_for_format,
+    _review_case_post_handler,
+)
+from .constants import CASE_TYPES, DIAGRAM_TYPE_LABELS
+from .helpers import (
+    ALLOWED_DOC_SUFFIXES,
+    ALLOWED_SOURCE_SUFFIXES,
+    ALLOWED_VIDEO_SUFFIXES,
+    ATTACHMENT_MAX_BYTES,
+    VIDEO_MAX_BYTES,
+    parse_tags_json,
+    post_media_ready_for_approval,
+    prepare_post_id_and_spec,
+    save_case_file,
+    save_spec_json,
+    save_thumbnail_from_upload,
+)
+from .permissions import (
+    PERM_DELETE,
+    PERM_FIELDS,
+    PERM_PERMISSIONS,
+    PERM_PUBLISH_PROXY,
+    PERM_REVIEW,
+    VALID_GRANT_PERMISSIONS,
+    can_delete_case,
+    can_review_case,
+    load_user_showcase_permissions,
+)
+from .routes_uploads import reject_if_cos_multipart_files_present
 
 logger = logging.getLogger(__name__)
 
@@ -705,7 +708,15 @@ async def proxy_create_post(
     if spec_obj:
         save_spec_json(post_id, spec_obj)
 
-    initial_status = "approved" if auto_approve and PERM_REVIEW in perms else "pending"
+    initial_status = "pending"
+    if (
+        auto_approve
+        and PERM_REVIEW in perms
+        and post_media_ready_for_approval(case_type=case_type, spec=spec_obj)
+    ):
+        # Only auto-approve when create-time media is already complete (COS
+        # create-then-upload must approve after uploads finish).
+        initial_status = "approved"
     attribution = {
         "display_name": attribution_name.strip(),
         "organization": attribution_org.strip() or None,
@@ -738,9 +749,27 @@ async def proxy_create_post(
         actor_id=current_user.id,
         action="proxy_create",
         post_id=post_id,
-        payload={"attribution": attribution, "auto_approve": auto_approve},
+        payload={
+            "attribution": attribution,
+            "auto_approve": auto_approve,
+            "status": initial_status,
+        },
     )
-    await db.commit()
+    try:
+        await db.commit()
+    except DATABASE_ERRORS as exc:
+        await db.rollback()
+        await rollback_created_post_assets(
+            post_id=post_id,
+            thumbnail_path=thumbnail_path,
+            spec=spec_obj,
+            user_id=current_user.id,
+            reason="proxy_db_commit_failed",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create proxy case",
+        ) from exc
     await showcase_cache.invalidate_post(post_id)
     post = await _load_post_for_format(db, post_id)
     return {
@@ -757,20 +786,25 @@ class PurgeOrphansBody(BaseModel):
 
 @router.get("/admin/showcase/storage/status")
 async def admin_showcase_storage_status(
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
     _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_SHOWCASE_VIEW)),
 ):
     """COS / local storage health for Showcase media."""
+    if not await can_view_showcase_dashboard(db, current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient Showcase permission")
     return build_storage_status().to_dict()
 
 
 @router.get("/admin/showcase/storage/reconcile")
 async def admin_showcase_storage_reconcile(
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db_with_request_rls),
     _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_SHOWCASE_VIEW)),
 ):
     """Diff Postgres media keys vs COS objects under the Showcase prefix."""
+    if not await can_view_showcase_dashboard(db, current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient Showcase permission")
     report = await reconcile_showcase_storage(db)
     return report.to_dict()
 

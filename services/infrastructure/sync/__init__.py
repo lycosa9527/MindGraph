@@ -1,1 +1,1 @@
-"""COS mirror sync modules (CrowdSec blocklist, Qdrant release)."""
+"""COS mirror sync modules (CrowdSec/AbuseIPDB blocklists, GeoLite, Qdrant, Celery)."""

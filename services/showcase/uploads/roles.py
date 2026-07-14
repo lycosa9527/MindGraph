@@ -13,8 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from routers.features.community_helpers import SPEC_MAX_BYTES, THUMBNAIL_MAX_BYTES
-from routers.features.showcase_helpers import (
+from routers.features.community.helpers import THUMBNAIL_MAX_BYTES
+from routers.features.showcase.helpers import (
     ALLOWED_DOC_SUFFIXES,
     ALLOWED_SOURCE_SUFFIXES,
     ALLOWED_VIDEO_SUFFIXES,
@@ -99,11 +99,8 @@ def resolve_upload_role(role: str) -> UploadRoleSpec:
             spec_field="classroom_video_path",
         )
     if role == "spec":
-        return UploadRoleSpec(
-            role=role,
-            allowed_suffixes=frozenset({".json"}),
-            max_bytes=SPEC_MAX_BYTES,
-        )
+        # Spec JSON is stored in Postgres; do not mint COS uploads for it.
+        raise ValueError("Spec is stored in Postgres; use the post create/update JSON body")
     match = _GALLERY_ROLE.match(role)
     if match:
         slot = int(match.group(1))

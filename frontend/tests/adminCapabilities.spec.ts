@@ -98,4 +98,21 @@ describe('adminCapabilities', () => {
       'tab.settings.thinking_coins',
     ])
   })
+
+  it('public_dashboard settings subtab is superadmin-only', () => {
+    expect(settingsSubtabRequiresCapabilities('public_dashboard')).toEqual([
+      'tab.settings.public_dashboard',
+    ])
+    expect(fallbackCapabilitiesForRole('superadmin')).toContain('tab.settings.public_dashboard')
+    for (const role of [
+      'platform_bd',
+      'expert',
+      'school_admin',
+      'teacher',
+      'personal_trial',
+      'personal_paid',
+    ] as const) {
+      expect(fallbackCapabilitiesForRole(role)).not.toContain('tab.settings.public_dashboard')
+    }
+  })
 })

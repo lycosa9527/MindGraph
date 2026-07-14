@@ -12,7 +12,6 @@
  *
  * Full cookbook: routers/auth/dependencies.py module docstring.
  */
-
 import type { UserRole } from '@/types'
 
 export type AdminCapability =
@@ -39,6 +38,7 @@ export type AdminCapability =
   | 'tab.settings.performance'
   | 'tab.settings.errors'
   | 'tab.settings.thinking_coins'
+  | 'tab.settings.public_dashboard'
   | 'tab.settings.gewe'
   | 'tab.settings.kitty_llmops'
   | 'tab.settings.mindbot'
@@ -89,6 +89,7 @@ const SUPERADMIN_CAPS: AdminCapability[] = [
   'tab.settings.performance',
   'tab.settings.errors',
   'tab.settings.thinking_coins',
+  'tab.settings.public_dashboard',
   'tab.settings.gewe',
   'tab.settings.kitty_llmops',
   'tab.settings.mindbot',
@@ -200,10 +201,7 @@ export function tabRequiresCapabilities(tabKey: string): AdminCapability[] {
 }
 
 export function canViewUsersTab(caps: AdminCapability[]): boolean {
-  return (
-    caps.includes('tab.users.view') &&
-    caps.includes('scope.global')
-  )
+  return caps.includes('tab.users.view') && caps.includes('scope.global')
 }
 
 export function canViewDataCenterTab(caps: AdminCapability[]): boolean {
@@ -245,6 +243,7 @@ export function settingsSubtabRequiresCapabilities(subtab: string): AdminCapabil
     performance: ['tab.settings.performance'],
     errors: ['tab.settings.errors'],
     thinking_coins: ['tab.settings.thinking_coins'],
+    public_dashboard: ['tab.settings.public_dashboard'],
     gewe: ['tab.settings.gewe'],
     kitty_llmops: ['tab.settings.kitty_llmops'],
     mindbot: ['tab.settings.mindbot'],

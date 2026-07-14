@@ -24,14 +24,18 @@ _PATH_FLAG_ATTRS: tuple[tuple[str, str], ...] = (
     ("/api/showcase", "FEATURE_SHOWCASE"),
     ("/api/community", "FEATURE_COMMUNITY"),
     ("/api/library", "FEATURE_LIBRARY"),
+    ("/api/markets", "FEATURE_MARKETS"),
     ("/api/askonce", "FEATURE_ASKONCE"),
     ("/api/devices", "FEATURE_SMART_RESPONSE"),
     ("/api/gewe", "FEATURE_GEWE"),
     ("/api/chat", "FEATURE_WORKSHOP_CHAT"),
+    ("/api/ws/chat", "FEATURE_WORKSHOP_CHAT"),
     ("/api/mindmate/collab", "FEATURE_MINDMATE_COLLAB"),
     ("/api/ws/mindmate-collab", "FEATURE_MINDMATE_COLLAB"),
     ("/api/ws/mindmate-notify", "FEATURE_MINDMATE_COLLAB"),
     ("/api/mindbot", "FEATURE_MINDBOT"),
+    ("/api/kitty", "FEATURE_KITTY_AGENT"),
+    ("/ws/kitty", "FEATURE_KITTY_AGENT"),
     ("/api/auth/oauth", "FEATURE_OAUTH_LOGIN"),
 )
 

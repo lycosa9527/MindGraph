@@ -16,7 +16,6 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from config.settings import config
 from models.domain.auth import User
 from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
@@ -36,7 +35,7 @@ from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_NETWORK,
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
 )
-from utils.auth import get_current_user
+from utils.auth import get_current_user, user_has_feature_access
 from utils.auth.school_tier import (
     TIER_FEATURE_ONLINE_COLLAB,
     assert_user_has_school_tier_feature,
@@ -47,16 +46,18 @@ from utils.db.session_open import actor_rls_session
 logger = logging.getLogger(__name__)
 
 
-async def _require_mindmate_collab_feature() -> None:
-    """Return 404 when MindMate collab is disabled via FEATURE_MINDMATE_COLLAB."""
-    if not config.FEATURE_MINDMATE_COLLAB:
+async def _require_mindmate_collab_access(
+    current_user: User = Depends(get_current_user),
+) -> None:
+    """Return 404 when collab is off globally or the user lacks org/user grants."""
+    if not await user_has_feature_access(current_user, "feature_mindmate_collab"):
         raise HTTPException(status_code=404, detail="Feature is disabled")
 
 
 router = APIRouter(
     prefix="/mindmate/collab",
     tags=["mindmate-collab"],
-    dependencies=[Depends(_require_mindmate_collab_feature)],
+    dependencies=[Depends(_require_mindmate_collab_access)],
 )
 
 

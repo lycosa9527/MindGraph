@@ -86,6 +86,11 @@ FEATURE_ORG_ACCESS = "cache:feature_org_access:v1"
 TTL_FEATURE_ACCESS = 86_400
 
 # ---------------------------------------------------------------------------
+# Runtime .env reload fan-out  (env_reload_fanout.py)
+# ---------------------------------------------------------------------------
+ENV_RELOAD_CHANNEL = "mg:env:reload"
+
+# ---------------------------------------------------------------------------
 # Dify dual-server health  (redis_dify_server_health_cache.py)
 # ---------------------------------------------------------------------------
 DIFY_SERVER_HEALTH = "dify:health:{org_id}:{server}"

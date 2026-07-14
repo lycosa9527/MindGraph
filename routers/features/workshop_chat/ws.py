@@ -162,7 +162,7 @@ async def chat_websocket(websocket: WebSocket):
         logger.warning("[ChatWS] VPN/CN policy closed connection for user_id=%s", user.id)
         return
 
-    if not can_access_workshop_chat(user):
+    if not await can_access_workshop_chat(user):
         try:
             record_ws_auth_failure()
         except BACKGROUND_INFRA_ERRORS as exc:

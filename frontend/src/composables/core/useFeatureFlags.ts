@@ -19,7 +19,7 @@ export function useFeatureFlags() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['featureFlags'],
     queryFn: () => store.fetchFlags(),
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 60 * 1000, // 1 minute — align with store cache for hot toggles
     retry: 1,
   })
 
@@ -27,8 +27,8 @@ export function useFeatureFlags() {
   const featureCourse = computed(() => data.value?.feature_course ?? false)
   const featureTemplate = computed(() => data.value?.feature_template ?? false)
   const featureCommunity = computed(() => data.value?.feature_community ?? false)
-  const featureShowcase = computed(() => data.value?.feature_showcase ?? true)
-  const featureAskOnce = computed(() => data.value?.feature_askonce ?? true)
+  const featureShowcase = computed(() => data.value?.feature_showcase ?? false)
+  const featureAskOnce = computed(() => data.value?.feature_askonce ?? false)
   const featureDebateverse = computed(() => data.value?.feature_debateverse ?? false)
   const featureKnowledgeSpace = computed(() => data.value?.feature_knowledge_space ?? false)
   const featureMindmapV2Canvas = computed(() => data.value?.feature_mindmap_v2_canvas ?? false)

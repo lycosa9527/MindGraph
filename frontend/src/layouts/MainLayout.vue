@@ -10,9 +10,11 @@ import { Lock, PanelLeftOpen } from '@lucide/vue'
 
 import { AppSidebar } from '@/components/sidebar'
 import { useLanguage } from '@/composables'
+import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { preloadMarkdownRendererForRoute } from '@/composables/core/useMarkdown'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
+import { isAdminPublicDashboardRoute } from '@/utils/publicDashboardRoute'
 
 const route = useRoute()
 
@@ -27,6 +29,7 @@ watch(
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const { t } = useLanguage()
+const { canViewSettingsSubtab } = useAdminAccess()
 
 /** Inline expand control exists on MindMate toolbar and MindGraph gallery headers. */
 const showCollapsedSidebarExpand = computed(
@@ -38,6 +41,12 @@ const showCollapsedSidebarExpand = computed(
 
 const isGuest = computed(() => !authStore.isAuthenticated)
 
+/** Super-admin national data center: hide app sidebar for a full-page map view. */
+const hideAppSidebar = computed(
+  () =>
+    isAdminPublicDashboardRoute(route) && canViewSettingsSubtab('public_dashboard')
+)
+
 /** CN `/mindgraph`: show content clearly for guests; other main routes keep blur + login hint overlay. */
 const shouldBlurGuestMain = computed(() => {
   if (!isGuest.value) return false
@@ -48,14 +57,14 @@ const shouldBlurGuestMain = computed(() => {
 
 <template>
   <div class="main-layout h-screen w-screen flex overflow-hidden">
-    <AppSidebar />
+    <AppSidebar v-if="!hideAppSidebar" />
 
     <!-- Main content (blurred for guests except CN MindGraph landing; sidebar stays clear) -->
     <main
       class="main-content relative flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
     >
       <div
-        v-if="showCollapsedSidebarExpand"
+        v-if="showCollapsedSidebarExpand && !hideAppSidebar"
         class="main-sidebar-expand-bar h-14 px-4 flex items-center border-b border-stone-200 bg-white shrink-0"
       >
         <el-button
@@ -80,7 +89,7 @@ const shouldBlurGuestMain = computed(() => {
         </div>
         <!-- ICP Registration Footer - Chinese version only -->
         <div
-          v-if="uiStore.uiVersion === 'chinese'"
+          v-if="uiStore.uiVersion === 'chinese' && !hideAppSidebar"
           class="icp-footer"
         >
           京ICP备2025126228号
