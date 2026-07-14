@@ -13,7 +13,7 @@ import { storeToRefs } from 'pinia'
 
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { eventBus } from '@/composables/core/useEventBus'
-import { presentationDiagramEditLockedRef } from '@/composables/presentation/presentationDiagramEdit'
+import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import {
   handleLearningSheetPickNodeClick,
   isLearningSheetCustomPickActive,
@@ -63,7 +63,7 @@ function finalizeMindMapExportNodeStyle(style: CSSProperties): CSSProperties {
   })
 }
 const isTextReadonly = computed(
-  () => props.data.hidden === true || presentationDiagramEditLockedRef.value
+  () => props.data.hidden === true || diagramPresentationReadOnlyRef.value
 )
 
 // Get theme defaults matching old StyleManager

@@ -16,6 +16,7 @@ import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { formatDiagramCountLabel } from '@/utils/diagramLimit'
+import { folderNameById } from '@/composables/sidebar/useDiagramArchiveHistory'
 
 const emit = defineEmits<{
   (e: 'select', diagram: SavedDiagram): void
@@ -27,6 +28,7 @@ const authStore = useAuthStore()
 const store = useSavedDiagramsStore()
 
 const diagrams = computed(() => store.diagrams)
+const folders = computed(() => store.folders)
 const isLoading = computed(() => store.isLoading)
 const maxDiagrams = computed(() => store.maxDiagrams)
 const diagramCountLabel = computed(() =>
@@ -46,6 +48,10 @@ watch(
     else store.reset()
   }
 )
+
+function folderLabel(folderId: string | null | undefined): string | null {
+  return folderNameById(folders.value, folderId)
+}
 
 function typeLabel(type: string): string {
   const key = `sidebar.diagramType.${type}`
@@ -134,7 +140,15 @@ async function handleDelete(diagramId: string) {
               />
               {{ diagram.title || t('sidebar.history.untitled') }}
             </span>
-            <span class="dd-item-type">{{ typeLabel(diagram.diagram_type) }}</span>
+            <span class="dd-item-type">
+              {{ typeLabel(diagram.diagram_type) }}
+              <span
+                v-if="folderLabel(diagram.folder_id)"
+                class="dd-folder-badge"
+              >
+                · {{ folderLabel(diagram.folder_id) }}
+              </span>
+            </span>
           </div>
 
           <div class="dd-item-actions">
@@ -273,6 +287,10 @@ async function handleDelete(diagramId: string) {
   font-size: 12px;
   color: #a8a29e;
   line-height: 1.3;
+}
+
+.dd-folder-badge {
+  color: #78716c;
 }
 
 /* ── Action buttons ── */

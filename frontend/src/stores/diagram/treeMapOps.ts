@@ -1,6 +1,7 @@
 import { eventBus } from '@/composables/core/useEventBus'
 
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -55,6 +56,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
   }
 
   function removeTreeMapNodes(nodeIds: string[]): number {
+    if (isDiagramPresentationReadOnly()) return 0
     if (type.value !== 'tree_map' || !data.value?.nodes) return 0
     const spec = buildTreeMapSpecFromNodes()
     if (!spec) return 0
@@ -164,6 +166,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     targetType: 'topic' | 'child' | 'sibling',
     targetId?: string
   ): boolean {
+    if (isDiagramPresentationReadOnly()) return false
     if (type.value !== 'tree_map') return false
     const spec = buildTreeMapSpecFromNodes()
     if (!spec) return false

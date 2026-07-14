@@ -21,6 +21,10 @@ import {
   isSettingsSubtab,
   settingsSubtabLabelKey,
 } from '@/composables/admin/adminSettingsNav'
+import {
+  caseSquareSubtabLabelKey,
+  resolveCaseSquareSubtab,
+} from '@/composables/admin/adminCaseSquareNav'
 import { useLanguage } from '@/composables'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useAdminOrganizations } from '@/composables/queries'
@@ -146,6 +150,12 @@ export function useAdminHeaderBreadcrumb(options: {
         }
         return [{ label: tabLabel }, { label: subtabLabel }]
       }
+    }
+
+    if (options.activeTab.value === 'case_square') {
+      const subtabName = resolveCaseSquareSubtab(options.route.query.subtab)
+      const subtabLabel = t(caseSquareSubtabLabelKey(subtabName))
+      return [{ label: tabLabel }, { label: subtabLabel }]
     }
 
     return [{ label: tabLabel }]

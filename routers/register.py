@@ -78,6 +78,17 @@ if config.FEATURE_COMMUNITY:
 else:
     logger.debug("[RouterRegistration] Community feature disabled via FEATURE_COMMUNITY flag")
 
+CASE_SQUARE_MODULE = None
+try:
+    CASE_SQUARE_MODULE = importlib.import_module("routers.features.case_square").router
+except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
+    CASE_SQUARE_MODULE = None
+    logger.debug(
+        "[RouterRegistration] Failed to import case square router: %s",
+        e,
+        exc_info=True,
+    )
+
 GEWE_MODULE = None
 if config.FEATURE_GEWE:
     try:
@@ -194,6 +205,16 @@ def register_routers(app: FastAPI) -> None:
             )
         else:
             logger.debug("[RouterRegistration] Community feature disabled via FEATURE_COMMUNITY flag")
+
+    # Case Square (案例广场) — always mount; feature_gate enforces FEATURE_CASE_SQUARE
+    if CASE_SQUARE_MODULE is not None:
+        app.include_router(CASE_SQUARE_MODULE)
+        registered_feature_paths.append("/api/case-square")
+    else:
+        logger.warning(
+            "[RouterRegistration] Case Square router NOT registered - import failed or router is None. "
+            "Check DEBUG logs for details."
+        )
 
     # Market (市场) - catalog, orders, Alipay
     if MARKETS_MODULE is not None:

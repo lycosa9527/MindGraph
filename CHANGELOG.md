@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.145.0] - 2026-07-14
+
+> **Case Square gallery and diagram archive folders, with Alembic 0084–0088 and security hardening.**
+
+### Added
+
+- **Case Square** — Moderated public gallery for teaching designs, diagram cases, and diagram templates (`FEATURE_CASE_SQUARE`, migrations `0084`–`0087`, `/api/case-square`). Browse with filters, likes, favorites, expert recommendations; authors publish via modal; admin moderation, field options, and staff grants. Default **off** via feature flag.
+- **Diagram archive folders** — Always-on sidebar folders (`0088`, `/api/diagram-folders`) with create/rename/delete and diagram move.
+- **Authenticated Case Square assets** — Files served via `/api/case-square/assets/...` (author/staff for non-approved; any auth user for approved). Direct `/static/case_square/` access is blocked.
+
+### Security
+
+- **Multipart body-limit bypass** — Streaming body limit now applies to multipart when `Content-Length` is absent (path-scoped 105MB only for Case Square publish routes).
+- **Admin feature gate** — `/api/auth/admin/case-square` requires `FEATURE_CASE_SQUARE`.
+- **Staff edit policy** — Staff may edit pending/rejected posts only (approved posts are immutable via the edit API).
+- **Upload magic-byte checks** — Docs, images, videos, and `.mg` sources validated beyond extension/size.
+
+### Changed
+
+- **CSP** — `frame-src` includes Office Online viewer for teaching-doc preview; `worker-src` / `media-src` retained from main.
+- **Router size** — Case Square backend split into feed/posts/actions/common modules; publish modal script extracted to composables.
+
+### Tests
+
+- **CI** — [`test_case_square_create_response.py`](tests/test_case_square_create_response.py), [`test_diagram_folders_api.py`](tests/test_diagram_folders_api.py) (incl. folder IDOR negative); extended security hardening tests.
+
 ## [5.144.0] - 2026-07-14
 
 > **Mind map slide show with traversal modes and focus dimming, B&W export wireframe wired to nodes and edges, inline-edit Enter sibling guard, and presentation toolbar polish.**

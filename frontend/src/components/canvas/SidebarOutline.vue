@@ -15,6 +15,7 @@ import { useMindMapOutlineMirror } from '@/composables/mindMap/useMindMapOutline
 import { useMindMapOutlineDrag } from '@/composables/mindMap/useMindMapOutlineDrag'
 import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
 import { eventBus } from '@/composables/core/useEventBus'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { useDiagramStore } from '@/stores'
 import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
 import type { MindMapOutlineNode } from '@/utils/mindMapOutlineTree'
@@ -158,6 +159,7 @@ function handleAddSibling(nodeId: string): void {
 }
 
 function handleDelete(nodeId: string): void {
+  if (isDiagramPresentationReadOnly()) return
   if (nodeId === 'topic') return
   diagramStore.removeMindMapNodes([nodeId])
   diagramStore.clearSelection()

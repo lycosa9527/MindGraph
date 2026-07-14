@@ -1,5 +1,9 @@
 import { type ComputedRef, type Ref, computed } from 'vue'
 
+import {
+  caseSquareReaderLockRef,
+  presentationDiagramEditLockedRef,
+} from '@/composables/presentation/presentationDiagramEdit'
 import { learningSheetPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramStore } from '@/stores'
 import type { PresentationToolId } from '@/types'
@@ -52,7 +56,10 @@ export function useDiagramCanvasVueFlowUi(
 
   /** Block diagram edits unless presentation pointer (default edit) mode is active. */
   const presentationDiagramEditLocked = computed(
-    () => presentationRailOpen.value && !presentationPointerEditMode.value
+    () =>
+      presentationDiagramEditLockedRef.value ||
+      caseSquareReaderLockRef.value ||
+      (presentationRailOpen.value && !presentationPointerEditMode.value)
   )
 
   const presentationStrokeColor = computed(() =>

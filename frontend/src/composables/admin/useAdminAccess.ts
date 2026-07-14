@@ -49,23 +49,19 @@ export function useAdminAccess() {
 
 
   const capabilities = computed((): AdminCapability[] => {
-
     const fromStore = authStore.adminCapabilitiesPayload?.capabilities
+    const roleFallback = fallbackCapabilitiesForRole(authStore.userRole)
 
     if (fromStore?.length) {
-
-      return fromStore
-
+      // Union with role fallback so new panel caps appear before backend restart.
+      return [...new Set([...fromStore, ...roleFallback])] as AdminCapability[]
     }
 
     if (authStore.adminCapabilitiesLoaded) {
-
       return []
-
     }
 
-    return fallbackCapabilitiesForRole(authStore.userRole)
-
+    return roleFallback
   })
 
 
@@ -204,7 +200,7 @@ export function useAdminAccess() {
 
   const visibleTabKeys = computed(() => {
 
-    const keys = ['data_center', 'users', 'organizations', 'invites', 'billing', 'settings', 'feature_dev']
+    const keys = ['data_center', 'users', 'organizations', 'invites', 'billing', 'case_square', 'settings', 'feature_dev']
 
     return keys.filter((key) => canViewTab(key))
 

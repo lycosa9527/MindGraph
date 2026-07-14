@@ -40,6 +40,7 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_course": "FEATURE_COURSE",
     "feature_template": "FEATURE_TEMPLATE",
     "feature_community": "FEATURE_COMMUNITY",
+    "feature_case_square": "FEATURE_CASE_SQUARE",
     "feature_askonce": "FEATURE_ASKONCE",
     "feature_school_zone": "FEATURE_SCHOOL_ZONE",
     "feature_debateverse": "FEATURE_DEBATEVERSE",

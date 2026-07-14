@@ -15,6 +15,7 @@ from .auth import (
     APIKey,
 )
 from .diagrams import Diagram
+from .diagram_folders import DiagramFolder
 from .knowledge_space import (
     KnowledgeSpace,
     KnowledgeDocument,
@@ -69,6 +70,7 @@ __all__ = [
     "APIKey",
     # Diagrams
     "Diagram",
+    "DiagramFolder",
     # Knowledge Space
     "KnowledgeSpace",
     "KnowledgeDocument",

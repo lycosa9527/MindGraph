@@ -1,4 +1,5 @@
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
 export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
@@ -25,6 +26,7 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
   }
 
   function removeDoubleBubbleMapNodes(nodeIds: string[]): number {
+    if (isDiagramPresentationReadOnly()) return 0
     const spec = ctx.getDoubleBubbleSpecFromData()
     if (!spec) return 0
 

@@ -31,6 +31,7 @@ from . import (
     diagram_generation,
     diagram_node_ops,
     diagrams,
+    diagram_folders,
     dify_conversations,
     dify_files,
     feedback,
@@ -107,6 +108,7 @@ router.include_router(mindmate_export.router)
 router.include_router(mindmate_export_dumps.router)
 router.include_router(mindmate_export_jobs.router)
 router.include_router(diagrams.router)
+router.include_router(diagram_folders.router)
 router.include_router(diagram_node_ops.router)
 router.include_router(workshop_ws.router)
 if mindmate_collab_routes_module is not None:

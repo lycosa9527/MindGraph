@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import AutoImport from 'unplugin-auto-import/vite'
@@ -135,6 +135,28 @@ const elementPlusResolver = ElementPlusResolver({
   importStyle: 'css',
 })
 
+/** Dev-only: inject WSL/custom API origin into CSP when VITE_BACKEND_HOST is not localhost:9527. */
+function devCspConnectSrcPlugin(apiOrigin: string): Plugin {
+  return {
+    name: 'mindgraph-dev-csp-connect-src',
+    apply: 'serve',
+    transformIndexHtml(html) {
+      if (
+        apiOrigin === 'http://localhost:9527' ||
+        apiOrigin === 'http://127.0.0.1:9527' ||
+        html.includes(apiOrigin)
+      ) {
+        return html
+      }
+      let updated = html.replace(/connect-src ([^;]+)/, `connect-src $1 ${apiOrigin}`)
+      if (html.includes('media-src')) {
+        updated = updated.replace(/media-src ([^;]+)/, `media-src $1 ${apiOrigin}`)
+      }
+      return updated
+    },
+  }
+}
+
 /** Split Element Plus into route-friendly chunks (data-heavy vs shell). */
 function elementPlusManualChunk(id: string): string | undefined {
   if (!id.includes('node_modules/element-plus')) {
@@ -181,9 +203,11 @@ export default defineConfig({
       '@tanstack/vue-query',
       '@vueuse/core',
       'vue-demi',
+      'pdfjs-dist',
     ],
   },
   plugins: [
+    devCspConnectSrcPlugin(backendOrigin),
     vue({
       template: {
         compilerOptions: {
@@ -273,6 +297,9 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(version),
     __BUILD_TIME__: JSON.stringify(Date.now()),
+    __DEV_API_ORIGIN__: JSON.stringify(
+      process.env.NODE_ENV === 'production' ? '' : backendHost.replace(/\/$/, '')
+    ),
   },
   resolve: {
     // tsconfig `paths` for TS/JS; explicit `@` alias still required for CSS @import in SFCs

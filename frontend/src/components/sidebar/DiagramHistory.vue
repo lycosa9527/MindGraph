@@ -1,30 +1,31 @@
 <script setup lang="ts">
 /**
- * DiagramHistory - Grouped list of saved diagrams
- * Design: Clean minimalist grouped by time periods
- * Shows max 20 items with "More" option
+ * DiagramHistory - Saved diagrams with archive folders and uncategorized timeline
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
-import {
-  ElDropdown,
-  ElDropdownItem,
-  ElDropdownMenu,
-  ElIcon,
-  ElMessageBox,
-  ElScrollbar,
-} from 'element-plus'
+import { ElIcon, ElMessageBox, ElScrollbar } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { Edit3, FileImage, Lock, MoreHorizontal, Pin, Power, Trash2 } from '@lucide/vue'
+import {
+  ChevronDown,
+  ChevronRight,
+  Edit3,
+  FileImage,
+  Folder,
+  FolderPlus,
+  Lock,
+  Trash2,
+} from '@lucide/vue'
 
+import { useDiagramArchiveHistory } from '@/composables/sidebar/useDiagramArchiveHistory'
 import { useLanguage, useNotifications } from '@/composables'
-import CollabLiveBadge from '@/components/social/CollabLiveBadge.vue'
-import { eventBus } from '@/composables/core/useEventBus'
 import { useAuthStore } from '@/stores'
 import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { formatDiagramCountLabel, hasDiagramSaveLimit } from '@/utils/diagramLimit'
+
+import DiagramHistoryRow from './DiagramHistoryRow.vue'
 
 const props = defineProps<{
   isBlurred?: boolean
@@ -39,76 +40,38 @@ const notify = useNotifications()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
 
-// Show all or just 10
-const showAll = ref(false)
 const INITIAL_LIMIT = 10
 
-// Computed
 const diagrams = computed(() => savedDiagramsStore.diagrams)
+const folders = computed(() => savedDiagramsStore.folders)
 const isLoading = computed(() => savedDiagramsStore.isLoading)
 const currentDiagramId = computed(() => savedDiagramsStore.currentDiagramId)
 const maxDiagrams = computed(() => savedDiagramsStore.maxDiagrams)
 const hasSaveLimit = computed(() => savedDiagramsStore.hasSaveLimit)
+const foldersLoadFailed = computed(() => savedDiagramsStore.foldersLoadFailed)
+const fetchError = computed(() => savedDiagramsStore.error)
+
 const diagramCountLabel = computed(() =>
-  formatDiagramCountLabel(diagrams.value.length, maxDiagrams.value)
+  formatDiagramCountLabel(savedDiagramsStore.total || diagrams.value.length, maxDiagrams.value)
 )
-const _remainingSlots = computed(() => savedDiagramsStore.remainingSlots)
 
-// Group diagrams by time period with pinned at top
-interface GroupedDiagrams {
-  pinned: SavedDiagram[]
-  today: SavedDiagram[]
-  yesterday: SavedDiagram[]
-  week: SavedDiagram[]
-  month: SavedDiagram[]
-}
-
-const groupedDiagrams = computed((): GroupedDiagrams => {
-  const groups: GroupedDiagrams = {
-    pinned: [],
-    today: [],
-    yesterday: [],
-    week: [],
-    month: [],
-  }
-
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
-  const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000
-
-  // Limit unless showAll
-  const items = showAll.value ? diagrams.value : diagrams.value.slice(0, INITIAL_LIMIT)
-
-  items.forEach((diagram) => {
-    // Pinned items go to the top group
-    if (diagram.is_pinned) {
-      groups.pinned.push(diagram)
-      return
-    }
-
-    const diagramTime = new Date(diagram.updated_at).getTime()
-
-    if (diagramTime >= todayStart) {
-      groups.today.push(diagram)
-    } else if (diagramTime >= yesterdayStart) {
-      groups.yesterday.push(diagram)
-    } else if (diagramTime >= weekStart) {
-      groups.week.push(diagram)
-    } else {
-      // Everything older goes to Past Month
-      groups.month.push(diagram)
-    }
+const folderCountLabel = computed(() =>
+  t('sidebar.diagramHistory.folderCount', {
+    count: folders.value.length,
   })
+)
 
-  return groups
-})
+const {
+  showAllUncategorized,
+  groupedUncategorized,
+  hasMoreUncategorized,
+  remainingUncategorizedCount,
+  uncategorizedDiagrams,
+  isFolderCollapsed,
+  toggleFolderCollapsed,
+  diagramsForFolder,
+} = useDiagramArchiveHistory(diagrams, folders, INITIAL_LIMIT)
 
-// Check if there are more diagrams to show
-const hasMore = computed(() => diagrams.value.length > INITIAL_LIMIT && !showAll.value)
-const remainingCount = computed(() => diagrams.value.length - INITIAL_LIMIT)
-
-// Group labels
 const groupLabels = computed(() => ({
   pinned: t('sidebar.history.pinned'),
   today: t('common.date.today'),
@@ -117,30 +80,12 @@ const groupLabels = computed(() => ({
   month: t('common.date.pastMonth'),
 }))
 
-function getDiagramTypeLabel(type: string): string {
-  const key = `sidebar.diagramType.${type}`
-  const translated = t(key)
-  if (translated !== key) {
-    return translated
-  }
-  return type
-}
-
-/** Popper width: compact for pin/rename/delete only; wider when collab stop is shown. */
-function diagramMoreMenuPopperClass(diagram: SavedDiagram): string {
-  return diagram.workshop_active
-    ? 'diagram-history-more-popper diagram-history-more-popper--wide'
-    : 'diagram-history-more-popper diagram-history-more-popper--narrow'
-}
-
-// Fetch diagrams on mount if authenticated
 onMounted(() => {
   if (authStore.isAuthenticated && !props.isBlurred) {
     savedDiagramsStore.fetchDiagrams()
   }
 })
 
-// Re-fetch when authentication changes
 watch(
   () => authStore.isAuthenticated,
   (isAuth) => {
@@ -152,82 +97,98 @@ watch(
   }
 )
 
-// Handle diagram click
 function handleDiagramClick(diagram: SavedDiagram): void {
   savedDiagramsStore.setCurrentDiagram(diagram.id)
   emit('select', diagram)
 }
 
-// Handle rename diagram
-async function handleRenameDiagram(diagramId: string): Promise<void> {
-  const diagram = diagrams.value.find((d) => d.id === diagramId)
-  const currentName = diagram?.title || ''
-
+async function promptFolderName(
+  titleKey: string,
+  promptKey: string,
+  initialValue = ''
+): Promise<string | null> {
   try {
-    const result = await ElMessageBox.prompt(
-      t('sidebar.diagramHistory.renamePrompt'),
-      t('sidebar.diagramHistory.renameTitle'),
-      {
-        confirmButtonText: t('common.ok'),
-        cancelButtonText: t('common.cancel'),
-        inputValue: currentName,
-        inputPattern: /\S+/,
-        inputErrorMessage: t('sidebar.diagramHistory.nameRequired'),
-      }
-    )
-
+    const result = await ElMessageBox.prompt(t(promptKey), t(titleKey), {
+      confirmButtonText: t('common.ok'),
+      cancelButtonText: t('common.cancel'),
+      inputValue: initialValue,
+      inputPattern: /\S+/,
+      inputErrorMessage: t('sidebar.diagramHistory.nameRequired'),
+    })
     const value =
       typeof result === 'object' && result !== null && 'value' in result
         ? (result as { value: string }).value
         : undefined
-    if (value && value.trim() !== currentName) {
-      await savedDiagramsStore.updateDiagram(diagramId, { title: value.trim() })
+    return value?.trim() || null
+  } catch {
+    return null
+  }
+}
+
+async function handleCreateFolder(): Promise<void> {
+  const name = await promptFolderName(
+    'sidebar.diagramHistory.folderCreateTitle',
+    'sidebar.diagramHistory.folderCreatePrompt'
+  )
+  if (!name) return
+  const created = await savedDiagramsStore.createFolder(name)
+  if (created) {
+    notify.success(t('sidebar.diagramHistory.folderCreated'))
+  } else {
+    notify.error(t('sidebar.diagramHistory.folderCreateFailed'))
+  }
+}
+
+async function handleRenameFolder(folderId: string, currentName: string): Promise<void> {
+  const name = await promptFolderName(
+    'sidebar.diagramHistory.folderRenameTitle',
+    'sidebar.diagramHistory.folderRenamePrompt',
+    currentName
+  )
+  if (!name || name === currentName) return
+  const ok = await savedDiagramsStore.renameFolder(folderId, name)
+  if (ok) {
+    notify.success(t('sidebar.diagramHistory.folderRenamed'))
+  } else {
+    notify.error(t('sidebar.diagramHistory.folderRenameFailed'))
+  }
+}
+
+async function handleDeleteFolder(folderId: string): Promise<void> {
+  try {
+    await ElMessageBox.confirm(
+      t('sidebar.diagramHistory.folderDeleteConfirm'),
+      t('sidebar.diagramHistory.folderDeleteTitle'),
+      {
+        confirmButtonText: t('common.ok'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+      }
+    )
+    const ok = await savedDiagramsStore.deleteFolder(folderId)
+    if (ok) {
+      notify.success(t('sidebar.diagramHistory.folderDeleted'))
+    } else {
+      notify.error(savedDiagramsStore.error || t('sidebar.diagramHistory.folderDeleteFailed'))
     }
   } catch {
-    // User cancelled
+    // cancelled
   }
 }
 
-// Handle delete diagram - delete immediately
-async function handleDeleteDiagram(diagramId: string): Promise<void> {
-  try {
-    const success = await savedDiagramsStore.deleteDiagram(diagramId)
-    if (success) {
-      notify.success(t('sidebar.diagramHistory.deleted'))
-    } else {
-      notify.error(t('sidebar.diagramHistory.deleteFailed'))
-    }
-  } catch (error) {
-    console.error('[DiagramHistory] Delete error:', error)
-    notify.error(t('sidebar.diagramHistory.deleteFailed'))
+async function handleCreateFolderFromRow(): Promise<string | null> {
+  const name = await promptFolderName(
+    'sidebar.diagramHistory.folderCreateTitle',
+    'sidebar.diagramHistory.folderCreatePrompt'
+  )
+  if (!name) return null
+  const created = await savedDiagramsStore.createFolder(name)
+  if (!created) {
+    notify.error(t('sidebar.diagramHistory.folderCreateFailed'))
+    return null
   }
-}
-
-// Handle pin/unpin diagram
-async function handlePinDiagram(diagramId: string): Promise<void> {
-  const diagram = diagrams.value.find((d) => d.id === diagramId)
-  if (!diagram) return
-
-  const newPinned = !diagram.is_pinned
-  await savedDiagramsStore.pinDiagram(diagramId, newPinned)
-}
-
-// Toggle show all
-function toggleShowAll(): void {
-  showAll.value = !showAll.value
-}
-
-/** End workshop for this diagram (host only; clears canvas session if this diagram is open). */
-async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
-  const ok = await savedDiagramsStore.stopDiagramOnlineCollab(diagramId)
-  if (ok) {
-    if (diagramId === savedDiagramsStore.activeDiagramId) {
-      eventBus.emit('workshop:code-changed', { code: null, visibility: null })
-    }
-    notify.success(t('collab.ended'))
-  } else {
-    notify.error(t('collab.endFailed'))
-  }
+  notify.success(t('sidebar.diagramHistory.folderCreated'))
+  return created.id
 }
 </script>
 
@@ -235,23 +196,47 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
   <div
     class="diagram-history flex flex-1 min-h-0 flex-col border-t border-stone-200 relative overflow-hidden"
   >
-    <!-- Header -->
-    <div class="px-4 py-3 flex items-center justify-between">
-      <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
-        {{ t('sidebar.diagramHistory.title') }}
+    <div class="px-4 py-3 flex items-center justify-between gap-2">
+      <div class="min-w-0">
+        <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
+          {{ t('sidebar.diagramHistory.title') }}
+        </div>
+        <div
+          v-if="!isBlurred && (diagrams.length > 0 || folders.length > 0)"
+          class="text-[11px] text-stone-400 mt-0.5 truncate"
+        >
+          {{ diagramCountLabel }}
+          <span v-if="folders.length > 0"> · {{ folderCountLabel }}</span>
+        </div>
       </div>
-      <div
-        v-if="!isBlurred && diagrams.length > 0"
-        class="text-xs text-stone-400"
+      <button
+        v-if="!isBlurred"
+        class="new-folder-btn"
+        type="button"
+        @click="handleCreateFolder"
       >
-        {{ diagramCountLabel }}
-      </div>
+        <FolderPlus class="w-3.5 h-3.5 shrink-0" />
+        <span class="new-folder-btn__label">
+          {{ t('sidebar.diagramHistory.folderCreateTitle') }}
+        </span>
+      </button>
     </div>
 
-    <!-- Scrollable diagram list -->
     <ElScrollbar class="flex-1 px-4 pb-4">
       <div :class="isBlurred ? 'blur-sm pointer-events-none select-none' : ''">
-        <!-- Loading State -->
+        <div
+          v-if="fetchError"
+          class="archive-error"
+        >
+          {{ t('sidebar.diagramHistory.loadFailed') }}
+        </div>
+        <div
+          v-if="foldersLoadFailed"
+          class="archive-warning"
+        >
+          {{ t('sidebar.diagramHistory.foldersLoadFailed') }}
+        </div>
+
         <div
           v-if="isLoading"
           class="flex items-center justify-center py-8"
@@ -261,9 +246,8 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
           </ElIcon>
         </div>
 
-        <!-- Empty State -->
         <div
-          v-else-if="diagrams.length === 0"
+          v-else-if="diagrams.length === 0 && folders.length === 0"
           class="text-center py-8"
         >
           <FileImage class="w-8 h-8 mx-auto mb-2 text-stone-300" />
@@ -278,446 +262,190 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
           </p>
         </div>
 
-        <!-- Grouped Diagram List -->
         <template v-else>
-          <!-- Top (Pinned) -->
-          <div
-            v-if="groupedDiagrams.pinned.length > 0"
-            class="group-section"
+          <section
+            v-if="folders.length > 0"
+            class="archive-section"
           >
-            <div class="group-label">{{ groupLabels.pinned }}</div>
+            <div class="section-heading">
+              {{ t('sidebar.diagramHistory.foldersSection') }}
+            </div>
             <div
-              v-for="diagram in groupedDiagrams.pinned"
-              :key="diagram.id"
-              class="diagram-item"
-              :class="{ active: currentDiagramId === diagram.id }"
-              @click="handleDiagramClick(diagram)"
+              v-for="folder in folders"
+              :key="folder.id"
+              class="group-section folder-section"
             >
-              <div class="diagram-info">
-                <span class="diagram-name">
-                  <Pin class="w-3 h-3 inline-block mr-1 text-amber-500" />
-                  {{ diagram.title || t('mindmate.untitled') }}
-                  <CollabLiveBadge
-                    v-if="diagram.workshop_active"
-                    :title="t('sidebar.diagramHistory.collabLive')"
-                  />
-                </span>
-                <span class="diagram-type">
-                  {{ getDiagramTypeLabel(diagram.diagram_type) }}
-                </span>
-              </div>
-              <button
-                class="delete-btn"
-                :title="t('sidebar.actions.delete')"
-                @click.stop="handleDeleteDiagram(diagram.id)"
+              <div
+                class="folder-header"
+                @click="toggleFolderCollapsed(folder.id)"
               >
-                <Trash2 class="w-4 h-4" />
-              </button>
-              <ElDropdown
-                trigger="click"
-                placement="bottom-end"
-                :popper-class="diagramMoreMenuPopperClass(diagram)"
-                class="more-dropdown"
-                @click.stop
-              >
-                <button
-                  class="more-btn"
+                <component
+                  :is="isFolderCollapsed(folder.id) ? ChevronRight : ChevronDown"
+                  class="w-3.5 h-3.5 shrink-0 text-stone-400"
+                />
+                <Folder class="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                <span class="folder-name">{{ folder.name }}</span>
+                <span class="folder-count">{{ diagramsForFolder(folder.id).length }}</span>
+                <div
+                  class="folder-actions"
                   @click.stop
                 >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu class="diagram-history-more__menu">
-                    <ElDropdownItem @click="handlePinDiagram(diagram.id)">
-                      <span class="diagram-history-more__row">
-                        <Pin class="w-4 h-4 shrink-0 text-amber-500 rotate-45" />
-                        {{ t('sidebar.actions.unpin') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
-                      <span class="diagram-history-more__row">
-                        <Edit3 class="w-4 h-4 shrink-0 text-stone-600" />
-                        {{ t('sidebar.actions.rename') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      v-if="diagram.workshop_active"
-                      @click="handleTurnOffOnlineCollab(diagram.id)"
-                    >
-                      <span class="diagram-history-more__row">
-                        <Power class="w-4 h-4 shrink-0 text-stone-600" />
-                        {{ t('sidebar.actions.turnOffOnlineCollab') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      divided
-                      @click="handleDeleteDiagram(diagram.id)"
-                    >
-                      <span class="diagram-history-more__row diagram-history-more__row--danger">
-                        <Trash2 class="w-4 h-4 shrink-0" />
-                        {{ t('sidebar.actions.delete') }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
-            </div>
-          </div>
-
-          <!-- Today -->
-          <div
-            v-if="groupedDiagrams.today.length > 0"
-            class="group-section"
-          >
-            <div class="group-label">{{ groupLabels.today }}</div>
-            <div
-              v-for="diagram in groupedDiagrams.today"
-              :key="diagram.id"
-              class="diagram-item"
-              :class="{ active: currentDiagramId === diagram.id }"
-              @click="handleDiagramClick(diagram)"
-            >
-              <div class="diagram-info">
-                <span class="diagram-name">
-                  {{ diagram.title || t('mindmate.untitled') }}
-                  <CollabLiveBadge
-                    v-if="diagram.workshop_active"
-                    :title="t('sidebar.diagramHistory.collabLive')"
-                  />
-                </span>
-                <span class="diagram-type">
-                  {{ getDiagramTypeLabel(diagram.diagram_type) }}
-                </span>
+                  <button
+                    class="folder-action-btn"
+                    :title="t('sidebar.actions.rename')"
+                    @click="handleRenameFolder(folder.id, folder.name)"
+                  >
+                    <Edit3 class="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    class="folder-action-btn folder-action-btn--danger"
+                    :title="t('sidebar.actions.delete')"
+                    @click="handleDeleteFolder(folder.id)"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-              <button
-                class="delete-btn"
-                :title="t('sidebar.actions.delete')"
-                @click.stop="handleDeleteDiagram(diagram.id)"
+              <div
+                v-if="!isFolderCollapsed(folder.id)"
+                class="folder-items"
               >
-                <Trash2 class="w-4 h-4" />
-              </button>
-              <ElDropdown
-                trigger="click"
-                placement="bottom-end"
-                :popper-class="diagramMoreMenuPopperClass(diagram)"
-                class="more-dropdown"
-                @click.stop
-              >
-                <button
-                  class="more-btn"
-                  @click.stop
+                <DiagramHistoryRow
+                  v-for="diagram in diagramsForFolder(folder.id)"
+                  :key="diagram.id"
+                  :diagram="diagram"
+                  :folders="folders"
+                  :is-active="currentDiagramId === diagram.id"
+                  show-pinned-icon
+                  @select="handleDiagramClick"
+                  :create-folder="handleCreateFolderFromRow"
+                />
+                <p
+                  v-if="diagramsForFolder(folder.id).length === 0"
+                  class="folder-empty"
                 >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu class="diagram-history-more__menu">
-                    <ElDropdownItem @click="handlePinDiagram(diagram.id)">
-                      <span class="diagram-history-more__row">
-                        <Pin class="w-4 h-4 shrink-0 text-amber-500" />
-                        {{ t('sidebar.actions.pinToTop') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
-                      <span class="diagram-history-more__row">
-                        <Edit3 class="w-4 h-4 shrink-0 text-stone-600" />
-                        {{ t('sidebar.actions.rename') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      v-if="diagram.workshop_active"
-                      @click="handleTurnOffOnlineCollab(diagram.id)"
-                    >
-                      <span class="diagram-history-more__row">
-                        <Power class="w-4 h-4 shrink-0 text-stone-600" />
-                        {{ t('sidebar.actions.turnOffOnlineCollab') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      divided
-                      @click="handleDeleteDiagram(diagram.id)"
-                    >
-                      <span class="diagram-history-more__row diagram-history-more__row--danger">
-                        <Trash2 class="w-4 h-4 shrink-0" />
-                        {{ t('sidebar.actions.delete') }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
-            </div>
-          </div>
-
-          <!-- Yesterday -->
-          <div
-            v-if="groupedDiagrams.yesterday.length > 0"
-            class="group-section"
-          >
-            <div class="group-label">{{ groupLabels.yesterday }}</div>
-            <div
-              v-for="diagram in groupedDiagrams.yesterday"
-              :key="diagram.id"
-              class="diagram-item"
-              :class="{ active: currentDiagramId === diagram.id }"
-              @click="handleDiagramClick(diagram)"
-            >
-              <div class="diagram-info">
-                <span class="diagram-name">
-                  {{ diagram.title || t('mindmate.untitled') }}
-                  <CollabLiveBadge
-                    v-if="diagram.workshop_active"
-                    :title="t('sidebar.diagramHistory.collabLive')"
-                  />
-                </span>
-                <span class="diagram-type">
-                  {{ getDiagramTypeLabel(diagram.diagram_type) }}
-                </span>
+                  {{ t('sidebar.diagramHistory.folderEmpty') }}
+                </p>
               </div>
-              <button
-                class="delete-btn"
-                :title="t('sidebar.actions.delete')"
-                @click.stop="handleDeleteDiagram(diagram.id)"
-              >
-                <Trash2 class="w-4 h-4" />
-              </button>
-              <ElDropdown
-                trigger="click"
-                placement="bottom-end"
-                :popper-class="diagramMoreMenuPopperClass(diagram)"
-                class="more-dropdown"
-                @click.stop
-              >
-                <button
-                  class="more-btn"
-                  @click.stop
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu class="diagram-history-more__menu">
-                    <ElDropdownItem @click="handlePinDiagram(diagram.id)">
-                      <span class="diagram-history-more__row">
-                        <Pin class="w-4 h-4 shrink-0 text-amber-500" />
-                        {{ t('sidebar.actions.pinToTop') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
-                      <span class="diagram-history-more__row">
-                        <Edit3 class="w-4 h-4 shrink-0 text-stone-600" />
-                        {{ t('sidebar.actions.rename') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      v-if="diagram.workshop_active"
-                      @click="handleTurnOffOnlineCollab(diagram.id)"
-                    >
-                      <span class="diagram-history-more__row">
-                        <Power class="w-4 h-4 shrink-0 text-stone-600" />
-                        {{ t('sidebar.actions.turnOffOnlineCollab') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      divided
-                      @click="handleDeleteDiagram(diagram.id)"
-                    >
-                      <span class="diagram-history-more__row diagram-history-more__row--danger">
-                        <Trash2 class="w-4 h-4 shrink-0" />
-                        {{ t('sidebar.actions.delete') }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
             </div>
-          </div>
+          </section>
 
-          <!-- Past Week -->
-          <div
-            v-if="groupedDiagrams.week.length > 0"
-            class="group-section"
+          <section
+            v-if="uncategorizedDiagrams.length > 0 || folders.length > 0"
+            class="archive-section"
           >
-            <div class="group-label">{{ groupLabels.week }}</div>
+            <div class="section-heading">
+              {{ t('sidebar.diagramHistory.uncategorizedSection') }}
+            </div>
+
             <div
-              v-for="diagram in groupedDiagrams.week"
-              :key="diagram.id"
-              class="diagram-item"
-              :class="{ active: currentDiagramId === diagram.id }"
-              @click="handleDiagramClick(diagram)"
+              v-if="groupedUncategorized.pinned.length > 0"
+              class="group-section"
             >
-              <div class="diagram-info">
-                <span class="diagram-name">
-                  {{ diagram.title || t('mindmate.untitled') }}
-                  <CollabLiveBadge
-                    v-if="diagram.workshop_active"
-                    :title="t('sidebar.diagramHistory.collabLive')"
-                  />
-                </span>
-                <span class="diagram-type">
-                  {{ getDiagramTypeLabel(diagram.diagram_type) }}
-                </span>
-              </div>
-              <button
-                class="delete-btn"
-                :title="t('sidebar.actions.delete')"
-                @click.stop="handleDeleteDiagram(diagram.id)"
-              >
-                <Trash2 class="w-4 h-4" />
-              </button>
-              <ElDropdown
-                trigger="click"
-                placement="bottom-end"
-                :popper-class="diagramMoreMenuPopperClass(diagram)"
-                class="more-dropdown"
-                @click.stop
-              >
-                <button
-                  class="more-btn"
-                  @click.stop
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu class="diagram-history-more__menu">
-                    <ElDropdownItem @click="handlePinDiagram(diagram.id)">
-                      <span class="diagram-history-more__row">
-                        <Pin class="w-4 h-4 shrink-0 text-amber-500" />
-                        {{ t('sidebar.actions.pinToTop') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
-                      <span class="diagram-history-more__row">
-                        <Edit3 class="w-4 h-4 shrink-0 text-stone-600" />
-                        {{ t('sidebar.actions.rename') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      v-if="diagram.workshop_active"
-                      @click="handleTurnOffOnlineCollab(diagram.id)"
-                    >
-                      <span class="diagram-history-more__row">
-                        <Power class="w-4 h-4 shrink-0 text-stone-600" />
-                        {{ t('sidebar.actions.turnOffOnlineCollab') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      divided
-                      @click="handleDeleteDiagram(diagram.id)"
-                    >
-                      <span class="diagram-history-more__row diagram-history-more__row--danger">
-                        <Trash2 class="w-4 h-4 shrink-0" />
-                        {{ t('sidebar.actions.delete') }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
+              <div class="group-label">{{ groupLabels.pinned }}</div>
+              <DiagramHistoryRow
+                v-for="diagram in groupedUncategorized.pinned"
+                :key="diagram.id"
+                :diagram="diagram"
+                :folders="folders"
+                :is-active="currentDiagramId === diagram.id"
+                show-pinned-icon
+                @select="handleDiagramClick"
+                :create-folder="handleCreateFolderFromRow"
+              />
             </div>
-          </div>
 
-          <!-- Past Month -->
-          <div
-            v-if="groupedDiagrams.month.length > 0"
-            class="group-section"
-          >
-            <div class="group-label">{{ groupLabels.month }}</div>
             <div
-              v-for="diagram in groupedDiagrams.month"
-              :key="diagram.id"
-              class="diagram-item"
-              :class="{ active: currentDiagramId === diagram.id }"
-              @click="handleDiagramClick(diagram)"
+              v-if="groupedUncategorized.today.length > 0"
+              class="group-section"
             >
-              <div class="diagram-info">
-                <span class="diagram-name">
-                  {{ diagram.title || t('mindmate.untitled') }}
-                  <CollabLiveBadge
-                    v-if="diagram.workshop_active"
-                    :title="t('sidebar.diagramHistory.collabLive')"
-                  />
-                </span>
-                <span class="diagram-type">
-                  {{ getDiagramTypeLabel(diagram.diagram_type) }}
-                </span>
-              </div>
-              <button
-                class="delete-btn"
-                :title="t('sidebar.actions.delete')"
-                @click.stop="handleDeleteDiagram(diagram.id)"
-              >
-                <Trash2 class="w-4 h-4" />
-              </button>
-              <ElDropdown
-                trigger="click"
-                placement="bottom-end"
-                :popper-class="diagramMoreMenuPopperClass(diagram)"
-                class="more-dropdown"
-                @click.stop
-              >
-                <button
-                  class="more-btn"
-                  @click.stop
-                >
-                  <MoreHorizontal class="w-4 h-4" />
-                </button>
-                <template #dropdown>
-                  <ElDropdownMenu class="diagram-history-more__menu">
-                    <ElDropdownItem @click="handlePinDiagram(diagram.id)">
-                      <span class="diagram-history-more__row">
-                        <Pin class="w-4 h-4 shrink-0 text-amber-500" />
-                        {{ t('sidebar.actions.pinToTop') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem @click="handleRenameDiagram(diagram.id)">
-                      <span class="diagram-history-more__row">
-                        <Edit3 class="w-4 h-4 shrink-0 text-stone-600" />
-                        {{ t('sidebar.actions.rename') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      v-if="diagram.workshop_active"
-                      @click="handleTurnOffOnlineCollab(diagram.id)"
-                    >
-                      <span class="diagram-history-more__row">
-                        <Power class="w-4 h-4 shrink-0 text-stone-600" />
-                        {{ t('sidebar.actions.turnOffOnlineCollab') }}
-                      </span>
-                    </ElDropdownItem>
-                    <ElDropdownItem
-                      divided
-                      @click="handleDeleteDiagram(diagram.id)"
-                    >
-                      <span class="diagram-history-more__row diagram-history-more__row--danger">
-                        <Trash2 class="w-4 h-4 shrink-0" />
-                        {{ t('sidebar.actions.delete') }}
-                      </span>
-                    </ElDropdownItem>
-                  </ElDropdownMenu>
-                </template>
-              </ElDropdown>
+              <div class="group-label">{{ groupLabels.today }}</div>
+              <DiagramHistoryRow
+                v-for="diagram in groupedUncategorized.today"
+                :key="diagram.id"
+                :diagram="diagram"
+                :folders="folders"
+                :is-active="currentDiagramId === diagram.id"
+                @select="handleDiagramClick"
+                :create-folder="handleCreateFolderFromRow"
+              />
             </div>
-          </div>
 
-          <!-- Show More button -->
-          <button
-            v-if="hasMore"
-            class="show-more-btn"
-            @click="toggleShowAll"
-          >
-            {{ t('sidebar.actions.showMore', { n: remainingCount }) }}
-          </button>
+            <div
+              v-if="groupedUncategorized.yesterday.length > 0"
+              class="group-section"
+            >
+              <div class="group-label">{{ groupLabels.yesterday }}</div>
+              <DiagramHistoryRow
+                v-for="diagram in groupedUncategorized.yesterday"
+                :key="diagram.id"
+                :diagram="diagram"
+                :folders="folders"
+                :is-active="currentDiagramId === diagram.id"
+                @select="handleDiagramClick"
+                :create-folder="handleCreateFolderFromRow"
+              />
+            </div>
 
-          <!-- Show Less button -->
-          <button
-            v-if="showAll && diagrams.length > INITIAL_LIMIT"
-            class="show-more-btn"
-            @click="toggleShowAll"
-          >
-            {{ t('sidebar.actions.showLess') }}
-          </button>
+            <div
+              v-if="groupedUncategorized.week.length > 0"
+              class="group-section"
+            >
+              <div class="group-label">{{ groupLabels.week }}</div>
+              <DiagramHistoryRow
+                v-for="diagram in groupedUncategorized.week"
+                :key="diagram.id"
+                :diagram="diagram"
+                :folders="folders"
+                :is-active="currentDiagramId === diagram.id"
+                @select="handleDiagramClick"
+                :create-folder="handleCreateFolderFromRow"
+              />
+            </div>
+
+            <div
+              v-if="groupedUncategorized.month.length > 0"
+              class="group-section"
+            >
+              <div class="group-label">{{ groupLabels.month }}</div>
+              <DiagramHistoryRow
+                v-for="diagram in groupedUncategorized.month"
+                :key="diagram.id"
+                :diagram="diagram"
+                :folders="folders"
+                :is-active="currentDiagramId === diagram.id"
+                @select="handleDiagramClick"
+                :create-folder="handleCreateFolderFromRow"
+              />
+            </div>
+
+            <p
+              v-if="uncategorizedDiagrams.length === 0"
+              class="uncategorized-empty"
+            >
+              {{ t('sidebar.diagramHistory.uncategorizedEmpty') }}
+            </p>
+
+            <button
+              v-if="hasMoreUncategorized"
+              class="show-more-btn"
+              @click="showAllUncategorized = true"
+            >
+              {{ t('sidebar.actions.showMore', { n: remainingUncategorizedCount }) }}
+            </button>
+
+            <button
+              v-if="showAllUncategorized && uncategorizedDiagrams.length > INITIAL_LIMIT"
+              class="show-more-btn"
+              @click="showAllUncategorized = false"
+            >
+              {{ t('sidebar.actions.showLess') }}
+            </button>
+          </section>
         </template>
       </div>
     </ElScrollbar>
 
-    <!-- Login overlay when blurred -->
     <div
       v-if="isBlurred"
       class="absolute inset-0 flex items-center justify-center bg-stone-50/60 backdrop-blur-[2px]"
@@ -741,6 +469,38 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
   min-height: 120px;
 }
 
+.archive-section + .archive-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #e7e5e4;
+}
+
+.section-heading {
+  font-size: 11px;
+  font-weight: 600;
+  color: #78716c;
+  letter-spacing: 0.03em;
+  margin-bottom: 8px;
+}
+
+.archive-error,
+.archive-warning {
+  font-size: 11px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
+.archive-error {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.archive-warning {
+  color: #92400e;
+  background: #fffbeb;
+}
+
 .group-section {
   margin-bottom: 12px;
 }
@@ -759,98 +519,133 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
   padding-left: 2px;
 }
 
-.diagram-item {
+.folder-header {
+  position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
+  gap: 6px;
   padding: 6px 8px;
+  padding-right: 28px;
   border-radius: 6px;
-  color: #57534e;
-  font-size: 13px;
-  text-align: left;
-  transition: background-color 0.15s ease;
   cursor: pointer;
-  border: none;
-  background: transparent;
+  color: #44403c;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
 }
 
-.diagram-item:hover {
+.folder-header:hover {
   background-color: #f5f5f4;
 }
 
-.diagram-item.active {
-  background-color: #e7e5e4;
-  color: #1c1917;
-}
-
-.diagram-info {
-  flex: 1;
+.folder-name {
+  flex: 1 1 auto;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.diagram-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.diagram-type {
-  font-size: 10px;
+.folder-count {
+  flex-shrink: 0;
+  font-size: 11px;
   color: #a8a29e;
+  min-width: 1rem;
+  text-align: right;
 }
 
-.delete-btn {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+.folder-actions {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  padding-left: 6px;
+  background: linear-gradient(to right, transparent, #fafaf9 28%);
+  border-radius: 4px;
+  transition: opacity 0.15s ease;
+}
+
+.folder-header:hover .folder-actions {
+  opacity: 1;
+  pointer-events: auto;
+  background: linear-gradient(to right, transparent, #f5f5f4 28%);
+}
+
+.folder-header:hover .folder-count {
+  visibility: hidden;
+}
+
+.folder-action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  opacity: 0;
-  color: #78716c;
-  transition: all 0.15s ease;
-  background: transparent;
+  width: 22px;
+  height: 22px;
   border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #78716c;
   cursor: pointer;
-  margin-right: 2px;
 }
 
-.diagram-item:hover .delete-btn {
-  opacity: 1;
+.folder-action-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
-.delete-btn:hover {
-  background-color: #fee2e2;
+.folder-action-btn:hover:not(:disabled) {
+  background: #e7e5e4;
+  color: #1c1917;
+}
+
+.folder-action-btn--danger:hover:not(:disabled) {
+  background: #fee2e2;
   color: #dc2626;
 }
 
-.more-btn {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  display: flex;
+.folder-items {
+  margin-left: 12px;
+  padding-left: 8px;
+  border-left: 1px solid #e7e5e4;
+}
+
+.folder-empty,
+.uncategorized-empty {
+  font-size: 11px;
+  color: #a8a29e;
+  padding: 4px 8px 8px;
+}
+
+.new-folder-btn {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  opacity: 0;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  background: #fafaf9;
   color: #78716c;
-  transition: all 0.15s ease;
-  background: transparent;
-  border: none;
   cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.diagram-item:hover .more-btn {
-  opacity: 1;
+.new-folder-btn__label {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
 }
 
-.more-btn:hover {
-  background-color: #e7e5e4;
-  color: #1c1917;
+.new-folder-btn:hover {
+  border-color: #d6d3d1;
+  color: #44403c;
+  background: #f5f5f4;
 }
 
 .show-more-btn {
@@ -873,10 +668,8 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
   border-color: #a8a29e;
   color: #57534e;
 }
-
 </style>
 
-<!-- Teleported dropdown — Swiss popper; width via --narrow / --wide (collab extras) -->
 <style>
 .diagram-history-more-popper.el-popper {
   min-width: 0 !important;
@@ -890,7 +683,6 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
   overflow: hidden !important;
 }
 
-/* Pin / rename / delete only — hugs content; cap for long translations */
 .diagram-history-more-popper.diagram-history-more-popper--narrow.el-popper {
   width: max-content !important;
   max-width: min(calc(100vw - 24px), 260px) !important;
@@ -902,7 +694,6 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
   align-items: center;
 }
 
-/* Includes long collab line — hug content up to max (no fixed empty rail) */
 .diagram-history-more-popper.diagram-history-more-popper--wide.el-popper {
   width: max-content !important;
   max-width: min(calc(100vw - 24px), 172px) !important;
@@ -987,5 +778,20 @@ async function handleTurnOffOnlineCollab(diagramId: string): Promise<void> {
 .diagram-history-more-popper .el-dropdown-menu__item:hover .diagram-history-more__row--danger,
 .diagram-history-more-popper .el-dropdown-menu__item:focus .diagram-history-more__row--danger {
   color: #dc2626;
+}
+
+.diagram-history-folder-submenu.el-popper {
+  padding: 4px !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 8px !important;
+  min-width: 140px !important;
+  max-width: min(calc(100vw - 24px), 220px) !important;
+}
+
+.diagram-history-folder-popper .el-dropdown-menu__item {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

@@ -54,11 +54,40 @@ logger = logging.getLogger(__name__)
 
 # Maximum request body size (5MB) - prevents DoS attacks via large payloads
 MAX_REQUEST_BODY_SIZE = 5 * 1024 * 1024  # 5MB
+# Case Square publish: doc + optional videos (see case_square_helpers VIDEO_MAX_BYTES)
+CASE_SQUARE_MAX_BODY_SIZE = 105 * 1024 * 1024  # 100MB + multipart overhead
+
+
+def max_request_body_size_for_path(path: str) -> int:
+    """Per-route body limit; case-square publish allows large teaching attachments."""
+    if path == "/api/case-square/posts":
+        return CASE_SQUARE_MAX_BODY_SIZE
+    if path.startswith("/api/case-square/posts/"):
+        return CASE_SQUARE_MAX_BODY_SIZE
+    if path == "/api/auth/admin/case-square/posts/proxy":
+        return CASE_SQUARE_MAX_BODY_SIZE
+    return MAX_REQUEST_BODY_SIZE
 
 
 def is_https(request: Request) -> bool:
     """Check if request is over HTTPS (shared with auth cookie helpers)."""
     return request_is_https(request)
+
+
+_EMBEDDABLE_CASE_SQUARE_SUFFIXES = (".pdf", ".doc", ".docx")
+_STREAMING_STATIC_SUFFIXES = (".mp4", ".webm", ".mov", ".m4v", ".m4a")
+
+
+def allows_same_origin_case_square_frame(path: str) -> bool:
+    """Case Square teaching attachments may be previewed in same-origin iframes."""
+    # Public static mount is blocked; assets are served via authenticated API.
+    if path.startswith("/api/case-square/assets/"):
+        lower = path.lower()
+        return lower.endswith(_EMBEDDABLE_CASE_SQUARE_SUFFIXES)
+    if not path.startswith("/static/case_square/"):
+        return False
+    lower = path.lower()
+    return lower.endswith(_EMBEDDABLE_CASE_SQUARE_SUFFIXES)
 
 
 async def block_chat_static_uploads(request: Request, call_next):
@@ -70,6 +99,18 @@ async def block_chat_static_uploads(request: Request, call_next):
     ``/static/chat/`` URLs.
     """
     if request.url.path.startswith("/static/chat/"):
+        return JSONResponse(status_code=404, content={"detail": "Not found"})
+    return await call_next(request)
+
+
+async def block_case_square_static_uploads(request: Request, call_next):
+    """
+    Block direct HTTP access to Case Square files on disk.
+
+    Pending and approved assets must be fetched via authenticated
+    ``/api/case-square/assets/...`` so non-approved posts are not world-readable.
+    """
+    if request.url.path.startswith("/static/case_square/"):
         return JSONResponse(status_code=404, content={"detail": "Not found"})
     return await call_next(request)
 
@@ -86,24 +127,21 @@ async def limit_request_body_size(request: Request, call_next):
     For complete protection, also limit at reverse proxy level (Nginx).
     """
     content_length = request.headers.get("content-length")
+    max_size = max_request_body_size_for_path(request.url.path)
     if content_length:
         try:
             size = int(content_length)
-            if size > MAX_REQUEST_BODY_SIZE:
+            if size > max_size:
                 client_ip = request.client.host if request.client else "unknown"
                 security_log.input_validation_failed(
                     field="request_body",
-                    reason=(
-                        f"size {size / 1024 / 1024:.1f}MB exceeds {MAX_REQUEST_BODY_SIZE / 1024 / 1024:.0f}MB limit"
-                    ),
+                    reason=(f"size {size / 1024 / 1024:.1f}MB exceeds {max_size / 1024 / 1024:.0f}MB limit"),
                     ip=client_ip,
                     value_size=size,
                 )
                 return JSONResponse(
                     status_code=413,
-                    content={
-                        "detail": f"Request body too large. Maximum size is {MAX_REQUEST_BODY_SIZE // 1024 // 1024}MB"
-                    },
+                    content={"detail": f"Request body too large. Maximum size is {max_size // 1024 // 1024}MB"},
                 )
         except ValueError:
             # Invalid Content-Length header, let it pass (will fail elsewhere if malformed)
@@ -236,8 +274,11 @@ async def add_security_headers(request: Request, call_next):
     """
     response = await call_next(request)
 
+    path = request.url.path
+    same_origin_frame = allows_same_origin_case_square_frame(path)
+
     # Prevent clickjacking (stops site being embedded in iframes)
-    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN" if same_origin_frame else "DENY"
 
     # Prevent MIME sniffing (stops browser from guessing content types)
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -249,6 +290,7 @@ async def add_security_headers(request: Request, call_next):
     # Content Security Policy (controls what resources can load)
     # Tailored specifically for MindGraph's architecture
     # In DEBUG mode, allow Swagger UI CDN for /docs and /redoc endpoints
+    frame_ancestors = "'self'" if same_origin_frame else "'none'"
     if config.debug:
         # DEBUG mode: Allow Swagger UI resources from CDN (including source maps)
         response.headers["Content-Security-Policy"] = (
@@ -259,7 +301,8 @@ async def add_security_headers(request: Request, call_next):
             "img-src 'self' data: http: https: blob: https://cdn.jsdelivr.net https://fastapi.tiangolo.com; "
             "font-src 'self' data: https://cdn.jsdelivr.net; "
             "connect-src 'self' ws: wss: blob: https://cdn.jsdelivr.net; "
-            "frame-ancestors 'none'; "
+            "frame-src 'self' blob: https://view.officeapps.live.com; "
+            f"frame-ancestors {frame_ancestors}; "
             "base-uri 'self'; "
             "form-action 'self';"
         )
@@ -278,7 +321,8 @@ async def add_security_headers(request: Request, call_next):
             "img-src 'self' data: http: https: blob:; "
             "font-src 'self' data:; "
             "connect-src 'self' ws: wss: blob:; "
-            "frame-ancestors 'none'; "
+            "frame-src 'self' blob: https://view.officeapps.live.com; "
+            f"frame-ancestors {frame_ancestors}; "
             "base-uri 'self'; "
             "form-action 'self';"
         )
@@ -319,6 +363,10 @@ async def add_cache_control_headers(request: Request, call_next):
         apply_no_cache_headers(response)
     elif should_apply_api_no_cache(path, response):
         apply_no_cache_headers(response)
+    elif path.startswith("/static/case_square/") and path.lower().endswith(".pdf"):
+        apply_no_cache_headers(response)
+    elif path.startswith("/api/case-square/assets/") and path.lower().endswith(".pdf"):
+        apply_no_cache_headers(response)
 
     return response
 
@@ -328,27 +376,26 @@ async def enforce_streaming_body_limit(request: Request, call_next):
     Enforce body size when Content-Length is absent (chunked uploads).
 
     Complements ``limit_request_body_size`` which only inspects Content-Length.
+    Multipart is included so omitting Content-Length cannot bypass the cap.
     """
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         content_length = request.headers.get("content-length")
+        max_size = max_request_body_size_for_path(request.url.path)
         if not content_length:
             body = await request.body()
-            if len(body) > MAX_REQUEST_BODY_SIZE:
+            if len(body) > max_size:
                 client_ip = get_client_ip(request)
                 security_log.input_validation_failed(
                     field="request_body",
                     reason=(
-                        f"streamed size {len(body) / 1024 / 1024:.1f}MB exceeds "
-                        f"{MAX_REQUEST_BODY_SIZE / 1024 / 1024:.0f}MB limit"
+                        f"streamed size {len(body) / 1024 / 1024:.1f}MB exceeds {max_size / 1024 / 1024:.0f}MB limit"
                     ),
                     ip=client_ip,
                     value_size=len(body),
                 )
                 return JSONResponse(
                     status_code=413,
-                    content={
-                        "detail": (f"Request body too large. Maximum size is {MAX_REQUEST_BODY_SIZE // 1024 // 1024}MB")
-                    },
+                    content={"detail": (f"Request body too large. Maximum size is {max_size // 1024 // 1024}MB")},
                 )
     return await call_next(request)
 
@@ -373,10 +420,14 @@ class SelectiveGZipMiddleware:
         """call  ."""
         if scope["type"] == "http":
             path = scope.get("path", "")
-            # Check if this is a PDF file endpoint BEFORE processing
-            is_pdf_endpoint = path.startswith("/api/library/documents/") and "/file" in path
+            lower_path = path.lower()
+            # PDF and video responses must stay uncompressed for range requests / HTML5 media.
+            is_streaming_static = lower_path.endswith(_STREAMING_STATIC_SUFFIXES)
+            is_pdf_endpoint = (path.startswith("/api/library/documents/") and "/file" in path) or lower_path.endswith(
+                ".pdf"
+            )
 
-            if is_pdf_endpoint:
+            if is_pdf_endpoint or is_streaming_static:
                 # Skip compression for PDF files - pass through directly
                 # This preserves range request support
                 await self.app(scope, receive, send)
@@ -646,6 +697,7 @@ def setup_middleware(app: FastAPI):
     # Note: Middleware executes in reverse order of registration
     # So log_requests runs first, then add_cache_control_headers, etc.
     app.middleware("http")(block_chat_static_uploads)
+    app.middleware("http")(block_case_square_static_uploads)
     app.middleware("http")(enforce_streaming_body_limit)
     app.middleware("http")(limit_request_body_size)
     app.middleware("http")(abuseipdb_middleware)

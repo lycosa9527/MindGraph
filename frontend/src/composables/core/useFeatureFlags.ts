@@ -27,6 +27,7 @@ export function useFeatureFlags() {
   const featureCourse = computed(() => data.value?.feature_course ?? false)
   const featureTemplate = computed(() => data.value?.feature_template ?? false)
   const featureCommunity = computed(() => data.value?.feature_community ?? false)
+  const featureCaseSquare = computed(() => data.value?.feature_case_square ?? false)
   const featureAskOnce = computed(() => data.value?.feature_askonce ?? true)
   const featureSchoolZone = computed(() => data.value?.feature_school_zone ?? false)
   const featureDebateverse = computed(() => data.value?.feature_debateverse ?? false)
@@ -52,6 +53,7 @@ export function useFeatureFlags() {
     featureCourse,
     featureTemplate,
     featureCommunity,
+    featureCaseSquare,
     featureAskOnce,
     featureSchoolZone,
     featureDebateverse,

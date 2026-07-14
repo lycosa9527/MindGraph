@@ -8,6 +8,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { eventBus } from '@/composables/core/useEventBus'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import {
   BRANCH_NODE_HEIGHT,
   DEFAULT_CENTER_Y,
@@ -79,6 +80,8 @@ function getDoubleBubbleGroupFromNodeId(
 // Build menu items based on context (reactive to UI locale via uiStore.language)
 const menuItems = computed<MenuItem[]>(() => {
   void uiStore.language
+  if (isDiagramPresentationReadOnly()) return []
+
   const items: MenuItem[] = []
 
   if (props.target === 'node' && props.node) {

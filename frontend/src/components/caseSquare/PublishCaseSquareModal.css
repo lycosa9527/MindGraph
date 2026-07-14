@@ -1,0 +1,144 @@
+.publish-step-dot {
+  display: flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.publish-step-dot--active {
+  background: #111827;
+  color: #fff;
+}
+
+.publish-step-line {
+  width: 2px;
+  flex: 1;
+  min-height: 3.25rem;
+  margin: 2px 0;
+  border-radius: 1px;
+  background: #e5e7eb;
+}
+
+.publish-step-line--active {
+  background: #111827;
+}
+
+.publish-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  color: #7c3aed;
+  background: #f5f3ff;
+  border: none;
+  border-radius: 0.375rem;
+  outline: none;
+  box-shadow: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.15s ease;
+}
+
+.publish-ai-badge:hover:not(:disabled) {
+  background: #ede9fe;
+}
+
+.publish-ai-badge:focus,
+.publish-ai-badge:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.publish-ai-badge:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.publish-field {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid #f3f4f6;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  outline: none;
+}
+
+.publish-field:focus {
+  border-color: #e5e7eb;
+  box-shadow: 0 0 0 2px rgb(229 231 235 / 0.4);
+}
+
+.publish-modal-close {
+  border: none;
+  outline: none;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.publish-modal-close:focus,
+.publish-modal-close:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.publish-tag-suggest {
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #4b5563;
+  background: #fff;
+  border: 1px solid #f3f4f6;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.publish-tag-suggest:hover {
+  border-color: #e5e7eb;
+  background: #f9fafb;
+}
+
+.publish-tag-suggest:focus,
+.publish-tag-suggest:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.publish-tag-remove,
+.publish-tag-add {
+  border: none;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.publish-tag-add {
+  border: 1px solid #f3f4f6;
+}
+
+.publish-tag-remove:focus,
+.publish-tag-remove:focus-visible,
+.publish-tag-add:focus,
+.publish-tag-add:focus-visible {
+  outline: none;
+}

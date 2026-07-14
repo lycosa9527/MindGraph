@@ -10,6 +10,7 @@
 import { nextTick, onMounted, onUnmounted } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import {
@@ -57,6 +58,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
   // ---- Add helpers ----
 
   function handleAddBranch(): void {
+    if (isDiagramPresentationReadOnly()) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))
@@ -109,6 +111,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
   }
 
   function handleAddChild(): void {
+    if (isDiagramPresentationReadOnly()) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))
@@ -184,6 +187,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
   }
 
   function handleAddSibling(): void {
+    if (isDiagramPresentationReadOnly()) return
     const diagramType = diagramStore.type
     if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
     if (!diagramStore.data?.nodes) {
@@ -208,6 +212,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
   // ---- Main add handler ----
 
   function handleAddNode(): void {
+    if (isDiagramPresentationReadOnly()) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))
@@ -544,6 +549,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
   // ---- Main delete handler ----
 
   async function handleDeleteNode(): Promise<void> {
+    if (isDiagramPresentationReadOnly()) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))

@@ -1,6 +1,7 @@
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
@@ -8,6 +9,7 @@ export function useBubbleMapOpsSlice(ctx: DiagramContext) {
   const { type, data } = ctx
 
   function removeBubbleMapNodes(nodeIds: string[]): number {
+    if (isDiagramPresentationReadOnly()) return 0
     if (type.value !== 'bubble_map' || !data.value?.nodes) return 0
 
     const idsToRemove = new Set(nodeIds.filter((id) => id.startsWith('bubble-')))

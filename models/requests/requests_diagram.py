@@ -484,6 +484,27 @@ class DiagramUpdateRequest(BaseModel):
     )
 
 
+class DiagramFolderCreateRequest(BaseModel):
+    """Request model for creating a diagram archive folder."""
+
+    name: str = Field(..., min_length=1, max_length=100, description="Folder name")
+
+
+class DiagramFolderUpdateRequest(BaseModel):
+    """Request model for renaming a diagram archive folder."""
+
+    name: str = Field(..., min_length=1, max_length=100, description="New folder name")
+
+
+class DiagramMoveFolderRequest(BaseModel):
+    """Move a diagram into a folder (or back to uncategorized)."""
+
+    folder_id: Optional[str] = Field(
+        None,
+        description="Target folder UUID; null removes from folder",
+    )
+
+
 class FocusQuestionReviewRequest(BaseModel):
     """Request for AI validation and refinement of a concept-map focus question."""
 

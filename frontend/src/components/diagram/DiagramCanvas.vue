@@ -26,9 +26,10 @@ import { ExportToCommunityModal, CanvasNodeFloatingToolbar } from '@/components/
 import MindMapNodeExplainModal from '@/components/canvas/MindMapNodeExplainModal.vue'
 import { useBranchMoveDrag, useLanguage } from '@/composables'
 import {
-  presentationDiagramEditLockedRef,
+  diagramPresentationReadOnlyRef,
   resolvePresentationTeleportTarget,
 } from '@/composables/presentation/presentationDiagramEdit'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { useNodeFloatingToolbarPosition } from '@/composables/canvasToolbar'
 import { useMindMapSubgraphSuggest } from '@/composables/editor/useMindMapSubgraphSuggest'
 import { isMindMapSubgraphExpandable } from '@/utils/mindMapSubgraphContext'
@@ -236,7 +237,7 @@ const {
   presentationPenColor,
 })
 
-const presentationDiagramEditLocked = presentationDiagramEditLockedRef
+const presentationDiagramEditLocked = diagramPresentationReadOnlyRef
 
 const presentationStrokeOverlayMode = computed((): 'pen' | 'highlighter' | 'eraser' => {
   if (presentationStrokeEraserActive.value) return 'eraser'
@@ -276,6 +277,7 @@ useMindMapConnectorDebugLog({
 const { handlePaste: handleMindMapMultiLinePaste } = useMindMapMultiLinePaste()
 
 function onCanvasPaste(event: ClipboardEvent): void {
+  if (isDiagramPresentationReadOnly()) return
   if (diagramStore.canPaste) {
     event.preventDefault()
     const anchor = diagramStore.selectedNodes[0]
@@ -434,7 +436,7 @@ const contextMenu = useDiagramCanvasContextMenu({
   vueFlowWrapper,
   getNodes: () => unref(getVueFlowNodes),
   screenToFlowCoordinate,
-  presentationDiagramEditLocked: presentationDiagramEditLockedRef,
+  presentationDiagramEditLocked: diagramPresentationReadOnlyRef,
   emitPaneClick: () => emit('paneClick'),
   diagramStore,
   t,

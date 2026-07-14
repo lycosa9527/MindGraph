@@ -25,6 +25,7 @@ import type { DiagramId, DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 import { hasDiagramSaveLimit } from '@/utils/diagramLimit'
 
+import { syncFolderDiagramCounts } from '@/composables/sidebar/useDiagramArchiveHistory'
 import { useAuthStore } from './auth'
 import { useDiagramStore } from './diagram'
 import { useLLMResultsStore } from './llmResults'
@@ -156,6 +157,20 @@ export interface SavedDiagram {
   updated_at: string // ISO date string
   is_pinned: boolean
   workshop_active?: boolean
+  folder_id?: string | null
+}
+
+export interface DiagramFolder {
+  id: string
+  name: string
+  sort_order: number
+  diagram_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface DiagramFolderListResponse {
+  folders: DiagramFolder[]
 }
 
 export interface SavedDiagramFull extends SavedDiagram {
@@ -184,6 +199,8 @@ export interface AutoSaveResult {
 export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   // State
   const diagrams = ref<SavedDiagram[]>([])
+  const folders = ref<DiagramFolder[]>([])
+  const foldersLoadFailed = ref(false)
   const total = ref(0)
   const maxDiagrams = ref(0)
   const isLoading = ref(false)
@@ -193,6 +210,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   // Active diagram tracking - tracks if current canvas diagram is saved to library
   const activeDiagramId = ref<string | null>(null)
   const isAutoSaving = ref(false)
+
+  /** In-memory cache so case-square / history picker can show previews instantly. */
+  const diagramDetailCache = new Map<string, SavedDiagramFull>()
 
   // Getters
   const authStore = useAuthStore()
@@ -211,31 +231,63 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   )
 
   // Actions
+  function applyFolderCounts(): void {
+    folders.value = syncFolderDiagramCounts(folders.value, diagrams.value)
+  }
+
   async function fetchDiagrams(page: number = 1, pageSize: number = 50): Promise<boolean> {
     if (!authStore.isAuthenticated) {
       diagrams.value = []
+      folders.value = []
+      foldersLoadFailed.value = false
       return false
     }
 
     isLoading.value = true
     error.value = null
+    foldersLoadFailed.value = false
 
     try {
-      // Use credentials (token in httpOnly cookie)
-      const response = await authFetch(`/api/diagrams?page=${page}&page_size=${pageSize}`)
+      const [diagramResponse, folderResponse] = await Promise.all([
+        authFetch(`/api/diagrams?page=${page}&page_size=${pageSize}`),
+        authFetch('/api/diagram-folders'),
+      ])
 
-      if (!response.ok) {
-        if (response.status === 401) {
+      if (!diagramResponse.ok) {
+        if (diagramResponse.status === 401) {
           authStore.handleTokenExpired('您的登录已过期，请重新登录后查看图表')
           return false
         }
-        throw new Error(`Failed to fetch diagrams: ${response.status}`)
+        throw new Error(`Failed to fetch diagrams: ${diagramResponse.status}`)
       }
 
-      const data: DiagramListResponse = await response.json()
-      diagrams.value = data.diagrams
+      const data: DiagramListResponse = await diagramResponse.json()
+      let merged = [...data.diagrams]
+      let nextPage = data.page
+      let hasMore = data.has_more
+      while (hasMore && merged.length < data.total) {
+        nextPage += 1
+        const nextResponse = await authFetch(
+          `/api/diagrams?page=${nextPage}&page_size=${pageSize}`
+        )
+        if (!nextResponse.ok) break
+        const nextData: DiagramListResponse = await nextResponse.json()
+        merged = [...merged, ...nextData.diagrams]
+        hasMore = nextData.has_more
+      }
+
+      diagrams.value = merged
       total.value = data.total
       maxDiagrams.value = data.max_diagrams
+
+      if (folderResponse.ok) {
+        const folderData: DiagramFolderListResponse = await folderResponse.json()
+        folders.value = folderData.folders
+      } else {
+        foldersLoadFailed.value = true
+      }
+      applyFolderCounts()
+
       return true
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to load diagrams'
@@ -243,6 +295,138 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       return false
     } finally {
       isLoading.value = false
+    }
+  }
+
+  async function createFolder(name: string): Promise<DiagramFolder | null> {
+    if (!authStore.isAuthenticated) return null
+    try {
+      const response = await authFetch('/api/diagram-folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      })
+      if (!response.ok) {
+        return null
+      }
+      const created = (await response.json()) as {
+        id: string
+        name: string
+        sort_order: number
+        created_at: string
+        updated_at: string
+      }
+      const folder: DiagramFolder = {
+        id: created.id,
+        name: created.name,
+        sort_order: created.sort_order,
+        diagram_count: 0,
+        created_at: created.created_at,
+        updated_at: created.updated_at,
+      }
+      folders.value = [...folders.value, folder].sort(
+        (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name)
+      )
+      return folder
+    } catch (e) {
+      console.error('[SavedDiagrams] Create folder error:', e)
+      return null
+    }
+  }
+
+  async function renameFolder(folderId: string, name: string): Promise<boolean> {
+    if (!authStore.isAuthenticated) return false
+    try {
+      const response = await authFetch(`/api/diagram-folders/${folderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() }),
+      })
+      if (!response.ok) return false
+      const entry = folders.value.find((f) => f.id === folderId)
+      if (entry) {
+        entry.name = name.trim()
+      }
+      return true
+    } catch (e) {
+      console.error('[SavedDiagrams] Rename folder error:', e)
+      return false
+    }
+  }
+
+  async function deleteFolder(folderId: string): Promise<boolean> {
+    if (!authStore.isAuthenticated) return false
+    try {
+      const response = await authFetch(`/api/diagram-folders/${folderId}`, {
+        method: 'DELETE',
+      })
+      if (response.status === 401) {
+        authStore.handleTokenExpired('您的登录已过期，请重新登录')
+        return false
+      }
+      if (!response.ok) {
+        const detail = await readDiagramApiErrorDetail(response)
+        error.value = detail || 'Failed to delete folder'
+        console.error('[SavedDiagrams] Delete folder error:', response.status, detail)
+        return false
+      }
+      folders.value = folders.value.filter((f) => f.id !== folderId)
+      diagrams.value.forEach((d) => {
+        if (d.folder_id === folderId) {
+          d.folder_id = null
+        }
+      })
+      applyFolderCounts()
+      return true
+    } catch (e) {
+      console.error('[SavedDiagrams] Delete folder error:', e)
+      return false
+    }
+  }
+
+  async function moveDiagramToFolder(
+    diagramId: string,
+    folderId: string | null
+  ): Promise<boolean> {
+    if (!authStore.isAuthenticated) return false
+    const entry = diagrams.value.find((d) => d.id === diagramId)
+    const previousFolderId = entry?.folder_id ?? null
+    if (entry) {
+      entry.folder_id = folderId
+      applyFolderCounts()
+    }
+    try {
+      const response = await authFetch(`/api/diagrams/${diagramId}/folder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder_id: folderId }),
+      })
+      if (!response.ok) {
+        if (response.status === 401) {
+          authStore.handleTokenExpired('您的登录已过期，请重新登录')
+          if (entry) {
+            entry.folder_id = previousFolderId
+            applyFolderCounts()
+          }
+          return false
+        }
+        const detail = await readDiagramApiErrorDetail(response)
+        error.value = detail || 'Failed to move diagram'
+        console.error('[SavedDiagrams] Move to folder error:', response.status, detail)
+        if (entry) {
+          entry.folder_id = previousFolderId
+          applyFolderCounts()
+        }
+        return false
+      }
+      return true
+    } catch (e) {
+      if (entry) {
+        entry.folder_id = previousFolderId
+        applyFolderCounts()
+      }
+      console.error('[SavedDiagrams] Move to folder error:', e)
+      return false
     }
   }
 
@@ -274,6 +458,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
   function removeDiagramFromLocalList(diagramId: string): void {
     diagrams.value = diagrams.value.filter((d) => d.id !== diagramId)
+    diagramDetailCache.delete(diagramId)
     if (total.value > 0) {
       total.value--
     }
@@ -285,9 +470,36 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     }
   }
 
+  function getCachedDiagram(diagramId: string): SavedDiagramFull | null {
+    return diagramDetailCache.get(diagramId) ?? null
+  }
+
+  function getCachedDiagramSpec(diagramId: string): Record<string, unknown> | null {
+    return diagramDetailCache.get(diagramId)?.spec ?? null
+  }
+
+  /**
+   * Warm spec cache for history picker / publish preview (best-effort, non-blocking).
+   */
+  async function prefetchDiagramSpecs(diagramIds: string[], limit = 12): Promise<void> {
+    if (!authStore.isAuthenticated) return
+    const pending = diagramIds.filter((id) => !diagramDetailCache.has(id)).slice(0, limit)
+    await Promise.all(
+      pending.map(async (diagramId) => {
+        const result = await getDiagram(diagramId)
+        if (!result.ok) return
+      })
+    )
+  }
+
   async function getDiagram(diagramId: string): Promise<GetDiagramResult> {
     if (!authStore.isAuthenticated) {
       return { ok: false, reason: 'unauthenticated', status: null }
+    }
+
+    const cached = diagramDetailCache.get(diagramId)
+    if (cached) {
+      return { ok: true, diagram: cached }
     }
 
     try {
@@ -314,6 +526,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       }
 
       const diagram: SavedDiagramFull = await response.json()
+      diagramDetailCache.set(diagramId, diagram)
       return { ok: true, diagram }
     } catch (e) {
       console.error('[SavedDiagrams] Get diagram error:', e)
@@ -860,17 +1073,22 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
   function reset(): void {
     diagrams.value = []
+    folders.value = []
+    foldersLoadFailed.value = false
     total.value = 0
     isLoading.value = false
     error.value = null
     currentDiagramId.value = null
     activeDiagramId.value = null
     isAutoSaving.value = false
+    diagramDetailCache.clear()
   }
 
   return {
     // State
     diagrams,
+    folders,
+    foldersLoadFailed,
     total,
     maxDiagrams,
     isLoading,
@@ -888,8 +1106,15 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
     // Actions
     fetchDiagrams,
+    createFolder,
+    renameFolder,
+    deleteFolder,
+    moveDiagramToFolder,
     stopDiagramOnlineCollab,
     getDiagram,
+    getCachedDiagram,
+    getCachedDiagramSpec,
+    prefetchDiagramSpecs,
     saveDiagram,
     updateDiagram,
     deleteDiagram,

@@ -102,6 +102,11 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_COMMUNITY", "False").lower() == "true"
 
     @property
+    def FEATURE_CASE_SQUARE(self):
+        """Enable Case Square (案例广场) moderated public case gallery."""
+        return self._get_cached_value("FEATURE_CASE_SQUARE", "False").lower() == "true"
+
+    @property
     def FEATURE_ASKONCE(self):
         """Enable AskOnce (多应) multi-LLM chat feature.
 

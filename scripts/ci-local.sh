@@ -170,7 +170,10 @@ run_backend() {
     tests/test_privacy_policy_static.py \
     tests/test_privacy_policy_http.py \
     tests/test_workshop_chat_file_service.py \
-    tests/test_dingtalk_bind_service.py
+    tests/test_dingtalk_bind_service.py \
+    tests/test_case_square_helpers.py \
+    tests/test_case_square_create_response.py \
+    tests/test_diagram_folders_api.py
 }
 
 run_frontend() {

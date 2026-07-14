@@ -60,6 +60,16 @@ from models.domain.community import (
     CommunityPostLike,
     CommunityPostComment,
 )
+from models.domain.case_square import (
+    CaseSquarePost,
+    CaseSquarePostFavorite,
+    CaseSquarePostLike,
+)
+from models.domain.case_square_admin import (
+    CaseSquareAuditLog,
+    CaseSquareFieldOption,
+    CaseSquareStaffGrant,
+)
 from models.domain.school_zone import (
     SharedDiagram,
     SharedDiagramLike,
@@ -157,6 +167,12 @@ __all__ = [
     "CommunityPost",
     "CommunityPostLike",
     "CommunityPostComment",
+    "CaseSquarePost",
+    "CaseSquarePostLike",
+    "CaseSquarePostFavorite",
+    "CaseSquareStaffGrant",
+    "CaseSquareFieldOption",
+    "CaseSquareAuditLog",
     "SharedDiagram",
     "SharedDiagramLike",
     "SharedDiagramComment",

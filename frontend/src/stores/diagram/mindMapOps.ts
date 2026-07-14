@@ -27,6 +27,7 @@ import {
   nodesAndConnectionsToMindMapSpec,
 } from '../specLoader'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import { emitEvent, getMindMapCurveExtents } from './events'
 import {
   findNodeIdByPathKey,
@@ -296,6 +297,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     text = defaultNewNodeText(),
     childText = defaultNewChildText()
   ): boolean {
+    if (isDiagramPresentationReadOnly()) return false
     if (readMindMapV2VisualDesignActive()) {
       return addMindMapBranchOnSide(side, text)
     }
@@ -357,6 +359,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     parentNodeId: string,
     text = defaultNewNodeText()
   ): boolean {
+    if (isDiagramPresentationReadOnly()) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
 
@@ -388,6 +391,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function removeMindMapNodes(nodeIds: string[]): number {
+    if (isDiagramPresentationReadOnly()) return 0
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return 0
     if (!data.value?.nodes || !data.value?.connections) return 0
 
@@ -479,6 +483,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     _targetIndex?: number,
     cursorFlowX?: number
   ): boolean {
+    if (isDiagramPresentationReadOnly()) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
     if (branchNodeId === 'topic') return false
@@ -649,6 +654,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     text = defaultNewNodeText(),
     position: 'above' | 'below' = 'below'
   ): boolean {
+    if (isDiagramPresentationReadOnly()) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
     if (nodeId === 'topic') return false
@@ -687,6 +693,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     lines: string[],
     options?: { topicSide?: 'left' | 'right' }
   ): number {
+    if (isDiagramPresentationReadOnly()) return 0
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return 0
     if (!data.value?.nodes || !data.value?.connections) return 0
 
@@ -776,6 +783,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     nodeId: string,
     direction: 'top' | 'bottom' | 'left' | 'right'
   ): boolean {
+    if (isDiagramPresentationReadOnly()) return false
     if (!readMindMapV2VisualDesignActive()) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
 
@@ -866,6 +874,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function toggleMindMapCollapse(nodeId: string): boolean {
+    if (isDiagramPresentationReadOnly()) return false
     if (!readMindMapV2VisualDesignActive()) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false

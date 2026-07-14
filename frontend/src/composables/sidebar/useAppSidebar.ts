@@ -28,12 +28,14 @@ import {
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useAdminFeatureDevNav } from '@/composables/admin/useAdminFeatureDevNav'
 import { defaultFeatureDevSubtab } from '@/composables/admin/adminFeatureDevNav'
+import { defaultCaseSquareSubtab } from '@/composables/admin/adminCaseSquareNav'
 import { useAdminSettingsNav } from '@/composables/admin/useAdminSettingsNav'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
+import { getCaseSquarePendingCount } from '@/utils/apiClient'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
@@ -65,6 +67,7 @@ export function useAppSidebar() {
     featureCourse,
     featureTemplate,
     featureCommunity,
+    featureCaseSquare,
     featureAskOnce,
     featureSchoolZone,
     featureDebateverse,
@@ -103,6 +106,7 @@ export function useAppSidebar() {
     if (path.startsWith('/school-zone')) return 'school-zone'
     if (path.startsWith('/template')) return 'template'
     if (path.startsWith('/course')) return 'course'
+    if (path.startsWith('/case-square')) return 'case-square'
     if (path.startsWith('/community')) return 'community'
     if (path.startsWith('/library')) return 'library'
     if (
@@ -138,6 +142,24 @@ export function useAppSidebar() {
   const { can, canViewSettingsSubtab, capabilities } = useAdminAccess()
   const expandedPanel = ref<string | null>(null)
   const dataCenterNavExpanded = ref(false)
+  const caseSquarePendingCount = ref(0)
+  const caseSquareRejectedCount = ref(0)
+
+  async function refreshCaseSquarePendingCount(): Promise<void> {
+    if (!featureCaseSquare.value || !can('tab.case_square.edit') || !authStore.isAuthenticated) {
+      caseSquarePendingCount.value = 0
+      caseSquareRejectedCount.value = 0
+      return
+    }
+    try {
+      const res = await getCaseSquarePendingCount()
+      caseSquarePendingCount.value = res.pending
+      caseSquareRejectedCount.value = res.rejected
+    } catch {
+      caseSquarePendingCount.value = 0
+      caseSquareRejectedCount.value = 0
+    }
+  }
 
   const currentAdminTab = computed((): string | null => {
     const path = router.currentRoute.value.path
@@ -309,6 +331,7 @@ export function useAppSidebar() {
     template: '/template',
     course: '/course',
     community: '/community',
+    'case-square': '/case-square',
     library: '/library',
     admin: '/admin',
     'workshop-chat': '/workshop-chat',
@@ -353,6 +376,15 @@ export function useAppSidebar() {
     }
     if (tabName === 'settings') {
       query.subtab = settingsNav.currentSettingsSubtab.value ?? 'roles'
+    }
+    if (tabName === 'case_square') {
+      query.subtab =
+        typeof router.currentRoute.value.query.subtab === 'string'
+          ? router.currentRoute.value.query.subtab
+          : defaultCaseSquareSubtab()
+      if (query.subtab === 'moderation') {
+        query.queue = 'pending'
+      }
     }
     if (tabName === 'data_center') {
       let resolvedView =
@@ -630,6 +662,28 @@ export function useAppSidebar() {
   })
   onScopeDispose(offThinkingCoinMutation)
 
+  const offCaseSquareUpdated = eventBus.on('admin:case_square_updated', () => {
+    void refreshCaseSquarePendingCount()
+  })
+  onScopeDispose(offCaseSquareUpdated)
+
+  watch(
+    () => [authStore.isAuthenticated, featureCaseSquare.value, can('tab.case_square.edit')] as const,
+    () => {
+      void refreshCaseSquarePendingCount()
+    },
+    { immediate: true }
+  )
+
+  watch(
+    () => authStore.adminCapabilitiesLoaded,
+    (loaded) => {
+      if (loaded) {
+        void refreshCaseSquarePendingCount()
+      }
+    }
+  )
+
   const showMindmateCollabSessions = computed(
     () => featureMindmateCollab.value && canUseOnlineCollab.value,
   )
@@ -643,6 +697,7 @@ export function useAppSidebar() {
     featureCourse,
     featureTemplate,
     featureCommunity,
+    featureCaseSquare,
     featureAskOnce,
     featureSchoolZone,
     featureDebateverse,
@@ -665,6 +720,8 @@ export function useAppSidebar() {
     isManagementPanelUser,
     adminNavTabs,
     singleAdminNavTab,
+    caseSquarePendingCount,
+    caseSquareRejectedCount,
     showManagementPanelSubnav,
     openDirectAdminTab,
     currentAdminTab,

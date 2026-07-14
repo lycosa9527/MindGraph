@@ -234,6 +234,7 @@ export interface AdminFeatureFlagsPayload {
   feature_course?: boolean
   feature_template?: boolean
   feature_community?: boolean
+  feature_case_square?: boolean
   feature_askonce?: boolean
   feature_school_zone?: boolean
   feature_debateverse?: boolean

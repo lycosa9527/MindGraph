@@ -24,7 +24,7 @@ from utils.auth.thinking_coin_config import (
 
 def _status_hint(task: ThinkingCoinEarnTask, completed: bool) -> Optional[str]:
     if task.slug == SLUG_PUBLISH_CASE:
-        return "即将开放"
+        return "审核通过后发放"
     if task.handler_key == HANDLER_AUTO_LOGIN and completed:
         return "今日已签到"
     if task.handler_key == HANDLER_USAGE_DAILY and completed:
@@ -87,7 +87,7 @@ async def build_wallet_payload(
                 "action_config": task.action_config or {},
                 "completed_today": completed,
                 "status_hint": _status_hint(task, completed),
-                "coming_soon": task.slug == SLUG_PUBLISH_CASE,
+                "coming_soon": False,
             }
         )
 
