@@ -59,6 +59,7 @@ def showcase_panel_capabilities(perms: frozenset[str]) -> frozenset[str]:
 
 
 async def load_user_showcase_permissions(db: AsyncSession, user: User) -> frozenset[str]:
+    """Resolve effective Showcase permissions from roles and staff grants."""
     if is_superadmin(user):
         return ALL_SHOWCASE_PERMS
     perms: set[str] = set()
@@ -80,19 +81,23 @@ async def load_user_showcase_permissions(db: AsyncSession, user: User) -> frozen
 
 
 def user_has_showcase_permission(perms: frozenset[str], perm: str) -> bool:
+    """Return True when ``perm`` is present in the resolved permission set."""
     return perm in perms
 
 
 async def can_publish_case(_user: User) -> bool:
+    """Return True when the user may publish their own Showcase case."""
     return True
 
 
 async def can_publish_proxy(db: AsyncSession, user: User) -> bool:
+    """Return True when the user may publish on behalf of another author."""
     perms = await load_user_showcase_permissions(db, user)
     return PERM_PUBLISH_PROXY in perms
 
 
 async def can_review_case(db: AsyncSession, user: User) -> bool:
+    """Return True when the user may approve or reject Showcase cases."""
     perms = await load_user_showcase_permissions(db, user)
     return PERM_REVIEW in perms
 
@@ -131,6 +136,7 @@ def can_resubmit_case(post: ShowcasePost, user: User) -> bool:
 
 
 async def can_expert_recommend(db: AsyncSession, user: User) -> bool:
+    """Return True when the user may add expert recommendations."""
     perms = await load_user_showcase_permissions(db, user)
     return PERM_RECOMMEND in perms
 
@@ -142,21 +148,25 @@ async def can_view_case_staff_meta(db: AsyncSession, user: User) -> bool:
 
 
 async def can_manage_fields(db: AsyncSession, user: User) -> bool:
+    """Return True when the user may manage Showcase field options."""
     perms = await load_user_showcase_permissions(db, user)
     return PERM_FIELDS in perms
 
 
 async def can_manage_permissions(db: AsyncSession, user: User) -> bool:
+    """Return True when the user may manage Showcase staff grants."""
     perms = await load_user_showcase_permissions(db, user)
     return PERM_PERMISSIONS in perms
 
 
 async def can_view_dashboard(db: AsyncSession, user: User) -> bool:
+    """Return True when the user may view the Showcase admin dashboard."""
     perms = await load_user_showcase_permissions(db, user)
     return PERM_DASHBOARD in perms or PERM_REVIEW in perms or PERM_DELETE in perms
 
 
 async def can_user_review_post(post: ShowcasePost, user: User, db: AsyncSession) -> bool:
+    """Return True when the user may review this post (not self-submit)."""
     if not await can_review_case(db, user):
         return False
     submitter_id = post.submitted_by_id if post.submitted_by_id is not None else post.author_id
@@ -168,6 +178,7 @@ async def can_user_review_post(post: ShowcasePost, user: User, db: AsyncSession)
 
 
 async def can_view_non_approved_post(post: ShowcasePost, user: User, db: AsyncSession) -> bool:
+    """Return True when the user may view a non-approved post."""
     if user.id in (post.author_id, post.submitted_by_id):
         return True
     return await can_review_case(db, user)

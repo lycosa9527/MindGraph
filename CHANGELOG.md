@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.146.1] - 2026-07-14
+
+> **Showcase pylint docstring fix so GitHub CI treats convention score as green.**
+
+### Fixed
+
+- **Pylint C0116** — Added missing function docstrings in Showcase audit, field options, post delete, and staff permissions modules so CI exits 0 (score 10.00 alone was not enough on Actions).
+
 ## [5.146.0] - 2026-07-14
 
 > **Showcase private COS uploads, Kitty-style control plane, workflow logging, and COS↔DB reconcile.**

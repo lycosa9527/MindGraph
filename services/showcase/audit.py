@@ -17,6 +17,7 @@ async def write_showcase_audit(
     post_id: Optional[str] = None,
     payload: Optional[dict[str, Any]] = None,
 ) -> None:
+    """Append a Showcase audit log row (caller commits the session)."""
     db.add(
         ShowcaseAuditLog(
             post_id=post_id,

@@ -31,11 +31,13 @@ async def invalidate_field_options_cache_async() -> None:
 
 
 def _sort_by_canonical_order(values: list[str], canonical: tuple[str, ...]) -> list[str]:
+    """Sort values by canonical order, then alphabetically for unknowns."""
     rank = {value: idx for idx, value in enumerate(canonical)}
     return sorted(values, key=lambda value: (rank.get(value, len(canonical)), value))
 
 
 async def load_active_values(db: AsyncSession, category: str) -> list[str]:
+    """Load active field-option values for a category, ordered for UI display."""
     rows = (
         await db.execute(
             select(ShowcaseFieldOption.value)
@@ -55,6 +57,7 @@ async def load_active_values(db: AsyncSession, category: str) -> list[str]:
 
 
 async def load_meta_payload(db: AsyncSession) -> dict:
+    """Return subjects/grades/tags meta, using Redis cache when available."""
     cached = await showcase_cache.get_cached_meta()
     if isinstance(cached, dict):
         return cached
@@ -78,6 +81,7 @@ async def load_meta_payload(db: AsyncSession) -> dict:
 
 
 async def validate_subject(db: AsyncSession, value: Optional[str]) -> None:
+    """Raise ValueError when subject is set and not in the active allow-list."""
     if value is None:
         return
     allowed = set(await load_active_values(db, "subject"))
@@ -88,6 +92,7 @@ async def validate_subject(db: AsyncSession, value: Optional[str]) -> None:
 
 
 async def validate_grade(db: AsyncSession, value: Optional[str]) -> None:
+    """Raise ValueError when grade is set and not in the active allow-list."""
     if value is None:
         return
     allowed = set(await load_active_values(db, "grade"))

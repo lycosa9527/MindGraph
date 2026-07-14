@@ -18,5 +18,6 @@ async def delete_showcase_post_rows(db: AsyncSession, post_id: str) -> int:
 
 
 async def showcase_post_still_exists(db: AsyncSession, post_id: str) -> bool:
+    """Return True if a Showcase post row with the given id still exists."""
     row = (await db.execute(select(ShowcasePost.id).where(ShowcasePost.id == post_id))).scalar_one_or_none()
     return row is not None
