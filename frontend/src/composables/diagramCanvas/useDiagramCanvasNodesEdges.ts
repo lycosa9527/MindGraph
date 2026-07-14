@@ -17,10 +17,12 @@ export interface UseDiagramCanvasNodesEdgesOptions {
   diagramStore: ReturnType<typeof useDiagramStore>
   branchMove: ReturnType<typeof useBranchMoveDrag>
   collabLockedNodeIds: MaybeRefOrGetter<string[]>
+  mindMapSlideFocusNodeId?: MaybeRefOrGetter<string | null | undefined>
+  mindMapSlideDimFocusNodeIds?: MaybeRefOrGetter<Set<string> | null | undefined>
 }
 
 export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOptions) {
-  const { diagramStore, branchMove, collabLockedNodeIds } = options
+  const { diagramStore, branchMove, collabLockedNodeIds, mindMapSlideFocusNodeId, mindMapSlideDimFocusNodeIds } = options
   const indicatorStore = useCanvasNodeIndicatorsStore()
   const { mindMapCanvasMode } = storeToRefs(useUIStore())
   const featureFlagsStore = useFeatureFlagsStore()
@@ -66,6 +68,8 @@ export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOp
     const workshopEditing = indicatorStore.workshopEditing
     const collabSelected = indicatorStore.collabSelected
     const tabRecActive = indicatorStore.tabRecActive
+    const slideFocusNodeId = toValue(mindMapSlideFocusNodeId) ?? null
+    const slideDimFocusNodeIds = toValue(mindMapSlideDimFocusNodeIds) ?? null
 
     // Always map so every returned node has an explicit `class` property.
     // If we returned the original node objects (which have no `class` key) when
@@ -91,6 +95,12 @@ export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOp
       }
       if (tabRecActive === n.id) {
         classes.push('tab-rec-active')
+      }
+      if (slideFocusNodeId === n.id) {
+        classes.push('mind-map-slide-focus')
+      }
+      if (slideDimFocusNodeIds && !slideDimFocusNodeIds.has(n.id)) {
+        classes.push('mind-map-slide-dimmed')
       }
 
       // Always return a new object with an explicit `class` value (even '').
@@ -131,14 +141,33 @@ export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOp
           )
         : storeEdges.value
 
+    const slideDimFocusNodeIds = toValue(mindMapSlideDimFocusNodeIds) ?? null
+    const withSlideEdgeDim = baseList.map((e) => {
+      const existingClass = typeof e.class === 'string' ? e.class : ''
+      if (slideDimFocusNodeIds && slideDimFocusNodeIds.size > 0) {
+        const inFocus =
+          slideDimFocusNodeIds.has(e.source) && slideDimFocusNodeIds.has(e.target)
+        if (inFocus) return { ...e, class: existingClass }
+        const merged = existingClass
+          ? `${existingClass} mind-map-slide-edge-dimmed`
+          : 'mind-map-slide-edge-dimmed'
+        return { ...e, class: merged }
+      }
+      const clearedClass = existingClass
+        .split(/\s+/)
+        .filter((token) => token && token !== 'mind-map-slide-edge-dimmed')
+        .join(' ')
+      return { ...e, class: clearedClass }
+    })
+
     // Concept maps use edge-level tab-rec ant lines; always map them so that the
     // tab-rec-active class is explicitly cleared when the indicator is removed
     // (Vue Flow only updates a class attribute when the property is explicitly present).
-    if (diagramStore.type !== 'concept_map') return baseList
+    if (diagramStore.type !== 'concept_map') return withSlideEdgeDim
 
     const recEdgeIds = indicatorStore.tabRecEdgeIds
     const recSet = new Set(recEdgeIds)
-    return baseList.map((e) => {
+    return withSlideEdgeDim.map((e) => {
       const existingClass = typeof e.class === 'string' ? e.class : ''
       if (recSet.has(e.id)) {
         const merged = existingClass ? `${existingClass} tab-rec-active` : 'tab-rec-active'

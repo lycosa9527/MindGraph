@@ -25,6 +25,37 @@ export type CollapseOverlayHandle = {
   strokeColor: string
 }
 
+/** Branch nodes that can show the collapse (−) control. */
+export function isMindMapCollapseEligibleNode(
+  nodeId: string | null | undefined,
+  connections: Connection[] | undefined
+): boolean {
+  if (!nodeId || nodeId === 'topic' || !connections?.length) return false
+  return connections.some((c) => c.source === nodeId)
+}
+
+/** Resolve which branch should show collapse from a canvas hover/click target. */
+export function resolveMindMapCollapseHoverNodeId(
+  target: EventTarget | null,
+  connections: Connection[] | undefined
+): string | null {
+  if (!(target instanceof Element) || !connections?.length) return null
+
+  const edgeEl = target.closest('.vue-flow__edge')
+  if (edgeEl) {
+    const edgeId = edgeEl.getAttribute('data-id')
+    if (!edgeId) return null
+    const conn = connections.find((c) => c.id === edgeId)
+    if (!conn?.source || conn.source === 'topic') return null
+    return isMindMapCollapseEligibleNode(conn.source, connections) ? conn.source : null
+  }
+
+  const nodeEl = target.closest('.vue-flow__node')
+  const nodeId = nodeEl?.getAttribute('data-id')
+  if (!nodeId || nodeId === 'topic') return null
+  return nodeId
+}
+
 function readViewport(container: HTMLElement): { x: number; y: number; zoom: number } {
   const pane = container.querySelector('.vue-flow__transformationpane') as HTMLElement | null
   if (!pane) return { x: 0, y: 0, zoom: 1 }
@@ -242,7 +273,7 @@ function resolveToggleHandle(
 
 export function useMindMapCollapseOverlayPositions(options: {
   containerRef: Ref<HTMLElement | null>
-  hoveredNodeId: Ref<string | null>
+  activeCollapseNodeId: Ref<string | null>
   collapsedPaths: Ref<string[]>
   nodes: Ref<DiagramNode[] | undefined>
   connections: Ref<Connection[] | undefined>
@@ -283,7 +314,7 @@ export function useMindMapCollapseOverlayPositions(options: {
       options.collapsedPaths.value,
       options.getDescendantIds
     )
-    const hoveredId = options.hoveredNodeId.value
+    const hoveredId = options.activeCollapseNodeId.value
     const editingId = options.editingNodeId.value
 
     for (const nodeId of collapsedNodeIds) {
@@ -343,7 +374,7 @@ export function useMindMapCollapseOverlayPositions(options: {
   watch(
     () =>
       [
-        options.hoveredNodeId.value,
+        options.activeCollapseNodeId.value,
         options.enabled.value,
         options.collapsedPaths.value.join('|'),
         options.nodes.value?.length,

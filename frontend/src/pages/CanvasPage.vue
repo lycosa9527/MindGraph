@@ -500,6 +500,10 @@ const { laserScale, highlighterScale } = storeToRefs(presentationPointerStore)
 const slidePresentation = useMindMapSlidePresentation({
   active: () => isMindMapPresentationMode.value && mindMapPresentationTool.value === 'slides',
   onExitPresentation: () => handleStartPresentationWithTier(),
+  onExitSlides: () => {
+    mindMapPresentationTool.value = 'pointer'
+    presentationTool.value = 'laser'
+  },
 })
 
 const presentationPointerEditMode = computed(
@@ -533,6 +537,13 @@ const showMindMapSlideOverlay = computed(
     isMindMapPresentationMode.value &&
     mindMapPresentationTool.value === 'slides' &&
     slidePresentation.slideCount.value > 0
+)
+
+const showMindMapPresentationSideToolbar = computed(
+  () =>
+    showSimplifiedPresentationRail.value &&
+    mindMapPresentationTool.value !== 'timer' &&
+    mindMapPresentationTool.value !== 'slides'
 )
 
 const showBottomBar = computed(() => !isMindMapPresentationMode.value)
@@ -1361,25 +1372,27 @@ onUnmounted(() => {
     />
 
     <!-- Simplified presentation rail: hand · laser · pen · spotlight · timer · slides (mind map) -->
-    <MindMapPresentationSideToolbar
-      v-if="showSimplifiedPresentationRail && mindMapPresentationTool !== 'timer'"
-      :active-tool="mindMapPresentationTool"
-      :color-id="penColorId"
-      :thickness="penThickness"
-      :laser-scale="laserScale"
-      :highlighter-scale="highlighterScale"
-      :highlighter-color-index="highlighterColorIndex"
-      :stroke-eraser-active="presentationStrokeEraserActive"
-      :show-slides-tool="useMindMapV2"
-      @select-tool="handleMindMapPresentationToolSelect"
-      @select-color="applyPenColor"
-      @select-thickness="applyPenThickness"
-      @select-laser-size="applyLaserSize"
-      @select-highlighter-color="applyHighlighterColor"
-      @select-highlighter-scale="applyHighlighterScale"
-      @toggle-stroke-eraser="toggleStrokeEraser"
-      @exit="handleMindMapPresentationExit"
-    />
+    <Transition name="presentation-rail-slide">
+      <MindMapPresentationSideToolbar
+        v-if="showMindMapPresentationSideToolbar"
+        :active-tool="mindMapPresentationTool"
+        :color-id="penColorId"
+        :thickness="penThickness"
+        :laser-scale="laserScale"
+        :highlighter-scale="highlighterScale"
+        :highlighter-color-index="highlighterColorIndex"
+        :stroke-eraser-active="presentationStrokeEraserActive"
+        :show-slides-tool="useMindMapV2"
+        @select-tool="handleMindMapPresentationToolSelect"
+        @select-color="applyPenColor"
+        @select-thickness="applyPenThickness"
+        @select-laser-size="applyLaserSize"
+        @select-highlighter-color="applyHighlighterColor"
+        @select-highlighter-scale="applyHighlighterScale"
+        @toggle-stroke-eraser="toggleStrokeEraser"
+        @exit="handleMindMapPresentationExit"
+      />
+    </Transition>
 
     <PresentationTimerOverlay
       v-if="showSimplifiedPresentationRail && mindMapPresentationTool === 'timer'"
@@ -1408,10 +1421,22 @@ onUnmounted(() => {
       :slide-index="slidePresentation.slideIndex.value"
       :slide-count="slidePresentation.slideCount.value"
       :slide-title="slidePresentation.currentSlide.value?.title ?? ''"
+      :breadcrumb="slidePresentation.slideBreadcrumb.value"
+      :is-overview-slide="slidePresentation.isOverviewSlide.value"
       :auto-play="slidePresentation.autoPlay.value"
+      :auto-play-progress="slidePresentation.autoPlayProgress.value"
+      :transitioning="slidePresentation.transitioning.value"
+      :can-go-prev="slidePresentation.canGoPrev.value"
+      :can-go-next="slidePresentation.canGoNext.value"
+      :traversal-mode="slidePresentation.traversalMode.value"
       @toggle-auto-play="slidePresentation.toggleAutoPlay()"
       @prev="slidePresentation.prevSlide()"
       @next="slidePresentation.nextSlide()"
+      @first="slidePresentation.firstSlide()"
+      @last="slidePresentation.lastSlide()"
+      @go-to="slidePresentation.goToSlide"
+      @update-traversal-mode="slidePresentation.setTraversalMode"
+      @exit="slidePresentation.exitSlideShow()"
     />
 
     <CanvasChrome v-if="!isMindMapPresentationMode">
@@ -1506,7 +1531,10 @@ onUnmounted(() => {
           :presentation-pointer-edit-mode="presentationPointerEditMode"
           :presentation-hand-pan-mode="presentationHandPanMode"
           :collab-locked-node-ids="collabLockedNodeIds"
+          :mind-map-slide-focus-node-id="slidePresentation.slideFocusNodeId.value"
+          :mind-map-slide-dim-focus-node-ids="slidePresentation.slideDimFocusNodeIds.value"
           :presentation-rail-open="presentationRailOpen"
+          :presentation-side-toolbar-visible="showMindMapPresentationSideToolbar"
           @node-double-click="handleNodeDoubleClick"
         />
 

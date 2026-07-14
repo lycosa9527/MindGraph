@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.144.0] - 2026-07-14
+
+> **Mind map slide show with traversal modes and focus dimming, B&W export wireframe wired to nodes and edges, inline-edit Enter sibling guard, and presentation toolbar polish.**
+
+### Added
+
+- **Mind map slide traversal modes** — Overview plus **first-level branches** or **deep traversal** slides; breadcrumb path per slide ([`mindMapSlides.ts`](frontend/src/utils/mindMapSlides.ts), [`useMindMapSlidePresentation.ts`](frontend/src/composables/mindMap/useMindMapSlidePresentation.ts)).
+- **Slide show HUD** — Compact bottom dock with progress bar (click to jump), prev/next/first/last, auto-play with fill progress, traversal toggle, collapsible handle, and icon-only exit back to presentation mode ([`MindMapSlideOverlay.vue`](frontend/src/components/canvas/MindMapSlideOverlay.vue)).
+- **Slide focus visuals** — Blue outline on the active slide node; non-focus nodes and branch edges dimmed during branch slides ([`useDiagramCanvasNodesEdges.ts`](frontend/src/composables/diagramCanvas/useDiagramCanvasNodesEdges.ts), [`diagramCanvas.css`](frontend/src/components/diagram/diagramCanvas.css)).
+- **Slide navigation** — Keyboard (Space, arrows, Home/End), click canvas to advance, and auto-play countdown ([`useMindMapSlidePresentation.ts`](frontend/src/composables/mindMap/useMindMapSlidePresentation.ts)).
+- **Inline-edit Enter guard** — Post-commit sibling anchor and frame guard so Enter after double-click edit adds a sibling on the edited branch instead of re-opening edit or mis-selecting ([`mindMapCanvasEnterGuard.ts`](frontend/src/composables/mindMap/mindMapCanvasEnterGuard.ts)).
+
+### Changed
+
+- **Slide show state restore** — Snapshot viewport and collapsed-branch paths on enter; restore on exit slides (stay in presentation mode) ([`useMindMapSlidePresentation.ts`](frontend/src/composables/mindMap/useMindMapSlidePresentation.ts), [`useDiagramCanvasEventBus.ts`](frontend/src/composables/diagramCanvas/useDiagramCanvasEventBus.ts)).
+- **Presentation side toolbar** — Right toolbar slides out while slide show is active and returns when slides end ([`CanvasPage.vue`](frontend/src/pages/CanvasPage.vue)).
+- **Mind map export B&W** — Wireframe outline styles now apply to topic/branch nodes, underline bars, and orthogonal edges during raster export ([`BranchNode.vue`](frontend/src/components/diagram/nodes/BranchNode.vue), [`TopicNode.vue`](frontend/src/components/diagram/nodes/TopicNode.vue), [`MindMapOrthogonalEdge.vue`](frontend/src/components/diagram/edges/MindMapOrthogonalEdge.vue)).
+
+### Fixed
+
+- **Slide exit edge dimming** — `mind-map-slide-edge-dimmed` is stripped from every edge when leaving slide show so connectors no longer stay faded ([`useDiagramCanvasNodesEdges.ts`](frontend/src/composables/diagramCanvas/useDiagramCanvasNodesEdges.ts)).
+- **Mind map B&W export** — Color/wireframe toggle in the export dropdown now affects PNG, SVG, and PDF output (styles were implemented but not connected to renderers).
+
+### Tests
+
+- **Frontend** — [`mindMapSlides.spec.ts`](frontend/tests/mindMapSlides.spec.ts), [`mindMapCanvasEnterGuard.spec.ts`](frontend/tests/mindMapCanvasEnterGuard.spec.ts), [`mindMapCollapseOverlayTarget.spec.ts`](frontend/tests/mindMapCollapseOverlayTarget.spec.ts), [`mindMapEditSiblingSelection.spec.ts`](frontend/tests/mindMapEditSiblingSelection.spec.ts), [`mindMapUndoRedo.spec.ts`](frontend/tests/mindMapUndoRedo.spec.ts), [`canvasExportVisualMode.spec.ts`](frontend/tests/canvasExportVisualMode.spec.ts); extended [`mindMapNodeIdRemap.spec.ts`](frontend/tests/mindMapNodeIdRemap.spec.ts).
+
 ## [5.143.1] - 2026-07-14
 
 > **CI hygiene on main: Ruff format, Kitty ephemeral-scope i18n parity, and document review-annotation removal.**

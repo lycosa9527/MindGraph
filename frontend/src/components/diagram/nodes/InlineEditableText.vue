@@ -19,6 +19,11 @@ import {
   isLearningSheetCustomPickActive,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { isMindMapDiagramType } from '@/composables/mindMap/mindMapArrowNavigation'
+import {
+  armInlineEditEnterGuard,
+  clearMindMapPostEditSiblingAnchor,
+  setMindMapPostEditSiblingAnchor,
+} from '@/composables/mindMap/mindMapCanvasEnterGuard'
 import { useDiagramNodeMarkdownDisplay } from '@/composables/diagram/useDiagramNodeMarkdownDisplay'
 import { useDiagramStore } from '@/stores'
 import {
@@ -459,6 +464,10 @@ function startEditing(): void {
     diagramStore.mindMapPendingEditNodeId = null
   }
 
+  if (isMindMapInlineEditContext() && props.nodeId !== 'topic') {
+    diagramStore.selectNodes(props.nodeId)
+  }
+
   // Emit event for tracking
   eventBus.emit('node_editor:opening', { nodeId: props.nodeId })
   emit('editStart')
@@ -524,6 +533,13 @@ function saveEdit(): void {
 
   const finalText = resolved
   editText.value = finalText
+
+  if (isMindMapInlineEditContext() && props.nodeId !== 'topic') {
+    syncMindMapInlineEditDimensionsBeforeClose()
+    diagramStore.selectNodes(props.nodeId)
+    setMindMapPostEditSiblingAnchor(props.nodeId)
+  }
+
   localIsEditing.value = false
   clearEditLock()
 
@@ -549,6 +565,10 @@ function cancelEdit(): void {
   } else {
     editText.value = originalText.value
   }
+  if (isMindMapInlineEditContext()) {
+    clearMindMapPostEditSiblingAnchor()
+  }
+
   localIsEditing.value = false
   clearEditLock()
 
@@ -562,21 +582,26 @@ function isMindMapInlineEditContext(): boolean {
   return isMindMapDiagramType(diagramStore.type)
 }
 
+function syncMindMapInlineEditDimensionsBeforeClose(): void {
+  if (!isMindMapInlineEditContext() || props.nodeId === 'topic') return
+  const el = inputRef.value
+  if (!el) return
+  const width = Math.max(el.offsetWidth, el.scrollWidth)
+  const height = el.offsetHeight
+  if (width > 0 && height > 0) {
+    diagramStore.setMindMapNodeDimensions(props.nodeId, width, height)
+  }
+}
+
 /**
  * Handle keyboard events
  */
 function handleKeydown(event: KeyboardEvent): void {
   if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault()
-    event.stopPropagation()
-    if (isMindMapInlineEditContext() && props.nodeId !== 'topic') {
-      saveEdit()
-      nextTick(() => {
-        eventBus.emit('diagram:add_sibling_requested', {})
-      })
-      return
-    }
-    saveEdit()
+    if (event.isComposing || event.keyCode === 229) return
+    // Enter commit is handled in capture phase (attachInputEnterCapture) so the
+    // same keydown cannot also trigger canvas-level "add sibling" shortcuts.
+    return
   } else if (event.key === 'Escape') {
     event.preventDefault()
     event.stopPropagation()
@@ -662,8 +687,52 @@ function syncDocumentOutsideEditListeners(editing: boolean): void {
   }
 }
 
+let inputEnterCaptureHandler: ((event: Event) => void) | null = null
+
+function detachInputEnterCapture(): void {
+  const el = inputRef.value
+  if (el && inputEnterCaptureHandler) {
+    el.removeEventListener('keydown', inputEnterCaptureHandler, true)
+  }
+  inputEnterCaptureHandler = null
+}
+
+function attachInputEnterCapture(): void {
+  detachInputEnterCapture()
+  const el = inputRef.value
+  if (!el) return
+
+  inputEnterCaptureHandler = (event: Event): void => {
+    if (!(event instanceof KeyboardEvent)) return
+    if (event.key !== 'Enter' || event.shiftKey) return
+    if (event.isComposing || event.keyCode === 229) return
+
+    event.preventDefault()
+    event.stopPropagation()
+    event.stopImmediatePropagation()
+
+    armInlineEditEnterGuard()
+    saveEdit()
+  }
+
+  el.addEventListener('keydown', inputEnterCaptureHandler, true)
+}
+
+function syncInputEnterCaptureListener(editing: boolean): void {
+  if (editing) {
+    void nextTick(() => {
+      if (localIsEditing.value) {
+        attachInputEnterCapture()
+      }
+    })
+  } else {
+    detachInputEnterCapture()
+  }
+}
+
 watch(localIsEditing, (editing) => {
   syncDocumentOutsideEditListeners(editing)
+  syncInputEnterCaptureListener(editing)
 })
 
 /**
@@ -869,6 +938,7 @@ const unsubNodeEditDenied = eventBus.on('workshop:node-edit-denied', handleNodeE
 // Cleanup on unmount
 onUnmounted(() => {
   syncDocumentOutsideEditListeners(false)
+  detachInputEnterCapture()
   unsubEditRequested()
   unsubRecommendationApplied()
   unsubInsertText()

@@ -380,6 +380,55 @@
   display: none !important;
 }
 
+/* ── Mind map slide focus: blue outline on the current slide node ────────── */
+.vue-flow__node.mind-map-slide-focus > * {
+  position: relative;
+  isolation: isolate;
+}
+
+.vue-flow__node.mind-map-slide-focus:not(.vue-flow__node-boundary) > *::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 3px solid #3b82f6;
+  border-radius: inherit;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: 0 0 0 1px rgb(59 130 246 / 0.25), 0 0 12px rgb(59 130 246 / 0.35);
+}
+
+:root.dark .vue-flow__node.mind-map-slide-focus:not(.vue-flow__node-boundary) > *::after {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 1px rgb(96 165 250 / 0.3), 0 0 14px rgb(96 165 250 / 0.4);
+}
+
+.vue-flow__node-circle.mind-map-slide-focus:not(:has(.circle-node--capsule)) > *::after {
+  border-radius: 50% !important;
+}
+
+.vue-flow__node.workshop-editing.mind-map-slide-focus > *::after,
+.vue-flow__node.tab-rec-active.mind-map-slide-focus > *::before {
+  display: none !important;
+}
+
+/* Dim non-focus nodes during branch slides */
+.vue-flow__node.mind-map-slide-dimmed {
+  opacity: 0.3;
+  filter: grayscale(0.25);
+  transition: opacity 0.45s ease, filter 0.45s ease;
+}
+
+.vue-flow__node.mind-map-slide-focus.mind-map-slide-dimmed {
+  opacity: 1;
+  filter: none;
+}
+
+.vue-flow__edge.mind-map-slide-edge-dimmed {
+  opacity: 0.22;
+  transition: opacity 0.45s ease;
+}
+
 /* ── Branch-move ghost: semi-transparent dragged node following cursor ─── */
 .branch-move-ghost {
   box-sizing: border-box;

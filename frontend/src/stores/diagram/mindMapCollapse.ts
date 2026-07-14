@@ -104,6 +104,54 @@ export function remapMindMapNodeIdAfterReload(
   return findNodeIdByTextSegmentsOnSide(segments, otherSide, newNodes, newConnections)
 }
 
+/** Carry DOM-measured sizes across a mind-map tree rebuild (add/delete/reload). */
+export function remapMindMapMeasuredDimensionsAfterReload(
+  oldWidths: Record<string, number>,
+  oldHeights: Record<string, number>,
+  oldNodes: DiagramNode[],
+  oldConnections: Connection[],
+  newNodes: DiagramNode[],
+  newConnections: Connection[]
+): { widths: Record<string, number>; heights: Record<string, number> } {
+  const widths: Record<string, number> = {}
+  const heights: Record<string, number> = {}
+
+  for (const [oldId, width] of Object.entries(oldWidths)) {
+    const newId = remapMindMapNodeIdAfterReload(
+      oldId,
+      oldNodes,
+      oldConnections,
+      newNodes,
+      newConnections
+    )
+    if (newId) widths[newId] = width
+  }
+
+  for (const [oldId, height] of Object.entries(oldHeights)) {
+    const newId = remapMindMapNodeIdAfterReload(
+      oldId,
+      oldNodes,
+      oldConnections,
+      newNodes,
+      newConnections
+    )
+    if (newId) heights[newId] = height
+  }
+
+  for (const node of newNodes) {
+    const estimatedWidth = node.data?.estimatedWidth as number | undefined
+    const estimatedHeight = node.data?.estimatedHeight as number | undefined
+    if (estimatedWidth !== undefined) {
+      widths[node.id] = estimatedWidth
+    }
+    if (estimatedHeight !== undefined) {
+      heights[node.id] = estimatedHeight
+    }
+  }
+
+  return { widths, heights }
+}
+
 /** Remap a selection list across a mind-map tree rebuild; drops unresolved ids. */
 export function remapMindMapNodeIdsAfterReload(
   oldIds: string[],

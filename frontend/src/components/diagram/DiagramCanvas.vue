@@ -95,8 +95,11 @@ interface Props {
   presentationPointerEditMode?: boolean
   presentationHandPanMode?: boolean
   collabLockedNodeIds?: string[]
+  mindMapSlideFocusNodeId?: string | null
+  mindMapSlideDimFocusNodeIds?: Set<string> | null
   panOnDragButtons?: number[] | null
   presentationRailOpen?: boolean
+  presentationSideToolbarVisible?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -108,8 +111,11 @@ const props = withDefaults(defineProps<Props>(), {
   presentationPointerEditMode: false,
   presentationHandPanMode: false,
   collabLockedNodeIds: () => [],
+  mindMapSlideFocusNodeId: null,
+  mindMapSlideDimFocusNodeIds: null,
   panOnDragButtons: null,
   presentationRailOpen: false,
+  presentationSideToolbarVisible: true,
 })
 
 const presentationHighlightStrokes = defineModel<PresentationHighlightStroke[]>(
@@ -249,6 +255,8 @@ const { nodes, edges, nodesLength } = useDiagramCanvasNodesEdges({
   diagramStore,
   branchMove,
   collabLockedNodeIds: () => props.collabLockedNodeIds,
+  mindMapSlideFocusNodeId: () => props.mindMapSlideFocusNodeId,
+  mindMapSlideDimFocusNodeIds: () => props.mindMapSlideDimFocusNodeIds,
 })
 
 const useMindMapV2 = useMindMapV2Chrome()
@@ -353,6 +361,7 @@ const {
   fitViewOnInit: toRef(props, 'fitViewOnInit'),
   conceptMapInitialTopicFit: toRef(props, 'conceptMapInitialTopicFit'),
   presentationRailOpen: toRef(props, 'presentationRailOpen'),
+  presentationSideToolbarVisible: toRef(props, 'presentationSideToolbarVisible'),
   presentationToolIsNotTimer,
   nodesLength,
 })

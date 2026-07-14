@@ -18,6 +18,11 @@ import {
   handleLearningSheetPickNodeClick,
   isLearningSheetCustomPickActive,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
+import {
+  useMindMapExportOutlineWireframeActive,
+  wrapMindMapNodeStyleForExport,
+  wrapMindMapUnderlineBarForExport,
+} from '@/composables/mindMap/useMindMapExportOutlineWireframe'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
@@ -49,6 +54,14 @@ const diagramStore = useDiagramStore()
 const llmResultsStore = useLLMResultsStore()
 const { isGenerating: isWholeDiagramGenerating } = storeToRefs(llmResultsStore)
 const useMindMapV2Visuals = useMindMapV2Chrome()
+const exportOutlineActive = useMindMapExportOutlineWireframeActive()
+
+function finalizeMindMapExportNodeStyle(style: CSSProperties): CSSProperties {
+  return wrapMindMapNodeStyleForExport(style, exportOutlineActive.value, {
+    isMindMapV2: isMindMap.value && useMindMapV2Visuals.value,
+    isUnderlineShape: isUnderlineTopic.value,
+  })
+}
 const isTextReadonly = computed(
   () => props.data.hidden === true || presentationDiagramEditLockedRef.value
 )
@@ -135,12 +148,13 @@ const underlineLineStyle = computed((): CSSProperties => {
     theme?.topicBorderColor ||
     '#0d47a1'
   const { textGap } = mindMapUnderlineContentPadding()
-  return {
+  const base = {
     backgroundColor: lineColor,
     opacity: MIND_MAP_GEOMETRY.edgeStrokeOpacity,
     marginTop: `${textGap}px`,
     height: `${MINDMAP_UNDERLINE_STROKE_WIDTH}px`,
   }
+  return wrapMindMapUnderlineBarForExport(base, exportOutlineActive.value)
 })
 
 // For multi-flow maps: get cause count to generate handles dynamically
@@ -271,7 +285,7 @@ const nodeStyle = computed(() => {
       maxWidth: '400px',
     }
 
-    return classicStyle
+    return finalizeMindMapExportNodeStyle(classicStyle)
   }
 
   const theme = defaultMindMapTheme.value
@@ -349,37 +363,37 @@ const nodeStyle = computed(() => {
 
   // Add dynamic width when editing (only for multi-flow map)
   if (isMultiFlowMap.value && dynamicWidth.value !== null) {
-    return {
+    return finalizeMindMapExportNodeStyle({
       ...withMindMapBox,
       width: `${dynamicWidth.value}px`,
       minWidth: `${dynamicWidth.value}px`,
       transition: 'width 0.2s ease',
-    }
+    })
   }
 
   // Multi-flow map topic: adaptive width so node grows/shrinks with text
   if (isMultiFlowMap.value && dynamicWidth.value === null) {
-    return {
+    return finalizeMindMapExportNodeStyle({
       ...withMindMapBox,
       width: 'max-content',
       minWidth: '90px',
-    }
+    })
   }
 
   // Flow map topic: adaptive width and height so full text displays
   if (isFlowMap.value) {
-    return {
+    return finalizeMindMapExportNodeStyle({
       ...withMindMapBox,
       width: 'max-content',
       minWidth: '120px',
       minHeight: '48px',
       maxWidth: '400px',
-    }
+    })
   }
 
   // Tree map: measured box from layout so wrapped text stays inside the pill (Vue Flow + CSS match)
   if (isTreeMap.value && props.data.style?.width != null) {
-    return {
+    return finalizeMindMapExportNodeStyle({
       ...withMindMapBox,
       width: `${props.data.style.width}px`,
       minWidth: `${props.data.style.width}px`,
@@ -390,19 +404,19 @@ const nodeStyle = computed(() => {
             minHeight: `${props.data.style.height}px`,
           }
         : {}),
-    }
+    })
   }
 
   // Brace map / mind map: hard-cap width so the pill never exceeds the layout algorithm's maximum
   if (isBraceMap.value || isMindMap.value) {
-    return {
+    return finalizeMindMapExportNodeStyle({
       ...withMindMapBox,
       width: 'fit-content',
       maxWidth: '400px',
-    }
+    })
   }
 
-  return withMindMapBox
+  return finalizeMindMapExportNodeStyle(withMindMapBox)
 })
 
 const topicRingBorderRadius = computed(() => {

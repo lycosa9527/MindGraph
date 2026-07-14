@@ -167,6 +167,26 @@
   cursor: auto !important;
 }
 
+/* Presentation side rail: slide off to the right when slides mode hides it */
+.presentation-rail-slide-enter-active,
+.presentation-rail-slide-leave-active {
+  transition:
+    transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.22s ease;
+}
+
+.presentation-rail-slide-enter-from,
+.presentation-rail-slide-leave-to {
+  transform: translate(calc(100% + 1rem), -50%);
+  opacity: 0;
+}
+
+.presentation-rail-slide-enter-to,
+.presentation-rail-slide-leave-from {
+  transform: translate(0, -50%);
+  opacity: 1;
+}
+
 /* Laser pointer dot — z-index via laserCursorStyle (PRESENTATION_Z.LASER) */
 .laser-cursor {
   position: fixed;

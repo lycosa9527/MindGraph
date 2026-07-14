@@ -463,6 +463,11 @@ export type EventTypes = {
   }
   'view:fit_for_export_requested': Record<string, never>
   'view:zoom_reset_requested': Record<string, never>
+  'view:viewport_snapshot_save': Record<string, never>
+  'view:viewport_snapshot_restore': {
+    animate?: boolean
+    duration?: number
+  }
 
   /** Canvas presentation rail: Ctrl/Cmd+6 toggles virtual keyboard */
   'presentation:toggle_virtual_keyboard_requested': Record<string, never>
