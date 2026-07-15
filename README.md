@@ -1,11 +1,40 @@
-# MindGraph
+<p align="center">
+  <img src="docs/assets/readme-hero.jpg" alt="MindGraph — cute black cat learning with diagrams" width="100%">
+</p>
 
-AI-powered diagram generation platform. Transform natural language into professional visual diagrams with support for Thinking Maps, Mind Maps, and Concept Maps.
+<h1 align="center">MindGraph</h1>
 
-[![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![Vue](https://img.shields.io/badge/Vue-3.5+-42b883.svg)](https://vuejs.org/)
-[![Version](https://img.shields.io/badge/Version-5.132.0-brightgreen.svg)](CHANGELOG.md)
+<p align="center">
+  <strong>Diagrams for cat lovers who love to learn</strong><br>
+  Turn a thought into Thinking Maps, Mind Maps, and Concept Maps — with a little help from AI.
+</p>
+
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.13+-blue.svg" alt="Python"></a>
+  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.104+-green.svg" alt="FastAPI"></a>
+  <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3.5+-42b883.svg" alt="Vue"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.147.0-brightgreen.svg" alt="Version"></a>
+</p>
+
+---
+
+Welcome in. **MindGraph** is an AI-powered diagram studio for classrooms and curious minds: describe an idea in plain language, watch it become a structured map, then play with it on an interactive canvas — alone or with classmates.
+
+Built for teachers, learners, and anyone who thinks better with pictures (especially if a black cat on the desk helps).
+
+<p align="center">
+  <img src="docs/assets/readme-diagrams.jpg" alt="Cute black cat guides Circle, Bubble, Tree, and Concept Maps" width="72%">
+</p>
+
+<p align="center"><em>Meet the maps: Circle, Bubble, Tree, and Concept — same learning tools teachers know, wrapped in a friendlier face.</em></p>
+
+<p align="center">
+  <img src="docs/assets/readme-canvas.jpg" alt="Black cat teacher introducing MindGraph mind map in class" width="88%">
+</p>
+
+<p align="center"><em>From “Ideas” to Stories, Questions, and Feelings — MindGraph turns brainstorming into a shareable, editable canvas.</em></p>
+
+> README art generated with DashScope **qwen-image-2.0** (cute black-cat education theme). Regenerate via `scripts/generate_readme_images.py`.
 
 ---
 

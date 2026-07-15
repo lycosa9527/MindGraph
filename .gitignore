@@ -236,6 +236,9 @@ docs/*
 !docs/NODE_NVM_SETUP.md
 !docs/VUE_SETUP.md
 !docs/db-*.md
+!docs/assets/
+docs/assets/*
+!docs/assets/readme-*.jpg
 !docs/architecture/
 docs/architecture/*
 !docs/architecture/**/*.md
