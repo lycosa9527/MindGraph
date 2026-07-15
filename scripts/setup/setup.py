@@ -2720,8 +2720,10 @@ def print_next_steps() -> None:
     )
     print("    4. Activate miniconda (Linux/macOS/WSL):")
     print("       conda activate mindgraph")
-    print("    5. Run: python main.py")
-    print("    6. Open http://localhost:9527 in your browser")
+    print("    5. National data center / map IP lookups (optional):")
+    print("       python scripts/setup/dashboard_install.py")
+    print("    6. Run: python main.py")
+    print("    7. Open http://localhost:9527 in your browser")
 
     # Show platform-specific hints
     os_name = platform.system().lower()

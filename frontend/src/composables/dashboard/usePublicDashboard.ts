@@ -47,7 +47,7 @@ interface FlagDatum {
   value: [number, number] | number[]
 }
 
-const GEO_JSON_URL = '/static/data/china-geo.json'
+const GEO_JSON_URL = '/data/china-geo.json'
 const MAX_ACTIVITIES = 100
 const SERIES_USERS = 'users'
 const SERIES_SESSIONS = 'sessions'

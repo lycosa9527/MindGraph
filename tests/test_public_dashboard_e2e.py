@@ -11,8 +11,11 @@ platform super-admin (no passkey).
 from __future__ import annotations
 
 import asyncio
+import importlib
 import json
+import shutil
 from collections.abc import AsyncIterator, Generator
+from pathlib import Path
 from types import SimpleNamespace
 
 import httpx
@@ -183,9 +186,23 @@ async def test_activity_stream_emits_initial_event(
 
 
 @pytest.mark.asyncio
-async def test_china_geo_static_asset_served(client: httpx.AsyncClient) -> None:
-    """China GeoJSON used by the Vue map must be reachable under /static."""
-    response = await client.get("/static/data/china-geo.json")
+async def test_china_geo_static_asset_served(
+    client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:
+    """China GeoJSON used by the Vue map must be reachable under /data (frontend dist)."""
+    vue_spa_module = importlib.import_module("routers.core.vue_spa")
+    dist_dir = tmp_path / "dist"
+    data_dir = dist_dir / "data"
+    data_dir.mkdir(parents=True)
+    source = Path("frontend/public/data/china-geo.json")
+    if not source.is_file():
+        pytest.skip("frontend/public/data/china-geo.json not present")
+    shutil.copy(source, data_dir / "china-geo.json")
+    monkeypatch.setattr(vue_spa_module, "VUE_DIST_DIR", dist_dir)
+
+    response = await client.get("/data/china-geo.json")
     assert response.status_code == 200, response.text
     body = response.json()
     assert body.get("type") == "FeatureCollection"

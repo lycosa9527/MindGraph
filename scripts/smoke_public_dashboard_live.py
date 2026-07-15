@@ -68,7 +68,7 @@ def _run_flow(base: str, access_token: str) -> None:
         history = client.get("/api/public/activity-history?limit=10")
         assert history.status_code == 200, history.text
 
-        geo = client.get("/static/data/china-geo.json")
+        geo = client.get("/data/china-geo.json")
         assert geo.status_code == 200, geo.text
         assert geo.json().get("type") == "FeatureCollection"
 
