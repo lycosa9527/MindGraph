@@ -1,5 +1,5 @@
 /**
- * en UI � common
+ * tg UI � common
  */
 
 export default {
@@ -148,6 +148,7 @@ export default {
   'mobile.kittyEnd': 'End',
   'mobile.kittyWelcomeLine': 'Share your ideas',
   'mobile.kittyWelcomeSub': 'Ask by voice with photo support. Open a saved diagram on your phone or desktop so Kitty stays in sync with MindGraph.',
+  'mobile.kittyNeedsDesktopOwner': 'Open this diagram on desktop MindGraph to apply edits. Phone Kitty can still chat until the canvas is connected.',
   'mobile.kittyConnecting': 'Connecting…',
   'mobile.kittyInputPlaceholder': 'Type a message…',
   'mobile.kittySend': 'Send',
@@ -169,14 +170,11 @@ export default {
   'mobile.kittyNewMindmapTitle': 'New mind map',
   'mobile.kittyNewMindmapCreated': 'New mind map started; desktop will open a blank canvas.',
   'mobile.kittyNewMindmapCreateFailed': 'Could not create the mind map. Please try again.',
-  'mobile.kittyNewMindmapDesktopFailed':
-    'New mind map started, but desktop could not be notified.',
+  'mobile.kittyNewMindmapDesktopFailed': 'New mind map started, but desktop could not be notified.',
   'mobile.kittyDiagramPinned': 'Pinned',
   'mobile.kittyDiagramPickFailed': 'Could not load that diagram. Try again later.',
-  'mobile.kittyEphemeralScopePinned':
-    'Using a temporary session — choose or create a saved diagram to sync with desktop.',
-  'mobile.kittyEphemeralScopeDegraded':
-    'Desktop pairing may be out of sync. Open a saved diagram to reconnect.',
+  'mobile.kittyEphemeralScopePinned': 'Using a temporary session — choose or create a saved diagram to sync with desktop.',
+  'mobile.kittyEphemeralScopeDegraded': 'Desktop pairing may be out of sync. Open a saved diagram to reconnect.',
   'mobile.kittyDesktopJumpFailed': 'Diagram switched, but desktop could not be notified.',
   'mobile.kittyDiagramSelected': 'Diagram selected; desktop will open it.',
   'mobile.kittyCurrentDiagramLabel': 'Current diagram',
@@ -200,12 +198,18 @@ export default {
   'mobile.kittyClickWheelNext': 'Next node',
   'mobile.kittyClickWheelSelect': 'Select current node',
   'mobile.kittyLlmRowAria': 'Choose AI model',
-  'mobile.kittyPhotoOcrComingSoon':
-    'Photo OCR is coming soon. Use hold-to-speak or text to edit the diagram.',
-  'mobile.kittyPickDiagramToEdit':
-    'Open or pick a saved diagram first, then hold to speak or type to edit it.',
-  'mobile.kittyHubSyncFailed':
-    'Could not sync the diagram to Kitty. Check your connection and try again.',
+  'mobile.kittyPhotoNeedsDiagram': 'Open or pick a saved diagram first, then take a photo to extract text.',
+  'mobile.kittyPhotoInvalidType': 'Please choose a JPG, PNG, or WebP photo.',
+  'mobile.kittyPhotoTooLarge': 'Photo is too large. Maximum size is 10MB.',
+  'mobile.kittyPhotoProgressDetecting': 'Processing photo…',
+  'mobile.kittyPhotoUserBubble': '📷 Photo',
+  'mobile.kittyPhotoUntitledMap': 'Mind map',
+  'mobile.kittyPhotoHanddrawnReply': 'Detected a hand-drawn mind map “{topic}”. Rebuilt on canvas; outline saved to Document Summary.',
+  'mobile.kittyPhotoHanddrawnLocalReply': 'Detected a hand-drawn mind map “{topic}”. Rebuilt here; outline saved to Document Summary. Library sync did not complete — open the diagram again if the canvas looks stale.',
+  'mobile.kittyPhotoOcrReply': 'Extracted text from the photo:\n{excerpt}\n\nFull text is in Document Summary.',
+  'mobile.kittyPhotoUploadFailed': 'Could not upload the photo.',
+  'mobile.kittyPickDiagramToEdit': 'Open or pick a saved diagram first, then hold to speak or type to edit it.',
+  'mobile.kittyHubSyncFailed': 'Could not sync the diagram to Kitty. Check your connection and try again.',
   'mobile.kittyDesktopDiagramFollowed': 'Switched to the diagram open on desktop',
   'mobile.kittyScopeDivergence': 'Desktop opened a different diagram. Choose how to sync:',
   'mobile.kittyScopeFollowDesktop': 'Follow desktop diagram',
@@ -222,6 +226,24 @@ export default {
   'meta.pageTitle.teacherUsage': 'Teacher usage',
   'meta.pageTitle.workshopChat': 'Workshop chat',
   'publicDashboard.networkError': 'Network error, failed to load dashboard',
+  'publicDashboard.title': 'MG National Data Center',
+  'publicDashboard.subtitle': 'Real-time user distribution across China',
+  'publicDashboard.statsTitle': 'Statistics',
+  'publicDashboard.connectedUsers': 'Online users',
+  'publicDashboard.registeredUsers': 'Registered users',
+  'publicDashboard.tokensToday': 'Tokens today',
+  'publicDashboard.totalTokens': 'Total tokens',
+  'publicDashboard.activeNow': 'Active now',
+  'publicDashboard.totalUsers': 'Total users',
+  'publicDashboard.today': 'Today',
+  'publicDashboard.allTime': 'All time',
+  'publicDashboard.activityTitle': 'Live activity',
+  'publicDashboard.refresh': 'Refresh',
+  'publicDashboard.noActivity': 'No recent activity yet',
+  'publicDashboard.hasGenerated': 'generated',
+  'publicDashboard.unknownDiagram': 'diagram',
+  'publicDashboard.visualHigh': 'High',
+  'publicDashboard.visualLow': 'Low',
   'settings.language.interface': 'Interface language',
   'settings.language.matchPrompt': 'Keep AI assistant, interface and virtual keyboard language in sync',
   'settings.language.prompt': 'AI assistant language',

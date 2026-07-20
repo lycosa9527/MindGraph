@@ -23,19 +23,20 @@ export function isCanvasBackTargetPath(path: string): boolean {
   )
 }
 
-/** Use when replacing/pushing the editor URL so mobile stays on /m/canvas. */
+/**
+ * Editor path for the current route context.
+ * Any `/m/*` page (MindMate, MindGraph, canvas) opens `/m/canvas`.
+ */
 export function canvasEditorPathForRoute(routePath: string): '/canvas' | '/m/canvas' {
-  return routePath === CANVAS_EDITOR_PATH_MOBILE
-    ? CANVAS_EDITOR_PATH_MOBILE
-    : CANVAS_EDITOR_PATH_DESKTOP
-}
-
-/** Landing-page `.mg` import: open editor on desktop or mobile canvas. */
-export function canvasPathForImportNavigation(routePath: string): '/canvas' | '/m/canvas' {
   if (routePath === CANVAS_EDITOR_PATH_MOBILE || routePath.startsWith('/m/')) {
     return CANVAS_EDITOR_PATH_MOBILE
   }
   return CANVAS_EDITOR_PATH_DESKTOP
+}
+
+/** Landing-page `.mg` import: open editor on desktop or mobile canvas. */
+export function canvasPathForImportNavigation(routePath: string): '/canvas' | '/m/canvas' {
+  return canvasEditorPathForRoute(routePath)
 }
 
 /** Default MindGraph landing when canvas entry path is unknown. */

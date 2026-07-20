@@ -147,3 +147,26 @@ def extract_before_fingerprint(session_context: Dict[str, Any]) -> Dict[str, Any
         "children": list(children) if isinstance(children, list) else [],
         "format": "kitty_children",
     }
+
+
+def refresh_session_diagram_data_from_evidence(
+    session_context: Dict[str, Any],
+    evidence: Dict[str, Any],
+) -> None:
+    """
+    Patch session ``diagram_data`` from a verified canvas ack evidence snapshot.
+
+    Required for sequential multi-mutation turns so the next apply's
+    ``before_fingerprint`` matches the post-apply canvas.
+    """
+    nodes = evidence.get("nodes")
+    if not isinstance(nodes, list):
+        return
+    diagram_data = session_context.get("diagram_data")
+    if not isinstance(diagram_data, dict):
+        diagram_data = {}
+        session_context["diagram_data"] = diagram_data
+    diagram_data["nodes"] = list(nodes)
+    connections = evidence.get("connections")
+    if isinstance(connections, list):
+        diagram_data["connections"] = list(connections)

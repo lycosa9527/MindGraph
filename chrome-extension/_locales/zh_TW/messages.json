@@ -268,24 +268,28 @@
     "description": "目前分頁不支援文件擷取時的提示"
   },
   "fileCenterSectionLabel": {
-    "message": "儲存到檔案中心",
-    "description": "檔案中心區域標題"
+    "message": "儲存到文件總結",
+    "description": "文件總結區域標題"
   },
   "fileCenterPackageLabel": {
-    "message": "資料包",
-    "description": "資料包選擇標籤"
+    "message": "工作階段",
+    "description": "文件總結工作階段選擇標籤"
+  },
+  "fileCenterNewSession": {
+    "message": "新建工作階段（目前頁面）",
+    "description": "為目前頁面建立新的文件總結工作階段"
   },
   "btnSaveToFileCenter": {
-    "message": "將網頁儲存到資料包",
-    "description": "將網頁內容儲存到檔案中心資料包的按鈕"
+    "message": "儲存網頁擷取",
+    "description": "將網頁 markdown 儲存到文件總結（COS）的按鈕"
   },
   "fileCenterUntitled": {
-    "message": "未命名資料包",
-    "description": "資料包預設名稱"
+    "message": "未命名工作階段",
+    "description": "文件總結工作階段預設名稱"
   },
   "statusSavedToFileCenter": {
-    "message": "已儲存到檔案中心，開始索引。",
-    "description": "儲存網頁到資料包後的狀態"
+    "message": "已儲存擷取內容，可在文件總結中回顧。",
+    "description": "儲存網頁擷取到 COS 後的狀態"
   },
   "btnSettings": {
     "message": "設定",

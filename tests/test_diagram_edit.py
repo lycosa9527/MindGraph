@@ -13,6 +13,7 @@ from services.diagram_edit.executor import execute_diagram_edit_from_legacy
 from services.diagram_edit.pending import (
     MutationAckPayload,
     complete_pending,
+    fail_pending_for_scope,
     new_mutation_id,
     register_pending,
     reset_pending_state_for_tests,
@@ -96,6 +97,41 @@ def test_pending_ack_timeout() -> None:
         register_pending(mutation_id, "voice-test")
         result = await wait_for_ack(mutation_id, timeout_sec=0.05)
         assert result is None
+
+    asyncio.run(run())
+
+
+def test_fail_pending_for_scope_completes_waiter() -> None:
+    """Owner disconnect fails in-flight acks for that scope (no ack_timeout wait)."""
+    reset_pending_state_for_tests()
+    mutation_id = new_mutation_id()
+
+    async def run() -> None:
+        fut = register_pending(mutation_id, "voice-mobile", scope="lib-diagram-1")
+        n = fail_pending_for_scope(
+            "lib-diagram-1",
+            error_code="no_owner",
+            message="Desktop canvas owner disconnected",
+        )
+        assert n == 1
+        ack = await fut
+        assert ack.verified is False
+        assert ack.error_code == "no_owner"
+        assert fail_pending_for_scope("lib-diagram-1") == 0
+
+    asyncio.run(run())
+
+
+def test_fail_pending_for_scope_ignores_other_scopes() -> None:
+    """Fail-by-scope must not complete pending mutations for a different diagram."""
+    reset_pending_state_for_tests()
+    mutation_id = new_mutation_id()
+
+    async def run() -> None:
+        fut = register_pending(mutation_id, "voice-mobile", scope="lib-a")
+        assert fail_pending_for_scope("lib-b") == 0
+        assert not fut.done()
+        assert complete_pending(MutationAckPayload(mutation_id=mutation_id, verified=True))
 
     asyncio.run(run())
 

@@ -383,7 +383,7 @@ export default {
   'canvas.toolbar.moreAppConceptMapModesDesc': '当前为标准模式，更多模式即将推出',
   'canvas.toolbar.moreAppLearningSheet': '半成品图示',
   'canvas.toolbar.moreAppLearningSheetDesc': '随机留空，学习复习好搭子',
-  'canvas.toolbar.moreAppWaterfall': '概念停车场',
+  'canvas.toolbar.moreAppWaterfall': 'AI头脑风暴',
   'canvas.toolbar.moreAppWaterfallDesc': '在批量节点中选择，发散聚合思维显性化',
   'canvas.toolbar.moreApps': '更多应用',
   'canvas.toolbar.moreAppSnapshot': '快照',
@@ -643,13 +643,13 @@ export default {
   'canvas.mindMapSideToolbar.expand': '展开工具栏',
   'canvas.mindMapSideToolbar.collapse': '收起工具栏',
   'canvas.mindMapSideToolbar.outline': '层级大纲',
-  'canvas.mindMapSideToolbar.waterfall': '概念停车场',
+  'canvas.mindMapSideToolbar.waterfall': 'AI头脑风暴',
   'canvas.mindMapWaterfall.panelHint':
     '选中节点，AI生成分支建议\n按住 Ctrl 可多选节点\n未选中节点时，将基于中心主题生成关联分支建议。',
   'canvas.mindMapWaterfall.emptyHint': '暂无建议，请先在画布上选中节点或点击重新生成。',
   'canvas.mindMapWaterfall.dragHint':
     '点击多选后拖拽到导图节点上插入；拖到空白处将添加为一级分支。',
-  'canvas.mindMapWaterfall.historyAddFromPalette': '从概念停车场拖入节点',
+  'canvas.mindMapWaterfall.historyAddFromPalette': '从AI头脑风暴拖入节点',
   'canvas.mindMapOneSentence.intro': '输入主题，或说明分支数量、分类维度、步骤等结构要求',
   'canvas.mindMapOneSentence.requirementsPlaceholder':
     '例如：北京三日游计划，四个分支：衣、食、住、行',
@@ -662,6 +662,19 @@ export default {
   'canvas.mindMapOneSentence.listeningPlaceholder': '正在听…',
   'canvas.mindMapOneSentence.sendButton': '发送',
   'canvas.mindMapOneSentence.micButton': '语音输入',
+  'canvas.mindMapOneSentence.photoButton': '上传图片',
+  'canvas.mindMapOneSentence.photoUserBubble': '📷 照片',
+  'canvas.mindMapOneSentence.photoNeedsDiagram': '请先将图示保存到图库，再上传图片。',
+  'canvas.mindMapOneSentence.photoInvalidType': '请选择 JPG、PNG 或 WebP 图片。',
+  'canvas.mindMapOneSentence.photoTooLarge': '图片过大，最大 10MB。',
+  'canvas.mindMapOneSentence.photoUntitledMap': '思维导图',
+  'canvas.mindMapOneSentence.photoHanddrawnReply':
+    '检测到手绘思维导图「{topic}」。已重建到画布，结构大纲已保存到文档总结。',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
+    '检测到手绘思维导图「{topic}」。已在本机画布重建，结构大纲已保存到文档总结。图库同步未完成，请保存或重试。',
+  'canvas.mindMapOneSentence.photoOcrReply':
+    '已识别图片文字：\n{excerpt}\n\n全文已存入文档总结。',
+  'canvas.mindMapOneSentence.photoFailed': '无法处理该图片。',
   'canvas.mindMapOneSentence.micDenied': '麦克风不可用，请检查浏览器权限',
   'canvas.mindMapOneSentence.ttsToggle': '朗读开关',
   'canvas.mindMapOneSentence.kittyWelcome': '你好，告诉我你想画什么思维图示，或之后继续让我帮你修改。',
@@ -685,6 +698,8 @@ export default {
   'canvas.mindMapOneSentence.requestQueued': '排队中',
   'canvas.mindMapOneSentence.requestFailed': '未完成',
   'canvas.mindMapOneSentence.kittyEditAccessDenied': '当前没有权限修改这张导图。',
+  'canvas.mindMapOneSentence.kittyEditCollabActive':
+    '实时协作进行中，Kitty 暂不修改导图，以免和协作编辑冲突。',
   'canvas.mindMapOneSentence.kittyEditStaleRevision': '导图刚被更新过，这次修改过期了。请再说一次你的修改。',
   'canvas.mindMapOneSentence.kittyEditTimeout': '这次修改超时了，导图可能未更新。请再试一次。',
   'canvas.mindMapOneSentence.kittyEditNoOwner': '暂时找不到可编辑的画布，请确认画布已打开后再试。',
@@ -693,6 +708,10 @@ export default {
   'canvas.mindMapOneSentence.kittyEditCenterFailed': '抱歉，没能更新主题。请再试一次。',
   'canvas.mindMapOneSentence.kittyEditDeleteFailed': '抱歉，没能删除该节点。请确认名称后再试。',
   'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': '抱歉，没能为该分支自动补全。你可以再说一次「自动补全」。',
+  'canvas.mindMapOneSentence.kittyBranchCompleteDone': '这个分支补全好了。',
+  'canvas.mindMapOneSentence.kittyBranchesCompleteDone': '这几个分支都补全好了。',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
+    '有的分支补全好了，有的没成功。你可以再说一次「自动补全」。',
   'canvas.mindMapOneSentence.kittyWorking': '好的，正在处理…',
   'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty 暂不可用，请确认已开启 FEATURE_KITTY_AGENT。',
   'canvas.mindMapOneSentence.kittyConnectFailed':
@@ -719,10 +738,25 @@ export default {
   'canvas.mindMapDocumentSummary.intro':
     '为本图积累资料，生成更准确的思维导图。添加文档、图片、网页或聊天记录后，再一键生成。',
   'canvas.mindMapDocumentSummary.uploadFileHint': '点击上传文件',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint': '支持 Word、PDF、PPT、图片、音频；仅保存提取文字',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint':
+    '支持 PDF、Word、PPT、Excel、文本、图片、音频；仅保留提取后的 Markdown',
   'canvas.mindMapDocumentSummary.invalidFileType': '不支持该文件类型',
   'canvas.mindMapDocumentSummary.saveContent': '保存内容',
   'canvas.mindMapDocumentSummary.statusExtracting': '提取中…',
+  'canvas.mindMapDocumentSummary.stageStarting': '准备中…',
+  'canvas.mindMapDocumentSummary.stageConverting': '正在转换旧版 Office 文件…',
+  'canvas.mindMapDocumentSummary.stageExtracting': '正在提取文字…',
+  'canvas.mindMapDocumentSummary.stageOcr': '正在识别图片文字…',
+  'canvas.mindMapDocumentSummary.stageTranscribing': '正在转写音频…',
+  'canvas.mindMapDocumentSummary.stageStoring': '正在保存提取结果…',
+  'canvas.mindMapDocumentSummary.replaceSourceHint': '再次上传将替换本图当前的唯一来源',
+  'canvas.mindMapDocumentSummary.fromSource': '来自 {name}',
+  'canvas.mindMapDocumentSummary.deleteSource': '删除来源',
+  'canvas.mindMapDocumentSummary.sourceDeleted': '已删除来源，可以重新上传',
+  'canvas.mindMapDocumentSummary.extractStarted': '正在提取内容…',
+  'canvas.mindMapDocumentSummary.extractFailed': '无法从该文件提取文字',
+  'canvas.mindMapDocumentSummary.sourceBoundHint': 'Markdown 已就绪。可生成思维导图，或删除后来源后重新上传。',
+  'canvas.mindMapDocumentSummary.deleteToRetry': '请先删除此来源，再重新上传或粘贴。',
   'canvas.mindMapDocumentSummary.chatIntroLite':
     '下载文件读取工具，输入配对码，将微信或钉钉聊天记录发送到此图表。',
   'canvas.mindMapDocumentSummary.chatReceivedLite': '已收到聊天记录',
@@ -769,7 +803,10 @@ export default {
     '在此可自由粘贴论文片段、读书摘要、工作讨论纪要、需求文档等。我们将为您层层理清头绪！',
   'canvas.mindMapDocumentSummary.imageUploadLabel': '上传图片：',
   'canvas.mindMapDocumentSummary.uploadImageHint': '点击上传 JPG、PNG 图片',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint': '我们将自动识别图片中的文字并提炼',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint':
+    '手绘思维导图将自动重建到画布；普通图片则提取文字',
+  'canvas.mindMapDocumentSummary.visionRebuildSuccess': '已识别手绘思维导图并重建到画布',
+  'canvas.mindMapDocumentSummary.visionProgressDetecting': '正在识别手绘思维导图…',
   'canvas.mindMapDocumentSummary.imageOcrHint': '支持笔记截图、白板照片、扫描件等含文字的图片。',
   'canvas.mindMapDocumentSummary.removeImage': '移除图片',
   'canvas.mindMapDocumentSummary.webLinkLabel': '网页链接：',
@@ -784,6 +821,14 @@ export default {
   'canvas.mindMapDocumentSummary.invalidDocType': '仅支持 Word（.docx）和 PDF 文件',
   'canvas.mindMapDocumentSummary.invalidImageType': '仅支持 JPG、PNG 图片',
   'canvas.mindMapDocumentSummary.docTooLarge': '文档过大，请上传 20MB 以内的文件',
+  'canvas.mindMapDocumentSummary.pasteTooLong':
+    '粘贴文本超过模型输入上限（约 90 万字符），请缩短后再试',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel':
+    '提取文本超过模型输入上限（约 90 万字符 / qwen3.6-flash 991K tokens），请换用更短的文档',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel':
+    '该文件提取出的文本过长，无法送给模型。请上传更短的文档（提取文本约 90 万字符以内）',
+  'canvas.mindMapDocumentSummary.storageConflictCleared':
+    '已保存的提取内容缺失或与存储不同步，已自动清除。请重新上传或粘贴文档。',
   'canvas.mindMapSideToolbar.learningSheet': '半成品图示',
   'canvas.mindMapSideToolbar.oneSentence': '一句话生成',
   'canvas.mindMapSideToolbar.documentSummary': '文档总结',

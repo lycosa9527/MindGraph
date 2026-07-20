@@ -5,13 +5,29 @@ import { storeToRefs } from 'pinia'
 import { useLanguage, useNotifications } from '@/composables'
 import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
+import {
+  enqueueSubgraphApply,
+  withSubgraphFetchSlot,
+} from '@/composables/editor/mindMapSubgraphApplyQueue'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import {
+  cancelQuietBranchComplete,
+  endQuietBranchComplete,
+} from '@/composables/kitty/kittyQuietBranchCompleteBatch'
+import {
+  commitVerifiedLocalDiagramMutation,
+  verifySubgraphChildTextsPresent,
+} from '@/composables/kitty/diagramEditApply'
+import type { DiagramHubPersistDeps } from '@/composables/kitty/diagramEditHubPersist'
 import { i18n } from '@/i18n'
 import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
+import { useKittySessionStore } from '@/stores/kittySession'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
+import { findMindMapNodeIdByLabel } from '@/utils/findMindMapNodeIdByLabel'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 import {
   extractFailureFromPayload,
   resolveGenerateGraphErrorMessage,
@@ -20,6 +36,7 @@ import {
 import {
   extractBranchesFromGeneratedSpec,
   toDirectChildrenOnly,
+  type MindMapBranchSpec,
 } from '@/utils/mindMapSubgraphMerge'
 import {
   collectMindMapSubgraphContext,
@@ -106,6 +123,203 @@ function isMindMapDiagramType(diagramType: string | null | undefined): boolean {
   return diagramType === 'mindmap' || diagramType === 'mind_map'
 }
 
+export type MindMapSubgraphPersistOptions = {
+  hubPersist: DiagramHubPersistDeps
+  /** Kitty owning-tab: Hub persist is required (rollback on failure). */
+  requireHubPersist?: boolean
+}
+
+function resolvePasteAnchorNodeId(
+  diagramStore: ReturnType<typeof useDiagramStore>,
+  preferredNodeId: string,
+  anchorLabel: string
+): string | null {
+  const nodes = diagramStore.data?.nodes
+  const connections = diagramStore.data?.connections
+  if (nodes?.some((node) => node.id === preferredNodeId)) {
+    return preferredNodeId
+  }
+  if (anchorLabel) {
+    return findMindMapNodeIdByLabel(nodes, connections, anchorLabel)
+  }
+  return null
+}
+
+async function applyGeneratedSubgraphBranches(options: {
+  diagramStore: ReturnType<typeof useDiagramStore>
+  previewStore: ReturnType<typeof useMindMapSubgraphPreviewStore>
+  preferredNodeId: string
+  jobKey: string
+  anchorLabel: string
+  generatedBranches: MindMapBranchSpec[]
+  historyLabel: string
+  persist?: MindMapSubgraphPersistOptions
+  /** Kitty: no success toast / no chat dump of generated children. */
+  quietSuccess?: boolean
+  nodesBeforeCount: number
+  llmModel: string
+  subgraphPrompt: string
+  responseDebug: MindMapSubgraphResponseDebug
+  extractDebug: MindMapSubgraphExtractDebug
+  t: (key: string) => string
+  subgraphNotify: SubgraphNotifier
+}): Promise<boolean> {
+  const {
+    diagramStore,
+    previewStore,
+    preferredNodeId,
+    jobKey,
+    anchorLabel,
+    generatedBranches,
+    historyLabel,
+    persist,
+    quietSuccess = false,
+    nodesBeforeCount,
+    llmModel,
+    subgraphPrompt,
+    responseDebug,
+    extractDebug,
+    t,
+    subgraphNotify,
+  } = options
+
+  const pasteNodeId = resolvePasteAnchorNodeId(diagramStore, preferredNodeId, anchorLabel)
+  if (!pasteNodeId) {
+    mindMapSubgraphDebug('guard', 'aborted: paste anchor missing after re-resolve', {
+      preferredNodeId,
+      anchorLabel,
+    })
+    previewStore.finishJob(jobKey)
+    if (quietSuccess) {
+      endQuietBranchComplete(false)
+    } else {
+      subgraphNotify.warning(t('canvas.mindMapOneSentence.kittyEditBranchCompleteFailed'))
+      eventBus.emit('kitty:diagram_action_completed', {
+        action: 'auto_complete_branch',
+        ok: false,
+        errorCode: 'branch_not_found',
+      })
+    }
+    endMindMapSubgraphDebugRun(false)
+    return false
+  }
+
+  const expanded = diagramStore.expandMindMapPathToNode(pasteNodeId)
+  mindMapSubgraphDebug('paste', 'expandMindMapPathToNode', { nodeId: pasteNodeId, expanded })
+
+  const mergeLookupBeforePaste = debugMindMapSubgraphMergeLookup(
+    diagramStore.data?.nodes ?? [],
+    diagramStore.data?.connections ?? [],
+    pasteNodeId
+  )
+  mindMapSubgraphDebug('merge', 'lookup immediately before paste', mergeLookupBeforePaste)
+
+  const childTexts = generatedBranches.map((b) => b.text)
+  let applied = false
+  let verifiedPersistOk = true
+  let persistError: string | undefined
+
+  if (persist) {
+    const kittySession = useKittySessionStore()
+    const commit = await commitVerifiedLocalDiagramMutation({
+      apply: () =>
+        diagramStore.pasteMindMapClipboardBranches(pasteNodeId, generatedBranches, historyLabel),
+      mutationId: safeRandomUUID(),
+      verify: (_before, after) => verifySubgraphChildTextsPresent(after, childTexts),
+      hubPersist: persist.hubPersist,
+      requireHubPersist: persist.requireHubPersist === true,
+      hubRevision: kittySession.hubScopeRevision,
+      sendAck: kittySession.getMutationAckSender() ?? undefined,
+    })
+    applied = commit.applied
+    verifiedPersistOk = commit.verified === true && commit.hubPersistOk !== false
+    persistError = commit.verificationError
+    if (commit.hubRevision != null) {
+      kittySession.setHubScopeRevision(commit.hubRevision)
+    }
+  } else {
+    applied = diagramStore.pasteMindMapClipboardBranches(
+      pasteNodeId,
+      generatedBranches,
+      historyLabel
+    )
+  }
+
+  const nodesAfterCount = diagramStore.data?.nodes?.length ?? 0
+  mindMapSubgraphDebug('paste', 'pasteMindMapClipboardBranches result', {
+    anchorNodeId: pasteNodeId,
+    applied,
+    verifiedPersistOk,
+    persistError,
+    nodesBeforeCount,
+    nodesAfterCount,
+    nodesAdded: nodesAfterCount - nodesBeforeCount,
+    diagramAfter: diagramStore.data?.nodes
+      ? summarizeMindMapNodesForDebug(
+          diagramStore.data.nodes,
+          diagramStore.data.connections ?? []
+        )
+      : null,
+  })
+
+  previewStore.finishJob(jobKey)
+  if (!applied || !verifiedPersistOk) {
+    mindMapSubgraphFailureDump({
+      stage: !applied ? 'merge_failed' : 'hub_persist_failed',
+      nodeId: pasteNodeId,
+      llm: llmModel,
+      prompt: subgraphPrompt,
+      response: responseDebug,
+      extract: extractDebug,
+      mergeLookup: mergeLookupBeforePaste,
+      generatedBranches,
+    })
+    if (quietSuccess) {
+      endQuietBranchComplete(false)
+    } else {
+      subgraphNotify.error(
+        !applied
+          ? t('canvas.subgraphPreview.mergeFailed')
+          : t('canvas.mindMapOneSentence.kittyEditPersistFailed')
+      )
+      eventBus.emit('kitty:diagram_action_completed', {
+        action: 'auto_complete_branch',
+        ok: false,
+        errorCode: !applied ? 'merge_failed' : 'hub_persist_failed',
+      })
+    }
+    endMindMapSubgraphDebugRun(false)
+    return false
+  }
+
+  diagramStore.expandMindMapPathToNode(pasteNodeId)
+  const successSummary = `${historyLabel}：${childTexts.join('、')}`
+  if (quietSuccess) {
+    // Hub sync without chat spam; one coalesced "branches ready" reply when the wave ends.
+    eventBus.emit('kitty:diagram_action_completed', {
+      action: 'auto_complete_branch',
+      ok: true,
+    })
+    endQuietBranchComplete(true)
+  } else {
+    subgraphNotify.success(successSummary)
+    eventBus.emit('kitty:diagram_action_completed', {
+      action: 'auto_complete_branch',
+      ok: true,
+      userSummary: successSummary,
+    })
+  }
+  mindMapSubgraphDebug('done', 'subgraph applied successfully', {
+    nodeId: pasteNodeId,
+    childCount: generatedBranches.length,
+    childTexts,
+    verifiedPersist: Boolean(persist),
+    quietSuccess,
+  })
+  endMindMapSubgraphDebugRun(true)
+  return true
+}
+
 async function runMindMapSubgraphGeneration(
   nodeId: string | null,
   deps: {
@@ -117,6 +331,9 @@ async function runMindMapSubgraphGeneration(
     promptLanguage: string
     t: (key: string) => string
     subgraphNotify: SubgraphNotifier
+    persist?: MindMapSubgraphPersistOptions
+    anchorLabel?: string
+    quietSuccess?: boolean
   }
 ): Promise<boolean> {
   const {
@@ -128,40 +345,50 @@ async function runMindMapSubgraphGeneration(
     promptLanguage,
     t,
     subgraphNotify,
+    persist,
+    anchorLabel: anchorLabelOpt,
+    quietSuccess = false,
   } = deps
 
   beginMindMapSubgraphDebugRun(nodeId ?? '(null)')
+
+  const failQuietGuard = (): false => {
+    if (quietSuccess) {
+      endQuietBranchComplete(false)
+    }
+    endMindMapSubgraphDebugRun(false)
+    return false
+  }
 
   if (!nodeId || !isMindMapDiagramType(diagramStore.type)) {
     mindMapSubgraphDebug('guard', 'aborted: missing nodeId or not a mind map', {
       nodeId,
       diagramType: diagramStore.type,
     })
-    endMindMapSubgraphDebugRun(false)
-    return false
+    return failQuietGuard()
   }
-  if (previewStore.isGenerating) {
-    mindMapSubgraphDebug('guard', 'aborted: generation already in flight')
-    endMindMapSubgraphDebugRun(false)
-    return false
+  if (previewStore.isGeneratingFor(nodeId)) {
+    mindMapSubgraphDebug('guard', 'aborted: generation already in flight for node', { nodeId })
+    return failQuietGuard()
   }
   if (!isMindMapSubgraphExpandable(nodeId)) {
     mindMapSubgraphDebug('guard', 'aborted: node not expandable', { nodeId })
-    endMindMapSubgraphDebugRun(false)
-    return false
+    return failQuietGuard()
   }
 
   if (!authStore.isAuthenticated) {
     mindMapSubgraphDebug('guard', 'aborted: not authenticated')
-    subgraphNotify.warning(t('notification.signInToUse'))
-    endMindMapSubgraphDebugRun(false)
-    return false
+    if (!quietSuccess) {
+      subgraphNotify.warning(t('notification.signInToUse'))
+    }
+    return failQuietGuard()
   }
   if (diagramStore.collabSessionActive) {
     mindMapSubgraphDebug('guard', 'aborted: collab session active')
-    subgraphNotify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
-    endMindMapSubgraphDebugRun(false)
-    return false
+    if (!quietSuccess) {
+      subgraphNotify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+    }
+    return failQuietGuard()
   }
 
   const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
@@ -171,17 +398,22 @@ async function runMindMapSubgraphGeneration(
       nodeId,
       nodeText,
     })
-    subgraphNotify.warning(t('canvas.subgraphPreview.enterNodeTextFirst'))
-    endMindMapSubgraphDebugRun(false)
-    return false
+    if (!quietSuccess) {
+      subgraphNotify.warning(t('canvas.subgraphPreview.enterNodeTextFirst'))
+    }
+    return failQuietGuard()
   }
 
   const data = diagramStore.data
   if (!data?.nodes || !data?.connections) {
     mindMapSubgraphDebug('guard', 'aborted: diagram has no nodes/connections')
-    endMindMapSubgraphDebugRun(false)
-    return false
+    return failQuietGuard()
   }
+
+  const anchorLabel =
+    typeof anchorLabelOpt === 'string' && anchorLabelOpt.trim() !== ''
+      ? anchorLabelOpt.trim()
+      : nodeText
 
   mindMapSubgraphDebug('context', 'diagram before request', {
     anchor: { nodeId, nodeText },
@@ -192,20 +424,21 @@ async function runMindMapSubgraphGeneration(
   const subgraphContext = collectMindMapSubgraphContext(data.nodes, data.connections, nodeId)
   if (!subgraphContext) {
     mindMapSubgraphDebug('guard', 'aborted: could not build subgraph context', { nodeId })
-    subgraphNotify.warning(t('canvas.subgraphPreview.enterNodeTextFirst'))
-    endMindMapSubgraphDebugRun(false)
-    return false
+    if (!quietSuccess) {
+      subgraphNotify.warning(t('canvas.subgraphPreview.enterNodeTextFirst'))
+    }
+    return failQuietGuard()
   }
 
   mindMapSubgraphDebug('context', 'subgraph context', subgraphContext)
 
-  previewStore.beginGeneration(nodeId)
+  const { signal, jobKey } = previewStore.beginGeneration(nodeId)
   const nodesBeforeCount = data.nodes.length
+  const historyLabel = t('canvas.subgraphPreview.historyLabel')
 
   try {
     const diagramId = savedDiagramsStore.activeDiagramId
     const llmModel = resolveDiagramLlmModel(llmResultsStore.selectedModel)
-    const signal = previewStore.generationSignal()
     const subgraphPrompt = formatMindMapSubgraphPrompt(subgraphContext, promptLanguage)
 
     const requestBody: Record<string, unknown> = {
@@ -239,16 +472,21 @@ async function runMindMapSubgraphGeneration(
     }
     mindMapSubgraphDebug('request', `POST /api/generate_graph → llm=${llmModel}`, requestDebug)
 
-    const response = await authFetch('/api/generate_graph', {
-      method: 'POST',
-      signal,
-      body: JSON.stringify(requestBody),
-    })
+    const response = await withSubgraphFetchSlot(() =>
+      authFetch('/api/generate_graph', {
+        method: 'POST',
+        signal,
+        body: JSON.stringify(requestBody),
+      })
+    )
 
     if (!response.ok) {
-      if (signal?.aborted) {
+      if (signal.aborted) {
         mindMapSubgraphDebug('error', 'request aborted')
-        previewStore.finishGeneration()
+        previewStore.finishJob(jobKey)
+        if (quietSuccess) {
+          cancelQuietBranchComplete()
+        }
         endMindMapSubgraphDebugRun(false)
         return false
       }
@@ -263,12 +501,17 @@ async function runMindMapSubgraphGeneration(
         errorData,
         failure,
       })
-      if (failure) {
-        notifySubgraphError(failure.error, failure.errorType, t, subgraphNotify)
-      } else {
-        notifySubgraphError(`HTTP ${response.status}`, undefined, t, subgraphNotify)
+      if (!quietSuccess) {
+        if (failure) {
+          notifySubgraphError(failure.error, failure.errorType, t, subgraphNotify)
+        } else {
+          notifySubgraphError(`HTTP ${response.status}`, undefined, t, subgraphNotify)
+        }
       }
-      previewStore.finishGeneration()
+      previewStore.finishJob(jobKey)
+      if (quietSuccess) {
+        endQuietBranchComplete(false)
+      }
       endMindMapSubgraphDebugRun(false)
       return false
     }
@@ -277,9 +520,12 @@ async function runMindMapSubgraphGeneration(
     const responseDebug = buildResponseDebug(response.status, result)
     mindMapSubgraphDebug('response', 'API JSON response', responseDebug)
 
-    if (signal?.aborted) {
+    if (signal.aborted) {
       mindMapSubgraphDebug('error', 'aborted after response received')
-      previewStore.finishGeneration()
+      previewStore.finishJob(jobKey)
+      if (quietSuccess) {
+        cancelQuietBranchComplete()
+      }
       endMindMapSubgraphDebugRun(false)
       return false
     }
@@ -293,8 +539,13 @@ async function runMindMapSubgraphGeneration(
         response: responseDebug,
         failure: payloadFailure,
       })
-      notifySubgraphError(payloadFailure.error, payloadFailure.errorType, t, subgraphNotify)
-      previewStore.finishGeneration()
+      if (!quietSuccess) {
+        notifySubgraphError(payloadFailure.error, payloadFailure.errorType, t, subgraphNotify)
+      }
+      previewStore.finishJob(jobKey)
+      if (quietSuccess) {
+        endQuietBranchComplete(false)
+      }
       endMindMapSubgraphDebugRun(false)
       return false
     }
@@ -317,84 +568,44 @@ async function runMindMapSubgraphGeneration(
         response: responseDebug,
         extract: extractDebug,
       })
-      subgraphNotify.warning(t('canvas.subgraphPreview.emptyResult'))
-      previewStore.finishGeneration()
+      if (!quietSuccess) {
+        subgraphNotify.warning(t('canvas.subgraphPreview.emptyResult'))
+      }
+      previewStore.finishJob(jobKey)
+      if (quietSuccess) {
+        endQuietBranchComplete(false)
+      }
       endMindMapSubgraphDebugRun(false)
       return false
     }
 
-    const expanded = diagramStore.expandMindMapPathToNode(nodeId)
-    mindMapSubgraphDebug('paste', 'expandMindMapPathToNode', { nodeId, expanded })
-
-    const mergeLookupBeforePaste = debugMindMapSubgraphMergeLookup(
-      diagramStore.data?.nodes ?? [],
-      diagramStore.data?.connections ?? [],
-      nodeId
-    )
-    mindMapSubgraphDebug('merge', 'lookup immediately before paste', mergeLookupBeforePaste)
-
-    const applied = diagramStore.pasteMindMapClipboardBranches(
-      nodeId,
-      generatedBranches,
-      t('canvas.subgraphPreview.historyLabel')
-    )
-    const nodesAfterCount = diagramStore.data?.nodes?.length ?? 0
-
-    mindMapSubgraphDebug('paste', 'pasteMindMapClipboardBranches result', {
-      anchorNodeId: nodeId,
-      applied,
-      nodesBeforeCount,
-      nodesAfterCount,
-      nodesAdded: nodesAfterCount - nodesBeforeCount,
-      diagramAfter: diagramStore.data?.nodes
-        ? summarizeMindMapNodesForDebug(
-            diagramStore.data.nodes,
-            diagramStore.data.connections ?? []
-          )
-        : null,
-    })
-
-    previewStore.finishGeneration()
-    if (!applied) {
-      mindMapSubgraphFailureDump({
-        stage: 'merge_failed',
-        nodeId,
-        llm: llmModel,
-        prompt: subgraphPrompt,
-        response: responseDebug,
-        extract: extractDebug,
-        mergeLookup: mergeLookupBeforePaste,
+    return enqueueSubgraphApply(() =>
+      applyGeneratedSubgraphBranches({
+        diagramStore,
+        previewStore,
+        preferredNodeId: nodeId,
+        jobKey,
+        anchorLabel,
         generatedBranches,
+        historyLabel,
+        persist,
+        quietSuccess,
+        nodesBeforeCount,
+        llmModel,
+        subgraphPrompt,
+        responseDebug,
+        extractDebug,
+        t,
+        subgraphNotify,
       })
-      subgraphNotify.error(t('canvas.subgraphPreview.mergeFailed'))
-      eventBus.emit('kitty:diagram_action_completed', {
-        action: 'auto_complete_branch',
-        ok: false,
-        errorCode: 'merge_failed',
-      })
-      endMindMapSubgraphDebugRun(false)
-      return false
-    }
-
-    diagramStore.expandMindMapPathToNode(nodeId)
-    const successSummary = `${t('canvas.subgraphPreview.historyLabel')}：${generatedBranches.map((b) => b.text).join('、')}`
-    subgraphNotify.success(successSummary)
-    eventBus.emit('kitty:diagram_action_completed', {
-      action: 'auto_complete_branch',
-      ok: true,
-      userSummary: successSummary,
-    })
-    mindMapSubgraphDebug('done', 'subgraph applied successfully', {
-      nodeId,
-      childCount: generatedBranches.length,
-      childTexts: generatedBranches.map((b) => b.text),
-    })
-    endMindMapSubgraphDebugRun(true)
-    return true
+    )
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       mindMapSubgraphDebug('error', 'fetch aborted', { name: error.name })
-      previewStore.finishGeneration()
+      previewStore.finishJob(jobKey)
+      if (quietSuccess) {
+        cancelQuietBranchComplete()
+      }
       endMindMapSubgraphDebugRun(false)
       return false
     }
@@ -411,15 +622,28 @@ async function runMindMapSubgraphGeneration(
       message,
       error: error instanceof Error ? { name: error.name, stack: error.stack } : error,
     })
-    subgraphNotify.error(message)
-    previewStore.finishGeneration()
+    if (!quietSuccess) {
+      subgraphNotify.error(message)
+    }
+    previewStore.finishJob(jobKey)
+    if (quietSuccess) {
+      endQuietBranchComplete(false)
+    }
     endMindMapSubgraphDebugRun(false)
     return false
   }
 }
 
 /** Kitty event-bus entry — safe outside Vue ``setup`` (no ``useI18n``). */
-export async function generateMindMapSubgraphForNode(nodeId: string | null): Promise<boolean> {
+export async function generateMindMapSubgraphForNode(
+  nodeId: string | null,
+  options?: {
+    persist?: MindMapSubgraphPersistOptions
+    anchorLabel?: string
+    /** Skip success toast and Kitty chat dump of generated children. */
+    quietSuccess?: boolean
+  }
+): Promise<boolean> {
   const uiStore = useUIStore()
   const t = i18n.global.t.bind(i18n.global) as (key: string) => string
   return runMindMapSubgraphGeneration(nodeId, {
@@ -431,6 +655,9 @@ export async function generateMindMapSubgraphForNode(nodeId: string | null): Pro
     promptLanguage: uiStore.promptLanguage,
     t,
     subgraphNotify: notify,
+    persist: options?.persist,
+    anchorLabel: options?.anchorLabel,
+    quietSuccess: options?.quietSuccess === true,
   })
 }
 

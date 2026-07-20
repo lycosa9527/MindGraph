@@ -225,9 +225,10 @@ export function useKittySessionManager(options: {
 }) {
   const snapshot = ref<KittySessionSnapshotDto | null>(null)
   const lastFetchedScope = ref<string | null>(null)
-  const fetchInFlight = ref(false)
   const pollMs = options.pollIntervalMs ?? 0
   let pollTimer: ReturnType<typeof setInterval> | null = null
+  /** Bumps on each refresh intent so in-flight responses for a prior scope are ignored. */
+  let refreshGeneration = 0
 
   const alignment = computed(() => snapshot.value?.alignment ?? null)
   const ingressOwner = computed(() => snapshot.value?.ingress_owner ?? 'desktop')
@@ -236,26 +237,30 @@ export function useKittySessionManager(options: {
 
   async function refresh(): Promise<KittySessionSnapshotDto | null> {
     if (!options.enabled.value) {
+      refreshGeneration += 1
       snapshot.value = null
+      lastFetchedScope.value = null
       return null
     }
     const scope = options.scope.value?.trim() ?? ''
     if (!scope) {
+      refreshGeneration += 1
       snapshot.value = null
+      lastFetchedScope.value = null
       return null
     }
-    if (fetchInFlight.value) {
+    const generation = ++refreshGeneration
+    const next = await fetchKittySessionSnapshot(scope)
+    if (generation !== refreshGeneration) {
       return snapshot.value
     }
-    fetchInFlight.value = true
-    try {
-      const next = await fetchKittySessionSnapshot(scope)
-      snapshot.value = next
-      lastFetchedScope.value = scope
-      return next
-    } finally {
-      fetchInFlight.value = false
+    const currentScope = options.scope.value?.trim() ?? ''
+    if (!options.enabled.value || currentScope !== scope) {
+      return snapshot.value
     }
+    snapshot.value = next
+    lastFetchedScope.value = scope
+    return next
   }
 
   function stopPoll(): void {
@@ -285,6 +290,9 @@ export function useKittySessionManager(options: {
 
   onUnmounted(() => {
     stopPoll()
+    refreshGeneration += 1
+    snapshot.value = null
+    lastFetchedScope.value = null
   })
 
   return {

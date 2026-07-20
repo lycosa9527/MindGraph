@@ -218,30 +218,6 @@ async def test_context_update_schedules_refresh_once() -> None:
 
 
 @pytest.mark.asyncio
-async def test_image_paragraph_event_processes_paragraph() -> None:
-    """Test image paragraph event processes paragraph."""
-    _, voice_session_id = await _make_event_runtime()
-    try:
-        bus = get_session_event_bus(voice_session_id)
-        with patch(
-            "services.kitty.session.event_handlers.process_paragraph_with_qwen_plus",
-            new=AsyncMock(return_value=True),
-        ) as paragraph_mock:
-            await bus.emit(
-                KittyEvent(
-                    kind="image_paragraph",
-                    voice_session_id=voice_session_id,
-                    payload={"text": "Describe this image in detail."},
-                )
-            )
-            await _drain_bus()
-
-        paragraph_mock.assert_awaited_once()
-    finally:
-        await _cleanup_event_runtime(voice_session_id)
-
-
-@pytest.mark.asyncio
 async def test_teardown_clears_bus_memory_and_pending_refresh() -> None:
     """Test teardown clears bus memory and pending refresh."""
     _runtime, voice_session_id = await _make_event_runtime()

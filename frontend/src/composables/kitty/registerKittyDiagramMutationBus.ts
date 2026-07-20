@@ -14,7 +14,13 @@ import { markKittyServerStepOk } from '@/composables/kitty/pipeline/editTurn'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import type { DiagramEditExpectedEffect } from '@/utils/diagramEditVerify'
 import type { Connection, DiagramNode } from '@/types'
+import { useDiagramStore } from '@/stores/diagram'
 import { useKittySessionStore } from '@/stores/kittySession'
+
+function collabBlocksKittyDiagramEdits(): boolean {
+  const diagramStore = useDiagramStore()
+  return diagramStore.collabSessionActive === true && diagramStore.type !== 'concept_map'
+}
 
 export type KittyDiagramMutationRequest = {
   action: string
@@ -73,6 +79,43 @@ async function applyKittyDiagramMutationRequest(
       if (!useKittySessionStore().claimMutationId(mutationId)) {
         return
       }
+      if (collabBlocksKittyDiagramEdits()) {
+        sendAck({
+          type: 'diagram_mutation_ack',
+          mutation_id: mutationId,
+          verified: false,
+          ok: false,
+          error_code: 'collab_active',
+          message: 'Kitty edits paused during live collaboration',
+        })
+        recordKittyMutationApply({
+          ctx,
+          action: diagramAction,
+          ok: false,
+          verified: false,
+          ackOk: true,
+          errorCode: 'collab_active',
+          summary,
+        })
+        eventBus.emit('voice:diagram_update_executed', {
+          action: diagramAction,
+          updates: diagramUpdates,
+          summary: 'collab_active',
+          verified: false,
+          errorCode: 'collab_active',
+        })
+        reportKittyDiagramEditFailure({
+          action: diagramAction,
+          errorCode: 'collab_active',
+          scope: payload.hubPersist?.scope ?? null,
+          lane,
+        })
+        traceKittyWorkflow(lane, 'diagram_ws', 'collab_active', {
+          action: diagramAction,
+          verified: false,
+        })
+        return
+      }
       const applyResult = await applyVerifiedDiagramUpdate(diagramAction, diagramUpdates, {
         mutationId,
         expectedEffect: payload.expectedEffect,
@@ -101,11 +144,13 @@ async function applyKittyDiagramMutationRequest(
       })
 
       if (applyResult.verified) {
+        // Do not fall back to debug ``summary`` for chat — multi-step chains omit
+        // user_summary so coalesced progress/done acks own the conversation.
         eventBus.emit('voice:diagram_update_executed', {
           action: diagramAction,
           updates: diagramUpdates,
           summary,
-          userSummary: userSummary !== '' ? userSummary : summary,
+          userSummary: userSummary !== '' ? userSummary : undefined,
           verified: true,
         })
       } else {

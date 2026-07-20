@@ -8,9 +8,31 @@ import {
   markKittyEditTurnCompleted,
   markKittyServerStepOk,
 } from '@/composables/kitty/pipeline/editTurn'
-import type { KittyTranslateFn } from '@/composables/kitty/pipeline/errorCatalog'
-import { messageForKittyFail } from '@/composables/kitty/pipeline/trace'
+import {
+  resolveKittyErrorCode,
+  type KittyTranslateFn,
+} from '@/composables/kitty/pipeline/errorCatalog'
+import { failKittyTurn, messageForKittyFail } from '@/composables/kitty/pipeline/trace'
 import { useKittyPipelineStore } from '@/stores/kittyPipeline'
+
+function failActiveEditTurn(
+  pipelineStore: ReturnType<typeof useKittyPipelineStore>,
+  errorCode: string | undefined
+): void {
+  const ctx = pipelineStore.activeTurn
+  if (ctx == null) {
+    return
+  }
+  if (pipelineStore.pipelinePhase === 'failed' || pipelineStore.pipelinePhase === 'idle') {
+    return
+  }
+  failKittyTurn({
+    ctx,
+    module: 'mutation',
+    step: 'S10_mutation_apply',
+    errorCode: resolveKittyErrorCode(errorCode),
+  })
+}
 
 export type KittyEditReplyBusHandlers = {
   showFinalReply: (text: string) => void
@@ -73,15 +95,14 @@ export function useKittyEditReplyBus(
       if (handlers.onBusyLlm?.(payload.errorCode)) {
         return
       }
+      failActiveEditTurn(pipelineStore, payload.errorCode)
       handlers.showFinalReply(
         resolveKittyEditFailureMessage(payload.errorCode, handlers.t, payload.action)
       )
       handlers.markActiveRequest('failed')
-      if (ctx) {
-        const fail = pipelineStore.getLastFail()
-        if (fail) {
-          handlers.showFinalReply(messageForKittyFail(fail, handlers.kittyT))
-        }
+      const fail = pipelineStore.getLastFail()
+      if (fail) {
+        handlers.showFinalReply(messageForKittyFail(fail, handlers.kittyT))
       }
     }
   }
@@ -107,13 +128,17 @@ export function useKittyEditReplyBus(
     if (handlers.onBusyLlm?.(payload.errorCode)) {
       return
     }
+    failActiveEditTurn(pipelineStore, payload.errorCode)
+    const failureSummary = payload.userSummary?.trim()
     handlers.showFinalReply(
-      resolveKittyEditFailureMessage(payload.errorCode, handlers.t, payload.action)
+      failureSummary ||
+        resolveKittyEditFailureMessage(payload.errorCode, handlers.t, payload.action)
     )
     handlers.markActiveRequest('failed')
   }
 
   const onDiagramEditFailed = (payload: { action: string; errorCode: string }) => {
+    failActiveEditTurn(pipelineStore, payload.errorCode)
     handlers.showFinalReply(
       resolveKittyEditFailureMessage(payload.errorCode, handlers.t, payload.action)
     )

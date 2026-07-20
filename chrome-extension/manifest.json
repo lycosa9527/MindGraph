@@ -3,7 +3,7 @@
   "minimum_chrome_version": "109",
   "minimum_edge_version": "120",
   "name": "MindGraph — Web to mind map",
-  "version": "0.4.21",
+  "version": "0.4.22",
   "description": "Mind map PNG and document download for MindGraph — Chrome and Edge.",
   "default_locale": "en",
   "permissions": ["activeTab", "scripting", "storage", "downloads", "tabs", "contextMenus", "notifications", "offscreen"],

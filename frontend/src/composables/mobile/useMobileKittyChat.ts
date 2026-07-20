@@ -11,6 +11,7 @@ import { useKittyAsrSession } from '@/composables/kitty/asr/useKittyAsrSession'
 import { useKittyConversationHistory } from '@/composables/kitty/conversation/useKittyConversationHistory'
 import { useKittyEditReplyBus } from '@/composables/kitty/conversation/useKittyEditReplyBus'
 import type { KittyAgentContext } from '@/composables/kitty/kittyAgentTypes'
+import { processConversationImageUpload } from '@/composables/kitty/processConversationImageUpload'
 import {
   runKittyEditTurn,
 } from '@/composables/kitty/pipeline/editTurn'
@@ -55,7 +56,7 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
     onDebugLine,
   } = options
 
-  const { t } = useLanguage()
+  const { t, promptLanguage } = useLanguage()
   const kittyT = adaptKittyTranslate(t)
   const diagramStore = useDiagramStore()
   const pipelineStore = useKittyPipelineStore()
@@ -160,6 +161,78 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
     return sendUserText(draft.value)
   }
 
+  /**
+   * Photo / gallery → unified conversation image (OCR or hand-drawn rebuild) + chat lines.
+   */
+  async function uploadConversationImage(options: {
+    file: File
+    diagramId: string
+    diagramTitle?: string
+  }): Promise<boolean> {
+    const diagramId = options.diagramId.trim()
+    if (!diagramId) {
+      return false
+    }
+    const rid = safeRandomUUID()
+    const userLine = t('mobile.kittyPhotoUserBubble', '📷 Photo')
+    history.pushUserMessage(userLine, rid)
+    history.activeRequestId.value = rid
+    void history.appendUserTurn(userLine, rid, {
+      diagramType: diagramStore.type ?? undefined,
+      outcome: 'conversation_image',
+    })
+
+    try {
+      const result = await processConversationImageUpload({
+        file: options.file,
+        diagramId,
+        diagramTitle: options.diagramTitle,
+        language: promptLanguage.value,
+        applyToLibrary: true,
+      })
+
+      if (result.mode === 'handdrawn' && result.spec) {
+        diagramStore.loadFromSpec(result.spec, 'mindmap')
+      }
+
+      let reply: string
+      if (result.mode === 'handdrawn') {
+        const topic =
+          result.topic?.trim() || t('mobile.kittyPhotoUntitledMap', 'Mind map')
+        if (result.appliedToLibrary) {
+          reply = t(
+            'mobile.kittyPhotoHanddrawnReply',
+            `Detected a hand-drawn mind map “${topic}”. Rebuilt on canvas; outline saved to Document Summary.`
+          ).replace('{topic}', topic)
+        } else {
+          reply = t(
+            'mobile.kittyPhotoHanddrawnLocalReply',
+            `Detected a hand-drawn mind map “${topic}”. Rebuilt here; outline saved to Document Summary. Library sync did not complete — open the diagram again if the canvas looks stale.`
+          ).replace('{topic}', topic)
+        }
+      } else {
+        const excerpt = result.ocrExcerpt || '—'
+        reply = t(
+          'mobile.kittyPhotoOcrReply',
+          `Extracted text from the photo:\n${excerpt}\n\nFull text is in Document Summary.`
+        ).replace('{excerpt}', excerpt)
+      }
+      history.replyState.showFinalReply(reply)
+      history.markActiveRequest('done', rid)
+      void history.appendKittyTurn(reply, rid, { outcome: 'conversation_image' })
+      return true
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : t('mobile.kittyPhotoUploadFailed', 'Could not upload the photo.')
+      history.replyState.showFinalReply(message)
+      history.markActiveRequest('failed', rid)
+      void history.appendKittyTurn(message, rid, { outcome: 'conversation_image_failed' })
+      return false
+    }
+  }
+
   async function selectClarifyChoice(choice: OneSentenceClarifyChoice): Promise<void> {
     draft.value = String(choice.index)
     await sendUserText(String(choice.index), undefined, undefined, 'clarify_choice')
@@ -247,6 +320,8 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
     replyBus.dispose()
     eventBus.removeAllListenersForOwner(`${OWNER_ID}:trace`)
     funAsr.stopListening()
+    // Leave shared pipeline idle so a later desktop/mobile surface is not blocked.
+    pipelineStore.resetToIdle()
   })
 
   return {
@@ -254,6 +329,7 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
     sessionHydrated: history.sessionHydrated,
     sendDraft,
     sendUserText,
+    uploadConversationImage,
     selectClarifyChoice,
     bindChatScroll: history.bindChatScroll,
   }

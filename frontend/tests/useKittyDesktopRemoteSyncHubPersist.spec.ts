@@ -1,31 +1,40 @@
 /**
  * Desktop observer recovers from live_context after mobile hub persist event.
- * Owning-tab persist must not reload Pinia (SoT already applied).
+ * Owning-tab Pinia must never be reloaded from stale Redis (branch loss bug).
  */
 import { computed, ref } from 'vue'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { applyKittyDiagramUpdate } from '@/composables/kitty/kittyAgentActions'
 import { useKittyDesktopRemoteSync } from '@/composables/kitty/useKittyDesktopRemoteSync'
+import { useKittySessionStore } from '@/stores/kittySession'
 
-const { syncDiagramStoreFromVoiceContext } = vi.hoisted(() => ({
+const { syncDiagramStoreFromVoiceContext, runKittyHubSyncMock, localNodes } = vi.hoisted(() => ({
   syncDiagramStoreFromVoiceContext: vi.fn(),
+  runKittyHubSyncMock: vi.fn(async () => ({ ok: true, revision: 1 })),
+  localNodes: { value: [] as { id: string; text: string }[] },
 }))
 
 vi.mock('@/composables/kitty/syncDiagramStoreFromVoiceContext', () => ({
   syncDiagramStoreFromVoiceContext,
 }))
 
+vi.mock('@/composables/kitty/pipeline/hubSyncWorker', () => ({
+  runKittyHubSync: runKittyHubSyncMock,
+}))
+
 vi.mock('@/composables/kitty/kittyAgentActions', () => ({
   applyKittyDiagramUpdate: vi.fn(),
+  executeKittyAgentAction: vi.fn(),
 }))
 
 vi.mock('@/composables/kitty/kittyDiagramFingerprint', () => ({
   getKittyDiagramContentFingerprint: (data?: { nodes?: unknown[] } | null) => {
     const nodes = data?.nodes ?? []
-    return nodes.length > 0 ? `hub-${nodes.length}` : 'local-empty'
+    return nodes.length > 0 ? `fp-${nodes.length}` : 'local-empty'
   },
   getKittyVoiceDiagramFingerprint: () => 'remote-fp',
 }))
@@ -34,28 +43,42 @@ vi.mock('@/composables/kitty/kittySelectionApply', () => ({
   applyKittyRemoteCanvasSelection: vi.fn(),
 }))
 
+vi.mock('@/composables/kitty/applyKittyRemoteLlmModel', () => ({
+  applyKittyRemoteLlmModel: vi.fn(),
+}))
+
 vi.mock('@/composables/kitty/kittyDesktopMobileActiveHub', () => ({
   acquireKittyMobileActiveHub: () => () => undefined,
-  isKittyMobileActiveHubFresh: () => true,
+  isKittyMobileActiveHubFresh: () => false,
   useKittyMobileActiveHubSnapshot: () =>
     ref({
-      active: true,
-      scopes: ['lib-1'],
-      primaryScope: 'lib-1',
-      updatedAt: Date.now(),
+      active: false,
+      scopes: [] as string[],
+      primaryScope: null,
+      updatedAt: 0,
     }),
+}))
+
+vi.mock('@/composables/kitty/kittyWorkflowTrace', () => ({
+  traceKittyWorkflow: vi.fn(),
 }))
 
 vi.mock('@/stores/diagram', () => ({
   useDiagramStore: () => ({
     type: 'mindmap',
-    data: { nodes: [], connections: [] },
+    get data() {
+      return { nodes: localNodes.value, connections: [] }
+    },
+    collabSessionActive: false,
   }),
 }))
 
 describe('useKittyDesktopRemoteSync hub persist recovery', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
+    localNodes.value = []
     syncDiagramStoreFromVoiceContext.mockClear()
+    runKittyHubSyncMock.mockClear()
     eventBus.removeAllListenersForOwner('KittyDesktopRemoteSync')
     vi.stubGlobal(
       'fetch',
@@ -125,5 +148,69 @@ describe('useKittyDesktopRemoteSync hub persist recovery', () => {
 
     expect(fetch).toHaveBeenCalled()
     expect(syncDiagramStoreFromVoiceContext).toHaveBeenCalled()
+  })
+
+  it('does not clobber Pinia from live_context when ownsKittySession', async () => {
+    useKittySessionStore().setOwnsKittySession(true)
+    localNodes.value = [
+      { id: 'topic', text: 'Cars' },
+      { id: 'branch-1', text: 'DIY' },
+      { id: 'child-1', text: 'Paint' },
+    ]
+
+    const sync = useKittyDesktopRemoteSync({
+      libraryDiagramId: ref('lib-1'),
+      syncEnabled: computed(() => true),
+      collabSessionActive: computed(() => false),
+    })
+    await sync.refresh()
+
+    expect(syncDiagramStoreFromVoiceContext).not.toHaveBeenCalled()
+  })
+
+  it('does not regress richer local Pinia to smaller hub snapshot', async () => {
+    useKittySessionStore().setOwnsKittySession(false)
+    localNodes.value = [
+      { id: 'topic', text: 'Cars' },
+      { id: 'branch-1', text: 'DIY' },
+      { id: 'child-1', text: 'Paint' },
+    ]
+
+    const sync = useKittyDesktopRemoteSync({
+      libraryDiagramId: ref('lib-1'),
+      syncEnabled: computed(() => true),
+      collabSessionActive: computed(() => false),
+    })
+    await sync.refresh()
+
+    expect(syncDiagramStoreFromVoiceContext).not.toHaveBeenCalled()
+  })
+
+  it('does not re-run hub sync after autocomplete (verified path already persisted)', async () => {
+    useKittySessionStore().setOwnsKittySession(true)
+    useKittyDesktopRemoteSync({
+      libraryDiagramId: ref('lib-1'),
+      syncEnabled: computed(() => true),
+      collabSessionActive: computed(() => false),
+      hubPersist: {
+        buildContext: () =>
+          ({
+            diagram_type: 'mindmap',
+            active_panel: 'none',
+            selected_nodes: [],
+            diagram_data: {},
+          }) as never,
+        updateContext: vi.fn(),
+      },
+    })
+
+    eventBus.emit('kitty:diagram_action_completed', {
+      action: 'auto_complete_branch',
+      ok: true,
+      userSummary: 'ok',
+    })
+    await new Promise((r) => setTimeout(r, 50))
+
+    expect(runKittyHubSyncMock).not.toHaveBeenCalled()
   })
 })

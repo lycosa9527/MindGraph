@@ -709,11 +709,7 @@ async def proxy_create_post(
         save_spec_json(post_id, spec_obj)
 
     initial_status = "pending"
-    if (
-        auto_approve
-        and PERM_REVIEW in perms
-        and post_media_ready_for_approval(case_type=case_type, spec=spec_obj)
-    ):
+    if auto_approve and PERM_REVIEW in perms and post_media_ready_for_approval(case_type=case_type, spec=spec_obj):
         # Only auto-approve when create-time media is already complete (COS
         # create-then-upload must approve after uploads finish).
         initial_status = "approved"

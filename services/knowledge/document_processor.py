@@ -13,12 +13,21 @@ Proprietary License
 import logging
 import mimetypes
 import re
+import shutil
+import tempfile
 import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from services.knowledge import document_ocr
 from services.knowledge.audio_transcription import AUDIO_EXTENSIONS, transcribe_audio_file
+from services.knowledge.document_office_extract import (
+    extract_csv_markdown,
+    extract_docx_markdown,
+    extract_pptx_markdown,
+    extract_xlsx_markdown,
+)
+from services.knowledge.legacy_office_convert import convert_legacy_office, is_legacy_office_mime
 from services.utils.error_types import FILE_IO_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -74,19 +83,6 @@ try:
 except ImportError:
     pass
 
-_pytesseract_mod: Any = None
-_pil_image_cls: Any = None
-_tesseract_available = False
-try:
-    import pytesseract as _pytesseract_import
-    from PIL import Image as _pil_image_import
-
-    _pytesseract_mod = _pytesseract_import
-    _pil_image_cls = _pil_image_import
-    _tesseract_available = True
-except ImportError:
-    pass
-
 _pptx_presentation_cls: Any = None
 _pptx_available = False
 try:
@@ -112,7 +108,7 @@ class DocumentProcessor:
     """
     Document processing service for text extraction.
 
-    Supports: PDF, DOCX, TXT, MD, images (with OCR), PPTX, XLSX
+    Supports: PDF, DOCX/DOC, TXT, MD, CSV, images (with OCR), PPTX/PPT, XLSX/XLS, audio
 
     Includes file content validation using magic bytes to ensure files match their claimed type.
     """
@@ -122,6 +118,8 @@ class DocumentProcessor:
     FILE_SIGNATURES = [
         # PDF
         (b"%PDF", "application/pdf", "PDF"),
+        # Legacy OLE Office (.doc / .ppt / .xls)
+        (b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", "application/msword", "OLE Compound"),
         # DOCX (ZIP-based format, starts with PK)
         (
             b"PK\x03\x04",
@@ -143,6 +141,7 @@ class DocumentProcessor:
         # Images
         (b"\xff\xd8\xff", "image/jpeg", "JPEG"),
         (b"\x89PNG\r\n\x1a\n", "image/png", "PNG"),
+        (b"RIFF", "image/webp", "WEBP"),
         (b"GIF87a", "image/gif", "GIF87a"),
         (b"GIF89a", "image/gif", "GIF89a"),
         (b"BM", "image/bmp", "BMP"),
@@ -152,6 +151,13 @@ class DocumentProcessor:
         (b"\xef\xbb\xbf", "text/plain", "UTF-8 BOM"),
     ]
 
+    MIME_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    MIME_PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    MIME_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    MIME_DOC = "application/msword"
+    MIME_PPT = "application/vnd.ms-powerpoint"
+    MIME_XLS = "application/vnd.ms-excel"
+
     # Maximum magic bytes length to read
     MAX_MAGIC_LEN = max(len(sig[0]) for sig in FILE_SIGNATURES)
 
@@ -159,14 +165,20 @@ class DocumentProcessor:
         """Initialize document processor."""
         self.supported_types = {
             "application/pdf": self._extract_pdf,
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": self._extract_docx,
+            self.MIME_DOCX: self._extract_docx,
+            self.MIME_DOC: self._extract_legacy_office,
             "text/plain": self._extract_text,
             "text/markdown": self._extract_text,
+            "text/csv": self._extract_csv,
+            "application/csv": self._extract_csv,
             "image/jpeg": self._extract_image,
             "image/png": self._extract_image,
             "image/jpg": self._extract_image,
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation": self._extract_pptx,
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": self._extract_xlsx,
+            "image/webp": self._extract_image,
+            self.MIME_PPTX: self._extract_pptx,
+            self.MIME_PPT: self._extract_legacy_office,
+            self.MIME_XLSX: self._extract_xlsx,
+            self.MIME_XLS: self._extract_legacy_office,
         }
         # Audio sources are transcribed to text via DashScope recording-file ASR.
         for audio_mime in set(AUDIO_EXTENSIONS.values()):
@@ -199,6 +211,10 @@ class DocumentProcessor:
                     detected_type = mime_type
                     break
 
+            # WEBP is RIFF....WEBP — confirm the WEBP marker at offset 8.
+            if header.startswith(b"RIFF") and len(header) >= 12 and header[8:12] == b"WEBP":
+                detected_type = "image/webp"
+
             # Special handling for ZIP-based formats (DOCX, PPTX, XLSX)
             # They all start with PK\x03\x04, so we need to check the internal structure
             if header.startswith(b"PK\x03\x04"):
@@ -212,35 +228,39 @@ class DocumentProcessor:
 
                         # Check for DOCX
                         if any("word/document.xml" in f for f in file_list):
-                            detected_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            detected_type = self.MIME_DOCX
                         # Check for PPTX
                         elif any("ppt/presentation.xml" in f for f in file_list):
-                            detected_type = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                            detected_type = self.MIME_PPTX
                         # Check for XLSX
                         elif any("xl/workbook.xml" in f for f in file_list):
-                            detected_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            detected_type = self.MIME_XLSX
                         else:
                             # It's a ZIP but not a recognized Office format
                             detected_type = "application/zip"
                 except FILE_IO_ERRORS as e:
                     logger.warning("[DocumentProcessor] Failed to inspect ZIP structure: %s", e)
                     # If ZIP inspection fails, assume it matches if expected type is ZIP-based
-                    if expected_mime_type in [
-                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    ]:
+                    if expected_mime_type in [self.MIME_DOCX, self.MIME_PPTX, self.MIME_XLSX]:
                         detected_type = expected_mime_type
+
+            # OLE compound documents share one signature; trust the claimed legacy MIME.
+            if header.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1") and is_legacy_office_mime(expected_mime_type):
+                detected_type = expected_mime_type
 
             # For text files, we can't reliably detect from magic bytes alone
             # But we can check if it's valid UTF-8
-            if expected_mime_type in ["text/plain", "text/markdown"]:
+            if expected_mime_type in ["text/plain", "text/markdown", "text/csv", "application/csv"]:
                 try:
                     with open(file_path, "r", encoding="utf-8") as f:
                         f.read(1024)  # Try to read first 1KB
                     detected_type = expected_mime_type  # Assume valid if readable as UTF-8
                 except UnicodeDecodeError:
-                    return False, None
+                    # CSV/text may be GBK; allow when extension-backed extractors will retry.
+                    if expected_mime_type in ["text/csv", "application/csv", "text/plain"]:
+                        detected_type = expected_mime_type
+                    else:
+                        return False, None
 
             # Validate match
             if detected_type:
@@ -592,16 +612,39 @@ class DocumentProcessor:
             return text, []
 
     def _extract_docx(self, file_path: str) -> str:
-        """Extract text from DOCX."""
+        """Extract text and tables from DOCX as markdown."""
         if not _docx_available or _docx_document_cls is None:
             raise ImportError("python-docx required for DOCX extraction")
+        return extract_docx_markdown(_docx_document_cls, file_path)
 
-        doc = _docx_document_cls(file_path)
-        text_parts = []
-        for paragraph in doc.paragraphs:
-            if paragraph.text.strip():
-                text_parts.append(paragraph.text)
-        return "\n\n".join(text_parts)
+    def _extract_csv(self, file_path: str) -> str:
+        """Extract a CSV file as a markdown table."""
+        return extract_csv_markdown(file_path)
+
+    def _extract_legacy_office(self, file_path: str) -> str:
+        """Convert legacy Office binaries to OOXML, then extract."""
+        mime_type = self.get_file_type(file_path)
+        if not is_legacy_office_mime(mime_type):
+            # Fallback: infer from extension when callers pass a temp without suffix.
+            ext = Path(file_path).suffix.lower()
+            mime_by_ext = {
+                ".doc": self.MIME_DOC,
+                ".ppt": self.MIME_PPT,
+                ".xls": self.MIME_XLS,
+            }
+            mime_type = mime_by_ext.get(ext, mime_type)
+        if not is_legacy_office_mime(mime_type):
+            raise ValueError(f"Unsupported legacy Office type for {file_path}")
+
+        out_dir = tempfile.mkdtemp(prefix="legacy_office_")
+        try:
+            converted_path, ooxml_mime = convert_legacy_office(file_path, mime_type, out_dir)
+            extractor = self.supported_types.get(ooxml_mime)
+            if extractor is None or extractor is self._extract_legacy_office:
+                raise ValueError(f"No OOXML extractor for converted type {ooxml_mime}")
+            return extractor(converted_path)
+        finally:
+            shutil.rmtree(out_dir, ignore_errors=True)
 
     def _extract_text(self, file_path: str) -> str:
         """Extract text from plain text files."""
@@ -620,98 +663,24 @@ class DocumentProcessor:
         raise ValueError(f"Failed to decode text file with any encoding: {file_path}")
 
     def _extract_image(self, file_path: str) -> str:
-        """Extract text from image using OCR."""
-        # Try DashScope OCR first
-        try:
-            return self._extract_image_dashscope(file_path)
-        except document_ocr.OCR_CALL_ERRORS as e:
-            logger.warning("[DocumentProcessor] DashScope OCR failed: %s", e)
-            # Fallback to pytesseract
-            try:
-                return self._extract_image_tesseract(file_path)
-            except FILE_IO_ERRORS as e2:
-                raise ValueError(f"OCR failed with both DashScope and Tesseract: {e2}") from e2
-
-    def _extract_image_dashscope(self, file_path: str) -> str:
-        """Extract text from an image file using the DashScope vision model."""
-        with open(file_path, "rb") as f:
-            image_data = f.read()
-        mime_type = self.get_file_type(file_path)
-        if not mime_type.startswith("image/"):
-            mime_type = "image/jpeg"
-        text = document_ocr.dashscope_vision_ocr(image_data, mime_type)
-        if text and text.strip():
-            return text.strip()
-        raise ValueError("No text extracted from OCR response")
+        """Extract text from image using DashScope OCR (Tesseract fallback)."""
+        return document_ocr.ocr_image_file(file_path, self.get_file_type(file_path))
 
     def _extract_audio(self, file_path: str) -> str:
         """Transcribe an audio source to text via DashScope recording-file ASR."""
         return transcribe_audio_file(file_path)
 
-    def _extract_image_tesseract(self, file_path: str) -> str:
-        """Extract text using pytesseract OCR."""
-        if not _tesseract_available or _pil_image_cls is None or _pytesseract_mod is None:
-            raise ImportError(
-                "pytesseract and PIL required for Tesseract OCR. Install with: pip install pytesseract Pillow"
-            )
-
-        try:
-            image = _pil_image_cls.open(file_path)
-            text = _pytesseract_mod.image_to_string(image, lang="chi_sim+eng")  # Chinese + English
-            return text
-        except FILE_IO_ERRORS as e:
-            # Check if this is a TesseractNotFoundError
-            error_str = str(e).lower()
-            if "tesseract" in error_str and (
-                "not found" in error_str or "not installed" in error_str or "not in your path" in error_str
-            ):
-                logger.error("[DocumentProcessor] Tesseract OCR binary not found: %s", str(e))
-                error_msg = (
-                    "Tesseract OCR binary not found. "
-                    "The pytesseract Python package is installed, but the Tesseract binary is missing or not in PATH.\n"
-                    "Install Tesseract:\n"
-                    "  - Ubuntu/Debian: sudo apt-get install tesseract-ocr tesseract-ocr-chi-sim\n"
-                    "  - macOS: brew install tesseract\n"
-                    "  - Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki\n"
-                    f"Original error: {str(e)}"
-                )
-                raise RuntimeError(error_msg) from e
-
-            logger.error("[DocumentProcessor] Tesseract OCR failed: %s", str(e))
-            error_msg = f"Tesseract OCR failed: {str(e)}"
-            raise RuntimeError(error_msg) from e
-
     def _extract_pptx(self, file_path: str) -> str:
-        """Extract text from PPTX."""
+        """Extract slide text and speaker notes from PPTX as markdown."""
         if not _pptx_available or _pptx_presentation_cls is None:
             raise ImportError("python-pptx required for PPTX extraction")
-
-        prs = _pptx_presentation_cls(file_path)
-        text_parts = []
-        for slide in prs.slides:
-            for shape in slide.shapes:
-                shape_text = getattr(shape, "text", None)
-                if shape_text and str(shape_text).strip():
-                    text_parts.append(str(shape_text))
-        return "\n\n".join(text_parts)
+        return extract_pptx_markdown(_pptx_presentation_cls, file_path)
 
     def _extract_xlsx(self, file_path: str) -> str:
-        """Extract text from XLSX."""
+        """Extract workbook sheets from XLSX as markdown tables."""
         if not _openpyxl_available or _openpyxl_load_workbook is None:
             raise ImportError("openpyxl required for XLSX extraction")
-
-        wb = _openpyxl_load_workbook(file_path, read_only=True)
-        text_parts = []
-        for sheet_name in wb.sheetnames:
-            sheet = wb[sheet_name]
-            sheet_text = []
-            for row in sheet.iter_rows(values_only=True):
-                row_text = " ".join(str(cell) if cell else "" for cell in row)
-                if row_text.strip():
-                    sheet_text.append(row_text)
-            if sheet_text:
-                text_parts.append(f"Sheet: {sheet_name}\n" + "\n".join(sheet_text))
-        return "\n\n".join(text_parts)
+        return extract_xlsx_markdown(_openpyxl_load_workbook, file_path)
 
     def get_file_type(self, file_path: str) -> str:
         """
@@ -730,23 +699,27 @@ class DocumentProcessor:
         if ext in AUDIO_EXTENSIONS:
             return AUDIO_EXTENSIONS[ext]
 
-        mime_type, _ = mimetypes.guess_type(file_path)
-        if not mime_type:
-            # Fallback based on extension
-            ext_to_mime = {
-                ".pdf": "application/pdf",
-                ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                ".txt": "text/plain",
-                ".md": "text/markdown",
-                ".jpg": "image/jpeg",
-                ".jpeg": "image/jpeg",
-                ".png": "image/png",
-                ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            }
-            mime_type = ext_to_mime.get(ext, "application/octet-stream")
+        ext_to_mime = {
+            ".pdf": "application/pdf",
+            ".docx": self.MIME_DOCX,
+            ".doc": self.MIME_DOC,
+            ".txt": "text/plain",
+            ".md": "text/markdown",
+            ".csv": "text/csv",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".webp": "image/webp",
+            ".pptx": self.MIME_PPTX,
+            ".ppt": self.MIME_PPT,
+            ".xlsx": self.MIME_XLSX,
+            ".xls": self.MIME_XLS,
+        }
+        if ext in ext_to_mime:
+            return ext_to_mime[ext]
 
-        return mime_type
+        mime_type, _ = mimetypes.guess_type(file_path)
+        return mime_type or "application/octet-stream"
 
     def is_supported(self, file_type: str) -> bool:
         """

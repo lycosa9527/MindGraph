@@ -134,6 +134,16 @@ export function failKittyTurn(input: {
     errorCode,
     detail: event.detail,
   })
+  // Mirror completeKittyTurn: leave failed briefly for UI, then clear active turn
+  // so editPipelineActive / peer polls cannot stick after a hard fail.
+  if (getActivePinia()) {
+    const store = useKittyPipelineStore()
+    window.setTimeout(() => {
+      if (store.activeTurn?.requestId === input.ctx.requestId && store.pipelinePhase === 'failed') {
+        store.resetToIdle()
+      }
+    }, 50)
+  }
   return fail
 }
 

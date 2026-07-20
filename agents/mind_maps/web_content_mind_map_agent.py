@@ -1,16 +1,16 @@
 """
-Web content mind map agent — generates mind map specs from extracted page text.
+Content mind map agent — generates mind map specs from extracted text.
 
-Used by the Chrome extension flow (and API clients). Uses centralized
-``web_content_generation`` prompts and defaults to Qwen classification
-``QWEN_MODEL_CLASSIFICATION`` (default ``qwen3.6-flash``) via ``dashscope_model`` override.
+Used by Document Summary (document prompt) and Chrome/web flows (web prompt).
+Defaults to Qwen classification ``QWEN_MODEL_CLASSIFICATION`` (default
+``qwen3.6-flash``) via ``dashscope_model`` override.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from agents.core.agent_utils import extract_json_from_response
 from agents.mind_maps.mind_map_agent import MindMapAgent
@@ -18,11 +18,18 @@ from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
-from utils.prompt_locale import build_web_page_content_user_block
+from utils.prompt_locale import build_extracted_content_user_block
+
+ContentSourceKind = Literal["web", "document"]
+
+_PROMPT_TYPE_BY_SOURCE: dict[str, str] = {
+    "web": "web_content_generation",
+    "document": "document_content_generation",
+}
 
 
 class WebContentMindMapAgent(MindMapAgent):
-    """Mind map generation from web page text (plain or markdown)."""
+    """Mind map generation from extracted content (web page or document)."""
 
     async def generate_from_page_content(
         self,
@@ -36,10 +43,11 @@ class WebContentMindMapAgent(MindMapAgent):
         request_type: str = "diagram_generation",
         endpoint_path: Optional[str] = None,
         http_request_id: Optional[str] = None,
+        source_kind: ContentSourceKind = "web",
     ) -> Dict[str, Any]:
-        """Generate a mind map from extracted page content."""
+        """Generate a mind map from extracted page or document content."""
         try:
-            spec, recovery_warnings = await self._spec_from_web_page_content(
+            spec, recovery_warnings = await self._spec_from_extracted_content(
                 page_content=page_content,
                 language=language,
                 content_format=content_format,
@@ -50,11 +58,12 @@ class WebContentMindMapAgent(MindMapAgent):
                 request_type=request_type,
                 endpoint_path=endpoint_path,
                 http_request_id=http_request_id,
+                source_kind=source_kind,
             )
             if not spec:
                 return {
                     "success": False,
-                    "error": "Failed to generate mind map specification from web content",
+                    "error": "Failed to generate mind map specification from content",
                 }
 
             is_valid, validation_msg = self.validate_output(spec)
@@ -84,7 +93,7 @@ class WebContentMindMapAgent(MindMapAgent):
         except LLM_PIPELINE_ERRORS as exc:
             return {"success": False, "error": f"Generation failed: {str(exc)}"}
 
-    async def _spec_from_web_page_content(
+    async def _spec_from_extracted_content(
         self,
         page_content: str,
         language: str,
@@ -96,18 +105,21 @@ class WebContentMindMapAgent(MindMapAgent):
         request_type: str,
         endpoint_path: Optional[str],
         http_request_id: Optional[str] = None,
+        source_kind: ContentSourceKind = "web",
     ) -> Tuple[Optional[Dict[str, Any]], Optional[List[str]]]:
-        """Call LLM to build mind map spec from extracted web page text."""
-        system_prompt = get_prompt("mind_map", language, "web_content_generation")
+        """Call LLM to build mind map spec from extracted text."""
+        prompt_type = _PROMPT_TYPE_BY_SOURCE.get(source_kind, "web_content_generation")
+        system_prompt = get_prompt("mind_map", language, prompt_type)
         if not system_prompt:
             return None, None
 
-        user_block = build_web_page_content_user_block(
+        user_block = build_extracted_content_user_block(
             page_content=page_content,
             language=language,
             content_format=content_format,
             page_title=page_title,
             page_url=page_url,
+            source_kind=source_kind,
         )
 
         response = await llm_service.chat(
@@ -151,3 +163,7 @@ class WebContentMindMapAgent(MindMapAgent):
                 spec.pop("_recovery_warnings", None)
                 spec.pop("_recovered_count", None)
         return spec, recovery_warnings
+
+
+# Prefer this name in new code; WebContentMindMapAgent kept for import stability.
+ContentMindMapAgent = WebContentMindMapAgent

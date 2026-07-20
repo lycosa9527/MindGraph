@@ -112,3 +112,51 @@ def test_chat_handoff_status_returns_record(client: TestClient) -> None:
         response = client.get("/api/knowledge-space/chat-handoff/status?code=123456")
     assert response.status_code == 200
     assert response.json()["status"] == "waiting"
+
+
+def test_chat_handoff_cancel_by_code(client: TestClient) -> None:
+    """Cancel revokes a waiting pairing code for the owner."""
+    app.dependency_overrides[get_current_user] = partial(_make_user, 42)
+    with patch(
+        "routers.api.knowledge_space.chat_handoff.revoke_handoff_code",
+        new_callable=AsyncMock,
+        return_value=True,
+    ) as revoke_code:
+        response = client.post(
+            "/api/knowledge-space/chat-handoff/cancel",
+            json={"code": "123456"},
+        )
+    assert response.status_code == 200
+    assert response.json()["revoked"] == 1
+    revoke_code.assert_awaited_once_with("123456", 42)
+
+
+def test_chat_handoff_cancel_by_package(client: TestClient) -> None:
+    """Cancel can revoke all waiting codes for a package."""
+    app.dependency_overrides[get_current_user] = partial(_make_user, 42)
+    with (
+        patch(
+            "routers.api.knowledge_space.chat_handoff.revoke_handoff_code",
+            new_callable=AsyncMock,
+            return_value=False,
+        ),
+        patch(
+            "routers.api.knowledge_space.chat_handoff.revoke_waiting_handoffs_for_package",
+            new_callable=AsyncMock,
+            return_value=2,
+        ) as revoke_pkg,
+    ):
+        response = client.post(
+            "/api/knowledge-space/chat-handoff/cancel",
+            json={"package_id": 9},
+        )
+    assert response.status_code == 200
+    assert response.json()["revoked"] == 2
+    revoke_pkg.assert_awaited_once_with(42, 9)
+
+
+def test_chat_handoff_cancel_requires_target(client: TestClient) -> None:
+    """Cancel without code or package_id is rejected."""
+    app.dependency_overrides[get_current_user] = _make_user
+    response = client.post("/api/knowledge-space/chat-handoff/cancel", json={})
+    assert response.status_code == 422

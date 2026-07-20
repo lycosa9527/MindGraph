@@ -67,11 +67,78 @@ def _generate_code() -> str:
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
+async def load_handoff(code: str) -> Optional[ChatHandoffRecord]:
+    """Load handoff record by pairing code."""
+    raw = await AsyncRedisOps.get(_code_key(code))
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+        user_id = int(data["user_id"])
+        package_id = int(data["package_id"])
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return None
+    document_id = data.get("document_id")
+    parsed_doc_id = int(document_id) if document_id is not None else None
+    return ChatHandoffRecord(
+        user_id=user_id,
+        package_id=package_id,
+        status=str(data.get("status") or "waiting"),
+        document_id=parsed_doc_id,
+    )
+
+
+async def consume_handoff(code: str) -> None:
+    """Remove pairing code after successful ingest."""
+    record = await load_handoff(code)
+    try:
+        await AsyncRedisOps.delete(_code_key(code))
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning("[ChatHandoff] Failed to delete code %s: %s", code, exc)
+    if record is not None:
+        await AsyncRedisOps.set_remove(_user_codes_key(record.user_id), code)
+
+
+async def revoke_handoff_code(code: str, user_id: int) -> bool:
+    """Delete a waiting pairing code owned by the user. Idempotent."""
+    record = await load_handoff(code)
+    if record is None or record.user_id != user_id or record.status != "waiting":
+        return False
+    await consume_handoff(code)
+    logger.info(
+        "[ChatHandoff] Revoked waiting code for user=%s package=%s",
+        user_id,
+        record.package_id,
+    )
+    return True
+
+
+async def revoke_waiting_handoffs_for_package(user_id: int, package_id: int) -> int:
+    """Revoke all waiting pairing codes for a user + package."""
+    codes = await AsyncRedisOps.set_members(_user_codes_key(user_id))
+    revoked = 0
+    for code in codes:
+        record = await load_handoff(code)
+        if record is None:
+            await AsyncRedisOps.set_remove(_user_codes_key(user_id), code)
+            continue
+        if record.user_id != user_id or record.package_id != package_id:
+            continue
+        if record.status != "waiting":
+            continue
+        if await revoke_handoff_code(code, user_id):
+            revoked += 1
+    return revoked
+
+
 async def mint_handoff_code(user_id: int, package_id: int) -> str:
     """Create a six-digit pairing code bound to user + package."""
     rate_count = await AsyncRedisOps.increment(_rate_key(user_id), ttl_seconds=600)
     if rate_count is not None and rate_count > 20:
         raise ValueError("Too many pairing codes requested; try again later")
+
+    # One waiting code per package — drop any prior live pairing for this corpus.
+    await revoke_waiting_handoffs_for_package(user_id, package_id)
 
     for _ in range(8):
         code = _generate_code()
@@ -93,27 +160,6 @@ async def mint_handoff_code(user_id: int, package_id: int) -> str:
             logger.info("[ChatHandoff] Minted code for user=%s package=%s", user_id, package_id)
             return code
     raise RuntimeError("Failed to allocate pairing code")
-
-
-async def load_handoff(code: str) -> Optional[ChatHandoffRecord]:
-    """Load handoff record by pairing code."""
-    raw = await AsyncRedisOps.get(_code_key(code))
-    if not raw:
-        return None
-    try:
-        data = json.loads(raw)
-        user_id = int(data["user_id"])
-        package_id = int(data["package_id"])
-    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
-        return None
-    document_id = data.get("document_id")
-    parsed_doc_id = int(document_id) if document_id is not None else None
-    return ChatHandoffRecord(
-        user_id=user_id,
-        package_id=package_id,
-        status=str(data.get("status") or "waiting"),
-        document_id=parsed_doc_id,
-    )
 
 
 async def claim_handoff_for_ingest(code: str, user_id: int) -> Optional[ChatHandoffRecord]:
@@ -217,14 +263,3 @@ async def finalize_handoff_for_document(document_id: int, terminal_status: str) 
         if not isinstance(code, str) or len(code) != 6:
             return
     await update_handoff_status(code, terminal_status, document_id)
-
-
-async def consume_handoff(code: str) -> None:
-    """Remove pairing code after successful ingest."""
-    record = await load_handoff(code)
-    try:
-        await AsyncRedisOps.delete(_code_key(code))
-    except BACKGROUND_INFRA_ERRORS as exc:
-        logger.warning("[ChatHandoff] Failed to delete code %s: %s", code, exc)
-    if record is not None:
-        await AsyncRedisOps.set_remove(_user_codes_key(record.user_id), code)

@@ -1,5 +1,5 @@
 /**
- * en UI � notification
+ * tg UI � notification
  */
 
 export default {

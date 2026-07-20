@@ -1,5 +1,5 @@
 /**
- * en UI � notification
+ * it UI � notification
  */
 
 export default {

@@ -6,8 +6,8 @@
  * like ordinary Knowledge Space documents; the completed sources scope RAG
  * retrieval when the diagram is completed by the LLM.
  *
- * This composable wraps the `/api/knowledge-space/packages` endpoints with
- * Vue Query and exposes a small facade for the File Center panel.
+ * Default API root is Knowledge Space. Pass ``apiMode: 'doc_summary'`` for the
+ * Document Summary portal (short ``/api/doc-summary/*`` paths).
  */
 import { type MaybeRef, computed, unref } from 'vue'
 
@@ -15,15 +15,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { documentNeedsPipelinePoll } from '@/composables/knowledge/usePipelineStatusBadge'
+import {
+  DOC_SUMMARY_DOCUMENTS_BASE,
+  DOC_SUMMARY_PACKAGES_BASE,
+} from '@/config/docSummaryApi'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 import { apiRequestJson, apiUpload } from '@/utils/apiClient'
-import { documentNeedsPipelinePoll } from '@/composables/knowledge/usePipelineStatusBadge'
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export type PackageSource = 'canvas' | 'knowledge_space' | 'chrome_extension' | 'doc_summary'
+
+/** Which HTTP surface package mutations/queries use. */
+export type FileCenterApiMode = 'knowledge_space' | 'doc_summary'
 
 export interface KnowledgePackage {
   id: number
@@ -85,7 +92,24 @@ export const fileCenterKeys = {
   package: (packageId: number) => [...fileCenterKeys.all, 'package', packageId] as const,
 }
 
-const PACKAGES_BASE = '/api/knowledge-space/packages'
+const KS_PACKAGES_BASE = '/api/knowledge-space/packages'
+const KS_DOCUMENTS_BASE = '/api/knowledge-space/documents'
+
+function resolveApiBases(mode: FileCenterApiMode = 'knowledge_space'): {
+  packagesBase: string
+  documentsBase: string
+} {
+  if (mode === 'doc_summary') {
+    return {
+      packagesBase: DOC_SUMMARY_PACKAGES_BASE,
+      documentsBase: DOC_SUMMARY_DOCUMENTS_BASE,
+    }
+  }
+  return {
+    packagesBase: KS_PACKAGES_BASE,
+    documentsBase: KS_DOCUMENTS_BASE,
+  }
+}
 
 /** Poll while any source is still indexing or wiki compile is pending. */
 function hasProcessingDocuments(
@@ -115,10 +139,14 @@ function shouldPollPackages(packages: KnowledgePackage[]): boolean {
   })
 }
 
-export function usePackages(options?: { enabled?: MaybeRef<boolean> }) {
+export function usePackages(options?: {
+  enabled?: MaybeRef<boolean>
+  apiMode?: FileCenterApiMode
+}) {
+  const { packagesBase } = resolveApiBases(options?.apiMode ?? 'knowledge_space')
   return useQuery({
     queryKey: fileCenterKeys.packages(),
-    queryFn: () => apiRequestJson<PackageListResponse>(PACKAGES_BASE),
+    queryFn: () => apiRequestJson<PackageListResponse>(packagesBase),
     staleTime: 30 * 1000,
     enabled: options?.enabled,
     retry: 1,
@@ -131,8 +159,9 @@ export function usePackages(options?: { enabled?: MaybeRef<boolean> }) {
 
 export function usePackageDetail(
   packageId: MaybeRef<number | null>,
-  options?: { enabled?: MaybeRef<boolean> }
+  options?: { enabled?: MaybeRef<boolean>; apiMode?: FileCenterApiMode }
 ) {
+  const { packagesBase } = resolveApiBases(options?.apiMode ?? 'knowledge_space')
   return useQuery({
     queryKey: computed(() => fileCenterKeys.package(unref(packageId) ?? 0)),
     queryFn: () => {
@@ -140,14 +169,18 @@ export function usePackageDetail(
       if (id === null) {
         throw new Error('Package id is required')
       }
-      return apiRequestJson<PackageDetailResponse>(`${PACKAGES_BASE}/${id}`)
+      return apiRequestJson<PackageDetailResponse>(`${packagesBase}/${id}`)
     },
     enabled: computed(() => unref(options?.enabled) !== false && unref(packageId) !== null),
     staleTime: 5 * 1000,
     // Poll while any source is still indexing so the UI reflects progress.
     refetchInterval: (query) => {
       const data = query.state.data as PackageDetailResponse | undefined
-      return data && hasProcessingDocuments(data.documents, data.package.source) ? 4000 : false
+      if (!data || !hasProcessingDocuments(data.documents, data.package.source)) {
+        return false
+      }
+      // Document Summary lite extract needs snappier progress updates.
+      return data.package.source === 'doc_summary' ? 1000 : 4000
     },
   })
 }
@@ -156,9 +189,10 @@ export function usePackageDetail(
 // Mutations
 // ============================================================================
 
-export function useFileCenterMutations() {
+export function useFileCenterMutations(options?: { apiMode?: FileCenterApiMode }) {
   const queryClient = useQueryClient()
   const { t } = useLanguage()
+  const { packagesBase, documentsBase } = resolveApiBases(options?.apiMode ?? 'knowledge_space')
 
   function invalidatePackages(): void {
     void queryClient.invalidateQueries({ queryKey: fileCenterKeys.packages() })
@@ -171,7 +205,7 @@ export function useFileCenterMutations() {
 
   const createPackage = useMutation({
     mutationFn: (payload: CreatePackagePayload) =>
-      apiRequestJson<KnowledgePackage>(PACKAGES_BASE, {
+      apiRequestJson<KnowledgePackage>(packagesBase, {
         method: 'POST',
         body: JSON.stringify(payload),
       }),
@@ -181,7 +215,7 @@ export function useFileCenterMutations() {
 
   const updatePackage = useMutation({
     mutationFn: (vars: { packageId: number; name?: string; diagram_id?: string }) =>
-      apiRequestJson<KnowledgePackage>(`${PACKAGES_BASE}/${vars.packageId}`, {
+      apiRequestJson<KnowledgePackage>(`${packagesBase}/${vars.packageId}`, {
         method: 'PUT',
         body: JSON.stringify({ name: vars.name, diagram_id: vars.diagram_id }),
       }),
@@ -191,7 +225,7 @@ export function useFileCenterMutations() {
 
   const deletePackage = useMutation({
     mutationFn: (packageId: number) =>
-      apiRequestJson<{ message: string }>(`${PACKAGES_BASE}/${packageId}`, { method: 'DELETE' }),
+      apiRequestJson<{ message: string }>(`${packagesBase}/${packageId}`, { method: 'DELETE' }),
     onSuccess: () => invalidatePackages(),
     onError: (error: Error) => notify.error(error.message || t('fileCenter.deleteFailed')),
   })
@@ -201,7 +235,7 @@ export function useFileCenterMutations() {
       const formData = new FormData()
       formData.append('file', vars.file)
       const response = await apiUpload(
-        `${PACKAGES_BASE}/${vars.packageId}/documents/upload`,
+        `${packagesBase}/${vars.packageId}/documents/upload`,
         formData
       )
       if (!response.ok) {
@@ -217,7 +251,7 @@ export function useFileCenterMutations() {
   const ingestText = useMutation({
     mutationFn: (vars: { packageId: number; payload: IngestTextPayload }) =>
       apiRequestJson<KnowledgeDocument>(
-        `${PACKAGES_BASE}/${vars.packageId}/documents/ingest-text`,
+        `${packagesBase}/${vars.packageId}/documents/ingest-text`,
         { method: 'POST', body: JSON.stringify(vars.payload) }
       ),
     onSuccess: (_data, vars) => invalidatePackage(vars.packageId),
@@ -226,7 +260,7 @@ export function useFileCenterMutations() {
 
   const ingestWeb = useMutation({
     mutationFn: (vars: { packageId: number; payload: IngestWebPayload }) =>
-      apiRequestJson<KnowledgeDocument>(`${PACKAGES_BASE}/${vars.packageId}/documents/ingest-web`, {
+      apiRequestJson<KnowledgeDocument>(`${packagesBase}/${vars.packageId}/documents/ingest-web`, {
         method: 'POST',
         body: JSON.stringify(vars.payload),
       }),
@@ -237,7 +271,7 @@ export function useFileCenterMutations() {
   const ingestWebUrl = useMutation({
     mutationFn: (vars: { packageId: number; payload: IngestWebUrlPayload }) =>
       apiRequestJson<KnowledgeDocument>(
-        `${PACKAGES_BASE}/${vars.packageId}/documents/ingest-web-url`,
+        `${packagesBase}/${vars.packageId}/documents/ingest-web-url`,
         { method: 'POST', body: JSON.stringify(vars.payload) }
       ),
     onSuccess: (_data, vars) => invalidatePackage(vars.packageId),
@@ -246,7 +280,7 @@ export function useFileCenterMutations() {
 
   const deleteSource = useMutation({
     mutationFn: (vars: { packageId: number; documentId: number }) =>
-      apiRequestJson<{ message?: string }>(`/api/knowledge-space/documents/${vars.documentId}`, {
+      apiRequestJson<{ message?: string }>(`${documentsBase}/${vars.documentId}`, {
         method: 'DELETE',
       }),
     onSuccess: (_data, vars) => invalidatePackage(vars.packageId),
@@ -256,7 +290,7 @@ export function useFileCenterMutations() {
   const startProcessing = useMutation({
     mutationFn: (packageId: number) =>
       apiRequestJson<{ message: string; processed_count: number }>(
-        `${PACKAGES_BASE}/${packageId}/documents/start-processing`,
+        `${packagesBase}/${packageId}/documents/start-processing`,
         { method: 'POST' }
       ),
     onSuccess: (_data, packageId) => invalidatePackage(packageId),

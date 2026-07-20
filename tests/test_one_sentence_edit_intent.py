@@ -216,3 +216,43 @@ def test_heuristic_add_branch_then_auto_complete_en() -> None:
     assert isinstance(follow, list)
     assert follow[0]["action"] == "auto_complete_branch"
     assert follow[0]["target"] == "History"
+
+
+def test_heuristic_multi_add_branches() -> None:
+    """Multi named branches map to sequential add_node follow-ups (no AC tools)."""
+    cmd = heuristic_one_sentence_edit_command("添加跑步、跳跃、攀爬、下蹲分支")
+    assert cmd is not None
+    assert cmd["action"] == "add_node"
+    assert cmd["target"] == "跑步"
+    follow = cmd.get("follow_up_actions")
+    assert isinstance(follow, list)
+    assert [item.get("action") for item in follow] == ["add_node", "add_node", "add_node"]
+    assert [item.get("target") for item in follow] == ["跳跃", "攀爬", "下蹲"]
+
+
+def test_heuristic_update_center_then_multi_add() -> None:
+    """Topic change + multi branch list maps to update_center + add_node chain."""
+    cmd = heuristic_one_sentence_edit_command("主题改成学生运动，添加跑步、跳跃、攀爬、下蹲分支")
+    assert cmd is not None
+    assert cmd["action"] == "update_center"
+    assert cmd["target"] == "学生运动"
+    follow = cmd.get("follow_up_actions")
+    assert isinstance(follow, list)
+    assert [item.get("action") for item in follow] == [
+        "add_node",
+        "add_node",
+        "add_node",
+        "add_node",
+    ]
+    assert [item.get("target") for item in follow] == ["跑步", "跳跃", "攀爬", "下蹲"]
+
+
+def test_heuristic_multi_add_branches_en() -> None:
+    """English multi-branch list maps to sequential add_node follow-ups."""
+    cmd = heuristic_one_sentence_edit_command("add branches A, B, C, and D")
+    assert cmd is not None
+    assert cmd["action"] == "add_node"
+    assert cmd["target"] == "A"
+    follow = cmd.get("follow_up_actions")
+    assert isinstance(follow, list)
+    assert [item.get("target") for item in follow] == ["B", "C", "D"]

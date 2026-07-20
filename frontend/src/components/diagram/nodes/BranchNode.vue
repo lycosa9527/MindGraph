@@ -8,7 +8,6 @@ import { computed, inject, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
-import { storeToRefs } from 'pinia'
 
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { useLanguage, useNotifications } from '@/composables'
@@ -354,10 +353,7 @@ const nodeStyle = computed((): CSSProperties => {
 const isEditing = ref(false)
 
 const previewStore = useMindMapSubgraphPreviewStore()
-const { isGenerating: subgraphPreviewGenerating, generatingNodeId } = storeToRefs(previewStore)
-const isSubgraphGenerating = computed(
-  () => subgraphPreviewGenerating.value && generatingNodeId.value === props.id
-)
+const isSubgraphGenerating = computed(() => previewStore.isGeneratingFor(props.id))
 const subgraphRingBorderRadius = computed(() => {
   const radius = nodeStyle.value.borderRadius
   if (typeof radius === 'string' && radius.length > 0) {

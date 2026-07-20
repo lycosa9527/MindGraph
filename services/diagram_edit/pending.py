@@ -37,6 +37,7 @@ class _PendingEntry:
     created_at: float
     voice_session_id: str
     idempotency_key: Optional[str]
+    scope: Optional[str]
 
 
 _pending: Dict[str, _PendingEntry] = {}
@@ -53,15 +54,18 @@ def register_pending(
     voice_session_id: str,
     *,
     idempotency_key: Optional[str] = None,
+    scope: Optional[str] = None,
 ) -> asyncio.Future:
     """Register a pending ack future for mutation_id."""
     loop = asyncio.get_running_loop()
     fut: asyncio.Future = loop.create_future()
+    scope_key = scope.strip() if isinstance(scope, str) and scope.strip() else None
     _pending[mutation_id] = _PendingEntry(
         future=fut,
         created_at=time.monotonic(),
         voice_session_id=voice_session_id,
         idempotency_key=idempotency_key,
+        scope=scope_key,
     )
     return fut
 
@@ -110,13 +114,48 @@ async def wait_for_ack(
         return None
 
 
+def fail_pending_for_scope(
+    scope: str,
+    *,
+    error_code: str = "no_owner",
+    message: str = "Desktop canvas owner disconnected",
+) -> int:
+    """Fail pending acks for ``scope`` when the canvas owner drops mid-flight.
+
+    Completes waiters with a verified=False ack so mobile fails fast with
+    ``no_owner`` instead of waiting for ``ack_timeout``.
+    """
+    want = scope.strip() if isinstance(scope, str) else ""
+    if not want:
+        return 0
+    matched = 0
+    for mid, ent in list(_pending.items()):
+        if ent.scope != want:
+            continue
+        if complete_pending(
+            MutationAckPayload(
+                mutation_id=mid,
+                verified=False,
+                error_code=error_code,
+                message=message,
+            )
+        ):
+            matched += 1
+    return matched
+
+
 def clear_pending_for_session(voice_session_id: str) -> None:
-    """Cancel pending acks when a voice session ends."""
+    """Fail pending acks when a voice session ends (no cancel — waiters get a result)."""
     to_remove = [mid for mid, ent in _pending.items() if ent.voice_session_id == voice_session_id]
     for mid in to_remove:
-        entry = _pending.pop(mid, None)
-        if entry is not None and not entry.future.done():
-            entry.future.cancel()
+        complete_pending(
+            MutationAckPayload(
+                mutation_id=mid,
+                verified=False,
+                error_code="no_owner",
+                message="Voice session ended before canvas ack",
+            )
+        )
 
 
 def detach_pending_for_tests(mutation_id: str) -> Optional[asyncio.Future]:
@@ -143,6 +182,7 @@ def reattach_pending_for_tests(
         created_at=time.monotonic(),
         voice_session_id=voice_session_id,
         idempotency_key=None,
+        scope=None,
     )
 
 

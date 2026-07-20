@@ -104,9 +104,7 @@ def test_workshop_ws_awaits_can_access_workshop_chat():
 @pytest.mark.asyncio
 async def test_env_reload_fanout_skips_same_origin():
     """Publisher worker must not reload twice from its own fan-out message."""
-    with patch(
-        "services.infrastructure.sync.env_reload_fanout.reload_runtime_config_from_dotenv"
-    ) as reload_mock:
+    with patch("services.infrastructure.sync.env_reload_fanout.reload_runtime_config_from_dotenv") as reload_mock:
         await handle_env_reload_message(
             '{"v":1,"origin":"worker-a"}',
             "worker-a",
@@ -117,9 +115,7 @@ async def test_env_reload_fanout_skips_same_origin():
 @pytest.mark.asyncio
 async def test_env_reload_fanout_applies_for_other_origin():
     """Sibling workers reload when they receive another origin's message."""
-    with patch(
-        "services.infrastructure.sync.env_reload_fanout.reload_runtime_config_from_dotenv"
-    ) as reload_mock:
+    with patch("services.infrastructure.sync.env_reload_fanout.reload_runtime_config_from_dotenv") as reload_mock:
         await handle_env_reload_message(
             '{"v":1,"origin":"worker-a"}',
             "worker-b",

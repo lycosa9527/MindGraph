@@ -17,7 +17,11 @@ from typing import Any, Dict, Optional
 from fastapi import WebSocket
 
 from services.kitty.ack.ack_failure import render_failure_ack_for_command
-from services.kitty.ack.ack_library import render_ack_for_command, render_low_confidence_ack
+from services.kitty.ack.ack_library import (
+    render_ack,
+    render_ack_for_command,
+    render_low_confidence_ack,
+)
 from services.kitty.ack.ack_slots import enrich_ack_session_context
 from services.kitty.context.messaging import resolve_voice_interaction_language
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
@@ -29,6 +33,10 @@ from services.kitty.routing.one_sentence_edit_helpers import (
 )
 from services.kitty.routing.pending_branch_autocomplete import (
     created_node_id_from_applied_ops,
+)
+from services.kitty.routing.structural_chain import (
+    peel_chain_from_command,
+    run_verified_structural_chain,
 )
 from services.kitty.session.memory import get_session_memory
 from services.kitty.session.runtime_state import logger, voice_sessions
@@ -43,6 +51,7 @@ async def execute_follow_up_actions(
     session_context: Dict[str, Any],
     command_text: str,
     topic: str | None = None,
+    silent_branch_ack: bool = False,
 ) -> None:
     """Run chained actions (e.g. auto_complete), optionally with a topic override."""
     if not follow_ups:
@@ -93,6 +102,7 @@ async def execute_follow_up_actions(
                 command_text=command_text,
                 lang=lang,
                 node_id=node_id or None,
+                silent_ack=silent_branch_ack,
             )
             kitty_wf_log(
                 "follow_up",
@@ -171,16 +181,61 @@ async def route_structural_diagram_command(
     scope = str(scope_raw).strip() if isinstance(scope_raw, str) else ""
 
     follow_up_actions = normalize_follow_up_actions(command)
-    parallel_auto_complete, follow_up_actions = split_parallel_auto_complete_follow_ups(
-        str(action),
-        follow_up_actions,
-        primary_command=command,
-    )
+    steps, chain_autocomplete, is_multi = peel_chain_from_command(command, follow_up_actions)
+
     center_topic = ""
     if str(action) == "update_center":
         target_raw = command.get("target")
         if isinstance(target_raw, str) and target_raw.strip():
             center_topic = target_raw.strip()
+
+    if is_multi and scope:
+        return await run_verified_structural_chain(
+            router,
+            websocket,
+            voice_session_id,
+            steps,
+            session_context,
+            scope=scope,
+            diagram_type=str(diagram_type),
+            user_id=user_id,
+            live_session=live_session,
+            command_text=command_text,
+            lang=lang,
+            autocomplete_follow_ups=chain_autocomplete,
+            execute_follow_up_actions=execute_follow_up_actions,
+            center_topic=center_topic,
+            verify_required=use_verified,
+        )
+    if is_multi and not scope:
+        # Structural follow-ups cannot run without a canvas scope — fail clearly
+        # instead of applying only the primary mutation.
+        logger.warning(
+            "Multi-structural turn rejected: missing diagram_session_id (primary=%s steps=%s)",
+            action,
+            len(steps),
+        )
+        fail_text = render_ack("diagram.failed.no_owner", lang=lang)
+        await router.send_diagram_failure_ack(
+            websocket,
+            voice_session_id,
+            fail_text,
+            one_sentence_action=str(action) if action else None,
+            one_sentence_outcome="failed",
+            one_sentence_user_text=command_text,
+        )
+        return router.finish_route(
+            voice_session_id,
+            router.RouteOutcome.FAILED,
+            reason="multi_step_no_scope",
+            action=str(action) if action else None,
+        )
+
+    parallel_auto_complete, follow_up_actions = split_parallel_auto_complete_follow_ups(
+        str(action),
+        follow_up_actions,
+        primary_command=command,
+    )
 
     if use_verified and scope:
         progress_text = render_ack_for_command(

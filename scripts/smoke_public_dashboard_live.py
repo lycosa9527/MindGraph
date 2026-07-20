@@ -96,9 +96,7 @@ def _run_flow(base: str, access_token: str) -> None:
                 if len(collected) > 8000:
                     break
         assert "data:" in collected
-        payload = json.loads(
-            next(line[5:].strip() for line in collected.splitlines() if line.startswith("data:"))
-        )
+        payload = json.loads(next(line[5:].strip() for line in collected.splitlines() if line.startswith("data:")))
         assert payload.get("type") in {
             "initial",
             "heartbeat",

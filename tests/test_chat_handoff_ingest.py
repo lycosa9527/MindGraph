@@ -12,12 +12,12 @@ from fastapi.testclient import TestClient
 
 from config.database import get_async_db
 from routers.api.knowledge_space.chat_handoff import router as chat_router
-from routers.api.knowledge_space.doc_summary import router as doc_router
+from routers.api.doc_summary import router as doc_router
 from services.knowledge.chat_handoff_service import ChatHandoffRecord
 from utils.auth import get_current_user
 
 app = FastAPI()
-app.include_router(doc_router, prefix="/api/knowledge-space")
+app.include_router(doc_router, prefix="/api")
 app.include_router(chat_router, prefix="/api/knowledge-space")
 
 
@@ -46,11 +46,11 @@ def clear_dependency_overrides() -> Generator[None, None, None]:
 def test_session_start_rejects_unknown_package_id(client: TestClient) -> None:
     """Invalid package_id returns 400 instead of creating a duplicate package."""
     app.dependency_overrides[get_current_user] = _make_user
-    with patch("routers.api.knowledge_space.doc_summary.KnowledgePackageService") as service_cls:
+    with patch("routers.api.doc_summary.session.KnowledgePackageService") as service_cls:
         service = service_cls.return_value
         service.ensure_doc_summary_session = AsyncMock(side_effect=ValueError("Package 999 not found or access denied"))
         response = client.post(
-            "/api/knowledge-space/doc-summary/session/start",
+            "/api/doc-summary/session/start",
             json={"package_id": 999},
         )
     assert response.status_code == 400
@@ -70,7 +70,7 @@ def test_chat_handoff_ingest_rejects_used_code(client: TestClient) -> None:
         claim.return_value = None
         load.return_value = record
         response = client.post(
-            "/api/knowledge-space/chat-handoff/ingest",
+            "/api/doc-summary/chat-handoff/ingest",
             json={
                 "code": "123456",
                 "platform": "wechat",
@@ -108,7 +108,7 @@ def test_chat_handoff_ingest_success(client: TestClient) -> None:
         created_at=SimpleNamespace(isoformat=lambda: "2026-01-01T00:00:00"),
         updated_at=SimpleNamespace(isoformat=lambda: "2026-01-01T00:00:00"),
     )
-    batch = SimpleNamespace(id=3)
+    batch = SimpleNamespace(id=3, source="canvas")
     with (
         patch(
             "routers.api.knowledge_space.chat_handoff.claim_handoff_for_ingest",
@@ -122,7 +122,7 @@ def test_chat_handoff_ingest_success(client: TestClient) -> None:
         service.get_package = AsyncMock(return_value=batch)
         service.add_text_source = AsyncMock(return_value=document)
         response = client.post(
-            "/api/knowledge-space/chat-handoff/ingest",
+            "/api/doc-summary/chat-handoff/ingest",
             json={
                 "code": "123456",
                 "platform": "wechat",
@@ -170,7 +170,7 @@ def test_chat_handoff_ingest_wecom_platform(client: TestClient) -> None:
         created_at=SimpleNamespace(isoformat=lambda: "2026-01-01T00:00:00"),
         updated_at=SimpleNamespace(isoformat=lambda: "2026-01-01T00:00:00"),
     )
-    batch = SimpleNamespace(id=3)
+    batch = SimpleNamespace(id=3, source="canvas")
     with (
         patch(
             "routers.api.knowledge_space.chat_handoff.claim_handoff_for_ingest",
@@ -184,7 +184,7 @@ def test_chat_handoff_ingest_wecom_platform(client: TestClient) -> None:
         service.get_package = AsyncMock(return_value=batch)
         service.add_text_source = AsyncMock(return_value=document)
         response = client.post(
-            "/api/knowledge-space/chat-handoff/ingest",
+            "/api/doc-summary/chat-handoff/ingest",
             json={
                 "code": "654321",
                 "platform": "wecom",

@@ -21,7 +21,12 @@ def test_kitty_llmops_manifest_keys():
     assert len(m["modules"]) >= 3
     assert "mermaid_flow" in m
     assert len(m["special_flows"]) == 3
-    assert m["special_flows"][0]["name"] == "paragraph_path"
+    flow_names = {row["name"] for row in m["special_flows"]}
+    assert flow_names == {
+        "unsupported_diagram_type",
+        "paragraph_path",
+        "conversation_image",
+    }
 
 
 def test_kitty_llmops_manifest_paths_exist_on_disk():

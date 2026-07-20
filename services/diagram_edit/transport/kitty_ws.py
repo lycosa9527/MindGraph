@@ -7,6 +7,9 @@ from typing import Any, Dict, Optional
 from services.kitty.session.runtime_state import voice_sessions
 
 OUTBOUND_EXTRAS_KEY = "_diagram_edit_ws_outbound_extras"
+# When set on the voice session, diagram_update payloads omit chat user_summary
+# so multi-step chains can coalesce progress/done acks without per-step spam.
+MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY = "_multi_step_suppress_diagram_chat"
 
 
 def verified_edit_extras_pending(voice_session_id: str) -> bool:

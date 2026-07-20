@@ -272,20 +272,24 @@
     "description": "文档总结区域标题"
   },
   "fileCenterPackageLabel": {
-    "message": "资料包",
-    "description": "资料包选择标签"
+    "message": "会话",
+    "description": "文档总结会话选择标签"
+  },
+  "fileCenterNewSession": {
+    "message": "新建会话（当前页面）",
+    "description": "为当前页面创建新的文档总结会话"
   },
   "btnSaveToFileCenter": {
-    "message": "将网页保存到资料库",
-    "description": "将网页内容保存到文档总结资料包的按钮"
+    "message": "保存网页提取",
+    "description": "将网页 markdown 保存到文档总结（COS）的按钮"
   },
   "fileCenterUntitled": {
-    "message": "未命名资料包",
-    "description": "资料包默认名称"
+    "message": "未命名会话",
+    "description": "文档总结会话默认名称"
   },
   "statusSavedToFileCenter": {
-    "message": "已保存到文档总结，开始索引。",
-    "description": "保存网页到资料包后的状态"
+    "message": "已保存提取内容，可在文档总结中回顾。",
+    "description": "保存网页提取到 COS 后的状态"
   },
   "btnSettings": {
     "message": "设置",

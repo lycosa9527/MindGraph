@@ -97,6 +97,10 @@ export default {
   'mindmate.openCanvasLoginRequired': '请先登录后再在画布中打开导图。',
   'mindmate.openCanvasNoLibraryId': '导图未保存到图库。请先登录后再试。',
   'mindmate.openCanvasSaveRetry': '导图未能自动保存到图库。请重新生成；若仍失败请联系管理员。',
+  'mindmate.openCanvasSwitchTitle': '切换导图',
+  'mindmate.openCanvasSwitchBody':
+    '在画布中打开「{target}」？当前画布是「{current}」。当前画布上未保存的修改可能会丢失。',
+  'mindmate.openCanvasSwitchOk': '打开',
   'mindmate.diagramLibraryFull': '图库已满，请删除旧图后再试。',
   'mindmate.diagramPreviewExpired':
     '临时预览图已从浏览器缓存中清除。点击此通知或下方「在画布中编辑」打开导图。',

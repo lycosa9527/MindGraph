@@ -25,7 +25,6 @@ KittyEventKind = Literal[
     "assistant_done",
     "context_update",
     "function_call",
-    "image_paragraph",
     "stop",
 ]
 

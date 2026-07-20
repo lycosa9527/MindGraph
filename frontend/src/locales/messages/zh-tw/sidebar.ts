@@ -1,6 +1,4 @@
-/**
- * zh-tw UI � sidebar
- */
+/** zh-tw UI — sidebar */
 
 export default {
   'sidebar.actions.delete': '刪除',
@@ -37,6 +35,7 @@ export default {
   'sidebar.chatHistory.dingtalkBadgeHint': '這條對話來自釘釘 MindBot',
   'sidebar.chunkTest': 'RAG分塊測試',
   'sidebar.collapseSidebar': '收起側邊欄',
+  'sidebar.showcase': '案例廣場',
   'sidebar.community': '社區分享',
   'sidebar.courses': '思維課程',
   'sidebar.debateHistory.deleteConfirm': '確定要刪除這個辯論記錄嗎？此操作不可撤銷。',
@@ -125,5 +124,4 @@ export default {
   'sidebar.mindmateCollabHistory.stopConfirm': '將為所有參與者結束此研討房間，所有人將退出房間。',
   'sidebar.mindmateCollabHistory.visibilityOrg': '校內',
   'sidebar.mindmateCollabHistory.visibilityNetwork': '跨校',
-  'sidebar.showcase': '案例广场',
 } as const

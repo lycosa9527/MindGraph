@@ -59,8 +59,11 @@ import {
   listInFlightAutocompleteDisplayNames,
 } from '@/composables/kitty/kittyEditAfterLlmQueue'
 import { setDiagramWriteLockHolder } from '@/composables/kitty/useDiagramWriteLock'
+import { prepareConversationImageCapture } from '@/composables/kitty/prepareConversationImageCapture'
+import { processConversationImageUpload } from '@/composables/kitty/processConversationImageUpload'
 import { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
 import { useKittyUserMobileActive } from '@/composables/kitty/useKittyUserMobileActive'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 import {
   useAuthStore,
   useDiagramStore,
@@ -81,7 +84,7 @@ export type {
 const PANEL_OWNER = 'MindMapOneSentencePanel'
 
 export function useMindMapOneSentenceChat() {
-  const { t, isZh, currentLanguage } = useLanguage()
+  const { t, isZh, currentLanguage, promptLanguage } = useLanguage()
   const kittyT = adaptKittyTranslate(t)
   const route = useRoute()
   const router = useRouter()
@@ -165,6 +168,8 @@ export function useMindMapOneSentenceChat() {
   let hubSyncTimer: ReturnType<typeof setTimeout> | null = null
   let lastHubFingerprint = ''
   let bootstrapGeneration = 0
+  /** Scope whose turns last hydrated (or seeded) this panel — used to drop stale Pinia on scope change. */
+  let hydratedScope: string | null = null
 
   function scrollChatToBottom(): void {
     void nextTick(() => {
@@ -580,6 +585,135 @@ export function useMindMapOneSentenceChat() {
     chatScrollEl.value = el
   }
 
+  /**
+   * Conversation image (same pipeline as mobile Kitty): OCR or hand-drawn rebuild.
+   */
+  async function uploadConversationImage(file: File): Promise<boolean> {
+    if (diagramStore.collabSessionActive) {
+      replyState.showFinalReply(t('canvas.mindMapOneSentence.kittyEditCollabActive'))
+      return false
+    }
+    if (mobileKittyOwnsEditInput.value) {
+      replyState.showFinalReply(t('canvas.mindMapOneSentence.mobileKittyOwnsInput'))
+      return false
+    }
+    if (isInputBlocked.value) {
+      return false
+    }
+
+    const prepared = prepareConversationImageCapture(file)
+    if (!prepared.ok) {
+      if (prepared.reason === 'invalid_type') {
+        replyState.showFinalReply(
+          t(
+            'canvas.mindMapOneSentence.photoInvalidType',
+            'Please choose a JPG, PNG, or WebP photo.'
+          )
+        )
+      } else if (prepared.reason === 'too_large') {
+        replyState.showFinalReply(
+          t(
+            'canvas.mindMapOneSentence.photoTooLarge',
+            'Photo is too large. Maximum size is 10MB.'
+          )
+        )
+      }
+      return false
+    }
+
+    const diagramId = savedDiagramsStore.activeDiagramId?.trim()
+    if (!diagramId) {
+      replyState.showFinalReply(
+        t(
+          'canvas.mindMapOneSentence.photoNeedsDiagram',
+          'Save this diagram to the library first, then upload a photo.'
+        )
+      )
+      return false
+    }
+
+    const rid = safeRandomUUID()
+    const userLine = t('canvas.mindMapOneSentence.photoUserBubble', '📷 Photo')
+    oneSentence.registerUserRequest(userLine, 'inflight', rid)
+    void appendOneSentenceTurn(diagramScope.value, {
+      role: 'user',
+      content: userLine,
+      phase: phase.value === 'create' ? 'create' : 'edit',
+      source: 'conversation_image',
+      diagram_type: diagramStore.type ?? undefined,
+      request_id: rid,
+    })
+
+    try {
+      const result = await processConversationImageUpload({
+        file: prepared.file,
+        diagramId,
+        diagramTitle:
+          savedDiagramsStore.diagrams.find((row) => row.id === diagramId)?.title ||
+          undefined,
+        language: promptLanguage.value,
+        applyToLibrary: true,
+      })
+
+      if (result.mode === 'handdrawn' && result.spec) {
+        diagramStore.loadFromSpec(result.spec, 'mindmap')
+        llmResultsStore.reset()
+      }
+
+      let reply: string
+      if (result.mode === 'handdrawn') {
+        const topic =
+          result.topic?.trim() ||
+          t('canvas.mindMapOneSentence.photoUntitledMap', 'Mind map')
+        if (result.appliedToLibrary) {
+          reply = t(
+            'canvas.mindMapOneSentence.photoHanddrawnReply',
+            `Detected a hand-drawn mind map “${topic}”. Rebuilt on canvas; outline saved to Document Summary.`
+          ).replace('{topic}', topic)
+        } else {
+          reply = t(
+            'canvas.mindMapOneSentence.photoHanddrawnLocalReply',
+            `Detected a hand-drawn mind map “${topic}”. Rebuilt on this canvas; outline saved to Document Summary. Library sync did not complete — save or retry if needed.`
+          ).replace('{topic}', topic)
+        }
+      } else {
+        const excerpt = result.ocrExcerpt || '—'
+        reply = t(
+          'canvas.mindMapOneSentence.photoOcrReply',
+          `Extracted text from the photo:\n${excerpt}\n\nFull text is in Document Summary.`
+        ).replace('{excerpt}', excerpt)
+      }
+      replyState.showFinalReply(reply)
+      oneSentence.markRequestDone(rid)
+      void appendOneSentenceTurn(diagramScope.value, {
+        role: 'kitty',
+        content: reply,
+        phase: phase.value === 'create' ? 'create' : 'edit',
+        source: 'conversation_image',
+        diagram_type: diagramStore.type ?? undefined,
+        request_id: rid,
+      })
+      return true
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : t('canvas.mindMapOneSentence.photoFailed', 'Could not process the photo.')
+      replyState.showFinalReply(message)
+      oneSentence.markRequestFailed(rid, 'conversation_image_failed')
+      void appendOneSentenceTurn(diagramScope.value, {
+        role: 'kitty',
+        content: message,
+        phase: phase.value === 'create' ? 'create' : 'edit',
+        source: 'conversation_image_failed',
+        diagram_type: diagramStore.type ?? undefined,
+        request_id: rid,
+        outcome: 'failed',
+      })
+      return false
+    }
+  }
+
   async function bootstrapSession(): Promise<void> {
     const gen = ++bootstrapGeneration
     const libraryId = savedDiagramsStore.activeDiagramId
@@ -592,29 +726,39 @@ export function useMindMapOneSentenceChat() {
     const restored = await fetchOneSentenceTurns(diagramScope.value)
     if (gen !== bootstrapGeneration) return
 
+    const scope = diagramScope.value
     if (restored.length > 0) {
       oneSentence.hydrateFromTurns(restored)
       oneSentence.setPhase('edit')
       if (libraryId) {
         oneSentence.setScopeMigrated(true)
       }
+      hydratedScope = scope
       scrollChatToBottom()
-    } else if (messages.value.length === 0) {
-      // Server empty: seed welcome only when local thread is also empty (avoid stacking on refresh).
+    } else if (messages.value.length === 0 || hydratedScope !== scope) {
+      // Empty Redis for this scope: drop Pinia bubbles from another diagram, then seed.
+      // Same-scope refresh with a local welcome only keeps the thread (avoid re-seed flicker).
+      oneSentence.resetChatUiForWelcome()
       if (
-        shouldUseOneSentenceEditFlow(diagramStore, savedDiagramsStore, llmResultsStore, phase.value)
+        shouldUseOneSentenceEditFlow(
+          diagramStore,
+          savedDiagramsStore,
+          llmResultsStore,
+          phase.value
+        )
       ) {
         oneSentence.setPhase('edit')
         pushKittyMessage(pickOneSentenceGenerateDone(currentLanguage.value))
       } else {
         pushKittyMessage(pickOneSentenceWelcome(currentLanguage.value))
       }
+      hydratedScope = scope
     } else if (
       shouldUseOneSentenceEditFlow(diagramStore, savedDiagramsStore, llmResultsStore, phase.value)
     ) {
       oneSentence.setPhase('edit')
     }
-    oneSentence.markSessionReady(diagramScope.value)
+    oneSentence.markSessionReady(scope)
   }
 
   watch(
@@ -664,9 +808,14 @@ export function useMindMapOneSentenceChat() {
 
   watch(
     () => savedDiagramsStore.activeDiagramId,
-    (libraryId) => {
+    (libraryId, prevLibraryId) => {
       if (!libraryId) {
-        oneSentence.setLibraryScope(null)
+        // Left a saved diagram: rotate ephemeral UI so diagram A's thread cannot leak.
+        if (prevLibraryId) {
+          oneSentence.onCanvasReset()
+        } else {
+          oneSentence.setLibraryScope(null)
+        }
         return
       }
       oneSentence.setLibraryScope(libraryId)
@@ -887,6 +1036,7 @@ export function useMindMapOneSentenceChat() {
     bus.on('oneSentence:request_failed', onRequestSettled)
     bus.on('oneSentence:messages_changed', onMessagesChanged)
     bus.on('oneSentence:session_reset', () => {
+      hydratedScope = null
       void bootstrapSession()
     })
   })
@@ -905,6 +1055,8 @@ export function useMindMapOneSentenceChat() {
       peerHistoryTimer = null
     }
     funAsr.stopListening()
+    // Panel may unmount mid-LLM; clear write lock so context is not stuck locked.
+    setDiagramWriteLockHolder(null)
     // Canvas owner (CanvasPage) owns Kitty WS lifecycle — do not stop on panel close.
   })
 
@@ -923,6 +1075,7 @@ export function useMindMapOneSentenceChat() {
     asrPartialTranscript,
     toggleMic,
     sendDraft,
+    uploadConversationImage,
     selectClarifyChoice,
     bindChatScroll,
   }

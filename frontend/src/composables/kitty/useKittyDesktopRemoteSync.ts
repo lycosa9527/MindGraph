@@ -91,7 +91,7 @@ export function useKittyDesktopRemoteSync(options: {
     expected_effect?: unknown
     before_fingerprint?: unknown
   }): void {
-    if (!options.syncEnabled.value || collabBlocksDiagramEdits()) {
+    if (!options.syncEnabled.value) {
       return
     }
     const scope = typeof data.scope === 'string' ? data.scope.trim() : ''
@@ -110,6 +110,8 @@ export function useKittyDesktopRemoteSync(options: {
 
     // Verified edits: Redis SSE is the cross-worker apply path when owner WS
     // is on another Uvicorn process. Observers must not re-apply.
+    // Collab must not drop here — mutation bus nacks with collab_active so the
+    // pending server future completes (avoids ack_timeout).
     if (mutationId !== '') {
       if (!kittySession.ownsKittySession) {
         return
@@ -149,6 +151,10 @@ export function useKittyDesktopRemoteSync(options: {
           : undefined,
         lane: 'desktop',
       })
+      return
+    }
+
+    if (collabBlocksDiagramEdits()) {
       return
     }
 
@@ -243,7 +249,11 @@ export function useKittyDesktopRemoteSync(options: {
     if (typeof ua !== 'number') {
       return
     }
-    if (lastAppliedUpdatedAt.value !== null && ua <= lastAppliedUpdatedAt.value) {
+    const appliedUpdatedAt: number = ua
+    if (
+      lastAppliedUpdatedAt.value !== null &&
+      appliedUpdatedAt <= lastAppliedUpdatedAt.value
+    ) {
       return
     }
     const dt = diagramTypeFromLivePayload(data.diagram_type)
@@ -257,10 +267,12 @@ export function useKittyDesktopRemoteSync(options: {
 
     const diagramData = isRecord(data.diagram_data) ? data.diagram_data : null
     const localNodes = diagramStore.data?.nodes ?? []
-    const hubHasCanonicalNodes =
-      diagramData != null && Array.isArray(diagramData.nodes) && diagramData.nodes.length > 0
-    // Children-only Hub snapshots (server voice preview) must not overwrite Pinia SoT.
-    if (!hubHasCanonicalNodes && localNodes.length > 0) {
+    const hubNodes =
+      diagramData != null && Array.isArray(diagramData.nodes) ? diagramData.nodes : []
+    const hubHasCanonicalNodes = hubNodes.length > 0
+    const kittySession = useKittySessionStore()
+
+    function applyLiveMetaOnly(reason: string): void {
       if (
         Array.isArray(data.selected_nodes) &&
         data.selected_nodes.every((x) => typeof x === 'string')
@@ -272,12 +284,34 @@ export function useKittyDesktopRemoteSync(options: {
       if ('selected_llm_model' in data) {
         void applyKittyRemoteLlmModel(data.selected_llm_model)
       }
-      lastAppliedUpdatedAt.value = ua
-      traceKittyWorkflow(
-        'desktop',
-        'live_context_skip',
-        `hub lacks nodes[] — keep Pinia SoT updated_at=${ua}`,
-        { scope: options.libraryDiagramId.value?.trim() }
+      lastAppliedUpdatedAt.value = appliedUpdatedAt
+      traceKittyWorkflow('desktop', 'live_context_skip', reason, {
+        scope: options.libraryDiagramId.value?.trim(),
+      })
+    }
+
+    // Owning tab Pinia is SoT (verified apply + autocomplete paste). Reloading
+    // Redis live_context here clobbers branches that were never (or not yet) in Hub.
+    if (kittySession.ownsKittySession) {
+      applyLiveMetaOnly(
+        `owning_tab — keep Pinia SoT updated_at=${appliedUpdatedAt}`
+      )
+      return
+    }
+
+    // Children-only Hub snapshots (server voice preview) must not overwrite Pinia SoT.
+    if (!hubHasCanonicalNodes && localNodes.length > 0) {
+      applyLiveMetaOnly(
+        `hub lacks nodes[] — keep Pinia SoT updated_at=${appliedUpdatedAt}`
+      )
+      return
+    }
+
+    // Never regress a richer local canvas (e.g. library load / autocomplete) to a
+    // smaller Redis snapshot — especially before ownsKittySession is set on re-enter.
+    if (hubHasCanonicalNodes && localNodes.length > hubNodes.length) {
+      applyLiveMetaOnly(
+        `local ahead hub (${localNodes.length}>${hubNodes.length}) — keep Pinia updated_at=${appliedUpdatedAt}`
       )
       return
     }
@@ -286,7 +320,7 @@ export function useKittyDesktopRemoteSync(options: {
     const localFp = getKittyDiagramContentFingerprint(diagramStore.data)
     const hubContentFp = hubHasCanonicalNodes
       ? getKittyDiagramContentFingerprint({
-          nodes: (diagramData as Record<string, unknown>).nodes as unknown[],
+          nodes: hubNodes,
           connections: Array.isArray((diagramData as Record<string, unknown>).connections)
             ? ((diagramData as Record<string, unknown>).connections as unknown[])
             : [],
@@ -302,14 +336,14 @@ export function useKittyDesktopRemoteSync(options: {
       traceKittyWorkflow(
         'desktop',
         'live_context_recovery',
-        `updated_at=${ua} force=${forceRecovery}`,
+        `updated_at=${appliedUpdatedAt} force=${forceRecovery}`,
         { scope: options.libraryDiagramId.value?.trim() }
       )
     } else if (sseMissed && diagramData != null && !contentDiverged) {
       traceKittyWorkflow(
         'desktop',
         'live_context_skip',
-        `pinia already matches hub updated_at=${ua}`,
+        `pinia already matches hub updated_at=${appliedUpdatedAt}`,
         { scope: options.libraryDiagramId.value?.trim() }
       )
     }
@@ -323,7 +357,7 @@ export function useKittyDesktopRemoteSync(options: {
     if ('selected_llm_model' in data) {
       void applyKittyRemoteLlmModel(data.selected_llm_model)
     }
-    lastAppliedUpdatedAt.value = ua
+    lastAppliedUpdatedAt.value = appliedUpdatedAt
   }
 
   async function tick(tickOpts?: { forceRecovery?: boolean }): Promise<void> {
@@ -522,12 +556,29 @@ export function useKittyDesktopRemoteSync(options: {
       // Owning tab already applied + verified into Pinia — reloading live_context
       // would clobber SoT with a stale/voice-shaped snapshot.
       if (payload.source === 'owning_tab') {
+        lastDiagramSseAt.value = Date.now()
         traceKittyWorkflow('desktop', 'live_context_skip', 'owning_tab persist — keep Pinia', {
           scope,
         })
         return
       }
       void tick({ forceRecovery: true })
+    },
+    'KittyDesktopRemoteSync'
+  )
+
+  // Kitty autocomplete Hub-persists inside commitVerifiedLocalDiagramMutation.
+  // Mark SSE fresh so live_context recovery does not treat the tab as stale.
+  eventBus.onWithOwner(
+    'kitty:diagram_action_completed',
+    (payload: { ok: boolean }) => {
+      if (!payload.ok || !options.syncEnabled.value) {
+        return
+      }
+      if (!useKittySessionStore().ownsKittySession) {
+        return
+      }
+      lastDiagramSseAt.value = Date.now()
     },
     'KittyDesktopRemoteSync'
   )

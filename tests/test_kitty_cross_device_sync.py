@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from services.agent_hub.scope_lifecycle import MindGraphAgentHub
+from services.diagram_edit.transport.kitty_ws import MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY
 from services.kitty.context.messaging import send_kitty_diagram_update, send_kitty_ws_action
 from services.kitty.infra.desktop.kitty_desktop_wake_fanout import (
     publish_kitty_diagram_update,
@@ -246,9 +247,62 @@ async def test_send_kitty_diagram_update_routes_verified_to_canvas_owner() -> No
     assert owner_call.args[1]["mutation_id"] == "mut-1"
     assert owner_call.args[1]["updates"] == {"text": "中国移动"}
     assert ingress_call.args[0] is ingress_ws
-    assert ingress_call.args[1].get("mutation_id") is None
     assert ingress_call.args[1]["user_summary"] == "已添加分支"
     fanout.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_send_kitty_diagram_update_suppresses_chat_during_multi_step() -> None:
+    """Multi-step chain flag omits per-mutation user_summary on owner + ingress."""
+    ingress_ws = MagicMock()
+    owner_ws = MagicMock()
+    message = {
+        "type": "diagram_update",
+        "action": "add_node",
+        "updates": {"text": "跑步"},
+        "mutation_id": "mut-chain-1",
+    }
+    with (
+        patch(
+            "services.kitty.context.messaging.safe_websocket_send",
+            AsyncMock(return_value=True),
+        ) as safe_send,
+        patch(
+            "services.kitty.context.messaging.publish_kitty_diagram_update",
+            AsyncMock(),
+        ),
+        patch(
+            "services.kitty.context.messaging.find_canvas_owner_websocket",
+            return_value=owner_ws,
+        ),
+        patch(
+            "services.kitty.context.messaging.voice_sessions",
+            {
+                "vs-mobile": {
+                    "user_id": 7,
+                    "diagram_session_id": "lib-owner-1",
+                    "_kitty_client_lane": "mobile",
+                    MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY: True,
+                }
+            },
+        ),
+        patch(
+            "services.kitty.context.messaging.render_ack_for_diagram_update",
+            return_value="不应出现",
+        ) as render_summary,
+        patch(
+            "services.kitty.context.messaging.fanout_voice_command_from_session",
+            AsyncMock(),
+        ),
+    ):
+        ok = await send_kitty_diagram_update(ingress_ws, "vs-mobile", message)
+
+    assert ok is True
+    render_summary.assert_not_called()
+    owner_payload = safe_send.await_args_list[0].args[1]
+    ingress_payload = safe_send.await_args_list[1].args[1]
+    assert "user_summary" not in owner_payload
+    assert "user_summary" not in ingress_payload
 
 
 @pytest.mark.asyncio

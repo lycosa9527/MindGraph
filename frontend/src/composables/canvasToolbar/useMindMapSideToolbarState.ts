@@ -3,8 +3,8 @@ import { useRoute } from 'vue-router'
 
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { getConceptParkingLotDiagramKey } from '@/composables/nodePalette/sessionKeys'
-import { getConceptParkingLot } from '@/composables/conceptParkingLot/useConceptParkingLot'
+import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
+import { getAiBrainstormDiagramKey } from '@/composables/nodePalette/sessionKeys'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import { useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
 
@@ -44,14 +44,18 @@ export function useMindMapSideToolbarState() {
 
   function openTool(toolId: MindMapSideToolId): void {
     if (!requireDiagram()) return
+    const previous = activeTool.value
+    if (previous === 'waterfall' && toolId !== 'waterfall' && panelsStore.aiBrainstormPanel.isOpen) {
+      getAiBrainstorm().dismiss()
+    }
     activeTool.value = toolId
 
     if (toolId === 'waterfall') {
-      const diagramKey = getConceptParkingLotDiagramKey(
+      const diagramKey = getAiBrainstormDiagramKey(
         savedDiagramsStore.activeDiagramId,
         route.query.diagramId as string | undefined
       )
-      panelsStore.openConceptParkingLot({ diagramKey })
+      panelsStore.openAiBrainstorm({ diagramKey })
     }
   }
 
@@ -59,8 +63,8 @@ export function useMindMapSideToolbarState() {
     const closing = activeTool.value
     activeTool.value = null
     sidebarExpanded.value = true
-    if (closing === 'waterfall' && panelsStore.conceptParkingLotPanel.isOpen) {
-      getConceptParkingLot().dismiss()
+    if (closing === 'waterfall' && panelsStore.aiBrainstormPanel.isOpen) {
+      getAiBrainstorm().dismiss()
     }
   }
 
@@ -126,10 +130,10 @@ export function useMindMapSideToolbarState() {
 
 /** Close waterfall when its external panel closes. */
 export function bindMindMapExternalPanelClose(
-  isConceptParkingLotOpen: () => boolean,
+  isAiBrainstormOpen: () => boolean,
   onClose: () => void
 ): () => void {
-  return watch(isConceptParkingLotOpen, (open) => {
+  return watch(isAiBrainstormOpen, (open) => {
     if (!open && activeTool.value === 'waterfall') {
       onClose()
     }

@@ -68,7 +68,6 @@ from utils.auth import (
     get_user_role,
     hash_password,
     increment_failed_attempts,
-    is_https,
     reset_failed_attempts,
     verify_bayi_passkey,
     verify_password,
@@ -885,5 +884,3 @@ async def verify_bayi_passkey_login(
             "match_prompt_to_ui": getattr(auth_user, "match_prompt_to_ui", True),
         },
     }
-
-

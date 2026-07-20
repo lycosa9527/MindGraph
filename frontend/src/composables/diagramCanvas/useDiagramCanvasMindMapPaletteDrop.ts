@@ -9,7 +9,7 @@ import {
   getMindMapPaletteDragSession,
   type MindMapPaletteDragItem,
 } from '@/composables/nodePalette/mindMapPaletteDragSession'
-import { getConceptParkingLot } from '@/composables/conceptParkingLot/useConceptParkingLot'
+import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { mindMapBranchFontSize, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
@@ -114,7 +114,7 @@ export function useDiagramCanvasMindMapPaletteDrop(
   const { diagramStore } = options
   const { screenToFlowCoordinate, getNodes } = useVueFlow()
   const { t } = useLanguage()
-  const { removeDroppedSuggestions } = getConceptParkingLot()
+  const { removeDroppedSuggestions } = getAiBrainstorm()
 
   const previewActive = ref(false)
   const previewCursorPos = ref<{ x: number; y: number } | null>(null)

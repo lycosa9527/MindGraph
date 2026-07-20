@@ -13,12 +13,14 @@
  *     intentionally kept set by the store to allow multi-pick, so we mirror the
  *     picker's visual: once an option is applied the picker closes, ant line goes too)
  */
-import { watch } from 'vue'
+import { onUnmounted, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore } from '@/stores'
 import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
 import { useInlineRecommendationsStore } from '@/stores/inlineRecommendations'
+
+const TAB_REC_INDICATOR_OWNER = 'CanvasPageTabRecIndicator'
 
 export function useCanvasPageTabRecIndicator(): void {
   const inlineRecStore = useInlineRecommendationsStore()
@@ -59,9 +61,18 @@ export function useCanvasPageTabRecIndicator(): void {
   )
 
   // Secondary signal: clear immediately when an option is applied.
-  eventBus.on('inline_recommendation:applied', ({ nodeId }) => {
-    if (activeIndicatorNodeId === nodeId) {
-      clearAll()
-    }
+  eventBus.onWithOwner(
+    'inline_recommendation:applied',
+    ({ nodeId }) => {
+      if (activeIndicatorNodeId === nodeId) {
+        clearAll()
+      }
+    },
+    TAB_REC_INDICATOR_OWNER
+  )
+
+  onUnmounted(() => {
+    eventBus.removeAllListenersForOwner(TAB_REC_INDICATOR_OWNER)
+    clearAll()
   })
 }

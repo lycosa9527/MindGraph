@@ -108,6 +108,7 @@ def test_ingest_text_does_not_start_processing(client: TestClient) -> None:
         patch("routers.api.knowledge_space.packages.process_document_task") as task,
     ):
         service = service_cls.return_value
+        service.get_package = AsyncMock(return_value=SimpleNamespace(id=3, source="canvas"))
         service.add_text_source = AsyncMock(return_value=document)
         response = client.post(
             "/api/knowledge-space/packages/3/documents/ingest-text",

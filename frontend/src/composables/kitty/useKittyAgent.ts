@@ -686,19 +686,6 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     )
   }
 
-  function sendAppendImage(dataBase64: string, format = 'jpeg'): void {
-    if (!dataBase64 || !ws.value || ws.value.readyState !== WebSocket.OPEN) return
-    traceKittyWorkflow('mobile', 'image_send', `format=${format}`)
-    sendMinimalAudioPreamble()
-    ws.value.send(
-      JSON.stringify({
-        type: 'append_image',
-        data: dataBase64,
-        format,
-      })
-    )
-  }
-
   async function stopConversation(): Promise<void> {
     startGeneration += 1
     cancelActiveConnectAttempt('Conversation stopped')
@@ -821,7 +808,6 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     stopAudioPlayback,
     updateContext,
     registerDiagramContextBuilder,
-    sendAppendImage,
     sendMinimalAudioPreamble,
     cleanup,
     destroy,

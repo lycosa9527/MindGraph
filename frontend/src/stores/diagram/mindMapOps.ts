@@ -238,7 +238,6 @@ function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): voi
   const previousSelected = [...ctx.selectedNodes.value]
   const previousPendingEdit = ctx.mindMapPendingEditNodeId.value
   const previewStore = useMindMapSubgraphPreviewStore()
-  const previousGeneratingId = previewStore.generatingNodeId
 
   ctx.data.value.nodes = result.nodes
   ctx.data.value.connections = result.connections
@@ -278,15 +277,15 @@ function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): voi
       result.connections
     )
   }
-  if (previousGeneratingId) {
-    previewStore.generatingNodeId = remapMindMapNodeIdAfterReload(
-      previousGeneratingId,
+  previewStore.remapGeneratingNodeIds((oldId) =>
+    remapMindMapNodeIdAfterReload(
+      oldId,
       oldNodes,
       oldConnections,
       result.nodes,
       result.connections
     )
-  }
+  )
 }
 
 export function useMindMapOpsSlice(ctx: DiagramContext) {

@@ -1,6 +1,4 @@
-/**
- * zh-tw UI � common
- */
+/** zh-tw UI — common */
 
 export default {
   'app.aiDisclaimer': '內容由AI生成，請仔細甄別',
@@ -12,7 +10,8 @@ export default {
   'app.browserLocale.switch': '切換',
   'app.browserLocale.title': '切換界面語言？',
   'app.testServer.badge': '測試',
-  'app.testServer.body': 'Roy插著腰提醒您，您正在造訪測試伺服器，此站點會頻繁下線並測試，正式使用請前往生產環境。',
+  'app.testServer.body':
+    'Roy插着腰提醒您，您正在访问测试服务器，此站点会频繁下线并测试，正式使用请前往生产环境。',
   'app.testServer.confirm': '繼續使用測試站',
   'app.testServer.jump': '前往正式環境',
   'app.testServer.productionHost': 'mg.mindspringedu.com',
@@ -113,8 +112,10 @@ export default {
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'Kitty',
-  'canvas.kittyMobileIndicatorHint': '手机 Kitty 已通过麦克风与会话启动并与当前图示关联，请在手机上对话与操作。',
-  'canvas.kittyMobileIndicatorAria': '状态：手机 Kitty 已与当前 MindGraph 画布关联，请在手机上使用 Kitty。',
+  'canvas.kittyMobileIndicatorHint':
+    '手机 Kitty 已通过麦克风与会话启动并与当前图示关联，请在手机上对话与操作。',
+  'canvas.kittyMobileIndicatorAria':
+    '状态：手机 Kitty 已与当前 MindGraph 画布关联，请在手机上使用 Kitty。',
   'canvas.kittyMobileIndicatorTitle': '手機 Kitty',
   'canvas.kittyVoiceCommandLogTitle': '語音指令',
   'canvas.kittyVoiceCommandLogAria': '來自手機 Kitty 的最近語音指令',
@@ -147,7 +148,10 @@ export default {
   'mobile.kittyKeyboardToggle': '文字輸入',
   'mobile.kittyEnd': '結束',
   'mobile.kittyWelcomeLine': '說說你的想法',
-  'mobile.kittyWelcomeSub': '语音随问随答，支持拍照识图。请在手机或电脑上打开已保存的图示，便于 Kitty 与 MindGraph 同步。',
+  'mobile.kittyWelcomeSub':
+    '可语音或文字提问。请在手机或电脑上打开已保存的图示，便于 Kitty 与 MindGraph 同步。',
+  'mobile.kittyNeedsDesktopOwner':
+    '请在电脑端 MindGraph 打开此导图后再编辑。画布未连接时，手机端仍可对话。',
   'mobile.kittyConnecting': '正在連接…',
   'mobile.kittyInputPlaceholder': '輸入消息…',
   'mobile.kittySend': '發送',
@@ -157,9 +161,10 @@ export default {
   'mobile.kittyDiagramCardTapHint': '點擊選擇導圖',
   'mobile.kittyDiagramUpdated': '圖示已更新',
   'mobile.kittyConnectFailed': '連接失敗，請檢查網絡後重試',
-  'mobile.kittyDisconnected': '語音連接已斷開，點按麥克風重新連接',
+  'mobile.kittyDisconnected': '語音連接已斷開，正在重新連接…',
   'mobile.kittyEnableServerHint': '請在服務端 .env 中設置 FEATURE_KITTY_AGENT=True 並重啟 API。',
-  'mobile.kittyServerDisabledBanner': '当前环境未开启 Kitty 语音后端，拍照与语音不可用。请在 server .env 中启用 FEATURE_KITTY_AGENT 并重启。',
+  'mobile.kittyServerDisabledBanner':
+    '当前环境未开启 Kitty 语音后端，拍照与语音不可用。请在 server .env 中启用 FEATURE_KITTY_AGENT 并重启。',
   'mobile.kittyDiagramPickerTitle': '選擇導圖',
   'mobile.kittyDiagramPickerLoading': '加載中…',
   'mobile.kittyDiagramPickerEmpty': '暫無已保存的導圖',
@@ -167,15 +172,15 @@ export default {
   'mobile.kittyDiagramPickerNoMatch': '沒有匹配的導圖',
   'mobile.kittyCreateNewMindmap': '新建思維導圖',
   'mobile.kittyNewMindmapTitle': '新建思維導圖',
-  'mobile.kittyNewMindmapCreated': '已新建思維導圖，電腦端將打開空白畫布',
+  'mobile.kittyNewMindmapCreated': '已新建思維導圖，電腦端將打開該導圖',
   'mobile.kittyNewMindmapCreateFailed': '新建思維導圖失敗，請重試',
-  'mobile.kittyNewMindmapDesktopFailed': '已新建導圖，但無法通知電腦端打開畫布',
+  'mobile.kittyNewMindmapDesktopFailed': '已新建導圖，但無法通知電腦端打開',
   'mobile.kittyDiagramPinned': '置頂',
   'mobile.kittyDiagramPickFailed': '無法加載該導圖，請稍後重試',
   'mobile.kittyEphemeralScopePinned':
-    '目前為臨時會話，請選擇或新建已保存的導圖以與電腦端同步。',
+    '当前为临时会话，请选择或新建已保存的导图以与电脑端同步。',
   'mobile.kittyEphemeralScopeDegraded':
-    '與電腦端的配對可能不同步，請打開已保存的導圖以重新連接。',
+    '与电脑端的配对可能不同步，请打开已保存的导图以重新连接。',
   'mobile.kittyDesktopJumpFailed': '已切換導圖，但無法通知電腦端',
   'mobile.kittyDiagramSelected': '已選擇導圖，電腦端將同步打開',
   'mobile.kittyCurrentDiagramLabel': '當前圖示',
@@ -185,7 +190,8 @@ export default {
   'mobile.kittyHubSourceLibrary': 'Hub：庫',
   'mobile.kittyHubSourceEmpty': 'Hub：空',
   'mobile.kittyMicPttTitle': '按住說話，鬆開發送；輸入框外可按住空格鍵說話。',
-  'mobile.kittyMicPttAria': '按住說話：按住按鈕採集語音，鬆開停止並發送。輸入框外可按住空格鍵；文字輸入打開且聚焦輸入框時空格仍為輸入空格。',
+  'mobile.kittyMicPttAria':
+    '按住说话：按住按钮采集语音，松开停止并发送。输入框外可按住空格键；文字输入打开且聚焦输入框时空格仍为输入空格。',
   'mobile.kittyHoldToSpeak': '按住說話',
   'mobile.kittyReleaseToSend': '鬆開發送',
   'mobile.kittyMicToggleTitle': '按住說話，鬆開發送；輸入框外可按住空格鍵說話。',
@@ -197,17 +203,29 @@ export default {
   'mobile.kittyClickWheelMenu': '回到第一個節點',
   'mobile.kittyClickWheelPrev': '上一個節點',
   'mobile.kittyClickWheelNext': '下一個節點',
-  'mobile.kittyClickWheelSelect': '選取目前節點',
+  'mobile.kittyClickWheelSelect': '選中當前節點',
   'mobile.kittyLlmRowAria': '選擇 AI 模型',
-  'mobile.kittyPhotoOcrComingSoon': '拍照識圖即將推出。請先按住說話或輸入文字來編輯圖示。',
+  'mobile.kittyPhotoNeedsDiagram': '請先打開或選擇已保存的圖示，再拍照提取文字。',
+  'mobile.kittyPhotoInvalidType': '請選擇 JPG、PNG 或 WebP 圖片。',
+  'mobile.kittyPhotoTooLarge': '圖片過大，最大 10MB。',
+  'mobile.kittyPhotoProgressDetecting': '正在處理照片…',
+  'mobile.kittyPhotoUserBubble': '📷 照片',
+  'mobile.kittyPhotoUntitledMap': '思維導圖',
+  'mobile.kittyPhotoHanddrawnReply':
+    '检测到手绘思维导图「{topic}」。已重建到画布，结构大纲已保存到文档总结。',
+  'mobile.kittyPhotoHanddrawnLocalReply':
+    '检测到手绘思维导图「{topic}」。已在本机重建，结构大纲已保存到文档总结。图库同步未完成，若画布未更新请重新打开图示。',
+  'mobile.kittyPhotoOcrReply':
+    '已识别图片文字：\n{excerpt}\n\n全文已存入文档总结。',
+  'mobile.kittyPhotoUploadFailed': '照片上傳失敗。',
   'mobile.kittyPickDiagramToEdit': '請先打開或選擇一張已保存的圖示，再按住說話或輸入文字進行編輯。',
   'mobile.kittyHubSyncFailed': '無法將圖示同步到 Kitty，請檢查網絡後重試。',
   'mobile.kittyDesktopDiagramFollowed': '已切換為電腦端打開的圖示',
-  'mobile.kittyScopeDivergence': '電腦端打開了不同的導圖。請選擇如何同步：',
-  'mobile.kittyScopeFollowDesktop': '跟隨電腦端導圖',
-  'mobile.kittyScopeOpenOnDesktop': '在電腦端打開手機上的導圖',
-  'mobile.kittyScopeKeepSplitAction': '保持分開',
-  'mobile.kittyScopeKeepSplit': '手機與電腦端保持不同導圖',
+  'mobile.kittyScopeDivergence': '電腦端打開了另一張導圖。請選擇如何同步：',
+  'mobile.kittyScopeFollowDesktop': '跟隨電腦導圖',
+  'mobile.kittyScopeOpenOnDesktop': '在電腦打開手機導圖',
+  'mobile.kittyScopeKeepSplitAction': '暫不同步',
+  'mobile.kittyScopeKeepSplit': '保持手機與電腦各自打開不同導圖',
   'meta.pageTitle.notFound': '頁面未找到',
   'meta.pageTitle.privacy': '用戶協議與隱私政策',
   'meta.pageTitle.publicDashboard': 'MG全國數據中心',
@@ -251,19 +269,24 @@ export default {
   'settings.version.chinese': '專業模式',
   'settings.version.international': '簡潔模式',
   'landing.international.subtitle': '宇宙中最強大的AI思維圖示生成軟件',
-  'landing.international.promptPlaceholder': '描述主题并指定图示类型，例如「用流程图展示测量密度的实验步骤」…',
+  'landing.international.promptPlaceholder':
+    '描述主题并指定图示类型，例如「用流程图展示测量密度的实验步骤」…',
   'landing.international.examplesTitle': '靈感推薦',
   'landing.international.example1': '生成一張關於「光合作用」的思維導圖',
-  'landing.international.example2': '用树形图分类「脊椎动物」，四个分支：鱼类、两栖类、爬行类、哺乳类',
-  'landing.international.example3': '用流程图展示「测量物体密度」的实验步骤：称质量、量体积、计算、记录结论',
+  'landing.international.example2':
+    '用树形图分类「脊椎动物」，四个分支：鱼类、两栖类、爬行类、哺乳类',
+  'landing.international.example3':
+    '用流程图展示「测量物体密度」的实验步骤：称质量、量体积、计算、记录结论',
   'landing.international.example4': '用雙氣泡圖比較「植物細胞」與「動物細胞」的異同',
-  'landing.international.example5': '用括号图分解「一元二次方程」：标准式、判别式、求根公式、图像与根的关系',
+  'landing.international.example5':
+    '用括号图分解「一元二次方程」：标准式、判别式、求根公式、图像与根的关系',
   'landing.international.example6': '生成氣泡圖，描述「牛頓三大定律」的關鍵概念',
   'landing.international.phaseRequestSent': '請求已發送',
   'landing.international.phaseServerReceived': '服務器已收到請求',
   'landing.international.phaseGenerating': '正在生成圖示…',
   'landing.international.phasePleaseWait': '請稍候，AI 正在組織內容',
-  'landing.international.generatingWithTopic': '主题：{topic}，正在生成{diagramType}，请稍候',
+  'landing.international.generatingWithTopic':
+    '主题：{topic}，正在生成{diagramType}，请稍候',
   'landing.international.topicUnknown': '您的主題',
   'landing.international.diagramTypePending': '圖示',
   'landing.international.errorRateLimit': '請求過於頻繁，請稍後再試',

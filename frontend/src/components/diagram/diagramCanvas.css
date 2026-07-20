@@ -75,6 +75,12 @@
   display: block !important;
 }
 
+/* Mobile canvas: keep marquee hidden — touch pan/pinch owns the gesture */
+.diagram-canvas.canvas-touch.mind-map-canvas .vue-flow__nodesselection,
+.diagram-canvas.canvas-touch.mind-map-canvas .vue-flow__nodesselection-rect {
+  display: none !important;
+}
+
 .diagram-canvas.mind-map-canvas .vue-flow__nodesselection-rect {
   background: rgba(59, 130, 246, 0.08);
   border: 1px solid rgba(59, 130, 246, 0.45);

@@ -229,18 +229,30 @@ def render_library_prompt(lang: Lang = "zh") -> str:
         [
             "Rules:",
             "- Prefer auto_complete_branch when user asks to 补全/填充/expand an EXISTING branch label.",
-            "- Prefer add_node only when adding a NEW branch/child.",
-            "- When the user changes the topic/center AND asks to auto-complete (补全/补完), "
-            "call diagram.update_center then node_action.auto_complete (two tool calls).",
-            "- When the user adds a NEW branch AND asks to auto-complete/fill it "
-            "(添加…分支并补全), call diagram.add_node then node_action.auto_complete_branch "
-            "with the same label (two tool calls; do not invent node_id for the new branch).",
+            "- Prefer add_node only when adding a NEW branch/child (exact new labels).",
+            "- When the user changes the topic/center AND asks for whole-map auto-complete "
+            "(补全/补完整图) with NO new-branch adds, call diagram.update_center then "
+            "node_action.auto_complete (two tool calls).",
+            "- When the user adds ONE NEW branch (even if they also say 补全/fill it), "
+            "prefer diagram.add_node only — the canvas fills that new branch after apply. "
+            "Do not invent node_id for the new branch.",
+            "- When the user adds MULTIPLE new branches in one request (optionally after "
+            "changing the topic), emit only structural tools: diagram.update_center if "
+            "needed, then one diagram.add_node per branch label in order. Do NOT emit "
+            "auto_complete_branch or whole-map auto_complete for those new labels — the "
+            "server fills them after all structural edits finish. Never interleave "
+            "auto_complete_branch between add_node calls.",
+            "- Never call whole-map auto_complete in the same turn as new-branch add_node "
+            "calls you expect the canvas to fill (whole-map fill would wipe those children).",
+            "- Execution order (always): update_center → delete_node → update_node → "
+            "add_node → auto_complete_branch → auto_complete. Never put auto-complete "
+            "before structural edits.",
             "- Match branch labels and node ids against the Current diagram JSON; do not invent labels.",
             "- Always pass node_id from the diagram JSON when targeting an existing node "
             "(stable if text changes). Never invent node_id for a node that does not exist yet.",
             "- add_node creates a NEW node: pass target/text (+ parent_ref/side); do not invent "
             "node_id. The canvas assigns the real id after apply.",
-            "- auto_complete_branch / delete_node / update_node / select_node: require node_id "
+            "- auto_complete_branch / delete_node / update_node: require node_id "
             "from Current diagram JSON whenever the node already exists.",
             "- If ambiguous, call node_action.clarify_options with 2–3 short options.",
             "- clarify_options: every option_command must include the fields needed to execute "

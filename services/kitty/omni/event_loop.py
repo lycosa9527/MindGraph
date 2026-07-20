@@ -194,25 +194,6 @@ async def _handle_transcription_event(
         )
     )
 
-    if not session_mut.get("pending_kitty_image_paragraph"):
-        return
-
-    if not transcription_text.strip():
-        streak = session_mut.get("kitty_image_paragraph_empty_streak", 0) + 1
-        session_mut["kitty_image_paragraph_empty_streak"] = streak
-        if streak >= 15:
-            session_mut["pending_kitty_image_paragraph"] = False
-            session_mut.pop("kitty_image_paragraph_empty_streak", None)
-        return
-
-    session_mut["pending_kitty_image_paragraph"] = False
-    session_mut.pop("kitty_image_paragraph_empty_streak", None)
-    await emit_kitty_session_event(
-        voice_session_id,
-        "image_paragraph",
-        {"text": transcription_text},
-    )
-
 
 async def _forward_audio_chunk(websocket: WebSocket, event: dict[str, Any]) -> None:
     """Forward audio chunk."""

@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.148.0] - 2026-07-20
+
+> **Document Summary `/api/doc-summary` surface, vision mind-map from conversation images, AI Brainstorm panel, Kitty structural edit chains, and Chrome extension v0.4.22 doc-summary persist.**
+
+### Added
+
+- **Document Summary API package** — Short-path router at `/api/doc-summary` (session, packages, documents) so canvas/clients use product URLs while persistence stays shared ([`routers/api/doc_summary/`](routers/api/doc_summary/), [`docSummaryApi.ts`](frontend/src/config/docSummaryApi.ts)).
+- **Vision mind-map rebuild** — DashScope multimodal detect + structure rebuild for hand-drawn/photographed maps; applies to library and wakes desktop Kitty ([`vision_mindmap.py`](services/knowledge/vision_mindmap.py), [`vision_mindmap_apply.py`](services/knowledge/vision_mindmap_apply.py)).
+- **Kitty conversation image REST** — `POST /api/kitty/conversation_image`: hand-drawn → canvas rebuild + outline extract; otherwise OCR → Document Summary ([`conversation_image.py`](services/knowledge/conversation_image.py), [`conversation_image_handler.py`](services/kitty/http/conversation_image_handler.py)).
+- **Conversation image FE pipeline** — Capture/resize/upload shared by desktop Kitty and mobile ([`prepareConversationImageCapture.ts`](frontend/src/composables/kitty/prepareConversationImageCapture.ts), [`processConversationImageUpload.ts`](frontend/src/composables/kitty/processConversationImageUpload.ts)).
+- **AI Brainstorm panel** — Side tool for staged AI suggestions on canvas, replacing Concept Parking Lot ([`AiBrainstormPanel.vue`](frontend/src/components/canvas/AiBrainstormPanel.vue), [`composables/aiBrainstorm/`](frontend/src/composables/aiBrainstorm/)).
+- **Kitty structural mutation chain** — Sequential multi-edit one-sentence turns with safe command ordering ([`structural_chain.py`](services/kitty/routing/structural_chain.py), [`node_action_order.py`](services/kitty/routing/node_action_order.py)).
+- **Quiet branch-complete batching** — Coalesce multi-branch auto-complete into one short chat reply ([`kittyQuietBranchCompleteBatch.ts`](frontend/src/composables/kitty/kittyQuietBranchCompleteBatch.ts)).
+- **Subgraph apply queue** — Serial paste/persist + bounded parallel LLM fetches for multi-branch auto-complete ([`mindMapSubgraphApplyQueue.ts`](frontend/src/composables/editor/mindMapSubgraphApplyQueue.ts)).
+- **Office / table extraction** — OOXML/CSV → markdown tables; LibreOffice path for legacy `.doc`/`.ppt`/`.xls` ([`document_office_extract.py`](services/knowledge/document_office_extract.py), [`markdown_tables.py`](services/knowledge/markdown_tables.py), [`legacy_office_convert.py`](services/knowledge/legacy_office_convert.py)).
+- **Mind-map outline markdown** — Vision rebuild specs → Document Summary `extract.md` outline ([`mindmap_outline_md.py`](services/knowledge/mindmap_outline_md.py)).
+- **Doc Summary limits & temp files** — Upload/input caps and short-lived binary temp under `doc_summary_tmp/` ([`doc_summary_limits.py`](services/knowledge/doc_summary_limits.py), [`doc_summary_temp.py`](services/knowledge/doc_summary_temp.py)).
+- **Chat handoff cancel/revoke** — Cancel waiting codes; one waiting code per package; revoke on session end ([`chat_handoff_service.py`](services/knowledge/chat_handoff_service.py), [`useChatHandoff.ts`](frontend/src/composables/mindMap/useChatHandoff.ts)).
+- **Canvas library open helper** — Shared confirm/navigate when opening another library diagram ([`canvasLibraryDiagramOpen.ts`](frontend/src/composables/canvasPage/canvasLibraryDiagramOpen.ts)).
+- **Ephemeral session clear** — Shared Pinia/UI teardown for reset and leave-canvas ([`clearCanvasEphemeralSession.ts`](frontend/src/composables/canvasPage/clearCanvasEphemeralSession.ts)).
+- **Document-content mind-map prompts** — Dedicated EN/ZH prompts for extracted docs vs web pages ([`prompts/mind_maps.py`](prompts/mind_maps.py)).
+- **Chrome extension v0.4.22** — Persist captures into Document Summary via `/api/doc-summary` with package or new-session flow ([`background.js`](chrome-extension/background.js), [`popup.js`](chrome-extension/popup.js)).
+
+### Changed
+
+- **Clients → `/api/doc-summary`** — Canvas Document Summary UI, file-reader, and Chrome extension call the new prefix ([`useMindMapDocumentSummary.ts`](frontend/src/composables/mindMap/useMindMapDocumentSummary.ts), [`api_client.py`](clients/file-reader/file_reader/api_client.py)).
+- **Default vision model** — `DASHSCOPE_VISION_MODEL` default `qwen3.7-plus` → `qwen3.6-flash` ([`knowledge_config.py`](config/knowledge_config.py), [`env.example`](env.example)).
+- **COS Document Summary keys** — UUID-keyed objects under `documents/mindgraph/{uuid}.md`; access only via ownership-checked APIs ([`doc_summary_storage.py`](services/knowledge/doc_summary_storage.py)).
+- **Doc Summary ingest/storage** — Harder session binding, storage-conflict codes, extracted-access probe, clearer package lifecycle.
+- **Kitty WS `append_image` retired** — Inbound errors point clients to REST conversation image; WS module removed.
+- **Canvas session reset** — Reset/leave paths use ephemeral clear + library-open decisions.
+- **Waterfall tool shell** — Legacy waterfall panel mounts AI Brainstorm ([`MindMapWaterfallPanel.vue`](frontend/src/components/canvas/MindMapWaterfallPanel.vue)).
+- **One-sentence / node-action routing** — Stronger heuristics and ordered structural vs auto-complete execution.
+
+### Fixed
+
+- **Chat handoff lifecycle** — Waiting codes revoked when cancelled or when minting a new code for the same package; oversized ingest returns 413.
+- **Multi-branch Kitty UX** — Quiet batched completion and subgraph apply queue reduce chat spam and racey canvas applies.
+- **Library diagram switch** — Confirm before replacing an already-open different diagram.
+- **i18n key parity** — Synced Document Summary / Kitty photo / canvas-switch keys across all UI locale bundles (and rebuilt zh-TW from zh).
+- **Kitty live-context typing** — Narrow `updated_at` before assigning into `lastAppliedUpdatedAt` so vue-tsc stays green ([`useKittyDesktopRemoteSync.ts`](frontend/src/composables/kitty/useKittyDesktopRemoteSync.ts)).
+
+### Removed
+
+- **Concept parking lot** — Composable and panel logic removed; replaced by AI Brainstorm.
+- **Kitty WS image append path** — `services/kitty/ws/append_image.py` and FE `compressImageForKitty.ts` removed in favor of HTTP vision upload.
+
+### Tests
+
+- **Backend** — Vision mindmap, conversation image, doc-summary session/binding/clear/sync/limits/temp/storage-conflict/packages/extracted-access, office extract, markdown tables, outline md, structural chain, node-action order, chat-handoff revoke, Chrome doc-summary persist, content mindmap prompts.
+- **Frontend** — Canvas library open, Kitty quiet branch batch, subgraph apply queue, conversation image upload, Document Summary accept, chat handoff, and related canvas/Kitty specs.
+
 ## [5.147.0] - 2026-07-15
 
 > **Public dashboard embedded in admin, feature-flag hot reload, COS mirrors for GeoLite/AbuseIPDB, and Showcase router package layout.**

@@ -15,9 +15,7 @@ from typing import Any, Dict
 from fastapi import WebSocket
 
 from services.kitty.ack.ack_emit import emit_user_ack
-from services.kitty.content.paragraph import process_paragraph_with_qwen_plus
 from services.kitty.context.library_refresh import bump_voice_mutation_freshness
-from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.omni.context_refresh import schedule_omni_context_refresh
 from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call, route_voice_command
@@ -76,8 +74,6 @@ async def setup_session_event_handlers(runtime: KittySessionRuntime) -> SessionE
                 sess["_last_context_update_mono"] = time.monotonic()
             reason = str(event.payload.get("reason") or "context_update")
             await schedule_omni_context_refresh(runtime.voice_session_id, reason=reason)
-        elif event.kind == "image_paragraph":
-            await _handle_image_paragraph(runtime, event.payload)
 
     bus.add_handler(_on_event)
     await bus.start()
@@ -203,25 +199,3 @@ async def _handle_function_call(runtime: KittySessionRuntime, payload: Dict[str,
         str(args),
         session_context,
     )
-
-
-async def _handle_image_paragraph(runtime: KittySessionRuntime, payload: Dict[str, Any]) -> None:
-    """Handle image paragraph."""
-    text = str(payload.get("text") or "").strip()
-    if not text:
-        return
-    session = voice_sessions.get(runtime.voice_session_id) or {}
-    session_context = dict(session.get("context") or {})
-    try:
-        await process_paragraph_with_qwen_plus(
-            runtime.websocket,
-            runtime.voice_session_id,
-            text,
-            session_context,
-        )
-    except (ValueError, KeyError, RuntimeError, AttributeError) as voice_error:
-        logger.error("Image paragraph processing error: %s", voice_error, exc_info=True)
-        await safe_websocket_send(
-            runtime.websocket,
-            {"type": "error", "error": "Image paragraph processing failed"},
-        )

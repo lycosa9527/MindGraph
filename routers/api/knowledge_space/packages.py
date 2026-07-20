@@ -43,6 +43,10 @@ from models.responses import (
 from services.knowledge import package_wiki_store
 from services.knowledge.audio_hosting import resolve_audio_path
 from services.knowledge.doc_summary_ingest import DOC_SUMMARY_SOURCE, DocSummaryIngestService
+from services.knowledge.doc_summary_limits import (
+    DocSummaryContentTooLongError,
+    content_too_long_detail,
+)
 from services.knowledge.knowledge_package_service import KnowledgePackageService
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.package_pipeline_status import (
@@ -70,6 +74,8 @@ def _document_to_response(
 ) -> DocumentResponse:
     metadata = doc.doc_metadata or {}
     resolved_rag = rag_status or derive_document_rag_status(doc.status)
+    extract_chars = metadata.get("extract_char_count")
+    extract_char_count = int(extract_chars) if isinstance(extract_chars, int) else None
     return DocumentResponse(
         id=doc.id,
         file_name=doc.file_name,
@@ -84,6 +90,7 @@ def _document_to_response(
         chunking_mode=metadata.get("chunking_mode"),
         rag_status=resolved_rag,
         wiki_status=wiki_status,
+        extract_char_count=extract_char_count,
         created_at=doc.created_at.isoformat(),
         updated_at=doc.updated_at.isoformat(),
     )
@@ -338,6 +345,11 @@ async def upload_package_document(
             )
 
         return _package_document_response(current_user.id, package_id, document, package_source=package.source)
+    except DocSummaryContentTooLongError as e:
+        raise HTTPException(
+            status_code=413,
+            detail=content_too_long_detail(char_count=e.char_count),
+        ) from e
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except DATABASE_ERRORS as e:
@@ -376,6 +388,11 @@ async def ingest_text(
                 language=request.language,
             )
         return _package_document_response(current_user.id, package_id, document, package_source=package.source)
+    except DocSummaryContentTooLongError as e:
+        raise HTTPException(
+            status_code=413,
+            detail=content_too_long_detail(char_count=e.char_count),
+        ) from e
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except DATABASE_ERRORS as e:
@@ -421,6 +438,11 @@ async def ingest_web(
                 language=request.language,
             )
         return _package_document_response(current_user.id, package_id, document, package_source=package.source)
+    except DocSummaryContentTooLongError as e:
+        raise HTTPException(
+            status_code=413,
+            detail=content_too_long_detail(char_count=e.char_count),
+        ) from e
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except DATABASE_ERRORS as e:
@@ -467,6 +489,11 @@ async def ingest_web_url(
                 language=request.language,
             )
         return _package_document_response(current_user.id, package_id, document, package_source=package.source)
+    except DocSummaryContentTooLongError as e:
+        raise HTTPException(
+            status_code=413,
+            detail=content_too_long_detail(char_count=e.char_count),
+        ) from e
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except DATABASE_ERRORS as e:

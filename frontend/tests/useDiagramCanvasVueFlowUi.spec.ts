@@ -11,9 +11,9 @@ function buildUiOptions(overrides: Partial<Parameters<typeof useDiagramCanvasVue
     } as ReturnType<typeof import('@/stores').useDiagramStore>,
     presentationRailOpen: ref(false),
     handToolActive: ref(false),
-    presentationPointerEditMode: ref(true),
+    presentationPointerEditMode: ref(false),
     presentationHandPanMode: ref(false),
-    panOnDragButtons: ref<number[] | null>([0, 1, 2]),
+    panOnDragButtons: ref<number[] | null>(null),
     presentationTool: ref<'pointer' | 'highlighter' | 'pen' | 'timer'>('pointer'),
     presentationHighlighterColor: ref('#fef08a'),
     presentationPenColor: ref('#ef4444'),
@@ -22,11 +22,27 @@ function buildUiOptions(overrides: Partial<Parameters<typeof useDiagramCanvasVue
 }
 
 describe('useDiagramCanvasVueFlowUi', () => {
-  it('uses true for selectionKeyCode when drag-select is enabled', () => {
+  it('keeps desktop pointer-mode always-on marquee (new canvas)', () => {
     learningSheetPickActive.value = false
     const ui = useDiagramCanvasVueFlowUi(buildUiOptions())
     expect(ui.selectNodesOnDrag.value).toBe(true)
     expect(ui.selectionKeyCode.value).toBe(true)
+    expect(ui.effectivePanOnDrag.value).toEqual([1])
+    expect(ui.elementsSelectable.value).toBe(true)
+  })
+
+  it('disables marquee and VF pan when mobile panOnDragButtons are set', () => {
+    learningSheetPickActive.value = false
+    const ui = useDiagramCanvasVueFlowUi(
+      buildUiOptions({
+        panOnDragButtons: ref<number[] | null>([0, 1, 2]),
+      })
+    )
+    expect(ui.selectNodesOnDrag.value).toBe(false)
+    expect(ui.selectionKeyCode.value).toBe(null)
+    expect(ui.effectivePanOnDrag.value).toBe(false)
+    // Tap-to-select nodes must still work
+    expect(ui.elementsSelectable.value).toBe(true)
   })
 
   it('uses null (Vue Flow default Shift) when drag-select is disabled', () => {
@@ -34,5 +50,17 @@ describe('useDiagramCanvasVueFlowUi', () => {
     const ui = useDiagramCanvasVueFlowUi(buildUiOptions())
     expect(ui.selectNodesOnDrag.value).toBe(false)
     expect(ui.selectionKeyCode.value).toBe(null)
+  })
+
+  it('hand tool pans with all buttons and turns selection off', () => {
+    learningSheetPickActive.value = false
+    const ui = useDiagramCanvasVueFlowUi(
+      buildUiOptions({
+        handToolActive: ref(true),
+      })
+    )
+    expect(ui.effectivePanOnDrag.value).toEqual([0, 1, 2])
+    expect(ui.selectNodesOnDrag.value).toBe(false)
+    expect(ui.elementsSelectable.value).toBe(false)
   })
 })

@@ -17,8 +17,8 @@ import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'
 import type {
   ConceptMapTab,
-  ConceptParkingLotPanelState,
-  ConceptParkingLotSessionSnapshot,
+  AiBrainstormPanelState,
+  AiBrainstormSessionSnapshot,
   MindmateMessage,
   MindmatePanelState,
   NodePalettePanelState,
@@ -51,14 +51,16 @@ export const usePanelsStore = defineStore('panels', () => {
 
   const nodePaletteSessionsByDiagram = ref<Map<string, NodePaletteSessionSnapshot>>(new Map())
 
-  const conceptParkingLot = ref<ConceptParkingLotPanelState>({
+  const aiBrainstorm = ref<AiBrainstormPanelState>({
     open: false,
     suggestions: [],
     selected: [],
     mode: null,
+    stage: null,
+    stage_data: null,
   })
 
-  const conceptParkingLotSessionsByDiagram = ref<Map<string, ConceptParkingLotSessionSnapshot>>(
+  const aiBrainstormSessionsByDiagram = ref<Map<string, AiBrainstormSessionSnapshot>>(
     new Map()
   )
 
@@ -93,9 +95,9 @@ export const usePanelsStore = defineStore('panels', () => {
     ...nodePalette.value,
   }))
 
-  const conceptParkingLotPanel = computed(() => ({
-    isOpen: conceptParkingLot.value.open,
-    ...conceptParkingLot.value,
+  const aiBrainstormPanel = computed(() => ({
+    isOpen: aiBrainstorm.value.open,
+    ...aiBrainstorm.value,
   }))
 
   const propertyPanel = computed(() => ({
@@ -260,131 +262,137 @@ export const usePanelsStore = defineStore('panels', () => {
     }
   }
 
-  function openConceptParkingLot(
-    options: Partial<ConceptParkingLotPanelState> & { diagramKey?: string } = {}
+  function openAiBrainstorm(
+    options: Partial<AiBrainstormPanelState> & { diagramKey?: string } = {}
   ): void {
-    const wasOpen = conceptParkingLot.value.open
+    const wasOpen = aiBrainstorm.value.open
     const { diagramKey, ...restOptions } = options
-    const snapshot = diagramKey && conceptParkingLotSessionsByDiagram.value.get(diagramKey)
+    const snapshot = diagramKey && aiBrainstormSessionsByDiagram.value.get(diagramKey)
     const hasRestoredSession = !!(snapshot && snapshot.suggestions.length > 0)
     if (hasRestoredSession && snapshot) {
-      conceptParkingLot.value = {
-        ...conceptParkingLot.value,
+      aiBrainstorm.value = {
+        ...aiBrainstorm.value,
         suggestions: snapshot.suggestions,
         selected: snapshot.selected,
         mode: snapshot.mode,
+        stage: snapshot.stage ?? null,
+        stage_data: snapshot.stage_data ?? null,
         sourceTabs: snapshot.sourceTabs,
         open: true,
       }
     } else {
-      conceptParkingLot.value = {
-        ...conceptParkingLot.value,
+      aiBrainstorm.value = {
+        ...aiBrainstorm.value,
         open: true,
         ...restOptions,
       }
     }
     if (!wasOpen) {
-      eventBus.emit('panel:opened', { panel: 'conceptParkingLot', isOpen: true, options })
-      eventBus.emit('concept_parking_lot:opened', { diagramKey, hasRestoredSession })
+      eventBus.emit('panel:opened', { panel: 'aiBrainstorm', isOpen: true, options })
+      eventBus.emit('ai_brainstorm:opened', { diagramKey, hasRestoredSession })
     }
   }
 
-  function saveConceptParkingLotSession(diagramKey: string): void {
-    const { suggestions, selected, mode, sourceTabs } = conceptParkingLot.value
+  function saveAiBrainstormSession(diagramKey: string): void {
+    const { suggestions, selected, mode, stage, stage_data, sourceTabs } = aiBrainstorm.value
     if (suggestions.length > 0 && diagramKey) {
-      const map = new Map(conceptParkingLotSessionsByDiagram.value)
+      const map = new Map(aiBrainstormSessionsByDiagram.value)
       map.set(diagramKey, {
         suggestions: [...suggestions],
         selected: [...selected],
         mode,
+        stage: stage ?? null,
+        stage_data: stage_data ?? null,
         sourceTabs: sourceTabs ? [...sourceTabs] : undefined,
       })
-      conceptParkingLotSessionsByDiagram.value = map
+      aiBrainstormSessionsByDiagram.value = map
     }
   }
 
-  function clearConceptParkingLotSession(diagramKey?: string): void {
+  function clearAiBrainstormSession(diagramKey?: string): void {
     if (diagramKey) {
-      const map = new Map(conceptParkingLotSessionsByDiagram.value)
+      const map = new Map(aiBrainstormSessionsByDiagram.value)
       map.delete(diagramKey)
-      conceptParkingLotSessionsByDiagram.value = map
+      aiBrainstormSessionsByDiagram.value = map
     } else {
-      conceptParkingLotSessionsByDiagram.value = new Map()
+      aiBrainstormSessionsByDiagram.value = new Map()
     }
   }
 
-  function migrateConceptParkingLotSessionToSavedDiagram(newDiagramId: string): void {
-    const oldKey = 'concept-parking-lot-mindmap-new'
-    const newKey = `concept-parking-lot-mindmap-${newDiagramId}`
-    const snapshot = conceptParkingLotSessionsByDiagram.value.get(oldKey)
+  function migrateAiBrainstormSessionToSavedDiagram(newDiagramId: string): void {
+    const oldKey = 'ai-brainstorm-mindmap-new'
+    const newKey = `ai-brainstorm-mindmap-${newDiagramId}`
+    const snapshot = aiBrainstormSessionsByDiagram.value.get(oldKey)
     if (snapshot) {
-      const map = new Map(conceptParkingLotSessionsByDiagram.value)
+      const map = new Map(aiBrainstormSessionsByDiagram.value)
       map.set(newKey, snapshot)
       map.delete(oldKey)
-      conceptParkingLotSessionsByDiagram.value = map
+      aiBrainstormSessionsByDiagram.value = map
     }
   }
 
-  function closeConceptParkingLot(): void {
-    const wasOpen = conceptParkingLot.value.open
+  function closeAiBrainstorm(): void {
+    const wasOpen = aiBrainstorm.value.open
     if (wasOpen) {
-      eventBus.emit('concept_parking_lot:streaming_stop_requested', {})
+      eventBus.emit('ai_brainstorm:streaming_stop_requested', {})
     }
-    conceptParkingLot.value.open = false
+    aiBrainstorm.value.open = false
     if (wasOpen) {
-      eventBus.emit('panel:closed', { panel: 'conceptParkingLot', isOpen: false })
+      eventBus.emit('panel:closed', { panel: 'aiBrainstorm', isOpen: false })
     }
   }
 
-  function updateConceptParkingLot(updates: Partial<ConceptParkingLotPanelState>): void {
-    conceptParkingLot.value = {
-      ...conceptParkingLot.value,
+  function updateAiBrainstorm(updates: Partial<AiBrainstormPanelState>): void {
+    aiBrainstorm.value = {
+      ...aiBrainstorm.value,
       ...updates,
     }
   }
 
-  function setConceptParkingLotSuggestions(suggestions: NodeSuggestion[]): void {
-    conceptParkingLot.value.suggestions = suggestions
+  function setAiBrainstormSuggestions(suggestions: NodeSuggestion[]): void {
+    aiBrainstorm.value.suggestions = suggestions
   }
 
-  function appendConceptParkingLotSuggestion(suggestion: NodeSuggestion): void {
-    conceptParkingLot.value = {
-      ...conceptParkingLot.value,
-      suggestions: [...conceptParkingLot.value.suggestions, suggestion],
+  function appendAiBrainstormSuggestion(suggestion: NodeSuggestion): void {
+    aiBrainstorm.value = {
+      ...aiBrainstorm.value,
+      suggestions: [...aiBrainstorm.value.suggestions, suggestion],
     }
   }
 
-  function removeConceptParkingLotSuggestions(suggestionIds: string[]): void {
+  function removeAiBrainstormSuggestions(suggestionIds: string[]): void {
     if (suggestionIds.length === 0) return
     const remove = new Set(suggestionIds)
-    conceptParkingLot.value = {
-      ...conceptParkingLot.value,
-      suggestions: conceptParkingLot.value.suggestions.filter((s) => !remove.has(s.id)),
-      selected: conceptParkingLot.value.selected.filter((id) => !remove.has(id)),
+    aiBrainstorm.value = {
+      ...aiBrainstorm.value,
+      suggestions: aiBrainstorm.value.suggestions.filter((s) => !remove.has(s.id)),
+      selected: aiBrainstorm.value.selected.filter((id) => !remove.has(id)),
     }
   }
 
-  function toggleConceptParkingLotSelection(nodeId: string): void {
-    const index = conceptParkingLot.value.selected.indexOf(nodeId)
+  function toggleAiBrainstormSelection(nodeId: string): void {
+    const index = aiBrainstorm.value.selected.indexOf(nodeId)
     if (index > -1) {
-      conceptParkingLot.value.selected.splice(index, 1)
+      aiBrainstorm.value.selected.splice(index, 1)
     } else {
-      conceptParkingLot.value.selected.push(nodeId)
+      aiBrainstorm.value.selected.push(nodeId)
     }
   }
 
-  function clearConceptParkingLotState(options?: { clearSessions?: boolean }): void {
+  function clearAiBrainstormState(options?: { clearSessions?: boolean }): void {
     const clearSessions = options?.clearSessions ?? true
-    eventBus.emit('concept_parking_lot:streaming_stop_requested', {})
-    conceptParkingLot.value = {
-      ...conceptParkingLot.value,
+    eventBus.emit('ai_brainstorm:streaming_stop_requested', {})
+    aiBrainstorm.value = {
+      ...aiBrainstorm.value,
       suggestions: [],
       selected: [],
       mode: null,
+      stage: null,
+      stage_data: null,
       sourceTabs: undefined,
     }
     if (clearSessions) {
-      conceptParkingLotSessionsByDiagram.value = new Map()
+      aiBrainstormSessionsByDiagram.value = new Map()
     }
   }
 
@@ -564,7 +572,7 @@ export const usePanelsStore = defineStore('panels', () => {
    */
   function reset(): void {
     eventBus.emit('node_palette:streaming_stop_requested', {})
-    eventBus.emit('concept_parking_lot:streaming_stop_requested', {})
+    eventBus.emit('ai_brainstorm:streaming_stop_requested', {})
     mindmate.value = {
       open: false,
       conversationId: null,
@@ -582,13 +590,15 @@ export const usePanelsStore = defineStore('panels', () => {
       useConceptListHeader: false,
     }
     nodePaletteSessionsByDiagram.value = new Map()
-    conceptParkingLot.value = {
+    aiBrainstorm.value = {
       open: false,
       suggestions: [],
       selected: [],
       mode: null,
+      stage: null,
+      stage_data: null,
     }
-    conceptParkingLotSessionsByDiagram.value = new Map()
+    aiBrainstormSessionsByDiagram.value = new Map()
     property.value = {
       open: false,
       nodeId: null,
@@ -600,7 +610,7 @@ export const usePanelsStore = defineStore('panels', () => {
     // State
     mindmate,
     nodePalette,
-    conceptParkingLot,
+    aiBrainstorm,
     property,
 
     // Getters
@@ -609,7 +619,7 @@ export const usePanelsStore = defineStore('panels', () => {
     openPanelCount,
     mindmatePanel,
     nodePalettePanel,
-    conceptParkingLotPanel,
+    aiBrainstormPanel,
     propertyPanel,
 
     // Actions
@@ -636,17 +646,17 @@ export const usePanelsStore = defineStore('panels', () => {
     removeNodePaletteSuggestions,
     clearNodePaletteState,
     toggleNodePaletteSelection,
-    openConceptParkingLot,
-    closeConceptParkingLot,
-    updateConceptParkingLot,
-    setConceptParkingLotSuggestions,
-    appendConceptParkingLotSuggestion,
-    removeConceptParkingLotSuggestions,
-    toggleConceptParkingLotSelection,
-    saveConceptParkingLotSession,
-    clearConceptParkingLotSession,
-    migrateConceptParkingLotSessionToSavedDiagram,
-    clearConceptParkingLotState,
+    openAiBrainstorm,
+    closeAiBrainstorm,
+    updateAiBrainstorm,
+    setAiBrainstormSuggestions,
+    appendAiBrainstormSuggestion,
+    removeAiBrainstormSuggestions,
+    toggleAiBrainstormSelection,
+    saveAiBrainstormSession,
+    clearAiBrainstormSession,
+    migrateAiBrainstormSessionToSavedDiagram,
+    clearAiBrainstormState,
     openProperty,
     closeProperty,
     closePropertyPanel,

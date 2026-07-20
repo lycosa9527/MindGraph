@@ -123,6 +123,7 @@ export function useKittyUserMobileActive(pollEnabled: Ref<boolean>) {
 
   onUnmounted(() => {
     stopPolling()
+    clearRefs()
   })
 
   const hubFresh = computed(() => isKittyMobileActiveHubFresh())

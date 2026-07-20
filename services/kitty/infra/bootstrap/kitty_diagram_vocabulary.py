@@ -125,6 +125,10 @@ Examples:
 
 KITTY_VOICE_COMMAND_PROMPT = """
 【Diagram edit & UI tools — call the matching function when the user wants a canvas change】
+Call exactly ONE tool here. Multi-branch / multi-mutation one-sentence mind-map edits
+(e.g. add A/B/C/D, topic+several branches, deferred branch fills) are handled by the
+one-sentence edit agent — not this voice router. auto_complete here fills the WHOLE
+diagram; there is no auto_complete_branch tool on this path.
 - update_center — change topic/title/center (e.g. 「主题是运动会」, 「change topic to Cars」)
 - add_node — add one node (text required; optional 0-based position)
 - update_node — change an existing node's text (node_identifier + new_text)

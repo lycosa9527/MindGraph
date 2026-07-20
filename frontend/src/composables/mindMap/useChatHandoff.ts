@@ -3,7 +3,8 @@ import { type MaybeRef, onScopeDispose, ref, unref, watch } from 'vue'
 import { useQueryClient } from '@tanstack/vue-query'
 
 import { fileCenterKeys } from '@/composables/fileCenter/useFileCenter'
-import { apiRequestJson } from '@/utils/apiClient'
+import { DOC_SUMMARY_CHAT_HANDOFF_BASE } from '@/config/docSummaryApi'
+import { apiRequest, apiRequestJson } from '@/utils/apiClient'
 
 type HandoffStatusResponse = {
   code: string
@@ -16,6 +17,24 @@ type HandoffStartResponse = {
   code: string
   expires_in_seconds: number
   package_id: number
+}
+
+function fireRevokeHandoff(code: string | null, packageId: number | null): void {
+  if (!code && packageId === null) {
+    return
+  }
+  const body: { code?: string; package_id?: number } = {}
+  if (code) {
+    body.code = code
+  }
+  if (packageId !== null) {
+    body.package_id = packageId
+  }
+  void apiRequest(`${DOC_SUMMARY_CHAT_HANDOFF_BASE}/cancel`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    keepalive: true,
+  }).catch(() => undefined)
 }
 
 export function useChatHandoff(packageId: MaybeRef<number | null>) {
@@ -42,7 +61,7 @@ export function useChatHandoff(packageId: MaybeRef<number | null>) {
   async function pollStatus(code: string): Promise<void> {
     try {
       const status = await apiRequestJson<HandoffStatusResponse>(
-        `/api/knowledge-space/chat-handoff/status?code=${encodeURIComponent(code)}`
+        `${DOC_SUMMARY_CHAT_HANDOFF_BASE}/status?code=${encodeURIComponent(code)}`
       )
       handoffStatus.value = status.status
       if (status.status === 'done' || status.status === 'failed') {
@@ -70,6 +89,32 @@ export function useChatHandoff(packageId: MaybeRef<number | null>) {
     }, 1500)
   }
 
+  function resetHandoff(options?: {
+    revoke?: boolean
+    packageIdForRevoke?: number | null
+  }): void {
+    const code = pairingCode.value
+    const status = handoffStatus.value
+    const packageIdForRevoke = options?.packageIdForRevoke ?? unref(packageId)
+    // Keep in-flight ingest (claimed / indexing); revoke unused or expired waits.
+    const claimedOrFinished =
+      status === 'received'
+      || status === 'indexing'
+      || status === 'done'
+      || status === 'failed'
+    const shouldRevoke =
+      options?.revoke !== false && Boolean(code) && !claimedOrFinished
+
+    stopPolling()
+    pairingCode.value = null
+    handoffStatus.value = 'idle'
+    mintError.value = null
+
+    if (shouldRevoke && code) {
+      fireRevokeHandoff(code, packageIdForRevoke)
+    }
+  }
+
   async function mintPairingCode(): Promise<string | null> {
     const id = unref(packageId)
     if (id === null || isMinting.value) {
@@ -78,8 +123,13 @@ export function useChatHandoff(packageId: MaybeRef<number | null>) {
     isMinting.value = true
     mintError.value = null
     try {
+      if (pairingCode.value) {
+        fireRevokeHandoff(pairingCode.value, id)
+        pairingCode.value = null
+        stopPolling()
+      }
       const response = await apiRequestJson<HandoffStartResponse>(
-        '/api/knowledge-space/chat-handoff/start',
+        `${DOC_SUMMARY_CHAT_HANDOFF_BASE}/start`,
         {
           method: 'POST',
           body: JSON.stringify({ package_id: id }),
@@ -97,22 +147,17 @@ export function useChatHandoff(packageId: MaybeRef<number | null>) {
     }
   }
 
-  function resetHandoff(): void {
-    stopPolling()
-    pairingCode.value = null
-    handoffStatus.value = 'idle'
-    mintError.value = null
-  }
-
   watch(
     () => unref(packageId),
-    () => {
-      resetHandoff()
+    (_next, previous) => {
+      resetHandoff({
+        packageIdForRevoke: previous ?? null,
+      })
     }
   )
 
   onScopeDispose(() => {
-    stopPolling()
+    resetHandoff()
   })
 
   return {

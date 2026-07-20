@@ -1,6 +1,9 @@
 /**
  * Apply Kitty diagram_update with mandatory post-apply verification,
  * Hub persist, then combined WS ack.
+ *
+ * Also used for local canvas mutations (e.g. branch autocomplete paste) that
+ * must share the same verify → Hub persist → compensate contract.
  */
 import {
   applyVoiceDiagramAddNodes,
@@ -17,6 +20,7 @@ import { loadSpecForDiagramType } from '@/stores/specLoader'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import {
   captureDiagramFingerprint,
+  normalizeDiagramText,
   resolveCreatedNodeIds,
   type DiagramEditExpectedEffect,
   type DiagramFingerprint,
@@ -33,6 +37,11 @@ export type DiagramEditApplyResult = {
 }
 
 export type DiagramMutationAckSender = (payload: Record<string, unknown>) => void
+
+export type LocalDiagramVerifyFn = (
+  before: DiagramFingerprint,
+  after: DiagramFingerprint
+) => { ok: boolean; error?: string }
 
 function reloadFromFingerprint(
   store: ReturnType<typeof useDiagramStore>,
@@ -112,28 +121,66 @@ function sendCombinedAck(
   })
 }
 
-export async function applyVerifiedDiagramUpdate(
-  action: string,
-  updates: Record<string, unknown> | unknown[],
-  options: {
-    mutationId: string
-    expectedEffect?: DiagramEditExpectedEffect
-    beforeFingerprint?: DiagramFingerprint
-    sendAck: DiagramMutationAckSender
-    hubRevision?: number | null
-    hubPersist?: DiagramHubPersistDeps
+function noopAck(_payload: Record<string, unknown>): void {
+  /* local-only verified commits (no pending BE mutation future) */
+}
+
+function nodeLabel(node: DiagramNode): string {
+  const direct = node.text
+  if (typeof direct === 'string' && direct.trim() !== '') {
+    return normalizeDiagramText(direct)
   }
-): Promise<DiagramEditApplyResult> {
+  const label = node.data?.label
+  if (typeof label === 'string') {
+    return normalizeDiagramText(label)
+  }
+  return ''
+}
+
+/** Verify autocomplete/subgraph children landed (placeholder replace may keep node count). */
+export function verifySubgraphChildTextsPresent(
+  evidence: DiagramFingerprint,
+  childTexts: string[]
+): { ok: boolean; error?: string } {
+  for (const raw of childTexts) {
+    const want = normalizeDiagramText(raw)
+    if (!want) {
+      continue
+    }
+    if (!evidence.nodes.some((n) => nodeLabel(n) === want)) {
+      return { ok: false, error: `missing_child:${want}` }
+    }
+  }
+  return { ok: true }
+}
+
+/**
+ * Shared verified commit: local apply → verify → Hub persist → compensate on failure.
+ * Used by WS diagram_update and Kitty branch autocomplete paste.
+ */
+export async function commitVerifiedLocalDiagramMutation(options: {
+  apply: () => boolean
+  mutationId: string
+  expectedEffect?: DiagramEditExpectedEffect
+  verify?: LocalDiagramVerifyFn
+  beforeFingerprint?: DiagramFingerprint
+  sendAck?: DiagramMutationAckSender
+  hubRevision?: number | null
+  hubPersist?: DiagramHubPersistDeps
+  /** When true, missing hubPersist is a hard failure (Kitty owning-tab path). */
+  requireHubPersist?: boolean
+}): Promise<DiagramEditApplyResult> {
   const store = useDiagramStore()
   const nodes = store.data?.nodes ?? []
   const connections = store.data?.connections ?? []
+  const sendAck = options.sendAck ?? noopAck
 
   const before =
     options.beforeFingerprint ??
     captureDiagramFingerprint(nodes as DiagramNode[], connections as Connection[])
   const beforeCount = before.nodes.length
 
-  const appliedCount = applyDiagramUpdateAction(store, action, updates)
+  const applied = options.apply()
   const afterNodes = store.data?.nodes ?? []
   const afterConnections = store.data?.connections ?? []
   const evidence = captureDiagramFingerprint(
@@ -141,8 +188,8 @@ export async function applyVerifiedDiagramUpdate(
     afterConnections as Connection[]
   )
 
-  if (appliedCount === 0) {
-    sendCombinedAck(options.sendAck, {
+  if (!applied) {
+    sendCombinedAck(sendAck, {
       mutationId: options.mutationId,
       verified: false,
       hubPersistOk: false,
@@ -152,31 +199,35 @@ export async function applyVerifiedDiagramUpdate(
     return { applied: false, verified: false, evidence, verificationError: 'apply_noop' }
   }
 
-  const effect = options.expectedEffect
   const diagramType = store.type === 'mind_map' ? 'mindmap' : store.type
   let verified = true
   let verificationError: string | undefined
 
-  if (effect && diagramType === 'mindmap') {
-    const report = verifyMindMapEffect(effect, evidence, beforeCount)
+  if (options.verify) {
+    const report = options.verify(before, evidence)
     verified = report.ok
     verificationError = report.error
-    if (!verified) {
-      reloadFromFingerprint(store, before)
-      sendCombinedAck(options.sendAck, {
-        mutationId: options.mutationId,
-        verified: false,
-        hubPersistOk: false,
-        hubRevision: options.hubRevision ?? null,
-        errorCode: 'verify_failed',
-        message: verificationError,
-      })
-      return {
-        applied: true,
-        verified: false,
-        evidence,
-        verificationError,
-      }
+  } else if (options.expectedEffect && diagramType === 'mindmap') {
+    const report = verifyMindMapEffect(options.expectedEffect, evidence, beforeCount)
+    verified = report.ok
+    verificationError = report.error
+  }
+
+  if (!verified) {
+    reloadFromFingerprint(store, before)
+    sendCombinedAck(sendAck, {
+      mutationId: options.mutationId,
+      verified: false,
+      hubPersistOk: false,
+      hubRevision: options.hubRevision ?? null,
+      errorCode: 'verify_failed',
+      message: verificationError,
+    })
+    return {
+      applied: true,
+      verified: false,
+      evidence,
+      verificationError,
     }
   }
 
@@ -189,7 +240,7 @@ export async function applyVerifiedDiagramUpdate(
     hubRevision = persistResult.revision
     if (!hubPersistOk) {
       reloadFromFingerprint(store, before)
-      sendCombinedAck(options.sendAck, {
+      sendCombinedAck(sendAck, {
         mutationId: options.mutationId,
         verified: false,
         hubPersistOk: false,
@@ -205,19 +256,36 @@ export async function applyVerifiedDiagramUpdate(
         verificationError: persistResult.error ?? 'hub_persist_failed',
       }
     }
+  } else if (options.requireHubPersist) {
+    reloadFromFingerprint(store, before)
+    sendCombinedAck(sendAck, {
+      mutationId: options.mutationId,
+      verified: false,
+      hubPersistOk: false,
+      hubRevision: options.hubRevision ?? null,
+      errorCode: 'hub_persist_failed',
+      message: 'hub_persist_required',
+    })
+    return {
+      applied: true,
+      verified: false,
+      hubPersistOk: false,
+      evidence,
+      verificationError: 'hub_persist_required',
+    }
   } else {
     hubPersistOk = true
     hubRevision =
       typeof options.hubRevision === 'number' ? options.hubRevision : undefined
   }
 
-  sendCombinedAck(options.sendAck, {
+  sendCombinedAck(sendAck, {
     mutationId: options.mutationId,
     verified: true,
     hubPersistOk: true,
     hubRevision: hubRevision ?? options.hubRevision ?? null,
     evidence,
-    createdNodeIds: resolveCreatedNodeIds(before, evidence, effect),
+    createdNodeIds: resolveCreatedNodeIds(before, evidence, options.expectedEffect),
   })
 
   return {
@@ -227,4 +295,28 @@ export async function applyVerifiedDiagramUpdate(
     hubRevision,
     evidence,
   }
+}
+
+export async function applyVerifiedDiagramUpdate(
+  action: string,
+  updates: Record<string, unknown> | unknown[],
+  options: {
+    mutationId: string
+    expectedEffect?: DiagramEditExpectedEffect
+    beforeFingerprint?: DiagramFingerprint
+    sendAck: DiagramMutationAckSender
+    hubRevision?: number | null
+    hubPersist?: DiagramHubPersistDeps
+  }
+): Promise<DiagramEditApplyResult> {
+  const store = useDiagramStore()
+  return commitVerifiedLocalDiagramMutation({
+    apply: () => applyDiagramUpdateAction(store, action, updates) > 0,
+    mutationId: options.mutationId,
+    expectedEffect: options.expectedEffect,
+    beforeFingerprint: options.beforeFingerprint,
+    sendAck: options.sendAck,
+    hubRevision: options.hubRevision,
+    hubPersist: options.hubPersist,
+  })
 }

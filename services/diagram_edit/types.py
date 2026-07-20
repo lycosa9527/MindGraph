@@ -23,6 +23,7 @@ ErrorCode = Literal[
     "ack_timeout",
     "compensate_failed",
     "access_denied",
+    "collab_active",
     "busy_llm_generating",
     "hub_persist_failed",
 ]

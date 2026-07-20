@@ -99,11 +99,29 @@ def build_web_page_content_user_block(
     page_title: Optional[str] = None,
     page_url: Optional[str] = None,
 ) -> str:
-    """
-    User message wrapper for web-content mind map generation.
+    """User message wrapper for web-page mind map generation."""
+    return build_extracted_content_user_block(
+        page_content=page_content,
+        language=language,
+        content_format=content_format,
+        page_title=page_title,
+        page_url=page_url,
+        source_kind="web",
+    )
 
-    Simplified vs Traditional Chinese get matching labels; other languages use the English shell
-    and rely on the system prompt + :func:`output_language_instruction` for target output.
+
+def build_extracted_content_user_block(
+    page_content: str,
+    language: str,
+    content_format: str,
+    page_title: Optional[str] = None,
+    page_url: Optional[str] = None,
+    source_kind: str = "web",
+) -> str:
+    """
+    User message wrapper for extracted-content mind map generation.
+
+    ``source_kind`` is ``web`` (page URL + title) or ``document`` (document title only).
     """
     title_raw = (page_title or "").strip()
     url_raw = (page_url or "").strip()
@@ -112,31 +130,29 @@ def build_web_page_content_user_block(
     fmt_latin = "markdown" if is_markdown else "plain text"
     fmt_zh_s = "Markdown" if is_markdown else "纯文本"
     fmt_zh_t = "Markdown" if is_markdown else "純文字"
+    is_document = source_kind == "document"
 
     if lang in ("zh", "zh-cn", "zh-hans", "zh-sg"):
         title_line = title_raw or "（无标题）"
-        url_line = url_raw or "（无 URL）"
-        return (
-            f"页面 URL：{url_line}\n"
-            f"页面标题：{title_line}\n"
-            f"内容格式：{fmt_zh_s}\n\n"
-            f"--- 正文开始 ---\n{page_content}\n--- 正文结束 ---"
-        )
+        if is_document:
+            header = f"文档标题：{title_line}\n内容格式：{fmt_zh_s}\n\n"
+        else:
+            url_line = url_raw or "（无 URL）"
+            header = f"页面 URL：{url_line}\n页面标题：{title_line}\n内容格式：{fmt_zh_s}\n\n"
+        return f"{header}--- 正文开始 ---\n{page_content}\n--- 正文结束 ---"
     if lang in ("zh-hant", "zh-tw", "zh-hk", "zh-mo"):
         title_line = title_raw or "（無標題）"
-        url_line = url_raw or "（無 URL）"
-        return (
-            f"頁面 URL：{url_line}\n"
-            f"頁面標題：{title_line}\n"
-            f"內容格式：{fmt_zh_t}\n\n"
-            f"--- 正文開始 ---\n{page_content}\n--- 正文結束 ---"
-        )
+        if is_document:
+            header = f"文件標題：{title_line}\n內容格式：{fmt_zh_t}\n\n"
+        else:
+            url_line = url_raw or "（無 URL）"
+            header = f"頁面 URL：{url_line}\n頁面標題：{title_line}\n內容格式：{fmt_zh_t}\n\n"
+        return f"{header}--- 正文開始 ---\n{page_content}\n--- 正文結束 ---"
 
     title_line = title_raw or "(no title)"
-    url_line = url_raw or "(no url)"
-    return (
-        f"Page URL: {url_line}\n"
-        f"Page title: {title_line}\n"
-        f"Content format: {fmt_latin}\n\n"
-        f"--- Content start ---\n{page_content}\n--- Content end ---"
-    )
+    if is_document:
+        header = f"Document title: {title_line}\nContent format: {fmt_latin}\n\n"
+    else:
+        url_line = url_raw or "(no url)"
+        header = f"Page URL: {url_line}\nPage title: {title_line}\nContent format: {fmt_latin}\n\n"
+    return f"{header}--- Content start ---\n{page_content}\n--- Content end ---"

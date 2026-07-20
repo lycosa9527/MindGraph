@@ -16,6 +16,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import importlib
 import logging
 
 from fastapi import APIRouter
@@ -55,6 +56,13 @@ try:
 except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
     KNOWLEDGE_SPACE_MODULE = None
     logger.debug("[API] Failed to import knowledge_space router: %s", e, exc_info=True)
+
+DOC_SUMMARY_MODULE = None
+try:
+    DOC_SUMMARY_MODULE = importlib.import_module("routers.api.doc_summary")
+except (ImportError, ModuleNotFoundError, AttributeError, TypeError) as e:
+    DOC_SUMMARY_MODULE = None
+    logger.debug("[API] Failed to import doc_summary router: %s", e, exc_info=True)
 
 MINDBOT_MODULE = None
 try:
@@ -119,6 +127,13 @@ else:
         "[API] Knowledge Space router NOT registered - import failed or router is None. "
         "Check DEBUG logs for details. This may be due to missing dependencies (Qdrant, Celery)."
     )
+
+# Document Summary — short /api/doc-summary/* paths (split from knowledge-space URLs)
+if DOC_SUMMARY_MODULE is not None:
+    router.include_router(DOC_SUMMARY_MODULE.router)
+    logger.info("[API] Document Summary router registered at /api/doc-summary")
+else:
+    logger.warning("[API] Document Summary router NOT registered - import failed or router is None.")
 
 if MINDBOT_MODULE is not None:
     router.include_router(MINDBOT_MODULE.router)

@@ -79,7 +79,8 @@ async def parse_voice_intent_with_tools(
     recent = memory.summarize_for_parser(5)
     system = (
         "You are a diagram voice command router. "
-        "Call exactly one tool when the user wants a canvas/UI action. "
+        "Call exactly one tool when the user wants a single canvas/UI action. "
+        "Compound multi-branch mind-map edits are out of scope for this router. "
         "If the user is only chatting, do not call any tool."
         + KITTY_DIAGRAM_CATALOG_PROMPT
         + KITTY_VOICE_COMMAND_PROMPT

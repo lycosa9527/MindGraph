@@ -27,6 +27,7 @@ from services.kitty.routing.node_action_library import (
     render_diagram_snapshot_block,
     render_library_prompt,
 )
+from services.kitty.routing.node_action_order import order_node_action_commands
 from services.kitty.session.memory import get_session_memory
 from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
@@ -41,7 +42,6 @@ _STRUCTURAL_ACTIONS = frozenset(
         "delete_node",
     }
 )
-_AUTOCOMPLETE_ACTIONS = frozenset({"auto_complete", "auto_complete_branch"})
 _ALSO_AUTOCOMPLETE_RE = re.compile(
     r"(?:并|然后|再|and\s+then|then)?\s*"
     r"(?:自动)?(?:补全|补完|完善|填充|auto[-\s]?complete)",
@@ -67,25 +67,14 @@ def _extract_tool_call_entry(
     return name, args_text, cmd
 
 
-def _action_sort_key(cmd: Dict[str, Any]) -> Tuple[int, int]:
-    """Structural edits before auto-complete; preserve relative order within a tier."""
-    action = str(cmd.get("action") or "")
-    if action in _STRUCTURAL_ACTIONS:
-        return (0, 0)
-    if action in _AUTOCOMPLETE_ACTIONS:
-        return (1, 0)
-    if action == "clarify_options":
-        return (2, 0)
-    return (3, 0)
-
-
 def _merge_tool_call_commands(
     commands: List[Dict[str, Any]],
 ) -> Optional[Dict[str, Any]]:
     """
     Collapse one or more tool-call commands into a primary + follow_up_actions.
 
-    Clarify-only responses stay single. Structural + auto-complete become two steps.
+    Clarify-only responses stay single. Mixed tools are ordered by
+    ``order_node_action_commands`` (structure before auto-complete).
     """
     usable = [dict(cmd) for cmd in commands if isinstance(cmd, dict) and cmd.get("action") not in (None, "none")]
     if not usable:
@@ -94,8 +83,7 @@ def _merge_tool_call_commands(
         for cmd in usable:
             if str(cmd.get("action") or "") == "clarify_options":
                 return cmd
-    ordered = sorted(enumerate(usable), key=lambda item: (_action_sort_key(item[1]), item[0]))
-    ordered_cmds = [item[1] for item in ordered]
+    ordered_cmds = order_node_action_commands(usable)
     primary = dict(ordered_cmds[0])
     follow_ups = [dict(cmd) for cmd in ordered_cmds[1:]]
     if follow_ups:
@@ -206,12 +194,22 @@ async def parse_node_action_intent(
             "You are Kitty's mind map edit router. "
             "The user wants a canvas change. "
             "Call one or more tools from the library in execution order. "
-            "If the user asks to change the topic/center AND auto-complete, "
-            "call diagram.update_center first, then node_action.auto_complete "
-            "(two separate tool calls). "
-            "If the user asks to add a NEW branch AND auto-complete/fill it, "
-            "call diagram.add_node first, then node_action.auto_complete_branch "
-            "with the same branch label (two separate tool calls). "
+            "Exact NEW branch labels require diagram.add_node; "
+            "node_action.auto_complete_branch only fills children under an EXISTING node. "
+            "If the user changes the topic/center AND wants whole-map fill only, "
+            "call diagram.update_center then node_action.auto_complete. "
+            "If the user adds ONE new branch (optionally asking to fill it), "
+            "prefer diagram.add_node only — the canvas fills new branches after apply. "
+            "If the user adds MULTIPLE new named branches (optionally after changing "
+            "the topic), call diagram.update_center first when needed, then one "
+            "diagram.add_node per branch label in order. Do NOT call "
+            "auto_complete_branch between or after those adds, and do NOT call "
+            "whole-map auto_complete in the same turn (it would wipe new children); "
+            "the server fills those new branches after all structural edits finish. "
+            "Always emit tools in this order: update_center, delete_node, "
+            "update_node, add_node, then auto_complete_branch / auto_complete last "
+            "(and only when needed for EXISTING nodes or whole-map-only requests). "
+            "Do not invent node_id for new branches. "
             "Never reply with plain text.\n\n" + library
         )
         user_prompt = f"{snapshot}\nRecent turns:\n{recent or '(none)'}\nUser: {user_line}"
@@ -220,10 +218,21 @@ async def parse_node_action_intent(
             "你是 Kitty 的思维导图编辑路由。 "
             "用户想要修改画布。 "
             "从动作库中按执行顺序调用一个或多个工具。 "
-            "若用户同时要求改主题/中心并自动补全，先调用 diagram.update_center，"
-            "再调用 node_action.auto_complete（两次独立工具调用）。 "
-            "若用户要求新增分支并补全/填充该分支，先调用 diagram.add_node，"
-            "再调用 node_action.auto_complete_branch（同一分支名，两次独立工具调用）。 "
+            "精确的新分支名必须用 diagram.add_node；"
+            "node_action.auto_complete_branch 只用于给已存在的分支补子节点。 "
+            "若用户只改主题/中心并要求整图补全，先 diagram.update_center，"
+            "再 node_action.auto_complete。 "
+            "若用户新增一个分支（即使说要补全），优先只调用 diagram.add_node——"
+            "画布会在结构修改完成后自动补全新分支。 "
+            "若用户一次新增多个命名分支（可同时改主题），需要时先 "
+            "diagram.update_center，再按顺序为每个分支名各调用一次 diagram.add_node；"
+            "不要在 add_node 之间或之后调用 auto_complete_branch，"
+            "也不要在同一轮调用整图 auto_complete（会冲掉刚加的子节点）；"
+            "服务端会在全部结构修改完成后为这些新分支补全。 "
+            "工具顺序固定为：update_center → delete_node → update_node → "
+            "add_node → 最后才是 auto_complete_branch / auto_complete"
+            "（且仅在针对已有节点或纯整图补全时需要）。 "
+            "不要为新分支编造 node_id。"
             "不要用纯文本回复。\n\n" + library
         )
         user_prompt = f"{snapshot}\n最近对话:\n{recent or '（无）'}\n用户: {user_line}"
@@ -233,7 +242,7 @@ async def parse_node_action_intent(
             prompt=user_prompt,
             model=ONE_SENTENCE_EDIT_DASHSCOPE_MODEL,
             temperature=0.0,
-            max_tokens=400,
+            max_tokens=600,
             timeout=10.0,
             tools=build_node_action_tools(),
             tool_choice="auto",

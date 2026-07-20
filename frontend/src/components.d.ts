@@ -81,6 +81,7 @@ declare module 'vue' {
     AdminUsersTab: typeof import('./components/admin/AdminUsersTab.vue')['default']
     AdminUsersTable: typeof import('./components/admin/AdminUsersTable.vue')['default']
     AdminUserTokenUsageTab: typeof import('./components/admin/AdminUserTokenUsageTab.vue')['default']
+    AiBrainstormPanel: typeof import('./components/canvas/AiBrainstormPanel.vue')['default']
     AIModelSelector: typeof import('./components/canvas/AIModelSelector.vue')['default']
     ApiTokenModal: typeof import('./components/auth/ApiTokenModal.vue')['default']
     AppSidebar: typeof import('./components/sidebar/AppSidebar.vue')['default']

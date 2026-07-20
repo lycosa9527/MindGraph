@@ -495,7 +495,7 @@ function buildAuthHeaders(creds) {
 }
 
 /**
- * List the user's File Center packages for the popup picker.
+ * List the user's Document Summary packages for the popup picker.
  * @returns {Promise<{ ok: true, packages: Array<object> } | { ok: false, error: string }>}
  */
 async function fetchPackages() {
@@ -503,7 +503,7 @@ async function fetchPackages() {
   if (!creds) {
     return { ok: false, error: chrome.i18n.getMessage("errSettingsIncomplete") };
   }
-  const url = `${creds.baseUrl}/api/knowledge-space/packages`;
+  const url = `${creds.baseUrl}/api/doc-summary/packages`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -526,16 +526,13 @@ async function fetchPackages() {
 }
 
 /**
- * Capture the active tab's content and ingest it into a File Center package.
+ * Capture the active tab and store extract.md in a Document Summary session (COS).
  * @param {number} tabId
- * @param {number} packageId
- * @returns {Promise<{ ok: true, document: object } | { ok: false, error: string }>}
+ * @param {number|null|undefined} packageId Optional existing doc_summary package id.
+ * @returns {Promise<{ ok: true, document: object, packageId: number } | { ok: false, error: string }>}
  */
 async function runSaveToFileCenter(tabId, packageId) {
   const parsedPackageId = MindGraphExtensionSecurity.parsePositiveInt(packageId);
-  if (!parsedPackageId) {
-    return { ok: false, error: chrome.i18n.getMessage("errFailed") };
-  }
   const creds = await getApiCredentials();
   if (!creds) {
     return { ok: false, error: chrome.i18n.getMessage("errSettingsIncomplete") };
@@ -556,10 +553,32 @@ async function runSaveToFileCenter(tabId, packageId) {
     return { ok: false, error: MindGraphDocExtract.localizedCaptureErrorKey(captureResult) };
   }
 
-  const ingestUrl = `${creds.baseUrl}/api/knowledge-space/packages/${parsedPackageId}/documents/ingest-web`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
+    const sessionRes = await fetch(`${creds.baseUrl}/api/doc-summary/session/start`, MindGraphShared.mgatFetchInit({
+      method: "POST",
+      signal: controller.signal,
+      headers: buildAuthHeaders(creds),
+      body: JSON.stringify({
+        diagram_title: payload.page_title || undefined,
+        package_id: parsedPackageId || undefined,
+        create_if_missing: true,
+      }),
+    }));
+    if (!sessionRes.ok) {
+      clearTimeout(timeoutId);
+      const detail = await MindGraphShared.parseErrorDetailFromResponse(sessionRes);
+      return { ok: false, error: chrome.i18n.getMessage("errApi", [String(sessionRes.status), detail]) };
+    }
+    const sessionPkg = await sessionRes.json();
+    const targetPackageId = MindGraphExtensionSecurity.parsePositiveInt(sessionPkg && sessionPkg.id);
+    if (!targetPackageId) {
+      clearTimeout(timeoutId);
+      return { ok: false, error: chrome.i18n.getMessage("errFailed") };
+    }
+
+    const ingestUrl = `${creds.baseUrl}/api/doc-summary/packages/${targetPackageId}/documents/ingest-web`;
     const res = await fetch(ingestUrl, MindGraphShared.mgatFetchInit({
       method: "POST",
       signal: controller.signal,
@@ -577,7 +596,7 @@ async function runSaveToFileCenter(tabId, packageId) {
       return { ok: false, error: chrome.i18n.getMessage("errApi", [String(res.status), detail]) };
     }
     const document = await res.json();
-    return { ok: true, document };
+    return { ok: true, document, packageId: targetPackageId };
   } catch (e) {
     clearTimeout(timeoutId);
     if (e && e.name === "AbortError") {
@@ -715,11 +734,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   if (msg && msg.type === "SAVE_TO_FILE_CENTER" && typeof msg.tabId === "number") {
     const packageId = MindGraphExtensionSecurity.parsePositiveInt(msg.packageId);
-    if (!packageId) {
-      sendResponse({ ok: false, error: chrome.i18n.getMessage("errFailed") });
-      return true;
-    }
-    runSaveToFileCenter(msg.tabId, packageId).then(sendResponse);
+    runSaveToFileCenter(msg.tabId, packageId || null).then(sendResponse);
     return true;
   }
   if (msg && msg.type === "PREVIEW_EXTRACT" && typeof msg.tabId === "number") {

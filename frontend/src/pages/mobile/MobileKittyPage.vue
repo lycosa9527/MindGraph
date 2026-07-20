@@ -56,6 +56,7 @@ const showKeyboard = ref(false)
 const draft = ref('')
 const micDenied = ref(false)
 const cameraDenied = ref(false)
+const photoUploading = ref(false)
 const isDevBuild = import.meta.env.DEV
 
 const KITTY_DEBUG_MAX = 42
@@ -177,12 +178,25 @@ const sessionMgrEnabled = computed(
   () => authStore.isAuthenticated && kittyServerEnabled.value && connected.value
 )
 const {
+  snapshot: kittySessionSnapshot,
   divergence: kittySessionDivergence,
   refresh: refreshKittySessionSnapshot,
 } = useKittySessionManager({
   scope: kittyPairScope,
   enabled: sessionMgrEnabled,
   pollIntervalMs: 12000,
+})
+
+/** Library scope linked but desktop canvas-owner WS not present — edits will fail closed. */
+const needsDesktopOwner = computed(() => {
+  if (kittyPairScopeIsEphemeral.value || !connected.value) {
+    return false
+  }
+  const snap = kittySessionSnapshot.value
+  if (snap == null || snap.requested_scope !== kittyPairScope.value.trim()) {
+    return false
+  }
+  return snap.canvas_owner_present !== true
 })
 
 const showScopeDivergenceBanner = ref(false)
@@ -413,29 +427,49 @@ async function handleDisconnect(): Promise<void> {
 }
 
 /**
- * Camera / photo capture stub for future LLM OCR ingress.
- * Compresses optionally for readiness; does not call retired Omni append_image.
+ * Camera / gallery → unified conversation image (same as desktop one-sentence).
  */
 async function handleMobileKittyPhotoCapture(ev: Event): Promise<void> {
   const input = ev.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
-  const result = await prepareMobileKittyPhotoCapture(file)
-  if (!result.ok) {
-    if (result.reason === 'compress_failed') {
-      cameraDenied.value = true
+
+  const diagramId =
+    mobileKittyContextPreview.value.diagramLibraryId?.trim() ||
+    (!kittyPairScopeIsEphemeral.value ? kittyPairScope.value.trim() : '')
+  if (!diagramId) {
+    notify.warning(
+      t(
+        'mobile.kittyPhotoNeedsDiagram',
+        'Open or pick a saved diagram first, then take a photo to extract text.'
+      )
+    )
+    return
+  }
+
+  const validated = prepareMobileKittyPhotoCapture(file)
+  if (!validated.ok) {
+    if (validated.reason === 'invalid_type') {
+      notify.warning(t('mobile.kittyPhotoInvalidType', 'Please choose a JPG, PNG, or WebP photo.'))
+    } else if (validated.reason === 'too_large') {
+      notify.warning(t('mobile.kittyPhotoTooLarge', 'Photo is too large. Maximum size is 10MB.'))
     }
     return
   }
+
   cameraDenied.value = false
-  // Future: send compressedBase64 to LLM OCR ingress (not Omni append_image).
-  void result.compressedBase64
-  notify.info(
-    t(
-      'mobile.kittyPhotoOcrComingSoon',
-      'Photo OCR is coming soon. Use hold-to-speak or text to edit the diagram.'
-    )
-  )
+  photoUploading.value = true
+  notify.showLoading(t('mobile.kittyPhotoProgressDetecting', 'Processing photo…'))
+  try {
+    await uploadConversationImage({
+      file: validated.file,
+      diagramId,
+      diagramTitle: mobileKittyContextPreview.value.diagramDisplayTitle || undefined,
+    })
+  } finally {
+    notify.hideLoading()
+    photoUploading.value = false
+  }
 }
 
 const funAsr = useKittyFunAsrMic({
@@ -460,6 +494,7 @@ const {
   sendDraft,
   selectClarifyChoice,
   bindChatScroll,
+  uploadConversationImage,
 } = useMobileKittyChat({
   kitty,
   funAsr,
@@ -784,6 +819,19 @@ function handleChipActiveRetap(node: { id: string; text: string }): void {
     </div>
 
     <div
+      v-if="needsDesktopOwner && !showScopeDivergenceBanner"
+      class="shrink-0 mx-3 mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950 leading-relaxed"
+      role="status"
+    >
+      {{
+        t(
+          'mobile.kittyNeedsDesktopOwner',
+          'Open this diagram on desktop MindGraph to apply edits. Phone Kitty can still chat until the canvas is connected.'
+        )
+      }}
+    </div>
+
+    <div
       v-if="showScopeDivergenceBanner && kittySessionDivergence"
       class="shrink-0 mx-3 mt-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-950 leading-relaxed"
       role="status"
@@ -932,18 +980,23 @@ function handleChipActiveRetap(node: { id: string; text: string }): void {
         <label
           class="kitty-side-control kitty-side-control--camera"
           :class="{
-            'pointer-events-none opacity-40': cameraDenied || !kittyServerEnabled || connecting,
-            'active:bg-gray-200 cursor-pointer': !cameraDenied && kittyServerEnabled && !connecting,
+            'pointer-events-none opacity-40':
+              cameraDenied || !kittyServerEnabled || connecting || photoUploading,
+            'active:bg-gray-200 cursor-pointer':
+              !cameraDenied && kittyServerEnabled && !connecting && !photoUploading,
           }"
           :aria-label="t('mobile.kittyCameraLabel', '拍照或相册')"
         >
-          <Camera class="kitty-side-control__icon" />
+          <Loader2
+            v-if="photoUploading"
+            class="kitty-side-control__icon animate-spin"
+          />
+          <Camera v-else class="kitty-side-control__icon" />
           <input
             type="file"
-            accept="image/*"
-            capture="environment"
+            accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
             class="hidden"
-            :disabled="!kittyServerEnabled || connecting || cameraDenied"
+            :disabled="!kittyServerEnabled || connecting || cameraDenied || photoUploading"
             @change="handleMobileKittyPhotoCapture"
           />
         </label>

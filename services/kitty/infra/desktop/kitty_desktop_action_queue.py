@@ -4,6 +4,8 @@ Accepted payload kinds:
 
 - ``open_library_diagram`` — saved MindGraph library id (+ optional title for UX).
   Preferred for create-new / voice ``open_desktop_canvas`` (durable library draft first).
+- ``reload_library_diagram`` — force-reload a library id already open on desktop
+  (e.g. mobile vision mind-map rebuild wrote a new library snapshot).
 - ``open_canvas`` — residual blank-canvas open (diagram slug + optional topic / session_scope).
   Not used for durable create-new.
 
@@ -212,6 +214,18 @@ async def enqueue_kitty_desktop_action(user_id: int, payload: Dict[str, Any]) ->
                 payload,
             )
             return False
+        return await _push_desktop_action(user_id, normalized)
+
+    if kind == "reload_library_diagram":
+        normalized = _normalize_open_library_payload(dict(payload))
+        if normalized is None:
+            logger.warning(
+                "[KittyDesktopActions] invalid reload_library_diagram user=%s payload=%s",
+                user_id,
+                payload,
+            )
+            return False
+        normalized["kind"] = "reload_library_diagram"
         return await _push_desktop_action(user_id, normalized)
 
     logger.warning("[KittyDesktopActions] unsupported kind=%s user=%s", kind, user_id)

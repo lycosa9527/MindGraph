@@ -17,7 +17,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
-from models.requests.requests_knowledge_space import ChatHandoffIngestRequest, ChatHandoffStartRequest
+from models.requests.requests_knowledge_space import (
+    ChatHandoffCancelRequest,
+    ChatHandoffIngestRequest,
+    ChatHandoffStartRequest,
+)
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.api.knowledge_space.packages import _document_to_response
 from services.knowledge.chat_handoff_service import (
@@ -25,10 +29,16 @@ from services.knowledge.chat_handoff_service import (
     list_waiting_handoffs,
     load_handoff,
     mint_handoff_code,
+    revoke_handoff_code,
+    revoke_waiting_handoffs_for_package,
     update_handoff_status,
 )
 from services.knowledge.chat_transcript_normalizer import normalize_chat_messages, normalize_raw_content
 from services.knowledge.doc_summary_ingest import DocSummaryIngestService
+from services.knowledge.doc_summary_limits import (
+    DocSummaryContentTooLongError,
+    content_too_long_detail,
+)
 from services.knowledge.knowledge_package_service import KnowledgePackageService
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
@@ -125,6 +135,32 @@ async def chat_handoff_status(
     }
 
 
+@router.post("/chat-handoff/cancel")
+async def cancel_chat_handoff(
+    request: ChatHandoffCancelRequest,
+    http_request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """Revoke waiting pairing code(s) when the diagram session ends."""
+    identifier = get_rate_limit_identifier(current_user, http_request)
+    await check_endpoint_rate_limit("chat_handoff_cancel", identifier, max_requests=60, window_seconds=60)
+
+    revoked = 0
+    try:
+        if request.code:
+            if await revoke_handoff_code(request.code, current_user.id):
+                revoked += 1
+        if request.package_id is not None:
+            revoked += await revoke_waiting_handoffs_for_package(
+                current_user.id,
+                request.package_id,
+            )
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error("[ChatHandoff] cancel failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Pairing service unavailable") from exc
+    return {"revoked": revoked}
+
+
 @router.post("/chat-handoff/ingest")
 async def ingest_chat_handoff(
     request: ChatHandoffIngestRequest,
@@ -205,6 +241,12 @@ async def ingest_chat_handoff(
             current_user.id,
         )
         return _document_to_response(document)
+    except DocSummaryContentTooLongError as exc:
+        await update_handoff_status(request.code, "failed")
+        raise HTTPException(
+            status_code=413,
+            detail=content_too_long_detail(char_count=exc.char_count),
+        ) from exc
     except ValueError as exc:
         await update_handoff_status(request.code, "failed")
         raise HTTPException(status_code=400, detail=str(exc)) from exc

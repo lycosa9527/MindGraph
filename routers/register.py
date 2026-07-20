@@ -142,9 +142,7 @@ def register_routers(app: FastAPI) -> None:
     if LIBRARY_MODULE is not None:
         _mount_feature(app, LIBRARY_MODULE.router, "/api/library", registered_feature_paths)
     else:
-        logger.warning(
-            "[RouterRegistration] Library router NOT registered - import failed or router is None."
-        )
+        logger.warning("[RouterRegistration] Library router NOT registered - import failed or router is None.")
 
     _mount_feature(app, COMMUNITY_MODULE, "/api/community", registered_feature_paths)
     _mount_feature(app, SHOWCASE_MODULE, "/api/showcase", registered_feature_paths)
@@ -152,9 +150,7 @@ def register_routers(app: FastAPI) -> None:
     if MARKETS_MODULE is not None:
         _mount_feature(app, MARKETS_MODULE.router, "/api/markets", registered_feature_paths)
     else:
-        logger.warning(
-            "[RouterRegistration] Markets router NOT registered - import failed or router is None."
-        )
+        logger.warning("[RouterRegistration] Markets router NOT registered - import failed or router is None.")
 
     _mount_feature(app, GEWE_MODULE, "/api/gewe", registered_feature_paths)
     _mount_feature(app, WORKSHOP_CHAT_MODULE, "/api/chat", registered_feature_paths)
@@ -180,9 +176,7 @@ def register_routers(app: FastAPI) -> None:
     if DEBATEVERSE_MODULE is not None:
         _mount_feature(app, DEBATEVERSE_MODULE.router, "/api/debateverse", registered_feature_paths)
     else:
-        logger.warning(
-            "[RouterRegistration] DebateVerse router NOT registered - import failed or router is None."
-        )
+        logger.warning("[RouterRegistration] DebateVerse router NOT registered - import failed or router is None.")
 
     if registered_feature_paths:
         logger.info(

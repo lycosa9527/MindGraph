@@ -312,6 +312,7 @@ class DocumentResponse(BaseModel):
     chunking_mode: Optional[str] = None
     rag_status: Optional[str] = None
     wiki_status: Optional[str] = None
+    extract_char_count: Optional[int] = None
     created_at: str
     updated_at: str
 

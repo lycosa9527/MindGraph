@@ -452,11 +452,18 @@ export const useOneSentenceStore = defineStore('oneSentence', () => {
     eventBus.emit('oneSentence:session_reset', { scope: normalized })
   }
 
+  /**
+   * Clear in-memory chat for a fresh welcome seed. Does not rotate ephemeral
+   * scope (use ``onCanvasReset`` when leaving a diagram entirely).
+   */
   function resetChatUiForWelcome(): void {
     messages.value = []
     requests.value = {}
     busyQueue.value = []
     activeRequestId.value = null
+    draft.value = ''
+    phase.value = 'create'
+    connecting.value = false
     sessionReady.value = false
   }
 

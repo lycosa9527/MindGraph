@@ -150,6 +150,18 @@ KITTY_INTENT_ROWS: List[IntentRow] = [
         "notes": "Canvas subgraph glow fill for an existing branch label.",
     },
     {
+        "name": "multi_step_structural_edit",
+        "kind": "diagram",
+        "channel": "bus",
+        "hub_op": "patch_context",
+        "notes": (
+            "One-sentence follow_up_actions chain: order "
+            "update_center→delete_node→update_node→add_node; coalesced "
+            "diagram.multi_step acks; deferred silent auto_complete_branch for "
+            "created branches; skip whole-map auto_complete after those fills."
+        ),
+    },
+    {
         "name": "clarify_options",
         "kind": "ui",
         "channel": "ws_action",
@@ -214,10 +226,13 @@ KITTY_SPECIAL_FLOWS: List[Dict[str, Any]] = [
         "notes": "Qwen Plus extraction; large specs may use replace or batched patch (bridge policy).",
     },
     {
-        "name": "append_image_vision",
-        "channel": "omni",
-        "hub_op": "optional patch_context",
-        "notes": "WS ``append_image`` → Omni; transcript may route paragraph/Qwen; hub if canvas updates.",
+        "name": "conversation_image",
+        "channel": "http",
+        "hub_op": "library replace (hand-drawn) or doc_summary extract",
+        "notes": (
+            "POST ``/api/kitty/conversation_image`` — vision classify; "
+            "hand-drawn rebuild + outline extract, else OCR extract; Kitty chat reply on client."
+        ),
     },
 ]
 

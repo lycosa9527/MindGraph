@@ -63,8 +63,7 @@ export default {
   'sidebar.diagramHistory.folderCreatePrompt': 'Enter a name for the new folder',
   'sidebar.diagramHistory.folderCreateTitle': 'New folder',
   'sidebar.diagramHistory.folderCreated': 'Folder created',
-  'sidebar.diagramHistory.folderDeleteConfirm':
-    'Delete this folder? Diagrams inside will move to Uncategorized.',
+  'sidebar.diagramHistory.folderDeleteConfirm': 'Delete this folder? Diagrams inside will move to Uncategorized.',
   'sidebar.diagramHistory.folderDeleteFailed': 'Failed to delete folder',
   'sidebar.diagramHistory.folderDeleteTitle': 'Delete folder',
   'sidebar.diagramHistory.folderDeleted': 'Folder deleted',

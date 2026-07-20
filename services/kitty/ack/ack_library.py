@@ -107,6 +107,18 @@ _ACK_TEMPLATES: Dict[str, Dict[KittyLanguage, str]] = {
         "zh": "抱歉，没能为「{target}」分支自动补全。你可以再说一次「自动补全」。",
         "en": 'Sorry — I couldn\'t auto-complete the "{target}" branch. You can ask again to auto-complete.',
     },
+    "diagram.multi_step.progress": {
+        "zh": "好的，{detail}…",
+        "en": "OK — {detail}…",
+    },
+    "diagram.multi_step.done": {
+        "zh": "{detail}",
+        "en": "{detail}",
+    },
+    "diagram.multi_step.done_with_complete": {
+        "zh": "{detail}开始为它们自动补全…",
+        "en": "{detail}Starting auto-complete for them…",
+    },
     "diagram.clarify_options": {
         "zh": "{question}\n{options_list}\n请回复序号或选项内容。",
         "en": "{question}\n{options_list}\nReply with the number or option text.",

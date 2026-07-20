@@ -207,7 +207,7 @@ class FileReaderApiClient:
 
     def list_packages(self) -> Tuple[bool, List[PackageItem], Optional[AppError]]:
         """List Knowledge Space packages for the authenticated user."""
-        ok, data, err = self._request_json("GET", "/api/knowledge-space/packages")
+        ok, data, err = self._request_json("GET", "/api/doc-summary/packages")
         if not ok:
             return False, [], err or AppError(code=ErrorCode.PACKAGES_FAILED)
         if not isinstance(data, dict):
@@ -234,7 +234,7 @@ class FileReaderApiClient:
 
     def list_waiting_sessions(self) -> Tuple[bool, List[LiveSession], Optional[AppError]]:
         """List pairing sessions the website is waiting on."""
-        ok, data, err = self._request_json("GET", "/api/knowledge-space/chat-handoff/waiting")
+        ok, data, err = self._request_json("GET", "/api/doc-summary/chat-handoff/waiting")
         if not ok:
             return False, [], err or AppError(code=ErrorCode.PACKAGES_FAILED)
         if not isinstance(data, dict):
@@ -292,7 +292,7 @@ class FileReaderApiClient:
         """Mint a pairing code for the selected package."""
         ok, data, err = self._request_json(
             "POST",
-            "/api/knowledge-space/chat-handoff/start",
+            "/api/doc-summary/chat-handoff/start",
             {"package_id": package_id},
         )
         if not ok:
@@ -330,7 +330,7 @@ class FileReaderApiClient:
 
         ok, data, err = self._request_json(
             "POST",
-            "/api/knowledge-space/chat-handoff/ingest",
+            "/api/doc-summary/chat-handoff/ingest",
             payload,
             timeout=120,
         )
@@ -350,7 +350,7 @@ class FileReaderApiClient:
         if not file_path.is_file():
             return UploadResult(False, AppError(code=ErrorCode.UPLOAD_FAILED, raw_detail="File not found"))
 
-        url = f"{self._base_url()}/api/knowledge-space/packages/{package_id}/documents/upload"
+        url = f"{self._base_url()}/api/doc-summary/packages/{package_id}/documents/upload"
         headers = {
             "Authorization": f"Bearer {self._settings.api_token.strip()}",
             "X-MG-Account": self._settings.account_phone.strip(),

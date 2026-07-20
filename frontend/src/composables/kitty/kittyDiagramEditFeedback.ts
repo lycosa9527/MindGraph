@@ -14,6 +14,7 @@ const CODE_FAIL_I18N: Record<string, string> = {
   context_mutation_rejected: 'canvas.mindMapOneSentence.kittyEditPersistFailed',
   busy_llm_generating: 'canvas.mindMapOneSentence.kittyEditBusy',
   access_denied: 'canvas.mindMapOneSentence.kittyEditAccessDenied',
+  collab_active: 'canvas.mindMapOneSentence.kittyEditCollabActive',
   stale_revision: 'canvas.mindMapOneSentence.kittyEditStaleRevision',
   ack_timeout: 'canvas.mindMapOneSentence.kittyEditTimeout',
   no_owner: 'canvas.mindMapOneSentence.kittyEditNoOwner',

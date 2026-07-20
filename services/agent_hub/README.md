@@ -74,7 +74,7 @@ Cross-device **pairing and navigation** use Redis helpers that are intentionally
 - [`kitty_desktop_focus.py`](../kitty/infra/desktop/kitty_desktop_focus.py) — last library/diagram id the user focused on desktop (mobile aligns `/ws/kitty/{scope}`). **Not** a channel for `diagram_data`.
 - [`kitty_desktop_action_queue.py`](../kitty/infra/desktop/kitty_desktop_action_queue.py) — FIFO for `kind: open_canvas` only (slug + seeds). **Not** full specs or hub patches.
 
-Authoritative canvas edits and merged specs remain **`apply_diagram_spec_mutation`**, hub revision, and **`kitty:live_spec`** (including [`GET /api/kitty/live_context/...`](../kitty/http/handlers.py) on desktop). For Omni image ingress and vision notes see [`ws/append_image.py`](../kitty/ws/append_image.py).
+Authoritative canvas edits and merged specs remain **`apply_diagram_spec_mutation`**, hub revision, and **`kitty:live_spec`** (including [`GET /api/kitty/live_context/...`](../kitty/http/handlers.py) on desktop). Conversation photo upload uses [`POST /api/kitty/conversation_image`](../kitty/http/conversation_image_handler.py) (vision classify → hand-drawn rebuild + outline extract, or OCR extract).
 
 **Load balancer:** prefer **sticky sessions** to `/ws/kitty` across workers (latency); refcount remains authoritative for correctness.
 

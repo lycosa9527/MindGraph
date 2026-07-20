@@ -274,3 +274,58 @@ async def test_agent_attaches_branch_autocomplete_for_add_node() -> None:
     assert isinstance(follow, list)
     assert follow[0]["action"] == "auto_complete_branch"
     assert follow[0]["target"] == "中国"
+
+
+@pytest.mark.asyncio
+async def test_agent_multi_add_node_tool_calls_merge_in_order() -> None:
+    """Multiple add_node tool calls become primary + structural follow-ups."""
+    chat_raw = AsyncMock(
+        return_value={
+            "tool_calls": [
+                {
+                    "function": {
+                        "name": "diagram.update_center",
+                        "arguments": json.dumps({"new_text": "学生运动"}),
+                    }
+                },
+                {
+                    "function": {
+                        "name": "diagram.add_node",
+                        "arguments": json.dumps({"text": "跑步"}),
+                    }
+                },
+                {
+                    "function": {
+                        "name": "diagram.add_node",
+                        "arguments": json.dumps({"text": "跳跃"}),
+                    }
+                },
+            ],
+        }
+    )
+    with (
+        patch("services.kitty.routing.node_action_agent.llm_service.chat_raw", chat_raw),
+        patch(
+            "services.kitty.routing.node_action_agent.get_session_memory",
+        ) as mem,
+    ):
+        mem.return_value.summarize_for_parser.return_value = ""
+        cmd = await parse_node_action_intent(
+            "主题改成学生运动，添加跑步和跳跃分支",
+            voice_session_id="voice_test",
+            diagram_type="mindmap",
+            session_context={"language": "zh", "diagram_data": {"center": {"text": "主题"}}},
+        )
+
+    assert cmd is not None
+    assert cmd["action"] == "update_center"
+    assert cmd["target"] == "学生运动"
+    follow = cmd.get("follow_up_actions")
+    assert isinstance(follow, list)
+    assert [item.get("action") for item in follow] == ["add_node", "add_node"]
+    assert [item.get("target") for item in follow] == ["跑步", "跳跃"]
+    assert chat_raw.await_args is not None
+    system = chat_raw.await_args.kwargs["system_message"]
+    assert "多个" in system or "MULTIPLE" in system
+    assert "不要在 add_node 之间" in system or "Do NOT call" in system
+    assert "whole-map" in system or "整图" in system

@@ -81,7 +81,9 @@ class KnowledgePackageService:
         await self.db.commit()
         await self.db.refresh(package)
 
-        if diagram_id:
+        # Document Summary links via DocumentBatch.diagram_id only — never overwrite
+        # diagrams.knowledge_package_id (that column is for Knowledge Space / File Center).
+        if diagram_id and package_source != "doc_summary":
             await self._link_diagram_to_package(diagram_id, package.id)
 
         logger.info(
@@ -145,6 +147,36 @@ class KnowledgePackageService:
         )
         return batch_result.scalars().first()
 
+    async def find_doc_summary_package_for_diagram(
+        self,
+        diagram_id: str,
+    ) -> Optional[DocumentBatch]:
+        """Return a ``source=doc_summary`` package for the diagram, if any."""
+        linked = await self.find_package_for_diagram(diagram_id)
+        if linked is not None and linked.source == "doc_summary":
+            return linked
+
+        batch_result = await self.db.execute(
+            select(DocumentBatch).where(
+                and_(
+                    DocumentBatch.user_id == self.user_id,
+                    DocumentBatch.diagram_id == diagram_id,
+                    DocumentBatch.source == "doc_summary",
+                )
+            )
+        )
+        return batch_result.scalars().first()
+
+    @staticmethod
+    def _doc_summary_package_matches_diagram(
+        package: DocumentBatch,
+        diagram_id: Optional[str],
+    ) -> bool:
+        """True when package is unbound or already linked to ``diagram_id``."""
+        if not diagram_id or not package.diagram_id:
+            return True
+        return package.diagram_id == diagram_id
+
     async def ensure_doc_summary_session(
         self,
         diagram_id: Optional[str] = None,
@@ -154,19 +186,32 @@ class KnowledgePackageService:
     ) -> DocumentBatch:
         """Return the Document Summary package for a canvas session.
 
-        Resumes an existing package linked by ``package_id`` or ``diagram_id``.
-        Creates a new package only when ``create_if_missing`` is true (first ingest).
+        Resumes an existing ``source=doc_summary`` package linked by ``package_id``
+        or ``diagram_id``. Creates a new package only when ``create_if_missing``
+        is true (first ingest). Never resumes a Knowledge Space / File Center package.
+        Ignores a stale ``package_id`` that belongs to a different diagram so the
+        session always tracks the active diagram's COS extract.
         """
         if package_id is not None:
             existing = await self.get_package(package_id)
             if not existing:
                 raise ValueError(f"Package {package_id} not found or access denied")
-            if diagram_id and not existing.diagram_id:
-                return await self.update_package(existing.id, diagram_id=diagram_id)
-            return existing
+            if existing.source != "doc_summary":
+                raise ValueError("Package is not a Document Summary session")
+            if self._doc_summary_package_matches_diagram(existing, diagram_id):
+                if diagram_id and not existing.diagram_id:
+                    return await self.update_package(existing.id, diagram_id=diagram_id)
+                return existing
+            logger.info(
+                "[FileCenter] Ignoring stale doc_summary package_id=%s (linked to %s) for diagram=%s user=%s",
+                package_id,
+                existing.diagram_id,
+                diagram_id,
+                self.user_id,
+            )
 
         if diagram_id:
-            linked = await self.find_package_for_diagram(diagram_id)
+            linked = await self.find_doc_summary_package_for_diagram(diagram_id)
             if linked:
                 return linked
 
@@ -174,7 +219,83 @@ class KnowledgePackageService:
             raise ValueError("No Document Summary package for this session")
 
         name = (diagram_title or "").strip() or "Untitled package"
+        # Re-check immediately before insert to shrink the concurrent-create window.
+        if diagram_id:
+            linked = await self.find_doc_summary_package_for_diagram(diagram_id)
+            if linked:
+                return linked
         return await self.create_package(name=name, diagram_id=diagram_id, source="doc_summary")
+
+    async def clear_doc_summary_session(
+        self,
+        *,
+        diagram_id: Optional[str] = None,
+        package_id: Optional[int] = None,
+    ) -> bool:
+        """Delete the Document Summary package for a canvas session (COS + Redis + DB).
+
+        Resolves by ``package_id`` and/or ``diagram_id``. Returns True when a
+        package was deleted. Safe no-op when nothing is linked.
+        """
+        if package_id is None and not diagram_id:
+            raise ValueError("package_id or diagram_id is required")
+
+        package: Optional[DocumentBatch] = None
+        if package_id is not None:
+            package = await self.get_package(package_id)
+            if package is not None and package.source != "doc_summary":
+                raise ValueError("Package is not a Document Summary session")
+            if package is not None and not self._doc_summary_package_matches_diagram(package, diagram_id):
+                logger.info(
+                    "[FileCenter] Ignoring stale clear package_id=%s for diagram=%s user=%s",
+                    package_id,
+                    diagram_id,
+                    self.user_id,
+                )
+                package = None
+
+        if package is None and diagram_id:
+            package = await self.find_doc_summary_package_for_diagram(diagram_id)
+
+        if package is None:
+            return False
+
+        await self.delete_package(package.id)
+        return True
+
+    async def resolve_package_for_mindmap_generate(
+        self,
+        *,
+        package_id: Optional[int] = None,
+        diagram_id: Optional[str] = None,
+    ) -> Optional[DocumentBatch]:
+        """Resolve package for generate: prefer diagram's doc_summary (COS) extract.
+
+        Stale ``package_id`` values that belong to another diagram are ignored so
+        generation always reads the active diagram's markdown.
+        """
+        package: Optional[DocumentBatch] = None
+        if package_id is not None:
+            package = await self.get_package(package_id)
+            if (
+                package is not None
+                and package.source == "doc_summary"
+                and not self._doc_summary_package_matches_diagram(package, diagram_id)
+            ):
+                logger.info(
+                    "[FileCenter] Ignoring stale generate package_id=%s for diagram=%s user=%s",
+                    package_id,
+                    diagram_id,
+                    self.user_id,
+                )
+                package = None
+
+        if package is None and diagram_id:
+            package = await self.find_doc_summary_package_for_diagram(diagram_id)
+            if package is None:
+                package = await self.find_package_for_diagram(diagram_id)
+
+        return package
 
     async def update_package(
         self,
@@ -191,7 +312,8 @@ class KnowledgePackageService:
             package.name = name.strip()[:200] or package.name
         if diagram_id is not None:
             package.diagram_id = diagram_id
-            await self._link_diagram_to_package(diagram_id, package.id)
+            if package.source != "doc_summary":
+                await self._link_diagram_to_package(diagram_id, package.id)
 
         await self.db.commit()
         await self.db.refresh(package)

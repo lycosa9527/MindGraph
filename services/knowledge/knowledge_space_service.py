@@ -42,6 +42,7 @@ from services.knowledge.document_processing import (
 )
 from services.knowledge.document_processor import get_document_processor
 from services.knowledge.doc_summary_storage import clear_package_redis, delete_extracted_content
+from services.knowledge.doc_summary_temp import remove_job_dir
 from services.utils.safe_upload import ensure_within_directory, safe_upload_basename
 from services.knowledge.document_reindexing import (
     chunk_text_for_reindexing,
@@ -611,7 +612,9 @@ class KnowledgeSpaceService:
 
         try:
             metadata = document.doc_metadata or {}
-            if metadata.get("doc_summary_lite"):
+            if metadata.get("doc_summary_lite") or metadata.get("temp_job_dir"):
+                # Document Summary lite: drop COS/local markdown + any in-flight temp upload.
+                remove_job_dir(metadata.get("temp_job_dir"))
                 await delete_extracted_content(metadata)
                 if document.batch_id is not None:
                     await clear_package_redis(document.batch_id)

@@ -67,21 +67,29 @@ export interface NodePalettePanelState {
   useConceptListHeader?: boolean
 }
 
-/** Mind map concept parking lot (概念停车场) — separate from staged node palette */
-export interface ConceptParkingLotPanelState {
+/**
+ * Mind map AI Brainstorm (AI头脑风暴) — new-Canvas side tool, isolated from Node Palette.
+ */
+export interface AiBrainstormPanelState {
   open: boolean
   suggestions: NodeSuggestion[]
   selected: string[]
-  /** Active tab: 'topic' or branch-* id matching generation source */
+  /** Active tab: stage name, parent branch name, or source node id */
   mode: string | null
-  /** One tab per canvas source node used for generation */
+  /** Mind map stages: 'branches' | 'children' */
+  stage?: string | null
+  /** Stage-2 parent context: { branch_id, branch_name } */
+  stage_data?: Record<string, unknown> | null
+  /** Tabs for stage-2 parents or canvas multi-source generation */
   sourceTabs?: ConceptMapTab[]
 }
 
-export interface ConceptParkingLotSessionSnapshot {
+export interface AiBrainstormSessionSnapshot {
   suggestions: NodeSuggestion[]
   selected: string[]
   mode: string | null
+  stage?: string | null
+  stage_data?: Record<string, unknown> | null
   sourceTabs?: ConceptMapTab[]
 }
 

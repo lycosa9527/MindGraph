@@ -224,10 +224,7 @@ def _xdb_file_plausible(path: Path, min_bytes: int) -> bool:
         return False
     size = path.stat().st_size
     if size < min_bytes:
-        print(
-            f"[ERROR] {path.name} is only {size} bytes (expected >= {min_bytes}); "
-            "delete and retry or check network."
-        )
+        print(f"[ERROR] {path.name} is only {size} bytes (expected >= {min_bytes}); delete and retry or check network.")
         try:
             path.unlink()
         except OSError:

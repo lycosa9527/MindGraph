@@ -757,12 +757,17 @@ async function startPopup() {
         resolve(res || { ok: false, error: "no_response" });
       });
     });
-    if (!response.ok || !Array.isArray(response.packages) || response.packages.length === 0) {
+    if (!response.ok) {
       fileCenterSection.hidden = true;
       return;
     }
     fieldPackage.textContent = "";
-    response.packages.forEach((pkg) => {
+    const optNew = document.createElement("option");
+    optNew.value = "";
+    optNew.textContent = t("fileCenterNewSession");
+    fieldPackage.appendChild(optNew);
+    const packages = Array.isArray(response.packages) ? response.packages : [];
+    packages.forEach((pkg) => {
       const opt = document.createElement("option");
       opt.value = String(pkg.id);
       opt.textContent = pkg.name || t("fileCenterUntitled");
@@ -1142,8 +1147,9 @@ async function startPopup() {
   if (btnSaveFileCenter && fieldPackage) {
     btnSaveFileCenter.addEventListener("click", () => {
       void (async () => {
-        const packageId = parseInt(fieldPackage.value, 10);
-        if (!Number.isFinite(packageId)) {
+        const rawPackageId = (fieldPackage.value || "").trim();
+        const packageId = rawPackageId ? parseInt(rawPackageId, 10) : null;
+        if (rawPackageId && !Number.isFinite(packageId)) {
           return;
         }
         setStatus(statusEl, t("statusWorking"), "loading");
@@ -1156,7 +1162,11 @@ async function startPopup() {
           }
           const response = await new Promise((resolve) => {
             chrome.runtime.sendMessage(
-              { type: "SAVE_TO_FILE_CENTER", tabId: tab.id, packageId },
+              {
+                type: "SAVE_TO_FILE_CENTER",
+                tabId: tab.id,
+                packageId: packageId || undefined,
+              },
               (res) => {
                 void chrome.runtime.lastError;
                 resolve(res || { ok: false, error: t("errFailed") });
@@ -1165,8 +1175,9 @@ async function startPopup() {
           });
           if (response.ok) {
             setStatus(statusEl, t("statusSavedToFileCenter"), "ok");
+            void loadPackages();
           } else {
-            console.error("[MindGraph] save to file center failed", response.error);
+            console.error("[MindGraph] save to Document Summary failed", response.error);
             setStatus(statusEl, userFacingError(response.error), "err");
           }
         } catch (e) {

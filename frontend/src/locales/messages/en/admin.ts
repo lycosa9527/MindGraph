@@ -26,8 +26,7 @@ export default {
   'admin.confirm': 'Confirm',
   'admin.copyShareMessage': 'Copy',
   'admin.copyInvitationCode': 'Copy invitation code',
-  'admin.schoolInviteCopyPayload':
-    '{orgName}: Welcome to the Mind thinking & teaching AI agent platform!\nGuided by BNU Thinking Training Center and co-built with 100+ thinking-development alliance schools — join us to grow thinking skills in the AI era.\nHow: open on computer or phone; register with phone number + invitation code the first time, then sign in with SMS verification.\nURL: {siteUrl}\nOrganization invitation code: {code}',
+  'admin.schoolInviteCopyPayload': '{orgName}: Welcome to the Mind thinking & teaching AI agent platform!\nGuided by BNU Thinking Training Center and co-built with 100+ thinking-development alliance schools — join us to grow thinking skills in the AI era.\nHow: open on computer or phone; register with phone number + invitation code the first time, then sign in with SMS verification.\nURL: {siteUrl}\nOrganization invitation code: {code}',
   'admin.createApiKey': 'Create API Key',
   'admin.createOrganization': 'Create Organization',
   'admin.createSchool': 'Create School',
@@ -436,12 +435,10 @@ export default {
   'admin.performance.tab': 'Performance',
   'admin.publicDashboard.tab': 'National data center',
   'admin.publicDashboard.title': 'MG National Data Center',
-  'admin.publicDashboard.subtitle':
-    'Super-admin China map dashboard with live online users, tokens, and activity.',
+  'admin.publicDashboard.subtitle': 'Super-admin China map dashboard with live online users, tokens, and activity.',
   'admin.publicDashboard.backToAdmin': 'Back to admin',
   'admin.publicDashboard.accessDeniedTitle': 'Super-admin only',
-  'admin.publicDashboard.accessDeniedHint':
-    'Only platform super-admins can open the national data center settings tab.',
+  'admin.publicDashboard.accessDeniedHint': 'Only platform super-admins can open the national data center settings tab.',
   'admin.errors.tab': 'Error collection',
   'admin.errors.groupOverview': 'Overview',
   'admin.errors.groupBreakdown': '24h breakdown',
@@ -920,8 +917,7 @@ export default {
   'admin.userSearchFailed': 'User search failed',
   'admin.selectSchool': 'Select school',
   'admin.setManager': 'Set as Manager',
-  'admin.shareInviteMessage':
-    '{orgName}: Welcome to the Mind thinking & teaching AI agent platform!\nGuided by BNU Thinking Training Center and co-built with 100+ thinking-development alliance schools — join us to grow thinking skills in the AI era.\nHow: open on computer or phone; register with phone number + invitation code the first time, then sign in with SMS verification.\nURL: {siteUrl}\nOrganization invitation code: {code}',
+  'admin.shareInviteMessage': '{orgName}: Welcome to the Mind thinking & teaching AI agent platform!\nGuided by BNU Thinking Training Center and co-built with 100+ thinking-development alliance schools — join us to grow thinking skills in the AI era.\nHow: open on computer or phone; register with phone number + invitation code the first time, then sign in with SMS verification.\nURL: {siteUrl}\nOrganization invitation code: {code}',
   'admin.shareInviteTitle': 'Share Invitation',
   'admin.source': 'Source',
   'admin.sourceDatabase': 'Database',

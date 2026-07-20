@@ -11,11 +11,11 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from routers.api.knowledge_space.doc_summary import router
+from routers.api.doc_summary import router
 from utils.auth import get_current_user
 
 app = FastAPI()
-app.include_router(router, prefix="/api/knowledge-space")
+app.include_router(router, prefix="/api")
 
 
 def _make_user(user_id: int = 42) -> SimpleNamespace:
@@ -42,7 +42,7 @@ def clear_dependency_overrides() -> Generator[None, None, None]:
 
 def test_session_start_requires_auth(client: TestClient) -> None:
     """Unauthenticated session start is rejected."""
-    response = client.post("/api/knowledge-space/doc-summary/session/start", json={})
+    response = client.post("/api/doc-summary/session/start", json={})
     assert response.status_code in (401, 403)
 
 
@@ -58,12 +58,12 @@ def test_session_start_returns_package_when_create_requested(client: TestClient)
         created_at=now,
         updated_at=now,
     )
-    with patch("routers.api.knowledge_space.doc_summary.KnowledgePackageService") as service_cls:
+    with patch("routers.api.doc_summary.session.KnowledgePackageService") as service_cls:
         service = service_cls.return_value
         service.ensure_doc_summary_session = AsyncMock(return_value=batch)
         service.get_package_stats = AsyncMock(return_value={7: {"total": 0, "completed": 0}})
         response = client.post(
-            "/api/knowledge-space/doc-summary/session/start",
+            "/api/doc-summary/session/start",
             json={"diagram_title": "My diagram", "create_if_missing": True},
         )
     assert response.status_code == 200
@@ -80,14 +80,54 @@ def test_session_start_returns_package_when_create_requested(client: TestClient)
 def test_session_start_without_create_returns_not_found(client: TestClient) -> None:
     """Resume-only session start does not create an empty package."""
     app.dependency_overrides[get_current_user] = _make_user
-    with patch("routers.api.knowledge_space.doc_summary.KnowledgePackageService") as service_cls:
+    with patch("routers.api.doc_summary.session.KnowledgePackageService") as service_cls:
         service = service_cls.return_value
         service.ensure_doc_summary_session = AsyncMock(
             side_effect=ValueError("No Document Summary package for this session")
         )
         response = client.post(
-            "/api/knowledge-space/doc-summary/session/start",
+            "/api/doc-summary/session/start",
             json={"diagram_title": "My diagram"},
         )
     assert response.status_code == 404
     assert response.json()["detail"] == "No Document Summary package for this session"
+
+
+def test_session_clear_deletes_package(client: TestClient) -> None:
+    """Canvas reset clears the Document Summary package (COS via delete_package)."""
+    app.dependency_overrides[get_current_user] = _make_user
+    with (
+        patch("routers.api.doc_summary.session.KnowledgePackageService") as service_cls,
+        patch(
+            "routers.api.doc_summary.session.revoke_waiting_handoffs_for_package",
+            new_callable=AsyncMock,
+            return_value=1,
+        ) as revoke_handoffs,
+    ):
+        service = service_cls.return_value
+        service.clear_doc_summary_session = AsyncMock(return_value=True)
+        response = client.post(
+            "/api/doc-summary/session/clear",
+            json={"diagram_id": "diag-1", "package_id": 7},
+        )
+    assert response.status_code == 200
+    assert response.json()["deleted"] is True
+    revoke_handoffs.assert_awaited_once_with(42, 7)
+    service.clear_doc_summary_session.assert_awaited_once_with(
+        diagram_id="diag-1",
+        package_id=7,
+    )
+
+
+def test_session_clear_noop_when_missing(client: TestClient) -> None:
+    """Clear is idempotent when no Document Summary package is linked."""
+    app.dependency_overrides[get_current_user] = _make_user
+    with patch("routers.api.doc_summary.session.KnowledgePackageService") as service_cls:
+        service = service_cls.return_value
+        service.clear_doc_summary_session = AsyncMock(return_value=False)
+        response = client.post(
+            "/api/doc-summary/session/clear",
+            json={"diagram_id": "diag-missing"},
+        )
+    assert response.status_code == 200
+    assert response.json()["deleted"] is False

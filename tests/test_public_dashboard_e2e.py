@@ -173,11 +173,7 @@ async def test_activity_stream_emits_initial_event(
                 break
 
     assert "data:" in collected
-    payload_lines = [
-        line[5:].strip()
-        for line in collected.splitlines()
-        if line.startswith("data:")
-    ]
+    payload_lines = [line[5:].strip() for line in collected.splitlines() if line.startswith("data:")]
     assert payload_lines
     parsed = json.loads(payload_lines[0])
     assert parsed.get("type") in {"initial", "error", "heartbeat", "stats_update", "activity"}
@@ -218,6 +214,4 @@ async def test_spa_routes_redirect_dashboard_to_admin(client: httpx.AsyncClient)
         response = await client.get(path, follow_redirects=False)
         assert response.status_code in {301, 302, 307, 308}, f"{path} -> {response.status_code}"
         location = response.headers.get("location", "")
-        assert location.endswith(expected) or expected in location, (
-            f"{path} location={location!r}"
-        )
+        assert location.endswith(expected) or expected in location, f"{path} location={location!r}"

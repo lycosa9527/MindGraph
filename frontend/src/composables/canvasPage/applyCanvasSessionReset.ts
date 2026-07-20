@@ -1,32 +1,16 @@
+import { clearCanvasEphemeralSession } from '@/composables/canvasPage/clearCanvasEphemeralSession'
 import { eventBus } from '@/composables/core/useEventBus'
-import { resetLearningSheetCustomModeUi } from '@/composables/mindMap/useLearningSheetCustomMode'
-import {
-  useConceptMapFocusReviewStore,
-  useDiagramStore,
-  useInlineRecommendationsStore,
-  useLLMResultsStore,
-  useOneSentenceStore,
-  usePanelsStore,
-} from '@/stores'
-import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
-import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
-import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
+import { useDiagramStore, useOneSentenceStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 /**
  * Abort in-flight AI streams and clear ephemeral Pinia state before reloading
  * the default template. CanvasPage listens for `diagram:reset_requested` to
- * reset page-local refs (presentation rail, snapshots, autosave suppress).
+ * reset page-local refs (presentation rail, snapshots, autosave suppress,
+ * file-center session).
  */
 export function applyCanvasSessionReset(): void {
-  useLLMResultsStore().reset()
-  useInlineRecommendationsStore().reset()
-  useConceptMapFocusReviewStore().clear()
-  useConceptMapRootConceptReviewStore().clear()
-  useMindMapSubgraphPreviewStore().clear()
-  useDiagramTranslateUiStore().abortTranslate()
-  usePanelsStore().reset()
-  resetLearningSheetCustomModeUi()
+  clearCanvasEphemeralSession()
 
   const diagramStore = useDiagramStore()
   diagramStore.clearSelection()
@@ -34,9 +18,12 @@ export function applyCanvasSessionReset(): void {
   diagramStore.clearCopiedNodes()
   diagramStore.resetSessionEditCount()
 
-  useSavedDiagramsStore().clearActiveDiagram()
+  const savedDiagrams = useSavedDiagramsStore()
+  // Capture before clear — Document Summary COS cleanup needs the diagram id.
+  const diagramId = savedDiagrams.activeDiagramId ?? undefined
+  savedDiagrams.clearActiveDiagram()
   // Keep durable library chat in Redis/PG; rotate ephemeral UI scope.
   useOneSentenceStore().onCanvasReset()
 
-  eventBus.emit('diagram:reset_requested', {})
+  eventBus.emit('diagram:reset_requested', { diagramId })
 }

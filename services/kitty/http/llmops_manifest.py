@@ -74,6 +74,22 @@ def build_kitty_llmops_manifest() -> Dict[str, Any]:
                 "hub_calls": ["apply_diagram_spec_mutation via apply_kitty_ws_context_patch on context_update"],
             },
             {
+                "id": "conversation_image",
+                "title": "Conversation image (HTTP)",
+                "paths": [
+                    "services/kitty/http/conversation_image_handler.py",
+                    "services/knowledge/conversation_image.py",
+                    "services/knowledge/conversation_image_upload.py",
+                    "services/knowledge/vision_mindmap.py",
+                    "services/knowledge/mindmap_outline_md.py",
+                ],
+                "role": (
+                    "POST /api/kitty/conversation_image — vision classify; "
+                    "hand-drawn rebuild + outline extract, else OCR extract."
+                ),
+                "hub_calls": ["library save via apply_rebuilt_mindmap_to_library"],
+            },
+            {
                 "id": "fun_asr_realtime",
                 "title": "Fun-ASR realtime",
                 "paths": [

@@ -219,13 +219,13 @@ async def test_one_sentence_update_center_then_auto_complete_follow_up() -> None
         call_order.append("bus")
         return _applied_bus_result(4)
 
-    async def _send_side_effect(_ws, message, *_args, **_kwargs):
+    async def _send_action_side_effect(_ws, _vid, message, *_args, **_kwargs):
         if isinstance(message, dict) and message.get("action") == "auto_complete":
             call_order.append("auto_complete")
         return True
 
     bus_mock = AsyncMock(side_effect=_bus_side_effect)
-    send_mock = AsyncMock(side_effect=_send_side_effect)
+    send_action_mock = AsyncMock(side_effect=_send_action_side_effect)
     fanout_mock = AsyncMock()
 
     try:
@@ -256,8 +256,8 @@ async def test_one_sentence_update_center_then_auto_complete_follow_up() -> None
                 bus_mock,
             ),
             patch(
-                "services.kitty.routing.command_router.safe_websocket_send",
-                send_mock,
+                "services.kitty.routing.command_router.send_kitty_ws_action",
+                send_action_mock,
             ),
             patch(
                 "services.kitty.routing.command_router.fanout_voice_command_from_session",
@@ -287,11 +287,11 @@ async def test_one_sentence_update_center_then_auto_complete_follow_up() -> None
         fanout_mock.assert_awaited()
         auto_sends = [
             call
-            for call in send_mock.await_args_list
-            if len(call.args) >= 2 and isinstance(call.args[1], dict) and call.args[1].get("action") == "auto_complete"
+            for call in send_action_mock.await_args_list
+            if len(call.args) >= 3 and isinstance(call.args[2], dict) and call.args[2].get("action") == "auto_complete"
         ]
         assert auto_sends, "expected auto_complete websocket action"
-        auto_msg = auto_sends[0].args[1]
+        auto_msg = auto_sends[0].args[2]
         assert auto_msg.get("params", {}).get("topic") == "小学新课标"
         assert "auto_complete" in call_order
         assert "bus" in call_order
@@ -783,5 +783,104 @@ async def test_one_sentence_clarify_options_emits_numbered_ack() -> None:
         assert "1)" in ack_text
         assert "2)" in ack_text
         assert voice_sessions[vid].get("pending_clarify_options") is not None
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_one_sentence_multi_add_node_chain_coalesced_acks() -> None:
+    """Multi add_node: sequential bus applies, deferred silent completes, ≤2 chat acks."""
+    ws = MagicMock()
+    vid = create_voice_session(
+        user_id="91",
+        diagram_session_id="scope-os-multi",
+        diagram_type="mind_map",
+    )
+    voice_sessions[vid]["context"] = _mindmap_edit_context()
+    ack_mock = AsyncMock(return_value=True)
+    branch_ac_mock = AsyncMock(return_value=True)
+    emit_branch_mock = AsyncMock(return_value=True)
+    bus_calls: list[str] = []
+
+    async def _bus_side_effect(_ws, _vid, command, *_args, **_kwargs):
+        target = str(command.get("target") or "")
+        bus_calls.append(target)
+        node_id = f"branch-r-1-{len(bus_calls) - 1}"
+        return _applied_bus_result(revision=len(bus_calls) + 1, node_id=node_id)
+
+    bus_mock = AsyncMock(side_effect=_bus_side_effect)
+
+    try:
+        with (
+            patch(
+                "services.kitty.routing.command_router.load_kitty_live_context",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.throttled_refresh_voice_context_from_library",
+                new=AsyncMock(return_value=None),
+            ),
+            patch(
+                "services.kitty.routing.command_router.parse_one_sentence_edit_intent",
+                new=AsyncMock(
+                    return_value={
+                        "action": "update_center",
+                        "target": "学生运动",
+                        "confidence": 0.95,
+                        "follow_up_actions": [
+                            {"action": "add_node", "target": "跑步", "confidence": 0.95},
+                            {"action": "add_node", "target": "跳跃", "confidence": 0.95},
+                            {"action": "add_node", "target": "攀爬", "confidence": 0.95},
+                            {"action": "add_node", "target": "下蹲", "confidence": 0.95},
+                        ],
+                    }
+                ),
+            ),
+            patch(
+                "services.kitty.routing.command_router.apply_kitty_legacy_diagram_command",
+                bus_mock,
+            ),
+            patch(
+                "services.kitty.routing.command_router.emit_user_ack",
+                ack_mock,
+            ),
+            patch(
+                "services.kitty.routing.command_router.emit_auto_complete_branch",
+                emit_branch_mock,
+            ),
+            patch(
+                "services.kitty.routing.command_router.maybe_start_background_branch_autocomplete",
+                branch_ac_mock,
+            ),
+            patch(
+                "services.kitty.routing.command_router.redis_user_cache.get_by_id",
+                new=AsyncMock(return_value=None),
+            ),
+        ):
+            result = await route_voice_command(
+                ws,
+                vid,
+                "主题改成学生运动，并添加跑步、跳跃、攀爬、下蹲四个分支",
+                dict(voice_sessions[vid]["context"]),
+                is_text_message=True,
+                from_voice=False,
+            )
+
+        assert result.outcome == RouteOutcome.EXECUTED
+        assert bus_mock.await_count == 5
+        assert bus_calls == ["学生运动", "跑步", "跳跃", "攀爬", "下蹲"]
+        branch_ac_mock.assert_not_awaited()
+        assert emit_branch_mock.await_count == 4
+        for call in emit_branch_mock.await_args_list:
+            assert call.kwargs.get("silent_ack") is True
+        # One progress + one summary done (no per-step chat spam).
+        assert ack_mock.await_count == 2
+        progress_text = ack_mock.await_args_list[0].args[2]
+        done_text = ack_mock.await_args_list[1].args[2]
+        assert "学生运动" in progress_text
+        assert "跑步" in progress_text
+        assert "主题已改为「学生运动」" in done_text
+        assert "跑步" in done_text
+        assert "开始为它们自动补全" in done_text
     finally:
         voice_sessions.pop(vid, None)

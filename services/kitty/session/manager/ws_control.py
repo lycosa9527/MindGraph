@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from services.diagram_edit.pending import fail_pending_for_scope
 from services.kitty.infra.scope.kitty_ws_scope import normalize_kitty_diagram_session_id
 from services.kitty.session.manager.action_journal import append_journal_simple
 from services.kitty.session.manager.redis_sot import (
@@ -80,6 +81,13 @@ async def detach_lane(
         await sot_clear_mobile_scope(uid, normalized)
     if canvas_owner:
         await sot_clear_canvas_owner_present(uid, normalized)
+        # In-flight verified edits waiting on this owner must not sit until
+        # ack_timeout — complete them as no_owner so mobile can recover.
+        fail_pending_for_scope(
+            normalized,
+            error_code="no_owner",
+            message="Desktop canvas owner disconnected",
+        )
 
     await append_journal_simple(
         kind="detach",

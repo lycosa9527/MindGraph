@@ -36,7 +36,7 @@ export function registerCanvasPageDiagramEventBus(options: {
     () => {
       diagramStore.seedHistoryBaselineIfEmpty()
       panelsStore.clearNodePaletteState({ clearSessions: false })
-      panelsStore.clearConceptParkingLotState({ clearSessions: false })
+      panelsStore.clearAiBrainstormState({ clearSessions: false })
       restoreLearningSheetUiFromDiagram()
     },
     'CanvasPage'
@@ -53,7 +53,7 @@ export function registerCanvasPageDiagramEventBus(options: {
     'diagram:type_changed',
     () => {
       panelsStore.clearNodePaletteState()
-      panelsStore.clearConceptParkingLotState()
+      panelsStore.clearAiBrainstormState()
     },
     'CanvasPage'
   )

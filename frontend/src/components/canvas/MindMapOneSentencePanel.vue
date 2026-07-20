@@ -2,11 +2,11 @@
 /**
  * Mind map one-sentence panel — Kitty chat (text-only).
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { ElAvatar } from 'element-plus'
 
-import { Mic, Send } from '@lucide/vue'
+import { Camera, Mic, Send } from '@lucide/vue'
 
 import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelCloseButton.vue'
 import OneSentenceKittyAvatar from '@/components/canvas/OneSentenceKittyAvatar.vue'
@@ -33,12 +33,37 @@ const {
   kittyAgentState,
   asrListening,
   sendDraft,
+  uploadConversationImage,
   selectClarifyChoice,
   toggleMic,
   bindChatScroll,
 } = useMindMapOneSentenceChat()
 
 const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar))
+const photoInputRef = ref<HTMLInputElement | null>(null)
+const photoUploading = ref(false)
+
+function openPhotoPicker(): void {
+  if (inputDisabled.value || photoUploading.value) {
+    return
+  }
+  photoInputRef.value?.click()
+}
+
+async function onPhotoSelected(ev: Event): Promise<void> {
+  const input = ev.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) {
+    return
+  }
+  photoUploading.value = true
+  try {
+    await uploadConversationImage(file)
+  } finally {
+    photoUploading.value = false
+  }
+}
 
 function setChatScrollEl(el: unknown): void {
   const node = el instanceof HTMLElement ? el : null
@@ -210,12 +235,31 @@ function handleInputKeydown(event: KeyboardEvent): void {
             @keydown="handleInputKeydown"
           />
           <div class="one-sentence-input-actions">
+            <input
+              ref="photoInputRef"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+              class="one-sentence-photo-input"
+              @change="onPhotoSelected"
+            >
+            <button
+              type="button"
+              class="one-sentence-input-icon"
+              :aria-label="t('canvas.mindMapOneSentence.photoButton', 'Upload photo')"
+              :disabled="inputDisabled || photoUploading"
+              @click="openPhotoPicker"
+            >
+              <Camera
+                class="h-[18px] w-[18px]"
+                :stroke-width="2"
+              />
+            </button>
             <button
               type="button"
               class="one-sentence-input-icon"
               :class="{ 'one-sentence-input-icon--recording': asrListening }"
               :aria-label="t('canvas.mindMapOneSentence.micButton')"
-              :disabled="inputDisabled"
+              :disabled="inputDisabled || photoUploading"
               @click="handleMic"
             >
               <Mic
@@ -226,7 +270,7 @@ function handleInputKeydown(event: KeyboardEvent): void {
             <button
               type="button"
               class="one-sentence-input-send"
-              :disabled="sendDisabled"
+              :disabled="sendDisabled || photoUploading"
               :aria-label="t('canvas.mindMapOneSentence.sendButton')"
               @click="handleSend"
             >
@@ -527,6 +571,10 @@ function handleInputKeydown(event: KeyboardEvent): void {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.one-sentence-photo-input {
+  display: none;
 }
 
 .one-sentence-input-icon {

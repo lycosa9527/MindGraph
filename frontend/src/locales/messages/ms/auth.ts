@@ -1,5 +1,5 @@
 /**
- * en UI � auth
+ * ms UI � auth
  */
 
 export default {

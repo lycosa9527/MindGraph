@@ -146,10 +146,15 @@ class KnowledgeConfigMixin:
         """DashScope multimodal model for image OCR / understanding (document ingestion).
 
         Native vision-language model used by the document processor to read image
-        sources and OCR rasterized scanned-PDF pages. Defaults to ``qwen3.7-plus``;
+        sources and OCR rasterized scanned-PDF pages. Defaults to ``qwen3.6-flash``;
         override with ``DASHSCOPE_VISION_MODEL``.
         """
-        return self._get_cached_value("DASHSCOPE_VISION_MODEL", "qwen3.7-plus")
+        return self._get_cached_value("DASHSCOPE_VISION_MODEL", "qwen3.6-flash")
+
+    @property
+    def LIBREOFFICE_PATH(self) -> str:
+        """Optional absolute path to LibreOffice ``soffice`` for legacy .doc/.ppt/.xls."""
+        return self._get_cached_value("LIBREOFFICE_PATH", "")
 
     @property
     def DASHSCOPE_ASR_FILETRANS_MODEL(self) -> str:
@@ -227,7 +232,12 @@ class KnowledgeConfigMixin:
 
     @property
     def COS_DOCUMENTS_PREFIX(self) -> str:
-        """COS key prefix for Document Summary extracted markdown."""
+        """COS key prefix for Document Summary extracted markdown.
+
+        Objects are UUID-keyed (not MG user id), e.g.
+        ``documents/mindgraph/{uuid}.md``, so test/prod can share one bucket.
+        Access is always via ownership-checked APIs — never a public COS URL.
+        """
         return self._get_cached_value("COS_DOCUMENTS_PREFIX", "documents/mindgraph").strip().rstrip("/")
 
     @property

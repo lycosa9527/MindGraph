@@ -84,6 +84,7 @@ from services.infrastructure.sync.cos_mirror_scheduler import (
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from services.monitoring.error_retention_scheduler import start_error_retention_scheduler
+from services.knowledge.doc_summary_temp import start_doc_summary_tmp_cleanup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
 from services.utils.temp_export_cleaner import start_export_cleanup_scheduler
 from utils.auth import AUTH_MODE, warmup_jwt_secret_async
@@ -405,6 +406,14 @@ async def lifespan(fastapi_app: FastAPI):
     except BACKGROUND_INFRA_ERRORS as e:
         if is_main_worker:
             logger.warning("Failed to start export cleanup scheduler: %s", e)
+
+    try:
+        asyncio.create_task(start_doc_summary_tmp_cleanup_scheduler())
+        if is_main_worker:
+            logger.debug("Document Summary temp cleanup scheduler started")
+    except BACKGROUND_INFRA_ERRORS as e:
+        if is_main_worker:
+            logger.warning("Failed to start Document Summary temp cleanup scheduler: %s", e)
 
     try:
         asyncio.create_task(start_error_retention_scheduler(interval_hours=24))

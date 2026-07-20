@@ -149,7 +149,9 @@ export default {
   'mobile.kittyEnd': '结束',
   'mobile.kittyWelcomeLine': '说说你的想法',
   'mobile.kittyWelcomeSub':
-    '语音随问随答，支持拍照识图。请在手机或电脑上打开已保存的图示，便于 Kitty 与 MindGraph 同步。',
+    '可语音或文字提问。请在手机或电脑上打开已保存的图示，便于 Kitty 与 MindGraph 同步。',
+  'mobile.kittyNeedsDesktopOwner':
+    '请在电脑端 MindGraph 打开此导图后再编辑。画布未连接时，手机端仍可对话。',
   'mobile.kittyConnecting': '正在连接…',
   'mobile.kittyInputPlaceholder': '输入消息…',
   'mobile.kittySend': '发送',
@@ -159,7 +161,7 @@ export default {
   'mobile.kittyDiagramCardTapHint': '点击选择导图',
   'mobile.kittyDiagramUpdated': '图示已更新',
   'mobile.kittyConnectFailed': '连接失败，请检查网络后重试',
-  'mobile.kittyDisconnected': '语音连接已断开，点按麦克风重新连接',
+  'mobile.kittyDisconnected': '语音连接已断开，正在重新连接…',
   'mobile.kittyEnableServerHint': '请在服务端 .env 中设置 FEATURE_KITTY_AGENT=True 并重启 API。',
   'mobile.kittyServerDisabledBanner':
     '当前环境未开启 Kitty 语音后端，拍照与语音不可用。请在 server .env 中启用 FEATURE_KITTY_AGENT 并重启。',
@@ -203,7 +205,19 @@ export default {
   'mobile.kittyClickWheelNext': '下一个节点',
   'mobile.kittyClickWheelSelect': '选中当前节点',
   'mobile.kittyLlmRowAria': '选择 AI 模型',
-  'mobile.kittyPhotoOcrComingSoon': '拍照识图即将推出。请先按住说话或输入文字来编辑图示。',
+  'mobile.kittyPhotoNeedsDiagram': '请先打开或选择已保存的图示，再拍照提取文字。',
+  'mobile.kittyPhotoInvalidType': '请选择 JPG、PNG 或 WebP 图片。',
+  'mobile.kittyPhotoTooLarge': '图片过大，最大 10MB。',
+  'mobile.kittyPhotoProgressDetecting': '正在处理照片…',
+  'mobile.kittyPhotoUserBubble': '📷 照片',
+  'mobile.kittyPhotoUntitledMap': '思维导图',
+  'mobile.kittyPhotoHanddrawnReply':
+    '检测到手绘思维导图「{topic}」。已重建到画布，结构大纲已保存到文档总结。',
+  'mobile.kittyPhotoHanddrawnLocalReply':
+    '检测到手绘思维导图「{topic}」。已在本机重建，结构大纲已保存到文档总结。图库同步未完成，若画布未更新请重新打开图示。',
+  'mobile.kittyPhotoOcrReply':
+    '已识别图片文字：\n{excerpt}\n\n全文已存入文档总结。',
+  'mobile.kittyPhotoUploadFailed': '照片上传失败。',
   'mobile.kittyPickDiagramToEdit': '请先打开或选择一张已保存的图示，再按住说话或输入文字进行编辑。',
   'mobile.kittyHubSyncFailed': '无法将图示同步到 Kitty，请检查网络后重试。',
   'mobile.kittyDesktopDiagramFollowed': '已切换为电脑端打开的图示',

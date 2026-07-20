@@ -11,7 +11,10 @@ from fastapi import WebSocket
 
 from models.domain.messages import Language
 
-from services.diagram_edit.transport.kitty_ws import OUTBOUND_EXTRAS_KEY
+from services.diagram_edit.transport.kitty_ws import (
+    MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY,
+    OUTBOUND_EXTRAS_KEY,
+)
 from services.diagram_edit.pending import MutationAckPayload, complete_pending
 from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
     KITTY_DIAGRAM_CATALOG_PROMPT,
@@ -44,6 +47,25 @@ def _stamp_request_id(payload: Dict[str, Any], request_id: str | None) -> Dict[s
     if request_id:
         payload["request_id"] = request_id
     return payload
+
+
+def _chat_only_diagram_update(
+    outbound: Dict[str, Any],
+    *,
+    mutation_id: str,
+    request_id: str | None,
+) -> Dict[str, Any]:
+    """Mobile ingress payload: chat summary only when present (multi-step may omit)."""
+    payload: Dict[str, Any] = {
+        "type": "diagram_update",
+        "action": outbound.get("action"),
+        "updates": {},
+        "mutation_id": mutation_id,
+    }
+    summary = outbound.get("user_summary")
+    if isinstance(summary, str) and summary.strip():
+        payload["user_summary"] = summary.strip()
+    return _stamp_request_id(payload, request_id)
 
 
 async def _journal_mutation_out(
@@ -283,7 +305,11 @@ async def send_kitty_diagram_update(
         extras_raw = sess.get(OUTBOUND_EXTRAS_KEY)
         if isinstance(extras_raw, dict):
             outbound = {**outbound, **extras_raw}
-    if outbound.get("type") == "diagram_update" and not outbound.get("user_summary"):
+    suppress_chat = isinstance(sess, dict) and sess.get(MULTI_STEP_SUPPRESS_DIAGRAM_CHAT_KEY) is True
+    if outbound.get("type") == "diagram_update" and suppress_chat:
+        # Multi-step chain owns chat via coalesced progress/done acks.
+        outbound.pop("user_summary", None)
+    elif outbound.get("type") == "diagram_update" and not outbound.get("user_summary"):
         ctx = sess.get("context") if isinstance(sess, dict) else {}
         if not isinstance(ctx, dict):
             ctx = {}
@@ -335,15 +361,10 @@ async def send_kitty_diagram_update(
             owner_ws = find_canvas_owner_websocket(uid, scope_key)
             if owner_ws is not None and owner_ws is not websocket:
                 owner_sent = await safe_websocket_send(owner_ws, outbound)
-                chat_only = _stamp_request_id(
-                    {
-                        "type": "diagram_update",
-                        "action": outbound.get("action"),
-                        "updates": {},
-                        "user_summary": outbound.get("user_summary"),
-                        "mutation_id": mid,
-                    },
-                    request_id,
+                chat_only = _chat_only_diagram_update(
+                    outbound,
+                    mutation_id=mid,
+                    request_id=request_id,
                 )
                 ingress_sent = await safe_websocket_send(websocket, chat_only)
                 sent = owner_sent or ingress_sent
@@ -357,15 +378,10 @@ async def send_kitty_diagram_update(
             elif owner_ws is None and not is_canvas_owner_session(sess):
                 # No local owner WS — chat on mobile; Redis SSE carries verified apply
                 # only when a desktop owner lease exists (cross-worker).
-                chat_only = _stamp_request_id(
-                    {
-                        "type": "diagram_update",
-                        "action": outbound.get("action"),
-                        "updates": {},
-                        "user_summary": outbound.get("user_summary"),
-                        "mutation_id": mid,
-                    },
-                    request_id,
+                chat_only = _chat_only_diagram_update(
+                    outbound,
+                    mutation_id=mid,
+                    request_id=request_id,
                 )
                 align = await require_aligned_for_verified_edit(
                     uid,

@@ -10,11 +10,16 @@ import { CopyDocument, Edit, RefreshRight, Share } from '@element-plus/icons-vue
 import { ThumbsDown, ThumbsUp } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import {
+  confirmCanvasLibraryDiagramOpen,
+  decideCanvasLibraryDiagramOpen,
+} from '@/composables/canvasPage/canvasLibraryDiagramOpen'
 import { useRenderedMarkdown } from '@/composables/core/useRenderedMarkdown'
 import { useMindmateDiagramPreviewImage } from '@/composables/mindmate/useMindmateDiagramPreviewImage'
 import type { FeedbackRating, MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useAuthStore } from '@/stores/auth'
 import type { ModelLoadPhase } from '@/stores/llmResults'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { authFetch } from '@/utils/api'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
 import { extractMindmatePreviewCacheKey } from '@/utils/mindmateDiagramPreviewCache'
@@ -56,6 +61,7 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
+const savedDiagramsStore = useSavedDiagramsStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -222,6 +228,31 @@ async function openInCanvas() {
     await router.push({ path: '/auth', query: { redirect: route.fullPath } })
     return
   }
+
+  const currentId = savedDiagramsStore.activeDiagramId?.trim() ?? ''
+  const decision = decideCanvasLibraryDiagramOpen(route.path, currentId, diagramId)
+  if (decision === 'noop') {
+    return
+  }
+  if (decision === 'confirm') {
+    const targetTitle =
+      savedDiagramsStore.diagrams.find((row) => row.id === diagramId)?.title?.trim() || diagramId
+    const currentTitle =
+      savedDiagramsStore.diagrams.find((row) => row.id === currentId)?.title?.trim() || currentId
+    const accepted = await confirmCanvasLibraryDiagramOpen({
+      title: t('mindmate.openCanvasSwitchTitle'),
+      message: t('mindmate.openCanvasSwitchBody', {
+        target: targetTitle,
+        current: currentTitle,
+      }),
+      confirmButtonText: t('mindmate.openCanvasSwitchOk'),
+      cancelButtonText: t('common.cancel'),
+    })
+    if (!accepted) {
+      return
+    }
+  }
+
   openingCanvas.value = true
   try {
     const canvasPath = canvasEditorPathForRoute(route.path)

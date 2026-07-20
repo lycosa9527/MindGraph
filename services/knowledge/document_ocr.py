@@ -1,7 +1,7 @@
 """OCR helpers: DashScope vision model with a Tesseract fallback.
 
 Shared by the document processor for image-file OCR and scanned-PDF page OCR.
-Uses the configurable ``DASHSCOPE_VISION_MODEL`` (default ``qwen3.7-plus``) via
+Uses the configurable ``DASHSCOPE_VISION_MODEL`` (default ``qwen3.6-flash``) via
 the DashScope multimodal-generation endpoint; falls back to Tesseract when the
 provider call fails. Rasterizes scanned PDFs with PyMuPDF (fitz).
 
@@ -81,7 +81,7 @@ else:
 def dashscope_vision_ocr(image_bytes: bytes, mime_type: str = "image/png") -> str:
     """Run OCR on raw image bytes via the DashScope multimodal endpoint.
 
-    Uses the configurable ``DASHSCOPE_VISION_MODEL`` (default ``qwen3.7-plus``).
+    Uses the configurable ``DASHSCOPE_VISION_MODEL`` (default ``qwen3.6-flash``).
     Returns the extracted text (possibly empty); raises on transport errors.
     """
     if not _httpx_available or not _config_available or _httpx_mod is None or _settings_config is None:
@@ -123,7 +123,7 @@ def dashscope_vision_ocr(image_bytes: bytes, mime_type: str = "image/png") -> st
     return _parse_vision_ocr_text(result)
 
 
-def _parse_vision_ocr_text(result: Dict[str, Any]) -> str:
+def parse_dashscope_multimodal_text(result: Dict[str, Any]) -> str:
     """Pull text out of a DashScope multimodal-generation response."""
     output = result.get("output") if isinstance(result, dict) else None
     choices = output.get("choices") if isinstance(output, dict) else None
@@ -146,6 +146,11 @@ def _parse_vision_ocr_text(result: Dict[str, Any]) -> str:
     return str(content).strip() if content else ""
 
 
+def _parse_vision_ocr_text(result: Dict[str, Any]) -> str:
+    """Backward-compatible alias for OCR helpers in this module."""
+    return parse_dashscope_multimodal_text(result)
+
+
 def ocr_image_bytes(png_bytes: bytes) -> str:
     """OCR raw PNG bytes via DashScope, falling back to Tesseract; never raises."""
     try:
@@ -159,6 +164,33 @@ def ocr_image_bytes(png_bytes: bytes) -> str:
         except FILE_IO_ERRORS as exc:
             logger.warning("[DocumentOCR] Tesseract page OCR failed: %s", exc)
     return ""
+
+
+def ocr_image_file(file_path: str, mime_type: str = "image/jpeg") -> str:
+    """OCR an image file via DashScope, falling back to Tesseract.
+
+    Raises ``ValueError`` when both providers yield no text.
+    """
+    resolved_mime = mime_type if mime_type.startswith("image/") else "image/jpeg"
+    with open(file_path, "rb") as handle:
+        image_data = handle.read()
+    try:
+        text = dashscope_vision_ocr(image_data, resolved_mime)
+        if text and text.strip():
+            return text.strip()
+    except OCR_CALL_ERRORS as exc:
+        logger.warning("[DocumentOCR] DashScope image OCR failed: %s", exc)
+
+    if not (_tesseract_available and _pil_image_cls is not None and _pytesseract_mod is not None):
+        raise ValueError("OCR failed: DashScope unavailable and Tesseract not installed")
+    try:
+        image = _pil_image_cls.open(file_path)
+        text = _pytesseract_mod.image_to_string(image, lang="chi_sim+eng")
+    except FILE_IO_ERRORS as exc:
+        raise ValueError(f"OCR failed with both DashScope and Tesseract: {exc}") from exc
+    if text and str(text).strip():
+        return str(text).strip()
+    raise ValueError("No text extracted from OCR response")
 
 
 def ocr_pdf_pages(file_path: str, max_pages: int, dpi: int) -> Tuple[str, List[Dict[str, Any]]]:

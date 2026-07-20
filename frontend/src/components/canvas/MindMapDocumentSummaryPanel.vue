@@ -20,6 +20,7 @@ import {
   Upload,
   X,
 } from '@lucide/vue'
+import { ElProgress } from 'element-plus'
 
 import { useLanguage, useNotifications } from '@/composables'
 import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelCloseButton.vue'
@@ -32,8 +33,13 @@ import { useFileCenterActivePackage } from '@/composables/fileCenter/useFileCent
 import { useChatHandoff } from '@/composables/mindMap/useChatHandoff'
 import { useMindMapDocumentSummary } from '@/composables/mindMap/useMindMapDocumentSummary'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { DOC_SUMMARY_MAX_INPUT_CHARS } from '@/config/docSummaryApi'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useDiagramStore } from '@/stores'
+import {
+  docSummarySourceLabel,
+  toDocSummaryMarkdownName,
+} from '@/utils/docSummaryMarkdownName'
 
 type SummaryTab = 'file' | 'chat' | 'document' | 'image' | 'web'
 
@@ -47,7 +53,12 @@ const diagramStore = useDiagramStore()
 const { featureKnowledgeSpace } = useFeatureFlags()
 const useMindMapV2 = useMindMapV2Chrome()
 
-const featureEnabled = computed(() => featureKnowledgeSpace.value && useMindMapV2.value)
+// Lite Document Summary is split from Knowledge Space; only need mind-map v2.
+const featureEnabled = computed(() =>
+  DOC_SUMMARY_LITE_UI
+    ? useMindMapV2.value
+    : featureKnowledgeSpace.value && useMindMapV2.value
+)
 
 const {
   linkedPackage,
@@ -58,15 +69,23 @@ const {
   sessionStarting,
 } = useFileCenterActivePackage(featureEnabled)
 
-const detailQuery = usePackageDetail(activePackageId, { enabled: featureEnabled })
-const { uploadFile, ingestText, ingestWebUrl, deleteSource, updatePackage } = useFileCenterMutations()
+const detailQuery = usePackageDetail(activePackageId, {
+  enabled: featureEnabled,
+  apiMode: 'doc_summary',
+})
+const { uploadFile, ingestText, ingestWebUrl, deleteSource, updatePackage } = useFileCenterMutations({
+  apiMode: 'doc_summary',
+})
 const {
   isGenerating,
   isIndexingCorpus,
   isAdding,
   generateFromPackage,
+  rebuildFromImageFile,
+  prepareImageUploadFile,
   validateUploadFile,
   isImageUploadFile,
+  extractStageLabel,
   DOC_SUMMARY_UPLOAD_ACCEPT,
   MAX_CONTENT_LENGTH,
 } = useMindMapDocumentSummary()
@@ -116,12 +135,91 @@ const isIndexing = computed(
     isIndexingCorpus.value ||
     documents.value.some((doc) => doc.status === 'processing')
 )
+/** Lite mode keeps a single active source per diagram session. */
+const activeSource = computed(() => documents.value[0] ?? null)
+const hasActiveSource = computed(() => activeSource.value !== null)
+const isSourceProcessing = computed(
+  () =>
+    activeSource.value?.status === 'processing' || activeSource.value?.status === 'pending'
+)
+const isSourceReady = computed(() => activeSource.value?.status === 'completed')
+const isSourceFailed = computed(() => activeSource.value?.status === 'failed')
+const extractPercent = computed(() => {
+  const doc = activeSource.value
+  if (!doc || !isSourceProcessing.value) return 0
+  return Math.max(0, Math.min(100, doc.processing_progress_percent ?? 0))
+})
+const extractStageText = computed(() => {
+  const doc = activeSource.value
+  if (!doc || !isSourceProcessing.value) return ''
+  return extractStageLabel(doc.processing_progress)
+})
+/** User-facing markdown name, e.g. report.pptx → report.md */
+const markdownDisplayName = computed(() =>
+  toDocSummaryMarkdownName(activeSource.value?.file_name)
+)
+const originalSourceLabel = computed(() =>
+  docSummarySourceLabel(activeSource.value?.file_name)
+)
+const showOriginalSource = computed(() => {
+  const original = originalSourceLabel.value
+  if (!original) return false
+  return original.toLowerCase() !== markdownDisplayName.value.toLowerCase()
+})
+const isDeletingSource = computed(() => deleteSource.isPending.value)
+const sourceExceedsModelInput = computed(() => {
+  const chars = activeSource.value?.extract_char_count
+  return typeof chars === 'number' && chars > DOC_SUMMARY_MAX_INPUT_CHARS
+})
+
 const canGenerate = computed(
   () =>
     !isGenerating.value &&
     !collabActive.value &&
-    completedCount.value > 0 &&
+    !isSourceProcessing.value &&
+    isSourceReady.value &&
+    !sourceExceedsModelInput.value &&
     activePackageId.value !== null
+)
+
+/** Track async extract so we toast once when it finishes (not on upload accept). */
+const watchedExtractDocId = ref<number | null>(null)
+
+watch(
+  () => {
+    const doc = activeSource.value
+    if (!doc || !docSummaryLiteUi) return null
+    return { id: doc.id, status: doc.status, error: doc.error_message ?? null }
+  },
+  (next, prev) => {
+    if (!next) {
+      watchedExtractDocId.value = null
+      return
+    }
+    if (next.status === 'processing' || next.status === 'pending') {
+      watchedExtractDocId.value = next.id
+      return
+    }
+    if (watchedExtractDocId.value !== next.id) return
+    if (prev && (prev.status === 'processing' || prev.status === 'pending')) {
+      if (next.status === 'completed') {
+        const chars = activeSource.value?.extract_char_count
+        if (typeof chars === 'number' && chars > DOC_SUMMARY_MAX_INPUT_CHARS) {
+          notify.error(t('canvas.mindMapDocumentSummary.extractTooLongForModel'))
+        } else {
+          notify.success(t('canvas.mindMapDocumentSummary.ingestSuccessLite'))
+        }
+      } else if (next.status === 'failed') {
+        const err = next.error || ''
+        if (err.includes('model input limit')) {
+          notify.error(t('canvas.mindMapDocumentSummary.extractTooLongForModel'))
+        } else {
+          notify.error(err || t('canvas.mindMapDocumentSummary.extractFailed'))
+        }
+      }
+      watchedExtractDocId.value = null
+    }
+  }
 )
 
 const pairingMinutes = computed(() => Math.max(1, Math.round(expiresInSeconds.value / 60)))
@@ -215,7 +313,15 @@ async function handleDeleteSource(documentId: number): Promise<void> {
   }
   const id = activePackageId.value
   if (id === null) return
-  await deleteSource.mutateAsync({ packageId: id, documentId })
+  try {
+    await deleteSource.mutateAsync({ packageId: id, documentId })
+    watchedExtractDocId.value = null
+    clearUploadedFile()
+    pastedText.value = ''
+    notify.success(t('canvas.mindMapDocumentSummary.sourceDeleted'))
+  } catch (error) {
+    console.error('[DocumentSummary] delete source failed:', error)
+  }
 }
 
 function openFilePicker(): void {
@@ -285,28 +391,57 @@ async function handleAddToCorpus(): Promise<void> {
 
     if (docSummaryLiteUi && activeTab.value === 'file') {
       if (uploadedFile.value) {
-        await uploadFile.mutateAsync({ packageId: id, file: uploadedFile.value })
+        const rawFile = uploadedFile.value
+        const tryVision = isImageUploadFile(rawFile)
+        const fileForVision = tryVision ? await prepareImageUploadFile(rawFile) : rawFile
+        const uploaded = await uploadFile.mutateAsync({
+          packageId: id,
+          file: fileForVision,
+        })
         clearUploadedFile()
-      } else {
-        const content = pastedText.value.trim().slice(0, MAX_CONTENT_LENGTH)
-        if (!content) {
-          notify.warning(t('canvas.mindMapDocumentSummary.emptyDocument'))
+        if (tryVision) {
+          const vision = await rebuildFromImageFile(fileForVision)
+          if (vision.applied) {
+            return
+          }
+        }
+        // Async extract — success toast fires when status becomes completed.
+        if (uploaded.status === 'processing' || uploaded.status === 'pending') {
+          watchedExtractDocId.value = uploaded.id
+          notify.info(t('canvas.mindMapDocumentSummary.extractStarted'))
           return
         }
-        await ingestText.mutateAsync({
-          packageId: id,
-          payload: { content, title: uploadedFileName.value.trim() || undefined },
-        })
-        pastedText.value = ''
+        notify.success(t('canvas.mindMapDocumentSummary.ingestSuccessLite'))
+        return
       }
+      const content = pastedText.value.trim()
+      if (!content) {
+        notify.warning(t('canvas.mindMapDocumentSummary.emptyDocument'))
+        return
+      }
+      if (content.length > MAX_CONTENT_LENGTH) {
+        notify.warning(t('canvas.mindMapDocumentSummary.pasteTooLong'))
+        return
+      }
+      await ingestText.mutateAsync({
+        packageId: id,
+        payload: { content, title: uploadedFileName.value.trim() || undefined },
+      })
+      pastedText.value = ''
+      notify.success(t('canvas.mindMapDocumentSummary.ingestSuccessLite'))
+      return
     } else if (activeTab.value === 'document') {
       if (uploadedFile.value) {
         await uploadFile.mutateAsync({ packageId: id, file: uploadedFile.value })
         clearUploadedFile()
       } else {
-        const content = pastedText.value.trim().slice(0, MAX_CONTENT_LENGTH)
+        const content = pastedText.value.trim()
         if (!content) {
           notify.warning(t('canvas.mindMapDocumentSummary.emptyDocument'))
+          return
+        }
+        if (content.length > MAX_CONTENT_LENGTH) {
+          notify.warning(t('canvas.mindMapDocumentSummary.pasteTooLong'))
           return
         }
         await ingestText.mutateAsync({
@@ -316,8 +451,13 @@ async function handleAddToCorpus(): Promise<void> {
         pastedText.value = ''
       }
     } else if (activeTab.value === 'image' && uploadedFile.value) {
-      await uploadFile.mutateAsync({ packageId: id, file: uploadedFile.value })
+      const fileForVision = await prepareImageUploadFile(uploadedFile.value)
+      await uploadFile.mutateAsync({ packageId: id, file: fileForVision })
       clearUploadedFile()
+      const vision = await rebuildFromImageFile(fileForVision)
+      if (vision.applied) {
+        return
+      }
     } else if (activeTab.value === 'web') {
       const url = webUrl.value.trim()
       if (!url) {
@@ -329,13 +469,7 @@ async function handleAddToCorpus(): Promise<void> {
     } else {
       return
     }
-    notify.success(
-      t(
-        docSummaryLiteUi
-          ? 'canvas.mindMapDocumentSummary.ingestSuccessLite'
-          : 'canvas.mindMapDocumentSummary.ingestSuccess'
-      )
-    )
+    notify.success(t('canvas.mindMapDocumentSummary.ingestSuccess'))
   } catch (error) {
     console.error('[DocumentSummary] ingest failed:', error)
   } finally {
@@ -356,6 +490,7 @@ const canAdd = computed(() => {
   if (collabActive.value || isAdding.value || sessionStarting.value) return false
   if (activeTab.value === 'chat') return false
   if (docSummaryLiteUi && activeTab.value === 'file') {
+    if (hasActiveSource.value) return false
     return uploadedFile.value !== null || pastedText.value.trim().length > 0
   }
   if (activeTab.value === 'document') {
@@ -373,11 +508,11 @@ const canAdd = computed(() => {
 
 <template>
   <aside
-    class="mind-map-document-summary-panel pointer-events-auto absolute inset-y-3 left-3 z-40 flex w-80 flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm"
+    class="mind-map-document-summary-panel pointer-events-auto absolute inset-y-3 left-3 z-40 flex w-80 flex-col overflow-hidden rounded-2xl border border-[var(--swiss-border,#e7e5e4)] bg-[var(--swiss-surface,#ffffff)] shadow-sm"
     :aria-label="t('canvas.mindMapSideToolbar.documentSummary')"
   >
-    <header class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-3 py-3">
-      <h3 class="truncate text-sm font-semibold text-slate-800">
+    <header class="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--swiss-border,#e7e5e4)] px-3 py-3">
+      <h3 class="truncate text-sm font-semibold tracking-tight text-[var(--swiss-ink,#1c1917)]">
         {{ t('canvas.mindMapSideToolbar.documentSummary') }}
       </h3>
       <MindMapSidePanelCloseButton @close="handleClose" />
@@ -522,16 +657,76 @@ const canAdd = computed(() => {
         </div>
       </div>
 
+      <!-- Lite: single source card (md) with delete — replaces upload zone -->
       <div
-        v-else-if="completedCount > 0 && documents[0]"
-        class="mx-3 mt-2 shrink-0 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2"
+        v-if="docSummaryLiteUi && hasActiveSource && activeSource"
+        class="doc-summary-source-card mx-3 mt-3 shrink-0"
+        :class="{
+          'doc-summary-source-card--processing': isSourceProcessing,
+          'doc-summary-source-card--ready': isSourceReady,
+          'doc-summary-source-card--failed': isSourceFailed,
+        }"
       >
-        <p class="truncate text-xs font-medium text-emerald-900">
-          {{ documents[0].file_name }}
-        </p>
-        <p class="mt-0.5 text-[10px] text-emerald-700">
-          {{ t('canvas.mindMapDocumentSummary.statusReady') }}
-        </p>
+        <div class="flex items-start gap-2.5">
+          <div class="doc-summary-source-icon shrink-0">
+            <span class="doc-summary-md-badge">.md</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p
+              class="doc-summary-md-name truncate"
+              :title="markdownDisplayName"
+            >
+              {{ markdownDisplayName }}
+            </p>
+            <p
+              v-if="showOriginalSource"
+              class="mt-0.5 truncate text-[11px] text-[var(--swiss-muted,#78716c)]"
+              :title="originalSourceLabel || undefined"
+            >
+              {{ t('canvas.mindMapDocumentSummary.fromSource', { name: originalSourceLabel }) }}
+            </p>
+            <p
+              v-if="isSourceProcessing"
+              class="mt-1.5 text-[11px] text-[var(--swiss-geek-cyan-ui,#0e7490)]"
+            >
+              {{ extractStageText }}
+              <span class="tabular-nums"> · {{ extractPercent }}%</span>
+            </p>
+            <p
+              v-else-if="isSourceReady"
+              class="mt-1.5 text-[11px] text-[var(--swiss-geek-teal-ui,#0f766e)]"
+            >
+              {{ t('canvas.mindMapDocumentSummary.statusReady') }}
+            </p>
+            <p
+              v-else-if="isSourceFailed"
+              class="mt-1.5 text-[11px] text-[var(--swiss-geek-red-ui,#e30613)]"
+            >
+              {{ activeSource.error_message || t('canvas.mindMapDocumentSummary.statusFailed') }}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="doc-summary-delete-btn shrink-0"
+            :disabled="isDeletingSource || collabActive"
+            :aria-label="t('common.delete')"
+            :title="t('canvas.mindMapDocumentSummary.deleteSource')"
+            @click="handleDeleteSource(activeSource.id)"
+          >
+            <Trash2
+              class="h-3.5 w-3.5"
+              :stroke-width="2"
+            />
+          </button>
+        </div>
+        <ElProgress
+          v-if="isSourceProcessing"
+          class="doc-summary-progress mt-2.5"
+          :percentage="extractPercent"
+          :stroke-width="3"
+          :show-text="false"
+          color="var(--swiss-geek-cyan-ui, #0e7490)"
+        />
       </div>
 
       <div class="doc-summary-tab-strip mx-3 mt-3 shrink-0">
@@ -548,9 +743,9 @@ const canAdd = computed(() => {
       </div>
 
       <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-3">
-        <!-- Lite: unified file upload -->
+        <!-- Lite: upload zone only when no source yet -->
         <div
-          v-if="docSummaryLiteUi && activeTab === 'file'"
+          v-if="docSummaryLiteUi && activeTab === 'file' && !hasActiveSource"
           class="flex flex-col gap-3"
         >
           <button
@@ -560,25 +755,25 @@ const canAdd = computed(() => {
             @click="openFilePicker"
           >
             <Upload
-              class="mb-2 h-5 w-5 text-slate-400"
+              class="mb-2 h-5 w-5 text-[var(--swiss-subtle,#a8a29e)]"
               :stroke-width="1.75"
             />
-            <span class="text-sm font-medium text-slate-700">
+            <span class="text-sm font-medium text-[var(--swiss-ink,#1c1917)]">
               {{ t('canvas.mindMapDocumentSummary.uploadFileHint') }}
             </span>
-            <span class="mt-1 text-[11px] text-slate-400">
+            <span class="mt-1 text-[11px] leading-relaxed text-[var(--swiss-muted,#78716c)]">
               {{ t('canvas.mindMapDocumentSummary.uploadFileSubhint') }}
             </span>
             <span
               v-if="uploadedFileName"
-              class="mt-2 max-w-full truncate text-xs font-medium text-blue-600"
+              class="mt-2 max-w-full truncate text-xs font-medium text-[var(--swiss-geek-cyan-ui,#0e7490)]"
             >
               {{ uploadedFileName }}
             </span>
           </button>
           <div
             v-else
-            class="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+            class="relative overflow-hidden rounded-xl border border-[var(--swiss-border,#e7e5e4)] bg-[var(--swiss-inset,#fafaf9)]"
           >
             <img
               :src="filePreviewUrl"
@@ -587,7 +782,7 @@ const canAdd = computed(() => {
             />
             <button
               type="button"
-              class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-slate-500 shadow-sm"
+              class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[var(--swiss-muted,#78716c)] shadow-sm"
               @click="clearUploadedFile"
             >
               <X
@@ -605,10 +800,23 @@ const canAdd = computed(() => {
           />
           <textarea
             v-model="pastedText"
-            class="doc-summary-textarea w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            class="doc-summary-textarea w-full resize-none rounded-xl border border-[var(--swiss-border,#e7e5e4)] bg-white px-3 py-2.5 text-sm leading-relaxed text-[var(--swiss-ink,#1c1917)] placeholder:text-[var(--swiss-subtle,#a8a29e)] focus:border-[var(--swiss-border-strong,#d6d3d1)] focus:outline-none focus:ring-2 focus:ring-[var(--swiss-geek-cyan-soft,#ecfeff)]"
             :placeholder="t('canvas.mindMapDocumentSummary.pastePlaceholder')"
             rows="4"
           />
+        </div>
+
+        <div
+          v-else-if="docSummaryLiteUi && activeTab === 'file' && hasActiveSource"
+          class="flex flex-1 flex-col justify-center px-1 py-6 text-center"
+        >
+          <p class="text-[11px] leading-relaxed text-[var(--swiss-muted,#78716c)]">
+            {{
+              isSourceFailed
+                ? t('canvas.mindMapDocumentSummary.deleteToRetry')
+                : t('canvas.mindMapDocumentSummary.sourceBoundHint')
+            }}
+          </p>
         </div>
 
         <!-- Document (legacy) -->
@@ -850,7 +1058,7 @@ const canAdd = computed(() => {
         </div>
 
         <button
-          v-if="activeTab !== 'chat'"
+          v-if="activeTab !== 'chat' && !(docSummaryLiteUi && hasActiveSource && activeTab === 'file')"
           type="button"
           class="doc-summary-add-btn mt-3 w-full shrink-0"
           :disabled="!canAdd"
@@ -866,10 +1074,10 @@ const canAdd = computed(() => {
         </button>
       </div>
 
-      <div class="shrink-0 border-t border-slate-100 px-3 py-3">
+      <div class="shrink-0 border-t border-[var(--swiss-border,#e7e5e4)] px-3 py-3">
         <button
           type="button"
-          class="one-sentence-generate-btn w-full"
+          class="doc-summary-generate-btn w-full"
           :disabled="!canGenerate"
           :title="collabActive ? t('canvas.mindMapDocumentSummary.collabDisabled') : undefined"
           @click="handleGenerate"
@@ -894,13 +1102,95 @@ const canAdd = computed(() => {
   max-height: calc(100% - 1.5rem);
 }
 
+.doc-summary-source-card {
+  padding: 12px 12px 11px;
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  border-radius: 12px;
+  background: var(--swiss-inset, #fafaf9);
+}
+
+.doc-summary-source-card--processing {
+  border-color: color-mix(in srgb, var(--swiss-geek-cyan-ui, #0e7490) 28%, var(--swiss-border, #e7e5e4));
+  background: var(--swiss-geek-cyan-soft, #ecfeff);
+}
+
+.doc-summary-source-card--ready {
+  border-color: color-mix(in srgb, var(--swiss-geek-teal-ui, #0f766e) 24%, var(--swiss-border, #e7e5e4));
+  background: var(--swiss-geek-teal-soft, #f0fdfa);
+}
+
+.doc-summary-source-card--failed {
+  border-color: color-mix(in srgb, var(--swiss-geek-red-ui, #e30613) 24%, var(--swiss-border, #e7e5e4));
+  background: var(--swiss-geek-red-soft, #fef2f2);
+}
+
+.doc-summary-source-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  border-radius: 8px;
+  background: var(--swiss-surface, #ffffff);
+  color: var(--swiss-body, #44403c);
+}
+
+.doc-summary-md-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--swiss-geek-teal-ui, #0f766e);
+}
+
+.doc-summary-md-name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--swiss-ink, #1c1917);
+}
+
+.doc-summary-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--swiss-subtle, #a8a29e);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.doc-summary-delete-btn:hover:not(:disabled) {
+  color: var(--swiss-geek-red-ui, #e30613);
+  background: var(--swiss-geek-red-soft, #fef2f2);
+  border-color: color-mix(in srgb, var(--swiss-geek-red-ui, #e30613) 18%, transparent);
+}
+
+.doc-summary-delete-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.doc-summary-progress :deep(.el-progress-bar__outer) {
+  background: color-mix(in srgb, var(--swiss-geek-cyan-ui, #0e7490) 12%, white);
+}
+
 .doc-summary-tab-strip {
   display: flex;
   gap: 4px;
-  padding: 4px;
+  padding: 3px;
   overflow-x: auto;
-  border-radius: 12px;
-  background: rgb(241 245 249);
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  border-radius: 10px;
+  background: var(--swiss-inset, #fafaf9);
   scrollbar-width: thin;
 }
 
@@ -909,23 +1199,23 @@ const canAdd = computed(() => {
   min-width: 0;
   padding: 7px 8px;
   border: none;
-  border-radius: 9px;
+  border-radius: 7px;
   background: transparent;
   font-size: 11px;
-  font-weight: 500;
-  color: rgb(100 116 139);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--swiss-muted, #78716c);
   cursor: pointer;
   white-space: nowrap;
   transition:
     background 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
+    color 0.15s ease;
 }
 
 .doc-summary-tab--active {
-  background: white;
-  color: rgb(30 41 59);
-  box-shadow: 0 1px 3px rgb(15 23 42 / 0.08);
+  background: var(--swiss-surface, #ffffff);
+  color: var(--swiss-ink, #1c1917);
+  box-shadow: 0 1px 2px rgb(28 25 23 / 0.06);
 }
 
 .doc-summary-upload-box {
@@ -936,9 +1226,9 @@ const canAdd = computed(() => {
   width: 100%;
   min-height: 100px;
   padding: 14px;
-  border: 1.5px dashed rgb(203 213 225);
-  border-radius: 14px;
-  background: rgb(248 250 252);
+  border: 1px dashed var(--swiss-border-strong, #d6d3d1);
+  border-radius: 12px;
+  background: var(--swiss-inset, #fafaf9);
   text-align: center;
   cursor: pointer;
   transition:
@@ -947,8 +1237,8 @@ const canAdd = computed(() => {
 }
 
 .doc-summary-upload-box:hover {
-  border-color: rgb(147 197 253);
-  background: rgb(239 246 255);
+  border-color: var(--swiss-geek-cyan-ui, #0e7490);
+  background: var(--swiss-geek-cyan-soft, #ecfeff);
 }
 
 .doc-summary-textarea {
@@ -957,12 +1247,12 @@ const canAdd = computed(() => {
 
 .doc-summary-add-btn {
   padding: 9px 14px;
-  border: 1px solid rgb(203 213 225);
-  border-radius: 12px;
-  background: white;
+  border: 1px solid var(--swiss-border-strong, #d6d3d1);
+  border-radius: 10px;
+  background: var(--swiss-surface, #ffffff);
   font-size: 13px;
   font-weight: 500;
-  color: rgb(51 65 85);
+  color: var(--swiss-body, #44403c);
   cursor: pointer;
   transition:
     border-color 0.15s ease,
@@ -970,8 +1260,8 @@ const canAdd = computed(() => {
 }
 
 .doc-summary-add-btn:hover:not(:disabled) {
-  border-color: rgb(147 197 253);
-  background: rgb(248 250 252);
+  border-color: var(--swiss-body, #44403c);
+  background: var(--swiss-hover, #f5f5f4);
 }
 
 .doc-summary-add-btn:disabled {
@@ -979,34 +1269,33 @@ const canAdd = computed(() => {
   cursor: not-allowed;
 }
 
-.one-sentence-generate-btn {
+.doc-summary-generate-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 10px 16px;
-  border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgb(124 58 237) 0%, rgb(79 70 229) 100%);
-  font-size: 14px;
-  font-weight: 500;
-  color: white;
-  box-shadow: 0 2px 8px rgb(124 58 237 / 0.28);
+  border: 1px solid var(--swiss-ink, #1c1917);
+  border-radius: 10px;
+  background: var(--swiss-ink, #1c1917);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #fafaf9;
   cursor: pointer;
   transition:
     opacity 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
-.one-sentence-generate-btn:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgb(124 58 237 / 0.35);
-  transform: translateY(-1px);
+.doc-summary-generate-btn:hover:not(:disabled) {
+  background: #292524;
+  border-color: #292524;
 }
 
-.one-sentence-generate-btn:disabled {
-  opacity: 0.55;
+.doc-summary-generate-btn:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
-  transform: none;
 }
 </style>

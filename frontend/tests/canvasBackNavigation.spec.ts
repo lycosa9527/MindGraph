@@ -22,9 +22,16 @@ describe('canvasBackNavigation', () => {
     expect(canvasEditorPathForRoute('/canvas')).toBe('/canvas')
   })
 
+  it('opens mobile canvas from mobile MindMate and MindGraph pages', () => {
+    expect(canvasEditorPathForRoute('/m/mindmate')).toBe('/m/canvas')
+    expect(canvasEditorPathForRoute('/m/mindgraph')).toBe('/m/canvas')
+    expect(canvasEditorPathForRoute('/mindmate')).toBe('/canvas')
+  })
+
   it('routes import navigation to mobile canvas from mobile routes', () => {
     expect(canvasPathForImportNavigation('/m/mindgraph')).toBe('/m/canvas')
     expect(canvasPathForImportNavigation('/mindgraph')).toBe('/canvas')
+    expect(canvasPathForImportNavigation('/m/mindmate')).toBe('/m/canvas')
   })
 
   it('defaults mobile canvas back to /m/mindgraph', () => {

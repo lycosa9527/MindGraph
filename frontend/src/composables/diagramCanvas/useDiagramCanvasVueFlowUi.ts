@@ -68,6 +68,16 @@ export function useDiagramCanvasVueFlowUi(
       : presentationHighlighterColor.value
   )
 
+  /**
+   * MobileCanvasPage passes panOnDragButtons and mounts capture-phase touch pan/pinch.
+   * Those handlers own 1-finger pan and 2-finger zoom; Vue Flow must not start rubber-band
+   * select (desktop new-canvas pointer mode) on the same pointer stream.
+   */
+  const mobileTouchGesturesActive = computed(() => {
+    const buttons = panOnDragButtons.value
+    return Array.isArray(buttons) && buttons.length > 0
+  })
+
   const effectivePanOnDrag = computed((): number[] | boolean => {
     if (presentationHandPanMode.value) {
       return panOnDragButtons.value ?? [0, 1, 2]
@@ -79,6 +89,10 @@ export function useDiagramCanvasVueFlowUi(
       return panOnDragButtons.value ?? [0, 1, 2]
     }
     if (presentationStrokeToolActive.value) {
+      return false
+    }
+    // Mobile: custom touch handlers own pan; keep VF from competing on button 0.
+    if (mobileTouchGesturesActive.value) {
       return false
     }
     return [1]
@@ -108,6 +122,8 @@ export function useDiagramCanvasVueFlowUi(
 
   const selectNodesOnDrag = computed(() => {
     if (learningSheetPickActive.value) return false
+    // Mobile touch pan/pinch — never start always-on marquee (desktop v2 pointer stays on).
+    if (mobileTouchGesturesActive.value) return false
     if (presentationStrokeToolActive.value) return false
     if (presentationPointerEditMode.value) return true
     if (presentationDiagramEditLocked.value) return false
@@ -116,7 +132,7 @@ export function useDiagramCanvasVueFlowUi(
   })
 
   // Vue Flow 1.48 runtime prop check accepts boolean | null only (not key strings).
-  // null keeps the library default (Shift) for hand-tool / pick modes where drag-select is off.
+  // null keeps the library default (Shift) for hand-tool / pick / mobile where drag-select is off.
   const selectionKeyCode = computed<boolean | null>(() =>
     selectNodesOnDrag.value ? true : null
   )

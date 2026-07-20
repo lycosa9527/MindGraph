@@ -153,6 +153,74 @@ _ADD_BRANCH_THEN_AUTO_EN = re.compile(
     re.IGNORECASE,
 )
 
+# Multi named branches — list separators required so single-add phrases stay intact.
+_MULTI_ADD_BRANCH_ZH = re.compile(
+    r"^(?:请)?(?:帮我)?(?:再)?"
+    r"(?:添加|增加|加|新建|加入)"
+    r"(?:以下|这些|几个)?"
+    r"(?:分支|节点)?"
+    r"(?:：|:|为)?"
+    r"\s*"
+    r"(?P<labels>.+?(?:[、，,]|和|&).+?)"
+    r"(?:这?[二三四五六七八九十\d]+个)?"
+    r"(?:分支|节点)"
+    r"(?:[，,、]?\s*(?:并|然后|再)?(?:自动)?(?:补全|补完|完善|填充)(?:一下|它们)?)?$"
+)
+
+_MULTI_ADD_BRANCH_EN = re.compile(
+    r"^(?:please\s+)?"
+    r"(?:add|create)\s+"
+    r"(?:(?:the\s+|these\s+|new\s+)?)?"
+    r"(?:branches|nodes)\s+"
+    r"(?:called\s+|named\s+)?"
+    r"(?P<labels>.+?(?:,| and ).+?)$",
+    re.IGNORECASE,
+)
+
+_MULTI_ADD_BRANCH_EN_SUFFIX = re.compile(
+    r"^(?:please\s+)?"
+    r"(?:add|create)\s+"
+    r"(?P<labels>.+?(?:,| and ).+?)\s+"
+    r"(?:branches|nodes)$",
+    re.IGNORECASE,
+)
+
+_UPDATE_CENTER_THEN_MULTI_ADD_ZH = re.compile(
+    r"^(?:请)?(?:帮我)?(?:把)?"
+    r"(?:主题|中心|标题)"
+    r"(?:改成|换成|改为|变成|改成是|设为|设置为)"
+    r"(?P<topic>.+?)"
+    r"[，,、]?\s*"
+    r"(?:并|然后|再)?"
+    r"(?:添加|增加|加|新建|加入)"
+    r"(?:以下|这些|几个)?"
+    r"(?:分支|节点)?"
+    r"(?:：|:|为)?"
+    r"\s*"
+    r"(?P<labels>.+?(?:[、，,]|和|&).+?)"
+    r"(?:这?[二三四五六七八九十\d]+个)?"
+    r"(?:分支|节点)?"
+    r"(?:[，,、]?\s*(?:并|然后|再)?(?:自动)?(?:补全|补完|完善|填充)(?:一下|它们)?)?$"
+)
+
+_UPDATE_CENTER_THEN_MULTI_ADD_EN = re.compile(
+    r"^(?:please\s+)?"
+    r"(?:change|set|update|rename)\s+"
+    r"(?:the\s+)?"
+    r"(?:topic|center|title)\s+"
+    r"(?:to|as)\s+"
+    r"[\"']?(?P<topic>.+?)[\"']?\s*"
+    r"(?:,\s*)?(?:and\s+)?(?:then\s+)?"
+    r"(?:add|create)\s+"
+    r"(?:(?:the\s+|these\s+|new\s+)?)?"
+    r"(?:branches|nodes)\s+"
+    r"(?:called\s+|named\s+)?"
+    r"(?P<labels>.+?(?:,| and ).+?)$",
+    re.IGNORECASE,
+)
+
+_LABEL_LIST_SPLIT = re.compile(r"\s*(?:[、，,/|&]|以及|\s+and\s+)\s*", re.IGNORECASE)
+
 _UPDATE_CENTER_ZH = re.compile(
     r"^(?:请)?(?:帮我)?(?:把)?"
     r"(?:主题|中心|标题)"
@@ -195,7 +263,54 @@ _STRIP_TRAILING_PUNCT = re.compile(r"[。.!！？?\s]+$")
 def _clean_label(raw: str) -> str:
     label = _STRIP_TRAILING_PUNCT.sub("", (raw or "").strip())
     label = label.strip("\"'「」『』")
+    if label.startswith("和") and len(label) > 1:
+        label = label[1:].strip()
+    if re.match(r"(?i)^and\s+", label):
+        label = label[3:].strip()
     return label.strip()
+
+
+def _split_multi_labels(raw: str) -> list[str]:
+    """Split a user-listed branch string into clean labels (need ≥2)."""
+    normalized = (raw or "").strip()
+    # 「A、B和C」 / "A, B, and C" → normalize list separators.
+    normalized = re.sub(r"(?<=\S)和(?=\S)", "、", normalized)
+    normalized = re.sub(r"(?i),\s*and\s+", "、", normalized)
+    labels: list[str] = []
+    for chunk in _LABEL_LIST_SPLIT.split(normalized):
+        label = _clean_label(chunk)
+        if label:
+            labels.append(label)
+    return labels
+
+
+def _multi_add_command(
+    labels: list[str],
+    *,
+    topic: str = "",
+) -> Optional[Dict[str, Any]]:
+    """Build update_center? + sequential add_node follow-ups (no AC tools)."""
+    if len(labels) < 2:
+        return None
+    first, *rest = labels
+    follows: list[Dict[str, Any]] = [{"action": "add_node", "target": label, "confidence": 0.92} for label in rest]
+    topic_label = topic.strip()
+    if topic_label:
+        return {
+            "action": "update_center",
+            "target": topic_label,
+            "confidence": 0.92,
+            "follow_up_actions": [
+                {"action": "add_node", "target": first, "confidence": 0.92},
+                *follows,
+            ],
+        }
+    return {
+        "action": "add_node",
+        "target": first,
+        "confidence": 0.92,
+        "follow_up_actions": follows,
+    }
 
 
 def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str, Any]]:
@@ -242,6 +357,25 @@ def heuristic_one_sentence_edit_command(command_text: str) -> Optional[Dict[str,
                     {"action": "auto_complete", "confidence": 0.95},
                 ],
             }
+
+    for pattern in (_UPDATE_CENTER_THEN_MULTI_ADD_ZH, _UPDATE_CENTER_THEN_MULTI_ADD_EN):
+        center_multi = pattern.match(text)
+        if center_multi is None:
+            continue
+        topic = _clean_label(center_multi.group("topic"))
+        labels = _split_multi_labels(center_multi.group("labels"))
+        cmd = _multi_add_command(labels, topic=topic)
+        if cmd is not None:
+            return cmd
+
+    for pattern in (_MULTI_ADD_BRANCH_ZH, _MULTI_ADD_BRANCH_EN, _MULTI_ADD_BRANCH_EN_SUFFIX):
+        multi_add = pattern.match(text)
+        if multi_add is None:
+            continue
+        labels = _split_multi_labels(multi_add.group("labels"))
+        cmd = _multi_add_command(labels)
+        if cmd is not None:
+            return cmd
 
     for pattern in (
         _ADD_BRANCH_THEN_AUTO_ZH,

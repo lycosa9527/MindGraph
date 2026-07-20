@@ -1,5 +1,5 @@
 /**
- * zh-tw UI � workshop
+ * zh UI — workshop
  */
 
 export default {
@@ -32,7 +32,8 @@ export default {
   'collab.previousSessionsStopped': '已結束您在其它圖示上的 {n} 場協同會話。',
   'collab.saveFailed': '保存失敗',
   'collab.scanToJoin': '掃碼加入',
-  'collab.schoolDescActive': '校内协同已开启。同事请在 MindGraph 首页打开「协同 → 校内协同」，在列表中选择此图示加入（无需输入邀请码）。',
+  'collab.schoolDescActive':
+    '校内协同已开启。同事请在 MindGraph 首页打开「协同 → 校内协同」，在列表中选择此图示加入（无需输入邀请码）。',
   'collab.schoolStarted': '校內協同已開啟，同事可在「協同 → 校內協同」中加入',
   'collab.sectionNetwork': '共同協同（邀請碼）',
   'collab.sectionSchool': '校內協同',
@@ -132,7 +133,8 @@ export default {
   'workshop.gearMenu': '選項',
   'workshop.generalChat': '綜合討論',
   'workshop.inbox': '收件箱',
-  'workshop.inboxHintPickChannel': '在侧栏打开课题组、课例或私信即可阅读与回复。随时可通过「视图 → 收件箱」回到此页。',
+  'workshop.inboxHintPickChannel':
+    '在侧栏打开课题组、课例或私信即可阅读与回复。随时可通过「视图 → 收件箱」回到此页。',
   'workshop.inboxSummaryTitle': '你的收件箱',
   'workshop.inboxUnreadChannels': '頻道內未讀',
   'workshop.inboxUnreadDms': '私信未讀',
@@ -157,7 +159,8 @@ export default {
   'workshop.loadMore': '加載更多',
   'workshop.mainChannelStream': '主頻道',
   'workshop.manageTeachingGroups': '管理教研組',
-  'workshop.manageTeachingGroupsBlurb': '可添加或归档教研组，设置公开或私有，修改名称与简介，调整列表顺序，复制教研组作为模板，并邀请同事加入。发帖权限与通知等请使用「高级设置」。归档后全校成员将不再看到该组。',
+  'workshop.manageTeachingGroupsBlurb':
+    '可添加或归档教研组，设置公开或私有，修改名称与简介，调整列表顺序，复制教研组作为模板，并邀请同事加入。发帖权限与通知等请使用「高级设置」。归档后全校成员将不再看到该组。',
   'workshop.manageUser': '管理此用戶',
   'workshop.markAllReadChannel': '將全部消息標為已讀',
   'workshop.markAsRead': '標記為已讀',
@@ -195,7 +198,8 @@ export default {
   'workshop.noTeachingGroupsListed': '暫無教研組。',
   'workshop.noTopicsYet': '暫無話題',
   'workshop.notifications': '通知',
-  'workshop.notificationsSettingsBlurb': '提及与新消息的浏览器通知取决于系统设置。也可在各频道的设置中分别开启桌面与邮件提醒。',
+  'workshop.notificationsSettingsBlurb':
+    '提及与新消息的浏览器通知取决于系统设置。也可在各频道的设置中分别开启桌面与邮件提醒。',
   'workshop.offline': '離線',
   'workshop.online': '在線',
   'workshop.openMainChannelStream': '主頻道',
@@ -212,7 +216,8 @@ export default {
   'workshop.policyMembersOnly': '僅成員',
   'workshop.postingPolicy': '發佈權限',
   'workshop.preferences': '偏好設置',
-  'workshop.preferencesSettingsBlurb': '语言与界面偏好适用于整个应用。更多 Workshop 协作相关选项将陆续在此提供。',
+  'workshop.preferencesSettingsBlurb':
+    '语言与界面偏好适用于整个应用。更多 Workshop 协作相关选项将陆续在此提供。',
   'workshop.presenceActive': '在線',
   'workshop.presenceIdle': '離開',
   'workshop.presenceOffline': '離線',
@@ -220,7 +225,8 @@ export default {
   'workshop.profile': '個人資料',
   'workshop.publicChannels': '公開頻道',
   'workshop.quoteMessage': '引用消息',
-  'workshop.readOnlyProfileBlurb': '同事的档案以简化视图显示。管理员可使用「管理用户」打开后台用户列表。',
+  'workshop.readOnlyProfileBlurb':
+    '同事的档案以简化视图显示。管理员可使用「管理用户」打开后台用户列表。',
   'workshop.recentDmActivity': '最近私信',
   'workshop.recentTopics': '最近話題',
   'workshop.renameTopic': '重命名話題',
@@ -255,7 +261,8 @@ export default {
   'workshop.streamMenu': '教研組菜單',
   'workshop.strikethrough': '刪除線',
   'workshop.switchSchool': '切換學校',
-  'workshop.teachingGroupLandingHint': '本教研组下的课例与会话。点击课例进入频道，或点击会话进入对应话题。',
+  'workshop.teachingGroupLandingHint':
+    '本教研组下的课例与会话。点击课例进入频道，或点击会话进入对应话题。',
   'workshop.teachingGroupMembers': '成員',
   'workshop.teachingGroupNameRequired': '請填寫教研組名稱。',
   'workshop.teachingGroupNoLessons': '該教研組下還沒有課例。',
@@ -286,11 +293,14 @@ export default {
   'workshop.viewProfile': '查看個人資料',
   'workshop.viewingSchool': '當前查看：{0}',
   'workshop.views': '視圖',
-  'workshop.welcomeChannelsBody': '系统里的「频道」多对应现实中的课题组或教研组：按学科或项目划一块协作空间（如下方示例中的数学课题组、英语课题组），界定成员与讨论范围。',
+  'workshop.welcomeChannelsBody':
+    '系统里的「频道」多对应现实中的课题组或教研组：按学科或项目划一块协作空间（如下方示例中的数学课题组、英语课题组），界定成员与讨论范围。',
   'workshop.welcomeChannelsTitle': '課題組 / 教研組',
-  'workshop.welcomeConversationsBody': '在课例里可建多个带标题的会话，例如教学设计、课堂实施、反思改进等，把不同议题分开，避免混在一条时间线里。',
+  'workshop.welcomeConversationsBody':
+    '在课例里可建多个带标题的会话，例如教学设计、课堂实施、反思改进等，把不同议题分开，避免混在一条时间线里。',
   'workshop.welcomeConversationsTitle': '會話（話題）',
-  'workshop.welcomeExampleCaption': '以下为虚构示例，便于理解：数学课题组、英语课题组各自下设课例与会话主题。',
+  'workshop.welcomeExampleCaption':
+    '以下为虚构示例，便于理解：数学课题组、英语课题组各自下设课例与会话主题。',
   'workshop.welcomeExampleConvLabel': '會話',
   'workshop.welcomeExampleGroupEnglish': '英語課題組',
   'workshop.welcomeExampleGroupMath': '數學課題組',
@@ -309,10 +319,13 @@ export default {
   'workshop.welcomeExampleMsgLabel': '每個會話裡是同事們逐條發送的消息',
   'workshop.welcomeExampleOrg': '晨曦中學',
   'workshop.welcomeHowTitle': '概念與層級關係',
-  'workshop.welcomeIntro': 'Workshop 是面向学校的协作空间：发布公告、开展课例研究，并把讨论结构化地组织在教学场景旁边。',
-  'workshop.welcomeLessonStudyBody': '课例一般挂在某个课题组下，围绕具体一节课做磨课、观课与反思；可带进度状态，也可关联思维图示。',
+  'workshop.welcomeIntro':
+    'Workshop 是面向学校的协作空间：发布公告、开展课例研究，并把讨论结构化地组织在教学场景旁边。',
+  'workshop.welcomeLessonStudyBody':
+    '课例一般挂在某个课题组下，围绕具体一节课做磨课、观课与反思；可带进度状态，也可关联思维图示。',
   'workshop.welcomeLessonStudyTitle': '課例研究',
-  'workshop.welcomeMessagesBody': '消息是会话或频道时间线里的单条发言；回复、@同事、附件等都体现在消息上。',
+  'workshop.welcomeMessagesBody':
+    '消息是会话或频道时间线里的单条发言；回复、@同事、附件等都体现在消息上。',
   'workshop.welcomeMessagesTitle': '消息',
   'workshop.welcomeSubtitle': '在 MindGraph 上與校內同事協作',
   'workshop.welcomeTitle': '歡迎使用 Workshop（工作坊）',
@@ -330,7 +343,8 @@ export default {
   'workshopCanvas.connectionClosedReason': '在線協作連接已斷開：{reason}',
   'workshopCanvas.editingNode': '{username} {emoji} 正在編輯此節點',
   'workshopCanvas.errorGeneric': '在線協作錯誤',
-  'workshopCanvas.updatePartialFiltered': '部分编辑未同步（{count} 个节点）：其他协作者正在编辑这些节点。',
+  'workshopCanvas.updatePartialFiltered':
+    '部分编辑未同步（{count} 个节点）：其他协作者正在编辑这些节点。',
   'workshopCanvas.reconnectFailed': '在線協作重連失敗，請刷新頁面重試',
   'workshopCanvas.resyncWaiting': '圖稿同步比對預期更久，正在重試；若編輯異常請嘗試刷新頁面。',
   'workshopCanvas.returnedHomeIdle': '空閒時間過長已斷開協作，已返回首頁',
@@ -340,7 +354,8 @@ export default {
   'workshopCanvas.usersLeft': '{count} 位用戶已離開',
   'workshopCanvas.wsError': '在線協作連接錯誤，請檢查網絡連接',
   'workshopCanvas.returnedHomeRoomIdle': '本會話圖示長時間無協作編輯，協同已自動結束並已返回首頁',
-  'workshopCanvas.roomIdleWarningToast': '图示长时间未有协作编辑——倒计时结束前若无人编辑图示，协同将自动结束。',
+  'workshopCanvas.roomIdleWarningToast':
+    '图示长时间未有协作编辑——倒计时结束前若无人编辑图示，协同将自动结束。',
   'workshopCanvas.otherTabCollaborationActive': '該賬號在另一標籤頁或窗口中繼續在線協作。',
   'workshopCanvas.joinQrAlt': '加入在線協作的二維碼',
-} as const
+}

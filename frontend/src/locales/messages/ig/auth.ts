@@ -1,5 +1,5 @@
 /**
- * en UI � auth
+ * ig UI � auth
  */
 
 export default {

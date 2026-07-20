@@ -1,5 +1,5 @@
 /**
- * en UI � mindmate
+ * nl UI � mindmate
  */
 
 export default {
@@ -92,6 +92,9 @@ export default {
   'mindmate.openCanvasLoginRequired': 'Sign in to open this diagram in the canvas.',
   'mindmate.openCanvasNoLibraryId': 'Diagram was not saved to your library. Sign in and try again.',
   'mindmate.openCanvasSaveRetry': 'Could not save this diagram to your library automatically. Regenerate; contact your administrator if it persists.',
+  'mindmate.openCanvasSwitchTitle': 'Switch diagram',
+  'mindmate.openCanvasSwitchBody': 'Open “{target}” in the canvas? The current diagram is “{current}”. Unsaved changes on the current canvas may be lost.',
+  'mindmate.openCanvasSwitchOk': 'Open',
   'mindmate.diagramLibraryFull': 'Diagram library is full. Delete old diagrams and try again.',
   'mindmate.diagramPreviewExpired': 'This preview is no longer in your browser cache—the temporary image was cleared. Tap this notice or use «Edit in canvas» below to open the diagram.',
   'mindmate.tooltip.copy': 'Copy',

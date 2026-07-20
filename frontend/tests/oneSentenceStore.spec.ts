@@ -84,4 +84,36 @@ describe('useOneSentenceStore', () => {
     expect(store.phase).toBe('create')
     expect(Object.keys(store.requests)).toHaveLength(0)
   })
+
+  it('resetChatUiForWelcome clears bubbles without rotating ephemeral scope', () => {
+    const store = useOneSentenceStore()
+    const before = store.ephemeralScope
+    store.setLibraryScope('diagram-a')
+    store.setPhase('edit')
+    store.setDraft('旧草稿')
+    store.registerUserRequest('旧对话', 'done')
+
+    store.resetChatUiForWelcome()
+
+    expect(store.ephemeralScope).toBe(before)
+    expect(store.libraryScope).toBe('diagram-a')
+    expect(store.messages).toHaveLength(0)
+    expect(store.phase).toBe('create')
+    expect(store.draft).toBe('')
+    expect(Object.keys(store.requests)).toHaveLength(0)
+  })
+
+  it('canvas reset unbinds library scope so a new diagram gets a fresh thread', () => {
+    const store = useOneSentenceStore()
+    store.setLibraryScope('diagram-a')
+    store.setPhase('edit')
+    store.registerUserRequest('diagram A chat', 'done')
+
+    store.onCanvasReset()
+
+    expect(store.libraryScope).toBeNull()
+    expect(store.messages).toHaveLength(0)
+    expect(store.phase).toBe('create')
+    expect(store.diagramScope).toBe(store.ephemeralScope)
+  })
 })

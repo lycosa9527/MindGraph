@@ -1,5 +1,5 @@
 /**
- * en UI � workshop
+ * uk UI � workshop
  */
 
 export default {

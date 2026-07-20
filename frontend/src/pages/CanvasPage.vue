@@ -2,13 +2,14 @@
 /**
  * CanvasPage - Full canvas editor page with Vue Flow integration
  *
- * Store cleanup on exit (onUnmounted): diagram, savedDiagrams, llmResults, panels,
- * inline recommendations + relationship (via coordinator teardown), concept-map
- * focus/root review streams, snapshot history, presentation state, and partial
- * ui reset — avoids stale state and lingering SSE on re-entry.
+ * Store cleanup on exit (onUnmounted): ``clearCanvasEphemeralSession`` (LLM,
+ * panels, translate, relationship, Kitty session UI, node indicators, side
+ * toolbar, virtual keyboard, learning sheet) plus diagram/savedDiagrams/
+ * oneSentence, file-center session, snapshots, presentation, and partial UI
+ * reset — avoids stale state and lingering SSE on re-entry.
  *
- * In-session reset (top-bar Reset): applyCanvasSessionReset + diagram:reset_requested
- * mirrors the same teardown without leaving the page.
+ * In-session reset (top-bar Reset): ``applyCanvasSessionReset`` → shared
+ * ephemeral clears + ``diagram:reset_requested`` for page-local refs.
  *
  * Users access this page via:
  * 1. DiagramTemplateInput - Generates on landing, then navigates here with pre-loaded diagram
@@ -74,6 +75,7 @@ import {
   applyCanvasKittySeedFromRoute,
   canvasKittySeedQueryKeysPresent,
 } from '@/composables/canvasPage/applyCanvasKittySeedFromRoute'
+import { clearCanvasEphemeralSession } from '@/composables/canvasPage/clearCanvasEphemeralSession'
 import { handleKittyAutoCompleteBranchRequest } from '@/composables/kitty/handleKittyAutoCompleteBranchRequest'
 import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
 import { KITTY_CANVAS_OWNER_KEY } from '@/composables/kitty/kittyCanvasOwnerKey'
@@ -127,7 +129,6 @@ import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSli
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import {
   learningSheetNeedsPresentationConfirm,
-  resetLearningSheetCustomModeUi,
   resumeLearningSheetAfterPresentation,
   suspendLearningSheetForPresentation,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
@@ -166,9 +167,9 @@ import {
 } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
+import { useKittySessionStore } from '@/stores/kittySession'
 import { useOneSentenceStore } from '@/stores/oneSentence'
 import { usePresentationPointerStore } from '@/stores/presentationPointer'
-import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import type { MindMapPresentationToolId } from '@/types/diagram'
@@ -467,13 +468,13 @@ const fitViewOnInit = computed(() => {
 })
 
 const featureKnowledgeSpaceFlag = computed(() => featureFlagsStore.getFeatureKnowledgeSpace())
-const fileCenterEnabled = computed(
-  () => featureKnowledgeSpaceFlag.value && useMindMapV2.value
+const fileCenterEnabled = computed(() =>
+  DOC_SUMMARY_LITE_UI
+    ? useMindMapV2.value
+    : featureKnowledgeSpaceFlag.value && useMindMapV2.value
 )
-provide(
-  FILE_CENTER_ACTIVE_PACKAGE_KEY,
-  createFileCenterActivePackage(fileCenterEnabled)
-)
+const fileCenterActivePackage = createFileCenterActivePackage(fileCenterEnabled)
+provide(FILE_CENTER_ACTIVE_PACKAGE_KEY, fileCenterActivePackage)
 const ragBranchExpandEnabled = computed(
   () => fileCenterEnabled.value && !DOC_SUMMARY_LITE_UI
 )
@@ -567,7 +568,7 @@ const showLearningSheetExportNudge = computed(
 const { activeTool, sidebarVisible, closeActiveTool } = useMindMapSideToolbarState()
 
 watch(
-  () => useMindMapV2.value && panelsStore.conceptParkingLotPanel.isOpen,
+  () => useMindMapV2.value && panelsStore.aiBrainstormPanel.isOpen,
   (shouldShowWaterfallPanel) => {
     if (shouldShowWaterfallPanel && activeTool.value !== 'waterfall') {
       activeTool.value = 'waterfall'
@@ -575,7 +576,7 @@ watch(
   }
 )
 
-bindMindMapExternalPanelClose(() => panelsStore.conceptParkingLotPanel.isOpen, closeActiveTool)
+bindMindMapExternalPanelClose(() => panelsStore.aiBrainstormPanel.isOpen, closeActiveTool)
 
 watch(
   () => diagramStore.type,
@@ -717,7 +718,18 @@ eventBus.onWithOwner(
       notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
       return
     }
-    void handleKittyAutoCompleteBranchRequest(data)
+    void handleKittyAutoCompleteBranchRequest(data, {
+      ensureConnected: () => kittyCanvasOwner.ensureConnected(),
+      hubPersist: () => ({
+        buildContext: () =>
+          buildKittyDiagramContext(diagramStore, 'one_sentence', {
+            oneSentencePhase: oneSentenceStore.phase,
+          }),
+        updateContext: (ctx, opts) => kittyCanvasOwner.kitty.updateContext(ctx, opts),
+        hubScopeRevision: useKittySessionStore().hubScopeRevision,
+        scope: kittyOwnerScope.value,
+      }),
+    })
   },
   'CanvasPage'
 )
@@ -900,6 +912,7 @@ registerCanvasPageResetHandler({
   mindMapPresentationTool,
   slidePresentation,
   canvasZoom,
+  fileCenterActivePackage,
 })
 
 /** MindMate panel and presentation rail cannot both be active: opening one closes the other. */
@@ -1284,23 +1297,22 @@ onUnmounted(() => {
   inlineRecCoordinator.teardown()
   eventBus.removeAllListenersForOwner('CanvasPage')
 
-  // Cancel any in-flight concept-map 3-LLM review streams and clear their state.
-  // Event-bus listeners that previously dismissed them (pane click / selection change)
-  // are already removed above, so we must clear here to avoid stale state on re-entry.
-  focusReviewStore.clear()
-  rootConceptReviewStore.clear()
+  // Shared Pinia / module clears (LLM, panels, translate, relationship, Kitty
+  // session UI, node indicators, side toolbar, VK, learning sheet, reviews…).
+  clearCanvasEphemeralSession()
 
   // Clean up state when leaving canvas - matches old JS behavior
   diagramStore.reset()
   savedDiagramsStore.clearActiveDiagram()
+  // One-sentence / Kitty chat is scoped per diagram; clear Pinia so a new canvas
+  // does not show the previous diagram's conversation.
+  oneSentenceStore.onCanvasReset()
+  // Leave canvas: keep server package + COS so the diagram can resume later.
+  fileCenterActivePackage.clearLocalSession()
   snapshotHistory.clearSnapshots()
-  useLLMResultsStore().reset()
-  usePanelsStore().reset()
-  useMindMapSubgraphPreviewStore().clear()
   uiStore.setSelectedChartType('选择具体图示')
   uiStore.setFreeInputValue('')
   resetPresentationStateOnLeave()
-  resetLearningSheetCustomModeUi()
   setPresentationDiagramEditLocked(false)
   setPresentationFullscreenRoot(null)
   void exitPresentationFullscreen()

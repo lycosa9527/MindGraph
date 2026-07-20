@@ -57,6 +57,14 @@ export const useCanvasNodeIndicatorsStore = defineStore('canvasNodeIndicators', 
     tabRecEdgeIds.value = edgeIds
   }
 
+  /** Wipe all indicator maps — canvas Reset and leave-canvas teardown. */
+  function clearAll(): void {
+    workshopEditing.value = new Map()
+    collabSelected.value = new Set()
+    tabRecActive.value = null
+    tabRecEdgeIds.value = []
+  }
+
   return {
     workshopEditing,
     collabSelected,
@@ -67,5 +75,6 @@ export const useCanvasNodeIndicatorsStore = defineStore('canvasNodeIndicators', 
     setCollabSelected,
     setTabRecActive,
     setTabRecEdgeIds,
+    clearAll,
   }
 })

@@ -13,7 +13,11 @@ from typing import Any, Dict, Optional
 from fastapi import WebSocket
 
 from services.diagram_edit.convert import legacy_command_to_diagram_edit
-from services.diagram_edit.effects import build_expected_effect, extract_before_fingerprint
+from services.diagram_edit.effects import (
+    build_expected_effect,
+    extract_before_fingerprint,
+    refresh_session_diagram_data_from_evidence,
+)
 from services.diagram_edit.handlers.mindmap import register_mindmap_handlers
 from services.diagram_edit.pending import (
     cache_result,
@@ -176,6 +180,7 @@ async def execute_diagram_edit(
         mutation_id,
         voice_session_id,
         idempotency_key=command.idempotency_key,
+        scope=command.scope,
     )
 
     outbound_extras = {
@@ -270,6 +275,7 @@ async def execute_diagram_edit(
     if created_id:
         applied_op["node_id"] = created_id
     applied_ops = [applied_op]
+    refresh_session_diagram_data_from_evidence(session_context, evidence)
     result = ToolResult(
         status="applied",
         mutation_id=mutation_id,

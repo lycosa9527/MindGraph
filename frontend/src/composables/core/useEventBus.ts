@@ -52,12 +52,12 @@ export type EventTypes = {
   }
   /** Stop all node-palette SSE requests (e.g. panel closed or canvas exited). */
   'node_palette:streaming_stop_requested': Record<string, never>
-  'concept_parking_lot:opened': {
+  'ai_brainstorm:opened': {
     diagramKey?: string
     hasRestoredSession: boolean
   }
-  /** Stop concept parking lot SSE requests (panel closed or canvas exited). */
-  'concept_parking_lot:streaming_stop_requested': Record<string, never>
+  /** Stop AI brainstorm SSE requests (panel closed or canvas exited). */
+  'ai_brainstorm:streaming_stop_requested': Record<string, never>
 
   // Diagram Events
   'diagram:render_requested': { source?: string }
@@ -682,7 +682,7 @@ export type EventTypes = {
   'toolbar:update_state_requested': { state: unknown }
 
   // Diagram Reset
-  'diagram:reset_requested': Record<string, never>
+  'diagram:reset_requested': { diagramId?: string }
   'diagram:history_restored': { diagramType?: string }
 
   // Learning Mode Events

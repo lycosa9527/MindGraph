@@ -572,7 +572,10 @@ async def dispatch_kitty_ws_inbound_message(
     if msg_type == "append_image":
         await safe_websocket_send(
             websocket,
-            {"type": "error", "error": "Image append requires Omni (retired)"},
+            {
+                "type": "error",
+                "error": ("append_image is retired; use POST /api/kitty/conversation_image"),
+            },
         )
         return "continue"
 

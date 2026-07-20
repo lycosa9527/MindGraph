@@ -1,8 +1,9 @@
 """Document Summary extracted-content storage (COS + Redis cache + PG pointers).
 
 Only extracted markdown is persisted — original uploads are discarded after
-extraction. Postgres holds metadata and COS keys; Redis optionally caches text
-for fast regenerate.
+extraction. Each extract gets a unique ``object_id`` (UUID) so test/prod can
+share one COS bucket without colliding on overlapping MG user ids. Postgres
+holds the cos_key; APIs check package ownership before any fetch.
 
 Author: lycosa9527
 Made by: MindSpring Team
@@ -15,7 +16,9 @@ Proprietary License
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -36,7 +39,9 @@ logger = logging.getLogger(__name__)
 
 STORAGE_COS = "cos"
 STORAGE_LOCAL = "local"
-DOC_SUMMARY_MAX_CHARS = 32_000
+
+# Skip Redis text cache above this size (COS/local remain source of truth).
+_REDIS_TEXT_CACHE_MAX_CHARS = 2_000_000
 
 
 def cos_documents_enabled() -> bool:
@@ -46,22 +51,32 @@ def cos_documents_enabled() -> bool:
     return cos_credentials_configured()
 
 
-def build_cos_key(user_id: int, package_id: int) -> str:
-    """COS object key for a package's extracted markdown."""
-    relative = f"user_{user_id}/pkg_{package_id}/extracted.md"
+def new_object_id() -> str:
+    """Allocate a unique opaque id for one extracted markdown object."""
+    return uuid.uuid4().hex
+
+
+def build_cos_key(object_id: str) -> str:
+    """COS object key for one extracted markdown blob (UUID-based, not user id)."""
+    oid = (object_id or "").strip()
+    if not oid:
+        raise ValueError("object_id is required for Document Summary COS keys")
+    relative = f"{oid}.md"
     return cos_object_key(relative, prefix=config.COS_DOCUMENTS_PREFIX)
 
 
-def build_local_fallback_path(user_id: int, package_id: int) -> Path:
+def build_local_fallback_path(object_id: str) -> Path:
     """Local extracted-markdown path when COS is unavailable (dev/tests)."""
+    oid = (object_id or "").strip()
+    if not oid:
+        raise ValueError("object_id is required for Document Summary local paths")
     base = Path(config.KNOWLEDGE_STORAGE_DIR) / "doc_summary"
-    return base / f"user_{user_id}" / f"pkg_{package_id}" / "extracted.md"
+    return base / f"{oid}.md"
 
 
 def build_storage_metadata(
     *,
-    user_id: int,
-    package_id: int,
+    object_id: str,
     markdown: str,
     source_filename: str,
     source_mime: str,
@@ -69,14 +84,15 @@ def build_storage_metadata(
     page_url: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Build ``doc_metadata`` payload after a successful extract/store."""
-    trimmed = markdown.strip()[:DOC_SUMMARY_MAX_CHARS]
+    text = markdown.strip()
     now = datetime.now(UTC).isoformat()
     meta: Dict[str, Any] = {
         "storage": STORAGE_COS if cos_documents_enabled() else STORAGE_LOCAL,
+        "object_id": object_id,
         "ingest_source": ingest_source,
         "source_filename": source_filename,
         "source_mime": source_mime,
-        "extract_char_count": len(trimmed),
+        "extract_char_count": len(text),
         "extracted_at": now,
         "doc_summary_lite": True,
     }
@@ -84,9 +100,9 @@ def build_storage_metadata(
         meta["page_url"] = page_url
     if cos_documents_enabled():
         meta["cos_bucket"] = COS_BUCKET
-        meta["cos_key"] = build_cos_key(user_id, package_id)
+        meta["cos_key"] = build_cos_key(object_id)
     else:
-        meta["local_path"] = str(build_local_fallback_path(user_id, package_id))
+        meta["local_path"] = str(build_local_fallback_path(object_id))
     return meta
 
 
@@ -102,34 +118,42 @@ def _read_local(path: Path) -> Optional[str]:
 
 
 def store_extracted_markdown_sync(
-    user_id: int,
-    package_id: int,
     markdown: str,
+    object_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Persist extracted markdown to COS or local fallback. Returns storage keys."""
-    trimmed = markdown.strip()[:DOC_SUMMARY_MAX_CHARS]
-    if not trimmed:
+    text = markdown.strip()
+    if not text:
         raise ValueError("Extracted content is empty")
 
+    oid = (object_id or new_object_id()).strip()
     if cos_documents_enabled():
-        cos_key = build_cos_key(user_id, package_id)
-        payload = trimmed.encode("utf-8")
+        cos_key = build_cos_key(oid)
+        payload = text.encode("utf-8")
         if not upload_bytes(payload, cos_key, log_prefix="[DocSummary/COS]"):
             raise RuntimeError("Failed to upload extracted content to COS")
-        return {"storage": STORAGE_COS, "cos_key": cos_key, "cos_bucket": COS_BUCKET}
+        return {
+            "storage": STORAGE_COS,
+            "object_id": oid,
+            "cos_key": cos_key,
+            "cos_bucket": COS_BUCKET,
+        }
 
-    local_path = build_local_fallback_path(user_id, package_id)
-    _write_local(local_path, trimmed)
-    return {"storage": STORAGE_LOCAL, "local_path": str(local_path)}
+    local_path = build_local_fallback_path(oid)
+    _write_local(local_path, text)
+    return {
+        "storage": STORAGE_LOCAL,
+        "object_id": oid,
+        "local_path": str(local_path),
+    }
 
 
 async def store_extracted_markdown(
-    user_id: int,
-    package_id: int,
     markdown: str,
+    object_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Async wrapper around :func:`store_extracted_markdown_sync`."""
-    return await asyncio.to_thread(store_extracted_markdown_sync, user_id, package_id, markdown)
+    return await asyncio.to_thread(store_extracted_markdown_sync, markdown, object_id)
 
 
 def fetch_extracted_markdown_sync(doc_metadata: Optional[Dict[str, Any]]) -> Optional[str]:
@@ -141,6 +165,10 @@ def fetch_extracted_markdown_sync(doc_metadata: Optional[Dict[str, Any]]) -> Opt
     if storage == STORAGE_COS:
         cos_key = doc_metadata.get("cos_key")
         if not cos_key:
+            object_id = doc_metadata.get("object_id")
+            if object_id:
+                cos_key = build_cos_key(str(object_id))
+        if not cos_key:
             return None
         raw = get_object_bytes(cos_key, log_prefix="[DocSummary/COS]")
         if raw is None:
@@ -150,6 +178,9 @@ def fetch_extracted_markdown_sync(doc_metadata: Optional[Dict[str, Any]]) -> Opt
     local_path = doc_metadata.get("local_path")
     if local_path:
         return _read_local(Path(local_path))
+    object_id = doc_metadata.get("object_id")
+    if object_id:
+        return _read_local(build_local_fallback_path(str(object_id)))
     return None
 
 
@@ -167,27 +198,75 @@ def _redis_text_key(package_id: int) -> str:
 
 
 async def set_package_status(package_id: int, status: str) -> None:
-    """Cache processing status for UI polling."""
+    """Cache processing status for UI polling (legacy string form)."""
+    await set_package_extract_progress(package_id, status, status, 0 if status == "failed" else 50)
+
+
+async def set_package_extract_progress(
+    package_id: int,
+    status: str,
+    stage: str,
+    percent: int,
+) -> None:
+    """Cache extract status + stage + percent for UI polling."""
+    payload = json.dumps(
+        {
+            "status": status,
+            "stage": stage,
+            "percent": max(0, min(100, int(percent))),
+        }
+    )
     await AsyncRedisOps.set_with_ttl(
         _redis_status_key(package_id),
-        status,
+        payload,
         redis_keys.TTL_DOC_SUMMARY_STATUS,
     )
 
 
 async def get_package_status(package_id: int) -> Optional[str]:
-    """Return cached package extract status."""
-    return await AsyncRedisOps.get(_redis_status_key(package_id))
+    """Return cached package extract status string (legacy or JSON payload)."""
+    raw = await AsyncRedisOps.get(_redis_status_key(package_id))
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return raw
+    if isinstance(data, dict):
+        status = data.get("status")
+        return str(status) if status is not None else None
+    return str(raw)
+
+
+async def get_package_extract_progress(package_id: int) -> Optional[Dict[str, Any]]:
+    """Return ``{status, stage, percent}`` when Redis holds a progress payload."""
+    raw = await AsyncRedisOps.get(_redis_status_key(package_id))
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return {"status": raw, "stage": raw, "percent": 0}
+    if isinstance(data, dict):
+        return {
+            "status": data.get("status"),
+            "stage": data.get("stage"),
+            "percent": int(data.get("percent") or 0),
+        }
+    return None
 
 
 async def cache_extracted_text(package_id: int, markdown: str) -> None:
     """Cache extracted markdown in Redis for fast regenerate."""
-    trimmed = markdown.strip()[:DOC_SUMMARY_MAX_CHARS]
-    if not trimmed:
+    text = markdown.strip()
+    if not text:
+        return
+    if len(text) > _REDIS_TEXT_CACHE_MAX_CHARS:
+        # Oversized extracts stay on COS/local only.
         return
     await AsyncRedisOps.set_with_ttl(
         _redis_text_key(package_id),
-        trimmed,
+        text,
         redis_keys.TTL_DOC_SUMMARY_TEXT,
     )
 
@@ -215,6 +294,8 @@ def delete_extracted_content_sync(doc_metadata: Optional[Dict[str, Any]]) -> Non
     storage = doc_metadata.get("storage")
     if storage == STORAGE_COS:
         cos_key = doc_metadata.get("cos_key")
+        if not cos_key and doc_metadata.get("object_id"):
+            cos_key = build_cos_key(str(doc_metadata["object_id"]))
         if cos_key:
             delete_object(cos_key)
         return
@@ -222,6 +303,12 @@ def delete_extracted_content_sync(doc_metadata: Optional[Dict[str, Any]]) -> Non
     local_path = doc_metadata.get("local_path")
     if local_path:
         path = Path(local_path)
+        if path.is_file():
+            path.unlink()
+        return
+    object_id = doc_metadata.get("object_id")
+    if object_id:
+        path = build_local_fallback_path(str(object_id))
         if path.is_file():
             path.unlink()
 

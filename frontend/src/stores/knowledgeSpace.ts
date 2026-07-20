@@ -21,6 +21,8 @@ export interface KnowledgeDocument {
   chunking_mode?: string | null
   rag_status?: 'not_yet' | 'processing' | 'complete' | 'failed' | null
   wiki_status?: 'disabled' | 'not_yet' | 'pending' | 'complete' | null
+  /** Extracted markdown size when Document Summary lite has finished. */
+  extract_char_count?: number | null
   created_at: string
   updated_at: string
 }

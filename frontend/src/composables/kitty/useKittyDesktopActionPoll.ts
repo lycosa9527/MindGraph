@@ -18,7 +18,10 @@ import {
   createKittyDesktopWakeStream,
 } from '@/composables/kitty/createKittyDesktopWakeStream'
 import { handleKittyDesktopQueuedAction } from '@/composables/kitty/kittyDesktopActionHandlers'
-import { publishKittyMobileActiveHub } from '@/composables/kitty/kittyDesktopMobileActiveHub'
+import {
+  clearKittyMobileActiveHub,
+  publishKittyMobileActiveHub,
+} from '@/composables/kitty/kittyDesktopMobileActiveHub'
 import { createKittyDesktopPollLeader } from '@/composables/kitty/kittyDesktopPollLeader'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { KITTY_MOBILE_WATCH_MS } from '@/composables/kitty/runKittyIntervalPoll'
@@ -406,6 +409,14 @@ export function useKittyDesktopActionPoll(): void {
 
   function syncPolling(): void {
     ensurePollLeader()
+    // Visibility hide only pauses SSE/watch — keep hub (phone may still be live).
+    // Clear hub only when this browser can no longer be a desktop Kitty leader
+    // (logout, feature off, mobile surface, headless export).
+    if (!pollLeaderEligible()) {
+      stop()
+      clearKittyMobileActiveHub()
+      return
+    }
     if (!pollingAllowed()) {
       stop()
       return
@@ -454,5 +465,6 @@ export function useKittyDesktopActionPoll(): void {
     document.removeEventListener('visibilitychange', onVisibilityChange)
     tearDownPollLeader()
     stop()
+    clearKittyMobileActiveHub()
   })
 }

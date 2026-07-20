@@ -9,11 +9,11 @@ export function getNodePaletteDiagramKey(
   return `${diagramType}-${id}`
 }
 
-/** Session key for mind-map concept parking lot (概念停车场), isolated from node palette. */
-export function getConceptParkingLotDiagramKey(
+/** Session key for mind-map AI Brainstorm (AI头脑风暴), isolated from node palette. */
+export function getAiBrainstormDiagramKey(
   activeDiagramId: string | null,
   routeDiagramId: string | undefined
 ): string {
   const id = routeDiagramId || activeDiagramId || 'new'
-  return `concept-parking-lot-mindmap-${id}`
+  return `ai-brainstorm-mindmap-${id}`
 }

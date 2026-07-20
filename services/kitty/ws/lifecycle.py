@@ -25,6 +25,9 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_kitty_ws_rate_limit_close,
 )
 from services.kitty.context.messaging import safe_websocket_send
+from services.kitty.infra.desktop.kitty_canvas_owner_presence import (
+    mark_kitty_canvas_owner_present,
+)
 from services.kitty.infra.desktop.kitty_mobile_active import clear_kitty_mobile_scope
 from services.kitty.session.manager import get_kitty_session_manager
 from services.kitty.infra.redis.kitty_session_redis import persist_kitty_live_for_ws
@@ -471,13 +474,19 @@ async def run_kitty_idle_watchdog(
     voice_session_id: str,
     last_client_inbound: list[float],
 ) -> None:
-    """Close the WS when no inbound client message arrives within the idle window."""
+    """Close the WS on idle; refresh canvas-owner Redis presence while connected."""
     idle_timeout_sec = kitty_ws_idle_timeout_seconds()
     if idle_timeout_sec is None:
-        return
-    check_interval = max(5.0, min(30.0, float(idle_timeout_sec) / 4.0))
+        check_interval = 60.0
+    else:
+        check_interval = max(5.0, min(30.0, float(idle_timeout_sec) / 4.0))
     while True:
         await asyncio.sleep(check_interval)
+        sess = voice_sessions.get(voice_session_id)
+        if isinstance(sess, dict) and sess.get("_kitty_canvas_owner") is True:
+            await mark_kitty_canvas_owner_present(int(current_user.id), diagram_session_id)
+        if idle_timeout_sec is None:
+            continue
         if time.monotonic() - last_client_inbound[0] >= idle_timeout_sec:
             logger.info(
                 "Kitty WS idle timeout (no inbound client message for %.0fs) "

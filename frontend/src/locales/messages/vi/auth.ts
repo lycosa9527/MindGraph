@@ -1,5 +1,5 @@
 /**
- * en UI � auth
+ * vi UI � auth
  */
 
 export default {

@@ -470,6 +470,10 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     }
   }
 
+  function invalidateDiagramDetail(diagramId: string): void {
+    diagramDetailCache.delete(diagramId)
+  }
+
   function getCachedDiagram(diagramId: string): SavedDiagramFull | null {
     return diagramDetailCache.get(diagramId) ?? null
   }
@@ -913,7 +917,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
         activeDiagramId.value = saved.id
         usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
         if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-          usePanelsStore().migrateConceptParkingLotSessionToSavedDiagram(saved.id)
+          usePanelsStore().migrateAiBrainstormSessionToSavedDiagram(saved.id)
         }
         return { success: true, action: 'saved', diagramId: saved.id }
       } else {
@@ -1029,7 +1033,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       llmResultsStore.updateCurrentModelSpec(spec)
       usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
       if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-        usePanelsStore().migrateConceptParkingLotSessionToSavedDiagram(saved.id)
+        usePanelsStore().migrateAiBrainstormSessionToSavedDiagram(saved.id)
       }
       return { success: true, action: 'saved', diagramId: saved.id }
     } else {
@@ -1063,7 +1067,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       llmResultsStore.updateCurrentModelSpec(spec)
       usePanelsStore().migrateNodePaletteSessionToSavedDiagram(diagramType, saved.id)
       if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-        usePanelsStore().migrateConceptParkingLotSessionToSavedDiagram(saved.id)
+        usePanelsStore().migrateAiBrainstormSessionToSavedDiagram(saved.id)
       }
       return { success: true, action: 'saved', diagramId: saved.id }
     } else {
@@ -1112,6 +1116,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     moveDiagramToFolder,
     stopDiagramOnlineCollab,
     getDiagram,
+    invalidateDiagramDetail,
     getCachedDiagram,
     getCachedDiagramSpec,
     prefetchDiagramSpecs,

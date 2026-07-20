@@ -124,7 +124,8 @@ async def fetch_url_page_text(url: str) -> Tuple[str, Optional[str]]:
 
             if not text:
                 raise HTTPException(status_code=422, detail="No readable text found on page")
-            return text[:32000], title
+            # Full extracted text (response body already capped by MAX_FETCH_BYTES).
+            return text, title
     except httpx.TimeoutException as exc:
         raise HTTPException(status_code=504, detail="Timeout fetching page") from exc
     except httpx.RequestError as exc:

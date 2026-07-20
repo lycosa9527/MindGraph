@@ -1,6 +1,10 @@
 import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 
 import { applyCanvasSessionReset } from '@/composables/canvasPage/applyCanvasSessionReset'
+import {
+  confirmCanvasLibraryDiagramOpen,
+  decideCanvasLibraryDiagramOpen,
+} from '@/composables/canvasPage/canvasLibraryDiagramOpen'
 import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { isCanvasPristineForTypeSwitch } from '@/composables/canvasPage/isCanvasPristineForTypeSwitch'
 import { switchCanvasDiagramType } from '@/composables/canvasPage/switchCanvasDiagramType'
@@ -25,6 +29,12 @@ interface OpenCanvasQueued {
 }
 
 interface OpenLibraryDiagramQueued {
+  kind?: unknown
+  diagram_library_id?: unknown
+  title?: unknown
+}
+
+interface ReloadLibraryDiagramQueued {
   kind?: unknown
   diagram_library_id?: unknown
   title?: unknown
@@ -57,6 +67,69 @@ export function adoptOpenCanvasSessionScope(sessionScope: string): void {
   })
 }
 
+/**
+ * Force-reload a library diagram into Pinia (even when already active).
+ * Used after mobile vision rebuild writes a new library snapshot.
+ */
+export async function handleKittyReloadLibraryDiagramAction(
+  action: unknown,
+  options: {
+    routePath: string
+    savedDiagramsStore: SavedDiagramsStore
+    router: Router
+    t: (key: string, fallback?: string) => string
+  }
+): Promise<void> {
+  if (action == null || typeof action !== 'object') {
+    return
+  }
+  const act = action as ReloadLibraryDiagramQueued
+  if (act.kind !== 'reload_library_diagram') {
+    return
+  }
+  const targetId = typeof act.diagram_library_id === 'string' ? act.diagram_library_id.trim() : ''
+  if (targetId.length === 0) {
+    return
+  }
+
+  const onCanvas =
+    options.routePath === '/canvas' || options.routePath.startsWith('/canvas/')
+  if (!onCanvas) {
+    await options.router
+      .push({ path: '/canvas', query: { diagramId: targetId } })
+      .catch(() => undefined)
+    return
+  }
+
+  const currentId = options.savedDiagramsStore.activeDiagramId?.trim() ?? ''
+  if (currentId && currentId !== targetId) {
+    await handleKittyOpenLibraryDiagramAction(
+      { kind: 'open_library_diagram', diagram_library_id: targetId, title: act.title },
+      options
+    )
+    return
+  }
+
+  // Bust detail cache so we pick up the mobile-written snapshot.
+  options.savedDiagramsStore.invalidateDiagramDetail(targetId)
+  const result = await options.savedDiagramsStore.getDiagram(targetId)
+  if (!result.ok || !result.diagram?.spec) {
+    return
+  }
+  const diagramStore = useDiagramStore()
+  const loaded = diagramStore.loadFromSpec(
+    result.diagram.spec as Record<string, unknown>,
+    'mindmap'
+  )
+  if (loaded) {
+    options.savedDiagramsStore.setActiveDiagram(targetId)
+    useLLMResultsStore().reset()
+    traceKittyWorkflow('desktop', 'desktop_nav', `reload_library ${targetId.slice(0, 12)}`, {
+      scope: targetId,
+    })
+  }
+}
+
 export async function handleKittyOpenLibraryDiagramAction(
   action: unknown,
   options: {
@@ -81,31 +154,24 @@ export async function handleKittyOpenLibraryDiagramAction(
     typeof act.title === 'string' && act.title.trim().length > 0 ? act.title.trim() : targetId
 
   const currentId = options.savedDiagramsStore.activeDiagramId?.trim() ?? ''
-  const onCanvas = options.routePath === '/canvas' || options.routePath.startsWith('/canvas/')
-
-  if (currentId === targetId && onCanvas) {
+  const decision = decideCanvasLibraryDiagramOpen(options.routePath, currentId, targetId)
+  if (decision === 'noop') {
     return
   }
 
-  if (currentId.length > 0 && currentId !== targetId) {
+  if (decision === 'confirm') {
     const currentTitle =
       options.savedDiagramsStore.diagrams.find((row) => row.id === currentId)?.title ?? currentId
-    try {
-      const ElMessageBox = await loadElMessageBox()
-      await ElMessageBox.confirm(
-        options.t(
-          'kitty.desktopJumpConfirmBody',
-          `手机 Kitty 请求打开「${targetTitle}」。当前画布是「${currentTitle}」。是否跳转？`
-        ),
-        options.t('kitty.desktopJumpConfirmTitle', '切换导图'),
-        {
-          confirmButtonText: options.t('kitty.desktopJumpConfirmOk', '跳转'),
-          cancelButtonText: options.t('common.cancel', '取消'),
-          type: 'warning',
-          distinguishCancelAndClose: true,
-        }
-      )
-    } catch {
+    const accepted = await confirmCanvasLibraryDiagramOpen({
+      title: options.t('kitty.desktopJumpConfirmTitle', '切换导图'),
+      message: options.t(
+        'kitty.desktopJumpConfirmBody',
+        `手机 Kitty 请求打开「${targetTitle}」。当前画布是「${currentTitle}」。是否跳转？`
+      ),
+      confirmButtonText: options.t('kitty.desktopJumpConfirmOk', '跳转'),
+      cancelButtonText: options.t('common.cancel', '取消'),
+    })
+    if (!accepted) {
       return
     }
   }
@@ -243,5 +309,9 @@ export async function handleKittyDesktopQueuedAction(
   }
   if (kind === 'open_library_diagram') {
     await handleKittyOpenLibraryDiagramAction(action, options)
+    return
+  }
+  if (kind === 'reload_library_diagram') {
+    await handleKittyReloadLibraryDiagramAction(action, options)
   }
 }

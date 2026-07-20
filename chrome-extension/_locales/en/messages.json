@@ -272,20 +272,24 @@
     "description": "Document Summary section label"
   },
   "fileCenterPackageLabel": {
-    "message": "Package",
-    "description": "Package picker label"
+    "message": "Session",
+    "description": "Document Summary session picker label"
+  },
+  "fileCenterNewSession": {
+    "message": "New session (this page)",
+    "description": "Create a new Document Summary session for the captured page"
   },
   "btnSaveToFileCenter": {
-    "message": "Save page to corpus",
-    "description": "Button to save page content into a Document Summary package"
+    "message": "Save page extract",
+    "description": "Button to save page markdown into Document Summary (COS)"
   },
   "fileCenterUntitled": {
-    "message": "Untitled package",
-    "description": "Fallback package name"
+    "message": "Untitled session",
+    "description": "Fallback Document Summary session name"
   },
   "statusSavedToFileCenter": {
-    "message": "Saved to Document Summary. Indexing started.",
-    "description": "Status after saving page into a package"
+    "message": "Saved extract for review in Document Summary.",
+    "description": "Status after saving page markdown into COS-backed Document Summary"
   },
   "btnSettings": {
     "message": "Settings",

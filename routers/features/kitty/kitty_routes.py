@@ -6,17 +6,19 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
-from fastapi import Body, Depends, HTTPException, Query, WebSocket
+from fastapi import Body, Depends, File, Form, HTTPException, Query, Request, UploadFile, WebSocket
 
 from config.settings import config
 from models.domain.auth import User
+from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.features.kitty.state import (
     active_websockets,
     logger,
     router,
 )
+from services.kitty.http.conversation_image_handler import kitty_rest_conversation_image
 from services.agent_hub import get_mind_graph_agent_hub
 from services.kitty.http.handlers import (
     kitty_rest_desktop_action_enqueue,
@@ -96,6 +98,36 @@ async def kitty_desktop_action_enqueue(
     Enqueue a desktop UX action (``open_library_diagram``, ``open_canvas``) from mobile Kitty.
     """
     return await kitty_rest_desktop_action_enqueue(current_user, payload)
+
+
+@router.post("/api/kitty/conversation_image")
+async def kitty_conversation_image(
+    request: Request,
+    file: UploadFile = File(...),
+    language: str = Form("zh"),
+    diagram_id: str = Form(...),
+    diagram_title: Optional[str] = Form(None),
+    apply_to_library: bool = Form(True),
+    current_user: User = Depends(get_current_user),
+):
+    """Conversation image: hand-drawn mind-map rebuild or OCR → Document Summary."""
+    if not await kitty_http_allowed(current_user):
+        raise HTTPException(status_code=403, detail="Kitty is disabled")
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "kitty_conversation_image",
+        identifier,
+        max_requests=60,
+        window_seconds=60,
+    )
+    return await kitty_rest_conversation_image(
+        current_user,
+        file=file,
+        language=language,
+        diagram_id=diagram_id,
+        diagram_title=diagram_title,
+        apply_to_library=apply_to_library,
+    )
 
 
 @router.get("/api/kitty/desktop_pairing")
