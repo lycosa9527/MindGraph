@@ -88,8 +88,8 @@ def showcase_wf_log(
     Log one step in the Showcase create → upload → download → delete pipeline.
 
     Stages include: create, create_fail, create_rollback, upload_init,
-    upload_init_fail, upload_complete, upload_complete_fail, download,
-    download_deny, withdraw, delete, assets_deleted, cache_invalidate,
+    upload_init_fail, upload_complete, upload_complete_fail, upload_rollback,
+    download, download_deny, withdraw, delete, assets_deleted, cache_invalidate,
     sync_scan, sync_purge.
     """
     if not showcase_workflow_trace_enabled():

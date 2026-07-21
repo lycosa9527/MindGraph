@@ -51,11 +51,14 @@ def log_withdraw(
     *,
     post_id: str,
     user_id: int,
+    reason: str = "hard_delete",
 ) -> None:
-    """Workflow log for author withdraw."""
+    """Workflow log for author withdraw (optional client-reported reason)."""
+    detail = reason.strip() if reason and reason.strip() else "hard_delete"
+    stage = "upload_rollback" if detail.startswith("upload_") else "withdraw"
     showcase_wf_log(
-        "withdraw",
-        "hard_delete",
+        stage,
+        detail,
         post_id=post_id,
         user_id=user_id,
         backend=storage_backend(),

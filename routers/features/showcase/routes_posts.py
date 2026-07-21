@@ -10,6 +10,7 @@ from typing import Optional, Set
 
 from fastapi import (
     APIRouter,
+    Body,
     Depends,
     File,
     Form,
@@ -19,6 +20,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -754,10 +756,27 @@ async def get_post(
     return payload
 
 
+class WithdrawBody(BaseModel):
+    """Optional client context when withdraw is used as upload-failure rollback."""
+
+    reason: Optional[str] = Field(default=None, max_length=200)
+
+
+def _normalize_withdraw_reason(raw: Optional[str]) -> str:
+    if not raw:
+        return "hard_delete"
+    cleaned = " ".join(raw.strip().split())
+    if not cleaned:
+        return "hard_delete"
+    return cleaned[:200]
+
+
 async def _withdraw_case_post_handler(
     post_id: str,
     current_user: User,
     db: AsyncSession,
+    *,
+    reason: Optional[str] = None,
 ) -> dict[str, str]:
     _validate_post_id(post_id)
     post = (await db.execute(select(ShowcasePost).where(ShowcasePost.id == post_id))).scalar_one_or_none()
@@ -768,6 +787,7 @@ async def _withdraw_case_post_handler(
 
     thumb_path = post.thumbnail_path
     spec_snapshot = dict(post.spec) if isinstance(post.spec, dict) else None
+    withdraw_reason = _normalize_withdraw_reason(reason)
 
     panel_ctx = RlsContext.panel_superadmin(current_user)
     await apply_rls_context_async(db, panel_ctx)
@@ -777,7 +797,7 @@ async def _withdraw_case_post_handler(
             actor_id=current_user.id,
             action="withdraw",
             post_id=post_id,
-            payload={"title": post.title},
+            payload={"title": post.title, "reason": withdraw_reason},
         )
         removed = await delete_showcase_post_rows(db, post_id)
         if removed != 1:
@@ -800,7 +820,14 @@ async def _withdraw_case_post_handler(
         ) from exc
     await delete_post_assets(post_id=post_id, thumbnail_path=thumb_path, spec=spec_snapshot)
     await showcase_cache.invalidate_post(post_id)
-    log_withdraw(post_id=post_id, user_id=current_user.id)
+    if withdraw_reason.startswith("upload_"):
+        logger.warning(
+            "[Showcase] upload_rollback post=%s user=%s reason=%s",
+            post_id,
+            current_user.id,
+            withdraw_reason,
+        )
+    log_withdraw(post_id=post_id, user_id=current_user.id, reason=withdraw_reason)
     log_cache_invalidate(post_id=post_id)
     return {"message": "Case withdrawn"}
 
@@ -808,11 +835,17 @@ async def _withdraw_case_post_handler(
 @router.post("/posts/{post_id}/withdraw")
 async def withdraw_post(
     post_id: str,
+    body: WithdrawBody = Body(default_factory=WithdrawBody),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Author withdraws a case still under review (hard delete)."""
-    return await _withdraw_case_post_handler(post_id, current_user, db)
+    return await _withdraw_case_post_handler(
+        post_id,
+        current_user,
+        db,
+        reason=body.reason,
+    )
 
 
 async def _delist_case_post_handler(

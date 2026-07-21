@@ -22,6 +22,7 @@ import {
   uploadShowcaseFile,
   type ShowcaseUploadRole,
 } from '@/composables/showcase/uploadShowcaseFile'
+import { mapShowcaseSubmitError } from '@/composables/showcase/mapShowcaseSubmitError'
 import { resolvePublishThumbnail } from '@/composables/showcase/publishShowcaseThumbnails'
 import type {
   GalleryDiagramDraft,
@@ -58,7 +59,7 @@ export type PublishSubmitDeps = {
   }
   t: UseLanguageTranslate
   notify: {
-    error: (message: string) => void
+    error: (message: string, duration?: number) => void
     success: (message: string, duration?: number) => void
     showLoading: (message?: string) => void
     hideLoading: () => void
@@ -262,10 +263,21 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     }
   }
 
-  async function rollbackCreatedPost(postId: string, proxyMode: boolean): Promise<void> {
+  function uploadFailureReason(error: unknown): string {
+    if (error instanceof Error && error.message.trim()) {
+      return `upload_${error.message.trim()}`.slice(0, 200)
+    }
+    return 'upload_failed'
+  }
+
+  async function rollbackCreatedPost(
+    postId: string,
+    proxyMode: boolean,
+    reason: string,
+  ): Promise<void> {
     try {
       // Pending author posts use withdraw (hard-delete + asset cleanup)
-      await withdrawShowcasePost(postId)
+      await withdrawShowcasePost(postId, { reason })
     } catch {
       if (!proxyMode) {
         return
@@ -300,35 +312,20 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         await reviewAdminShowcasePost(postId, 'approve')
       }
       setSubmitProgress(String(t('showcase.publishModal.finishing')))
-    } catch {
-      await rollbackCreatedPost(postId, proxyMode)
-      throw new Error('SHOWCASE_UPLOAD_ROLLED_BACK')
+    } catch (uploadError) {
+      const cause =
+        uploadError instanceof Error && uploadError.message.trim()
+          ? uploadError.message.trim()
+          : 'upload_failed'
+      console.error('[Showcase] upload failed; rolling back draft', postId, uploadError)
+      await rollbackCreatedPost(postId, proxyMode, uploadFailureReason(uploadError))
+      throw new Error(`SHOWCASE_UPLOAD_ROLLED_BACK:${cause}`)
     }
     return postId
   }
 
   function mapSubmitError(error: unknown): string {
-    const message = error instanceof Error ? error.message : ''
-    if (isSessionExpiredMessage(message)) {
-      return String(t('auth.sessionExpired'))
-    }
-    if (message === 'SHOWCASE_UPLOAD_ROLLED_BACK') {
-      return String(t('showcase.publishModal.uploadFailedRolledBack'))
-    }
-    if (
-      message === 'NETWORK_ERROR' ||
-      message === 'Failed to fetch' ||
-      /network|fetch failed/i.test(message)
-    ) {
-      return String(t('showcase.publishModal.networkError'))
-    }
-    if (
-      message.startsWith('SHOWCASE_STORAGE_PUT_FAILED') ||
-      /Upload to storage failed|upload failed|presigned|COS|storage/i.test(message)
-    ) {
-      return String(t('showcase.publishModal.uploadFailed'))
-    }
-    return message || String(t('showcase.publishModal.uploadFailed'))
+    return mapShowcaseSubmitError(error, t, isSessionExpiredMessage)
   }
 
   async function submit() {
@@ -566,7 +563,8 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
       resetForm()
     } catch (e) {
       clearSubmitProgress()
-      notify.error(mapSubmitError(e))
+      // Longer duration — upload failures are easy to miss after the loading toast closes
+      notify.error(mapSubmitError(e), 10000)
     } finally {
       clearSubmitProgress()
       isSubmitting.value = false

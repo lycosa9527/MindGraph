@@ -35,19 +35,40 @@ function guessContentType(file: File): string {
   return 'application/octet-stream'
 }
 
+function isBrowserCorsOrNetworkFailure(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const message = error.message || ''
+  // Chromium/Firefox: TypeError Failed to fetch; Safari: Load failed / NetworkError
+  return (
+    error.name === 'TypeError' ||
+    error.name === 'NetworkError' ||
+    /failed to fetch|networkerror|load failed|network request failed/i.test(message)
+  )
+}
+
 async function putToPresignedUrl(
   putUrl: string,
   file: File,
   headers: Record<string, string>,
 ): Promise<void> {
-  const response = await fetch(putUrl, {
-    method: 'PUT',
-    headers: {
-      ...headers,
-      'Content-Type': headers['Content-Type'] || guessContentType(file),
-    },
-    body: file,
-  })
+  const contentType = headers['Content-Type'] || guessContentType(file)
+  let response: Response
+  try {
+    response = await fetch(putUrl, {
+      method: 'PUT',
+      headers: {
+        ...headers,
+        'Content-Type': contentType,
+      },
+      body: file,
+    })
+  } catch (error) {
+    if (isBrowserCorsOrNetworkFailure(error)) {
+      // Browser→COS blocked (usually bucket CORS missing this origin) or offline
+      throw new Error('SHOWCASE_STORAGE_CORS_OR_NETWORK')
+    }
+    throw error
+  }
   if (!response.ok) {
     throw new Error(`SHOWCASE_STORAGE_PUT_FAILED:${response.status}`)
   }

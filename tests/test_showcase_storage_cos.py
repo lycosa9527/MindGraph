@@ -24,6 +24,7 @@ from services.showcase.storage import backend as storage_backend
 from services.showcase.storage.keys import is_scoped_post_object_key
 from services.showcase.sync.report import diff_key_sets
 from services.showcase.upload_roles import resolve_upload_role
+from services.utils import tencent_cos_client as cos_mod
 
 
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
@@ -281,6 +282,31 @@ async def test_create_presigned_put_local_returns_null_url(monkeypatch: pytest.M
     assert result is not None
     assert result["put_url"] is None
     assert result["storage"] == storage.STORAGE_LOCAL
+
+
+def test_generate_presigned_put_signs_content_type_via_headers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Browser PUTs send Content-Type; signature must use Headers, not Params."""
+    captured: dict[str, object] = {}
+
+    class _FakeClient:
+        def get_presigned_url(self, **kwargs: object) -> str:
+            """Capture kwargs and return a dummy PUT URL."""
+            captured.update(kwargs)
+            return "https://example.cos.test/put"
+
+    monkeypatch.setattr(cos_mod, "get_cos_client", _FakeClient)
+    monkeypatch.setattr(cos_mod, "COS_BUCKET", "bucket-appid")
+    url = cos_mod.generate_presigned_put_url(
+        "showcase/mindgraph-Test/showcase/posts/p/a.docx",
+        expired=60,
+        content_type="application/pdf",
+    )
+    assert url == "https://example.cos.test/put"
+    assert captured.get("Method") == "PUT"
+    assert captured.get("Headers") == {"Content-Type": "application/pdf"}
+    assert captured.get("Params") in (None, {})
 
 
 @pytest.mark.asyncio

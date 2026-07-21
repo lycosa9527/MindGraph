@@ -344,23 +344,25 @@ def generate_presigned_put_url(
     """
     Short-lived presigned PUT URL for browser→COS uploads (private bucket).
 
-    ``expired`` is TTL in seconds. Callers must not embed durable COS URLs in API JSON.
+    ``Content-Type`` is signed via Headers (not query Params) so browser PUTs that
+    send the same header match the signature. ``expired`` is TTL in seconds.
+    Callers must not embed durable COS URLs in API JSON.
     """
     client = get_cos_client()
     if client is None:
         return None
-    params: Dict[str, Any] = {}
-    if content_type:
-        params["ContentType"] = content_type
+    signed_headers: Dict[str, str] = {}
     if headers:
-        params.update(headers)
+        signed_headers.update(headers)
+    if content_type:
+        signed_headers.setdefault("Content-Type", content_type)
     try:
         return client.get_presigned_url(
             Method="PUT",
             Bucket=COS_BUCKET,
             Key=object_key,
             Expired=expired,
-            Params=params or None,
+            Headers=signed_headers or None,
         )
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[COS] presigned PUT failed key=%s: %s", object_key, exc)

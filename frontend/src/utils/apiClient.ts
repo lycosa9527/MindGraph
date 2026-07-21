@@ -1012,12 +1012,19 @@ export async function uploadShowcaseGalleryImages(
   }
 }
 
-export async function withdrawShowcasePost(postId: string): Promise<{ message: string }> {
+export async function withdrawShowcasePost(
+  postId: string,
+  options?: { reason?: string },
+): Promise<{ message: string }> {
   const id = postId.trim()
   if (!id) {
     throw new Error('Missing case id')
   }
-  const response = await apiPost(`/api/showcase/posts/${id}/withdraw`, {})
+  const reason = options?.reason?.trim()
+  const response = await apiPost(
+    `/api/showcase/posts/${id}/withdraw`,
+    reason ? { reason: reason.slice(0, 200) } : {},
+  )
   if (!response.ok) {
     const err = await response.json().catch(() => ({ detail: 'Failed to withdraw case' }))
     throw new Error(err.detail || 'Failed to withdraw case')

@@ -52,6 +52,10 @@ export default {
   'showcase.publishModal.finishing': '即将完成…',
   'showcase.publishModal.uploadFailedRolledBack':
     '上传失败，草稿已撤销，请重试。',
+  'showcase.publishModal.uploadCorsFailed':
+    '文件未能上传到对象存储（常见原因：存储桶 CORS 未允许当前网站地址）。草稿已撤销，请联系管理员配置后重试。',
+  'showcase.publishModal.uploadStorageRejected':
+    '对象存储拒绝了本次上传。草稿已撤销，请稍后重试；若反复失败请联系管理员。',
   'showcase.publishModal.uploadFailed': '上传失败，请重试。',
   'showcase.publishModal.success': '案例已提交，等待管理员审核',
   'showcase.publishModal.fromCanvas': '从画布发布',

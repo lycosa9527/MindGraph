@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.150.0] - 2026-07-21
+
+> **Showcase COS upload reliability: Content-Type signed via headers, clearer CORS/storage failure UX, and upload-rollback withdraw reasons.**
+
+### Added
+
+- **Showcase submit error mapper** — Dedicated mapping for CORS/network vs storage-rejected vs generic rollback messages ([`mapShowcaseSubmitError.ts`](frontend/src/composables/showcase/mapShowcaseSubmitError.ts)).
+- **Withdraw reason on upload rollback** — Optional `reason` on `POST /api/showcase/posts/{id}/withdraw`; upload failures log as `upload_rollback` for greppable workflow traces ([`routes_posts.py`](routers/features/showcase/routes_posts.py), [`lifecycle.py`](services/showcase/posts/lifecycle.py)).
+- **COS CORS guidance** — `env.example` documents required browser origins / methods / headers for Showcase presigned PUTs.
+
+### Changed
+
+- **Presigned PUT Content-Type** — Sign `Content-Type` via `Headers` (not query `Params`) so browser PUTs match the signature ([`tencent_cos_client.py`](services/utils/tencent_cos_client.py)).
+- **Upload failure UX** — Detect browser→COS CORS/network failures; longer toast duration; i18n keys for CORS and storage rejection across locale bundles.
+
+### Fixed
+
+- **Silent Showcase upload failure** — Browser CORS/network PUT failures no longer look like opaque rollbacks; drafts still withdraw, with a reason the server can log.
+
+### Tests
+
+- **Backend** — Presigned PUT signs Content-Type via Headers; withdraw reason normalization and `upload_rollback` stage.
+- **Frontend** — Showcase submit error mapping (`mapShowcaseSubmitError.spec.ts`).
+
 ## [5.149.0] - 2026-07-21
 
 > **Stable mind-map node identity, underline connector layout/performance, unified module activity with `X-MG-Client`, and Kitty live-spec extras hydrate.**
