@@ -37,6 +37,7 @@ from services.features.workshop_chat.mention_resolution import (
     MentionResolutionError,
 )
 from services.features.workshop_chat_ws_manager import chat_ws_manager
+from services.monitoring.module_activity import schedule_module_activity
 from services.infrastructure.monitoring.ws_metrics import (
     record_ws_auth_failure,
     record_ws_rate_limit_hit,
@@ -335,6 +336,18 @@ async def _handle_channel_message(
                 )
             )
             return
+        schedule_module_activity(
+            user=user,
+            module="workshop",
+            redis_activity_type="workshop_chat",
+            request=websocket,
+            details={"channel_id": channel_id},
+            detail=f"ws channel={channel_id}",
+            usage_source="mindgraph",
+            usage_action="workshop_chat",
+            title=f"channel:{channel_id}",
+            prompt_preview=content,
+        )
         await chat_ws_manager.send_to_user(
             user.id,
             {
@@ -377,6 +390,18 @@ async def _handle_topic_message(
                 user.id,
                 content,
                 topic_id=topic_id,
+            )
+            schedule_module_activity(
+                user=user,
+                module="workshop",
+                redis_activity_type="workshop_chat",
+                request=websocket,
+                details={"channel_id": channel_id, "topic_id": topic_id},
+                detail=f"ws channel={channel_id} topic={topic_id}",
+                usage_source="mindgraph",
+                usage_action="workshop_chat",
+                title=f"topic:{topic_id}",
+                prompt_preview=content,
             )
         except MentionResolutionError as exc:
             await websocket.send_text(
@@ -468,6 +493,18 @@ async def _handle_dm(
                 )
             )
             return
+        schedule_module_activity(
+            user=user,
+            module="workshop",
+            redis_activity_type="workshop_chat",
+            request=websocket,
+            details={"partner_id": recipient_id, "endpoint": "dm_ws"},
+            detail=f"ws dm partner={recipient_id}",
+            usage_source="mindgraph",
+            usage_action="workshop_chat",
+            title=f"dm:{recipient_id}",
+            prompt_preview=content,
+        )
         await chat_ws_manager.send_to_user(
             user.id,
             {

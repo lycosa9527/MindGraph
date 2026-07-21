@@ -5,13 +5,23 @@ import {
   DEFAULT_MINDMAP_BRANCH_GAP,
   MINDMAP_SIBLING_GAP,
 } from '@/composables/diagrams/layoutConfig'
+import {
+  getMindMapDiagramStyleById,
+  mindMapNodeShapeFromPreset,
+} from '@/config/mindMapDiagramStyles'
 import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
 import type { Connection, DiagramNode } from '@/types'
+
+import {
+  ensureMindMapBranchUid,
+  MINDMAP_NODE_UID_DATA_KEY,
+} from '@/utils/mindMapNodeUid'
 
 import type { MindMapBranchSpec } from './mindMapLegacyLayout'
 import {
   estimateNodeWidthForCanvasMode,
   measureBranchNodeHeightForCanvasMode,
+  measureMindMapUnderlineBoxMetrics,
 } from './mindMapMeasurements'
 
 function getBranchText(branch: { text?: string; label?: string }): string {
@@ -29,15 +39,18 @@ export function layoutMindMapSideV2(
   connections: Connection[],
   startHandleIndex: number,
   _totalBranches: number,
-  topicBorderColor: string
+  topicBorderColor: string,
+  diagramStyleId?: string | null
 ): void {
   if (branches.length === 0) return
 
   const sideChar = side === 'right' ? 'r' : 'l'
+  const diagramStyle = getMindMapDiagramStyleById(diagramStyleId)
 
   interface LayoutNode {
     id: string
     text: string
+    uid: string
     depth: number
     estimatedWidth: number
     estimatedHeight: number
@@ -51,10 +64,18 @@ export function layoutMindMapSideV2(
     const idx = globalCounter.value++
     const id = `branch-${sideChar}-${depth}-${idx}`
     const text = getBranchText(b)
+    const uid = ensureMindMapBranchUid(b)
     const estimatedWidth = estimateNodeWidthForCanvasMode(text, id, 'v2')
-    const estimatedHeight = measureBranchNodeHeightForCanvasMode(text, id, 'v2')
+    const shape = mindMapNodeShapeFromPreset(
+      { id, type: 'branch' },
+      diagramStyle
+    )
+    const estimatedHeight =
+      shape === 'underline'
+        ? measureMindMapUnderlineBoxMetrics(text, id).totalHeight
+        : measureBranchNodeHeightForCanvasMode(text, id, 'v2')
     const children = (b.children ?? []).map((c) => buildTree(c, depth + 1, branchIndex))
-    return { id, text, depth, estimatedWidth, estimatedHeight, children, branchIndex }
+    return { id, text, uid, depth, estimatedWidth, estimatedHeight, children, branchIndex }
   }
 
   const topLevel = branches.map((b, i) => {
@@ -174,6 +195,7 @@ export function layoutMindMapSideV2(
         branchIndex: node.branchIndex,
         estimatedWidth: node.estimatedWidth,
         estimatedHeight: node.estimatedHeight,
+        [MINDMAP_NODE_UID_DATA_KEY]: node.uid,
       },
     })
 

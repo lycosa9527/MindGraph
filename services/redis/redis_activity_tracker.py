@@ -38,6 +38,7 @@ from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.utils.error_types import REDIS_ERRORS
 from services.utils.typing_helpers import redis_decode, redis_decode_required, redis_hash_to_str
+from utils.auth.mg_client import merge_client_source_into_details, mg_client_display_label
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ class RedisActivityTracker:
     # Activity type mappings
     ACTIVITY_TYPES = {
         "diagram_generation": "Generating Diagram",
+        "diagram_save": "Saving Diagram",
         "node_palette": "Using Node Palette",
         "autocomplete": "Auto-complete",
         "voice_conversation": "Voice Conversation",
@@ -80,9 +82,19 @@ class RedisActivityTracker:
         "ai_assistant": "AI Assistant",
         "export_png": "Exporting PNG",
         "export_dingtalk": "Exporting DingTalk",
+        "knowledge_space": "Knowledge Space",
+        "doc_summary": "Document Summary",
+        "workshop_collab": "Workshop Collab",
+        "workshop_chat": "Workshop Chat",
+        "askonce": "AskOnce",
+        "debateverse": "DebateVerse",
+        "markets": "Markets",
+        "library": "Library",
+        "showcase": "Showcase",
+        "canvas_translate": "Canvas Translate",
+        "relationship_labels": "Relationship Labels",
         "login": "Login",
         "logout": "Logout",
-        "page_view": "Viewing Page",
     }
 
     def __init__(self):
@@ -252,7 +264,8 @@ class RedisActivityTracker:
             pipe.expire(user_sessions_key, SESSION_TTL)
             await pipe.execute()
 
-        await self._log_activity(user_id, user_phone, "login", session_id=session_id)
+        # Login history is written by track_user_activity / track_module_activity
+        # so start_session does not double-count with record_activity("login").
 
         if ip_address and ip_address != "unknown":
             self._record_city_flag_async(ip_address)
@@ -422,27 +435,37 @@ class RedisActivityTracker:
         session_id: Optional[str] = None,
         user_name: Optional[str] = None,
         ip_address: Optional[str] = None,
+        client_source: Optional[str] = None,
     ):
         """Record a user activity."""
+        merged_details = merge_client_source_into_details(details, client_source)
+        resolved_client = client_source or merged_details.get("client_source")
+        if isinstance(resolved_client, str):
+            resolved_client = resolved_client.strip() or None
+        else:
+            resolved_client = None
+
         if self._use_redis():
             await self._redis_record_activity(
                 user_id,
                 user_phone,
                 activity_type,
-                details,
+                merged_details,
                 session_id,
                 user_name,
                 ip_address,
+                resolved_client,
             )
         else:
             await self._memory_record_activity(
                 user_id,
                 user_phone,
                 activity_type,
-                details,
+                merged_details,
                 session_id,
                 user_name,
                 ip_address,
+                resolved_client,
             )
 
     async def _redis_record_activity(
@@ -454,6 +477,7 @@ class RedisActivityTracker:
         session_id: Optional[str],
         user_name: Optional[str],
         ip_address: Optional[str],
+        client_source: Optional[str],
     ):
         """Record activity using Redis."""
         redis = get_async_redis()
@@ -466,6 +490,7 @@ class RedisActivityTracker:
                 session_id,
                 user_name,
                 ip_address,
+                client_source,
             )
             return
 
@@ -496,13 +521,22 @@ class RedisActivityTracker:
                         existing_name = await redis.hget(session_key, "user_name")
                         if not existing_name or existing_name == "":
                             pipe.hset(session_key, "user_name", user_name)
+                    if client_source:
+                        pipe.hset(session_key, "client_source", client_source)
                     pipe.expire(session_key, SESSION_TTL)
                     await pipe.execute()
 
             if session_ip and session_ip != "unknown":
                 self._record_city_flag_async(session_ip)
 
-            await self._log_activity(user_id, user_phone, activity_type, details, session_id)
+            await self._log_activity(
+                user_id,
+                user_phone,
+                activity_type,
+                details,
+                session_id,
+                client_source,
+            )
 
         except REDIS_ERRORS as e:
             logger.error("[ActivityTracker] Redis error recording activity: %s", e)
@@ -516,6 +550,7 @@ class RedisActivityTracker:
         session_id: Optional[str],
         user_name: Optional[str],
         ip_address: Optional[str],
+        client_source: Optional[str],
     ):
         """Record activity using in-memory storage."""
         now = get_beijing_now()
@@ -539,11 +574,20 @@ class RedisActivityTracker:
             session["activity_count"] = session.get("activity_count", 0) + 1
             if user_name and (not session.get("user_name") or session.get("user_name") == ""):
                 session["user_name"] = user_name
+            if client_source:
+                session["client_source"] = client_source
 
         if session_ip and session_ip != "unknown":
             self._record_city_flag_async(session_ip)
 
-        await self._log_activity(user_id, user_phone, activity_type, details, session_id)
+        await self._log_activity(
+            user_id,
+            user_phone,
+            activity_type,
+            details,
+            session_id,
+            client_source,
+        )
 
     async def _log_activity(
         self,
@@ -552,11 +596,16 @@ class RedisActivityTracker:
         activity_type: str,
         details: Optional[Dict] = None,
         session_id: Optional[bytes | str] = None,
+        client_source: Optional[str] = None,
     ):
         """Log activity to history."""
         phone_text = redis_decode_required(user_phone)
         session_text = redis_decode(session_id)
         activity_label = self.ACTIVITY_TYPES.get(activity_type, activity_type)
+        detail_map = details or {}
+        resolved_client = client_source or detail_map.get("client_source")
+        if not isinstance(resolved_client, str) or not resolved_client.strip():
+            resolved_client = None
 
         entry = {
             "timestamp": get_beijing_now().isoformat(),
@@ -564,8 +613,10 @@ class RedisActivityTracker:
             "user_phone": phone_text,
             "activity_type": activity_type,
             "activity_label": activity_label,
-            "details": details or {},
+            "details": detail_map,
             "session_id": session_text,
+            "client_source": resolved_client,
+            "client_source_label": mg_client_display_label(resolved_client) if resolved_client else None,
         }
 
         if self._use_redis():
@@ -650,6 +701,7 @@ class RedisActivityTracker:
                         except REDIS_ERRORS:
                             duration = "0:00:00"
 
+                        client_source = session_data.get("client_source") or None
                         user_data = {
                             "session_id": session_data.get("session_id", ""),
                             "user_id": int(session_data.get("user_id", 0)),
@@ -664,6 +716,8 @@ class RedisActivityTracker:
                             "last_activity": last_activity.isoformat(),
                             "activity_count": int(session_data.get("activity_count", 0)),
                             "session_duration": duration,
+                            "client_source": client_source,
+                            "client_source_label": (mg_client_display_label(client_source) if client_source else None),
                         }
                         active_users.append(user_data)
                     except REDIS_ERRORS as e:
@@ -700,6 +754,7 @@ class RedisActivityTracker:
             if session["last_activity"] < cutoff_time:
                 continue
 
+            client_source = session.get("client_source")
             user_data = {
                 "session_id": session_id,
                 "user_id": session["user_id"],
@@ -714,6 +769,8 @@ class RedisActivityTracker:
                 "last_activity": session["last_activity"].isoformat(),
                 "activity_count": session.get("activity_count", 0),
                 "session_duration": str(now - session["created_at"]).split(".", maxsplit=1)[0],
+                "client_source": client_source,
+                "client_source_label": (mg_client_display_label(client_source) if client_source else None),
             }
             active_users.append(user_data)
 
@@ -751,6 +808,8 @@ class RedisActivityTracker:
                 "activity_label": act["activity_label"],
                 "details": act["details"],
                 "session_id": act.get("session_id"),
+                "client_source": act.get("client_source"),
+                "client_source_label": act.get("client_source_label"),
             }
             for act in reversed(activities)
         ]

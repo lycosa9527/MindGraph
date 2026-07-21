@@ -57,6 +57,7 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_ws_viewer_connection_delta,
 )
 from services.online_collab.common.collab_palette import USER_COLORS, USER_EMOJIS
+from services.monitoring.module_activity import schedule_module_activity
 from services.online_collab.core.online_collab_manager import (
     get_online_collab_manager,
 )
@@ -309,6 +310,19 @@ async def canvas_collab_websocket(
             else:
                 record_ws_editor_connection_delta(1)
             join_committed = True
+            schedule_module_activity(
+                user=user,
+                module="workshop",
+                redis_activity_type="workshop_collab",
+                request=websocket,
+                details={"code": code, "diagram_id": diagram_id, "role": handle.role},
+                detail=f"join code={code} role={handle.role}",
+                usage_source="mindgraph",
+                usage_action="workshop_collab",
+                title=f"collab:{code}",
+                prompt_preview=f"join {code}",
+                diagram_id=diagram_id,
+            )
 
             try:
                 await run_canvas_collab_receive_loop(collab_ctx)

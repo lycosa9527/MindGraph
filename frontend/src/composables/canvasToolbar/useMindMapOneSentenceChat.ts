@@ -63,6 +63,7 @@ import { prepareConversationImageCapture } from '@/composables/kitty/prepareConv
 import { processConversationImageUpload } from '@/composables/kitty/processConversationImageUpload'
 import { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
 import { useKittyUserMobileActive } from '@/composables/kitty/useKittyUserMobileActive'
+import { mergeMindMapPresentationExtrasIntoSpec } from '@/utils/mindMapLiveSpecExtras'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 import {
   useAuthStore,
@@ -656,7 +657,13 @@ export function useMindMapOneSentenceChat() {
       })
 
       if (result.mode === 'handdrawn' && result.spec) {
-        diagramStore.loadFromSpec(result.spec, 'mindmap')
+        diagramStore.loadFromSpec(
+          mergeMindMapPresentationExtrasIntoSpec(
+            result.spec,
+            diagramStore.data as Record<string, unknown> | null
+          ),
+          'mindmap'
+        )
         llmResultsStore.reset()
       }
 

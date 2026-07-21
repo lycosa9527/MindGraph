@@ -511,11 +511,19 @@ const canAdd = computed(() => {
     class="mind-map-document-summary-panel pointer-events-auto absolute inset-y-3 left-3 z-40 flex w-80 flex-col overflow-hidden rounded-2xl border border-[var(--swiss-border,#e7e5e4)] bg-[var(--swiss-surface,#ffffff)] shadow-sm"
     :aria-label="t('canvas.mindMapSideToolbar.documentSummary')"
   >
-    <header class="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--swiss-border,#e7e5e4)] px-3 py-3">
-      <h3 class="truncate text-sm font-semibold tracking-tight text-[var(--swiss-ink,#1c1917)]">
-        {{ t('canvas.mindMapSideToolbar.documentSummary') }}
-      </h3>
-      <MindMapSidePanelCloseButton @close="handleClose" />
+    <header class="flex shrink-0 flex-col gap-2 border-b border-[var(--swiss-border,#e7e5e4)] px-3 py-3">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="truncate text-base font-semibold tracking-tight text-[var(--swiss-ink,#1c1917)]">
+          {{ t('canvas.mindMapSideToolbar.documentSummary') }}
+        </h3>
+        <MindMapSidePanelCloseButton @close="handleClose" />
+      </div>
+      <p
+        v-if="featureEnabled"
+        class="text-sm leading-relaxed text-gray-500"
+      >
+        {{ t('canvas.mindMapDocumentSummary.intro') }}
+      </p>
     </header>
 
     <div
@@ -548,13 +556,6 @@ const canAdd = computed(() => {
       >
         {{ t('canvas.mindMapDocumentSummary.saveDiagramHint') }}
       </div>
-
-      <p
-        v-if="!docSummaryLiteUi"
-        class="shrink-0 px-3 pt-3 text-[11px] leading-relaxed text-slate-500"
-      >
-        {{ t('canvas.mindMapDocumentSummary.intro') }}
-      </p>
 
       <!-- Corpus header (full RAG mode only) -->
       <div

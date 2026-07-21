@@ -30,6 +30,7 @@ except ImportError:
     get_session_manager = None
 
 from utils.auth.config import AUTH_MODE
+from utils.auth.mg_client import bind_mg_client_for_web
 from utils.auth.org_subscription import ensure_org_subscription_current
 from utils.auth.tokens import decode_access_token
 from utils.auth.user_tokens import validate_user_token
@@ -101,7 +102,10 @@ async def resolve_authenticated_user_optional(request: Request) -> Optional[User
         return None
     if _redis.user_cache is None:
         return None
-    return await _redis.user_cache.get_by_id(int(user_id))
+    user = await _redis.user_cache.get_by_id(int(user_id))
+    if user is not None:
+        bind_mg_client_for_web(request)
+    return user
 
 
 async def load_user_from_jwt_session_token(token: str) -> Optional[User]:

@@ -127,6 +127,9 @@ export function useCanvasPageWorkshopCollab() {
     workshopCode,
     applyingRemoteCollabPatch,
     getDiagramData: () => diagramStore.data,
+    // Full Pinia save spec (includes mindmap extras) when granular exceeds caps
+    // or mindmap style/collapse metadata changes without a topology-only patch.
+    getSpecForWorkshopUpdate: () => diagramStore.getSpecForSave(),
     mergeGranularUpdate: (...args) => diagramStore.mergeGranularUpdate(...args),
     clearRedoStack: () => diagramStore.clearRedoStack(),
     updateNode: (id, patch) => diagramStore.updateNode(id, patch),

@@ -42,6 +42,7 @@ from services.showcase.posts.lifecycle import (
     log_withdraw,
     rollback_created_post_assets,
 )
+from services.monitoring.module_activity import schedule_module_activity
 from services.showcase.storage import delete_post_assets
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user
@@ -509,7 +510,19 @@ async def create_post(
     await showcase_cache.invalidate_post(post_id)
     log_cache_invalidate(post_id=post_id)
     log_create_success(post_id=post_id, user_id=current_user.id, case_type=case_type)
-    logger.info(
+    schedule_module_activity(
+        user=current_user,
+        module="showcase",
+        redis_activity_type="showcase",
+        request=request,
+        details={"post_id": post_id, "action": "create", "case_type": case_type},
+        detail=f"create post={post_id} type={case_type}",
+        usage_source="mindgraph",
+        usage_action="showcase_engage",
+        title=f"post:{post_id}",
+        prompt_preview=f"create {case_type}",
+    )
+    logger.debug(
         "[Showcase] create_post ok post=%s user=%s case_type=%s",
         post_id,
         current_user.id,

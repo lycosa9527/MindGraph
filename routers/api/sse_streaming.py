@@ -39,7 +39,7 @@ from services.auth.thinking_coin.usage_wire import (
     thinking_coins_apply_to_user,
 )
 from services.auth.thinking_coin.event_hub import mutation_to_footer
-from services.redis.redis_activity_tracker import get_activity_tracker
+from services.monitoring.module_activity import track_module_activity
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.user_daily_token_quota import daily_token_limit_message
@@ -76,22 +76,20 @@ async def ai_assistant_stream(
     # Get message
     message = req.message.strip()
 
-    # Track user activity
+    # Track user activity (Redis + greppable log; usage row written on stream complete)
     if current_user and hasattr(current_user, "id"):
-        try:
-            tracker = get_activity_tracker()
-            await tracker.record_activity(
-                user_id=current_user.id,
-                user_phone=getattr(current_user, "phone", None) or "",
-                activity_type="ai_assistant",
-                details={
-                    "conversation_id": req.conversation_id,
-                    "user_id": req.user_id,
-                },
-                user_name=getattr(current_user, "name", None),
-            )
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.debug("Failed to track user activity: %s", e)
+        await track_module_activity(
+            user=current_user,
+            module="mindmate",
+            redis_activity_type="ai_assistant",
+            request=request,
+            details={
+                "conversation_id": req.conversation_id,
+                "user_id": req.user_id,
+            },
+            detail=f"conv={req.conversation_id or 'new'}",
+            persist_usage=False,
+        )
 
     # Handle Dify conversation opener trigger
     # When message is "start" with no conversation_id, this triggers Dify's opener

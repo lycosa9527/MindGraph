@@ -557,6 +557,11 @@
   border-color: #60a5fa;
 }
 
+/* V2 underline drop targets: keep marching-ants box rectangular (not pill). */
+.branch-move-drop-preview.is-underline {
+  border-radius: 0 !important;
+}
+
 /* ── AI tab-rec active: green ant line (gradient for pills/rects, rotating ring for circles) ──
  * Applied when the AI inline-recommendation picker is open for this node.
  * ──────────────────────────────────────────────────────────────────────── */

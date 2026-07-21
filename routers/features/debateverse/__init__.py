@@ -43,6 +43,7 @@ from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identi
 from services.features.dashscope_tts import get_tts_service
 from services.features.debateverse_service import DebateVerseService
 from services.llm import llm_service
+from services.monitoring.module_activity import schedule_module_activity
 from services.llm.llm_utils import stream_enable_thinking
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
@@ -479,6 +480,18 @@ async def create_session(
             llm_assignments=request.llm_assignments,
             debate_format=request.format or "us_parliamentary",
         )
+        schedule_module_activity(
+            user=current_user,
+            module="debateverse",
+            redis_activity_type="debateverse",
+            details={"session_id": session.id, "action": "create"},
+            detail=f"create session={session.id}",
+            usage_source="mindgraph",
+            usage_action="debate_turn",
+            title=request.topic,
+            prompt_preview=request.topic,
+            conversation_id=session.id,
+        )
 
         return {
             "session_id": session.id,
@@ -725,7 +738,18 @@ async def send_user_message(
         await db.rollback()
         raise
 
-    logger.info("User %s sent message in session %s", current_user.id, session_id)
+    schedule_module_activity(
+        user=current_user,
+        module="debateverse",
+        redis_activity_type="debateverse",
+        details={"session_id": session_id, "action": "message", "stage": current_stage},
+        detail=f"message session={session_id} stage={current_stage}",
+        usage_source="mindgraph",
+        usage_action="debate_turn",
+        title=f"debate:{session_id[:8]}",
+        prompt_preview=request.content,
+        conversation_id=session_id,
+    )
 
     return {
         "success": True,
@@ -827,6 +851,20 @@ async def stream_debater(
 
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("debateverse_stream", identifier, max_requests=60, window_seconds=60)
+
+    schedule_module_activity(
+        user=current_user,
+        module="debateverse",
+        redis_activity_type="debateverse",
+        request=request,
+        details={"session_id": session_id, "action": "stream", "stage": stage},
+        detail=f"stream session={session_id} stage={stage}",
+        usage_source="mindgraph",
+        usage_action="debate_turn",
+        title=f"stream:{stage}",
+        prompt_preview=f"debater={participant_id} stage={stage}",
+        conversation_id=session_id,
+    )
 
     return StreamingResponse(
         stream_debater_response(

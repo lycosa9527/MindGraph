@@ -10,6 +10,11 @@ import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 
 import {
+  ensureMindMapBranchUid,
+  MINDMAP_NODE_UID_DATA_KEY,
+} from '@/utils/mindMapNodeUid'
+
+import {
   estimateNodeWidthForCanvasMode,
   measureBranchNodeHeightForCanvasMode,
 } from './mindMapMeasurements'
@@ -17,6 +22,8 @@ import {
 export interface MindMapBranchSpec {
   text: string
   children?: MindMapBranchSpec[]
+  /** Stable identity across positional id rebuilds (duplicate labels safe). */
+  uid?: string
 }
 
 function getBranchText(branch: { text?: string; label?: string }): string {
@@ -42,6 +49,7 @@ export function layoutMindMapSideLegacy(
   interface LayoutNode {
     id: string
     text: string
+    uid: string
     depth: number
     estimatedWidth: number
     estimatedHeight: number
@@ -55,10 +63,11 @@ export function layoutMindMapSideLegacy(
     const idx = globalCounter.value++
     const id = `branch-${sideChar}-${depth}-${idx}`
     const text = getBranchText(b)
+    const uid = ensureMindMapBranchUid(b)
     const estimatedWidth = estimateNodeWidthForCanvasMode(text, id, 'legacy')
     const estimatedHeight = measureBranchNodeHeightForCanvasMode(text, id, 'legacy')
     const children = (b.children ?? []).map((c) => buildTree(c, depth + 1, branchIndex))
-    return { id, text, depth, estimatedWidth, estimatedHeight, children, branchIndex }
+    return { id, text, uid, depth, estimatedWidth, estimatedHeight, children, branchIndex }
   }
 
   const topLevel = branches.map((b, i) => {
@@ -186,6 +195,7 @@ export function layoutMindMapSideLegacy(
         branchIndex: node.branchIndex,
         estimatedWidth: node.estimatedWidth,
         estimatedHeight: node.estimatedHeight,
+        [MINDMAP_NODE_UID_DATA_KEY]: node.uid,
       },
     })
     node.children.forEach((c) => createNodes(c))

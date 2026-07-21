@@ -16,7 +16,7 @@ Proprietary License
 import logging
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,7 +43,7 @@ from models.requests.requests_thinking import (
     NodeSelectionRequest,
 )
 from routers.node_palette_streaming import stream_node_palette
-from services.redis.redis_activity_tracker import get_activity_tracker
+from services.monitoring.module_activity import track_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user, is_teacher
 from utils.placeholder import is_placeholder_text
@@ -155,6 +155,7 @@ def _log_topic_and_firing(req: NodePaletteStartRequest, center_topic: str, sessi
 @router.post("/thinking_mode/node_palette/start")
 async def start_node_palette(
     req: NodePaletteStartRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -166,29 +167,17 @@ async def start_node_palette(
     NOTE: Kimi removed due to Volcengine server load issues
     """
     session_id = req.session_id
-    user_id = current_user.id if current_user else None
 
-    # Track user activity
     if current_user:
-        try:
-            tracker = get_activity_tracker()
-            await tracker.record_activity(
-                user_id=current_user.id,
-                user_phone=current_user.phone or "",
-                activity_type="node_palette",
-                details={"diagram_type": req.diagram_type, "session_id": session_id},
-                user_name=getattr(current_user, "name", None),
-            )
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.debug("Failed to track user activity: %s", e)
-
-    # Log at INFO level for user activity tracking
-    logger.info(
-        "[NodePalette] Started: Session %s (User: %s, Diagram: %s)",
-        session_id[:8],
-        user_id,
-        req.diagram_type,
-    )
+        await track_module_activity(
+            user=current_user,
+            module="canvas",
+            redis_activity_type="node_palette",
+            request=request,
+            details={"diagram_type": req.diagram_type, "session_id": session_id},
+            detail=f"{req.diagram_type} session={session_id[:8]}",
+            persist_usage=False,
+        )
 
     # Debug: Log received diagram data structure
     logger.debug("[NodePalette-API] Diagram type: %s", req.diagram_type)

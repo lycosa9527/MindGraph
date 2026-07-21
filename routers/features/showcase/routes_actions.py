@@ -14,6 +14,7 @@ from sqlalchemy.sql.functions import count as sa_count
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.showcase import ShowcasePost, ShowcasePostFavorite, ShowcasePostLike
+from services.monitoring.module_activity import schedule_module_activity
 from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user
@@ -93,6 +94,17 @@ async def toggle_like(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
     await showcase_cache.invalidate_post(post_id)
+    schedule_module_activity(
+        user=current_user,
+        module="showcase",
+        redis_activity_type="showcase",
+        details={"post_id": post_id, "action": "like", "liked": liked},
+        detail=f"like post={post_id} liked={liked}",
+        usage_source="mindgraph",
+        usage_action="showcase_engage",
+        title=f"like:{post_id}",
+        prompt_preview=f"{'liked' if liked else 'unliked'} {post_id}",
+    )
     return {"liked": liked, "likes_count": likes_count}
 
 

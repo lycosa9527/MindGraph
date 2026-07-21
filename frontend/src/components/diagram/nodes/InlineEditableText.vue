@@ -586,10 +586,11 @@ function syncMindMapInlineEditDimensionsBeforeClose(): void {
   if (!isMindMapInlineEditContext() || props.nodeId === 'topic') return
   const el = inputRef.value
   if (!el) return
+  // Width-only: input height excludes underline padding/gap/bar, and writing it into
+  // Pinia caused a wrong Y restack before BranchNode ResizeObserver corrected it.
   const width = Math.max(el.offsetWidth, el.scrollWidth)
-  const height = el.offsetHeight
-  if (width > 0 && height > 0) {
-    diagramStore.setMindMapNodeDimensions(props.nodeId, width, height)
+  if (width > 0) {
+    diagramStore.setMindMapNodeWidth(props.nodeId, width)
   }
 }
 

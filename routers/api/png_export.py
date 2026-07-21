@@ -72,6 +72,7 @@ from services.diagram.generation_skip_registry import (
 from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.diagram.library_save_user_notices import library_save_user_notice
 from services.infrastructure.utils.browser import BrowserUnavailableError
+from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user, get_current_user_or_api_key
 from .helpers import (
@@ -198,6 +199,21 @@ async def export_png(
     if not diagram_data:
         raise HTTPException(status_code=400, detail=Messages.error("diagram_data_required", lang))
 
+    if current_user and hasattr(current_user, "id"):
+        schedule_module_activity(
+            user=current_user,
+            module="canvas",
+            redis_activity_type="export_png",
+            request=request,
+            details={"diagram_type": diagram_type, "endpoint": "export_png"},
+            detail=f"export_png type={diagram_type}",
+            usage_source="mindgraph",
+            usage_action="export_diagram",
+            title=f"export_png:{diagram_type}",
+            prompt_preview=f"export_png {diagram_type}",
+            diagram_type=diagram_type,
+        )
+
     logger.debug(
         "PNG export request - diagram_type: %s, data keys: %s",
         diagram_type,
@@ -270,20 +286,27 @@ async def generate_png_from_prompt(
 
     language = (req.language or "zh").strip()
 
-    logger.info(
+    user_id = current_user.id if current_user and hasattr(current_user, "id") else None
+    organization_id = (
+        getattr(current_user, "organization_id", None) if current_user and hasattr(current_user, "id") else None
+    )
+    if current_user and hasattr(current_user, "id"):
+        schedule_module_activity(
+            user=current_user,
+            module="canvas",
+            redis_activity_type="diagram_generation",
+            request=request,
+            details={"endpoint": "generate_png", "language": language},
+            detail=f"generate_png lang={language}",
+            persist_usage=False,
+        )
+    logger.debug(
         "[GeneratePNG] Request: prompt_meta=%s language=%s",
         _prompt_meta_for_log(prompt),
         language,
     )
 
     try:
-        # Use simplified prompt-to-diagram approach (single Qwen call)
-        user_id = current_user.id if current_user and hasattr(current_user, "id") else None
-        if current_user and hasattr(current_user, "id"):
-            organization_id = getattr(current_user, "organization_id", None)
-        else:
-            organization_id = None
-
         # Detect learning sheet from prompt
         is_learning_sheet = _detect_learning_sheet_from_prompt(prompt, language)
         logger.debug("[GeneratePNG] Learning sheet detected: %s", is_learning_sheet)
@@ -481,7 +504,7 @@ async def generate_dingtalk_png(
     try:
         language = (req.language or "zh").strip()
 
-        logger.info(
+        logger.debug(
             "[GenerateDingTalk] Request: prompt_meta=%s language=%s",
             _prompt_meta_for_log(prompt),
             language,
@@ -490,6 +513,18 @@ async def generate_dingtalk_png(
         save_identity = await resolve_diagram_save_identity(db, request, current_user, req)
         user_id = save_identity.user_id
         organization_id = save_identity.organization_id
+
+        if user_id is not None and int(user_id) > 0:
+            schedule_module_activity(
+                user_id=int(user_id),
+                organization_id=organization_id,
+                module="dingtalk",
+                redis_activity_type="export_dingtalk",
+                request=request,
+                details={"endpoint": "generate_dingtalk", "language": language},
+                detail=f"dingtalk lang={language}",
+                persist_usage=False,
+            )
 
         # Detect learning sheet from prompt
         is_learning_sheet = _detect_learning_sheet_from_prompt(prompt, language)

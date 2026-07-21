@@ -2,12 +2,19 @@ import { type Ref, nextTick, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import type { DiagramNode } from '@/types/diagram'
+import { mindMapLiveSpecExtrasFingerprint } from '@/utils/mindMapLiveSpecExtras'
 
 import { calculateDiff } from './diagramDiff'
 
 interface CanvasDiagramData {
   nodes?: unknown[]
   connections?: unknown[]
+  type?: string
+  _node_styles?: unknown
+  _mindmap_theme?: unknown
+  _mindmap_diagram_style?: unknown
+  _mindmap_canvas?: unknown
+  _collapsed_paths?: unknown
 }
 
 interface UseCanvasPageCollabDiffOptions {
@@ -45,6 +52,7 @@ const MAX_DELETED_CONNECTION_IDS = 200
 export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions) {
   let previousNodes: Array<Record<string, unknown>> = []
   let previousConnections: Array<Record<string, unknown>> = []
+  let previousMindMapExtrasFp = ''
   let diffFlushTimer: ReturnType<typeof setTimeout> | null = null
   let diffFirstDirtyAt = 0
 
@@ -59,12 +67,32 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
     diffFirstDirtyAt = 0
   }
 
+  function extrasFingerprintFromData(
+    data: CanvasDiagramData | null | undefined
+  ): string {
+    if (!data) return ''
+    return mindMapLiveSpecExtrasFingerprint(data as Record<string, unknown>)
+  }
+
   function syncPreviousFromCurrent(): void {
     const current = options.getDiagramData()
     if (current) {
       previousNodes = JSON.parse(JSON.stringify(current.nodes ?? []))
       previousConnections = JSON.parse(JSON.stringify(current.connections ?? []))
+      previousMindMapExtrasFp = extrasFingerprintFromData(current)
     }
+  }
+
+  function sendFullSpecOrNull(reason: string): boolean {
+    if (!options.getSpecForWorkshopUpdate) return false
+    const fullSpec = options.getSpecForWorkshopUpdate()
+    if (!fullSpec) return false
+    if (import.meta.env.DEV) {
+      console.log('[CollabDebug] runDiffAndSend full-spec', { reason })
+    }
+    options.sendUpdate(fullSpec)
+    syncPreviousFromCurrent()
+    return true
   }
 
   function onGranularUpdate(
@@ -123,6 +151,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
       }
       previousNodes = JSON.parse(JSON.stringify(currentData.nodes))
       previousConnections = JSON.parse(JSON.stringify(currentData.connections || []))
+      previousMindMapExtrasFp = extrasFingerprintFromData(currentData)
       return
     }
     if (options.applyingRemoteCollabPatch.value) {
@@ -145,6 +174,15 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
 
     const currentNodes = currentData.nodes as Array<{ id: string }>
     const currentConnections = (currentData.connections ?? []) as Array<{ id: string }>
+    const currentExtrasFp = extrasFingerprintFromData(currentData)
+    const mindMapExtrasChanged = currentExtrasFp !== previousMindMapExtrasFp
+
+    // Style/theme/collapse live outside granular node patches. When they change,
+    // replace the Redis live_spec with the full Pinia save document.
+    if (mindMapExtrasChanged && sendFullSpecOrNull('mindmap-extras-changed')) {
+      return
+    }
+
     const changedNodes = calculateDiff(previousNodes as Array<{ id: string }>, currentNodes)
     const changedConnections = calculateDiff(
       previousConnections as Array<{ id: string }>,
@@ -184,20 +222,8 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
         deletedNodeIds.length > MAX_DELETED_NODE_IDS ||
         deletedConnectionIds.length > MAX_DELETED_CONNECTION_IDS
 
-      if (granularExceedsServerCaps && options.getSpecForWorkshopUpdate) {
-        const fullSpec = options.getSpecForWorkshopUpdate()
-        if (fullSpec) {
-          if (import.meta.env.DEV) {
-            console.log('[CollabDebug] runDiffAndSend full-spec fallback (granular over cap)', {
-              changedNodes: changedNodes.length,
-              changedConns: changedConnections.length,
-              deletedNodes: deletedNodeIds.length,
-              deletedConns: deletedConnectionIds.length,
-            })
-          }
-          options.sendUpdate(fullSpec)
-          previousNodes = JSON.parse(JSON.stringify(currentNodes))
-          previousConnections = JSON.parse(JSON.stringify(currentConnections))
+      if (granularExceedsServerCaps) {
+        if (sendFullSpecOrNull('granular-over-cap')) {
           return
         }
         if (import.meta.env.DEV) {
@@ -229,6 +255,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
 
     previousNodes = JSON.parse(JSON.stringify(currentNodes))
     previousConnections = JSON.parse(JSON.stringify(currentConnections))
+    previousMindMapExtrasFp = currentExtrasFp
   }
 
   function scheduleDiffFlush(): void {
@@ -256,6 +283,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
       if (!options.workshopCode.value) {
         previousNodes = JSON.parse(JSON.stringify(newData.nodes))
         previousConnections = JSON.parse(JSON.stringify(newData.connections || []))
+        previousMindMapExtrasFp = extrasFingerprintFromData(newData)
         return
       }
 
@@ -265,6 +293,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
       if (options.applyingRemoteCollabPatch.value) {
         previousNodes = JSON.parse(JSON.stringify(nodes))
         previousConnections = JSON.parse(JSON.stringify(connections))
+        previousMindMapExtrasFp = extrasFingerprintFromData(newData)
         void nextTick(() => {
           scheduleDiffFlush()
         })
@@ -307,6 +336,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
   function resetDiffTracking(): void {
     previousNodes = []
     previousConnections = []
+    previousMindMapExtrasFp = ''
     preSendNodeSnapshots.clear()
     clearPendingDiffTimer()
   }

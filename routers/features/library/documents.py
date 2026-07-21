@@ -31,6 +31,7 @@ from services.library.exceptions import (
 )
 from services.library.image_path_resolver import resolve_page_image
 from services.library.library_path_utils import resolve_library_path
+from services.monitoring.module_activity import schedule_module_activity
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
@@ -205,14 +206,21 @@ async def get_document(
         )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error.message)
 
-    # Structured logging
-    logger.info(
-        "[Library] Document retrieved",
-        extra={
-            "document_id": document_id,
-            "user_id": current_user.id,
-            "title": document.title,
-        },
+    schedule_module_activity(
+        user=current_user,
+        module="library",
+        redis_activity_type="library",
+        details={"document_id": document_id, "action": "open"},
+        detail=f"open doc={document_id}",
+        usage_source="mindgraph",
+        usage_action="library_engage",
+        title=document.title or f"doc:{document_id}",
+        prompt_preview=f"open {document.title or document_id}",
+    )
+    logger.debug(
+        "[Library] Document retrieved id=%s user=%s",
+        document_id,
+        current_user.id,
     )
 
     return serialize_document(document)

@@ -24,6 +24,7 @@ import {
   getDropTargetShapeClass,
 } from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
 import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { mindMapBranchFontSize, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
@@ -32,7 +33,7 @@ import { useDiagramStore } from '@/stores'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindGraphNode } from '@/types'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
-import { resolveNodeShape } from '@/utils/nodeShapeStyle'
+import { nodeShapeBorderRadius } from '@/utils/nodeShapeStyle'
 
 const DEFAULT_NODE_WIDTH = 120
 const DEFAULT_NODE_HEIGHT = 50
@@ -219,6 +220,9 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     )
     const label = (labelEl?.textContent ?? '').trim() || '…'
     const isUnderline = branchEl.classList.contains('mind-map-underline-node')
+    const isLegacyPill = branchEl.classList.contains('mind-map-legacy-node')
+    const looksPill =
+      isLegacyPill || cs.borderRadius === '9999px' || parseFloat(cs.borderRadius) >= 100
 
     return {
       label,
@@ -230,7 +234,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
       fontSize: cs.fontSize,
       fontWeight: cs.fontWeight,
       borderRadius: cs.borderRadius,
-      shapeClass: isUnderline ? '' : 'is-pill',
+      shapeClass: isUnderline ? 'is-underline' : looksPill ? 'is-pill' : '',
       variant: isUnderline ? 'underline' : 'standard',
     }
   }
@@ -263,11 +267,26 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     const v2Visuals = readMindMapV2VisualDesignActive()
     const branchIndex = (node.data?.branchIndex as number | undefined) ?? 0
     const branchPalette = getMindmapBranchColor(branchIndex, v2Visuals ? undefined : 'legacy')
-    const nodeShape = v2Visuals ? resolveNodeShape(dataStyle as never, true) : 'oval'
+    const nodeShape = v2Visuals
+      ? resolveMindMapNodeShape(
+          {
+            id: nodeId,
+            type: 'branch',
+            style: dataStyle as never,
+          },
+          diagramStore.data?._mindmap_diagram_style as string | undefined
+        )
+      : 'oval'
     const isUnderline = v2Visuals && nodeShape === 'underline'
     const fontSizePx = dataStyle.fontSize ?? (v2Visuals ? mindMapBranchFontSize(nodeId) : 16)
     const fontSize =
       typeof fontSizePx === 'number' ? `${fontSizePx}px` : String(fontSizePx ?? '16px')
+    const shapeClass = getDropTargetShapeClass(node as MindGraphNode)
+    const borderRadius = isUnderline
+      ? '0px'
+      : v2Visuals
+        ? nodeShapeBorderRadius(nodeShape, true)
+        : getDropPreviewBorderRadius(node as MindGraphNode)
 
     const ghost: BranchMoveGhostPreview = {
       label,
@@ -288,8 +307,8 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
       ),
       fontSize,
       fontWeight: String(dataStyle.fontWeight ?? vueStyle.fontWeight ?? 'normal'),
-      borderRadius: isUnderline ? '0px' : getDropPreviewBorderRadius(node as MindGraphNode),
-      shapeClass: getDropTargetShapeClass(node as MindGraphNode),
+      borderRadius,
+      shapeClass,
       variant: isUnderline ? 'underline' : 'standard',
     }
 

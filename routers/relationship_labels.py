@@ -15,7 +15,7 @@ import json
 import logging
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,6 +34,7 @@ from services.infrastructure.http.error_handler import (
     LLMServiceError,
     LLMTimeoutError,
 )
+from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user, is_teacher
 from utils.chinese_language_policy import (
@@ -108,6 +109,7 @@ async def _stream_labels(req, user: User | None, is_next: bool):
 @router.post("/thinking_mode/relationship_labels/start")
 async def start_relationship_labels(
     req: RelationshipLabelsStartRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -121,6 +123,19 @@ async def start_relationship_labels(
         req.session_id[:8],
         req.concept_a[:20],
         req.concept_b[:20],
+    )
+
+    schedule_module_activity(
+        user=current_user,
+        module="canvas",
+        redis_activity_type="relationship_labels",
+        request=request,
+        details={"session_id": req.session_id},
+        detail=f"{req.concept_a[:40]} ↔ {req.concept_b[:40]}",
+        usage_source="mindgraph",
+        usage_action="relationship_labels",
+        title=f"{req.concept_a[:40]} ↔ {req.concept_b[:40]}",
+        prompt_preview=f"{req.concept_a} ↔ {req.concept_b}",
     )
 
     # Log relationship_labels for teacher usage tracking

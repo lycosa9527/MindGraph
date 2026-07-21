@@ -19,7 +19,7 @@ import os
 import tempfile
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,6 +48,7 @@ from services.knowledge.doc_summary_limits import (
     content_too_long_detail,
 )
 from services.knowledge.knowledge_package_service import KnowledgePackageService
+from services.monitoring.module_activity import schedule_module_activity
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.package_pipeline_status import (
     WIKI_STATUS_DISABLED,
@@ -304,6 +305,7 @@ async def delete_package(
 @router.post("/packages/{package_id}/documents/upload")
 async def upload_package_document(
     package_id: int,
+    request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
@@ -344,6 +346,20 @@ async def upload_package_document(
                 batch_id=package_id,
             )
 
+        is_doc_summary = package.source == "doc_summary"
+        schedule_module_activity(
+            user=current_user,
+            module="doc_summary" if is_doc_summary else "knowledge",
+            redis_activity_type="doc_summary" if is_doc_summary else "knowledge_space",
+            request=request,
+            details={"package_id": package_id, "endpoint": "upload"},
+            detail=f"upload package={package_id} file={file.filename}",
+            usage_source="mindgraph",
+            usage_action="knowledge_ingest",
+            title=file.filename,
+            prompt_preview=f"upload {file.filename}",
+        )
+
         return _package_document_response(current_user.id, package_id, document, package_source=package.source)
     except DocSummaryContentTooLongError as e:
         raise HTTPException(
@@ -361,6 +377,7 @@ async def upload_package_document(
 async def ingest_text(
     package_id: int,
     request: PackageIngestTextRequest,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -370,12 +387,13 @@ async def ingest_text(
     if not package:
         raise HTTPException(status_code=404, detail="Package not found")
     try:
+        title = request.title or "Pasted note"
         if package.source == "doc_summary":
             ingest = DocSummaryIngestService(db, current_user.id)
             document = await ingest.ingest_text(
                 package_id,
                 content=request.content,
-                title=request.title or "Pasted note",
+                title=title,
                 source_kind="paste",
                 language=request.language,
             )
@@ -383,10 +401,23 @@ async def ingest_text(
             document = await package_service.add_text_source(
                 package_id,
                 content=request.content,
-                title=request.title or "Pasted note",
+                title=title,
                 source_kind="paste",
                 language=request.language,
             )
+        is_doc_summary = package.source == "doc_summary"
+        schedule_module_activity(
+            user=current_user,
+            module="doc_summary" if is_doc_summary else "knowledge",
+            redis_activity_type="doc_summary" if is_doc_summary else "knowledge_space",
+            request=http_request,
+            details={"package_id": package_id, "endpoint": "ingest-text"},
+            detail=f"ingest_text package={package_id}",
+            usage_source="mindgraph",
+            usage_action="knowledge_ingest",
+            title=title,
+            prompt_preview=title,
+        )
         return _package_document_response(current_user.id, package_id, document, package_source=package.source)
     except DocSummaryContentTooLongError as e:
         raise HTTPException(
@@ -404,6 +435,7 @@ async def ingest_text(
 async def ingest_web(
     package_id: int,
     request: PackageIngestWebRequest,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -418,12 +450,13 @@ async def ingest_web(
             if existing:
                 return _package_document_response(current_user.id, package_id, existing, package_source=package.source)
 
+        title = request.page_title or request.page_url or "Web snapshot"
         if package.source == "doc_summary":
             ingest = DocSummaryIngestService(db, current_user.id)
             document = await ingest.ingest_text(
                 package_id,
                 content=request.page_content,
-                title=request.page_title or request.page_url or "Web snapshot",
+                title=title,
                 source_kind="web",
                 page_url=request.page_url,
                 language=request.language,
@@ -432,11 +465,24 @@ async def ingest_web(
             document = await package_service.add_text_source(
                 package_id,
                 content=request.page_content,
-                title=request.page_title or request.page_url or "Web snapshot",
+                title=title,
                 source_kind="web",
                 page_url=request.page_url,
                 language=request.language,
             )
+        is_doc_summary = package.source == "doc_summary"
+        schedule_module_activity(
+            user=current_user,
+            module="doc_summary" if is_doc_summary else "knowledge",
+            redis_activity_type="doc_summary" if is_doc_summary else "knowledge_space",
+            request=http_request,
+            details={"package_id": package_id, "endpoint": "ingest-web"},
+            detail=f"ingest_web package={package_id}",
+            usage_source="mindgraph",
+            usage_action="knowledge_ingest",
+            title=title,
+            prompt_preview=title,
+        )
         return _package_document_response(current_user.id, package_id, document, package_source=package.source)
     except DocSummaryContentTooLongError as e:
         raise HTTPException(
@@ -454,6 +500,7 @@ async def ingest_web(
 async def ingest_web_url(
     package_id: int,
     request: PackageIngestWebUrlRequest,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -469,12 +516,13 @@ async def ingest_web_url(
             return _package_document_response(current_user.id, package_id, existing, package_source=package.source)
 
         page_content, page_title = await fetch_url_page_text(page_url)
+        title = page_title or page_url
         if package.source == "doc_summary":
             ingest = DocSummaryIngestService(db, current_user.id)
             document = await ingest.ingest_text(
                 package_id,
                 content=page_content,
-                title=page_title or page_url,
+                title=title,
                 source_kind="web",
                 page_url=page_url,
                 language=request.language,
@@ -483,11 +531,24 @@ async def ingest_web_url(
             document = await service.add_text_source(
                 package_id,
                 content=page_content,
-                title=page_title or page_url,
+                title=title,
                 source_kind="web",
                 page_url=page_url,
                 language=request.language,
             )
+        is_doc_summary = package.source == "doc_summary"
+        schedule_module_activity(
+            user=current_user,
+            module="doc_summary" if is_doc_summary else "knowledge",
+            redis_activity_type="doc_summary" if is_doc_summary else "knowledge_space",
+            request=http_request,
+            details={"package_id": package_id, "endpoint": "ingest-web-url"},
+            detail=f"ingest_web_url package={package_id}",
+            usage_source="mindgraph",
+            usage_action="knowledge_ingest",
+            title=title,
+            prompt_preview=page_url,
+        )
         return _package_document_response(current_user.id, package_id, document, package_source=package.source)
     except DocSummaryContentTooLongError as e:
         raise HTTPException(
@@ -537,6 +598,7 @@ async def fetch_hosted_audio(token: str):
 @router.post("/packages/{package_id}/documents/start-processing")
 async def start_package_processing(
     package_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -545,6 +607,19 @@ async def start_package_processing(
     package = await package_service.get_package(package_id)
     if not package:
         raise HTTPException(status_code=404, detail="Package not found")
+
+    schedule_module_activity(
+        user=current_user,
+        module="knowledge",
+        redis_activity_type="knowledge_space",
+        request=request,
+        details={"package_id": package_id, "endpoint": "start-processing"},
+        detail=f"start_processing package={package_id}",
+        usage_source="mindgraph",
+        usage_action="knowledge_ingest",
+        title=f"process_package_{package_id}",
+        prompt_preview=f"start-processing package={package_id}",
+    )
 
     documents = await package_service.get_package_documents(package_id)
     docs_to_process = [doc for doc in documents if doc.status in ("pending", "failed")]

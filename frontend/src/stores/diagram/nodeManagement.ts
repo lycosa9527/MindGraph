@@ -2,6 +2,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
@@ -176,9 +177,19 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         (nodeData?.hidden === true || isLearningSheetBlankDisplayText(newText))
 
       if (!isLearningSheetBlankUpdate) {
-        const nodeStyle = currentNode.style
+        const nodeStyle = {
+          ...(ctx.data.value._node_styles?.[nodeId] || {}),
+          ...(currentNode.style || {}),
+        }
         const freshWidth = estimateMindMapBranchWidth(newText, nodeId, nodeStyle)
-        const freshHeight = measureMindMapBranchHeight(newText, nodeId, nodeStyle)
+        const shape = resolveMindMapNodeShape(
+          { id: nodeId, type: currentNode.type ?? 'branch', style: nodeStyle },
+          ctx.data.value._mindmap_diagram_style as string | undefined
+        )
+        const freshHeight =
+          shape === 'underline'
+            ? measureMindMapBranchUnderlineHeight(newText, nodeId, nodeStyle)
+            : measureMindMapBranchHeight(newText, nodeId, nodeStyle)
         ctx.data.value.nodes[nodeIndex] = {
           ...ctx.data.value.nodes[nodeIndex],
           data: {
@@ -186,6 +197,13 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
             estimatedWidth: freshWidth,
             estimatedHeight: freshHeight,
           },
+        }
+        // Drop stale DOM height so the next restack uses the fresh estimate immediately;
+        // BranchNode ResizeObserver will replace it with the real box on the next frame.
+        if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
+          ctx.mindMapNodeHeights.value[nodeId] = freshHeight
+          ctx.mindMapNodeWidths.value[nodeId] = freshWidth
+          ctx.scheduleMindMapRecalc()
         }
       }
     }

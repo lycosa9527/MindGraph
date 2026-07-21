@@ -40,6 +40,42 @@ def _node_display_text(node: Dict[str, Any]) -> str:
     return ""
 
 
+def _mindmap_uid_data_for_live(node: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Keep stable mindMapUid through library→live hydrate (positional ids change)."""
+    data = node.get("data")
+    if not isinstance(data, dict):
+        return None
+    uid = data.get("mindMapUid")
+    if isinstance(uid, str) and uid.strip():
+        return {"mindMapUid": uid.strip()}
+    return None
+
+
+# Mind-map visuals survive loadFromSpec only via these top-level extras
+# (tree rebuild discards wire node.style). Keep in sync with FE mindMapLiveSpecExtras.
+_MINDMAP_LIVE_SPEC_EXTRA_KEYS = (
+    "_node_styles",
+    "_mindmap_theme",
+    "_mindmap_diagram_style",
+    "_mindmap_canvas",
+    "_collapsed_paths",
+)
+
+
+def _attach_mindmap_live_spec_extras(
+    diagram_data: Dict[str, Any],
+    spec: Dict[str, Any],
+    diagram_type: str,
+) -> None:
+    """Copy durable mind-map extras from a library/DB spec into live diagram_data."""
+    if diagram_type not in ("mindmap", "mind_map"):
+        return
+    for key in _MINDMAP_LIVE_SPEC_EXTRA_KEYS:
+        value = spec.get(key)
+        if value is not None:
+            diagram_data[key] = value
+
+
 def diagram_data_from_saved_spec(spec: Dict[str, Any], diagram_type: str) -> Dict[str, Any]:
     """
     Build VoiceContext-style diagram_data from stored spec (DB/cache shape).
@@ -58,7 +94,11 @@ def diagram_data_from_saved_spec(spec: Dict[str, Any], diagram_type: str) -> Dic
         nid = str(n.get("id") or f"n{index}")
         text = _node_display_text(n)
         children.append({"id": nid, "index": len(children), "text": text})
-        vue_nodes.append({"id": nid, "text": text, "type": n.get("type")})
+        vue_node: Dict[str, Any] = {"id": nid, "text": text, "type": n.get("type")}
+        uid_data = _mindmap_uid_data_for_live(n)
+        if uid_data is not None:
+            vue_node["data"] = uid_data
+        vue_nodes.append(vue_node)
 
     diagram_data: Dict[str, Any] = {
         "diagram_type": diagram_type,
@@ -78,6 +118,7 @@ def diagram_data_from_saved_spec(spec: Dict[str, Any], diagram_type: str) -> Dic
             diagram_data["center"] = {"text": ttext}
     elif isinstance(spec.get("center"), dict):
         diagram_data["center"] = spec["center"]
+    _attach_mindmap_live_spec_extras(diagram_data, spec, diagram_type)
     return diagram_data
 
 

@@ -37,6 +37,7 @@ from services.auth.thinking_coin.usage_wire import (
 )
 from services.infrastructure.http.error_handler import LLMServiceError, ThinkingCoinInsufficientError
 from services.llm import llm_service
+from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, JSON_PARSE_ERRORS
 from utils.auth import get_current_user_or_api_key, is_superadmin
 from utils.auth.thinking_coin_config import EVENT_DIAGRAM_TRANSLATE, THINKING_COIN_MODE_BATCH_INNER
@@ -341,6 +342,21 @@ async def translate_node_label(
     if not source_text:
         raise HTTPException(status_code=400, detail="text must not be empty")
 
+    if current_user and hasattr(current_user, "id"):
+        schedule_module_activity(
+            user=current_user,
+            module="canvas",
+            redis_activity_type="canvas_translate",
+            request=request,
+            details={"endpoint": "translate_node_label", "target_language": lang_code},
+            detail=f"node lang={lang_code}",
+            usage_source="mindgraph",
+            usage_action="canvas_translate",
+            title=f"translate→{lang_code}",
+            prompt_preview=source_text[:120],
+            diagram_id=req.diagram_id,
+        )
+
     system_message = (
         "You translate text for a diagram node label. Rules:\n"
         "- Output only the translation in the target language. No quotes, markdown, or explanations.\n"
@@ -412,6 +428,21 @@ async def translate_diagram_labels(
     lang_code = req.target_language
     lang_name = CANVAS_TRANSLATE_LANGUAGE_NAMES_EN.get(lang_code, lang_code)
     script_rules = _chinese_script_extra_rules(req.ui_locale)
+
+    if current_user and hasattr(current_user, "id"):
+        schedule_module_activity(
+            user=current_user,
+            module="canvas",
+            redis_activity_type="canvas_translate",
+            request=request,
+            details={"endpoint": "translate_diagram_labels", "target_language": lang_code},
+            detail=f"diagram lang={lang_code}",
+            usage_source="mindgraph",
+            usage_action="canvas_translate",
+            title=f"translate_diagram→{lang_code}",
+            prompt_preview=f"labels→{lang_code}",
+            diagram_id=req.diagram_id,
+        )
 
     ordered_texts = _diagram_ordered_unique_texts(req)
 
@@ -510,6 +541,21 @@ async def translate_diagram_labels_stream(
     organization_id = (
         getattr(current_user, "organization_id", None) if current_user and hasattr(current_user, "id") else None
     )
+
+    if current_user and hasattr(current_user, "id"):
+        schedule_module_activity(
+            user=current_user,
+            module="canvas",
+            redis_activity_type="canvas_translate",
+            request=request,
+            details={"endpoint": "translate_diagram_labels_stream", "target_language": lang_code},
+            detail=f"diagram_stream lang={lang_code}",
+            usage_source="mindgraph",
+            usage_action="canvas_translate",
+            title=f"translate_stream→{lang_code}",
+            prompt_preview=f"labels_stream→{lang_code}",
+            diagram_id=req.diagram_id,
+        )
 
     return StreamingResponse(
         _translate_diagram_labels_ndjson(

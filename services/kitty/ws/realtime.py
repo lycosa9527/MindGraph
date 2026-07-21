@@ -32,6 +32,7 @@ from services.kitty.ws.lifecycle import (
     start_kitty_session,
 )
 from services.kitty.session.canvas_owner import agent_session_id_for_scope
+from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.ws_limits import kitty_ws_idle_timeout_seconds
 from utils.ws_session_registry import _registry as _ws_registry
@@ -76,11 +77,24 @@ async def kitty_realtime_websocket(websocket: WebSocket, diagram_session_id: str
     )
     await redis_increment_active_total(1)
     ws_session_started = time.monotonic()
-    logger.info(
+    logger.debug(
         "[WSSession] OPEN  session=%s endpoint=voice user_id=%s remote=%s",
         voice_ws_session.session_id,
         current_user.id,
         voice_ws_session.remote_addr,
+    )
+    schedule_module_activity(
+        user=current_user,
+        module="kitty",
+        redis_activity_type="voice_conversation",
+        request=websocket,
+        details={"scope": diagram_session_id},
+        detail=f"scope={diagram_session_id[:16]}",
+        usage_source="mindgraph",
+        usage_action="voice_session",
+        title="voice_session",
+        prompt_preview=f"kitty voice {diagram_session_id[:16]}",
+        conversation_id=diagram_session_id,
     )
 
     voice_session_id: str | None = None

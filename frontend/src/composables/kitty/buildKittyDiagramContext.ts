@@ -10,6 +10,10 @@ import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
+import {
+  attachMindMapLiveSpecExtras,
+  isMindMapDiagramType,
+} from '@/utils/mindMapLiveSpecExtras'
 
 /** Sync Kitty voice language with UI locale: Chinese by default, English only for `en` UI. */
 export function kittyInteractionLanguageFromUi(): 'zh' | 'en' {
@@ -70,6 +74,10 @@ export function buildKittyDiagramContext(
     nodes: nodes.map((n) => ({ ...n })),
     connections: (data?.connections ?? []).map((c) => ({ ...c })),
     selected_nodes: [...diagramStore.selectedNodes],
+  }
+  // loadFromSpec rebuilds mindmaps from text; visuals need top-level extras.
+  if (isMindMapDiagramType(dt) && data) {
+    attachMindMapLiveSpecExtras(diagram_data, data as Record<string, unknown>)
   }
   if (dt === 'concept_map' && data?.connections?.length) {
     const textById = new Map(nodes.map((n) => [n.id, nodeDisplayText(n)]))

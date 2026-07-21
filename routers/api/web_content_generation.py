@@ -52,9 +52,19 @@ from services.knowledge.package_rag_scope import (
 )
 from services.knowledge.url_page_fetch import fetch_url_page_text as _fetch_url_page_text
 from services.admin.user_usage_activity import schedule_user_usage_activity
+from services.monitoring.module_activity import schedule_module_activity, track_module_activity
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
-from services.utils.error_types import DATABASE_ERRORS, LLM_PIPELINE_ERRORS, REDIS_ERRORS
+from services.utils.error_types import (
+    DATABASE_ERRORS,
+    LLM_PIPELINE_ERRORS,
+    REDIS_ERRORS,
+)
 from utils.auth import get_current_user, get_current_user_or_api_key
+from utils.auth.mg_client import (
+    MG_CLIENT_UNSPECIFIED,
+    client_source_from_request,
+    mg_client_display_label,
+)
 from utils.auth.school_tier import (
     TIER_FEATURE_CHROME_EXTENSION,
     assert_user_has_school_tier_feature,
@@ -175,13 +185,18 @@ async def _generate_mindmap_from_resolved_content(
 
     if user_id:
         title_preview = (page_title or page_url or "").strip()[:200] or None
-        schedule_user_usage_activity(
+        schedule_module_activity(
             user_id=int(user_id),
             organization_id=organization_id,
-            source="mindgraph",
-            action="diagram_generate",
+            module="canvas",
+            redis_activity_type="diagram_generation",
+            request=request,
+            details={"endpoint": endpoint_path, "diagram_type": "mind_map"},
+            detail=f"package_mindmap {title_preview or '-'}",
+            usage_source="mindgraph",
+            usage_action="diagram_generate",
             title=title_preview,
-            prompt_preview=title_preview,
+            prompt_preview=title_preview or endpoint_path,
             diagram_type="mind_map",
         )
 
@@ -487,14 +502,19 @@ async def canvas_generate_mindmap_from_image(
                 )
                 result["library"] = apply_status
             if current_user.id:
-                schedule_user_usage_activity(
-                    user_id=int(current_user.id),
-                    organization_id=getattr(current_user, "organization_id", None),
-                    source="mindgraph",
-                    action="diagram_generate",
+                schedule_module_activity(
+                    user=current_user,
+                    module="canvas",
+                    redis_activity_type="diagram_generation",
+                    request=request,
+                    details={"endpoint": "generate_mindmap_from_image", "diagram_type": "mind_map"},
+                    detail=f"vision_mindmap {page_title or '-'}",
+                    usage_source="mindgraph",
+                    usage_action="diagram_generate",
                     title=page_title,
-                    prompt_preview=page_title,
+                    prompt_preview=page_title or "vision_mindmap",
                     diagram_type="mind_map",
+                    diagram_id=str(diagram_id) if diagram_id else None,
                 )
             return result
 
@@ -661,13 +681,29 @@ async def web_content_mindmap_png(
     )
 
     http_request_id = _sanitize_correlation_header(request.headers.get("X-Request-Id"))
-    client_label = _sanitize_correlation_header(request.headers.get("X-MG-Client"), max_len=64) or "unspecified"
+    client_label = client_source_from_request(request) or MG_CLIENT_UNSPECIFIED
     logger.info(
-        "[TokenAudit] web_content_mindmap_png: user=%s, client=%s, request_id=%s",
+        "[TokenAudit] web_content_mindmap_png: user=%s, client=%s (%s), request_id=%s",
         user_id if user_id is not None else "anonymous",
         client_label,
+        mg_client_display_label(client_label),
         http_request_id or "none",
     )
+
+    if current_user and hasattr(current_user, "id"):
+        await track_module_activity(
+            user=current_user,
+            module="canvas",
+            redis_activity_type="diagram_generation",
+            request=request,
+            client_source=client_label,
+            details={
+                "diagram_type": "mind_map",
+                "endpoint": "web_content_mindmap_png",
+            },
+            detail="web_content_mindmap_png",
+            persist_usage=False,
+        )
 
     agent = WebContentMindMapAgent(model="qwen")
     result = await agent.generate_from_page_content(
@@ -747,6 +783,7 @@ async def web_content_mindmap_png(
     if save_error_type:
         response_headers["X-MG-Save-Error"] = save_error_type
 
+    # Redis + [UserActivity] already recorded at request start; usage only on success
     if user_id:
         schedule_user_usage_activity(
             user_id=int(user_id),

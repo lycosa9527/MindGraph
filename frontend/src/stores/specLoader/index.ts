@@ -68,7 +68,10 @@ export function loadSpecForDiagramType(
         generic.nodes,
         generic.connections
       )
-      result = loadMindMapSpec(mindSpec)
+      // Keep existing left/right sides. Redistributing via
+      // [...left, ...right] + distributeBranchesClockwise is not idempotent and
+      // reshuffles branches on every library reload / first autosave URL sync.
+      result = loadMindMapSpec({ ...mindSpec, preserveLeftRight: true })
     } else {
       result = loadGenericSpec(spec)
     }

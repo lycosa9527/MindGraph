@@ -37,7 +37,7 @@ from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
 )
 from services.monitoring.activity_stream import get_activity_stream_service
-from services.redis.redis_activity_tracker import get_activity_tracker
+from services.monitoring.module_activity import track_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user_or_api_key, is_superadmin
 from utils.db.session_open import system_rls_session
@@ -159,28 +159,16 @@ async def _prepare_generate_graph(
     request.state.is_autocomplete = request_type == "autocomplete"
 
     if current_user and hasattr(current_user, "id"):
-        try:
-            tracker = get_activity_tracker()
-            activity_type = "autocomplete" if request_type == "autocomplete" else "diagram_generation"
-            diagram_type_str = req.diagram_type.value if req.diagram_type else "unknown"
-            await tracker.record_activity(
-                user_id=current_user.id,
-                user_phone=getattr(current_user, "phone", None) or "",
-                activity_type=activity_type,
-                details={"diagram_type": diagram_type_str, "llm_model": llm_model},
-                user_name=getattr(current_user, "name", None),
-            )
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.debug("Failed to track user activity: %s", e)
-
-    if request_type == "autocomplete":
-        diagram_type_str = req.diagram_type.value if req.diagram_type else "auto"
-        logger.info(
-            "[AutoComplete] Started: User %s, Diagram: %s, Model: %s, Request: %s",
-            user_id,
-            diagram_type_str,
-            llm_model,
-            request_id[:8],
+        activity_type = "autocomplete" if request_type == "autocomplete" else "diagram_generation"
+        diagram_type_str = req.diagram_type.value if req.diagram_type else "unknown"
+        await track_module_activity(
+            user=current_user,
+            module="canvas",
+            redis_activity_type=activity_type,
+            request=request,
+            details={"diagram_type": diagram_type_str, "llm_model": llm_model},
+            detail=f"{diagram_type_str} model={llm_model}",
+            persist_usage=False,
         )
 
     prepared: dict[str, Any] = {
@@ -253,7 +241,7 @@ async def _finalize_generate_graph_result(result: dict[str, Any], prepared: dict
         except BACKGROUND_INFRA_ERRORS as e:
             logger.debug("Failed to broadcast activity: %s", e)
 
-    if user_id and request_type != "autocomplete":
+    if user_id:
         topic_for_activity = prompt[:50] if prompt else ""
         if diagram_type == "double_bubble_map":
             spec_data = result.get("spec", {})
@@ -265,11 +253,12 @@ async def _finalize_generate_graph_result(result: dict[str, Any], prepared: dict
                 elif left or right:
                     topic_for_activity = str(left or right)
         dtype_value = req.diagram_type.value if req.diagram_type else str(diagram_type)
+        usage_action = "autocomplete" if request_type == "autocomplete" else "diagram_generate"
         schedule_user_usage_activity(
             user_id=int(user_id),
             organization_id=organization_id,
             source="mindgraph",
-            action="diagram_generate",
+            action=usage_action,
             title=topic_for_activity or None,
             prompt_preview=prompt or None,
             diagram_type=dtype_value,

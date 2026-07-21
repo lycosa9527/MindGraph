@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from services.library import LibraryService
+from services.monitoring.module_activity import schedule_module_activity
 from utils.auth import get_current_user
 
 from .models import BookmarkCreate
@@ -42,17 +43,23 @@ async def create_bookmark(
     try:
         bookmark = await service.create_bookmark(document_id=document_id, page_number=data.page_number, note=data.note)
 
-        # Structured logging
-        logger.info(
-            "[Library] Bookmark created",
-            extra={
-                "bookmark_id": bookmark.id,
-                "document_id": document_id,
-                "page_number": data.page_number,
-                "user_id": current_user.id,
-            },
+        schedule_module_activity(
+            user=current_user,
+            module="library",
+            redis_activity_type="library",
+            details={"document_id": document_id, "action": "bookmark"},
+            detail=f"bookmark doc={document_id} page={data.page_number}",
+            usage_source="mindgraph",
+            usage_action="library_engage",
+            title=f"bookmark:{document_id}",
+            prompt_preview=f"bookmark page={data.page_number}",
         )
-        logger.info("Bookmark created successfully: id=%s, uuid=%s", bookmark.id, bookmark.uuid)
+        logger.debug(
+            "[Library] Bookmark created id=%s doc=%s user=%s",
+            bookmark.id,
+            document_id,
+            current_user.id,
+        )
 
         return {
             "id": bookmark.id,

@@ -169,7 +169,7 @@ onUnmounted(() => {
   >
     <header class="flex shrink-0 flex-col gap-2 border-b border-slate-100 bg-gray-50/50 px-3 py-3">
       <div class="flex items-center justify-between gap-2">
-        <h3 class="truncate text-sm font-semibold tracking-wide text-gray-800">
+        <h3 class="truncate text-base font-semibold tracking-wide text-gray-800">
           {{ t('canvas.mindMapSideToolbar.waterfall') }}
         </h3>
         <div class="flex shrink-0 items-center gap-1">
@@ -237,7 +237,7 @@ onUnmounted(() => {
       </div>
     </header>
 
-    <p class="ai-brainstorm-panel__hint shrink-0 border-b border-slate-100 px-3 py-2 text-[11px] leading-snug text-slate-500">
+    <p class="ai-brainstorm-panel__hint shrink-0 border-b border-slate-100 px-3 py-2 text-sm leading-relaxed text-gray-500">
       {{ t('canvas.mindMapWaterfall.panelHint') }}
     </p>
 

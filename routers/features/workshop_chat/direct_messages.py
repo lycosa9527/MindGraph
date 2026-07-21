@@ -27,6 +27,7 @@ from services.features.workshop_chat.mention_resolution import (
     MentionResolutionError,
 )
 from services.features.workshop_chat_ws_manager import chat_ws_manager
+from services.monitoring.module_activity import schedule_module_activity
 from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -122,6 +123,17 @@ async def send_dm(
                 "ambiguous": exc.ambiguous_names,
             },
         ) from exc
+    schedule_module_activity(
+        user=current_user,
+        module="workshop",
+        redis_activity_type="workshop_chat",
+        details={"partner_id": partner_id, "endpoint": "dm"},
+        detail=f"dm partner={partner_id}",
+        usage_source="mindgraph",
+        usage_action="workshop_chat",
+        title=f"dm:{partner_id}",
+        prompt_preview=body.content,
+    )
     await chat_ws_manager.send_to_user(
         partner_id,
         {

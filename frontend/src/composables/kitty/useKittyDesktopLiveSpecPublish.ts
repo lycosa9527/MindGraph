@@ -7,6 +7,10 @@ import { type ComputedRef, type Ref, watch } from 'vue'
 import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
+import {
+  attachMindMapLiveSpecExtras,
+  isMindMapDiagramType,
+} from '@/utils/mindMapLiveSpecExtras'
 
 const DEBOUNCE_MS = 700
 
@@ -33,16 +37,20 @@ export function useKittyDesktopLiveSpecPublish(options: {
       return
     }
     try {
+      const diagramData: Record<string, unknown> = {
+        nodes: data.nodes ?? [],
+        connections: data.connections ?? [],
+      }
+      if (isMindMapDiagramType(diagramType)) {
+        attachMindMapLiveSpecExtras(diagramData, data as Record<string, unknown>)
+      }
       const res = await fetch(`/api/kitty/live_context/${encodeURIComponent(scope)}`, {
         method: 'PUT',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           diagram_type: diagramType,
-          diagram_data: {
-            nodes: data.nodes ?? [],
-            connections: data.connections ?? [],
-          },
+          diagram_data: diagramData,
           selected_nodes: [...diagramStore.selectedNodes],
           active_panel: 'one_sentence',
           selected_llm_model: llmResultsStore.selectedModel,

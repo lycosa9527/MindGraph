@@ -30,6 +30,7 @@ import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
+import { mindMapLiveSpecExtrasFingerprint } from '@/utils/mindMapLiveSpecExtras'
 
 import {
   canPerformDiagramSave,
@@ -43,7 +44,12 @@ type DiagramDataLike = { nodes?: unknown[]; connections?: unknown[] } | null
 interface NodeLike {
   id?: string
   text?: string
-  data?: { label?: string; hidden?: boolean; hiddenAnswer?: string }
+  data?: {
+    label?: string
+    hidden?: boolean
+    hiddenAnswer?: string
+    mindMapUid?: string
+  }
   position?: { x?: number; y?: number }
   style?: unknown
 }
@@ -101,6 +107,8 @@ function getContentFingerprint(data: DiagramDataLike): string {
       text: node.text ?? node.data?.label ?? '',
       hidden: node.data?.hidden === true,
       hiddenAnswer: node.data?.hiddenAnswer ?? '',
+      // First layout assigns mindMapUid without text changes — must autosave.
+      mindMapUid: node.data?.mindMapUid ?? '',
     })
   }
   const connContent = (c: unknown) => {
@@ -119,6 +127,8 @@ function getContentFingerprint(data: DiagramDataLike): string {
     nodes: nodeFingerprints,
     conns: connFingerprints,
     learningSheet: learningSheetFingerprint(data),
+    // Theme / collapse / style-only mindmap edits must debounce-save to library.
+    mindMapExtras: mindMapLiveSpecExtrasFingerprint(data as Record<string, unknown>),
   })
 }
 

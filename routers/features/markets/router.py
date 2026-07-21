@@ -35,6 +35,7 @@ from services.markets.subscription_service import (
     get_or_create_subscription_intent,
     subscription_to_dict,
 )
+from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import DATABASE_ERRORS
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
@@ -226,6 +227,17 @@ async def create_order(
     db.add(order)
     await db.commit()
     await db.refresh(order)
+    schedule_module_activity(
+        user=user,
+        module="markets",
+        redis_activity_type="markets",
+        details={"listing_id": listing.id, "order_id": order.id},
+        detail=f"order listing={listing.id}",
+        usage_source="mindgraph",
+        usage_action="market_order",
+        title=listing.title,
+        prompt_preview=f"order listing={listing.id} amount={order.amount_minor}",
+    )
     return OrderOut(
         id=order.id,
         listing_id=order.listing_id,
@@ -353,6 +365,17 @@ async def subscription_intent(
     sub = await get_or_create_subscription_intent(db, user=user, listing=listing)
     await db.commit()
     await db.refresh(sub)
+    schedule_module_activity(
+        user=user,
+        module="markets",
+        redis_activity_type="markets",
+        details={"listing_id": listing.id, "subscription_id": sub.id},
+        detail=f"subscription listing={listing.id}",
+        usage_source="mindgraph",
+        usage_action="market_order",
+        title=f"subscription:{sub.id}",
+        prompt_preview=f"subscription_intent listing={listing.id}",
+    )
     return SubscriptionOut(**subscription_to_dict(sub))
 
 

@@ -51,9 +51,26 @@ export function reconcileAfterHistoryRestore(ctx: DiagramContext): void {
 
   const diagramType = type.value
   if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-    mindMapNodeWidths.value = {}
-    mindMapNodeHeights.value = {}
-    mindMapTopicActualWidth.value = null
+    // Seed from estimates so Y restack does not wait on a ResizeObserver storm.
+    const widths: Record<string, number> = {}
+    const heights: Record<string, number> = {}
+    let topicWidth: number | null = null
+    for (const node of data.value.nodes) {
+      const estimatedWidth = node.data?.estimatedWidth as number | undefined
+      const estimatedHeight = node.data?.estimatedHeight as number | undefined
+      if (estimatedWidth !== undefined) widths[node.id] = estimatedWidth
+      if (estimatedHeight !== undefined) heights[node.id] = estimatedHeight
+      if (
+        node.id === 'topic' &&
+        (node.type === 'topic' || node.type === 'center') &&
+        estimatedWidth !== undefined
+      ) {
+        topicWidth = estimatedWidth
+      }
+    }
+    mindMapNodeWidths.value = widths
+    mindMapNodeHeights.value = heights
+    mindMapTopicActualWidth.value = topicWidth
     mindMapTopicBranchGaps.value = null
     mindMapRecalcTrigger.value += 1
 
@@ -61,10 +78,14 @@ export function reconcileAfterHistoryRestore(ctx: DiagramContext): void {
       (node) => node.id === 'topic' && (node.type === 'topic' || node.type === 'center')
     )
     if (topicNode) {
-      const topicWidth =
-        (topicNode.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
+      const resolvedTopicWidth =
+        topicWidth ??
+        (topicNode.data?.estimatedWidth as number | undefined) ??
+        DEFAULT_NODE_WIDTH
       const centerX =
-        topicNode.position != null ? topicNode.position.x + topicWidth / 2 : DEFAULT_CENTER_X
+        topicNode.position != null
+          ? topicNode.position.x + resolvedTopicWidth / 2
+          : DEFAULT_CENTER_X
       mindMapCurveExtentBaseline.value = getMindMapCurveExtents(data.value.nodes, centerX)
     } else {
       mindMapCurveExtentBaseline.value = null

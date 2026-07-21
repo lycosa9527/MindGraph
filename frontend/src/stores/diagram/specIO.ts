@@ -25,6 +25,7 @@ import {
 import { useUIStore } from '../ui'
 import { getMindMapCurveExtents } from './events'
 import { snapshotMindMapCanvasBucket, hydrateMindMapCanvasStylesOnLoad } from './mindMapCanvasModeSwitch'
+import { cancelMindMapPendingInlineEdit } from './mindMapOps'
 import { resyncMindMapConnectionStrokeColorsForActiveMode } from './mindMapStylePreservation'
 import type { DiagramContext, LoadFromSpecOptions } from './types'
 
@@ -37,6 +38,8 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (!spec || !diagramTypeValue) return false
 
     ctx.resetSessionEditCount()
+    // Library / template load replaces the tree — drop stale post-add inline-edit retries.
+    cancelMindMapPendingInlineEdit(ctx)
 
     // Preserve dimensions of nodes that will be reused (same type reload, e.g. add/delete step).
     // Reused nodes are not remounted by Vue Flow, so ResizeObserver won't re-fire for them.
@@ -395,6 +398,9 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       }
       if (ctx.data.value._mindmap_theme) {
         spec._mindmap_theme = ctx.data.value._mindmap_theme
+      }
+      if (ctx.data.value._mindmap_diagram_style) {
+        spec._mindmap_diagram_style = ctx.data.value._mindmap_diagram_style
       }
     }
     return spec

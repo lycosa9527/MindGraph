@@ -1,4 +1,8 @@
 import type { Connection, DiagramData, DiagramNode } from '@/types'
+import {
+  findNodeIdByMindMapUid,
+  readMindMapNodeUid,
+} from '@/utils/mindMapNodeUid'
 
 import {
   findNodeIdByPathKey,
@@ -78,11 +82,57 @@ function textSegmentsEqual(a: string[] | null, b: string[] | null): boolean {
   return a.every((segment, index) => segment === b[index])
 }
 
+function directChildTexts(
+  nodeId: string,
+  nodes: DiagramNode[],
+  connections: Connection[]
+): string[] {
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
+  return connections
+    .filter((c) => c.source === nodeId)
+    .map((c) => c.target)
+    .slice()
+    .sort(sortMindMapNodeIdsByGlobalIndex)
+    .map((id) => nodeMap.get(id)?.text ?? '')
+}
+
+/**
+ * When a branch is reparented, the topic→node text path changes, so path/segment
+ * matching fails. Fall back to unique own-text (+ direct-child texts) identity.
+ */
+function findNodeIdByOwnTextIdentity(
+  oldId: string,
+  oldNodes: DiagramNode[],
+  oldConnections: Connection[],
+  newNodes: DiagramNode[],
+  newConnections: Connection[]
+): string | null {
+  const oldNode = oldNodes.find((n) => n.id === oldId)
+  if (!oldNode) return null
+  const ownText = oldNode.text ?? ''
+  const oldChildTexts = directChildTexts(oldId, oldNodes, oldConnections)
+
+  const candidates = newNodes.filter(
+    (n) => n.id.startsWith('branch-') && (n.text ?? '') === ownText
+  )
+  if (candidates.length === 0) return null
+  if (candidates.length === 1) return candidates[0].id
+
+  const withSameChildren = candidates.filter((n) => {
+    const childTexts = directChildTexts(n.id, newNodes, newConnections)
+    return (
+      childTexts.length === oldChildTexts.length &&
+      childTexts.every((text, index) => text === oldChildTexts[index])
+    )
+  })
+  if (withSameChildren.length === 1) return withSameChildren[0].id
+  return null
+}
+
 /**
  * Resolve a node id across a mind-map tree rebuild.
- * Prefer path key when the text identity still matches; otherwise follow text path.
- * Sibling inserts shift path indices, so trusting path alone would remap sizes/selection
- * onto the newly inserted node.
+ * Prefer stable mindMapUid (survives duplicate labels + reparent).
+ * Then path key when text identity still matches; else text path / own-text fallback.
  */
 export function remapMindMapNodeIdAfterReload(
   oldId: string,
@@ -98,6 +148,13 @@ export function remapMindMapNodeIdAfterReload(
     return newNodes.some((node) => node.id === oldId) ? oldId : null
   }
 
+  const oldNode = oldNodes.find((node) => node.id === oldId)
+  const stableUid = readMindMapNodeUid(oldNode)
+  if (stableUid) {
+    const byUid = findNodeIdByMindMapUid(newNodes, stableUid)
+    if (byUid) return byUid
+  }
+
   const segments = getMindMapTextSegments(oldId, oldNodes, oldConnections)
   const pathKey = mindMapNodePathKey(oldId, oldConnections)
   if (pathKey) {
@@ -110,13 +167,27 @@ export function remapMindMapNodeIdAfterReload(
     }
   }
 
-  if (!segments) return null
+  if (segments) {
+    const side: 'l' | 'r' = oldId.startsWith('branch-l-') ? 'l' : 'r'
+    const sameSide = findNodeIdByTextSegmentsOnSide(segments, side, newNodes, newConnections)
+    if (sameSide) return sameSide
+    const otherSide: 'l' | 'r' = side === 'l' ? 'r' : 'l'
+    const crossSide = findNodeIdByTextSegmentsOnSide(
+      segments,
+      otherSide,
+      newNodes,
+      newConnections
+    )
+    if (crossSide) return crossSide
+  }
 
-  const side: 'l' | 'r' = oldId.startsWith('branch-l-') ? 'l' : 'r'
-  const sameSide = findNodeIdByTextSegmentsOnSide(segments, side, newNodes, newConnections)
-  if (sameSide) return sameSide
-  const otherSide: 'l' | 'r' = side === 'l' ? 'r' : 'l'
-  return findNodeIdByTextSegmentsOnSide(segments, otherSide, newNodes, newConnections)
+  return findNodeIdByOwnTextIdentity(
+    oldId,
+    oldNodes,
+    oldConnections,
+    newNodes,
+    newConnections
+  )
 }
 
 /**

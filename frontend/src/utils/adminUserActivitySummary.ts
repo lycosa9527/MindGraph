@@ -52,6 +52,52 @@ const DIAGRAM_TYPE_LABELS_EN: Record<string, string> = {
   concept_map: 'Concept map',
 }
 
+const ACTION_VERBS_ZH: Record<string, string> = {
+  diagram_generate: '生成',
+  diagram_save: '保存',
+  dingtalk_diagram: '钉钉导图',
+  autocomplete: '自动补全',
+  export_diagram: '导出',
+  voice_session: '语音会话',
+  one_sentence_generate: '一句话生成',
+  one_sentence_edit: '一句话编辑',
+  knowledge_query: '知识检索',
+  knowledge_ingest: '知识入库',
+  doc_summary_session: '文档摘要',
+  workshop_collab: '协作画布',
+  workshop_chat: '工作坊聊天',
+  askonce_turn: 'AskOnce',
+  debate_turn: '辩论',
+  market_order: '市场订单',
+  library_engage: '图书馆',
+  showcase_engage: '展示墙',
+  canvas_translate: '画布翻译',
+  relationship_labels: '关系标签',
+}
+
+const ACTION_VERBS_EN: Record<string, string> = {
+  diagram_generate: 'Generated',
+  diagram_save: 'Saved',
+  dingtalk_diagram: 'DingTalk diagram',
+  autocomplete: 'Autocomplete',
+  export_diagram: 'Exported',
+  voice_session: 'Voice session',
+  one_sentence_generate: 'One-sentence generate',
+  one_sentence_edit: 'One-sentence edit',
+  knowledge_query: 'Knowledge query',
+  knowledge_ingest: 'Knowledge ingest',
+  doc_summary_session: 'Doc summary',
+  workshop_collab: 'Workshop collab',
+  workshop_chat: 'Workshop chat',
+  askonce_turn: 'AskOnce',
+  debate_turn: 'Debate',
+  market_order: 'Market order',
+  library_engage: 'Library',
+  showcase_engage: 'Showcase',
+  canvas_translate: 'Canvas translate',
+  relationship_labels: 'Relationship labels',
+}
+
 export function diagramTypeLabel(diagramType: string | null | undefined, locale: string): string {
   const key = (diagramType ?? '').trim()
   if (!key) {
@@ -69,6 +115,24 @@ export function activitySourceLabel(source: string, labels: ActivitySummaryLabel
     return labels.sourceDingtalk
   }
   return labels.sourceMindgraph
+}
+
+function actionVerb(
+  action: string,
+  labels: ActivitySummaryLabels,
+  locale: string
+): string {
+  if (action === 'diagram_save') {
+    return labels.save
+  }
+  if (action === 'dingtalk_diagram') {
+    return labels.dingtalkGenerate
+  }
+  if (action === 'diagram_generate') {
+    return labels.generate
+  }
+  const verbs = locale.startsWith('zh') ? ACTION_VERBS_ZH : ACTION_VERBS_EN
+  return verbs[action] ?? labels.generate
 }
 
 export function formatAdminUserActivitySummary(
@@ -100,12 +164,7 @@ export function formatAdminUserActivitySummary(
     return summary
   }
 
-  const verb =
-    action === 'diagram_save'
-      ? labels.save
-      : action === 'dingtalk_diagram'
-        ? labels.dingtalkGenerate
-        : labels.generate
+  const verb = actionVerb(action, labels, locale)
   const dtype = diagramTypeLabel(row.diagramType, locale)
   const title = (row.title ?? row.promptPreview ?? '').trim()
   const chunks = [verb]

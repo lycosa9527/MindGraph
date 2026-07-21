@@ -187,21 +187,16 @@ function showActions(nodeId: string): boolean {
             class="h-4 w-4 shrink-0 text-emerald-500"
             :stroke-width="1.75"
           />
-          <span class="truncate text-[13px] font-semibold text-slate-800">
+          <span class="truncate text-base font-semibold text-slate-800">
             {{ t('canvas.mindMapSideToolbar.outline') }}
           </span>
         </div>
         <MindMapSidePanelCloseButton @close="handleClose" />
       </div>
 
-      <div class="mt-2.5 flex flex-col gap-1">
-        <span class="text-[10px] leading-snug text-gray-400">
-          {{ t('canvas.mindMapSideToolbar.outlineDragHint') }}
-        </span>
-        <span class="text-[10px] leading-snug text-gray-400">
-          {{ t('canvas.mindMapSideToolbar.outlinePasteHint') }}
-        </span>
-      </div>
+      <p class="mt-2 text-sm leading-relaxed text-gray-500">
+        {{ t('canvas.mindMapSideToolbar.outlineIntro') }}
+      </p>
       <div class="mt-1 flex justify-end">
         <span class="shrink-0 text-[10px] font-semibold text-blue-600">
           {{ t('canvas.mindMapSideToolbar.realtimeSync') }}

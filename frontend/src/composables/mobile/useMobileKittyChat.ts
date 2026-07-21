@@ -26,6 +26,7 @@ import type {
   OneSentenceClarifyChoice,
   OneSentencePhase,
 } from '@/stores/oneSentence'
+import { mergeMindMapPresentationExtrasIntoSpec } from '@/utils/mindMapLiveSpecExtras'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 const OWNER_ID = 'MobileKittyChat'
@@ -192,7 +193,13 @@ export function useMobileKittyChat(options: UseMobileKittyChatOptions) {
       })
 
       if (result.mode === 'handdrawn' && result.spec) {
-        diagramStore.loadFromSpec(result.spec, 'mindmap')
+        diagramStore.loadFromSpec(
+          mergeMindMapPresentationExtrasIntoSpec(
+            result.spec,
+            diagramStore.data as Record<string, unknown> | null
+          ),
+          'mindmap'
+        )
       }
 
       let reply: string

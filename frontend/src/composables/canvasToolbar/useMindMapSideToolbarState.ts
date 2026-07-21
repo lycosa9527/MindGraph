@@ -44,6 +44,10 @@ export function useMindMapSideToolbarState() {
 
   function openTool(toolId: MindMapSideToolId): void {
     if (!requireDiagram()) return
+    if (toolId === 'waterfall' && diagramStore.collabSessionActive) {
+      notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
+      return
+    }
     const previous = activeTool.value
     if (previous === 'waterfall' && toolId !== 'waterfall' && panelsStore.aiBrainstormPanel.isOpen) {
       getAiBrainstorm().dismiss()

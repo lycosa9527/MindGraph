@@ -143,18 +143,17 @@ function getNodeWidth(node: DiagramNode, nodeWidths: Record<string, number>): nu
 }
 
 /**
- * Resolve the node's vertical size, mirroring the edge renderer's height source
- * (`nodeBoxSize` in mindMapEdgeEndpoints): trust the DOM-measured height, falling
- * back to the build-time estimate only before the first measurement.
- *
- * The earlier `Math.max(measured, estimate)` clamped underline nodes (~24px) up to
- * their stale rounded-shape estimate (~34px), so the layout anchored connectors at a
- * height the node never renders at — drifting the bracket center by the size delta.
+ * Resolve the node's vertical size for layout restack.
+ * Prefer Pinia DOM-measured height; otherwise the build-time / text-edit estimate.
+ * Never sync-measure text here — `correctYPositions` calls this many times per node
+ * and DOM measure would stall the main thread after every branch edit.
+ * Shape-correct estimates are written at load / text / style change sites instead.
  */
 function getNodeHeight(
   nodeId: string,
   nodeMap: Map<string, DiagramNode>,
-  nodeHeights: Record<string, number>
+  nodeHeights: Record<string, number>,
+  _diagramStyleId?: string | null
 ): number {
   const measured = nodeHeights[nodeId]
   if (measured !== undefined) return measured
@@ -170,7 +169,7 @@ function getNodeAnchorY(
   diagramStyleId?: string | null
 ): number {
   const node = nodeMap.get(nodeId)
-  const h = getNodeHeight(nodeId, nodeMap, nodeHeights)
+  const h = getNodeHeight(nodeId, nodeMap, nodeHeights, diagramStyleId)
   const shape = resolveMindMapNodeShape(
     { id: nodeId, type: node?.type ?? 'branch', style: node?.style },
     diagramStyleId
@@ -187,7 +186,7 @@ function getNodeTopYForAnchor(
   diagramStyleId?: string | null
 ): number {
   const node = nodeMap.get(nodeId)
-  const h = getNodeHeight(nodeId, nodeMap, nodeHeights)
+  const h = getNodeHeight(nodeId, nodeMap, nodeHeights, diagramStyleId)
   const shape = resolveMindMapNodeShape(
     { id: nodeId, type: node?.type ?? 'branch', style: node?.style },
     diagramStyleId
@@ -410,20 +409,32 @@ function correctYPositions(
   leftRoots.sort(byGlobalIndex)
 
   const newY = new Map<string, number>()
+  /** One span per node per restack — assignSubtreeY would otherwise re-walk each subtree. */
+  const subtreeSpanCache = new Map<string, number>()
 
   function computeSubtreeSpan(nodeId: string): number {
-    const h = getNodeHeight(nodeId, nodeMap, nodeHeights)
-    if (collapsedNodeIds.has(nodeId)) return h
+    const cached = subtreeSpanCache.get(nodeId)
+    if (cached !== undefined) return cached
+    const h = getNodeHeight(nodeId, nodeMap, nodeHeights, diagramStyleId)
+    if (collapsedNodeIds.has(nodeId)) {
+      subtreeSpanCache.set(nodeId, h)
+      return h
+    }
     const kids = childrenMap.get(nodeId)
-    if (!kids || kids.length === 0) return h
+    if (!kids || kids.length === 0) {
+      subtreeSpanCache.set(nodeId, h)
+      return h
+    }
     const childSpans = kids.map((kid) => computeSubtreeSpan(kid))
     const childrenTotalSpan =
       childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * MINDMAP_SIBLING_GAP
-    return Math.max(h, childrenTotalSpan)
+    const span = Math.max(h, childrenTotalSpan)
+    subtreeSpanCache.set(nodeId, span)
+    return span
   }
 
   function assignSubtreeY(nodeId: string, startY: number): number {
-    const h = getNodeHeight(nodeId, nodeMap, nodeHeights)
+    const h = getNodeHeight(nodeId, nodeMap, nodeHeights, diagramStyleId)
     const kids = childrenMap.get(nodeId)
 
     if (!kids || kids.length === 0 || collapsedNodeIds.has(nodeId)) {
@@ -455,7 +466,10 @@ function correctYPositions(
         diagramStyleId
       )
       newY.set(soleChildId, childTopY)
-      return Math.max(startY + h, childTopY + getNodeHeight(soleChildId, nodeMap, nodeHeights))
+      return Math.max(
+        startY + h,
+        childTopY + getNodeHeight(soleChildId, nodeMap, nodeHeights, diagramStyleId)
+      )
     }
 
     if (childrenTotalSpan >= h) {
@@ -569,7 +583,7 @@ function correctYPositions(
       { id: node.id, type: node.type ?? 'branch', style: node.style },
       diagramStyleId
     )
-    const h = getNodeHeight(node.id, nodeMap, nodeHeights)
+    const h = getNodeHeight(node.id, nodeMap, nodeHeights, diagramStyleId)
     if (isMindMapConnectorVerboseDebugEnabled()) {
       logMindMapProcess('layout:y-correct:result', {
         nodeId: node.id,

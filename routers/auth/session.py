@@ -52,6 +52,7 @@ from utils.auth import (
     hash_refresh_token,
     is_https,
 )
+from utils.auth.mg_client import client_source_from_request
 from utils.auth.request_helpers import CSRF_COOKIE_NAME
 from utils.auth.thinking_coin_config import feature_thinking_coins_enabled
 from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
@@ -547,6 +548,16 @@ async def logout(
         path="/",
         samesite="strict",
         secure=is_https(request),
+    )
+
+    # Greppable line only — Redis logout is recorded inside end_session
+    client = client_source_from_request(request) or "-"
+    org = getattr(current_user, "organization_id", None)
+    logger.info(
+        "[UserActivity] user=%s action=logout module=auth client=%s org=%s detail=logout",
+        current_user.id,
+        client,
+        org if org is not None else "-",
     )
 
     # End user sessions in activity tracker

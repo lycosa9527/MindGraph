@@ -17,6 +17,11 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import {
+  isMindMapDiagramType,
+  mergeMindMapPresentationExtrasIntoSpec,
+} from '@/utils/mindMapLiveSpecExtras'
+
 import { useDiagramStore } from './diagram'
 import { useSavedDiagramsStore } from './savedDiagrams'
 
@@ -193,11 +198,14 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     }
 
     // Flow map: preserve current orientation (LLM spec typically omits it, defaulting to horizontal)
+    // Mind map: preserve theme / diagram style / canvas (LLM/vision specs omit them).
     let specToLoad = result.spec
+    const currentData = diagramStore.data as Record<string, unknown> | null
     if (diagramType === 'flow_map') {
-      const currentOrientation =
-        (diagramStore.data as Record<string, unknown>)?.orientation ?? 'horizontal'
+      const currentOrientation = currentData?.orientation ?? 'horizontal'
       specToLoad = { ...result.spec, orientation: currentOrientation }
+    } else if (isMindMapDiagramType(diagramType)) {
+      specToLoad = mergeMindMapPresentationExtrasIntoSpec(result.spec, currentData)
     }
 
     // Mark before load so auto-save skips: content change is programmatic replace,
@@ -209,6 +217,12 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     )
     if (loaded) {
       selectedModel.value = model
+      // Layout assigns mindMapUid on first load of raw children[]; stamp into this
+      // model's cache so later switches keep stable identities (and presentation).
+      const stamped = diagramStore.getSpecForSave()
+      if (stamped) {
+        updateCurrentModelSpec(stamped)
+      }
       // Always keep activeDiagramId - we're updating the same diagram with different
       // LLM result. Clearing it caused duplicate CREATE when debounced save fired.
       return true

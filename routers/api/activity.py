@@ -12,7 +12,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +21,7 @@ from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import mutation_to_footer, track_client_event
+from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user, is_teacher
 from utils.auth.thinking_coin_config import EVENT_DIAGRAM_EXPORT
@@ -38,7 +39,8 @@ class DiagramExportLogRequest(BaseModel):
 
 @router.post("/activity/diagram_export")
 async def log_diagram_export(
-    _req: DiagramExportLogRequest,
+    req: DiagramExportLogRequest,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:
@@ -49,6 +51,20 @@ async def log_diagram_export(
     """
     status = "skipped"
     reason: str | None = None
+    export_format = (req.format or "png").strip().lower() or "png"
+
+    schedule_module_activity(
+        user=current_user,
+        module="canvas",
+        redis_activity_type="export_png",
+        request=request,
+        details={"format": export_format},
+        detail=f"export={export_format}",
+        usage_source="mindgraph",
+        usage_action="export_diagram",
+        title=f"export_{export_format}",
+        prompt_preview=f"format={export_format}",
+    )
 
     if is_teacher(current_user):
         try:

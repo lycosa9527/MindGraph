@@ -114,11 +114,16 @@ function handleInputKeydown(event: KeyboardEvent): void {
     class="mind-map-one-sentence-panel pointer-events-auto absolute inset-y-3 left-3 z-40 flex w-[22rem] flex-col rounded-2xl border border-slate-200/90 bg-white shadow-sm"
     :aria-label="t('canvas.mindMapSideToolbar.oneSentence')"
   >
-    <header class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-3 py-3">
-      <h3 class="truncate text-sm font-semibold text-slate-800">
-        {{ t('canvas.mindMapSideToolbar.oneSentence') }}
-      </h3>
-      <MindMapSidePanelCloseButton @close="handleClose" />
+    <header class="flex shrink-0 flex-col gap-2 border-b border-slate-100 px-3 py-3">
+      <div class="flex items-center justify-between gap-2">
+        <h3 class="truncate text-base font-semibold text-slate-800">
+          {{ t('canvas.mindMapSideToolbar.oneSentence') }}
+        </h3>
+        <MindMapSidePanelCloseButton @close="handleClose" />
+      </div>
+      <p class="text-sm leading-relaxed text-gray-500">
+        {{ t('canvas.mindMapSideToolbar.oneSentenceIntro') }}
+      </p>
     </header>
 
     <div

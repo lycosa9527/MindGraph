@@ -11,6 +11,7 @@ import {
   syncRainbowMindMapConnectionColors,
 } from '@/config/mindMapVibrantThemes'
 import {
+  mindMapBranchDepth,
   syncLegacyMindMapConnectionStrokeColors,
   syncMindMapConnectionStrokeColors,
   syncMindMapConnectionStrokeColorsForCanvasMode,
@@ -23,6 +24,15 @@ import {
 } from '@/config/mindMapThemes'
 import type { Connection, DiagramNode, DiagramType, NodeStyle } from '@/types'
 import { readEffectiveMindMapCanvasMode, readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+
+/** Injected to avoid a circular import with mindMapCollapse remap helpers. */
+export type MindMapNodeIdRemapper = (
+  oldId: string,
+  oldNodes: DiagramNode[],
+  oldConnections: Connection[],
+  newNodes: DiagramNode[],
+  newConnections: Connection[]
+) => string | null
 
 function branchGlobalIndex(nodeId: string): number {
   return parseInt(nodeId.split('-')[3] ?? '0', 10)
@@ -161,6 +171,7 @@ function resolvePriorSiblingNodeShape(
  * Resolve nodeShape after a tree reload.
  * Never inherit the parent's shape — L1 rounded must not overwrite L2 underline in classic.
  * Also heals shapes that were wrongly parent-inherited on a prior reload.
+ * When depth changes (drag-reparent), use the diagram-style preset for the new depth.
  */
 function resolveMindMapRestoredNodeShape(
   node: DiagramNode,
@@ -169,9 +180,18 @@ function resolveMindMapRestoredNodeShape(
   stylesByPath: Map<string, NodeStyle>,
   nodes: DiagramNode[],
   connections: Connection[],
-  diagramStyle: ReturnType<typeof getMindMapDiagramStyleById>
+  diagramStyle: ReturnType<typeof getMindMapDiagramStyleById>,
+  previousDepth?: number
 ): NodeStyle['nodeShape'] {
   const presetShape = mindMapNodeShapeFromPreset(node, diagramStyle)
+  if (
+    previousDepth !== undefined &&
+    node.id.startsWith('branch-') &&
+    previousDepth !== mindMapBranchDepth(node.id)
+  ) {
+    return presetShape
+  }
+
   const fromPreserved = preserved?.nodeShape
   if (!fromPreserved) {
     return (
@@ -192,7 +212,8 @@ export function applyMindMapStylesByPath(
   connections: Connection[],
   stylesByPath: Map<string, NodeStyle>,
   themeId?: MindMapThemeId | string | null,
-  diagramStyleId?: string | null
+  diagramStyleId?: string | null,
+  previousDepthByPath?: Map<string, number>
 ): Record<string, NodeStyle> {
   const v2Visuals = readMindMapV2VisualDesignActive()
   const defaultTheme = getMindMapThemeById(resolveMindMapThemeId(themeId))
@@ -209,7 +230,8 @@ export function applyMindMapStylesByPath(
       stylesByPath,
       nodes,
       connections,
-      diagramStyle
+      diagramStyle,
+      previousDepthByPath?.get(key)
     )
 
     if (preserved) {
@@ -281,7 +303,12 @@ export function resyncMindMapConnectionStrokeColorsForActiveMode(
   return true
 }
 
-/** Preserve visual styles when mind-map tree is rebuilt (add/remove/reload). */
+/**
+ * Preserve visual styles when mind-map tree is rebuilt (add/remove/move/reload).
+ * When `remapNodeId` is provided, styles follow content identity (same as measured dims),
+ * and nodeShape updates to the diagram-style preset when depth changes.
+ * Without a remapper, styles stay path-slot keyed (used by canvas-mode buckets).
+ */
 export function mergeMindMapReloadStyles(
   oldNodes: DiagramNode[],
   oldConnections: Connection[],
@@ -289,18 +316,55 @@ export function mergeMindMapReloadStyles(
   newConnections: Connection[],
   existingNodeStyles?: Record<string, NodeStyle>,
   themeId?: MindMapThemeId | string | null,
-  diagramStyleId?: string | null
+  diagramStyleId?: string | null,
+  remapNodeId?: MindMapNodeIdRemapper
 ): Record<string, NodeStyle> {
-  const stylesByPath = collectMindMapStylesByPath(
-    oldNodes,
-    oldConnections,
-    existingNodeStyles
-  )
+  if (!remapNodeId) {
+    const stylesByPath = collectMindMapStylesByPath(
+      oldNodes,
+      oldConnections,
+      existingNodeStyles
+    )
+    return applyMindMapStylesByPath(
+      newNodes,
+      newConnections,
+      stylesByPath,
+      themeId,
+      diagramStyleId
+    )
+  }
+
+  const stylesByPath = new Map<string, NodeStyle>()
+  const previousDepthByPath = new Map<string, number>()
+
+  for (const oldNode of oldNodes) {
+    const merged = mergeNodeStyle(oldNode, existingNodeStyles)
+    if (!merged || Object.keys(merged).length === 0) continue
+
+    const newId = remapNodeId(
+      oldNode.id,
+      oldNodes,
+      oldConnections,
+      newNodes,
+      newConnections
+    )
+    if (!newId) continue
+
+    const newPath = mindMapNodePathKey(newId, newConnections)
+    if (!newPath) continue
+
+    stylesByPath.set(newPath, merged)
+    if (oldNode.id.startsWith('branch-')) {
+      previousDepthByPath.set(newPath, mindMapBranchDepth(oldNode.id))
+    }
+  }
+
   return applyMindMapStylesByPath(
     newNodes,
     newConnections,
     stylesByPath,
     themeId,
-    diagramStyleId
+    diagramStyleId,
+    previousDepthByPath
   )
 }

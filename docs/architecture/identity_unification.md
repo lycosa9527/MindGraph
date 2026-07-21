@@ -66,6 +66,10 @@ Authoritative owner remains `diagrams.user_id`.
 
 Uses the same `mg_user_{pk}` via Bearer auth. Fetches unified history from `GET /api/dify/conversations` and loads messages with Dify routing query params. Continues a selected MindBot thread using that row's `dify_user` for streaming.
 
+## API client source (`X-MG-Client`)
+
+mgat_ clients send `X-MG-Client` (`chrome-extension`, `edge-extension`, `openclaw`, `file-reader`). The server sanitizes the label, binds it on `request.state.mg_client`, emits `[TokenAudit]` lines, and records `client_source` on Redis activity sessions / history (admin realtime). Browser JWT sessions bind as `web`. See [`utils/auth/mg_client.py`](../../utils/auth/mg_client.py).
+
 ## Related docs
 
 - [DingTalk account binding](dingtalk_account_binding.md)

@@ -12,6 +12,10 @@ import {
 } from '@/utils/mindMapSubgraphMerge'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import {
+  collectMindMapNodeUids,
+  rebindMindMapBranchUidsForPaste,
+} from '@/utils/mindMapNodeUid'
+import {
   debugMindMapSubgraphMergeLookup,
   isMindMapSubgraphDebugEnabled,
   mindMapSubgraphDebug,
@@ -227,7 +231,8 @@ function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): voi
     result.connections,
     ctx.data.value._node_styles,
     resolveActiveMindMapThemeId(ctx.data.value),
-    ctx.data.value._mindmap_diagram_style
+    ctx.data.value._mindmap_diagram_style,
+    remapMindMapNodeIdAfterReload
   )
 
   const oldNodes = ctx.data.value.nodes
@@ -596,7 +601,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     ctx.selectedConnectionId.value = null
     ctx.pushHistory('Move branch')
     emitEvent('diagram:operation_completed', { operation: 'move_branch' })
-    eventBus.emit('diagram:loaded', { diagramType: type.value || 'mindmap' })
+    // Fit via branch_moved only — do not emit diagram:loaded (that resets palette/AI/fit flags).
     eventBus.emit('diagram:branch_moved', {})
 
     const targetDescendantIds =
@@ -920,6 +925,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     const nodesBefore = data.value.nodes.length
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
+    // Cut→paste keeps uids; copy→paste mints new ones when the source still exists.
+    rebindMindMapBranchUidsForPaste(branches, collectMindMapNodeUids(data.value.nodes))
     if (isMindMapSubgraphDebugEnabled()) {
       mindMapSubgraphDebug('paste', 'spec snapshot before merge', {
         anchorNodeId,

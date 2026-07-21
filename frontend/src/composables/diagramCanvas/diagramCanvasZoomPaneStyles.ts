@@ -2,7 +2,12 @@ import type { GraphNode } from '@vue-flow/core'
 
 import type { BranchMoveGhostPreview } from '@/composables/editor/useBranchMoveDrag'
 import type { DropTarget } from '@/composables/editor/useBranchMoveDrag'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
+import { useDiagramStore } from '@/stores/diagram'
+import type { DiagramNode, NodeStyle } from '@/types'
 import type { MindGraphNode } from '@/types/vueflow'
+import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { nodeShapeBorderRadius, type NodeShape } from '@/utils/nodeShapeStyle'
 
 import {
   BRANCH_MOVE_NODE_HEIGHT,
@@ -17,6 +22,31 @@ interface NodeWithDimensions {
   dimensions?: { width?: number; height?: number }
   measured?: { width?: number; height?: number }
   style?: { width?: number | string; height?: number | string }
+}
+
+function resolveMindMapDropPreviewShape(node: MindGraphNode): NodeShape | null {
+  const diagramType = node.data?.diagramType
+  if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return null
+  if (!readMindMapV2VisualDesignActive()) return null
+
+  const nodeId = node.id ?? ''
+  const diagramData = useDiagramStore().data
+  const storeNode = diagramData?.nodes.find((n) => n.id === nodeId)
+  const style = {
+    ...(diagramData?._node_styles?.[nodeId] ?? {}),
+    ...(storeNode?.style ?? {}),
+    ...(node.data?.style ?? {}),
+  } as NodeStyle
+
+  const diagramNode: Pick<DiagramNode, 'id' | 'type' | 'style'> = {
+    id: nodeId,
+    type: node.type === 'topic' || storeNode?.type === 'topic' ? 'topic' : 'branch',
+    style,
+  }
+  return resolveMindMapNodeShape(
+    diagramNode,
+    diagramData?._mindmap_diagram_style as string | undefined
+  )
 }
 
 function getTargetNodeDimensions(
@@ -52,6 +82,7 @@ export function getDropPreviewBorderRadius(node: MindGraphNode): string {
 
   const { diagramType, nodeType, originalNode, style } = data
   const styleRadiusPx = style?.borderRadius != null ? `${style.borderRadius}px` : null
+  const v2MindMapShape = resolveMindMapDropPreviewShape(node)
 
   if (vfType === 'concept') {
     return '9999px'
@@ -67,12 +98,14 @@ export function getDropPreviewBorderRadius(node: MindGraphNode): string {
   const topicUsesPill =
     diagramType === 'tree_map' ||
     diagramType === 'brace_map' ||
-    diagramType === 'mindmap' ||
-    diagramType === 'mind_map' ||
+    ((diagramType === 'mindmap' || diagramType === 'mind_map') && !v2MindMapShape) ||
     diagramType === 'multi_flow_map' ||
     diagramType === 'flow_map'
 
   if (vfType === 'topic') {
+    if (v2MindMapShape) {
+      return nodeShapeBorderRadius(v2MindMapShape, true)
+    }
     if (topicUsesPill) {
       return '9999px'
     }
@@ -80,6 +113,9 @@ export function getDropPreviewBorderRadius(node: MindGraphNode): string {
   }
 
   if (vfType === 'branch') {
+    if (v2MindMapShape) {
+      return nodeShapeBorderRadius(v2MindMapShape, true)
+    }
     if (diagramType === 'mindmap' || diagramType === 'mind_map' || diagramType === 'tree_map') {
       return '9999px'
     }
@@ -124,7 +160,9 @@ export function getDropPreviewBorderRadius(node: MindGraphNode): string {
  * `branch-move-drop-preview` overlay so CSS can apply the correct ant-line style.
  * Mirrors the logic in `getDropPreviewBorderRadius`.
  */
-export function getDropTargetShapeClass(node: MindGraphNode): 'is-circle' | 'is-pill' | '' {
+export function getDropTargetShapeClass(
+  node: MindGraphNode
+): 'is-circle' | 'is-pill' | 'is-underline' | '' {
   const vfType = node.type ?? ''
   const data = node.data
   if (vfType === 'bubble') return 'is-circle'
@@ -132,6 +170,10 @@ export function getDropTargetShapeClass(node: MindGraphNode): 'is-circle' | 'is-
     if (data?.diagramType === 'double_bubble_map' && data?.nodeType !== 'topic') return 'is-pill'
     return 'is-circle'
   }
+  const v2Shape = resolveMindMapDropPreviewShape(node)
+  if (v2Shape === 'underline') return 'is-underline'
+  if (v2Shape === 'oval') return 'is-pill'
+  if (v2Shape) return ''
   const br = getDropPreviewBorderRadius(node)
   if (br === '9999px') return 'is-pill'
   return ''
@@ -233,6 +275,21 @@ export function getDropTargetStyle(
   }
 
   if (target.type === 'child') {
+    const v2Shape = resolveMindMapDropPreviewShape(node)
+    if (v2Shape === 'underline') {
+      // Match v2 underline nodes: highlight the baseline rather than a pill box.
+      return {
+        position: 'absolute',
+        left: `${node.position.x}px`,
+        top: `${node.position.y + nodeH - 3}px`,
+        width: `${nodeW}px`,
+        height: '4px',
+        borderRadius: '2px',
+        background: '#2563eb',
+        boxShadow: '0 0 0 2px rgb(37 99 235 / 0.25)',
+        pointerEvents: 'none',
+      }
+    }
     baseStyle.border = '2px dashed #2563eb'
     baseStyle.background = 'rgb(37 99 235 / 0.08)'
   }

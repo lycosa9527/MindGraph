@@ -15,6 +15,8 @@ import {
 export type MindMapBranchSpec = {
   text: string
   children?: MindMapBranchSpec[]
+  /** Stable identity across positional id rebuilds (duplicate labels safe). */
+  uid?: string
 }
 
 function isMindMapPlaceholderChildLabel(text: string): boolean {
@@ -56,6 +58,7 @@ function mergeChildrenReplacingPlaceholders(
 function deepCloneBranch(branch: MindMapBranchSpec): MindMapBranchSpec {
   return {
     text: branch.text,
+    uid: branch.uid,
     children: branch.children?.map(deepCloneBranch),
   }
 }
@@ -73,8 +76,10 @@ export function normalizeGeneratedBranch(item: unknown): MindMapBranchSpec | nul
   const children = rawChildren
     .map(normalizeGeneratedBranch)
     .filter((c): c is MindMapBranchSpec => c !== null)
+  const uid = typeof rec.uid === 'string' && rec.uid.trim() ? rec.uid.trim() : undefined
   return {
     text,
+    uid,
     children: children.length > 0 ? children : undefined,
   }
 }

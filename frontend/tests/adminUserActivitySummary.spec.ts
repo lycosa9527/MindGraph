@@ -84,4 +84,30 @@ describe('formatAdminUserActivitySummary', () => {
     expect(summary).toContain('DingTalk diagram')
     expect(summary).not.toContain('Generated')
   })
+
+  it('formats workshop and knowledge actions with dedicated verbs', () => {
+    const workshop = formatAdminUserActivitySummary(
+      {
+        source: 'mindgraph',
+        action: 'workshop_chat',
+        title: 'channel:1',
+        promptPreview: 'hello',
+      },
+      labels,
+      'en'
+    )
+    expect(workshop).toContain('Workshop chat')
+
+    const knowledge = formatAdminUserActivitySummary(
+      {
+        source: 'mindgraph',
+        action: 'knowledge_query',
+        title: 'retrieval_test',
+        promptPreview: 'photosynthesis',
+      },
+      labels,
+      'zh'
+    )
+    expect(knowledge).toContain('知识检索')
+  })
 })

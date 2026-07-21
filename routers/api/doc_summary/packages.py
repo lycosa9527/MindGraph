@@ -12,7 +12,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
@@ -115,46 +115,74 @@ async def delete_package(
 @router.post("/packages/{package_id}/documents/upload")
 async def upload_package_document(
     package_id: int,
+    http_request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Upload a file into a Document Summary package (extract-only ingest)."""
     await _require_doc_summary_package(package_id, current_user, db)
-    return await ks_packages.upload_package_document(package_id, file, current_user, db)
+    return await ks_packages.upload_package_document(
+        package_id,
+        http_request,
+        file,
+        current_user,
+        db,
+    )
 
 
 @router.post("/packages/{package_id}/documents/ingest-text")
 async def ingest_text(
     package_id: int,
     request: PackageIngestTextRequest,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Paste text into a Document Summary package."""
     await _require_doc_summary_package(package_id, current_user, db)
-    return await ks_packages.ingest_text(package_id, request, current_user, db)
+    return await ks_packages.ingest_text(
+        package_id,
+        request,
+        http_request,
+        current_user,
+        db,
+    )
 
 
 @router.post("/packages/{package_id}/documents/ingest-web")
 async def ingest_web(
     package_id: int,
     request: PackageIngestWebRequest,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Ingest a web snapshot body into a Document Summary package."""
     await _require_doc_summary_package(package_id, current_user, db)
-    return await ks_packages.ingest_web(package_id, request, current_user, db)
+    return await ks_packages.ingest_web(
+        package_id,
+        request,
+        http_request,
+        current_user,
+        db,
+    )
 
 
 @router.post("/packages/{package_id}/documents/ingest-web-url")
 async def ingest_web_url(
     package_id: int,
     request: PackageIngestWebUrlRequest,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Fetch a URL and ingest into a Document Summary package."""
     await _require_doc_summary_package(package_id, current_user, db)
-    return await ks_packages.ingest_web_url(package_id, request, current_user, db)
+    return await ks_packages.ingest_web_url(
+        package_id,
+        request,
+        http_request,
+        current_user,
+        db,
+    )

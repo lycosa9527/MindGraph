@@ -21,7 +21,7 @@ from services.admin.user_usage_activity import (
     clip_activity_preview,
     schedule_user_usage_activity,
 )
-from services.redis.redis_activity_tracker import get_activity_tracker
+from services.monitoring.module_activity import track_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.roles import is_teacher
 from utils.db.session_open import system_rls_session
@@ -69,11 +69,12 @@ async def _record_redis_activity(
     scope: str,
     session_id: Optional[str] = None,
 ) -> None:
-    tracker = get_activity_tracker()
-    await tracker.record_activity(
+    phase = str(turn.get("phase") or "")
+    action = str(turn.get("action") or "")
+    await track_module_activity(
         user_id=user_id,
-        user_phone="",
-        activity_type="one_sentence_turn",
+        module="kitty",
+        redis_activity_type="one_sentence_turn",
         details={
             "session_id": session_id or turn.get("session_id"),
             "scope": scope,
@@ -86,6 +87,8 @@ async def _record_redis_activity(
             "request_id": turn.get("request_id"),
             "command_detail": turn.get("command_detail"),
         },
+        detail=f"phase={phase or '-'} action={action or '-'}",
+        persist_usage=False,
     )
 
 

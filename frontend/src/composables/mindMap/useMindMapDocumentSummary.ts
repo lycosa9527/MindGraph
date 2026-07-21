@@ -22,6 +22,7 @@ import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/st
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 import { authFetch } from '@/utils/api'
 import { apiRequestJson, apiUpload } from '@/utils/apiClient'
+import { mergeMindMapPresentationExtrasIntoSpec } from '@/utils/mindMapLiveSpecExtras'
 
 const PACKAGES_BASE = DOC_SUMMARY_PACKAGES_BASE
 
@@ -151,7 +152,11 @@ export function useMindMapDocumentSummary() {
     }
 
     await ensureFontsForLanguageCode(promptLanguage.value)
-    const loaded = diagramStore.loadFromSpec(result.spec, 'mindmap')
+    const specToLoad = mergeMindMapPresentationExtrasIntoSpec(
+      result.spec,
+      diagramStore.data as Record<string, unknown> | null
+    )
+    const loaded = diagramStore.loadFromSpec(specToLoad, 'mindmap')
     if (!loaded) {
       notify.error(t('canvas.mindMapDocumentSummary.loadFailed'))
       return false

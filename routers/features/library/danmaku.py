@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from services.library import LibraryService
+from services.monitoring.module_activity import schedule_module_activity
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from utils.auth import get_current_user
 from utils.auth.roles import is_admin
@@ -115,15 +116,22 @@ async def create_danmaku(
             highlight_color=data.highlight_color,
         )
 
-        # Structured logging
-        logger.info(
-            "[Library] Danmaku created",
-            extra={
-                "danmaku_id": danmaku.id,
-                "document_id": document_id,
-                "user_id": current_user.id,
-                "page_number": data.page_number,
-            },
+        schedule_module_activity(
+            user=current_user,
+            module="library",
+            redis_activity_type="library",
+            details={"document_id": document_id, "action": "danmaku"},
+            detail=f"danmaku doc={document_id} page={data.page_number}",
+            usage_source="mindgraph",
+            usage_action="library_engage",
+            title=f"danmaku:{document_id}",
+            prompt_preview=data.content,
+        )
+        logger.debug(
+            "[Library] Danmaku created id=%s doc=%s user=%s",
+            danmaku.id,
+            document_id,
+            current_user.id,
         )
 
         return {

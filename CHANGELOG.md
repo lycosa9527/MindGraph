@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.149.0] - 2026-07-21
+
+> **Stable mind-map node identity, underline connector layout/performance, unified module activity with `X-MG-Client`, and Kitty live-spec extras hydrate.**
+
+### Added
+
+- **Stable mind-map branch UIDs** — `data.mindMapUid` survives tree rebuilds/reparent so styles, selection, and measured sizes follow content identity instead of positional ids ([`mindMapNodeUid.ts`](frontend/src/utils/mindMapNodeUid.ts), [`mindMapCollapse.ts`](frontend/src/stores/diagram/mindMapCollapse.ts)).
+- **Mind-map live-spec extras helpers** — Persist/restore diagram style, theme, node styles, and collapse paths across Kitty/live-spec round-trips ([`mindMapLiveSpecExtras.ts`](frontend/src/utils/mindMapLiveSpecExtras.ts)).
+- **Unified module activity** — Shared Redis + usage-timeline + greppable log helper for canvas/Kitty/knowledge/doc-summary and feature routers ([`module_activity.py`](services/monitoring/module_activity.py)).
+- **`X-MG-Client` attribution** — Sanitize/bind client labels (`web`, chrome/edge extension, OpenClaw, file-reader) for activity details ([`mg_client.py`](utils/auth/mg_client.py)).
+- **Underline drop-preview shapes** — V2 branch-move previews use rectangular/baseline highlights for underline nodes ([`diagramCanvasZoomPaneStyles.ts`](frontend/src/composables/diagramCanvas/diagramCanvasZoomPaneStyles.ts)).
+
+### Changed
+
+- **Style merge on reload** — Mind-map reload styles remap by UID/content identity and refresh `nodeShape` when depth changes after drag-reparent ([`mindMapStylePreservation.ts`](frontend/src/stores/diagram/mindMapStylePreservation.ts)).
+- **V2 layout height estimates** — Underline-shaped depths use underline box metrics at build time ([`mindMapV2Layout.ts`](frontend/src/stores/specLoader/mindMapV2Layout.ts)).
+- **Activity tracking wiring** — Routers/services call the unified module activity helper with client-source details.
+- **Kitty context hydrate** — Library/saved-spec hydrate keeps mind-map live-spec extras for `loadFromSpec` visuals ([`kitty_context_hydrate.py`](services/kitty/infra/bootstrap/kitty_context_hydrate.py)).
+
+### Fixed
+
+- **Underline connector Y misalignment** — Pack underline content to the top (`justify-start` + `height: fit-content`) so SVG bars/tees meet the text baseline instead of floating below ([`BranchNode.vue`](frontend/src/components/diagram/nodes/BranchNode.vue), [`TopicNode.vue`](frontend/src/components/diagram/nodes/TopicNode.vue)).
+- **Connector lag after branch edits** — Stop sync DOM measuring inside Y restack; seed underline-aware estimates on text edit; sync edit width only; cache subtree spans; seed sizes on history restore ([`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts), [`nodeManagement.ts`](frontend/src/stores/diagram/nodeManagement.ts), [`InlineEditableText.vue`](frontend/src/components/diagram/nodes/InlineEditableText.vue), [`historyRestore.ts`](frontend/src/stores/diagram/historyRestore.ts)).
+- **Plain-text underline measure cost** — Prefer cheap canvas measure unless markdown/KaTeX is needed ([`mindMapMeasurements.ts`](frontend/src/stores/specLoader/mindMapMeasurements.ts)).
+
+### Tests
+
+- **Backend** — Module activity, `X-MG-Client` tracker source, mg_client sanitize/bind, Kitty hydrate mind-map extras.
+- **Frontend** — Mind-map UID remap, live-spec extras, load preserve sides, reload style identity, underline drop-preview shapes.
+
 ## [5.148.0] - 2026-07-20
 
 > **Document Summary `/api/doc-summary` surface, vision mind-map from conversation images, AI Brainstorm panel, Kitty structural edit chains, and Chrome extension v0.4.22 doc-summary persist.**

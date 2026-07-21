@@ -11,7 +11,7 @@ Proprietary License
 import logging
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,6 +29,7 @@ from services.knowledge.doc_summary_limits import (
     storage_conflict_detail,
 )
 from services.knowledge.knowledge_package_service import KnowledgePackageService
+from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
 
@@ -136,6 +137,7 @@ async def resolve_owned_extracted(
 @router.post("/session/start")
 async def start_doc_summary_session(
     request: DocSummarySessionStartRequest,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -147,6 +149,19 @@ async def start_doc_summary_session(
             diagram_title=request.diagram_title,
             package_id=request.package_id,
             create_if_missing=request.create_if_missing,
+        )
+        schedule_module_activity(
+            user=current_user,
+            module="doc_summary",
+            redis_activity_type="doc_summary",
+            request=http_request,
+            details={"package_id": package.id, "diagram_id": request.diagram_id},
+            detail=f"session package={package.id}",
+            usage_source="mindgraph",
+            usage_action="doc_summary_session",
+            title=request.diagram_title or f"doc_summary_{package.id}",
+            prompt_preview=f"diagram={request.diagram_id or '-'}",
+            diagram_id=request.diagram_id,
         )
         stats_map = await service.get_package_stats([package.id])
         stats = stats_map.get(package.id, {"total": 0, "completed": 0})

@@ -32,6 +32,7 @@ from pydantic import BaseModel
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.llm import llm_service
+from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
 
@@ -250,8 +251,24 @@ async def stream_chat(
 
     # Get user ID for token tracking
     user_id = current_user.id if current_user else None
+    last_user_msg = next(
+        (m["content"] for m in reversed(messages) if m.get("role") == "user"),
+        "",
+    )
+    schedule_module_activity(
+        user=current_user,
+        module="askonce",
+        redis_activity_type="askonce",
+        request=request,
+        details={"model": model},
+        detail=f"model={model}",
+        usage_source="mindgraph",
+        usage_action="askonce_turn",
+        title=f"askonce:{model}",
+        prompt_preview=last_user_msg or None,
+    )
 
-    logger.info(
+    logger.debug(
         "[ASKONCE:%s] Starting stream (%s messages, user=%s)",
         model.upper(),
         len(messages),

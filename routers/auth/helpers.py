@@ -32,6 +32,7 @@ from models.domain.user_activity_log import UserActivityLog
 from services.auth.ip_geolocation import get_geolocation_service
 from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
+from services.monitoring.module_activity import track_module_activity
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.session.redis_session_manager import get_session_manager
 from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
@@ -120,35 +121,38 @@ async def track_user_activity(
         db: Optional DB session for persisting login to user_activity_log
     """
     try:
-        tracker = get_activity_tracker()
-        ip_address = None
-        if request:
-            ip_address = get_client_ip(request)
-        user_phone = user.phone or ""
-
-        # For login activities, start a new session (or reuse existing)
-        # For other activities, just record (will find/create session automatically)
+        detail_map = details or {}
         if activity_type == "login":
-            session_id = await tracker.start_session(
+            tracker = get_activity_tracker()
+            ip_address = get_client_ip(request) if request else None
+            await tracker.start_session(
                 user_id=user.id,
-                user_phone=user_phone,
+                user_phone=user.phone or "",
                 user_name=user.name,
                 ip_address=ip_address,
                 reuse_existing=True,
             )
             if db and normalize_role(user.role) == "teacher":
                 await _log_login_and_compute_stats(user.id, db)
-        else:
-            session_id = None  # Let record_activity find/create session
+            method = str(detail_map.get("method") or "").strip()
+            await track_module_activity(
+                user=user,
+                module="auth",
+                redis_activity_type="login",
+                request=request,
+                details=detail_map,
+                detail=f"method={method}" if method else None,
+                persist_usage=False,
+            )
+            return
 
-        await tracker.record_activity(
-            user_id=user.id,
-            user_phone=user_phone,
-            activity_type=activity_type,
-            details=details or {},
-            session_id=session_id,
-            user_name=user.name,
-            ip_address=ip_address,
+        await track_module_activity(
+            user=user,
+            module="canvas",
+            redis_activity_type=activity_type,
+            request=request,
+            details=detail_map,
+            persist_usage=False,
         )
     except DATABASE_ERRORS as e:
         # Don't fail the request if tracking fails

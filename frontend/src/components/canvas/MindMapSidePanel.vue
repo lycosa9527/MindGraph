@@ -116,7 +116,7 @@ function handleExitLearningSheet(): void {
     <header
       class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 bg-gray-50/50 px-3 py-3"
     >
-      <h3 class="truncate text-sm font-semibold tracking-wide text-gray-800">
+      <h3 class="truncate text-base font-semibold tracking-wide text-gray-800">
         {{ panelTitle }}
       </h3>
       <MindMapSidePanelCloseButton @close="handleClose" />
@@ -128,7 +128,7 @@ function handleExitLearningSheet(): void {
       class="flex min-h-0 flex-1 flex-col overflow-y-auto"
     >
       <div class="flex flex-col gap-3 px-4 py-5">
-        <p class="text-xs leading-relaxed text-gray-500">
+        <p class="text-sm leading-relaxed text-gray-500">
           {{ t('canvas.mindMapSideToolbar.learningSheetIntro') }}
         </p>
 

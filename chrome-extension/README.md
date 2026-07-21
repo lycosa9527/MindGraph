@@ -130,7 +130,7 @@ You can install in **both** Chrome and Edge on the same PC — each browser keep
 - **Account (phone)** — Same value as **`X-MG-Account`** for API tokens.
 - **API token** — `mgat_…` from the app (**账户信息** → **API Token**). After save, a line under the token shows **valid-until** from **`GET /api/auth/api-token`** (metadata only; same auth headers as `/me`).
 
-The extension sends **`X-MG-Client: chrome-extension`** or **`X-MG-Client: edge-extension`** (detected automatically) on mgat requests so the server can label **`[TokenAudit]`** log lines.
+The extension sends **`X-MG-Client: chrome-extension`** or **`X-MG-Client: edge-extension`** (detected automatically) on mgat requests so the server can label **`[TokenAudit]`** log lines and Redis activity tracker entries (`client_source`).
 
 **Save** calls **`GET /api/auth/me`** to verify the token, then persists settings. **Credentials are written to `chrome.storage.local` only after that request succeeds**. Network failures show an error and nothing is saved.
 

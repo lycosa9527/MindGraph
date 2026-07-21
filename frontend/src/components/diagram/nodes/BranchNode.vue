@@ -171,7 +171,15 @@ const mindMapThemeColors = computed(() => {
   }
 })
 
-const contentJustifyClass = computed(() => 'justify-center')
+/**
+ * Underline nodes pack content to the top so the bar stays on the box bottom.
+ * `justify-center` in a taller-than-content flex column lifts the bar off the
+ * bottom while SVG connectors still anchor at `height - stroke/2` — the live
+ * "SVG Y misaligned" drift and floating bracket stems.
+ */
+const contentJustifyClass = computed(() =>
+  isUnderlineShape.value ? 'justify-start' : 'justify-center'
+)
 
 const treeMapGroupColors = computed(() => {
   if (!isTreeMap.value) return null
@@ -617,17 +625,29 @@ function handleBranchNodeClick(event: MouseEvent): void {
 .branch-node.mind-map-node.mind-map-underline-node {
   min-width: unset;
   min-height: unset;
+  height: fit-content;
   width: fit-content;
   box-shadow: none !important;
 }
 
 .branch-node.mind-map-underline-node {
   width: fit-content;
+  height: fit-content;
   box-shadow: none !important;
 }
 
 .branch-node.mind-map-underline-node .mind-map-underline-text {
   width: 100%;
+}
+
+/* Match measurement line-height (1.35); drop 1.5em min-height that pads plain labels. */
+.branch-node.mind-map-underline-node :deep(.inline-editable-text) {
+  min-height: 0;
+  line-height: 1.35;
+}
+
+.branch-node.mind-map-underline-node :deep(.inline-edit-display) {
+  line-height: 1.35;
 }
 
 .branch-node.mind-map-underline-node .mind-map-underline-line {

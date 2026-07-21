@@ -42,6 +42,7 @@ from services.infrastructure.utils.spa_handler import (
 )
 from services.showcase.storage import cos_showcase_enabled
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR, resolve_authenticated_user_optional
+from utils.auth.mg_client import REQUEST_STATE_MG_CLIENT
 from utils.auth.request_helpers import (
     CSRF_COOKIE_NAME,
     CSRF_HEADER_NAME,
@@ -563,14 +564,26 @@ async def log_requests(request: Request, call_next):
     # Log combined request/response to save space (skip noisy immutable asset traffic)
     response_time = time.time() - start_time
     if not is_public_static_path(request.url.path):
-        logger.debug(
-            "Request: %s %s from %s Response: %s in %.3fs",
-            request.method,
-            log_path,
-            get_client_ip(request),
-            response.status_code,
-            response_time,
-        )
+        mg_client = getattr(request.state, REQUEST_STATE_MG_CLIENT, None)
+        if isinstance(mg_client, str) and mg_client:
+            logger.debug(
+                "Request: %s %s from %s client=%s Response: %s in %.3fs",
+                request.method,
+                log_path,
+                get_client_ip(request),
+                mg_client,
+                response.status_code,
+                response_time,
+            )
+        else:
+            logger.debug(
+                "Request: %s %s from %s Response: %s in %.3fs",
+                request.method,
+                log_path,
+                get_client_ip(request),
+                response.status_code,
+                response_time,
+            )
 
     # Monitor slow requests (thresholds based on endpoint type)
     if "generate_png" in request.url.path and response_time > 20:

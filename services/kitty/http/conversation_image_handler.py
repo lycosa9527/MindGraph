@@ -8,13 +8,13 @@ from typing import Optional
 from fastapi import File, Form, HTTPException, UploadFile
 
 from models.domain.auth import User
-from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.knowledge.conversation_image import process_conversation_image
 from services.knowledge.conversation_image_upload import (
     ALLOWED_CONVERSATION_IMAGE_TYPES,
     normalize_conversation_image_content_type,
     validate_conversation_image_bytes,
 )
+from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import FILE_IO_ERRORS, LLM_PIPELINE_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -70,13 +70,19 @@ async def kitty_rest_conversation_image(
         raise HTTPException(status_code=500, detail="Image processing failed") from exc
 
     if result.get("mode") == "handdrawn" and current_user.id:
-        schedule_user_usage_activity(
-            user_id=int(current_user.id),
+        title = (diagram_title or file.filename or "hand-drawn")[:200]
+        schedule_module_activity(
+            user=current_user,
             organization_id=org_id,
-            source="mindgraph",
-            action="diagram_generate",
-            title=(diagram_title or file.filename or "hand-drawn")[:200],
+            module="kitty",
+            redis_activity_type="diagram_generation",
+            details={"endpoint": "conversation_image", "mode": "handdrawn"},
+            detail=f"handdrawn title={title}",
+            usage_source="mindgraph",
+            usage_action="diagram_generate",
+            title=title,
             prompt_preview="conversation_image_handdrawn",
             diagram_type="mind_map",
+            diagram_id=diagram_id,
         )
     return result

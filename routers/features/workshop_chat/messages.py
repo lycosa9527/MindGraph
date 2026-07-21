@@ -32,6 +32,7 @@ from routers.features.workshop_chat.schemas import (
     EditMessageRequest,
     SendMessageRequest,
 )
+from services.monitoring.module_activity import schedule_module_activity
 from services.features.workshop_chat import (
     file_service,
     message_service,
@@ -136,6 +137,17 @@ async def send_channel_message(
                 "ambiguous": exc.ambiguous_names,
             },
         ) from exc
+    schedule_module_activity(
+        user=current_user,
+        module="workshop",
+        redis_activity_type="workshop_chat",
+        details={"channel_id": channel_id},
+        detail=f"channel={channel_id}",
+        usage_source="mindgraph",
+        usage_action="workshop_chat",
+        title=f"channel:{channel_id}",
+        prompt_preview=body.content,
+    )
     await chat_ws_manager.broadcast_to_channel(
         channel_id,
         {
@@ -208,6 +220,17 @@ async def send_topic_message(
                 "ambiguous": exc.ambiguous_names,
             },
         ) from exc
+    schedule_module_activity(
+        user=current_user,
+        module="workshop",
+        redis_activity_type="workshop_chat",
+        details={"channel_id": channel_id, "topic_id": topic_id},
+        detail=f"channel={channel_id} topic={topic_id}",
+        usage_source="mindgraph",
+        usage_action="workshop_chat",
+        title=f"topic:{topic_id}",
+        prompt_preview=body.content,
+    )
     await chat_ws_manager.broadcast_to_channel(
         channel_id,
         {

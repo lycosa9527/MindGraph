@@ -1,12 +1,22 @@
 /**
  * Pinia diagram content fingerprint for hub persist and desktop recovery.
  */
-type DiagramDataLike = { nodes?: unknown[]; connections?: unknown[] } | null
+import { mindMapLiveSpecExtrasFingerprint } from '@/utils/mindMapLiveSpecExtras'
+
+type DiagramDataLike = {
+  nodes?: unknown[]
+  connections?: unknown[]
+  _node_styles?: unknown
+  _mindmap_theme?: unknown
+  _mindmap_diagram_style?: unknown
+  _mindmap_canvas?: unknown
+  _collapsed_paths?: unknown
+} | null
 
 interface NodeLike {
   id?: string
   text?: string
-  data?: { label?: string }
+  data?: { label?: string; mindMapUid?: string }
 }
 
 export function getKittyDiagramContentFingerprint(data: DiagramDataLike): string {
@@ -20,12 +30,16 @@ export function getKittyDiagramContentFingerprint(data: DiagramDataLike): string
     return JSON.stringify({
       id: node.id,
       text: node.text ?? node.data?.label ?? '',
+      // First layout assigns mindMapUid without text changes — must republish.
+      mindMapUid: node.data?.mindMapUid ?? '',
     })
   }
   const connContent = (c: unknown) => JSON.stringify(c)
   return JSON.stringify({
     nodes: nodes.map(nodeContent).sort(),
     conns: conns.map(connContent).sort(),
+    // Style/collapse-only edits must republish live_spec for mobile hydrate.
+    mindMapExtras: mindMapLiveSpecExtrasFingerprint(data as Record<string, unknown>),
   })
 }
 

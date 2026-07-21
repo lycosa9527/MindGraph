@@ -111,7 +111,19 @@ export function measureMindMapUnderlineTextBlockHeight(
     BRANCH_BASE_MAX_TEXT_WIDTH,
     branchFontSize
   )
-  return measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
+  // Plain labels: cheap canvas measure (same as rounded branches). Reserve the
+  // markdown/KaTeX pipeline for labels that actually need it — full-tree reloads
+  // call this once per node and the rendered path forces layout each time.
+  if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
+    return measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
+  }
+  const { height: textHeight } = measureTextDimensions(text, branchFontSize, {
+    maxWidth: maxTextWidth,
+    paddingX: 0,
+    paddingY: 0,
+  })
+  // measureTextDimensions uses line-height 1.4; underline display is 1.35.
+  return Math.max(branchFontSize, textHeight * (1.35 / 1.4))
 }
 
 /** Full underline box metrics — height and line midline offset from the same text measure. */

@@ -10,6 +10,7 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { readMindMapNodeUid } from '@/utils/mindMapNodeUid'
 import type { Connection, DiagramNode } from '@/types'
 
 import { mindMapNodePathKey } from '@/stores/diagram/mindMapStylePreservation'
@@ -222,8 +223,10 @@ export function nodesAndConnectionsToMindMapSpec(
     const children = childIds
       .map((id) => buildBranch(id))
       .filter((b): b is MindMapBranch => b !== null)
+    const uid = readMindMapNodeUid(node) ?? undefined
     return {
       text: node.text ?? '',
+      uid,
       children: children.length > 0 ? children : undefined,
     }
   }
@@ -411,6 +414,9 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
 
   if (v2Visuals) {
     const topicBorderColor = resolveMindMapTopicBorderColor(topicNode)
+    const diagramStyleId =
+      (spec._mindmap_diagram_style as string | undefined) ??
+      (spec.mindmap_diagram_style as string | undefined)
     layoutMindMapSideV2(
       rightBranches,
       'right',
@@ -422,7 +428,8 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       connections,
       0,
       allBranches.length,
-      topicBorderColor
+      topicBorderColor,
+      diagramStyleId
     )
     layoutMindMapSideV2(
       leftBranches,
@@ -435,7 +442,8 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       connections,
       rightBranches.length,
       allBranches.length,
-      topicBorderColor
+      topicBorderColor,
+      diagramStyleId
     )
   } else {
     layoutMindMapSideLegacy(

@@ -129,7 +129,10 @@ const resolvedStyle = computed(() => ({
   ...(props.data.style || {}),
 }))
 
-const contentJustifyClass = computed(() => 'justify-center')
+/** Underline topic: pack to top so the bar sits on the box bottom (matches SVG anchor). */
+const contentJustifyClass = computed(() =>
+  isUnderlineTopic.value ? 'justify-start' : 'justify-center'
+)
 
 const underlineTextStyle = computed((): CSSProperties => {
   const padX = mindMapHorizontalPadding('underline')
@@ -740,11 +743,21 @@ function handleWidthChange(width: number) {
 
 .topic-node.mind-map-underline-node {
   min-height: unset;
+  height: fit-content;
   box-shadow: none !important;
 }
 
 .topic-node.mind-map-underline-node .mind-map-underline-text {
   width: 100%;
+}
+
+.topic-node.mind-map-underline-node :deep(.inline-editable-text) {
+  min-height: 0;
+  line-height: 1.35;
+}
+
+.topic-node.mind-map-underline-node :deep(.inline-edit-display) {
+  line-height: 1.35;
 }
 
 .topic-node.mind-map-underline-node .mind-map-underline-line {

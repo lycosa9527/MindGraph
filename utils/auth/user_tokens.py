@@ -30,6 +30,7 @@ except ImportError:
     org_cache = None
     user_cache = None
 
+from utils.auth.mg_client import bind_mg_client_from_header, mg_client_display_label
 from utils.auth.org_subscription import ensure_org_subscription_current
 from utils.auth.request_helpers import get_client_ip
 from utils.auth.school_tier import TIER_FEATURE_API_TOKEN, user_has_school_tier_feature
@@ -78,21 +79,21 @@ async def _check_org_access_async(user: User) -> None:
 
 
 def _log_mgat_audit(request: Optional[Request], user_id: int) -> None:
-    """Emit TokenAudit line for mgat_ validation (OpenClaw, Chrome extension, etc.)."""
+    """Bind X-MG-Client and emit TokenAudit line for mgat_ validation."""
     if request is None:
         return
     if getattr(request.state, "_mgat_audit_logged", False):
         return
     setattr(request.state, "_mgat_audit_logged", True)
-    raw_client = (request.headers.get("X-MG-Client") or "").strip()
-    client = raw_client[:64] if raw_client else "unspecified"
+    client = bind_mg_client_from_header(request)
     ip = get_client_ip(request)
     path = request.url.path
     logger.info(
-        "[TokenAudit] mgat validated: user=%s, ip=%s, client=%s, path=%s",
+        "[TokenAudit] mgat validated: user=%s, ip=%s, client=%s (%s), path=%s",
         user_id,
         ip,
         client,
+        mg_client_display_label(client),
         path,
     )
 

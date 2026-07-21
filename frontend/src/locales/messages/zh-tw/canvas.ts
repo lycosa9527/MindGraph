@@ -644,8 +644,7 @@ export default {
   'canvas.mindMapSideToolbar.collapse': '收起工具欄',
   'canvas.mindMapSideToolbar.outline': '層級大綱',
   'canvas.mindMapSideToolbar.waterfall': 'AI頭腦風暴',
-  'canvas.mindMapWaterfall.panelHint':
-    '选中节点，AI生成分支建议\n按住 Ctrl 可多选节点\n未选中节点时，将基于中心主题生成关联分支建议。',
+  'canvas.mindMapWaterfall.panelHint': '選中節點生成分支建議，拖到畫布即可插入',
   'canvas.mindMapWaterfall.emptyHint': '暫無建議，請先在畫布上選中節點或點擊重新生成。',
   'canvas.mindMapWaterfall.dragHint':
     '点击多选后拖拽到导图节点上插入；拖到空白处将添加为一级分支。',
@@ -735,8 +734,7 @@ export default {
   'canvas.mindMapDocumentSummary.tabChat': '聊天記錄',
   'canvas.mindMapDocumentSummary.tabFileUpload': '文件上傳',
   'canvas.mindMapDocumentSummary.tabChatHistory': '聊天記錄',
-  'canvas.mindMapDocumentSummary.intro':
-    '为本图积累资料，生成更准确的思维导图。添加文档、图片、网页或聊天记录后，再一键生成。',
+  'canvas.mindMapDocumentSummary.intro': '為本圖積累資料，生成更準確的思維導圖',
   'canvas.mindMapDocumentSummary.uploadFileHint': '點擊上傳文件',
   'canvas.mindMapDocumentSummary.uploadFileSubhint':
     '支持 PDF、Word、PPT、Excel、文本、图片、音频；仅保留提取后的 Markdown',
@@ -831,6 +829,8 @@ export default {
     '已保存的提取内容缺失或与存储不同步，已自动清除。请重新上传或粘贴文档。',
   'canvas.mindMapSideToolbar.learningSheet': '半成品圖示',
   'canvas.mindMapSideToolbar.oneSentence': '一句話生成',
+  'canvas.mindMapSideToolbar.oneSentenceIntro':
+    '用一句話描述主題或修改要求，智能生成並調整導圖',
   'canvas.mindMapSideToolbar.documentSummary': '文檔總結',
   'fileCenter.intro':
     '资料包是为当前图表整理的来源集合。添加文件、笔记或网页后，图表会基于这些来源自动补全分支。',
@@ -868,6 +868,8 @@ export default {
   'canvas.mindMapSideToolbar.outlineEmpty': '暫無節點內容',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI智能生成',
   'canvas.mindMapSideToolbar.outlineEditHint': '雙擊節點文字可以直接實時修改噢',
+  'canvas.mindMapSideToolbar.outlineIntro':
+    '用大綱編輯導圖結構，拖曳調序，貼上多行可批量新增',
   'canvas.mindMapSideToolbar.outlineDragHint':
     '拖拽调整顺序；放到节点上方/下方为同级换位，放到中间为子节点',
   'canvas.mindMapSideToolbar.outlinePasteHint': '選中節點後粘貼多行文本，可批量添加同級節點',

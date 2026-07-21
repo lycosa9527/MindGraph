@@ -14,7 +14,7 @@ Proprietary License
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +41,7 @@ from services.knowledge.knowledge_settings import resolve_retrieval_params
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.retrieval_test_service import get_retrieval_test_service
 from services.llm.rag_service import get_rag_service
+from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user
 
@@ -52,6 +53,7 @@ router = APIRouter()
 @router.post("/retrieval-test")
 async def test_retrieval(
     request: RetrievalTestRequest,
+    http_request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
@@ -68,6 +70,19 @@ async def test_retrieval(
         method=request.method,
         top_k=request.top_k,
         score_threshold=request.score_threshold,
+    )
+
+    schedule_module_activity(
+        user=current_user,
+        module="knowledge",
+        redis_activity_type="knowledge_space",
+        request=http_request,
+        details={"endpoint": "retrieval-test", "method": method},
+        detail=f"query method={method}",
+        usage_source="mindgraph",
+        usage_action="knowledge_query",
+        title="retrieval_test",
+        prompt_preview=request.query,
     )
 
     try:

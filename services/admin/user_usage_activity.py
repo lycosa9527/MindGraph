@@ -19,8 +19,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.user_usage_activity import UserUsageActivity
 from repositories.user_usage_activity_repo import UserUsageActivityRepository
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.db.session_open import system_rls_session
+
+_USAGE_PERSIST_ERRORS = BACKGROUND_INFRA_ERRORS + DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +39,21 @@ _VALID_ACTIONS = frozenset(
         "dingtalk_diagram",
         "one_sentence_generate",
         "one_sentence_edit",
+        "autocomplete",
+        "export_diagram",
+        "voice_session",
+        "knowledge_query",
+        "knowledge_ingest",
+        "doc_summary_session",
+        "workshop_collab",
+        "workshop_chat",
+        "askonce_turn",
+        "debate_turn",
+        "market_order",
+        "library_engage",
+        "showcase_engage",
+        "canvas_translate",
+        "relationship_labels",
     }
 )
 
@@ -148,7 +165,7 @@ async def record_user_usage_activity(
             repo = UserUsageActivityRepository(session)
             await repo.insert(row)
             await session.commit()
-    except BACKGROUND_INFRA_ERRORS as exc:
+    except _USAGE_PERSIST_ERRORS as exc:
         logger.warning(
             "[UserUsageActivity] persist_failed user_id=%s source=%s action=%s error=%s",
             user_id,

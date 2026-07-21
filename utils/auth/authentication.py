@@ -45,6 +45,7 @@ from .auth_resolution import AUTH_CONTEXT_USER_ATTR, raise_if_org_locked_or_expi
 from .config import AUTH_MODE, JWT_ALGORITHM
 from .enterprise_mode import get_enterprise_user
 from .jwt_secret import get_jwt_secret
+from .mg_client import bind_mg_client_for_web
 from .tokens import api_key_header, decode_access_token, security
 from .user_tokens import validate_user_token
 
@@ -181,6 +182,7 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
     await raise_if_org_locked_or_expired_async(user)
+    bind_mg_client_for_web(request)
 
     return user
 

@@ -152,7 +152,8 @@ export function hydrateMindMapCanvasStylesOnLoad(
       data.nodes,
       connections,
       bucketStyles,
-      themeId
+      themeId,
+      data._mindmap_diagram_style
     )
     if (mode === 'legacy') {
       for (const node of data.nodes) {
@@ -236,7 +237,8 @@ export function reconcileMindMapCanvasModeSwitch(
     result.nodes,
     result.connections,
     stylesByPath,
-    themeId
+    themeId,
+    data._mindmap_diagram_style
   )
 
   if (newMode === 'legacy') {

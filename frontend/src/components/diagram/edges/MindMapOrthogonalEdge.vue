@@ -174,25 +174,20 @@ const targetPoint = computed(() =>
   })
 )
 
-const siblingTargetYs = computed(() =>
+/** Resolve sibling join points once (shared by trunk X + bus Y + spine). */
+const siblingTargetPoints = computed(() =>
   siblingEdges.value.map((edge) => {
     const node = vueFlowNodes.value.find((n) => n.id === edge.target)
     return resolveTargetPoint(node, {
       x: edge.targetX ?? props.targetX,
       y: edge.targetY ?? props.targetY,
-    }).y
+    })
   })
 )
 
-const siblingTargetXs = computed(() =>
-  siblingEdges.value.map((edge) => {
-    const node = vueFlowNodes.value.find((n) => n.id === edge.target)
-    return edgeEndpoint(node, 'target', {
-      x: edge.targetX ?? props.targetX,
-      y: edge.targetY ?? props.targetY,
-    }).x
-  })
-)
+const siblingTargetYs = computed(() => siblingTargetPoints.value.map((point) => point.y))
+
+const siblingTargetXs = computed(() => siblingTargetPoints.value.map((point) => point.x))
 
 /** One edge per sibling group draws the shared vertical spine + stem. */
 const drawsBusSpine = computed(() => {

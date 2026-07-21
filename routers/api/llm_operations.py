@@ -26,6 +26,7 @@ from agents.core.workflow import agent_graph_workflow_with_styles
 from models import GenerateRequest, LLMHealthResponse, Messages, get_request_language
 from models.domain.auth import User
 from services.llm import llm_service
+from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user, get_current_user_or_api_key
 
@@ -194,6 +195,21 @@ async def generate_multi_parallel(
     user_id = current_user.id if current_user and hasattr(current_user, "id") else None
     organization_id = getattr(current_user, "organization_id", None) if current_user else None
 
+    if current_user and hasattr(current_user, "id"):
+        schedule_module_activity(
+            user=current_user,
+            module="canvas",
+            redis_activity_type="diagram_generation",
+            request=request,
+            details={"endpoint": "generate_multi_parallel", "diagram_type": diagram_type},
+            detail=f"multi_parallel type={diagram_type or 'auto'}",
+            usage_source="mindgraph",
+            usage_action="diagram_generate",
+            title=prompt[:50] or None,
+            prompt_preview=prompt,
+            diagram_type=diagram_type,
+        )
+
     logger.debug(
         "[generate_multi_parallel] Starting parallel generation with %d models",
         len(models),
@@ -343,6 +359,21 @@ async def generate_multi_progressive(
 
     user_id = current_user.id if current_user and hasattr(current_user, "id") else None
     organization_id = getattr(current_user, "organization_id", None) if current_user else None
+
+    if current_user and hasattr(current_user, "id"):
+        schedule_module_activity(
+            user=current_user,
+            module="canvas",
+            redis_activity_type="diagram_generation",
+            request=request,
+            details={"endpoint": "generate_multi_progressive", "diagram_type": diagram_type},
+            detail=f"multi_progressive type={diagram_type or 'auto'}",
+            usage_source="mindgraph",
+            usage_action="diagram_generate",
+            title=prompt[:50] or None,
+            prompt_preview=prompt,
+            diagram_type=diagram_type,
+        )
 
     logger.debug(
         "[generate_multi_progressive] Starting progressive generation with %d models",
