@@ -302,7 +302,8 @@ async def add_security_headers(request: Request, call_next):
     # In DEBUG mode, allow Swagger UI CDN for /docs and /redoc endpoints
     frame_ancestors = "'self'" if same_origin_frame else "'none'"
     # Direct browser PUT to private COS (Showcase). Omit when COS is off so
-    # connect-src stays least-privilege. SPA meta is aligned in _serve_index.
+    # connect-src stays least-privilege. SPA serve strips Vite CSP <meta> so
+    # this header is the sole document policy.
     cos_connect = cos_browser_csp_sources() if cos_showcase_enabled() else ""
     cos_connect_clause = f" {cos_connect}" if cos_connect else ""
     media_src = f"media-src 'self' blob:{cos_connect_clause}; " if cos_connect else "media-src 'self' blob:; "
