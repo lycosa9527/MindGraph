@@ -36,7 +36,7 @@ def _load_pdf(name_part: str) -> Tuple[Path, str]:
     """Load OCR PDF text for a subject name fragment."""
     path = next(p for p in OCR_DIR.glob("*.pdf") if name_part in p.name and "课程方案" not in p.name)
     doc = fitz.open(str(path))
-    text = "\n\n".join(str(doc[i].get_text() or "") for i in range(len(doc)))
+    text = "\n\n".join(str(doc.load_page(i).get_text() or "") for i in range(len(doc)))
     return path, text
 
 

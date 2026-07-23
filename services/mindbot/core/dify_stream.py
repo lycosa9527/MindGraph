@@ -114,6 +114,36 @@ def _stream_error_is_conversation_not_exists(ev: dict[str, Any]) -> bool:
     return False
 
 
+def _stream_error_is_idle_read_timeout(ev: dict[str, Any]) -> bool:
+    """True for aiohttp ``sock_read`` idle timeouts (no SSE bytes for the idle window)."""
+    err = ev.get("message") or ev.get("error") or ""
+    if not isinstance(err, str) or not err.strip():
+        return False
+    low = err.lower()
+    if "timeout on reading data from socket" in low:
+        return True
+    return "sock_read" in low and "timeout" in low
+
+
+def _stream_error_is_hung_bound_conversation(
+    ev: dict[str, Any],
+    *,
+    saw_answer: bool,
+    full_text: str,
+    media_sent: int,
+) -> bool:
+    """
+    Bound conversation produced no assistant content before an idle read timeout.
+
+    Dify may accept the stream and then stall forever on a bad/stuck conversation
+    while Redis still holds that ``conversation_id``. Without recovery, every later
+    1:1 message reuses the same id and waits another full ``sock_read`` window.
+    """
+    if saw_answer or full_text.strip() or media_sent > 0:
+        return False
+    return _stream_error_is_idle_read_timeout(ev)
+
+
 def _extract_agent_thought_text(ev: dict[str, Any]) -> str:
     """
     Best-effort text from Dify ``agent_thought`` (and similar) streaming events.
@@ -167,8 +197,11 @@ async def mindbot_consume_dify_stream_batched(
     ``on_message_replace`` when set is awaited after Dify ``message_replace`` (answer reset);
     use to reset AI card or UI state that tracks cumulative deltas.
 
-    Stale-conversation retry uses a single recursive call with ``on_stale_conversation=None``
-    (at most 2 total attempts); the second call does not retry again so stack depth is bounded.
+    Recoverable conversation failures (``conversation_not_exists``, or idle
+    ``sock_read`` timeout with zero assistant content while a bound id was used)
+    clear the Redis binding via ``on_stale_conversation`` and retry once without
+    ``conversation_id``. The recursive call sets ``on_stale_conversation=None`` so
+    stack depth stays bounded (at most 2 attempts).
     """
     defer_to_end = env_bool("MINDBOT_STREAM_DEFER_TO_END", False)
     native_media = env_bool("MINDBOT_DIFY_NATIVE_MEDIA_ENABLED", True)
@@ -314,12 +347,28 @@ async def mindbot_consume_dify_stream_batched(
             err = ev.get("message") or ev.get("error") or "dify stream error"
             code = ev.get("code")
             status = ev.get("status")
-            if _active_conv_id and _stream_error_is_conversation_not_exists(ev) and on_stale_conversation is not None:
-                logger.warning(
-                    "[MindBot] dify_sse_stale_conversation %s retry_without_conv",
-                    pipeline_ctx,
-                )
-                await on_stale_conversation()
+            recover = on_stale_conversation
+            can_recover = bool(_active_conv_id and recover is not None)
+            stale = can_recover and _stream_error_is_conversation_not_exists(ev)
+            hung = can_recover and _stream_error_is_hung_bound_conversation(
+                ev,
+                saw_answer=saw_answer,
+                full_text=full,
+                media_sent=media_sent,
+            )
+            if (stale or hung) and recover is not None:
+                if stale:
+                    logger.warning(
+                        "[MindBot] dify_sse_stale_conversation %s retry_without_conv",
+                        pipeline_ctx,
+                    )
+                else:
+                    logger.warning(
+                        "[MindBot] dify_sse_hung_conversation %s "
+                        "reason=idle_read_timeout reply_chars=0 retry_without_conv",
+                        pipeline_ctx,
+                    )
+                await recover()
                 return await mindbot_consume_dify_stream_batched(
                     dify,
                     text=text,
