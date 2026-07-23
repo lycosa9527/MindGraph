@@ -1,5 +1,5 @@
 /**
- * V2 mind-map side layout — subtree-relative X, symmetric root stacking.
+ * V2 mind-map side layout — subtree-relative X, sequential root stacking.
  */
 import {
   DEFAULT_MINDMAP_BRANCH_GAP,
@@ -159,22 +159,14 @@ export function layoutMindMapSideV2(
   }
 
   const topLevelSpans = topLevel.map((node) => subtreeHeight(node))
-
-  if (topLevel.length === 2) {
-    const rootStartYs = computeSymmetricRootStartYs(topLevelSpans, topicCenterY, crossBranchGap)
-    topLevel.forEach((node, i) => {
-      layoutSubtreeFromTop(node, rootStartYs[i] ?? topicCenterY)
-    })
-  } else {
-    const totalHeight =
-      topLevelSpans.reduce((a, b) => a + b, 0) +
-      Math.max(0, topLevel.length - 1) * crossBranchGap
-    let y = topicCenterY - totalHeight / 2
-    for (let i = 0; i < topLevel.length; i++) {
-      y = layoutSubtreeFromTop(topLevel[i], y)
-      if (i < topLevel.length - 1) y += crossBranchGap
-    }
-  }
+  const rootStartYs = computeSymmetricRootStartYs(
+    topLevelSpans,
+    topicCenterY,
+    crossBranchGap
+  )
+  topLevel.forEach((node, i) => {
+    layoutSubtreeFromTop(node, rootStartYs[i] ?? topicCenterY)
+  })
 
   const topicOuterEdge =
     side === 'right' ? topicCenterX + topicWidth / 2 : topicCenterX - topicWidth / 2

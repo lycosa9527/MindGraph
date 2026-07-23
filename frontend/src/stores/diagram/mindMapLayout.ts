@@ -6,7 +6,10 @@ import {
   DEFAULT_NODE_WIDTH,
   MINDMAP_SIBLING_GAP,
 } from '@/composables/diagrams/layoutConfig'
-import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
+import {
+  computeSequentialRootStartYsFrom,
+  computeSymmetricRootStartYs,
+} from '@/utils/mindMapSideStacking'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { mindMapConnectionAnchorY, mindMapNodeTopYForAnchorY } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
@@ -220,7 +223,7 @@ export interface MindMapColumnResult {
  * X: Each node is placed one rankSeparation beyond its parent (not a global depth column).
  * Y: DOM-measured heights re-stack siblings and re-center parents on their children.
  */
-/** V2 mind map column layout (underline anchors, symmetric stacking). */
+/** V2 mind map column layout (underline anchors, sequential side stacking). */
 export function recalculateMindMapV2ColumnPositions(
   nodes: DiagramNode[],
   topicWidth: number | null,
@@ -499,25 +502,34 @@ function correctYPositions(
     return startY + h
   }
 
+  function sidePackOriginTop(roots: string[]): number | undefined {
+    const firstRoot = roots[0]
+    if (firstRoot == null) return undefined
+    // Subtree packing starts at the first child's top when present. The L1 node
+    // itself is often re-centered inside a taller child span, so its Y is not
+    // a safe pack origin.
+    const firstKids = childrenMap.get(firstRoot)
+    if (firstKids && firstKids.length > 0 && !collapsedNodeIds.has(firstRoot)) {
+      return nodeMap.get(firstKids[0])?.position?.y
+    }
+    return nodeMap.get(firstRoot)?.position?.y
+  }
+
   function stackBranches(roots: string[], topicCenterY: number): void {
     if (roots.length === 0) return
 
-    if (roots.length === 2) {
-      const spans = roots.map((r) => computeSubtreeSpan(r))
-      const startYs = computeSymmetricRootStartYs(spans, topicCenterY, crossBranchGap)
-      for (let i = 0; i < roots.length; i++) {
-        assignSubtreeY(roots[i], startYs[i] ?? topicCenterY)
-      }
-      return
-    }
-
     const spans = roots.map((r) => computeSubtreeSpan(r))
-    const totalHeight =
-      spans.reduce((a, b) => a + b, 0) + Math.max(0, roots.length - 1) * crossBranchGap
-    let y = topicCenterY - totalHeight / 2
+    const packOrigin = sidePackOriginTop(roots)
+    // Multi-root: pack from the preserved side origin in data.nodes so sibling
+    // Enter Y-preserve survives measurement-driven recalcs. Single-root / missing
+    // positions still center on the topic.
+    const startYs =
+      roots.length >= 2 && packOrigin != null
+        ? computeSequentialRootStartYsFrom(packOrigin, spans, crossBranchGap)
+        : computeSymmetricRootStartYs(spans, topicCenterY, crossBranchGap)
+
     for (let i = 0; i < roots.length; i++) {
-      y = assignSubtreeY(roots[i], y)
-      if (i < roots.length - 1) y += crossBranchGap
+      assignSubtreeY(roots[i], startYs[i] ?? topicCenterY)
     }
   }
 

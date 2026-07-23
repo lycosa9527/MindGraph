@@ -13,8 +13,12 @@ import {
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import {
   collectMindMapNodeUids,
+  MINDMAP_NODE_UID_DATA_KEY,
+  readMindMapNodeUid,
   rebindMindMapBranchUidsForPaste,
 } from '@/utils/mindMapNodeUid'
+import { applyMindMapSideAnchorYPreserve } from '@/utils/mindMapSideStacking'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 import {
   debugMindMapSubgraphMergeLookup,
   isMindMapSubgraphDebugEnabled,
@@ -664,6 +668,18 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (nodeId === 'topic') return false
 
     const connections = data.value.connections
+    const anchorNode = data.value.nodes.find((node) => node.id === nodeId)
+    const anchorY = anchorNode?.position?.y
+    let anchorUid = readMindMapNodeUid(anchorNode)
+    // Ensure a stable uid so Y-preserve can find this branch after id remap.
+    if (!anchorUid && anchorNode) {
+      anchorUid = safeRandomUUID()
+      anchorNode.data = {
+        ...anchorNode.data,
+        [MINDMAP_NODE_UID_DATA_KEY]: anchorUid,
+      }
+    }
+
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
     const found = findBranchByNodeId(
       spec.rightBranches,
@@ -683,12 +699,27 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     found.parentArray.splice(insertIndex, 0, newSibling)
     const pathKey = computeSiblingPathKey(nodeId, insertIndex, connections)
 
-    return applyMindMapSpecReload(
-      spec.topic,
-      spec.leftBranches,
-      spec.rightBranches,
-      position === 'above' ? 'Add sibling above' : 'Add sibling',
-      pathKey
+    const result = loadMindMapSpec({
+      topic: spec.topic,
+      leftBranches: spec.leftBranches,
+      rightBranches: spec.rightBranches,
+      preserveLeftRight: true,
+    })
+    let nodes = result.nodes
+    if (
+      readMindMapV2VisualDesignActive() &&
+      anchorUid != null &&
+      anchorY != null &&
+      Number.isFinite(anchorY)
+    ) {
+      nodes = applyMindMapSideAnchorYPreserve(result.nodes, anchorUid, anchorY)
+    }
+
+    return commitMindMapReloadWithSelect(
+      ctx,
+      { ...result, nodes },
+      pathKey,
+      position === 'above' ? 'Add sibling above' : 'Add sibling'
     )
   }
 
