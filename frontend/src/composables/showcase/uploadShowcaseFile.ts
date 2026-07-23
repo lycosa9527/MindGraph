@@ -64,7 +64,7 @@ async function putToPresignedUrl(
     })
   } catch (error) {
     if (isBrowserCorsOrNetworkFailure(error)) {
-      // Browser→COS blocked (usually bucket CORS missing this origin) or offline
+      // Browser→COS blocked: bucket CORS, CSP connect-src, or offline
       throw new Error('SHOWCASE_STORAGE_CORS_OR_NETWORK')
     }
     throw error

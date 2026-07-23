@@ -51,10 +51,81 @@ _SCRIPT_HAS_NONCE_RE = re.compile(r"\bnonce\s*=", re.IGNORECASE)
 # document policy matches the HTTP header in production.
 _META_SCRIPT_SRC_UNSAFE_INLINE = "script-src 'self' 'unsafe-inline'"
 
+# Meta CSP content="..."; used to align connect-src/media-src with the HTTP header
+# for Showcase browser→COS PUTs (header ∩ meta — both must allow the COS host).
+# Body may contain single-quoted CSP keywords ('self'); match the closing quote
+# that opened the content attribute (not those inner quotes).
+_META_CSP_CONTENT_RE = re.compile(
+    r"(<meta\b[^>]*\bhttp-equiv=(?P<eq>['\"])Content-Security-Policy(?P=eq)"
+    r"[^>]*\bcontent=(?P<cq>['\"]))"
+    r"(?P<body>.*?)"
+    r"(?P=cq)",
+    re.IGNORECASE | re.DOTALL,
+)
+_CSP_DIRECTIVE_RE_TEMPLATE = r"({name}\s+)([^;]+)"
+_COS_CSP_HOST_MARKERS = ("myqcloud.com", "tencentcos.cn")
+
 
 def generate_csp_nonce() -> str:
     """Return a fresh, URL-safe CSP nonce for a single response."""
     return secrets.token_urlsafe(16)
+
+
+def _csp_directive_has_cos_host(value: str) -> bool:
+    lowered = value.lower()
+    return any(marker in lowered for marker in _COS_CSP_HOST_MARKERS)
+
+
+def _append_hosts_to_csp_directive(csp: str, directive: str, hosts: str) -> str:
+    """Append space-separated hosts to an existing CSP directive value."""
+    pattern = re.compile(_CSP_DIRECTIVE_RE_TEMPLATE.format(name=re.escape(directive)))
+    match = pattern.search(csp)
+    if not match:
+        return csp
+    existing = match.group(2)
+    if _csp_directive_has_cos_host(existing):
+        return csp
+    updated = f"{existing.rstrip()} {hosts.strip()}"
+    return csp[: match.start(2)] + updated + csp[match.end(2) :]
+
+
+def ensure_csp_meta_cos_hosts(html: str, hosts: str) -> str:
+    """
+    Ensure the in-document CSP meta allows browser→COS hosts.
+
+    When both the HTTP CSP header and meta tag are present, browsers enforce the
+    intersection. Serving SPA through FastAPI can therefore unblock Showcase
+    uploads even if ``frontend/dist/index.html`` was built before COS hosts were
+    added to the source meta.
+    """
+    cleaned = (hosts or "").strip()
+    if not cleaned:
+        return html
+
+    def _rewrite(match: re.Match[str]) -> str:
+        prefix = match.group(1)
+        csp = match.group("body")
+        closer = match.group("cq")
+        updated = _append_hosts_to_csp_directive(csp, "connect-src", cleaned)
+        if re.search(r"media-src\s+", updated):
+            updated = _append_hosts_to_csp_directive(updated, "media-src", cleaned)
+        elif re.search(r"connect-src\s+[^;]+;", updated):
+            updated = re.sub(
+                r"(connect-src\s+[^;]+;)",
+                rf"\1 media-src 'self' blob: {cleaned};",
+                updated,
+                count=1,
+            )
+        elif re.search(r"connect-src\s+", updated):
+            updated = re.sub(
+                r"(connect-src\s+[^;]+)",
+                rf"\1; media-src 'self' blob: {cleaned}",
+                updated,
+                count=1,
+            )
+        return f"{prefix}{updated}{closer}"
+
+    return _META_CSP_CONTENT_RE.sub(_rewrite, html, count=1)
 
 
 def inject_csp_nonce(html: str, nonce: str) -> str:

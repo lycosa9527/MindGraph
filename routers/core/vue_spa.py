@@ -22,10 +22,13 @@ from services.infrastructure.utils.spa_handler import (
     CSP_NONCE_STATE_ATTR,
     VUE_DIST_DIR,
     apply_no_cache_headers,
+    ensure_csp_meta_cos_hosts,
     generate_csp_nonce,
     inject_csp_nonce,
     media_type_for_vue_dist_relpath,
 )
+from services.showcase.storage import cos_showcase_enabled
+from services.utils.tencent_cos_client import cos_browser_csp_sources
 from utils.privacy_policy_static import privacy_policy_source_path
 
 logger = logging.getLogger(__name__)
@@ -332,6 +335,10 @@ async def _serve_index(request: Request) -> HTMLResponse:
     nonce = generate_csp_nonce()
     setattr(request.state, CSP_NONCE_STATE_ATTR, nonce)
     html = inject_csp_nonce(index_path.read_text(encoding="utf-8"), nonce)
+    # Header ∩ meta: stamp COS hosts into meta so old dist shells still allow
+    # Showcase browser→COS PUT after a backend-only CSP fix.
+    if cos_showcase_enabled():
+        html = ensure_csp_meta_cos_hosts(html, cos_browser_csp_sources())
 
     response = HTMLResponse(content=html)
     apply_no_cache_headers(response)

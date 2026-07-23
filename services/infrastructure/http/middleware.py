@@ -41,6 +41,7 @@ from services.infrastructure.utils.spa_handler import (
     should_apply_no_cache,
 )
 from services.showcase.storage import cos_showcase_enabled
+from services.utils.tencent_cos_client import cos_browser_csp_sources
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR, resolve_authenticated_user_optional
 from utils.auth.mg_client import REQUEST_STATE_MG_CLIENT
 from utils.auth.request_helpers import (
@@ -275,6 +276,8 @@ async def add_security_headers(request: Request, call_next):
       via JS, which a nonce cannot cover.
     - ws:/wss:: Required for Kitty Agent WebSocket connections
     - data: URIs: Required for canvas-to-image conversions
+    - connect-src / media-src: when Showcase COS is on, allow the configured
+      bucket virtual-host endpoints for browser→COS presigned PUT / media
     - DEBUG mode: Allows Swagger UI CDN (cdn.jsdelivr.net) for /docs endpoint
 
     Reviewed: 2025-10-26 - All directives verified against actual codebase
@@ -298,6 +301,11 @@ async def add_security_headers(request: Request, call_next):
     # Tailored specifically for MindGraph's architecture
     # In DEBUG mode, allow Swagger UI CDN for /docs and /redoc endpoints
     frame_ancestors = "'self'" if same_origin_frame else "'none'"
+    # Direct browser PUT to private COS (Showcase). Omit when COS is off so
+    # connect-src stays least-privilege. SPA meta is aligned in _serve_index.
+    cos_connect = cos_browser_csp_sources() if cos_showcase_enabled() else ""
+    cos_connect_clause = f" {cos_connect}" if cos_connect else ""
+    media_src = f"media-src 'self' blob:{cos_connect_clause}; " if cos_connect else "media-src 'self' blob:; "
     if config.debug:
         # DEBUG mode: Allow Swagger UI resources from CDN (including source maps)
         response.headers["Content-Security-Policy"] = (
@@ -307,7 +315,8 @@ async def add_security_headers(request: Request, call_next):
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
             "img-src 'self' data: http: https: blob: https://cdn.jsdelivr.net https://fastapi.tiangolo.com; "
             "font-src 'self' data: https://cdn.jsdelivr.net; "
-            "connect-src 'self' ws: wss: blob: https://cdn.jsdelivr.net; "
+            f"connect-src 'self' ws: wss: blob: https://cdn.jsdelivr.net{cos_connect_clause}; "
+            f"{media_src}"
             "frame-src 'self' blob: https://view.officeapps.live.com; "
             f"frame-ancestors {frame_ancestors}; "
             "base-uri 'self'; "
@@ -327,7 +336,8 @@ async def add_security_headers(request: Request, call_next):
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: http: https: blob:; "
             "font-src 'self' data:; "
-            "connect-src 'self' ws: wss: blob:; "
+            f"connect-src 'self' ws: wss: blob:{cos_connect_clause}; "
+            f"{media_src}"
             "frame-src 'self' blob: https://view.officeapps.live.com; "
             f"frame-ancestors {frame_ancestors}; "
             "base-uri 'self'; "

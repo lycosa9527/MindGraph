@@ -65,6 +65,21 @@ def cos_credentials_configured() -> bool:
     return bool(COS_SECRET_ID and COS_SECRET_KEY and COS_BUCKET and COS_REGION)
 
 
+def cos_browser_csp_sources() -> str:
+    """
+    CSP host-sources for browser→COS (connect-src / media-src).
+
+    Prefer the exact virtual-hosted-style endpoints for the configured bucket
+    and region. Fall back to suffix wildcards when bucket/region are unset
+    (local Vite meta / incomplete env).
+    """
+    bucket = COS_BUCKET.strip()
+    region = COS_REGION.strip()
+    if bucket and region:
+        return f"https://{bucket}.cos.{region}.myqcloud.com https://{bucket}.cos.{region}.tencentcos.cn"
+    return "https://*.myqcloud.com https://*.tencentcos.cn"
+
+
 def normalized_cos_prefix(prefix: Optional[str] = None) -> str:
     """Normalize key prefix without trailing slash."""
     raw = (prefix if prefix is not None else COS_KEY_PREFIX).strip().rstrip("/")

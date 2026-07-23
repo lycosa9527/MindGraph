@@ -53,7 +53,7 @@ export default {
   'showcase.publishModal.uploadFailedRolledBack':
     'Upload failed — the draft was discarded. Please try again.',
   'showcase.publishModal.uploadCorsFailed':
-    'Could not upload to object storage (often bucket CORS does not allow this site origin). The draft was discarded — ask an admin to fix CORS, then retry.',
+    'Could not upload to object storage (often bucket CORS or site CSP blocking the COS host). The draft was discarded — ask an admin to fix CORS/CSP, then retry.',
   'showcase.publishModal.uploadStorageRejected':
     'Object storage rejected the upload. The draft was discarded — try again later, or contact an admin if it keeps failing.',
   'showcase.publishModal.uploadFailed': 'Upload failed. Please try again.',
