@@ -57,6 +57,20 @@ export default {
   'showcase.publishModal.uploadStorageRejected':
     'Object storage rejected the upload. The draft was discarded — try again later, or contact an admin if it keeps failing.',
   'showcase.publishModal.uploadFailed': 'Upload failed. Please try again.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Cover image exceeds the 2MB limit. Compress the preview or use a smaller image, then try again.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'File exceeds the size limit (documents/images 20MB, videos 100MB). Compress and try again.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'File exceeds the size limit (documents/images 20MB, videos 100MB). The draft was discarded — compress and try again.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'File is too large for this upload type. Check the size limit and try again.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'File is too large for this upload type. The draft was discarded — check the size limit and try again.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Case submitted, but the cover image failed to upload. You can edit the case later to refresh the cover.',
+  'showcase.publishModal.coverUnsupportedLegacyDoc':
+    'Case submitted without a cover — .doc files cannot generate a preview. Prefer .docx or .pdf.',
   'showcase.publishModal.success': 'Case submitted — awaiting admin review',
   'showcase.publishModal.fromCanvas': 'Publish from canvas',
   'showcase.publishModal.step1Title': 'Basic info',
@@ -134,13 +148,14 @@ export default {
   'showcase.publishModal.validationDiagramType': 'Please select a diagram type',
   'showcase.publishModal.invalidFileType': 'Unsupported file type',
   'showcase.publishModal.invalidMgFile': 'Could not read this .mg file — export it from MindGraph first',
-  'showcase.publishModal.cannotPreview': 'Could not generate preview — try PNG/JPG or pick a saved diagram',
+  'showcase.publishModal.cannotPreview':
+    'Could not generate a cover preview — the case will still submit. Try PNG/JPG or pick a saved diagram.',
   'showcase.publishModal.cannotPreviewHistory':
-    'Could not generate preview — re-pick the saved diagram or re-save it from the canvas',
+    'Could not generate a cover from this saved diagram — the case will still submit. Re-pick it or re-save from the canvas.',
   'showcase.publishModal.cannotPreviewTemplate':
-    'Could not generate preview — check the .mg file or pick another saved diagram',
+    'Could not generate a cover — the case will still submit. Check the .mg file or pick another saved diagram.',
   'showcase.publishModal.cannotPreviewTeachingDoc':
-    'Could not generate document cover preview — check the PDF or DOCX file',
+    'Could not generate a document cover — the case will still submit. Check the PDF/DOCX, or edit later to refresh the cover.',
   'showcase.publishModal.historyTitle': 'Pick saved diagram',
   'showcase.publishModal.historySearch': 'Search diagram name…',
   'showcase.publishModal.historyEmpty': 'No saved diagrams',

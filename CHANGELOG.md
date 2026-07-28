@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.152.0] - 2026-07-28
+
+> **Showcase covers stay under 2MB and soft-fail without discarding the case; Kitty WS/SSE recover auth once then hard-stop; Dify failover health probes once per host and treats bad app keys as reachable.**
+
+### Added
+
+- **Dify host-level health probe** — Probe each unique base URL once with candidate app keys; retry on 401/403; auth-only answers still count as host online ([`dify_health_host_probe.py`](services/dify/dify_health_host_probe.py), [`dify_health_probe_plan.py`](services/dify/dify_health_probe_plan.py), [`dify_health_poller.py`](services/dify/dify_health_poller.py)).
+- **Showcase cover size helpers** — Client shrinks cover PNGs to the 2MB / 960px budget before upload ([`showcaseShared.ts`](frontend/src/components/showcase/showcaseShared.ts), [`captureTeachingDocThumbnail.ts`](frontend/src/utils/captureTeachingDocThumbnail.ts)).
+- **Kitty WS auth reconnect gate** — Shared refresh-once-then-hard-stop helper for canvas-owner and mobile Kitty connect paths ([`kittyWsAuthReconnect.ts`](frontend/src/composables/kitty/kittyWsAuthReconnect.ts)).
+
+### Changed
+
+- **Showcase cover is best-effort** — Attachment/gallery uploads still roll back on failure; cover capture/upload failures warn and leave the case submitted ([`submitPublishShowcasePost.ts`](frontend/src/composables/showcase/submitPublishShowcasePost.ts)).
+- **Showcase size-error UX** — Distinct messages for cover 2MB vs attachment/video limits, including rollback wording ([`mapShowcaseSubmitError.ts`](frontend/src/composables/showcase/mapShowcaseSubmitError.ts), en/zh showcase locales).
+- **Kitty desktop polls use `apiRequest`** — Focus/session/live-context/mobile-active/pairing GETs refresh on 401 instead of raw `fetch`, so idle heartbeats stop after session expiry ([`useKittyDesktopFocus.ts`](frontend/src/composables/kitty/useKittyDesktopFocus.ts), [`useKittyDesktopActionPoll.ts`](frontend/src/composables/kitty/useKittyDesktopActionPoll.ts), and related Kitty pollers).
+- **Desktop wake SSE reconnect gate** — Skip backoff reconnect when logged out or polling is disallowed ([`createKittyDesktopWakeStream.ts`](frontend/src/composables/kitty/createKittyDesktopWakeStream.ts)).
+- **Dify health poller lock loss** — Finish Redis fan-out with in-memory probe results instead of aborting mid-cycle ([`dify_health_poller.py`](services/dify/dify_health_poller.py)).
+- **Dify health env docs** — Clarify host-level dedupe and auth-retry behavior ([`env.example`](env.example)).
+
+### Fixed
+
+- **Teaching-design / diagram covers over 2MB** — Lower capture pixelRatio and downscale until within `CASE_THUMBNAIL_MAX_BYTES` so COS/presigned PUTs stop returning 413.
+- **Legacy `.doc` cover path** — Skip unsupported preview generation and submit without a cover instead of failing the publish flow.
+- **Kitty WS reconnect storm after expired JWT** — Canvas-owner and mobile Kitty refresh once via `/api/auth/refresh`, then hard-stop and surface session-expired instead of looping on 403/1006 ([`useKittyCanvasOwnerAgent.ts`](frontend/src/composables/kitty/useKittyCanvasOwnerAgent.ts), [`MobileKittyPage.vue`](frontend/src/pages/mobile/MobileKittyPage.vue), [`useMobileKittyPageLifecycle.ts`](frontend/src/composables/mobile/useMobileKittyPageLifecycle.ts)).
+
+### Tests
+
+- **Backend** — Host probe auth-retry / online classification; probe plan collapses same URL across keys and slots ([`test_dify_health_host_probe.py`](tests/test_dify_health_host_probe.py), [`test_dify_health_probe_plan.py`](tests/test_dify_health_probe_plan.py)).
+- **Frontend** — Cover vs attachment 413 mapping; Kitty WS auth recover/hard-stop; wake-stream `shouldReconnect` skip ([`mapShowcaseSubmitError.spec.ts`](frontend/tests/mapShowcaseSubmitError.spec.ts), [`kittyWsAuthReconnect.spec.ts`](frontend/tests/kittyWsAuthReconnect.spec.ts), [`createKittyDesktopWakeStream.spec.ts`](frontend/tests/createKittyDesktopWakeStream.spec.ts)).
+- **Optional e2e** — Real DOCX teaching-design create → attach → thumb gates → withdraw when `SHOWCASE_REAL_DOCX` / Desktop fixture is present ([`test_showcase_real_docx_e2e.py`](tests/test_showcase_real_docx_e2e.py)).
+
 ## [5.151.1] - 2026-07-28
 
 > **Mind map post-Enter/Tab selection no longer fights sticky inline edit; Kitty desktop action drain loads handlers before LPOP; Vite Rolldown codeSplitting groups.**

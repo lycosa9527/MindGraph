@@ -7,6 +7,7 @@ vi.mock('@/stores/kittySession', () => ({
     hubScopeRevision: null,
     setHubScopeRevision: vi.fn(),
     setOwnsKittySession: vi.fn(),
+    setMutationAckSender: vi.fn(),
   }),
 }))
 

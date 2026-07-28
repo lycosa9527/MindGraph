@@ -284,7 +284,7 @@ async def start_cleanup_scheduler(interval_hours: int = 1):
 
             # Refresh lock before cleanup to prevent expiration
             if not await refresh_cleanup_lock():
-                logger.warning("[Cleanup] Lost cleanup lock, stopping scheduler on this worker")
+                logger.debug("[Cleanup] Lost cleanup lock, stopping scheduler on this worker")
                 # Try to reacquire lock
                 if not await acquire_cleanup_lock():
                     continue  # Another worker has it, keep waiting

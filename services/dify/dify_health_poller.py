@@ -2,8 +2,8 @@
 Background heartbeat poller for per-organization Dify servers.
 
 Platform monitoring walks every schema slot (1, 2, 3, …) and probes each unique
-URL/key any school uses on that slot. Per-school failover logs and routing use
-only the pair that school configured (e.g. 1+2, 2+3, or 1+3).
+base URL once (shared hosts collapse across schools/keys). Per-school failover
+logs and routing use only the pair that school configured (e.g. 1+2, 2+3, or 1+3).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -19,6 +19,7 @@ import uuid
 from typing import Dict, List, Optional, Tuple
 
 from models.domain.auth import Organization
+from services.dify.dify_health_host_probe import check_dify_host_reachable
 from services.dify.dify_health_logging import (
     LOG_PREFIX,
     health_status_text,
@@ -43,7 +44,6 @@ from services.dify.dify_servers import (
     primary_server_no,
 )
 from services.dify.org_mindmate_client import select_active_dify_server
-from services.mindbot.dify.service_health import check_dify_app_api_reachable
 from services.redis import keys as _keys
 from services.redis.cache.redis_dify_server_health_cache import (
     DifyServerHealth,
@@ -278,13 +278,13 @@ async def _probe_unique_target(
     target: DifyProbeTarget,
     semaphore: asyncio.Semaphore,
 ) -> _ProbeOutcome:
-    """Run one deduplicated HTTP health check with bounded concurrency."""
+    """Run one host-level HTTP health check with bounded concurrency."""
     async with semaphore:
-        return await check_dify_app_api_reachable(target.api_url, target.api_key)
+        return await check_dify_host_reachable(target.api_url, target.api_keys)
 
 
-async def _run_deduped_probes(plan: DifyProbePlan) -> Dict[Tuple[str, str], _ProbeOutcome]:
-    """Probe each unique endpoint once and index results by URL/key."""
+async def _run_deduped_probes(plan: DifyProbePlan) -> Dict[str, _ProbeOutcome]:
+    """Probe each unique base URL once and index results by normalized URL."""
     if not plan.unique_targets:
         return {}
     semaphore = asyncio.Semaphore(DIFY_PROBE_CONCURRENCY)
@@ -339,7 +339,7 @@ async def _probe_once() -> None:
     plan = build_deduped_probe_plan(monitor_orgs)
     schema_slots = organization_dify_server_slots()
     logger.debug(
-        "%s Health check cycle: %s unique endpoint(s) across schema slot(s) %s; "
+        "%s Health check cycle: %s unique base URL(s) across schema slot(s) %s; "
         "%s school(s) contribute credentials (%s org/server assignment(s)).",
         LOG_PREFIX,
         plan.unique_endpoint_count,
@@ -355,6 +355,7 @@ async def _probe_once() -> None:
         route_before_by_org[org.id] = await select_active_dify_server(org)
 
     assignments_applied = 0
+    lock_lost = False
     for target, assignments in plan.assignments_by_target:
         outcome = outcomes[probe_target_key(target)]
         for assignment in assignments:
@@ -363,13 +364,15 @@ async def _probe_once() -> None:
                 continue
             await _apply_assignment(org, assignment, outcome)
             assignments_applied += 1
-            if assignments_applied % _LOCK_REFRESH_EVERY_ASSIGNMENTS == 0:
-                if not await _acquire_or_refresh_lock():
-                    logger.warning(
-                        "%s Lost health-check lock mid-cycle; stopping fan-out early.",
-                        LOG_PREFIX,
-                    )
-                    return
+            if lock_lost or assignments_applied % _LOCK_REFRESH_EVERY_ASSIGNMENTS != 0:
+                continue
+            if await _acquire_or_refresh_lock():
+                continue
+            lock_lost = True
+            logger.warning(
+                "%s Lost health-check lock mid-cycle; finishing fan-out with in-memory probe results.",
+                LOG_PREFIX,
+            )
 
     for org in failover_orgs:
         await _finalize_org(org, route_before_by_org.get(org.id))

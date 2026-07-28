@@ -22,6 +22,11 @@ export interface KittyDesktopWakeStreamOptions {
   onOpen?: () => void
   onClose?: () => void
   onError?: (event: Event) => void
+  /**
+   * When false after an error, skip backoff reconnect (e.g. logged out).
+   * Do not use this for refresh-on-SSE-error — EventSource drops are often non-auth.
+   */
+  shouldReconnect?: () => boolean
 }
 
 export interface KittyDesktopDiagramUpdateFanout {
@@ -102,12 +107,23 @@ export function createKittyDesktopWakeStream(options: KittyDesktopWakeStreamOpti
     if (closed) {
       return
     }
+    if (options.shouldReconnect != null && !options.shouldReconnect()) {
+      traceKittyWorkflow('hub', 'sse_reconnect', 'skipped — shouldReconnect=false')
+      return
+    }
     clearRetryTimer()
     retryCount += 1
     const delayMs = Math.min(30000, 1000 * retryCount)
     traceKittyWorkflow('hub', 'sse_reconnect', `retry in ${delayMs}ms`)
     retryTimer = setTimeout(() => {
       retryTimer = null
+      if (closed) {
+        return
+      }
+      if (options.shouldReconnect != null && !options.shouldReconnect()) {
+        traceKittyWorkflow('hub', 'sse_reconnect', 'skipped — shouldReconnect=false')
+        return
+      }
       connect()
     }, delayMs)
   }

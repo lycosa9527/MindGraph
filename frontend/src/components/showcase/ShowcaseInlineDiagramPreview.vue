@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { Loader2 } from '@lucide/vue'
 
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
+import { dataUrlToPngBlob } from '@/components/showcase/showcaseShared'
 import { useLanguage } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import {
@@ -12,12 +13,11 @@ import {
 } from '@/composables/presentation/presentationDiagramEdit'
 import { useDiagramStore } from '@/stores'
 import type { DiagramType } from '@/types'
-import { dataUrlToPngBlob } from '@/components/showcase/showcaseShared'
+import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
 import {
   cloneShowcaseDiagramSpec,
   resolveShowcaseDiagramType,
 } from '@/utils/showcaseDiagramThumbnail'
-import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
 
 pushShowcaseReaderLock()
 
@@ -79,7 +79,10 @@ function waitForViewFitCompleted(timeoutMs = 4_000): Promise<void> {
   })
 }
 
-async function loadSpecIntoCanvas(spec: Record<string, unknown>, diagramTypeValue: string): Promise<void> {
+async function loadSpecIntoCanvas(
+  spec: Record<string, unknown>,
+  diagramTypeValue: string
+): Promise<void> {
   const token = ++loadToken
   isReady.value = false
   hasError.value = false
@@ -136,7 +139,7 @@ async function captureThumbnail(): Promise<Blob | null> {
     const captureTarget =
       (previewRoot.value.querySelector('.diagram-canvas') as HTMLElement | null) ??
       previewRoot.value
-    const dataUrl = await htmlToImage.toPng(captureTarget, { pixelRatio: 2, cacheBust: true })
+    const dataUrl = await htmlToImage.toPng(captureTarget, { pixelRatio: 1.5, cacheBust: true })
     const blob = await dataUrlToPngBlob(dataUrl)
     return blob
   } catch {
@@ -154,10 +157,17 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="showcase-inline-diagram-preview flex h-full min-h-0 flex-col bg-gray-50">
-    <div v-if="!spec" class="flex flex-1 flex-col items-center justify-center px-6 text-center text-gray-400">
+    <div
+      v-if="!spec"
+      class="flex flex-1 flex-col items-center justify-center px-6 text-center text-gray-400"
+    >
       <p class="text-sm">{{ emptyLabel }}</p>
     </div>
-    <div v-else ref="previewRoot" class="relative min-h-0 flex-1">
+    <div
+      v-else
+      ref="previewRoot"
+      class="relative min-h-0 flex-1"
+    >
       <img
         v-if="showThumbnailPlaceholder && thumbnailUrl"
         :src="thumbnailUrl"
@@ -166,7 +176,7 @@ onBeforeUnmount(() => {
       />
       <DiagramCanvas
         v-if="canvasMounted"
-        class="relative z-[1]"
+        class="relative z-1"
         :show-minimap="false"
         :fit-view-on-init="true"
         :hand-tool-active="true"

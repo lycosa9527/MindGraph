@@ -9,10 +9,15 @@ import { type ComputedRef, type Ref, onUnmounted, watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
+import {
+  createKittyWsAuthReconnectGate,
+  runKittyConnectWithAuthRecovery,
+} from '@/composables/kitty/kittyWsAuthReconnect'
 import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
 import { runKittyHubSync } from '@/composables/kitty/pipeline/hubSyncWorker'
 import { KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS } from '@/composables/kitty/syncKittyHubContext'
 import { useKittyAgent } from '@/composables/kitty/useKittyAgent'
+import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'
 import { useOneSentenceStore } from '@/stores/oneSentence'
 import { useKittySessionStore } from '@/stores/kittySession'
@@ -28,9 +33,11 @@ export function useKittyCanvasOwnerAgent(options: {
   kitty: ReturnType<typeof useKittyAgent>
   ensureConnected: () => Promise<boolean>
 } {
+  const authStore = useAuthStore()
   const diagramStore = useDiagramStore()
   const oneSentence = useOneSentenceStore()
   const kittySession = useKittySessionStore()
+  const authGate = createKittyWsAuthReconnectGate()
 
   const kitty = useKittyAgent({
     ownerId: 'KittyCanvasOwner',
@@ -67,7 +74,7 @@ export function useKittyCanvasOwnerAgent(options: {
   }
 
   function scheduleReconnect(): void {
-    if (!options.enabled.value) {
+    if (!options.enabled.value || authGate.isHardStopped()) {
       return
     }
     clearReconnectTimer()
@@ -86,7 +93,7 @@ export function useKittyCanvasOwnerAgent(options: {
     void kitty.stopConversation()
   }
 
-  async function ensureConnected(): Promise<boolean> {
+  async function connectOnce(): Promise<boolean> {
     if (!options.enabled.value) {
       return false
     }
@@ -112,6 +119,29 @@ export function useKittyCanvasOwnerAgent(options: {
     }
   }
 
+  async function ensureConnected(): Promise<boolean> {
+    if (!options.enabled.value || authGate.isHardStopped()) {
+      return false
+    }
+    const scope = options.libraryDiagramId.value?.trim() ?? ''
+    if (!scope) {
+      return false
+    }
+    return runKittyConnectWithAuthRecovery({
+      isHardStopped: authGate.isHardStopped,
+      markHardStopped: authGate.markHardStopped,
+      hasAuthenticatedUser: () => Boolean(authStore.isAuthenticated || authStore.user),
+      refreshAccessToken: () => authStore.refreshAccessToken(),
+      onSessionExpired: () => {
+        authStore.handleTokenExpired(
+          'Your session has expired. Please log in again.',
+          undefined
+        )
+      },
+      connectOnce,
+    })
+  }
+
   function scheduleBackgroundHubSync(): void {
     if (!options.enabled.value || !kittySession.ownsKittySession || !kitty.isConnected.value) {
       return
@@ -126,7 +156,7 @@ export function useKittyCanvasOwnerAgent(options: {
       if (!fingerprint || fingerprint === lastHubFingerprint) {
         return
       }
-      const scope = options.libraryDiagramId.value?.trim() ?? ''
+      const hubScope = options.libraryDiagramId.value?.trim() ?? ''
       void runKittyHubSync({
         deps: {
           buildContext,
@@ -137,7 +167,7 @@ export function useKittyCanvasOwnerAgent(options: {
         },
         ctx: {
           requestId: `owner-bg-${Date.now()}`,
-          scope: scope || 'scope',
+          scope: hubScope || 'scope',
           lane: 'desktop',
         },
         reason: 'background',
@@ -152,7 +182,12 @@ export function useKittyCanvasOwnerAgent(options: {
 
   watch(
     [options.enabled, options.libraryDiagramId],
-    () => {
+    (current, previous) => {
+      const enabled = current[0]
+      const wasEnabled = previous?.[0]
+      if (enabled && wasEnabled === false) {
+        authGate.reset()
+      }
       if (!options.enabled.value) {
         releaseOwnership()
         return
@@ -168,6 +203,19 @@ export function useKittyCanvasOwnerAgent(options: {
   )
 
   watch(
+    () => authStore.isAuthenticated,
+    (authenticated, wasAuthenticated) => {
+      if (authenticated && !wasAuthenticated) {
+        authGate.reset()
+      }
+      if (!authenticated) {
+        authGate.markHardStopped()
+        clearReconnectTimer()
+      }
+    }
+  )
+
+  watch(
     () => getKittyDiagramContentFingerprint(diagramStore.data),
     () => {
       scheduleBackgroundHubSync()
@@ -177,7 +225,7 @@ export function useKittyCanvasOwnerAgent(options: {
   eventBus.onWithOwner(
     'voice:ws_closed',
     () => {
-      if (!options.enabled.value) {
+      if (!options.enabled.value || authGate.isHardStopped()) {
         return
       }
       scheduleReconnect()
@@ -192,7 +240,7 @@ export function useKittyCanvasOwnerAgent(options: {
     if (document.visibilityState !== 'visible') {
       return
     }
-    if (!options.enabled.value) {
+    if (!options.enabled.value || authGate.isHardStopped()) {
       return
     }
     scheduleReconnect()

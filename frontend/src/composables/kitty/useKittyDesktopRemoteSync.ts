@@ -28,6 +28,7 @@ import type { KittyAgentContext } from '@/composables/kitty/kittyAgentTypes'
 import { syncDiagramStoreFromVoiceContext } from '@/composables/kitty/syncDiagramStoreFromVoiceContext'
 import { useDiagramStore } from '@/stores/diagram'
 import { useKittySessionStore } from '@/stores/kittySession'
+import { apiRequest } from '@/utils/apiClient'
 import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import type { DiagramType } from '@/types'
 
@@ -386,8 +387,8 @@ export function useKittyDesktopRemoteSync(options: {
     }
 
     try {
-      const res = await fetch(`/api/kitty/live_context/${encodeURIComponent(id)}`, {
-        credentials: 'same-origin',
+      const res = await apiRequest(`/api/kitty/live_context/${encodeURIComponent(id)}`, {
+        method: 'GET',
       })
       if (!res.ok) {
         return

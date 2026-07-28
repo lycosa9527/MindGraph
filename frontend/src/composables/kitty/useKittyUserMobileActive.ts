@@ -9,6 +9,7 @@ import {
   useKittyMobileActiveHubSnapshot,
 } from '@/composables/kitty/kittyDesktopMobileActiveHub'
 import { KITTY_MOBILE_WATCH_MS } from '@/composables/kitty/runKittyIntervalPoll'
+import { apiRequest } from '@/utils/apiClient'
 
 interface MobileActivePayload {
   active?: unknown
@@ -51,7 +52,7 @@ export function useKittyUserMobileActive(pollEnabled: Ref<boolean>) {
     }
     tickInFlight = true
     try {
-      const res = await fetch('/api/kitty/mobile_active', { credentials: 'same-origin' })
+      const res = await apiRequest('/api/kitty/mobile_active', { method: 'GET' })
       if (!pollEnabled.value) {
         return
       }

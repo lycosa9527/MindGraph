@@ -1,12 +1,13 @@
 /**
  * Mobile Kitty page mount/teardown, WS reconnect, and Pinia pipeline cleanup.
  */
-import { onMounted, onUnmounted, type Ref } from 'vue'
+import { onMounted, onUnmounted, watch, type Ref } from 'vue'
 import type { Router } from 'vue-router'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
 import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrateMobileKittyStoreFromBootstrap'
+import type { createKittyWsAuthReconnectGate } from '@/composables/kitty/kittyWsAuthReconnect'
 import type { useAuthStore } from '@/stores/auth'
 import type { useFeatureFlagsStore } from '@/stores/featureFlags'
 import type { useKittyAgent } from '@/composables/kitty/useKittyAgent'
@@ -26,6 +27,11 @@ export interface UseMobileKittyPageLifecycleOptions {
   ensureMobileKittyBootstrap: () => Promise<void>
   /** Pre-open Kitty WS so first PTT hold is not racing connect. */
   ensureConnected?: () => Promise<boolean>
+  /**
+   * Shared with page ensureConnected — one gate so hard-stop after refresh
+   * failure also blocks voice:ws_closed reconnect scheduling.
+   */
+  authGate: ReturnType<typeof createKittyWsAuthReconnectGate>
   kittyServerEnabled?: { value: boolean }
   bindKittyMicKeyboard: () => void
   teardownMicPtt: () => void
@@ -44,6 +50,7 @@ export function useMobileKittyPageLifecycle(options: UseMobileKittyPageLifecycle
     bootstrapPayload,
     ensureMobileKittyBootstrap,
     ensureConnected,
+    authGate,
     kittyServerEnabled,
     bindKittyMicKeyboard,
     teardownMicPtt,
@@ -65,18 +72,37 @@ export function useMobileKittyPageLifecycle(options: UseMobileKittyPageLifecycle
   }
 
   function scheduleReconnect(): void {
-    if (disposed || !ensureConnected || kittyServerEnabled?.value === false) {
+    if (
+      disposed ||
+      !ensureConnected ||
+      kittyServerEnabled?.value === false ||
+      authGate.isHardStopped() ||
+      !authStore.isAuthenticated
+    ) {
       return
     }
     clearReconnectTimer()
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null
-      if (disposed) {
+      if (disposed || authGate.isHardStopped() || !authStore.isAuthenticated) {
         return
       }
       void ensureConnected()
     }, RECONNECT_DEBOUNCE_MS)
   }
+
+  watch(
+    () => authStore.isAuthenticated,
+    (authenticated, wasAuthenticated) => {
+      if (authenticated && !wasAuthenticated) {
+        authGate.reset()
+      }
+      if (!authenticated) {
+        authGate.markHardStopped()
+        clearReconnectTimer()
+      }
+    }
+  )
 
   function resetLocalKittyUiState(): void {
     pipelineStore.resetToIdle()
@@ -112,7 +138,7 @@ export function useMobileKittyPageLifecycle(options: UseMobileKittyPageLifecycle
     eventBus.onWithOwner(
       'voice:ws_closed',
       (data) => {
-        if (data.wasClean) {
+        if (data.wasClean || authGate.isHardStopped() || !authStore.isAuthenticated) {
           return
         }
         // Drop mid-turn pipeline so unclean reconnect cannot stick awaiting_result.

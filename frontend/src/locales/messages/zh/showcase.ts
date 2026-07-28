@@ -57,6 +57,20 @@ export default {
   'showcase.publishModal.uploadStorageRejected':
     '对象存储拒绝了本次上传。草稿已撤销，请稍后重试；若反复失败请联系管理员。',
   'showcase.publishModal.uploadFailed': '上传失败，请重试。',
+  'showcase.publishModal.uploadCoverTooLarge':
+    '封面图超过 2MB 限制。请压缩预览图或换用更小的图片后重试。',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    '文件超过大小限制（文档/图片 20MB，视频 100MB）。请压缩后重试。',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    '文件超过大小限制（文档/图片 20MB，视频 100MB）。草稿已撤销，请压缩后重试。',
+  'showcase.publishModal.uploadFileTooLarge':
+    '文件过大，超出当前上传类型的限制，请确认大小后重试。',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    '文件过大，超出当前上传类型的限制。草稿已撤销，请确认大小后重试。',
+  'showcase.publishModal.coverUploadSkipped':
+    '案例已提交，但封面上传失败。可稍后编辑案例以更新封面。',
+  'showcase.publishModal.coverUnsupportedLegacyDoc':
+    '案例已提交，但 .doc 无法自动生成封面。建议改用 .docx 或 .pdf。',
   'showcase.publishModal.success': '案例已提交，等待管理员审核',
   'showcase.publishModal.fromCanvas': '从画布发布',
   'showcase.publishModal.step1Title': '基本信息',
@@ -135,12 +149,14 @@ export default {
   'showcase.publishModal.validationDiagramType': '请选择图示类型',
   'showcase.publishModal.invalidFileType': '文件格式不支持',
   'showcase.publishModal.invalidMgFile': '无法读取 .mg 文件，请确认文件来自 MindGraph 导出',
-  'showcase.publishModal.cannotPreview': '无法生成预览图，请尝试上传 PNG/JPG 或从历史图示选择',
+  'showcase.publishModal.cannotPreview':
+    '无法生成封面预览，案例仍将提交；可尝试 PNG/JPG 或从历史图示选择',
   'showcase.publishModal.cannotPreviewHistory':
-    '无法生成预览图，请重新选择历史图示，或先在画布中打开该图示并重新保存',
-  'showcase.publishModal.cannotPreviewTemplate': '无法生成预览图，请确认 .mg 文件有效或重新选择历史图示',
+    '无法从该历史图示生成封面，案例仍将提交；请重新选择，或先在画布中打开并重新保存',
+  'showcase.publishModal.cannotPreviewTemplate':
+    '无法生成封面预览，案例仍将提交；请确认 .mg 文件有效或重新选择历史图示',
   'showcase.publishModal.cannotPreviewTeachingDoc':
-    '无法生成文档封面预览，请确认 PDF 或 DOCX 文件有效',
+    '无法生成文档封面预览，案例仍将提交；请确认 PDF 或 DOCX 有效，或稍后编辑补充封面',
   'showcase.publishModal.historyTitle': '选择历史图示',
   'showcase.publishModal.historySearch': '搜索图示名称…',
   'showcase.publishModal.historyEmpty': '暂无历史图示',

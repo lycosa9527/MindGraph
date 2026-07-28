@@ -7,6 +7,7 @@ import { type Ref, computed, onUnmounted, ref, watch } from 'vue'
 import { shouldLockDesktopOneSentenceForMobileKitty } from '@/composables/canvasToolbar/desktopOneSentenceMobileKittyLock'
 import type { KittyMobileActiveSnapshot } from '@/composables/kitty/kittyDesktopMobileActiveHub'
 import type { OneSentencePhase } from '@/stores/oneSentence'
+import { apiRequest } from '@/utils/apiClient'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 export type KittySessionAlignment =
@@ -194,8 +195,8 @@ export async function fetchKittySessionSnapshot(
   }
   const q = options?.includeJournal ? '?include_journal=true' : ''
   try {
-    const res = await fetch(`/api/kitty/session/${encodeURIComponent(id)}${q}`, {
-      credentials: 'same-origin',
+    const res = await apiRequest(`/api/kitty/session/${encodeURIComponent(id)}${q}`, {
+      method: 'GET',
     })
     if (!res.ok) {
       return null

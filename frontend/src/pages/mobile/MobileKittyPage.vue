@@ -24,6 +24,10 @@ import {
 import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLlmModel'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
 import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrateMobileKittyStoreFromBootstrap'
+import {
+  createKittyWsAuthReconnectGate,
+  runKittyConnectWithAuthRecovery,
+} from '@/composables/kitty/kittyWsAuthReconnect'
 import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesktopLlmModelPublish'
 import { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
 import { useKittyMobileDebugBus } from '@/composables/kitty/useKittyMobileDebugBus'
@@ -46,6 +50,7 @@ const router = useRouter()
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
+const mobileKittyAuthGate = createKittyWsAuthReconnectGate()
 const featureFlagsStore = useFeatureFlagsStore()
 const { flags } = storeToRefs(featureFlagsStore)
 const kittyServerEnabled = computed(() => flags.value?.feature_kitty_agent ?? false)
@@ -361,7 +366,7 @@ function isKittyLiveForScope(scope: string): boolean {
   return kitty.isLiveForScope(scope)
 }
 
-async function ensureConnected(): Promise<boolean> {
+async function connectKittyOnce(): Promise<boolean> {
   const requestedScope = kittyPairScope.value
   kitty.reconcileLiveState()
   if (isKittyLiveForScope(requestedScope)) {
@@ -412,9 +417,29 @@ async function ensureConnected(): Promise<boolean> {
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error)
     pushKittyDebugLine('#connect', `fail ${detail.slice(0, 100)}`)
-    notify.warning(t('mobile.kittyConnectFailed', '连接失败，请检查网络后重试'))
     return false
   }
+}
+
+async function ensureConnected(): Promise<boolean> {
+  const ok = await runKittyConnectWithAuthRecovery({
+    isHardStopped: mobileKittyAuthGate.isHardStopped,
+    markHardStopped: mobileKittyAuthGate.markHardStopped,
+    hasAuthenticatedUser: () => Boolean(authStore.isAuthenticated || authStore.user),
+    refreshAccessToken: () => authStore.refreshAccessToken(),
+    onSessionExpired: () => {
+      authStore.handleTokenExpired(
+        'Your session has expired. Please log in again.',
+        undefined
+      )
+    },
+    connectOnce: connectKittyOnce,
+  })
+  // Auth hard-stop surfaces the session-expired modal; only toast network-style failures.
+  if (!ok && authStore.isAuthenticated && !mobileKittyAuthGate.isHardStopped()) {
+    notify.warning(t('mobile.kittyConnectFailed', '连接失败，请检查网络后重试'))
+  }
+  return ok
 }
 
 async function goHome(): Promise<void> {
@@ -712,6 +737,7 @@ useMobileKittyPageLifecycle({
   bootstrapPayload,
   ensureMobileKittyBootstrap,
   ensureConnected,
+  authGate: mobileKittyAuthGate,
   kittyServerEnabled,
   bindKittyMicKeyboard,
   teardownMicPtt,

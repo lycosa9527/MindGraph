@@ -11,6 +11,7 @@ import {
   KITTY_FOCUS_RECOVERY_POLL_MS,
   KITTY_PAIR_POLL_MS,
 } from '@/composables/kitty/runKittyIntervalPoll'
+import { apiRequest } from '@/utils/apiClient'
 
 const DEBOUNCE_MS = 480
 /** Keep Redis focus fresh while canvas stays open (mobile freshness checks). */
@@ -18,10 +19,9 @@ const FOCUS_HEARTBEAT_MS = 60_000
 
 async function putDesktopFocusDiagram(diagramLibraryId: string | null): Promise<void> {
   try {
-    await fetch('/api/kitty/desktop_focus', {
+    // apiRequest refreshes once on 401 then expires the session — stops idle heartbeat spam.
+    await apiRequest('/api/kitty/desktop_focus', {
       method: 'PUT',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ diagram_library_id: diagramLibraryId }),
     })
   } catch {
@@ -48,8 +48,8 @@ export function useKittyDesktopFocusHint(
       return
     }
     try {
-      const res = await fetch('/api/kitty/desktop_focus', {
-        credentials: 'same-origin',
+      const res = await apiRequest('/api/kitty/desktop_focus', {
+        method: 'GET',
       })
       if (!res.ok) {
         applyFocus(null, null)

@@ -4,6 +4,7 @@
 import { computed, ref } from 'vue'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 
 import { useKittyDesktopLiveSpecSync } from '@/composables/kitty/useKittyDesktopLiveSpecSync'
 
@@ -16,9 +17,11 @@ const { loadFromSpec, selectNodes, clearSelection } = vi.hoisted(() => ({
 vi.mock('@/stores/diagram', () => ({
   useDiagramStore: () => ({
     type: 'circle_map',
+    data: { nodes: [], connections: [] },
     loadFromSpec,
     selectNodes,
     clearSelection,
+    collabSessionActive: false,
   }),
 }))
 
@@ -45,18 +48,29 @@ vi.mock('@/composables/kitty/kittySelectionApply', () => ({
   },
 }))
 
+vi.mock('@/composables/kitty/applyKittyRemoteLlmModel', () => ({
+  applyKittyRemoteLlmModel: vi.fn(),
+}))
+
 vi.mock('@/composables/kitty/kittyDesktopMobileActiveHub', () => ({
   acquireKittyMobileActiveHub: () => () => undefined,
   isKittyMobileActiveHubFresh: () => false,
   useKittyMobileActiveHubSnapshot: () =>
     ref({
       active: false,
+      scopes: [] as string[],
+      primaryScope: null,
       updatedAt: 0,
     }),
 }))
 
+vi.mock('@/composables/kitty/kittyWorkflowTrace', () => ({
+  traceKittyWorkflow: vi.fn(),
+}))
+
 describe('useKittyDesktopLiveSpecSync', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     loadFromSpec.mockClear()
     selectNodes.mockClear()
     clearSelection.mockClear()

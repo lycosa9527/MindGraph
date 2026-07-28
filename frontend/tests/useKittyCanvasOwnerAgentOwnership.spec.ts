@@ -52,6 +52,15 @@ vi.mock('@/stores/oneSentence', () => ({
   useOneSentenceStore: () => ({ phase: 'edit' }),
 }))
 
+vi.mock('@/stores/auth', () => ({
+  useAuthStore: () => ({
+    isAuthenticated: true,
+    user: { id: 1 },
+    refreshAccessToken: vi.fn(async () => ({ success: true })),
+    handleTokenExpired: vi.fn(),
+  }),
+}))
+
 vi.mock('@/composables/core/useEventBus', () => ({
   eventBus: {
     onWithOwner: vi.fn(),

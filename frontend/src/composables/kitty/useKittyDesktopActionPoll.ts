@@ -29,6 +29,7 @@ import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { KITTY_MOBILE_WATCH_MS } from '@/composables/kitty/runKittyIntervalPoll'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { apiRequest } from '@/utils/apiClient'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 type PollPhase = 'off' | 'watching'
@@ -169,8 +170,8 @@ export function useKittyDesktopActionPoll(): void {
     pairingAbort = new AbortController()
     const signal = pairingAbort.signal
     try {
-      const res = await fetch(pairingUrl(waitSec), {
-        credentials: 'same-origin',
+      const res = await apiRequest(pairingUrl(waitSec), {
+        method: 'GET',
         signal,
       })
       if (!res.ok) {
@@ -273,6 +274,7 @@ export function useKittyDesktopActionPoll(): void {
       return
     }
     stopWakeStream = createKittyDesktopWakeStream({
+      shouldReconnect: () => isAuthenticated.value && pollingAllowed(),
       onMobileActive: handleWakeMobileActive,
       onDesktopActionPending: () => {
         void drainPendingDesktopAction()

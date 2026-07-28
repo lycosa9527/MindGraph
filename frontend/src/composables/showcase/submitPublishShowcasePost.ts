@@ -9,7 +9,9 @@ import {
   type ShowcaseGalleryItem,
 } from '@/components/showcase/showcaseGallery'
 import {
+  acceptThumbnailBlob,
   CASE_ATTACHMENT_MAX_BYTES,
+  CASE_THUMBNAIL_MAX_BYTES,
   CASE_UPLOAD_TOTAL_MAX_BYTES,
   CASE_VIDEO_MAX_BYTES,
   TAG_MAX_COUNT,
@@ -43,7 +45,10 @@ import {
   cloneShowcaseDiagramSpec,
   inferDiagramTypeFromSpec,
 } from '@/utils/showcaseDiagramThumbnail'
-import { captureTeachingDocThumbnail } from '@/utils/captureTeachingDocThumbnail'
+import {
+  captureTeachingDocThumbnail,
+  isLegacyTeachingDocFile,
+} from '@/utils/captureTeachingDocThumbnail'
 
 export type PublishSubmitDeps = {
   props: {
@@ -61,6 +66,7 @@ export type PublishSubmitDeps = {
   notify: {
     error: (message: string, duration?: number) => void
     success: (message: string, duration?: number) => void
+    warning: (message: string, duration?: number) => void
     showLoading: (message?: string) => void
     hideLoading: () => void
   }
@@ -88,6 +94,7 @@ export type PublishSubmitDeps = {
   selectedDiagram: Ref<SavedDiagram | null>
   selectedDiagramSpec: Ref<Record<string, unknown> | null>
   editHasAttachment: Ref<boolean>
+  editHasThumbnail: Ref<boolean>
   galleryImageDrafts: Ref<GalleryImageDraft[]>
   galleryDiagramDrafts: Ref<GalleryDiagramDraft[]>
   galleryExistingImages: Ref<GalleryExistingImage[]>
@@ -108,6 +115,26 @@ export type PublishSubmitDeps = {
 
 function blobToPngFile(blob: Blob, name = 'thumbnail.png'): File {
   return new File([blob], name, { type: 'image/png' })
+}
+
+async function prepareThumbnailUploadFile(blob: Blob | null): Promise<File | null> {
+  const prepared = await acceptThumbnailBlob(blob)
+  if (!prepared || prepared.size > CASE_THUMBNAIL_MAX_BYTES) return null
+  return blobToPngFile(prepared)
+}
+
+function isThumbnailUploadRole(role: ShowcaseUploadRole): boolean {
+  return role === 'thumbnail'
+}
+
+function coverSkipKeyForCase(caseTypeValue: ShowcaseCaseType): string {
+  if (caseTypeValue === 'teaching_design') {
+    return 'showcase.publishModal.cannotPreviewTeachingDoc'
+  }
+  if (caseTypeValue === 'diagram_template') {
+    return 'showcase.publishModal.cannotPreviewTemplate'
+  }
+  return 'showcase.publishModal.cannotPreview'
 }
 
 export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
@@ -140,6 +167,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     selectedDiagram,
     selectedDiagramSpec,
     editHasAttachment,
+    editHasThumbnail,
     galleryImageDrafts,
     galleryDiagramDrafts,
     galleryExistingImages,
@@ -240,17 +268,20 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
   async function uploadPendingMedia(
     postId: string,
     pending: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }>,
-  ): Promise<void> {
-    const total = pending.length
-    for (let index = 0; index < total; index += 1) {
-      const item = pending[index]
-      if (!item) continue
+  ): Promise<{ coverUploadFailed: boolean }> {
+    const required = pending.filter((item) => !isThumbnailUploadRole(item.role))
+    const covers = pending.filter((item) => isThumbnailUploadRole(item.role))
+    const total = required.length + covers.length
+    let uploaded = 0
+
+    for (const item of required) {
+      uploaded += 1
       setSubmitProgress(
         String(
           t('showcase.publishModal.uploadingFile', {
             name: displayNameForUpload(item),
-            current: index + 1,
-            total,
+            current: uploaded,
+            total: Math.max(total, 1),
           }),
         ),
       )
@@ -261,6 +292,33 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         filename: item.filename,
       })
     }
+
+    let coverUploadFailed = false
+    for (const item of covers) {
+      uploaded += 1
+      setSubmitProgress(
+        String(
+          t('showcase.publishModal.uploadingFile', {
+            name: displayNameForUpload(item),
+            current: uploaded,
+            total: Math.max(total, 1),
+          }),
+        ),
+      )
+      try {
+        await uploadShowcaseFile({
+          postId,
+          role: item.role,
+          file: item.file,
+          filename: item.filename,
+        })
+      } catch (coverError) {
+        // Keep attachment/gallery/source; cover is best-effort for card display.
+        console.warn('[Showcase] cover upload soft-failed', postId, coverError)
+        coverUploadFailed = true
+      }
+    }
+    return { coverUploadFailed }
   }
 
   function uploadFailureReason(error: unknown): string {
@@ -295,7 +353,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     createFn: () => Promise<{ post: { id: string } }>,
     pending: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }>,
     options: { proxyMode?: boolean; approveAfterUpload?: boolean } = {},
-  ): Promise<string> {
+  ): Promise<{ postId: string; coverUploadFailed: boolean }> {
     const proxyMode = options.proxyMode === true
     const approveAfterUpload = options.approveAfterUpload === true
     setSubmitProgress(String(t('showcase.publishModal.creatingCase')))
@@ -303,15 +361,16 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     const postId = result.post.id
     if (pending.length === 0) {
       setSubmitProgress(String(t('showcase.publishModal.finishing')))
-      return postId
+      return { postId, coverUploadFailed: false }
     }
     try {
-      await uploadPendingMedia(postId, pending)
+      const { coverUploadFailed } = await uploadPendingMedia(postId, pending)
       if (approveAfterUpload) {
         setSubmitProgress(String(t('showcase.publishModal.finishing')))
         await reviewAdminShowcasePost(postId, 'approve')
       }
       setSubmitProgress(String(t('showcase.publishModal.finishing')))
+      return { postId, coverUploadFailed }
     } catch (uploadError) {
       const cause =
         uploadError instanceof Error && uploadError.message.trim()
@@ -321,7 +380,6 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
       await rollbackCreatedPost(postId, proxyMode, uploadFailureReason(uploadError))
       throw new Error(`SHOWCASE_UPLOAD_ROLLED_BACK:${cause}`)
     }
-    return postId
   }
 
   function mapSubmitError(error: unknown): string {
@@ -368,6 +426,8 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         formData.append('attribution_org', attributionOrg.value.trim())
       }
 
+      let coverSkipKey: string | null = null
+
       if (caseType.value === 'teaching_design') {
         if (!uploadedFile.value && !(isEditMode.value && editHasAttachment.value)) {
           notify.error(String(t('showcase.publishModal.validationFile')))
@@ -379,15 +439,26 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
             file: uploadedFile.value,
             filename: uploadedFile.value.name,
           })
-        }
-        const teachingThumb = uploadedFile.value
-          ? await captureTeachingDocThumbnail(uploadedFile.value)
-          : null
-        if (teachingThumb) {
-          pendingUploads.push({
-            role: 'thumbnail',
-            file: blobToPngFile(teachingThumb),
-          })
+          if (isLegacyTeachingDocFile(uploadedFile.value.name)) {
+            coverSkipKey = 'showcase.publishModal.coverUnsupportedLegacyDoc'
+          } else {
+            let teachingThumb: Blob | null = null
+            try {
+              teachingThumb = await captureTeachingDocThumbnail(uploadedFile.value)
+            } catch (captureError) {
+              console.warn('[Showcase] teaching doc cover capture failed', captureError)
+              coverSkipKey = 'showcase.publishModal.cannotPreviewTeachingDoc'
+            }
+            const teachingThumbFile = await prepareThumbnailUploadFile(teachingThumb)
+            if (teachingThumbFile) {
+              pendingUploads.push({
+                role: 'thumbnail',
+                file: teachingThumbFile,
+              })
+            } else if (!coverSkipKey) {
+              coverSkipKey = 'showcase.publishModal.cannotPreviewTeachingDoc'
+            }
+          }
         }
       } else {
         if (caseType.value === 'diagram_template' && selectedDiagram.value && !selectedDiagramSpec.value) {
@@ -462,9 +533,11 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
             })
           }
 
-          const thumb = await resolveThumbnail()
-          if (thumb) {
-            pendingUploads.push({ role: 'thumbnail', file: blobToPngFile(thumb) })
+          const thumbFile = await prepareThumbnailUploadFile(await resolveThumbnail())
+          if (thumbFile) {
+            pendingUploads.push({ role: 'thumbnail', file: thumbFile })
+          } else if (!(isEditMode.value && editHasThumbnail.value)) {
+            coverSkipKey = coverSkipKeyForCase(caseType.value)
           }
         } else {
           let specObj: Record<string, unknown> | null = null
@@ -516,13 +589,16 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
             })
           }
 
-          const thumb = await resolveThumbnail()
-          if (thumb) {
-            pendingUploads.push({ role: 'thumbnail', file: blobToPngFile(thumb) })
+          const thumbFile = await prepareThumbnailUploadFile(await resolveThumbnail())
+          if (thumbFile) {
+            pendingUploads.push({ role: 'thumbnail', file: thumbFile })
+          } else if (!(isEditMode.value && editHasThumbnail.value)) {
+            coverSkipKey = coverSkipKeyForCase(caseType.value)
           }
         }
       }
 
+      let coverUploadFailed = false
       let savedPostId = props.editPostId?.trim() ?? ''
       if (props.proxyMode) {
         const canAutoApprove = autoApprove.value && can('tab.showcase.edit')
@@ -530,11 +606,13 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         if (canAutoApprove && pendingUploads.length === 0) {
           formData.append('auto_approve', 'true')
         }
-        savedPostId = await createThenUpload(
+        const created = await createThenUpload(
           () => proxyCreateShowcasePost(formData),
           pendingUploads,
           { proxyMode: true, approveAfterUpload },
         )
+        savedPostId = created.postId
+        coverUploadFailed = created.coverUploadFailed
         clearSubmitProgress()
         notify.success(String(t('admin.showcase.proxySuccess')), 3000)
         showcaseStore.emitAdminUpdated()
@@ -542,7 +620,8 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         setSubmitProgress(String(t('showcase.publishModal.submitting')))
         await updateShowcasePost(savedPostId, formData)
         if (pendingUploads.length > 0) {
-          await uploadPendingMedia(savedPostId, pendingUploads)
+          const uploaded = await uploadPendingMedia(savedPostId, pendingUploads)
+          coverUploadFailed = uploaded.coverUploadFailed
         }
         setSubmitProgress(String(t('showcase.publishModal.finishing')))
         clearSubmitProgress()
@@ -550,13 +629,20 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         showcaseStore.emitPostUpdated(savedPostId)
         showcaseStore.emitFeedInvalidate('resubmit')
       } else {
-        savedPostId = await createThenUpload(
+        const created = await createThenUpload(
           () => createShowcasePost(formData),
           pendingUploads,
         )
+        savedPostId = created.postId
+        coverUploadFailed = created.coverUploadFailed
         clearSubmitProgress()
         notify.success(String(t('showcase.publishModal.success')), 3000)
         showcaseStore.emitFeedInvalidate('publish')
+      }
+      if (coverUploadFailed) {
+        notify.warning(String(t('showcase.publishModal.coverUploadSkipped')), 8000)
+      } else if (coverSkipKey) {
+        notify.warning(String(t(coverSkipKey)), 8000)
       }
       emit('update:visible', false)
       emit('success')

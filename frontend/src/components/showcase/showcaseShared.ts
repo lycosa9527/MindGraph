@@ -203,32 +203,6 @@ export function isTemplateSourceFile(name: string): boolean {
   return isTemplateMgFile(name)
 }
 
-/** Convert an image File to PNG Blob for showcase thumbnail upload. */
-export async function imageFileToPngBlob(file: File): Promise<Blob> {
-  const url = URL.createObjectURL(file)
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image()
-      el.onload = () => resolve(el)
-      el.onerror = reject
-      el.src = url
-    })
-    const canvas = document.createElement('canvas')
-    canvas.width = img.naturalWidth
-    canvas.height = img.naturalHeight
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Canvas unavailable')
-    ctx.drawImage(img, 0, 0)
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, 'image/png')
-    })
-    if (!blob) throw new Error('Failed to encode PNG')
-    return blob
-  } finally {
-    URL.revokeObjectURL(url)
-  }
-}
-
 export const TAG_MAX_LENGTH = 10
 export const TAG_MAX_COUNT = 5
 
@@ -238,10 +212,13 @@ export const TAG_MAX_COUNT = 5
  */
 export const SHOWCASE_DIRECT_FILE_UPLOADS_ENABLED = true
 
-/** Client-side limits aligned with showcase_helpers.py */
+/** Client-side limits aligned with showcase helpers / upload roles. */
 export const CASE_ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024
 /** Teaching design document upload limit (same as attachment max). */
 export const CASE_TEACHING_DOC_MAX_BYTES = CASE_ATTACHMENT_MAX_BYTES
+/** Cover PNG limit — matches server THUMBNAIL_MAX_BYTES (not the 20MB doc limit). */
+export const CASE_THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024
+const THUMBNAIL_MAX_EDGE_PX = 960
 
 export function showcaseMaxMegabytes(bytes: number): number {
   return Math.round(bytes / 1024 / 1024)
@@ -249,6 +226,98 @@ export function showcaseMaxMegabytes(bytes: number): number {
 
 export const CASE_VIDEO_MAX_BYTES = 100 * 1024 * 1024
 export const CASE_UPLOAD_TOTAL_MAX_BYTES = 105 * 1024 * 1024
+
+function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), 'image/png')
+  })
+}
+
+/**
+ * Downscale a cover image until it fits the thumbnail byte budget.
+ * Showcase covers are PNG-only on the server; large html-to-image captures must shrink.
+ */
+export async function shrinkPngBlobToMaxBytes(
+  blob: Blob,
+  maxBytes: number = CASE_THUMBNAIL_MAX_BYTES,
+): Promise<Blob | null> {
+  if (!blob || blob.size <= 0) return null
+  if (blob.size <= maxBytes) return blob
+  if (typeof createImageBitmap !== 'function') return null
+
+  let bitmap: ImageBitmap
+  try {
+    bitmap = await createImageBitmap(blob)
+  } catch {
+    return null
+  }
+
+  try {
+    let width = bitmap.width
+    let height = bitmap.height
+    if (width < 1 || height < 1) return null
+
+    const longest = Math.max(width, height)
+    if (longest > THUMBNAIL_MAX_EDGE_PX) {
+      const scale = THUMBNAIL_MAX_EDGE_PX / longest
+      width = Math.max(1, Math.round(width * scale))
+      height = Math.max(1, Math.round(height * scale))
+    }
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return null
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, width, height)
+      ctx.drawImage(bitmap, 0, 0, width, height)
+      const next = await canvasToPngBlob(canvas)
+      if (next && next.size <= maxBytes) return next
+      if (!next || width <= 64 || height <= 64) return null
+      width = Math.max(64, Math.round(width * 0.75))
+      height = Math.max(64, Math.round(height * 0.75))
+    }
+    return null
+  } finally {
+    bitmap.close()
+  }
+}
+
+/** Convert an image File to PNG Blob for showcase thumbnail upload. */
+export async function imageFileToPngBlob(file: File): Promise<Blob | null> {
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image()
+      el.onload = () => resolve(el)
+      el.onerror = reject
+      el.src = url
+    })
+    let width = img.naturalWidth
+    let height = img.naturalHeight
+    const longest = Math.max(width, height)
+    if (longest > THUMBNAIL_MAX_EDGE_PX) {
+      const scale = THUMBNAIL_MAX_EDGE_PX / longest
+      width = Math.max(1, Math.round(width * scale))
+      height = Math.max(1, Math.round(height * scale))
+    }
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    ctx.drawImage(img, 0, 0, width, height)
+    const blob = await canvasToPngBlob(canvas)
+    if (!blob) return null
+    return shrinkPngBlobToMaxBytes(blob)
+  } catch {
+    return null
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
 
 /** Suggested tags for the publish form (each ≤ {@link TAG_MAX_LENGTH} chars). */
 export const RECOMMENDED_TAGS = [
@@ -348,5 +417,7 @@ export async function isMostlyBlankImageBlob(blob: Blob): Promise<boolean> {
 export async function acceptThumbnailBlob(blob: Blob | null): Promise<Blob | null> {
   if (!isValidThumbnailBlob(blob)) return null
   if (await isMostlyBlankImageBlob(blob)) return null
-  return blob
+  const shrunk = await shrinkPngBlobToMaxBytes(blob)
+  if (!isValidThumbnailBlob(shrunk)) return null
+  return shrunk
 }

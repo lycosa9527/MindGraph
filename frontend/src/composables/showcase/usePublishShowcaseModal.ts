@@ -694,6 +694,7 @@ export function usePublishShowcaseModal(
     selectedDiagram,
     selectedDiagramSpec,
     editHasAttachment,
+    editHasThumbnail,
     galleryImageDrafts,
     galleryDiagramDrafts,
     galleryExistingImages,

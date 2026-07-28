@@ -1,4 +1,4 @@
-/** en UI — showcase */
+/** nl UI (synced from en) — showcase */
 
 export default {
   'showcase.title': 'Showcase',
@@ -45,6 +45,32 @@ export default {
   'showcase.publishModal.subjectLabel': 'Subject',
   'showcase.publishModal.gradeLabel': 'Grade',
   'showcase.publishModal.submit': 'Submit for review',
+  'showcase.publishModal.submitting': 'Submitting…',
+  'showcase.publishModal.creatingCase': 'Creating case…',
+  'showcase.publishModal.uploadingFiles': 'Uploading files ({current}/{total})…',
+  'showcase.publishModal.uploadingFile': 'Uploading {name} ({current}/{total})…',
+  'showcase.publishModal.finishing': 'Finishing…',
+  'showcase.publishModal.uploadFailedRolledBack':
+    'Upload failed — the draft was discarded. Please try again.',
+  'showcase.publishModal.uploadCorsFailed':
+    'Could not upload to object storage (often bucket CORS or site CSP blocking the COS host). The draft was discarded — ask an admin to fix CORS/CSP, then retry.',
+  'showcase.publishModal.uploadStorageRejected':
+    'Object storage rejected the upload. The draft was discarded — try again later, or contact an admin if it keeps failing.',
+  'showcase.publishModal.uploadFailed': 'Upload failed. Please try again.',
+  'showcase.publishModal.uploadCoverTooLarge':
+    'Cover image exceeds the 2MB limit. Compress the preview or use a smaller image, then try again.',
+  'showcase.publishModal.uploadAttachmentTooLarge':
+    'File exceeds the size limit (documents/images 20MB, videos 100MB). Compress and try again.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
+    'File exceeds the size limit (documents/images 20MB, videos 100MB). The draft was discarded — compress and try again.',
+  'showcase.publishModal.uploadFileTooLarge':
+    'File is too large for this upload type. Check the size limit and try again.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack':
+    'File is too large for this upload type. The draft was discarded — check the size limit and try again.',
+  'showcase.publishModal.coverUploadSkipped':
+    'Case submitted, but the cover image failed to upload. You can edit the case later to refresh the cover.',
+  'showcase.publishModal.coverUnsupportedLegacyDoc':
+    'Case submitted without a cover — .doc files cannot generate a preview. Prefer .docx or .pdf.',
   'showcase.publishModal.success': 'Case submitted — awaiting admin review',
   'showcase.publishModal.fromCanvas': 'Publish from canvas',
   'showcase.publishModal.step1Title': 'Basic info',
@@ -58,6 +84,10 @@ export default {
   'showcase.publishModal.uploadLabel': 'Upload file',
   'showcase.publishModal.uploadImage': 'Upload image',
   'showcase.publishModal.uploadFile': 'Upload file',
+  'showcase.publishModal.directUploadDisabled':
+    'Direct file upload is temporarily unavailable. You can still pick a saved diagram from history.',
+  'showcase.publishModal.uploadViaStorage':
+    'Files upload directly to secure storage (short-lived URL).',
   'showcase.publishModal.pickHistory': 'Pick from history',
   'showcase.publishModal.removeFile': 'Remove',
   'showcase.publishModal.teachingDocHint': '.doc / .docx / .pdf',
@@ -118,13 +148,14 @@ export default {
   'showcase.publishModal.validationDiagramType': 'Please select a diagram type',
   'showcase.publishModal.invalidFileType': 'Unsupported file type',
   'showcase.publishModal.invalidMgFile': 'Could not read this .mg file — export it from MindGraph first',
-  'showcase.publishModal.cannotPreview': 'Could not generate preview — try PNG/JPG or pick a saved diagram',
+  'showcase.publishModal.cannotPreview':
+    'Could not generate a cover preview — the case will still submit. Try PNG/JPG or pick a saved diagram.',
   'showcase.publishModal.cannotPreviewHistory':
-    'Could not generate preview — re-pick the saved diagram or re-save it from the canvas',
+    'Could not generate a cover from this saved diagram — the case will still submit. Re-pick it or re-save from the canvas.',
   'showcase.publishModal.cannotPreviewTemplate':
-    'Could not generate preview — check the .mg file or pick another saved diagram',
+    'Could not generate a cover — the case will still submit. Check the .mg file or pick another saved diagram.',
   'showcase.publishModal.cannotPreviewTeachingDoc':
-    'Could not generate document cover preview — check the PDF or DOCX file',
+    'Could not generate a document cover — the case will still submit. Check the PDF/DOCX, or edit later to refresh the cover.',
   'showcase.publishModal.historyTitle': 'Pick saved diagram',
   'showcase.publishModal.historySearch': 'Search diagram name…',
   'showcase.publishModal.historyEmpty': 'No saved diagrams',
@@ -141,6 +172,9 @@ export default {
   'showcase.detail.favorite': 'Save',
   'showcase.detail.favorited': 'Saved',
   'showcase.detail.unfavorited': 'Removed from saved',
+  'showcase.detail.actionFailed': 'Action failed. Please try again.',
+  'showcase.detail.recommendedOn': 'Marked as recommended',
+  'showcase.detail.recommendedOff': 'Recommendation removed',
   'showcase.detail.approve': 'Approve',
   'showcase.detail.reject': 'Reject',
   'showcase.detail.recommend': 'Expert recommend',
@@ -162,6 +196,7 @@ export default {
   'showcase.resubmitted': 'Resubmitted for review',
   'showcase.publishModal.editTitle': 'Edit and resubmit',
   'showcase.publishModal.resubmit': 'Resubmit for review',
+  'showcase.publishModal.resubmitting': 'Resubmitting…',
   'showcase.publishModal.keepExistingFile': 'Leave empty to keep the current file',
   'showcase.detail.views': '{n} views',
   'showcase.detail.recommended': 'Recommended',
@@ -193,24 +228,4 @@ export default {
   'showcase.deleteConfirmBody': 'Delete this case?',
   'showcase.deleted': 'Deleted',
   'meta.pageTitle.showcase': 'Showcase',
-  'showcase.publishModal.submitting': 'Submitting…',
-  'showcase.publishModal.creatingCase': 'Creating case…',
-  'showcase.publishModal.uploadingFiles': 'Uploading files ({current}/{total})…',
-  'showcase.publishModal.uploadingFile': 'Uploading {name} ({current}/{total})…',
-  'showcase.publishModal.finishing': 'Finishing…',
-  'showcase.publishModal.uploadFailedRolledBack': 
-    'Upload failed — the draft was discarded. Please try again.',
-  'showcase.publishModal.uploadCorsFailed':
-    'Could not upload to object storage (often bucket CORS does not allow this site origin). The draft was discarded — ask an admin to fix CORS, then retry.',
-  'showcase.publishModal.uploadStorageRejected':
-    'Object storage rejected the upload. The draft was discarded — try again later, or contact an admin if it keeps failing.',
-  'showcase.publishModal.uploadFailed': 'Upload failed. Please try again.',
-  'showcase.publishModal.directUploadDisabled': 
-    'Direct file upload is temporarily unavailable. You can still pick a saved diagram from history.',
-  'showcase.publishModal.uploadViaStorage': 
-    'Files upload directly to secure storage (short-lived URL).',
-  'showcase.detail.actionFailed': 'Action failed. Please try again.',
-  'showcase.detail.recommendedOn': 'Marked as recommended',
-  'showcase.detail.recommendedOff': 'Recommendation removed',
-  'showcase.publishModal.resubmitting': 'Resubmitting…',
 } as const

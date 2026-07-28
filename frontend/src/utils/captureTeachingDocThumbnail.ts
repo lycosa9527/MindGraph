@@ -10,9 +10,9 @@ import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
 import { renderDocxPreview } from '@/utils/renderDocxPreview'
 
 const THUMB_MAX_WIDTH = 960
-const PDF_THUMB_SCALE = 1.25
+const PDF_THUMB_SCALE = 1.1
 const DOCX_CAPTURE_HOST_STYLE =
-  'position:fixed;left:0;top:0;z-index:-1;width:820px;max-height:1200px;overflow:hidden;' +
+  'position:fixed;left:0;top:0;z-index:-1;width:720px;max-height:960px;overflow:hidden;' +
   'background:#fff;opacity:0;pointer-events:none;'
 
 let workerConfigured = false
@@ -99,10 +99,13 @@ async function captureDocxFirstPage(file: File): Promise<Blob | null> {
     if (!captureTarget) return null
 
     const htmlToImage = await import('html-to-image')
+    // Keep pixelRatio at 1 — docx first-page PNGs easily exceed the 2MB cover limit.
     const dataUrl = await htmlToImage.toPng(captureTarget, {
-      pixelRatio: 1.5,
+      pixelRatio: 1,
       backgroundColor: '#ffffff',
       cacheBust: true,
+      width: Math.min(captureTarget.scrollWidth || THUMB_MAX_WIDTH, THUMB_MAX_WIDTH),
+      height: Math.min(captureTarget.scrollHeight || 960, 960),
     })
     const blob = await dataUrlToPngBlob(dataUrl)
     return acceptThumbnailBlob(blob)
@@ -113,10 +116,14 @@ async function captureDocxFirstPage(file: File): Promise<Blob | null> {
 
 /** Render the first page of a teaching-design document (PDF/DOCX) as a PNG thumbnail. */
 export async function captureTeachingDocThumbnail(file: File): Promise<Blob | null> {
-  const lower = file.name.toLowerCase()
-  if (lower.endsWith('.pdf')) return capturePdfFirstPage(file)
-  if (lower.endsWith('.docx')) return captureDocxFirstPage(file)
-  return null
+  try {
+    const lower = file.name.toLowerCase()
+    if (lower.endsWith('.pdf')) return await capturePdfFirstPage(file)
+    if (lower.endsWith('.docx')) return await captureDocxFirstPage(file)
+    return null
+  } catch {
+    return null
+  }
 }
 
 export function isLegacyTeachingDocFile(name: string): boolean {

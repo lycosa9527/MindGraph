@@ -4,10 +4,10 @@
 import { nextTick, type Ref } from 'vue'
 
 import {
+  acceptThumbnailBlob,
   dataUrlToPngBlob,
   imageFileToPngBlob,
   isDiagramImageFile,
-  isValidThumbnailBlob,
 } from '@/components/showcase/showcaseShared'
 import { eventBus } from '@/composables/core/useEventBus'
 import { setPresentationDiagramEditLocked } from '@/composables/presentation/presentationDiagramEdit'
@@ -37,8 +37,8 @@ export async function captureCanvasThumbnail(props: ThumbnailProps): Promise<Blo
   if (!container) return null
   await props.prepareForThumbnail?.()
   const htmlToImage = await import('html-to-image')
-  const dataUrl = await htmlToImage.toPng(container, { pixelRatio: 2, cacheBust: true })
-  return dataUrlToPngBlob(dataUrl)
+  const dataUrl = await htmlToImage.toPng(container, { pixelRatio: 1.5, cacheBust: true })
+  return acceptThumbnailBlob(await dataUrlToPngBlob(dataUrl))
 }
 
 export async function captureSpecThumbnailClient(
@@ -87,9 +87,9 @@ export async function captureSpecThumbnailClient(
     const captureTarget =
       (container.querySelector('.diagram-canvas') as HTMLElement | null) ?? container
     const htmlToImage = await import('html-to-image')
-    const dataUrl = await htmlToImage.toPng(captureTarget, { pixelRatio: 2, cacheBust: true })
+    const dataUrl = await htmlToImage.toPng(captureTarget, { pixelRatio: 1.5, cacheBust: true })
     const blob = await dataUrlToPngBlob(dataUrl)
-    return isValidThumbnailBlob(blob) ? blob : null
+    return acceptThumbnailBlob(blob)
   } catch {
     return null
   } finally {
@@ -107,15 +107,15 @@ export async function resolveHistoryDiagramThumbnail(
   if (!diagram) return null
 
   if (diagram.thumbnail) {
-    const fromList = await dataUrlToPngBlob(diagram.thumbnail)
-    if (isValidThumbnailBlob(fromList)) return fromList
+    const fromList = await acceptThumbnailBlob(await dataUrlToPngBlob(diagram.thumbnail))
+    if (fromList) return fromList
   }
 
   const savedDiagramsStore = useSavedDiagramsStore()
   const cached = savedDiagramsStore.getCachedDiagram(diagram.id)
   if (cached?.thumbnail) {
-    const fromCache = await dataUrlToPngBlob(cached.thumbnail)
-    if (isValidThumbnailBlob(fromCache)) return fromCache
+    const fromCache = await acceptThumbnailBlob(await dataUrlToPngBlob(cached.thumbnail))
+    if (fromCache) return fromCache
   }
 
   try {
@@ -127,8 +127,8 @@ export async function resolveHistoryDiagramThumbnail(
       if (data.url) {
         const imgRes = await fetch(data.url, { credentials: 'include', cache: 'no-store' })
         if (imgRes.ok) {
-          const blob = await imgRes.blob()
-          if (isValidThumbnailBlob(blob)) return blob
+          const prepared = await acceptThumbnailBlob(await imgRes.blob())
+          if (prepared) return prepared
         }
       }
     }
@@ -174,15 +174,18 @@ export async function resolvePublishThumbnail(options: {
   }
   const firstGalleryImage = options.galleryImageDrafts[0]
   if (firstGalleryImage) {
-    return imageFileToPngBlob(firstGalleryImage.file)
+    const fromGallery = await imageFileToPngBlob(firstGalleryImage.file)
+    if (fromGallery) return fromGallery
   }
   if (options.uploadedFile && isDiagramImageFile(options.uploadedFile.name)) {
-    return imageFileToPngBlob(options.uploadedFile)
+    const fromUpload = await imageFileToPngBlob(options.uploadedFile)
+    if (fromUpload) return fromUpload
   }
 
   if (options.showPublishDiagramPreview && options.inlinePreviewRef.value) {
     const fromInline = await options.inlinePreviewRef.value.captureThumbnail?.()
-    if (isValidThumbnailBlob(fromInline ?? null)) return fromInline ?? null
+    const prepared = await acceptThumbnailBlob(fromInline ?? null)
+    if (prepared) return prepared
   }
 
   if (options.uploadedMgSpec) {

@@ -14,6 +14,7 @@ import { applyKittyRemoteCanvasSelection } from '@/composables/kitty/kittySelect
 import { KITTY_LIVE_CONTEXT_POLL_MS } from '@/composables/kitty/runKittyIntervalPoll'
 import { syncDiagramStoreFromVoiceContext } from '@/composables/kitty/syncDiagramStoreFromVoiceContext'
 import { useDiagramStore } from '@/stores/diagram'
+import { apiRequest } from '@/utils/apiClient'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -60,8 +61,8 @@ export function useMobileKittyLiveContextPoll(options: {
     }
     inFlight = true
     try {
-      const res = await fetch(`/api/kitty/live_context/${encodeURIComponent(id)}`, {
-        credentials: 'same-origin',
+      const res = await apiRequest(`/api/kitty/live_context/${encodeURIComponent(id)}`, {
+        method: 'GET',
       })
       if (!res.ok) {
         return
