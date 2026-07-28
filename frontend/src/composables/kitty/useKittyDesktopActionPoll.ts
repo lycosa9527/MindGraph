@@ -5,6 +5,9 @@
  *
  * Actions stay in Redis FIFO (multi-worker safe via LPOP). Long-poll BLPOP chains
  * are no longer used — SSE carries the wake; REST only pops.
+ *
+ * Heavy action handlers + savedDiagrams (diagram/specLoader) load via dynamic import
+ * before Redis LPOP so a failed chunk fetch never drops a queued action.
  */
 import { onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -17,7 +20,6 @@ import {
   type KittyDesktopWakeMobileActive,
   createKittyDesktopWakeStream,
 } from '@/composables/kitty/createKittyDesktopWakeStream'
-import { handleKittyDesktopQueuedAction } from '@/composables/kitty/kittyDesktopActionHandlers'
 import {
   clearKittyMobileActiveHub,
   publishKittyMobileActiveHub,
@@ -25,8 +27,8 @@ import {
 import { createKittyDesktopPollLeader } from '@/composables/kitty/kittyDesktopPollLeader'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { KITTY_MOBILE_WATCH_MS } from '@/composables/kitty/runKittyIntervalPoll'
-import { useAuthStore, useFeatureFlagsStore } from '@/stores'
-import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { useAuthStore } from '@/stores/auth'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 type PollPhase = 'off' | 'watching'
@@ -38,6 +40,31 @@ interface DesktopPairingResponse {
   primary_scope?: unknown
 }
 
+type KittyActionDeps = {
+  handleKittyDesktopQueuedAction: (typeof import('@/composables/kitty/kittyDesktopActionHandlers'))['handleKittyDesktopQueuedAction']
+  useSavedDiagramsStore: (typeof import('@/stores/savedDiagrams'))['useSavedDiagramsStore']
+}
+
+let kittyActionDepsPromise: Promise<KittyActionDeps> | null = null
+
+function loadKittyActionDeps(): Promise<KittyActionDeps> {
+  if (kittyActionDepsPromise == null) {
+    kittyActionDepsPromise = Promise.all([
+      import('@/composables/kitty/kittyDesktopActionHandlers'),
+      import('@/stores/savedDiagrams'),
+    ])
+      .then(([handlers, saved]) => ({
+        handleKittyDesktopQueuedAction: handlers.handleKittyDesktopQueuedAction,
+        useSavedDiagramsStore: saved.useSavedDiagramsStore,
+      }))
+      .catch((error: unknown) => {
+        kittyActionDepsPromise = null
+        throw error
+      })
+  }
+  return kittyActionDepsPromise
+}
+
 function pairingUrl(waitSec: number): string {
   const params = new URLSearchParams()
   params.set('wait_sec', String(waitSec))
@@ -47,7 +74,6 @@ function pairingUrl(waitSec: number): string {
 export function useKittyDesktopActionPoll(): void {
   const authStore = useAuthStore()
   const featureFlagsStore = useFeatureFlagsStore()
-  const savedDiagramsStore = useSavedDiagramsStore()
   const { isAuthenticated } = storeToRefs(authStore)
   const { t } = useLanguage()
   const route = useRoute()
@@ -175,9 +201,10 @@ export function useKittyDesktopActionPoll(): void {
   }
 
   async function applyQueuedAction(action: unknown): Promise<void> {
+    const { handleKittyDesktopQueuedAction, useSavedDiagramsStore } = await loadKittyActionDeps()
     await handleKittyDesktopQueuedAction(action, {
       routePath: route.path,
-      savedDiagramsStore,
+      savedDiagramsStore: useSavedDiagramsStore(),
       router,
       route,
       t,
@@ -191,6 +218,7 @@ export function useKittyDesktopActionPoll(): void {
     }
     drainInFlight = true
     try {
+      await loadKittyActionDeps()
       // Drain a few items in case several were enqueued while SSE was down.
       for (let i = 0; i < 8; i += 1) {
         if (!pollingAllowed()) {
@@ -226,7 +254,7 @@ export function useKittyDesktopActionPoll(): void {
         await applyQueuedAction(data.action)
       }
     } catch {
-      /* ignore transient network failures */
+      /* ignore transient network / chunk-load failures (no LPOP if deps failed) */
     } finally {
       drainInFlight = false
     }
@@ -359,6 +387,7 @@ export function useKittyDesktopActionPoll(): void {
     }
     watchTickInFlight = true
     try {
+      await loadKittyActionDeps()
       const data = await fetchDesktopPairing(0)
       if (!pollingAllowed()) {
         return
@@ -382,7 +411,7 @@ export function useKittyDesktopActionPoll(): void {
         await applyQueuedAction(data.action)
       }
     } catch {
-      /* ignore transient network failures */
+      /* ignore transient network / chunk-load failures (no LPOP if deps failed) */
     } finally {
       watchTickInFlight = false
     }
@@ -391,6 +420,7 @@ export function useKittyDesktopActionPoll(): void {
   function startWatching(): void {
     clearIntervalId()
     setPhase('watching')
+    void loadKittyActionDeps()
     startWakeStreamConnection()
     void tickWatch()
     intervalId = setInterval(() => {

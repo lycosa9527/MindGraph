@@ -17,7 +17,7 @@ import { defineStore } from 'pinia'
 
 import { notify } from '@/composables/core/notifications'
 import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
-import { getDefaultDiagramName } from '@/composables'
+import { getDefaultDiagramName } from '@/composables/editor/useDiagramLabels'
 import { SAVE } from '@/config'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import { i18n } from '@/i18n'

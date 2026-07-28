@@ -9,8 +9,10 @@ import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { isCanvasPristineForTypeSwitch } from '@/composables/canvasPage/isCanvasPristineForTypeSwitch'
 import { switchCanvasDiagramType } from '@/composables/canvasPage/switchCanvasDiagramType'
 import { loadElMessageBox } from '@/composables/core/notifications'
+import { adoptOpenCanvasSessionScope } from '@/composables/kitty/adoptOpenCanvasSessionScope'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
-import { useDiagramStore, useLLMResultsStore, useOneSentenceStore } from '@/stores'
+import { useDiagramStore } from '@/stores/diagram'
+import { useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 
@@ -53,18 +55,6 @@ function normalizeSessionScope(raw: unknown): string | null {
     return null
   }
   return cut
-}
-
-/**
- * Bind desktop Kitty / one-sentence scope to the mobile-issued session id.
- * Must run after canvas reset so a fresh blank canvas shares mobile's SoT.
- */
-export function adoptOpenCanvasSessionScope(sessionScope: string): void {
-  useOneSentenceStore().adoptEphemeralScope(sessionScope)
-  useSavedDiagramsStore().clearActiveDiagram()
-  traceKittyWorkflow('desktop', 'desktop_nav', `adopt_scope ${sessionScope.slice(0, 12)}`, {
-    scope: sessionScope,
-  })
 }
 
 /**

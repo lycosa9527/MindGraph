@@ -155,13 +155,99 @@ function computeSiblingPathKey(
 
 const MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS = 80
 const MIND_MAP_INLINE_EDIT_RETRY_MS = 40
+/** Allow Vue Flow remount selection echo; after this, user selection wins. */
+const MIND_MAP_PENDING_EDIT_REMOUNT_ECHO_MS = 400
+/** Force-reselect only while hosts settle; then yield if selection moved. */
+const MIND_MAP_PENDING_EDIT_SELECTION_GUARD_ATTEMPTS = 12
 
 let mindMapInlineEditRetryGeneration = 0
+let mindMapPendingEditArmedAtMs = 0
+let mindMapPendingEditPointerCleanup: (() => void) | null = null
 
-/** Abort pending post-add inline-edit retries (navigation / store reset). */
+const MIND_MAP_PENDING_EDIT_EPHEMERAL_UI_SELECTOR = [
+  '.el-notification',
+  '.el-message',
+  '.el-overlay',
+  '.el-message-box',
+  '.el-loading-mask',
+  '.dark-alert-notification',
+].join(', ')
+
+function detachMindMapPendingEditPointerGuard(): void {
+  if (!mindMapPendingEditPointerCleanup) return
+  mindMapPendingEditPointerCleanup()
+  mindMapPendingEditPointerCleanup = null
+}
+
+/** Abort pending post-add inline-edit retries (navigation / store reset / user intent). */
 export function cancelMindMapPendingInlineEdit(ctx: DiagramContext): void {
   mindMapInlineEditRetryGeneration += 1
   ctx.mindMapPendingEditNodeId.value = null
+  mindMapPendingEditArmedAtMs = 0
+  detachMindMapPendingEditPointerGuard()
+}
+
+/**
+ * After remount-echo grace, yield sticky post-add edit when selection leaves the
+ * pending node (sidebar / Vue Flow click). During grace, tryFocus may reassert.
+ */
+export function releaseMindMapPendingInlineEditIfSelectionMoved(
+  ctx: DiagramContext,
+  nextSelectedIds: readonly string[]
+): void {
+  const pending = ctx.mindMapPendingEditNodeId.value
+  if (!pending) return
+  if (nextSelectedIds.includes(pending)) return
+  if (Date.now() - mindMapPendingEditArmedAtMs < MIND_MAP_PENDING_EDIT_REMOUNT_ECHO_MS) {
+    return
+  }
+  cancelMindMapPendingInlineEdit(ctx)
+}
+
+function isMindMapPendingEditEphemeralTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && !!target.closest(MIND_MAP_PENDING_EDIT_EPHEMERAL_UI_SELECTOR)
+}
+
+function attachMindMapPendingEditPointerGuard(
+  ctx: DiagramContext,
+  nodeId: string,
+  generation: number
+): void {
+  detachMindMapPendingEditPointerGuard()
+
+  const onPointerDown = (event: Event): void => {
+    if (generation !== mindMapInlineEditRetryGeneration) {
+      detachMindMapPendingEditPointerGuard()
+      return
+    }
+    if (ctx.mindMapPendingEditNodeId.value !== nodeId) {
+      detachMindMapPendingEditPointerGuard()
+      return
+    }
+    if (isMindMapPendingEditEphemeralTarget(event.target)) return
+
+    const target = event.target
+    if (!(target instanceof Element)) return
+
+    const nodeEl = target.closest('.vue-flow__node')
+    if (nodeEl instanceof HTMLElement) {
+      const clickedId = nodeEl.getAttribute('data-id')
+      if (clickedId && clickedId !== nodeId) {
+        // User picked another branch — stop sticky reselect immediately.
+        cancelMindMapPendingInlineEdit(ctx)
+      }
+      return
+    }
+
+    if (target.closest('.vue-flow__pane, .vue-flow')) {
+      cancelMindMapPendingInlineEdit(ctx)
+    }
+  }
+
+  document.addEventListener('pointerdown', onPointerDown, true)
+  mindMapPendingEditPointerCleanup = () => {
+    document.removeEventListener('pointerdown', onPointerDown, true)
+  }
 }
 
 function escapeMindMapNodeSelectorId(nodeId: string): string {
@@ -178,19 +264,38 @@ function selectMindMapNode(ctx: DiagramContext, nodeId: string): void {
   emitEvent('diagram:selection_changed', { selectedNodes: [nodeId] })
 }
 
+function clearMindMapPendingEditIfCurrent(ctx: DiagramContext, nodeId: string): void {
+  if (ctx.mindMapPendingEditNodeId.value !== nodeId) return
+  ctx.mindMapPendingEditNodeId.value = null
+  mindMapPendingEditArmedAtMs = 0
+  detachMindMapPendingEditPointerGuard()
+}
+
 function requestMindMapNodeInlineEdit(ctx: DiagramContext, nodeId: string): void {
   mindMapInlineEditRetryGeneration += 1
   const generation = mindMapInlineEditRetryGeneration
+  mindMapPendingEditArmedAtMs = Date.now()
   ctx.mindMapPendingEditNodeId.value = nodeId
   // Keep selection on the node we are about to edit (Enter add → new branch).
   selectMindMapNode(ctx, nodeId)
+  attachMindMapPendingEditPointerGuard(ctx, nodeId, generation)
   let attempts = 0
+
+  const finishPending = (): void => {
+    if (generation !== mindMapInlineEditRetryGeneration) return
+    clearMindMapPendingEditIfCurrent(ctx, nodeId)
+  }
 
   const tryFocus = (): void => {
     if (generation !== mindMapInlineEditRetryGeneration) return
     attempts += 1
     // Vue Flow can briefly echo the previous selection when nodes remount.
+    // Only reassert during settle; after that, user selection must win.
     if (ctx.selectedNodes.value[0] !== nodeId) {
+      if (attempts > MIND_MAP_PENDING_EDIT_SELECTION_GUARD_ATTEMPTS) {
+        cancelMindMapPendingInlineEdit(ctx)
+        return
+      }
       selectMindMapNode(ctx, nodeId)
     }
     const host = document.querySelector(
@@ -211,12 +316,15 @@ function requestMindMapNodeInlineEdit(ctx: DiagramContext, nodeId: string): void
             `.vue-flow__node[data-id="${escapeMindMapNodeSelectorId(nodeId)}"] .inline-edit-input`
           ) as HTMLInputElement | null
           if (stillInput && document.activeElement === stillInput) {
-            ctx.mindMapPendingEditNodeId.value = null
+            finishPending()
             return
           }
           if (attempts < MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS) {
             setTimeout(tryFocus, MIND_MAP_INLINE_EDIT_RETRY_MS)
+            return
           }
+          // Unstable focus at max attempts — drop pending so it cannot steal clicks.
+          finishPending()
         })
         return
       }
@@ -224,14 +332,14 @@ function requestMindMapNodeInlineEdit(ctx: DiagramContext, nodeId: string): void
         setTimeout(tryFocus, MIND_MAP_INLINE_EDIT_RETRY_MS)
         return
       }
-      ctx.mindMapPendingEditNodeId.value = null
+      finishPending()
       return
     }
 
     if (attempts >= MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS) {
       eventBus.emit('node:edit_requested', { nodeId })
       // Last resort: drop pending so a stuck id cannot steal later edits.
-      ctx.mindMapPendingEditNodeId.value = null
+      finishPending()
       return
     }
     requestAnimationFrame(tryFocus)

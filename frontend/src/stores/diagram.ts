@@ -582,6 +582,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     mindMapRecalcTrigger,
     mindMapTopicBranchGaps,
     mindMapPendingEditNodeId,
+    cancelMindMapPendingInlineEdit: () => cancelMindMapPendingInlineEdit(ctx),
     mindMapPreserveIncomingY,
     mindMapPreserveIncomingYNodeId,
     nodeDimensions,

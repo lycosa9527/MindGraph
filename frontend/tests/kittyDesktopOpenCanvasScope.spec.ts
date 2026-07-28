@@ -38,10 +38,8 @@ vi.mock('@/composables/canvasPage/applyCanvasSessionReset', () => ({
 }))
 
 import { switchCanvasDiagramType } from '@/composables/canvasPage/switchCanvasDiagramType'
-import {
-  adoptOpenCanvasSessionScope,
-  handleKittyOpenCanvasAction,
-} from '@/composables/kitty/kittyDesktopActionHandlers'
+import { adoptOpenCanvasSessionScope } from '@/composables/kitty/adoptOpenCanvasSessionScope'
+import { handleKittyOpenCanvasAction } from '@/composables/kitty/kittyDesktopActionHandlers'
 import { useOneSentenceStore } from '@/stores/oneSentence'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 

@@ -4,8 +4,8 @@
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
 
 import { applyKittyTopicSeedToDiagram } from '@/composables/canvasPage/applyKittyTopicSeedToDiagram'
-import { adoptOpenCanvasSessionScope } from '@/composables/kitty/kittyDesktopActionHandlers'
-import { useDiagramStore } from '@/stores'
+import { adoptOpenCanvasSessionScope } from '@/composables/kitty/adoptOpenCanvasSessionScope'
+import { useDiagramStore } from '@/stores/diagram'
 import type { DiagramType } from '@/types'
 
 type DiagramPiniaStore = ReturnType<typeof useDiagramStore>

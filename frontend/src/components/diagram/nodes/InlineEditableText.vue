@@ -479,6 +479,7 @@ function startEditing(): void {
   // Focus and select text after DOM update. Do NOT clear mindMapPendingEditNodeId
   // here — layout write-back / success toast often steal focus right after the
   // first focus; pending must stay set so remount/blur can re-enter edit.
+  // Pending is released on stable focus, save/cancel, or intentional canvas click.
   nextTick(() => {
     if (focusHtmlControl(inputRef.value)) {
       selectHtmlControl(inputRef.value)
@@ -486,6 +487,12 @@ function startEditing(): void {
     updateInputWidth()
     syncFontMetrics()
   })
+}
+
+function releaseMindMapPendingEditIfMine(): void {
+  if (!isMindMapInlineEditContext()) return
+  if (diagramStore.mindMapPendingEditNodeId !== props.nodeId) return
+  diagramStore.cancelMindMapPendingInlineEdit()
 }
 
 /**
@@ -526,6 +533,7 @@ function saveEdit(): void {
   // Validate text length - revert if invalid
   if (resolved === null) {
     editText.value = originalText.value
+    releaseMindMapPendingEditIfMine()
     localIsEditing.value = false
     clearEditLock()
     eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
@@ -536,12 +544,19 @@ function saveEdit(): void {
   const finalText = resolved
   editText.value = finalText
 
+  releaseMindMapPendingEditIfMine()
+
   if (isMindMapInlineEditContext() && props.nodeId !== 'topic') {
     // Do not write <input> width into mind-map layout here — it is narrower than
     // branch chrome and was sliding left L1 X toward the topic on canvas click.
     // MindMapV2BranchNode ResizeObserver owns measured size after edit closes.
-    diagramStore.selectNodes(props.nodeId)
+    // Keep post-edit Enter anchor, but do not steal selection if the user already
+    // clicked another branch (outside pointer runs before Vue Flow select).
     setMindMapPostEditSiblingAnchor(props.nodeId)
+    const selectedId = diagramStore.selectedNodes[0]
+    if (!selectedId || selectedId === props.nodeId || selectedId === 'topic') {
+      diagramStore.selectNodes(props.nodeId)
+    }
   }
 
   localIsEditing.value = false
@@ -572,6 +587,7 @@ function cancelEdit(): void {
   if (isMindMapInlineEditContext()) {
     clearMindMapPostEditSiblingAnchor()
   }
+  releaseMindMapPendingEditIfMine()
 
   localIsEditing.value = false
   clearEditLock()
@@ -584,6 +600,21 @@ function cancelEdit(): void {
 
 function isMindMapInlineEditContext(): boolean {
   return isMindMapDiagramType(diagramStore.type)
+}
+
+function isEphemeralOutsideEditTarget(event: Event): boolean {
+  const target = event.target
+  if (!(target instanceof Element)) return false
+  return !!target.closest(
+    [
+      '.el-notification',
+      '.el-message',
+      '.el-overlay',
+      '.el-message-box',
+      '.el-loading-mask',
+      '.dark-alert-notification',
+    ].join(', ')
+  )
 }
 
 /**
@@ -665,15 +696,21 @@ function isEventInsideEditor(event: Event): boolean {
 function commitEditOnOutsidePointer(event: Event): void {
   if (!localIsEditing.value) return
   if (isEventInsideEditor(event)) return
-  // Ignore transient UI (toasts) while post-add pending edit is armed.
-  if (isMindMapInlineEditContext() && diagramStore.mindMapPendingEditNodeId === props.nodeId) {
+  // Keep sticky post-add edit only for toast/overlay focus theft — not canvas clicks.
+  if (
+    isMindMapInlineEditContext() &&
+    diagramStore.mindMapPendingEditNodeId === props.nodeId &&
+    isEphemeralOutsideEditTarget(event)
+  ) {
     return
   }
+  releaseMindMapPendingEditIfMine()
   saveEdit()
 }
 
 function commitEditOnCanvasPaneClick(): void {
   if (!localIsEditing.value) return
+  releaseMindMapPendingEditIfMine()
   saveEdit()
 }
 
@@ -801,6 +838,7 @@ function handleRecommendationApplied(payload: {
 }): void {
   if (payload?.appliedToConnectionId) {
     if (payload.nodeId !== props.nodeId || !localIsEditing.value) return
+    releaseMindMapPendingEditIfMine()
     localIsEditing.value = false
     eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
     emit('cancel')
@@ -814,6 +852,7 @@ function handleRecommendationApplied(payload: {
     editText.value = payload.text
     originalText.value = payload.text
   }
+  releaseMindMapPendingEditIfMine()
   localIsEditing.value = false
   eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
   emit('cancel')

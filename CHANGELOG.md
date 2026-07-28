@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.151.1] - 2026-07-28
+
+> **Mind map post-Enter/Tab selection no longer fights sticky inline edit; Kitty desktop action drain loads handlers before LPOP; Vite Rolldown codeSplitting groups.**
+
+### Fixed
+
+- **Mind map sticky post-add edit steals branch clicks** — After Enter/Tab add, `mindMapPendingEditNodeId` + `tryFocus` re-selected the new node and ignored outside canvas pointers, so older branches needed multiple clicks. Pending edit now yields on intentional canvas/selection changes (toast/overlay stickiness kept), clears on save/cancel and the stuck max-attempt path, and no longer force-selects over a user-moved selection ([`mindMapOps.ts`](frontend/src/stores/diagram/mindMapOps.ts), [`selection.ts`](frontend/src/stores/diagram/selection.ts), [`InlineEditableText.vue`](frontend/src/components/diagram/nodes/InlineEditableText.vue)).
+- **Kitty desktop queued-action drop on chunk load failure** — Heavy handlers/`savedDiagrams` load before Redis LPOP so a failed dynamic import cannot dequeue an action ([`useKittyDesktopActionPoll.ts`](frontend/src/composables/kitty/useKittyDesktopActionPoll.ts)).
+
+### Changed
+
+- **`adoptOpenCanvasSessionScope` module** — Extracted from desktop action handlers so canvas seed/route paths avoid pulling the full Kitty handler graph ([`adoptOpenCanvasSessionScope.ts`](frontend/src/composables/kitty/adoptOpenCanvasSessionScope.ts)).
+- **Vite vendor splits** — `rollupOptions.manualChunks` → Rolldown `codeSplitting.groups`; keep vue-flow/echarts/jspdf/EP out of forced entry-shared chunks ([`vite.config.ts`](frontend/vite.config.ts)).
+- **Mobile canvas Tailwind** — Prefer spacing utilities (`min-h-11`, `inset-e-3`, …) over arbitrary pixel classes ([`MobileCanvasPage.vue`](frontend/src/pages/mobile/MobileCanvasPage.vue)).
+
+### Tests
+
+- **Frontend** — Pending post-add inline-edit release on grace selection / other-node pointer / ephemeral toast ([`mindMapPendingInlineEdit.spec.ts`](frontend/tests/mindMapPendingInlineEdit.spec.ts)); Kitty surface import guard for the extracted scope helper.
+
 ## [5.151.0] - 2026-07-28
 
 > **Mind map v2/legacy lazy canvas split, in-place sibling insert with sticky Enter Y, collab connection-order SoT, and longer API tokens with safer geo/pg-restore startup.**

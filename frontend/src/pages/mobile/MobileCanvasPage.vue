@@ -417,7 +417,7 @@ onUnmounted(() => {
         {{ t('canvas.emptyState', '选择图示类型开始创建') }}
       </div>
 
-      <div class="mobile-zoom-controls absolute bottom-3 end-3 z-10 flex flex-col gap-1.5">
+      <div class="mobile-zoom-controls absolute bottom-3 inset-e-3 z-10 flex flex-col gap-1.5">
         <button
           type="button"
           class="mobile-zoom-btn"
@@ -472,15 +472,13 @@ onUnmounted(() => {
         v-if="inlineRecActive"
         :class="[
           'flex items-center w-full min-w-0',
-          isConceptMap ? 'gap-2 min-h-[48px] mobile-inline-rec--concept' : 'gap-1.5 min-h-[36px]',
+          isConceptMap ? 'gap-2 min-h-12 mobile-inline-rec--concept' : 'gap-1.5 min-h-9',
         ]"
       >
         <button
           :class="[
             'shrink-0 rounded-xl bg-red-50 active:bg-red-100 text-red-500 transition-colors',
-            isConceptMap
-              ? 'p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center'
-              : 'p-1.5',
+            isConceptMap ? 'p-2.5 min-w-11 min-h-11 flex items-center justify-center' : 'p-1.5',
           ]"
           @click="handleRecDismiss"
         >
@@ -491,8 +489,8 @@ onUnmounted(() => {
           :class="[
             'shrink-0 rounded-xl transition-colors',
             isConceptMap
-              ? 'p-3 min-w-[48px] min-h-[48px] flex items-center justify-center'
-              : 'p-2 min-w-[40px] min-h-[40px] flex items-center justify-center',
+              ? 'p-3 min-w-12 min-h-12 flex items-center justify-center'
+              : 'p-2 min-w-10 min-h-10 flex items-center justify-center',
             mobileCanPrev
               ? 'bg-gray-100 active:bg-gray-200 text-gray-600'
               : 'bg-gray-50 text-gray-300',
@@ -529,7 +527,7 @@ onUnmounted(() => {
               :class="[
                 'rec-chip shrink-0 rounded-xl bg-green-50 active:bg-green-100 text-green-700 font-medium transition-colors border border-green-200 whitespace-nowrap',
                 isConceptMap
-                  ? 'rec-chip--concept px-3 py-2.5 text-sm min-h-[44px] flex items-center'
+                  ? 'rec-chip--concept px-3 py-2.5 text-sm min-h-11 flex items-center'
                   : 'px-2.5 py-1.5 text-xs',
               ]"
               @click="handleRecSelect(idx)"
@@ -546,8 +544,8 @@ onUnmounted(() => {
           :class="[
             'shrink-0 rounded-xl transition-colors',
             isConceptMap
-              ? 'p-3 min-w-[48px] min-h-[48px] flex items-center justify-center'
-              : 'p-2 min-w-[40px] min-h-[40px] flex items-center justify-center',
+              ? 'p-3 min-w-12 min-h-12 flex items-center justify-center'
+              : 'p-2 min-w-10 min-h-10 flex items-center justify-center',
             mobileRecFetching
               ? 'bg-gray-50 text-gray-300'
               : 'bg-gray-100 active:bg-gray-200 text-gray-600',
@@ -607,7 +605,7 @@ onUnmounted(() => {
     <Transition name="palette-slide">
       <div
         v-if="showNodePalette && panelsStore.nodePalettePanel.isOpen"
-        class="mobile-node-palette-overlay absolute inset-0 z-[100] flex flex-col touch-manipulation bg-white"
+        class="mobile-node-palette-overlay absolute inset-0 z-100 flex flex-col touch-manipulation bg-white"
         style="top: var(--mg-mobile-palette-top, 9.5rem)"
       >
         <RootConceptModal

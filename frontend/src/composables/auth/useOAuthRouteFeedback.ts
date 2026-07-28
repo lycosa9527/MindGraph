@@ -4,7 +4,8 @@
 import { watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { eventBus } from '@/composables/core/useEventBus'
 import {
   isOAuthRedirectError,

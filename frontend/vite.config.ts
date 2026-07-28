@@ -378,9 +378,9 @@ export default defineConfig({
     sourcemap: process.env.SOURCEMAP === '1' ? true : false,
     // Vite’s default 500 kB is aggressive for feature-rich SPAs; 1000 kB is a
     // practical bar once vendors are split (below). Revisit if a single chunk
-    // still exceeds this — prefer more `manualChunks` over raising the limit.
+    // still exceeds this — prefer tighter codeSplitting groups over raising the limit.
     chunkSizeWarningLimit: 1000,
-    rollupOptions: {
+    rolldownOptions: {
       onwarn(warning, defaultHandler) {
         // @tailwindcss/vite transforms CSS chunks without emitting sourcemaps;
         // the resulting SOURCEMAP_BROKEN noise is cosmetic — suppress it.
@@ -390,65 +390,53 @@ export default defineConfig({
       output: {
         /**
          * App routes already use dynamic import() (see `src/router/index.ts`).
-         * Splits here isolate large non-EP `node_modules` for caching (icons,
-         * echarts, …). Element Plus is NOT force-chunked: a former catch-all
-         * `vendor-ep-core` / data+overlay split pulled heavy widgets into the
-         * entry graph via cross-chunk static imports. EP loads via deep ESM
-         * paths + deferred overlay helpers (`notifications.ts`) and Rollup
-         * places the rest with the routes that import them.
-         * Order: more specific sub-packages before broader matches.
+         * Groups isolate large non-EP `node_modules` for caching. Element Plus,
+         * echarts, jspdf, and @vue-flow are NOT force-chunked: naming them via
+         * manual splits caused Rolldown to static-import those chunks from the
+         * entry for sharing. EP loads via deep ESM + deferred overlays
+         * (`notifications.ts`); vue-flow stays with DiagramCanvas.
+         * No catch-all `node_modules` group (would fight route-level splitting).
          */
-        manualChunks(id) {
-          if (!id.includes('node_modules')) {
-            return undefined
-          }
-          if (id.includes('node_modules/@element-plus/icons-vue')) {
-            return 'vendor-ep-icons'
-          }
-          // Do not force-chunk echarts/jspdf: they are only used from route-level
-          // code (dynamic import / lazy pages). Naming them via manualChunks caused
-          // Rolldown to static-import those chunks from the entry for sharing.
-          if (id.includes('node_modules/chart.js')) {
-            return 'vendor-chartjs'
-          }
-          if (id.includes('node_modules/@vue-flow')) {
-            return 'vendor-vue-flow'
-          }
-          if (id.includes('node_modules/@lucide/vue')) {
-            return 'vendor-lucide'
-          }
-          if (id.includes('node_modules/katex')) {
-            return 'vendor-katex'
-          }
-          if (id.includes('node_modules/highlight.js')) {
-            return 'vendor-highlight'
-          }
-          if (id.includes('node_modules/mathlive')) {
-            return 'vendor-mathlive'
-          }
-          if (
-            id.includes('node_modules/markdown-it') ||
-            id.includes('node_modules/@vscode/markdown-it-katex') ||
-            id.includes('node_modules/dompurify')
-          ) {
-            return 'vendor-markdown'
-          }
-          if (id.includes('node_modules/html-to-image')) {
-            return 'vendor-html-to-image'
-          }
-          if (id.includes('node_modules/vue-i18n') || id.includes('node_modules/@intlify')) {
-            return 'vendor-i18n'
-          }
-          if (id.includes('node_modules/@vueuse')) {
-            return 'vendor-vueuse'
-          }
-          if (id.includes('node_modules/@tanstack')) {
-            return 'vendor-tanstack'
-          }
-          if (id.includes('node_modules/simple-keyboard') && !id.includes('simple-keyboard-layouts')) {
-            return 'vendor-keyboard'
-          }
-          return undefined
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vendor-ep-icons',
+              test: /node_modules[\\/]@element-plus[\\/]icons-vue/,
+              priority: 30,
+            },
+            { name: 'vendor-chartjs', test: /node_modules[\\/]chart\.js/, priority: 25 },
+            { name: 'vendor-lucide', test: /node_modules[\\/]@lucide[\\/]vue/, priority: 25 },
+            { name: 'vendor-katex', test: /node_modules[\\/]katex/, priority: 25 },
+            {
+              name: 'vendor-highlight',
+              test: /node_modules[\\/]highlight\.js/,
+              priority: 25,
+            },
+            { name: 'vendor-mathlive', test: /node_modules[\\/]mathlive/, priority: 25 },
+            {
+              name: 'vendor-markdown',
+              test: /node_modules[\\/](markdown-it|@vscode[\\/]markdown-it-katex|dompurify)/,
+              priority: 25,
+            },
+            {
+              name: 'vendor-html-to-image',
+              test: /node_modules[\\/]html-to-image/,
+              priority: 25,
+            },
+            {
+              name: 'vendor-i18n',
+              test: /node_modules[\\/](vue-i18n|@intlify)/,
+              priority: 25,
+            },
+            { name: 'vendor-vueuse', test: /node_modules[\\/]@vueuse/, priority: 25 },
+            { name: 'vendor-tanstack', test: /node_modules[\\/]@tanstack/, priority: 25 },
+            {
+              name: 'vendor-keyboard',
+              // Exclude simple-keyboard-layouts (loaded with locale layouts separately).
+              test: /node_modules[\\/]simple-keyboard([\\/]|$)/,
+              priority: 25,
+            },
+          ],
         },
       },
     },

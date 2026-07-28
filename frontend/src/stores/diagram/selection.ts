@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 
 import { emitEvent } from './events'
+import { releaseMindMapPendingInlineEditIfSelectionMoved } from './mindMapOps'
 import type { DiagramContext } from './types'
 
 export function useSelectionSlice(ctx: DiagramContext) {
@@ -23,6 +24,9 @@ export function useSelectionSlice(ctx: DiagramContext) {
       return false
     }
 
+    // After remount-echo grace, selecting another node releases sticky post-add edit.
+    releaseMindMapPendingInlineEditIfSelectionMoved(ctx, ids)
+
     selectedConnectionId.value = null
     selectedNodes.value = ids
     emitEvent('diagram:selection_changed', { selectedNodes: ids })
@@ -31,6 +35,7 @@ export function useSelectionSlice(ctx: DiagramContext) {
 
   function selectConnection(connectionId: string | null): void {
     if (connectionId) {
+      releaseMindMapPendingInlineEditIfSelectionMoved(ctx, [])
       selectedNodes.value = []
     }
     selectedConnectionId.value = connectionId
@@ -38,6 +43,7 @@ export function useSelectionSlice(ctx: DiagramContext) {
   }
 
   function clearSelection(): void {
+    releaseMindMapPendingInlineEditIfSelectionMoved(ctx, [])
     selectedConnectionId.value = null
     selectedNodes.value = []
     emitEvent('diagram:selection_changed', { selectedNodes: [] })
