@@ -1,7 +1,7 @@
 """Redis cache for user-scoped API tokens (mgat_ prefix).
 
 Key: usertoken:hash:{sha256(raw)[:32]} -> JSON {user_id, expires_at, is_active, token_hash_full}
-TTL: 7 days (aligned with default token lifetime).
+TTL: 90 days (aligned with default token lifetime).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -11,8 +11,8 @@ Proprietary License
 import hashlib
 import json
 import logging
-from datetime import UTC, datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
@@ -35,7 +35,7 @@ def _short_hash_from_full_token_hash(token_hash_64: str) -> str:
 class _UserTokenCache:
     """_UserTokenCache helper."""
 
-    async def get_by_raw_token(self, raw_token: str) -> Optional[Dict[str, Any]]:
+    async def get_by_raw_token(self, raw_token: str) -> dict[str, Any] | None:
         """Get by raw token."""
         if not is_redis_available():
             return None
@@ -52,7 +52,7 @@ class _UserTokenCache:
             logger.debug("[UserTokenCache] get failed: %s", exc)
         return None
 
-    async def get_by_token_hash_64(self, token_hash_64: str) -> Optional[Dict[str, Any]]:
+    async def get_by_token_hash_64(self, token_hash_64: str) -> dict[str, Any] | None:
         """Get by token hash 64."""
         if not is_redis_available():
             return None
@@ -106,7 +106,7 @@ class _UserTokenCache:
             logger.debug("[UserTokenCache] invalidate failed: %s", exc)
 
     @staticmethod
-    def is_expired(cached: Dict[str, Any]) -> bool:
+    def is_expired(cached: dict[str, Any]) -> bool:
         """Is expired."""
         expires_at_str = cached.get("expires_at")
         if not expires_at_str:
@@ -115,7 +115,7 @@ class _UserTokenCache:
             exp = datetime.fromisoformat(expires_at_str)
             if exp.tzinfo is None:
                 exp = exp.replace(tzinfo=UTC)
-            return exp < datetime.now(timezone.utc)
+            return exp < datetime.now(UTC)
         except (ValueError, TypeError):
             return False
 

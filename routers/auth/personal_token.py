@@ -9,7 +9,7 @@ Proprietary License
 import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
@@ -35,7 +35,7 @@ from utils.auth.school_tier import (
 
 router = APIRouter(tags=["Authentication"])
 
-TOKEN_TTL_DAYS = 7
+TOKEN_TTL_DAYS = 90
 
 
 @router.post("/api-token", dependencies=[Depends(require_not_mgat_for_token_mint)])
@@ -44,7 +44,7 @@ async def create_user_api_token(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create or replace the single user API token (mgat_). Session-JWT only."""
     await assert_user_has_school_tier_feature(
         db,
@@ -103,7 +103,7 @@ async def get_user_api_token_status(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Return metadata for the current user's API token (never the raw secret)."""
     if not await user_has_school_tier_feature(db, current_user, TIER_FEATURE_API_TOKEN):
         raise HTTPException(
@@ -138,7 +138,7 @@ async def get_user_api_token_status(
 async def revoke_user_api_token(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Revoke the user's API token."""
     result = await db.execute(select(UserAPIToken).where(UserAPIToken.user_id == current_user.id))
     row = result.scalar_one_or_none()

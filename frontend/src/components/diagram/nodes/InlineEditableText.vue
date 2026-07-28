@@ -5,8 +5,10 @@
  * Features:
  * - Double-click to enter edit mode
  * - Text is highlighted/selected on edit start
- * - Enter to save, Escape to cancel
- * - Tab: emits node_editor:tab_pressed (draftText); optional syncBaselineOnTab for concept map focus
+ * - Enter to save / confirm edit (does not add nodes)
+ * - Escape to cancel
+ * - Tab (mind map): save then add child (edit opens on the new node)
+ * - Tab (concept map): emits node_editor:tab_pressed (draftText); optional syncBaselineOnTab
  * - Click outside to save
  * - Seamless transition between display and edit modes
  */
@@ -15,16 +17,14 @@ import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from '
 import { useLanguage, useNotifications } from '@/composables'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
 import { eventBus } from '@/composables/core/useEventBus'
-import {
-  isLearningSheetCustomPickActive,
-} from '@/composables/mindMap/useLearningSheetCustomMode'
+import { useDiagramNodeMarkdownDisplay } from '@/composables/diagram/useDiagramNodeMarkdownDisplay'
 import { isMindMapDiagramType } from '@/composables/mindMap/mindMapArrowNavigation'
 import {
   armInlineEditEnterGuard,
   clearMindMapPostEditSiblingAnchor,
   setMindMapPostEditSiblingAnchor,
 } from '@/composables/mindMap/mindMapCanvasEnterGuard'
-import { useDiagramNodeMarkdownDisplay } from '@/composables/diagram/useDiagramNodeMarkdownDisplay'
+import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramStore } from '@/stores'
 import {
   isNodeDisplayPlaceholderLabel,
@@ -32,11 +32,8 @@ import {
   stripConceptMapFocusQuestionPrefix,
 } from '@/stores/diagram/diagramDefaultLabels'
 import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasurement'
-import {
-  isWhitespaceOnlyNodeText,
-  resolveInlineNodeTextForSave,
-} from '@/utils/nodeEditableText'
 import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
+import { isWhitespaceOnlyNodeText, resolveInlineNodeTextForSave } from '@/utils/nodeEditableText'
 
 const props = withDefaults(
   defineProps<{
@@ -199,10 +196,15 @@ const CONTEXT_MENU_EDIT_DELAY_MS = 50
 
 function handleEditRequested(payload: { nodeId?: string }): void {
   if (props.readonly) return
-  if (payload?.nodeId === props.nodeId && !localIsEditing.value) {
-    const noopEvent = { preventDefault: () => {}, stopPropagation: () => {} } as MouseEvent
-    setTimeout(() => handleDoubleClick(noopEvent), CONTEXT_MENU_EDIT_DELAY_MS)
+  if (payload?.nodeId !== props.nodeId || localIsEditing.value) return
+  // Post-add pending edit must start immediately — the 50ms context-menu delay
+  // races layout write-back / toast focus and leaves the node merely selected.
+  if (diagramStore.mindMapPendingEditNodeId === props.nodeId) {
+    startEditing()
+    return
   }
+  const noopEvent = { preventDefault: () => {}, stopPropagation: () => {} } as MouseEvent
+  setTimeout(() => handleDoubleClick(noopEvent), CONTEXT_MENU_EDIT_DELAY_MS)
 }
 
 // Update text when prop changes (and not editing)
@@ -319,22 +321,30 @@ watch(
   { flush: 'post' }
 )
 
+function tryStartPendingMindMapEdit(): void {
+  if (props.readonly || localIsEditing.value) return
+  if (diagramStore.mindMapPendingEditNodeId !== props.nodeId) return
+  startEditing()
+}
+
 onMounted(() => {
   nextTick(() => {
     syncFontMetrics()
-    if (
-      diagramStore.mindMapPendingEditNodeId === props.nodeId &&
-      !props.readonly &&
-      !localIsEditing.value
-    ) {
-      startEditing()
-      diagramStore.mindMapPendingEditNodeId = null
-    }
+    tryStartPendingMindMapEdit()
     requestAnimationFrame(() => {
       syncFontMetrics()
     })
   })
 })
+
+// Post-add layout write-back can remount hosts after onMounted; keep watching.
+watch(
+  () => diagramStore.mindMapPendingEditNodeId,
+  (pendingId) => {
+    if (pendingId !== props.nodeId) return
+    nextTick(() => tryStartPendingMindMapEdit())
+  }
+)
 
 const isFocusQuestionSplitMode = computed(() => props.focusQuestionEditableSplit != null)
 
@@ -436,9 +446,7 @@ function startEditing(): void {
     if (props.autoWrap) {
       editUsesMultilineControl.value = !isDisplaySingleLine(displayRef.value)
       editLockedWidthPx.value = Math.max(textWidth, 40)
-      editLockedMinHeightPx.value = editUsesMultilineControl.value
-        ? Math.max(textHeight, 20)
-        : null
+      editLockedMinHeightPx.value = editUsesMultilineControl.value ? Math.max(textHeight, 20) : null
       inputWidth.value = `${editLockedWidthPx.value}px`
     } else if (props.textAlign === 'right') {
       const maxWidthPx = parseInt(props.maxWidth, 10) || 180
@@ -460,10 +468,6 @@ function startEditing(): void {
 
   localIsEditing.value = true
 
-  if (diagramStore.mindMapPendingEditNodeId === props.nodeId) {
-    diagramStore.mindMapPendingEditNodeId = null
-  }
-
   if (isMindMapInlineEditContext() && props.nodeId !== 'topic') {
     diagramStore.selectNodes(props.nodeId)
   }
@@ -472,7 +476,9 @@ function startEditing(): void {
   eventBus.emit('node_editor:opening', { nodeId: props.nodeId })
   emit('editStart')
 
-  // Focus and select text after DOM update
+  // Focus and select text after DOM update. Do NOT clear mindMapPendingEditNodeId
+  // here — layout write-back / success toast often steal focus right after the
+  // first focus; pending must stay set so remount/blur can re-enter edit.
   nextTick(() => {
     if (focusHtmlControl(inputRef.value)) {
       selectHtmlControl(inputRef.value)
@@ -515,11 +521,7 @@ function saveEdit(): void {
     return
   }
 
-  const resolved = resolveInlineNodeTextForSave(
-    editText.value,
-    props.minLength,
-    props.maxLength
-  )
+  const resolved = resolveInlineNodeTextForSave(editText.value, props.minLength, props.maxLength)
 
   // Validate text length - revert if invalid
   if (resolved === null) {
@@ -535,7 +537,9 @@ function saveEdit(): void {
   editText.value = finalText
 
   if (isMindMapInlineEditContext() && props.nodeId !== 'topic') {
-    syncMindMapInlineEditDimensionsBeforeClose()
+    // Do not write <input> width into mind-map layout here — it is narrower than
+    // branch chrome and was sliding left L1 X toward the topic on canvas click.
+    // MindMapV2BranchNode ResizeObserver owns measured size after edit closes.
     diagramStore.selectNodes(props.nodeId)
     setMindMapPostEditSiblingAnchor(props.nodeId)
   }
@@ -582,18 +586,6 @@ function isMindMapInlineEditContext(): boolean {
   return isMindMapDiagramType(diagramStore.type)
 }
 
-function syncMindMapInlineEditDimensionsBeforeClose(): void {
-  if (!isMindMapInlineEditContext() || props.nodeId === 'topic') return
-  const el = inputRef.value
-  if (!el) return
-  // Width-only: input height excludes underline padding/gap/bar, and writing it into
-  // Pinia caused a wrong Y restack before BranchNode ResizeObserver corrected it.
-  const width = Math.max(el.offsetWidth, el.scrollWidth)
-  if (width > 0) {
-    diagramStore.setMindMapNodeWidth(props.nodeId, width)
-  }
-}
-
 /**
  * Handle keyboard events
  */
@@ -607,11 +599,7 @@ function handleKeydown(event: KeyboardEvent): void {
     event.preventDefault()
     event.stopPropagation()
     cancelEdit()
-  } else if (
-    event.key === 'Enter' &&
-    event.shiftKey &&
-    (event.ctrlKey || event.metaKey)
-  ) {
+  } else if (event.key === 'Enter' && event.shiftKey && (event.ctrlKey || event.metaKey)) {
     event.preventDefault()
     event.stopPropagation()
     insertLineBreakAtCaret()
@@ -654,9 +642,16 @@ function handleKeydown(event: KeyboardEvent): void {
  */
 function handleBlur(): void {
   setTimeout(() => {
-    if (localIsEditing.value) {
-      saveEdit()
+    if (!localIsEditing.value) return
+    // Post-add: toast / layout remount briefly steals focus — refocus, don't commit.
+    if (isMindMapInlineEditContext() && diagramStore.mindMapPendingEditNodeId === props.nodeId) {
+      if (focusHtmlControl(inputRef.value)) {
+        selectHtmlControl(inputRef.value)
+      }
+      return
     }
+    if (inputRef.value && document.activeElement === inputRef.value) return
+    saveEdit()
   }, 150)
 }
 
@@ -670,6 +665,10 @@ function isEventInsideEditor(event: Event): boolean {
 function commitEditOnOutsidePointer(event: Event): void {
   if (!localIsEditing.value) return
   if (isEventInsideEditor(event)) return
+  // Ignore transient UI (toasts) while post-add pending edit is armed.
+  if (isMindMapInlineEditContext() && diagramStore.mindMapPendingEditNodeId === props.nodeId) {
+    return
+  }
   saveEdit()
 }
 
@@ -712,6 +711,8 @@ function attachInputEnterCapture(): void {
     event.stopPropagation()
     event.stopImmediatePropagation()
 
+    // Confirm edit only. Canvas Enter (when not editing) adds a sibling;
+    // arm the guard so this same keydown cannot also trigger that shortcut.
     armInlineEditEnterGuard()
     saveEdit()
   }
@@ -952,10 +953,7 @@ onUnmounted(() => {
   <div
     ref="rootRef"
     class="inline-editable-text"
-    :class="[
-      rootAlignClass,
-      { 'inline-editable-text--full-width': fullWidth },
-    ]"
+    :class="[rootAlignClass, { 'inline-editable-text--full-width': fullWidth }]"
     @dblclick="handleDoubleClick"
     @touchstart.passive="handleTouchStart"
     @touchend.passive="handleTouchEnd"
@@ -1128,7 +1126,8 @@ onUnmounted(() => {
           class="inline-edit-plain"
           :class="{ 'inline-edit-plain--whitespace': isWhitespaceOnlyNodeText(text) }"
           :style="displayDecorationStyle"
-        >{{ text }}</span>
+          >{{ text }}</span
+        >
       </template>
     </div>
   </div>

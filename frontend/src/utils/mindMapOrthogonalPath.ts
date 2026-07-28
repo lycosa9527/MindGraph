@@ -47,99 +47,144 @@ function branchApproachY(
   trunkX: number,
   toX: number,
   maxRadius: number,
-  flatThreshold: number
+  flatThreshold: number,
+  /** Multi-sibling bus: still fillet tees near the parent Y (shared spine needs a Q). */
+  roundDespiteFlat = false
 ): number {
-  if (Math.abs(toY - fromY) < flatThreshold) return toY
+  const dy = Math.abs(toY - fromY)
+  if (!roundDespiteFlat && dy < flatThreshold) return toY
   const hLen = Math.abs(toX - trunkX)
-  const vLeg = Math.abs(toY - fromY)
+  // Near-parent bus tees have tiny dy; use maxRadius so the fillet still has a vertical leg.
+  const vLeg = Math.max(dy, roundDespiteFlat ? maxRadius : 0)
   const r = clampRadius(maxRadius, hLen, Math.max(vLeg, hLen * 0.35))
   if (r <= 0.5) return toY
   return toY < fromY ? toY + r : toY - r
 }
 
-/** Vertical bus span — sibling branch Y only, trimmed to rounded tee join points. */
-function computeSpineVerticalRange(
-  branchYs: number[],
-  fromY: number,
-  trunkX: number,
-  branchToXs: number[],
-  maxRadius: number,
-  flatThreshold: number
-): { top: number; bottom: number } {
-  let top = Infinity
-  let bottom = -Infinity
-  for (let i = 0; i < branchYs.length; i++) {
-    const y = branchYs[i]!
-    const toX = branchToXs[i] ?? trunkX
-    const approach = branchApproachY(y, fromY, trunkX, toX, maxRadius, flatThreshold)
-    top = Math.min(top, approach)
-    bottom = Math.max(bottom, approach)
-  }
-  if (!Number.isFinite(top)) {
-    return { top: fromY, bottom: fromY }
-  }
-  return { top, bottom }
+type MindMapTeeSpec = {
+  toX: number
+  toY: number
+  approachY: number
+  radius: number
 }
 
-function buildBusSpine(
+function resolveTeeRadius(
+  toY: number,
+  fromY: number,
+  trunkX: number,
+  toX: number,
+  maxRadius: number,
+  flatThreshold: number,
+  roundDespiteFlat: boolean
+): number {
+  const hLen = Math.abs(toX - trunkX)
+  if (hLen < 0.5) return 0
+  const dy = Math.abs(toY - fromY)
+  if (!roundDespiteFlat && dy < flatThreshold) return 0
+  const vLeg = Math.max(dy, roundDespiteFlat ? maxRadius : 0)
+  return clampRadius(maxRadius, hLen, Math.max(vLeg, hLen * 0.35))
+}
+
+function resolveTeeSpec(
+  toY: number,
+  fromY: number,
+  trunkX: number,
+  toX: number,
+  maxRadius: number,
+  flatThreshold: number,
+  roundDespiteFlat: boolean
+): MindMapTeeSpec {
+  const radius = resolveTeeRadius(
+    toY,
+    fromY,
+    trunkX,
+    toX,
+    maxRadius,
+    flatThreshold,
+    roundDespiteFlat
+  )
+  const approachY = branchApproachY(
+    toY,
+    fromY,
+    trunkX,
+    toX,
+    maxRadius,
+    flatThreshold,
+    roundDespiteFlat
+  )
+  return { toX, toY, approachY, radius }
+}
+
+/**
+ * Stem + vertical bus with filleted tees. Each Q is continuous from the bus (no
+ * separate subpath along the trunk), so translucent strokes do not double-paint
+ * at the curve→bus join. Horizontals to children are drawn by each edge stub.
+ */
+function buildSpineWithFilletTees(
   fromX: number,
   fromY: number,
   trunkX: number,
-  spineTop: number,
-  spineBottom: number
+  tees: MindMapTeeSpec[]
 ): string {
   const parts = [`M ${fromX} ${fromY}`, `L ${trunkX} ${fromY}`]
 
-  if (spineBottom - spineTop < 0.5) {
-    return parts.join(' ')
+  const uppers = tees
+    .filter((tee) => tee.approachY < fromY - 0.5)
+    .sort((a, b) => b.approachY - a.approachY)
+  const lowers = tees
+    .filter((tee) => tee.approachY > fromY + 0.5)
+    .sort((a, b) => a.approachY - b.approachY)
+  const atParent = tees.filter((tee) => Math.abs(tee.approachY - fromY) <= 0.5)
+
+  function emitFillet(tee: MindMapTeeSpec): void {
+    // Pen is at (trunkX, approachY). Fillet only — no horizontal (avoids double paint).
+    if (tee.radius <= 0.5 || Math.abs(tee.approachY - tee.toY) < 0.5) return
+    const sx = tee.toX >= trunkX ? 1 : -1
+    parts.push(`Q ${trunkX} ${tee.toY} ${trunkX + sx * tee.radius} ${tee.toY}`)
+    parts.push(`M ${trunkX} ${tee.approachY}`)
   }
 
-  if (fromY <= spineTop + 0.5) {
-    parts.push(`L ${trunkX} ${spineTop}`, `L ${trunkX} ${spineBottom}`)
-  } else if (fromY >= spineBottom - 0.5) {
-    parts.push(`L ${trunkX} ${spineBottom}`, `L ${trunkX} ${spineTop}`)
-  } else {
-    if (spineTop < fromY - 0.5) parts.push(`L ${trunkX} ${spineTop}`)
-    if (spineBottom > fromY + 0.5) parts.push(`L ${trunkX} ${spineBottom}`)
+  for (const tee of uppers) {
+    parts.push(`L ${trunkX} ${tee.approachY}`)
+    emitFillet(tee)
+  }
+
+  if (uppers.length > 0 && (lowers.length > 0 || atParent.length > 0)) {
+    parts.push(`M ${trunkX} ${fromY}`)
+  }
+
+  for (const tee of atParent) {
+    emitFillet(tee)
+  }
+
+  if (atParent.length > 0 && lowers.length > 0) {
+    parts.push(`M ${trunkX} ${fromY}`)
+  }
+
+  for (const tee of lowers) {
+    parts.push(`L ${trunkX} ${tee.approachY}`)
+    emitFillet(tee)
   }
 
   return parts.join(' ')
 }
 
-function buildRoundedTeeBranch(
+/** Horizontal from fillet end (or trunk for flat tees) to the child. */
+function buildBranchHorizontalStub(
   trunkX: number,
   fromY: number,
   toX: number,
   toY: number,
   maxRadius: number,
-  flatThreshold: number
+  flatThreshold: number,
+  roundDespiteFlat: boolean
 ): string {
+  const tee = resolveTeeSpec(toY, fromY, trunkX, toX, maxRadius, flatThreshold, roundDespiteFlat)
+  if (tee.radius <= 0.5 || Math.abs(tee.approachY - tee.toY) < 0.5) {
+    return `M ${trunkX} ${toY} L ${toX} ${toY}`
+  }
   const sx = toX >= trunkX ? 1 : -1
-  const hLen = Math.abs(toX - trunkX)
-  if (hLen < 0.5) {
-    return `M ${trunkX} ${toY} L ${toX} ${toY}`
-  }
-
-  if (Math.abs(toY - fromY) < flatThreshold) {
-    return `M ${trunkX} ${toY} L ${toX} ${toY}`
-  }
-
-  const vLeg = Math.abs(toY - fromY)
-  const r = clampRadius(maxRadius, hLen, Math.max(vLeg, hLen * 0.35))
-  if (r <= 0.5) {
-    return `M ${trunkX} ${toY} L ${toX} ${toY}`
-  }
-
-  const approachY = branchApproachY(toY, fromY, trunkX, toX, maxRadius, flatThreshold)
-  if (Math.abs(approachY - toY) < 0.5) {
-    return `M ${trunkX} ${toY} L ${toX} ${toY}`
-  }
-
-  return [
-    `M ${trunkX} ${approachY}`,
-    `Q ${trunkX} ${toY} ${trunkX + sx * r} ${toY}`,
-    `L ${toX} ${toY}`,
-  ].join(' ')
+  return `M ${trunkX + sx * tee.radius} ${toY} L ${toX} ${toY}`
 }
 
 /**
@@ -180,22 +225,29 @@ export function buildMindMapBracketBusPath(
     return `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${toX} ${toY}`
   }
 
+  // Shared vertical spine: the near-parent child must still get a Q tee, otherwise
+  // it meets the bus at a sharp 90° while farther siblings look rounded (debug: sharp_or_flat).
+  const roundDespiteFlat = branchYs.length > 1
+
   const branchToXs =
     options.siblingToXs && options.siblingToXs.length === branchYs.length
       ? options.siblingToXs
       : branchYs.map(() => toX)
-  const { top: spineTop, bottom: spineBottom } = computeSpineVerticalRange(
-    branchYs,
-    fromY,
-    trunkX,
-    branchToXs,
-    maxR,
-    flatThreshold
-  )
-  const branch = buildRoundedTeeBranch(trunkX, fromY, toX, toY, maxR, flatThreshold)
 
+  const stub = buildBranchHorizontalStub(
+    trunkX,
+    fromY,
+    toX,
+    toY,
+    maxR,
+    flatThreshold,
+    roundDespiteFlat
+  )
+
+  // Non-spine edges: horizontal only. Fillets live on the spine path so the Q never
+  // retraces the bus (opacity would thicken at the join).
   if (!drawSpine) {
-    return branch
+    return stub
   }
 
   if (branchYs.length === 1) {
@@ -207,9 +259,10 @@ export function buildMindMapBracketBusPath(
       return `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${toX} ${toY}`
     }
     const approachY = branchApproachY(toY, fromY, trunkX, toX, maxR, flatThreshold)
-    if (Math.abs(approachY - toY) < 0.5) {
+    if (Math.abs(approachY - toY) < 0.5 || r <= 0.5) {
       return `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${toX} ${toY}`
     }
+    // Single child: one continuous path (stem → bus → fillet → child).
     return [
       `M ${fromX} ${fromY}`,
       `L ${trunkX} ${fromY}`,
@@ -219,7 +272,11 @@ export function buildMindMapBracketBusPath(
     ].join(' ')
   }
 
-  return `${buildBusSpine(fromX, fromY, trunkX, spineTop, spineBottom)} ${branch}`
+  const tees = branchYs.map((y, i) =>
+    resolveTeeSpec(y, fromY, trunkX, branchToXs[i] ?? toX, maxR, flatThreshold, roundDespiteFlat)
+  )
+  const spine = buildSpineWithFilletTees(fromX, fromY, trunkX, tees)
+  return `${spine} ${stub}`
 }
 
 /**
@@ -328,7 +385,19 @@ export function computeMindMapSharedTrunkX(
   const flowingRight = sourceX <= fallbackTargetX
   const nearestTargetX = flowingRight ? Math.min(...xs) : Math.max(...xs)
   const dx = nearestTargetX - sourceX
-  const ratioSpan = Math.abs(dx) * MINDMAP_CONNECTOR_TURN_RATIO
-  const offset = Math.max(MINDMAP_TOPIC_TRUNK_MIN_OFFSET, ratioSpan)
+  const absDx = Math.abs(dx)
+  if (absDx < 0.5) return sourceX
+
+  // Never place the trunk on/past the child. A fixed 28px min offset used to
+  // overshoot when the parent→child gap shrank (width SoT mismatch), leaving
+  // hLen≈0 so buildRoundedTeeBranch dropped the Q and corners went sharp 90°.
+  const teeClearance = Math.min(MINDMAP_CONNECTOR_MAX_RADIUS + 4, Math.max(4, absDx / 2))
+  const maxOffset = Math.max(0, absDx - teeClearance)
+  const ratioSpan = absDx * MINDMAP_CONNECTOR_TURN_RATIO
+  const preferred = Math.max(
+    Math.min(MINDMAP_TOPIC_TRUNK_MIN_OFFSET, maxOffset),
+    Math.min(ratioSpan, maxOffset)
+  )
+  const offset = Math.min(maxOffset, preferred)
   return flowingRight ? sourceX + offset : sourceX - offset
 }

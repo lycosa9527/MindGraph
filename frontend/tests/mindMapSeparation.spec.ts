@@ -1,33 +1,35 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+
 import { createPinia, setActivePinia } from 'pinia'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   resolveLegacyMindMapConnectionStrokeColor,
   syncLegacyMindMapConnectionStrokeColors,
   syncMindMapConnectionStrokeColorsForCanvasMode,
 } from '@/config/mindMapGeometry'
-import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { LEGACY_MINDMAP_BRANCH_COLORS } from '@/config/mindMapLegacyColors'
+import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { getEdgeTypeForDiagram } from '@/stores/diagram/events'
 import {
   hydrateMindMapCanvasStylesOnLoad,
   reconcileMindMapCanvasModeSwitch,
   sanitizeLegacyNodeStyle,
   snapshotMindMapCanvasBucket,
 } from '@/stores/diagram/mindMapCanvasModeSwitch'
-import { getEdgeTypeForDiagram } from '@/stores/diagram/events'
 import { useMindMapOpsSlice } from '@/stores/diagram/mindMapOps'
 import type { DiagramContext } from '@/stores/diagram/types'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { loadMindMapSpec } from '@/stores/specLoader'
+import { useUIStore } from '@/stores/ui'
+import type { Connection, DiagramData, DiagramNode } from '@/types'
 import {
   buildClassicMindMapTopicHandlePositions,
   classicMindMapPillHandleInsetPx,
   classicMindMapSideHandleTopPercent,
   withClassicMindMapTopicSourceHandle,
 } from '@/utils/classicMindMapTopicHandles'
-import { loadMindMapSpec } from '@/stores/specLoader'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
-import { useUIStore } from '@/stores/ui'
-import type { Connection, DiagramData, DiagramNode } from '@/types'
 
 function enableMindMapV2CanvasFlag(): void {
   const flagsStore = useFeatureFlagsStore()
@@ -69,6 +71,7 @@ function makeMindMapCtx(data: DiagramData): DiagramContext {
     mindMapRecalcTrigger: ref(0),
     mindMapCurveExtentBaseline: ref(null),
     mindMapPendingEditNodeId: ref(null),
+    mindMapPreserveIncomingY: ref(false),
     pushHistory: vi.fn(),
     scheduleMindMapRecalc: vi.fn(),
   } as DiagramContext
@@ -85,15 +88,18 @@ describe('mind map classic vs v2 separation', () => {
       length: 0,
       key: vi.fn(() => null),
     })
-    vi.stubGlobal('matchMedia', vi.fn(() => ({
-      matches: false,
-      media: '',
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    })))
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: false,
+        media: '',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+    )
   })
 
   it('uses curved edges for legacy mind maps', () => {
@@ -143,9 +149,9 @@ describe('mind map classic vs v2 separation', () => {
       { id: 'e1', source: 'topic', target: 'branch-r-0-1' },
       { id: 'e2', source: 'branch-r-0-1', target: 'branch-r-1-2' },
     ]
-    expect(
-      resolveLegacyMindMapConnectionStrokeColor(connections[1], nodes, connections)
-    ).toBe(getMindmapBranchColor(4, 'legacy').border)
+    expect(resolveLegacyMindMapConnectionStrokeColor(connections[1], nodes, connections)).toBe(
+      getMindmapBranchColor(4, 'legacy').border
+    )
   })
 
   it('syncLegacyMindMapConnectionStrokeColors assigns palette colors per edge', () => {
@@ -447,8 +453,9 @@ describe('mind map classic vs v2 separation', () => {
 
     const anchorId = ctx.data.value?.nodes?.find((n) => n.text === 'Branch A')?.id
     expect(anchorId).toBeDefined()
+    if (!anchorId) throw new Error('expected anchorId')
 
-    expect(ops.addMindMapSibling(anchorId!, 'Branch B')).toBe(true)
+    expect(ops.addMindMapSibling(anchorId, 'Branch B')).toBe(true)
 
     const newBranchNode = ctx.data.value?.nodes?.find((n) => n.text === 'Branch B')
     expect(newBranchNode).toBeDefined()
@@ -491,11 +498,7 @@ describe('mind map classic vs v2 separation', () => {
       { id: 'e3', source: 'topic', target: 'branch-l-1-0', sourceHandle: 'mindmap-left-0' },
     ]
 
-    const rightHandles = buildClassicMindMapTopicHandlePositions(
-      connections,
-      'r',
-      'mindmap-right'
-    )
+    const rightHandles = buildClassicMindMapTopicHandlePositions(connections, 'r', 'mindmap-right')
     expect(rightHandles.map((h) => h.top)).toEqual(['33.33333333333333%', '66.66666666666666%'])
 
     const leftHandles = buildClassicMindMapTopicHandlePositions(connections, 'l', 'mindmap-left')

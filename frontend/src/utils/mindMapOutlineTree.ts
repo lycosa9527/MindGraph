@@ -1,6 +1,5 @@
-import type { Connection, DiagramNode } from '@/types'
-
 import { sortMindMapChildIds, sortMindMapTopicChildIds } from '@/config/mindMapGeometry'
+import type { Connection, DiagramNode } from '@/types'
 
 export interface MindMapOutlineNode {
   id: string
@@ -14,7 +13,9 @@ function getNodeText(node: DiagramNode): string {
 }
 
 function isMindMapRootNode(node: DiagramNode): boolean {
-  return node.type === 'topic' || node.type === 'center' || node.id === 'topic' || node.id === 'root'
+  return (
+    node.type === 'topic' || node.type === 'center' || node.id === 'topic' || node.id === 'root'
+  )
 }
 
 function buildChildrenMap(connections: Connection[]): Map<string, string[]> {
@@ -27,15 +28,8 @@ function buildChildrenMap(connections: Connection[]): Map<string, string[]> {
   return children
 }
 
-function nodeY(nodeById: Map<string, DiagramNode>, nodeId: string): number {
-  return nodeById.get(nodeId)?.position?.y ?? 0
-}
-
-/** Bidirectional mind map: right top→bottom, then left bottom→top (clockwise). */
-function sortTopicLevelChildIds(
-  childIds: string[],
-  nodeById: Map<string, DiagramNode>
-): string[] {
+/** Bidirectional mind map: right then left, preserving connection order per side. */
+function sortTopicLevelChildIds(childIds: string[]): string[] {
   const right = childIds.filter((id) => id.startsWith('branch-r-'))
   const left = childIds.filter((id) => id.startsWith('branch-l-'))
   const other = childIds.filter((id) => !id.startsWith('branch-r-') && !id.startsWith('branch-l-'))
@@ -44,28 +38,17 @@ function sortTopicLevelChildIds(
     return sortMindMapTopicChildIds(childIds)
   }
 
-  right.sort((a, b) => nodeY(nodeById, a) - nodeY(nodeById, b))
-  left.sort((a, b) => nodeY(nodeById, b) - nodeY(nodeById, a))
   return [...right, ...left, ...other]
 }
 
-function sortOutlineChildIds(
-  parentId: string,
-  childIds: string[],
-  nodeById: Map<string, DiagramNode>
-): string[] {
+function sortOutlineChildIds(parentId: string, childIds: string[]): string[] {
   if (childIds.length <= 1) return childIds
 
   if (parentId === 'topic') {
-    return sortTopicLevelChildIds(childIds, nodeById)
+    return sortTopicLevelChildIds(childIds)
   }
 
-  // Sub-branches on one side stack vertically — top to bottom matches canvas.
-  const hasPositions = childIds.every((id) => nodeById.get(id)?.position != null)
-  if (hasPositions) {
-    return childIds.slice().sort((a, b) => nodeY(nodeById, a) - nodeY(nodeById, b))
-  }
-
+  // Connection-list order is sibling SoT (matches canvas after in-place insert).
   return sortMindMapChildIds(childIds)
 }
 
@@ -77,7 +60,7 @@ function buildNode(
 ): MindMapOutlineNode | null {
   const node = nodeById.get(nodeId)
   if (!node) return null
-  const childIds = sortOutlineChildIds(nodeId, childrenMap.get(nodeId) ?? [], nodeById)
+  const childIds = sortOutlineChildIds(nodeId, childrenMap.get(nodeId) ?? [])
   return {
     id: nodeId,
     text: getNodeText(node) || nodeId,

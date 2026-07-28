@@ -1,23 +1,28 @@
 import { createPinia, setActivePinia } from 'pinia'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { shouldSkipLibraryReloadDuringGeneration } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
+import {
+  shouldSkipLibraryReloadDuringGeneration,
+  shouldSkipLibraryReloadForActiveDiagram,
+} from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
 import { useLLMResultsStore } from '@/stores/llmResults'
 
-describe('shouldSkipLibraryReloadDuringGeneration', () => {
-  it('skips when generating and route id matches active diagram', () => {
+describe('shouldSkipLibraryReloadForActiveDiagram', () => {
+  it('skips when route id matches the already-active diagram (first autosave URL sync)', () => {
+    expect(shouldSkipLibraryReloadForActiveDiagram('diag-1', 'diag-1')).toBe(true)
+    // Generating flag must not be required — Enter edits also hit this path.
+    expect(shouldSkipLibraryReloadDuringGeneration(false, 'diag-1', 'diag-1')).toBe(true)
     expect(shouldSkipLibraryReloadDuringGeneration(true, 'diag-1', 'diag-1')).toBe(true)
   })
 
-  it('does not skip when generating but switching to another diagram', () => {
+  it('does not skip when switching to another diagram', () => {
+    expect(shouldSkipLibraryReloadForActiveDiagram('diag-2', 'diag-1')).toBe(false)
     expect(shouldSkipLibraryReloadDuringGeneration(true, 'diag-2', 'diag-1')).toBe(false)
   })
 
-  it('does not skip when not generating', () => {
-    expect(shouldSkipLibraryReloadDuringGeneration(false, 'diag-1', 'diag-1')).toBe(false)
-  })
-
   it('does not skip when active diagram is unset', () => {
+    expect(shouldSkipLibraryReloadForActiveDiagram('diag-1', null)).toBe(false)
     expect(shouldSkipLibraryReloadDuringGeneration(true, 'diag-1', null)).toBe(false)
   })
 })

@@ -22,7 +22,6 @@ import os
 import signal
 import time
 from contextlib import asynccontextmanager
-from typing import Optional
 
 import httpx
 from fastapi import FastAPI
@@ -30,11 +29,11 @@ from fastapi import FastAPI
 from agents.inline_recommendations import start_inline_rec_cleanup_scheduler
 from config.celery import CeleryStartupError, init_celery_worker_check
 from config.settings import config
-from services.dify.dify_health_poller import start_dify_health_poller
-from services.dify.dify_server_schema import clear_dify_server_schema_cache
 from services.auth.geoip_country import log_geolite_country_mmdb_startup_status
 from services.auth.sms_middleware import get_sms_middleware
 from services.auth.sms_service import SMS_NOTIFICATION_RATE_LIMIT_MESSAGE
+from services.dify.dify_health_poller import start_dify_health_poller
+from services.dify.dify_server_schema import clear_dify_server_schema_cache
 from services.infrastructure.lifecycle.app_runtime import set_app_start_time
 from services.infrastructure.lifecycle.lifespan_collab_integration import (
     start_online_collab_subsystem_async,
@@ -62,31 +61,32 @@ from services.infrastructure.security.crowdsec_blocklist_service import (
     apply_crowdsec_baseline_from_file_async,
     crowdsec_blocklist_sync_enabled,
 )
-from services.infrastructure.sync.crowdsec_cos_sync import merge_crowdsec_blocklist_for_role
 from services.infrastructure.security.fail2ban_integration.startup_gate import (
     enforce_fail2ban_startup_or_exit,
 )
 from services.infrastructure.security.production_secrets_guard import enforce_production_security_guards
+from services.infrastructure.sync.cos_mirror_scheduler import (
+    run_cos_mirror_startup,
+    start_cos_mirror_scheduler,
+)
+from services.infrastructure.sync.cos_sync_env import cos_sync_enabled, is_cos_consumer
+from services.infrastructure.sync.crowdsec_cos_sync import merge_crowdsec_blocklist_for_role
 from services.infrastructure.utils.browser import log_browser_diagnostics
 from services.infrastructure.utils.launch_commands import lines_playwright_startup_critical
+from services.knowledge.doc_summary_temp import start_doc_summary_tmp_cleanup_scheduler
 from services.llm import llm_service
 from services.llm.qdrant_startup import QdrantStartupError, init_qdrant_sync
+from services.monitoring.error_retention_scheduler import start_error_retention_scheduler
 from services.redis.cache.redis_api_key_usage_flush import start_api_key_usage_flush_scheduler
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_distributed_lock import (
     acquire_startup_sms_notification_lock,
     release_startup_sms_notification_lock,
 )
-from services.infrastructure.sync.cos_mirror_scheduler import (
-    run_cos_mirror_startup,
-    start_cos_mirror_scheduler,
-)
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from services.monitoring.error_retention_scheduler import start_error_retention_scheduler
-from services.knowledge.doc_summary_temp import start_doc_summary_tmp_cleanup_scheduler
-from services.utils.temp_image_cleaner import start_cleanup_scheduler
 from services.utils.temp_export_cleaner import start_export_cleanup_scheduler
+from services.utils.temp_image_cleaner import start_cleanup_scheduler
 from utils.auth import AUTH_MODE, warmup_jwt_secret_async
 from utils.auth.config import ADMIN_PHONES, TRUSTED_PROXY_IPS
 from utils.auth.request_helpers import describe_trusted_proxy_config
@@ -226,27 +226,34 @@ async def lifespan(fastapi_app: FastAPI):
         logger.debug("[LIFESPAN] Signal handlers registered")
         _log_security_startup_posture()
         enforce_production_security_guards()
-        _log_geolite_country_mmdb_startup_status()
         enforce_fail2ban_startup_or_exit()
 
     # Initialize Redis (REQUIRED for caching, rate limiting, sessions)
     # Application will exit if Redis is not available
     await lifespan_init_redis_phase(is_main_worker)
 
-    await apply_blacklist_baseline_from_file_async()
-    await apply_crowdsec_baseline_from_file_async()
-    if crowdsec_blocklist_sync_enabled():
-        try:
-            await merge_crowdsec_blocklist_for_role()
-        except (*BACKGROUND_INFRA_ERRORS, httpx.HTTPError) as crowdsec_exc:
-            if is_main_worker:
-                logger.warning("[CrowdSec] Startup blocklist merge failed: %s", crowdsec_exc)
-
     try:
         await run_cos_mirror_startup()
     except BACKGROUND_INFRA_ERRORS as cos_mirror_exc:
         if is_main_worker:
-            logger.warning("[COSMirror] Startup hook failed: %s", cos_mirror_exc)
+            logger.warning("[COSMirror] Startup sync failed: %s", cos_mirror_exc)
+
+    if is_main_worker:
+        _log_geolite_country_mmdb_startup_status()
+
+    consumer_cos_sync = cos_sync_enabled() and is_cos_consumer()
+    if not consumer_cos_sync:
+        await apply_blacklist_baseline_from_file_async()
+        await apply_crowdsec_baseline_from_file_async()
+        if crowdsec_blocklist_sync_enabled():
+            try:
+                await merge_crowdsec_blocklist_for_role()
+            except (*BACKGROUND_INFRA_ERRORS, httpx.HTTPError) as crowdsec_exc:
+                if is_main_worker:
+                    logger.warning("[CrowdSec] Startup blocklist merge failed: %s", crowdsec_exc)
+    else:
+        await apply_blacklist_baseline_from_file_async()
+        await apply_crowdsec_baseline_from_file_async()
 
     clear_ip_reputation_sismember_cache()
 
@@ -276,7 +283,7 @@ async def lifespan(fastapi_app: FastAPI):
             try:
                 CriticalAlertService.send_startup_failure_alert_sync(
                     component="Qdrant",
-                    error_message=f"Qdrant startup failed: {str(e)}",
+                    error_message=f"Qdrant startup failed: {e!s}",
                     details=(
                         "Application cannot start without Qdrant when Knowledge Space is enabled. "
                         "Check Qdrant connection and configuration."
@@ -304,7 +311,7 @@ async def lifespan(fastapi_app: FastAPI):
             try:
                 CriticalAlertService.send_startup_failure_alert_sync(
                     component="Celery",
-                    error_message=f"Celery worker unavailable: {str(e)}",
+                    error_message=f"Celery worker unavailable: {e!s}",
                     details=(
                         "Application cannot start without Celery worker when Knowledge Space is enabled. "
                         "Start Celery worker: celery -A config.celery worker --loglevel=info"
@@ -335,7 +342,7 @@ async def lifespan(fastapi_app: FastAPI):
         try:
             CriticalAlertService.send_startup_failure_alert_sync(
                 component="Dependencies",
-                error_message=f"System dependency check failed: {str(e)}",
+                error_message=f"System dependency check failed: {e!s}",
                 details=("Required system dependencies are missing. Check Tesseract OCR installation."),
             )
         except BACKGROUND_INFRA_ERRORS as alert_error:
@@ -379,7 +386,7 @@ async def lifespan(fastapi_app: FastAPI):
         except BACKGROUND_INFRA_ERRORS as e:
             logger.warning("Could not verify Playwright installation: %s", e)
 
-    api_key_usage_flush_task: Optional[asyncio.Task] = None
+    api_key_usage_flush_task: asyncio.Task | None = None
     try:
         api_key_usage_flush_task = start_api_key_usage_flush_scheduler()
         if is_main_worker:
@@ -426,8 +433,8 @@ async def lifespan(fastapi_app: FastAPI):
     # Start workshop subsystem: cleanup scheduler + Lua script preload + idle monitor.
     workshop_cleanup_task, session_manager_task = await start_online_collab_subsystem_async(is_main_worker)
 
-    worker_perf_task: Optional[asyncio.Task[None]] = None
-    worker_perf_stop: Optional[asyncio.Event] = None
+    worker_perf_task: asyncio.Task[None] | None = None
+    worker_perf_stop: asyncio.Event | None = None
     try:
         worker_perf_task, worker_perf_stop = start_worker_perf_heartbeat()
     except BACKGROUND_INFRA_ERRORS as e:
@@ -447,7 +454,7 @@ async def lifespan(fastapi_app: FastAPI):
     # Backs up database daily, keeps configurable retention (default: 2 backups)
     # Uses Redis distributed lock to ensure only ONE worker runs backups across all workers
     # All workers start the scheduler, but only the lock holder executes backups
-    backup_scheduler_task: Optional[asyncio.Task] = None
+    backup_scheduler_task: asyncio.Task | None = None
     try:
         backup_scheduler_task = asyncio.create_task(start_backup_scheduler())
         # Don't log here - the scheduler will log whether it acquired the lock
@@ -455,21 +462,21 @@ async def lifespan(fastapi_app: FastAPI):
         if worker_id == "0" or not worker_id:
             logger.warning("Failed to start backup scheduler: %s", e)
 
-    abuseipdb_scheduler_task: Optional[asyncio.Task] = None
+    abuseipdb_scheduler_task: asyncio.Task | None = None
     try:
         abuseipdb_scheduler_task = asyncio.create_task(start_abuseipdb_blacklist_scheduler())
     except BACKGROUND_INFRA_ERRORS as e:
         if worker_id == "0" or not worker_id:
             logger.warning("Failed to start AbuseIPDB blacklist scheduler: %s", e)
 
-    cos_mirror_task: Optional[asyncio.Task] = None
+    cos_mirror_task: asyncio.Task | None = None
     try:
         cos_mirror_task = asyncio.create_task(start_cos_mirror_scheduler())
     except BACKGROUND_INFRA_ERRORS as e:
         if worker_id == "0" or not worker_id:
             logger.warning("Failed to start COS mirror scheduler: %s", e)
 
-    dify_health_poller_task: Optional[asyncio.Task] = None
+    dify_health_poller_task: asyncio.Task | None = None
     try:
         clear_dify_server_schema_cache()
         dify_health_poller_task = asyncio.create_task(start_dify_health_poller())
@@ -486,7 +493,7 @@ async def lifespan(fastapi_app: FastAPI):
     # Start process monitor (health monitoring and auto-restart for Qdrant, Celery, Redis)
     # Uses Redis distributed lock to ensure only ONE worker monitors across all workers
     # All workers start the monitor, but only the lock holder performs monitoring
-    process_monitor_task: Optional[asyncio.Task] = None
+    process_monitor_task: asyncio.Task | None = None
     try:
         process_monitor = get_process_monitor()
         process_monitor_task = asyncio.create_task(process_monitor.start())
@@ -500,7 +507,7 @@ async def lifespan(fastapi_app: FastAPI):
     # Start health monitor (periodic health checks via /health/all endpoint)
     # Uses Redis distributed lock to ensure only ONE worker monitors across all workers
     # All workers start the monitor, but only the lock holder performs monitoring
-    health_monitor_task: Optional[asyncio.Task] = None
+    health_monitor_task: asyncio.Task | None = None
     try:
         health_monitor = get_health_monitor()
         health_monitor_task = asyncio.create_task(health_monitor.start())

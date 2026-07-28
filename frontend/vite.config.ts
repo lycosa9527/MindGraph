@@ -135,6 +135,29 @@ const elementPlusResolver = ElementPlusResolver({
   importStyle: 'css',
 })
 
+/** pdfjs-dist loads its worker via `import(this.workerSrc)`; Vite needs `@vite-ignore` on that call. */
+function pdfjsViteIgnoreDynamicImportPlugin(): Plugin {
+  const workerImportPattern =
+    /import\(\s*\/\*webpackIgnore:\s*true\*\/\s*this\.workerSrc\s*\)/g
+  const workerImportReplacement =
+    'import(/* webpackIgnore: true */ /* @vite-ignore */ this.workerSrc)'
+  const pdfEntryIdPattern = /pdfjs-dist[/\\].*[/\\]pdf\.mjs(?:$|\?)/
+
+  return {
+    name: 'pdfjs-vite-ignore-dynamic-import',
+    transform(code, id) {
+      if (!pdfEntryIdPattern.test(id) || !code.includes('this.workerSrc')) {
+        return null
+      }
+      const next = code.replace(workerImportPattern, workerImportReplacement)
+      if (next === code) {
+        return null
+      }
+      return { code: next, map: null }
+    },
+  }
+}
+
 /** Dev-only: inject WSL/custom API origin into CSP when VITE_BACKEND_HOST is not localhost:9527. */
 function devCspConnectSrcPlugin(apiOrigin: string): Plugin {
   return {
@@ -173,6 +196,9 @@ export default defineConfig({
       'vue-demi',
       'pdfjs-dist',
     ],
+    rolldownOptions: {
+      plugins: [pdfjsViteIgnoreDynamicImportPlugin()],
+    },
   },
   plugins: [
     devCspConnectSrcPlugin(backendOrigin),

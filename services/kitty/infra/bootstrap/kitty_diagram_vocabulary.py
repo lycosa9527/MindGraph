@@ -130,7 +130,7 @@ Call exactly ONE tool here. Multi-branch / multi-mutation one-sentence mind-map 
 one-sentence edit agent — not this voice router. auto_complete here fills the WHOLE
 diagram; there is no auto_complete_branch tool on this path.
 - update_center — change topic/title/center (e.g. 「主题是运动会」, 「change topic to Cars」)
-- add_node — add one node (text required; optional 0-based position)
+- add_node — add one node (text required; optional parent_ref / side / after_node_id / insert_index)
 - update_node — change an existing node's text (node_identifier + new_text)
 - delete_node — remove a node (node_identifier: index label like 第一个 / node text / id)
 - select_node — highlight a node on canvas

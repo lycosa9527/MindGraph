@@ -30,11 +30,47 @@ sudo apt autoremove -y
 
 ### 3. Install nvm
 
+**Default (GitHub):**
+
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 nvm --version
+```
+
+**Mirror (Gitee — when GitHub is slow or blocked):** clone nvm from Gitee; download Node binaries via npmmirror. Do **not** point MindGraph `npm` at npmmirror (see step 5).
+
+Gitee raw URLs redirect — use **`curl -fsSL`** (the `-L` follows the redirect; without it, bash runs a 409-byte HTML page and fails with `line 1: a: No such file or directory`):
+
+```bash
+export NVM_SOURCE=https://gitee.com/mirrors/nvm.git
+export NVM_NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
+curl -fsSL https://gitee.com/mirrors/nvm/raw/master/install.sh | bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+nvm --version
+```
+
+**Git fallback** (if curl still fails):
+
+```bash
+export NVM_DIR="$HOME/.nvm"
+export NVM_NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
+git clone https://gitee.com/mirrors/nvm.git "$NVM_DIR"
+cd "$NVM_DIR" && git checkout v0.40.3
+grep -q 'nvm.sh' ~/.bashrc || cat >> ~/.bashrc <<'EOF'
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+EOF
+. "$NVM_DIR/nvm.sh"
+nvm --version
+```
+
+Add the mirror env vars to `~/.bashrc` if you use them often:
+
+```bash
+export NVM_NODEJS_ORG_MIRROR=https://npmmirror.com/mirrors/node
 ```
 
 ### 4. Install latest Node and npm
@@ -170,3 +206,4 @@ Do **not** rely on `npm run lint:fix` to mass-convert the tree — fix Git + edi
 | Global npm upgrade still fails | Fix step 4 first; ensure `npm -v` works before `npm install -g npm@latest` |
 | `npm warn allow-scripts` after install | Pull latest `frontend/package.json`, or run `npm approve-scripts` / update `allowScripts` (see step 5) |
 | `EALLOWREMOTE` / refusing registry tarball URLs | Ensure Node ≥26 and pull latest `frontend/package-lock.json` + `frontend/.npmrc`. Do not set a global npmmirror registry for this repo. Temporary unblock only: `npm install --allow-remote=all` |
+| `libatomic.so.1: cannot open shared object file` | `sudo apt update && sudo apt install -y libatomic1` (Node 26 on Ubuntu/WSL) |

@@ -35,12 +35,15 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from urllib.parse import urlparse
 
 import psycopg
+from sqlalchemy import text
 
 from config.database import DATABASE_URL, init_db, libpq_database_url
+from db_rls.roles_sql import build_grants_sql
+from scripts.db.rls_roles_bootstrap import ensure_postgresql_extensions
 from services.utils.error_types import (
     BACKGROUND_INFRA_ERRORS,
     DATABASE_ERRORS,
@@ -60,7 +63,10 @@ from services.utils.pg_client_binaries import (
     pg_tools_connection_username,
     pg_tools_libpq_url,
 )
-from services.utils.pg_restore_prep import wipe_public_schema_before_restore
+from services.utils.pg_restore_prep import (
+    build_pg_restore_toc_for_migrate_role,
+    wipe_public_schema_before_restore,
+)
 
 try:
     from services.infrastructure.process.process_manager import start_postgresql_server
@@ -119,7 +125,7 @@ DUMP_PREFIX = "mindgraph.postgresql"
 DUMP_EXT = ".dump"
 
 
-def _find_process_on_port(port: int) -> Optional[int]:
+def _find_process_on_port(port: int) -> int | None:
     """
     Find the PID of the process using the specified port.
     Cross-platform: netstat on Windows, lsof on Linux/Mac.
@@ -156,7 +162,7 @@ def _find_process_on_port(port: int) -> Optional[int]:
     return None
 
 
-def _get_process_name(pid: int) -> Optional[str]:
+def _get_process_name(pid: int) -> str | None:
     """Get process name for a given PID. Cross-platform."""
     try:
         if sys.platform == "win32":
@@ -222,12 +228,12 @@ def _port_has_listener(host: str, port: int, timeout: float = 1.0) -> bool:
         return False
 
 
-def _find_postgres_processes() -> List[str]:
+def _find_postgres_processes() -> list[str]:
     """
     Find PostgreSQL process PIDs by name. Used when port is in use but
     lsof/netstat cannot find the process (e.g. different namespace, permissions).
     """
-    pids: List[str] = []
+    pids: list[str] = []
     try:
         if sys.platform == "win32":
             result = subprocess.run(
@@ -269,7 +275,7 @@ def _can_connect_postgresql(db_url: str, timeout: int = 2) -> bool:
         return False
 
 
-def _get_connection_error(db_url: str, timeout: int = 2) -> Optional[str]:
+def _get_connection_error(db_url: str, timeout: int = 2) -> str | None:
     """Try to connect and return the error message for diagnostics."""
     libpq_url = libpq_database_url(db_url)
     try:
@@ -338,7 +344,7 @@ def _try_start_postgresql() -> bool:
         return False
 
 
-def _connection_error_is_password_reject(conn_err: Optional[str]) -> bool:
+def _connection_error_is_password_reject(conn_err: str | None) -> bool:
     """True when the server responded but rejected the password (daemon is up)."""
     if not conn_err:
         return False
@@ -466,7 +472,7 @@ def ensure_postgresql_running(db_url: str) -> bool:
 find_pg_binary = find_pg_client_binary
 
 
-def _prepare_pg_dump_cli() -> Optional[int]:
+def _prepare_pg_dump_cli() -> int | None:
     """
     Bootstrap RLS env for standalone CLI dump/import.
 
@@ -498,7 +504,7 @@ def log_db_summary(tables: int, columns: int, records: int) -> None:
 class DumpImportProgress:
     """Progress bar for dump/import operations. Uses Rich when available and TTY."""
 
-    def __init__(self, mode: str, total_stages: int, stage_names: Dict[int, str]):
+    def __init__(self, mode: str, total_stages: int, stage_names: dict[int, str]):
         """init  ."""
         self.mode = mode
         self.total_stages = total_stages
@@ -542,7 +548,7 @@ class DumpImportProgress:
         if self.use_rich and self.progress:
             self.progress.__exit__(exc_type, exc_val, exc_tb)
 
-    def update(self, stage: int, description: Optional[str] = None) -> None:
+    def update(self, stage: int, description: str | None = None) -> None:
         """Update progress to given stage."""
         stage_name = description or self.stage_names.get(stage, f"Stage {stage}")
         if self.use_rich and self.progress and self.task_id is not None:
@@ -601,7 +607,7 @@ def verify_dump(backup_path: Path) -> bool:
 def run_restore(
     db_url: str,
     backup_path: Path,
-    db_engine: Optional[Any] = None,
+    db_engine: Any | None = None,
 ) -> bool:
     """
     Run pg_restore. Overwrites existing data.
@@ -620,24 +626,52 @@ def run_restore(
     if not wipe_public_schema_before_restore(db_url, db_engine):
         return False
 
+    ext_ok, ext_msg = ensure_postgresql_extensions(db_url, allow_password_prompt=False)
+    if not ext_ok:
+        ext_ok, ext_msg = ensure_postgresql_extensions(db_url, allow_password_prompt=True)
+    if not ext_ok:
+        logger.warning(
+            "Could not pre-install PostgreSQL extensions before restore: %s. "
+            "If restore fails on CREATE EXTENSION, run: "
+            'sudo -u postgres psql -d mindgraph -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements; '
+            'CREATE EXTENSION IF NOT EXISTS pg_trgm;"',
+            ext_msg,
+        )
+
+    toc_path = build_pg_restore_toc_for_migrate_role(
+        backup_path,
+        find_pg_restore=find_pg_binary,
+    )
+
     cmd = [
         pg_restore,
         "--no-owner",
         "--single-transaction",
         "-d",
         libpq_database_url(db_url),
-        str(backup_path),
     ]
+    if toc_path is not None:
+        cmd.extend(["-L", str(toc_path)])
+    cmd.append(str(backup_path))
     result = subprocess.run(cmd, capture_output=True, timeout=3600, check=False, text=True)
 
     if result.returncode != 0:
         stderr = result.stderr or ""
         logger.error("pg_restore failed (exit %d): %s", result.returncode, stderr[:1000])
         return False
+
+    if db_engine is not None:
+        try:
+            with db_engine.begin() as conn:
+                conn.execute(text(build_grants_sql()))
+            logger.info("Re-applied RLS role grants after pg_restore")
+        except DATABASE_ERRORS as exc:
+            logger.warning("Could not re-apply grants after restore: %s", exc)
+
     return True
 
 
-def list_dumps(backup_dir: Optional[Path] = None) -> List[Path]:
+def list_dumps(backup_dir: Path | None = None) -> list[Path]:
     """List dump files in backup dir, newest first."""
     bdir = backup_dir or BACKUP_DIR
     if not bdir.exists():
@@ -647,7 +681,7 @@ def list_dumps(backup_dir: Optional[Path] = None) -> List[Path]:
     return dumps
 
 
-def select_dump_file(backup_dir: Optional[Path] = None) -> Optional[Path]:
+def select_dump_file(backup_dir: Path | None = None) -> Path | None:
     """Let user select dump file from backup. Returns Path or None."""
     bdir = backup_dir or BACKUP_DIR
     dumps = list_dumps(bdir)
@@ -753,7 +787,7 @@ def dump_command(live: bool) -> int:
     return 0
 
 
-def _read_last_import_timestamp(backup_dir: Path) -> Optional[str]:
+def _read_last_import_timestamp(backup_dir: Path) -> str | None:
     """Read last import timestamp from backup dir. Returns ISO string or None."""
     path = backup_dir / ".last_import_timestamp"
     if not path.exists():
@@ -782,7 +816,7 @@ def _format_timestamp(ts: str) -> str:
         return ts
 
 
-def _confirm_overwrite(dump_ts: str, last_import_ts: Optional[str]) -> bool:
+def _confirm_overwrite(dump_ts: str, last_import_ts: str | None) -> bool:
     """
     Ask user to confirm overwrite. Uses timestamp comparison for prompt message.
     Returns True to proceed. Full words only.
@@ -820,9 +854,9 @@ def _confirm_overwrite(dump_ts: str, last_import_ts: Optional[str]) -> bool:
 def import_command(
     live: bool,
     *,
-    db_url: Optional[str] = None,
-    db_engine: Optional[Any] = None,
-    backup_dir: Optional[Path] = None,
+    db_url: str | None = None,
+    db_engine: Any | None = None,
+    backup_dir: Path | None = None,
 ) -> int:
     """
     Import flow. Returns exit code. Uses timestamp comparison, prompts to overwrite.
@@ -844,7 +878,7 @@ def _import_command_body(
     *,
     db_url: str,
     stats_engine: Any,
-    backup_dir: Optional[Path],
+    backup_dir: Path | None,
 ) -> int:
     """Import flow implementation."""
     bdir = backup_dir or BACKUP_DIR
@@ -972,8 +1006,8 @@ def _import_command_body(
             prog.update(5, "Verifying counts")
             prog.update(6, "Complete")
 
-        missing_tables: List[str] = []
-        count_mismatches: List[Tuple[str, int, int]] = []
+        missing_tables: list[str] = []
+        count_mismatches: list[tuple[str, int, int]] = []
         for table, expected in expected_counts.items():
             actual = actual_counts.get(table, -1)
             if actual == -1:
@@ -1010,7 +1044,7 @@ def _import_command_body(
             stats_engine.dispose()
 
 
-def prompt_dump_or_import() -> Optional[str]:
+def prompt_dump_or_import() -> str | None:
     """Ask user: dump or import. Returns 'd' or 'i' or None to exit. Full words only."""
     while True:
         try:

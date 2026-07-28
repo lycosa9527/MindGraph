@@ -13,7 +13,7 @@ import {
 } from '@/config/mindMapThemes'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
-import { readEffectiveMindMapCanvasMode, readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { readEffectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import {
@@ -24,7 +24,10 @@ import {
 } from '../specLoader'
 import { useUIStore } from '../ui'
 import { getMindMapCurveExtents } from './events'
-import { snapshotMindMapCanvasBucket, hydrateMindMapCanvasStylesOnLoad } from './mindMapCanvasModeSwitch'
+import {
+  hydrateMindMapCanvasStylesOnLoad,
+  snapshotMindMapCanvasBucket,
+} from './mindMapCanvasModeSwitch'
 import { cancelMindMapPendingInlineEdit } from './mindMapOps'
 import { resyncMindMapConnectionStrokeColorsForActiveMode } from './mindMapStylePreservation'
 import type { DiagramContext, LoadFromSpecOptions } from './types'
@@ -81,13 +84,15 @@ export function useSpecIOSlice(ctx: DiagramContext) {
 
     if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
       ctx.mindMapNodeWidths.value = {}
+      ctx.mindMapNodeHeights.value = {}
       ctx.mindMapTopicActualWidth.value = null
       ctx.mindMapTopicBranchGaps.value = null
       ctx.mindMapRecalcTrigger.value = 0
+      // Full spec load owns Y — drop sticky L1 Enter preserve from the prior canvas.
+      ctx.mindMapPreserveIncomingY.value = false
+      ctx.mindMapPreserveIncomingYNodeId.value = null
 
-      const themeFromSpec = getMindMapThemeForDiagram(
-        spec as { _mindmap_theme?: string | null }
-      )
+      const themeFromSpec = getMindMapThemeForDiagram(spec as { _mindmap_theme?: string | null })
       const diagramStyleId = (spec as { _mindmap_diagram_style?: string | null })
         ._mindmap_diagram_style
       nodesToStore = nodesToStore.map((node) => {

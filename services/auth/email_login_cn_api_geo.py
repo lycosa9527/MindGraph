@@ -11,9 +11,7 @@ Proprietary License
 
 from __future__ import annotations
 
-from typing import Optional
-
-from fastapi import Request, status
+from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
 from models.domain.auth import User
@@ -60,7 +58,7 @@ def _email_cn_geo_prereqs_ok(connection: HttpOrWebSocket) -> bool:
     return True
 
 
-async def _resolve_user_for_email_cn_geo(connection: HttpOrWebSocket) -> Optional[User]:
+async def _resolve_user_for_email_cn_geo(connection: HttpOrWebSocket) -> User | None:
     """Resolve user for email cn geo."""
     cached = getattr(connection.state, AUTH_CONTEXT_USER_ATTR, None)
     if cached is not None:
@@ -82,10 +80,15 @@ async def _resolve_user_for_email_cn_geo(connection: HttpOrWebSocket) -> Optiona
     if not account:
         return None
     http_request = connection if isinstance(connection, Request) else None
-    return await validate_user_token(token, account, request=http_request)
+    # Soft-resolve only: invalid/expired mgat_ must not crash ASGI middleware.
+    # Downstream auth returns a clean 401 (same pattern as resolve_authenticated_user_optional).
+    try:
+        return await validate_user_token(token, account, request=http_request)
+    except HTTPException:
+        return None
 
 
-async def maybe_enforce_email_login_cn_geo_api_async(connection: HttpOrWebSocket) -> Optional[JSONResponse]:
+async def maybe_enforce_email_login_cn_geo_api_async(connection: HttpOrWebSocket) -> JSONResponse | None:
     """
     Block overseas email accounts from CN IPs on API usage (JWT or mgat_), matching
     browser email login behavior.

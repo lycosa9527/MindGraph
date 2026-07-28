@@ -10,6 +10,7 @@ from services.utils import tencent_cos_client as cos_mod
 
 
 def test_cos_browser_csp_sources_exact_when_bucket_region_set(monkeypatch) -> None:
+    """Exact COS host-sources when bucket and region are configured."""
     monkeypatch.setattr(cos_mod, "COS_BUCKET", "mindgraph-1356113246")
     monkeypatch.setattr(cos_mod, "COS_REGION", "ap-beijing")
     assert cos_mod.cos_browser_csp_sources() == (
@@ -19,12 +20,14 @@ def test_cos_browser_csp_sources_exact_when_bucket_region_set(monkeypatch) -> No
 
 
 def test_cos_browser_csp_sources_wildcard_fallback(monkeypatch) -> None:
+    """Wildcard COS host-sources when bucket is unset."""
     monkeypatch.setattr(cos_mod, "COS_BUCKET", "")
     monkeypatch.setattr(cos_mod, "COS_REGION", "ap-beijing")
     assert cos_mod.cos_browser_csp_sources() == ("https://*.myqcloud.com https://*.tencentcos.cn")
 
 
 def test_strip_document_csp_meta_removes_multiline_tag() -> None:
+    """Strip multiline CSP meta tags from SPA HTML."""
     html = (
         "<!doctype html><head>"
         '<meta charset="UTF-8" />'
@@ -41,6 +44,7 @@ def test_strip_document_csp_meta_removes_multiline_tag() -> None:
 
 
 def test_inject_nonce_then_strip_meta_keeps_script_nonce() -> None:
+    """Nonce injection survives CSP meta strip for script tags."""
     html = (
         "<!doctype html><head>"
         '<meta http-equiv="Content-Security-Policy" '

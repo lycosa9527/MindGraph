@@ -8,7 +8,6 @@ import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import type { DiagramData, DiagramNode, DiagramType, HistoryEntry } from '@/types'
-import type { MindGraphNode } from '@/types/vueflow'
 
 import { useConceptMapRelationshipStore } from './conceptMapRelationship'
 import { useBraceMapOpsSlice } from './diagram/braceMapOps'
@@ -22,9 +21,12 @@ import { useFlowMapOpsSlice } from './diagram/flowMapOps'
 import { useHistorySlice } from './diagram/history'
 import { reconcileAfterHistoryRestore as reconcileDiagramAfterHistoryRestore } from './diagram/historyRestore'
 import { useLearningSheetSlice } from './diagram/learningSheet'
+import { reconcileMindMapCanvasModeSwitch } from './diagram/mindMapCanvasModeSwitch'
+import { syncMindMapStoreLayoutPositions } from './diagram/mindMapDisplayLayout'
 import { useMindMapLayoutSlice } from './diagram/mindMapLayout'
-import { createMindMapRecalcScheduler } from './diagram/mindMapRecalcScheduler'
 import { cancelMindMapPendingInlineEdit, useMindMapOpsSlice } from './diagram/mindMapOps'
+import { createMindMapRecalcScheduler } from './diagram/mindMapRecalcScheduler'
+import { resyncMindMapConnectionStrokeColorsForActiveMode } from './diagram/mindMapStylePreservation'
 import { useMultiFlowLayoutSlice } from './diagram/multiFlowLayout'
 import { useNodeDimensionSlice } from './diagram/nodeDimensionSlice'
 import { useNodeManagementSlice } from './diagram/nodeManagement'
@@ -35,10 +37,8 @@ import { useSpecIOSlice } from './diagram/specIO'
 import { useTitleSlice } from './diagram/titleManagement'
 import { useTreeMapOpsSlice } from './diagram/treeMapOps'
 import type { DiagramContext, MindMapCurveExtents } from './diagram/types'
-import { reconcileMindMapCanvasModeSwitch } from './diagram/mindMapCanvasModeSwitch'
-import { resyncMindMapConnectionStrokeColorsForActiveMode } from './diagram/mindMapStylePreservation'
-import type { MindMapCanvasMode } from './ui'
 import { useVueFlowIntegrationSlice } from './diagram/vueFlowIntegration'
+import type { MindMapCanvasMode } from './ui'
 
 export { subscribeToDiagramEvents } from './diagram/events'
 export type {
@@ -70,6 +70,8 @@ export const useDiagramStore = defineStore('diagram', () => {
   const mindMapRecalcTrigger = ref(0)
   const mindMapTopicBranchGaps = ref<{ left: number; right: number } | null>(null)
   const mindMapPendingEditNodeId = ref<string | null>(null)
+  const mindMapPreserveIncomingY = ref(false)
+  const mindMapPreserveIncomingYNodeId = ref<string | null>(null)
   const nodeDimensions = ref<Record<string, { width: number; height: number }>>({})
   const layoutRecalcTrigger = ref(0)
   const sessionEditCount = ref(0)
@@ -112,6 +114,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     mindMapRecalcTrigger,
     mindMapTopicBranchGaps,
     mindMapPendingEditNodeId,
+    mindMapPreserveIncomingY,
+    mindMapPreserveIncomingYNodeId,
     nodeDimensions,
     layoutRecalcTrigger,
     sessionEditCount,
@@ -119,7 +123,9 @@ export const useDiagramStore = defineStore('diagram', () => {
     collabForeignLockedNodeIds,
   } as DiagramContext
 
-  ctx.scheduleMindMapRecalc = createMindMapRecalcScheduler(type, mindMapRecalcTrigger)
+  ctx.scheduleMindMapRecalc = createMindMapRecalcScheduler(type, mindMapRecalcTrigger, () =>
+    syncMindMapStoreLayoutPositions(ctx)
+  )
 
   // ?? Phase 2 slices ??
   const historySlice = useHistorySlice(ctx)
@@ -131,7 +137,17 @@ export const useDiagramStore = defineStore('diagram', () => {
   const learningSheetSlice = useLearningSheetSlice(ctx)
   const titleSlice = useTitleSlice(ctx)
 
-  const { pushHistory, canUndo, canRedo, undo, redo, clearHistory, clearRedoStack, seedHistoryBaseline, seedHistoryBaselineIfEmpty } = historySlice
+  const {
+    pushHistory,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    clearHistory,
+    clearRedoStack,
+    seedHistoryBaseline,
+    seedHistoryBaselineIfEmpty,
+  } = historySlice
   const {
     selectNodes,
     selectConnection,
@@ -148,8 +164,14 @@ export const useDiagramStore = defineStore('diagram', () => {
     clearCustomPosition,
     resetToAutoLayout,
   } = customPositionsSlice
-  const { saveNodeStyle, getNodeStyle, clearNodeStyle, clearAllNodeStyles, applyStylePreset, applyMindMapAppearance } =
-    nodeStylesSlice
+  const {
+    saveNodeStyle,
+    getNodeStyle,
+    clearNodeStyle,
+    clearAllNodeStyles,
+    applyStylePreset,
+    applyMindMapAppearance,
+  } = nodeStylesSlice
   const {
     isLearningSheet,
     hiddenAnswers,
@@ -402,6 +424,9 @@ export const useDiagramStore = defineStore('diagram', () => {
     mindMapNodeHeights.value = {}
     mindMapRecalcTrigger.value = 0
     mindMapTopicBranchGaps.value = null
+    mindMapPendingEditNodeId.value = null
+    mindMapPreserveIncomingY.value = false
+    mindMapPreserveIncomingYNodeId.value = null
     clearNodeDimensions()
     layoutRecalcTrigger.value = 0
     sessionEditCount.value = 0
@@ -551,11 +576,14 @@ export const useDiagramStore = defineStore('diagram', () => {
     setMindMapNodeWidth: setMindMapNodeWidthSlice,
     setMindMapNodeDimensions,
     clearMindMapNodeWidths,
+    mindMapTopicActualWidth,
     mindMapNodeWidths,
     mindMapNodeHeights,
     mindMapRecalcTrigger,
     mindMapTopicBranchGaps,
     mindMapPendingEditNodeId,
+    mindMapPreserveIncomingY,
+    mindMapPreserveIncomingYNodeId,
     nodeDimensions,
     layoutRecalcTrigger,
     setNodeDimensions: setNodeDimensionsSlice,

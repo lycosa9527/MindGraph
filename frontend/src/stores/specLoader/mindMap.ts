@@ -9,11 +9,14 @@ import {
   MINDMAP_TARGET_EXTENT,
 } from '@/composables/diagrams/layoutConfig'
 import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
+import {
+  buildMindMapChildrenMapByConnectionOrder,
+  mindMapNodePathKey,
+  sortMindMapNodeIdsByGlobalIndex,
+} from '@/stores/diagram/mindMapStylePreservation'
+import type { Connection, DiagramNode } from '@/types'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { readMindMapNodeUid } from '@/utils/mindMapNodeUid'
-import type { Connection, DiagramNode } from '@/types'
-
-import { mindMapNodePathKey } from '@/stores/diagram/mindMapStylePreservation'
 
 import { layoutMindMapSideLegacy } from './mindMapLegacyLayout'
 import type { MindMapBranchSpec } from './mindMapLegacyLayout'
@@ -23,21 +26,18 @@ import {
   estimateTopicNodeWidthForCanvasMode,
   measureBranchNodeHeightForCanvasMode,
 } from './mindMapMeasurements'
-import { layoutMindMapSideV2 } from './mindMapV2Layout'
-import type { SpecLoaderResult } from './types'
+import { measureMindMapUnderlineBoxMetrics as measureMindMapUnderlineBoxMetricsForCanvasMode } from './mindMapMeasurements'
 import {
+  type MindMapMeasureTypography,
   estimateNodeWidthWithTypography,
   estimateTopicNodeHeightWithTypography,
   estimateTopicNodeWidthWithTypography,
   hasCustomMindMapTypography,
   measureBranchNodeHeightWithTypography,
-  measureBranchNodeUnderlineHeightWithTypography,
   measureMindMapUnderlineBoxMetricsWithTypography,
-  type MindMapMeasureTypography,
 } from './mindMapTypographyMeasure'
-import {
-  measureMindMapUnderlineBoxMetrics as measureMindMapUnderlineBoxMetricsForCanvasMode,
-} from './mindMapMeasurements'
+import { layoutMindMapSideV2 } from './mindMapV2Layout'
+import type { SpecLoaderResult } from './types'
 
 export type { MindMapMeasureTypography }
 export type MindMapBranch = MindMapBranchSpec
@@ -151,7 +151,9 @@ export function normalizeMindMapHorizontalSymmetry(
     const center = getCenterX(node)
     const distFromCenter = side === 'left' ? topicCenterX - center : center - topicCenterX
     const newCenter =
-      side === 'left' ? topicCenterX - distFromCenter * scale : topicCenterX + distFromCenter * scale
+      side === 'left'
+        ? topicCenterX - distFromCenter * scale
+        : topicCenterX + distFromCenter * scale
     node.position.x = newCenter - nodeWidth / 2
   }
 
@@ -201,25 +203,13 @@ export function nodesAndConnectionsToMindMapSpec(
   const topicNode = nodes.find((n) => n.id === 'topic')
   const topic = topicNode?.text ?? ''
 
-  const childrenMap = new Map<string, string[]>()
-  connections.forEach((c) => {
-    if (!childrenMap.has(c.source)) {
-      childrenMap.set(c.source, [])
-    }
-    const sourceChildren = childrenMap.get(c.source)
-    if (sourceChildren) {
-      sourceChildren.push(c.target)
-    }
-  })
-
+  const childrenMap = buildMindMapChildrenMapByConnectionOrder(connections)
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
-
-  const sortByGlobalIndex = sortMindMapNodeIdsByGlobalIndex
 
   function buildBranch(nodeId: string): MindMapBranch | null {
     const node = nodeMap.get(nodeId)
     if (!node || nodeId === 'topic') return null
-    const childIds = (childrenMap.get(nodeId) ?? []).slice().sort(sortByGlobalIndex)
+    const childIds = childrenMap.get(nodeId) ?? []
     const children = childIds
       .map((id) => buildBranch(id))
       .filter((b): b is MindMapBranch => b !== null)
@@ -232,8 +222,8 @@ export function nodesAndConnectionsToMindMapSpec(
   }
 
   const topicChildIds = childrenMap.get('topic') ?? []
-  const rightIds = topicChildIds.filter((id) => id.startsWith('branch-r-')).sort(sortByGlobalIndex)
-  const leftIds = topicChildIds.filter((id) => id.startsWith('branch-l-')).sort(sortByGlobalIndex)
+  const rightIds = topicChildIds.filter((id) => id.startsWith('branch-r-'))
+  const leftIds = topicChildIds.filter((id) => id.startsWith('branch-l-'))
 
   const rightBranches = rightIds
     .map((id) => buildBranch(id))
@@ -251,24 +241,10 @@ export interface FindBranchResult {
   indexInParent: number
 }
 
-export function sortMindMapNodeIdsByGlobalIndex(a: string, b: string): number {
-  const aIdx = parseInt(a.split('-')[3] ?? '0', 10)
-  const bIdx = parseInt(b.split('-')[3] ?? '0', 10)
-  return aIdx - bIdx
-}
+export { sortMindMapNodeIdsByGlobalIndex }
 
 function buildMindMapChildrenMap(connections: Connection[]): Map<string, string[]> {
-  const childrenMap = new Map<string, string[]>()
-  connections.forEach((c) => {
-    if (!childrenMap.has(c.source)) {
-      childrenMap.set(c.source, [])
-    }
-    const sourceChildren = childrenMap.get(c.source)
-    if (sourceChildren) {
-      sourceChildren.push(c.target)
-    }
-  })
-  return childrenMap
+  return buildMindMapChildrenMapByConnectionOrder(connections)
 }
 
 function findBranchByPathKey(
@@ -325,9 +301,7 @@ export function findBranchByNodeId(
         result = { branch: branches[i], parentArray, indexInParent: i }
         return true
       }
-      const childIds = (childrenMap.get(currentId) ?? [])
-        .slice()
-        .sort(sortMindMapNodeIdsByGlobalIndex)
+      const childIds = childrenMap.get(currentId) ?? []
       const childBranches = branches[i].children
       if (childIds.length > 0 && childBranches && childBranches.length > 0) {
         if (walkLevel(childIds, childBranches, childBranches)) {
@@ -339,12 +313,8 @@ export function findBranchByNodeId(
   }
 
   const topicChildIds = childrenMap.get('topic') ?? []
-  const rightIds = topicChildIds
-    .filter((id) => id.startsWith('branch-r-'))
-    .sort(sortMindMapNodeIdsByGlobalIndex)
-  const leftIds = topicChildIds
-    .filter((id) => id.startsWith('branch-l-'))
-    .sort(sortMindMapNodeIdsByGlobalIndex)
+  const rightIds = topicChildIds.filter((id) => id.startsWith('branch-r-'))
+  const leftIds = topicChildIds.filter((id) => id.startsWith('branch-l-'))
 
   if (walkLevel(rightIds, rightBranches, rightBranches)) return result
   if (walkLevel(leftIds, leftBranches, leftBranches)) return result

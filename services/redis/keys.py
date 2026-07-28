@@ -43,7 +43,7 @@ TTL_API_KEY = 300  # 5 min
 # User API token cache  (redis_user_token_cache.py) — OpenClaw mgat_ tokens
 # ---------------------------------------------------------------------------
 USER_TOKEN_BY_HASH = "usertoken:hash:{hash}"
-TTL_USER_TOKEN = 604800  # 7 days (matches default token expiry)
+TTL_USER_TOKEN = 90 * 86_400  # 90 days (matches default token expiry)
 
 # ---------------------------------------------------------------------------
 # Diagram cache  (_redis_diagram_cache_helpers.py / redis_diagram_cache.py)

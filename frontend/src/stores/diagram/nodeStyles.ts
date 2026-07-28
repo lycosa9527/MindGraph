@@ -4,6 +4,8 @@ import {
   mindMapDiagramStyleUsesLayeredBranchColors,
   mindMapNodeShapeFromPreset,
 } from '@/config/mindMapDiagramStyles'
+import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
+import { type MindMapThemeId, getMindMapThemeById } from '@/config/mindMapThemes'
 import {
   applyRainbowMindMapColors,
   isRainbowMindMapTheme,
@@ -11,14 +13,9 @@ import {
   mindMapLayeredCenterTopicColors,
   syncRainbowMindMapConnectionColors,
 } from '@/config/mindMapVibrantThemes'
-import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
-import {
-  getMindMapThemeById,
-  type MindMapThemeId,
-} from '@/config/mindMapThemes'
 import type { DiagramNode, NodeStyle } from '@/types'
-import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 import {
   estimateNodeWidth as estimateMindMapBranchWidth,
@@ -130,6 +127,9 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     })
 
     if (shapeChanged) {
+      // Shape regime change: leave sticky L1-Enter preserve so Y can full-restack.
+      ctx.mindMapPreserveIncomingY.value = false
+      ctx.mindMapPreserveIncomingYNodeId.value = null
       ctx.scheduleMindMapRecalc()
     }
   }
@@ -164,19 +164,20 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
       if (!useTopic && layeredBranches) {
         branchColors = mindMapLayeredBranchColorsForNode(node.id, preset.borderColor)
       }
-      const centerTopic = layeredBranches && useTopic ? mindMapLayeredCenterTopicColors(preset) : null
+      const centerTopic =
+        layeredBranches && useTopic ? mindMapLayeredCenterTopicColors(preset) : null
 
       const mergedStyle: Partial<NodeStyle> = {
         ...(node.style || {}),
         backgroundColor: useTopic
-          ? centerTopic?.topicBackgroundColor ?? preset.topicBackgroundColor
-          : branchColors?.backgroundColor ?? preset.backgroundColor,
+          ? (centerTopic?.topicBackgroundColor ?? preset.topicBackgroundColor)
+          : (branchColors?.backgroundColor ?? preset.backgroundColor),
         textColor: useTopic
-          ? centerTopic?.topicTextColor ?? preset.topicTextColor
-          : branchColors?.textColor ?? preset.textColor,
+          ? (centerTopic?.topicTextColor ?? preset.topicTextColor)
+          : (branchColors?.textColor ?? preset.textColor),
         borderColor: useTopic
-          ? centerTopic?.topicBorderColor ?? preset.topicBorderColor
-          : branchColors?.borderColor ?? preset.borderColor,
+          ? (centerTopic?.topicBorderColor ?? preset.topicBorderColor)
+          : (branchColors?.borderColor ?? preset.borderColor),
       }
       const nodeIndex = nodes.findIndex((n) => n.id === node.id)
       if (nodeIndex !== -1) {

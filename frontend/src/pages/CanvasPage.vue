@@ -52,7 +52,7 @@ import {
 import CanvasCollabOverlay from '@/components/canvas/CanvasCollabOverlay.vue'
 import CanvasTranslateProgressBanner from '@/components/canvas/CanvasTranslateProgressBanner.vue'
 import LearningSheetExportNudge from '@/components/canvas/LearningSheetExportNudge.vue'
-import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
+import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import KittyCanvasAnchor from '@/components/kitty/KittyCanvasAnchor.vue'
 import { MindmatePanel, NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
@@ -76,11 +76,6 @@ import {
   canvasKittySeedQueryKeysPresent,
 } from '@/composables/canvasPage/applyCanvasKittySeedFromRoute'
 import { clearCanvasEphemeralSession } from '@/composables/canvasPage/clearCanvasEphemeralSession'
-import { handleKittyAutoCompleteBranchRequest } from '@/composables/kitty/handleKittyAutoCompleteBranchRequest'
-import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
-import { KITTY_CANVAS_OWNER_KEY } from '@/composables/kitty/kittyCanvasOwnerKey'
-import { registerKittyDiagramMutationBus } from '@/composables/kitty/registerKittyDiagramMutationBus'
-import { useKittyCanvasOwnerAgent } from '@/composables/kitty/useKittyCanvasOwnerAgent'
 import {
   VALID_DIAGRAM_TYPES,
   diagramTypeMap,
@@ -89,16 +84,15 @@ import {
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
 import { registerCanvasPageResetHandler } from '@/composables/canvasPage/registerCanvasPageResetHandler'
+import { shouldSkipLibraryReloadForActiveDiagram } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
-import { shouldSkipLibraryReloadDuringGeneration } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
 import { useCanvasPageMountedHandlers } from '@/composables/canvasPage/useCanvasPageMountedHandlers'
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import {
-  canvasVirtualKeyboardOpen,
   ensureCanvasVirtualKeyboardUiVersionSync,
   toggleCanvasVirtualKeyboard,
 } from '@/composables/canvasToolbar'
@@ -113,33 +107,36 @@ import {
 } from '@/composables/core/diagramMarkdownPipeline'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useMindMapRagBranchExpand } from '@/composables/editor/useMindMapRagBranchExpand'
-import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import {
-  createFileCenterActivePackage,
   FILE_CENTER_ACTIVE_PACKAGE_KEY,
+  createFileCenterActivePackage,
 } from '@/composables/fileCenter/useFileCenterActivePackage'
+import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
+import { handleKittyAutoCompleteBranchRequest } from '@/composables/kitty/handleKittyAutoCompleteBranchRequest'
 import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitty/kittyAddNodeWithRecommendations'
+import { KITTY_CANVAS_OWNER_KEY } from '@/composables/kitty/kittyCanvasOwnerKey'
 import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
+import { registerKittyDiagramMutationBus } from '@/composables/kitty/registerKittyDiagramMutationBus'
+import { useKittyCanvasOwnerAgent } from '@/composables/kitty/useKittyCanvasOwnerAgent'
+import { useKittyDesktopLiveSpecPublish } from '@/composables/kitty/useKittyDesktopLiveSpecPublish'
 import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesktopLlmModelPublish'
 import { useKittyDesktopSelectionPublish } from '@/composables/kitty/useKittyDesktopSelectionPublish'
-import { useKittyDesktopLiveSpecPublish } from '@/composables/kitty/useKittyDesktopLiveSpecPublish'
 import { useKittyDesktopVoicePhase } from '@/composables/kitty/useKittyDesktopVoicePhase'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
-import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import {
   learningSheetNeedsPresentationConfirm,
   resumeLearningSheetAfterPresentation,
   suspendLearningSheetForPresentation,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import {
   setPresentationDiagramEditLocked,
   setPresentationFullscreenRoot,
 } from '@/composables/presentation/presentationDiagramEdit'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
-import {
-  PRESENTATION_HIGHLIGHTER_PALETTE_TOOLBAR,
-} from '@/config/presentationHighlighter'
+import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
+import { PRESENTATION_HIGHLIGHTER_PALETTE_TOOLBAR } from '@/config/presentationHighlighter'
 import {
   PRESENTATION_LASER_SIZE_SCALE,
   type PresentationLaserSize,
@@ -446,8 +443,6 @@ const showZoomControls = computed(() => {
 
 const useMindMapV2 = useMindMapV2Chrome()
 
-const isMindMapCanvas = computed(() => isMindMapDiagramType(diagramStore.type))
-
 eventBus.onWithOwner(
   'mindmap:canvas_mode_changed',
   ({ previousMode, newMode }) => {
@@ -469,15 +464,11 @@ const fitViewOnInit = computed(() => {
 
 const featureKnowledgeSpaceFlag = computed(() => featureFlagsStore.getFeatureKnowledgeSpace())
 const fileCenterEnabled = computed(() =>
-  DOC_SUMMARY_LITE_UI
-    ? useMindMapV2.value
-    : featureKnowledgeSpaceFlag.value && useMindMapV2.value
+  DOC_SUMMARY_LITE_UI ? useMindMapV2.value : featureKnowledgeSpaceFlag.value && useMindMapV2.value
 )
 const fileCenterActivePackage = createFileCenterActivePackage(fileCenterEnabled)
 provide(FILE_CENTER_ACTIVE_PACKAGE_KEY, fileCenterActivePackage)
-const ragBranchExpandEnabled = computed(
-  () => fileCenterEnabled.value && !DOC_SUMMARY_LITE_UI
-)
+const ragBranchExpandEnabled = computed(() => fileCenterEnabled.value && !DOC_SUMMARY_LITE_UI)
 useMindMapRagBranchExpand(ragBranchExpandEnabled)
 
 const isMindMapPresentationMode = computed(
@@ -1080,15 +1071,9 @@ watch(
   },
   async (newId, oldId) => {
     if (newId && typeof newId === 'string' && newId !== oldId) {
-      // First AutoComplete save only syncs ?diagramId= — do not reload/clearCache or
-      // in-flight parallel LLM streams are aborted before they finish.
-      if (
-        shouldSkipLibraryReloadDuringGeneration(
-          llmResultsStore.isGenerating,
-          newId,
-          savedDiagramsStore.activeDiagramId
-        )
-      ) {
+      // First autosave / AutoComplete only syncs ?diagramId= onto the live canvas.
+      // Reloading renumbers mind-map ids (orphans Enter selection) and restacks Y.
+      if (shouldSkipLibraryReloadForActiveDiagram(newId, savedDiagramsStore.activeDiagramId)) {
         return
       }
       const loaded = await loadDiagramFromLibrary(newId)
@@ -1361,9 +1346,7 @@ onUnmounted(() => {
     <!-- Spotlight overlay (new canvas presentation rail) -->
     <Transition name="spotlight-fade">
       <div
-        v-if="
-          isMindMapPresentationMode && mindMapPresentationTool === 'spotlight'
-        "
+        v-if="isMindMapPresentationMode && mindMapPresentationTool === 'spotlight'"
         class="spotlight-overlay"
         :style="spotlightStyle"
         aria-hidden="true"
@@ -1527,7 +1510,7 @@ onUnmounted(() => {
 
       <!-- Diagram area - takes remaining space -->
       <div class="flex-1 min-w-0 flex flex-col relative">
-        <DiagramCanvas
+        <DiagramCanvasHost
           v-if="diagramStore.data"
           v-model:presentation-highlight-strokes="presentationHighlightStrokes"
           v-model:presentation-tool="presentationTool"
@@ -1539,7 +1522,9 @@ onUnmounted(() => {
           :show-minimap="false"
           :fit-view-on-init="fitViewOnInit"
           :concept-map-initial-topic-fit="false"
-          :hand-tool-active="showSimplifiedPresentationRail ? presentationHandPanMode : handToolActive"
+          :hand-tool-active="
+            showSimplifiedPresentationRail ? presentationHandPanMode : handToolActive
+          "
           :presentation-pointer-edit-mode="presentationPointerEditMode"
           :presentation-hand-pan-mode="presentationHandPanMode"
           :collab-locked-node-ids="collabLockedNodeIds"

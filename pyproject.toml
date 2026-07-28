@@ -9,6 +9,11 @@ exclude = [
     "**/build",
     "**/*.toml",
     "pyproject.toml",
+    # Local ESP-IDF / vendor trees (gitignored); keep CI/local analysis aligned.
+    "esp32",
+    "esp32/**",
+    "archive",
+    "archive/**",
 ]
 stubPath = "typings"
 # Miniconda env (conda activate python313 or mindgraph); .venv excluded from analysis
@@ -71,6 +76,9 @@ ignore-paths = [
     "prompts",
     # @generated bundled API strings; wrapping would churn large dict literals on regen.
     "models/domain/message_catalog/bundled_messages.py",
+    # Local ESP-IDF / vendor trees (gitignored).
+    "esp32",
+    "archive",
 ]
 
 # Output format
@@ -243,9 +251,17 @@ exclude = [
     "venv",
     "__pycache__",
     "node_modules",
+    "esp32",
+    "archive",
+    # Ruff 0.16+ formats fenced Python in Markdown by default; keep docs out of CI format gate.
+    "*.md",
+    "**/*.md",
 ]
 
 [tool.ruff.lint]
+# Pin pre-0.16 defaults (0.16 expanded defaults 59→413 rules). Revisit with a dedicated cleanup.
+# See https://astral.sh/blog/ruff-v0.16.0
+select = ["E4", "E7", "E9", "F"]
 # E402: imports after sys.path / env setup in scripts and some infra modules
 ignore = ["E402"]
 

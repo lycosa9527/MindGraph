@@ -65,6 +65,17 @@ export interface DiagramContext {
   mindMapTopicBranchGaps: Ref<{ left: number; right: number } | null>
   /** Node id that should enter inline edit after the next mount (mind-map add flows). */
   mindMapPendingEditNodeId: Ref<string | null>
+  /**
+   * When true, v2 display layout keeps incoming node Y (settle only, no full
+   * restack). Set on incremental L1 Enter; kept across measure/edit-end.
+   * Cleared on collapse/expand, diagram style shape switch, and full reload.
+   */
+  mindMapPreserveIncomingY: Ref<boolean>
+  /**
+   * Last L1 node id inserted in-place while {@link mindMapPreserveIncomingY}
+   * is held (diagnostics; cleared with the flag).
+   */
+  mindMapPreserveIncomingYNodeId: Ref<string | null>
 
   // Generic node dimension tracking (actual DOM-measured sizes)
   nodeDimensions: Ref<Record<string, { width: number; height: number }>>
@@ -103,4 +114,9 @@ export interface DiagramContext {
   setExpectedNodeCount: (count: number) => void
   /** Coalesce mind-map layout invalidations to one recalc per animation frame. */
   scheduleMindMapRecalc: () => void
+  /**
+   * v2 only: evaluate the sole layout computed and write XY/gaps into Pinia.
+   * Filled by the Vue Flow integration slice; sync must not recompute layout.
+   */
+  writeBackMindMapV2LayoutFromComputed?: () => void
 }

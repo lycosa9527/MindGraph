@@ -10,7 +10,6 @@
 import { nextTick, onMounted, onUnmounted } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import {
@@ -19,10 +18,16 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
-import { useDiagramStore } from '@/stores'
 import { consumeMindMapPostEditSiblingAnchor } from '@/composables/mindMap/mindMapCanvasEnterGuard'
+import { useDiagramStore } from '@/stores'
 import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { DiagramNode } from '@/types'
+import {
+  getLastMindMapSiblingInsertFailure,
+  isMindMapSiblingDebugEnabled,
+  recordMindMapSiblingInsertAttempt,
+} from '@/utils/mindMapSiblingDebug'
 
 export type UseNodeActionsOptions = {
   /** When false, primary add skips tree map (desktop toolbar shows "in development"). */
@@ -195,16 +200,35 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
 
-    const anchorId = consumeMindMapPostEditSiblingAnchor(diagramStore.selectedNodes[0])
+    const selectedId = diagramStore.selectedNodes[0]
+    const anchorId = consumeMindMapPostEditSiblingAnchor(selectedId)
+    if (isMindMapSiblingDebugEnabled()) {
+      recordMindMapSiblingInsertAttempt({
+        stage: 'toolbar_or_enter',
+        selectedId: selectedId ?? null,
+        resolvedAnchorId: anchorId,
+        selectedNodes: diagramStore.selectedNodes.slice(),
+      })
+    }
     if (!anchorId) {
+      if (isMindMapSiblingDebugEnabled()) {
+        console.warn('[MindMap sibling debug] no anchor', {
+          selectedId: selectedId ?? null,
+          selectedNodes: diagramStore.selectedNodes.slice(),
+        })
+      }
       notify.warning(t('canvas.toolbar.selectBranchForSibling'))
       return
     }
-    if (
-      diagramStore.addMindMapSibling(anchorId, t('canvas.toolbar.newBranch'))
-    ) {
+    if (diagramStore.addMindMapSibling(anchorId, t('canvas.toolbar.newBranch'))) {
       notify.success(t('canvas.toolbar.siblingAdded'))
     } else {
+      if (isMindMapSiblingDebugEnabled()) {
+        console.warn(
+          '[MindMap sibling debug] toast 无法添加同级节点',
+          getLastMindMapSiblingInsertFailure()
+        )
+      }
       notify.warning(t('canvas.toolbar.cannotAddSibling'))
     }
   }

@@ -4,6 +4,36 @@ Classic mind map canvas remains the **default** (`mindMapCanvasMode: legacy`). V
 (side toolbar, **Document Summary** (文档总结), orthogonal edges, subtree layout) is **opt-in** when
 `FEATURE_MINDMAP_V2_CANVAS=True` and the user selects the new canvas in Language settings.
 
+## Canvas component split (lazy-loaded shells)
+
+Mind maps mount through **`DiagramCanvasHost`** → **`MindMapCanvasRouter`**, which
+lazy-loads exactly one shell:
+
+| Shell | Chunk | Edge registry | Overlays |
+|-------|-------|---------------|----------|
+| `MindMapLegacyCanvas` | classic | `diagramCanvasEdgeTypesLegacy` (curved only) | none |
+| `MindMapV2Canvas` | v2 | `diagramCanvasEdgeTypesMindMapV2` (+ orthogonal) | `MindMapV2CanvasOverlays` |
+
+Each shell passes `mindMapVariant` into `DiagramCanvas` and **`provide`s
+`MIND_MAP_CANVAS_VARIANT_KEY`** so `TopicNode` / `BranchNode` use
+`useMindMapCanvasVisuals()` instead of re-resolving from the store on first paint.
+
+Non–mind-map types still mount `DiagramCanvas` directly (showcase, export-render, etc.).
+
+Mode switch in Language settings remounts the active shell (`:key` on router).
+
+### Node component split (lazy-loaded)
+
+`TopicNode` and `BranchNode` remain the Vue Flow registry entry points but are thin routers:
+
+| Router | Legacy chunk | V2 chunk | Other types |
+|--------|--------------|----------|-------------|
+| `TopicNode.vue` | `mindMap/MindMapLegacyTopicNode.vue` | `mindMap/MindMapV2TopicNode.vue` | `TopicNodeDiagram.vue` |
+| `BranchNode.vue` | `mindMap/MindMapLegacyBranchNode.vue` | `mindMap/MindMapV2BranchNode.vue` | `BranchNodeDiagram.vue` |
+
+Variant files hardcode styling (no runtime legacy/v2 branches). `useMindMapCanvasVisuals()` reads
+`MIND_MAP_CANVAS_VARIANT_KEY` from the canvas shell for the router decision only.
+
 ## Central gate
 
 - `useMindMapV2Chrome()` — UI chrome only
@@ -18,6 +48,21 @@ Classic mind map canvas remains the **default** (`mindMapCanvasMode: legacy`). V
 | V2 | [`mindMapV2Layout.ts`](../../frontend/src/stores/specLoader/mindMapV2Layout.ts) — subtree-relative X, symmetric root stacking | [`mindMapLayout.ts`](../../frontend/src/stores/diagram/mindMapLayout.ts) |
 
 Size estimates: [`mindMapMeasurements.ts`](../../frontend/src/stores/specLoader/mindMapMeasurements.ts) branches on mode. Legacy uses [`mindMapLegacyGeometry.ts`](../../frontend/src/config/mindMapLegacyGeometry.ts); v2 uses `MIND_MAP_GEOMETRY`.
+
+### V2 layout ownership (production)
+
+| Concern | Owner |
+|---------|--------|
+| Sole layout compute | `mindMapV2LayoutResult` in [`vueFlowIntegration.ts`](../../frontend/src/stores/diagram/vueFlowIntegration.ts) → `computeMindMapDisplayLayout('v2')` → `recalculateMindMapV2ColumnPositions` |
+| Canvas nodes | `vueFlowNodes` maps `mindMapV2LayoutNodes` (no second layout engine) |
+| Pinia write-back | `scheduleMindMapRecalc` → `writeBackMindMapV2LayoutFromComputed` (merge positions into `data.nodes`) |
+| Topic width SoT | `mindMapTopicActualWidth` via `resolveMindMapTopicLayoutWidth` (layout + topic→L1 edges) |
+
+**`mindMapPreserveIncomingY` (sticky L1 Enter):**
+
+- **Set** on v2 L1 in-place sibling commit so first paint keeps insert Y (settle only: fan center, overlap push, side pack).
+- **Kept** across measure / text edit-end / L1 height delta (full restack on measure caused delayed L1 shift).
+- **Cleared** on collapse/expand, diagram style shape switch, and full reload (`commitMindMapReload` / `loadSpec` / store reset) so those ops can run `correctYPositions`.
 
 ## Color split
 

@@ -367,8 +367,13 @@ router.beforeEach(async (to, from) => {
   }
 
   // Fetch feature flags if needed (for router guard - doesn't use vue-query)
-  // Any `main` layout route needs flags for the sidebar; chunk-test and similar set `requiresFeatureFlag`.
-  const needsFeatureFlags = Boolean(to.meta.requiresFeatureFlag) || to.meta.layout === 'main'
+  // Any `main` layout route needs flags for the sidebar; canvas routes need flags
+  // before mind-map hydrate so v2 vs legacy does not flash after first paint.
+  const needsFeatureFlags =
+    Boolean(to.meta.requiresFeatureFlag) ||
+    to.meta.layout === 'main' ||
+    to.meta.layout === 'canvas' ||
+    to.name === 'MobileCanvas'
   if (needsFeatureFlags) {
     await featureFlagsStore.fetchFlags()
   }

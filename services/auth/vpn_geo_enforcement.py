@@ -10,10 +10,9 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Optional
 
 import redis.asyncio as aioredis
-from fastapi import Request, WebSocket
+from fastapi import HTTPException, Request, WebSocket
 from fastapi.responses import JSONResponse
 
 from models.domain.messages import Messages, get_request_language
@@ -44,7 +43,7 @@ logger = logging.getLogger(__name__)
 _WS_CLOSE_REASON_MAX = 120
 
 
-def should_kick_vpn_transition(login_cc: Optional[str], current_cc: Optional[str]) -> bool:
+def should_kick_vpn_transition(login_cc: str | None, current_cc: str | None) -> bool:
     """Should kick vpn transition."""
     if not login_cc or len(login_cc) != 2:
         return False
@@ -55,7 +54,7 @@ def should_kick_vpn_transition(login_cc: Optional[str], current_cc: Optional[str
     return True
 
 
-def _decode_redis_value(raw: object) -> Optional[str]:
+def _decode_redis_value(raw: object) -> str | None:
     """Decode redis value."""
     if raw is None:
         return None
@@ -152,8 +151,8 @@ def _vpn_geo_prereqs_ok(connection: HttpOrWebSocket) -> bool:
 async def maybe_enforce_vpn_cn_geo_for_user(
     connection: HttpOrWebSocket,
     user_id: int,
-    phone_str: Optional[str],
-) -> Optional[JSONResponse]:
+    phone_str: str | None,
+) -> JSONResponse | None:
     """
     Apply VPN/CN transition rules for a known user (browser JWT or OpenClaw mgat_).
     """
@@ -224,7 +223,7 @@ async def maybe_enforce_vpn_cn_geo_for_user(
     return None
 
 
-async def maybe_enforce_vpn_cn_geo(request: Request) -> Optional[JSONResponse]:
+async def maybe_enforce_vpn_cn_geo(request: Request) -> JSONResponse | None:
     """Maybe enforce vpn cn geo."""
     if not _vpn_geo_prereqs_ok(request):
         return None
@@ -245,7 +244,7 @@ async def maybe_enforce_vpn_cn_geo(request: Request) -> Optional[JSONResponse]:
     return await maybe_enforce_vpn_cn_geo_for_user(request, user_id, phone_str)
 
 
-async def maybe_enforce_vpn_cn_geo_async(connection: HttpOrWebSocket) -> Optional[JSONResponse]:
+async def maybe_enforce_vpn_cn_geo_async(connection: HttpOrWebSocket) -> JSONResponse | None:
     """
     Email-login CN GeoIP on API (JWT/mgat_), then VPN/CN transition (JWT/mgat_).
     """
@@ -280,11 +279,19 @@ async def maybe_enforce_vpn_cn_geo_async(connection: HttpOrWebSocket) -> Optiona
     if not account:
         return None
 
-    user = await validate_user_token(token, account, request=connection if isinstance(connection, Request) else None)
+    # Soft-resolve only: invalid/expired mgat_ must not crash ASGI middleware.
+    try:
+        user = await validate_user_token(
+            token,
+            account,
+            request=connection if isinstance(connection, Request) else None,
+        )
+    except HTTPException:
+        return None
     return await maybe_enforce_vpn_cn_geo_for_user(connection, user.id, user.phone)
 
 
-def _close_reason_from_geo_json_response(resp: JSONResponse) -> Optional[str]:
+def _close_reason_from_geo_json_response(resp: JSONResponse) -> str | None:
     """Close reason from geo json response."""
     body = getattr(resp, "body", None)
     if body is None:

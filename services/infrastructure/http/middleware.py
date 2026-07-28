@@ -48,8 +48,10 @@ from utils.auth.request_helpers import (
     CSRF_COOKIE_NAME,
     CSRF_HEADER_NAME,
     get_client_ip,
-    is_https as request_is_https,
     set_csrf_cookie,
+)
+from utils.auth.request_helpers import (
+    is_https as request_is_https,
 )
 from utils.db.rls_context import RlsContext, reset_rls_context, set_rls_context
 
@@ -377,13 +379,14 @@ async def add_cache_control_headers(request: Request, call_next):
 
     if path.startswith("/assets/"):
         response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    elif should_apply_no_cache(path, content_type):
-        apply_no_cache_headers(response)
-    elif should_apply_api_no_cache(path, response):
-        apply_no_cache_headers(response)
-    elif path.startswith("/static/case_square/") and path.lower().endswith(".pdf"):
-        apply_no_cache_headers(response)
-    elif path.startswith("/api/showcase/assets/") and path.lower().endswith(".pdf"):
+    elif (
+        should_apply_no_cache(path, content_type)
+        or should_apply_api_no_cache(path, response)
+        or path.startswith("/static/case_square/")
+        and path.lower().endswith(".pdf")
+        or path.startswith("/api/showcase/assets/")
+        and path.lower().endswith(".pdf")
+    ):
         apply_no_cache_headers(response)
 
     return response
@@ -737,5 +740,7 @@ def setup_middleware(app: FastAPI):
     app.middleware("http")(ensure_pdf_range_support)  # Safety net for PDF headers
     app.middleware("http")(log_requests)
     app.middleware("http")(feature_flag_gate)
-    app.middleware("http")(auth_context_middleware)
+    # Register geo before auth_context: Starlette runs last-added middleware first, so
+    # auth_context resolves User/RLS, then vpn_cn_geo reuses request.state (see docstring).
     app.middleware("http")(vpn_cn_geo_middleware)
+    app.middleware("http")(auth_context_middleware)

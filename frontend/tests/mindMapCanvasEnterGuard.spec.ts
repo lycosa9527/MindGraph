@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import {
   armInlineEditEnterGuard,
   clearMindMapPostEditSiblingAnchor,
@@ -12,7 +13,6 @@ import {
   setMindMapPostEditSiblingAnchor,
   shouldBlockCanvasEnterShortcut,
 } from '@/composables/mindMap/mindMapCanvasEnterGuard'
-import { eventBus } from '@/composables/core/useEventBus'
 
 describe('inlineEditEnterGuard', () => {
   it('tracks open editors via node_editor events', () => {
@@ -49,10 +49,19 @@ describe('inlineEditEnterGuard', () => {
     document.body.removeChild(wrapper)
   })
 
-  it('prefers post-edit sibling anchor over stale selection', () => {
+  it('uses selection when it differs from post-edit anchor (side switch)', () => {
     initInlineEditEnterGuard()
+    clearMindMapPostEditSiblingAnchor()
+    // Edited a left branch, then selected a right branch — Enter must stay on right.
+    setMindMapPostEditSiblingAnchor('branch-l-1-0')
+    expect(consumeMindMapPostEditSiblingAnchor('branch-r-1-0')).toBe('branch-r-1-0')
+  })
+
+  it('uses post-edit anchor when selection is empty after edit', () => {
+    initInlineEditEnterGuard()
+    clearMindMapPostEditSiblingAnchor()
     setMindMapPostEditSiblingAnchor('branch-r-1-0')
-    expect(consumeMindMapPostEditSiblingAnchor('branch-l-1-0')).toBe('branch-r-1-0')
+    expect(consumeMindMapPostEditSiblingAnchor(undefined)).toBe('branch-r-1-0')
     expect(consumeMindMapPostEditSiblingAnchor('branch-l-1-0')).toBe('branch-l-1-0')
   })
 

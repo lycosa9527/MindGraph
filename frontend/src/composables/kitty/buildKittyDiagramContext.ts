@@ -1,19 +1,20 @@
 /**
  * Build Voice/Kitty WebSocket context from the diagram store (session_context parity).
  */
-import { buildKittyChildren, kittyNodeDisplayText } from '@/composables/kitty/kittyDiagramChildren'
-import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
+import {
+  buildKittyChildren,
+  buildKittyClickWheelNodes,
+  kittyNodeDisplayText,
+} from '@/composables/kitty/kittyDiagramChildren'
 import { getDiagramWriteLockHolder } from '@/composables/kitty/useDiagramWriteLock'
+import type { KittyAgentContext } from '@/composables/kitty/useKittyAgent'
 import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
 import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
-import {
-  attachMindMapLiveSpecExtras,
-  isMindMapDiagramType,
-} from '@/utils/mindMapLiveSpecExtras'
+import { attachMindMapLiveSpecExtras, isMindMapDiagramType } from '@/utils/mindMapLiveSpecExtras'
 
 /** Sync Kitty voice language with UI locale: Chinese by default, English only for `en` UI. */
 export function kittyInteractionLanguageFromUi(): 'zh' | 'en' {
@@ -64,7 +65,15 @@ export function buildKittyDiagramContext(
     focusQuestionFromSpec:
       typeof data?.focus_question === 'string' ? data.focus_question : undefined,
   })
-  const children = buildKittyChildren(dt, nodes)
+  // Mind map: prefer connection-order wheel list so branch_index matches canvas.
+  const children =
+    dt === 'mindmap' || dt === 'mind_map'
+      ? buildKittyClickWheelNodes(dt, nodes, data?.connections ?? []).map((n) => ({
+          id: n.id,
+          index: n.index,
+          text: n.text,
+        }))
+      : buildKittyChildren(dt, nodes)
   // Pinia nodes/connections are the live SoT for Hub + live_context recovery.
   // Flat children[] remains for Kitty indexing / Omni prompts only.
   const diagram_data: Record<string, unknown> = {

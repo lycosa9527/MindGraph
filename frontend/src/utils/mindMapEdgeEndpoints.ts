@@ -1,8 +1,5 @@
-import {
-  MIND_MAP_GEOMETRY,
-  mindMapConnectionAnchorY,
-} from '@/config/mindMapGeometry'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
+import { MIND_MAP_GEOMETRY, mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
 import type { MindGraphNodeData, NodeStyle } from '@/types'
 
 export function mindMapBranchSide(nodeId: string | undefined): 'left' | 'right' | null {
@@ -40,16 +37,20 @@ export type MeasuredNodeSize = { width?: number; height?: number } | undefined
  */
 function nodeBoxSize(node: FlowNodeLike, measured?: MeasuredNodeSize): { w: number; h: number } {
   const data = node.data
+  // Match layout getNodeWidth/Height order: Pinia → estimate → (then) vue-flow.
+  // Preferring vue-flow dimensions over estimate made the parent edge jump out while
+  // children stayed at estimate-based X — gap shrank, trunk sat on the child, and the
+  // rounded tee collapsed to a sharp 90° (seen rarely on L2 under one branch).
   return {
     w:
       measured?.width ??
-      node.dimensions?.width ??
       (data?.estimatedWidth as number | undefined) ??
+      node.dimensions?.width ??
       MIND_MAP_GEOMETRY.minWidth,
     h:
       measured?.height ??
-      node.dimensions?.height ??
       (data?.estimatedHeight as number | undefined) ??
+      node.dimensions?.height ??
       MIND_MAP_GEOMETRY.minHeight,
   }
 }
@@ -96,7 +97,12 @@ function resolveMindMapUnderlineAnchorY(
 }
 
 /**
- * Snap edge endpoints to underline midline / branch side edge when node shape is underline.
+ * Resolve mind-map edge endpoints from layout geometry (branch side + measured box).
+ *
+ * Branch nodes always use outer (source) / inner (target) side edges — never Vue Flow
+ * handle fallbacks. After layout remaps VF positions, handle bounds often stick to the
+ * inward target handle, so L1→L2 stems loop across the parent. Underline Y uses the bar
+ * midline; other shapes use the box midline (same as layout connection anchors).
  */
 export function resolveMindMapEdgeEndpoint(
   node: FlowNodeLike | undefined,
@@ -116,19 +122,25 @@ export function resolveMindMapEdgeEndpoint(
     },
     diagramStyleId
   )
-  if (shape !== 'underline') return fallback
 
   const { w, h } = nodeBoxSize(node, measured)
-  const y = resolveMindMapUnderlineAnchorY(node.position.y, h, fallback.y)
+  const y =
+    shape === 'underline'
+      ? resolveMindMapUnderlineAnchorY(node.position.y, h, fallback.y)
+      : mindMapConnectionAnchorY(node.position.y, h, shape)
 
   if (node.id === 'topic') {
-    const side: 'left' | 'right' =
-      fallback.x <= node.position.x + w / 2 ? 'left' : 'right'
+    // Topic source X is owned by MindMapOrthogonalEdge (side from L1 target).
+    // Only snap Y for underline topics; keep VF X otherwise.
+    if (shape !== 'underline') return fallback
+    const side: 'left' | 'right' = fallback.x <= node.position.x + w / 2 ? 'left' : 'right'
     return { x: underlineTargetJoinX(fallback.x, side, role), y }
   }
 
   const side = mindMapBranchSide(node.id)
-  if (!side) return { x: fallback.x, y }
+  if (!side) {
+    return shape === 'underline' ? { x: fallback.x, y } : fallback
+  }
 
   let x =
     role === 'target'
@@ -139,6 +151,8 @@ export function resolveMindMapEdgeEndpoint(
         ? node.position.x
         : node.position.x + w
 
-  x = underlineTargetJoinX(x, side, role)
+  if (shape === 'underline') {
+    x = underlineTargetJoinX(x, side, role)
+  }
   return { x, y }
 }

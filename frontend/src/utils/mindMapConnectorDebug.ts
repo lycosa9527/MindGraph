@@ -1,13 +1,12 @@
-import { mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
+import { mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
 import type { DiagramNode, MindGraphNodeData, NodeStyle } from '@/types'
-import type { NodeShape } from '@/utils/nodeShapeStyle'
 import {
+  type MindMapConnectorDebugLevel,
   getMindMapConnectorDebugLevel,
   isMindMapConnectorDebugEnabled,
   isMindMapConnectorVerboseDebugEnabled,
   setMindMapConnectorDebugLevel,
-  type MindMapConnectorDebugLevel,
 } from '@/utils/mindMapConnectorDebugLevel'
 import {
   beginMindMapConnectorPipeline,
@@ -16,6 +15,12 @@ import {
   setMindMapVerboseRecalcGen,
 } from '@/utils/mindMapConnectorDebugVerbose'
 import { resolveMindMapEdgeEndpoint, resolveMindMapNodeStyle } from '@/utils/mindMapEdgeEndpoints'
+import {
+  MINDMAP_CONNECTOR_FLAT_DY,
+  buildMindMapBracketBusPath,
+  computeMindMapSharedTrunkX,
+} from '@/utils/mindMapOrthogonalPath'
+import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 export interface MindMapConnectorDebugDumpOptions {
   container: HTMLElement | null
@@ -97,6 +102,15 @@ export interface MindMapConnectorDebugEdgeRow {
   liveTargetUnderlineY: number | null
   resolvedTargetVsLivePx: number | null
   vueFlowTargetVsLivePx: number | null
+  /** Parent→child horizontal gap at resolved endpoints. */
+  gapDx: number | null
+  trunkX: number | null
+  /** |targetX − trunkX| — room for the rounded tee. */
+  hLen: number | null
+  siblingCount: number
+  hasRoundedTee: boolean | null
+  /** rounded | sharp_no_q | flat | sole_topic | sole_underline */
+  teeStatus: string | null
 }
 
 export interface MindMapConnectorDebugDump {
@@ -116,7 +130,7 @@ type DebugFlowNodeLike = {
 }
 
 function asDebugFlowNode(
-  flowNode: MindMapConnectorDebugDumpOptions['flowNodes'][number] | undefined,
+  flowNode: MindMapConnectorDebugDumpOptions['flowNodes'][number] | undefined
 ): DebugFlowNodeLike | undefined {
   if (!flowNode) return undefined
   return {
@@ -145,7 +159,7 @@ function resolveShape(
       style: resolveMindMapNodeStyle(
         nodeId,
         flowNode.data as MindGraphNodeData | undefined,
-        preservedNodeStyles,
+        preservedNodeStyles
       ),
     },
     diagramStyleId
@@ -355,8 +369,7 @@ function buildNodeRows(options: MindMapConnectorDebugDumpOptions): MindMapConnec
       specY,
       layoutX: flowNode.position?.x ?? null,
       layoutY,
-      deltaY:
-        specY != null && layoutY != null ? round1(layoutY - specY) : null,
+      deltaY: specY != null && layoutY != null ? round1(layoutY - specY) : null,
       piniaWidth: options.widths[nodeId] ?? null,
       piniaHeight,
       estimateHeight: (flowNode.data?.estimatedHeight as number | undefined) ?? null,
@@ -378,7 +391,12 @@ function buildNodeRows(options: MindMapConnectorDebugDumpOptions): MindMapConnec
 function buildEdgeRows(options: MindMapConnectorDebugDumpOptions): MindMapConnectorDebugEdgeRow[] {
   const flowById = new Map(options.flowNodes.map((node) => [node.id, node]))
 
-  return options.edges.map((edge) => {
+  const resolvedByEdgeId = new Map<
+    string,
+    { source: { x: number; y: number }; target: { x: number; y: number } }
+  >()
+
+  const rows = options.edges.map((edge) => {
     const sourceNode = asDebugFlowNode(flowById.get(edge.source))
     const targetNode = asDebugFlowNode(flowById.get(edge.target))
     const sourceStyle = resolveMindMapNodeStyle(
@@ -431,6 +449,7 @@ function buildEdgeRows(options: MindMapConnectorDebugDumpOptions): MindMapConnec
       targetMeasured,
       options.diagramStyleId
     )
+    resolvedByEdgeId.set(edge.id, { source: resolvedSource, target: resolvedTarget })
 
     const targetShape = resolveShape(
       edge.target,
@@ -443,9 +462,7 @@ function buildEdgeRows(options: MindMapConnectorDebugDumpOptions): MindMapConnec
         ? readLiveMindMapUnderlineAnchorY(edge.target, options.screenToFlowCoordinate)
         : null
     const resolvedTargetVsLivePx =
-      liveTargetUnderlineY != null
-        ? round1(liveTargetUnderlineY - resolvedTarget.y)
-        : null
+      liveTargetUnderlineY != null ? round1(liveTargetUnderlineY - resolvedTarget.y) : null
     const vueFlowTargetVsLivePx =
       edge.targetY != null && liveTargetUnderlineY != null
         ? round1(liveTargetUnderlineY - edge.targetY)
@@ -475,12 +492,77 @@ function buildEdgeRows(options: MindMapConnectorDebugDumpOptions): MindMapConnec
       vueFlowSourceY: edge.sourceY ?? null,
       vueFlowTargetX: edge.targetX ?? null,
       vueFlowTargetY: edge.targetY ?? null,
-      liveTargetUnderlineY:
-        liveTargetUnderlineY != null ? round1(liveTargetUnderlineY) : null,
+      liveTargetUnderlineY: liveTargetUnderlineY != null ? round1(liveTargetUnderlineY) : null,
       resolvedTargetVsLivePx,
       vueFlowTargetVsLivePx,
+      gapDx: null as number | null,
+      trunkX: null as number | null,
+      hLen: null as number | null,
+      siblingCount: 0,
+      hasRoundedTee: null as boolean | null,
+      teeStatus: null as string | null,
     }
   })
+
+  for (const row of rows) {
+    const self = resolvedByEdgeId.get(row.edgeId)
+    if (!self) continue
+    const siblingEdges = options.edges.filter((edge) => {
+      if (edge.source !== row.source) return false
+      if (row.source !== 'topic') return true
+      const mySide = row.target.includes('-l-') ? 'l' : row.target.includes('-r-') ? 'r' : null
+      const theirSide = edge.target.includes('-l-') ? 'l' : edge.target.includes('-r-') ? 'r' : null
+      return mySide != null && mySide === theirSide
+    })
+    const siblingTargetXs = siblingEdges.map((edge) => {
+      const resolved = resolvedByEdgeId.get(edge.id)
+      return resolved?.target.x ?? self.target.x
+    })
+    const siblingYs = siblingEdges.map((edge) => {
+      const resolved = resolvedByEdgeId.get(edge.id)
+      return resolved?.target.y ?? self.target.y
+    })
+    const trunkX = computeMindMapSharedTrunkX(self.source.x, siblingTargetXs, self.target.x)
+    const gapDx = Math.abs(self.target.x - self.source.x)
+    const hLen = Math.abs(self.target.x - trunkX)
+    const targetShape = resolveShape(
+      row.target,
+      flowById.get(row.target),
+      options.preservedNodeStyles,
+      options.diagramStyleId
+    )
+    const path = buildMindMapBracketBusPath(
+      self.source.x,
+      self.source.y,
+      self.target.x,
+      self.target.y,
+      trunkX,
+      siblingYs,
+      {
+        drawSpine: true,
+        siblingToXs: siblingTargetXs,
+        singleUnderlineChild: siblingYs.length === 1 && targetShape === 'underline',
+        singleTopicSideChild: row.source === 'topic' && siblingEdges.length === 1,
+      }
+    )
+    const hasRoundedTee = path.includes('Q ')
+    const dy = Math.abs(self.target.y - self.source.y)
+    let teeStatus = 'rounded'
+    if (row.source === 'topic' && siblingEdges.length === 1) teeStatus = 'sole_topic'
+    else if (siblingYs.length === 1 && targetShape === 'underline') teeStatus = 'sole_underline'
+    else if (!hasRoundedTee && hLen < 0.5) teeStatus = 'sharp_no_q'
+    else if (!hasRoundedTee && dy < MINDMAP_CONNECTOR_FLAT_DY) teeStatus = 'flat_dy'
+    else if (!hasRoundedTee) teeStatus = 'sharp_or_flat'
+
+    row.gapDx = round1(gapDx)
+    row.trunkX = round1(trunkX)
+    row.hLen = round1(hLen)
+    row.siblingCount = siblingEdges.length
+    row.hasRoundedTee = hasRoundedTee
+    row.teeStatus = teeStatus
+  }
+
+  return rows
 }
 
 export function dumpMindMapConnectorDebug(options: MindMapConnectorDebugDumpOptions): void {
@@ -520,6 +602,34 @@ export function dumpMindMapConnectorDebug(options: MindMapConnectorDebugDumpOpti
   }
   console.table(nodeRows)
   console.table(edgeRows)
+  const sharpTees = edgeRows.filter(
+    (row) =>
+      row.teeStatus === 'sharp_no_q' ||
+      (row.hasRoundedTee === false &&
+        row.teeStatus !== 'sole_topic' &&
+        row.teeStatus !== 'sole_underline')
+  )
+  if (sharpTees.length > 0) {
+    console.warn(
+      `[MindMap WARN] ${sharpTees.length} edge(s) without rounded tee — check gapDx/hLen/trunkX`
+    )
+    console.table(
+      sharpTees.map((row) => ({
+        edgeId: row.edgeId,
+        source: row.source,
+        target: row.target,
+        gapDx: row.gapDx,
+        trunkX: row.trunkX,
+        hLen: row.hLen,
+        siblingCount: row.siblingCount,
+        teeStatus: row.teeStatus,
+        resolvedSourceX: row.resolvedSourceX,
+        resolvedTargetX: row.resolvedTargetX,
+      }))
+    )
+  } else {
+    console.info('[MindMap OK] All multi-child tees include a Q curve.')
+  }
   if (misaligned.length === 0) {
     console.info('[MindMap OK] No underline resolvedEdgeY vs live bar misalignment > 1px.')
   } else {
@@ -531,10 +641,16 @@ export function dumpMindMapConnectorDebug(options: MindMapConnectorDebugDumpOpti
     'Columns: formulaVsLivePx = formula−live | resolvedVsLivePx = SVG−live | vueFlowVsLivePx = handle−live | domHandleVsLivePx = DOM handle−live'
   )
   console.info(
+    'Tee: gapDx = |target−source| X | hLen = |target−trunk| (needs room for Q) | teeStatus'
+  )
+  console.info(
     'Levels: localStorage mindgraph.debugMindMapConnectors = "1" | "verbose" (or window.mindMapConnectorDebug.enableBasic())'
   )
   console.info(
     'Inspect: mindMapConnectorDebug.inspect("branch-r-2-1") | mindMapConnectorDebug.inspectEdges("branch-r-2-1")'
+  )
+  console.info(
+    'Sibling: localStorage mindgraph.debugMindMapSibling = "1" (or window.mindMapSiblingDebug.enable())'
   )
   console.groupEnd()
 
@@ -542,9 +658,7 @@ export function dumpMindMapConnectorDebug(options: MindMapConnectorDebugDumpOpti
     recalcGeneration: options.recalcGeneration,
     nodeCount: nodeRows.length,
     edgeCount: edgeRows.length,
-    movedYCount: nodeRows.filter(
-      (row) => row.deltaY != null && Math.abs(row.deltaY) >= 0.5
-    ).length,
+    movedYCount: nodeRows.filter((row) => row.deltaY != null && Math.abs(row.deltaY) >= 0.5).length,
     underlineMisalignedCount: misaligned.length,
   })
 
@@ -591,9 +705,7 @@ export function inspectMindMapConnectorDebugEdges(nodeId?: string): void {
     return
   }
   const rows = nodeId
-    ? lastSettledDump.edgeRows.filter(
-        (row) => row.source === nodeId || row.target === nodeId
-      )
+    ? lastSettledDump.edgeRows.filter((row) => row.source === nodeId || row.target === nodeId)
     : lastSettledDump.edgeRows.filter((row) => row.liveTargetUnderlineY != null)
   if (rows.length === 0) {
     console.warn(`[MindMap] No edge rows for nodeId=${nodeId ?? '(underline targets)'}`)

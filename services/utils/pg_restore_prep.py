@@ -7,7 +7,9 @@ Proprietary License
 """
 
 import logging
-from typing import Optional
+import subprocess
+from pathlib import Path
+from typing import Any
 from urllib.parse import unquote, urlparse
 
 import psycopg
@@ -18,6 +20,77 @@ from config.database import libpq_database_url
 from services.utils.error_types import DATABASE_ERRORS
 
 logger = logging.getLogger(__name__)
+
+
+def _pg_restore_line_should_skip_for_migrate_role(line: str) -> bool:
+    """
+    TOC entries ``mindgraph_migrate`` cannot apply during local pg_restore.
+
+    Production dumps include superuser-only extension DDL and default ACLs
+    owned by ``postgres``; skip them and re-apply grants after restore.
+    """
+    stripped = line.strip()
+    if not stripped or stripped.startswith(";"):
+        return False
+    upper = stripped.upper()
+    if " EXTENSION " in upper or upper.endswith(" EXTENSION"):
+        return True
+    if " COMMENT - EXTENSION " in upper:
+        return True
+    return " DEFAULT ACL " in upper
+
+
+def build_pg_restore_toc_for_migrate_role(
+    backup_path: Path,
+    *,
+    find_pg_restore: Any,
+) -> Path | None:
+    """
+    Write a pg_restore TOC omitting superuser-only / postgres-owned ACL entries.
+
+    Restore connects as ``mindgraph_migrate`` (``--no-owner``). Extensions must
+    be pre-installed as superuser; default privileges are reapplied via RLS grant SQL.
+    """
+    pg_restore = find_pg_restore("pg_restore")
+    if not pg_restore:
+        return None
+
+    result = subprocess.run(
+        [pg_restore, "--list", str(backup_path)],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+    if result.returncode != 0:
+        logger.warning("pg_restore --list failed; restoring without TOC filter")
+        return None
+
+    filtered: list[str] = []
+    skipped = 0
+    for line in result.stdout.splitlines():
+        if _pg_restore_line_should_skip_for_migrate_role(line):
+            filtered.append(f"; skipped migrate-incompatible: {line.lstrip(';')}")
+            skipped += 1
+        else:
+            filtered.append(line)
+
+    if skipped == 0:
+        return None
+
+    toc_path = Path(f"/tmp/mindgraph_pg_restore_{backup_path.stem}.toc")
+    toc_path.write_text("\n".join(filtered) + "\n", encoding="utf-8")
+    logger.info("pg_restore TOC: skipped %d migrate-incompatible entries", skipped)
+    return toc_path
+
+
+def build_pg_restore_toc_excluding_extensions(
+    backup_path: Path,
+    *,
+    find_pg_restore: Any,
+) -> Path | None:
+    """Backward-compatible alias for :func:`build_pg_restore_toc_for_migrate_role`."""
+    return build_pg_restore_toc_for_migrate_role(backup_path, find_pg_restore=find_pg_restore)
 
 
 def _db_user_and_name_from_url(db_url: str) -> tuple[str, str]:
@@ -50,7 +123,7 @@ def _log_database_privilege_hint(exc: Exception, db_url: str) -> None:
 
 def ensure_public_schema_exists(
     db_url: str,
-    engine: Optional[Engine] = None,
+    engine: Engine | None = None,
 ) -> bool:
     """
     Ensure ``public`` exists and is grantable.
@@ -65,10 +138,9 @@ def ensure_public_schema_exists(
                 conn.execute(text("CREATE SCHEMA IF NOT EXISTS public"))
                 conn.execute(text("GRANT ALL ON SCHEMA public TO PUBLIC"))
         else:
-            with psycopg.connect(libpq_database_url(db_url), autocommit=True) as conn:
-                with conn.cursor() as cur:
-                    cur.execute("CREATE SCHEMA IF NOT EXISTS public")
-                    cur.execute("GRANT ALL ON SCHEMA public TO PUBLIC")
+            with psycopg.connect(libpq_database_url(db_url), autocommit=True) as conn, conn.cursor() as cur:
+                cur.execute("CREATE SCHEMA IF NOT EXISTS public")
+                cur.execute("GRANT ALL ON SCHEMA public TO PUBLIC")
     except DATABASE_ERRORS as exc:
         logger.error("Failed to ensure public schema: %s", exc)
         _log_database_privilege_hint(exc, db_url)
@@ -79,7 +151,7 @@ def ensure_public_schema_exists(
 
 def wipe_public_schema_before_restore(
     db_url: str,
-    engine: Optional[Engine] = None,
+    engine: Engine | None = None,
 ) -> bool:
     """
     Drop the public schema and recreate an empty ``public`` schema.
@@ -96,11 +168,10 @@ def wipe_public_schema_before_restore(
                 conn.execute(text("CREATE SCHEMA public"))
                 conn.execute(text("GRANT ALL ON SCHEMA public TO PUBLIC"))
         else:
-            with psycopg.connect(libpq_database_url(db_url), autocommit=True) as conn:
-                with conn.cursor() as cur:
-                    cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
-                    cur.execute("CREATE SCHEMA public")
-                    cur.execute("GRANT ALL ON SCHEMA public TO PUBLIC")
+            with psycopg.connect(libpq_database_url(db_url), autocommit=True) as conn, conn.cursor() as cur:
+                cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
+                cur.execute("CREATE SCHEMA public")
+                cur.execute("GRANT ALL ON SCHEMA public TO PUBLIC")
     except DATABASE_ERRORS as exc:
         logger.error("Failed to reset public schema: %s", exc)
         _log_database_privilege_hint(exc, db_url)

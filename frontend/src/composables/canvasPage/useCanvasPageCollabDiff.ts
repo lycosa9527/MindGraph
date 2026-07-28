@@ -67,9 +67,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
     diffFirstDirtyAt = 0
   }
 
-  function extrasFingerprintFromData(
-    data: CanvasDiagramData | null | undefined
-  ): string {
+  function extrasFingerprintFromData(data: CanvasDiagramData | null | undefined): string {
     if (!data) return ''
     return mindMapLiveSpecExtrasFingerprint(data as Record<string, unknown>)
   }
@@ -194,10 +192,31 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
       .filter((n) => n.id && !currentNodeIds.has(n.id))
       .map((n) => n.id)
 
+    const previousConnectionIds = new Set(
+      (previousConnections as Array<{ id: string }>).map((c) => c.id)
+    )
     const currentConnectionIds = new Set(currentConnections.map((c) => c.id))
     const deletedConnectionIds = (previousConnections as Array<{ id: string }>)
       .filter((c) => c.id && !currentConnectionIds.has(c.id))
       .map((c) => c.id)
+
+    // Mind map sibling SoT = connection order. Tag new edges so Redis merge
+    // inserts beside the previous sibling instead of appending at list end.
+    const connectionsForSend = changedConnections.map((conn) => {
+      const row = conn as Record<string, unknown>
+      const id = typeof row.id === 'string' ? row.id : ''
+      if (!id || previousConnectionIds.has(id)) return row
+      const source = typeof row.source === 'string' ? row.source : ''
+      if (!source) return row
+      const siblings = currentConnections.filter(
+        (c) => (c as { source?: string }).source === source
+      ) as Array<{ id: string; target?: string }>
+      const idx = siblings.findIndex((c) => c.id === id)
+      if (idx <= 0) return row
+      const prevTarget = siblings[idx - 1]?.target
+      if (typeof prevTarget !== 'string' || !prevTarget) return row
+      return { ...row, insert_after_target: prevTarget }
+    })
 
     if (import.meta.env.DEV) {
       console.log('[CollabDebug] runDiffAndSend diff', {
@@ -245,7 +264,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
       options.sendUpdate(
         undefined,
         changedNodes.length > 0 ? changedNodes : undefined,
-        changedConnections.length > 0 ? changedConnections : undefined,
+        connectionsForSend.length > 0 ? connectionsForSend : undefined,
         deletedNodeIds,
         deletedConnectionIds
       )

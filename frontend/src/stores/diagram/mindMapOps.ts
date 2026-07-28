@@ -1,30 +1,37 @@
 import { eventBus } from '@/composables/core/useEventBus'
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
-import {
-  inferMindMapThemeIdFromNodes,
-  resolveActiveMindMapThemeId,
-} from '@/config/mindMapThemes'
+import { inferMindMapThemeIdFromNodes, resolveActiveMindMapThemeId } from '@/config/mindMapThemes'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
-import {
-  mergeGeneratedBranchesIntoSpec,
-  type MindMapBranchSpec,
-} from '@/utils/mindMapSubgraphMerge'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import {
-  collectMindMapNodeUids,
   MINDMAP_NODE_UID_DATA_KEY,
+  collectMindMapNodeUids,
+  ensureMindMapBranchUid,
+  findNodeIdByMindMapUid,
   readMindMapNodeUid,
   rebindMindMapBranchUidsForPaste,
 } from '@/utils/mindMapNodeUid'
-import { applyMindMapSideAnchorYPreserve } from '@/utils/mindMapSideStacking'
-import { safeRandomUUID } from '@/utils/safeRandomUUID'
+import {
+  recordMindMapSiblingInsertAttempt,
+  recordMindMapSiblingInsertFailure,
+  recordMindMapSiblingInsertSuccess,
+} from '@/utils/mindMapSiblingDebug'
+import {
+  applyMindMapIncrementalSiblingYPreserve,
+  applyMindMapIncrementalTopLevelSiblingLayout,
+} from '@/utils/mindMapSideStacking'
 import {
   debugMindMapSubgraphMergeLookup,
   isMindMapSubgraphDebugEnabled,
   mindMapSubgraphDebug,
   mindMapSubgraphDebugError,
 } from '@/utils/mindMapSubgraphDebug'
+import {
+  type MindMapBranchSpec,
+  mergeGeneratedBranchesIntoSpec,
+} from '@/utils/mindMapSubgraphMerge'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 import { useInlineRecommendationsStore } from '../inlineRecommendations'
 import { useMindMapSubgraphPreviewStore } from '../mindMapSubgraphPreview'
@@ -34,15 +41,12 @@ import {
   loadMindMapSpec,
   nodesAndConnectionsToMindMapSpec,
 } from '../specLoader'
+import type { SpecLoaderResult } from '../specLoader/types'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
-import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import { emitEvent, getMindMapCurveExtents } from './events'
 import {
-  findNodeIdByPathKey,
-  mergeMindMapReloadStyles,
-  mindMapNodePathKey,
-} from './mindMapStylePreservation'
-import {
+  getMindMapCollapsedNodeIds,
+  getMindMapCollapsedPaths,
   isMindMapPathCollapsed,
   mindMapNodeHasChildren,
   pruneMindMapCollapsedPaths,
@@ -52,8 +56,14 @@ import {
   remapMindMapNodeIdsAfterReload,
   setMindMapCollapsedPaths,
 } from './mindMapCollapse'
+import { insertMindMapSiblingInPlace } from './mindMapSiblingInsert'
+import {
+  findNodeIdByPathKey,
+  mergeMindMapReloadStyles,
+  mindMapNodePathKey,
+} from './mindMapStylePreservation'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
-import type { SpecLoaderResult } from '../specLoader/types'
 
 function defaultNewNodeText(): string {
   return String(i18n.global.t('diagram.editable.placeholder')).replace(/[….]{1,3}$/u, '')
@@ -106,7 +116,8 @@ function retainMeasuredDimensions(
   oldNodes: DiagramNode[],
   oldConnections: Connection[],
   newNodes: DiagramNode[],
-  newConnections: Connection[]
+  newConnections: Connection[],
+  scheduleRecalc = true
 ): void {
   const { widths, heights } = remapMindMapMeasuredDimensionsAfterReload(
     ctx.mindMapNodeWidths.value,
@@ -118,7 +129,9 @@ function retainMeasuredDimensions(
   )
   ctx.mindMapNodeWidths.value = widths
   ctx.mindMapNodeHeights.value = heights
-  ctx.scheduleMindMapRecalc()
+  if (scheduleRecalc) {
+    ctx.scheduleMindMapRecalc()
+  }
 }
 
 function getMindMapParentId(connections: Connection[], nodeId: string): string | null {
@@ -151,24 +164,60 @@ export function cancelMindMapPendingInlineEdit(ctx: DiagramContext): void {
   ctx.mindMapPendingEditNodeId.value = null
 }
 
+function escapeMindMapNodeSelectorId(nodeId: string): string {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(nodeId)
+  }
+  return nodeId.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
+/** Select a mind-map node and notify listeners / Vue Flow. */
+function selectMindMapNode(ctx: DiagramContext, nodeId: string): void {
+  ctx.selectedConnectionId.value = null
+  ctx.selectedNodes.value = [nodeId]
+  emitEvent('diagram:selection_changed', { selectedNodes: [nodeId] })
+}
+
 function requestMindMapNodeInlineEdit(ctx: DiagramContext, nodeId: string): void {
   mindMapInlineEditRetryGeneration += 1
   const generation = mindMapInlineEditRetryGeneration
   ctx.mindMapPendingEditNodeId.value = nodeId
+  // Keep selection on the node we are about to edit (Enter add → new branch).
+  selectMindMapNode(ctx, nodeId)
   let attempts = 0
 
   const tryFocus = (): void => {
     if (generation !== mindMapInlineEditRetryGeneration) return
     attempts += 1
+    // Vue Flow can briefly echo the previous selection when nodes remount.
+    if (ctx.selectedNodes.value[0] !== nodeId) {
+      selectMindMapNode(ctx, nodeId)
+    }
     const host = document.querySelector(
-      `.vue-flow__node[data-id="${CSS.escape(nodeId)}"] .inline-editable-text`
+      `.vue-flow__node[data-id="${escapeMindMapNodeSelectorId(nodeId)}"] .inline-editable-text`
     )
 
     if (host) {
       eventBus.emit('node:edit_requested', { nodeId })
       const input = host.querySelector('.inline-edit-input') as HTMLInputElement | null
+      // Require stable focus across one rAF before clearing pending. A single
+      // focus tick is not enough — write-back / toast often steal it immediately
+      // and clearing pending left the new branch stuck in select-only mode.
       if (input && document.activeElement === input) {
-        ctx.mindMapPendingEditNodeId.value = null
+        requestAnimationFrame(() => {
+          if (generation !== mindMapInlineEditRetryGeneration) return
+          if (ctx.mindMapPendingEditNodeId.value !== nodeId) return
+          const stillInput = document.querySelector(
+            `.vue-flow__node[data-id="${escapeMindMapNodeSelectorId(nodeId)}"] .inline-edit-input`
+          ) as HTMLInputElement | null
+          if (stillInput && document.activeElement === stillInput) {
+            ctx.mindMapPendingEditNodeId.value = null
+            return
+          }
+          if (attempts < MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS) {
+            setTimeout(tryFocus, MIND_MAP_INLINE_EDIT_RETRY_MS)
+          }
+        })
         return
       }
       if (attempts < MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS) {
@@ -181,6 +230,7 @@ function requestMindMapNodeInlineEdit(ctx: DiagramContext, nodeId: string): void
 
     if (attempts >= MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS) {
       eventBus.emit('node:edit_requested', { nodeId })
+      // Last resort: drop pending so a stuck id cannot steal later edits.
       ctx.mindMapPendingEditNodeId.value = null
       return
     }
@@ -194,13 +244,20 @@ function selectAndEditByPathKey(
   ctx: DiagramContext,
   nodes: DiagramNode[],
   connections: Connection[],
-  pathKey: string | null
+  pathKey: string | null,
+  scheduleRecalc = true
 ): void {
   if (!pathKey) return
   const nodeId = findNodeIdByPathKey(nodes, connections, pathKey)
   if (!nodeId) return
-  ctx.selectedNodes.value = [nodeId]
-  ctx.scheduleMindMapRecalc()
+  selectMindMapNode(ctx, nodeId)
+  if (scheduleRecalc) {
+    // Same as in-place sibling: settle positions before arming post-add edit.
+    if (ctx.writeBackMindMapV2LayoutFromComputed) {
+      ctx.writeBackMindMapV2LayoutFromComputed()
+    }
+    ctx.scheduleMindMapRecalc()
+  }
   requestMindMapNodeInlineEdit(ctx, nodeId)
 }
 
@@ -208,20 +265,36 @@ function commitMindMapReloadWithSelect(
   ctx: DiagramContext,
   result: SpecLoaderResult,
   selectPathKey: string | null,
-  historyLabel: string
+  historyLabel: string,
+  options?: { skipMindMapRecalc?: boolean }
 ): boolean {
   if (!ctx.data.value?.nodes || !ctx.data.value?.connections) return false
-  commitMindMapReload(ctx, result)
+  commitMindMapReload(ctx, result, options)
   ctx.pushHistory(historyLabel)
   emitEvent('diagram:node_added', { node: null })
-  selectAndEditByPathKey(ctx, result.nodes, result.connections, selectPathKey)
+  selectAndEditByPathKey(
+    ctx,
+    result.nodes,
+    result.connections,
+    selectPathKey,
+    !options?.skipMindMapRecalc
+  )
   return true
 }
 
-function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): void {
+function commitMindMapReload(
+  ctx: DiagramContext,
+  result: SpecLoaderResult,
+  options?: { skipMindMapRecalc?: boolean }
+): void {
   if (!ctx.data.value?.nodes || !ctx.data.value?.connections) return
 
+  // Full tree rebuild owns Y again — drop in-place Enter preserve.
+  ctx.mindMapPreserveIncomingY.value = false
+  ctx.mindMapPreserveIncomingYNodeId.value = null
+
   const v2Visuals = readMindMapV2VisualDesignActive()
+  const skipRecalc = options?.skipMindMapRecalc === true
 
   if (v2Visuals && !ctx.data.value._mindmap_theme) {
     const inferred = inferMindMapThemeIdFromNodes(ctx.data.value.nodes)
@@ -242,7 +315,14 @@ function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): voi
   const oldNodes = ctx.data.value.nodes
   const oldConnections = ctx.data.value.connections
 
-  retainMeasuredDimensions(ctx, oldNodes, oldConnections, result.nodes, result.connections)
+  retainMeasuredDimensions(
+    ctx,
+    oldNodes,
+    oldConnections,
+    result.nodes,
+    result.connections,
+    !skipRecalc
+  )
 
   const previousSelected = [...ctx.selectedNodes.value]
   const previousPendingEdit = ctx.mindMapPendingEditNodeId.value
@@ -252,7 +332,7 @@ function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): voi
   ctx.data.value.connections = result.connections
   ctx.data.value._node_styles = mergedNodeStyles
 
-  if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
+  if (!skipRecalc && (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map')) {
     ctx.mindMapRecalcTrigger.value += 1
     ctx.scheduleMindMapRecalc()
   }
@@ -287,13 +367,7 @@ function commitMindMapReload(ctx: DiagramContext, result: SpecLoaderResult): voi
     )
   }
   previewStore.remapGeneratingNodeIds((oldId) =>
-    remapMindMapNodeIdAfterReload(
-      oldId,
-      oldNodes,
-      oldConnections,
-      result.nodes,
-      result.connections
-    )
+    remapMindMapNodeIdAfterReload(oldId, oldNodes, oldConnections, result.nodes, result.connections)
   )
 }
 
@@ -336,10 +410,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     return commitMindMapReloadWithSelect(ctx, result, pathKey, 'Add branch')
   }
 
-  function addMindMapBranchOnSide(
-    side: 'left' | 'right',
-    text = defaultNewNodeText()
-  ): boolean {
+  function addMindMapBranchOnSide(side: 'left' | 'right', text = defaultNewNodeText()): boolean {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
 
@@ -363,10 +434,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     return commitMindMapReloadWithSelect(ctx, result, pathKey, 'Add branch')
   }
 
-  function addMindMapChild(
-    parentNodeId: string,
-    text = defaultNewNodeText()
-  ): boolean {
+  function addMindMapChild(parentNodeId: string, text = defaultNewNodeText()): boolean {
     if (isDiagramPresentationReadOnly()) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
@@ -418,12 +486,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       indexInParent: number
     }[] = []
     idsToRemove.forEach((nodeId) => {
-      const found = findBranchByNodeId(
-        spec.rightBranches,
-        spec.leftBranches,
-        nodeId,
-        connections
-      )
+      const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, nodeId, connections)
       if (found) {
         toRemoveWithParent.push({
           nodeId,
@@ -657,21 +720,151 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     return applyMindMapSpecReload(spec.topic, leftBranches, rightBranches, 'Structure: balanced')
   }
 
+  function commitMindMapSiblingInPlace(
+    inserted: NonNullable<ReturnType<typeof insertMindMapSiblingInPlace>>,
+    historyLabel: string
+  ): boolean {
+    if (!data.value?.nodes || !data.value?.connections) return false
+
+    data.value.nodes = inserted.nodes
+    data.value.connections = inserted.connections
+    ctx.mindMapNodeWidths.value = {
+      ...ctx.mindMapNodeWidths.value,
+      [inserted.newNodeId]: inserted.estimatedWidth,
+    }
+    ctx.mindMapNodeHeights.value = {
+      ...ctx.mindMapNodeHeights.value,
+      [inserted.newNodeId]: inserted.estimatedHeight,
+    }
+
+    if (inserted.isTopLevel) {
+      // Keep preserve across measure/edit-end (full restack caused delayed L1 shift).
+      // Cleared on collapse/expand/style switch so those ops can full-restack.
+      ctx.mindMapPreserveIncomingY.value = true
+      ctx.mindMapPreserveIncomingYNodeId.value = inserted.newNodeId
+    }
+
+    const newNode = inserted.nodes.find((node) => node.id === inserted.newNodeId) ?? null
+    ctx.pushHistory(historyLabel)
+    emitEvent('diagram:node_added', newNode)
+
+    // Sync write-back first so the big position merge happens before edit starts.
+    // Then arm pending edit; scheduled recalc is usually a no-op merge + trigger.
+    if (ctx.writeBackMindMapV2LayoutFromComputed) {
+      ctx.writeBackMindMapV2LayoutFromComputed()
+    }
+    ctx.scheduleMindMapRecalc()
+    requestMindMapNodeInlineEdit(ctx, inserted.newNodeId)
+    return true
+  }
+
+  /**
+   * Insert a sibling in-place (v2) or via reload (legacy).
+   * Optional `at` selects absolute index / after_node for Kitty + paste.
+   */
   function addMindMapSibling(
     nodeId: string,
     text = defaultNewNodeText(),
-    position: 'above' | 'below' = 'below'
+    position: 'above' | 'below' = 'below',
+    at?: { insertIndex?: number; afterNodeId?: string; parentId?: string }
   ): boolean {
-    if (isDiagramPresentationReadOnly()) return false
-    if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
-    if (!data.value?.nodes || !data.value?.connections) return false
+    recordMindMapSiblingInsertAttempt({
+      nodeId,
+      text,
+      position,
+      at,
+      selected: selectedNodes.value.slice(),
+      v2: readMindMapV2VisualDesignActive(),
+      presentationReadOnly: isDiagramPresentationReadOnly(),
+      type: type.value,
+    })
+    if (isDiagramPresentationReadOnly()) {
+      recordMindMapSiblingInsertFailure('presentation_read_only', { nodeId })
+      return false
+    }
+    if (type.value !== 'mindmap' && type.value !== 'mind_map') {
+      recordMindMapSiblingInsertFailure('not_mindmap', { type: type.value, nodeId })
+      return false
+    }
+    if (!data.value?.nodes || !data.value?.connections) {
+      recordMindMapSiblingInsertFailure('no_diagram_data', { nodeId })
+      return false
+    }
+    if (nodeId === 'topic' && at?.parentId == null && at?.insertIndex == null) {
+      recordMindMapSiblingInsertFailure('topic_without_insert_at', { nodeId, at })
+      return false
+    }
+
+    // v2: mint one id + edge; connection order is SoT — no loadMindMapSpec.
+    if (readMindMapV2VisualDesignActive()) {
+      // Stale free-index ids after an accidental library reload leave selection
+      // pointing at a node with no parent edge — recover another valid selection.
+      let anchorNodeId = nodeId === 'topic' ? undefined : nodeId
+      const diagramConnections = data.value.connections
+      if (anchorNodeId && !diagramConnections.some((conn) => conn.target === anchorNodeId)) {
+        const fallback = selectedNodes.value.find(
+          (id) =>
+            id !== anchorNodeId &&
+            id !== 'topic' &&
+            diagramConnections.some((conn) => conn.target === id)
+        )
+        if (fallback) {
+          recordMindMapSiblingInsertAttempt({
+            stage: 'stale_anchor_recovered',
+            staleAnchorId: anchorNodeId,
+            fallbackAnchorId: fallback,
+            selected: selectedNodes.value.slice(),
+          })
+          anchorNodeId = fallback
+          selectMindMapNode(ctx, fallback)
+        }
+      }
+      const collapsedPaths = getMindMapCollapsedPaths(data.value)
+      const collapsedNodeIds = getMindMapCollapsedNodeIds(
+        data.value.nodes,
+        data.value.connections,
+        collapsedPaths
+      )
+      const inserted = insertMindMapSiblingInPlace(data.value.nodes, data.value.connections, {
+        text,
+        anchorNodeId,
+        position,
+        insertIndex: at?.insertIndex,
+        afterNodeId: at?.afterNodeId,
+        parentId: at?.parentId,
+        nodeHeights: ctx.mindMapNodeHeights.value,
+        nodeWidths: ctx.mindMapNodeWidths.value,
+        diagramStyleId: data.value._mindmap_diagram_style as string | undefined,
+        collapsedNodeIds,
+      })
+      if (!inserted) return false
+      const ok = commitMindMapSiblingInPlace(
+        inserted,
+        position === 'above' ? 'Add sibling above' : 'Add sibling'
+      )
+      if (ok) {
+        recordMindMapSiblingInsertSuccess({
+          newNodeId: inserted.newNodeId,
+          anchorNodeId: nodeId,
+          isTopLevel: inserted.isTopLevel,
+        })
+      } else {
+        recordMindMapSiblingInsertFailure('commit_failed', {
+          newNodeId: inserted.newNodeId,
+          anchorNodeId: nodeId,
+        })
+      }
+      return ok
+    }
+
     if (nodeId === 'topic') return false
 
     const connections = data.value.connections
     const anchorNode = data.value.nodes.find((node) => node.id === nodeId)
+    const topicNode = data.value.nodes.find((node) => node.id === 'topic')
     const anchorY = anchorNode?.position?.y
+    const topicY = topicNode?.position?.y
     let anchorUid = readMindMapNodeUid(anchorNode)
-    // Ensure a stable uid so Y-preserve can find this branch after id remap.
     if (!anchorUid && anchorNode) {
       anchorUid = safeRandomUUID()
       anchorNode.data = {
@@ -681,24 +874,17 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     }
 
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
-    const found = findBranchByNodeId(
-      spec.rightBranches,
-      spec.leftBranches,
-      nodeId,
-      connections
-    )
+    const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, nodeId, connections)
     if (!found) return false
 
-    const insertIndex =
-      position === 'above' ? found.indexInParent : found.indexInParent + 1
+    const insertIndex = position === 'above' ? found.indexInParent : found.indexInParent + 1
     const parentId = getMindMapParentId(connections, nodeId)
-    const newSibling =
-      parentId === 'topic'
-        ? newTopLevelMindMapBranchSpec(text)
-        : { text }
+    const isTopLevel = parentId === 'topic'
+    const newSibling = isTopLevel ? newTopLevelMindMapBranchSpec(text) : { text }
+    const newSiblingUid = ensureMindMapBranchUid(newSibling)
     found.parentArray.splice(insertIndex, 0, newSibling)
-    const pathKey = computeSiblingPathKey(nodeId, insertIndex, connections)
 
+    const beforeNodes = data.value.nodes
     const result = loadMindMapSpec({
       topic: spec.topic,
       leftBranches: spec.leftBranches,
@@ -706,21 +892,64 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       preserveLeftRight: true,
     })
     let nodes = result.nodes
-    if (
-      readMindMapV2VisualDesignActive() &&
-      anchorUid != null &&
-      anchorY != null &&
-      Number.isFinite(anchorY)
-    ) {
-      nodes = applyMindMapSideAnchorYPreserve(result.nodes, anchorUid, anchorY)
+    let usedIncrementalL1Layout = false
+    if (anchorUid != null) {
+      if (isTopLevel && topicY != null && Number.isFinite(topicY)) {
+        nodes = applyMindMapIncrementalTopLevelSiblingLayout(
+          beforeNodes,
+          result.nodes,
+          result.connections,
+          {
+            anchorUid,
+            newSiblingUid,
+            insert: position,
+            topicY,
+            nodeHeights: ctx.mindMapNodeHeights.value,
+          }
+        )
+        usedIncrementalL1Layout = true
+      } else if (anchorY != null && Number.isFinite(anchorY)) {
+        nodes = applyMindMapIncrementalSiblingYPreserve(result.nodes, {
+          anchorUid,
+          anchorY,
+        })
+      }
     }
 
-    return commitMindMapReloadWithSelect(
+    const newNodeId = findNodeIdByMindMapUid(nodes, newSiblingUid)
+    const pathKey =
+      newNodeId != null
+        ? mindMapNodePathKey(newNodeId, result.connections)
+        : computeSiblingPathKey(nodeId, insertIndex, connections)
+
+    const committed = commitMindMapReloadWithSelect(
       ctx,
       { ...result, nodes },
       pathKey,
-      position === 'above' ? 'Add sibling above' : 'Add sibling'
+      position === 'above' ? 'Add sibling above' : 'Add sibling',
+      usedIncrementalL1Layout ? { skipMindMapRecalc: true } : undefined
     )
+    if (committed && newSiblingUid) {
+      const liveNodes = data.value?.nodes ?? nodes
+      const liveNewId = findNodeIdByMindMapUid(liveNodes, newSiblingUid)
+      if (liveNewId) {
+        selectMindMapNode(ctx, liveNewId)
+      }
+    }
+    // Re-arm after commitMindMapReload cleared preserve; brief hold for first paint.
+    if (committed && usedIncrementalL1Layout) {
+      ctx.mindMapPreserveIncomingY.value = true
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            ctx.mindMapPreserveIncomingY.value = false
+          })
+        })
+      } else {
+        ctx.mindMapPreserveIncomingY.value = false
+      }
+    }
+    return committed
   }
 
   function insertMindMapSiblingsFromLines(
@@ -740,9 +969,35 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       return 0
     }
 
+    // v2: shared in-place sibling helper (same path as Enter).
+    if (readMindMapV2VisualDesignActive() && anchorNodeId !== 'topic') {
+      let inserted = 0
+      let cursorId = anchorNodeId
+      for (const label of labels) {
+        const ok = addMindMapSibling(cursorId, label, 'below')
+        if (!ok) break
+        const selected = selectedNodes.value[0]
+        if (!selected) break
+        cursorId = selected
+        inserted += 1
+      }
+      return inserted
+    }
+
+    if (readMindMapV2VisualDesignActive() && anchorNodeId === 'topic') {
+      // Topic paste: append top-level branches on the chosen side via branch add.
+      const side = options?.topicSide ?? 'right'
+      let inserted = 0
+      for (const label of labels) {
+        if (!addMindMapBranchOnSide(side, label)) break
+        inserted += 1
+      }
+      return inserted
+    }
+
     const connections = data.value.connections
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
-    let selectPathKey: string | null = null
+    let selectPathKey: string
 
     if (anchorNodeId === 'topic') {
       const side = options?.topicSide ?? 'right'
@@ -761,11 +1016,13 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
       const insertIndex = found.indexInParent + 1
       found.parentArray.splice(insertIndex, 0, ...labels.map((text) => ({ text })))
-      selectPathKey = computeSiblingPathKey(
+      const pathKey = computeSiblingPathKey(
         anchorNodeId,
         insertIndex + labels.length - 1,
         connections
       )
+      if (!pathKey) return 0
+      selectPathKey = pathKey
     }
 
     const historyLabel = String(
@@ -781,22 +1038,14 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     return ok ? labels.length : 0
   }
 
-  function insertMindMapParentBranch(
-    nodeId: string,
-    text = defaultNewNodeText()
-  ): boolean {
+  function insertMindMapParentBranch(nodeId: string, text = defaultNewNodeText()): boolean {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
     if (nodeId === 'topic') return false
 
     const connections = data.value.connections
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
-    const found = findBranchByNodeId(
-      spec.rightBranches,
-      spec.leftBranches,
-      nodeId,
-      connections
-    )
+    const found = findBranchByNodeId(spec.rightBranches, spec.leftBranches, nodeId, connections)
     if (!found) return false
 
     const pathKey = mindMapNodePathKey(nodeId, connections)
@@ -868,6 +1117,9 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     if (!changed) return false
     setMindMapCollapsedPaths(data.value as Record<string, unknown>, paths)
+    // Topology change: leave sticky L1-Enter preserve so Y can full-restack.
+    ctx.mindMapPreserveIncomingY.value = false
+    ctx.mindMapPreserveIncomingYNodeId.value = null
     ctx.scheduleMindMapRecalc()
     return true
   }
@@ -921,14 +1173,17 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     const current = data.value._collapsed_paths ?? []
     const collapsed = isMindMapPathCollapsed(nodeId, data.value.connections, current)
-    const next = collapsed
-      ? current.filter((p) => p !== pathKey)
-      : [...current, pathKey]
+    const next = collapsed ? current.filter((p) => p !== pathKey) : [...current, pathKey]
 
     setMindMapCollapsedPaths(data.value as Record<string, unknown>, next)
+    // Topology change: leave sticky L1-Enter preserve so Y can full-restack.
+    ctx.mindMapPreserveIncomingY.value = false
+    ctx.mindMapPreserveIncomingYNodeId.value = null
     ctx.scheduleMindMapRecalc()
     ctx.pushHistory(collapsed ? 'Expand branch' : 'Collapse branch')
-    emitEvent('diagram:operation_completed', { operation: collapsed ? 'expand_branch' : 'collapse_branch' })
+    emitEvent('diagram:operation_completed', {
+      operation: collapsed ? 'expand_branch' : 'collapse_branch',
+    })
     return true
   }
 
@@ -987,8 +1242,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       return false
     }
 
-    const label =
-      historyLabel ?? String(i18n.global.t('diagram.history.pasteNodes'))
+    const label = historyLabel ?? String(i18n.global.t('diagram.history.pasteNodes'))
     const reloaded = applyMindMapSpecReload(
       merged.topic,
       merged.leftBranches,
@@ -997,16 +1251,18 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     )
     if (isMindMapSubgraphDebugEnabled()) {
       const afterNodes = data.value?.nodes ?? []
-      const afterConnections = data.value?.connections ?? []
+      const _afterConnections = data.value?.connections ?? []
       mindMapSubgraphDebug('paste', 'applyMindMapSpecReload', {
         anchorNodeId,
         reloaded,
         nodesBefore,
         nodesAfter: afterNodes.length,
-        branchIdsAfter: afterNodes.filter((n) => n.id.startsWith('branch-')).map((n) => ({
-          id: n.id,
-          text: n.text,
-        })),
+        branchIdsAfter: afterNodes
+          .filter((n) => n.id.startsWith('branch-'))
+          .map((n) => ({
+            id: n.id,
+            text: n.text,
+          })),
       })
     }
     return reloaded

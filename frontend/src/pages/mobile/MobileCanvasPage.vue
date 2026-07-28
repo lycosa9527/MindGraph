@@ -33,7 +33,7 @@ import {
   ConceptMapLabelPicker,
   ConceptMapRootConceptPicker,
 } from '@/components/canvas'
-import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
+import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import { NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
   getDiagramOperations,
@@ -47,16 +47,16 @@ import {
   useNotifications,
 } from '@/composables'
 import { useCanvasAutoSaveStatus } from '@/composables/canvasPage/useCanvasAutoSaveStatus'
-import { useCanvasUnsavedLeaveGuard } from '@/composables/canvasPage/useCanvasUnsavedLeaveGuard'
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
+import { useCanvasUnsavedLeaveGuard } from '@/composables/canvasPage/useCanvasUnsavedLeaveGuard'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
+import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { useMobileCanvasEventHandlers } from '@/composables/mobile/useMobileCanvasEventHandlers'
 import { useMobileCanvasInlineRecBar } from '@/composables/mobile/useMobileCanvasInlineRecBar'
 import { useMobileCanvasRouteLoader } from '@/composables/mobile/useMobileCanvasRouteLoader'
 import { useMobileCanvasToolbar } from '@/composables/mobile/useMobileCanvasToolbar'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import {
   useAuthStore,
   useConceptMapRelationshipStore,
@@ -69,13 +69,10 @@ import {
 } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
-import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
-import {
-  DEFAULT_CHART_TYPE_KEY,
-  diagramTypeFromKey,
-} from '@/utils/diagramTypeKeys'
+import { DEFAULT_CHART_TYPE_KEY, diagramTypeFromKey } from '@/utils/diagramTypeKeys'
 
 const diagramStore = useDiagramStore()
 const uiStore = useUIStore()
@@ -115,11 +112,7 @@ const chartType = computed(() => uiStore.selectedChartType)
 const diagramType = computed<DiagramType | null>(() => diagramTypeFromKey(chartType.value))
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
 const useMindMapV2 = useMindMapV2Chrome()
-const fitViewOnInit = computed(
-  () =>
-    !isConceptMap.value &&
-    !useMindMapV2.value
-)
+const fitViewOnInit = computed(() => !isConceptMap.value && !useMindMapV2.value)
 
 const tabReady = computed(() => {
   if (!authStore.isAuthenticated) return false
@@ -339,61 +332,61 @@ onUnmounted(() => {
           <span class="toolbar-label">{{ t('canvas.toolbar.delete', '删除') }}</span>
         </button>
 
-      <!-- 概念图：5 等分；生成概念 = Sparkles，启动 AI = Bot -->
-      <template v-if="isConceptMap">
-        <button
-          class="toolbar-btn toolbar-btn--primary"
-          :class="{ 'toolbar-btn--generating': isAIGenerating }"
-          @click="handleToolbarAI"
-        >
-          <Sparkles
-            :size="18"
-            class="ai-icon"
-          />
-          <span class="toolbar-label truncate max-w-full">{{
-            t('canvas.toolbar.conceptGeneration', '生成概念')
-          }}</span>
-        </button>
-        <button
-          type="button"
-          class="toolbar-btn toolbar-btn--ai"
-          :class="{ 'toolbar-btn--ai-on': llmResultsStore.selectedModel }"
-          @click="toggleConceptMapAiToolbar"
-        >
-          <Bot
-            :size="18"
-            class="ai-icon"
-          />
-          <span class="toolbar-label truncate max-w-full">{{
-            t('aiModel.enableAi', '启动 AI')
-          }}</span>
-        </button>
-      </template>
-      <template v-else>
-        <button
-          class="toolbar-btn toolbar-btn--primary"
-          :class="{
-            'toolbar-btn--generating': isAIGenerating,
-          }"
-          :aria-label="t('canvas.toolbar.aiGenerate', 'AI生成')"
-          @click="handleToolbarAI"
-        >
-          <Sparkles
-            :size="18"
-            class="ai-icon"
-          />
-          <span class="toolbar-label">{{ t('canvas.toolbar.aiGenerate', 'AI生成') }}</span>
-        </button>
-        <button
-          class="toolbar-btn toolbar-btn--purple"
-          :class="{ 'toolbar-btn--active': showNodePalette }"
-          :aria-label="t('panel.nodePalette')"
-          @click="toggleNodePalette"
-        >
-          <LayoutGrid :size="18" />
-          <span class="toolbar-label">{{ t('panel.nodePalette') }}</span>
-        </button>
-      </template>
+        <!-- 概念图：5 等分；生成概念 = Sparkles，启动 AI = Bot -->
+        <template v-if="isConceptMap">
+          <button
+            class="toolbar-btn toolbar-btn--primary"
+            :class="{ 'toolbar-btn--generating': isAIGenerating }"
+            @click="handleToolbarAI"
+          >
+            <Sparkles
+              :size="18"
+              class="ai-icon"
+            />
+            <span class="toolbar-label truncate max-w-full">{{
+              t('canvas.toolbar.conceptGeneration', '生成概念')
+            }}</span>
+          </button>
+          <button
+            type="button"
+            class="toolbar-btn toolbar-btn--ai"
+            :class="{ 'toolbar-btn--ai-on': llmResultsStore.selectedModel }"
+            @click="toggleConceptMapAiToolbar"
+          >
+            <Bot
+              :size="18"
+              class="ai-icon"
+            />
+            <span class="toolbar-label truncate max-w-full">{{
+              t('aiModel.enableAi', '启动 AI')
+            }}</span>
+          </button>
+        </template>
+        <template v-else>
+          <button
+            class="toolbar-btn toolbar-btn--primary"
+            :class="{
+              'toolbar-btn--generating': isAIGenerating,
+            }"
+            :aria-label="t('canvas.toolbar.aiGenerate', 'AI生成')"
+            @click="handleToolbarAI"
+          >
+            <Sparkles
+              :size="18"
+              class="ai-icon"
+            />
+            <span class="toolbar-label">{{ t('canvas.toolbar.aiGenerate', 'AI生成') }}</span>
+          </button>
+          <button
+            class="toolbar-btn toolbar-btn--purple"
+            :class="{ 'toolbar-btn--active': showNodePalette }"
+            :aria-label="t('panel.nodePalette')"
+            @click="toggleNodePalette"
+          >
+            <LayoutGrid :size="18" />
+            <span class="toolbar-label">{{ t('panel.nodePalette') }}</span>
+          </button>
+        </template>
       </div>
 
       <p
@@ -406,7 +399,7 @@ onUnmounted(() => {
 
     <!-- Diagram canvas with touch support (only this area is pannable/zoomable) -->
     <div class="canvas-area flex-1 min-h-0 relative overflow-hidden">
-      <DiagramCanvas
+      <DiagramCanvasHost
         v-if="diagramStore.data"
         class="absolute inset-0 canvas-touch"
         :show-background="true"

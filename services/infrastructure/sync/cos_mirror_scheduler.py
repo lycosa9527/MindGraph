@@ -13,26 +13,24 @@ import logging
 import os
 import uuid
 from datetime import datetime
-from typing import Optional
 
+from services.infrastructure.sync.abuseipdb_cos_sync import merge_abuseipdb_blocklist_from_cos
+from services.infrastructure.sync.celery_cos_sync import (
+    install_celery_from_cos,
+    publish_celery_release_to_cos,
+)
 from services.infrastructure.sync.cos_sync_env import (
     cos_sync_enabled,
     is_cos_consumer,
     is_cos_publisher,
 )
 from services.infrastructure.sync.crowdsec_cos_sync import merge_crowdsec_blocklist_from_cos
-from services.infrastructure.sync.abuseipdb_cos_sync import merge_abuseipdb_blocklist_from_cos
-from services.infrastructure.sync.celery_cos_sync import (
-    install_celery_from_cos,
-    publish_celery_release_to_cos,
-)
 from services.infrastructure.sync.geolite_cos_sync import (
     install_geolite_from_cos,
     publish_geolite_to_cos,
 )
 from services.infrastructure.sync.qdrant_cos_sync import (
     install_qdrant_from_cos,
-    maybe_auto_install_qdrant_from_cos,
     publish_qdrant_release_to_cos,
 )
 from services.redis.redis_async_client import get_async_redis
@@ -53,7 +51,7 @@ class _CosMirrorLockState:
 
     def __init__(self) -> None:
         """init."""
-        self.worker_lock_id: Optional[str] = None
+        self.worker_lock_id: str | None = None
 
 
 _lock_state = _CosMirrorLockState()
@@ -117,26 +115,36 @@ async def _sleep_until_next_sync() -> None:
             return
 
 
+async def _run_consumer_cos_pull(*, force_blocklists: bool = False) -> None:
+    """
+    Pull consumer artifacts from COS when newer than local.
+
+    Blocklists, GeoLite, Qdrant, and Celery each skip when already in sync unless
+    ``force_blocklists`` is set (scheduled mirror tick).
+    """
+    cs = await merge_crowdsec_blocklist_from_cos(force=force_blocklists)
+    if cs.get("ok") and not cs.get("skipped"):
+        logger.info("[COSMirror] CrowdSec consumer sync: %s IPs", cs.get("count"))
+    ab = await merge_abuseipdb_blocklist_from_cos(force=force_blocklists)
+    if ab.get("ok") and not ab.get("skipped"):
+        logger.info("[COSMirror] AbuseIPDB consumer sync: %s IPs", ab.get("count"))
+    gl = await install_geolite_from_cos()
+    if gl.get("ok") and not gl.get("skipped"):
+        logger.info("[COSMirror] GeoLite installed from COS")
+    qd = await install_qdrant_from_cos()
+    if qd.get("ok") and not qd.get("skipped"):
+        logger.info("[COSMirror] Qdrant installed v%s from COS", qd.get("version"))
+    elif qd.get("needs_root"):
+        logger.info("[COSMirror] Qdrant COS update skipped (requires root)")
+    cl = await install_celery_from_cos()
+    if cl.get("ok") and not cl.get("skipped"):
+        logger.info("[COSMirror] Celery installed v%s from COS", cl.get("version"))
+
+
 async def _run_mirror_tick() -> None:
     """One scheduled mirror cycle."""
     if is_cos_consumer():
-        cs = await merge_crowdsec_blocklist_from_cos(force=True)
-        if cs.get("ok") and not cs.get("skipped"):
-            logger.info("[COSMirror] CrowdSec consumer sync: %s IPs", cs.get("count"))
-        ab = await merge_abuseipdb_blocklist_from_cos(force=True)
-        if ab.get("ok") and not ab.get("skipped"):
-            logger.info("[COSMirror] AbuseIPDB consumer sync: %s IPs", ab.get("count"))
-        gl = await install_geolite_from_cos()
-        if gl.get("ok") and not gl.get("skipped"):
-            logger.info("[COSMirror] GeoLite installed from COS")
-        qd = await install_qdrant_from_cos()
-        if qd.get("ok") and not qd.get("skipped"):
-            logger.info("[COSMirror] Qdrant installed v%s from COS", qd.get("version"))
-        elif qd.get("needs_root"):
-            logger.debug("[COSMirror] Qdrant install needs root")
-        cl = await install_celery_from_cos()
-        if cl.get("ok") and not cl.get("skipped"):
-            logger.info("[COSMirror] Celery installed v%s from COS", cl.get("version"))
+        await _run_consumer_cos_pull(force_blocklists=True)
     elif is_cos_publisher():
         pub = await publish_qdrant_release_to_cos()
         if pub.get("ok") and not pub.get("skipped"):
@@ -193,8 +201,9 @@ async def start_cos_mirror_scheduler() -> None:
 
 
 async def run_cos_mirror_startup() -> None:
-    """Startup hooks: consumer auto-install Qdrant when configured."""
+    """Before serving: pull newer COS artifacts (consumer) so launch uses current data."""
     if not cos_sync_enabled():
         return
     if is_cos_consumer():
-        await maybe_auto_install_qdrant_from_cos()
+        logger.info("[COSMirror] Checking COS for newer artifacts at startup...")
+        await _run_consumer_cos_pull(force_blocklists=False)

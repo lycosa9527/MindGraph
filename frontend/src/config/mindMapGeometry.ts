@@ -3,8 +3,8 @@
  * Golden-ratio aesthetic baseline for typography, padding, borders, and edges.
  */
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import type { Connection, DiagramNode } from '@/types'
 import type { MindMapCanvasMode } from '@/stores/ui'
+import type { Connection, DiagramNode } from '@/types'
 
 export const MIND_MAP_GEOMETRY = {
   /** Depth 2+ branch / leaf labels */
@@ -60,42 +60,29 @@ export function mindMapBranchFontSize(nodeId?: string): number {
     : MIND_MAP_GEOMETRY.fontSize
 }
 
-/** Sort depth-2+ sibling branch ids by local layout index (same side / parent). */
+/**
+ * Preserve sibling order from the caller (connection-list order is SoT).
+ * Kept as a named helper so outline / Kitty wheel share one entry point.
+ */
 export function sortMindMapChildIds(childIds: string[]): string[] {
-  if (childIds.length <= 1) return childIds
-  const hasIndexed = childIds.some((id) => mindMapBranchGlobalIndex(id) != null)
-  if (!hasIndexed) return childIds
-  return childIds.slice().sort((a, b) => {
-    const ai = mindMapBranchGlobalIndex(a)
-    const bi = mindMapBranchGlobalIndex(b)
-    if (ai != null && bi != null) return ai - bi
-    if (ai != null) return -1
-    if (bi != null) return 1
-    return 0
-  })
+  return childIds
 }
 
 /**
- * Sort topic's depth-1 children in clockwise order:
- * right side top→bottom, then left side bottom→top.
- * Per-side ids restart at 0, so never sort all children by id suffix alone.
+ * Topic depth-1 children: right side (connection order) then left side
+ * (connection order). Does not re-sort by global id suffix.
  */
 export function sortMindMapTopicChildIds(childIds: string[]): string[] {
   if (childIds.length <= 1) return childIds
   const right = childIds.filter((id) => id.startsWith('branch-r-'))
   const left = childIds.filter((id) => id.startsWith('branch-l-'))
-  if (right.length === 0 && left.length === 0) return sortMindMapChildIds(childIds)
-
-  right.sort(
-    (a, b) => (mindMapBranchGlobalIndex(a) ?? 0) - (mindMapBranchGlobalIndex(b) ?? 0)
-  )
-  left.sort(
-    (a, b) => (mindMapBranchGlobalIndex(b) ?? 0) - (mindMapBranchGlobalIndex(a) ?? 0)
-  )
+  if (right.length === 0 && left.length === 0) return childIds
   return [...right, ...left]
 }
 
-export function mindMapHorizontalPadding(shape: 'rounded' | 'rectangle' | 'oval' | 'underline'): number {
+export function mindMapHorizontalPadding(
+  shape: 'rounded' | 'rectangle' | 'oval' | 'underline'
+): number {
   return shape === 'oval' ? MIND_MAP_GEOMETRY.paddingXOval : MIND_MAP_GEOMETRY.paddingX
 }
 
@@ -136,6 +123,21 @@ export function computeMindMapUnderlineBoxMetrics(textBlockHeight: number): {
     totalHeight,
     lineMidlineOffsetFromTop: top + textBlockHeight + textGap + stroke / 2,
   }
+}
+
+/**
+ * Topic column width for layout and topic→L1 edge stems.
+ * Prefer DOM-measured width, but never shrink below the text estimate
+ * (same rule as v2 column layout).
+ */
+export function resolveMindMapTopicLayoutWidth(
+  measured: number | null | undefined,
+  estimate: number
+): number {
+  if (measured != null && measured > 0) {
+    return Math.max(measured, estimate)
+  }
+  return estimate
 }
 
 /** Y coordinate where branch connectors meet the node (center or underline midline). */
@@ -257,10 +259,7 @@ export function syncMindMapConnectionStrokeColorsForCanvasMode(
 ): void {
   if (mode === 'v2') {
     const topic = nodes.find((node) => node.id === 'topic')
-    syncMindMapConnectionStrokeColors(
-      connections,
-      resolveMindMapTopicBorderColor(topic)
-    )
+    syncMindMapConnectionStrokeColors(connections, resolveMindMapTopicBorderColor(topic))
     return
   }
   syncLegacyMindMapConnectionStrokeColors(connections, nodes)

@@ -58,6 +58,9 @@ function ensureInstalled(specs) {
   if (missing.length === 0) {
     return
   }
+  console.log(
+    `[ensure-cross-platform-native-deps] Installing missing platform bindings: ${missing.join(', ')}`
+  )
   execSync(`npm install ${missing.join(' ')} --no-save --force`, {
     cwd: root,
     stdio: 'inherit',

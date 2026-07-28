@@ -22,25 +22,10 @@ import { MiniMap } from '@vue-flow/minimap'
 
 import { storeToRefs } from 'pinia'
 
-import { ExportToCommunityModal, CanvasNodeFloatingToolbar } from '@/components/canvas'
+import { ExportToCommunityModal } from '@/components/canvas'
 import MindMapNodeExplainModal from '@/components/canvas/MindMapNodeExplainModal.vue'
 import { useBranchMoveDrag, useLanguage } from '@/composables'
-import {
-  diagramPresentationReadOnlyRef,
-  resolvePresentationTeleportTarget,
-} from '@/composables/presentation/presentationDiagramEdit'
-import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { useNodeFloatingToolbarPosition } from '@/composables/canvasToolbar'
-import { useMindMapSubgraphSuggest } from '@/composables/editor/useMindMapSubgraphSuggest'
-import { isMindMapSubgraphExpandable } from '@/utils/mindMapSubgraphContext'
-import {
-  useLearningSheetCustomMode,
-  useLearningSheetPickKeyboard,
-} from '@/composables/mindMap/useLearningSheetCustomMode'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
-import { useMindMapConnectorDebugLog } from '@/composables/mindMap/useMindMapConnectorDebugLog'
-import { isMindMapConnectorDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
-import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { registerDiagramLayoutRecalcBootstrap } from '@/composables/core/diagramLayoutRecalcBootstrap'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useTheme } from '@/composables/core/useTheme'
@@ -59,30 +44,48 @@ import {
   useDiagramCanvasVueFlowUi,
 } from '@/composables/diagramCanvas'
 import { useDiagramCanvasMindMapPaletteDrop } from '@/composables/diagramCanvas/useDiagramCanvasMindMapPaletteDrop'
-import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
-import { useMindMapNodeExplain } from '@/composables/mindMap/useMindMapNodeExplain'
 import {
   CONCEPT_MAP_GENERATING_KEY,
   useConceptMapRelationship,
 } from '@/composables/editor/useConceptMapRelationship'
+import { useMindMapSubgraphSuggest } from '@/composables/editor/useMindMapSubgraphSuggest'
+import { MIND_MAP_CANVAS_VARIANT_KEY } from '@/composables/mindMap/mindMapCanvasVariantKey'
+import {
+  useLearningSheetCustomMode,
+  useLearningSheetPickKeyboard,
+} from '@/composables/mindMap/useLearningSheetCustomMode'
+import { useMindMapCanvasVisuals } from '@/composables/mindMap/useMindMapCanvasVisuals'
+import { useMindMapConnectorDebugLog } from '@/composables/mindMap/useMindMapConnectorDebugLog'
+import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
+import { useMindMapNodeExplain } from '@/composables/mindMap/useMindMapNodeExplain'
+import {
+  diagramPresentationReadOnlyRef,
+  resolvePresentationTeleportTarget,
+} from '@/composables/presentation/presentationDiagramEdit'
+import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
 import { useDiagramStore, usePanelsStore, usePresentationPointerStore, useUIStore } from '@/stores'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
+import type { MindMapCanvasMode } from '@/stores/ui'
 import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } from '@/types'
+import { isMindMapConnectorDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
+import { isMindMapSubgraphExpandable } from '@/utils/mindMapSubgraphContext'
 
 import BraceOverlay from './BraceOverlay.vue'
 import BridgeOverlay from './BridgeOverlay.vue'
-import MindMapCollapseToggleOverlay from './MindMapCollapseToggleOverlay.vue'
-import MindMapDirectionalAddOverlay from './MindMapDirectionalAddOverlay.vue'
 import ContextMenu from './ContextMenu.vue'
 import DiagramCanvasZoomPaneOverlays from './DiagramCanvasZoomPaneOverlays.vue'
 import LearningSheetOverlay from './LearningSheetOverlay.vue'
-import LearningSheetFloatBar from '@/components/canvas/LearningSheetFloatBar.vue'
 import PresentationHighlightOverlay from './PresentationHighlightOverlay.vue'
 import TreeMapOverlay from './TreeMapOverlay.vue'
 import './diagramCanvas.css'
+import { diagramCanvasEdgeTypesLegacy } from './diagramCanvasEdgeTypesLegacy'
+import { diagramCanvasEdgeTypesMindMapV2 } from './diagramCanvasEdgeTypesMindMapV2'
 import { diagramCanvasEdgeTypes, diagramCanvasNodeTypes } from './diagramCanvasVueFlowTypes'
 
 interface Props {
+  /** Locks mind map rendering when mounted via MindMapLegacyCanvas / MindMapV2Canvas. */
+  mindMapVariant?: MindMapCanvasMode
   showBackground?: boolean
   showMinimap?: boolean
   fitViewOnInit?: boolean
@@ -246,8 +249,7 @@ const presentationStrokeOverlayMode = computed((): 'pen' | 'highlighter' | 'eras
 
 /** Zoom-bar hand or presentation hand: grab-pan the canvas. */
 const useHandToolPanClass = computed(
-  () =>
-    props.presentationHandPanMode || (props.handToolActive && !props.presentationRailOpen)
+  () => props.presentationHandPanMode || (props.handToolActive && !props.presentationRailOpen)
 )
 
 const presentationTeleportTarget = computed(() => resolvePresentationTeleportTarget())
@@ -260,7 +262,29 @@ const { nodes, edges, nodesLength } = useDiagramCanvasNodesEdges({
   mindMapSlideDimFocusNodeIds: () => props.mindMapSlideDimFocusNodeIds,
 })
 
-const useMindMapV2 = useMindMapV2Chrome()
+provide(
+  MIND_MAP_CANVAS_VARIANT_KEY,
+  computed(() => props.mindMapVariant ?? null)
+)
+
+const useMindMapV2 = useMindMapCanvasVisuals()
+
+const resolvedEdgeTypes = computed(() => {
+  if (props.mindMapVariant === 'legacy') {
+    return diagramCanvasEdgeTypesLegacy
+  }
+  if (props.mindMapVariant === 'v2') {
+    return diagramCanvasEdgeTypesMindMapV2
+  }
+  const isMindMap = diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'
+  if (isMindMap && useMindMapV2.value) {
+    return diagramCanvasEdgeTypesMindMapV2
+  }
+  if (isMindMap) {
+    return diagramCanvasEdgeTypesLegacy
+  }
+  return diagramCanvasEdgeTypes
+})
 
 const mindMapConnectorDebugEnabled = computed(
   () =>
@@ -326,10 +350,7 @@ const { position: floatingToolbarPosition, scheduleMeasure: scheduleFloatingTool
   })
 
 watch(
-  () =>
-    nodes.value
-      .map((n) => `${n.id}:${n.position?.x ?? 0}:${n.position?.y ?? 0}`)
-      .join('|'),
+  () => nodes.value.map((n) => `${n.id}:${n.position?.x ?? 0}:${n.position?.y ?? 0}`).join('|'),
   () => {
     scheduleFloatingToolbarMeasure()
   }
@@ -384,9 +405,7 @@ const {
   setViewport,
 })
 
-function handleViewportChangeWithToolbar(
-  ...args: Parameters<typeof handleViewportChange>
-) {
+function handleViewportChangeWithToolbar(...args: Parameters<typeof handleViewportChange>) {
   handleViewportChange(...args)
   scheduleFloatingToolbarMeasure()
 }
@@ -559,7 +578,6 @@ defineExpose({
     @contextmenu.capture="handleContextMenuEvent"
     @paste.capture="onCanvasPaste"
   >
-    <LearningSheetFloatBar v-if="useMindMapV2 && !uiStore.exportWireframeOutline" />
     <div
       ref="vueFlowWrapper"
       class="vue-flow-wrapper w-full h-full"
@@ -575,7 +593,7 @@ defineExpose({
         :nodes="nodes"
         :edges="edges"
         :node-types="diagramCanvasNodeTypes"
-        :edge-types="diagramCanvasEdgeTypes"
+        :edge-types="resolvedEdgeTypes"
         :default-viewport="{ x: 0, y: 0, zoom: diagramCanvasZoomConfig.default }"
         :min-zoom="diagramCanvasZoomConfig.min"
         :max-zoom="diagramCanvasZoomConfig.max"
@@ -641,24 +659,17 @@ defineExpose({
       </VueFlow>
     </div>
 
-    <CanvasNodeFloatingToolbar
-      v-if="useMindMapV2 && !presentationDiagramEditLocked"
-      :position="floatingToolbarPosition"
-      :node-id="floatingToolbarAnchorId"
-      :ai-generating="subgraphGenerating"
-      :show-ai-subgraph="floatingToolbarShowAiSubgraph"
-      @ai-subgraph-generate="handleAiSubgraphGenerate"
-    />
-
-    <MindMapDirectionalAddOverlay
-      v-if="useMindMapV2 && !presentationDiagramEditLocked && !uiStore.exportWireframeOutline"
-      :container-ref="canvasContainer"
-      :teleport-target="presentationTeleportTarget"
-    />
-    <MindMapCollapseToggleOverlay
-      v-if="useMindMapV2 && !presentationDiagramEditLocked && !uiStore.exportWireframeOutline"
-      :container-ref="canvasContainer"
-      :teleport-target="presentationTeleportTarget"
+    <slot
+      v-if="useMindMapV2"
+      name="v2-canvas-overlays"
+      :presentation-diagram-edit-locked="presentationDiagramEditLocked"
+      :floating-toolbar-position="floatingToolbarPosition"
+      :floating-toolbar-anchor-id="floatingToolbarAnchorId"
+      :subgraph-generating="subgraphGenerating"
+      :floating-toolbar-show-ai-subgraph="floatingToolbarShowAiSubgraph"
+      :canvas-container="canvasContainer"
+      :presentation-teleport-target="presentationTeleportTarget"
+      :on-ai-subgraph-generate="handleAiSubgraphGenerate"
     />
 
     <ContextMenu

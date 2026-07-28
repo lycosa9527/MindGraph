@@ -6,26 +6,27 @@ import { computed, ref } from 'vue'
 
 import { type EdgeProps, useVueFlow } from '@vue-flow/core'
 
-import type { MindGraphEdgeData, MindGraphNodeData, NodeStyle } from '@/types'
 import { useMindMapExportOutlineWireframeActive } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
-import { useDiagramStore } from '@/stores'
-import { resolveMindMapOutlineWireframeEdgeStroke } from '@/utils/mindMapOutlineWireframeStyle'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import {
-  MIND_MAP_GEOMETRY,
   MINDMAP_UNDERLINE_STROKE_WIDTH,
+  MIND_MAP_GEOMETRY,
   mindMapConnectionAnchorY,
   resolveMindMapTopicBorderColor,
+  resolveMindMapTopicLayoutWidth,
 } from '@/config/mindMapGeometry'
-import {
-  buildMindMapBracketBusPath,
-  computeMindMapSharedTrunkX,
-} from '@/utils/mindMapOrthogonalPath'
+import { useDiagramStore } from '@/stores'
+import type { MindGraphEdgeData, MindGraphNodeData, NodeStyle } from '@/types'
 import {
   mindMapBranchSide,
   resolveMindMapEdgeEndpoint,
   resolveMindMapNodeStyle,
 } from '@/utils/mindMapEdgeEndpoints'
-import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
+import {
+  buildMindMapBracketBusPath,
+  computeMindMapSharedTrunkX,
+} from '@/utils/mindMapOrthogonalPath'
+import { resolveMindMapOutlineWireframeEdgeStroke } from '@/utils/mindMapOutlineWireframeStyle'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
@@ -40,12 +41,9 @@ const preservedNodeStyles = computed(
 )
 
 /** Mind-map layout measurements — same source as recalculateMindMapV2ColumnPositions. */
-const mindMapWidths = computed(
-  () => diagramStore.mindMapNodeWidths as Record<string, number>
-)
-const mindMapHeights = computed(
-  () => diagramStore.mindMapNodeHeights as Record<string, number>
-)
+const mindMapWidths = computed(() => diagramStore.mindMapNodeWidths as Record<string, number>)
+const mindMapHeights = computed(() => diagramStore.mindMapNodeHeights as Record<string, number>)
+const mindMapTopicActualWidth = computed(() => diagramStore.mindMapTopicActualWidth)
 const fallbackDimensions = computed(
   () => diagramStore.nodeDimensions as Record<string, { width: number; height: number }>
 )
@@ -60,6 +58,24 @@ function measuredSize(nodeId: string | undefined): { width: number; height: numb
     width: w ?? fallback?.width,
     height: h ?? fallback?.height,
   }
+}
+
+/** Topic width SoT matches layout: mindMapTopicActualWidth + max(measured, estimate). */
+function topicLayoutSize(topicNode: (typeof vueFlowNodes.value)[number]): {
+  width: number
+  height: number
+} {
+  const estimateW = (topicNode.data?.estimatedWidth as number | undefined) ?? 120
+  const width = resolveMindMapTopicLayoutWidth(mindMapTopicActualWidth.value, estimateW)
+
+  const topicMeasured = measuredSize('topic')
+  const height =
+    topicMeasured?.height ??
+    topicNode.dimensions?.height ??
+    (topicNode.data?.estimatedHeight as number | undefined) ??
+    48
+
+  return { width, height }
 }
 
 const diagramStyleId = computed(
@@ -86,7 +102,11 @@ function edgeEndpoint(
   role: 'source' | 'target',
   fallback: { x: number; y: number }
 ) {
-  const style = resolveMindMapNodeStyle(node?.id, node?.data as MindGraphNodeData | undefined, preservedNodeStyles.value)
+  const style = resolveMindMapNodeStyle(
+    node?.id,
+    node?.data as MindGraphNodeData | undefined,
+    preservedNodeStyles.value
+  )
   return resolveMindMapEdgeEndpoint(
     node,
     role,
@@ -120,17 +140,7 @@ const topicAnchor = computed(() => {
   const topicNode = vueFlowNodes.value.find((n) => n.id === 'topic')
   if (!topicNode?.position) return null
 
-  const topicMeasured = measuredSize('topic')
-  const w =
-    topicMeasured?.width ??
-    topicNode.dimensions?.width ??
-    (topicNode.data?.estimatedWidth as number | undefined) ??
-    120
-  const h =
-    topicMeasured?.height ??
-    topicNode.dimensions?.height ??
-    (topicNode.data?.estimatedHeight as number | undefined) ??
-    48
+  const { width: w, height: h } = topicLayoutSize(topicNode)
 
   const topicStyle = resolveMindMapNodeStyle(
     'topic',
@@ -215,9 +225,7 @@ const isSingleUnderlineChild = computed(
   () => siblingTargetYs.value.length === 1 && targetShape.value === 'underline'
 )
 
-const isSingleTopicSideChild = computed(
-  () => isFromTopic.value && siblingEdges.value.length === 1
-)
+const isSingleTopicSideChild = computed(() => isFromTopic.value && siblingEdges.value.length === 1)
 
 const path = computed(() => {
   const from = anchorPoint.value
@@ -225,20 +233,12 @@ const path = computed(() => {
   const trunkX = sharedTrunkX.value
   const ys = siblingTargetYs.value
 
-  const edgePath = buildMindMapBracketBusPath(
-    from.x,
-    from.y,
-    to.x,
-    to.y,
-    trunkX,
-    ys,
-    {
-      drawSpine: drawsBusSpine.value,
-      siblingToXs: siblingTargetXs.value,
-      singleUnderlineChild: isSingleUnderlineChild.value,
-      singleTopicSideChild: isSingleTopicSideChild.value,
-    }
-  )
+  const edgePath = buildMindMapBracketBusPath(from.x, from.y, to.x, to.y, trunkX, ys, {
+    drawSpine: drawsBusSpine.value,
+    siblingToXs: siblingTargetXs.value,
+    singleUnderlineChild: isSingleUnderlineChild.value,
+    singleTopicSideChild: isSingleTopicSideChild.value,
+  })
 
   return {
     edgePath,
@@ -263,7 +263,8 @@ const edgeStyle = computed(() => ({
   strokeWidth: isHovered.value
     ? MIND_MAP_GEOMETRY.edgeStrokeWidthHover
     : (props.data?.style?.strokeWidth ?? MIND_MAP_GEOMETRY.edgeStrokeWidth),
-  strokeOpacity: exportOutlineActive.value || isHovered.value ? 1 : MIND_MAP_GEOMETRY.edgeStrokeOpacity,
+  strokeOpacity:
+    exportOutlineActive.value || isHovered.value ? 1 : MIND_MAP_GEOMETRY.edgeStrokeOpacity,
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
   strokeLinecap: 'butt' as const,
   strokeLinejoin: 'round' as const,

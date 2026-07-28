@@ -35,15 +35,26 @@ export function clearMindMapPostEditSiblingAnchor(): void {
   mindMapPostEditSiblingAnchor = null
 }
 
-/** Prefer the node that just finished inline edit over stale diagram selection. */
+/**
+ * Resolve Enter sibling anchor.
+ * - If the user selected a different node after editing, honor that selection
+ *   (otherwise left-side post-edit anchors stole Enter from a right selection).
+ * - If selection is empty/topic, fall back to the node that just finished edit.
+ * - If selection matches the post-edit node, either is fine.
+ */
 export function consumeMindMapPostEditSiblingAnchor(
   fallbackSelectedId: string | undefined
 ): string | null {
   const anchor = mindMapPostEditSiblingAnchor
   mindMapPostEditSiblingAnchor = null
-  if (anchor && anchor !== 'topic') return anchor
-  if (fallbackSelectedId && fallbackSelectedId !== 'topic') return fallbackSelectedId
-  return null
+  const selected = fallbackSelectedId && fallbackSelectedId !== 'topic' ? fallbackSelectedId : null
+  const postEdit = anchor && anchor !== 'topic' ? anchor : null
+
+  if (selected && postEdit && selected !== postEdit) {
+    return selected
+  }
+  if (postEdit) return postEdit
+  return selected
 }
 
 /** Block canvas-level Enter until the next animation frame after inline edit commits. */

@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.151.0] - 2026-07-28
+
+> **Mind map v2/legacy lazy canvas split, in-place sibling insert with sticky Enter Y, collab connection-order SoT, and longer API tokens with safer geo/pg-restore startup.**
+
+### Added
+
+- **Mind map canvas host/router** — `DiagramCanvasHost` routes mind maps through `MindMapCanvasRouter`, which lazy-loads exactly one shell (`MindMapLegacyCanvas` / `MindMapV2Canvas`) with separate edge registries and v2-only overlays ([`DiagramCanvasHost.vue`](frontend/src/components/diagram/DiagramCanvasHost.vue), [`MindMapCanvasRouter.vue`](frontend/src/components/diagram/MindMapCanvasRouter.vue)).
+- **Mind map node routers** — `TopicNode` / `BranchNode` are thin lazy routers to `MindMapLegacy*` / `MindMapV2*` variant chunks; other diagram types use `TopicNodeDiagram` / `BranchNodeDiagram` ([`TopicNode.vue`](frontend/src/components/diagram/nodes/TopicNode.vue), [`BranchNode.vue`](frontend/src/components/diagram/nodes/BranchNode.vue), [`nodes/mindMap/`](frontend/src/components/diagram/nodes/mindMap/)).
+- **Locked canvas variant injection** — `MIND_MAP_CANVAS_VARIANT_KEY` + `useMindMapCanvasVisuals()` so nodes resolve legacy vs v2 from the active shell ([`mindMapCanvasVariantKey.ts`](frontend/src/composables/mindMap/mindMapCanvasVariantKey.ts), [`useMindMapCanvasVisuals.ts`](frontend/src/composables/mindMap/useMindMapCanvasVisuals.ts)).
+- **V2 in-place sibling insert** — `insertMindMapSiblingInPlace` mints one id/edge, splices connection order, places Y, and shifts siblings without full-tree reload ([`mindMapSiblingInsert.ts`](frontend/src/stores/diagram/mindMapSiblingInsert.ts)).
+- **`mindMapPreserveIncomingY` policy** — Sticky L1 Enter Y across measure/edit-end; settle-only layout; cleared on collapse, shape switch, and full reload ([`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts), [`mindMapSideStacking.ts`](frontend/src/utils/mindMapSideStacking.ts)).
+- **Sibling insert API fields** — `after_node_id` / `insert_index` on diagram-edit tools and Kitty/voice paths ([`schema.py`](services/diagram_edit/schema.py), [`convert.py`](services/diagram_edit/convert.py), [`diagram_add.py`](services/kitty/diagram/diagram_add.py)).
+- **Collab sibling-order hint** — `insert_after_target` on new connection patches with Redis `JSON.ARRINSERT` ([`online_collab_live_spec.py`](services/online_collab/spec/online_collab_live_spec.py)).
+- **pg_restore migrate-role TOC filter** — Skip superuser extension/default-ACL entries; pre-install extensions; re-apply RLS grants ([`pg_restore_prep.py`](services/utils/pg_restore_prep.py), [`reset_local_pg_and_import_dump.py`](scripts/db/reset_local_pg_and_import_dump.py)).
+- **COS consumer startup pull** — Sync blocklists, GeoLite, Qdrant, and Celery from COS before serving ([`cos_mirror_scheduler.py`](services/infrastructure/sync/cos_mirror_scheduler.py)).
+- **Architecture / nvm docs** — Canvas/node split and preserve-Y lifecycle; China-friendly nvm install notes ([`mindmap_v2_separation.md`](docs/architecture/mindmap_v2_separation.md), [`NODE_NVM_SETUP.md`](docs/NODE_NVM_SETUP.md)).
+
+### Changed
+
+- **Sibling order SoT** — Connection list order replaces global branch-index sorting in geometry, side stacking, voice, and Kitty paths.
+- **V2 L1 column / orthogonal paths** — Shared inner-edge column layout; rounded multi-sibling bus tees; topic width SoT for anchors ([`mindMapOrthogonalPath.ts`](frontend/src/utils/mindMapOrthogonalPath.ts)).
+- **Canvas pages use host** — Desktop/mobile mount `DiagramCanvasHost` ([`CanvasPage.vue`](frontend/src/pages/CanvasPage.vue), [`MobileCanvasPage.vue`](frontend/src/pages/mobile/MobileCanvasPage.vue)).
+- **Library reload guard** — Skip reload when `?diagramId=` matches the already-active diagram ([`skipLibraryReloadDuringGeneration.ts`](frontend/src/composables/canvasPage/skipLibraryReloadDuringGeneration.ts)).
+- **API token lifetime** — Personal API tokens and Redis cache TTL **7 → 90 days** ([`personal_token.py`](routers/auth/personal_token.py)).
+- **Startup ordering** — COS consumer artifact pull before CrowdSec merge; geo middleware after `auth_context` ([`lifespan.py`](services/infrastructure/lifecycle/lifespan.py), [`middleware.py`](services/infrastructure/http/middleware.py)).
+- **Ruff 0.16 compatibility** — Pin pre-0.16 lint `select` and exclude Markdown from format gate ([`pyproject.toml`](pyproject.toml)).
+- **Local lint parity with CI** — Inline-suppression and four-rule audits scan git-tracked Python only; basedpyright/pylint/ruff exclude gitignored `esp32/` / `archive/` trees ([`lint_no_inline_disables.py`](scripts/lint/lint_no_inline_disables.py), [`audit_pylint_four_rules.py`](scripts/lint/audit_pylint_four_rules.py), [`pyproject.toml`](pyproject.toml)).
+- **Frontend npm audit cleanup** — `vite-plugin-pwa@^1.3.0`, `sharp@^0.35.3`, overrides for `brace-expansion` / `minimatch` ([`package.json`](frontend/package.json)).
+
+### Fixed
+
+- **V2 Enter sibling flash** — In-place insert keeps new branch at insert Y and selects it for inline edit.
+- **Post-edit Enter anchor theft** — User selection wins over stale post-edit sibling anchor ([`mindMapCanvasEnterGuard.ts`](frontend/src/composables/mindMap/mindMapCanvasEnterGuard.ts)).
+- **Collab sibling mis-order** — Remote inserts land between siblings, not at connection list end.
+- **Geo middleware ASGI crash** — Invalid/expired `mgat_` tokens soft-resolve to `None` ([`email_login_cn_api_geo.py`](services/auth/email_login_cn_api_geo.py), [`vpn_geo_enforcement.py`](services/auth/vpn_geo_enforcement.py)).
+- **Local pg_restore on `mindgraph_migrate`** — TOC skips postgres-owned extension/ACL DDL; grants re-applied post-restore.
+
+### Tests
+
+- **Frontend** — In-place sibling insert, preserve-Y policy, side stacking, v2 Enter selection, orthogonal bus paths ([`mindMapSiblingInsertInPlace.spec.ts`](frontend/tests/mindMapSiblingInsertInPlace.spec.ts), [`mindMapPreserveIncomingY.spec.ts`](frontend/tests/mindMapPreserveIncomingY.spec.ts)).
+- **Backend** — Geo `mgat_` soft-resolve, pg_restore TOC skip rules, COS consumer startup pull, collab `insert_after_target` ([`test_email_login_cn_api_geo_mgat.py`](tests/auth/test_email_login_cn_api_geo_mgat.py), [`test_pg_restore_prep.py`](tests/services/test_pg_restore_prep.py), [`test_cos_mirror_scheduler.py`](tests/services/test_cos_mirror_scheduler.py), [`test_workshop_collab_backend.py`](tests/test_workshop_collab_backend.py)).
+
 ## [5.150.0] - 2026-07-21
 
 > **Showcase COS upload reliability: Content-Type signed via headers, clearer CORS/storage failure UX, and upload-rollback withdraw reasons.**

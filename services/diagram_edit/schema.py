@@ -8,15 +8,15 @@ Proprietary License
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List
+from typing import Any
 
 
 def _fn(
     name: str,
     description: str,
-    properties: Dict[str, Any],
-    required: List[str],
-) -> Dict[str, Any]:
+    properties: dict[str, Any],
+    required: list[str],
+) -> dict[str, Any]:
     return {
         "type": "function",
         "function": {
@@ -31,7 +31,7 @@ def _fn(
     }
 
 
-def get_diagram_edit_tools() -> List[Dict[str, Any]]:
+def get_diagram_edit_tools() -> list[dict[str, Any]]:
     """Return v1 mindmap structural edit tools (agent-agnostic)."""
     return [
         _fn(
@@ -63,6 +63,14 @@ def get_diagram_edit_tools() -> List[Dict[str, Any]]:
                 "child_index": {
                     "type": "integer",
                     "description": "0-based child index under branch_index",
+                },
+                "after_node_id": {
+                    "type": "string",
+                    "description": "Insert a sibling immediately after this node id",
+                },
+                "insert_index": {
+                    "type": "integer",
+                    "description": "0-based sibling index under parent_ref (connection order)",
                 },
             },
             ["text"],
@@ -96,7 +104,7 @@ def get_diagram_edit_tools() -> List[Dict[str, Any]]:
 def diagram_edit_function_call_to_legacy_command(
     name: str,
     arguments_json: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Map diagram_edit tool call to legacy Kitty command dict."""
     try:
         args = json.loads(arguments_json) if arguments_json else {}
@@ -107,7 +115,7 @@ def diagram_edit_function_call_to_legacy_command(
 
     if name == "diagram.update_center":
         new_text = args.get("new_text") or args.get("target")
-        cmd: Dict[str, Any] = {"action": "update_center", "confidence": 0.95}
+        cmd: dict[str, Any] = {"action": "update_center", "confidence": 0.95}
         if isinstance(new_text, str) and new_text.strip():
             cmd["target"] = new_text.strip()
         return cmd
@@ -129,6 +137,12 @@ def diagram_edit_function_call_to_legacy_command(
         child_idx = args.get("child_index")
         if isinstance(child_idx, int):
             cmd["child_index"] = child_idx
+        after_node_id = args.get("after_node_id")
+        if isinstance(after_node_id, str) and after_node_id.strip():
+            cmd["after_node_id"] = after_node_id.strip()
+        insert_index = args.get("insert_index")
+        if isinstance(insert_index, int) and insert_index >= 0:
+            cmd["insert_index"] = insert_index
         pos = args.get("position") or args.get("node_index")
         if isinstance(pos, int):
             cmd["node_index"] = pos

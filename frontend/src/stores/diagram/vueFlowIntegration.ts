@@ -2,20 +2,20 @@ import { computed } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import {
   augmentConnectionWithOptimalHandles,
   splitMixedArrowHandleGroups,
 } from '@/composables/diagrams/conceptMapHandles'
+import { resolveLegacyMindMapConnectionStrokeColor } from '@/config/mindMapGeometry'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { useUIStore } from '@/stores/ui'
 import type { Connection, MindGraphEdge, MindGraphEdgeType, MindGraphNode } from '@/types'
 import {
   connectionToVueFlowEdge,
   diagramNodeToVueFlowNode,
   vueFlowNodeToDiagramNode,
 } from '@/types/vueflow'
-
-import { useUIStore } from '@/stores/ui'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
-import { resolveLegacyMindMapConnectionStrokeColor } from '@/config/mindMapGeometry'
 import { withClassicMindMapTopicSourceHandle } from '@/utils/classicMindMapTopicHandles'
 import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
@@ -29,11 +29,12 @@ import {
   recalculateTreeMapLayout,
 } from '../specLoader'
 import { getEdgeTypeForDiagram } from './events'
+import { getMindMapCollapsedNodeIds, getMindMapCollapsedPaths } from './mindMapCollapse'
 import {
-  getMindMapCollapsedNodeIds,
-  getMindMapCollapsedPaths,
-} from './mindMapCollapse'
-import { computeMindMapDisplayLayout } from './mindMapDisplayLayout'
+  type MindMapDisplayLayoutResult,
+  computeMindMapDisplayLayout,
+  mergeMindMapLayoutPositions,
+} from './mindMapDisplayLayout'
 import type { DiagramContext } from './types'
 
 export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
@@ -99,6 +100,58 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     return recalculateBridgeMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
   })
 
+  /**
+   * Sole v2 mind-map layout owner (like circleMapLayoutNodes).
+   * Does not read selectedNodes — selection must not re-run the layout engine.
+   */
+  const mindMapV2LayoutResult = computed<MindMapDisplayLayoutResult | null>(() => {
+    const diagramType = ctx.type.value
+    if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return null
+    if (!ctx.data.value?.nodes) return null
+    if (effectiveMindMapMode.value !== 'v2') return null
+
+    // Layout deps only — not selectedNodes, not recalc trigger (trigger remaps VF only).
+    const connections = ctx.data.value.connections ?? []
+    const collapsedPaths = getMindMapCollapsedPaths(ctx.data.value)
+    const collapsedNodeIds = getMindMapCollapsedNodeIds(
+      ctx.data.value.nodes,
+      connections,
+      collapsedPaths
+    )
+    const preserveIncomingY = ctx.mindMapPreserveIncomingY.value
+    return computeMindMapDisplayLayout(
+      'v2',
+      ctx.data.value.nodes,
+      connections,
+      ctx.mindMapTopicActualWidth.value,
+      ctx.mindMapNodeWidths.value,
+      ctx.mindMapNodeHeights.value,
+      collapsedNodeIds,
+      ctx.data.value._mindmap_diagram_style as string | undefined,
+      preserveIncomingY ? { preserveIncomingY: true } : undefined
+    )
+  })
+
+  const mindMapV2LayoutNodes = computed(() => mindMapV2LayoutResult.value?.nodes ?? [])
+
+  ctx.writeBackMindMapV2LayoutFromComputed = () => {
+    const result = mindMapV2LayoutResult.value
+    if (!result || !ctx.data.value?.nodes) return
+    ctx.mindMapTopicBranchGaps.value = result.gaps
+    const merged = mergeMindMapLayoutPositions(ctx.data.value.nodes, result.nodes)
+    if (merged !== ctx.data.value.nodes) {
+      ctx.data.value.nodes = merged
+    }
+    // Re-poke post-add inline edit after position write-back (hosts may remount).
+    const pendingEditId = ctx.mindMapPendingEditNodeId.value
+    if (pendingEditId) {
+      requestAnimationFrame(() => {
+        if (ctx.mindMapPendingEditNodeId.value !== pendingEditId) return
+        eventBus.emit('node:edit_requested', { nodeId: pendingEditId })
+      })
+    }
+  }
+
   const vueFlowNodes = computed<MindGraphNode[]>(() => {
     const diagramType = ctx.type.value
     if (!ctx.data.value?.nodes || !diagramType) return []
@@ -138,20 +191,29 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     }
 
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-      void ctx.mindMapRecalcTrigger.value
-
-      const connections = ctx.data.value.connections ?? []
       const useV2Layout = effectiveMindMapMode.value === 'v2'
-      const collapsedPaths = useV2Layout ? getMindMapCollapsedPaths(ctx.data.value) : []
-      const collapsedNodeIds = useV2Layout
-        ? getMindMapCollapsedNodeIds(
-            ctx.data.value.nodes,
-            connections,
-            collapsedPaths
-          )
-        : new Set<string>()
+      const connections = ctx.data.value.connections ?? []
+      const firstLevelBranchCount = connections.filter((c) => c.source === 'topic').length
+
+      // v2: map the sole layout computed + selection (no second layout engine pass).
+      if (useV2Layout) {
+        void ctx.mindMapRecalcTrigger.value
+        return mindMapV2LayoutNodes.value.map((node) => {
+          const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+          vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
+          vueFlowNode.draggable = false
+          if (node.id === 'topic' && vueFlowNode.data) {
+            vueFlowNode.data.totalBranchCount = firstLevelBranchCount
+          }
+          return vueFlowNode
+        })
+      }
+
+      // Legacy: keep layout inside this computed (unchanged ownership).
+      void ctx.mindMapRecalcTrigger.value
+      const collapsedNodeIds = new Set<string>()
       const { nodes: correctedNodes, gaps } = computeMindMapDisplayLayout(
-        useV2Layout ? 'v2' : 'legacy',
+        'legacy',
         ctx.data.value.nodes,
         connections,
         ctx.mindMapTopicActualWidth.value,
@@ -161,7 +223,6 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
         ctx.data.value._mindmap_diagram_style as string | undefined
       )
       ctx.mindMapTopicBranchGaps.value = gaps
-      const firstLevelBranchCount = connections.filter((c) => c.source === 'topic').length
 
       return correctedNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
@@ -282,7 +343,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
         ? 'curved'
         : isV2MindMap
           ? 'mindmapOrthogonal'
-          : ((effectiveConn.edgeType as MindGraphEdgeType) || defaultEdgeType)
+          : (effectiveConn.edgeType as MindGraphEdgeType) || defaultEdgeType
       const edge = connectionToVueFlowEdge(effectiveConn, edgeType)
       if (diagramType && edge.data) {
         edge.data = { ...edge.data, diagramType }
@@ -419,6 +480,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
 
   return {
     circleMapLayoutNodes,
+    mindMapV2LayoutNodes,
     vueFlowNodes,
     vueFlowEdges,
     updateNodePosition,

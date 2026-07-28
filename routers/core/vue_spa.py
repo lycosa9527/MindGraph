@@ -334,9 +334,7 @@ async def _serve_index(request: Request) -> HTMLResponse:
     setattr(request.state, CSP_NONCE_STATE_ATTR, nonce)
     # Header is the sole document CSP (nonce + COS connect-src). Strip Vite's
     # meta tag so browsers do not intersect a second, drift-prone policy.
-    html = strip_document_csp_meta(
-        inject_csp_nonce(index_path.read_text(encoding="utf-8"), nonce)
-    )
+    html = strip_document_csp_meta(inject_csp_nonce(index_path.read_text(encoding="utf-8"), nonce))
 
     response = HTMLResponse(content=html)
     apply_no_cache_headers(response)

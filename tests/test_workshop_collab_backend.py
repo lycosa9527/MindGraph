@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pytest
 from fastapi import HTTPException
@@ -48,20 +48,20 @@ from services.online_collab.spec.online_collab_live_spec import (
 
 
 def _make_spec(
-    nodes: Optional[List[Dict[str, Any]]] = None,
-    connections: Optional[List[Dict[str, Any]]] = None,
+    nodes: list[dict[str, Any]] | None = None,
+    connections: list[dict[str, Any]] | None = None,
     version: int = 1,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Make spec."""
     return {"nodes": nodes or [], "connections": connections or [], "v": version}
 
 
-def _no_editors() -> Dict[str, Dict[str, Dict[int, str]]]:
+def _no_editors() -> dict[str, dict[str, dict[int, str]]]:
     """No editors."""
     return {}
 
 
-def _editors_with_lock(code: str, node_id: str, owner_id: int, username: str) -> Dict[str, Dict[str, Dict[int, str]]]:
+def _editors_with_lock(code: str, node_id: str, owner_id: int, username: str) -> dict[str, dict[str, dict[int, str]]]:
     """Editors with lock."""
     return {code: {node_id: {owner_id: username}}}
 
@@ -76,7 +76,7 @@ class TestMergeGranularIntoSpec:
 
     def test_adds_new_node(self) -> None:
         """Test adds new node."""
-        spec: Dict[str, Any] = {"nodes": [], "connections": []}
+        spec: dict[str, Any] = {"nodes": [], "connections": []}
         merge_granular_into_spec(spec, [{"id": "n1", "text": "hello"}], None)
         assert len(spec["nodes"]) == 1
         assert spec["nodes"][0]["id"] == "n1"
@@ -89,7 +89,7 @@ class TestMergeGranularIntoSpec:
 
     def test_adds_connection(self) -> None:
         """Test adds connection."""
-        spec: Dict[str, Any] = {
+        spec: dict[str, Any] = {
             "nodes": [{"id": "n1"}, {"id": "n2"}],
             "connections": [],
         }
@@ -158,6 +158,42 @@ class TestMergeGranularIntoSpec:
         }
         merge_granular_into_spec(spec, None, [{"source": "n1", "target": "n2", "label": "new"}])
         assert spec["connections"][0]["label"] == "new"
+
+    def test_connection_insert_after_target_preserves_sibling_order(self) -> None:
+        """Mind-map sibling SoT: new edge inserts after prior sibling, not list end."""
+        spec: dict[str, Any] = {
+            "nodes": [
+                {"id": "topic"},
+                {"id": "branch-r-1-0"},
+                {"id": "branch-r-1-1"},
+                {"id": "branch-l-1-0"},
+            ],
+            "connections": [
+                {"id": "e0", "source": "topic", "target": "branch-r-1-0"},
+                {"id": "e1", "source": "topic", "target": "branch-r-1-1"},
+                {"id": "e2", "source": "topic", "target": "branch-l-1-0"},
+            ],
+        }
+        merge_granular_into_spec(
+            spec,
+            [{"id": "branch-r-1-2", "text": "新分支"}],
+            [
+                {
+                    "id": "e-new",
+                    "source": "topic",
+                    "target": "branch-r-1-2",
+                    "insert_after_target": "branch-r-1-0",
+                }
+            ],
+        )
+        targets = [c["target"] for c in spec["connections"] if c["source"] == "topic"]
+        assert targets == [
+            "branch-r-1-0",
+            "branch-r-1-2",
+            "branch-r-1-1",
+            "branch-l-1-0",
+        ]
+        assert "insert_after_target" not in spec["connections"][1]
 
 
 # ---------------------------------------------------------------------------
@@ -241,7 +277,7 @@ class TestLockHelpers:
         """When redis editors are provided, local editors are ignored."""
         local = _editors_with_lock(self.CODE, self.NODE_ID, self.ALICE_ID, "alice")
         # Redis editors show the node as free
-        redis_editors: Dict[str, Dict[int, str]] = {}
+        redis_editors: dict[str, dict[int, str]] = {}
         assert not node_locked_by_other_user(self.CODE, self.BOB_ID, self.NODE_ID, local, redis_editors)
 
     def test_filter_granular_nodes_drops_locked(self) -> None:
@@ -313,9 +349,9 @@ class TestLockBeforeWriteContract:
     def _simulate_update(
         self,
         sender_id: int,
-        nodes: List[Dict[str, Any]],
-        active_editors: Dict[str, Dict[str, Dict[int, str]]],
-    ) -> List[Dict[str, Any]]:
+        nodes: list[dict[str, Any]],
+        active_editors: dict[str, dict[str, dict[int, str]]],
+    ) -> list[dict[str, Any]]:
         """
         Return the nodes that would reach Redis after lock filtering.
 
@@ -388,7 +424,7 @@ class TestRestCollabGuardLogic:
     async def test_409_raised_when_active_code_exists(self) -> None:
         """Test 409 raised when active code exists."""
 
-        async def _get_active(_diagram_id: str) -> Optional[str]:
+        async def _get_active(_diagram_id: str) -> str | None:
             return "abc-123"
 
         with pytest.raises(HTTPException) as exc_info:
@@ -404,7 +440,7 @@ class TestRestCollabGuardLogic:
     async def test_no_exception_when_no_active_code(self) -> None:
         """Test no exception when no active code."""
 
-        async def _get_active(_diagram_id: str) -> Optional[str]:
+        async def _get_active(_diagram_id: str) -> str | None:
             return None
 
         active_code = await _get_active("diag-1")
@@ -424,7 +460,7 @@ class TestMultiWorkerNxDedup:
 
     def test_first_call_acquires(self) -> None:
         """Test first call acquires."""
-        store: Dict[str, str] = {}
+        store: dict[str, str] = {}
 
         def redis_set_nx(key: str, value: str) -> bool:
             if key in store:
@@ -436,7 +472,7 @@ class TestMultiWorkerNxDedup:
 
     def test_second_call_rejected(self) -> None:
         """Test second call rejected."""
-        store: Dict[str, str] = {"flush:room-abc": "1"}
+        store: dict[str, str] = {"flush:room-abc": "1"}
 
         def redis_set_nx(key: str, value: str) -> bool:
             if key in store:
@@ -464,8 +500,8 @@ class TestFanoutBroadcastSemantics:
     @pytest.mark.asyncio
     async def test_publish_reaches_all_subscribers(self) -> None:
         """Test publish reaches all subscribers."""
-        received: Dict[str, List[str]] = {}
-        queues: Dict[str, asyncio.Queue] = {}
+        received: dict[str, list[str]] = {}
+        queues: dict[str, asyncio.Queue] = {}
         channel = "workshop:test-room"
 
         async def subscriber(name: str) -> None:
@@ -503,7 +539,7 @@ class TestFanoutBroadcastSemantics:
         load-balances to only one consumer).
         """
         total_received = 0
-        queues: List[asyncio.Queue] = [asyncio.Queue() for _ in range(5)]
+        queues: list[asyncio.Queue] = [asyncio.Queue() for _ in range(5)]
 
         async def listener(queue: asyncio.Queue) -> None:
             nonlocal total_received
@@ -539,37 +575,37 @@ class TestHexpireParticipants:
     to simulate HSET / HDEL / HLEN / HKEYS / HEXPIRE semantics.
     """
 
-    def _make_store(self) -> Dict[str, Dict[str, int]]:
+    def _make_store(self) -> dict[str, dict[str, int]]:
         """Make store."""
         return {}
 
     def test_hset_records_participant(self) -> None:
         """Test hset records participant."""
-        store: Dict[str, Any] = {}
+        store: dict[str, Any] = {}
         store["user:42"] = 1
         assert "user:42" in store
 
     def test_hdel_removes_participant(self) -> None:
         """Test hdel removes participant."""
-        store: Dict[str, Any] = {"user:42": 1, "user:99": 1}
+        store: dict[str, Any] = {"user:42": 1, "user:99": 1}
         del store["user:42"]
         assert "user:42" not in store
         assert "user:99" in store
 
     def test_hlen_returns_count(self) -> None:
         """Test hlen returns count."""
-        store: Dict[str, Any] = {"user:1": 1, "user:2": 1, "user:3": 1}
+        store: dict[str, Any] = {"user:1": 1, "user:2": 1, "user:3": 1}
         assert len(store) == 3
 
     def test_hkeys_returns_all_fields(self) -> None:
         """Test hkeys returns all fields."""
-        store: Dict[str, Any] = {"user:1": 1, "user:2": 1}
+        store: dict[str, Any] = {"user:1": 1, "user:2": 1}
         keys = list(store.keys())
         assert set(keys) == {"user:1", "user:2"}
 
     def test_participant_count_zero_after_all_removed(self) -> None:
         """Test participant count zero after all removed."""
-        store: Dict[str, Any] = {"user:1": 1}
+        store: dict[str, Any] = {"user:1": 1}
         del store["user:1"]
         assert len(store) == 0
 
@@ -626,7 +662,7 @@ class TestMergeCleanupPartitioning:
     that simulate the rows the MERGE statement would touch.
     """
 
-    def _expired_rows(self) -> List[Dict[str, Any]]:
+    def _expired_rows(self) -> list[dict[str, Any]]:
         """Expired rows."""
         now = datetime.now(UTC)
         return [{"id": i, "workshop_code": f"wc-{i}", "expires_at": now - timedelta(hours=1)} for i in range(1, 6)]
@@ -647,7 +683,7 @@ class TestMergeCleanupPartitioning:
 
     def test_cleanup_idempotent_on_double_run(self) -> None:
         """Test cleanup idempotent on double run."""
-        cleaned: Dict[str, bool] = {}
+        cleaned: dict[str, bool] = {}
 
         def mark_cleaned(code: str) -> bool:
             if code in cleaned:
@@ -666,7 +702,7 @@ class TestMergeCleanupPartitioning:
         """
         before_update = {"id": 7, "workshop_code": "wc-7"}
 
-        def simulate_merge_returning(row: Dict[str, Any]) -> Optional[str]:
+        def simulate_merge_returning(row: dict[str, Any]) -> str | None:
             return row.get("workshop_code")
 
         code = simulate_merge_returning(before_update)
@@ -674,9 +710,9 @@ class TestMergeCleanupPartitioning:
 
     def test_no_purge_when_workshop_code_is_none(self) -> None:
         """Test no purge when workshop code is none."""
-        purged: List[str] = []
+        purged: list[str] = []
 
-        def maybe_purge(code: Optional[str]) -> None:
+        def maybe_purge(code: str | None) -> None:
             if code:
                 purged.append(code)
 
@@ -686,7 +722,7 @@ class TestMergeCleanupPartitioning:
     def test_purge_called_for_each_expired_code(self) -> None:
         """Test purge called for each expired code."""
         rows = self._expired_rows()
-        purged: List[str] = []
+        purged: list[str] = []
 
         for row in rows:
             code = row.get("workshop_code")

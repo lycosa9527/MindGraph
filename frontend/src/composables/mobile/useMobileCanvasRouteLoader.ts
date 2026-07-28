@@ -1,32 +1,29 @@
 /**
  * Mobile canvas route/query bootstrap (type, import, library diagram).
  */
-import { type ComputedRef, computed, nextTick, onMounted } from 'vue'
+import { type ComputedRef, nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import {
-  eventBus,
-  useDiagramSpecForSave,
-} from '@/composables'
+import { eventBus, useDiagramSpecForSave } from '@/composables'
 import { shouldSkipLibraryReloadDuringGeneration } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
+import type { useInlineRecommendationsCoordinator } from '@/composables/editor/useInlineRecommendationsCoordinator'
 import { replayKittyPendingCanvasAction } from '@/composables/kitty/useKittyMobileHubActionBridge'
 import { IMPORT_SPEC_KEY } from '@/config'
-import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import type { LocaleCode } from '@/i18n/locales'
 import type { LLMResult } from '@/stores'
 import type { useAuthStore } from '@/stores/auth'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { useFeatureFlagsStore } from '@/stores/featureFlags'
-import type { LocaleCode } from '@/i18n/locales'
-import type { useInlineRecommendationsCoordinator } from '@/composables/editor/useInlineRecommendationsCoordinator'
 import type { useLLMResultsStore } from '@/stores/llmResults'
 import type { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { useUIStore } from '@/stores/ui'
 import type { DiagramType } from '@/types'
+import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 import {
   VALID_DIAGRAM_TYPES,
   diagramTypeKeyForType,
@@ -125,7 +122,7 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
     inlineRecCoordinator.setup()
     await nextTick()
     replayKittyPendingCanvasAction()
-    void featureFlagsStore.fetchFlags()
+    await featureFlagsStore.fetchFlags()
     await savedDiagramsStore.fetchDiagrams()
 
     const diagramIdRaw = route.query.diagramId ?? route.query.diagram_id

@@ -1,14 +1,7 @@
 import type { Connection, DiagramData, DiagramNode } from '@/types'
-import {
-  findNodeIdByMindMapUid,
-  readMindMapNodeUid,
-} from '@/utils/mindMapNodeUid'
+import { findNodeIdByMindMapUid, readMindMapNodeUid } from '@/utils/mindMapNodeUid'
 
-import {
-  findNodeIdByPathKey,
-  mindMapNodePathKey,
-  sortMindMapNodeIdsByGlobalIndex,
-} from './mindMapStylePreservation'
+import { findNodeIdByPathKey, mindMapNodePathKey } from './mindMapStylePreservation'
 
 function getMindMapTextSegments(
   nodeId: string,
@@ -39,11 +32,7 @@ function findNodeIdByTextSegments(
   if (segments.length === 0) return null
 
   const nodeMap = new Map(nodes.map((n) => [n.id, n]))
-  const childIds = connections
-    .filter((c) => c.source === parentId)
-    .map((c) => c.target)
-    .slice()
-    .sort(sortMindMapNodeIdsByGlobalIndex)
+  const childIds = connections.filter((c) => c.source === parentId).map((c) => c.target)
 
   for (const childId of childIds) {
     if ((nodeMap.get(childId)?.text ?? '') !== segments[0]) continue
@@ -64,8 +53,6 @@ function findNodeIdByTextSegmentsOnSide(
   const rootIds = connections
     .filter((c) => c.source === 'topic' && c.target.startsWith(prefix))
     .map((c) => c.target)
-    .slice()
-    .sort(sortMindMapNodeIdsByGlobalIndex)
 
   for (const rootId of rootIds) {
     const rootText = nodes.find((n) => n.id === rootId)?.text ?? ''
@@ -91,8 +78,6 @@ function directChildTexts(
   return connections
     .filter((c) => c.source === nodeId)
     .map((c) => c.target)
-    .slice()
-    .sort(sortMindMapNodeIdsByGlobalIndex)
     .map((id) => nodeMap.get(id)?.text ?? '')
 }
 
@@ -172,22 +157,11 @@ export function remapMindMapNodeIdAfterReload(
     const sameSide = findNodeIdByTextSegmentsOnSide(segments, side, newNodes, newConnections)
     if (sameSide) return sameSide
     const otherSide: 'l' | 'r' = side === 'l' ? 'r' : 'l'
-    const crossSide = findNodeIdByTextSegmentsOnSide(
-      segments,
-      otherSide,
-      newNodes,
-      newConnections
-    )
+    const crossSide = findNodeIdByTextSegmentsOnSide(segments, otherSide, newNodes, newConnections)
     if (crossSide) return crossSide
   }
 
-  return findNodeIdByOwnTextIdentity(
-    oldId,
-    oldNodes,
-    oldConnections,
-    newNodes,
-    newConnections
-  )
+  return findNodeIdByOwnTextIdentity(oldId, oldNodes, oldConnections, newNodes, newConnections)
 }
 
 /**
@@ -347,12 +321,7 @@ export function getMindMapVisibleCollapsedNodeIds(
   getDescendantIds: (rootId: string) => Set<string>
 ): Set<string> {
   const collapsed = getMindMapCollapsedNodeIds(nodes, connections, collapsedPaths)
-  const hidden = getMindMapCollapseHiddenIds(
-    nodes,
-    connections,
-    collapsedPaths,
-    getDescendantIds
-  )
+  const hidden = getMindMapCollapseHiddenIds(nodes, connections, collapsedPaths, getDescendantIds)
   const visible = new Set<string>()
   for (const id of collapsed) {
     if (!hidden.has(id)) visible.add(id)
@@ -393,10 +362,7 @@ export function pruneMindMapCollapsedPaths(
   })
 }
 
-export function setMindMapCollapsedPaths(
-  data: Record<string, unknown>,
-  paths: string[]
-): void {
+export function setMindMapCollapsedPaths(data: Record<string, unknown>, paths: string[]): void {
   const pruned = paths.filter(Boolean)
   if (pruned.length === 0) {
     delete data._collapsed_paths

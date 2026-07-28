@@ -2,6 +2,10 @@
  * Diagram Components Index
  */
 export { default as DiagramCanvas } from './DiagramCanvas.vue'
+export { default as DiagramCanvasHost } from './DiagramCanvasHost.vue'
+export { default as MindMapCanvasRouter } from './MindMapCanvasRouter.vue'
+export { default as MindMapLegacyCanvas } from './MindMapLegacyCanvas.vue'
+export { default as MindMapV2Canvas } from './MindMapV2Canvas.vue'
 
 // Node components
 export { default as TopicNode } from './nodes/TopicNode.vue'

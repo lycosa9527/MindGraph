@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -131,6 +132,20 @@ def audit_file(path: Path) -> dict[str, int]:
     }
 
 
+def _tracked_python_files(root: Path) -> list[Path]:
+    """Return git-tracked ``*.py`` paths so gitignored trees match CI checkout."""
+    completed = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "--", "*.py"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        print(completed.stderr.strip() or "git ls-files failed", file=sys.stderr)
+        return []
+    return [root / line.strip() for line in completed.stdout.splitlines() if line.strip()]
+
+
 def main() -> int:
     """Main."""
     parser = argparse.ArgumentParser(description="Audit four-rule pylint counts (AST approximation)")
@@ -145,7 +160,7 @@ def main() -> int:
     totals: dict[str, int] = defaultdict(int)
     by_dir: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
 
-    for py_path in sorted(root.rglob("*.py")):
+    for py_path in _tracked_python_files(root):
         if _should_skip(py_path, root):
             continue
         counts = audit_file(py_path)

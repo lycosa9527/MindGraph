@@ -5,25 +5,28 @@ import {
   resolveMindMapDiagramStyleId,
 } from '@/config/mindMapDiagramStyles'
 import {
-  isRainbowMindMapTheme,
-  mindMapRainbowColorsForNode,
-  MIND_MAP_RAINBOW_TOPIC_COLORS,
-  syncRainbowMindMapConnectionColors,
-} from '@/config/mindMapVibrantThemes'
-import {
   mindMapBranchDepth,
   syncLegacyMindMapConnectionStrokeColors,
   syncMindMapConnectionStrokeColors,
   syncMindMapConnectionStrokeColorsForCanvasMode,
 } from '@/config/mindMapGeometry'
 import {
+  type MindMapThemeId,
   getMindMapThemeById,
   mindMapStyleFromTheme,
   resolveMindMapThemeId,
-  type MindMapThemeId,
 } from '@/config/mindMapThemes'
+import {
+  MIND_MAP_RAINBOW_TOPIC_COLORS,
+  isRainbowMindMapTheme,
+  mindMapRainbowColorsForNode,
+  syncRainbowMindMapConnectionColors,
+} from '@/config/mindMapVibrantThemes'
 import type { Connection, DiagramNode, DiagramType, NodeStyle } from '@/types'
-import { readEffectiveMindMapCanvasMode, readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import {
+  readEffectiveMindMapCanvasMode,
+  readMindMapV2VisualDesignActive,
+} from '@/utils/mindMapCanvasMode'
 
 /** Injected to avoid a circular import with mindMapCollapse remap helpers. */
 export type MindMapNodeIdRemapper = (
@@ -38,28 +41,34 @@ function branchGlobalIndex(nodeId: string): number {
   return parseInt(nodeId.split('-')[3] ?? '0', 10)
 }
 
-/** Sort mind-map node ids by layout global index (matches path-key sibling order). */
+/**
+ * Sort by layout global index in the id suffix.
+ * Prefer {@link buildMindMapChildrenMapByConnectionOrder} for sibling order —
+ * connection array order is the SoT for insert/path keys/layout.
+ */
 export function sortMindMapNodeIdsByGlobalIndex(a: string, b: string): number {
   return branchGlobalIndex(a) - branchGlobalIndex(b)
 }
 
-function buildChildrenMap(connections: Connection[]): Map<string, string[]> {
+/** Children grouped by parent in connection-list order (no global-index sort). */
+export function buildMindMapChildrenMapByConnectionOrder(
+  connections: Connection[]
+): Map<string, string[]> {
   const map = new Map<string, string[]>()
   for (const c of connections) {
-    if (!map.has(c.source)) map.set(c.source, [])
-    map.get(c.source)!.push(c.target)
-  }
-  for (const children of map.values()) {
-    children.sort(sortMindMapNodeIdsByGlobalIndex)
+    const kids = map.get(c.source)
+    if (kids) kids.push(c.target)
+    else map.set(c.source, [c.target])
   }
   return map
 }
 
+function buildChildrenMap(connections: Connection[]): Map<string, string[]> {
+  return buildMindMapChildrenMapByConnectionOrder(connections)
+}
+
 /** Stable tree path (side + sibling indices) — survives node id regeneration on reload. */
-export function mindMapNodePathKey(
-  nodeId: string,
-  connections: Connection[]
-): string | null {
+export function mindMapNodePathKey(nodeId: string, connections: Connection[]): string | null {
   if (nodeId === 'topic') return 'topic'
   if (!nodeId.startsWith('branch-')) return null
 
@@ -194,10 +203,7 @@ function resolveMindMapRestoredNodeShape(
 
   const fromPreserved = preserved?.nodeShape
   if (!fromPreserved) {
-    return (
-      resolvePriorSiblingNodeShape(pathKey, stylesByPath) ??
-      presetShape
-    )
+    return resolvePriorSiblingNodeShape(pathKey, stylesByPath) ?? presetShape
   }
 
   const parentShape = resolveParentNodeShape(pathKey, stylesByPath, nodes, connections)
@@ -275,8 +281,7 @@ export function applyMindMapStylesByPath(
       nodes.find((n) => n.id === 'topic')?.style?.borderColor ??
       stylesByPath.get('topic')?.borderColor
     const branchAccent =
-      defaultTheme.borderColor ??
-      nodes.find((n) => n.id.startsWith('branch-'))?.style?.borderColor
+      defaultTheme.borderColor ?? nodes.find((n) => n.id.startsWith('branch-'))?.style?.borderColor
     const strokeColor = layered && branchAccent ? branchAccent : topicBorder
     if (strokeColor) {
       syncMindMapConnectionStrokeColors(connections, strokeColor)
@@ -320,18 +325,8 @@ export function mergeMindMapReloadStyles(
   remapNodeId?: MindMapNodeIdRemapper
 ): Record<string, NodeStyle> {
   if (!remapNodeId) {
-    const stylesByPath = collectMindMapStylesByPath(
-      oldNodes,
-      oldConnections,
-      existingNodeStyles
-    )
-    return applyMindMapStylesByPath(
-      newNodes,
-      newConnections,
-      stylesByPath,
-      themeId,
-      diagramStyleId
-    )
+    const stylesByPath = collectMindMapStylesByPath(oldNodes, oldConnections, existingNodeStyles)
+    return applyMindMapStylesByPath(newNodes, newConnections, stylesByPath, themeId, diagramStyleId)
   }
 
   const stylesByPath = new Map<string, NodeStyle>()
@@ -341,13 +336,7 @@ export function mergeMindMapReloadStyles(
     const merged = mergeNodeStyle(oldNode, existingNodeStyles)
     if (!merged || Object.keys(merged).length === 0) continue
 
-    const newId = remapNodeId(
-      oldNode.id,
-      oldNodes,
-      oldConnections,
-      newNodes,
-      newConnections
-    )
+    const newId = remapNodeId(oldNode.id, oldNodes, oldConnections, newNodes, newConnections)
     if (!newId) continue
 
     const newPath = mindMapNodePathKey(newId, newConnections)

@@ -5,26 +5,35 @@ import type { DiagramType } from '@/types'
 /**
  * Coalesce burst mind-map layout invalidations (e.g. many ResizeObservers on load)
  * into at most one recalc per animation frame.
+ *
+ * Optional `syncStorePositions` runs once per frame before the trigger bump so
+ * Pinia node X/Y match the display layout (single position SoT).
  */
 export function createMindMapRecalcScheduler(
   type: Ref<DiagramType | null>,
-  mindMapRecalcTrigger: Ref<number>
+  mindMapRecalcTrigger: Ref<number>,
+  syncStorePositions?: () => void
 ): () => void {
   let rafId: number | null = null
+
+  function runRecalc(): void {
+    syncStorePositions?.()
+    mindMapRecalcTrigger.value++
+  }
 
   return function scheduleMindMapRecalc(): void {
     const diagramType = type.value
     if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
 
     if (typeof requestAnimationFrame !== 'function') {
-      mindMapRecalcTrigger.value++
+      runRecalc()
       return
     }
 
     if (rafId !== null) return
     rafId = requestAnimationFrame(() => {
       rafId = null
-      mindMapRecalcTrigger.value++
+      runRecalc()
     })
   }
 }

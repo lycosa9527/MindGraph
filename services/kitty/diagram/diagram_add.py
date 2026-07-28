@@ -5,7 +5,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import WebSocket
 
@@ -19,8 +19,8 @@ from services.kitty.session.runtime_state import logger, voice_sessions
 
 
 def _resolve_add_parent_id(
-    command: Dict[str, Any],
-    session_context: Dict[str, Any],
+    command: dict[str, Any],
+    session_context: dict[str, Any],
 ) -> str | None:
     """Resolve ``parent_ref`` to a stable canvas node id for child inserts."""
     parent_ref = command.get("parent_ref")
@@ -43,7 +43,7 @@ def _resolve_add_parent_id(
     return None
 
 
-def _mindmap_side(command: Dict[str, Any]) -> str:
+def _mindmap_side(command: dict[str, Any]) -> str:
     side = command.get("side")
     if isinstance(side, str) and side.strip().lower() in ("left", "right"):
         return side.strip().lower()
@@ -53,8 +53,8 @@ def _mindmap_side(command: Dict[str, Any]) -> str:
 async def voice_apply_add_node_action(
     websocket: WebSocket,
     voice_session_id: str,
-    command: Dict[str, Any],
-    session_context: Dict[str, Any],
+    command: dict[str, Any],
+    session_context: dict[str, Any],
 ) -> bool:
     """Handle add_node actions including palette-open when target is empty."""
     target = command.get("target")
@@ -447,10 +447,24 @@ async def voice_apply_add_node_action(
                     },
                 )
         else:
-            # No position specified - add under parent_ref when set, else top-level branch
+            # No position specified - sibling insert, child under parent_ref, or top-level
             parent_id = _resolve_add_parent_id(command, session_context)
             side = _mindmap_side(command)
-            if parent_id:
+            after_node_id = command.get("after_node_id")
+            insert_index = command.get("insert_index")
+            after_id = after_node_id.strip() if isinstance(after_node_id, str) and after_node_id.strip() else None
+            insert_at = insert_index if isinstance(insert_index, int) and insert_index >= 0 else None
+
+            if after_id:
+                logger.info("Adding sibling after_node_id=%s: %s", after_id, target)
+            elif parent_id and insert_at is not None:
+                logger.info(
+                    "Adding sibling under parent_id=%s at insert_index=%s: %s",
+                    parent_id,
+                    insert_at,
+                    target,
+                )
+            elif parent_id:
                 logger.info("Adding child under parent_id=%s: %s", parent_id, target)
             else:
                 logger.info("Adding node to end (side=%s): %s", side, target)
@@ -459,7 +473,7 @@ async def voice_apply_add_node_action(
                 "index": len(nodes),
                 "text": target,
             }
-            if parent_id:
+            if parent_id and not after_id:
                 # Keep voice-shaped children list best-effort; Pinia is SoT on verified path.
                 for branch in nodes:
                     if not isinstance(branch, dict):
@@ -474,13 +488,21 @@ async def voice_apply_add_node_action(
                         if not isinstance(kids, list):
                             branch["children"] = []
                             kids = branch["children"]
-                        kids.append({"text": target, "children": []})
+                        if insert_at is not None and insert_at < len(kids):
+                            kids.insert(insert_at, {"text": target, "children": []})
+                        else:
+                            kids.append({"text": target, "children": []})
                         break
-            else:
+            elif not after_id:
                 nodes.append(new_node)
 
-            update_payload: Dict[str, Any] = {"text": target}
-            if parent_id:
+            update_payload: dict[str, Any] = {"text": target}
+            if after_id:
+                update_payload["after_node_id"] = after_id
+            elif parent_id and insert_at is not None:
+                update_payload["parent_id"] = parent_id
+                update_payload["insert_index"] = insert_at
+            elif parent_id:
                 update_payload["parent_id"] = parent_id
             else:
                 update_payload["side"] = side

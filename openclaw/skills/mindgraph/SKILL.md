@@ -68,7 +68,7 @@ Never print or log the token or account in assistant-visible output.
 1. Log into MindGraph in the browser.
 2. Open **账户信息** → **API Token** → **生成 Token**.
 3. Copy the token once; set `MINDGRAPH_TOKEN` and `MINDGRAPH_ACCOUNT` (phone) and `MINDGRAPH_BASE_URL` (default test deployment: `https://test.mindspringedu.com`; override for your own host) in OpenClaw skill env.
-4. Tokens expire after 7 days; regenerate from the same UI.
+4. Tokens expire after 90 days; regenerate from the same UI.
 
 ## 1. Generate diagram spec
 

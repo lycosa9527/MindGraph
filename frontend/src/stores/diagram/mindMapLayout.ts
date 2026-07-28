@@ -6,15 +6,22 @@ import {
   DEFAULT_NODE_WIDTH,
   MINDMAP_SIBLING_GAP,
 } from '@/composables/diagrams/layoutConfig'
-import {
-  computeSequentialRootStartYsFrom,
-  computeSymmetricRootStartYs,
-} from '@/utils/mindMapSideStacking'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
-import { mindMapConnectionAnchorY, mindMapNodeTopYForAnchorY } from '@/config/mindMapGeometry'
+import {
+  mindMapConnectionAnchorY,
+  mindMapNodeTopYForAnchorY,
+  resolveMindMapTopicLayoutWidth,
+} from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
 import { isMindMapConnectorVerboseDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { logMindMapProcess } from '@/utils/mindMapConnectorDebugVerbose'
+import {
+  applyMindMapL1HeightDeltaShift,
+  centerMindMapSidePacksOnTopic,
+  computeSequentialRootStartYsFrom,
+  computeSymmetricRootStartYs,
+  settleMindMapPreserveYLayout,
+} from '@/utils/mindMapSideStacking'
 
 import type { DiagramContext } from './types'
 
@@ -54,17 +61,19 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
 
   function setMindMapNodeDimensions(
     nodeId: string,
-    width: number | null,
-    height: number | null
+    width: number | null | undefined,
+    height: number | null | undefined
   ): void {
     let changed = false
+    let heightDelta: number | null = null
 
+    // null clears; undefined leaves the axis unchanged (e.g. height-only while editing).
     if (width === null) {
       if (nodeId in ctx.mindMapNodeWidths.value) {
         delete ctx.mindMapNodeWidths.value[nodeId]
         changed = true
       }
-    } else {
+    } else if (width !== undefined) {
       const prev = ctx.mindMapNodeWidths.value[nodeId]
       if (prev === undefined || Math.abs(prev - width) >= 1) {
         ctx.mindMapNodeWidths.value[nodeId] = width
@@ -77,12 +86,32 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
         delete ctx.mindMapNodeHeights.value[nodeId]
         changed = true
       }
-    } else {
+    } else if (height !== undefined) {
       const prev = ctx.mindMapNodeHeights.value[nodeId]
       if (prev === undefined || Math.abs(prev - height) >= 1) {
+        if (typeof prev === 'number') {
+          heightDelta = height - prev
+        }
         ctx.mindMapNodeHeights.value[nodeId] = height
         changed = true
       }
+    }
+
+    if (
+      heightDelta != null &&
+      Math.abs(heightDelta) >= 0.5 &&
+      ctx.mindMapPreserveIncomingY.value &&
+      ctx.data.value?.nodes &&
+      ctx.data.value.connections
+    ) {
+      // Sticky preserve skips full Y restack — push L1 roots below locally.
+      ctx.data.value.nodes = applyMindMapL1HeightDeltaShift(
+        ctx.data.value.nodes,
+        ctx.data.value.connections,
+        nodeId,
+        heightDelta,
+        ctx.mindMapNodeHeights.value
+      )
     }
 
     if (changed && (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map')) {
@@ -217,6 +246,15 @@ export interface MindMapColumnResult {
   gaps: { left: number; right: number }
 }
 
+/** Options for v2 column layout passes. */
+export interface MindMapV2LayoutOptions {
+  /**
+   * Keep every node's incoming Y and only recompute X.
+   * Used after incremental L1 Enter so the first paint is already final.
+   */
+  preserveIncomingY?: boolean
+}
+
 /**
  * Recalculate mind-map node positions using subtree-relative X and balanced Y.
  *
@@ -231,7 +269,8 @@ export function recalculateMindMapV2ColumnPositions(
   nodeHeights: Record<string, number> = {},
   connections: Connection[] = [],
   collapsedNodeIds: ReadonlySet<string> = new Set<string>(),
-  diagramStyleId?: string | null
+  diagramStyleId?: string | null,
+  options?: MindMapV2LayoutOptions
 ): MindMapColumnResult {
   const topicNode = nodes.find((n) => n.id === 'topic')
   if (!topicNode?.position) return { nodes, gaps: { left: 0, right: 0 } }
@@ -247,10 +286,7 @@ export function recalculateMindMapV2ColumnPositions(
 
   const storedEstimate =
     (topicNode.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
-  const measuredTopicWidth = topicWidth ?? 0
-
-  const effectiveTopicWidth =
-    measuredTopicWidth > 0 ? Math.max(measuredTopicWidth, storedEstimate) : storedEstimate
+  const effectiveTopicWidth = resolveMindMapTopicLayoutWidth(topicWidth, storedEstimate)
   const gap = DEFAULT_MINDMAP_RANK_SEPARATION
 
   const centerX = topicNode.position.x + effectiveTopicWidth / 2
@@ -266,16 +302,19 @@ export function recalculateMindMapV2ColumnPositions(
       childrenMap.set(c.source, [c.target])
     }
   }
-  for (const kids of childrenMap.values()) {
-    kids.sort((a, b) => {
-      const aIdx = parseInt(a.split('-')[3] ?? '0', 10)
-      const bIdx = parseInt(b.split('-')[3] ?? '0', 10)
-      return aIdx - bIdx
-    })
-  }
 
   const nodeMap = new Map<string, DiagramNode>()
   for (const n of nodes) nodeMap.set(n.id, n)
+
+  // Left L1 share one outer column (max width on that side). Per-node width made
+  // shorter labels jump toward the topic after edit-end measure / canvas click.
+  let leftL1ColumnWidth = 0
+  for (const rootId of childrenMap.get('topic') ?? []) {
+    if (!rootId.startsWith('branch-l-')) continue
+    const root = nodeMap.get(rootId)
+    if (!root) continue
+    leftL1ColumnWidth = Math.max(leftL1ColumnWidth, getNodeWidth(root, nodeWidths))
+  }
 
   const newX = new Map<string, number>()
 
@@ -286,7 +325,13 @@ export function recalculateMindMapV2ColumnPositions(
 
     let x: number
     if (parentId === 'topic') {
-      x = side === 'r' ? topicRightEdge + gap : topicLeftEdge - gap - w
+      if (side === 'r') {
+        // Right L1: shared inner (left) edge — width does not move X.
+        x = topicRightEdge + gap
+      } else {
+        const colW = leftL1ColumnWidth > 0 ? leftL1ColumnWidth : w
+        x = topicLeftEdge - gap - colW
+      }
     } else {
       const parent = nodeMap.get(parentId)
       if (!parent?.position) return
@@ -308,10 +353,12 @@ export function recalculateMindMapV2ColumnPositions(
     assignSubtreeX(rootId, 'topic', parsed.side)
   }
 
-  const rightGap =
-    (childrenMap.get('topic') ?? []).some((id) => id.startsWith('branch-r-')) ? gap : 0
-  const leftGap =
-    (childrenMap.get('topic') ?? []).some((id) => id.startsWith('branch-l-')) ? gap : 0
+  const rightGap = (childrenMap.get('topic') ?? []).some((id) => id.startsWith('branch-r-'))
+    ? gap
+    : 0
+  const leftGap = (childrenMap.get('topic') ?? []).some((id) => id.startsWith('branch-l-'))
+    ? gap
+    : 0
 
   let correctedNodes = nodes.map((node) => {
     if (!node.position) return node
@@ -329,11 +376,22 @@ export function recalculateMindMapV2ColumnPositions(
   })
 
   // --- Y-position correction using actual measured heights ---
-  if (connections.length > 0) {
+  // Skip full restack when the caller already placed Y (incremental L1 Enter):
+  // restacking L1s was the "weird then fixes itself" flash. Still rigid-center
+  // each parent↔children group and each side pack on the topic.
+  if (connections.length > 0 && !options?.preserveIncomingY) {
     correctedNodes = correctYPositions(
       correctedNodes,
       nodeHeights,
       connections,
+      collapsedNodeIds,
+      diagramStyleId
+    )
+  } else if (connections.length > 0 && options?.preserveIncomingY) {
+    correctedNodes = settleMindMapPreserveYLayout(
+      correctedNodes,
+      connections,
+      nodeHeights,
       collapsedNodeIds,
       diagramStyleId
     )
@@ -379,20 +437,12 @@ function correctYPositions(
       childrenMap.set(c.source, [c.target])
     }
   }
-  for (const kids of childrenMap.values()) {
-    kids.sort((a, b) => {
-      const aIdx = parseInt(a.split('-')[3] ?? '0', 10)
-      const bIdx = parseInt(b.split('-')[3] ?? '0', 10)
-      return aIdx - bIdx
-    })
-  }
-
   const topicChildren = childrenMap.get('topic') ?? []
   if (topicChildren.length === 0) return nodes
 
   const crossBranchGap = DEFAULT_MINDMAP_BRANCH_GAP
 
-  // Separate first-level branches by side
+  // First-level branches by side — connection list order is sibling SoT
   const rightRoots: string[] = []
   const leftRoots: string[] = []
   for (const cid of topicChildren) {
@@ -401,15 +451,6 @@ function correctYPositions(
     if (parsed.side === 'r') rightRoots.push(cid)
     else leftRoots.push(cid)
   }
-
-  // Sort roots by stable global index (not stale Y) so re-stack stays in tree order
-  const byGlobalIndex = (a: string, b: string) => {
-    const aIdx = parseInt(a.split('-')[3] ?? '0', 10)
-    const bIdx = parseInt(b.split('-')[3] ?? '0', 10)
-    return aIdx - bIdx
-  }
-  rightRoots.sort(byGlobalIndex)
-  leftRoots.sort(byGlobalIndex)
 
   const newY = new Map<string, number>()
   /** One span per node per restack — assignSubtreeY would otherwise re-walk each subtree. */
@@ -449,30 +490,61 @@ function correctYPositions(
     const childrenTotalSpan =
       childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * MINDMAP_SIBLING_GAP
 
-    // Sole underline leaf: align its underline anchor to the parent's connection anchor
-    // so the edge is a flat horizontal (no diagonal when parent is taller than the child).
-    const soleChildId = kids.length === 1 ? kids[0]! : null
-    const soleChildKids = soleChildId ? childrenMap.get(soleChildId) : undefined
+    // Sole underline child: align its connection anchor to the parent's so the
+    // stem is flat horizontal (underline continues from parent mid; text sits above).
+    // Leaves and chains (L1→L2→L3) — box-mid centering left the underline below the
+    // parent mid and drew a diagonal (common on right-side single-child chains).
+    const soleChildId = kids.length === 1 ? (kids[0] ?? null) : null
     if (
       soleChildId &&
       !collapsedNodeIds.has(nodeId) &&
-      isUnderlineMindMapNode(soleChildId, nodeMap, diagramStyleId) &&
-      (!soleChildKids || soleChildKids.length === 0)
+      isUnderlineMindMapNode(soleChildId, nodeMap, diagramStyleId)
     ) {
       newY.set(nodeId, startY)
       const parentAnchorY = getNodeAnchorY(nodeId, startY, nodeMap, nodeHeights, diagramStyleId)
-      const childTopY = getNodeTopYForAnchor(
+      const soleChildKids = childrenMap.get(soleChildId)
+      const provisionalTop = getNodeTopYForAnchor(
         soleChildId,
         parentAnchorY,
         nodeMap,
         nodeHeights,
         diagramStyleId
       )
-      newY.set(soleChildId, childTopY)
-      return Math.max(
-        startY + h,
-        childTopY + getNodeHeight(soleChildId, nodeMap, nodeHeights, diagramStyleId)
+
+      if (!soleChildKids || soleChildKids.length === 0) {
+        newY.set(soleChildId, provisionalTop)
+        return Math.max(
+          startY + h,
+          provisionalTop + getNodeHeight(soleChildId, nodeMap, nodeHeights, diagramStyleId)
+        )
+      }
+
+      // Layout grandchildren, then rigid-shift so the direct child's anchor still
+      // matches the parent (fan stays relative; stem stays flat).
+      const subtreeEnd = assignSubtreeY(soleChildId, provisionalTop)
+      const laidOutTop = newY.get(soleChildId) ?? provisionalTop
+      const laidOutAnchor = getNodeAnchorY(
+        soleChildId,
+        laidOutTop,
+        nodeMap,
+        nodeHeights,
+        diagramStyleId
       )
+      const delta = parentAnchorY - laidOutAnchor
+      if (Math.abs(delta) >= 0.5) {
+        const stack = [soleChildId]
+        while (stack.length > 0) {
+          const id = stack.pop()
+          if (id == null) continue
+          const y = newY.get(id)
+          if (y != null) newY.set(id, y + delta)
+          const nested = childrenMap.get(id)
+          if (nested) {
+            for (const kid of nested) stack.push(kid)
+          }
+        }
+      }
+      return Math.max(startY + h, subtreeEnd + delta)
     }
 
     if (childrenTotalSpan >= h) {
@@ -485,21 +557,51 @@ function correctYPositions(
       const lastKid = kids[kids.length - 1]
       const firstKidTopY = newY.get(firstKid) ?? startY
       const lastKidTopY = newY.get(lastKid) ?? startY
-      const firstAnchorY = getNodeAnchorY(firstKid, firstKidTopY, nodeMap, nodeHeights, diagramStyleId)
+      const firstAnchorY = getNodeAnchorY(
+        firstKid,
+        firstKidTopY,
+        nodeMap,
+        nodeHeights,
+        diagramStyleId
+      )
       const lastAnchorY = getNodeAnchorY(lastKid, lastKidTopY, nodeMap, nodeHeights, diagramStyleId)
       const anchorCenter = (firstAnchorY + lastAnchorY) / 2
-      newY.set(nodeId, getNodeTopYForAnchor(nodeId, anchorCenter, nodeMap, nodeHeights, diagramStyleId))
+      newY.set(
+        nodeId,
+        getNodeTopYForAnchor(nodeId, anchorCenter, nodeMap, nodeHeights, diagramStyleId)
+      )
       return y
     }
 
+    // Parent taller than the fan: stack kids, then rigid-shift so the
+    // first/last connection-anchor midpoint matches the parent anchor
+    // (box-span mid left underline L2 below the stem).
     newY.set(nodeId, startY)
-    const shift = (h - childrenTotalSpan) / 2
-    let y = startY + shift
+    const parentAnchorY = getNodeAnchorY(nodeId, startY, nodeMap, nodeHeights, diagramStyleId)
+    let y = startY
     for (let i = 0; i < kids.length; i++) {
       if (i > 0) y += MINDMAP_SIBLING_GAP
       y = assignSubtreeY(kids[i], y)
     }
-    return startY + h
+    const firstKid = kids[0]
+    const lastKid = kids[kids.length - 1]
+    const firstKidTopY = newY.get(firstKid) ?? startY
+    const lastKidTopY = newY.get(lastKid) ?? startY
+    const firstAnchorY = getNodeAnchorY(
+      firstKid,
+      firstKidTopY,
+      nodeMap,
+      nodeHeights,
+      diagramStyleId
+    )
+    const lastAnchorY = getNodeAnchorY(lastKid, lastKidTopY, nodeMap, nodeHeights, diagramStyleId)
+    const delta = parentAnchorY - (firstAnchorY + lastAnchorY) / 2
+    if (Math.abs(delta) >= 0.5) {
+      for (const kidId of kids) {
+        shiftSubtreeInNewY(kidId, delta)
+      }
+    }
+    return Math.max(startY + h, y + delta)
   }
 
   function sidePackOriginTop(roots: string[]): number | undefined {
@@ -515,14 +617,45 @@ function correctYPositions(
     return nodeMap.get(firstRoot)?.position?.y
   }
 
+  function shiftSubtreeInNewY(rootId: string, delta: number): void {
+    if (Math.abs(delta) < 0.5) return
+    const stack = [rootId]
+    while (stack.length > 0) {
+      const id = stack.pop()
+      if (id == null) continue
+      const y = newY.get(id)
+      if (y != null) newY.set(id, y + delta)
+      const kids = childrenMap.get(id)
+      if (kids) {
+        for (const kid of kids) stack.push(kid)
+      }
+    }
+  }
+
   function stackBranches(roots: string[], topicCenterY: number): void {
     if (roots.length === 0) return
 
+    const allPinned = roots.every((rootId) => {
+      const y = nodeMap.get(rootId)?.position?.y
+      return y != null && Number.isFinite(y)
+    })
+
+    // Multi-root with existing tops: keep each L1 where it is (Enter / measure
+    // must not re-center the side). Reflow children inside each subtree only.
+    if (roots.length >= 2 && allPinned) {
+      for (const rootId of roots) {
+        const pinY = nodeMap.get(rootId)?.position?.y
+        if (pinY == null) continue
+        assignSubtreeY(rootId, pinY)
+        const laidOutY = newY.get(rootId)
+        if (laidOutY == null) continue
+        shiftSubtreeInNewY(rootId, pinY - laidOutY)
+      }
+      return
+    }
+
     const spans = roots.map((r) => computeSubtreeSpan(r))
     const packOrigin = sidePackOriginTop(roots)
-    // Multi-root: pack from the preserved side origin in data.nodes so sibling
-    // Enter Y-preserve survives measurement-driven recalcs. Single-root / missing
-    // positions still center on the topic.
     const startYs =
       roots.length >= 2 && packOrigin != null
         ? computeSequentialRootStartYsFrom(packOrigin, spans, crossBranchGap)
@@ -539,33 +672,14 @@ function correctYPositions(
   stackBranches(rightRoots, topicCenterY)
   stackBranches(leftRoots, topicCenterY)
 
-  // Subtree re-centering moves L1 nodes after the initial stack; re-align topic so its
-  // connection anchor sits at the midpoint of all L1 branch anchors (both sides).
-  const allRoots = [...rightRoots, ...leftRoots]
-  if (allRoots.length > 0) {
-    let minAnchor = Infinity
-    let maxAnchor = -Infinity
-    for (const rootId of allRoots) {
-      const topY = newY.get(rootId)
-      if (topY == null) continue
-      const anchor = getNodeAnchorY(rootId, topY, nodeMap, nodeHeights, diagramStyleId)
-      minAnchor = Math.min(minAnchor, anchor)
-      maxAnchor = Math.max(maxAnchor, anchor)
-    }
-    if (Number.isFinite(minAnchor) && Number.isFinite(maxAnchor)) {
-      const targetAnchorY = (minAnchor + maxAnchor) / 2
-      newY.set(
-        'topic',
-        getNodeTopYForAnchor('topic', targetAnchorY, nodeMap, nodeHeights, diagramStyleId)
-      )
-    }
-  }
+  // Keep topic where it is; each side pack is centered on it below (or already
+  // is, when stackBranches used topic-symmetric start Ys).
+  newY.set('topic', topicTopY)
 
   function alignSingleSideRootToTopic(roots: string[]): void {
     if (roots.length !== 1) return
     const rootId = roots[0]
     if (!rootId) return
-    const topicTopY = newY.get('topic') ?? nodeMap.get('topic')?.position?.y ?? 0
     const topicAnchorY = getNodeAnchorY('topic', topicTopY, nodeMap, nodeHeights, diagramStyleId)
     newY.set(
       rootId,
@@ -586,7 +700,7 @@ function correctYPositions(
     })
   }
 
-  return nodes.map((node) => {
+  const yCorrected = nodes.map((node) => {
     const correctedY = newY.get(node.id)
     if (correctedY == null || !node.position) return node
     if (Math.abs(node.position.y - correctedY) < 0.5) return node
@@ -609,6 +723,9 @@ function correctYPositions(
     }
     return { ...node, position: { ...node.position, y: correctedY } }
   })
+
+  // Pinned / incremental packs: slide each side as a rigid body onto the topic.
+  return centerMindMapSidePacksOnTopic(yCorrected, connections, nodeHeights)
 }
 
 /**

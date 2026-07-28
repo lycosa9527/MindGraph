@@ -11,6 +11,8 @@ export const MINDMAP_NODE_UID_DATA_KEY = 'mindMapUid'
 
 export type MindMapBranchUidCarrier = {
   uid?: string
+  text?: string
+  children?: MindMapBranchUidCarrier[]
 }
 
 export function readMindMapNodeUid(

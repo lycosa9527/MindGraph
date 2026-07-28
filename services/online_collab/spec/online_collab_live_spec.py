@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import logging
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from models.domain.diagrams import Diagram
 from services.online_collab.spec.online_collab_live_spec_json import (
@@ -24,7 +24,7 @@ from services.online_collab.spec.online_collab_live_spec_json import (
 logger = logging.getLogger(__name__)
 
 
-def _parse_db_spec(diagram: Diagram) -> Dict[str, Any]:
+def _parse_db_spec(diagram: Diagram) -> dict[str, Any]:
     """Parse db spec."""
     raw = diagram.spec
     if raw is None:
@@ -46,7 +46,7 @@ def _parse_db_spec(diagram: Diagram) -> Dict[str, Any]:
         return {}
 
 
-def _prune_dangling_connections(spec: Dict[str, Any]) -> None:
+def _prune_dangling_connections(spec: dict[str, Any]) -> None:
     """Drop edges whose ``source`` / ``target`` no longer exist on any node."""
     nodes = spec.get("nodes") or []
     if not isinstance(nodes, list):
@@ -63,10 +63,10 @@ def _prune_dangling_connections(spec: Dict[str, Any]) -> None:
 
 
 def _merge_node_patches(
-    existing_nodes: List[Dict[str, Any]],
-    patches: List[Dict[str, Any]],
-    skip_node_ids: Optional[Set[str]] = None,
-) -> List[Dict[str, Any]]:
+    existing_nodes: list[dict[str, Any]],
+    patches: list[dict[str, Any]],
+    skip_node_ids: set[str] | None = None,
+) -> list[dict[str, Any]]:
     """Merge node patches."""
     skip = skip_node_ids or set()
     by_index = {str(n.get("id")): i for i, n in enumerate(existing_nodes) if n.get("id")}
@@ -97,23 +97,47 @@ def _merge_node_patches(
     return existing_nodes
 
 
+def _connection_insert_index(
+    conns: list[dict[str, Any]],
+    patch: dict[str, Any],
+) -> int:
+    """Prefer insert after prior sibling (mind-map connection-order SoT)."""
+    source = patch.get("source")
+    after_target = patch.get("insert_after_target")
+    if isinstance(source, str) and isinstance(after_target, str) and after_target:
+        for i, conn in enumerate(conns):
+            if not isinstance(conn, dict):
+                continue
+            if conn.get("source") == source and conn.get("target") == after_target:
+                return i + 1
+    if isinstance(source, str) and source:
+        last_same = -1
+        for i, conn in enumerate(conns):
+            if isinstance(conn, dict) and conn.get("source") == source:
+                last_same = i
+        if last_same >= 0:
+            return last_same + 1
+    return len(conns)
+
+
 def _merge_connection_patches(
-    conns: List[Dict[str, Any]],
-    patches: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
-    """Merge connection patches."""
+    conns: list[dict[str, Any]],
+    patches: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Merge connection patches (new edges may insert among siblings)."""
     for patch in patches:
         if not isinstance(patch, dict):
             continue
-        conn_id = patch.get("id")
+        clean_patch = {k: v for k, v in patch.items() if k != "insert_after_target"}
+        conn_id = clean_patch.get("id")
         if conn_id:
             idx = next(
                 (i for i, c in enumerate(conns) if isinstance(c, dict) and c.get("id") == conn_id),
                 -1,
             )
         else:
-            source = patch.get("source")
-            target = patch.get("target")
+            source = clean_patch.get("source")
+            target = clean_patch.get("target")
             if not source or not target:
                 continue
             idx = next(
@@ -125,18 +149,19 @@ def _merge_connection_patches(
                 -1,
             )
         if idx >= 0:
-            conns[idx] = {**conns[idx], **patch}
+            conns[idx] = {**conns[idx], **clean_patch}
         else:
-            conns.append(patch)
+            insert_at = _connection_insert_index(conns, patch)
+            conns.insert(insert_at, clean_patch)
     return conns
 
 
 def merge_granular_into_spec(
-    spec: Dict[str, Any],
-    nodes: Optional[List[Dict[str, Any]]],
-    connections: Optional[List[Dict[str, Any]]],
-    deleted_node_ids: Optional[List[str]] = None,
-    deleted_connection_ids: Optional[List[str]] = None,
+    spec: dict[str, Any],
+    nodes: list[dict[str, Any]] | None,
+    connections: list[dict[str, Any]] | None,
+    deleted_node_ids: list[str] | None = None,
+    deleted_connection_ids: list[str] | None = None,
 ) -> None:
     """Merge granular node/connection patches (same rules as frontend ``mergeGranularUpdate``).
 
@@ -144,25 +169,25 @@ def merge_granular_into_spec(
     ``deleted_connection_ids``) before applying patches.
     """
     if deleted_node_ids:
-        to_delete: Set[str] = {str(nid) for nid in deleted_node_ids if nid}
+        to_delete: set[str] = {str(nid) for nid in deleted_node_ids if nid}
         spec["nodes"] = [
             n for n in (spec.get("nodes") or []) if isinstance(n, dict) and str(n.get("id", "")) not in to_delete
         ]
 
     if deleted_connection_ids:
-        to_delete_c: Set[str] = {str(cid) for cid in deleted_connection_ids if cid}
+        to_delete_c: set[str] = {str(cid) for cid in deleted_connection_ids if cid}
         spec["connections"] = [
             c
             for c in (spec.get("connections") or [])
             if isinstance(c, dict) and str(c.get("id", "")) not in to_delete_c
         ]
 
-    skip_patch_ids: Set[str] = set()
+    skip_patch_ids: set[str] = set()
     if deleted_node_ids:
         skip_patch_ids = {str(nid) for nid in deleted_node_ids if nid}
 
     if nodes:
-        existing_nodes: List[Dict[str, Any]] = list(spec.get("nodes") or [])
+        existing_nodes: list[dict[str, Any]] = list(spec.get("nodes") or [])
         if not isinstance(existing_nodes, list):
             existing_nodes = []
         spec["nodes"] = _merge_node_patches(
@@ -172,7 +197,7 @@ def merge_granular_into_spec(
         )
 
     if connections:
-        conns: List[Dict[str, Any]] = list(spec.get("connections") or [])
+        conns: list[dict[str, Any]] = list(spec.get("connections") or [])
         if not isinstance(conns, list):
             conns = []
         spec["connections"] = _merge_connection_patches(conns, connections)
@@ -184,13 +209,13 @@ _CHANGED_FULL = frozenset({"__full__"})
 
 
 def apply_live_update(
-    current: Optional[Dict[str, Any]],
-    spec: Optional[Any],
-    nodes: Optional[List[Any]],
-    connections: Optional[List[Any]],
-    deleted_node_ids: Optional[List[str]] = None,
-    deleted_connection_ids: Optional[List[str]] = None,
-) -> Tuple[Dict[str, Any], int, frozenset]:
+    current: dict[str, Any] | None,
+    spec: Any | None,
+    nodes: list[Any] | None,
+    connections: list[Any] | None,
+    deleted_node_ids: list[str] | None = None,
+    deleted_connection_ids: list[str] | None = None,
+) -> tuple[dict[str, Any], int, frozenset]:
     """
     Apply one WS update. Full ``spec`` replaces document; else merge granular.
 
@@ -254,12 +279,12 @@ def apply_live_update(
     return out, next_v, frozenset(changed)
 
 
-def serialize_live_spec(doc: Dict[str, Any]) -> str:
+def serialize_live_spec(doc: dict[str, Any]) -> str:
     """JSON for Redis (includes internal ``v``)."""
     return json.dumps(doc, ensure_ascii=False)
 
 
-def deserialize_live_spec(raw: Any) -> Optional[Dict[str, Any]]:
+def deserialize_live_spec(raw: Any) -> dict[str, Any] | None:
     """Parse Redis bytes/str to a dict."""
     if raw is None:
         return None
@@ -274,7 +299,7 @@ def deserialize_live_spec(raw: Any) -> Optional[Dict[str, Any]]:
         return None
 
 
-def spec_for_snapshot(doc: Dict[str, Any]) -> Dict[str, Any]:
+def spec_for_snapshot(doc: dict[str, Any]) -> dict[str, Any]:
     """Client-facing snapshot without internal version / seq keys."""
     out = deepcopy(doc)
     out.pop("v", None)
@@ -282,7 +307,7 @@ def spec_for_snapshot(doc: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
-async def read_live_spec(redis: Any, code: str) -> Optional[Dict[str, Any]]:
+async def read_live_spec(redis: Any, code: str) -> dict[str, Any] | None:
     """Read live spec from Redis via ``JSON.GET`` (Redis 8+)."""
     return await json_get_live_spec(redis, code)
 
@@ -290,7 +315,7 @@ async def read_live_spec(redis: Any, code: str) -> Optional[Dict[str, Any]]:
 async def write_live_spec(
     redis: Any,
     code: str,
-    doc: Dict[str, Any],
+    doc: dict[str, Any],
     ttl_sec: int,
 ) -> None:
     """Persist live spec with session-aligned TTL (RedisJSON only)."""
@@ -304,7 +329,7 @@ async def seed_live_spec_from_diagram(
     code: str,
     diagram: Diagram,
     ttl_sec: int,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Hydrate Redis from ``Diagram.spec`` JSON; version starts at 1."""
     parsed = _parse_db_spec(diagram)
     if "type" not in parsed and diagram.diagram_type:

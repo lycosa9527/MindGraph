@@ -82,7 +82,14 @@ export function resolveVoiceNodeId(
   return null
 }
 
-function topLevelMindmapBranchIds(nodes: DiagramNode[]): string[] {
+function topLevelMindmapBranchIds(nodes: DiagramNode[], connections: Connection[] = []): string[] {
+  const topicConns = connections.filter((c) => c.source === 'topic')
+  if (topicConns.length > 0) {
+    const rights = topicConns.filter((c) => c.target.startsWith('branch-r-1-')).map((c) => c.target)
+    const lefts = topicConns.filter((c) => c.target.startsWith('branch-l-1-')).map((c) => c.target)
+    return [...rights, ...lefts]
+  }
+  // Fallback when connections unavailable: stable id order (legacy callers).
   const sortIdx = (id: string): number => parseInt(id.split('-').pop() ?? '0', 10)
   const rights = nodes
     .filter((n) => n.id.startsWith('branch-r-1-'))
@@ -99,7 +106,7 @@ function mindmapChildIdAt(
   childIndex: number
 ): string | null {
   const conns = store.data?.connections?.filter((c) => c.source === parentBranchId) ?? []
-  const targets = conns.map((c) => c.target).sort()
+  const targets = conns.map((c) => c.target)
   return targets[childIndex] ?? null
 }
 
@@ -296,10 +303,24 @@ export function applyVoiceDiagramAddNodes(
       const branchIdx = typeof p.branch_index === 'number' ? p.branch_index : undefined
       const childIdx = typeof p.child_index === 'number' ? p.child_index : undefined
       const parentId = typeof p.parent_id === 'string' ? p.parent_id.trim() : ''
+      const afterNodeId = typeof p.after_node_id === 'string' ? p.after_node_id.trim() : ''
+      const insertIndex =
+        typeof p.insert_index === 'number' && p.insert_index >= 0 ? p.insert_index : undefined
       const sideRaw = typeof p.side === 'string' ? p.side.trim().toLowerCase() : ''
       const side = sideRaw === 'left' ? 'left' : 'right'
-      if (branchIdx !== undefined && childIdx !== undefined && text) {
-        const parents = topLevelMindmapBranchIds(store.data.nodes)
+      if (afterNodeId && text) {
+        if (store.addMindMapSibling(afterNodeId, text, 'below')) count++
+      } else if (parentId !== '' && insertIndex !== undefined && text) {
+        if (
+          store.addMindMapSibling(parentId, text, 'below', {
+            parentId,
+            insertIndex,
+          })
+        ) {
+          count++
+        }
+      } else if (branchIdx !== undefined && childIdx !== undefined && text) {
+        const parents = topLevelMindmapBranchIds(store.data.nodes, store.data.connections ?? [])
         const parentFromIndex = parents[branchIdx]
         if (parentFromIndex && store.addMindMapChild(parentFromIndex, text)) count++
       } else if (parentId !== '' && text) {
@@ -584,7 +605,7 @@ export function applyVoiceDiagramRemoveNodes(
         typeof o.branch_index === 'number' &&
         typeof o.child_index === 'number'
       ) {
-        const parents = topLevelMindmapBranchIds(store.data.nodes)
+        const parents = topLevelMindmapBranchIds(store.data.nodes, store.data.connections ?? [])
         const pid = parents[o.branch_index]
         if (pid) {
           const cid = mindmapChildIdAt(store, pid, o.child_index)

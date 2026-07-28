@@ -7,21 +7,21 @@ Proprietary License
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from services.diagram_edit.schema import diagram_edit_function_call_to_legacy_command
 from services.diagram_edit.types import LEGACY_ACTION_TO_TOOL, DiagramEditCommand
 
 
 def legacy_command_to_diagram_edit(
-    legacy: Dict[str, Any],
+    legacy: dict[str, Any],
     *,
     scope: str,
     diagram_type: str,
-    expected_revision: Optional[int] = None,
-    idempotency_key: Optional[str] = None,
+    expected_revision: int | None = None,
+    idempotency_key: str | None = None,
     source_agent: str = "kitty",
-) -> Optional[DiagramEditCommand]:
+) -> DiagramEditCommand | None:
     """Convert legacy Kitty command dict to DiagramEditCommand."""
     action = legacy.get("action")
     if not isinstance(action, str):
@@ -30,7 +30,7 @@ def legacy_command_to_diagram_edit(
     if tool is None:
         return None
 
-    args: Dict[str, Any] = {}
+    args: dict[str, Any] = {}
     if tool == "diagram.update_center":
         target = legacy.get("target") or legacy.get("new_text")
         if isinstance(target, str):
@@ -39,7 +39,15 @@ def legacy_command_to_diagram_edit(
         target = legacy.get("target")
         if isinstance(target, str):
             args["text"] = target.strip()
-        for key in ("parent_ref", "side", "branch_index", "child_index", "node_index"):
+        for key in (
+            "parent_ref",
+            "side",
+            "branch_index",
+            "child_index",
+            "node_index",
+            "after_node_id",
+            "insert_index",
+        ):
             if key in legacy:
                 args[key] = legacy[key]
     elif tool == "diagram.update_node":
@@ -69,7 +77,7 @@ def legacy_command_to_diagram_edit(
     )
 
 
-def diagram_edit_tool_from_function_call(name: str, arguments_json: str) -> Optional[DiagramEditCommand]:
+def diagram_edit_tool_from_function_call(name: str, arguments_json: str) -> DiagramEditCommand | None:
     """Build DiagramEditCommand from OpenAI function call (partial; scope filled later)."""
     legacy = diagram_edit_function_call_to_legacy_command(name, arguments_json)
     action = legacy.get("action")

@@ -6,23 +6,21 @@ import { ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { MINDMAP_CANVAS_MODE_KEY, useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
 
 function syncMindMapCanvasModeForFlags(data: FeatureFlagsResponse): void {
-  // Lazy import avoids a Pinia init cycle with the UI store.
-  void import('@/stores/ui').then(({ MINDMAP_CANVAS_MODE_KEY, useUIStore }) => {
-    const uiStore = useUIStore()
-    if (!data.feature_mindmap_v2_canvas) {
-      if (uiStore.mindMapCanvasMode === 'v2') {
-        uiStore.setMindMapCanvasMode('legacy')
-      }
-      return
+  const uiStore = useUIStore()
+  if (!data.feature_mindmap_v2_canvas) {
+    if (uiStore.mindMapCanvasMode === 'v2') {
+      uiStore.setMindMapCanvasMode('legacy')
     }
-    const stored = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
-    if (stored === 'v2') {
-      uiStore.setMindMapCanvasMode('v2')
-    }
-  })
+    return
+  }
+  const stored = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
+  if (stored === 'v2') {
+    uiStore.setMindMapCanvasMode('v2')
+  }
 }
 
 export interface FeatureOrgAccessEntry {

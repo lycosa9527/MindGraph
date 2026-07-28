@@ -17,7 +17,7 @@ import json
 import logging
 import os
 import uuid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from redis.exceptions import RedisError
 
@@ -197,12 +197,40 @@ redis.register_function('mg_spec_granular_apply', function(keys, args)
     if cid ~= nil then
       local q  = cjson.encode(tostring(cid))
       local fp = '$.connections[?(@.id == ' .. q .. ')]'
+      -- Strip transport-only sibling insert hint before persist.
+      local after_target = p['insert_after_target']
+      p['insert_after_target'] = nil
       local pj = cjson.encode(p)
       local h  = redis.call('JSON.GET', sk, fp)
       if h and h ~= '[]' then
         redis.call('JSON.MERGE', sk, fp, pj)
       else
-        redis.call('JSON.ARRAPPEND', sk, '$.connections', pj)
+        local insert_idx = nil
+        local conn_len = nil
+        if after_target ~= nil and p['source'] ~= nil then
+          local all = redis.call('JSON.GET', sk, '$.connections')
+          if all and all ~= '[]' then
+            local ok_a, arr = pcall(cjson.decode, tostring(all))
+            if ok_a and type(arr) == 'table' and type(arr[1]) == 'table' then
+              local list = arr[1]
+              conn_len = #list
+              for i, c in ipairs(list) do
+                if type(c) == 'table'
+                  and tostring(c['source']) == tostring(p['source'])
+                  and tostring(c['target']) == tostring(after_target) then
+                  -- Lua 1-based i → RedisJSON 0-based insert-after index = i
+                  insert_idx = i
+                  break
+                end
+              end
+            end
+          end
+        end
+        if insert_idx ~= nil and conn_len ~= nil and insert_idx < conn_len then
+          redis.call('JSON.ARRINSERT', sk, '$.connections', insert_idx, pj)
+        else
+          redis.call('JSON.ARRAPPEND', sk, '$.connections', pj)
+        end
       end
       chc = true
     end
@@ -323,8 +351,8 @@ async def acquire_nx_lock(
     redis: Any,
     key: str,
     ttl_sec: int,
-    token: Optional[str] = None,
-) -> Optional[str]:
+    token: str | None = None,
+) -> str | None:
     """
     Attempt to acquire an NX lock with a per-caller token.
 
@@ -464,7 +492,7 @@ async def fcall_node_claim_exclusive(
     username: str,
     field_ttl_sec: int,
     key_ttl_sec: int,
-) -> Optional[bool]:
+) -> bool | None:
     """
     Atomically claim exclusive edit ownership of a node via ``mg_node_claim_exclusive``.
 
@@ -583,7 +611,7 @@ async def acquire_room_write_lock(
     code: str,
     user_id: int,
     ttl_sec: int = _WRITE_LOCK_TTL_SEC,
-) -> Optional[str]:
+) -> str | None:
     """
     Try to acquire the room-level write lock for ``user_id``.
 
@@ -628,11 +656,11 @@ async def fcall_spec_granular_apply(
     redis: Any,
     code: str,
     ttl_sec: int,
-    nodes: Optional[List[Dict[str, Any]]],
-    connections: Optional[List[Dict[str, Any]]],
-    deleted_node_ids: Optional[List[str]],
-    deleted_connection_ids: Optional[List[str]],
-) -> Optional[Tuple[int, int]]:
+    nodes: list[dict[str, Any]] | None,
+    connections: list[dict[str, Any]] | None,
+    deleted_node_ids: list[str] | None,
+    deleted_connection_ids: list[str] | None,
+) -> tuple[int, int] | None:
     """
     FCALL mg_spec_granular_apply: atomic per-node/connection upsert + delete
     on the live spec key, returning ``(version, seq)``.

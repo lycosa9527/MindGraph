@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -22,11 +23,31 @@ def _is_allowed(path: Path, _root: Path) -> bool:
     return False
 
 
+def _tracked_python_files(root: Path) -> list[Path]:
+    """Return git-tracked ``*.py`` paths so gitignored trees (e.g. esp32/) match CI."""
+    completed = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "--", "*.py"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        print(completed.stderr.strip() or "git ls-files failed", file=sys.stderr)
+        return []
+    paths: list[Path] = []
+    for line in completed.stdout.splitlines():
+        rel = line.strip()
+        if not rel:
+            continue
+        paths.append(root / rel)
+    return paths
+
+
 def main() -> int:
     """Main."""
     root = Path(__file__).resolve().parents[2]
     violations: list[str] = []
-    for py_path in sorted(root.rglob("*.py")):
+    for py_path in _tracked_python_files(root):
         if any(part in py_path.parts for part in ("__pycache__", ".venv", "venv", "node_modules", "frontend")):
             continue
         if _is_allowed(py_path, root):
