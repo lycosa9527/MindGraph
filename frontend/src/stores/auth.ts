@@ -48,6 +48,7 @@ import {
 } from '@/utils/adminCapabilities'
 import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
 import { useMindMateStore } from '@/stores/mindmate'
+import { useShowcaseStore } from '@/stores/showcase'
 import { normalizeUserRole } from '@/utils/userRoleDisplay'
 import { DEFAULT_USER_AVATAR_EMOJI } from '@/utils/userAvatarEmoji'
 import {
@@ -459,6 +460,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('access_token')
     clearSavedLoginCredentials()
     useMindMateStore().reset()
+    useShowcaseStore().reset()
     stopSessionMonitoring()
     useUIStore().setLanguagePolicyAllowZh(true)
   }

@@ -69,6 +69,12 @@ export default {
     '文件过大，超出当前上传类型的限制。草稿已撤销，请确认大小后重试。',
   'showcase.publishModal.coverUploadSkipped':
     '案例已提交，但封面上传失败。可稍后编辑案例以更新封面。',
+  'showcase.publishModal.coverGenerating':
+    '封面正在后台生成，稍后会显示在卡片上。',
+  'showcase.publishModal.coverFailed':
+    '案例已提交，但封面生成失败。可稍后编辑案例以刷新封面。',
+  'showcase.publishModal.coverFailedTimeout':
+    '案例已提交，但封面生成超时。可稍后编辑案例以刷新封面。',
   'showcase.publishModal.coverUnsupportedLegacyDoc':
     '案例已提交，但 .doc 无法自动生成封面。建议改用 .docx 或 .pdf。',
   'showcase.publishModal.success': '案例已提交，等待管理员审核',
@@ -123,6 +129,11 @@ export default {
   'showcase.publishModal.highlightsPlaceholder': '逐条描述本课设计的亮点，每行一条（选填）',
   'showcase.publishModal.teachingIntroPlaceholder': '简要介绍本课教学设计的背景、目标与适用场景',
   'showcase.publishModal.aiGenerate': 'AI生成',
+  'showcase.publishModal.aiGenerating': 'AI生成中…',
+  'showcase.publishModal.aiGenerateSuccess': '已根据文档生成教学设计简介、设计亮点与教学反思，请核对后编辑',
+  'showcase.publishModal.aiGenerateFailed': 'AI生成失败，请稍后重试',
+  'showcase.publishModal.aiGenerateNeedFile': '请先在上一步上传教学设计文档',
+  'showcase.publishModal.aiGenerateTeachingOnly': 'AI生成目前仅支持教学设计案例',
   'showcase.publishModal.reflectionLabel': '教学反思',
   'showcase.publishModal.introPlaceholder': '简要描述案例内容和适用场景',
   'showcase.publishModal.diagramCorePlaceholder': '描述此图示的核心内容和思维可视化特点',

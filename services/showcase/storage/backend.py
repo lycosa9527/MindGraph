@@ -21,6 +21,7 @@ from services.showcase.storage.keys import (
 from services.utils.tencent_cos_client import (
     cos_credentials_configured,
     delete_object,
+    download_file,
     generate_presigned_get_url,
     generate_presigned_put_url,
     get_object_bytes,
@@ -47,12 +48,22 @@ def storage_backend() -> str:
     return STORAGE_COS if cos_showcase_enabled() else STORAGE_LOCAL
 
 
-def put_bytes_sync(logical_key: str, data: bytes) -> str:
+def put_bytes_sync(
+    logical_key: str,
+    data: bytes,
+    *,
+    content_type: Optional[str] = None,
+) -> str:
     """Write bytes to COS or local; returns logical key."""
     backend = storage_backend()
     if cos_showcase_enabled():
         key = full_cos_key(logical_key)
-        if not upload_bytes(data, key, log_prefix="[Showcase/COS]"):
+        if not upload_bytes(
+            data,
+            key,
+            log_prefix="[Showcase/COS]",
+            content_type=content_type,
+        ):
             raise RuntimeError("Failed to upload Showcase object to COS")
         showcase_wf_log(
             "storage_put",
@@ -73,9 +84,40 @@ def put_bytes_sync(logical_key: str, data: bytes) -> str:
     return logical_key
 
 
-async def put_bytes(logical_key: str, data: bytes) -> str:
+async def put_bytes(
+    logical_key: str,
+    data: bytes,
+    *,
+    content_type: Optional[str] = None,
+) -> str:
     """Async put via to_thread."""
-    return await asyncio.to_thread(put_bytes_sync, logical_key, data)
+    return await asyncio.to_thread(
+        put_bytes_sync,
+        logical_key,
+        data,
+        content_type=content_type,
+    )
+
+
+def download_to_path_sync(logical_key: str, dest: Path) -> bool:
+    """Stream object to a local file (COS download_file or local copy)."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if cos_showcase_enabled() and not logical_key.startswith(f"{LEGACY_LOGICAL_PREFIX}/"):
+        return download_file(
+            full_cos_key(logical_key),
+            dest,
+            log_prefix="[Showcase/COS]",
+        )
+    source = resolve_local_safe(logical_key)
+    if not source.is_file():
+        return False
+    dest.write_bytes(source.read_bytes())
+    return True
+
+
+async def download_to_path(logical_key: str, dest: Path) -> bool:
+    """Async stream object to a local file."""
+    return await asyncio.to_thread(download_to_path_sync, logical_key, dest)
 
 
 def get_bytes_sync(logical_key: str, *, max_bytes: Optional[int] = None) -> Optional[bytes]:

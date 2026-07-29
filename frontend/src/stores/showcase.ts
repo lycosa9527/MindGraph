@@ -5,7 +5,10 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
+import { createShowcaseCoverStream } from '@/composables/showcase/createShowcaseCoverStream'
+import { i18n } from '@/i18n'
 import {
   type ShowcasePost,
   type ShowcasePostList,
@@ -36,6 +39,8 @@ export const useShowcaseStore = defineStore('showcase', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const lastQuery = ref<ShowcaseFeedQuery | null>(null)
+  const coverPendingIds = ref<Record<string, true>>({})
+  const coverStreamTeardowns = new Map<string, () => void>()
 
   const hasPosts = computed(() => posts.value.length > 0)
 
@@ -49,6 +54,66 @@ export const useShowcaseStore = defineStore('showcase', () => {
 
   function emitAdminUpdated() {
     eventBus.emit('admin:showcase_updated', {})
+  }
+
+  function emitCoverReady(postId: string, thumbnailUrl?: string | null) {
+    eventBus.emit('showcase:cover_ready', { postId, thumbnailUrl })
+  }
+
+  function emitCoverFail(postId: string, reason?: string | null) {
+    eventBus.emit('showcase:cover_fail', { postId, reason })
+  }
+
+  function isCoverPending(postId: string): boolean {
+    return Boolean(coverPendingIds.value[postId])
+  }
+
+  function stopCoverStream(postId: string) {
+    const teardown = coverStreamTeardowns.get(postId)
+    if (teardown) {
+      teardown()
+      coverStreamTeardowns.delete(postId)
+    }
+  }
+
+  function clearCoverPending(postId: string) {
+    stopCoverStream(postId)
+    if (!coverPendingIds.value[postId]) return
+    const next = { ...coverPendingIds.value }
+    delete next[postId]
+    coverPendingIds.value = next
+  }
+
+  function clearAllCoverPending() {
+    for (const postId of [...coverStreamTeardowns.keys()]) {
+      stopCoverStream(postId)
+    }
+    coverPendingIds.value = {}
+  }
+
+  function markCoverPending(postId: string) {
+    if (!postId) return
+    coverPendingIds.value = { ...coverPendingIds.value, [postId]: true }
+    stopCoverStream(postId)
+    const teardown = createShowcaseCoverStream(postId, {
+      onReady: ({ thumbnailUrl }) => {
+        if (thumbnailUrl) {
+          patchPost(postId, { thumbnail_url: thumbnailUrl })
+        }
+        clearCoverPending(postId)
+        emitCoverReady(postId, thumbnailUrl)
+      },
+      onFail: ({ reason }) => {
+        clearCoverPending(postId)
+        emitCoverFail(postId, reason)
+        const key =
+          reason === 'timeout' || reason === 'soft_time_limit' || reason === 'hard_time_limit'
+            ? 'showcase.publishModal.coverFailedTimeout'
+            : 'showcase.publishModal.coverFailed'
+        notify.warning(String(i18n.global.t(key)), 8000)
+      },
+    })
+    coverStreamTeardowns.set(postId, teardown)
   }
 
   async function fetchPosts(query: ShowcaseFeedQuery = {}): Promise<ShowcasePostList> {
@@ -102,6 +167,7 @@ export const useShowcaseStore = defineStore('showcase', () => {
   }
 
   function reset() {
+    clearAllCoverPending()
     posts.value = []
     total.value = 0
     page.value = 1
@@ -117,14 +183,21 @@ export const useShowcaseStore = defineStore('showcase', () => {
     loading,
     error,
     lastQuery,
+    coverPendingIds,
     hasPosts,
     fetchPosts,
     refresh,
     patchPost,
     removePost,
     reset,
+    markCoverPending,
+    clearCoverPending,
+    clearAllCoverPending,
+    isCoverPending,
     emitFeedInvalidate,
     emitPostUpdated,
     emitAdminUpdated,
+    emitCoverReady,
+    emitCoverFail,
   }
 })

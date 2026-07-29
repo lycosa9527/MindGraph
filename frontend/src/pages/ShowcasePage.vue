@@ -36,13 +36,16 @@ import { useLanguage } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
 import { useAuthStore } from '@/stores'
+import { useShowcaseStore } from '@/stores/showcase'
 import {
   type ShowcasePost,
+  getShowcasePost,
   getShowcasePosts,
 } from '@/utils/apiClient'
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
+const showcaseStore = useShowcaseStore()
 const { subjectOptions, gradeOptions } = useShowcaseMeta()
 
 const typeTabs = [
@@ -105,6 +108,10 @@ function displayTags(tags: string[]): string[] {
 
 function showPostThumbnail(post: ShowcasePost): boolean {
   return Boolean(post.thumbnail_url) && !blankThumbIds.value.has(post.id)
+}
+
+function isCoverPending(post: ShowcasePost): boolean {
+  return showcaseStore.isCoverPending(post.id) && !showPostThumbnail(post)
 }
 
 function hideBlankThumb(postId: string): void {
@@ -275,6 +282,30 @@ const offPostUpdated = eventBus.on('showcase:post_updated', () => {
 const offAdminShowcase = eventBus.on('admin:showcase_updated', () => {
   void reload()
 })
+const offCoverReady = eventBus.on('showcase:cover_ready', ({ postId, thumbnailUrl }) => {
+  const idx = posts.value.findIndex((p) => p.id === postId)
+  if (idx < 0) return
+  if (thumbnailUrl) {
+    posts.value[idx] = { ...posts.value[idx], thumbnail_url: thumbnailUrl }
+    blankThumbIds.value = new Set(
+      [...blankThumbIds.value].filter((id) => id !== postId),
+    )
+    return
+  }
+  void getShowcasePost(postId)
+    .then((fresh) => {
+      const i = posts.value.findIndex((p) => p.id === postId)
+      if (i >= 0 && fresh.thumbnail_url) {
+        posts.value[i] = { ...posts.value[i], thumbnail_url: fresh.thumbnail_url }
+        blankThumbIds.value = new Set(
+          [...blankThumbIds.value].filter((id) => id !== postId),
+        )
+      }
+    })
+    .catch(() => {
+      void reload()
+    })
+})
 
 onMounted(() => {
   void fetchPosts()
@@ -284,6 +315,7 @@ onUnmounted(() => {
   offFeedInvalidate()
   offPostUpdated()
   offAdminShowcase()
+  offCoverReady()
 })
 
 watch(
@@ -414,7 +446,7 @@ watch(searchQuery, () => {
             :include-all="false"
           />
 
-          <div class="relative min-w-[160px] flex-1">
+          <div class="relative min-w-40 flex-1">
             <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
             <input
               v-model="searchQuery"
@@ -453,10 +485,10 @@ watch(searchQuery, () => {
           <!-- Cover (full card width) -->
           <div
             :class="[
-              'showcase-card-cover relative aspect-[5/3] w-full shrink-0 overflow-hidden',
+              'showcase-card-cover relative aspect-5/3 w-full shrink-0 overflow-hidden',
               showPostThumbnail(post)
                 ? 'bg-gray-100'
-                : ['bg-gradient-to-br', caseTypeTheme(post.case_type).coverFallback],
+                : ['bg-linear-to-br', caseTypeTheme(post.case_type).coverFallback],
             ]"
           >
             <img
@@ -469,8 +501,20 @@ watch(searchQuery, () => {
               @error="onThumbError(post)"
             />
             <div
+              v-else-if="isCoverPending(post)"
+              class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-50/90"
+            >
+              <span
+                class="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"
+                aria-hidden="true"
+              />
+              <span class="px-3 text-center text-[11px] text-gray-500">
+                {{ t('showcase.publishModal.coverGenerating') }}
+              </span>
+            </div>
+            <div
               v-if="showPostThumbnail(post)"
-              class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/45 to-transparent"
+              class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/45 to-transparent"
             />
             <div class="absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-1 p-2">
               <span

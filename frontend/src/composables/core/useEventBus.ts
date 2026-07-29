@@ -729,6 +729,8 @@ export type EventTypes = {
   'admin:showcase_updated': Record<string, never>
   'showcase:feed_invalidate': { reason?: string }
   'showcase:post_updated': { postId: string }
+  'showcase:cover_ready': { postId: string; thumbnailUrl?: string | null }
+  'showcase:cover_fail': { postId: string; reason?: string | null }
 
   // Wildcard for any event (for debugging)
   '*': { event: string; data: unknown }

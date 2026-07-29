@@ -36,6 +36,7 @@ from models.domain.auth import User
 from models.domain.showcase import ShowcasePost
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from services.redis.cache import redis_showcase_cache as showcase_cache
+from services.showcase.covers.enqueue import enqueue_teaching_design_cover
 from services.showcase.infra.observability import showcase_extra
 from services.showcase.storage import (
     build_object_key,
@@ -506,6 +507,15 @@ async def complete_showcase_upload(
         role=role_spec.role,
         logical_key=key,
     )
+    if role_spec.role == "attachment":
+        enqueue_teaching_design_cover(
+            post_id=post_id,
+            user_id=current_user.id,
+            attachment_key=key,
+            case_type=post.case_type,
+            organization_id=current_user.organization_id,
+            author_id=post.author_id,
+        )
     post = await _load_post_for_format(db, post_id)
     return {
         "key": key,

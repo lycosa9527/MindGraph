@@ -41,7 +41,7 @@ openai>=2.40.0
 python-multipart>=0.0.30
 httpx[http2]>=0.28.1  # Primary async HTTP client with HTTP/2 (LLM clients, SMS)
 alipay-sdk-python>=3.7.1160  # Alipay Open Platform (gateway; e.g. alipay.trade.page.pay)
-mcp[cli]>=1.27.2  # Model Context Protocol (Streamable HTTP at /api/mcp when FEATURE_MCP_HTTP=True)
+mcp[cli]>=2,<3  # MCP Streamable HTTP at /api/mcp (MCPServer; transport kwargs on streamable_http_app)
 websockets>=16.0  # WebSocket support (Omni realtime voice)
 dingtalk-stream>=0.24.3  # DingTalk Stream SDK (background WebSocket for AI card callbackType=STREAM in groups)
 

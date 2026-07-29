@@ -38,6 +38,10 @@ from config.settings import config
 from scripts.db.postgres_app_startup import prepare_postgresql_rls_runtime
 from services.infrastructure.lifecycle.startup import MINDGRAPH_LAUNCHER_PID_ENV
 from services.infrastructure.process import _port_utils
+from services.showcase.covers.config import (
+    celery_worker_needed_for_app,
+    showcase_server_covers_enabled,
+)
 from services.infrastructure.process._reload_watch_guard import (
     clear_reload_breaking_symlinks,
 )
@@ -237,41 +241,67 @@ def run_server() -> None:
         else:
             logger.debug("[QDRANT] Skipping Qdrant (Knowledge Space feature is disabled)")
 
-        # 4. Celery (REQUIRED only if Knowledge Space feature is enabled)
+        # 4. Celery — required for Knowledge Space; soft-start for Showcase covers
         celery_worker = None
-        if config.FEATURE_KNOWLEDGE_SPACE:
+        need_celery = celery_worker_needed_for_app()
+        celery_hard_required = bool(config.FEATURE_KNOWLEDGE_SPACE)
+        if need_celery:
             logger.debug("[CELERY] Checking Celery installation...")
             is_installed, message = check_celery_installed()
             if not is_installed:
-                print(
-                    "[ERROR] Celery is REQUIRED for Knowledge Space feature but not installed "
-                    "or dependencies are missing."
+                if celery_hard_required:
+                    print(
+                        "[ERROR] Celery is REQUIRED for Knowledge Space feature but not installed "
+                        "or dependencies are missing."
+                    )
+                    print(f"        {message}")
+                    print("        Application cannot start without Celery when FEATURE_KNOWLEDGE_SPACE is enabled.")
+                    sys.exit(1)
+                logger.warning(
+                    "[CELERY] Showcase covers enabled but Celery missing — covers will soft-fail: %s",
+                    message,
                 )
-                print(f"        {message}")
-                print("        Application cannot start without Celery when FEATURE_KNOWLEDGE_SPACE is enabled.")
-                sys.exit(1)
-            logger.debug("[CELERY] %s", message)
-            logger.debug("[CELERY] Starting Celery worker...")
-            celery_worker = start_celery_worker()  # Verifies Celery is running (exits if not ready)
-            if celery_worker:
-                logger.debug("[CELERY] ✓ Celery worker started successfully")
             else:
-                logger.debug("[CELERY] ✓ Using existing Celery worker")
+                logger.debug("[CELERY] %s", message)
+                logger.debug("[CELERY] Starting Celery worker...")
+                try:
+                    celery_worker = start_celery_worker()
+                except SystemExit:
+                    if celery_hard_required:
+                        raise
+                    logger.warning("[CELERY] Worker failed to start; Showcase covers will soft-fail on enqueue")
+                    celery_worker = None
+                if celery_worker:
+                    logger.debug("[CELERY] ✓ Celery worker started successfully")
+                elif celery_hard_required:
+                    logger.debug("[CELERY] ✓ Using existing Celery worker")
+                elif showcase_server_covers_enabled():
+                    logger.debug("[CELERY] ✓ Celery available for Showcase covers (or will soft-fail if worker absent)")
         else:
-            logger.debug("[CELERY] Skipping Celery (Knowledge Space feature is disabled)")
+            logger.debug("[CELERY] Skipping Celery (Knowledge Space and Showcase covers disabled)")
 
         # All services verified and running - continue with application startup
+        celery_note = ""
+        if config.FEATURE_KNOWLEDGE_SPACE:
+            celery_note = ", Qdrant, Celery"
+        elif need_celery:
+            celery_note = ", Celery"
         logger.debug("=" * 80)
         logger.debug(
             "All required services are ready: Redis%s%s",
             ", PostgreSQL" if using_postgresql else "",
-            ", Qdrant, Celery" if config.FEATURE_KNOWLEDGE_SPACE else "",
+            celery_note,
         )
         logger.debug("=" * 80)
+        ready_extra = ""
+        if config.FEATURE_KNOWLEDGE_SPACE:
+            ready_extra = " + Qdrant + Celery"
+        elif need_celery:
+            ready_extra = " + Celery"
         logger.info(
             "Infrastructure ready: Redis%s%s",
             " + PostgreSQL" if using_postgresql else "",
-            " + Qdrant + Celery" if config.FEATURE_KNOWLEDGE_SPACE else "",
+            ready_extra,
         )
 
         config.print_config_summary()
@@ -384,8 +414,9 @@ def run_server() -> None:
         except KeyboardInterrupt:
             print("\n" + "=" * 80)
             print("Shutting down gracefully...")
-            if config.FEATURE_KNOWLEDGE_SPACE:
+            if celery_worker_needed_for_app():
                 stop_celery_worker()
+            if config.FEATURE_KNOWLEDGE_SPACE:
                 stop_qdrant_server()
             if using_postgresql:
                 stop_postgresql_server()
@@ -393,8 +424,9 @@ def run_server() -> None:
         finally:
             sys.stderr = original_stderr
             sys.excepthook = original_excepthook
-            if config.FEATURE_KNOWLEDGE_SPACE:
+            if celery_worker_needed_for_app():
                 stop_celery_worker()
+            if config.FEATURE_KNOWLEDGE_SPACE:
                 stop_qdrant_server()
             if using_postgresql:
                 stop_postgresql_server()

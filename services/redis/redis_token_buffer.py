@@ -77,6 +77,7 @@ class RedisTokenBuffer:
         # Logical alias still routes to generation client; physical model follows env (flash by default).
         "qwen-plus": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
         "qwen3.6-flash": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
+        "qwen3.7-flash": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
         "qwen3.7-plus": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
         "deepseek": {"input": 0.4, "output": 2.0, "provider": "dashscope"},
         "kimi": {"input": 2.0, "output": 6.0, "provider": "dashscope"},
@@ -92,6 +93,7 @@ class RedisTokenBuffer:
         "qwen-turbo": "qwen3.6-flash",
         "qwen-plus": "qwen3.6-flash",
         "qwen3.6-flash": "qwen3.6-flash",
+        "qwen3.7-flash": "qwen3.7-flash",
         "qwen3.7-plus": "qwen3.7-plus",
         "deepseek": "deepseek-v3.2",
         "kimi": "moonshot-v1-32k",

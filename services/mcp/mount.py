@@ -8,7 +8,7 @@ Proprietary License
 
 from fastapi import FastAPI
 
-from services.mcp.mindgraph_mcp import get_mindgraph_mcp
+from services.mcp.mindgraph_mcp import mindgraph_mcp_asgi_app
 
 
 def mount_mindgraph_mcp(app: FastAPI) -> None:
@@ -16,7 +16,7 @@ def mount_mindgraph_mcp(app: FastAPI) -> None:
     Mount MCP Streamable HTTP at /api/mcp (single route / inside the sub-app).
 
     Lifespan: the Starlette sub-app runs StreamableHTTPSessionManager; FastAPI propagates
-    mounted application lifespan in supported versions.
+    mounted application lifespan in supported versions. mcp 2.x enters lifespan once at
+    manager startup (shared across requests when stateless_http=True).
     """
-    mcp = get_mindgraph_mcp()
-    app.mount("/api/mcp", mcp.streamable_http_app())
+    app.mount("/api/mcp", mindgraph_mcp_asgi_app())

@@ -45,10 +45,6 @@ import {
   cloneShowcaseDiagramSpec,
   inferDiagramTypeFromSpec,
 } from '@/utils/showcaseDiagramThumbnail'
-import {
-  captureTeachingDocThumbnail,
-  isLegacyTeachingDocFile,
-} from '@/utils/captureTeachingDocThumbnail'
 
 export type PublishSubmitDeps = {
   props: {
@@ -67,6 +63,7 @@ export type PublishSubmitDeps = {
     error: (message: string, duration?: number) => void
     success: (message: string, duration?: number) => void
     warning: (message: string, duration?: number) => void
+    info: (message: string, duration?: number) => void
     showLoading: (message?: string) => void
     hideLoading: () => void
   }
@@ -439,26 +436,6 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
             file: uploadedFile.value,
             filename: uploadedFile.value.name,
           })
-          if (isLegacyTeachingDocFile(uploadedFile.value.name)) {
-            coverSkipKey = 'showcase.publishModal.coverUnsupportedLegacyDoc'
-          } else {
-            let teachingThumb: Blob | null = null
-            try {
-              teachingThumb = await captureTeachingDocThumbnail(uploadedFile.value)
-            } catch (captureError) {
-              console.warn('[Showcase] teaching doc cover capture failed', captureError)
-              coverSkipKey = 'showcase.publishModal.cannotPreviewTeachingDoc'
-            }
-            const teachingThumbFile = await prepareThumbnailUploadFile(teachingThumb)
-            if (teachingThumbFile) {
-              pendingUploads.push({
-                role: 'thumbnail',
-                file: teachingThumbFile,
-              })
-            } else if (!coverSkipKey) {
-              coverSkipKey = 'showcase.publishModal.cannotPreviewTeachingDoc'
-            }
-          }
         }
       } else {
         if (caseType.value === 'diagram_template' && selectedDiagram.value && !selectedDiagramSpec.value) {
@@ -600,6 +577,9 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
 
       let coverUploadFailed = false
       let savedPostId = props.editPostId?.trim() ?? ''
+      const teachingDesignAttachmentUploaded =
+        caseType.value === 'teaching_design' &&
+        pendingUploads.some((u) => u.role === 'attachment')
       if (props.proxyMode) {
         const canAutoApprove = autoApprove.value && can('tab.showcase.edit')
         const approveAfterUpload = canAutoApprove && pendingUploads.length > 0
@@ -639,7 +619,10 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         notify.success(String(t('showcase.publishModal.success')), 3000)
         showcaseStore.emitFeedInvalidate('publish')
       }
-      if (coverUploadFailed) {
+      if (teachingDesignAttachmentUploaded && savedPostId) {
+        showcaseStore.markCoverPending(savedPostId)
+        notify.info(String(t('showcase.publishModal.coverGenerating')), 5000)
+      } else if (coverUploadFailed) {
         notify.warning(String(t('showcase.publishModal.coverUploadSkipped')), 8000)
       } else if (coverSkipKey) {
         notify.warning(String(t(coverSkipKey)), 8000)

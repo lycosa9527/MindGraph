@@ -13,8 +13,10 @@ from .common import (
     _review_case_post_handler,
 )
 from .routes_actions import router as actions_router
+from .routes_ai import router as ai_router
 from .routes_feed import router as feed_router
 from .routes_posts import router as posts_router
+from .routes_covers import router as covers_router
 from .routes_uploads import router as uploads_router
 
 router = APIRouter(prefix="/api/showcase", tags=["Showcase"])
@@ -22,6 +24,8 @@ router.include_router(feed_router)
 router.include_router(posts_router)
 router.include_router(actions_router)
 router.include_router(uploads_router)
+router.include_router(covers_router)
+router.include_router(ai_router)
 
 __all__ = [
     "CaseReviewBody",

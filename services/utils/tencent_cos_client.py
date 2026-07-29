@@ -198,6 +198,7 @@ def upload_bytes(
     *,
     max_retries: int = 3,
     log_prefix: str = "[COS]",
+    content_type: Optional[str] = None,
 ) -> bool:
     """Upload raw bytes to COS."""
     client = get_cos_client()
@@ -205,7 +206,10 @@ def upload_bytes(
         return False
 
     def _do_put() -> dict:
-        return client.put_object(Bucket=COS_BUCKET, Body=data, Key=object_key)
+        params: Dict[str, Any] = {"Bucket": COS_BUCKET, "Body": data, "Key": object_key}
+        if content_type:
+            params["ContentType"] = content_type
+        return client.put_object(**params)
 
     try:
         _retry_cos_call("put_object", _do_put, max_retries=max_retries)

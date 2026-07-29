@@ -33,6 +33,7 @@ import {
 } from '@/utils/showcaseDiagramThumbnail'
 import { loadPublishShowcaseEditPost } from '@/composables/showcase/loadPublishShowcaseEditPost'
 import { createPublishShowcaseSubmitHandlers } from '@/composables/showcase/submitPublishShowcasePost'
+import { useShowcaseTeachingCopyAi } from '@/composables/showcase/useShowcaseTeachingCopyAi'
 
 export type PublishShowcaseModalProps = {
   visible: boolean
@@ -92,7 +93,6 @@ export function usePublishShowcaseModal(
   const classroomApplication = ref('')
   const isSubmitting = ref(false)
   const submitPhaseLabel = ref('')
-  const isGenerating = ref(false)
   const isHistorySpecLoading = ref(false)
   const showHistoryPicker = ref(false)
 
@@ -276,7 +276,27 @@ export function usePublishShowcaseModal(
       : String(t('showcase.publishModal.step2Title'))
   )
 
+  const {
+    isGenerating,
+    aiGeneratePhase,
+    clearTeachingCopyPrefetch,
+    beginTeachingCopyPrefetch,
+    generateDescription,
+  } = useShowcaseTeachingCopyAi({
+    t,
+    notify,
+    caseType,
+    title,
+    subject,
+    grade,
+    uploadedFile,
+    description,
+    designHighlights,
+    teachingReflection,
+  })
+
   function resetForm() {
+    clearTeachingCopyPrefetch()
     step.value = 1
     title.value = ''
     description.value = ''
@@ -334,6 +354,7 @@ export function usePublishShowcaseModal(
   }
 
   watch(caseType, (type) => {
+    clearTeachingCopyPrefetch()
     if (type === 'teaching_design') {
       diagramType.value = ''
       selectedDiagram.value = null
@@ -461,6 +482,7 @@ export function usePublishShowcaseModal(
       return
     }
     if (!validateTeachingDocSize(file)) return
+    clearTeachingCopyPrefetch()
     uploadedFile.value = file
     uploadedFileName.value = file.name
     selectedDiagram.value = null
@@ -473,6 +495,7 @@ export function usePublishShowcaseModal(
   }
 
   function removeUploadedFile() {
+    clearTeachingCopyPrefetch()
     uploadedFile.value = null
     uploadedFileName.value = ''
     uploadedMgSpec.value = null
@@ -635,6 +658,10 @@ export function usePublishShowcaseModal(
         if (!specReady) return
       }
       step.value = 2
+      if (caseType.value === 'teaching_design' && uploadedFile.value) {
+        // Prefetch while the user fills step 2 so "AI生成" can resolve immediately.
+        beginTeachingCopyPrefetch({ notifyStart: false })
+      }
     } finally {
       isStep1Advancing.value = false
     }
@@ -642,27 +669,6 @@ export function usePublishShowcaseModal(
 
   function goPrev() {
     step.value = 1
-  }
-
-  async function generateDescription() {
-    if (!title.value.trim()) {
-      notify.error(String(t('showcase.publishModal.validationTitle')))
-      return
-    }
-    isGenerating.value = true
-    try {
-      await new Promise((r) => setTimeout(r, 600))
-      const typeLabel =
-        caseType.value === 'teaching_design'
-          ? String(t('showcase.type.teachingDesign'))
-          : caseType.value === 'diagram_case'
-            ? String(t('showcase.type.diagramCase'))
-            : String(t('showcase.type.diagramTemplate'))
-      const subjectPart = subject.value ? `适用于${subject.value}学科` : ''
-      description.value = `《${title.value.trim()}》是一则${typeLabel}案例，${subjectPart}，展示了思维图示在课堂教学中的创新应用与实践价值。`
-    } finally {
-      isGenerating.value = false
-    }
   }
 
   const { resolveThumbnail, submit } = createPublishShowcaseSubmitHandlers({
@@ -747,6 +753,7 @@ export function usePublishShowcaseModal(
     classroomApplication,
     isSubmitting,
     isGenerating,
+    aiGeneratePhase,
     isHistorySpecLoading,
     showHistoryPicker,
     uploadedFile,

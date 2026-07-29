@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.153.0] - 2026-07-29
+
+> **Showcase teaching-design covers render server-side (LibreOffice + Celery + SSE); AI drafts intro, highlights, and reflection from uploaded documents; MCP HTTP mounts on mcp 2.x.**
+
+### Added
+
+- **Server-side teaching-design covers** — After attachment `uploads/complete`, Celery job `showcase.generate_cover` downloads the file, converts `.doc`/`.docx` via LibreOffice, rasterizes page 1 with PyMuPDF, shrinks to the 2MB / 960px budget, and uploads `thumbnail.png` ([`services/showcase/covers/`](services/showcase/covers/), [`tasks/showcase_cover_tasks.py`](tasks/showcase_cover_tasks.py)).
+- **Cover SSE stream** — `GET /api/showcase/posts/{id}/cover-stream` pushes `cover_ready` / `cover_fail` over Redis pub/sub with heartbeats and a 210s hard stop ([`routes_covers.py`](routers/features/showcase/routes_covers.py), [`createShowcaseCoverStream.ts`](frontend/src/composables/showcase/createShowcaseCoverStream.ts)).
+- **Cover pending UX** — Publish marks the post as cover-pending, opens an EventSource, shows a spinner on feed cards until the thumbnail arrives, and warns on timeout/failure without blocking submit ([`showcase.ts`](frontend/src/stores/showcase.ts), [`ShowcasePage.vue`](frontend/src/pages/ShowcasePage.vue)).
+- **Teaching-design AI copy API** — `POST /api/showcase/ai/teaching-copy` accepts `.pdf`/`.doc`/`.docx` plus title/subject/grade, extracts text, and returns `description`, `design_highlights`, and `teaching_reflection` via `qwen3.7-flash` (~200 字 × 3; rate limit 12/min) ([`ai_copy.py`](services/showcase/ai_copy.py), [`routes_ai.py`](routers/features/showcase/routes_ai.py)).
+- **Publish modal AI generate** — Real LLM-backed “AI生成” with prefetch on step-2 entry, fingerprint cache, abort on file/title change, and phase styling ([`useShowcaseTeachingCopyAi.ts`](frontend/src/composables/showcase/useShowcaseTeachingCopyAi.ts), [`PublishShowcaseModal.vue`](frontend/src/components/showcase/PublishShowcaseModal.vue)).
+- **Showcase storage download helpers** — `download_to_path` / `download_to_path_sync` stream attachments to temp files during cover generation ([`backend.py`](services/showcase/storage/backend.py)).
+- **Celery cover task registration** — `tasks.showcase_cover_tasks` on the `default` queue with `showcase.*` routing ([`config/celery.py`](config/celery.py)).
+- **`SHOWCASE_SERVER_COVERS` env** — Default on when `COS_SHOWCASE_ENABLED`; set `false` to disable; `true` forces on for local/dev ([`env.example`](env.example)).
+
+### Changed
+
+- **Teaching-design publish flow** — Client no longer captures/uploads a cover thumbnail on submit; only the attachment is uploaded and the cover is generated asynchronously server-side ([`submitPublishShowcasePost.ts`](frontend/src/composables/showcase/submitPublishShowcasePost.ts)).
+- **Celery startup/monitoring** — Worker soft-starts when server covers are on (even if Knowledge Space is off); missing Celery warns and covers soft-fail instead of blocking boot ([`server_launcher.py`](services/infrastructure/process/server_launcher.py), [`process_monitor.py`](services/infrastructure/monitoring/process_monitor.py)).
+- **AI generate replaces stub** — Step-2 “AI生成” calls the new API and fills all three teaching-design text fields ([`usePublishShowcaseModal.ts`](frontend/src/composables/showcase/usePublishShowcaseModal.ts)).
+- **COS thumbnail upload** — `put_bytes` / `upload_bytes` accept optional `ContentType` so cover PNGs store as `image/png` ([`tencent_cos_client.py`](services/utils/tencent_cos_client.py)).
+- **Token accounting for qwen3.7-flash** — Pricing alias and 120s timeout for the new model ([`redis_token_buffer.py`](services/redis/redis_token_buffer.py), [`llm_utils.py`](services/llm/llm_utils.py)).
+- **MCP package 2.x** — Pin `mcp[cli]>=2,<3`; mount via `MCPServer` / `mindgraph_mcp_asgi_app()` ([`requirements.txt`](requirements.txt), [`mindgraph_mcp.py`](services/mcp/mindgraph_mcp.py), [`mount.py`](services/mcp/mount.py)).
+
+### Fixed
+
+- **Legacy `.doc` covers** — Server-side LibreOffice conversion covers `.doc` attachments (5.152.0 skipped them client-side); publish still succeeds if generation fails.
+- **DOCX DOM capture robustness** — `sanitizeDocxDomForHtmlCapture` strips empty/broken SVG `<image>` hrefs that broke html-to-image ([`captureTeachingDocThumbnail.ts`](frontend/src/utils/captureTeachingDocThumbnail.ts)).
+
+### Tests
+
+- **Backend** — AI copy JSON parse/normalize ([`test_showcase_ai_copy.py`](tests/test_showcase_ai_copy.py)); server cover scope/stale-key guards, PNG shrink, PDF render ([`test_showcase_server_covers.py`](tests/test_showcase_server_covers.py)).
+- **Frontend** — Teaching-copy fingerprint cache key ([`generateShowcaseTeachingCopy.spec.ts`](frontend/tests/generateShowcaseTeachingCopy.spec.ts)); DOCX DOM sanitizer ([`sanitizeDocxDomForHtmlCapture.spec.ts`](frontend/tests/sanitizeDocxDomForHtmlCapture.spec.ts)).
+- **Smoke** — Live LLM smoke for teaching-copy extraction + generation ([`scripts/smoke_showcase_ai_copy.py`](scripts/smoke_showcase_ai_copy.py)).
+
 ## [5.152.0] - 2026-07-28
 
 > **Showcase covers stay under 2MB and soft-fail without discarding the case; Kitty WS/SSE recover auth once then hard-stop; Dify failover health probes once per host and treats bad app keys as reachable.**

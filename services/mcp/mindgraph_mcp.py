@@ -1,5 +1,5 @@
 """
-FastMCP server: prompt to diagram image via POST /api/generate_dingtalk.
+MCPServer: prompt to diagram image via POST /api/generate_dingtalk.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -10,17 +10,20 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
+from collections.abc import Mapping
 
 import httpx
-from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
+from starlette.applications import Starlette
 
 from config.settings import config
 
 logger = logging.getLogger(__name__)
 
-_MCP_SINGLETON: dict[str, FastMCP] = {}
+_MCP_SINGLETON: dict[str, MCPServer] = {}
+
+_TRANSPORT_SECURITY = TransportSecuritySettings(enable_dns_rebinding_protection=False)
 
 
 def _internal_base_url() -> str:
@@ -31,16 +34,34 @@ def _internal_base_url() -> str:
     return f"http://127.0.0.1:{config.port}"
 
 
+def _header_value(headers: Mapping[str, str], name: str) -> str:
+    """Read a header by name (case-insensitive)."""
+    direct = headers.get(name)
+    if direct is not None:
+        return direct.strip()
+    lowered = name.lower()
+    for key, value in headers.items():
+        if key.lower() == lowered:
+            return value.strip()
+    return ""
+
+
 def _auth_headers_from_context(ctx: Context) -> dict[str, str]:
-    """Auth headers from context."""
-    http_request = ctx.request_context.request
-    if http_request is None:
+    """Auth headers from the Streamable HTTP request (Bearer mgat_ + X-MG-Account)."""
+    try:
+        incoming = ctx.headers
+    except ValueError as exc:
+        raise ValueError(
+            "MCP tool requires Streamable HTTP with a Starlette request context; "
+            "Authorization and X-MG-Account headers are missing."
+        ) from exc
+    if incoming is None:
         raise ValueError(
             "MCP tool requires Streamable HTTP with a Starlette request context; "
             "Authorization and X-MG-Account headers are missing."
         )
-    auth = (http_request.headers.get("authorization") or "").strip()
-    account = (http_request.headers.get("x-mg-account") or "").strip()
+    auth = _header_value(incoming, "authorization")
+    account = _header_value(incoming, "x-mg-account")
     if not auth.lower().startswith("bearer "):
         raise ValueError("Authorization header must be Bearer token (mgat_...).")
     if not account:
@@ -53,30 +74,27 @@ def _auth_headers_from_context(ctx: Context) -> dict[str, str]:
     }
 
 
-def build_mindgraph_mcp() -> FastMCP:
+def build_mindgraph_mcp() -> MCPServer:
     """
-    Build the FastMCP app with Streamable HTTP settings suitable for mounting on FastAPI.
+    Build the MCPServer with tools only.
 
-    DNS rebinding checks are disabled here; the outer FastAPI app and reverse proxy enforce host policy.
+    Transport settings (JSON response, stateless HTTP, path, DNS rebinding) are
+    applied in ``mindgraph_mcp_asgi_app`` — mcp 2.x moved them off the constructor.
     """
-    mcp = FastMCP(
+    mcp = MCPServer(
         name="MindGraph",
         instructions=(
             "Generate a diagram image from a natural-language prompt using the MindGraph account "
             "associated with the request headers (Bearer mgat_ token and X-MG-Account). "
             "Returns markdown with an image URL, same as POST /api/generate_dingtalk."
         ),
-        json_response=True,
-        stateless_http=True,
-        streamable_http_path="/",
-        transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
     )
 
     @mcp.tool()
     async def mindgraph_prompt_to_diagram_image(
         prompt: str,
         language: str = "zh",
-        ctx: Optional[Context] = None,
+        ctx: Context | None = None,
     ) -> str:
         """
         Turn a teaching or topic prompt into a diagram PNG and return markdown ![](url).
@@ -112,8 +130,24 @@ def build_mindgraph_mcp() -> FastMCP:
     return mcp
 
 
-def get_mindgraph_mcp() -> FastMCP:
-    """Return a process-wide singleton FastMCP instance for mounting."""
+def get_mindgraph_mcp() -> MCPServer:
+    """Return a process-wide singleton MCPServer instance for mounting."""
     if "app" not in _MCP_SINGLETON:
         _MCP_SINGLETON["app"] = build_mindgraph_mcp()
     return _MCP_SINGLETON["app"]
+
+
+def mindgraph_mcp_asgi_app() -> Starlette:
+    """
+    Streamable HTTP ASGI app for mounting at ``/api/mcp``.
+
+    Path is ``/`` inside the mount so the public endpoint stays ``/api/mcp``.
+    DNS rebinding checks are disabled here; the outer FastAPI app and reverse
+    proxy enforce host policy.
+    """
+    return get_mindgraph_mcp().streamable_http_app(
+        json_response=True,
+        stateless_http=True,
+        streamable_http_path="/",
+        transport_security=_TRANSPORT_SECURITY,
+    )

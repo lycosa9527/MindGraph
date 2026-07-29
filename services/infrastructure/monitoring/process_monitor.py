@@ -57,6 +57,13 @@ except ImportError:
     CriticalAlertService = None
 
 try:
+    from services.showcase.covers.config import (
+        celery_worker_needed_for_app as _covers_need_celery,
+    )
+except ImportError:
+    _covers_need_celery = None
+
+try:
     from config.celery import celery_app
 except ImportError:
     celery_app = None
@@ -68,6 +75,14 @@ try:
 except ImportError:
     config = None
     _CONFIG_AVAILABLE = False
+
+
+def celery_worker_needed_for_app() -> bool:
+    """True when Celery should be monitored for Knowledge Space or Showcase covers."""
+    if _covers_need_celery is not None:
+        return _covers_need_celery()
+    return bool(_CONFIG_AVAILABLE and config is not None and config.FEATURE_KNOWLEDGE_SPACE)
+
 
 logger = logging.getLogger(__name__)
 
@@ -336,9 +351,9 @@ class ProcessMonitor:
         Returns:
             ServiceStatus (HEALTHY or UNHEALTHY)
         """
-        # Skip Celery check if RAG is disabled
+        # Skip Celery check when neither Knowledge Space nor Showcase covers need it
         if _CONFIG_AVAILABLE and config is not None:
-            if not config.FEATURE_KNOWLEDGE_SPACE:
+            if not celery_worker_needed_for_app():
                 return ServiceStatus.HEALTHY
 
         try:
@@ -748,8 +763,9 @@ class ProcessMonitor:
                 db_url = os.getenv("DATABASE_URL", "")
                 using_postgresql = "postgresql" in db_url.lower()
 
-                # Check if RAG is enabled (determines if Celery and Qdrant are needed)
+                # Knowledge Space needs Qdrant+Celery; Showcase covers need Celery only
                 rag_enabled = _CONFIG_AVAILABLE and config is not None and config.FEATURE_KNOWLEDGE_SPACE
+                celery_needed = celery_worker_needed_for_app() if _CONFIG_AVAILABLE else False
 
                 if using_postgresql:
                     if rag_enabled:
@@ -765,6 +781,18 @@ class ProcessMonitor:
                             self._check_postgresql_health(),
                             return_exceptions=False,
                         )
+                    elif celery_needed:
+                        (
+                            redis_status,
+                            celery_status,
+                            postgresql_status,
+                        ) = await asyncio.gather(
+                            self._check_redis_health(),
+                            self._check_celery_health(),
+                            self._check_postgresql_health(),
+                            return_exceptions=False,
+                        )
+                        qdrant_status = ServiceStatus.HEALTHY
                     else:
                         redis_status, postgresql_status = await asyncio.gather(
                             self._check_redis_health(),
@@ -772,7 +800,7 @@ class ProcessMonitor:
                             return_exceptions=False,
                         )
                         qdrant_status = ServiceStatus.HEALTHY  # RAG disabled, skip Qdrant
-                        celery_status = ServiceStatus.HEALTHY  # RAG disabled, skip Celery
+                        celery_status = ServiceStatus.HEALTHY  # Celery not needed
                 else:
                     if rag_enabled:
                         (
@@ -785,16 +813,24 @@ class ProcessMonitor:
                             self._check_celery_health(),
                             return_exceptions=False,
                         )
+                    elif celery_needed:
+                        redis_status, celery_status = await asyncio.gather(
+                            self._check_redis_health(),
+                            self._check_celery_health(),
+                            return_exceptions=False,
+                        )
+                        qdrant_status = ServiceStatus.HEALTHY
                     else:
                         redis_status = await self._check_redis_health()
                         qdrant_status = ServiceStatus.HEALTHY  # RAG disabled, skip Qdrant
-                        celery_status = ServiceStatus.HEALTHY  # RAG disabled, skip Celery
+                        celery_status = ServiceStatus.HEALTHY  # Celery not needed
                     postgresql_status = ServiceStatus.HEALTHY  # Not using PostgreSQL
 
                 # Check and restart services if needed
                 await self._check_and_restart_service("redis", redis_status)
                 if rag_enabled:
                     await self._check_and_restart_service("qdrant", qdrant_status)
+                if celery_needed:
                     await self._check_and_restart_service("celery", celery_status)
                 if using_postgresql:
                     await self._check_and_restart_service("postgresql", postgresql_status)
@@ -803,6 +839,7 @@ class ProcessMonitor:
                 statuses = [redis_status]
                 if rag_enabled:
                     statuses.append(qdrant_status)
+                if celery_needed:
                     statuses.append(celery_status)
                 if using_postgresql:
                     statuses.append(postgresql_status)

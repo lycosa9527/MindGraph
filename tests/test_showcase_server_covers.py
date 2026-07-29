@@ -1,0 +1,225 @@
+"""Unit + fixture tests for Showcase server-side teaching-design covers."""
+
+from __future__ import annotations
+
+import io
+import os
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import fitz
+import pytest
+from PIL import Image, ImageStat
+
+from services.knowledge.legacy_office_convert import resolve_soffice_path
+from services.showcase.covers.generate import (
+    attachment_key_in_post_scope,
+    generate_showcase_cover,
+)
+from services.showcase.covers.render import (
+    THUMBNAIL_MAX_BYTES,
+    render_document_cover_png,
+    shrink_png_bytes,
+)
+
+_PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+
+_DEFAULT_DOCX_LIANG = Path(
+    "/mnt/c/Users/roywa/Desktop/小学-六年级-语文-《两小儿辩日》-梁静-北京师范大学昌平附属学校4.docx"
+)
+_WIN_DOCX_LIANG = Path(
+    r"C:\Users\roywa\Desktop"
+    r"\小学-六年级-语文-《两小儿辩日》-梁静-北京师范大学昌平附属学校4.docx"
+)
+_DEFAULT_DOCX_AQ = Path("/mnt/c/Users/roywa/Desktop/【3.0版本】2402-《阿Q正传》教学设计-陈玉华.docx")
+_WIN_DOCX_AQ = Path(r"C:\Users\roywa\Desktop\【3.0版本】2402-《阿Q正传》教学设计-陈玉华.docx")
+
+
+def _resolve_fixture(env_name: str, *candidates: Path) -> Path | None:
+    override = os.environ.get(env_name, "").strip()
+    paths = [Path(override)] if override else []
+    paths.extend(candidates)
+    for path in paths:
+        if path.is_file():
+            return path
+    return None
+
+
+def _make_png_bytes(width: int = 1280, height: int = 960) -> bytes:
+    # High-entropy pixels keep PNG size above the shrink budget.
+    image = Image.frombytes("RGB", (width, height), os.urandom(width * height * 3))
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG", compress_level=0)
+    return buffer.getvalue()
+
+
+def _make_pdf(path: Path, text: str = "Showcase cover fixture") -> None:
+    document = fitz.open()
+    page = document.new_page(width=595, height=842)
+    page.draw_rect(fitz.Rect(40, 40, 555, 400), color=(0.1, 0.2, 0.5), fill=(0.2, 0.4, 0.7))
+    page.insert_text((72, 120), text, fontsize=28, color=(1, 1, 1))
+    document.save(path)
+    document.close()
+
+
+def test_attachment_key_in_post_scope() -> None:
+    """Accept only keys under the post's showcase/posts/{id}/ prefix."""
+    post_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    assert attachment_key_in_post_scope(
+        post_id,
+        f"showcase/posts/{post_id}/attachment.docx",
+    )
+    assert not attachment_key_in_post_scope(
+        post_id,
+        "showcase/posts/other-id/attachment.docx",
+    )
+    assert not attachment_key_in_post_scope(post_id, "")
+
+
+def test_shrink_png_bytes_fits_budget() -> None:
+    """Downscale cover PNGs until they fit the byte and pixel budgets."""
+    huge = _make_png_bytes()
+    assert len(huge) > 100_000
+    shrunk = shrink_png_bytes(huge, max_bytes=100_000)
+    assert shrunk.startswith(_PNG_MAGIC)
+    assert len(shrunk) <= 100_000
+    with Image.open(io.BytesIO(shrunk)) as image:
+        assert max(image.size) <= 960
+    # Default budget path still accepts already-small PNG magic payloads.
+    under = shrink_png_bytes(shrunk, max_bytes=THUMBNAIL_MAX_BYTES)
+    assert under.startswith(_PNG_MAGIC)
+    assert len(under) <= THUMBNAIL_MAX_BYTES
+
+
+def _mean_luminance(png: bytes) -> float:
+    """Average channel luminance used to reject blank cover renders."""
+    with Image.open(io.BytesIO(png)) as image:
+        rgb = image.convert("RGB")
+        means = ImageStat.Stat(rgb).mean
+        return sum(means) / len(means)
+
+
+def test_render_pdf_first_page_without_soffice(tmp_path: Path) -> None:
+    """Rasterize PDF page 1 via PyMuPDF without LibreOffice."""
+    pdf_path = tmp_path / "page.pdf"
+    _make_pdf(pdf_path)
+    png = render_document_cover_png(pdf_path, tmp_path / "work")
+    assert png.startswith(_PNG_MAGIC)
+    assert len(png) <= THUMBNAIL_MAX_BYTES
+    assert 5 < _mean_luminance(png) < 250
+
+
+@pytest.mark.asyncio
+async def test_generate_aborts_on_stale_attachment_key() -> None:
+    """Skip download/upload when the post attachment key no longer matches."""
+    post_id = "11111111-2222-3333-4444-555555555555"
+    stale_key = f"showcase/posts/{post_id}/attachment.docx"
+    current_key = f"showcase/posts/{post_id}/attachment.pdf"
+    post = MagicMock()
+    post.case_type = "teaching_design"
+    post.spec = {"attachment_path": current_key}
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = post
+    session = AsyncMock()
+    session.execute = AsyncMock(return_value=result_mock)
+    session.__aenter__.return_value = session
+    session.__aexit__.return_value = None
+
+    with (
+        patch(
+            "services.showcase.covers.generate.acquire_cover_lock",
+            return_value="token",
+        ),
+        patch("services.showcase.covers.generate.release_cover_lock") as release,
+        patch(
+            "services.showcase.covers.generate.rls_async_session",
+            return_value=session,
+        ),
+        patch("services.showcase.covers.generate.download_to_path_sync") as download,
+        patch("services.showcase.covers.generate.put_bytes_sync") as put,
+        patch(
+            "services.showcase.covers.generate.publish_showcase_cover_event",
+            new_callable=AsyncMock,
+        ) as publish,
+    ):
+        ok = await generate_showcase_cover(
+            post_id=post_id,
+            user_id=1,
+            attachment_key=stale_key,
+            organization_id=None,
+            author_id=1,
+        )
+    assert ok is False
+    download.assert_not_called()
+    put.assert_not_called()
+    release.assert_called_once_with(post_id, "token")
+    publish.assert_awaited()
+    stale_await = publish.await_args
+    assert stale_await is not None
+    assert stale_await.args[1] == "cover_fail"
+
+
+@pytest.mark.asyncio
+async def test_generate_refuses_out_of_scope_key() -> None:
+    """Emit cover_fail when attachment_key is outside the post prefix."""
+    with patch(
+        "services.showcase.covers.generate.publish_showcase_cover_event",
+        new_callable=AsyncMock,
+    ) as publish:
+        ok = await generate_showcase_cover(
+            post_id="11111111-2222-3333-4444-555555555555",
+            user_id=1,
+            attachment_key="showcase/posts/other/attachment.docx",
+        )
+    assert ok is False
+    publish.assert_awaited()
+    scope_await = publish.await_args
+    assert scope_await is not None
+    assert scope_await.args[1] == "cover_fail"
+
+
+def _png_non_blank(png: bytes) -> None:
+    assert png.startswith(_PNG_MAGIC)
+    assert len(png) <= THUMBNAIL_MAX_BYTES
+    assert 5 < _mean_luminance(png) < 250
+
+
+@pytest.mark.skipif(
+    resolve_soffice_path() is None,
+    reason="LibreOffice (soffice) not installed",
+)
+@pytest.mark.skipif(
+    _resolve_fixture("SHOWCASE_REAL_DOCX_2", _DEFAULT_DOCX_LIANG, _WIN_DOCX_LIANG) is None,
+    reason="Set SHOWCASE_REAL_DOCX_2 or place 两小儿辩日 DOCX on Desktop",
+)
+def test_render_real_docx_liang_er_bian_ri(tmp_path: Path) -> None:
+    """Optional soffice cover render for the 两小儿辩日 Desktop fixture."""
+    source = _resolve_fixture(
+        "SHOWCASE_REAL_DOCX_2",
+        _DEFAULT_DOCX_LIANG,
+        _WIN_DOCX_LIANG,
+    )
+    assert source is not None
+    work = tmp_path / "lo"
+    work.mkdir()
+    png = render_document_cover_png(source, work)
+    _png_non_blank(png)
+
+
+@pytest.mark.skipif(
+    resolve_soffice_path() is None,
+    reason="LibreOffice (soffice) not installed",
+)
+@pytest.mark.skipif(
+    _resolve_fixture("SHOWCASE_REAL_DOCX", _DEFAULT_DOCX_AQ, _WIN_DOCX_AQ) is None,
+    reason="Set SHOWCASE_REAL_DOCX or place 阿Q正传 DOCX on Desktop",
+)
+def test_render_real_docx_aq_zheng_zhuan(tmp_path: Path) -> None:
+    """Optional soffice cover render for the 阿Q正传 Desktop fixture."""
+    source = _resolve_fixture("SHOWCASE_REAL_DOCX", _DEFAULT_DOCX_AQ, _WIN_DOCX_AQ)
+    assert source is not None
+    work = tmp_path / "lo"
+    work.mkdir()
+    png = render_document_cover_png(source, work)
+    _png_non_blank(png)
