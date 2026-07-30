@@ -125,9 +125,6 @@ function isThumbnailUploadRole(role: ShowcaseUploadRole): boolean {
 }
 
 function coverSkipKeyForCase(caseTypeValue: ShowcaseCaseType): string {
-  if (caseTypeValue === 'teaching_design') {
-    return 'showcase.publishModal.cannotPreviewTeachingDoc'
-  }
   if (caseTypeValue === 'diagram_template') {
     return 'showcase.publishModal.cannotPreviewTemplate'
   }

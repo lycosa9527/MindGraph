@@ -75,8 +75,6 @@ export default {
     'Case submitted, but the cover could not be generated. You can edit the case later to refresh the cover.',
   'showcase.publishModal.coverFailedTimeout':
     'Case submitted, but cover generation timed out. You can edit the case later to refresh the cover.',
-  'showcase.publishModal.coverUnsupportedLegacyDoc':
-    'Case submitted without a cover — .doc files cannot generate a preview. Prefer .docx or .pdf.',
   'showcase.publishModal.success': 'Case submitted — awaiting admin review',
   'showcase.publishModal.fromCanvas': 'Publish from canvas',
   'showcase.publishModal.step1Title': 'Basic info',
@@ -96,8 +94,8 @@ export default {
     'Files upload directly to secure storage (short-lived URL).',
   'showcase.publishModal.pickHistory': 'Pick from history',
   'showcase.publishModal.removeFile': 'Remove',
-  'showcase.publishModal.teachingDocHint': '.doc / .docx / .pdf',
-  'showcase.publishModal.teachingDocHintWithLimit': '.doc / .docx / .pdf — max {maxMb} MB per document',
+  'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: limited preview)',
+  'showcase.publishModal.teachingDocHintWithLimit': '.docx / .pdf / .pptx (.doc: limited preview) — max {maxMb} MB per document',
   'showcase.publishModal.teachingDocTooLarge': 'Document exceeds the {maxMb} MB limit. Compress and try again.',
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Upload images (multiple)',
@@ -166,8 +164,6 @@ export default {
     'Could not generate a cover from this saved diagram — the case will still submit. Re-pick it or re-save from the canvas.',
   'showcase.publishModal.cannotPreviewTemplate':
     'Could not generate a cover — the case will still submit. Check the .mg file or pick another saved diagram.',
-  'showcase.publishModal.cannotPreviewTeachingDoc':
-    'Could not generate a document cover — the case will still submit. Check the PDF/DOCX, or edit later to refresh the cover.',
   'showcase.publishModal.historyTitle': 'Pick saved diagram',
   'showcase.publishModal.historySearch': 'Search diagram name…',
   'showcase.publishModal.historyEmpty': 'No saved diagrams',
@@ -217,6 +213,7 @@ export default {
   'showcase.detail.openDocument': 'Open in new tab',
   'showcase.detail.enterFullscreen': 'Fullscreen',
   'showcase.detail.exitFullscreen': 'Exit fullscreen',
+  'showcase.detail.pptxPreviewPending': 'Converting slides for preview…',
   'showcase.detail.docPreviewLoading': 'Loading document…',
   'showcase.detail.docPreviewFailed': 'Could not load preview. Try opening in a new tab.',
   'showcase.detail.legacyDocHint':
@@ -227,7 +224,7 @@ export default {
   'showcase.detail.diagramPreviewFailed': 'Could not load diagram preview',
   'showcase.detail.zoomIn': 'Zoom in',
   'showcase.detail.zoomOut': 'Zoom out',
-  'showcase.detail.zoomReset': 'Reset zoom',
+  'showcase.detail.zoomReset': 'Fit width',
   'showcase.detail.tab.intro': 'Overview',
   'showcase.detail.tab.highlights': 'Highlights',
   'showcase.detail.tab.reflection': 'Reflection',

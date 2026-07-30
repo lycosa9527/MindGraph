@@ -727,6 +727,7 @@ export interface ShowcasePost {
   thumbnail_url: string | null
   spec_json_url?: string | null
   attachment_url?: string | null
+  preview_url?: string | null
   classroom_video_url?: string | null
   reflection_video_url?: string | null
   source_file_url?: string | null

@@ -282,24 +282,36 @@ const offPostUpdated = eventBus.on('showcase:post_updated', () => {
 const offAdminShowcase = eventBus.on('admin:showcase_updated', () => {
   void reload()
 })
-const offCoverReady = eventBus.on('showcase:cover_ready', ({ postId, thumbnailUrl }) => {
+const offCoverReady = eventBus.on('showcase:cover_ready', ({ postId, thumbnailUrl, previewUrl }) => {
   const idx = posts.value.findIndex((p) => p.id === postId)
   if (idx < 0) return
-  if (thumbnailUrl) {
-    posts.value[idx] = { ...posts.value[idx], thumbnail_url: thumbnailUrl }
-    blankThumbIds.value = new Set(
-      [...blankThumbIds.value].filter((id) => id !== postId),
-    )
+  if (thumbnailUrl || previewUrl) {
+    posts.value[idx] = {
+      ...posts.value[idx],
+      ...(thumbnailUrl ? { thumbnail_url: thumbnailUrl } : {}),
+      ...(previewUrl ? { preview_url: previewUrl } : {}),
+    }
+    if (thumbnailUrl) {
+      blankThumbIds.value = new Set(
+        [...blankThumbIds.value].filter((id) => id !== postId),
+      )
+    }
     return
   }
   void getShowcasePost(postId)
     .then((fresh) => {
       const i = posts.value.findIndex((p) => p.id === postId)
-      if (i >= 0 && fresh.thumbnail_url) {
-        posts.value[i] = { ...posts.value[i], thumbnail_url: fresh.thumbnail_url }
-        blankThumbIds.value = new Set(
-          [...blankThumbIds.value].filter((id) => id !== postId),
-        )
+      if (i >= 0 && (fresh.thumbnail_url || fresh.preview_url)) {
+        posts.value[i] = {
+          ...posts.value[i],
+          thumbnail_url: fresh.thumbnail_url ?? posts.value[i].thumbnail_url,
+          preview_url: fresh.preview_url ?? posts.value[i].preview_url,
+        }
+        if (fresh.thumbnail_url) {
+          blankThumbIds.value = new Set(
+            [...blankThumbIds.value].filter((id) => id !== postId),
+          )
+        }
       }
     })
     .catch(() => {

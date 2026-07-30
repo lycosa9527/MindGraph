@@ -16,6 +16,7 @@ from services.showcase.covers.generate import (
     attachment_key_in_post_scope,
     generate_showcase_cover,
 )
+from services.showcase.covers.office_to_pdf import office_suffix_needs_pdf
 from services.showcase.covers.render import (
     THUMBNAIL_MAX_BYTES,
     render_document_cover_png,
@@ -60,6 +61,13 @@ def _make_pdf(path: Path, text: str = "Showcase cover fixture") -> None:
     page.insert_text((72, 120), text, fontsize=28, color=(1, 1, 1))
     document.save(path)
     document.close()
+
+
+def test_office_suffix_includes_pptx() -> None:
+    """PPTX must go through LibreOffice before cover rasterize."""
+    assert office_suffix_needs_pdf(".pptx")
+    assert office_suffix_needs_pdf(".docx")
+    assert not office_suffix_needs_pdf(".pdf")
 
 
 def test_attachment_key_in_post_scope() -> None:

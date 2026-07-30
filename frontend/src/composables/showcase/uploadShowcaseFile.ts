@@ -16,23 +16,33 @@ export type ShowcaseUploadRole =
   | 'classroom'
   | `gallery_${number}`
 
-function guessContentType(file: File): string {
-  if (file.type) return file.type
-  const name = file.name.toLowerCase()
-  if (name.endsWith('.png')) return 'image/png'
-  if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg'
-  if (name.endsWith('.gif')) return 'image/gif'
-  if (name.endsWith('.webp')) return 'image/webp'
-  if (name.endsWith('.pdf')) return 'application/pdf'
-  if (name.endsWith('.doc')) return 'application/msword'
-  if (name.endsWith('.docx')) {
+function contentTypeFromExtension(name: string): string {
+  const lower = name.toLowerCase()
+  if (lower.endsWith('.png')) return 'image/png'
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg'
+  if (lower.endsWith('.gif')) return 'image/gif'
+  if (lower.endsWith('.webp')) return 'image/webp'
+  if (lower.endsWith('.pdf')) return 'application/pdf'
+  if (lower.endsWith('.doc')) return 'application/msword'
+  if (lower.endsWith('.docx')) {
     return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   }
-  if (name.endsWith('.mp4') || name.endsWith('.m4v')) return 'video/mp4'
-  if (name.endsWith('.webm')) return 'video/webm'
-  if (name.endsWith('.mov')) return 'video/quicktime'
-  if (name.endsWith('.mg')) return 'application/json'
+  if (lower.endsWith('.pptx')) {
+    return 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  }
+  if (lower.endsWith('.mp4') || lower.endsWith('.m4v')) return 'video/mp4'
+  if (lower.endsWith('.webm')) return 'video/webm'
+  if (lower.endsWith('.mov')) return 'video/quicktime'
+  if (lower.endsWith('.mg')) return 'application/json'
   return 'application/octet-stream'
+}
+
+function guessContentType(file: File): string {
+  const raw = (file.type || '').trim().toLowerCase()
+  const unusable =
+    !raw || raw === 'application/octet-stream' || raw === 'binary/octet-stream'
+  if (!unusable) return file.type
+  return contentTypeFromExtension(file.name)
 }
 
 function isBrowserCorsOrNetworkFailure(error: unknown): boolean {

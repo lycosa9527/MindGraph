@@ -57,7 +57,7 @@ No Gotenberg; intermediate PDF never lands on COS.
 | Hard stop | LO 120s; Celery soft 180 / hard 210; SSE max 210s then `cover_fail` reason=timeout |
 | Guard | Redis lock `showcase:cover:{post_id}`; abort if post gone or `attachment_key` stale; overwrite thumb when key matches; RLS write as `author_id` |
 | Flag | `SHOWCASE_SERVER_COVERS` (default on when `COS_SHOWCASE_ENABLED`); Celery soft-starts for covers |
-| Host | `LIBREOFFICE_PATH` / `resolve_soffice_path`; install CJK fonts on Linux |
+| Host | Startup hard-gate: LibreOffice + `fonts-noto-cjk` when covers enabled (`host_deps.py`); `LIBREOFFICE_PATH` / `resolve_soffice_path` |
 
 Logical keys in PG stay under `showcase/posts/{uuid}/…`; COS uses `full_cos_key` + `COS_SHOWCASE_PREFIX`.
 

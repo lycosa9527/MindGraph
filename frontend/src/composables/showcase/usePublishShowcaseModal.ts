@@ -720,7 +720,7 @@ export function usePublishShowcaseModal(
   })
 
   const uploadAccept = computed(() => {
-    if (caseType.value === 'teaching_design') return '.doc,.docx,.pdf'
+    if (caseType.value === 'teaching_design') return '.doc,.docx,.pdf,.pptx'
     if (caseType.value === 'diagram_case') return '.png,.jpg,.jpeg,.webp,.gif'
     return '.mg'
   })

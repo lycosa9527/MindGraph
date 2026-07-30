@@ -6,9 +6,11 @@ All Rights Reserved
 Proprietary License
 """
 
+import io
 import json
 import logging
 import uuid
+import zipfile
 from pathlib import Path
 from typing import Optional, cast
 
@@ -38,7 +40,7 @@ SHOWCASE_DIR.mkdir(parents=True, exist_ok=True)
 
 ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024
 VIDEO_MAX_BYTES = 100 * 1024 * 1024
-ALLOWED_DOC_SUFFIXES = frozenset({".doc", ".docx", ".pdf"})
+ALLOWED_DOC_SUFFIXES = frozenset({".doc", ".docx", ".pdf", ".pptx"})
 ALLOWED_SOURCE_SUFFIXES = frozenset({".mg", ".png", ".jpg", ".jpeg", ".webp", ".gif"})
 GALLERY_IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp", ".gif"})
 GALLERY_MAX_ITEMS = 12
@@ -110,6 +112,15 @@ def resolve_showcase_disk_path(rel_path: str) -> Path:
     return candidate
 
 
+def _zip_member_names(content: bytes) -> list[str] | None:
+    """Return ZIP member names, or None when content is not a readable ZIP."""
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            return archive.namelist()
+    except (zipfile.BadZipFile, OSError):
+        return None
+
+
 def _validate_magic_bytes(content: bytes, suffix: str) -> None:
     """Reject uploads whose content does not match the declared suffix."""
     if suffix == ".png":
@@ -135,6 +146,13 @@ def _validate_magic_bytes(content: bytes, suffix: str) -> None:
     if suffix == ".docx":
         if not (content.startswith(ZIP_LOCAL_FILE_HEADER) or content.startswith(ZIP_EMPTY)):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid DOCX file format")
+        return
+    if suffix == ".pptx":
+        if not (content.startswith(ZIP_LOCAL_FILE_HEADER) or content.startswith(ZIP_EMPTY)):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid PPTX file format")
+        names = _zip_member_names(content)
+        if names is None or not any("ppt/presentation.xml" in name for name in names):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid PPTX file format")
         return
     if suffix == ".doc":
         if not content.startswith(OLE_COMPOUND_MAGIC):

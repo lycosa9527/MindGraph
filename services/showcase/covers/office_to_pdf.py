@@ -12,7 +12,7 @@ from services.knowledge.legacy_office_convert import resolve_soffice_path
 logger = logging.getLogger(__name__)
 
 _CONVERT_TIMEOUT_SECONDS = 120
-_OFFICE_SUFFIXES = frozenset({".doc", ".docx"})
+_OFFICE_SUFFIXES = frozenset({".doc", ".docx", ".pptx"})
 
 
 def office_suffix_needs_pdf(suffix: str) -> bool:
@@ -21,7 +21,7 @@ def office_suffix_needs_pdf(suffix: str) -> bool:
 
 
 def convert_office_to_pdf(source_path: Path, output_dir: Path) -> Path:
-    """Convert .doc/.docx to PDF using a per-job LibreOffice user profile.
+    """Convert .doc/.docx/.pptx to PDF using a per-job LibreOffice user profile.
 
     Returns the path to the produced PDF. Raises ``ValueError`` on failure.
     """

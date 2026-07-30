@@ -11,6 +11,7 @@ export type ShowcaseCoverReadyEvent = {
   type: 'cover_ready'
   postId: string
   thumbnailUrl?: string | null
+  previewUrl?: string | null
 }
 
 export type ShowcaseCoverFailEvent = {
@@ -36,6 +37,7 @@ function parseCoverPayload(raw: unknown): ShowcaseCoverReadyEvent | ShowcaseCove
       type: 'cover_ready',
       postId,
       thumbnailUrl: typeof row.thumbnail_url === 'string' ? row.thumbnail_url : null,
+      previewUrl: typeof row.preview_url === 'string' ? row.preview_url : null,
     }
   }
   if (row.type === 'cover_fail') {

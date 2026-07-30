@@ -132,8 +132,8 @@ async def _apply_key_to_post(
     role_spec: UploadRoleSpec,
     logical_key: str,
     filename: Optional[str],
-) -> Optional[str]:
-    """Persist logical key onto post fields; returns previous key to delete."""
+) -> list[str]:
+    """Persist logical key onto post fields; returns previous keys to delete."""
     return apply_key_to_post(
         post,
         role_spec=role_spec,
@@ -434,7 +434,10 @@ async def complete_showcase_upload(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Uploaded object size invalid",
             )
-        sample = await get_bytes(key, max_bytes=MAGIC_SAMPLE_BYTES)
+        # PPTX magic checks OOXML member names; ZIP central directory is at EOF,
+        # so a head sample is not enough — load the whole object (size already capped).
+        magic_limit = size if suffix == ".pptx" else MAGIC_SAMPLE_BYTES
+        sample = await get_bytes(key, max_bytes=magic_limit)
         if sample is None:
             log_upload_complete_fail(
                 post_id=post_id,
@@ -473,7 +476,7 @@ async def complete_showcase_upload(
             raise
 
     post = await _load_editable_post(db, post_id, current_user)
-    previous = await _apply_key_to_post(
+    previous_keys = await _apply_key_to_post(
         post,
         role_spec=role_spec,
         logical_key=key,
@@ -497,7 +500,7 @@ async def complete_showcase_upload(
             detail="Failed to save upload",
         ) from exc
 
-    if previous and previous != key:
+    for previous in previous_keys:
         await delete_key(previous)
 
     await showcase_cache.invalidate_post(post_id)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useRouter } from 'vue-router'
 
@@ -28,6 +28,7 @@ import {
   type ShowcaseCaseType,
 } from '@/components/showcase/showcaseShared'
 import { useLanguage, useNotifications } from '@/composables'
+import { eventBus } from '@/composables/core/useEventBus'
 import {
   postCanDelist,
   postCanResubmit,
@@ -271,6 +272,22 @@ watch(
     void loadPost()
   }
 )
+
+const offCoverReady = eventBus.on('showcase:cover_ready', ({ postId, thumbnailUrl, previewUrl }) => {
+  if (!props.visible || !post.value || post.value.id !== postId) return
+  post.value = {
+    ...post.value,
+    ...(thumbnailUrl ? { thumbnail_url: thumbnailUrl } : {}),
+    ...(previewUrl ? { preview_url: previewUrl } : {}),
+  }
+  if (!previewUrl && !post.value.preview_url) {
+    void loadPost()
+  }
+})
+
+onUnmounted(() => {
+  offCoverReady()
+})
 
 async function loadPost() {
   if (!props.postId) return
@@ -584,6 +601,7 @@ function close() {
             <div class="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
               <ShowcaseTeachingDocPreview
                 :attachment-url="post.attachment_url"
+                :preview-url="post.preview_url"
                 :fallback-text="docFallbackText"
                 :watermark-name="post.author.name"
                 :watermark-organization="post.author.organization"

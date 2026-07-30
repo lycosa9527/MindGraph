@@ -61,15 +61,18 @@ def render_pdf_first_page_png(pdf_path: Path) -> bytes:
         document.close()
 
 
-def render_document_cover_png(source_path: Path, work_dir: Path) -> bytes:
-    """Render first page of PDF/DOC/DOCX to a budget-compliant PNG."""
+def resolve_cover_pdf_path(source_path: Path, work_dir: Path) -> Path:
+    """Resolve a PDF path for cover rasterize (identity for PDF, LO convert for Office)."""
     suffix = source_path.suffix.lower()
     if suffix == ".pdf":
-        pdf_path = source_path
-    elif office_suffix_needs_pdf(suffix):
-        pdf_path = convert_office_to_pdf(source_path, work_dir)
-    else:
-        raise ValueError(f"Unsupported cover source suffix: {suffix}")
+        return source_path
+    if office_suffix_needs_pdf(suffix):
+        return convert_office_to_pdf(source_path, work_dir)
+    raise ValueError(f"Unsupported cover source suffix: {suffix}")
 
+
+def render_document_cover_png(source_path: Path, work_dir: Path) -> bytes:
+    """Render first page of PDF/DOC/DOCX/PPTX to a budget-compliant PNG."""
+    pdf_path = resolve_cover_pdf_path(source_path, work_dir)
     raw = render_pdf_first_page_png(pdf_path)
     return shrink_png_bytes(raw)

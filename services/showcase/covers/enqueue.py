@@ -14,7 +14,7 @@ from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
 
-_COVER_SUFFIXES = frozenset({".pdf", ".doc", ".docx"})
+_COVER_SUFFIXES = frozenset({".pdf", ".doc", ".docx", ".pptx"})
 _COVER_TASK_NAME = "showcase.generate_cover"
 
 

@@ -164,10 +164,16 @@ async def showcase_cover_stream_response(
     post = await _load_visible_post(db, post_id, current_user)
     initial_payload: Optional[str] = None
     if post.thumbnail_path:
+        preview_url = None
+        if isinstance(post.spec, dict):
+            preview_path = post.spec.get("preview_path")
+            if isinstance(preview_path, str) and preview_path.strip():
+                preview_url = showcase_public_asset_url(preview_path.lstrip("/"))
         initial_payload = build_cover_event_payload(
             "cover_ready",
             post_id=post_id,
             thumbnail_url=showcase_public_asset_url(post.thumbnail_path),
+            preview_url=preview_url,
         )
     await release_open_transaction(db)
 

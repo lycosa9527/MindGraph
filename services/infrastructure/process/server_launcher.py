@@ -42,6 +42,7 @@ from services.showcase.covers.config import (
     celery_worker_needed_for_app,
     showcase_server_covers_enabled,
 )
+from services.showcase.covers.host_deps import enforce_showcase_cover_host_deps_or_exit
 from services.infrastructure.process._reload_watch_guard import (
     clear_reload_breaking_symlinks,
 )
@@ -280,17 +281,22 @@ def run_server() -> None:
         else:
             logger.debug("[CELERY] Skipping Celery (Knowledge Space and Showcase covers disabled)")
 
+        # 5. Showcase covers — LibreOffice + Noto CJK fonts (hard-fail when covers enabled)
+        enforce_showcase_cover_host_deps_or_exit()
+
         # All services verified and running - continue with application startup
         celery_note = ""
         if config.FEATURE_KNOWLEDGE_SPACE:
             celery_note = ", Qdrant, Celery"
         elif need_celery:
             celery_note = ", Celery"
+        showcase_note = ", LibreOffice/CJK" if showcase_server_covers_enabled() else ""
         logger.debug("=" * 80)
         logger.debug(
-            "All required services are ready: Redis%s%s",
+            "All required services are ready: Redis%s%s%s",
             ", PostgreSQL" if using_postgresql else "",
             celery_note,
+            showcase_note,
         )
         logger.debug("=" * 80)
         ready_extra = ""
@@ -298,6 +304,8 @@ def run_server() -> None:
             ready_extra = " + Qdrant + Celery"
         elif need_celery:
             ready_extra = " + Celery"
+        if showcase_server_covers_enabled():
+            ready_extra = f"{ready_extra} + LibreOffice/CJK"
         logger.info(
             "Infrastructure ready: Redis%s%s",
             " + PostgreSQL" if using_postgresql else "",

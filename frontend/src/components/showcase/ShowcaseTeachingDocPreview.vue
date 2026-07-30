@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { FileText, Loader2, Maximize2, Minimize2, ZoomIn, ZoomOut } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { renderDocxPreview } from '@/utils/renderDocxPreview'
 import { renderPdfPreview } from '@/utils/renderPdfPreview'
+import { refreshWatermarkDensity } from '@/utils/showcaseWatermark'
 
 const props = defineProps<{
   attachmentUrl?: string | null
+  /** LibreOffice-converted PDF for PPTX (and similar) inline preview. */
+  previewUrl?: string | null
   fallbackText?: string
   watermarkName?: string | null
   watermarkOrganization?: string | null
@@ -16,17 +19,18 @@ const props = defineProps<{
 
 const { t } = useLanguage()
 
-type FileKind = 'pdf' | 'docx' | 'doc' | 'unknown'
+type FileKind = 'pdf' | 'docx' | 'doc' | 'pptx' | 'unknown'
 
-const WATERMARK_TILE_COUNT = 18
+const WATERMARK_TILE_COUNT = 36
 const PDF_BASE_SCALE = 1.35
-const ZOOM_MIN = 0.6
+const ZOOM_MIN = 0.5
 const ZOOM_MAX = 2.5
 const ZOOM_STEP = 0.15
 
 const fileKind = computed<FileKind>(() => {
   const url = props.attachmentUrl?.toLowerCase() ?? ''
   if (url.endsWith('.pdf')) return 'pdf'
+  if (url.endsWith('.pptx')) return 'pptx'
   if (url.endsWith('.docx')) return 'docx'
   if (url.endsWith('.doc')) return 'doc'
   return 'unknown'
@@ -36,6 +40,22 @@ const absoluteAttachmentUrl = computed(() => {
   if (!props.attachmentUrl || typeof window === 'undefined') return null
   return new URL(props.attachmentUrl, window.location.origin).href
 })
+
+const absolutePreviewUrl = computed(() => {
+  if (!props.previewUrl || typeof window === 'undefined') return null
+  return new URL(props.previewUrl, window.location.origin).href
+})
+
+/** PDF bytes source for pdf.js (native PDF or converted PPTX preview). */
+const pdfSourceUrl = computed(() => {
+  if (fileKind.value === 'pdf') return absoluteAttachmentUrl.value
+  if (fileKind.value === 'pptx') return absolutePreviewUrl.value
+  return null
+})
+
+const pptxPreviewPending = computed(
+  () => fileKind.value === 'pptx' && !absolutePreviewUrl.value
+)
 
 const watermarkText = computed(() => {
   const name = props.watermarkName?.trim()
@@ -70,6 +90,7 @@ const legacyDocOfficeSrc = computed(() => {
 const hasAttachmentPreview = computed(
   () =>
     fileKind.value === 'pdf' ||
+    fileKind.value === 'pptx' ||
     fileKind.value === 'docx' ||
     Boolean(legacyDocOfficeSrc.value)
 )
@@ -78,28 +99,45 @@ const hasReaderContent = computed(
   () => hasAttachmentPreview.value || Boolean(props.fallbackText?.trim())
 )
 
-const zoomLevel = ref(1)
+/** Fit-to-width baseline (≤1). User zoom multiplies on top. */
+const fitZoom = ref(1)
+const userZoom = ref(1)
+
+const zoomLevel = computed(() => {
+  const raw = fitZoom.value * userZoom.value
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(raw * 100) / 100))
+})
 
 const zoomPercent = computed(() => `${Math.round(zoomLevel.value * 100)}%`)
 
+/** CSS `zoom` shrinks layout + paint together (avoids transform empty-space / h-scroll). */
 const contentZoomStyle = computed(() => ({
-  transform: `scale(${zoomLevel.value})`,
-  transformOrigin: 'top center',
+  zoom: zoomLevel.value,
 }))
 
 function zoomIn() {
-  zoomLevel.value = Math.min(ZOOM_MAX, Math.round((zoomLevel.value + ZOOM_STEP) * 100) / 100)
+  userZoom.value = Math.min(
+    ZOOM_MAX / Math.max(fitZoom.value, 0.01),
+    Math.round((userZoom.value + ZOOM_STEP) * 100) / 100
+  )
 }
 
 function zoomOut() {
-  zoomLevel.value = Math.max(ZOOM_MIN, Math.round((zoomLevel.value - ZOOM_STEP) * 100) / 100)
+  userZoom.value = Math.max(
+    ZOOM_MIN / Math.max(fitZoom.value, 0.01),
+    Math.round((userZoom.value - ZOOM_STEP) * 100) / 100
+  )
 }
 
 function resetZoom() {
-  zoomLevel.value = 1
+  userZoom.value = 1
+  void nextTick(() => {
+    recomputeFitZoom()
+  })
 }
 
 const readerRoot = ref<HTMLElement | null>(null)
+const viewportEl = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
 
 function syncFullscreenState() {
@@ -143,6 +181,44 @@ let pdfLoadToken = 0
 let pdfCleanup: (() => void) | null = null
 let pdfAbort: AbortController | null = null
 
+function measureContentWidth(): number {
+  if (
+    (fileKind.value === 'pdf' || fileKind.value === 'pptx') &&
+    pdfContainer.value
+  ) {
+    const page = pdfContainer.value.querySelector<HTMLElement>('.showcase-pdf-page, canvas')
+    return page?.scrollWidth || pdfContainer.value.scrollWidth
+  }
+  if (fileKind.value === 'docx' && docxContainer.value) {
+    const wrapper =
+      docxContainer.value.querySelector<HTMLElement>('.showcase-docx-wrapper') ?? docxContainer.value
+    return wrapper.scrollWidth
+  }
+  return 0
+}
+
+function recomputeFitZoom(): void {
+  const viewport = viewportEl.value
+  if (!viewport) return
+  const available = viewport.clientWidth
+  if (available <= 0) return
+
+  // Measure at identity zoom so fit is absolute.
+  const savedUser = userZoom.value
+  userZoom.value = 1
+  fitZoom.value = 1
+
+  void nextTick(() => {
+    const natural = measureContentWidth()
+    fitZoom.value =
+      natural > available + 2 ? Math.max(ZOOM_MIN, Math.min(1, available / natural)) : 1
+    userZoom.value = savedUser
+    if (watermarkText.value && docxContainer.value) {
+      refreshWatermarkDensity(docxContainer.value, watermarkText.value)
+    }
+  })
+}
+
 async function loadPdfPreview(url: string, container: HTMLElement): Promise<void> {
   pdfAbort?.abort()
   pdfAbort = new AbortController()
@@ -150,26 +226,30 @@ async function loadPdfPreview(url: string, container: HTMLElement): Promise<void
   pdfCleanup = null
   container.replaceChildren()
 
+  // Fit-to-width is CSS (max-width:100%); only userZoom changes raster scale.
   pdfCleanup = await renderPdfPreview({
     url,
     container,
-    scale: PDF_BASE_SCALE * zoomLevel.value,
+    scale: PDF_BASE_SCALE * userZoom.value,
     signal: pdfAbort.signal,
     watermarkText: watermarkText.value,
   })
 }
 
 watch(
-  [absoluteAttachmentUrl, fileKind, () => pdfContainer.value, zoomLevel],
+  [pdfSourceUrl, fileKind, () => pdfContainer.value, userZoom],
   async ([url, kind, container]) => {
-    if (kind !== 'pdf' || !url || !container) {
+    const usesPdfReader = kind === 'pdf' || kind === 'pptx'
+    if (!usesPdfReader || !url || !container) {
       pdfAbort?.abort()
       pdfAbort = null
       pdfCleanup?.()
       pdfCleanup = null
       pdfLoading.value = false
       pdfError.value = null
-      container?.replaceChildren()
+      if (usesPdfReader) {
+        container?.replaceChildren()
+      }
       return
     }
 
@@ -180,6 +260,8 @@ watch(
     try {
       await loadPdfPreview(url, container)
       if (token !== pdfLoadToken) return
+      await nextTick()
+      fitZoom.value = 1
     } catch (e) {
       if (token !== pdfLoadToken) return
       if (e instanceof DOMException && e.name === 'AbortError') return
@@ -207,6 +289,8 @@ watch(
     docxLoading.value = true
     docxError.value = null
     container.replaceChildren()
+    fitZoom.value = 1
+    userZoom.value = 1
 
     try {
       const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}mg_preview=${Date.now()}`, {
@@ -219,6 +303,9 @@ watch(
       const blob = await response.blob()
       if (token !== docxLoadToken || !container) return
       await renderDocxPreview(blob, container, watermarkText.value)
+      if (token !== docxLoadToken) return
+      await nextTick()
+      recomputeFitZoom()
     } catch {
       if (token !== docxLoadToken) return
       docxError.value = String(t('showcase.detail.docPreviewFailed'))
@@ -232,18 +319,31 @@ watch(
 )
 
 watch(
-  () => props.attachmentUrl,
+  () => [props.attachmentUrl, props.previewUrl] as const,
   () => {
-    zoomLevel.value = 1
+    fitZoom.value = 1
+    userZoom.value = 1
   }
 )
 
+let resizeObserver: ResizeObserver | null = null
+
 onMounted(() => {
   document.addEventListener('fullscreenchange', syncFullscreenState)
+  if (viewportEl.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      if (userZoom.value === 1) {
+        recomputeFitZoom()
+      }
+    })
+    resizeObserver.observe(viewportEl.value)
+  }
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', syncFullscreenState)
+  resizeObserver?.disconnect()
+  resizeObserver = null
   pdfAbort?.abort()
   pdfAbort = null
   pdfCleanup?.()
@@ -267,7 +367,7 @@ onBeforeUnmount(() => {
       <button
         type="button"
         class="doc-reader-toolbar-btn inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800 disabled:opacity-40"
-        :disabled="zoomLevel <= ZOOM_MIN"
+        :disabled="zoomLevel <= ZOOM_MIN + 0.001"
         :title="String(t('showcase.detail.zoomOut'))"
         @click="zoomOut"
       >
@@ -277,7 +377,7 @@ onBeforeUnmount(() => {
       <button
         type="button"
         class="doc-reader-toolbar-btn inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800 disabled:opacity-40"
-        :disabled="zoomLevel >= ZOOM_MAX"
+        :disabled="zoomLevel >= ZOOM_MAX - 0.001"
         :title="String(t('showcase.detail.zoomIn'))"
         @click="zoomIn"
       >
@@ -286,6 +386,7 @@ onBeforeUnmount(() => {
       <button
         type="button"
         class="doc-reader-toolbar-btn rounded-lg px-2 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+        :title="String(t('showcase.detail.zoomReset'))"
         @click="resetZoom"
       >
         {{ t('showcase.detail.zoomReset') }}
@@ -307,7 +408,8 @@ onBeforeUnmount(() => {
     </div>
 
     <div
-      class="showcase-doc-viewport relative min-h-0 flex-1 overflow-auto bg-white"
+      ref="viewportEl"
+      class="showcase-doc-viewport relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-white"
       @copy="blockCopyEvent"
       @cut="blockCopyEvent"
       @selectstart="blockCopyEvent"
@@ -316,25 +418,32 @@ onBeforeUnmount(() => {
       @dragstart="blockCopyEvent"
     >
       <div
-        v-if="fileKind === 'pdf'"
-        class="relative min-h-full px-4 py-4"
-        :style="contentZoomStyle"
+        v-if="fileKind === 'pdf' || fileKind === 'pptx'"
+        class="relative min-h-full px-3 py-3"
       >
         <div
-          v-if="pdfLoading"
+          v-if="pptxPreviewPending || pdfLoading"
           class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-gray-500"
         >
           <Loader2 class="mr-2 h-5 w-5 animate-spin" />
-          <span class="text-sm">{{ t('showcase.detail.docPreviewLoading') }}</span>
+          <span class="text-sm">{{
+            pptxPreviewPending
+              ? t('showcase.detail.pptxPreviewPending')
+              : t('showcase.detail.docPreviewLoading')
+          }}</span>
         </div>
         <div
-          v-if="pdfError"
+          v-if="pdfError && !pptxPreviewPending"
           class="absolute inset-0 z-20 flex min-h-[50vh] flex-col items-center justify-center gap-3 bg-white px-8 text-center"
         >
           <FileText class="h-12 w-12 text-gray-300" />
           <p class="text-sm text-gray-500">{{ pdfError }}</p>
         </div>
-        <div ref="pdfContainer" class="showcase-pdf-host mx-auto max-w-3xl" />
+        <div
+          v-show="!pptxPreviewPending"
+          ref="pdfContainer"
+          class="showcase-pdf-host mx-auto w-full max-w-full"
+        />
       </div>
 
       <div v-else-if="fileKind === 'docx'" class="relative min-h-full" :style="contentZoomStyle">
@@ -352,7 +461,7 @@ onBeforeUnmount(() => {
           <FileText class="h-12 w-12 text-gray-300" />
           <p class="text-sm text-gray-500">{{ docxError }}</p>
         </div>
-        <div ref="docxContainer" class="showcase-docx-host px-4 py-4" />
+        <div ref="docxContainer" class="showcase-docx-host w-full max-w-full px-3 py-3" />
       </div>
 
       <iframe
@@ -434,6 +543,7 @@ onBeforeUnmount(() => {
 
 :deep(.showcase-watermark-host) {
   position: relative;
+  overflow: hidden;
 }
 
 :deep(.showcase-page-watermark) {
@@ -442,8 +552,10 @@ onBeforeUnmount(() => {
   z-index: 20;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2.5rem 1rem;
-  padding: 2rem 0.75rem;
+  grid-auto-rows: 6.25rem;
+  align-content: start;
+  gap: 0.35rem 0.5rem;
+  padding: 1.25rem 0.5rem;
   overflow: hidden;
   pointer-events: none;
   user-select: none;
@@ -457,28 +569,46 @@ onBeforeUnmount(() => {
   color: #6b7280;
   text-align: center;
   white-space: nowrap;
-  opacity: 0.14;
+  opacity: 0.16;
 }
 
-.showcase-doc-watermark {
-  display: none;
-}
-
-.showcase-docx-host :deep(.showcase-docx-wrapper),
-.showcase-docx-host :deep(.showcase-docx),
-.showcase-docx-host :deep(section),
-.showcase-docx-host :deep(article),
-.showcase-docx-host :deep(.docx) {
-  background: #fff !important;
-  background-color: #fff !important;
-  color: #111827;
+.showcase-docx-host {
+  box-sizing: border-box;
 }
 
 .showcase-docx-host :deep(.showcase-docx-wrapper) {
-  margin: 0 auto;
-  box-shadow:
-    0 1px 3px rgb(0 0 0 / 6%),
-    0 4px 12px rgb(0 0 0 / 4%);
+  background: #fff !important;
+  background-color: #fff !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.showcase-docx-host :deep(.showcase-docx),
+.showcase-docx-host :deep(section),
+.showcase-docx-host :deep(article) {
+  background: #fff !important;
+  background-color: #fff !important;
+  color: #111827;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 0 1.25rem !important;
+  padding: 0.25rem 0.15rem 1rem !important;
+  box-shadow: none !important;
+  border: none !important;
+  overflow: visible !important;
+}
+
+.showcase-docx-host :deep(section + section),
+.showcase-docx-host :deep(article + article) {
+  border-top: 1px solid #f3f4f6;
+  padding-top: 1.25rem !important;
 }
 
 .showcase-docx-host :deep(p),
@@ -490,9 +620,24 @@ onBeforeUnmount(() => {
   -webkit-user-select: none;
 }
 
+.showcase-docx-host :deep(table) {
+  max-width: 100% !important;
+}
+
+.showcase-docx-host :deep(img) {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
 .showcase-pdf-host :deep(.showcase-pdf-page) {
   max-width: 100%;
+  width: 100%;
   height: auto !important;
+}
+
+.showcase-pdf-host :deep(.showcase-pdf-page-wrap) {
+  width: 100%;
+  max-width: 100%;
 }
 
 .showcase-pdf-host :deep(.showcase-pdf-frame) {

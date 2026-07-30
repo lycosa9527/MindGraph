@@ -2,17 +2,29 @@
 
 from __future__ import annotations
 
+import io
+import zipfile
 from pathlib import Path
 
 import pytest
 from fastapi import HTTPException
 
 from routers.features.showcase.helpers import (
+    ALLOWED_DOC_SUFFIXES,
     _validate_magic_bytes,
     showcase_public_asset_url,
     post_id_from_showcase_filename,
     resolve_showcase_disk_path,
 )
+from services.showcase.uploads.roles import assert_content_type_allowed
+
+
+def _minimal_ooxml_zip(*member_names: str) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        for name in member_names:
+            archive.writestr(name, "<?xml version='1.0'?><root/>")
+    return buffer.getvalue()
 
 
 def test_showcase_public_asset_url() -> None:
@@ -46,6 +58,38 @@ def test_validate_magic_bytes_pdf_and_png() -> None:
     with pytest.raises(HTTPException) as exc:
         _validate_magic_bytes(b"not-a-pdf", ".pdf")
     assert exc.value.status_code == 400
+
+
+def test_allowed_doc_suffixes_include_pptx() -> None:
+    """Teaching-design allowlist accepts PPTX."""
+    assert ".pptx" in ALLOWED_DOC_SUFFIXES
+
+
+def test_validate_magic_bytes_pptx_accepts_presentation_xml() -> None:
+    """Accept OOXML ZIP that contains ppt/presentation.xml."""
+    payload = _minimal_ooxml_zip("[Content_Types].xml", "ppt/presentation.xml")
+    _validate_magic_bytes(payload, ".pptx")
+
+
+def test_validate_magic_bytes_pptx_rejects_docx_zip() -> None:
+    """Reject a DOCX-shaped ZIP when the declared suffix is .pptx."""
+    payload = _minimal_ooxml_zip("[Content_Types].xml", "word/document.xml")
+    with pytest.raises(HTTPException) as exc:
+        _validate_magic_bytes(payload, ".pptx")
+    assert exc.value.status_code == 400
+
+
+def test_content_type_allows_octet_stream_for_docs() -> None:
+    """Browsers often send octet-stream for Office/PDF uploads."""
+    assert_content_type_allowed(".pdf", "application/octet-stream")
+    assert_content_type_allowed(".docx", "application/octet-stream")
+    assert_content_type_allowed(".pptx", "application/octet-stream")
+    assert_content_type_allowed(
+        ".pptx",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    )
+    with pytest.raises(ValueError):
+        assert_content_type_allowed(".pptx", "image/png")
 
 
 def test_resolve_showcase_disk_path_rejects_traversal(tmp_path: Path, monkeypatch) -> None:

@@ -14,7 +14,7 @@ import signal
 import subprocess
 import sys
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from services.infrastructure.process._process_io import (
     close_resource_stack,
@@ -30,6 +30,51 @@ else:
         from config.celery import celery_app
     except ImportError:
         celery_app = None
+
+
+def required_app_task_names() -> set[str]:
+    """Task names registered on this process's Celery app (exclude built-ins)."""
+    if celery_app is None:
+        return set()
+    return {name for name in celery_app.tasks if not name.startswith("celery.")}
+
+
+def workers_missing_required_tasks(registered: dict[str, Any]) -> list[str]:
+    """Return worker names whose registered task set is missing any app task."""
+    required = required_app_task_names()
+    if not required:
+        return []
+    stale: list[str] = []
+    for worker_name, tasks in registered.items():
+        worker_tasks = set(tasks or [])
+        if not required.issubset(worker_tasks):
+            stale.append(str(worker_name))
+    return stale
+
+
+def shutdown_stale_celery_workers(stale_names: list[str]) -> None:
+    """Ask only the named workers to shut down; leave healthy peers running."""
+    if celery_app is None or not stale_names:
+        return
+    print(f"[CELERY] Existing worker(s) missing app tasks — shutting down: {', '.join(stale_names)}")
+    try:
+        celery_app.control.broadcast("shutdown", destination=stale_names)
+    except BACKGROUND_INFRA_ERRORS as exc:
+        print(f"[CELERY] Shutdown broadcast failed: {exc}")
+    stale_set = set(stale_names)
+    for _ in range(20):
+        time.sleep(0.5)
+        try:
+            inspect = celery_app.control.inspect(timeout=2.0)
+            active = inspect.active() or {}
+            still_stale = stale_set.intersection(active.keys())
+            if not still_stale:
+                print("[CELERY] Stale worker(s) stopped")
+                return
+        except BACKGROUND_INFRA_ERRORS:
+            # Broker unreachable mid-shutdown — still attempt local relaunch.
+            return
+    print("[CELERY] Stale worker(s) still reporting active; continuing startup check")
 
 
 def start_celery_worker(server_state) -> Optional[subprocess.Popen[bytes]]:
@@ -59,6 +104,20 @@ def start_celery_worker(server_state) -> Optional[subprocess.Popen[bytes]]:
                 print(f"[CELERY] Found {worker_count} existing Celery worker(s):")
                 for worker_name in worker_names:
                     print(f"        - {worker_name}")
+
+                registered = inspect.registered()
+                if registered:
+                    stale = workers_missing_required_tasks(registered)
+                    if stale:
+                        shutdown_stale_celery_workers(stale)
+                        # Re-inspect: healthy peers may remain after targeted shutdown.
+                        if attempt < 2:
+                            time.sleep(0.5)
+                            continue
+                        break
+                else:
+                    print("[CELERY] Could not verify registered tasks; using existing worker(s)")
+
                 print("[CELERY] ✓ Using existing Celery worker(s), skipping startup")
                 return None
             break

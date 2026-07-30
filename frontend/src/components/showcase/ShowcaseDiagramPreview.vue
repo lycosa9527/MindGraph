@@ -937,8 +937,10 @@ onBeforeUnmount(() => {
   z-index: 20;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2.5rem 1rem;
-  padding: 2rem 0.75rem;
+  grid-auto-rows: 6.25rem;
+  align-content: start;
+  gap: 0.35rem 0.5rem;
+  padding: 1.25rem 0.5rem;
   overflow: hidden;
   pointer-events: none;
   user-select: none;

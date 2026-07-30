@@ -141,7 +141,7 @@ def normalize_ai_copy_fields(parsed: Dict[str, Any]) -> Dict[str, str]:
 
 
 def extract_document_text(file_path: str) -> str:
-    """Extract plain text from a teaching-design upload (.pdf/.doc/.docx)."""
+    """Extract plain text from a teaching-design upload (.pdf/.doc/.docx/.pptx)."""
     processor = get_document_processor()
     file_type = processor.get_file_type(file_path)
     if not processor.is_supported(file_type):

@@ -17,13 +17,19 @@ def apply_key_to_post(
     role_spec: UploadRoleSpec,
     logical_key: str,
     filename: Optional[str],
-) -> Optional[str]:
-    """Persist logical key onto post fields; returns previous key to delete."""
-    previous: Optional[str] = None
+) -> list[str]:
+    """Persist logical key onto post fields; returns previous keys to delete."""
+    to_delete: list[str] = []
+
+    def _track_previous(previous: Optional[str]) -> None:
+        if previous and previous != logical_key:
+            to_delete.append(previous)
+
     if role_spec.is_thumbnail:
         previous = post.thumbnail_path
         post.thumbnail_path = logical_key
-        return previous if previous != logical_key else None
+        _track_previous(previous)
+        return to_delete
 
     spec_obj: dict[str, Any]
     if isinstance(post.spec, dict):
@@ -51,19 +57,30 @@ def apply_key_to_post(
         entry.pop("pending", None)
         spec_obj["source"] = "gallery"
         post.spec = spec_obj
-        return previous if previous != logical_key else None
+        _track_previous(previous)
+        return to_delete
 
     if role_spec.spec_field:
         prev_field = spec_obj.get(role_spec.spec_field)
         previous = prev_field if isinstance(prev_field, str) else None
         spec_obj[role_spec.spec_field] = logical_key
-        if role_spec.role == "attachment" and filename:
-            spec_obj["attachment_filename"] = Path(filename).name
+        if role_spec.role == "attachment":
+            if filename:
+                spec_obj["attachment_filename"] = Path(filename).name
+            # Attachment change invalidates LO preview; cover job regenerates PPTX preview.
+            old_preview = spec_obj.pop("preview_path", None)
+            if isinstance(old_preview, str) and old_preview:
+                to_delete.append(old_preview)
+            # Drop stale cover so cover-stream waits for the new Celery job (no early cover_ready).
+            if post.thumbnail_path:
+                to_delete.append(post.thumbnail_path)
+                post.thumbnail_path = None
         post.spec = spec_obj
-        return previous if previous != logical_key else None
+        _track_previous(previous)
+        return to_delete
 
     post.spec = spec_obj
-    return None
+    return to_delete
 
 
 def log_upload_init(

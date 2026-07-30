@@ -106,6 +106,7 @@ def collect_keys_from_post(
         return keys
     for field in (
         "attachment_path",
+        "preview_path",
         "source_file_path",
         "reflection_video_path",
         "classroom_video_path",

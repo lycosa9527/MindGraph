@@ -1,7 +1,7 @@
 import { gunzipSync } from 'fflate'
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
 
-import { stampWatermarkOnElement } from '@/utils/showcaseWatermark'
+import { refreshWatermarkDensity, stampWatermarkOnElement } from '@/utils/showcaseWatermark'
 
 let workerConfigured = false
 
@@ -72,7 +72,9 @@ async function renderPdfCanvas(
     const page = await pdf.getPage(pageNum)
     const viewport = page.getViewport({ scale })
     const canvas = document.createElement('canvas')
-    canvas.className = 'showcase-pdf-page mx-auto block max-w-full shadow-sm'
+    canvas.className = 'showcase-pdf-page mx-auto block max-w-full'
+    canvas.style.width = '100%'
+    canvas.style.height = 'auto'
     const context = canvas.getContext('2d')
     if (!context) continue
     canvas.width = viewport.width
@@ -80,7 +82,7 @@ async function renderPdfCanvas(
     await page.render({ canvasContext: context, viewport }).promise
 
     const pageWrap = document.createElement('div')
-    pageWrap.className = 'showcase-pdf-page-wrap showcase-watermark-host relative mx-auto mb-4 max-w-full'
+    pageWrap.className = 'showcase-pdf-page-wrap showcase-watermark-host relative mx-auto mb-4 w-full max-w-full'
     pageWrap.appendChild(canvas)
     if (watermarkText?.trim()) {
       stampWatermarkOnElement(pageWrap, watermarkText.trim())
@@ -88,6 +90,9 @@ async function renderPdfCanvas(
     container.appendChild(pageWrap)
   }
   pdf.destroy()
+  if (watermarkText?.trim()) {
+    refreshWatermarkDensity(container, watermarkText.trim())
+  }
 }
 
 function renderPdfBlobIframe(data: Uint8Array, container: HTMLElement): () => void {

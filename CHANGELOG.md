@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.154.0] - 2026-07-30
+
+> **Showcase teaching-design accepts PPTX (cover + PDF preview); stale Celery workers restart safely; document preview fits width with denser watermarks.**
+
+### Added
+
+- **PPTX teaching-design uploads** — `.pptx` joins the teaching-design allowlist (FE accept, upload roles, magic bytes requiring `ppt/presentation.xml`, AI teaching-copy extract via `python-pptx`) ([`helpers.py`](routers/features/showcase/helpers.py), [`showcaseShared.ts`](frontend/src/components/showcase/showcaseShared.ts), [`roles.py`](services/showcase/uploads/roles.py)).
+- **PPTX cover + slide preview** — LibreOffice converts PPTX→PDF for the cover thumbnail and persists `preview.pdf`; detail reader uses pdf.js with a pending state until conversion finishes ([`generate.py`](services/showcase/covers/generate.py), [`ShowcaseTeachingDocPreview.vue`](frontend/src/components/showcase/ShowcaseTeachingDocPreview.vue), [`office_to_pdf.py`](services/showcase/covers/office_to_pdf.py)).
+- **Host deps gate for covers** — Startup checks LibreOffice + Noto CJK when server covers are enabled; install hints include `libreoffice-impress` ([`host_deps.py`](services/showcase/covers/host_deps.py), [`server_launcher.py`](services/infrastructure/process/server_launcher.py)).
+
+### Changed
+
+- **Stale Celery reuse** — Before skipping worker startup, verify registered tasks; missing app tasks shut down **only** those workers (`destination=…`), then reuse healthy peers or relaunch ([`_celery_manager.py`](services/infrastructure/process/_celery_manager.py)).
+- **Attachment replace invalidates cover/preview** — New attachment clears `thumbnail_path` and `preview_path` so cover-stream waits for the new job instead of early `cover_ready` ([`pipeline.py`](services/showcase/uploads/pipeline.py)).
+- **Teaching-doc preview UX** — Fit-to-width zoom (CSS `zoom`), no horizontal scroll, denser watermarks; locales use “Fit width” / “适应宽度” ([`ShowcaseTeachingDocPreview.vue`](frontend/src/components/showcase/ShowcaseTeachingDocPreview.vue), [`renderDocxPreview.ts`](frontend/src/utils/renderDocxPreview.ts), [`showcaseWatermark.ts`](frontend/src/utils/showcaseWatermark.ts)).
+- **Content-Type hardening** — FE remaps empty/`octet-stream` from extension; BE allows `application/octet-stream` for pdf/doc/docx/pptx ([`uploadShowcaseFile.ts`](frontend/src/composables/showcase/uploadShowcaseFile.ts), [`roles.py`](services/showcase/uploads/roles.py)).
+- **Honest teaching-doc hints** — Copy lists `.docx` / `.pdf` / `.pptx` and notes limited `.doc` preview; removed unused cover-skip locales ([en/zh showcase locales](frontend/src/locales/messages/)).
+
+### Fixed
+
+- **AI teaching-copy magic validation** — `POST /api/showcase/ai/teaching-copy` rejects mismatched file content ([`routes_ai.py`](routers/features/showcase/routes_ai.py)).
+- **PPTX COS complete magic** — Full object is loaded for OOXML member checks (ZIP central directory is at EOF) ([`routes_uploads.py`](routers/features/showcase/routes_uploads.py)).
+- **covers package import cycle** — Package `__init__` stays light so `host_deps` can load from launch paths without pulling Redis via `generate` ([`covers/__init__.py`](services/showcase/covers/__init__.py)).
+
+### Tests
+
+- **Backend** — PPTX magic accept/reject; octet-stream content-types; Celery stale-worker targeted shutdown; cover host-deps; `preview_path` key collection ([`test_showcase_helpers.py`](tests/test_showcase_helpers.py), [`test_celery_manager_stale.py`](tests/test_celery_manager_stale.py), [`test_showcase_cover_host_deps.py`](tests/test_showcase_cover_host_deps.py)).
+
 ## [5.153.0] - 2026-07-29
 
 > **Showcase teaching-design covers render server-side (LibreOffice + Celery + SSE); AI drafts intro, highlights, and reflection from uploaded documents; MCP HTTP mounts on mcp 2.x.**

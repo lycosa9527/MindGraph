@@ -458,6 +458,7 @@ async def _format_post(
     spec_json_url = showcase_public_asset_url(f"case_square/{post.id}.json") if post.spec else None
 
     attachment_url = None
+    preview_url = None
     classroom_video_url = None
     reflection_video_url = None
     source_file_url = None
@@ -465,6 +466,9 @@ async def _format_post(
         attach_path = post.spec.get("attachment_path")
         if isinstance(attach_path, str) and attach_path.strip():
             attachment_url = showcase_public_asset_url(attach_path.lstrip("/"))
+        preview_path = post.spec.get("preview_path")
+        if isinstance(preview_path, str) and preview_path.strip():
+            preview_url = showcase_public_asset_url(preview_path.lstrip("/"))
         classroom_path = post.spec.get("classroom_video_path")
         if isinstance(classroom_path, str) and classroom_path.strip():
             classroom_video_url = showcase_public_asset_url(classroom_path.lstrip("/"))
@@ -518,6 +522,7 @@ async def _format_post(
         "thumbnail_url": thumbnail_url,
         "spec_json_url": spec_json_url,
         "attachment_url": attachment_url,
+        "preview_url": preview_url,
         "classroom_video_url": classroom_video_url,
         "reflection_video_url": reflection_video_url,
         "source_file_url": source_file_url,
@@ -614,6 +619,9 @@ async def _apply_author_case_update(
             old_path = spec_obj.get("attachment_path")
             if isinstance(old_path, str) and old_path and old_path != attachment_path:
                 delete_case_file(old_path)
+            old_preview = spec_obj.pop("preview_path", None)
+            if isinstance(old_preview, str) and old_preview.strip():
+                delete_case_file(old_preview)
             spec_obj["attachment_path"] = attachment_path
             spec_obj["attachment_filename"] = Path(attachment.filename).name
         if description.strip():

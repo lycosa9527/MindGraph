@@ -26,24 +26,33 @@ from routers.features.showcase.helpers import (
 
 _GALLERY_ROLE = re.compile(r"^gallery_([0-9]|1[0-1])$")
 
+_OCTET_STREAM = "application/octet-stream"
+
 CONTENT_TYPES: dict[str, frozenset[str]] = {
     ".png": frozenset({"image/png"}),
     ".jpg": frozenset({"image/jpeg"}),
     ".jpeg": frozenset({"image/jpeg"}),
     ".gif": frozenset({"image/gif"}),
     ".webp": frozenset({"image/webp"}),
-    ".pdf": frozenset({"application/pdf"}),
-    ".doc": frozenset({"application/msword"}),
+    ".pdf": frozenset({"application/pdf", _OCTET_STREAM}),
+    ".doc": frozenset({"application/msword", _OCTET_STREAM}),
     ".docx": frozenset(
         {
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            _OCTET_STREAM,
+        }
+    ),
+    ".pptx": frozenset(
+        {
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            _OCTET_STREAM,
         }
     ),
     ".mp4": frozenset({"video/mp4"}),
     ".m4v": frozenset({"video/mp4", "video/x-m4v"}),
     ".mov": frozenset({"video/quicktime"}),
     ".webm": frozenset({"video/webm"}),
-    ".mg": frozenset({"application/json", "application/octet-stream", "text/plain"}),
+    ".mg": frozenset({"application/json", _OCTET_STREAM, "text/plain"}),
     ".json": frozenset({"application/json"}),
 }
 

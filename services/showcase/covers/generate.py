@@ -14,7 +14,11 @@ from models.domain.showcase import ShowcasePost
 from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.showcase.covers.events import publish_showcase_cover_event
 from services.showcase.covers.locks import acquire_cover_lock, release_cover_lock
-from services.showcase.covers.render import render_document_cover_png
+from services.showcase.covers.render import (
+    render_pdf_first_page_png,
+    resolve_cover_pdf_path,
+    shrink_png_bytes,
+)
 from services.showcase.infra.observability import showcase_wf_log
 from services.showcase.storage import (
     LOGICAL_PREFIX,
@@ -29,7 +33,7 @@ from utils.db.rls_context import RlsContext, rls_async_session
 
 logger = logging.getLogger(__name__)
 
-_COVER_SUFFIXES = frozenset({".pdf", ".doc", ".docx"})
+_COVER_SUFFIXES = frozenset({".pdf", ".doc", ".docx", ".pptx"})
 
 
 def attachment_key_in_post_scope(post_id: str, attachment_key: str) -> bool:
@@ -158,9 +162,19 @@ async def generate_showcase_cover(
                 reason="download_failed",
             )
 
-        png_bytes = render_document_cover_png(source_path, work_dir / "lo")
+        pdf_path = resolve_cover_pdf_path(source_path, work_dir / "lo")
+        png_bytes = shrink_png_bytes(render_pdf_first_page_png(pdf_path))
         thumb_key = build_object_key(post_id, "thumbnail", ".png")
         put_bytes_sync(thumb_key, png_bytes, content_type="image/png")
+
+        preview_key: Optional[str] = None
+        if suffix == ".pptx":
+            preview_key = build_object_key(post_id, "preview", ".pdf")
+            put_bytes_sync(
+                preview_key,
+                pdf_path.read_bytes(),
+                content_type="application/pdf",
+            )
 
         async with rls_async_session(RlsContext.for_celery_user(rls_user_id, organization_id)) as db:
             result = await db.execute(select(ShowcasePost).where(ShowcasePost.id == post_id))
@@ -180,10 +194,15 @@ async def generate_showcase_cover(
                     reason="stale_attachment_before_write",
                 )
             post.thumbnail_path = thumb_key
+            if preview_key is not None:
+                spec_obj = dict(post.spec) if isinstance(post.spec, dict) else {}
+                spec_obj["preview_path"] = preview_key
+                post.spec = spec_obj
             await db.commit()
 
         await showcase_cache.invalidate_post(post_id)
         thumb_url = showcase_public_asset_url(thumb_key)
+        preview_url = showcase_public_asset_url(preview_key) if preview_key is not None else None
         showcase_wf_log(
             "cover_ok",
             f"bytes={len(png_bytes)}",
@@ -196,6 +215,7 @@ async def generate_showcase_cover(
             post_id,
             "cover_ready",
             thumbnail_url=thumb_url,
+            preview_url=preview_url,
         )
         return True
     except (*BACKGROUND_INFRA_ERRORS, *DATABASE_ERRORS, ValueError, OSError) as exc:

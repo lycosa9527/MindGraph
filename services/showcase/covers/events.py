@@ -30,12 +30,15 @@ def build_cover_event_payload(
     *,
     post_id: str,
     thumbnail_url: Optional[str] = None,
+    preview_url: Optional[str] = None,
     reason: Optional[str] = None,
 ) -> str:
     """JSON payload for cover SSE / pub/sub."""
     body: dict[str, Any] = {"type": event_type, "post_id": post_id}
     if thumbnail_url:
         body["thumbnail_url"] = thumbnail_url
+    if preview_url:
+        body["preview_url"] = preview_url
     if reason:
         body["reason"] = reason[:200]
     return json.dumps(body, ensure_ascii=False)
@@ -63,6 +66,7 @@ async def publish_showcase_cover_event(
     event_type: str,
     *,
     thumbnail_url: Optional[str] = None,
+    preview_url: Optional[str] = None,
     reason: Optional[str] = None,
 ) -> None:
     """Push a cover lifecycle event to SSE subscribers (async Redis)."""
@@ -73,6 +77,7 @@ async def publish_showcase_cover_event(
         event_type,
         post_id=post_id,
         thumbnail_url=thumbnail_url,
+        preview_url=preview_url,
         reason=reason,
     )
     try:
@@ -91,6 +96,7 @@ def publish_showcase_cover_event_sync(
     event_type: str,
     *,
     thumbnail_url: Optional[str] = None,
+    preview_url: Optional[str] = None,
     reason: Optional[str] = None,
 ) -> None:
     """Push a cover lifecycle event from sync contexts (enqueue / Celery wrapper)."""
@@ -103,6 +109,7 @@ def publish_showcase_cover_event_sync(
         event_type,
         post_id=post_id,
         thumbnail_url=thumbnail_url,
+        preview_url=preview_url,
         reason=reason,
     )
     try:

@@ -38,7 +38,7 @@ from services.showcase.ai_copy import (
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.auth import get_current_user
 
-from .helpers import ALLOWED_DOC_SUFFIXES, ATTACHMENT_MAX_BYTES
+from .helpers import ALLOWED_DOC_SUFFIXES, ATTACHMENT_MAX_BYTES, _validate_magic_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +92,7 @@ async def generate_teaching_design_ai_copy(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="Document too large",
         )
+    _validate_magic_bytes(raw, suffix)
 
     temp_path: Path | None = None
     try:

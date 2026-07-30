@@ -75,8 +75,6 @@ export default {
     '案例已提交，但封面生成失败。可稍后编辑案例以刷新封面。',
   'showcase.publishModal.coverFailedTimeout':
     '案例已提交，但封面生成超时。可稍后编辑案例以刷新封面。',
-  'showcase.publishModal.coverUnsupportedLegacyDoc':
-    '案例已提交，但 .doc 无法自动生成封面。建议改用 .docx 或 .pdf。',
   'showcase.publishModal.success': '案例已提交，等待管理员审核',
   'showcase.publishModal.fromCanvas': '从画布发布',
   'showcase.publishModal.step1Title': '基本信息',
@@ -96,8 +94,8 @@ export default {
     '文件将通过安全短时链接上传至对象存储。',
   'showcase.publishModal.pickHistory': '选择历史图示',
   'showcase.publishModal.removeFile': '移除',
-  'showcase.publishModal.teachingDocHint': '支持 .doc / .docx / .pdf',
-  'showcase.publishModal.teachingDocHintWithLimit': '支持 .doc / .docx / .pdf，单个文档不超过 {maxMb} MB',
+  'showcase.publishModal.teachingDocHint': '支持 .docx / .pdf / .pptx（.doc 预览受限）',
+  'showcase.publishModal.teachingDocHintWithLimit': '支持 .docx / .pdf / .pptx（.doc 预览受限），单个文档不超过 {maxMb} MB',
   'showcase.publishModal.teachingDocTooLarge': '文档大小超过 {maxMb} MB 上限，请压缩后重新上传',
   'showcase.publishModal.diagramImageHint': '支持 .png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': '上传图片（可多选）',
@@ -166,8 +164,6 @@ export default {
     '无法从该历史图示生成封面，案例仍将提交；请重新选择，或先在画布中打开并重新保存',
   'showcase.publishModal.cannotPreviewTemplate':
     '无法生成封面预览，案例仍将提交；请确认 .mg 文件有效或重新选择历史图示',
-  'showcase.publishModal.cannotPreviewTeachingDoc':
-    '无法生成文档封面预览，案例仍将提交；请确认 PDF 或 DOCX 有效，或稍后编辑补充封面',
   'showcase.publishModal.historyTitle': '选择历史图示',
   'showcase.publishModal.historySearch': '搜索图示名称…',
   'showcase.publishModal.historyEmpty': '暂无历史图示',
@@ -215,6 +211,7 @@ export default {
   'showcase.detail.openDocument': '在新标签页打开',
   'showcase.detail.enterFullscreen': '全屏阅读',
   'showcase.detail.exitFullscreen': '退出全屏',
+  'showcase.detail.pptxPreviewPending': '正在转换幻灯片以供预览…',
   'showcase.detail.docPreviewLoading': '正在加载文档…',
   'showcase.detail.docPreviewFailed': '文档预览加载失败，请尝试在新标签页打开',
   'showcase.detail.legacyDocHint': '旧版 .doc 格式暂不支持内嵌预览，请下载或在新标签页中打开；建议上传 .docx 以获得在线预览。',
@@ -224,7 +221,7 @@ export default {
   'showcase.detail.diagramPreviewFailed': '图示预览加载失败',
   'showcase.detail.zoomIn': '放大',
   'showcase.detail.zoomOut': '缩小',
-  'showcase.detail.zoomReset': '重置',
+  'showcase.detail.zoomReset': '适应宽度',
   'showcase.detail.tab.intro': '案例简介',
   'showcase.detail.tab.highlights': '设计亮点',
   'showcase.detail.tab.reflection': '教学反思',

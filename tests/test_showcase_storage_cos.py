@@ -53,7 +53,8 @@ def test_collect_keys_from_post() -> None:
     post_id = "12345678-1234-4234-8234-123456789abc"
     thumb = f"showcase/posts/{post_id}/thumbnail.png"
     spec = {
-        "attachment_path": f"showcase/posts/{post_id}/attachment.pdf",
+        "attachment_path": f"showcase/posts/{post_id}/attachment.pptx",
+        "preview_path": f"showcase/posts/{post_id}/preview.pdf",
         "gallery": [
             {"kind": "image", "path": f"showcase/posts/{post_id}/gallery_0.png"},
             {"kind": "diagram", "diagram_id": "x"},
@@ -62,6 +63,7 @@ def test_collect_keys_from_post() -> None:
     keys = storage.collect_keys_from_post(thumbnail_path=thumb, spec=spec)
     assert thumb in keys
     assert spec["attachment_path"] in keys
+    assert spec["preview_path"] in keys
     assert f"showcase/posts/{post_id}/gallery_0.png" in keys
 
 
@@ -69,6 +71,7 @@ def test_resolve_upload_role_gallery_and_attachment() -> None:
     """Upload roles map to allowlists and size caps."""
     att = resolve_upload_role("attachment")
     assert ".pdf" in att.allowed_suffixes
+    assert ".pptx" in att.allowed_suffixes
     gal = resolve_upload_role("gallery_3")
     assert gal.is_gallery is True
     assert gal.gallery_slot == 3

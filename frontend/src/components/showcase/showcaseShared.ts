@@ -184,7 +184,7 @@ export function diagramTypeLabel(value: string): string {
   return DIAGRAM_TYPE_OPTIONS.find((o) => o.value === value)?.label ?? value
 }
 
-const TEACHING_DOC_EXT = /\.(doc|docx|pdf)$/i
+const TEACHING_DOC_EXT = /\.(doc|docx|pdf|pptx)$/i
 const DIAGRAM_IMAGE_EXT = /\.(png|jpe?g|webp|gif)$/i
 
 export function isTeachingDocFile(name: string): boolean {

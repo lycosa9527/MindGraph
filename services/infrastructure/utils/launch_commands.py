@@ -18,6 +18,8 @@ import argparse
 import sys
 from urllib.parse import urlparse
 
+from services.showcase.covers.host_deps import lines_showcase_cover_host_install
+
 _MODULE_INVOKE = "python -m services.infrastructure.utils.launch_commands"
 
 FAIL2BAN_CHECK_CMD = "python3 -m services.infrastructure.security.fail2ban_integration check"
@@ -37,9 +39,10 @@ LIFESPAN_ORDER_TEXT = """
   3. AbuseIPDB/CrowdSec baselines (warnings only if merge fails)
   4. Qdrant (if FEATURE_KNOWLEDGE_SPACE)
   5. Celery worker check (if FEATURE_KNOWLEDGE_SPACE)
-  6. System deps / Tesseract (if Knowledge Space)
-  7. Database integrity + init_db
-  8. Remaining services (LLM, schedulers, etc.)
+  6. LibreOffice + Noto CJK fonts (if Showcase server covers enabled)
+  7. System deps / Tesseract (if Knowledge Space)
+  8. Database integrity + init_db
+  9. Remaining services (LLM, schedulers, etc.)
 """.strip()
 
 
@@ -280,6 +283,11 @@ def lines_tesseract_hint() -> list[str]:
     ]
 
 
+def lines_showcase_libreoffice_hint() -> list[str]:
+    """LibreOffice + Noto CJK for Showcase server-side teaching-design covers."""
+    return lines_showcase_cover_host_install()
+
+
 def lines_playwright_hint() -> list[str]:
     """Chromium for PNG generation (matches browser.py / setup.py patterns)."""
     return [
@@ -338,6 +346,9 @@ def build_cheatsheet_text() -> str:
         "",
         "--- Tesseract ---",
         *lines_tesseract_hint(),
+        "",
+        "--- Showcase covers (LibreOffice + Noto CJK) ---",
+        *lines_showcase_libreoffice_hint(),
         "",
         "--- Playwright ---",
         *lines_playwright_hint(),

@@ -56,8 +56,12 @@ export const useShowcaseStore = defineStore('showcase', () => {
     eventBus.emit('admin:showcase_updated', {})
   }
 
-  function emitCoverReady(postId: string, thumbnailUrl?: string | null) {
-    eventBus.emit('showcase:cover_ready', { postId, thumbnailUrl })
+  function emitCoverReady(
+    postId: string,
+    thumbnailUrl?: string | null,
+    previewUrl?: string | null,
+  ) {
+    eventBus.emit('showcase:cover_ready', { postId, thumbnailUrl, previewUrl })
   }
 
   function emitCoverFail(postId: string, reason?: string | null) {
@@ -96,12 +100,15 @@ export const useShowcaseStore = defineStore('showcase', () => {
     coverPendingIds.value = { ...coverPendingIds.value, [postId]: true }
     stopCoverStream(postId)
     const teardown = createShowcaseCoverStream(postId, {
-      onReady: ({ thumbnailUrl }) => {
-        if (thumbnailUrl) {
-          patchPost(postId, { thumbnail_url: thumbnailUrl })
+      onReady: ({ thumbnailUrl, previewUrl }) => {
+        const patch: Partial<ShowcasePost> = {}
+        if (thumbnailUrl) patch.thumbnail_url = thumbnailUrl
+        if (previewUrl) patch.preview_url = previewUrl
+        if (Object.keys(patch).length > 0) {
+          patchPost(postId, patch)
         }
         clearCoverPending(postId)
-        emitCoverReady(postId, thumbnailUrl)
+        emitCoverReady(postId, thumbnailUrl, previewUrl)
       },
       onFail: ({ reason }) => {
         clearCoverPending(postId)
