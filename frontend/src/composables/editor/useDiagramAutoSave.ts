@@ -282,8 +282,6 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       return { saved: false, reason: 'error' }
     }
 
-    const base = diagramStore.getSpecForSave()
-    if (base) llmResultsStore.updateCurrentModelSpec(base)
     const spec = getDiagramSpec()
     if (!spec) return { saved: false, reason: 'skipped_empty' }
 
@@ -307,7 +305,8 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
         lastSavedFullFingerprint = getFullFingerprint(diagramStore.data as DiagramDataLike)
         isDirty.value = false
         diagramStore.resetSessionEditCount()
-        llmResultsStore.updateCurrentModelSpec(spec)
+        // Do not clone into llmResults cache on every debounce — stamp on model switch /
+        // first-result apply keeps presentation + UIDs for later switches.
         options.onSaved?.({
           action: result.action,
           diagramId: result.diagramId,

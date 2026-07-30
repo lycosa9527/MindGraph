@@ -6,7 +6,8 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+# Python distribution folder only (not node_modules/*/dist typings)
+/dist/
 downloads/
 eggs/
 .eggs/

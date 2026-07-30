@@ -659,6 +659,9 @@ export function useAutoComplete() {
       language,
       request_type: 'autocomplete',
     }
+    if (baseTopic) {
+      requestBody.locked_topic = baseTopic
+    }
     if (instructions) {
       requestBody.generation_instructions = instructions
     }
@@ -695,7 +698,7 @@ export function useAutoComplete() {
     }
 
     // Start generation before font wait so the topic LlmPhaseRing shows immediately.
-    llmResultsStore.startGeneration(newSessionId, diagramType, modelsToRun)
+    llmResultsStore.startGeneration(newSessionId, diagramType, modelsToRun, baseTopic || null)
 
     eventBus.emit('llm:generation_started', {
       models: modelsToRun,

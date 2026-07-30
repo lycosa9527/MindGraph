@@ -23,11 +23,17 @@ import { useDiagramStore } from '@/stores'
 import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { DiagramNode } from '@/types'
+import { readEffectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import {
   getLastMindMapSiblingInsertFailure,
   isMindMapSiblingDebugEnabled,
   recordMindMapSiblingInsertAttempt,
 } from '@/utils/mindMapSiblingDebug'
+
+/** V2 canvas: Enter/Tab create focuses inline edit — success toasts steal focus. */
+function shouldToastMindMapNodeAdd(): boolean {
+  return readEffectiveMindMapCanvasMode() !== 'v2'
+}
 
 export type UseNodeActionsOptions = {
   /** When false, primary add skips tree map (desktop toolbar shows "in development"). */
@@ -109,7 +115,8 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         side,
         t('canvas.toolbar.newBranch'),
         t('canvas.toolbar.newChild')
-      )
+      ) &&
+      shouldToastMindMapNodeAdd()
     ) {
       notify.success(t('canvas.toolbar.branchAdded'))
     }
@@ -185,7 +192,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
     if (diagramStore.addMindMapChild(selectedId, t('canvas.toolbar.newChild'))) {
-      notify.success(t('canvas.toolbar.childAdded'))
+      if (shouldToastMindMapNodeAdd()) {
+        notify.success(t('canvas.toolbar.childAdded'))
+      }
     } else {
       notify.warning(t('canvas.toolbar.cannotAddChild'))
     }
@@ -221,7 +230,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
     if (diagramStore.addMindMapSibling(anchorId, t('canvas.toolbar.newBranch'))) {
-      notify.success(t('canvas.toolbar.siblingAdded'))
+      if (shouldToastMindMapNodeAdd()) {
+        notify.success(t('canvas.toolbar.siblingAdded'))
+      }
     } else {
       if (isMindMapSiblingDebugEnabled()) {
         console.warn(

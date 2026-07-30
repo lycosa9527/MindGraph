@@ -4,6 +4,9 @@ LLM chat dispatch with optional autocomplete phase signals.
 When ``phase_emit`` is provided, uses ``chat_stream`` and emits ``waiting`` before
 the LLM call and ``streaming`` on the first content token. Otherwise delegates to
 blocking ``chat()`` unchanged.
+
+Diagram-spec callers default to DashScope/Volcengine ``json_object`` structured
+output. Pass ``structured_json=False`` for free-text classification replies.
 """
 
 from collections.abc import Awaitable, Callable
@@ -12,6 +15,8 @@ from typing import Any, Optional
 from services.llm import llm_service
 
 PhaseEmitter = Callable[[str], Awaitable[None]]
+
+JSON_OBJECT_RESPONSE_FORMAT: dict[str, str] = {"type": "json_object"}
 
 _LLM_DISPATCH_KEYS = (
     "user_id",
@@ -35,10 +40,14 @@ async def dispatch_llm_chat(
     phase_emit: Optional[PhaseEmitter],
     prompt: str,
     model: str,
+    structured_json: bool = True,
     **kwargs: Any,
 ) -> str | dict[Any, Any]:
     """Run LLM chat; stream with phase signals when ``phase_emit`` is set."""
-    llm_kwargs = {key: value for key, value in kwargs.items() if key != "phase_emit"}
+    llm_kwargs = {key: value for key, value in kwargs.items() if key not in ("phase_emit", "structured_json")}
+    if structured_json and "response_format" not in llm_kwargs:
+        llm_kwargs["response_format"] = JSON_OBJECT_RESPONSE_FORMAT
+
     if phase_emit is None:
         return await llm_service.chat(prompt=prompt, model=model, **llm_kwargs)
 

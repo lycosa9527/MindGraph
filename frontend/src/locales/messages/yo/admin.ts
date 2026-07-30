@@ -1,5 +1,5 @@
 /**
- * yo UI � admin
+ * en UI � admin
  */
 
 export default {
@@ -87,7 +87,7 @@ export default {
   'admin.feature.mindmateCollabHint': 'Shared MindMate AI chatroom (org browse + invite code). Requires online_collab tier.',
   'admin.featureLoadFailed': 'Could not load feature flags',
   'admin.featureSaveFailed': 'Could not save settings',
-  'admin.featuresIntro': 'Toggle module flags. Values are written to .env and reloaded into the running server so the UI and most API checks update immediately. If a module was never loaded at process start, you may still need a full restart to register its routes.',
+  'admin.featuresIntro': 'Toggle module flags. Values are written to .env and reloaded on all API workers so the UI and API checks update without a restart. Knowledge Space may still need Qdrant/Celery that were started with the process.',
   'admin.featuresReloadFailed': 'Could not apply changes. Restart the server.',
   'admin.featuresSave': 'Apply',
   'admin.featuresSaved': 'Changes applied.',
@@ -95,7 +95,7 @@ export default {
   'admin.featureDevTab': 'Feature development',
   'admin.newFeaturesTab': 'New features',
   'admin.kittyLlmopsTab': 'Kitty LLMOps',
-  'admin.featuresIntroAccess': 'Organization and user allowlists are stored in the database and take effect as soon as you save. Use Permissions to limit who can use a module after it is enabled.',
+  'admin.featuresIntroAccess': 'For Workshop, MindMate collab, MindBot, MindMate export, and Kitty, use Permissions to limit organizations and users after the module is enabled. Allowlists are stored in the database and take effect immediately.',
   'admin.featurePermissionsApply': 'Save permissions',
   'admin.featurePermissionsApplied': 'Feature permissions saved.',
   'admin.featurePermissionsButton': 'Permissions',

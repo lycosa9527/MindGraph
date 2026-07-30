@@ -35,12 +35,32 @@ keeps storage; status becomes `withdrawn`.
 
 ## Teaching-design AI copy (step 2)
 
-`POST /api/showcase/ai/teaching-copy` — multipart document (`.pdf`/`.doc`/`.docx`) plus
-title/subject/grade. Server extracts text (`DocumentProcessor`), then drafts
-`description` / `design_highlights` / `teaching_reflection` with DashScope
-`qwen3.7-flash` (K-12 teacher voice; ~200 字 × 3 ≈ 600 字; one paragraph each;
-names diagrams + thinking types without heavy academic jargon). Prefire on step-1
-next so **AI生成** can resolve from cache.
+Multipart document (`.pdf`/`.doc`/`.docx`/`.pptx`) plus title/subject/grade.
+Server extracts text (`DocumentProcessor`), then drafts `description` /
+`design_highlights` / `teaching_reflection` with DashScope `qwen3.7-flash`
+(K-12 teacher voice; ~200 字 × 3 ≈ 600 字; one paragraph each; names diagrams +
+thinking types without heavy academic jargon).
+
+| Route | Response |
+|-------|----------|
+| `POST /api/showcase/ai/teaching-copy` | Sync JSON (smoke / fallback) |
+| `POST /api/showcase/ai/teaching-copy/stream` | SSE used by the publish modal |
+
+Shared rate limit: `showcase_ai_teaching_copy` — 12 req / 60s per user.
+
+**SSE events** (`text/event-stream`, `data:` JSON lines):
+
+| `event` | Payload |
+|---------|---------|
+| `phase` | `phase`: `extracting` \| `generating` |
+| `fields` | Partial `description` / `design_highlights` / `teaching_reflection` (keys appear as the model streams JSON) |
+| `done` | Final normalized fields + `model` |
+| `error` | `message`, optional `error_type` |
+
+Publish modal auto-starts the **stream** on step-1→2 so textareas fill live
+(with toasts). Button while in-flight **stops** generation (keeps partial text);
+idle click clears the three fields and regenerates. Validation/extract run
+before the stream opens; client disconnect cancels the LLM stream.
 
 ## Server-side teaching-design covers
 
@@ -57,7 +77,7 @@ No Gotenberg; intermediate PDF never lands on COS.
 | Hard stop | LO 120s; Celery soft 180 / hard 210; SSE max 210s then `cover_fail` reason=timeout |
 | Guard | Redis lock `showcase:cover:{post_id}`; abort if post gone or `attachment_key` stale; overwrite thumb when key matches; RLS write as `author_id` |
 | Flag | `SHOWCASE_SERVER_COVERS` (default on when `COS_SHOWCASE_ENABLED`); Celery soft-starts for covers |
-| Host | Startup hard-gate: LibreOffice + `fonts-noto-cjk` when covers enabled (`host_deps.py`); `LIBREOFFICE_PATH` / `resolve_soffice_path` |
+| Host | Startup hard-gate: LibreOffice Writer+Impress + `fonts-noto-cjk` when covers enabled (`host_deps.py`); failure messages include `apt-get install` + verify (`soffice --version`, Writer/Impress binaries, `fc-list`); `LIBREOFFICE_PATH` / `resolve_soffice_path` |
 
 Logical keys in PG stay under `showcase/posts/{uuid}/…`; COS uses `full_cos_key` + `COS_SHOWCASE_PREFIX`.
 

@@ -1,4 +1,4 @@
-/** hi UI (synced from en) — showcase */
+/** en UI — showcase */
 
 export default {
   'showcase.title': 'Showcase',
@@ -69,6 +69,12 @@ export default {
     'File is too large for this upload type. The draft was discarded — check the size limit and try again.',
   'showcase.publishModal.coverUploadSkipped':
     'Case submitted, but the cover image failed to upload. You can edit the case later to refresh the cover.',
+  'showcase.publishModal.coverGenerating':
+    'Cover preview is generating in the background — it will appear on the card shortly.',
+  'showcase.publishModal.coverFailed':
+    'Case submitted, but the cover could not be generated. You can edit the case later to refresh the cover.',
+  'showcase.publishModal.coverFailedTimeout':
+    'Case submitted, but cover generation timed out. You can edit the case later to refresh the cover.',
   'showcase.publishModal.success': 'Case submitted — awaiting admin review',
   'showcase.publishModal.fromCanvas': 'Publish from canvas',
   'showcase.publishModal.step1Title': 'Basic info',
@@ -122,10 +128,10 @@ export default {
   'showcase.publishModal.teachingIntroPlaceholder': 'Briefly introduce the lesson background, goals, and context',
   'showcase.publishModal.aiGenerate': 'AI generate',
   'showcase.publishModal.aiGenerating': 'Generating…',
-  'showcase.publishModal.coverGenerating': 'Cover preview is generating in the background — it will appear on the card shortly.',
-  'showcase.publishModal.coverFailed': 'Case submitted, but the cover could not be generated. You can edit the case later to refresh the cover.',
-  'showcase.publishModal.coverFailedTimeout': 'Case submitted, but cover generation timed out. You can edit the case later to refresh the cover.',
-  'showcase.publishModal.aiGenerateSuccess': 'Filled intro, highlights, and reflection from the document — review and edit as needed',
+  'showcase.publishModal.aiGenerateStop': 'Stop',
+  'showcase.publishModal.aiGenerateCancelled': 'AI generation cancelled — click again to regenerate',
+  'showcase.publishModal.aiGenerateSuccess':
+    'Filled intro, highlights, and reflection from the document — review and edit as needed',
   'showcase.publishModal.aiGenerateFailed': 'AI generation failed — please try again',
   'showcase.publishModal.aiGenerateNeedFile': 'Upload a teaching-design document in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI generate is available for teaching-design cases only',

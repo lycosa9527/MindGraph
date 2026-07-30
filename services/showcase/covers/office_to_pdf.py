@@ -28,7 +28,9 @@ def convert_office_to_pdf(source_path: Path, output_dir: Path) -> Path:
     soffice = resolve_soffice_path()
     if not soffice:
         raise ValueError(
-            "LibreOffice is required for Office cover generation. Install LibreOffice or set LIBREOFFICE_PATH."
+            "LibreOffice Writer+Impress is required for Office cover generation. "
+            "Install: sudo apt-get install -y libreoffice-writer libreoffice-impress "
+            "(or set LIBREOFFICE_PATH to soffice)."
         )
     if not source_path.is_file():
         raise ValueError(f"Office source not found: {source_path}")

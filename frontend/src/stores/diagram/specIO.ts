@@ -57,13 +57,22 @@ export function useSpecIOSlice(ctx: DiagramContext) {
         ? ctx.data.value.nodes
         : undefined
 
+    const preserveMindMapMeasures = options?.preserveMindMapMeasures === true
+    const preservedMindMapWidths = preserveMindMapMeasures ? { ...ctx.mindMapNodeWidths.value } : null
+    const preservedMindMapHeights = preserveMindMapMeasures
+      ? { ...ctx.mindMapNodeHeights.value }
+      : null
+    const preservedTopicWidth = preserveMindMapMeasures ? ctx.mindMapTopicActualWidth.value : null
+
     ctx.nodeDimensions.value = {}
     ctx.layoutRecalcTrigger.value = 0
     useConceptMapRelationshipStore().clearAll()
 
     if (!ctx.setDiagramType(diagramTypeValue)) return false
 
-    const result = loadSpecForDiagramType(spec, diagramTypeValue)
+    const result = loadSpecForDiagramType(spec, diagramTypeValue, {
+      preferLaidOutMindMapNodes: options?.preferLaidOutMindMapNodes,
+    })
 
     let nodesToStore = result.nodes
     if (diagramTypeValue === 'bubble_map' && result.nodes.length > 0) {
@@ -83,9 +92,36 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     }
 
     if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
-      ctx.mindMapNodeWidths.value = {}
-      ctx.mindMapNodeHeights.value = {}
-      ctx.mindMapTopicActualWidth.value = null
+      const nextNodeIds = new Set(nodesToStore.map((n) => n.id).filter(Boolean))
+      if (preservedMindMapWidths && preservedMindMapHeights) {
+        const nextWidths: Record<string, number> = {}
+        const nextHeights: Record<string, number> = {}
+        for (const id of nextNodeIds) {
+          const pw = preservedMindMapWidths[id]
+          const ph = preservedMindMapHeights[id]
+          if (pw !== undefined) nextWidths[id] = pw
+          if (ph !== undefined) nextHeights[id] = ph
+        }
+        for (const node of nodesToStore) {
+          if (!node.id || node.type === 'boundary') continue
+          const ew = node.data?.estimatedWidth as number | undefined
+          const eh = node.data?.estimatedHeight as number | undefined
+          if (nextWidths[node.id] === undefined && ew != null && ew > 0) {
+            nextWidths[node.id] = ew
+          }
+          if (nextHeights[node.id] === undefined && eh != null && eh > 0) {
+            nextHeights[node.id] = eh
+          }
+        }
+        ctx.mindMapNodeWidths.value = nextWidths
+        ctx.mindMapNodeHeights.value = nextHeights
+        ctx.mindMapTopicActualWidth.value =
+          nextNodeIds.has('topic') && preservedTopicWidth != null ? preservedTopicWidth : null
+      } else {
+        ctx.mindMapNodeWidths.value = {}
+        ctx.mindMapNodeHeights.value = {}
+        ctx.mindMapTopicActualWidth.value = null
+      }
       ctx.mindMapTopicBranchGaps.value = null
       ctx.mindMapRecalcTrigger.value = 0
       // Full spec load owns Y — drop sticky L1 Enter preserve from the prior canvas.
@@ -120,6 +156,9 @@ export function useSpecIOSlice(ctx: DiagramContext) {
           topicNode?.position != null ? topicNode.position.x + topicW / 2 : DEFAULT_CENTER_X
         ctx.mindMapCurveExtentBaseline.value = getMindMapCurveExtents(nodesToStore, centerX)
       }
+
+      const measureCount = nodesToStore.filter((n) => n.type !== 'boundary').length
+      ctx.armMindMapMeasureBatch(measureCount)
     } else {
       ctx.mindMapCurveExtentBaseline.value = null
     }
@@ -199,7 +238,10 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     }
 
     if (options?.emitLoaded !== false) {
-      eventBus.emit('diagram:loaded', { diagramType: diagramTypeValue })
+      eventBus.emit('diagram:loaded', {
+        diagramType: diagramTypeValue,
+        skipFit: options?.skipFit === true,
+      })
     }
     return true
   }

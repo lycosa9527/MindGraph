@@ -7,6 +7,7 @@ import json
 import pytest
 
 from services.showcase.ai_copy import (
+    extract_partial_ai_copy_fields,
     normalize_ai_copy_fields,
     parse_json_object,
     strip_code_fence,
@@ -57,3 +58,35 @@ def test_parse_json_object_roundtrip() -> None:
     }
     parsed = parse_json_object(json.dumps(payload, ensure_ascii=False))
     assert normalize_ai_copy_fields(parsed)["description"] == payload["description"]
+
+
+def test_extract_partial_ai_copy_fields_progressive() -> None:
+    """Grow fields as JSON keys appear in a streaming buffer."""
+    assert not extract_partial_ai_copy_fields("{")
+    assert not extract_partial_ai_copy_fields('{"description": "')
+    partial = extract_partial_ai_copy_fields('{"description": "本课用气泡图')
+    assert partial["description"] == "本课用气泡图"
+    assert "design_highlights" not in partial
+
+    two = extract_partial_ai_copy_fields('{"description": "简介完成", "design_highlights": "亮点进行中')
+    assert two["description"] == "简介完成"
+    assert two["design_highlights"] == "亮点进行中"
+    assert "teaching_reflection" not in two
+
+    full = extract_partial_ai_copy_fields('{"description":"a","design_highlights":"b","teaching_reflection":"c"}')
+    assert full == {
+        "description": "a",
+        "design_highlights": "b",
+        "teaching_reflection": "c",
+    }
+
+
+def test_extract_partial_ai_copy_fields_escapes_and_aliases() -> None:
+    """Decode escapes and accept Chinese key aliases mid-stream."""
+    escaped = extract_partial_ai_copy_fields('{"description": "说\\"清楚\\n再练')
+    assert escaped["description"] == '说"清楚\n再练'
+
+    chinese = extract_partial_ai_copy_fields('{"教学设计简介": "简介", "设计亮点": "亮点", "教学反思": "反思进行')
+    assert chinese["description"] == "简介"
+    assert chinese["design_highlights"] == "亮点"
+    assert chinese["teaching_reflection"] == "反思进行"

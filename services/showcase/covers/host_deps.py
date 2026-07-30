@@ -6,6 +6,7 @@ import logging
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 from typing import Optional
 
 from services.knowledge.legacy_office_convert import resolve_soffice_path
@@ -25,38 +26,103 @@ _NOTO_CJK_MARKERS = (
     "source han serif",
 )
 
+_LINUX_PROGRAM_DIRS = (
+    Path("/usr/lib/libreoffice/program"),
+    Path("/usr/lib64/libreoffice/program"),
+)
+
+_APT_LO_PACKAGES = "libreoffice-writer libreoffice-impress libreoffice-common fonts-noto-cjk fontconfig"
+_APT_INSTALL_LO = f"sudo apt-get install -y {_APT_LO_PACKAGES}"
+
+# component -> (PATH names, program/ binary, lib glob stem)
+_COMPONENT_MARKERS: dict[str, tuple[tuple[str, ...], str, str]] = {
+    "writer": (("lowriter", "swriter"), "swriter", "libswriterlo.so*"),
+    "impress": (("loimpress", "simpress"), "simpress", "libsimpresslo.so*"),
+}
+
 
 def lines_showcase_cover_host_install() -> list[str]:
-    """Copy-paste install hints for LibreOffice + Noto CJK fonts."""
+    """Copy-paste install + verify hints for LibreOffice + Noto CJK fonts."""
     return [
-        "Showcase server-side teaching-design covers need LibreOffice and CJK fonts.",
+        "Showcase server-side teaching-design covers need LibreOffice (Writer + Impress) and CJK fonts.",
         "",
         "  Ubuntu/Debian:",
         "    sudo apt-get update",
-        "    sudo apt-get install -y libreoffice-writer libreoffice-impress "
-        "libreoffice-common fonts-noto-cjk fontconfig",
+        f"    {_APT_INSTALL_LO}",
+        "",
+        "  Verify:",
         "    soffice --version",
+        "    command -v lowriter || command -v swriter",
+        "    command -v loimpress || command -v simpress",
         "    fc-list :lang=zh | head",
         "",
         "  macOS:",
         "    brew install libreoffice",
         "    brew install --cask font-noto-sans-cjk-sc",
+        "    soffice --version",
         "",
-        "  Windows: install LibreOffice from https://www.libreoffice.org/download/",
-        "           and ensure soffice.exe is on PATH (or set LIBREOFFICE_PATH).",
+        "  Windows: install full LibreOffice from",
+        "           https://www.libreoffice.org/download/",
+        "           (includes Writer + Impress). Put soffice.exe on PATH",
+        "           or set LIBREOFFICE_PATH, then run: soffice --version",
         "",
         "  Optional: set LIBREOFFICE_PATH=/usr/bin/soffice in .env",
         "  Disable covers and continue: SHOWCASE_SERVER_COVERS=false",
+        "  Full cheatsheet: python -m services.infrastructure.utils.launch_commands",
     ]
 
 
+def libreoffice_program_dir(soffice: str) -> Optional[Path]:
+    """Locate the LibreOffice ``program/`` directory from a soffice path."""
+    path = Path(soffice).resolve()
+    if path.parent.name == "program":
+        return path.parent
+    nested = path.parent / "program"
+    if (nested / "soffice").is_file() or (nested / "soffice.bin").is_file():
+        return nested
+    for candidate in _LINUX_PROGRAM_DIRS:
+        if (candidate / "soffice").is_file() or (candidate / "soffice.bin").is_file():
+            return candidate
+    return None
+
+
+def office_component_installed(soffice: str, component: str) -> bool:
+    """True when a LibreOffice component (writer/impress) is present."""
+    markers = _COMPONENT_MARKERS.get(component)
+    if markers is None:
+        return False
+    path_names, program_bin, lib_glob = markers
+    if any(shutil.which(name) for name in path_names):
+        return True
+    program_dir = libreoffice_program_dir(soffice)
+    if program_dir is None:
+        # Full desktop installs on Windows/macOS usually ship both components.
+        return sys.platform in {"win32", "darwin"}
+    if (program_dir / program_bin).is_file():
+        return True
+    if any(program_dir.glob(lib_glob)):
+        return True
+    xcd = program_dir.parent / "share" / "registry" / f"{component}.xcd"
+    return xcd.is_file()
+
+
+def impress_component_installed(soffice: str) -> bool:
+    """True when Impress is present (required for PPTX → PDF covers)."""
+    return office_component_installed(soffice, "impress")
+
+
+def writer_component_installed(soffice: str) -> bool:
+    """True when Writer is present (required for DOC/DOCX → PDF covers)."""
+    return office_component_installed(soffice, "writer")
+
+
 def check_libreoffice_installed() -> tuple[bool, str]:
-    """Return whether ``soffice`` is available for Office → PDF cover conversion."""
+    """Return whether Writer+Impress ``soffice`` is available for Office → PDF."""
     soffice = resolve_soffice_path()
     if not soffice:
         return (
             False,
-            "LibreOffice (soffice) not found on PATH and LIBREOFFICE_PATH is unset.",
+            f"LibreOffice (soffice) not found on PATH and LIBREOFFICE_PATH is unset. Install: {_APT_INSTALL_LO}",
         )
     try:
         result = subprocess.run(
@@ -67,12 +133,32 @@ def check_libreoffice_installed() -> tuple[bool, str]:
             check=False,
         )
     except (*BACKGROUND_INFRA_ERRORS, subprocess.SubprocessError) as exc:
-        return False, f"LibreOffice found at {soffice} but --version failed: {exc}"
+        return (
+            False,
+            f"LibreOffice found at {soffice} but --version failed: {exc}. Reinstall: {_APT_INSTALL_LO}",
+        )
     version = (result.stdout or result.stderr or "").strip().splitlines()
     label = version[0] if version else "unknown version"
     if result.returncode != 0 and not version:
-        return False, f"LibreOffice at {soffice} did not report a version (exit {result.returncode})."
-    return True, f"{label} ({soffice})"
+        return (
+            False,
+            f"LibreOffice at {soffice} did not report a version "
+            f"(exit {result.returncode}). Reinstall: {_APT_INSTALL_LO}",
+        )
+
+    missing: list[str] = []
+    if not writer_component_installed(soffice):
+        missing.append("Writer (.doc/.docx)")
+    if not impress_component_installed(soffice):
+        missing.append("Impress (.pptx)")
+    if missing:
+        return (
+            False,
+            "LibreOffice components missing: "
+            + ", ".join(missing)
+            + ". Install: sudo apt-get install -y libreoffice-writer libreoffice-impress",
+        )
+    return True, f"{label} + Writer + Impress ({soffice})"
 
 
 def _fc_list_output() -> Optional[str]:
@@ -105,7 +191,10 @@ def check_noto_cjk_fonts_installed() -> tuple[bool, str]:
     if sys.platform == "win32":
         return True, "CJK font check skipped on Windows (install Noto CJK if covers look blank)"
     if sys.platform == "darwin":
-        return True, "CJK font check skipped on macOS (install Noto CJK via brew cask if needed)"
+        return (
+            True,
+            "CJK font check skipped on macOS (brew install --cask font-noto-sans-cjk-sc if covers look blank)",
+        )
 
     fc_list = shutil.which("fc-list")
     if not fc_list:
@@ -127,11 +216,14 @@ def check_noto_cjk_fonts_installed() -> tuple[bool, str]:
         return (
             False,
             "Chinese fonts exist but Noto/Source Han CJK was not found. "
-            "Install: sudo apt-get install -y fonts-noto-cjk",
+            "Install: sudo apt-get install -y fonts-noto-cjk "
+            "then verify: fc-list :lang=zh | head",
         )
     return (
         False,
-        "No Chinese-capable fonts found. Install: sudo apt-get install -y fonts-noto-cjk",
+        "No Chinese-capable fonts found. "
+        "Install: sudo apt-get install -y fonts-noto-cjk "
+        "then verify: fc-list :lang=zh | head",
     )
 
 
@@ -145,7 +237,7 @@ def enforce_showcase_cover_host_deps_or_exit() -> None:
         logger.debug("[SHOWCASE] Skipping LibreOffice/CJK font check (server covers disabled)")
         return
 
-    logger.debug("[SHOWCASE] Checking LibreOffice and CJK fonts for server covers...")
+    logger.debug("[SHOWCASE] Checking LibreOffice (Writer+Impress) and CJK fonts...")
     lo_ok, lo_msg = check_libreoffice_installed()
     fonts_ok, fonts_msg = check_noto_cjk_fonts_installed()
 
@@ -156,7 +248,7 @@ def enforce_showcase_cover_host_deps_or_exit() -> None:
 
     print()
     print("=" * 80)
-    print("[ERROR] Showcase server-side covers require LibreOffice and CJK fonts.")
+    print("[ERROR] Showcase server-side covers require LibreOffice (Writer + Impress) and CJK fonts.")
     print("=" * 80)
     if not lo_ok:
         print(f"  LibreOffice: MISSING — {lo_msg}")

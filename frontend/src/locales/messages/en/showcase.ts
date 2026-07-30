@@ -128,6 +128,8 @@ export default {
   'showcase.publishModal.teachingIntroPlaceholder': 'Briefly introduce the lesson background, goals, and context',
   'showcase.publishModal.aiGenerate': 'AI generate',
   'showcase.publishModal.aiGenerating': 'Generating…',
+  'showcase.publishModal.aiGenerateStop': 'Stop',
+  'showcase.publishModal.aiGenerateCancelled': 'AI generation cancelled — click again to regenerate',
   'showcase.publishModal.aiGenerateSuccess':
     'Filled intro, highlights, and reflection from the document — review and edit as needed',
   'showcase.publishModal.aiGenerateFailed': 'AI generation failed — please try again',

@@ -22,6 +22,7 @@ import {
   resolveMindMapEdgeEndpoint,
   resolveMindMapNodeStyle,
 } from '@/utils/mindMapEdgeEndpoints'
+import { mindMapOrthogonalSiblingGroupKey } from '@/utils/mindMapOrthogonalSiblings'
 import {
   buildMindMapBracketBusPath,
   computeMindMapSharedTrunkX,
@@ -32,7 +33,7 @@ const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
 const isHovered = ref(false)
 
-const { edges: vueFlowEdges, nodes: vueFlowNodes } = useVueFlow()
+const { nodes: vueFlowNodes } = useVueFlow()
 
 const diagramStore = useDiagramStore()
 const exportOutlineActive = useMindMapExportOutlineWireframeActive()
@@ -123,17 +124,10 @@ function branchSide(nodeId: string | undefined): 'left' | 'right' | null {
   return mindMapBranchSide(nodeId)
 }
 
-const siblingEdges = computed(() =>
-  vueFlowEdges.value.filter((edge) => {
-    if (edge.source !== props.source) return false
-    if (isFromTopic.value) {
-      const mySide = branchSide(props.target)
-      const theirSide = branchSide(edge.target)
-      return mySide != null && mySide === theirSide
-    }
-    return true
-  })
-)
+const siblingEdges = computed(() => {
+  const key = mindMapOrthogonalSiblingGroupKey(props.source, props.target)
+  return diagramStore.mindMapOrthogonalSiblingsByGroup.get(key) ?? []
+})
 
 const topicAnchor = computed(() => {
   if (!isFromTopic.value) return null
@@ -188,10 +182,15 @@ const targetPoint = computed(() =>
 const siblingTargetPoints = computed(() =>
   siblingEdges.value.map((edge) => {
     const node = vueFlowNodes.value.find((n) => n.id === edge.target)
-    return resolveTargetPoint(node, {
-      x: edge.targetX ?? props.targetX,
-      y: edge.targetY ?? props.targetY,
-    })
+    // Store sibling map is MindGraphEdge (no Vue Flow targetX/Y); resolve from nodes.
+    const fallback =
+      edge.target === props.target
+        ? { x: props.targetX, y: props.targetY }
+        : {
+            x: node?.position?.x ?? props.targetX,
+            y: node?.position?.y ?? props.targetY,
+          }
+    return resolveTargetPoint(node, fallback)
   })
 )
 

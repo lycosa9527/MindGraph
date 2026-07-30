@@ -13,7 +13,7 @@
  * - Click to switch between cached results
  * - Per-model loading/ready/error states
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
@@ -94,6 +94,9 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
    * saved user edits; persisting the new model's result would overwrite them).
    */
   const contentChangeIsFromModelSwitch = ref(false)
+
+  /** Canvas topic captured at auto-complete start; applied on every model switch/load. */
+  const lockedTopic = ref<string | null>(null)
 
   // Getters
   const models = computed(() => MODELS)
@@ -192,15 +195,16 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
 
     // During auto-complete: per-model autosave runs on llm:model_completed; skip
     // save-before-replace on programmatic first-result render. User-initiated switch
-    // (after generation): save current before replacing so user can revert.
+    // (after generation): save current so user can revert — do not block first paint.
     if (!isGenerating.value) {
-      await savedDiagramsStore.saveCurrentDiagramBeforeReplace()
+      void savedDiagramsStore.saveCurrentDiagramBeforeReplace()
     }
 
     // Flow map: preserve current orientation (LLM spec typically omits it, defaulting to horizontal)
     // Mind map: preserve theme / diagram style / canvas (LLM/vision specs omit them).
     let specToLoad = result.spec
     const currentData = diagramStore.data as Record<string, unknown> | null
+    const hadCanvasNodes = (diagramStore.data?.nodes?.length ?? 0) > 0
     if (diagramType === 'flow_map') {
       const currentOrientation = currentData?.orientation ?? 'horizontal'
       specToLoad = { ...result.spec, orientation: currentOrientation }
@@ -208,21 +212,42 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       specToLoad = mergeMindMapPresentationExtrasIntoSpec(result.spec, currentData)
     }
 
+    const topicLock = (lockedTopic.value || '').trim()
+    if (topicLock) {
+      specToLoad = applyLockedTopicToSpec(specToLoad, topicLock, diagramType)
+    }
+
+    // Keep viewport on user model switch when a diagram is already painted.
+    // First AC result / empty→content still fits (isGenerating or no nodes).
+    const skipFit = !isGenerating.value && hadCanvasNodes
+    const softMindMapSwitch =
+      isMindMapDiagramType(diagramType) &&
+      Array.isArray(specToLoad.nodes) &&
+      (specToLoad.nodes as unknown[]).length > 0 &&
+      Array.isArray(specToLoad.connections) &&
+      (specToLoad.connections as unknown[]).length > 0
+
     // Mark before load so auto-save skips: content change is programmatic replace,
     // not a user edit. save-before-replace already saved user edits.
     contentChangeIsFromModelSwitch.value = true
     const loaded = diagramStore.loadFromSpec(
       specToLoad,
-      diagramType as import('@/types').DiagramType
+      diagramType as import('@/types').DiagramType,
+      {
+        skipFit,
+        preserveMindMapMeasures: softMindMapSwitch,
+        preferLaidOutMindMapNodes: softMindMapSwitch,
+      }
     )
     if (loaded) {
       selectedModel.value = model
-      // Layout assigns mindMapUid on first load of raw children[]; stamp into this
-      // model's cache so later switches keep stable identities (and presentation).
-      const stamped = diagramStore.getSpecForSave()
-      if (stamped) {
-        updateCurrentModelSpec(stamped)
-      }
+      // Defer stamp so getSpecForSave does not block first paint after soft load.
+      void nextTick(() => {
+        const stamped = diagramStore.getSpecForSave()
+        if (stamped) {
+          updateCurrentModelSpec(stamped)
+        }
+      })
       // Always keep activeDiagramId - we're updating the same diagram with different
       // LLM result. Clearing it caused duplicate CREATE when debounced save fired.
       return true
@@ -240,6 +265,33 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     results.value = {}
     selectedModel.value = null
     totalModels.value = null
+    lockedTopic.value = null
+  }
+
+  function applyLockedTopicToSpec(
+    spec: Record<string, unknown>,
+    topic: string,
+    diagramType: string
+  ): Record<string, unknown> {
+    const normalized = diagramType === 'mind_map' ? 'mindmap' : diagramType
+    if (
+      normalized === 'mindmap' ||
+      normalized === 'bubble_map' ||
+      normalized === 'circle_map' ||
+      normalized === 'tree_map'
+    ) {
+      return { ...spec, topic }
+    }
+    if (normalized === 'brace_map') {
+      return { ...spec, whole: topic, topic }
+    }
+    if (normalized === 'flow_map') {
+      return { ...spec, title: topic }
+    }
+    if (normalized === 'multi_flow_map') {
+      return { ...spec, event: topic }
+    }
+    return spec
   }
 
   // Clear all cached results and abort any in-flight auto-complete requests.
@@ -268,7 +320,8 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   function startGeneration(
     newSessionId: string,
     diagramType: string,
-    modelsToRun?: string[]
+    modelsToRun?: string[],
+    topicToLock?: string | null
   ): void {
     // Cancel any existing requests
     cancelAllRequests()
@@ -279,6 +332,8 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     // Set state
     isGenerating.value = true
     sessionId.value = newSessionId
+    const trimmedLock = typeof topicToLock === 'string' ? topicToLock.trim() : ''
+    lockedTopic.value = trimmedLock || null
 
     // Normalize diagram type
     let normalizedType = diagramType

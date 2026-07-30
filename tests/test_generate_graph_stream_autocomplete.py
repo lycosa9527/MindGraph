@@ -58,6 +58,9 @@ async def test_dispatch_llm_chat_without_phase_emit_uses_blocking_chat() -> None
 
     mock_chat.assert_awaited_once()
     assert result == '{"topic": "X"}'
+    await_args = mock_chat.await_args
+    assert await_args is not None
+    assert await_args.kwargs.get("response_format") == {"type": "json_object"}
 
 
 @pytest.mark.asyncio
@@ -85,6 +88,30 @@ async def test_dispatch_llm_chat_strips_phase_emit_from_llm_kwargs() -> None:
 
     assert "phase_emit" not in captured
     assert captured.get("user_id") == 1
+    assert captured.get("response_format") == {"type": "json_object"}
+
+
+@pytest.mark.asyncio
+async def test_dispatch_llm_chat_can_disable_structured_json() -> None:
+    """Classification-style calls can opt out of json_object response_format."""
+    captured: dict[str, Any] = {}
+
+    async def fake_chat(**kwargs: Any) -> str:
+        captured.update(kwargs)
+        return "mind_map"
+
+    with patch(
+        "agents.core.llm_spec_stream.llm_service.chat",
+        new=AsyncMock(side_effect=fake_chat),
+    ):
+        await dispatch_llm_chat(
+            phase_emit=None,
+            prompt="test",
+            model="qwen",
+            structured_json=False,
+        )
+
+    assert "response_format" not in captured
 
 
 @pytest.mark.asyncio
@@ -100,7 +127,14 @@ async def test_mind_map_agent_passes_phase_emit_to_dispatch() -> None:
         assert emit is not None
         await emit("waiting")
         await emit("streaming")
-        return '{"topic":"T","children":[{"text":"A","children":[]}]}'
+        return (
+            '{"topic":"T","children":['
+            '{"text":"A","children":[{"text":"a1"}]},'
+            '{"text":"B","children":[{"text":"b1"}]},'
+            '{"text":"C","children":[{"text":"c1"}]},'
+            '{"text":"D","children":[{"text":"d1"}]}'
+            "]}"
+        )
 
     agent = MindMapAgent(model="qwen")
     with patch(
@@ -218,6 +252,7 @@ def test_build_workflow_kwargs_uses_user_prompt_not_prompt() -> None:
             "language": "zh",
             "llm": LLMModel.QWEN,
             "request_type": "autocomplete",
+            "locked_topic": "circle topic",
         }
     )
     prepared = {
@@ -234,3 +269,4 @@ def test_build_workflow_kwargs_uses_user_prompt_not_prompt() -> None:
     assert "prompt" not in kwargs
     assert kwargs["forced_diagram_type"] == "circle_map"
     assert kwargs["model"] == "qwen"
+    assert kwargs["locked_topic"] == "circle topic"

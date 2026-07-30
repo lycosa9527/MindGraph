@@ -97,6 +97,7 @@ def _build_workflow_kwargs(req: GenerateRequest, prepared: dict[str, Any]) -> di
         "rag_top_k": req.rag_top_k if req.rag_top_k else 5,
         "diagram_id": req.diagram_id,
         "rag_document_ids": req.rag_document_ids,
+        "locked_topic": req.locked_topic if hasattr(req, "locked_topic") else None,
         "mind_map_topic": req.mind_map_topic if hasattr(req, "mind_map_topic") else None,
         "expand_branch": req.expand_branch if hasattr(req, "expand_branch") else None,
         "reference_branches": req.reference_branches if hasattr(req, "reference_branches") else None,

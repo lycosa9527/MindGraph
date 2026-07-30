@@ -350,7 +350,15 @@ const { position: floatingToolbarPosition, scheduleMeasure: scheduleFloatingTool
   })
 
 watch(
-  () => nodes.value.map((n) => `${n.id}:${n.position?.x ?? 0}:${n.position?.y ?? 0}`).join('|'),
+  () => {
+    const selected = floatingToolbarNodeIds.value
+    if (selected.length === 0) return ''
+    const selectedSet = new Set(selected)
+    return nodes.value
+      .filter((n) => selectedSet.has(n.id))
+      .map((n) => `${n.id}:${n.position?.x ?? 0}:${n.position?.y ?? 0}`)
+      .join('|')
+  },
   () => {
     scheduleFloatingToolbarMeasure()
   }

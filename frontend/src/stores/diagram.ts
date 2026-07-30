@@ -280,12 +280,14 @@ export const useDiagramStore = defineStore('diagram', () => {
 
   const mindMapLayoutSlice = useMindMapLayoutSlice(ctx)
   const {
+    armMindMapMeasureBatch,
     setMindMapTopicWidth,
     setMindMapTopicMeasured,
     setMindMapNodeWidth: setMindMapNodeWidthSlice,
     setMindMapNodeDimensions,
     clearMindMapNodeWidths,
   } = mindMapLayoutSlice
+  ctx.armMindMapMeasureBatch = armMindMapMeasureBatch
 
   const specIOSlice = useSpecIOSlice(ctx)
   const {
@@ -334,6 +336,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   const {
     vueFlowNodes,
     vueFlowEdges,
+    mindMapOrthogonalSiblingsByGroup,
     updateNodePosition,
     updateNodesFromVueFlow,
     syncFromVueFlow,
@@ -461,6 +464,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     effectiveTitle,
     vueFlowNodes,
     vueFlowEdges,
+    mindMapOrthogonalSiblingsByGroup,
     setDiagramType,
     setSessionId,
     updateDiagram,

@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.155.0] - 2026-07-30
+
+> **Showcase teaching-copy AI streams live; mind-map auto-complete locks the canvas topic and soft-loads model switches.**
+
+### Added
+
+- **Streaming teaching-copy AI** — `POST /api/showcase/ai/teaching-copy/stream` SSE fills `description` / `design_highlights` / `teaching_reflection` token-by-token in the publish modal; sync JSON route kept as fallback ([`routes_ai.py`](routers/features/showcase/routes_ai.py), [`ai_copy.py`](services/showcase/ai_copy.py), [`useShowcaseTeachingCopyAi.ts`](frontend/src/composables/showcase/useShowcaseTeachingCopyAi.ts)).
+- **Autocomplete topic lock** — Client sends `locked_topic`; backend overwrites central topic fields after generation so auto-complete never rewrites the canvas topic ([`autocomplete_topic_lock.py`](agents/core/autocomplete_topic_lock.py), [`workflow.py`](agents/core/workflow.py), [`useAutoComplete.ts`](frontend/src/composables/editor/useAutoComplete.ts), [`llmResults.ts`](frontend/src/stores/llmResults.ts)).
+- **Mind-map measure batch** — After `loadFromSpec`, ResizeObserver updates accumulate until the pending count hits 0 (or a short safety flush) before one recalc ([`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts), [`specIO.ts`](frontend/src/stores/diagram/specIO.ts)).
+- **Orthogonal sibling map** — Precompute parent→sibling edge groups so each orthogonal edge does not filter the full edge list ([`mindMapOrthogonalSiblings.ts`](frontend/src/utils/mindMapOrthogonalSiblings.ts), [`vueFlowIntegration.ts`](frontend/src/stores/diagram/vueFlowIntegration.ts)).
+
+### Changed
+
+- **AI生成 UX** — Step 2 auto-streams into empty fields with start/success/error toasts; button shows **停止** while in-flight (abort, keep partial text); idle click clears and regenerates ([`PublishShowcaseModal.vue`](frontend/src/components/showcase/PublishShowcaseModal.vue), [`useShowcaseTeachingCopyAi.ts`](frontend/src/composables/showcase/useShowcaseTeachingCopyAi.ts)).
+- **Mind-map auto-complete quality** — Enforce 4/6/8 main branches with nested children; raise `max_tokens` and lower temperature; prompt locks exact `topic` ([`mind_map_agent.py`](agents/mind_maps/mind_map_agent.py), [`prompts/mind_maps.py`](prompts/mind_maps.py)).
+- **Soft model switch** — Laid-out mind maps reuse stamped `nodes[]`/`connections[]`, preserve measured widths/heights, skip fit on user switch, and defer cache stamp so first paint stays smooth ([`llmResults.ts`](frontend/src/stores/llmResults.ts), [`specLoader/index.ts`](frontend/src/stores/specLoader/index.ts)).
+- **Volcengine / DashScope JSON mode** — Forward `response_format`; Volcengine retries without structured output when the model rejects it ([`volcengine.py`](clients/llm/volcengine.py), [`dashscope.py`](clients/llm/dashscope.py)).
+- **Cover host-deps** — Require Writer + Impress markers; clearer apt install/verify hints in startup and [`env.example`](env.example) ([`host_deps.py`](services/showcase/covers/host_deps.py)).
+
+### Tests
+
+- **Backend / frontend** — Partial JSON field extraction; SSE client field callbacks; topic-lock unit tests; mind-map soft-load / measure-batch vitest; autocomplete audit helpers ([`test_showcase_ai_copy.py`](tests/test_showcase_ai_copy.py), [`test_autocomplete_topic_lock.py`](tests/test_autocomplete_topic_lock.py), [`generateShowcaseTeachingCopy.spec.ts`](frontend/tests/generateShowcaseTeachingCopy.spec.ts), [`mindMapSoftLoadAndMeasureBatch.spec.ts`](frontend/tests/mindMapSoftLoadAndMeasureBatch.spec.ts)).
+
 ## [5.154.0] - 2026-07-30
 
 > **Showcase teaching-design accepts PPTX (cover + PDF preview); stale Celery workers restart safely; document preview fits width with denser watermarks.**

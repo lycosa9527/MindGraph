@@ -34,6 +34,19 @@ from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 logger = logging.getLogger(__name__)
 
 
+def _is_unsupported_structured_output_error(exc: BaseException) -> bool:
+    """Return True when Volcengine rejects response_format / structured output."""
+    message = str(exc).lower()
+    needles = (
+        "response_format",
+        "structured output",
+        "json_object",
+        "json_schema",
+        "text.format",
+    )
+    return any(needle in message for needle in needles)
+
+
 class DoubaoClient:
     """
     Client for Volcengine Doubao (豆包) using OpenAI-compatible API.
@@ -73,6 +86,7 @@ class DoubaoClient:
         messages: List[Dict],
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Send async chat completion request to Volcengine Doubao (OpenAI-compatible)
@@ -81,6 +95,7 @@ class DoubaoClient:
             messages: List of message dictionaries with 'role' and 'content'
             temperature: Sampling temperature (0.0 to 2.0), None uses default
             max_tokens: Maximum tokens in response
+            **kwargs: Optional extras (e.g. response_format)
 
         Returns:
             Dict with 'content' and 'usage' keys
@@ -92,13 +107,17 @@ class DoubaoClient:
 
             logger.debug("Doubao async API request: %s (temp: %s)", self.model_name, temperature)
 
+            create_kwargs: Dict[str, Any] = {
+                "model": self.model_name,
+                "messages": as_openai_chat_messages(messages),
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            if "response_format" in kwargs:
+                create_kwargs["response_format"] = kwargs["response_format"]
+
             # Call OpenAI-compatible API
-            completion = await self.client.chat.completions.create(
-                model=self.model_name,
-                messages=as_openai_chat_messages(messages),
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+            completion = await self.client.chat.completions.create(**create_kwargs)
 
             # Extract content from response
             content = completion.choices[0].message.content
@@ -169,15 +188,22 @@ class DoubaoClient:
         messages: List[Dict],
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """Alias for async_chat_completion for API consistency"""
-        return await self.async_chat_completion(messages, temperature, max_tokens)
+        return await self.async_chat_completion(
+            messages,
+            temperature,
+            max_tokens,
+            **kwargs,
+        )
 
     async def async_stream_chat_completion(
         self,
         messages: List[Dict],
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
+        **kwargs: Any,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat completion from Doubao using OpenAI-compatible API.
@@ -198,15 +224,19 @@ class DoubaoClient:
 
             logger.debug("Doubao stream API request: %s (temp: %s)", self.model_name, temperature)
 
+            create_kwargs: Dict[str, Any] = {
+                "model": self.model_name,
+                "messages": as_openai_chat_messages(messages),
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "stream": True,
+                "stream_options": {"include_usage": True},
+            }
+            if "response_format" in kwargs:
+                create_kwargs["response_format"] = kwargs["response_format"]
+
             # Use OpenAI SDK's streaming with usage tracking
-            stream = await self.client.chat.completions.create(
-                model=self.model_name,
-                messages=as_openai_chat_messages(messages),
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=True,  # Enable streaming
-                stream_options={"include_usage": True},  # Request usage in stream
-            )
+            stream = await self.client.chat.completions.create(**create_kwargs)
 
             last_usage = None
             async for chunk in stream:
@@ -358,6 +388,7 @@ class VolcengineClient:
         messages: List[Dict],
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Non-streaming chat completion using endpoint ID.
@@ -366,22 +397,60 @@ class VolcengineClient:
             messages: List of message dictionaries
             temperature: Sampling temperature
             max_tokens: Maximum tokens
+            **kwargs: Optional extras (e.g. response_format). Retries once without
+                response_format when the endpoint rejects structured output.
 
         Returns:
             Dict with 'content' and 'usage' keys
         """
+        response_format = kwargs.pop("response_format", None)
+        try:
+            return await self._chat_completion_once(
+                messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                response_format=response_format,
+            )
+        except LLMProviderError as exc:
+            if response_format is None or not _is_unsupported_structured_output_error(exc):
+                raise
+            logger.warning(
+                "Volcengine %s rejected response_format; retrying without structured output: %s",
+                self.model_alias,
+                exc,
+            )
+            return await self._chat_completion_once(
+                messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                response_format=None,
+            )
+
+    async def _chat_completion_once(
+        self,
+        messages: List[Dict],
+        *,
+        temperature: Optional[float],
+        max_tokens: int,
+        response_format: Optional[Any],
+    ) -> Dict[str, Any]:
+        """Single non-streaming Volcengine chat completion attempt."""
         try:
             if temperature is None:
                 temperature = self.default_temperature
 
             logger.debug("Volcengine %s request: endpoint=%s", self.model_alias, self.endpoint_id)
 
-            completion = await self.client.chat.completions.create(
-                model=self.endpoint_id,  # Use endpoint ID for higher RPM!
-                messages=as_openai_chat_messages(messages),
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+            create_kwargs: Dict[str, Any] = {
+                "model": self.endpoint_id,
+                "messages": as_openai_chat_messages(messages),
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            if response_format is not None:
+                create_kwargs["response_format"] = response_format
+
+            completion = await self.client.chat.completions.create(**create_kwargs)
 
             content = completion.choices[0].message.content
 
@@ -442,6 +511,7 @@ class VolcengineClient:
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
         enable_thinking: bool = False,
+        **kwargs: Any,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Streaming chat completion using endpoint ID.
@@ -451,6 +521,7 @@ class VolcengineClient:
             temperature: Sampling temperature
             max_tokens: Maximum tokens
             enable_thinking: Whether to enable thinking mode (for DeepSeek/Kimi via Volcengine)
+            **kwargs: Optional extras (e.g. response_format)
 
         Yields:
             Dict with 'type' and 'content' keys:
@@ -458,6 +529,45 @@ class VolcengineClient:
             - {'type': 'token', 'content': '...'} - Response content
             - {'type': 'usage', 'usage': {...}} - Token usage stats
         """
+        response_format = kwargs.pop("response_format", None)
+        try:
+            async for chunk in self._stream_chat_completion_once(
+                messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                enable_thinking=enable_thinking,
+                response_format=response_format,
+            ):
+                yield chunk
+            return
+        except LLMProviderError as exc:
+            if response_format is None or not _is_unsupported_structured_output_error(exc):
+                raise
+            logger.warning(
+                "Volcengine %s stream rejected response_format; retrying without: %s",
+                self.model_alias,
+                exc,
+            )
+
+        async for chunk in self._stream_chat_completion_once(
+            messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            enable_thinking=enable_thinking,
+            response_format=None,
+        ):
+            yield chunk
+
+    async def _stream_chat_completion_once(
+        self,
+        messages: List[Dict],
+        *,
+        temperature: Optional[float],
+        max_tokens: int,
+        enable_thinking: bool,
+        response_format: Optional[Any],
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """Single streaming Volcengine chat completion attempt."""
         try:
             if temperature is None:
                 temperature = self.default_temperature
@@ -467,15 +577,19 @@ class VolcengineClient:
             # Build extra params for thinking mode if enabled
             extra_body = {"enable_thinking": enable_thinking} if enable_thinking else {}
 
-            stream = await self.client.chat.completions.create(
-                model=self.endpoint_id,  # Use endpoint ID for higher RPM!
-                messages=as_openai_chat_messages(messages),
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=True,
-                stream_options={"include_usage": True},  # Request usage in stream
-                extra_body=extra_body if extra_body else None,
-            )
+            create_kwargs: Dict[str, Any] = {
+                "model": self.endpoint_id,
+                "messages": as_openai_chat_messages(messages),
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+                "stream": True,
+                "stream_options": {"include_usage": True},
+                "extra_body": extra_body if extra_body else None,
+            }
+            if response_format is not None:
+                create_kwargs["response_format"] = response_format
+
+            stream = await self.client.chat.completions.create(**create_kwargs)
 
             last_usage = None
             async for chunk in stream:
@@ -546,7 +660,13 @@ class VolcengineClient:
         messages: List[Dict],
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
+        **kwargs: Any,
     ) -> str:
         """Alias for async_chat_completion for API consistency"""
-        result = await self.async_chat_completion(messages, temperature, max_tokens)
+        result = await self.async_chat_completion(
+            messages,
+            temperature,
+            max_tokens,
+            **kwargs,
+        )
         return result.get("content", "") if isinstance(result, dict) else str(result)

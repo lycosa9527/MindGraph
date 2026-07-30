@@ -18,7 +18,9 @@
     "isolatedModules": true,
     "jsx": "preserve",
 
-    /* Path aliases — keep in sync with `vite.config.ts` `resolve.alias` (required for SFC/CSS + bundler resolution). */
+    /* Path aliases — keep `@/*` / `@data/*` in sync with `vite.config.ts` `resolve.alias`.
+       Do not map packages to `.d.ts` here: Vite `resolve.tsconfigPaths` would bundle those
+       as runtime modules (Rolldown MISSING_EXPORT on @lucide/vue). Types come from package typings. */
     "paths": {
       "@/*": ["./src/*"],
       "@data/*": ["../data/*"]

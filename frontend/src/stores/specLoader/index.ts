@@ -42,6 +42,15 @@ export {
 } from './mindMap'
 export type { SpecLoaderResult } from './types'
 
+/** Optional flags for {@link loadSpecForDiagramType}. */
+export type LoadSpecForDiagramTypeOptions = {
+  /**
+   * Mind-map with stamped `nodes[]`+`connections[]`: keep laid-out positions via
+   * generic load instead of re-running `loadMindMapSpec` (LLM model switch).
+   */
+  preferLaidOutMindMapNodes?: boolean
+}
+
 /**
  * Load diagram data from API spec
  * @param spec - The API spec object
@@ -54,7 +63,8 @@ export type { SpecLoaderResult } from './types'
  */
 export function loadSpecForDiagramType(
   spec: Record<string, unknown>,
-  diagramType: DiagramType
+  diagramType: DiagramType,
+  options?: LoadSpecForDiagramTypeOptions
 ): SpecLoaderResult {
   let result: SpecLoaderResult
 
@@ -63,15 +73,19 @@ export function loadSpecForDiagramType(
   // LLM-generated specs use type-specific format: { topic, attributes, ... }
   if (Array.isArray(spec.nodes) && spec.nodes.length > 0) {
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-      const generic = loadGenericSpec(spec)
-      const mindSpec = nodesAndConnectionsToMindMapSpec(
-        generic.nodes,
-        generic.connections
-      )
-      // Keep existing left/right sides. Redistributing via
-      // [...left, ...right] + distributeBranchesClockwise is not idempotent and
-      // reshuffles branches on every library reload / first autosave URL sync.
-      result = loadMindMapSpec({ ...mindSpec, preserveLeftRight: true })
+      const hasConnections =
+        Array.isArray(spec.connections) && (spec.connections as unknown[]).length > 0
+      // Soft path: stamped model-cache specs already have stable ids + positions.
+      if (options?.preferLaidOutMindMapNodes === true && hasConnections) {
+        result = loadGenericSpec(spec)
+      } else {
+        const generic = loadGenericSpec(spec)
+        const mindSpec = nodesAndConnectionsToMindMapSpec(generic.nodes, generic.connections)
+        // Keep existing left/right sides. Redistributing via
+        // [...left, ...right] + distributeBranchesClockwise is not idempotent and
+        // reshuffles branches on every library reload / first autosave URL sync.
+        result = loadMindMapSpec({ ...mindSpec, preserveLeftRight: true })
+      }
     } else {
       result = loadGenericSpec(spec)
     }

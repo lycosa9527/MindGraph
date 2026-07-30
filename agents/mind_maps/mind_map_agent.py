@@ -133,6 +133,7 @@ class MindMapAgent(BaseAgent):
 
             structure_mode = kwargs.get("structure_mode", "free")
             fixed_nodes = kwargs.get("fixed_nodes") or {}
+            locked_topic = str(kwargs.get("locked_topic") or "").strip()
             spec, recovery_warnings = await self._generate_mind_map_spec(
                 user_prompt,
                 language,
@@ -143,6 +144,7 @@ class MindMapAgent(BaseAgent):
                 request_type=request_type,
                 endpoint_path=endpoint_path,
                 phase_emit=kwargs.get("phase_emit"),
+                locked_topic=locked_topic,
             )
             if not spec:
                 return {
@@ -150,9 +152,13 @@ class MindMapAgent(BaseAgent):
                     "error": "Failed to generate mind map specification",
                 }
 
+            if locked_topic:
+                spec["topic"] = locked_topic
+
             is_valid, validation_msg = self.validate_output(
                 spec,
                 fixed_branch_labels=fixed_nodes.get("children") if structure_mode == "fixed" else None,
+                enforce_hierarchy=structure_mode != "fixed",
             )
             if not is_valid:
                 logger.warning("MindMapAgent: Validation failed: %s", validation_msg)
@@ -191,20 +197,40 @@ class MindMapAgent(BaseAgent):
         prompt: str,
         language: str,
         fixed_nodes: Dict[str, Any],
+        locked_topic: str = "",
     ) -> str:
         """Build LLM user message."""
         children = fixed_nodes.get("children")
         if isinstance(children, list) and children:
             labels = ", ".join(str(c) for c in children if str(c).strip())
             if is_chinese_prompt_shell_language(language):
-                return f"请为以下描述创建思维导图：{prompt}\n\n用户指定的主分支（必须原样使用）：{labels}"
-            return (
-                f"Please create a mind map for the following description: {prompt}\n\n"
-                f"User-specified main branches (use EXACT labels): {labels}"
-            )
+                message = f"请为以下描述创建思维导图：{prompt}\n\n用户指定的主分支（必须原样使用）：{labels}"
+            else:
+                message = (
+                    f"Please create a mind map for the following description: {prompt}\n\n"
+                    f"User-specified main branches (use EXACT labels): {labels}"
+                )
+        elif is_chinese_prompt_shell_language(language):
+            message = f"请为以下描述创建一个思维导图：{prompt}"
+        else:
+            message = f"Please create a mind map for the following description: {prompt}"
+
+        topic = locked_topic.strip()
+        if not topic:
+            return message
         if is_chinese_prompt_shell_language(language):
-            return f"请为以下描述创建一个思维导图：{prompt}"
-        return f"Please create a mind map for the following description: {prompt}"
+            return (
+                f"{message}\n\n"
+                f'CRITICAL: JSON 的 "topic" 字段必须原样等于「{topic}」，禁止改写、翻译或缩短。'
+                "每个主分支必须包含嵌套 children 子项；不要把叶子概念直接挂在中心主题下。"
+            )
+        return (
+            f"{message}\n\n"
+            f'CRITICAL: The JSON "topic" field MUST equal exactly "{topic}" '
+            "(do not paraphrase, translate, or shorten). "
+            "Every main branch MUST include nested children sub-items; "
+            "do not attach leaf concepts directly under the central topic."
+        )
 
     def _coerce_reference_branch_list(self, value: Any) -> List[str]:
         if not isinstance(value, list):
@@ -356,6 +382,7 @@ class MindMapAgent(BaseAgent):
         request_type: str = "diagram_generation",
         endpoint_path: Optional[str] = None,
         phase_emit=None,
+        locked_topic: str = "",
     ) -> Tuple[Optional[Dict[str, Any]], Optional[List[str]]]:
         """Generate the mind map specification using LLM."""
         fixed_nodes = fixed_nodes or {}
@@ -368,15 +395,20 @@ class MindMapAgent(BaseAgent):
                 logger.error("MindMapAgent: No prompt found for language %s type %s", language, prompt_type)
                 return None, None
 
-            user_prompt = self._build_user_prompt_message(prompt, language, fixed_nodes)
+            user_prompt = self._build_user_prompt_message(
+                prompt,
+                language,
+                fixed_nodes,
+                locked_topic=locked_topic,
+            )
 
             response = await dispatch_llm_chat(
                 phase_emit=phase_emit,
                 prompt=user_prompt,
                 model=self.model,
                 system_message=system_prompt,
-                max_tokens=1000,
-                temperature=1.0,
+                max_tokens=4000,
+                temperature=0.7,
                 user_id=user_id,
                 organization_id=organization_id,
                 request_type=request_type,
@@ -428,6 +460,7 @@ class MindMapAgent(BaseAgent):
         self,
         output: Dict[str, Any],
         fixed_branch_labels: Optional[List[str]] = None,
+        enforce_hierarchy: bool = True,
     ) -> Tuple[bool, str]:
         """Validate a mind map specification."""
         try:
@@ -451,6 +484,22 @@ class MindMapAgent(BaseAgent):
                 for idx, label in enumerate(expected):
                     if idx >= len(actual) or actual[idx] != label:
                         return False, f"Branch {idx + 1} must be '{label}'"
+            elif enforce_hierarchy:
+                main_branches = [child for child in output["children"] if isinstance(child, dict)]
+                branch_count = len(main_branches)
+                if branch_count not in (4, 6, 8):
+                    return False, f"Main branches must be 4, 6, or 8 (got {branch_count})"
+                for idx, branch in enumerate(main_branches):
+                    nested = branch.get("children")
+                    if not isinstance(nested, list) or not nested:
+                        label = self._get_node_text(branch).strip() or f"branch {idx + 1}"
+                        return False, f"Main branch '{label}' must include nested children"
+                    has_text_child = any(
+                        isinstance(child, dict) and self._get_node_text(child).strip() for child in nested
+                    )
+                    if not has_text_child:
+                        label = self._get_node_text(branch).strip() or f"branch {idx + 1}"
+                        return False, f"Main branch '{label}' must include nested children with text"
 
             return True, "Valid mind map specification"
         except LLM_PIPELINE_ERRORS as e:

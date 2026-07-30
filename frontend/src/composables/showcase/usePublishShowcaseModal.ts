@@ -282,6 +282,10 @@ export function usePublishShowcaseModal(
     clearTeachingCopyPrefetch,
     beginTeachingCopyPrefetch,
     generateDescription,
+    resetAiCopyFields,
+    markDescriptionDirty,
+    markDesignHighlightsDirty,
+    markTeachingReflectionDirty,
   } = useShowcaseTeachingCopyAi({
     t,
     notify,
@@ -293,6 +297,7 @@ export function usePublishShowcaseModal(
     description,
     designHighlights,
     teachingReflection,
+    step,
   })
 
   function resetForm() {
@@ -326,6 +331,7 @@ export function usePublishShowcaseModal(
     () => props.visible,
     (visible) => {
       if (!visible) {
+        clearTeachingCopyPrefetch()
         props.restoreAfterThumbnail?.()
         return
       }
@@ -488,6 +494,10 @@ export function usePublishShowcaseModal(
     selectedDiagram.value = null
     selectedDiagramSpec.value = null
     uploadedMgSpec.value = null
+    // New teaching doc: clear loaded/edit copy so step-2 prefetch can stream in.
+    if (caseType.value === 'teaching_design') {
+      resetAiCopyFields()
+    }
 
     if (isMgUploadedFile(file)) {
       void ensureMgUploadSpecReady()
@@ -659,8 +669,13 @@ export function usePublishShowcaseModal(
       }
       step.value = 2
       if (caseType.value === 'teaching_design' && uploadedFile.value) {
-        // Prefetch while the user fills step 2 so "AI生成" can resolve immediately.
-        beginTeachingCopyPrefetch({ notifyStart: false })
+        // Auto-stream into step-2 fields; button aborts / regenerates.
+        beginTeachingCopyPrefetch({
+          notifyStart: true,
+          notifySuccess: true,
+          notifyError: true,
+          forceOverwrite: false,
+        })
       }
     } finally {
       isStep1Advancing.value = false
@@ -668,6 +683,7 @@ export function usePublishShowcaseModal(
   }
 
   function goPrev() {
+    clearTeachingCopyPrefetch()
     step.value = 1
   }
 
@@ -808,6 +824,9 @@ export function usePublishShowcaseModal(
     goNext,
     goPrev,
     generateDescription,
+    markDescriptionDirty,
+    markDesignHighlightsDirty,
+    markTeachingReflectionDirty,
     submit,
     caseTypeIcon,
     CASE_TYPE_PUBLISH_OPTIONS,

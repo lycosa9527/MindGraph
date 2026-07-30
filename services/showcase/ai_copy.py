@@ -13,11 +13,29 @@ from __future__ import annotations
 import json
 import logging
 import re
+from collections.abc import AsyncIterator
 from typing import Any, Dict, Optional
 
 from services.knowledge.document_processor import get_document_processor
 from services.llm import llm_service
 from services.utils.error_types import JSON_PARSE_ERRORS, LLM_PIPELINE_ERRORS
+
+# Canonical output keys → accepted aliases in model JSON.
+_FIELD_ALIASES: dict[str, tuple[str, ...]] = {
+    "description": ("description", "教学设计简介", "intro"),
+    "design_highlights": (
+        "design_highlights",
+        "designHighlights",
+        "设计亮点",
+        "highlights",
+    ),
+    "teaching_reflection": (
+        "teaching_reflection",
+        "teachingReflection",
+        "教学反思",
+        "reflection",
+    ),
+}
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +158,93 @@ def normalize_ai_copy_fields(parsed: Dict[str, Any]) -> Dict[str, str]:
     }
 
 
+def _decode_json_string_prefix(raw: str) -> str:
+    """Decode a JSON string body that may still be incomplete (no closing quote)."""
+    out: list[str] = []
+    index = 0
+    length = len(raw)
+    while index < length:
+        char = raw[index]
+        if char == "\\":
+            if index + 1 >= length:
+                break
+            nxt = raw[index + 1]
+            if nxt == "n":
+                out.append("\n")
+            elif nxt == "r":
+                out.append("\r")
+            elif nxt == "t":
+                out.append("\t")
+            elif nxt in {'"', "\\", "/"}:
+                out.append(nxt)
+            elif nxt == "u" and index + 5 < length:
+                hex_part = raw[index + 2 : index + 6]
+                if re.fullmatch(r"[0-9a-fA-F]{4}", hex_part):
+                    out.append(chr(int(hex_part, 16)))
+                    index += 6
+                    continue
+                break
+            else:
+                break
+            index += 2
+            continue
+        if char == '"':
+            break
+        out.append(char)
+        index += 1
+    return "".join(out)
+
+
+def _extract_json_string_after_key(buffer: str, key: str) -> Optional[str]:
+    """Return decoded string value for ``key`` from a partial JSON buffer."""
+    pattern = re.compile(
+        rf'"{re.escape(key)}"\s*:\s*"',
+        flags=re.DOTALL,
+    )
+    match = pattern.search(buffer)
+    if match is None:
+        return None
+    return _decode_json_string_prefix(buffer[match.end() :])
+
+
+def extract_partial_ai_copy_fields(buffer: str) -> Dict[str, str]:
+    """
+    Extract teaching-copy string fields from an incomplete JSON stream buffer.
+
+    Returns only keys that have started (opening quote seen). Values are lightly
+    trimmed; full ``normalize_ai_copy_fields`` runs on the completed response.
+    """
+    text = strip_code_fence(buffer)
+    result: Dict[str, str] = {}
+    for canonical, aliases in _FIELD_ALIASES.items():
+        value: Optional[str] = None
+        for alias in aliases:
+            value = _extract_json_string_after_key(text, alias)
+            if value is not None:
+                break
+        if value is None:
+            continue
+        trimmed = value.strip()
+        if trimmed:
+            result[canonical] = trimmed[:SHOWCASE_AI_COPY_MAX_FIELD_CHARS]
+    return result
+
+
+def _build_teaching_copy_user_prompt(
+    *,
+    document_text: str,
+    title: str,
+    subject: str,
+    grade: str,
+) -> str:
+    return _USER_PROMPT_TEMPLATE_ZH.format(
+        title=title.strip() or "未命名案例",
+        subject=subject.strip() or "未指定",
+        grade=grade.strip() or "未指定",
+        document_text=document_text.strip(),
+    )
+
+
 def extract_document_text(file_path: str) -> str:
     """Extract plain text from a teaching-design upload (.pdf/.doc/.docx/.pptx)."""
     processor = get_document_processor()
@@ -166,11 +271,11 @@ async def generate_teaching_design_copy(
     endpoint_path: str,
 ) -> Dict[str, str]:
     """Call qwen3.7-flash and return normalized showcase copy fields."""
-    user_prompt = _USER_PROMPT_TEMPLATE_ZH.format(
-        title=title.strip() or "未命名案例",
-        subject=subject.strip() or "未指定",
-        grade=grade.strip() or "未指定",
-        document_text=document_text.strip(),
+    user_prompt = _build_teaching_copy_user_prompt(
+        document_text=document_text,
+        title=title,
+        subject=subject,
+        grade=grade,
     )
     try:
         raw = await llm_service.chat(
@@ -185,7 +290,7 @@ async def generate_teaching_design_copy(
             diagram_type=None,
             endpoint_path=endpoint_path,
             use_knowledge_base=False,
-            skip_load_balancing=False,
+            skip_load_balancing=True,
             response_format={"type": "json_object"},
             dashscope_model=SHOWCASE_AI_COPY_MODEL,
         )
@@ -200,3 +305,75 @@ async def generate_teaching_design_copy(
         raise ValueError("empty_llm_response")
     parsed = parse_json_object(text)
     return normalize_ai_copy_fields(parsed)
+
+
+async def stream_teaching_design_copy(
+    *,
+    document_text: str,
+    title: str,
+    subject: str,
+    grade: str,
+    user_id: Optional[int],
+    organization_id: Optional[int],
+    endpoint_path: str,
+) -> AsyncIterator[Dict[str, Any]]:
+    """
+    Stream qwen3.7-flash teaching-copy as SSE-ready event dicts.
+
+    Yields ``fields`` snapshots while tokens arrive, then ``done`` with
+    normalized fields, or ``error`` on failure.
+    """
+    user_prompt = _build_teaching_copy_user_prompt(
+        document_text=document_text,
+        title=title,
+        subject=subject,
+        grade=grade,
+    )
+    buffer = ""
+    last_snapshot: Dict[str, str] = {}
+    try:
+        async for chunk in llm_service.chat_stream(
+            prompt=user_prompt,
+            system_message=_SYSTEM_PROMPT_ZH,
+            model="qwen",
+            temperature=0.45,
+            max_tokens=2400,
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type="showcase_ai_copy",
+            diagram_type=None,
+            endpoint_path=endpoint_path,
+            use_knowledge_base=False,
+            skip_load_balancing=True,
+            yield_structured=False,
+            response_format={"type": "json_object"},
+            dashscope_model=SHOWCASE_AI_COPY_MODEL,
+        ):
+            if chunk is None:
+                continue
+            if isinstance(chunk, dict):
+                continue
+            piece = str(chunk)
+            if not piece:
+                continue
+            buffer += piece
+            snapshot = extract_partial_ai_copy_fields(buffer)
+            if snapshot and snapshot != last_snapshot:
+                last_snapshot = dict(snapshot)
+                yield {"event": "fields", **snapshot}
+    except LLM_PIPELINE_ERRORS:
+        logger.exception("[ShowcaseAI] llm stream failed model=%s", SHOWCASE_AI_COPY_MODEL)
+        raise
+
+    text = buffer.strip()
+    if not text:
+        raise ValueError("empty_llm_response")
+    parsed = parse_json_object(text)
+    fields = normalize_ai_copy_fields(parsed)
+    yield {
+        "event": "done",
+        "description": fields["description"],
+        "design_highlights": fields["design_highlights"],
+        "teaching_reflection": fields["teaching_reflection"],
+        "model": SHOWCASE_AI_COPY_MODEL,
+    }

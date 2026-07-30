@@ -88,7 +88,12 @@ export function useDiagramCanvasFit(options: {
 
   /** One-shot initial fit resets only when a new diagram is loaded, not on edits. */
   fitEventUnsubscribers.push(
-    eventBus.on('diagram:loaded', () => {
+    eventBus.on('diagram:loaded', (payload) => {
+      if (payload?.skipFit) {
+        // LLM model switch: keep camera; treat fit as already done.
+        hasInitialFitDoneForDiagram.value = true
+        return
+      }
       hasInitialFitDoneForDiagram.value = false
     }),
     eventBus.on('diagram:loaded_from_library', () => {

@@ -1,5 +1,5 @@
 /**
- * lv UI � canvas
+ * en UI � canvas
  */
 
 export default {
@@ -379,7 +379,7 @@ export default {
   'canvas.toolbar.moreAppConceptMapModesDesc': 'Standard mode now; more modes coming soon',
   'canvas.toolbar.moreAppLearningSheet': 'Learning sheet',
   'canvas.toolbar.moreAppLearningSheetDesc': 'Random blanks for study and review',
-  'canvas.toolbar.moreAppWaterfall': 'Concept parking lot',
+  'canvas.toolbar.moreAppWaterfall': 'AI Brainstorm',
   'canvas.toolbar.moreAppWaterfallDesc': 'Select across batch nodes; make divergent and convergent thinking visible',
   'canvas.toolbar.moreApps': 'More Apps',
   'canvas.toolbar.moreAppSnapshot': 'Snapshot',
@@ -634,11 +634,11 @@ export default {
   'canvas.mindMapSideToolbar.expand': 'Expand toolbar',
   'canvas.mindMapSideToolbar.collapse': 'Collapse toolbar',
   'canvas.mindMapSideToolbar.outline': 'Outline',
-  'canvas.mindMapSideToolbar.waterfall': 'Concept parking lot',
+  'canvas.mindMapSideToolbar.waterfall': 'AI Brainstorm',
   'canvas.mindMapWaterfall.panelHint': 'Select nodes for AI branch ideas, then drag them onto the canvas',
   'canvas.mindMapWaterfall.emptyHint': 'No suggestions yet. Select nodes on the canvas or tap Refresh.',
   'canvas.mindMapWaterfall.dragHint': 'Click to multi-select, then drag onto a map node to insert. Drop on empty canvas to add a top-level branch.',
-  'canvas.mindMapWaterfall.historyAddFromPalette': 'Add nodes from concept parking lot',
+  'canvas.mindMapWaterfall.historyAddFromPalette': 'Add nodes from AI brainstorm',
   'canvas.mindMapOneSentence.intro': 'Enter a topic, or specify branch count, categories, steps, or other structure',
   'canvas.mindMapOneSentence.requirementsPlaceholder': 'e.g. 3-day Beijing trip with four branches: clothing, food, lodging, transport',
   'canvas.mindMapOneSentence.examplesTitle': 'Inspiration',
@@ -714,7 +714,7 @@ export default {
   'canvas.mindMapDocumentSummary.tabChatHistory': 'Chat history',
   'canvas.mindMapDocumentSummary.intro': 'Curate sources for this diagram to generate a more accurate mind map',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'Click to upload a file',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'Word, PDF, PPT, images, audio — extracted text only is stored',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'PDF, Word, PPT, Excel, text, images, audio — only extracted markdown is kept',
   'canvas.mindMapDocumentSummary.invalidFileType': 'Unsupported file type',
   'canvas.mindMapDocumentSummary.saveContent': 'Save content',
   'canvas.mindMapDocumentSummary.statusExtracting': 'Extracting…',
@@ -775,7 +775,7 @@ export default {
   'canvas.mindMapDocumentSummary.pastePlaceholder': 'Paste paper excerpts, book summaries, meeting notes, requirements, and more.',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'Upload image:',
   'canvas.mindMapDocumentSummary.uploadImageHint': 'Click to upload JPG or PNG',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'We extract text from the image automatically',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'We detect hand-drawn mind maps and rebuild them; otherwise we extract text',
   'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'Hand-drawn mind map detected — rebuilt on canvas',
   'canvas.mindMapDocumentSummary.visionProgressDetecting': 'Detecting hand-drawn mind map…',
   'canvas.mindMapDocumentSummary.imageOcrHint': 'Works with note screenshots, whiteboard photos, and scans.',

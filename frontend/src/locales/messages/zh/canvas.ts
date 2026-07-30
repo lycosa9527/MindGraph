@@ -331,7 +331,7 @@ export default {
   'canvas.presentationTimer.closeHud': '关闭计时器',
   'canvas.presentation.learningSheetConfirmTitle': '进入放映？',
   'canvas.presentation.learningSheetConfirmBody':
-    '您仍在半成品图示编辑中。进入放映将结束挖空编辑，已挖空的内容会保留。是否继续？',
+    '您仍在挖空支架图编辑中。进入放映将结束挖空编辑，已挖空的内容会保留。是否继续？',
   'canvas.presentation.learningSheetConfirmProceed': '进入放映',
   'canvas.presentationContextMenu.laserPointer': '激光笔',
   'canvas.presentationContextMenu.spotlight': '聚光灯',
@@ -381,7 +381,7 @@ export default {
   'canvas.toolbar.learningSheetRestored': '已恢复学习单',
   'canvas.toolbar.moreAppConceptMapModes': '概念图模式',
   'canvas.toolbar.moreAppConceptMapModesDesc': '当前为标准模式，更多模式即将推出',
-  'canvas.toolbar.moreAppLearningSheet': '半成品图示',
+  'canvas.toolbar.moreAppLearningSheet': '挖空支架图',
   'canvas.toolbar.moreAppLearningSheetDesc': '随机留空，学习复习好搭子',
   'canvas.toolbar.moreAppWaterfall': 'AI头脑风暴',
   'canvas.toolbar.moreAppWaterfallDesc': '在批量节点中选择，发散聚合思维显性化',
@@ -465,7 +465,7 @@ export default {
   'canvas.toolbar.substepAdded': '已添加子步骤',
   'canvas.toolbar.substepDefault1': '子步骤{n}.1',
   'canvas.toolbar.substepDefault2': '子步骤{n}.2',
-  'canvas.toolbar.switchedLearningSheetMode': '已切换为半成品图示模式',
+  'canvas.toolbar.switchedLearningSheetMode': '已切换为挖空支架图模式',
   'canvas.toolbar.switchedToRegular': '已切换回普通模式',
   'canvas.toolbar.tagHot': '热门',
   'canvas.toolbar.tagSoon': '即将推出',
@@ -827,7 +827,7 @@ export default {
     '该文件提取出的文本过长，无法送给模型。请上传更短的文档（提取文本约 90 万字符以内）',
   'canvas.mindMapDocumentSummary.storageConflictCleared':
     '已保存的提取内容缺失或与存储不同步，已自动清除。请重新上传或粘贴文档。',
-  'canvas.mindMapSideToolbar.learningSheet': '半成品图示',
+  'canvas.mindMapSideToolbar.learningSheet': '挖空支架图',
   'canvas.mindMapSideToolbar.oneSentence': '一句话生成',
   'canvas.mindMapSideToolbar.oneSentenceIntro':
     '用一句话描述主题或修改要求，智能生成并调整导图',
@@ -883,11 +883,11 @@ export default {
   'canvas.mindMapSideToolbar.expandBranch': '展开分支',
   'canvas.mindMapSideToolbar.collapseBranch': '收起分支',
   'canvas.mindMapSideToolbar.aiGenerateDesc': '基于当前主题，用一句话智能扩展思维导图结构。',
-  'canvas.mindMapSideToolbar.enterLearningSheet': '开启半成品图示',
-  'canvas.mindMapSideToolbar.exitLearningSheet': '退出半成品图示',
+  'canvas.mindMapSideToolbar.enterLearningSheet': '开启挖空支架图',
+  'canvas.mindMapSideToolbar.exitLearningSheet': '退出挖空支架图',
   'canvas.mindMapSideToolbar.restoreFullDiagram': '还原为完整图示',
   'canvas.mindMapSideToolbar.learningSheetIntro':
-    '选择一种方式创建半成品图示，适合课堂练习与复习。',
+    '选择一种方式创建挖空支架图，适合课堂练习与复习。',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': '随机留空',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc':
     '系统自动随机挖空约 20% 的节点，参考答案显示在图示下方。',

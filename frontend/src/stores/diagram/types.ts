@@ -11,6 +11,18 @@ export type LoadFromSpecOptions = {
    * newly built nodes by id so typography survives structural reloads (e.g. flow / double-bubble).
    */
   mergePreviousNodeStyles?: boolean
+  /**
+   * Mind-map LLM model switch: keep overlapping measured widths/heights so the canvas
+   * does not wait on a full ResizeObserver storm before layout settles.
+   */
+  preserveMindMapMeasures?: boolean
+  /**
+   * Mind-map with stamped `nodes[]`+`connections[]`: load positions as-is via generic
+   * loader instead of re-running `loadMindMapSpec` (LLM model switch).
+   */
+  preferLaidOutMindMapNodes?: boolean
+  /** When true, canvas fit listeners keep the current viewport (LLM model switch). */
+  skipFit?: boolean
 }
 
 export type DiagramEventType =
@@ -112,6 +124,8 @@ export interface DiagramContext {
   getMindMapDescendantIds: (rootNodeId: string) => Set<string>
   getTreeMapDescendantIds: (nodeId: string) => Set<string>
   setExpectedNodeCount: (count: number) => void
+  /** Arm mind-map measure batch so ResizeObserver reports coalesce into one recalc. */
+  armMindMapMeasureBatch: (count: number) => void
   /** Coalesce mind-map layout invalidations to one recalc per animation frame. */
   scheduleMindMapRecalc: () => void
   /**

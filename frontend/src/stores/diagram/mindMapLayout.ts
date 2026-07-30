@@ -29,15 +29,74 @@ import type { DiagramContext } from './types'
  * Mind map layout width tracking slice.
  * Manages topic-node and per-node measured widths,
  * triggering reactive column-position recalculation.
+ *
+ * Batch mode (after loadFromSpec): ResizeObserver reports update maps but skip
+ * scheduleMindMapRecalc until the pending count hits 0 or a short safety flush.
  */
 export function useMindMapLayoutSlice(ctx: DiagramContext) {
+  let pendingMindMapMeasureCount = 0
+  let measureBatchSafetyTimer: ReturnType<typeof setTimeout> | null = null
+  let measureBatchRaf1 = 0
+  let measureBatchRaf2 = 0
+
+  function clearMindMapMeasureBatchTimers(): void {
+    if (measureBatchSafetyTimer != null) {
+      clearTimeout(measureBatchSafetyTimer)
+      measureBatchSafetyTimer = null
+    }
+    if (measureBatchRaf1 !== 0) {
+      cancelAnimationFrame(measureBatchRaf1)
+      measureBatchRaf1 = 0
+    }
+    if (measureBatchRaf2 !== 0) {
+      cancelAnimationFrame(measureBatchRaf2)
+      measureBatchRaf2 = 0
+    }
+  }
+
+  function flushMindMapMeasureBatch(): void {
+    clearMindMapMeasureBatchTimers()
+    if (pendingMindMapMeasureCount <= 0) return
+    pendingMindMapMeasureCount = 0
+    if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
+      ctx.scheduleMindMapRecalc()
+    }
+  }
+
+  function armMindMapMeasureBatch(count: number): void {
+    clearMindMapMeasureBatchTimers()
+    pendingMindMapMeasureCount = Math.max(0, count)
+    if (pendingMindMapMeasureCount <= 0) return
+    measureBatchSafetyTimer = setTimeout(() => {
+      flushMindMapMeasureBatch()
+    }, 100)
+    measureBatchRaf1 = requestAnimationFrame(() => {
+      measureBatchRaf2 = requestAnimationFrame(() => {
+        flushMindMapMeasureBatch()
+      })
+    })
+  }
+
+  function scheduleAfterMindMapMeasure(changed: boolean): void {
+    if (!changed) return
+    if (ctx.type.value !== 'mindmap' && ctx.type.value !== 'mind_map') return
+    if (pendingMindMapMeasureCount > 0) {
+      pendingMindMapMeasureCount -= 1
+      if (pendingMindMapMeasureCount <= 0) {
+        pendingMindMapMeasureCount = 0
+        clearMindMapMeasureBatchTimers()
+        ctx.scheduleMindMapRecalc()
+      }
+      return
+    }
+    ctx.scheduleMindMapRecalc()
+  }
+
   function setMindMapTopicWidth(width: number): void {
     const prev = ctx.mindMapTopicActualWidth.value
     if (prev != null && Math.abs(prev - width) < 1) return
     ctx.mindMapTopicActualWidth.value = width
-    if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
-      ctx.scheduleMindMapRecalc()
-    }
+    scheduleAfterMindMapMeasure(true)
   }
 
   function setMindMapNodeWidth(nodeId: string, width: number | null): void {
@@ -54,9 +113,7 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
         changed = true
       }
     }
-    if (changed && (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map')) {
-      ctx.scheduleMindMapRecalc()
-    }
+    scheduleAfterMindMapMeasure(changed)
   }
 
   function setMindMapNodeDimensions(
@@ -114,9 +171,7 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
       )
     }
 
-    if (changed && (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map')) {
-      ctx.scheduleMindMapRecalc()
-    }
+    scheduleAfterMindMapMeasure(changed)
   }
 
   function setMindMapTopicMeasured(width: number, height: number): void {
@@ -134,17 +189,18 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
       changed = true
     }
 
-    if (changed && (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map')) {
-      ctx.scheduleMindMapRecalc()
-    }
+    scheduleAfterMindMapMeasure(changed)
   }
 
   function clearMindMapNodeWidths(): void {
+    pendingMindMapMeasureCount = 0
+    clearMindMapMeasureBatchTimers()
     ctx.mindMapNodeWidths.value = {}
     ctx.mindMapNodeHeights.value = {}
   }
 
   return {
+    armMindMapMeasureBatch,
     setMindMapTopicWidth,
     setMindMapTopicMeasured,
     setMindMapNodeWidth,

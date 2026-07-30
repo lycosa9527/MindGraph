@@ -565,8 +565,19 @@ function buildEdgeRows(options: MindMapConnectorDebugDumpOptions): MindMapConnec
   return rows
 }
 
+let hasWarnedConnectorDebugFps = false
+
 export function dumpMindMapConnectorDebug(options: MindMapConnectorDebugDumpOptions): void {
   if (!isMindMapConnectorDebugEnabled()) return
+
+  if (!hasWarnedConnectorDebugFps) {
+    hasWarnedConnectorDebugFps = true
+    console.warn(
+      '[MindMap] Connector debug is ON — dumps after every layout hurt FPS. ' +
+        'Disable: localStorage.setItem("mindgraph.debugMindMapConnectors","0") ' +
+        'or mindMapConnectorDebug.disable(), then reload.'
+    )
+  }
 
   if (isMindMapConnectorVerboseDebugEnabled()) {
     setMindMapVerboseRecalcGen(options.recalcGeneration)

@@ -18,6 +18,7 @@ import {
 } from '@/types/vueflow'
 import { withClassicMindMapTopicSourceHandle } from '@/utils/classicMindMapTopicHandles'
 import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
 
 import {
   recalculateBraceMapLayout,
@@ -412,6 +413,11 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     return edges
   })
 
+  /** One parent→sibling list map for v2 orthogonal edges (avoids per-edge O(E) filter). */
+  const mindMapOrthogonalSiblingsByGroup = computed(() =>
+    buildMindMapOrthogonalSiblingMap(vueFlowEdges.value)
+  )
+
   function updateNodePosition(
     nodeId: string,
     position: { x: number; y: number },
@@ -483,6 +489,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     mindMapV2LayoutNodes,
     vueFlowNodes,
     vueFlowEdges,
+    mindMapOrthogonalSiblingsByGroup,
     updateNodePosition,
     updateNodesFromVueFlow,
     syncFromVueFlow,

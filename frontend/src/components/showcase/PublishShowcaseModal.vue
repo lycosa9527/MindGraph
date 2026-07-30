@@ -89,6 +89,9 @@ const {
   goNext,
   goPrev,
   generateDescription,
+  markDescriptionDirty,
+  markDesignHighlightsDirty,
+  markTeachingReflectionDirty,
   submit,
   caseTypeIcon,
   CASE_TYPE_PUBLISH_OPTIONS,
@@ -640,7 +643,7 @@ const {
                           aiGeneratePhase === 'sending' ||
                           aiGeneratePhase === 'waiting' ||
                           aiGeneratePhase === 'streaming'
-                            ? t('showcase.publishModal.aiGenerating')
+                            ? t('showcase.publishModal.aiGenerateStop')
                             : t('showcase.publishModal.aiGenerate')
                         }}
                       </button>
@@ -656,6 +659,7 @@ const {
                         : t('showcase.publishModal.introPlaceholder')
                     "
                     class="publish-field"
+                    @input="markDescriptionDirty"
                   />
                 </div>
 
@@ -671,6 +675,7 @@ const {
                       maxlength="5000"
                       :placeholder="t('showcase.publishModal.highlightsPlaceholder')"
                       class="publish-field"
+                      @input="markDesignHighlightsDirty"
                     />
                   </div>
 
@@ -684,6 +689,7 @@ const {
                       maxlength="5000"
                       :placeholder="t('showcase.publishModal.reflectionPlaceholder')"
                       class="w-full rounded-xl border border-gray-100 px-4 py-2.5 text-sm shadow-sm outline-none focus:border-gray-200 focus:ring-2 focus:ring-gray-200/40"
+                      @input="markTeachingReflectionDirty"
                     />
                   </div>
                 </template>

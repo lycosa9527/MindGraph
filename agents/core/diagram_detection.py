@@ -125,6 +125,7 @@ async def _detect_diagram_type_from_prompt(
             model=model,
             max_tokens=50,
             temperature=0.3,
+            structured_json=False,
             user_id=user_id,
             organization_id=organization_id,
             request_type=request_type,

@@ -1,5 +1,5 @@
 /**
- * af UI � thinkingCoins
+ * en UI � thinkingCoins
  */
 
 export const thinkingCoinsMessages = {
@@ -23,7 +23,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.insufficientBody': 'Complete tasks below or try again later',
   'thinkingCoins.checkedInToday': 'Checked in today',
   'thinkingCoins.usageDoneToday': 'Completed today',
-  'thinkingCoins.casePendingHint': 'Reward after approval',
+  'thinkingCoins.casePendingHint': 'Coming soon',
   'thinkingCoins.schoolInfo': 'Contact your school admin for school plans',
   'thinkingCoins.school.headline': 'AI-powered thinking · school solutions',
   'thinkingCoins.school.description': 'Private deployment, custom features, and full operations support for schools and institutions — built for scale, branding, and data security.',

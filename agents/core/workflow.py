@@ -27,6 +27,7 @@ from agents.core.generate_events import (
 )
 from agents.core.agent_result import artifact_metadata, artifact_to_spec_or_error, normalize_agent_generation_result
 from agents.core.agent_routing import AgentGenerateRoute, resolve_agent_generate_route
+from agents.core.autocomplete_topic_lock import apply_locked_topic_to_spec, resolve_locked_topic
 from agents.core.prompt_requirements import (
     AgentRequirementParams,
     build_generation_user_message,
@@ -162,6 +163,7 @@ async def _generate_spec_with_agent(
     structure_mode: str = "free",
     fixed_nodes: dict | None = None,
     constraints: str = "",
+    locked_topic: str | None = None,
     mind_map_topic: str | None = None,
     expand_branch: str | None = None,
     reference_branches: list | None = None,
@@ -213,6 +215,9 @@ async def _generate_spec_with_agent(
             route.kwargs["reference_branches"] = reference_branches or []
             route.kwargs["existing_branch_children"] = existing_branch_children or []
             route.kwargs["parent_branch"] = (parent_branch or "").strip()
+        topic_lock = (locked_topic or "").strip()
+        if topic_lock:
+            route.kwargs["locked_topic"] = topic_lock
         logger.debug("Agent route mode: %s", route.mode)
 
         result = await _invoke_agent_route(
@@ -260,6 +265,7 @@ async def agent_graph_workflow_with_styles(
     # File Center: diagram-linked package scoping for RAG
     diagram_id=None,
     rag_document_ids=None,
+    locked_topic=None,
     mind_map_topic=None,
     expand_branch=None,
     reference_branches=None,
@@ -589,6 +595,7 @@ Please generate a more accurate and detailed diagram based on the above context.
                 structure_mode=agent_params.structure_mode,
                 fixed_nodes=agent_params.fixed_nodes,
                 constraints=agent_params.constraints,
+                locked_topic=locked_topic,
                 mind_map_topic=mind_map_topic,
                 expand_branch=expand_branch,
                 reference_branches=reference_branches,
@@ -605,6 +612,19 @@ Please generate a more accurate and detailed diagram based on the above context.
 
         agent_meta = artifact_metadata(agent_artifact)
         spec = artifact_to_spec_or_error(agent_artifact)
+
+        topic_to_lock = resolve_locked_topic(
+            locked_topic,
+            request_type=request_type or "",
+            user_prompt=user_prompt or "",
+        )
+        if topic_to_lock and isinstance(spec, dict) and not spec.get("error"):
+            apply_locked_topic_to_spec(spec, topic_to_lock, diagram_type)
+            logger.info(
+                "Autocomplete topic lock applied: diagram=%s topic=%r",
+                diagram_type,
+                topic_to_lock[:80],
+            )
 
         if not spec or (isinstance(spec, dict) and spec.get("error")):
             logger.error("Failed to generate spec for %s", diagram_type)

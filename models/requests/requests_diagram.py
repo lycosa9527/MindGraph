@@ -119,6 +119,14 @@ class GenerateRequest(BaseModel):
         max_length=5000,
         description="Optional generation requirements separate from the main prompt (canvas one-sentence)",
     )
+    locked_topic: Optional[str] = Field(
+        None,
+        max_length=500,
+        description=(
+            "Canvas central topic that must not change on autocomplete "
+            "(server overwrites returned topic/title/whole/event)"
+        ),
+    )
     # Mind map branch sub-graph expansion (canvas floating toolbar)
     mind_map_topic: Optional[str] = Field(
         None,

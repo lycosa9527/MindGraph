@@ -121,7 +121,7 @@ export type EventTypes = {
   }
   'diagram:style_changed': { nodeId?: string; style?: unknown; all?: boolean; preset?: boolean }
   'diagram:learning_sheet_changed': Record<string, never>
-  'diagram:loaded': { diagramType: string; spec?: unknown }
+  'diagram:loaded': { diagramType: string; spec?: unknown; skipFit?: boolean }
   'diagram:loaded_from_library': { diagramId: string; diagramType: string }
   'diagram:double_bubble_relayout_requested': Record<string, never>
   /** Increment diagram store layoutRecalcTrigger (e.g. after lazy-loaded KaTeX/markdown pipeline). */

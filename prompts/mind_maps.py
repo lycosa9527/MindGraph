@@ -79,6 +79,7 @@ CRITICAL Requirements:
 - Each node must have both id and text fields
 - Branches should follow MECE principle (Mutually Exclusive, Collectively Exhaustive)
 - Sub-items should have hierarchy and instructional guidance significance
+- NEVER put leaf concepts as direct children of topic — every main branch MUST have nested children[]
 - ALL children arrays must be properly closed with ]
 - ALL objects must be properly closed with }}
 - Use concise but educationally practical text
@@ -141,6 +142,7 @@ MIND_MAP_AGENT_GENERATION_ZH = """你是一名专为提升教师思维教学水�
 - 每个节点必须有id和text字段
 - 分支应该遵循MECE原则（相互独立，完全穷尽）
 - 子项应该具有层次性和教学指导意义
+- 禁止把叶子概念直接挂在中心主题下——每个主分支必须包含嵌套的 children[]
 - 所有children数组必须用]正确闭合
 - 所有对象必须用}}正确闭合
 - 使用简洁但具有教学实践指导价值的文本

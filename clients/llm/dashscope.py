@@ -517,6 +517,7 @@ class DeepSeekClient:
         messages: List[Dict],
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Send async chat completion request to DeepSeek R1
@@ -525,6 +526,7 @@ class DeepSeekClient:
             messages: List of message dictionaries with 'role' and 'content'
             temperature: Sampling temperature (0.0 to 1.0), None uses default
             max_tokens: Maximum tokens in response
+            **kwargs: Optional extras (e.g. response_format for JSON mode)
 
         Returns:
             Dict with 'content' and 'usage' keys
@@ -538,6 +540,8 @@ class DeepSeekClient:
             payload["messages"] = messages
             payload["temperature"] = temperature
             payload["max_tokens"] = max_tokens
+            if "response_format" in kwargs:
+                payload["response_format"] = kwargs.pop("response_format")
 
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
@@ -593,9 +597,15 @@ class DeepSeekClient:
         messages: List[Dict],
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """Alias for async_chat_completion for API consistency"""
-        return await self.async_chat_completion(messages, temperature, max_tokens)
+        return await self.async_chat_completion(
+            messages,
+            temperature,
+            max_tokens,
+            **kwargs,
+        )
 
     async def async_stream_chat_completion(
         self,
@@ -603,6 +613,7 @@ class DeepSeekClient:
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
         enable_thinking: bool = False,
+        **kwargs: Any,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat completion from DeepSeek R1 (async generator).
@@ -612,6 +623,7 @@ class DeepSeekClient:
             temperature: Sampling temperature (0.0 to 1.0), None uses default
             max_tokens: Maximum tokens in response
             enable_thinking: Whether to enable thinking mode (for DeepSeek R1)
+            **kwargs: Optional extras (e.g. response_format for JSON mode)
 
         Yields:
             Dict with 'type' and 'content' keys:
@@ -629,6 +641,8 @@ class DeepSeekClient:
             payload["max_tokens"] = max_tokens
             payload["stream"] = True
             payload["stream_options"] = {"include_usage": True}
+            if "response_format" in kwargs:
+                payload["response_format"] = kwargs.pop("response_format")
 
             # Enable thinking mode if requested
             if "extra_body" not in payload:

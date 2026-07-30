@@ -1,5 +1,5 @@
 /**
- * hi UI � common
+ * en UI � common
  */
 
 export default {
@@ -147,7 +147,7 @@ export default {
   'mobile.kittyKeyboardToggle': 'Text input',
   'mobile.kittyEnd': 'End',
   'mobile.kittyWelcomeLine': 'Share your ideas',
-  'mobile.kittyWelcomeSub': 'Ask by voice with photo support. Open a saved diagram on your phone or desktop so Kitty stays in sync with MindGraph.',
+  'mobile.kittyWelcomeSub': 'Ask by voice or type. Open a saved diagram on your phone or desktop so Kitty stays in sync with MindGraph.',
   'mobile.kittyNeedsDesktopOwner': 'Open this diagram on desktop MindGraph to apply edits. Phone Kitty can still chat until the canvas is connected.',
   'mobile.kittyConnecting': 'Connecting…',
   'mobile.kittyInputPlaceholder': 'Type a message…',
@@ -158,7 +158,7 @@ export default {
   'mobile.kittyDiagramCardTapHint': 'Tap to choose a diagram',
   'mobile.kittyDiagramUpdated': 'Diagram updated',
   'mobile.kittyConnectFailed': 'Connection failed. Check your network and try again.',
-  'mobile.kittyDisconnected': 'Voice connection lost. Hold the mic to reconnect.',
+  'mobile.kittyDisconnected': 'Voice connection lost. Reconnecting…',
   'mobile.kittyEnableServerHint': 'Enable FEATURE_KITTY_AGENT=True in server .env and restart the API.',
   'mobile.kittyServerDisabledBanner': 'Kitty voice is disabled in this environment. Enable FEATURE_KITTY_AGENT in server .env and restart.',
   'mobile.kittyDiagramPickerTitle': 'Choose diagram',
@@ -168,9 +168,9 @@ export default {
   'mobile.kittyDiagramPickerNoMatch': 'No matching diagrams',
   'mobile.kittyCreateNewMindmap': 'Create new mind map',
   'mobile.kittyNewMindmapTitle': 'New mind map',
-  'mobile.kittyNewMindmapCreated': 'New mind map started; desktop will open a blank canvas.',
+  'mobile.kittyNewMindmapCreated': 'New mind map saved; desktop will open it.',
   'mobile.kittyNewMindmapCreateFailed': 'Could not create the mind map. Please try again.',
-  'mobile.kittyNewMindmapDesktopFailed': 'New mind map started, but desktop could not be notified.',
+  'mobile.kittyNewMindmapDesktopFailed': 'Mind map saved, but desktop could not be notified.',
   'mobile.kittyDiagramPinned': 'Pinned',
   'mobile.kittyDiagramPickFailed': 'Could not load that diagram. Try again later.',
   'mobile.kittyEphemeralScopePinned': 'Using a temporary session — choose or create a saved diagram to sync with desktop.',
@@ -218,7 +218,7 @@ export default {
   'mobile.kittyScopeKeepSplit': 'Keep phone and desktop on different diagrams',
   'meta.pageTitle.notFound': 'Page not found',
   'meta.pageTitle.privacy': 'Terms & Privacy',
-  'meta.pageTitle.publicDashboard': 'Statistics',
+  'meta.pageTitle.publicDashboard': 'MG National Data Center',
   'meta.pageTitle.schoolDashboard': 'School dashboard',
   'meta.pageTitle.smartResponse': 'Smart response',
   'meta.pageTitle.template': 'Templates',
