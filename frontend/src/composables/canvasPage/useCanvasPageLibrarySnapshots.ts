@@ -13,6 +13,11 @@ import { useSnapshotHistory } from '@/composables/editor/useSnapshotHistory'
 import { type LLMResult, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
+import { mindMapLibraryLoadOptions } from '@/utils/mindMapLibraryLoadOptions'
+import {
+  beginMindMapLoadSession,
+  markMindMapLoadStage,
+} from '@/utils/mindMapLoadDebug'
 
 import { diagramTypeMap } from './diagramTypeMaps'
 import { shouldSkipLibraryReloadForActiveDiagram } from './skipLibraryReloadDuringGeneration'
@@ -43,7 +48,10 @@ export function useCanvasPageLibrarySnapshots(options: {
       return true
     }
 
+    beginMindMapLoadSession('library')
+    markMindMapLoadStage('library:fetch:start', { diagramId })
     const result = await savedDiagramsStore.getDiagram(diagramId)
+    markMindMapLoadStage('library:fetch:done', { ok: result.ok })
     if (!result.ok) {
       notify.error(t('canvas.library.diagramNotFound'))
       const nextQuery = { ...router.currentRoute.value.query }
@@ -73,16 +81,22 @@ export function useCanvasPageLibrarySnapshots(options: {
       llmResultsStore.clearCache()
     }
 
-    eventBus.emit('diagram:loaded_from_library', {
-      diagramId,
-      diagramType: diagram.diagram_type,
-    })
     if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
       await loadDiagramMarkdownPipeline({ bumpLayout: false })
     }
-    const loaded = diagramStore.loadFromSpec(specForLoad, diagram.diagram_type as DiagramType)
+    const loadOpts = mindMapLibraryLoadOptions(diagram.diagram_type, specForLoad)
+    const loaded = diagramStore.loadFromSpec(
+      specForLoad,
+      diagram.diagram_type as DiagramType,
+      loadOpts
+    )
 
     if (loaded) {
+      // Emit after Pinia replace so listeners do not read the previous diagram.
+      eventBus.emit('diagram:loaded_from_library', {
+        diagramId,
+        diagramType: diagram.diagram_type,
+      })
       uiStore.setSelectedChartType(
         Object.entries(diagramTypeMap).find(([_, v]) => v === diagram.diagram_type)?.[0] ||
           diagram.diagram_type
@@ -135,11 +149,14 @@ export function useCanvasPageLibrarySnapshots(options: {
 
       diagramStore.pushHistory(t('canvas.topBar.snapshotRecallHistory', { n: versionNumber }))
       llmResultsStore.clearCache()
-      eventBus.emit('diagram:loaded_from_library', { diagramId, diagramType })
       if (diagramSpecLikelyNeedsMarkdownPipeline(spec)) {
         await loadDiagramMarkdownPipeline({ bumpLayout: false })
       }
-      diagramStore.loadFromSpec(spec, diagramType)
+      const loadOpts = mindMapLibraryLoadOptions(diagramType, spec)
+      const recalled = diagramStore.loadFromSpec(spec, diagramType, loadOpts)
+      if (recalled) {
+        eventBus.emit('diagram:loaded_from_library', { diagramId, diagramType })
+      }
       snapshotHistory.setActiveVersion(versionNumber)
     } finally {
       snapshotHistory.setRecallingVersion(null)

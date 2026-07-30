@@ -29,6 +29,11 @@ import {
   diagramTypeKeyForType,
   diagramTypeKeyFromDiagramType,
 } from '@/utils/diagramTypeKeys'
+import { mindMapLibraryLoadOptions } from '@/utils/mindMapLibraryLoadOptions'
+import {
+  beginMindMapLoadSession,
+  markMindMapLoadStage,
+} from '@/utils/mindMapLoadDebug'
 
 export interface UseMobileCanvasRouteLoaderOptions {
   diagramStore: ReturnType<typeof useDiagramStore>
@@ -83,7 +88,10 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
       return true
     }
 
+    beginMindMapLoadSession('library-mobile')
+    markMindMapLoadStage('library:fetch:start', { diagramId })
     const result = await savedDiagramsStore.getDiagram(diagramId)
+    markMindMapLoadStage('library:fetch:done', { ok: result.ok })
     if (!result.ok) {
       notifyError(translate('canvas.library.diagramNotFound'))
       const nextQuery = { ...route.query }
@@ -99,15 +107,20 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
     const spec = diagram.spec as Record<string, unknown>
     llmResultsStore.clearCache()
 
-    eventBus.emit('diagram:loaded_from_library', {
-      diagramId,
-      diagramType: diagram.diagram_type,
-    })
     if (diagramSpecLikelyNeedsMarkdownPipeline(spec)) {
       await loadDiagramMarkdownPipeline({ bumpLayout: false })
     }
-    const loaded = diagramStore.loadFromSpec(spec, diagram.diagram_type as DiagramType)
+    const loadOpts = mindMapLibraryLoadOptions(diagram.diagram_type, spec)
+    const loaded = diagramStore.loadFromSpec(
+      spec,
+      diagram.diagram_type as DiagramType,
+      loadOpts
+    )
     if (loaded) {
+      eventBus.emit('diagram:loaded_from_library', {
+        diagramId,
+        diagramType: diagram.diagram_type,
+      })
       const key = diagramTypeKeyFromDiagramType(diagram.diagram_type)
       if (key) uiStore.setSelectedChartType(key)
       return true
@@ -160,7 +173,11 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
             if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
               await loadDiagramMarkdownPipeline({ bumpLayout: false })
             }
-            const loaded = diagramStore.loadFromSpec(specForLoad, loadedType)
+            const loaded = diagramStore.loadFromSpec(
+              specForLoad,
+              loadedType,
+              mindMapLibraryLoadOptions(loadedType, specForLoad)
+            )
             if (loaded) {
               const key = diagramTypeKeyForType(loadedType)
               if (key) {

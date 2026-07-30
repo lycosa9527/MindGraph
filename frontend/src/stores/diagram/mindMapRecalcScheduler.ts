@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 
 import type { DiagramType } from '@/types'
+import { markMindMapLoadRecalc } from '@/utils/mindMapLoadDebug'
 
 /**
  * Coalesce burst mind-map layout invalidations (e.g. many ResizeObservers on load)
@@ -17,6 +18,7 @@ export function createMindMapRecalcScheduler(
   let rafId: number | null = null
 
   function runRecalc(): void {
+    markMindMapLoadRecalc()
     syncStorePositions?.()
     mindMapRecalcTrigger.value++
   }

@@ -124,6 +124,11 @@
     transform 0.2s ease;
 }
 
+/* Suppress position animation while measure-batch settles after loadFromSpec */
+.diagram-canvas--bulk-load .vue-flow__node {
+  transition: none;
+}
+
 /* Mind map: allow four-directional + handles to extend outside node bounds */
 .vue-flow__node-branch:has(.mind-map-node),
 .vue-flow__node-branch:has(.mind-map-legacy-node),

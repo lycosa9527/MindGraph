@@ -2,7 +2,7 @@
 /**
  * MindMapV2BranchNode — v2 mind map branch node (themes, shapes, underline, subgraph ring).
  */
-import { computed, inject, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
@@ -37,6 +37,7 @@ import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { markMindMapLoadShellMounted } from '@/utils/mindMapLoadDebug'
 import { applyNodeShapeToStyle, mindMapUnderlineHandleStyle } from '@/utils/nodeShapeStyle'
 
 import InlineEditableText from '../InlineEditableText.vue'
@@ -267,6 +268,10 @@ useNodeDimensions(branchNodeRef, props.id, {
     }
     diagramStore.setMindMapNodeDimensions(props.id, w, h)
   },
+})
+
+onMounted(() => {
+  markMindMapLoadShellMounted('branch')
 })
 
 function handleTextSave(newText: string) {

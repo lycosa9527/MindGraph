@@ -14,6 +14,10 @@ import {
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 import { readEffectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import {
+  beginMindMapSpecLoadSession,
+  markMindMapLoadStage,
+} from '@/utils/mindMapLoadDebug'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import {
@@ -32,6 +36,24 @@ import { cancelMindMapPendingInlineEdit } from './mindMapOps'
 import { resyncMindMapConnectionStrokeColorsForActiveMode } from './mindMapStylePreservation'
 import type { DiagramContext, LoadFromSpecOptions } from './types'
 
+function seedMindMapMeasuresFromEstimates(
+  nodesToStore: DiagramNode[],
+  nextWidths: Record<string, number>,
+  nextHeights: Record<string, number>
+): void {
+  for (const node of nodesToStore) {
+    if (!node.id || node.type === 'boundary') continue
+    const ew = node.data?.estimatedWidth as number | undefined
+    const eh = node.data?.estimatedHeight as number | undefined
+    if (nextWidths[node.id] === undefined && ew != null && ew > 0) {
+      nextWidths[node.id] = ew
+    }
+    if (nextHeights[node.id] === undefined && eh != null && eh > 0) {
+      nextHeights[node.id] = eh
+    }
+  }
+}
+
 export function useSpecIOSlice(ctx: DiagramContext) {
   function loadFromSpec(
     spec: Record<string, unknown>,
@@ -39,6 +61,11 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     options?: LoadFromSpecOptions
   ): boolean {
     if (!spec || !diagramTypeValue) return false
+
+    if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
+      beginMindMapSpecLoadSession()
+      markMindMapLoadStage('spec:load:start', { diagramType: diagramTypeValue })
+    }
 
     ctx.resetSessionEditCount()
     // Library / template load replaces the tree — drop stale post-add inline-edit retries.
@@ -102,25 +129,20 @@ export function useSpecIOSlice(ctx: DiagramContext) {
           if (pw !== undefined) nextWidths[id] = pw
           if (ph !== undefined) nextHeights[id] = ph
         }
-        for (const node of nodesToStore) {
-          if (!node.id || node.type === 'boundary') continue
-          const ew = node.data?.estimatedWidth as number | undefined
-          const eh = node.data?.estimatedHeight as number | undefined
-          if (nextWidths[node.id] === undefined && ew != null && ew > 0) {
-            nextWidths[node.id] = ew
-          }
-          if (nextHeights[node.id] === undefined && eh != null && eh > 0) {
-            nextHeights[node.id] = eh
-          }
-        }
+        seedMindMapMeasuresFromEstimates(nodesToStore, nextWidths, nextHeights)
         ctx.mindMapNodeWidths.value = nextWidths
         ctx.mindMapNodeHeights.value = nextHeights
         ctx.mindMapTopicActualWidth.value =
-          nextNodeIds.has('topic') && preservedTopicWidth != null ? preservedTopicWidth : null
+          nextNodeIds.has('topic') && preservedTopicWidth != null
+            ? preservedTopicWidth
+            : (nextWidths.topic ?? null)
       } else {
-        ctx.mindMapNodeWidths.value = {}
-        ctx.mindMapNodeHeights.value = {}
-        ctx.mindMapTopicActualWidth.value = null
+        const nextWidths: Record<string, number> = {}
+        const nextHeights: Record<string, number> = {}
+        seedMindMapMeasuresFromEstimates(nodesToStore, nextWidths, nextHeights)
+        ctx.mindMapNodeWidths.value = nextWidths
+        ctx.mindMapNodeHeights.value = nextHeights
+        ctx.mindMapTopicActualWidth.value = nextWidths.topic ?? null
       }
       ctx.mindMapTopicBranchGaps.value = null
       ctx.mindMapRecalcTrigger.value = 0
@@ -241,6 +263,11 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       eventBus.emit('diagram:loaded', {
         diagramType: diagramTypeValue,
         skipFit: options?.skipFit === true,
+      })
+    }
+    if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
+      markMindMapLoadStage('spec:load:done', {
+        nodeCount: ctx.data.value?.nodes?.length ?? 0,
       })
     }
     return true

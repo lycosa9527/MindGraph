@@ -84,21 +84,88 @@ export function useDiagramCanvasFit(options: {
   const isFittedForPanel = ref(false)
   const hasInitialFitDoneForDiagram = ref(false)
   let fitFromNodesChangeTimeoutId: ReturnType<typeof setTimeout> | null = null
+  let fitAfterLoadTimeoutId: ReturnType<typeof setTimeout> | null = null
+  let pendingFitAfterMindMapBulk = false
   const fitEventUnsubscribers: Array<() => void> = []
+
+  function clearFitAfterLoadTimer(): void {
+    if (fitAfterLoadTimeoutId != null) {
+      clearTimeout(fitAfterLoadTimeoutId)
+      fitAfterLoadTimeoutId = null
+    }
+  }
+
+  function runMindMapFitAfterLoad(): void {
+    if (getNodes().length === 0) return
+    hasInitialFitDoneForDiagram.value = true
+    // Run on the next frame so fitView is not inside a long setTimeout task
+    // (Chrome "[Violation] setTimeout handler took …ms").
+    const apply = (): void => {
+      if (useMindMapV2.value) {
+        fitToFullCanvas(true)
+        return
+      }
+      centerDiagramAtDefaultZoom(false)
+      eventBus.emit('view:fit_completed', { mode: 'mind_map_centered', animate: false })
+    }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(apply)
+      })
+      return
+    }
+    apply()
+  }
+
+  function scheduleMindMapFitAfterLoad(): void {
+    clearFitAfterLoadTimer()
+    if (diagramStore.mindMapBulkLoading) {
+      pendingFitAfterMindMapBulk = true
+      return
+    }
+    // After measure settle, two rAFs are enough — avoid the 350ms init delay.
+    runMindMapFitAfterLoad()
+  }
 
   /** One-shot initial fit resets only when a new diagram is loaded, not on edits. */
   fitEventUnsubscribers.push(
     eventBus.on('diagram:loaded', (payload) => {
       if (payload?.skipFit) {
-        // LLM model switch: keep camera; treat fit as already done.
+        pendingFitAfterMindMapBulk = false
+        clearFitAfterLoadTimer()
         hasInitialFitDoneForDiagram.value = true
         return
       }
       hasInitialFitDoneForDiagram.value = false
+      // Soft reloads often reuse Vue Flow node ids — nodes-initialized may not
+      // re-fire. Mind maps wait for measure-batch; other types fit shortly.
+      if (isMindMapDiagramType(diagramStore.type)) {
+        scheduleMindMapFitAfterLoad()
+      } else if (diagramStore.type !== 'concept_map') {
+        clearFitAfterLoadTimer()
+        fitAfterLoadTimeoutId = setTimeout(() => {
+          fitAfterLoadTimeoutId = null
+          if (hasInitialFitDoneForDiagram.value) return
+          hasInitialFitDoneForDiagram.value = true
+          eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+        }, ANIMATION.FIT_VIEWPORT_DELAY)
+      }
     }),
     eventBus.on('diagram:loaded_from_library', () => {
       hasInitialFitDoneForDiagram.value = false
     })
+  )
+
+  watch(
+    () => diagramStore.mindMapBulkLoading,
+    (loading, wasLoading) => {
+      if (!pendingFitAfterMindMapBulk || wasLoading !== true || loading !== false) {
+        return
+      }
+      pendingFitAfterMindMapBulk = false
+      clearFitAfterLoadTimer()
+      runMindMapFitAfterLoad()
+    }
   )
 
   function getRightPanelWidth(): number {
@@ -398,7 +465,15 @@ export function useDiagramCanvasFit(options: {
     if (getNodes().length === 0) return
     if (!fitViewOnInit.value) {
       if (isMindMapDiagramType(diagramStore.type)) {
-        if (hasInitialFitDoneForDiagram.value) return
+        // Primary fit path is diagram:loaded → scheduleMindMapFitAfterLoad.
+        // Fallback only when that path did not arm (e.g. emitLoaded: false).
+        if (
+          hasInitialFitDoneForDiagram.value ||
+          pendingFitAfterMindMapBulk ||
+          fitAfterLoadTimeoutId != null
+        ) {
+          return
+        }
         hasInitialFitDoneForDiagram.value = true
         setTimeout(() => {
           if (useMindMapV2.value) {
@@ -481,6 +556,8 @@ export function useDiagramCanvasFit(options: {
       clearTimeout(fitFromNodesChangeTimeoutId)
       fitFromNodesChangeTimeoutId = null
     }
+    pendingFitAfterMindMapBulk = false
+    clearFitAfterLoadTimer()
     fitEventUnsubscribers.forEach((unsub) => unsub())
     fitEventUnsubscribers.length = 0
   }

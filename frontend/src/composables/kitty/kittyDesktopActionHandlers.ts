@@ -15,6 +15,7 @@ import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
+import { mindMapLibraryLoadOptions } from '@/utils/mindMapLibraryLoadOptions'
 
 type SavedDiagramsStore = ReturnType<typeof useSavedDiagramsStore>
 
@@ -107,9 +108,12 @@ export async function handleKittyReloadLibraryDiagramAction(
     return
   }
   const diagramStore = useDiagramStore()
+  const spec = result.diagram.spec as Record<string, unknown>
+  const diagramType = (result.diagram.diagram_type || 'mindmap') as DiagramType
   const loaded = diagramStore.loadFromSpec(
-    result.diagram.spec as Record<string, unknown>,
-    'mindmap'
+    spec,
+    diagramType,
+    mindMapLibraryLoadOptions(diagramType, spec)
   )
   if (loaded) {
     options.savedDiagramsStore.setActiveDiagram(targetId)

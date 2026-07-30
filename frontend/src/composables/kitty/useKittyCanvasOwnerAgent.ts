@@ -197,7 +197,9 @@ export function useKittyCanvasOwnerAgent(options: {
         releaseOwnership()
         return
       }
-      void ensureConnected()
+      // Debounce so loadFromSpec first paint is not competing with WS start +
+      // full diagram context JSON.stringify on the main thread.
+      scheduleReconnect()
     },
     { immediate: true }
   )

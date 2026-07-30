@@ -6,6 +6,7 @@ import { useDiagramStore } from '@/stores/diagram'
 import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
+import { mindMapLibraryLoadOptions } from '@/utils/mindMapLibraryLoadOptions'
 
 function normalizeDiagramType(raw: string): DiagramType | null {
   const slug = raw.trim() === 'mind_map' ? 'mindmap' : raw.trim()
@@ -39,7 +40,12 @@ export async function hydrateMobileKittyFromLibrary(diagramId: string): Promise<
   }
   savedDiagramsStore.setActiveDiagram(trimmed)
   diagramStore.clearHistory()
-  const ok = diagramStore.loadFromSpec(spec as Record<string, unknown>, dt)
+  const specRecord = spec as Record<string, unknown>
+  const ok = diagramStore.loadFromSpec(
+    specRecord,
+    dt,
+    mindMapLibraryLoadOptions(dt, specRecord)
+  )
   traceKittyWorkflow('mobile', 'library_hydrate', ok ? `ok type=${dt}` : 'load failed', {
     scope: trimmed,
   })

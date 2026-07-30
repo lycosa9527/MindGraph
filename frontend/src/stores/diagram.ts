@@ -72,6 +72,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   const mindMapPendingEditNodeId = ref<string | null>(null)
   const mindMapPreserveIncomingY = ref(false)
   const mindMapPreserveIncomingYNodeId = ref<string | null>(null)
+  const mindMapBulkLoading = ref(false)
   const nodeDimensions = ref<Record<string, { width: number; height: number }>>({})
   const layoutRecalcTrigger = ref(0)
   const sessionEditCount = ref(0)
@@ -116,6 +117,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     mindMapPendingEditNodeId,
     mindMapPreserveIncomingY,
     mindMapPreserveIncomingYNodeId,
+    mindMapBulkLoading,
     nodeDimensions,
     layoutRecalcTrigger,
     sessionEditCount,
@@ -430,6 +432,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     mindMapPendingEditNodeId.value = null
     mindMapPreserveIncomingY.value = false
     mindMapPreserveIncomingYNodeId.value = null
+    mindMapBulkLoading.value = false
     clearNodeDimensions()
     layoutRecalcTrigger.value = 0
     sessionEditCount.value = 0
@@ -589,6 +592,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     cancelMindMapPendingInlineEdit: () => cancelMindMapPendingInlineEdit(ctx),
     mindMapPreserveIncomingY,
     mindMapPreserveIncomingYNodeId,
+    mindMapBulkLoading,
     nodeDimensions,
     layoutRecalcTrigger,
     setNodeDimensions: setNodeDimensionsSlice,

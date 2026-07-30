@@ -152,6 +152,7 @@ const emit = defineEmits<{
 }>()
 
 const diagramStore = useDiagramStore()
+const { mindMapBulkLoading } = storeToRefs(diagramStore)
 const panelsStore = usePanelsStore()
 const uiStore = useUIStore()
 
@@ -582,6 +583,7 @@ defineExpose({
       'mind-map-canvas': useMindMapV2,
       'diagram-canvas--hand-tool': useHandToolPanClass,
       'diagram-canvas--learning-sheet-pick': isLearningSheetPickActive,
+      'diagram-canvas--bulk-load': mindMapBulkLoading,
     }"
     @contextmenu.capture="handleContextMenuEvent"
     @paste.capture="onCanvasPaste"

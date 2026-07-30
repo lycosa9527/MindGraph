@@ -88,6 +88,8 @@ export interface DiagramContext {
    * is held (diagnostics; cleared with the flag).
    */
   mindMapPreserveIncomingYNodeId: Ref<string | null>
+  /** True while measure-batch is active after loadFromSpec (suppress node transform). */
+  mindMapBulkLoading: Ref<boolean>
 
   // Generic node dimension tracking (actual DOM-measured sizes)
   nodeDimensions: Ref<Record<string, { width: number; height: number }>>

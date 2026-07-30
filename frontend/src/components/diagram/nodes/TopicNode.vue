@@ -1,9 +1,11 @@
 <script setup lang="ts">
 /**
- * TopicNode — routes mind maps to lazy legacy/v2 shells; other diagram types use TopicNodeDiagram.
+ * TopicNode — routes mind maps to legacy/v2 shells; other diagram types use TopicNodeDiagram.
+ * V2 shell is eager so library/autocomplete paint does not show empty slots before labels.
  */
 import { computed, defineAsyncComponent } from 'vue'
 
+import MindMapV2TopicNode from '@/components/diagram/nodes/mindMap/MindMapV2TopicNode.vue'
 import { useMindMapCanvasVisuals } from '@/composables/mindMap/useMindMapCanvasVisuals'
 import type { MindGraphNodeProps } from '@/types'
 
@@ -18,7 +20,6 @@ const useMindMapV2 = useMindMapCanvasVisuals()
 const MindMapLegacyTopicNode = defineAsyncComponent(
   () => import('./mindMap/MindMapLegacyTopicNode.vue')
 )
-const MindMapV2TopicNode = defineAsyncComponent(() => import('./mindMap/MindMapV2TopicNode.vue'))
 const TopicNodeDiagram = defineAsyncComponent(() => import('./TopicNodeDiagram.vue'))
 </script>
 

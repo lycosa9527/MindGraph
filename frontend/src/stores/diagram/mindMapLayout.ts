@@ -16,6 +16,11 @@ import type { Connection, DiagramNode } from '@/types'
 import { isMindMapConnectorVerboseDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { logMindMapProcess } from '@/utils/mindMapConnectorDebugVerbose'
 import {
+  markMindMapLoadFirstMeasure,
+  markMindMapLoadStage,
+  scheduleMindMapLoadSettle,
+} from '@/utils/mindMapLoadDebug'
+import {
   applyMindMapL1HeightDeltaShift,
   centerMindMapSidePacksOnTopic,
   computeSequentialRootStartYsFrom,
@@ -30,73 +35,135 @@ import type { DiagramContext } from './types'
  * Manages topic-node and per-node measured widths,
  * triggering reactive column-position recalculation.
  *
- * Batch mode (after loadFromSpec): ResizeObserver reports update maps but skip
- * scheduleMindMapRecalc until the pending count hits 0 or a short safety flush.
+ * Batch mode (after loadFromSpec): accumulate unique node measure reports, then
+ * one recalc when all expected nodes report (or safety timeout). Value-equal
+ * reports still count — seeded estimates often match DOM within 1px.
  */
+/** After the last unique measure report, flush without waiting for reused nodes. */
+const MEASURE_BATCH_QUIET_MS = 64
+/**
+ * Fallback when mounts never report. Cancelled on the first unique report so a
+ * long main-thread stall cannot leave an overdue timer racing quiet flush.
+ */
+const MEASURE_BATCH_ARM_SAFETY_MS = 1500
+/** Fallback after progress has started but quiet/count0 never completes. */
+const MEASURE_BATCH_PROGRESS_SAFETY_MS = 750
+
 export function useMindMapLayoutSlice(ctx: DiagramContext) {
-  let pendingMindMapMeasureCount = 0
+  let measureBatchExpected = 0
+  let measureBatchReported: Set<string> | null = null
   let measureBatchSafetyTimer: ReturnType<typeof setTimeout> | null = null
-  let measureBatchRaf1 = 0
-  let measureBatchRaf2 = 0
+  let measureBatchQuietTimer: ReturnType<typeof setTimeout> | null = null
 
   function clearMindMapMeasureBatchTimers(): void {
     if (measureBatchSafetyTimer != null) {
       clearTimeout(measureBatchSafetyTimer)
       measureBatchSafetyTimer = null
     }
-    if (measureBatchRaf1 !== 0) {
-      cancelAnimationFrame(measureBatchRaf1)
-      measureBatchRaf1 = 0
-    }
-    if (measureBatchRaf2 !== 0) {
-      cancelAnimationFrame(measureBatchRaf2)
-      measureBatchRaf2 = 0
+    if (measureBatchQuietTimer != null) {
+      clearTimeout(measureBatchQuietTimer)
+      measureBatchQuietTimer = null
     }
   }
 
-  function flushMindMapMeasureBatch(): void {
+  function clearMindMapMeasureBatchSafetyTimer(): void {
+    if (measureBatchSafetyTimer != null) {
+      clearTimeout(measureBatchSafetyTimer)
+      measureBatchSafetyTimer = null
+    }
+  }
+
+  function armMindMapMeasureBatchSafety(ms: number): void {
+    clearMindMapMeasureBatchSafetyTimer()
+    measureBatchSafetyTimer = setTimeout(() => {
+      measureBatchSafetyTimer = null
+      flushMindMapMeasureBatch('timeout')
+    }, ms)
+  }
+
+  function setBulkLoading(active: boolean): void {
+    ctx.mindMapBulkLoading.value = active
+  }
+
+  function isMeasureBatchActive(): boolean {
+    return measureBatchReported != null && measureBatchExpected > 0
+  }
+
+  function flushMindMapMeasureBatch(reason: 'count0' | 'quiet' | 'timeout'): void {
     clearMindMapMeasureBatchTimers()
-    if (pendingMindMapMeasureCount <= 0) return
-    pendingMindMapMeasureCount = 0
+    if (!isMeasureBatchActive()) {
+      setBulkLoading(false)
+      return
+    }
+    const reported = measureBatchReported?.size ?? 0
+    measureBatchExpected = 0
+    measureBatchReported = null
+    setBulkLoading(false)
+    markMindMapLoadStage('measure:batch:flush', { reason, reported })
     if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
       ctx.scheduleMindMapRecalc()
     }
+    scheduleMindMapLoadSettle(`batch:${reason}`)
   }
 
   function armMindMapMeasureBatch(count: number): void {
     clearMindMapMeasureBatchTimers()
-    pendingMindMapMeasureCount = Math.max(0, count)
-    if (pendingMindMapMeasureCount <= 0) return
-    measureBatchSafetyTimer = setTimeout(() => {
-      flushMindMapMeasureBatch()
-    }, 100)
-    measureBatchRaf1 = requestAnimationFrame(() => {
-      measureBatchRaf2 = requestAnimationFrame(() => {
-        flushMindMapMeasureBatch()
-      })
-    })
+    measureBatchExpected = Math.max(0, count)
+    if (measureBatchExpected <= 0) {
+      measureBatchReported = null
+      setBulkLoading(false)
+      return
+    }
+    measureBatchReported = new Set()
+    setBulkLoading(true)
+    markMindMapLoadStage('measure:batch:arm', { pending: measureBatchExpected })
+    // Arm-only safety — replaced by progress safety on the first unique report.
+    armMindMapMeasureBatchSafety(MEASURE_BATCH_ARM_SAFETY_MS)
   }
 
-  function scheduleAfterMindMapMeasure(changed: boolean): void {
-    if (!changed) return
+  function scheduleAfterMindMapMeasure(changed: boolean, nodeId?: string): void {
     if (ctx.type.value !== 'mindmap' && ctx.type.value !== 'mind_map') return
-    if (pendingMindMapMeasureCount > 0) {
-      pendingMindMapMeasureCount -= 1
-      if (pendingMindMapMeasureCount <= 0) {
-        pendingMindMapMeasureCount = 0
-        clearMindMapMeasureBatchTimers()
-        ctx.scheduleMindMapRecalc()
+
+    if (isMeasureBatchActive() && measureBatchReported) {
+      if (nodeId) {
+        const wasNew = !measureBatchReported.has(nodeId)
+        measureBatchReported.add(nodeId)
+        markMindMapLoadFirstMeasure(nodeId)
+        if (measureBatchReported.size >= measureBatchExpected) {
+          flushMindMapMeasureBatch('count0')
+          return
+        }
+        // Reused Vue Flow nodes often never re-measure; flush shortly after the
+        // last unique report instead of waiting for a full unique set.
+        if (wasNew) {
+          // Reset progress safety on each unique id so a 750ms-from-first
+          // timer cannot flush while unique reports are still streaming in.
+          armMindMapMeasureBatchSafety(MEASURE_BATCH_PROGRESS_SAFETY_MS)
+          if (measureBatchQuietTimer != null) {
+            clearTimeout(measureBatchQuietTimer)
+          }
+          measureBatchQuietTimer = setTimeout(() => {
+            measureBatchQuietTimer = null
+            flushMindMapMeasureBatch('quiet')
+          }, MEASURE_BATCH_QUIET_MS)
+        }
       }
       return
     }
+
+    if (!changed) return
     ctx.scheduleMindMapRecalc()
   }
 
   function setMindMapTopicWidth(width: number): void {
     const prev = ctx.mindMapTopicActualWidth.value
-    if (prev != null && Math.abs(prev - width) < 1) return
+    if (prev != null && Math.abs(prev - width) < 1) {
+      // Still count toward measure-batch even when estimate matches DOM.
+      scheduleAfterMindMapMeasure(false, 'topic')
+      return
+    }
     ctx.mindMapTopicActualWidth.value = width
-    scheduleAfterMindMapMeasure(true)
+    scheduleAfterMindMapMeasure(true, 'topic')
   }
 
   function setMindMapNodeWidth(nodeId: string, width: number | null): void {
@@ -113,7 +180,7 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
         changed = true
       }
     }
-    scheduleAfterMindMapMeasure(changed)
+    scheduleAfterMindMapMeasure(changed, nodeId)
   }
 
   function setMindMapNodeDimensions(
@@ -171,7 +238,7 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
       )
     }
 
-    scheduleAfterMindMapMeasure(changed)
+    scheduleAfterMindMapMeasure(changed, nodeId)
   }
 
   function setMindMapTopicMeasured(width: number, height: number): void {
@@ -189,12 +256,15 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
       changed = true
     }
 
-    scheduleAfterMindMapMeasure(changed)
+    // Always notify batch (unique-id settle); recalc only when values changed.
+    scheduleAfterMindMapMeasure(changed, 'topic')
   }
 
   function clearMindMapNodeWidths(): void {
-    pendingMindMapMeasureCount = 0
+    measureBatchExpected = 0
+    measureBatchReported = null
     clearMindMapMeasureBatchTimers()
+    setBulkLoading(false)
     ctx.mindMapNodeWidths.value = {}
     ctx.mindMapNodeHeights.value = {}
   }

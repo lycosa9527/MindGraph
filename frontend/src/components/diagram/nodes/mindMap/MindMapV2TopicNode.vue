@@ -2,7 +2,7 @@
 /**
  * MindMapV2TopicNode — v2 mind map topic node (themes, shapes, underline, trunk handles).
  */
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
@@ -34,6 +34,7 @@ import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { useDiagramStore, useLLMResultsStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { markMindMapLoadShellMounted } from '@/utils/mindMapLoadDebug'
 import {
   type NodeShape,
   applyNodeShapeToStyle,
@@ -212,6 +213,10 @@ useNodeDimensions(topicNodeRef, props.id, {
     if (isEditing.value) return
     diagramStore.setMindMapTopicMeasured(w, h)
   },
+})
+
+onMounted(() => {
+  markMindMapLoadShellMounted('topic')
 })
 
 function handleTextSave(newText: string) {

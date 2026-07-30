@@ -1,10 +1,12 @@
 <script setup lang="ts">
 /**
- * Lazy-loads exactly one mind map canvas shell (legacy or v2).
- * Remounts on mode switch so only the active variant's chunk is used.
+ * Routes mind maps to legacy or v2 canvas shells.
+ * V2 is eager — async canvas was the dominant library-open delay (~1–2s to first shell mount).
+ * Legacy stays lazy (rare mode switch).
  */
 import { computed, defineAsyncComponent } from 'vue'
 
+import MindMapV2Canvas from '@/components/diagram/MindMapV2Canvas.vue'
 import { useFeatureFlagsStore, useUIStore } from '@/stores'
 import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
@@ -19,7 +21,6 @@ const effectiveMode = computed(() =>
 )
 
 const MindMapLegacyCanvas = defineAsyncComponent(() => import('./MindMapLegacyCanvas.vue'))
-const MindMapV2Canvas = defineAsyncComponent(() => import('./MindMapV2Canvas.vue'))
 </script>
 
 <template>

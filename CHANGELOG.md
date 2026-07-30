@@ -5,6 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.155.4] - 2026-07-30
+
+> **Mind-map load: supersede rapid model-switch debug sessions; fit after settle on rAF.**
+
+### Fixed
+
+- **Overlapping load sessions** — Rapid LLM switches restart the `[MindMapLoad]` session when a prior `spec:load` is still open, instead of nesting stages ([`mindMapLoadDebug.ts`](frontend/src/utils/mindMapLoadDebug.ts), [`specIO.ts`](frontend/src/stores/diagram/specIO.ts)).
+- **Fit-after-load jank** — Post measure-batch zoom-fit uses double-`rAF` instead of a 350ms `setTimeout` (avoids long timer-handler violations) ([`useDiagramCanvasFit.ts`](frontend/src/composables/diagramCanvas/useDiagramCanvasFit.ts)).
+
+### Tests
+
+- **Frontend** — Load-debug session supersede on rapid `spec:load` ([`mindMapSoftLoadAndMeasureBatch.spec.ts`](frontend/tests/mindMapSoftLoadAndMeasureBatch.spec.ts)).
+
+## [5.155.3] - 2026-07-30
+
+> **Mind-map load audit: freeze layout during measure-batch; LLM model switch zoom-fits after settle.**
+
+### Fixed
+
+- **V2 layout crawl during measure-batch** — While `mindMapBulkLoading`, v2 layout holds stamped node XY so live width/height updates cannot reshape Vue Flow node-by-node before flush ([`vueFlowIntegration.ts`](frontend/src/stores/diagram/vueFlowIntegration.ts)).
+- **LLM model-switch zoom-fit** — Switching models always fits the diagram; mind-map v2 fits after measure-batch settle (soft reloads often skip `nodes-initialized`) ([`llmResults.ts`](frontend/src/stores/llmResults.ts), [`useDiagramCanvasFit.ts`](frontend/src/composables/diagramCanvas/useDiagramCanvasFit.ts)).
+- **Soft hydrate coverage** — Snapshot recall, Kitty desktop/mobile library hydrate, and mobile import use `mindMapLibraryLoadOptions`; library `diagram:loaded_from_library` emits after Pinia replace ([`useCanvasPageLibrarySnapshots.ts`](frontend/src/composables/canvasPage/useCanvasPageLibrarySnapshots.ts), [`kittyDesktopActionHandlers.ts`](frontend/src/composables/kitty/kittyDesktopActionHandlers.ts), [`hydrateMobileKittyFromLibrary.ts`](frontend/src/composables/kitty/hydrateMobileKittyFromLibrary.ts), [`useMobileCanvasRouteLoader.ts`](frontend/src/composables/mobile/useMobileCanvasRouteLoader.ts)).
+- **Measure-batch progress safety** — Progress timeout resets on each unique report so it cannot beat quiet while mounts are still streaming ([`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts)).
+
+## [5.155.2] - 2026-07-30
+
+> **Mind-map load: measure-batch quiet flush wins after long stalls; Kitty reconnect deferred off first paint.**
+
+### Fixed
+
+- **Measure-batch timeout race** — First unique measure report cancels the arm-time 1.5s safety and starts a 750ms progress safety, so a long main-thread stall cannot leave an overdue timer beating the 64ms quiet flush ([`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts)).
+- **Kitty canvas-owner connect** — Scope/enabled watch uses the existing 400ms reconnect debounce instead of immediate `ensureConnected`, so `loadFromSpec` first paint is not competing with WS start + full diagram context JSON ([`useKittyCanvasOwnerAgent.ts`](frontend/src/composables/kitty/useKittyCanvasOwnerAgent.ts)).
+
+### Tests
+
+- **Frontend** — Arm-safety cancel vs quiet; Kitty ownership waits for reconnect debounce ([`mindMapSoftLoadAndMeasureBatch.spec.ts`](frontend/tests/mindMapSoftLoadAndMeasureBatch.spec.ts), [`useKittyCanvasOwnerAgentOwnership.spec.ts`](frontend/tests/useKittyCanvasOwnerAgentOwnership.spec.ts)).
+
+## [5.155.1] - 2026-07-30
+
+> **Mind-map library open paints labels with layout; measure-batch no longer crawls node-by-node.**
+
+### Fixed
+
+- **Mind-map load paint** — Eager-import v2 canvas + topic/branch shells (async canvas was ~1–2s to first mount); library/mobile soft-loads stamped `nodes[]`/`connections[]` (without copying prior-diagram session measures) and seeds v2 measure maps from estimates; measure-batch settles on unique reports + 64ms quiet flush (reused Vue Flow nodes often skip ResizeObserver) with 1.5s safety timeout — removed double-rAF early flush; suppress Vue Flow node `transform` while bulk-loading ([`MindMapCanvasRouter.vue`](frontend/src/components/diagram/MindMapCanvasRouter.vue), [`TopicNode.vue`](frontend/src/components/diagram/nodes/TopicNode.vue), [`BranchNode.vue`](frontend/src/components/diagram/nodes/BranchNode.vue), [`mindMapLayout.ts`](frontend/src/stores/diagram/mindMapLayout.ts), [`mindMapLibraryLoadOptions.ts`](frontend/src/utils/mindMapLibraryLoadOptions.ts), [`specIO.ts`](frontend/src/stores/diagram/specIO.ts), [`diagramCanvas.css`](frontend/src/components/diagram/diagramCanvas.css)).
+
+### Added
+
+- **Mind-map load timers** — Opt-in `localStorage.setItem('mindmap_load_debug', '1')` logs `[MindMapLoad]` `performance.now()` stages (fetch → spec → shell → measure batch → recalcs → settle) ([`mindMapLoadDebug.ts`](frontend/src/utils/mindMapLoadDebug.ts)).
+
+### Tests
+
+- **Frontend** — Measure-batch late-mount / no early-flush / safety-timeout cases; library soft-load options helper ([`mindMapSoftLoadAndMeasureBatch.spec.ts`](frontend/tests/mindMapSoftLoadAndMeasureBatch.spec.ts)).
+
 ## [5.155.0] - 2026-07-30
 
 > **Showcase teaching-copy AI streams live; mind-map auto-complete locks the canvas topic and soft-loads model switches.**

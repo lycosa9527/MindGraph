@@ -1,7 +1,7 @@
 /**
  * Canvas owner must clear ownsKittySession when disabled or scope emptied.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { computed, effectScope, nextTick, ref } from 'vue'
 
@@ -79,6 +79,11 @@ describe('useKittyCanvasOwnerAgent ownership reset', () => {
     stopConversation.mockClear()
     isConnected.value = false
     isLiveForScope.mockReturnValue(true)
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('clears ownsKittySession when enabled becomes false', async () => {
@@ -92,6 +97,8 @@ describe('useKittyCanvasOwnerAgent ownership reset', () => {
       })
     })
     await nextTick()
+    // Connect is debounced so mind-map first paint is not blocked.
+    await vi.advanceTimersByTimeAsync(400)
     await Promise.resolve()
     expect(useKittySessionStore().ownsKittySession).toBe(true)
 
@@ -113,6 +120,7 @@ describe('useKittyCanvasOwnerAgent ownership reset', () => {
       })
     })
     await nextTick()
+    await vi.advanceTimersByTimeAsync(400)
     await Promise.resolve()
     expect(useKittySessionStore().ownsKittySession).toBe(true)
 

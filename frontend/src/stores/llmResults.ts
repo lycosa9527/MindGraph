@@ -204,7 +204,6 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     // Mind map: preserve theme / diagram style / canvas (LLM/vision specs omit them).
     let specToLoad = result.spec
     const currentData = diagramStore.data as Record<string, unknown> | null
-    const hadCanvasNodes = (diagramStore.data?.nodes?.length ?? 0) > 0
     if (diagramType === 'flow_map') {
       const currentOrientation = currentData?.orientation ?? 'horizontal'
       specToLoad = { ...result.spec, orientation: currentOrientation }
@@ -217,9 +216,8 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       specToLoad = applyLockedTopicToSpec(specToLoad, topicLock, diagramType)
     }
 
-    // Keep viewport on user model switch when a diagram is already painted.
-    // First AC result / empty→content still fits (isGenerating or no nodes).
-    const skipFit = !isGenerating.value && hadCanvasNodes
+    // Always zoom-fit after model switch so different LLM layouts are framed.
+    // Fit runs from diagram:loaded after mind-map measure-batch settle (v2).
     const softMindMapSwitch =
       isMindMapDiagramType(diagramType) &&
       Array.isArray(specToLoad.nodes) &&
@@ -234,7 +232,6 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       specToLoad,
       diagramType as import('@/types').DiagramType,
       {
-        skipFit,
         preserveMindMapMeasures: softMindMapSwitch,
         preferLaidOutMindMapNodes: softMindMapSwitch,
       }

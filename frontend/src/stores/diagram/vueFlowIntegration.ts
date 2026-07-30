@@ -111,6 +111,15 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     if (!ctx.data.value?.nodes) return null
     if (effectiveMindMapMode.value !== 'v2') return null
 
+    // Hold stamped XY while measure-batch accumulates — live width/height maps
+    // must not reshape Vue Flow node-by-node before flush.
+    if (ctx.mindMapBulkLoading.value) {
+      return {
+        nodes: ctx.data.value.nodes,
+        gaps: ctx.mindMapTopicBranchGaps.value ?? { left: 0, right: 0 },
+      }
+    }
+
     // Layout deps only — not selectedNodes, not recalc trigger (trigger remaps VF only).
     const connections = ctx.data.value.connections ?? []
     const collapsedPaths = getMindMapCollapsedPaths(ctx.data.value)
