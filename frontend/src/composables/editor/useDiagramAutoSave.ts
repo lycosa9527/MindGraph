@@ -9,16 +9,16 @@
  *   bypass the generating guard so each model persists without waiting for slow peers
  * - Content fingerprint computed + watch (Vue deep watch gives same ref for
  *   in-place mutations; computed fingerprint yields proper old/new on change)
+ * - Sync snapshot before the persist queue (leave/unmount must not race reset())
  * - Periodic interval save to catch position/style-only edits
  * - isDirty / isSaving flags for UI feedback
  *
  * Usage:
  *   const autoSave = useDiagramAutoSave({ getDiagramTitle, onSaved })
- *   // Composable sets up internal watch; no CanvasPage integration needed
- *   // On unmount: autoSave.teardown()
+ *   // On canvas leave: flushOnLeave() → teardown() → reset Pinia → clearActiveDiagram in finally
  */
 import { storeToRefs } from 'pinia'
-import { type ComputedRef, computed, onUnmounted, ref, watch } from 'vue'
+import { type ComputedRef, computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { eventBus } from '@/composables'
@@ -188,6 +188,23 @@ export interface UseDiagramAutoSaveOptions {
   isCollabActive?: ComputedRef<boolean>
 }
 
+type SaveAttemptOptions = {
+  bypassGeneratingGuard?: boolean
+  bypassSubgraphGuard?: boolean
+  bypassSuppressGuard?: boolean
+}
+
+type CapturedSave = {
+  title: string
+  diagramType: string
+  spec: Record<string, unknown>
+  language: string
+  editCount: number
+  fullFingerprint: string
+  /** Library row id at capture time (survive clearActiveDiagram during leave). */
+  targetDiagramId: string | null
+}
+
 export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   const router = useRouter()
   const route = useRoute()
@@ -207,6 +224,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   const lastSavedAt = ref<Date | null>(null)
   const isDirty = ref(false)
   const isSaving = ref(false)
+  let disposed = false
 
   let lastSavedFullFingerprint = ''
   let consecutiveSaveFailures = 0
@@ -229,7 +247,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     )
   }
 
-  function buildSaveEligibility(bypassGeneratingGuard = false) {
+  function buildSaveEligibility(saveOpts: SaveAttemptOptions = {}) {
     return {
       authenticated:
         authStore.isAuthenticated && !authStore.authVerificationBlockedByNetwork,
@@ -239,7 +257,9 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       isCollabGuest: Boolean(options.isCollabGuest?.value),
       collabSessionActive: Boolean(options.isCollabActive?.value),
       hasTypeAndData: Boolean(diagramStore.type && diagramStore.data),
-      bypassGeneratingGuard,
+      bypassGeneratingGuard: saveOpts.bypassGeneratingGuard === true,
+      bypassSubgraphGuard: saveOpts.bypassSubgraphGuard === true,
+      bypassSuppressGuard: saveOpts.bypassSuppressGuard === true,
     }
   }
 
@@ -272,50 +292,75 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     }
   }
 
-  async function performSaveInternal(
-    saveOpts: { bypassGeneratingGuard?: boolean } = {}
-  ): Promise<SaveFlushResult> {
-    if (!canPerformDiagramSave(buildSaveEligibility(saveOpts.bypassGeneratingGuard))) {
-      return { saved: false, reason: 'skipped_guards' }
+  function captureSaveAttempt(
+    saveOpts: SaveAttemptOptions = {}
+  ): { ok: true; captured: CapturedSave } | { ok: false; result: SaveFlushResult } {
+    if (!canPerformDiagramSave(buildSaveEligibility(saveOpts))) {
+      return { ok: false, result: { saved: false, reason: 'skipped_guards' } }
     }
     if (consecutiveSaveFailures >= MAX_CONSECUTIVE_SAVE_FAILURES) {
-      return { saved: false, reason: 'error' }
+      return { ok: false, result: { saved: false, reason: 'error' } }
     }
 
     const spec = getDiagramSpec()
-    if (!spec) return { saved: false, reason: 'skipped_empty' }
+    if (!spec) return { ok: false, result: { saved: false, reason: 'skipped_empty' } }
 
     const diagramType = diagramStore.type
-    if (!diagramType) return { saved: false, reason: 'skipped_empty' }
+    if (!diagramType) return { ok: false, result: { saved: false, reason: 'skipped_empty' } }
 
+    return {
+      ok: true,
+      captured: {
+        title: getTitle(),
+        diagramType,
+        spec,
+        language: promptLanguage.value,
+        editCount: diagramStore.sessionEditCount,
+        fullFingerprint: getFullFingerprint(diagramStore.data as DiagramDataLike),
+        targetDiagramId: savedDiagramsStore.activeDiagramId,
+      },
+    }
+  }
+
+  async function performSaveInternal(captured: CapturedSave): Promise<SaveFlushResult> {
     isSaving.value = true
     try {
       const result = await savedDiagramsStore.autoSaveDiagram(
-        getTitle(),
-        diagramType,
-        spec,
-        promptLanguage.value,
+        captured.title,
+        captured.diagramType,
+        captured.spec,
+        captured.language,
         null,
-        diagramStore.sessionEditCount
+        captured.editCount,
+        captured.targetDiagramId
       )
 
       if (result.success) {
         consecutiveSaveFailures = 0
         lastSavedAt.value = new Date()
-        lastSavedFullFingerprint = getFullFingerprint(diagramStore.data as DiagramDataLike)
-        isDirty.value = false
+        lastSavedFullFingerprint = captured.fullFingerprint
         diagramStore.resetSessionEditCount()
-        // Do not clone into llmResults cache on every debounce — stamp on model switch /
-        // first-result apply keeps presentation + UIDs for later switches.
-        options.onSaved?.({
-          action: result.action,
-          diagramId: result.diagramId,
-        })
-        if (result.action === 'saved' && result.diagramId) {
-          const canvasPath = canvasEditorPathForRoute(route.path)
-          const currentId = route.query.diagramId
-          if (String(currentId ?? '') !== String(result.diagramId)) {
-            router.replace({ path: canvasPath, query: { diagramId: result.diagramId } })
+
+        const currentFull = getFullFingerprint(diagramStore.data as DiagramDataLike)
+        if (!diagramStore.data || currentFull === captured.fullFingerprint) {
+          isDirty.value = false
+        } else {
+          // Newer edits landed after this snapshot — keep dirty and reschedule.
+          isDirty.value = true
+          if (!disposed) trigger()
+        }
+
+        if (!disposed) {
+          options.onSaved?.({
+            action: result.action,
+            diagramId: result.diagramId,
+          })
+          if (result.action === 'saved' && result.diagramId) {
+            const canvasPath = canvasEditorPathForRoute(route.path)
+            const currentId = route.query.diagramId
+            if (String(currentId ?? '') !== String(result.diagramId)) {
+              router.replace({ path: canvasPath, query: { diagramId: result.diagramId } })
+            }
           }
         }
         return { saved: true, reason: 'success' }
@@ -346,13 +391,17 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     }
   }
 
-  function performSave(saveOpts: { bypassGeneratingGuard?: boolean } = {}): Promise<SaveFlushResult> {
-    const next = persistQueue.then(() => performSaveInternal(saveOpts))
+  function performSave(saveOpts: SaveAttemptOptions = {}): Promise<SaveFlushResult> {
+    // Snapshot before persistQueue microtask so leave/reset cannot clear Pinia first.
+    const attempt = captureSaveAttempt(saveOpts)
+    if (!attempt.ok) return Promise.resolve(attempt.result)
+    const next = persistQueue.then(() => performSaveInternal(attempt.captured))
     persistQueue = next.catch((): SaveFlushResult => ({ saved: false, reason: 'error' }))
     return next
   }
 
   function trigger(): void {
+    if (disposed) return
     cancelDebounce()
     consecutiveSaveFailures = 0
     isDirty.value = true
@@ -361,7 +410,11 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     }, SAVE.AUTO_SAVE_DEBOUNCE_MS)
   }
 
-  async function flush(): Promise<SaveFlushResult> {
+  /**
+   * Immediate persist. Default bypasses subgraph busy (paste already applied).
+   * Pass leave-style bypasses from canvas unmount so suppress/LLM cannot drop the snapshot.
+   */
+  async function flush(saveOpts: SaveAttemptOptions = {}): Promise<SaveFlushResult> {
     cancelDebounce()
     if (!authStore.isAuthenticated) {
       return { saved: false, reason: 'skipped_guards' }
@@ -369,12 +422,31 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     if (!savedDiagramsStore.activeDiagramId && savedDiagramsStore.isSlotsFullyUsed) {
       return { saved: false, reason: 'skipped_slots_full' }
     }
-    return performSave()
+    return performSave({
+      bypassSubgraphGuard: true,
+      ...saveOpts,
+    })
+  }
+
+  /** Canvas leave: persist even while suppress / LLM / subgraph flags are still set. */
+  async function flushOnLeave(): Promise<SaveFlushResult> {
+    return flush({
+      bypassSubgraphGuard: true,
+      bypassSuppressGuard: true,
+      bypassGeneratingGuard: true,
+    })
   }
 
   const contentFingerprint = computed(() =>
     getContentFingerprint(diagramStore.data as DiagramDataLike)
   )
+
+  function markDirtyIfAheadOfLastSave(): void {
+    if (disposed || !diagramStore.data) return
+    const currentFull = getFullFingerprint(diagramStore.data as DiagramDataLike)
+    if (!currentFull || currentFull === lastSavedFullFingerprint) return
+    trigger()
+  }
 
   const stopContentWatch = watch(contentFingerprint, (newFP, oldFP) => {
     if (!newFP || oldFP === undefined || newFP === oldFP) return
@@ -383,7 +455,12 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       cancelDebounce()
       return
     }
-    if (!llmResultsStore.isGenerating && !isSuppressed.value) trigger()
+    if (!llmResultsStore.isGenerating && !isSuppressed.value) {
+      trigger()
+      return
+    }
+    // Suppress / LLM stream: remember dirty so end-of-suppress / canSave retry can flush.
+    isDirty.value = true
   })
 
   const stopTitleWatch = watch(
@@ -402,6 +479,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     suppressTimer = setTimeout(() => {
       isSuppressed.value = false
       suppressTimer = null
+      markDirtyIfAheadOfLastSave()
     }, ms)
   }
 
@@ -418,6 +496,12 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       if (isGen) cancelDebounce()
     }
   )
+
+  // Debounce often hits skipped_guards while subgraph is busy; retry when idle + dirty.
+  const stopCanSaveWatch = watch(canSave, (ok) => {
+    if (!ok || !isDirty.value || isSaving.value || disposed) return
+    void performSave()
+  })
 
   const stopLlmModelCompleted = eventBus.on(
     'llm:model_completed',
@@ -467,6 +551,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   startInterval()
 
   function teardown(): void {
+    disposed = true
     cancelDebounce()
     stopInterval()
     if (suppressTimer) {
@@ -476,6 +561,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     stopContentWatch()
     stopTitleWatch()
     stopIsGenerating()
+    stopCanSaveWatch()
     stopLlmModelCompleted()
     stopLlmComplete()
     stopLoadedFromLibrary()
@@ -486,11 +572,13 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     stopLearningSheetChanged()
   }
 
-  onUnmounted(teardown)
+  // Pages own teardown after flushOnLeave (see CanvasPage / MobileCanvasPage).
+  // Auto onUnmounted would run before the page leave hook and race capture.
 
   return {
     trigger,
     flush,
+    flushOnLeave,
     performSave,
     setSuppressFromLibrary,
     cancelTimer: cancelDebounce,

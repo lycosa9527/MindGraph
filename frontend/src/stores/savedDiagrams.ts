@@ -46,6 +46,25 @@ import { useUIStore } from './ui'
 // Security constants - must match backend limits
 const MAX_THUMBNAIL_SIZE = 150000 // Max base64 chars (~100KB decoded)
 
+/**
+ * Prefer a sync-captured library id (leave flush) over live ``activeDiagramId``,
+ * which may already have been cleared by canvas unmount.
+ */
+export function resolveAutoSaveTargetDiagramId(
+  targetDiagramId: string | null | undefined,
+  activeDiagramId: string | null | undefined
+): string | null {
+  if (typeof targetDiagramId === 'string') {
+    const trimmed = targetDiagramId.trim()
+    if (trimmed) return trimmed
+  }
+  if (typeof activeDiagramId === 'string') {
+    const trimmed = activeDiagramId.trim()
+    if (trimmed) return trimmed
+  }
+  return null
+}
+
 function diagramLimitMessage(max: number, apiDetail?: string): string {
   if (apiDetail && apiDetail.trim()) {
     return apiDetail.trim()
@@ -851,17 +870,14 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
   /**
    * Auto-save diagram logic:
-   * - If diagram is already saved (activeDiagramId set): update existing
+   * - If diagram is already saved (targetDiagramId or activeDiagramId): update existing
    * - If new diagram and slots available: save as new
    * - If new diagram and slots full: skip (return skipped status)
    * - If new diagram is empty/unmodified: skip (return skipped status)
    *
-   * @param title - Diagram title
-   * @param diagramType - Type of diagram
-   * @param spec - Diagram spec data
-   * @param language - Language code (default 'zh')
-   * @param thumbnail - Optional thumbnail
-   * @returns AutoSaveResult with action taken
+   * ``targetDiagramId`` is for leave/unmount flushes that captured the id before
+   * ``clearActiveDiagram()`` — without it, an in-flight save would create/skip
+   * instead of updating the library row.
    */
   async function autoSaveDiagram(
     title: string,
@@ -869,7 +885,8 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     spec: Record<string, unknown>,
     language: string = 'zh',
     thumbnail: string | null = null,
-    editCount: number = 0
+    editCount: number = 0,
+    targetDiagramId: string | null = null
   ): Promise<AutoSaveResult> {
     if (!authStore.isAuthenticated) {
       return { success: false, action: 'skipped', error: 'Not authenticated' }
@@ -878,8 +895,13 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     isAutoSaving.value = true
 
     try {
+      const diagramId = resolveAutoSaveTargetDiagramId(
+        targetDiagramId,
+        activeDiagramId.value
+      )
+
       // Case 1: Diagram is already saved - update it
-      if (activeDiagramId.value !== null) {
+      if (diagramId !== null) {
         const updates: {
           title: string
           spec: Record<string, unknown>
@@ -889,13 +911,12 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
         if (editCount > 0) {
           updates.edit_count = editCount
         }
-        const updated = await updateDiagram(activeDiagramId.value, updates)
+        const updated = await updateDiagram(diagramId, updates)
 
         if (updated) {
-          return { success: true, action: 'updated', diagramId: activeDiagramId.value }
-        } else {
-          return { success: false, action: 'error', error: 'Failed to update diagram' }
+          return { success: true, action: 'updated', diagramId }
         }
+        return { success: false, action: 'error', error: 'Failed to update diagram' }
       }
 
       // Case 2: New diagram - check if it's empty/unmodified
@@ -920,9 +941,8 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
           usePanelsStore().migrateAiBrainstormSessionToSavedDiagram(saved.id)
         }
         return { success: true, action: 'saved', diagramId: saved.id }
-      } else {
-        return { success: false, action: 'error', error: error.value || 'Failed to save diagram' }
       }
+      return { success: false, action: 'error', error: error.value || 'Failed to save diagram' }
     } catch (e) {
       console.error('[SavedDiagrams] Auto-save error:', e)
       return {

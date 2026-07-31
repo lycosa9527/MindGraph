@@ -8,6 +8,7 @@ import {
   saveFlushFailureMessageKey,
   shouldAutoSaveAfterLlmModelCompleted,
 } from '@/composables/editor/diagramSaveFeedback'
+import { resolveAutoSaveTargetDiagramId } from '@/stores/savedDiagrams'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 
 describe('resolveDiagramTitleForSave', () => {
@@ -74,6 +75,61 @@ describe('diagram save guards and feedback', () => {
     expect(canPerformDiagramSave({ ...duringGeneration, bypassGeneratingGuard: true })).toBe(true)
   })
 
+  it('allows leave flush while subgraph is busy only when bypass flag is set', () => {
+    const duringSubgraph = {
+      authenticated: true,
+      llmGenerating: false,
+      subgraphGenerating: true,
+      collabSessionActive: false,
+      isCollabGuest: false,
+      suppressed: false,
+      hasTypeAndData: true,
+    }
+    expect(canPerformDiagramSave(duringSubgraph)).toBe(false)
+    expect(canPerformDiagramSave({ ...duringSubgraph, bypassSubgraphGuard: true })).toBe(true)
+    // LLM bypass must not silently skip the subgraph guard.
+    expect(canPerformDiagramSave({ ...duringSubgraph, bypassGeneratingGuard: true })).toBe(false)
+  })
+
+  it('allows leave flush during suppress / LLM only with explicit leave bypasses', () => {
+    const duringSuppress = {
+      authenticated: true,
+      llmGenerating: false,
+      subgraphGenerating: false,
+      collabSessionActive: false,
+      isCollabGuest: false,
+      suppressed: true,
+      hasTypeAndData: true,
+    }
+    expect(canPerformDiagramSave(duringSuppress)).toBe(false)
+    expect(canPerformDiagramSave({ ...duringSuppress, bypassSuppressGuard: true })).toBe(true)
+
+    const leaveBusy = {
+      ...duringSuppress,
+      llmGenerating: true,
+      subgraphGenerating: true,
+    }
+    expect(canPerformDiagramSave(leaveBusy)).toBe(false)
+    expect(
+      canPerformDiagramSave({
+        ...leaveBusy,
+        bypassGeneratingGuard: true,
+        bypassSubgraphGuard: true,
+        bypassSuppressGuard: true,
+      })
+    ).toBe(true)
+    // Collab must still hard-block even on leave-style bypasses.
+    expect(
+      canPerformDiagramSave({
+        ...leaveBusy,
+        collabSessionActive: true,
+        bypassGeneratingGuard: true,
+        bypassSubgraphGuard: true,
+        bypassSuppressGuard: true,
+      })
+    ).toBe(false)
+  })
+
   it('blocks save when auth is blocked by offline verification', () => {
     expect(
       canPerformDiagramSave({
@@ -103,5 +159,18 @@ describe('diagram save guards and feedback', () => {
         isCollabGuest: false,
       }).llmGenerating
     ).toBe(true)
+  })
+})
+
+describe('resolveAutoSaveTargetDiagramId', () => {
+  it('keeps UPDATE target when live active id was cleared after leave capture', () => {
+    expect(resolveAutoSaveTargetDiagramId('lib-123', null)).toBe('lib-123')
+    expect(resolveAutoSaveTargetDiagramId('lib-123', 'stale-other')).toBe('lib-123')
+  })
+
+  it('falls back to live active id for normal in-session autosave', () => {
+    expect(resolveAutoSaveTargetDiagramId(null, 'lib-live')).toBe('lib-live')
+    expect(resolveAutoSaveTargetDiagramId('  ', 'lib-live')).toBe('lib-live')
+    expect(resolveAutoSaveTargetDiagramId(null, null)).toBeNull()
   })
 })

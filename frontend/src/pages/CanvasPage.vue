@@ -1276,9 +1276,10 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  void diagramAutoSave.flush().finally(() => {
-    diagramAutoSave.teardown()
-  })
+  // Capture spec + library id sync, then stop watches before Pinia reset.
+  // clearActiveDiagram waits for the network persist so UPDATE cannot become CREATE.
+  const flushPromise = diagramAutoSave.flushOnLeave()
+  diagramAutoSave.teardown()
   inlineRecCoordinator.teardown()
   eventBus.removeAllListenersForOwner('CanvasPage')
 
@@ -1288,7 +1289,6 @@ onUnmounted(() => {
 
   // Clean up state when leaving canvas - matches old JS behavior
   diagramStore.reset()
-  savedDiagramsStore.clearActiveDiagram()
   // One-sentence / Kitty chat is scoped per diagram; clear Pinia so a new canvas
   // does not show the previous diagram's conversation.
   oneSentenceStore.onCanvasReset()
@@ -1302,6 +1302,10 @@ onUnmounted(() => {
   setPresentationFullscreenRoot(null)
   void exitPresentationFullscreen()
   resetPreviousDiagramTracking()
+
+  void flushPromise.finally(() => {
+    savedDiagramsStore.clearActiveDiagram()
+  })
 })
 </script>
 

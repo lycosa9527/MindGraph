@@ -18,14 +18,21 @@ export interface DiagramSaveEligibility extends DiagramSaveGuardState {
   suppressed: boolean
   hasTypeAndData: boolean
   bypassGeneratingGuard?: boolean
+  /**
+   * Leave / explicit flush: canvas already holds applied subgraph paste while
+   * ``subgraphGenerating`` may still be true until ``finishJob``.
+   */
+  bypassSubgraphGuard?: boolean
+  /** Leave flush: post-load suppress must not drop the last snapshot. */
+  bypassSuppressGuard?: boolean
 }
 
 /** Shared guard for autosave, flush, and per-LLM-round persistence. */
 export function canPerformDiagramSave(state: DiagramSaveEligibility): boolean {
   if (!state.authenticated || !state.hasTypeAndData) return false
   if (!state.bypassGeneratingGuard && state.llmGenerating) return false
-  if (state.subgraphGenerating) return false
-  if (state.suppressed) return false
+  if (!state.bypassSubgraphGuard && state.subgraphGenerating) return false
+  if (!state.bypassSuppressGuard && state.suppressed) return false
   if (state.isCollabGuest || state.collabSessionActive) return false
   return true
 }

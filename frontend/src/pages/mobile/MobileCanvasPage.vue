@@ -270,20 +270,24 @@ watch(
 onUnmounted(() => {
   inlineRecCoordinator.teardown()
   mobileCanvasEvents.teardown()
-  void diagramAutoSave.flush().finally(() => {
-    diagramAutoSave.teardown()
-  })
+  const flushPromise = diagramAutoSave.flushOnLeave()
+  diagramAutoSave.teardown()
   focusReviewStore.clear()
   rootConceptReviewStore.clear()
 
   if (!preserveDiagramForKittyHub.value) {
     diagramStore.reset()
-    savedDiagramsStore.clearActiveDiagram()
   }
   useLLMResultsStore().reset()
   usePanelsStore().reset()
   uiStore.setSelectedChartType(DEFAULT_CHART_TYPE_KEY)
   uiStore.setFreeInputValue('')
+
+  void flushPromise.finally(() => {
+    if (!preserveDiagramForKittyHub.value) {
+      savedDiagramsStore.clearActiveDiagram()
+    }
+  })
 })
 </script>
 

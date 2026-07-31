@@ -32,8 +32,8 @@ export type KittyHubContextSyncDeps = {
 
 /**
  * Sync current diagram context to Agent Hub and wait for context_mutation_ack.
- * Writes Redis live_spec only; Postgres library snapshot persist is owned by
- * desktop canvas mutation apply (diagramEditApply hubPersist), not mobile.
+ * Writes Redis live_spec only. Postgres library rows are owned by canvas
+ * autosave / flush (useDiagramAutoSave), not this Hub path.
  */
 export async function syncKittyHubContext(
   deps: KittyHubContextSyncDeps
