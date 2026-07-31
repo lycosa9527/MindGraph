@@ -5,6 +5,7 @@
 import { ref } from 'vue'
 
 import { getSessionReport } from '@/api/maite/reports'
+import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { eventBus } from '@/composables/core/useEventBus'
 
@@ -39,8 +40,17 @@ async function copyReport(): Promise<void> {
   if (!reportMarkdown.value) {
     await loadReport()
   }
-  if (reportMarkdown.value) {
+  if (!reportMarkdown.value) {
+    return
+  }
+  try {
     await navigator.clipboard.writeText(reportMarkdown.value)
+    notify.success(t('notification.copied'))
+  } catch {
+    eventBus.emit('maite:error', {
+      message: 'report_copy_failed',
+      source: 'report_actions',
+    })
   }
 }
 </script>

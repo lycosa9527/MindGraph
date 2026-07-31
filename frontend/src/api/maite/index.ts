@@ -1,5 +1,5 @@
 /**
- * Maite Learning API barrel export.
+ * Mate Learning API barrel export.
  */
 export * from './client'
 export * from './problems'

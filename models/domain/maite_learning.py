@@ -1,5 +1,5 @@
 """
-Maite Learning core ORM models (problems + inquiry sessions).
+Mate Learning core ORM models (problems + inquiry sessions).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved

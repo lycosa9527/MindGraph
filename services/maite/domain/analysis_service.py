@@ -20,6 +20,8 @@ from repositories.maite.sessions_repo import MaiteSessionsRepository
 from repositories.maite.stages_repo import MaiteStagesRepository
 from services.maite.domain.errors import MaiteNotFoundError
 from services.maite.domain.json_helpers import parse_llm_json
+from services.maite.domain.session_guards import require_mutable_session
+from services.maite.domain.transaction import commit_maite
 from services.maite.llm.adapter import MaiteLLMAdapter
 from services.maite.prompts.registry import PromptRegistry, get_prompt_registry
 
@@ -52,9 +54,7 @@ class AnalysisService:
         endpoint_path: str,
     ) -> dict[str, Any]:
         """Run LLM analysis for the session problem and persist results."""
-        inquiry = await self._sessions.get_owned(session_id, user_id)
-        if inquiry is None:
-            raise MaiteNotFoundError("Session not found")
+        inquiry = await require_mutable_session(self._sessions, session_id, user_id)
         problem = await self._problems.get_by_id(inquiry.problem_id)
         if problem is None:
             raise MaiteNotFoundError("Problem not found")
@@ -126,6 +126,7 @@ class AnalysisService:
                 current_stage="analysis",
                 updated_at=datetime.now(UTC),
             )
+        await commit_maite(self._session)
         return self._row_dict(saved)
 
     @staticmethod

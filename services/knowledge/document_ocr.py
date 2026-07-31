@@ -20,6 +20,8 @@ import io
 import logging
 from typing import Any, Dict, List, Tuple, Type
 
+from config.dashscope_urls import build_dashscope_headers
+from config.settings import config as _settings_config
 from services.utils.error_types import FILE_IO_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -34,16 +36,6 @@ try:
 
     _httpx_mod = _httpx_import
     _httpx_available = True
-except ImportError:
-    pass
-
-_settings_config: Any = None
-_config_available = False
-try:
-    from config.settings import config as _settings_config_import
-
-    _settings_config = _settings_config_import
-    _config_available = True
 except ImportError:
     pass
 
@@ -84,7 +76,7 @@ def dashscope_vision_ocr(image_bytes: bytes, mime_type: str = "image/png") -> st
     Uses the configurable ``DASHSCOPE_VISION_MODEL`` (default ``qwen3.6-flash``).
     Returns the extracted text (possibly empty); raises on transport errors.
     """
-    if not _httpx_available or not _config_available or _httpx_mod is None or _settings_config is None:
+    if not _httpx_available or _httpx_mod is None:
         raise ValueError("httpx and config required for DashScope OCR")
 
     api_key = _settings_config.QWEN_API_KEY
@@ -92,10 +84,10 @@ def dashscope_vision_ocr(image_bytes: bytes, mime_type: str = "image/png") -> st
         raise ValueError("DashScope API key required for OCR")
 
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
+    headers = build_dashscope_headers(
+        api_key,
+        workspace_id=getattr(_settings_config, "DASHSCOPE_WORKSPACE_ID", None),
+    )
     payload = {
         "model": _settings_config.DASHSCOPE_VISION_MODEL,
         "input": {

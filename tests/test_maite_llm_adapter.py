@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from services.llm.llm_utils import stream_enable_thinking
 from services.maite.events.bus import (
     MaiteEvent,
     get_maite_session_event_bus,
@@ -41,13 +42,24 @@ async def test_maite_llm_adapter_complete_passes_tracking_kwargs():
     assert kwargs["user_id"] == 7
     assert kwargs["organization_id"] == 3
     assert kwargs["use_knowledge_base"] is False
+    assert kwargs["system_message"] == "sys"
+    assert kwargs["prompt"] == "user"
+    assert "messages" not in kwargs
+
+
+def test_stream_enable_thinking_off_for_qwen3():
+    """qwen3.7-* must not enable DashScope thinking on streams."""
+    assert stream_enable_thinking("qwen3.7-plus") is False
+    assert stream_enable_thinking("qwen3.7-flash") is False
+    assert stream_enable_thinking("qwen") is False
 
 
 def test_maite_route_ocr_requires_vision():
-    """OCR task routes to vision prompt."""
+    """OCR task routes to vision prompt on qwen3.7-flash."""
     resolved = route("ocr_extract", has_image=True)
     assert resolved.prompt_id == "ocr_extract"
     assert resolved.requires_vision is True
+    assert resolved.model == "qwen3.7-flash"
 
 
 def test_maite_route_diagnosis_stays_text():

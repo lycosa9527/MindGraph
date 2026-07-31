@@ -1,5 +1,5 @@
 """
-Maite Learning variant practice endpoints.
+Mate Learning variant practice endpoints.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -17,7 +17,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
-from routers.features.maite.helpers import MAITE_DOMAIN_ERRORS, organization_id_for, raise_maite_http_error
+from routers.features.maite.helpers import (
+    MAITE_DOMAIN_ERRORS,
+    enforce_maite_llm_rate_limit,
+    organization_id_for,
+    raise_maite_http_error,
+)
 from services.maite.domain.variant_service import VariantService
 from services.monitoring.module_activity import schedule_module_activity
 from utils.auth import get_current_user
@@ -60,15 +65,23 @@ async def generate_variant_tasks(
     current_user: User = Depends(get_current_user),
 ) -> list[dict[str, Any]]:
     """Generate four variant practice tasks for a session."""
+    await enforce_maite_llm_rate_limit(current_user, request)
     _schedule_variant(current_user, request, session_id, "generate")
     service = VariantService(db)
     try:
-        return await service.generate_variants(
+        tasks = await service.generate_variants(
             session_id,
             user_id=current_user.id,
             organization_id=organization_id_for(current_user),
             endpoint_path=f"/api/maite/inquiry/{session_id}/variants",
         )
+        logger.info(
+            "[Maite] Variants generated user=%s session=%s tasks=%s",
+            current_user.id,
+            session_id,
+            len(tasks),
+        )
+        return tasks
     except (*MAITE_DOMAIN_ERRORS,) as exc:
         raise_maite_http_error(exc)
         raise AssertionError("unreachable") from exc
@@ -84,10 +97,11 @@ async def submit_variant_task(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Submit variant answer/strategy and receive transfer feedback."""
+    await enforce_maite_llm_rate_limit(current_user, request)
     _schedule_variant(current_user, request, session_id, "submit", task_id)
     service = VariantService(db)
     try:
-        return await service.submit_feedback(
+        result = await service.submit_feedback(
             task_id,
             user_id=current_user.id,
             organization_id=organization_id_for(current_user),
@@ -95,6 +109,13 @@ async def submit_variant_task(
             student_strategy=payload.student_strategy,
             endpoint_path=f"/api/maite/inquiry/{session_id}/variants/{task_id}/submit",
         )
+        logger.info(
+            "[Maite] Variant submitted user=%s session=%s task=%s",
+            current_user.id,
+            session_id,
+            task_id,
+        )
+        return result
     except (*MAITE_DOMAIN_ERRORS,) as exc:
         raise_maite_http_error(exc)
         raise AssertionError("unreachable") from exc

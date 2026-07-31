@@ -20,8 +20,11 @@ from models.domain.maite_stages import MaiteVariantTask
 from repositories.maite.problems_repo import MaiteProblemsRepository
 from repositories.maite.sessions_repo import MaiteSessionsRepository
 from repositories.maite.stages_repo import MaiteStagesRepository
-from services.maite.domain.errors import MaiteNotFoundError
+from services.maite.domain.errors import MaiteConflictError, MaiteNotFoundError
 from services.maite.domain.json_helpers import parse_llm_json
+from services.maite.domain.public_serializers import public_variant_task
+from services.maite.domain.session_guards import require_mutable_session
+from services.maite.domain.transaction import commit_maite
 from services.maite.events import emit_maite_session_event
 from services.maite.llm.adapter import MaiteLLMAdapter
 from services.maite.prompts.registry import PromptRegistry, get_prompt_registry
@@ -62,10 +65,10 @@ class VariantService:
         endpoint_path: str,
     ) -> list[dict[str, Any]]:
         """Generate four variant tasks (or return existing ones) for a session."""
-        await self._require_owned_session(session_id, user_id)
+        await require_mutable_session(self._sessions, session_id, user_id)
         existing = await self._stages.variant.list_for_session(session_id)
         if existing:
-            return [self._public_task(row) for row in existing]
+            return [public_variant_task(row) for row in existing]
         problem_text = await self._problem_text(session_id)
         diagnosis = await self._stages.diagnosis.get_for_session(session_id)
         rendered = self._prompts.render(
@@ -106,7 +109,14 @@ class VariantService:
             saved = await self._stages.variant.create(row)
             await self._store_reference(saved.id, item)
             created.append(saved)
-        return [self._public_task(row) for row in created]
+        await self._sessions.update_by_id(
+            session_id,
+            current_stage="variant",
+            status="in_progress",
+            updated_at=datetime.now(UTC),
+        )
+        await commit_maite(self._session)
+        return [public_variant_task(row) for row in created]
 
     async def submit_feedback(
         self,
@@ -120,6 +130,8 @@ class VariantService:
     ) -> dict[str, Any]:
         """Score a student variant answer and return public feedback fields."""
         task = await self._require_owned_task(task_id, user_id)
+        if task.status == "submitted":
+            raise MaiteConflictError("Variant task already submitted")
         problem_text = await self._problem_text(task.session_id)
         reference = await self._stages.task_reference.get_for_task("variant", task_id)
         rendered = self._prompts.render(
@@ -166,16 +178,17 @@ class VariantService:
             status="submitted",
             updated_at=datetime.now(UTC),
         )
+        await commit_maite(self._session)
         await emit_maite_session_event(
             str(task.session_id),
             "variant_scored",
             {"task_id": task.id, "transfer_result": transfer},
         )
-        return self._public_task(updated)
+        return public_variant_task(updated)
 
     async def _store_reference(self, task_id: int, item: dict[str, Any]) -> None:
         ref_answer = str(item.get("reference_answer") or "")
-        ref_strategy = str(item.get("reference_strategy") or "")
+        ref_strategy = str(item.get("reference_strategy") or item.get("expected_strategy") or "")
         if not ref_answer and not ref_strategy:
             return
         existing = await self._stages.task_reference.get_for_task("variant", task_id)
@@ -187,7 +200,10 @@ class VariantService:
             reference_answer=ref_answer,
             reference_strategy=ref_strategy,
             success_criteria=str(item.get("success_criteria") or ""),
-            learning_context={"variant_type": item.get("variant_type")},
+            learning_context={
+                "variant_type": item.get("variant_type"),
+                "expected_strategy": item.get("expected_strategy"),
+            },
         )
         await self._stages.task_reference.create(row)
 
@@ -207,13 +223,8 @@ class VariantService:
         task = await self._stages.variant.get_by_id(task_id)
         if task is None:
             raise MaiteNotFoundError("Variant task not found")
-        await self._require_owned_session(task.session_id, user_id)
+        await require_mutable_session(self._sessions, task.session_id, user_id)
         return task
-
-    async def _require_owned_session(self, session_id: int, user_id: int) -> None:
-        row = await self._sessions.get_owned(session_id, user_id)
-        if row is None:
-            raise MaiteNotFoundError("Session not found")
 
     async def _problem_text(self, session_id: int) -> str:
         row = await self._sessions.get_by_id(session_id)
@@ -225,19 +236,6 @@ class VariantService:
     @staticmethod
     def _strip_reference_fields(data: dict[str, Any]) -> dict[str, Any]:
         cleaned = dict(data)
-        for key in ("reference_answer", "reference_strategy", "success_criteria"):
+        for key in ("reference_answer", "reference_strategy", "success_criteria", "expected_strategy"):
             cleaned.pop(key, None)
         return cleaned
-
-    @staticmethod
-    def _public_task(task: Any) -> dict[str, Any]:
-        if task is None:
-            return {}
-        table = getattr(task, "__table__", None)
-        if table is None:
-            return {}
-        data = {col.name: getattr(task, col.name) for col in table.columns}
-        feedback = data.get("ai_feedback")
-        if isinstance(feedback, dict):
-            data["ai_feedback"] = VariantService._strip_reference_fields(feedback)
-        return data

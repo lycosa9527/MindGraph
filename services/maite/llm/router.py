@@ -34,11 +34,8 @@ def route(task_type: str, *, has_image: bool = False) -> ModelRouteContext:
     registry = get_prompt_registry()
     template = registry.get_by_task_type(task_type)
     requires_vision = task_type in _VISION_TASKS
-    model = template.model_hint
-    if requires_vision and "vl" not in model:
-        model = "qwen-vl-max"
     return ModelRouteContext(
         prompt_id=template.id,
-        model=model,
+        model=template.model_hint,
         requires_vision=requires_vision,
     )

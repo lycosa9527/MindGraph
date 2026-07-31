@@ -23,6 +23,7 @@ from starlette.websockets import WebSocketDisconnect
 from websockets.asyncio.client import ClientConnection
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 
+from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.ws_limits import (
@@ -133,10 +134,12 @@ async def run_asr_relay(
     resolved_model = str(raw_model).strip() or default_asr_model
     base = config.DASHSCOPE_REALTIME_WS_BASE.rstrip("/")
     url = f"{base}?model={resolved_model}"
-    extra_headers = {
-        "Authorization": f"Bearer {api_key}",
-        "OpenAI-Beta": "realtime=v1",
-    }
+    extra_headers = build_dashscope_headers(
+        api_key,
+        workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+        content_type=None,
+        extra={"OpenAI-Beta": "realtime=v1"},
+    )
 
     try:
         upstream = await websockets.connect(

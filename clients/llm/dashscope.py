@@ -20,6 +20,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 import httpx
 
 from clients.llm.http_client_manager import get_httpx_manager
+from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from services.infrastructure.http.error_handler import (
     LLMAccessDeniedError,
@@ -33,6 +34,14 @@ from services.llm.error_parsers.dashscope_error_parser import (
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
+
+
+def _dashscope_headers(api_key: Optional[str]) -> Dict[str, str]:
+    """Bearer + optional workspace header for DashScope model calls."""
+    return build_dashscope_headers(
+        api_key,
+        workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+    )
 
 
 class QwenClient:
@@ -204,10 +213,7 @@ class QwenClient:
                 )
                 payload.update(kwargs)
 
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            }
+            headers = _dashscope_headers(self.api_key)
 
             client = await get_httpx_manager().get_client("qwen", self.api_url, self.timeout, self.stream_timeout)
             response = await client.post(self.api_url, json=payload, headers=headers)
@@ -402,10 +408,7 @@ class QwenClient:
                 logger.debug("[QwenClient] Additional kwargs in stream: %s", list(kwargs.keys()))
                 payload.update(kwargs)
 
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            }
+            headers = _dashscope_headers(self.api_key)
 
             client = await get_httpx_manager().get_client("qwen", self.api_url, self.timeout, self.stream_timeout)
             async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
@@ -543,10 +546,7 @@ class DeepSeekClient:
             if "response_format" in kwargs:
                 payload["response_format"] = kwargs.pop("response_format")
 
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            }
+            headers = _dashscope_headers(self.api_key)
 
             logger.debug("DeepSeek async API request: %s", self.model_name)
 
@@ -649,10 +649,7 @@ class DeepSeekClient:
                 payload["extra_body"] = {}
             payload["extra_body"]["enable_thinking"] = enable_thinking
 
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            }
+            headers = _dashscope_headers(self.api_key)
 
             client = await get_httpx_manager().get_client("deepseek", self.api_url, self.timeout, self.stream_timeout)
             async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
@@ -769,10 +766,7 @@ class KimiClient:
             payload["temperature"] = temperature
             payload["max_tokens"] = max_tokens
 
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            }
+            headers = _dashscope_headers(self.api_key)
 
             logger.debug("Kimi async API request: %s", self.model_name)
 
@@ -865,10 +859,7 @@ class KimiClient:
                 payload["extra_body"] = {}
             payload["extra_body"]["enable_thinking"] = enable_thinking
 
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            }
+            headers = _dashscope_headers(self.api_key)
 
             client = await get_httpx_manager().get_client("kimi", self.api_url, self.timeout, self.stream_timeout)
             async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:

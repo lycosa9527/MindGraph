@@ -4,10 +4,10 @@
  */
 import { ref } from 'vue'
 
+import { ImagePlus } from '@lucide/vue'
+
 import { useLanguage } from '@/composables/core/useLanguage'
 import { eventBus } from '@/composables/core/useEventBus'
-
-import ocrUploadIcon from '@/assets/maite/ocr-upload.svg'
 
 const props = defineProps<{
   modelValue: string
@@ -63,7 +63,12 @@ function onFileSelected(event: Event): void {
         :disabled="disabled"
         @click="openFilePicker"
       >
-        <img :src="ocrUploadIcon" alt="" class="maite-problem-input__ocr-icon" />
+        <ImagePlus
+          class="maite-problem-input__ocr-icon"
+          :size="16"
+          :stroke-width="1.75"
+          aria-hidden="true"
+        />
         {{ t('maite.problem.ocr') }}
       </button>
       <input
@@ -119,8 +124,8 @@ function onFileSelected(event: Event): void {
 }
 
 .maite-problem-input__ocr-icon {
-  width: 16px;
-  height: 16px;
+  flex-shrink: 0;
+  color: var(--el-text-color-regular, #57534e);
 }
 
 .maite-problem-input__file {

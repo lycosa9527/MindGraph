@@ -36,6 +36,7 @@ const DebateHistory = defineAsyncComponent(() => import('./DebateHistory.vue'))
 const DiagramHistory = defineAsyncComponent(() => import('./DiagramHistory.vue'))
 const KnowledgeSpaceHistory = defineAsyncComponent(() => import('./KnowledgeSpaceHistory.vue'))
 const LibraryCommentsHistory = defineAsyncComponent(() => import('./LibraryCommentsHistory.vue'))
+const MaitePracticeHistory = defineAsyncComponent(() => import('./MaitePracticeHistory.vue'))
 const WorkshopChatHistory = defineAsyncComponent(() => import('./WorkshopChatHistory.vue'))
 
 const NAV_ICON_SIZE = 18
@@ -324,10 +325,10 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </el-tooltip>
 
-        <!-- Maite Learning -->
+        <!-- Mate Learning -->
         <el-tooltip
-          v-if="s.featureMaiteLearning"
-          :content="s.t('sidebar.maiteLearning')"
+          v-if="s.featureMateLearning"
+          :content="s.t('sidebar.mateLearning')"
           placement="right"
           :disabled="!s.isCollapsed"
         >
@@ -343,10 +344,18 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <span
               v-if="!s.isCollapsed"
               class="nav-label"
-              >{{ s.t('sidebar.maiteLearning') }}</span
+              >{{ s.t('sidebar.mateLearning') }}</span
             >
           </div>
         </el-tooltip>
+        <transition name="panel-slide">
+          <div
+            v-if="s.featureMateLearning && s.showPanel('maite')"
+            class="sidebar-panel"
+          >
+            <MaitePracticeHistory />
+          </div>
+        </transition>
 
         <!-- Community -->
         <el-tooltip

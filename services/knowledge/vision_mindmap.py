@@ -19,6 +19,7 @@ from typing import Any, Dict, Optional
 import httpx
 
 from agents.core.agent_utils import extract_json_from_response
+from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from prompts import get_prompt
 from services.knowledge.document_ocr import parse_dashscope_multimodal_text
@@ -158,10 +159,10 @@ def dashscope_vision_mindmap(
 
     resolved_mime = mime_type if mime_type.startswith("image/") else "image/jpeg"
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
+    headers = build_dashscope_headers(
+        api_key,
+        workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+    )
     # qwen3.5 / qwen3.6 vision defaults to thinking ON, which burns large
     # reasoning_tokens (often 10–20s+). Structured JSON rebuild does not need it.
     payload = {

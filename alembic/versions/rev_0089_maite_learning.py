@@ -1,4 +1,4 @@
-"""Create Maite Learning tables (problems, sessions, stages, artifacts).
+"""Create Mate Learning tables (problems, sessions, stages, artifacts).
 
 Revision ID: 0089
 Revises: 0088

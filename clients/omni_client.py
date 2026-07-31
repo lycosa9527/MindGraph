@@ -30,6 +30,7 @@ import httpx
 import websockets
 from websockets.exceptions import ConnectionClosed
 
+from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from services.kitty.omni.tools import build_omni_diagram_tools
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -170,7 +171,11 @@ class OmniRealtimeClient:
             return
 
         url = f"{config.DASHSCOPE_REALTIME_WS_BASE.rstrip('/')}?model={self.model}"
-        headers = {"Authorization": f"Bearer {self.api_key}"}
+        headers = build_dashscope_headers(
+            self.api_key,
+            workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+            content_type=None,
+        )
 
         try:
             self.ws = await websockets.connect(
@@ -939,10 +944,10 @@ class OmniClient:
             "extra_body": {"enable_thinking": False},
         }
 
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
+        headers = build_dashscope_headers(
+            api_key,
+            workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+        )
 
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=5.0), http2=True) as client:

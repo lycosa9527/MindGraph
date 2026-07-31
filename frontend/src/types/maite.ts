@@ -1,5 +1,5 @@
 /**
- * Maite Learning (迈特学习法) shared frontend types.
+ * Mate Learning (迈特学习法) shared frontend types.
  */
 
 export type MaiteMode = 'demo' | 'inquiry' | 'map'
@@ -99,6 +99,7 @@ export interface MaitePracticeItem {
   title?: string | null
   status: string
   current_stage: string
+  mode?: string
   problem_text?: string
   updated_at: string
   created_at: string
@@ -129,7 +130,6 @@ export interface MaiteVariantTask {
   variant_type: string
   variant_text: string
   changed_part?: string
-  expected_strategy?: string
   status: string
   student_answer?: string | null
   student_strategy?: string | null

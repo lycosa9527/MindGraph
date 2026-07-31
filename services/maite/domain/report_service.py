@@ -21,6 +21,7 @@ from repositories.maite.sessions_repo import MaiteSessionsRepository
 from services.maite.domain.errors import MaiteNotFoundError
 from services.maite.domain.inquiry_service import InquiryService
 from services.maite.domain.json_helpers import parse_llm_json
+from services.maite.domain.transaction import commit_maite
 from services.maite.llm.adapter import MaiteLLMAdapter
 from services.maite.prompts.registry import PromptRegistry, get_prompt_registry
 
@@ -89,6 +90,7 @@ class ReportService:
                 sections=sections,
                 updated_at=datetime.now(UTC),
             )
+        await commit_maite(self._session)
         return self._row_dict(saved)
 
     async def get_report(self, session_id: int, *, user_id: int) -> dict[str, Any]:

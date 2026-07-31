@@ -86,12 +86,12 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_COURSE", "False").lower() == "true"
 
     @property
-    def FEATURE_MAITE_LEARNING(self):
-        """Enable Maite Learning (迈特学习法) feature.
+    def FEATURE_MATE_LEARNING(self):
+        """Enable Mate Learning (迈特学习法) feature.
 
-        Enabled by default. Set FEATURE_MAITE_LEARNING=False in .env to disable.
+        Disabled by default. Set FEATURE_MATE_LEARNING=True in .env to enable.
         """
-        return self._get_cached_value("FEATURE_MAITE_LEARNING", "True").lower() == "true"
+        return self._get_cached_value("FEATURE_MATE_LEARNING", "False").lower() == "true"
 
     @property
     def FEATURE_TEMPLATE(self):

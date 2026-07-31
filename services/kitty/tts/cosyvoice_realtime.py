@@ -19,8 +19,12 @@ import websockets
 from websockets.asyncio.client import ClientConnection
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 
+from config.dashscope_urls import (
+    build_dashscope_headers,
+    build_dashscope_inference_ws_url,
+    normalize_dashscope_region,
+)
 from config.settings import config
-from config.dashscope_urls import build_dashscope_inference_ws_url, normalize_dashscope_region
 from services.kitty.asr.fun_asr_realtime import resolve_dashscope_api_key
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 
@@ -155,10 +159,11 @@ class CosyVoiceRealtimeClient:
             raise RuntimeError("DASHSCOPE_WORKSPACE_ID required for CosyVoice MaaS inference")
 
         url = build_dashscope_inference_ws_url(workspace_id=workspace_id, region=region)
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "X-DashScope-WorkSpace": workspace_id,
-        }
+        headers = build_dashscope_headers(
+            api_key,
+            workspace_id=workspace_id,
+            content_type=None,
+        )
         self._closed = False
         self._ws = await websockets.connect(
             url,

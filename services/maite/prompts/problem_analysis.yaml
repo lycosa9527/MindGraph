@@ -1,7 +1,7 @@
 id: problem_analysis
 version: v1
 task_type: problem_analysis
-model_hint: qwen-plus-latest
+model_hint: qwen3.7-plus
 input_variables:
   - problem_text
   - subject

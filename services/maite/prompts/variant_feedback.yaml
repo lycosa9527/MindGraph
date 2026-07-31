@@ -1,7 +1,7 @@
 id: variant_feedback
 version: v3
 task_type: variant_feedback
-model_hint: qwen-plus-latest
+model_hint: qwen3.7-plus
 input_variables:
   - problem_text
   - core_logic

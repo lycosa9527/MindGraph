@@ -10,14 +10,16 @@ import dashscope
 from dashscope import MultiModalConversation
 from dotenv import load_dotenv
 
+from config.settings import config
+
 load_dotenv()
 
-API_KEY = (os.getenv("QWEN_API_KEY") or "").strip()
+API_KEY = (config.QWEN_API_KEY or os.getenv("QWEN_API_KEY") or "").strip()
 if not API_KEY:
     raise SystemExit("QWEN_API_KEY missing")
 
-# Classic Beijing DashScope host (matches project Qwen defaults)
-dashscope.base_http_api_url = "https://dashscope.aliyuncs.com/api/v1"
+# Prefer workspace MaaS /api/v1 (falls back to legacy when workspace unset).
+dashscope.base_http_api_url = config.DASHSCOPE_API_URL.rstrip("/")
 dashscope.api_key = API_KEY
 
 OUT_DIR = Path("docs/assets")

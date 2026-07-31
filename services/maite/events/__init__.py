@@ -14,6 +14,7 @@ from services.maite.events.bus import (
     emit_maite_session_event,
     get_maite_session_event_bus,
     remove_maite_session_event_bus,
+    stop_maite_session_event_bus,
 )
 from services.maite.events.kinds import MaiteEventKind
 
@@ -24,4 +25,5 @@ __all__ = [
     "emit_maite_session_event",
     "get_maite_session_event_bus",
     "remove_maite_session_event_bus",
+    "stop_maite_session_event_bus",
 ]

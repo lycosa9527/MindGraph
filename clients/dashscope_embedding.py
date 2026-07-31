@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional, Union
 import httpx
 import numpy as np
 
+from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.dashscope_error_handler import (
@@ -154,10 +155,10 @@ class DashScopeEmbeddingClient:
                 truncated_texts.append(text)
         texts = truncated_texts
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
+        headers = build_dashscope_headers(
+            self.api_key,
+            workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+        )
 
         # Build payload based on API type
         if self.use_openai_compatible:
@@ -519,10 +520,10 @@ class DashScopeEmbeddingClient:
         Returns:
             List of embedding vectors
         """
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
+        headers = build_dashscope_headers(
+            self.api_key,
+            workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+        )
 
         payload: Dict[str, Any] = {"model": self.model, "input": {"contents": contents}}
 

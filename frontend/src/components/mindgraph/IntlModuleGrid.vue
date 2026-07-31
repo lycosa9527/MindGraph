@@ -35,7 +35,7 @@ const {
   featureCommunity,
   featureShowcase,
   featureAskOnce,
-  featureMaiteLearning,
+  featureMateLearning,
   featureDebateverse,
   featureKnowledgeSpace,
   featureLibrary,
@@ -111,10 +111,10 @@ const modules = computed<ModuleItem[]>(() => [
   },
   {
     key: 'maite',
-    labelKey: 'sidebar.maiteLearning',
+    labelKey: 'sidebar.mateLearning',
     route: '/maite',
     icon: GraduationCap,
-    visible: featureMaiteLearning.value,
+    visible: featureMateLearning.value,
   },
   {
     key: 'community',

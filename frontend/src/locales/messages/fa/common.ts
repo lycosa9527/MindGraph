@@ -100,7 +100,7 @@ export default {
   'meta.pageTitle.dashboardLogin': 'Dashboard login',
   'meta.pageTitle.demoLogin': 'Demo login',
   'meta.pageTitle.debateverse': 'DebateVerse',
-  'meta.pageTitle.maiteLearning': 'Maite Learning',
+  'meta.pageTitle.mateLearning': 'Mate Learning',
   'meta.pageTitle.default': 'Mind Platform',
   'meta.pageTitle.bayiPasskeyLogin': 'School access',
   'meta.pageTitle.gewe': 'Gewe',

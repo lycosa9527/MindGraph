@@ -83,10 +83,18 @@ class QwenAPISettings(BaseModel):
 
     __category__ = "Qwen API"
 
-    QWEN_API_KEY: str = Field(..., min_length=10, description="Qwen API key (required)")
+    QWEN_API_KEY: str = Field(..., min_length=10, description="DashScope workspace API key (required)")
+    DASHSCOPE_WORKSPACE_ID: str = Field(
+        default="",
+        description="DashScope Workspace ID (业务空间 ID); builds MaaS hosts when set",
+    )
+    DASHSCOPE_REGION: str = Field(
+        default="cn-beijing",
+        description="DashScope region (cn-beijing, ap-southeast-1, us, eu-central-1, ap-northeast-1)",
+    )
     QWEN_API_URL: str = Field(
-        default="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
-        description="Qwen API endpoint URL",
+        default="",
+        description="Optional chat completions URL override (leave empty for workspace MaaS)",
     )
     QWEN_MODEL_CLASSIFICATION: str = Field(
         default="qwen3.6-flash",
@@ -114,7 +122,9 @@ class QwenAPISettings(BaseModel):
     @field_validator("QWEN_API_URL")
     @classmethod
     def validate_url(cls, v):
-        """Validate API URL has correct protocol prefix."""
+        """Validate optional API URL has correct protocol prefix when set."""
+        if not v:
+            return v
         if not v.startswith(("http://", "https://")):
             raise ValueError("API URL must start with http:// or https://")
         return v
@@ -191,9 +201,9 @@ class FeatureFlagSettings(BaseModel):
         description="Enable drag and drop functionality for diagram nodes",
     )
     FEATURE_COURSE: bool = Field(default=False, description="Enable Thinking Course (思维课程) feature")
-    FEATURE_MAITE_LEARNING: bool = Field(
-        default=True,
-        description="Enable Maite Learning (迈特学习法) feature",
+    FEATURE_MATE_LEARNING: bool = Field(
+        default=False,
+        description="Enable Mate Learning (迈特学习法) feature",
     )
     FEATURE_TEMPLATE: bool = Field(default=False, description="Enable Template Resources (模板资源) feature")
     FEATURE_COMMUNITY: bool = Field(default=False, description="Enable Community Sharing (社区分享) feature")

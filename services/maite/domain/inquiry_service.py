@@ -21,8 +21,19 @@ from repositories.maite.reports_repo import MaiteReportsRepository
 from repositories.maite.sessions_repo import MaiteSessionsRepository
 from repositories.maite.stages_repo import MaiteStagesRepository
 from services.maite.domain.errors import MaiteConflictError, MaiteNotFoundError
-from services.maite.events import emit_maite_session_event
-from services.maite.redis.practice_cache import invalidate_recent_practice
+from services.maite.domain.public_serializers import (
+    model_to_dict,
+    public_remedy_task,
+    public_variant_task,
+)
+from services.maite.domain.session_guards import require_mutable_session, require_owned_session
+from services.maite.domain.transaction import commit_maite
+from services.maite.events import emit_maite_session_event, stop_maite_session_event_bus
+from services.maite.redis.practice_cache import (
+    get_recent_practice,
+    invalidate_recent_practice,
+    set_recent_practice,
+)
 from services.maite.schemas.inquiry import SessionCreate, SessionRead, SnapshotRead
 
 logger = logging.getLogger(__name__)
@@ -61,22 +72,35 @@ class InquiryService:
             current_stage="decompose",
         )
         created = await self._sessions.create(row)
+        await commit_maite(self._session)
         await self._mark_practice_dirty(user_id, created.id)
+        logger.info(
+            "[Maite] Session created id=%s user=%s problem=%s mode=%s",
+            created.id,
+            user_id,
+            payload.problem_id,
+            payload.mode,
+        )
         return SessionRead.model_validate(created)
 
     async def list_sessions(self, user_id: int, *, limit: int = 50) -> list[SessionRead]:
-        """List inquiry sessions for a user."""
+        """List inquiry sessions for a user, preferring a short Redis cache."""
+        cached = await get_recent_practice(user_id)
+        if cached is not None:
+            return [SessionRead.model_validate(item) for item in cached[:limit]]
         rows = await self._sessions.list_for_user(user_id, limit=limit)
+        payload = [SessionRead.model_validate(row).model_dump(mode="json") for row in rows]
+        await set_recent_practice(user_id, payload)
         return [SessionRead.model_validate(row) for row in rows]
 
     async def get_session(self, session_id: int, *, user_id: int) -> SessionRead:
         """Return a single owned inquiry session."""
-        row = await self._require_owned_session(session_id, user_id)
+        row = await require_owned_session(self._sessions, session_id, user_id)
         return SessionRead.model_validate(row)
 
     async def get_snapshot(self, session_id: int, *, user_id: int) -> SnapshotRead:
         """Return aggregated session snapshot across all stages."""
-        row = await self._require_owned_session(session_id, user_id)
+        row = await require_owned_session(self._sessions, session_id, user_id)
         problem = await self._problems.get_by_id(row.problem_id)
         decompose = await self._stages.decompose.get_for_session(session_id)
         diagnosis = await self._stages.diagnosis.get_for_session(session_id)
@@ -91,12 +115,12 @@ class InquiryService:
                 "title": row.title,
                 "mode": row.mode,
             },
-            problem=self._model_to_dict(problem) if problem else None,
-            decompose=self._model_to_dict(decompose),
-            diagnosis=self._model_to_dict(diagnosis),
-            remedy_tasks=[self._public_remedy_task(task) for task in remedy_tasks],
-            variant_tasks=[self._public_variant_task(task) for task in variant_tasks],
-            report=self._model_to_dict(report),
+            problem=model_to_dict(problem) if problem else None,
+            decompose=model_to_dict(decompose),
+            diagnosis=model_to_dict(diagnosis),
+            remedy_tasks=[public_remedy_task(task) for task in remedy_tasks],
+            variant_tasks=[public_variant_task(task) for task in variant_tasks],
+            report=model_to_dict(report),
         )
 
     async def submit_decompose(
@@ -110,7 +134,7 @@ class InquiryService:
         validation_warnings: Optional[list[Any]] = None,
     ) -> dict[str, Any]:
         """Persist decompose tables and advance to diagnosis stage."""
-        row = await self._require_owned_session(session_id, user_id)
+        row = await require_mutable_session(self._sessions, session_id, user_id)
         existing = await self._stages.decompose.get_for_session(session_id)
         if existing is not None:
             raise MaiteConflictError("Decompose already submitted")
@@ -128,8 +152,14 @@ class InquiryService:
             status="in_progress",
             updated_at=datetime.now(UTC),
         )
+        await commit_maite(self._session)
         await self._mark_practice_dirty(user_id, session_id)
-        return self._model_to_dict(created) or {}
+        logger.info(
+            "[Maite] Decompose submitted session=%s user=%s -> diagnosis",
+            session_id,
+            user_id,
+        )
+        return model_to_dict(created) or {}
 
     async def redo_session(
         self,
@@ -139,7 +169,7 @@ class InquiryService:
         reason: Optional[str] = None,
     ) -> SessionRead:
         """Start a new version of an inquiry session."""
-        original = await self._require_owned_session(session_id, user_id)
+        original = await require_owned_session(self._sessions, session_id, user_id)
         row = MaiteInquirySession(
             user_id=user_id,
             organization_id=original.organization_id,
@@ -153,14 +183,22 @@ class InquiryService:
             redo_reason=reason,
         )
         created = await self._sessions.create(row)
+        await commit_maite(self._session)
         await self._mark_practice_dirty(user_id, created.id)
         return SessionRead.model_validate(created)
 
     async def complete_session(self, session_id: int, *, user_id: int) -> SessionRead:
         """Mark session completed when required variant tasks are submitted."""
-        row = await self._require_owned_session(session_id, user_id)
+        row = await require_mutable_session(self._sessions, session_id, user_id)
         submitted = await self._stages.variant.count_submitted(session_id)
         if submitted < MIN_VARIANTS_FOR_COMPLETE:
+            logger.warning(
+                "[Maite] Complete blocked session=%s user=%s submitted=%s required=%s",
+                session_id,
+                user_id,
+                submitted,
+                MIN_VARIANTS_FOR_COMPLETE,
+            )
             raise MaiteConflictError(f"At least {MIN_VARIANTS_FOR_COMPLETE} variant tasks must be submitted")
         updated = await self._sessions.update_by_id(
             row.id,
@@ -171,19 +209,21 @@ class InquiryService:
         )
         if updated is None:
             raise MaiteNotFoundError("Session not found")
+        await commit_maite(self._session)
+        await invalidate_recent_practice(user_id)
         await emit_maite_session_event(
             str(session_id),
             "session_completed",
-            {"session_id": session_id},
+            {"session_id": session_id, "user_id": user_id},
         )
-        await self._mark_practice_dirty(user_id, session_id)
+        await stop_maite_session_event_bus(str(session_id))
+        logger.info(
+            "[Maite] Session completed id=%s user=%s variants=%s",
+            session_id,
+            user_id,
+            submitted,
+        )
         return SessionRead.model_validate(updated)
-
-    async def _require_owned_session(self, session_id: int, user_id: int) -> MaiteInquirySession:
-        row = await self._sessions.get_owned(session_id, user_id)
-        if row is None:
-            raise MaiteNotFoundError("Session not found")
-        return row
 
     async def _mark_practice_dirty(self, user_id: int, session_id: int) -> None:
         await invalidate_recent_practice(user_id)
@@ -192,34 +232,3 @@ class InquiryService:
             "practice_dirty",
             {"user_id": user_id, "session_id": session_id},
         )
-
-    @staticmethod
-    def _model_to_dict(obj: Any) -> Optional[dict[str, Any]]:
-        if obj is None:
-            return None
-        columns = getattr(obj, "__table__", None)
-        if columns is None:
-            return None
-        return {col.name: getattr(obj, col.name) for col in columns.columns}
-
-    @staticmethod
-    def _public_remedy_task(task: Any) -> dict[str, Any]:
-        data = InquiryService._model_to_dict(task) or {}
-        payload = data.get("task_payload")
-        if isinstance(payload, dict):
-            sanitized = dict(payload)
-            for key in ("reference_answer", "reference_strategy", "success_criteria"):
-                sanitized.pop(key, None)
-            data["task_payload"] = sanitized
-        return data
-
-    @staticmethod
-    def _public_variant_task(task: Any) -> dict[str, Any]:
-        data = InquiryService._model_to_dict(task) or {}
-        feedback = data.get("ai_feedback")
-        if isinstance(feedback, dict):
-            sanitized = dict(feedback)
-            for key in ("reference_answer", "reference_strategy"):
-                sanitized.pop(key, None)
-            data["ai_feedback"] = sanitized
-        return data

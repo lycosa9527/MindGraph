@@ -1,8 +1,8 @@
 """
-Maite Learning API router package.
+Mate Learning API router package.
 
 Chinese name: 迈特学习法
-English name: Maite Learning
+English name: Mate Learning
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -25,7 +25,7 @@ from routers.features.maite import (
     variants,
 )
 
-router = APIRouter(prefix="/api/maite", tags=["Maite Learning"])
+router = APIRouter(prefix="/api/maite", tags=["Mate Learning"])
 
 router.include_router(health.router)
 router.include_router(problems.router)

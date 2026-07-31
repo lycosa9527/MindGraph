@@ -198,8 +198,9 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/maite',
     name: 'MaiteLearning',
+    // Same as AskOnce / DebateVerse: lazy page, no requiresAuth probe on cold load.
     component: () => import('@/pages/MaiteLearningPage.vue'),
-    meta: { requiresAuth: true, layout: 'main', ...pageTitle('maiteLearning') },
+    meta: { layout: 'main', ...pageTitle('mateLearning') },
   },
   {
     path: '/debateverse',
@@ -490,7 +491,7 @@ router.beforeEach(async (to, from) => {
   if (to.name === 'AskOnce' && !featureFlagsStore.getFeatureAskOnce()) {
     return { name: 'MindMate' }
   }
-  if (to.name === 'MaiteLearning' && !featureFlagsStore.getFeatureMaiteLearning()) {
+  if (to.name === 'MaiteLearning' && !featureFlagsStore.getFeatureMateLearning()) {
     return { name: 'MindMate' }
   }
   if (to.name === 'DebateVerse' && !featureFlagsStore.getFeatureDebateverse()) {

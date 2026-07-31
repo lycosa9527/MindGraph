@@ -10,12 +10,10 @@ import MaiteProblemInput from '@/components/maite/shared/MaiteProblemInput.vue'
 import MaiteStreamStatus from '@/components/maite/shared/MaiteStreamStatus.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMaiteDemo } from '@/composables/maite/useMaiteDemo'
-import { useMaiteOcrUpload } from '@/composables/maite/useMaiteOcrUpload'
 import { useMaiteStore } from '@/stores/maite'
 
 const { t } = useLanguage()
 const store = useMaiteStore()
-useMaiteOcrUpload()
 
 const {
   messages,
@@ -34,9 +32,10 @@ const {
 } = useMaiteDemo()
 
 watch(
-  () => store.currentProblemText,
-  (text) => {
-    if (text && store.mode === 'demo') {
+  () => store.mode,
+  (mode, prev) => {
+    // Fresh demo tab only — do not wipe when reopening a saved practice session.
+    if (mode === 'demo' && prev !== 'demo' && !store.activeSessionId) {
       resetDemo()
     }
   }
@@ -62,7 +61,7 @@ function onProblemUpdate(value: string): void {
           type="button"
           class="maite-demo-view__btn"
           :disabled="!canDecompose"
-          @click="runDecompose"
+          @click="() => runDecompose()"
         >
           {{ t('maite.demo.decompose') }}
         </button>

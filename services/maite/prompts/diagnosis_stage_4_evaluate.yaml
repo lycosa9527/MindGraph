@@ -1,7 +1,7 @@
 id: diagnosis_stage_4_evaluate
 version: v2
 task_type: diagnosis_stage_4_evaluate
-model_hint: qwen-plus-latest
+model_hint: qwen3.7-plus
 input_variables:
   - variant_text
   - student_judgement

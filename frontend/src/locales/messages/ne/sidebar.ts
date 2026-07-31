@@ -40,7 +40,7 @@ export default {
   'sidebar.showcase': 'Showcase',
   'sidebar.community': 'Community',
   'sidebar.courses': 'Thinking courses',
-  'sidebar.maiteLearning': 'Maite Learning',
+  'sidebar.mateLearning': 'Mate Learning',
   'sidebar.debateHistory.deleteConfirm': 'Are you sure you want to delete this debate? This cannot be undone.',
   'sidebar.debateHistory.empty': 'No debates yet',
   'sidebar.debateHistory.loginPrompt': 'Login to view debates',

@@ -1,7 +1,7 @@
 id: diagnosis_stage_3
 version: v1
 task_type: diagnosis_stage_3
-model_hint: qwen-plus-latest
+model_hint: qwen3.7-plus
 input_variables:
   - problem_text
   - student_decomposition_json

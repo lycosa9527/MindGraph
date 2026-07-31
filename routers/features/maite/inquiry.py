@@ -1,5 +1,5 @@
 """
-Maite Learning inquiry session endpoints.
+Mate Learning inquiry session endpoints.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -17,7 +17,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
-from routers.features.maite.helpers import MAITE_DOMAIN_ERRORS, organization_id_for, raise_maite_http_error
+from routers.features.maite.helpers import (
+    MAITE_DOMAIN_ERRORS,
+    enforce_maite_llm_rate_limit,
+    organization_id_for,
+    raise_maite_http_error,
+)
 from services.maite.domain.analysis_service import AnalysisService
 from services.maite.domain.assessment_service import AssessmentService
 from services.maite.domain.decompose_service import DecomposeService
@@ -88,6 +93,13 @@ async def create_inquiry_session(
             user_id=current_user.id,
             organization_id=organization_id_for(current_user),
         )
+        logger.info(
+            "[Maite] User %s created session %s problem=%s mode=%s",
+            current_user.id,
+            created.id,
+            payload.problem_id,
+            payload.mode,
+        )
         _schedule_inquiry_activity(current_user, request, "create_session", created.id)
         return created
     except (*MAITE_DOMAIN_ERRORS,) as exc:
@@ -101,6 +113,20 @@ async def list_inquiry_sessions(
     current_user: User = Depends(get_current_user),
 ) -> list[SessionRead]:
     """List inquiry sessions for the authenticated user."""
+    service = InquiryService(db)
+    try:
+        return await service.list_sessions(current_user.id)
+    except (*MAITE_DOMAIN_ERRORS,) as exc:
+        raise_maite_http_error(exc)
+        raise AssertionError("unreachable") from exc
+
+
+@router.get("/practice/recent", response_model=list[SessionRead])
+async def list_recent_practice(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+) -> list[SessionRead]:
+    """Return recent practice sessions (Redis-cached list)."""
     service = InquiryService(db)
     try:
         return await service.list_sessions(current_user.id)
@@ -150,6 +176,12 @@ async def redo_inquiry_session(
     service = InquiryService(db)
     try:
         created = await service.redo_session(session_id, user_id=current_user.id)
+        logger.info(
+            "[Maite] User %s redid session %s -> %s",
+            current_user.id,
+            session_id,
+            created.id,
+        )
         _schedule_inquiry_activity(current_user, request, "redo_session", created.id)
         return created
     except (*MAITE_DOMAIN_ERRORS,) as exc:
@@ -168,6 +200,11 @@ async def complete_inquiry_session(
     service = InquiryService(db)
     try:
         completed = await service.complete_session(session_id, user_id=current_user.id)
+        logger.info(
+            "[Maite] User %s completed session %s",
+            current_user.id,
+            session_id,
+        )
         _schedule_inquiry_activity(current_user, request, "complete_session", session_id)
         return completed
     except (*MAITE_DOMAIN_ERRORS,) as exc:
@@ -183,6 +220,7 @@ async def analyze_inquiry_session(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Run LLM problem analysis for the session problem."""
+    await enforce_maite_llm_rate_limit(current_user, request)
     _schedule_inquiry_activity(current_user, request, "analysis", session_id)
     service = AnalysisService(db)
     try:
@@ -246,13 +284,19 @@ async def submit_decompose_tables(
     _schedule_inquiry_activity(current_user, request, "decompose_submission", session_id)
     service = InquiryService(db)
     try:
-        return await service.submit_decompose(
+        result = await service.submit_decompose(
             session_id,
             user_id=current_user.id,
             condition_table=payload.condition_table,
             step_table=payload.step_table,
             model_table=payload.model_table,
         )
+        logger.info(
+            "[Maite] User %s submitted decompose for session %s",
+            current_user.id,
+            session_id,
+        )
+        return result
     except (*MAITE_DOMAIN_ERRORS,) as exc:
         raise_maite_http_error(exc)
         raise AssertionError("unreachable") from exc

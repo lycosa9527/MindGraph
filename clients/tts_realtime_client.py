@@ -27,6 +27,7 @@ from typing import Any, AsyncGenerator, Callable, Dict, Optional
 import websockets
 from websockets.exceptions import ConnectionClosed, WebSocketException
 
+from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
@@ -125,9 +126,12 @@ class TTSRealtimeClient:
             # Build WebSocket URL with model parameter
             url = f"{config.DASHSCOPE_REALTIME_WS_BASE.rstrip('/')}?model={self.model}"
 
-            # Connect with API key in headers
             # Note: websockets library uses 'additional_headers' parameter
-            headers = {"Authorization": f"Bearer {self.api_key}"}
+            headers = build_dashscope_headers(
+                self.api_key,
+                workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+                content_type=None,
+            )
 
             self.ws = await websockets.connect(
                 url,

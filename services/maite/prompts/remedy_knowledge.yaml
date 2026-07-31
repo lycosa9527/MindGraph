@@ -1,7 +1,7 @@
 id: remedy_knowledge
 version: v3
 task_type: remedy_knowledge
-model_hint: qwen-plus-latest
+model_hint: qwen3.7-plus
 input_variables:
   - problem_text
   - block_name

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from config.dashscope_urls import (
+    WORKSPACE_HEADER,
     build_chat_completions_url,
+    build_dashscope_headers,
     build_dashscope_inference_ws_url,
     build_realtime_ws_base,
     dashscope_endpoint_summary,
@@ -112,3 +114,18 @@ def test_build_dashscope_inference_ws_url() -> None:
         region="cn-beijing",
     )
     assert url == "wss://ws-test123.cn-beijing.maas.aliyuncs.com/api-ws/v1/inference"
+
+
+def test_build_dashscope_headers_includes_workspace() -> None:
+    """Model calls send X-DashScope-WorkSpace when workspace id is set."""
+    headers = build_dashscope_headers("sk-test", workspace_id="llm-9b85qukeq1cjfa5l")
+    assert headers["Authorization"] == "Bearer sk-test"
+    assert headers["Content-Type"] == "application/json"
+    assert headers[WORKSPACE_HEADER] == "llm-9b85qukeq1cjfa5l"
+
+
+def test_build_dashscope_headers_omits_workspace_when_unset() -> None:
+    """Legacy mode keeps Bearer-only headers."""
+    headers = build_dashscope_headers("sk-test", workspace_id=None, content_type=None)
+    assert headers == {"Authorization": "Bearer sk-test"}
+    assert WORKSPACE_HEADER not in headers

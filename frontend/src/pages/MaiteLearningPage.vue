@@ -16,6 +16,7 @@ onUnmounted(() => {
     sessionId: store.activeSessionId ?? undefined,
   })
   eventBus.emit('maite:mentor_stream_stop', {})
+  store.resetWorkspace()
 })
 </script>
 

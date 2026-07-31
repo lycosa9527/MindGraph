@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.maite_learning import MaiteProblem
 from repositories.maite.problems_repo import MaiteProblemsRepository
 from services.maite.domain.json_helpers import parse_llm_json
+from services.maite.domain.transaction import commit_maite
 from services.maite.llm.adapter import MaiteLLMAdapter
 from services.maite.prompts.registry import PromptRegistry, get_prompt_registry
 from services.maite.schemas.problem import OcrResult, ProblemCreate, ProblemRead
@@ -78,6 +79,13 @@ class ProblemService:
             difficulty=payload.difficulty,
         )
         created = await self._repo.create(row)
+        await commit_maite(self._session)
+        logger.info(
+            "[Maite] Problem created id=%s user=%s source=%s",
+            created.id,
+            user_id,
+            payload.source_type,
+        )
         return ProblemRead.model_validate(created)
 
     async def list_problems(self, user_id: int, *, limit: int = 50) -> list[ProblemRead]:
@@ -99,12 +107,14 @@ class ProblemService:
         endpoint_path: str,
     ) -> OcrResult:
         """Extract problem text from an uploaded image via OCR."""
-        stored_path = await save_user_upload(
-            user_id,
-            image_bytes,
-            suffix=".png" if "png" in mime_type else ".jpg",
-        )
-        data_url = to_data_url(stored_path, mime_type=mime_type)
+        if "png" in mime_type:
+            suffix = ".png"
+        elif "webp" in mime_type:
+            suffix = ".webp"
+        else:
+            suffix = ".jpg"
+        stored_path = await save_user_upload(user_id, image_bytes, suffix=suffix)
+        data_url = await to_data_url(stored_path, mime_type=mime_type)
         rendered = self._prompts.render("ocr_extract", {"image_hint": stored_path})
         raw = await self._llm.complete(
             rendered.system_prompt,
@@ -121,6 +131,19 @@ class ProblemService:
         )
         raw_text = str(parsed.get("raw_text") or parsed.get("problem_text") or raw.strip())
         clean_text = str(parsed.get("clean_text") or raw_text)
+        if not clean_text.strip():
+            logger.warning(
+                "[Maite] OCR returned empty text user=%s path=%s",
+                user_id,
+                stored_path,
+            )
+        else:
+            logger.info(
+                "[Maite] OCR extracted user=%s chars=%s path=%s",
+                user_id,
+                len(clean_text),
+                stored_path,
+            )
         return OcrResult(
             raw_text=raw_text,
             clean_text=clean_text,

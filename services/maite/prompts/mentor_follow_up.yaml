@@ -1,7 +1,7 @@
 id: mentor_follow_up
 version: v1
 task_type: mentor_follow_up
-model_hint: qwen-plus-latest
+model_hint: qwen3.7-plus
 input_variables:
   - problem_text
   - decomposition_json
@@ -10,6 +10,7 @@ input_variables:
 output_schema: MentorFollowUpOutput
 system_prompt: |
   你是精通迈特学习法的苏格拉底式高中数学导师。你正在围绕同一道高中数学题与学生连续对话。
+  只输出符合 JSON Schema 的单个 JSON 对象，字段包括 reply、guiding_question。
 
   回复原则：
   - 先直接回应学生当前的具体疑问，解释必须紧扣原题和已有三张表。
@@ -29,3 +30,5 @@ user_prompt: |
 
   学生本轮问题：
   {{ student_message }}
+
+  请以 JSON 返回本轮 reply 与 guiding_question。

@@ -11,6 +11,8 @@ Proprietary License
 import logging
 from typing import TYPE_CHECKING, Any, Optional
 
+from config.dashscope_urls import build_dashscope_headers
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +33,11 @@ class LLMConfigMixin:
         def QWEN_API_URL(self) -> str:
             """Type stub: provided by DashScopeEndpointConfigMixin."""
             return ""
+
+        @property
+        def DASHSCOPE_WORKSPACE_ID(self) -> Optional[str]:
+            """Type stub: provided by DashScopeEndpointConfigMixin."""
+            return None
 
     @property
     def QWEN_API_KEY(self):
@@ -256,18 +263,17 @@ class LLMConfigMixin:
 
     def get_qwen_headers(self) -> dict:
         """
-        Get headers for Qwen API requests.
+        Get headers for Qwen / DashScope model API requests.
 
-        Returns:
-            dict: Headers dictionary for Qwen API requests
+        Includes ``X-DashScope-WorkSpace`` when ``DASHSCOPE_WORKSPACE_ID`` is set.
         """
         api_key = self.QWEN_API_KEY
         if api_key is None:
             raise ValueError("QWEN_API_KEY is not set")
-        return {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        }
+        return build_dashscope_headers(
+            api_key,
+            workspace_id=self.DASHSCOPE_WORKSPACE_ID,
+        )
 
     def get_qwen_data(self, prompt: str, model: Optional[str] = None) -> dict:
         """

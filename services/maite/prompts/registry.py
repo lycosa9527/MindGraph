@@ -78,7 +78,7 @@ class PromptRegistry:
             id=str(raw["id"]),
             version=str(raw.get("version", "v1")),
             task_type=str(raw.get("task_type", raw["id"])),
-            model_hint=str(raw.get("model_hint", "qwen-plus-latest")),
+            model_hint=str(raw.get("model_hint", "qwen3.7-plus")),
             input_variables=tuple(str(v) for v in input_vars),
             output_schema=str(raw.get("output_schema", "")),
             system_prompt=str(raw.get("system_prompt", "")).strip(),

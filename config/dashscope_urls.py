@@ -11,7 +11,7 @@ Proprietary License
 
 from __future__ import annotations
 
-from typing import Literal, Optional, TypedDict
+from typing import Dict, Literal, Optional, TypedDict
 
 DashScopeRegion = Literal[
     "cn-beijing",
@@ -27,6 +27,36 @@ LEGACY_API_V1_BASE = "https://dashscope.aliyuncs.com/api/v1/"
 LEGACY_COMPATIBLE_API_BASE = "https://dashscope.aliyuncs.com/compatible-api/v1"
 LEGACY_REALTIME_WS_BASE_CN = "wss://dashscope.aliyuncs.com/api-ws/v1/realtime"
 LEGACY_REALTIME_WS_BASE_INTL = "wss://dashscope-intl.aliyuncs.com/api-ws/v1/realtime"
+
+WORKSPACE_HEADER = "X-DashScope-WorkSpace"
+
+
+def build_dashscope_headers(
+    api_key: Optional[str],
+    *,
+    workspace_id: Optional[str] = None,
+    content_type: Optional[str] = "application/json",
+    extra: Optional[Dict[str, str]] = None,
+) -> Dict[str, str]:
+    """Build DashScope auth headers, including workspace id when set.
+
+    Model Studio sub-business spaces (华北2 / 新加坡 / 东京 / 法兰克福) resolve
+    the target space from the MaaS host and/or ``X-DashScope-WorkSpace``.
+    Bailian **application** calls (agent/workflow) also need an APP ID; this
+    helper is for model APIs only.
+    """
+    if not api_key or not isinstance(api_key, str):
+        raise ValueError("DashScope API key is required")
+    headers: Dict[str, str] = {"Authorization": f"Bearer {api_key}"}
+    if content_type:
+        headers["Content-Type"] = content_type
+    cleaned = workspace_id.strip() if isinstance(workspace_id, str) else ""
+    if cleaned:
+        headers[WORKSPACE_HEADER] = cleaned
+    if extra:
+        headers.update(extra)
+    return headers
+
 
 _REGION_ALIASES: dict[str, DashScopeRegion] = {
     "cn": "cn-beijing",

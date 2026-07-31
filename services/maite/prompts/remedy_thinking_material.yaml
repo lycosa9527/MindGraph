@@ -1,7 +1,7 @@
 id: remedy_thinking_material
 version: v1
 task_type: remedy_thinking_material
-model_hint: qwen-plus-latest
+model_hint: qwen3.7-plus
 input_variables:
   - problem_text
   - block_name

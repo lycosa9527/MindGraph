@@ -5,6 +5,7 @@ import { onScopeDispose, ref } from 'vue'
 
 import { listSessions } from '@/api/maite/inquiry'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useAuthStore } from '@/stores/auth'
 import { useMaiteStore } from '@/stores/maite'
 
 import type { MaitePracticeItem } from '@/types/maite'
@@ -14,6 +15,7 @@ function toPracticeItem(session: {
   title?: string | null
   status: string
   current_stage: string
+  mode?: string
   updated_at: string
   created_at: string
 }): MaitePracticeItem {
@@ -22,6 +24,7 @@ function toPracticeItem(session: {
     title: session.title,
     status: session.status,
     current_stage: session.current_stage,
+    mode: session.mode,
     updated_at: session.updated_at,
     created_at: session.created_at,
   }
@@ -29,10 +32,16 @@ function toPracticeItem(session: {
 
 export function useMaitePracticeHistory() {
   const store = useMaiteStore()
+  const authStore = useAuthStore()
   const loading = ref(false)
   const errorMessage = ref('')
 
   async function loadSessions(): Promise<void> {
+    // Guest shell is allowed (route has no requiresAuth); skip list until signed in.
+    if (!authStore.isAuthenticated) {
+      store.setRecentPractice([])
+      return
+    }
     loading.value = true
     errorMessage.value = ''
     try {

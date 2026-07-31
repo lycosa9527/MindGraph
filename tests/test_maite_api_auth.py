@@ -35,7 +35,7 @@ async def test_feature_flag_gate_blocks_maite_when_disabled():
     call_next = AsyncMock(return_value=MagicMock(status_code=200))
     with patch(
         "services.infrastructure.http.feature_gate.config",
-        SimpleNamespace(FEATURE_MAITE_LEARNING=False),
+        SimpleNamespace(FEATURE_MATE_LEARNING=False),
     ):
         response = await feature_flag_gate(_request("/api/maite/health"), call_next)
     assert response.status_code == 404
@@ -44,12 +44,12 @@ async def test_feature_flag_gate_blocks_maite_when_disabled():
 
 @pytest.mark.asyncio
 async def test_feature_flag_gate_allows_maite_when_enabled():
-    """Maite requests pass when FEATURE_MAITE_LEARNING is on."""
+    """Mate Learning requests pass when FEATURE_MATE_LEARNING is on."""
     downstream = MagicMock(status_code=200)
     call_next = AsyncMock(return_value=downstream)
     with patch(
         "services.infrastructure.http.feature_gate.config",
-        SimpleNamespace(FEATURE_MAITE_LEARNING=True),
+        SimpleNamespace(FEATURE_MATE_LEARNING=True),
     ):
         response = await feature_flag_gate(_request("/api/maite/inquiry/sessions"), call_next)
     assert response is downstream
@@ -58,4 +58,4 @@ async def test_feature_flag_gate_allows_maite_when_enabled():
 
 def test_maite_feature_key_mapped():
     """Admin/org-access map includes maite learning."""
-    assert FEATURE_KEY_TO_CONFIG_ATTR["feature_maite_learning"] == "FEATURE_MAITE_LEARNING"
+    assert FEATURE_KEY_TO_CONFIG_ATTR["feature_mate_learning"] == "FEATURE_MATE_LEARNING"

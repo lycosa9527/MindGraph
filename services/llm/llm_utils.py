@@ -35,7 +35,8 @@ class LLMUtils:
             return False
         if ml == "kimi":
             return False
-        if ml == "qwen" or ml.startswith("qwen-"):
+        # qwen, qwen-plus, qwen3.7-flash/plus, etc. — keep thinking off app-wide.
+        if ml == "qwen" or ml.startswith("qwen-") or ml.startswith("qwen3"):
             return False
         return True
 

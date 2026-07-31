@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * MaiteStageRail — inquiry stage navigation.
+ * MaiteStageRail — inquiry stage navigation (past + current only).
  */
 import { useLanguage } from '@/composables/core/useLanguage'
 
@@ -22,6 +22,19 @@ const stages: MaiteInquiryStage[] = ['decompose', 'diagnosis', 'remedy', 'varian
 function isReadOnly(stage: MaiteInquiryStage): boolean {
   return props.readOnlyPhases.includes(stage)
 }
+
+function isLocked(stage: MaiteInquiryStage): boolean {
+  const order = stages.indexOf(stage)
+  const current = stages.indexOf(props.activeStage)
+  return order > current
+}
+
+function onSelect(stage: MaiteInquiryStage): void {
+  if (isLocked(stage)) {
+    return
+  }
+  emit('select', stage)
+}
 </script>
 
 <template>
@@ -34,8 +47,10 @@ function isReadOnly(stage: MaiteInquiryStage): boolean {
       :class="{
         'maite-stage-rail__item--active': activeStage === stage,
         'maite-stage-rail__item--readonly': isReadOnly(stage),
+        'maite-stage-rail__item--locked': isLocked(stage),
       }"
-      @click="emit('select', stage)"
+      :disabled="isLocked(stage)"
+      @click="onSelect(stage)"
     >
       <span class="maite-stage-rail__label">{{ t(`maite.stage.${stage}`) }}</span>
     </button>
@@ -59,12 +74,17 @@ function isReadOnly(stage: MaiteInquiryStage): boolean {
 }
 
 .maite-stage-rail__item--active {
-  border-color: #667eea;
-  background: #667eea;
+  border-color: #334155;
+  background: #334155;
   color: #fff;
 }
 
 .maite-stage-rail__item--readonly:not(.maite-stage-rail__item--active) {
   opacity: 0.7;
+}
+
+.maite-stage-rail__item--locked {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 </style>

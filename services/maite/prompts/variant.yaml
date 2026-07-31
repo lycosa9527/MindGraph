@@ -1,7 +1,7 @@
 id: variant
 version: v3
 task_type: variant
-model_hint: qwen-plus-latest
+model_hint: qwen3.7-plus
 input_variables:
   - problem_text
   - final_block_report

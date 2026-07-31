@@ -18,7 +18,11 @@ import websockets
 from websockets.asyncio.client import ClientConnection
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 
-from config.dashscope_urls import build_dashscope_inference_ws_url, normalize_dashscope_region
+from config.dashscope_urls import (
+    build_dashscope_headers,
+    build_dashscope_inference_ws_url,
+    normalize_dashscope_region,
+)
 from config.settings import config
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 
@@ -144,10 +148,11 @@ class FunAsrRealtimeClient:
             raise RuntimeError("DASHSCOPE_WORKSPACE_ID required for Fun-ASR MaaS inference")
 
         url = build_dashscope_inference_ws_url(workspace_id=workspace_id, region=region)
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "X-DashScope-WorkSpace": workspace_id,
-        }
+        headers = build_dashscope_headers(
+            api_key,
+            workspace_id=workspace_id,
+            content_type=None,
+        )
         self._task_id = str(uuid.uuid4())
         self._ws = await websockets.connect(
             url,

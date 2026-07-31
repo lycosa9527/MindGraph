@@ -5,21 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.156.0] - 2026-07-31
+## [5.156.1] - 2026-07-31
 
-> **迈特学习法 (Maite Learning): native MindGraph module with async LLM, PG+RLS, Redis, and event-bus UI.**
+> **迈特学习法: persist practice on OCR, stream mentor results live, and commit Maite DB writes.**
+
+### Fixed
+
+- **Practice list empty after OCR** — Maite domain services only flushed and never committed, so create-problem/session responses looked successful then rolled back on request end; all Maite write paths now commit (`services/maite/domain/transaction.py`).
+- **Mentor stream stall** — Streaming decompose/follow-up no longer uses `response_format: json_object` (DashScope buffered the full JSON ~45–70s); cumulative SSE preview + longer stall timeout; UI shows live tokens in chat and stream panel.
+- **最近练习 on upload** — OCR success immediately creates problem + session and optimistically prepends sidebar **最近练习** (demo/inquiry), before mentor decompose starts.
 
 ### Added
 
-- **迈特学习法 module** — Sidebar + Intl module grid entry (`/maite`) for demo / inquiry / learning-map modes, gated by `FEATURE_MAITE_LEARNING` (default on).
-- **Backend `/api/maite`** — Authenticated async routers for problems/OCR, mentor SSE, inquiry stages (decompose → diagnose → remedy → variants → complete), reports, and user graph progress; private uploads; Redis recent-practice cache.
-- **Shared LLM path** — Maite prompts call MindGraph `llm_service` (`request_type=maite_learning`) with token-cap / thinking-coin tracking; YAML prompts under `services/maite/prompts/`.
-- **PostgreSQL models + RLS** — `maite_*` tables (Alembic `0089`/`0090`) with `user_id` ownership; server-only `MaiteTaskReference` answer keys.
-- **Event-bus UI** — Typed `maite:*` events on the frontend event bus; session asyncio bus for stage/stream coordination.
+- **Maite toasts / notifications** — Upload, OCR, decompose start/complete, practice-saved, and stream-fallback feedback; `useMaiteNotifications` bridges `maite:error`.
+- **Sidebar practice history** — `MaitePracticeHistory` accordion (MindMate-style); open respects `demo` vs `inquiry` mode.
+
+### Changed
+
+- **Demo OCR → auto decompose** — After OCR, demo auto-starts streamed mentor decompose and reuses the session created at upload.
 
 ### Tests
 
-- **Backend** — Maite LLM adapter tracking kwargs, feature-gate hot-off, session bus, completion gate (`tests/test_maite_*.py`).
+- **Frontend** — Inquiry complete gate (`frontend/tests/maite/inquiryCompleteGate.spec.ts`).
+- **Backend** — Module activity + public serializers (`tests/test_maite_module_activity.py`, `tests/test_maite_public_serializers.py`).
+
+## [5.156.0] - 2026-07-31
+
+> **迈特学习法 (Mate Learning): native MindGraph module with async LLM, PG+RLS, Redis, and event-bus UI.**
+
+### Added
+
+- **迈特学习法 module** — Sidebar + Intl module grid entry (`/maite`) for demo / inquiry / learning-map modes, gated by `FEATURE_MATE_LEARNING` (default off).
+- **Backend `/api/maite`** — Authenticated async routers for problems/OCR, mentor SSE, inquiry stages (decompose → diagnose → remedy → variants → complete), reports, and user graph progress; private uploads; Redis recent-practice cache.
+- **Shared LLM path** — Maite prompts call MindGraph `llm_service` (`request_type=maite_learning`) with token-cap / thinking-coin tracking; YAML prompts under `services/maite/prompts/`.
+- **PostgreSQL models + RLS** — `maite_*` tables (Alembic `0089`/`0090`/`0091`) with `user_id` ownership + child/task-reference RLS; server-only `MaiteTaskReference` answer keys.
+- **Event-bus UI** — Typed `maite:*` events on the frontend event bus; session asyncio bus for stage/stream coordination.
+
+### Changed
+
+- **Maite production hardening** — Completed sessions return 409 on mutations; strip `expected_strategy` from client payloads; LLM rate limits on diagnosis/remedy/variants/reports; OCR 8MB cap; authenticated `/health`; module activity tagged `maite` (not coerced to canvas); practice list Redis populate + `/practice/recent`; inquiry UI requires real variant answers (no placeholder complete).
+
+### Tests
+
+- **Backend** — Maite LLM adapter tracking kwargs, feature-gate hot-off, session bus, completion gate, secret stripping, module activity (`tests/test_maite_*.py`).
 - **Frontend** — Maite math text + SSE frame parser (`frontend/tests/maite/`).
 
 ## [5.155.4] - 2026-07-30

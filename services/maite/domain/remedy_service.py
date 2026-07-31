@@ -20,8 +20,11 @@ from models.domain.maite_stages import MaiteRemedyTask
 from repositories.maite.problems_repo import MaiteProblemsRepository
 from repositories.maite.sessions_repo import MaiteSessionsRepository
 from repositories.maite.stages_repo import MaiteStagesRepository
-from services.maite.domain.errors import MaiteNotFoundError
+from services.maite.domain.errors import MaiteConflictError, MaiteNotFoundError
 from services.maite.domain.json_helpers import parse_llm_json
+from services.maite.domain.public_serializers import public_remedy_task
+from services.maite.domain.session_guards import require_mutable_session
+from services.maite.domain.transaction import commit_maite
 from services.maite.events import emit_maite_session_event
 from services.maite.llm.adapter import MaiteLLMAdapter
 from services.maite.prompts.registry import PromptRegistry, get_prompt_registry
@@ -59,7 +62,10 @@ class RemedyService:
         user_id: int,
     ) -> list[dict[str, Any]]:
         """Create remedy tasks from the diagnosis block report."""
-        await self._require_owned_session(session_id, user_id)
+        await require_mutable_session(self._sessions, session_id, user_id)
+        existing = await self._stages.remedy.list_for_session(session_id)
+        if existing:
+            return [public_remedy_task(row) for row in existing]
         diagnosis = await self._stages.diagnosis.get_for_session(session_id)
         blocks = diagnosis.final_block_report if diagnosis else []
         created_rows: list[MaiteRemedyTask] = []
@@ -78,7 +84,8 @@ class RemedyService:
                 status="pending",
             )
             created_rows.append(await self._stages.remedy.create(row))
-        return [self._public_task(row) for row in created_rows]
+        await commit_maite(self._session)
+        return [public_remedy_task(row) for row in created_rows]
 
     async def prepare_task(
         self,
@@ -126,12 +133,13 @@ class RemedyService:
             updated_at=datetime.now(UTC),
         )
         await self._store_reference("remedy", task.id, parsed)
+        await commit_maite(self._session)
         await emit_maite_session_event(
             str(task.session_id),
             "remedy_prepared",
             {"task_id": task.id},
         )
-        return self._public_task(updated)
+        return public_remedy_task(updated)
 
     async def submit_task(
         self,
@@ -145,6 +153,8 @@ class RemedyService:
     ) -> dict[str, Any]:
         """Score student remedy response and store feedback."""
         task = await self._require_owned_task(task_id, user_id)
+        if task.status == "submitted":
+            raise MaiteConflictError("Remedy task already submitted")
         feedback_prompt_id = self._feedback_prompt_id(task.block_type)
         problem_text = await self._problem_text(task.session_id)
         rendered = self._prompts.render(
@@ -180,7 +190,8 @@ class RemedyService:
             status="submitted",
             updated_at=datetime.now(UTC),
         )
-        return self._public_task(updated)
+        await commit_maite(self._session)
+        return public_remedy_task(updated)
 
     @staticmethod
     def _feedback_prompt_id(block_type: str) -> str:
@@ -214,13 +225,8 @@ class RemedyService:
         task = await self._stages.remedy.get_by_id(task_id)
         if task is None:
             raise MaiteNotFoundError("Remedy task not found")
-        await self._require_owned_session(task.session_id, user_id)
+        await require_mutable_session(self._sessions, task.session_id, user_id)
         return task
-
-    async def _require_owned_session(self, session_id: int, user_id: int) -> None:
-        row = await self._sessions.get_owned(session_id, user_id)
-        if row is None:
-            raise MaiteNotFoundError("Session not found")
 
     async def _problem_text(self, session_id: int) -> str:
         row = await self._sessions.get_by_id(session_id)
@@ -232,22 +238,6 @@ class RemedyService:
     @staticmethod
     def _strip_reference_fields(data: dict[str, Any]) -> dict[str, Any]:
         cleaned = dict(data)
-        for key in ("reference_answer", "reference_strategy", "success_criteria"):
+        for key in ("reference_answer", "reference_strategy", "success_criteria", "expected_strategy"):
             cleaned.pop(key, None)
         return cleaned
-
-    @staticmethod
-    def _public_task(task: Any) -> dict[str, Any]:
-        if task is None:
-            return {}
-        table = getattr(task, "__table__", None)
-        if table is None:
-            return {}
-        data = {col.name: getattr(task, col.name) for col in table.columns}
-        payload = data.get("task_payload")
-        if isinstance(payload, dict):
-            data["task_payload"] = RemedyService._strip_reference_fields(payload)
-        feedback = data.get("ai_feedback")
-        if isinstance(feedback, dict):
-            data["ai_feedback"] = RemedyService._strip_reference_fields(feedback)
-        return data

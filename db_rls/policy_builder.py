@@ -134,6 +134,41 @@ DEBATE_CHILD_TABLES = [
     ),
 ]
 
+_MAITE_SESSION_VISIBLE = (
+    "EXISTS (SELECT 1 FROM maite_inquiry_sessions s WHERE s.id = session_id AND rls_diagram_visible(s.user_id))"
+)
+_MAITE_PROBLEM_VISIBLE = (
+    "EXISTS (SELECT 1 FROM maite_problems p WHERE p.id = problem_id AND rls_diagram_visible(p.user_id))"
+)
+
+MAITE_CHILD_TABLES = [
+    ("maite_decompose_submissions", _MAITE_SESSION_VISIBLE),
+    ("maite_diagnosis_results", _MAITE_SESSION_VISIBLE),
+    ("maite_remedy_tasks", _MAITE_SESSION_VISIBLE),
+    ("maite_variant_tasks", _MAITE_SESSION_VISIBLE),
+    ("maite_self_assessments", _MAITE_SESSION_VISIBLE),
+    ("maite_problem_analyses", _MAITE_PROBLEM_VISIBLE),
+    ("maite_session_reports", _MAITE_SESSION_VISIBLE),
+]
+
+MAITE_TASK_REFERENCE_EXPR = (
+    "("
+    "EXISTS ("
+    "SELECT 1 FROM maite_variant_tasks vt "
+    "JOIN maite_inquiry_sessions s ON s.id = vt.session_id "
+    "WHERE maite_task_references.task_kind = 'variant' "
+    "AND maite_task_references.task_id = vt.id "
+    "AND rls_diagram_visible(s.user_id)"
+    ") OR EXISTS ("
+    "SELECT 1 FROM maite_remedy_tasks rt "
+    "JOIN maite_inquiry_sessions s ON s.id = rt.session_id "
+    "WHERE maite_task_references.task_kind = 'remedy' "
+    "AND maite_task_references.task_id = rt.id "
+    "AND rls_diagram_visible(s.user_id)"
+    ") OR rls_is_system_mode()"
+    ")"
+)
+
 # Group B — organization_id
 ORG_TABLES = [
     "token_usage",

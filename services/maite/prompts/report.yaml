@@ -1,7 +1,7 @@
 id: report
 version: v1
 task_type: report
-model_hint: qwen-plus-latest
+model_hint: qwen3.7-plus
 input_variables:
   - session_snapshot
 output_schema: SessionReportOutput

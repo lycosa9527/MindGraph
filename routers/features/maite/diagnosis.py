@@ -1,5 +1,5 @@
 """
-Maite Learning four-stage diagnosis endpoints.
+Mate Learning four-stage diagnosis endpoints.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -17,7 +17,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
-from routers.features.maite.helpers import MAITE_DOMAIN_ERRORS, organization_id_for, raise_maite_http_error
+from routers.features.maite.helpers import (
+    MAITE_DOMAIN_ERRORS,
+    enforce_maite_llm_rate_limit,
+    organization_id_for,
+    raise_maite_http_error,
+)
 from services.maite.domain.diagnosis_service import DiagnosisService
 from services.monitoring.module_activity import schedule_module_activity
 from utils.auth import get_current_user
@@ -57,7 +62,8 @@ def _endpoint(session_id: int, suffix: str) -> str:
     return f"/api/maite/inquiry/{session_id}/diagnose{suffix}"
 
 
-def _schedule_diagnosis(user: User, request: Request, session_id: int, action: str) -> None:
+async def _begin_diagnosis(user: User, request: Request, session_id: int, action: str) -> None:
+    await enforce_maite_llm_rate_limit(user, request)
     schedule_module_activity(
         user=user,
         module="maite",
@@ -95,7 +101,7 @@ async def diagnose_stage_1(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Run stage-one direction check (via auto diagnosis pipeline)."""
-    _schedule_diagnosis(current_user, request, session_id, "stage_1")
+    await _begin_diagnosis(current_user, request, session_id, "stage_1")
     service = DiagnosisService(db)
     try:
         result = await service.auto_diagnose(
@@ -120,16 +126,27 @@ async def diagnose_auto(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Run full auto four-stage diagnosis."""
-    _schedule_diagnosis(current_user, request, session_id, "auto")
+    await _begin_diagnosis(current_user, request, session_id, "auto")
     service = DiagnosisService(db)
     try:
-        return await service.auto_diagnose(
+        logger.info(
+            "[Maite] Auto diagnosis start user=%s session=%s",
+            current_user.id,
+            session_id,
+        )
+        result = await service.auto_diagnose(
             session_id,
             user_id=current_user.id,
             organization_id=organization_id_for(current_user),
             student_thinking=payload.student_input,
             endpoint_path=_endpoint(session_id, "/auto"),
         )
+        logger.info(
+            "[Maite] Auto diagnosis complete user=%s session=%s",
+            current_user.id,
+            session_id,
+        )
+        return result
     except (*MAITE_DOMAIN_ERRORS,) as exc:
         raise_maite_http_error(exc)
         raise AssertionError("unreachable") from exc
@@ -144,7 +161,7 @@ async def diagnose_stage_2_interaction(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Record a stage-two knowledge-boundary interaction."""
-    _schedule_diagnosis(current_user, request, session_id, "stage_2")
+    await _begin_diagnosis(current_user, request, session_id, "stage_2")
     service = DiagnosisService(db)
     try:
         result = await service.auto_diagnose(
@@ -171,7 +188,7 @@ async def diagnose_stage_3_interaction(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Record a stage-three step-chain interaction."""
-    _schedule_diagnosis(current_user, request, session_id, "stage_3")
+    await _begin_diagnosis(current_user, request, session_id, "stage_3")
     service = DiagnosisService(db)
     try:
         result = await service.auto_diagnose(
@@ -197,7 +214,7 @@ async def diagnose_stage_4_generate_variant(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Generate the stage-four light variant."""
-    _schedule_diagnosis(current_user, request, session_id, "stage_4_generate")
+    await _begin_diagnosis(current_user, request, session_id, "stage_4_generate")
     service = DiagnosisService(db)
     try:
         return await service.generate_stage_four_variant(
@@ -220,7 +237,7 @@ async def diagnose_stage_4_evaluate(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Evaluate student judgement on the stage-four variant."""
-    _schedule_diagnosis(current_user, request, session_id, "stage_4_evaluate")
+    await _begin_diagnosis(current_user, request, session_id, "stage_4_evaluate")
     service = DiagnosisService(db)
     variant_text = payload.variant_text
     if not variant_text:
@@ -254,7 +271,7 @@ async def diagnose_finalize(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Finalize diagnosis block report and advance to remedy."""
-    _schedule_diagnosis(current_user, request, session_id, "finalize")
+    await _begin_diagnosis(current_user, request, session_id, "finalize")
     service = DiagnosisService(db)
     report = payload.final_block_report if payload else []
     if not report:
@@ -269,11 +286,18 @@ async def diagnose_finalize(
         if not isinstance(report, list):
             report = []
     try:
-        return await service.finalize(
+        result = await service.finalize(
             session_id,
             user_id=current_user.id,
             final_block_report=report,
         )
+        logger.info(
+            "[Maite] Diagnosis finalized user=%s session=%s blocks=%s",
+            current_user.id,
+            session_id,
+            len(report),
+        )
+        return result
     except (*MAITE_DOMAIN_ERRORS,) as exc:
         raise_maite_http_error(exc)
         raise AssertionError("unreachable") from exc

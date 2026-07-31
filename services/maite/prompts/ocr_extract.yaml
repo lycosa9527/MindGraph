@@ -1,11 +1,12 @@
 id: ocr_extract
 version: v1
 task_type: ocr_extract
-model_hint: qwen-vl-max
+model_hint: qwen3.7-flash
 input_variables:
   - image_hint
 output_schema: OCRExtractOutput
 system_prompt: |
   你是高中数学题目 OCR 助手。只提取题干、公式、选项和必要图形关系，不解题。
+  只输出符合 JSON Schema 的单个对象，字段包括 raw_text、clean_text，可选 confidence。
 user_prompt: |
-  请从图片中提取题目信息。图片说明：{{ image_hint }}
+  请从图片中提取题目信息，并以 JSON 返回。图片说明：{{ image_hint }}

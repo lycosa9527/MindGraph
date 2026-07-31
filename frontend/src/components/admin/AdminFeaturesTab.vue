@@ -36,7 +36,7 @@ const reloadEnvRuntimeMutation = useReloadAdminEnvRuntime()
 interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
   feature_rag_chunk_test: boolean
   feature_course: boolean
-  feature_maite_learning: boolean
+  feature_mate_learning: boolean
   feature_template: boolean
   feature_community: boolean
   feature_showcase: boolean
@@ -160,10 +160,10 @@ const ROWS: RowDef[] = [
     hintKey: 'admin.feature.courseHint',
   },
   {
-    apiKey: 'feature_maite_learning',
-    envKey: 'FEATURE_MAITE_LEARNING',
-    labelKey: 'admin.feature.maiteLearning',
-    hintKey: 'admin.feature.maiteLearningHint',
+    apiKey: 'feature_mate_learning',
+    envKey: 'FEATURE_MATE_LEARNING',
+    labelKey: 'admin.feature.mateLearning',
+    hintKey: 'admin.feature.mateLearningHint',
   },
   {
     apiKey: 'feature_template',

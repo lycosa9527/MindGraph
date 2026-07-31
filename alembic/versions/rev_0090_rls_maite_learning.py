@@ -1,4 +1,4 @@
-"""RLS for Maite Learning user-scoped tables.
+"""RLS for Mate Learning user-scoped tables.
 
 Revision ID: 0090
 Revises: 0089

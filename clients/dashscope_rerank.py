@@ -25,6 +25,7 @@ try:
 except ImportError:
     redis_module = None
 
+from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
@@ -282,10 +283,10 @@ class DashScopeRerankClient:
         if cached_result is not None:
             return cached_result
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
+        headers = build_dashscope_headers(
+            self.api_key,
+            workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+        )
 
         # Build payload based on model type
         # Documents should be simple list of strings for both models

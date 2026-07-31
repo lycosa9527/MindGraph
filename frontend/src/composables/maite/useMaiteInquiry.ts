@@ -3,16 +3,17 @@
  */
 import { computed, ref } from 'vue'
 
-import { createProblem } from '@/api/maite/problems'
 import {
   completeSession,
-  createSession,
   getSnapshot,
   submitDecompose,
 } from '@/api/maite/inquiry'
+import { persistMaitePractice } from '@/composables/maite/useMaitePracticePersist'
 import { diagnoseAuto, diagnoseFinalize } from '@/api/maite/diagnosis'
 import { generateRemedyTasks } from '@/api/maite/remedy'
 import { generateVariantTasks, submitVariantTask } from '@/api/maite/variants'
+import { notify } from '@/composables/core/notifications'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useMaiteStore } from '@/stores/maite'
 
@@ -46,6 +47,7 @@ function emptyTables(): {
 
 export function useMaiteInquiry() {
   const store = useMaiteStore()
+  const { t } = useLanguage()
 
   const loading = ref(false)
   const errorMessage = ref('')
@@ -62,7 +64,14 @@ export function useMaiteInquiry() {
     return STAGE_ORDER.slice(0, Math.max(0, currentIndex))
   })
 
+  const canComplete = computed(() => {
+    const submitted = variantTasks.value.filter((task) => task.status === 'submitted').length
+    return submitted >= 3
+  })
+
   const sessionId = computed(() => store.activeSessionId)
+
+  const decomposeReadonly = computed(() => readOnlyPhases.value.includes('decompose'))
 
   function syncStageFromSnapshot(data: MaiteSessionSnapshot): void {
     const stage = String(data.session?.current_stage ?? 'decompose') as MaiteInquiryStage
@@ -114,18 +123,23 @@ export function useMaiteInquiry() {
     loading.value = true
     errorMessage.value = ''
     try {
-      const problem = await createProblem({ raw_text: problemText.trim() })
-      const session = await createSession({
-        problem_id: problem.id,
-        mode: 'inquiry',
-        title: problemText.slice(0, 40),
-      })
-      store.setActiveSessionId(session.id)
+      // Reuse session already created at OCR upload when available.
+      let sessionId = store.activeSessionId
+      if (!sessionId) {
+        const session = await persistMaitePractice({
+          text: problemText,
+          mode: 'inquiry',
+        })
+        sessionId = session?.id ?? null
+      }
+      if (!sessionId) {
+        throw new Error('create_failed')
+      }
       store.setCurrentProblemText(problemText)
-      eventBus.emit('maite:session_opened', { sessionId: session.id, mode: 'inquiry' })
-      eventBus.emit('maite:practice_invalidate', { reason: 'session_created' })
-      await loadSnapshot(session.id)
-      return session.id
+      eventBus.emit('maite:session_opened', { sessionId, mode: 'inquiry' })
+      await loadSnapshot(sessionId)
+      notify.success(t('maite.toast.session_created'))
+      return sessionId
     } catch (error: unknown) {
       errorMessage.value = error instanceof Error ? error.message : 'create_failed'
       eventBus.emit('maite:error', {
@@ -139,7 +153,7 @@ export function useMaiteInquiry() {
   }
 
   async function submitDecomposeTables(): Promise<void> {
-    if (!sessionId.value) {
+    if (!sessionId.value || decomposeReadonly.value) {
       return
     }
     loading.value = true
@@ -193,7 +207,6 @@ export function useMaiteInquiry() {
     errorMessage.value = ''
     try {
       remedyTasks.value = await generateRemedyTasks(sessionId.value)
-      activeStage.value = 'variant'
       await loadSnapshot(sessionId.value)
     } catch (error: unknown) {
       errorMessage.value = error instanceof Error ? error.message : 'remedy_failed'
@@ -214,6 +227,7 @@ export function useMaiteInquiry() {
     errorMessage.value = ''
     try {
       variantTasks.value = await generateVariantTasks(sessionId.value)
+      activeStage.value = 'variant'
       await loadSnapshot(sessionId.value)
     } catch (error: unknown) {
       errorMessage.value = error instanceof Error ? error.message : 'variant_failed'
@@ -226,25 +240,38 @@ export function useMaiteInquiry() {
     }
   }
 
-  async function submitAllVariantsPlaceholder(): Promise<void> {
-    if (!sessionId.value || variantTasks.value.length === 0) {
+  async function submitVariantAnswer(
+    taskId: number,
+    studentAnswer: string,
+    studentStrategy: string
+  ): Promise<void> {
+    if (!sessionId.value) {
+      return
+    }
+    const answer = studentAnswer.trim()
+    const strategy = studentStrategy.trim()
+    if (!answer || !strategy) {
+      errorMessage.value = 'variant_answer_required'
+      eventBus.emit('maite:error', {
+        message: errorMessage.value,
+        source: 'inquiry_variant_submit',
+      })
       return
     }
     loading.value = true
     errorMessage.value = ''
     try {
-      for (const task of variantTasks.value) {
-        if (task.status === 'submitted') {
-          continue
-        }
-        await submitVariantTask(sessionId.value, task.id, {
-          student_answer: '占位答案',
-          student_strategy: '占位策略',
-        })
-      }
+      await submitVariantTask(sessionId.value, taskId, {
+        student_answer: answer,
+        student_strategy: strategy,
+      })
       await loadSnapshot(sessionId.value)
     } catch (error: unknown) {
       errorMessage.value = error instanceof Error ? error.message : 'variant_submit_failed'
+      eventBus.emit('maite:error', {
+        message: errorMessage.value,
+        source: 'inquiry_variant_submit',
+      })
     } finally {
       loading.value = false
     }
@@ -254,19 +281,22 @@ export function useMaiteInquiry() {
     if (!sessionId.value) {
       return
     }
+    if (!canComplete.value) {
+      errorMessage.value = 'variants_incomplete'
+      eventBus.emit('maite:error', {
+        message: errorMessage.value,
+        source: 'inquiry_complete',
+      })
+      return
+    }
     loading.value = true
     errorMessage.value = ''
     try {
-      if (variantTasks.value.length === 0) {
-        await runVariantsGenerate()
-      }
-      if (variantTasks.value.some((task) => task.status !== 'submitted')) {
-        await submitAllVariantsPlaceholder()
-      }
       await completeSession(sessionId.value)
       activeStage.value = 'completed'
       eventBus.emit('maite:practice_invalidate', { reason: 'session_completed' })
       await loadSnapshot(sessionId.value)
+      notify.success(t('maite.toast.session_completed'))
     } catch (error: unknown) {
       errorMessage.value = error instanceof Error ? error.message : 'complete_failed'
       eventBus.emit('maite:error', {
@@ -279,6 +309,11 @@ export function useMaiteInquiry() {
   }
 
   function selectStage(stage: MaiteInquiryStage): void {
+    const targetIndex = STAGE_ORDER.indexOf(stage)
+    const currentIndex = STAGE_ORDER.indexOf(activeStage.value)
+    if (targetIndex < 0 || targetIndex > currentIndex) {
+      return
+    }
     activeStage.value = stage
     if (sessionId.value) {
       eventBus.emit('maite:stage_changed', {
@@ -300,6 +335,8 @@ export function useMaiteInquiry() {
     variantTasks,
     studentThinking,
     readOnlyPhases,
+    decomposeReadonly,
+    canComplete,
     sessionId,
     loadSnapshot,
     startInquirySession,
@@ -307,6 +344,7 @@ export function useMaiteInquiry() {
     runDiagnoseAuto,
     runRemedyGenerate,
     runVariantsGenerate,
+    submitVariantAnswer,
     completeInquiry,
     selectStage,
   }

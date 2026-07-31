@@ -1,7 +1,7 @@
 id: diagnosis_stage_4_variant
 version: v1
 task_type: diagnosis_stage_4_variant
-model_hint: qwen-plus-latest
+model_hint: qwen3.7-plus
 input_variables:
   - problem_text
   - diagnosis_context

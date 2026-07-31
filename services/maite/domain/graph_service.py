@@ -17,6 +17,7 @@ from models.domain.maite_artifacts import MaiteGraphNodeProgress
 from repositories.maite.graph_repo import MaiteGraphRepository
 from repositories.maite.sessions_repo import MaiteSessionsRepository
 from services.maite.domain.errors import MaiteNotFoundError
+from services.maite.domain.transaction import commit_maite
 
 
 class GraphService:
@@ -74,6 +75,7 @@ class GraphService:
                 source=source,
                 updated_at=datetime.now(UTC),
             )
+        await commit_maite(self._session)
         return self._row_dict(saved)
 
     async def _require_owned_session(self, session_id: int, user_id: int) -> None:

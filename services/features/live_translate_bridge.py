@@ -27,6 +27,7 @@ from starlette.websockets import WebSocketDisconnect
 from websockets.asyncio.client import ClientConnection
 from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
 
+from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.ws_limits import (
@@ -123,9 +124,11 @@ async def run_translate_relay(
     resolved_model = (str(model).strip() if model else "") or config.QWEN_LIVE_TRANSLATE_MODEL
     base = config.DASHSCOPE_REALTIME_WS_BASE.rstrip("/")
     url = f"{base}?model={resolved_model}"
-    extra_headers = {
-        "Authorization": f"Bearer {api_key}",
-    }
+    extra_headers = build_dashscope_headers(
+        api_key,
+        workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+        content_type=None,
+    )
 
     try:
         upstream: ClientConnection = await websockets.connect(

@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from agents.core.agent_utils import extract_json_from_response
 from config.database import DATABASE_MIGRATION_URL, DATABASE_URL
+from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from prompts import get_prompt
 from services.knowledge.document_ocr import parse_dashscope_multimodal_text
@@ -240,7 +241,10 @@ def _dashscope_timed(
         },
     }
     url = f"{config.DASHSCOPE_API_URL}services/aigc/multimodal-generation/generation"
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    headers = build_dashscope_headers(
+        api_key,
+        workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+    )
     started = time.perf_counter()
     with httpx.Client(timeout=timeout_sec) as client:
         response = client.post(url, headers=headers, json=payload)

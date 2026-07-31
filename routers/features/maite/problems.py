@@ -1,5 +1,5 @@
 """
-Maite Learning problem and OCR endpoints.
+Mate Learning problem and OCR endpoints.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -32,6 +32,7 @@ router = APIRouter()
 
 _ALLOWED_IMAGE_TYPES = frozenset({"image/png", "image/jpeg", "image/webp"})
 _ALLOWED_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp"})
+_MAX_OCR_BYTES = 8 * 1024 * 1024
 
 
 def _validate_upload_file(upload: UploadFile) -> str:
@@ -66,11 +67,18 @@ async def create_problem(
     )
     service = ProblemService(db)
     try:
-        return await service.create_problem(
+        created = await service.create_problem(
             payload,
             user_id=current_user.id,
             organization_id=organization_id_for(current_user),
         )
+        logger.info(
+            "[Maite] User %s created problem %s (chars=%s)",
+            current_user.id,
+            created.id,
+            len(payload.raw_text or ""),
+        )
+        return created
     except (*MAITE_DOMAIN_ERRORS,) as exc:
         raise_maite_http_error(exc)
         raise AssertionError("unreachable") from exc
@@ -89,7 +97,18 @@ async def extract_problem_ocr(
     await check_endpoint_rate_limit("maite_ocr", identifier, max_requests=30, window_seconds=60)
     image_bytes = await file.read()
     if not image_bytes:
+        logger.warning("[Maite] Empty OCR upload from user %s", current_user.id)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty upload")
+    if len(image_bytes) > _MAX_OCR_BYTES:
+        logger.warning(
+            "[Maite] OCR upload too large user=%s bytes=%s",
+            current_user.id,
+            len(image_bytes),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Image exceeds 8MB limit",
+        )
     schedule_module_activity(
         user=current_user,
         module="maite",
@@ -103,13 +122,22 @@ async def extract_problem_ocr(
     )
     service = ProblemService(db)
     try:
-        return await service.ocr_extract(
+        result = await service.ocr_extract(
             user_id=current_user.id,
             organization_id=organization_id_for(current_user),
             image_bytes=image_bytes,
             mime_type=mime_type,
             endpoint_path="/api/maite/problems/ocr",
         )
+        text_len = len(result.clean_text or result.raw_text or "")
+        logger.info(
+            "[Maite] OCR ok user=%s mime=%s bytes=%s text_chars=%s",
+            current_user.id,
+            mime_type,
+            len(image_bytes),
+            text_len,
+        )
+        return result
     except (*MAITE_DOMAIN_ERRORS,) as exc:
         raise_maite_http_error(exc)
         raise AssertionError("unreachable") from exc

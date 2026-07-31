@@ -1,5 +1,5 @@
 /**
- * Maite Learning Pinia store — workspace mode and session context.
+ * Mate Learning Pinia store — workspace mode and session context.
  */
 import { computed, ref } from 'vue'
 

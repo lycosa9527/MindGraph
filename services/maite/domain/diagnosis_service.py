@@ -19,8 +19,9 @@ from models.domain.maite_stages import MaiteDiagnosisResult
 from repositories.maite.problems_repo import MaiteProblemsRepository
 from repositories.maite.sessions_repo import MaiteSessionsRepository
 from repositories.maite.stages_repo import MaiteStagesRepository
-from services.maite.domain.errors import MaiteNotFoundError
 from services.maite.domain.json_helpers import parse_llm_json
+from services.maite.domain.session_guards import require_mutable_session
+from services.maite.domain.transaction import commit_maite
 from services.maite.events import emit_maite_session_event
 from services.maite.llm.adapter import MaiteLLMAdapter
 from services.maite.prompts.registry import PromptRegistry, get_prompt_registry
@@ -116,6 +117,7 @@ class DiagnosisService:
                 final_block_report=final_report,
                 updated_at=datetime.now(UTC),
             )
+        await commit_maite(self._session)
         await emit_maite_session_event(
             str(session_id),
             "diagnosis_progress",
@@ -151,6 +153,7 @@ class DiagnosisService:
             current_stage="remedy",
             updated_at=datetime.now(UTC),
         )
+        await commit_maite(self._session)
         return self._row_dict(saved)
 
     async def generate_stage_four_variant(
@@ -247,9 +250,7 @@ class DiagnosisService:
         return parsed
 
     async def _require_owned_session(self, session_id: int, user_id: int) -> None:
-        row = await self._sessions.get_owned(session_id, user_id)
-        if row is None:
-            raise MaiteNotFoundError("Session not found")
+        await require_mutable_session(self._sessions, session_id, user_id)
 
     async def _problem_text(self, session_id: int) -> str:
         row = await self._sessions.get_by_id(session_id)

@@ -71,5 +71,12 @@
     "yo",
     "zu"
   ],
-  "dedicatedCodes": ["af", "az", "fr", "th", "zh", "zh-tw"]
+  "dedicatedCodes": [
+    "af",
+    "az",
+    "fr",
+    "th",
+    "zh",
+    "zh-tw"
+  ]
 }

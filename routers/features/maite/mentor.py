@@ -1,5 +1,5 @@
 """
-Maite Learning mentor decompose and follow-up endpoints.
+Mate Learning mentor decompose and follow-up endpoints.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -84,12 +84,15 @@ async def decompose_problem(
     _schedule_mentor_activity(user=current_user, request=request, action="decompose", preview=payload.question)
     service = MentorService()
     try:
-        return await service.decompose(
+        logger.info("[Maite] Mentor decompose start user=%s", current_user.id)
+        result = await service.decompose(
             payload,
             user_id=current_user.id,
             organization_id=organization_id_for(current_user),
             endpoint_path="/api/maite/mentor/decompose",
         )
+        logger.info("[Maite] Mentor decompose complete user=%s", current_user.id)
+        return result
     except (*MAITE_DOMAIN_ERRORS,) as exc:
         raise_maite_http_error(exc)
         raise AssertionError("unreachable") from exc
@@ -106,6 +109,7 @@ async def decompose_problem_stream(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("maite_mentor_stream", identifier, max_requests=60, window_seconds=60)
     _schedule_mentor_activity(user=current_user, request=request, action="decompose_stream", preview=payload.question)
+    logger.info("[Maite] Mentor decompose stream start user=%s", current_user.id)
     service = MentorService()
     events = service.decompose_stream(
         payload,
@@ -133,13 +137,16 @@ async def answer_follow_up(
     _schedule_mentor_activity(user=current_user, request=request, action="follow_up", preview=payload.reply)
     service = MentorService()
     try:
-        return await service.follow_up(
+        logger.info("[Maite] Mentor follow-up start user=%s", current_user.id)
+        result = await service.follow_up(
             payload,
             decomposition=payload.decomposition,
             user_id=current_user.id,
             organization_id=organization_id_for(current_user),
             endpoint_path="/api/maite/mentor/follow-up",
         )
+        logger.info("[Maite] Mentor follow-up complete user=%s", current_user.id)
+        return result
     except (*MAITE_DOMAIN_ERRORS,) as exc:
         raise_maite_http_error(exc)
         raise AssertionError("unreachable") from exc
@@ -156,6 +163,7 @@ async def answer_follow_up_stream(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("maite_mentor_stream", identifier, max_requests=60, window_seconds=60)
     _schedule_mentor_activity(user=current_user, request=request, action="follow_up_stream", preview=payload.reply)
+    logger.info("[Maite] Mentor follow-up stream start user=%s", current_user.id)
     service = MentorService()
     events = service.follow_up_stream(
         payload,

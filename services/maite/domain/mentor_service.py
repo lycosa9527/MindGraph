@@ -106,8 +106,16 @@ class MentorService:
             "mentor_decompose",
             {"problem_text": payload.question},
         )
+        logger.info(
+            "[Maite] Decompose stream begin user=%s question_chars=%s",
+            user_id,
+            len(payload.question or ""),
+        )
         buffer = ""
-        yield {"event": "status", "data": {"phase": "streaming"}}
+        chunk_count = 0
+        # Stream without response_format=json_object so tokens arrive incrementally
+        # (DashScope buffers the full JSON when json_object mode is set).
+        yield {"event": "status", "data": {"status": "streaming", "phase": "waiting_llm"}}
         try:
             async for chunk in self._llm.stream(
                 rendered.system_prompt,
@@ -118,9 +126,50 @@ class MentorService:
                 task_type="mentor_decompose",
             ):
                 buffer += chunk
-                yield {"event": "preview", "data": {"text": chunk}}
-            data = parse_llm_json(buffer, fallback={"next_question": "请先写出你识别的已知条件。"})
-            validated = MentorDecomposeOutput.model_validate(data).model_dump()
+                chunk_count += 1
+                if chunk_count == 1:
+                    logger.info(
+                        "[Maite] Decompose stream first chunk user=%s chars=%s",
+                        user_id,
+                        len(chunk),
+                    )
+                    yield {
+                        "event": "status",
+                        "data": {"status": "streaming", "phase": "receiving"},
+                    }
+                elif chunk_count % 20 == 0:
+                    logger.info(
+                        "[Maite] Decompose stream progress user=%s chunks=%s buffer_chars=%s",
+                        user_id,
+                        chunk_count,
+                        len(buffer),
+                    )
+                # Cumulative preview so the UI can show growing output.
+                yield {"event": "preview", "data": {"text": buffer}}
+            if not buffer.strip():
+                logger.warning(
+                    "[Maite] Decompose stream empty user=%s; falling back to complete",
+                    user_id,
+                )
+                yield {"event": "status", "data": {"status": "fallback"}}
+                validated = await self.decompose(
+                    payload,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    endpoint_path=endpoint_path,
+                )
+            else:
+                data = parse_llm_json(
+                    buffer,
+                    fallback={"next_question": "请先写出你识别的已知条件。"},
+                )
+                validated = MentorDecomposeOutput.model_validate(data).model_dump()
+            logger.info(
+                "[Maite] Decompose stream complete user=%s chunks=%s buffer_chars=%s",
+                user_id,
+                chunk_count,
+                len(buffer),
+            )
             yield {"event": "complete", "data": validated}
         except (
             *LLM_PIPELINE_ERRORS,
@@ -131,8 +180,12 @@ class MentorService:
             TypeError,
             KeyError,
         ) as exc:
-            logger.error("Mentor decompose stream failed: %s", exc, exc_info=True)
-            yield {"event": "error", "data": {"message": str(exc)}}
+            logger.error(
+                "[Maite] Mentor decompose stream failed: %s",
+                exc,
+                exc_info=True,
+            )
+            yield {"event": "error", "data": {"message": "Mentor stream failed"}}
 
     async def follow_up_stream(
         self,
@@ -153,8 +206,14 @@ class MentorService:
                 "student_message": payload.reply,
             },
         )
+        logger.info(
+            "[Maite] Follow-up stream begin user=%s reply_chars=%s",
+            user_id,
+            len(payload.reply or ""),
+        )
         buffer = ""
-        yield {"event": "status", "data": {"phase": "streaming"}}
+        chunk_count = 0
+        yield {"event": "status", "data": {"status": "streaming", "phase": "waiting_llm"}}
         try:
             async for chunk in self._llm.stream(
                 rendered.system_prompt,
@@ -165,9 +224,50 @@ class MentorService:
                 task_type="mentor_follow_up",
             ):
                 buffer += chunk
-                yield {"event": "preview", "data": {"text": chunk}}
-            data = parse_llm_json(buffer, fallback={"reply": buffer.strip(), "guiding_question": ""})
-            validated = MentorFollowUpOutput.model_validate(data).model_dump()
+                chunk_count += 1
+                if chunk_count == 1:
+                    logger.info(
+                        "[Maite] Follow-up stream first chunk user=%s chars=%s",
+                        user_id,
+                        len(chunk),
+                    )
+                    yield {
+                        "event": "status",
+                        "data": {"status": "streaming", "phase": "receiving"},
+                    }
+                elif chunk_count % 20 == 0:
+                    logger.info(
+                        "[Maite] Follow-up stream progress user=%s chunks=%s buffer_chars=%s",
+                        user_id,
+                        chunk_count,
+                        len(buffer),
+                    )
+                yield {"event": "preview", "data": {"text": buffer}}
+            if not buffer.strip():
+                logger.warning(
+                    "[Maite] Follow-up stream empty user=%s; falling back to complete",
+                    user_id,
+                )
+                yield {"event": "status", "data": {"status": "fallback"}}
+                validated = await self.follow_up(
+                    payload,
+                    decomposition=decomposition,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    endpoint_path=endpoint_path,
+                )
+            else:
+                data = parse_llm_json(
+                    buffer,
+                    fallback={"reply": buffer.strip(), "guiding_question": ""},
+                )
+                validated = MentorFollowUpOutput.model_validate(data).model_dump()
+            logger.info(
+                "[Maite] Follow-up stream complete user=%s chunks=%s buffer_chars=%s",
+                user_id,
+                chunk_count,
+                len(buffer),
+            )
             yield {"event": "complete", "data": validated}
         except (
             *LLM_PIPELINE_ERRORS,
@@ -178,5 +278,9 @@ class MentorService:
             TypeError,
             KeyError,
         ) as exc:
-            logger.error("Mentor follow-up stream failed: %s", exc, exc_info=True)
-            yield {"event": "error", "data": {"message": str(exc)}}
+            logger.error(
+                "[Maite] Mentor follow-up stream failed: %s",
+                exc,
+                exc_info=True,
+            )
+            yield {"event": "error", "data": {"message": "Mentor stream failed"}}

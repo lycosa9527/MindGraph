@@ -1,5 +1,5 @@
 """
-Maite Learning targeted remedy endpoints.
+Mate Learning targeted remedy endpoints.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -17,7 +17,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
-from routers.features.maite.helpers import MAITE_DOMAIN_ERRORS, organization_id_for, raise_maite_http_error
+from routers.features.maite.helpers import (
+    MAITE_DOMAIN_ERRORS,
+    enforce_maite_llm_rate_limit,
+    organization_id_for,
+    raise_maite_http_error,
+)
 from services.maite.domain.remedy_service import RemedyService
 from services.monitoring.module_activity import schedule_module_activity
 from utils.auth import get_current_user
@@ -63,7 +68,14 @@ async def generate_remedy_tasks(
     _schedule_remedy(current_user, request, session_id, "generate")
     service = RemedyService(db)
     try:
-        return await service.create_overview_from_report(session_id, user_id=current_user.id)
+        tasks = await service.create_overview_from_report(session_id, user_id=current_user.id)
+        logger.info(
+            "[Maite] Remedy generated user=%s session=%s tasks=%s",
+            current_user.id,
+            session_id,
+            len(tasks),
+        )
+        return tasks
     except (*MAITE_DOMAIN_ERRORS,) as exc:
         raise_maite_http_error(exc)
         raise AssertionError("unreachable") from exc
@@ -78,6 +90,7 @@ async def prepare_remedy_task(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Prepare LLM remedy prompt material for a task."""
+    await enforce_maite_llm_rate_limit(current_user, request)
     _schedule_remedy(current_user, request, session_id, "prepare", task_id)
     service = RemedyService(db)
     try:
@@ -101,6 +114,7 @@ async def generate_remedy_material(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Generate supplemental remedy material (reuses prepare pipeline)."""
+    await enforce_maite_llm_rate_limit(current_user, request)
     _schedule_remedy(current_user, request, session_id, "material", task_id)
     service = RemedyService(db)
     try:
@@ -125,6 +139,7 @@ async def submit_remedy_task(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Submit student remedy response and receive AI feedback."""
+    await enforce_maite_llm_rate_limit(current_user, request)
     _schedule_remedy(current_user, request, session_id, "submit", task_id)
     service = RemedyService(db)
     try:
@@ -150,6 +165,7 @@ async def reevaluate_remedy_task(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Re-run remedy preparation/feedback for legacy clients."""
+    await enforce_maite_llm_rate_limit(current_user, request)
     _schedule_remedy(current_user, request, session_id, "reevaluate", task_id)
     service = RemedyService(db)
     try:

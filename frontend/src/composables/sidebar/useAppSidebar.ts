@@ -69,7 +69,7 @@ export function useAppSidebar() {
     featureCommunity,
     featureShowcase,
     featureAskOnce,
-    featureMaiteLearning,
+    featureMateLearning,
     featureDebateverse,
     featureKnowledgeSpace,
     featureLibrary,
@@ -577,17 +577,21 @@ export function useAppSidebar() {
   }
 
   /**
-   * Keep MindMate vs MindGraph history accordions in sync with the route: only one open,
-   * and the active app shows its history (ChatHistory vs DiagramHistory).
+   * Keep MindMate / MindGraph / Mate Learning history accordions in sync with the route:
+   * only one open, and the active app shows its history panel.
    */
   watch(
     currentMode,
     (mode) => {
-      if (mode === 'mindmate' || mode === 'mindgraph') {
+      if (mode === 'mindmate' || mode === 'mindgraph' || mode === 'maite') {
         expandedPanel.value = mode
         return
       }
-      if (expandedPanel.value === 'mindmate' || expandedPanel.value === 'mindgraph') {
+      if (
+        expandedPanel.value === 'mindmate' ||
+        expandedPanel.value === 'mindgraph' ||
+        expandedPanel.value === 'maite'
+      ) {
         expandedPanel.value = null
       }
     },
@@ -699,7 +703,7 @@ export function useAppSidebar() {
     featureCommunity,
     featureShowcase,
     featureAskOnce,
-    featureMaiteLearning,
+    featureMateLearning,
     featureDebateverse,
     featureKnowledgeSpace,
     hideKnowledgeSpaceNav: HIDE_KNOWLEDGE_SPACE_NAV,

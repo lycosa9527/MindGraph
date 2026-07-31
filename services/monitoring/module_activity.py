@@ -46,6 +46,7 @@ VALID_MODULES = frozenset(
         "showcase",
         "auth",
         "dingtalk",
+        "maite",
     }
 )
 

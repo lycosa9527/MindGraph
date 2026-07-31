@@ -13,14 +13,12 @@ import MaiteProblemInput from '@/components/maite/shared/MaiteProblemInput.vue'
 import MaiteReportActions from '@/components/maite/shared/MaiteReportActions.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMaiteInquiry } from '@/composables/maite/useMaiteInquiry'
-import { useMaiteOcrUpload } from '@/composables/maite/useMaiteOcrUpload'
 import { useMaiteStore } from '@/stores/maite'
 
 import type { MaiteInquiryStage } from '@/types/maite'
 
 const { t } = useLanguage()
 const store = useMaiteStore()
-useMaiteOcrUpload()
 
 const {
   loading,
@@ -32,6 +30,8 @@ const {
   variantTasks,
   studentThinking,
   readOnlyPhases,
+  decomposeReadonly,
+  canComplete,
   sessionId,
   loadSnapshot,
   startInquirySession,
@@ -39,6 +39,7 @@ const {
   runDiagnoseAuto,
   runRemedyGenerate,
   runVariantsGenerate,
+  submitVariantAnswer,
   completeInquiry,
   selectStage,
 } = useMaiteInquiry()
@@ -108,11 +109,18 @@ function onStageSelect(stage: MaiteInquiryStage): void {
           :condition-table="tables.condition_table"
           :step-table="tables.step_table"
           :model-table="tables.model_table"
+          :readonly="decomposeReadonly"
           @update:condition-table="(rows) => (tables.condition_table = rows)"
           @update:step-table="(rows) => (tables.step_table = rows)"
           @update:model-table="(rows) => (tables.model_table = rows)"
         />
-        <button type="button" class="maite-inquiry-view__btn" :disabled="loading" @click="submitDecomposeTables">
+        <button
+          v-if="!decomposeReadonly"
+          type="button"
+          class="maite-inquiry-view__btn"
+          :disabled="loading"
+          @click="submitDecomposeTables"
+        >
           {{ t('maite.inquiry.submitDecompose') }}
         </button>
       </section>
@@ -141,8 +149,10 @@ function onStageSelect(stage: MaiteInquiryStage): void {
         <MaiteVariantPanel
           :tasks="variantTasks"
           :loading="loading"
+          :can-complete="canComplete"
           @generate="runVariantsGenerate"
           @complete="completeInquiry"
+          @submit="submitVariantAnswer"
         />
       </section>
 
@@ -153,7 +163,9 @@ function onStageSelect(stage: MaiteInquiryStage): void {
       </section>
     </template>
 
-    <p v-if="errorMessage" class="maite-inquiry-view__error">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="maite-inquiry-view__error">
+      {{ t(`maite.errors.${errorMessage}`, errorMessage) }}
+    </p>
   </div>
 </template>
 

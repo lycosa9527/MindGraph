@@ -1,5 +1,5 @@
 """
-Maite Learning knowledge/thinking graph endpoints.
+Mate Learning knowledge/thinking graph endpoints.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -36,6 +36,12 @@ async def get_user_graph(
         nodes = await service.list_nodes(current_user.id)
         knowledge_nodes = [node for node in nodes if node.get("graph_type") == "knowledge"]
         thinking_nodes = [node for node in nodes if node.get("graph_type") == "thinking"]
+        logger.info(
+            "[Maite] Graph loaded user=%s knowledge=%s thinking=%s",
+            current_user.id,
+            len(knowledge_nodes),
+            len(thinking_nodes),
+        )
         return {
             "student_id": str(current_user.id),
             "knowledge_nodes": knowledge_nodes,

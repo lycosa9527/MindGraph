@@ -38,7 +38,7 @@ export default {
   'sidebar.showcase': '案例广场',
   'sidebar.community': '社区分享',
   'sidebar.courses': '思维课程',
-  'sidebar.maiteLearning': '迈特学习法',
+  'sidebar.mateLearning': '迈特学习法',
   'sidebar.debateHistory.deleteConfirm': '确定要删除这个辩论记录吗？此操作不可撤销。',
   'sidebar.debateHistory.empty': '暂无辩论记录',
   'sidebar.debateHistory.loginPrompt': '登录后查看历史辩论',

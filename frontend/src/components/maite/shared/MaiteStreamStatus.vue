@@ -22,10 +22,24 @@ const label = computed(() => {
   if (!props.streaming) {
     return ''
   }
-  if (props.status) {
+  if (props.status === 'fallback') {
+    return t('maite.stream.fallback')
+  }
+  if (props.status === 'receiving' || props.preview) {
+    return t('maite.stream.receiving')
+  }
+  if (props.status && props.status !== 'waiting_llm') {
     return props.status
   }
   return t('maite.stream.working')
+})
+
+const previewText = computed(() => {
+  const text = props.preview?.trim() ?? ''
+  if (text.length <= 600) {
+    return text
+  }
+  return `${text.slice(-600)}`
 })
 </script>
 
@@ -36,7 +50,7 @@ const label = computed(() => {
     <button type="button" class="maite-stream-status__stop" @click="emit('stop')">
       {{ t('maite.stream.stop') }}
     </button>
-    <p v-if="preview" class="maite-stream-status__preview">{{ preview }}</p>
+    <p v-if="previewText" class="maite-stream-status__preview">{{ previewText }}</p>
   </div>
 </template>
 
@@ -73,7 +87,13 @@ const label = computed(() => {
 .maite-stream-status__preview {
   flex-basis: 100%;
   margin: 0;
+  max-height: 160px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
+  line-height: 1.45;
   color: var(--el-text-color-secondary, #78716c);
 }
 

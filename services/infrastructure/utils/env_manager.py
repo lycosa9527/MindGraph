@@ -516,17 +516,13 @@ class EnvManager:
                 "required": True,
                 "sensitive": True,
             },
-            "QWEN_API_URL": {
-                "type": "url",
-                "category": "Qwen API",
-                "description": "Qwen chat completions URL (optional when DASHSCOPE_WORKSPACE_ID is set)",
-                "default": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
-                "required": False,
-            },
             "DASHSCOPE_WORKSPACE_ID": {
                 "type": "string",
                 "category": "Qwen API",
-                "description": "DashScope workspace id for MaaS subdomain endpoints",
+                "description": (
+                    "DashScope Workspace ID (业务空间 ID). Recommended: builds "
+                    "{workspace}.{region}.maas.aliyuncs.com hosts"
+                ),
                 "default": "",
                 "required": False,
             },
@@ -536,6 +532,21 @@ class EnvManager:
                 "description": "DashScope region (cn-beijing, ap-southeast-1, us, eu-central-1, ap-northeast-1)",
                 "default": "cn-beijing",
                 "required": False,
+            },
+            "QWEN_API_URL": {
+                "type": "url",
+                "category": "Qwen API",
+                "description": "Optional chat URL override (leave empty when using DASHSCOPE_WORKSPACE_ID)",
+                "default": "",
+                "required": False,
+            },
+            "DASHSCOPE_API_KEY": {
+                "type": "password",
+                "category": "Qwen API",
+                "description": "Optional DashScope key for ASR/TTS (defaults to QWEN_API_KEY)",
+                "default": "",
+                "required": False,
+                "sensitive": True,
             },
             "QWEN_MODEL_CLASSIFICATION": {
                 "type": "string",

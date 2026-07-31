@@ -1,7 +1,7 @@
 id: remedy
 version: v1
 task_type: remedy
-model_hint: qwen-plus-latest
+model_hint: qwen3.7-plus
 input_variables:
   - final_block_report
   - problem_text

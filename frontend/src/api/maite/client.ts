@@ -44,6 +44,7 @@ export async function consumeMaiteSseStream(
   const csrfToken = readCsrfTokenFromCookie()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    Accept: 'text/event-stream',
   }
   if (csrfToken) {
     headers['X-CSRF-Token'] = csrfToken
@@ -157,9 +158,12 @@ function processMaiteSseChunk(
   }
 
   switch (eventName) {
-    case 'status':
-      callbacks.onStatus?.(String(parsed.status ?? parsed.message ?? ''))
+    case 'status': {
+      const phase = typeof parsed.phase === 'string' ? parsed.phase : ''
+      const status = typeof parsed.status === 'string' ? parsed.status : ''
+      callbacks.onStatus?.(phase || status || String(parsed.message ?? ''))
       break
+    }
     case 'preview':
       callbacks.onPreview?.(String(parsed.text ?? parsed.preview ?? ''))
       break

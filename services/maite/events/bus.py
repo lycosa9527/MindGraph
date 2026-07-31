@@ -69,7 +69,9 @@ class MaiteSessionEventBus:
         self._consumer_task = asyncio.create_task(self._consume_loop())
 
     async def stop(self) -> None:
-        """Stop the consumer and emit a terminal ``stop`` event."""
+        """Stop the consumer task and mark the bus closed."""
+        if self._closed:
+            return
         self._closed = True
         if self._consumer_task is not None:
             self._consumer_task.cancel()
@@ -78,7 +80,6 @@ class MaiteSessionEventBus:
             except asyncio.CancelledError:
                 pass
             self._consumer_task = None
-        await self.emit(MaiteEvent(kind="stop", session_key=self.session_key, payload={}))
 
     async def _consume_loop(self) -> None:
         while not self._closed:
@@ -130,10 +131,9 @@ async def emit_maite_session_event(
     kind: MaiteEventKind,
     payload: Optional[Dict[str, Any]] = None,
 ) -> None:
-    """Enqueue one event on the session bus (no-op if bus was torn down)."""
-    bus = _buses.get(session_key)
-    if bus is None:
-        return
+    """Ensure the session bus is running and enqueue one event."""
+    bus = get_maite_session_event_bus(session_key)
+    await bus.start()
     await bus.emit(
         MaiteEvent(
             kind=kind,
@@ -141,3 +141,12 @@ async def emit_maite_session_event(
             payload=dict(payload) if payload else {},
         )
     )
+
+
+async def stop_maite_session_event_bus(session_key: str) -> None:
+    """Stop and unregister the session bus when a learning session ends."""
+    bus = _buses.get(session_key)
+    if bus is None:
+        return
+    await bus.stop()
+    remove_maite_session_event_bus(session_key)

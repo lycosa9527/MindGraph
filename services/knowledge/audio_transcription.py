@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 
 import httpx
 
+from config.dashscope_urls import build_dashscope_headers
 from config.settings import config
 from services.knowledge.audio_hosting import publish_audio, revoke_audio
 
@@ -95,11 +96,11 @@ def _submit_task(client: httpx.Client, file_url: str, language_hints: Optional[L
         "input": {"file_urls": [file_url]},
         "parameters": parameters,
     }
-    headers = {
-        "Authorization": f"Bearer {_resolve_api_key()}",
-        "Content-Type": "application/json",
-        "X-DashScope-Async": "enable",
-    }
+    headers = build_dashscope_headers(
+        _resolve_api_key(),
+        workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+        extra={"X-DashScope-Async": "enable"},
+    )
     response = client.post(f"{_base_url()}{_SUBMIT_PATH}", headers=headers, json=payload)
     response.raise_for_status()
     output = response.json().get("output", {})
@@ -112,7 +113,11 @@ def _submit_task(client: httpx.Client, file_url: str, language_hints: Optional[L
 
 def _poll_task(client: httpx.Client, task_id: str) -> Dict[str, Any]:
     """Poll a transcription task until it reaches a terminal state; return output."""
-    headers = {"Authorization": f"Bearer {_resolve_api_key()}"}
+    headers = build_dashscope_headers(
+        _resolve_api_key(),
+        workspace_id=config.DASHSCOPE_WORKSPACE_ID,
+        content_type=None,
+    )
     url = f"{_base_url()}{_TASK_PATH.format(task_id=task_id)}"
     deadline = time.time() + _MAX_POLL_SEC
     while True:

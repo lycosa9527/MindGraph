@@ -17,12 +17,14 @@ from models.domain.maite_stages import MaiteSelfAssessment
 from repositories.maite.sessions_repo import MaiteSessionsRepository
 from repositories.maite.stages_repo import MaiteStagesRepository
 from services.maite.domain.errors import MaiteConflictError, MaiteNotFoundError
+from services.maite.domain.transaction import commit_maite
 
 
 class AssessmentService:
     """Persist student mastery self-assessments."""
 
     def __init__(self, session: AsyncSession) -> None:
+        self._session = session
         self._sessions = MaiteSessionsRepository(session)
         self._stages = MaiteStagesRepository(session)
 
@@ -47,6 +49,7 @@ class AssessmentService:
             current_stage="self_assessment",
             updated_at=datetime.now(UTC),
         )
+        await commit_maite(self._session)
         return self._row_dict(saved)
 
     @staticmethod

@@ -73,6 +73,10 @@ class ClientManager:
                     "classification",
                     pinned_dashscope_model="qwen3.6-flash",
                 )
+                self._clients["qwen3.7-flash"] = QwenClient(
+                    "classification",
+                    pinned_dashscope_model="qwen3.7-flash",
+                )
                 self._clients["qwen3.7-plus"] = QwenClient(
                     "generation",
                     pinned_dashscope_model="qwen3.7-plus",

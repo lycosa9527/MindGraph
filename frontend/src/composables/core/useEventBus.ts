@@ -736,7 +736,7 @@ export type EventTypes = {
   }
   'showcase:cover_fail': { postId: string; reason?: string | null }
 
-  // Maite Learning (迈特学习法)
+  // Mate Learning (迈特学习法)
   'maite:mode_changed': { mode: 'demo' | 'inquiry' | 'map' }
   'maite:session_opened': { sessionId: number; mode: string }
   'maite:session_closed': { sessionId?: number }
