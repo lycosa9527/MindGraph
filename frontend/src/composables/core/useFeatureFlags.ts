@@ -25,6 +25,7 @@ export function useFeatureFlags() {
 
   const featureRagChunkTest = computed(() => data.value?.feature_rag_chunk_test ?? false)
   const featureCourse = computed(() => data.value?.feature_course ?? false)
+  const featureMaiteLearning = computed(() => data.value?.feature_maite_learning ?? false)
   const featureTemplate = computed(() => data.value?.feature_template ?? false)
   const featureCommunity = computed(() => data.value?.feature_community ?? false)
   const featureShowcase = computed(() => data.value?.feature_showcase ?? false)
@@ -50,6 +51,7 @@ export function useFeatureFlags() {
   return {
     featureRagChunkTest,
     featureCourse,
+    featureMaiteLearning,
     featureTemplate,
     featureCommunity,
     featureShowcase,

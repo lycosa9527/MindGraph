@@ -11,6 +11,7 @@ import {
   ChevronDown,
   FileText,
   Files,
+  GraduationCap,
   LayoutGrid,
   MessageCircle,
   MessageSquare,
@@ -319,6 +320,30 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               v-if="!s.isCollapsed"
               class="nav-label"
               >{{ s.t('sidebar.courses') }}</span
+            >
+          </div>
+        </el-tooltip>
+
+        <!-- Maite Learning -->
+        <el-tooltip
+          v-if="s.featureMaiteLearning"
+          :content="s.t('sidebar.maiteLearning')"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('maite')"
+            @click="s.setMode('maite')"
+          >
+            <GraduationCap
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.maiteLearning') }}</span
             >
           </div>
         </el-tooltip>

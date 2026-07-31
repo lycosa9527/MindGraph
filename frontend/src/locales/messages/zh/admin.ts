@@ -60,6 +60,8 @@ export default {
   'admin.feature.courseHint': '课程相关界面与接口。',
   'admin.feature.debateverse': '论境 DebateVerse',
   'admin.feature.debateverseHint': '美式辩论流程。',
+  'admin.feature.maiteLearning': '迈特学习法',
+  'admin.feature.maiteLearningHint': '逆向分解、四阶诊断与变式练习学习模块。',
   'admin.feature.gewe': 'Gewe 微信集成',
   'admin.feature.geweHint': '管理端微信工具（需后端支持）。',
   'admin.feature.knowledgeSpace': '知识空间（RAG）',

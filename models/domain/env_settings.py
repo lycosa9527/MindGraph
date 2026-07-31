@@ -191,6 +191,10 @@ class FeatureFlagSettings(BaseModel):
         description="Enable drag and drop functionality for diagram nodes",
     )
     FEATURE_COURSE: bool = Field(default=False, description="Enable Thinking Course (思维课程) feature")
+    FEATURE_MAITE_LEARNING: bool = Field(
+        default=True,
+        description="Enable Maite Learning (迈特学习法) feature",
+    )
     FEATURE_TEMPLATE: bool = Field(default=False, description="Enable Template Resources (模板资源) feature")
     FEATURE_COMMUNITY: bool = Field(default=False, description="Enable Community Sharing (社区分享) feature")
     FEATURE_SHOWCASE: bool = Field(

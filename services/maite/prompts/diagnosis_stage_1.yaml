@@ -1,0 +1,15 @@
+id: diagnosis_stage_1
+version: v1
+task_type: diagnosis_stage_1
+model_hint: qwen-plus-latest
+input_variables:
+  - problem_text
+  - student_decomposition_json
+  - student_thinking
+output_schema: DiagnosisStageOneOutput
+system_prompt: |
+  你是迈特学习法测堵助手。只做后置诊断和局部答疑，不输出完整答案。
+user_prompt: |
+  原题：{{ problem_text }}
+  学生填写的逆向拆解三表（仅作为诊断证据，可能不完整或不准确）：{{ student_decomposition_json }}
+  学生完整思路：{{ student_thinking }}

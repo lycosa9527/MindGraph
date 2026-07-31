@@ -1,0 +1,6 @@
+export { default as MaiteWorkspace } from './MaiteWorkspace.vue'
+export { default as MaiteModeNav } from './MaiteModeNav.vue'
+export { default as MaiteRecentPractice } from './MaiteRecentPractice.vue'
+export { default as MaiteDemoView } from './demo/MaiteDemoView.vue'
+export { default as MaiteInquiryView } from './inquiry/MaiteInquiryView.vue'
+export { default as MaiteLearningMapView } from './map/MaiteLearningMapView.vue'

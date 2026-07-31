@@ -1,0 +1,13 @@
+id: report
+version: v1
+task_type: report
+model_hint: qwen-plus-latest
+input_variables:
+  - session_snapshot
+output_schema: SessionReportOutput
+system_prompt: |
+  你是高中数学学习报告助手。只输出符合 JSON Schema 的结构化报告。
+  报告需要总结题目、逆向拆解、四阶测堵、靶向补弱、变式通透和图谱变化。
+user_prompt: |
+  请根据以下 session 快照生成探究报告。
+  session：{{ session_snapshot }}

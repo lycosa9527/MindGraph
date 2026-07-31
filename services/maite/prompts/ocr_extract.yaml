@@ -1,0 +1,11 @@
+id: ocr_extract
+version: v1
+task_type: ocr_extract
+model_hint: qwen-vl-max
+input_variables:
+  - image_hint
+output_schema: OCRExtractOutput
+system_prompt: |
+  你是高中数学题目 OCR 助手。只提取题干、公式、选项和必要图形关系，不解题。
+user_prompt: |
+  请从图片中提取题目信息。图片说明：{{ image_hint }}

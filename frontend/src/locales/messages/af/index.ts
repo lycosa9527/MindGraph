@@ -12,12 +12,14 @@ import mindmate from './mindmate.ts'
 import notification from './notification.ts'
 import sidebar from './sidebar.ts'
 import { thinkingCoinsMessages as thinkingCoins } from './thinkingCoins.ts'
+import maite from './maite.ts'
 import workshop from './workshop.ts'
 
 export default {
   ...common,
   ...mindmate,
   ...canvas,
+  ...maite,
   ...workshop,
   ...admin,
   ...knowledge,

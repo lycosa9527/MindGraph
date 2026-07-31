@@ -9,6 +9,7 @@ import community from './community.ts'
 import showcase from './showcase.ts'
 import knowledge from './knowledge.ts'
 import mindmate from './mindmate.ts'
+import maite from './maite.ts'
 import notification from './notification.ts'
 import sidebar from './sidebar.ts'
 import { thinkingCoinsMessages as thinkingCoins } from './thinkingCoins.ts'
@@ -17,6 +18,7 @@ import workshop from './workshop.ts'
 export default {
   ...common,
   ...mindmate,
+  ...maite,
   ...canvas,
   ...workshop,
   ...admin,

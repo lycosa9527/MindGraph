@@ -736,6 +736,26 @@ export type EventTypes = {
   }
   'showcase:cover_fail': { postId: string; reason?: string | null }
 
+  // Maite Learning (迈特学习法)
+  'maite:mode_changed': { mode: 'demo' | 'inquiry' | 'map' }
+  'maite:session_opened': { sessionId: number; mode: string }
+  'maite:session_closed': { sessionId?: number }
+  'maite:stage_changed': { sessionId: number; stage: string; readOnlyPhases: string[] }
+  'maite:problem_ready': { problemId: number; text: string; imageUrl?: string }
+  'maite:ocr_requested': { file: File; scene: 'demo' | 'question' }
+  'maite:ocr_completed': { text: string; imageUrl?: string; scene: string }
+  'maite:mentor_stream_status': { status: string }
+  'maite:mentor_stream_preview': { text: string }
+  'maite:mentor_stream_complete': { payload: unknown }
+  'maite:mentor_stream_error': { message: string }
+  'maite:mentor_stream_stop': Record<string, never>
+  'maite:inquiry_mutate_requested': { action: string; sessionId: number; body?: unknown }
+  'maite:inquiry_snapshot_loaded': { snapshot: unknown }
+  'maite:practice_invalidate': { reason?: string }
+  'maite:report_export_requested': { sessionId: number }
+  'maite:map_refresh_requested': Record<string, never>
+  'maite:error': { message: string; code?: string; source?: string }
+
   // Wildcard for any event (for debugging)
   '*': { event: string; data: unknown }
 }

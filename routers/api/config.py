@@ -77,6 +77,7 @@ class FeatureFlagsResponse(BaseModel):
     external_base_url: str
     feature_rag_chunk_test: bool
     feature_course: bool
+    feature_maite_learning: bool
     feature_template: bool
     feature_community: bool
     feature_showcase: bool
@@ -131,6 +132,7 @@ async def get_feature_flags(
         external_base_url=external_base,
         feature_rag_chunk_test=config.FEATURE_RAG_CHUNK_TEST,
         feature_course=config.FEATURE_COURSE,
+        feature_maite_learning=config.FEATURE_MAITE_LEARNING,
         feature_template=config.FEATURE_TEMPLATE,
         feature_community=config.FEATURE_COMMUNITY,
         feature_showcase=config.FEATURE_SHOWCASE,

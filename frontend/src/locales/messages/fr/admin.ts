@@ -58,6 +58,8 @@ export default {
   'admin.feature.course': 'Parcours de réflexion',
   'admin.feature.courseHint': 'Interface et API liées au cours.',
   'admin.feature.debateverse': 'DebateVerse (débats format US)',
+  'admin.feature.maiteLearning': 'Maite Learning',
+  'admin.feature.maiteLearningHint': 'Reverse decompose, diagnosis, remedy, and variant practice.',
   'admin.feature.debateverseHint': 'Parcours de débat de type américain.',
   'admin.feature.gewe': 'Intégration WeChat Gewe',
   'admin.feature.geweHint': 'Outils WeChat pour administrateurs (nécessite le backend).',

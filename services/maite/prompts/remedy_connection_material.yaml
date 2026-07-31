@@ -1,0 +1,29 @@
+id: remedy_connection_material
+version: v1
+task_type: remedy_connection_material
+model_hint: qwen-plus-latest
+input_variables:
+  - problem_text
+  - block_name
+  - block_evidence
+  - remedy_direction
+  - condition_table
+  - step_table
+  - model_table
+output_schema: ConnectionRemedyMaterialOutput
+system_prompt: |
+  你是高中数学补弱出题助手。只输出符合 JSON Schema 的单个对象。
+  根据一个“联结断裂”堵点，生成 1 道短练习题。
+  题目只训练一个明确的前后步骤连接。它必须能独立作答。
+  题干要写清已知、要写什么。学生只需写连接规则和下一步操作。
+  不给答案。不写解题步骤。不写提示。不复述整道原题。
+  使用短句和具体动词。面向高中生。
+  valid 仅在题目确实对应当前堵点时为 true。否则为 false，并在 reason 说明原因。
+user_prompt: |
+  原题：{{ problem_text }}
+  堵点：{{ block_name }}
+  诊断依据：{{ block_evidence }}
+  补弱方向：{{ remedy_direction }}
+  条件表：{{ condition_table }}
+  步骤表：{{ step_table }}
+  模型表：{{ model_table }}

@@ -18,7 +18,7 @@ import {
   VideoPlay,
 } from '@element-plus/icons-vue'
 
-import { LayoutGrid, MessageSquare, Settings, Watch } from '@lucide/vue'
+import { LayoutGrid, MessageSquare, Settings, Watch, GraduationCap } from '@lucide/vue'
 
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -35,6 +35,7 @@ const {
   featureCommunity,
   featureShowcase,
   featureAskOnce,
+  featureMaiteLearning,
   featureDebateverse,
   featureKnowledgeSpace,
   featureLibrary,
@@ -107,6 +108,13 @@ const modules = computed<ModuleItem[]>(() => [
     route: '/course',
     icon: VideoPlay,
     visible: featureCourse.value,
+  },
+  {
+    key: 'maite',
+    labelKey: 'sidebar.maiteLearning',
+    route: '/maite',
+    icon: GraduationCap,
+    visible: featureMaiteLearning.value,
   },
   {
     key: 'community',

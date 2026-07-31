@@ -30,6 +30,7 @@ const NS_FILES = [
   'community.ts',
   'knowledge.ts',
   'mindmate.ts',
+  'maite.ts',
   'notification.ts',
   'sidebar.ts',
   'thinkingCoins.ts',

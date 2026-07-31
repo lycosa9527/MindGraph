@@ -124,6 +124,21 @@ from models.domain.generation_preview_link import GenerationPreviewLink
 from models.domain.mindmate_export_job import MindmateExportJob
 from models.domain.mindmate_collab import MindmateCollabSession, MindmateCollabMessage
 from models.domain.kitty_one_sentence import KittyOneSentenceSession, KittyOneSentenceTurn
+from models.domain.maite_learning import MaiteProblem, MaiteInquirySession
+from models.domain.maite_stages import (
+    MaiteProblemAnalysis,
+    MaiteSelfAssessment,
+    MaiteDecomposeSubmission,
+    MaiteDiagnosisResult,
+    MaiteRemedyTask,
+    MaiteVariantTask,
+)
+from models.domain.maite_artifacts import (
+    MaiteSessionReport,
+    MaiteGraphNodeProgress,
+    MaitePromptRun,
+    MaiteTaskReference,
+)
 from models.domain.error_event import ErrorEvent, ErrorGroup
 
 __all__ = [
@@ -219,6 +234,18 @@ __all__ = [
     "MindmateCollabMessage",
     "KittyOneSentenceSession",
     "KittyOneSentenceTurn",
+    "MaiteProblem",
+    "MaiteInquirySession",
+    "MaiteProblemAnalysis",
+    "MaiteSelfAssessment",
+    "MaiteDecomposeSubmission",
+    "MaiteDiagnosisResult",
+    "MaiteRemedyTask",
+    "MaiteVariantTask",
+    "MaiteSessionReport",
+    "MaiteGraphNodeProgress",
+    "MaitePromptRun",
+    "MaiteTaskReference",
     "ErrorEvent",
     "ErrorGroup",
 ]

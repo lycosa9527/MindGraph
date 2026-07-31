@@ -69,6 +69,7 @@ export function useAppSidebar() {
     featureCommunity,
     featureShowcase,
     featureAskOnce,
+    featureMaiteLearning,
     featureDebateverse,
     featureKnowledgeSpace,
     featureLibrary,
@@ -101,6 +102,7 @@ export function useAppSidebar() {
     if (path.startsWith('/knowledge-space')) return 'knowledge-space'
     if (path.startsWith('/chunk-test')) return 'chunk-test'
     if (path.startsWith('/askonce')) return 'askonce'
+    if (path.startsWith('/maite')) return 'maite'
     if (path.startsWith('/debateverse')) return 'debateverse'
     if (path.startsWith('/template')) return 'template'
     if (path.startsWith('/course')) return 'course'
@@ -324,6 +326,7 @@ export function useAppSidebar() {
     'knowledge-space': '/knowledge-space',
     'chunk-test': '/chunk-test',
     askonce: '/askonce',
+    maite: '/maite',
     debateverse: '/debateverse',
     template: '/template',
     course: '/course',
@@ -696,6 +699,7 @@ export function useAppSidebar() {
     featureCommunity,
     featureShowcase,
     featureAskOnce,
+    featureMaiteLearning,
     featureDebateverse,
     featureKnowledgeSpace,
     hideKnowledgeSpaceNav: HIDE_KNOWLEDGE_SPACE_NAV,

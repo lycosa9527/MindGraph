@@ -38,6 +38,7 @@ from utils.auth.role_constants import (
 FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_rag_chunk_test": "FEATURE_RAG_CHUNK_TEST",
     "feature_course": "FEATURE_COURSE",
+    "feature_maite_learning": "FEATURE_MAITE_LEARNING",
     "feature_template": "FEATURE_TEMPLATE",
     "feature_community": "FEATURE_COMMUNITY",
     "feature_showcase": "FEATURE_SHOWCASE",

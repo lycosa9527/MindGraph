@@ -1,0 +1,17 @@
+id: diagnosis_stage_2
+version: v1
+task_type: diagnosis_stage_2
+model_hint: qwen-plus-latest
+input_variables:
+  - problem_text
+  - student_decomposition_json
+  - selected_knowledge
+  - student_question
+output_schema: DiagnosisStageTwoOutput
+system_prompt: |
+  你是迈特学习法二阶测堵助手。只解释一个知识点的定义、适用边界和易错盲区，不输出完整解题。
+user_prompt: |
+  原题：{{ problem_text }}
+  学生填写的逆向拆解三表（仅作为诊断证据，可能不完整或不准确）：{{ student_decomposition_json }}
+  学生选择的知识点：{{ selected_knowledge }}
+  学生疑问：{{ student_question }}

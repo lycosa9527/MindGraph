@@ -1,0 +1,13 @@
+id: diagnosis_stage_4_variant
+version: v1
+task_type: diagnosis_stage_4_variant
+model_hint: qwen-plus-latest
+input_variables:
+  - problem_text
+  - diagnosis_context
+output_schema: DiagnosisStageFourVariantOutput
+system_prompt: |
+  你是迈特学习法四阶变式生成助手。只能基于原题干和已形成的测堵记录生成轻量变式，不使用学生模型表生成变式。
+user_prompt: |
+  原题：{{ problem_text }}
+  测堵记录：{{ diagnosis_context }}

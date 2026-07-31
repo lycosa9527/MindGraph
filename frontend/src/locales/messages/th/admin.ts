@@ -58,6 +58,8 @@ export default {
   'admin.feature.course': 'หลักสูตรการคิด',
   'admin.feature.courseHint': 'UI และ API ที่เกี่ยวข้องกับหลักสูตร',
   'admin.feature.debateverse': 'DebateVerse',
+  'admin.feature.maiteLearning': 'Maite Learning',
+  'admin.feature.maiteLearningHint': 'Reverse decompose, diagnosis, remedy, and variant practice.',
   'admin.feature.debateverseHint': 'รูปแบบการดีเบตสไตล์อเมริกัน',
   'admin.feature.gewe': 'การเชื่อมต่อ Gewe WeChat',
   'admin.feature.geweHint': 'เครื่องมือ WeChat สำหรับผู้ดูแล (ต้องการแบ็กเอนด์)',

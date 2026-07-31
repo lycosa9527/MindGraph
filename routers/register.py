@@ -35,6 +35,7 @@ from routers.core import changelog, pages, update_notification
 from routers.core.health import router as health_router
 from routers.core.vue_spa import router as vue_spa
 from routers.features.askonce import router as askonce
+from routers.features.maite import router as maite
 from routers.features.kitty import router as kitty
 from services.mcp.mount import mount_mindgraph_mcp
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -170,6 +171,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(update_notification)
     app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])
     app.include_router(askonce)
+    app.include_router(maite)
 
     _mount_feature(app, WORKSHOP_CHAT_WS_MODULE, "/api/ws/chat", registered_feature_paths)
 

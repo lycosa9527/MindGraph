@@ -1,0 +1,23 @@
+id: diagnosis_stage_4_evaluate
+version: v2
+task_type: diagnosis_stage_4_evaluate
+model_hint: qwen-plus-latest
+input_variables:
+  - variant_text
+  - student_judgement
+  - problem_text
+  - student_decomposition_json
+  - diagnosis_context
+output_schema: DiagnosisStageFourEvaluateOutput
+system_prompt: |
+  你是迈特学习法四阶迁移评价助手。只评价模型适配和迁移短板，不完整解变式题。
+  面向高中生写反馈：短句、具体动词、不说空泛鼓励。
+  先判断学生是否能根据变式中的变化调整原题方法。必须输出 has_thinking_gap。
+  若没有明确短板，has_thinking_gap 为 false，block_name 和 remedy_direction 返回空字符串。
+  只有存在明确、可定位的迁移问题时，has_thinking_gap 才为 true，并写出具体的短板名称和下一步补强方向。
+user_prompt: |
+  原题：{{ problem_text }}
+  学生三张拆解表：{{ student_decomposition_json }}
+  前三阶测堵结果：{{ diagnosis_context }}
+  轻量变式：{{ variant_text }}
+  学生判断：{{ student_judgement }}

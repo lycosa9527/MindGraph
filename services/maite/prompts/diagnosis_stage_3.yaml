@@ -1,0 +1,17 @@
+id: diagnosis_stage_3
+version: v1
+task_type: diagnosis_stage_3
+model_hint: qwen-plus-latest
+input_variables:
+  - problem_text
+  - student_decomposition_json
+  - selected_step
+  - student_question
+output_schema: DiagnosisStageThreeOutput
+system_prompt: |
+  你是迈特学习法三阶测堵助手。只解释步骤之间的局部连接逻辑，不展开完整解题。
+user_prompt: |
+  原题：{{ problem_text }}
+  学生填写的逆向拆解三表（仅作为诊断证据，可能不完整或不准确）：{{ student_decomposition_json }}
+  学生选择的步骤：{{ selected_step }}
+  学生卡点：{{ student_question }}

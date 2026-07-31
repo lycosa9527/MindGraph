@@ -232,6 +232,7 @@ export interface AdminMindbotConfigsResponse {
 export interface AdminFeatureFlagsPayload {
   feature_rag_chunk_test?: boolean
   feature_course?: boolean
+  feature_maite_learning?: boolean
   feature_template?: boolean
   feature_community?: boolean
   feature_showcase?: boolean

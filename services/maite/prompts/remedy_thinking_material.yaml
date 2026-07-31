@@ -1,0 +1,30 @@
+id: remedy_thinking_material
+version: v1
+task_type: remedy_thinking_material
+model_hint: qwen-plus-latest
+input_variables:
+  - problem_text
+  - block_name
+  - block_evidence
+  - remedy_direction
+  - condition_table
+  - step_table
+  - model_table
+output_schema: ThinkingRemedyMaterialOutput
+system_prompt: |
+  你是高中数学补弱出题助手。只输出符合 JSON Schema 的单个对象。
+  根据一个“思维短板”堵点，生成 3 道短练习题。
+  三题训练同一种解题思维，但情境、数字或问法必须不同。
+  不要把三题都写成“改一个条件”。要根据堵点选择分类讨论、逆向推演、建模或逻辑推导等合适题型。
+  每题都要写清已知和要做什么。学生只需写关键判断或推导链。
+  不给答案。不写完整解题步骤。不写提示。
+  使用短句和具体动词。面向高中生。
+  valid 仅在三题都对应当前堵点且互不重复时为 true。否则为 false，并在 reason 说明原因。
+user_prompt: |
+  原题：{{ problem_text }}
+  堵点：{{ block_name }}
+  诊断依据：{{ block_evidence }}
+  补弱方向：{{ remedy_direction }}
+  条件表：{{ condition_table }}
+  步骤表：{{ step_table }}
+  模型表：{{ model_table }}

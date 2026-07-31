@@ -331,7 +331,7 @@ export default {
   'canvas.presentationTimer.closeHud': '關閉計時器',
   'canvas.presentation.learningSheetConfirmTitle': '進入放映？',
   'canvas.presentation.learningSheetConfirmBody':
-    '您仍在挖空支架圖编辑中。进入放映将结束挖空编辑，已挖空的内容会保留。是否继续？',
+    '您仍在挖空支架图编辑中。进入放映将结束挖空编辑，已挖空的内容会保留。是否继续？',
   'canvas.presentation.learningSheetConfirmProceed': '進入放映',
   'canvas.presentationContextMenu.laserPointer': '激光筆',
   'canvas.presentationContextMenu.spotlight': '聚光燈',
@@ -830,7 +830,7 @@ export default {
   'canvas.mindMapSideToolbar.learningSheet': '挖空支架圖',
   'canvas.mindMapSideToolbar.oneSentence': '一句話生成',
   'canvas.mindMapSideToolbar.oneSentenceIntro':
-    '用一句話描述主題或修改要求，智能生成並調整導圖',
+    '用一句话描述主题或修改要求，智能生成并调整导图',
   'canvas.mindMapSideToolbar.documentSummary': '文檔總結',
   'fileCenter.intro':
     '资料包是为当前图表整理的来源集合。添加文件、笔记或网页后，图表会基于这些来源自动补全分支。',
@@ -869,7 +869,7 @@ export default {
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI智能生成',
   'canvas.mindMapSideToolbar.outlineEditHint': '雙擊節點文字可以直接實時修改噢',
   'canvas.mindMapSideToolbar.outlineIntro':
-    '用大綱編輯導圖結構，拖曳調序，貼上多行可批量新增',
+    '用大纲编辑导图结构，拖拽调序，粘贴多行可批量添加',
   'canvas.mindMapSideToolbar.outlineDragHint':
     '拖拽调整顺序；放到节点上方/下方为同级换位，放到中间为子节点',
   'canvas.mindMapSideToolbar.outlinePasteHint': '選中節點後粘貼多行文本，可批量添加同級節點',
@@ -887,7 +887,7 @@ export default {
   'canvas.mindMapSideToolbar.exitLearningSheet': '退出挖空支架圖',
   'canvas.mindMapSideToolbar.restoreFullDiagram': '還原為完整圖示',
   'canvas.mindMapSideToolbar.learningSheetIntro':
-    '选择一种方式创建挖空支架圖，适合课堂练习与复习。',
+    '选择一种方式创建挖空支架图，适合课堂练习与复习。',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': '隨機留空',
   'canvas.mindMapSideToolbar.learningSheetRandomDesc':
     '系统自动随机挖空约 20% 的节点，参考答案显示在图示下方。',

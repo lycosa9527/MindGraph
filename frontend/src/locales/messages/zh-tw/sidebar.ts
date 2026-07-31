@@ -38,6 +38,7 @@ export default {
   'sidebar.showcase': '案例廣場',
   'sidebar.community': '社區分享',
   'sidebar.courses': '思維課程',
+  'sidebar.maiteLearning': '邁特學習法',
   'sidebar.debateHistory.deleteConfirm': '確定要刪除這個辯論記錄嗎？此操作不可撤銷。',
   'sidebar.debateHistory.empty': '暫無辯論記錄',
   'sidebar.debateHistory.loginPrompt': '登錄後查看歷史辯論',

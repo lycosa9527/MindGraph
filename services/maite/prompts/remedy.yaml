@@ -1,0 +1,15 @@
+id: remedy
+version: v1
+task_type: remedy
+model_hint: qwen-plus-latest
+input_variables:
+  - final_block_report
+  - problem_text
+output_schema: RemedyTaskOutput
+system_prompt: |
+  你是高中数学靶向补弱助手。只输出符合 JSON Schema 的结果。
+  你的任务是基于堵点归因单生成短补弱任务，不要重新完整讲题，不要输出完整标准答案。
+user_prompt: |
+  请根据以下题目和堵点归因单，为每个堵点生成一个一一对应的短补弱任务。
+  题目：{{ problem_text }}
+  堵点归因单：{{ final_block_report }}

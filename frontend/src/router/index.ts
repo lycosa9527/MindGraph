@@ -196,6 +196,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'main', ...pageTitle('askOnce') },
   },
   {
+    path: '/maite',
+    name: 'MaiteLearning',
+    component: () => import('@/pages/MaiteLearningPage.vue'),
+    meta: { requiresAuth: true, layout: 'main', ...pageTitle('maiteLearning') },
+  },
+  {
     path: '/debateverse',
     name: 'DebateVerse',
     component: () => import('@/pages/DebateVersePage.vue'),
@@ -482,6 +488,9 @@ router.beforeEach(async (to, from) => {
     return { name: 'MindMate' }
   }
   if (to.name === 'AskOnce' && !featureFlagsStore.getFeatureAskOnce()) {
+    return { name: 'MindMate' }
+  }
+  if (to.name === 'MaiteLearning' && !featureFlagsStore.getFeatureMaiteLearning()) {
     return { name: 'MindMate' }
   }
   if (to.name === 'DebateVerse' && !featureFlagsStore.getFeatureDebateverse()) {

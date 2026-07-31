@@ -33,6 +33,7 @@ interface FeatureFlagsResponse {
   external_base_url: string
   feature_rag_chunk_test: boolean
   feature_course: boolean
+  feature_maite_learning: boolean
   feature_template: boolean
   feature_community: boolean
   feature_showcase: boolean
@@ -88,6 +89,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           external_base_url: '',
           feature_rag_chunk_test: false,
           feature_course: false,
+          feature_maite_learning: false,
           feature_template: false,
           feature_community: false,
           feature_showcase: false,
@@ -147,6 +149,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         external_base_url: '',
         feature_rag_chunk_test: false,
         feature_course: false,
+        feature_maite_learning: false,
         feature_template: false,
         feature_community: false,
         feature_showcase: false,
@@ -188,6 +191,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
 
   function getFeatureCourse(): boolean {
     return flags.value?.feature_course ?? false
+  }
+
+  function getFeatureMaiteLearning(): boolean {
+    return flags.value?.feature_maite_learning ?? false
   }
 
   function getFeatureTemplate(): boolean {
@@ -285,6 +292,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     fetchFlags,
     getFeatureRagChunkTest,
     getFeatureCourse,
+    getFeatureMaiteLearning,
     getFeatureTemplate,
     getFeatureCommunity,
     getFeatureShowcase,

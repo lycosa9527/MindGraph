@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.156.0] - 2026-07-31
+
+> **迈特学习法 (Maite Learning): native MindGraph module with async LLM, PG+RLS, Redis, and event-bus UI.**
+
+### Added
+
+- **迈特学习法 module** — Sidebar + Intl module grid entry (`/maite`) for demo / inquiry / learning-map modes, gated by `FEATURE_MAITE_LEARNING` (default on).
+- **Backend `/api/maite`** — Authenticated async routers for problems/OCR, mentor SSE, inquiry stages (decompose → diagnose → remedy → variants → complete), reports, and user graph progress; private uploads; Redis recent-practice cache.
+- **Shared LLM path** — Maite prompts call MindGraph `llm_service` (`request_type=maite_learning`) with token-cap / thinking-coin tracking; YAML prompts under `services/maite/prompts/`.
+- **PostgreSQL models + RLS** — `maite_*` tables (Alembic `0089`/`0090`) with `user_id` ownership; server-only `MaiteTaskReference` answer keys.
+- **Event-bus UI** — Typed `maite:*` events on the frontend event bus; session asyncio bus for stage/stream coordination.
+
+### Tests
+
+- **Backend** — Maite LLM adapter tracking kwargs, feature-gate hot-off, session bus, completion gate (`tests/test_maite_*.py`).
+- **Frontend** — Maite math text + SSE frame parser (`frontend/tests/maite/`).
+
 ## [5.155.4] - 2026-07-30
 
 > **Mind-map load: supersede rapid model-switch debug sessions; fit after settle on rAF.**

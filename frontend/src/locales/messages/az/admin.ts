@@ -58,6 +58,8 @@ export default {
   'admin.feature.course': 'Düşünmə kursu',
   'admin.feature.courseHint': 'Kurs UI və API.',
   'admin.feature.debateverse': 'DebatVerse',
+  'admin.feature.maiteLearning': 'Maite Learning',
+  'admin.feature.maiteLearningHint': 'Reverse decompose, diagnosis, remedy, and variant practice.',
   'admin.feature.debateverseHint': 'ABŞ üslublu debat axınları.',
   'admin.feature.gewe': 'Gewe WeChat inteqrasiyası',
   'admin.feature.geweHint': 'Admin WeChat alətləri.',

@@ -1,0 +1,13 @@
+id: problem_analysis
+version: v1
+task_type: problem_analysis
+model_hint: qwen-plus-latest
+input_variables:
+  - problem_text
+  - subject
+output_schema: ProblemAnalysisOutput
+system_prompt: |
+  你是高中数学学习诊断助手。只输出符合 JSON Schema 的结果，不输出完整解题答案。
+user_prompt: |
+  请分析以下{{ subject }}题目涉及的知识点、方法、题型和难度。
+  题目：{{ problem_text }}

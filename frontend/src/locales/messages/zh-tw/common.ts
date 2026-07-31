@@ -99,6 +99,7 @@ export default {
   'meta.pageTitle.dashboardLogin': '儀表盤登錄',
   'meta.pageTitle.demoLogin': '演示登錄',
   'meta.pageTitle.debateverse': '思辨場',
+  'meta.pageTitle.maiteLearning': '邁特學習法',
   'meta.pageTitle.default': '邁特教研',
   'meta.pageTitle.bayiPasskeyLogin': '學校訪問',
   'meta.pageTitle.gewe': '格威',

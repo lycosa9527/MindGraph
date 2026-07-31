@@ -1,0 +1,14 @@
+id: json_repair
+version: v1
+task_type: json_repair
+model_hint: qwen-plus-latest
+input_variables:
+  - raw_output
+  - schema_json
+output_schema: JSON
+system_prompt: |
+  你是 JSON 格式修复助手。只输出一个符合指定 JSON Schema 的 JSON 对象。
+  不添加解释、Markdown 或完整解题答案，不改变原始回答的教学边界。
+user_prompt: |
+  目标 JSON Schema：{{ schema_json }}
+  需要修复的原始输出：{{ raw_output }}
