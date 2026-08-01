@@ -1,5 +1,5 @@
 """
-Pure helpers for stack COS CLI (Qdrant + Celery update planning).
+Pure helpers for stack COS CLI (Qdrant + Celery + Playwright update planning).
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -23,6 +23,7 @@ class StackUpdatePlan(TypedDict):
 
     qdrant: ComponentUpdate
     celery: ComponentUpdate
+    playwright: ComponentUpdate
 
 
 def artifact_on_cos(plan: dict) -> bool:
@@ -30,35 +31,53 @@ def artifact_on_cos(plan: dict) -> bool:
     return plan.get("reason") != "cos_meta_missing"
 
 
-def stack_check_exit_code(qdrant_plan: dict, celery_plan: dict) -> int:
+def stack_check_exit_code(
+    qdrant_plan: dict,
+    celery_plan: dict,
+    playwright_plan: dict | None = None,
+) -> int:
     """
     Exit code for check action.
 
     0 = up to date, 1 = update available, 2 = config/meta error.
     """
-    if qdrant_plan.get("reason") == "cos_not_configured" or celery_plan.get("reason") == "cos_not_configured":
+    plans = [qdrant_plan, celery_plan]
+    if playwright_plan is not None:
+        plans.append(playwright_plan)
+    if any(plan.get("reason") == "cos_not_configured" for plan in plans):
         return 2
-    if not artifact_on_cos(qdrant_plan) and not artifact_on_cos(celery_plan):
+    if not any(artifact_on_cos(plan) for plan in plans):
         return 2
-    if qdrant_plan.get("update_needed") or celery_plan.get("update_needed"):
+    if any(plan.get("update_needed") for plan in plans):
         return 1
     return 0
 
 
-def stack_has_pending_updates(qdrant_plan: dict, celery_plan: dict) -> bool:
+def stack_has_pending_updates(
+    qdrant_plan: dict,
+    celery_plan: dict,
+    playwright_plan: dict | None = None,
+) -> bool:
     """True when at least one on-COS artifact is newer than installed."""
-    if artifact_on_cos(qdrant_plan) and qdrant_plan.get("update_needed"):
-        return True
-    return bool(artifact_on_cos(celery_plan) and celery_plan.get("update_needed"))
+    plans = [qdrant_plan, celery_plan]
+    if playwright_plan is not None:
+        plans.append(playwright_plan)
+    return any(artifact_on_cos(plan) and plan.get("update_needed") for plan in plans)
 
 
-def stack_update_prompt(qdrant_plan: dict, celery_plan: dict) -> Optional[str]:
+def stack_update_prompt(
+    qdrant_plan: dict,
+    celery_plan: dict,
+    playwright_plan: dict | None = None,
+) -> Optional[str]:
     """Human-readable install prompt, or None when no COS artifacts exist."""
     parts: List[str] = []
     if artifact_on_cos(qdrant_plan) and qdrant_plan.get("update_needed"):
         parts.append(f"Qdrant {qdrant_plan.get('cos_version')}")
     if artifact_on_cos(celery_plan) and celery_plan.get("update_needed"):
         parts.append(f"Celery {celery_plan.get('cos_version')}")
+    if playwright_plan is not None and artifact_on_cos(playwright_plan) and playwright_plan.get("update_needed"):
+        parts.append(f"Playwright {playwright_plan.get('cos_version')}")
     if not parts:
         return None
     return f"Install {' and '.join(parts)} from COS now"
@@ -67,10 +86,12 @@ def stack_update_prompt(qdrant_plan: dict, celery_plan: dict) -> Optional[str]:
 def resolve_stack_update(
     qdrant_plan: dict,
     celery_plan: dict,
+    playwright_plan: dict | None = None,
     *,
     reinstall: bool,
 ) -> StackUpdatePlan:
     """Decide which components to update and whether to force reinstall."""
+    pw_plan = playwright_plan or {"reason": "cos_meta_missing", "update_needed": False}
     if reinstall:
         return {
             "qdrant": {
@@ -81,6 +102,10 @@ def resolve_stack_update(
                 "run": artifact_on_cos(celery_plan),
                 "force": artifact_on_cos(celery_plan),
             },
+            "playwright": {
+                "run": artifact_on_cos(pw_plan),
+                "force": artifact_on_cos(pw_plan),
+            },
         }
     return {
         "qdrant": {
@@ -89,6 +114,10 @@ def resolve_stack_update(
         },
         "celery": {
             "run": bool(artifact_on_cos(celery_plan) and celery_plan.get("update_needed")),
+            "force": False,
+        },
+        "playwright": {
+            "run": bool(artifact_on_cos(pw_plan) and pw_plan.get("update_needed")),
             "force": False,
         },
     }
@@ -123,6 +152,13 @@ def summarize_update_result(label: str, result: dict) -> tuple[bool, int]:
         return False, 0 if not result.get("ok") else 1
     if label == "Celery":
         if result.get("ok") and result.get("import_ok"):
+            return True, 0
+        return False, 0 if not result.get("ok") else 1
+    if label == "Playwright":
+        if result.get("ok") and result.get("skipped"):
+            return True, 0
+        if result.get("ok") and result.get("browser_ok"):
+            # Browser from COS is enough for success; apt deps are best-effort.
             return True, 0
         return False, 0 if not result.get("ok") else 1
     if result.get("ok"):

@@ -76,20 +76,42 @@ def test_resolve_stack_update_pending_only():
     plan = stack_cos_plan.resolve_stack_update(
         _plan(update_needed=True),
         _plan(update_needed=False),
+        _plan(update_needed=False),
         reinstall=False,
     )
     assert plan["qdrant"] == {"run": True, "force": False}
     assert plan["celery"] == {"run": False, "force": False}
+    assert plan["playwright"] == {"run": False, "force": False}
 
 
 def test_resolve_stack_update_reinstall():
     plan = stack_cos_plan.resolve_stack_update(
         _plan(update_needed=False),
         _plan(update_needed=False),
+        _plan(update_needed=False),
         reinstall=True,
     )
     assert plan["qdrant"] == {"run": True, "force": True}
     assert plan["celery"] == {"run": True, "force": True}
+    assert plan["playwright"] == {"run": True, "force": True}
+
+
+def test_stack_update_prompt_includes_playwright():
+    prompt = stack_cos_plan.stack_update_prompt(
+        _plan(reason="cos_meta_missing"),
+        _plan(reason="cos_meta_missing"),
+        _plan(update_needed=True, cos_version="1.61.0"),
+    )
+    assert prompt == "Install Playwright 1.61.0 from COS now"
+
+
+def test_summarize_playwright_browser_ok():
+    ok, code = stack_cos_plan.summarize_update_result(
+        "Playwright",
+        {"ok": True, "browser_ok": True},
+    )
+    assert ok is True
+    assert code == 0
 
 
 def test_verify_component_outcome_skips_missing_meta():

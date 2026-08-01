@@ -294,8 +294,9 @@ def lines_playwright_hint() -> list[str]:
         "Playwright (PNG generation: /api/generate_png, /api/generate_dingtalk):",
         "  pip install playwright",
         "  python -m playwright install chromium",
-        "  Linux system libraries (if Chromium fails to start):",
-        "    sudo python -m playwright install-deps chromium",
+        "  Or from COS (browser + apt .deb deps): python scripts/db/update_stack_from_cos.py",
+        "  Linux system libraries fallback (online apt):",
+        "    sudo -E python -m playwright install-deps chromium",
         "  Optional (all browsers): python -m playwright install",
         "  conda activate mindgraph && python -m playwright install chromium",
     ]

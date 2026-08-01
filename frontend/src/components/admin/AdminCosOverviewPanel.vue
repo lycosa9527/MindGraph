@@ -72,6 +72,7 @@ function healthLabel(key: string): string {
       <li>{{ t('admin.cos.sectionBackups') }}: {{ healthLabel('database_backups') }}</li>
       <li>{{ t('admin.cos.sectionCrowdsec') }}: {{ healthLabel('crowdsec') }}</li>
       <li>{{ t('admin.cos.sectionQdrant') }}: {{ healthLabel('qdrant') }}</li>
+      <li>{{ t('admin.cos.sectionPlaywright') }}: {{ healthLabel('playwright') }}</li>
     </ul>
   </div>
 </template>

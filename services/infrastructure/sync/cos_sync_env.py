@@ -24,6 +24,7 @@ _ABUSEIPDB_REL = "sync/abuseipdb"
 _GEOLITE_REL = "sync/geolite"
 _QDRANT_REL = "sync/qdrant"
 _CELERY_REL = "sync/celery"
+_PLAYWRIGHT_REL = "sync/playwright"
 
 _DEFAULT_COS_SYNC_KEY_PREFIX = "backups/mindgraph-shared"
 
@@ -64,7 +65,7 @@ def is_cos_consumer() -> bool:
 
 def normalized_cos_sync_prefix() -> str:
     """
-    Prefix for infra sync artifacts (blocklists, Qdrant, Celery, GeoLite).
+    Prefix for infra sync artifacts (blocklists, Qdrant, Celery, Playwright, GeoLite).
 
     Uses ``COS_SYNC_KEY_PREFIX`` when set; otherwise falls back to ``COS_KEY_PREFIX``
     (legacy shared layout with PG dumps).
@@ -143,6 +144,27 @@ def celery_wheel_cos_key(version: str, wheel_filename: str) -> str:
     """COS key for Celery PyPI wheel."""
     safe_version = version.lstrip("v")
     return cos_sync_object_key(f"{_CELERY_REL}/v{safe_version}/{wheel_filename}")
+
+
+def playwright_meta_cos_key() -> str:
+    """COS key for Playwright Chromium release meta JSON."""
+    return cos_sync_object_key(f"{_PLAYWRIGHT_REL}/meta.json")
+
+
+def playwright_tarball_cos_key(version: str, platform_tag: str, tarball_filename: str) -> str:
+    """COS key for Playwright Chromium tarball."""
+    safe_version = version.lstrip("v")
+    return cos_sync_object_key(f"{_PLAYWRIGHT_REL}/v{safe_version}/{platform_tag}/{tarball_filename}")
+
+
+def playwright_apt_deps_meta_cos_key() -> str:
+    """COS key for Playwright apt-deps release meta JSON."""
+    return cos_sync_object_key(f"{_PLAYWRIGHT_REL}/apt-deps/meta.json")
+
+
+def playwright_apt_deps_tarball_cos_key(distro_key: str, tarball_filename: str) -> str:
+    """COS key for Playwright apt ``.deb`` bundle tarball."""
+    return cos_sync_object_key(f"{_PLAYWRIGHT_REL}/apt-deps/{distro_key}/{tarball_filename}")
 
 
 def cos_config_snapshot() -> dict:

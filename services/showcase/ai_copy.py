@@ -21,6 +21,7 @@ from services.llm import llm_service
 from services.utils.error_types import JSON_PARSE_ERRORS, LLM_PIPELINE_ERRORS
 
 # Canonical output keys → accepted aliases in model JSON.
+# teaching_reflection is intentionally omitted: teachers fill it manually.
 _FIELD_ALIASES: dict[str, tuple[str, ...]] = {
     "description": ("description", "教学设计简介", "intro"),
     "design_highlights": (
@@ -29,12 +30,6 @@ _FIELD_ALIASES: dict[str, tuple[str, ...]] = {
         "设计亮点",
         "highlights",
     ),
-    "teaching_reflection": (
-        "teaching_reflection",
-        "teachingReflection",
-        "教学反思",
-        "reflection",
-    ),
 }
 
 logger = logging.getLogger(__name__)
@@ -42,9 +37,9 @@ logger = logging.getLogger(__name__)
 SHOWCASE_AI_COPY_MODEL = "qwen3.7-flash"
 SHOWCASE_AI_COPY_MAX_INPUT_CHARS = 32000
 SHOWCASE_AI_COPY_MAX_FIELD_CHARS = 1200
-# Per-field target (~200) × 3 fields ≈ 600 字 total.
+# Per-field target (~200) × 2 fields ≈ 400 字 total.
 SHOWCASE_AI_COPY_TARGET_CHARS_PER_FIELD = 200
-SHOWCASE_AI_COPY_TARGET_CHARS_TOTAL = 600
+SHOWCASE_AI_COPY_TARGET_CHARS_TOTAL = 400
 
 _SYSTEM_PROMPT_ZH = """\
 你是面向中小学教师的思维发展型课堂教研助手（MindGraph 案例广场）。用户会提供一份教学设计\
@@ -69,12 +64,12 @@ _SYSTEM_PROMPT_ZH = """\
 
 输出要求：
 - 仅输出一个 JSON 对象（不要代码围栏、不要额外说明）。
-- 字段：description（教学设计简介）、design_highlights（设计亮点）、\
-teaching_reflection（教学反思）。
+- 字段仅两项：description（教学设计简介）、design_highlights（设计亮点）。\
+不要输出教学反思或其他字段（教学反思由教师本人填写）。
 - 每个字段写成一整段连贯中文（完整句子），不要分条、不要项目符号、不要用换行罗列；\
 在段落里自然写清「图示/工具 + 思维类型 + 作用」。
-- 字数硬性目标：教学设计简介、设计亮点、教学反思各约 200 字（建议 190–210 字），\
-三字段合计约 600 字；不要明显偏短，也不要某一字段独长。
+- 字数硬性目标：教学设计简介、设计亮点各约 200 字（建议 190–210 字），\
+两字段合计约 400 字；不要明显偏短，也不要某一字段独长。
 - 紧扣学科、年级与文档内容；文档未写明的图示或活动不要虚构。"""
 
 _USER_PROMPT_TEMPLATE_ZH = """\
@@ -86,9 +81,10 @@ _USER_PROMPT_TEMPLATE_ZH = """\
 【教学设计文档正文】
 {document_text}
 
-请输出 JSON：三个字段各约 200 字、合计约 600 字；每字段一整段完整句子；\
-写清图示与思维，但用语要通俗、给中小学老师减负；勿分条、勿论文腔。\
-{{"description":"...","design_highlights":"...","teaching_reflection":"..."}}"""
+请输出 JSON：仅 description 与 design_highlights，各约 200 字、合计约 400 字；\
+每字段一整段完整句子；写清图示与思维，但用语要通俗、给中小学老师减负；\
+勿分条、勿论文腔；勿输出教学反思。\
+{{"description":"...","design_highlights":"..."}}"""
 
 
 def strip_code_fence(raw: str) -> str:
@@ -135,7 +131,7 @@ def _clean_field(value: Any) -> str:
 
 
 def normalize_ai_copy_fields(parsed: Dict[str, Any]) -> Dict[str, str]:
-    """Normalize LLM JSON into the three showcase teaching-design fields."""
+    """Normalize LLM JSON into showcase AI fields (reflection left for teachers)."""
     description = _clean_field(parsed.get("description") or parsed.get("教学设计简介") or parsed.get("intro"))
     highlights = _clean_field(
         parsed.get("design_highlights")
@@ -143,18 +139,13 @@ def normalize_ai_copy_fields(parsed: Dict[str, Any]) -> Dict[str, str]:
         or parsed.get("设计亮点")
         or parsed.get("highlights")
     )
-    reflection = _clean_field(
-        parsed.get("teaching_reflection")
-        or parsed.get("teachingReflection")
-        or parsed.get("教学反思")
-        or parsed.get("reflection")
-    )
-    if not description and not highlights and not reflection:
+    if not description and not highlights:
         raise ValueError("empty_ai_copy_fields")
     return {
         "description": description,
         "design_highlights": highlights,
-        "teaching_reflection": reflection,
+        # Kept for API shape; AI no longer drafts teaching reflection.
+        "teaching_reflection": "",
     }
 
 
@@ -270,7 +261,7 @@ async def generate_teaching_design_copy(
     organization_id: Optional[int],
     endpoint_path: str,
 ) -> Dict[str, str]:
-    """Call qwen3.7-flash and return normalized showcase copy fields."""
+    """Call qwen3.7-flash and return intro/highlights (reflection left empty)."""
     user_prompt = _build_teaching_copy_user_prompt(
         document_text=document_text,
         title=title,
@@ -283,7 +274,7 @@ async def generate_teaching_design_copy(
             system_message=_SYSTEM_PROMPT_ZH,
             model="qwen",
             temperature=0.45,
-            max_tokens=2400,
+            max_tokens=1600,
             user_id=user_id,
             organization_id=organization_id,
             request_type="showcase_ai_copy",
@@ -337,7 +328,7 @@ async def stream_teaching_design_copy(
             system_message=_SYSTEM_PROMPT_ZH,
             model="qwen",
             temperature=0.45,
-            max_tokens=2400,
+            max_tokens=1600,
             user_id=user_id,
             organization_id=organization_id,
             request_type="showcase_ai_copy",

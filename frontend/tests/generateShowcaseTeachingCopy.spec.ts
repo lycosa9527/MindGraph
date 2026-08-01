@@ -54,7 +54,7 @@ describe('streamShowcaseTeachingCopy', () => {
         'data: {"event":"phase","phase":"generating"}',
         'data: {"event":"fields","description":"简介半"}',
         'data: {"event":"fields","description":"简介完整","design_highlights":"亮点"}',
-        'data: {"event":"done","description":"简介完整","design_highlights":"亮点","teaching_reflection":"反思","model":"qwen3.7-flash"}',
+        'data: {"event":"done","description":"简介完整","design_highlights":"亮点","teaching_reflection":"","model":"qwen3.7-flash"}',
       ]),
     )
 
@@ -79,7 +79,7 @@ describe('streamShowcaseTeachingCopy', () => {
     expect(result).toEqual({
       description: '简介完整',
       designHighlights: '亮点',
-      teachingReflection: '反思',
+      teachingReflection: '',
       model: 'qwen3.7-flash',
     })
   })

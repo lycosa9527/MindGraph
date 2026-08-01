@@ -17,6 +17,7 @@ from services.infrastructure.sync.cos_sync_env import (
     cos_sync_role,
     crowdsec_meta_cos_key,
     geolite_meta_cos_key,
+    playwright_meta_cos_key,
     qdrant_meta_cos_key,
 )
 from services.infrastructure.sync.abuseipdb_cos_sync import (
@@ -27,6 +28,11 @@ from services.infrastructure.sync.celery_cos_sync import (
     get_celery_cos_status,
     install_celery_from_cos,
     publish_celery_release_to_cos,
+)
+from services.infrastructure.sync.playwright_cos_sync import (
+    get_playwright_cos_status,
+    install_playwright_from_cos,
+    publish_playwright_release_to_cos,
 )
 from services.infrastructure.sync.crowdsec_cos_sync import (
     get_crowdsec_cos_status,
@@ -72,6 +78,7 @@ def get_cos_overview_status() -> Dict[str, Any]:
     geolite_meta = tencent_cos_client.get_json(geolite_meta_cos_key())
     qdrant_meta = tencent_cos_client.get_json(qdrant_meta_cos_key())
     celery_meta = tencent_cos_client.get_json(celery_meta_cos_key())
+    playwright_meta = tencent_cos_client.get_json(playwright_meta_cos_key())
     local_backup = get_backup_status()
     cos_backups = list_cos_backups()
 
@@ -119,6 +126,10 @@ def get_cos_overview_status() -> Dict[str, Any]:
             "celery": {
                 "health": _artifact_health(celery_meta is not None),
                 "cos_meta": celery_meta,
+            },
+            "playwright": {
+                "health": _artifact_health(playwright_meta is not None),
+                "cos_meta": playwright_meta,
             },
         },
     }
@@ -204,3 +215,18 @@ async def trigger_celery_install_admin() -> Dict[str, Any]:
 async def get_celery_status_admin() -> Dict[str, Any]:
     """Celery COS status."""
     return await get_celery_cos_status()
+
+
+async def trigger_playwright_publish_admin() -> Dict[str, Any]:
+    """Publisher: pack Chromium and upload to COS."""
+    return await publish_playwright_release_to_cos(force=True)
+
+
+async def trigger_playwright_install_admin() -> Dict[str, Any]:
+    """Consumer: install Playwright Chromium from COS."""
+    return await install_playwright_from_cos(force=True)
+
+
+async def get_playwright_status_admin() -> Dict[str, Any]:
+    """Playwright Chromium COS status."""
+    return await get_playwright_cos_status()

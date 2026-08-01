@@ -130,7 +130,7 @@ export default {
   'showcase.publishModal.aiGenerating': 'AI生成中…',
   'showcase.publishModal.aiGenerateStop': '停止',
   'showcase.publishModal.aiGenerateCancelled': '已停止 AI 生成 — 再点一次可清空并重新生成',
-  'showcase.publishModal.aiGenerateSuccess': '已根据文档生成教学设计简介、设计亮点与教学反思，请核对后编辑',
+  'showcase.publishModal.aiGenerateSuccess': '已根据文档生成教学设计简介与设计亮点，请核对后编辑；教学反思请自行填写',
   'showcase.publishModal.aiGenerateFailed': 'AI生成失败，请稍后重试',
   'showcase.publishModal.aiGenerateNeedFile': '请先在上一步上传教学设计文档',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI生成目前仅支持教学设计案例',

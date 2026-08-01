@@ -472,8 +472,8 @@ class EnvManager:
         Returns:
             Dict[str, Dict]: Schema metadata for each setting
         """
-        # This is a static schema based on env.example
-        # For dynamic validation, use models/env_settings.py Pydantic models
+        # Static admin-UI schema (subset of env.example + docs/ops/env-advanced.md).
+        # For dynamic validation, use models/domain/env_settings.py Pydantic models.
 
         schema = {
             # Application Server

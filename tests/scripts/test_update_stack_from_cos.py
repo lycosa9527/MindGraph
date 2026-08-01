@@ -34,8 +34,14 @@ async def test_action_update_cancelled_when_up_to_date(monkeypatch):
             "cos_version": "1.18.2",
             "installed_version": "1.18.2",
         },
+        {
+            "update_needed": False,
+            "reason": "up_to_date",
+            "cos_version": "1.61.0",
+            "installed_version": "1.61.0",
+        },
     )
-    monkeypatch.setattr(cli, "_fetch_both_plans", AsyncMock(return_value=plans))
+    monkeypatch.setattr(cli, "_fetch_stack_plans", AsyncMock(return_value=plans))
     monkeypatch.setattr(cli, "_prompt_yes_no", lambda question, default_yes: False)
     code = await cli._action_update()
     assert code == 0
@@ -56,8 +62,14 @@ async def test_action_update_runs_pending(monkeypatch):
             "cos_version": "5.6.3",
             "installed_version": "5.6.3",
         },
+        {
+            "update_needed": True,
+            "reason": "not_installed",
+            "cos_version": "1.61.0",
+            "installed_version": None,
+        },
     )
-    monkeypatch.setattr(cli, "_fetch_both_plans", AsyncMock(return_value=plans))
+    monkeypatch.setattr(cli, "_fetch_stack_plans", AsyncMock(return_value=plans))
     monkeypatch.setattr(cli, "_prompt_yes_no", lambda question, default_yes: True)
     run_updates = AsyncMock(return_value=0)
     monkeypatch.setattr(cli, "_run_stack_updates", run_updates)
@@ -68,3 +80,4 @@ async def test_action_update_runs_pending(monkeypatch):
     plan = run_updates.await_args.args[0]
     assert plan["qdrant"]["run"] is True
     assert plan["celery"]["run"] is False
+    assert plan["playwright"]["run"] is True

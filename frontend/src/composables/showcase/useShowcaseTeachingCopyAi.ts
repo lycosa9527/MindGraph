@@ -1,8 +1,9 @@
 /**
  * Auto-stream Showcase teaching-design AI copy into form fields.
  *
- * Step 2 entry starts generation automatically. Button click while in-flight
- * aborts; click while idle clears fields and regenerates.
+ * Streams into description + design highlights only; teaching reflection is
+ * left for the teacher. Step 2 entry starts generation automatically. Button
+ * click while in-flight aborts; click while idle clears AI fields and regenerates.
  */
 import { type Ref, ref, watch } from 'vue'
 
@@ -33,7 +34,6 @@ type TeachingCopyStreamState = {
   emptyAtStart: {
     description: boolean
     designHighlights: boolean
-    teachingReflection: boolean
   }
   notifySuccess: boolean
   notifyError: boolean
@@ -49,7 +49,6 @@ export function useShowcaseTeachingCopyAi(options: {
   uploadedFile: Ref<File | null>
   description: Ref<string>
   designHighlights: Ref<string>
-  teachingReflection: Ref<string>
   step?: Ref<number>
 }) {
   const { t, notify, caseType, title, subject, grade, uploadedFile } = options
@@ -57,7 +56,6 @@ export function useShowcaseTeachingCopyAi(options: {
   const aiGeneratePhase = ref<ModelLoadPhase>('idle')
   const dirtyDescription = ref(false)
   const dirtyDesignHighlights = ref(false)
-  const dirtyTeachingReflection = ref(false)
   let teachingCopyStream: TeachingCopyStreamState | null = null
   let applyingAiFields = false
   let metadataRestartTimer: ReturnType<typeof setTimeout> | null = null
@@ -91,15 +89,14 @@ export function useShowcaseTeachingCopyAi(options: {
   function resetDirtyFlags(): void {
     dirtyDescription.value = false
     dirtyDesignHighlights.value = false
-    dirtyTeachingReflection.value = false
   }
 
   function resetAiCopyFields(): void {
     applyingAiFields = true
     try {
+      // teachingReflection is teacher-authored; AI generate never clears it.
       options.description.value = ''
       options.designHighlights.value = ''
-      options.teachingReflection.value = ''
     } finally {
       applyingAiFields = false
     }
@@ -114,10 +111,6 @@ export function useShowcaseTeachingCopyAi(options: {
     if (!applyingAiFields) dirtyDesignHighlights.value = true
   }
 
-  function markTeachingReflectionDirty(): void {
-    if (!applyingAiFields) dirtyTeachingReflection.value = true
-  }
-
   function applyFinalResult(result: ShowcaseTeachingCopyResult, forceOverwrite: boolean): void {
     applyingAiFields = true
     try {
@@ -126,9 +119,6 @@ export function useShowcaseTeachingCopyAi(options: {
       }
       if (forceOverwrite || !dirtyDesignHighlights.value) {
         options.designHighlights.value = result.designHighlights
-      }
-      if (forceOverwrite || !dirtyTeachingReflection.value) {
-        options.teachingReflection.value = result.teachingReflection
       }
     } finally {
       applyingAiFields = false
@@ -154,13 +144,6 @@ export function useShowcaseTeachingCopyAi(options: {
           (state.emptyAtStart.designHighlights && !dirtyDesignHighlights.value))
       ) {
         options.designHighlights.value = fields.designHighlights
-      }
-      if (
-        fields.teachingReflection !== undefined &&
-        (state.forceOverwrite ||
-          (state.emptyAtStart.teachingReflection && !dirtyTeachingReflection.value))
-      ) {
-        options.teachingReflection.value = fields.teachingReflection
       }
     } finally {
       applyingAiFields = false
@@ -231,7 +214,6 @@ export function useShowcaseTeachingCopyAi(options: {
     const emptyAtStart = {
       description: !options.description.value.trim(),
       designHighlights: !options.designHighlights.value.trim(),
-      teachingReflection: !options.teachingReflection.value.trim(),
     }
 
     const state: TeachingCopyStreamState = {
@@ -393,6 +375,5 @@ export function useShowcaseTeachingCopyAi(options: {
     resetAiCopyFields,
     markDescriptionDirty,
     markDesignHighlightsDirty,
-    markTeachingReflectionDirty,
   }
 }

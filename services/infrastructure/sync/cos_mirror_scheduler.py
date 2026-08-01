@@ -19,6 +19,10 @@ from services.infrastructure.sync.celery_cos_sync import (
     install_celery_from_cos,
     publish_celery_release_to_cos,
 )
+from services.infrastructure.sync.playwright_cos_sync import (
+    install_playwright_from_cos,
+    publish_playwright_release_to_cos,
+)
 from services.infrastructure.sync.cos_sync_env import (
     cos_sync_enabled,
     is_cos_consumer,
@@ -119,8 +123,8 @@ async def _run_consumer_cos_pull(*, force_blocklists: bool = False) -> None:
     """
     Pull consumer artifacts from COS when newer than local.
 
-    Blocklists, GeoLite, Qdrant, and Celery each skip when already in sync unless
-    ``force_blocklists`` is set (scheduled mirror tick).
+    Blocklists, GeoLite, Qdrant, Celery, and Playwright each skip when already
+    in sync unless ``force_blocklists`` is set (scheduled mirror tick).
     """
     cs = await merge_crowdsec_blocklist_from_cos(force=force_blocklists)
     if cs.get("ok") and not cs.get("skipped"):
@@ -139,6 +143,9 @@ async def _run_consumer_cos_pull(*, force_blocklists: bool = False) -> None:
     cl = await install_celery_from_cos()
     if cl.get("ok") and not cl.get("skipped"):
         logger.info("[COSMirror] Celery installed v%s from COS", cl.get("version"))
+    pw = await install_playwright_from_cos()
+    if pw.get("ok") and not pw.get("skipped"):
+        logger.info("[COSMirror] Playwright Chromium installed v%s from COS", pw.get("version"))
 
 
 async def _run_mirror_tick() -> None:
@@ -152,6 +159,11 @@ async def _run_mirror_tick() -> None:
         cl_pub = await publish_celery_release_to_cos()
         if cl_pub.get("ok") and not cl_pub.get("skipped"):
             logger.info("[COSMirror] Celery published v%s to COS", cl_pub.get("version"))
+        pw_pub = await publish_playwright_release_to_cos()
+        if pw_pub.get("ok") and not pw_pub.get("skipped"):
+            logger.info("[COSMirror] Playwright Chromium published v%s to COS", pw_pub.get("version"))
+        elif pw_pub.get("error") == "chromium_pack_failed":
+            logger.debug("[COSMirror] Playwright Chromium not packed; skip publish")
         gl_pub = await publish_geolite_to_cos()
         if gl_pub.get("ok") and not gl_pub.get("skipped"):
             logger.info("[COSMirror] GeoLite published to COS")

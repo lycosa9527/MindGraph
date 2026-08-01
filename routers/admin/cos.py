@@ -198,3 +198,39 @@ async def cos_celery_install(
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[AdminCOS] celery install failed: %s", exc)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+
+@router.get("/playwright/status")
+async def cos_playwright_status(
+    _scope: AdminScope = Depends(require_settings_cos),
+) -> Dict[str, Any]:
+    """Playwright Chromium and COS mirror status."""
+    try:
+        return await cos_admin_service.get_playwright_status_admin()
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error("[AdminCOS] playwright status failed: %s", exc)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+
+@router.post("/playwright/publish")
+async def cos_playwright_publish(
+    _scope: AdminScope = Depends(require_settings_cos),
+) -> Dict[str, Any]:
+    """Publisher: pack Chromium and upload to COS."""
+    try:
+        return await cos_admin_service.trigger_playwright_publish_admin()
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error("[AdminCOS] playwright publish failed: %s", exc)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+
+@router.post("/playwright/install")
+async def cos_playwright_install(
+    _scope: AdminScope = Depends(require_settings_cos),
+) -> Dict[str, Any]:
+    """Consumer: download Playwright Chromium from COS and extract into browsers cache."""
+    try:
+        return await cos_admin_service.trigger_playwright_install_admin()
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error("[AdminCOS] playwright install failed: %s", exc)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc

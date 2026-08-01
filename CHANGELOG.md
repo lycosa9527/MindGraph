@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.157.0] - 2026-08-01
+
+> **Playwright Chromium (+ apt deps) via COS stack sync; showcase AI copy leaves teaching reflection to teachers; slim env.example.**
+
+### Added
+
+- **Playwright COS mirror** — Publisher packs Chromium (and Ubuntu apt `.deb` deps) to COS; consumers install from the shared sync prefix alongside Qdrant/Celery (`services/infrastructure/sync/playwright_*.py`, `scripts/db/update_stack_from_cos.py`).
+- **Admin COS Playwright** — Overview health row plus status / publish / install API routes (`routers/admin/cos.py`, `AdminCosOverviewPanel.vue`).
+- **`PLAYWRIGHT_TARGET_VERSION`** — Optional pin for the Playwright package version recorded in COS meta (`env.example`).
+
+### Changed
+
+- **Showcase teaching-copy AI** — Streams only description + design highlights; teaching reflection is teacher-authored and never cleared/overwritten by AI generate (`services/showcase/ai_copy.py`, `useShowcaseTeachingCopyAi.ts`).
+- **`env.example`** — Trimmed to deployment essentials; advanced knobs documented in `docs/ops/env-advanced.md`.
+- **Fail2ban / COS docs** — Shared sync prefix layout notes Playwright under `sync/playwright/`.
+
+### Tests
+
+- **Backend** — Playwright COS plan/sync + apt-deps helpers; updated stack COS / showcase AI copy tests.
+- **Frontend** — Showcase teaching-copy generate coverage for the two AI fields.
+
 ## [5.156.1] - 2026-07-31
 
 > **迈特学习法: persist practice on OCR, stream mentor results live, and commit Maite DB writes.**

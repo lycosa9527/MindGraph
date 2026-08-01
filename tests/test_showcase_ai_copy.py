@@ -22,7 +22,7 @@ def test_strip_code_fence_removes_json_fence() -> None:
 
 def test_parse_json_object_tolerates_noise() -> None:
     """Parse the first JSON object even when wrapped in prose."""
-    raw = '以下是结果：\n{"description":"简介","design_highlights":"亮点","teaching_reflection":"反思"}\n完'
+    raw = '以下是结果：\n{"description":"简介","design_highlights":"亮点"}\n完'
     parsed = parse_json_object(raw)
     assert parsed["description"] == "简介"
     assert parsed["design_highlights"] == "亮点"
@@ -40,7 +40,8 @@ def test_normalize_ai_copy_fields_accepts_chinese_keys() -> None:
     assert "辨日" in fields["description"]
     assert "认知冲突" in fields["design_highlights"]
     assert "\n" not in fields["design_highlights"]
-    assert "变式" in fields["teaching_reflection"]
+    # Reflection is teacher-authored; AI normalize always clears it.
+    assert fields["teaching_reflection"] == ""
 
 
 def test_normalize_ai_copy_fields_rejects_empty() -> None:
@@ -54,10 +55,11 @@ def test_parse_json_object_roundtrip() -> None:
     payload = {
         "description": "简介约四十字左右用于案例广场。",
         "design_highlights": "亮点一\n亮点二",
-        "teaching_reflection": "课后反思一句。",
     }
     parsed = parse_json_object(json.dumps(payload, ensure_ascii=False))
-    assert normalize_ai_copy_fields(parsed)["description"] == payload["description"]
+    normalized = normalize_ai_copy_fields(parsed)
+    assert normalized["description"] == payload["description"]
+    assert normalized["teaching_reflection"] == ""
 
 
 def test_extract_partial_ai_copy_fields_progressive() -> None:
@@ -73,11 +75,11 @@ def test_extract_partial_ai_copy_fields_progressive() -> None:
     assert two["design_highlights"] == "亮点进行中"
     assert "teaching_reflection" not in two
 
+    # Reflection key is ignored even if the model still emits it.
     full = extract_partial_ai_copy_fields('{"description":"a","design_highlights":"b","teaching_reflection":"c"}')
     assert full == {
         "description": "a",
         "design_highlights": "b",
-        "teaching_reflection": "c",
     }
 
 
@@ -89,4 +91,4 @@ def test_extract_partial_ai_copy_fields_escapes_and_aliases() -> None:
     chinese = extract_partial_ai_copy_fields('{"教学设计简介": "简介", "设计亮点": "亮点", "教学反思": "反思进行')
     assert chinese["description"] == "简介"
     assert chinese["design_highlights"] == "亮点"
-    assert chinese["teaching_reflection"] == "反思进行"
+    assert "teaching_reflection" not in chinese

@@ -131,7 +131,7 @@ export default {
   'showcase.publishModal.aiGenerateStop': 'Stop',
   'showcase.publishModal.aiGenerateCancelled': 'AI generation cancelled — click again to regenerate',
   'showcase.publishModal.aiGenerateSuccess':
-    'Filled intro, highlights, and reflection from the document — review and edit as needed',
+    'Filled intro and highlights from the document — review and edit; write the teaching reflection yourself',
   'showcase.publishModal.aiGenerateFailed': 'AI generation failed — please try again',
   'showcase.publishModal.aiGenerateNeedFile': 'Upload a teaching-design document in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI generate is available for teaching-design cases only',

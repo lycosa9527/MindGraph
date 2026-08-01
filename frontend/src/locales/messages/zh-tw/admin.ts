@@ -1232,6 +1232,7 @@ export default {
   'admin.cos.sectionBackups': '備份',
   'admin.cos.sectionCrowdsec': 'CrowdSec',
   'admin.cos.sectionQdrant': 'Qdrant',
+  'admin.cos.sectionPlaywright': 'Playwright',
   'admin.cos.refresh': '刷新',
   'admin.cos.connection': 'COS 連接',
   'admin.cos.connected': '已連接',

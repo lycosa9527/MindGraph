@@ -18,6 +18,7 @@ import hashlib
 import json
 import logging
 import os
+import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
@@ -126,12 +127,23 @@ def _is_retryable_cos_error(exc: Exception) -> bool:
     return False
 
 
+def _cos_fetch_errors() -> tuple[type[Exception], ...]:
+    """Exception types raised by the Tencent COS SDK (plus infra errors)."""
+    errors: list[type[Exception]] = list(BACKGROUND_INFRA_ERRORS)
+    if CosServiceError is not None:
+        errors.append(CosServiceError)
+    if CosClientError is not None:
+        errors.append(CosClientError)
+    return tuple(errors)
+
+
 def _retry_cos_call(operation: str, func: Any, max_retries: int = 3) -> Any:
     last_exc: Optional[Exception] = None
+    cos_errors = _cos_fetch_errors()
     for attempt in range(max_retries):
         try:
             return func()
-        except BACKGROUND_INFRA_ERRORS as exc:
+        except cos_errors as exc:
             last_exc = exc
             if not _is_retryable_cos_error(exc) or attempt == max_retries - 1:
                 raise
@@ -187,7 +199,7 @@ def upload_file(
         )
         _retry_cos_call("upload", _do_upload, max_retries=max_retries)
         return True
-    except BACKGROUND_INFRA_ERRORS as exc:
+    except _cos_fetch_errors() as exc:
         logger.error("%s Upload failed key=%s: %s", log_prefix, object_key, exc, exc_info=True)
         return False
 
@@ -231,29 +243,25 @@ def download_file(
     if client is None:
         return False
     local_path.parent.mkdir(parents=True, exist_ok=True)
+    # Keep multipart resume records in a user-writable dir (avoid root-owned
+    # ~/.cos_download_tmp_file from older sudo downloads).
+    resume_dir = Path(tempfile.gettempdir()) / "mindgraph-cos-resume"
+    resume_dir.mkdir(parents=True, exist_ok=True)
 
     def _do_download() -> None:
         client.download_file(
             Bucket=COS_BUCKET,
             Key=object_key,
             DestFilePath=str(local_path),
+            DumpRecordDir=str(resume_dir),
         )
 
     try:
         _retry_cos_call("download", _do_download, max_retries=max_retries)
         return True
-    except BACKGROUND_INFRA_ERRORS as exc:
+    except _cos_fetch_errors() as exc:
         logger.error("%s Download failed key=%s: %s", log_prefix, object_key, exc)
         return False
-
-
-def _cos_fetch_errors() -> tuple[type[Exception], ...]:
-    errors: list[type[Exception]] = list(BACKGROUND_INFRA_ERRORS)
-    if CosServiceError is not None:
-        errors.append(CosServiceError)
-    if CosClientError is not None:
-        errors.append(CosClientError)
-    return tuple(errors)
 
 
 def get_object_bytes(

@@ -1174,6 +1174,7 @@ export default {
   'admin.cos.sectionBackups': 'Backups',
   'admin.cos.sectionCrowdsec': 'CrowdSec',
   'admin.cos.sectionQdrant': 'Qdrant',
+  'admin.cos.sectionPlaywright': 'Playwright',
   'admin.cos.refresh': 'Refresh',
   'admin.cos.connection': 'COS connection',
   'admin.cos.connected': 'Connected',

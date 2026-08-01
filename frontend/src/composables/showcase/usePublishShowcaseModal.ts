@@ -285,7 +285,6 @@ export function usePublishShowcaseModal(
     resetAiCopyFields,
     markDescriptionDirty,
     markDesignHighlightsDirty,
-    markTeachingReflectionDirty,
   } = useShowcaseTeachingCopyAi({
     t,
     notify,
@@ -296,7 +295,6 @@ export function usePublishShowcaseModal(
     uploadedFile,
     description,
     designHighlights,
-    teachingReflection,
     step,
   })
 
@@ -826,7 +824,6 @@ export function usePublishShowcaseModal(
     generateDescription,
     markDescriptionDirty,
     markDesignHighlightsDirty,
-    markTeachingReflectionDirty,
     submit,
     caseTypeIcon,
     CASE_TYPE_PUBLISH_OPTIONS,

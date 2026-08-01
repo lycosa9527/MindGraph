@@ -17,6 +17,15 @@ def test_normalized_cos_sync_prefix_uses_dedicated_env():
         assert cos_sync_env.crowdsec_blocklist_cos_key() == ("backups/mindgraph-shared/sync/crowdsec/blocklist.txt")
         assert cos_sync_env.abuseipdb_meta_cos_key() == ("backups/mindgraph-shared/sync/abuseipdb/meta.json")
         assert cos_sync_env.geolite_mmdb_cos_key() == ("backups/mindgraph-shared/sync/geolite/GeoLite2-Country.mmdb")
+        assert cos_sync_env.playwright_meta_cos_key() == ("backups/mindgraph-shared/sync/playwright/meta.json")
+        assert cos_sync_env.playwright_tarball_cos_key(
+            "1.61.0",
+            "linux-x64",
+            "playwright-chromium-1.61.0-linux-x64-r1228.tar.gz",
+        ) == (
+            "backups/mindgraph-shared/sync/playwright/v1.61.0/linux-x64/"
+            "playwright-chromium-1.61.0-linux-x64-r1228.tar.gz"
+        )
 
 
 def test_cos_config_snapshot_includes_sync_key_prefix():

@@ -828,7 +828,7 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared':
     '已保存的提取内容缺失或与存储不同步，已自动清除。请重新上传或粘贴文档。',
   'canvas.mindMapSideToolbar.learningSheet': '挖空支架图',
-  'canvas.mindMapSideToolbar.oneSentence': '一句话生成',
+  'canvas.mindMapSideToolbar.oneSentence': '对话式修改',
   'canvas.mindMapSideToolbar.oneSentenceIntro':
     '用一句话描述主题或修改要求，智能生成并调整导图',
   'canvas.mindMapSideToolbar.documentSummary': '文档总结',

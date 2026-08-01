@@ -118,7 +118,7 @@ Use a shared sync prefix so every env reads the same objects (PG dumps can stay 
 
 ```bash
 COS_KEY_PREFIX=backups/mindgraph-CHANGE          # optional per-env dumps
-COS_SYNC_KEY_PREFIX=backups/mindgraph-shared     # shared blocklists / Qdrant / Celery / GeoLite
+COS_SYNC_KEY_PREFIX=backups/mindgraph-shared     # shared blocklists / Qdrant / Celery / Playwright / GeoLite
 ```
 
 Layout under `COS_SYNC_KEY_PREFIX`:
@@ -127,7 +127,7 @@ Layout under `COS_SYNC_KEY_PREFIX`:
 sync/crowdsec/blocklist.txt + meta.json
 sync/abuseipdb/blocklist.txt + meta.json
 sync/geolite/GeoLite2-Country.mmdb + meta.json
-sync/qdrant/…  sync/celery/…
+sync/qdrant/…  sync/celery/…  sync/playwright/… (browser + apt-deps)
 ```
 
 **Seed / force publish** (publisher host only; do not run CrowdSec force-pull on more than one machine the same day):
