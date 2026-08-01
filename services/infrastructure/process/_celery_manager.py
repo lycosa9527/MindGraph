@@ -130,6 +130,7 @@ def start_celery_worker(server_state) -> Optional[subprocess.Popen[bytes]]:
     print("[CELERY] Starting Celery worker for background task processing...")
 
     python_exe = sys.executable
+    worker_loglevel = (os.getenv("CELERY_WORKER_LOGLEVEL") or "info").strip() or "info"
 
     celery_cmd = [
         python_exe,
@@ -138,7 +139,7 @@ def start_celery_worker(server_state) -> Optional[subprocess.Popen[bytes]]:
         "-A",
         "config.celery",
         "worker",
-        "--loglevel=debug",
+        f"--loglevel={worker_loglevel}",
         "--concurrency=2",
         "-Q",
         "default,knowledge",

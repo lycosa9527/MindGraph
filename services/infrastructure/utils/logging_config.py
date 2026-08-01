@@ -334,15 +334,20 @@ class UnifiedFormatter(logging.Formatter):
         datefmt=None,
         style: Literal["%", "{", "$"] = "%",
         validate=True,
+        use_colors: bool = True,
         **_kwargs,
     ):
         """
         Initialize formatter, accepting Uvicorn's use_colors parameter.
-        We ignore use_colors since we handle our own color logic.
+
+        Console handlers keep ANSI colors; file handlers pass use_colors=False
+        so grepping timestamped logs is not polluted by escape codes.
         """
+        if "use_colors" in _kwargs:
+            use_colors = bool(_kwargs.pop("use_colors"))
         # Call parent init without use_colors (not a standard logging.Formatter parameter)
         super().__init__(fmt=fmt, datefmt=datefmt, style=style, validate=validate)
-        # We manage our own colors in the format() method
+        self.use_colors = use_colors
 
     def format(self, record):
         """Format."""
@@ -357,13 +362,15 @@ class UnifiedFormatter(logging.Formatter):
         }
         level_name = level_map.get(record.levelname, record.levelname)
 
-        color = self.COLORS.get(level_name, "")
-        reset = self.COLORS["RESET"]
-
-        if level_name == "CRIT":
-            colored_level = f"{self.COLORS['BOLD']}{color}{level_name.ljust(5)}{reset}"
+        if self.use_colors:
+            color = self.COLORS.get(level_name, "")
+            reset = self.COLORS["RESET"]
+            if level_name == "CRIT":
+                colored_level = f"{self.COLORS['BOLD']}{color}{level_name.ljust(5)}{reset}"
+            else:
+                colored_level = f"{color}{level_name.ljust(5)}{reset}"
         else:
-            colored_level = f"{color}{level_name.ljust(5)}{reset}"
+            colored_level = level_name.ljust(5)
 
         # Source abbreviation
         source = record.name
@@ -398,7 +405,8 @@ class UnifiedFormatter(logging.Formatter):
         # Normalize message spacing: strip leading whitespace and normalize multiple spaces to single space
         message = record.getMessage().lstrip()
         message = re.sub(r" +", " ", message)  # Normalize multiple spaces to single space
-        message = _colorize_leading_module_tag(message, self.MODULE_TAG_COLORS, self.COLORS["RESET"])
+        if self.use_colors:
+            message = _colorize_leading_module_tag(message, self.MODULE_TAG_COLORS, self.COLORS["RESET"])
 
         line = f"[{timestamp}] {colored_level} | {source} | [{pid}] {message}"
 
@@ -547,8 +555,9 @@ def setup_logging():
     - Frontend logger configuration
     - OpenAI SDK logger configuration
     """
-    # Create formatter
-    unified_formatter = UnifiedFormatter()
+    # Console keeps ANSI; file handlers stay plain for grep / log shipping.
+    console_formatter = UnifiedFormatter(use_colors=True)
+    file_formatter = UnifiedFormatter(use_colors=False)
 
     # Use UTF-8 encoding for console output to handle emojis and Chinese characters
     # Only create console handler if stdout is usable
@@ -557,7 +566,7 @@ def setup_logging():
 
     if _is_stream_usable(sys.stdout):
         console_handler = SafeStreamHandler(sys.stdout)
-        console_handler.setFormatter(unified_formatter)
+        console_handler.setFormatter(console_formatter)
         handlers.append(console_handler)
     # If stdout is not usable, we'll only use file handler (more reliable)
 
@@ -571,7 +580,7 @@ def setup_logging():
             backup_count=10,  # Keep 10 backup files (30 days of logs)
             encoding="utf-8",
         )
-        file_handler.setFormatter(unified_formatter)
+        file_handler.setFormatter(file_formatter)
         handlers.append(file_handler)
     except (OSError, IOError):
         # If we can't create file handler, at least try to use console if available

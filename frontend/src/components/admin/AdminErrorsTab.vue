@@ -2,8 +2,8 @@
 /**
  * Admin Error Collection — Swiss metrics + monospace event log (geek ops style).
  */
-import { computed, ref, watch } from 'vue'
-import { Bell, Connection, WarningFilled } from '@element-plus/icons-vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
+import { Bell, Connection, DocumentCopy, WarningFilled } from '@element-plus/icons-vue'
 
 import AdminErrorEventDetailDialog from '@/components/admin/AdminErrorEventDetailDialog.vue'
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
@@ -22,6 +22,12 @@ import {
   useAdminErrorGroups,
   useAdminErrorSummary,
 } from '@/composables/queries/useAdminQueries'
+import {
+  ADMIN_ERROR_COPY_PAGE_SIZE,
+  buildAdminErrorCollectionDump,
+  isAbortError,
+} from '@/utils/admin/adminErrorCollectionCopy'
+import { copyTextToClipboard } from '@/utils/copyTextToClipboard'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -39,6 +45,13 @@ const pageSize = 50
 const detailVisible = ref(false)
 const detailEvent = ref<(AdminErrorEventItem & { stacktrace?: string | null }) | null>(null)
 const mutingGroupId = ref<number | null>(null)
+const copyingAll = ref(false)
+let copyAbortController: AbortController | null = null
+
+onUnmounted(() => {
+  copyAbortController?.abort()
+  copyAbortController = null
+})
 
 const listQuery = computed(() => ({
   page: page.value,
@@ -207,6 +220,65 @@ function refreshAll(): void {
     void eventsQuery.refetch()
   } else {
     void groupsQuery.refetch()
+  }
+}
+
+async function copyAllErrors(): Promise<void> {
+  if (copyingAll.value) {
+    return
+  }
+  if (total.value === 0) {
+    notify.warning(t('admin.errors.copyAllEmpty'))
+    return
+  }
+
+  copyAbortController?.abort()
+  const abortController = new AbortController()
+  copyAbortController = abortController
+  copyingAll.value = true
+  try {
+    const result = await buildAdminErrorCollectionDump({
+      view: viewMode.value,
+      hours: hours.value,
+      severity: severity.value,
+      source: source.value,
+      summary: summary.value,
+      signal: abortController.signal,
+    })
+    if (abortController.signal.aborted) {
+      return
+    }
+    if (result.kind === 'empty') {
+      notify.warning(t('admin.errors.copyAllEmpty'))
+      return
+    }
+    await copyTextToClipboard(result.text)
+    if (result.truncated) {
+      notify.success(
+        t('admin.errors.copyAllSuccessTruncated', {
+          count: String(result.count),
+          limit: String(ADMIN_ERROR_COPY_PAGE_SIZE),
+          total: String(result.total),
+        })
+      )
+    } else {
+      notify.success(t('admin.errors.copyAllSuccess', { count: String(result.count) }))
+    }
+    if (result.failedDetails > 0) {
+      notify.warning(
+        t('admin.errors.copyAllPartial', { failed: String(result.failedDetails) })
+      )
+    }
+  } catch (error) {
+    if (isAbortError(error) || abortController.signal.aborted) {
+      return
+    }
+    notify.error(t('admin.errors.copyAllError'))
+  } finally {
+    if (copyAbortController === abortController) {
+      copyAbortController = null
+    }
+    copyingAll.value = false
   }
 }
 
@@ -386,6 +458,17 @@ function onNextPage(): void {
           @click="refreshAll"
         >
           {{ t('common.refresh') }}
+        </el-button>
+        <el-button
+          class="admin-swiss-btn admin-swiss-btn--ghost"
+          :icon="DocumentCopy"
+          :loading="copyingAll"
+          :disabled="total === 0 || copyingAll"
+          :title="t('admin.errors.copyAllHint')"
+          :aria-label="t('admin.errors.copyAllHint')"
+          @click="copyAllErrors"
+        >
+          {{ t('admin.errors.copyAll') }}
         </el-button>
       </div>
 

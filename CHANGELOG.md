@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.159.0] - 2026-08-01
+
+> **Admin error Copy all; showcase cross-org author 500; quieter Celery/WS/abort logs; ClientDisconnect and RLS session hardening.**
+
+### Added
+
+- **Admin error collection Copy all** — One-click clipboard dump of filtered errors with path/message/stacktrace/tags (batched detail fetch, clipboard fallback, truncate/partial toasts) (`AdminErrorsTab.vue`, `adminErrorCollectionCopy.ts`).
+
+### Fixed
+
+- **Showcase list 500 (cross-org authors)** — `users` RLS is same-org, so `joinedload(author)` was `None` for other schools’ cases and author formatting crashed; resolve public name/avatar/org under system bootstrap and tolerate missing authors (`author_payload.py`, `routes_posts.py`).
+- **`ClientDisconnect` on `/api/generate_graph/stream`** — Stop peeking the POST body in `log_requests` (logging no longer buffers JSON just for slow-threshold splitting); streamed-body limit and the general exception handler treat early client abort as 204 instead of an unhandled 500 (`middleware.py`, `exception_handlers.py`).
+- **HTTPException as unhandled 500** — Middleware-raised `HTTPException` (e.g. expired token) re-routes through `http_exception_handler` instead of the catch-all (`exception_handlers.py`).
+- **RLS strict deny_default noise** — Admin error APIs and coin side-sessions use pinned RLS sessions (`get_async_db_with_request_rls` / `actor_rls_session`); chunk-test background binds session RLS; lint flags bare `open_async_session` (`admin/errors.py`, diagrams/workshop/canvas_translate, `lint_rls_session.py`).
+- **Celery log flood** — Managed worker defaults to `--loglevel=info`; process monitor skips broker inspect when the subprocess PID is alive; file formatters drop ANSI (`_celery_manager.py`, `process_monitor.py`, `logging_config.py`, `config/celery.py`).
+- **WebSocket client-gone noise** — `safe_websocket_send_text` also swallows `websockets.ConnectionClosed*` (`ws_limits.py`).
+- **Frontend abort / teaching-copy noise** — Skip `AbortError` in frontend error reporting; teaching-copy stream catch no longer rethrows (`frontendLog.ts`, `useShowcaseTeachingCopyAi.ts`).
+
+### Tests
+
+- **Backend** — Showcase author payload when author row is missing; `log_requests` does not buffer bodies; `ClientDisconnect` → 204 in streamed-body limit and general handler; Celery health-check skip when worker PID is alive.
+- **Frontend** — Error-collection copy dump / clipboard helpers; teaching-copy stream abort coverage; `AbortError` skipped in frontend error reporting.
+
 ## [5.158.0] - 2026-08-01
 
 > **Mind map v2 canvas default; pan-only keep-new-child in view; inline-edit hardening; admin capabilities after verified session; OpenClaw skill 1.3.0 (90-day tokens).**

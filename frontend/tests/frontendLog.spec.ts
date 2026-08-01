@@ -80,4 +80,19 @@ describe('frontendLog', () => {
 
     expect(fetch).not.toHaveBeenCalled()
   })
+
+  it('skips AbortError / user-aborted fetch noise', () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+    vi.stubEnv('PROD', true)
+    vi.stubEnv('DEV', false)
+
+    const abort = new DOMException('The user aborted a request.', 'AbortError')
+    reportFrontendError(abort, { source: 'unhandledrejection' })
+    reportFrontendError(
+      new Error('BodyStreamBuffer was aborted'),
+      { source: 'unhandledrejection' }
+    )
+
+    expect(fetch).not.toHaveBeenCalled()
+  })
 })

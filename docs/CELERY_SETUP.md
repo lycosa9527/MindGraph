@@ -54,9 +54,12 @@ Process monitor restarts the worker if it crashes (default on):
 ```bash
 PROCESS_MONITOR_ENABLED=true
 CELERY_MANAGED_BY_APP=true   # default — app starts/stops the worker with main.py
+CELERY_WORKER_LOGLEVEL=info  # default — use debug only for short local diagnosis
 ```
 
 Do **not** set `CELERY_MANAGED_BY_APP=false` on WSL or production servers unless you are debugging a standalone worker.
+
+When `CELERY_MANAGED_BY_APP=true`, the process monitor treats the worker subprocess as healthy if the PID is alive and does **not** call broker `inspect.active()` every cycle (that flooded `logs/celery_worker_error.log` with DEBUG pidbox lines). Always launch via `python -m celery -A config.celery worker` from the repo root (app-managed does this); avoid running as root when possible.
 
 ## Running Celery (app-managed)
 
@@ -89,15 +92,22 @@ If a worker is already running:
 
 Worker logs (Linux):
 
-- `logs/celery_worker.log`
-- `logs/celery_worker_error.log`
+- `logs/celery_worker.log` (stdout)
+- `logs/celery_worker_error.log` (stderr — should stay small at `info`; rotate/truncate after upgrades if bloated by old DEBUG runs)
+
+### Post-deploy checklist (test + production)
+
+1. Restart API **and** Celery together so new tasks (e.g. `showcase.generate_cover`) are registered.
+2. Confirm registration: `celery -A config.celery inspect registered` includes knowledge, showcase, and mindmate_export tasks.
+3. If covers/PNG/DingTalk fail on test with Playwright errors, install Chromium in the app conda env (`python -m playwright install chromium` + OS deps, or COS stack sync).
+4. Verify DashScope / Qwen API keys and region match each host’s `.env`.
 
 ### Manual worker (debug only)
 
 For isolated Celery debugging, not normal WSL/server operation:
 
 ```bash
-celery -A config.celery worker --loglevel=info
+python -m celery -A config.celery worker --loglevel=info
 ```
 
 Set `CELERY_MANAGED_BY_APP=false` if you run a long-lived external worker and do not want `main.py` to stop it on exit.

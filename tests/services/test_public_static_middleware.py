@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import FastAPI
-from starlette.responses import PlainTextResponse
+from fastapi import FastAPI, HTTPException
+from starlette.requests import ClientDisconnect
+from starlette.responses import PlainTextResponse, Response
 from starlette.testclient import TestClient
 
-from services.infrastructure.http.middleware import auth_context_middleware, log_requests
+from services.infrastructure.http.exception_handlers import general_exception_handler
+from services.infrastructure.http.middleware import (
+    auth_context_middleware,
+    enforce_streaming_body_limit,
+    log_requests,
+)
 from services.infrastructure.utils.spa_handler import is_public_static_path
 
 
@@ -107,6 +114,10 @@ def _app_with_log_middleware() -> FastAPI:
     async def api_ping() -> PlainTextResponse:
         return PlainTextResponse("pong")
 
+    @app.post("/api/generate_graph/stream")
+    async def generate_graph_stream() -> PlainTextResponse:
+        return PlainTextResponse("ok")
+
     return app
 
 
@@ -124,3 +135,80 @@ def test_log_requests_keeps_debug_line_for_api(caplog: pytest.LogCaptureFixture)
     client = TestClient(_app_with_log_middleware())
     client.get("/api/ping")
     assert any("Request: GET /api/ping" in record.message for record in caplog.records)
+
+
+def test_log_requests_does_not_buffer_generate_graph_body() -> None:
+    """Logging must not consume the body (avoids ClientDisconnect → 500)."""
+    client = TestClient(_app_with_log_middleware())
+    response = client.post(
+        "/api/generate_graph/stream",
+        json={"request_type": "autocomplete", "topic": "x"},
+    )
+    assert response.status_code == 200
+    assert response.text == "ok"
+
+
+@pytest.mark.asyncio
+async def test_log_requests_never_reads_body() -> None:
+    """Unit: log_requests must not call request.body()."""
+    request = MagicMock()
+    request.method = "POST"
+    request.url = SimpleNamespace(path="/api/generate_graph/stream", query="")
+    request.body = AsyncMock(return_value=b'{"request_type":"autocomplete"}')
+    request.state = SimpleNamespace()
+    call_next = AsyncMock(return_value=Response(status_code=200))
+
+    response = await log_requests(request, call_next)
+
+    assert response.status_code == 200
+    request.body.assert_not_called()
+    call_next.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_enforce_streaming_body_limit_returns_204_on_client_disconnect() -> None:
+    """Client abort while buffering a chunked body must not become a 500."""
+    request = MagicMock()
+    request.method = "POST"
+    request.url = SimpleNamespace(path="/api/upload")
+    request.headers = {}
+    request.body = AsyncMock(side_effect=ClientDisconnect())
+    call_next = AsyncMock()
+
+    with patch(
+        "services.infrastructure.http.middleware.max_request_body_size_for_path",
+        return_value=1024,
+    ):
+        response = await enforce_streaming_body_limit(request, call_next)
+
+    assert response.status_code == 204
+    call_next.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_general_exception_handler_treats_client_disconnect_as_204() -> None:
+    """Safety net when ClientDisconnect escapes outer middleware into ServerErrorMiddleware."""
+    request = MagicMock()
+    request.url = SimpleNamespace(path="/api/generate_graph/stream")
+    request.state = SimpleNamespace(request_id=None)
+
+    response = await general_exception_handler(request, ClientDisconnect())
+
+    assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_general_exception_handler_reroutes_http_exception() -> None:
+    """Middleware-raised HTTPException must not become an unhandled 500."""
+    request = MagicMock()
+    request.url = SimpleNamespace(path="/api/auth/me")
+    request.state = SimpleNamespace(request_id=None)
+    request.headers = {}
+
+    response = await general_exception_handler(
+        request,
+        HTTPException(status_code=401, detail="Invalid or expired token"),
+    )
+
+    assert response.status_code == 401
+    assert response.body == b'{"detail":"Invalid or expired token"}'

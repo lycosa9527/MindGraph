@@ -1,6 +1,7 @@
 /**
  * Report frontend errors to the backend error collection pipeline.
  */
+import { isAbortError } from '@/composables/nodePalette/errors'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { isStaleChunkLoadError } from '@/utils/staleChunkReload'
 
@@ -116,6 +117,9 @@ export function reportFrontendError(
   context?: { source?: string; info?: string }
 ): void {
   if (shouldSkipReporting()) {
+    return
+  }
+  if (isAbortError(err)) {
     return
   }
   if (isBenignBrowserNoise(err)) {

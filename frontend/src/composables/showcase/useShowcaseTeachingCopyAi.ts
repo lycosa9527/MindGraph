@@ -25,7 +25,8 @@ type TranslateFn = (key: string) => unknown
 
 type TeachingCopyStreamState = {
   fingerprint: string
-  promise: Promise<ShowcaseTeachingCopyResult>
+  /** Settles without reject so fire-and-forget callers avoid unhandledrejection. */
+  promise: Promise<ShowcaseTeachingCopyResult | void>
   result: ShowcaseTeachingCopyResult | null
   error: string | null
   abort: AbortController
@@ -218,7 +219,7 @@ export function useShowcaseTeachingCopyAi(options: {
 
     const state: TeachingCopyStreamState = {
       fingerprint,
-      promise: undefined as unknown as Promise<ShowcaseTeachingCopyResult>,
+      promise: undefined as unknown as Promise<ShowcaseTeachingCopyResult | void>,
       result: null,
       error: null,
       abort,
@@ -276,8 +277,10 @@ export function useShowcaseTeachingCopyAi(options: {
         return result
       })
       .catch((error: unknown) => {
+        // Fire-and-forget: never rethrow — abort/cancel and handled failures
+        // must not become window unhandledrejection noise.
         if (abort.signal.aborted) {
-          throw error
+          return
         }
         const message =
           error instanceof Error && error.message
@@ -290,7 +293,6 @@ export function useShowcaseTeachingCopyAi(options: {
             notify.error(message)
           }
         }
-        throw error
       })
       .finally(() => {
         if (teachingCopyStream?.fingerprint !== fingerprint) return

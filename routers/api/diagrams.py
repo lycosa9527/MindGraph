@@ -33,7 +33,6 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
-from config.db_sessions import open_async_session
 from models.domain.auth import User
 from models.domain.diagram_snapshots import DiagramSnapshot
 from models.domain.diagrams import Diagram
@@ -267,7 +266,7 @@ async def create_diagram(
         diagram_id=diagram_id,
     )
 
-    async with open_async_session() as db:
+    async with actor_rls_session(current_user) as db:
         org = await load_user_org(current_user)
         save_mutation = await track_client_event(db, current_user, org, EVENT_DIAGRAM_SAVE)
         coins_footer = mutation_to_footer(save_mutation)

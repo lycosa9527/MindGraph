@@ -23,7 +23,6 @@ from models.requests.requests_canvas_translate import (
     TranslateDiagramLabelsRequest,
     TranslateNodeLabelRequest,
 )
-from config.db_sessions import open_async_session
 from services.auth.thinking_coin.client_event_service import load_user_org
 from services.auth.thinking_coin.event_hub import (
     merge_mutation_footers,
@@ -41,6 +40,7 @@ from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, JSON_PARSE_ERRORS
 from utils.auth import get_current_user_or_api_key, is_superadmin
 from utils.auth.thinking_coin_config import EVENT_DIAGRAM_TRANSLATE, THINKING_COIN_MODE_BATCH_INNER
+from utils.db.session_open import actor_rls_session
 
 from .diagram_generation import _query_diagram_ownership
 from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
@@ -187,7 +187,7 @@ async def _claim_diagram_translate_earn(current_user: Optional[User]) -> dict[st
     if current_user is None:
         return {}
     try:
-        async with open_async_session() as db:
+        async with actor_rls_session(current_user) as db:
             org = await load_user_org(current_user)
             mutation = await track_client_event(db, current_user, org, EVENT_DIAGRAM_TRANSLATE)
             return mutation_to_footer(mutation)

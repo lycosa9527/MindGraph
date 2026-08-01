@@ -134,6 +134,49 @@ class ServiceStatus(Enum):
     UNKNOWN = "unknown"
 
 
+async def check_celery_worker_health(
+    *,
+    app: Any,
+    managed_process: Any,
+    worker_needed: bool,
+) -> ServiceStatus:
+    """
+    Celery liveness for process monitor.
+
+    When the app owns the worker subprocess, a live PID is enough (avoids
+    broker inspect/pidbox spam). Unmanaged deployments ping workers instead.
+    """
+    if not worker_needed:
+        return ServiceStatus.HEALTHY
+
+    try:
+        if app is None:
+            logger.warning("[ProcessMonitor] Celery app not available")
+            return ServiceStatus.UNHEALTHY
+
+        if managed_process is not None:
+            return_code = managed_process.poll()
+            if return_code is not None:
+                logger.warning(
+                    "[ProcessMonitor] Celery process terminated (return code: %s)",
+                    return_code,
+                )
+                return ServiceStatus.UNHEALTHY
+            return ServiceStatus.HEALTHY
+
+        inspect = app.control.inspect(timeout=2.0)
+        ping_replies = await asyncio.to_thread(inspect.ping)
+
+        if ping_replies is None or not ping_replies:
+            logger.warning("[ProcessMonitor] No Celery workers responded to ping")
+            return ServiceStatus.UNHEALTHY
+
+        return ServiceStatus.HEALTHY
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning("[ProcessMonitor] Celery health check failed: %s", exc)
+        return ServiceStatus.UNHEALTHY
+
+
 # ============================================================================
 # Service Metrics Dataclass
 # ============================================================================
@@ -351,39 +394,11 @@ class ProcessMonitor:
         Returns:
             ServiceStatus (HEALTHY or UNHEALTHY)
         """
-        # Skip Celery check when neither Knowledge Space nor Showcase covers need it
-        if _CONFIG_AVAILABLE and config is not None:
-            if not celery_worker_needed_for_app():
-                return ServiceStatus.HEALTHY
-
-        try:
-            if celery_app is None:
-                logger.warning("[ProcessMonitor] Celery app not available")
-                return ServiceStatus.UNHEALTHY
-
-            # Check for active workers via Redis broker
-            inspect = celery_app.control.inspect(timeout=2.0)
-            active_workers = await asyncio.to_thread(inspect.active)
-
-            if active_workers is None or not active_workers:
-                logger.warning("[ProcessMonitor] No active Celery workers found")
-                return ServiceStatus.UNHEALTHY
-
-            # Process check if subprocess managed
-            if ServerState.celery_worker_process is not None:
-                return_code = ServerState.celery_worker_process.poll()
-                if return_code is not None:
-                    # Process has terminated
-                    logger.warning(
-                        "[ProcessMonitor] Celery process terminated (return code: %s)",
-                        return_code,
-                    )
-                    return ServiceStatus.UNHEALTHY
-
-            return ServiceStatus.HEALTHY
-        except BACKGROUND_INFRA_ERRORS as e:
-            logger.warning("[ProcessMonitor] Celery health check failed: %s", e)
-            return ServiceStatus.UNHEALTHY
+        return await check_celery_worker_health(
+            app=celery_app,
+            managed_process=ServerState.celery_worker_process,
+            worker_needed=celery_worker_needed_for_app(),
+        )
 
     async def _check_postgresql_health(self) -> ServiceStatus:
         """

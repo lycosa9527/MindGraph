@@ -172,6 +172,17 @@ async def general_exception_handler(request: Request, exc: Exception):
     exception_message = str(exc)
     request_path = getattr(request.url, "path", "") if request and request.url else ""
 
+    # BaseHTTPMiddleware can surface HTTPException into the catch-all instead of
+    # FastAPI's HTTPException handler (e.g. auth checks in middleware).
+    if isinstance(exc, HTTPException):
+        return await http_exception_handler(request, exc)
+
+    # Outer BaseHTTPMiddleware can raise ClientDisconnect before ExceptionMiddleware
+    # sees it; ServerErrorMiddleware then routes here via the Exception handler.
+    if isinstance(exc, ClientDisconnect):
+        logger.debug("Client disconnected (request aborted): %s", request_path)
+        return Response(status_code=204)
+
     # Starlette's BaseHTTPMiddleware raises RuntimeError("No response returned.") when
     # a streaming response is cancelled (asyncio.CancelledError / GeneratorExit) before
     # the ASGI `http.response.start` message is sent. This is a client-disconnect

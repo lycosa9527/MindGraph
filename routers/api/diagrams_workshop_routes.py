@@ -12,7 +12,6 @@ from typing import Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 
-from config.db_sessions import open_async_session
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from models.domain.messages import Language
@@ -217,7 +216,7 @@ async def join_workshop(
         workshop_info["diagram_id"],
     )
 
-    async with open_async_session() as db:
+    async with actor_rls_session(current_user) as db:
         org = await load_user_org(current_user)
         join_mutation = await track_client_event(db, current_user, org, EVENT_WORKSHOP_JOIN)
         coins_footer = mutation_to_footer(join_mutation)
@@ -276,7 +275,7 @@ async def join_workshop_organization(
         body.diagram_id,
     )
 
-    async with open_async_session() as db:
+    async with actor_rls_session(current_user) as db:
         org = await load_user_org(current_user)
         join_mutation = await track_client_event(db, current_user, org, EVENT_WORKSHOP_JOIN)
         coins_footer = mutation_to_footer(join_mutation)

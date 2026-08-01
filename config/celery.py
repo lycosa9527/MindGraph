@@ -53,6 +53,12 @@ _bootstrap_rls_migration_from_env()
 patch_kombu_redis_connection_pool()
 
 
+def _celery_worker_log_level() -> int:
+    """Resolve Celery worker log level from CELERY_WORKER_LOGLEVEL (default INFO)."""
+    name = (os.getenv("CELERY_WORKER_LOGLEVEL") or "info").strip().upper() or "INFO"
+    return getattr(logging, name, logging.INFO)
+
+
 # Configure Celery logging to match application format
 class UnifiedFormatter(logging.Formatter):
     """
@@ -70,6 +76,11 @@ class UnifiedFormatter(logging.Formatter):
         "BOLD": "\033[1m",
     }
 
+    def __init__(self, *, use_colors: bool = True):
+        """Init with optional ANSI colors (console on, file off)."""
+        super().__init__()
+        self.use_colors = use_colors
+
     def format(self, record):
         # Timestamp: HH:MM:SS
         """Format."""
@@ -82,13 +93,15 @@ class UnifiedFormatter(logging.Formatter):
         elif level_name == "WARNING":
             level_name = "WARN"
 
-        color = self.COLORS.get(level_name, "")
-        reset = self.COLORS["RESET"]
-
-        if level_name == "CRIT":
-            colored_level = f"{self.COLORS['BOLD']}{color}{level_name.ljust(5)}{reset}"
+        if self.use_colors:
+            color = self.COLORS.get(level_name, "")
+            reset = self.COLORS["RESET"]
+            if level_name == "CRIT":
+                colored_level = f"{self.COLORS['BOLD']}{color}{level_name.ljust(5)}{reset}"
+            else:
+                colored_level = f"{color}{level_name.ljust(5)}{reset}"
         else:
-            colored_level = f"{color}{level_name.ljust(5)}{reset}"
+            colored_level = level_name.ljust(5)
 
         # Source abbreviation - handle Celery-specific loggers
         source = record.name
@@ -128,6 +141,7 @@ def setup_celery_logging():
     """Configure Celery to use unified logging format."""
     # Get root logger
     root_logger = logging.getLogger()
+    celery_level = _celery_worker_log_level()
 
     # Remove existing handlers
     for handler in root_logger.handlers[:]:
@@ -135,7 +149,7 @@ def setup_celery_logging():
 
     # Create console handler with unified formatter
     console_handler = logging.StreamHandler()
-    console_handler.setFormatter(UnifiedFormatter())
+    console_handler.setFormatter(UnifiedFormatter(use_colors=True))
 
     # Create file handler to write to logs/app.log (same as main application)
     # Ensure logs directory exists
@@ -150,7 +164,7 @@ def setup_celery_logging():
         backupCount=10,
         encoding="utf-8",
     )
-    file_handler.setFormatter(UnifiedFormatter())
+    file_handler.setFormatter(UnifiedFormatter(use_colors=False))
 
     # Configure Celery loggers - including all variants
     celery_loggers = [
@@ -161,20 +175,21 @@ def setup_celery_logging():
         "celery.beat",
         "celery.app",
         "celery.app.trace",
+        "celery.redirected",
     ]
 
     for logger_name in celery_loggers:
         celery_logger = logging.getLogger(logger_name)
         celery_logger.handlers = []
         celery_logger.addHandler(console_handler)
-        celery_logger.addHandler(file_handler)  # Add file handler
-        celery_logger.setLevel(logging.DEBUG)  # Full verbose logging
+        celery_logger.addHandler(file_handler)
+        celery_logger.setLevel(celery_level)
         celery_logger.propagate = False
 
     # Configure root logger to catch all messages
     root_logger.addHandler(console_handler)
-    root_logger.addHandler(file_handler)  # Add file handler
-    root_logger.setLevel(logging.DEBUG)  # Full verbose logging
+    root_logger.addHandler(file_handler)
+    root_logger.setLevel(celery_level)
 
     # Also configure any existing logger that starts with 'celery'
     # This catches MainProcess and ForkPoolWorker loggers
@@ -183,8 +198,8 @@ def setup_celery_logging():
             celery_logger = logging.getLogger(logger_name)
             celery_logger.handlers = []
             celery_logger.addHandler(console_handler)
-            celery_logger.addHandler(file_handler)  # Add file handler
-            celery_logger.setLevel(logging.DEBUG)  # Full verbose logging
+            celery_logger.addHandler(file_handler)
+            celery_logger.setLevel(celery_level)
             celery_logger.propagate = False
 
     # Set all application loggers to DEBUG for verbose logging

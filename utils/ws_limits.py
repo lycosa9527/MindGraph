@@ -16,6 +16,18 @@ from collections.abc import Mapping
 from typing import Any, Optional
 
 from starlette.websockets import WebSocket, WebSocketDisconnect
+from websockets.exceptions import ConnectionClosed, ConnectionClosedError, ConnectionClosedOK
+
+# Client-gone failures that should not surface as application faults.
+_WS_CLIENT_GONE_ERRORS: tuple[type[BaseException], ...] = (
+    RuntimeError,
+    ConnectionError,
+    OSError,
+    WebSocketDisconnect,
+    ConnectionClosed,
+    ConnectionClosedError,
+    ConnectionClosedOK,
+)
 
 
 def _optional_positive_int(name: str) -> int:
@@ -75,7 +87,7 @@ async def safe_websocket_send_text(websocket: WebSocket, text: str) -> None:
     """Send a text frame; ignore failures when the client has already gone away."""
     try:
         await websocket.send_text(text)
-    except (RuntimeError, ConnectionError, OSError, WebSocketDisconnect):
+    except _WS_CLIENT_GONE_ERRORS:
         pass
 
 

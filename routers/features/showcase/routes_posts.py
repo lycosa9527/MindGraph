@@ -57,6 +57,7 @@ from .common import (
     _format_post,
     _increment_approved_post_views,
     _load_post_for_format,
+    _load_public_author_profiles,
     _safe_showcase_audit,
     _search_filter,
     _validate_case_type,
@@ -281,7 +282,20 @@ async def list_posts(
     else:
         favorited_post_ids = set()
 
-    formatted = [await _format_post(p, current_user, db, liked_post_ids, favorited_post_ids) for p in posts]
+    author_profiles = await _load_public_author_profiles(
+        {p.author_id for p in posts if p.author is None and p.author_id is not None}
+    )
+    formatted = [
+        await _format_post(
+            p,
+            current_user,
+            db,
+            liked_post_ids,
+            favorited_post_ids,
+            author_profiles,
+        )
+        for p in posts
+    ]
     payload = {
         "posts": formatted,
         "total": total,

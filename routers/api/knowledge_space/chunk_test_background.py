@@ -21,7 +21,13 @@ from config.database import SyncSessionLocal
 from models.domain.knowledge_space import ChunkTestResult
 from services.knowledge.rag_chunk_test import get_rag_chunk_test_service
 from services.utils.error_types import DATABASE_ERRORS
-from utils.db.rls_context import RlsContext, reset_rls_context, rls_sync_session, set_rls_context
+from utils.db.rls_context import (
+    RlsContext,
+    bind_session_rls_context,
+    reset_rls_context,
+    rls_sync_session,
+    set_rls_context,
+)
 from utils.db.session_open import system_rls_session, user_rls_session
 
 logger = logging.getLogger(__name__)
@@ -252,10 +258,12 @@ def run_test_in_background(
     db = None
     test_result = None
 
-    rls_token = set_rls_context(RlsContext.for_celery_user(user_id))
+    rls_ctx = RlsContext.for_celery_user(user_id)
+    rls_token = set_rls_context(rls_ctx)
     try:
         # Create database session with proper error handling
         db = SyncSessionLocal()
+        bind_session_rls_context(db, rls_ctx)
         logger.debug("[ChunkTestBackground] Querying test result %s from database", test_id)
         loaded = db.execute(select(ChunkTestResult).where(ChunkTestResult.id == test_id)).scalar_one_or_none()
         if not loaded:
@@ -502,10 +510,12 @@ def run_benchmark_in_background(
     db = None
     test_result = None
 
-    rls_token = set_rls_context(RlsContext.for_celery_user(user_id))
+    rls_ctx = RlsContext.for_celery_user(user_id)
+    rls_token = set_rls_context(rls_ctx)
     try:
         # Create database session with proper error handling
         db = SyncSessionLocal()
+        bind_session_rls_context(db, rls_ctx)
         logger.debug("[ChunkTestBackground] Querying test result %s from database", test_id)
         loaded = db.execute(select(ChunkTestResult).where(ChunkTestResult.id == test_id)).scalar_one_or_none()
         if not loaded:

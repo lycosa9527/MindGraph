@@ -15,7 +15,6 @@ All Rights Reserved
 Proprietary License
 """
 
-import json
 import logging
 import os
 import time
@@ -23,9 +22,10 @@ from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from starlette.middleware.gzip import GZipResponder
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.requests import ClientDisconnect
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from config.settings import config
@@ -403,7 +403,14 @@ async def enforce_streaming_body_limit(request: Request, call_next):
         content_length = request.headers.get("content-length")
         max_size = max_request_body_size_for_path(request.url.path)
         if not content_length:
-            body = await request.body()
+            try:
+                body = await request.body()
+            except ClientDisconnect:
+                logger.debug(
+                    "Client disconnected while reading streamed body: %s",
+                    request.url.path,
+                )
+                return Response(status_code=204)
             if len(body) > max_size:
                 client_ip = get_client_ip(request)
                 security_log.input_validation_failed(
@@ -543,34 +550,13 @@ async def vpn_cn_geo_middleware(request: Request, call_next):
 
 
 async def log_requests(request: Request, call_next):
-    """
-    Log all HTTP requests and responses with timing information.
-    Handles request/response lifecycle events.
-    """
+    """Log HTTP requests/responses with timing. Does not read the request body."""
     start_time = time.time()
 
     # For Vue assets, include version info in log for debugging
     log_path = request.url.path
     if request.url.path.startswith("/assets/") and request.url.query:
         log_path = f"{request.url.path}?{request.url.query}"
-
-    # For POST requests to generate_graph, check if it's autocomplete before processing
-    # This allows us to set appropriate slow warning thresholds
-    is_autocomplete_request = False
-    if request.method == "POST" and "generate_graph" in request.url.path:
-        try:
-            body = await request.body()
-            if body:
-                body_data = json.loads(body)
-                is_autocomplete_request = body_data.get("request_type") == "autocomplete"
-
-                # Recreate request body stream for downstream consumption
-                async def _receive_body():
-                    return {"type": "http.request", "body": body, "more_body": False}
-
-                request = Request(request.scope, receive=_receive_body)
-        except (json.JSONDecodeError, AttributeError, TypeError):
-            pass
 
     # Process request
     response = await call_next(request)
@@ -607,29 +593,15 @@ async def log_requests(request: Request, call_next):
             request.url.path,
             response_time,
         )
-    elif "generate_graph" in request.url.path:
-        if is_autocomplete_request:
-            # Auto-complete: Each LLM call takes 3-5s, total ~10-12s for 3-4 models
-            # Based on actual performance data from CHANGELOG: first result ~3s, total ~10-12s
-            # Warn if individual LLM call exceeds 8s (should be 3-5s normally)
-            if response_time > 8:
-                logger.warning(
-                    "Slow auto-complete generation: %s %s took %.3fs "
-                    "(expected 3-5s per LLM, total ~10-12s for all models)",
-                    request.method,
-                    request.url.path,
-                    response_time,
-                )
-        else:
-            # Initial generation: Should be fast, 2-8s typical
-            # Based on actual performance: Qwen typically 2-5s, other models 3-8s
-            if response_time > 5:
-                logger.warning(
-                    "Slow graph generation: %s %s took %.3fs (expected 2-8s)",
-                    request.method,
-                    request.url.path,
-                    response_time,
-                )
+    elif "generate_graph" in request.url.path and response_time > 8:
+        # Unified threshold: initial gen is typically 2-8s; autocomplete streams
+        # often run ~10-12s. Avoid body peek just to split the two cases.
+        logger.warning(
+            "Slow graph generation: %s %s took %.3fs",
+            request.method,
+            request.url.path,
+            response_time,
+        )
     elif "node_palette" in request.url.path and response_time > 10:
         # Node Palette streams from 4 LLMs, 5-8s is normal
         logger.warning(

@@ -5,10 +5,14 @@ from __future__ import annotations
 import io
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
+from typing import cast
 
 import pytest
 from fastapi import HTTPException
 
+from models.domain.showcase import ShowcasePost
+from routers.features.showcase.author_payload import author_payload
 from routers.features.showcase.helpers import (
     ALLOWED_DOC_SUFFIXES,
     _validate_magic_bytes,
@@ -101,3 +105,52 @@ def test_resolve_showcase_disk_path_rejects_traversal(tmp_path: Path, monkeypatc
     with pytest.raises(HTTPException) as exc:
         resolve_showcase_disk_path("case_square/../secrets.txt")
     assert exc.value.status_code == 404
+
+
+def test_author_payload_missing_author_uses_profile_or_anonymous() -> None:
+    """Cross-org RLS / deleted authors must not crash list formatting."""
+    post = cast(
+        ShowcasePost,
+        SimpleNamespace(
+            author_id=42,
+            author=None,
+            publish_source="self",
+            attribution=None,
+        ),
+    )
+    anonymous = author_payload(post)
+    assert anonymous["id"] == 42
+    assert anonymous["name"] == "Anonymous"
+    assert anonymous["avatar"] == "👤"
+    assert anonymous["organization"] is None
+    assert anonymous["is_proxy"] is False
+
+    profiled = author_payload(
+        post,
+        {
+            "name": "李老师",
+            "avatar": "👩‍🏫",
+            "organization": "示例学校",
+        },
+    )
+    assert profiled["name"] == "李老师"
+    assert profiled["avatar"] == "👩‍🏫"
+    assert profiled["organization"] == "示例学校"
+
+
+def test_author_payload_proxy_works_without_author_row() -> None:
+    """Proxy attribution still formats when author relationship is missing."""
+    post = cast(
+        ShowcasePost,
+        SimpleNamespace(
+            author_id=7,
+            author=None,
+            publish_source="proxy",
+            attribution={"display_name": "代理教师", "organization": "外校"},
+        ),
+    )
+    payload = author_payload(post)
+    assert payload["name"] == "代理教师"
+    assert payload["organization"] == "外校"
+    assert payload["is_proxy"] is True
+    assert payload["avatar"] == "👤"

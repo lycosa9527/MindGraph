@@ -24,6 +24,8 @@ from services.showcase.post_delete import delete_showcase_post_rows, showcase_po
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.db.rls_context import RlsContext, apply_rls_context_async, rls_async_session
 
+from .author_payload import author_payload as _author_payload
+from .author_payload import load_public_author_profiles as _load_public_author_profiles
 from .constants import (
     CASE_TYPES,
     DIAGRAM_TYPE_LABELS,
@@ -351,29 +353,6 @@ async def _adjust_approved_post_likes_count(post_id: str, delta: int) -> int | N
         return new_count
 
 
-def _author_payload(post: ShowcasePost) -> dict:
-    attr = post.attribution if isinstance(post.attribution, dict) else {}
-    if post.publish_source == "proxy" and isinstance(attr.get("display_name"), str) and attr["display_name"].strip():
-        org = attr.get("organization")
-        org_str = org.strip() if isinstance(org, str) and org.strip() else None
-        if org_str is None and post.author.organization:
-            org_str = post.author.organization.name
-        return {
-            "id": post.author_id,
-            "name": attr["display_name"].strip(),
-            "avatar": post.author.avatar or "👤",
-            "organization": org_str,
-            "is_proxy": True,
-        }
-    return {
-        "id": post.author_id,
-        "name": post.author.name or "Anonymous",
-        "avatar": post.author.avatar or "👤",
-        "organization": (post.author.organization.name if post.author.organization else None),
-        "is_proxy": False,
-    }
-
-
 def _format_gallery_items(spec: dict | None, post_id: str) -> list[dict]:
     if not spec or not isinstance(spec, dict):
         return []
@@ -423,6 +402,7 @@ async def _format_post(
     db: AsyncSession,
     liked_post_ids: Optional[Set[str]] = None,
     favorited_post_ids: Optional[Set[str]] = None,
+    author_profiles: Optional[dict[int, dict]] = None,
 ) -> dict:
     user_id = current_user.id
     is_liked = False
@@ -452,6 +432,13 @@ async def _format_post(
             )
         ).scalar_one_or_none()
         is_favorited = fav_row is not None
+
+    author_profile: dict | None = None
+    if author_profiles is not None:
+        author_profile = author_profiles.get(post.author_id)
+    elif post.author is None and post.author_id is not None:
+        loaded = await _load_public_author_profiles({post.author_id})
+        author_profile = loaded.get(post.author_id)
 
     thumbnail_url = showcase_public_asset_url(post.thumbnail_path) if post.thumbnail_path else None
     # Spec is PG-backed; URL hits authenticated assets route which synthesizes JSON
@@ -534,7 +521,7 @@ async def _format_post(
         "rejection_reason": (
             post.rejection_reason if post.author_id == user_id or post.submitted_by_id == user_id or reviewer else None
         ),
-        "author": _author_payload(post),
+        "author": _author_payload(post, author_profile),
         "likes_count": post.likes_count,
         "views_count": post.views_count,
         "created_at": post.created_at.isoformat() if post.created_at else "",
