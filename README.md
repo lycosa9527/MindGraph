@@ -75,7 +75,7 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 - Diagram snapshots: up to 10 point-in-time versions per diagram with click-to-recall
 - Canvas history baseline: first edit is undoable; session reset clears ephemeral state
 - Text alignment and rich text-style toolbar
-- Mind map v2 canvas (optional, `FEATURE_MINDMAP_V2_CANVAS=True`): side-toolbar chrome, orthogonal edges, Document Summary panel
+- Mind map v2 canvas (default when `FEATURE_MINDMAP_V2_CANVAS=True`): side-toolbar chrome, orthogonal edges, Document Summary panel; classic still selectable in Language settings
 - Mobile web shell (`/m/*`) with touch pinch-zoom and pane pan
 
 **Collaboration & Platform**
@@ -207,7 +207,7 @@ Notable feature flags (see `env.example` for full list):
 | `FEATURE_KNOWLEDGE_SPACE` | `False` | RAG / Document Summary (requires Qdrant + Celery) |
 | `FEATURE_OAUTH_LOGIN` | `False` | WeChat + DingTalk QR login |
 | `FEATURE_THINKING_COINS` | `False` | Trial-tier org thinking coin wallet |
-| `FEATURE_MINDMAP_V2_CANVAS` | `False` | Mind map v2 side-toolbar canvas |
+| `FEATURE_MINDMAP_V2_CANVAS` | `True` | Mind map v2 side-toolbar canvas (default layout; classic still available) |
 
 Production hardening: set `COLLAB_FANOUT_ORIGIN_SECRET` (shared across workers), `ALLOWED_HOSTS`, and see [docs/architecture/production_security_deploy.md](docs/architecture/production_security_deploy.md).
 

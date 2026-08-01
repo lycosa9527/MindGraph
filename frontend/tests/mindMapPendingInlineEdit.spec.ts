@@ -86,6 +86,8 @@ describe('mind map pending post-add inline edit', () => {
     const { createdId } = addSiblingAndGetCreated()
 
     expect(diagramStore.mindMapPendingEditNodeId).toBe(createdId)
+    // Session must NOT arm before first display measure (layout width/X).
+    expect(diagramStore.mindMapEditingNodeId).toBeNull()
     expect(diagramStore.selectedNodes[0]).toBe(createdId)
   })
 
@@ -151,5 +153,82 @@ describe('mind map pending post-add inline edit', () => {
     diagramStore.selectNodes(otherId)
     expect(diagramStore.selectedNodes[0]).toBe(otherId)
     expect(diagramStore.mindMapPendingEditNodeId).toBeNull()
+  })
+
+  function mountInlineEditHost(nodeId: string): {
+    hostRoot: HTMLElement
+    input: HTMLInputElement
+    cleanup: () => void
+  } {
+    const hostRoot = document.createElement('div')
+    hostRoot.className = 'vue-flow__node'
+    hostRoot.setAttribute('data-id', nodeId)
+    const editable = document.createElement('div')
+    editable.className = 'inline-editable-text'
+    const input = document.createElement('input')
+    input.className = 'inline-edit-input'
+    editable.appendChild(input)
+    hostRoot.appendChild(editable)
+    document.body.appendChild(hostRoot)
+    return {
+      hostRoot,
+      input,
+      cleanup: () => {
+        hostRoot.remove()
+      },
+    }
+  }
+
+  it('arms store edit session after stable focus so remount can reopen', async () => {
+    const diagramStore = useDiagramStore()
+    const { createdId } = addSiblingAndGetCreated()
+    expect(diagramStore.mindMapPendingEditNodeId).toBe(createdId)
+    expect(diagramStore.mindMapEditingNodeId).toBeNull()
+
+    // Mount + focus before flushing tryFocus rAFs — otherwise the no-host
+    // rAF chain burns max attempts and clears pending.
+    const { input, cleanup } = mountInlineEditHost(createdId)
+    input.focus()
+    expect(document.activeElement).toBe(input)
+
+    // Flush double-rAF start + stable-focus check → session armed, pending cleared.
+    await vi.advanceTimersByTimeAsync(48)
+    expect(diagramStore.mindMapEditingNodeId).toBe(createdId)
+    expect(diagramStore.mindMapPendingEditNodeId).toBeNull()
+
+    // Session survives after pending clear (write-back remount recovery).
+    await vi.advanceTimersByTimeAsync(500)
+    expect(diagramStore.mindMapEditingNodeId).toBe(createdId)
+
+    diagramStore.clearMindMapEditingNodeId(createdId)
+    expect(diagramStore.mindMapEditingNodeId).toBeNull()
+
+    cleanup()
+  })
+
+  it('selection-guard attempts alone do not cancel pending while selection returns', async () => {
+    const diagramStore = useDiagramStore()
+    const { createdId, otherId } = addSiblingAndGetCreated()
+    // Host present but unfocused so we only test selection-guard retries.
+    const { cleanup } = mountInlineEditHost(createdId)
+    expect(diagramStore.mindMapPendingEditNodeId).toBe(createdId)
+
+    // Flush start so tryFocus is in the setTimeout retry loop (not bare rAF).
+    await vi.advanceTimersByTimeAsync(32)
+
+    // Echo selection away without selectNodes (no grace-release path). Past the
+    // force-reselect window tryFocus must not cancel pending.
+    for (let i = 0; i < 15; i += 1) {
+      diagramStore.selectedNodes.splice(0, diagramStore.selectedNodes.length, otherId)
+      await vi.advanceTimersByTimeAsync(40)
+    }
+
+    expect(diagramStore.mindMapPendingEditNodeId).toBe(createdId)
+
+    diagramStore.selectNodes(createdId)
+    expect(diagramStore.mindMapPendingEditNodeId).toBe(createdId)
+    expect(diagramStore.selectedNodes[0]).toBe(createdId)
+
+    cleanup()
   })
 })

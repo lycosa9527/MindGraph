@@ -2,10 +2,11 @@
 /**
  * MindMapV2BranchNode — v2 mind map branch node (themes, shapes, underline, subgraph ring).
  */
-import { computed, inject, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref, watch, type WritableComputedRef } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
+import { storeToRefs } from 'pinia'
 
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { useLanguage, useNotifications } from '@/composables'
@@ -37,6 +38,7 @@ import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { markMindMapLoadShellMounted } from '@/utils/mindMapLoadDebug'
 import { applyNodeShapeToStyle, mindMapUnderlineHandleStyle } from '@/utils/nodeShapeStyle'
 
@@ -45,6 +47,7 @@ import InlineEditableText from '../InlineEditableText.vue'
 const props = defineProps<MindGraphNodeProps>()
 
 const diagramStore = useDiagramStore()
+const { mindMapPendingEditNodeId, mindMapEditingNodeId } = storeToRefs(diagramStore)
 const isTextReadonly = computed(
   () =>
     (props.data.hidden === true && diagramStore.isLearningSheet) ||
@@ -194,7 +197,17 @@ const textMaxWidth = computed(() => {
   return `${BRANCH_MAX_TEXT_WIDTH}px`
 })
 
-const isEditing = ref(false)
+// Store-owned session survives Vue Flow remount after Enter sibling write-back.
+const isEditing: WritableComputedRef<boolean> = computed({
+  get: () => mindMapEditingNodeId.value === props.id,
+  set: (value: boolean) => {
+    if (value) {
+      diagramStore.setMindMapEditingNodeId(props.id)
+      return
+    }
+    diagramStore.clearMindMapEditingNodeId(props.id)
+  },
+})
 
 const previewStore = useMindMapSubgraphPreviewStore()
 const isSubgraphGenerating = computed(() => previewStore.isGeneratingFor(props.id))
@@ -228,6 +241,63 @@ const branchMove = inject<{
 }>('branchMove', { onBranchMovePointerDown: () => false, onBranchMovePointerUp: () => {} })
 
 const isSheetPickActive = computed(() => isLearningSheetCustomPickActive())
+
+/**
+ * Post-add open path (Enter sibling / Tab child): pending is armed on the store
+ * before this host mounts. Do NOT open edit on the first paint — ResizeObserver
+ * must measure display chrome first. One rAF later, flip store session so
+ * InlineEditableText's isEditing watch starts the input.
+ */
+watch(
+  mindMapPendingEditNodeId,
+  (pendingId) => {
+    if (pendingId !== props.id) return
+    markMindMapInlineEditStage('branch:pending-seen', {
+      nodeId: props.id,
+      pendingId,
+      editingId: mindMapEditingNodeId.value,
+      readonly: isTextReadonly.value,
+    })
+    if (isTextReadonly.value) {
+      markMindMapInlineEditStage('branch:session-skip', {
+        nodeId: props.id,
+        reason: 'readonly',
+      })
+      return
+    }
+    if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
+      markMindMapInlineEditStage('branch:session-skip', {
+        nodeId: props.id,
+        reason: 'collab-locked',
+      })
+      return
+    }
+    requestAnimationFrame(() => {
+      if (mindMapPendingEditNodeId.value !== props.id) {
+        markMindMapInlineEditStage('branch:session-skip', {
+          nodeId: props.id,
+          reason: 'pending-cleared-before-raf',
+          pendingId: mindMapPendingEditNodeId.value,
+        })
+        return
+      }
+      if (mindMapEditingNodeId.value === props.id) {
+        markMindMapInlineEditStage('branch:session-skip', {
+          nodeId: props.id,
+          reason: 'session-already-open',
+        })
+        return
+      }
+      markMindMapInlineEditStage('branch:session-open', {
+        nodeId: props.id,
+        pendingId: mindMapPendingEditNodeId.value,
+        source: 'pending-watch-raf',
+      })
+      isEditing.value = true
+    })
+  },
+  { immediate: true }
+)
 
 function handleBranchMovePointerDown(event: MouseEvent): void {
   if (isSheetPickActive.value) return

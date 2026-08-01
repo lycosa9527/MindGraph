@@ -14,6 +14,8 @@
  */
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import { storeToRefs } from 'pinia'
+
 import { useLanguage, useNotifications } from '@/composables'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -33,6 +35,7 @@ import {
 } from '@/stores/diagram/diagramDefaultLabels'
 import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasurement'
 import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
+import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { isWhitespaceOnlyNodeText, resolveInlineNodeTextForSave } from '@/utils/nodeEditableText'
 
 const props = withDefaults(
@@ -131,6 +134,7 @@ const collabCanvas = inject<{ isNodeLockedByOther?: (nodeId: string) => boolean 
 const notifyCollab = useNotifications()
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
+const { mindMapPendingEditNodeId, mindMapEditingNodeId } = storeToRefs(diagramStore)
 
 const resolvedPlaceholder = computed(() => {
   if (props.placeholder != null && props.placeholder !== '') {
@@ -145,6 +149,9 @@ const fieldAriaLabel = computed(() => resolvedPlaceholder.value)
 
 // Local editing state
 const localIsEditing = ref(false)
+/** Wall clock when this editor last entered edit mode (blur-save grace). */
+let mindMapEditOpenedAtMs = 0
+const MIND_MAP_BLUR_SAVE_GRACE_MS = 400
 const rootRef = ref<HTMLElement | null>(null)
 const editText = ref(props.text)
 const originalText = ref(props.text)
@@ -176,33 +183,64 @@ function syncFontMetrics(): void {
   displayFontWeight.value = cs.fontWeight || '400'
 }
 
-// Sync with parent's isEditing prop
-watch(
-  () => props.isEditing,
-  (newVal) => {
-    if (newVal && !localIsEditing.value) {
-      startEditing()
-    } else if (!newVal && localIsEditing.value) {
-      localIsEditing.value = false
-      clearEditLock()
-    }
-  }
-)
-
 // Listen for edit request from context menu (right-click → 编辑)
 // Reuse same handler as double-click so both paths share identical behavior.
 // Defer so the menu closes and DOM settles before focus/select (ensures selection animation shows).
 const CONTEXT_MENU_EDIT_DELAY_MS = 50
 
+function refocusInlineEditInput(source: string): boolean {
+  const focused = focusHtmlControl(inputRef.value)
+  if (focused) {
+    selectHtmlControl(inputRef.value)
+  }
+  markMindMapInlineEditStage('edit:requested-handled', {
+    nodeId: props.nodeId,
+    source,
+    focused,
+    hasInput: !!inputRef.value,
+    pendingId: mindMapPendingEditNodeId.value,
+    editingId: mindMapEditingNodeId.value,
+  })
+  return focused
+}
+
 function handleEditRequested(payload: { nodeId?: string }): void {
   if (props.readonly) return
-  if (payload?.nodeId !== props.nodeId || localIsEditing.value) return
-  // Post-add pending edit must start immediately — the 50ms context-menu delay
-  // races layout write-back / toast focus and leaves the node merely selected.
-  if (diagramStore.mindMapPendingEditNodeId === props.nodeId) {
+  if (payload?.nodeId !== props.nodeId) return
+
+  // Layout write-back often steals focus while local edit stays open. Do not
+  // ignore edit_requested in that case — refocus the existing input.
+  if (localIsEditing.value) {
+    if (
+      mindMapPendingEditNodeId.value === props.nodeId ||
+      mindMapEditingNodeId.value === props.nodeId
+    ) {
+      void nextTick(() => {
+        refocusInlineEditInput('refocus-while-editing')
+      })
+    }
+    return
+  }
+
+  // Post-add pending / store session must start immediately — the 50ms
+  // context-menu delay races layout write-back and leaves the node selected-only.
+  if (
+    mindMapPendingEditNodeId.value === props.nodeId ||
+    mindMapEditingNodeId.value === props.nodeId
+  ) {
+    markMindMapInlineEditStage('edit:requested-handled', {
+      nodeId: props.nodeId,
+      pendingId: mindMapPendingEditNodeId.value,
+      editingId: mindMapEditingNodeId.value,
+      source: 'immediate',
+    })
     startEditing()
     return
   }
+  markMindMapInlineEditStage('edit:requested-handled', {
+    nodeId: props.nodeId,
+    source: 'context-menu-delay',
+  })
   const noopEvent = { preventDefault: () => {}, stopPropagation: () => {} } as MouseEvent
   setTimeout(() => handleDoubleClick(noopEvent), CONTEXT_MENU_EDIT_DELAY_MS)
 }
@@ -323,7 +361,13 @@ watch(
 
 function tryStartPendingMindMapEdit(): void {
   if (props.readonly || localIsEditing.value) return
-  if (diagramStore.mindMapPendingEditNodeId !== props.nodeId) return
+  if (mindMapPendingEditNodeId.value !== props.nodeId) return
+  markMindMapInlineEditStage('edit:startEditing', {
+    nodeId: props.nodeId,
+    source: 'tryStartPending',
+    pendingId: mindMapPendingEditNodeId.value,
+    editingId: mindMapEditingNodeId.value,
+  })
   startEditing()
 }
 
@@ -338,12 +382,14 @@ onMounted(() => {
 })
 
 // Post-add layout write-back can remount hosts after onMounted; keep watching.
+// Use storeToRefs so Pinia pending changes always invalidate this watcher.
 watch(
-  () => diagramStore.mindMapPendingEditNodeId,
+  mindMapPendingEditNodeId,
   (pendingId) => {
     if (pendingId !== props.nodeId) return
     nextTick(() => tryStartPendingMindMapEdit())
-  }
+  },
+  { immediate: true }
 )
 
 const isFocusQuestionSplitMode = computed(() => props.focusQuestionEditableSplit != null)
@@ -432,12 +478,32 @@ const wrapperStyle = computed(() => {
  * Start editing mode
  */
 function startEditing(): void {
-  if (localIsEditing.value || props.readonly) return
+  if (localIsEditing.value || props.readonly) {
+    markMindMapInlineEditStage('edit:start-blocked', {
+      nodeId: props.nodeId,
+      reason: localIsEditing.value ? 'already-editing' : 'readonly',
+      localIsEditing: localIsEditing.value,
+      propsIsEditing: props.isEditing === true,
+    })
+    return
+  }
 
   if (collabCanvas?.isNodeLockedByOther?.(props.nodeId)) {
+    markMindMapInlineEditStage('edit:start-blocked', {
+      nodeId: props.nodeId,
+      reason: 'collab-locked',
+    })
     notifyCollab.warning(t('collab.nodeLocked'))
     return
   }
+
+  markMindMapInlineEditStage('edit:startEditing', {
+    nodeId: props.nodeId,
+    source: 'startEditing',
+    pendingId: mindMapPendingEditNodeId.value,
+    editingId: mindMapEditingNodeId.value,
+    propsIsEditing: props.isEditing === true,
+  })
 
   // Measure width before switching to edit mode
   if (displayRef.value) {
@@ -467,38 +533,97 @@ function startEditing(): void {
   }
 
   localIsEditing.value = true
+  mindMapEditOpenedAtMs = Date.now()
 
-  if (isMindMapInlineEditContext() && props.nodeId !== 'topic') {
-    diagramStore.selectNodes(props.nodeId)
+  if (isMindMapInlineEditContext()) {
+    // Store session survives remount; pending is only the open-phase latch.
+    diagramStore.setMindMapEditingNodeId(props.nodeId)
+    if (props.nodeId !== 'topic') {
+      diagramStore.selectNodes(props.nodeId)
+    }
   }
 
   // Emit event for tracking
   eventBus.emit('node_editor:opening', { nodeId: props.nodeId })
+  markMindMapInlineEditStage('edit:opening', {
+    nodeId: props.nodeId,
+    pendingId: mindMapPendingEditNodeId.value,
+    editingId: mindMapEditingNodeId.value,
+  })
   emit('editStart')
 
-  // Focus and select text after DOM update. Do NOT clear mindMapPendingEditNodeId
-  // here — layout write-back / success toast often steal focus right after the
-  // first focus; pending must stay set so remount/blur can re-enter edit.
-  // Pending is released on stable focus, save/cancel, or intentional canvas click.
+  // Focus and select text after DOM update. Once focused, drop open-phase
+  // pending so tryFocus stops; remount/focus-theft recovery uses the session.
   nextTick(() => {
-    if (focusHtmlControl(inputRef.value)) {
+    const focused = focusHtmlControl(inputRef.value)
+    if (focused) {
       selectHtmlControl(inputRef.value)
+    }
+    markMindMapInlineEditStage('edit:opening', {
+      nodeId: props.nodeId,
+      source: 'focus-tick',
+      focused,
+      hasInput: !!inputRef.value,
+      editingId: mindMapEditingNodeId.value,
+    })
+    if (focused && mindMapPendingEditNodeId.value === props.nodeId) {
+      diagramStore.cancelMindMapPendingInlineEdit('focus-tick-success')
     }
     updateInputWidth()
     syncFontMetrics()
   })
 }
 
+// Sync with parent's isEditing prop (immediate: remount with isEditing already true).
+watch(
+  () => props.isEditing,
+  (newVal) => {
+    if (newVal && !localIsEditing.value) {
+      startEditing()
+      return
+    }
+    if (!newVal && localIsEditing.value) {
+      // External session clear — must emit closed so Enter guard cannot zombie.
+      markMindMapInlineEditStage('edit:watch-kill', {
+        nodeId: props.nodeId,
+        pendingId: mindMapPendingEditNodeId.value,
+        editingId: mindMapEditingNodeId.value,
+      })
+      localIsEditing.value = false
+      clearEditLock()
+      syncDocumentOutsideEditListeners(false)
+      detachInputEnterCapture()
+      eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
+      markMindMapInlineEditStage('edit:closed', {
+        nodeId: props.nodeId,
+        source: 'watch-kill',
+      })
+    }
+  },
+  { immediate: true }
+)
+
 function releaseMindMapPendingEditIfMine(): void {
   if (!isMindMapInlineEditContext()) return
-  if (diagramStore.mindMapPendingEditNodeId !== props.nodeId) return
-  diagramStore.cancelMindMapPendingInlineEdit()
+  if (mindMapPendingEditNodeId.value === props.nodeId) {
+    diagramStore.cancelMindMapPendingInlineEdit()
+  }
+  // Always drop store session for this node on save/cancel/abandon.
+  diagramStore.clearMindMapEditingNodeId(props.nodeId)
+}
+
+function isMindMapStickyEditOwner(): boolean {
+  if (!isMindMapInlineEditContext()) return false
+  return (
+    mindMapPendingEditNodeId.value === props.nodeId ||
+    mindMapEditingNodeId.value === props.nodeId
+  )
 }
 
 /**
  * Save the edited text
  */
-function saveEdit(): void {
+function saveEdit(source = 'saveEdit'): void {
   if (!localIsEditing.value) return
 
   if (props.focusQuestionEditableSplit) {
@@ -564,6 +689,10 @@ function saveEdit(): void {
 
   // Emit event for workshop tracking (editing stopped)
   eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
+  markMindMapInlineEditStage('edit:closed', {
+    nodeId: props.nodeId,
+    source,
+  })
 
   // Only emit save if text actually changed
   if (finalText !== originalText.value) {
@@ -638,7 +767,7 @@ function handleKeydown(event: KeyboardEvent): void {
     event.preventDefault()
     event.stopPropagation()
     if (isMindMapInlineEditContext()) {
-      saveEdit()
+      saveEdit('tab-commit')
       nextTick(() => {
         eventBus.emit('diagram:add_child_requested', {})
       })
@@ -674,15 +803,38 @@ function handleKeydown(event: KeyboardEvent): void {
 function handleBlur(): void {
   setTimeout(() => {
     if (!localIsEditing.value) return
-    // Post-add: toast / layout remount briefly steals focus — refocus, don't commit.
-    if (isMindMapInlineEditContext() && diagramStore.mindMapPendingEditNodeId === props.nodeId) {
+    // Post-add / remount: layout write-back steals focus — refocus, don't commit.
+    if (isMindMapStickyEditOwner()) {
+      const ageMs = Date.now() - mindMapEditOpenedAtMs
+      if (ageMs < MIND_MAP_BLUR_SAVE_GRACE_MS) {
+        markMindMapInlineEditStage('edit:blur-grace', {
+          nodeId: props.nodeId,
+          source: 'sticky-open-grace',
+          ageMs,
+        })
+      }
       if (focusHtmlControl(inputRef.value)) {
         selectHtmlControl(inputRef.value)
       }
       return
     }
     if (inputRef.value && document.activeElement === inputRef.value) return
-    saveEdit()
+    // Fresh open: ignore stolen-focus blur until grace ends (non-sticky paths).
+    if (
+      isMindMapInlineEditContext() &&
+      Date.now() - mindMapEditOpenedAtMs < MIND_MAP_BLUR_SAVE_GRACE_MS
+    ) {
+      markMindMapInlineEditStage('edit:blur-grace', {
+        nodeId: props.nodeId,
+        source: 'open-grace',
+        ageMs: Date.now() - mindMapEditOpenedAtMs,
+      })
+      if (focusHtmlControl(inputRef.value)) {
+        selectHtmlControl(inputRef.value)
+      }
+      return
+    }
+    saveEdit('blur-save')
   }, 150)
 }
 
@@ -696,22 +848,19 @@ function isEventInsideEditor(event: Event): boolean {
 function commitEditOnOutsidePointer(event: Event): void {
   if (!localIsEditing.value) return
   if (isEventInsideEditor(event)) return
-  // Keep sticky post-add edit only for toast/overlay focus theft — not canvas clicks.
-  if (
-    isMindMapInlineEditContext() &&
-    diagramStore.mindMapPendingEditNodeId === props.nodeId &&
-    isEphemeralOutsideEditTarget(event)
-  ) {
+  // Keep sticky edit only for toast/overlay focus theft — not canvas clicks.
+  if (isMindMapStickyEditOwner() && isEphemeralOutsideEditTarget(event)) {
     return
   }
-  releaseMindMapPendingEditIfMine()
-  saveEdit()
+  // saveEdit owns session/pending release — never clear session first (that
+  // flips props.isEditing false, kills local edit, and saveEdit early-returns
+  // without node_editor:closed → Enter zombie).
+  saveEdit('outside-pointer')
 }
 
 function commitEditOnCanvasPaneClick(): void {
   if (!localIsEditing.value) return
-  releaseMindMapPendingEditIfMine()
-  saveEdit()
+  saveEdit('pane-click')
 }
 
 function syncDocumentOutsideEditListeners(editing: boolean): void {
@@ -751,7 +900,7 @@ function attachInputEnterCapture(): void {
     // Confirm edit only. Canvas Enter (when not editing) adds a sibling;
     // arm the guard so this same keydown cannot also trigger that shortcut.
     armInlineEditEnterGuard()
-    saveEdit()
+    saveEdit('enter-commit')
   }
 
   el.addEventListener('keydown', inputEnterCaptureHandler, true)
@@ -978,6 +1127,21 @@ const unsubNodeEditDenied = eventBus.on('workshop:node-edit-denied', handleNodeE
 
 // Cleanup on unmount
 onUnmounted(() => {
+  // Remount during layout write-back must not leave Enter guard wedged.
+  if (localIsEditing.value) {
+    markMindMapInlineEditStage('edit:unmount-closed', {
+      nodeId: props.nodeId,
+      pendingId: mindMapPendingEditNodeId.value,
+      editingId: mindMapEditingNodeId.value,
+    })
+    localIsEditing.value = false
+    clearEditLock()
+    eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
+    markMindMapInlineEditStage('edit:closed', {
+      nodeId: props.nodeId,
+      source: 'unmount',
+    })
+  }
   syncDocumentOutsideEditListeners(false)
   detachInputEnterCapture()
   unsubEditRequested()

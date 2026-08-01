@@ -43,16 +43,19 @@ If the user wants **exact labels** on certain nodes (not a full regeneration), u
 | `mind_map` | Hierarchical mind map. Alias **`mindmap`** is normalized to **`mind_map`**. |
 | `concept_map` | Concept maps (concepts + labeled links). Extra fields like **`concept_map_topic`**, **`concept_a`**, **`concept_b`** exist for focused modes — see OpenAPI / `GenerateRequest` when the user asks for relationship-only or similar. |
 
-Other diagram features (e.g. **`fixed_dimension`**, **`dimension_only_mode`** for tree/brace/bridge) are optional; use them only when the user’s wording clearly requires that mode.
+Other diagram features are optional; use them only when the user’s wording clearly requires that mode:
+
+- **`fixed_dimension`** — tree / brace / bridge maps (preserve a classification, decomposition, or analogy pattern)
+- **`dimension_only_mode`** — tree / brace maps only (dimension known, topic generated)
 
 ## Authentication (every request)
 
 Set headers on all HTTP calls:
 
 - `Authorization: Bearer {MINDGRAPH_TOKEN}` — token starts with `mgat_`
-- `X-MG-Account: {MINDGRAPH_ACCOUNT}` — same phone number as the MindGraph account (no spaces)
-- `X-MG-Client: openclaw` — include on every request so server logs and the activity tracker can attribute API token traffic to OpenClaw (matches Chrome extension `chrome-extension`; server `[TokenAudit]` lines and `client_source` use this label)
-- `X-Request-Id` — optional but **recommended on long calls** (e.g. web-content PNG); use a fresh UUID per request (or equivalent id). Echoed in server `[TokenAudit]` and LLM metadata (`http_request_id`) for tracing
+- `X-MG-Account: {MINDGRAPH_ACCOUNT}` — same phone number as the MindGraph account (no spaces); **required** with `mgat_` (auth fails without a matching account)
+- `X-MG-Client: openclaw` — **recommended** on every request for attribution (not required for auth). Missing → server treats client as `unspecified`. Matches Chrome extension `chrome-extension`; `[TokenAudit]` / `client_source` use this label
+- `X-Request-Id` — optional; **recommended on long calls** (especially web-content PNG). Use a fresh UUID per request. On the web-content PNG path it appears in `[TokenAudit]` and LLM metadata (`http_request_id`); general `mgat_` TokenAudit logs client/path only
 
 Never print or log the token or account in assistant-visible output.
 
@@ -89,7 +92,7 @@ JSON body (minimal — topic + type):
 - **`diagram_type`** — one of the **Thinking Maps**, **`mind_map`**, or **`concept_map`** (see tables above). Optional for auto-detection.
 - **`language`** / **`llm`** — match user preference and host defaults when relevant.
 
-Response includes the generated **spec** (diagram JSON).
+Response JSON includes **`success`**, **`spec`** (diagram JSON), **`diagram_type`**, and optional **`error`**. Prefer checking **`success`** before saving.
 
 ## 2. Save diagram
 
@@ -144,7 +147,7 @@ Or structured updates (preferred for targeted label changes):
 { "action": "update", "updates": [{ "node_id": "branch_0", "new_text": "New label" }] }
 ```
 
-Actions: `update`, `add`, `delete` (see API error messages for required fields). **Always** `GET` the diagram first (§4) when **`node_id`** values are unknown. Then call step 3 again for a fresh image.
+Actions: `update`, `add`, `delete` (see API error messages for required fields). **`add`** appends a new child under the diagram root (server assigns the id); there is no parent-targeting field. **Always** `GET` the diagram first (§4) when **`node_id`** values are unknown. Then call step 3 again for a fresh image.
 
 ## 6. Inline recommendations
 
@@ -186,7 +189,9 @@ Mind map **only** from extracted page text (same auth headers as above).
 
 `POST {MINDGRAPH_BASE_URL}/api/web_content_mindmap_png`
 
-Same JSON body as above, plus optional `width` and `height` (viewport size for PNG capture; defaults **1200×800** if omitted). Response: **`image/png`** body (**not** JSON), `Content-Disposition: attachment; filename="mindgraph-web-content.png"`. On error, the server may return **JSON** with `detail` (HTTP 4xx/5xx). **Do not** call `response.json()` on success—read bytes.
+Same JSON body as above, plus optional `width` and `height` (viewport size for PNG capture; defaults **1200×800** if omitted). Response: **`image/png`** body (**not** JSON). Default `Content-Disposition` filename is **`mindgraph-web-content.png`**; when the server also saves the diagram, it may send **`X-MG-Diagram-Id`** and rename the file to **`mindgraph-{diagram_id}.png`**. On error, the server may return **JSON** with `detail` (HTTP 4xx/5xx). **Do not** call `response.json()` on success—read bytes.
+
+Both web-content routes require the account’s **chrome_extension** school-tier feature (same gate family as API tokens). Trial / lite orgs that lack that feature get **403**.
 
 **Timeouts (critical for OpenClaw / any HTTP client)**  
 The PNG path runs **LLM generation** plus **Playwright screenshot** of the export page. End-to-end latency often exceeds **60 seconds**. Use a **client read timeout of at least 180 seconds (3 minutes)** on this request (the Chrome extension uses the same). Shorter timeouts produce misleading “network” failures. The JSON-only route (`generate_from_web_content`) is also LLM-bound; allow **several minutes** if your stack defaults to 30–60s.
@@ -194,13 +199,27 @@ The PNG path runs **LLM generation** plus **Playwright screenshot** of the expor
 **Chrome extension (same API)**  
 The repo ships **`chrome-extension/`** (Load unpacked in `chrome://extensions`). It captures the active tab via a **short** message to the service worker, then runs **`fetch` + download in the popup** so the MV3 worker is not held across a long request. **Base URL** in settings must be the **API origin** (e.g. `https://your-host.example.com`), same as `MINDGRAPH_BASE_URL` here—not the SPA path `/mindgraph` alone.
 
+## 8. Also useful (optional shortcuts)
+
+Same auth headers as above. Use when the default generate → save → PNG flow is heavier than needed:
+
+| Method | Path | When |
+|--------|------|------|
+| `GET` | `/api/diagrams` | List the user’s diagrams (paginated) before editing an existing one |
+| `POST` | `/api/generate_png` | Prompt → PNG bytes in one call (skip explicit save) |
+| `POST` | `/api/export_png` | Existing spec → PNG bytes |
+| `POST` | `/api/generate_dingtalk` | Prompt → markdown-friendly image URL (DingTalk / similar bots) |
+
+Rate limits apply (e.g. diagram PNG URL around **20/min**; many generate routes around **100/min**). On **429**, back off and retry.
+
 ## Best practices
 
-- Always send **Authorization** + **X-MG-Account** on every call, using **current** `MINDGRAPH_*` env values (see **Authentication** and **Updating auth** above).
-- Send **`X-MG-Client: openclaw`** and **`X-Request-Id`** on every call when possible; they make server logs and support correlation match the Chrome extension workflow.
+- Always send **Authorization** + **X-MG-Account** on every `mgat_` call, using **current** `MINDGRAPH_*` env values (see **Authentication** and **Updating auth** above).
+- Prefer **`X-MG-Client: openclaw`** on every call; add **`X-Request-Id`** especially on long web-content PNG calls.
 - Default flow: map the user’s **topic** → **`prompt`** and their **chart choice** → **`diagram_type`** from the eight Thinking Maps plus **`mind_map`** / **`concept_map`** as needed.
 - Use **long HTTP timeouts** for **`web_content_mindmap_png`** and other heavy routes (see §7).
 - After **any** mutation, fetch the PNG URL (step 3) before replying.
 - Prefer reading the diagram (step 4) before PATCH when IDs are unknown.
-- Warn the user before token expiry when relevant.
+- Warn the user before token expiry when relevant (tokens last **90 days**).
 - If auth fails after the user updated env in WorkBuddy/OpenClaw, suggest saving config and restarting the host app so new variables are picked up; then retry.
+- On **403** for web-content or token minting, the school tier may lack `api_token` / `chrome_extension` (trial / lite).

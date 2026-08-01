@@ -629,9 +629,11 @@ export function useAppSidebar() {
   )
 
   watch(
-    isManagementPanelUser,
-    (allowed) => {
-      if (allowed) {
+    () => [authStore.isAuthSessionVerified, isManagementPanelUser.value] as const,
+    ([verified, allowed]) => {
+      // Role fallback makes isManagementPanelUser true from sessionStorage before
+      // cookies are verified — wait so we do not race an expired access token.
+      if (verified && allowed) {
         void loadAdminNavCapabilities()
       }
     },

@@ -126,7 +126,7 @@ function doneTokenView() {
     <Transition name="modal">
       <div
         v-if="isVisible"
-        class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+        class="fixed inset-0 z-60 flex items-center justify-center p-4"
         @click.self="closeModal"
       >
         <div class="absolute inset-0 bg-stone-900/60 backdrop-blur-[2px]" />
@@ -141,7 +141,7 @@ function doneTokenView() {
                 @click="closeModal"
               />
               <h2 class="text-lg font-semibold text-stone-900 tracking-tight">API Token</h2>
-              <p class="text-xs text-stone-500 mt-1">用于 OpenClaw 等外部工具，有效期 7 天</p>
+              <p class="text-xs text-stone-500 mt-1">用于 OpenClaw 等外部工具，有效期 90 天</p>
             </div>
 
             <div class="p-8 space-y-4">

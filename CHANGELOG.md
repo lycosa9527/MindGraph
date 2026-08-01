@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.158.0] - 2026-08-01
+
+> **Mind map v2 canvas default; pan-only keep-new-child in view; inline-edit hardening; admin capabilities after verified session; OpenClaw skill 1.3.0 (90-day tokens).**
+
+### Changed
+
+- **Mind map v2 default** — `FEATURE_MINDMAP_V2_CANVAS` defaults to `True`; UI defaults to the new canvas (classic still selectable in Language settings; flag off forces classic-only) (`features_config.py`, `env.example`, `featureFlags.ts`, `ui.ts`).
+- **OpenClaw skill** — Auth / response / web-content / shortcut docs; API token validity **90 days**; ClawHub publish target **1.3.0** (`openclaw/skills/mindgraph/`).
+- **API Token modal** — Copy updated to 90-day validity (`ApiTokenModal.vue`).
+
+### Fixed
+
+- **Admin capabilities race** — Wait for verified auth session (and retry once after refresh on 401) before `/api/auth/admin/capabilities`, so restored panel roles do not paint console 401s (`auth.ts`, `useAppSidebar.ts`).
+- **Mind-map child add viewport** — Pan-only keep-in-view so a newly added child lands in the central safe fraction of the usable canvas without changing zoom (`mindMapEnsureNodeVisible.ts`, `useDiagramCanvasFit.ts`, `mindMapOps.ts`).
+- **Inline edit / Enter on mind maps** — Stronger pending-edit handoff, Enter guard, and v2 branch node edit wiring so focus and commit stay reliable (`InlineEditableText.vue`, `MindMapV2BranchNode.vue`, `mindMapCanvasEnterGuard.ts`).
+
+### Added
+
+- **Mind-map keep-visible helpers** — Pure pan math + canvas fit hook; optional inline-edit debug util for local diagnosis.
+- **Tests** — Admin capabilities load gating; keep-visible pan math; inline-edit debug; Enter-guard / pending-inline-edit coverage.
+
 ## [5.157.0] - 2026-08-01
 
 > **Playwright Chromium (+ apt deps) via COS stack sync; showcase AI copy leaves teaching reflection to teachers; slim env.example.**

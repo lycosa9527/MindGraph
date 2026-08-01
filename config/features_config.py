@@ -64,10 +64,10 @@ class FeaturesConfigMixin:
     def FEATURE_MINDMAP_V2_CANVAS(self):
         """Expose Classic/New mind map canvas choice in Language settings.
 
-        Disabled by default: all users stay on classic canvas; the segmented control is hidden.
-        Set FEATURE_MINDMAP_V2_CANVAS=True in .env to show the opt-in and allow new canvas.
+        Enabled by default: new (v2) canvas is the default; classic remains selectable.
+        Set FEATURE_MINDMAP_V2_CANVAS=False in .env to force classic-only (hide the control).
         """
-        return self._get_cached_value("FEATURE_MINDMAP_V2_CANVAS", "False").lower() == "true"
+        return self._get_cached_value("FEATURE_MINDMAP_V2_CANVAS", "True").lower() == "true"
 
     @property
     def FEATURE_DEBATEVERSE(self):

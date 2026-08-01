@@ -224,10 +224,10 @@ class FeatureFlagSettings(BaseModel):
         description="Enable the MindMate 记录导出 admin subtab (view/export Dify conversation history)",
     )
     FEATURE_MINDMAP_V2_CANVAS: bool = Field(
-        default=False,
+        default=True,
         description=(
             "Show Classic/New mind map canvas control in Language settings; "
-            "classic canvas remains the default when False"
+            "new (v2) canvas is the default when True; classic remains available"
         ),
     )
 

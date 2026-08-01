@@ -36,7 +36,7 @@ Minimal shape:
 
 - **MINDGRAPH_BASE_URL**: HTTPS origin of your MindGraph deployment (no trailing slash). Use the same origin you would use for API calls (not only the `/mindgraph` SPA path).
 - **MINDGRAPH_ACCOUNT**: Phone number / account login (same as in MindGraph).
-- **MINDGRAPH_TOKEN**: Generated in the app under **账户信息 → API Token** (shown once; 7-day validity).
+- **MINDGRAPH_TOKEN**: Generated in the app under **账户信息 → API Token** (shown once; **90-day** validity).
 
 **HTTP timeouts:** Any host or tool that calls **`/api/web_content_mindmap_png`** (or other LLM + export routes) should allow **at least ~180 seconds** read timeout unless you know your server is faster. Default short timeouts in HTTP clients cause spurious failures.
 
@@ -62,10 +62,10 @@ From the MindGraph repo root:
 ```bash
 npm i -g clawhub
 clawhub login
-clawhub skill publish ./openclaw/skills/mindgraph --slug mindgraph --name "MindGraph" --version 1.2.0 --tags latest
+clawhub skill publish ./openclaw/skills/mindgraph --slug mindgraph --name "MindGraph" --version 1.3.0 --tags latest
 ```
 
-Bump the **ClawHub** `--version` when `SKILL.md` or this README changes.
+Bump the **ClawHub** `--version` when `SKILL.md` or this README changes (current publish target: **1.3.0**).
 
 **Inline recommendations:** the `start` and `next_batch` HTTP endpoints use **Server-Sent Events (SSE)**, not JSON-only responses. See `SKILL.md` §6.
 
@@ -73,6 +73,6 @@ Bump the **ClawHub** `--version` when `SKILL.md` or this README changes.
 
 | File | Role |
 |------|------|
-| `SKILL.md` | Agent instructions (API paths, auth, timeouts, §3 `url` + `filename`, PNG signing) |
+| `SKILL.md` | Agent instructions (API paths, auth, timeouts, §3 `url` + `filename`, PNG signing, §8 shortcuts) |
 | `demo.json` | Copy-paste `skills.entries.mindgraph` for `openclaw.json` |
 | `README.md` | Install, configure, WorkBuddy hints, publish command |

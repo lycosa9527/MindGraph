@@ -18,6 +18,7 @@ import {
 } from '@/types/vueflow'
 import { withClassicMindMapTopicSourceHandle } from '@/utils/classicMindMapTopicHandles'
 import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
 
 import {
@@ -152,12 +153,43 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     if (merged !== ctx.data.value.nodes) {
       ctx.data.value.nodes = merged
     }
-    // Re-poke post-add inline edit after position write-back (hosts may remount).
-    const pendingEditId = ctx.mindMapPendingEditNodeId.value
-    if (pendingEditId) {
+    // Re-poke inline edit after position write-back when open-phase pending or
+    // store session is active but the input lost focus / remounted.
+    const editId = ctx.mindMapPendingEditNodeId.value ?? ctx.mindMapEditingNodeId.value
+    if (editId) {
       requestAnimationFrame(() => {
-        if (ctx.mindMapPendingEditNodeId.value !== pendingEditId) return
-        eventBus.emit('node:edit_requested', { nodeId: pendingEditId })
+        const stillPending = ctx.mindMapPendingEditNodeId.value === editId
+        const stillEditing = ctx.mindMapEditingNodeId.value === editId
+        if (!stillPending && !stillEditing) {
+          markMindMapInlineEditStage('writeback:repoke-skip', {
+            nodeId: editId,
+            reason: 'no-longer-pending-or-editing',
+          })
+          return
+        }
+        const safeId =
+          typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+            ? CSS.escape(editId)
+            : editId.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+        const input = document.querySelector(
+          `.vue-flow__node[data-id="${safeId}"] .inline-edit-input`
+        ) as HTMLInputElement | null
+        if (input && document.activeElement === input) {
+          markMindMapInlineEditStage('writeback:repoke-skip', {
+            nodeId: editId,
+            reason: 'already-focused',
+            pendingId: ctx.mindMapPendingEditNodeId.value,
+            editingId: ctx.mindMapEditingNodeId.value,
+          })
+          return
+        }
+        markMindMapInlineEditStage('writeback:repoke', {
+          nodeId: editId,
+          pendingId: ctx.mindMapPendingEditNodeId.value,
+          editingId: ctx.mindMapEditingNodeId.value,
+          hasInput: !!input,
+        })
+        eventBus.emit('node:edit_requested', { nodeId: editId })
       })
     }
   }

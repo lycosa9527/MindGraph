@@ -1,5 +1,5 @@
 {
-  "_instructions": "Merge the \"skills\" object below into your OpenClaw config (e.g. ~/.openclaw/openclaw.json). Remove this _instructions key after copying. Replace every placeholder value. MindGraph honors new tokens immediately; if the host still uses old credentials after you edit env, save config and restart WorkBuddy/OpenClaw (or reload skills).",
+  "_instructions": "Merge the \"skills\" object below into your OpenClaw config (e.g. ~/.openclaw/openclaw.json). Remove this _instructions key after copying. Replace every placeholder value. Tokens last 90 days (regenerate in 账户信息 → API Token). MindGraph honors new tokens immediately; if the host still uses old credentials after you edit env, save config and restart WorkBuddy/OpenClaw (or reload skills).",
   "skills": {
     "entries": {
       "mindgraph": {

@@ -18,9 +18,12 @@ function syncMindMapCanvasModeForFlags(data: FeatureFlagsResponse): void {
     return
   }
   const stored = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
-  if (stored === 'v2') {
-    uiStore.setMindMapCanvasMode('v2')
+  // Explicit classic stays classic; missing/invalid/v2 → new layout default.
+  if (stored === 'legacy') {
+    uiStore.setMindMapCanvasMode('legacy')
+    return
   }
+  uiStore.setMindMapCanvasMode('v2')
 }
 
 export interface FeatureOrgAccessEntry {
@@ -96,7 +99,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_askonce: false,
           feature_debateverse: false,
           feature_knowledge_space: false,
-          feature_mindmap_v2_canvas: false,
+          feature_mindmap_v2_canvas: true,
           feature_library: false,
           feature_gewe: false,
           feature_smart_response: false,
@@ -133,7 +136,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_test_server_banner: raw.feature_test_server_banner ?? false,
         feature_oauth_login: raw.feature_oauth_login ?? false,
         feature_thinking_coins: raw.feature_thinking_coins ?? false,
-        feature_mindmap_v2_canvas: raw.feature_mindmap_v2_canvas ?? false,
+        feature_mindmap_v2_canvas: raw.feature_mindmap_v2_canvas ?? true,
       }
       flags.value = data
       lastFetchTime.value = now
@@ -156,7 +159,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_askonce: false,
         feature_debateverse: false,
         feature_knowledge_space: false,
-        feature_mindmap_v2_canvas: false,
+        feature_mindmap_v2_canvas: true,
         feature_library: false,
         feature_gewe: false,
         feature_smart_response: false,
@@ -175,6 +178,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_org_access: {},
       }
       flags.value = defaultFlags
+      syncMindMapCanvasModeForFlags(defaultFlags)
       return defaultFlags
     } finally {
       isLoading.value = false
@@ -222,7 +226,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   }
 
   function getFeatureMindmapV2Canvas(): boolean {
-    return flags.value?.feature_mindmap_v2_canvas ?? false
+    // Product default is v2-on; avoid classic flash before the first /api/config/features fetch.
+    return flags.value?.feature_mindmap_v2_canvas ?? true
   }
 
   function getFeatureLibrary(): boolean {

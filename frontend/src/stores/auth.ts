@@ -568,21 +568,38 @@ export const useAuthStore = defineStore('auth', () => {
 
   let loadAdminCapabilitiesPromise: Promise<void> | null = null
 
+  async function fetchAdminCapabilitiesResponse(): Promise<Response> {
+    return fetch('/api/auth/admin/capabilities', {
+      credentials: 'same-origin',
+    })
+  }
+
   async function loadAdminCapabilities(): Promise<void> {
     if (loadAdminCapabilitiesPromise) {
       return loadAdminCapabilitiesPromise
     }
 
+    // sessionStorage can restore a panel role before cookies are valid. Fetching
+    // here races checkAuth's /me → refresh and paints a console 401; wait until
+    // the session has been verified (or recovered) in this tab.
+    if (!user.value) {
+      adminCapabilitiesPayload.value = null
+      adminCapabilitiesLoaded.value = true
+      return
+    }
+    if (!hasVerifiedAuthThisSession.value) {
+      return
+    }
+
     loadAdminCapabilitiesPromise = (async () => {
-      if (!user.value) {
-        adminCapabilitiesPayload.value = null
-        adminCapabilitiesLoaded.value = true
-        return
-      }
       try {
-        const response = await fetch('/api/auth/admin/capabilities', {
-          credentials: 'same-origin',
-        })
+        let response = await fetchAdminCapabilitiesResponse()
+        if (response.status === 401) {
+          const refreshed = await refreshSessionAccessToken()
+          if (refreshed) {
+            response = await fetchAdminCapabilitiesResponse()
+          }
+        }
         if (!response.ok) {
           adminCapabilitiesPayload.value = null
           return

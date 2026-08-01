@@ -10,6 +10,7 @@ import {
   isInlineDiagramEditKeyEvent,
   isInlineDiagramEditOpen,
   isInlineEditEnterGuarded,
+  reconcileOpenInlineEditorsWithDom,
   setMindMapPostEditSiblingAnchor,
   shouldBlockCanvasEnterShortcut,
 } from '@/composables/mindMap/mindMapCanvasEnterGuard'
@@ -70,5 +71,31 @@ describe('inlineEditEnterGuard', () => {
     setMindMapPostEditSiblingAnchor('branch-r-1-0')
     eventBus.emit('canvas:pane_clicked', {})
     expect(consumeMindMapPostEditSiblingAnchor('branch-l-1-0')).toBe('branch-l-1-0')
+  })
+
+  it('self-heals zombie open-edit ownership when editor DOM is gone', () => {
+    initInlineEditEnterGuard()
+    eventBus.emit('node_editor:opening', { nodeId: 'branch-zombie' })
+    expect(isInlineDiagramEditOpen()).toBe(true)
+
+    // No .inline-edit-wrapper in document — Enter must not stay wedged.
+    reconcileOpenInlineEditorsWithDom()
+    expect(isInlineDiagramEditOpen()).toBe(false)
+
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+    expect(shouldBlockCanvasEnterShortcut(event)).toBe(false)
+  })
+
+  it('clears open ownership on node_editor:closed for that nodeId', () => {
+    initInlineEditEnterGuard()
+    // Ensure clean slate from prior tests.
+    reconcileOpenInlineEditorsWithDom()
+    eventBus.emit('node_editor:opening', { nodeId: 'branch-a' })
+    eventBus.emit('node_editor:opening', { nodeId: 'branch-b' })
+    expect(isInlineDiagramEditOpen()).toBe(true)
+    eventBus.emit('node_editor:closed', { nodeId: 'branch-a' })
+    expect(isInlineDiagramEditOpen()).toBe(true)
+    eventBus.emit('node_editor:closed', { nodeId: 'branch-b' })
+    expect(isInlineDiagramEditOpen()).toBe(false)
   })
 })

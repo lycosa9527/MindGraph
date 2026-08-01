@@ -433,6 +433,16 @@ export type EventTypes = {
     padding?: number
     userInitiated?: boolean
   }
+  /**
+   * Pan-only (no zoom): keep a node inside the central safeFraction of the canvas.
+   * Used after mind-map Tab/child add when the new node lands off-screen.
+   */
+  'view:ensure_node_visible_requested': {
+    nodeId: string
+    /** Central fraction of usable canvas (default 0.75). */
+    safeFraction?: number
+    animate?: boolean
+  }
   'view:fit_diagram_requested': Record<string, never>
   'view:flip_orientation_requested': Record<string, never>
   'view:zoomed': {

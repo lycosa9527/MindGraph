@@ -164,6 +164,11 @@ export const FIT_PADDING = {
   EXPORT: 0.05,
   /** Minimal padding (2%) */
   MINIMAL: 0.02,
+  /**
+   * Mind-map child add: pan-only keep-in-view uses the central fraction of the
+   * usable canvas (chrome insets excluded). 0.75 ≈ 12.5% inset each side.
+   */
+  MIND_MAP_KEEP_VISIBLE_SAFE_FRACTION: 0.75,
 } as const
 
 /**

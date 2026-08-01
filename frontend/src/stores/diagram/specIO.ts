@@ -32,7 +32,7 @@ import {
   hydrateMindMapCanvasStylesOnLoad,
   snapshotMindMapCanvasBucket,
 } from './mindMapCanvasModeSwitch'
-import { cancelMindMapPendingInlineEdit } from './mindMapOps'
+import { cancelMindMapPendingInlineEdit, clearMindMapEditingNodeId } from './mindMapOps'
 import { resyncMindMapConnectionStrokeColorsForActiveMode } from './mindMapStylePreservation'
 import type { DiagramContext, LoadFromSpecOptions } from './types'
 
@@ -70,6 +70,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     ctx.resetSessionEditCount()
     // Library / template load replaces the tree — drop stale post-add inline-edit retries.
     cancelMindMapPendingInlineEdit(ctx)
+    clearMindMapEditingNodeId(ctx)
 
     // Preserve dimensions of nodes that will be reused (same type reload, e.g. add/delete step).
     // Reused nodes are not remounted by Vue Flow, so ResizeObserver won't re-fire for them.

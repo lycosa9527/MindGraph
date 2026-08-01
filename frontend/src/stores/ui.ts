@@ -97,8 +97,8 @@ export const useUIStore = defineStore('ui', () => {
   const uiLanguageExplicit = ref(false)
   const browserLocaleHintDismissed = ref(false)
   const uiVersion = ref<UiVersion>(detectDefaultUiVersion())
-  /** Mind map canvas chrome: legacy (Option 1) or v2 side-toolbar layout (Option 2). */
-  const mindMapCanvasMode = ref<MindMapCanvasMode>('legacy')
+  /** Mind map canvas chrome: legacy (Option 1) or v2 side-toolbar layout (Option 2). Default: v2. */
+  const mindMapCanvasMode = ref<MindMapCanvasMode>('v2')
   const isMobile = ref(false)
   const sidebarCollapsed = ref(false)
 
@@ -245,9 +245,12 @@ export const useUIStore = defineStore('ui', () => {
     }
 
     const storedMindMapCanvasMode = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
-    // Default off: v2 is restored only after FEATURE_MINDMAP_V2_CANVAS is confirmed.
-    if (storedMindMapCanvasMode === 'legacy') {
-      mindMapCanvasMode.value = 'legacy'
+    // Restore explicit choice; otherwise default to new (v2) layout.
+    // Flag sync may force legacy if FEATURE_MINDMAP_V2_CANVAS is disabled.
+    if (isValidMindMapCanvasMode(storedMindMapCanvasMode)) {
+      mindMapCanvasMode.value = storedMindMapCanvasMode
+    } else {
+      mindMapCanvasMode.value = 'v2'
     }
 
     if (isValidLanguage(storedLanguage)) {

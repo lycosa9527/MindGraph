@@ -1,8 +1,10 @@
 # Mind map canvas — classic vs v2 separation
 
-Classic mind map canvas remains the **default** (`mindMapCanvasMode: legacy`). V2 chrome
-(side toolbar, **Document Summary** (文档总结), orthogonal edges, subtree layout) is **opt-in** when
-`FEATURE_MINDMAP_V2_CANVAS=True` and the user selects the new canvas in Language settings.
+New (v2) mind map canvas is the **default** (`mindMapCanvasMode: v2`) when
+`FEATURE_MINDMAP_V2_CANVAS=True` (on by default). V2 chrome includes side toolbar,
+**Document Summary** (文档总结), orthogonal edges, and subtree layout. Classic canvas
+(`legacy`) remains available via Language settings; set `FEATURE_MINDMAP_V2_CANVAS=False`
+to force classic-only.
 
 ## Canvas component split (lazy-loaded shells)
 

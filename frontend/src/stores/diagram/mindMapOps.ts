@@ -12,6 +12,7 @@ import {
   readMindMapNodeUid,
   rebindMindMapBranchUidsForPaste,
 } from '@/utils/mindMapNodeUid'
+import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import {
   recordMindMapSiblingInsertAttempt,
   recordMindMapSiblingInsertFailure,
@@ -180,11 +181,36 @@ function detachMindMapPendingEditPointerGuard(): void {
 }
 
 /** Abort pending post-add inline-edit retries (navigation / store reset / user intent). */
-export function cancelMindMapPendingInlineEdit(ctx: DiagramContext): void {
+export function cancelMindMapPendingInlineEdit(
+  ctx: DiagramContext,
+  reason = 'cancelMindMapPendingInlineEdit'
+): void {
+  const previousPending = ctx.mindMapPendingEditNodeId.value
   mindMapInlineEditRetryGeneration += 1
   ctx.mindMapPendingEditNodeId.value = null
   mindMapPendingEditArmedAtMs = 0
   detachMindMapPendingEditPointerGuard()
+  if (previousPending) {
+    const stage =
+      reason === 'focus-tick-success' ? 'pending:open-phase-done' : 'pending:cancel'
+    markMindMapInlineEditStage(stage, {
+      nodeId: previousPending,
+      editingId: ctx.mindMapEditingNodeId.value,
+      generation: mindMapInlineEditRetryGeneration,
+      reason,
+    })
+  }
+}
+
+/** Begin / update store-owned mind-map inline-edit session (survives remount). */
+export function setMindMapEditingNodeId(ctx: DiagramContext, nodeId: string | null): void {
+  ctx.mindMapEditingNodeId.value = nodeId
+}
+
+/** Clear store-owned edit session; optional nodeId only clears when it matches. */
+export function clearMindMapEditingNodeId(ctx: DiagramContext, nodeId?: string): void {
+  if (nodeId != null && ctx.mindMapEditingNodeId.value !== nodeId) return
+  ctx.mindMapEditingNodeId.value = null
 }
 
 /**
@@ -266,16 +292,33 @@ function selectMindMapNode(ctx: DiagramContext, nodeId: string): void {
 
 function clearMindMapPendingEditIfCurrent(ctx: DiagramContext, nodeId: string): void {
   if (ctx.mindMapPendingEditNodeId.value !== nodeId) return
+  // Bump generation so in-flight tryFocus timers cannot resurrect the open loop.
+  mindMapInlineEditRetryGeneration += 1
   ctx.mindMapPendingEditNodeId.value = null
   mindMapPendingEditArmedAtMs = 0
   detachMindMapPendingEditPointerGuard()
+  markMindMapInlineEditStage('pending:cleared', {
+    nodeId,
+    editingId: ctx.mindMapEditingNodeId.value,
+    generation: mindMapInlineEditRetryGeneration,
+  })
 }
 
 function requestMindMapNodeInlineEdit(ctx: DiagramContext, nodeId: string): void {
   mindMapInlineEditRetryGeneration += 1
   const generation = mindMapInlineEditRetryGeneration
   mindMapPendingEditArmedAtMs = Date.now()
+  // Pending only here. Do NOT set mindMapEditingNodeId yet — that flips V2
+  // isEditing on first paint so ResizeObserver measures the wide <input> and
+  // layout places/sizes the branch wrong. Session is set in startEditing once
+  // the display-mode measure has landed (or below once focus is stable).
   ctx.mindMapPendingEditNodeId.value = nodeId
+  markMindMapInlineEditStage('pending:arm', {
+    nodeId,
+    editingId: ctx.mindMapEditingNodeId.value,
+    generation,
+    selectedId: ctx.selectedNodes.value[0] ?? null,
+  })
   // Keep selection on the node we are about to edit (Enter add → new branch).
   selectMindMapNode(ctx, nodeId)
   attachMindMapPendingEditPointerGuard(ctx, nodeId, generation)
@@ -286,28 +329,91 @@ function requestMindMapNodeInlineEdit(ctx: DiagramContext, nodeId: string): void
     clearMindMapPendingEditIfCurrent(ctx, nodeId)
   }
 
+  const scheduleRetry = (): void => {
+    if (attempts < MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS) {
+      setTimeout(tryFocus, MIND_MAP_INLINE_EDIT_RETRY_MS)
+      return
+    }
+    markMindMapInlineEditStage('pending:max-attempts', {
+      nodeId,
+      generation,
+      attempt: attempts,
+      editingId: ctx.mindMapEditingNodeId.value,
+    })
+    // Exhausted retries — drop pending so a stuck id cannot steal later clicks.
+    // Keep mindMapEditingNodeId so remount / write-back can still reopen edit.
+    finishPending()
+  }
+
   const tryFocus = (): void => {
     if (generation !== mindMapInlineEditRetryGeneration) return
+    if (ctx.mindMapPendingEditNodeId.value !== nodeId) return
     attempts += 1
+    markMindMapInlineEditStage('pending:tryFocus', {
+      nodeId,
+      generation,
+      attempt: attempts,
+      selectedId: ctx.selectedNodes.value[0] ?? null,
+      editingId: ctx.mindMapEditingNodeId.value,
+    })
     // Vue Flow can briefly echo the previous selection when nodes remount.
-    // Only reassert during settle; after that, user selection must win.
+    // Force-reselect only during settle; after that honor selection (do not
+    // cancel pending — releaseMindMapPendingInlineEditIfSelectionMoved owns that).
     if (ctx.selectedNodes.value[0] !== nodeId) {
-      if (attempts > MIND_MAP_PENDING_EDIT_SELECTION_GUARD_ATTEMPTS) {
-        cancelMindMapPendingInlineEdit(ctx)
+      markMindMapInlineEditStage('pending:selection-drift', {
+        nodeId,
+        generation,
+        attempt: attempts,
+        selectedId: ctx.selectedNodes.value[0] ?? null,
+      })
+      if (attempts <= MIND_MAP_PENDING_EDIT_SELECTION_GUARD_ATTEMPTS) {
+        selectMindMapNode(ctx, nodeId)
+      } else {
+        scheduleRetry()
         return
       }
-      selectMindMapNode(ctx, nodeId)
     }
+
     const host = document.querySelector(
       `.vue-flow__node[data-id="${escapeMindMapNodeSelectorId(nodeId)}"] .inline-editable-text`
     )
 
     if (host) {
+      markMindMapInlineEditStage('pending:host-found', {
+        nodeId,
+        generation,
+        attempt: attempts,
+      })
       eventBus.emit('node:edit_requested', { nodeId })
+      markMindMapInlineEditStage('pending:edit_requested', {
+        nodeId,
+        generation,
+        attempt: attempts,
+        source: 'tryFocus',
+      })
       const input = host.querySelector('.inline-edit-input') as HTMLInputElement | null
-      // Require stable focus across one rAF before clearing pending. A single
-      // focus tick is not enough — write-back / toast often steal it immediately
-      // and clearing pending left the new branch stuck in select-only mode.
+      // Session already open (startEditing ran): write-back may have stolen focus.
+      // Refocus once, then end open-phase — do not spam 80 edit_requested retries.
+      if (ctx.mindMapEditingNodeId.value === nodeId) {
+        if (input && document.activeElement !== input && typeof input.focus === 'function') {
+          input.focus()
+          if (typeof input.select === 'function') {
+            input.select()
+          }
+        }
+        markMindMapInlineEditStage('pending:focus-stable', {
+          nodeId,
+          generation,
+          attempt: attempts,
+          editingId: ctx.mindMapEditingNodeId.value,
+          focused: !!input && document.activeElement === input,
+          reason: 'session-open-end-retries',
+        })
+        finishPending()
+        return
+      }
+      // Pending is open-phase only. Remount recovery is owned by
+      // mindMapEditingNodeId. Clear pending once focus is stable.
       if (input && document.activeElement === input) {
         requestAnimationFrame(() => {
           if (generation !== mindMapInlineEditRetryGeneration) return
@@ -316,28 +422,47 @@ function requestMindMapNodeInlineEdit(ctx: DiagramContext, nodeId: string): void
             `.vue-flow__node[data-id="${escapeMindMapNodeSelectorId(nodeId)}"] .inline-edit-input`
           ) as HTMLInputElement | null
           if (stillInput && document.activeElement === stillInput) {
+            if (ctx.mindMapEditingNodeId.value !== nodeId) {
+              ctx.mindMapEditingNodeId.value = nodeId
+            }
+            markMindMapInlineEditStage('pending:focus-stable', {
+              nodeId,
+              generation,
+              attempt: attempts,
+              editingId: ctx.mindMapEditingNodeId.value,
+            })
             finishPending()
             return
           }
-          if (attempts < MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS) {
-            setTimeout(tryFocus, MIND_MAP_INLINE_EDIT_RETRY_MS)
-            return
-          }
-          // Unstable focus at max attempts — drop pending so it cannot steal clicks.
-          finishPending()
+          scheduleRetry()
         })
         return
       }
-      if (attempts < MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS) {
-        setTimeout(tryFocus, MIND_MAP_INLINE_EDIT_RETRY_MS)
-        return
-      }
-      finishPending()
+      markMindMapInlineEditStage('pending:awaiting-input', {
+        nodeId,
+        generation,
+        attempt: attempts,
+        hasInput: !!input,
+        focused: document.activeElement === input,
+        editingId: ctx.mindMapEditingNodeId.value,
+      })
+      scheduleRetry()
       return
     }
 
+    markMindMapInlineEditStage('pending:host-missing', {
+      nodeId,
+      generation,
+      attempt: attempts,
+    })
     if (attempts >= MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS) {
       eventBus.emit('node:edit_requested', { nodeId })
+      markMindMapInlineEditStage('pending:max-attempts', {
+        nodeId,
+        generation,
+        attempt: attempts,
+        reason: 'host-missing',
+      })
       // Last resort: drop pending so a stuck id cannot steal later edits.
       finishPending()
       return
@@ -571,7 +696,18 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       rightBranches: spec.rightBranches,
       preserveLeftRight: true,
     })
-    return commitMindMapReloadWithSelect(ctx, result, pathKey, 'Add child')
+    const ok = commitMindMapReloadWithSelect(ctx, result, pathKey, 'Add child')
+    if (ok && pathKey) {
+      const newChildId = findNodeIdByPathKey(result.nodes, result.connections, pathKey)
+      if (newChildId) {
+        // Pan-only: keep new child in the central ~75% of the canvas (no zoom-fit).
+        eventBus.emit('view:ensure_node_visible_requested', {
+          nodeId: newChildId,
+          animate: true,
+        })
+      }
+    }
+    return ok
   }
 
   function removeMindMapNodes(nodeIds: string[]): number {

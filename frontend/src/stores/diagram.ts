@@ -24,7 +24,12 @@ import { useLearningSheetSlice } from './diagram/learningSheet'
 import { reconcileMindMapCanvasModeSwitch } from './diagram/mindMapCanvasModeSwitch'
 import { syncMindMapStoreLayoutPositions } from './diagram/mindMapDisplayLayout'
 import { useMindMapLayoutSlice } from './diagram/mindMapLayout'
-import { cancelMindMapPendingInlineEdit, useMindMapOpsSlice } from './diagram/mindMapOps'
+import {
+  cancelMindMapPendingInlineEdit,
+  clearMindMapEditingNodeId,
+  setMindMapEditingNodeId,
+  useMindMapOpsSlice,
+} from './diagram/mindMapOps'
 import { createMindMapRecalcScheduler } from './diagram/mindMapRecalcScheduler'
 import { resyncMindMapConnectionStrokeColorsForActiveMode } from './diagram/mindMapStylePreservation'
 import { useMultiFlowLayoutSlice } from './diagram/multiFlowLayout'
@@ -70,6 +75,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   const mindMapRecalcTrigger = ref(0)
   const mindMapTopicBranchGaps = ref<{ left: number; right: number } | null>(null)
   const mindMapPendingEditNodeId = ref<string | null>(null)
+  const mindMapEditingNodeId = ref<string | null>(null)
   const mindMapPreserveIncomingY = ref(false)
   const mindMapPreserveIncomingYNodeId = ref<string | null>(null)
   const mindMapBulkLoading = ref(false)
@@ -115,6 +121,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     mindMapRecalcTrigger,
     mindMapTopicBranchGaps,
     mindMapPendingEditNodeId,
+    mindMapEditingNodeId,
     mindMapPreserveIncomingY,
     mindMapPreserveIncomingYNodeId,
     mindMapBulkLoading,
@@ -430,6 +437,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     mindMapRecalcTrigger.value = 0
     mindMapTopicBranchGaps.value = null
     mindMapPendingEditNodeId.value = null
+    mindMapEditingNodeId.value = null
     mindMapPreserveIncomingY.value = false
     mindMapPreserveIncomingYNodeId.value = null
     mindMapBulkLoading.value = false
@@ -589,7 +597,11 @@ export const useDiagramStore = defineStore('diagram', () => {
     mindMapRecalcTrigger,
     mindMapTopicBranchGaps,
     mindMapPendingEditNodeId,
-    cancelMindMapPendingInlineEdit: () => cancelMindMapPendingInlineEdit(ctx),
+    mindMapEditingNodeId,
+    cancelMindMapPendingInlineEdit: (reason?: string) =>
+      cancelMindMapPendingInlineEdit(ctx, reason),
+    setMindMapEditingNodeId: (nodeId: string | null) => setMindMapEditingNodeId(ctx, nodeId),
+    clearMindMapEditingNodeId: (nodeId?: string) => clearMindMapEditingNodeId(ctx, nodeId),
     mindMapPreserveIncomingY,
     mindMapPreserveIncomingYNodeId,
     mindMapBulkLoading,

@@ -1,7 +1,9 @@
 import { eventBus } from '@/composables/core/useEventBus'
+import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 
 let initialized = false
-let openInlineEditCount = 0
+/** Node ids with an open inline editor (opening without matching closed = zombie). */
+const openInlineEditNodeIds = new Set<string>()
 let enterGuardFrames = 0
 /** Node that just finished inline edit; next Enter sibling add should anchor here. */
 let mindMapPostEditSiblingAnchor: string | null = null
@@ -10,11 +12,22 @@ let mindMapPostEditSiblingAnchor: string | null = null
 export function initInlineEditEnterGuard(): void {
   if (initialized) return
   initialized = true
-  eventBus.on('node_editor:opening', () => {
-    openInlineEditCount += 1
+  eventBus.on('node_editor:opening', (payload) => {
+    const nodeId = payload?.nodeId
+    if (nodeId) {
+      openInlineEditNodeIds.add(nodeId)
+      return
+    }
+    // Legacy emitters without nodeId — keep a sentinel so Enter still blocks.
+    openInlineEditNodeIds.add('__anonymous__')
   })
-  eventBus.on('node_editor:closed', () => {
-    openInlineEditCount = Math.max(0, openInlineEditCount - 1)
+  eventBus.on('node_editor:closed', (payload) => {
+    const nodeId = payload?.nodeId
+    if (nodeId) {
+      openInlineEditNodeIds.delete(nodeId)
+    } else {
+      openInlineEditNodeIds.delete('__anonymous__')
+    }
     armInlineEditEnterGuard()
   })
   eventBus.on('canvas:pane_clicked', () => {
@@ -75,11 +88,33 @@ export function isInlineEditEnterGuarded(): boolean {
 }
 
 export function isInlineDiagramEditOpen(): boolean {
-  return openInlineEditCount > 0
+  return openInlineEditNodeIds.size > 0
 }
 
 export function isInlineDiagramEditDomActive(): boolean {
   return document.querySelector('.inline-edit-wrapper') !== null
+}
+
+/**
+ * Drop zombie open-edit ownership when the bus says editing but no editor DOM
+ * exists (unmount / force-kill without node_editor:closed).
+ */
+export function reconcileOpenInlineEditorsWithDom(): void {
+  if (openInlineEditNodeIds.size === 0) return
+  if (isInlineDiagramEditDomActive()) return
+  const focusedInput = document.activeElement
+  if (
+    focusedInput instanceof HTMLElement &&
+    focusedInput.closest('.inline-edit-input, .inline-edit-wrapper')
+  ) {
+    return
+  }
+  const zombieIds = [...openInlineEditNodeIds]
+  openInlineEditNodeIds.clear()
+  markMindMapInlineEditStage('enter-guard:zombie-heal', {
+    reason: 'open-set-without-editor-dom',
+    zombieIds,
+  })
 }
 
 export function isInlineDiagramEditKeyEvent(event: KeyboardEvent): boolean {
@@ -91,6 +126,7 @@ export function isInlineDiagramEditKeyEvent(event: KeyboardEvent): boolean {
 export function shouldBlockCanvasEnterShortcut(event: KeyboardEvent): boolean {
   if (event.isComposing || event.keyCode === 229) return true
   if (isInlineEditEnterGuarded()) return true
+  reconcileOpenInlineEditorsWithDom()
   if (isInlineDiagramEditOpen()) return true
   if (isInlineDiagramEditDomActive()) return true
   if (isInlineDiagramEditKeyEvent(event)) return true

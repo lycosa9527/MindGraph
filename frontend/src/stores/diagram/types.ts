@@ -78,6 +78,11 @@ export interface DiagramContext {
   /** Node id that should enter inline edit after the next mount (mind-map add flows). */
   mindMapPendingEditNodeId: Ref<string | null>
   /**
+   * Store-owned inline-edit session (survives Vue Flow remount). Branch/topic
+   * hosts derive `isEditing` from this instead of a local ref.
+   */
+  mindMapEditingNodeId: Ref<string | null>
+  /**
    * When true, v2 display layout keeps incoming node Y (settle only, no full
    * restack). Set on incremental L1 Enter; kept across measure/edit-end.
    * Cleared on collapse/expand, diagram style shape switch, and full reload.

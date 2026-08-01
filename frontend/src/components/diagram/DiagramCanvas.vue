@@ -380,6 +380,7 @@ const {
   fitDiagram,
   fitForExport,
   fitToNodes,
+  ensureNodeVisibleInSafeFraction,
   scheduleFitAfterStructuralNodeChange,
   clearFitTimersOnUnmount,
 } = useDiagramCanvasFit({
@@ -542,6 +543,7 @@ onMounted(() => {
       fitDiagram,
       fitForExport,
       fitToNodes,
+      ensureNodeVisibleInSafeFraction,
     },
     emit,
     exportByFormat,

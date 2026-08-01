@@ -22,6 +22,10 @@ type FitApi = {
     nodeIds: string[],
     options?: { animate?: boolean; duration?: number; padding?: number }
   ) => Promise<void>
+  ensureNodeVisibleInSafeFraction: (
+    nodeId: string,
+    options?: { safeFraction?: number; animate?: boolean }
+  ) => void
 }
 
 type DiagramStore = ReturnType<typeof useDiagramStore>
@@ -142,6 +146,17 @@ export function useDiagramCanvasEventBus(): {
           animate: data.animate !== false,
           duration: data.duration,
           padding: data.padding,
+        })
+      })
+    )
+
+    // Pan-only keep-in-view after child add — always allowed (does not zoom-fit).
+    unsubscribers.push(
+      eventBus.on('view:ensure_node_visible_requested', (data) => {
+        if (!data?.nodeId) return
+        fitApi.ensureNodeVisibleInSafeFraction(data.nodeId, {
+          safeFraction: data.safeFraction,
+          animate: data.animate !== false,
         })
       })
     )

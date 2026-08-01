@@ -19,6 +19,7 @@ import {
   parseFitPaddingPx,
   resolveMindMapSideToolbarLeftReservePx,
 } from '@/utils/mindMapSideToolbarFitReserve'
+import { computePanToKeepNodeInSafeFraction } from '@/utils/mindMapEnsureNodeVisible'
 
 type DiagramStore = ReturnType<typeof useDiagramStore>
 type PanelsStore = ReturnType<typeof usePanelsStore>
@@ -59,6 +60,10 @@ export function useDiagramCanvasFit(options: {
     nodeIds: string[],
     options?: { animate?: boolean; duration?: number; padding?: number }
   ) => Promise<void>
+  ensureNodeVisibleInSafeFraction: (
+    nodeId: string,
+    options?: { safeFraction?: number; animate?: boolean }
+  ) => void
   scheduleFitAfterStructuralNodeChange: (hasFitTriggeringChange: boolean) => void
   clearFitTimersOnUnmount: () => void
 } {
@@ -392,6 +397,8 @@ export function useDiagramCanvasFit(options: {
     height?: number
   }
 
+  type EnsureVisibleNode = FlowNodeLike & { id?: string }
+
   function getNodeWidthHeight(
     node: FlowNodeLike,
     defaultW = 120,
@@ -400,6 +407,70 @@ export function useDiagramCanvasFit(options: {
     const w = node.dimensions?.width ?? node.measured?.width ?? node.width ?? defaultW
     const h = node.dimensions?.height ?? node.measured?.height ?? node.height ?? defaultH
     return { width: Number(w) || defaultW, height: Number(h) || defaultH }
+  }
+
+  /**
+   * Pan only (keep zoom): if `nodeId` sits outside the central safeFraction of
+   * the usable canvas, shift the viewport so it enters that zone.
+   * Retries briefly so Tab-child layout/measure can settle first.
+   */
+  function ensureNodeVisibleInSafeFraction(
+    nodeId: string,
+    options?: { safeFraction?: number; animate?: boolean }
+  ): void {
+    if (!nodeId) return
+    const animate = options?.animate !== false
+    const safeFraction =
+      options?.safeFraction ?? FIT_PADDING.MIND_MAP_KEEP_VISIBLE_SAFE_FRACTION
+    const maxAttempts = 12
+
+    const tryApply = (attempt: number): void => {
+      const list = getNodes() as EnsureVisibleNode[]
+      const node = Array.isArray(list) ? list.find((n) => n.id === nodeId) : undefined
+      if (!node) {
+        if (attempt < maxAttempts) {
+          requestAnimationFrame(() => tryApply(attempt + 1))
+        }
+        return
+      }
+
+      const { width, height } = getNodeWidthHeight(node)
+      const container = canvasContainer.value
+      const viewWidth = container?.clientWidth ?? CANVAS.DEFAULT_WIDTH
+      const viewHeight = container?.clientHeight ?? CANVAS.DEFAULT_HEIGHT
+      const result = computePanToKeepNodeInSafeFraction({
+        viewport: getViewport(),
+        node: {
+          x: node.position?.x ?? 0,
+          y: node.position?.y ?? 0,
+          width,
+          height,
+        },
+        viewWidth,
+        viewHeight,
+        safeFraction,
+        chromeInsets: {
+          top: getFitViewTopPx(),
+          bottom: getFitViewBottomPx(),
+          left: parseFitPaddingPx(getFitViewLeftPx()),
+          right: parseFitPaddingPx(getFitViewRightPx()),
+        },
+      })
+      if (!result.changed) return
+
+      setViewport(result.viewport, {
+        duration: animate ? ANIMATION.DURATION_NORMAL : 0,
+      })
+    }
+
+    // Double rAF: wait for Vue Flow write-back after child reload.
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => tryApply(0))
+      })
+      return
+    }
+    tryApply(0)
   }
 
   /** Center diagram bounding box in viewport at default zoom (no scale-to-fit). */
@@ -648,6 +719,7 @@ export function useDiagramCanvasFit(options: {
     fitDiagram,
     fitForExport,
     fitToNodes,
+    ensureNodeVisibleInSafeFraction,
     scheduleFitAfterStructuralNodeChange,
     clearFitTimersOnUnmount,
   }
