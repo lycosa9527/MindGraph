@@ -229,6 +229,7 @@ useMobileCanvasRouteLoader({
   notifyWarning: (message) => notify.warning(message),
   notifyError: (message) => notify.error(message),
   onCollabClear: () => diagramStore.setCollabSessionActive(false),
+  diagramAutoSave,
 })
 
 const preserveDiagramForKittyHub = ref(false)
