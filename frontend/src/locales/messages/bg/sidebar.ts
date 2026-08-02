@@ -1,5 +1,5 @@
 /**
- * en UI � sidebar
+ * bg UI � sidebar
  */
 
 export default {

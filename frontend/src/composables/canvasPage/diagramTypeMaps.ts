@@ -43,3 +43,18 @@ export const VALID_DIAGRAM_TYPES: DiagramType[] = [
   'mind_map',
   'concept_map',
 ]
+
+/**
+ * Sync canvas chrome (toolbar / top-bar actions) to a known diagram type before
+ * `loadFromSpec` finishes. Avoids a flash of the previous diagram's toolbar
+ * while the library fetch / markdown pipeline is still in flight.
+ */
+export function applyDiagramTypeForCanvasChrome(
+  setDiagramType: (diagramType: DiagramType) => boolean,
+  diagramType: string | null | undefined
+): boolean {
+  if (!diagramType || !VALID_DIAGRAM_TYPES.includes(diagramType as DiagramType)) {
+    return false
+  }
+  return setDiagramType(diagramType as DiagramType)
+}

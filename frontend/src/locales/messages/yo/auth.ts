@@ -1,5 +1,5 @@
 /**
- * en UI � auth
+ * yo UI � auth
  */
 
 export default {

@@ -1,5 +1,5 @@
 /**
- * en UI � workshop
+ * km UI � workshop
  */
 
 export default {

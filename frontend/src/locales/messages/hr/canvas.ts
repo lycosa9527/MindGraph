@@ -1,5 +1,5 @@
 /**
- * en UI � canvas
+ * hr UI � canvas
  */
 
 export default {
@@ -730,11 +730,8 @@ export default {
   'canvas.mindMapDocumentSummary.saveContent': 'Save content',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'Fetch and save',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'Fetching page content…',
-  'canvas.mindMapDocumentSummary.webLinkHintLite':
-    'Paste a public page URL — we fetch as much article text as we can and save it as Markdown.',
-
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
-    'Direct link fetch is server-side and cannot use your login cookies, so pages behind auth or paywalls are often incomplete. For a full webpage snapshot as you see it, use the Chrome / Edge extension.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite': 'Paste a public page URL — we fetch as much article text as we can and save it as Markdown.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'Direct link fetch is server-side and cannot use your login cookies, so pages behind auth or paywalls are often incomplete. For a full webpage snapshot as you see it, use the Chrome / Edge extension.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Download Chrome extension',
   'canvas.mindMapDocumentSummary.statusExtracting': 'Extracting…',
   'canvas.mindMapDocumentSummary.stageStarting': 'Starting…',
@@ -817,8 +814,7 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'The saved extract was missing or out of sync and has been cleared. Please upload or paste the document again.',
   'canvas.mindMapSideToolbar.learningSheet': 'Learning sheet',
   'canvas.mindMapSideToolbar.oneSentence': 'One-sentence generate',
-  'canvas.mindMapSideToolbar.oneSentenceIntro':
-    'Describe a topic or edit request in one sentence to generate or refine the map',
+  'canvas.mindMapSideToolbar.oneSentenceIntro': 'Describe a topic or edit request in one sentence to generate or refine the map',
   'canvas.mindMapSideToolbar.documentSummary': 'Document Summary',
   'fileCenter.intro': 'A package is a curated set of sources for this diagram. Add files, notes, or web pages — the diagram completes its branches from these sources.',
   'fileCenter.defaultPackageName': 'Untitled package',
@@ -855,8 +851,7 @@ export default {
   'canvas.mindMapSideToolbar.outlineEmpty': 'No nodes yet',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI Generate',
   'canvas.mindMapSideToolbar.outlineEditHint': 'Double-click any row to edit inline',
-  'canvas.mindMapSideToolbar.outlineIntro':
-    'Edit structure in the outline — drag to reorder, paste lines to bulk-add',
+  'canvas.mindMapSideToolbar.outlineIntro': 'Edit structure in the outline — drag to reorder, paste lines to bulk-add',
   'canvas.mindMapSideToolbar.outlineDragHint': 'Drag to reorder; drop above/below for siblings, center to nest as child',
   'canvas.mindMapSideToolbar.outlinePasteHint': 'Select a node and paste multi-line text to add sibling nodes in bulk',
   'canvas.mindMapPaste.inserted': 'Inserted {count} sibling node(s)',

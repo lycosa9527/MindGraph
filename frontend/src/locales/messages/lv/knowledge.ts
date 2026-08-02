@@ -1,5 +1,5 @@
 /**
- * en UI � knowledge
+ * lv UI � knowledge
  */
 
 export default {

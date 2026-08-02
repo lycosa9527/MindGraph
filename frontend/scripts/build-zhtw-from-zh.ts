@@ -20,27 +20,30 @@ const FILES = [
   'community.ts',
   'knowledge.ts',
   'mindmate.ts',
+  'maite.ts',
   'notification.ts',
   'sidebar.ts',
   'workshop.ts',
+  'showcase.ts',
+  'thinkingCoins.ts',
 ] as const
 
 function convertFileContent(text: string, convert: (s: string) => string): string {
   const lines = text.split('\n')
   const out: string[] = []
-  const lineRe = /^(\s*'[^']+'\s*:\s*)'([^']*)'(\s*,?)\s*$/
+  // Single-quoted values; also allow values that continue on the next lines via string concat.
+  const lineRe = /^(\s*'[^']+'\s*:\s*)'((?:\\'|[^'])*)'(\s*,?)\s*$/
   for (const line of lines) {
     const m = line.match(lineRe)
     if (m) {
-      out.push(`${m[1]}'${convert(m[2])}'${m[3]}`)
+      const converted = convert(m[2]).replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+      out.push(`${m[1]}'${converted}'${m[3]}`)
+    } else if (line.includes('/** Chinese UI')) {
+      out.push(line.replace('Chinese UI', 'Traditional Chinese (zh-TW) UI'))
+    } else if (line.includes('/** zh UI')) {
+      out.push(line.replace('zh UI', 'zh-tw UI'))
     } else {
-      if (line.includes('/** Chinese UI')) {
-        out.push(line.replace('Chinese UI', 'Traditional Chinese (zh-TW) UI'))
-      } else if (line.includes('/** zh UI')) {
-        out.push(line.replace('zh UI', 'zh-tw UI'))
-      } else {
-        out.push(line)
-      }
+      out.push(line)
     }
   }
   return out.join('\n')

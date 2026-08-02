@@ -5,7 +5,10 @@ import { type ComputedRef, nextTick, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { eventBus, useDiagramSpecForSave } from '@/composables'
+import { applyDiagramTypeForCanvasChrome } from '@/composables/canvasPage/diagramTypeMaps'
 import { shouldSkipLibraryReloadDuringGeneration } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
+import { unloadCanvasForLibrarySwitch } from '@/composables/canvasPage/unloadCanvasForLibrarySwitch'
+import type { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
@@ -51,6 +54,7 @@ export interface UseMobileCanvasRouteLoaderOptions {
   notifyWarning: (message: string) => void
   notifyError: (message: string) => void
   onCollabClear: () => void
+  diagramAutoSave: ReturnType<typeof useDiagramAutoSave>
 }
 
 export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOptions): {
@@ -74,7 +78,11 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
     notifyWarning,
     notifyError,
     onCollabClear,
+    diagramAutoSave,
   } = options
+
+  /** Invalidates in-flight library loads when another diagram is selected. */
+  let libraryLoadGeneration = 0
 
   async function loadDiagramFromLibrary(diagramId: string): Promise<boolean> {
     // URL sync after first AutoComplete save: keep live canvas + in-flight LLM streams.
@@ -88,9 +96,25 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
       return true
     }
 
+    const loadGen = ++libraryLoadGeneration
+
+    if (diagramAutoSave.isDirty.value) {
+      await diagramAutoSave.flush()
+    }
+    if (loadGen !== libraryLoadGeneration) {
+      return false
+    }
+    diagramAutoSave.cancelTimer()
+    diagramAutoSave.setSuppressFromLibrary()
+
     beginMindMapLoadSession('library-mobile')
     markMindMapLoadStage('library:fetch:start', { diagramId })
+    const listed = savedDiagramsStore.diagrams.find((d) => d.id === diagramId)
+    unloadCanvasForLibrarySwitch(listed?.diagram_type)
     const result = await savedDiagramsStore.getDiagram(diagramId)
+    if (loadGen !== libraryLoadGeneration) {
+      return false
+    }
     markMindMapLoadStage('library:fetch:done', { ok: result.ok })
     if (!result.ok) {
       notifyError(translate('canvas.library.diagramNotFound'))
@@ -101,14 +125,17 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
       return false
     }
     const diagram = result.diagram
+    applyDiagramTypeForCanvasChrome(diagramStore.setDiagramType, diagram.diagram_type)
     savedDiagramsStore.setActiveDiagram(diagramId)
-    diagramStore.clearHistory()
 
     const spec = diagram.spec as Record<string, unknown>
     llmResultsStore.clearCache()
 
     if (diagramSpecLikelyNeedsMarkdownPipeline(spec)) {
       await loadDiagramMarkdownPipeline({ bumpLayout: false })
+    }
+    if (loadGen !== libraryLoadGeneration) {
+      return false
     }
     const loadOpts = mindMapLibraryLoadOptions(diagram.diagram_type, spec)
     const loaded = diagramStore.loadFromSpec(
@@ -117,6 +144,9 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
       loadOpts
     )
     if (loaded) {
+      if (diagram.title) {
+        diagramStore.initTitle(diagram.title)
+      }
       eventBus.emit('diagram:loaded_from_library', {
         diagramId,
         diagramType: diagram.diagram_type,

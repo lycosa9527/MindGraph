@@ -1,5 +1,5 @@
 /**
- * en UI � notification
+ * lv UI � notification
  */
 
 export default {

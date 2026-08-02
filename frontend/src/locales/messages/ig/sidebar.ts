@@ -1,5 +1,5 @@
 /**
- * en UI � sidebar
+ * ig UI � sidebar
  */
 
 export default {

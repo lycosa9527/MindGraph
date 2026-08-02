@@ -1,5 +1,5 @@
 /**
- * en UI � admin
+ * hr UI � admin
  */
 
 export default {
@@ -490,13 +490,10 @@ export default {
   'admin.errors.unmuteSuccess': 'Alerts restored for this fingerprint',
   'admin.errors.muteError': 'Failed to update mute state',
   'admin.errors.copyAll': 'Copy all',
-  'admin.errors.copyAllHint':
-    'Copy full error details (path, message, stacktrace, tags) for the current filters',
+  'admin.errors.copyAllHint': 'Copy full error details (path, message, stacktrace, tags) for the current filters',
   'admin.errors.copyAllSuccess': 'Copied {count} errors to clipboard',
-  'admin.errors.copyAllSuccessTruncated':
-    'Copied {count} of {total} errors (limit {limit}); refine filters for the rest',
-  'admin.errors.copyAllPartial':
-    'Copied with {failed} missing stacktrace(s); list fields are still included',
+  'admin.errors.copyAllSuccessTruncated': 'Copied {count} of {total} errors (limit {limit}); refine filters for the rest',
+  'admin.errors.copyAllPartial': 'Copied with {failed} missing stacktrace(s); list fields are still included',
   'admin.errors.copyAllEmpty': 'Nothing to copy',
   'admin.errors.copyAllError': 'Failed to copy errors',
   'admin.performance.groupCompute': 'Compute & memory',

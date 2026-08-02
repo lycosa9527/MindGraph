@@ -19,8 +19,9 @@ import {
   markMindMapLoadStage,
 } from '@/utils/mindMapLoadDebug'
 
-import { diagramTypeMap } from './diagramTypeMaps'
+import { applyDiagramTypeForCanvasChrome, diagramTypeMap } from './diagramTypeMaps'
 import { shouldSkipLibraryReloadForActiveDiagram } from './skipLibraryReloadDuringGeneration'
+import { unloadCanvasForLibrarySwitch } from './unloadCanvasForLibrarySwitch'
 
 type SnapshotHistoryApi = ReturnType<typeof useSnapshotHistory>
 
@@ -42,15 +43,39 @@ export function useCanvasPageLibrarySnapshots(options: {
   const notify = useNotifications()
   const { t } = useLanguage()
 
+  /** Invalidates in-flight library loads when the user selects another diagram. */
+  let libraryLoadGeneration = 0
+
   async function loadDiagramFromLibrary(diagramId: string): Promise<boolean> {
     // URL sync after first AutoComplete save: keep live canvas + in-flight LLM streams.
     if (shouldSkipLibraryReloadForActiveDiagram(diagramId, savedDiagramsStore.activeDiagramId)) {
       return true
     }
 
+    const loadGen = ++libraryLoadGeneration
+
+    // Persist the previous canvas before tearing it down — clearing data while
+    // activeDiagramId still points at the old row could autosave an empty wipe.
+    if (diagramAutoSave.isDirty.value) {
+      await diagramAutoSave.flush()
+    }
+    if (loadGen !== libraryLoadGeneration) {
+      return false
+    }
+    diagramAutoSave.cancelTimer()
+    diagramAutoSave.setSuppressFromLibrary()
+    snapshotHistory.clearSnapshots()
+
     beginMindMapLoadSession('library')
     markMindMapLoadStage('library:fetch:start', { diagramId })
+    const listed = savedDiagramsStore.diagrams.find((d) => d.id === diagramId)
+    // Unload old canvas + sync chrome in the same tick so neither previous
+    // toolbar nor previous nodes can paint during the fetch await.
+    unloadCanvasForLibrarySwitch(listed?.diagram_type)
     const result = await savedDiagramsStore.getDiagram(diagramId)
+    if (loadGen !== libraryLoadGeneration) {
+      return false
+    }
     markMindMapLoadStage('library:fetch:done', { ok: result.ok })
     if (!result.ok) {
       notify.error(t('canvas.library.diagramNotFound'))
@@ -61,9 +86,8 @@ export function useCanvasPageLibrarySnapshots(options: {
       return false
     }
     const diagram = result.diagram
-    diagramStore.resetSessionEditCount()
+    applyDiagramTypeForCanvasChrome(diagramStore.setDiagramType, diagram.diagram_type)
     savedDiagramsStore.setActiveDiagram(diagramId)
-    diagramStore.clearHistory()
 
     const spec = diagram.spec as Record<string, unknown>
     const llmResults = spec?.llm_results as
@@ -84,6 +108,9 @@ export function useCanvasPageLibrarySnapshots(options: {
     if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
       await loadDiagramMarkdownPipeline({ bumpLayout: false })
     }
+    if (loadGen !== libraryLoadGeneration) {
+      return false
+    }
     const loadOpts = mindMapLibraryLoadOptions(diagram.diagram_type, specForLoad)
     const loaded = diagramStore.loadFromSpec(
       specForLoad,
@@ -92,6 +119,9 @@ export function useCanvasPageLibrarySnapshots(options: {
     )
 
     if (loaded) {
+      if (diagram.title) {
+        diagramStore.initTitle(diagram.title)
+      }
       // Emit after Pinia replace so listeners do not read the previous diagram.
       eventBus.emit('diagram:loaded_from_library', {
         diagramId,

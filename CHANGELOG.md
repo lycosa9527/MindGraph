@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.161.0] - 2026-08-02
+
+> **Interface language picker: real UI copy for all 28 locales; canvas library switch flash hardening.**
+
+### Changed
+
+- **Interface language picker translations** — All 28 Settings → Interface language locales now ship dedicated message bundles (~90–98% differs-from-en UI copy across 13 modules; brands/formulas/shortcuts intentionally English). Completes former English stubs and partial fr/az/th/af; regenerates zh-tw including showcase/maite/thinkingCoins; lazy loaders leave EN-copy for picker codes (`lazyLocaleLoaders.ts`, `messages/<code>/*.ts`).
+- **zh-tw OpenCC pipeline** — `i18n:build-zhtw` also converts showcase, maite, and thinkingCoins from zh.
+- **i18n key sync namespaces** — `sync-messages-keys-from-reference.ts` includes showcase and maite.
+
+### Fixed
+
+- **Canvas switch flash (follow-up)** — Library diagram select: generation-gated in-flight loads and collab flag preserved across unload (`useCanvasPageLibrarySnapshots.ts`, `useMobileCanvasRouteLoader.ts`).
+
 ## [5.160.0] - 2026-08-02
 
 > **Document Summary lite production hardening; AI brainstorm 3-LLM waterfall polish; learning-sheet DOCX export.**
@@ -23,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Canvas switch flash** — On library diagram select, flush dirty autosave then unload the previous canvas (reset + chrome type from list metadata) before fetch, so old toolbar/nodes never paint during the load gap.
 - **Worksheet DOCX body limit** — Middleware now allows ~22 MB for `/api/export_worksheet_docx` so large diagram PNGs are not rejected by the default 5 MB cap.
 - **Worksheet DOCX image fit / invalid upload** — Tall diagrams shrink to the page box; corrupt images return 400 instead of 500.
 - **Worksheet modal hint (af/az/fr/th)** — Copy mentions both PDF and document export.

@@ -1,5 +1,5 @@
 /**
- * en UI � sidebar
+ * my UI � sidebar
  */
 
 export default {
