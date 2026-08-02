@@ -169,7 +169,7 @@ async def refresh_token(request: Request, response: Response):
     accept_encoding = request.headers.get("Accept-Encoding", "")
     sec_ch_platform = request.headers.get("Sec-CH-UA-Platform", "")
     sec_ch_mobile = request.headers.get("Sec-CH-UA-Mobile", "")
-    logger.info(
+    logger.debug(
         "[TokenAudit] Device fingerprint headers: user=%s, UA=%s..., lang=%s, encoding=%s, platform=%s, mobile=%s",
         user_id,
         user_agent[:50],
@@ -397,7 +397,7 @@ async def get_session_status(
     get_request_language(x_language, accept_language)
     client_ip = get_client_ip(request)
 
-    logger.info(
+    logger.debug(
         "[TokenAudit] /session-status called: user=%s, ip=%s",
         current_user.id,
         client_ip,

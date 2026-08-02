@@ -11,7 +11,6 @@ Proprietary License
 """
 
 import ipaddress
-import logging
 import os
 import secrets
 from functools import lru_cache
@@ -21,8 +20,6 @@ from fastapi import Request, Response
 
 from utils.auth.config import TRUSTED_PROXY_IPS
 from utils.auth.connection_types import HttpOrWebSocket
-
-logger = logging.getLogger(__name__)
 
 # Sentinel keyword expansions for ``TRUSTED_PROXY_IPS``. Using ``private`` lets
 # reverse-proxy deployments (Nginx Proxy Manager, Docker, LAN nginx) trust any
@@ -169,24 +166,17 @@ def get_client_ip(connection: HttpOrWebSocket) -> str:
         Client IP address string
     """
     if not _trusted_proxy_peer(connection):
-        direct_ip = _direct_peer_ip(connection)
-        logger.debug("Client IP from direct connection: %s", direct_ip)
-        return direct_ip
+        return _direct_peer_ip(connection)
 
     forwarded_for = connection.headers.get("X-Forwarded-For")
     if forwarded_for:
-        client_ip = forwarded_for.split(",")[0].strip()
-        logger.debug("Client IP from X-Forwarded-For: %s (full: %s)", client_ip, forwarded_for)
-        return client_ip
+        return forwarded_for.split(",")[0].strip()
 
     real_ip = connection.headers.get("X-Real-IP")
     if real_ip:
-        logger.debug("Client IP from X-Real-IP: %s", real_ip)
         return real_ip.strip()
 
-    direct_ip = _direct_peer_ip(connection)
-    logger.debug("Client IP from connection.client.host: %s", direct_ip)
-    return direct_ip
+    return _direct_peer_ip(connection)
 
 
 def describe_trusted_proxy_config() -> str:

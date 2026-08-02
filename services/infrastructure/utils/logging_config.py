@@ -684,6 +684,10 @@ def setup_logging():
     # hpack/h2: HTTP/2 HPACK header compression - very verbose at DEBUG
     logging.getLogger("hpack").setLevel(http_level)
     logging.getLogger("h2").setLevel(http_level)
+    # Handshake DEBUG dumps Cookie/JWT; keep INFO (accepted/open/closed).
+    logging.getLogger("websockets").setLevel(logging.WARNING)
+    logging.getLogger("websockets.server").setLevel(logging.WARNING)
+    logging.getLogger("uvicorn.protocols.websockets").setLevel(logging.INFO)
 
     # Other external libraries can remain at DEBUG for troubleshooting
     logging.getLogger("qcloud_cos").setLevel(logging.DEBUG)

@@ -294,7 +294,6 @@ class OrganizationCache:
             if cached:
                 try:
                     org = self._deserialize_org(cached)
-                    logger.debug("[OrgCache] Cache hit for org ID %s", org_id)
                     return org
                 except (KeyError, ValueError, TypeError) as e:
                     logger.error(

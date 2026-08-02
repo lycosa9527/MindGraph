@@ -82,6 +82,7 @@ from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_distributed_lock import (
     acquire_startup_sms_notification_lock,
     release_startup_sms_notification_lock,
+    try_claim_launch_complete_log,
 )
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -555,20 +556,14 @@ async def lifespan(fastapi_app: FastAPI):
         # This ensures completion messages appear after all startup logging
         await asyncio.sleep(0.3)
 
-    # Print completion messages after all startup activities are complete
-    if is_main_worker:
-        startup_duration = time.time() - startup_start
-        logger.debug("[LIFESPAN] Startup complete, yielding to application...")
-        # Print prominent launch completion notification
-        # This appears after all startup activities including monitor initialization
-        print()
-        print("=" * 80)
-        print("✓ APPLICATION LAUNCH COMPLETE")
-        print("=" * 80)
-        print("All services initialized and ready to accept requests.")
-        print(f"Startup time: {startup_duration:.2f}s")
-        print("=" * 80)
-        print()
+    # One cluster-wide completion line (Redis SET NX). Fail-open logs per worker.
+    startup_duration = time.time() - startup_start
+    logger.debug("[LIFESPAN] Startup complete, yielding to application...")
+    if await try_claim_launch_complete_log():
+        logger.info(
+            "APPLICATION LAUNCH COMPLETE startup=%.2fs",
+            startup_duration,
+        )
 
     holdings = LifespanBackgroundTasks(
         cleanup_task=cleanup_task,

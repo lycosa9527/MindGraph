@@ -181,7 +181,7 @@ def register_routers(app: FastAPI) -> None:
         logger.warning("[RouterRegistration] DebateVerse router NOT registered - import failed or router is None.")
 
     if registered_feature_paths:
-        logger.info(
+        logger.debug(
             "[RouterRegistration] Feature API prefixes: %s",
             ", ".join(registered_feature_paths),
         )

@@ -103,7 +103,7 @@ setup_exception_handlers(app)
 _VUE_SPA_ENABLED = setup_vue_spa(app)
 
 if _VUE_SPA_ENABLED:
-    logger.info("Vue SPA mode: Frontend served from frontend/dist/")
+    logger.debug("Vue SPA mode: Frontend served from frontend/dist/")
 elif not is_dev_mode():
     # Only warn in production - in dev mode, Vite handles frontend
     logger.warning("Vue SPA not available - run 'npm run build' in frontend/ directory")

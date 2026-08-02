@@ -3,7 +3,7 @@ Vue Flow Screenshot Module
 ===========================
 
 Captures diagram PNGs by loading the Vue Flow frontend in Playwright.
-Replaces the old D3-based png_export_core.py rendering pipeline.
+Replaces the former D3-based server-side PNG rendering pipeline.
 
 Flow:
 1. Open headless Chromium via BrowserContextManager

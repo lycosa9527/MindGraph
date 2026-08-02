@@ -172,8 +172,6 @@ class GraphSettings(BaseModel):
     __category__ = "Graph & UI Settings"
 
     GRAPH_LANGUAGE: GraphLanguage = Field(default=GraphLanguage.ZH, description="Language for graph generation (zh/en)")
-    TOPIC_FONT_SIZE: int = Field(default=18, gt=0, description="Topic node font size in pixels")
-    CHAR_FONT_SIZE: int = Field(default=14, gt=0, description="Characteristic node font size in pixels")
     WATERMARK_TEXT: str = Field(default="MindGraph", description="Watermark text on generated graphs")
 
 

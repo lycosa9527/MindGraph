@@ -123,7 +123,7 @@ router.include_router(live_translate_ws.router)
 # Knowledge Space router (has its own prefix)
 if KNOWLEDGE_SPACE_MODULE is not None:
     router.include_router(KNOWLEDGE_SPACE_MODULE.router)
-    logger.info("[API] Knowledge Space router registered at /api/knowledge-space")
+    logger.debug("[API] Knowledge Space router registered at /api/knowledge-space")
 else:
     logger.warning(
         "[API] Knowledge Space router NOT registered - import failed or router is None. "
@@ -133,13 +133,13 @@ else:
 # Document Summary — short /api/doc-summary/* paths (split from knowledge-space URLs)
 if DOC_SUMMARY_MODULE is not None:
     router.include_router(DOC_SUMMARY_MODULE.router)
-    logger.info("[API] Document Summary router registered at /api/doc-summary")
+    logger.debug("[API] Document Summary router registered at /api/doc-summary")
 else:
     logger.warning("[API] Document Summary router NOT registered - import failed or router is None.")
 
 if MINDBOT_MODULE is not None:
     router.include_router(MINDBOT_MODULE.router)
-    logger.info("[API] MindBot router registered at /api/mindbot")
+    logger.debug("[API] MindBot router registered at /api/mindbot")
 else:
     logger.warning("[API] MindBot router NOT registered - import failed or router is None.")
 

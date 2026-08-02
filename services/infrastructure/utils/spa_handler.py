@@ -142,7 +142,7 @@ def should_serve_vue_spa() -> bool:
     if mode == "auto":
         available = is_vue_spa_available()
         if available:
-            logger.info("Vue SPA build detected. Serving Vue frontend.")
+            logger.debug("Vue SPA build detected. Serving Vue frontend.")
         return available
 
     return False
@@ -185,7 +185,7 @@ def setup_vue_spa(app: FastAPI) -> bool:
             logger.info("Using legacy Jinja2 templates for frontend")
         return False
 
-    logger.info("Configuring Vue SPA from: %s", VUE_DIST_DIR)
+    logger.debug("Configuring Vue SPA from: %s", VUE_DIST_DIR)
 
     # Mount Vue static assets (must match script/link tags in dist/index.html)
     assets_dir = VUE_DIST_DIR / "assets"
@@ -203,7 +203,7 @@ def setup_vue_spa(app: FastAPI) -> bool:
                 assets_dir,
             )
         else:
-            logger.info("Mounted /assets with %s files from %s", len(asset_files), assets_dir)
+            logger.debug("Mounted /assets with %s files from %s", len(asset_files), assets_dir)
         app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="vue-assets")
 
     # Mount gallery folder for featured diagrams

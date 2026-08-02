@@ -258,6 +258,41 @@ async def release_startup_sms_notification_lock(lock_id: str) -> None:
         )
 
 
+LAUNCH_COMPLETE_LOG_LOCK_KEY = _keys.LOCK_LAUNCH_COMPLETE
+LAUNCH_COMPLETE_LOG_LOCK_TTL = _keys.TTL_LOCK_LAUNCH_COMPLETE
+
+
+async def try_claim_launch_complete_log() -> bool:
+    """
+    Claim exclusive right to emit APPLICATION LAUNCH COMPLETE for this boot.
+
+    Fail-open: if Redis is unavailable or SET NX errors, return True so each
+    worker may still log rather than crashing startup.
+    """
+    if not is_redis_available():
+        return True
+
+    redis = get_async_redis()
+    if redis is None:
+        return True
+
+    lock_id = _generate_lock_id()
+    try:
+        acquired = await redis.set(
+            LAUNCH_COMPLETE_LOG_LOCK_KEY,
+            lock_id,
+            nx=True,
+            ex=LAUNCH_COMPLETE_LOG_LOCK_TTL,
+        )
+        return bool(acquired)
+    except REDIS_ERRORS as exc:
+        logger.debug(
+            "[LIFESPAN] Launch-complete log lock failed (fail-open): %s",
+            exc,
+        )
+        return True
+
+
 @asynccontextmanager
 async def phone_registration_lock(phone: str):
     """

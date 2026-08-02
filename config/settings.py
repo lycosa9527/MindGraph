@@ -10,7 +10,6 @@ Features:
 - Comprehensive validation for required and optional settings
 - Default values for all configuration options
 - Support for Qwen LLM configuration
-- D3.js visualization customization options
 
 Environment Variables:
 - QWEN_API_KEY: Required for core functionality
@@ -36,7 +35,6 @@ from config.features_config import FeaturesConfigMixin
 from config.knowledge_config import KnowledgeConfigMixin
 from config.llm_config import LLMConfigMixin
 from config.rate_limiting import RateLimitingConfigMixin
-from config.visualization_config import VisualizationConfigMixin
 from utils.env_utils import ensure_utf8_env_file
 
 logger = logging.getLogger(__name__)
@@ -52,7 +50,6 @@ class Config(
     LLMConfigMixin,
     RateLimitingConfigMixin,
     KnowledgeConfigMixin,
-    VisualizationConfigMixin,
     FeaturesConfigMixin,
 ):
     """
@@ -63,7 +60,7 @@ class Config(
     """
 
     def print_config_summary(self) -> None:
-        """Log application, LLM, language, and visualization settings."""
+        """Log application, LLM, and language settings."""
         logger.info(
             "Configuration: v%s | %s:%s | lang=%s | Qwen classification=%s | Qwen generation=%s",
             self.version,
@@ -73,9 +70,6 @@ class Config(
             self.QWEN_MODEL_CLASSIFICATION,
             self.QWEN_MODEL_GENERATION,
         )
-        logger.debug("Configuration Summary:")
-        logger.debug("   Version: %s", self.version)
-        logger.debug("   FastAPI: %s:%s (Debug: %s)", self.host, self.port, self.debug)
         logger.debug("   Qwen: %s", self.QWEN_API_URL)
         endpoint = self.DASHSCOPE_ENDPOINT_SUMMARY
         logger.debug(
@@ -85,17 +79,6 @@ class Config(
             endpoint.get("workspace_id") or "—",
         )
         logger.debug("     - Realtime WS: %s", endpoint.get("realtime_ws_base"))
-        logger.debug("     - Classification: %s", self.QWEN_MODEL_CLASSIFICATION)
-        logger.debug("     - Generation: %s", self.QWEN_MODEL_GENERATION)
-
-        logger.debug("   Language: %s", self.GRAPH_LANGUAGE)
-        logger.debug(
-            "   Theme: %s / %s / %s",
-            self.D3_TOPIC_FILL,
-            self.D3_SIM_FILL,
-            self.D3_DIFF_FILL,
-        )
-        logger.debug("   Dimensions: %sx%spx", self.D3_BASE_WIDTH, self.D3_BASE_HEIGHT)
 
 
 # Create global configuration instance

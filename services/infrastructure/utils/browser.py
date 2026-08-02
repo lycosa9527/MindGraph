@@ -568,8 +568,3 @@ class BrowserContextManager:
             self.playwright = None
 
         logger.debug("Fresh browser instance cleaned up")
-
-
-# Only log from main worker to avoid duplicate messages
-if os.getenv("UVICORN_WORKER_ID") is None or os.getenv("UVICORN_WORKER_ID") == "0":
-    logger.debug("Browser manager module loaded")

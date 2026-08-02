@@ -146,8 +146,10 @@ TTL_USER_DAILY_TOKENS = 90_000  # 25 h — covers Beijing midnight rollover
 # ---------------------------------------------------------------------------
 LOCK = "lock:{resource}"
 LOCK_STARTUP_SMS = "lock:mindgraph:lifespan:startup_sms"
+LOCK_LAUNCH_COMPLETE = "lock:mindgraph:lifespan:launch_complete"
 TTL_LOCK_DEFAULT = 10
 TTL_LOCK_STARTUP = 300
+TTL_LOCK_LAUNCH_COMPLETE = 120
 
 # ---------------------------------------------------------------------------
 # Activity tracker  (redis_activity_tracker.py)

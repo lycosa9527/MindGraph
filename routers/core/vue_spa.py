@@ -273,10 +273,10 @@ async def vue_catch_all(request: Request, path: str):
     # Check if this is a file with extension - try to serve from dist root first
     if "." in path.split("/")[-1]:
         file_path = VUE_DIST_DIR / path
-        logger.info("[Catch-all] Checking file: %s (exists: %s)", file_path, file_path.exists())
+        logger.debug("[Catch-all] Checking file: %s (exists: %s)", file_path, file_path.exists())
         if file_path.exists() and file_path.is_file():
             media_type = media_type_for_vue_dist_relpath(path)
-            logger.info("[Catch-all] Serving file: %s", file_path)
+            logger.debug("[Catch-all] Serving file: %s", file_path)
             return FileResponse(path=str(file_path), media_type=media_type)
         # File doesn't exist, return 404
         logger.warning("[Catch-all] File not found: %s (VUE_DIST_DIR: %s)", file_path, VUE_DIST_DIR)
@@ -329,7 +329,7 @@ async def _serve_index(request: Request) -> HTMLResponse:
     if not index_path.exists():
         return _frontend_not_built_response()
 
-    logger.info("Serving Vue SPA index.html from: %s", index_path)
+    logger.debug("Serving Vue SPA index.html from: %s", index_path)
     nonce = generate_csp_nonce()
     setattr(request.state, CSP_NONCE_STATE_ATTR, nonce)
     # Header is the sole document CSP (nonce + COS connect-src). Strip Vite's

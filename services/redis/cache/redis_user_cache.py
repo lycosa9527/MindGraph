@@ -306,7 +306,6 @@ class UserCache:
             if cached:
                 try:
                     user = self._deserialize_user(cached)
-                    logger.debug("[UserCache] Cache hit for user ID %s", user_id)
                     return user
                 except (KeyError, ValueError, TypeError) as e:
                     logger.error(

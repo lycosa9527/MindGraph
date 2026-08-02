@@ -52,6 +52,10 @@ def main() -> int:
             continue
         if _is_allowed(py_path, root):
             continue
+        # Skip paths deleted in the working tree but still listed by git ls-files
+        # until the deletion is staged.
+        if not py_path.is_file():
+            continue
         for line_no, line in enumerate(py_path.read_text(encoding="utf-8").splitlines(), start=1):
             if _INLINE_SUPPRESSION.search(line):
                 violations.append(f"{py_path.relative_to(root)}:{line_no}:{line.strip()}")

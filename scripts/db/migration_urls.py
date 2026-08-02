@@ -25,6 +25,15 @@ RLS_HEAD_REVISION = "0053"
 _DEFAULT_RUNTIME = "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph"
 
 
+class _MigrationUrlLogState:
+    """Once-per-process guard for Runtime/Alembic DATABASE_URL INFO lines."""
+
+    logged: bool = False
+
+
+_MIGRATION_URL_LOG_STATE = _MigrationUrlLogState()
+
+
 def normalise_db_url(url: str) -> str:
     """Match config.database URL normalisation (psycopg3 scheme)."""
     for legacy in ("postgresql+psycopg2://", "postgresql://", "postgres://"):
@@ -212,8 +221,14 @@ def configure_rls_migration_environment() -> dict[str, str]:
         "migration_url": migration_url,
         "migration_source": source,
     }
-    logger.info("Runtime DATABASE_URL: %s", _mask_url(runtime))
-    logger.info("Alembic DATABASE_MIGRATION_URL: %s (%s)", _mask_url(migration_url), source)
+    if not _MIGRATION_URL_LOG_STATE.logged:
+        logger.info("Runtime DATABASE_URL: %s", _mask_url(runtime))
+        logger.info(
+            "Alembic DATABASE_MIGRATION_URL: %s (%s)",
+            _mask_url(migration_url),
+            source,
+        )
+        _MIGRATION_URL_LOG_STATE.logged = True
     return info
 
 

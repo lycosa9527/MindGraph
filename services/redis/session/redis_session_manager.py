@@ -471,12 +471,6 @@ class RedisSessionManager:
             True if session is valid, False otherwise
         """
         token_hash = _hash_token(token)
-        token_preview = token_hash[:8]
-        logger.debug(
-            "[Session] is_session_valid called: user=%s, token=%s...",
-            user_id,
-            token_preview,
-        )
 
         if not self._use_redis():
             logger.error(
@@ -501,33 +495,12 @@ class RedisSessionManager:
                 # Sessions are stored as timestamp:device_hash:token_hash
                 all_sessions = await redis.smembers(session_set_key)
                 session_count = len(all_sessions)
-                logger.debug(
-                    "[Session] Validating token against %s session(s): user=%s",
-                    session_count,
-                    user_id,
-                )
 
-                for idx, session_entry in enumerate(all_sessions):
-                    entry_ts, entry_device_hash, entry_token_hash = self._parse_session_entry(session_entry)
-                    age_seconds = time.time() - entry_ts if entry_ts > 0 else -1
-                    entry_device_preview = entry_device_hash[:8] if entry_device_hash else "none"
-                    entry_token_preview = entry_token_hash[:8]
-                    logger.debug(
-                        "[Session]   Session[%s]: device=%s..., token=%s..., age=%.0fs",
-                        idx,
-                        entry_device_preview,
-                        entry_token_preview,
-                        age_seconds,
-                    )
+                for session_entry in all_sessions:
+                    entry_token_hash = self._parse_session_entry(session_entry)[2]
                     if entry_token_hash == token_hash:
                         # Extend session TTL on successful validation (sliding expiration)
                         await redis.expire(session_set_key, SESSION_TTL_SECONDS)
-                        logger.debug(
-                            "[Session] Session VALID: user=%s, matched session[%s], age=%.0fs, TTL extended",
-                            user_id,
-                            idx,
-                            age_seconds,
-                        )
                         return True
 
                 # Token not found in any session
@@ -560,10 +533,6 @@ class RedisSessionManager:
             if is_valid:
                 # Extend session TTL on successful validation (sliding expiration)
                 await redis.expire(session_key, SESSION_TTL_SECONDS)
-                logger.info(
-                    "[Session] Session VALID (legacy mode): user=%s, TTL extended",
-                    user_id,
-                )
             else:
                 logger.info(
                     "[Session] Session INVALID (legacy mode): user=%s, token mismatch",

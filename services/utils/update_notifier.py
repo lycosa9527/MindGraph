@@ -49,7 +49,7 @@ class UpdateNotifier:
 
     def __init__(self):
         """Initialize the UpdateNotifier."""
-        logger.info("UpdateNotifier initialized (database storage)")
+        logger.debug("UpdateNotifier initialized (database storage)")
 
     async def _ensure_notification_exists(self, db: AsyncSession) -> UpdateNotification:
         """Ensure a notification record exists in the database (race-condition safe)."""
