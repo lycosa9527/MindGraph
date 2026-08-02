@@ -7,8 +7,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { Check, Loader2, RefreshCw } from '@lucide/vue'
 
-import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelCloseButton.vue'
-
+import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { PALETTE_MINDMAP_DRAG_MIME } from '@/composables/nodePalette/constants'
@@ -65,9 +64,7 @@ const paletteTabStripGlowClass = computed(() => {
   return 'brainstorm-tab-strip--requesting'
 })
 
-const showTabs = computed(
-  () => showStage2Tabs.value || sourceTabs.value.length > 1
-)
+const showTabs = computed(() => showStage2Tabs.value || sourceTabs.value.length > 1)
 
 function handleClose(): void {
   dismiss()
@@ -88,22 +85,26 @@ function handleCancel(): void {
   emit('close')
 }
 
-function getNodeCardStyle(suggestion: { source_llm?: string }, isSelected: boolean) {
+const LLM_SOURCE_LABELS: Record<string, string> = {
+  qwen: 'Qwen',
+  deepseek: 'DeepSeek',
+  doubao: 'Doubao',
+}
+
+function llmSourceLabel(sourceLlm?: string): string {
+  if (!sourceLlm) return ''
+  return LLM_SOURCE_LABELS[sourceLlm] ?? sourceLlm
+}
+
+function getNodeCardStyle(
+  suggestion: { source_llm?: string },
+  isSelected: boolean
+): Record<string, string> {
   const colors = suggestion.source_llm ? getLLMColor(suggestion.source_llm, uiStore.isDark) : null
-  const selectedStyle = {
-    borderColor: 'rgb(59, 130, 246)',
-    backgroundColor: 'rgb(239, 246, 255)',
-  }
-  if (!colors) {
-    return isSelected ? selectedStyle : {}
-  }
+  if (!colors) return {}
   if (isSelected) {
-    return {
-      ...selectedStyle,
-      borderLeftWidth: '4px',
-      borderLeftStyle: 'solid',
-      borderLeftColor: colors.text,
-    }
+    // Keep model identity as a thin accent; selected chrome is Swiss ink/stone.
+    return { '--brainstorm-llm-accent': colors.text }
   }
   return {
     borderColor: colors.border,
@@ -151,7 +152,11 @@ onMounted(async () => {
       if (skipSelectionWatch.value || !prev) return
       if (ids.join(',') === prev.join(',')) return
       if (!panelsStore.aiBrainstormPanel.isOpen) return
-      if (isLoading.value) return
+      if (isLoading.value || isLoadingMore.value) return
+      // Classic waterfall stage-2: picking branches on canvas must not wipe tabs.
+      if (panelsStore.aiBrainstormPanel.stage === 'children') return
+      // User already chose suggestion cards for Next — don't restart.
+      if (panelsStore.aiBrainstormPanel.selected.length > 0) return
       await startSession()
     }
   )
@@ -164,89 +169,87 @@ onUnmounted(() => {
 
 <template>
   <aside
-    class="ai-brainstorm-panel pointer-events-auto absolute inset-y-3 left-3 z-40 flex w-[26rem] max-w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+    class="mind-map-side-rail-panel ai-brainstorm-panel pointer-events-auto w-104 max-w-[calc(100%-1.5rem)]"
     :aria-label="t('canvas.mindMapSideToolbar.waterfall')"
   >
-    <header class="flex shrink-0 flex-col gap-2 border-b border-slate-100 bg-gray-50/50 px-3 py-3">
-      <div class="flex items-center justify-between gap-2">
-        <h3 class="truncate text-base font-semibold tracking-wide text-gray-800">
-          {{ t('canvas.mindMapSideToolbar.waterfall') }}
-        </h3>
-        <div class="flex shrink-0 items-center gap-1">
-          <span
-            v-if="selectedIds.length > 0"
-            class="mr-1 text-xs text-slate-500"
-          >
-            {{ selectedIds.length }} {{ t('nodePalette.selected') }}
-          </span>
-          <button
-            type="button"
-            class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-slate-100 hover:text-gray-600 disabled:opacity-40"
-            :disabled="isLoading"
-            :aria-label="t('nodePalette.refresh')"
-            @click="handleRefresh"
-          >
-            <RefreshCw
-              class="h-4 w-4"
-              :class="{ 'animate-spin': isLoading }"
-              :stroke-width="2"
-            />
-          </button>
-          <MindMapSidePanelCloseButton @close="handleClose" />
-        </div>
-      </div>
+    <MindMapSidePanelHeader
+      :title="t('canvas.mindMapSideToolbar.waterfall')"
+      :intro="t('canvas.mindMapWaterfall.panelHint')"
+      @close="handleClose"
+    >
+      <template #actions>
+        <span
+          v-if="selectedIds.length > 0"
+          class="mr-1 text-xs text-slate-500"
+        >
+          {{ selectedIds.length }} {{ t('nodePalette.selected') }}
+        </span>
+        <button
+          type="button"
+          class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-slate-100 hover:text-gray-600 disabled:opacity-40"
+          :disabled="isLoading"
+          :aria-label="t('nodePalette.refresh')"
+          @click="handleRefresh"
+        >
+          <RefreshCw
+            class="h-4 w-4"
+            :class="{ 'animate-spin': isLoading }"
+            :stroke-width="2"
+          />
+        </button>
+      </template>
 
-      <div
+      <template
         v-if="showTabs"
-        class="flex gap-1 overflow-x-auto rounded-lg bg-slate-100 p-0.5"
-        :class="paletteTabStripGlowClass"
+        #below
       >
-        <template v-if="showStage2Tabs">
-          <button
-            v-for="parent in stage2Parents"
-            :key="parent.id"
-            type="button"
-            class="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
-            :class="
-              activeTabId === parent.name
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-slate-600 hover:text-gray-900'
-            "
-            :title="parent.name"
-            @click="handleStageTab(parent.id, parent.name)"
-          >
-            {{ parent.name.length > 8 ? parent.name.slice(0, 7) + '…' : parent.name }}
-          </button>
-        </template>
-        <template v-else>
-          <button
-            v-for="tab in sourceTabs"
-            :key="tab.id"
-            type="button"
-            class="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
-            :class="
-              activeTabId === tab.id
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-slate-600 hover:text-gray-900'
-            "
-            @click="switchTab(tab.id)"
-          >
-            {{ tab.name }}
-          </button>
-        </template>
-      </div>
-    </header>
-
-    <p class="ai-brainstorm-panel__hint shrink-0 border-b border-slate-100 px-3 py-2 text-sm leading-relaxed text-gray-500">
-      {{ t('canvas.mindMapWaterfall.panelHint') }}
-    </p>
+        <div
+          class="flex gap-1 overflow-x-auto rounded-lg bg-slate-100 p-0.5"
+          :class="paletteTabStripGlowClass"
+        >
+          <template v-if="showStage2Tabs">
+            <button
+              v-for="parent in stage2Parents"
+              :key="parent.id"
+              type="button"
+              class="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+              :class="
+                activeTabId === parent.name || activeTabId === parent.id
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-slate-600 hover:text-gray-900'
+              "
+              :title="parent.name"
+              @click="handleStageTab(parent.id, parent.name)"
+            >
+              {{ parent.name.length > 8 ? parent.name.slice(0, 7) + '…' : parent.name }}
+            </button>
+          </template>
+          <template v-else>
+            <button
+              v-for="tab in sourceTabs"
+              :key="tab.id"
+              type="button"
+              class="shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
+              :class="
+                activeTabId === tab.id
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-slate-600 hover:text-gray-900'
+              "
+              @click="switchTab(tab.id)"
+            >
+              {{ tab.name }}
+            </button>
+          </template>
+        </div>
+      </template>
+    </MindMapSidePanelHeader>
 
     <div class="min-h-0 flex-1 overflow-y-auto px-3 py-3">
       <div
         v-if="isLoading && suggestions.length === 0"
         class="flex flex-col items-center justify-center gap-2 py-10 text-sm text-slate-500"
       >
-        <Loader2 class="h-6 w-6 animate-spin text-blue-500" />
+        <Loader2 class="h-6 w-6 animate-spin text-(--swiss-geek-cyan-ui,#0e7490)" />
         <span>{{ t('nodePalette.generatingIdeas') }}</span>
       </div>
 
@@ -279,25 +282,37 @@ onUnmounted(() => {
           v-for="suggestion in suggestions"
           :key="suggestion.id"
           draggable="true"
-          class="brainstorm-suggestion-card cursor-grab rounded-xl border border-slate-200 px-3 py-2.5 transition-shadow active:cursor-grabbing hover:shadow-sm"
-          :class="{ 'ring-2 ring-blue-400 ring-offset-1': selectedIds.includes(suggestion.id) }"
+          class="brainstorm-suggestion-card"
+          :class="{
+            'brainstorm-suggestion-card--selected': selectedIds.includes(suggestion.id),
+          }"
           :style="getNodeCardStyle(suggestion, selectedIds.includes(suggestion.id))"
           @click="toggleSelection(suggestion.id)"
           @dragstart="handleDragStart($event, suggestion)"
           @dragend="handleDragEnd"
         >
-          <div class="flex items-start gap-2">
-            <div
+          <span
+            class="brainstorm-suggestion-card__check"
+            aria-hidden="true"
+          >
+            <Check
               v-if="selectedIds.includes(suggestion.id)"
-              class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500"
-            >
-              <Check class="h-3 w-3 text-white" />
-            </div>
+              class="h-3 w-3"
+              :stroke-width="2.5"
+            />
+          </span>
+          <div class="min-w-0 flex-1">
             <span
               dir="auto"
-              class="block min-w-0 flex-1 text-sm leading-snug text-gray-800 line-clamp-3 break-words"
+              class="brainstorm-suggestion-card__text"
             >
               {{ suggestion.text }}
+            </span>
+            <span
+              v-if="suggestion.source_llm"
+              class="brainstorm-suggestion-card__source"
+            >
+              {{ llmSourceLabel(suggestion.source_llm) }}
             </span>
           </div>
         </div>
@@ -308,7 +323,7 @@ onUnmounted(() => {
         >
           <button
             type="button"
-            class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--ghost"
             @click="loadNextBatch"
           >
             {{ t('nodePalette.loadMore') }}
@@ -321,29 +336,29 @@ onUnmounted(() => {
           <Loader2 class="h-5 w-5 animate-spin text-blue-500" />
         </div>
 
-        <p class="mt-2 rounded-lg bg-slate-50 px-2.5 py-2 text-[11px] leading-relaxed text-slate-500">
-          {{
-            showNextButton
-              ? t('nodePalette.helpNext')
-              : t('nodePalette.helpFinish')
-          }}
+        <p
+          class="mt-2 rounded-lg bg-slate-50 px-2.5 py-2 text-[11px] leading-relaxed text-slate-500"
+        >
+          {{ showNextButton ? t('nodePalette.helpNext') : t('nodePalette.helpFinish') }}
           <br />
           {{ t('canvas.mindMapWaterfall.dragHint') }}
         </p>
       </div>
     </div>
 
-    <footer class="flex shrink-0 justify-center gap-2 border-t border-slate-100 px-3 py-3">
+    <footer
+      class="flex shrink-0 justify-center gap-2 border-t border-(--swiss-border,#e7e5e4) px-3 py-3"
+    >
       <button
         type="button"
-        class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        class="mind-map-side-rail-btn mind-map-side-rail-btn--secondary min-w-22"
         @click="handleCancel"
       >
         {{ t('nodePalette.cancel') }}
       </button>
       <button
         type="button"
-        class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40"
+        class="mind-map-side-rail-btn mind-map-side-rail-btn--primary min-w-22"
         :disabled="selectedIds.length === 0"
         @click="handleFinish"
       >
@@ -354,23 +369,95 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.ai-brainstorm-panel {
-  max-height: calc(100% - 1.5rem);
-}
-
 .ai-brainstorm-panel__hint {
   white-space: pre-line;
 }
 
 .brainstorm-tab-strip--requesting {
-  box-shadow: inset 0 -2px 0 rgb(59 130 246 / 0.45);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--swiss-geek-cyan-ui, #0e7490) 55%, transparent);
 }
 
 .brainstorm-tab-strip--streaming {
-  box-shadow: inset 0 -2px 0 rgb(34 197 94 / 0.55);
+  box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--swiss-geek-teal-ui, #0f766e) 60%, transparent);
 }
 
 .brainstorm-suggestion-card {
+  --brainstorm-llm-accent: var(--swiss-ink, #1c1917);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  cursor: grab;
   user-select: none;
+  border-radius: 0.75rem;
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  background: var(--swiss-surface, #ffffff);
+  padding: 0.625rem 0.75rem;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.brainstorm-suggestion-card:hover {
+  border-color: var(--swiss-border-strong, #d6d3d1);
+  box-shadow: 0 1px 2px rgb(28 25 23 / 4%);
+}
+
+.brainstorm-suggestion-card:active {
+  cursor: grabbing;
+}
+
+.brainstorm-suggestion-card--selected {
+  border-color: var(--swiss-ink, #1c1917);
+  background: var(--swiss-inset, #fafaf9);
+  box-shadow: inset 3px 0 0 var(--brainstorm-llm-accent);
+}
+
+.brainstorm-suggestion-card--selected:hover {
+  border-color: var(--swiss-ink, #1c1917);
+  background: var(--swiss-hover, #f5f5f4);
+  box-shadow: inset 3px 0 0 var(--brainstorm-llm-accent);
+}
+
+.brainstorm-suggestion-card__check {
+  display: inline-flex;
+  height: 1.125rem;
+  width: 1.125rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.125rem;
+  border-radius: 9999px;
+  border: 1.5px solid var(--swiss-border-strong, #d6d3d1);
+  background: var(--swiss-surface, #ffffff);
+  color: #fafaf9;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.brainstorm-suggestion-card--selected .brainstorm-suggestion-card__check {
+  border-color: var(--swiss-ink, #1c1917);
+  background: var(--swiss-ink, #1c1917);
+}
+
+.brainstorm-suggestion-card__text {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+  line-height: 1.375;
+  color: var(--swiss-ink, #1c1917);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.brainstorm-suggestion-card__source {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--swiss-muted, #78716c);
 }
 </style>

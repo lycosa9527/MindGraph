@@ -1,0 +1,80 @@
+/**
+ * Mind-map side-rail panel shell + Swiss stone buttons.
+ * Bottom inset matches FIT_PADDING.BOTTOM_UI_HEIGHT_PX (88) so panels clear the bottom toolbox.
+ */
+
+.mind-map-side-rail-panel {
+  position: absolute;
+  top: 0.75rem;
+  bottom: 88px;
+  left: 0.75rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  background: var(--swiss-surface, #ffffff);
+  box-shadow: 0 1px 2px rgb(28 25 23 / 0.06);
+}
+
+.mind-map-side-rail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease,
+    color 0.15s ease;
+}
+
+.mind-map-side-rail-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mind-map-side-rail-btn--secondary {
+  border: 1px solid var(--swiss-border-strong, #d6d3d1);
+  background: var(--swiss-surface, #ffffff);
+  color: var(--swiss-body, #44403c);
+}
+
+.mind-map-side-rail-btn--secondary:hover:not(:disabled) {
+  border-color: var(--swiss-body, #44403c);
+  background: var(--swiss-hover, #f5f5f4);
+}
+
+.mind-map-side-rail-btn--primary {
+  border: 1px solid var(--swiss-ink, #1c1917);
+  background: var(--swiss-ink, #1c1917);
+  color: #fafaf9;
+}
+
+.mind-map-side-rail-btn--primary:hover:not(:disabled) {
+  background: #292524;
+  border-color: #292524;
+}
+
+.mind-map-side-rail-btn--ghost {
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  background: var(--swiss-inset, #fafaf9);
+  color: var(--swiss-muted, #78716c);
+  font-weight: 500;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
+}
+
+.mind-map-side-rail-btn--ghost:hover:not(:disabled) {
+  border-color: var(--swiss-border-strong, #d6d3d1);
+  background: var(--swiss-hover, #f5f5f4);
+  color: var(--swiss-ink, #1c1917);
+}

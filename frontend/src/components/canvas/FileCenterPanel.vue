@@ -210,7 +210,7 @@ function chunkingLabel(doc: KnowledgeDocument): string {
 
 <template>
   <aside
-    class="file-center-panel pointer-events-auto absolute inset-y-3 left-3 z-40 flex w-80 flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm"
+    class="mind-map-side-rail-panel file-center-panel pointer-events-auto w-80"
     :aria-label="t('canvas.mindMapSideToolbar.documentSummary')"
   >
     <header
@@ -519,10 +519,6 @@ function chunkingLabel(doc: KnowledgeDocument): string {
 </template>
 
 <style scoped>
-.file-center-panel {
-  max-height: calc(100% - 1.5rem);
-}
-
 .file-center-tab-strip {
   display: flex;
   gap: 4px;

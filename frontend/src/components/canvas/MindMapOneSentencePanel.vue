@@ -8,7 +8,7 @@ import { ElAvatar } from 'element-plus'
 
 import { Camera, Mic, Send } from '@lucide/vue'
 
-import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelCloseButton.vue'
+import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
 import OneSentenceKittyAvatar from '@/components/canvas/OneSentenceKittyAvatar.vue'
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
 
@@ -111,20 +111,14 @@ function handleInputKeydown(event: KeyboardEvent): void {
 
 <template>
   <aside
-    class="mind-map-one-sentence-panel pointer-events-auto absolute inset-y-3 left-3 z-40 flex w-[22rem] flex-col rounded-2xl border border-slate-200/90 bg-white shadow-sm"
+    class="mind-map-side-rail-panel mind-map-one-sentence-panel pointer-events-auto w-88"
     :aria-label="t('canvas.mindMapSideToolbar.oneSentence')"
   >
-    <header class="flex shrink-0 flex-col gap-2 border-b border-slate-100 px-3 py-3">
-      <div class="flex items-center justify-between gap-2">
-        <h3 class="truncate text-base font-semibold text-slate-800">
-          {{ t('canvas.mindMapSideToolbar.oneSentence') }}
-        </h3>
-        <MindMapSidePanelCloseButton @close="handleClose" />
-      </div>
-      <p class="text-sm leading-relaxed text-gray-500">
-        {{ t('canvas.mindMapSideToolbar.oneSentenceIntro') }}
-      </p>
-    </header>
+    <MindMapSidePanelHeader
+      :title="t('canvas.mindMapSideToolbar.oneSentence')"
+      :intro="t('canvas.mindMapSideToolbar.oneSentenceIntro')"
+      @close="handleClose"
+    />
 
     <div
       :ref="setChatScrollEl"
@@ -255,7 +249,7 @@ function handleInputKeydown(event: KeyboardEvent): void {
               @click="openPhotoPicker"
             >
               <Camera
-                class="h-[18px] w-[18px]"
+                class="h-4.5 w-4.5"
                 :stroke-width="2"
               />
             </button>
@@ -268,7 +262,7 @@ function handleInputKeydown(event: KeyboardEvent): void {
               @click="handleMic"
             >
               <Mic
-                class="h-[18px] w-[18px]"
+                class="h-4.5 w-4.5"
                 :stroke-width="2"
               />
             </button>
@@ -280,7 +274,7 @@ function handleInputKeydown(event: KeyboardEvent): void {
               @click="handleSend"
             >
               <Send
-                class="h-[18px] w-[18px]"
+                class="h-4.5 w-4.5"
                 :stroke-width="2"
               />
             </button>
@@ -293,7 +287,6 @@ function handleInputKeydown(event: KeyboardEvent): void {
 
 <style scoped>
 .mind-map-one-sentence-panel {
-  max-height: calc(100% - 1.5rem);
   overflow: hidden;
 }
 
@@ -625,26 +618,27 @@ function handleInputKeydown(event: KeyboardEvent): void {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: none;
+  border: 1px solid var(--swiss-ink, #1c1917);
   border-radius: 10px;
-  background: linear-gradient(135deg, rgb(124 58 237) 0%, rgb(79 70 229) 100%);
-  color: white;
+  background: var(--swiss-ink, #1c1917);
+  color: #fafaf9;
   cursor: pointer;
   transition:
     opacity 0.15s ease,
-    transform 0.15s ease,
-    background 0.15s ease;
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .one-sentence-input-send:hover:not(:disabled) {
-  transform: translateY(-1px);
+  background: #292524;
+  border-color: #292524;
 }
 
 .one-sentence-input-send:disabled {
-  background: #e5e7eb;
-  color: #9ca3af;
+  border-color: var(--swiss-border, #e7e5e4);
+  background: var(--swiss-inset, #fafaf9);
+  color: var(--swiss-subtle, #a8a29e);
   cursor: not-allowed;
-  transform: none;
 }
 
 @keyframes one-sentence-stream-pulse {

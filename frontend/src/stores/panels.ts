@@ -72,7 +72,11 @@ export const usePanelsStore = defineStore('panels', () => {
 
   // Getters
   const anyPanelOpen = computed(
-    () => mindmate.value.open || nodePalette.value.open || property.value.open
+    () =>
+      mindmate.value.open ||
+      nodePalette.value.open ||
+      aiBrainstorm.value.open ||
+      property.value.open
   )
   const isAnyPanelOpen = anyPanelOpen // Alias
 
@@ -80,6 +84,7 @@ export const usePanelsStore = defineStore('panels', () => {
     let count = 0
     if (mindmate.value.open) count++
     if (nodePalette.value.open) count++
+    if (aiBrainstorm.value.open) count++
     if (property.value.open) count++
     return count
   })
@@ -289,6 +294,7 @@ export const usePanelsStore = defineStore('panels', () => {
     }
     if (!wasOpen) {
       eventBus.emit('panel:opened', { panel: 'aiBrainstorm', isOpen: true, options })
+      eventBus.emit('state:panel_opened', { panel: 'aiBrainstorm', state: aiBrainstorm.value })
       eventBus.emit('ai_brainstorm:opened', { diagramKey, hasRestoredSession })
     }
   }
@@ -339,6 +345,12 @@ export const usePanelsStore = defineStore('panels', () => {
     aiBrainstorm.value.open = false
     if (wasOpen) {
       eventBus.emit('panel:closed', { panel: 'aiBrainstorm', isOpen: false })
+      eventBus.emit('state:panel_closed', { panel: 'aiBrainstorm' })
+      const diagramStore = useDiagramStore()
+      const uiStore = useUIStore()
+      if (!isManualViewportMode(diagramStore, uiStore)) {
+        setTimeout(() => eventBus.emit('view:fit_diagram_requested', {}), 300)
+      }
     }
   }
 
@@ -563,6 +575,7 @@ export const usePanelsStore = defineStore('panels', () => {
   function closeAllPanels(): void {
     closeMindmate()
     closeNodePalette()
+    closeAiBrainstorm()
     closeProperty()
     eventBus.emit('panel:all_closed', {})
   }

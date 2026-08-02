@@ -1,29 +1,15 @@
-import { ref, watch } from 'vue'
+/**
+ * Thin adapter over useCanvasExportStore for existing call sites.
+ */
+import { storeToRefs } from 'pinia'
 
-import {
-  DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS,
-  loadCanvasWorksheetTextOptions,
-  saveCanvasWorksheetTextOptions,
-  type CanvasWorksheetTextOptions,
-} from '@/config/canvasWorksheetText'
-
-const worksheetTextOptions = ref<CanvasWorksheetTextOptions>(loadCanvasWorksheetTextOptions())
-
-watch(
-  worksheetTextOptions,
-  (value) => {
-    saveCanvasWorksheetTextOptions(value)
-  },
-  { deep: true }
-)
+import { useCanvasExportStore } from '@/stores/canvasExport'
 
 export function useCanvasWorksheetText() {
-  function resetWorksheetTextOptions(): void {
-    worksheetTextOptions.value = { ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS }
-  }
-
+  const store = useCanvasExportStore()
+  const { worksheetTextOptions } = storeToRefs(store)
   return {
     worksheetTextOptions,
-    resetWorksheetTextOptions,
+    resetWorksheetTextOptions: store.resetWorksheetTextOptions,
   }
 }

@@ -150,7 +150,8 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
   return response
 }
 
-function parseApiErrorDetail(payload: unknown, fallback: string): string {
+/** Extract a human-readable message from FastAPI `{ detail }` error payloads. */
+export function parseApiErrorDetail(payload: unknown, fallback: string): string {
   if (payload && typeof payload === 'object' && 'detail' in payload) {
     const detail = (payload as { detail?: unknown }).detail
     if (typeof detail === 'string' && detail.trim()) {
@@ -171,6 +172,16 @@ function parseApiErrorDetail(payload: unknown, fallback: string): string {
         })
         .filter((line): line is string => Boolean(line))
       if (lines.length > 0) return lines.join('\n')
+    }
+    if (detail && typeof detail === 'object') {
+      const code = (detail as { code?: unknown }).code
+      const message = (detail as { message?: unknown }).message
+      if (typeof message === 'string' && message.trim()) {
+        return message
+      }
+      if (typeof code === 'string' && code.trim()) {
+        return code
+      }
     }
   }
   return fallback

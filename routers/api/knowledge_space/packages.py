@@ -40,6 +40,7 @@ from models.responses import (
     PackageListResponse,
     PackageResponse,
 )
+from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from services.knowledge import package_wiki_store
 from services.knowledge.audio_hosting import resolve_audio_path
 from services.knowledge.doc_summary_ingest import DOC_SUMMARY_SOURCE, DocSummaryIngestService
@@ -48,7 +49,6 @@ from services.knowledge.doc_summary_limits import (
     content_too_long_detail,
 )
 from services.knowledge.knowledge_package_service import KnowledgePackageService
-from services.monitoring.module_activity import schedule_module_activity
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.package_pipeline_status import (
     WIKI_STATUS_DISABLED,
@@ -57,7 +57,8 @@ from services.knowledge.package_pipeline_status import (
     derive_document_wiki_statuses,
     derive_wiki_status,
 )
-from services.knowledge.url_page_fetch import fetch_url_page_text
+from services.knowledge.url_page_fetch import fallback_title_from_url, fetch_url_page_text
+from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from tasks.knowledge_space_tasks import process_document_task
 from utils.auth import get_current_user
@@ -505,6 +506,13 @@ async def ingest_web_url(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Fetch a public URL server-side and ingest as a web snapshot."""
+    identifier = get_rate_limit_identifier(current_user, http_request)
+    await check_endpoint_rate_limit(
+        "doc_summary_ingest_web_url",
+        identifier,
+        max_requests=20,
+        window_seconds=600,
+    )
     service = KnowledgePackageService(db, current_user.id)
     package = await service.get_package(package_id)
     if not package:
@@ -516,7 +524,7 @@ async def ingest_web_url(
             return _package_document_response(current_user.id, package_id, existing, package_source=package.source)
 
         page_content, page_title = await fetch_url_page_text(page_url)
-        title = page_title or page_url
+        title = page_title or fallback_title_from_url(page_url)
         if package.source == "doc_summary":
             ingest = DocSummaryIngestService(db, current_user.id)
             document = await ingest.ingest_text(

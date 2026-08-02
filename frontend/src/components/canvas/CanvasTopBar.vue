@@ -11,6 +11,8 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { storeToRefs } from 'pinia'
+
 import {
   ElButton,
   ElDropdown,
@@ -40,7 +42,7 @@ import { useLanguage } from '@/composables'
 import { CANVAS_TOP_BAR } from '@/config/uiConfig'
 import { CANVAS_STANDARD_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM } from '@/config/canvasExportMenu'
 import { isPdfExportCommand } from '@/utils/diagramPdfExport'
-import { useAuthStore, useDiagramStore, usePanelsStore } from '@/stores'
+import { useAuthStore, useCanvasExportStore, useDiagramStore, usePanelsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
@@ -252,9 +254,15 @@ function handleSlotModalCancel(): void {
   showSlotFullModal.value = false
 }
 
+const canvasExportStore = useCanvasExportStore()
+const { mergedExportOptions } = storeToRefs(canvasExportStore)
+
 // Export menu actions - emit event for DiagramCanvas to handle
 function handleExportCommand(command: string) {
-  eventBus.emit('toolbar:export_requested', { format: command })
+  eventBus.emit('toolbar:export_requested', {
+    format: command,
+    options: { ...mergedExportOptions.value },
+  })
 }
 
 function handleOpenMindmate() {
@@ -291,7 +299,7 @@ async function handleReset() {
           size="small"
           @click="handleBack"
         >
-          <ArrowLeft class="w-[18px] h-[18px] mg-icon-flip-rtl" />
+          <ArrowLeft class="w-4.5 h-4.5 mg-icon-flip-rtl" />
         </ElButton>
       </ElTooltip>
 
@@ -343,7 +351,7 @@ async function handleReset() {
 
     <!-- Col 2: editing toolbar (hidden for viewers) -->
     <div
-      class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-[5]"
+      class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-5"
     >
       <span
         v-if="props.isViewer"

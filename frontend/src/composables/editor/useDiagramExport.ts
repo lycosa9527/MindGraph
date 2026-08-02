@@ -8,10 +8,14 @@ import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composa
 import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
-import { hasActiveWorksheetHeader } from '@/config/canvasWorksheetText'
+import {
+  hasActiveWorksheetHeader,
+  resolveWorksheetTopicText,
+} from '@/config/canvasWorksheetText'
+import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'
-import { apiRequestJson } from '@/utils/apiClient'
+import { apiRequestJson, apiUpload } from '@/utils/apiClient'
 import { loadHtmlToImageModule } from '@/utils/diagramExportHtmlToImage'
 import {
   isLearningSheetRasterCapture,
@@ -92,6 +96,11 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
 
   const isExporting = ref(false)
 
+  function resolveExportOptions(exportOptions?: CanvasExportOptions): CanvasExportOptions {
+    // Do not inject store worksheet into plain PDF — headers are opt-in on the payload.
+    return mergeCanvasExportOptions(exportOptions)
+  }
+
   async function waitForExportFonts(): Promise<void> {
     await waitForDiagramExportFonts(uiStore.promptLanguage)
   }
@@ -112,7 +121,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   async function buildA4PdfFromImages(
     images: PdfRasterCapture[],
     orientation: PdfPageOrientation,
-    headerCapture: PdfRasterCapture | null = null
+    headerCapture: PdfRasterCapture | null = null,
+    exportOptions?: CanvasExportOptions
   ): Promise<InstanceType<(typeof import('jspdf'))['jsPDF']>> {
     const { jsPDF } = await import('jspdf')
     const pdf = new jsPDF({
@@ -120,6 +130,12 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       unit: 'mm',
       format: 'a4',
     })
+    const worksheetText = resolveExportOptions(exportOptions).worksheetText
+    const diagramOffsetX = worksheetText?.diagramOffsetX ?? 0
+    const diagramOffsetY = worksheetText?.diagramOffsetY ?? 0
+    const diagramScale = worksheetText?.diagramScale ?? 1
+    const hasCustomPlacement =
+      diagramOffsetX !== 0 || diagramOffsetY !== 0 || diagramScale !== 1
     for (let index = 0; index < images.length; index += 1) {
       const image = images[index]
       if (index > 0) {
@@ -141,7 +157,28 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
           compressed.height,
           headerCapture.dataUrl,
           headerCapture.width,
-          headerCapture.height
+          headerCapture.height,
+          10,
+          4,
+          diagramOffsetX,
+          diagramOffsetY,
+          diagramScale
+        )
+      } else if (index === 0 && hasCustomPlacement && !headerCapture) {
+        // No header, but user placed/resized the diagram — honor transform on page 1.
+        addWorksheetPageToPdf(
+          pdf,
+          compressed.dataUrl,
+          compressed.width,
+          compressed.height,
+          null,
+          0,
+          0,
+          10,
+          4,
+          diagramOffsetX,
+          diagramOffsetY,
+          diagramScale
         )
       } else {
         addRasterImageToA4PdfPage(pdf, compressed.dataUrl, compressed.width, compressed.height)
@@ -163,11 +200,19 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   async function resolveWorksheetHeaderCapture(
     exportOptions?: CanvasExportOptions
   ): Promise<PdfRasterCapture | null> {
-    const worksheetText = exportOptions?.worksheetText
-    if (!hasActiveWorksheetHeader(worksheetText) || !worksheetText) {
+    const merged = resolveExportOptions(exportOptions)
+    const worksheetText = merged.worksheetText
+    if (!worksheetText || !hasActiveWorksheetHeader(worksheetText)) {
       return null
     }
-    return captureWorksheetHeader(getTitle(), worksheetText, worksheetHeaderLabels())
+    const topic = resolveWorksheetTopicText(worksheetText, getTitle())
+    try {
+      return await captureWorksheetHeader(topic, worksheetText, worksheetHeaderLabels())
+    } catch (error) {
+      console.error('[worksheetHeader] Failed to capture header for PDF:', error)
+      notify.warning(t('canvas.worksheetText.headerCaptureFailed'))
+      return null
+    }
   }
 
   function resolvePdfOrientation(
@@ -271,7 +316,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     diagramStore.setLearningSheetShowAnswers(savedShowAnswers)
 
     const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
-    const pdf = await buildA4PdfFromImages(captures, orientation, headerCapture)
+    const pdf = await buildA4PdfFromImages(captures, orientation, headerCapture, exportOptions)
     const baseName = sanitizeFilename(getTitle())
     const timestamp = new Date().toISOString().slice(0, 10)
     pdf.save(`${baseName}_${timestamp}.pdf`)
@@ -287,20 +332,22 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       return
     }
 
+    const mergedOptions = resolveExportOptions(exportOptions)
+
     isExporting.value = true
     try {
       await waitForExportFonts()
 
       if (isLearningSheetRasterCapture(diagramStore)) {
-        const orientation = resolvePdfOrientation(format, container, exportOptions)
-        await exportLearningSheetPdf(container, orientation, format, exportOptions)
+        const orientation = resolvePdfOrientation(format, container, mergedOptions)
+        await exportLearningSheetPdf(container, orientation, format, mergedOptions)
         return
       }
 
-      const capture = await captureContainerForPdf(container, exportOptions)
-      const orientation = resolvePdfOrientation(format, container, exportOptions, capture)
-      const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
-      const pdf = await buildA4PdfFromImages([capture], orientation, headerCapture)
+      const capture = await captureContainerForPdf(container, mergedOptions)
+      const orientation = resolvePdfOrientation(format, container, mergedOptions, capture)
+      const headerCapture = await resolveWorksheetHeaderCapture(mergedOptions)
+      const pdf = await buildA4PdfFromImages([capture], orientation, headerCapture, mergedOptions)
       const baseName = sanitizeFilename(getTitle())
       const timestamp = new Date().toISOString().slice(0, 10)
       pdf.save(`${baseName}_${timestamp}.pdf`)
@@ -340,7 +387,76 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
   }
 
+  async function exportAsWorksheetDocx(exportOptions?: CanvasExportOptions): Promise<void> {
+    const container = getContainer()
+    if (!container) {
+      notify.warning(t('canvas.export.canvasNotReady'))
+      return
+    }
+
+    const mergedOptions = resolveExportOptions(exportOptions)
+    const worksheetText = mergedOptions.worksheetText
+    if (!worksheetText) {
+      notify.warning(t('canvas.export.docxError'))
+      return
+    }
+
+    isExporting.value = true
+    try {
+      await waitForExportFonts()
+      const capture = await captureContainerForPdf(container, mergedOptions)
+      const imageResponse = await fetch(capture.dataUrl)
+      const diagramBlob = await imageResponse.blob()
+      const title = getTitle()
+      const formData = new FormData()
+      formData.append('diagram', diagramBlob, 'diagram.png')
+      formData.append(
+        'meta',
+        JSON.stringify({
+          title,
+          layout: mergedOptions.layout,
+          showTopic: worksheetText.showTopic,
+          showName: worksheetText.showName,
+          showClass: worksheetText.showClass,
+          showDate: worksheetText.showDate,
+          showInstruction: worksheetText.showInstruction,
+          topicText: resolveWorksheetTopicText(worksheetText, title),
+          instructionText: worksheetText.instructionText,
+          diagramOffsetX: worksheetText.diagramOffsetX,
+          diagramOffsetY: worksheetText.diagramOffsetY,
+          diagramScale: worksheetText.diagramScale,
+          labels: {
+            name: t('canvas.worksheetText.fieldName'),
+            className: t('canvas.worksheetText.fieldClass'),
+            date: t('canvas.worksheetText.fieldDate'),
+            instructionPrefix: t('canvas.worksheetText.instructionPrefix'),
+            defaultInstruction: t('canvas.worksheetText.defaultInstruction'),
+          },
+        })
+      )
+
+      const response = await apiUpload('/api/export_worksheet_docx', formData)
+      if (!response.ok) {
+        throw new Error(`DOCX export failed (${response.status})`)
+      }
+      const docxBlob = await response.blob()
+      const baseName = sanitizeFilename(title)
+      const timestamp = new Date().toISOString().slice(0, 10)
+      triggerDownloadBlob(docxBlob, `${baseName}_${timestamp}.docx`)
+      logDiagramExport('worksheet_docx')
+      notify.success(t('canvas.export.docxSuccess'))
+    } catch (error) {
+      console.error('Worksheet DOCX export failed:', error)
+      notify.error(t('canvas.export.docxError'))
+    } finally {
+      isExporting.value = false
+    }
+  }
+
   async function exportByFormat(format: string, exportOptions?: CanvasExportOptions): Promise<void> {
+    if (isExporting.value) {
+      return
+    }
     switch (format) {
       case 'png':
         await exportAsPng(exportOptions)
@@ -352,6 +468,9 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       case 'pdf_landscape':
       case 'pdf_portrait':
         await exportAsPdf(format, exportOptions)
+        break
+      case 'worksheet_docx':
+        await exportAsWorksheetDocx(exportOptions)
         break
       case 'mg':
         await exportAsMgFile()
@@ -369,6 +488,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     exportAsPng,
     exportAsSvg,
     exportAsPdf,
+    exportAsWorksheetDocx,
     exportAsMgFile,
     exportByFormat,
     isExporting,

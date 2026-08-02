@@ -17,11 +17,12 @@ import { notify } from '@/composables/core/notifications'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { documentNeedsPipelinePoll } from '@/composables/knowledge/usePipelineStatusBadge'
 import {
+  DOC_SUMMARY_CONTENT_TOO_LONG_CODE,
   DOC_SUMMARY_DOCUMENTS_BASE,
   DOC_SUMMARY_PACKAGES_BASE,
 } from '@/config/docSummaryApi'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
-import { apiRequestJson, apiUpload } from '@/utils/apiClient'
+import { apiRequestJson, apiUpload, parseApiErrorDetail } from '@/utils/apiClient'
 
 // ============================================================================
 // Types
@@ -194,6 +195,17 @@ export function useFileCenterMutations(options?: { apiMode?: FileCenterApiMode }
   const { t } = useLanguage()
   const { packagesBase, documentsBase } = resolveApiBases(options?.apiMode ?? 'knowledge_space')
 
+  function mutationErrorMessage(error: Error, fallback: string): string {
+    const raw = error.message || ''
+    if (
+      raw.includes(DOC_SUMMARY_CONTENT_TOO_LONG_CODE) ||
+      raw.includes('model input limit')
+    ) {
+      return t('canvas.mindMapDocumentSummary.contentTooLongForModel')
+    }
+    return raw || fallback
+  }
+
   function invalidatePackages(): void {
     void queryClient.invalidateQueries({ queryKey: fileCenterKeys.packages() })
   }
@@ -239,13 +251,14 @@ export function useFileCenterMutations(options?: { apiMode?: FileCenterApiMode }
         formData
       )
       if (!response.ok) {
-        const error = await response.json().catch(() => null)
-        throw new Error(error?.detail || t('fileCenter.uploadFailed'))
+        const payload = await response.json().catch(() => null)
+        throw new Error(parseApiErrorDetail(payload, t('fileCenter.uploadFailed')))
       }
       return (await response.json()) as KnowledgeDocument
     },
     onSuccess: (_data, vars) => invalidatePackage(vars.packageId),
-    onError: (error: Error) => notify.error(error.message || t('fileCenter.uploadFailed')),
+    onError: (error: Error) =>
+      notify.error(mutationErrorMessage(error, t('fileCenter.uploadFailed'))),
   })
 
   const ingestText = useMutation({
@@ -255,7 +268,8 @@ export function useFileCenterMutations(options?: { apiMode?: FileCenterApiMode }
         { method: 'POST', body: JSON.stringify(vars.payload) }
       ),
     onSuccess: (_data, vars) => invalidatePackage(vars.packageId),
-    onError: (error: Error) => notify.error(error.message || t('fileCenter.ingestFailed')),
+    onError: (error: Error) =>
+      notify.error(mutationErrorMessage(error, t('fileCenter.ingestFailed'))),
   })
 
   const ingestWeb = useMutation({
@@ -265,7 +279,8 @@ export function useFileCenterMutations(options?: { apiMode?: FileCenterApiMode }
         body: JSON.stringify(vars.payload),
       }),
     onSuccess: (_data, vars) => invalidatePackage(vars.packageId),
-    onError: (error: Error) => notify.error(error.message || t('fileCenter.ingestFailed')),
+    onError: (error: Error) =>
+      notify.error(mutationErrorMessage(error, t('fileCenter.ingestFailed'))),
   })
 
   const ingestWebUrl = useMutation({
@@ -275,7 +290,8 @@ export function useFileCenterMutations(options?: { apiMode?: FileCenterApiMode }
         { method: 'POST', body: JSON.stringify(vars.payload) }
       ),
     onSuccess: (_data, vars) => invalidatePackage(vars.packageId),
-    onError: (error: Error) => notify.error(error.message || t('fileCenter.ingestFailed')),
+    onError: (error: Error) =>
+      notify.error(mutationErrorMessage(error, t('fileCenter.ingestFailed'))),
   })
 
   const deleteSource = useMutation({

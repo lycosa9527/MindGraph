@@ -61,10 +61,25 @@ logger = logging.getLogger(__name__)
 MAX_REQUEST_BODY_SIZE = 5 * 1024 * 1024  # 5MB
 # Showcase publish: doc + optional videos (see showcase_helpers VIDEO_MAX_BYTES)
 SHOWCASE_MAX_BODY_SIZE = 105 * 1024 * 1024  # 100MB + multipart overhead
+# Learning-sheet DOCX: up to 20MB diagram PNG + multipart meta overhead
+WORKSHEET_DOCX_MAX_BODY_SIZE = 22 * 1024 * 1024
+# Document Summary / Knowledge Space file upload: 20MB file + multipart overhead
+DOC_SUMMARY_UPLOAD_MAX_BODY_SIZE = 22 * 1024 * 1024
+
+
+def _is_document_upload_path(path: str) -> bool:
+    """True for package document upload endpoints (doc-summary + knowledge-space)."""
+    if not path.endswith("/documents/upload"):
+        return False
+    return path.startswith("/api/doc-summary/packages/") or path.startswith("/api/knowledge-space/packages/")
 
 
 def max_request_body_size_for_path(path: str) -> int:
     """Per-route body limit; shrink Showcase when COS mode (no large multipart)."""
+    if path == "/api/export_worksheet_docx":
+        return WORKSHEET_DOCX_MAX_BODY_SIZE
+    if _is_document_upload_path(path):
+        return DOC_SUMMARY_UPLOAD_MAX_BODY_SIZE
     showcase_paths = (
         path == "/api/showcase/posts"
         or path.startswith("/api/showcase/posts/")

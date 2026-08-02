@@ -267,6 +267,24 @@ def test_showcase_publish_body_size_limit_paths(monkeypatch: pytest.MonkeyPatch)
     assert resolver("/api/auth/admin/showcase/posts/proxy") == default
 
 
+def test_worksheet_docx_body_size_limit_path() -> None:
+    """Learning-sheet DOCX uploads may exceed the default 5MB API body cap."""
+    resolver = middleware_module.max_request_body_size_for_path
+    assert resolver("/api/export_worksheet_docx") == (middleware_module.WORKSHEET_DOCX_MAX_BODY_SIZE)
+    assert resolver("/api/export_worksheet_docx") > middleware_module.MAX_REQUEST_BODY_SIZE
+    assert resolver("/api/activity/diagram_export") == middleware_module.MAX_REQUEST_BODY_SIZE
+
+
+def test_doc_summary_upload_body_size_limit_paths() -> None:
+    """Document Summary / KS package uploads may exceed the default 5MB API body cap."""
+    resolver = middleware_module.max_request_body_size_for_path
+    limit = middleware_module.DOC_SUMMARY_UPLOAD_MAX_BODY_SIZE
+    assert resolver("/api/doc-summary/packages/12/documents/upload") == limit
+    assert resolver("/api/knowledge-space/packages/12/documents/upload") == limit
+    assert limit > middleware_module.MAX_REQUEST_BODY_SIZE
+    assert resolver("/api/doc-summary/packages/12/documents/ingest-text") == (middleware_module.MAX_REQUEST_BODY_SIZE)
+
+
 @pytest.mark.asyncio
 async def test_block_showcase_static_uploads_returns_404() -> None:
     """Direct /static/case_square/ and /static/showcase/ access must be denied."""

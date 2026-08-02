@@ -1,29 +1,15 @@
-import { ref, watch } from 'vue'
+/**
+ * Thin adapter over useCanvasExportStore for existing call sites.
+ */
+import { storeToRefs } from 'pinia'
 
-import {
-  DEFAULT_CANVAS_EXPORT_OPTIONS,
-  loadCanvasExportOptions,
-  saveCanvasExportOptions,
-  type CanvasExportOptions,
-} from '@/config/canvasExportOptions'
-
-const exportOptions = ref<CanvasExportOptions>(loadCanvasExportOptions())
-
-watch(
-  exportOptions,
-  (value) => {
-    saveCanvasExportOptions(value)
-  },
-  { deep: true }
-)
+import { useCanvasExportStore } from '@/stores/canvasExport'
 
 export function useCanvasExportOptions() {
-  function resetExportOptions(): void {
-    exportOptions.value = { ...DEFAULT_CANVAS_EXPORT_OPTIONS }
-  }
-
+  const store = useCanvasExportStore()
+  const { exportOptions } = storeToRefs(store)
   return {
     exportOptions,
-    resetExportOptions,
+    resetExportOptions: store.resetExportOptions,
   }
 }

@@ -10,6 +10,7 @@ import { Handle, Position } from '@vue-flow/core'
 import { storeToRefs } from 'pinia'
 
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
+import { aiBrainstormGlowingNodeIds } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
@@ -54,7 +55,10 @@ const { getNodeStyle } = useTheme({
 
 const defaultStyle = computed(() => getNodeStyle('topic'))
 
-const isTopicAutoCompleteGlowing = computed(() => isWholeDiagramGenerating.value)
+const isTopicAutoCompleteGlowing = computed(
+  () =>
+    isWholeDiagramGenerating.value || aiBrainstormGlowingNodeIds.value.has(props.id)
+)
 
 const resolvedStyle = computed(() => ({
   ...(diagramStore.data?._node_styles?.[props.id] || {}),

@@ -608,6 +608,12 @@ async def canvas_generate_mindmap_from_package(
                     source_kind="document",
                 )
 
+            if package is None:
+                raise HTTPException(
+                    status_code=422,
+                    detail="No Document Summary package found for this diagram",
+                )
+
             if not config.FEATURE_KNOWLEDGE_SPACE:
                 raise HTTPException(status_code=403, detail="Knowledge Space is disabled")
 

@@ -307,6 +307,7 @@ declare module 'vue' {
     MindMapPresentationSideToolbar: typeof import('./components/canvas/MindMapPresentationSideToolbar.vue')['default']
     MindMapSidePanel: typeof import('./components/canvas/MindMapSidePanel.vue')['default']
     MindMapSidePanelCloseButton: typeof import('./components/canvas/MindMapSidePanelCloseButton.vue')['default']
+    MindMapSidePanelHeader: typeof import('./components/canvas/MindMapSidePanelHeader.vue')['default']
     MindMapSideToolbar: typeof import('./components/canvas/MindMapSideToolbar.vue')['default']
     MindMapSlideOverlay: typeof import('./components/canvas/MindMapSlideOverlay.vue')['default']
     MindMapStructureIcon: typeof import('./components/canvas/MindMapStructureIcon.vue')['default']

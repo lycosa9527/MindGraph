@@ -126,15 +126,28 @@ export async function captureWorksheetHeader(
   const element = buildWorksheetHeaderElement(topicName, options, labels)
   if (!element) return null
 
-  element.style.position = 'fixed'
-  element.style.left = '-10000px'
-  element.style.top = '0'
-  element.style.zIndex = '-1'
-  document.body.appendChild(element)
+  // Mount off-screen but fully opaque (opacity:0 / z-index:-1 can blank html-to-image).
+  const host = document.createElement('div')
+  host.setAttribute('data-worksheet-header-host', 'true')
+  host.style.cssText =
+    'position:fixed;left:-10000px;top:0;width:900px;overflow:visible;pointer-events:none;'
+  host.appendChild(element)
+  document.body.appendChild(host)
 
   try {
+    // Force layout before rasterizing.
+    void element.offsetWidth
     const { toCanvas } = await loadHtmlToImageModule()
     const canvas = await toCanvas(element, worksheetHeaderCaptureOptions())
+    if (canvas.width <= 0 || canvas.height <= 0) {
+      console.error('[worksheetHeader] Capture produced empty canvas', {
+        width: canvas.width,
+        height: canvas.height,
+        topicName,
+        options,
+      })
+      return null
+    }
     const dataUrl = canvas.toDataURL('image/png')
     const image = await loadImageElement(dataUrl)
     return {
@@ -144,6 +157,6 @@ export async function captureWorksheetHeader(
       image,
     }
   } finally {
-    element.remove()
+    host.remove()
   }
 }

@@ -23,7 +23,8 @@ import {
 import { ElProgress } from 'element-plus'
 
 import { useLanguage, useNotifications } from '@/composables'
-import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelCloseButton.vue'
+import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
+import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import {
   useFileCenterMutations,
@@ -31,6 +32,10 @@ import {
 } from '@/composables/fileCenter/useFileCenter'
 import { useFileCenterActivePackage } from '@/composables/fileCenter/useFileCenterActivePackage'
 import { useChatHandoff } from '@/composables/mindMap/useChatHandoff'
+import {
+  resolveLiteDraftKind,
+  waitForDocSummarySourceReady,
+} from '@/composables/mindMap/useDocSummaryLiteSaveAndGenerate'
 import { useMindMapDocumentSummary } from '@/composables/mindMap/useMindMapDocumentSummary'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { DOC_SUMMARY_MAX_INPUT_CHARS } from '@/config/docSummaryApi'
@@ -51,6 +56,7 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const diagramStore = useDiagramStore()
 const { featureKnowledgeSpace } = useFeatureFlags()
+const { canUseChromeExtension } = useSchoolTierFeatures()
 const useMindMapV2 = useMindMapV2Chrome()
 
 // Lite Document Summary is split from Knowledge Space; only need mind-map v2.
@@ -114,6 +120,7 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const tabs: Array<{ id: SummaryTab; labelKey: string }> = DOC_SUMMARY_LITE_UI
   ? [
       { id: 'file', labelKey: 'canvas.mindMapDocumentSummary.tabFileUpload' },
+      { id: 'web', labelKey: 'canvas.mindMapDocumentSummary.tabWeb' },
       { id: 'chat', labelKey: 'canvas.mindMapDocumentSummary.tabChatHistory' },
     ]
   : [
@@ -172,18 +179,39 @@ const sourceExceedsModelInput = computed(() => {
   return typeof chars === 'number' && chars > DOC_SUMMARY_MAX_INPUT_CHARS
 })
 
-const canGenerate = computed(
+const hasPendingLiteDraft = computed(
   () =>
-    !isGenerating.value &&
-    !collabActive.value &&
-    !isSourceProcessing.value &&
-    isSourceReady.value &&
-    !sourceExceedsModelInput.value &&
-    activePackageId.value !== null
+    resolveLiteDraftKind({
+      hasActiveSource: hasActiveSource.value,
+      activeTab: activeTab.value,
+      uploadedFile: uploadedFile.value,
+      pastedText: pastedText.value,
+      webUrl: webUrl.value,
+    }) !== 'none'
 )
+
+const canGenerate = computed(() => {
+  if (
+    isGenerating.value ||
+    isAdding.value ||
+    sessionStarting.value ||
+    collabActive.value ||
+    isSourceProcessing.value ||
+    sourceExceedsModelInput.value
+  ) {
+    return false
+  }
+  if (docSummaryLiteUi) {
+    if (isSourceReady.value && activePackageId.value !== null) return true
+    return hasPendingLiteDraft.value
+  }
+  return isSourceReady.value && activePackageId.value !== null
+})
 
 /** Track async extract so we toast once when it finishes (not on upload accept). */
 const watchedExtractDocId = ref<number | null>(null)
+/** When Generate owns ingest→wait→generate, skip extract watcher toasts (success + errors). */
+const suppressExtractWatchToasts = ref(false)
 
 watch(
   () => {
@@ -202,19 +230,21 @@ watch(
     }
     if (watchedExtractDocId.value !== next.id) return
     if (prev && (prev.status === 'processing' || prev.status === 'pending')) {
-      if (next.status === 'completed') {
-        const chars = activeSource.value?.extract_char_count
-        if (typeof chars === 'number' && chars > DOC_SUMMARY_MAX_INPUT_CHARS) {
-          notify.error(t('canvas.mindMapDocumentSummary.extractTooLongForModel'))
-        } else {
-          notify.success(t('canvas.mindMapDocumentSummary.ingestSuccessLite'))
-        }
-      } else if (next.status === 'failed') {
-        const err = next.error || ''
-        if (err.includes('model input limit')) {
-          notify.error(t('canvas.mindMapDocumentSummary.extractTooLongForModel'))
-        } else {
-          notify.error(err || t('canvas.mindMapDocumentSummary.extractFailed'))
+      if (!suppressExtractWatchToasts.value) {
+        if (next.status === 'completed') {
+          const chars = activeSource.value?.extract_char_count
+          if (typeof chars === 'number' && chars > DOC_SUMMARY_MAX_INPUT_CHARS) {
+            notify.error(t('canvas.mindMapDocumentSummary.extractTooLongForModel'))
+          } else {
+            notify.success(t('canvas.mindMapDocumentSummary.ingestSuccessLite'))
+          }
+        } else if (next.status === 'failed') {
+          const err = next.error || ''
+          if (err.includes('model input limit')) {
+            notify.error(t('canvas.mindMapDocumentSummary.extractTooLongForModel'))
+          } else {
+            notify.error(err || t('canvas.mindMapDocumentSummary.extractFailed'))
+          }
         }
       }
       watchedExtractDocId.value = null
@@ -225,6 +255,7 @@ watch(
 const pairingMinutes = computed(() => Math.max(1, Math.round(expiresInSeconds.value / 60)))
 
 const fileReaderDownloadUrl = '/api/downloads/mindgraph-file-reader'
+const chromeExtensionZipUrl = '/api/downloads/mindgraph-chrome-extension'
 
 async function bootstrapSession(): Promise<void> {
   await resolveSession()
@@ -375,11 +406,88 @@ function clearImage(): void {
   clearUploadedFile()
 }
 
+async function ensureLitePackageId(): Promise<number> {
+  if (activePackageId.value !== null) return activePackageId.value
+  const pkg = await ensureSession()
+  return pkg.id
+}
+
+/**
+ * Ingest pending lite draft. Returns whether the source is ready for generate.
+ * visionApplied: hand-drawn rebuild already replaced the canvas.
+ */
+async function ingestPendingLiteDraft(): Promise<{
+  packageId: number
+  ready: boolean
+  visionApplied: boolean
+}> {
+  const kind = resolveLiteDraftKind({
+    hasActiveSource: hasActiveSource.value,
+    activeTab: activeTab.value,
+    uploadedFile: uploadedFile.value,
+    pastedText: pastedText.value,
+    webUrl: webUrl.value,
+  })
+  const id = await ensureLitePackageId()
+
+  if (kind === 'file' && uploadedFile.value) {
+    const rawFile = uploadedFile.value
+    const tryVision = isImageUploadFile(rawFile)
+    const fileForVision = tryVision ? await prepareImageUploadFile(rawFile) : rawFile
+    // Vision first: hand-drawn rebuild must not leave an orphan async extract source.
+    if (tryVision) {
+      const vision = await rebuildFromImageFile(fileForVision)
+      if (vision.applied) {
+        clearUploadedFile()
+        return { packageId: id, ready: false, visionApplied: true }
+      }
+    }
+    const uploaded = await uploadFile.mutateAsync({
+      packageId: id,
+      file: fileForVision,
+    })
+    clearUploadedFile()
+    if (uploaded.status === 'processing' || uploaded.status === 'pending') {
+      watchedExtractDocId.value = uploaded.id
+      if (!suppressExtractWatchToasts.value) {
+        notify.info(t('canvas.mindMapDocumentSummary.extractStarted'))
+      }
+      return { packageId: id, ready: false, visionApplied: false }
+    }
+    return { packageId: id, ready: uploaded.status === 'completed', visionApplied: false }
+  }
+
+  if (kind === 'paste') {
+    const content = pastedText.value.trim()
+    if (content.length > MAX_CONTENT_LENGTH) {
+      notify.warning(t('canvas.mindMapDocumentSummary.pasteTooLong'))
+      throw new Error('paste_too_long')
+    }
+    await ingestText.mutateAsync({
+      packageId: id,
+      payload: { content, title: uploadedFileName.value.trim() || undefined },
+    })
+    pastedText.value = ''
+    return { packageId: id, ready: true, visionApplied: false }
+  }
+
+  if (kind === 'web') {
+    const url = webUrl.value.trim()
+    notify.info(t('canvas.mindMapDocumentSummary.webFetchStarted'))
+    await ingestWebUrl.mutateAsync({ packageId: id, payload: { page_url: url } })
+    webUrl.value = ''
+    return { packageId: id, ready: true, visionApplied: false }
+  }
+
+  return { packageId: id, ready: isSourceReady.value, visionApplied: false }
+}
+
 async function handleAddToCorpus(): Promise<void> {
   if (collabActive.value) {
     notify.warning(t('canvas.mindMapDocumentSummary.collabDisabled'))
     return
   }
+  if (docSummaryLiteUi) return
 
   isAdding.value = true
   try {
@@ -389,48 +497,7 @@ async function handleAddToCorpus(): Promise<void> {
       id = pkg.id
     }
 
-    if (docSummaryLiteUi && activeTab.value === 'file') {
-      if (uploadedFile.value) {
-        const rawFile = uploadedFile.value
-        const tryVision = isImageUploadFile(rawFile)
-        const fileForVision = tryVision ? await prepareImageUploadFile(rawFile) : rawFile
-        const uploaded = await uploadFile.mutateAsync({
-          packageId: id,
-          file: fileForVision,
-        })
-        clearUploadedFile()
-        if (tryVision) {
-          const vision = await rebuildFromImageFile(fileForVision)
-          if (vision.applied) {
-            return
-          }
-        }
-        // Async extract — success toast fires when status becomes completed.
-        if (uploaded.status === 'processing' || uploaded.status === 'pending') {
-          watchedExtractDocId.value = uploaded.id
-          notify.info(t('canvas.mindMapDocumentSummary.extractStarted'))
-          return
-        }
-        notify.success(t('canvas.mindMapDocumentSummary.ingestSuccessLite'))
-        return
-      }
-      const content = pastedText.value.trim()
-      if (!content) {
-        notify.warning(t('canvas.mindMapDocumentSummary.emptyDocument'))
-        return
-      }
-      if (content.length > MAX_CONTENT_LENGTH) {
-        notify.warning(t('canvas.mindMapDocumentSummary.pasteTooLong'))
-        return
-      }
-      await ingestText.mutateAsync({
-        packageId: id,
-        payload: { content, title: uploadedFileName.value.trim() || undefined },
-      })
-      pastedText.value = ''
-      notify.success(t('canvas.mindMapDocumentSummary.ingestSuccessLite'))
-      return
-    } else if (activeTab.value === 'document') {
+    if (activeTab.value === 'document') {
       if (uploadedFile.value) {
         await uploadFile.mutateAsync({ packageId: id, file: uploadedFile.value })
         clearUploadedFile()
@@ -452,12 +519,13 @@ async function handleAddToCorpus(): Promise<void> {
       }
     } else if (activeTab.value === 'image' && uploadedFile.value) {
       const fileForVision = await prepareImageUploadFile(uploadedFile.value)
-      await uploadFile.mutateAsync({ packageId: id, file: fileForVision })
-      clearUploadedFile()
       const vision = await rebuildFromImageFile(fileForVision)
       if (vision.applied) {
+        clearUploadedFile()
         return
       }
+      await uploadFile.mutateAsync({ packageId: id, file: fileForVision })
+      clearUploadedFile()
     } else if (activeTab.value === 'web') {
       const url = webUrl.value.trim()
       if (!url) {
@@ -477,8 +545,80 @@ async function handleAddToCorpus(): Promise<void> {
   }
 }
 
+async function handleLiteSaveAndGenerate(): Promise<void> {
+  if (collabActive.value) {
+    notify.warning(t('canvas.mindMapDocumentSummary.collabDisabled'))
+    return
+  }
+  if (isGenerating.value || isAdding.value || sessionStarting.value || isSourceProcessing.value) {
+    return
+  }
+
+  let packageId = activePackageId.value
+  if (isSourceReady.value && packageId !== null && !hasPendingLiteDraft.value) {
+    await generateFromPackage({
+      packageId,
+      diagramId: activeDiagramId.value,
+      topicHint: diagramStore.effectiveTitle || undefined,
+    })
+    return
+  }
+
+  if (!hasPendingLiteDraft.value) {
+    notify.warning(t('canvas.mindMapDocumentSummary.generateNoCorpusLite'))
+    return
+  }
+
+  isAdding.value = true
+  suppressExtractWatchToasts.value = true
+  try {
+    const ingest = await ingestPendingLiteDraft()
+    packageId = ingest.packageId
+    if (ingest.visionApplied) return
+
+    if (!ingest.ready) {
+      const waitResult = await waitForDocSummarySourceReady({
+        detailQuery,
+        documents,
+      })
+      if (waitResult === 'failed') {
+        notify.error(t('canvas.mindMapDocumentSummary.extractFailed'))
+        return
+      }
+      if (waitResult === 'timeout') {
+        notify.error(t('canvas.mindMapDocumentSummary.generateFailed'))
+        return
+      }
+      if (sourceExceedsModelInput.value) {
+        notify.error(t('canvas.mindMapDocumentSummary.extractTooLongForModel'))
+        return
+      }
+    }
+
+    await generateFromPackage({
+      packageId,
+      diagramId: activeDiagramId.value,
+      topicHint: diagramStore.effectiveTitle || undefined,
+    })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'paste_too_long') return
+    console.error('[DocumentSummary] lite save-and-generate failed:', error)
+  } finally {
+    isAdding.value = false
+    suppressExtractWatchToasts.value = false
+  }
+}
+
 async function handleGenerate(): Promise<void> {
-  if (collabActive.value || !canGenerate.value) return
+  if (collabActive.value) {
+    notify.warning(t('canvas.mindMapDocumentSummary.collabDisabled'))
+    return
+  }
+  if (docSummaryLiteUi) {
+    await handleLiteSaveAndGenerate()
+    return
+  }
+  if (!canGenerate.value) return
   await generateFromPackage({
     packageId: activePackageId.value,
     diagramId: activeDiagramId.value,
@@ -487,12 +627,9 @@ async function handleGenerate(): Promise<void> {
 }
 
 const canAdd = computed(() => {
+  if (docSummaryLiteUi) return false
   if (collabActive.value || isAdding.value || sessionStarting.value) return false
   if (activeTab.value === 'chat') return false
-  if (docSummaryLiteUi && activeTab.value === 'file') {
-    if (hasActiveSource.value) return false
-    return uploadedFile.value !== null || pastedText.value.trim().length > 0
-  }
   if (activeTab.value === 'document') {
     return pastedText.value.trim().length > 0 || uploadedFile.value !== null
   }
@@ -504,27 +641,22 @@ const canAdd = computed(() => {
   }
   return false
 })
+
+const liteSourceBound = computed(
+  () => docSummaryLiteUi && hasActiveSource.value && (activeTab.value === 'file' || activeTab.value === 'web')
+)
 </script>
 
 <template>
   <aside
-    class="mind-map-document-summary-panel pointer-events-auto absolute inset-y-3 left-3 z-40 flex w-80 flex-col overflow-hidden rounded-2xl border border-[var(--swiss-border,#e7e5e4)] bg-[var(--swiss-surface,#ffffff)] shadow-sm"
+    class="mind-map-side-rail-panel mind-map-document-summary-panel pointer-events-auto w-80"
     :aria-label="t('canvas.mindMapSideToolbar.documentSummary')"
   >
-    <header class="flex shrink-0 flex-col gap-2 border-b border-[var(--swiss-border,#e7e5e4)] px-3 py-3">
-      <div class="flex items-center justify-between gap-2">
-        <h3 class="truncate text-base font-semibold tracking-tight text-[var(--swiss-ink,#1c1917)]">
-          {{ t('canvas.mindMapSideToolbar.documentSummary') }}
-        </h3>
-        <MindMapSidePanelCloseButton @close="handleClose" />
-      </div>
-      <p
-        v-if="featureEnabled"
-        class="text-sm leading-relaxed text-gray-500"
-      >
-        {{ t('canvas.mindMapDocumentSummary.intro') }}
-      </p>
-    </header>
+    <MindMapSidePanelHeader
+      :title="t('canvas.mindMapSideToolbar.documentSummary')"
+      :intro="featureEnabled ? t('canvas.mindMapDocumentSummary.intro') : undefined"
+      @close="handleClose"
+    />
 
     <div
       v-if="!featureEnabled"
@@ -681,27 +813,27 @@ const canAdd = computed(() => {
             </p>
             <p
               v-if="showOriginalSource"
-              class="mt-0.5 truncate text-[11px] text-[var(--swiss-muted,#78716c)]"
+              class="mt-0.5 truncate text-[11px] text-(--swiss-muted,#78716c)"
               :title="originalSourceLabel || undefined"
             >
               {{ t('canvas.mindMapDocumentSummary.fromSource', { name: originalSourceLabel }) }}
             </p>
             <p
               v-if="isSourceProcessing"
-              class="mt-1.5 text-[11px] text-[var(--swiss-geek-cyan-ui,#0e7490)]"
+              class="mt-1.5 text-[11px] text-(--swiss-geek-cyan-ui,#0e7490)"
             >
               {{ extractStageText }}
               <span class="tabular-nums"> · {{ extractPercent }}%</span>
             </p>
             <p
               v-else-if="isSourceReady"
-              class="mt-1.5 text-[11px] text-[var(--swiss-geek-teal-ui,#0f766e)]"
+              class="mt-1.5 text-[11px] text-(--swiss-geek-teal-ui,#0f766e)"
             >
               {{ t('canvas.mindMapDocumentSummary.statusReady') }}
             </p>
             <p
               v-else-if="isSourceFailed"
-              class="mt-1.5 text-[11px] text-[var(--swiss-geek-red-ui,#e30613)]"
+              class="mt-1.5 text-[11px] text-(--swiss-geek-red-ui,#e30613)"
             >
               {{ activeSource.error_message || t('canvas.mindMapDocumentSummary.statusFailed') }}
             </p>
@@ -709,7 +841,13 @@ const canAdd = computed(() => {
           <button
             type="button"
             class="doc-summary-delete-btn shrink-0"
-            :disabled="isDeletingSource || collabActive"
+            :disabled="
+              isDeletingSource ||
+              collabActive ||
+              isAdding ||
+              isGenerating ||
+              isSourceProcessing
+            "
             :aria-label="t('common.delete')"
             :title="t('canvas.mindMapDocumentSummary.deleteSource')"
             @click="handleDeleteSource(activeSource.id)"
@@ -756,25 +894,25 @@ const canAdd = computed(() => {
             @click="openFilePicker"
           >
             <Upload
-              class="mb-2 h-5 w-5 text-[var(--swiss-subtle,#a8a29e)]"
+              class="mb-2 h-5 w-5 text-(--swiss-subtle,#a8a29e)"
               :stroke-width="1.75"
             />
-            <span class="text-sm font-medium text-[var(--swiss-ink,#1c1917)]">
+            <span class="text-sm font-medium text-(--swiss-ink,#1c1917)">
               {{ t('canvas.mindMapDocumentSummary.uploadFileHint') }}
             </span>
-            <span class="mt-1 text-[11px] leading-relaxed text-[var(--swiss-muted,#78716c)]">
+            <span class="mt-1 text-[11px] leading-relaxed text-(--swiss-muted,#78716c)">
               {{ t('canvas.mindMapDocumentSummary.uploadFileSubhint') }}
             </span>
             <span
               v-if="uploadedFileName"
-              class="mt-2 max-w-full truncate text-xs font-medium text-[var(--swiss-geek-cyan-ui,#0e7490)]"
+              class="mt-2 max-w-full truncate text-xs font-medium text-(--swiss-geek-cyan-ui,#0e7490)"
             >
               {{ uploadedFileName }}
             </span>
           </button>
           <div
             v-else
-            class="relative overflow-hidden rounded-xl border border-[var(--swiss-border,#e7e5e4)] bg-[var(--swiss-inset,#fafaf9)]"
+            class="relative overflow-hidden rounded-xl border border-(--swiss-border,#e7e5e4) bg-(--swiss-inset,#fafaf9)"
           >
             <img
               :src="filePreviewUrl"
@@ -783,7 +921,7 @@ const canAdd = computed(() => {
             />
             <button
               type="button"
-              class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[var(--swiss-muted,#78716c)] shadow-sm"
+              class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-(--swiss-muted,#78716c) shadow-sm"
               @click="clearUploadedFile"
             >
               <X
@@ -801,17 +939,17 @@ const canAdd = computed(() => {
           />
           <textarea
             v-model="pastedText"
-            class="doc-summary-textarea w-full resize-none rounded-xl border border-[var(--swiss-border,#e7e5e4)] bg-white px-3 py-2.5 text-sm leading-relaxed text-[var(--swiss-ink,#1c1917)] placeholder:text-[var(--swiss-subtle,#a8a29e)] focus:border-[var(--swiss-border-strong,#d6d3d1)] focus:outline-none focus:ring-2 focus:ring-[var(--swiss-geek-cyan-soft,#ecfeff)]"
+            class="doc-summary-textarea w-full resize-none rounded-xl border border-(--swiss-border,#e7e5e4) bg-white px-3 py-2.5 text-sm leading-relaxed text-(--swiss-ink,#1c1917) placeholder:text-(--swiss-subtle,#a8a29e) focus:border-(--swiss-border-strong,#d6d3d1) focus:outline-none focus:ring-2 focus:ring-(--swiss-geek-cyan-soft,#ecfeff)"
             :placeholder="t('canvas.mindMapDocumentSummary.pastePlaceholder')"
             rows="4"
           />
         </div>
 
         <div
-          v-else-if="docSummaryLiteUi && activeTab === 'file' && hasActiveSource"
+          v-else-if="liteSourceBound"
           class="flex flex-1 flex-col justify-center px-1 py-6 text-center"
         >
-          <p class="text-[11px] leading-relaxed text-[var(--swiss-muted,#78716c)]">
+          <p class="text-[11px] leading-relaxed text-(--swiss-muted,#78716c)">
             {{
               isSourceFailed
                 ? t('canvas.mindMapDocumentSummary.deleteToRetry')
@@ -907,25 +1045,48 @@ const canAdd = computed(() => {
           />
         </div>
 
-        <!-- Web -->
+        <!-- Web link — paste URL, server crawls page text → markdown -->
         <div
           v-else-if="activeTab === 'web'"
           class="flex flex-col gap-3"
         >
           <div class="relative">
             <Link2
-              class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-(--swiss-subtle,#a8a29e)"
               :stroke-width="2"
             />
             <input
               v-model="webUrl"
               type="url"
-              class="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              inputmode="url"
+              autocomplete="url"
+              class="w-full rounded-xl border border-(--swiss-border,#e7e5e4) bg-white py-2.5 pl-9 pr-3 text-sm text-(--swiss-ink,#1c1917) placeholder:text-(--swiss-subtle,#a8a29e) focus:border-(--swiss-border-strong,#d6d3d1) focus:outline-none focus:ring-2 focus:ring-(--swiss-geek-cyan-soft,#ecfeff)"
               :placeholder="t('canvas.mindMapDocumentSummary.webUrlPlaceholder')"
+              :disabled="isAdding || collabActive"
             />
           </div>
-          <p class="text-[11px] leading-relaxed text-slate-400">
-            {{ t('canvas.mindMapDocumentSummary.webLinkHint') }}
+          <p class="text-[11px] leading-relaxed text-(--swiss-muted,#78716c)">
+            {{
+              t(
+                docSummaryLiteUi
+                  ? 'canvas.mindMapDocumentSummary.webLinkHintLite'
+                  : 'canvas.mindMapDocumentSummary.webLinkHint'
+              )
+            }}
+          </p>
+          <p
+            v-if="docSummaryLiteUi"
+            class="text-[11px] leading-relaxed text-(--swiss-muted,#78716c)"
+          >
+            {{ t('canvas.mindMapDocumentSummary.webChromeExtensionHint') }}
+            <a
+              v-if="canUseChromeExtension"
+              :href="chromeExtensionZipUrl"
+              class="ml-1 font-medium text-(--swiss-ink,#1c1917) underline decoration-(--swiss-border-strong,#d6d3d1) underline-offset-2 hover:decoration-(--swiss-ink,#1c1917)"
+              download
+            >
+              {{ t('canvas.mindMapDocumentSummary.webChromeExtensionLink') }}
+            </a>
           </p>
         </div>
 
@@ -1059,23 +1220,17 @@ const canAdd = computed(() => {
         </div>
 
         <button
-          v-if="activeTab !== 'chat' && !(docSummaryLiteUi && hasActiveSource && activeTab === 'file')"
+          v-if="!docSummaryLiteUi && activeTab !== 'chat'"
           type="button"
           class="doc-summary-add-btn mt-3 w-full shrink-0"
           :disabled="!canAdd"
           @click="handleAddToCorpus"
         >
-          {{
-            t(
-              docSummaryLiteUi
-                ? 'canvas.mindMapDocumentSummary.saveContent'
-                : 'canvas.mindMapDocumentSummary.addToCorpus'
-            )
-          }}
+          {{ t('canvas.mindMapDocumentSummary.addToCorpus') }}
         </button>
       </div>
 
-      <div class="shrink-0 border-t border-[var(--swiss-border,#e7e5e4)] px-3 py-3">
+      <div class="shrink-0 border-t border-(--swiss-border,#e7e5e4) px-3 py-3">
         <button
           type="button"
           class="doc-summary-generate-btn w-full"
@@ -1088,7 +1243,7 @@ const canAdd = computed(() => {
             :stroke-width="2"
           />
           {{
-            isGenerating
+            isGenerating || isAdding
               ? t('canvas.toolbar.aiGenerating')
               : t('canvas.mindMapDocumentSummary.generateButton')
           }}
@@ -1099,10 +1254,6 @@ const canAdd = computed(() => {
 </template>
 
 <style scoped>
-.mind-map-document-summary-panel {
-  max-height: calc(100% - 1.5rem);
-}
-
 .doc-summary-source-card {
   padding: 12px 12px 11px;
   border: 1px solid var(--swiss-border, #e7e5e4);

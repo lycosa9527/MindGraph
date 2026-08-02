@@ -5,6 +5,7 @@
 import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
+import { suggestionBelongsToParent } from '@/composables/nodePalette/constants'
 import { getPlaceholderNodes } from '@/composables/nodePalette/placeholderHelpers'
 import {
   type Stage2Parent,
@@ -36,18 +37,6 @@ export interface ApplyAiBrainstormContext {
   startSessionsForAllParents: (parents: Stage2Parent[]) => Promise<void>
 }
 
-function suggestionBelongsToParent(
-  suggestion: NodeSuggestion,
-  parentId: string | null,
-  parentName: string
-): boolean {
-  if (parentId && suggestion.parent_id) {
-    return suggestion.parent_id === parentId
-  }
-  const mode = (suggestion.mode ?? '').trim()
-  return !parentName || mode === parentName || mode === ''
-}
-
 export async function applyAiBrainstormSelection(
   ctx: ApplyAiBrainstormContext
 ): Promise<boolean> {
@@ -72,6 +61,16 @@ export async function applyAiBrainstormSelection(
     branch_id?: string
     branch_name?: string
   }
+
+  if (stage === 'children' && connections) {
+    const parents = getStage2ParentsForDiagram('mindmap', nodes, connections)
+    if (parents.length > 1) {
+      const applied = applyStage2MultipleParents(ctx, parents, connections)
+      if (applied) return true
+      // Fall through to single-parent apply when nothing matched multi-parent filter.
+    }
+  }
+
   const parentId = stage === 'children' ? (stageDataTyped.branch_id ?? null) : null
   const parentNameNorm = (mode ?? '').trim()
 
@@ -87,8 +86,8 @@ export async function applyAiBrainstormSelection(
     const suggestion = toApplyFiltered[suggestionIndex]
     if (suggestion) {
       diagramStore.updateNode(slot.id, { text: suggestion.text })
-      suggestionIndex += 1
     }
+    suggestionIndex += 1
   }
 
   const remainder = toApplyFiltered.slice(suggestionIndex)
@@ -141,6 +140,80 @@ export async function applyAiBrainstormSelection(
     return transitionToStage2(ctx)
   }
 
+  updatePanel({ selected: [] })
+  clearSession(diagramKey)
+  closePanel()
+  return true
+}
+
+function applyStage2MultipleParents(
+  ctx: ApplyAiBrainstormContext,
+  parents: Stage2Parent[],
+  connections: Array<{ source: string; target: string }> | undefined
+): boolean {
+  const { diagramStore, diagramKey, toApply, stage, stageData, mode, updatePanel, clearSession, closePanel } =
+    ctx
+  const nodes = diagramStore.data?.nodes ?? []
+  const currentModeNorm = (mode ?? '').trim()
+  const stageDataTyped = (stageData ?? {}) as { branch_id?: string }
+  const currentParentId = stageDataTyped.branch_id ?? null
+  const parentIds = new Set(parents.map((p) => p.id))
+  const parentNames = new Set(parents.map((p) => (p.name ?? '').trim()))
+  let appliedAny = false
+
+  for (const parent of parents) {
+    const parentNameNorm = (parent.name ?? '').trim()
+    const toApplyParent = toApply.filter((s) =>
+      suggestionBelongsToParent(s, parent.id, parentNameNorm)
+    )
+    if (toApplyParent.length === 0) continue
+
+    const placeholdersParent = getPlaceholderNodes(
+      'mindmap',
+      nodes,
+      parent.name,
+      stage,
+      parent.id,
+      connections
+    )
+    let idx = 0
+    for (const slot of placeholdersParent) {
+      if (idx >= toApplyParent.length) break
+      const suggestion = toApplyParent[idx]
+      if (suggestion) {
+        diagramStore.updateNode(slot.id, { text: suggestion.text })
+      }
+      idx += 1
+    }
+    const remainderParent = toApplyParent.slice(idx)
+    for (const suggestion of remainderParent) {
+      const text = (suggestion.text ?? '').trim()
+      if (!text) continue
+      diagramStore.addMindMapChild(parent.id, text)
+      appliedAny = true
+    }
+    appliedAny = appliedAny || idx > 0
+  }
+
+  const unmatched = toApply.filter(
+    (s) => !(s.parent_id && parentIds.has(s.parent_id)) && !parentNames.has((s.mode ?? '').trim())
+  )
+  if (unmatched.length > 0) {
+    const fallbackParent =
+      (currentParentId ? parents.find((p) => p.id === currentParentId) : undefined) ??
+      parents.find((p) => (p.name ?? '').trim() === currentModeNorm) ??
+      parents[0]
+    if (fallbackParent) {
+      for (const suggestion of unmatched) {
+        const text = (suggestion.text ?? '').trim()
+        if (!text) continue
+        diagramStore.addMindMapChild(fallbackParent.id, text)
+        appliedAny = true
+      }
+    }
+  }
+
+  if (!appliedAny) return false
   updatePanel({ selected: [] })
   clearSession(diagramKey)
   closePanel()

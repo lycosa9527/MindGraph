@@ -4,6 +4,8 @@
  */
 import { computed, ref } from 'vue'
 
+import { storeToRefs } from 'pinia'
+
 import { ElDropdown, ElTooltip } from 'element-plus'
 
 import {
@@ -20,14 +22,11 @@ import {
 
 import MindMapAppearanceDropdown from '@/components/canvas/MindMapAppearanceDropdown.vue'
 import MindMapExportOptionsPanel from '@/components/canvas/MindMapExportOptionsPanel.vue'
-import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
 
 import {
   tryCollabGuardedRedo,
   tryCollabGuardedUndo,
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
-import { useCanvasExportOptions } from '@/composables/canvas/useCanvasExportOptions'
-import { useCanvasWorksheetText } from '@/composables/canvas/useCanvasWorksheetText'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar'
 import { useFeatureFlags } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -36,8 +35,7 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { CANVAS_MINDMAP_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM, CANVAS_WORKSHEET_TEXT_MENU_ITEM } from '@/config/canvasExportMenu'
-import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
-import { useAuthStore, useDiagramStore } from '@/stores'
+import { useAuthStore, useCanvasExportStore, useDiagramStore } from '@/stores'
 
 import MindMapStructureIcon from './MindMapStructureIcon.vue'
 
@@ -60,12 +58,11 @@ const { handleAddChild, handleAddSibling, handleDeleteNode, handleAddBranch } = 
 
 const { isAIGenerating, handleAIGenerate } = useCanvasToolbarApps()
 
-const { exportOptions } = useCanvasExportOptions()
-const { worksheetTextOptions } = useCanvasWorksheetText()
+const canvasExportStore = useCanvasExportStore()
+const { exportOptions, mergedExportOptions } = storeToRefs(canvasExportStore)
 
 const structureDropdownOpen = ref(false)
 const exportDropdownOpen = ref(false)
-const worksheetTextModalOpen = ref(false)
 
 const structureMode = computed(() => {
   void diagramStore.data?.nodes?.length
@@ -94,29 +91,17 @@ function handleStructurePick(mode: 'balanced' | 'right') {
   }
 }
 
-function buildExportPayload(format: string) {
-  return {
-    format,
-    options: {
-      ...exportOptions.value,
-      worksheetText: { ...worksheetTextOptions.value },
-    },
-  }
-}
-
 function handleExportCommand(format: string) {
   exportDropdownOpen.value = false
-  eventBus.emit('toolbar:export_requested', buildExportPayload(format))
+  eventBus.emit('toolbar:export_requested', {
+    format,
+    options: { ...mergedExportOptions.value },
+  })
 }
 
 function handleWorksheetTextMenuClick() {
   exportDropdownOpen.value = false
-  worksheetTextModalOpen.value = true
-}
-
-function handleWorksheetTextSave(options: CanvasWorksheetTextOptions) {
-  worksheetTextOptions.value = { ...options }
-  notify.success(t('canvas.worksheetText.saved'))
+  eventBus.emit('toolbar:worksheet_text_requested', {})
 }
 
 function handleAddChildClick() {
@@ -450,11 +435,6 @@ function handleAddChildClick() {
     </div>
   </div>
 
-  <CanvasWorksheetTextModal
-    v-model:visible="worksheetTextModalOpen"
-    :options="worksheetTextOptions"
-    @save="handleWorksheetTextSave"
-  />
 </template>
 
 <style src="./mindMapToolbarButtons.css"></style>

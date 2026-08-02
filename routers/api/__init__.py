@@ -42,6 +42,7 @@ from . import (
     mindmate_export_dumps,
     mindmate_export_jobs,
     png_export,
+    worksheet_docx_export,
     sse_streaming,
     web_content_generation,
     workshop_ws,
@@ -95,6 +96,7 @@ router.include_router(diagram_generation.router)
 router.include_router(canvas_translate.router)
 router.include_router(web_content_generation.router)
 router.include_router(png_export.router)
+router.include_router(worksheet_docx_export.router)
 router.include_router(sse_streaming.router)
 router.include_router(llm_operations.router)
 router.include_router(frontend_logging.router)

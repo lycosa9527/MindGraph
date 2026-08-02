@@ -1,0 +1,585 @@
+/** Canvas worksheet text modal — light Swiss stone shell + paper preview. */
+
+.worksheet-text-modal__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem 0.65rem;
+  padding-inline-end: 1.75rem;
+}
+
+.worksheet-text-modal__glyph {
+  color: #a8a29e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  user-select: none;
+}
+
+.worksheet-text-modal__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #1c1917;
+  line-height: 1.35;
+}
+
+.worksheet-text-modal__header-rule {
+  display: none;
+}
+
+.worksheet-text-modal__header-note {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #78716c;
+  line-height: 1.35;
+}
+
+@media (min-width: 640px) {
+  .worksheet-text-modal__header-rule {
+    display: block;
+    width: 1px;
+    height: 0.85rem;
+    align-self: center;
+    background: #d6d3d1;
+  }
+}
+
+.worksheet-text-modal__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  min-height: 420px;
+}
+
+.worksheet-text-modal__preview-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+  min-height: 360px;
+  padding: 0.85rem;
+  border: 1px solid #e7e5e4;
+  border-radius: 8px;
+  background: #f5f5f4;
+}
+
+.worksheet-text-modal__preview-kicker,
+.worksheet-text-modal__kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #78716c;
+  line-height: 1.35;
+}
+
+.worksheet-text-modal__preview-kicker::before,
+.worksheet-text-modal__kicker::before {
+  content: '';
+  display: inline-block;
+  width: 0.35rem;
+  height: 0.35rem;
+  background: #a8a29e;
+  border-radius: 1px;
+  transform: translateY(-0.05rem);
+}
+
+.worksheet-text-modal__preview-kicker-meta {
+  margin-left: auto;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #a8a29e;
+  text-transform: none;
+}
+
+/* Fits one A4 sheet (297×210 mm) inside the preview pane. */
+.worksheet-text-modal__paper-stage {
+  container-type: size;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  min-width: 0;
+}
+
+.worksheet-text-modal__paper {
+  /* Scale type/spacing from export header width (900px) → cqw on the page */
+  container-type: inline-size;
+  container-name: worksheet-a4;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 1.333cqw 1.778cqw 1.111cqw;
+  border: 1px solid #d6d3d1;
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow:
+    0 1px 0 rgba(28, 25, 23, 0.04),
+    0 10px 24px -16px rgba(28, 25, 23, 0.35);
+  overflow: hidden;
+}
+
+/* A4 landscape 297 × 210 mm — contain within stage */
+.worksheet-text-modal__paper--landscape {
+  aspect-ratio: 297 / 210;
+  width: min(100cqw, calc(100cqh * 297 / 210));
+  height: auto;
+}
+
+/* A4 portrait 210 × 297 mm — contain within stage */
+.worksheet-text-modal__paper--portrait {
+  aspect-ratio: 210 / 297;
+  height: min(100cqh, calc(100cqw * 297 / 210));
+  width: auto;
+}
+
+.worksheet-text-modal__paper-header {
+  flex-shrink: 0;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid #e7e5e4;
+}
+
+/*
+ * Match diagramWorksheetHeader.ts at 900px capture width:
+ * title 20px, fields 14px, instruction 13px → scale with A4 page width (cqw).
+ */
+.worksheet-text-modal__paper-topic {
+  margin: 0 0 1.333cqw;
+  text-align: center;
+  font-size: 2.222cqw;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1c1917;
+}
+
+.worksheet-text-modal__paper-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.333cqw 2.667cqw;
+  margin-bottom: 1.111cqw;
+}
+
+.worksheet-text-modal__paper-field {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.667cqw;
+  font-size: 1.556cqw;
+  line-height: 1.4;
+  color: #1c1917;
+}
+
+.worksheet-text-modal__paper-line {
+  display: inline-block;
+  min-width: 13.333cqw;
+  height: 1.25em;
+  border-bottom: 1px solid #44403c;
+}
+
+.worksheet-text-modal__paper-line--short {
+  min-width: 11.111cqw;
+}
+
+.worksheet-text-modal__paper-instruction {
+  margin: 0;
+  font-size: 1.444cqw;
+  line-height: 1.5;
+  color: #44403c;
+}
+
+.worksheet-text-modal__paper-empty {
+  margin-bottom: 1.111cqw;
+  padding: 0.889cqw 1.111cqw;
+  border: 1px dashed #d6d3d1;
+  border-radius: 2px;
+  font-size: 1.333cqw;
+  line-height: 1.45;
+  color: #78716c;
+  background: #fafaf9;
+}
+
+.worksheet-text-modal__paper-diagram {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 140px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+.worksheet-text-modal__paper-diagram-body {
+  position: relative;
+  flex: 1;
+  min-height: 120px;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.worksheet-text-modal__center-guide {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  background: #dc2626;
+  opacity: 0.85;
+}
+
+.worksheet-text-modal__center-guide--x {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.worksheet-text-modal__center-guide--y {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.dark .worksheet-text-modal__center-guide {
+  background: #f87171;
+}
+
+.worksheet-text-modal__diagram-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  border: 1.5px dashed #78716c;
+  border-radius: 2px;
+  background: transparent;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.worksheet-text-modal__diagram-frame.is-dragging {
+  cursor: grabbing;
+  border-color: #44403c;
+}
+
+.worksheet-text-modal__diagram-frame.is-resizing {
+  cursor: nwse-resize;
+  border-color: #44403c;
+}
+
+.worksheet-text-modal__paper-diagram-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.worksheet-text-modal__diagram-handle {
+  position: absolute;
+  z-index: 2;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid #1c1917;
+  border-radius: 1px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.worksheet-text-modal__diagram-handle--nw {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+.worksheet-text-modal__diagram-handle--ne {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+.worksheet-text-modal__diagram-handle--sw {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+
+.worksheet-text-modal__diagram-handle--se {
+  right: -5px;
+  bottom: -5px;
+  cursor: nwse-resize;
+}
+
+.worksheet-text-modal__paper-diagram-status {
+  margin: 0;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #78716c;
+  text-align: center;
+}
+
+.worksheet-text-modal__paper-diagram-hint {
+  margin: 0.35rem 0 0;
+  font-size: 1.111cqw;
+  line-height: 1.35;
+  color: #a8a29e;
+  text-align: center;
+}
+
+.dark .worksheet-text-modal__diagram-frame {
+  border-color: #a8a29e;
+}
+
+.dark .worksheet-text-modal__diagram-handle {
+  border-color: #fafaf9;
+  background: #1f2937;
+}
+
+.worksheet-text-modal__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.worksheet-text-modal__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.worksheet-text-modal__field-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  background: #fafaf9;
+}
+
+.worksheet-text-modal__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.worksheet-text-modal__label {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #44403c;
+}
+
+.worksheet-text-modal__instruction {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.worksheet-text-modal__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #78716c;
+}
+
+.worksheet-text-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.worksheet-text-modal__footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+@media (max-width: 760px) {
+  .worksheet-text-modal__layout {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .worksheet-text-modal__paper-stage {
+    min-height: 240px;
+    height: min(52vw, 320px);
+  }
+}
+.worksheet-text-modal.el-dialog {
+  --el-color-primary: #1c1917;
+  --el-color-primary-light-3: #78716c;
+  --el-color-primary-light-5: #a8a29e;
+  --el-color-primary-light-7: #d6d3d1;
+  --el-color-primary-light-8: #e7e5e4;
+  --el-color-primary-light-9: #f5f5f4;
+  --el-color-primary-dark-2: #0c0a09;
+  max-width: min(920px, 96vw);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e7e5e4;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.08),
+    0 4px 6px -4px rgba(0, 0, 0, 0.06);
+}
+
+.worksheet-text-modal .el-dialog__header {
+  margin: 0;
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid #e7e5e4;
+}
+
+.worksheet-text-modal .el-dialog__headerbtn {
+  top: 0.85rem;
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.worksheet-text-modal .el-dialog__headerbtn .el-dialog__close {
+  color: #a8a29e;
+}
+
+.worksheet-text-modal .el-dialog__headerbtn:hover .el-dialog__close {
+  color: #1c1917;
+}
+
+.worksheet-text-modal .el-dialog__body {
+  padding: 1rem 1.25rem 0.5rem;
+}
+
+.worksheet-text-modal .el-dialog__footer {
+  padding: 0.75rem 1.25rem 1rem;
+  border-top: 1px solid #e7e5e4;
+}
+
+.worksheet-text-modal .worksheet-text-modal__textarea .el-textarea__inner,
+.worksheet-text-modal .worksheet-text-modal__input .el-input__wrapper {
+  border-radius: 6px;
+  border-color: #d6d3d1;
+  box-shadow: none;
+  color: #1c1917;
+  background: #ffffff;
+}
+
+.worksheet-text-modal .worksheet-text-modal__input .el-input__wrapper {
+  border: 1px solid #d6d3d1;
+}
+
+.worksheet-text-modal .worksheet-text-modal__textarea .el-textarea__inner:focus,
+.worksheet-text-modal .worksheet-text-modal__input .el-input__wrapper.is-focus {
+  border-color: #78716c;
+  box-shadow: 0 0 0 1px #d6d3d1;
+}
+
+.worksheet-text-modal .worksheet-text-modal__btn.el-button {
+  font-weight: 500;
+  border-radius: 6px;
+  min-height: 2rem;
+  padding: 0 0.9rem;
+}
+
+.worksheet-text-modal .worksheet-text-modal__btn.el-button--default {
+  --el-button-text-color: #57534e;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-hover-bg-color: #f5f5f4;
+  --el-button-border-color: #d6d3d1;
+  --el-button-hover-border-color: #a8a29e;
+}
+
+.worksheet-text-modal .worksheet-text-modal__btn--primary.el-button--primary {
+  --el-button-bg-color: #1c1917;
+  --el-button-border-color: #1c1917;
+  --el-button-hover-bg-color: #292524;
+  --el-button-hover-border-color: #292524;
+  --el-button-active-bg-color: #0c0a09;
+  --el-button-active-border-color: #0c0a09;
+  min-width: 6.5rem;
+}
+
+.dark .worksheet-text-modal.el-dialog {
+  --el-color-primary: #f9fafb;
+  --el-color-primary-light-3: #d6d3d1;
+  --el-color-primary-light-5: #a8a29e;
+  --el-color-primary-light-7: #4b5563;
+  --el-color-primary-light-8: #374151;
+  --el-color-primary-light-9: #1f2937;
+  border-color: #374151;
+  background: #1f2937;
+}
+
+.dark .worksheet-text-modal .el-dialog__header,
+.dark .worksheet-text-modal .el-dialog__footer {
+  border-color: #374151;
+}
+
+.dark .worksheet-text-modal .el-dialog__headerbtn .el-dialog__close {
+  color: #78716c;
+}
+
+.dark .worksheet-text-modal .el-dialog__headerbtn:hover .el-dialog__close {
+  color: #f9fafb;
+}
+
+.dark .worksheet-text-modal__title,
+.dark .worksheet-text-modal__paper-topic,
+.dark .worksheet-text-modal__paper-field {
+  color: #fafaf9;
+}
+
+.dark .worksheet-text-modal__label,
+.dark .worksheet-text-modal__paper-instruction,
+.dark .worksheet-text-modal__paper-diagram-status {
+  color: #d6d3d1;
+}
+
+.dark .worksheet-text-modal__preview-pane {
+  border-color: #374151;
+  background: #111827;
+}
+
+.dark .worksheet-text-modal__paper,
+.dark .worksheet-text-modal__field-input,
+.dark .worksheet-text-modal__paper-empty {
+  border-color: #4b5563;
+  background: #1f2937;
+}
+
+.dark .worksheet-text-modal__paper-header {
+  border-color: #374151;
+}
+
+.dark .worksheet-text-modal__paper-diagram {
+  background: transparent;
+}
+
+.dark .worksheet-text-modal .worksheet-text-modal__textarea .el-textarea__inner,
+.dark .worksheet-text-modal .worksheet-text-modal__input .el-input__wrapper {
+  border-color: #4b5563;
+  color: #fafaf9;
+  background: #111827;
+}

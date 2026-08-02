@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.160.0] - 2026-08-02
+
+> **Document Summary lite production hardening; AI brainstorm 3-LLM waterfall polish; learning-sheet DOCX export.**
+
+### Added
+
+- **Print learning sheet → Export document (DOCX)** — Editable name/class/date/task fields with the diagram embedded as an image (`POST /api/export_worksheet_docx`, `worksheet_docx.py`, modal split PDF/document actions).
+- **Document Summary web Chrome-extension nudge** — Soft notice under paste-URL that server fetch has no login cookies; tier-gated download link (`MindMapDocumentSummaryPanel.vue`, i18n).
+- **AI brainstorm canvas glow** — Topic / branch nodes use the same `LlmPhaseRing` waiting glow as auto-complete while brainstorm streams (`useAiBrainstorm.ts`, mind-map topic/branch nodes).
+- **AI brainstorm selected-card polish** — Swiss checkbox + ink/stone selected state, thin LLM accent bar, source label; dropped heavy ring stack (`AiBrainstormPanel.vue`).
+
+### Changed
+
+- **AI brainstorm uses all 3 LLMs** — Same default as node palette (`qwen` / `deepseek` / `doubao` in parallel); still 6 ideas per model per batch.
+- **Document Summary upload body limit** — Middleware allows ~22 MB for doc-summary / knowledge-space `.../documents/upload` (matches advertised 20 MB file cap).
+
+### Fixed
+
+- **Worksheet DOCX body limit** — Middleware now allows ~22 MB for `/api/export_worksheet_docx` so large diagram PNGs are not rejected by the default 5 MB cap.
+- **Worksheet DOCX image fit / invalid upload** — Tall diagrams shrink to the page box; corrupt images return 400 instead of 500.
+- **Worksheet modal hint (af/az/fr/th)** — Copy mentions both PDF and document export.
+- **URL page fetch SSRF / DoS** — Resolve-once IP pin + SNI/`Host`, streamed 2 MiB abort, no redirects; HTML/plain content-type gate; title slug when page title missing (`url_page_fetch.py`).
+- **`ingest-web-url` rate limit** — 20 requests / 600s before fetch/ingest.
+- **Document Summary lite generate package miss** — Returns 422 instead of falling through to Knowledge Space 403 (`web_content_generation.py`).
+- **Vision-before-upload** — Hand-drawn rebuild runs before file upload so orphan async extracts are not left behind.
+- **Generate-owned extract toasts** — Suppress success/error watcher toasts while save-and-generate owns the wait; delete disabled during add/generate/processing.
+- **Structured 413 toasts** — Object `detail` / `doc_summary_content_too_long` mapped via `parseApiErrorDetail` + i18n in file-center mutations.
+- **Web URL draft validation** — Require `http(s)` and max 2000 chars before Generate enables.
+- **AI brainstorm stage-2 Finish** — Applies selections across all parent tabs (palette parity), not only the active tab.
+- **AI brainstorm Load more session id** — Matches `${session}_${parentId}` after multi-parent stage-2 start.
+- **AI brainstorm undo / panel parity** — History navigation aborts brainstorm streams; `anyPanelOpen` / close-all / `state:panel_*` + fit include brainstorm; selection watcher no longer wipes stage-2.
+- **AI brainstorm dismiss → Load more** — Restored sessions remint a client session id so Load more stays available.
+
+### Tests
+
+- **Backend** — Doc-summary upload body-limit paths; URL fetch pin/redirect/oversize/content-type; ingest-web-url rate-limit source assert; worksheet DOCX export coverage.
+- **Frontend** — Lite draft URL validation + wait-helper empty/fail/timeout; `parseApiErrorDetail` object codes; multi-tab brainstorm Finish apply.
+
 ## [5.159.0] - 2026-08-01
 
 > **Admin error Copy all; showcase cross-org author 500; quieter Celery/WS/abort logs; ClientDisconnect and RLS session hardening.**

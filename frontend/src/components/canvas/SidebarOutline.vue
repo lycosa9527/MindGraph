@@ -6,9 +6,9 @@ import { computed, nextTick, ref } from 'vue'
 
 import { ElTooltip } from 'element-plus'
 
-import { ChevronDown, FileText, GitCommit, GripVertical, Plus, Trash2 } from '@lucide/vue'
+import { ChevronDown, GitCommit, GripVertical, Plus, Trash2 } from '@lucide/vue'
 
-import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelCloseButton.vue'
+import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
 
 import { useLanguage } from '@/composables'
 import { useMindMapOutlineMirror } from '@/composables/mindMap/useMindMapOutlineMirror'
@@ -177,32 +177,14 @@ function showActions(nodeId: string): boolean {
 
 <template>
   <aside
-    class="sidebar-outline pointer-events-auto absolute inset-y-3 left-3 z-40 flex w-80 flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-sm"
+    class="mind-map-side-rail-panel sidebar-outline pointer-events-auto w-80"
     :aria-label="t('canvas.mindMapSideToolbar.outline')"
   >
-    <header class="shrink-0 border-b border-gray-100 bg-white px-4 pb-3 pt-3.5">
-      <div class="flex items-center justify-between gap-3">
-        <div class="flex min-w-0 flex-1 items-center justify-start gap-2">
-          <FileText
-            class="h-4 w-4 shrink-0 text-emerald-500"
-            :stroke-width="1.75"
-          />
-          <span class="truncate text-base font-semibold text-slate-800">
-            {{ t('canvas.mindMapSideToolbar.outline') }}
-          </span>
-        </div>
-        <MindMapSidePanelCloseButton @close="handleClose" />
-      </div>
-
-      <p class="mt-2 text-sm leading-relaxed text-gray-500">
-        {{ t('canvas.mindMapSideToolbar.outlineIntro') }}
-      </p>
-      <div class="mt-1 flex justify-end">
-        <span class="shrink-0 text-[10px] font-semibold text-blue-600">
-          {{ t('canvas.mindMapSideToolbar.realtimeSync') }}
-        </span>
-      </div>
-    </header>
+    <MindMapSidePanelHeader
+      :title="t('canvas.mindMapSideToolbar.outline')"
+      :intro="t('canvas.mindMapSideToolbar.outlineIntro')"
+      @close="handleClose"
+    />
 
     <div
       class="sidebar-outline__scroll min-h-0 flex-1 overflow-y-auto bg-white py-2 pr-2"
@@ -250,7 +232,7 @@ function showActions(nodeId: string): boolean {
             </span>
             <span
               v-else
-              class="w-[14px] shrink-0"
+              class="w-3.5 shrink-0"
               aria-hidden="true"
             />
             <!-- Chevron (branch nodes only) -->
@@ -273,7 +255,7 @@ function showActions(nodeId: string): boolean {
             </button>
             <span
               v-else
-              class="w-[18px] shrink-0"
+              class="w-4.5 shrink-0"
               aria-hidden="true"
             />
 
@@ -387,10 +369,6 @@ function showActions(nodeId: string): boolean {
 </template>
 
 <style scoped>
-.sidebar-outline {
-  max-height: calc(100% - 1.5rem);
-}
-
 .sidebar-outline__scroll {
   scrollbar-width: thin;
   scrollbar-color: rgb(209 213 219) transparent;

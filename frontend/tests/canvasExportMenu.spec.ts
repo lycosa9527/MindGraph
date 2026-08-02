@@ -87,13 +87,22 @@ describe('diagramPdfExport', () => {
     expect(isPdfExportCommand('png')).toBe(false)
   })
 
-  it('prefers explicit export layout over pdf command', () => {
+  it('prefers explicit pdf command over stored export layout', () => {
     expect(
       resolvePdfOrientationFromExportOptions('pdf_portrait', 1200, 800, 'landscape')
-    ).toBe('landscape')
+    ).toBe('portrait')
     expect(
       resolvePdfOrientationFromExportOptions('pdf_landscape', 800, 1200, 'portrait')
+    ).toBe('landscape')
+  })
+
+  it('uses stored layout when command is plain pdf', () => {
+    expect(
+      resolvePdfOrientationFromExportOptions('pdf', 1200, 800, 'portrait')
     ).toBe('portrait')
+    expect(
+      resolvePdfOrientationFromExportOptions('pdf', 800, 1200, 'landscape')
+    ).toBe('landscape')
   })
 
   it('falls back to command when export layout is omitted', () => {

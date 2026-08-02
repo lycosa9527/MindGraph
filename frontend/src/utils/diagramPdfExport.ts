@@ -35,6 +35,9 @@ export function resolvePdfOrientationFromExportOptions(
   imageHeight: number,
   layout?: CanvasExportLayout
 ): PdfPageOrientation {
+  // Explicit TopBar commands win over the stored layout preference.
+  if (command === 'pdf_landscape') return 'landscape'
+  if (command === 'pdf_portrait') return 'portrait'
   if (layout === 'landscape' || layout === 'portrait') {
     return layout
   }
@@ -170,12 +173,25 @@ export function addRasterImageToA4PdfPage(
   )
 }
 
+function clampUnitOffset(value: number | undefined): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0
+  return Math.max(-1, Math.min(1, value))
+}
+
+function clampUnitScale(value: number | undefined): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 1
+  return Math.max(0.25, Math.min(1, value))
+}
+
 export function fitImageRectInA4Region(
   pdf: JsPdfLike,
   imageWidthPx: number,
   imageHeightPx: number,
   regionTopMm: number,
-  marginMm = 10
+  marginMm = 10,
+  offsetX = 0,
+  offsetY = 0,
+  scale = 1
 ): { x: number; y: number; width: number; height: number } {
   const pageW = pdf.internal.pageSize.getWidth()
   const pageH = pdf.internal.pageSize.getHeight()
@@ -188,9 +204,16 @@ export function fitImageRectInA4Region(
     drawH = maxH
     drawW = drawH * aspect
   }
+  const s = clampUnitScale(scale)
+  drawW *= s
+  drawH *= s
+  const freeW = Math.max(0, maxW - drawW)
+  const freeH = Math.max(0, maxH - drawH)
+  const ox = clampUnitOffset(offsetX)
+  const oy = clampUnitOffset(offsetY)
   return {
-    x: (pageW - drawW) / 2,
-    y: regionTopMm + (maxH - drawH) / 2,
+    x: marginMm + freeW / 2 + (ox * freeW) / 2,
+    y: regionTopMm + freeH / 2 + (oy * freeH) / 2,
     width: drawW,
     height: drawH,
   }
@@ -205,7 +228,10 @@ export function addWorksheetPageToPdf(
   headerWidthPx: number,
   headerHeightPx: number,
   marginMm = 10,
-  headerGapMm = 4
+  headerGapMm = 4,
+  diagramOffsetX = 0,
+  diagramOffsetY = 0,
+  diagramScale = 1
 ): void {
   const pageW = pdf.internal.pageSize.getWidth()
   let regionTopMm = marginMm
@@ -231,7 +257,10 @@ export function addWorksheetPageToPdf(
     diagramWidthPx,
     diagramHeightPx,
     regionTopMm,
-    marginMm
+    marginMm,
+    diagramOffsetX,
+    diagramOffsetY,
+    diagramScale
   )
   pdf.addImage(
     diagramDataUrl,

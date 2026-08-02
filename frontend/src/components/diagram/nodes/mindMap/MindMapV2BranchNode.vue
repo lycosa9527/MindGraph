@@ -9,6 +9,7 @@ import { Handle, Position } from '@vue-flow/core'
 import { storeToRefs } from 'pinia'
 
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
+import { aiBrainstormGlowingNodeIds } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
@@ -210,7 +211,11 @@ const isEditing: WritableComputedRef<boolean> = computed({
 })
 
 const previewStore = useMindMapSubgraphPreviewStore()
-const isSubgraphGenerating = computed(() => previewStore.isGeneratingFor(props.id))
+const isSubgraphGenerating = computed(
+  () =>
+    previewStore.isGeneratingFor(props.id) ||
+    aiBrainstormGlowingNodeIds.value.has(props.id)
+)
 const subgraphRingBorderRadius = computed(() => {
   const radius = nodeStyle.value.borderRadius
   if (typeof radius === 'string' && radius.length > 0) {

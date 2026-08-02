@@ -6,7 +6,8 @@ import { computed } from 'vue'
 
 import { Hammer, RotateCcw, Shuffle } from '@lucide/vue'
 
-import MindMapSidePanelCloseButton from '@/components/canvas/MindMapSidePanelCloseButton.vue'
+import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
 
 import { useLanguage } from '@/composables'
 import { type MindMapSideToolId } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
@@ -50,10 +51,6 @@ const answerVisibilityOptions = computed(() => [
   { label: t('canvas.mindMapSideToolbar.learningSheetAnswersShow'), value: 'show' as const },
   { label: t('canvas.mindMapSideToolbar.learningSheetAnswersHide'), value: 'hide' as const },
 ])
-
-function setAnswerVisibility(value: AnswerVisibility): void {
-  answerVisibility.value = value
-}
 
 const panelTitle = computed(() => {
   switch (props.tool) {
@@ -110,17 +107,14 @@ function handleExitLearningSheet(): void {
 
   <aside
     v-else
-    class="mind-map-side-panel pointer-events-auto absolute inset-y-3 left-3 z-40 flex w-80 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+    class="mind-map-side-rail-panel mind-map-side-panel pointer-events-auto w-80"
     :aria-label="panelTitle"
   >
-    <header
-      class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 bg-gray-50/50 px-3 py-3"
-    >
-      <h3 class="truncate text-base font-semibold tracking-wide text-gray-800">
-        {{ panelTitle }}
-      </h3>
-      <MindMapSidePanelCloseButton @close="handleClose" />
-    </header>
+    <MindMapSidePanelHeader
+      :title="panelTitle"
+      :intro="t('canvas.mindMapSideToolbar.learningSheetIntro')"
+      @close="handleClose"
+    />
 
     <!-- Learning sheet -->
     <div
@@ -128,10 +122,6 @@ function handleExitLearningSheet(): void {
       class="flex min-h-0 flex-1 flex-col overflow-y-auto"
     >
       <div class="flex flex-col gap-3 px-4 py-5">
-        <p class="text-sm leading-relaxed text-gray-500">
-          {{ t('canvas.mindMapSideToolbar.learningSheetIntro') }}
-        </p>
-
         <button
           type="button"
           class="learning-sheet-mode-card group"
@@ -161,7 +151,7 @@ function handleExitLearningSheet(): void {
         >
           <span class="learning-sheet-mode-card__icon learning-sheet-mode-card__icon--blue">
             <Hammer
-              class="h-4 w-4 -rotate-[38deg]"
+              class="h-4 w-4 rotate-[-38deg]"
               :stroke-width="2"
             />
           </span>
@@ -183,24 +173,12 @@ function handleExitLearningSheet(): void {
             <span class="learning-sheet-answers-control__label">
               {{ t('canvas.mindMapSideToolbar.learningSheetAnswersLabel') }}
             </span>
-            <div
-              class="learning-sheet-answers-seg"
-              role="radiogroup"
-              :aria-label="t('canvas.mindMapSideToolbar.learningSheetAnswersLabel')"
-            >
-              <button
-                v-for="opt in answerVisibilityOptions"
-                :key="opt.value"
-                type="button"
-                role="radio"
-                class="learning-sheet-answers-seg__btn"
-                :class="{ 'is-active': answerVisibility === opt.value }"
-                :aria-checked="answerVisibility === opt.value"
-                @click="setAnswerVisibility(opt.value)"
-              >
-                {{ opt.label }}
-              </button>
-            </div>
+            <AdminSwissSegmented
+              v-model="answerVisibility"
+              block
+              :options="answerVisibilityOptions"
+              :ariaLabel="t('canvas.mindMapSideToolbar.learningSheetAnswersLabel')"
+            />
             <p class="learning-sheet-answers-control__shortcut">
               {{ t('canvas.mindMapSideToolbar.learningSheetAnswersShortcut') }}
             </p>
@@ -208,7 +186,7 @@ function handleExitLearningSheet(): void {
 
           <button
             type="button"
-            class="learning-sheet-restore-btn inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors"
+            class="mind-map-side-rail-btn mind-map-side-rail-btn--primary w-full"
             @click="handleExitLearningSheet"
           >
             <RotateCcw
@@ -224,31 +202,25 @@ function handleExitLearningSheet(): void {
 </template>
 
 <style scoped>
-.mind-map-side-panel {
-  max-height: calc(100% - 1.5rem);
-}
-
 .learning-sheet-mode-card {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid rgb(226 232 240);
-  border-radius: 14px;
-  background: rgb(255 255 255);
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  border-radius: 12px;
+  background: var(--swiss-surface, #ffffff);
   text-align: left;
   cursor: pointer;
   transition:
     border-color 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
+    background 0.15s ease;
 }
 
 .learning-sheet-mode-card:hover {
-  border-color: rgb(203 213 225);
-  background: rgb(248 250 252);
-  box-shadow: 0 1px 3px rgb(15 23 42 / 0.06);
+  border-color: var(--swiss-border-strong, #d6d3d1);
+  background: var(--swiss-hover, #f5f5f4);
 }
 
 .learning-sheet-mode-card__icon {
@@ -258,40 +230,27 @@ function handleExitLearningSheet(): void {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  background: var(--swiss-inset, #fafaf9);
 }
 
 .learning-sheet-mode-card__icon--amber {
-  color: rgb(180 83 9);
-  background: rgb(254 243 199);
-}
-
-.group:hover .learning-sheet-mode-card__icon--amber {
-  background: rgb(253 230 138);
+  color: var(--swiss-geek-amber-ui, #b45309);
+  background: var(--swiss-geek-amber-soft, #fffbeb);
+  border-color: color-mix(in srgb, var(--swiss-geek-amber-ui, #b45309) 22%, var(--swiss-border, #e7e5e4));
 }
 
 .learning-sheet-mode-card__icon--blue {
-  color: rgb(29 78 216);
-  background: rgb(219 234 254);
-}
-
-.group:hover .learning-sheet-mode-card__icon--blue {
-  background: rgb(191 219 254);
+  color: var(--swiss-geek-cyan-ui, #0e7490);
+  background: var(--swiss-geek-cyan-soft, #ecfeff);
+  border-color: color-mix(in srgb, var(--swiss-geek-cyan-ui, #0e7490) 22%, var(--swiss-border, #e7e5e4));
 }
 
 .learning-sheet-mode-card--active {
-  border-color: rgb(59 130 246);
-  background: rgb(239 246 255);
-  box-shadow: 0 0 0 1px rgb(59 130 246 / 0.25);
-}
-
-.learning-sheet-restore-btn {
-  background: linear-gradient(180deg, rgb(245 158 11) 0%, rgb(217 119 6) 100%);
-  border: 1px solid rgb(180 83 9 / 0.35);
-}
-
-.learning-sheet-restore-btn:hover {
-  background: linear-gradient(180deg, rgb(251 191 36) 0%, rgb(245 158 11) 100%);
+  border-color: var(--swiss-ink, #1c1917);
+  background: var(--swiss-hover, #f5f5f4);
+  box-shadow: 0 0 0 1px var(--swiss-ink, #1c1917);
 }
 
 .learning-sheet-answers-control {
@@ -304,62 +263,13 @@ function handleExitLearningSheet(): void {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: rgb(29 78 216);
+  color: var(--swiss-muted, #78716c);
 }
 
 .learning-sheet-answers-control__shortcut {
   margin: 0;
   font-size: 10px;
   line-height: 1.35;
-  color: rgb(37 99 235 / 0.85);
-}
-
-.learning-sheet-answers-seg {
-  display: flex;
-  width: 100%;
-  padding: 3px;
-  gap: 3px;
-  border-radius: 12px;
-  border: 1px solid rgb(59 130 246 / 0.35);
-  background: rgb(239 246 255);
-  box-shadow: 0 1px 2px rgb(37 99 235 / 0.08);
-}
-
-.learning-sheet-answers-seg__btn {
-  flex: 1 1 0;
-  min-width: 0;
-  margin: 0;
-  padding: 0.5rem 0.75rem;
-  border: none;
-  border-radius: 9px;
-  background: transparent;
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.35;
-  color: rgb(29 78 216);
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.learning-sheet-answers-seg__btn:not(.is-active):hover {
-  background: rgb(191 219 254 / 0.75);
-}
-
-.learning-sheet-answers-seg__btn.is-active {
-  color: rgb(255 255 255);
-  background: linear-gradient(180deg, rgb(59 130 246) 0%, rgb(37 99 235) 100%);
-  box-shadow: 0 1px 2px rgb(29 78 216 / 0.28);
-}
-
-.learning-sheet-answers-seg__btn:focus {
-  outline: none;
-}
-
-.learning-sheet-answers-seg__btn:focus-visible {
-  outline: 2px solid rgb(59 130 246);
-  outline-offset: 1px;
+  color: var(--swiss-subtle, #a8a29e);
 }
 </style>

@@ -34,10 +34,9 @@ import {
   stage2StageNameForType,
 } from '@/composables/nodePalette/stageHelpers'
 import { streamNodePaletteBatch } from '@/composables/nodePalette/streamNodePaletteBatch'
-import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
+import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
 import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import { resolveDiagramLlmModel } from '@/utils/resolveDiagramLlmModel'
 import type { NodeSuggestion } from '@/types/panels'
 
 export interface UseAiBrainstormOptions {
@@ -46,6 +45,21 @@ export interface UseAiBrainstormOptions {
 }
 
 let _aiBrainstormInstance: ReturnType<typeof useAiBrainstorm> | null = null
+
+/**
+ * Canvas node ids that should show the same LlmPhaseRing glow as auto-complete
+ * while AI Brainstorm is generating (topic and/or related branch parents).
+ */
+export const aiBrainstormGlowingNodeIds = ref<ReadonlySet<string>>(new Set())
+
+function setAiBrainstormGlowingNodeIds(ids: Iterable<string>): void {
+  aiBrainstormGlowingNodeIds.value = new Set(ids)
+}
+
+function clearAiBrainstormGlowingNodeIds(): void {
+  if (aiBrainstormGlowingNodeIds.value.size === 0) return
+  aiBrainstormGlowingNodeIds.value = new Set()
+}
 
 export function getAiBrainstorm(options: UseAiBrainstormOptions = {}) {
   if (!_aiBrainstormInstance) {
@@ -61,7 +75,6 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
   const diagramStore = useDiagramStore()
   const panelsStore = usePanelsStore()
   const savedDiagramsStore = useSavedDiagramsStore()
-  const llmResultsStore = useLLMResultsStore()
   const uiStore = useUIStore()
   const { promptLanguage } = storeToRefs(uiStore)
 
@@ -113,6 +126,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
     isLoadingMore.value = false
     paletteStreamPhase.value = 'idle'
     errorMessage.value = null
+    clearAiBrainstormGlowingNodeIds()
   }
 
   function abortAllPaletteStreaming(): void {
@@ -208,6 +222,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
     if (!sessionId.value || !topicText.value) return
     isLoading.value = true
     errorMessage.value = null
+    setAiBrainstormGlowingNodeIds(parents.map((parent) => parent.id))
     const sharedIds = new Set(panelsStore.aiBrainstormPanel.suggestions.map((s) => s.id))
     const basePayload: Record<string, unknown> = {
       diagram_type: 'mindmap',
@@ -215,7 +230,6 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
       language: promptLanguage.value,
       stage: stage2StageNameForType('mindmap'),
       nodes_per_llm: MINDMAP_WATERFALL_NODES_PER_LLM,
-      llm_models: [resolveDiagramLlmModel(llmResultsStore.selectedModel)],
       mode: parents[0]?.name,
     }
     try {
@@ -249,6 +263,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
       }
     } finally {
       isLoading.value = false
+      clearAiBrainstormGlowingNodeIds()
     }
   }
 
@@ -271,6 +286,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
       selected: keepSessionId ? panelsStore.aiBrainstormPanel.selected : [],
     })
     isLoading.value = true
+    setAiBrainstormGlowingNodeIds(sources.map((source) => source.id))
     try {
       ensurePaletteStreamSession()
       const sharedIds = new Set(panelsStore.aiBrainstormPanel.suggestions.map((s) => s.id))
@@ -286,7 +302,6 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
             diagram_data: diagramData.value,
             language: promptLanguage.value,
             nodes_per_llm: MINDMAP_WATERFALL_NODES_PER_LLM,
-            llm_models: [resolveDiagramLlmModel(llmResultsStore.selectedModel)],
             stage: source.stage,
             stage_data: stageData,
             mode: source.id,
@@ -313,6 +328,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
       return true
     } finally {
       isLoading.value = false
+      clearAiBrainstormGlowingNodeIds()
     }
   }
 
@@ -351,6 +367,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
     }
 
     errorMessage.value = null
+    let glowIds: string[] = ['topic']
     if (isStage2 && parents.length > 0) {
       const tabs = parents.map((p) => ({ id: p.id, name: p.name }))
       const activeParent =
@@ -362,6 +379,9 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
         sourceTabs: tabs,
         selected: keepSessionId ? panelsStore.aiBrainstormPanel.selected : [],
       })
+      glowIds = parents.length > 1 && !keepSessionId
+        ? parents.map((p) => p.id)
+        : [activeParent.id]
       if (parents.length > 1 && !keepSessionId) {
         await startSessionsForAllParents(parents)
         return true
@@ -374,18 +394,19 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
         sourceTabs: [{ id: 'topic', name: tabLabel(topic) }],
         selected: keepSessionId ? panelsStore.aiBrainstormPanel.selected : [],
       })
+      glowIds = ['topic']
     }
 
     isLoading.value = true
+    setAiBrainstormGlowingNodeIds(glowIds)
     try {
       ensurePaletteStreamSession()
       const payload: Record<string, unknown> = {
-        session_id: sessionId.value,
+        session_id: resolveStreamSessionId(),
         diagram_type: 'mindmap',
         diagram_data: diagramData.value,
         language: promptLanguage.value,
         nodes_per_llm: MINDMAP_WATERFALL_NODES_PER_LLM,
-        llm_models: [resolveDiagramLlmModel(llmResultsStore.selectedModel)],
         stage: panelsStore.aiBrainstormPanel.stage,
         mode: panelsStore.aiBrainstormPanel.mode,
       }
@@ -403,6 +424,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
       return false
     } finally {
       isLoading.value = false
+      clearAiBrainstormGlowingNodeIds()
     }
   }
 
@@ -410,22 +432,53 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
     return startSession({ keepSessionId: false })
   }
 
+  function resolveActiveGlowNodeIds(): string[] {
+    const stage = panelsStore.aiBrainstormPanel.stage ?? undefined
+    const stageData = panelsStore.aiBrainstormPanel.stage_data ?? undefined
+    const mode = panelsStore.aiBrainstormPanel.mode
+    const parentId = getParentIdFromStageData('mindmap', stage, stageData ?? undefined)
+    if (parentId) return [parentId]
+    if (mode && mode !== 'branches') return [mode]
+    return ['topic']
+  }
+
+  /**
+   * Stream session id for the active tab/source.
+   * Stage-2 / canvas multi-source starts use `${base}_${nodeId}`; Load More must match.
+   */
+  function resolveStreamSessionId(): string {
+    const base = sessionId.value ?? ''
+    if (!base) return ''
+    const stage = panelsStore.aiBrainstormPanel.stage ?? undefined
+    const stageData = panelsStore.aiBrainstormPanel.stage_data ?? undefined
+    const mode = panelsStore.aiBrainstormPanel.mode
+    const parentId = getParentIdFromStageData('mindmap', stage, stageData ?? undefined)
+    if (parentId) return `${base}_${parentId}`
+    const tabs = panelsStore.aiBrainstormPanel.sourceTabs ?? []
+    if (mode && mode !== 'branches' && tabs.some((tab) => tab.id === mode)) {
+      return `${base}_${mode}`
+    }
+    return base
+  }
+
   async function loadNextBatch(): Promise<boolean> {
-    if (!sessionId.value || isLoadingMore.value) return false
+    if (isLoadingMore.value) return false
+    ensureSessionId()
+    if (!sessionId.value) return false
     isLoadingMore.value = true
+    setAiBrainstormGlowingNodeIds(resolveActiveGlowNodeIds())
     try {
       ensurePaletteStreamSession()
       const stage = panelsStore.aiBrainstormPanel.stage ?? undefined
       const stageData = panelsStore.aiBrainstormPanel.stage_data ?? undefined
       const mode = panelsStore.aiBrainstormPanel.mode ?? stage
       const payload: Record<string, unknown> = {
-        session_id: sessionId.value,
+        session_id: resolveStreamSessionId(),
         diagram_type: 'mindmap',
         center_topic: topicText.value || ' ',
         language: promptLanguage.value,
         mode,
         nodes_per_llm: MINDMAP_WATERFALL_NODES_PER_LLM,
-        llm_models: [resolveDiagramLlmModel(llmResultsStore.selectedModel)],
       }
       if (stage) payload.stage = stage
       if (stageData && Object.keys(stageData).length > 0) payload.stage_data = stageData
@@ -439,6 +492,7 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
       return false
     } finally {
       isLoadingMore.value = false
+      clearAiBrainstormGlowingNodeIds()
     }
   }
 
@@ -508,9 +562,15 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
 
   function dismiss(): void {
     abortAllPaletteStreaming()
+    panelsStore.saveAiBrainstormSession(diagramKey())
     panelsStore.closeAiBrainstorm()
     sessionId.value = null
-    panelsStore.saveAiBrainstormSession(diagramKey())
+  }
+
+  function ensureSessionId(): void {
+    if (!sessionId.value) {
+      sessionId.value = generateSessionId()
+    }
   }
 
   function removeDroppedSuggestions(suggestionIds: string[]): void {
@@ -528,6 +588,15 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
   eventBus.onWithOwner(
     'ai_brainstorm:streaming_stop_requested',
     abortAllPaletteStreaming,
+    'useAiBrainstorm'
+  )
+  eventBus.onWithOwner(
+    'ai_brainstorm:opened',
+    (payload: { hasRestoredSession?: boolean }) => {
+      if (payload?.hasRestoredSession) {
+        ensureSessionId()
+      }
+    },
     'useAiBrainstorm'
   )
 

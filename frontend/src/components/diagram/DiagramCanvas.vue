@@ -23,8 +23,12 @@ import { MiniMap } from '@vue-flow/minimap'
 import { storeToRefs } from 'pinia'
 
 import { ExportToCommunityModal } from '@/components/canvas'
+import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
 import MindMapNodeExplainModal from '@/components/canvas/MindMapNodeExplainModal.vue'
 import { useBranchMoveDrag, useLanguage } from '@/composables'
+import type { CanvasExportColorMode } from '@/config/canvasExportOptions'
+import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
+import { useCanvasExportStore } from '@/stores/canvasExport'
 import { useNodeFloatingToolbarPosition } from '@/composables/canvasToolbar'
 import { registerDiagramLayoutRecalcBootstrap } from '@/composables/core/diagramLayoutRecalcBootstrap'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
@@ -407,6 +411,7 @@ const {
   exportByFormat,
   prepareForCommunityExport,
   restoreViewportAfterCommunityExport,
+  captureWorksheetPreviewPng,
 } = useDiagramCanvasExport({
   vueFlowWrapper,
   diagramStore,
@@ -414,6 +419,39 @@ const {
   getViewport,
   setViewport,
 })
+
+const canvasExportStore = useCanvasExportStore()
+const {
+  exportOptions,
+  worksheetTextOptions,
+  worksheetTextModalOpen,
+} = storeToRefs(canvasExportStore)
+
+function handleWorksheetTextSave(payload: {
+  worksheetText: CanvasWorksheetTextOptions
+  colorMode: CanvasExportColorMode
+  format: 'pdf' | 'worksheet_docx'
+}) {
+  canvasExportStore.commitWorksheetAndExport(
+    payload.worksheetText,
+    payload.colorMode,
+    payload.format
+  )
+}
+
+const worksheetDefaultTopic = computed(() => getExportTitle())
+
+async function captureWorksheetPreview(preview?: {
+  colorMode?: CanvasExportColorMode
+}): Promise<string | null> {
+  return canvasExportStore.runExportSession(async () =>
+    captureWorksheetPreviewPng({
+      ...exportOptions.value,
+      colorMode: preview?.colorMode ?? exportOptions.value.colorMode,
+      answerMode: exportOptions.value.answerMode,
+    })
+  )
+}
 
 function handleViewportChangeWithToolbar(...args: Parameters<typeof handleViewportChange>) {
   handleViewportChange(...args)
@@ -716,6 +754,16 @@ defineExpose({
       :prepare-for-thumbnail="prepareForCommunityExport"
       :restore-after-thumbnail="restoreViewportAfterCommunityExport"
       :diagram-type="diagramStore.type || 'mind_map'"
+    />
+
+    <CanvasWorksheetTextModal
+      v-model:visible="worksheetTextModalOpen"
+      :color-mode="exportOptions.colorMode"
+      :options="worksheetTextOptions"
+      :layout="exportOptions.layout"
+      :default-topic="worksheetDefaultTopic"
+      :capture-diagram-preview="captureWorksheetPreview"
+      @save="handleWorksheetTextSave"
     />
   </div>
 </template>

@@ -5,12 +5,20 @@ import {
   useDiagramSpecForSave,
   useLanguage,
 } from '@/composables'
+import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import { ANIMATION } from '@/config/uiConfig'
 import { useDiagramStore, useUIStore } from '@/stores'
+import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
+import { captureDiagramPngData } from '@/utils/diagramExportRasterCapture'
+import { runLearningSheetRasterCapture } from '@/utils/diagramExportLearningSheet'
 import {
   prepareDiagramCanvasForRasterCapture,
   waitForDiagramExportFonts,
 } from '@/utils/diagramExportPrep'
+import {
+  getDiagramCanvasPdfHtmlToImageOptions,
+  waitForNextPaint,
+} from '@/utils/diagramHtmlToImage'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 
 type CanvasViewport = { x: number; y: number; zoom: number }
@@ -72,6 +80,39 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
     communityViewportSnapshot.value = null
   }
 
+  /** Fit → rasterize diagram for worksheet modal preview → restore viewport. */
+  async function captureWorksheetPreviewPng(
+    exportOptions?: CanvasExportOptions
+  ): Promise<string | null> {
+    const container = vueFlowWrapper.value
+    if (!container) return null
+
+    const saved = getViewport?.() ?? null
+    try {
+      await prepareDiagramCanvasForRasterCapture(fitForExport)
+      await waitForDiagramExportFonts(uiStore.promptLanguage)
+      await waitForNextPaint()
+      let dataUrl: string | null = null
+      await runWithExportVisualMode(uiStore, container, exportOptions, async () => {
+        const capture = await runLearningSheetRasterCapture(
+          diagramStore,
+          exportOptions,
+          () =>
+            captureDiagramPngData(
+              container,
+              getDiagramCanvasPdfHtmlToImageOptions({ pixelRatio: 1 })
+            )
+        )
+        dataUrl = capture.dataUrl
+      })
+      return dataUrl
+    } finally {
+      if (saved && setViewport) {
+        setViewport(saved, { duration: ANIMATION.DURATION_FAST })
+      }
+    }
+  }
+
   return {
     showExportToCommunityModal,
     getExportContainer,
@@ -80,5 +121,6 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
     exportByFormat,
     prepareForCommunityExport,
     restoreViewportAfterCommunityExport,
+    captureWorksheetPreviewPng,
   }
 }

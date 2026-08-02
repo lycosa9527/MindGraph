@@ -5,13 +5,14 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { ANIMATION } from '@/config/uiConfig'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
-import { useDiagramStore } from '@/stores'
+import { useCanvasExportStore, useDiagramStore } from '@/stores'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramNode, DiagramType, MindGraphNode } from '@/types'
 import { isManualViewportMode } from '@/utils/conceptMapDesktopViewport'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
 import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
+import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 
 type FitApi = {
   fitToFullCanvas: (animate?: boolean) => void
@@ -82,6 +83,7 @@ export function useDiagramCanvasEventBus(): {
   function mountSubscriptions(ctx: DiagramCanvasEventBusContext): () => void {
     const unsubscribers: (() => void)[] = []
     const uiStore = useUIStore()
+    const canvasExportStore = useCanvasExportStore()
     const {
       diagramStore,
       getNodes,
@@ -186,25 +188,45 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       eventBus.on('toolbar:export_requested', async ({ format, options }) => {
+        // Worksheet headers only when the payload opts in (打印学习单 commit).
+        const mergedOptions = mergeCanvasExportOptions(options)
+
         if (format === 'mg') {
-          await exportByFormat(format, options)
+          await canvasExportStore.runExportSession(async () => {
+            await exportByFormat(format, mergedOptions)
+          })
           return
         }
 
         if (format === 'community') {
-          await prepareForCommunityExport()
-          showExportToCommunityModal.value = true
+          await canvasExportStore.runExportSession(async () => {
+            await prepareForCommunityExport()
+            showExportToCommunityModal.value = true
+          })
           return
         }
 
-        const savedViewport = getViewport()
-        fitApi.fitForExport()
-        await nextTick()
-        await waitForNextPaint()
-        await runWithExportVisualMode(uiStore, getExportContainer(), options, async () => {
-          await exportByFormat(format, options)
+        await canvasExportStore.runExportSession(async () => {
+          const savedViewport = getViewport()
+          fitApi.fitForExport()
+          await nextTick()
+          await waitForNextPaint()
+          await runWithExportVisualMode(
+            uiStore,
+            getExportContainer(),
+            mergedOptions,
+            async () => {
+              await exportByFormat(format, mergedOptions)
+            }
+          )
+          setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
         })
-        setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
+      })
+    )
+
+    unsubscribers.push(
+      eventBus.on('toolbar:worksheet_text_requested', () => {
+        canvasExportStore.openWorksheetTextModal()
       })
     )
 

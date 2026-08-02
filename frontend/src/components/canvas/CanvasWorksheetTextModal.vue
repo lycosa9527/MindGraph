@@ -1,47 +1,85 @@
 <script setup lang="ts">
 /**
  * Worksheet header settings — classroom print fields (name, class, date, instructions).
+ * Wide Swiss stone shell with live paper preview of the real diagram.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { ElButton, ElDialog, ElInput } from 'element-plus'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
+import { useWorksheetDiagramPreviewDrag } from '@/composables/canvas/useWorksheetDiagramPreviewDrag'
 import { useLanguage } from '@/composables/core/useLanguage'
+import type {
+  CanvasExportColorMode,
+  CanvasExportLayout,
+} from '@/config/canvasExportOptions'
 import {
   CLASSROOM_WORKSHEET_TEXT_PRESET,
   DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS,
+  hasActiveWorksheetHeader,
+  resolveWorksheetTopicText,
   type CanvasWorksheetTextOptions,
 } from '@/config/canvasWorksheetText'
-import { useDiagramStore } from '@/stores'
-import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
+
+import '@/styles/canvas-worksheet-text-modal.css'
 
 const visible = defineModel<boolean>('visible', { required: true })
 
-const props = defineProps<{
-  options: CanvasWorksheetTextOptions
-}>()
+const props = withDefaults(
+  defineProps<{
+    options: CanvasWorksheetTextOptions
+    colorMode?: CanvasExportColorMode
+    layout?: CanvasExportLayout
+    defaultTopic?: string
+    captureDiagramPreview?: (preview?: {
+      colorMode?: CanvasExportColorMode
+    }) => Promise<string | null>
+  }>(),
+  {
+    colorMode: 'color',
+    layout: 'landscape',
+    defaultTopic: '',
+    captureDiagramPreview: undefined,
+  }
+)
 
 const emit = defineEmits<{
-  save: [options: CanvasWorksheetTextOptions]
+  save: [payload: {
+    worksheetText: CanvasWorksheetTextOptions
+    colorMode: CanvasExportColorMode
+    format: 'pdf' | 'worksheet_docx'
+  }]
 }>()
 
-const { t, currentLanguage } = useLanguage()
-const diagramStore = useDiagramStore()
+const { t } = useLanguage()
 
 const draft = ref<CanvasWorksheetTextOptions>({ ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS })
+const draftColorMode = ref<CanvasExportColorMode>('color')
+const diagramPreviewUrl = ref<string | null>(null)
+const previewLoading = ref(false)
+const previewFailed = ref(false)
+let previewRequestId = 0
 
-const topicPreview = computed(() =>
-  resolveDiagramTitleForSave(
-    diagramStore.effectiveTitle,
-    diagramStore.type,
-    currentLanguage.value
-  )
+const previewTopic = computed(() =>
+  resolveWorksheetTopicText(draft.value, props.defaultTopic)
 )
+
+const previewHasHeader = computed(() => hasActiveWorksheetHeader(draft.value))
+
+const previewInstruction = computed(() => {
+  const custom = draft.value.instructionText.trim()
+  return custom || t('canvas.worksheetText.defaultInstruction')
+})
 
 const showHideOptions = computed(() => [
   { label: t('canvas.worksheetText.show'), value: 'show' as const },
   { label: t('canvas.worksheetText.hide'), value: 'hide' as const },
+])
+
+const colorOptions = computed(() => [
+  { label: t('canvas.exportOptions.colorWireframe'), value: 'wireframe' as const },
+  { label: t('canvas.exportOptions.colorColored'), value: 'color' as const },
 ])
 
 type WorksheetVisibility = 'show' | 'hide'
@@ -64,20 +102,136 @@ const showClassVisibility = worksheetVisibility('showClass')
 const showDateVisibility = worksheetVisibility('showDate')
 const showInstructionVisibility = worksheetVisibility('showInstruction')
 
+const diagramOffsetX = computed({
+  get: () => draft.value.diagramOffsetX,
+  set: (value: number) => {
+    draft.value.diagramOffsetX = value
+  },
+})
+const diagramOffsetY = computed({
+  get: () => draft.value.diagramOffsetY,
+  set: (value: number) => {
+    draft.value.diagramOffsetY = value
+  },
+})
+const diagramScale = computed({
+  get: () => draft.value.diagramScale,
+  set: (value: number) => {
+    draft.value.diagramScale = value
+  },
+})
+const diagramDragEnabled = computed(() => Boolean(diagramPreviewUrl.value))
+
+const {
+  diagramBodyRef,
+  diagramImgRef,
+  diagramFrameRef,
+  dragging,
+  resizing,
+  showCenterGuideX,
+  showCenterGuideY,
+  diagramFrameStyle,
+  onFramePointerDown,
+  onFramePointerMove,
+  onFramePointerUp,
+  onFramePointerCancel,
+  onDiagramImageLoad,
+  syncFreeSpace,
+  resetInteraction,
+} = useWorksheetDiagramPreviewDrag({
+  offsetX: diagramOffsetX,
+  offsetY: diagramOffsetY,
+  scale: diagramScale,
+  enabled: diagramDragEnabled,
+})
+
+function seedDraftFromProps() {
+  // Keep empty topicText so export falls back to the live diagram title.
+  draft.value = {
+    ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS,
+    ...props.options,
+  }
+  draftColorMode.value = props.colorMode
+}
+
+function clearPreviewState() {
+  previewRequestId += 1
+  previewLoading.value = false
+  previewFailed.value = false
+  diagramPreviewUrl.value = null
+  resetInteraction()
+}
+
+async function refreshDiagramPreview() {
+  if (!props.captureDiagramPreview) {
+    previewFailed.value = true
+    diagramPreviewUrl.value = null
+    return
+  }
+  const requestId = ++previewRequestId
+  previewLoading.value = true
+  previewFailed.value = false
+  try {
+    const dataUrl = await props.captureDiagramPreview({
+      colorMode: draftColorMode.value,
+    })
+    if (requestId !== previewRequestId) return
+    if (dataUrl) {
+      diagramPreviewUrl.value = dataUrl
+      previewFailed.value = false
+      await nextTick()
+      syncFreeSpace()
+      return
+    }
+    // Busy export / empty capture: keep prior preview if we have one.
+    if (!diagramPreviewUrl.value) {
+      previewFailed.value = true
+    }
+  } catch {
+    if (requestId !== previewRequestId) return
+    diagramPreviewUrl.value = null
+    previewFailed.value = true
+  } finally {
+    if (requestId === previewRequestId) {
+      previewLoading.value = false
+    }
+  }
+}
+
 watch(
   () => props.options,
-  (value) => {
-    draft.value = { ...value }
+  () => {
+    if (visible.value) {
+      seedDraftFromProps()
+    }
   },
-  { immediate: true, deep: true }
+  { deep: true }
 )
 
 watch(
   () => visible.value,
   (open) => {
-    if (open) {
-      draft.value = { ...props.options }
+    if (!open) {
+      clearPreviewState()
+      return
     }
+    seedDraftFromProps()
+    void refreshDiagramPreview()
+  }
+)
+
+watch(draftColorMode, () => {
+  if (visible.value) {
+    void refreshDiagramPreview()
+  }
+})
+
+watch(
+  () => props.layout,
+  async () => {
+    if (!visible.value) return
+    await nextTick()
+    syncFreeSpace()
   }
 )
 
@@ -85,203 +239,359 @@ function close() {
   visible.value = false
 }
 
-function handleSave() {
-  emit('save', { ...draft.value })
+function commitExport(format: 'pdf' | 'worksheet_docx') {
+  const worksheetText = { ...draft.value }
+  const liveTopic = props.defaultTopic.trim()
+  // Don't freeze the current title into sessionStorage when user didn't override it.
+  if (liveTopic && worksheetText.topicText.trim() === liveTopic) {
+    worksheetText.topicText = ''
+  }
+  emit('save', {
+    worksheetText,
+    colorMode: draftColorMode.value,
+    format,
+  })
   visible.value = false
 }
 
-function handleReset() {
+function handleExportPdf() {
+  commitExport('pdf')
+}
+
+function handleExportDocx() {
+  commitExport('worksheet_docx')
+}
+
+async function handleReset() {
+  // Full factory defaults: fields, placement, scale, and color mode.
   draft.value = { ...CLASSROOM_WORKSHEET_TEXT_PRESET }
+  draftColorMode.value = 'color'
+  await nextTick()
+  syncFreeSpace()
 }
 </script>
 
 <template>
   <ElDialog
     v-model="visible"
-    :title="t('canvas.worksheetText.modalTitle')"
-    width="520px"
+    width="920px"
     append-to-body
     destroy-on-close
+    align-center
     class="worksheet-text-modal"
+    :show-close="true"
     @close="close"
   >
-    <div class="worksheet-text-modal__body">
-      <div class="worksheet-text-modal__topic-block">
-        <span class="worksheet-text-modal__topic-label">{{
-          t('canvas.worksheetText.topicPreviewLabel')
-        }}</span>
-        <p class="worksheet-text-modal__topic-value">{{ topicPreview }}</p>
-      </div>
-
-      <div class="worksheet-text-modal__row">
-        <span class="worksheet-text-modal__label">{{ t('canvas.worksheetText.showTopic') }}</span>
-        <AdminSwissSegmented
-          v-model="showTopicVisibility"
-          fit
-          :options="showHideOptions"
-          :aria-label="t('canvas.worksheetText.showTopic')"
+    <template #header>
+      <div class="worksheet-text-modal__header">
+        <span
+          class="worksheet-text-modal__glyph"
+          aria-hidden="true"
+        >◇</span>
+        <h2 class="worksheet-text-modal__title">
+          {{ t('canvas.worksheetText.modalTitle') }}
+        </h2>
+        <span
+          class="worksheet-text-modal__header-rule"
+          aria-hidden="true"
         />
+        <span class="worksheet-text-modal__header-note">
+          {{ t('canvas.worksheetText.previewLabel') }}
+        </span>
       </div>
+    </template>
 
-      <div class="worksheet-text-modal__row">
-        <span class="worksheet-text-modal__label">{{ t('canvas.worksheetText.showName') }}</span>
-        <AdminSwissSegmented
-          v-model="showNameVisibility"
-          fit
-          :options="showHideOptions"
-          :aria-label="t('canvas.worksheetText.showName')"
-        />
-      </div>
-
-      <div class="worksheet-text-modal__row">
-        <span class="worksheet-text-modal__label">{{ t('canvas.worksheetText.showClass') }}</span>
-        <AdminSwissSegmented
-          v-model="showClassVisibility"
-          fit
-          :options="showHideOptions"
-          :aria-label="t('canvas.worksheetText.showClass')"
-        />
-      </div>
-
-      <div class="worksheet-text-modal__row">
-        <span class="worksheet-text-modal__label">{{ t('canvas.worksheetText.showDate') }}</span>
-        <AdminSwissSegmented
-          v-model="showDateVisibility"
-          fit
-          :options="showHideOptions"
-          :aria-label="t('canvas.worksheetText.showDate')"
-        />
-      </div>
-
-      <div class="worksheet-text-modal__row">
-        <span class="worksheet-text-modal__label">{{
-          t('canvas.worksheetText.showInstruction')
-        }}</span>
-        <AdminSwissSegmented
-          v-model="showInstructionVisibility"
-          fit
-          :options="showHideOptions"
-          :aria-label="t('canvas.worksheetText.showInstruction')"
-        />
-      </div>
-
-      <div
-        v-if="draft.showInstruction"
-        class="worksheet-text-modal__instruction"
+    <div class="worksheet-text-modal__layout">
+      <aside
+        class="worksheet-text-modal__preview-pane"
+        :aria-label="t('canvas.worksheetText.previewLabel')"
       >
-        <span class="worksheet-text-modal__label">{{
-          t('canvas.worksheetText.instructionLabel')
-        }}</span>
-        <ElInput
-          v-model="draft.instructionText"
-          type="textarea"
-          :rows="2"
-          :placeholder="t('canvas.worksheetText.defaultInstruction')"
-        />
-      </div>
+        <div class="worksheet-text-modal__preview-kicker">
+          <span>{{ t('canvas.worksheetText.previewLabel') }}</span>
+          <span class="worksheet-text-modal__preview-kicker-meta">
+            A4 ·
+            {{
+              layout === 'portrait'
+                ? t('canvas.exportOptions.layoutPortrait')
+                : t('canvas.exportOptions.layoutLandscape')
+            }}
+          </span>
+        </div>
+        <div class="worksheet-text-modal__paper-stage">
+          <div
+            class="worksheet-text-modal__paper"
+            :class="`worksheet-text-modal__paper--${layout}`"
+          >
+            <div
+              v-if="previewHasHeader"
+              class="worksheet-text-modal__paper-header"
+            >
+              <p
+                v-if="draft.showTopic && previewTopic"
+                class="worksheet-text-modal__paper-topic"
+              >
+                {{ previewTopic }}
+              </p>
+              <div
+                v-if="draft.showName || draft.showClass || draft.showDate"
+                class="worksheet-text-modal__paper-meta"
+              >
+                <span
+                  v-if="draft.showName"
+                  class="worksheet-text-modal__paper-field"
+                >
+                  <span>{{ t('canvas.worksheetText.fieldName') }}</span>
+                  <span
+                    class="worksheet-text-modal__paper-line"
+                    aria-hidden="true"
+                  />
+                </span>
+                <span
+                  v-if="draft.showClass"
+                  class="worksheet-text-modal__paper-field"
+                >
+                  <span>{{ t('canvas.worksheetText.fieldClass') }}</span>
+                  <span
+                    class="worksheet-text-modal__paper-line worksheet-text-modal__paper-line--short"
+                    aria-hidden="true"
+                  />
+                </span>
+                <span
+                  v-if="draft.showDate"
+                  class="worksheet-text-modal__paper-field"
+                >
+                  <span>{{ t('canvas.worksheetText.fieldDate') }}</span>
+                  <span
+                    class="worksheet-text-modal__paper-line"
+                    aria-hidden="true"
+                  />
+                </span>
+              </div>
+              <p
+                v-if="draft.showInstruction"
+                class="worksheet-text-modal__paper-instruction"
+              >
+                {{ t('canvas.worksheetText.instructionPrefix') }}{{ previewInstruction }}
+              </p>
+            </div>
+            <div
+              v-else
+              class="worksheet-text-modal__paper-empty"
+            >
+              {{ t('canvas.worksheetText.previewEmpty') }}
+            </div>
+            <div class="worksheet-text-modal__paper-diagram">
+              <div
+                ref="diagramBodyRef"
+                class="worksheet-text-modal__paper-diagram-body"
+                :class="{ 'is-dragging': dragging, 'is-resizing': resizing }"
+              >
+                <span
+                  v-if="showCenterGuideX"
+                  class="worksheet-text-modal__center-guide worksheet-text-modal__center-guide--x"
+                  aria-hidden="true"
+                />
+                <span
+                  v-if="showCenterGuideY"
+                  class="worksheet-text-modal__center-guide worksheet-text-modal__center-guide--y"
+                  aria-hidden="true"
+                />
+                <div
+                  v-if="diagramPreviewUrl"
+                  ref="diagramFrameRef"
+                  class="worksheet-text-modal__diagram-frame"
+                  :class="{ 'is-dragging': dragging, 'is-resizing': resizing }"
+                  :style="diagramFrameStyle"
+                  @pointerdown="onFramePointerDown"
+                  @pointermove="onFramePointerMove"
+                  @pointerup="onFramePointerUp"
+                  @pointercancel="onFramePointerCancel"
+                >
+                  <img
+                    ref="diagramImgRef"
+                    :src="diagramPreviewUrl"
+                    class="worksheet-text-modal__paper-diagram-img"
+                    alt=""
+                    draggable="false"
+                    @load="onDiagramImageLoad"
+                  >
+                  <span
+                    class="worksheet-text-modal__diagram-handle worksheet-text-modal__diagram-handle--nw"
+                    data-handle="nw"
+                  />
+                  <span
+                    class="worksheet-text-modal__diagram-handle worksheet-text-modal__diagram-handle--ne"
+                    data-handle="ne"
+                  />
+                  <span
+                    class="worksheet-text-modal__diagram-handle worksheet-text-modal__diagram-handle--sw"
+                    data-handle="sw"
+                  />
+                  <span
+                    class="worksheet-text-modal__diagram-handle worksheet-text-modal__diagram-handle--se"
+                    data-handle="se"
+                  />
+                </div>
+                <p
+                  v-else-if="previewLoading"
+                  class="worksheet-text-modal__paper-diagram-status"
+                >
+                  {{ t('canvas.worksheetText.previewLoading') }}
+                </p>
+                <p
+                  v-else-if="previewFailed"
+                  class="worksheet-text-modal__paper-diagram-status"
+                >
+                  {{ t('canvas.worksheetText.previewFailed') }}
+                </p>
+              </div>
+              <p
+                v-if="diagramPreviewUrl"
+                class="worksheet-text-modal__paper-diagram-hint"
+              >
+                {{ t('canvas.worksheetText.dragDiagramHint') }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
 
-      <p class="worksheet-text-modal__hint">{{ t('canvas.worksheetText.modalHint') }}</p>
+      <div class="worksheet-text-modal__controls">
+        <div class="worksheet-text-modal__fields">
+          <div class="worksheet-text-modal__row">
+            <span class="worksheet-text-modal__label">{{
+              t('canvas.worksheetText.showTopic')
+            }}</span>
+            <AdminSwissSegmented
+              v-model="showTopicVisibility"
+              fit
+              :options="showHideOptions"
+              :aria-label="t('canvas.worksheetText.showTopic')"
+            />
+          </div>
+
+          <div class="worksheet-text-modal__field-input">
+            <span class="worksheet-text-modal__kicker">{{
+              t('canvas.worksheetText.topicPreviewLabel')
+            }}</span>
+            <ElInput
+              v-model="draft.topicText"
+              :placeholder="defaultTopic || t('canvas.worksheetText.topicPreviewLabel')"
+              class="worksheet-text-modal__input"
+            />
+          </div>
+
+          <div class="worksheet-text-modal__row">
+            <span class="worksheet-text-modal__label">{{
+              t('canvas.worksheetText.showName')
+            }}</span>
+            <AdminSwissSegmented
+              v-model="showNameVisibility"
+              fit
+              :options="showHideOptions"
+              :aria-label="t('canvas.worksheetText.showName')"
+            />
+          </div>
+
+          <div class="worksheet-text-modal__row">
+            <span class="worksheet-text-modal__label">{{
+              t('canvas.worksheetText.showClass')
+            }}</span>
+            <AdminSwissSegmented
+              v-model="showClassVisibility"
+              fit
+              :options="showHideOptions"
+              :aria-label="t('canvas.worksheetText.showClass')"
+            />
+          </div>
+
+          <div class="worksheet-text-modal__row">
+            <span class="worksheet-text-modal__label">{{
+              t('canvas.worksheetText.showDate')
+            }}</span>
+            <AdminSwissSegmented
+              v-model="showDateVisibility"
+              fit
+              :options="showHideOptions"
+              :aria-label="t('canvas.worksheetText.showDate')"
+            />
+          </div>
+
+          <div class="worksheet-text-modal__row">
+            <span class="worksheet-text-modal__label">{{
+              t('canvas.worksheetText.showInstruction')
+            }}</span>
+            <AdminSwissSegmented
+              v-model="showInstructionVisibility"
+              fit
+              :options="showHideOptions"
+              :aria-label="t('canvas.worksheetText.showInstruction')"
+            />
+          </div>
+        </div>
+
+        <div
+          v-if="draft.showInstruction"
+          class="worksheet-text-modal__instruction"
+        >
+          <span class="worksheet-text-modal__kicker">{{
+            t('canvas.worksheetText.instructionLabel')
+          }}</span>
+          <ElInput
+            v-model="draft.instructionText"
+            type="textarea"
+            :rows="3"
+            :placeholder="t('canvas.worksheetText.defaultInstruction')"
+            class="worksheet-text-modal__textarea"
+          />
+        </div>
+
+        <div class="worksheet-text-modal__row">
+          <span class="worksheet-text-modal__label">{{
+            t('canvas.exportOptions.colorLabel')
+          }}</span>
+          <AdminSwissSegmented
+            v-model="draftColorMode"
+            fit
+            :options="colorOptions"
+            :aria-label="t('canvas.exportOptions.colorLabel')"
+          />
+        </div>
+
+        <p class="worksheet-text-modal__hint">{{ t('canvas.worksheetText.modalHint') }}</p>
+      </div>
     </div>
 
     <template #footer>
       <div class="worksheet-text-modal__footer">
-        <ElButton @click="handleReset">{{ t('canvas.worksheetText.reset') }}</ElButton>
+        <ElButton
+          class="worksheet-text-modal__btn"
+          @click="handleReset"
+        >
+          {{ t('canvas.worksheetText.reset') }}
+        </ElButton>
         <div class="worksheet-text-modal__footer-actions">
-          <ElButton @click="close">{{ t('canvas.worksheetText.cancel') }}</ElButton>
+          <ElButton
+            class="worksheet-text-modal__btn"
+            @click="close"
+          >
+            {{ t('canvas.worksheetText.cancel') }}
+          </ElButton>
+          <ElButton
+            class="worksheet-text-modal__btn"
+            @click="handleExportDocx"
+          >
+            {{ t('canvas.worksheetText.exportDocx') }}
+          </ElButton>
           <ElButton
             type="primary"
-            @click="handleSave"
+            class="worksheet-text-modal__btn worksheet-text-modal__btn--primary"
+            @click="handleExportPdf"
           >
-            {{ t('canvas.worksheetText.save') }}
+            {{ t('canvas.worksheetText.exportPdf') }}
           </ElButton>
         </div>
       </div>
     </template>
   </ElDialog>
 </template>
-
-<style scoped>
-.worksheet-text-modal__body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.worksheet-text-modal__topic-block {
-  padding: 10px 12px;
-  border: 1px solid var(--swiss-border, #e7e5e4);
-  border-radius: 8px;
-  background: var(--swiss-surface-muted, #fafaf9);
-}
-
-:global(.dark) .worksheet-text-modal__topic-block {
-  border-color: #44403c;
-  background: #292524;
-}
-
-.worksheet-text-modal__topic-label {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--swiss-muted, #78716c);
-}
-
-.worksheet-text-modal__topic-value {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.35;
-  color: #1c1917;
-}
-
-:global(.dark) .worksheet-text-modal__topic-value {
-  color: #fafaf9;
-}
-
-.worksheet-text-modal__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.worksheet-text-modal__label {
-  flex-shrink: 0;
-  font-size: 13px;
-  font-weight: 500;
-  color: #44403c;
-}
-
-:global(.dark) .worksheet-text-modal__label {
-  color: #d6d3d1;
-}
-
-.worksheet-text-modal__instruction {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.worksheet-text-modal__hint {
-  margin: 4px 0 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--swiss-muted, #78716c);
-}
-
-.worksheet-text-modal__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  gap: 8px;
-}
-
-.worksheet-text-modal__footer-actions {
-  display: flex;
-  gap: 8px;
-}
-</style>
