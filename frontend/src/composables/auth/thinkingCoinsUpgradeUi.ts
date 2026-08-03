@@ -51,6 +51,9 @@ export const PERSONAL_PLAN_TIERS = ['trial', 'monthly', 'sub', 'annual'] as cons
 
 export type PersonalPlanTier = (typeof PERSONAL_PLAN_TIERS)[number]
 
+/** Temporary: hide personal subscription plans; school edition only. */
+export const SHOW_PERSONAL_SUBSCRIPTION_TAB = false
+
 export type TaskTheme = {
   card: string
   iconWrap: string

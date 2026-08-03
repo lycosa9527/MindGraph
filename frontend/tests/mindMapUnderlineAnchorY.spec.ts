@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { mindMapConnectionAnchorY, resolveMindMapTopicLayoutWidth } from '@/config/mindMapGeometry'
+import {
+  mindMapConnectionAnchorY,
+  resolveMindMapTopicLayoutWidth,
+  resolveMindMapTopicStemWidth,
+} from '@/config/mindMapGeometry'
 import { resolveMindMapEdgeEndpoint } from '@/utils/mindMapEdgeEndpoints'
 
 describe('resolveMindMapTopicLayoutWidth', () => {
@@ -13,6 +17,18 @@ describe('resolveMindMapTopicLayoutWidth', () => {
   it('never shrinks below estimate (matches layout column width)', () => {
     expect(resolveMindMapTopicLayoutWidth(90, 120)).toBe(120)
     expect(resolveMindMapTopicLayoutWidth(140, 120)).toBe(140)
+  })
+})
+
+describe('resolveMindMapTopicStemWidth', () => {
+  it('uses estimate when measured is missing', () => {
+    expect(resolveMindMapTopicStemWidth(null, 120)).toBe(120)
+    expect(resolveMindMapTopicStemWidth(0, 120)).toBe(120)
+  })
+
+  it('uses painted measured width so the right stem meets the topic box', () => {
+    expect(resolveMindMapTopicStemWidth(90, 120)).toBe(90)
+    expect(resolveMindMapTopicStemWidth(140, 120)).toBe(140)
   })
 })
 

@@ -1,6 +1,7 @@
 /**
  * useDiagramExport - Composable for exporting MindGraph diagrams
- * Supports PNG, SVG, PDF (via html-to-image + jspdf), and MG interchange
+ * Mind maps: vector SVG + svg2pdf PDF + high-DPI SVG raster for DOCX.
+ * Other types: PNG/SVG/PDF via html-to-image + jspdf; MG interchange.
  */
 import { ref } from 'vue'
 
@@ -32,6 +33,14 @@ import {
   getDiagramCanvasHtmlToImageOptions,
   getDiagramCanvasPdfHtmlToImageOptions,
 } from '@/utils/diagramHtmlToImage'
+import {
+  buildMindMapVectorSvgFromStores,
+  canUseMindMapVectorExport,
+  exportMindMapVectorDocxPng,
+  exportMindMapVectorPdfDocument,
+  exportMindMapVectorSvgDataUrl,
+} from '@/utils/diagramMindMapVectorExport'
+import type { MindMapVectorSvgResult } from '@/utils/diagramMindMapVectorSvg'
 import {
   addRasterImageToA4PdfPage,
   addWorksheetPageToPdf,
@@ -270,12 +279,25 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
-      const { toSvg } = await loadHtmlToImageModule()
-      const captureOptions = getDiagramCanvasHtmlToImageOptions()
 
-      const dataUrl = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
-        toSvg(container, captureOptions)
-      )
+      let dataUrl: string
+      if (canUseMindMapVectorExport(diagramStore)) {
+        const vectorUrl = await runLearningSheetRasterCapture(
+          diagramStore,
+          exportOptions,
+          () => exportMindMapVectorSvgDataUrl(diagramStore, uiStore)
+        )
+        if (!vectorUrl) {
+          throw new Error('Mind-map vector SVG export produced empty output')
+        }
+        dataUrl = vectorUrl
+      } else {
+        const { toSvg } = await loadHtmlToImageModule()
+        const captureOptions = getDiagramCanvasHtmlToImageOptions()
+        dataUrl = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
+          toSvg(container, captureOptions)
+        )
+      }
 
       const baseName = sanitizeFilename(getTitle())
       const timestamp = new Date().toISOString().slice(0, 10)
@@ -291,6 +313,14 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
   }
 
+  async function captureMindMapVectorSvg(): Promise<MindMapVectorSvgResult> {
+    const result = buildMindMapVectorSvgFromStores(diagramStore, uiStore)
+    if (!result) {
+      throw new Error('Mind-map vector snapshot unavailable')
+    }
+    return result
+  }
+
   async function exportLearningSheetPdf(
     container: HTMLElement,
     orientation: PdfPageOrientation,
@@ -301,6 +331,34 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     const savedShowAnswers = diagramStore.learningSheetShowAnswers
     diagramStore.setLearningSheetShowAnswers(false)
     await waitForExportCanvasPaint()
+
+    if (canUseMindMapVectorExport(diagramStore)) {
+      try {
+        const vectors: MindMapVectorSvgResult[] = [await captureMindMapVectorSvg()]
+        if (includeAnswers) {
+          const answerVector = await diagramStore.runWithLearningSheetAnswersRevealed(async () => {
+            await waitForExportCanvasPaint()
+            return captureMindMapVectorSvg()
+          })
+          vectors.push(answerVector)
+        }
+        const headerCapture = await resolveWorksheetHeaderCapture(exportOptions)
+        const pdf = await exportMindMapVectorPdfDocument({
+          orientation,
+          vectors,
+          headerCapture,
+          exportOptions,
+        })
+        const baseName = sanitizeFilename(getTitle())
+        const timestamp = new Date().toISOString().slice(0, 10)
+        pdf.save(`${baseName}_${timestamp}.pdf`)
+        logDiagramExport(format)
+        notify.success(t('canvas.export.pdfSuccess'))
+      } finally {
+        diagramStore.setLearningSheetShowAnswers(savedShowAnswers)
+      }
+      return
+    }
 
     const worksheetCapture = await captureContainerForPdfRaw(container)
     const captures: PdfRasterCapture[] = [worksheetCapture]
@@ -341,6 +399,28 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       if (isLearningSheetRasterCapture(diagramStore)) {
         const orientation = resolvePdfOrientation(format, container, mergedOptions)
         await exportLearningSheetPdf(container, orientation, format, mergedOptions)
+        return
+      }
+
+      if (canUseMindMapVectorExport(diagramStore)) {
+        await waitForExportCanvasPaint()
+        const vector = await captureMindMapVectorSvg()
+        const orientation = resolvePdfOrientation(format, container, mergedOptions, {
+          width: vector.width,
+          height: vector.height,
+        })
+        const headerCapture = await resolveWorksheetHeaderCapture(mergedOptions)
+        const pdf = await exportMindMapVectorPdfDocument({
+          orientation,
+          vectors: [vector],
+          headerCapture,
+          exportOptions: mergedOptions,
+        })
+        const baseName = sanitizeFilename(getTitle())
+        const timestamp = new Date().toISOString().slice(0, 10)
+        pdf.save(`${baseName}_${timestamp}.pdf`)
+        logDiagramExport(format)
+        notify.success(t('canvas.export.pdfSuccess'))
         return
       }
 
@@ -404,9 +484,20 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
-      const capture = await captureContainerForPdf(container, mergedOptions)
-      const imageResponse = await fetch(capture.dataUrl)
-      const diagramBlob = await imageResponse.blob()
+      let diagramBlob: Blob
+      if (canUseMindMapVectorExport(diagramStore)) {
+        const raster = await runLearningSheetRasterCapture(diagramStore, mergedOptions, () =>
+          exportMindMapVectorDocxPng(diagramStore, uiStore)
+        )
+        if (!raster) {
+          throw new Error('Mind-map vector DOCX raster produced empty PNG')
+        }
+        diagramBlob = raster.blob
+      } else {
+        const capture = await captureContainerForPdf(container, mergedOptions)
+        const imageResponse = await fetch(capture.dataUrl)
+        diagramBlob = await imageResponse.blob()
+      }
       const title = getTitle()
       const formData = new FormData()
       formData.append('diagram', diagramBlob, 'diagram.png')

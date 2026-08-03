@@ -126,9 +126,9 @@ export function computeMindMapUnderlineBoxMetrics(textBlockHeight: number): {
 }
 
 /**
- * Topic column width for layout and topic→L1 edge stems.
+ * Topic column width for v2 layout (branch X placement).
  * Prefer DOM-measured width, but never shrink below the text estimate
- * (same rule as v2 column layout).
+ * so L1 columns do not collapse onto the topic while fonts settle.
  */
 export function resolveMindMapTopicLayoutWidth(
   measured: number | null | undefined,
@@ -136,6 +136,23 @@ export function resolveMindMapTopicLayoutWidth(
 ): number {
   if (measured != null && measured > 0) {
     return Math.max(measured, estimate)
+  }
+  return estimate
+}
+
+/**
+ * Painted topic width for topic→L1 connector stems.
+ *
+ * Layout may keep a larger estimate (`resolveMindMapTopicLayoutWidth`); the stem
+ * must meet the blue box edge. Using the inflated layout width leaves a visible
+ * gap on the right (left stays flush at ``position.x``).
+ */
+export function resolveMindMapTopicStemWidth(
+  measured: number | null | undefined,
+  estimate: number
+): number {
+  if (measured != null && measured > 0) {
+    return measured
   }
   return estimate
 }

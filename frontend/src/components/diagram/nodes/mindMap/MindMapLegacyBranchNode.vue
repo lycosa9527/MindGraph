@@ -22,11 +22,13 @@ import {
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores/diagram'
-import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
-import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
+import {
+  MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
+  resolveMindMapBranchTextMaxWidthPx,
+} from '@/utils/mindMapTextWrap'
 
 import InlineEditableText from '../InlineEditableText.vue'
 
@@ -56,8 +58,6 @@ const isChild = computed(() => props.data.nodeType === 'branch' && Boolean(props
 
 const themeNodeType = computed(() => (isChild.value ? 'child' : 'branch'))
 const defaultStyle = computed(() => getNodeStyle(themeNodeType.value))
-
-const BRANCH_MAX_TEXT_WIDTH = 200
 
 const resolvedStyle = computed(() => ({
   ...(diagramStore.data?._node_styles?.[props.id] || {}),
@@ -94,18 +94,13 @@ const nodeStyle = computed((): CSSProperties => {
 
 const textMaxWidth = computed(() => {
   const label = ((props.data.label as string) || '').trim()
-  if (!label) return `${BRANCH_MAX_TEXT_WIDTH}px`
-
-  const wrapThreshold = computeScriptAwareMaxWidth(label, BRANCH_MAX_TEXT_WIDTH)
+  if (!label) return `${MIND_MAP_BRANCH_MAX_TEXT_WIDTH}px`
   const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 16
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
-  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
-
-  if (textWidth <= wrapThreshold) {
-    return `${wrapThreshold}px`
-  }
-
-  return `${BRANCH_MAX_TEXT_WIDTH}px`
+  return `${resolveMindMapBranchTextMaxWidthPx(label, fontSize, {
+    fontWeight,
+    fontFamily: DIAGRAM_NODE_FONT_STACK,
+  })}px`
 })
 
 const isEditing = ref(false)

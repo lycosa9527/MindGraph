@@ -24,6 +24,7 @@ import {
 } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { SHOW_PERSONAL_SUBSCRIPTION_TAB } from '@/composables/auth/thinkingCoinsUpgradeUi'
 import { formatThinkingCoinBalance, useThinkingCoins } from '@/composables/auth/useThinkingCoins'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 
@@ -63,7 +64,8 @@ const {
   handleTaskClick,
 } = useThinkingCoins()
 
-const subscriptionTab = ref(false)
+/** false = personal, true = school */
+const subscriptionTab = ref(!SHOW_PERSONAL_SUBSCRIPTION_TAB)
 const subscriptionSectionRef = ref<HTMLElement | null>(null)
 const ledgerOpen = ref(false)
 const ledgerPage = ref(1)
@@ -208,7 +210,7 @@ watch(
   () => props.visible,
   (open) => {
     if (open) {
-      subscriptionTab.value = false
+      subscriptionTab.value = !SHOW_PERSONAL_SUBSCRIPTION_TAB
       void loadData().then(() => {
         if (props.initialTab === 'subscription' && subscriptionSectionRef.value) {
           subscriptionSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -435,7 +437,10 @@ function onUpgradeClick() {
                 {{ t('thinkingCoins.subscriptionRef') }}
               </h3>
 
-              <div class="mb-4 inline-flex rounded-full border border-stone-200 bg-stone-50 p-0.5">
+              <div
+                v-if="SHOW_PERSONAL_SUBSCRIPTION_TAB"
+                class="mb-4 inline-flex rounded-full border border-stone-200 bg-stone-50 p-0.5"
+              >
                 <button
                   type="button"
                   class="rounded-full px-4 py-1.5 text-sm font-medium transition"
@@ -463,7 +468,7 @@ function onUpgradeClick() {
               </div>
 
               <div
-                v-if="!subscriptionTab"
+                v-if="SHOW_PERSONAL_SUBSCRIPTION_TAB && !subscriptionTab"
                 class="grid grid-cols-1 gap-3 sm:grid-cols-2"
               >
                 <div

@@ -12,6 +12,7 @@ import { useLanguage } from '@/composables'
 import {
   PERSONAL_PLAN_TIERS,
   type PersonalPlanTier,
+  SHOW_PERSONAL_SUBSCRIPTION_TAB,
   planBadgeKeys,
   planFeatureKeys,
 } from '@/composables/auth/thinkingCoinsUpgradeUi'
@@ -20,7 +21,9 @@ type SubscriptionPlanTab = 'personal' | 'school'
 
 const { t } = useLanguage()
 
-const subscriptionTab = ref<SubscriptionPlanTab>('personal')
+const subscriptionTab = ref<SubscriptionPlanTab>(
+  SHOW_PERSONAL_SUBSCRIPTION_TAB ? 'personal' : 'school'
+)
 const rootRef = ref<HTMLElement | null>(null)
 
 const subscriptionTabOptions = computed(() => [
@@ -82,6 +85,7 @@ defineExpose({ focusSchoolTab })
       </h2>
 
       <AdminSwissSegmented
+        v-if="SHOW_PERSONAL_SUBSCRIPTION_TAB"
         v-model="subscriptionTab"
         class="tc-subscription-seg shrink-0"
         equal
@@ -92,7 +96,7 @@ defineExpose({ focusSchoolTab })
     </div>
 
     <div
-      v-if="subscriptionTab === 'personal'"
+      v-if="SHOW_PERSONAL_SUBSCRIPTION_TAB && subscriptionTab === 'personal'"
       class="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
     >
       <div

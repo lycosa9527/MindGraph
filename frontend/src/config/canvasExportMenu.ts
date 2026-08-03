@@ -1,6 +1,7 @@
 /**
  * Canvas export dropdown commands — shared between CanvasTopBar and mind-map toolbar.
- * Raster formats (png/svg/pdf) use fit-for-export + html-to-image; mg uses spec export.
+ * Mind maps: SVG/PDF/DOCX diagram body from model→vector SVG (PNG menu stays html-to-image).
+ * Other diagrams: png/svg/pdf use fit-for-export + html-to-image; mg uses spec export.
  */
 export type CanvasRasterExportCommand = 'png' | 'svg' | 'pdf_landscape' | 'pdf_portrait'
 

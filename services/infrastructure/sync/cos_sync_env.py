@@ -25,6 +25,7 @@ _GEOLITE_REL = "sync/geolite"
 _QDRANT_REL = "sync/qdrant"
 _CELERY_REL = "sync/celery"
 _PLAYWRIGHT_REL = "sync/playwright"
+_MINDMAP_EXPORT_FONTS_REL = "sync/fonts/mindmap-export"
 
 _DEFAULT_COS_SYNC_KEY_PREFIX = "backups/mindgraph-shared"
 
@@ -165,6 +166,24 @@ def playwright_apt_deps_meta_cos_key() -> str:
 def playwright_apt_deps_tarball_cos_key(distro_key: str, tarball_filename: str) -> str:
     """COS key for Playwright apt ``.deb`` bundle tarball."""
     return cos_sync_object_key(f"{_PLAYWRIGHT_REL}/apt-deps/{distro_key}/{tarball_filename}")
+
+
+def mindmap_export_fonts_rel_prefix() -> str:
+    """Relative sync prefix for mind-map PDF export OpenType fonts."""
+    return _MINDMAP_EXPORT_FONTS_REL
+
+
+def mindmap_export_font_cos_key(filename: str) -> str:
+    """COS key for a mind-map export font file (basename only)."""
+    safe = filename.strip().lstrip("/").replace("\\", "/")
+    if "/" in safe or ".." in safe:
+        raise ValueError(f"Invalid mind-map export font name: {filename}")
+    return cos_sync_object_key(f"{_MINDMAP_EXPORT_FONTS_REL}/{safe}")
+
+
+def mindmap_export_fonts_meta_cos_key() -> str:
+    """COS key for mind-map export fonts meta JSON."""
+    return cos_sync_object_key(f"{_MINDMAP_EXPORT_FONTS_REL}/meta.json")
 
 
 def cos_config_snapshot() -> dict:

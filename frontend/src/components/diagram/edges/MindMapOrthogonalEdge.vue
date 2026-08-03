@@ -13,7 +13,7 @@ import {
   MIND_MAP_GEOMETRY,
   mindMapConnectionAnchorY,
   resolveMindMapTopicBorderColor,
-  resolveMindMapTopicLayoutWidth,
+  resolveMindMapTopicStemWidth,
 } from '@/config/mindMapGeometry'
 import { useDiagramStore } from '@/stores'
 import type { MindGraphEdgeData, MindGraphNodeData, NodeStyle } from '@/types'
@@ -61,15 +61,17 @@ function measuredSize(nodeId: string | undefined): { width: number; height: numb
   }
 }
 
-/** Topic width SoT matches layout: mindMapTopicActualWidth + max(measured, estimate). */
-function topicLayoutSize(topicNode: (typeof vueFlowNodes.value)[number]): {
+/** Painted topic box for stem endpoints (not inflated layout column width). */
+function topicStemSize(topicNode: (typeof vueFlowNodes.value)[number]): {
   width: number
   height: number
 } {
   const estimateW = (topicNode.data?.estimatedWidth as number | undefined) ?? 120
-  const width = resolveMindMapTopicLayoutWidth(mindMapTopicActualWidth.value, estimateW)
-
   const topicMeasured = measuredSize('topic')
+  const measuredW =
+    mindMapTopicActualWidth.value ?? topicMeasured?.width ?? topicNode.dimensions?.width
+  const width = resolveMindMapTopicStemWidth(measuredW, estimateW)
+
   const height =
     topicMeasured?.height ??
     topicNode.dimensions?.height ??
@@ -134,7 +136,7 @@ const topicAnchor = computed(() => {
   const topicNode = vueFlowNodes.value.find((n) => n.id === 'topic')
   if (!topicNode?.position) return null
 
-  const { width: w, height: h } = topicLayoutSize(topicNode)
+  const { width: w, height: h } = topicStemSize(topicNode)
 
   const topicStyle = resolveMindMapNodeStyle(
     'topic',

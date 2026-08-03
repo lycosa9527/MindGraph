@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -31,6 +32,7 @@ def _reset_mount_flag() -> Any:
 
 @pytest.mark.asyncio
 async def test_mcp_session_run_noop_when_not_mounted() -> None:
+    """Session lifespan is a no-op when MCP was never mounted."""
     async with mindgraph_mcp_session_run():
         pass
     assert is_mindgraph_mcp_mounted() is False
@@ -38,10 +40,11 @@ async def test_mcp_session_run_noop_when_not_mounted() -> None:
 
 @pytest.mark.asyncio
 async def test_mcp_session_run_enters_manager_when_mounted() -> None:
+    """Mounted MCP enters session_manager.run() from the host lifespan."""
     entered = {"value": False}
 
     @asynccontextmanager
-    async def fake_run() -> Any:
+    async def fake_run() -> AsyncIterator[None]:
         entered["value"] = True
         yield
 
@@ -63,6 +66,7 @@ async def test_mcp_session_run_enters_manager_when_mounted() -> None:
 
 @pytest.mark.asyncio
 async def test_mcp_session_run_warns_when_manager_missing() -> None:
+    """Missing session_manager logs a warning instead of crashing startup."""
     server = MagicMock(spec=[])
     mark_mindgraph_mcp_mounted()
     with (
@@ -78,6 +82,8 @@ async def test_mcp_session_run_warns_when_manager_missing() -> None:
 
 
 def test_ensure_mcp_trailing_slash_rewrites_bare_path() -> None:
+    """Bare /api/mcp is rewritten to /api/mcp/ so POST is not 405."""
+
     async def ok(_request: Request) -> PlainTextResponse:
         return PlainTextResponse("ok")
 
@@ -98,6 +104,7 @@ def test_ensure_mcp_trailing_slash_rewrites_bare_path() -> None:
 
 
 def test_ensure_mcp_trailing_slash_leaves_other_paths() -> None:
+    """Non-MCP paths are left unchanged by the trailing-slash middleware."""
     seen: dict[str, str] = {}
 
     async def capture(request: Request) -> PlainTextResponse:

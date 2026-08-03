@@ -35,12 +35,14 @@ import {
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { useDiagramStore } from '@/stores/diagram'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
-import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
-import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { markMindMapLoadShellMounted } from '@/utils/mindMapLoadDebug'
+import {
+  MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
+  resolveMindMapBranchTextMaxWidthPx,
+} from '@/utils/mindMapTextWrap'
 import { applyNodeShapeToStyle, mindMapUnderlineHandleStyle } from '@/utils/nodeShapeStyle'
 
 import InlineEditableText from '../InlineEditableText.vue'
@@ -180,22 +182,15 @@ const nodeStyle = computed((): CSSProperties => {
   return finalizeMindMapExportNodeStyle(result)
 })
 
-const BRANCH_MAX_TEXT_WIDTH = 200
-
 const textMaxWidth = computed(() => {
   const label = ((props.data.label as string) || '').trim()
-  if (!label) return `${BRANCH_MAX_TEXT_WIDTH}px`
-
-  const wrapThreshold = computeScriptAwareMaxWidth(label, BRANCH_MAX_TEXT_WIDTH)
+  if (!label) return `${MIND_MAP_BRANCH_MAX_TEXT_WIDTH}px`
   const fontSize = parseFloat(nodeStyle.value.fontSize as string) || mindMapBranchFontSize(props.id)
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
-  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
-
-  if (textWidth <= wrapThreshold) {
-    return `${wrapThreshold}px`
-  }
-
-  return `${BRANCH_MAX_TEXT_WIDTH}px`
+  return `${resolveMindMapBranchTextMaxWidthPx(label, fontSize, {
+    fontWeight,
+    fontFamily: MIND_MAP_GEOMETRY.fontFamily,
+  })}px`
 })
 
 // Store-owned session survives Vue Flow remount after Enter sibling write-back.

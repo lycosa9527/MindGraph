@@ -36,6 +36,7 @@ import { useDiagramStore, useLLMResultsStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { markMindMapLoadShellMounted } from '@/utils/mindMapLoadDebug'
+import { resolveMindMapTopicTextMaxWidthPx } from '@/utils/mindMapTextWrap'
 import {
   type NodeShape,
   applyNodeShapeToStyle,
@@ -206,8 +207,7 @@ const topicRingBorderRadius = computed(() => {
   return '9999px'
 })
 
-const TOPIC_MAX_TEXT_WIDTH = 300
-const topicMaxWidth = computed(() => `${TOPIC_MAX_TEXT_WIDTH}px`)
+const topicMaxWidth = computed(() => `${resolveMindMapTopicTextMaxWidthPx()}px`)
 
 const isEditing = ref(false)
 const topicNodeRef = ref<HTMLDivElement | null>(null)

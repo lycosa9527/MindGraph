@@ -257,6 +257,9 @@ storage/tiktoken_cache/
 # RAG test datasets
 services/knowledge/rag_chunk_test/rag-test/
 
+# Local PG mind-map export fixtures (may contain user diagram data)
+frontend/tests/fixtures/pg_mindmaps/
+
 # ESP32 (ignored for now - will revisit in a few months)
 esp32/
 
@@ -274,3 +277,7 @@ frontend/public/downloads/mindgraph-file-reader.zip
 *.woff2
 *.eot
 *.fnt
+
+# Offline mind-map PDF export fonts (vendored; keep README)
+frontend/public/fonts/*
+!frontend/public/fonts/README.md

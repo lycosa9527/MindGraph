@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.163.0",
+  "version": "5.164.0",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"
@@ -40,6 +40,7 @@
     "check:china-geo": "node scripts/check-china-geo-shipped.ts",
     "check:pwa-workbox": "node scripts/check-pwa-workbox.ts",
     "check:pdf-worker": "node scripts/check-pdf-worker-version.ts",
+    "vendor:mindmap-export-fonts": "node scripts/vendor-mindmap-export-fonts.mjs",
     "fix": "npm run lint:fix && npm run format",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -97,6 +98,7 @@
     "pinia": "^3.0.4",
     "simple-keyboard": "^3.8.125",
     "simple-keyboard-layouts": "^3.4.188",
+    "svg2pdf.js": "^2.7.0",
     "vue": "^3.5.13",
     "vue-demi": "^0.14.10",
     "vue-i18n": "^11.3.0",
@@ -114,6 +116,7 @@
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
     "eslint-plugin-vue": "^10.6.2",
+    "fontverter": "^2.0.0",
     "globals": "^17.0.0",
     "google-translate-api-x": "^10.7.2",
     "jsdom": "^29.1.1",

@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.164.0] - 2026-08-03
+
+> **Mind-map vector SVG/PDF export (model→SVG + svg2pdf); shared canvas/export text wrap; COS-backed CJK fonts; topic stem flush fix.**
+
+### Added
+
+- **Mind-map vector export** — Mind maps build diagram SVG from the layout model (nodes/edges/text), then PDF via `svg2pdf.js`; DOCX embeds a high-DPI raster of that SVG. PNG menu stays html-to-image (`diagramMindMapVector*.ts`, `useDiagramExport.ts`, `svg2pdf.js`).
+- **Shared text-wrap contract** — Canvas topic/branch hosts and vector export share column widths and break rules (`mindMapTextWrap.ts`, mind-map node components).
+- **Export fonts API** — Same-origin `GET /api/mindmap_export_fonts/{filename}` serves Noto Sans SC TrueType from local cache or Tencent COS (`mindmap_export_fonts.py`, `mindmap_export_fonts_cos.py`).
+- **Font vendor/publish tooling** — `npm run vendor:mindmap-export-fonts` (WOFF2→TTF) and `scripts/db/publish_mindmap_export_fonts_to_cos.py` for shared COS mirror (`frontend/public/fonts/README.md`, `env.example`).
+
+### Changed
+
+- **Thinking Coins subscription UI** — Temporarily hide personal plan tab; school edition only (`SHOW_PERSONAL_SUBSCRIPTION_TAB`, Thinking Coins modal/section).
+- **Topic connector geometry** — Layout column width (`resolveMindMapTopicLayoutWidth`) stays estimate-floored; stem endpoints use painted width (`resolveMindMapTopicStemWidth`) so topic→L1 edges meet the blue box edge (`mindMapGeometry.ts`, `MindMapOrthogonalEdge.vue`).
+- **Locale sync** — Refresh ru message bundles (knowledge, maite, mindmate, notification, showcase, sidebar, thinkingCoins, workshop).
+
+### Fixed
+
+- **Topic→L1 stem gap** — Right-side connector no longer stops short when layout width is inflated above the painted topic box.
+
+### Tests
+
+- **Frontend** — Vector export unit/E2E audit specs; text-wrap unit coverage; underline-anchor coverage for stem width (`diagramMindMapVectorExport.spec.ts`, `diagramMindMapVectorE2E.audit.spec.ts`, `mindMapTextWrap.spec.ts`, `mindMapUnderlineAnchorY.spec.ts`).
+- **Backend** — COS font cache/status helpers (`tests/test_mindmap_export_fonts_cos.py`); MCP unit tests typed for basedpyright (`test_mcp_mindgraph_tool.py`, `test_mcp_session_lifespan.py`).
+
 ## [5.163.0] - 2026-08-03
 
 > **MCP Streamable HTTP production hardening; DEBUG `/assets` mount for Playwright export.**
