@@ -19,6 +19,7 @@ import {
   recordMindMapSiblingInsertSuccess,
 } from '@/utils/mindMapSiblingDebug'
 import {
+  applyMindMapIncrementalDeleteLayout,
   applyMindMapIncrementalSiblingYPreserve,
   applyMindMapIncrementalTopLevelSiblingLayout,
 } from '@/utils/mindMapSideStacking'
@@ -57,6 +58,7 @@ import {
   remapMindMapNodeIdsAfterReload,
   setMindMapCollapsedPaths,
 } from './mindMapCollapse'
+import { recalculateMindMapV2ColumnPositions } from './mindMapLayout'
 import { insertMindMapSiblingInPlace } from './mindMapSiblingInsert'
 import {
   findNodeIdByPathKey,
@@ -494,12 +496,36 @@ function selectAndEditByPathKey(
   requestMindMapNodeInlineEdit(ctx, nodeId)
 }
 
+type CommitMindMapReloadOptions = {
+  skipMindMapRecalc?: boolean
+  /**
+   * Hold the v2 layout computed on store XY while heights/nodes swap, run the
+   * same engine sync into the store, then briefly preserve Y — first paint
+   * matches post-recalc (no off-then-correct flash).
+   */
+  syncV2LayoutBeforeShow?: boolean
+}
+
+/** Re-arm sticky Y after commitMindMapReload cleared it (two frames). */
+function armMindMapPreserveIncomingYBriefly(ctx: DiagramContext): void {
+  ctx.mindMapPreserveIncomingY.value = true
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        ctx.mindMapPreserveIncomingY.value = false
+      })
+    })
+    return
+  }
+  ctx.mindMapPreserveIncomingY.value = false
+}
+
 function commitMindMapReloadWithSelect(
   ctx: DiagramContext,
   result: SpecLoaderResult,
   selectPathKey: string | null,
   historyLabel: string,
-  options?: { skipMindMapRecalc?: boolean }
+  options?: CommitMindMapReloadOptions
 ): boolean {
   if (!ctx.data.value?.nodes || !ctx.data.value?.connections) return false
   commitMindMapReload(ctx, result, options)
@@ -518,7 +544,7 @@ function commitMindMapReloadWithSelect(
 function commitMindMapReload(
   ctx: DiagramContext,
   result: SpecLoaderResult,
-  options?: { skipMindMapRecalc?: boolean }
+  options?: CommitMindMapReloadOptions
 ): void {
   if (!ctx.data.value?.nodes || !ctx.data.value?.connections) return
 
@@ -528,6 +554,12 @@ function commitMindMapReload(
 
   const v2Visuals = readMindMapV2VisualDesignActive()
   const skipRecalc = options?.skipMindMapRecalc === true
+  const syncV2 = options?.syncV2LayoutBeforeShow === true && v2Visuals
+  const holdBulk = syncV2
+
+  if (holdBulk) {
+    ctx.mindMapBulkLoading.value = true
+  }
 
   if (v2Visuals && !ctx.data.value._mindmap_theme) {
     const inferred = inferMindMapThemeIdFromNodes(ctx.data.value.nodes)
@@ -565,6 +597,31 @@ function commitMindMapReload(
   ctx.data.value.connections = result.connections
   ctx.data.value._node_styles = mergedNodeStyles
 
+  if (syncV2 && (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map')) {
+    const connections = ctx.data.value.connections ?? []
+    const collapsedPaths = getMindMapCollapsedPaths(ctx.data.value)
+    const collapsedNodeIds = getMindMapCollapsedNodeIds(
+      ctx.data.value.nodes,
+      connections,
+      collapsedPaths
+    )
+    const diagramStyleId =
+      typeof ctx.data.value._mindmap_diagram_style === 'string'
+        ? ctx.data.value._mindmap_diagram_style
+        : undefined
+    const laidOut = recalculateMindMapV2ColumnPositions(
+      ctx.data.value.nodes,
+      ctx.mindMapTopicActualWidth.value,
+      ctx.mindMapNodeWidths.value,
+      ctx.mindMapNodeHeights.value,
+      connections,
+      collapsedNodeIds,
+      diagramStyleId
+    )
+    ctx.data.value.nodes = laidOut.nodes
+    ctx.mindMapTopicBranchGaps.value = laidOut.gaps
+  }
+
   if (!skipRecalc && (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map')) {
     ctx.mindMapRecalcTrigger.value += 1
     ctx.scheduleMindMapRecalc()
@@ -579,7 +636,11 @@ function commitMindMapReload(
       result.connections,
       collapsedBefore
     )
-    const pruned = pruneMindMapCollapsedPaths(result.nodes, result.connections, remapped)
+    const pruned = pruneMindMapCollapsedPaths(
+      ctx.data.value.nodes,
+      ctx.data.value.connections ?? [],
+      remapped
+    )
     setMindMapCollapsedPaths(ctx.data.value as Record<string, unknown>, pruned)
   }
 
@@ -587,21 +648,34 @@ function commitMindMapReload(
     previousSelected,
     oldNodes,
     oldConnections,
-    result.nodes,
-    result.connections
+    ctx.data.value.nodes,
+    ctx.data.value.connections ?? []
   )
   if (previousPendingEdit) {
     ctx.mindMapPendingEditNodeId.value = remapMindMapNodeIdAfterReload(
       previousPendingEdit,
       oldNodes,
       oldConnections,
-      result.nodes,
-      result.connections
+      ctx.data.value.nodes,
+      ctx.data.value.connections ?? []
     )
   }
   previewStore.remapGeneratingNodeIds((oldId) =>
-    remapMindMapNodeIdAfterReload(oldId, oldNodes, oldConnections, result.nodes, result.connections)
+    remapMindMapNodeIdAfterReload(
+      oldId,
+      oldNodes,
+      oldConnections,
+      ctx.data.value?.nodes ?? result.nodes,
+      ctx.data.value?.connections ?? result.connections
+    )
   )
+
+  if (holdBulk) {
+    ctx.mindMapBulkLoading.value = false
+  }
+  if (syncV2) {
+    armMindMapPreserveIncomingYBriefly(ctx)
+  }
 }
 
 export function useMindMapOpsSlice(ctx: DiagramContext) {
@@ -716,7 +790,10 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (!data.value?.nodes || !data.value?.connections) return 0
 
     const connections = data.value.connections
-    const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
+    const beforeNodes = data.value.nodes
+    const beforeConnections = connections
+    const topicY = beforeNodes.find((node) => node.id === 'topic')?.position?.y
+    const spec = nodesAndConnectionsToMindMapSpec(beforeNodes, connections)
     const idsToRemove = new Set(nodeIds.filter((id) => id.startsWith('branch-')))
 
     if (collabForeignLockBlocksAnyId(ctx, idsToRemove)) {
@@ -754,13 +831,45 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     const deletedCount = toRemoveWithParent.length
     if (deletedCount === 0) return 0
 
+    const deletedNodeIds = toRemoveWithParent.map((item) => item.nodeId)
     const result = loadMindMapSpec({
       topic: spec.topic,
       leftBranches: spec.leftBranches,
       rightBranches: spec.rightBranches,
       preserveLeftRight: true,
     })
-    commitMindMapReload(ctx, result)
+
+    const collapsedPaths = getMindMapCollapsedPaths(data.value)
+    const collapsedNodeIds = getMindMapCollapsedNodeIds(
+      beforeNodes,
+      beforeConnections,
+      collapsedPaths
+    )
+    const incremental = applyMindMapIncrementalDeleteLayout(
+      beforeNodes,
+      beforeConnections,
+      result.nodes,
+      result.connections,
+      {
+        deletedNodeIds,
+        topicY: typeof topicY === 'number' ? topicY : undefined,
+        nodeHeights: ctx.mindMapNodeHeights.value,
+        collapsedNodeIds,
+        diagramStyleId:
+          typeof data.value._mindmap_diagram_style === 'string'
+            ? data.value._mindmap_diagram_style
+            : undefined,
+      }
+    )
+    commitMindMapReload(
+      ctx,
+      { ...result, nodes: incremental.nodes },
+      {
+        skipMindMapRecalc: incremental.usedIncremental,
+        // Same engine as the v2 display computed, applied before first paint.
+        syncV2LayoutBeforeShow: incremental.usedIncremental,
+      }
+    )
 
     nodeIds.forEach((id) => {
       ctx.clearCustomPosition(id)
@@ -1182,16 +1291,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     }
     // Re-arm after commitMindMapReload cleared preserve; brief hold for first paint.
     if (committed && usedIncrementalL1Layout) {
-      ctx.mindMapPreserveIncomingY.value = true
-      if (typeof requestAnimationFrame === 'function') {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            ctx.mindMapPreserveIncomingY.value = false
-          })
-        })
-      } else {
-        ctx.mindMapPreserveIncomingY.value = false
-      }
+      armMindMapPreserveIncomingYBriefly(ctx)
     }
     return committed
   }

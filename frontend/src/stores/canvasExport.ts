@@ -1,5 +1,5 @@
 /**
- * Canvas export preferences + worksheet (打印学习单) modal lifecycle.
+ * Canvas export preferences + worksheet (导出为DOCX/PDF) modal lifecycle.
  * Persisted in sessionStorage; toolbar open/export stay event-bus driven.
  */
 import { computed, ref, watch } from 'vue'
@@ -12,6 +12,7 @@ import {
   loadCanvasExportOptions,
   saveCanvasExportOptions,
   type CanvasExportColorMode,
+  type CanvasExportLayout,
   type CanvasExportOptions,
 } from '@/config/canvasExportOptions'
 import {
@@ -37,7 +38,7 @@ export const useCanvasExportStore = defineStore('canvasExport', () => {
     mergeCanvasExportOptions(exportOptions.value)
   )
 
-  /** 打印学习单 payload — includes persisted worksheet header/placement. */
+  /** Worksheet DOCX/PDF payload — includes persisted worksheet header/placement. */
   const worksheetExportOptions = computed(() =>
     mergeCanvasExportOptions(exportOptions.value, worksheetTextOptions.value)
   )
@@ -109,15 +110,17 @@ export const useCanvasExportStore = defineStore('canvasExport', () => {
   function commitWorksheetAndExport(
     worksheetText: CanvasWorksheetTextOptions,
     colorMode: CanvasExportColorMode,
-    format: 'pdf' | 'worksheet_docx' = 'pdf'
+    format: 'pdf' | 'worksheet_docx' = 'pdf',
+    layout?: CanvasExportLayout
   ): void {
     setWorksheetTextOptions(worksheetText)
-    patchExportOptions({ colorMode })
+    const nextLayout = layout ?? exportOptions.value.layout
+    patchExportOptions({ colorMode, layout: nextLayout })
     closeWorksheetTextModal()
     eventBus.emit('toolbar:export_requested', {
       format,
       options: mergeCanvasExportOptions(
-        { ...exportOptions.value, colorMode, worksheetText },
+        { ...exportOptions.value, colorMode, layout: nextLayout, worksheetText },
         worksheetText
       ),
     })

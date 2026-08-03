@@ -338,6 +338,7 @@ declare module 'vue' {
     OAuthQrLoginModal: typeof import('./components/auth/OAuthQrLoginModal.vue')['default']
     OAuthQrLoginPanel: typeof import('./components/auth/OAuthQrLoginPanel.vue')['default']
     OneSentenceKittyAvatar: typeof import('./components/canvas/OneSentenceKittyAvatar.vue')['default']
+    OneSentenceNodeActionGuide: typeof import('./components/canvas/OneSentenceNodeActionGuide.vue')['default']
     OnlineCollabModal: typeof import('./components/canvas/OnlineCollabModal.vue')['default']
     OrgContactsPanel: typeof import('./components/social/OrgContactsPanel.vue')['default']
     PdfToolbar: typeof import('./components/library/PdfToolbar.vue')['default']

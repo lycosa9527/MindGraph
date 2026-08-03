@@ -44,11 +44,10 @@ export const CANVAS_COMMUNITY_EXPORT_MENU_ITEM = {
   divided: true,
 }
 
-/** Mind map v2 export menu — PDF orientation comes from export options panel. */
+/** Mind map v2 export menu — DOCX/PDF (with paper orientation) lives in the worksheet modal. */
 export const CANVAS_MINDMAP_EXPORT_MENU_ITEMS: readonly CanvasExportMenuItem[] = [
   { command: 'png', labelKey: 'canvas.topBar.exportPng' },
   { command: 'svg', labelKey: 'canvas.topBar.exportSvg' },
-  { command: 'pdf', labelKey: 'canvas.topBar.exportPdf' },
   { command: 'mg', labelKey: 'canvas.topBar.exportJson', divided: true },
 ]
 

@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.162.0] - 2026-08-03
+
+> **Mind-map v2 delete/layout flash fixes; DOCX/PDF export modal polish; one-sentence node-action guide.**
+
+### Added
+
+- **One-sentence node-action guide** — Kitty conversational edit panel shows a collapsible node-action library with rotating suggestion prompts (`OneSentenceNodeActionGuide.vue`, `oneSentenceNodeActionGuide.ts`, `oneSentenceNodeActionSuggestions.ts`, canvas i18n).
+
+### Changed
+
+- **Export as DOCX/PDF** — Toolbar/modal copy renamed from “Print learning sheet”; mind-map v2 top-bar export drops standalone PDF (DOCX/PDF + paper orientation live in the worksheet modal) (`canvasExportMenu.ts`, `CanvasWorksheetTextModal.vue`, `MindMapExportOptionsPanel.vue`, `canvasExport.ts`).
+- **Locale bundles** — Canvas keys for DOCX/PDF rename + one-sentence suggestions across locales; broader pt/ru/pl/tr message refresh.
+
+### Fixed
+
+- **Mind-map v2 side layout after delete/reload** — Incremental delete layout, sole-root fan moves with the topic anchor, and pre-show v2 layout sync so the first paint matches post-recalc (no off-then-correct flash) (`mindMapSideStacking.ts`, `mindMapOps.ts`, `mindMapLayout.ts`).
+- **Diagram-edit delete verify labels** — Prefer unique human node text over recycled `branch-*` structural ids when building `node_absent` expectations (`services/diagram_edit/effects.py`).
+
+### Tests
+
+- **Frontend** — Side-stacking / sibling-anchor-Y / diagram-edit apply coverage; export menu no longer expects top-level PDF.
+- **Backend** — Delete-verify label resolution cases in `tests/test_diagram_edit.py`.
+
 ## [5.161.0] - 2026-08-02
 
 > **Interface language picker: real UI copy for all 28 locales; canvas library switch flash hardening.**

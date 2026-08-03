@@ -26,7 +26,7 @@ import { ExportToCommunityModal } from '@/components/canvas'
 import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
 import MindMapNodeExplainModal from '@/components/canvas/MindMapNodeExplainModal.vue'
 import { useBranchMoveDrag, useLanguage } from '@/composables'
-import type { CanvasExportColorMode } from '@/config/canvasExportOptions'
+import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasExportOptions'
 import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
 import { useCanvasExportStore } from '@/stores/canvasExport'
 import { useNodeFloatingToolbarPosition } from '@/composables/canvasToolbar'
@@ -430,12 +430,14 @@ const {
 function handleWorksheetTextSave(payload: {
   worksheetText: CanvasWorksheetTextOptions
   colorMode: CanvasExportColorMode
+  layout: CanvasExportLayout
   format: 'pdf' | 'worksheet_docx'
 }) {
   canvasExportStore.commitWorksheetAndExport(
     payload.worksheetText,
     payload.colorMode,
-    payload.format
+    payload.format,
+    payload.layout
   )
 }
 

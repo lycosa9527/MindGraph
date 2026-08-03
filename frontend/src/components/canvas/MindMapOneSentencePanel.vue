@@ -2,7 +2,7 @@
 /**
  * Mind map one-sentence panel — Kitty chat (text-only).
  */
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { ElAvatar } from 'element-plus'
 
@@ -10,10 +10,15 @@ import { Camera, Mic, Send } from '@lucide/vue'
 
 import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
 import OneSentenceKittyAvatar from '@/components/canvas/OneSentenceKittyAvatar.vue'
+import OneSentenceNodeActionGuide from '@/components/canvas/OneSentenceNodeActionGuide.vue'
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
 
 import { useLanguage } from '@/composables'
 import { useMindMapOneSentenceChat } from '@/composables/canvasToolbar/useMindMapOneSentenceChat'
+import {
+  ONE_SENTENCE_NODE_ACTION_SUGGESTION_KEYS,
+  ONE_SENTENCE_SUGGESTION_ROTATE_MS,
+} from '@/config/oneSentenceNodeActionSuggestions'
 import { useAuthStore } from '@/stores'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
@@ -43,6 +48,65 @@ const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar)
 const photoInputRef = ref<HTMLInputElement | null>(null)
 const photoUploading = ref(false)
 
+const inputDisabled = computed(
+  () => isInputBlocked.value
+)
+
+const sendDisabled = computed(() => inputDisabled.value || !draft.value.trim())
+
+const suggestionKeys = ONE_SENTENCE_NODE_ACTION_SUGGESTION_KEYS
+const activeSuggestionIndex = ref(0)
+const nodeActionGuideOpen = ref(false)
+let suggestionRotateTimer: ReturnType<typeof setInterval> | null = null
+
+const showSuggestionBubble = computed(
+  () =>
+    !inputDisabled.value
+    && !draft.value.trim()
+    && !nodeActionGuideOpen.value
+)
+
+const activeSuggestionKey = computed(
+  () => suggestionKeys[activeSuggestionIndex.value] ?? suggestionKeys[0]
+)
+
+function startSuggestionRotation(): void {
+  if (suggestionRotateTimer) {
+    return
+  }
+  suggestionRotateTimer = setInterval(() => {
+    activeSuggestionIndex.value =
+      (activeSuggestionIndex.value + 1) % suggestionKeys.length
+  }, ONE_SENTENCE_SUGGESTION_ROTATE_MS)
+}
+
+function stopSuggestionRotation(): void {
+  if (!suggestionRotateTimer) {
+    return
+  }
+  clearInterval(suggestionRotateTimer)
+  suggestionRotateTimer = null
+}
+
+function applyActiveSuggestion(): void {
+  if (inputDisabled.value) {
+    return
+  }
+  draft.value = t(activeSuggestionKey.value)
+}
+
+function toggleNodeActionGuide(): void {
+  nodeActionGuideOpen.value = !nodeActionGuideOpen.value
+}
+
+function applyNodeActionExample(example: string): void {
+  if (inputDisabled.value) {
+    return
+  }
+  draft.value = example
+  nodeActionGuideOpen.value = false
+}
+
 function openPhotoPicker(): void {
   if (inputDisabled.value || photoUploading.value) {
     return
@@ -69,12 +133,6 @@ function setChatScrollEl(el: unknown): void {
   const node = el instanceof HTMLElement ? el : null
   bindChatScroll(node)
 }
-
-const inputDisabled = computed(
-  () => isInputBlocked.value
-)
-
-const sendDisabled = computed(() => inputDisabled.value || !draft.value.trim())
 
 const inputPlaceholder = computed(() => {
   if (mobileKittyOwnsEditInput.value) {
@@ -107,6 +165,14 @@ function handleInputKeydown(event: KeyboardEvent): void {
     }
   }
 }
+
+onMounted(() => {
+  startSuggestionRotation()
+})
+
+onUnmounted(() => {
+  stopSuggestionRotation()
+})
 </script>
 
 <template>
@@ -215,14 +281,48 @@ function handleInputKeydown(event: KeyboardEvent): void {
         {{ t('canvas.mindMapOneSentence.mobileKittyOwnsInput') }}
       </p>
       <div class="one-sentence-input-stack">
+        <OneSentenceNodeActionGuide
+          v-model:open="nodeActionGuideOpen"
+          class="one-sentence-node-action-guide-anchor"
+          exclude-selector=".one-sentence-input-kitty"
+          @select="applyNodeActionExample"
+        />
+
         <div
           class="one-sentence-input-container"
           :class="{ 'one-sentence-input-container--disabled': inputDisabled }"
         >
-          <KittyBlackCatMascot
+          <button
+            type="button"
             class="one-sentence-input-kitty"
-            :agent-state="kittyAgentState"
-          />
+            :class="{ 'one-sentence-input-kitty--active': nodeActionGuideOpen }"
+            :aria-expanded="nodeActionGuideOpen"
+            :aria-label="t('canvas.mindMapOneSentence.nodeActionGuide.title')"
+            @click.stop="toggleNodeActionGuide"
+          >
+            <KittyBlackCatMascot :agent-state="kittyAgentState" />
+          </button>
+
+          <div
+            v-if="showSuggestionBubble"
+            class="one-sentence-suggestion-rotator"
+            :aria-label="t('canvas.mindMapOneSentence.examplesTitle')"
+          >
+            <Transition
+              name="one-sentence-suggestion-rotate"
+              mode="out-in"
+            >
+              <button
+                :key="activeSuggestionKey"
+                type="button"
+                class="one-sentence-suggestion-bubble"
+                :disabled="inputDisabled"
+                @click="applyActiveSuggestion"
+              >
+                {{ t(activeSuggestionKey) }}
+              </button>
+            </Transition>
+          </div>
 
           <textarea
             v-model="draft"
@@ -296,19 +396,54 @@ function handleInputKeydown(event: KeyboardEvent): void {
 
 .one-sentence-input-stack {
   position: relative;
-  padding-top: 1.5rem;
+  padding-top: 2.5rem;
+}
+
+.one-sentence-node-action-guide-anchor {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 4px);
+  z-index: 6;
 }
 
 .one-sentence-input-kitty {
   position: absolute;
   left: 6px;
   bottom: calc(100% - 6px);
-  z-index: 3;
+  z-index: 5;
+  display: block;
   width: 2.75rem;
   max-height: 3.5rem;
   aspect-ratio: 272 / 344;
   margin: 0;
-  pointer-events: none;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  border-radius: 10px;
+  transition: transform 0.15s ease;
+}
+
+.one-sentence-input-kitty:hover {
+  transform: translateY(-1px);
+}
+
+.one-sentence-input-kitty--active {
+  transform: translateY(-1px);
+}
+
+.one-sentence-input-kitty:focus-visible {
+  outline: 2px solid rgb(124 58 237 / 0.55);
+  outline-offset: 2px;
+}
+
+.one-sentence-input-kitty:deep(.kitty-black-cat-mascot) {
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  aspect-ratio: 272 / 344;
+  margin: 0;
 }
 
 .one-sentence-input-kitty:deep(.black-cat-container) {
@@ -321,6 +456,72 @@ function handleInputKeydown(event: KeyboardEvent): void {
   height: 100%;
   overflow: visible;
   filter: drop-shadow(0 2px 4px rgb(15 23 42 / 0.12));
+}
+
+.one-sentence-suggestion-rotator {
+  position: absolute;
+  left: 3.15rem;
+  bottom: calc(100% + 10px);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  max-width: calc(100% - 3.5rem);
+  height: 1.75rem;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.one-sentence-suggestion-bubble {
+  display: inline-block;
+  max-width: 100%;
+  padding: 4px 10px;
+  border: 1px solid #e7e5e4;
+  border-radius: 999px;
+  background: #fff;
+  color: #57534e;
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.one-sentence-suggestion-bubble:hover:not(:disabled) {
+  background: #f5f5f4;
+  border-color: #c4b5fd;
+  color: #44403c;
+}
+
+.one-sentence-suggestion-bubble:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.one-sentence-suggestion-rotate-enter-active,
+.one-sentence-suggestion-rotate-leave-active {
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+}
+
+.one-sentence-suggestion-rotate-leave-active {
+  position: absolute;
+}
+
+.one-sentence-suggestion-rotate-enter-from {
+  opacity: 0;
+  transform: translateX(28px);
+}
+
+.one-sentence-suggestion-rotate-leave-to {
+  opacity: 0;
+  transform: translateX(-28px);
 }
 
 .one-sentence-chat-row {

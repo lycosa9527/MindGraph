@@ -107,14 +107,17 @@ function nodeHeightForLayout(node: DiagramNode, nodeHeights?: Record<string, num
 }
 
 /**
- * Rigid-translate one side so its L1-root midpoint lines up with the topic
- * center. Relative gaps from Enter stay intact (whole pack slides together).
+ * Rigid-translate one side so its L1 connection-anchor midpoint lines up with
+ * the topic anchor. Relative gaps from Enter stay intact (whole pack slides).
+ * Same SoT as sole-root topic align / edge routing (box mid is wrong for
+ * underline L1).
  */
 export function centerMindMapSidePackOnTopic(
   nodes: DiagramNode[],
   connections: Connection[],
   side: 'l' | 'r',
-  nodeHeights?: Record<string, number>
+  nodeHeights?: Record<string, number>,
+  diagramStyleId?: string | null
 ): DiagramNode[] {
   const topic = nodes.find((node) => node.id === 'topic')
   if (!topic?.position) return nodes
@@ -131,15 +134,17 @@ export function centerMindMapSidePackOnTopic(
   for (const id of l1Ids) {
     const node = nodeById.get(id)
     if (!node?.position) continue
-    const anchor = node.position.y + nodeHeightForLayout(node, nodeHeights) / 2
+    const anchor = nodeConnectionAnchorY(node, nodeHeights, diagramStyleId)
+    if (anchor == null) continue
     minAnchor = Math.min(minAnchor, anchor)
     maxAnchor = Math.max(maxAnchor, anchor)
   }
   if (!Number.isFinite(minAnchor) || !Number.isFinite(maxAnchor)) return nodes
 
-  const topicCenter = topic.position.y + nodeHeightForLayout(topic, nodeHeights) / 2
+  const topicAnchor = nodeConnectionAnchorY(topic, nodeHeights, diagramStyleId)
+  if (topicAnchor == null) return nodes
   const sideMid = (minAnchor + maxAnchor) / 2
-  const delta = topicCenter - sideMid
+  const delta = topicAnchor - sideMid
   if (Math.abs(delta) < 0.5) return nodes
 
   return nodes.map((node) => {
@@ -152,10 +157,17 @@ export function centerMindMapSidePackOnTopic(
 export function centerMindMapSidePacksOnTopic(
   nodes: DiagramNode[],
   connections: Connection[],
-  nodeHeights?: Record<string, number>
+  nodeHeights?: Record<string, number>,
+  diagramStyleId?: string | null
 ): DiagramNode[] {
-  const left = centerMindMapSidePackOnTopic(nodes, connections, 'l', nodeHeights)
-  return centerMindMapSidePackOnTopic(left, connections, 'r', nodeHeights)
+  const left = centerMindMapSidePackOnTopic(
+    nodes,
+    connections,
+    'l',
+    nodeHeights,
+    diagramStyleId
+  )
+  return centerMindMapSidePackOnTopic(left, connections, 'r', nodeHeights, diagramStyleId)
 }
 
 /**
@@ -220,7 +232,12 @@ export function settleMindMapPreserveYLayout(
       collapsedNodeIds
     )
   }
-  return centerMindMapSidePacksOnTopic(result, connections, nodeHeights)
+  return centerMindMapSidePacksOnTopic(
+    result,
+    connections,
+    nodeHeights,
+    diagramStyleId
+  )
 }
 
 /**
@@ -590,4 +607,170 @@ export function applyMindMapIncrementalSiblingYPreserve(
     next = applyMindMapTopicYPreserve(next, options.topicY)
   }
   return next
+}
+
+const MIN_DELETE_UID_COVERAGE = 0.5
+
+/**
+ * After delete + loadMindMapSpec: restore survivor positions by UID, close the
+ * vertical gap left by deleted roots, then settle. Returns ``usedIncremental:
+ * false`` when UID coverage is too low (caller should full-recalc).
+ */
+export function applyMindMapIncrementalDeleteLayout(
+  beforeNodes: DiagramNode[],
+  beforeConnections: Connection[],
+  afterNodes: DiagramNode[],
+  afterConnections: Connection[],
+  options: {
+    deletedNodeIds: string[]
+    topicY?: number
+    nodeHeights?: Record<string, number>
+    collapsedNodeIds?: ReadonlySet<string>
+    diagramStyleId?: string | null
+  }
+): { nodes: DiagramNode[]; usedIncremental: boolean } {
+  const survivors = afterNodes.filter(
+    (node) => node.id !== 'topic' && node.id.startsWith('branch-')
+  )
+  if (survivors.length > 0) {
+    const withUid = survivors.filter((node) => Boolean(readMindMapNodeUid(node)))
+    if (withUid.length / survivors.length < MIN_DELETE_UID_COVERAGE) {
+      return { nodes: afterNodes, usedIncremental: false }
+    }
+  }
+
+  const beforeByUid = new Map<string, { x: number; y: number }>()
+  const heightByUid = new Map<string, number>()
+  for (const node of beforeNodes) {
+    const uid = readMindMapNodeUid(node)
+    if (!uid) continue
+    if (node.position) {
+      beforeByUid.set(uid, { x: node.position.x, y: node.position.y })
+    }
+    const measured = options.nodeHeights?.[node.id]
+    if (typeof measured === 'number' && measured > 0) {
+      heightByUid.set(uid, measured)
+    }
+  }
+
+  let nodes = afterNodes.map((node) => {
+    if (!node.position) return node
+    if (node.id === 'topic') {
+      if (options.topicY == null || !Number.isFinite(options.topicY)) return node
+      if (Math.abs(node.position.y - options.topicY) < 0.5) return node
+      return { ...node, position: { ...node.position, y: options.topicY } }
+    }
+    const uid = readMindMapNodeUid(node)
+    if (!uid) return node
+    const prev = beforeByUid.get(uid)
+    if (!prev) return node
+    if (
+      Math.abs(node.position.x - prev.x) < 0.5
+      && Math.abs(node.position.y - prev.y) < 0.5
+    ) {
+      return node
+    }
+    return { ...node, position: { x: prev.x, y: prev.y } }
+  })
+
+  const afterHeights: Record<string, number> = {}
+  for (const node of nodes) {
+    const uid = readMindMapNodeUid(node)
+    if (!uid) continue
+    const h = heightByUid.get(uid)
+    if (typeof h === 'number' && h > 0) {
+      afterHeights[node.id] = h
+    }
+  }
+  const heightsForLayout = { ...options.nodeHeights, ...afterHeights }
+
+  const beforeChildren = buildChildrenMap(beforeConnections)
+  const beforeById = new Map(beforeNodes.map((node) => [node.id, node]))
+  const deletedRoots = collectDeletedSubtreeRoots(options.deletedNodeIds, beforeChildren)
+
+  for (const deletedId of deletedRoots) {
+    const bounds = subtreeVerticalBounds(
+      deletedId,
+      beforeById,
+      beforeChildren,
+      options.nodeHeights
+    )
+    const deletedNode = beforeById.get(deletedId)
+    if (!bounds || !deletedNode?.position) continue
+
+    const gap = isTopLevelBranchId(deletedId)
+      ? DEFAULT_MINDMAP_BRANCH_GAP
+      : MINDMAP_SIBLING_GAP
+    const shift = -(bounds.maxY - bounds.minY + gap)
+    if (Math.abs(shift) < 0.5) continue
+
+    const parentId =
+      beforeConnections.find((connection) => connection.target === deletedId)?.source ?? 'topic'
+    const siblings = beforeChildren.get(parentId) ?? []
+    const deletedY = deletedNode.position.y
+    const afterChildren = buildChildrenMap(afterConnections)
+    const shiftIds = new Set<string>()
+
+    for (const sibId of siblings) {
+      if (sibId === deletedId) continue
+      const sib = beforeById.get(sibId)
+      if (!sib?.position || sib.position.y <= deletedY + 0.5) continue
+      const uid = readMindMapNodeUid(sib)
+      if (!uid) continue
+      const afterSibId = findNodeIdByMindMapUid(nodes, uid)
+      if (!afterSibId) continue
+      shiftIds.add(afterSibId)
+      for (const desc of collectDescendantIds(afterSibId, afterChildren)) {
+        shiftIds.add(desc)
+      }
+    }
+
+    if (shiftIds.size === 0) continue
+    nodes = nodes.map((node) => (shiftIds.has(node.id) ? withShiftedY(node, shift) : node))
+  }
+
+  nodes = settleMindMapPreserveYLayout(
+    nodes,
+    afterConnections,
+    heightsForLayout,
+    options.collapsedNodeIds ?? new Set<string>(),
+    options.diagramStyleId
+  )
+  return { nodes, usedIncremental: true }
+}
+
+function collectDeletedSubtreeRoots(
+  deletedNodeIds: string[],
+  beforeChildren: Map<string, string[]>
+): string[] {
+  const deletedSet = new Set(
+    deletedNodeIds.filter((id) => typeof id === 'string' && id.startsWith('branch-'))
+  )
+  if (deletedSet.size === 0) return []
+
+  const allRemoved = new Set(deletedSet)
+  for (const id of deletedSet) {
+    for (const desc of collectDescendantIds(id, beforeChildren)) {
+      allRemoved.add(desc)
+    }
+  }
+
+  const parentOf = new Map<string, string>()
+  for (const [parentId, kids] of beforeChildren) {
+    for (const kid of kids) {
+      parentOf.set(kid, parentId)
+    }
+  }
+
+  const roots = [...deletedSet].filter((id) => {
+    const parentId = parentOf.get(id)
+    return !parentId || !allRemoved.has(parentId)
+  })
+
+  roots.sort((a, b) => {
+    const depthDelta = branchDepth(b) - branchDepth(a)
+    if (depthDelta !== 0) return depthDelta
+    return a.localeCompare(b)
+  })
+  return roots
 }

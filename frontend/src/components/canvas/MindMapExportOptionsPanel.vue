@@ -9,7 +9,6 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import type {
   CanvasExportAnswerMode,
   CanvasExportColorMode,
-  CanvasExportLayout,
   CanvasExportOptions,
 } from '@/config/canvasExportOptions'
 import { useDiagramStore } from '@/stores'
@@ -30,13 +29,6 @@ const colorMode = computed({
   },
 })
 
-const layout = computed({
-  get: () => options.value.layout,
-  set: (value: CanvasExportLayout) => {
-    options.value = { ...options.value, layout: value }
-  },
-})
-
 const answerMode = computed({
   get: () => options.value.answerMode,
   set: (value: CanvasExportAnswerMode) => {
@@ -47,11 +39,6 @@ const answerMode = computed({
 const colorOptions = computed(() => [
   { label: t('canvas.exportOptions.colorColored'), value: 'color' as const },
   { label: t('canvas.exportOptions.colorWireframe'), value: 'wireframe' as const },
-])
-
-const layoutOptions = computed(() => [
-  { label: t('canvas.exportOptions.layoutLandscape'), value: 'landscape' as const },
-  { label: t('canvas.exportOptions.layoutPortrait'), value: 'portrait' as const },
 ])
 
 const answerOptions = computed(() => [
@@ -69,16 +56,6 @@ const answerOptions = computed(() => [
         fit
         :options="colorOptions"
         :aria-label="t('canvas.exportOptions.colorLabel')"
-      />
-    </div>
-
-    <div class="mm-export-options__row">
-      <span class="mm-export-options__label">{{ t('canvas.exportOptions.layoutLabel') }}</span>
-      <AdminSwissSegmented
-        v-model="layout"
-        fit
-        :options="layoutOptions"
-        :aria-label="t('canvas.exportOptions.layoutLabel')"
       />
     </div>
 

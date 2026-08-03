@@ -807,10 +807,22 @@ function correctYPositions(
     const rootId = roots[0]
     if (!rootId) return
     const topicAnchorY = getNodeAnchorY('topic', topicTopY, nodeMap, nodeHeights, diagramStyleId)
-    newY.set(
+    const nextTop = getNodeTopYForAnchor(
       rootId,
-      getNodeTopYForAnchor(rootId, topicAnchorY, nodeMap, nodeHeights, diagramStyleId)
+      topicAnchorY,
+      nodeMap,
+      nodeHeights,
+      diagramStyleId
     )
+    const prevTop = newY.get(rootId) ?? nodeMap.get(rootId)?.position?.y
+    if (prevTop == null) {
+      newY.set(rootId, nextTop)
+      return
+    }
+    if (!newY.has(rootId)) newY.set(rootId, prevTop)
+    // Move the whole side-root fan together — root-only snaps left children behind
+    // and the trailing side-pack pass then froze that skew.
+    shiftSubtreeInNewY(rootId, nextTop - prevTop)
   }
 
   alignSingleSideRootToTopic(rightRoots)
@@ -850,8 +862,14 @@ function correctYPositions(
     return { ...node, position: { ...node.position, y: correctedY } }
   })
 
-  // Pinned / incremental packs: slide each side as a rigid body onto the topic.
-  return centerMindMapSidePacksOnTopic(yCorrected, connections, nodeHeights)
+  // Multi-root packs: rigid-slide each side onto the topic. Sole roots already
+  // match the topic connection anchor (and their fans moved with them).
+  return centerMindMapSidePacksOnTopic(
+    yCorrected,
+    connections,
+    nodeHeights,
+    diagramStyleId
+  )
 }
 
 /**

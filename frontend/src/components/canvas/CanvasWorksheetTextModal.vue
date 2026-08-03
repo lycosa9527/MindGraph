@@ -48,6 +48,7 @@ const emit = defineEmits<{
   save: [payload: {
     worksheetText: CanvasWorksheetTextOptions
     colorMode: CanvasExportColorMode
+    layout: CanvasExportLayout
     format: 'pdf' | 'worksheet_docx'
   }]
 }>()
@@ -56,6 +57,7 @@ const { t } = useLanguage()
 
 const draft = ref<CanvasWorksheetTextOptions>({ ...DEFAULT_CANVAS_WORKSHEET_TEXT_OPTIONS })
 const draftColorMode = ref<CanvasExportColorMode>('color')
+const draftLayout = ref<CanvasExportLayout>('landscape')
 const diagramPreviewUrl = ref<string | null>(null)
 const previewLoading = ref(false)
 const previewFailed = ref(false)
@@ -80,6 +82,11 @@ const showHideOptions = computed(() => [
 const colorOptions = computed(() => [
   { label: t('canvas.exportOptions.colorWireframe'), value: 'wireframe' as const },
   { label: t('canvas.exportOptions.colorColored'), value: 'color' as const },
+])
+
+const layoutOptions = computed(() => [
+  { label: t('canvas.exportOptions.layoutLandscape'), value: 'landscape' as const },
+  { label: t('canvas.exportOptions.layoutPortrait'), value: 'portrait' as const },
 ])
 
 type WorksheetVisibility = 'show' | 'hide'
@@ -152,6 +159,7 @@ function seedDraftFromProps() {
     ...props.options,
   }
   draftColorMode.value = props.colorMode
+  draftLayout.value = props.layout
 }
 
 function clearPreviewState() {
@@ -226,14 +234,11 @@ watch(draftColorMode, () => {
   }
 })
 
-watch(
-  () => props.layout,
-  async () => {
-    if (!visible.value) return
-    await nextTick()
-    syncFreeSpace()
-  }
-)
+watch(draftLayout, async () => {
+  if (!visible.value) return
+  await nextTick()
+  syncFreeSpace()
+})
 
 function close() {
   visible.value = false
@@ -249,6 +254,7 @@ function commitExport(format: 'pdf' | 'worksheet_docx') {
   emit('save', {
     worksheetText,
     colorMode: draftColorMode.value,
+    layout: draftLayout.value,
     format,
   })
   visible.value = false
@@ -263,9 +269,10 @@ function handleExportDocx() {
 }
 
 async function handleReset() {
-  // Full factory defaults: fields, placement, scale, and color mode.
+  // Full factory defaults: fields, placement, scale, color mode, and paper orientation.
   draft.value = { ...CLASSROOM_WORKSHEET_TEXT_PRESET }
   draftColorMode.value = 'color'
+  draftLayout.value = 'landscape'
   await nextTick()
   syncFreeSpace()
 }
@@ -311,7 +318,7 @@ async function handleReset() {
           <span class="worksheet-text-modal__preview-kicker-meta">
             A4 ·
             {{
-              layout === 'portrait'
+              draftLayout === 'portrait'
                 ? t('canvas.exportOptions.layoutPortrait')
                 : t('canvas.exportOptions.layoutLandscape')
             }}
@@ -320,7 +327,7 @@ async function handleReset() {
         <div class="worksheet-text-modal__paper-stage">
           <div
             class="worksheet-text-modal__paper"
-            :class="`worksheet-text-modal__paper--${layout}`"
+            :class="`worksheet-text-modal__paper--${draftLayout}`"
           >
             <div
               v-if="previewHasHeader"
@@ -555,6 +562,18 @@ async function handleReset() {
             fit
             :options="colorOptions"
             :aria-label="t('canvas.exportOptions.colorLabel')"
+          />
+        </div>
+
+        <div class="worksheet-text-modal__row">
+          <span class="worksheet-text-modal__label">{{
+            t('canvas.exportOptions.layoutLabel')
+          }}</span>
+          <AdminSwissSegmented
+            v-model="draftLayout"
+            fit
+            :options="layoutOptions"
+            :aria-label="t('canvas.exportOptions.layoutLabel')"
           />
         </div>
 

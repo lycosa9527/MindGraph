@@ -174,6 +174,49 @@ describe('diagramEditApply one-sentence canvas path', () => {
     expect(result.verified).toBe(true)
   })
 
+  it('remove_nodes verifies by label so recycled branch-l-1-0 does not false-fail', async () => {
+    const store = useDiagramStore()
+    store.loadFromSpec(
+      {
+        topic: '交换机',
+        leftBranches: [
+          { text: '教学实践与应用', children: [{ text: '实验' }] },
+          { text: '基础与原理', children: [{ text: '定义' }] },
+        ],
+        rightBranches: [{ text: '种类与特征', children: [{ text: '分层' }] }],
+      },
+      'mindmap'
+    )
+    const firstLeft = store.data?.nodes.find((n) => n.text === '教学实践与应用')
+    expect(firstLeft?.id).toBeTruthy()
+    const sendAck = vi.fn()
+
+    const result = await applyVerifiedDiagramUpdate(
+      'remove_nodes',
+      [firstLeft!.id],
+      {
+        mutationId: 'mut-del-branch',
+        expectedEffect: {
+          op: 'delete_node',
+          node_identifier: '教学实践与应用',
+        },
+        sendAck,
+        hubRevision: 2,
+      }
+    )
+
+    expect(result.verified).toBe(true)
+    expect(store.data?.nodes.some((n) => n.text === '教学实践与应用')).toBe(false)
+    expect(store.data?.nodes.some((n) => n.text === '基础与原理')).toBe(true)
+    // After reload the former second left branch often becomes branch-l-1-0.
+    expect(store.data?.nodes.some((n) => n.id === 'branch-l-1-0')).toBe(true)
+    expect(sendAck).toHaveBeenCalledWith(
+      expect.objectContaining({
+        verified: true,
+      })
+    )
+  })
+
   it('verify failure restores canvas and acks verified false', async () => {
     const store = topicOnlyMindmapStore()
     const beforeCount = store.data?.nodes.length ?? 0

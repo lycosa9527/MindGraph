@@ -586,6 +586,54 @@ describe('v2 sibling Enter anchor Y stability', () => {
     expect(leftL2Anchor).toBeCloseTo(leftParentAnchor, 5)
   })
 
+  it('sole underline L1 aligns to topic without skewing its children', () => {
+    const heights = {
+      topic: 48,
+      'branch-l-1-0': 36,
+      'branch-l-2-0': 36,
+      'branch-l-2-1': 36,
+      'branch-r-1-0': 36,
+      'branch-r-1-1': 36,
+    }
+    const nodes: DiagramNode[] = [
+      node('topic', 200, { height: 48, width: 120, x: 400 }),
+      // Intentionally high — sole left must snap to topic and keep the fan.
+      node('branch-l-1-0', 100, { height: 36, width: 80, x: 100 }),
+      node('branch-l-2-0', 80, { height: 36, width: 70, x: 20 }),
+      node('branch-l-2-1', 130, { height: 36, width: 70, x: 20 }),
+      node('branch-r-1-0', 150, { height: 36, width: 80, x: 600 }),
+      node('branch-r-1-1', 250, { height: 36, width: 80, x: 600 }),
+    ]
+    const connections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'branch-l-1-0' },
+      { id: 'c1', source: 'branch-l-1-0', target: 'branch-l-2-0' },
+      { id: 'c2', source: 'branch-l-1-0', target: 'branch-l-2-1' },
+      { id: 'c3', source: 'topic', target: 'branch-r-1-0' },
+      { id: 'c4', source: 'topic', target: 'branch-r-1-1' },
+    ]
+    const { nodes: next } = recalculateMindMapV2ColumnPositions(
+      nodes,
+      120,
+      {},
+      heights,
+      connections,
+      new Set(),
+      'underline'
+    )
+    const topicY = requirePosition(requireNode(next, 'topic'), 'topic').y
+    const leftY = requirePosition(requireNode(next, 'branch-l-1-0'), 'branch-l-1-0').y
+    const k0Y = requirePosition(requireNode(next, 'branch-l-2-0'), 'branch-l-2-0').y
+    const k1Y = requirePosition(requireNode(next, 'branch-l-2-1'), 'branch-l-2-1').y
+    const topicAnchor = mindMapConnectionAnchorY(topicY, heights.topic, 'rectangle')
+    const leftAnchor = mindMapConnectionAnchorY(leftY, heights['branch-l-1-0'], 'underline')
+    const kidMid =
+      (mindMapConnectionAnchorY(k0Y, heights['branch-l-2-0'], 'underline') +
+        mindMapConnectionAnchorY(k1Y, heights['branch-l-2-1'], 'underline')) /
+      2
+    expect(leftAnchor).toBeCloseTo(topicAnchor, 5)
+    expect(kidMid).toBeCloseTo(leftAnchor, 5)
+  })
+
   it('mergeMindMapLayoutPositions writes X back and skips no-op', () => {
     const store: DiagramNode[] = [
       node('topic', 0, { x: 400, width: 120 }),

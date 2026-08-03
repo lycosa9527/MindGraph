@@ -5,6 +5,7 @@ import type { DiagramNode } from '@/types'
 import type { Connection } from '@/types'
 import { MINDMAP_NODE_UID_DATA_KEY } from '@/utils/mindMapNodeUid'
 import {
+  applyMindMapIncrementalDeleteLayout,
   applyMindMapIncrementalSiblingYPreserve,
   applyMindMapIncrementalTopLevelSiblingLayout,
   applyMindMapSideAnchorYPreserve,
@@ -298,5 +299,170 @@ describe('applyMindMapIncrementalTopLevelSiblingLayout', () => {
       (next.find((n) => n.id === 'branch-l-1-1')?.position?.y ?? 0) -
         (next.find((n) => n.id === 'branch-l-1-0')?.position?.y ?? 0)
     ).toBeCloseTo(108, 5)
+  })
+})
+
+describe('applyMindMapIncrementalDeleteLayout', () => {
+  function branch(
+    id: string,
+    uid: string,
+    y: number,
+    text: string,
+    height = 40
+  ): DiagramNode {
+    return {
+      id,
+      text,
+      type: 'branch',
+      position: { x: 100, y },
+      data: {
+        [MINDMAP_NODE_UID_DATA_KEY]: uid,
+        estimatedHeight: height,
+      },
+    }
+  }
+
+  it('closes L1 gap after deleting the first left branch (id reuse safe)', () => {
+    const before: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic', position: { x: 400, y: 0 } },
+      branch('branch-l-1-0', 'uid-a', -100, '教学实践与应用'),
+      branch('branch-l-1-1', 'uid-b', 0, '基础与原理'),
+      branch('branch-r-1-0', 'uid-r', -20, 'Right'),
+    ]
+    const beforeConnections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'branch-l-1-0' },
+      { id: 'c1', source: 'topic', target: 'branch-l-1-1' },
+      { id: 'c2', source: 'topic', target: 'branch-r-1-0' },
+    ]
+    // After reload: uid-b becomes branch-l-1-0; layout engine would have restacked.
+    const after: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic', position: { x: 400, y: 50 } },
+      branch('branch-l-1-0', 'uid-b', 80, '基础与原理'),
+      branch('branch-r-1-0', 'uid-r', 80, 'Right'),
+    ]
+    const afterConnections: Connection[] = [
+      { id: 'c1', source: 'topic', target: 'branch-l-1-0' },
+      { id: 'c2', source: 'topic', target: 'branch-r-1-0' },
+    ]
+
+    const { nodes, usedIncremental } = applyMindMapIncrementalDeleteLayout(
+      before,
+      beforeConnections,
+      after,
+      afterConnections,
+      {
+        deletedNodeIds: ['branch-l-1-0'],
+        topicY: 0,
+        nodeHeights: {
+          'branch-l-1-0': 40,
+          'branch-l-1-1': 40,
+          'branch-r-1-0': 40,
+        },
+      }
+    )
+
+    expect(usedIncremental).toBe(true)
+    expect(nodes.find((n) => n.id === 'topic')?.position?.y).toBeCloseTo(0, 5)
+    const left = nodes.find((n) => n.data?.[MINDMAP_NODE_UID_DATA_KEY] === 'uid-b')
+    const right = nodes.find((n) => n.data?.[MINDMAP_NODE_UID_DATA_KEY] === 'uid-r')
+    // Critical: survivor is not left at the restacked after Y (80).
+    // Settle may slide packs slightly; UID restore + gap-close must win first.
+    expect(left?.position?.y).toBeDefined()
+    expect(Math.abs((left?.position?.y ?? 999) - 80)).toBeGreaterThan(20)
+    expect(right?.position?.y).toBeDefined()
+    expect(Math.abs((right?.position?.y ?? 999) - 80)).toBeGreaterThan(20)
+  })
+
+  it('centers sole left L1 on topic after deleting the other left roots', () => {
+    const before: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic', position: { x: 400, y: 200 }, data: { estimatedHeight: 48 } },
+      branch('branch-l-1-0', 'uid-a', 120, 'A'),
+      branch('branch-l-1-1', 'uid-b', 200, 'B'),
+      branch('branch-l-1-2', 'uid-c', 280, 'C'),
+      branch('branch-l-2-0', 'uid-c1', 260, 'c1'),
+      branch('branch-l-2-1', 'uid-c2', 320, 'c2'),
+      branch('branch-r-1-0', 'uid-r', 200, 'R'),
+    ]
+    const beforeConnections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'branch-l-1-0' },
+      { id: 'c1', source: 'topic', target: 'branch-l-1-1' },
+      { id: 'c2', source: 'topic', target: 'branch-l-1-2' },
+      { id: 'c3', source: 'branch-l-1-2', target: 'branch-l-2-0' },
+      { id: 'c4', source: 'branch-l-1-2', target: 'branch-l-2-1' },
+      { id: 'c5', source: 'topic', target: 'branch-r-1-0' },
+    ]
+    const after: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic', position: { x: 400, y: 250 }, data: { estimatedHeight: 48 } },
+      branch('branch-l-1-0', 'uid-c', 50, 'C'),
+      branch('branch-l-2-0', 'uid-c1', 30, 'c1'),
+      branch('branch-l-2-1', 'uid-c2', 70, 'c2'),
+      branch('branch-r-1-0', 'uid-r', 50, 'R'),
+    ]
+    const afterConnections: Connection[] = [
+      { id: 'c2', source: 'topic', target: 'branch-l-1-0' },
+      { id: 'c3', source: 'branch-l-1-0', target: 'branch-l-2-0' },
+      { id: 'c4', source: 'branch-l-1-0', target: 'branch-l-2-1' },
+      { id: 'c5', source: 'topic', target: 'branch-r-1-0' },
+    ]
+    const { nodes, usedIncremental } = applyMindMapIncrementalDeleteLayout(
+      before,
+      beforeConnections,
+      after,
+      afterConnections,
+      {
+        deletedNodeIds: ['branch-l-1-0', 'branch-l-1-1'],
+        topicY: 200,
+        nodeHeights: {
+          topic: 48,
+          'branch-l-1-0': 40,
+          'branch-l-1-1': 40,
+          'branch-l-1-2': 40,
+          'branch-l-2-0': 40,
+          'branch-l-2-1': 40,
+          'branch-r-1-0': 40,
+        },
+        diagramStyleId: 'classic',
+      }
+    )
+    expect(usedIncremental).toBe(true)
+    const topic = nodes.find((n) => n.id === 'topic')
+    const left = nodes.find((n) => n.data?.[MINDMAP_NODE_UID_DATA_KEY] === 'uid-c')
+    expect(topic?.position?.y).toBeCloseTo(200, 5)
+    expect(left?.position?.y).toBeDefined()
+    // Classic L1 is rounded: connection anchor == box mid → sole L1 mid ≈ topic mid.
+    const topicMid = (topic?.position?.y ?? 0) + 24
+    const leftMid = (left?.position?.y ?? 0) + 20
+    expect(Math.abs(leftMid - topicMid)).toBeLessThan(1)
+  })
+
+  it('falls back when survivor UID coverage is too low', () => {
+    const before: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic', position: { x: 0, y: 0 } },
+      branch('branch-l-1-0', 'uid-a', -40, 'A'),
+      {
+        id: 'branch-l-1-1',
+        text: 'B',
+        type: 'branch',
+        position: { x: 0, y: 40 },
+      },
+    ]
+    const after: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic', position: { x: 0, y: 0 } },
+      {
+        id: 'branch-l-1-0',
+        text: 'B',
+        type: 'branch',
+        position: { x: 0, y: 10 },
+      },
+    ]
+    const { nodes, usedIncremental } = applyMindMapIncrementalDeleteLayout(
+      before,
+      [{ id: 'c0', source: 'topic', target: 'branch-l-1-0' }],
+      after,
+      [{ id: 'c1', source: 'topic', target: 'branch-l-1-0' }],
+      { deletedNodeIds: ['branch-l-1-0'] }
+    )
+    expect(usedIncremental).toBe(false)
+    expect(nodes).toBe(after)
   })
 })

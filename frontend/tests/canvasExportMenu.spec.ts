@@ -48,9 +48,9 @@ describe('canvasExportMenu', () => {
     expect(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.divided).toBe(true)
   })
 
-  it('defines mind map export menu with single A4 pdf entry', () => {
+  it('defines mind map export menu without standalone pdf (DOCX/PDF via worksheet modal)', () => {
     const commands = CANVAS_MINDMAP_EXPORT_MENU_ITEMS.map((item) => item.command)
-    expect(commands).toEqual(['png', 'svg', 'pdf', 'mg'])
+    expect(commands).toEqual(['png', 'svg', 'mg'])
   })
 
   it('marks mg as divided from raster formats in mind map menu', () => {

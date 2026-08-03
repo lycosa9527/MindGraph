@@ -205,6 +205,103 @@ def test_build_expected_effect_add_child_via_parent_ref() -> None:
     assert effect.parent_ref == "品牌"
 
 
+def test_build_expected_effect_delete_uses_unique_label_not_branch_id() -> None:
+    """Delete verify must use label — positional branch ids are reused after reload."""
+    before = {
+        "nodes": [
+            {"id": "topic", "text": "交换机"},
+            {"id": "branch-l-1-0", "text": "教学实践与应用"},
+            {"id": "branch-l-1-1", "text": "基础与原理"},
+        ],
+        "connections": [],
+    }
+    cmd = DiagramEditCommand(
+        tool="diagram.delete_node",
+        args={"node_identifier": "branch-l-1-0"},
+        scope="scope-1",
+        diagram_type="mindmap",
+        legacy_command={
+            "action": "delete_node",
+            "node_identifier": "branch-l-1-0",
+            "node_id": "branch-l-1-0",
+            "target": "教学实践与应用",
+        },
+    )
+    effect = build_expected_effect(cmd, before)
+    assert effect.op == "delete_node"
+    assert effect.node_identifier == "教学实践与应用"
+    assert "node_absent" in effect.checks
+
+
+def test_build_expected_effect_delete_id_only_resolves_label_from_snapshot() -> None:
+    """Id-only delete command still verifies by snapshot label."""
+    before = {
+        "nodes": [
+            {"id": "topic", "text": "交换机"},
+            {"id": "branch-l-1-0", "text": "教学实践与应用"},
+            {"id": "branch-l-1-1", "text": "基础与原理"},
+        ],
+        "connections": [],
+    }
+    cmd = DiagramEditCommand(
+        tool="diagram.delete_node",
+        args={"node_identifier": "branch-l-1-0"},
+        scope="scope-1",
+        diagram_type="mindmap",
+        legacy_command={"action": "delete_node", "node_identifier": "branch-l-1-0"},
+    )
+    effect = build_expected_effect(cmd, before)
+    assert effect.node_identifier == "教学实践与应用"
+
+
+def test_build_expected_effect_delete_data_label_only_node() -> None:
+    """Resolve deleted label from data.label when text is empty."""
+    before = {
+        "nodes": [
+            {"id": "topic", "text": "Topic"},
+            {"id": "branch-r-1-0", "text": "", "data": {"label": "History"}},
+            {"id": "branch-r-1-1", "text": "Other"},
+        ],
+        "connections": [],
+    }
+    cmd = DiagramEditCommand(
+        tool="diagram.delete_node",
+        args={"node_id": "branch-r-1-0"},
+        scope="scope-1",
+        diagram_type="mindmap",
+        legacy_command={"action": "delete_node", "node_id": "branch-r-1-0"},
+    )
+    effect = build_expected_effect(cmd, before)
+    assert effect.node_identifier == "History"
+
+
+def test_build_expected_effect_delete_omits_identifier_when_label_duplicated() -> None:
+    """Duplicate labels must not use node_absent (would false-fail after delete)."""
+    before = {
+        "nodes": [
+            {"id": "topic", "text": "Topic"},
+            {"id": "branch-l-1-0", "text": "历史"},
+            {"id": "branch-l-1-1", "text": "历史"},
+        ],
+        "connections": [],
+    }
+    cmd = DiagramEditCommand(
+        tool="diagram.delete_node",
+        args={"node_identifier": "branch-l-1-0"},
+        scope="scope-1",
+        diagram_type="mindmap",
+        legacy_command={
+            "action": "delete_node",
+            "node_identifier": "branch-l-1-0",
+            "target": "历史",
+        },
+    )
+    effect = build_expected_effect(cmd, before)
+    assert effect.node_identifier is None
+    assert "node_absent" not in effect.checks
+    assert "no_dangling_edges" in effect.checks
+
+
 def test_extract_before_fingerprint_nodes() -> None:
     """Fingerprint prefers nodes[] when present."""
     ctx = {
