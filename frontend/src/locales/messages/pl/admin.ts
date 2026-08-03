@@ -1,6 +1,6 @@
 /** pl UI — admin */
 
- {
+export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',
   'admin.addAdmin': 'Add Admin',
