@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.163.0] - 2026-08-03
+
+> **MCP Streamable HTTP production hardening; DEBUG `/assets` mount for Playwright export.**
+
+### Added
+
+- **MCP HTTP ops** — Secure Streamable HTTP at `/api/mcp`: host `session_manager` lifespan, trailing-slash rewrite, `mgat_` + `X-MG-Account` auth before protocol, per-user rate limit, feature-flag gate, loopback-only internal URL, `mcp` client label ([`services/mcp/`](services/mcp/), [`docs/operations/mcp_http.md`](docs/operations/mcp_http.md)).
+
+### Changed
+
+- **Feature gate** — `/api/mcp` gated by `FEATURE_MCP_HTTP` with always-on mount (hot off without restart) ([`feature_gate.py`](services/infrastructure/http/feature_gate.py), [`register.py`](routers/register.py)).
+- **SPA dist static** — Mount `/assets` (and `/gallery`) from `frontend/dist` even in DEBUG so Playwright `/export-render` can load hashed CSS/JS ([`spa_handler.py`](services/infrastructure/utils/spa_handler.py)).
+- **Deploy notes** — MCP proxy timeout ≥180s and env comments ([`production_security_deploy.md`](docs/architecture/production_security_deploy.md), [`env.example`](env.example)).
+
+### Fixed
+
+- **MCP mount lifespan** — Enter `session_manager.run()` from the host FastAPI lifespan (fixes `Task group is not initialized` when mounted).
+- **MCP POST without slash** — Rewrite `/api/mcp` → `/api/mcp/` so POST is not 405.
+- **Local DingTalk/MCP PNG in DEBUG** — Stale “missing Playwright” symptom was unmounted `/assets` returning JSON 404s.
+
+### Tests
+
+- **Backend** — MCP auth/lifespan/tool URL guards, feature-gate `/api/mcp`, SPA assets mount in DEBUG (`tests/test_mcp_*.py`, `tests/test_feature_flag_hot_reload.py`, `tests/test_vue_spa_static_mime.py`).
+
 ## [5.162.0] - 2026-08-03
 
 > **Mind-map v2 delete/layout flash fixes; DOCX/PDF export modal polish; one-sentence node-action guide.**

@@ -46,6 +46,7 @@ from services.infrastructure.lifecycle.lifespan_shutdown import (
     LifespanBackgroundTasks,
     run_lifespan_shutdown,
 )
+from services.mcp.session_lifespan import mindgraph_mcp_session_run
 from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService, admin_sms_alerts_enabled
 from services.infrastructure.monitoring.health_monitor import get_health_monitor
@@ -581,9 +582,11 @@ async def lifespan(fastapi_app: FastAPI):
         export_cleanup_task=export_cleanup_task,
     )
 
-    # Yield control to application
+    # Yield control to application. MCP session_manager must run for the whole
+    # serve window (mounted sub-app lifespans are not started by FastAPI).
     try:
-        yield
+        async with mindgraph_mcp_session_run():
+            yield
     finally:
         await run_lifespan_shutdown(
             fastapi_app=fastapi_app,

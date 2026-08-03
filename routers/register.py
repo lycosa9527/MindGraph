@@ -15,7 +15,6 @@ import logging
 
 from fastapi import FastAPI
 
-from config.settings import config
 from routers import (
     api,
     auth,
@@ -117,16 +116,15 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(pages)
     app.include_router(api.router)
 
-    if config.FEATURE_MCP_HTTP:
-        try:
-            mount_mindgraph_mcp(app)
-            logger.info("[RouterRegistration] MCP Streamable HTTP mounted at /api/mcp")
-        except BACKGROUND_INFRA_ERRORS as exc:
-            logger.warning(
-                "[RouterRegistration] MCP mount failed (FEATURE_MCP_HTTP=True): %s",
-                exc,
-                exc_info=True,
-            )
+    try:
+        mount_mindgraph_mcp(app)
+        logger.info("[RouterRegistration] MCP Streamable HTTP mounted at /api/mcp")
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning(
+            "[RouterRegistration] MCP mount failed: %s",
+            exc,
+            exc_info=True,
+        )
 
     app.include_router(node_palette.router)
     app.include_router(relationship_labels.router)

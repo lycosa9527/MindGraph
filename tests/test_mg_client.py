@@ -74,4 +74,6 @@ def test_display_labels() -> None:
     """Known clients have friendly display names."""
     assert mg_client_display_label("chrome-extension") == "Chrome extension"
     assert mg_client_display_label("openclaw") == "OpenClaw"
+    assert mg_client_display_label("mcp") == "MCP"
+    assert "mcp" in KNOWN_MG_CLIENTS
     assert mg_client_display_label("custom-bot") == "custom-bot"

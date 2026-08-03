@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import importlib
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from services.infrastructure.utils import spa_handler
 from services.infrastructure.utils.spa_handler import media_type_for_vue_dist_relpath
 
 vue_spa_module = importlib.import_module("routers.core.vue_spa")
@@ -76,3 +78,26 @@ def test_catch_all_index_html_serves_text_html(
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
     assert "offline" in response.text
+
+
+def test_setup_vue_spa_mounts_assets_in_debug(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """DEBUG auto mode skips SPA ownership but must still mount /assets for Playwright."""
+    dist_dir = tmp_path / "dist"
+    assets_dir = dist_dir / "assets"
+    assets_dir.mkdir(parents=True)
+    (assets_dir / "index-test.css").write_text("body{}", encoding="utf-8")
+    (dist_dir / "index.html").write_text("<html></html>", encoding="utf-8")
+
+    monkeypatch.setenv("DEBUG", "true")
+    monkeypatch.delenv("SPA_MODE", raising=False)
+    monkeypatch.setattr(spa_handler, "VUE_DIST_DIR", dist_dir)
+
+    app = FastAPI()
+    with patch.object(spa_handler, "setup_static_files"):
+        owned = spa_handler.setup_vue_spa(app)
+
+    assert owned is False
+    client = TestClient(app)
+    response = client.get("/assets/index-test.css")
+    assert response.status_code == 200
+    assert "body{}" in response.text

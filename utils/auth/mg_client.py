@@ -34,6 +34,7 @@ KNOWN_MG_CLIENTS = frozenset(
         "edge-extension",
         "openclaw",
         "file-reader",
+        "mcp",
         MG_CLIENT_UNSPECIFIED,
     }
 )
@@ -44,6 +45,7 @@ MG_CLIENT_DISPLAY_LABELS = {
     "edge-extension": "Edge extension",
     "openclaw": "OpenClaw",
     "file-reader": "File reader",
+    "mcp": "MCP",
     MG_CLIENT_UNSPECIFIED: "Unspecified",
 }
 

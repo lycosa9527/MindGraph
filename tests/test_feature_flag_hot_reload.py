@@ -88,6 +88,33 @@ async def test_feature_flag_gate_blocks_kitty_prefix():
     assert response.status_code == 404
 
 
+@pytest.mark.asyncio
+async def test_feature_flag_gate_blocks_mcp_when_disabled():
+    """MCP Streamable HTTP is gated when FEATURE_MCP_HTTP is off."""
+    call_next = AsyncMock(return_value=MagicMock(status_code=200))
+    with patch(
+        "services.infrastructure.http.feature_gate.config",
+        SimpleNamespace(FEATURE_MCP_HTTP=False),
+    ):
+        response = await feature_flag_gate(_request("/api/mcp"), call_next)
+    assert response.status_code == 404
+    call_next.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_feature_flag_gate_allows_mcp_when_enabled():
+    """MCP requests pass through when FEATURE_MCP_HTTP is on."""
+    downstream = MagicMock(status_code=200)
+    call_next = AsyncMock(return_value=downstream)
+    with patch(
+        "services.infrastructure.http.feature_gate.config",
+        SimpleNamespace(FEATURE_MCP_HTTP=True),
+    ):
+        response = await feature_flag_gate(_request("/api/mcp/"), call_next)
+    assert response is downstream
+    call_next.assert_awaited_once()
+
+
 def test_mindmate_collab_feature_key_mapped_and_permissions_supported():
     """Permissions for MindMate collab must resolve FEATURE_MINDMATE_COLLAB."""
     assert FEATURE_KEY_TO_CONFIG_ATTR["feature_mindmate_collab"] == "FEATURE_MINDMATE_COLLAB"

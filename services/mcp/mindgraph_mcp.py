@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import logging
 import os
+import uuid
 from collections.abc import Mapping
+from urllib.parse import urlparse
 
 import httpx
 from mcp.server.mcpserver import Context, MCPServer
@@ -18,6 +20,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from starlette.applications import Starlette
 
 from config.settings import config
+from utils.auth.mg_client import MG_CLIENT_HEADER
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +28,36 @@ _MCP_SINGLETON: dict[str, MCPServer] = {}
 
 _TRANSPORT_SECURITY = TransportSecuritySettings(enable_dns_rebinding_protection=False)
 
+_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+_DEFAULT_MG_CLIENT = "mcp"
+
+
+def _default_internal_base_url() -> str:
+    """Default loopback base URL for MCP tool → REST calls."""
+    return f"http://127.0.0.1:{config.port}"
+
 
 def _internal_base_url() -> str:
-    """Base URL for loopback HTTP calls from MCP tool handlers into this app."""
+    """
+    Base URL for loopback HTTP calls from MCP tool handlers into this app.
+
+    ``MCP_HTTP_INTERNAL_BASE_URL`` may override the default only when the host is
+    loopback; non-loopback overrides are ignored (SSRF / misconfig guard).
+    """
     override = (os.environ.get("MCP_HTTP_INTERNAL_BASE_URL") or "").strip().rstrip("/")
-    if override:
-        return override
-    return f"http://127.0.0.1:{config.port}"
+    if not override:
+        return _default_internal_base_url()
+
+    parsed = urlparse(override)
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme not in {"http", "https"} or host not in _LOOPBACK_HOSTS:
+        logger.warning(
+            "[MCP] Ignoring non-loopback MCP_HTTP_INTERNAL_BASE_URL=%r; using %s",
+            override,
+            _default_internal_base_url(),
+        )
+        return _default_internal_base_url()
+    return override
 
 
 def _header_value(headers: Mapping[str, str], name: str) -> str:
@@ -47,7 +73,12 @@ def _header_value(headers: Mapping[str, str], name: str) -> str:
 
 
 def _auth_headers_from_context(ctx: Context) -> dict[str, str]:
-    """Auth headers from the Streamable HTTP request (Bearer mgat_ + X-MG-Account)."""
+    """
+    Auth headers from the Streamable HTTP request (Bearer mgat_ + X-MG-Account).
+
+    Does not forward X-Forwarded-For / X-Real-IP (loopback is often a trusted
+    proxy peer; client-supplied XFF would be spoofable).
+    """
     try:
         incoming = ctx.headers
     except ValueError as exc:
@@ -64,11 +95,19 @@ def _auth_headers_from_context(ctx: Context) -> dict[str, str]:
     account = _header_value(incoming, "x-mg-account")
     if not auth.lower().startswith("bearer "):
         raise ValueError("Authorization header must be Bearer token (mgat_...).")
+    token = auth[7:].strip()
+    if not token.startswith("mgat_"):
+        raise ValueError("Authorization header must be Bearer token (mgat_...).")
     if not account:
         raise ValueError("X-MG-Account header is required (account phone number).")
+
+    mg_client = _header_value(incoming, MG_CLIENT_HEADER) or _DEFAULT_MG_CLIENT
+    request_id = _header_value(incoming, "x-request-id") or str(uuid.uuid4())
     return {
-        "Authorization": auth,
+        "Authorization": f"Bearer {token}",
         "X-MG-Account": account,
+        MG_CLIENT_HEADER: mg_client,
+        "X-Request-Id": request_id,
         "Content-Type": "application/json",
         "Accept": "application/json, text/plain, */*",
     }

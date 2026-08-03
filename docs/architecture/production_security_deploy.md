@@ -84,6 +84,8 @@ The backend also emits SSE comment keepalives every 25s during Dify silence ([`s
 
 5. **Extension mind-map PNG** — `POST /api/web_content_mindmap_png` can take up to **180s** (extension client abort). Use the same `proxy_read_timeout` / `proxy_send_timeout` **≥ 180s** on `/api` (300s is fine and matches MindMate above). Playwright render + LLM run server-side; cert testers need a current backend build on `mg.mindspringedu.com` / `test.mindspringedu.com`.
 
+6. **MCP Streamable HTTP** — `POST /api/mcp` tool calls proxy into `/api/generate_dingtalk` (up to **180s**). Use the same `proxy_read_timeout` / `proxy_send_timeout` **≥ 180s** on `/api` (300s is fine). Requires `FEATURE_MCP_HTTP=True`, Bearer `mgat_…` + `X-MG-Account`. See [`docs/operations/mcp_http.md`](../operations/mcp_http.md).
+
 ## Deploy order (same maintenance window)
 
 Deploy **backend and frontend build together**. CSRF double-submit is enforced once the `csrf_token` cookie exists; the SPA must send `X-CSRF-Token` on mutations (global fetch interceptor in `frontend/src/utils/installCsrfFetchInterceptor.ts`). **mgat_ API clients** (Chrome extension, OpenClaw, file-reader) skip CSRF when `Authorization: Bearer mgat_…` is present; the extension also uses `credentials: 'omit'` so incidental session cookies are not sent.

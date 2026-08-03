@@ -247,6 +247,7 @@ docs/operations/*
 !docs/operations/online-collab-runbook.md
 !docs/operations/online-collab-grafana-dashboard.json
 !docs/operations/UVICORN_RESOURCE_TRACKER.md
+!docs/operations/mcp_http.md
 # ruff
 .ruff_cache/
 

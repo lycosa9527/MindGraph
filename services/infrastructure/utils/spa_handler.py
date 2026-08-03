@@ -5,13 +5,15 @@ In development, the Vite dev server handles frontend routing.
 
 Usage:
     - Production: Build Vue app with `npm run build`, then serve from /frontend/dist
-    - Development: Run Vite dev server (e.g., `npm run dev`), backend will skip SPA serving
+    - Development: Vite handles the browser UI; backend still mounts ``/assets`` from
+      ``frontend/dist`` when present so Playwright ``/export-render`` (DingTalk/MCP PNG)
+      can load hashed CSS/JS. Full SPA catch-all ownership stays off in DEBUG auto mode.
 
 Environment Variables:
     - SPA_MODE: 'vue' (force Vue SPA), 'legacy' (disable Vue SPA), 'auto' (default, auto-detect)
-    - DEBUG=True: Automatically disables Vue SPA serving in auto mode
-    - ENVIRONMENT=development: Automatically disables Vue SPA serving in auto mode
-    - VITE_DEV_PORT: Automatically disables Vue SPA serving in auto mode
+    - DEBUG=True: Skips full SPA catch-all ownership in auto mode (Vite owns browser UI)
+    - ENVIRONMENT=development: Same as DEBUG for auto mode
+    - VITE_DEV_PORT: Same as DEBUG for auto mode
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -118,15 +120,19 @@ def is_dev_mode() -> bool:
 
 def should_serve_vue_spa() -> bool:
     """
-    Determine if we should serve Vue SPA based on mode and availability.
+    Determine if we should own full Vue SPA HTML routing.
 
-    In development mode (when VITE_DEV_PORT is set or DEBUG=True),
-    we skip serving the built SPA to allow Vite dev server to handle it.
+    In development mode (when VITE_DEV_PORT is set or DEBUG=True), return False
+    so Vite owns the browser UI. Dist ``/assets`` are still mounted separately
+    for headless ``/export-render`` (see ``mount_vue_dist_static``).
     """
     mode = get_spa_env_mode()
 
     if is_dev_mode() and mode == "auto":
-        logger.info("Development mode detected. Skipping Vue SPA serving (Vite dev server will handle frontend).")
+        logger.info(
+            "Development mode detected. Skipping full Vue SPA HTML ownership "
+            "(Vite handles browser UI; /assets still mounted for Playwright export)."
+        )
         return False
 
     if mode == "vue":
@@ -166,32 +172,18 @@ def setup_static_files(app: FastAPI) -> None:
         )
 
 
-def setup_vue_spa(app: FastAPI) -> bool:
+def mount_vue_dist_static(app: FastAPI) -> None:
     """
-    Setup Vue SPA serving for production.
+    Mount ``/assets`` and ``/gallery`` from ``frontend/dist`` when present.
 
-    Args:
-        app: FastAPI application instance
-
-    Returns:
-        True if Vue SPA was configured, False if not serving SPA
+    Required in DEBUG as well as production: Playwright navigates to backend
+    ``/export-render``, which loads hashed bundles from ``/assets/*``. Skipping
+    this mount leaves CSS/JS as JSON 404s and breaks DingTalk/MCP PNG export.
     """
-    # Always mount /static - needed for community thumbnails in dev and prod
-    setup_static_files(app)
-
-    if not should_serve_vue_spa():
-        # Don't log misleading message in dev mode - Vite handles frontend, not legacy templates
-        if not is_dev_mode():
-            logger.info("Using legacy Jinja2 templates for frontend")
-        return False
-
-    logger.debug("Configuring Vue SPA from: %s", VUE_DIST_DIR)
-
-    # Mount Vue static assets (must match script/link tags in dist/index.html)
     assets_dir = VUE_DIST_DIR / "assets"
     if not assets_dir.is_dir():
         logger.critical(
-            "Vue SPA enabled but %s is missing — /assets/* will 404 as JSON; "
+            "Vue dist assets missing at %s — /assets/* will 404 as JSON; "
             "deploy the full frontend build (entire frontend/dist, including assets/).",
             assets_dir,
         )
@@ -199,19 +191,42 @@ def setup_vue_spa(app: FastAPI) -> bool:
         asset_files = list(assets_dir.iterdir())
         if not asset_files:
             logger.critical(
-                "Vue SPA enabled but %s is empty — redeploy after `npm run build`.",
+                "Vue dist assets empty at %s — redeploy after `npm run build`.",
                 assets_dir,
             )
         else:
             logger.debug("Mounted /assets with %s files from %s", len(asset_files), assets_dir)
         app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="vue-assets")
 
-    # Mount gallery folder for featured diagrams
     gallery_dir = VUE_DIST_DIR / "gallery"
     if gallery_dir.exists():
         app.mount("/gallery", StaticFiles(directory=str(gallery_dir)), name="vue-gallery")
         logger.debug("Mounted /gallery for featured diagrams")
 
+
+def setup_vue_spa(app: FastAPI) -> bool:
+    """
+    Setup Vue dist static mounts and optional full SPA HTML ownership.
+
+    Args:
+        app: FastAPI application instance
+
+    Returns:
+        True if full Vue SPA HTML ownership is enabled, False otherwise
+        (``/assets`` may still be mounted for Playwright export).
+    """
+    # Always mount /static - needed for community thumbnails in dev and prod
+    setup_static_files(app)
+    # Always mount dist assets when present (Playwright /export-render in DEBUG)
+    mount_vue_dist_static(app)
+
+    if not should_serve_vue_spa():
+        # Don't log misleading message in dev mode - Vite handles browser UI
+        if not is_dev_mode():
+            logger.info("Using legacy Jinja2 templates for frontend")
+        return False
+
+    logger.debug("Configuring Vue SPA HTML ownership from: %s", VUE_DIST_DIR)
     return True
 
 
