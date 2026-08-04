@@ -753,6 +753,14 @@ export interface ShowcasePost {
     spec?: Record<string, unknown>
   }>
   status: 'pending' | 'approved' | 'rejected' | 'withdrawn'
+  /** Teaching/diagram media pipeline token for moderation queues. */
+  media_status?:
+    | 'awaiting_upload'
+    | 'converting_preview'
+    | 'preview_ready'
+    | 'cover_ready'
+    | 'ready'
+    | 'conversion_failed'
   is_expert_recommended: boolean
   publish_source?: 'self' | 'proxy'
   attribution?: { display_name?: string; organization?: string | null; is_external?: boolean } | null

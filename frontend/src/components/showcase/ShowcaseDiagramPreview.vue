@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import {
   ChevronLeft,
@@ -20,6 +20,7 @@ import {
   popShowcaseReaderLock,
   pushShowcaseReaderLock,
 } from '@/composables/presentation/presentationDiagramEdit'
+import { ANIMATION } from '@/config/uiConfig'
 import { useDiagramStore } from '@/stores'
 import type { DiagramType } from '@/types'
 import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
@@ -78,6 +79,7 @@ const readerRoot = ref<HTMLElement | null>(null)
 const isFullscreen = ref(false)
 const failedImageSlideIndexes = ref(new Set<number>())
 const slideBlobUrls = ref<Record<number, string>>({})
+let fullscreenFitTimer: ReturnType<typeof setTimeout> | null = null
 
 function resolvedImageSrc(index: number, url: string): string {
   return slideBlobUrls.value[index] ?? url
@@ -443,6 +445,19 @@ async function toggleFullscreen() {
   try {
     if (!document.fullscreenElement) {
       await readerRoot.value.requestFullscreen()
+      // Container size changes — re-fit after layout (init fit already ran at modal size).
+      if (previewMode.value === 'diagram') {
+        if (fullscreenFitTimer != null) {
+          window.clearTimeout(fullscreenFitTimer)
+          fullscreenFitTimer = null
+        }
+        void nextTick(() => {
+          fullscreenFitTimer = setTimeout(() => {
+            fullscreenFitTimer = null
+            eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+          }, ANIMATION.FIT_VIEWPORT_DELAY)
+        })
+      }
     } else {
       await document.exitFullscreen()
     }
@@ -557,6 +572,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (fullscreenFitTimer != null) {
+    window.clearTimeout(fullscreenFitTimer)
+    fullscreenFitTimer = null
+  }
   popShowcaseReaderLock()
   revokeSlideBlobUrls()
   document.removeEventListener('fullscreenchange', syncFullscreenState)

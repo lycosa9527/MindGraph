@@ -23,6 +23,12 @@ from routers.features.community.helpers import parse_spec_json
 from services.auth.thinking_coin.case_earn import try_publish_case_earn
 from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.showcase.audit import write_showcase_audit
+from services.showcase.covers.events import get_cover_last_event
+from services.showcase.media_status import (
+    MEDIA_STATUS_COVER_READY,
+    cover_event_indicates_failure,
+    resolve_showcase_media_status,
+)
 from services.showcase.post_delete import delete_showcase_post_rows, showcase_post_still_exists
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.db.rls_context import RlsContext, apply_rls_context_async, rls_async_session
@@ -484,6 +490,22 @@ async def _format_post(
 
     gallery_items = _format_gallery_items(post.spec if isinstance(post.spec, dict) else None, post.id)
 
+    media_status = resolve_showcase_media_status(
+        case_type=post.case_type,
+        thumbnail_path=post.thumbnail_path,
+        spec=post.spec,
+        cover_failed=False,
+    )
+    if post.case_type == "teaching_design" and media_status != MEDIA_STATUS_COVER_READY:
+        last_cover_event = await get_cover_last_event(str(post.id))
+        if cover_event_indicates_failure(last_cover_event):
+            media_status = resolve_showcase_media_status(
+                case_type=post.case_type,
+                thumbnail_path=post.thumbnail_path,
+                spec=post.spec,
+                cover_failed=True,
+            )
+
     reviewer = await can_review_case(db, current_user)
     user_perms_review = await can_user_review_post(post, current_user, db)
     can_del = await can_delete_case(post, current_user, db)
@@ -531,6 +553,7 @@ async def _format_post(
         "source_file_url": source_file_url,
         "gallery_items": gallery_items,
         "status": post.status,
+        "media_status": media_status,
         "is_expert_recommended": post.is_expert_recommended,
         "publish_source": post.publish_source,
         "attribution": post.attribution if post.publish_source == "proxy" else None,

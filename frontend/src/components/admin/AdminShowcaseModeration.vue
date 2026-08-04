@@ -15,6 +15,11 @@ import {
   resolveShowcaseQueue,
   type ShowcaseQueue,
 } from '@/composables/admin/adminShowcaseNav'
+import {
+  resolveShowcaseMediaStatus,
+  showcaseMediaStatusChipClass,
+  showcaseMediaStatusLabelKey,
+} from '@/composables/admin/showcaseMediaStatus'
 import { useLanguage } from '@/composables'
 import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
 import { eventBus } from '@/composables/core/useEventBus'
@@ -119,6 +124,14 @@ function caseTypeLabel(caseType: ShowcaseCaseType): string {
   if (caseType === 'teaching_design') return String(t('showcase.type.teachingDesign'))
   if (caseType === 'diagram_case') return String(t('showcase.type.diagramCase'))
   return String(t('showcase.type.diagramTemplate'))
+}
+
+function mediaStatusLabel(post: ShowcasePost): string {
+  return String(t(showcaseMediaStatusLabelKey(resolveShowcaseMediaStatus(post))))
+}
+
+function mediaStatusChipClass(post: ShowcasePost): string {
+  return showcaseMediaStatusChipClass(resolveShowcaseMediaStatus(post))
 }
 
 function formatDate(iso: string | null | undefined): string {
@@ -239,7 +252,7 @@ onMounted(() => {
         fit
         @update:model-value="setQueue"
       />
-      <div class="relative min-w-[220px] flex-1 sm:max-w-xs">
+      <div class="relative min-w-55 flex-1 sm:max-w-xs">
         <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <input
           v-model="searchQuery"
@@ -376,6 +389,20 @@ onMounted(() => {
       >
         <template #default="{ row }">
           {{ caseTypeLabel(row.case_type) }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        v-if="activeQueue === 'pending'"
+        :label="t('admin.showcase.colMediaStatus')"
+        min-width="140"
+      >
+        <template #default="{ row }">
+          <span
+            class="inline-flex max-w-full items-center rounded-md px-2 py-0.5 text-xs font-medium"
+            :class="mediaStatusChipClass(row)"
+          >
+            {{ mediaStatusLabel(row) }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.167.0] - 2026-08-05
+
+> **Showcase moderation media pipeline status; fix Showcase .mg reader fit (init + fullscreen).**
+
+### Added
+
+- **Showcase media status** — API `media_status` on formatted posts (upload → Office PDF convert → preview/cover ready / failed); pending-queue column with status chips in admin moderation (`media_status.py`, `showcaseMediaStatus.ts`, `AdminShowcaseModeration.vue`).
+
+### Fixed
+
+- **Showcase diagram reader fit** — Mind-map / locked reader always zoom-fits (including v1); allow auto fit-on-init under showcase reader lock; re-fit after fullscreen enter (`useDiagramCanvasFit.ts`, `useDiagramCanvasEventBus.ts`, `ShowcaseDiagramPreview.vue`).
+
+### Changed
+
+- **Locale** — Admin showcase media-status keys across locale bundles.
+
+### Tests
+
+- **Backend** — Media status derivation + cover_fail mapping (`test_showcase_media_status.py`).
+- **Frontend** — Media status resolve/label/chip helpers (`showcaseMediaStatus.spec.ts`).
+
 ## [5.166.0] - 2026-08-05
 
 > **Shape-aware mind-map gaps + e-blackboard chrome; presentation spotlight sizes; Showcase Office→pdf.js with COS CJK fonts and cover SSE replay.**

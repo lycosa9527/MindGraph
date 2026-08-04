@@ -6,6 +6,7 @@ import { useVueFlow } from '@vue-flow/core'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { showcaseReaderLockRef } from '@/composables/presentation/presentationDiagramEdit'
 import { ANIMATION, CANVAS, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
 import { animateViewportTransition, cancelViewportTransition } from '@/utils/viewportTransition'
 import type { useDiagramStore } from '@/stores/diagram'
@@ -106,7 +107,9 @@ export function useDiagramCanvasFit(options: {
     // Run on the next frame so fitView is not inside a long setTimeout task
     // (Chrome "[Violation] setTimeout handler took …ms").
     const apply = (): void => {
-      if (useMindMapV2.value) {
+      // Showcase reader always wants true zoom-fit (including mind-map v1).
+      // Editor v1 keeps center-at-default-zoom after load.
+      if (useMindMapV2.value || showcaseReaderLockRef.value) {
         fitToFullCanvas(true)
         return
       }
@@ -599,6 +602,13 @@ export function useDiagramCanvasFit(options: {
       return
     }
     if (hasInitialFitDoneForDiagram.value) return
+    // Mind maps: reuse diagram:loaded settle path (covers emitLoaded:false readers
+    // such as Showcase, where measure-batch must finish before fit).
+    if (isMindMapDiagramType(diagramStore.type)) {
+      if (pendingFitAfterMindMapBulk || fitAfterLoadTimeoutId != null) return
+      scheduleMindMapFitAfterLoad()
+      return
+    }
     hasInitialFitDoneForDiagram.value = true
     setTimeout(() => {
       eventBus.emit('view:fit_to_canvas_requested', { animate: true })

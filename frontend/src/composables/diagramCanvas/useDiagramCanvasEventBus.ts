@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 import { nextTick } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { showcaseReaderLockRef } from '@/composables/presentation/presentationDiagramEdit'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { ANIMATION } from '@/config/uiConfig'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
@@ -121,6 +122,9 @@ export function useDiagramCanvasEventBus(): {
     function allowViewportFitEvent(
       data: { userInitiated?: boolean; forExport?: boolean } | undefined
     ): boolean {
+      // Showcase .mg reader is read-only: auto fit-on-init / reset must work even
+      // when mind-map v2 or desktop concept map would otherwise require userInitiated.
+      if (showcaseReaderLockRef.value) return true
       if (!isManualViewportMode(diagramStore, uiStore)) return true
       return Boolean(data?.userInitiated || data?.forExport)
     }
