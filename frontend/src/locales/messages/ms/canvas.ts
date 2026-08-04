@@ -1,4 +1,6 @@
-/** ms UI — canvas */
+/**
+ * ms UI � canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'Subbagian Baru 1',

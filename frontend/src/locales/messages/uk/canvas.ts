@@ -1,4 +1,6 @@
-/** uk UI — canvas */
+/**
+ * uk UI � canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'Нова підчастина 1',

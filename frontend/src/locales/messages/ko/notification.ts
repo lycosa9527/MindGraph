@@ -1,4 +1,6 @@
-/** ko UI — notification */
+/**
+ * ko UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': '주제 또는 중심 노드는 지울 수 없습니다',

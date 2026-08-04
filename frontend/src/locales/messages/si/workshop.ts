@@ -1,4 +1,6 @@
-/** si UI — workshop */
+/**
+ * si UI � workshop
+ */
 
 export default {
   'collab.codeCopied': 'කේතය පිටපත් කර ඇත',

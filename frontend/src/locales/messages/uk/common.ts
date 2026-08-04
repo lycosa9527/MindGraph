@@ -1,4 +1,6 @@
-/** uk UI — common */
+/**
+ * uk UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'Контент створено ШІ; перевіряйте його уважно.',

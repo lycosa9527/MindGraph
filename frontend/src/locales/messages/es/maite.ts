@@ -1,4 +1,6 @@
-/** es UI — maite */
+/**
+ * es UI � maite
+ */
 
 export default {
   'maite.title': 'Mate Learning',

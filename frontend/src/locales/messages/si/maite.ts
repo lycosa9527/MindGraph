@@ -1,4 +1,6 @@
-/** si UI — maite */
+/**
+ * si UI � maite
+ */
 
 export default {
   'maite.title': 'Mate ඉගෙනුම',

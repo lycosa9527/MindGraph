@@ -1,4 +1,6 @@
-/** tl UI — sidebar */
+/**
+ * tl UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'I-delete',

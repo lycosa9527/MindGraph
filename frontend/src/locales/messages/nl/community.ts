@@ -1,4 +1,6 @@
-/** nl UI — community */
+/**
+ * nl UI � community
+ */
 
 export default {
   'community.category.all': 'Alle',
@@ -73,12 +75,10 @@ export default {
   'debateverse.clickNextHint': 'Klik op de knop Volgende om de wijzigingen door te voeren',
   'debateverse.coinTossAffirmativeFirst': 'Bevestigend spreekt eerst',
   'debateverse.coinTossGotIt': 'Ik heb het',
-  'debateverse.coinTossModalBody':
-    'Bepaal vóór het debat de spreekvolgorde of kies positieve/negatieve standpunten door middel van het opgooien van munten',
+  'debateverse.coinTossModalBody': 'Bepaal vóór het debat de spreekvolgorde of kies positieve/negatieve standpunten door middel van het opgooien van munten',
   'debateverse.coinTossNegativeFirst': 'Negatief spreekt eerst',
   'debateverse.coinTossOrder': 'Toss om de spreekvolgorde te bepalen',
-  'debateverse.coinTossRules':
-    'AI-modellen zijn willekeurig toegewezen aan debatrollen. Bepaal vóór het debat de spreekvolgorde of kies positieve/negatieve standpunten door middel van het opgooien van munten',
+  'debateverse.coinTossRules': 'AI-modellen zijn willekeurig toegewezen aan debatrollen. Bepaal vóór het debat de spreekvolgorde of kies positieve/negatieve standpunten door middel van het opgooien van munten',
   'debateverse.coinTossStageTitle': 'Fase van het opgooien van munten',
   'debateverse.debateTopicLabel': 'Debatonderwerp:',
   'debateverse.executeCoinToss': 'Voer de muntworp uit',
@@ -137,8 +137,7 @@ export default {
   'library.loading': 'Laden…',
   'library.other': 'Ander',
   'library.premiumCollection': 'Uitgelichte collectie',
-  'library.slotFull.body':
-    'Je hebt {max} opgeslagen diagrammen. Verwijder er één om een ​​nieuw diagram op te slaan.',
+  'library.slotFull.body': 'Je hebt {max} opgeslagen diagrammen. Verwijder er één om een ​​nieuw diagram op te slaan.',
   'library.slotFull.cancel': 'Annuleren',
   'library.slotFull.deleteAndSave': 'Verwijderen en opslaan',
   'library.slotFull.networkError': 'Netwerkfout, bewerking mislukt',

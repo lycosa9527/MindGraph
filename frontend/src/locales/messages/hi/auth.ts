@@ -1,4 +1,6 @@
-/** hi UI — auth */
+/**
+ * hi UI � auth
+ */
 
 export default {
   'auth.accountInfo': 'खाता',

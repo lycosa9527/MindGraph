@@ -1,4 +1,6 @@
-/** it UI — admin */
+/**
+ * it UI � admin
+ */
 
 export default {
   'admin.actions': 'Operazioni',
@@ -1360,4 +1362,3 @@ export default {
   'admin.showcase.subtabAria': 'Sections Showcase',
   'admin.showcase.title': 'Showcase',
 } as const
-

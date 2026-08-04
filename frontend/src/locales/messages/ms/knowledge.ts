@@ -1,4 +1,6 @@
-/** ms UI — knowledge */
+/**
+ * ms UI � knowledge
+ */
 
 export default {
   'fileCenterLibrary.title': 'Paket',

@@ -1,4 +1,6 @@
-/** es UI — admin */
+/**
+ * es UI � admin
+ */
 
 export default {
   'admin.actions': 'Acciones',

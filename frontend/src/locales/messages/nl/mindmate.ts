@@ -1,4 +1,6 @@
-/** nl UI — mindmate */
+/**
+ * nl UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'Klik om AI-relatielabels in te schakelen (meerdere modellen)',
@@ -11,18 +13,14 @@ export default {
   'aiModel.relationshipsBadge': 'Relaties',
   'aiModel.relationshipsTooltip': 'Sleep om concepten te koppelen: AI zal relaties genereren',
   'aiModel.tabFocusBadge': 'Tab focus',
-  'aiModel.tabFocusTooltip':
-    'Druk op Tab terwijl u de focusvraag bewerkt om te valideren; kies vervolgens alternatieven in de balk (− / =)',
+  'aiModel.tabFocusTooltip': 'Druk op Tab terwijl u de focusvraag bewerkt om te valideren; kies vervolgens alternatieven in de balk (− / =)',
   'aiModel.tabFocusQuestionBadge': 'Tab — focusvraag',
-  'aiModel.conceptMapFocusQuestionTabTooltip':
-    'Terwijl de focusvraag is geselecteerd of wordt bewerkt: druk op Tab om de AI-controle uit te voeren (voer eerst een inhoudelijke vraag in; inloggen vereist).',
+  'aiModel.conceptMapFocusQuestionTabTooltip': 'Terwijl de focusvraag is geselecteerd of wordt bewerkt: druk op Tab om de AI-controle uit te voeren (voer eerst een inhoudelijke vraag in; inloggen vereist).',
   'aiModel.tabRecBadge': 'Tab aanbev',
   'aiModel.tabContentRecBadge': 'Tab — inhoud',
   'aiModel.tabRelationshipRecBadge': 'Tab — relatie',
-  'aiModel.conceptMapConceptTabTooltip':
-    'Bewerkingsmodus (geïsoleerd concept): druk op Tab voor alternatieve bewoordingen (onderwerp moet zijn ingesteld).',
-  'aiModel.conceptMapRelationshipTabTooltip':
-    'Bewerkingsmodus of selectiemodus (gekoppeld concept): druk op Tab voor suggesties voor focal-linkrelaties.',
+  'aiModel.conceptMapConceptTabTooltip': 'Bewerkingsmodus (geïsoleerd concept): druk op Tab voor alternatieve bewoordingen (onderwerp moet zijn ingesteld).',
+  'aiModel.conceptMapRelationshipTabTooltip': 'Bewerkingsmodus of selectiemodus (gekoppeld concept): druk op Tab voor suggesties voor focal-linkrelaties.',
   'aiModel.tooltip.clickDeselect': 'Klik om {name} te deselecteren',
   'aiModel.tooltip.clickSelect': 'Klik om {name} te selecteren',
   'aiModel.tooltip.clickSwitch': 'Klik om naar het resultaat {name} te gaan',
@@ -50,11 +48,9 @@ export default {
   'focusQuestion.cannotReadStream': 'Kan suggestiestream niet lezen',
   'focusQuestion.confirm': 'Bevestig en open canvas',
   'focusQuestion.emptyOwn': '(leeg)',
-  'focusQuestion.help':
-    'Een focusvraag is het specifieke probleem dat uw kaart behandelt. Het biedt ruimte – voor een kaart over ‘water’ zouden voorbeelden kunnen zijn: ‘Hoe circuleert water op aarde?’ of “Wat zijn de fysische eigenschappen van water?”',
+  'focusQuestion.help': 'Een focusvraag is het specifieke probleem dat uw kaart behandelt. Het biedt ruimte – voor een kaart over ‘water’ zouden voorbeelden kunnen zijn: ‘Hoe circuleert water op aarde?’ of “Wat zijn de fysische eigenschappen van water?”',
   'focusQuestion.loadMoreFailed': 'Kan niet meer laden',
-  'focusQuestion.loginHint':
-    'Meld u aan om te valideren met AI en suggesties te ontvangen. U kunt nog steeds een vraag invoeren en doorgaan.',
+  'focusQuestion.loginHint': 'Meld u aan om te valideren met AI en suggesties te ontvangen. U kunt nog steeds een vraag invoeren en doorgaan.',
   'focusQuestion.needValidate': 'Voer AI-controle uit of sla eerst AI over',
   'focusQuestion.networkError': 'Netwerkfout',
   'focusQuestion.noResult': 'Geen resultaat',
@@ -72,8 +68,7 @@ export default {
   'focusQuestion.weakLabel': 'Zwak',
   'mindmate.defaultSuggestion1': 'Welke cognitieve conflicten kan ik ontwerpen voor een parallellogramles?',
   'mindmate.defaultSuggestion10': 'Hoe gebruik je situationeel onderwijs in de geschiedenisles?',
-  'mindmate.defaultSuggestion11':
-    'Met welke veiligheidsproblemen moet rekening worden gehouden bij natuurkundige experimenten?',
+  'mindmate.defaultSuggestion11': 'Met welke veiligheidsproblemen moet rekening worden gehouden bij natuurkundige experimenten?',
   'mindmate.defaultSuggestion12': 'Hoe ontwerp je huiswerk dat aansluit bij het cognitieve niveau van de leerling?',
   'mindmate.defaultSuggestion2': 'Help me een lesplan voor cellulaire ademhaling te maken.',
   'mindmate.defaultSuggestion3': 'Welke misvattingen hebben leerlingen over de zwaartekracht?',
@@ -96,15 +91,12 @@ export default {
   'mindmate.openCanvasFailed': 'Kan diagram in canvas niet openen.',
   'mindmate.openCanvasLoginRequired': 'Meld u aan om dit diagram in het canvas te openen.',
   'mindmate.openCanvasNoLibraryId': 'Het diagram is niet in uw bibliotheek opgeslagen. Log in en probeer het opnieuw.',
-  'mindmate.openCanvasSaveRetry':
-    'Kan dit diagram niet automatisch in uw bibliotheek opslaan. Regenereren; Neem contact op met uw beheerder als het probleem zich blijft voordoen.',
+  'mindmate.openCanvasSaveRetry': 'Kan dit diagram niet automatisch in uw bibliotheek opslaan. Regenereren; Neem contact op met uw beheerder als het probleem zich blijft voordoen.',
   'mindmate.openCanvasSwitchTitle': 'Schakelschema',
-  'mindmate.openCanvasSwitchBody':
-    'Open “{target}” in het canvas? Het huidige diagram is “{current}”. Niet-opgeslagen wijzigingen op het huidige canvas kunnen verloren gaan.',
+  'mindmate.openCanvasSwitchBody': 'Open “{target}” in het canvas? Het huidige diagram is “{current}”. Niet-opgeslagen wijzigingen op het huidige canvas kunnen verloren gaan.',
   'mindmate.openCanvasSwitchOk': 'Open',
   'mindmate.diagramLibraryFull': 'Diagrambibliotheek is vol. Verwijder oude diagrammen en probeer het opnieuw.',
-  'mindmate.diagramPreviewExpired':
-    'Dit voorbeeld bevindt zich niet langer in de cache van uw browser: de tijdelijke afbeelding is gewist. Tik op deze melding of gebruik \'Bewerken in canvas\' hieronder om het diagram te openen.',
+  'mindmate.diagramPreviewExpired': 'Dit voorbeeld bevindt zich niet langer in de cache van uw browser: de tijdelijke afbeelding is gewist. Tik op deze melding of gebruik \'Bewerken in canvas\' hieronder om het diagram te openen.',
   'mindmate.tooltip.copy': 'Kopiëren',
   'mindmate.tooltip.dislike': 'Afkeer',
   'mindmate.tooltip.edit': 'Bewerking',
@@ -131,10 +123,8 @@ export default {
   'nodePalette.generatingIdeas': 'Ideeën genereren...',
   'nodePalette.generatingProgress': 'Bezig met genereren... {count} ontvangen',
   'nodePalette.helpDimension': 'Selecteer precies slechts één dimensie en klik vervolgens op Volgende om door te gaan.',
-  'nodePalette.helpFinish':
-    'Klik om knooppunten te selecteren en klik vervolgens op Voltooien om aan het diagram toe te voegen.',
-  'nodePalette.helpNext':
-    'Selecteer knooppunten en klik vervolgens op Volgende om knooppunten in de tweede fase te genereren.',
+  'nodePalette.helpFinish': 'Klik om knooppunten te selecteren en klik vervolgens op Voltooien om aan het diagram toe te voegen.',
+  'nodePalette.helpNext': 'Selecteer knooppunten en klik vervolgens op Volgende om knooppunten in de tweede fase te genereren.',
   'nodePalette.history.replaceAddNodes': 'Knooppunten vervangen/toevoegen',
   'nodePalette.loadMore': 'Laad meer',
   'nodePalette.next': 'Volgende',
@@ -172,8 +162,7 @@ export default {
   'panels.share.title': 'Deel een gesprek',
   'rootConceptModal.addBranchAria': 'Filiaal toevoegen',
   'rootConceptModal.addBranchTooltip': 'Tak toevoegen (vermijd duplicaten)',
-  'rootConceptModal.helpFooter':
-    'Elk tabblad is één kennistak; concepten kunnen naar de wortel linken en later crosslinken. Sleep naar het canvas om automatisch naar de hoofdmap te linken.',
+  'rootConceptModal.helpFooter': 'Elk tabblad is één kennistak; concepten kunnen naar de wortel linken en later crosslinken. Sleep naar het canvas om automatisch naar de hoofdmap te linken.',
   'rootConceptModal.splittingLoading': 'Vestigingen splitsen en concepten genereren…',
   'rootConceptModal.tabTitleRoot': 'Rootconcept: {text}',
   'rootConceptModal.title': 'Wortelconcept',
@@ -202,14 +191,12 @@ export default {
   'mindmate.collabRecipientAll': 'Aan iedereen',
   'mindmate.collabInputPlaceholderMindmate': 'Vraag het aan de AI...',
   'mindmate.collabInputPlaceholderAll': 'Stuur leraren in deze ruimte een bericht...',
-  'mindmate.collabInputHint':
-    'Gewone berichten zijn alleen zichtbaar voor docenten; {\'@\'}MindMate activeert AI (gedeeld gesprek)',
+  'mindmate.collabInputHint': 'Gewone berichten zijn alleen zichtbaar voor docenten; {\'@\'}MindMate activeert AI (gedeeld gesprek)',
   'mindmate.collabSharedPanelTitle': 'Sluit je aan bij de chatroom',
   'mindmate.collabSharedCodeHint': 'Enter de uitnodigingscode (xxx-xxx) om deel te nemen aan een gedeelde MindMate chatroom.',
   'mindmate.collabStartOrg': 'Organisatieruimte starten',
   'mindmate.collabStartNetwork': 'Start- en deelcode',
-  'mindmate.collabJoinByCode':
-    'Enter een uitnodigingscode van 6 tekens om lid te worden van een gedeelde MindMate kamer.',
+  'mindmate.collabJoinByCode': 'Enter een uitnodigingscode van 6 tekens om lid te worden van een gedeelde MindMate kamer.',
   'mindmate.collabParticipants': 'deelnemers',
   'mindmate.collabNoOrgSessions': 'Geen actieve organisatieruimten',
   'mindmate.collabStarted': 'De samenwerkingsruimte is gestart',

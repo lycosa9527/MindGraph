@@ -1,4 +1,6 @@
-/** de UI — knowledge */
+/**
+ * de UI � knowledge
+ */
 
 export default {
   'fileCenterLibrary.title': 'Pakete',

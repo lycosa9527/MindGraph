@@ -1,4 +1,6 @@
-/** hi UI — community */
+/**
+ * hi UI � community
+ */
 
 export default {
   'community.category.all': 'सभी',

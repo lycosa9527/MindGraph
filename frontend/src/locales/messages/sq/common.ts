@@ -1,4 +1,6 @@
-/** sq UI — common */
+/**
+ * sq UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'Përmbajtja është e gjeneruar nga AI; ju lutemi verifikojeni me kujdes.',

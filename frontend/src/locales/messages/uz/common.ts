@@ -1,4 +1,6 @@
-/** uz UI — common */
+/**
+ * uz UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'Mazmun suni intellekt tomonidan yaratilgan; diqqat bilan tekshiring.',

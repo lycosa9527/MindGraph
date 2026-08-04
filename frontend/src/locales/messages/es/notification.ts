@@ -1,4 +1,6 @@
-/** es UI — notification */
+/**
+ * es UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'No se pueden borrar los nodos de tema o centro',

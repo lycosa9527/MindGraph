@@ -1,9 +1,10 @@
-/** tl UI — maite */
+/**
+ * tl UI � maite
+ */
 
 export default {
   'maite.title': 'Mate Learning',
-  'maite.subtitle':
-    'Baliktad na pag-decompose · Apat na yugto ng diagnosis · Targeted na remedy · Variant transfer',
+  'maite.subtitle': 'Baliktad na pag-decompose · Apat na yugto ng diagnosis · Targeted na remedy · Variant transfer',
   'maite.mode.demo': 'Demo',
   'maite.mode.inquiry': 'Pagtatanong',
   'maite.mode.map': 'Mapa',

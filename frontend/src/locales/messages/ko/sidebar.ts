@@ -1,4 +1,6 @@
-/** ko UI — sidebar */
+/**
+ * ko UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': '삭제',

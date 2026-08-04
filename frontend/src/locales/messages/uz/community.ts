@@ -1,4 +1,6 @@
-/** uz UI — community */
+/**
+ * uz UI � community
+ */
 
 export default {
   'community.category.all': 'Hammasi',

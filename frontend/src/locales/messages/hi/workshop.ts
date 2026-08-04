@@ -1,4 +1,6 @@
-/** hi UI — workshop */
+/**
+ * hi UI � workshop
+ */
 
 export default {
   'collab.codeCopied': 'कोड कॉपी',

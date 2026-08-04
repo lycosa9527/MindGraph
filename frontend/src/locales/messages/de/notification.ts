@@ -1,4 +1,6 @@
-/** de UI — notification */
+/**
+ * de UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Themen- oder Zentrumsknoten können nicht geleert werden',

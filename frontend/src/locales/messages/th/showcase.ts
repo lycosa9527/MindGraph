@@ -1,4 +1,6 @@
-/** th UI — showcase */
+/**
+ * th UI � showcase
+ */
 
 export default {
   'showcase.title': 'Showcase',
@@ -50,31 +52,19 @@ export default {
   'showcase.publishModal.uploadingFiles': 'กำลังอัปโหลดไฟล์ ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'กำลังอัปโหลด {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'กำลังทำให้เสร็จ…',
-  'showcase.publishModal.uploadFailedRolledBack':
-    'อัปโหลดล้มเหลว — ทิ้งฉบับร่างแล้ว กรุณาลองอีกครั้ง',
-  'showcase.publishModal.uploadCorsFailed':
-    'อัปโหลดไปที่เก็บอ็อบเจ็กต์ไม่ได้ (มักเป็น CORS ของบัคเก็ตหรือ CSP ของไซต์บล็อกโฮสต์ COS) ทิ้งฉบับร่างแล้ว — ขอให้ผู้ดูแลแก้ CORS/CSP แล้วลองใหม่',
-  'showcase.publishModal.uploadStorageRejected':
-    'ที่เก็บอ็อบเจ็กต์ปฏิเสธการอัปโหลด ทิ้งฉบับร่างแล้ว — ลองใหม่ภายหลัง หรือติดต่อผู้ดูแลหากยังเกิดซ้ำ',
+  'showcase.publishModal.uploadFailedRolledBack': 'อัปโหลดล้มเหลว — ทิ้งฉบับร่างแล้ว กรุณาลองอีกครั้ง',
+  'showcase.publishModal.uploadCorsFailed': 'อัปโหลดไปที่เก็บอ็อบเจ็กต์ไม่ได้ (มักเป็น CORS ของบัคเก็ตหรือ CSP ของไซต์บล็อกโฮสต์ COS) ทิ้งฉบับร่างแล้ว — ขอให้ผู้ดูแลแก้ CORS/CSP แล้วลองใหม่',
+  'showcase.publishModal.uploadStorageRejected': 'ที่เก็บอ็อบเจ็กต์ปฏิเสธการอัปโหลด ทิ้งฉบับร่างแล้ว — ลองใหม่ภายหลัง หรือติดต่อผู้ดูแลหากยังเกิดซ้ำ',
   'showcase.publishModal.uploadFailed': 'อัปโหลดล้มเหลว กรุณาลองอีกครั้ง',
-  'showcase.publishModal.uploadCoverTooLarge':
-    'รูปปกเกินจำกัด 2MB บีบอัดตัวอย่างหรือใช้รูปเล็กลงแล้วลองใหม่',
-  'showcase.publishModal.uploadAttachmentTooLarge':
-    'ไฟล์เกินจำกัดขนาด (เอกสาร/รูป 20MB วิดีโอ 100MB) บีบอัดแล้วลองใหม่',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
-    'ไฟล์เกินจำกัดขนาด (เอกสาร/รูป 20MB วิดีโอ 100MB) ทิ้งฉบับร่างแล้ว — บีบอัดแล้วลองใหม่',
-  'showcase.publishModal.uploadFileTooLarge':
-    'ไฟล์ใหญ่เกินไปสำหรับประเภทอัปโหลดนี้ ตรวจจำกัดขนาดแล้วลองใหม่',
-  'showcase.publishModal.uploadFileTooLargeRolledBack':
-    'ไฟล์ใหญ่เกินไปสำหรับประเภทอัปโหลดนี้ ทิ้งฉบับร่างแล้ว — ตรวจจำกัดขนาดแล้วลองใหม่',
-  'showcase.publishModal.coverUploadSkipped':
-    'ส่งเคสแล้ว แต่รูปปกอัปโหลดไม่ได้ คุณแก้ไขเคสภายหลังเพื่อรีเฟรชปกได้',
-  'showcase.publishModal.coverGenerating':
-    'กำลังสร้างตัวอย่างปกในพื้นหลัง — จะปรากฏบนการ์ดไม่ช้า',
-  'showcase.publishModal.coverFailed':
-    'ส่งเคสแล้ว แต่สร้างปกไม่ได้ คุณแก้ไขเคสภายหลังเพื่อรีเฟรชปกได้',
-  'showcase.publishModal.coverFailedTimeout':
-    'ส่งเคสแล้ว แต่สร้างปกหมดเวลา คุณแก้ไขเคสภายหลังเพื่อรีเฟรชปกได้',
+  'showcase.publishModal.uploadCoverTooLarge': 'รูปปกเกินจำกัด 2MB บีบอัดตัวอย่างหรือใช้รูปเล็กลงแล้วลองใหม่',
+  'showcase.publishModal.uploadAttachmentTooLarge': 'ไฟล์เกินจำกัดขนาด (เอกสาร/รูป 20MB วิดีโอ 100MB) บีบอัดแล้วลองใหม่',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'ไฟล์เกินจำกัดขนาด (เอกสาร/รูป 20MB วิดีโอ 100MB) ทิ้งฉบับร่างแล้ว — บีบอัดแล้วลองใหม่',
+  'showcase.publishModal.uploadFileTooLarge': 'ไฟล์ใหญ่เกินไปสำหรับประเภทอัปโหลดนี้ ตรวจจำกัดขนาดแล้วลองใหม่',
+  'showcase.publishModal.uploadFileTooLargeRolledBack': 'ไฟล์ใหญ่เกินไปสำหรับประเภทอัปโหลดนี้ ทิ้งฉบับร่างแล้ว — ตรวจจำกัดขนาดแล้วลองใหม่',
+  'showcase.publishModal.coverUploadSkipped': 'ส่งเคสแล้ว แต่รูปปกอัปโหลดไม่ได้ คุณแก้ไขเคสภายหลังเพื่อรีเฟรชปกได้',
+  'showcase.publishModal.coverGenerating': 'กำลังสร้างตัวอย่างปกในพื้นหลัง — จะปรากฏบนการ์ดไม่ช้า',
+  'showcase.publishModal.coverFailed': 'ส่งเคสแล้ว แต่สร้างปกไม่ได้ คุณแก้ไขเคสภายหลังเพื่อรีเฟรชปกได้',
+  'showcase.publishModal.coverFailedTimeout': 'ส่งเคสแล้ว แต่สร้างปกหมดเวลา คุณแก้ไขเคสภายหลังเพื่อรีเฟรชปกได้',
   'showcase.publishModal.success': 'ส่งเคสแล้ว — รอผู้ดูแลตรวจ',
   'showcase.publishModal.fromCanvas': 'เผยแพร่จากแคนวาส',
   'showcase.publishModal.step1Title': 'ข้อมูลพื้นฐาน',
@@ -88,10 +78,8 @@ export default {
   'showcase.publishModal.uploadLabel': 'อัปโหลดไฟล์',
   'showcase.publishModal.uploadImage': 'อัปโหลดรูป',
   'showcase.publishModal.uploadFile': 'อัปโหลดไฟล์',
-  'showcase.publishModal.directUploadDisabled':
-    'อัปโหลดไฟล์ตรงชั่วคราวไม่พร้อม คุณยังเลือกไดอะแกรมที่บันทึกจากประวัติได้',
-  'showcase.publishModal.uploadViaStorage':
-    'ไฟล์อัปโหลดตรงไปที่เก็บปลอดภัย (URL อายุสั้น)',
+  'showcase.publishModal.directUploadDisabled': 'อัปโหลดไฟล์ตรงชั่วคราวไม่พร้อม คุณยังเลือกไดอะแกรมที่บันทึกจากประวัติได้',
+  'showcase.publishModal.uploadViaStorage': 'ไฟล์อัปโหลดตรงไปที่เก็บปลอดภัย (URL อายุสั้น)',
   'showcase.publishModal.pickHistory': 'เลือกจากประวัติ',
   'showcase.publishModal.removeFile': 'นำออก',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: ตัวอย่างจำกัด)',
@@ -130,10 +118,11 @@ export default {
   'showcase.publishModal.aiGenerating': 'กำลังสร้าง…',
   'showcase.publishModal.aiGenerateStop': 'หยุด',
   'showcase.publishModal.aiGenerateCancelled': 'ยกเลิกการสร้าง AI แล้ว — คลิกอีกครั้งเพื่อสร้างใหม่',
-  'showcase.publishModal.aiGenerateSuccess':
-    'เติมคำแนะนำและจุดเด่นจากเอกสารแล้ว — ตรวจและแก้ไข การสะท้อนการสอนเขียนเอง',
+  'showcase.publishModal.aiGenerateSuccess': 'เติมคำแนะนำและจุดเด่นจากเอกสารแล้ว — ตรวจและแก้ไข การสะท้อนการสอนเขียนเอง',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'สร้างด้วย AI ล้มเหลว — กรุณาลองอีกครั้ง',
   'showcase.publishModal.aiGenerateNeedFile': 'อัปโหลดเอกสารออกแบบการสอนในขั้นตอนก่อนก่อน',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'สร้างด้วย AI ใช้ได้เฉพาะเคสออกแบบการสอน',
   'showcase.publishModal.reflectionLabel': 'การสะท้อนการสอน',
   'showcase.publishModal.introPlaceholder': 'อธิบายเคสและเมื่อใดควรใช้อย่างย่อ',
@@ -160,15 +149,13 @@ export default {
   'showcase.publishModal.validationDiagramType': 'กรุณาเลือกประเภทไดอะแกรม',
   'showcase.publishModal.invalidFileType': 'ประเภทไฟล์ไม่รองรับ',
   'showcase.publishModal.invalidMgFile': 'อ่านไฟล์ .mg นี้ไม่ได้ — ส่งออกจาก MindGraph ก่อน',
-  'showcase.publishModal.cannotPreview':
-    'สร้างตัวอย่างปกไม่ได้ — เคสยังส่งได้ ลอง PNG/JPG หรือเลือกไดอะแกรมที่บันทึก',
-  'showcase.publishModal.cannotPreviewHistory':
-    'สร้างปกจากไดอะแกรมที่บันทึกนี้ไม่ได้ — เคสยังส่งได้ เลือกใหม่หรือบันทึกใหม่จากแคนวาส',
-  'showcase.publishModal.cannotPreviewTemplate':
-    'สร้างปกไม่ได้ — เคสยังส่งได้ ตรวจไฟล์ .mg หรือเลือกไดอะแกรมที่บันทึกอื่น',
+  'showcase.publishModal.cannotPreview': 'สร้างตัวอย่างปกไม่ได้ — เคสยังส่งได้ ลอง PNG/JPG หรือเลือกไดอะแกรมที่บันทึก',
+  'showcase.publishModal.cannotPreviewHistory': 'สร้างปกจากไดอะแกรมที่บันทึกนี้ไม่ได้ — เคสยังส่งได้ เลือกใหม่หรือบันทึกใหม่จากแคนวาส',
+  'showcase.publishModal.cannotPreviewTemplate': 'สร้างปกไม่ได้ — เคสยังส่งได้ ตรวจไฟล์ .mg หรือเลือกไดอะแกรมที่บันทึกอื่น',
   'showcase.publishModal.historyTitle': 'เลือกไดอะแกรมที่บันทึก',
   'showcase.publishModal.historySearch': 'ค้นหาชื่อไดอะแกรม…',
   'showcase.publishModal.historyEmpty': 'ไม่มีไดอะแกรมที่บันทึก',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': 'การออกแบบบทเรียนทักษะการคิดในชั้นเรียน',
   'showcase.publishModal.typeDesc.diagramCase': 'ไดอะแกรมและการแสดงภาพที่ยอดเยี่ยมในการสอน',
   'showcase.publishModal.typeDesc.diagramTemplate': 'ไดอะแกรมสำหรับนำกลับมาใช้หรือปรับ',
@@ -194,11 +181,9 @@ export default {
   'showcase.detail.delist': 'ถอดรายการ',
   'showcase.detail.resubmit': 'แก้ไขแล้วส่งใหม่',
   'showcase.detail.withdrawTitle': 'ถอนเคส',
-  'showcase.detail.withdrawConfirm':
-    'ถอน "{title}"? จะถูกนำออกจากคิวตรวจและกู้คืนไม่ได้',
+  'showcase.detail.withdrawConfirm': 'ถอน "{title}"? จะถูกนำออกจากคิวตรวจและกู้คืนไม่ได้',
   'showcase.detail.delistTitle': 'ถอดรายการเคส',
-  'showcase.detail.delistConfirm':
-    'ถอด "{title}" ออกจากแกลเลอรี? ผู้ใช้อื่นจะดูไม่ได้อีก',
+  'showcase.detail.delistConfirm': 'ถอด "{title}" ออกจากแกลเลอรี? ผู้ใช้อื่นจะดูไม่ได้อีก',
   'showcase.detail.confirm': 'ยืนยัน',
   'showcase.detail.cancel': 'ยกเลิก',
   'showcase.withdrawn': 'ถอนแล้ว',
@@ -218,8 +203,7 @@ export default {
   'showcase.detail.pptxPreviewPending': 'กำลังแปลงสไลด์สำหรับตัวอย่าง…',
   'showcase.detail.docPreviewLoading': 'กำลังโหลดเอกสาร…',
   'showcase.detail.docPreviewFailed': 'โหลดตัวอย่างไม่ได้ ลองเปิดในแท็บใหม่',
-  'showcase.detail.legacyDocHint':
-    'ไฟล์ .doc แบบเก่าดูตัวอย่างในเบราว์เซอร์ไม่ได้ เปิดหรือดาวน์โหลดไฟล์ หรืออัปโหลด .docx เพื่อดูในเบราว์เซอร์',
+  'showcase.detail.legacyDocHint': 'ไฟล์ .doc แบบเก่าดูตัวอย่างในเบราว์เซอร์ไม่ได้ เปิดหรือดาวน์โหลดไฟล์ หรืออัปโหลด .docx เพื่อดูในเบราว์เซอร์',
   'showcase.detail.noDocument': 'ไม่มีตัวอย่างเอกสาร',
   'showcase.detail.noDiagramPreview': 'ไม่มีตัวอย่างไดอะแกรม',
   'showcase.detail.diagramPreviewLoading': 'กำลังโหลดไดอะแกรม…',

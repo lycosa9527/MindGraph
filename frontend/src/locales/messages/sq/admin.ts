@@ -1,4 +1,6 @@
-/** sq UI — admin */
+/**
+ * sq UI � admin
+ */
 
 export default {
   'admin.actions': 'Veprimet',

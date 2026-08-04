@@ -1,4 +1,6 @@
-/** ja UI — community */
+/**
+ * ja UI � community
+ */
 
 export default {
   'community.category.all': 'すべて',

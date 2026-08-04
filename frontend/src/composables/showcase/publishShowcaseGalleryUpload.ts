@@ -1,73 +1,40 @@
 /**
- * Gallery upload helpers for Showcase publish (init → PUT → complete).
+ * Gallery upload helpers for Showcase publish.
+ *
+ * Completeness must be checked on ``spec.gallery[].path`` — not
+ * ``gallery_items[].url``. Formatted URLs can resolve from storage even when
+ * the JSONB ``path`` field was never persisted (approve then fails).
  */
-import {
-  uploadShowcaseFile,
-  type ShowcaseUploadRole,
-} from '@/composables/showcase/uploadShowcaseFile'
-import { getShowcasePost, type ShowcasePost } from '@/utils/apiClient'
+import { getShowcasePost } from '@/utils/apiClient'
 
-export function countResolvedGalleryImages(post: {
-  gallery_items?: Array<{ kind: string; url?: string | null; missing?: boolean }>
-}): number {
-  return (
-    post.gallery_items?.filter(
-      (item) => item.kind === 'image' && item.url && !item.missing
-    ).length ?? 0
-  )
+export function countGalleryImagePathsInSpec(spec: unknown): number {
+  if (!spec || typeof spec !== 'object' || Array.isArray(spec)) return 0
+  const gallery = (spec as { gallery?: unknown }).gallery
+  if (!Array.isArray(gallery)) return 0
+  return gallery.filter((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return false
+    const entry = item as { kind?: unknown; path?: unknown }
+    return (
+      entry.kind === 'image' &&
+      typeof entry.path === 'string' &&
+      entry.path.trim().length > 0
+    )
+  }).length
 }
 
 export async function ensureGalleryImagesPersisted(
   postId: string,
-  drafts: Array<{ file: File; filename: string }>,
+  expectedImageCount: number,
   messages: { uploadFailed: string; reuploadHint: string },
 ): Promise<void> {
-  if (drafts.length === 0) return
+  if (expectedImageCount <= 0) return
 
-  let post = await getShowcasePost(postId)
-  if (countResolvedGalleryImages(post) >= drafts.length) return
+  const post = await getShowcasePost(postId)
+  if (countGalleryImagePathsInSpec(post.spec) >= expectedImageCount) return
 
-  const specObj =
-    post.spec && typeof post.spec === 'object' && !Array.isArray(post.spec)
-      ? (post.spec as { gallery?: unknown })
-      : null
-  const galleryList = Array.isArray(specObj?.gallery) ? specObj.gallery : []
-
-  let draftIdx = 0
-  for (let slot = 0; slot < Math.max(galleryList.length, drafts.length); slot += 1) {
-    const entry = galleryList[slot] as { kind?: string; path?: string; pending?: boolean } | undefined
-    const needsUpload =
-      !entry || (entry.kind === 'image' && (!entry.path || entry.pending))
-    if (!needsUpload) continue
-    const draft = drafts[draftIdx]
-    if (!draft) break
-    draftIdx += 1
-    await uploadShowcaseFile({
-      postId,
-      role: `gallery_${slot}` as ShowcaseUploadRole,
-      file: draft.file,
-      filename: draft.filename,
-    })
-  }
-
-  // Fallback: upload remaining drafts into sequential slots
-  while (draftIdx < drafts.length) {
-    const draft = drafts[draftIdx]
-    await uploadShowcaseFile({
-      postId,
-      role: `gallery_${draftIdx}` as ShowcaseUploadRole,
-      file: draft.file,
-      filename: draft.filename,
-    })
-    draftIdx += 1
-  }
-
-  post = await getShowcasePost(postId)
-  if (countResolvedGalleryImages(post) < drafts.length) {
-    throw new Error(
-      messages.reuploadHint
-        ? `${messages.uploadFailed} ${messages.reuploadHint}`
-        : messages.uploadFailed,
-    )
-  }
+  throw new Error(
+    messages.reuploadHint
+      ? `${messages.uploadFailed} ${messages.reuploadHint}`
+      : messages.uploadFailed,
+  )
 }

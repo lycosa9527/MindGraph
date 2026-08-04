@@ -21,6 +21,29 @@ One backend package (Kitty-style domain + infra). Routers stay thin under
 
 Compatibility shims: `services.showcase.upload_roles` re-exports `uploads.roles`.
 
+## Gallery limits (diagram case / template)
+
+| Case type | Multi-item gallery | Max items |
+|-----------|--------------------|-----------|
+| `teaching_design` | No (single document + optional videos) | 1 attachment |
+| `diagram_case` | Yes — images + saved diagrams | **15** (`gallery_0`…`gallery_14`) |
+| `diagram_template` | Yes — same gallery publish/view path as case | **15** |
+
+Frontend: `DIAGRAM_GALLERY_MAX_ITEMS`. Backend: `GALLERY_MAX_ITEMS` + upload role
+`gallery_{slot}`. Spec JSON body allows up to `SHOWCASE_SPEC_MAX_BYTES` (2MB) so
+multiple embedded diagram specs fit. Detail viewer carousels any `spec.gallery`
+length > 1.
+
+**Client gallery image prep (new picks only):** before COS PUT, the publish modal
+runs an abortable async pick pipeline (`processShowcaseGalleryImagePick` →
+`resizeImageFileForShowcaseGallery`) — long edge capped at **1600px**,
+PNG/JPEG/WebP preserved (JPEG/WebP q=0.85), always canvas re-encoded to strip
+EXIF/GPS (orientation applied via `imageOrientation: 'from-image'`). GIF is
+left unchanged so animation is preserved. Soft-fail keeps the original file if
+decode/encode fails. Processing is sequential with event-loop yields; closing
+the modal or starting a new pick aborts in-flight work. Cover/thumbnail
+pipeline is separate (960px PNG).
+
 ## Publish contract (COS on)
 
 1. `POST /api/showcase/posts` — metadata only (multipart files rejected when COS on)
@@ -37,9 +60,9 @@ keeps storage; status becomes `withdrawn`.
 
 Multipart document (`.pdf`/`.doc`/`.docx`/`.pptx`) plus title/subject/grade.
 Server extracts text (`DocumentProcessor`), then drafts `description` /
-`design_highlights` / `teaching_reflection` with DashScope `qwen3.7-flash`
-(K-12 teacher voice; ~200 字 × 3 ≈ 600 字; one paragraph each; names diagrams +
-thinking types without heavy academic jargon).
+`design_highlights` with DashScope `qwen3.7-flash`
+(K-12 teacher voice; ~200 字 × 2 ≈ 400 字; one paragraph each; names diagrams +
+thinking types without heavy academic jargon). Teaching reflection stays teacher-authored.
 
 | Route | Response |
 |-------|----------|
@@ -47,6 +70,22 @@ thinking types without heavy academic jargon).
 | `POST /api/showcase/ai/teaching-copy/stream` | SSE used by the publish modal |
 
 Shared rate limit: `showcase_ai_teaching_copy` — 12 req / 60s per user.
+
+## Diagram AI copy (step 2)
+
+JSON body with `title` / `subject` / `grade` / `diagram_type` / `specs[]`
+(personal library, `.mg`, canvas, or gallery diagram drafts). Server extracts
+node labels (`native_spec_to_pseudo_nodes` + nodes walk), then drafts
+`description` (图示简介) + `classroom_application` (课堂应用) with the same
+model and teacher voice (~200 字 × 2).
+
+| Route | Response |
+|-------|----------|
+| `POST /api/showcase/ai/diagram-copy` | Sync JSON (smoke / fallback) |
+| `POST /api/showcase/ai/diagram-copy/stream` | SSE used by the publish modal |
+
+Shared rate limit: `showcase_ai_diagram_copy` — 12 req / 60s per user.
+Image-only gallery items (no diagram specs) cannot AI-fill.
 
 **SSE events** (`text/event-stream`, `data:` JSON lines):
 
@@ -65,14 +104,17 @@ before the stream opens; client disconnect cancels the LLM stream.
 ## Server-side teaching-design covers
 
 Package: `services/showcase/covers/` (LibreOffice → PDF on temp disk + PyMuPDF page-1 PNG).
-No Gotenberg; intermediate PDF never lands on COS.
+No Gotenberg. For `.doc`/`.docx`/`.pptx`, the LO PDF is also uploaded as `preview.pdf` so the
+detail reader can render full pages (images, shapes, layout) via pdf.js — same path PPTX already used.
 
 | Step | Detail |
 |------|--------|
-| Trigger | `uploads/complete` with `role=attachment`, `case_type=teaching_design`, `.pdf/.doc/.docx` |
+| Trigger | `uploads/complete` with `role=attachment`, `case_type=teaching_design`, `.pdf/.doc/.docx/.pptx` |
 | Download | `download_to_path` / `download_file` (stream to temp; never full `get_bytes`) |
 | Render | PDF → PyMuPDF; Office → soffice with per-job `-env:UserInstallation` then PNG |
-| Upload | `put_bytes` → logical `showcase/posts/{id}/thumbnail.png` (`ContentType=image/png`) |
+| Upload | `put_bytes` → `thumbnail.png`; Office also → `preview.pdf` + `spec.preview_path` |
+| Reader | Detail pdf.js loads `/api/showcase/assets/…?proxy=1` (AuthZ + server bytes). Default asset GET stays 302→COS for ``<img>`` thumbs — credentialed `fetch` following that redirect fails browser CORS |
+| Backfill | `GET /posts/{id}` + cover-stream re-enqueue when Office attachment lacks `preview_path` (legacy thumbs-only posts) |
 | Events | Redis pub/sub → `GET …/posts/{id}/cover-stream` SSE (`cover_ready` / `cover_fail`); FE no poll |
 | Hard stop | LO 120s; Celery soft 180 / hard 210; SSE max 210s then `cover_fail` reason=timeout |
 | Guard | Redis lock `showcase:cover:{post_id}`; abort if post gone or `attachment_key` stale; overwrite thumb when key matches; RLS write as `author_id` |

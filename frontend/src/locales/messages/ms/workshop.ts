@@ -1,4 +1,6 @@
-/** ms UI — workshop */
+/**
+ * ms UI � workshop
+ */
 
 export default {
   'collab.codeCopied': 'Kode disalin',

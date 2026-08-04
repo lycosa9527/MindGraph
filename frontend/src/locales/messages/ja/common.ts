@@ -1,4 +1,6 @@
-/** ja UI — common */
+/**
+ * ja UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'コンテンツは AI 生成です。内容をよくご確認ください。',

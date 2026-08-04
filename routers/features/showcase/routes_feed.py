@@ -55,17 +55,60 @@ def _key_belongs_to_post(post: ShowcasePost, logical_key: str) -> bool:
     return False
 
 
+async def _proxy_showcase_asset_bytes(
+    *,
+    normalized: str,
+    post_id: str,
+    user_id: int,
+    media_type: str | None,
+    disposition: str,
+) -> Response:
+    """Stream object bytes through the API after AuthZ (avoids browser→COS CORS)."""
+    data = await get_bytes(normalized)
+    if data is None:
+        showcase_wf_log(
+            "download_deny",
+            "bytes_missing",
+            post_id=post_id,
+            user_id=user_id,
+            key=normalized,
+        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    showcase_wf_log(
+        "download",
+        "proxy_bytes",
+        post_id=post_id,
+        user_id=user_id,
+        key=normalized,
+        backend=storage_backend(),
+    )
+    return Response(
+        content=data,
+        media_type=media_type or "application/octet-stream",
+        headers={"Content-Disposition": disposition},
+    )
+
+
 @router.get("/assets/{asset_path:path}")
 async def download_showcase_asset(
     asset_path: str,
+    proxy: bool = Query(
+        False,
+        description=(
+            "When true, stream bytes through the API after AuthZ instead of "
+            "302 to COS. Required for credentialed in-app readers (pdf.js)."
+        ),
+    ),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
     Serve Showcase files with AuthZ.
 
-    COS: 302 to short-TTL presigned GET. Local/legacy: FileResponse or bytes.
-    API never embeds durable COS host URLs in JSON — only redirect Location.
+    Default (COS): 302 to short-TTL presigned GET (``<img>`` / navigation).
+    ``proxy=1``: stream bytes same-origin for pdf.js / docx-preview (no CORS).
+    Local/legacy: FileResponse or bytes. API never embeds durable COS host URLs
+    in list JSON — only redirect Location or ephemeral proxy body.
     """
     normalized = asset_path.lstrip("/").replace("\\", "/")
     if not is_showcase_logical_key(normalized):
@@ -140,6 +183,15 @@ async def download_showcase_asset(
                 media_type="application/json",
                 headers={"Content-Disposition": disposition},
             )
+
+    if proxy:
+        return await _proxy_showcase_asset_bytes(
+            normalized=normalized,
+            post_id=post_id,
+            user_id=current_user.id,
+            media_type=media_type,
+            disposition=disposition,
+        )
 
     if cos_showcase_enabled() and normalized.startswith("showcase/posts/"):
         url = create_presigned_get(normalized, filename=filename)

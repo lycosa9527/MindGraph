@@ -1,4 +1,6 @@
-/** si UI — sidebar */
+/**
+ * si UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'මකන්න',

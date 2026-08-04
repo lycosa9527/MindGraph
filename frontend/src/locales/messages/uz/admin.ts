@@ -1,4 +1,6 @@
-/** uz UI — admin */
+/**
+ * uz UI � admin
+ */
 
 export default {
   'admin.actions': 'Harakatlar',

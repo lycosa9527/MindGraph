@@ -1,4 +1,6 @@
-/** ko UI — workshop */
+/**
+ * ko UI � workshop
+ */
 
 export default {
   'collab.codeCopied': '코드가 복사되었습니다',
@@ -155,8 +157,7 @@ export default {
   'workshop.loadMore': '더 불러오기',
   'workshop.mainChannelStream': '메인 채널',
   'workshop.manageTeachingGroups': '교수 그룹 관리',
-  'workshop.manageTeachingGroupsBlurb':
-    '그룹 추가/제거, 공개/비공개 설정, 이름 및 설명 편집, 목록 순서, 템플릿으로 그룹 복제, 동료 초대. 고급에서 게시 규칙 및 알림 기본값. 보관 시 모든 사용자에게 제거됩니다.',
+  'workshop.manageTeachingGroupsBlurb': '그룹 추가/제거, 공개/비공개 설정, 이름 및 설명 편집, 목록 순서, 템플릿으로 그룹 복제, 동료 초대. 고급에서 게시 규칙 및 알림 기본값. 보관 시 모든 사용자에게 제거됩니다.',
   'workshop.manageUser': '이 사용자 관리',
   'workshop.markAllReadChannel': '모든 메시지 읽음',
   'workshop.markAsRead': '읽음으로 표시',

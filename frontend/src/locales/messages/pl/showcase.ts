@@ -1,5 +1,5 @@
 /**
- * pl UI — showcase
+ * pl UI � showcase
  */
 
 export default {
@@ -119,8 +119,10 @@ export default {
   'showcase.publishModal.aiGenerateStop': 'Stop',
   'showcase.publishModal.aiGenerateCancelled': 'Generowanie AI anulowane — kliknij ponownie, aby wygenerować',
   'showcase.publishModal.aiGenerateSuccess': 'Wypełniono wstęp i mocne strony z dokumentu — przejrzyj i edytuj; refleksję dydaktyczną napisz samodzielnie',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'Generowanie AI nieudane — spróbuj ponownie',
   'showcase.publishModal.aiGenerateNeedFile': 'Najpierw prześlij dokument projektu nauczania w poprzednim kroku',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'Generowanie AI jest dostępne tylko dla case\'ów projektu nauczania',
   'showcase.publishModal.reflectionLabel': 'Refleksja dydaktyczna',
   'showcase.publishModal.introPlaceholder': 'Krótko opisz case i kiedy go używać',
@@ -153,6 +155,7 @@ export default {
   'showcase.publishModal.historyTitle': 'Wybierz zapisany diagram',
   'showcase.publishModal.historySearch': 'Szukaj nazwy diagramu…',
   'showcase.publishModal.historyEmpty': 'Brak zapisanych diagramów',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': 'Projekt lekcji rozwijającej umiejętności myślenia',
   'showcase.publishModal.typeDesc.diagramCase': 'Doskonałe diagramy i wizualizacja w nauczaniu',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Diagramy do ponownego użycia lub adaptacji',

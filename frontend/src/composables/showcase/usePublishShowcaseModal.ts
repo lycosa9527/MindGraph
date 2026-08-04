@@ -10,7 +10,9 @@ import {
 } from '@/components/showcase/showcaseGallery'
 import {
   CASE_TYPE_PUBLISH_OPTIONS,
+  CASE_ATTACHMENT_MAX_BYTES,
   CASE_TEACHING_DOC_MAX_BYTES,
+  CASE_UPLOAD_TOTAL_MAX_BYTES,
   SHOWCASE_DIRECT_FILE_UPLOADS_ENABLED,
   showcaseMaxMegabytes,
   isDiagramImageFile,
@@ -24,6 +26,7 @@ import {
 import { useLanguage, useNotifications } from '@/composables'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
+import { processShowcaseGalleryImagePick } from '@/composables/showcase/processShowcaseGalleryImagePick'
 import { usePublishShowcaseGalleryDrafts } from '@/composables/showcase/usePublishShowcaseGalleryDrafts'
 import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
 import {
@@ -33,7 +36,7 @@ import {
 } from '@/utils/showcaseDiagramThumbnail'
 import { loadPublishShowcaseEditPost } from '@/composables/showcase/loadPublishShowcaseEditPost'
 import { createPublishShowcaseSubmitHandlers } from '@/composables/showcase/submitPublishShowcasePost'
-import { useShowcaseTeachingCopyAi } from '@/composables/showcase/useShowcaseTeachingCopyAi'
+import { usePublishShowcaseAiOrchestration } from '@/composables/showcase/usePublishShowcaseAiOrchestration'
 
 export type PublishShowcaseModalProps = {
   visible: boolean
@@ -94,6 +97,8 @@ export function usePublishShowcaseModal(
   const isSubmitting = ref(false)
   const submitPhaseLabel = ref('')
   const isHistorySpecLoading = ref(false)
+  const isGalleryImagesProcessing = ref(false)
+  let galleryPickAbort: AbortController | null = null
   const showHistoryPicker = ref(false)
 
   const uploadedFile = ref<File | null>(null)
@@ -198,14 +203,15 @@ export function usePublishShowcaseModal(
 
   const isDiagramTemplate = computed(() => caseType.value === 'diagram_template')
   const isDiagramCase = computed(() => caseType.value === 'diagram_case')
+  /** Multi-item gallery publish UI for case + template (not teaching design). */
+  const isDiagramGalleryCase = computed(
+    () => caseType.value === 'diagram_case' || caseType.value === 'diagram_template'
+  )
 
   const publishDiagramPreviewSpec = computed(() => {
-    if (isDiagramTemplate.value) {
-      return uploadedMgSpec.value ?? selectedDiagramSpec.value
-    }
-    if (isDiagramCase.value) {
+    if (isDiagramGalleryCase.value) {
       const firstDiagram = galleryDiagramDrafts.value.find((entry) => entry.spec)
-      return firstDiagram?.spec ?? selectedDiagramSpec.value
+      return firstDiagram?.spec ?? uploadedMgSpec.value ?? selectedDiagramSpec.value
     }
     return null
   })
@@ -261,11 +267,11 @@ export function usePublishShowcaseModal(
     if (caseType.value === 'teaching_design') {
       return Boolean(uploadedFile.value || (isEditMode.value && editHasAttachment.value))
     }
-    if (caseType.value === 'diagram_template') {
-      return hasTemplateStep1Source()
-    }
     if (caseType.value === 'diagram_case') {
       return galleryTotalCount.value > 0
+    }
+    if (caseType.value === 'diagram_template') {
+      return galleryTotalCount.value > 0 || hasTemplateStep1Source()
     }
     return Boolean(uploadedFile.value || selectedDiagram.value)
   })
@@ -279,13 +285,14 @@ export function usePublishShowcaseModal(
   const {
     isGenerating,
     aiGeneratePhase,
-    clearTeachingCopyPrefetch,
-    beginTeachingCopyPrefetch,
-    generateDescription,
+    clearAllAiPrefetch,
     resetAiCopyFields,
+    generateDescription,
     markDescriptionDirty,
     markDesignHighlightsDirty,
-  } = useShowcaseTeachingCopyAi({
+    markClassroomApplicationDirty,
+    beginStep2AiPrefetch,
+  } = usePublishShowcaseAiOrchestration({
     t,
     notify,
     caseType,
@@ -295,11 +302,20 @@ export function usePublishShowcaseModal(
     uploadedFile,
     description,
     designHighlights,
+    classroomApplication,
     step,
+    isDiagramType,
+    fromCanvas,
+    getDiagramSpec: props.getDiagramSpec,
+    publishPreviewDiagramType,
+    diagramType,
+    uploadedMgSpec,
+    selectedDiagramSpec,
+    galleryDiagramDrafts,
   })
 
   function resetForm() {
-    clearTeachingCopyPrefetch()
+    clearAllAiPrefetch()
     step.value = 1
     title.value = ''
     description.value = ''
@@ -325,14 +341,22 @@ export function usePublishShowcaseModal(
     clearGalleryDrafts()
   }
 
+  function abortGalleryImagePick(): void {
+    galleryPickAbort?.abort()
+    galleryPickAbort = null
+    isGalleryImagesProcessing.value = false
+  }
+
   watch(
     () => props.visible,
     (visible) => {
       if (!visible) {
-        clearTeachingCopyPrefetch()
+        abortGalleryImagePick()
+        clearAllAiPrefetch()
         props.restoreAfterThumbnail?.()
         return
       }
+      abortGalleryImagePick()
       resetForm()
       title.value = props.getTitle?.() || ''
       caseType.value = props.defaultCaseType || (props.getDiagramSpec ? 'diagram_case' : 'teaching_design')
@@ -358,7 +382,7 @@ export function usePublishShowcaseModal(
   }
 
   watch(caseType, (type) => {
-    clearTeachingCopyPrefetch()
+    clearAllAiPrefetch()
     if (type === 'teaching_design') {
       diagramType.value = ''
       selectedDiagram.value = null
@@ -401,8 +425,12 @@ export function usePublishShowcaseModal(
 
   function validateFile(file: File): boolean {
     if (caseType.value === 'teaching_design') return isTeachingDocFile(file.name)
-    if (caseType.value === 'diagram_case') return isDiagramImageFile(file.name)
+    if (isDiagramGalleryCase.value) return isDiagramImageFile(file.name)
     return isTemplateSourceFile(file.name)
+  }
+
+  function galleryImageDraftsBytes(): number {
+    return galleryImageDrafts.value.reduce((sum, draft) => sum + draft.file.size, 0)
   }
 
   function basenameFromMediaUrl(url: string): string {
@@ -429,7 +457,7 @@ export function usePublishShowcaseModal(
     return false
   }
 
-  function onDiagramGalleryImagesInput(event: Event): void {
+  async function onDiagramGalleryImagesInput(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement
     const files = input.files ? Array.from(input.files) : []
     input.value = ''
@@ -439,17 +467,57 @@ export function usePublishShowcaseModal(
     }
     if (!files.length) return
 
-    for (const file of files) {
-      if (galleryAtLimit.value) {
-        notify.error(String(t('showcase.publishModal.galleryLimit', { max: DIAGRAM_GALLERY_MAX_ITEMS })))
-        break
+    abortGalleryImagePick()
+    const controller = new AbortController()
+    galleryPickAbort = controller
+    isGalleryImagesProcessing.value = true
+
+    try {
+      await processShowcaseGalleryImagePick({
+        files,
+        signal: controller.signal,
+        maxPerFileBytes: CASE_ATTACHMENT_MAX_BYTES,
+        maxTotalBytes: CASE_UPLOAD_TOTAL_MAX_BYTES,
+        isImageFile: isDiagramImageFile,
+        galleryAtLimit: () => galleryAtLimit.value,
+        currentDraftBytes: galleryImageDraftsBytes,
+        onEvent: (pickEvent) => {
+          if (pickEvent.type === 'item') {
+            pushGalleryImageDraft(pickEvent.processed)
+            return
+          }
+          if (pickEvent.type !== 'reject') {
+            return
+          }
+          if (pickEvent.reason === 'gallery_limit') {
+            notify.error(
+              String(t('showcase.publishModal.galleryLimit', { max: DIAGRAM_GALLERY_MAX_ITEMS }))
+            )
+            return
+          }
+          if (pickEvent.reason === 'invalid_type') {
+            notify.error(String(t('showcase.publishModal.invalidFileType')))
+            return
+          }
+          if (pickEvent.reason === 'too_large') {
+            notify.error(
+              String(
+                t('showcase.publishModal.fileTooLarge', {
+                  name: pickEvent.source.name,
+                  maxMb: showcaseMaxMegabytes(CASE_ATTACHMENT_MAX_BYTES),
+                })
+              )
+            )
+            return
+          }
+          notify.error(String(t('showcase.publishModal.uploadTotalTooLarge')))
+        },
+      })
+    } finally {
+      if (galleryPickAbort === controller) {
+        galleryPickAbort = null
+        isGalleryImagesProcessing.value = false
       }
-      if (!validateFile(file)) {
-        notify.error(String(t('showcase.publishModal.invalidFileType')))
-        continue
-      }
-      if (!validateTeachingDocSize(file)) continue
-      pushGalleryImageDraft(file)
     }
   }
 
@@ -486,7 +554,7 @@ export function usePublishShowcaseModal(
       return
     }
     if (!validateTeachingDocSize(file)) return
-    clearTeachingCopyPrefetch()
+    clearAllAiPrefetch()
     uploadedFile.value = file
     uploadedFileName.value = file.name
     selectedDiagram.value = null
@@ -503,7 +571,7 @@ export function usePublishShowcaseModal(
   }
 
   function removeUploadedFile() {
-    clearTeachingCopyPrefetch()
+    clearAllAiPrefetch()
     uploadedFile.value = null
     uploadedFileName.value = ''
     uploadedMgSpec.value = null
@@ -566,7 +634,7 @@ export function usePublishShowcaseModal(
   }
 
   async function onHistorySelect(diagram: SavedDiagram) {
-    if (isDiagramCase.value) {
+    if (isDiagramGalleryCase.value) {
       await addGalleryDiagram(diagram)
       return
     }
@@ -631,8 +699,14 @@ export function usePublishShowcaseModal(
     }
     isStep1Advancing.value = true
     try {
-      if (!fromCanvas.value && caseType.value === 'diagram_template') {
-        if (!hasTemplateStep1Source()) {
+      if (!fromCanvas.value && isDiagramGalleryCase.value) {
+        const needsLegacyTemplateSource =
+          caseType.value === 'diagram_template' && galleryTotalCount.value < 1
+        if (galleryTotalCount.value < 1 && !hasTemplateStep1Source()) {
+          notify.error(String(t('showcase.publishModal.validationFile')))
+          return
+        }
+        if (caseType.value === 'diagram_case' && galleryTotalCount.value < 1) {
           notify.error(String(t('showcase.publishModal.validationFile')))
           return
         }
@@ -640,48 +714,28 @@ export function usePublishShowcaseModal(
           const mgReady = await ensureMgUploadSpecReady()
           if (!mgReady) return
         }
-      }
-      if (
-        !fromCanvas.value &&
-        caseType.value === 'diagram_case' &&
-        galleryTotalCount.value < 1
-      ) {
-        notify.error(String(t('showcase.publishModal.validationFile')))
-        return
-      }
-      if (
-        !fromCanvas.value &&
-        caseType.value === 'diagram_case' &&
-        galleryDiagramDrafts.value.some((draft) => !draft.spec)
-      ) {
-        for (const draft of galleryDiagramDrafts.value) {
-          if (!draft.spec && !(await loadGalleryDiagramSpec(draft))) {
-            notify.error(String(t('showcase.publishModal.validationFile')))
-            return
+        if (galleryDiagramDrafts.value.some((draft) => !draft.spec)) {
+          for (const draft of galleryDiagramDrafts.value) {
+            if (!draft.spec && !(await loadGalleryDiagramSpec(draft))) {
+              notify.error(String(t('showcase.publishModal.validationFile')))
+              return
+            }
           }
         }
-      }
-      if (!fromCanvas.value && caseType.value === 'diagram_template' && selectedDiagram.value && !selectedDiagramSpec.value) {
-        const specReady = await ensureSelectedDiagramSpec()
-        if (!specReady) return
+        if (needsLegacyTemplateSource && selectedDiagram.value && !selectedDiagramSpec.value) {
+          const specReady = await ensureSelectedDiagramSpec()
+          if (!specReady) return
+        }
       }
       step.value = 2
-      if (caseType.value === 'teaching_design' && uploadedFile.value) {
-        // Auto-stream into step-2 fields; button aborts / regenerates.
-        beginTeachingCopyPrefetch({
-          notifyStart: true,
-          notifySuccess: true,
-          notifyError: true,
-          forceOverwrite: false,
-        })
-      }
+      beginStep2AiPrefetch()
     } finally {
       isStep1Advancing.value = false
     }
   }
 
   function goPrev() {
-    clearTeachingCopyPrefetch()
+    clearAllAiPrefetch()
     step.value = 1
   }
 
@@ -735,7 +789,7 @@ export function usePublishShowcaseModal(
 
   const uploadAccept = computed(() => {
     if (caseType.value === 'teaching_design') return '.doc,.docx,.pdf,.pptx'
-    if (caseType.value === 'diagram_case') return '.png,.jpg,.jpeg,.webp,.gif'
+    if (isDiagramGalleryCase.value) return '.png,.jpg,.jpeg,.webp,.gif'
     return '.mg'
   })
 
@@ -785,6 +839,7 @@ export function usePublishShowcaseModal(
     galleryExistingImages,
     galleryTotalCount,
     galleryAtLimit,
+    isGalleryImagesProcessing,
     isEditMode,
     fromCanvas,
     canAutoApprove,
@@ -793,6 +848,7 @@ export function usePublishShowcaseModal(
     isDiagramType,
     isDiagramTemplate,
     isDiagramCase,
+    isDiagramGalleryCase,
     publishDiagramPreviewSpec,
     publishPreviewDiagramType,
     showPublishDiagramPreview,
@@ -824,6 +880,7 @@ export function usePublishShowcaseModal(
     generateDescription,
     markDescriptionDirty,
     markDesignHighlightsDirty,
+    markClassroomApplicationDirty,
     submit,
     caseTypeIcon,
     CASE_TYPE_PUBLISH_OPTIONS,

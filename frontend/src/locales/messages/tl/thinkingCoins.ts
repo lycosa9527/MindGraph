@@ -1,4 +1,6 @@
-/** tl UI — thinkingCoins */
+/**
+ * tl UI � thinkingCoins
+ */
 
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': 'Aking Thinking Tokens',
@@ -24,8 +26,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Malapit na',
   'thinkingCoins.schoolInfo': 'Makipag-ugnayan sa admin ng paaralan para sa mga plano',
   'thinkingCoins.school.headline': 'AI-powered na pag-iisip · solusyon para sa paaralan',
-  'thinkingCoins.school.description':
-    'Private deployment, custom na feature, at buong suportang operasyon para sa mga paaralan at institusyon — para sa scale, branding, at seguridad ng data.',
+  'thinkingCoins.school.description': 'Private deployment, custom na feature, at buong suportang operasyon para sa mga paaralan at institusyon — para sa scale, branding, at seguridad ng data.',
   'thinkingCoins.school.feature.accountManager': 'Nakalaang account manager',
   'thinkingCoins.school.feature.accountManagerDesc': 'One-on-one na konsultasyon',
   'thinkingCoins.school.feature.privateDeploy': 'Pribadong deployment',
@@ -120,4 +121,3 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.plan.feature.storage1gb': '1 GB na cloud storage',
   'thinkingCoins.plan.feature.storage2gb': '2 GB na cloud storage',
 } as const
-

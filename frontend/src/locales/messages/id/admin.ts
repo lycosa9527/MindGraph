@@ -1,4 +1,6 @@
-/** id UI — admin */
+/**
+ * id UI � admin
+ */
 
 export default {
   'admin.actions': 'Tindakan',

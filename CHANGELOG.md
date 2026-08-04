@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.165.0] - 2026-08-04
+
+> **Showcase diagram AI copy + 15-item gallery publish; MindMate case attachments; COS asset proxy for pdf.js; Office preview.pdf backfill.**
+
+### Added
+
+- **Diagram AI copy (publish step 2)** — Extract node text from canvas / personal library / `.mg` / gallery specs, then draft `description` + `classroom_application` via `qwen3.7-flash` (`POST /api/showcase/ai/diagram-copy` + SSE; `diagram_ai_copy.py`, `usePublishShowcaseAiOrchestration.ts`, `generateShowcaseDiagramCopy.ts`, `useShowcaseDiagramCopyAi.ts`).
+- **MindMate Showcase attachments** — Detail “Ask MindMate” builds a Dify-uploadable file from teaching doc, LibreOffice `preview.pdf`, or synthesized markdown brief; `/mindmate?showcase_post=` deep-link auto-attaches (`buildShowcaseMindMateAttachment.ts`, `MindmatePanel.vue`, `MindMatePage.vue`).
+- **Gallery image prep pipeline** — Abortable pick pipeline resizes to 1600px long edge, strips EXIF/GPS, preserves PNG/JPEG/WebP (`processShowcaseGalleryImagePick.ts`, `resizeImageFileForShowcaseGallery.ts`).
+- **Showcase asset proxy fetch** — `fetchShowcaseAsset()` appends `proxy=1` so credentialed pdf.js/docx readers get same-origin bytes on COS (`fetchShowcaseAsset.ts`, `routes_feed.py`).
+- **Office preview backfill** — On post read, enqueue LibreOffice cover regen when `.doc`/`.docx`/`.pptx` lacks `preview_path` (`covers/enqueue.py`).
+
+### Changed
+
+- **Diagram-case / template gallery** — Multi-item gallery (up to **15** images + saved diagrams) for both case types; personal-library picker with folder labels; Swiss remove-pill UI; publish validates gallery diagram specs before submit (`PublishShowcaseModal.vue`, `ShowcaseHistoryDiagramPicker.vue`, `showcaseGallery.ts`).
+- **Teaching-design AI copy** — Teaching reflection stays teacher-authored; AI fills intro + design highlights only (~400 字); diagram cases get separate AI orchestration (`usePublishShowcaseModal.ts`, `services/showcase/README.md`).
+- **Showcase detail previews** — Multi-diagram carousel resolves specs from gallery items / `.mg` URLs via proxied fetch; teaching docs use LO `preview.pdf` for `.doc`/`.docx` full-page pdf.js when available (`ShowcaseDiagramPreview.vue`, `ShowcaseTeachingDocPreview.vue`).
+- **Diagram actions** — Import/open resolves gallery-embedded diagram specs and defers canvas `setActiveDiagram` until preview unmount (`useShowcaseDiagramAction.ts`, `ShowcaseDetailModal.vue`).
+- **MindMate uploads** — Composer stays image-only; programmatic Showcase handoffs may upload documents via existing Dify extension list (`useMindMate.ts`).
+- **PDF worker** — Bump pinned worker to **pdfjs-dist@4.10.38**; version check validates `pdf.worker.min.mjs` against `package.json` (`pdf.worker.version`, `check-pdf-worker-version.ts`).
+- **Showcase spec limits** — Diagram/gallery JSON cap raised to **2 MB**; gallery path resolution uses COS `head_object` not just local disk.
+- **Locale bundles** — Showcase keys for diagram AI, gallery, personal library, doc preview (en/zh/zh-tw); broad **ar** refresh; **fa** partial refresh; **tr/admin** refresh.
+
+### Fixed
+
+- **Gallery JSONB persistence** — Deep-copy + `flag_modified` on nested gallery slot updates so COS complete/approve no longer leaves `pending` forever (`uploads/pipeline.py`, `routes_posts.py`).
+- **COS pdf.js CORS** — Showcase PDF/doc previews no longer fail when assets API returns 302 to presigned COS URLs.
+- **Legacy Office posts** — `.doc`/`.docx` with missing inline preview enqueue server-side LO→PDF instead of a permanent dead-end.
+- **Gallery upload gate** — Diagram-template posts can use the dedicated gallery upload endpoint (was diagram-case only).
+
+### Tests
+
+- **Frontend** — MindMate attachment builder, asset proxy fetch, gallery resize/pick, gallery upload, carousel slides, diagram copy AI, diagram actions (8 new Vitest specs).
+- **Backend** — Diagram AI copy extraction/normalization, gallery JSONB deep-copy, office preview enqueue, upload gallery spec, cover stream/proxy behavior (`test_showcase_diagram_ai_copy.py`, `test_showcase_upload_gallery_spec.py`, `test_showcase_office_preview_enqueue.py`, plus lifecycle/covers/COS extensions).
+
 ## [5.164.0] - 2026-08-03
 
 > **Mind-map vector SVG/PDF export (model→SVG + svg2pdf); shared canvas/export text wrap; COS-backed CJK fonts; topic stem flush fix.**

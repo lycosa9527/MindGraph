@@ -1,4 +1,6 @@
-/** tl UI — community */
+/**
+ * tl UI � community
+ */
 
 export default {
   'community.category.all': 'Lahat',
@@ -73,12 +75,10 @@ export default {
   'debateverse.clickNextHint': 'I-click ang susunod na button para magkabisa ang mga pagbabago',
   'debateverse.coinTossAffirmativeFirst': 'Unang magsasalita ang affirmative',
   'debateverse.coinTossGotIt': 'Naintindihan',
-  'debateverse.coinTossModalBody':
-    'Bago ang debate, tukuyin ang pagkakasunod ng pagsasalita o piliin ang posisyon ng affirmative/negative sa pamamagitan ng coin toss',
+  'debateverse.coinTossModalBody': 'Bago ang debate, tukuyin ang pagkakasunod ng pagsasalita o piliin ang posisyon ng affirmative/negative sa pamamagitan ng coin toss',
   'debateverse.coinTossNegativeFirst': 'Unang magsasalita ang negative',
   'debateverse.coinTossOrder': 'Coin toss para sa pagkakasunod ng pagsasalita',
-  'debateverse.coinTossRules':
-    'Random na naitalaga ang mga AI model sa mga tungkulin sa debate. Bago ang debate, tukuyin ang pagkakasunod ng pagsasalita o piliin ang posisyon sa pamamagitan ng coin toss',
+  'debateverse.coinTossRules': 'Random na naitalaga ang mga AI model sa mga tungkulin sa debate. Bago ang debate, tukuyin ang pagkakasunod ng pagsasalita o piliin ang posisyon sa pamamagitan ng coin toss',
   'debateverse.coinTossStageTitle': 'Yugto ng coin toss',
   'debateverse.debateTopicLabel': 'Paksa ng debate: ',
   'debateverse.executeCoinToss': 'Gawin ang coin toss',

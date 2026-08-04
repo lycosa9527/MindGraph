@@ -1,4 +1,6 @@
-/** id UI — thinkingCoins */
+/**
+ * id UI � thinkingCoins
+ */
 
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': 'Token Pemikiran Saya',

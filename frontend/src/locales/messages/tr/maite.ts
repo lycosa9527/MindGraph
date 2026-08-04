@@ -1,5 +1,5 @@
 /**
- * tr UI — maite
+ * tr UI � maite
  */
 
 export default {

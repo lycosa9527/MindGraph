@@ -1,4 +1,6 @@
-/** ko UI — showcase */
+/**
+ * ko UI � showcase
+ */
 
 export default {
   'showcase.title': '쇼케이스',
@@ -51,8 +53,7 @@ export default {
   'showcase.publishModal.uploadingFile': '{name} 업로드 중 ({current}/{total})…',
   'showcase.publishModal.finishing': '마무리 중…',
   'showcase.publishModal.uploadFailedRolledBack': '업로드에 실패했습니다 — 초안이 삭제되었습니다. 다시 시도해 주세요.',
-  'showcase.publishModal.uploadCorsFailed':
-    '객체 스토리지에 업로드할 수 없습니다(버킷 CORS 또는 사이트 CSP가 COS 호스트를 차단하는 경우가 많음). 초안이 삭제되었습니다 — 관리자에게 CORS/CSP 수정을 요청한 뒤 다시 시도하세요.',
+  'showcase.publishModal.uploadCorsFailed': '객체 스토리지에 업로드할 수 없습니다(버킷 CORS 또는 사이트 CSP가 COS 호스트를 차단하는 경우가 많음). 초안이 삭제되었습니다 — 관리자에게 CORS/CSP 수정을 요청한 뒤 다시 시도하세요.',
   'showcase.publishModal.uploadStorageRejected': '객체 스토리지가 업로드를 거부했습니다. 초안이 삭제되었습니다 — 나중에 다시 시도하거나 계속 실패하면 관리자에게 문의하세요.',
   'showcase.publishModal.uploadFailed': '업로드에 실패했습니다. 다시 시도해 주세요.',
   'showcase.publishModal.uploadCoverTooLarge': '커버 이미지가 2MB 제한을 초과합니다. 미리보기를 압축하거나 더 작은 이미지를 사용한 뒤 다시 시도하세요.',
@@ -118,8 +119,10 @@ export default {
   'showcase.publishModal.aiGenerateStop': '중지',
   'showcase.publishModal.aiGenerateCancelled': 'AI 생성이 취소되었습니다 — 다시 클릭하여 재생성',
   'showcase.publishModal.aiGenerateSuccess': '문서에서 소개와 하이라이트를 채웠습니다 — 검토 후 편집하세요. 수업 성찰은 직접 작성하세요',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'AI 생성에 실패했습니다 — 다시 시도해 주세요',
   'showcase.publishModal.aiGenerateNeedFile': '먼저 이전 단계에서 수업 설계 문서를 업로드하세요',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI 생성은 수업 설계 사례에서만 사용할 수 있습니다',
   'showcase.publishModal.reflectionLabel': '수업 성찰',
   'showcase.publishModal.introPlaceholder': '사례와 사용 시점을 간략히 설명하세요',
@@ -152,6 +155,7 @@ export default {
   'showcase.publishModal.historyTitle': '저장된 다이어그램 선택',
   'showcase.publishModal.historySearch': '다이어그램 이름 검색…',
   'showcase.publishModal.historyEmpty': '저장된 다이어그램 없음',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': '사고력 수업 설계',
   'showcase.publishModal.typeDesc.diagramCase': '우수 다이어그램 및 수업 시각화',
   'showcase.publishModal.typeDesc.diagramTemplate': '재사용 또는 수정용 다이어그램',

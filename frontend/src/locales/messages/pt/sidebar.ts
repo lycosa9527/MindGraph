@@ -1,4 +1,6 @@
-/** pt UI — sidebar */
+/**
+ * pt UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'Eliminar',

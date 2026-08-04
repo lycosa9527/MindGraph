@@ -1,4 +1,6 @@
-/** nl UI — notification */
+/**
+ * nl UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Kan onderwerp- of centrumknooppunten niet wissen',

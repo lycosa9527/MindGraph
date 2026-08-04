@@ -1,4 +1,6 @@
-/** hi UI — common */
+/**
+ * hi UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'सामग्री AI-जनित है; कृपया सावधानी से सत्यापित करें।',

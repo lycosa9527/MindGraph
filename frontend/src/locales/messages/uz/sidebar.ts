@@ -1,4 +1,6 @@
-/** uz UI — sidebar */
+/**
+ * uz UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'O‘chirish',

@@ -1,4 +1,6 @@
-/** it UI — knowledge */
+/**
+ * it UI � knowledge
+ */
 
 export default {
   'fileCenterLibrary.title': 'Pacchetti',

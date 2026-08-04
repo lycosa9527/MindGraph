@@ -1,4 +1,6 @@
-/** tl UI — common */
+/**
+ * tl UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'Nilikha ng AI ang nilalaman; pakisuri nang maigi.',
@@ -10,8 +12,7 @@ export default {
   'app.browserLocale.switch': 'Palitan',
   'app.browserLocale.title': 'Palitan ang wika ng interface?',
   'app.testServer.badge': 'TEST',
-  'app.testServer.body':
-    'Si Roy, nakasandal, ay nagpapaalala: nasa test server ka. Madalas offline ang site na ito para sa testing—gamitin ang live site para sa tunay na trabaho.',
+  'app.testServer.body': 'Si Roy, nakasandal, ay nagpapaalala: nasa test server ka. Madalas offline ang site na ito para sa testing—gamitin ang live site para sa tunay na trabaho.',
   'app.testServer.confirm': 'Manatili sa test',
   'app.testServer.jump': 'Pumunta sa live site',
   'app.testServer.productionHost': 'mg.mindspringedu.com',
@@ -113,10 +114,8 @@ export default {
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'Kitty',
-  'canvas.kittyMobileIndicatorHint':
-    'May phone Kitty session (nagsimula ang mic) na naka-link sa diagram na ito. Gamitin ang phone mo para makipag-usap kay Kitty.',
-  'canvas.kittyMobileIndicatorAria':
-    'Status: Nakakonekta ang Mobile Kitty sa MindGraph canvas na ito. Makipag-ugnayan sa phone mo.',
+  'canvas.kittyMobileIndicatorHint': 'May phone Kitty session (nagsimula ang mic) na naka-link sa diagram na ito. Gamitin ang phone mo para makipag-usap kay Kitty.',
+  'canvas.kittyMobileIndicatorAria': 'Status: Nakakonekta ang Mobile Kitty sa MindGraph canvas na ito. Makipag-ugnayan sa phone mo.',
   'canvas.kittyMobileIndicatorTitle': 'Mobile Kitty',
   'canvas.kittyVoiceCommandLogTitle': 'Mga voice command',
   'canvas.kittyVoiceCommandLogAria': 'Mga kamakailang voice command mula sa mobile Kitty',
@@ -149,10 +148,8 @@ export default {
   'mobile.kittyKeyboardToggle': 'Input ng teksto',
   'mobile.kittyEnd': 'Tapusin',
   'mobile.kittyWelcomeLine': 'Ibahagi ang mga ideya mo',
-  'mobile.kittyWelcomeSub':
-    'Magtanong gamit ang boses o mag-type. Magbukas ng naka-save na diagram sa phone o desktop para manatiling synced si Kitty sa MindGraph.',
-  'mobile.kittyNeedsDesktopOwner':
-    'Buksan ang diagram na ito sa desktop MindGraph para mailapat ang mga edit. Puwedeng makipag-chat pa rin ang phone Kitty hanggang makakonekta ang canvas.',
+  'mobile.kittyWelcomeSub': 'Magtanong gamit ang boses o mag-type. Magbukas ng naka-save na diagram sa phone o desktop para manatiling synced si Kitty sa MindGraph.',
+  'mobile.kittyNeedsDesktopOwner': 'Buksan ang diagram na ito sa desktop MindGraph para mailapat ang mga edit. Puwedeng makipag-chat pa rin ang phone Kitty hanggang makakonekta ang canvas.',
   'mobile.kittyConnecting': 'Kumokonekta…',
   'mobile.kittyInputPlaceholder': 'Mag-type ng mensahe…',
   'mobile.kittySend': 'Ipadala',
@@ -164,8 +161,7 @@ export default {
   'mobile.kittyConnectFailed': 'Nabigo ang koneksyon. Suriin ang network at subukan muli.',
   'mobile.kittyDisconnected': 'Nawala ang voice connection. Kumokonekta muli…',
   'mobile.kittyEnableServerHint': 'I-enable ang FEATURE_KITTY_AGENT=True sa server .env at i-restart ang API.',
-  'mobile.kittyServerDisabledBanner':
-    'Naka-disable ang Kitty voice sa environment na ito. I-enable ang FEATURE_KITTY_AGENT sa server .env at i-restart.',
+  'mobile.kittyServerDisabledBanner': 'Naka-disable ang Kitty voice sa environment na ito. I-enable ang FEATURE_KITTY_AGENT sa server .env at i-restart.',
   'mobile.kittyDiagramPickerTitle': 'Pumili ng diagram',
   'mobile.kittyDiagramPickerLoading': 'Naglo-load…',
   'mobile.kittyDiagramPickerEmpty': 'Walang naka-save na diagram',
@@ -178,10 +174,8 @@ export default {
   'mobile.kittyNewMindmapDesktopFailed': 'Na-save ang mind map, pero hindi ma-notify ang desktop.',
   'mobile.kittyDiagramPinned': 'Naka-pin',
   'mobile.kittyDiagramPickFailed': 'Hindi ma-load ang diagram na iyon. Subukan muli mamaya.',
-  'mobile.kittyEphemeralScopePinned':
-    'Gumagamit ng temporary session — pumili o gumawa ng naka-save na diagram para mag-sync sa desktop.',
-  'mobile.kittyEphemeralScopeDegraded':
-    'Maaaring out of sync ang desktop pairing. Magbukas ng naka-save na diagram para muling kumonekta.',
+  'mobile.kittyEphemeralScopePinned': 'Gumagamit ng temporary session — pumili o gumawa ng naka-save na diagram para mag-sync sa desktop.',
+  'mobile.kittyEphemeralScopeDegraded': 'Maaaring out of sync ang desktop pairing. Magbukas ng naka-save na diagram para muling kumonekta.',
   'mobile.kittyDesktopJumpFailed': 'Napalitan ang diagram, pero hindi ma-notify ang desktop.',
   'mobile.kittyDiagramSelected': 'Napili ang diagram; bubuksan ito ng desktop.',
   'mobile.kittyCurrentDiagramLabel': 'Kasalukuyang diagram',
@@ -190,16 +184,12 @@ export default {
   'mobile.kittyHubSourceLive': 'Hub: live',
   'mobile.kittyHubSourceLibrary': 'Hub: aklatan',
   'mobile.kittyHubSourceEmpty': 'Hub: walang laman',
-  'mobile.kittyMicPttTitle':
-    'Pindutin nang matagal para magsalita; bitawan para ipadala. Pindutin nang matagal ang Space kapag hindi nagta-type sa field.',
-  'mobile.kittyMicPttAria':
-    'Pindutin nang matagal para magsalita: hawakan ang mikropono para magsalita, bitawan para ipadala. Pindutin nang matagal ang Space kapag hindi nagta-type sa message field.',
+  'mobile.kittyMicPttTitle': 'Pindutin nang matagal para magsalita; bitawan para ipadala. Pindutin nang matagal ang Space kapag hindi nagta-type sa field.',
+  'mobile.kittyMicPttAria': 'Pindutin nang matagal para magsalita: hawakan ang mikropono para magsalita, bitawan para ipadala. Pindutin nang matagal ang Space kapag hindi nagta-type sa message field.',
   'mobile.kittyHoldToSpeak': 'Pindutin nang matagal para magsalita',
   'mobile.kittyReleaseToSend': 'Bitawan para ipadala',
-  'mobile.kittyMicToggleTitle':
-    'Pindutin nang matagal para magsalita; bitawan para ipadala. Pindutin nang matagal ang Space kapag hindi nagta-type sa field.',
-  'mobile.kittyMicToggleAria':
-    'Pindutin nang matagal para magsalita: hawakan ang mikropono para magsalita, bitawan para huminto.',
+  'mobile.kittyMicToggleTitle': 'Pindutin nang matagal para magsalita; bitawan para ipadala. Pindutin nang matagal ang Space kapag hindi nagta-type sa field.',
+  'mobile.kittyMicToggleAria': 'Pindutin nang matagal para magsalita: hawakan ang mikropono para magsalita, bitawan para huminto.',
   'mobile.kittyClickWheelAria': 'Mag-swipe o mag-tap para pumili ng node',
   'mobile.kittyClickWheelHint': 'Mag-swipe o mag-tap ng chips: branch → children',
   'mobile.kittyClickWheelEmptyLabel': 'Walang pamagat na node',
@@ -209,22 +199,17 @@ export default {
   'mobile.kittyClickWheelNext': 'Susunod na node',
   'mobile.kittyClickWheelSelect': 'Piliin ang kasalukuyang node',
   'mobile.kittyLlmRowAria': 'Pumili ng AI model',
-  'mobile.kittyPhotoNeedsDiagram':
-    'Magbukas o pumili muna ng naka-save na diagram, saka kumuha ng larawan para i-extract ang text.',
+  'mobile.kittyPhotoNeedsDiagram': 'Magbukas o pumili muna ng naka-save na diagram, saka kumuha ng larawan para i-extract ang text.',
   'mobile.kittyPhotoInvalidType': 'Pumili ng JPG, PNG, o WebP na larawan.',
   'mobile.kittyPhotoTooLarge': 'Masyadong malaki ang larawan. Maximum size ay 10MB.',
   'mobile.kittyPhotoProgressDetecting': 'Pinoproseso ang larawan…',
   'mobile.kittyPhotoUserBubble': '📷 Larawan',
   'mobile.kittyPhotoUntitledMap': 'Mind map',
-  'mobile.kittyPhotoHanddrawnReply':
-    'May natukoy na hand-drawn mind map na “{topic}”. Muli itong binuo sa canvas; na-save ang outline sa Document Summary.',
-  'mobile.kittyPhotoHanddrawnLocalReply':
-    'May natukoy na hand-drawn mind map na “{topic}”. Muli itong binuo dito; na-save ang outline sa Document Summary. Hindi natapos ang library sync — buksan muli ang diagram kung mukhang luma ang canvas.',
-  'mobile.kittyPhotoOcrReply':
-    'Na-extract ang text mula sa larawan:\n{excerpt}\n\nAng buong text ay nasa Document Summary.',
+  'mobile.kittyPhotoHanddrawnReply': 'May natukoy na hand-drawn mind map na “{topic}”. Muli itong binuo sa canvas; na-save ang outline sa Document Summary.',
+  'mobile.kittyPhotoHanddrawnLocalReply': 'May natukoy na hand-drawn mind map na “{topic}”. Muli itong binuo dito; na-save ang outline sa Document Summary. Hindi natapos ang library sync — buksan muli ang diagram kung mukhang luma ang canvas.',
+  'mobile.kittyPhotoOcrReply': 'Na-extract ang text mula sa larawan:\n{excerpt}\n\nAng buong text ay nasa Document Summary.',
   'mobile.kittyPhotoUploadFailed': 'Hindi ma-upload ang larawan.',
-  'mobile.kittyPickDiagramToEdit':
-    'Magbukas o pumili muna ng naka-save na diagram, saka pindutin nang matagal para magsalita o mag-type para i-edit.',
+  'mobile.kittyPickDiagramToEdit': 'Magbukas o pumili muna ng naka-save na diagram, saka pindutin nang matagal para magsalita o mag-type para i-edit.',
   'mobile.kittyHubSyncFailed': 'Hindi ma-sync ang diagram kay Kitty. Suriin ang koneksyon at subukan muli.',
   'mobile.kittyDesktopDiagramFollowed': 'Lumipat sa diagram na bukas sa desktop',
   'mobile.kittyScopeDivergence': 'Nagbukas ang desktop ng ibang diagram. Piliin kung paano mag-sync:',
@@ -275,18 +260,14 @@ export default {
   'settings.version.chinese': 'Propesyonal na mode',
   'settings.version.international': 'Pinasimpleng mode',
   'landing.international.subtitle': 'Ang Pinakamakapangyarihang AI Thinking Diagram Software sa Uniberso',
-  'landing.international.promptPlaceholder':
-    'Ilarawan ang topic at uri ng diagram—hal. “Gumamit ng flow map para sa density lab steps”…',
+  'landing.international.promptPlaceholder': 'Ilarawan ang topic at uri ng diagram—hal. “Gumamit ng flow map para sa density lab steps”…',
   'landing.international.examplesTitle': 'Inspirasyon',
   'landing.international.example1': 'Gumawa ng mind map tungkol sa photosynthesis',
   'landing.international.example2': 'Gumamit ng tree map para iklasipika ang vertebrates: isda, amphibians, reptiles, mammals',
-  'landing.international.example3':
-    'Gumamit ng flow map para sa density lab: sukatin ang mass, sukatin ang volume, kalkulahin, itala ang resulta',
+  'landing.international.example3': 'Gumamit ng flow map para sa density lab: sukatin ang mass, sukatin ang volume, kalkulahin, itala ang resulta',
   'landing.international.example4': 'Gumamit ng double bubble map para ihambing ang plant cells at animal cells',
-  'landing.international.example5':
-    'Gumamit ng brace map para hatiin ang quadratic equations: standard form, discriminant, quadratic formula, graph at roots',
-  'landing.international.example6':
-    'Gumawa ng bubble map na naglalarawan ng mga pangunahing ideya sa tatlong batas ng paggalaw ni Newton',
+  'landing.international.example5': 'Gumamit ng brace map para hatiin ang quadratic equations: standard form, discriminant, quadratic formula, graph at roots',
+  'landing.international.example6': 'Gumawa ng bubble map na naglalarawan ng mga pangunahing ideya sa tatlong batas ng paggalaw ni Newton',
   'landing.international.phaseRequestSent': 'Naipadala ang request',
   'landing.international.phaseServerReceived': 'Natanggap ng server ang request mo',
   'landing.international.phaseGenerating': 'Gine-generate ang diagram mo…',

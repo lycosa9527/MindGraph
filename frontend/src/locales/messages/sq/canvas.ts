@@ -1,4 +1,6 @@
-/** sq UI — canvas */
+/**
+ * sq UI � canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'Nënpjesë e re 1',
@@ -1069,5 +1071,5 @@ export default {
   'canvasPage.collabParticipantsAria': 'Pjesëmarrësit e bashkëpunimit',
   'canvasPage.collabConnected': 'I lidhur',
   'canvas.topBar.viewOnly': 'Vetëm shikim',
-  'canvasPage.collabParticipantsMore': 'më shumë'
+  'canvasPage.collabParticipantsMore': 'më shumë',
 } as const

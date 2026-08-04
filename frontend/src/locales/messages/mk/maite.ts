@@ -1,6 +1,7 @@
 /**
- * en UI — Mate Learning
+ * mk UI � maite
  */
+
 export default {
   'maite.title': 'Mate Learning',
   'maite.subtitle': 'Reverse decompose · Four-stage diagnosis · Targeted remedy · Variant transfer',

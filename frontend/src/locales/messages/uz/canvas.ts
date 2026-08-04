@@ -1,4 +1,6 @@
-/** uz UI — canvas */
+/**
+ * uz UI � canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'Yangi kichik qism 1',

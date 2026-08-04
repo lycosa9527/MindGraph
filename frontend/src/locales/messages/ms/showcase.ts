@@ -1,4 +1,6 @@
-/** ms UI — showcase */
+/**
+ * ms UI � showcase
+ */
 
 export default {
   'showcase.title': 'Pameran',
@@ -50,31 +52,19 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Mengunggah file ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Mengunggah {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'Menyelesaikan…',
-  'showcase.publishModal.uploadFailedRolledBack':
-    'Muat naik gagal — draf telah dibuang. Sila cuba lagi.',
-  'showcase.publishModal.uploadCorsFailed':
-    'Tidak boleh memuat naik ke stor objek (sering kerana CORS baldi atau CSP tapak menyekat hos COS). Draf telah dibuang — minta admin membaiki CORS/CSP, lalu cuba lagi.',
-  'showcase.publishModal.uploadStorageRejected':
-    'Stor objek menolak muat naik. Draf telah dibuang — cuba lagi nanti, atau hubungi admin jika terus gagal.',
+  'showcase.publishModal.uploadFailedRolledBack': 'Muat naik gagal — draf telah dibuang. Sila cuba lagi.',
+  'showcase.publishModal.uploadCorsFailed': 'Tidak boleh memuat naik ke stor objek (sering kerana CORS baldi atau CSP tapak menyekat hos COS). Draf telah dibuang — minta admin membaiki CORS/CSP, lalu cuba lagi.',
+  'showcase.publishModal.uploadStorageRejected': 'Stor objek menolak muat naik. Draf telah dibuang — cuba lagi nanti, atau hubungi admin jika terus gagal.',
   'showcase.publishModal.uploadFailed': 'Gagal mengunggah. Sila coba lagi.',
-  'showcase.publishModal.uploadCoverTooLarge':
-    'Imej kulit melebihi had 2MB. Mampatkan pratonton atau guna imej lebih kecil, lalu cuba lagi.',
-  'showcase.publishModal.uploadAttachmentTooLarge':
-    'Fail melebihi had saiz (dokumen/imej 20MB, video 100MB). Mampatkan dan cuba lagi.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
-    'Fail melebihi had saiz (dokumen/imej 20MB, video 100MB). Draf telah dibuang — mampatkan dan cuba lagi.',
-  'showcase.publishModal.uploadFileTooLarge':
-    'Fail terlalu besar untuk jenis muat naik ini. Semak had saiz dan cuba lagi.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack':
-    'Fail terlalu besar untuk jenis muat naik ini. Draf telah dibuang — semak had saiz dan cuba lagi.',
-  'showcase.publishModal.coverUploadSkipped':
-    'Kes dihantar, tetapi imej kulit gagal dimuat naik. Anda boleh mengedit kes kemudian untuk mengemas kini kulit.',
-  'showcase.publishModal.coverGenerating':
-    'Pratonton kulit sedang dijana di latar belakang — akan muncul pada kad sebentar lagi.',
-  'showcase.publishModal.coverFailed':
-    'Kes dihantar, tetapi kulit tidak boleh dijana. Anda boleh mengedit kes kemudian untuk mengemas kini kulit.',
-  'showcase.publishModal.coverFailedTimeout':
-    'Kes dihantar, tetapi penjanaan kulit tamat masa. Anda boleh mengedit kes kemudian untuk mengemas kini kulit.',
+  'showcase.publishModal.uploadCoverTooLarge': 'Imej kulit melebihi had 2MB. Mampatkan pratonton atau guna imej lebih kecil, lalu cuba lagi.',
+  'showcase.publishModal.uploadAttachmentTooLarge': 'Fail melebihi had saiz (dokumen/imej 20MB, video 100MB). Mampatkan dan cuba lagi.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Fail melebihi had saiz (dokumen/imej 20MB, video 100MB). Draf telah dibuang — mampatkan dan cuba lagi.',
+  'showcase.publishModal.uploadFileTooLarge': 'Fail terlalu besar untuk jenis muat naik ini. Semak had saiz dan cuba lagi.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Fail terlalu besar untuk jenis muat naik ini. Draf telah dibuang — semak had saiz dan cuba lagi.',
+  'showcase.publishModal.coverUploadSkipped': 'Kes dihantar, tetapi imej kulit gagal dimuat naik. Anda boleh mengedit kes kemudian untuk mengemas kini kulit.',
+  'showcase.publishModal.coverGenerating': 'Pratonton kulit sedang dijana di latar belakang — akan muncul pada kad sebentar lagi.',
+  'showcase.publishModal.coverFailed': 'Kes dihantar, tetapi kulit tidak boleh dijana. Anda boleh mengedit kes kemudian untuk mengemas kini kulit.',
+  'showcase.publishModal.coverFailedTimeout': 'Kes dihantar, tetapi penjanaan kulit tamat masa. Anda boleh mengedit kes kemudian untuk mengemas kini kulit.',
   'showcase.publishModal.success': 'Kasus diserahkan — menunggu peninjauan admin',
   'showcase.publishModal.fromCanvas': 'Publikasikan dari kanvas',
   'showcase.publishModal.step1Title': 'Informasi dasar',
@@ -88,10 +78,8 @@ export default {
   'showcase.publishModal.uploadLabel': 'Unggah berkas',
   'showcase.publishModal.uploadImage': 'Unggah gambar',
   'showcase.publishModal.uploadFile': 'Unggah berkas',
-  'showcase.publishModal.directUploadDisabled':
-    'Muat naik fail terus buat sementara tidak tersedia. Anda masih boleh memilih rajah tersimpan daripada sejarah.',
-  'showcase.publishModal.uploadViaStorage':
-    'Fail dimuat naik terus ke stor selamat (URL berjangka pendek).',
+  'showcase.publishModal.directUploadDisabled': 'Muat naik fail terus buat sementara tidak tersedia. Anda masih boleh memilih rajah tersimpan daripada sejarah.',
+  'showcase.publishModal.uploadViaStorage': 'Fail dimuat naik terus ke stor selamat (URL berjangka pendek).',
   'showcase.publishModal.pickHistory': 'Pilih dari sejarah',
   'showcase.publishModal.removeFile': 'Mengpadam',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: pratinjau terbatas)',
@@ -130,10 +118,11 @@ export default {
   'showcase.publishModal.aiGenerating': 'Menghasilkan…',
   'showcase.publishModal.aiGenerateStop': 'Berhenti',
   'showcase.publishModal.aiGenerateCancelled': 'Pembuatan AI dibatalkan — klik lagi untuk membuat ulang',
-  'showcase.publishModal.aiGenerateSuccess':
-    'Pengenalan dan sorotan diisi daripada dokumen — semak dan edit; tulis refleksi pengajaran sendiri',
+  'showcase.publishModal.aiGenerateSuccess': 'Pengenalan dan sorotan diisi daripada dokumen — semak dan edit; tulis refleksi pengajaran sendiri',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'Pembuatan AI gagal — sila coba lagi',
   'showcase.publishModal.aiGenerateNeedFile': 'Unggah terlebih dahulu dokumen desain pengajaran pada langkah sebelumnya',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI generate hanya tersedia untuk kasus desain pengajaran',
   'showcase.publishModal.reflectionLabel': 'Mengajarkan refleksi',
   'showcase.publishModal.introPlaceholder': 'Jelaskan secara singkat kasusnya dan kapan menggunakannya',
@@ -160,15 +149,13 @@ export default {
   'showcase.publishModal.validationDiagramType': 'Sila pilih jenis rajah',
   'showcase.publishModal.invalidFileType': 'Jenis file tidak didukung',
   'showcase.publishModal.invalidMgFile': 'Tidak boleh membaca file .mg ini — ekspor dari MindGraph terlebih dahulu',
-  'showcase.publishModal.cannotPreview':
-    'Tidak boleh menjana pratonton kulit — kes masih akan dihantar. Cuba PNG/JPG atau pilih rajah tersimpan.',
-  'showcase.publishModal.cannotPreviewHistory':
-    'Tidak boleh menjana kulit daripada rajah tersimpan ini — kes masih akan dihantar. Pilih semula atau simpan semula dari kanvas.',
-  'showcase.publishModal.cannotPreviewTemplate':
-    'Tidak boleh menjana kulit — kes masih akan dihantar. Semak fail .mg atau pilih rajah tersimpan lain.',
+  'showcase.publishModal.cannotPreview': 'Tidak boleh menjana pratonton kulit — kes masih akan dihantar. Cuba PNG/JPG atau pilih rajah tersimpan.',
+  'showcase.publishModal.cannotPreviewHistory': 'Tidak boleh menjana kulit daripada rajah tersimpan ini — kes masih akan dihantar. Pilih semula atau simpan semula dari kanvas.',
+  'showcase.publishModal.cannotPreviewTemplate': 'Tidak boleh menjana kulit — kes masih akan dihantar. Semak fail .mg atau pilih rajah tersimpan lain.',
   'showcase.publishModal.historyTitle': 'Pilih rajah yang disimpan',
   'showcase.publishModal.historySearch': 'Cari nama rajah…',
   'showcase.publishModal.historyEmpty': 'Tidak ada rajah yang disimpan',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': 'Desain pembelajaran kelas keterampilan berfikir',
   'showcase.publishModal.typeDesc.diagramCase': 'Rajah dan visualisasi yang sangat baik dalam pengajaran',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Rajah untuk digunakan kembali atau diadaptasi',
@@ -194,11 +181,9 @@ export default {
   'showcase.detail.delist': 'Padam daftar',
   'showcase.detail.resubmit': 'Edit dan kirim ulang',
   'showcase.detail.withdrawTitle': 'Tarik kasus',
-  'showcase.detail.withdrawConfirm':
-    'Tarik "{title}"? Kes akan dikeluarkan daripada barisan semakan dan tidak boleh dipulihkan.',
+  'showcase.detail.withdrawConfirm': 'Tarik "{title}"? Kes akan dikeluarkan daripada barisan semakan dan tidak boleh dipulihkan.',
   'showcase.detail.delistTitle': 'Kasus pengpadaman',
-  'showcase.detail.delistConfirm':
-    'Turunkan "{title}" daripada galeri? Pengguna lain tidak lagi boleh melihatnya.',
+  'showcase.detail.delistConfirm': 'Turunkan "{title}" daripada galeri? Pengguna lain tidak lagi boleh melihatnya.',
   'showcase.detail.confirm': 'Mengonfirmasi',
   'showcase.detail.cancel': 'Membatalkan',
   'showcase.withdrawn': 'Ditarik',
@@ -218,8 +203,7 @@ export default {
   'showcase.detail.pptxPreviewPending': 'Mengonversi slide untuk pratinjau…',
   'showcase.detail.docPreviewLoading': 'Memuat dokumen…',
   'showcase.detail.docPreviewFailed': 'Tidak boleh memuat pratinjau. Coba buka di tab baru.',
-  'showcase.detail.legacyDocHint':
-    'Fail .doc lama tidak boleh dipratonton secara sebaris. Buka atau muat turun fail, atau muat naik .docx untuk pratonton dalam pelayar.',
+  'showcase.detail.legacyDocHint': 'Fail .doc lama tidak boleh dipratonton secara sebaris. Buka atau muat turun fail, atau muat naik .docx untuk pratonton dalam pelayar.',
   'showcase.detail.noDocument': 'Tidak ada pratinjau dokumen',
   'showcase.detail.noDiagramPreview': 'Tidak ada pratinjau rajah',
   'showcase.detail.diagramPreviewLoading': 'Memuat rajah…',

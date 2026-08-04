@@ -198,16 +198,19 @@ def _extract_json_string_after_key(buffer: str, key: str) -> Optional[str]:
     return _decode_json_string_prefix(buffer[match.end() :])
 
 
-def extract_partial_ai_copy_fields(buffer: str) -> Dict[str, str]:
+def extract_partial_json_string_fields(
+    buffer: str,
+    field_aliases: dict[str, tuple[str, ...]],
+) -> Dict[str, str]:
     """
-    Extract teaching-copy string fields from an incomplete JSON stream buffer.
+    Extract string fields from an incomplete JSON stream buffer.
 
     Returns only keys that have started (opening quote seen). Values are lightly
-    trimmed; full ``normalize_ai_copy_fields`` runs on the completed response.
+    trimmed; full normalize helpers run on the completed response.
     """
     text = strip_code_fence(buffer)
     result: Dict[str, str] = {}
-    for canonical, aliases in _FIELD_ALIASES.items():
+    for canonical, aliases in field_aliases.items():
         value: Optional[str] = None
         for alias in aliases:
             value = _extract_json_string_after_key(text, alias)
@@ -219,6 +222,21 @@ def extract_partial_ai_copy_fields(buffer: str) -> Dict[str, str]:
         if trimmed:
             result[canonical] = trimmed[:SHOWCASE_AI_COPY_MAX_FIELD_CHARS]
     return result
+
+
+def extract_partial_ai_copy_fields(buffer: str) -> Dict[str, str]:
+    """
+    Extract teaching-copy string fields from an incomplete JSON stream buffer.
+
+    Returns only keys that have started (opening quote seen). Values are lightly
+    trimmed; full ``normalize_ai_copy_fields`` runs on the completed response.
+    """
+    return extract_partial_json_string_fields(buffer, _FIELD_ALIASES)
+
+
+def clean_ai_copy_field(value: Any) -> str:
+    """Public wrapper for field cleanup used by sibling AI-copy modules."""
+    return _clean_field(value)
 
 
 def _build_teaching_copy_user_prompt(

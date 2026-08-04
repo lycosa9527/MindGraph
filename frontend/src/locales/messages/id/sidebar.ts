@@ -1,4 +1,6 @@
-/** id UI — sidebar */
+/**
+ * id UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'Hapus',

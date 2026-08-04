@@ -1,4 +1,6 @@
-/** ja UI — mindmate */
+/**
+ * ja UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'クリックで AI 関係ラベルを有効化（マルチモデル）',

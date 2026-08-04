@@ -1,4 +1,6 @@
-/** hi UI — notification */
+/**
+ * hi UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'विषय या केंद्र नोड साफ़ नहीं किए जा सकते',

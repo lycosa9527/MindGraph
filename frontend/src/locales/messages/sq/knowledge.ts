@@ -1,4 +1,6 @@
-/** sq UI — knowledge */
+/**
+ * sq UI � knowledge
+ */
 
 export default {
   'fileCenterLibrary.title': 'Paketet',

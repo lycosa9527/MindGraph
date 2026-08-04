@@ -19,13 +19,13 @@ from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from routers.features.community.helpers import (
     PNG_MAGIC,
-    SPEC_MAX_BYTES,
     THUMBNAIL_MAX_BYTES,
     parse_spec_json,
 )
 from services.showcase.storage import (
     build_object_key,
     delete_key_sync,
+    head_object_sync,
     is_showcase_logical_key,
     local_path_for_key,
     put_bytes,
@@ -43,7 +43,9 @@ VIDEO_MAX_BYTES = 100 * 1024 * 1024
 ALLOWED_DOC_SUFFIXES = frozenset({".doc", ".docx", ".pdf", ".pptx"})
 ALLOWED_SOURCE_SUFFIXES = frozenset({".mg", ".png", ".jpg", ".jpeg", ".webp", ".gif"})
 GALLERY_IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp", ".gif"})
-GALLERY_MAX_ITEMS = 12
+GALLERY_MAX_ITEMS = 15
+# Multi-diagram gallery specs embed up to GALLERY_MAX_ITEMS full diagrams; allow more than community posts.
+SHOWCASE_SPEC_MAX_BYTES = 2 * 1024 * 1024
 ALLOWED_VIDEO_SUFFIXES = frozenset({".mp4", ".webm", ".mov", ".m4v"})
 
 PDF_MAGIC = b"%PDF"
@@ -231,7 +233,7 @@ async def save_thumbnail_from_upload(post_id: str, thumbnail: UploadFile) -> str
 
 
 def _gallery_file_exists(rel_path: str) -> bool:
-
+    """True when the gallery object exists on local disk (legacy / non-COS)."""
     normalized = rel_path.lstrip("/").replace("\\", "/")
     if not is_showcase_logical_key(normalized):
         return False
@@ -241,15 +243,22 @@ def _gallery_file_exists(rel_path: str) -> bool:
         return False
 
 
+def _gallery_object_exists(rel_path: str) -> bool:
+    """True when the gallery object exists in active storage (local or COS)."""
+    normalized = rel_path.lstrip("/").replace("\\", "/")
+    if not is_showcase_logical_key(normalized):
+        return False
+    return head_object_sync(normalized) is not None
+
+
 def resolve_gallery_image_storage_path(post_id: str, slot: int, entry: dict) -> str | None:
-    """Return stored relative path for a gallery image (spec path or on-disk slot file)."""
+    """Return stored relative path for a gallery image (spec path or slot file)."""
     path = entry.get("path")
     if isinstance(path, str) and path.strip():
         rel = path.lstrip("/")
         if _gallery_file_exists(rel):
             return rel
         # COS-backed keys may not exist locally — trust stored path when well-formed
-
         if is_showcase_logical_key(rel) and f"/{post_id}/" in f"/{rel}/":
             return rel
 
@@ -258,7 +267,7 @@ def resolve_gallery_image_storage_path(post_id: str, slot: int, entry: dict) -> 
             f"showcase/posts/{post_id}/gallery_{slot}{ext}",
             f"case_square/{post_id}_gallery_{slot}{ext}",
         ):
-            if _gallery_file_exists(candidate):
+            if _gallery_object_exists(candidate):
                 return candidate
 
     filename = entry.get("filename")
@@ -267,7 +276,7 @@ def resolve_gallery_image_storage_path(post_id: str, slot: int, entry: dict) -> 
             f"case_square/{filename}",
             f"case_square/{post_id}_{filename}",
         ):
-            if _gallery_file_exists(candidate):
+            if _gallery_object_exists(candidate):
                 return candidate
 
     return None
@@ -279,6 +288,34 @@ def count_pending_gallery_images(spec_obj: dict) -> int:
     if not isinstance(gallery, list):
         return 0
     return sum(1 for item in gallery if isinstance(item, dict) and item.get("kind") == "image" and not item.get("path"))
+
+
+def heal_gallery_image_paths(post_id: str, spec_obj: dict) -> bool:
+    """Fill missing gallery ``path`` values when storage already has the object.
+
+    Recovers posts where upload/complete wrote COS/local bytes but JSONB nested
+    mutation did not persist ``path`` (blocked approve with incomplete gallery).
+    Returns True when ``spec_obj`` was modified.
+    """
+    gallery = spec_obj.get("gallery")
+    if not isinstance(gallery, list):
+        return False
+    changed = False
+    for slot, item in enumerate(gallery):
+        if not isinstance(item, dict) or item.get("kind") != "image":
+            continue
+        existing = item.get("path")
+        if isinstance(existing, str) and existing.strip():
+            continue
+        resolved = resolve_gallery_image_storage_path(post_id, slot, item)
+        if not resolved:
+            continue
+        item["path"] = resolved
+        item.pop("pending", None)
+        changed = True
+    if changed:
+        spec_obj["source"] = "gallery"
+    return changed
 
 
 def assert_gallery_uploads_resolved(spec_obj: dict) -> None:
@@ -371,7 +408,11 @@ async def apply_gallery_image_uploads(
     spec_obj: dict,
     gallery_images: list[UploadFile],
 ) -> None:
-    """Attach uploaded gallery image files to spec gallery items (pending slots only)."""
+    """Attach uploaded gallery image files to spec gallery items (pending slots only).
+
+    Replaces each filled slot with a new dict so callers can assign JSONB safely
+    (in-place nested mutation alone is not reliable with SQLAlchemy JSONB).
+    """
     gallery = spec_obj.get("gallery")
     if not isinstance(gallery, list):
         return
@@ -403,9 +444,11 @@ async def apply_gallery_image_uploads(
             f"gallery_{slot}",
             ATTACHMENT_MAX_BYTES,
         )
-        item["path"] = path
-        item["filename"] = Path(upload.filename).name
-        item.pop("pending", None)
+        gallery[slot] = {
+            "kind": "image",
+            "path": path,
+            "filename": Path(upload.filename).name,
+        }
     spec_obj["source"] = "gallery"
 
 
@@ -520,13 +563,18 @@ def delete_case_file(rel_path: str) -> None:
     delete_key_sync(normalized)
 
 
-def prepare_post_id_and_spec(spec: str) -> tuple[str, dict]:
-    """Parse diagram spec JSON and assign a new post UUID."""
-    if len(spec.encode("utf-8")) > SPEC_MAX_BYTES:
+def assert_showcase_spec_size(spec: str) -> None:
+    """Reject oversized showcase diagram/gallery JSON bodies."""
+    if len(spec.encode("utf-8")) > SHOWCASE_SPEC_MAX_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="Diagram spec too large",
         )
+
+
+def prepare_post_id_and_spec(spec: str) -> tuple[str, dict]:
+    """Parse diagram spec JSON and assign a new post UUID."""
+    assert_showcase_spec_size(spec)
     return str(uuid.uuid4()), parse_spec_json(spec)
 
 

@@ -1,4 +1,6 @@
-/** ko UI — canvas */
+/**
+ * ko UI � canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': '새 하위 부분 1',
@@ -675,8 +677,7 @@ export default {
   'canvas.mindMapOneSentence.photoUntitledMap': '마인드맵',
   'canvas.mindMapOneSentence.photoHanddrawnReply': '손그림 마인드맵 “{topic}”을(를) 감지했습니다. 캔버스에 다시 그렸고 개요는 문서 요약에 저장했습니다.',
   'canvas.mindMapOneSentence.photoHanddrawnLocalReply': '손그림 마인드맵 “{topic}”을(를) 감지했습니다. 이 캔버스에 다시 그렸고 개요는 문서 요약에 저장했습니다.',
-  'canvas.mindMapOneSentence.photoOcrReply':
-    '사진에서 텍스트를 추출했습니다:\n{excerpt}\n\n전체 텍스트는 문서 요약에 있습니다.',
+  'canvas.mindMapOneSentence.photoOcrReply': '사진에서 텍스트를 추출했습니다:\n{excerpt}\n\n전체 텍스트는 문서 요약에 있습니다.',
   'canvas.mindMapOneSentence.photoFailed': '사진을 처리하지 못했습니다.',
   'canvas.mindMapOneSentence.micDenied': '마이크를 사용할 수 없습니다 — 브라우저 권한을 확인하세요',
   'canvas.mindMapOneSentence.ttsToggle': '음성 전환',

@@ -1,4 +1,6 @@
-/** id UI — canvas */
+/**
+ * id UI � canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'Subbagian Baru 1',

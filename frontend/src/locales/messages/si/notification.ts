@@ -1,4 +1,6 @@
-/** si UI — notification */
+/**
+ * si UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'මාතෘකා හෝ මධ්‍ය නෝඩ් මකා නොහැක',

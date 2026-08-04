@@ -1,4 +1,6 @@
-/** uk UI — admin */
+/**
+ * uk UI � admin
+ */
 
 export default {
   'admin.actions': 'Дії',
@@ -1360,4 +1362,3 @@ export default {
   'admin.showcase.subtabAria': 'Розділи Showcase',
   'admin.showcase.title': 'Showcase',
 } as const
-

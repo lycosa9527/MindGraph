@@ -1,4 +1,6 @@
-/** uk UI — mindmate */
+/**
+ * uk UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'Натисніть, щоб увімкнути мітки зв\'язків ШІ (кілька моделей)',
@@ -65,6 +67,9 @@ export default {
   'focusQuestion.validationRequestFailed': 'Запит перевірки не вдався',
   'focusQuestion.weakLabel': 'Слабке',
   'mindmate.defaultSuggestion1': 'Які когнітивні конфлікти можу спроєктувати для уроку про паралелограм?',
+  'mindmate.defaultSuggestion10': 'Як використовувати ситуативне навчання на уроці історії?',
+  'mindmate.defaultSuggestion11': 'На які питання безпеки звернути увагу в фізичних експериментах?',
+  'mindmate.defaultSuggestion12': 'Як спроєктувати домашнє завдання відповідно до когнітивного рівня учнів?',
   'mindmate.defaultSuggestion2': 'Допоможіть створити план уроку про клітинне дихання.',
   'mindmate.defaultSuggestion3': 'Які хибні уявлення мають учні про гравітацію?',
   'mindmate.defaultSuggestion4': 'Як спроєктувати ефективне групове навчання?',
@@ -73,9 +78,6 @@ export default {
   'mindmate.defaultSuggestion7': 'Як пов\'язати математичні поняття з реальним життям?',
   'mindmate.defaultSuggestion8': 'Як розвивати критичне мислення?',
   'mindmate.defaultSuggestion9': 'Які ефективні стратегії навчання аудіювання?',
-  'mindmate.defaultSuggestion10': 'Як використовувати ситуативне навчання на уроці історії?',
-  'mindmate.defaultSuggestion11': 'На які питання безпеки звернути увагу в фізичних експериментах?',
-  'mindmate.defaultSuggestion12': 'Як спроєктувати домашнє завдання відповідно до когнітивного рівня учнів?',
   'mindmate.historyTitle': 'Історія розмов',
   'mindmate.imagePreview': 'Попередній перегляд зображення',
   'mindmate.input.attachFile': 'Додати файл',

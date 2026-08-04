@@ -1,4 +1,6 @@
-/** uk UI — showcase */
+/**
+ * uk UI � showcase
+ */
 
 export default {
   'showcase.title': 'Showcase',
@@ -50,31 +52,19 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Завантаження файлів ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Завантаження {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'Завершення…',
-  'showcase.publishModal.uploadFailedRolledBack':
-    'Завантаження не вдалося — чернетку скасовано. Спробуйте ще раз.',
-  'showcase.publishModal.uploadCorsFailed':
-    'Не вдалося завантажити в сховище (часто CORS бакета або CSP сайту блокує хост COS). Чернетку скасовано — попросіть адміністратора виправити CORS/CSP і повторіть.',
-  'showcase.publishModal.uploadStorageRejected':
-    'Сховище відхилило завантаження. Чернетку скасовано — спробуйте пізніше або зверніться до адміністратора, якщо помилка повторюється.',
+  'showcase.publishModal.uploadFailedRolledBack': 'Завантаження не вдалося — чернетку скасовано. Спробуйте ще раз.',
+  'showcase.publishModal.uploadCorsFailed': 'Не вдалося завантажити в сховище (часто CORS бакета або CSP сайту блокує хост COS). Чернетку скасовано — попросіть адміністратора виправити CORS/CSP і повторіть.',
+  'showcase.publishModal.uploadStorageRejected': 'Сховище відхилило завантаження. Чернетку скасовано — спробуйте пізніше або зверніться до адміністратора, якщо помилка повторюється.',
   'showcase.publishModal.uploadFailed': 'Завантаження не вдалося. Спробуйте ще раз.',
-  'showcase.publishModal.uploadCoverTooLarge':
-    'Обкладинка перевищує ліміт 2 МБ. Стисніть зображення або використайте менше, потім спробуйте знову.',
-  'showcase.publishModal.uploadAttachmentTooLarge':
-    'Файл перевищує ліміт розміру (документи/зображення 20 МБ, відео 100 МБ). Стисніть і спробуйте знову.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
-    'Файл перевищує ліміт розміру (документи/зображення 20 МБ, відео 100 МБ). Чернетку скасовано — стисніть і спробуйте знову.',
-  'showcase.publishModal.uploadFileTooLarge':
-    'Файл занадто великий для цього типу завантаження. Перевірте ліміт розміру і спробуйте знову.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack':
-    'Файл занадто великий для цього типу завантаження. Чернетку скасовано — перевірте ліміт розміру і спробуйте знову.',
-  'showcase.publishModal.coverUploadSkipped':
-    'Кейс надіслано, але обкладинку не вдалося завантажити. Пізніше можна відредагувати кейс і оновити обкладинку.',
-  'showcase.publishModal.coverGenerating':
-    'Попередній перегляд обкладинки генерується у фоні — незабаром з\'явиться на картці.',
-  'showcase.publishModal.coverFailed':
-    'Кейс надіслано, але обкладинку не вдалося згенерувати. Пізніше можна відредагувати кейс і оновити обкладинку.',
-  'showcase.publishModal.coverFailedTimeout':
-    'Кейс надіслано, але час генерації обкладинки минув. Пізніше можна відредагувати кейс і оновити обкладинку.',
+  'showcase.publishModal.uploadCoverTooLarge': 'Обкладинка перевищує ліміт 2 МБ. Стисніть зображення або використайте менше, потім спробуйте знову.',
+  'showcase.publishModal.uploadAttachmentTooLarge': 'Файл перевищує ліміт розміру (документи/зображення 20 МБ, відео 100 МБ). Стисніть і спробуйте знову.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Файл перевищує ліміт розміру (документи/зображення 20 МБ, відео 100 МБ). Чернетку скасовано — стисніть і спробуйте знову.',
+  'showcase.publishModal.uploadFileTooLarge': 'Файл занадто великий для цього типу завантаження. Перевірте ліміт розміру і спробуйте знову.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Файл занадто великий для цього типу завантаження. Чернетку скасовано — перевірте ліміт розміру і спробуйте знову.',
+  'showcase.publishModal.coverUploadSkipped': 'Кейс надіслано, але обкладинку не вдалося завантажити. Пізніше можна відредагувати кейс і оновити обкладинку.',
+  'showcase.publishModal.coverGenerating': 'Попередній перегляд обкладинки генерується у фоні — незабаром з\'явиться на картці.',
+  'showcase.publishModal.coverFailed': 'Кейс надіслано, але обкладинку не вдалося згенерувати. Пізніше можна відредагувати кейс і оновити обкладинку.',
+  'showcase.publishModal.coverFailedTimeout': 'Кейс надіслано, але час генерації обкладинки минув. Пізніше можна відредагувати кейс і оновити обкладинку.',
   'showcase.publishModal.success': 'Кейс надіслано — очікує перевірки адміністратором',
   'showcase.publishModal.fromCanvas': 'Опублікувати з полотна',
   'showcase.publishModal.step1Title': 'Основна інформація',
@@ -88,10 +78,8 @@ export default {
   'showcase.publishModal.uploadLabel': 'Завантажити файл',
   'showcase.publishModal.uploadImage': 'Завантажити зображення',
   'showcase.publishModal.uploadFile': 'Завантажити файл',
-  'showcase.publishModal.directUploadDisabled':
-    'Пряме завантаження файлів тимчасово недоступне. Можна обрати збережену діаграму з історії.',
-  'showcase.publishModal.uploadViaStorage':
-    'Файли завантажуються безпосередньо в захищене сховище (короткостроковий URL).',
+  'showcase.publishModal.directUploadDisabled': 'Пряме завантаження файлів тимчасово недоступне. Можна обрати збережену діаграму з історії.',
+  'showcase.publishModal.uploadViaStorage': 'Файли завантажуються безпосередньо в захищене сховище (короткостроковий URL).',
   'showcase.publishModal.pickHistory': 'Обрати з історії',
   'showcase.publishModal.removeFile': 'Видалити',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: обмежений перегляд)',
@@ -130,10 +118,11 @@ export default {
   'showcase.publishModal.aiGenerating': 'Генерація…',
   'showcase.publishModal.aiGenerateStop': 'Зупинити',
   'showcase.publishModal.aiGenerateCancelled': 'Генерацію ШІ скасовано — натисніть знову для повтору',
-  'showcase.publishModal.aiGenerateSuccess':
-    'Вступ і акценти заповнено з документа — перегляньте та відредагуйте; рефлексію напишіть самостійно',
+  'showcase.publishModal.aiGenerateSuccess': 'Вступ і акценти заповнено з документа — перегляньте та відредагуйте; рефлексію напишіть самостійно',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'Генерація ШІ не вдалася — спробуйте ще раз',
   'showcase.publishModal.aiGenerateNeedFile': 'Спочатку завантажте документ проєкту навчання на попередньому кроці',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'Генерація ШІ доступна лише для кейсів проєктування навчання',
   'showcase.publishModal.reflectionLabel': 'Педагогічна рефлексія',
   'showcase.publishModal.introPlaceholder': 'Коротко опишіть кейс і коли його використовувати',
@@ -160,15 +149,13 @@ export default {
   'showcase.publishModal.validationDiagramType': 'Оберіть тип діаграми',
   'showcase.publishModal.invalidFileType': 'Непідтримуваний тип файлу',
   'showcase.publishModal.invalidMgFile': 'Не вдалося прочитати файл .mg — спочатку експортуйте його з MindGraph',
-  'showcase.publishModal.cannotPreview':
-    'Не вдалося згенерувати попередній перегляд обкладинки — кейс все одно буде надіслано. Спробуйте PNG/JPG або оберіть збережену діаграму.',
-  'showcase.publishModal.cannotPreviewHistory':
-    'Не вдалося згенерувати обкладинку з цієї збереженої діаграми — кейс все одно буде надіслано. Оберіть знову або перезбережіть з полотна.',
-  'showcase.publishModal.cannotPreviewTemplate':
-    'Не вдалося згенерувати обкладинку — кейс все одно буде надіслано. Перевірте файл .mg або оберіть іншу збережену діаграму.',
+  'showcase.publishModal.cannotPreview': 'Не вдалося згенерувати попередній перегляд обкладинки — кейс все одно буде надіслано. Спробуйте PNG/JPG або оберіть збережену діаграму.',
+  'showcase.publishModal.cannotPreviewHistory': 'Не вдалося згенерувати обкладинку з цієї збереженої діаграми — кейс все одно буде надіслано. Оберіть знову або перезбережіть з полотна.',
+  'showcase.publishModal.cannotPreviewTemplate': 'Не вдалося згенерувати обкладинку — кейс все одно буде надіслано. Перевірте файл .mg або оберіть іншу збережену діаграму.',
   'showcase.publishModal.historyTitle': 'Обрати збережену діаграму',
   'showcase.publishModal.historySearch': 'Пошук за назвою діаграми…',
   'showcase.publishModal.historyEmpty': 'Немає збережених діаграм',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': 'Проєктування уроку з розвитком мислення',
   'showcase.publishModal.typeDesc.diagramCase': 'Яскраві діаграми та візуалізація в навчанні',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Діаграми для повторного використання або адаптації',
@@ -194,11 +181,9 @@ export default {
   'showcase.detail.delist': 'Приховати',
   'showcase.detail.resubmit': 'Редагувати та надіслати знову',
   'showcase.detail.withdrawTitle': 'Відкликати кейс',
-  'showcase.detail.withdrawConfirm':
-    'Відкликати «{title}»? Його буде прибрано з черги перевірки, відновити не можна.',
+  'showcase.detail.withdrawConfirm': 'Відкликати «{title}»? Його буде прибрано з черги перевірки, відновити не можна.',
   'showcase.detail.delistTitle': 'Приховати кейс',
-  'showcase.detail.delistConfirm':
-    'Приховати «{title}» з галереї? Інші користувачі більше не зможуть його переглянути.',
+  'showcase.detail.delistConfirm': 'Приховати «{title}» з галереї? Інші користувачі більше не зможуть його переглянути.',
   'showcase.detail.confirm': 'Підтвердити',
   'showcase.detail.cancel': 'Скасувати',
   'showcase.withdrawn': 'Відкликано',
@@ -218,8 +203,7 @@ export default {
   'showcase.detail.pptxPreviewPending': 'Конвертація слайдів для перегляду…',
   'showcase.detail.docPreviewLoading': 'Завантаження документа…',
   'showcase.detail.docPreviewFailed': 'Не вдалося завантажити перегляд. Спробуйте відкрити в новій вкладці.',
-  'showcase.detail.legacyDocHint':
-    'Застарілі файли .doc не можна переглянути тут. Відкрийте або завантажте файл, або завантажте .docx для перегляду в браузері.',
+  'showcase.detail.legacyDocHint': 'Застарілі файли .doc не можна переглянути тут. Відкрийте або завантажте файл, або завантажте .docx для перегляду в браузері.',
   'showcase.detail.noDocument': 'Немає попереднього перегляду документа',
   'showcase.detail.noDiagramPreview': 'Немає попереднього перегляду діаграми',
   'showcase.detail.diagramPreviewLoading': 'Завантаження діаграми…',

@@ -1,4 +1,6 @@
-/** en UI — showcase */
+/**
+ * ta UI � showcase
+ */
 
 export default {
   'showcase.title': 'Showcase',
@@ -50,31 +52,19 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Uploading files ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Uploading {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'Finishing…',
-  'showcase.publishModal.uploadFailedRolledBack':
-    'Upload failed — the draft was discarded. Please try again.',
-  'showcase.publishModal.uploadCorsFailed':
-    'Could not upload to object storage (often bucket CORS or site CSP blocking the COS host). The draft was discarded — ask an admin to fix CORS/CSP, then retry.',
-  'showcase.publishModal.uploadStorageRejected':
-    'Object storage rejected the upload. The draft was discarded — try again later, or contact an admin if it keeps failing.',
+  'showcase.publishModal.uploadFailedRolledBack': 'Upload failed — the draft was discarded. Please try again.',
+  'showcase.publishModal.uploadCorsFailed': 'Could not upload to object storage (often bucket CORS or site CSP blocking the COS host). The draft was discarded — ask an admin to fix CORS/CSP, then retry.',
+  'showcase.publishModal.uploadStorageRejected': 'Object storage rejected the upload. The draft was discarded — try again later, or contact an admin if it keeps failing.',
   'showcase.publishModal.uploadFailed': 'Upload failed. Please try again.',
-  'showcase.publishModal.uploadCoverTooLarge':
-    'Cover image exceeds the 2MB limit. Compress the preview or use a smaller image, then try again.',
-  'showcase.publishModal.uploadAttachmentTooLarge':
-    'File exceeds the size limit (documents/images 20MB, videos 100MB). Compress and try again.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
-    'File exceeds the size limit (documents/images 20MB, videos 100MB). The draft was discarded — compress and try again.',
-  'showcase.publishModal.uploadFileTooLarge':
-    'File is too large for this upload type. Check the size limit and try again.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack':
-    'File is too large for this upload type. The draft was discarded — check the size limit and try again.',
-  'showcase.publishModal.coverUploadSkipped':
-    'Case submitted, but the cover image failed to upload. You can edit the case later to refresh the cover.',
-  'showcase.publishModal.coverGenerating':
-    'Cover preview is generating in the background — it will appear on the card shortly.',
-  'showcase.publishModal.coverFailed':
-    'Case submitted, but the cover could not be generated. You can edit the case later to refresh the cover.',
-  'showcase.publishModal.coverFailedTimeout':
-    'Case submitted, but cover generation timed out. You can edit the case later to refresh the cover.',
+  'showcase.publishModal.uploadCoverTooLarge': 'Cover image exceeds the 2MB limit. Compress the preview or use a smaller image, then try again.',
+  'showcase.publishModal.uploadAttachmentTooLarge': 'File exceeds the size limit (documents/images 20MB, videos 100MB). Compress and try again.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'File exceeds the size limit (documents/images 20MB, videos 100MB). The draft was discarded — compress and try again.',
+  'showcase.publishModal.uploadFileTooLarge': 'File is too large for this upload type. Check the size limit and try again.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack': 'File is too large for this upload type. The draft was discarded — check the size limit and try again.',
+  'showcase.publishModal.coverUploadSkipped': 'Case submitted, but the cover image failed to upload. You can edit the case later to refresh the cover.',
+  'showcase.publishModal.coverGenerating': 'Cover preview is generating in the background — it will appear on the card shortly.',
+  'showcase.publishModal.coverFailed': 'Case submitted, but the cover could not be generated. You can edit the case later to refresh the cover.',
+  'showcase.publishModal.coverFailedTimeout': 'Case submitted, but cover generation timed out. You can edit the case later to refresh the cover.',
   'showcase.publishModal.success': 'Case submitted — awaiting admin review',
   'showcase.publishModal.fromCanvas': 'Publish from canvas',
   'showcase.publishModal.step1Title': 'Basic info',
@@ -88,10 +78,8 @@ export default {
   'showcase.publishModal.uploadLabel': 'Upload file',
   'showcase.publishModal.uploadImage': 'Upload image',
   'showcase.publishModal.uploadFile': 'Upload file',
-  'showcase.publishModal.directUploadDisabled':
-    'Direct file upload is temporarily unavailable. You can still pick a saved diagram from history.',
-  'showcase.publishModal.uploadViaStorage':
-    'Files upload directly to secure storage (short-lived URL).',
+  'showcase.publishModal.directUploadDisabled': 'Direct file upload is temporarily unavailable. You can still pick a saved diagram from history.',
+  'showcase.publishModal.uploadViaStorage': 'Files upload directly to secure storage (short-lived URL).',
   'showcase.publishModal.pickHistory': 'Pick from history',
   'showcase.publishModal.removeFile': 'Remove',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: limited preview)',
@@ -130,10 +118,11 @@ export default {
   'showcase.publishModal.aiGenerating': 'Generating…',
   'showcase.publishModal.aiGenerateStop': 'Stop',
   'showcase.publishModal.aiGenerateCancelled': 'AI generation cancelled — click again to regenerate',
-  'showcase.publishModal.aiGenerateSuccess':
-    'Filled intro, highlights, and reflection from the document — review and edit as needed',
+  'showcase.publishModal.aiGenerateSuccess': 'Filled intro, highlights, and reflection from the document — review and edit as needed',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'AI generation failed — please try again',
   'showcase.publishModal.aiGenerateNeedFile': 'Upload a teaching-design document in the previous step first',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI generate is available for teaching-design cases only',
   'showcase.publishModal.reflectionLabel': 'Teaching reflection',
   'showcase.publishModal.introPlaceholder': 'Briefly describe the case and when to use it',
@@ -160,15 +149,13 @@ export default {
   'showcase.publishModal.validationDiagramType': 'Please select a diagram type',
   'showcase.publishModal.invalidFileType': 'Unsupported file type',
   'showcase.publishModal.invalidMgFile': 'Could not read this .mg file — export it from MindGraph first',
-  'showcase.publishModal.cannotPreview':
-    'Could not generate a cover preview — the case will still submit. Try PNG/JPG or pick a saved diagram.',
-  'showcase.publishModal.cannotPreviewHistory':
-    'Could not generate a cover from this saved diagram — the case will still submit. Re-pick it or re-save from the canvas.',
-  'showcase.publishModal.cannotPreviewTemplate':
-    'Could not generate a cover — the case will still submit. Check the .mg file or pick another saved diagram.',
+  'showcase.publishModal.cannotPreview': 'Could not generate a cover preview — the case will still submit. Try PNG/JPG or pick a saved diagram.',
+  'showcase.publishModal.cannotPreviewHistory': 'Could not generate a cover from this saved diagram — the case will still submit. Re-pick it or re-save from the canvas.',
+  'showcase.publishModal.cannotPreviewTemplate': 'Could not generate a cover — the case will still submit. Check the .mg file or pick another saved diagram.',
   'showcase.publishModal.historyTitle': 'Pick saved diagram',
   'showcase.publishModal.historySearch': 'Search diagram name…',
   'showcase.publishModal.historyEmpty': 'No saved diagrams',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': 'Thinking-skills classroom lesson design',
   'showcase.publishModal.typeDesc.diagramCase': 'Excellent diagrams and visualization in teaching',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Diagrams for reuse or adaptation',
@@ -194,11 +181,9 @@ export default {
   'showcase.detail.delist': 'Delist',
   'showcase.detail.resubmit': 'Edit and resubmit',
   'showcase.detail.withdrawTitle': 'Withdraw case',
-  'showcase.detail.withdrawConfirm':
-    'Withdraw "{title}"? It will be removed from the review queue and cannot be restored.',
+  'showcase.detail.withdrawConfirm': 'Withdraw "{title}"? It will be removed from the review queue and cannot be restored.',
   'showcase.detail.delistTitle': 'Delist case',
-  'showcase.detail.delistConfirm':
-    'Delist "{title}" from the gallery? Other users will no longer be able to view it.',
+  'showcase.detail.delistConfirm': 'Delist "{title}" from the gallery? Other users will no longer be able to view it.',
   'showcase.detail.confirm': 'Confirm',
   'showcase.detail.cancel': 'Cancel',
   'showcase.withdrawn': 'Withdrawn',
@@ -218,8 +203,7 @@ export default {
   'showcase.detail.pptxPreviewPending': 'Converting slides for preview…',
   'showcase.detail.docPreviewLoading': 'Loading document…',
   'showcase.detail.docPreviewFailed': 'Could not load preview. Try opening in a new tab.',
-  'showcase.detail.legacyDocHint':
-    'Legacy .doc files cannot be previewed inline. Open or download the file, or upload .docx for in-browser preview.',
+  'showcase.detail.legacyDocHint': 'Legacy .doc files cannot be previewed inline. Open or download the file, or upload .docx for in-browser preview.',
   'showcase.detail.noDocument': 'No document preview',
   'showcase.detail.noDiagramPreview': 'No diagram preview',
   'showcase.detail.diagramPreviewLoading': 'Loading diagram…',

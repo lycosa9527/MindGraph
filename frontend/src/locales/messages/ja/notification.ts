@@ -1,4 +1,6 @@
-/** ja UI — notification */
+/**
+ * ja UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'トピックまたは中心ノードはクリアできません',

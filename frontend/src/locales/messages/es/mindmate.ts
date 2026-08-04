@@ -1,4 +1,6 @@
-/** es UI — mindmate */
+/**
+ * es UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'Haga clic para activar etiquetas de relación con IA (multimodelo)',

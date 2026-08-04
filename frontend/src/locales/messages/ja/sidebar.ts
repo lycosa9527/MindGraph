@@ -1,4 +1,6 @@
-/** ja UI — sidebar */
+/**
+ * ja UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': '削除',

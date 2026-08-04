@@ -617,6 +617,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       const saved: SavedDiagramFull = await response.json()
       applyThinkingCoinMutation(extractThinkingCoinsFooter(saved as unknown as Record<string, unknown>))
 
+      // Warm detail cache so canvas can open the new row without a second GET.
+      diagramDetailCache.set(saved.id, saved)
+
       // Add to local list
       diagrams.value.unshift({
         id: saved.id,

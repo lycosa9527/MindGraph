@@ -1,4 +1,6 @@
-/** vi UI — admin */
+/**
+ * vi UI � admin
+ */
 
 export default {
   'admin.actions': 'hành động',
@@ -24,8 +26,7 @@ export default {
   'admin.confirm': 'Xác nhận',
   'admin.copyShareMessage': 'Sao chép',
   'admin.copyInvitationCode': 'Sao chép mã lời mời',
-  'admin.schoolInviteCopyPayload':
-    '{orgName}: Chào mừng bạn đến với nền tảng tác nhân AI giảng dạy và tư duy trí tuệ!\nĐược hướng dẫn bởi Trung tâm Đào tạo Tư duy BNU và được đồng xây dựng với hơn 100 trường liên minh phát triển tư duy - hãy tham gia cùng chúng tôi để phát triển kỹ năng tư duy trong kỷ nguyên AI.\nCách thực hiện: mở trên máy tính hoặc điện thoại; đăng ký bằng số điện thoại + mã thư mời lần đầu tiên, sau đó đăng nhập bằng xác minh SMS.\nURL: {siteUrl}\nMã mời tổ chức: {code}',
+  'admin.schoolInviteCopyPayload': '{orgName}: Chào mừng bạn đến với nền tảng tác nhân AI giảng dạy và tư duy trí tuệ!\nĐược hướng dẫn bởi Trung tâm Đào tạo Tư duy BNU và được đồng xây dựng với hơn 100 trường liên minh phát triển tư duy - hãy tham gia cùng chúng tôi để phát triển kỹ năng tư duy trong kỷ nguyên AI.\nCách thực hiện: mở trên máy tính hoặc điện thoại; đăng ký bằng số điện thoại + mã thư mời lần đầu tiên, sau đó đăng nhập bằng xác minh SMS.\nURL: {siteUrl}\nMã mời tổ chức: {code}',
   'admin.createApiKey': 'Tạo khóa API',
   'admin.createOrganization': 'Tạo tổ chức',
   'admin.createSchool': 'Tạo trường học',
@@ -35,16 +36,14 @@ export default {
   'admin.dashboardLoadError': 'Lỗi mạng, không tải được số liệu thống kê trên trang tổng quan',
   'admin.delete': 'Xóa bỏ',
   'admin.deleteOrgConfirm': 'Xóa tổ chức {name}? Điều này không thể hoàn tác được.',
-  'admin.deleteOrgConfirmWithUsers':
-    'Xóa tổ chức {name} và tất cả tài khoản người dùng {count}? Điều này không thể hoàn tác được.',
+  'admin.deleteOrgConfirmWithUsers': 'Xóa tổ chức {name} và tất cả tài khoản người dùng {count}? Điều này không thể hoàn tác được.',
   'admin.deleteOrganization': 'Xóa tổ chức',
   'admin.description': 'Sự miêu tả',
   'admin.diagramGeneration': 'Tạo sơ đồ',
   'admin.diagramTypes': 'Các loại sơ đồ',
   'admin.disabled': 'Tàn tật',
   'admin.displayNameLabel': 'Văn bản hiển thị thanh bên',
-  'admin.displayNameHint':
-    'Văn bản tùy chỉnh được hiển thị trong thanh bên của người dùng (ví dụ: MindGraph Pro). Để trống để sử dụng tên trường.',
+  'admin.displayNameHint': 'Văn bản tùy chỉnh được hiển thị trong thanh bên của người dùng (ví dụ: MindGraph Pro). Để trống để sử dụng tên trường.',
   'admin.editApiKey': 'Chỉnh sửa khóa API',
   'admin.editSchool': 'Chỉnh sửa trường học',
   'admin.enabled': 'Đã bật',
@@ -71,8 +70,7 @@ export default {
   'admin.feature.markets': 'Thị trường (danh mục và đơn đặt hàng)',
   'admin.feature.marketsHint': 'Mẫu/khóa học/SKU đăng ký, Alipay thanh toán và thông báo.',
   'admin.feature.mindbot': 'MindBot (DingTalk → Dify)',
-  'admin.feature.mindbotHint':
-    'Doanh nghiệp DingTalk robot HTTP gọi lại, Dify cho mỗi trường học và các bí mật. Yêu cầu URL gọi lại HTTPS.',
+  'admin.feature.mindbotHint': 'Doanh nghiệp DingTalk robot HTTP gọi lại, Dify cho mỗi trường học và các bí mật. Yêu cầu URL gọi lại HTTPS.',
   'admin.feature.mindmateExport': 'MindMate xuất cuộc hội thoại',
   'admin.feature.mindmateExportHint': 'Bảng Superadmin để xem và xuất lịch sử web MindMate và DingTalk MindBot Dify.',
   'admin.feature.ragChunkTest': 'Kiểm tra đoạn RAG',
@@ -82,19 +80,16 @@ export default {
   'admin.feature.teacherUsage': 'Phân tích sử dụng của giáo viên',
   'admin.feature.teacherUsageHint': 'Bảng điều khiển quản trị dành cho sự tham gia của giáo viên.',
   'admin.feature.kittyAgent': 'Kitty Agent (giọng nói và canvas)',
-  'admin.feature.kittyAgentHint':
-    'Đại lý đa phương thức thời gian thực Qwen-Omni; WebSocket và REST tôn trọng quy tắc truy cập của tổ chức/người dùng.',
+  'admin.feature.kittyAgentHint': 'Đại lý đa phương thức thời gian thực Qwen-Omni; WebSocket và REST tôn trọng quy tắc truy cập của tổ chức/người dùng.',
   'admin.feature.template': 'Tài nguyên mẫu',
   'admin.feature.templateHint': 'Thư viện mẫu và các API liên quan.',
   'admin.feature.workshopChat': 'Workshop (教研坊)',
   'admin.feature.workshopChatHint': 'Các kênh, chủ đề và tin nhắn trực tiếp của trường học.',
   'admin.feature.mindmateCollab': 'MindMate cộng tác',
-  'admin.feature.mindmateCollabHint':
-    'Phòng trò chuyện AI MindMate được chia sẻ (duyệt tổ chức + mã mời). Yêu cầu cấp độ online_collab.',
+  'admin.feature.mindmateCollabHint': 'Phòng trò chuyện AI MindMate được chia sẻ (duyệt tổ chức + mã mời). Yêu cầu cấp độ online_collab.',
   'admin.featureLoadFailed': 'Không thể tải cờ tính năng',
   'admin.featureSaveFailed': 'Không thể lưu cài đặt',
-  'admin.featuresIntro':
-    'Chuyển đổi cờ mô-đun. Các giá trị được ghi vào .env và được tải lại trên tất cả các nhân viên API để UI và API kiểm tra cập nhật mà không cần khởi động lại. Không gian Tri thức có thể vẫn cần Qdrant/Celery đã được bắt đầu trong quá trình này.',
+  'admin.featuresIntro': 'Chuyển đổi cờ mô-đun. Các giá trị được ghi vào .env và được tải lại trên tất cả các nhân viên API để UI và API kiểm tra cập nhật mà không cần khởi động lại. Không gian Tri thức có thể vẫn cần Qdrant/Celery đã được bắt đầu trong quá trình này.',
   'admin.featuresReloadFailed': 'Không thể áp dụng các thay đổi. Khởi động lại máy chủ.',
   'admin.featuresSave': 'Áp dụng',
   'admin.featuresSaved': 'Các thay đổi đã được áp dụng.',
@@ -102,21 +97,18 @@ export default {
   'admin.featureDevTab': 'Phát triển tính năng',
   'admin.newFeaturesTab': 'Tính năng mới',
   'admin.kittyLlmopsTab': 'Mèo con LLMOps',
-  'admin.featuresIntroAccess':
-    'Đối với Workshop, MindMate collab, MindBot, MindMate xuất và Kitty, hãy sử dụng Quyền để giới hạn tổ chức và người dùng sau khi mô-đun được bật. Danh sách cho phép được lưu trữ trong cơ sở dữ liệu và có hiệu lực ngay lập tức.',
+  'admin.featuresIntroAccess': 'Đối với Workshop, MindMate collab, MindBot, MindMate xuất và Kitty, hãy sử dụng Quyền để giới hạn tổ chức và người dùng sau khi mô-đun được bật. Danh sách cho phép được lưu trữ trong cơ sở dữ liệu và có hiệu lực ngay lập tức.',
   'admin.featurePermissionsApply': 'Lưu quyền',
   'admin.featurePermissionsApplied': 'Đã lưu quyền đối với tính năng.',
   'admin.featurePermissionsButton': 'Quyền',
   'admin.featurePermissionsOrgs': 'Tổ chức',
   'admin.featurePermissionsOrgsPlaceholder': 'Chọn trường có thể sử dụng tính năng này',
   'admin.featurePermissionsRestrict': 'Hạn chế quyền truy cập',
-  'admin.featurePermissionsRestrictHint':
-    'Khi bật, chỉ các tổ chức và người dùng được liệt kê (cộng với quản trị viên và người quản lý) mới có thể sử dụng tính năng này trong khi tính năng này vẫn được bật trên toàn cầu.',
+  'admin.featurePermissionsRestrictHint': 'Khi bật, chỉ các tổ chức và người dùng được liệt kê (cộng với quản trị viên và người quản lý) mới có thể sử dụng tính năng này trong khi tính năng này vẫn được bật trên toàn cầu.',
   'admin.featurePermissionsRestrictedBadge': 'Hạn chế',
   'admin.featurePermissionsSaveFailed': 'Không thể lưu quyền đối với tính năng',
   'admin.featurePermissionsUserIds': 'ID người dùng (tùy chọn)',
-  'admin.featurePermissionsUserIdsHint':
-    'ID người dùng dạng số được phân tách bằng dấu phẩy cho các trường hợp ngoại lệ (ví dụ: tài khoản thí điểm).',
+  'admin.featurePermissionsUserIdsHint': 'ID người dùng dạng số được phân tách bằng dấu phẩy cho các trường hợp ngoại lệ (ví dụ: tài khoản thí điểm).',
   'admin.featurePermissionsUserIdsPlaceholder': 'ví dụ. 12, 34, 56',
   'admin.expirationDate': 'Ngày hết hạn',
   'admin.expirationDateHint': 'Tổ chức sẽ bị khóa sau ngày này. Để trống không có giới hạn.',
@@ -162,12 +154,10 @@ export default {
   'admin.mindbot': '__ GIỮ0__',
   'admin.mindbot.title': 'DingTalk robot & Dify (mỗi trường)',
   'admin.mindbot.dialogHeaderNote': 'DingTalk robot [{name}]',
-  'admin.mindbot.introHttpOnly':
-    'HTTP chế độ nhận: một URL gọi lại cho mỗi trường (hiển thị khi bạn chỉnh sửa). DingTalk ứng dụng bí mật ký các yêu cầu gửi đến; Dify cho phép trả lời.',
+  'admin.mindbot.introHttpOnly': 'HTTP chế độ nhận: một URL gọi lại cho mỗi trường (hiển thị khi bạn chỉnh sửa). DingTalk ứng dụng bí mật ký các yêu cầu gửi đến; Dify cho phép trả lời.',
   'admin.mindbot.emptyState': 'Chưa có trường nào được định cấu hình MindBot.',
   'admin.mindbot.managerIntro': 'Định cấu hình robot DingTalk HTTP và Dify cho tổ chức của bạn.',
-  'admin.mindbot.managerReadOnlyIntro':
-    'Cấu hình MindBot của trường bạn được hiển thị bên dưới (chỉ đọc). Hãy liên hệ với quản trị viên nền tảng để thực hiện thay đổi.',
+  'admin.mindbot.managerReadOnlyIntro': 'Cấu hình MindBot của trường bạn được hiển thị bên dưới (chỉ đọc). Hãy liên hệ với quản trị viên nền tảng để thực hiện thay đổi.',
   'admin.mindbot.managerNoConfig': 'Chưa có cấu hình MindBot nào được thiết lập cho trường học của bạn.',
   'admin.mindbot.sectionDingTalk': '__ GIỮ0__',
   'admin.mindbot.sectionDify': '__ GIỮ0__',
@@ -181,8 +171,7 @@ export default {
   'admin.mindbot.edit': 'Biên tập',
   'admin.mindbot.move': 'Di chuyển',
   'admin.mindbot.moveTitle': 'Di chuyển bot sang tổ chức khác',
-  'admin.mindbot.moveIntro':
-    'Chỉ định cấu hình bot DingTalk này cho một trường khác. Mã thông báo URL gọi lại không thay đổi.',
+  'admin.mindbot.moveIntro': 'Chỉ định cấu hình bot DingTalk này cho một trường khác. Mã thông báo URL gọi lại không thay đổi.',
   'admin.mindbot.moveTarget': 'Tổ chức điểm đến',
   'admin.mindbot.moveSuccess': 'Bot đã di chuyển đến tổ chức đã chọn.',
   'admin.mindbot.moveError': 'Không thể di chuyển bot. Điểm đến có thể đầy đủ hoặc không hợp lệ.',
@@ -202,22 +191,19 @@ export default {
   'admin.mindbot.deleteConfirm': 'Xóa cấu hình MindBot cho tổ chức này?',
   'admin.mindbot.orgSelect': 'Trường học',
   'admin.mindbot.dingtalkRobotCode': '__ GIỮ0__',
-  'admin.mindbot.dingtalkRobotCodeHint':
-    'Từ bảng điều khiển dành cho nhà phát triển DingTalk; được sử dụng cho các cuộc gọi đi API (gửi phản hồi). Tin nhắn gửi đến được xác định bằng đường dẫn URL gọi lại của trường này chứ không phải bằng cách khớp giá trị này với webhook JSON.',
+  'admin.mindbot.dingtalkRobotCodeHint': 'Từ bảng điều khiển dành cho nhà phát triển DingTalk; được sử dụng cho các cuộc gọi đi API (gửi phản hồi). Tin nhắn gửi đến được xác định bằng đường dẫn URL gọi lại của trường này chứ không phải bằng cách khớp giá trị này với webhook JSON.',
   'admin.mindbot.dingtalkAppSecret': '__ GIỮ0__',
   'admin.mindbot.dingtalkAppSecretHint': 'Bắt buộc khi thêm trường học.',
   'admin.mindbot.dingtalkAppSecretMaskedHint': 'Được lưu trữ bí mật với mặt nạ ở giữa. Sử dụng Thay thế để nhập Client Secret mới.',
   'admin.mindbot.dingtalkAppSecretReplaceHint': 'Nhập Client Secret mới hoặc để trống và lưu để giữ giá trị hiện tại.',
   'admin.mindbot.dingtalkClientId': '__ GIỮ0__',
   'admin.mindbot.dingtalkClientIdPlaceholder': 'Khóa ứng dụng Open platform (cặp với Client Secret)',
-  'admin.mindbot.dingtalkClientIdHint':
-    'Được sử dụng với Client Secret để nhận mã thông báo truy cập cho thẻ AI và OpenAPI khác. Lưu cả hai; bắt buộc đối với “Quyền kiểm tra” và thẻ AI.',
+  'admin.mindbot.dingtalkClientIdHint': 'Được sử dụng với Client Secret để nhận mã thông báo truy cập cho thẻ AI và OpenAPI khác. Lưu cả hai; bắt buộc đối với “Quyền kiểm tra” và thẻ AI.',
   'admin.mindbot.difyShowChainOfThought': 'Hiển thị chuỗi suy nghĩ',
   'admin.mindbot.dingtalkAiCardStreamingMaxChars': 'DingTalk AI card phát trực tuyến tối đa ký tự',
   'admin.mindbot.dingtalkAiCardTemplateId': 'Mẫu AI card (tùy chọn)',
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder': 'Trống = trả lời bằng văn bản; ví dụ. d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
-  'admin.mindbot.dingtalkAiCardTemplateIdHint':
-    'Mẫu được xuất bản từ nền tảng thẻ DingTalk. Cần Client ID và quyền truy cập thẻ (Card.Instance.Write và Card.Streaming.Write).',
+  'admin.mindbot.dingtalkAiCardTemplateIdHint': 'Mẫu được xuất bản từ nền tảng thẻ DingTalk. Cần Client ID và quyền truy cập thẻ (Card.Instance.Write và Card.Streaming.Write).',
   'admin.mindbot.dingtalkAiCardStreamCheck': 'Quyền kiểm tra',
   'admin.mindbot.dingtalkAiCardStreamOk': 'OAuth và quyền truy cập thẻ phát trực tuyến OK',
   'admin.mindbot.dingtalkAiCardStreamFail': 'Kiểm tra không thành công',
@@ -233,12 +219,10 @@ export default {
   'admin.mindbot.difyApiKeyReplaceHint': 'Nhập khóa API mới hoặc để trống và lưu để giữ khóa hiện tại.',
   'admin.mindbot.replaceSecret': 'Thay thế',
   'admin.mindbot.difyTimeout': 'Dify thời gian chờ (giây)',
-  'admin.mindbot.difyInputsJsonHint':
-    'Nếu ứng dụng Dify của bạn xác định các biến đầu vào, hãy đặt đối tượng JSON tại đây (ví dụ: \'{\'"grade":"7"\'}\').',
+  'admin.mindbot.difyInputsJsonHint': 'Nếu ứng dụng Dify của bạn xác định các biến đầu vào, hãy đặt đối tượng JSON tại đây (ví dụ: \'{\'"grade":"7"\'}\').',
   'admin.mindbot.enabled': 'Kích hoạt MindBot',
   'admin.mindbot.schoolCallbackUrl': 'DingTalk HTTP URL gọi lại (trường này)',
-  'admin.mindbot.schoolCallbackUrlHint':
-    'Dán URL này vào trường gọi lại robot DingTalk HTTP. Giữ bí mật—bất kỳ ai có liên kết đều có thể gửi lưu lượng truy cập đến webhook của bạn.',
+  'admin.mindbot.schoolCallbackUrlHint': 'Dán URL này vào trường gọi lại robot DingTalk HTTP. Giữ bí mật—bất kỳ ai có liên kết đều có thể gửi lưu lượng truy cập đến webhook của bạn.',
   'admin.mindbot.callbackUrlAfterSave': 'Lưu một lần để tạo và hiển thị URL gọi lại của trường này.',
   'admin.mindbot.openSettings': 'MindBot cài đặt',
   'admin.mindbot.copyUrl': 'Sao chép',
@@ -251,13 +235,10 @@ export default {
   'admin.mindbot.managerNoOrg': 'Tài khoản của bạn chưa được chỉ định tổ chức.',
   'admin.mindbot.tabDingtalk': 'DingTalk API xác thực',
   'admin.oauth.sectionTitle': 'QR đăng nhập',
-  'admin.oauth.intro':
-    'Cho phép đăng nhập WeChat hoặc DingTalk QR cho trường này. WeChat AppID/Bí mật nằm trong máy chủ .env; DingTalk yêu cầu thông tin xác thực về CNTT của trường.',
-  'admin.oauth.officialDocsHint':
-    'Phù hợp với các tài liệu chính thức: WeChat WxLogin + trao đổi mã; DingTalk OAuth 2.0 DTFrameLogin + trao đổi authCode ngay lập tức (không phải oapi.dingtalk.com kế thừa).',
+  'admin.oauth.intro': 'Cho phép đăng nhập WeChat hoặc DingTalk QR cho trường này. WeChat AppID/Bí mật nằm trong máy chủ .env; DingTalk yêu cầu thông tin xác thực về CNTT của trường.',
+  'admin.oauth.officialDocsHint': 'Phù hợp với các tài liệu chính thức: WeChat WxLogin + trao đổi mã; DingTalk OAuth 2.0 DTFrameLogin + trao đổi authCode ngay lập tức (không phải oapi.dingtalk.com kế thừa).',
   'admin.oauth.wechatToggle': 'Cho phép đăng nhập WeChat QR',
-  'admin.oauth.wechatHint':
-    'Trước tiên, giáo viên phải liên kết WeChat trong phần Liên kết tài khoản. Nền tảng AppID/Bí mật được đặt trong máy chủ .env.',
+  'admin.oauth.wechatHint': 'Trước tiên, giáo viên phải liên kết WeChat trong phần Liên kết tài khoản. Nền tảng AppID/Bí mật được đặt trong máy chủ .env.',
   'admin.oauth.dingtalkToggle': 'Cho phép đăng nhập DingTalk QR',
   'admin.oauth.dingtalkAppKey': '__ GIỮ0__ __ GIỮ1__ (__ GIỮ2__)',
   'admin.oauth.dingtalkAppSecret': '__ GIỮ0__ __ GIỮ1__',
@@ -271,19 +252,16 @@ export default {
   'admin.oauth.wechatCallback': '__ GIỮ0__',
   'admin.oauth.dingtalkCallback': '__ GIỮ0__',
   'admin.oauth.schoolItChecklistTitle': 'DingTalk Danh sách kiểm tra CNTT',
-  'admin.oauth.schoolItChecklist':
-    'DingTalk Danh sách kiểm tra CNTT:\n1. Kích hoạt trang web của bên thứ ba / đăng nhập QR\n2. Đặt URL gọi lại DingTalk ở trên trong bảng điều khiển DingTalk (khớp chính xác)\n3. Phạm vi yêu cầu: permission-open_app_api_base, Contact.User.Read\n4. Cung cấp AppKey, AppSecret, tùy chọn CorpId cho quản trị viên MindGraph',
+  'admin.oauth.schoolItChecklist': 'DingTalk Danh sách kiểm tra CNTT:\n1. Kích hoạt trang web của bên thứ ba / đăng nhập QR\n2. Đặt URL gọi lại DingTalk ở trên trong bảng điều khiển DingTalk (khớp chính xác)\n3. Phạm vi yêu cầu: permission-open_app_api_base, Contact.User.Read\n4. Cung cấp AppKey, AppSecret, tùy chọn CorpId cho quản trị viên MindGraph',
   'admin.oauth.loadError': 'Không thể tải cài đặt đăng nhập QR',
   'admin.oauth.saveSuccess': 'QR đã lưu cài đặt đăng nhập',
   'admin.oauth.saveError': 'Không thể lưu. Vui lòng thử lại.',
   'admin.mindbot.tabDify': 'Dify API xác thực',
-  'admin.mindbot.standaloneDifySchoolHint':
-    'Đối với hầu hết các trường học, hãy đặt Dify trên phương thức chỉnh sửa trường học dưới MindMate auth. Việc lưu trường sẽ sao chép các cài đặt đó vào tất cả các bot. Per-bot Dify ở đây chỉ dành cho những trường hợp đặc biệt và có thể bị ghi đè khi trường được lưu.',
+  'admin.mindbot.standaloneDifySchoolHint': 'Đối với hầu hết các trường học, hãy đặt Dify trên phương thức chỉnh sửa trường học dưới MindMate auth. Việc lưu trường sẽ sao chép các cài đặt đó vào tất cả các bot. Per-bot Dify ở đây chỉ dành cho những trường hợp đặc biệt và có thể bị ghi đè khi trường được lưu.',
   'admin.mindbot.tabLog': 'Nhật ký',
   'admin.mindbot.tabMonitor': 'Màn hình',
   'admin.mindbot.refreshCallbackUrl': 'Làm mới URL',
-  'admin.mindbot.rotateConfirm':
-    'Tạo URL gọi lại mới? URL cũ sẽ ngừng hoạt động cho đến khi bạn cập nhật nó trong DingTalk.',
+  'admin.mindbot.rotateConfirm': 'Tạo URL gọi lại mới? URL cũ sẽ ngừng hoạt động cho đến khi bạn cập nhật nó trong DingTalk.',
   'admin.mindbot.callbackRotated': 'Đã cập nhật URL gọi lại. Cập nhật DingTalk bằng URL mới.',
   'admin.mindbot.usageNeedSave': 'Lưu cấu hình một lần để bật URL gọi lại, nhật ký và giám sát.',
   'admin.mindbot.usageEmpty': 'Chưa có sự kiện sử dụng nào.',
@@ -306,12 +284,9 @@ export default {
   'admin.mindbot.exportEmpty': 'Không có gì để xuất cho bộ lọc hiện tại.',
   'admin.mindbot.exportError': 'Xuất không thành công. Hãy thử lại.',
   'admin.mindbot.exportSuccess': 'Xuất đã tải xuống.',
-  'admin.mindbot.exportDisclaimer':
-    'MindBot siêu dữ liệu sử dụng cho nghiên cứu giáo dục. Nội dung thư không được lưu trữ; các hàng chỉ là phép đo từ xa.',
-  'admin.mindbot.logTabHint':
-    'Dòng sử dụng thô cho trường này (mới nhất trước). Nhấp vào một dòng để xem siêu dữ liệu đầy đủ. Nội dung tin nhắn không được lưu trữ.',
-  'admin.mindbot.monitorTabHint':
-    'Các cuộc trò chuyện được nhóm từ trang đã tải. Bấm vào một hàng để mở chủ đề; bấm vào một lượt để biết chi tiết.',
+  'admin.mindbot.exportDisclaimer': 'MindBot siêu dữ liệu sử dụng cho nghiên cứu giáo dục. Nội dung thư không được lưu trữ; các hàng chỉ là phép đo từ xa.',
+  'admin.mindbot.logTabHint': 'Dòng sử dụng thô cho trường này (mới nhất trước). Nhấp vào một dòng để xem siêu dữ liệu đầy đủ. Nội dung tin nhắn không được lưu trữ.',
+  'admin.mindbot.monitorTabHint': 'Các cuộc trò chuyện được nhóm từ trang đã tải. Bấm vào một hàng để mở chủ đề; bấm vào một lượt để biết chi tiết.',
   'admin.mindbot.colConvThread': 'Cuộc hội thoại',
   'admin.mindbot.colTurnsLoaded': 'Lần lượt (trang)',
   'admin.mindbot.convNoThreadId': '(không có id chủ đề)',
@@ -320,8 +295,7 @@ export default {
   'admin.mindbot.threadEmpty': 'Không tìm thấy sự kiện chủ đề nào.',
   'admin.mindbot.threadLoadMore': 'Tải lượt cũ hơn',
   'admin.mindbot.usageEventDetailTitle': 'Sự kiện sử dụng',
-  'admin.mindbot.usageEventDetailPrivacy':
-    'Vì lý do bảo mật, lời nhắc của người dùng và câu trả lời của bot không được lưu trữ—chỉ có siêu dữ liệu bên dưới.',
+  'admin.mindbot.usageEventDetailPrivacy': 'Vì lý do bảo mật, lời nhắc của người dùng và câu trả lời của bot không được lưu trữ—chỉ có siêu dữ liệu bên dưới.',
   'admin.mindbot.detailId': 'Id sự kiện',
   'admin.mindbot.detailStreaming': 'Truyền phát',
   'admin.mindbot.detailYes': 'Đúng',
@@ -341,12 +315,10 @@ export default {
   'admin.library.colVisible': 'Dễ thấy',
   'admin.library.deleteBook': 'Xóa sách',
   'admin.library.deleteBookConfirm': 'Có, xóa mọi thứ',
-  'admin.library.deleteBookConfirmMsg':
-    'Xóa vĩnh viễn tất cả hình ảnh trang {count} khỏi đĩa VÀ bản ghi cơ sở dữ liệu cho "{name}"? Điều này không thể hoàn tác được.',
+  'admin.library.deleteBookConfirmMsg': 'Xóa vĩnh viễn tất cả hình ảnh trang {count} khỏi đĩa VÀ bản ghi cơ sở dữ liệu cho "{name}"? Điều này không thể hoàn tác được.',
   'admin.library.deleteBookSuccess': 'Đã xóa sách',
   'admin.library.deleteBookTitle': 'Xóa sách',
-  'admin.library.deleteConfirmMsg':
-    'Xóa vĩnh viễn bản ghi cơ sở dữ liệu cho "{name}"? Hình ảnh trang trên đĩa không bị ảnh hưởng.',
+  'admin.library.deleteConfirmMsg': 'Xóa vĩnh viễn bản ghi cơ sở dữ liệu cho "{name}"? Hình ảnh trang trên đĩa không bị ảnh hưởng.',
   'admin.library.deleteConfirmTitle': 'Xóa bản ghi tài liệu',
   'admin.library.deleteError': 'Không thể xóa',
   'admin.library.deleteRecord': 'Xóa bản ghi',
@@ -438,8 +410,7 @@ export default {
   'admin.dingtalkCardClickToEditApiKeys': 'Nhấp để chỉnh sửa các phím API',
   'admin.dingtalkApiKeysDialogTitle': 'Hình ảnh DingTalk — tích hợp các phím API',
   'admin.dingtalkApiKeysDialogNote': 'X-API-Key · generate_dingtalk & URL hình ảnh tạm thời',
-  'admin.dingtalkApiKeysDialogIntro':
-    'Sử dụng tiêu đề X-API-Key. Các khóa này xác thực các lệnh gọi API công khai, chẳng hạn như tạo sơ đồ PNG cho DingTalk. Phản hồi được đánh dấu bằng URL hình ảnh có giới hạn thời gian; tìm nạp hình ảnh chỉ cần liên kết đã ký chứ không cần khóa này.',
+  'admin.dingtalkApiKeysDialogIntro': 'Sử dụng tiêu đề X-API-Key. Các khóa này xác thực các lệnh gọi API công khai, chẳng hạn như tạo sơ đồ PNG cho DingTalk. Phản hồi được đánh dấu bằng URL hình ảnh có giới hạn thời gian; tìm nạp hình ảnh chỉ cần liên kết đã ký chứ không cần khóa này.',
   'admin.apiKeysTableStats': 'Mã thông báo (mọi lúc)',
   'admin.apiKeysRequestCount': 'Yêu cầu',
   'admin.apiKeysTableQuota': 'hạn ngạch',
@@ -454,8 +425,7 @@ export default {
   'admin.apiKeysExpiresDays': 'Hết hạn sau (ngày)',
   'admin.apiKeysExpiresDaysHint': 'Không bắt buộc; để trống để không hết hạn kể từ thời điểm tạo',
   'admin.apiKeysCreatedSecretTitle': 'Lưu khóa mới của bạn',
-  'admin.apiKeysCreatedSecretBody':
-    'Sao chép khóa vào phần tích hợp của bạn (Dify, lệnh gọi lại hoặc tập lệnh) làm tiêu đề X-API-Key. Bạn cũng có thể sao chép nó từ danh sách bất cứ lúc nào.',
+  'admin.apiKeysCreatedSecretBody': 'Sao chép khóa vào phần tích hợp của bạn (Dify, lệnh gọi lại hoặc tập lệnh) làm tiêu đề X-API-Key. Bạn cũng có thể sao chép nó từ danh sách bất cứ lúc nào.',
   'admin.apiKeysDisable': 'Vô hiệu hóa',
   'admin.apiKeysEnable': 'Cho phép',
   'admin.apiKeysNameRequired': 'Tên là bắt buộc',
@@ -467,20 +437,17 @@ export default {
   'admin.performance.tab': 'Hiệu suất',
   'admin.publicDashboard.tab': 'Trung tâm dữ liệu quốc gia',
   'admin.publicDashboard.title': '__ GIỮ0__',
-  'admin.publicDashboard.subtitle':
-    'Super-admin Bảng điều khiển bản đồ Trung Quốc với người dùng, mã thông báo và hoạt động trực tuyến trực tuyến.',
+  'admin.publicDashboard.subtitle': 'Super-admin Bảng điều khiển bản đồ Trung Quốc với người dùng, mã thông báo và hoạt động trực tuyến trực tuyến.',
   'admin.publicDashboard.backToAdmin': 'Quay lại quản trị viên',
   'admin.publicDashboard.accessDeniedTitle': '__chỉ GIỮ0__',
-  'admin.publicDashboard.accessDeniedHint':
-    'Chỉ quản trị viên cấp cao của nền tảng mới có thể mở tab cài đặt trung tâm dữ liệu quốc gia.',
+  'admin.publicDashboard.accessDeniedHint': 'Chỉ quản trị viên cấp cao của nền tảng mới có thể mở tab cài đặt trung tâm dữ liệu quốc gia.',
   'admin.errors.tab': 'Thu thập lỗi',
   'admin.errors.groupOverview': 'Tổng quan',
   'admin.errors.groupBreakdown': 'sự cố 24h',
   'admin.errors.groupFeed': 'Nguồn cấp dữ liệu sự kiện',
   'admin.errors.bySeverity24h': 'Theo mức độ nghiêm trọng',
   'admin.errors.bySource24h': 'Theo nguồn',
-  'admin.errors.feedHint':
-    'Dòng nhật ký đơn cách · nhấp để xem chi tiết · tắt tiếng cảnh báo trên mỗi dấu vân tay trong chế độ xem nhóm',
+  'admin.errors.feedHint': 'Dòng nhật ký đơn cách · nhấp để xem chi tiết · tắt tiếng cảnh báo trên mỗi dấu vân tay trong chế độ xem nhóm',
   'admin.errors.viewEvents': 'Sự kiện',
   'admin.errors.viewGroups': 'Nhóm',
   'admin.errors.viewMode': 'Xem',
@@ -523,11 +490,9 @@ export default {
   'admin.errors.unmuteSuccess': 'Đã khôi phục cảnh báo cho dấu vân tay này',
   'admin.errors.muteError': 'Không cập nhật được trạng thái tắt tiếng',
   'admin.errors.copyAll': 'Sao chép tất cả',
-  'admin.errors.copyAllHint':
-    'Sao chép đầy đủ chi tiết lỗi (đường dẫn, thông báo, dấu vết ngăn xếp, thẻ) cho các bộ lọc hiện tại',
+  'admin.errors.copyAllHint': 'Sao chép đầy đủ chi tiết lỗi (đường dẫn, thông báo, dấu vết ngăn xếp, thẻ) cho các bộ lọc hiện tại',
   'admin.errors.copyAllSuccess': 'Đã sao chép lỗi {count} vào bảng nhớ tạm',
-  'admin.errors.copyAllSuccessTruncated':
-    'Đã sao chép {count} trong số {total} lỗi (giới hạn {limit}); tinh chỉnh bộ lọc cho phần còn lại',
+  'admin.errors.copyAllSuccessTruncated': 'Đã sao chép {count} trong số {total} lỗi (giới hạn {limit}); tinh chỉnh bộ lọc cho phần còn lại',
   'admin.errors.copyAllPartial': 'Đã sao chép với {failed} dấu vết bị thiếu; các trường danh sách vẫn được bao gồm',
   'admin.errors.copyAllEmpty': 'Không có gì để sao chép',
   'admin.errors.copyAllError': 'Không thể sao chép lỗi',
@@ -552,33 +517,27 @@ export default {
   'admin.performance.convStreaming': 'Truyền phát',
   'admin.performance.convSending': 'Chặn gửi',
   'admin.performance.convReceiving': 'Truyền phát WS (trong nước)',
-  'admin.performance.hintMindbotConv':
-    'Tổng cụm. Đang phát trực tuyến = Dify SSE đang phát trực tiếp thẻ; chặn gửi = một lần Dify + trả lời; nhận = DingTalk Luồng SDK WebSocket tác vụ đang chạy (mỗi khóa ứng dụng).',
+  'admin.performance.hintMindbotConv': 'Tổng cụm. Đang phát trực tuyến = Dify SSE đang phát trực tiếp thẻ; chặn gửi = một lần Dify + trả lời; nhận = DingTalk Luồng SDK WebSocket tác vụ đang chạy (mỗi khóa ứng dụng).',
   'admin.performance.mindbotConcurrencyUnavailable': 'Không có số lượng quy trình Dify ({reason}).',
   'admin.performance.dingtalkStreamUnavailable': 'DingTalk Số liệu ứng dụng khách phát trực tuyến không có sẵn ({reason}).',
   'admin.performance.mindbotModuleCumulative': 'Tích lũy (cơ sở dữ liệu)',
   'admin.performance.mindbotSchools': 'Trường học có bot',
   'admin.performance.mindbotRepliesOk': 'Đã gửi câu trả lời (OK, tổng cộng)',
   'admin.performance.mindbotModuleStatsError': 'Không thể tải số liệu thống kê mô-đun ({reason}).',
-  'admin.performance.hintMindbotModule':
-    'Các tổ chức riêng biệt có ít nhất một cấu hình MindBot; câu trả lời = các hàng sử dụng có error_code MINDBOT_OK (mọi lúc).',
+  'admin.performance.hintMindbotModule': 'Các tổ chức riêng biệt có ít nhất một cấu hình MindBot; câu trả lời = các hàng sử dụng có error_code MINDBOT_OK (mọi lúc).',
   'admin.performance.mindbotPeaks24hSection': 'Nước dâng cao (24h, cụm)',
   'admin.performance.peakStreaming24h': 'Đang phát trực tuyến (cao 24h)',
   'admin.performance.peakBlocking24h': 'Chặn (cao 24h)',
   'admin.performance.peakWs24h': 'Truyền phát WS (cao 24h)',
   'admin.performance.mindbotPeaks24hError': 'Không có số liệu thống kê cao nhất trong 24 giờ ({reason}).',
-  'admin.performance.hintMindbotPeaks24h':
-    'Max quan sát mỗi UTC giờ trong Redis, sau đó là lớn nhất trong 24 giờ qua. Sử dụng với giới hạn MINDBOT_MAX_ACTIVE_STREAMING / mỗi tổ chức để xem khoảng trống. Yêu cầu Redis.',
+  'admin.performance.hintMindbotPeaks24h': 'Max quan sát mỗi UTC giờ trong Redis, sau đó là lớn nhất trong 24 giờ qua. Sử dụng với giới hạn MINDBOT_MAX_ACTIVE_STREAMING / mỗi tổ chức để xem khoảng trống. Yêu cầu Redis.',
   'admin.performance.sectionPools': 'Nhóm kết nối cơ sở dữ liệu',
   'admin.performance.sectionServices': 'Dịch vụ được quản lý',
   'admin.performance.sectionLlm': 'Trình theo dõi LLM (cụm)',
-  'admin.performance.hintProcessCpuSingle':
-    'CPU quy trình của công nhân này % (psutil). Với nhiều công nhân, tổng số tiền trên mỗi công nhân là % (có thể vượt quá 100%).',
+  'admin.performance.hintProcessCpuSingle': 'CPU quy trình của công nhân này % (psutil). Với nhiều công nhân, tổng số tiền trên mỗi công nhân là % (có thể vượt quá 100%).',
   'admin.performance.hintNetwork': 'KB/s ước tính từ bộ đếm giao diện trên máy chủ này.',
-  'admin.performance.hintConnections':
-    'Số lượng WebSocket trò chuyện/workshop được tổng hợp giữa các công nhân; tổng số hoạt động sử dụng Redis khi có sẵn.',
-  'admin.performance.hintRedis':
-    'Bộ nhớ đã sử dụng và đỉnh cao trong phụ đề; thanh hiển thị tỷ lệ phân mảnh (được chia tỷ lệ để hiển thị).',
+  'admin.performance.hintConnections': 'Số lượng WebSocket trò chuyện/workshop được tổng hợp giữa các công nhân; tổng số hoạt động sử dụng Redis khi có sẵn.',
+  'admin.performance.hintRedis': 'Bộ nhớ đã sử dụng và đỉnh cao trong phụ đề; thanh hiển thị tỷ lệ phân mảnh (được chia tỷ lệ để hiển thị).',
   'admin.performance.diskHint': '{mount} · đã sử dụng {used} · miễn phí {free} · tổng cộng {total}',
   'admin.performance.version': 'Ứng dụng {version}',
   'admin.performance.uptimeSec': 'Thời gian hoạt động {sec}s',
@@ -668,17 +627,12 @@ export default {
   'admin.revokeRole': 'Xóa vai trò',
   'admin.revokeRoleConfirm': 'Xóa vai trò khỏi',
   'admin.roleControl': 'Kiểm soát vai trò',
-  'admin.roleControlDesc':
-    'Quản lý quyền truy cập superadmin. Người dùng có vai trò này có thể truy cập vào bảng quản lý đầy đủ.',
-  'admin.roleControlDescPlatformBd':
-    'Quản lý quyền truy cập của nhà nghiên cứu giảng dạy. Các nhà nghiên cứu giảng dạy có thể xem dữ liệu toàn cầu và quản lý lời mời của trường.',
-  'admin.roleControlDescExpert':
-    'Quản lý quyền truy cập của chuyên gia. Các chuyên gia có thể tạo trường học và quản lý các tổ chức trong phạm vi được mời của họ.',
-  'admin.roleControlDescManagers':
-    'Quản lý quản trị viên trường học. Họ có thể truy cập bảng thông tin trường học cho tổ chức của mình. Người dùng phải thuộc về một trường học trước khi được cấp vai trò này.',
+  'admin.roleControlDesc': 'Quản lý quyền truy cập superadmin. Người dùng có vai trò này có thể truy cập vào bảng quản lý đầy đủ.',
+  'admin.roleControlDescPlatformBd': 'Quản lý quyền truy cập của nhà nghiên cứu giảng dạy. Các nhà nghiên cứu giảng dạy có thể xem dữ liệu toàn cầu và quản lý lời mời của trường.',
+  'admin.roleControlDescExpert': 'Quản lý quyền truy cập của chuyên gia. Các chuyên gia có thể tạo trường học và quản lý các tổ chức trong phạm vi được mời của họ.',
+  'admin.roleControlDescManagers': 'Quản lý quản trị viên trường học. Họ có thể truy cập bảng thông tin trường học cho tổ chức của mình. Người dùng phải thuộc về một trường học trước khi được cấp vai trò này.',
   'admin.roleAssignmentTab': 'Phân công vai trò',
-  'admin.roleAssignmentDesc':
-    'Chỉ định một trong bảy vai trò cho người dùng. Các vai trò nền tảng, B2B và C2C có các quyền khác nhau.',
+  'admin.roleAssignmentDesc': 'Chỉ định một trong bảy vai trò cho người dùng. Các vai trò nền tảng, B2B và C2C có các quyền khác nhau.',
   'admin.roleTierPlatform': 'Nền tảng',
   'admin.roleTierB2B': 'Tổ chức B2B',
   'admin.roleTierC2C': 'C2C cá nhân',
@@ -694,8 +648,7 @@ export default {
   'admin.schoolCodeRequired': 'Không thể tạo mã trường từ tên. Vui lòng nhập mã.',
   'admin.schoolDashboard': 'Bảng thông tin trường học',
   'admin.schoolDashboardNoOrg': 'Bạn phải thuộc về một trường học để xem bảng điều khiển.',
-  'admin.usersTabSchoolDashboardHint':
-    'Các thành viên của trường được quản lý từ Bảng điều khiển của trường. Mở nó để thêm hoặc chỉnh sửa người dùng trong tổ chức của bạn.',
+  'admin.usersTabSchoolDashboardHint': 'Các thành viên của trường được quản lý từ Bảng điều khiển của trường. Mở nó để thêm hoặc chỉnh sửa người dùng trong tổ chức của bạn.',
   'admin.memberSeats': 'Ghế thành viên',
   'admin.managerSeats': 'Ghế quản trị',
   'admin.resourceSpace': 'Không gian tài nguyên',
@@ -734,12 +687,9 @@ export default {
   'admin.schoolAddMemberType': 'Kiểu',
   'admin.schoolAddMemberBatchTitle': 'Nhập hàng loạt',
   'admin.schoolAddMemberBatchHint': 'Sao chép các hàng từ Excel, WPS hoặc Word, sau đó nhấp vào đây và dán (Ctrl+V).',
-  'admin.schoolAddMemberBatchPastePlaceholder':
-    'Dán các hàng bảng tính vào đây — số điện thoại di động/email và tên vào hai cột; một trong hai lệnh đều hoạt động',
-  'admin.schoolAddMemberBatchPasteHint':
-    'Mẹo: chọn các hàng trong Excel/WPS/Word, sao chép rồi dán vào đây; số điện thoại di động và email được phát hiện tự động.',
-  'admin.schoolAddMemberBatchInvalidPaste':
-    'Không thể đọc các hàng đã dán. Sử dụng hai cột: số điện thoại di động hoặc email và tên (thứ tự).',
+  'admin.schoolAddMemberBatchPastePlaceholder': 'Dán các hàng bảng tính vào đây — số điện thoại di động/email và tên vào hai cột; một trong hai lệnh đều hoạt động',
+  'admin.schoolAddMemberBatchPasteHint': 'Mẹo: chọn các hàng trong Excel/WPS/Word, sao chép rồi dán vào đây; số điện thoại di động và email được phát hiện tự động.',
+  'admin.schoolAddMemberBatchInvalidPaste': 'Không thể đọc các hàng đã dán. Sử dụng hai cột: số điện thoại di động hoặc email và tên (thứ tự).',
   'admin.schoolAddMemberBatchTooLarge': 'Tối đa {max} thành viên mỗi đợt ({count} đã dán)',
   'admin.schoolAddMemberBatchDuplicatesRemoved': '({count} các bản sao đã bị xóa)',
   'admin.schoolAddMemberBatchEmpty': 'Dán các hàng thành viên trước khi nhập',
@@ -751,14 +701,12 @@ export default {
   'admin.schoolAddMemberSuccess': 'Đã thêm thành viên',
   'admin.schoolAddMemberBatchSuccess': 'Đã thêm {created} thành viên',
   'admin.schoolAddMemberBatchSuccessWithSkipped': 'Đã thêm {created} thành viên ({skipped} đã đăng ký, bỏ qua)',
-  'admin.schoolAddMemberBatchAllSkipped':
-    'Tất cả địa chỉ liên hệ {skipped} đã được đăng ký — không có thành viên mới nào được thêm vào',
+  'admin.schoolAddMemberBatchAllSkipped': 'Tất cả địa chỉ liên hệ {skipped} đã được đăng ký — không có thành viên mới nào được thêm vào',
   'admin.schoolAddMemberBatchPartial': 'Đã thêm {created} thành viên; {failed} không thành công',
   'admin.schoolAddMemberBatchResultTitle': 'Nhập kết quả',
   'admin.schoolAddMemberBatchResultSuccess': 'Đã thêm thành công {created} thành viên',
   'admin.schoolAddMemberBatchResultPartial': 'Đã thêm {created} thành viên. Không thể thêm {failed} — xem chi tiết bên dưới.',
-  'admin.schoolAddMemberBatchResultAllFailed':
-    'Không có thành viên nào được thêm vào. {failed} không thành công — xem chi tiết bên dưới.',
+  'admin.schoolAddMemberBatchResultAllFailed': 'Không có thành viên nào được thêm vào. {failed} không thành công — xem chi tiết bên dưới.',
   'admin.schoolAddMemberBatchFailedListTitle': '{count} không thành công',
   'admin.schoolAddMemberBatchFailedReason': 'Lý do',
   'admin.schoolAddMemberBatchResultDone': 'Xong',
@@ -773,8 +721,7 @@ export default {
   'admin.schoolUserUnlockConfirm': 'Mở khóa tài khoản này? Khóa đăng nhập không thành công và bộ đếm lần thử sẽ bị xóa.',
   'admin.listRange': '{start}–{end} trong số {total}',
   'admin.listRangeEmpty': 'Không có kết quả',
-  'admin.schoolManagerGrantRequiresOrg':
-    'Người dùng này chưa đi học. Thêm họ vào trường học trước khi cấp quyền quản lý trường học.',
+  'admin.schoolManagerGrantRequiresOrg': 'Người dùng này chưa đi học. Thêm họ vào trường học trước khi cấp quyền quản lý trường học.',
   'admin.schoolManagersTab': 'Quản lý trường học',
   'admin.schoolName': 'Tên trường',
   'admin.schoolNamePlaceholder': 'ví dụ. Trường trung học Bắc Kinh',
@@ -792,41 +739,33 @@ export default {
   'admin.extraMemberSeatsLabel': 'Ghế thành viên bổ sung',
   'admin.extraMemberSeatsHint': 'Thành viên: {current} / {effectiveLimit} (cơ sở {base} + phụ {extra}).',
   'admin.extraMemberSeatsPreset': '+{count}',
-  'admin.schoolVersionHint':
-    'Cấp đăng ký đặt giới hạn thành viên và lưu trữ sơ đồ cho trường này. Thành viên: {current} / {limit}.',
+  'admin.schoolVersionHint': 'Cấp đăng ký đặt giới hạn thành viên và lưu trữ sơ đồ cho trường này. Thành viên: {current} / {limit}.',
   'admin.unlimited': 'Không giới hạn',
   'admin.unlimitedMembers': 'Thành viên không giới hạn',
   'admin.schoolManagerNotAvailableTrial': 'Các trường thử nghiệm không thể phân công người quản lý trường học.',
   'admin.noSchoolManagersShort': 'Không có sẵn',
-  'admin.schoolVersionLiteFeaturesHint':
-    'Các cấp độ dùng thử và cơ bản không bao gồm: cộng tác trực tuyến, công cụ trình bày, tiện ích mở rộng Chrome, mã thông báo API và tích hợp OpenClaw.',
+  'admin.schoolVersionLiteFeaturesHint': 'Các cấp độ dùng thử và cơ bản không bao gồm: cộng tác trực tuyến, công cụ trình bày, tiện ích mở rộng Chrome, mã thông báo API và tích hợp OpenClaw.',
   'admin.schoolVersionTierTrial': 'Trải nghiệm thử nghiệm',
   'admin.schoolVersionTierLite': 'Giảng dạy và nghiên cứu cơ bản',
   'admin.schoolVersionTierStandard': 'Tiêu chuẩn giảng dạy và nghiên cứu',
   'admin.schoolVersionTierProfessional': 'Đồng xây dựng trường học',
-  'admin.schoolVersionTierOption':
-    '{label} · {members} thành viên · {managers} người quản lý · {storage} GB/lưu trữ sơ đồ thành viên',
-  'admin.schoolVersionTierOptionTrial':
-    '{label} · Không giới hạn thành viên · Không có người quản lý trường học · {diagrams} sơ đồ/giáo viên · {storage} GB/lưu trữ thành viên',
+  'admin.schoolVersionTierOption': '{label} · {members} thành viên · {managers} người quản lý · {storage} GB/lưu trữ sơ đồ thành viên',
+  'admin.schoolVersionTierOptionTrial': '{label} · Không giới hạn thành viên · Không có người quản lý trường học · {diagrams} sơ đồ/giáo viên · {storage} GB/lưu trữ thành viên',
   'admin.schoolManagerLimitHint': 'Quản lý trường học {current} / {limit}',
   'admin.schoolManagerLimitReached': 'Trường này đã đạt đến giới hạn quản lý ({limit})',
-  'admin.schoolTierDowngradeBlocked':
-    'Không thể chuyển sang cấp độ này: {members} thành viên (tối đa {memberLimit}) và {managers} người quản lý (tối đa {managerLimit})',
+  'admin.schoolTierDowngradeBlocked': 'Không thể chuyển sang cấp độ này: {members} thành viên (tối đa {memberLimit}) và {managers} người quản lý (tối đa {managerLimit})',
   'admin.schoolModal.tabMindbot': '__ GIỮ0__',
-  'admin.schoolModal.mindbotIntro':
-    'Định cấu hình robot DingTalk cho trường học này. Theo mặc định, mỗi bot sử dụng cài đặt MindMate Dify; bạn có thể đặt Dify tùy chỉnh cho mỗi bot bên dưới mẫu AI card khi cần.',
+  'admin.schoolModal.mindbotIntro': 'Định cấu hình robot DingTalk cho trường học này. Theo mặc định, mỗi bot sử dụng cài đặt MindMate Dify; bạn có thể đặt Dify tùy chỉnh cho mỗi bot bên dưới mẫu AI card khi cần.',
   'admin.schoolModal.mindbotSelectBot': 'Chọn bot',
   'admin.schoolModal.mindbotAddBot': 'Thêm bot',
   'admin.schoolModal.mindbotCreateHint': 'Tạo cấu hình MindBot mới (tối đa {cap} bot cho mỗi trường).',
   'admin.schoolMindmateAgentSection': 'MindMate đại lý',
   'admin.schoolMindmateAgentName': 'Tên đại lý',
-  'admin.schoolMindmateAgentNameHint':
-    'Được hiển thị trong thanh bên và giao diện người dùng MindMate. Để trống để sử dụng MindMate.',
+  'admin.schoolMindmateAgentNameHint': 'Được hiển thị trong thanh bên và giao diện người dùng MindMate. Để trống để sử dụng MindMate.',
   'admin.schoolMindmateAgentAvatar': 'Hình đại diện đại lý',
   'admin.schoolMindmateAgentAvatarUpload': 'Tải hình đại diện lên',
   'admin.schoolMindmateAgentAvatarRemove': 'Xóa hình đại diện',
-  'admin.schoolMindmateAgentAvatarHint':
-    'PNG, JPG, GIF hoặc WebP; tối đa 1MB; tối thiểu 64×64; cho phép ảnh GIF động (tối đa 120 khung hình); được cắt thành hình vuông 256×256.',
+  'admin.schoolMindmateAgentAvatarHint': 'PNG, JPG, GIF hoặc WebP; tối đa 1MB; tối thiểu 64×64; cho phép ảnh GIF động (tối đa 120 khung hình); được cắt thành hình vuông 256×256.',
   'admin.schoolMindmateAvatarUploaded': 'Avatar đã được tải lên và xử lý.',
   'admin.schoolMindmateAvatarRemoved': 'Đã xóa hình đại diện.',
   'admin.schoolMindmateAvatarUploadFailed': 'Tải lên hình đại diện không thành công. Vui lòng thử lại.',
@@ -847,14 +786,12 @@ export default {
   'admin.schoolDifyApiKeyRequired': 'Cần có khóa API khi đặt URL cơ sở.',
   'admin.schoolDifyUrlRequired': 'URL cơ sở là bắt buộc khi khóa API được đặt.',
   'admin.schoolDifyPairRequired': 'Cần có cả URL cơ sở và khóa API để ghi đè trường học.',
-  'admin.schoolDifyApiKeyHintOptional':
-    'Chỉ bắt buộc khi thiết lập ghi đè dành riêng cho trường học. Để trống cả hai trường để sử dụng cài đặt .env chung.',
+  'admin.schoolDifyApiKeyHintOptional': 'Chỉ bắt buộc khi thiết lập ghi đè dành riêng cho trường học. Để trống cả hai trường để sử dụng cài đặt .env chung.',
   'admin.schoolDifyBlankUsesGlobal': 'Để trống để sử dụng URL chung: {url}',
   'admin.schoolDifyApiKeyBlankUsesGlobal': 'Để trống để sử dụng khóa chung API ({masked}).',
   'admin.schoolDifyAuthTest': 'Dify kiểm tra xác thực',
   'admin.schoolDifyAuthTestRunning': 'Đang thử nghiệm…',
-  'admin.schoolDifyAuthTestTooltip':
-    'Kiểm tra xác thực Dify bằng URL và khóa trong biểu mẫu này (bao gồm các chỉnh sửa chưa được lưu).',
+  'admin.schoolDifyAuthTestTooltip': 'Kiểm tra xác thực Dify bằng URL và khóa trong biểu mẫu này (bao gồm các chỉnh sửa chưa được lưu).',
   'admin.schoolDifyAuthTestPassed': 'Dify xác thực đã thành công.',
   'admin.schoolDifyAuthTestFailed': 'Dify xác thực không thành công. Kiểm tra URL cơ sở và khóa API.',
   'admin.schoolDifyAuthRequiredBeforeSave': 'Chạy thử nghiệm xác thực Dify thành công trước khi lưu.',
@@ -873,17 +810,14 @@ export default {
   'admin.schoolDifyServer2': 'Máy chủ 2',
   'admin.schoolDifyActiveServer': 'Máy chủ đang hoạt động',
   'admin.schoolDifyFailover': 'Tự động chuyển đổi dự phòng',
-  'admin.schoolDifyDualServerHint':
-    'Định cấu hình hai máy chủ Dify cho mỗi trường. Máy chủ đang hoạt động xử lý cuộc trò chuyện MindMate trực tiếp; nếu tính năng tự động chuyển đổi dự phòng được bật, lưu lượng truy cập sẽ chuyển sang chế độ chờ khi máy chủ đang hoạt động không thể truy cập được và chuyển trở lại chế độ khôi phục.',
+  'admin.schoolDifyDualServerHint': 'Định cấu hình hai máy chủ Dify cho mỗi trường. Máy chủ đang hoạt động xử lý cuộc trò chuyện MindMate trực tiếp; nếu tính năng tự động chuyển đổi dự phòng được bật, lưu lượng truy cập sẽ chuyển sang chế độ chờ khi máy chủ đang hoạt động không thể truy cập được và chuyển trở lại chế độ khôi phục.',
   'admin.mindmateExport.navLabel': 'MindMate xuất',
   'admin.mindmateExport.tabExport': 'Tìm kiếm & bộ lọc',
   'admin.mindmateExport.tabDumps': 'Kết xuất tập tin',
   'admin.mindmateExport.panelModeLabel': 'Chế độ xuất MindMate',
   'admin.mindmateExport.title': 'MindMate xuất cuộc hội thoại',
-  'admin.mindmateExport.description':
-    'Xem và xuất lịch sử hội thoại MindMate (Dify) cho một người dùng, nhiều người dùng hoặc toàn bộ trường học trong một khoảng thời gian. Lịch sử được hợp nhất trên cả hai máy chủ Dify.',
-  'admin.mindmateExport.privacyNotice':
-    'Chế độ xem này hiển thị nội dung tin nhắn thực sự. Mỗi lần xuất đều được kiểm tra (ai đã xuất tổ chức/người dùng/phạm vi/định dạng nào). Xử lý dữ liệu được xuất một cách có trách nhiệm.',
+  'admin.mindmateExport.description': 'Xem và xuất lịch sử hội thoại MindMate (Dify) cho một người dùng, nhiều người dùng hoặc toàn bộ trường học trong một khoảng thời gian. Lịch sử được hợp nhất trên cả hai máy chủ Dify.',
+  'admin.mindmateExport.privacyNotice': 'Chế độ xem này hiển thị nội dung tin nhắn thực sự. Mỗi lần xuất đều được kiểm tra (ai đã xuất tổ chức/người dùng/phạm vi/định dạng nào). Xử lý dữ liệu được xuất một cách có trách nhiệm.',
   'admin.mindmateExport.orgLabel': 'Trường học',
   'admin.mindmateExport.orgPlaceholder': 'Chọn trường',
   'admin.mindmateExport.scopeLabel': 'Phạm vi',
@@ -902,8 +836,7 @@ export default {
   'admin.mindmateExport.dateRangeLabel': 'Phạm vi ngày và giờ',
   'admin.mindmateExport.startDateTime': 'Bắt đầu',
   'admin.mindmateExport.endDateTime': 'Kết thúc',
-  'admin.mindmateExport.dateTimeHint':
-    'Sử dụng cài đặt trước nhanh hoặc chọn ngày và giờ bắt đầu/kết thúc. Lựa chọn chỉ theo ngày sử dụng đầy đủ các ngày theo lịch (00:00–23:59). Để trống (Tất cả) để xem toàn bộ lịch sử.',
+  'admin.mindmateExport.dateTimeHint': 'Sử dụng cài đặt trước nhanh hoặc chọn ngày và giờ bắt đầu/kết thúc. Lựa chọn chỉ theo ngày sử dụng đầy đủ các ngày theo lịch (00:00–23:59). Để trống (Tất cả) để xem toàn bộ lịch sử.',
   'admin.mindmateExport.startDate': 'Ngày bắt đầu',
   'admin.mindmateExport.endDate': 'Ngày kết thúc',
   'admin.mindmateExport.loadConversations': 'Tải cuộc hội thoại',
@@ -911,13 +844,10 @@ export default {
   'admin.mindmateExport.conversationsTitle': 'Cuộc trò chuyện',
   'admin.mindmateExport.conversationCount': '{count} cuộc trò chuyện',
   'admin.mindmateExport.noConversations': 'Không có cuộc trò chuyện. Điều chỉnh bộ lọc và tải lại.',
-  'admin.mindmateExport.truncatedNotice':
-    'Quá nhiều người dùng trong phạm vi (tối đa {max}); kết quả đã bị cắt ngắn. Thu hẹp lựa chọn để xuất hoàn chỉnh.',
-  'admin.mindmateExport.conversationsTruncatedNotice':
-    'Quá nhiều cuộc trò chuyện trùng khớp; danh sách đã bị giới hạn. Thu hẹp phạm vi ngày hoặc phạm vi.',
+  'admin.mindmateExport.truncatedNotice': 'Quá nhiều người dùng trong phạm vi (tối đa {max}); kết quả đã bị cắt ngắn. Thu hẹp lựa chọn để xuất hoàn chỉnh.',
+  'admin.mindmateExport.conversationsTruncatedNotice': 'Quá nhiều cuộc trò chuyện trùng khớp; danh sách đã bị giới hạn. Thu hẹp phạm vi ngày hoặc phạm vi.',
   'admin.mindmateExport.truncatedDownloadTitle': 'Xuất có thể không đầy đủ',
-  'admin.mindmateExport.truncatedDownloadConfirm':
-    'Việc xuất này vượt quá giới hạn {max} người dùng hoặc giới hạn cuộc trò chuyện. Vẫn tiếp tục chứ?',
+  'admin.mindmateExport.truncatedDownloadConfirm': 'Việc xuất này vượt quá giới hạn {max} người dùng hoặc giới hạn cuộc trò chuyện. Vẫn tiếp tục chứ?',
   'admin.mindmateExport.loadPrompt': 'Đặt bộ lọc và nhấp vào Tải cuộc hội thoại.',
   'admin.mindmateExport.serverBadge': 'Máy chủ {server}',
   'admin.mindmateExport.viewTranscript': 'Chọn một cuộc trò chuyện để xem bản ghi của nó.',
@@ -946,8 +876,7 @@ export default {
   'admin.mindmateExport.jobDownload': 'Tải xuống xuất',
   'admin.mindmateExport.requiresJobNotice': 'Phạm vi này lớn; sử dụng công việc xuất nền thay vì tải xuống trực tiếp.',
   'admin.mindmateExport.loadMore': 'Tải thêm',
-  'admin.mindmateExport.dumps.intro':
-    'Tải lên dify-dump_*.zip từ mỗi máy chủ Dify và nhập. Mỗi lần nhập sẽ hợp nhất vào thư viện tích lũy mà Tìm kiếm & bộ lọc sử dụng. Lưu trữ ảnh chụp nhanh được lưu giữ để kiểm tra.',
+  'admin.mindmateExport.dumps.intro': 'Tải lên dify-dump_*.zip từ mỗi máy chủ Dify và nhập. Mỗi lần nhập sẽ hợp nhất vào thư viện tích lũy mà Tìm kiếm & bộ lọc sử dụng. Lưu trữ ảnh chụp nhanh được lưu giữ để kiểm tra.',
   'admin.mindmateExport.dumps.libraryDify': 'Thư viện Dify (Máy chủ 1)',
   'admin.mindmateExport.dumps.libraryNeodify': 'Thư viện NeoDify (Máy chủ 2)',
   'admin.mindmateExport.dumps.libraryEmpty': 'Chưa có thư viện - nhập kết xuất để bắt đầu.',
@@ -997,8 +926,7 @@ export default {
   'admin.userSearchFailed': 'Tìm kiếm người dùng không thành công',
   'admin.selectSchool': 'Chọn trường',
   'admin.setManager': 'Đặt làm Người quản lý',
-  'admin.shareInviteMessage':
-    '{orgName}: Chào mừng bạn đến với nền tảng tác nhân AI giảng dạy và tư duy trí tuệ!\nĐược hướng dẫn bởi Trung tâm Đào tạo Tư duy BNU và được đồng xây dựng với hơn 100 trường liên minh phát triển tư duy - hãy tham gia cùng chúng tôi để phát triển kỹ năng tư duy trong kỷ nguyên AI.\nCách thực hiện: mở trên máy tính hoặc điện thoại; đăng ký bằng số điện thoại + mã thư mời lần đầu tiên, sau đó đăng nhập bằng xác minh SMS.\nURL: {siteUrl}\nMã mời tổ chức: {code}',
+  'admin.shareInviteMessage': '{orgName}: Chào mừng bạn đến với nền tảng tác nhân AI giảng dạy và tư duy trí tuệ!\nĐược hướng dẫn bởi Trung tâm Đào tạo Tư duy BNU và được đồng xây dựng với hơn 100 trường liên minh phát triển tư duy - hãy tham gia cùng chúng tôi để phát triển kỹ năng tư duy trong kỷ nguyên AI.\nCách thực hiện: mở trên máy tính hoặc điện thoại; đăng ký bằng số điện thoại + mã thư mời lần đầu tiên, sau đó đăng nhập bằng xác minh SMS.\nURL: {siteUrl}\nMã mời tổ chức: {code}',
   'admin.shareInviteTitle': 'Chia sẻ lời mời',
   'admin.source': 'Nguồn',
   'admin.sourceDatabase': 'Cơ sở dữ liệu',
@@ -1036,8 +964,7 @@ export default {
   'admin.paidBenefitRemaining': 'Được hưởng quyền lợi cho đến khi',
   'admin.paidBenefitPermanent': 'Vĩnh viễn',
   'admin.rankingBeijingTodayHint': 'Thứ hạng dành cho ngày hiện tại (00:00–24:00, giờ Bắc Kinh, UTC+8).',
-  'admin.usersTokensAllTimeHint':
-    'Số lượng mã thông báo là tổng số mọi thời đại. Nhấp vào tên hoặc giá trị mã thông báo để mở biểu đồ xu hướng trên Mọi thời điểm.',
+  'admin.usersTokensAllTimeHint': 'Số lượng mã thông báo là tổng số mọi thời đại. Nhấp vào tên hoặc giá trị mã thông báo để mở biểu đồ xu hướng trên Mọi thời điểm.',
   'admin.topSchoolsByTokens': 'Các trường hàng đầu theo mức sử dụng token',
   'admin.topSchoolsByMindGraphTokens': 'MindGraph · Trường học theo cách sử dụng token',
   'admin.topSchoolsByMindMateTokens': 'MindMate · Trường học theo cách sử dụng token',
@@ -1212,21 +1139,18 @@ export default {
   'admin.database.skipped': 'Đã bỏ qua',
   'admin.database.orphaned': 'mồ côi',
   'admin.database.pgExportImport': 'PostgreSQL Xuất / Nhập',
-  'admin.database.pgExportImportDesc':
-    'Xuất cơ sở dữ liệu hiện tại sang tệp kết xuất trong bản sao lưu/hoặc khôi phục từ kết xuất hiện có.',
+  'admin.database.pgExportImportDesc': 'Xuất cơ sở dữ liệu hiện tại sang tệp kết xuất trong bản sao lưu/hoặc khôi phục từ kết xuất hiện có.',
   'admin.database.exportNow': 'Xuất ngay',
   'admin.database.exportSuccess': 'Đã xuất cơ sở dữ liệu',
   'admin.database.exportError': 'Xuất không thành công',
   'admin.database.noDumpFiles': 'Không tìm thấy tệp kết xuất nào trong bản sao lưu/',
   'admin.database.restore': 'Khôi phục',
   'admin.database.importConfirmTitle': 'Xác nhận Khôi phục',
-  'admin.database.importConfirmMsg':
-    'CẢNH BÁO: Thao tác này sẽ THAY THẾ TẤT CẢ dữ liệu hiện có trong PostgreSQL bằng nội dung tệp kết xuất. Điều này không thể hoàn tác được. Bạn có chắc không?',
+  'admin.database.importConfirmMsg': 'CẢNH BÁO: Thao tác này sẽ THAY THẾ TẤT CẢ dữ liệu hiện có trong PostgreSQL bằng nội dung tệp kết xuất. Điều này không thể hoàn tác được. Bạn có chắc không?',
   'admin.database.importSuccess': 'Cơ sở dữ liệu được khôi phục thành công',
   'admin.database.importError': 'Khôi phục không thành công',
   'admin.database.orphanCleanup': 'Dọn dẹp trẻ mồ côi',
-  'admin.database.orphanCleanupDesc':
-    'Phát hiện và xóa các bản ghi có tham chiếu khóa ngoại bị hỏng trong cơ sở dữ liệu PostgreSQL hiện tại.',
+  'admin.database.orphanCleanupDesc': 'Phát hiện và xóa các bản ghi có tham chiếu khóa ngoại bị hỏng trong cơ sở dữ liệu PostgreSQL hiện tại.',
   'admin.database.detectOrphans': 'Phát hiện trẻ mồ côi',
   'admin.database.orphanDetectError': 'Không thể phát hiện trẻ mồ côi',
   'admin.database.noOrphansFound': 'Không tìm thấy bản ghi mồ côi nào - cơ sở dữ liệu sạch sẽ.',
@@ -1244,8 +1168,7 @@ export default {
   'admin.database.pgLiveRows': 'Hàng trực tiếp',
   'admin.database.pgExecuteMerge': 'Hợp nhất vào DB trực tiếp',
   'admin.database.pgMergeConfirmTitle': 'Xác nhận hợp nhất PG',
-  'admin.database.pgMergeConfirmMsg':
-    'Điều này sẽ hợp nhất dữ liệu từ kết xuất vào cơ sở dữ liệu trực tiếp. Các hồ sơ hiện có sẽ được bảo tồn. Tiếp tục?',
+  'admin.database.pgMergeConfirmMsg': 'Điều này sẽ hợp nhất dữ liệu từ kết xuất vào cơ sở dữ liệu trực tiếp. Các hồ sơ hiện có sẽ được bảo tồn. Tiếp tục?',
   'admin.database.pgMergeSuccess': 'Kết xuất PG đã hợp nhất thành công',
   'admin.database.pgMergeError': 'Hợp nhất kết xuất PG không thành công',
   'admin.database.pgNewRows': 'Mới',
@@ -1345,8 +1268,7 @@ export default {
   'admin.showcase.fieldsCategoryAria': 'Danh mục trường',
   'admin.showcase.fieldsExisting': 'Tùy chọn hiện có',
   'admin.showcase.fieldsIntro': 'Quản lý các tùy chọn chủ đề, điểm và thẻ được đề xuất.',
-  'admin.showcase.intro':
-    'Xem xét nội dung gửi, quản lý các trường hợp đã xuất bản, tùy chọn trường và quyền của nhân viên.',
+  'admin.showcase.intro': 'Xem xét nội dung gửi, quản lý các trường hợp đã xuất bản, tùy chọn trường và quyền của nhân viên.',
   'admin.showcase.nextPage': 'Kế tiếp',
   'admin.showcase.openProxyForm': 'Mở biểu mẫu xuất bản proxy',
   'admin.showcase.perm.showcase_dashboard_view': 'Xem trang tổng quan',

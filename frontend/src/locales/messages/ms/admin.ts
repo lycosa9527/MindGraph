@@ -1,4 +1,6 @@
-/** ms UI — admin */
+/**
+ * ms UI � admin
+ */
 
 export default {
   'admin.actions': 'Tindakan',

@@ -1,4 +1,6 @@
-/** de UI — canvas */
+/**
+ * de UI � canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'Neuer Unterteil 1',

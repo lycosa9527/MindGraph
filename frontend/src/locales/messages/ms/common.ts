@@ -1,4 +1,6 @@
-/** ms UI — common */
+/**
+ * ms UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'Kandungan dijana oleh AI; sila sahkan dengan teliti.',

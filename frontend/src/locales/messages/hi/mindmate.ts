@@ -1,4 +1,6 @@
-/** hi UI — mindmate */
+/**
+ * hi UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'AI संबंध लेबल सक्षम करने के लिए क्लिक (मल्टी-मॉडल)',

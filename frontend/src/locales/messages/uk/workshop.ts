@@ -1,4 +1,6 @@
-/** uk UI — workshop */
+/**
+ * uk UI � workshop
+ */
 
 export default {
   'collab.codeCopied': 'Код скопійовано',

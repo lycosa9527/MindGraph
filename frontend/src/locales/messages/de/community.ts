@@ -1,4 +1,6 @@
-/** de UI — community */
+/**
+ * de UI � community
+ */
 
 export default {
   'community.category.all': 'Alle',

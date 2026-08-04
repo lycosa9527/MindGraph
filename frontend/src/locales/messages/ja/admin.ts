@@ -1,4 +1,6 @@
-/** ja UI — admin */
+/**
+ * ja UI � admin
+ */
 
 export default {
   'admin.actions': '操作',
@@ -24,8 +26,7 @@ export default {
   'admin.confirm': '確認',
   'admin.copyShareMessage': 'コピー',
   'admin.copyInvitationCode': 'コピー招待コード',
-  'admin.schoolInviteCopyPayload':
-    '{orgName}：Mind 思考・教育 AI エージェントプラットフォームへようこそ！\nBNU 思考トレーニングセンター監修、100 校以上の思考発展連盟校と共創 — AI 時代の思考力を高めましょう。\n方法：PC またはスマートフォンで開く。初回は電話番号＋招待コードで登録、その後は SMS 確認コードでログイン。\nURL：{siteUrl}\n組織専用招待コード：{code}',
+  'admin.schoolInviteCopyPayload': '{orgName}：Mind 思考・教育 AI エージェントプラットフォームへようこそ！\nBNU 思考トレーニングセンター監修、100 校以上の思考発展連盟校と共創 — AI 時代の思考力を高めましょう。\n方法：PC またはスマートフォンで開く。初回は電話番号＋招待コードで登録、その後は SMS 確認コードでログイン。\nURL：{siteUrl}\n組織専用招待コード：{code}',
   'admin.createApiKey': 'API キーを作成',
   'admin.createOrganization': '組織を作成',
   'admin.createSchool': '学校を作成',
@@ -88,8 +89,7 @@ export default {
   'admin.feature.mindmateCollabHint': '共有 MindMate AI チャットルーム（校内閲覧＋招待コード）。online_collab プランが必要です。',
   'admin.featureLoadFailed': '読み込めません機能スイッチ',
   'admin.featureSaveFailed': '保存できません設定',
-  'admin.featuresIntro':
-    '各モジュールをここで切り替えます。値は .env に書き込まれ、すべての API ワーカーにホットリロードされ、UI と API チェックは再起動なしで更新されます。ナレッジスペースは起動時に初期化した Qdrant/Celery が必要な場合、完全再起動が必要なことがあります。',
+  'admin.featuresIntro': '各モジュールをここで切り替えます。値は .env に書き込まれ、すべての API ワーカーにホットリロードされ、UI と API チェックは再起動なしで更新されます。ナレッジスペースは起動時に初期化した Qdrant/Celery が必要な場合、完全再起動が必要なことがあります。',
   'admin.featuresReloadFailed': '変更を適用できませんでした。サーバーを再起動してください。',
   'admin.featuresSave': '反映',
   'admin.featuresSaved': '変更を適用しました。',
@@ -97,16 +97,14 @@ export default {
   'admin.featureDevTab': '機能開発',
   'admin.newFeaturesTab': '新機能',
   'admin.kittyLlmopsTab': 'Kitty LLMOps',
-  'admin.featuresIntroAccess':
-    'For Workshop, MindMate 共同編集, MindBot, MindMate export, and Kitty, use 権限 to limit organizations and users after the module is enabled. すべてowlists are stored in the database and take effect immediately.',
+  'admin.featuresIntroAccess': 'For Workshop, MindMate 共同編集, MindBot, MindMate export, and Kitty, use 権限 to limit organizations and users after the module is enabled. すべてowlists are stored in the database and take effect immediately.',
   'admin.featurePermissionsApply': '権限を保存',
   'admin.featurePermissionsApplied': '功能権限保存しました。',
   'admin.featurePermissionsButton': '権限',
   'admin.featurePermissionsOrgs': '組織',
   'admin.featurePermissionsOrgsPlaceholder': 'この機能を利用できる学校を選択',
   'admin.featurePermissionsRestrict': 'アクセスを制限',
-  'admin.featurePermissionsRestrictHint':
-    'When on, only listed organizations and users (plus admins and managers) may use this feature while it stays enabled globally。',
+  'admin.featurePermissionsRestrictHint': 'When on, only listed organizations and users (plus admins and managers) may use this feature while it stays enabled globally。',
   'admin.featurePermissionsRestrictedBadge': '制限あり',
   'admin.featurePermissionsSaveFailed': '保存できません功能権限',
   'admin.featurePermissionsUserIds': 'ユーザー ID（任意）',
@@ -173,8 +171,7 @@ export default {
   'admin.mindbot.edit': '編集',
   'admin.mindbot.move': '迁移',
   'admin.mindbot.moveTitle': '移動 bot to another organization',
-  'admin.mindbot.moveIntro':
-    'Assign this DingTalk bot configuration to a different school. The callback URL token is unchanged。',
+  'admin.mindbot.moveIntro': 'Assign this DingTalk bot configuration to a different school. The callback URL token is unchanged。',
   'admin.mindbot.moveTarget': '移行先の学校',
   'admin.mindbot.moveSuccess': 'Bot moved to the selected organization。',
   'admin.mindbot.moveError': '移動できませんでした bot. The destination may be full or invalid.',
@@ -194,22 +191,19 @@ export default {
   'admin.mindbot.deleteConfirm': '削除してよろしいですか该校的 MindBot 配置？',
   'admin.mindbot.orgSelect': '学校',
   'admin.mindbot.dingtalkRobotCode': 'RobotCode',
-  'admin.mindbot.dingtalkRobotCodeHint':
-    'From the DingTalk developer console; used for outbound API calls (sending replies). Inbound messages are identified by this school’s callback URL path, not by matching this value to the webhook JSON。',
+  'admin.mindbot.dingtalkRobotCodeHint': 'From the DingTalk developer console; used for outbound API calls (sending replies). Inbound messages are identified by this school’s callback URL path, not by matching this value to the webhook JSON。',
   'admin.mindbot.dingtalkAppSecret': '客户Secret',
   'admin.mindbot.dingtalkAppSecretHint': '必須 when adding a school.',
   'admin.mindbot.dingtalkAppSecretMaskedHint': 'Stored secret with the middle masked. Use Replace to enter a new Client Secret。',
   'admin.mindbot.dingtalkAppSecretReplaceHint': 'Enter a new Client Secret, or leave blank and save to keep the current one。',
   'admin.mindbot.dingtalkClientId': '客户ID',
   'admin.mindbot.dingtalkClientIdPlaceholder': 'オープンプラットフォーム AppKey（Client Secret とセット）',
-  'admin.mindbot.dingtalkClientIdHint':
-    'Used with the Client Secret to obtain access トークン for AI cards and other OpenAPI. 保存 both; 必須 for “Test permissions” and AI cards.',
+  'admin.mindbot.dingtalkClientIdHint': 'Used with the Client Secret to obtain access トークン for AI cards and other OpenAPI. 保存 both; 必須 for “Test permissions” and AI cards.',
   'admin.mindbot.difyShowChainOfThought': '思考チェーンを表示',
   'admin.mindbot.dingtalkAiCardStreamingMaxChars': 'AI 卡片流式コンテンツ上限（字符）',
   'admin.mindbot.dingtalkAiCardTemplateId': 'AI 卡片テンプレート（任意）',
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder': '空欄でテキスト返信；例 d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
-  'admin.mindbot.dingtalkAiCardTemplateIdHint':
-    '公開済み template from DingTalk card platform. Needs Client ID and card permissions (Card.Instance.Write and Card.ストリーミング.Write).',
+  'admin.mindbot.dingtalkAiCardTemplateIdHint': '公開済み template from DingTalk card platform. Needs Client ID and card permissions (Card.Instance.Write and Card.ストリーミング.Write).',
   'admin.mindbot.dingtalkAiCardStreamCheck': '権限をテスト',
   'admin.mindbot.dingtalkAiCardStreamOk': 'OAuth とストリーミングカード権限は正常です',
   'admin.mindbot.dingtalkAiCardStreamFail': 'Checkに失敗しました',
@@ -225,12 +219,10 @@ export default {
   'admin.mindbot.difyApiKeyReplaceHint': '输入新的 API Key；若空欄并保存则保留現在保存しました的值。',
   'admin.mindbot.replaceSecret': '更换',
   'admin.mindbot.difyTimeout': 'Dify 超时（秒）',
-  'admin.mindbot.difyInputsJsonHint':
-    'If your Dify app defines input variables, set a JSON object here (e.g. \'{\'"grade":"7"\'}\')。',
+  'admin.mindbot.difyInputsJsonHint': 'If your Dify app defines input variables, set a JSON object here (e.g. \'{\'"grade":"7"\'}\')。',
   'admin.mindbot.enabled': '有効 MindBot',
   'admin.mindbot.schoolCallbackUrl': 'DingTalk HTTP コールバック URL（本校）',
-  'admin.mindbot.schoolCallbackUrlHint':
-    'Paste this URL into the DingTalk HTTP robot callback field. Keep it private—anyone with the link can send traffic to your webhook。',
+  'admin.mindbot.schoolCallbackUrlHint': 'Paste this URL into the DingTalk HTTP robot callback field. Keep it private—anyone with the link can send traffic to your webhook。',
   'admin.mindbot.callbackUrlAfterSave': '保存 once to generate and show this school’s callback URL.',
   'admin.mindbot.openSettings': 'MindBot 設定',
   'admin.mindbot.copyUrl': 'コピー',
@@ -243,13 +235,10 @@ export default {
   'admin.mindbot.managerNoOrg': 'Your account has no organization assigned。',
   'admin.mindbot.tabDingtalk': 'DingTalk API 認証',
   'admin.oauth.sectionTitle': 'QR サインイン',
-  'admin.oauth.intro':
-    'Enable WeChat or DingTalk QR login for this school. WeChat AppID/Secret are in server .env; DingTalk requires school IT credentials。',
-  'admin.oauth.officialDocsHint':
-    'Matches official docs: WeChat Wxログイン + code exchange; DingTalk OAuth 2.0 DTFrameログイン + immediate authCode exchange (not legacy oapi.dingtalk.com).',
+  'admin.oauth.intro': 'Enable WeChat or DingTalk QR login for this school. WeChat AppID/Secret are in server .env; DingTalk requires school IT credentials。',
+  'admin.oauth.officialDocsHint': 'Matches official docs: WeChat Wxログイン + code exchange; DingTalk OAuth 2.0 DTFrameログイン + immediate authCode exchange (not legacy oapi.dingtalk.com).',
   'admin.oauth.wechatToggle': 'WeChat QR ログインを有効化',
-  'admin.oauth.wechatHint':
-    '教師 must link WeChat under アカウント linking first. プラットフォーム AppID/Secret are set in server .env.',
+  'admin.oauth.wechatHint': '教師 must link WeChat under アカウント linking first. プラットフォーム AppID/Secret are set in server .env.',
   'admin.oauth.dingtalkToggle': 'DingTalk QR ログインを有効化',
   'admin.oauth.dingtalkAppKey': 'DingTalk AppKey（client_id）',
   'admin.oauth.dingtalkAppSecret': '钉钉 AppSecret',
@@ -263,19 +252,16 @@ export default {
   'admin.oauth.wechatCallback': '微信',
   'admin.oauth.dingtalkCallback': '钉钉',
   'admin.oauth.schoolItChecklistTitle': 'DingTalk IT チェックリスト',
-  'admin.oauth.schoolItChecklist':
-    'DingTalk IT checklist:\n1. Enable third-party website / QR login\n2. Set the DingTalk callback URL above in DingTalk console (exact match)\n3. Request scopes: permission-open_app_api_base, Contact.ユーザー.Read\n4. Provide AppKey, AppSecret, 任意 CorpId to MindGraph admin',
+  'admin.oauth.schoolItChecklist': 'DingTalk IT checklist:\n1. Enable third-party website / QR login\n2. Set the DingTalk callback URL above in DingTalk console (exact match)\n3. Request scopes: permission-open_app_api_base, Contact.ユーザー.Read\n4. Provide AppKey, AppSecret, 任意 CorpId to MindGraph admin',
   'admin.oauth.loadError': '読み込めませんでした QR login settings',
   'admin.oauth.saveSuccess': '扫码登录配置保存しました',
   'admin.oauth.saveError': '保存に失敗しました，もう一度お試しください',
   'admin.mindbot.tabDify': 'Dify鉴权',
-  'admin.mindbot.standaloneDifySchoolHint':
-    'For most schools, set Dify on the school edit modal under MindMate 認証. Saving the school copies those settings to all bots. Per-bot Dify here is only for special cases and may be overwritten when the school is saved.',
+  'admin.mindbot.standaloneDifySchoolHint': 'For most schools, set Dify on the school edit modal under MindMate 認証. Saving the school copies those settings to all bots. Per-bot Dify here is only for special cases and may be overwritten when the school is saved.',
   'admin.mindbot.tabLog': '日志',
   'admin.mindbot.tabMonitor': '监控',
   'admin.mindbot.refreshCallbackUrl': '更新 URL',
-  'admin.mindbot.rotateConfirm':
-    'Generate a new callback URL? The old URL will stop working until you update it in DingTalk。',
+  'admin.mindbot.rotateConfirm': 'Generate a new callback URL? The old URL will stop working until you update it in DingTalk。',
   'admin.mindbot.callbackRotated': '回调地址更新しました，请在钉钉中同步修改。',
   'admin.mindbot.usageNeedSave': '保存 the configuration once to enable callback URL, log, and monitor.',
   'admin.mindbot.usageEmpty': 'いいえ usage events yet.',
@@ -298,12 +284,9 @@ export default {
   'admin.mindbot.exportEmpty': 'いいえthing to export for the current filter.',
   'admin.mindbot.exportError': 'エクスポートに失敗しました，もう一度お試しください。',
   'admin.mindbot.exportSuccess': 'エクスポート downloaded.',
-  'admin.mindbot.exportDisclaimer':
-    'MindBot usage metadata for educational research. メッセージ bodies are not stored; rows are telemetry only.',
-  'admin.mindbot.logTabHint':
-    'Raw usage lines for this school (newest first). Click a line for full metadata. メッセージ text is not stored.',
-  'admin.mindbot.monitorTabHint':
-    '会話 grouped from the loaded page. Click a row to open the thread; click a turn for details.',
+  'admin.mindbot.exportDisclaimer': 'MindBot usage metadata for educational research. メッセージ bodies are not stored; rows are telemetry only.',
+  'admin.mindbot.logTabHint': 'Raw usage lines for this school (newest first). Click a line for full metadata. メッセージ text is not stored.',
+  'admin.mindbot.monitorTabHint': '会話 grouped from the loaded page. Click a row to open the thread; click a turn for details.',
   'admin.mindbot.colConvThread': '会話',
   'admin.mindbot.colTurnsLoaded': '轮回(本ページ)',
   'admin.mindbot.convNoThreadId': '（无会話 ID）',
@@ -332,8 +315,7 @@ export default {
   'admin.library.colVisible': '表示',
   'admin.library.deleteBook': '削除 Book',
   'admin.library.deleteBookConfirm': '确认すべて削除',
-  'admin.library.deleteBookConfirmMsg':
-    '永久ly delete all {count} page images from disk AND the database record for "{name}"? 元に戻せません.',
+  'admin.library.deleteBookConfirmMsg': '永久ly delete all {count} page images from disk AND the database record for "{name}"? 元に戻せません.',
   'admin.library.deleteBookSuccess': '书籍削除しました',
   'admin.library.deleteBookTitle': '削除 Book',
   'admin.library.deleteConfirmMsg': '永久ly delete the database record for "{name}"? ページ images on disk are not affected.',
@@ -428,8 +410,7 @@ export default {
   'admin.dingtalkCardClickToEditApiKeys': 'クリックで API キーを編集',
   'admin.dingtalkApiKeysDialogTitle': 'DingTalk image — integration API keys',
   'admin.dingtalkApiKeysDialogNote': 'X-API-Key · generate_dingtalk & temp image URLs',
-  'admin.dingtalkApiKeysDialogIntro':
-    'Use the X-API-Key header. These keys authenticate public API calls such as diagram PNG generation for DingTalk. Responses are markdown with time-limited image URLs; fetching an image only needs the signed link, not this key。',
+  'admin.dingtalkApiKeysDialogIntro': 'Use the X-API-Key header. These keys authenticate public API calls such as diagram PNG generation for DingTalk. Responses are markdown with time-limited image URLs; fetching an image only needs the signed link, not this key。',
   'admin.apiKeysTableStats': 'トークン（累計）',
   'admin.apiKeysRequestCount': 'リクエスト',
   'admin.apiKeysTableQuota': 'クォータ',
@@ -536,31 +517,26 @@ export default {
   'admin.performance.convStreaming': 'ストリーミング',
   'admin.performance.convSending': 'Blocking send',
   'admin.performance.convReceiving': 'Stream WS 接收',
-  'admin.performance.hintMindbotConv':
-    'Cluster sum. ストリーミング = Dify SSE card streams in progress; blocking send = one-shot Dify + reply; receiving = DingTalk Stream SDK WebSocket tasks running (per app key).',
+  'admin.performance.hintMindbotConv': 'Cluster sum. ストリーミング = Dify SSE card streams in progress; blocking send = one-shot Dify + reply; receiving = DingTalk Stream SDK WebSocket tasks running (per app key).',
   'admin.performance.mindbotConcurrencyUnavailable': 'Dify pipeline counts unavailable ({reason})。',
   'admin.performance.dingtalkStreamUnavailable': 'DingTalk Stream client metrics unavailable ({reason})。',
   'admin.performance.mindbotModuleCumulative': 'Cumulative (database)',
   'admin.performance.mindbotSchools': '学校 w/ bot',
   'admin.performance.mindbotRepliesOk': 'Replies delivered (OK, total)',
   'admin.performance.mindbotModuleStatsError': '読み込めません模块统计（{reason}）。',
-  'admin.performance.hintMindbotModule':
-    'Distinct organizations with at least one MindBot config; replies = usage rows with error_code MINDBOT_OK (all time)。',
+  'admin.performance.hintMindbotModule': 'Distinct organizations with at least one MindBot config; replies = usage rows with error_code MINDBOT_OK (all time)。',
   'admin.performance.mindbotPeaks24hSection': 'High water (24h, cluster)',
   'admin.performance.peakStreaming24h': 'ストリーミング (24h high)',
   'admin.performance.peakBlocking24h': 'Blocking (24h high)',
   'admin.performance.peakWs24h': 'Stream WS 24h 最高',
   'admin.performance.mindbotPeaks24hError': '24h high unavailable ({reason})。',
-  'admin.performance.hintMindbotPeaks24h':
-    'Max observed each UTC hour in Redis, then the largest of the last 24 hours. Use with MINDBOT_MAX_ACTIVE_STREAMING / per-org caps to see headroom. Requires Redis。',
+  'admin.performance.hintMindbotPeaks24h': 'Max observed each UTC hour in Redis, then the largest of the last 24 hours. Use with MINDBOT_MAX_ACTIVE_STREAMING / per-org caps to see headroom. Requires Redis。',
   'admin.performance.sectionPools': 'データベース connection pools',
   'admin.performance.sectionServices': '管理サービス',
   'admin.performance.sectionLlm': 'LLM トラッカー (cluster)',
-  'admin.performance.hintProcessCpuSingle':
-    'This worker\'s process CPU % (psutil). With several workers, totals sum per-worker % (can exceed 100%)。',
+  'admin.performance.hintProcessCpuSingle': 'This worker\'s process CPU % (psutil). With several workers, totals sum per-worker % (can exceed 100%)。',
   'admin.performance.hintNetwork': 'KB/s estimated from interface counters on this host。',
-  'admin.performance.hintConnections':
-    'WebSocket chat/workshop counts are summed across workers; active total uses Redis when available。',
+  'admin.performance.hintConnections': 'WebSocket chat/workshop counts are summed across workers; active total uses Redis when available。',
   'admin.performance.hintRedis': '副タイトル为已用与峰值内存；进度件为碎片率（为展示已缩放）。',
   'admin.performance.diskHint': '{mount} · used {used} · free {free} · total {total}',
   'admin.performance.version': 'バージョン {version}',
@@ -653,12 +629,10 @@ export default {
   'admin.roleControl': 'ロール控制',
   'admin.roleControlDesc': '管理スーパー管理者権限。拥有该ロール的ユーザー可访问完整管理面板。',
   'admin.roleControlDescPlatformBd': '管理教研员権限。教研员可查看グローバル数据并管理学校邀请。',
-  'admin.roleControlDescExpert':
-    'Manage expert access. エキスパートs can create schools and manage organizations in their invite scope.',
+  'admin.roleControlDescExpert': 'Manage expert access. エキスパートs can create schools and manage organizations in their invite scope.',
   'admin.roleControlDescManagers': '管理学校管理者。学校管理者可访问其所属組織的学校ダッシュボード。授予该ロール前，ユーザー须已加入学校。',
   'admin.roleAssignmentTab': 'ロール分配',
-  'admin.roleAssignmentDesc':
-    'Assign one of seven roles to a user. プラットフォーム, B2B, and C2C roles have different permissions.',
+  'admin.roleAssignmentDesc': 'Assign one of seven roles to a user. プラットフォーム, B2B, and C2C roles have different permissions.',
   'admin.roleTierPlatform': 'プラットフォーム',
   'admin.roleTierB2B': 'B2B 組織',
   'admin.roleTierC2C': 'C端個人ユーザー',
@@ -714,8 +688,7 @@ export default {
   'admin.schoolAddMemberBatchTitle': '批量インポート',
   'admin.schoolAddMemberBatchHint': 'コピー rows from Excel, WPS, or Word, then click here and paste (Ctrl+V).',
   'admin.schoolAddMemberBatchPastePlaceholder': 'Paste spreadsheet rows here — mobile/email and name in two columns; either order works',
-  'admin.schoolAddMemberBatchPasteHint':
-    'Tip: select rows in Excel/WPS/Word, copy, then paste here; mobile numbers and emails are detected automatically。',
+  'admin.schoolAddMemberBatchPasteHint': 'Tip: select rows in Excel/WPS/Word, copy, then paste here; mobile numbers and emails are detected automatically。',
   'admin.schoolAddMemberBatchInvalidPaste': '認識できません粘贴コンテンツ，请使用两列：電話番号或邮箱与氏名（顺序不限）',
   'admin.schoolAddMemberBatchTooLarge': 'At most {max} メンバー per batch ({count} pasted)',
   'admin.schoolAddMemberBatchDuplicatesRemoved': '({count} duplicates removed)',
@@ -766,8 +739,7 @@ export default {
   'admin.extraMemberSeatsLabel': '追加メンバーシート',
   'admin.extraMemberSeatsHint': 'Members: {current} / {effectiveLimit} (base {base} + extra {extra})。',
   'admin.extraMemberSeatsPreset': '+{count}',
-  'admin.schoolVersionHint':
-    'Subscription tier sets member cap and diagram storage for this school. Members: {current} / {limit}。',
+  'admin.schoolVersionHint': 'Subscription tier sets member cap and diagram storage for this school. Members: {current} / {limit}。',
   'admin.unlimited': '不限',
   'admin.unlimitedMembers': 'メンバー不限',
   'admin.schoolManagerNotAvailableTrial': 'トライアル schools cannot assign school managers.',
@@ -781,11 +753,9 @@ export default {
   'admin.schoolVersionTierOptionTrial': '{label} · メンバー無制限 · 学校管理者なし · {diagrams} diagrams/teacher · {storage} GB/member storage',
   'admin.schoolManagerLimitHint': '学校管理者 {current} / {limit}',
   'admin.schoolManagerLimitReached': 'This school has reached its manager limit ({limit})',
-  'admin.schoolTierDowngradeBlocked':
-    'Cannot switch to this tier: {members} メンバー (max {memberLimit}) and {managers} managers (max {managerLimit})',
+  'admin.schoolTierDowngradeBlocked': 'Cannot switch to this tier: {members} メンバー (max {memberLimit}) and {managers} managers (max {managerLimit})',
   'admin.schoolModal.tabMindbot': 'MindBot',
-  'admin.schoolModal.mindbotIntro':
-    'Configure DingTalk robots for this school. By default each bot uses MindMate Dify settings; you can set custom Dify per bot below the AI card template when needed。',
+  'admin.schoolModal.mindbotIntro': 'Configure DingTalk robots for this school. By default each bot uses MindMate Dify settings; you can set custom Dify per bot below the AI card template when needed。',
   'admin.schoolModal.mindbotSelectBot': '選択 bot',
   'admin.schoolModal.mindbotAddBot': '追加 bot',
   'admin.schoolModal.mindbotCreateHint': 'Creating a new MindBot config (up to {cap} bots per school)。',
@@ -795,8 +765,7 @@ export default {
   'admin.schoolMindmateAgentAvatar': 'エージェントアバター',
   'admin.schoolMindmateAgentAvatarUpload': 'アップロード形象',
   'admin.schoolMindmateAgentAvatarRemove': 'アバターを削除',
-  'admin.schoolMindmateAgentAvatarHint':
-    'PNG, JPG, GIF, or WebP; max 1MB; min 64×64; animated GIFs allowed (max 120 frames); cropped to a 256×256 square。',
+  'admin.schoolMindmateAgentAvatarHint': 'PNG, JPG, GIF, or WebP; max 1MB; min 64×64; animated GIFs allowed (max 120 frames); cropped to a 256×256 square。',
   'admin.schoolMindmateAvatarUploaded': '头像已アップロード并处理完了。',
   'admin.schoolMindmateAvatarRemoved': '头像削除しました。',
   'admin.schoolMindmateAvatarUploadFailed': '头像アップロードに失敗しました，もう一度お試しください。',
@@ -817,8 +786,7 @@ export default {
   'admin.schoolDifyApiKeyRequired': 'API key is 必須 when a base URL is set.',
   'admin.schoolDifyUrlRequired': 'Base URL is 必須 when an API key is set.',
   'admin.schoolDifyPairRequired': 'Both base URL and API key are 必須 for a school override.',
-  'admin.schoolDifyApiKeyHintOptional':
-    '必須 only when setting a school-specific override. Leave both fields empty to use global .env settings.',
+  'admin.schoolDifyApiKeyHintOptional': '必須 only when setting a school-specific override. Leave both fields empty to use global .env settings.',
   'admin.schoolDifyBlankUsesGlobal': '空欄则使用グローバル地址：{url}',
   'admin.schoolDifyApiKeyBlankUsesGlobal': '空欄则使用グローバル API Key（{masked}）。',
   'admin.schoolDifyAuthTest': 'Dify auth test',
@@ -842,17 +810,14 @@ export default {
   'admin.schoolDifyServer2': '服务器 2',
   'admin.schoolDifyActiveServer': '有効 server',
   'admin.schoolDifyFailover': 'Auto failover',
-  'admin.schoolDifyDualServerHint':
-    'Configure two Dify servers per school. The active server handles live MindMate chat; if auto failover is on, traffic switches to the standby when the active server is unreachable and switches back on recovery。',
+  'admin.schoolDifyDualServerHint': 'Configure two Dify servers per school. The active server handles live MindMate chat; if auto failover is on, traffic switches to the standby when the active server is unreachable and switches back on recovery。',
   'admin.mindmateExport.navLabel': 'MindMate 记录エクスポート',
   'admin.mindmateExport.tabExport': 'フィルター与查询',
   'admin.mindmateExport.tabDumps': 'Dump ファイル',
   'admin.mindmateExport.panelModeLabel': 'MindMate エクスポート模式',
   'admin.mindmateExport.title': 'MindMate 记录エクスポート',
-  'admin.mindmateExport.description':
-    'View and export MindMate (Dify) conversation history for a single user, multiple users, or a whole school over a time range. History is merged across both Dify servers。',
-  'admin.mindmateExport.privacyNotice':
-    'This view exposes real message content. Every export is audited (who exported which org/users/range/format). Handle exported data responsibly。',
+  'admin.mindmateExport.description': 'View and export MindMate (Dify) conversation history for a single user, multiple users, or a whole school over a time range. History is merged across both Dify servers。',
+  'admin.mindmateExport.privacyNotice': 'This view exposes real message content. Every export is audited (who exported which org/users/range/format). Handle exported data responsibly。',
   'admin.mindmateExport.orgLabel': '学校',
   'admin.mindmateExport.orgPlaceholder': '選択 a school',
   'admin.mindmateExport.scopeLabel': '范围',
@@ -871,8 +836,7 @@ export default {
   'admin.mindmateExport.dateRangeLabel': '日時範囲',
   'admin.mindmateExport.startDateTime': '開始',
   'admin.mindmateExport.endDateTime': '结束时间',
-  'admin.mindmateExport.dateTimeHint':
-    'Use a quick preset or pick start/end date and time. 日付-only picks use full calendar days (00:00–23:59). Leave empty (すべて) for full history.',
+  'admin.mindmateExport.dateTimeHint': 'Use a quick preset or pick start/end date and time. 日付-only picks use full calendar days (00:00–23:59). Leave empty (すべて) for full history.',
   'admin.mindmateExport.startDate': '開始 date',
   'admin.mindmateExport.endDate': '结束日付',
   'admin.mindmateExport.loadConversations': '会話を読み込む',
@@ -912,8 +876,7 @@ export default {
   'admin.mindmateExport.jobDownload': 'ダウンロードエクスポート',
   'admin.mindmateExport.requiresJobNotice': 'This scope is large; use a background export job instead of a direct download。',
   'admin.mindmateExport.loadMore': '読み込みもっと見る',
-  'admin.mindmateExport.dumps.intro':
-    'アップロード dify-dump_*.zip from each Dify host and import. Each import merges into the cumulative library used by 検索とフィルター. Snapshot archives are kept for audit.',
+  'admin.mindmateExport.dumps.intro': 'アップロード dify-dump_*.zip from each Dify host and import. Each import merges into the cumulative library used by 検索とフィルター. Snapshot archives are kept for audit.',
   'admin.mindmateExport.dumps.libraryDify': 'Dify library (Server 1)',
   'admin.mindmateExport.dumps.libraryNeodify': 'NeoDify library (Server 2)',
   'admin.mindmateExport.dumps.libraryEmpty': 'いいえ library yet — import a dump to start.',
@@ -963,8 +926,7 @@ export default {
   'admin.userSearchFailed': 'ユーザー検索失敗',
   'admin.selectSchool': '学校を選択',
   'admin.setManager': '管理者に設定',
-  'admin.shareInviteMessage':
-    '{orgName}：Mind 思考・教育 AI エージェントプラットフォームへようこそ！\nBNU 思考トレーニングセンター監修、100 校以上の思考発展連盟校と共創 — AI 時代の思考力を高めましょう。\n方法：PC またはスマートフォンで開く。初回は電話番号＋招待コードで登録、その後は SMS 確認コードでログイン。\nURL：{siteUrl}\n組織専用招待コード：{code}',
+  'admin.shareInviteMessage': '{orgName}：Mind 思考・教育 AI エージェントプラットフォームへようこそ！\nBNU 思考トレーニングセンター監修、100 校以上の思考発展連盟校と共創 — AI 時代の思考力を高めましょう。\n方法：PC またはスマートフォンで開く。初回は電話番号＋招待コードで登録、その後は SMS 確認コードでログイン。\nURL：{siteUrl}\n組織専用招待コード：{code}',
   'admin.shareInviteTitle': '招待を共有',
   'admin.source': '来源',
   'admin.sourceDatabase': 'データベース',
@@ -1002,8 +964,7 @@ export default {
   'admin.paidBenefitRemaining': '有料特典期限',
   'admin.paidBenefitPermanent': '永久',
   'admin.rankingBeijingTodayHint': 'Rankings are for the current day (00:00–24:00, Beijing time, UTC+8)。',
-  'admin.usersTokensAllTimeHint':
-    'Token counts are all-time totals. Click a name or token value to open the trend chart on 全期間.',
+  'admin.usersTokensAllTimeHint': 'Token counts are all-time totals. Click a name or token value to open the trend chart on 全期間.',
   'admin.topSchoolsByTokens': 'トークン使用量上位学校',
   'admin.topSchoolsByMindGraphTokens': 'MindGraph · 学校 by トークン使用量',
   'admin.topSchoolsByMindMateTokens': 'MindMate · 学校 by トークン使用量',
@@ -1185,13 +1146,11 @@ export default {
   'admin.database.noDumpFiles': 'いいえ dump files found in backup/',
   'admin.database.restore': '恢复',
   'admin.database.importConfirmTitle': '確認 復元',
-  'admin.database.importConfirmMsg':
-    'WARNING: This will REPLACE ALL existing data in PostgreSQL with the dump file contents. 元に戻せません. よろしいですか?',
+  'admin.database.importConfirmMsg': 'WARNING: This will REPLACE ALL existing data in PostgreSQL with the dump file contents. 元に戻せません. よろしいですか?',
   'admin.database.importSuccess': '数据库恢复に成功しました',
   'admin.database.importError': '復元 failed',
   'admin.database.orphanCleanup': '孤立レコードのクリーンアップ',
-  'admin.database.orphanCleanupDesc':
-    'Detect and remove records with broken foreign key references in the current PostgreSQL database。',
+  'admin.database.orphanCleanupDesc': 'Detect and remove records with broken foreign key references in the current PostgreSQL database。',
   'admin.database.detectOrphans': 'Detect Orphans',
   'admin.database.orphanDetectError': '失敗 to detect orphans',
   'admin.database.noOrphansFound': 'いいえ orphaned records found — database is clean.',
@@ -1209,8 +1168,7 @@ export default {
   'admin.database.pgLiveRows': 'Live Rows',
   'admin.database.pgExecuteMerge': 'マージ Into Live DB',
   'admin.database.pgMergeConfirmTitle': '確認 PG マージ',
-  'admin.database.pgMergeConfirmMsg':
-    'This will merge data from the dump into the live database. Existing records will be preserved. 続ける?',
+  'admin.database.pgMergeConfirmMsg': 'This will merge data from the dump into the live database. Existing records will be preserved. 続ける?',
   'admin.database.pgMergeSuccess': 'PG 转储合并に成功しました',
   'admin.database.pgMergeError': 'PG dump mergeに失敗しました',
   'admin.database.pgNewRows': '新增',

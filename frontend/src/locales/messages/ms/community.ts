@@ -1,4 +1,6 @@
-/** ms UI — community */
+/**
+ * ms UI � community
+ */
 
 export default {
   'community.category.all': 'Semua',

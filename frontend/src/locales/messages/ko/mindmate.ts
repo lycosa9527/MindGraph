@@ -1,4 +1,6 @@
-/** ko UI — mindmate */
+/**
+ * ko UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': '클릭하여 AI 관계 레이블 사용(다중 모델)',

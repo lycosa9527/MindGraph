@@ -1,4 +1,6 @@
-/** nl UI — thinkingCoins */
+/**
+ * nl UI � thinkingCoins
+ */
 
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': 'Mijn denktokens',

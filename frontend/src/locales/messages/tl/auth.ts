@@ -1,4 +1,6 @@
-/** tl UI — auth */
+/**
+ * tl UI � auth
+ */
 
 export default {
   'auth.accountInfo': 'Account',
@@ -14,15 +16,11 @@ export default {
   'auth.downloadDesktopShortcut': 'Idagdag sa desktop',
   'auth.pwaIosInstallHint': 'I-tap ang Share sa Safari, Chrome, o Edge, pagkatapos piliin ang “Add to Home Screen”.',
   'auth.pwaAndroidInstallHint': 'Buksan ang menu ng browser (⋮) at i-tap ang Install app o Add to Home screen.',
-  'auth.pwaSafariMacInstallHint':
-    'Sa Safari, piliin ang File → Add to Dock, o Share → Add to Dock (macOS Sonoma o mas bago).',
-  'auth.pwaDesktopInstallHint':
-    'Gamitin ang menu ng browser (⋮) o icon ng install sa address bar (Chrome, Edge, o Brave).',
+  'auth.pwaSafariMacInstallHint': 'Sa Safari, piliin ang File → Add to Dock, o Share → Add to Dock (macOS Sonoma o mas bago).',
+  'auth.pwaDesktopInstallHint': 'Gamitin ang menu ng browser (⋮) o icon ng install sa address bar (Chrome, Edge, o Brave).',
   'auth.pwaInstallSuccess': 'Naidagdag ang MindGraph sa iyong desktop.',
-  'auth.pwaDevInstallHint':
-    'Naka-off ang PWA install sa normal na dev mode. Gamitin ang production build (npm run build + backend) o patakbuhin ang npm run dev:pwa, pagkatapos gamitin ang Chrome/Edge sa HTTPS o localhost.',
-  'auth.pwaInsecureOriginHint':
-    'Buksan ang MindGraph sa browser sa HTTPS address nito (hindi saved HTML file) bago i-install sa desktop.',
+  'auth.pwaDevInstallHint': 'Naka-off ang PWA install sa normal na dev mode. Gamitin ang production build (npm run build + backend) o patakbuhin ang npm run dev:pwa, pagkatapos gamitin ang Chrome/Edge sa HTTPS o localhost.',
+  'auth.pwaInsecureOriginHint': 'Buksan ang MindGraph sa browser sa HTTPS address nito (hindi saved HTML file) bago i-install sa desktop.',
   'auth.backToLogin': 'Bumalik sa Login',
   'auth.captcha': 'Captcha',
   'auth.captchaLength4': 'Ilagay ang 4-character na captcha',
@@ -32,12 +30,9 @@ export default {
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Extension ng Chrome',
-  'auth.schoolTierFeatureUnavailable':
-    'Kailangan ng feature na ito ang Standard o Professional school tier (hindi kasama ang Basic).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Natapos na ang subscription ng iyong paaralan. Nasa trial tier na ang account mo. Makipag-ugnayan sa platform administrator para mag-renew.',
-  'auth.diagramLimitReached':
-    'Hanggang {max} saved diagram bawat guro ang pinapayagan ng trial schools. Mag-delete ng isa para mag-save ng bago.',
+  'auth.schoolTierFeatureUnavailable': 'Kailangan ng feature na ito ang Standard o Professional school tier (hindi kasama ang Basic).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Natapos na ang subscription ng iyong paaralan. Nasa trial tier na ang account mo. Makipag-ugnayan sa platform administrator para mag-renew.',
+  'auth.diagramLimitReached': 'Hanggang {max} saved diagram bawat guro ang pinapayagan ng trial schools. Mag-delete ng isa para mag-save ng bago.',
   'auth.downloadOpenclawSkill': 'OpenClaw skill',
   'auth.changePhoneButton': 'Palitan ang phone',
   'auth.passwordChangeSuccess': 'Matagumpay na napalitan ang password',
@@ -115,8 +110,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'Email pang-edukasyon',
   'auth.modal.hybridRegisterEmailTabAny': 'Email',
   'auth.modal.hybridRegisterPhoneTab': 'Telepono + invitation code',
-  'auth.modal.mainlandSalesNotice':
-    'Kailangan ng access sa mainland China? Gamitin ang mobile number at invitation code, o makipag-ugnayan sa customer support.',
+  'auth.modal.mainlandSalesNotice': 'Kailangan ng access sa mainland China? Gamitin ang mobile number at invitation code, o makipag-ugnayan sa customer support.',
   'auth.modal.registrationEmailLabel': 'Education email lamang',
   'auth.modal.registrationEmailLabelAny': 'Address ng email',
   'auth.modal.registrationEmailHint': '',
@@ -131,8 +125,7 @@ export default {
   'auth.modal.emailCodePlaceholder': '6-digit na code mula sa email',
   'auth.modal.acknowledgeOverseas': 'Nauunawaan ko at gagamitin ko ang software para sa edukasyon lamang.',
   'auth.modal.acknowledgeOverseasAny': 'Nauunawaan ko at sumasang-ayon ako sa overseas registration terms.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'Nauunawaan ko at sumasang-ayon ako sa overseas registration terms, at hindi available ang Simplified Chinese sa path na ito.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'Nauunawaan ko at sumasang-ayon ako sa overseas registration terms, at hindi available ang Simplified Chinese sa path na ito.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Pakikumpirma ang paunawa sa itaas.',
   'auth.loginPhoneOrEmail': 'Phone o email',
@@ -147,17 +140,13 @@ export default {
   'auth.username': 'Username',
   'auth.waitCaptchaLoad': 'Maghintay hanggang ma-load ang captcha',
   'auth.quickRegPageTitle': 'Mabilis na pagre-register',
-  'auth.quickRegPageHint':
-    'Buksan ang page na ito mula sa link na ibinahagi ng paaralan. Ilagay ang phone at 6-digit na room code sa quick registration window ng facilitator (nagre-refresh tuwing ~30 segundo). Ipinapakita ng code na nasa session ka; hindi nito pinapatunayan ang phone ownership tulad ng SMS code.',
-  'auth.quickRegLinkInvalid':
-    'Hindi aktibo ang registration link na ito (expired o sarado). Buksan muli ang kasalukuyang link mula sa facilitator.',
-  'auth.quickRegProbeRateLimited':
-    'Masyadong maraming check mula sa page na ito. Maghintay at i-refresh, o subukan muli mamaya.',
+  'auth.quickRegPageHint': 'Buksan ang page na ito mula sa link na ibinahagi ng paaralan. Ilagay ang phone at 6-digit na room code sa quick registration window ng facilitator (nagre-refresh tuwing ~30 segundo). Ipinapakita ng code na nasa session ka; hindi nito pinapatunayan ang phone ownership tulad ng SMS code.',
+  'auth.quickRegLinkInvalid': 'Hindi aktibo ang registration link na ito (expired o sarado). Buksan muli ang kasalukuyang link mula sa facilitator.',
+  'auth.quickRegProbeRateLimited': 'Masyadong maraming check mula sa page na ito. Maghintay at i-refresh, o subukan muli mamaya.',
   'auth.quickRegSessionSignups': 'Nag-register sa session na ito: {n}',
   'auth.quickRegRoomCodeLabel': 'Kodigo ng room',
   'auth.quickRegRoomCodePlaceholder': '6 digit',
-  'auth.quickRegRoomCodeHint':
-    'Itugma ang malalaking digit sa quick registration dialog ng facilitator; ilagay ang code bago magbago.',
+  'auth.quickRegRoomCodeHint': 'Itugma ang malalaking digit sa quick registration dialog ng facilitator; ilagay ang code bago magbago.',
   'auth.quickRegRoomCodeEnter6': 'Ilagay ang 6-digit na room code',
   'auth.quickRegMaxUses': 'Max signups para sa link na ito',
   'auth.quickRegHeadcount': 'Max',
@@ -167,16 +156,14 @@ export default {
   'auth.quickRegSubmit': 'Kumpletuhin ang registration',
   'auth.quickRegSubmitting': 'Nagre-register…',
   'auth.quickRegRegisterSuccess': 'Matagumpay ang registration',
-  'auth.quickRegSessionUnsure':
-    'Maaaring matagumpay ang registration. Kung hindi ka naka-sign in, bumalik at gamitin ang verification code login, o i-refresh ang page na ito.',
+  'auth.quickRegSessionUnsure': 'Maaaring matagumpay ang registration. Kung hindi ka naka-sign in, bumalik at gamitin ang verification code login, o i-refresh ang page na ito.',
   'auth.quickRegBackToSignIn': 'Gamitin ang standard login / register',
   'auth.quickRegSelectOrg': 'Pumili ng paaralan',
   'auth.quickRegOrgLoadError': 'Hindi ma-load ang mga paaralan. Subukan muli.',
   'auth.quickRegMintError': 'Hindi mabuksan ang registration channel. Subukan muli.',
   'auth.setPasswordWithSms': 'Itakda ang login password',
   'auth.setPasswordWithSmsTitle': 'Itakda ang password via SMS',
-  'auth.setPasswordWithSmsHint':
-    'Nagpapadala kami ng code sa naka-bind na phone mo. Pagkatapos magtakda ng password, maaari kang mag-sign in gamit ang password o verification code.',
+  'auth.setPasswordWithSmsHint': 'Nagpapadala kami ng code sa naka-bind na phone mo. Pagkatapos magtakda ng password, maaari kang mag-sign in gamit ang password o verification code.',
   'auth.setPasswordWithSmsSubmit': 'I-save ang password',
   'auth.setPasswordWithSmsSubmitting': 'Sine-save…',
   'auth.accountDisplayName': 'Pangalan sa display',
@@ -192,8 +179,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Hindi ma-unlink. Subukan muli.',
   'auth.dingtalkBindRebind': 'I-link muli',
   'auth.dingtalkBindTitle': 'I-link ang DingTalk account',
-  'auth.dingtalkBindInstructions':
-    'Ipadala ang 6-digit na code sa ibaba (hal. 123-456) bilang text message sa school DingTalk MindBot mo.',
+  'auth.dingtalkBindInstructions': 'Ipadala ang 6-digit na code sa ibaba (hal. 123-456) bilang text message sa school DingTalk MindBot mo.',
   'auth.dingtalkBindPairWaiting': 'Naghihintay na matanggap ng MindBot ang code mo…',
   'auth.dingtalkBindCodeHint': 'Ipadala lamang ang code na ito — walang dagdag na text.',
   'auth.dingtalkBindCountdown': 'Mag-e-expire ang session sa {s}s',
@@ -208,8 +194,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'Naka-link ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'Kasalukuyang naka-link: {staff}',
   'auth.dingtalkUnbindTitle': 'I-unlink ang DingTalk account',
-  'auth.dingtalkUnbindInstructions':
-    'Ipadala ang code sa ibaba mula sa naka-link na DingTalk account mo sa MindBot para kumpirmahin ang unlink.',
+  'auth.dingtalkUnbindInstructions': 'Ipadala ang code sa ibaba mula sa naka-link na DingTalk account mo sa MindBot para kumpirmahin ang unlink.',
   'auth.dingtalkUnbindPairWaiting': 'Naghihintay na kumpirmahin ng naka-link na DingTalk account mo…',
   'auth.dingtalkUnbindCodeHint': 'Ipadala lamang ang code na ito mula sa naka-link na DingTalk account mo.',
   'auth.dingtalkUnbindExpiredHint': 'Nag-expire ang unlink session. Magsimula muli.',
@@ -222,8 +207,7 @@ export default {
   'auth.qrLoginInviteRequired': 'Ilagay ang school invitation code bago gamitin ang QR login',
   'auth.qrLoginProvidersFailed': 'Hindi ma-load ang QR login settings. Subukan muli.',
   'auth.qrLoginProviderDisabled': 'Hindi naka-enable ang sign-in method na ito para sa paaralan mo',
-  'auth.qrLoginNotLinked':
-    'Hindi naka-link ang account — mag-sign in gamit ang password at i-bind sa Account linking muna',
+  'auth.qrLoginNotLinked': 'Hindi naka-link ang account — mag-sign in gamit ang password at i-bind sa Account linking muna',
   'auth.qrLoginExchangeFailed': 'Nabigo ang QR sign-in. Subukan muli.',
   'auth.qrLoginInvalidState': 'Nag-expire ang QR session. Isara at mag-scan muli.',
   'auth.qrLoginCorpMismatch': 'Hindi tumutugma ang DingTalk organization sa school settings mo.',
@@ -232,8 +216,7 @@ export default {
   'auth.qrLoginStartFailed': 'Hindi masimulan ang QR sign-in. Subukan muli.',
   'auth.qrLoginSuccess': 'Matagumpay na naka-sign in',
   'auth.accountBindingsSection': 'Pag-uugnay ng account',
-  'auth.accountBindingsHint':
-    'Nagse-save ang MindBot sa DingTalk; WeChat/DingTalk para sa QR sign-in (i-bind dito muna)',
+  'auth.accountBindingsHint': 'Nagse-save ang MindBot sa DingTalk; WeChat/DingTalk para sa QR sign-in (i-bind dito muna)',
   'auth.bindMindbot': 'I-link ang MindBot',
   'auth.unbindMindbot': 'I-unlink ang MindBot',
   'auth.bindWechat': 'I-link ang WeChat',

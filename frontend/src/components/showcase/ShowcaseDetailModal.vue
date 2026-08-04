@@ -37,7 +37,7 @@ import {
 import { resolveDevStaticUrl } from '@/utils/devStaticUrl'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useShowcaseDiagramAction } from '@/composables/showcase/useShowcaseDiagramAction'
-import { useAuthStore } from '@/stores'
+import { useAuthStore, useShowcaseStore } from '@/stores'
 import {
   type ShowcasePost,
   deleteAdminShowcasePost,
@@ -51,6 +51,12 @@ import {
   toggleShowcasePostLike,
   withdrawShowcasePost,
 } from '@/utils/apiClient'
+
+function teachingDocNeedsPreview(post: ShowcasePost): boolean {
+  if (post.case_type !== 'teaching_design' || post.preview_url) return false
+  const path = (post.attachment_url || '').toLowerCase().split('?')[0] || ''
+  return path.endsWith('.pptx') || path.endsWith('.docx') || path.endsWith('.doc')
+}
 
 type TeachingSpec = {
   body?: string
@@ -106,6 +112,9 @@ const {
 } = useShowcaseDiagramAction()
 
 const post = ref<ShowcasePost | null>(null)
+const diagramPreviewRef = ref<{
+  getActiveDiagramSpec?: () => Record<string, unknown> | null
+} | null>(null)
 const isLoading = ref(false)
 const isActionBusy = ref(false)
 const loadError = ref<string | null>(null)
@@ -295,6 +304,10 @@ async function loadPost() {
   loadError.value = null
   try {
     post.value = await getShowcasePost(props.postId)
+    // get_post enqueues missing LO preview; open SSE so the reader updates live.
+    if (post.value && teachingDocNeedsPreview(post.value)) {
+      useShowcaseStore().markCoverPending(post.value.id)
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(t('showcase.detail.loadFailed'))
     if (!props.postPreview) {
@@ -517,14 +530,18 @@ async function remove() {
 
 async function runDiagramAction() {
   if (!post.value) return
-  await handleDiagramAction(post.value, diagramPostSpec.value, { closeModal: close })
+  const activeSpec = diagramPreviewRef.value?.getActiveDiagramSpec?.() ?? null
+  await handleDiagramAction(post.value, activeSpec ?? diagramPostSpec.value, {
+    closeModal: close,
+  })
 }
 
 function askMindMate() {
   if (!post.value) return
+  // MindMate loads the case as a pending Dify attachment; user types their own question.
   void router.push({
     name: 'MindMate',
-    query: { q: `请帮我分析这份教学设计案例：《${post.value.title}》` },
+    query: { showcase_post: post.value.id },
   })
   close()
 }
@@ -898,6 +915,7 @@ function close() {
 
             <div class="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
               <ShowcaseDiagramPreview
+                ref="diagramPreviewRef"
                 :post-id="post.id"
                 :thumbnail-url="post.thumbnail_url"
                 :source-file-url="post.source_file_url"

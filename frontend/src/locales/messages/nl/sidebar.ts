@@ -1,4 +1,6 @@
-/** nl UI — sidebar */
+/**
+ * nl UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'Verwijderen',

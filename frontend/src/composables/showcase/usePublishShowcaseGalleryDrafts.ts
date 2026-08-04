@@ -81,6 +81,7 @@ export function usePublishShowcaseGalleryDrafts() {
     return false
   }
 
+  /** Store an already-processed gallery image (caller resizes / strips EXIF). */
   function pushGalleryImageDraft(file: File): void {
     galleryImageDrafts.value.push({
       id: newGalleryId(),

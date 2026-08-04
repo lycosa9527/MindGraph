@@ -1,4 +1,6 @@
-/** de UI — mindmate */
+/**
+ * de UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'Klicken, um KI-Beziehungslabels zu aktivieren (Multi-Modell)',

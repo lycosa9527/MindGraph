@@ -1,6 +1,7 @@
 import { gunzipSync } from 'fflate'
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
 
+import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 import { refreshWatermarkDensity, stampWatermarkOnElement } from '@/utils/showcaseWatermark'
 
 let workerConfigured = false
@@ -20,11 +21,6 @@ export type RenderPdfPreviewOptions = {
   watermarkText?: string
 }
 
-function withCacheBust(url: string): string {
-  const sep = url.includes('?') ? '&' : '?'
-  return `${url}${sep}mg_preview=${Date.now()}`
-}
-
 function normalizePdfBytes(data: Uint8Array): Uint8Array {
   if (data.byteLength >= 5) {
     const head = String.fromCharCode(...data.subarray(0, 5))
@@ -37,11 +33,7 @@ function normalizePdfBytes(data: Uint8Array): Uint8Array {
 }
 
 async function fetchPdfBytes(url: string, signal?: AbortSignal): Promise<Uint8Array> {
-  const response = await fetch(withCacheBust(url), {
-    credentials: 'include',
-    cache: 'no-store',
-    signal,
-  })
+  const response = await fetchShowcaseAsset(url, { signal })
   if (!response.ok) {
     throw new Error(`Failed to fetch PDF (${response.status})`)
   }

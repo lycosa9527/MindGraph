@@ -1,4 +1,6 @@
-/** tl UI — mindmate */
+/**
+ * tl UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'I-click para paganahin ang mga label ng relasyon ng AI (multi-model)',
@@ -11,18 +13,14 @@ export default {
   'aiModel.relationshipsBadge': 'Mga relasyon',
   'aiModel.relationshipsTooltip': 'I-drag upang i-link ang mga konsepto—Ang AI ay bubuo ng mga relasyon',
   'aiModel.tabFocusBadge': 'Focus sa tab',
-  'aiModel.tabFocusTooltip':
-    'Pindutin ang Tab habang ine-edit ang focus na tanong upang patunayan; pagkatapos ay pumili ng mga alternatibo sa bar (− / =)',
+  'aiModel.tabFocusTooltip': 'Pindutin ang Tab habang ine-edit ang focus na tanong upang patunayan; pagkatapos ay pumili ng mga alternatibo sa bar (− / =)',
   'aiModel.tabFocusQuestionBadge': 'Tab — focus na tanong',
-  'aiModel.conceptMapFocusQuestionTabTooltip':
-    'Habang pinipili o ini-edit ang focus na tanong: pindutin ang Tab para patakbuhin ang AI check (magpasok muna ng mahalagang tanong; kailangan ng pag-sign in).',
+  'aiModel.conceptMapFocusQuestionTabTooltip': 'Habang pinipili o ini-edit ang focus na tanong: pindutin ang Tab para patakbuhin ang AI check (magpasok muna ng mahalagang tanong; kailangan ng pag-sign in).',
   'aiModel.tabRecBadge': 'Tab rec',
   'aiModel.tabContentRecBadge': 'Tab - nilalaman',
   'aiModel.tabRelationshipRecBadge': 'Tab - relasyon',
-  'aiModel.conceptMapConceptTabTooltip':
-    'Edit mode (nakahiwalay na konsepto): pindutin ang Tab para sa mga alternatibong salita (dapat itakda ang paksa).',
-  'aiModel.conceptMapRelationshipTabTooltip':
-    'I-edit ang mode o selection mode (naka-link na konsepto): pindutin ang Tab para sa mga suhestyon sa ugnayan ng focal-link.',
+  'aiModel.conceptMapConceptTabTooltip': 'Edit mode (nakahiwalay na konsepto): pindutin ang Tab para sa mga alternatibong salita (dapat itakda ang paksa).',
+  'aiModel.conceptMapRelationshipTabTooltip': 'I-edit ang mode o selection mode (naka-link na konsepto): pindutin ang Tab para sa mga suhestyon sa ugnayan ng focal-link.',
   'aiModel.tooltip.clickDeselect': 'I-click upang alisin sa pagkakapili ang {name}',
   'aiModel.tooltip.clickSelect': 'I-click upang piliin ang {name}',
   'aiModel.tooltip.clickSwitch': 'I-click upang lumipat sa resulta ng {name}',
@@ -31,8 +29,7 @@ export default {
   'aiModel.tooltip.showingResult': 'Kasalukuyang ipinapakita ang resulta ng {name}',
   'aiModel.hostPickBadgeTooltip': 'In-edit ng host ang bersyon ng diagram ng modelong ito (multi-model view)',
   'aiModel.hostPickBadgeAria': 'Ang host ay nag-e-edit gamit ang {name}',
-  'autoComplete.conceptMapRealtime':
-    'Gumagamit ang mga concept map ng real-time na mga mungkahi sa relasyon; lumikha ng mga link upang makabuo',
+  'autoComplete.conceptMapRealtime': 'Gumagamit ang mga concept map ng real-time na mga mungkahi sa relasyon; lumikha ng mga link upang makabuo',
   'autoComplete.doubleBubbleNeedBothTopics': 'Mangyaring punan ang parehong kaliwa at kanang mga paksa bago bumuo',
   'autoComplete.doubleBubbleTopicPair': '{left} kumpara sa {right}',
   'autoComplete.enterTopicFirst': 'Mangyaring ilagay muna ang nilalaman ng paksa',
@@ -51,11 +48,9 @@ export default {
   'focusQuestion.cannotReadStream': 'Hindi mabasa ang stream ng mungkahi',
   'focusQuestion.confirm': 'Kumpirmahin at buksan ang canvas',
   'focusQuestion.emptyOwn': '(walang laman)',
-  'focusQuestion.help':
-    'Ang isang focus na tanong ay ang partikular na isyu na tinutugunan ng iyong mapa. Nagtatakda ito ng saklaw—para sa isang mapa tungkol sa "tubig", ang mga halimbawa ay maaaring "Paano umiikot ang tubig sa Earth?" o "Ano ang mga pisikal na katangian ng tubig?"',
+  'focusQuestion.help': 'Ang isang focus na tanong ay ang partikular na isyu na tinutugunan ng iyong mapa. Nagtatakda ito ng saklaw—para sa isang mapa tungkol sa "tubig", ang mga halimbawa ay maaaring "Paano umiikot ang tubig sa Earth?" o "Ano ang mga pisikal na katangian ng tubig?"',
   'focusQuestion.loadMoreFailed': 'Hindi na makapag-load pa',
-  'focusQuestion.loginHint':
-    'Mag-sign in para mag-validate gamit ang AI at makakuha ng mga mungkahi. Maaari ka pa ring maglagay ng tanong at magpatuloy.',
+  'focusQuestion.loginHint': 'Mag-sign in para mag-validate gamit ang AI at makakuha ng mga mungkahi. Maaari ka pa ring maglagay ng tanong at magpatuloy.',
   'focusQuestion.needValidate': 'Patakbuhin ang AI check o laktawan muna ang AI',
   'focusQuestion.networkError': 'Error sa network',
   'focusQuestion.noResult': 'Walang resulta',
@@ -71,8 +66,7 @@ export default {
   'focusQuestion.validate': 'Pagsusuri ng AI',
   'focusQuestion.validationRequestFailed': 'Nabigo ang kahilingan sa pagpapatunay',
   'focusQuestion.weakLabel': 'Mahina',
-  'mindmate.defaultSuggestion1':
-    'Anong mga cognitive conflict ang maaari kong idisenyo para sa isang paralelogram na aralin?',
+  'mindmate.defaultSuggestion1': 'Anong mga cognitive conflict ang maaari kong idisenyo para sa isang paralelogram na aralin?',
   'mindmate.defaultSuggestion10': 'Paano gamitin ang pagtuturo sa sitwasyon sa klase ng kasaysayan?',
   'mindmate.defaultSuggestion11': 'Anong mga isyu sa kaligtasan ang dapat tandaan sa mga eksperimento sa pisika?',
   'mindmate.defaultSuggestion12': 'Paano magdisenyo ng araling-bahay na tumutugma sa antas ng pag-iisip ng mag-aaral?',
@@ -97,15 +91,12 @@ export default {
   'mindmate.openCanvasFailed': 'Hindi mabuksan ang diagram sa canvas.',
   'mindmate.openCanvasLoginRequired': 'Mag-sign in para buksan ang diagram na ito sa canvas.',
   'mindmate.openCanvasNoLibraryId': 'Ang diagram ay hindi na-save sa iyong library. Mag-sign in at subukang muli.',
-  'mindmate.openCanvasSaveRetry':
-    'Hindi awtomatikong ma-save ang diagram na ito sa iyong library. Magbagong-buhay; makipag-ugnayan sa iyong administrator kung magpapatuloy ito.',
+  'mindmate.openCanvasSaveRetry': 'Hindi awtomatikong ma-save ang diagram na ito sa iyong library. Magbagong-buhay; makipag-ugnayan sa iyong administrator kung magpapatuloy ito.',
   'mindmate.openCanvasSwitchTitle': 'Lumipat ng diagram',
-  'mindmate.openCanvasSwitchBody':
-    'Buksan ang "{target}" sa canvas? Ang kasalukuyang diagram ay "{current}". Maaaring mawala ang mga hindi na-save na pagbabago sa kasalukuyang canvas.',
+  'mindmate.openCanvasSwitchBody': 'Buksan ang "{target}" sa canvas? Ang kasalukuyang diagram ay "{current}". Maaaring mawala ang mga hindi na-save na pagbabago sa kasalukuyang canvas.',
   'mindmate.openCanvasSwitchOk': 'Bukas',
   'mindmate.diagramLibraryFull': 'Puno ang library ng diagram. Tanggalin ang mga lumang diagram at subukang muli.',
-  'mindmate.diagramPreviewExpired':
-    'Ang preview na ito ay wala na sa iyong browser cache—ang pansamantalang larawan ay na-clear. I-tap ang notice na ito o gamitin ang «I-edit sa canvas» sa ibaba upang buksan ang diagram.',
+  'mindmate.diagramPreviewExpired': 'Ang preview na ito ay wala na sa iyong browser cache—ang pansamantalang larawan ay na-clear. I-tap ang notice na ito o gamitin ang «I-edit sa canvas» sa ibaba upang buksan ang diagram.',
   'mindmate.tooltip.copy': 'Kopyahin',
   'mindmate.tooltip.dislike': 'hindi gusto',
   'mindmate.tooltip.edit': 'I-edit',
@@ -131,12 +122,9 @@ export default {
   'nodePalette.finish': 'Tapusin',
   'nodePalette.generatingIdeas': 'Bumubuo ng mga ideya...',
   'nodePalette.generatingProgress': 'Binubuo... {count} natanggap',
-  'nodePalette.helpDimension':
-    'Piliin ang eksaktong 1 dimensyon lamang, pagkatapos ay i-click ang Susunod upang magpatuloy.',
-  'nodePalette.helpFinish':
-    'I-click upang pumili ng mga node, pagkatapos ay i-click ang Tapusin upang idagdag sa diagram.',
-  'nodePalette.helpNext':
-    'Pumili ng mga node, pagkatapos ay i-click ang Susunod upang bumuo ng mga node sa pangalawang yugto.',
+  'nodePalette.helpDimension': 'Piliin ang eksaktong 1 dimensyon lamang, pagkatapos ay i-click ang Susunod upang magpatuloy.',
+  'nodePalette.helpFinish': 'I-click upang pumili ng mga node, pagkatapos ay i-click ang Tapusin upang idagdag sa diagram.',
+  'nodePalette.helpNext': 'Pumili ng mga node, pagkatapos ay i-click ang Susunod upang bumuo ng mga node sa pangalawang yugto.',
   'nodePalette.history.replaceAddNodes': 'Palitan / magdagdag ng mga node',
   'nodePalette.loadMore': 'Mag-load pa',
   'nodePalette.next': 'Susunod',
@@ -174,8 +162,7 @@ export default {
   'panels.share.title': 'Ibahagi ang Pag-uusap',
   'rootConceptModal.addBranchAria': 'Magdagdag ng sangay',
   'rootConceptModal.addBranchTooltip': 'Magdagdag ng sangay (iwasan ang mga duplicate)',
-  'rootConceptModal.helpFooter':
-    'Ang bawat tab ay isang sangay ng kaalaman; ang mga konsepto ay maaaring mag-link sa ugat at mag-cross-link sa ibang pagkakataon. I-drag sa canvas para mag-auto-link sa ugat.',
+  'rootConceptModal.helpFooter': 'Ang bawat tab ay isang sangay ng kaalaman; ang mga konsepto ay maaaring mag-link sa ugat at mag-cross-link sa ibang pagkakataon. I-drag sa canvas para mag-auto-link sa ugat.',
   'rootConceptModal.splittingLoading': 'Paghahati-hati ng mga sangay at pagbuo ng mga konsepto...',
   'rootConceptModal.tabTitleRoot': 'Konsepto ng ugat: {text}',
   'rootConceptModal.title': 'Konsepto ng ugat',
@@ -204,8 +191,7 @@ export default {
   'mindmate.collabRecipientAll': 'Sa lahat',
   'mindmate.collabInputPlaceholderMindmate': 'Tanungin ang AI...',
   'mindmate.collabInputPlaceholderAll': 'Magmensahe sa mga guro sa kwartong ito...',
-  'mindmate.collabInputHint':
-    'Karaniwang mensahe para sa mga guro lang; {\'@\'}MindMate ang magpapatakbo ng AI (shared na usapan)',
+  'mindmate.collabInputHint': 'Karaniwang mensahe para sa mga guro lang; {\'@\'}MindMate ang magpapatakbo ng AI (shared na usapan)',
   'mindmate.collabSharedPanelTitle': 'Sumali sa chatroom',
   'mindmate.collabSharedCodeHint': 'Ilagay ang invite code (xxx-xxx) para sumali sa shared MindMate chatroom.',
   'mindmate.collabStartOrg': 'Simulan ang silid ng org',

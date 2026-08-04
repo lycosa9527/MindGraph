@@ -1,4 +1,6 @@
-/** vi UI — workshop */
+/**
+ * vi UI � workshop
+ */
 
 export default {
   'collab.codeCopied': 'Đã sao chép mã',
@@ -30,10 +32,8 @@ export default {
   'collab.previousSessionsStopped': 'Đã kết thúc (các) phiên cộng tác trước đó của {n} trên các sơ đồ khác của bạn.',
   'collab.saveFailed': 'Không lưu được sơ đồ',
   'collab.scanToJoin': 'Quét để tham gia',
-  'collab.schoolDescActive':
-    'Sự hợp tác của trường đang diễn ra. Đồng nghiệp: sử dụng Cộng tác → Trường học trên trang chủ và chọn sơ đồ này - không cần mã.',
-  'collab.schoolStarted':
-    'Tính năng cộng tác của trường học đang bật — đồng nghiệp có thể tham gia từ Cộng tác → Trường học.',
+  'collab.schoolDescActive': 'Sự hợp tác của trường đang diễn ra. Đồng nghiệp: sử dụng Cộng tác → Trường học trên trang chủ và chọn sơ đồ này - không cần mã.',
+  'collab.schoolStarted': 'Tính năng cộng tác của trường học đang bật — đồng nghiệp có thể tham gia từ Cộng tác → Trường học.',
   'collab.sectionNetwork': 'Cộng tác chia sẻ (mã)',
   'collab.sectionSchool': 'Hợp tác trường học',
   'collab.sessionDuration': 'Thời lượng phiên',
@@ -132,8 +132,7 @@ export default {
   'workshop.gearMenu': 'Tùy chọn',
   'workshop.generalChat': 'Trò chuyện chung',
   'workshop.inbox': 'Hộp thư đến',
-  'workshop.inboxHintPickChannel':
-    'Mở một kênh hoặc tin nhắn trực tiếp trên thanh bên để đọc và trả lời. Bạn có thể quay lại đây bất cứ lúc nào từ Lượt xem → Hộp thư đến.',
+  'workshop.inboxHintPickChannel': 'Mở một kênh hoặc tin nhắn trực tiếp trên thanh bên để đọc và trả lời. Bạn có thể quay lại đây bất cứ lúc nào từ Lượt xem → Hộp thư đến.',
   'workshop.inboxSummaryTitle': 'Hộp thư đến của bạn',
   'workshop.inboxUnreadChannels': 'Chưa đọc trong các kênh',
   'workshop.inboxUnreadDms': 'Tin nhắn trực tiếp chưa đọc',
@@ -158,8 +157,7 @@ export default {
   'workshop.loadMore': 'Tải thêm',
   'workshop.mainChannelStream': 'Kênh chính',
   'workshop.manageTeachingGroups': 'Quản lý nhóm giảng dạy',
-  'workshop.manageTeachingGroupsBlurb':
-    'Thêm hoặc xóa nhóm, đặt công khai hoặc riêng tư, chỉnh sửa tên và mô tả, sắp xếp lại danh sách, sao chép nhóm làm mẫu và mời đồng nghiệp. Sử dụng Nâng cao để đăng các quy tắc và mặc định thông báo. Việc lưu trữ sẽ xóa nhóm đối với mọi người.',
+  'workshop.manageTeachingGroupsBlurb': 'Thêm hoặc xóa nhóm, đặt công khai hoặc riêng tư, chỉnh sửa tên và mô tả, sắp xếp lại danh sách, sao chép nhóm làm mẫu và mời đồng nghiệp. Sử dụng Nâng cao để đăng các quy tắc và mặc định thông báo. Việc lưu trữ sẽ xóa nhóm đối với mọi người.',
   'workshop.manageUser': 'Quản lý người dùng này',
   'workshop.markAllReadChannel': 'Đánh dấu tất cả tin nhắn đã đọc',
   'workshop.markAsRead': 'Đánh dấu là đã đọc',
@@ -197,8 +195,7 @@ export default {
   'workshop.noTeachingGroupsListed': 'Chưa có nhóm giảng dạy nào.',
   'workshop.noTopicsYet': 'Chưa có cuộc trò chuyện nào',
   'workshop.notifications': 'Thông báo',
-  'workshop.notificationsSettingsBlurb':
-    'Thông báo trình duyệt về đề cập và tin nhắn mới sử dụng cài đặt hệ thống của bạn. Bạn cũng có thể điều chỉnh thông báo trên màn hình và email cho mỗi kênh trong cài đặt kênh.',
+  'workshop.notificationsSettingsBlurb': 'Thông báo trình duyệt về đề cập và tin nhắn mới sử dụng cài đặt hệ thống của bạn. Bạn cũng có thể điều chỉnh thông báo trên màn hình và email cho mỗi kênh trong cài đặt kênh.',
   'workshop.offline': 'ngoại tuyến',
   'workshop.online': 'trực tuyến',
   'workshop.openMainChannelStream': 'Kênh chính',
@@ -206,10 +203,8 @@ export default {
   'workshop.permissions': 'Quyền',
   'workshop.personalMenu': 'Thực đơn cá nhân',
   'workshop.phase2RoadmapGroupsAlerts': 'Đến sau: đề cập @group, từ cảnh báo và chính sách lịch sử chỉnh sửa tin nhắn.',
-  'workshop.phase2RoadmapMovePreview':
-    'Đến sau: di chuyển một tin nhắn, xem trước liên kết URL và hoạt động đa kênh phong phú hơn.',
-  'workshop.phase2RoadmapPlatform':
-    'Tồn đọng nền tảng: đồng bộ hóa gia tăng, đẩy thiết bị di động, thông báo email, bot/webhook.',
+  'workshop.phase2RoadmapMovePreview': 'Đến sau: di chuyển một tin nhắn, xem trước liên kết URL và hoạt động đa kênh phong phú hơn.',
+  'workshop.phase2RoadmapPlatform': 'Tồn đọng nền tảng: đồng bộ hóa gia tăng, đẩy thiết bị di động, thông báo email, bot/webhook.',
   'workshop.pickColleagueToInvite': 'Chọn một đồng nghiệp để mời.',
   'workshop.pinChannel': 'Ghim lên đầu',
   'workshop.policyEveryone': 'Mọi người',
@@ -217,8 +212,7 @@ export default {
   'workshop.policyMembersOnly': 'Chỉ thành viên',
   'workshop.postingPolicy': 'Chính sách đăng bài',
   'workshop.preferences': 'Tùy chọn',
-  'workshop.preferencesSettingsBlurb':
-    'Tùy chọn ngôn ngữ và hiển thị áp dụng trên ứng dụng. Nhiều tùy chọn trò chuyện trong Workshop sẽ xuất hiện ở đây theo thời gian.',
+  'workshop.preferencesSettingsBlurb': 'Tùy chọn ngôn ngữ và hiển thị áp dụng trên ứng dụng. Nhiều tùy chọn trò chuyện trong Workshop sẽ xuất hiện ở đây theo thời gian.',
   'workshop.presenceActive': 'Tích cực',
   'workshop.presenceIdle': 'Nhàn rỗi',
   'workshop.presenceOffline': 'Ngoại tuyến',
@@ -226,8 +220,7 @@ export default {
   'workshop.profile': 'Hồ sơ',
   'workshop.publicChannels': 'Kênh công cộng',
   'workshop.quoteMessage': 'Tin nhắn trích dẫn',
-  'workshop.readOnlyProfileBlurb':
-    'Chi tiết hồ sơ của đồng nghiệp được hiển thị ở chế độ xem đơn giản. Sử dụng Quản lý người dùng (quản trị viên) để mở thư mục quản trị.',
+  'workshop.readOnlyProfileBlurb': 'Chi tiết hồ sơ của đồng nghiệp được hiển thị ở chế độ xem đơn giản. Sử dụng Quản lý người dùng (quản trị viên) để mở thư mục quản trị.',
   'workshop.recentDmActivity': 'Tin nhắn trực tiếp gần đây',
   'workshop.recentTopics': 'Cuộc trò chuyện gần đây',
   'workshop.renameTopic': 'Đổi tên cuộc trò chuyện',
@@ -238,8 +231,7 @@ export default {
   'workshop.roleOwner': 'Người sở hữu',
   'workshop.searchMembers': 'Tìm kiếm thành viên...',
   'workshop.searchMessages': 'Tìm kiếm tin nhắn...',
-  'workshop.selectChannelForSettings':
-    'Trước tiên hãy chọn một nhóm giảng dạy hoặc nghiên cứu bài học, sau đó mở cài đặt tại đây.',
+  'workshop.selectChannelForSettings': 'Trước tiên hãy chọn một nhóm giảng dạy hoặc nghiên cứu bài học, sau đó mở cài đặt tại đây.',
   'workshop.selectConversation': 'Chọn một cuộc trò chuyện',
   'workshop.selectParentGroup': 'Nhóm giảng dạy phụ huynh',
   'workshop.selectTopic': 'Chọn cuộc trò chuyện',
@@ -263,8 +255,7 @@ export default {
   'workshop.streamMenu': 'Thực đơn nhóm giảng dạy',
   'workshop.strikethrough': 'Gạch ngang',
   'workshop.switchSchool': 'Chuyển trường',
-  'workshop.teachingGroupLandingHint':
-    'Nghiên cứu bài học và hội thoại trong nhóm giảng dạy này. Chọn một hàng để mở kênh hoặc chuỗi.',
+  'workshop.teachingGroupLandingHint': 'Nghiên cứu bài học và hội thoại trong nhóm giảng dạy này. Chọn một hàng để mở kênh hoặc chuỗi.',
   'workshop.teachingGroupMembers': 'Thành viên',
   'workshop.teachingGroupNameRequired': 'Vui lòng nhập tên nhóm giảng dạy.',
   'workshop.teachingGroupNoLessons': 'Chưa có bài học nào trong nhóm này.',
@@ -295,14 +286,11 @@ export default {
   'workshop.viewProfile': 'Xem hồ sơ',
   'workshop.viewingSchool': 'Đang xem: {0}',
   'workshop.views': 'Lượt xem',
-  'workshop.welcomeChannelsBody':
-    '“Kênh” ở đây thường tương ứng với nhóm nghiên cứu giảng dạy (教研组) hoặc PLC: một không gian chung cho mỗi nhóm (ví dụ PLC Toán, PLC tiếng Anh). Nó xác định ai tham gia và cách nhóm không gian.',
+  'workshop.welcomeChannelsBody': '“Kênh” ở đây thường tương ứng với nhóm nghiên cứu giảng dạy (教研组) hoặc PLC: một không gian chung cho mỗi nhóm (ví dụ PLC Toán, PLC tiếng Anh). Nó xác định ai tham gia và cách nhóm không gian.',
   'workshop.welcomeChannelsTitle': 'PLC/nhóm môn học',
-  'workshop.welcomeConversationsBody':
-    'Trong nghiên cứu bài học, bạn mở các cuộc trò chuyện có tiêu đề—ví dụ: thiết kế hướng dẫn, suy ngẫm hoặc nhiệm vụ tiếp theo—để các chủ đề luôn dễ theo dõi.',
+  'workshop.welcomeConversationsBody': 'Trong nghiên cứu bài học, bạn mở các cuộc trò chuyện có tiêu đề—ví dụ: thiết kế hướng dẫn, suy ngẫm hoặc nhiệm vụ tiếp theo—để các chủ đề luôn dễ theo dõi.',
   'workshop.welcomeConversationsTitle': 'Cuộc trò chuyện',
-  'workshop.welcomeExampleCaption':
-    'Ví dụ minh họa (trường học hư cấu) — PLC Toán và PLC tiếng Anh, mỗi PLC có nghiên cứu bài học và hội thoại mẫu.',
+  'workshop.welcomeExampleCaption': 'Ví dụ minh họa (trường học hư cấu) — PLC Toán và PLC tiếng Anh, mỗi PLC có nghiên cứu bài học và hội thoại mẫu.',
   'workshop.welcomeExampleConvLabel': 'Cuộc trò chuyện',
   'workshop.welcomeExampleGroupEnglish': 'PLC tiếng Anh',
   'workshop.welcomeExampleGroupMath': 'Toán PLC',
@@ -321,13 +309,10 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'Tin nhắn trực tiếp bên trong mỗi cuộc trò chuyện',
   'workshop.welcomeExampleOrg': 'Trường trung học cơ sở Chenxi',
   'workshop.welcomeHowTitle': 'Làm thế nào nó phù hợp với nhau',
-  'workshop.welcomeIntro':
-    'Hội thảo là không gian của trường để thảo luận có cấu trúc: chia sẻ thông báo, nghiên cứu bài học và tổ chức các cuộc trò chuyện cùng với công việc giảng dạy của bạn.',
-  'workshop.welcomeLessonStudyBody':
-    'Các kênh học bài thường nằm trong nhóm đó. Mỗi cái là một địa điểm cho một chu kỳ bài học—lập kế hoạch, quan sát và phản ánh—và có thể liên kết với các sơ đồ hoặc trạng thái.',
+  'workshop.welcomeIntro': 'Hội thảo là không gian của trường để thảo luận có cấu trúc: chia sẻ thông báo, nghiên cứu bài học và tổ chức các cuộc trò chuyện cùng với công việc giảng dạy của bạn.',
+  'workshop.welcomeLessonStudyBody': 'Các kênh học bài thường nằm trong nhóm đó. Mỗi cái là một địa điểm cho một chu kỳ bài học—lập kế hoạch, quan sát và phản ánh—và có thể liên kết với các sơ đồ hoặc trạng thái.',
   'workshop.welcomeLessonStudyTitle': 'Nghiên cứu bài học',
-  'workshop.welcomeMessagesBody':
-    'Tin nhắn là các bài đăng riêng lẻ trong luồng kênh chính hoặc trong một cuộc trò chuyện. Tất cả các câu trả lời, đề cập và tập tin đều xuất hiện trên tin nhắn.',
+  'workshop.welcomeMessagesBody': 'Tin nhắn là các bài đăng riêng lẻ trong luồng kênh chính hoặc trong một cuộc trò chuyện. Tất cả các câu trả lời, đề cập và tập tin đều xuất hiện trên tin nhắn.',
   'workshop.welcomeMessagesTitle': 'Tin nhắn',
   'workshop.welcomeSubtitle': 'Cộng tác với trường học của bạn trên MindGraph',
   'workshop.welcomeTitle': 'Chào mừng đến với Hội thảo',
@@ -335,8 +320,7 @@ export default {
   'workshop.youAnd': 'Bạn và',
   'workshopCanvas.connectFailed': 'Không thể kết nối với cộng tác',
   'workshopCanvas.sessionExpiredReconnect': 'Phiên của bạn đã hết hạn. Vui lòng làm mới trang để tham gia lại cộng tác.',
-  'workshopCanvas.sessionRefreshFailed':
-    'Không thể làm mới phiên cộng tác của bạn. Vui lòng lưu công việc của bạn và đăng nhập lại.',
+  'workshopCanvas.sessionRefreshFailed': 'Không thể làm mới phiên cộng tác của bạn. Vui lòng lưu công việc của bạn và đăng nhập lại.',
   'workshopCanvas.outboundQueueDegraded': 'Sự hợp tác đang tụt lại phía sau. Không thể giữ lại một số chỉnh sửa chưa gửi.',
   'workshopCanvas.connectionClosed': 'Đã đóng kết nối',
   'workshopCanvas.connectionClosedSlow': 'Đã đóng kết nối: kết nối của bạn quá chậm để theo kịp phiên cộng tác.',
@@ -346,11 +330,9 @@ export default {
   'workshopCanvas.connectionClosedReason': 'Kết nối cộng tác đã đóng: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} đang chỉnh sửa nút này',
   'workshopCanvas.errorGeneric': 'Lỗi cộng tác',
-  'workshopCanvas.updatePartialFiltered':
-    'Một số chỉnh sửa đã bị bỏ qua ((các) nút {count}) vì một cộng tác viên khác đang chỉnh sửa các nút đó.',
+  'workshopCanvas.updatePartialFiltered': 'Một số chỉnh sửa đã bị bỏ qua ((các) nút {count}) vì một cộng tác viên khác đang chỉnh sửa các nút đó.',
   'workshopCanvas.reconnectFailed': 'Không thể kết nối lại với cộng tác, vui lòng làm mới trang',
-  'workshopCanvas.resyncWaiting':
-    'Đồng bộ hóa sơ đồ trực tiếp mất nhiều thời gian hơn dự kiến. Đang thử lại; bạn có thể làm mới nếu quá trình chỉnh sửa cảm thấy bế tắc.',
+  'workshopCanvas.resyncWaiting': 'Đồng bộ hóa sơ đồ trực tiếp mất nhiều thời gian hơn dự kiến. Đang thử lại; bạn có thể làm mới nếu quá trình chỉnh sửa cảm thấy bế tắc.',
   'workshopCanvas.returnedHomeIdle': 'Trở về nhà - bạn đã bị ngắt kết nối sau một thời gian dài nhàn rỗi.',
   'workshopCanvas.userJoined': 'Người dùng {username} đã tham gia',
   'workshopCanvas.usersJoined': 'Người dùng {count} đã tham gia',
@@ -358,8 +340,7 @@ export default {
   'workshopCanvas.usersLeft': 'Người dùng {count} đã rời đi',
   'workshopCanvas.wsError': 'Lỗi kết nối cộng tác, vui lòng kiểm tra mạng của bạn',
   'workshopCanvas.returnedHomeRoomIdle': 'Hợp tác đã kết thúc: không có chỉnh sửa sơ đồ nào trong phiên này trong một thời gian.',
-  'workshopCanvas.roomIdleWarningToast':
-    'Gần đây không có chỉnh sửa sơ đồ nào — hoạt động cộng tác kết thúc khi đồng hồ đếm ngược về 0 trừ khi có ai đó chỉnh sửa.',
+  'workshopCanvas.roomIdleWarningToast': 'Gần đây không có chỉnh sửa sơ đồ nào — hoạt động cộng tác kết thúc khi đồng hồ đếm ngược về 0 trừ khi có ai đó chỉnh sửa.',
   'workshopCanvas.otherTabCollaborationActive': 'Cộng tác tiếp tục trong một tab hoặc cửa sổ khác cho tài khoản này.',
   'workshopCanvas.joinQrAlt': 'Tham gia cộng tác mã QR',
 } as const

@@ -1,4 +1,6 @@
-/** af UI — showcase */
+/**
+ * af UI � showcase
+ */
 
 export default {
   'showcase.title': 'Uitstalling',
@@ -50,31 +52,19 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Laai lêers op ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Laai {name} op ({current}/{total})…',
   'showcase.publishModal.finishing': 'Voltooi…',
-  'showcase.publishModal.uploadFailedRolledBack':
-    'Oplaai het misluk — die konsep is verwerp. Probeer asseblief weer.',
-  'showcase.publishModal.uploadCorsFailed':
-    'Kon nie na objekberging oplaai nie (dikwels blokkeer emmer-CORS of werf-CSP die COS-gasheer). Die konsep is verwerp — vra \'n admin om CORS/CSP te regstel en probeer weer.',
-  'showcase.publishModal.uploadStorageRejected':
-    'Objekberging het die oplaai verwerp. Die konsep is verwerp — probeer later weer, of kontak \'n admin as dit aanhou misluk.',
+  'showcase.publishModal.uploadFailedRolledBack': 'Oplaai het misluk — die konsep is verwerp. Probeer asseblief weer.',
+  'showcase.publishModal.uploadCorsFailed': 'Kon nie na objekberging oplaai nie (dikwels blokkeer emmer-CORS of werf-CSP die COS-gasheer). Die konsep is verwerp — vra \'n admin om CORS/CSP te regstel en probeer weer.',
+  'showcase.publishModal.uploadStorageRejected': 'Objekberging het die oplaai verwerp. Die konsep is verwerp — probeer later weer, of kontak \'n admin as dit aanhou misluk.',
   'showcase.publishModal.uploadFailed': 'Oplaai het misluk. Probeer asseblief weer.',
-  'showcase.publishModal.uploadCoverTooLarge':
-    'Omslagbeeld oorskry die 2 MB-limiet. Komprimeer die voorskou of gebruik \'n kleiner beeld en probeer weer.',
-  'showcase.publishModal.uploadAttachmentTooLarge':
-    'Lêer oorskry die groottelimiet (dokumente/beelde 20 MB, video\'s 100 MB). Komprimeer en probeer weer.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
-    'Lêer oorskry die groottelimiet (dokumente/beelde 20 MB, video\'s 100 MB). Die konsep is verwerp — komprimeer en probeer weer.',
-  'showcase.publishModal.uploadFileTooLarge':
-    'Lêer is te groot vir hierdie oplaaitipe. Gaan die groottelimiet na en probeer weer.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack':
-    'Lêer is te groot vir hierdie oplaaitipe. Die konsep is verwerp — gaan die groottelimiet na en probeer weer.',
-  'showcase.publishModal.coverUploadSkipped':
-    'Geval ingedien, maar die omslagbeeld kon nie oplaai nie. U kan die geval later wysig om die omslag te verfris.',
-  'showcase.publishModal.coverGenerating':
-    'Omslagvoorskou word op die agtergrond gegenereer — dit verskyn binnekort op die kaart.',
-  'showcase.publishModal.coverFailed':
-    'Geval ingedien, maar die omslag kon nie gegenereer word nie. U kan die geval later wysig om die omslag te verfris.',
-  'showcase.publishModal.coverFailedTimeout':
-    'Geval ingedien, maar omslaggenerering het uitgetel. U kan die geval later wysig om die omslag te verfris.',
+  'showcase.publishModal.uploadCoverTooLarge': 'Omslagbeeld oorskry die 2 MB-limiet. Komprimeer die voorskou of gebruik \'n kleiner beeld en probeer weer.',
+  'showcase.publishModal.uploadAttachmentTooLarge': 'Lêer oorskry die groottelimiet (dokumente/beelde 20 MB, video\'s 100 MB). Komprimeer en probeer weer.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Lêer oorskry die groottelimiet (dokumente/beelde 20 MB, video\'s 100 MB). Die konsep is verwerp — komprimeer en probeer weer.',
+  'showcase.publishModal.uploadFileTooLarge': 'Lêer is te groot vir hierdie oplaaitipe. Gaan die groottelimiet na en probeer weer.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Lêer is te groot vir hierdie oplaaitipe. Die konsep is verwerp — gaan die groottelimiet na en probeer weer.',
+  'showcase.publishModal.coverUploadSkipped': 'Geval ingedien, maar die omslagbeeld kon nie oplaai nie. U kan die geval later wysig om die omslag te verfris.',
+  'showcase.publishModal.coverGenerating': 'Omslagvoorskou word op die agtergrond gegenereer — dit verskyn binnekort op die kaart.',
+  'showcase.publishModal.coverFailed': 'Geval ingedien, maar die omslag kon nie gegenereer word nie. U kan die geval later wysig om die omslag te verfris.',
+  'showcase.publishModal.coverFailedTimeout': 'Geval ingedien, maar omslaggenerering het uitgetel. U kan die geval later wysig om die omslag te verfris.',
   'showcase.publishModal.success': 'Geval ingedien — wag op admin-hersiening',
   'showcase.publishModal.fromCanvas': 'Publiseer vanaf canvas',
   'showcase.publishModal.step1Title': 'Basiese info',
@@ -88,10 +78,8 @@ export default {
   'showcase.publishModal.uploadLabel': 'Laai lêer op',
   'showcase.publishModal.uploadImage': 'Laai beeld op',
   'showcase.publishModal.uploadFile': 'Laai lêer op',
-  'showcase.publishModal.directUploadDisabled':
-    'Direkte lêeroplaai is tydelik onbeskikbaar. U kan steeds \'n gestoorde diagram uit geskiedenis kies.',
-  'showcase.publishModal.uploadViaStorage':
-    'Lêers laai direk op na veilige berging (korttermyn-URL).',
+  'showcase.publishModal.directUploadDisabled': 'Direkte lêeroplaai is tydelik onbeskikbaar. U kan steeds \'n gestoorde diagram uit geskiedenis kies.',
+  'showcase.publishModal.uploadViaStorage': 'Lêers laai direk op na veilige berging (korttermyn-URL).',
   'showcase.publishModal.pickHistory': 'Kies uit geskiedenis',
   'showcase.publishModal.removeFile': 'Verwyder',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: beperkte voorskou)',
@@ -130,10 +118,11 @@ export default {
   'showcase.publishModal.aiGenerating': 'Genereer…',
   'showcase.publishModal.aiGenerateStop': 'Stop',
   'showcase.publishModal.aiGenerateCancelled': 'KI-generering gekanselleer — klik weer om te hergenereer',
-  'showcase.publishModal.aiGenerateSuccess':
-    'Inleiding en hoogtepunte uit die dokument ingevul — hersien en wysig; skryf die onderrigrefleksie self',
+  'showcase.publishModal.aiGenerateSuccess': 'Inleiding en hoogtepunte uit die dokument ingevul — hersien en wysig; skryf die onderrigrefleksie self',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'KI-generering het misluk — probeer asseblief weer',
   'showcase.publishModal.aiGenerateNeedFile': 'Laai eers \'n onderrigontwerp-dokument in die vorige stap op',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'KI genereer is slegs beskikbaar vir onderrigontwerp-gevalle',
   'showcase.publishModal.reflectionLabel': 'Onderrigrefleksie',
   'showcase.publishModal.introPlaceholder': 'Beskryf kortliks die geval en wanneer om dit te gebruik',
@@ -160,15 +149,13 @@ export default {
   'showcase.publishModal.validationDiagramType': 'Kies asseblief \'n diagramtipe',
   'showcase.publishModal.invalidFileType': 'Nie-ondersteunde lêertipe',
   'showcase.publishModal.invalidMgFile': 'Kon nie hierdie .mg-lêer lees nie — eksporteer dit eers vanaf MindGraph',
-  'showcase.publishModal.cannotPreview':
-    'Kon nie \'n omslagvoorskou genereer nie — die geval sal steeds ingedien word. Probeer PNG/JPG of kies \'n gestoorde diagram.',
-  'showcase.publishModal.cannotPreviewHistory':
-    'Kon nie \'n omslag van hierdie gestoorde diagram genereer nie — die geval sal steeds ingedien word. Kies dit weer of stoor weer vanaf die canvas.',
-  'showcase.publishModal.cannotPreviewTemplate':
-    'Kon nie \'n omslag genereer nie — die geval sal steeds ingedien word. Gaan die .mg-lêer na of kies \'n ander gestoorde diagram.',
+  'showcase.publishModal.cannotPreview': 'Kon nie \'n omslagvoorskou genereer nie — die geval sal steeds ingedien word. Probeer PNG/JPG of kies \'n gestoorde diagram.',
+  'showcase.publishModal.cannotPreviewHistory': 'Kon nie \'n omslag van hierdie gestoorde diagram genereer nie — die geval sal steeds ingedien word. Kies dit weer of stoor weer vanaf die canvas.',
+  'showcase.publishModal.cannotPreviewTemplate': 'Kon nie \'n omslag genereer nie — die geval sal steeds ingedien word. Gaan die .mg-lêer na of kies \'n ander gestoorde diagram.',
   'showcase.publishModal.historyTitle': 'Kies gestoorde diagram',
   'showcase.publishModal.historySearch': 'Soek diagramnaam…',
   'showcase.publishModal.historyEmpty': 'Geen gestoorde diagramme nie',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': 'Denkvaardighede-klaskamerlesontwerp',
   'showcase.publishModal.typeDesc.diagramCase': 'Uitstekende diagramme en visualisering in onderrig',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Diagramme vir hergebruik of aanpassing',
@@ -194,11 +181,9 @@ export default {
   'showcase.detail.delist': 'Haal af',
   'showcase.detail.resubmit': 'Wysig en dien weer in',
   'showcase.detail.withdrawTitle': 'Trek geval terug',
-  'showcase.detail.withdrawConfirm':
-    'Trek "{title}" terug? Dit sal uit die hersieningswaglys verwyder word en kan nie herstel word nie.',
+  'showcase.detail.withdrawConfirm': 'Trek "{title}" terug? Dit sal uit die hersieningswaglys verwyder word en kan nie herstel word nie.',
   'showcase.detail.delistTitle': 'Haal geval af',
-  'showcase.detail.delistConfirm':
-    'Haal "{title}" uit die galery af? Ander gebruikers sal dit nie meer kan besigtig nie.',
+  'showcase.detail.delistConfirm': 'Haal "{title}" uit die galery af? Ander gebruikers sal dit nie meer kan besigtig nie.',
   'showcase.detail.confirm': 'Bevestig',
   'showcase.detail.cancel': 'Kanselleer',
   'showcase.withdrawn': 'Teruggetrek',
@@ -218,8 +203,7 @@ export default {
   'showcase.detail.pptxPreviewPending': 'Skakels word vir voorskou omgeskakel…',
   'showcase.detail.docPreviewLoading': 'Laai dokument…',
   'showcase.detail.docPreviewFailed': 'Kon nie voorskou laai nie. Probeer om in \'n nuwe oortjie oop te maak.',
-  'showcase.detail.legacyDocHint':
-    'Verouderde .doc-lêers kan nie inline voorskou word nie. Open of laai die lêer af, of laai .docx op vir voorskou in die blaaier.',
+  'showcase.detail.legacyDocHint': 'Verouderde .doc-lêers kan nie inline voorskou word nie. Open of laai die lêer af, of laai .docx op vir voorskou in die blaaier.',
   'showcase.detail.noDocument': 'Geen dokumentvoorskou nie',
   'showcase.detail.noDiagramPreview': 'Geen diagramvoorskou nie',
   'showcase.detail.diagramPreviewLoading': 'Laai diagram…',

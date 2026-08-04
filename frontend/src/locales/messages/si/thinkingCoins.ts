@@ -1,4 +1,6 @@
-/** si UI — thinkingCoins */
+/**
+ * si UI � thinkingCoins
+ */
 
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': 'මගේ චින්තන ටෝකන්',

@@ -1,4 +1,6 @@
-/** si UI — showcase */
+/**
+ * si UI � showcase
+ */
 
 export default {
   'showcase.title': 'Showcase',
@@ -117,8 +119,10 @@ export default {
   'showcase.publishModal.aiGenerateStop': 'නවත්වන්න',
   'showcase.publishModal.aiGenerateCancelled': 'AI ජනනය අවලංගු — නැවත ජනනය කිරීමට නැවත ක්‍ලික් කරන්න',
   'showcase.publishModal.aiGenerateSuccess': 'ලේඛනයෙන් පිරවූ හැඳින්වීම සහ උද්දීපනය - සමාලෝචනය සහ සංස්කරණය කිරීම; ඉගැන්වීමේ පරාවර්තනය ඔබම ලියන්න',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'AI ජනනය අසාර්ථක — නැවත උත්සාහ කරන්න',
   'showcase.publishModal.aiGenerateNeedFile': 'පළමුව පෙර පියවරෙන් උගන්වන-නිර්මාණ ලේඛනයක් උඩුගත කරන්න',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI ජනනය උගන්වන-නිර්මාණ නඩු සඳහා පමණක්',
   'showcase.publishModal.reflectionLabel': 'උගන්වන reflection',
   'showcase.publishModal.introPlaceholder': 'නඩුව සහ භාවිතා කරන අවස්ථාව කෙටියෙන් විස්තර කරන්න',
@@ -151,6 +155,7 @@ export default {
   'showcase.publishModal.historyTitle': 'සුරැකි රූප සටහන තෝරන්න',
   'showcase.publishModal.historySearch': 'රූප සටහන නම සොයන්න…',
   'showcase.publishModal.historyEmpty': 'සුරැකි රූප සටහන් නැත',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': 'චින්තන-කු‍ශල පන්‍ති පාඩම් නිර්මාණය',
   'showcase.publishModal.typeDesc.diagramCase': 'උගන්වීමේ විශිෂ්‍ට රූප සටහන් සහ visualization',
   'showcase.publishModal.typeDesc.diagramTemplate': 'නැවත භාවිතය හෝ අනුවර්තනය සඳහා රූප සටහන්',

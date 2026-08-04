@@ -1,4 +1,6 @@
-/** sq UI — mindmate */
+/**
+ * sq UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'Klikoni për të aktivizuar etiketat e marrëdhënieve me AI (multi-model)',
@@ -65,6 +67,9 @@ export default {
   'focusQuestion.validationRequestFailed': 'Kërkesa e validimit dështoi',
   'focusQuestion.weakLabel': 'E dobët',
   'mindmate.defaultSuggestion1': 'Çfarë konfliktesh kognitivë mund të projektoj për një mësim rreth paralelogramit?',
+  'mindmate.defaultSuggestion10': 'Si të përdor mësimdhënien situative në orën e historisë?',
+  'mindmate.defaultSuggestion11': 'Çfarë çështjesh sigurie duhet vënë re në eksperimentet e fizikës?',
+  'mindmate.defaultSuggestion12': 'Si të projektoj detyra shtëpie që përputhen me nivelin kognitiv të nxënësve?',
   'mindmate.defaultSuggestion2': 'Më ndihmoni të krijoj një plan mësimor për frymëmarrjen qelizore.',
   'mindmate.defaultSuggestion3': 'Çfarë keqkuptimesh kanë nxënësit rreth gravitetit?',
   'mindmate.defaultSuggestion4': 'Si të projektoj një seancë efektive të të mësuarit në grup?',
@@ -73,9 +78,6 @@ export default {
   'mindmate.defaultSuggestion7': 'Si të lidh konceptet matematike me jetën reale?',
   'mindmate.defaultSuggestion8': 'Si të zhvilloj aftësi mendimi kritik?',
   'mindmate.defaultSuggestion9': 'Cilat janë strategjitë efektive për mësimdhënien e dëgjimit?',
-  'mindmate.defaultSuggestion10': 'Si të përdor mësimdhënien situative në orën e historisë?',
-  'mindmate.defaultSuggestion11': 'Çfarë çështjesh sigurie duhet vënë re në eksperimentet e fizikës?',
-  'mindmate.defaultSuggestion12': 'Si të projektoj detyra shtëpie që përputhen me nivelin kognitiv të nxënësve?',
   'mindmate.historyTitle': 'Historiku i bisedave',
   'mindmate.imagePreview': 'Pamja paraprake e imazhit',
   'mindmate.input.attachFile': 'Bashkëngjit skedar',

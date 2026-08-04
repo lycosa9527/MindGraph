@@ -1,4 +1,6 @@
-/** ms UI — notification */
+/**
+ * ms UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Tidak boleh mengpadam nod topik atau pusat',

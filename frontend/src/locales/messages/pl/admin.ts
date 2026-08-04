@@ -1,4 +1,6 @@
-/** pl UI — admin */
+/**
+ * pl UI � admin
+ */
 
 export default {
   'admin.actions': 'Actions',

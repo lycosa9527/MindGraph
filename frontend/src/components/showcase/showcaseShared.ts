@@ -74,13 +74,29 @@ export function resolveDiagramAction(params: {
   spec?: unknown
   specJsonUrl?: string | null
   sourceFileUrl?: string | null
+  hasGalleryDiagram?: boolean
 }): ShowcaseDiagramAction | null {
   if (params.caseType === 'teaching_design') return null
   if (params.caseType === 'diagram_template') return 'apply_template'
 
   if (isRenderableShowcaseSpec(params.spec)) return 'import_open'
+  if (params.hasGalleryDiagram) return 'import_open'
 
   const spec = params.spec as Record<string, unknown> | undefined
+  if (spec?.source === 'gallery') {
+    const gallery = spec.gallery
+    if (Array.isArray(gallery)) {
+      const hasDiagram = gallery.some(
+        (entry) =>
+          entry &&
+          typeof entry === 'object' &&
+          (entry as { kind?: string }).kind === 'diagram' &&
+          (entry as { spec?: unknown }).spec &&
+          typeof (entry as { spec?: unknown }).spec === 'object'
+      )
+      if (hasDiagram) return 'import_open'
+    }
+  }
   if (spec?.source === 'image_upload') return 'go_draw'
 
   const source = params.sourceFileUrl ?? ''
@@ -225,7 +241,8 @@ export function showcaseMaxMegabytes(bytes: number): number {
 }
 
 export const CASE_VIDEO_MAX_BYTES = 100 * 1024 * 1024
-export const CASE_UPLOAD_TOTAL_MAX_BYTES = 105 * 1024 * 1024
+/** Gallery may include up to 15 images (20MB each) plus a cover; keep under abuse ceiling. */
+export const CASE_UPLOAD_TOTAL_MAX_BYTES = 160 * 1024 * 1024
 
 function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
   return new Promise((resolve) => {

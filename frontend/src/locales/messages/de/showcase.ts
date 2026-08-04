@@ -1,4 +1,6 @@
-/** de UI — showcase */
+/**
+ * de UI � showcase
+ */
 
 export default {
   'showcase.title': 'Showcase',
@@ -117,8 +119,10 @@ export default {
   'showcase.publishModal.aiGenerateStop': 'Stoppen',
   'showcase.publishModal.aiGenerateCancelled': 'KI-Generierung abgebrochen — klicken Sie erneut zum Neu generieren',
   'showcase.publishModal.aiGenerateSuccess': 'Einleitung und Highlights aus dem Dokument ausgefüllt — prüfen und bearbeiten Sie; schreiben Sie die Unterrichtsreflexion selbst',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'KI-Generierung fehlgeschlagen — bitte versuchen Sie es erneut',
   'showcase.publishModal.aiGenerateNeedFile': 'Laden Sie zuerst im vorherigen Schritt ein Unterrichtsentwurfs-Dokument hoch',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'KI-Generierung ist nur für Unterrichtsentwurfs-Fälle verfügbar',
   'showcase.publishModal.reflectionLabel': 'Unterrichtsreflexion',
   'showcase.publishModal.introPlaceholder': 'Beschreiben Sie kurz den Fall und wann er eingesetzt werden soll',
@@ -151,6 +155,7 @@ export default {
   'showcase.publishModal.historyTitle': 'Gespeichertes Diagramm wählen',
   'showcase.publishModal.historySearch': 'Diagrammname suchen …',
   'showcase.publishModal.historyEmpty': 'Keine gespeicherten Diagramme',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': 'Unterrichtsentwurf für Denkfähigkeiten im Klassenzimmer',
   'showcase.publishModal.typeDesc.diagramCase': 'Hervorragende Diagramme und Visualisierung im Unterricht',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Diagramme zur Wiederverwendung oder Anpassung',

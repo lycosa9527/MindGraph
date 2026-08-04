@@ -369,10 +369,48 @@ export function useMindMate(options: MindMateOptions = {}) {
     return 'custom'
   }
 
-  async function uploadFile(file: File): Promise<MindMateFile | null> {
-    // Only allow image files
-    if (!file.type.startsWith('image/')) {
-      const errorMsg = 'Only image files are allowed'
+  /** Extensions accepted by ``/api/dify/files/upload`` (documents + images). */
+  const DIFY_UPLOAD_EXTENSIONS = new Set([
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'webp',
+    'svg',
+    'txt',
+    'md',
+    'markdown',
+    'pdf',
+    'html',
+    'htm',
+    'xlsx',
+    'xls',
+    'doc',
+    'docx',
+    'csv',
+    'xml',
+    'epub',
+    'ppt',
+    'pptx',
+  ])
+
+  function isDifyUploadableFile(file: File): boolean {
+    if (file.type.startsWith('image/')) return true
+    const ext = (file.name.split('.').pop() || '').toLowerCase()
+    return DIFY_UPLOAD_EXTENSIONS.has(ext)
+  }
+
+  async function uploadFile(
+    file: File,
+    options: { allowDocuments?: boolean } = {}
+  ): Promise<MindMateFile | null> {
+    // Composer paperclip stays image-only; programmatic handoffs (Showcase) may
+    // attach teaching docs that the Dify upload API already accepts.
+    const allowDocuments = options.allowDocuments === true
+    if (!file.type.startsWith('image/') && !(allowDocuments && isDifyUploadableFile(file))) {
+      const errorMsg = allowDocuments
+        ? 'Unsupported file type for MindMate'
+        : 'Only image files are allowed'
       eventBus.emit('mindmate:error', { error: errorMsg })
       onError?.(errorMsg)
       return null

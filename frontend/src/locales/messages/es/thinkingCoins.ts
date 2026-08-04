@@ -1,4 +1,6 @@
-/** es UI — thinkingCoins */
+/**
+ * es UI � thinkingCoins
+ */
 
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': 'Mis tokens de pensamiento',

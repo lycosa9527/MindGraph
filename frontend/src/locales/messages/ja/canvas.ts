@@ -1,4 +1,6 @@
-/** ja UI — canvas */
+/**
+ * ja UI � canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': '新しいサブパーツ 1',
@@ -34,8 +36,7 @@ export default {
   'canvas.worksheetText.hide': '非表示',
   'canvas.worksheetText.instructionLabel': '説明文',
   'canvas.worksheetText.instructionPrefix': '要件：',
-  'canvas.worksheetText.modalHint':
-    'エクスポート PDF for printing. エクスポート document for editable name/class fields; the diagram stays an image.',
+  'canvas.worksheetText.modalHint': 'エクスポート PDF for printing. エクスポート document for editable name/class fields; the diagram stays an image.',
   'canvas.worksheetText.headerCaptureFailed': '学習シートページ眉生成失敗，已エクスポート不含ページ眉的 PDF。',
   'canvas.worksheetText.modalTitle': 'DOCX/PDFとしてエクスポート',
   'canvas.worksheetText.previewDiagram': '図',
@@ -407,8 +408,7 @@ export default {
   'canvas.toolbar.translateLabelAndMore': '{n} more not shown…',
   'canvas.toolbar.translateLabelInProgress': 'Translating diagram…',
   'canvas.toolbar.translateLabelBannerTitle': 'Translating diagram',
-  'canvas.toolbar.translateLabelFallbackEnInfo':
-    'Your interface language is not available as a translation target yet. Labels will be translated to English。',
+  'canvas.toolbar.translateLabelFallbackEnInfo': 'Your interface language is not available as a translation target yet. Labels will be translated to English。',
   'canvas.toolbar.translateLabelFailed': '翻译失敗，しばらくしてからもう一度お試しください',
   'canvas.toolbar.translateLabelDone': 'Diagram translated',
   'canvas.toolbar.moreAppVirtualKeyboard': 'Virtual Keyboard',
@@ -445,10 +445,8 @@ export default {
   'canvas.toolbar.redoShortcut': 'Ctrl + Y',
   'canvas.toolbar.selectBranchOrChild': '先に选择ブランチ或子ノード',
   'canvas.toolbar.selectCategoryOrLeafDelete': '選択してください分类或子项ノード（トピックノード不可削除）',
-  'canvas.toolbar.selectCauseOrEffectForAdd':
-    '選択 a cause or effect node (not the event), then press Enter to add another in that column',
-  'canvas.toolbar.selectTreeBranchForChild':
-    '選択 a category or an item under a category to add a child, or select the topic to add a category',
+  'canvas.toolbar.selectCauseOrEffectForAdd': '選択 a cause or effect node (not the event), then press Enter to add another in that column',
+  'canvas.toolbar.selectTreeBranchForChild': '選択 a category or an item under a category to add a child, or select the topic to add a category',
   'canvas.toolbar.selectNodesFirst': '先に选择ノード',
   'canvas.toolbar.selectNodesToDelete': '先に选择要削除的ノード',
   'canvas.toolbar.selectPartForSubpart': '先に选择要追加子部分的ノード',
@@ -650,8 +648,7 @@ export default {
   'canvas.mindMapSideToolbar.waterfall': 'AI头脑风暴',
   'canvas.mindMapWaterfall.panelHint': '選択 nodes for AI branch ideas, then drag them onto the canvas',
   'canvas.mindMapWaterfall.emptyHint': 'いいえ suggestions yet. 選択 nodes on the canvas or tap 更新.',
-  'canvas.mindMapWaterfall.dragHint':
-    'Click to multi-select, then drag onto a map node to insert. Drop on empty canvas to add a top-level branch。',
+  'canvas.mindMapWaterfall.dragHint': 'Click to multi-select, then drag onto a map node to insert. Drop on empty canvas to add a top-level branch。',
   'canvas.mindMapWaterfall.historyAddFromPalette': '从AI头脑风暴拖入ノード',
   'canvas.mindMapOneSentence.intro': '输入トピック，或说明ブランチ数量、分类维度、步骤等结构要件',
   'canvas.mindMapOneSentence.requirementsPlaceholder': '例如：北京三日游计划，四個ブランチ：衣、食、住、行',
@@ -679,10 +676,8 @@ export default {
   'canvas.mindMapOneSentence.photoTooLarge': 'Photo is too large. Maximum size is 10MB。',
   'canvas.mindMapOneSentence.photoUntitledMap': '思维マインドマップ',
   'canvas.mindMapOneSentence.photoHanddrawnReply': 'Detected a hand-drawn mind map “{topic}”. Rebuilt on canvas; outline saved to ドキュメント要約.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
-    'Detected a hand-drawn mind map “{topic}”. Rebuilt on this canvas; outline saved to ドキュメント要約. ライブラリ sync did not complete — save or retry if needed.',
-  'canvas.mindMapOneSentence.photoOcrReply':
-    'Extracted text from the photo:\n{excerpt}\n\nFull text is in ドキュメント要約.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'Detected a hand-drawn mind map “{topic}”. Rebuilt on this canvas; outline saved to ドキュメント要約. ライブラリ sync did not complete — save or retry if needed.',
+  'canvas.mindMapOneSentence.photoOcrReply': 'Extracted text from the photo:\n{excerpt}\n\nFull text is in ドキュメント要約.',
   'canvas.mindMapOneSentence.photoFailed': '処理できませんでした the photo.',
   'canvas.mindMapOneSentence.micDenied': '麦克风不可用，ご確認ください閲覧器権限',
   'canvas.mindMapOneSentence.ttsToggle': 'Toggle speech',
@@ -698,10 +693,8 @@ export default {
   'canvas.mindMapOneSentence.kittyContextSyncFailed': 'キャンバス同步失敗，请稍后再试一回。',
   'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'キャンバス同步失敗（{detail}），请稍后再试一回。',
   'canvas.mindMapOneSentence.kittyEditBusy': 'マインドマップ生成中中，请稍等完了后再改。',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued':
-    '{models} results are still streaming — I will run your request automatically when they finish。',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
-    'Other model results are still streaming — I will run your request automatically when they finish。',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} results are still streaming — I will run your request automatically when they finish。',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'Other model results are still streaming — I will run your request automatically when they finish。',
   'canvas.mindMapOneSentence.kittyEditBusyResuming': 'Other models finished — continuing with your request…',
   'canvas.mindMapOneSentence.requestQueued': '排队中',
   'canvas.mindMapOneSentence.requestFailed': '失敗',
@@ -722,8 +715,7 @@ export default {
   'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty is unavailable. Check that FEATURE_KITTY_AGENT is enabled on the server。',
   'canvas.mindMapOneSentence.kittyConnectFailed': '接続できませんでした canvas Kitty. Open this diagram on desktop, then try again.',
   'canvas.mindMapOneSentence.clarifyChoices': '選択してください一项',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
-    'Mobile Kitty is connected to this diagram. Use your phone to speak or type — desktop input is paused。',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'Mobile Kitty is connected to this diagram. Use your phone to speak or type — desktop input is paused。',
   'canvas.mindMapOneSentence.scopeDivergenceHint': '手机 Kitty 開く了另一张マインドマップ。请在手机上同步，或在此開く那张マインドマップ。',
   'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'Use Mobile Kitty on your phone…',
   'canvas.mindMapNodeExplain.title': 'Kitty 学习ヒント',
@@ -746,10 +738,8 @@ export default {
   'canvas.mindMapDocumentSummary.saveContent': '保存コンテンツ',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'Fetch and save',
   'canvas.mindMapDocumentSummary.webFetchStarted': '正在抓取网ページコンテンツ…',
-  'canvas.mindMapDocumentSummary.webLinkHintLite':
-    'Paste a public page URL — we fetch as much article text as we can and save it as Markdown。',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
-    'Direct link fetch is server-side and cannot use your login cookies, so ページ behind auth or paywalls are often incomplete. For a full webpage snapshot as you see it, use the Chrome / Edge extension.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite': 'Paste a public page URL — we fetch as much article text as we can and save it as Markdown。',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'Direct link fetch is server-side and cannot use your login cookies, so ページ behind auth or paywalls are often incomplete. For a full webpage snapshot as you see it, use the Chrome / Edge extension.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'ダウンロード Chrome 扩展',
   'canvas.mindMapDocumentSummary.statusExtracting': '提取中…',
   'canvas.mindMapDocumentSummary.stageStarting': '開始ing…',
@@ -766,8 +756,7 @@ export default {
   'canvas.mindMapDocumentSummary.extractFailed': 'extract text from this fileできませんでした',
   'canvas.mindMapDocumentSummary.sourceBoundHint': 'Markdown 已就绪。可生成思维マインドマップ，或削除后来源后重新アップロード。',
   'canvas.mindMapDocumentSummary.deleteToRetry': '削除 this source, then upload, paste, or fetch a page again.',
-  'canvas.mindMapDocumentSummary.chatIntroLite':
-    'ダウンロード the file reader, enter the pairing code, and send WeChat or DingTalk history for this diagram.',
+  'canvas.mindMapDocumentSummary.chatIntroLite': 'ダウンロード the file reader, enter the pairing code, and send WeChat or DingTalk history for this diagram.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'Chat history received',
   'canvas.mindMapDocumentSummary.chatDoneLite': '聊日记录保存しました，可点击生成',
   'canvas.mindMapDocumentSummary.corpusStatus': '{completed} of {total} sources indexed',
@@ -782,8 +771,7 @@ export default {
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'ナレッジスペース未有効',
   'canvas.mindMapDocumentSummary.featureDisabledHint': '有効ナレッジスペース功能后即可使用文書总结。',
   'canvas.mindMapDocumentSummary.saveDiagramHint': '保存 this diagram to link the package and enable full RAG retrieval.',
-  'canvas.mindMapDocumentSummary.chatIntro':
-    'ダウンロード the file reader, enter the pairing code below, and send WeChat or DingTalk history to this corpus.',
+  'canvas.mindMapDocumentSummary.chatIntro': 'ダウンロード the file reader, enter the pairing code below, and send WeChat or DingTalk history to this corpus.',
   'canvas.mindMapDocumentSummary.pairingCode': '配对码',
   'canvas.mindMapDocumentSummary.startPairingCode': 'Get pairing code',
   'canvas.mindMapDocumentSummary.pairingExpires': 'Expires in {minutes} min',
@@ -829,17 +817,14 @@ export default {
   'canvas.mindMapDocumentSummary.invalidImageType': 'Only JPG and PNG images are supported',
   'canvas.mindMapDocumentSummary.docTooLarge': '文書过大，アップロードしてください 20MB 以内的ファイル',
   'canvas.mindMapDocumentSummary.pasteTooLong': 'Pasted text exceeds the model input limit (about 900,000 文字). Please shorten it.',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel':
-    'Extracted text exceeds the model input limit (~900,000 文字 / qwen3.6-flash 991K トークン). Please use a shorter document.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel':
-    'This file’s text is too long for the model. Please upload a shorter document (under ~900,000 文字 of text).',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Extracted text exceeds the model input limit (~900,000 文字 / qwen3.6-flash 991K トークン). Please use a shorter document.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'This file’s text is too long for the model. Please upload a shorter document (under ~900,000 文字 of text).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': '保存しました的提取コンテンツ缺失或与存储不同步，已自动清除。请重新アップロード或粘贴文書。',
   'canvas.mindMapSideToolbar.learningSheet': '学習シート',
   'canvas.mindMapSideToolbar.oneSentence': 'One-sentence generate',
   'canvas.mindMapSideToolbar.oneSentenceIntro': '用一句话説明トピック或修改要件，智能生成并调整マインドマップ',
   'canvas.mindMapSideToolbar.documentSummary': 'ドキュメント要約',
-  'fileCenter.intro':
-    'A package is a curated set of sources for this diagram. 追加 files, notes, or web ページ — the diagram completes its branches from these sources.',
+  'fileCenter.intro': 'A package is a curated set of sources for this diagram. 追加 files, notes, or web ページ — the diagram completes its branches from these sources.',
   'fileCenter.defaultPackageName': 'Untitled package',
   'fileCenter.packageNameLabel': 'Package name',
   'fileCenter.createPackage': '作成 package',

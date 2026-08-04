@@ -1,4 +1,6 @@
-/** id UI — mindmate */
+/**
+ * id UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'Klik untuk mengaktifkan label hubungan AI (multi-model)',

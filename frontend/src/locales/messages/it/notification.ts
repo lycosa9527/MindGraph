@@ -1,4 +1,6 @@
-/** it UI — notification */
+/**
+ * it UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Impossibile cancellare i nodi di argomento o centrale',

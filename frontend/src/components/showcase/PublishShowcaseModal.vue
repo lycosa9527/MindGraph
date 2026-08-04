@@ -52,6 +52,8 @@ const {
   galleryExistingImages,
   galleryTotalCount,
   galleryAtLimit,
+  isGalleryImagesProcessing,
+  isDiagramGalleryCase,
   isEditMode,
   fromCanvas,
   canAutoApprove,
@@ -91,6 +93,7 @@ const {
   generateDescription,
   markDescriptionDirty,
   markDesignHighlightsDirty,
+  markClassroomApplicationDirty,
   submit,
   caseTypeIcon,
   CASE_TYPE_PUBLISH_OPTIONS,
@@ -396,6 +399,7 @@ const {
 
                   <template v-if="caseType === 'teaching_design'">
                     <label
+                      v-if="!uploadedFileName"
                       class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-4 py-8 transition-colors"
                       :class="
                         directFileUploadsEnabled
@@ -424,7 +428,7 @@ const {
                     </label>
                   </template>
 
-                  <template v-else-if="caseType === 'diagram_case'">
+                  <template v-else-if="isDiagramGalleryCase">
                     <p class="mb-2 text-xs text-gray-400">
                       {{
                         t('showcase.publishModal.galleryHint', {
@@ -436,7 +440,9 @@ const {
                       <label
                         class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-3 py-6 transition-colors"
                         :class="
-                          directFileUploadsEnabled && !galleryAtLimit
+                          directFileUploadsEnabled &&
+                          !galleryAtLimit &&
+                          !isGalleryImagesProcessing
                             ? 'cursor-pointer hover:border-gray-300 hover:bg-gray-50'
                             : 'pointer-events-none cursor-not-allowed opacity-50'
                         "
@@ -453,7 +459,11 @@ const {
                           class="hidden"
                           multiple
                           :accept="uploadAccept"
-                          :disabled="!directFileUploadsEnabled || galleryAtLimit"
+                          :disabled="
+                            !directFileUploadsEnabled ||
+                            galleryAtLimit ||
+                            isGalleryImagesProcessing
+                          "
                           @change="onDiagramGalleryImagesInput"
                         />
                       </label>
@@ -497,7 +507,7 @@ const {
                           </span>
                           <button
                             type="button"
-                            class="shrink-0 text-xs text-gray-500 hover:text-red-500"
+                            class="publish-remove-pill"
                             @click="
                               removeGalleryExistingImage(galleryExistingImages.indexOf(existing))
                             "
@@ -520,7 +530,7 @@ const {
                           }}</span>
                           <button
                             type="button"
-                            class="shrink-0 text-xs text-gray-500 hover:text-red-500"
+                            class="publish-remove-pill"
                             @click="removeGalleryImageDraft(draft.id)"
                           >
                             {{ t('showcase.publishModal.removeFile') }}
@@ -538,7 +548,7 @@ const {
                           </span>
                           <button
                             type="button"
-                            class="shrink-0 text-xs text-gray-500 hover:text-red-500"
+                            class="publish-remove-pill"
                             @click="removeGalleryDiagramDraft(draft.id)"
                           >
                             {{ t('showcase.publishModal.removeFile') }}
@@ -549,7 +559,10 @@ const {
                   </template>
 
                   <template v-else>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div
+                      v-if="!uploadedFileName"
+                      class="grid grid-cols-2 gap-3"
+                    >
                       <label
                         class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-3 py-6 transition-colors"
                         :class="
@@ -587,13 +600,13 @@ const {
                   </template>
 
                   <div
-                    v-if="uploadedFileName && caseType !== 'diagram_case'"
-                    class="mt-3 flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+                    v-if="uploadedFileName && !isDiagramGalleryCase"
+                    class="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
                   >
                     <span class="truncate text-sm text-gray-700">{{ uploadedFileName }}</span>
                     <button
                       type="button"
-                      class="shrink-0 text-xs text-gray-500 hover:text-red-500"
+                      class="publish-remove-pill"
                       @click="removeUploadedFile"
                     >
                       {{ t('showcase.publishModal.removeFile') }}
@@ -615,7 +628,7 @@ const {
                       }}
                     </label>
                     <LlmPhaseRing
-                      v-if="caseType === 'teaching_design'"
+                      v-if="caseType === 'teaching_design' || isDiagramType"
                       :phase="aiGeneratePhase"
                       streaming-variant="qwen"
                       border-radius="0.375rem"
@@ -706,6 +719,7 @@ const {
                     maxlength="5000"
                     :placeholder="t('showcase.publishModal.classroomAppPlaceholder')"
                     class="publish-field"
+                    @input="markClassroomApplicationDirty"
                   />
                 </div>
 
@@ -839,7 +853,7 @@ const {
 
   <ShowcaseHistoryDiagramPicker
     v-model:visible="showHistoryPicker"
-    :multi-select="isDiagramCase"
+    :multi-select="isDiagramGalleryCase"
     @select="onHistorySelect"
   />
 

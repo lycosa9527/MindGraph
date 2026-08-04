@@ -1,4 +1,6 @@
-/** si UI — mindmate */
+/**
+ * si UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'AI සම්බන්ධතා ලේබල සබල කිරීමට ක්ලික් කරන්න (බහු මාදිලිය)',

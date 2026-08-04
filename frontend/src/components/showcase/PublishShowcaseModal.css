@@ -141,6 +141,43 @@
   box-shadow: none;
 }
 
+/* Swiss stone pill — remove uploaded attachment */
+.publish-remove-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 1.625rem;
+  padding: 0.125rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  color: #57534e;
+  background: #fff;
+  border: 1px solid #d6d3d1;
+  border-radius: 9999px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.publish-remove-pill:hover {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.publish-remove-pill:focus,
+.publish-remove-pill:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(214 211 209 / 0.55);
+}
+
 .publish-tag-remove,
 .publish-tag-add {
   border: none;

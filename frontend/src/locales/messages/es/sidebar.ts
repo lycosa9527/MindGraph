@@ -1,4 +1,6 @@
-/** es UI — sidebar */
+/**
+ * es UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'Eliminar',

@@ -1,4 +1,6 @@
-/** sq UI — sidebar */
+/**
+ * sq UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'Fshi',

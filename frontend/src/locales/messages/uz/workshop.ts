@@ -1,4 +1,6 @@
-/** uz UI — workshop */
+/**
+ * uz UI � workshop
+ */
 
 export default {
   'collab.codeCopied': 'Kod nusxalashndi',

@@ -34,6 +34,9 @@ from utils.db.rls_context import RlsContext, rls_async_session
 logger = logging.getLogger(__name__)
 
 _COVER_SUFFIXES = frozenset({".pdf", ".doc", ".docx", ".pptx"})
+# Persist LO PDF for inline pdf.js preview (images/shapes/layout). Native PDF
+# uses the attachment itself — no separate preview object.
+_PREVIEW_PDF_SUFFIXES = frozenset({".doc", ".docx", ".pptx"})
 
 
 def attachment_key_in_post_scope(post_id: str, attachment_key: str) -> bool:
@@ -168,7 +171,7 @@ async def generate_showcase_cover(
         put_bytes_sync(thumb_key, png_bytes, content_type="image/png")
 
         preview_key: Optional[str] = None
-        if suffix == ".pptx":
+        if suffix in _PREVIEW_PDF_SUFFIXES:
             preview_key = build_object_key(post_id, "preview", ".pdf")
             put_bytes_sync(
                 preview_key,

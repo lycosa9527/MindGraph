@@ -1,4 +1,6 @@
-/** ko UI — auth */
+/**
+ * ko UI � auth
+ */
 
 export default {
   'auth.accountInfo': '계정',
@@ -17,8 +19,7 @@ export default {
   'auth.pwaSafariMacInstallHint': 'Safari에서 파일 → Dock에 추가, 또는 공유 → Dock에 추가(macOS Sonoma 이상)를 선택하세요.',
   'auth.pwaDesktopInstallHint': '브라우저 메뉴(⋮) 또는 주소창의 설치 아이콘(Chrome, Edge, Brave)을 사용하세요.',
   'auth.pwaInstallSuccess': 'MindGraph가 바탕화면에 추가되었습니다.',
-  'auth.pwaDevInstallHint':
-    '일반 개발 모드에서는 PWA 설치가 꺼져 있습니다. 프로덕션 빌드(npm run build + backend) 또는 npm run dev:pwa를 실행한 뒤 HTTPS 또는 localhost에서 Chrome/Edge를 사용하세요.',
+  'auth.pwaDevInstallHint': '일반 개발 모드에서는 PWA 설치가 꺼져 있습니다. 프로덕션 빌드(npm run build + backend) 또는 npm run dev:pwa를 실행한 뒤 HTTPS 또는 localhost에서 Chrome/Edge를 사용하세요.',
   'auth.pwaInsecureOriginHint': '바탕화면에 설치하기 전에 저장된 HTML 파일이 아닌 HTTPS 주소로 MindGraph를 브라우저에서 여세요.',
   'auth.backToLogin': '로그인으로 돌아가기',
   'auth.captcha': '캡차',
@@ -139,8 +140,7 @@ export default {
   'auth.username': '사용자 이름',
   'auth.waitCaptchaLoad': '캡차가 로드될 때까지 기다려 주세요',
   'auth.quickRegPageTitle': '빠른 회원가입',
-  'auth.quickRegPageHint':
-    '학교에서 공유한 링크로 이 페이지를 여세요. 전화번호와 진행자 빠른 가입 창에 표시된 6자리 방 코드(약 30초마다 갱신)를 입력하세요. 코드는 세션 참여를 확인하며 SMS처럼 전화 소유를 검증하지는 않습니다.',
+  'auth.quickRegPageHint': '학교에서 공유한 링크로 이 페이지를 여세요. 전화번호와 진행자 빠른 가입 창에 표시된 6자리 방 코드(약 30초마다 갱신)를 입력하세요. 코드는 세션 참여를 확인하며 SMS처럼 전화 소유를 검증하지는 않습니다.',
   'auth.quickRegLinkInvalid': '이 가입 링크는 활성화되어 있지 않습니다(만료 또는 종료). 진행자에게서 최신 링크를 다시 여세요.',
   'auth.quickRegProbeRateLimited': '이 페이지에서 확인 횟수가 너무 많습니다. 잠시 후 새로고침하거나 나중에 다시 시도하세요.',
   'auth.quickRegSessionSignups': '이번 세션 가입: {n}명',

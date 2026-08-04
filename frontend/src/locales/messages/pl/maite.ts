@@ -1,5 +1,5 @@
 /**
- * pl UI — maite
+ * pl UI � maite
  */
 
 export default {

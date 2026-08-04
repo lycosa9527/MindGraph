@@ -2,13 +2,27 @@
 
 from __future__ import annotations
 
+import copy
 from pathlib import Path
 from typing import Any, Optional
+
+from sqlalchemy.orm.attributes import flag_modified
 
 from models.domain.showcase import ShowcasePost
 from services.showcase.infra.observability import showcase_wf_log
 from services.showcase.storage import storage_backend
 from services.showcase.uploads.roles import UploadRoleSpec
+
+
+def _assign_post_spec(post: ShowcasePost, spec_obj: dict[str, Any]) -> None:
+    """Assign JSONB spec so SQLAlchemy persists nested gallery/path mutations.
+
+    A shallow ``dict(post.spec)`` shares nested gallery dicts with the loaded
+    value; mutating ``entry['path']`` in place then reassigning can look like a
+    no-op to JSONB change tracking (approve then sees pending gallery forever).
+    """
+    post.spec = spec_obj
+    flag_modified(post, "spec")
 
 
 def apply_key_to_post(
@@ -33,7 +47,7 @@ def apply_key_to_post(
 
     spec_obj: dict[str, Any]
     if isinstance(post.spec, dict):
-        spec_obj = dict(post.spec)
+        spec_obj = copy.deepcopy(post.spec)
     else:
         spec_obj = {"type": post.case_type}
 
@@ -44,19 +58,23 @@ def apply_key_to_post(
             spec_obj["gallery"] = gallery
         while len(gallery) <= role_spec.gallery_slot:
             gallery.append({"kind": "image", "pending": True})
-        entry = gallery[role_spec.gallery_slot]
-        if not isinstance(entry, dict):
-            entry = {"kind": "image"}
-            gallery[role_spec.gallery_slot] = entry
-        prev_path = entry.get("path")
+        prev_entry = gallery[role_spec.gallery_slot]
+        prev_path = prev_entry.get("path") if isinstance(prev_entry, dict) else None
         previous = prev_path if isinstance(prev_path, str) else None
-        entry["path"] = logical_key
-        entry["kind"] = "image"
+        # Replace the slot with a new dict (do not mutate nested JSONB in place).
+        new_entry: dict[str, Any] = {
+            "kind": "image",
+            "path": logical_key,
+        }
         if filename:
-            entry["filename"] = Path(filename).name
-        entry.pop("pending", None)
+            new_entry["filename"] = Path(filename).name
+        elif isinstance(prev_entry, dict):
+            prev_name = prev_entry.get("filename")
+            if isinstance(prev_name, str) and prev_name.strip():
+                new_entry["filename"] = prev_name
+        gallery[role_spec.gallery_slot] = new_entry
         spec_obj["source"] = "gallery"
-        post.spec = spec_obj
+        _assign_post_spec(post, spec_obj)
         _track_previous(previous)
         return to_delete
 
@@ -75,11 +93,11 @@ def apply_key_to_post(
             if post.thumbnail_path:
                 to_delete.append(post.thumbnail_path)
                 post.thumbnail_path = None
-        post.spec = spec_obj
+        _assign_post_spec(post, spec_obj)
         _track_previous(previous)
         return to_delete
 
-    post.spec = spec_obj
+    _assign_post_spec(post, spec_obj)
     return to_delete
 
 

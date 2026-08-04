@@ -1,4 +1,6 @@
-/** de UI — auth */
+/**
+ * de UI � auth
+ */
 
 export default {
   'auth.accountInfo': 'Konto',

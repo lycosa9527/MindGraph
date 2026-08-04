@@ -135,7 +135,32 @@ function prefillCollabJoin(rawCode: string): void {
   collabPanelRef.value?.prefillAndAutoJoin(rawCode)
 }
 
-defineExpose({ prefillCollabJoin })
+async function attachShowcasePost(postId: string): Promise<void> {
+  const id = postId.trim()
+  if (!id) return
+  if (!authStore.isAuthenticated) {
+    authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
+  try {
+    mindMate.clearPendingFiles()
+    mindMate.startNewConversation()
+    const { getShowcasePost } = await import('@/utils/apiClient')
+    const { buildShowcaseMindMateAttachment } = await import(
+      '@/composables/showcase/buildShowcaseMindMateAttachment'
+    )
+    const post = await getShowcasePost(id)
+    const file = await buildShowcaseMindMateAttachment(post)
+    const uploaded = await mindMate.uploadFile(file, { allowDocuments: true })
+    if (!uploaded) {
+      notify.error(String(t('showcase.detail.actionFailed')))
+    }
+  } catch {
+    notify.error(String(t('showcase.detail.actionFailed')))
+  }
+}
+
+defineExpose({ prefillCollabJoin, attachShowcasePost })
 
 // Computed for loading state
 const isLoading = computed(
@@ -561,7 +586,7 @@ function isLastAssistantMessage(messageId: string): boolean {
         :aria-label="t('sidebar.expandSidebar')"
         @click="uiStore.toggleSidebar()"
       >
-        <PanelLeftOpen class="w-[18px] h-[18px]" />
+        <PanelLeftOpen class="w-4.5 h-4.5" />
       </el-button>
       <MindmateCollabBreadcrumb
         v-if="isCollabChatroomMode"

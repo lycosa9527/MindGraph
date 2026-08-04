@@ -1,4 +1,6 @@
-/** sq UI — community */
+/**
+ * sq UI � community
+ */
 
 export default {
   'community.category.all': 'Të gjitha',

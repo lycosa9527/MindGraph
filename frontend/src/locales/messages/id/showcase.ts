@@ -1,4 +1,6 @@
-/** id UI — showcase */
+/**
+ * id UI � showcase
+ */
 
 export default {
   'showcase.title': 'Pameran',
@@ -50,31 +52,19 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Mengunggah file ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Mengunggah {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'Menyelesaikan…',
-  'showcase.publishModal.uploadFailedRolledBack':
-    'Unggahan gagal — draf telah dibuang. Silakan coba lagi.',
-  'showcase.publishModal.uploadCorsFailed':
-    'Tidak dapat mengunggah ke penyimpanan objek (sering karena CORS bucket atau CSP situs memblokir host COS). Draf telah dibuang — minta admin memperbaiki CORS/CSP, lalu coba lagi.',
-  'showcase.publishModal.uploadStorageRejected':
-    'Penyimpanan objek menolak unggahan. Draf telah dibuang — coba lagi nanti, atau hubungi admin jika terus gagal.',
+  'showcase.publishModal.uploadFailedRolledBack': 'Unggahan gagal — draf telah dibuang. Silakan coba lagi.',
+  'showcase.publishModal.uploadCorsFailed': 'Tidak dapat mengunggah ke penyimpanan objek (sering karena CORS bucket atau CSP situs memblokir host COS). Draf telah dibuang — minta admin memperbaiki CORS/CSP, lalu coba lagi.',
+  'showcase.publishModal.uploadStorageRejected': 'Penyimpanan objek menolak unggahan. Draf telah dibuang — coba lagi nanti, atau hubungi admin jika terus gagal.',
   'showcase.publishModal.uploadFailed': 'Gagal mengunggah. Silakan coba lagi.',
-  'showcase.publishModal.uploadCoverTooLarge':
-    'Gambar sampul melebihi batas 2MB. Kompres pratinjau atau gunakan gambar lebih kecil, lalu coba lagi.',
-  'showcase.publishModal.uploadAttachmentTooLarge':
-    'File melebihi batas ukuran (dokumen/gambar 20MB, video 100MB). Kompres dan coba lagi.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
-    'File melebihi batas ukuran (dokumen/gambar 20MB, video 100MB). Draf telah dibuang — kompres dan coba lagi.',
-  'showcase.publishModal.uploadFileTooLarge':
-    'File terlalu besar untuk jenis unggahan ini. Periksa batas ukuran dan coba lagi.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack':
-    'File terlalu besar untuk jenis unggahan ini. Draf telah dibuang — periksa batas ukuran dan coba lagi.',
-  'showcase.publishModal.coverUploadSkipped':
-    'Kasus dikirim, tetapi gambar sampul gagal diunggah. Anda dapat mengedit kasus nanti untuk memperbarui sampul.',
-  'showcase.publishModal.coverGenerating':
-    'Pratinjau sampul sedang dibuat di latar belakang — akan muncul di kartu sebentar lagi.',
-  'showcase.publishModal.coverFailed':
-    'Kasus dikirim, tetapi sampul tidak dapat dibuat. Anda dapat mengedit kasus nanti untuk memperbarui sampul.',
-  'showcase.publishModal.coverFailedTimeout':
-    'Kasus dikirim, tetapi pembuatan sampul habis waktu. Anda dapat mengedit kasus nanti untuk memperbarui sampul.',
+  'showcase.publishModal.uploadCoverTooLarge': 'Gambar sampul melebihi batas 2MB. Kompres pratinjau atau gunakan gambar lebih kecil, lalu coba lagi.',
+  'showcase.publishModal.uploadAttachmentTooLarge': 'File melebihi batas ukuran (dokumen/gambar 20MB, video 100MB). Kompres dan coba lagi.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'File melebihi batas ukuran (dokumen/gambar 20MB, video 100MB). Draf telah dibuang — kompres dan coba lagi.',
+  'showcase.publishModal.uploadFileTooLarge': 'File terlalu besar untuk jenis unggahan ini. Periksa batas ukuran dan coba lagi.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack': 'File terlalu besar untuk jenis unggahan ini. Draf telah dibuang — periksa batas ukuran dan coba lagi.',
+  'showcase.publishModal.coverUploadSkipped': 'Kasus dikirim, tetapi gambar sampul gagal diunggah. Anda dapat mengedit kasus nanti untuk memperbarui sampul.',
+  'showcase.publishModal.coverGenerating': 'Pratinjau sampul sedang dibuat di latar belakang — akan muncul di kartu sebentar lagi.',
+  'showcase.publishModal.coverFailed': 'Kasus dikirim, tetapi sampul tidak dapat dibuat. Anda dapat mengedit kasus nanti untuk memperbarui sampul.',
+  'showcase.publishModal.coverFailedTimeout': 'Kasus dikirim, tetapi pembuatan sampul habis waktu. Anda dapat mengedit kasus nanti untuk memperbarui sampul.',
   'showcase.publishModal.success': 'Kasus diserahkan — menunggu peninjauan admin',
   'showcase.publishModal.fromCanvas': 'Publikasikan dari kanvas',
   'showcase.publishModal.step1Title': 'Informasi dasar',
@@ -88,10 +78,8 @@ export default {
   'showcase.publishModal.uploadLabel': 'Unggah berkas',
   'showcase.publishModal.uploadImage': 'Unggah gambar',
   'showcase.publishModal.uploadFile': 'Unggah berkas',
-  'showcase.publishModal.directUploadDisabled':
-    'Unggah file langsung sementara tidak tersedia. Anda tetap dapat memilih diagram tersimpan dari riwayat.',
-  'showcase.publishModal.uploadViaStorage':
-    'File diunggah langsung ke penyimpanan aman (URL berumur pendek).',
+  'showcase.publishModal.directUploadDisabled': 'Unggah file langsung sementara tidak tersedia. Anda tetap dapat memilih diagram tersimpan dari riwayat.',
+  'showcase.publishModal.uploadViaStorage': 'File diunggah langsung ke penyimpanan aman (URL berumur pendek).',
   'showcase.publishModal.pickHistory': 'Pilih dari sejarah',
   'showcase.publishModal.removeFile': 'Menghapus',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc: pratinjau terbatas)',
@@ -130,10 +118,11 @@ export default {
   'showcase.publishModal.aiGenerating': 'Menghasilkan…',
   'showcase.publishModal.aiGenerateStop': 'Berhenti',
   'showcase.publishModal.aiGenerateCancelled': 'Pembuatan AI dibatalkan — klik lagi untuk membuat ulang',
-  'showcase.publishModal.aiGenerateSuccess':
-    'Pengantar dan sorotan diisi dari dokumen — tinjau dan edit; tulis refleksi pengajaran sendiri',
+  'showcase.publishModal.aiGenerateSuccess': 'Pengantar dan sorotan diisi dari dokumen — tinjau dan edit; tulis refleksi pengajaran sendiri',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'Pembuatan AI gagal — silakan coba lagi',
   'showcase.publishModal.aiGenerateNeedFile': 'Unggah terlebih dahulu dokumen desain pengajaran pada langkah sebelumnya',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI generate hanya tersedia untuk kasus desain pengajaran',
   'showcase.publishModal.reflectionLabel': 'Mengajarkan refleksi',
   'showcase.publishModal.introPlaceholder': 'Jelaskan secara singkat kasusnya dan kapan menggunakannya',
@@ -160,15 +149,13 @@ export default {
   'showcase.publishModal.validationDiagramType': 'Silakan pilih jenis diagram',
   'showcase.publishModal.invalidFileType': 'Jenis file tidak didukung',
   'showcase.publishModal.invalidMgFile': 'Tidak dapat membaca file .mg ini — ekspor dari MindGraph terlebih dahulu',
-  'showcase.publishModal.cannotPreview':
-    'Tidak dapat membuat pratinjau sampul — kasus tetap akan dikirim. Coba PNG/JPG atau pilih diagram tersimpan.',
-  'showcase.publishModal.cannotPreviewHistory':
-    'Tidak dapat membuat sampul dari diagram tersimpan ini — kasus tetap akan dikirim. Pilih ulang atau simpan ulang dari kanvas.',
-  'showcase.publishModal.cannotPreviewTemplate':
-    'Tidak dapat membuat sampul — kasus tetap akan dikirim. Periksa file .mg atau pilih diagram tersimpan lain.',
+  'showcase.publishModal.cannotPreview': 'Tidak dapat membuat pratinjau sampul — kasus tetap akan dikirim. Coba PNG/JPG atau pilih diagram tersimpan.',
+  'showcase.publishModal.cannotPreviewHistory': 'Tidak dapat membuat sampul dari diagram tersimpan ini — kasus tetap akan dikirim. Pilih ulang atau simpan ulang dari kanvas.',
+  'showcase.publishModal.cannotPreviewTemplate': 'Tidak dapat membuat sampul — kasus tetap akan dikirim. Periksa file .mg atau pilih diagram tersimpan lain.',
   'showcase.publishModal.historyTitle': 'Pilih diagram yang disimpan',
   'showcase.publishModal.historySearch': 'Cari nama diagram…',
   'showcase.publishModal.historyEmpty': 'Tidak ada diagram yang disimpan',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': 'Desain pembelajaran kelas keterampilan berpikir',
   'showcase.publishModal.typeDesc.diagramCase': 'Diagram dan visualisasi yang sangat baik dalam pengajaran',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Diagram untuk digunakan kembali atau diadaptasi',
@@ -194,11 +181,9 @@ export default {
   'showcase.detail.delist': 'Hapus daftar',
   'showcase.detail.resubmit': 'Edit dan kirim ulang',
   'showcase.detail.withdrawTitle': 'Tarik kasus',
-  'showcase.detail.withdrawConfirm':
-    'Tarik "{title}"? Kasus akan dihapus dari antrean peninjauan dan tidak dapat dipulihkan.',
+  'showcase.detail.withdrawConfirm': 'Tarik "{title}"? Kasus akan dihapus dari antrean peninjauan dan tidak dapat dipulihkan.',
   'showcase.detail.delistTitle': 'Kasus penghapusan',
-  'showcase.detail.delistConfirm':
-    'Turunkan "{title}" dari galeri? Pengguna lain tidak lagi dapat melihatnya.',
+  'showcase.detail.delistConfirm': 'Turunkan "{title}" dari galeri? Pengguna lain tidak lagi dapat melihatnya.',
   'showcase.detail.confirm': 'Mengonfirmasi',
   'showcase.detail.cancel': 'Membatalkan',
   'showcase.withdrawn': 'Ditarik',
@@ -218,8 +203,7 @@ export default {
   'showcase.detail.pptxPreviewPending': 'Mengonversi slide untuk pratinjau…',
   'showcase.detail.docPreviewLoading': 'Memuat dokumen…',
   'showcase.detail.docPreviewFailed': 'Tidak dapat memuat pratinjau. Coba buka di tab baru.',
-  'showcase.detail.legacyDocHint':
-    'File .doc lama tidak dapat dipratinjau secara inline. Buka atau unduh file, atau unggah .docx untuk pratinjau di peramban.',
+  'showcase.detail.legacyDocHint': 'File .doc lama tidak dapat dipratinjau secara inline. Buka atau unduh file, atau unggah .docx untuk pratinjau di peramban.',
   'showcase.detail.noDocument': 'Tidak ada pratinjau dokumen',
   'showcase.detail.noDiagramPreview': 'Tidak ada pratinjau diagram',
   'showcase.detail.diagramPreviewLoading': 'Memuat diagram…',

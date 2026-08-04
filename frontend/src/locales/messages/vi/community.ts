@@ -1,4 +1,6 @@
-/** vi UI — community */
+/**
+ * vi UI � community
+ */
 
 export default {
   'community.category.all': 'Tất cả',
@@ -73,12 +75,10 @@ export default {
   'debateverse.clickNextHint': 'Nhấn nút tiếp theo để áp dụng thay đổi',
   'debateverse.coinTossAffirmativeFirst': 'Phe ủng hộ phát biểu trước',
   'debateverse.coinTossGotIt': 'Đã hiểu',
-  'debateverse.coinTossModalBody':
-    'Trước tranh biện, xác định thứ tự phát biểu hoặc chọn phe ủng hộ/phản đối bằng tung đồng xu',
+  'debateverse.coinTossModalBody': 'Trước tranh biện, xác định thứ tự phát biểu hoặc chọn phe ủng hộ/phản đối bằng tung đồng xu',
   'debateverse.coinTossNegativeFirst': 'Phe phản đối phát biểu trước',
   'debateverse.coinTossOrder': 'Tung đồng xu để xác định thứ tự phát biểu',
-  'debateverse.coinTossRules':
-    'Các mô hình AI đã được gán ngẫu nhiên vào vai tranh biện. Trước tranh biện, xác định thứ tự phát biểu hoặc chọn phe bằng tung đồng xu',
+  'debateverse.coinTossRules': 'Các mô hình AI đã được gán ngẫu nhiên vào vai tranh biện. Trước tranh biện, xác định thứ tự phát biểu hoặc chọn phe bằng tung đồng xu',
   'debateverse.coinTossStageTitle': 'Giai đoạn tung đồng xu',
   'debateverse.debateTopicLabel': 'Chủ đề tranh biện: ',
   'debateverse.executeCoinToss': 'Tung đồng xu',

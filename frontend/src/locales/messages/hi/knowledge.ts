@@ -1,4 +1,6 @@
-/** hi UI — knowledge */
+/**
+ * hi UI � knowledge
+ */
 
 export default {
   'fileCenterLibrary.title': 'पैकेज',

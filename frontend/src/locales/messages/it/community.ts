@@ -1,4 +1,6 @@
-/** it UI — community */
+/**
+ * it UI � community
+ */
 
 export default {
   'community.category.all': 'Tutti',

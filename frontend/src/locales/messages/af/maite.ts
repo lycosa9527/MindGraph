@@ -1,6 +1,7 @@
 /**
- * af UI — maite
+ * af UI � maite
  */
+
 export default {
   'maite.title': 'Mate Learning',
   'maite.subtitle': 'Omgekeerde ontbinding · Vierfase-diagnose · Gerigte remedie · Variant-oordrag',

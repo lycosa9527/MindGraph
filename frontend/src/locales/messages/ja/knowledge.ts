@@ -1,4 +1,6 @@
-/** ja UI — knowledge */
+/**
+ * ja UI � knowledge
+ */
 
 export default {
   'fileCenterLibrary.title': 'パッケージ',

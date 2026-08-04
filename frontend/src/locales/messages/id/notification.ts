@@ -1,4 +1,6 @@
-/** id UI — notification */
+/**
+ * id UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Tidak dapat menghapus node topik atau pusat',

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { Search, X } from '@lucide/vue'
+import { Folder, Search, X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
@@ -17,16 +17,28 @@ const emit = defineEmits<{
   (e: 'select', diagram: SavedDiagram): void
 }>()
 
-const { t } = useLanguage()
+const { t, currentLanguage } = useLanguage()
 const savedDiagramsStore = useSavedDiagramsStore()
 
 const searchQuery = ref('')
+
+const folderNameById = computed(() => {
+  const map = new Map<string, string>()
+  for (const folder of savedDiagramsStore.folders) {
+    map.set(folder.id, folder.name)
+  }
+  return map
+})
 
 const filteredDiagrams = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   const list = savedDiagramsStore.diagrams
   if (!q) return list
-  return list.filter((d) => d.title.toLowerCase().includes(q))
+  return list.filter((d) => {
+    if (d.title.toLowerCase().includes(q)) return true
+    const folderName = folderLabel(d).toLowerCase()
+    return folderName.includes(q)
+  })
 })
 
 watch(
@@ -56,9 +68,28 @@ function pick(diagram: SavedDiagram) {
   }
 }
 
-function formatDate(iso: string): string {
+function folderLabel(diagram: SavedDiagram): string {
+  const folderId = diagram.folder_id
+  if (folderId) {
+    return folderNameById.value.get(folderId) ?? String(t('showcase.publishModal.historyUncategorized'))
+  }
+  return String(t('showcase.publishModal.historyUncategorized'))
+}
+
+function formatModifiedAt(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString('zh-CN')
+    const locale = currentLanguage.value === 'zh' || currentLanguage.value === 'zh-tw'
+      ? currentLanguage.value === 'zh-tw'
+        ? 'zh-TW'
+        : 'zh-CN'
+      : currentLanguage.value || undefined
+    return new Date(iso).toLocaleString(locale, {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   } catch {
     return iso
   }
@@ -69,7 +100,7 @@ function formatDate(iso: string): string {
   <Teleport to="body">
     <div
       v-if="visible"
-      class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+      class="fixed inset-0 z-60 flex items-center justify-center bg-black/40 p-4"
       @click.self="close"
     >
       <div class="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl">
@@ -98,7 +129,7 @@ function formatDate(iso: string): string {
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-5">
+        <div class="flex-1 overflow-y-auto p-3">
           <p v-if="savedDiagramsStore.isLoading" class="py-8 text-center text-sm text-gray-400">…</p>
           <p
             v-else-if="filteredDiagrams.length === 0"
@@ -106,32 +137,37 @@ function formatDate(iso: string): string {
           >
             {{ t('showcase.publishModal.historyEmpty') }}
           </p>
-          <div v-else class="grid grid-cols-3 gap-3">
-            <button
+          <ul
+            v-else
+            class="divide-y divide-gray-100 rounded-xl border border-gray-100"
+          >
+            <li
               v-for="diagram in filteredDiagrams"
               :key="diagram.id"
-              type="button"
-              class="overflow-hidden rounded-xl border border-gray-100 text-left shadow-sm transition-all hover:border-gray-200 hover:shadow-md"
-              @click="pick(diagram)"
             >
-              <div
-                class="flex h-20 items-center justify-center bg-gradient-to-br from-violet-400 to-purple-500"
+              <button
+                type="button"
+                class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
+                @click="pick(diagram)"
               >
-                <img
-                  v-if="diagram.thumbnail"
-                  :src="diagram.thumbnail"
-                  :alt="diagram.title"
-                  class="h-full w-full object-cover"
-                />
-              </div>
-              <div class="p-2.5">
-                <p class="truncate text-xs font-medium text-gray-900">{{ diagram.title }}</p>
-                <p class="mt-0.5 truncate text-[10px] text-gray-400">
-                  {{ diagram.diagram_type }} · {{ formatDate(diagram.updated_at) }}
-                </p>
-              </div>
-            </button>
-          </div>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm font-medium text-gray-900">
+                    {{ diagram.title }}
+                  </p>
+                  <p class="mt-0.5 truncate text-xs text-gray-400">
+                    {{ formatModifiedAt(diagram.updated_at) }}
+                  </p>
+                </div>
+                <span
+                  class="inline-flex max-w-[40%] shrink-0 items-center gap-1 truncate rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-[11px] font-medium text-stone-600"
+                  :title="folderLabel(diagram)"
+                >
+                  <Folder class="h-3 w-3 shrink-0 text-stone-400" />
+                  <span class="truncate">{{ folderLabel(diagram) }}</span>
+                </span>
+              </button>
+            </li>
+          </ul>
         </div>
 
         <div

@@ -1,4 +1,6 @@
-/** vi UI — notification */
+/**
+ * vi UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Không thể xóa nút chủ đề hoặc nút trung tâm',
@@ -18,8 +20,7 @@ export default {
   'notification.feedbackThanks': 'Cảm ơn phản hồi của bạn',
   'notification.feedbackThanksDislike': 'Cảm ơn phản hồi — chúng tôi sẽ cải thiện',
   'notification.focusQuestionTooShort': 'Hãy nhập câu hỏi trọng tâm dài hơn trước',
-  'notification.geoLiteMissingIntro':
-    'Tải GeoLite2 Country từ MaxMind, giải nén GeoLite2-Country.mmdb và sao chép vào thư mục dữ liệu máy chủ:',
+  'notification.geoLiteMissingIntro': 'Tải GeoLite2 Country từ MaxMind, giải nén GeoLite2-Country.mmdb và sao chép vào thư mục dữ liệu máy chủ:',
   'notification.geoLiteMissingLink': 'Mở trang tải MaxMind GeoLite',
   'notification.geoLiteMissingPathLabel': 'Đường dẫn mong đợi:',
   'notification.geoLiteMissingTitle': 'Thiếu cơ sở dữ liệu GeoLite2 Country',

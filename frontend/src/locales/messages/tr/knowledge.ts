@@ -1,5 +1,5 @@
 /**
- * tr UI — knowledge
+ * tr UI � knowledge
  */
 
 export default {

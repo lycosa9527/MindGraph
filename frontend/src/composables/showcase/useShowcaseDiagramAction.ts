@@ -2,36 +2,41 @@ import { computed, ref, type Ref } from 'vue'
 
 import { useRouter } from 'vue-router'
 
+import { firstGalleryDiagramSpec } from '@/components/showcase/showcaseGallery'
 import {
   isRenderableShowcaseSpec,
   resolveDiagramAction,
   type ShowcaseDiagramAction,
-  type ShowcaseCaseType,
 } from '@/components/showcase/showcaseShared'
 import { useLanguage, useNotifications } from '@/composables'
 import { diagramTypeToChineseMap } from '@/composables/canvasPage/diagramTypeMaps'
 import { useAuthStore, useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { ShowcasePost } from '@/utils/apiClient'
-import { resolveShowcaseDiagramType } from '@/utils/showcaseDiagramThumbnail'
+import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 import { decodeMgFileToJsonText } from '@/utils/mgInterchange'
+import {
+  cloneShowcaseDiagramSpec,
+  resolveShowcaseDiagramType,
+} from '@/utils/showcaseDiagramThumbnail'
 
 async function fetchShowcaseSpec(post: ShowcasePost, spec?: unknown): Promise<Record<string, unknown> | null> {
   if (isRenderableShowcaseSpec(spec)) {
-    return spec
+    return cloneShowcaseDiagramSpec(spec)
+  }
+
+  const fromGallery = firstGalleryDiagramSpec(spec, post.gallery_items)
+  if (fromGallery && isRenderableShowcaseSpec(fromGallery)) {
+    return cloneShowcaseDiagramSpec(fromGallery)
   }
 
   if (post.spec_json_url) {
     try {
-      const url = post.spec_json_url
-      const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, {
-        credentials: 'include',
-        cache: 'no-store',
-      })
+      const res = await fetchShowcaseAsset(post.spec_json_url)
       if (res.ok) {
         const parsed = (await res.json()) as unknown
         if (isRenderableShowcaseSpec(parsed)) {
-          return parsed
+          return cloneShowcaseDiagramSpec(parsed)
         }
       }
     } catch {
@@ -42,14 +47,11 @@ async function fetchShowcaseSpec(post: ShowcasePost, spec?: unknown): Promise<Re
   const sourceUrl = post.source_file_url ?? ''
   if (/\.mg(\?|$)/i.test(sourceUrl)) {
     try {
-      const res = await fetch(`${sourceUrl}${sourceUrl.includes('?') ? '&' : '?'}t=${Date.now()}`, {
-        credentials: 'include',
-        cache: 'no-store',
-      })
+      const res = await fetchShowcaseAsset(sourceUrl)
       if (!res.ok) return null
       const text = await decodeMgFileToJsonText(await res.arrayBuffer())
       const parsed = JSON.parse(text) as unknown
-      return isRenderableShowcaseSpec(parsed) ? parsed : null
+      return isRenderableShowcaseSpec(parsed) ? cloneShowcaseDiagramSpec(parsed) : null
     } catch {
       return null
     }
@@ -74,11 +76,17 @@ export function useShowcaseDiagramAction() {
   }
 
   function resolveActionForPost(post: ShowcasePost, spec?: unknown): ShowcaseDiagramAction | null {
+    const hasGalleryDiagram = Boolean(
+      post.gallery_items?.some(
+        (item) => item.kind === 'diagram' && item.spec && typeof item.spec === 'object'
+      ) || firstGalleryDiagramSpec(spec, post.gallery_items)
+    )
     return resolveDiagramAction({
       caseType: post.case_type,
       spec,
       specJsonUrl: post.spec_json_url,
       sourceFileUrl: post.source_file_url,
+      hasGalleryDiagram,
     })
   }
 
@@ -124,10 +132,14 @@ export function useShowcaseDiagramAction() {
         notify.error(savedDiagramsStore.error || String(t('community.post.importFail')))
         return
       }
-      savedDiagramsStore.setActiveDiagram(saved.id)
+
+      // Do not setActiveDiagram before navigation. CanvasPage skips library reload when
+      // ?diagramId= already matches activeDiagramId, while ShowcaseDiagramPreview unmount
+      // restores a stale diagramStore backup — leaving canvas empty/wrong despite a save.
+      savedDiagramsStore.clearActiveDiagram()
       notify.success(String(t('community.post.importOk')))
       options?.closeModal?.()
-      void router.push({ path: '/canvas', query: { diagramId: saved.id } })
+      await router.push({ path: '/canvas', query: { diagramId: saved.id } })
     } catch (e) {
       notify.error(e instanceof Error ? e.message : String(t('community.post.importFail')))
     } finally {

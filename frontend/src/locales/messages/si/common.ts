@@ -1,4 +1,6 @@
-/** si UI — common */
+/**
+ * si UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'අන්තර්ගතය AI මගින් සෑදි ඇත; කරුණාකර ප්‍රවේශමෙන් සත්‍යාපනය කරන්න.',

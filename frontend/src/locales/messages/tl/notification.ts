@@ -1,4 +1,6 @@
-/** tl UI — notification */
+/**
+ * tl UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Hindi maaaring i-clear ang topic o center nodes',
@@ -18,8 +20,7 @@ export default {
   'notification.feedbackThanks': 'Salamat sa iyong feedback',
   'notification.feedbackThanksDislike': 'Salamat sa feedback — pagbubutihin namin ito',
   'notification.focusQuestionTooShort': 'Maglagay muna ng mas mahabang focus question',
-  'notification.geoLiteMissingIntro':
-    'I-download ang GeoLite2 Country mula sa MaxMind, i-extract ang GeoLite2-Country.mmdb, at kopyahin sa server data folder:',
+  'notification.geoLiteMissingIntro': 'I-download ang GeoLite2 Country mula sa MaxMind, i-extract ang GeoLite2-Country.mmdb, at kopyahin sa server data folder:',
   'notification.geoLiteMissingLink': 'Buksan ang MaxMind GeoLite download page',
   'notification.geoLiteMissingPathLabel': 'Inaasahang path:',
   'notification.geoLiteMissingTitle': 'Nawawala ang GeoLite2 Country database',

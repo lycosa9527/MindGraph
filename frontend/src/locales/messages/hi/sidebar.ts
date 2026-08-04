@@ -1,4 +1,6 @@
-/** hi UI — sidebar */
+/**
+ * hi UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'हटाएँ',

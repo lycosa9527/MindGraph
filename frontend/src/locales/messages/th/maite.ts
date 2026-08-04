@@ -1,6 +1,7 @@
 /**
- * th UI — maite
+ * th UI � maite
  */
+
 export default {
   'maite.title': 'Mate Learning',
   'maite.subtitle': 'ถอดโจทย์ย้อนกลับ · วินิจฉัย 4 ขั้น · เสริมจุดอ่อน · ฝึกโจทย์แปรรูป',

@@ -1,4 +1,6 @@
-/** sq UI — thinkingCoins */
+/**
+ * sq UI � thinkingCoins
+ */
 
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': 'Tokenët e mia të mendimit',

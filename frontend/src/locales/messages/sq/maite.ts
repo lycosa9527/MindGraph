@@ -1,4 +1,6 @@
-/** sq UI — maite */
+/**
+ * sq UI � maite
+ */
 
 export default {
   'maite.title': 'Mate Learning',

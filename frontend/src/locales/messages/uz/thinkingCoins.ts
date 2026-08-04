@@ -1,4 +1,6 @@
-/** uz UI — thinkingCoins */
+/**
+ * uz UI � thinkingCoins
+ */
 
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': 'Mening fikrlash tokenlarim',

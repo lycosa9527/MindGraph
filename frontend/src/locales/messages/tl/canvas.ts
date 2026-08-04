@@ -1,4 +1,6 @@
-/** tl UI — canvas */
+/**
+ * tl UI � canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'Bagong Subpart 1',
@@ -34,8 +36,7 @@ export default {
   'canvas.worksheetText.hide': 'Magtago',
   'canvas.worksheetText.instructionLabel': 'Mga tagubilin',
   'canvas.worksheetText.instructionPrefix': 'Gawain:',
-  'canvas.worksheetText.modalHint':
-    'I-export ang PDF para sa pag-print. I-export ang dokumento para sa nae-edit na mga field ng pangalan/klase; ang diagram ay nananatiling isang imahe.',
+  'canvas.worksheetText.modalHint': 'I-export ang PDF para sa pag-print. I-export ang dokumento para sa nae-edit na mga field ng pangalan/klase; ang diagram ay nananatiling isang imahe.',
   'canvas.worksheetText.headerCaptureFailed': 'Hindi mai-render ang worksheet header; na-export PDF nang wala ito.',
   'canvas.worksheetText.modalTitle': 'I-export bilang DOCX/PDF',
   'canvas.worksheetText.previewDiagram': 'Dayagram',
@@ -55,19 +56,14 @@ export default {
   'canvas.worksheetText.showName': 'Pangalan',
   'canvas.worksheetText.showTopic': 'Pamagat ng paksa',
   'canvas.worksheetText.topicPreviewLabel': 'Paksa ng diagram',
-  'canvas.import.invalidFile':
-    'Di-wastong diagram file. Mangyaring pumili ng MG file na na-export mula sa MindGraph o isang CmapTools .cmap file.',
+  'canvas.import.invalidFile': 'Di-wastong diagram file. Mangyaring pumili ng MG file na na-export mula sa MindGraph o isang CmapTools .cmap file.',
   'canvas.import.parseError': 'Nabigong i-parse ang diagram file, pakisubukang muli',
-  'canvas.import.cmapHeuristicSemantics':
-    'Gumamit ang CmapTools file na ito ng text-order fallback para sa mga link—i-verify ang mga relasyon laban sa iyong orihinal na mapa.',
-  'canvas.import.cmapConnectionFallback':
-    'Ang mga relasyon ay muling itinayo mula sa IHMC na mga graphical na koneksyon sa halip na mga proposition object.',
+  'canvas.import.cmapHeuristicSemantics': 'Gumamit ang CmapTools file na ito ng text-order fallback para sa mga link—i-verify ang mga relasyon laban sa iyong orihinal na mapa.',
+  'canvas.import.cmapConnectionFallback': 'Ang mga relasyon ay muling itinayo mula sa IHMC na mga graphical na koneksyon sa halip na mga proposition object.',
   'canvas.import.cmapEmptyLayout': 'Ang na-import na mapa ay walang na-recover na node coordinate; na-regenerate ang layout.',
-  'canvas.import.cmapLayoutLabelCollision':
-    'Ang mga duplicate na label ng konsepto ay nagsasapawan sa mga anchor ng layout; maaaring mali ang ilang na-import na posisyon.',
+  'canvas.import.cmapLayoutLabelCollision': 'Ang mga duplicate na label ng konsepto ay nagsasapawan sa mga anchor ng layout; maaaring mali ang ilang na-import na posisyon.',
   'canvas.import.cmapLayoutFailed': 'Ang pagkuha ng layout ay nagkaroon ng error sa pag-parse—na-regenerate ang mga posisyon.',
-  'canvas.reset.confirmBody':
-    'Sigurado ka ba? Ang lahat ng kasalukuyang nilalaman ay mawawala, kabilang ang diagram at node palette. Hindi na ito maaaring bawiin.',
+  'canvas.reset.confirmBody': 'Sigurado ka ba? Ang lahat ng kasalukuyang nilalaman ay mawawala, kabilang ang diagram at node palette. Hindi na ito maaaring bawiin.',
   'canvas.reset.confirmButton': 'I-reset',
   'canvas.reset.confirmTitle': 'I-reset sa Default',
   'canvas.reset.warnSelectType': 'Hindi ma-reset: pumili muna ng uri ng diagram',
@@ -88,15 +84,13 @@ export default {
   'canvas.shortcutGuide.addSibling': 'Magdagdag ng kapatid',
   'canvas.shortcutGuide.addSiblingDesc': 'Mabilis na magpasok ng kapatid sa tabi ng napiling node.',
   'canvas.shortcutGuide.editText': 'I-edit ang text',
-  'canvas.shortcutGuide.editTextDesc':
-    'Buksan ang inline na pag-edit sa lugar; Ipasok o i-blur ang mga sine-save at muling kalkulahin ang laki kaagad.',
+  'canvas.shortcutGuide.editTextDesc': 'Buksan ang inline na pag-edit sa lugar; Ipasok o i-blur ang mga sine-save at muling kalkulahin ang laki kaagad.',
   'canvas.shortcutGuide.doubleClick': 'I-double click para i-edit',
   'canvas.shortcutGuide.deleteNode': 'Tanggalin ang node',
   'canvas.shortcutGuide.deleteNodeDesc': 'Alisin ang napiling node at ang mga sanga nito (pinoprotektahan ang root node).',
   'canvas.shortcutGuide.arrowNav': 'Mga arrow key',
   'canvas.shortcutGuide.selectNav': 'Mag-navigate',
-  'canvas.shortcutGuide.arrowNavDesc':
-    'Euclidean navigation: tumalon ang mga arrow key sa pinakamalapit na node sa pamamagitan ng pisikal na 2D na posisyon sa canvas, para sa tuluy-tuloy na parang desktop na paggalaw sa anumang layout.',
+  'canvas.shortcutGuide.arrowNavDesc': 'Euclidean navigation: tumalon ang mga arrow key sa pinakamalapit na node sa pamamagitan ng pisikal na 2D na posisyon sa canvas, para sa tuluy-tuloy na parang desktop na paggalaw sa anumang layout.',
   'canvas.shortcutGuide.cancel': 'I-clear ang pagpili / pag-edit',
   'canvas.shortcutGuide.cancelDesc': 'Kanselahin ang pagpili o pag-edit.',
   'canvas.shortcutGuide.undo': 'I-undo',
@@ -195,10 +189,8 @@ export default {
   'canvas.toolbar.cannotGenerate': 'Hindi makabuo',
   'canvas.toolbar.causeAdded': 'Dahilan ang idinagdag na node',
   'canvas.toolbar.childAdded': 'Dagdag ng bata',
-  'canvas.toolbar.collabAiBlocked':
-    'Tanging ang may-ari ng diagram ang maaaring gumamit ng pagbuo ng AI sa panahon ng pakikipagtulungan',
-  'canvas.toolbar.collabLiveAiDisabled':
-    'Hindi available ang pagbuo ng AI sa panahon ng live na pakikipagtulungan kaya manatiling naka-sync ang lahat',
+  'canvas.toolbar.collabAiBlocked': 'Tanging ang may-ari ng diagram ang maaaring gumamit ng pagbuo ng AI sa panahon ng pakikipagtulungan',
+  'canvas.toolbar.collabLiveAiDisabled': 'Hindi available ang pagbuo ng AI sa panahon ng live na pakikipagtulungan kaya manatiling naka-sync ang lahat',
   'canvas.toolbar.collabGuestFeatureBlocked': 'Hindi available ang feature na ito habang sumali ka bilang isang collaboration guest.',
   'canvas.toolbar.colorLabel': 'Kulay',
   'canvas.toolbar.conceptGeneration': 'Pagbuo ng Konsepto',
@@ -224,8 +216,7 @@ export default {
   'canvas.toolbar.highlighterChooseColor': 'Kulay ng highlighter',
   'canvas.toolbar.highlighterPaletteAria': 'Pumili ng kulay ng highlighter',
   'canvas.toolbar.insertEquation': 'Ipasok ang equation',
-  'canvas.toolbar.insertEquationTooltip':
-    'Ipasok ang inline na matematika ($...$) sa caret, o idugtong sa napiling node kung hindi nag-e-edit',
+  'canvas.toolbar.insertEquationTooltip': 'Ipasok ang inline na matematika ($...$) sa caret, o idugtong sa napiling node kung hindi nag-e-edit',
   'canvas.toolbar.insertEquationSelectNode': 'Pumili muna ng node',
   'canvas.toolbar.insertEquationDialogTitle': 'Ipasok ang equation',
   'canvas.toolbar.insertEquationLoading': 'Nilo-load ang math editor...',
@@ -347,8 +338,7 @@ export default {
   'canvas.presentationTimer.startPresenting': 'Simulan ang pagtatanghal',
   'canvas.presentationTimer.closeHud': 'Isara ang timer',
   'canvas.presentation.learningSheetConfirmTitle': 'Simulan ang pagtatanghal?',
-  'canvas.presentation.learningSheetConfirmBody':
-    'In-edit mo pa rin ang learning sheet. Ang panimulang pagtatanghal ay magtatapos sa blangkong pag-edit; ang mga umiiral na blangko ay itatago. Magpatuloy?',
+  'canvas.presentation.learningSheetConfirmBody': 'In-edit mo pa rin ang learning sheet. Ang panimulang pagtatanghal ay magtatapos sa blangkong pag-edit; ang mga umiiral na blangko ay itatago. Magpatuloy?',
   'canvas.presentation.learningSheetConfirmProceed': 'Simulan ang pagtatanghal',
   'canvas.presentationContextMenu.laserPointer': 'Laser pointer',
   'canvas.presentationContextMenu.spotlight': 'Spotlight',
@@ -406,8 +396,7 @@ export default {
   'canvas.toolbar.moreAppSnapshot': 'Snapshot',
   'canvas.toolbar.moreAppSnapshotDesc': 'Mag-save ng bersyon ng diagram na ito (max 10)',
   'canvas.toolbar.moreAppTranslateLabel': 'Isalin',
-  'canvas.toolbar.moreAppTranslateLabelDesc':
-    'Isalin ang lahat ng node at mga label ng koneksyon sa iyong kasalukuyang wika ng interface gamit ang AI',
+  'canvas.toolbar.moreAppTranslateLabelDesc': 'Isalin ang lahat ng node at mga label ng koneksyon sa iyong kasalukuyang wika ng interface gamit ang AI',
   'canvas.toolbar.translateLabelTitle': 'Isalin ang diagram',
   'canvas.toolbar.translateLabelSource': 'Mga label na isasalin ({count})',
   'canvas.toolbar.translateLabelTargetLanguage': 'Target na wika',
@@ -419,24 +408,20 @@ export default {
   'canvas.toolbar.translateLabelAndMore': '{n} pa ang hindi ipinapakita...',
   'canvas.toolbar.translateLabelInProgress': 'Nagsasalin ng diagram...',
   'canvas.toolbar.translateLabelBannerTitle': 'Pagsasalin ng diagram',
-  'canvas.toolbar.translateLabelFallbackEnInfo':
-    'Hindi pa available ang iyong wika sa interface bilang target ng pagsasalin. Ang mga label ay isasalin sa Ingles.',
+  'canvas.toolbar.translateLabelFallbackEnInfo': 'Hindi pa available ang iyong wika sa interface bilang target ng pagsasalin. Ang mga label ay isasalin sa Ingles.',
   'canvas.toolbar.translateLabelFailed': 'Nabigo ang pagsasalin. Pakisubukang muli.',
   'canvas.toolbar.translateLabelDone': 'Isinalin ang diagram',
   'canvas.toolbar.moreAppVirtualKeyboard': 'Virtual na Keyboard',
   'canvas.toolbar.moreAppVirtualKeyboardDesc': 'Naka-sync ang on-screen na keyboard sa iyong wika ng interface',
   'canvas.toolbar.virtualKeyboardClose': 'Isara ang keyboard',
-  'canvas.toolbar.virtualKeyboardFocusHint':
-    'I-double click o i-double tap muna ang isang label ng node, pagkatapos ay mag-type gamit ang keyboard',
+  'canvas.toolbar.virtualKeyboardFocusHint': 'I-double click o i-double tap muna ang isang label ng node, pagkatapos ay mag-type gamit ang keyboard',
   'canvas.toolbar.snapshotSaveFirst': 'Paki-save muna ang diagram bago kumuha ng snapshot',
   'canvas.toolbar.snapshotTaken': 'Na-save ang snapshot {n}',
   'canvas.toolbar.snapshotFailed': 'Nabigong i-save ang snapshot, pakisubukang muli',
-  'canvas.toolbar.snapshotTooLarge':
-    'Masyadong malaki ang snapshot (max {max} KB). Bawasan ang nilalaman ng diagram at subukang muli.',
+  'canvas.toolbar.snapshotTooLarge': 'Masyadong malaki ang snapshot (max {max} KB). Bawasan ang nilalaman ng diagram at subukang muli.',
   'canvas.toolbar.snapshotRateLimited': 'Masyadong maraming mga pagkilos ng snapshot. Maghintay sandali at subukang muli.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Hindi nakita ang diagram. I-reload ang page o buksan ito mula sa iyong library.',
-  'canvas.library.diagramNotFound':
-    'Hindi nakita ang diagram. Maaaring ito ay tinanggal. Magbukas ng isa pang diagram mula sa iyong library.',
+  'canvas.library.diagramNotFound': 'Hindi nakita ang diagram. Maaaring ito ay tinanggal. Magbukas ng isa pang diagram mula sa iyong library.',
   'canvas.toolbar.snapshotConflict': 'Hindi ma-save ang snapshot (conflict). Pakisubukang muli.',
   'canvas.toolbar.newAssociation': 'Bagong samahan',
   'canvas.toolbar.newAttribute': 'Bagong Katangian',
@@ -460,16 +445,13 @@ export default {
   'canvas.toolbar.redoShortcut': 'Ctrl + Y',
   'canvas.toolbar.selectBranchOrChild': 'Mangyaring pumili ng branch o child node',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Mangyaring pumili ng kategorya o mga node ng dahon (hindi matatanggal ang node ng paksa)',
-  'canvas.toolbar.selectCauseOrEffectForAdd':
-    'Pumili ng node na sanhi o epekto (hindi ang kaganapan), pagkatapos ay pindutin ang Enter upang magdagdag ng isa pa sa column na iyon',
-  'canvas.toolbar.selectTreeBranchForChild':
-    'Pumili ng isang kategorya o isang item sa ilalim ng isang kategorya upang magdagdag ng isang bata, o piliin ang paksa upang magdagdag ng isang kategorya',
+  'canvas.toolbar.selectCauseOrEffectForAdd': 'Pumili ng node na sanhi o epekto (hindi ang kaganapan), pagkatapos ay pindutin ang Enter upang magdagdag ng isa pa sa column na iyon',
+  'canvas.toolbar.selectTreeBranchForChild': 'Pumili ng isang kategorya o isang item sa ilalim ng isang kategorya upang magdagdag ng isang bata, o piliin ang paksa upang magdagdag ng isang kategorya',
   'canvas.toolbar.selectNodesFirst': 'Mangyaring pumili muna ng (mga) node',
   'canvas.toolbar.selectNodesToDelete': 'Mangyaring pumili ng (mga) node na tatanggalin',
   'canvas.toolbar.selectPartForSubpart': 'Mangyaring pumili ng bahaging idadagdag ng subpart',
   'canvas.toolbar.selectPartThenEnter': 'Pumili ng part node, pagkatapos ay pindutin ang Enter para magdagdag ng subpart',
-  'canvas.toolbar.selectSimilarityOrDifferenceDelete':
-    'Mangyaring pumili ng mga node ng pagkakapareho o pagkakaiba (hindi matatanggal ang mga node ng paksa)',
+  'canvas.toolbar.selectSimilarityOrDifferenceDelete': 'Mangyaring pumili ng mga node ng pagkakapareho o pagkakaiba (hindi matatanggal ang mga node ng paksa)',
   'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'Mangyaring pumili muna ng pagkakatulad o pagkakaiba ng node',
   'canvas.toolbar.selectStepForSubstep': 'Mangyaring pumili ng isang hakbang upang magdagdag ng substep',
   'canvas.toolbar.similarityWithIndex': 'Pagkakatulad {n}',
@@ -592,8 +574,7 @@ export default {
   'canvas.mindMapSlideOverlay.branch': 'Sangay',
   'canvas.mindMapSlideOverlay.region': 'Mga kontrol sa slide show',
   'canvas.mindMapSlideOverlay.progress': 'Pag-usad ng slide — i-click upang tumalon',
-  'canvas.mindMapSlideOverlay.shortcuts':
-    'I-click ang canvas o Space/→ susunod · ← nakaraan · Home/Tapos muna/huling · Esc exit slide',
+  'canvas.mindMapSlideOverlay.shortcuts': 'I-click ang canvas o Space/→ susunod · ← nakaraan · Home/Tapos muna/huling · Esc exit slide',
   'canvas.mindMapSlideOverlay.exit': 'Lumabas sa mga slide',
   'canvas.mindMapSlideOverlay.collapse': 'I-collapse ang mga kontrol',
   'canvas.mindMapSlideOverlay.expand': 'Palawakin ang mga kontrol',
@@ -606,12 +587,9 @@ export default {
   'canvasPage.collaborationFooterOwner': 'pakikipagtulungan ni {username}',
   'canvasPage.collaborationFooterOwnerDiagram': 'Diagram ni {username} «{diagramTitle}» — pakikipagtulungan',
   'canvasPage.collaborationFooterNetworkDiagramTitle': 'Collaborative na diagram «{diagramTitle}»',
-  'canvasPage.collaborationFooterSchool':
-    'Kasalukuyang isinasagawa ang pakikipagtulungan sa paaralan — sumali mula sa listahan ng paaralan.',
-  'canvasPage.collaborationFooterSchoolDiagram':
-    'Pakikipagtulungan ng paaralan sa «{diagramTitle}» — sumali mula sa listahan ng sesyon ng paaralan.',
-  'canvasPage.collabRoomIdleEnding':
-    'Session idle — magtatapos ang collaboration sa humigit-kumulang {seconds}s (i-edit para panatilihin ito)',
+  'canvasPage.collaborationFooterSchool': 'Kasalukuyang isinasagawa ang pakikipagtulungan sa paaralan — sumali mula sa listahan ng paaralan.',
+  'canvasPage.collaborationFooterSchoolDiagram': 'Pakikipagtulungan ng paaralan sa «{diagramTitle}» — sumali mula sa listahan ng sesyon ng paaralan.',
+  'canvasPage.collabRoomIdleEnding': 'Session idle — magtatapos ang collaboration sa humigit-kumulang {seconds}s (i-edit para panatilihin ito)',
   'conceptMap.focus.noResult': 'Walang resulta',
   'conceptMap.focus.validationRequestFailed': 'Nabigo ang kahilingan sa pagpapatunay',
   'diagram.aiGenerating': 'AI...',
@@ -668,24 +646,17 @@ export default {
   'canvas.mindMapSideToolbar.collapse': 'I-collapse ang toolbar',
   'canvas.mindMapSideToolbar.outline': 'Balangkas',
   'canvas.mindMapSideToolbar.waterfall': 'AI Brainstorm',
-  'canvas.mindMapWaterfall.panelHint':
-    'Pumili ng mga node para sa mga ideya ng sangay ng AI, pagkatapos ay i-drag ang mga ito sa canvas',
+  'canvas.mindMapWaterfall.panelHint': 'Pumili ng mga node para sa mga ideya ng sangay ng AI, pagkatapos ay i-drag ang mga ito sa canvas',
   'canvas.mindMapWaterfall.emptyHint': 'Wala pang mungkahi. Pumili ng mga node sa canvas o i-tap ang I-refresh.',
-  'canvas.mindMapWaterfall.dragHint':
-    'I-click upang pumili ng marami, pagkatapos ay i-drag sa isang node ng mapa upang ipasok. I-drop sa walang laman na canvas upang magdagdag ng isang nangungunang antas na sangay.',
+  'canvas.mindMapWaterfall.dragHint': 'I-click upang pumili ng marami, pagkatapos ay i-drag sa isang node ng mapa upang ipasok. I-drop sa walang laman na canvas upang magdagdag ng isang nangungunang antas na sangay.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'Magdagdag ng mga node mula sa AI brainstorm',
-  'canvas.mindMapOneSentence.intro':
-    'Maglagay ng paksa, o tukuyin ang bilang ng sangay, kategorya, hakbang, o iba pang istruktura',
-  'canvas.mindMapOneSentence.requirementsPlaceholder':
-    'hal. 3-araw na paglalakbay sa Beijing na may apat na sangay: damit, pagkain, tuluyan, transportasyon',
+  'canvas.mindMapOneSentence.intro': 'Maglagay ng paksa, o tukuyin ang bilang ng sangay, kategorya, hakbang, o iba pang istruktura',
+  'canvas.mindMapOneSentence.requirementsPlaceholder': 'hal. 3-araw na paglalakbay sa Beijing na may apat na sangay: damit, pagkain, tuluyan, transportasyon',
   'canvas.mindMapOneSentence.examplesTitle': 'Inspirasyon',
   'canvas.mindMapOneSentence.generateButton': 'Bumuo',
-  'canvas.mindMapOneSentence.example1':
-    '3-araw na plano sa paglalakbay sa Beijing na may apat na sangay: damit, pagkain, tuluyan, transportasyon',
-  'canvas.mindMapOneSentence.example2':
-    'SWOT pagsusuri para sa isang bagong paglulunsad ng produkto: kalakasan, kahinaan, pagkakataon, pagbabanta',
-  'canvas.mindMapOneSentence.example3':
-    'Elementarya na agham: mga estado ng tubig — mga simpleng label, max 6 na character bawat node',
+  'canvas.mindMapOneSentence.example1': '3-araw na plano sa paglalakbay sa Beijing na may apat na sangay: damit, pagkain, tuluyan, transportasyon',
+  'canvas.mindMapOneSentence.example2': 'SWOT pagsusuri para sa isang bagong paglulunsad ng produkto: kalakasan, kahinaan, pagkakataon, pagbabanta',
+  'canvas.mindMapOneSentence.example3': 'Elementarya na agham: mga estado ng tubig — mga simpleng label, max 6 na character bawat node',
   'canvas.mindMapOneSentence.suggestion.add_node': 'Add a China branch',
   'canvas.mindMapOneSentence.suggestion.update_node': 'Rename Brewing Methods to Brew Methods',
   'canvas.mindMapOneSentence.suggestion.update_center': 'Change the topic to Tea',
@@ -704,70 +675,51 @@ export default {
   'canvas.mindMapOneSentence.photoInvalidType': 'Mangyaring pumili ng JPG, PNG, o WebP na larawan.',
   'canvas.mindMapOneSentence.photoTooLarge': 'Masyadong malaki ang larawan. Ang maximum na laki ay 10MB.',
   'canvas.mindMapOneSentence.photoUntitledMap': 'Mapa ng isip',
-  'canvas.mindMapOneSentence.photoHanddrawnReply':
-    'Nakakita ng hand-drawn mind map na "{topic}". Muling itinayo sa canvas; na-save ang outline sa Buod ng Dokumento.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
-    'Nakakita ng hand-drawn mind map na "{topic}". Muling itinayo sa canvas na ito; na-save ang outline sa Buod ng Dokumento. Hindi nakumpleto ang pag-sync ng library — i-save o subukang muli kung kinakailangan.',
-  'canvas.mindMapOneSentence.photoOcrReply':
-    'Na-extract na text mula sa larawan:\\\\\n{excerpt}\\\\\n\\\\\nAng buong text ay nasa Buod ng Dokumento.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply': 'Nakakita ng hand-drawn mind map na "{topic}". Muling itinayo sa canvas; na-save ang outline sa Buod ng Dokumento.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'Nakakita ng hand-drawn mind map na "{topic}". Muling itinayo sa canvas na ito; na-save ang outline sa Buod ng Dokumento. Hindi nakumpleto ang pag-sync ng library — i-save o subukang muli kung kinakailangan.',
+  'canvas.mindMapOneSentence.photoOcrReply': 'Na-extract na text mula sa larawan:\\\\\n{excerpt}\\\\\n\\\\\nAng buong text ay nasa Buod ng Dokumento.',
   'canvas.mindMapOneSentence.photoFailed': 'Hindi maproseso ang larawan.',
   'canvas.mindMapOneSentence.micDenied': 'Hindi available ang mikropono — tingnan ang pahintulot ng browser',
   'canvas.mindMapOneSentence.ttsToggle': 'I-toggle ang pagsasalita',
-  'canvas.mindMapOneSentence.kittyWelcome':
-    'Kumusta — sabihin sa akin kung anong diagram ang gagawin, o patuloy na makipag-chat para mag-edit ng mga branch at node.',
+  'canvas.mindMapOneSentence.kittyWelcome': 'Kumusta — sabihin sa akin kung anong diagram ang gagawin, o patuloy na makipag-chat para mag-edit ng mga branch at node.',
   'canvas.mindMapOneSentence.switchDiagramType': 'Lumipat sa {type}…',
   'canvas.mindMapOneSentence.kittyGenerating': 'Okay — pagbuo ng iyong diagram...',
   'canvas.mindMapOneSentence.kittyGenerateDone': 'Handa na ang diagram. Patuloy na mag-type para mag-edit ng mga branch o node.',
   'canvas.mindMapOneSentence.kittyGenerateFailed': 'Nabigo ang pagbuo ng diagram. Subukang muli o pinuhin ang iyong paglalarawan.',
   'canvas.mindMapOneSentence.kittyEditFailed': 'Hindi mailapat ang pag-edit na iyon. Subukang i-rephrase ang iyong kahilingan.',
-  'canvas.mindMapOneSentence.kittyEditStale':
-    'Ang pag-edit na iyon ay hindi nagkaroon ng bisa sa canvas (lipas o walang-op). Subukan muli.',
-  'canvas.mindMapOneSentence.kittyEditVerifyFailed':
-    'Hindi ma-verify ng canvas ang pag-edit na iyon. Ang iyong diagram ay iniwang hindi nabago.',
-  'canvas.mindMapOneSentence.kittyEditPersistFailed':
-    'Ang pag-edit ay inilapat nang lokal ngunit nabigong mag-sync. Subukan muli sa isang sandali.',
+  'canvas.mindMapOneSentence.kittyEditStale': 'Ang pag-edit na iyon ay hindi nagkaroon ng bisa sa canvas (lipas o walang-op). Subukan muli.',
+  'canvas.mindMapOneSentence.kittyEditVerifyFailed': 'Hindi ma-verify ng canvas ang pag-edit na iyon. Ang iyong diagram ay iniwang hindi nabago.',
+  'canvas.mindMapOneSentence.kittyEditPersistFailed': 'Ang pag-edit ay inilapat nang lokal ngunit nabigong mag-sync. Subukan muli sa isang sandali.',
   'canvas.mindMapOneSentence.kittyContextSyncFailed': 'Hindi ma-sync ang canvas. Pakisubukang muli sa ilang sandali.',
   'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'Hindi ma-sync ang canvas ({detail}). Pakisubukang muli sa ilang sandali.',
   'canvas.mindMapOneSentence.kittyEditBusy': 'Bumubuo pa rin ang diagram — mangyaring maghintay, pagkatapos ay subukang muli.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued':
-    '{models} na mga resulta ay nagsi-stream pa rin — Awtomatiko kong patakbuhin ang iyong kahilingan kapag natapos na ang mga ito.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
-    'Nagsi-stream pa rin ang ibang mga resulta ng modelo — Awtomatiko kong patakbuhin ang iyong kahilingan kapag natapos na ang mga ito.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} na mga resulta ay nagsi-stream pa rin — Awtomatiko kong patakbuhin ang iyong kahilingan kapag natapos na ang mga ito.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'Nagsi-stream pa rin ang ibang mga resulta ng modelo — Awtomatiko kong patakbuhin ang iyong kahilingan kapag natapos na ang mga ito.',
   'canvas.mindMapOneSentence.kittyEditBusyResuming': 'Tapos na ang iba pang mga modelo — nagpapatuloy sa iyong kahilingan...',
   'canvas.mindMapOneSentence.requestQueued': 'Nakapila',
   'canvas.mindMapOneSentence.requestFailed': 'Nabigo',
   'canvas.mindMapOneSentence.kittyEditAccessDenied': 'Wala kang pahintulot na i-edit ang diagram na ito.',
-  'canvas.mindMapOneSentence.kittyEditCollabActive':
-    'Ang Kitty na mga pag-edit ng diagram ay naka-pause sa panahon ng live na pakikipagtulungan upang manatiling naka-sync ang lahat.',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision':
-    'Ang diagram ay na-update lamang, kaya ang pag-edit ay lipas. Mangyaring ulitin ang iyong pagbabago.',
-  'canvas.mindMapOneSentence.kittyEditTimeout':
-    'Nag-time out ang pag-edit na iyon — maaaring hindi nabago ang diagram. Pakisubukang muli.',
-  'canvas.mindMapOneSentence.kittyEditNoOwner':
-    'Wala akong mahanap na nae-edit na canvas. Buksan ang canvas, pagkatapos ay subukang muli.',
+  'canvas.mindMapOneSentence.kittyEditCollabActive': 'Ang Kitty na mga pag-edit ng diagram ay naka-pause sa panahon ng live na pakikipagtulungan upang manatiling naka-sync ang lahat.',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision': 'Ang diagram ay na-update lamang, kaya ang pag-edit ay lipas. Mangyaring ulitin ang iyong pagbabago.',
+  'canvas.mindMapOneSentence.kittyEditTimeout': 'Nag-time out ang pag-edit na iyon — maaaring hindi nabago ang diagram. Pakisubukang muli.',
+  'canvas.mindMapOneSentence.kittyEditNoOwner': 'Wala akong mahanap na nae-edit na canvas. Buksan ang canvas, pagkatapos ay subukang muli.',
   'canvas.mindMapOneSentence.kittyEditAddFailed': 'Paumanhin — hindi ko maidagdag ang node na iyon. Suriin ang pangalan at subukang muli.',
-  'canvas.mindMapOneSentence.kittyEditUpdateFailed':
-    'Paumanhin — hindi ko mapalitan ang pangalan ng node na iyon. Suriin ang pangalan at subukang muli.',
+  'canvas.mindMapOneSentence.kittyEditUpdateFailed': 'Paumanhin — hindi ko mapalitan ang pangalan ng node na iyon. Suriin ang pangalan at subukang muli.',
   'canvas.mindMapOneSentence.kittyEditCenterFailed': 'Paumanhin — hindi ko ma-update ang paksa. Pakisubukang muli.',
   'canvas.mindMapOneSentence.kittyEditDeleteFailed': 'Paumanhin — hindi ko maalis ang node na iyon. Suriin ang pangalan at subukang muli.',
   'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': 'Paumanhin — hindi ko ma-auto-complete ang branch na iyon. Maaari kang magtanong muli.',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'Handa na ang sangay na iyon.',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'Handa na ang mga sangay na iyon.',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
-    'Ang ilang mga sangay ay handa na, ngunit ang ilan ay hindi natapos. Maaari mong hilingin na i-auto-complete muli.',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': 'Ang ilang mga sangay ay handa na, ngunit ang ilan ay hindi natapos. Maaari mong hilingin na i-auto-complete muli.',
   'canvas.mindMapOneSentence.kittyWorking': 'OK - ginagawa iyon...',
   'canvas.mindMapOneSentence.kittyUnavailable': 'Hindi available ang Kitty. Tingnan kung naka-enable ang FEATURE_KITTY_AGENT sa server.',
-  'canvas.mindMapOneSentence.kittyConnectFailed':
-    'Hindi maikonekta ang canvas Kitty. Buksan ang diagram na ito sa desktop, pagkatapos ay subukang muli.',
+  'canvas.mindMapOneSentence.kittyConnectFailed': 'Hindi maikonekta ang canvas Kitty. Buksan ang diagram na ito sa desktop, pagkatapos ay subukang muli.',
   'canvas.mindMapOneSentence.clarifyChoices': 'Pumili ng opsyon',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
-    'Ang mobile Kitty ay konektado sa diagram na ito. Gamitin ang iyong telepono para magsalita o mag-type — naka-pause ang input sa desktop.',
-  'canvas.mindMapOneSentence.scopeDivergenceHint':
-    'Ang telepono Kitty ay nasa ibang diagram. Mag-sync mula sa telepono, o buksan ang diagram dito.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'Ang mobile Kitty ay konektado sa diagram na ito. Gamitin ang iyong telepono para magsalita o mag-type — naka-pause ang input sa desktop.',
+  'canvas.mindMapOneSentence.scopeDivergenceHint': 'Ang telepono Kitty ay nasa ibang diagram. Mag-sync mula sa telepono, o buksan ang diagram dito.',
   'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'Gamitin ang Mobile Kitty sa iyong telepono…',
   'canvas.mindMapNodeExplain.title': 'Kitty tala sa pag-aaral',
-  'canvas.mindMapNodeExplain.userPrompt':
-    'Bakit maaaring magdulot ng mga tanong o cognitive conflict ang "{node}" sa diagram na ito?',
+  'canvas.mindMapNodeExplain.userPrompt': 'Bakit maaaring magdulot ng mga tanong o cognitive conflict ang "{node}" sa diagram na ito?',
   'canvas.mindMapNodeExplain.thinking': 'Tinitingnan ang iyong diagram...',
   'canvas.mindMapNodeExplain.inputPlaceholder': 'Magtanong ng follow-up o ibahagi ang iyong mga saloobin...',
   'canvas.mindMapNodeExplain.sendButton': 'Ipadala',
@@ -781,16 +733,13 @@ export default {
   'canvas.mindMapDocumentSummary.tabChatHistory': 'History ng chat',
   'canvas.mindMapDocumentSummary.intro': 'Kunin ang mga pangunahing punto upang makabuo ng isang mas tumpak na mapa ng isip',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'I-click para mag-upload ng file',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint':
-    'PDF, Word, PPT, Excel, text, mga larawan, audio — ang na-extract na markdown lang ang pinananatili',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'PDF, Word, PPT, Excel, text, mga larawan, audio — ang na-extract na markdown lang ang pinananatili',
   'canvas.mindMapDocumentSummary.invalidFileType': 'Hindi sinusuportahang uri ng file',
   'canvas.mindMapDocumentSummary.saveContent': 'I-save ang nilalaman',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'Kunin at i-save',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'Kinukuha ang content ng page…',
-  'canvas.mindMapDocumentSummary.webLinkHintLite':
-    'I-paste ang pampublikong URL ng pahina — kukunin namin ang maraming teksto ng artikulo at ise-save bilang Markdown.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
-    'Ang direktang pag-fetch ng link ay server-side at hindi maaaring gumamit ng login cookies mo, kaya madalas hindi kumpleto ang mga pahinang may auth o paywall. Para sa buong snapshot ng webpage gaya ng nakikita mo, gamitin ang Chrome / Edge extension.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite': 'I-paste ang pampublikong URL ng pahina — kukunin namin ang maraming teksto ng artikulo at ise-save bilang Markdown.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'Ang direktang pag-fetch ng link ay server-side at hindi maaaring gumamit ng login cookies mo, kaya madalas hindi kumpleto ang mga pahinang may auth o paywall. Para sa buong snapshot ng webpage gaya ng nakikita mo, gamitin ang Chrome / Edge extension.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'I-download ang Chrome extension',
   'canvas.mindMapDocumentSummary.statusExtracting': 'Kinukuha…',
   'canvas.mindMapDocumentSummary.stageStarting': 'Nagsisimula…',
@@ -806,10 +755,8 @@ export default {
   'canvas.mindMapDocumentSummary.extractStarted': 'Kinukuha ang content…',
   'canvas.mindMapDocumentSummary.extractFailed': 'Hindi ma-extract ang text mula sa file na ito',
   'canvas.mindMapDocumentSummary.sourceBoundHint': 'Handa na ang markdown. Bumuo ng mind map, o tanggalin ang source para mag-upload ng iba.',
-  'canvas.mindMapDocumentSummary.deleteToRetry':
-    'Tanggalin ang pinagmulang ito, pagkatapos ay i-upload, i-paste, o kunin muli ang isang pahina.',
-  'canvas.mindMapDocumentSummary.chatIntroLite':
-    'I-download ang file reader, ilagay ang pairing code, at ipadala ang WeChat o DingTalk history para sa diagram na ito.',
+  'canvas.mindMapDocumentSummary.deleteToRetry': 'Tanggalin ang pinagmulang ito, pagkatapos ay i-upload, i-paste, o kunin muli ang isang pahina.',
+  'canvas.mindMapDocumentSummary.chatIntroLite': 'I-download ang file reader, ilagay ang pairing code, at ipadala ang WeChat o DingTalk history para sa diagram na ito.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'Natanggap ang history ng chat',
   'canvas.mindMapDocumentSummary.chatDoneLite': 'Na-save ang chat — i-tap ang Bumuo kapag handa na',
   'canvas.mindMapDocumentSummary.corpusStatus': '{completed} ng {total} source ang na-index',
@@ -824,8 +771,7 @@ export default {
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'Naka-disable ang kaalaman Space',
   'canvas.mindMapDocumentSummary.featureDisabledHint': 'Paganahin ang tampok na Kaalaman Space upang magamit ang Buod ng Dokumento.',
   'canvas.mindMapDocumentSummary.saveDiagramHint': 'I-save ang diagram na ito para i-link ang package at paganahin ang buong RAG retrieval.',
-  'canvas.mindMapDocumentSummary.chatIntro':
-    'I-download ang file reader, ilagay ang pairing code sa ibaba, at ipadala ang WeChat o DingTalk history sa corpus na ito.',
+  'canvas.mindMapDocumentSummary.chatIntro': 'I-download ang file reader, ilagay ang pairing code sa ibaba, at ipadala ang WeChat o DingTalk history sa corpus na ito.',
   'canvas.mindMapDocumentSummary.pairingCode': 'Code ng pagpapares',
   'canvas.mindMapDocumentSummary.startPairingCode': 'Kumuha ng code ng pagpapares',
   'canvas.mindMapDocumentSummary.pairingExpires': 'Mag-e-expire sa {minutes} min',
@@ -850,12 +796,10 @@ export default {
   'canvas.mindMapDocumentSummary.uploadDocHint': 'I-click para mag-upload ng Word o PDF',
   'canvas.mindMapDocumentSummary.uploadDocSubhint': 'Awtomatikong kinukuha namin ang nilalaman ng dokumento',
   'canvas.mindMapDocumentSummary.pasteLabel': 'O i-paste ang mahabang anyo na mga tala:',
-  'canvas.mindMapDocumentSummary.pastePlaceholder':
-    'Idikit ang mga sipi sa papel, mga buod ng aklat, mga tala sa pagpupulong, mga kinakailangan, at higit pa.',
+  'canvas.mindMapDocumentSummary.pastePlaceholder': 'Idikit ang mga sipi sa papel, mga buod ng aklat, mga tala sa pagpupulong, mga kinakailangan, at higit pa.',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'Mag-upload ng larawan:',
   'canvas.mindMapDocumentSummary.uploadImageHint': 'I-click para mag-upload ng JPG o PNG',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint':
-    'Nakikita namin ang mga iginuhit ng kamay na mga mapa ng isip at muling itinayo ang mga ito; kung hindi, kinukuha namin ang teksto',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'Nakikita namin ang mga iginuhit ng kamay na mga mapa ng isip at muling itinayo ang mga ito; kung hindi, kinukuha namin ang teksto',
   'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'Na-detect ang hand-drawn mind map — itinayong muli sa canvas',
   'canvas.mindMapDocumentSummary.visionProgressDetecting': 'Pag-detect ng hand-drawn mind map...',
   'canvas.mindMapDocumentSummary.imageOcrHint': 'Gumagana sa mga screenshot ng tala, mga larawan sa whiteboard, at mga pag-scan.',
@@ -872,20 +816,15 @@ export default {
   'canvas.mindMapDocumentSummary.invalidDocType': 'Tanging Word (.docx) at PDF file ang sinusuportahan',
   'canvas.mindMapDocumentSummary.invalidImageType': 'Tanging JPG at PNG na mga larawan ang sinusuportahan',
   'canvas.mindMapDocumentSummary.docTooLarge': 'Masyadong malaki ang file. Ang maximum na laki ay 20MB.',
-  'canvas.mindMapDocumentSummary.pasteTooLong':
-    'Ang na-paste na text ay lumampas sa limitasyon ng pag-input ng modelo (mga 900,000 character). Mangyaring paikliin ito.',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel':
-    'Ang na-extract na text ay lumampas sa limitasyon ng pag-input ng modelo (~900,000 character / qwen3.6-flash 991K token). Mangyaring gumamit ng mas maikling dokumento.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel':
-    'Masyadong mahaba ang text ng file na ito para sa modelo. Mangyaring mag-upload ng mas maikling dokumento (sa ilalim ng ~900,000 character ng teksto).',
-  'canvas.mindMapDocumentSummary.storageConflictCleared':
-    'Ang naka-save na extract ay nawawala o hindi naka-sync at na-clear na. Paki-upload o i-paste muli ang dokumento.',
+  'canvas.mindMapDocumentSummary.pasteTooLong': 'Ang na-paste na text ay lumampas sa limitasyon ng pag-input ng modelo (mga 900,000 character). Mangyaring paikliin ito.',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Ang na-extract na text ay lumampas sa limitasyon ng pag-input ng modelo (~900,000 character / qwen3.6-flash 991K token). Mangyaring gumamit ng mas maikling dokumento.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Masyadong mahaba ang text ng file na ito para sa modelo. Mangyaring mag-upload ng mas maikling dokumento (sa ilalim ng ~900,000 character ng teksto).',
+  'canvas.mindMapDocumentSummary.storageConflictCleared': 'Ang naka-save na extract ay nawawala o hindi naka-sync at na-clear na. Paki-upload o i-paste muli ang dokumento.',
   'canvas.mindMapSideToolbar.learningSheet': 'Learning sheet',
   'canvas.mindMapSideToolbar.oneSentence': 'Bumuo ng isang pangungusap',
   'canvas.mindMapSideToolbar.oneSentenceIntro': 'Ilarawan ang topic o edit request sa isang pangungusap para gumawa o pagbutihin ang mapa',
   'canvas.mindMapSideToolbar.documentSummary': 'Buod ng Dokumento',
-  'fileCenter.intro':
-    'Ang package ay isang na-curate na hanay ng mga source para sa diagram na ito. Magdagdag ng mga file, tala, o web page — kinukumpleto ng diagram ang mga sangay nito mula sa mga mapagkukunang ito.',
+  'fileCenter.intro': 'Ang package ay isang na-curate na hanay ng mga source para sa diagram na ito. Magdagdag ng mga file, tala, o web page — kinukumpleto ng diagram ang mga sangay nito mula sa mga mapagkukunang ito.',
   'fileCenter.defaultPackageName': 'Walang pamagat na pakete',
   'fileCenter.packageNameLabel': 'Pangalan ng package',
   'fileCenter.createPackage': 'Lumikha ng package',
@@ -920,12 +859,9 @@ export default {
   'canvas.mindMapSideToolbar.outlineEmpty': 'Wala pang node',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'Bumuo ng AI',
   'canvas.mindMapSideToolbar.outlineEditHint': 'I-double click ang anumang row para i-edit inline',
-  'canvas.mindMapSideToolbar.outlineIntro':
-    'I-edit ang istruktura sa outline — i-drag para i-reorder, i-paste ang mga linya para mag-bulk add',
-  'canvas.mindMapSideToolbar.outlineDragHint':
-    'I-drag upang muling ayusin; drop sa itaas/baba para sa mga kapatid, center to nest bilang bata',
-  'canvas.mindMapSideToolbar.outlinePasteHint':
-    'Pumili ng node at i-paste ang multi-line na text para magdagdag ng magkakapatid na node nang maramihan',
+  'canvas.mindMapSideToolbar.outlineIntro': 'I-edit ang istruktura sa outline — i-drag para i-reorder, i-paste ang mga linya para mag-bulk add',
+  'canvas.mindMapSideToolbar.outlineDragHint': 'I-drag upang muling ayusin; drop sa itaas/baba para sa mga kapatid, center to nest bilang bata',
+  'canvas.mindMapSideToolbar.outlinePasteHint': 'Pumili ng node at i-paste ang multi-line na text para magdagdag ng magkakapatid na node nang maramihan',
   'canvas.mindMapPaste.inserted': 'Ipinasok ang {count} (mga) kapatid na node',
   'canvas.mindMapPaste.truncated': 'Naabot na ang limitasyon sa linya — ang unang 50 linya lang ang naipasok',
   'canvas.mindMapSideToolbar.realtimeSync': 'Live na pag-sync',
@@ -941,12 +877,10 @@ export default {
   'canvas.mindMapSideToolbar.restoreFullDiagram': 'Ibalik ang buong diagram',
   'canvas.mindMapSideToolbar.learningSheetIntro': 'Piliin kung paano gumawa ng learning sheet para sa pagsasanay at pagsusuri.',
   'canvas.mindMapSideToolbar.learningSheetRandomTitle': 'Random na mga blangko',
-  'canvas.mindMapSideToolbar.learningSheetRandomDesc':
-    'Random na blangko ang tungkol sa 20% ng mga node; ang mga sagot ay makikita sa ibaba ng diagram.',
+  'canvas.mindMapSideToolbar.learningSheetRandomDesc': 'Random na blangko ang tungkol sa 20% ng mga node; ang mga sagot ay makikita sa ibaba ng diagram.',
   'canvas.mindMapSideToolbar.learningSheetRandomActiveHint': '{count} (mga) node na blangko · Esc para i-dismiss',
   'canvas.mindMapSideToolbar.learningSheetCustomTitle': 'Mga custom na blangko',
-  'canvas.mindMapSideToolbar.learningSheetCustomDesc':
-    'Ang cursor ay nagiging martilyo — i-click ang mga node upang blangko; i-click muli upang ibalik.',
+  'canvas.mindMapSideToolbar.learningSheetCustomDesc': 'Ang cursor ay nagiging martilyo — i-click ang mga node upang blangko; i-click muli upang ibalik.',
   'canvas.mindMapSideToolbar.learningSheetActiveStatus': 'Aktibo · {count} (mga) node na blangko',
   'canvas.mindMapSideToolbar.learningSheetPickActiveInPanel': 'Pick mode · i-click ang mga node sa canvas',
   'canvas.mindMapSideToolbar.learningSheetPickTitle': 'Custom na blank mode',
@@ -1054,8 +988,7 @@ export default {
   'editor.redo': 'Gawin muli',
   'editor.saveDiagram': 'I-save ang Diagram',
   'editor.selectDiagramType': 'Piliin ang Uri ng Diagram',
-  'editor.slotsFull':
-    'Space puno, hindi available ang auto-save sa ngayon. Mangyaring tanggalin ang mga kasalukuyang diagram upang magbakante ng higit pang espasyo.',
+  'editor.slotsFull': 'Space puno, hindi available ang auto-save sa ngayon. Mangyaring tanggalin ang mga kasalukuyang diagram upang magbakante ng higit pang espasyo.',
   'editor.undo': 'I-undo',
   'editor.zoomIn': 'Mag-zoom In',
   'editor.zoomOut': 'Mag-zoom Out',
@@ -1093,8 +1026,7 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Lumikha sa canvas',
   'landing.diagramGrid.tree_map.desc': 'Uriin at pangkatin',
   'landing.diagramGrid.tree_map.title': 'Mapa ng Puno',
-  'landing.template.freePlaceholder':
-    'Ilarawan ang iyong paksa o istraktura (mga sangay, hakbang, kategorya...) o pumili ng template sa ibaba...',
+  'landing.template.freePlaceholder': 'Ilarawan ang iyong paksa o istraktura (mga sangay, hakbang, kategorya...) o pumili ng template sa ibaba...',
   'landing.template.slot.criterion': 'Pag-uuri',
   'landing.template.slot.event': 'Kaganapan',
   'landing.template.slot.itemA': 'Aytem A',
@@ -1126,8 +1058,7 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'Hindi ma-load ang mga sesyon sa paaralan',
   'mindgraphLanding.networkError': 'Error sa network',
   'mindgraphLanding.networkErrorJoin': 'Error sa network, nabigong sumali',
-  'mindgraphLanding.orgSessionsEmpty':
-    'No school sessions right now. Dapat simulan ng isang kasamahan ang "Pagtutulungan ng paaralan" sa canvas.',
+  'mindgraphLanding.orgSessionsEmpty': 'No school sessions right now. Dapat simulan ng isang kasamahan ang "Pagtutulungan ng paaralan" sa canvas.',
   'mindgraphLanding.participantsOnline': '{n} online',
   'mindgraphLanding.schoolCollab': 'Pakikipagtulungan sa paaralan',
   'mindgraphLanding.sharedCodeHint': 'Ilagay ang code ng imbitasyon (xxx-xxx) para sumali sa kanilang session.',

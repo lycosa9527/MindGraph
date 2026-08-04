@@ -1,4 +1,6 @@
-/** sq UI — notification */
+/**
+ * sq UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Nuk mund të pastrohen nyjet e temës ose qendrës',

@@ -1,4 +1,6 @@
-/** uz UI — mindmate */
+/**
+ * uz UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'AI elaqe etiketlerini faolleshdirmek uchun bosing (choxmodelli)',

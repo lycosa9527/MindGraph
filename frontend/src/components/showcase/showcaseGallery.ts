@@ -1,6 +1,8 @@
-/** Diagram-case gallery items (images + saved diagrams). */
+/** Diagram-case / diagram-template gallery items (images + saved diagrams). */
 
-export const DIAGRAM_GALLERY_MAX_ITEMS = 12
+import { isRenderableShowcaseSpec } from '@/components/showcase/showcaseShared'
+
+export const DIAGRAM_GALLERY_MAX_ITEMS = 15
 
 export type ShowcaseGalleryImageItem = {
   kind: 'image'
@@ -192,6 +194,57 @@ function slidesFromApiGallery(
   return slides
 }
 
+/** First renderable diagram spec from a gallery wrapper or gallery_items payload. */
+export function firstGalleryDiagramSpec(
+  spec: unknown,
+  galleryItems?: ShowcaseGalleryApiItem[]
+): Record<string, unknown> | null {
+  if (galleryItems?.length) {
+    for (const item of galleryItems) {
+      if (item.kind === 'diagram' && item.spec && typeof item.spec === 'object') {
+        return item.spec
+      }
+    }
+  }
+  for (const entry of parseSpecGallery(spec)) {
+    if (entry.kind === 'diagram' && entry.spec) {
+      return entry.spec
+    }
+  }
+  return null
+}
+
+function isMgSourceUrl(url: string | null | undefined): boolean {
+  return Boolean(url && /\.mg(\?|$)/i.test(url))
+}
+
+/**
+ * Prefer an interactive diagram slide when graph data exists.
+ * Cover/thumbnail PNGs must not win over a renderable diagram spec or `.mg` source.
+ */
+function diagramSlideFromPost(params: {
+  spec?: unknown
+  sourceFileUrl?: string | null
+  diagramType?: string | null
+  resolveUrl: (url: string | null | undefined) => string | null
+}): ShowcaseCarouselSlide | null {
+  if (isRenderableShowcaseSpec(params.spec)) {
+    return {
+      kind: 'diagram',
+      diagram_type: params.diagramType ?? undefined,
+      spec: params.spec,
+    }
+  }
+  const sourceUrl = params.resolveUrl(params.sourceFileUrl)
+  if (isMgSourceUrl(sourceUrl)) {
+    return {
+      kind: 'diagram',
+      diagram_type: params.diagramType ?? undefined,
+    }
+  }
+  return null
+}
+
 /** Normalize API/spec/source fields into carousel slides for detail preview. */
 export function resolveCarouselSlides(params: {
   galleryItems?: ShowcaseGalleryApiItem[]
@@ -199,6 +252,7 @@ export function resolveCarouselSlides(params: {
   postId?: string | null
   sourceFileUrl?: string | null
   thumbnailUrl?: string | null
+  diagramType?: string | null
   resolveUrl: (url: string | null | undefined) => string | null
 }): ShowcaseCarouselSlide[] {
   const specGallery = parseSpecGallery(params.spec)
@@ -214,7 +268,13 @@ export function resolveCarouselSlides(params: {
   if (params.galleryItems?.length) {
     const fromApi = slidesFromApiGallery(params.galleryItems, params.resolveUrl)
     if (fromApi.length > 1) return fromApi
-    if (fromApi.length === 1) return fromApi
+    if (fromApi.length === 1) {
+      // Single gallery image must not hide a top-level / .mg diagram.
+      if (fromApi[0].kind === 'diagram') return fromApi
+      const diagramSlide = diagramSlideFromPost(params)
+      if (diagramSlide) return [diagramSlide]
+      return fromApi
+    }
   }
 
   if (specGallery.length === 1) {
@@ -224,6 +284,9 @@ export function resolveCarouselSlides(params: {
       resolveUrl: params.resolveUrl,
     })
   }
+
+  const diagramSlide = diagramSlideFromPost(params)
+  if (diagramSlide) return [diagramSlide]
 
   const slides: ShowcaseCarouselSlide[] = []
   const sourceUrl = params.resolveUrl(params.sourceFileUrl)

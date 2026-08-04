@@ -1,4 +1,6 @@
-/** fr UI — showcase */
+/**
+ * fr UI � showcase
+ */
 
 export default {
   'showcase.title': 'Vitrine',
@@ -50,31 +52,19 @@ export default {
   'showcase.publishModal.uploadingFiles': 'Téléversement des fichiers ({current}/{total})…',
   'showcase.publishModal.uploadingFile': 'Téléversement de {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'Finalisation…',
-  'showcase.publishModal.uploadFailedRolledBack':
-    'Échec du téléversement — le brouillon a été abandonné. Veuillez réessayer.',
-  'showcase.publishModal.uploadCorsFailed':
-    'Impossible de téléverser vers le stockage objet (souvent CORS du bucket ou CSP du site bloquant l’hôte COS). Le brouillon a été abandonné — demandez à un admin de corriger CORS/CSP, puis réessayez.',
-  'showcase.publishModal.uploadStorageRejected':
-    'Le stockage objet a rejeté le téléversement. Le brouillon a été abandonné — réessayez plus tard, ou contactez un admin si cela persiste.',
+  'showcase.publishModal.uploadFailedRolledBack': 'Échec du téléversement — le brouillon a été abandonné. Veuillez réessayer.',
+  'showcase.publishModal.uploadCorsFailed': 'Impossible de téléverser vers le stockage objet (souvent CORS du bucket ou CSP du site bloquant l’hôte COS). Le brouillon a été abandonné — demandez à un admin de corriger CORS/CSP, puis réessayez.',
+  'showcase.publishModal.uploadStorageRejected': 'Le stockage objet a rejeté le téléversement. Le brouillon a été abandonné — réessayez plus tard, ou contactez un admin si cela persiste.',
   'showcase.publishModal.uploadFailed': 'Échec du téléversement. Veuillez réessayer.',
-  'showcase.publishModal.uploadCoverTooLarge':
-    'L’image de couverture dépasse la limite de 2 Mo. Compressez l’aperçu ou utilisez une image plus petite, puis réessayez.',
-  'showcase.publishModal.uploadAttachmentTooLarge':
-    'Le fichier dépasse la limite (documents/images 20 Mo, vidéos 100 Mo). Compressez et réessayez.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
-    'Le fichier dépasse la limite (documents/images 20 Mo, vidéos 100 Mo). Le brouillon a été abandonné — compressez et réessayez.',
-  'showcase.publishModal.uploadFileTooLarge':
-    'Fichier trop volumineux pour ce type de téléversement. Vérifiez la limite de taille et réessayez.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack':
-    'Fichier trop volumineux pour ce type de téléversement. Le brouillon a été abandonné — vérifiez la limite et réessayez.',
-  'showcase.publishModal.coverUploadSkipped':
-    'Cas soumis, mais l’image de couverture n’a pas pu être téléversée. Vous pourrez modifier le cas plus tard pour actualiser la couverture.',
-  'showcase.publishModal.coverGenerating':
-    'L’aperçu de couverture se génère en arrière-plan — il apparaîtra bientôt sur la carte.',
-  'showcase.publishModal.coverFailed':
-    'Cas soumis, mais la couverture n’a pas pu être générée. Vous pourrez modifier le cas plus tard pour actualiser la couverture.',
-  'showcase.publishModal.coverFailedTimeout':
-    'Cas soumis, mais la génération de couverture a expiré. Vous pourrez modifier le cas plus tard pour actualiser la couverture.',
+  'showcase.publishModal.uploadCoverTooLarge': 'L’image de couverture dépasse la limite de 2 Mo. Compressez l’aperçu ou utilisez une image plus petite, puis réessayez.',
+  'showcase.publishModal.uploadAttachmentTooLarge': 'Le fichier dépasse la limite (documents/images 20 Mo, vidéos 100 Mo). Compressez et réessayez.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'Le fichier dépasse la limite (documents/images 20 Mo, vidéos 100 Mo). Le brouillon a été abandonné — compressez et réessayez.',
+  'showcase.publishModal.uploadFileTooLarge': 'Fichier trop volumineux pour ce type de téléversement. Vérifiez la limite de taille et réessayez.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack': 'Fichier trop volumineux pour ce type de téléversement. Le brouillon a été abandonné — vérifiez la limite et réessayez.',
+  'showcase.publishModal.coverUploadSkipped': 'Cas soumis, mais l’image de couverture n’a pas pu être téléversée. Vous pourrez modifier le cas plus tard pour actualiser la couverture.',
+  'showcase.publishModal.coverGenerating': 'L’aperçu de couverture se génère en arrière-plan — il apparaîtra bientôt sur la carte.',
+  'showcase.publishModal.coverFailed': 'Cas soumis, mais la couverture n’a pas pu être générée. Vous pourrez modifier le cas plus tard pour actualiser la couverture.',
+  'showcase.publishModal.coverFailedTimeout': 'Cas soumis, mais la génération de couverture a expiré. Vous pourrez modifier le cas plus tard pour actualiser la couverture.',
   'showcase.publishModal.success': 'Cas soumis — en attente de la révision admin',
   'showcase.publishModal.fromCanvas': 'Publier depuis le canevas',
   'showcase.publishModal.step1Title': 'Infos de base',
@@ -88,10 +78,8 @@ export default {
   'showcase.publishModal.uploadLabel': 'Téléverser un fichier',
   'showcase.publishModal.uploadImage': 'Téléverser une image',
   'showcase.publishModal.uploadFile': 'Téléverser un fichier',
-  'showcase.publishModal.directUploadDisabled':
-    'Le téléversement direct de fichiers est temporairement indisponible. Vous pouvez encore choisir un diagramme enregistré dans l’historique.',
-  'showcase.publishModal.uploadViaStorage':
-    'Les fichiers sont téléversés directement vers un stockage sécurisé (URL à courte durée).',
+  'showcase.publishModal.directUploadDisabled': 'Le téléversement direct de fichiers est temporairement indisponible. Vous pouvez encore choisir un diagramme enregistré dans l’historique.',
+  'showcase.publishModal.uploadViaStorage': 'Les fichiers sont téléversés directement vers un stockage sécurisé (URL à courte durée).',
   'showcase.publishModal.pickHistory': 'Choisir dans l’historique',
   'showcase.publishModal.removeFile': 'Retirer',
   'showcase.publishModal.teachingDocHint': '.docx / .pdf / .pptx (.doc : aperçu limité)',
@@ -130,10 +118,11 @@ export default {
   'showcase.publishModal.aiGenerating': 'Génération…',
   'showcase.publishModal.aiGenerateStop': 'Arrêter',
   'showcase.publishModal.aiGenerateCancelled': 'Génération IA annulée — cliquez à nouveau pour régénérer',
-  'showcase.publishModal.aiGenerateSuccess':
-    'Intro et points forts remplis à partir du document — relisez et modifiez ; rédigez vous-même la réflexion pédagogique',
+  'showcase.publishModal.aiGenerateSuccess': 'Intro et points forts remplis à partir du document — relisez et modifiez ; rédigez vous-même la réflexion pédagogique',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'Échec de la génération IA — veuillez réessayer',
   'showcase.publishModal.aiGenerateNeedFile': 'Téléversez d’abord un document de conception pédagogique à l’étape précédente',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'La génération IA est disponible uniquement pour les cas de conception pédagogique',
   'showcase.publishModal.reflectionLabel': 'Réflexion pédagogique',
   'showcase.publishModal.introPlaceholder': 'Décrivez brièvement le cas et quand l’utiliser',
@@ -160,15 +149,13 @@ export default {
   'showcase.publishModal.validationDiagramType': 'Veuillez sélectionner un type de diagramme',
   'showcase.publishModal.invalidFileType': 'Type de fichier non pris en charge',
   'showcase.publishModal.invalidMgFile': 'Impossible de lire ce fichier .mg — exportez-le d’abord depuis MindGraph',
-  'showcase.publishModal.cannotPreview':
-    'Impossible de générer un aperçu de couverture — le cas sera quand même soumis. Essayez PNG/JPG ou choisissez un diagramme enregistré.',
-  'showcase.publishModal.cannotPreviewHistory':
-    'Impossible de générer une couverture à partir de ce diagramme enregistré — le cas sera quand même soumis. Resélectionnez-le ou réenregistrez depuis le canevas.',
-  'showcase.publishModal.cannotPreviewTemplate':
-    'Impossible de générer une couverture — le cas sera quand même soumis. Vérifiez le fichier .mg ou choisissez un autre diagramme enregistré.',
+  'showcase.publishModal.cannotPreview': 'Impossible de générer un aperçu de couverture — le cas sera quand même soumis. Essayez PNG/JPG ou choisissez un diagramme enregistré.',
+  'showcase.publishModal.cannotPreviewHistory': 'Impossible de générer une couverture à partir de ce diagramme enregistré — le cas sera quand même soumis. Resélectionnez-le ou réenregistrez depuis le canevas.',
+  'showcase.publishModal.cannotPreviewTemplate': 'Impossible de générer une couverture — le cas sera quand même soumis. Vérifiez le fichier .mg ou choisissez un autre diagramme enregistré.',
   'showcase.publishModal.historyTitle': 'Choisir un diagramme enregistré',
   'showcase.publishModal.historySearch': 'Rechercher le nom du diagramme…',
   'showcase.publishModal.historyEmpty': 'Aucun diagramme enregistré',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': 'Conception de leçon en classe axée sur les compétences de pensée',
   'showcase.publishModal.typeDesc.diagramCase': 'Excellents diagrammes et visualisation en enseignement',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Diagrammes à réutiliser ou adapter',
@@ -194,11 +181,9 @@ export default {
   'showcase.detail.delist': 'Délister',
   'showcase.detail.resubmit': 'Modifier et resoumettre',
   'showcase.detail.withdrawTitle': 'Retirer le cas',
-  'showcase.detail.withdrawConfirm':
-    'Retirer « {title} » ? Il sera retiré de la file de révision et ne pourra pas être restauré.',
+  'showcase.detail.withdrawConfirm': 'Retirer « {title} » ? Il sera retiré de la file de révision et ne pourra pas être restauré.',
   'showcase.detail.delistTitle': 'Délister le cas',
-  'showcase.detail.delistConfirm':
-    'Délister « {title} » de la galerie ? Les autres utilisateurs ne pourront plus le consulter.',
+  'showcase.detail.delistConfirm': 'Délister « {title} » de la galerie ? Les autres utilisateurs ne pourront plus le consulter.',
   'showcase.detail.confirm': 'Confirmer',
   'showcase.detail.cancel': 'Annuler',
   'showcase.withdrawn': 'Retiré',
@@ -218,8 +203,7 @@ export default {
   'showcase.detail.pptxPreviewPending': 'Conversion des diapositives pour l’aperçu…',
   'showcase.detail.docPreviewLoading': 'Chargement du document…',
   'showcase.detail.docPreviewFailed': 'Impossible de charger l’aperçu. Essayez d’ouvrir dans un nouvel onglet.',
-  'showcase.detail.legacyDocHint':
-    'Les fichiers .doc hérités ne peuvent pas être prévisualisés en ligne. Ouvrez ou téléchargez le fichier, ou téléversez un .docx pour l’aperçu dans le navigateur.',
+  'showcase.detail.legacyDocHint': 'Les fichiers .doc hérités ne peuvent pas être prévisualisés en ligne. Ouvrez ou téléchargez le fichier, ou téléversez un .docx pour l’aperçu dans le navigateur.',
   'showcase.detail.noDocument': 'Aucun aperçu de document',
   'showcase.detail.noDiagramPreview': 'Aucun aperçu de diagramme',
   'showcase.detail.diagramPreviewLoading': 'Chargement du diagramme…',

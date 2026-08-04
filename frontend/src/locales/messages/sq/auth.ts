@@ -1,4 +1,6 @@
-/** sq UI — auth */
+/**
+ * sq UI � auth
+ */
 
 export default {
   'auth.accountInfo': 'Llogaria',

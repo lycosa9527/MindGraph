@@ -25,6 +25,7 @@ import {
   type ShowcaseUploadRole,
 } from '@/composables/showcase/uploadShowcaseFile'
 import { mapShowcaseSubmitError } from '@/composables/showcase/mapShowcaseSubmitError'
+import { ensureGalleryImagesPersisted } from '@/composables/showcase/publishShowcaseGalleryUpload'
 import { resolvePublishThumbnail } from '@/composables/showcase/publishShowcaseThumbnails'
 import type {
   GalleryDiagramDraft,
@@ -230,7 +231,11 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     } else if (classroomApplication.value.trim()) {
       extras.classroom_application = classroomApplication.value.trim()
     }
-    if (selectedDiagram.value && caseType.value !== 'diagram_case') {
+    if (
+      selectedDiagram.value &&
+      caseType.value !== 'diagram_case' &&
+      caseType.value !== 'diagram_template'
+    ) {
       extras.source_diagram_id = selectedDiagram.value.id
     }
     return extras
@@ -259,12 +264,17 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     return null
   }
 
+  function isGalleryUploadRole(role: ShowcaseUploadRole): boolean {
+    return /^gallery_\d+$/.test(role)
+  }
+
   async function uploadPendingMedia(
     postId: string,
     pending: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }>,
   ): Promise<{ coverUploadFailed: boolean }> {
     const required = pending.filter((item) => !isThumbnailUploadRole(item.role))
     const covers = pending.filter((item) => isThumbnailUploadRole(item.role))
+    const galleryUploadCount = required.filter((item) => isGalleryUploadRole(item.role)).length
     const total = required.length + covers.length
     let uploaded = 0
 
@@ -284,6 +294,14 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         role: item.role,
         file: item.file,
         filename: item.filename,
+      })
+    }
+
+    if (galleryUploadCount > 0) {
+      // Fail publish if JSONB paths did not land (approve would otherwise reject).
+      await ensureGalleryImagesPersisted(postId, galleryUploadCount, {
+        uploadFailed: String(t('showcase.publishModal.galleryUploadFailed')),
+        reuploadHint: String(t('showcase.publishModal.galleryReuploadHint')),
       })
     }
 
@@ -450,11 +468,12 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
 
         formData.append('diagram_type', diagramType.value)
 
-        if (caseType.value === 'diagram_case' && !fromCanvas.value) {
-          if (galleryTotalCount.value < 1) {
-            notify.error(String(t('showcase.publishModal.validationFile')))
-            return
-          }
+        const usesGalleryPublish =
+          (caseType.value === 'diagram_case' || caseType.value === 'diagram_template') &&
+          !fromCanvas.value &&
+          galleryTotalCount.value >= 1
+
+        if (usesGalleryPublish) {
           for (const draft of galleryDiagramDrafts.value) {
             if (!(await loadGalleryDiagramSpec(draft))) {
               notify.error(String(t('showcase.publishModal.validationFile')))
@@ -482,7 +501,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
             })
           }
           const specObj: Record<string, unknown> = {
-            type: 'diagram_case',
+            type: caseType.value,
             source: 'gallery',
             gallery: buildGallerySpecPayload(galleryItems),
           }

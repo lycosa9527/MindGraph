@@ -1,4 +1,6 @@
-/** nl UI — admin */
+/**
+ * nl UI � admin
+ */
 
 export default {
   'admin.actions': 'Acties',
@@ -24,8 +26,7 @@ export default {
   'admin.confirm': 'Bevestigen',
   'admin.copyShareMessage': 'Kopiëren',
   'admin.copyInvitationCode': 'Kopieer de uitnodigingscode',
-  'admin.schoolInviteCopyPayload':
-    '{orgName}: Welkom bij de Mind thinking & teaching AI agent platform!\nGeleid door BNU Thinking Training Center en mede gebouwd met meer dan 100 alliantiescholen voor denkontwikkeling – sluit u bij ons aan om de denkvaardigheden in het AI-tijdperk te vergroten.\nHoe: openen op computer of telefoon; registreer u de eerste keer met telefoonnummer + uitnodigingscode en log vervolgens in met sms-verificatie.\nURL: {siteUrl}\nUitnodigingscode organisatie: {code}',
+  'admin.schoolInviteCopyPayload': '{orgName}: Welkom bij de Mind thinking & teaching AI agent platform!\nGeleid door BNU Thinking Training Center en mede gebouwd met meer dan 100 alliantiescholen voor denkontwikkeling – sluit u bij ons aan om de denkvaardigheden in het AI-tijdperk te vergroten.\nHoe: openen op computer of telefoon; registreer u de eerste keer met telefoonnummer + uitnodigingscode en log vervolgens in met sms-verificatie.\nURL: {siteUrl}\nUitnodigingscode organisatie: {code}',
   'admin.createApiKey': 'Maak een API-sleutel',
   'admin.createOrganization': 'Organisatie creëren',
   'admin.createSchool': 'Creëer School',
@@ -35,16 +36,14 @@ export default {
   'admin.dashboardLoadError': 'Netwerkfout. Het laden van dashboardstatistieken is niet gelukt',
   'admin.delete': 'Verwijderen',
   'admin.deleteOrgConfirm': 'Organisatie {name} verwijderen? Dit kan niet ongedaan worden gemaakt.',
-  'admin.deleteOrgConfirmWithUsers':
-    'Organisatie {name} en alle {count} gebruikersaccounts verwijderen? Dit kan niet ongedaan worden gemaakt.',
+  'admin.deleteOrgConfirmWithUsers': 'Organisatie {name} en alle {count} gebruikersaccounts verwijderen? Dit kan niet ongedaan worden gemaakt.',
   'admin.deleteOrganization': 'Organisatie verwijderen',
   'admin.description': 'Beschrijving',
   'admin.diagramGeneration': 'Diagramgeneratie',
   'admin.diagramTypes': 'Diagramtypen',
   'admin.disabled': 'Gehandicapt',
   'admin.displayNameLabel': 'Weergavetekst zijbalk',
-  'admin.displayNameHint':
-    'Aangepaste tekst weergegeven in de zijbalk van de gebruiker (bijvoorbeeld MindGraph Pro). Laat leeg om de schoolnaam te gebruiken.',
+  'admin.displayNameHint': 'Aangepaste tekst weergegeven in de zijbalk van de gebruiker (bijvoorbeeld MindGraph Pro). Laat leeg om de schoolnaam te gebruiken.',
   'admin.editApiKey': 'API-sleutel bewerken',
   'admin.editSchool': 'School bewerken',
   'admin.enabled': 'Ingeschakeld',
@@ -71,11 +70,9 @@ export default {
   'admin.feature.markets': 'Markt (catalogus & bestellingen)',
   'admin.feature.marketsHint': 'Sjablonen/cursussen/abonnement-SKU\'s, Alipay afrekenen en op de hoogte stellen.',
   'admin.feature.mindbot': 'MindBot (DingTalk → Dify)',
-  'admin.feature.mindbotHint':
-    'Enterprise DingTalk robot HTTP-callback, per school Dify en geheimen. Vereist HTTPS-callback-URL.',
+  'admin.feature.mindbotHint': 'Enterprise DingTalk robot HTTP-callback, per school Dify en geheimen. Vereist HTTPS-callback-URL.',
   'admin.feature.mindmateExport': 'MindMate gespreksexport',
-  'admin.feature.mindmateExportHint':
-    'Superadmin-paneel om de webgeschiedenis van MindMate en DingTalk MindBot Dify te bekijken en te exporteren.',
+  'admin.feature.mindmateExportHint': 'Superadmin-paneel om de webgeschiedenis van MindMate en DingTalk MindBot Dify te bekijken en te exporteren.',
   'admin.feature.ragChunkTest': 'RAG-brokkentest',
   'admin.feature.ragChunkTestHint': 'Benchmarktools binnen de kennisruimte.',
   'admin.feature.smartResponse': 'Slimme reactie (apparaten)',
@@ -83,19 +80,16 @@ export default {
   'admin.feature.teacherUsage': 'Analyse van gebruik door docenten',
   'admin.feature.teacherUsageHint': 'Beheerdersdashboards voor betrokkenheid van docenten.',
   'admin.feature.kittyAgent': 'Kitty Agent (stem en canvas)',
-  'admin.feature.kittyAgentHint':
-    'Qwen-Omni realtime multimodale agent; WebSocket en REST respecteren de toegangsregels voor organisaties en gebruikers.',
+  'admin.feature.kittyAgentHint': 'Qwen-Omni realtime multimodale agent; WebSocket en REST respecteren de toegangsregels voor organisaties en gebruikers.',
   'admin.feature.template': 'Sjabloonbronnen',
   'admin.feature.templateHint': 'Sjabloongalerij en gerelateerde API\'s.',
   'admin.feature.workshopChat': 'Workshop (教研坊)',
   'admin.feature.workshopChatHint': 'Schoolkanalen, onderwerpen en directe berichten.',
   'admin.feature.mindmateCollab': 'MindMate samenwerking',
-  'admin.feature.mindmateCollabHint':
-    'Gedeelde MindMate AI chatroom (org browsen + uitnodigingscode). Vereist online_collab-laag.',
+  'admin.feature.mindmateCollabHint': 'Gedeelde MindMate AI chatroom (org browsen + uitnodigingscode). Vereist online_collab-laag.',
   'admin.featureLoadFailed': 'Kan functievlaggen niet laden',
   'admin.featureSaveFailed': 'Kan instellingen niet opslaan',
-  'admin.featuresIntro':
-    'Schakel modulevlaggen in en uit. Waarden worden naar .env geschreven en opnieuw geladen op alle API-werkrollen, zodat de gebruikersinterface en API-controles worden bijgewerkt zonder opnieuw op te starten. Knowledge Space heeft mogelijk nog steeds Qdrant/Celery nodig die tijdens het proces zijn gestart.',
+  'admin.featuresIntro': 'Schakel modulevlaggen in en uit. Waarden worden naar .env geschreven en opnieuw geladen op alle API-werkrollen, zodat de gebruikersinterface en API-controles worden bijgewerkt zonder opnieuw op te starten. Knowledge Space heeft mogelijk nog steeds Qdrant/Celery nodig die tijdens het proces zijn gestart.',
   'admin.featuresReloadFailed': 'Kan de wijzigingen niet toepassen. Start de server opnieuw op.',
   'admin.featuresSave': 'Toepassen',
   'admin.featuresSaved': 'Wijzigingen toegepast.',
@@ -103,21 +97,18 @@ export default {
   'admin.featureDevTab': 'Functie-ontwikkeling',
   'admin.newFeaturesTab': 'Nieuwe functies',
   'admin.kittyLlmopsTab': 'Kitty LLMOps',
-  'admin.featuresIntroAccess':
-    'Voor Workshop, MindMate collab, MindBot, MindMate export en Kitty gebruikt u Machtigingen om organisaties en gebruikers te beperken nadat de module is ingeschakeld. Toelatingslijsten worden opgeslagen in de database en zijn onmiddellijk van kracht.',
+  'admin.featuresIntroAccess': 'Voor Workshop, MindMate collab, MindBot, MindMate export en Kitty gebruikt u Machtigingen om organisaties en gebruikers te beperken nadat de module is ingeschakeld. Toelatingslijsten worden opgeslagen in de database en zijn onmiddellijk van kracht.',
   'admin.featurePermissionsApply': 'Machtigingen opslaan',
   'admin.featurePermissionsApplied': 'Functiemachtigingen opgeslagen.',
   'admin.featurePermissionsButton': 'Machtigingen',
   'admin.featurePermissionsOrgs': 'Organisaties',
   'admin.featurePermissionsOrgsPlaceholder': 'Selecteer scholen die deze functie kunnen gebruiken',
   'admin.featurePermissionsRestrict': 'Beperk de toegang',
-  'admin.featurePermissionsRestrictHint':
-    'Wanneer deze functie is ingeschakeld, kunnen alleen vermelde organisaties en gebruikers (plus beheerders en managers) deze functie gebruiken zolang deze wereldwijd ingeschakeld blijft.',
+  'admin.featurePermissionsRestrictHint': 'Wanneer deze functie is ingeschakeld, kunnen alleen vermelde organisaties en gebruikers (plus beheerders en managers) deze functie gebruiken zolang deze wereldwijd ingeschakeld blijft.',
   'admin.featurePermissionsRestrictedBadge': 'Beperkt',
   'admin.featurePermissionsSaveFailed': 'Kan functierechten niet opslaan',
   'admin.featurePermissionsUserIds': 'Gebruikers-ID\'s (optioneel)',
-  'admin.featurePermissionsUserIdsHint':
-    'Door komma\'s gescheiden numerieke gebruikers-ID\'s voor uitzonderingen (bijv. pilotaccounts).',
+  'admin.featurePermissionsUserIdsHint': 'Door komma\'s gescheiden numerieke gebruikers-ID\'s voor uitzonderingen (bijv. pilotaccounts).',
   'admin.featurePermissionsUserIdsPlaceholder': 'bijv. 12, 34, 56',
   'admin.expirationDate': 'Vervaldatum',
   'admin.expirationDateHint': 'Na deze datum wordt de organisatie gesloten. Laat leeg voor geen limiet.',
@@ -133,8 +124,7 @@ export default {
   'admin.inputTokens': 'Invoertokens (altijd)',
   'admin.invitationCode': 'Uitnodigingscode',
   'admin.invitationCodeFormatHint': 'Formaat XXX-XXX (letters en cijfers; exclusief 0, O, 1, I, L).',
-  'admin.invitationCodeMaskedHint':
-    'De uitnodigingscode is standaard verborgen; gebruik het oogpictogram wanneer u het wilt bekijken.',
+  'admin.invitationCodeMaskedHint': 'De uitnodigingscode is standaard verborgen; gebruik het oogpictogram wanneer u het wilt bekijken.',
   'admin.sensitiveReveal': 'Onthullen',
   'admin.sensitiveHide': 'Verbergen',
   'admin.invitationCodeAutoGenerated': 'Na het aanmaken wordt automatisch een XXX-XXX-uitnodigingscode gegenereerd.',
@@ -164,12 +154,10 @@ export default {
   'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'DingTalk robot & Dify (per school)',
   'admin.mindbot.dialogHeaderNote': 'DingTalk robot [{name}]',
-  'admin.mindbot.introHttpOnly':
-    'HTTP-ontvangstmodus: één terugbel-URL per school (weergegeven wanneer u bewerkt). DingTalk app-geheim ondertekent inkomende verzoeken; Dify stuurt antwoorden aan.',
+  'admin.mindbot.introHttpOnly': 'HTTP-ontvangstmodus: één terugbel-URL per school (weergegeven wanneer u bewerkt). DingTalk app-geheim ondertekent inkomende verzoeken; Dify stuurt antwoorden aan.',
   'admin.mindbot.emptyState': 'Er is nog geen school die MindBot heeft geconfigureerd.',
   'admin.mindbot.managerIntro': 'Configureer de DingTalk HTTP-robot en Dify voor uw organisatie.',
-  'admin.mindbot.managerReadOnlyIntro':
-    'De MindBot-configuratie van uw school wordt hieronder weergegeven (alleen-lezen). Neem contact op met de platformbeheerder om wijzigingen aan te brengen.',
+  'admin.mindbot.managerReadOnlyIntro': 'De MindBot-configuratie van uw school wordt hieronder weergegeven (alleen-lezen). Neem contact op met de platformbeheerder om wijzigingen aan te brengen.',
   'admin.mindbot.managerNoConfig': 'Er is nog geen MindBot-configuratie ingesteld voor uw school.',
   'admin.mindbot.sectionDingTalk': 'DingTalk',
   'admin.mindbot.sectionDify': 'Dify',
@@ -183,8 +171,7 @@ export default {
   'admin.mindbot.edit': 'Bewerking',
   'admin.mindbot.move': 'Beweging',
   'admin.mindbot.moveTitle': 'Verplaats bot naar een andere organisatie',
-  'admin.mindbot.moveIntro':
-    'Wijs deze DingTalk botconfiguratie toe aan een andere school. Het callback-URL-token is ongewijzigd.',
+  'admin.mindbot.moveIntro': 'Wijs deze DingTalk botconfiguratie toe aan een andere school. Het callback-URL-token is ongewijzigd.',
   'admin.mindbot.moveTarget': 'Bestemmingsorganisatie',
   'admin.mindbot.moveSuccess': 'Bot verplaatst naar de geselecteerde organisatie.',
   'admin.mindbot.moveError': 'Kan bot niet verplaatsen. De bestemming kan vol of ongeldig zijn.',
@@ -204,23 +191,19 @@ export default {
   'admin.mindbot.deleteConfirm': 'MindBot-configuratie voor deze organisatie verwijderen?',
   'admin.mindbot.orgSelect': 'School',
   'admin.mindbot.dingtalkRobotCode': 'Robotcode',
-  'admin.mindbot.dingtalkRobotCodeHint':
-    'Vanaf de DingTalk ontwikkelaarsconsole; gebruikt voor uitgaande API-aanroepen (antwoorden verzenden). Inkomende berichten worden geïdentificeerd aan de hand van het callback-URL-pad van deze school, niet door deze waarde te matchen met de webhook-JSON.',
+  'admin.mindbot.dingtalkRobotCodeHint': 'Vanaf de DingTalk ontwikkelaarsconsole; gebruikt voor uitgaande API-aanroepen (antwoorden verzenden). Inkomende berichten worden geïdentificeerd aan de hand van het callback-URL-pad van deze school, niet door deze waarde te matchen met de webhook-JSON.',
   'admin.mindbot.dingtalkAppSecret': 'Klantgeheim',
   'admin.mindbot.dingtalkAppSecretHint': 'Vereist bij het toevoegen van een school.',
-  'admin.mindbot.dingtalkAppSecretMaskedHint':
-    'Opgeslagen geheim met het middelste gemaskeerd. Gebruik Vervangen om een ​​nieuw clientgeheim in te voeren.',
+  'admin.mindbot.dingtalkAppSecretMaskedHint': 'Opgeslagen geheim met het middelste gemaskeerd. Gebruik Vervangen om een ​​nieuw clientgeheim in te voeren.',
   'admin.mindbot.dingtalkAppSecretReplaceHint': 'Enter een nieuw klantgeheim, of laat dit leeg en sla het op om het huidige te behouden.',
   'admin.mindbot.dingtalkClientId': 'Klant-ID',
   'admin.mindbot.dingtalkClientIdPlaceholder': 'App-sleutel voor open platform (koppelt met Client Secret)',
-  'admin.mindbot.dingtalkClientIdHint':
-    'Wordt gebruikt met het Clientgeheim om toegangstokens te verkrijgen voor AI-kaarten en andere OpenAPI. Bewaar beide; vereist voor “Testrechten” en AI-kaarten.',
+  'admin.mindbot.dingtalkClientIdHint': 'Wordt gebruikt met het Clientgeheim om toegangstokens te verkrijgen voor AI-kaarten en andere OpenAPI. Bewaar beide; vereist voor “Testrechten” en AI-kaarten.',
   'admin.mindbot.difyShowChainOfThought': 'Toon keten van gedachten',
   'admin.mindbot.dingtalkAiCardStreamingMaxChars': 'DingTalk AI-kaart streaming max. tekens',
   'admin.mindbot.dingtalkAiCardTemplateId': 'AI-kaartsjabloon (optioneel)',
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder': 'Leeg = tekstantwoorden; bijv. d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
-  'admin.mindbot.dingtalkAiCardTemplateIdHint':
-    'Gepubliceerde sjabloon van het DingTalk kaartplatform. Vereist client-ID en kaartmachtigingen (Card.Instance.Write en Card.Streaming.Write).',
+  'admin.mindbot.dingtalkAiCardTemplateIdHint': 'Gepubliceerde sjabloon van het DingTalk kaartplatform. Vereist client-ID en kaartmachtigingen (Card.Instance.Write en Card.Streaming.Write).',
   'admin.mindbot.dingtalkAiCardStreamCheck': 'Machtigingen testen',
   'admin.mindbot.dingtalkAiCardStreamOk': 'OAuth- en streamingkaartmachtigingen OK',
   'admin.mindbot.dingtalkAiCardStreamFail': 'Controle mislukt',
@@ -232,18 +215,14 @@ export default {
   'admin.mindbot.difyBaseUrl': 'Dify API-basis-URL',
   'admin.mindbot.difyApiKey': 'Dify API-sleutel',
   'admin.mindbot.difyApiKeyHint': 'Vereist bij het toevoegen van een school.',
-  'admin.mindbot.difyApiKeyMaskedHint':
-    'Opgeslagen sleutel met het middelste gemaskeerd. Gebruik Vervangen om een ​​nieuwe API-sleutel in te voeren.',
-  'admin.mindbot.difyApiKeyReplaceHint':
-    'Enter een nieuwe API-sleutel, of laat dit leeg en sla op om de huidige sleutel te behouden.',
+  'admin.mindbot.difyApiKeyMaskedHint': 'Opgeslagen sleutel met het middelste gemaskeerd. Gebruik Vervangen om een ​​nieuwe API-sleutel in te voeren.',
+  'admin.mindbot.difyApiKeyReplaceHint': 'Enter een nieuwe API-sleutel, of laat dit leeg en sla op om de huidige sleutel te behouden.',
   'admin.mindbot.replaceSecret': 'Vervangen',
   'admin.mindbot.difyTimeout': 'Dify time-out (seconden)',
-  'admin.mindbot.difyInputsJsonHint':
-    'Als uw Dify-app invoervariabelen definieert, stelt u hier een JSON-object in (bijvoorbeeld \'{\'"grade":"7"\'}\').',
+  'admin.mindbot.difyInputsJsonHint': 'Als uw Dify-app invoervariabelen definieert, stelt u hier een JSON-object in (bijvoorbeeld \'{\'"grade":"7"\'}\').',
   'admin.mindbot.enabled': 'Schakel MindBot in',
   'admin.mindbot.schoolCallbackUrl': 'DingTalk HTTP-callback-URL (deze school)',
-  'admin.mindbot.schoolCallbackUrlHint':
-    'Plak deze URL in het DingTalk HTTP-robot-callbackveld. Houd het privé: iedereen met de link kan verkeer naar uw webhook sturen.',
+  'admin.mindbot.schoolCallbackUrlHint': 'Plak deze URL in het DingTalk HTTP-robot-callbackveld. Houd het privé: iedereen met de link kan verkeer naar uw webhook sturen.',
   'admin.mindbot.callbackUrlAfterSave': 'Sla één keer op om de terugbel-URL van deze school te genereren en weer te geven.',
   'admin.mindbot.openSettings': 'MindBot instellingen',
   'admin.mindbot.copyUrl': 'Kopiëren',
@@ -256,13 +235,10 @@ export default {
   'admin.mindbot.managerNoOrg': 'Aan uw account is geen organisatie toegewezen.',
   'admin.mindbot.tabDingtalk': 'DingTalk API-auth',
   'admin.oauth.sectionTitle': 'QR-aanmelding',
-  'admin.oauth.intro':
-    'Schakel WeChat of DingTalk QR-login in voor deze school. WeChat AppID/Secret bevinden zich in server .env; Voor DingTalk zijn de IT-referenties van de school vereist.',
-  'admin.oauth.officialDocsHint':
-    'Komt overeen met officiële documenten: WeChat WxLogin + code-uitwisseling; DingTalk OAuth 2.0 DTFrameLogin + onmiddellijke authCode-uitwisseling (niet verouderd oapi.dingtalk.com).',
+  'admin.oauth.intro': 'Schakel WeChat of DingTalk QR-login in voor deze school. WeChat AppID/Secret bevinden zich in server .env; Voor DingTalk zijn de IT-referenties van de school vereist.',
+  'admin.oauth.officialDocsHint': 'Komt overeen met officiële documenten: WeChat WxLogin + code-uitwisseling; DingTalk OAuth 2.0 DTFrameLogin + onmiddellijke authCode-uitwisseling (niet verouderd oapi.dingtalk.com).',
   'admin.oauth.wechatToggle': 'Schakel WeChat QR-aanmelding in',
-  'admin.oauth.wechatHint':
-    'Docenten moeten eerst WeChat koppelen onder Account koppelen. Platform AppID/Secret worden ingesteld in server .env.',
+  'admin.oauth.wechatHint': 'Docenten moeten eerst WeChat koppelen onder Account koppelen. Platform AppID/Secret worden ingesteld in server .env.',
   'admin.oauth.dingtalkToggle': 'Schakel DingTalk QR-aanmelding in',
   'admin.oauth.dingtalkAppKey': 'DingTalk AppKey (client_id)',
   'admin.oauth.dingtalkAppSecret': 'DingTalk Appgeheim',
@@ -276,19 +252,16 @@ export default {
   'admin.oauth.wechatCallback': 'WeChat',
   'admin.oauth.dingtalkCallback': 'DingTalk',
   'admin.oauth.schoolItChecklistTitle': 'DingTalk IT-checklist',
-  'admin.oauth.schoolItChecklist':
-    'DingTalk IT-checklist:\n1. Schakel website/QR-login van derden in\n2. Stel de DingTalk callback-URL hierboven in de DingTalk console in (exacte overeenkomst)\n3. Scopes aanvragen: toestemming-open_app_api_base, Contact.User.Read\n4. Geef AppKey, AppSecret en optioneel CorpId op aan de MindGraph beheerder',
+  'admin.oauth.schoolItChecklist': 'DingTalk IT-checklist:\n1. Schakel website/QR-login van derden in\n2. Stel de DingTalk callback-URL hierboven in de DingTalk console in (exacte overeenkomst)\n3. Scopes aanvragen: toestemming-open_app_api_base, Contact.User.Read\n4. Geef AppKey, AppSecret en optioneel CorpId op aan de MindGraph beheerder',
   'admin.oauth.loadError': 'Kan QR-inloginstellingen niet laden',
   'admin.oauth.saveSuccess': 'QR-inloginstellingen opgeslagen',
   'admin.oauth.saveError': 'Kan niet opslaan. Probeer het opnieuw.',
   'admin.mindbot.tabDify': 'Dify API-auth',
-  'admin.mindbot.standaloneDifySchoolHint':
-    'Voor de meeste scholen stelt u Dify in op de schoolbewerkingsmodaliteit onder MindMate auth. Als u de school opslaat, worden deze instellingen naar alle bots gekopieerd. Per-bot Dify is hier alleen voor speciale gevallen en kan worden overschreven wanneer de school wordt opgeslagen.',
+  'admin.mindbot.standaloneDifySchoolHint': 'Voor de meeste scholen stelt u Dify in op de schoolbewerkingsmodaliteit onder MindMate auth. Als u de school opslaat, worden deze instellingen naar alle bots gekopieerd. Per-bot Dify is hier alleen voor speciale gevallen en kan worden overschreven wanneer de school wordt opgeslagen.',
   'admin.mindbot.tabLog': 'Logboek',
   'admin.mindbot.tabMonitor': 'Monitor',
   'admin.mindbot.refreshCallbackUrl': 'URL vernieuwen',
-  'admin.mindbot.rotateConfirm':
-    'Een nieuwe callback-URL genereren? De oude URL werkt niet meer totdat u deze bijwerkt in DingTalk.',
+  'admin.mindbot.rotateConfirm': 'Een nieuwe callback-URL genereren? De oude URL werkt niet meer totdat u deze bijwerkt in DingTalk.',
   'admin.mindbot.callbackRotated': 'Terugbel-URL bijgewerkt. Update DingTalk met de nieuwe URL.',
   'admin.mindbot.usageNeedSave': 'Sla de configuratie één keer op om de callback-URL, log en monitor in te schakelen.',
   'admin.mindbot.usageEmpty': 'Nog geen gebruiksgebeurtenissen.',
@@ -311,12 +284,9 @@ export default {
   'admin.mindbot.exportEmpty': 'Er valt niets te exporteren voor het huidige filter.',
   'admin.mindbot.exportError': 'Exporteren is mislukt. Probeer het opnieuw.',
   'admin.mindbot.exportSuccess': 'Exporteren gedownload.',
-  'admin.mindbot.exportDisclaimer':
-    'MindBot gebruik metadata voor onderwijsonderzoek. Berichtteksten worden niet opgeslagen; rijen zijn alleen telemetrie.',
-  'admin.mindbot.logTabHint':
-    'Onbewerkte gebruiksregels voor deze school (nieuwste eerst). Klik op een regel voor volledige metadata. Berichttekst wordt niet opgeslagen.',
-  'admin.mindbot.monitorTabHint':
-    'Gesprekken gegroepeerd vanaf de geladen pagina. Klik op een rij om de thread te openen; klik op een beurt voor details.',
+  'admin.mindbot.exportDisclaimer': 'MindBot gebruik metadata voor onderwijsonderzoek. Berichtteksten worden niet opgeslagen; rijen zijn alleen telemetrie.',
+  'admin.mindbot.logTabHint': 'Onbewerkte gebruiksregels voor deze school (nieuwste eerst). Klik op een regel voor volledige metadata. Berichttekst wordt niet opgeslagen.',
+  'admin.mindbot.monitorTabHint': 'Gesprekken gegroepeerd vanaf de geladen pagina. Klik op een rij om de thread te openen; klik op een beurt voor details.',
   'admin.mindbot.colConvThread': 'Gesprek',
   'admin.mindbot.colTurnsLoaded': 'Bochten (pagina)',
   'admin.mindbot.convNoThreadId': '(geen thread-ID)',
@@ -325,8 +295,7 @@ export default {
   'admin.mindbot.threadEmpty': 'Geen threadgebeurtenissen gevonden.',
   'admin.mindbot.threadLoadMore': 'Laad oudere beurten',
   'admin.mindbot.usageEventDetailTitle': 'Gebruiksgebeurtenis',
-  'admin.mindbot.usageEventDetailPrivacy':
-    'Uit privacyoverwegingen worden gebruikersprompts en botantwoorden niet opgeslagen, alleen onderstaande metagegevens.',
+  'admin.mindbot.usageEventDetailPrivacy': 'Uit privacyoverwegingen worden gebruikersprompts en botantwoorden niet opgeslagen, alleen onderstaande metagegevens.',
   'admin.mindbot.detailId': 'Gebeurtenis-ID',
   'admin.mindbot.detailStreaming': 'Streamen',
   'admin.mindbot.detailYes': 'Ja',
@@ -346,12 +315,10 @@ export default {
   'admin.library.colVisible': 'Zichtbaar',
   'admin.library.deleteBook': 'Boek verwijderen',
   'admin.library.deleteBookConfirm': 'Ja, verwijder alles',
-  'admin.library.deleteBookConfirmMsg':
-    'Alle {count} pagina-afbeeldingen definitief verwijderen van schijf EN het databaserecord voor "{name}"? Dit kan niet ongedaan worden gemaakt.',
+  'admin.library.deleteBookConfirmMsg': 'Alle {count} pagina-afbeeldingen definitief verwijderen van schijf EN het databaserecord voor "{name}"? Dit kan niet ongedaan worden gemaakt.',
   'admin.library.deleteBookSuccess': 'Boek verwijderd',
   'admin.library.deleteBookTitle': 'Boek verwijderen',
-  'admin.library.deleteConfirmMsg':
-    'Het databaserecord voor "{name}" definitief verwijderen? Pagina-afbeeldingen op schijf worden niet beïnvloed.',
+  'admin.library.deleteConfirmMsg': 'Het databaserecord voor "{name}" definitief verwijderen? Pagina-afbeeldingen op schijf worden niet beïnvloed.',
   'admin.library.deleteConfirmTitle': 'Documentrecord verwijderen',
   'admin.library.deleteError': 'Kan niet verwijderen',
   'admin.library.deleteRecord': 'Opname verwijderen',
@@ -443,16 +410,14 @@ export default {
   'admin.dingtalkCardClickToEditApiKeys': 'Klik om API-sleutels te bewerken',
   'admin.dingtalkApiKeysDialogTitle': 'DingTalk afbeelding — integratie-API-sleutels',
   'admin.dingtalkApiKeysDialogNote': 'X-API-sleutel · genereer_dingtalk en tijdelijke afbeeldings-URL\'s',
-  'admin.dingtalkApiKeysDialogIntro':
-    'Gebruik de X-API-Key-header. Deze sleutels verifiëren openbare API-aanroepen, zoals het genereren van diagram-PNG\'s voor DingTalk. Reacties worden afgeprijsd met in de tijd beperkte afbeeldings-URL\'s; voor het ophalen van een afbeelding is alleen de ondertekende link nodig, niet deze sleutel.',
+  'admin.dingtalkApiKeysDialogIntro': 'Gebruik de X-API-Key-header. Deze sleutels verifiëren openbare API-aanroepen, zoals het genereren van diagram-PNG\'s voor DingTalk. Reacties worden afgeprijsd met in de tijd beperkte afbeeldings-URL\'s; voor het ophalen van een afbeelding is alleen de ondertekende link nodig, niet deze sleutel.',
   'admin.apiKeysTableStats': 'Tokens (altijd)',
   'admin.apiKeysRequestCount': 'Verzoeken',
   'admin.apiKeysTableQuota': 'Quotum',
   'admin.apiKeysUnlimited': 'Onbeperkt',
   'admin.apiKeyCopy': 'Kopieer sleutel',
   'admin.apiKeysStatus': 'Status',
-  'admin.apiKeysDeleteConfirm':
-    'API-sleutel “{name}” verwijderen? Integraties die hiervan gebruikmaken, werken niet meer.',
+  'admin.apiKeysDeleteConfirm': 'API-sleutel “{name}” verwijderen? Integraties die hiervan gebruikmaken, werken niet meer.',
   'admin.apiKeysDeleteSuccess': 'API-sleutel verwijderd',
   'admin.apiKeysCreateSuccess': 'API-sleutel gemaakt',
   'admin.apiKeysLoadError': 'Kan API-sleutels niet laden',
@@ -460,8 +425,7 @@ export default {
   'admin.apiKeysExpiresDays': 'Verloopt over (dagen)',
   'admin.apiKeysExpiresDaysHint': 'Optioneel; leeg laten zodat er geen vervaldatum is vanaf de aanmaaktijd',
   'admin.apiKeysCreatedSecretTitle': 'Bewaar uw nieuwe sleutel',
-  'admin.apiKeysCreatedSecretBody':
-    'Kopieer de sleutel naar uw integratie (Dify, callbacks of scripts) als de X-API-Key-header. U kunt het ook op elk gewenst moment uit de lijst kopiëren.',
+  'admin.apiKeysCreatedSecretBody': 'Kopieer de sleutel naar uw integratie (Dify, callbacks of scripts) als de X-API-Key-header. U kunt het ook op elk gewenst moment uit de lijst kopiëren.',
   'admin.apiKeysDisable': 'Uitzetten',
   'admin.apiKeysEnable': 'Inschakelen',
   'admin.apiKeysNameRequired': 'Naam is vereist',
@@ -476,16 +440,14 @@ export default {
   'admin.publicDashboard.subtitle': 'Superbeheerder China-kaartdashboard met live online gebruikers, tokens en activiteit.',
   'admin.publicDashboard.backToAdmin': 'Terug naar beheerder',
   'admin.publicDashboard.accessDeniedTitle': 'Alleen superbeheerder',
-  'admin.publicDashboard.accessDeniedHint':
-    'Alleen platformsuperbeheerders kunnen het tabblad met nationale datacenterinstellingen openen.',
+  'admin.publicDashboard.accessDeniedHint': 'Alleen platformsuperbeheerders kunnen het tabblad met nationale datacenterinstellingen openen.',
   'admin.errors.tab': 'Foutverzameling',
   'admin.errors.groupOverview': 'Overzicht',
   'admin.errors.groupBreakdown': '24 uur storing',
   'admin.errors.groupFeed': 'Gebeurtenisfeed',
   'admin.errors.bySeverity24h': 'Op ernst',
   'admin.errors.bySource24h': 'Per bron',
-  'admin.errors.feedHint':
-    'Monospace-logregels · klik voor details · demp waarschuwingen per vingerafdruk in groepsweergave',
+  'admin.errors.feedHint': 'Monospace-logregels · klik voor details · demp waarschuwingen per vingerafdruk in groepsweergave',
   'admin.errors.viewEvents': 'Evenementen',
   'admin.errors.viewGroups': 'Groepen',
   'admin.errors.viewMode': 'Weergave',
@@ -528,8 +490,7 @@ export default {
   'admin.errors.unmuteSuccess': 'Waarschuwingen hersteld voor deze vingerafdruk',
   'admin.errors.muteError': 'Kan de mute-status niet updaten',
   'admin.errors.copyAll': 'Kopieer alles',
-  'admin.errors.copyAllHint':
-    'Kopieer de volledige foutdetails (pad, bericht, stacktrace, tags) voor de huidige filters',
+  'admin.errors.copyAllHint': 'Kopieer de volledige foutdetails (pad, bericht, stacktrace, tags) voor de huidige filters',
   'admin.errors.copyAllSuccess': '{count}-fouten naar klembord gekopieerd',
   'admin.errors.copyAllSuccessTruncated': '{count} van {total} fouten gekopieerd (limiet {limit}); verfijn de filters voor de rest',
   'admin.errors.copyAllPartial': 'Gekopieerd met {failed} ontbrekende stacktrace(s); lijstvelden zijn nog steeds opgenomen',
@@ -544,47 +505,39 @@ export default {
   'admin.performance.sectionRedis': 'Redis servergeheugen',
   'admin.performance.sectionConnections': 'WebSockets en sessies',
   'admin.performance.sectionAiCardStreaming': 'AI-kaartstreaming (live)',
-  'admin.performance.hintAiCardStreaming':
-    'Tijdens de vlucht Dify kaartstreams (clustersom). 24 uur = beste hoogste uurtarief (UTC, Redis).',
+  'admin.performance.hintAiCardStreaming': 'Tijdens de vlucht Dify kaartstreams (clustersom). 24 uur = beste hoogste uurtarief (UTC, Redis).',
   'admin.performance.mindbotStreamingNowError': 'Live telling niet beschikbaar ({reason}).',
   'admin.performance.streamingMax24hLabel': '24 uur hoog (gelijktijdig) ·',
   'admin.performance.streamingMax24hError': '24u hoog niet beschikbaar ({reason}).',
   'admin.performance.sectionMindmateStreaming': 'MindMate (site · Dify SSE)',
-  'admin.performance.hintMindmateStreaming':
-    'Aantal streams van site MindMate (clustersom). 24 uur = beste hoogste uur per uur (UTC, Redis).',
+  'admin.performance.hintMindmateStreaming': 'Aantal streams van site MindMate (clustersom). 24 uur = beste hoogste uur per uur (UTC, Redis).',
   'admin.performance.mindmateStreamingNowError': 'Live telling niet beschikbaar ({reason}).',
   'admin.performance.sectionDingtalk': 'DingTalk Streamclients',
   'admin.performance.sectionMindbotPipelines': 'MindBot (DingTalk) — live',
   'admin.performance.convStreaming': 'Streamen',
   'admin.performance.convSending': 'Verzenden blokkeren',
   'admin.performance.convReceiving': 'Stream WS (inkomend)',
-  'admin.performance.hintMindbotConv':
-    'Clustersom. Streaming = Dify SSE-kaartstreams bezig; verzenden blokkeren = one-shot Dify + antwoord; ontvangen = DingTalk Stream SDK WebSocket-taken uitgevoerd (per app-sleutel).',
+  'admin.performance.hintMindbotConv': 'Clustersom. Streaming = Dify SSE-kaartstreams bezig; verzenden blokkeren = one-shot Dify + antwoord; ontvangen = DingTalk Stream SDK WebSocket-taken uitgevoerd (per app-sleutel).',
   'admin.performance.mindbotConcurrencyUnavailable': 'Dify pijplijntellingen niet beschikbaar ({reason}).',
   'admin.performance.dingtalkStreamUnavailable': 'DingTalk Streamclientstatistieken niet beschikbaar ({reason}).',
   'admin.performance.mindbotModuleCumulative': 'Cumulatief (database)',
   'admin.performance.mindbotSchools': 'Scholen met bot',
   'admin.performance.mindbotRepliesOk': 'Geleverde antwoorden (OK, totaal)',
   'admin.performance.mindbotModuleStatsError': 'Kan modulestatistieken niet laden ({reason}).',
-  'admin.performance.hintMindbotModule':
-    'Verschillende organisaties met ten minste één MindBot-configuratie; antwoorden = gebruiksrijen met error_code MINDBOT_OK (altijd).',
+  'admin.performance.hintMindbotModule': 'Verschillende organisaties met ten minste één MindBot-configuratie; antwoorden = gebruiksrijen met error_code MINDBOT_OK (altijd).',
   'admin.performance.mindbotPeaks24hSection': 'Hoogwater (24u, cluster)',
   'admin.performance.peakStreaming24h': 'Streaming (24 uur hoog)',
   'admin.performance.peakBlocking24h': 'Blokkeren (24u hoog)',
   'admin.performance.peakWs24h': 'Stream WS (24 uur hoog)',
   'admin.performance.mindbotPeaks24hError': 'Statistieken over 24-uurspiek zijn niet beschikbaar ({reason}).',
-  'admin.performance.hintMindbotPeaks24h':
-    'Max heeft elk UTC-uur waargenomen in Redis, daarna het grootste van de afgelopen 24 uur. Gebruik met MINDBOT_MAX_ACTIVE_STREAMING / limieten per organisatie om de speelruimte te zien. Vereist Redis.',
+  'admin.performance.hintMindbotPeaks24h': 'Max heeft elk UTC-uur waargenomen in Redis, daarna het grootste van de afgelopen 24 uur. Gebruik met MINDBOT_MAX_ACTIVE_STREAMING / limieten per organisatie om de speelruimte te zien. Vereist Redis.',
   'admin.performance.sectionPools': 'Databaseverbindingspools',
   'admin.performance.sectionServices': 'Beheerde diensten',
   'admin.performance.sectionLlm': 'LLM-tracker (cluster)',
-  'admin.performance.hintProcessCpuSingle':
-    'Het proces-CPU% van deze werknemer (psutil). Bij meerdere werknemers bedraagt ​​de som per werknemer % (kan groter zijn dan 100%).',
+  'admin.performance.hintProcessCpuSingle': 'Het proces-CPU% van deze werknemer (psutil). Bij meerdere werknemers bedraagt ​​de som per werknemer % (kan groter zijn dan 100%).',
   'admin.performance.hintNetwork': 'KB/s geschat op basis van interfacetellers op deze host.',
-  'admin.performance.hintConnections':
-    'Het aantal WebSocket-chats/workshops wordt opgeteld voor alle werknemers; actief totaal gebruikt Redis indien beschikbaar.',
-  'admin.performance.hintRedis':
-    'Gebruikt geheugen en piek in de ondertitel; de balk toont de fragmentatieverhouding (geschaald voor weergave).',
+  'admin.performance.hintConnections': 'Het aantal WebSocket-chats/workshops wordt opgeteld voor alle werknemers; actief totaal gebruikt Redis indien beschikbaar.',
+  'admin.performance.hintRedis': 'Gebruikt geheugen en piek in de ondertitel; de balk toont de fragmentatieverhouding (geschaald voor weergave).',
   'admin.performance.diskHint': '{mount} · gebruikt {used} · gratis {free} · totaal {total}',
   'admin.performance.version': 'App {version}',
   'admin.performance.uptimeSec': 'Uptime {sec}s',
@@ -674,17 +627,12 @@ export default {
   'admin.revokeRole': 'Rol verwijderen',
   'admin.revokeRoleConfirm': 'Rol verwijderen uit',
   'admin.roleControl': 'Rolcontrole',
-  'admin.roleControlDesc':
-    'Beheer superadmin-toegang. Gebruikers met deze rol hebben toegang tot het volledige beheerpaneel.',
-  'admin.roleControlDescPlatformBd':
-    'Beheer de toegang van onderwijsonderzoekers. Onderwijsonderzoekers kunnen wereldwijde gegevens en het beheer van schooluitnodigingen bekijken.',
-  'admin.roleControlDescExpert':
-    'Beheer de toegang van experts. Experts kunnen scholen creëren en organisaties beheren binnen hun uitnodigingsbereik.',
-  'admin.roleControlDescManagers':
-    'Beheer schoolbeheerders. Ze hebben toegang tot het schooldashboard van hun organisatie. Gebruikers moeten al lid zijn van een school voordat ze deze rol krijgen.',
+  'admin.roleControlDesc': 'Beheer superadmin-toegang. Gebruikers met deze rol hebben toegang tot het volledige beheerpaneel.',
+  'admin.roleControlDescPlatformBd': 'Beheer de toegang van onderwijsonderzoekers. Onderwijsonderzoekers kunnen wereldwijde gegevens en het beheer van schooluitnodigingen bekijken.',
+  'admin.roleControlDescExpert': 'Beheer de toegang van experts. Experts kunnen scholen creëren en organisaties beheren binnen hun uitnodigingsbereik.',
+  'admin.roleControlDescManagers': 'Beheer schoolbeheerders. Ze hebben toegang tot het schooldashboard van hun organisatie. Gebruikers moeten al lid zijn van een school voordat ze deze rol krijgen.',
   'admin.roleAssignmentTab': 'Roltoewijzing',
-  'admin.roleAssignmentDesc':
-    'Wijs een van de zeven rollen toe aan een gebruiker. Platform-, B2B- en C2C-rollen hebben verschillende machtigingen.',
+  'admin.roleAssignmentDesc': 'Wijs een van de zeven rollen toe aan een gebruiker. Platform-, B2B- en C2C-rollen hebben verschillende machtigingen.',
   'admin.roleTierPlatform': 'Platform',
   'admin.roleTierB2B': 'B2B-organisatie',
   'admin.roleTierC2C': 'C2C persoonlijk',
@@ -700,8 +648,7 @@ export default {
   'admin.schoolCodeRequired': 'De schoolcode kan niet worden gegenereerd op basis van de naam. Voer een code in.',
   'admin.schoolDashboard': 'Schooldashboard',
   'admin.schoolDashboardNoOrg': 'Je moet lid zijn van een school om het dashboard te kunnen bekijken.',
-  'admin.usersTabSchoolDashboardHint':
-    'Schoolleden worden beheerd vanuit het Schooldashboard. Open het om gebruikers in uw organisatie toe te voegen of te bewerken.',
+  'admin.usersTabSchoolDashboardHint': 'Schoolleden worden beheerd vanuit het Schooldashboard. Open het om gebruikers in uw organisatie toe te voegen of te bewerken.',
   'admin.memberSeats': 'Ledenzetels',
   'admin.managerSeats': 'Beheerdersstoelen',
   'admin.resourceSpace': 'Bronruimte',
@@ -740,12 +687,9 @@ export default {
   'admin.schoolAddMemberType': 'Type',
   'admin.schoolAddMemberBatchTitle': 'Batch-import',
   'admin.schoolAddMemberBatchHint': 'Kopieer rijen uit Excel, WPS of Word, klik vervolgens hier en plak (Ctrl+V).',
-  'admin.schoolAddMemberBatchPastePlaceholder':
-    'Plak hier spreadsheetrijen – mobiel/e-mail en naam in twee kolommen; beide bestellingen werken',
-  'admin.schoolAddMemberBatchPasteHint':
-    'Tip: selecteer rijen in Excel/WPS/Word, kopieer en plak hier; mobiele nummers en e-mails worden automatisch gedetecteerd.',
-  'admin.schoolAddMemberBatchInvalidPaste':
-    'Kan geplakte rijen niet lezen. Gebruik twee kolommen: mobiel nummer of e-mailadres en naam (beide volgorde).',
+  'admin.schoolAddMemberBatchPastePlaceholder': 'Plak hier spreadsheetrijen – mobiel/e-mail en naam in twee kolommen; beide bestellingen werken',
+  'admin.schoolAddMemberBatchPasteHint': 'Tip: selecteer rijen in Excel/WPS/Word, kopieer en plak hier; mobiele nummers en e-mails worden automatisch gedetecteerd.',
+  'admin.schoolAddMemberBatchInvalidPaste': 'Kan geplakte rijen niet lezen. Gebruik twee kolommen: mobiel nummer of e-mailadres en naam (beide volgorde).',
   'admin.schoolAddMemberBatchTooLarge': 'Maximaal {max} leden per batch ({count} geplakt)',
   'admin.schoolAddMemberBatchDuplicatesRemoved': '({count} duplicaten verwijderd)',
   'admin.schoolAddMemberBatchEmpty': 'Plak lidrijen voordat u deze importeert',
@@ -774,12 +718,10 @@ export default {
   'admin.schoolAddMemberCreateError': 'Kan lid niet toevoegen',
   'admin.schoolAddMemberRequired': 'Vul naam en mobiel nummer of e-mailadres in, of plak een batch',
   'admin.schoolUserUnlock': 'Ontgrendelen',
-  'admin.schoolUserUnlockConfirm':
-    'Dit account ontgrendelen? De vergrendeling voor mislukte aanmeldingen en de teller voor pogingen worden gewist.',
+  'admin.schoolUserUnlockConfirm': 'Dit account ontgrendelen? De vergrendeling voor mislukte aanmeldingen en de teller voor pogingen worden gewist.',
   'admin.listRange': '{start}–{end} van {total}',
   'admin.listRangeEmpty': 'Geen resultaten',
-  'admin.schoolManagerGrantRequiresOrg':
-    'Deze gebruiker zit nog niet op een school. Voeg ze toe aan een school voordat u de schoolmanager toekent.',
+  'admin.schoolManagerGrantRequiresOrg': 'Deze gebruiker zit nog niet op een school. Voeg ze toe aan een school voordat u de schoolmanager toekent.',
   'admin.schoolManagersTab': 'Schoolmanagers',
   'admin.schoolName': 'Schoolnaam',
   'admin.schoolNamePlaceholder': 'bijv. Beijing Middelbare school',
@@ -797,40 +739,33 @@ export default {
   'admin.extraMemberSeatsLabel': 'Extra ledenzetels',
   'admin.extraMemberSeatsHint': 'Leden: {current} / {effectiveLimit} (basis {base} + extra {extra}).',
   'admin.extraMemberSeatsPreset': '+{count}',
-  'admin.schoolVersionHint':
-    'Het abonnementsniveau stelt de ledenlimiet en diagramopslag voor deze school in. Leden: {current} / {limit}.',
+  'admin.schoolVersionHint': 'Het abonnementsniveau stelt de ledenlimiet en diagramopslag voor deze school in. Leden: {current} / {limit}.',
   'admin.unlimited': 'Onbeperkt',
   'admin.unlimitedMembers': 'Onbeperkt aantal leden',
   'admin.schoolManagerNotAvailableTrial': 'Proefscholen kunnen geen schoolleiders aanwijzen.',
   'admin.noSchoolManagersShort': 'Niet beschikbaar',
-  'admin.schoolVersionLiteFeaturesHint':
-    'Proef- en basislagen zijn exclusief: online samenwerking, presentatietools, Chrome extension, API-tokens en OpenClaw-integratie.',
+  'admin.schoolVersionLiteFeaturesHint': 'Proef- en basislagen zijn exclusief: online samenwerking, presentatietools, Chrome extension, API-tokens en OpenClaw-integratie.',
   'admin.schoolVersionTierTrial': 'Proef ervaring',
   'admin.schoolVersionTierLite': 'Basisonderwijs en onderzoek',
   'admin.schoolVersionTierStandard': 'Standaard onderwijs en onderzoek',
   'admin.schoolVersionTierProfessional': 'Samen bouwen aan scholen',
   'admin.schoolVersionTierOption': '{label} · {members} leden · {managers} managers · {storage} GB/lid diagramopslag',
-  'admin.schoolVersionTierOptionTrial':
-    '{label} · Onbeperkt aantal leden · Geen schoolmanagers · {diagrams} diagrammen/leraar · {storage} GB/ledenopslag',
+  'admin.schoolVersionTierOptionTrial': '{label} · Onbeperkt aantal leden · Geen schoolmanagers · {diagrams} diagrammen/leraar · {storage} GB/ledenopslag',
   'admin.schoolManagerLimitHint': 'Schoolmanagers {current} / {limit}',
   'admin.schoolManagerLimitReached': 'Deze school heeft de beheerderslimiet bereikt ({limit})',
-  'admin.schoolTierDowngradeBlocked':
-    'Kan niet overstappen naar dit niveau: {members} leden (max {memberLimit}) en {managers} managers (max {managerLimit})',
+  'admin.schoolTierDowngradeBlocked': 'Kan niet overstappen naar dit niveau: {members} leden (max {memberLimit}) en {managers} managers (max {managerLimit})',
   'admin.schoolModal.tabMindbot': 'MindBot',
-  'admin.schoolModal.mindbotIntro':
-    'Configureer DingTalk robots voor deze school. Standaard gebruikt elke bot MindMate Dify instellingen; u kunt indien nodig een aangepaste Dify per bot instellen onder de AI-kaartsjabloon.',
+  'admin.schoolModal.mindbotIntro': 'Configureer DingTalk robots voor deze school. Standaard gebruikt elke bot MindMate Dify instellingen; u kunt indien nodig een aangepaste Dify per bot instellen onder de AI-kaartsjabloon.',
   'admin.schoolModal.mindbotSelectBot': 'Selecteer bot',
   'admin.schoolModal.mindbotAddBot': 'Bot toevoegen',
   'admin.schoolModal.mindbotCreateHint': 'Een nieuwe MindBot-configuratie maken (maximaal {cap} bots per school).',
   'admin.schoolMindmateAgentSection': 'MindMate agent',
   'admin.schoolMindmateAgentName': 'Naam agent',
-  'admin.schoolMindmateAgentNameHint':
-    'Getoond in de zijbalk en MindMate gebruikersinterface. Laat leeg om MindMate te gebruiken.',
+  'admin.schoolMindmateAgentNameHint': 'Getoond in de zijbalk en MindMate gebruikersinterface. Laat leeg om MindMate te gebruiken.',
   'admin.schoolMindmateAgentAvatar': 'Agent-avatar',
   'admin.schoolMindmateAgentAvatarUpload': 'Avatar uploaden',
   'admin.schoolMindmateAgentAvatarRemove': 'Avatar verwijderen',
-  'admin.schoolMindmateAgentAvatarHint':
-    'PNG, JPG, GIF of WebP; maximaal 1 MB; min. 64×64; geanimeerde GIF\'s toegestaan ​​(max. 120 frames); bijgesneden tot een vierkant van 256×256.',
+  'admin.schoolMindmateAgentAvatarHint': 'PNG, JPG, GIF of WebP; maximaal 1 MB; min. 64×64; geanimeerde GIF\'s toegestaan ​​(max. 120 frames); bijgesneden tot een vierkant van 256×256.',
   'admin.schoolMindmateAvatarUploaded': 'Avatar geüpload en verwerkt.',
   'admin.schoolMindmateAvatarRemoved': 'Avatar verwijderd.',
   'admin.schoolMindmateAvatarUploadFailed': 'Avatar-upload mislukt. Probeer het opnieuw.',
@@ -851,25 +786,20 @@ export default {
   'admin.schoolDifyApiKeyRequired': 'API-sleutel is vereist wanneer een basis-URL is ingesteld.',
   'admin.schoolDifyUrlRequired': 'Basis-URL is vereist wanneer een API-sleutel is ingesteld.',
   'admin.schoolDifyPairRequired': 'Zowel de basis-URL als de API-sleutel zijn vereist voor een schooloverschrijving.',
-  'admin.schoolDifyApiKeyHintOptional':
-    'Alleen vereist bij het instellen van een schoolspecifieke overschrijving. Laat beide velden leeg om de globale .env-instellingen te gebruiken.',
+  'admin.schoolDifyApiKeyHintOptional': 'Alleen vereist bij het instellen van een schoolspecifieke overschrijving. Laat beide velden leeg om de globale .env-instellingen te gebruiken.',
   'admin.schoolDifyBlankUsesGlobal': 'Laat dit leeg om de globale URL te gebruiken: {url}',
   'admin.schoolDifyApiKeyBlankUsesGlobal': 'Laat dit leeg om de globale API-sleutel ({masked}) te gebruiken.',
   'admin.schoolDifyAuthTest': 'Dify verificatietest',
   'admin.schoolDifyAuthTestRunning': 'Testen…',
-  'admin.schoolDifyAuthTestTooltip':
-    'Test de Dify-authenticatie met de URL en sleutel in dit formulier (niet-opgeslagen bewerkingen zijn inbegrepen).',
+  'admin.schoolDifyAuthTestTooltip': 'Test de Dify-authenticatie met de URL en sleutel in dit formulier (niet-opgeslagen bewerkingen zijn inbegrepen).',
   'admin.schoolDifyAuthTestPassed': 'Dify verificatie geslaagd.',
   'admin.schoolDifyAuthTestFailed': 'Dify verificatie mislukt. Controleer de basis-URL en API-sleutel.',
   'admin.schoolDifyAuthRequiredBeforeSave': 'Voer de Dify verificatietest succesvol uit voordat u opslaat.',
   'admin.schoolDifyAuthRequiredOnCreate': 'Voer de Dify-authenticatietest succesvol uit voordat u de school aanmaakt.',
   'admin.copyShortInvite': 'Kopieer korte link',
-  'admin.schoolDifyAuthErrorNoKey':
-    'API-sleutel is niet geconfigureerd (voer er één in of stel de globale DIFY_API_KEY in .env in).',
-  'admin.schoolDifyAuthErrorNoUrl':
-    'Basis-URL is niet geconfigureerd (voer er één in of stel de globale DIFY_API_URL in .env in).',
-  'admin.schoolDifyAuthErrorTimeout':
-    'Er is een time-out opgetreden bij het verbinden met Dify. Controleer de URL en het netwerk.',
+  'admin.schoolDifyAuthErrorNoKey': 'API-sleutel is niet geconfigureerd (voer er één in of stel de globale DIFY_API_KEY in .env in).',
+  'admin.schoolDifyAuthErrorNoUrl': 'Basis-URL is niet geconfigureerd (voer er één in of stel de globale DIFY_API_URL in .env in).',
+  'admin.schoolDifyAuthErrorTimeout': 'Er is een time-out opgetreden bij het verbinden met Dify. Controleer de URL en het netwerk.',
   'admin.schoolDifyAuthErrorNetwork': 'Kan Dify niet bereiken. Controleer het netwerk en de basis-URL.',
   'admin.schoolDifyAuthErrorUnauthorized': 'Ongeldige of ongeautoriseerde API-sleutel (HTTP 401).',
   'admin.schoolDifyAuthErrorForbidden': 'Toegang tot de Dify API was verboden (HTTP 403).',
@@ -880,17 +810,14 @@ export default {
   'admin.schoolDifyServer2': 'Serveerster 2',
   'admin.schoolDifyActiveServer': 'Actieve server',
   'admin.schoolDifyFailover': 'Automatische failover',
-  'admin.schoolDifyDualServerHint':
-    'Configureer twee Dify-servers per school. De actieve server verzorgt de live MindMate chat; als automatische failover is ingeschakeld, schakelt het verkeer over naar stand-by wanneer de actieve server onbereikbaar is en wordt het herstel weer ingeschakeld.',
+  'admin.schoolDifyDualServerHint': 'Configureer twee Dify-servers per school. De actieve server verzorgt de live MindMate chat; als automatische failover is ingeschakeld, schakelt het verkeer over naar stand-by wanneer de actieve server onbereikbaar is en wordt het herstel weer ingeschakeld.',
   'admin.mindmateExport.navLabel': 'MindMate exporteren',
   'admin.mindmateExport.tabExport': 'Zoeken en filteren',
   'admin.mindmateExport.tabDumps': 'Bestanden dumpen',
   'admin.mindmateExport.panelModeLabel': 'MindMate exportmodus',
   'admin.mindmateExport.title': 'MindMate gespreksexport',
-  'admin.mindmateExport.description':
-    'Bekijk en exporteer de MindMate (Dify) gespreksgeschiedenis voor één gebruiker, meerdere gebruikers of een hele school over een bepaalde periode. De geschiedenis wordt samengevoegd tussen beide Dify-servers.',
-  'admin.mindmateExport.privacyNotice':
-    'Deze weergave onthult de echte berichtinhoud. Elke export wordt gecontroleerd (wie heeft welke organisatie/gebruikers/bereik/formaat geëxporteerd). Ga verantwoord om met geëxporteerde gegevens.',
+  'admin.mindmateExport.description': 'Bekijk en exporteer de MindMate (Dify) gespreksgeschiedenis voor één gebruiker, meerdere gebruikers of een hele school over een bepaalde periode. De geschiedenis wordt samengevoegd tussen beide Dify-servers.',
+  'admin.mindmateExport.privacyNotice': 'Deze weergave onthult de echte berichtinhoud. Elke export wordt gecontroleerd (wie heeft welke organisatie/gebruikers/bereik/formaat geëxporteerd). Ga verantwoord om met geëxporteerde gegevens.',
   'admin.mindmateExport.orgLabel': 'School',
   'admin.mindmateExport.orgPlaceholder': 'Selecteer een school',
   'admin.mindmateExport.scopeLabel': 'Domein',
@@ -909,8 +836,7 @@ export default {
   'admin.mindmateExport.dateRangeLabel': 'Datum- en tijdbereik',
   'admin.mindmateExport.startDateTime': 'Begin',
   'admin.mindmateExport.endDateTime': 'Einde',
-  'admin.mindmateExport.dateTimeHint':
-    'Gebruik een snelle voorinstelling of kies een begin-/einddatum en -tijd. Voor keuzes met alleen een datum worden volledige kalenderdagen gebruikt (00:00–23:59). Laat leeg (Alles) voor de volledige geschiedenis.',
+  'admin.mindmateExport.dateTimeHint': 'Gebruik een snelle voorinstelling of kies een begin-/einddatum en -tijd. Voor keuzes met alleen een datum worden volledige kalenderdagen gebruikt (00:00–23:59). Laat leeg (Alles) voor de volledige geschiedenis.',
   'admin.mindmateExport.startDate': 'Startdatum',
   'admin.mindmateExport.endDate': 'Einddatum',
   'admin.mindmateExport.loadConversations': 'Gesprekken laden',
@@ -918,10 +844,8 @@ export default {
   'admin.mindmateExport.conversationsTitle': 'Gesprekken',
   'admin.mindmateExport.conversationCount': '{count} gesprekken',
   'admin.mindmateExport.noConversations': 'Geen gesprekken. Pas de filters aan en laad opnieuw.',
-  'admin.mindmateExport.truncatedNotice':
-    'Te veel gebruikers binnen bereik (max. {max}); resultaten werden ingekort. Verfijn de selectie voor een volledige export.',
-  'admin.mindmateExport.conversationsTruncatedNotice':
-    'Te veel gesprekken kwamen overeen; de lijst was afgetopt. Beperk het datumbereik of bereik.',
+  'admin.mindmateExport.truncatedNotice': 'Te veel gebruikers binnen bereik (max. {max}); resultaten werden ingekort. Verfijn de selectie voor een volledige export.',
+  'admin.mindmateExport.conversationsTruncatedNotice': 'Te veel gesprekken kwamen overeen; de lijst was afgetopt. Beperk het datumbereik of bereik.',
   'admin.mindmateExport.truncatedDownloadTitle': 'De export is mogelijk onvolledig',
   'admin.mindmateExport.truncatedDownloadConfirm': 'Deze export overschrijdt de {max}-gebruikerslimiet of gesprekslimiet. Toch doorgaan?',
   'admin.mindmateExport.loadPrompt': 'Stel filters in en klik op Gesprekken laden.',
@@ -950,11 +874,9 @@ export default {
   'admin.mindmateExport.jobResume': 'Cv',
   'admin.mindmateExport.jobCancel': 'Taak annuleren',
   'admin.mindmateExport.jobDownload': 'Exporteren downloaden',
-  'admin.mindmateExport.requiresJobNotice':
-    'Deze reikwijdte is groot; gebruik een achtergrondexporttaak in plaats van een directe download.',
+  'admin.mindmateExport.requiresJobNotice': 'Deze reikwijdte is groot; gebruik een achtergrondexporttaak in plaats van een directe download.',
   'admin.mindmateExport.loadMore': 'Laad meer',
-  'admin.mindmateExport.dumps.intro':
-    'Upload dify-dump_*.zip vanaf elke Dify host en importeer. Elke import wordt samengevoegd met de cumulatieve bibliotheek die wordt gebruikt door Zoeken en filters. Er worden momentopnamearchieven bewaard voor controle.',
+  'admin.mindmateExport.dumps.intro': 'Upload dify-dump_*.zip vanaf elke Dify host en importeer. Elke import wordt samengevoegd met de cumulatieve bibliotheek die wordt gebruikt door Zoeken en filters. Er worden momentopnamearchieven bewaard voor controle.',
   'admin.mindmateExport.dumps.libraryDify': 'Dify bibliotheek (server 1)',
   'admin.mindmateExport.dumps.libraryNeodify': 'NeoDify bibliotheek (server 2)',
   'admin.mindmateExport.dumps.libraryEmpty': 'Nog geen bibliotheek: importeer een dump om te beginnen.',
@@ -1004,8 +926,7 @@ export default {
   'admin.userSearchFailed': 'Zoeken naar gebruiker is mislukt',
   'admin.selectSchool': 'Selecteer school',
   'admin.setManager': 'Instellen als beheerder',
-  'admin.shareInviteMessage':
-    '{orgName}: Welkom bij de Mind thinking & teaching AI agent platform!\nGeleid door BNU Thinking Training Center en mede gebouwd met meer dan 100 alliantiescholen voor denkontwikkeling – sluit u bij ons aan om de denkvaardigheden in het AI-tijdperk te vergroten.\nHoe: openen op computer of telefoon; registreer u de eerste keer met telefoonnummer + uitnodigingscode en log vervolgens in met sms-verificatie.\nURL: {siteUrl}\nUitnodigingscode organisatie: {code}',
+  'admin.shareInviteMessage': '{orgName}: Welkom bij de Mind thinking & teaching AI agent platform!\nGeleid door BNU Thinking Training Center en mede gebouwd met meer dan 100 alliantiescholen voor denkontwikkeling – sluit u bij ons aan om de denkvaardigheden in het AI-tijdperk te vergroten.\nHoe: openen op computer of telefoon; registreer u de eerste keer met telefoonnummer + uitnodigingscode en log vervolgens in met sms-verificatie.\nURL: {siteUrl}\nUitnodigingscode organisatie: {code}',
   'admin.shareInviteTitle': 'Uitnodiging delen',
   'admin.source': 'Bron',
   'admin.sourceDatabase': 'Database',
@@ -1023,8 +944,7 @@ export default {
   'admin.systemSettings': 'Systeeminstellingen',
   'admin.readOnly': 'Alleen-lezen',
   'admin.dataCenterGlobal': 'Platform (alle scholen)',
-  'admin.inviteUsersSelectSchool':
-    'Selecteer een school om de uitnodigingscode van de organisatie te bekijken en te kopiëren.',
+  'admin.inviteUsersSelectSchool': 'Selecteer een school om de uitnodigingscode van de organisatie te bekijken en te kopiëren.',
   'admin.today': 'Vandaag',
   'admin.todayRegistrations': 'De inschrijvingen van vandaag',
   'admin.tokenStatsLoadError': 'Kan tokenstatistieken niet laden',
@@ -1044,8 +964,7 @@ export default {
   'admin.paidBenefitRemaining': 'Betaalde uitkering tot',
   'admin.paidBenefitPermanent': 'Permanent',
   'admin.rankingBeijingTodayHint': 'De ranglijsten gelden voor de huidige dag (00:00–24:00, Beijing tijd, UTC+8).',
-  'admin.usersTokensAllTimeHint':
-    'Tokentellingen zijn totalen aller tijden. Klik op een naam of tokenwaarde om de trendgrafiek op All Time te openen.',
+  'admin.usersTokensAllTimeHint': 'Tokentellingen zijn totalen aller tijden. Klik op een naam of tokenwaarde om de trendgrafiek op All Time te openen.',
   'admin.topSchoolsByTokens': 'Topscholen op basis van tokengebruik',
   'admin.topSchoolsByMindGraphTokens': 'MindGraph · Scholen op basis van tokengebruik',
   'admin.topSchoolsByMindMateTokens': 'MindMate · Scholen op basis van tokengebruik',
@@ -1220,21 +1139,18 @@ export default {
   'admin.database.skipped': 'Overgeslagen',
   'admin.database.orphaned': 'Wees',
   'admin.database.pgExportImport': 'PostgreSQL Exporteren/importeren',
-  'admin.database.pgExportImportDesc':
-    'Exporteer de huidige database naar een dumpbestand in backup/, of herstel vanaf een bestaande dump.',
+  'admin.database.pgExportImportDesc': 'Exporteer de huidige database naar een dumpbestand in backup/, of herstel vanaf een bestaande dump.',
   'admin.database.exportNow': 'Nu exporteren',
   'admin.database.exportSuccess': 'Database geëxporteerd',
   'admin.database.exportError': 'Exporteren is mislukt',
   'admin.database.noDumpFiles': 'Geen dumpbestanden gevonden in back-up/',
   'admin.database.restore': 'Herstellen',
   'admin.database.importConfirmTitle': 'Bevestig Herstellen',
-  'admin.database.importConfirmMsg':
-    'WAARSCHUWING: Dit VERVANGT ALLE bestaande gegevens in PostgreSQL door de inhoud van het dumpbestand. Dit kan niet ongedaan worden gemaakt. Weet je het zeker?',
+  'admin.database.importConfirmMsg': 'WAARSCHUWING: Dit VERVANGT ALLE bestaande gegevens in PostgreSQL door de inhoud van het dumpbestand. Dit kan niet ongedaan worden gemaakt. Weet je het zeker?',
   'admin.database.importSuccess': 'Database succesvol hersteld',
   'admin.database.importError': 'Herstellen mislukt',
   'admin.database.orphanCleanup': 'Opruiming weeskinderen',
-  'admin.database.orphanCleanupDesc':
-    'Detecteer en verwijder records met verbroken refererende sleutelreferenties in de huidige PostgreSQL database.',
+  'admin.database.orphanCleanupDesc': 'Detecteer en verwijder records met verbroken refererende sleutelreferenties in de huidige PostgreSQL database.',
   'admin.database.detectOrphans': 'Weeskinderen opsporen',
   'admin.database.orphanDetectError': 'Kan weeskinderen niet detecteren',
   'admin.database.noOrphansFound': 'Geen verweesde records gevonden - database is schoon.',
@@ -1252,8 +1168,7 @@ export default {
   'admin.database.pgLiveRows': 'Levende rijen',
   'admin.database.pgExecuteMerge': 'Samenvoegen in Live DB',
   'admin.database.pgMergeConfirmTitle': 'Bevestig PG-samenvoeging',
-  'admin.database.pgMergeConfirmMsg':
-    'Hierdoor worden gegevens uit de dump samengevoegd met de live database. Bestaande documenten blijven behouden. Doorgaan?',
+  'admin.database.pgMergeConfirmMsg': 'Hierdoor worden gegevens uit de dump samengevoegd met de live database. Bestaande documenten blijven behouden. Doorgaan?',
   'admin.database.pgMergeSuccess': 'PG-dump is succesvol samengevoegd',
   'admin.database.pgMergeError': 'Het samenvoegen van de PG-dump is mislukt',
   'admin.database.pgNewRows': 'Nieuw',

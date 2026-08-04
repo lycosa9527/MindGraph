@@ -1,5 +1,5 @@
 /**
- * tr UI — mindmate
+ * tr UI � mindmate
  */
 
 export default {

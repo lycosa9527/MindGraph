@@ -1,4 +1,6 @@
-/** ms UI — auth */
+/**
+ * ms UI � auth
+ */
 
 export default {
   'auth.accountInfo': 'Akaun',

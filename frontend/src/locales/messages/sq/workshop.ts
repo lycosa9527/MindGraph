@@ -1,4 +1,6 @@
-/** sq UI — workshop */
+/**
+ * sq UI � workshop
+ */
 
 export default {
   'collab.codeCopied': 'Kodi u kopjua',

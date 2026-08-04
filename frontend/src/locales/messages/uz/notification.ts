@@ -1,4 +1,6 @@
-/** uz UI — notification */
+/**
+ * uz UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Mavzu yoki markaz tugunlarini tozalab bo‘lmaydi',

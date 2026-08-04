@@ -1,4 +1,6 @@
-/** es UI — community */
+/**
+ * es UI � community
+ */
 
 export default {
   'community.category.all': 'Todo',

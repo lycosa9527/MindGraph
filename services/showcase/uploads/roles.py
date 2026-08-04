@@ -24,7 +24,7 @@ from routers.features.showcase.helpers import (
     VIDEO_MAX_BYTES,
 )
 
-_GALLERY_ROLE = re.compile(r"^gallery_([0-9]|1[0-1])$")
+_GALLERY_ROLE = re.compile(r"^gallery_(\d{1,2})$")
 
 _OCTET_STREAM = "application/octet-stream"
 

@@ -6,8 +6,10 @@ import pytest
 from fastapi import HTTPException
 
 from routers.features.showcase.helpers import (
+    GALLERY_MAX_ITEMS,
     assert_post_ready_for_approval,
     post_media_ready_for_approval,
+    validate_gallery_spec,
 )
 
 
@@ -47,3 +49,29 @@ def test_pending_gallery_blocks_approval() -> None:
 def test_diagram_template_without_gallery_is_ready() -> None:
     """Canvas/template specs without gallery do not need media uploads."""
     assert post_media_ready_for_approval(case_type="diagram_template", spec={"type": "mind_map"}) is True
+
+
+def test_diagram_template_pending_gallery_blocks_approval() -> None:
+    """Templates with a gallery must finish image uploads before approve."""
+    spec = {
+        "type": "diagram_template",
+        "source": "gallery",
+        "gallery": [{"kind": "image", "pending": True}],
+    }
+    with pytest.raises(HTTPException) as exc:
+        assert_post_ready_for_approval(case_type="diagram_template", spec=spec)
+    assert exc.value.status_code == 400
+
+
+def test_gallery_max_items_is_fifteen() -> None:
+    """Case/template galleries accept 15 items and reject 16."""
+    assert GALLERY_MAX_ITEMS == 15
+    ok_items = [
+        {"kind": "diagram", "diagram_id": f"d-{index}", "title": f"D{index}"} for index in range(GALLERY_MAX_ITEMS)
+    ]
+    validate_gallery_spec({"type": "diagram_case", "gallery": ok_items})
+
+    too_many = ok_items + [{"kind": "diagram", "diagram_id": "d-extra", "title": "X"}]
+    with pytest.raises(HTTPException) as exc:
+        validate_gallery_spec({"type": "diagram_case", "gallery": too_many})
+    assert exc.value.status_code == 400

@@ -1,5 +1,5 @@
 /**
- * tr UI — canvas
+ * tr UI � canvas
  */
 
 export default {

@@ -1,4 +1,6 @@
-/** tl UI — knowledge */
+/**
+ * tl UI � knowledge
+ */
 
 export default {
   'fileCenterLibrary.title': 'Mga Package',
@@ -46,8 +48,7 @@ export default {
   'chunkTestResults.answerQuality': 'Kalidad ng Sagot',
   'chunkTestResults.avgLatency': 'Karaniwang latency',
   'chunkTestResults.back': 'Bumalik',
-  'chunkTestResults.cancelConfirmBody':
-    'Sigurado ka bang gusto mong kanselahin ang test na ito? Titigil ito sa susunod na checkpoint.',
+  'chunkTestResults.cancelConfirmBody': 'Sigurado ka bang gusto mong kanselahin ang test na ito? Titigil ito sa susunod na checkpoint.',
   'chunkTestResults.cancelFailed': 'Hindi nakansela ang test',
   'chunkTestResults.cancelRequested': 'Hiniling ang pagkansela ng test',
   'chunkTestResults.cancelTest': 'Kanselahin ang Test',
@@ -122,25 +123,18 @@ export default {
   'knowledge.header.title': 'Personal na Knowledge Base',
   'knowledge.header.upload': 'Mag-upload ng Dokumento',
   'knowledge.ragGuide.title': 'Paano gumagana ang mga package, RAG, at wiki?',
-  'knowledge.ragGuide.subtitle':
-    'Walang kailangang jargon — isipin itong folder ng reference material. Ini-index namin ito para sa search (RAG), pagkatapos ay gumagawa ng maiikling wiki notes, at binabasa ng AI ang pareho kapag gumagawa ka ng mind map.',
+  'knowledge.ragGuide.subtitle': 'Walang kailangang jargon — isipin itong folder ng reference material. Ini-index namin ito para sa search (RAG), pagkatapos ay gumagawa ng maiikling wiki notes, at binabasa ng AI ang pareho kapag gumagawa ka ng mind map.',
   'knowledge.ragGuide.step1.title': 'Pumili ng package',
-  'knowledge.ragGuide.step1.body':
-    'Parang Zotero collection ang isang package. Hanggang 3 sa kaliwa; kadalasan isa bawat mind map. I-click ang package sa sidebar para pamahalaan ang mga dokumento.',
+  'knowledge.ragGuide.step1.body': 'Parang Zotero collection ang isang package. Hanggang 3 sa kaliwa; kadalasan isa bawat mind map. I-click ang package sa sidebar para pamahalaan ang mga dokumento.',
   'knowledge.ragGuide.step2.title': 'Magdagdag ng source at i-index (RAG)',
-  'knowledge.ragGuide.step2.body':
-    'Mag-upload ng PDF, Word, notes, o web pages. Hinahati namin ang mahahabang dokumento sa searchable chunks at iniimbak ang vector embeddings — ito ang RAG index at unang magiging handa.',
+  'knowledge.ragGuide.step2.body': 'Mag-upload ng PDF, Word, notes, o web pages. Hinahati namin ang mahahabang dokumento sa searchable chunks at iniimbak ang vector embeddings — ito ang RAG index at unang magiging handa.',
   'knowledge.ragGuide.step3.title': 'Awtomatikong na-compile ang wiki notes',
-  'knowledge.ragGuide.step3.body':
-    'Pagkatapos ng indexing, nag-compile ang LLM ng overview at topic wiki pages sa disk. Maiikling notes ito (hindi transcript) na nagbubuod ng package para mas mabilis mag-orient.',
+  'knowledge.ragGuide.step3.body': 'Pagkatapos ng indexing, nag-compile ang LLM ng overview at topic wiki pages sa disk. Maiikling notes ito (hindi transcript) na nagbubuod ng package para mas mabilis mag-orient.',
   'knowledge.ragGuide.step4.title': 'Gumagamit ang lookup ng wiki + chunks',
-  'knowledge.ragGuide.step4.body':
-    'Kapag nag-expand ka ng branch o gumagawa ng summary, unahin naming i-match ang relevant wiki pages, pagkatapos ay kukunin ang pinaka-relevant na chunk passages (hybrid RAG).',
+  'knowledge.ragGuide.step4.body': 'Kapag nag-expand ka ng branch o gumagawa ng summary, unahin naming i-match ang relevant wiki pages, pagkatapos ay kukunin ang pinaka-relevant na chunk passages (hybrid RAG).',
   'knowledge.ragGuide.step5.title': 'Mga sagot na nakabatay sa iyong sources',
-  'knowledge.ragGuide.step5.body':
-    'Sumusulat ang AI mula sa wiki notes at retrieved snippets imbes na manghula — mas magagandang source, tapos na indexing, at compiled wiki pages ay mas tumpak na maps.',
-  'knowledge.ragGuide.footer':
-    'Tip: ang pagbukas ng Document Summary sa canvas ay awtomatikong gumagawa ng package; ang mga page na na-save via Chrome extension ay lumalabas din sa sidebar list.',
+  'knowledge.ragGuide.step5.body': 'Sumusulat ang AI mula sa wiki notes at retrieved snippets imbes na manghula — mas magagandang source, tapos na indexing, at compiled wiki pages ay mas tumpak na maps.',
+  'knowledge.ragGuide.footer': 'Tip: ang pagbukas ng Document Summary sa canvas ay awtomatikong gumagawa ng package; ang mga page na na-save via Chrome extension ay lumalabas din sa sidebar list.',
   'knowledge.pipeline.title': 'Status ng pipeline',
   'knowledge.pipeline.ragIdle': 'Indeks ng RAG',
   'knowledge.pipeline.ragIdleDetail': 'Wala pang na-index na package. Magdagdag ng source at mag-index mula sa isang package.',
@@ -240,8 +234,7 @@ export default {
   'knowledge.settings.retrievalSection': 'Mga Setting ng Retrieval',
   'knowledge.settings.title': 'Mga Setting ng Knowledge Base',
   'knowledge.settings.helpTitle': 'Paano ina-apply ang mga setting na ito',
-  'knowledge.settings.helpBody':
-    'Agad na ina-apply ang retrieval preferences sa search at AI answers. Ang chunk size at overlap ay para sa bagong na-index na dokumento — i-re-index ang existing sources pagkatapos baguhin.',
+  'knowledge.settings.helpBody': 'Agad na ina-apply ang retrieval preferences sa search at AI answers. Ang chunk size at overlap ay para sa bagong na-index na dokumento — i-re-index ang existing sources pagkatapos baguhin.',
   'knowledge.settings.tokens': 'mga token',
   'knowledge.settings.serverSection': 'Server (basahin lang)',
   'knowledge.settings.rerankingMode': 'Reranking',

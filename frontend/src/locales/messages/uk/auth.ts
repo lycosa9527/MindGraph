@@ -1,4 +1,6 @@
-/** uk UI — auth */
+/**
+ * uk UI � auth
+ */
 
 export default {
   'auth.accountInfo': 'Обліковий запис',

@@ -1,4 +1,6 @@
-/** si UI — knowledge */
+/**
+ * si UI � knowledge
+ */
 
 export default {
   'fileCenterLibrary.title': 'පැකේජ',

@@ -1,5 +1,5 @@
 /**
- * tr UI — showcase
+ * tr UI � showcase
  */
 
 export default {
@@ -119,8 +119,10 @@ export default {
   'showcase.publishModal.aiGenerateStop': 'Durdur',
   'showcase.publishModal.aiGenerateCancelled': 'YZ oluşturma iptal edildi — yeniden oluşturmak için tekrar tıklayın',
   'showcase.publishModal.aiGenerateSuccess': 'Belgeden giriş ve öne çıkanlar dolduruldu — gözden geçirip düzenleyin; öğretim yansımasını kendiniz yazın',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'YZ oluşturma başarısız — lütfen tekrar deneyin',
   'showcase.publishModal.aiGenerateNeedFile': 'Önceki adımda önce bir öğretim tasarımı belgesi yükleyin',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'YZ ile oluştur yalnızca öğretim tasarımı örnekleri için kullanılabilir',
   'showcase.publishModal.reflectionLabel': 'Öğretim yansıması',
   'showcase.publishModal.introPlaceholder': 'Örneği ve ne zaman kullanılacağını kısaca açıklayın',
@@ -153,6 +155,7 @@ export default {
   'showcase.publishModal.historyTitle': 'Kayıtlı diyagram seç',
   'showcase.publishModal.historySearch': 'Diyagram adında ara…',
   'showcase.publishModal.historyEmpty': 'Kayıtlı diyagram yok',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': 'Düşünme becerileri sınıf dersi tasarımı',
   'showcase.publishModal.typeDesc.diagramCase': 'Öğretimde mükemmel diyagramlar ve görselleştirme',
   'showcase.publishModal.typeDesc.diagramTemplate': 'Yeniden kullanım veya uyarlama için diyagramlar',

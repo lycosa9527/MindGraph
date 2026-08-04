@@ -1,4 +1,6 @@
-/** uk UI — sidebar */
+/**
+ * uk UI � sidebar
+ */
 
 export default {
   'sidebar.actions.delete': 'Видалити',

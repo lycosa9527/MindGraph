@@ -1,4 +1,6 @@
-/** ko UI — admin */
+/**
+ * ko UI � admin
+ */
 
 export default {
   'admin.actions': '작업',
@@ -24,8 +26,7 @@ export default {
   'admin.confirm': '확인',
   'admin.copyShareMessage': '복사',
   'admin.copyInvitationCode': '초대 코드 복사',
-  'admin.schoolInviteCopyPayload':
-    '{orgName}: Mind 사고·교수 AI 에이전트 플랫폼에 오신 것을 환영합니다!\n북사범대 사고훈련센터 지도하에 100여 개 사고 발전형 연맹 학교와 함께 구축했습니다. AI 시대 사고력을 키우는 여정에 함께하세요.\n방법: 컴퓨터 또는 휴대폰에서 열고, 최초에는 전화번호+초대 코드로 등록한 뒤 SMS 인증으로 로그인하세요.\nURL: {siteUrl}\n조직 초대 코드: {code}',
+  'admin.schoolInviteCopyPayload': '{orgName}: Mind 사고·교수 AI 에이전트 플랫폼에 오신 것을 환영합니다!\n북사범대 사고훈련센터 지도하에 100여 개 사고 발전형 연맹 학교와 함께 구축했습니다. AI 시대 사고력을 키우는 여정에 함께하세요.\n방법: 컴퓨터 또는 휴대폰에서 열고, 최초에는 전화번호+초대 코드로 등록한 뒤 SMS 인증으로 로그인하세요.\nURL: {siteUrl}\n조직 초대 코드: {code}',
   'admin.createApiKey': 'API 키 만들기',
   'admin.createOrganization': '조직 만들기',
   'admin.createSchool': '학교 만들기',
@@ -88,8 +89,7 @@ export default {
   'admin.feature.mindmateCollabHint': '공유 MindMate AI 채팅방(조직 탐색 + 초대 코드). online_collab 등급 필요.',
   'admin.featureLoadFailed': '기능 플래그를 불러오지 못했습니다',
   'admin.featureSaveFailed': '설정을 저장하지 못했습니다',
-  'admin.featuresIntro':
-    '모듈 플래그를 전환합니다. 값은 .env에 기록되고 모든 API 워커에 다시 로드되어 UI와 API 검사가 재시작 없이 갱신됩니다. 지식 공간은 프로세스와 함께 시작된 Qdrant/Celery가 여전히 필요할 수 있습니다.',
+  'admin.featuresIntro': '모듈 플래그를 전환합니다. 값은 .env에 기록되고 모든 API 워커에 다시 로드되어 UI와 API 검사가 재시작 없이 갱신됩니다. 지식 공간은 프로세스와 함께 시작된 Qdrant/Celery가 여전히 필요할 수 있습니다.',
   'admin.featuresReloadFailed': '변경을 적용하지 못했습니다. 서버를 재시작하세요.',
   'admin.featuresSave': '적용',
   'admin.featuresSaved': '변경이 적용되었습니다.',
@@ -97,8 +97,7 @@ export default {
   'admin.featureDevTab': '기능 개발',
   'admin.newFeaturesTab': '새 기능',
   'admin.kittyLlmopsTab': 'Kitty LLMOps',
-  'admin.featuresIntroAccess':
-    '워크숍, MindMate 협업, MindBot, MindMate 내보내기, Kitty는 모듈을 켠 뒤 권한에서 조직과 사용자를 제한하세요. 허용 목록은 데이터베이스에 저장되며 즉시 적용됩니다.',
+  'admin.featuresIntroAccess': '워크숍, MindMate 협업, MindBot, MindMate 내보내기, Kitty는 모듈을 켠 뒤 권한에서 조직과 사용자를 제한하세요. 허용 목록은 데이터베이스에 저장되며 즉시 적용됩니다.',
   'admin.featurePermissionsApply': '권한 저장',
   'admin.featurePermissionsApplied': '기능 권한이 저장되었습니다.',
   'admin.featurePermissionsButton': '권한',
@@ -192,16 +191,14 @@ export default {
   'admin.mindbot.deleteConfirm': '이 조직의 MindBot 구성을 제거할까요?',
   'admin.mindbot.orgSelect': '학교',
   'admin.mindbot.dingtalkRobotCode': '로봇 코드',
-  'admin.mindbot.dingtalkRobotCodeHint':
-    '딩톡 개발자 콘솔에서 확인; 아웃바운드 API 호출(답변 전송)에 사용됩니다. 수신 메시지는 이 값과 웹훅 JSON 일치가 아니라 학교 콜백 URL 경로로 식별됩니다.',
+  'admin.mindbot.dingtalkRobotCodeHint': '딩톡 개발자 콘솔에서 확인; 아웃바운드 API 호출(답변 전송)에 사용됩니다. 수신 메시지는 이 값과 웹훅 JSON 일치가 아니라 학교 콜백 URL 경로로 식별됩니다.',
   'admin.mindbot.dingtalkAppSecret': 'Client Secret',
   'admin.mindbot.dingtalkAppSecretHint': '학교 추가 시 필요합니다.',
   'admin.mindbot.dingtalkAppSecretMaskedHint': '중간이 마스킹된 저장된 시크릿입니다. 교체로 새 Client Secret을 입력하세요.',
   'admin.mindbot.dingtalkAppSecretReplaceHint': '새 Client Secret을 입력하거나, 비운 채 저장하면 현재 값을 유지합니다.',
   'admin.mindbot.dingtalkClientId': 'Client ID',
   'admin.mindbot.dingtalkClientIdPlaceholder': '오픈 플랫폼 앱 키(Client Secret과 쌍)',
-  'admin.mindbot.dingtalkClientIdHint':
-    'Client Secret과 함께 AI 카드 및 기타 OpenAPI용 액세스 토큰을 받는 데 사용됩니다. 둘 다 저장하세요; “권한 테스트”와 AI 카드에 필요합니다.',
+  'admin.mindbot.dingtalkClientIdHint': 'Client Secret과 함께 AI 카드 및 기타 OpenAPI용 액세스 토큰을 받는 데 사용됩니다. 둘 다 저장하세요; “권한 테스트”와 AI 카드에 필요합니다.',
   'admin.mindbot.difyShowChainOfThought': '사고 과정 표시',
   'admin.mindbot.dingtalkAiCardStreamingMaxChars': '딩톡 AI 카드 스트리밍 최대 문자 수',
   'admin.mindbot.dingtalkAiCardTemplateId': 'AI 카드 템플릿(선택)',
@@ -255,8 +252,7 @@ export default {
   'admin.oauth.wechatCallback': '위챗',
   'admin.oauth.dingtalkCallback': '딩톡',
   'admin.oauth.schoolItChecklistTitle': '딩톡 IT 체크리스트',
-  'admin.oauth.schoolItChecklist':
-    '딩톡 IT 체크리스트:\n1. 타사 웹사이트 / QR 로그인 사용\n2. 아래 딩톡 콜백 URL 설정\n3. 필요한 경우 CorpId 범위 구성',
+  'admin.oauth.schoolItChecklist': '딩톡 IT 체크리스트:\n1. 타사 웹사이트 / QR 로그인 사용\n2. 아래 딩톡 콜백 URL 설정\n3. 필요한 경우 CorpId 범위 구성',
   'admin.oauth.loadError': 'QR 로그인 설정을 불러오지 못했습니다',
   'admin.oauth.saveSuccess': 'QR 로그인 설정이 저장되었습니다',
   'admin.oauth.saveError': '저장하지 못했습니다. 다시 시도하세요.',
@@ -759,8 +755,7 @@ export default {
   'admin.schoolManagerLimitReached': '이 학교는 매니저 한도({limit})에 도달했습니다',
   'admin.schoolTierDowngradeBlocked': '이 등급으로 전환할 수 없습니다: 멤버 {members}명(최대 {memberLimit}), 매니저 {managers}명(최대 {managerLimit})',
   'admin.schoolModal.tabMindbot': 'MindBot',
-  'admin.schoolModal.mindbotIntro':
-    '이 학교의 딩톡 로봇을 구성합니다. 기본적으로 각 봇은 MindMate Dify 설정을 사용하며, 필요 시 AI 카드 템플릿 아래에서 봇별 사용자 지정 Dify를 설정할 수 있습니다.',
+  'admin.schoolModal.mindbotIntro': '이 학교의 딩톡 로봇을 구성합니다. 기본적으로 각 봇은 MindMate Dify 설정을 사용하며, 필요 시 AI 카드 템플릿 아래에서 봇별 사용자 지정 Dify를 설정할 수 있습니다.',
   'admin.schoolModal.mindbotSelectBot': '봇 선택',
   'admin.schoolModal.mindbotAddBot': '봇 추가',
   'admin.schoolModal.mindbotCreateHint': '새 MindBot 구성 생성 중(학교당 최대 {cap}개).',
@@ -815,8 +810,7 @@ export default {
   'admin.schoolDifyServer2': '서버 2',
   'admin.schoolDifyActiveServer': '활성 서버',
   'admin.schoolDifyFailover': '자동 장애 조치',
-  'admin.schoolDifyDualServerHint':
-    '학교당 Dify 서버 두 대를 구성합니다. 활성 서버가 실시간 MindMate 채팅을 처리하며, 자동 장애 조치가 켜져 있으면 활성 서버에 연결할 수 없을 때 대기 서버로 전환되고 복구 시 다시 전환됩니다.',
+  'admin.schoolDifyDualServerHint': '학교당 Dify 서버 두 대를 구성합니다. 활성 서버가 실시간 MindMate 채팅을 처리하며, 자동 장애 조치가 켜져 있으면 활성 서버에 연결할 수 없을 때 대기 서버로 전환되고 복구 시 다시 전환됩니다.',
   'admin.mindmateExport.navLabel': 'MindMate 내보내기',
   'admin.mindmateExport.tabExport': '검색 & 필터',
   'admin.mindmateExport.tabDumps': '덤프 파일',
@@ -882,8 +876,7 @@ export default {
   'admin.mindmateExport.jobDownload': '내보내기 다운로드',
   'admin.mindmateExport.requiresJobNotice': '이 범위가 큽니다; 직접 다운로드 대신 백그라운드 내보내기 작업을 사용하세요.',
   'admin.mindmateExport.loadMore': '더 보기',
-  'admin.mindmateExport.dumps.intro':
-    '각 Dify 호스트의 dify-dump_*.zip을 업로드하고 가져오세요. 각 가져오기는 검색 & 필터가 사용하는 누적 라이브러리에 병합됩니다. 스냅샷 아카이브는 감사용으로 보관됩니다.',
+  'admin.mindmateExport.dumps.intro': '각 Dify 호스트의 dify-dump_*.zip을 업로드하고 가져오세요. 각 가져오기는 검색 & 필터가 사용하는 누적 라이브러리에 병합됩니다. 스냅샷 아카이브는 감사용으로 보관됩니다.',
   'admin.mindmateExport.dumps.libraryDify': 'Dify 라이브러리(서버 1)',
   'admin.mindmateExport.dumps.libraryNeodify': 'NeoDify 라이브러리(서버 2)',
   'admin.mindmateExport.dumps.libraryEmpty': '아직 라이브러리 없음 — 덤프를 가져와 시작하세요.',
@@ -933,8 +926,7 @@ export default {
   'admin.userSearchFailed': '사용자 검색에 실패했습니다',
   'admin.selectSchool': '학교 선택',
   'admin.setManager': '매니저로 설정',
-  'admin.shareInviteMessage':
-    '{orgName}: Mind 사고·교수 AI 에이전트 플랫폼에 오신 것을 환영합니다!\n북사범대 사고훈련센터 지도하에 100여 개 사고 발전형 연맹 학교와 함께 구축했습니다. AI 시대 사고력을 키우는 여정에 함께하세요.\n방법: 컴퓨터 또는 휴대폰에서 열고, 최초에는 전화번호+초대 코드로 등록한 뒤 SMS 인증으로 로그인하세요.\nURL: {siteUrl}\n조직 초대 코드: {code}',
+  'admin.shareInviteMessage': '{orgName}: Mind 사고·교수 AI 에이전트 플랫폼에 오신 것을 환영합니다!\n북사범대 사고훈련센터 지도하에 100여 개 사고 발전형 연맹 학교와 함께 구축했습니다. AI 시대 사고력을 키우는 여정에 함께하세요.\n방법: 컴퓨터 또는 휴대폰에서 열고, 최초에는 전화번호+초대 코드로 등록한 뒤 SMS 인증으로 로그인하세요.\nURL: {siteUrl}\n조직 초대 코드: {code}',
   'admin.shareInviteTitle': '초대 공유',
   'admin.source': '소스',
   'admin.sourceDatabase': '데이터베이스',

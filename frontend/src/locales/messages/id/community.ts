@@ -1,4 +1,6 @@
-/** id UI — community */
+/**
+ * id UI � community
+ */
 
 export default {
   'community.category.all': 'Semua',

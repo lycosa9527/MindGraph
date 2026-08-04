@@ -1,4 +1,6 @@
-/** vi UI — thinkingCoins */
+/**
+ * vi UI � thinkingCoins
+ */
 
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': 'Token Tư Duy Của Tôi',
@@ -24,8 +26,7 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.casePendingHint': 'Sắp ra mắt',
   'thinkingCoins.schoolInfo': 'Liên hệ quản trị viên trường để biết gói trường học',
   'thinkingCoins.school.headline': 'Tư duy bằng AI · giải pháp cho trường học',
-  'thinkingCoins.school.description':
-    'Triển khai riêng, tính năng tùy chỉnh và hỗ trợ vận hành đầy đủ cho trường học và tổ chức — phù hợp quy mô lớn, thương hiệu và bảo mật dữ liệu.',
+  'thinkingCoins.school.description': 'Triển khai riêng, tính năng tùy chỉnh và hỗ trợ vận hành đầy đủ cho trường học và tổ chức — phù hợp quy mô lớn, thương hiệu và bảo mật dữ liệu.',
   'thinkingCoins.school.feature.accountManager': 'Quản lý tài khoản chuyên trách',
   'thinkingCoins.school.feature.accountManagerDesc': 'Tư vấn một-một',
   'thinkingCoins.school.feature.privateDeploy': 'Triển khai riêng',
@@ -120,4 +121,3 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.plan.feature.storage1gb': '1 GB lưu trữ đám mây',
   'thinkingCoins.plan.feature.storage2gb': '2 GB lưu trữ đám mây',
 } as const
-

@@ -187,6 +187,92 @@ async def test_generate_refuses_out_of_scope_key() -> None:
     assert scope_await.args[1] == "cover_fail"
 
 
+@pytest.mark.asyncio
+async def test_generate_persists_preview_pdf_for_docx(tmp_path: Path) -> None:
+    """DOCX cover jobs upload LO PDF as preview.pdf (same as PPTX) for pdf.js."""
+    post_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    attachment_key = f"showcase/posts/{post_id}/attachment.docx"
+    pdf_path = tmp_path / "converted.pdf"
+    _make_pdf(pdf_path)
+    png_bytes = _make_png_bytes(64, 64)
+
+    post = MagicMock()
+    post.case_type = "teaching_design"
+    post.author_id = 7
+    post.spec = {"attachment_path": attachment_key}
+    post.thumbnail_path = None
+
+    result_mock = MagicMock()
+    result_mock.scalar_one_or_none.return_value = post
+    session = AsyncMock()
+    session.execute = AsyncMock(return_value=result_mock)
+    session.commit = AsyncMock()
+    session.__aenter__.return_value = session
+    session.__aexit__.return_value = None
+
+    def _fake_download(_key: str, dest: Path) -> bool:
+        dest.write_bytes(b"PK\x03\x04fake-docx")
+        return True
+
+    with (
+        patch(
+            "services.showcase.covers.generate.acquire_cover_lock",
+            return_value="token",
+        ),
+        patch("services.showcase.covers.generate.release_cover_lock"),
+        patch(
+            "services.showcase.covers.generate.rls_async_session",
+            return_value=session,
+        ),
+        patch(
+            "services.showcase.covers.generate.download_to_path_sync",
+            side_effect=_fake_download,
+        ),
+        patch(
+            "services.showcase.covers.generate.resolve_cover_pdf_path",
+            return_value=pdf_path,
+        ),
+        patch(
+            "services.showcase.covers.generate.render_pdf_first_page_png",
+            return_value=png_bytes,
+        ),
+        patch(
+            "services.showcase.covers.generate.shrink_png_bytes",
+            return_value=png_bytes,
+        ),
+        patch("services.showcase.covers.generate.put_bytes_sync") as put,
+        patch(
+            "services.showcase.covers.generate.showcase_cache.invalidate_post",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "services.showcase.covers.generate.publish_showcase_cover_event",
+            new_callable=AsyncMock,
+        ) as publish,
+        patch(
+            "services.showcase.covers.generate.showcase_public_asset_url",
+            side_effect=lambda key: f"/assets/{key}",
+        ),
+    ):
+        ok = await generate_showcase_cover(
+            post_id=post_id,
+            user_id=1,
+            attachment_key=attachment_key,
+            organization_id=None,
+            author_id=7,
+        )
+
+    assert ok is True
+    put_keys = [call.args[0] for call in put.call_args_list]
+    assert f"showcase/posts/{post_id}/thumbnail.png" in put_keys
+    assert f"showcase/posts/{post_id}/preview.pdf" in put_keys
+    assert post.spec.get("preview_path") == f"showcase/posts/{post_id}/preview.pdf"
+    ready = publish.await_args
+    assert ready is not None
+    assert ready.args[1] == "cover_ready"
+    assert ready.kwargs.get("preview_url") == f"/assets/showcase/posts/{post_id}/preview.pdf"
+
+
 def _png_non_blank(png: bytes) -> None:
     assert png.startswith(_PNG_MAGIC)
     assert len(png) <= THUMBNAIL_MAX_BYTES

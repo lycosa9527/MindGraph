@@ -3,7 +3,7 @@
  * MindMatePage - Full-page MindMate chat interface
  * Route: /mindmate
  */
-import { onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { MindmatePanel } from '@/components/panels'
@@ -21,30 +21,63 @@ const notify = useNotifications()
 const { t } = useLanguage()
 const route = useRoute()
 const router = useRouter()
-const mindmatePanelRef = ref<InstanceType<typeof MindmatePanel> | null>(null)
+
+interface MindmatePanelHandle {
+  prefillCollabJoin: (rawCode: string) => void
+  attachShowcasePost: (postId: string) => Promise<void>
+}
+
+const mindmatePanelRef = ref<MindmatePanelHandle | null>(null)
 
 useMindmateCollabNotify()
+
+async function consumeJoinCollabQuery(): Promise<void> {
+  const joinCode = route.query.join_mindmate_collab
+  if (typeof joinCode !== 'string' || !joinCode.trim()) return
+
+  const nextQuery = { ...route.query }
+  delete nextQuery.join_mindmate_collab
+  void router.replace({ query: nextQuery })
+
+  if (!featureFlagsStore.getFeatureMindmateCollab()) {
+    return
+  }
+  if (!canUseOnlineCollab.value) {
+    notify.warning(t('auth.schoolTierFeatureUnavailable'))
+    return
+  }
+  await nextTick()
+  mindmatePanelRef.value?.prefillCollabJoin(joinCode.trim())
+}
+
+async function consumeShowcasePostQuery(): Promise<void> {
+  const postId = route.query.showcase_post
+  if (typeof postId !== 'string' || !postId.trim()) return
+
+  const nextQuery = { ...route.query }
+  delete nextQuery.showcase_post
+  void router.replace({ query: nextQuery })
+
+  await nextTick()
+  await mindmatePanelRef.value?.attachShowcasePost(postId.trim())
+}
 
 onMounted(async () => {
   void ensureMarkdownRenderer()
   void authStore.checkAuth(true)
   await featureFlagsStore.fetchFlags()
-
-  const joinCode = route.query.join_mindmate_collab
-  if (typeof joinCode === 'string' && joinCode.trim()) {
-    const nextQuery = { ...route.query }
-    delete nextQuery.join_mindmate_collab
-    void router.replace({ query: nextQuery })
-    if (!featureFlagsStore.getFeatureMindmateCollab()) {
-      return
-    }
-    if (!canUseOnlineCollab.value) {
-      notify.warning(t('auth.schoolTierFeatureUnavailable'))
-      return
-    }
-    mindmatePanelRef.value?.prefillCollabJoin(joinCode.trim())
-  }
+  await consumeJoinCollabQuery()
+  await consumeShowcasePostQuery()
 })
+
+watch(
+  () => route.query.showcase_post,
+  (value) => {
+    if (typeof value === 'string' && value.trim()) {
+      void consumeShowcasePostQuery()
+    }
+  }
+)
 
 onUnmounted(() => {
   useVoiceStore().reset()

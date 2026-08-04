@@ -1,5 +1,5 @@
 /**
- * pl UI — canvas
+ * pl UI � canvas
  */
 
 export default {

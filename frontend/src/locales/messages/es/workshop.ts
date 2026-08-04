@@ -1,4 +1,6 @@
-/** es UI — workshop */
+/**
+ * es UI � workshop
+ */
 
 export default {
   'collab.codeCopied': 'Código copiado',

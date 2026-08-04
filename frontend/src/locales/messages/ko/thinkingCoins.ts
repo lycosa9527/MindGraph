@@ -1,4 +1,6 @@
-/** ko UI — thinkingCoins */
+/**
+ * ko UI � thinkingCoins
+ */
 
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': '내 사고 토큰',
@@ -119,4 +121,3 @@ export const thinkingCoinsMessages = {
   'thinkingCoins.plan.feature.storage1gb': '클라우드 저장 1GB',
   'thinkingCoins.plan.feature.storage2gb': '클라우드 저장 2GB',
 } as const
-

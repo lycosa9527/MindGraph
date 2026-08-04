@@ -1,4 +1,6 @@
-/** si UI — admin */
+/**
+ * si UI � admin
+ */
 
 export default {
   'admin.actions': 'ක්රියාවන්',

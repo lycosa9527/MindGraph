@@ -1,4 +1,6 @@
-/** tl UI — workshop */
+/**
+ * tl UI � workshop
+ */
 
 export default {
   'collab.codeCopied': 'Nakopya ang code',
@@ -27,14 +29,11 @@ export default {
   'collab.noDiagramToSave': 'Walang diagram na i-save',
   'collab.nodeLocked': 'May ibang nag-e-edit sa node na ito',
   'collab.participants': '{n} kalahok',
-  'collab.previousSessionsStopped':
-    'Natapos ang {n} nakaraang (mga) session ng pakikipagtulungan sa iyong iba pang mga diagram.',
+  'collab.previousSessionsStopped': 'Natapos ang {n} nakaraang (mga) session ng pakikipagtulungan sa iyong iba pang mga diagram.',
   'collab.saveFailed': 'Nabigong i-save ang diagram',
   'collab.scanToJoin': 'I-scan para sumali',
-  'collab.schoolDescActive':
-    'Naka-on ang pakikipagtulungan sa paaralan. Mga kasamahan: gamitin ang Collaborate → School sa home page at piliin ang diagram na ito — walang kinakailangang code.',
-  'collab.schoolStarted':
-    'Naka-on ang collaboration ng paaralan — maaaring sumali ang mga kasamahan mula sa Collaborate → School.',
+  'collab.schoolDescActive': 'Naka-on ang pakikipagtulungan sa paaralan. Mga kasamahan: gamitin ang Collaborate → School sa home page at piliin ang diagram na ito — walang kinakailangang code.',
+  'collab.schoolStarted': 'Naka-on ang collaboration ng paaralan — maaaring sumali ang mga kasamahan mula sa Collaborate → School.',
   'collab.sectionNetwork': 'Nakabahaging pakikipagtulungan (code)',
   'collab.sectionSchool': 'Pakikipagtulungan sa paaralan',
   'collab.sessionDuration': 'Tagal ng session',
@@ -54,8 +53,7 @@ export default {
   'workshop.archiveLessonStudy': 'Pag-aaral ng aralin sa archive',
   'workshop.archiveLessonStudyConfirm': 'I-archive ang lesson study na ito? Hindi na ito makikita ng mga miyembro sa listahan.',
   'workshop.archiveTeachingGroup': 'I-archive ang pangkat ng pagtuturo',
-  'workshop.archiveTeachingGroupConfirm':
-    'I-archive ang pangkat ng pagtuturo na ito? Mawawala ito sa listahan ng pangkat ng pagtuturo.',
+  'workshop.archiveTeachingGroupConfirm': 'I-archive ang pangkat ng pagtuturo na ito? Mawawala ito sa listahan ng pangkat ng pagtuturo.',
   'workshop.backToConversations': '← Mga pag-uusap',
   'workshop.bold': 'Matapang',
   'workshop.browseChannels': 'Mag-browse ng mga pangkat ng pagtuturo',
@@ -101,8 +99,7 @@ export default {
   'workshop.create': 'Lumikha',
   'workshop.createChannelFailed': 'Hindi makagawa ng channel',
   'workshop.createChannelNeedParent': 'Pumili muna ng pangkat ng pagtuturo ng magulang.',
-  'workshop.createChannelNoGroupsYet':
-    'Gumawa muna ng pangkat ng pagtuturo, pagkatapos ay magdagdag ng mga pag-aaral ng aralin sa ilalim nito.',
+  'workshop.createChannelNoGroupsYet': 'Gumawa muna ng pangkat ng pagtuturo, pagkatapos ay magdagdag ng mga pag-aaral ng aralin sa ilalim nito.',
   'workshop.createChannelSuccess': 'Nagawa ang channel',
   'workshop.createStudyCaseHint': 'Magsimula ng pag-uusap para makapagsimula',
   'workshop.cycleStudyStatus': 'Katayuan ng pag-aaral ng cycle',
@@ -135,8 +132,7 @@ export default {
   'workshop.gearMenu': 'Mga pagpipilian',
   'workshop.generalChat': 'Pangkalahatang Chat',
   'workshop.inbox': 'Inbox',
-  'workshop.inboxHintPickChannel':
-    'Magbukas ng channel o direktang mensahe sa sidebar para magbasa at tumugon. Maaari kang bumalik dito anumang oras mula sa Views → Inbox.',
+  'workshop.inboxHintPickChannel': 'Magbukas ng channel o direktang mensahe sa sidebar para magbasa at tumugon. Maaari kang bumalik dito anumang oras mula sa Views → Inbox.',
   'workshop.inboxSummaryTitle': 'Ang iyong inbox',
   'workshop.inboxUnreadChannels': 'Hindi pa nababasa sa mga channel',
   'workshop.inboxUnreadDms': 'Mga hindi pa nababasang direktang mensahe',
@@ -161,8 +157,7 @@ export default {
   'workshop.loadMore': 'Mag-load pa',
   'workshop.mainChannelStream': 'Pangunahing channel',
   'workshop.manageTeachingGroups': 'Pamahalaan ang mga pangkat ng pagtuturo',
-  'workshop.manageTeachingGroupsBlurb':
-    'Magdagdag o mag-alis ng mga grupo, magtakda ng pampubliko o pribado, mag-edit ng mga pangalan at paglalarawan, muling ayusin ang listahan, i-duplicate ang isang grupo bilang template, at mag-imbita ng mga kasamahan. Gamitin ang Advanced para sa pag-post ng mga panuntunan at mga default ng notification. Ang pag-archive ay nag-aalis ng grupo para sa lahat.',
+  'workshop.manageTeachingGroupsBlurb': 'Magdagdag o mag-alis ng mga grupo, magtakda ng pampubliko o pribado, mag-edit ng mga pangalan at paglalarawan, muling ayusin ang listahan, i-duplicate ang isang grupo bilang template, at mag-imbita ng mga kasamahan. Gamitin ang Advanced para sa pag-post ng mga panuntunan at mga default ng notification. Ang pag-archive ay nag-aalis ng grupo para sa lahat.',
   'workshop.manageUser': 'Pamahalaan ang user na ito',
   'workshop.markAllReadChannel': 'Markahan ang lahat ng mensaheng nabasa na',
   'workshop.markAsRead': 'Markahan bilang nabasa',
@@ -200,18 +195,15 @@ export default {
   'workshop.noTeachingGroupsListed': 'Wala pang mga pangkat ng pagtuturo.',
   'workshop.noTopicsYet': 'Wala pang usapan',
   'workshop.notifications': 'Mga abiso',
-  'workshop.notificationsSettingsBlurb':
-    'Ginagamit ng mga notification ng browser para sa mga pagbanggit at bagong mensahe ang iyong mga setting ng system. Maaari mo ring ibagay ang mga alerto sa desktop at email sa bawat channel sa mga setting ng channel.',
+  'workshop.notificationsSettingsBlurb': 'Ginagamit ng mga notification ng browser para sa mga pagbanggit at bagong mensahe ang iyong mga setting ng system. Maaari mo ring ibagay ang mga alerto sa desktop at email sa bawat channel sa mga setting ng channel.',
   'workshop.offline': 'offline',
   'workshop.online': 'online',
   'workshop.openMainChannelStream': 'Pangunahing channel',
   'workshop.others': 'IBA',
   'workshop.permissions': 'Mga Pahintulot',
   'workshop.personalMenu': 'Personal na Menu',
-  'workshop.phase2RoadmapGroupsAlerts':
-    'Paparating na: @group pagbanggit, alerto na mga salita, at patakaran sa kasaysayan ng pag-edit ng mensahe.',
-  'workshop.phase2RoadmapMovePreview':
-    'Paparating na: ilipat ang isang mensahe, mga preview ng link ng URL, at mas mahusay na aktibidad sa cross-channel.',
+  'workshop.phase2RoadmapGroupsAlerts': 'Paparating na: @group pagbanggit, alerto na mga salita, at patakaran sa kasaysayan ng pag-edit ng mensahe.',
+  'workshop.phase2RoadmapMovePreview': 'Paparating na: ilipat ang isang mensahe, mga preview ng link ng URL, at mas mahusay na aktibidad sa cross-channel.',
   'workshop.phase2RoadmapPlatform': 'Platform backlog: incremental sync, mobile push, email digest, bots/webhooks.',
   'workshop.pickColleagueToInvite': 'Pumili ng kasamahan na imbitahan.',
   'workshop.pinChannel': 'I-pin sa itaas',
@@ -220,8 +212,7 @@ export default {
   'workshop.policyMembersOnly': 'Mga miyembro lamang',
   'workshop.postingPolicy': 'Patakaran sa Pag-post',
   'workshop.preferences': 'Mga Kagustuhan',
-  'workshop.preferencesSettingsBlurb':
-    'Nalalapat ang mga kagustuhan sa wika at display sa buong app. Higit pang mga opsyon sa chat sa Workshop ang lalabas dito sa paglipas ng panahon.',
+  'workshop.preferencesSettingsBlurb': 'Nalalapat ang mga kagustuhan sa wika at display sa buong app. Higit pang mga opsyon sa chat sa Workshop ang lalabas dito sa paglipas ng panahon.',
   'workshop.presenceActive': 'Aktibo',
   'workshop.presenceIdle': 'Idle',
   'workshop.presenceOffline': 'Offline',
@@ -229,8 +220,7 @@ export default {
   'workshop.profile': 'Profile',
   'workshop.publicChannels': 'Mga Pampublikong Channel',
   'workshop.quoteMessage': 'I-quote ang mensahe',
-  'workshop.readOnlyProfileBlurb':
-    'Ang mga detalye ng profile para sa mga kasamahan ay ipinapakita sa isang pinasimpleng view. Gamitin ang Manage user (admins) para buksan ang admin directory.',
+  'workshop.readOnlyProfileBlurb': 'Ang mga detalye ng profile para sa mga kasamahan ay ipinapakita sa isang pinasimpleng view. Gamitin ang Manage user (admins) para buksan ang admin directory.',
   'workshop.recentDmActivity': 'Mga kamakailang direktang mensahe',
   'workshop.recentTopics': 'Mga Kamakailang Pag-uusap',
   'workshop.renameTopic': 'Palitan ang pangalan ng pag-uusap',
@@ -241,8 +231,7 @@ export default {
   'workshop.roleOwner': 'May-ari',
   'workshop.searchMembers': 'Maghanap ng mga miyembro...',
   'workshop.searchMessages': 'Maghanap ng mga mensahe...',
-  'workshop.selectChannelForSettings':
-    'Pumili muna ng pangkat ng pagtuturo o pag-aaral ng aralin, pagkatapos ay buksan ang mga setting dito.',
+  'workshop.selectChannelForSettings': 'Pumili muna ng pangkat ng pagtuturo o pag-aaral ng aralin, pagkatapos ay buksan ang mga setting dito.',
   'workshop.selectConversation': 'Pumili ng pag-uusap',
   'workshop.selectParentGroup': 'Grupo ng pagtuturo ng magulang',
   'workshop.selectTopic': 'Pumili ng pag-uusap',
@@ -266,8 +255,7 @@ export default {
   'workshop.streamMenu': 'Menu ng pangkat ng pagtuturo',
   'workshop.strikethrough': 'Strikethrough',
   'workshop.switchSchool': 'Lumipat ng Paaralan',
-  'workshop.teachingGroupLandingHint':
-    'Mga aralin at pag-uusap sa pangkat ng pagtuturo na ito. Pumili ng row para buksan ang channel o thread.',
+  'workshop.teachingGroupLandingHint': 'Mga aralin at pag-uusap sa pangkat ng pagtuturo na ito. Pumili ng row para buksan ang channel o thread.',
   'workshop.teachingGroupMembers': 'Mga miyembro',
   'workshop.teachingGroupNameRequired': 'Mangyaring magpasok ng pangalan ng pangkat ng pagtuturo.',
   'workshop.teachingGroupNoLessons': 'Wala pang lesson study sa grupong ito.',
@@ -298,14 +286,11 @@ export default {
   'workshop.viewProfile': 'Tingnan ang profile',
   'workshop.viewingSchool': 'Tinitingnan: {0}',
   'workshop.views': 'Mga view',
-  'workshop.welcomeChannelsBody':
-    'Ang isang "channel" dito ay madalas na tumutugma sa isang pangkat ng pananaliksik sa pagtuturo (教研组) o PLC: isang nakabahaging espasyo bawat koponan (hal. Math PLC, English PLC). Tinutukoy nito kung sino ang nakikibahagi at kung paano pinagsama-sama ang espasyo.',
+  'workshop.welcomeChannelsBody': 'Ang isang "channel" dito ay madalas na tumutugma sa isang pangkat ng pananaliksik sa pagtuturo (教研组) o PLC: isang nakabahaging espasyo bawat koponan (hal. Math PLC, English PLC). Tinutukoy nito kung sino ang nakikibahagi at kung paano pinagsama-sama ang espasyo.',
   'workshop.welcomeChannelsTitle': 'PLC / mga pangkat ng paksa',
-  'workshop.welcomeConversationsBody':
-    'Sa loob ng isang lesson study, nagbubukas ka ng mga may pamagat na pag-uusap—halimbawa, disenyo ng pagtuturo, pagmuni-muni, o mga follow-up na gawain—upang manatiling madaling sundan ang mga thread.',
+  'workshop.welcomeConversationsBody': 'Sa loob ng isang lesson study, nagbubukas ka ng mga may pamagat na pag-uusap—halimbawa, disenyo ng pagtuturo, pagmuni-muni, o mga follow-up na gawain—upang manatiling madaling sundan ang mga thread.',
   'workshop.welcomeConversationsTitle': 'Mga pag-uusap',
-  'workshop.welcomeExampleCaption':
-    'Mapaglarawang halimbawa (fictional school) — Math PLC at English PLC, bawat isa ay may mga pag-aaral sa aralin at sample na pag-uusap.',
+  'workshop.welcomeExampleCaption': 'Mapaglarawang halimbawa (fictional school) — Math PLC at English PLC, bawat isa ay may mga pag-aaral sa aralin at sample na pag-uusap.',
   'workshop.welcomeExampleConvLabel': 'Mga pag-uusap',
   'workshop.welcomeExampleGroupEnglish': 'English PLC',
   'workshop.welcomeExampleGroupMath': 'Math PLC',
@@ -324,49 +309,38 @@ export default {
   'workshop.welcomeExampleMsgLabel': 'Nabubuhay ang mga mensahe sa bawat pag-uusap',
   'workshop.welcomeExampleOrg': 'Chenxi Middle School',
   'workshop.welcomeHowTitle': 'Kung paano ito magkakasama',
-  'workshop.welcomeIntro':
-    'Ang Workshop ay ang lugar ng iyong paaralan para sa nakabalangkas na talakayan: magbahagi ng mga anunsyo, magpatakbo ng mga pag-aaral ng aralin, at panatilihing maayos ang mga pag-uusap kasama ng iyong gawaing pagtuturo.',
-  'workshop.welcomeLessonStudyBody':
-    'Ang mga channel sa pag-aaral ng aralin ay karaniwang nasa ilalim ng pangkat na iyon. Ang bawat isa ay lugar para sa isang ikot ng aralin—pagpaplano, pagmamasid, at pagmuni-muni—at maaaring mag-link sa mga diagram o status.',
+  'workshop.welcomeIntro': 'Ang Workshop ay ang lugar ng iyong paaralan para sa nakabalangkas na talakayan: magbahagi ng mga anunsyo, magpatakbo ng mga pag-aaral ng aralin, at panatilihing maayos ang mga pag-uusap kasama ng iyong gawaing pagtuturo.',
+  'workshop.welcomeLessonStudyBody': 'Ang mga channel sa pag-aaral ng aralin ay karaniwang nasa ilalim ng pangkat na iyon. Ang bawat isa ay lugar para sa isang ikot ng aralin—pagpaplano, pagmamasid, at pagmuni-muni—at maaaring mag-link sa mga diagram o status.',
   'workshop.welcomeLessonStudyTitle': 'Lesson study',
-  'workshop.welcomeMessagesBody':
-    'Ang mga mensahe ay ang mga indibidwal na post sa pangunahing channel stream o sa loob ng isang pag-uusap. Ang mga tugon, pagbanggit, at mga file ay nasa mga mensahe.',
+  'workshop.welcomeMessagesBody': 'Ang mga mensahe ay ang mga indibidwal na post sa pangunahing channel stream o sa loob ng isang pag-uusap. Ang mga tugon, pagbanggit, at mga file ay nasa mga mensahe.',
   'workshop.welcomeMessagesTitle': 'Mga mensahe',
   'workshop.welcomeSubtitle': 'Makipagtulungan sa iyong paaralan sa MindGraph',
   'workshop.welcomeTitle': 'Maligayang pagdating sa Workshop',
   'workshop.you': '(ikaw)',
   'workshop.youAnd': 'Ikaw at',
   'workshopCanvas.connectFailed': 'Nabigong kumonekta sa pakikipagtulungan',
-  'workshopCanvas.sessionExpiredReconnect':
-    'Nag-expire na ang iyong session. Mangyaring i-refresh ang pahina upang muling sumali sa pakikipagtulungan.',
-  'workshopCanvas.sessionRefreshFailed':
-    'Hindi ma-refresh ang iyong session ng pakikipagtulungan. Mangyaring i-save ang iyong trabaho at mag-sign in muli.',
-  'workshopCanvas.outboundQueueDegraded':
-    'Ang pakikipagtulungan ay nahuhulog. Ang ilang hindi naipadalang mga pag-edit ay hindi mapanatili.',
+  'workshopCanvas.sessionExpiredReconnect': 'Nag-expire na ang iyong session. Mangyaring i-refresh ang pahina upang muling sumali sa pakikipagtulungan.',
+  'workshopCanvas.sessionRefreshFailed': 'Hindi ma-refresh ang iyong session ng pakikipagtulungan. Mangyaring i-save ang iyong trabaho at mag-sign in muli.',
+  'workshopCanvas.outboundQueueDegraded': 'Ang pakikipagtulungan ay nahuhulog. Ang ilang hindi naipadalang mga pag-edit ay hindi mapanatili.',
   'workshopCanvas.connectionClosed': 'Sarado ang koneksyon',
-  'workshopCanvas.connectionClosedSlow':
-    'Sarado ang koneksyon: masyadong mabagal ang iyong koneksyon upang makasabay sa session ng pakikipagtulungan.',
+  'workshopCanvas.connectionClosedSlow': 'Sarado ang koneksyon: masyadong mabagal ang iyong koneksyon upang makasabay sa session ng pakikipagtulungan.',
   'workshopCanvas.sessionEndedByHost': 'Tinapos na ng host ang session ng pakikipagtulungan.',
   'workshopCanvas.editingNodeLabel': 'Ang {username} ay nag-e-edit…',
   'workshopCanvas.collabEditorDisplayNameFallback': 'isang tao',
   'workshopCanvas.connectionClosedReason': 'Sarado ang koneksyon sa pakikipagtulungan: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} ay ini-edit ang node na ito',
   'workshopCanvas.errorGeneric': 'Error sa pakikipagtulungan',
-  'workshopCanvas.updatePartialFiltered':
-    'Nilaktawan ang ilang pag-edit ((mga) {count} node) dahil isa pang collaborator ang nag-e-edit sa mga node na iyon.',
+  'workshopCanvas.updatePartialFiltered': 'Nilaktawan ang ilang pag-edit ((mga) {count} node) dahil isa pang collaborator ang nag-e-edit sa mga node na iyon.',
   'workshopCanvas.reconnectFailed': 'Nabigong kumonekta muli sa pakikipagtulungan, paki-refresh ang page',
-  'workshopCanvas.resyncWaiting':
-    'Ang pag-sync ng live na diagram ay mas tumatagal kaysa sa inaasahan. Sinusubukang muli; maaari mong i-refresh kung natigil ang pag-edit.',
+  'workshopCanvas.resyncWaiting': 'Ang pag-sync ng live na diagram ay mas tumatagal kaysa sa inaasahan. Sinusubukang muli; maaari mong i-refresh kung natigil ang pag-edit.',
   'workshopCanvas.returnedHomeIdle': 'Umuwi — nadiskonekta ka pagkatapos ng mahabang panahon ng walang ginagawa.',
   'workshopCanvas.userJoined': 'Sumali ang user na {username}',
   'workshopCanvas.usersJoined': 'Sumali ang mga user ng {count}',
   'workshopCanvas.userLeft': 'Umalis ang user na {username}',
   'workshopCanvas.usersLeft': 'Umalis ang mga user ng {count}',
   'workshopCanvas.wsError': 'Error sa koneksyon sa pakikipagtulungan, pakitingnan ang iyong network',
-  'workshopCanvas.returnedHomeRoomIdle':
-    'Natapos ang pakikipagtulungan: walang mga pag-edit ng diagram sa session na ito nang ilang sandali.',
-  'workshopCanvas.roomIdleWarningToast':
-    'Walang mga pag-edit sa diagram kamakailan — nagtatapos ang pakikipagtulungan kapag umabot sa zero ang countdown maliban kung may mag-e-edit.',
+  'workshopCanvas.returnedHomeRoomIdle': 'Natapos ang pakikipagtulungan: walang mga pag-edit ng diagram sa session na ito nang ilang sandali.',
+  'workshopCanvas.roomIdleWarningToast': 'Walang mga pag-edit sa diagram kamakailan — nagtatapos ang pakikipagtulungan kapag umabot sa zero ang countdown maliban kung may mag-e-edit.',
   'workshopCanvas.otherTabCollaborationActive': 'Nagpapatuloy ang pakikipagtulungan sa isa pang tab o window para sa account na ito.',
   'workshopCanvas.joinQrAlt': 'Sumali sa pakikipagtulungan sa QR code',
 } as const

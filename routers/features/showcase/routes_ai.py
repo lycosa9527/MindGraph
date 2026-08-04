@@ -1,5 +1,5 @@
 """
-Showcase AI helpers: teaching-design copy from uploaded document text.
+Showcase AI helpers: teaching-design / diagram copy drafts for publish modal.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -27,6 +27,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 
 from models.domain.auth import User
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
@@ -43,6 +44,11 @@ from services.showcase.ai_copy import (
     generate_teaching_design_copy,
     stream_teaching_design_copy,
 )
+from services.showcase.diagram_ai_copy import (
+    extract_diagram_texts,
+    generate_diagram_case_copy,
+    stream_diagram_case_copy,
+)
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.auth import get_current_user
 
@@ -54,6 +60,20 @@ router = APIRouter()
 
 _ENDPOINT_PATH = "/api/showcase/ai/teaching-copy"
 _STREAM_ENDPOINT_PATH = "/api/showcase/ai/teaching-copy/stream"
+_DIAGRAM_ENDPOINT_PATH = "/api/showcase/ai/diagram-copy"
+_DIAGRAM_STREAM_ENDPOINT_PATH = "/api/showcase/ai/diagram-copy/stream"
+_MAX_DIAGRAM_SPECS = 12
+
+
+class DiagramCopyBody(BaseModel):
+    """JSON body for diagram AI copy (specs from personal library / .mg / canvas)."""
+
+    title: str = ""
+    subject: str = ""
+    grade: str = ""
+    diagram_type: str = ""
+    specs: list[dict[str, Any]] = Field(default_factory=list)
+
 
 _EXTRACT_IO_ERRORS = (
     OSError,
@@ -351,6 +371,208 @@ async def generate_teaching_design_ai_copy_stream(
             user_id=getattr(current_user, "id", None),
             organization_id=getattr(current_user, "organization_id", None),
             temp_path=temp_path,
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+async def _prepare_diagram_copy_text_async(
+    *,
+    request: Request,
+    body: DiagramCopyBody,
+    current_user: User,
+) -> str:
+    """Rate-limit and extract node text from diagram specs."""
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "showcase_ai_diagram_copy",
+        identifier,
+        max_requests=12,
+        window_seconds=60,
+    )
+
+    if not body.specs:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Diagram spec required",
+        )
+    if len(body.specs) > _MAX_DIAGRAM_SPECS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"At most {_MAX_DIAGRAM_SPECS} diagram specs",
+        )
+
+    try:
+        return extract_diagram_texts(body.specs, body.diagram_type or "mind_map")
+    except ValueError as exc:
+        if str(exc) == "no_text_extracted":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="No text extracted from diagram",
+            ) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Failed to extract text from diagram",
+        ) from exc
+
+
+async def _stream_diagram_copy_events(
+    *,
+    http_request: Request,
+    diagram_text: str,
+    title: str,
+    subject: str,
+    grade: str,
+    diagram_type: str,
+    user_id: int | None,
+    organization_id: int | None,
+) -> AsyncIterator[str]:
+    """Yield SSE chunks for diagram AI copy; cancel on client disconnect."""
+    queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
+    cancel_event = asyncio.Event()
+
+    async def run_stream() -> None:
+        try:
+            await queue.put({"event": "phase", "phase": "generating"})
+            async for event in stream_diagram_case_copy(
+                diagram_text=diagram_text,
+                title=title,
+                subject=subject,
+                grade=grade,
+                diagram_type=diagram_type,
+                user_id=user_id,
+                organization_id=organization_id,
+                endpoint_path=_DIAGRAM_STREAM_ENDPOINT_PATH,
+            ):
+                if cancel_event.is_set():
+                    break
+                await queue.put(event)
+        except asyncio.CancelledError:
+            logger.debug("[ShowcaseAI] diagram stream cancelled")
+        except LLMContentFilterError as exc:
+            msg = getattr(exc, "user_message", None) or "AI content filtered"
+            await queue.put({"event": "error", "message": msg, "error_type": "content_filter"})
+        except LLMRateLimitError as exc:
+            msg = getattr(exc, "user_message", None) or "AI rate limited, please retry shortly"
+            await queue.put({"event": "error", "message": msg, "error_type": "rate_limit"})
+        except LLMTimeoutError as exc:
+            msg = getattr(exc, "user_message", None) or "AI generation timed out"
+            await queue.put({"event": "error", "message": msg, "error_type": "timeout"})
+        except LLMAccessDeniedError as exc:
+            msg = getattr(exc, "user_message", None) or "AI access denied"
+            await queue.put({"event": "error", "message": msg, "error_type": "access_denied"})
+        except (LLMProviderError, LLMServiceError, *LLM_PIPELINE_ERRORS) as exc:
+            logger.warning("[ShowcaseAI] diagram stream failed: %s", exc)
+            await queue.put(
+                {
+                    "event": "error",
+                    "message": "AI generation failed",
+                    "error_type": "service_error",
+                }
+            )
+        finally:
+            await queue.put(None)
+
+    task = asyncio.create_task(run_stream())
+
+    async def monitor_disconnect() -> None:
+        while not task.done():
+            if await http_request.is_disconnected():
+                cancel_event.set()
+                task.cancel()
+                return
+            await asyncio.sleep(0.25)
+
+    monitor_task = asyncio.create_task(monitor_disconnect())
+    try:
+        yield _sse_line({"event": "phase", "phase": "extracting"})
+        while True:
+            item = await queue.get()
+            if item is None:
+                break
+            yield _sse_line(item)
+    finally:
+        monitor_task.cancel()
+        if not task.done():
+            cancel_event.set()
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+        try:
+            await monitor_task
+        except asyncio.CancelledError:
+            pass
+
+
+@router.post("/ai/diagram-copy")
+async def generate_diagram_ai_copy(
+    request: Request,
+    body: DiagramCopyBody,
+    current_user: User = Depends(get_current_user),
+):
+    """Extract diagram node text then draft intro / classroom application."""
+    diagram_text = await _prepare_diagram_copy_text_async(
+        request=request,
+        body=body,
+        current_user=current_user,
+    )
+    try:
+        fields = await generate_diagram_case_copy(
+            diagram_text=diagram_text,
+            title=body.title,
+            subject=body.subject,
+            grade=body.grade,
+            diagram_type=body.diagram_type,
+            user_id=getattr(current_user, "id", None),
+            organization_id=getattr(current_user, "organization_id", None),
+            endpoint_path=_DIAGRAM_ENDPOINT_PATH,
+        )
+    except (
+        LLMRateLimitError,
+        LLMTimeoutError,
+        LLMAccessDeniedError,
+        LLMContentFilterError,
+        LLMProviderError,
+        *LLM_PIPELINE_ERRORS,
+    ) as exc:
+        raise _map_llm_http(exc) from exc
+
+    return {
+        "description": fields["description"],
+        "classroom_application": fields["classroom_application"],
+        "model": "qwen3.7-flash",
+    }
+
+
+@router.post("/ai/diagram-copy/stream")
+async def generate_diagram_ai_copy_stream(
+    request: Request,
+    body: DiagramCopyBody,
+    current_user: User = Depends(get_current_user),
+):
+    """SSE stream: phase + incremental fields + done for diagram AI copy."""
+    diagram_text = await _prepare_diagram_copy_text_async(
+        request=request,
+        body=body,
+        current_user=current_user,
+    )
+    return StreamingResponse(
+        _stream_diagram_copy_events(
+            http_request=request,
+            diagram_text=diagram_text,
+            title=body.title,
+            subject=body.subject,
+            grade=body.grade,
+            diagram_type=body.diagram_type,
+            user_id=getattr(current_user, "id", None),
+            organization_id=getattr(current_user, "organization_id", None),
         ),
         media_type="text/event-stream",
         headers={

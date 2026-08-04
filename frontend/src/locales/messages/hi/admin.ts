@@ -1,4 +1,6 @@
-/** hi UI — admin */
+/**
+ * hi UI � admin
+ */
 
 export default {
   'admin.actions': 'कार्रवाइयाँ',
@@ -24,8 +26,7 @@ export default {
   'admin.confirm': 'पुष्टि',
   'admin.copyShareMessage': 'कॉपी',
   'admin.copyInvitationCode': 'आमंत्रण कोड कॉपी',
-  'admin.schoolInviteCopyPayload':
-    '{orgName}: Mind चिंतन और शिक्षण AI एजेंट प्लेटफ़ॉर्म में स्वागत!\nBNU Thinking Training Center के मार्गदर्शन और 100+ चिंतन-विकास गठबंधन स्कूलों के सह-निर्माण — AI युग में चिंतन कौशल बढ़ाने में शामिल हों।\nकैसे: कंप्यूटर या फ़ोन पर खोलें; पहली बार फ़ोन + आमंत्रण कोड से पंजीकरण, फिर SMS सत्यापन से साइन इन।\nURL: {siteUrl}\nसंगठन आमंत्रण कोड: {code}',
+  'admin.schoolInviteCopyPayload': '{orgName}: Mind चिंतन और शिक्षण AI एजेंट प्लेटफ़ॉर्म में स्वागत!\nBNU Thinking Training Center के मार्गदर्शन और 100+ चिंतन-विकास गठबंधन स्कूलों के सह-निर्माण — AI युग में चिंतन कौशल बढ़ाने में शामिल हों।\nकैसे: कंप्यूटर या फ़ोन पर खोलें; पहली बार फ़ोन + आमंत्रण कोड से पंजीकरण, फिर SMS सत्यापन से साइन इन।\nURL: {siteUrl}\nसंगठन आमंत्रण कोड: {code}',
   'admin.createApiKey': 'API Key बनाएँ',
   'admin.createOrganization': 'संगठन बनाएँ',
   'admin.createSchool': 'स्कूल बनाएँ',
@@ -69,8 +70,7 @@ export default {
   'admin.feature.markets': 'Market (कैटलॉग और ऑर्डर)',
   'admin.feature.marketsHint': 'टेम्पलेट/पाठ्यक्रम/SKU, Alipay checkout और notify।',
   'admin.feature.mindbot': 'MindBot (DingTalk → Dify)',
-  'admin.feature.mindbotHint':
-    'Enterprise DingTalk robot HTTP callback, प्रति-स्कूल Dify और secrets। HTTPS callback URL चाहिए।',
+  'admin.feature.mindbotHint': 'Enterprise DingTalk robot HTTP callback, प्रति-स्कूल Dify और secrets। HTTPS callback URL चाहिए।',
   'admin.feature.mindmateExport': 'MindMate बातचीत निर्यात',
   'admin.feature.mindmateExportHint': 'वेब MindMate और DingTalk MindBot Dify इतिहास देख/निर्यात — superadmin पैनल।',
   'admin.feature.ragChunkTest': 'RAG चंक परीक्षण',
@@ -89,8 +89,7 @@ export default {
   'admin.feature.mindmateCollabHint': 'साझा MindMate AI chatroom (org browse + invite code)। online_collab tier चाहिए।',
   'admin.featureLoadFailed': 'नहीं हो सका: load feature flags',
   'admin.featureSaveFailed': 'नहीं हो सका: save settings',
-  'admin.featuresIntro':
-    'मॉड्यूल फ़्लैग टॉगल। .env में लिखकर सभी API workers पर reload — UI/API बिना restart अपडेट। Knowledge Space को Qdrant/Celery चाहिए हो सकता है।',
+  'admin.featuresIntro': 'मॉड्यूल फ़्लैग टॉगल। .env में लिखकर सभी API workers पर reload — UI/API बिना restart अपडेट। Knowledge Space को Qdrant/Celery चाहिए हो सकता है।',
   'admin.featuresReloadFailed': 'नहीं हो सका: apply changes. Restart the server.',
   'admin.featuresSave': 'लागू',
   'admin.featuresSaved': 'बदलाव लागू।',
@@ -98,8 +97,7 @@ export default {
   'admin.featureDevTab': 'फ़ीचर विकास',
   'admin.newFeaturesTab': 'नया features',
   'admin.kittyLlmopsTab': 'Kitty LLMOps',
-  'admin.featuresIntroAccess':
-    'Workshop, MindMate collab, MindBot, MindMate export, Kitty — मॉड्यूल सक्षम के बाद Permissions से org/user सीमित करें। Allowlist DB में, तुरंत प्रभावी।',
+  'admin.featuresIntroAccess': 'Workshop, MindMate collab, MindBot, MindMate export, Kitty — मॉड्यूल सक्षम के बाद Permissions से org/user सीमित करें। Allowlist DB में, तुरंत प्रभावी।',
   'admin.featurePermissionsApply': 'सहेजें permissions',
   'admin.featurePermissionsApplied': 'फ़ीचर अनुमतियाँ सहेजी।',
   'admin.featurePermissionsButton': 'अनुमतियाँ',
@@ -156,12 +154,10 @@ export default {
   'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'DingTalk robot और Dify (प्रति स्कूल)',
   'admin.mindbot.dialogHeaderNote': 'DingTalk robot [{name}]',
-  'admin.mindbot.introHttpOnly':
-    'HTTP receive: प्रति स्कूल callback URL (संपादन पर)। DingTalk app secret inbound हस्ताक्षर; Dify उत्तर।',
+  'admin.mindbot.introHttpOnly': 'HTTP receive: प्रति स्कूल callback URL (संपादन पर)। DingTalk app secret inbound हस्ताक्षर; Dify उत्तर।',
   'admin.mindbot.emptyState': 'कोई school has MindBot configured yet.',
   'admin.mindbot.managerIntro': 'अपने संगठन हेतु DingTalk HTTP robot और Dify कॉन्फ़िगर करें।',
-  'admin.mindbot.managerReadOnlyIntro':
-    'आपका school\'s MindBot configuration is shown below (read-only). Contact the platform administrator to make changes.',
+  'admin.mindbot.managerReadOnlyIntro': 'आपका school\'s MindBot configuration is shown below (read-only). Contact the platform administrator to make changes.',
   'admin.mindbot.managerNoConfig': 'कोई MindBot configuration has been set up for your school yet.',
   'admin.mindbot.sectionDingTalk': 'DingTalk',
   'admin.mindbot.sectionDify': 'Dify',
@@ -195,22 +191,19 @@ export default {
   'admin.mindbot.deleteConfirm': 'हटाएँ MindBot configuration for this organization?',
   'admin.mindbot.orgSelect': 'स्कूल',
   'admin.mindbot.dingtalkRobotCode': 'Robot code',
-  'admin.mindbot.dingtalkRobotCodeHint':
-    'DingTalk developer console से; outbound API (उत्तर)। Inbound=this स्कूल callback URL path से, webhook JSON match नहीं।',
+  'admin.mindbot.dingtalkRobotCodeHint': 'DingTalk developer console से; outbound API (उत्तर)। Inbound=this स्कूल callback URL path से, webhook JSON match नहीं।',
   'admin.mindbot.dingtalkAppSecret': 'Client Secret',
   'admin.mindbot.dingtalkAppSecretHint': 'आवश्यक when adding a school.',
   'admin.mindbot.dingtalkAppSecretMaskedHint': 'Secret मध्य masked। Replace से नया Client Secret।',
   'admin.mindbot.dingtalkAppSecretReplaceHint': 'दर्ज a new Client Secret, or leave blank and save to keep the current one.',
   'admin.mindbot.dingtalkClientId': 'Client ID',
   'admin.mindbot.dingtalkClientIdPlaceholder': 'खोलें platform app key (pairs with Client Secret)',
-  'admin.mindbot.dingtalkClientIdHint':
-    'Client Secret के साथ access token — AI cards/OpenAPI। दोनों सहेजें; “Test permissions”/AI cards हेतु।',
+  'admin.mindbot.dingtalkClientIdHint': 'Client Secret के साथ access token — AI cards/OpenAPI। दोनों सहेजें; “Test permissions”/AI cards हेतु।',
   'admin.mindbot.difyShowChainOfThought': 'दिखाएँ chain-of-thought',
   'admin.mindbot.dingtalkAiCardStreamingMaxChars': 'DingTalk AI card streaming max chars',
   'admin.mindbot.dingtalkAiCardTemplateId': 'AI card template (वैक.)',
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder': 'खाली = text उत्तर; उदा. d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
-  'admin.mindbot.dingtalkAiCardTemplateIdHint':
-    'DingTalk card platform प्रकाशित template। Client ID और card permissions (Card.Instance.Write, Card.Streaming.Write)।',
+  'admin.mindbot.dingtalkAiCardTemplateIdHint': 'DingTalk card platform प्रकाशित template। Client ID और card permissions (Card.Instance.Write, Card.Streaming.Write)।',
   'admin.mindbot.dingtalkAiCardStreamCheck': 'अनुमतियाँ परीक्षण',
   'admin.mindbot.dingtalkAiCardStreamOk': 'OAuth और streaming card permissions OK',
   'admin.mindbot.dingtalkAiCardStreamFail': 'जाँच विफल',
@@ -229,8 +222,7 @@ export default {
   'admin.mindbot.difyInputsJsonHint': 'Dify app input variables हेतु JSON (उदा. \'{\'"grade":"7"\'}\')।',
   'admin.mindbot.enabled': 'सक्षम MindBot',
   'admin.mindbot.schoolCallbackUrl': 'DingTalk HTTP callback URL (यह स्कूल)',
-  'admin.mindbot.schoolCallbackUrlHint':
-    'DingTalk HTTP robot callback में URL चिपकाएँ। निजी रखें — लिंक वाला webhook पर ट्रैफ़िक भेज सकता है।',
+  'admin.mindbot.schoolCallbackUrlHint': 'DingTalk HTTP robot callback में URL चिपकाएँ। निजी रखें — लिंक वाला webhook पर ट्रैफ़िक भेज सकता है।',
   'admin.mindbot.callbackUrlAfterSave': 'सहेजें once to generate and show this school’s callback URL.',
   'admin.mindbot.openSettings': 'MindBot सेटिंग',
   'admin.mindbot.copyUrl': 'कॉपी',
@@ -243,10 +235,8 @@ export default {
   'admin.mindbot.managerNoOrg': 'आपका account has no organization assigned.',
   'admin.mindbot.tabDingtalk': 'DingTalk API auth',
   'admin.oauth.sectionTitle': 'QR साइन-इन',
-  'admin.oauth.intro':
-    'सक्षम WeChat or DingTalk QR login for this school. WeChat AppID/Secret are in server .env; DingTalk requires school IT credentials.',
-  'admin.oauth.officialDocsHint':
-    'आधिकारिक docs: WeChat WxLogin + code; DingTalk OAuth 2.0 DTFrameLogin + authCode (legacy oapi.dingtalk.com नहीं)।',
+  'admin.oauth.intro': 'सक्षम WeChat or DingTalk QR login for this school. WeChat AppID/Secret are in server .env; DingTalk requires school IT credentials.',
+  'admin.oauth.officialDocsHint': 'आधिकारिक docs: WeChat WxLogin + code; DingTalk OAuth 2.0 DTFrameLogin + authCode (legacy oapi.dingtalk.com नहीं)।',
   'admin.oauth.wechatToggle': 'सक्षम WeChat QR login',
   'admin.oauth.wechatHint': 'शिक्षक पहले Account linking में WeChat जोड़ें। Platform AppID/Secret server .env में।',
   'admin.oauth.dingtalkToggle': 'सक्षम DingTalk QR login',
@@ -262,14 +252,12 @@ export default {
   'admin.oauth.wechatCallback': 'WeChat',
   'admin.oauth.dingtalkCallback': 'DingTalk',
   'admin.oauth.schoolItChecklistTitle': 'DingTalk IT checklist',
-  'admin.oauth.schoolItChecklist':
-    'DingTalk IT checklist:\n1. तृतीय-पक्ष वेबसाइट/QR login सक्षम\n2. DingTalk console में ऊपर callback URL (exact match)\n3. Scopes: permission-open_app_api_base, Contact.User.Read\n4. AppKey, AppSecret, वैक. CorpId MindGraph admin को',
+  'admin.oauth.schoolItChecklist': 'DingTalk IT checklist:\n1. तृतीय-पक्ष वेबसाइट/QR login सक्षम\n2. DingTalk console में ऊपर callback URL (exact match)\n3. Scopes: permission-open_app_api_base, Contact.User.Read\n4. AppKey, AppSecret, वैक. CorpId MindGraph admin को',
   'admin.oauth.loadError': 'नहीं हो सका: load QR login settings',
   'admin.oauth.saveSuccess': 'QR login सेटिंग सहेजी',
   'admin.oauth.saveError': 'सहेज नहीं सका। पुनः प्रयास।',
   'admin.mindbot.tabDify': 'Dify API auth',
-  'admin.mindbot.standaloneDifySchoolHint':
-    'अधिकांश स्कूल: school edit modal MindMate auth में Dify। स्कूल सहेजने पर सभी bots को कॉपी। यहाँ per-bot=Dify विशेष मामले; स्कूल save पर overwrite।',
+  'admin.mindbot.standaloneDifySchoolHint': 'अधिकांश स्कूल: school edit modal MindMate auth में Dify। स्कूल सहेजने पर सभी bots को कॉपी। यहाँ per-bot=Dify विशेष मामले; स्कूल save पर overwrite।',
   'admin.mindbot.tabLog': 'लॉग',
   'admin.mindbot.tabMonitor': 'मॉनिटर',
   'admin.mindbot.refreshCallbackUrl': 'रीफ़्रेश URL',
@@ -422,8 +410,7 @@ export default {
   'admin.dingtalkCardClickToEditApiKeys': 'क्लिक to edit API keys',
   'admin.dingtalkApiKeysDialogTitle': 'DingTalk image — integration API keys',
   'admin.dingtalkApiKeysDialogNote': 'X-API-Key · generate_dingtalk और temp image URLs',
-  'admin.dingtalkApiKeysDialogIntro':
-    'उपयोग the X-API-Key header. These keys authenticate public API calls such as diagram PNG generation for DingTalk. Responses are markdown with time-limited image URLs; fetching an image only needs the signed link, not this key.',
+  'admin.dingtalkApiKeysDialogIntro': 'उपयोग the X-API-Key header. These keys authenticate public API calls such as diagram PNG generation for DingTalk. Responses are markdown with time-limited image URLs; fetching an image only needs the signed link, not this key.',
   'admin.apiKeysTableStats': 'Tokens (सभी समय)',
   'admin.apiKeysRequestCount': 'अनुरोध',
   'admin.apiKeysTableQuota': 'कोटा',
@@ -438,8 +425,7 @@ export default {
   'admin.apiKeysExpiresDays': 'समाप्त (दिन)',
   'admin.apiKeysExpiresDaysHint': 'वैक.; खाली = निर्माण से समाप्ति नहीं',
   'admin.apiKeysCreatedSecretTitle': 'सहेजें your new key',
-  'admin.apiKeysCreatedSecretBody':
-    'कॉपी the key into your integration (Dify, callbacks, or scripts) as the X-API-Key header. You can also copy it from the list at any time.',
+  'admin.apiKeysCreatedSecretBody': 'कॉपी the key into your integration (Dify, callbacks, or scripts) as the X-API-Key header. You can also copy it from the list at any time.',
   'admin.apiKeysDisable': 'अक्षम',
   'admin.apiKeysEnable': 'सक्षम',
   'admin.apiKeysNameRequired': 'नाम आवश्यक',
@@ -531,28 +517,24 @@ export default {
   'admin.performance.convStreaming': 'स्ट्रीमिंग',
   'admin.performance.convSending': 'ब्लॉकिंग भेजना',
   'admin.performance.convReceiving': 'Stream WS (इनबाउंड)',
-  'admin.performance.hintMindbotConv':
-    'Cluster sum. Streaming = Dify SSE card streams in progress; blocking send = one-shot Dify + reply; receiving = DingTalk Stream SDK WebSocket tasks running (per app key).',
+  'admin.performance.hintMindbotConv': 'Cluster sum. Streaming = Dify SSE card streams in progress; blocking send = one-shot Dify + reply; receiving = DingTalk Stream SDK WebSocket tasks running (per app key).',
   'admin.performance.mindbotConcurrencyUnavailable': 'Dify pipeline counts unavailable ({reason}).',
   'admin.performance.dingtalkStreamUnavailable': 'DingTalk Stream client metrics unavailable ({reason}).',
   'admin.performance.mindbotModuleCumulative': 'संचयी (database)',
   'admin.performance.mindbotSchools': 'Bot वाले स्कूल',
   'admin.performance.mindbotRepliesOk': 'उत्तर वितरित (OK, कुल)',
   'admin.performance.mindbotModuleStatsError': 'नहीं हो सका: load module stats ({reason}).',
-  'admin.performance.hintMindbotModule':
-    'Distinct organizations with at least one MindBot config; replies = usage rows with error_code MINDBOT_OK (all time).',
+  'admin.performance.hintMindbotModule': 'Distinct organizations with at least one MindBot config; replies = usage rows with error_code MINDBOT_OK (all time).',
   'admin.performance.mindbotPeaks24hSection': 'उच्च स्तर (24h, cluster)',
   'admin.performance.peakStreaming24h': 'स्ट्रीमिंग (24h उच्च)',
   'admin.performance.peakBlocking24h': 'ब्लॉकिंग (24h उच्च)',
   'admin.performance.peakWs24h': 'Stream WS (24h उच्च)',
   'admin.performance.mindbotPeaks24hError': '24h शिखर सांख्यिकी अनुपलब्ध ({reason})।',
-  'admin.performance.hintMindbotPeaks24h':
-    'Redis में प्रत्येक UTC घंटे का अधिकतम, फिर पिछले 24 घंटों का सबसे बड़ा। MINDBOT_MAX_ACTIVE_STREAMING / per-org caps के साथ headroom देखें। Redis आवश्यक।',
+  'admin.performance.hintMindbotPeaks24h': 'Redis में प्रत्येक UTC घंटे का अधिकतम, फिर पिछले 24 घंटों का सबसे बड़ा। MINDBOT_MAX_ACTIVE_STREAMING / per-org caps के साथ headroom देखें। Redis आवश्यक।',
   'admin.performance.sectionPools': 'डेटाबेस कनेक्शन पूल',
   'admin.performance.sectionServices': 'प्रबंधित सेवाएँ',
   'admin.performance.sectionLlm': 'LLM ट्रैकर (cluster)',
-  'admin.performance.hintProcessCpuSingle':
-    'यह worker\'s process CPU % (psutil). With several workers, totals sum per-worker % (can exceed 100%).',
+  'admin.performance.hintProcessCpuSingle': 'यह worker\'s process CPU % (psutil). With several workers, totals sum per-worker % (can exceed 100%).',
   'admin.performance.hintNetwork': 'इस होस्ट के interface counters से KB/s अनुमान।',
   'admin.performance.hintConnections': 'WebSocket chat/workshop गिनती workers में जोड़ी; सक्रिय कुल Redis से (उपलब्ध हो)।',
   'admin.performance.hintRedis': 'subtitle में used memory/peak; bar fragmentation ratio (display scaled) दिखाता है।',
@@ -646,12 +628,9 @@ export default {
   'admin.revokeRoleConfirm': 'हटाएँ role from',
   'admin.roleControl': 'भूमिका नियंत्रण',
   'admin.roleControlDesc': 'प्रबंधन superadmin access. Users with this role can access the full management panel.',
-  'admin.roleControlDescPlatformBd':
-    'प्रबंधन teaching researcher access. Teaching researchers can view global data and school invite management.',
-  'admin.roleControlDescExpert':
-    'प्रबंधन expert access. Experts can create schools and manage organizations in their invite scope.',
-  'admin.roleControlDescManagers':
-    'प्रबंधन school admins. They can access the school dashboard for their organization. Users must already belong to a school before being granted this role.',
+  'admin.roleControlDescPlatformBd': 'प्रबंधन teaching researcher access. Teaching researchers can view global data and school invite management.',
+  'admin.roleControlDescExpert': 'प्रबंधन expert access. Experts can create schools and manage organizations in their invite scope.',
+  'admin.roleControlDescManagers': 'प्रबंधन school admins. They can access the school dashboard for their organization. Users must already belong to a school before being granted this role.',
   'admin.roleAssignmentTab': 'भूमिका असाइनमेंट',
   'admin.roleAssignmentDesc': 'उपयोगकर्ता को सात में से एक भूमिका दें। Platform, B2B और C2C की अलग अनुमतियाँ।',
   'admin.roleTierPlatform': 'प्लेटफ़ॉर्म',
@@ -710,8 +689,7 @@ export default {
   'admin.schoolAddMemberBatchHint': 'कॉपी rows from Excel, WPS, or Word, then click here and paste (Ctrl+V).',
   'admin.schoolAddMemberBatchPastePlaceholder': 'स्प्रेडशीट पंक्तियाँ चिपकाएँ — मोबाइल/ईमेल और नाम दो कॉलम; क्रम कोई भी',
   'admin.schoolAddMemberBatchPasteHint': 'Excel/WPS/Word में पंक्ति चुनें, कॉपी, यहाँ चिपकाएँ; मोबाइल/ईमेल स्वतः पहचान।',
-  'admin.schoolAddMemberBatchInvalidPaste':
-    'नहीं हो सका: read pasted rows. Use two columns: mobile number or email, and name (either order).',
+  'admin.schoolAddMemberBatchInvalidPaste': 'नहीं हो सका: read pasted rows. Use two columns: mobile number or email, and name (either order).',
   'admin.schoolAddMemberBatchTooLarge': 'अधिकतम {max} सदस्य/बैच ({count} चिपकाए)',
   'admin.schoolAddMemberBatchDuplicatesRemoved': '({count} duplicates हटाए)',
   'admin.schoolAddMemberBatchEmpty': 'आयात से पहले सदस्य पंक्तियाँ चिपकाएँ',
@@ -766,8 +744,7 @@ export default {
   'admin.unlimitedMembers': 'असीमित सदस्य',
   'admin.schoolManagerNotAvailableTrial': 'Trial स्कूल manager नहीं दे सकते।',
   'admin.noSchoolManagersShort': 'उपलब्ध नहीं',
-  'admin.schoolVersionLiteFeaturesHint':
-    'Trial and basic tiers exclude: online collaboration, presentation tools, Chrome extension, API tokens, and OpenClaw integration.',
+  'admin.schoolVersionLiteFeaturesHint': 'Trial and basic tiers exclude: online collaboration, presentation tools, Chrome extension, API tokens, and OpenClaw integration.',
   'admin.schoolVersionTierTrial': 'Trial अनुभव',
   'admin.schoolVersionTierLite': 'बुनियादी शिक्षण-अनुसंधान',
   'admin.schoolVersionTierStandard': 'मानक शिक्षण-अनुसंधान',
@@ -778,8 +755,7 @@ export default {
   'admin.schoolManagerLimitReached': 'यह school has reached its manager limit ({limit})',
   'admin.schoolTierDowngradeBlocked': 'Tier नहीं: {members} सदस्य (max {memberLimit}), {managers} managers (max {managerLimit})',
   'admin.schoolModal.tabMindbot': 'MindBot',
-  'admin.schoolModal.mindbotIntro':
-    'Configure DingTalk robots for this school. By default each bot uses MindMate Dify settings; you can set custom Dify per bot below the AI card template when needed.',
+  'admin.schoolModal.mindbotIntro': 'Configure DingTalk robots for this school. By default each bot uses MindMate Dify settings; you can set custom Dify per bot below the AI card template when needed.',
   'admin.schoolModal.mindbotSelectBot': 'चुनें bot',
   'admin.schoolModal.mindbotAddBot': 'जोड़ें bot',
   'admin.schoolModal.mindbotCreateHint': 'Creating a new MindBot config (up to {cap} bots per school).',
@@ -789,8 +765,7 @@ export default {
   'admin.schoolMindmateAgentAvatar': 'Agent अवतार',
   'admin.schoolMindmateAgentAvatarUpload': 'अपलोड avatar',
   'admin.schoolMindmateAgentAvatarRemove': 'हटाएँ avatar',
-  'admin.schoolMindmateAgentAvatarHint':
-    'PNG, JPG, GIF, WebP; max 1MB; min 64×64; animated GIF (max 120 frames); 256×256 square crop।',
+  'admin.schoolMindmateAgentAvatarHint': 'PNG, JPG, GIF, WebP; max 1MB; min 64×64; animated GIF (max 120 frames); 256×256 square crop।',
   'admin.schoolMindmateAvatarUploaded': 'अवतार अपलोड और प्रसंस्कृत।',
   'admin.schoolMindmateAvatarRemoved': 'अवतार हटाया।',
   'admin.schoolMindmateAvatarUploadFailed': 'अवतार अपलोड विफल। पुनः।',
@@ -811,8 +786,7 @@ export default {
   'admin.schoolDifyApiKeyRequired': 'API key is required when a base URL is set.',
   'admin.schoolDifyUrlRequired': 'Base URL is required when an API key is set.',
   'admin.schoolDifyPairRequired': 'Both base URL and API key are required for a school override.',
-  'admin.schoolDifyApiKeyHintOptional':
-    'आवश्यक only when setting a school-specific override. Leave both fields empty to use global .env settings.',
+  'admin.schoolDifyApiKeyHintOptional': 'आवश्यक only when setting a school-specific override. Leave both fields empty to use global .env settings.',
   'admin.schoolDifyBlankUsesGlobal': 'छोड़ें blank to use global URL: {url}',
   'admin.schoolDifyApiKeyBlankUsesGlobal': 'छोड़ें blank to use global API key ({masked}).',
   'admin.schoolDifyAuthTest': 'Dify auth test',
@@ -836,17 +810,14 @@ export default {
   'admin.schoolDifyServer2': 'Server 2',
   'admin.schoolDifyActiveServer': 'सक्रिय server',
   'admin.schoolDifyFailover': 'Auto failover',
-  'admin.schoolDifyDualServerHint':
-    'Configure two Dify servers per school. The active server handles live MindMate chat; if auto failover is on, traffic switches to the standby when the active server is unreachable and switches back on recovery.',
+  'admin.schoolDifyDualServerHint': 'Configure two Dify servers per school. The active server handles live MindMate chat; if auto failover is on, traffic switches to the standby when the active server is unreachable and switches back on recovery.',
   'admin.mindmateExport.navLabel': 'MindMate export',
   'admin.mindmateExport.tabExport': 'खोज & filters',
   'admin.mindmateExport.tabDumps': 'Dump फ़ाइलें',
   'admin.mindmateExport.panelModeLabel': 'MindMate export mode',
   'admin.mindmateExport.title': 'MindMate बातचीत निर्यात',
-  'admin.mindmateExport.description':
-    'देखें and export MindMate (Dify) conversation history for a single user, multiple users, or a whole school over a time range. History is merged across both Dify servers.',
-  'admin.mindmateExport.privacyNotice':
-    'यह view exposes real message content. Every export is audited (who exported which org/users/range/format). Handle exported data responsibly.',
+  'admin.mindmateExport.description': 'देखें and export MindMate (Dify) conversation history for a single user, multiple users, or a whole school over a time range. History is merged across both Dify servers.',
+  'admin.mindmateExport.privacyNotice': 'यह view exposes real message content. Every export is audited (who exported which org/users/range/format). Handle exported data responsibly.',
   'admin.mindmateExport.orgLabel': 'स्कूल',
   'admin.mindmateExport.orgPlaceholder': 'चुनें a school',
   'admin.mindmateExport.scopeLabel': 'दायरा',
@@ -865,8 +836,7 @@ export default {
   'admin.mindmateExport.dateRangeLabel': 'दिनांक और समय सीमा',
   'admin.mindmateExport.startDateTime': 'शुरू',
   'admin.mindmateExport.endDateTime': 'समाप्त',
-  'admin.mindmateExport.dateTimeHint':
-    'उपयोग a quick preset or pick start/end date and time. Date-only picks use full calendar days (00:00–23:59). Leave empty (All) for full history.',
+  'admin.mindmateExport.dateTimeHint': 'उपयोग a quick preset or pick start/end date and time. Date-only picks use full calendar days (00:00–23:59). Leave empty (All) for full history.',
   'admin.mindmateExport.startDate': 'शुरू date',
   'admin.mindmateExport.endDate': 'समाप्त date',
   'admin.mindmateExport.loadConversations': 'लोड बातचीत',
@@ -906,8 +876,7 @@ export default {
   'admin.mindmateExport.jobDownload': 'डाउनलोड export',
   'admin.mindmateExport.requiresJobNotice': 'यह scope is large; use a background export job instead of a direct download.',
   'admin.mindmateExport.loadMore': 'और लोड करें',
-  'admin.mindmateExport.dumps.intro':
-    'अपलोड dify-dump_*.zip from each Dify host and import. Each import merges into the cumulative library used by Search & filters. Snapshot archives are kept for audit.',
+  'admin.mindmateExport.dumps.intro': 'अपलोड dify-dump_*.zip from each Dify host and import. Each import merges into the cumulative library used by Search & filters. Snapshot archives are kept for audit.',
   'admin.mindmateExport.dumps.libraryDify': 'Dify library (Server 1)',
   'admin.mindmateExport.dumps.libraryNeodify': 'NeoDify library (Server 2)',
   'admin.mindmateExport.dumps.libraryEmpty': 'कोई library yet — import a dump to start.',
@@ -957,8 +926,7 @@ export default {
   'admin.userSearchFailed': 'उपयोगकर्ता खोज विफल',
   'admin.selectSchool': 'स्कूल चुनें',
   'admin.setManager': 'सेट as Manager',
-  'admin.shareInviteMessage':
-    '{orgName}: Mind चिंतन और शिक्षण AI एजेंट प्लेटफ़ॉर्म में स्वागत!\nBNU Thinking Training Center के मार्गदर्शन और 100+ चिंतन-विकास गठबंधन स्कूलों के सह-निर्माण — AI युग में चिंतन कौशल बढ़ाने में शामिल हों।\nकैसे: कंप्यूटर या फ़ोन पर खोलें; पहली बार फ़ोन + आमंत्रण कोड से पंजीकरण, फिर SMS सत्यापन से साइन इन।\nURL: {siteUrl}\nसंगठन आमंत्रण कोड: {code}',
+  'admin.shareInviteMessage': '{orgName}: Mind चिंतन और शिक्षण AI एजेंट प्लेटफ़ॉर्म में स्वागत!\nBNU Thinking Training Center के मार्गदर्शन और 100+ चिंतन-विकास गठबंधन स्कूलों के सह-निर्माण — AI युग में चिंतन कौशल बढ़ाने में शामिल हों।\nकैसे: कंप्यूटर या फ़ोन पर खोलें; पहली बार फ़ोन + आमंत्रण कोड से पंजीकरण, फिर SMS सत्यापन से साइन इन।\nURL: {siteUrl}\nसंगठन आमंत्रण कोड: {code}',
   'admin.shareInviteTitle': 'आमंत्रण साझा',
   'admin.source': 'स्रोत',
   'admin.sourceDatabase': 'डेटाबेस',
@@ -1171,8 +1139,7 @@ export default {
   'admin.database.skipped': 'छोड़ा',
   'admin.database.orphaned': 'अनाथ',
   'admin.database.pgExportImport': 'PostgreSQL निर्यात / आयात',
-  'admin.database.pgExportImportDesc':
-    'निर्यात the current database to a dump file in backup/, or restore from an existing dump.',
+  'admin.database.pgExportImportDesc': 'निर्यात the current database to a dump file in backup/, or restore from an existing dump.',
   'admin.database.exportNow': 'निर्यात Now',
   'admin.database.exportSuccess': 'डेटाबेस निर्यात',
   'admin.database.exportError': 'निर्यात failed',
@@ -1201,8 +1168,7 @@ export default {
   'admin.database.pgLiveRows': 'लाइव पंक्तियाँ',
   'admin.database.pgExecuteMerge': 'लाइव DB में मर्ज',
   'admin.database.pgMergeConfirmTitle': 'पुष्टि PG Merge',
-  'admin.database.pgMergeConfirmMsg':
-    'यह will merge data from the dump into the live database. Existing records will be preserved. Continue?',
+  'admin.database.pgMergeConfirmMsg': 'यह will merge data from the dump into the live database. Existing records will be preserved. Continue?',
   'admin.database.pgMergeSuccess': 'PG dump सफलतापूर्वक मर्ज',
   'admin.database.pgMergeError': 'PG dump मर्ज विफल',
   'admin.database.pgNewRows': 'नया',

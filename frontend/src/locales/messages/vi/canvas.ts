@@ -1,4 +1,6 @@
-/** vi UI — canvas */
+/**
+ * vi UI � canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'Phần phụ mới 1',
@@ -34,8 +36,7 @@ export default {
   'canvas.worksheetText.hide': 'Trốn',
   'canvas.worksheetText.instructionLabel': 'Hướng dẫn',
   'canvas.worksheetText.instructionPrefix': 'Nhiệm vụ:',
-  'canvas.worksheetText.modalHint':
-    'Xuất PDF để in. Xuất tài liệu cho các trường tên/lớp có thể chỉnh sửa; sơ đồ vẫn là một hình ảnh.',
+  'canvas.worksheetText.modalHint': 'Xuất PDF để in. Xuất tài liệu cho các trường tên/lớp có thể chỉnh sửa; sơ đồ vẫn là một hình ảnh.',
   'canvas.worksheetText.headerCaptureFailed': 'Không thể hiển thị tiêu đề trang tính; đã xuất PDF mà không có nó.',
   'canvas.worksheetText.modalTitle': 'Xuất dưới dạng DOCX/PDF',
   'canvas.worksheetText.previewDiagram': 'Sơ đồ',
@@ -55,18 +56,14 @@ export default {
   'canvas.worksheetText.showName': 'Tên',
   'canvas.worksheetText.showTopic': 'Tiêu đề chủ đề',
   'canvas.worksheetText.topicPreviewLabel': 'chủ đề sơ đồ',
-  'canvas.import.invalidFile':
-    'Tệp sơ đồ không hợp lệ. Vui lòng chọn tệp MG được xuất từ ​​MindGraph hoặc tệp CmapTools .cmap.',
+  'canvas.import.invalidFile': 'Tệp sơ đồ không hợp lệ. Vui lòng chọn tệp MG được xuất từ ​​MindGraph hoặc tệp CmapTools .cmap.',
   'canvas.import.parseError': 'Không thể phân tích cú pháp tệp sơ đồ, vui lòng thử lại',
-  'canvas.import.cmapHeuristicSemantics':
-    'Tệp CmapTools này sử dụng tính năng dự phòng theo thứ tự văn bản cho các liên kết—xác minh mối quan hệ với bản đồ gốc của bạn.',
+  'canvas.import.cmapHeuristicSemantics': 'Tệp CmapTools này sử dụng tính năng dự phòng theo thứ tự văn bản cho các liên kết—xác minh mối quan hệ với bản đồ gốc của bạn.',
   'canvas.import.cmapConnectionFallback': 'Các mối quan hệ được xây dựng lại từ IHMC kết nối đồ họa hơn là các đối tượng mệnh đề.',
   'canvas.import.cmapEmptyLayout': 'Bản đồ đã nhập không có tọa độ nút được khôi phục; bố cục đã được tái tạo.',
-  'canvas.import.cmapLayoutLabelCollision':
-    'Các nhãn khái niệm trùng lặp chồng lên nhau trong các neo bố cục; một số vị trí đã nhập có thể sai.',
+  'canvas.import.cmapLayoutLabelCollision': 'Các nhãn khái niệm trùng lặp chồng lên nhau trong các neo bố cục; một số vị trí đã nhập có thể sai.',
   'canvas.import.cmapLayoutFailed': 'Việc trích xuất bố cục gặp phải lỗi phân tích cú pháp—các vị trí đã được tạo lại.',
-  'canvas.reset.confirmBody':
-    'Bạn có chắc không? Tất cả nội dung hiện tại sẽ bị mất, bao gồm sơ đồ và bảng nút. Điều này không thể hoàn tác được.',
+  'canvas.reset.confirmBody': 'Bạn có chắc không? Tất cả nội dung hiện tại sẽ bị mất, bao gồm sơ đồ và bảng nút. Điều này không thể hoàn tác được.',
   'canvas.reset.confirmButton': 'Cài lại',
   'canvas.reset.confirmTitle': 'Đặt lại về mặc định',
   'canvas.reset.warnSelectType': 'Không thể đặt lại: trước tiên hãy chọn loại sơ đồ',
@@ -87,15 +84,13 @@ export default {
   'canvas.shortcutGuide.addSibling': 'Thêm anh chị em',
   'canvas.shortcutGuide.addSiblingDesc': 'Nhanh chóng chèn anh chị em bên cạnh nút đã chọn.',
   'canvas.shortcutGuide.editText': 'Chỉnh sửa văn bản',
-  'canvas.shortcutGuide.editTextDesc':
-    'Mở chỉnh sửa nội tuyến tại chỗ; Nhập hoặc làm mờ sẽ lưu và tính toán lại kích thước ngay lập tức.',
+  'canvas.shortcutGuide.editTextDesc': 'Mở chỉnh sửa nội tuyến tại chỗ; Nhập hoặc làm mờ sẽ lưu và tính toán lại kích thước ngay lập tức.',
   'canvas.shortcutGuide.doubleClick': 'Nhấp đúp để chỉnh sửa',
   'canvas.shortcutGuide.deleteNode': 'Xóa nút',
   'canvas.shortcutGuide.deleteNodeDesc': 'Xóa nút đã chọn và các nhánh của nó (nút gốc được bảo vệ).',
   'canvas.shortcutGuide.arrowNav': 'Phím mũi tên',
   'canvas.shortcutGuide.selectNav': 'Điều hướng',
-  'canvas.shortcutGuide.arrowNavDesc':
-    'Điều hướng Euclide: các phím mũi tên chuyển đến nút gần nhất theo vị trí 2D vật lý trên canvas, để chuyển động liền mạch giống như máy tính để bàn trong mọi bố cục.',
+  'canvas.shortcutGuide.arrowNavDesc': 'Điều hướng Euclide: các phím mũi tên chuyển đến nút gần nhất theo vị trí 2D vật lý trên canvas, để chuyển động liền mạch giống như máy tính để bàn trong mọi bố cục.',
   'canvas.shortcutGuide.cancel': 'Xóa lựa chọn/chỉnh sửa',
   'canvas.shortcutGuide.cancelDesc': 'Hủy lựa chọn hoặc chỉnh sửa.',
   'canvas.shortcutGuide.undo': 'Hoàn tác',
@@ -195,8 +190,7 @@ export default {
   'canvas.toolbar.causeAdded': 'Nguyên nhân nút được thêm vào',
   'canvas.toolbar.childAdded': 'Đã thêm trẻ em',
   'canvas.toolbar.collabAiBlocked': 'Chỉ chủ sở hữu sơ đồ mới có thể sử dụng tính năng tạo AI trong quá trình cộng tác',
-  'canvas.toolbar.collabLiveAiDisabled':
-    'Việc tạo AI không khả dụng trong quá trình cộng tác trực tiếp nên mọi người luôn đồng bộ hóa',
+  'canvas.toolbar.collabLiveAiDisabled': 'Việc tạo AI không khả dụng trong quá trình cộng tác trực tiếp nên mọi người luôn đồng bộ hóa',
   'canvas.toolbar.collabGuestFeatureBlocked': 'Tính năng này không khả dụng khi bạn tham gia với tư cách là khách cộng tác.',
   'canvas.toolbar.colorLabel': 'Màu sắc',
   'canvas.toolbar.conceptGeneration': 'Thế hệ ý tưởng',
@@ -344,8 +338,7 @@ export default {
   'canvas.presentationTimer.startPresenting': 'Bắt đầu trình bày',
   'canvas.presentationTimer.closeHud': 'Đóng bộ hẹn giờ',
   'canvas.presentation.learningSheetConfirmTitle': 'Bắt đầu trình bày?',
-  'canvas.presentation.learningSheetConfirmBody':
-    'Bạn vẫn đang chỉnh sửa phiếu học tập. Bắt đầu trình bày sẽ kết thúc chỉnh sửa trống; khoảng trống hiện có sẽ được giữ lại. Tiếp tục?',
+  'canvas.presentation.learningSheetConfirmBody': 'Bạn vẫn đang chỉnh sửa phiếu học tập. Bắt đầu trình bày sẽ kết thúc chỉnh sửa trống; khoảng trống hiện có sẽ được giữ lại. Tiếp tục?',
   'canvas.presentation.learningSheetConfirmProceed': 'Bắt đầu trình bày',
   'canvas.presentationContextMenu.laserPointer': 'Con trỏ laser',
   'canvas.presentationContextMenu.spotlight': 'Điểm sáng',
@@ -415,8 +408,7 @@ export default {
   'canvas.toolbar.translateLabelAndMore': '{n} thêm không được hiển thị…',
   'canvas.toolbar.translateLabelInProgress': 'Dịch sơ đồ…',
   'canvas.toolbar.translateLabelBannerTitle': 'Sơ đồ dịch',
-  'canvas.toolbar.translateLabelFallbackEnInfo':
-    'Ngôn ngữ giao diện của bạn chưa có sẵn làm mục tiêu dịch. Nhãn sẽ được dịch sang tiếng Anh.',
+  'canvas.toolbar.translateLabelFallbackEnInfo': 'Ngôn ngữ giao diện của bạn chưa có sẵn làm mục tiêu dịch. Nhãn sẽ được dịch sang tiếng Anh.',
   'canvas.toolbar.translateLabelFailed': 'Bản dịch không thành công. Vui lòng thử lại.',
   'canvas.toolbar.translateLabelDone': 'Sơ đồ được dịch',
   'canvas.toolbar.moreAppVirtualKeyboard': 'Bàn phím ảo',
@@ -453,10 +445,8 @@ export default {
   'canvas.toolbar.redoShortcut': 'Ctrl + Y',
   'canvas.toolbar.selectBranchOrChild': 'Vui lòng chọn một nhánh hoặc nút con',
   'canvas.toolbar.selectCategoryOrLeafDelete': 'Vui lòng chọn danh mục hoặc nút lá (không thể xóa nút chủ đề)',
-  'canvas.toolbar.selectCauseOrEffectForAdd':
-    'Chọn một nút nguyên nhân hoặc kết quả (không phải sự kiện), sau đó nhấn Enter để thêm nút khác vào cột đó',
-  'canvas.toolbar.selectTreeBranchForChild':
-    'Chọn một danh mục hoặc một mục trong danh mục để thêm con hoặc chọn chủ đề để thêm danh mục',
+  'canvas.toolbar.selectCauseOrEffectForAdd': 'Chọn một nút nguyên nhân hoặc kết quả (không phải sự kiện), sau đó nhấn Enter để thêm nút khác vào cột đó',
+  'canvas.toolbar.selectTreeBranchForChild': 'Chọn một danh mục hoặc một mục trong danh mục để thêm con hoặc chọn chủ đề để thêm danh mục',
   'canvas.toolbar.selectNodesFirst': 'Vui lòng chọn (các) nút trước',
   'canvas.toolbar.selectNodesToDelete': 'Vui lòng chọn (các) nút để xóa',
   'canvas.toolbar.selectPartForSubpart': 'Vui lòng chọn một phần để thêm phần phụ vào',
@@ -584,8 +574,7 @@ export default {
   'canvas.mindMapSlideOverlay.branch': 'Chi nhánh',
   'canvas.mindMapSlideOverlay.region': 'Điều khiển trình chiếu',
   'canvas.mindMapSlideOverlay.progress': 'Tiến trình trượt - bấm để nhảy',
-  'canvas.mindMapSlideOverlay.shortcuts':
-    'Nhấp vào canvas hoặc Space/→ tiếp theo · ← trước · Trang chủ/Kết thúc đầu tiên/cuối cùng · Esc thoát slide',
+  'canvas.mindMapSlideOverlay.shortcuts': 'Nhấp vào canvas hoặc Space/→ tiếp theo · ← trước · Trang chủ/Kết thúc đầu tiên/cuối cùng · Esc thoát slide',
   'canvas.mindMapSlideOverlay.exit': 'Thoát khỏi slide',
   'canvas.mindMapSlideOverlay.collapse': 'Thu gọn điều khiển',
   'canvas.mindMapSlideOverlay.expand': 'Mở rộng điều khiển',
@@ -600,8 +589,7 @@ export default {
   'canvasPage.collaborationFooterNetworkDiagramTitle': 'Sơ đồ cộng tác «{diagramTitle}»',
   'canvasPage.collaborationFooterSchool': 'Đang tiến hành cộng tác với trường — tham gia từ danh sách trường.',
   'canvasPage.collaborationFooterSchoolDiagram': 'Hợp tác trường học trên «{diagramTitle}» — tham gia từ danh sách phiên học.',
-  'canvasPage.collabRoomIdleEnding':
-    'Phiên không hoạt động — cộng tác sẽ kết thúc sau khoảng {seconds} giây (chỉnh sửa để giữ lại)',
+  'canvasPage.collabRoomIdleEnding': 'Phiên không hoạt động — cộng tác sẽ kết thúc sau khoảng {seconds} giây (chỉnh sửa để giữ lại)',
   'conceptMap.focus.noResult': 'Không có kết quả',
   'conceptMap.focus.validationRequestFailed': 'Yêu cầu xác thực không thành công',
   'diagram.aiGenerating': 'AI...',
@@ -660,16 +648,13 @@ export default {
   'canvas.mindMapSideToolbar.waterfall': 'Động não AI',
   'canvas.mindMapWaterfall.panelHint': 'Chọn các nút cho ý tưởng nhánh AI, sau đó kéo chúng vào khung vẽ',
   'canvas.mindMapWaterfall.emptyHint': 'Chưa có đề xuất nào. Chọn các nút trên khung vẽ hoặc nhấn vào Làm mới.',
-  'canvas.mindMapWaterfall.dragHint':
-    'Nhấp để chọn nhiều mục, sau đó kéo vào nút bản đồ để chèn. Thả vào canvas trống để thêm nhánh cấp cao nhất.',
+  'canvas.mindMapWaterfall.dragHint': 'Nhấp để chọn nhiều mục, sau đó kéo vào nút bản đồ để chèn. Thả vào canvas trống để thêm nhánh cấp cao nhất.',
   'canvas.mindMapWaterfall.historyAddFromPalette': 'Thêm các nút từ AI brainstorm',
   'canvas.mindMapOneSentence.intro': 'Nhập chủ đề hoặc chỉ định số nhánh, danh mục, bước hoặc cấu trúc khác',
-  'canvas.mindMapOneSentence.requirementsPlaceholder':
-    'ví dụ. Chuyến đi Bắc Kinh 3 ngày với 4 chi nhánh: quần áo, ẩm thực, chỗ ở, phương tiện đi lại',
+  'canvas.mindMapOneSentence.requirementsPlaceholder': 'ví dụ. Chuyến đi Bắc Kinh 3 ngày với 4 chi nhánh: quần áo, ẩm thực, chỗ ở, phương tiện đi lại',
   'canvas.mindMapOneSentence.examplesTitle': 'Cảm hứng',
   'canvas.mindMapOneSentence.generateButton': 'Phát ra',
-  'canvas.mindMapOneSentence.example1':
-    'Kế hoạch chuyến đi Bắc Kinh 3 ngày với 4 chi nhánh: quần áo, ẩm thực, chỗ ở, phương tiện đi lại',
+  'canvas.mindMapOneSentence.example1': 'Kế hoạch chuyến đi Bắc Kinh 3 ngày với 4 chi nhánh: quần áo, ẩm thực, chỗ ở, phương tiện đi lại',
   'canvas.mindMapOneSentence.example2': 'SWOT phân tích khi ra mắt sản phẩm mới: điểm mạnh, điểm yếu, cơ hội, mối đe dọa',
   'canvas.mindMapOneSentence.example3': 'Khoa học cơ bản: trạng thái của nước - nhãn đơn giản, tối đa 6 ký tự cho mỗi nút',
   'canvas.mindMapOneSentence.suggestion.add_node': 'Add a China branch',
@@ -690,16 +675,13 @@ export default {
   'canvas.mindMapOneSentence.photoInvalidType': 'Vui lòng chọn ảnh JPG, PNG hoặc WebP.',
   'canvas.mindMapOneSentence.photoTooLarge': 'Ảnh quá lớn. Kích thước tối đa là 10MB.',
   'canvas.mindMapOneSentence.photoUntitledMap': 'Bản đồ tư duy',
-  'canvas.mindMapOneSentence.photoHanddrawnReply':
-    'Đã phát hiện bản đồ tư duy vẽ tay “{topic}”. Xây dựng lại trên canvas; phác thảo được lưu vào Tóm tắt Tài liệu.',
-  'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
-    'Đã phát hiện bản đồ tư duy vẽ tay “{topic}”. Được xây dựng lại trên canvas này; phác thảo được lưu vào Tóm tắt Tài liệu. Đồng bộ hóa thư viện chưa hoàn tất — lưu hoặc thử lại nếu cần.',
+  'canvas.mindMapOneSentence.photoHanddrawnReply': 'Đã phát hiện bản đồ tư duy vẽ tay “{topic}”. Xây dựng lại trên canvas; phác thảo được lưu vào Tóm tắt Tài liệu.',
+  'canvas.mindMapOneSentence.photoHanddrawnLocalReply': 'Đã phát hiện bản đồ tư duy vẽ tay “{topic}”. Được xây dựng lại trên canvas này; phác thảo được lưu vào Tóm tắt Tài liệu. Đồng bộ hóa thư viện chưa hoàn tất — lưu hoặc thử lại nếu cần.',
   'canvas.mindMapOneSentence.photoOcrReply': 'Trích văn bản từ ảnh:\\n{excerpt}\\n\\nToàn văn nằm trong Tóm tắt tài liệu.',
   'canvas.mindMapOneSentence.photoFailed': 'Không thể xử lý ảnh.',
   'canvas.mindMapOneSentence.micDenied': 'Không có micrô - kiểm tra quyền của trình duyệt',
   'canvas.mindMapOneSentence.ttsToggle': 'Chuyển đổi lời nói',
-  'canvas.mindMapOneSentence.kittyWelcome':
-    'Xin chào - hãy cho tôi biết cần tạo sơ đồ nào hoặc tiếp tục trò chuyện để chỉnh sửa các nhánh và nút.',
+  'canvas.mindMapOneSentence.kittyWelcome': 'Xin chào - hãy cho tôi biết cần tạo sơ đồ nào hoặc tiếp tục trò chuyện để chỉnh sửa các nhánh và nút.',
   'canvas.mindMapOneSentence.switchDiagramType': 'Đang chuyển sang {type}…',
   'canvas.mindMapOneSentence.kittyGenerating': 'Hiểu rồi — đang tạo sơ đồ của bạn…',
   'canvas.mindMapOneSentence.kittyGenerateDone': 'Sơ đồ đã sẵn sàng. Tiếp tục gõ để chỉnh sửa các nhánh hoặc nút.',
@@ -711,16 +693,13 @@ export default {
   'canvas.mindMapOneSentence.kittyContextSyncFailed': 'Không thể đồng bộ hóa canvas. Vui lòng thử lại sau giây lát.',
   'canvas.mindMapOneSentence.kittyContextSyncFailedDetail': 'Không thể đồng bộ hóa canvas ({detail}). Vui lòng thử lại sau giây lát.',
   'canvas.mindMapOneSentence.kittyEditBusy': 'Sơ đồ vẫn đang tạo - vui lòng đợi rồi thử lại.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueued':
-    '{models} kết quả vẫn đang phát trực tuyến — Tôi sẽ tự động chạy yêu cầu của bạn khi kết quả hoàn tất.',
-  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric':
-    'Các kết quả mô hình khác vẫn đang phát trực tuyến — tôi sẽ tự động chạy yêu cầu của bạn khi chúng kết thúc.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueued': '{models} kết quả vẫn đang phát trực tuyến — Tôi sẽ tự động chạy yêu cầu của bạn khi kết quả hoàn tất.',
+  'canvas.mindMapOneSentence.kittyEditBusyQueuedGeneric': 'Các kết quả mô hình khác vẫn đang phát trực tuyến — tôi sẽ tự động chạy yêu cầu của bạn khi chúng kết thúc.',
   'canvas.mindMapOneSentence.kittyEditBusyResuming': 'Các mô hình khác đã hoàn tất - tiếp tục với yêu cầu của bạn…',
   'canvas.mindMapOneSentence.requestQueued': 'Đã xếp hàng',
   'canvas.mindMapOneSentence.requestFailed': 'Thất bại',
   'canvas.mindMapOneSentence.kittyEditAccessDenied': 'Bạn không có quyền chỉnh sửa sơ đồ này.',
-  'canvas.mindMapOneSentence.kittyEditCollabActive':
-    'Kitty chỉnh sửa sơ đồ bị tạm dừng trong quá trình cộng tác trực tiếp để mọi người luôn đồng bộ hóa.',
+  'canvas.mindMapOneSentence.kittyEditCollabActive': 'Kitty chỉnh sửa sơ đồ bị tạm dừng trong quá trình cộng tác trực tiếp để mọi người luôn đồng bộ hóa.',
   'canvas.mindMapOneSentence.kittyEditStaleRevision': 'Sơ đồ vừa được cập nhật nên bản chỉnh sửa đó đã cũ. Vui lòng lặp lại thay đổi của bạn.',
   'canvas.mindMapOneSentence.kittyEditTimeout': 'Chỉnh sửa đó đã hết thời gian - sơ đồ có thể không thay đổi. Vui lòng thử lại.',
   'canvas.mindMapOneSentence.kittyEditNoOwner': 'Tôi không thể tìm thấy canvas có thể chỉnh sửa. Mở canvas rồi thử lại.',
@@ -731,14 +710,12 @@ export default {
   'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': 'Xin lỗi — tôi không thể tự động hoàn thành nhánh đó. Bạn có thể hỏi lại.',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': 'Chi nhánh đó đã sẵn sàng.',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': 'Những nhánh đó đã sẵn sàng.',
-  'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
-    'Một số chi nhánh đã sẵn sàng, nhưng một số chi nhánh vẫn chưa hoàn thành. Bạn có thể yêu cầu tự động hoàn thành lại.',
+  'canvas.mindMapOneSentence.kittyBranchesCompletePartial': 'Một số chi nhánh đã sẵn sàng, nhưng một số chi nhánh vẫn chưa hoàn thành. Bạn có thể yêu cầu tự động hoàn thành lại.',
   'canvas.mindMapOneSentence.kittyWorking': 'Được rồi - đang xử lý việc đó…',
   'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty không có sẵn. Kiểm tra xem FEATURE_KITTY_AGENT đã được bật trên máy chủ chưa.',
   'canvas.mindMapOneSentence.kittyConnectFailed': 'Không thể kết nối canvas Kitty. Hãy mở sơ đồ này trên máy tính để bàn rồi thử lại.',
   'canvas.mindMapOneSentence.clarifyChoices': 'Chọn một tùy chọn',
-  'canvas.mindMapOneSentence.mobileKittyOwnsInput':
-    'Điện thoại di động Kitty được kết nối với sơ đồ này. Sử dụng điện thoại của bạn để nói hoặc gõ - hoạt động nhập trên máy tính để bàn bị tạm dừng.',
+  'canvas.mindMapOneSentence.mobileKittyOwnsInput': 'Điện thoại di động Kitty được kết nối với sơ đồ này. Sử dụng điện thoại của bạn để nói hoặc gõ - hoạt động nhập trên máy tính để bàn bị tạm dừng.',
   'canvas.mindMapOneSentence.scopeDivergenceHint': 'Điện thoại Kitty nằm trên sơ đồ khác. Đồng bộ từ điện thoại hoặc mở sơ đồ đó tại đây.',
   'canvas.mindMapOneSentence.mobileKittyOwnsInputPlaceholder': 'Sử dụng Điện thoại di động Kitty trên điện thoại của bạn…',
   'canvas.mindMapNodeExplain.title': 'Kitty ghi chú học tập',
@@ -756,16 +733,13 @@ export default {
   'canvas.mindMapDocumentSummary.tabChatHistory': 'Lịch sử trò chuyện',
   'canvas.mindMapDocumentSummary.intro': 'Trích xuất các điểm chính để tạo bản đồ tư duy chính xác hơn',
   'canvas.mindMapDocumentSummary.uploadFileHint': 'Bấm để tải lên một tập tin',
-  'canvas.mindMapDocumentSummary.uploadFileSubhint':
-    'PDF, Word, PPT, Excel, văn bản, hình ảnh, âm thanh — chỉ giữ lại phần đánh dấu đã trích xuất',
+  'canvas.mindMapDocumentSummary.uploadFileSubhint': 'PDF, Word, PPT, Excel, văn bản, hình ảnh, âm thanh — chỉ giữ lại phần đánh dấu đã trích xuất',
   'canvas.mindMapDocumentSummary.invalidFileType': 'Loại tệp không được hỗ trợ',
   'canvas.mindMapDocumentSummary.saveContent': 'Lưu nội dung',
   'canvas.mindMapDocumentSummary.fetchAndSave': 'Tìm nạp và lưu',
   'canvas.mindMapDocumentSummary.webFetchStarted': 'Đang tìm nạp nội dung trang…',
-  'canvas.mindMapDocumentSummary.webLinkHintLite':
-    'Dán URL trang công khai — chúng tôi thu thập tối đa văn bản bài viết và lưu dưới dạng Markdown.',
-  'canvas.mindMapDocumentSummary.webChromeExtensionHint':
-    'Tải liên kết trực tiếp chạy phía máy chủ và không dùng được cookie đăng nhập của bạn, nên các trang có xác thực hoặc trả phí thường không đầy đủ. Để có ảnh chụp toàn trang như bạn thấy, hãy dùng tiện ích Chrome / Edge.',
+  'canvas.mindMapDocumentSummary.webLinkHintLite': 'Dán URL trang công khai — chúng tôi thu thập tối đa văn bản bài viết và lưu dưới dạng Markdown.',
+  'canvas.mindMapDocumentSummary.webChromeExtensionHint': 'Tải liên kết trực tiếp chạy phía máy chủ và không dùng được cookie đăng nhập của bạn, nên các trang có xác thực hoặc trả phí thường không đầy đủ. Để có ảnh chụp toàn trang như bạn thấy, hãy dùng tiện ích Chrome / Edge.',
   'canvas.mindMapDocumentSummary.webChromeExtensionLink': 'Tải xuống tiện ích mở rộng Chrome',
   'canvas.mindMapDocumentSummary.statusExtracting': 'Đang trích xuất…',
   'canvas.mindMapDocumentSummary.stageStarting': 'Bắt đầu…',
@@ -782,8 +756,7 @@ export default {
   'canvas.mindMapDocumentSummary.extractFailed': 'Không thể trích xuất văn bản từ tệp này',
   'canvas.mindMapDocumentSummary.sourceBoundHint': 'Markdown đã sẵn sàng. Tạo sơ đồ tư duy hoặc xóa nguồn để tải lên nội dung khác.',
   'canvas.mindMapDocumentSummary.deleteToRetry': 'Xóa nguồn này, sau đó tải lên, dán hoặc tìm nạp lại trang.',
-  'canvas.mindMapDocumentSummary.chatIntroLite':
-    'Tải xuống trình đọc tệp, nhập mã ghép nối và gửi lịch sử WeChat hoặc DingTalk cho sơ đồ này.',
+  'canvas.mindMapDocumentSummary.chatIntroLite': 'Tải xuống trình đọc tệp, nhập mã ghép nối và gửi lịch sử WeChat hoặc DingTalk cho sơ đồ này.',
   'canvas.mindMapDocumentSummary.chatReceivedLite': 'Đã nhận được lịch sử trò chuyện',
   'canvas.mindMapDocumentSummary.chatDoneLite': 'Đã lưu cuộc trò chuyện - nhấn Tạo khi sẵn sàng',
   'canvas.mindMapDocumentSummary.corpusStatus': '{completed} trong số {total} nguồn được lập chỉ mục',
@@ -798,8 +771,7 @@ export default {
   'canvas.mindMapDocumentSummary.featureDisabledTitle': 'Kiến thức Space bị vô hiệu hóa',
   'canvas.mindMapDocumentSummary.featureDisabledHint': 'Kích hoạt tính năng Kiến thức Space để sử dụng Tóm tắt tài liệu.',
   'canvas.mindMapDocumentSummary.saveDiagramHint': 'Lưu sơ đồ này để liên kết gói và cho phép truy xuất RAG đầy đủ.',
-  'canvas.mindMapDocumentSummary.chatIntro':
-    'Tải xuống trình đọc tệp, nhập mã ghép nối bên dưới và gửi lịch sử WeChat hoặc DingTalk tới kho dữ liệu này.',
+  'canvas.mindMapDocumentSummary.chatIntro': 'Tải xuống trình đọc tệp, nhập mã ghép nối bên dưới và gửi lịch sử WeChat hoặc DingTalk tới kho dữ liệu này.',
   'canvas.mindMapDocumentSummary.pairingCode': 'Mã ghép nối',
   'canvas.mindMapDocumentSummary.startPairingCode': 'Nhận mã ghép nối',
   'canvas.mindMapDocumentSummary.pairingExpires': 'Hết hạn sau {minutes} phút',
@@ -827,8 +799,7 @@ export default {
   'canvas.mindMapDocumentSummary.pastePlaceholder': 'Dán các đoạn trích trên giấy, tóm tắt sách, ghi chú cuộc họp, yêu cầu, v.v.',
   'canvas.mindMapDocumentSummary.imageUploadLabel': 'Tải hình ảnh lên:',
   'canvas.mindMapDocumentSummary.uploadImageHint': 'Bấm để tải lên JPG hoặc PNG',
-  'canvas.mindMapDocumentSummary.uploadImageSubhint':
-    'Chúng tôi phát hiện các bản đồ tư duy vẽ tay và xây dựng lại chúng; nếu không chúng tôi sẽ trích xuất văn bản',
+  'canvas.mindMapDocumentSummary.uploadImageSubhint': 'Chúng tôi phát hiện các bản đồ tư duy vẽ tay và xây dựng lại chúng; nếu không chúng tôi sẽ trích xuất văn bản',
   'canvas.mindMapDocumentSummary.visionRebuildSuccess': 'Đã phát hiện bản đồ tư duy vẽ tay - được xây dựng lại trên canvas',
   'canvas.mindMapDocumentSummary.visionProgressDetecting': 'Đang phát hiện bản đồ tư duy vẽ tay…',
   'canvas.mindMapDocumentSummary.imageOcrHint': 'Hoạt động với ảnh chụp màn hình ghi chú, ảnh bảng trắng và bản quét.',
@@ -845,20 +816,15 @@ export default {
   'canvas.mindMapDocumentSummary.invalidDocType': 'Chỉ hỗ trợ tệp Word (.docx) và PDF',
   'canvas.mindMapDocumentSummary.invalidImageType': 'Chỉ hỗ trợ hình ảnh JPG và PNG',
   'canvas.mindMapDocumentSummary.docTooLarge': 'Tệp quá lớn. Kích thước tối đa là 20 MB.',
-  'canvas.mindMapDocumentSummary.pasteTooLong':
-    'Văn bản đã dán vượt quá giới hạn đầu vào của mô hình (khoảng 900.000 ký tự). Hãy rút ngắn nó.',
-  'canvas.mindMapDocumentSummary.contentTooLongForModel':
-    'Văn bản được trích xuất vượt quá giới hạn đầu vào của mô hình (~900.000 ký tự / mã thông báo qwen3.6-flash 991K). Vui lòng sử dụng một tài liệu ngắn hơn.',
-  'canvas.mindMapDocumentSummary.extractTooLongForModel':
-    'Văn bản của tệp này quá dài đối với mô hình. Vui lòng tải lên một tài liệu ngắn hơn (dưới ~900.000 ký tự văn bản).',
-  'canvas.mindMapDocumentSummary.storageConflictCleared':
-    'Bản trích xuất đã lưu bị thiếu hoặc không đồng bộ và đã bị xóa. Vui lòng tải lên hoặc dán lại tài liệu.',
+  'canvas.mindMapDocumentSummary.pasteTooLong': 'Văn bản đã dán vượt quá giới hạn đầu vào của mô hình (khoảng 900.000 ký tự). Hãy rút ngắn nó.',
+  'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Văn bản được trích xuất vượt quá giới hạn đầu vào của mô hình (~900.000 ký tự / mã thông báo qwen3.6-flash 991K). Vui lòng sử dụng một tài liệu ngắn hơn.',
+  'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Văn bản của tệp này quá dài đối với mô hình. Vui lòng tải lên một tài liệu ngắn hơn (dưới ~900.000 ký tự văn bản).',
+  'canvas.mindMapDocumentSummary.storageConflictCleared': 'Bản trích xuất đã lưu bị thiếu hoặc không đồng bộ và đã bị xóa. Vui lòng tải lên hoặc dán lại tài liệu.',
   'canvas.mindMapSideToolbar.learningSheet': 'Phiếu học tập',
   'canvas.mindMapSideToolbar.oneSentence': 'Tạo một câu',
   'canvas.mindMapSideToolbar.oneSentenceIntro': 'Mô tả chủ đề hoặc yêu cầu chỉnh sửa trong một câu để tạo hoặc tinh chỉnh sơ đồ',
   'canvas.mindMapSideToolbar.documentSummary': 'Tóm tắt tài liệu',
-  'fileCenter.intro':
-    'Gói là một tập hợp các nguồn được tuyển chọn cho sơ đồ này. Thêm tệp, ghi chú hoặc trang web — sơ đồ hoàn thành các nhánh từ các nguồn này.',
+  'fileCenter.intro': 'Gói là một tập hợp các nguồn được tuyển chọn cho sơ đồ này. Thêm tệp, ghi chú hoặc trang web — sơ đồ hoàn thành các nhánh từ các nguồn này.',
   'fileCenter.defaultPackageName': 'Gói không có tiêu đề',
   'fileCenter.packageNameLabel': 'Tên gói',
   'fileCenter.createPackage': 'Tạo gói',
@@ -1022,8 +988,7 @@ export default {
   'editor.redo': 'Làm lại',
   'editor.saveDiagram': 'Lưu sơ đồ',
   'editor.selectDiagramType': 'Chọn loại sơ đồ',
-  'editor.slotsFull':
-    'Space đã đầy, tính năng tự động lưu hiện không khả dụng. Vui lòng xóa sơ đồ hiện có để giải phóng thêm không gian.',
+  'editor.slotsFull': 'Space đã đầy, tính năng tự động lưu hiện không khả dụng. Vui lòng xóa sơ đồ hiện có để giải phóng thêm không gian.',
   'editor.undo': 'Hoàn tác',
   'editor.zoomIn': 'Phóng to',
   'editor.zoomOut': 'Thu nhỏ',
@@ -1061,8 +1026,7 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Tạo trên canvas',
   'landing.diagramGrid.tree_map.desc': 'Phân loại & nhóm',
   'landing.diagramGrid.tree_map.title': 'Bản đồ cây',
-  'landing.template.freePlaceholder':
-    'Mô tả chủ đề hoặc cấu trúc của bạn (các nhánh, các bước, danh mục…) hoặc chọn mẫu bên dưới…',
+  'landing.template.freePlaceholder': 'Mô tả chủ đề hoặc cấu trúc của bạn (các nhánh, các bước, danh mục…) hoặc chọn mẫu bên dưới…',
   'landing.template.slot.criterion': 'Phân loại',
   'landing.template.slot.event': 'Sự kiện',
   'landing.template.slot.itemA': 'Mục A',
@@ -1094,8 +1058,7 @@ export default {
   'mindgraphLanding.loadOrgSessionsFailed': 'Không thể tải các buổi học',
   'mindgraphLanding.networkError': 'Lỗi mạng',
   'mindgraphLanding.networkErrorJoin': 'Lỗi mạng, không tham gia được',
-  'mindgraphLanding.orgSessionsEmpty':
-    'Hiện tại không có buổi học nào. Đồng nghiệp phải bắt đầu “Cộng tác với trường học” trên canvas.',
+  'mindgraphLanding.orgSessionsEmpty': 'Hiện tại không có buổi học nào. Đồng nghiệp phải bắt đầu “Cộng tác với trường học” trên canvas.',
   'mindgraphLanding.participantsOnline': '{n} trực tuyến',
   'mindgraphLanding.schoolCollab': 'Hợp tác trường học',
   'mindgraphLanding.sharedCodeHint': 'Nhập mã mời (xxx-xxx) để tham gia phiên của họ.',

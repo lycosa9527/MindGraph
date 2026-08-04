@@ -1,4 +1,6 @@
-/** id UI — workshop */
+/**
+ * id UI � workshop
+ */
 
 export default {
   'collab.codeCopied': 'Kode disalin',

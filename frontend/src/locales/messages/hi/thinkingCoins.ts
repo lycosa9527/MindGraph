@@ -1,4 +1,6 @@
-/** hi UI — thinkingCoins */
+/**
+ * hi UI � thinkingCoins
+ */
 
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': 'मेरे सोच टोकन',

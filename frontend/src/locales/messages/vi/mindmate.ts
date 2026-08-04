@@ -1,4 +1,6 @@
-/** vi UI — mindmate */
+/**
+ * vi UI � mindmate
+ */
 
 export default {
   'aiModel.conceptAiOff': 'Nhấp để bật nhãn mối quan hệ AI (đa mô hình)',
@@ -11,18 +13,14 @@ export default {
   'aiModel.relationshipsBadge': 'Mối quan hệ',
   'aiModel.relationshipsTooltip': 'Kéo để liên kết các khái niệm—AI sẽ tạo ra các mối quan hệ',
   'aiModel.tabFocusBadge': 'Tiêu điểm tab',
-  'aiModel.tabFocusTooltip':
-    'Nhấn Tab trong khi chỉnh sửa câu hỏi trọng tâm để xác thực; sau đó chọn các phương án thay thế trong thanh (- / =)',
+  'aiModel.tabFocusTooltip': 'Nhấn Tab trong khi chỉnh sửa câu hỏi trọng tâm để xác thực; sau đó chọn các phương án thay thế trong thanh (- / =)',
   'aiModel.tabFocusQuestionBadge': 'Tab - câu hỏi trọng tâm',
-  'aiModel.conceptMapFocusQuestionTabTooltip':
-    'Trong khi câu hỏi trọng tâm được chọn hoặc đang được chỉnh sửa: nhấn Tab để chạy kiểm tra AI (nhập câu hỏi nội dung trước; yêu cầu đăng nhập).',
+  'aiModel.conceptMapFocusQuestionTabTooltip': 'Trong khi câu hỏi trọng tâm được chọn hoặc đang được chỉnh sửa: nhấn Tab để chạy kiểm tra AI (nhập câu hỏi nội dung trước; yêu cầu đăng nhập).',
   'aiModel.tabRecBadge': 'Tab giới thiệu',
   'aiModel.tabContentRecBadge': 'Tab - nội dung',
   'aiModel.tabRelationshipRecBadge': 'Tab - mối quan hệ',
-  'aiModel.conceptMapConceptTabTooltip':
-    'Chế độ chỉnh sửa (khái niệm biệt lập): nhấn Tab để tìm từ ngữ thay thế (phải đặt chủ đề).',
-  'aiModel.conceptMapRelationshipTabTooltip':
-    'Chế độ chỉnh sửa hoặc chế độ lựa chọn (khái niệm liên kết): nhấn Tab để có gợi ý về mối quan hệ liên kết tiêu điểm.',
+  'aiModel.conceptMapConceptTabTooltip': 'Chế độ chỉnh sửa (khái niệm biệt lập): nhấn Tab để tìm từ ngữ thay thế (phải đặt chủ đề).',
+  'aiModel.conceptMapRelationshipTabTooltip': 'Chế độ chỉnh sửa hoặc chế độ lựa chọn (khái niệm liên kết): nhấn Tab để có gợi ý về mối quan hệ liên kết tiêu điểm.',
   'aiModel.tooltip.clickDeselect': 'Bấm để bỏ chọn {name}',
   'aiModel.tooltip.clickSelect': 'Nhấn chọn {name}',
   'aiModel.tooltip.clickSwitch': 'Bấm để chuyển sang kết quả {name}',
@@ -31,8 +29,7 @@ export default {
   'aiModel.tooltip.showingResult': 'Hiện đang hiển thị kết quả {name}',
   'aiModel.hostPickBadgeTooltip': 'Máy chủ đang chỉnh sửa phiên bản sơ đồ của mô hình này (chế độ xem đa mô hình)',
   'aiModel.hostPickBadgeAria': 'Máy chủ đang chỉnh sửa bằng {name}',
-  'autoComplete.conceptMapRealtime':
-    'Bản đồ khái niệm sử dụng các đề xuất về mối quan hệ theo thời gian thực; tạo liên kết để tạo',
+  'autoComplete.conceptMapRealtime': 'Bản đồ khái niệm sử dụng các đề xuất về mối quan hệ theo thời gian thực; tạo liên kết để tạo',
   'autoComplete.doubleBubbleNeedBothTopics': 'Vui lòng điền cả chủ đề bên trái và bên phải trước khi tạo',
   'autoComplete.doubleBubbleTopicPair': '{left} vs {right}',
   'autoComplete.enterTopicFirst': 'Vui lòng nhập nội dung chủ đề trước',
@@ -51,8 +48,7 @@ export default {
   'focusQuestion.cannotReadStream': 'Không thể đọc luồng đề xuất',
   'focusQuestion.confirm': 'Xác nhận và mở canvas',
   'focusQuestion.emptyOwn': '(trống)',
-  'focusQuestion.help':
-    'Câu hỏi trọng tâm là vấn đề cụ thể về địa chỉ bản đồ của bạn. Nó đặt ra phạm vi—đối với bản đồ về “nước”, ví dụ có thể là “Nước tuần hoàn trên Trái đất như thế nào?” hoặc “Tính chất vật lý của nước là gì?”',
+  'focusQuestion.help': 'Câu hỏi trọng tâm là vấn đề cụ thể về địa chỉ bản đồ của bạn. Nó đặt ra phạm vi—đối với bản đồ về “nước”, ví dụ có thể là “Nước tuần hoàn trên Trái đất như thế nào?” hoặc “Tính chất vật lý của nước là gì?”',
   'focusQuestion.loadMoreFailed': 'Không thể tải thêm',
   'focusQuestion.loginHint': 'Đăng nhập để xác thực bằng AI và nhận đề xuất. Bạn vẫn có thể nhập câu hỏi và tiếp tục.',
   'focusQuestion.needValidate': 'Chạy kiểm tra AI hoặc bỏ qua AI trước',
@@ -95,15 +91,12 @@ export default {
   'mindmate.openCanvasFailed': 'Không thể mở sơ đồ trong canvas.',
   'mindmate.openCanvasLoginRequired': 'Đăng nhập để mở sơ đồ này trong khung vẽ.',
   'mindmate.openCanvasNoLibraryId': 'Sơ đồ chưa được lưu vào thư viện của bạn. Đăng nhập và thử lại.',
-  'mindmate.openCanvasSaveRetry':
-    'Không thể tự động lưu sơ đồ này vào thư viện của bạn. Tái sinh; liên hệ với quản trị viên của bạn nếu nó vẫn tồn tại.',
+  'mindmate.openCanvasSaveRetry': 'Không thể tự động lưu sơ đồ này vào thư viện của bạn. Tái sinh; liên hệ với quản trị viên của bạn nếu nó vẫn tồn tại.',
   'mindmate.openCanvasSwitchTitle': 'Sơ đồ chuyển mạch',
-  'mindmate.openCanvasSwitchBody':
-    'Mở “{target}” trong khung vẽ? Sơ đồ hiện tại là “{current}”. Những thay đổi chưa được lưu trên khung vẽ hiện tại có thể bị mất.',
+  'mindmate.openCanvasSwitchBody': 'Mở “{target}” trong khung vẽ? Sơ đồ hiện tại là “{current}”. Những thay đổi chưa được lưu trên khung vẽ hiện tại có thể bị mất.',
   'mindmate.openCanvasSwitchOk': 'Mở',
   'mindmate.diagramLibraryFull': 'Thư viện sơ đồ đã đầy. Xóa sơ đồ cũ và thử lại.',
-  'mindmate.diagramPreviewExpired':
-    'Bản xem trước này không còn trong bộ nhớ đệm của trình duyệt nữa—hình ảnh tạm thời đã bị xóa. Nhấn vào thông báo này hoặc sử dụng «Chỉnh sửa trong canvas» bên dưới để mở sơ đồ.',
+  'mindmate.diagramPreviewExpired': 'Bản xem trước này không còn trong bộ nhớ đệm của trình duyệt nữa—hình ảnh tạm thời đã bị xóa. Nhấn vào thông báo này hoặc sử dụng «Chỉnh sửa trong canvas» bên dưới để mở sơ đồ.',
   'mindmate.tooltip.copy': 'Sao chép',
   'mindmate.tooltip.dislike': 'Không thích',
   'mindmate.tooltip.edit': 'Biên tập',
@@ -169,8 +162,7 @@ export default {
   'panels.share.title': 'Chia sẻ cuộc trò chuyện',
   'rootConceptModal.addBranchAria': 'Thêm chi nhánh',
   'rootConceptModal.addBranchTooltip': 'Thêm chi nhánh (tránh trùng lặp)',
-  'rootConceptModal.helpFooter':
-    'Mỗi tab là một nhánh kiến ​​thức; các khái niệm có thể liên kết đến gốc và liên kết chéo sau này. Kéo vào khung vẽ để tự động liên kết đến thư mục gốc.',
+  'rootConceptModal.helpFooter': 'Mỗi tab là một nhánh kiến ​​thức; các khái niệm có thể liên kết đến gốc và liên kết chéo sau này. Kéo vào khung vẽ để tự động liên kết đến thư mục gốc.',
   'rootConceptModal.splittingLoading': 'Tách các nhánh và tạo ra các khái niệm…',
   'rootConceptModal.tabTitleRoot': 'Khái niệm gốc: {text}',
   'rootConceptModal.title': 'khái niệm gốc',

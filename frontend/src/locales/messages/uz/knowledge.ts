@@ -1,4 +1,6 @@
-/** uz UI — knowledge */
+/**
+ * uz UI � knowledge
+ */
 
 export default {
   'fileCenterLibrary.title': 'Paketlar',

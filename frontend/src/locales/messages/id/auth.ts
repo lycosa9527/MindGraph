@@ -1,4 +1,6 @@
-/** id UI — auth */
+/**
+ * id UI � auth
+ */
 
 export default {
   'auth.accountInfo': 'Akun',

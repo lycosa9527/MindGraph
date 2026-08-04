@@ -1,4 +1,6 @@
-/** ko UI — knowledge */
+/**
+ * ko UI � knowledge
+ */
 
 export default {
   'fileCenterLibrary.title': '패키지',
@@ -121,14 +123,11 @@ export default {
   'knowledge.header.title': '개인 지식 베이스',
   'knowledge.header.upload': '문서 업로드',
   'knowledge.ragGuide.title': '패키지, RAG, 위키는 어떻게 작동하나요?',
-  'knowledge.ragGuide.subtitle':
-    '전문 용어 없이 이해하세요 — 참고 자료 폴더라고 생각하면 됩니다. 검색을 위해 인덱싱(RAG)한 뒤 짧은 위키 노트를 컴파일하고, 마인드맵을 만들 때 AI가 둘 다 참고합니다.',
+  'knowledge.ragGuide.subtitle': '전문 용어 없이 이해하세요 — 참고 자료 폴더라고 생각하면 됩니다. 검색을 위해 인덱싱(RAG)한 뒤 짧은 위키 노트를 컴파일하고, 마인드맵을 만들 때 AI가 둘 다 참고합니다.',
   'knowledge.ragGuide.step1.title': '패키지 선택',
-  'knowledge.ragGuide.step1.body':
-    '패키지는 Zotero 컬렉션과 같습니다. 왼쪽에 최대 3개까지 둘 수 있으며, 보통 하나의 마인드맵에 속합니다. 사이드바에서 패키지를 클릭해 문서를 관리하세요.',
+  'knowledge.ragGuide.step1.body': '패키지는 Zotero 컬렉션과 같습니다. 왼쪽에 최대 3개까지 둘 수 있으며, 보통 하나의 마인드맵에 속합니다. 사이드바에서 패키지를 클릭해 문서를 관리하세요.',
   'knowledge.ragGuide.step2.title': '출처 추가 및 인덱싱(RAG)',
-  'knowledge.ragGuide.step2.body':
-    'PDF, Word 파일, 노트 또는 웹 페이지를 업로드하세요. 긴 문서를 검색 가능한 청크로 나누고 벡터 임베딩을 저장합니다 — 이것이 RAG 인덱스이며 먼저 준비됩니다.',
+  'knowledge.ragGuide.step2.body': 'PDF, Word 파일, 노트 또는 웹 페이지를 업로드하세요. 긴 문서를 검색 가능한 청크로 나누고 벡터 임베딩을 저장합니다 — 이것이 RAG 인덱스이며 먼저 준비됩니다.',
   'knowledge.ragGuide.step3.title': '위키 노트 자동 컴파일',
   'knowledge.ragGuide.step3.body': '인덱싱이 끝나면 LLM이 개요 및 주제 위키 페이지를 디스크에 컴파일합니다. 전사가 아닌 간결한 노트로 패키지를 빠르게 파악할 수 있습니다.',
   'knowledge.ragGuide.step4.title': '조회 시 위키 + 청크 사용',

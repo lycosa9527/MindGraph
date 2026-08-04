@@ -1,4 +1,6 @@
-/** si UI — canvas */
+/**
+ * si UI � canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'නව උප කොටස 1',

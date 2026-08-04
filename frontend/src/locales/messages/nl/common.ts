@@ -1,4 +1,6 @@
-/** nl UI — common */
+/**
+ * nl UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'Inhoud is door AI gegenereerd; Controleer dit zorgvuldig.',
@@ -10,8 +12,7 @@ export default {
   'app.browserLocale.switch': 'Omschakelen',
   'app.browserLocale.title': 'Interfacetaal wijzigen?',
   'app.testServer.badge': 'TEST',
-  'app.testServer.body':
-    'Roy, handen op de heupen, herinnert je eraan: je bevindt je op de testserver. Deze site gaat vaak offline om te testen. Gebruik de live site voor het echte werk.',
+  'app.testServer.body': 'Roy, handen op de heupen, herinnert je eraan: je bevindt je op de testserver. Deze site gaat vaak offline om te testen. Gebruik de live site voor het echte werk.',
   'app.testServer.confirm': 'Blijf op proef',
   'app.testServer.jump': 'Ga naar de live-site',
   'app.testServer.productionHost': 'mg.mindspringedu.com',
@@ -113,8 +114,7 @@ export default {
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'Kitty',
-  'canvas.kittyMobileIndicatorHint':
-    'Aan dit diagram is een telefonische Kitty-sessie (microfoon gestart) gekoppeld. Gebruik uw telefoon om met Kitty te praten.',
+  'canvas.kittyMobileIndicatorHint': 'Aan dit diagram is een telefonische Kitty-sessie (microfoon gestart) gekoppeld. Gebruik uw telefoon om met Kitty te praten.',
   'canvas.kittyMobileIndicatorAria': 'Status: Mobiel Kitty is verbonden met dit MindGraph canvas. Communiceer op uw telefoon.',
   'canvas.kittyMobileIndicatorTitle': 'Mobiel Kitty',
   'canvas.kittyVoiceCommandLogTitle': 'Spraakopdrachten',
@@ -148,10 +148,8 @@ export default {
   'mobile.kittyKeyboardToggle': 'Tekstinvoer',
   'mobile.kittyEnd': 'Einde',
   'mobile.kittyWelcomeLine': 'Deel uw ideeën',
-  'mobile.kittyWelcomeSub':
-    'Vraag met uw stem of typ. Open een opgeslagen diagram op uw telefoon of desktop, zodat Kitty gesynchroniseerd blijft met MindGraph.',
-  'mobile.kittyNeedsDesktopOwner':
-    'Open dit diagram op het bureaublad MindGraph om bewerkingen toe te passen. Telefoon Kitty kan nog steeds chatten totdat het canvas is verbonden.',
+  'mobile.kittyWelcomeSub': 'Vraag met uw stem of typ. Open een opgeslagen diagram op uw telefoon of desktop, zodat Kitty gesynchroniseerd blijft met MindGraph.',
+  'mobile.kittyNeedsDesktopOwner': 'Open dit diagram op het bureaublad MindGraph om bewerkingen toe te passen. Telefoon Kitty kan nog steeds chatten totdat het canvas is verbonden.',
   'mobile.kittyConnecting': 'Verbinden…',
   'mobile.kittyInputPlaceholder': 'Typ een bericht…',
   'mobile.kittySend': 'Versturen',
@@ -163,8 +161,7 @@ export default {
   'mobile.kittyConnectFailed': 'Verbinding mislukt. Controleer uw netwerk en probeer het opnieuw.',
   'mobile.kittyDisconnected': 'Spraakverbinding verbroken. Opnieuw verbinding maken…',
   'mobile.kittyEnableServerHint': 'Schakel FEATURE_KITTY_AGENT=True in server .env in en start de API opnieuw.',
-  'mobile.kittyServerDisabledBanner':
-    'Kitty stem is uitgeschakeld in deze omgeving. Schakel FEATURE_KITTY_AGENT in server .env in en start opnieuw op.',
+  'mobile.kittyServerDisabledBanner': 'Kitty stem is uitgeschakeld in deze omgeving. Schakel FEATURE_KITTY_AGENT in server .env in en start opnieuw op.',
   'mobile.kittyDiagramPickerTitle': 'Kies diagram',
   'mobile.kittyDiagramPickerLoading': 'Laden…',
   'mobile.kittyDiagramPickerEmpty': 'Geen opgeslagen diagrammen',
@@ -177,10 +174,8 @@ export default {
   'mobile.kittyNewMindmapDesktopFailed': 'Mindmap opgeslagen, maar desktop kon geen melding krijgen.',
   'mobile.kittyDiagramPinned': 'Vastgezet',
   'mobile.kittyDiagramPickFailed': 'Kan dat diagram niet laden. Probeer het later opnieuw.',
-  'mobile.kittyEphemeralScopePinned':
-    'Een tijdelijke sessie gebruiken: kies of maak een opgeslagen diagram om te synchroniseren met het bureaublad.',
-  'mobile.kittyEphemeralScopeDegraded':
-    'Desktopkoppeling is mogelijk niet gesynchroniseerd. Open een opgeslagen diagram om opnieuw verbinding te maken.',
+  'mobile.kittyEphemeralScopePinned': 'Een tijdelijke sessie gebruiken: kies of maak een opgeslagen diagram om te synchroniseren met het bureaublad.',
+  'mobile.kittyEphemeralScopeDegraded': 'Desktopkoppeling is mogelijk niet gesynchroniseerd. Open een opgeslagen diagram om opnieuw verbinding te maken.',
   'mobile.kittyDesktopJumpFailed': 'Het diagram is gewijzigd, maar het bureaublad kon niet op de hoogte worden gesteld.',
   'mobile.kittyDiagramSelected': 'Diagram geselecteerd; bureaublad zal het openen.',
   'mobile.kittyCurrentDiagramLabel': 'Huidig ​​diagram',
@@ -189,16 +184,12 @@ export default {
   'mobile.kittyHubSourceLive': 'Hub: leef',
   'mobile.kittyHubSourceLibrary': 'Hub: bibliotheek',
   'mobile.kittyHubSourceEmpty': 'Hub: leeg',
-  'mobile.kittyMicPttTitle':
-    'Wacht om te spreken; vrijgeven om te verzenden. Houd Space ingedrukt als u niet in een veld typt.',
-  'mobile.kittyMicPttAria':
-    'Houd ingedrukt om te spreken: houd de microfoon ingedrukt om te praten, laat los om te verzenden. Houd Space ingedrukt terwijl u niet in het berichtveld typt.',
+  'mobile.kittyMicPttTitle': 'Wacht om te spreken; vrijgeven om te verzenden. Houd Space ingedrukt als u niet in een veld typt.',
+  'mobile.kittyMicPttAria': 'Houd ingedrukt om te spreken: houd de microfoon ingedrukt om te praten, laat los om te verzenden. Houd Space ingedrukt terwijl u niet in het berichtveld typt.',
   'mobile.kittyHoldToSpeak': 'Houd ingedrukt om te spreken',
   'mobile.kittyReleaseToSend': 'Laat los om te verzenden',
-  'mobile.kittyMicToggleTitle':
-    'Wacht om te spreken; vrijgeven om te verzenden. Houd Space ingedrukt als u niet in een veld typt.',
-  'mobile.kittyMicToggleAria':
-    'Houd ingedrukt om te spreken: houd de microfoon ingedrukt om te praten, laat los om te stoppen.',
+  'mobile.kittyMicToggleTitle': 'Wacht om te spreken; vrijgeven om te verzenden. Houd Space ingedrukt als u niet in een veld typt.',
+  'mobile.kittyMicToggleAria': 'Houd ingedrukt om te spreken: houd de microfoon ingedrukt om te praten, laat los om te stoppen.',
   'mobile.kittyClickWheelAria': 'Veeg of tik om een ​​knooppunt te selecteren',
   'mobile.kittyClickWheelHint': 'Veeg of tik op chips: tak → kinderen',
   'mobile.kittyClickWheelEmptyLabel': 'Naamloos knooppunt',
@@ -208,24 +199,18 @@ export default {
   'mobile.kittyClickWheelNext': 'Volgende knooppunt',
   'mobile.kittyClickWheelSelect': 'Selecteer huidig ​​knooppunt',
   'mobile.kittyLlmRowAria': 'Kies AI-model',
-  'mobile.kittyPhotoNeedsDiagram':
-    'Open of kies eerst een opgeslagen diagram en maak vervolgens een foto om tekst te extraheren.',
+  'mobile.kittyPhotoNeedsDiagram': 'Open of kies eerst een opgeslagen diagram en maak vervolgens een foto om tekst te extraheren.',
   'mobile.kittyPhotoInvalidType': 'Kies een JPG-, PNG- of WebP-foto.',
   'mobile.kittyPhotoTooLarge': 'Foto is te groot. Maximale grootte is 10 MB.',
   'mobile.kittyPhotoProgressDetecting': 'Foto verwerken…',
   'mobile.kittyPhotoUserBubble': '📷 Foto',
   'mobile.kittyPhotoUntitledMap': 'Mindmap',
-  'mobile.kittyPhotoHanddrawnReply':
-    'Een handgetekende mindmap “{topic}” gedetecteerd. Herbouwd op canvas; overzicht opgeslagen in Document Summary.',
-  'mobile.kittyPhotoHanddrawnLocalReply':
-    'Een handgetekende mindmap “{topic}” gedetecteerd. Hier herbouwd; overzicht opgeslagen in Document Summary. Synchronisatie van de bibliotheek is niet voltooid. Open het diagram opnieuw als het canvas er oud uitziet.',
-  'mobile.kittyPhotoOcrReply':
-    'Tekst uit de foto gehaald:\n{excerpt}\n\nDe volledige tekst staat in Document Summary.',
+  'mobile.kittyPhotoHanddrawnReply': 'Een handgetekende mindmap “{topic}” gedetecteerd. Herbouwd op canvas; overzicht opgeslagen in Document Summary.',
+  'mobile.kittyPhotoHanddrawnLocalReply': 'Een handgetekende mindmap “{topic}” gedetecteerd. Hier herbouwd; overzicht opgeslagen in Document Summary. Synchronisatie van de bibliotheek is niet voltooid. Open het diagram opnieuw als het canvas er oud uitziet.',
+  'mobile.kittyPhotoOcrReply': 'Tekst uit de foto gehaald:\n{excerpt}\n\nDe volledige tekst staat in Document Summary.',
   'mobile.kittyPhotoUploadFailed': 'Kan de foto niet uploaden.',
-  'mobile.kittyPickDiagramToEdit':
-    'Open of kies eerst een opgeslagen diagram en houd vervolgens ingedrukt om te spreken of typ om het te bewerken.',
-  'mobile.kittyHubSyncFailed':
-    'Kan het diagram niet synchroniseren met Kitty. Controleer uw verbinding en probeer het opnieuw.',
+  'mobile.kittyPickDiagramToEdit': 'Open of kies eerst een opgeslagen diagram en houd vervolgens ingedrukt om te spreken of typ om het te bewerken.',
+  'mobile.kittyHubSyncFailed': 'Kan het diagram niet synchroniseren met Kitty. Controleer uw verbinding en probeer het opnieuw.',
   'mobile.kittyDesktopDiagramFollowed': 'Overgeschakeld naar het diagram geopend op het bureaublad',
   'mobile.kittyScopeDivergence': 'Desktop opende een ander diagram. Kies hoe u wilt synchroniseren:',
   'mobile.kittyScopeFollowDesktop': 'Volg het bureaubladdiagram',
@@ -275,19 +260,14 @@ export default {
   'settings.version.chinese': 'Professionele modus',
   'settings.version.international': 'Vereenvoudigde modus',
   'landing.international.subtitle': 'De krachtigste AI-denkdiagramsoftware ter wereld',
-  'landing.international.promptPlaceholder':
-    'Beschrijf een onderwerp en diagramtype, b.v. “Gebruik een stroomkaart voor stappen in het dichtheidslaboratorium”…',
+  'landing.international.promptPlaceholder': 'Beschrijf een onderwerp en diagramtype, b.v. “Gebruik een stroomkaart voor stappen in het dichtheidslaboratorium”…',
   'landing.international.examplesTitle': 'Inspiratie',
   'landing.international.example1': 'Maak een mindmap over fotosynthese',
-  'landing.international.example2':
-    'Gebruik een boomkaart om gewervelde dieren te classificeren: vissen, amfibieën, reptielen, zoogdieren',
-  'landing.international.example3':
-    'Gebruik een stroomkaart voor een dichtheidslaboratorium: meet massa, meet volume, bereken, registreer resultaten',
+  'landing.international.example2': 'Gebruik een boomkaart om gewervelde dieren te classificeren: vissen, amfibieën, reptielen, zoogdieren',
+  'landing.international.example3': 'Gebruik een stroomkaart voor een dichtheidslaboratorium: meet massa, meet volume, bereken, registreer resultaten',
   'landing.international.example4': 'Gebruik een dubbele bellenkaart om plantencellen en dierlijke cellen te vergelijken',
-  'landing.international.example5':
-    'Gebruik een accoladekaart om kwadratische vergelijkingen op te splitsen: standaardvorm, discriminant, kwadratische formule, grafiek en wortels',
-  'landing.international.example6':
-    'Maak een bellenkaart die de belangrijkste ideeën in de drie bewegingswetten van Newton beschrijft',
+  'landing.international.example5': 'Gebruik een accoladekaart om kwadratische vergelijkingen op te splitsen: standaardvorm, discriminant, kwadratische formule, grafiek en wortels',
+  'landing.international.example6': 'Maak een bellenkaart die de belangrijkste ideeën in de drie bewegingswetten van Newton beschrijft',
   'landing.international.phaseRequestSent': 'Verzoek verzonden',
   'landing.international.phaseServerReceived': 'Server heeft uw verzoek ontvangen',
   'landing.international.phaseGenerating': 'Uw diagram genereren…',

@@ -1,4 +1,6 @@
-/** uz UI — auth */
+/**
+ * uz UI � auth
+ */
 
 export default {
   'auth.accountInfo': 'Hisob',

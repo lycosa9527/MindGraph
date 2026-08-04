@@ -1,4 +1,6 @@
-/** ko UI — common */
+/**
+ * ko UI � common
+ */
 
 export default {
   'app.aiDisclaimer': '콘텐츠는 AI가 생성합니다. 내용을 신중히 확인하세요.',
@@ -204,10 +206,8 @@ export default {
   'mobile.kittyPhotoUserBubble': '📷 사진',
   'mobile.kittyPhotoUntitledMap': '마인드맵',
   'mobile.kittyPhotoHanddrawnReply': '손그림 마인드맵 “{topic}”을(를) 감지했습니다. 캔버스에 재구성했고 개요는 문서 요약에 저장되었습니다.',
-  'mobile.kittyPhotoHanddrawnLocalReply':
-    '손그림 마인드맵 “{topic}”을(를) 감지했습니다. 여기에 재구성했고 개요는 문서 요약에 저장되었습니다. 라이브러리 동기화가 완료되지 않았습니다 — 캔버스가 오래되어 보이면 다이어그램을 다시 여세요.',
-  'mobile.kittyPhotoOcrReply':
-    '사진에서 추출한 텍스트:\n{excerpt}\n\n전체 텍스트는 문서 요약에 있습니다.',
+  'mobile.kittyPhotoHanddrawnLocalReply': '손그림 마인드맵 “{topic}”을(를) 감지했습니다. 여기에 재구성했고 개요는 문서 요약에 저장되었습니다. 라이브러리 동기화가 완료되지 않았습니다 — 캔버스가 오래되어 보이면 다이어그램을 다시 여세요.',
+  'mobile.kittyPhotoOcrReply': '사진에서 추출한 텍스트:\n{excerpt}\n\n전체 텍스트는 문서 요약에 있습니다.',
   'mobile.kittyPhotoUploadFailed': '사진을 업로드할 수 없습니다.',
   'mobile.kittyPickDiagramToEdit': '먼저 저장된 다이어그램을 열거나 선택한 뒤 길게 말하거나 입력하여 편집하세요.',
   'mobile.kittyHubSyncFailed': '다이어그램을 Kitty에 동기화할 수 없습니다. 연결을 확인하고 다시 시도하세요.',

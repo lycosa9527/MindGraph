@@ -1,4 +1,6 @@
-/** ja UI — thinkingCoins */
+/**
+ * ja UI � thinkingCoins
+ */
 
 export const thinkingCoinsMessages = {
   'thinkingCoins.title': 'マイ思考トークン',

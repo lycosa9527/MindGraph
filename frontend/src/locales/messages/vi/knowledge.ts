@@ -1,4 +1,6 @@
-/** vi UI — knowledge */
+/**
+ * vi UI � knowledge
+ */
 
 export default {
   'fileCenterLibrary.title': 'Gói tài liệu',
@@ -121,25 +123,18 @@ export default {
   'knowledge.header.title': 'Cơ sở tri thức cá nhân',
   'knowledge.header.upload': 'Tải lên tài liệu',
   'knowledge.ragGuide.title': 'Gói tài liệu, RAG và wiki hoạt động thế nào?',
-  'knowledge.ragGuide.subtitle':
-    'Không cần thuật ngữ chuyên môn — hãy coi đó là thư mục tài liệu tham khảo. Chúng tôi lập chỉ mục để tìm kiếm (RAG), rồi biên soạn ghi chú wiki ngắn, và AI đọc cả hai khi bạn tạo mind map.',
+  'knowledge.ragGuide.subtitle': 'Không cần thuật ngữ chuyên môn — hãy coi đó là thư mục tài liệu tham khảo. Chúng tôi lập chỉ mục để tìm kiếm (RAG), rồi biên soạn ghi chú wiki ngắn, và AI đọc cả hai khi bạn tạo mind map.',
   'knowledge.ragGuide.step1.title': 'Chọn một gói tài liệu',
-  'knowledge.ragGuide.step1.body':
-    'Một gói giống như bộ sưu tập Zotero. Bạn có thể có tối đa 3 bên trái; mỗi gói thường thuộc một mind map. Nhấp gói ở sidebar để quản lý tài liệu.',
+  'knowledge.ragGuide.step1.body': 'Một gói giống như bộ sưu tập Zotero. Bạn có thể có tối đa 3 bên trái; mỗi gói thường thuộc một mind map. Nhấp gói ở sidebar để quản lý tài liệu.',
   'knowledge.ragGuide.step2.title': 'Thêm nguồn và lập chỉ mục (RAG)',
-  'knowledge.ragGuide.step2.body':
-    'Tải lên PDF, Word, ghi chú hoặc trang web. Chúng tôi chia tài liệu dài thành chunk có thể tìm kiếm và lưu vector embedding — đây là chỉ mục RAG và sẵn sàng trước.',
+  'knowledge.ragGuide.step2.body': 'Tải lên PDF, Word, ghi chú hoặc trang web. Chúng tôi chia tài liệu dài thành chunk có thể tìm kiếm và lưu vector embedding — đây là chỉ mục RAG và sẵn sàng trước.',
   'knowledge.ragGuide.step3.title': 'Ghi chú wiki được biên soạn tự động',
-  'knowledge.ragGuide.step3.body':
-    'Sau khi lập chỉ mục xong, LLM biên soạn trang wiki tổng quan và theo chủ đề trên đĩa. Đây là ghi chú ngắn gọn (không phải bản ghi) tóm tắt gói để định hướng nhanh hơn.',
+  'knowledge.ragGuide.step3.body': 'Sau khi lập chỉ mục xong, LLM biên soạn trang wiki tổng quan và theo chủ đề trên đĩa. Đây là ghi chú ngắn gọn (không phải bản ghi) tóm tắt gói để định hướng nhanh hơn.',
   'knowledge.ragGuide.step4.title': 'Tra cứu dùng wiki + chunk',
-  'knowledge.ragGuide.step4.body':
-    'Khi bạn mở rộng nhánh hoặc tạo tóm tắt, chúng tôi khớp trang wiki liên quan trước, rồi truy xuất đoạn chunk phù hợp nhất (hybrid RAG).',
+  'knowledge.ragGuide.step4.body': 'Khi bạn mở rộng nhánh hoặc tạo tóm tắt, chúng tôi khớp trang wiki liên quan trước, rồi truy xuất đoạn chunk phù hợp nhất (hybrid RAG).',
   'knowledge.ragGuide.step5.title': 'Câu trả lời dựa trên nguồn của bạn',
-  'knowledge.ragGuide.step5.body':
-    'AI viết từ ghi chú wiki và đoạn trích được truy xuất thay vì đoán — nguồn tốt hơn, lập chỉ mục hoàn tất và wiki biên soạn giúp sơ đồ chính xác hơn.',
-  'knowledge.ragGuide.footer':
-    'Mẹo: mở Document Summary trên canvas sẽ tự tạo gói; trang lưu qua tiện ích Chrome cũng xuất hiện trong danh sách sidebar.',
+  'knowledge.ragGuide.step5.body': 'AI viết từ ghi chú wiki và đoạn trích được truy xuất thay vì đoán — nguồn tốt hơn, lập chỉ mục hoàn tất và wiki biên soạn giúp sơ đồ chính xác hơn.',
+  'knowledge.ragGuide.footer': 'Mẹo: mở Document Summary trên canvas sẽ tự tạo gói; trang lưu qua tiện ích Chrome cũng xuất hiện trong danh sách sidebar.',
   'knowledge.pipeline.title': 'Trạng thái pipeline',
   'knowledge.pipeline.ragIdle': 'Chỉ mục RAG',
   'knowledge.pipeline.ragIdleDetail': 'Chưa có gói nào được lập chỉ mục. Thêm nguồn và chạy lập chỉ mục từ một gói.',
@@ -239,8 +234,7 @@ export default {
   'knowledge.settings.retrievalSection': 'Cài đặt truy xuất',
   'knowledge.settings.title': 'Cài đặt cơ sở tri thức',
   'knowledge.settings.helpTitle': 'Cách các cài đặt này áp dụng',
-  'knowledge.settings.helpBody':
-    'Tùy chọn truy xuất áp dụng ngay cho tìm kiếm và câu trả lời AI. Kích thước và chồng lấn chunk áp dụng cho tài liệu mới lập chỉ mục — hãy lập chỉ mục lại nguồn hiện có sau khi thay đổi.',
+  'knowledge.settings.helpBody': 'Tùy chọn truy xuất áp dụng ngay cho tìm kiếm và câu trả lời AI. Kích thước và chồng lấn chunk áp dụng cho tài liệu mới lập chỉ mục — hãy lập chỉ mục lại nguồn hiện có sau khi thay đổi.',
   'knowledge.settings.tokens': 'token',
   'knowledge.settings.serverSection': 'Máy chủ (chỉ đọc)',
   'knowledge.settings.rerankingMode': 'Reranking',
@@ -251,8 +245,7 @@ export default {
   'knowledge.settings.wikiDisabled': 'Tắt',
   'knowledge.settings.saveSuccess': 'Đã lưu cài đặt',
   'knowledge.settings.saveFailed': 'Lưu cài đặt thất bại',
-  'knowledge.settings.reindexRequired':
-    'Cài đặt chunk đã thay đổi — hãy lập chỉ mục lại tài liệu hiện có trong gói để kích thước mới có hiệu lực.',
+  'knowledge.settings.reindexRequired': 'Cài đặt chunk đã thay đổi — hãy lập chỉ mục lại tài liệu hiện có trong gói để kích thước mới có hiệu lực.',
   'knowledge.upload.click': 'Nhấp để tải lên',
   'knowledge.upload.drag': 'hoặc kéo thả tệp vào đây',
   'knowledge.upload.fileTooLarge': 'Kích thước tệp không được vượt quá 10MB',

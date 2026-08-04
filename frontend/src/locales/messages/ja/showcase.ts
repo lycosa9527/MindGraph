@@ -1,4 +1,6 @@
-/** ja UI — showcase */
+/**
+ * ja UI � showcase
+ */
 
 export default {
   'showcase.title': 'Showcase',
@@ -51,8 +53,7 @@ export default {
   'showcase.publishModal.uploadingFile': '{name} をアップロード中（{current}/{total}）…',
   'showcase.publishModal.finishing': '仕上げ中…',
   'showcase.publishModal.uploadFailedRolledBack': 'アップロードに失敗しました — 下書きは破棄されました。もう一度お試しください。',
-  'showcase.publishModal.uploadCorsFailed':
-    'オブジェクトストレージへアップロードできませんでした（バケット CORS またはサイト CSP が COS ホストをブロックしている場合があります）。下書きは破棄されました — 管理者に CORS/CSP の修正を依頼してから再試行してください。',
+  'showcase.publishModal.uploadCorsFailed': 'オブジェクトストレージへアップロードできませんでした（バケット CORS またはサイト CSP が COS ホストをブロックしている場合があります）。下書きは破棄されました — 管理者に CORS/CSP の修正を依頼してから再試行してください。',
   'showcase.publishModal.uploadStorageRejected': 'オブジェクトストレージがアップロードを拒否しました。下書きは破棄されました — しばらくしてから再試行するか、繰り返し失敗する場合は管理者にお問い合わせください。',
   'showcase.publishModal.uploadFailed': 'アップロードに失敗しました。もう一度お試しください。',
   'showcase.publishModal.uploadCoverTooLarge': 'カバー画像が 2MB の上限を超えています。プレビューを圧縮するか、より小さい画像を使用してから再試行してください。',
@@ -118,8 +119,10 @@ export default {
   'showcase.publishModal.aiGenerateStop': '停止',
   'showcase.publishModal.aiGenerateCancelled': 'AI 生成をキャンセルしました — もう一度クリックで再生成',
   'showcase.publishModal.aiGenerateSuccess': '文書から紹介とハイライトを入力しました — 確認して編集してください。授業の振り返りはご自身で記入してください',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'AI 生成に失敗しました — もう一度お試しください',
   'showcase.publishModal.aiGenerateNeedFile': '先に前のステップで授業デザイン文書をアップロードしてください',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'AI 生成は授業デザイン事例のみ利用できます',
   'showcase.publishModal.reflectionLabel': '授業の振り返り',
   'showcase.publishModal.introPlaceholder': '事例の内容と利用場面を簡潔に説明してください',
@@ -152,6 +155,7 @@ export default {
   'showcase.publishModal.historyTitle': '保存済み図を選択',
   'showcase.publishModal.historySearch': '図名を検索…',
   'showcase.publishModal.historyEmpty': '保存済み図がありません',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': '思考スキル授業のデザイン',
   'showcase.publishModal.typeDesc.diagramCase': '優れた図示と授業での可視化',
   'showcase.publishModal.typeDesc.diagramTemplate': '再利用・改変可能な図',

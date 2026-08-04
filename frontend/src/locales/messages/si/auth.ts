@@ -1,4 +1,6 @@
-/** si UI — auth */
+/**
+ * si UI � auth
+ */
 
 export default {
   'auth.accountInfo': 'ගිණුම',

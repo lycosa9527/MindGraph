@@ -1,4 +1,6 @@
-/** fa UI — showcase */
+/**
+ * fa UI � showcase
+ */
 
 export default {
   'showcase.title': 'ویترین',
@@ -51,27 +53,18 @@ export default {
   'showcase.publishModal.uploadingFile': 'در حال بارگذاری {name} ({current}/{total})…',
   'showcase.publishModal.finishing': 'در حال اتمام…',
   'showcase.publishModal.uploadFailedRolledBack': 'بارگذاری ناموفق — پیش‌نویس حذف شد. لطفاً دوباره تلاش کنید.',
-  'showcase.publishModal.uploadCorsFailed':
-    'بارگذاری به ذخیره‌سازی شیء ممکن نشد (اغلب CORS سطل یا CSP سایت میزبان COS را مسدود می‌کند). پیش‌نویس حذف شد — از مدیر بخواهید CORS/CSP را اصلاح کند و دوباره تلاش کنید.',
-  'showcase.publishModal.uploadStorageRejected':
-    'ذخیره‌سازی شیء بارگذاری را رد کرد. پیش‌نویس حذف شد — بعداً تلاش کنید یا اگر ادامه داشت با مدیر تماس بگیرید.',
+  'showcase.publishModal.uploadCorsFailed': 'بارگذاری به ذخیره‌سازی شیء ممکن نشد (اغلب CORS سطل یا CSP سایت میزبان COS را مسدود می‌کند). پیش‌نویس حذف شد — از مدیر بخواهید CORS/CSP را اصلاح کند و دوباره تلاش کنید.',
+  'showcase.publishModal.uploadStorageRejected': 'ذخیره‌سازی شیء بارگذاری را رد کرد. پیش‌نویس حذف شد — بعداً تلاش کنید یا اگر ادامه داشت با مدیر تماس بگیرید.',
   'showcase.publishModal.uploadFailed': 'بارگذاری ناموفق. لطفاً دوباره تلاش کنید.',
-  'showcase.publishModal.uploadCoverTooLarge':
-    'تصویر جلد از حد ۲ م.ب بیشتر است. پیش‌نمایش را فشرده کنید یا تصویر کوچک‌تر استفاده کنید و دوباره تلاش کنید.',
-  'showcase.publishModal.uploadAttachmentTooLarge':
-    'فایل از حد (اسناد/تصاویر ۲۰ م.ب، ویدیو ۱۰۰ م.ب) بیشتر است. فشرده کنید و دوباره تلاش کنید.',
-  'showcase.publishModal.uploadAttachmentTooLargeRolledBack':
-    'فایل از حد (اسناد/تصاویر ۲۰ م.ب، ویدیو ۱۰۰ م.ب) بیشتر است. پیش‌نویس حذف شد — فشرده کنید و دوباره تلاش کنید.',
+  'showcase.publishModal.uploadCoverTooLarge': 'تصویر جلد از حد ۲ م.ب بیشتر است. پیش‌نمایش را فشرده کنید یا تصویر کوچک‌تر استفاده کنید و دوباره تلاش کنید.',
+  'showcase.publishModal.uploadAttachmentTooLarge': 'فایل از حد (اسناد/تصاویر ۲۰ م.ب، ویدیو ۱۰۰ م.ب) بیشتر است. فشرده کنید و دوباره تلاش کنید.',
+  'showcase.publishModal.uploadAttachmentTooLargeRolledBack': 'فایل از حد (اسناد/تصاویر ۲۰ م.ب، ویدیو ۱۰۰ م.ب) بیشتر است. پیش‌نویس حذف شد — فشرده کنید و دوباره تلاش کنید.',
   'showcase.publishModal.uploadFileTooLarge': 'فایل برای این نوع بارگذاری خیلی بزرگ است. حد را بررسی کنید و دوباره تلاش کنید.',
-  'showcase.publishModal.uploadFileTooLargeRolledBack':
-    'فایل برای این نوع بارگذاری خیلی بزرگ است. پیش‌نویس حذف شد — حد را بررسی کنید و دوباره تلاش کنید.',
-  'showcase.publishModal.coverUploadSkipped':
-    'مورد ارسال شد، اما بارگذاری تصویر جلد ناموفق بود. بعداً می‌توانید مورد را ویرایش کنید تا جلد را به‌روز کنید.',
+  'showcase.publishModal.uploadFileTooLargeRolledBack': 'فایل برای این نوع بارگذاری خیلی بزرگ است. پیش‌نویس حذف شد — حد را بررسی کنید و دوباره تلاش کنید.',
+  'showcase.publishModal.coverUploadSkipped': 'مورد ارسال شد، اما بارگذاری تصویر جلد ناموفق بود. بعداً می‌توانید مورد را ویرایش کنید تا جلد را به‌روز کنید.',
   'showcase.publishModal.coverGenerating': 'پیش‌نمایش جلد در پس‌زمینه در حال ایجاد است — به‌زودی روی کارت ظاهر می‌شود.',
-  'showcase.publishModal.coverFailed':
-    'مورد ارسال شد، اما ایجاد جلد ممکن نشد. بعداً می‌توانید مورد را ویرایش کنید تا جلد را به‌روز کنید.',
-  'showcase.publishModal.coverFailedTimeout':
-    'مورد ارسال شد، اما زمان ایجاد جلد تمام شد. بعداً می‌توانید مورد را ویرایش کنید تا جلد را به‌روز کنید.',
+  'showcase.publishModal.coverFailed': 'مورد ارسال شد، اما ایجاد جلد ممکن نشد. بعداً می‌توانید مورد را ویرایش کنید تا جلد را به‌روز کنید.',
+  'showcase.publishModal.coverFailedTimeout': 'مورد ارسال شد، اما زمان ایجاد جلد تمام شد. بعداً می‌توانید مورد را ویرایش کنید تا جلد را به‌روز کنید.',
   'showcase.publishModal.success': 'مورد ارسال شد — در انتظار بررسی مدیر',
   'showcase.publishModal.fromCanvas': 'انتشار از بوم',
   'showcase.publishModal.step1Title': 'اطلاعات پایه',
@@ -85,8 +78,7 @@ export default {
   'showcase.publishModal.uploadLabel': 'بارگذاری فایل',
   'showcase.publishModal.uploadImage': 'بارگذاری تصویر',
   'showcase.publishModal.uploadFile': 'بارگذاری فایل',
-  'showcase.publishModal.directUploadDisabled':
-    'بارگذاری مستقیم فایل موقتاً در دسترس نیست. هنوز می‌توانید نمودار ذخیره‌شده از تاریخچه انتخاب کنید.',
+  'showcase.publishModal.directUploadDisabled': 'بارگذاری مستقیم فایل موقتاً در دسترس نیست. هنوز می‌توانید نمودار ذخیره‌شده از تاریخچه انتخاب کنید.',
   'showcase.publishModal.uploadViaStorage': 'فایل‌ها مستقیماً به ذخیره‌سازی امن بارگذاری می‌شوند (URL کوتاه‌مدت).',
   'showcase.publishModal.pickHistory': 'انتخاب از تاریخچه',
   'showcase.publishModal.removeFile': 'حذف',
@@ -126,10 +118,11 @@ export default {
   'showcase.publishModal.aiGenerating': 'در حال تولید…',
   'showcase.publishModal.aiGenerateStop': 'توقف',
   'showcase.publishModal.aiGenerateCancelled': 'تولید هوش مصنوعی لغو شد — برای تولید مجدد دوباره کلیک کنید',
-  'showcase.publishModal.aiGenerateSuccess':
-    'معرفی و نکات برجسته از سند پر شد — بازبینی و ویرایش کنید؛ بازتاب آموزشی را خودتان بنویسید',
+  'showcase.publishModal.aiGenerateSuccess': 'معرفی و نکات برجسته از سند پر شد — بازبینی و ویرایش کنید؛ بازتاب آموزشی را خودتان بنویسید',
+  'showcase.publishModal.aiGenerateDiagramSuccess': 'Filled diagram intro and classroom use from the diagram — review and edit',
   'showcase.publishModal.aiGenerateFailed': 'تولید هوش مصنوعی ناموفق — لطفاً دوباره تلاش کنید',
   'showcase.publishModal.aiGenerateNeedFile': 'ابتدا در مرحله قبل سند طراحی آموزشی بارگذاری کنید',
+  'showcase.publishModal.aiGenerateNeedDiagram': 'Select or upload a diagram in the previous step first',
   'showcase.publishModal.aiGenerateTeachingOnly': 'تولید هوش مصنوعی فقط برای موارد طراحی آموزشی در دسترس است',
   'showcase.publishModal.reflectionLabel': 'بازتاب آموزشی',
   'showcase.publishModal.introPlaceholder': 'به‌اختصار مورد و زمان استفاده را توضیح دهید',
@@ -156,15 +149,13 @@ export default {
   'showcase.publishModal.validationDiagramType': 'لطفاً نوع نمودار را انتخاب کنید',
   'showcase.publishModal.invalidFileType': 'نوع فایل پشتیبانی نمی‌شود',
   'showcase.publishModal.invalidMgFile': 'خواندن این فایل .mg ممکن نشد — ابتدا از MindGraph صادر کنید',
-  'showcase.publishModal.cannotPreview':
-    'ایجاد پیش‌نمایش جلد ممکن نشد — مورد همچنان ارسال می‌شود. PNG/JPG امتحان کنید یا نمودار ذخیره‌شده انتخاب کنید.',
-  'showcase.publishModal.cannotPreviewHistory':
-    'ایجاد جلد از این نمودار ذخیره‌شده ممکن نشد — مورد همچنان ارسال می‌شود. دوباره انتخاب کنید یا از بوم ذخیره کنید.',
-  'showcase.publishModal.cannotPreviewTemplate':
-    'ایجاد جلد ممکن نشد — مورد همچنان ارسال می‌شود. فایل .mg را بررسی کنید یا نمودار ذخیره‌شده دیگری انتخاب کنید.',
+  'showcase.publishModal.cannotPreview': 'ایجاد پیش‌نمایش جلد ممکن نشد — مورد همچنان ارسال می‌شود. PNG/JPG امتحان کنید یا نمودار ذخیره‌شده انتخاب کنید.',
+  'showcase.publishModal.cannotPreviewHistory': 'ایجاد جلد از این نمودار ذخیره‌شده ممکن نشد — مورد همچنان ارسال می‌شود. دوباره انتخاب کنید یا از بوم ذخیره کنید.',
+  'showcase.publishModal.cannotPreviewTemplate': 'ایجاد جلد ممکن نشد — مورد همچنان ارسال می‌شود. فایل .mg را بررسی کنید یا نمودار ذخیره‌شده دیگری انتخاب کنید.',
   'showcase.publishModal.historyTitle': 'انتخاب نمودار ذخیره‌شده',
   'showcase.publishModal.historySearch': 'جستجوی نام نمودار…',
   'showcase.publishModal.historyEmpty': 'نمودار ذخیره‌شده‌ای نیست',
+  'showcase.publishModal.historyUncategorized': 'Uncategorized',
   'showcase.publishModal.typeDesc.teachingDesign': 'طراحی درس کلاسی با تمرکز بر مهارت‌های تفکر',
   'showcase.publishModal.typeDesc.diagramCase': 'نمودارها و تصویرسازی برجسته در آموزش',
   'showcase.publishModal.typeDesc.diagramTemplate': 'نمودارها برای استفاده مجدد یا تطبیق',
@@ -212,8 +203,7 @@ export default {
   'showcase.detail.pptxPreviewPending': 'در حال تبدیل اسلایدها برای پیش‌نمایش…',
   'showcase.detail.docPreviewLoading': 'در حال بارگذاری سند…',
   'showcase.detail.docPreviewFailed': 'بارگذاری پیش‌نمایش ممکن نشد. در زبانه جدید باز کنید.',
-  'showcase.detail.legacyDocHint':
-    'فایل‌های قدیمی .doc به‌صورت درون‌خطی پیش‌نمایش نمی‌شوند. فایل را باز یا دانلود کنید، یا .docx برای پیش‌نمایش در مرورگر بارگذاری کنید.',
+  'showcase.detail.legacyDocHint': 'فایل‌های قدیمی .doc به‌صورت درون‌خطی پیش‌نمایش نمی‌شوند. فایل را باز یا دانلود کنید، یا .docx برای پیش‌نمایش در مرورگر بارگذاری کنید.',
   'showcase.detail.noDocument': 'پیش‌نمایش سند نیست',
   'showcase.detail.noDiagramPreview': 'پیش‌نمایش نمودار نیست',
   'showcase.detail.diagramPreviewLoading': 'در حال بارگذاری نمودار…',

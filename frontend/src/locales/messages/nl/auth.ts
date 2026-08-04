@@ -1,4 +1,6 @@
-/** nl UI — auth */
+/**
+ * nl UI � auth
+ */
 
 export default {
   'auth.accountInfo': 'Account',
@@ -14,15 +16,11 @@ export default {
   'auth.downloadDesktopShortcut': 'Toevoegen aan bureaublad',
   'auth.pwaIosInstallHint': 'Tik op Delen in Safari, Chrome of Edge en kies vervolgens \'Toevoegen aan startscherm\'.',
   'auth.pwaAndroidInstallHint': 'Open het browsermenu (⋮) en tik op App installeren of Toevoegen aan startscherm.',
-  'auth.pwaSafariMacInstallHint':
-    'Kies in Safari Bestand → Toevoegen aan Dock of Delen → Toevoegen aan Dock (macOS Sonoma of hoger).',
-  'auth.pwaDesktopInstallHint':
-    'Gebruik het browsermenu (⋮) of het installatiepictogram in de adresbalk (Chrome, Edge, or Brave).',
+  'auth.pwaSafariMacInstallHint': 'Kies in Safari Bestand → Toevoegen aan Dock of Delen → Toevoegen aan Dock (macOS Sonoma of hoger).',
+  'auth.pwaDesktopInstallHint': 'Gebruik het browsermenu (⋮) of het installatiepictogram in de adresbalk (Chrome, Edge, or Brave).',
   'auth.pwaInstallSuccess': 'MindGraph is toegevoegd aan uw bureaublad.',
-  'auth.pwaDevInstallHint':
-    'PWA-installatie is uitgeschakeld in de normale ontwikkelaarsmodus. Gebruik productiebuild (npm run build + backend) of voer npm run dev:pwa uit en gebruik vervolgens Chrome/Edge op HTTPS of localhost.',
-  'auth.pwaInsecureOriginHint':
-    'Open MindGraph in de browser op het HTTPS-adres (geen opgeslagen HTML-bestand) voordat u installeert op het bureaublad.',
+  'auth.pwaDevInstallHint': 'PWA-installatie is uitgeschakeld in de normale ontwikkelaarsmodus. Gebruik productiebuild (npm run build + backend) of voer npm run dev:pwa uit en gebruik vervolgens Chrome/Edge op HTTPS of localhost.',
+  'auth.pwaInsecureOriginHint': 'Open MindGraph in de browser op het HTTPS-adres (geen opgeslagen HTML-bestand) voordat u installeert op het bureaublad.',
   'auth.backToLogin': 'Terug naar Inloggen',
   'auth.captcha': 'Captcha',
   'auth.captchaLength4': 'Voer een captcha van 4 tekens in',
@@ -32,12 +30,9 @@ export default {
   'auth.accountPlugin': 'Plug-in',
   'auth.apiTokenButton': 'API-token',
   'auth.downloadChromeExtension': 'Chrome extension',
-  'auth.schoolTierFeatureUnavailable':
-    'Voor deze functie is het Standard- of Professional-schoolniveau vereist (Basic-niveau uitgesloten).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Je schoolabonnement is beëindigd. Uw account bevindt zich nu op het proefniveau. Neem contact op met uw platformbeheerder om te verlengen.',
-  'auth.diagramLimitReached':
-    'Proefscholen staan ​​maximaal {max} opgeslagen diagrammen per leraar toe. Verwijder er één om een ​​nieuw diagram op te slaan.',
+  'auth.schoolTierFeatureUnavailable': 'Voor deze functie is het Standard- of Professional-schoolniveau vereist (Basic-niveau uitgesloten).',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Je schoolabonnement is beëindigd. Uw account bevindt zich nu op het proefniveau. Neem contact op met uw platformbeheerder om te verlengen.',
+  'auth.diagramLimitReached': 'Proefscholen staan ​​maximaal {max} opgeslagen diagrammen per leraar toe. Verwijder er één om een ​​nieuw diagram op te slaan.',
   'auth.downloadOpenclawSkill': 'OpenClaw vaardigheid',
   'auth.changePhoneButton': 'Telefoon wijzigen',
   'auth.passwordChangeSuccess': 'Wachtwoord succesvol gewijzigd',
@@ -115,8 +110,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'E-mail voor onderwijs',
   'auth.modal.hybridRegisterEmailTabAny': 'E-mail',
   'auth.modal.hybridRegisterPhoneTab': 'Telefoon + uitnodigingscode',
-  'auth.modal.mainlandSalesNotice':
-    'Toegang nodig op het vasteland van China? Gebruik uw mobiele nummer en uitnodigingscode, of neem contact op met de klantenservice.',
+  'auth.modal.mainlandSalesNotice': 'Toegang nodig op het vasteland van China? Gebruik uw mobiele nummer en uitnodigingscode, of neem contact op met de klantenservice.',
   'auth.modal.registrationEmailLabel': 'Alleen educatieve e-mail',
   'auth.modal.registrationEmailLabelAny': 'E-mailadres',
   'auth.modal.registrationEmailHint': '',
@@ -131,8 +125,7 @@ export default {
   'auth.modal.emailCodePlaceholder': '6-cijferige code uit e-mail',
   'auth.modal.acknowledgeOverseas': 'Ik begrijp het en zal de software alleen voor educatieve doeleinden gebruiken.',
   'auth.modal.acknowledgeOverseasAny': 'Ik begrijp en ga akkoord met de voorwaarden voor buitenlandse registratie.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'Ik begrijp en ga akkoord met de registratievoorwaarden in het buitenland, en dat Vereenvoudigd Chinees op deze route niet beschikbaar is.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'Ik begrijp en ga akkoord met de registratievoorwaarden in het buitenland, en dat Vereenvoudigd Chinees op deze route niet beschikbaar is.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Bevestig de bovenstaande melding.',
   'auth.loginPhoneOrEmail': 'Telefoon of e-mail',
@@ -147,17 +140,13 @@ export default {
   'auth.username': 'Gebruikersnaam',
   'auth.waitCaptchaLoad': 'Wacht tot de captcha is geladen',
   'auth.quickRegPageTitle': 'Snelle registratie',
-  'auth.quickRegPageHint':
-    'Open deze pagina via de link die uw school heeft gedeeld. Enter uw telefoon en de 6-cijferige kamercode die wordt weergegeven in het snelle registratievenster van de begeleider (deze wordt ongeveer elke 30 seconden vernieuwd). De code laat zien dat u zich in de sessie bevindt; het verifieert het eigendom van de telefoon niet zoals een sms-code dat zou doen.',
-  'auth.quickRegLinkInvalid':
-    'Deze registratielink is niet actief (verlopen of gesloten). Open de huidige link van de facilitator opnieuw.',
-  'auth.quickRegProbeRateLimited':
-    'Te veel cheques van deze pagina. Wacht even en vernieuw de pagina, of probeer het later opnieuw.',
+  'auth.quickRegPageHint': 'Open deze pagina via de link die uw school heeft gedeeld. Enter uw telefoon en de 6-cijferige kamercode die wordt weergegeven in het snelle registratievenster van de begeleider (deze wordt ongeveer elke 30 seconden vernieuwd). De code laat zien dat u zich in de sessie bevindt; het verifieert het eigendom van de telefoon niet zoals een sms-code dat zou doen.',
+  'auth.quickRegLinkInvalid': 'Deze registratielink is niet actief (verlopen of gesloten). Open de huidige link van de facilitator opnieuw.',
+  'auth.quickRegProbeRateLimited': 'Te veel cheques van deze pagina. Wacht even en vernieuw de pagina, of probeer het later opnieuw.',
   'auth.quickRegSessionSignups': 'Aangemeld voor deze sessie: {n}',
   'auth.quickRegRoomCodeLabel': 'Kamercode',
   'auth.quickRegRoomCodePlaceholder': '6 cijfers',
-  'auth.quickRegRoomCodeHint':
-    'Zorg ervoor dat de grote cijfers in het snelle registratievenster van de facilitator overeenkomen; voer de code in voordat deze verandert.',
+  'auth.quickRegRoomCodeHint': 'Zorg ervoor dat de grote cijfers in het snelle registratievenster van de facilitator overeenkomen; voer de code in voordat deze verandert.',
   'auth.quickRegRoomCodeEnter6': 'Enter de 6-cijferige kamercode',
   'auth.quickRegMaxUses': 'Maximaal aantal aanmeldingen voor deze link',
   'auth.quickRegHeadcount': 'Max',
@@ -167,16 +156,14 @@ export default {
   'auth.quickRegSubmit': 'Volledige registratie',
   'auth.quickRegSubmitting': 'Registreren…',
   'auth.quickRegRegisterSuccess': 'Registratie succesvol',
-  'auth.quickRegSessionUnsure':
-    'Het kan zijn dat de registratie is gelukt. Als u niet bent aangemeld, ga dan terug en gebruik de verificatiecode om in te loggen, of vernieuw deze pagina.',
+  'auth.quickRegSessionUnsure': 'Het kan zijn dat de registratie is gelukt. Als u niet bent aangemeld, ga dan terug en gebruik de verificatiecode om in te loggen, of vernieuw deze pagina.',
   'auth.quickRegBackToSignIn': 'Gebruik standaard login/registreren',
   'auth.quickRegSelectOrg': 'Selecteer school',
   'auth.quickRegOrgLoadError': 'Kan scholen niet laden. Probeer het opnieuw.',
   'auth.quickRegMintError': 'Kan het registratiekanaal niet openen. Probeer het opnieuw.',
   'auth.setPasswordWithSms': 'Stel het inlogwachtwoord in',
   'auth.setPasswordWithSmsTitle': 'Wachtwoord instellen via sms',
-  'auth.setPasswordWithSmsHint':
-    'Wij sturen een code naar uw gebonden telefoon. Nadat u een wachtwoord heeft ingesteld, kunt u inloggen met een wachtwoord of een verificatiecode.',
+  'auth.setPasswordWithSmsHint': 'Wij sturen een code naar uw gebonden telefoon. Nadat u een wachtwoord heeft ingesteld, kunt u inloggen met een wachtwoord of een verificatiecode.',
   'auth.setPasswordWithSmsSubmit': 'Wachtwoord opslaan',
   'auth.setPasswordWithSmsSubmitting': 'Besparing…',
   'auth.accountDisplayName': 'Weergavenaam',
@@ -192,8 +179,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Kan niet ontkoppelen. Probeer het opnieuw.',
   'auth.dingtalkBindRebind': 'Opnieuw koppelen',
   'auth.dingtalkBindTitle': 'Koppel DingTalk-account',
-  'auth.dingtalkBindInstructions':
-    'Stuur de onderstaande 6-cijferige code (bijvoorbeeld 123-456) als sms naar uw school DingTalk MindBot.',
+  'auth.dingtalkBindInstructions': 'Stuur de onderstaande 6-cijferige code (bijvoorbeeld 123-456) als sms naar uw school DingTalk MindBot.',
   'auth.dingtalkBindPairWaiting': 'Wachten tot MindBot uw code ontvangt…',
   'auth.dingtalkBindCodeHint': 'Verstuur alleen deze code - geen extra tekst.',
   'auth.dingtalkBindCountdown': 'Sessie verloopt over {s}s',
@@ -208,8 +194,7 @@ export default {
   'auth.dingtalkBindLinkedLabel': 'Gekoppeld ({staff})',
   'auth.dingtalkBindAlreadyLinked': 'Momenteel gekoppeld: {staff}',
   'auth.dingtalkUnbindTitle': 'Ontkoppel DingTalk-account',
-  'auth.dingtalkUnbindInstructions':
-    'Stuur de onderstaande code van uw gekoppelde DingTalk-account naar MindBot om het ontkoppelen te bevestigen.',
+  'auth.dingtalkUnbindInstructions': 'Stuur de onderstaande code van uw gekoppelde DingTalk-account naar MindBot om het ontkoppelen te bevestigen.',
   'auth.dingtalkUnbindPairWaiting': 'Wachten op bevestiging van uw gekoppelde DingTalk-account…',
   'auth.dingtalkUnbindCodeHint': 'Verstuur deze code alleen vanuit uw gekoppelde DingTalk account.',
   'auth.dingtalkUnbindExpiredHint': 'Ontkoppelsessie verlopen. Begin opnieuw.',
@@ -222,8 +207,7 @@ export default {
   'auth.qrLoginInviteRequired': 'Enter uw schooluitnodigingscode voordat u QR-login gebruikt',
   'auth.qrLoginProvidersFailed': 'Kan QR-inloginstellingen niet laden. Probeer het opnieuw.',
   'auth.qrLoginProviderDisabled': 'Deze inlogmethode is niet ingeschakeld voor jouw school',
-  'auth.qrLoginNotLinked':
-    'Account niet gekoppeld: meld u aan met een wachtwoord en bind eerst onder Account koppelen',
+  'auth.qrLoginNotLinked': 'Account niet gekoppeld: meld u aan met een wachtwoord en bind eerst onder Account koppelen',
   'auth.qrLoginExchangeFailed': 'QR-aanmelding mislukt. Probeer het opnieuw.',
   'auth.qrLoginInvalidState': 'QR-sessie verlopen. Sluit en scan opnieuw.',
   'auth.qrLoginCorpMismatch': 'De organisatie DingTalk komt niet overeen met uw schoolinstellingen.',
@@ -232,8 +216,7 @@ export default {
   'auth.qrLoginStartFailed': 'Kan QR-aanmelding niet starten. Probeer het opnieuw.',
   'auth.qrLoginSuccess': 'Succesvol ingelogd',
   'auth.accountBindingsSection': 'Accountkoppeling',
-  'auth.accountBindingsHint':
-    'MindBot slaat op in DingTalk; WeChat/DingTalk zijn voor QR-aanmelding (eerst hier binden)',
+  'auth.accountBindingsHint': 'MindBot slaat op in DingTalk; WeChat/DingTalk zijn voor QR-aanmelding (eerst hier binden)',
   'auth.bindMindbot': 'Link MindBot',
   'auth.unbindMindbot': 'Ontkoppel MindBot',
   'auth.bindWechat': 'Link WeChat',

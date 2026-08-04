@@ -75,6 +75,11 @@ def test_resolve_upload_role_gallery_and_attachment() -> None:
     gal = resolve_upload_role("gallery_3")
     assert gal.is_gallery is True
     assert gal.gallery_slot == 3
+    gal_high = resolve_upload_role("gallery_14")
+    assert gal_high.is_gallery is True
+    assert gal_high.gallery_slot == 14
+    with pytest.raises(ValueError):
+        resolve_upload_role("gallery_15")
     with pytest.raises(ValueError):
         resolve_upload_role("gallery_99")
     with pytest.raises(ValueError, match="Postgres"):

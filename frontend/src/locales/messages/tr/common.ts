@@ -1,5 +1,5 @@
 /**
- * tr UI — common
+ * tr UI � common
  */
 
 export default {

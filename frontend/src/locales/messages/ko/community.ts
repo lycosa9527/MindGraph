@@ -1,4 +1,6 @@
-/** ko UI — community */
+/**
+ * ko UI � community
+ */
 
 export default {
   'community.category.all': '전체',

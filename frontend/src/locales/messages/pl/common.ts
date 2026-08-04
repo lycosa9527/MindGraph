@@ -1,5 +1,5 @@
 /**
- * pl UI — common
+ * pl UI � common
  */
 
 export default {

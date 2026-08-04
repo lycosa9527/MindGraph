@@ -1,4 +1,6 @@
-/** ja UI — auth */
+/**
+ * ja UI � auth
+ */
 
 export default {
   'auth.accountInfo': 'アカウント',

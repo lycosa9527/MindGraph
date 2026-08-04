@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 import uuid as uuid_module
 from datetime import UTC, datetime
@@ -24,6 +25,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.sql.functions import count as sa_count
 
 from config.database import get_async_db
@@ -31,6 +33,7 @@ from models.domain.auth import User
 from models.domain.showcase import ShowcasePost, ShowcasePostFavorite, ShowcasePostLike
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from services.redis.cache import redis_showcase_cache as showcase_cache
+from services.showcase.covers.enqueue import enqueue_missing_office_preview
 from services.showcase.field_options import validate_grade, validate_subject
 from services.showcase.post_delete import (
     clear_showcase_post_engagement,
@@ -668,7 +671,7 @@ async def upload_post_gallery_images(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Upload diagram-case gallery images in a dedicated multipart request."""
+    """Upload diagram-case / diagram-template gallery images in a dedicated multipart request."""
     _validate_post_id(post_id)
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("showcase_update", identifier, max_requests=20, window_seconds=60)
@@ -678,10 +681,10 @@ async def upload_post_gallery_images(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
     if not await can_edit_case(post, current_user, db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot edit this case")
-    if post.case_type != "diagram_case":
+    if post.case_type not in ("diagram_case", "diagram_template"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Gallery images are only supported for diagram cases",
+            detail="Gallery images are only supported for diagram cases and templates",
         )
 
     gallery_images = await collect_gallery_images_from_request(request)
@@ -692,12 +695,14 @@ async def upload_post_gallery_images(
         )
     reject_if_cos_multipart_files_present(True)
 
-    spec_obj = post.spec if isinstance(post.spec, dict) else None
-    if not spec_obj or not isinstance(spec_obj.get("gallery"), list):
+    if not isinstance(post.spec, dict) or not isinstance(post.spec.get("gallery"), list):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Case has no gallery to attach images to",
         )
+    # Deep copy: mutating post.spec in place then reassigning the same object
+    # is a JSONB no-op under SQLAlchemy (approve then sees pending gallery).
+    spec_obj = copy.deepcopy(post.spec)
 
     logger.info(
         "[Showcase] upload_post_gallery_images post=%s files=%s",
@@ -708,6 +713,7 @@ async def upload_post_gallery_images(
     assert_gallery_uploads_resolved(spec_obj)
     save_spec_json(post_id, spec_obj)
     post.spec = spec_obj
+    flag_modified(post, "spec")
     post.updated_at = datetime.now(UTC)
 
     try:
@@ -767,6 +773,15 @@ async def get_post(
         payload["views_count"] = bumped_views
     if post.spec:
         payload["spec"] = post.spec
+    # Backfill LO preview.pdf for legacy Office posts (thumb OK, reader stuck).
+    enqueue_missing_office_preview(
+        post_id=post.id,
+        case_type=post.case_type,
+        spec=post.spec,
+        author_id=int(post.author_id),
+        organization_id=current_user.organization_id,
+        actor_user_id=int(current_user.id),
+    )
     return payload
 
 

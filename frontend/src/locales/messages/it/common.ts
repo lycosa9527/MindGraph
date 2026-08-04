@@ -1,4 +1,6 @@
-/** it UI — common */
+/**
+ * it UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'Contenuto generato dall\'IA; verifica attentamente.',

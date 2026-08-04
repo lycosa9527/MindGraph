@@ -1,4 +1,6 @@
-/** uk UI — community */
+/**
+ * uk UI � community
+ */
 
 export default {
   'community.category.all': 'Усі',

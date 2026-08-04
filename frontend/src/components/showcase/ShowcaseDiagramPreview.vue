@@ -22,6 +22,7 @@ import {
 } from '@/composables/presentation/presentationDiagramEdit'
 import { useDiagramStore } from '@/stores'
 import type { DiagramType } from '@/types'
+import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 import { decodeMgFileToJsonText } from '@/utils/mgInterchange'
 import {
   cloneShowcaseDiagramSpec,
@@ -68,6 +69,8 @@ type PreviewMode = 'idle' | 'loading' | 'diagram' | 'image' | 'empty' | 'error'
 
 const previewMode = ref<PreviewMode>('idle')
 const previewError = ref<string | null>(null)
+/** Spec currently rendered in the reader (may come from URL/.mg fetch, not slide.spec). */
+const loadedDiagramSpec = ref<Record<string, unknown> | null>(null)
 const zoomLevel = ref(1)
 const activeGalleryIndex = ref(0)
 const carouselRef = ref<HTMLElement | null>(null)
@@ -80,15 +83,31 @@ function resolvedImageSrc(index: number, url: string): string {
   return slideBlobUrls.value[index] ?? url
 }
 
+function guessImageMimeFromUrl(url: string): string | null {
+  const path = url.split('?')[0]?.toLowerCase() ?? ''
+  if (path.endsWith('.png')) return 'image/png'
+  if (path.endsWith('.jpg') || path.endsWith('.jpeg')) return 'image/jpeg'
+  if (path.endsWith('.gif')) return 'image/gif'
+  if (path.endsWith('.webp')) return 'image/webp'
+  if (path.endsWith('.svg')) return 'image/svg+xml'
+  return null
+}
+
 async function prefetchSlideImage(index: number, url: string): Promise<void> {
   if (slideBlobUrls.value[index] || failedImageSlideIndexes.value.has(index)) return
   const resolved = resolveDevStaticUrl(url) ?? url
   try {
-    const response = await fetch(resolved, { credentials: 'include', cache: 'no-store' })
+    // Same-origin proxy: credentialed fetch cannot follow COS 302 (CORS);
+    // ``<img>`` thumbs still work without proxy.
+    const response = await fetchShowcaseAsset(resolved)
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const blob = await response.blob()
-    if (!blob.type.startsWith('image/')) throw new Error('not image')
-    slideBlobUrls.value = { ...slideBlobUrls.value, [index]: URL.createObjectURL(blob) }
+    const mime = blob.type.startsWith('image/')
+      ? blob.type
+      : guessImageMimeFromUrl(resolved)
+    if (!mime) throw new Error('not image')
+    const imageBlob = blob.type.startsWith('image/') ? blob : new Blob([await blob.arrayBuffer()], { type: mime })
+    slideBlobUrls.value = { ...slideBlobUrls.value, [index]: URL.createObjectURL(imageBlob) }
   } catch {
     const next = new Set(failedImageSlideIndexes.value)
     next.add(index)
@@ -110,6 +129,7 @@ const carouselSlides = computed((): ShowcaseCarouselSlide[] =>
     postId: props.postId,
     sourceFileUrl: props.sourceFileUrl,
     thumbnailUrl: props.thumbnailUrl,
+    diagramType: props.diagramType,
     resolveUrl: resolveDevStaticUrl,
   })
 )
@@ -228,23 +248,12 @@ function slideDiagramType(slide: ShowcaseCarouselSlide): string | null {
 }
 
 async function fetchJson(url: string): Promise<unknown> {
-  const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}mg_preview=${Date.now()}`, {
-    credentials: 'include',
-    cache: 'no-store',
-  })
+  const response = await fetchShowcaseAsset(url)
   if (!response.ok) throw new Error(`HTTP ${response.status}`)
   return response.json()
 }
 
-async function resolveDiagramSpecForSlide(slide: ShowcaseCarouselSlide | null): Promise<Record<string, unknown> | null> {
-  if (!slide || slide.kind !== 'diagram') {
-    if (isRenderableSpec(props.spec)) return props.spec as Record<string, unknown>
-    return null
-  }
-  if (slide.spec && isRenderableSpec(slide.spec)) return slide.spec
-
-  if (isRenderableSpec(props.spec)) return props.spec as Record<string, unknown>
-
+async function fetchDiagramSpecFromUrls(): Promise<Record<string, unknown> | null> {
   if (props.specJsonUrl) {
     const fromUrl = await fetchJson(props.specJsonUrl)
     if (isRenderableSpec(fromUrl)) return fromUrl
@@ -252,14 +261,26 @@ async function resolveDiagramSpecForSlide(slide: ShowcaseCarouselSlide | null): 
 
   const sourceUrl = resolveDevStaticUrl(props.sourceFileUrl)
   if (sourceUrl && /\.mg(\?|$)/i.test(sourceUrl)) {
-    const response = await fetch(`${sourceUrl}${sourceUrl.includes('?') ? '&' : '?'}mg_preview=${Date.now()}`, {
-      credentials: 'include',
-      cache: 'no-store',
-    })
+    const response = await fetchShowcaseAsset(sourceUrl)
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const text = await decodeMgFileToJsonText(await response.arrayBuffer())
     const parsed = JSON.parse(text) as unknown
     if (isRenderableSpec(parsed)) return parsed
+  }
+
+  return null
+}
+
+async function resolveDiagramSpecForSlide(slide: ShowcaseCarouselSlide | null): Promise<Record<string, unknown> | null> {
+  if (slide?.kind === 'diagram' && slide.spec && isRenderableSpec(slide.spec)) {
+    return slide.spec
+  }
+
+  if (isRenderableSpec(props.spec)) return props.spec as Record<string, unknown>
+
+  // Empty carousel or diagram slide without nested spec: fetch from asset URLs.
+  if (!slide || slide.kind === 'diagram') {
+    return fetchDiagramSpecFromUrls()
   }
 
   return null
@@ -306,13 +327,18 @@ async function loadPreview(): Promise<void> {
     if (spec) {
       if (!diagramBackup) backupDiagramStore()
       const specClone = cloneShowcaseDiagramSpec(spec)
-      const diagramType = resolveShowcaseDiagramType(specClone, slideDiagramType(activeSlide.value!))
+      const diagramType = resolveShowcaseDiagramType(
+        specClone,
+        activeSlide.value ? slideDiagramType(activeSlide.value) : (props.diagramType ?? null)
+      )
       const loaded = diagramStore.loadFromSpec(specClone, diagramType, { emitLoaded: false })
       if (!loaded) throw new Error('Failed to load diagram spec')
+      loadedDiagramSpec.value = specClone
       previewMode.value = 'diagram'
       return
     }
 
+    loadedDiagramSpec.value = null
     if (imagePreviewUrl.value) {
       previewMode.value = 'image'
       return
@@ -321,6 +347,7 @@ async function loadPreview(): Promise<void> {
     previewMode.value = 'empty'
   } catch {
     if (token !== previewLoadToken) return
+    loadedDiagramSpec.value = null
     if (imagePreviewUrl.value) {
       previewMode.value = 'image'
       return
@@ -356,6 +383,26 @@ function goPrevSlide(): void {
 function goNextSlide(): void {
   scrollToSlide(activeGalleryIndex.value + 1)
 }
+
+/** Active carousel diagram spec for apply/import actions (null for image slides). */
+function getActiveDiagramSpec(): Record<string, unknown> | null {
+  const slide = activeSlide.value
+  if (slide?.kind === 'image') return null
+  if (slide?.kind === 'diagram' && slide.spec && isRenderableSpec(slide.spec)) {
+    return cloneShowcaseDiagramSpec(slide.spec)
+  }
+  // Reader may have fetched .mg / spec_json into diagramStore when slide.spec was absent.
+  if (
+    (!slide || slide.kind === 'diagram') &&
+    loadedDiagramSpec.value &&
+    isRenderableSpec(loadedDiagramSpec.value)
+  ) {
+    return cloneShowcaseDiagramSpec(loadedDiagramSpec.value)
+  }
+  return null
+}
+
+defineExpose({ getActiveDiagramSpec })
 
 function zoomIn() {
   zoomLevel.value = Math.min(ZOOM_MAX, Math.round((zoomLevel.value + ZOOM_STEP) * 100) / 100)
@@ -444,9 +491,9 @@ watch(
       carouselRef.value.scrollLeft = 0
     }
     zoomLevel.value = 1
-    if (!hasCarousel.value) {
-      void loadPreview()
-    }
+    // Always load: multi-diagram carousels previously skipped this path, so slide 0
+    // stayed on the swipe hint until the user changed slides (which triggered load).
+    void loadPreview()
   },
   { immediate: true }
 )
@@ -541,7 +588,7 @@ onBeforeUnmount(() => {
         >
           <ZoomOut class="h-3.5 w-3.5" />
         </button>
-        <span class="min-w-[2.75rem] text-center text-xs tabular-nums text-gray-500">{{ zoomPercent }}</span>
+        <span class="min-w-11 text-center text-xs tabular-nums text-gray-500">{{ zoomPercent }}</span>
         <button
           type="button"
           class="diagram-reader-toolbar-btn inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800 disabled:opacity-40"
@@ -569,7 +616,7 @@ onBeforeUnmount(() => {
         >
           <ZoomOut class="h-3.5 w-3.5" />
         </button>
-        <span class="min-w-[2.75rem] text-center text-xs tabular-nums text-gray-500">{{ zoomPercent }}</span>
+        <span class="min-w-11 text-center text-xs tabular-nums text-gray-500">{{ zoomPercent }}</span>
         <button
           type="button"
           class="diagram-reader-toolbar-btn inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800"

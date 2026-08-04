@@ -1,4 +1,6 @@
-/** id UI — common */
+/**
+ * id UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'Konten dihasilkan oleh AI; harap verifikasi dengan saksama.',

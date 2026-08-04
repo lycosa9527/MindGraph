@@ -1,4 +1,6 @@
-/** de UI — common */
+/**
+ * de UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'Inhalt KI-generiert; bitte sorgfältig prüfen.',

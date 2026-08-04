@@ -1,4 +1,6 @@
-/** uk UI — notification */
+/**
+ * uk UI � notification
+ */
 
 export default {
   'notification.cannotClearTopicOrCenter': 'Неможливо очистити вузли теми або центру',

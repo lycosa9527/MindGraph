@@ -1,4 +1,6 @@
-/** vi UI — common */
+/**
+ * vi UI � common
+ */
 
 export default {
   'app.aiDisclaimer': 'Nội dung do AI tạo; vui lòng kiểm tra cẩn thận.',
@@ -10,8 +12,7 @@ export default {
   'app.browserLocale.switch': 'Chuyển',
   'app.browserLocale.title': 'Chuyển ngôn ngữ giao diện?',
   'app.testServer.badge': 'TEST',
-  'app.testServer.body':
-    'Roy, đặt tay lên hông, nhắc bạn: bạn đang ở máy chủ thử nghiệm. Trang này thường offline để thử nghiệm—hãy dùng trang chính thức cho công việc thực tế.',
+  'app.testServer.body': 'Roy, đặt tay lên hông, nhắc bạn: bạn đang ở máy chủ thử nghiệm. Trang này thường offline để thử nghiệm—hãy dùng trang chính thức cho công việc thực tế.',
   'app.testServer.confirm': 'Ở lại thử nghiệm',
   'app.testServer.jump': 'Đến trang chính thức',
   'app.testServer.productionHost': 'mg.mindspringedu.com',
@@ -113,10 +114,8 @@ export default {
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'Kitty',
-  'canvas.kittyMobileIndicatorHint':
-    'Phiên Kitty trên điện thoại (đã bật mic) đang liên kết với sơ đồ này. Dùng điện thoại để nói chuyện với Kitty.',
-  'canvas.kittyMobileIndicatorAria':
-    'Trạng thái: Kitty di động đã kết nối với canvas MindGraph này. Tương tác trên điện thoại của bạn.',
+  'canvas.kittyMobileIndicatorHint': 'Phiên Kitty trên điện thoại (đã bật mic) đang liên kết với sơ đồ này. Dùng điện thoại để nói chuyện với Kitty.',
+  'canvas.kittyMobileIndicatorAria': 'Trạng thái: Kitty di động đã kết nối với canvas MindGraph này. Tương tác trên điện thoại của bạn.',
   'canvas.kittyMobileIndicatorTitle': 'Kitty di động',
   'canvas.kittyVoiceCommandLogTitle': 'Lệnh thoại',
   'canvas.kittyVoiceCommandLogAria': 'Lệnh thoại gần đây từ Kitty di động',
@@ -149,10 +148,8 @@ export default {
   'mobile.kittyKeyboardToggle': 'Nhập văn bản',
   'mobile.kittyEnd': 'Kết thúc',
   'mobile.kittyWelcomeLine': 'Chia sẻ ý tưởng của bạn',
-  'mobile.kittyWelcomeSub':
-    'Hỏi bằng giọng nói hoặc gõ. Mở sơ đồ đã lưu trên điện thoại hoặc máy tính để Kitty đồng bộ với MindGraph.',
-  'mobile.kittyNeedsDesktopOwner':
-    'Mở sơ đồ này trên MindGraph desktop để áp dụng chỉnh sửa. Kitty trên điện thoại vẫn có thể trò chuyện cho đến khi canvas kết nối.',
+  'mobile.kittyWelcomeSub': 'Hỏi bằng giọng nói hoặc gõ. Mở sơ đồ đã lưu trên điện thoại hoặc máy tính để Kitty đồng bộ với MindGraph.',
+  'mobile.kittyNeedsDesktopOwner': 'Mở sơ đồ này trên MindGraph desktop để áp dụng chỉnh sửa. Kitty trên điện thoại vẫn có thể trò chuyện cho đến khi canvas kết nối.',
   'mobile.kittyConnecting': 'Đang kết nối…',
   'mobile.kittyInputPlaceholder': 'Nhập tin nhắn…',
   'mobile.kittySend': 'Gửi',
@@ -164,8 +161,7 @@ export default {
   'mobile.kittyConnectFailed': 'Kết nối thất bại. Kiểm tra mạng và thử lại.',
   'mobile.kittyDisconnected': 'Mất kết nối thoại. Đang kết nối lại…',
   'mobile.kittyEnableServerHint': 'Bật FEATURE_KITTY_AGENT=True trong .env máy chủ và khởi động lại API.',
-  'mobile.kittyServerDisabledBanner':
-    'Giọng nói Kitty bị tắt trong môi trường này. Bật FEATURE_KITTY_AGENT trong .env máy chủ và khởi động lại.',
+  'mobile.kittyServerDisabledBanner': 'Giọng nói Kitty bị tắt trong môi trường này. Bật FEATURE_KITTY_AGENT trong .env máy chủ và khởi động lại.',
   'mobile.kittyDiagramPickerTitle': 'Chọn sơ đồ',
   'mobile.kittyDiagramPickerLoading': 'Đang tải…',
   'mobile.kittyDiagramPickerEmpty': 'Không có sơ đồ đã lưu',
@@ -209,12 +205,9 @@ export default {
   'mobile.kittyPhotoProgressDetecting': 'Đang xử lý ảnh…',
   'mobile.kittyPhotoUserBubble': '📷 Ảnh',
   'mobile.kittyPhotoUntitledMap': 'Sơ đồ tư duy',
-  'mobile.kittyPhotoHanddrawnReply':
-    'Phát hiện sơ đồ tư duy vẽ tay “{topic}”. Đã dựng lại trên canvas; dàn ý đã lưu vào Document Summary.',
-  'mobile.kittyPhotoHanddrawnLocalReply':
-    'Phát hiện sơ đồ tư duy vẽ tay “{topic}”. Đã dựng lại tại đây; dàn ý đã lưu vào Document Summary. Đồng bộ thư viện chưa hoàn tất — mở lại sơ đồ nếu canvas trông cũ.',
-  'mobile.kittyPhotoOcrReply':
-    'Đã trích xuất văn bản từ ảnh:\n{excerpt}\n\nVăn bản đầy đủ nằm trong Document Summary.',
+  'mobile.kittyPhotoHanddrawnReply': 'Phát hiện sơ đồ tư duy vẽ tay “{topic}”. Đã dựng lại trên canvas; dàn ý đã lưu vào Document Summary.',
+  'mobile.kittyPhotoHanddrawnLocalReply': 'Phát hiện sơ đồ tư duy vẽ tay “{topic}”. Đã dựng lại tại đây; dàn ý đã lưu vào Document Summary. Đồng bộ thư viện chưa hoàn tất — mở lại sơ đồ nếu canvas trông cũ.',
+  'mobile.kittyPhotoOcrReply': 'Đã trích xuất văn bản từ ảnh:\n{excerpt}\n\nVăn bản đầy đủ nằm trong Document Summary.',
   'mobile.kittyPhotoUploadFailed': 'Không thể tải ảnh lên.',
   'mobile.kittyPickDiagramToEdit': 'Mở hoặc chọn sơ đồ đã lưu trước, rồi giữ để nói hoặc gõ để chỉnh sửa.',
   'mobile.kittyHubSyncFailed': 'Không thể đồng bộ sơ đồ với Kitty. Kiểm tra kết nối và thử lại.',
@@ -271,11 +264,9 @@ export default {
   'landing.international.examplesTitle': 'Cảm hứng',
   'landing.international.example1': 'Tạo sơ đồ tư duy về quang hợp',
   'landing.international.example2': 'Dùng sơ đồ cây phân loại động vật có xương sống: cá, lưỡng cư, bò sát, thú',
-  'landing.international.example3':
-    'Dùng sơ đồ luồng cho thí nghiệm mật độ: đo khối lượng, đo thể tích, tính toán, ghi kết quả',
+  'landing.international.example3': 'Dùng sơ đồ luồng cho thí nghiệm mật độ: đo khối lượng, đo thể tích, tính toán, ghi kết quả',
   'landing.international.example4': 'Dùng sơ đồ bong bóng đôi so sánh tế bào thực vật và tế bào động vật',
-  'landing.international.example5':
-    'Dùng sơ đồ ngoặc phân tích phương trình bậc hai: dạng chuẩn, delta, công thức nghiệm, đồ thị và nghiệm',
+  'landing.international.example5': 'Dùng sơ đồ ngoặc phân tích phương trình bậc hai: dạng chuẩn, delta, công thức nghiệm, đồ thị và nghiệm',
   'landing.international.example6': 'Tạo sơ đồ bong bóng mô tả ý chính trong ba định luật chuyển động của Newton',
   'landing.international.phaseRequestSent': 'Đã gửi yêu cầu',
   'landing.international.phaseServerReceived': 'Máy chủ đã nhận yêu cầu của bạn',

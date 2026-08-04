@@ -1,4 +1,6 @@
-/** hi UI — canvas */
+/**
+ * hi UI � canvas
+ */
 
 export default {
   'braceMap.defaultSubpartFirst': 'नया उपभाग 1',

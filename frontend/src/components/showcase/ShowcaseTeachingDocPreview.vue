@@ -4,13 +4,34 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { FileText, Loader2, Maximize2, Minimize2, ZoomIn, ZoomOut } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 import { renderDocxPreview } from '@/utils/renderDocxPreview'
 import { renderPdfPreview } from '@/utils/renderPdfPreview'
 import { refreshWatermarkDensity } from '@/utils/showcaseWatermark'
 
+type FileKind = 'pdf' | 'docx' | 'doc' | 'pptx' | 'unknown'
+
+function attachmentFileKind(url: string | null | undefined): FileKind {
+  if (!url) return 'unknown'
+  try {
+    const path = new URL(url, 'http://local').pathname.toLowerCase()
+    if (path.endsWith('.pdf')) return 'pdf'
+    if (path.endsWith('.pptx')) return 'pptx'
+    if (path.endsWith('.docx')) return 'docx'
+    if (path.endsWith('.doc')) return 'doc'
+  } catch {
+    const lower = url.toLowerCase().split('?')[0] ?? ''
+    if (lower.endsWith('.pdf')) return 'pdf'
+    if (lower.endsWith('.pptx')) return 'pptx'
+    if (lower.endsWith('.docx')) return 'docx'
+    if (lower.endsWith('.doc')) return 'doc'
+  }
+  return 'unknown'
+}
+
 const props = defineProps<{
   attachmentUrl?: string | null
-  /** LibreOffice-converted PDF for PPTX (and similar) inline preview. */
+  /** LibreOffice-converted PDF for Office docs (PPTX/DOCX/DOC) inline preview. */
   previewUrl?: string | null
   fallbackText?: string
   watermarkName?: string | null
@@ -19,22 +40,13 @@ const props = defineProps<{
 
 const { t } = useLanguage()
 
-type FileKind = 'pdf' | 'docx' | 'doc' | 'pptx' | 'unknown'
-
 const WATERMARK_TILE_COUNT = 36
 const PDF_BASE_SCALE = 1.35
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 2.5
 const ZOOM_STEP = 0.15
 
-const fileKind = computed<FileKind>(() => {
-  const url = props.attachmentUrl?.toLowerCase() ?? ''
-  if (url.endsWith('.pdf')) return 'pdf'
-  if (url.endsWith('.pptx')) return 'pptx'
-  if (url.endsWith('.docx')) return 'docx'
-  if (url.endsWith('.doc')) return 'doc'
-  return 'unknown'
-})
+const fileKind = computed<FileKind>(() => attachmentFileKind(props.attachmentUrl))
 
 const absoluteAttachmentUrl = computed(() => {
   if (!props.attachmentUrl || typeof window === 'undefined') return null
@@ -46,12 +58,29 @@ const absolutePreviewUrl = computed(() => {
   return new URL(props.previewUrl, window.location.origin).href
 })
 
-/** PDF bytes source for pdf.js (native PDF or converted PPTX preview). */
+/**
+ * PDF bytes for pdf.js: native PDF attachment, or LO preview for Office.
+ * DOCX/DOC without previewUrl keep the client fallback (legacy posts).
+ */
 const pdfSourceUrl = computed(() => {
   if (fileKind.value === 'pdf') return absoluteAttachmentUrl.value
   if (fileKind.value === 'pptx') return absolutePreviewUrl.value
+  if (
+    (fileKind.value === 'docx' || fileKind.value === 'doc') &&
+    absolutePreviewUrl.value
+  ) {
+    return absolutePreviewUrl.value
+  }
   return null
 })
+
+const showPdfReader = computed(
+  () =>
+    fileKind.value === 'pdf' ||
+    fileKind.value === 'pptx' ||
+    ((fileKind.value === 'docx' || fileKind.value === 'doc') &&
+      Boolean(absolutePreviewUrl.value))
+)
 
 const pptxPreviewPending = computed(
   () => fileKind.value === 'pptx' && !absolutePreviewUrl.value
@@ -92,6 +121,7 @@ const hasAttachmentPreview = computed(
     fileKind.value === 'pdf' ||
     fileKind.value === 'pptx' ||
     fileKind.value === 'docx' ||
+    Boolean(absolutePreviewUrl.value && fileKind.value === 'doc') ||
     Boolean(legacyDocOfficeSrc.value)
 )
 
@@ -182,10 +212,7 @@ let pdfCleanup: (() => void) | null = null
 let pdfAbort: AbortController | null = null
 
 function measureContentWidth(): number {
-  if (
-    (fileKind.value === 'pdf' || fileKind.value === 'pptx') &&
-    pdfContainer.value
-  ) {
+  if (showPdfReader.value && pdfContainer.value) {
     const page = pdfContainer.value.querySelector<HTMLElement>('.showcase-pdf-page, canvas')
     return page?.scrollWidth || pdfContainer.value.scrollWidth
   }
@@ -237,9 +264,8 @@ async function loadPdfPreview(url: string, container: HTMLElement): Promise<void
 }
 
 watch(
-  [pdfSourceUrl, fileKind, () => pdfContainer.value, userZoom],
-  async ([url, kind, container]) => {
-    const usesPdfReader = kind === 'pdf' || kind === 'pptx'
+  [pdfSourceUrl, showPdfReader, () => pdfContainer.value, userZoom],
+  async ([url, usesPdfReader, container]) => {
     if (!usesPdfReader || !url || !container) {
       pdfAbort?.abort()
       pdfAbort = null
@@ -276,9 +302,10 @@ watch(
 )
 
 watch(
-  [absoluteAttachmentUrl, fileKind, () => docxContainer.value],
-  async ([url, kind, container]) => {
-    if (kind !== 'docx' || !url || !container) {
+  [absoluteAttachmentUrl, fileKind, absolutePreviewUrl, () => docxContainer.value],
+  async ([url, kind, previewUrl, container]) => {
+    // Prefer LibreOffice PDF via pdf.js when available (full images/layout).
+    if (kind !== 'docx' || !url || !container || previewUrl) {
       docxLoading.value = false
       docxError.value = null
       container?.replaceChildren()
@@ -293,10 +320,7 @@ watch(
     userZoom.value = 1
 
     try {
-      const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}mg_preview=${Date.now()}`, {
-        credentials: 'include',
-        cache: 'no-store',
-      })
+      const response = await fetchShowcaseAsset(url)
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
       }
@@ -373,7 +397,7 @@ onBeforeUnmount(() => {
       >
         <ZoomOut class="h-3.5 w-3.5" />
       </button>
-      <span class="min-w-[2.75rem] text-center text-xs tabular-nums text-gray-500">{{ zoomPercent }}</span>
+      <span class="min-w-11 text-center text-xs tabular-nums text-gray-500">{{ zoomPercent }}</span>
       <button
         type="button"
         class="doc-reader-toolbar-btn inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800 disabled:opacity-40"
@@ -418,7 +442,7 @@ onBeforeUnmount(() => {
       @dragstart="blockCopyEvent"
     >
       <div
-        v-if="fileKind === 'pdf' || fileKind === 'pptx'"
+        v-if="showPdfReader"
         class="relative min-h-full px-3 py-3"
       >
         <div

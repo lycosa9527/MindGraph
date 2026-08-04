@@ -17,6 +17,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import User
 from models.domain.showcase import ShowcasePost
 from services.redis.redis_async_client import get_async_redis
+from services.showcase.covers.enqueue import (
+    enqueue_missing_office_preview,
+    office_attachment_needs_preview,
+)
 from services.showcase.covers.events import (
     COVER_SSE_MAX_SECONDS,
     HEARTBEAT_SECONDS,
@@ -163,7 +167,21 @@ async def showcase_cover_stream_response(
     """Return an SSE stream of cover_ready / cover_fail for one post."""
     post = await _load_visible_post(db, post_id, current_user)
     initial_payload: Optional[str] = None
-    if post.thumbnail_path:
+    # Legacy Office posts may have a thumbnail but no LO preview.pdf — re-enqueue
+    # and wait instead of emitting cover_ready with preview_url=null (PPTX spinner).
+    needs_office_preview = (
+        post.case_type == "teaching_design" and office_attachment_needs_preview(post.spec) is not None
+    )
+    if needs_office_preview:
+        enqueue_missing_office_preview(
+            post_id=post_id,
+            case_type=post.case_type,
+            spec=post.spec,
+            author_id=int(post.author_id),
+            organization_id=current_user.organization_id,
+            actor_user_id=int(current_user.id),
+        )
+    elif post.thumbnail_path:
         preview_url = None
         if isinstance(post.spec, dict):
             preview_path = post.spec.get("preview_path")

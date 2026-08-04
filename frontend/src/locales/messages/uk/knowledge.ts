@@ -1,4 +1,6 @@
-/** uk UI — knowledge */
+/**
+ * uk UI � knowledge
+ */
 
 export default {
   'fileCenterLibrary.title': 'Пакети',

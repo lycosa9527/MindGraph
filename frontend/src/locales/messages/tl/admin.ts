@@ -1,4 +1,6 @@
-/** tl UI — admin */
+/**
+ * tl UI � admin
+ */
 
 export default {
   'admin.actions': 'Mga aksyon',
@@ -24,8 +26,7 @@ export default {
   'admin.confirm': 'Kumpirmahin',
   'admin.copyShareMessage': 'Kopyahin',
   'admin.copyInvitationCode': 'Kopyahin ang code ng imbitasyon',
-  'admin.schoolInviteCopyPayload':
-    '{orgName}: Maligayang pagdating sa Mind thinking & teaching AI agent platform!\nGinagabayan ng BNU Thinking Training Center at co-built kasama ang 100+ thinking-development alliance school — samahan kami para palaguin ang mga kasanayan sa pag-iisip sa panahon ng AI.\nPaano: buksan sa computer o telepono; magparehistro gamit ang numero ng telepono + code ng imbitasyon sa unang pagkakataon, pagkatapos ay mag-sign in gamit ang SMS na pag-verify.\nURL: {siteUrl}\nCode ng imbitasyon ng organisasyon: {code}',
+  'admin.schoolInviteCopyPayload': '{orgName}: Maligayang pagdating sa Mind thinking & teaching AI agent platform!\nGinagabayan ng BNU Thinking Training Center at co-built kasama ang 100+ thinking-development alliance school — samahan kami para palaguin ang mga kasanayan sa pag-iisip sa panahon ng AI.\nPaano: buksan sa computer o telepono; magparehistro gamit ang numero ng telepono + code ng imbitasyon sa unang pagkakataon, pagkatapos ay mag-sign in gamit ang SMS na pag-verify.\nURL: {siteUrl}\nCode ng imbitasyon ng organisasyon: {code}',
   'admin.createApiKey': 'Lumikha ng API Key',
   'admin.createOrganization': 'Lumikha ng Organisasyon',
   'admin.createSchool': 'Lumikha ng Paaralan',
@@ -35,16 +36,14 @@ export default {
   'admin.dashboardLoadError': 'Error sa network, hindi na-load ang mga istatistika ng dashboard',
   'admin.delete': 'Tanggalin',
   'admin.deleteOrgConfirm': 'Tanggalin ang organisasyon {name}? Hindi na ito maaaring bawiin.',
-  'admin.deleteOrgConfirmWithUsers':
-    'Tanggalin ang organisasyong {name} at lahat ng {count} na user account? Hindi na ito maaaring bawiin.',
+  'admin.deleteOrgConfirmWithUsers': 'Tanggalin ang organisasyong {name} at lahat ng {count} na user account? Hindi na ito maaaring bawiin.',
   'admin.deleteOrganization': 'Tanggalin ang Organisasyon',
   'admin.description': 'Paglalarawan',
   'admin.diagramGeneration': 'Pagbuo ng Diagram',
   'admin.diagramTypes': 'Mga Uri ng Diagram',
   'admin.disabled': 'Hindi pinagana',
   'admin.displayNameLabel': 'Display Name sa Sidebar',
-  'admin.displayNameHint':
-    'Custom na text na ipinapakita sa sidebar ng user (hal. MindGraph Pro). Iwanang walang laman upang gamitin ang pangalan ng paaralan.',
+  'admin.displayNameHint': 'Custom na text na ipinapakita sa sidebar ng user (hal. MindGraph Pro). Iwanang walang laman upang gamitin ang pangalan ng paaralan.',
   'admin.editApiKey': 'I-edit ang API Key',
   'admin.editSchool': 'I-edit ang Paaralan',
   'admin.enabled': 'Pinagana',
@@ -71,11 +70,9 @@ export default {
   'admin.feature.markets': 'Market (catalog at mga order)',
   'admin.feature.marketsHint': 'Mga template/kurso/subscription SKU, Alipay checkout at abisuhan.',
   'admin.feature.mindbot': 'MindBot (DingTalk → Dify)',
-  'admin.feature.mindbotHint':
-    'Enterprise DingTalk robot HTTP callback, per-school Dify at mga lihim. Nangangailangan ng HTTPS callback URL.',
+  'admin.feature.mindbotHint': 'Enterprise DingTalk robot HTTP callback, per-school Dify at mga lihim. Nangangailangan ng HTTPS callback URL.',
   'admin.feature.mindmateExport': 'MindMate pag-export ng pag-uusap',
-  'admin.feature.mindmateExportHint':
-    'Superadmin panel para tingnan at i-export ang web MindMate at DingTalk MindBot Dify history.',
+  'admin.feature.mindmateExportHint': 'Superadmin panel para tingnan at i-export ang web MindMate at DingTalk MindBot Dify history.',
   'admin.feature.ragChunkTest': 'Pagsusuri ng RAG chunk',
   'admin.feature.ragChunkTestHint': 'Mga tool sa benchmark sa loob ng espasyo ng kaalaman.',
   'admin.feature.smartResponse': 'Matalinong tugon (mga device)',
@@ -83,19 +80,16 @@ export default {
   'admin.feature.teacherUsage': 'Pagsusuri sa paggamit ng guro',
   'admin.feature.teacherUsageHint': 'Mga dashboard ng admin para sa pakikipag-ugnayan ng guro.',
   'admin.feature.kittyAgent': 'Kitty Agent (boses at canvas)',
-  'admin.feature.kittyAgentHint':
-    'Qwen-Omni realtime multimodal agent; WebSocket at REST igalang ang mga panuntunan sa pag-access ng org/user.',
+  'admin.feature.kittyAgentHint': 'Qwen-Omni realtime multimodal agent; WebSocket at REST igalang ang mga panuntunan sa pag-access ng org/user.',
   'admin.feature.template': 'Mga mapagkukunan ng template',
   'admin.feature.templateHint': 'Gallery ng template at mga nauugnay na API.',
   'admin.feature.workshopChat': 'Workshop (教研坊)',
   'admin.feature.workshopChatHint': 'Mga channel ng paaralan, paksa, at direktang mensahe.',
   'admin.feature.mindmateCollab': 'Kolaborasyon sa MindMate',
-  'admin.feature.mindmateCollabHint':
-    'Ibinahagi ang MindMate AI chatroom (org browse + invite code). Nangangailangan ng online_collab tier.',
+  'admin.feature.mindmateCollabHint': 'Ibinahagi ang MindMate AI chatroom (org browse + invite code). Nangangailangan ng online_collab tier.',
   'admin.featureLoadFailed': 'Hindi ma-load ang mga feature na flag',
   'admin.featureSaveFailed': 'Hindi ma-save ang mga setting',
-  'admin.featuresIntro':
-    'I-toggle ang mga flag ng module. Ang mga value ay isinusulat sa .env at nire-reload sa lahat ng API na manggagawa kaya ang UI at API ay nagsusuri ng update nang hindi nagre-restart. Maaaring kailanganin pa rin ng Knowledge Space ang Qdrant/Celery na sinimulan sa proseso.',
+  'admin.featuresIntro': 'I-toggle ang mga flag ng module. Ang mga value ay isinusulat sa .env at nire-reload sa lahat ng API na manggagawa kaya ang UI at API ay nagsusuri ng update nang hindi nagre-restart. Maaaring kailanganin pa rin ng Knowledge Space ang Qdrant/Celery na sinimulan sa proseso.',
   'admin.featuresReloadFailed': 'Hindi mailapat ang mga pagbabago. I-restart ang server.',
   'admin.featuresSave': 'Mag-apply',
   'admin.featuresSaved': 'Inilapat ang mga pagbabago.',
@@ -103,25 +97,21 @@ export default {
   'admin.featureDevTab': 'Pag-unlad ng tampok',
   'admin.newFeaturesTab': 'Mga bagong feature',
   'admin.kittyLlmopsTab': 'Kitty LLMOps',
-  'admin.featuresIntroAccess':
-    'Para sa Workshop, MindMate collab, MindBot, MindMate export, at Kitty, gamitin ang Mga Pahintulot upang limitahan ang mga organisasyon at user pagkatapos paganahin ang module. Ang mga allowlist ay iniimbak sa database at magkakabisa kaagad.',
+  'admin.featuresIntroAccess': 'Para sa Workshop, MindMate collab, MindBot, MindMate export, at Kitty, gamitin ang Mga Pahintulot upang limitahan ang mga organisasyon at user pagkatapos paganahin ang module. Ang mga allowlist ay iniimbak sa database at magkakabisa kaagad.',
   'admin.featurePermissionsApply': 'I-save ang mga pahintulot',
   'admin.featurePermissionsApplied': 'Na-save ang mga pahintulot sa feature.',
   'admin.featurePermissionsButton': 'Mga Pahintulot',
   'admin.featurePermissionsOrgs': 'Mga organisasyon',
   'admin.featurePermissionsOrgsPlaceholder': 'Pumili ng mga paaralan na maaaring gumamit ng feature na ito',
   'admin.featurePermissionsRestrict': 'Limitahan ang pag-access',
-  'admin.featurePermissionsRestrictHint':
-    'Kapag naka-on, tanging mga nakalistang organisasyon at user (kasama ang mga admin at manager) ang maaaring gumamit ng feature na ito habang ito ay nananatiling naka-enable sa buong mundo.',
+  'admin.featurePermissionsRestrictHint': 'Kapag naka-on, tanging mga nakalistang organisasyon at user (kasama ang mga admin at manager) ang maaaring gumamit ng feature na ito habang ito ay nananatiling naka-enable sa buong mundo.',
   'admin.featurePermissionsRestrictedBadge': 'Pinaghihigpitan',
   'admin.featurePermissionsSaveFailed': 'Hindi ma-save ang mga pahintulot sa feature',
   'admin.featurePermissionsUserIds': 'Mga User ID (opsyonal)',
-  'admin.featurePermissionsUserIdsHint':
-    'Mga numerong user ID na pinaghihiwalay ng kuwit para sa mga pagbubukod (hal. mga pilot account).',
+  'admin.featurePermissionsUserIdsHint': 'Mga numerong user ID na pinaghihiwalay ng kuwit para sa mga pagbubukod (hal. mga pilot account).',
   'admin.featurePermissionsUserIdsPlaceholder': 'hal. 12, 34, 56',
   'admin.expirationDate': 'Petsa ng Pag-expire',
-  'admin.expirationDateHint':
-    'Mala-lock ang organisasyon pagkatapos ng petsang ito. Iwanang walang laman nang walang limitasyon.',
+  'admin.expirationDateHint': 'Mala-lock ang organisasyon pagkatapos ng petsang ito. Iwanang walang laman nang walang limitasyon.',
   'admin.validityPeriod': 'Panahon ng Bisa',
   'admin.validityPeriodRequired': 'Mangyaring pumili ng panahon ng bisa',
   'admin.filterBySchool': 'Salain ayon sa Paaralan',
@@ -134,8 +124,7 @@ export default {
   'admin.inputTokens': 'Mga Token ng Input (Lahat ng Panahon)',
   'admin.invitationCode': 'Code ng Imbitasyon',
   'admin.invitationCodeFormatHint': 'I-format ang XXX-XXX (mga titik at digit; hindi kasama ang 0, O, 1, I, L).',
-  'admin.invitationCodeMaskedHint':
-    'Ang code ng imbitasyon ay nakatago bilang default; gamitin ang icon ng mata kapag kailangan mo itong tingnan.',
+  'admin.invitationCodeMaskedHint': 'Ang code ng imbitasyon ay nakatago bilang default; gamitin ang icon ng mata kapag kailangan mo itong tingnan.',
   'admin.sensitiveReveal': 'Ibunyag',
   'admin.sensitiveHide': 'Magtago',
   'admin.invitationCodeAutoGenerated': 'Awtomatikong bubuo ng XXX-XXX invitation code pagkatapos gawin.',
@@ -165,12 +154,10 @@ export default {
   'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'DingTalk robot at Dify (bawat paaralan)',
   'admin.mindbot.dialogHeaderNote': 'DingTalk robot [{name}]',
-  'admin.mindbot.introHttpOnly':
-    'HTTP receive mode: isang callback URL bawat paaralan (ipinapakita kapag nag-edit ka). DingTalk lihim ng app na nag-sign ng mga papasok na kahilingan; Dify powers replies.',
+  'admin.mindbot.introHttpOnly': 'HTTP receive mode: isang callback URL bawat paaralan (ipinapakita kapag nag-edit ka). DingTalk lihim ng app na nag-sign ng mga papasok na kahilingan; Dify powers replies.',
   'admin.mindbot.emptyState': 'Wala pang paaralan ang MindBot na na-configure.',
   'admin.mindbot.managerIntro': 'I-configure ang DingTalk HTTP robot at Dify para sa iyong organisasyon.',
-  'admin.mindbot.managerReadOnlyIntro':
-    'Ang MindBot configuration ng iyong paaralan ay ipinapakita sa ibaba (read-only). Makipag-ugnayan sa administrator ng platform para gumawa ng mga pagbabago.',
+  'admin.mindbot.managerReadOnlyIntro': 'Ang MindBot configuration ng iyong paaralan ay ipinapakita sa ibaba (read-only). Makipag-ugnayan sa administrator ng platform para gumawa ng mga pagbabago.',
   'admin.mindbot.managerNoConfig': 'Wala pang MindBot configuration ang na-set up para sa iyong paaralan.',
   'admin.mindbot.sectionDingTalk': 'DingTalk',
   'admin.mindbot.sectionDify': 'Dify',
@@ -184,13 +171,11 @@ export default {
   'admin.mindbot.edit': 'I-edit',
   'admin.mindbot.move': 'Ilipat',
   'admin.mindbot.moveTitle': 'Ilipat ang bot sa ibang organisasyon',
-  'admin.mindbot.moveIntro':
-    'Italaga itong DingTalk bot configuration sa ibang paaralan. Ang token ng callback URL ay hindi nagbabago.',
+  'admin.mindbot.moveIntro': 'Italaga itong DingTalk bot configuration sa ibang paaralan. Ang token ng callback URL ay hindi nagbabago.',
   'admin.mindbot.moveTarget': 'Organisasyon ng patutunguhan',
   'admin.mindbot.moveSuccess': 'Inilipat si Bot sa napiling organisasyon.',
   'admin.mindbot.moveError': 'Hindi mailipat ang bot. Maaaring puno o hindi wasto ang patutunguhan.',
-  'admin.mindbot.moveNoTargets':
-    'Walang organisasyon ang maaaring tumanggap ng isa pang bot (bawat paaralan ay limitado sa lima).',
+  'admin.mindbot.moveNoTargets': 'Walang organisasyon ang maaaring tumanggap ng isa pang bot (bawat paaralan ay limitado sa lima).',
   'admin.mindbot.create': 'Magdagdag ng bot',
   'admin.mindbot.botLabel': 'Label ng bot',
   'admin.mindbot.difyServiceOnline': 'Dify Serbisyong Online',
@@ -206,24 +191,19 @@ export default {
   'admin.mindbot.deleteConfirm': 'Alisin ang MindBot configuration para sa organisasyong ito?',
   'admin.mindbot.orgSelect': 'Paaralan',
   'admin.mindbot.dingtalkRobotCode': 'Kodigo ng robot',
-  'admin.mindbot.dingtalkRobotCodeHint':
-    'Mula sa DingTalk developer console; ginagamit para sa mga papalabas na API na tawag (nagpapadala ng mga tugon). Ang mga papasok na mensahe ay tinutukoy ng path ng URL ng callback ng paaralang ito, hindi sa pamamagitan ng pagtutugma ng value na ito sa webhook JSON.',
+  'admin.mindbot.dingtalkRobotCodeHint': 'Mula sa DingTalk developer console; ginagamit para sa mga papalabas na API na tawag (nagpapadala ng mga tugon). Ang mga papasok na mensahe ay tinutukoy ng path ng URL ng callback ng paaralang ito, hindi sa pamamagitan ng pagtutugma ng value na ito sa webhook JSON.',
   'admin.mindbot.dingtalkAppSecret': 'Client Secret',
   'admin.mindbot.dingtalkAppSecretHint': 'Kinakailangan kapag nagdadagdag ng paaralan.',
-  'admin.mindbot.dingtalkAppSecretMaskedHint':
-    'Nakatagong sikreto na ang gitna ay nakamaskara. Gamitin ang Palitan upang maglagay ng bagong Client Secret.',
-  'admin.mindbot.dingtalkAppSecretReplaceHint':
-    'Maglagay ng bagong Client Secret, o iwanang blangko at i-save upang mapanatili ang kasalukuyan.',
+  'admin.mindbot.dingtalkAppSecretMaskedHint': 'Nakatagong sikreto na ang gitna ay nakamaskara. Gamitin ang Palitan upang maglagay ng bagong Client Secret.',
+  'admin.mindbot.dingtalkAppSecretReplaceHint': 'Maglagay ng bagong Client Secret, o iwanang blangko at i-save upang mapanatili ang kasalukuyan.',
   'admin.mindbot.dingtalkClientId': 'Client ID',
   'admin.mindbot.dingtalkClientIdPlaceholder': 'Open platform app key (mga pares ng Client Secret)',
-  'admin.mindbot.dingtalkClientIdHint':
-    'Ginamit kasama ng Client Secret upang makakuha ng mga token ng access para sa mga AI card at iba pang OpenAPI. I-save pareho; kinakailangan para sa "Mga pahintulot sa pagsubok" at mga AI card.',
+  'admin.mindbot.dingtalkClientIdHint': 'Ginamit kasama ng Client Secret upang makakuha ng mga token ng access para sa mga AI card at iba pang OpenAPI. I-save pareho; kinakailangan para sa "Mga pahintulot sa pagsubok" at mga AI card.',
   'admin.mindbot.difyShowChainOfThought': 'Ipakita ang chain-of-thought',
   'admin.mindbot.dingtalkAiCardStreamingMaxChars': 'Max chars ng DingTalk AI card streaming',
   'admin.mindbot.dingtalkAiCardTemplateId': 'AI card template (opsyonal)',
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder': 'Walang laman = mga tugon sa teksto; hal. d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
-  'admin.mindbot.dingtalkAiCardTemplateIdHint':
-    'Na-publish na template mula sa DingTalk card platform. Nangangailangan ng Client ID at mga pahintulot sa card (Card.Instance.Write at Card.Streaming.Write).',
+  'admin.mindbot.dingtalkAiCardTemplateIdHint': 'Na-publish na template mula sa DingTalk card platform. Nangangailangan ng Client ID at mga pahintulot sa card (Card.Instance.Write at Card.Streaming.Write).',
   'admin.mindbot.dingtalkAiCardStreamCheck': 'Mga pahintulot sa pagsubok',
   'admin.mindbot.dingtalkAiCardStreamOk': 'OAuth at mga pahintulot sa streaming card OK',
   'admin.mindbot.dingtalkAiCardStreamFail': 'Nabigo ang pagsusuri',
@@ -235,18 +215,14 @@ export default {
   'admin.mindbot.difyBaseUrl': 'Dify API base URL',
   'admin.mindbot.difyApiKey': 'Dify API key',
   'admin.mindbot.difyApiKeyHint': 'Kinakailangan kapag nagdadagdag ng paaralan.',
-  'admin.mindbot.difyApiKeyMaskedHint':
-    'Naka-store na susi na nakamaskara ang gitna. Gamitin ang Palitan upang maglagay ng bagong API key.',
-  'admin.mindbot.difyApiKeyReplaceHint':
-    'Maglagay ng bagong API key, o iwanang blangko at i-save upang panatilihin ang kasalukuyan.',
+  'admin.mindbot.difyApiKeyMaskedHint': 'Naka-store na susi na nakamaskara ang gitna. Gamitin ang Palitan upang maglagay ng bagong API key.',
+  'admin.mindbot.difyApiKeyReplaceHint': 'Maglagay ng bagong API key, o iwanang blangko at i-save upang panatilihin ang kasalukuyan.',
   'admin.mindbot.replaceSecret': 'Palitan',
   'admin.mindbot.difyTimeout': 'Dify timeout (segundo)',
-  'admin.mindbot.difyInputsJsonHint':
-    'Kung ang iyong Dify app ay tumutukoy sa mga variable ng input, magtakda ng JSON object dito (hal. \'{\'"grade":"7"\'}\').',
+  'admin.mindbot.difyInputsJsonHint': 'Kung ang iyong Dify app ay tumutukoy sa mga variable ng input, magtakda ng JSON object dito (hal. \'{\'"grade":"7"\'}\').',
   'admin.mindbot.enabled': 'Paganahin ang MindBot',
   'admin.mindbot.schoolCallbackUrl': 'DingTalk HTTP callback URL (paaralan na ito)',
-  'admin.mindbot.schoolCallbackUrlHint':
-    'I-paste ang URL na ito sa DingTalk HTTP robot callback field. Panatilihing pribado—maaaring magpadala ng trapiko ang sinumang may link sa iyong webhook.',
+  'admin.mindbot.schoolCallbackUrlHint': 'I-paste ang URL na ito sa DingTalk HTTP robot callback field. Panatilihing pribado—maaaring magpadala ng trapiko ang sinumang may link sa iyong webhook.',
   'admin.mindbot.callbackUrlAfterSave': 'I-save nang isang beses para bumuo at ipakita ang callback URL ng paaralang ito.',
   'admin.mindbot.openSettings': 'MindBot mga setting',
   'admin.mindbot.copyUrl': 'Kopyahin',
@@ -259,13 +235,10 @@ export default {
   'admin.mindbot.managerNoOrg': 'Walang organisasyong itinalaga ang iyong account.',
   'admin.mindbot.tabDingtalk': 'Auth ng DingTalk API',
   'admin.oauth.sectionTitle': 'QR pag-sign-in',
-  'admin.oauth.intro':
-    'Paganahin ang WeChat o DingTalk QR login para sa paaralang ito. WeChat AppID/Secret ay nasa server .env; Ang DingTalk ay nangangailangan ng mga kredensyal sa IT ng paaralan.',
-  'admin.oauth.officialDocsHint':
-    'Tumutugma sa mga opisyal na doc: WeChat WxLogin + palitan ng code; DingTalk OAuth 2.0 DTFrameLogin + agarang authCode exchange (hindi legacy oapi.dingtalk.com).',
+  'admin.oauth.intro': 'Paganahin ang WeChat o DingTalk QR login para sa paaralang ito. WeChat AppID/Secret ay nasa server .env; Ang DingTalk ay nangangailangan ng mga kredensyal sa IT ng paaralan.',
+  'admin.oauth.officialDocsHint': 'Tumutugma sa mga opisyal na doc: WeChat WxLogin + palitan ng code; DingTalk OAuth 2.0 DTFrameLogin + agarang authCode exchange (hindi legacy oapi.dingtalk.com).',
   'admin.oauth.wechatToggle': 'Paganahin ang WeChat QR login',
-  'admin.oauth.wechatHint':
-    'Dapat munang i-link ng mga guro ang WeChat sa ilalim ng Pagli-link ng Account. Ang platform AppID/Secret ay nakatakda sa server .env.',
+  'admin.oauth.wechatHint': 'Dapat munang i-link ng mga guro ang WeChat sa ilalim ng Pagli-link ng Account. Ang platform AppID/Secret ay nakatakda sa server .env.',
   'admin.oauth.dingtalkToggle': 'Paganahin ang DingTalk QR login',
   'admin.oauth.dingtalkAppKey': 'DingTalk AppKey (client_id)',
   'admin.oauth.dingtalkAppSecret': 'DingTalk AppSecret',
@@ -279,22 +252,18 @@ export default {
   'admin.oauth.wechatCallback': 'WeChat',
   'admin.oauth.dingtalkCallback': 'DingTalk',
   'admin.oauth.schoolItChecklistTitle': 'Checklist ng DingTalk IT',
-  'admin.oauth.schoolItChecklist':
-    'DingTalk IT checklist:\n1. Paganahin ang third-party na website / QR login\n2. Itakda ang DingTalk callback URL sa itaas sa DingTalk console (eksaktong tugma)\n3. Mga saklaw ng kahilingan: permission-open_app_api_base, Contact.User.Read\n4. Magbigay ng AppKey, AppSecret, opsyonal na CorpId sa MindGraph admin',
+  'admin.oauth.schoolItChecklist': 'DingTalk IT checklist:\n1. Paganahin ang third-party na website / QR login\n2. Itakda ang DingTalk callback URL sa itaas sa DingTalk console (eksaktong tugma)\n3. Mga saklaw ng kahilingan: permission-open_app_api_base, Contact.User.Read\n4. Magbigay ng AppKey, AppSecret, opsyonal na CorpId sa MindGraph admin',
   'admin.oauth.loadError': 'Hindi ma-load ang QR mga setting sa pag-log in',
   'admin.oauth.saveSuccess': 'QR na-save ang mga setting sa pag-log in',
   'admin.oauth.saveError': 'Hindi makapag-save. Pakisubukang muli.',
   'admin.mindbot.tabDify': 'Auth ng Dify API',
-  'admin.mindbot.standaloneDifySchoolHint':
-    'Para sa karamihan ng mga paaralan, itakda ang Dify sa school edit modal sa ilalim ng MindMate auth. Ang pag-save ng paaralan ay kinokopya ang mga setting na iyon sa lahat ng mga bot. Per-bot Dify dito ay para lamang sa mga espesyal na kaso at maaaring ma-overwrite kapag nai-save ang paaralan.',
+  'admin.mindbot.standaloneDifySchoolHint': 'Para sa karamihan ng mga paaralan, itakda ang Dify sa school edit modal sa ilalim ng MindMate auth. Ang pag-save ng paaralan ay kinokopya ang mga setting na iyon sa lahat ng mga bot. Per-bot Dify dito ay para lamang sa mga espesyal na kaso at maaaring ma-overwrite kapag nai-save ang paaralan.',
   'admin.mindbot.tabLog': 'Log',
   'admin.mindbot.tabMonitor': 'Subaybayan',
   'admin.mindbot.refreshCallbackUrl': 'I-refresh ang URL',
-  'admin.mindbot.rotateConfirm':
-    'Bumuo ng bagong callback URL? Hihinto sa paggana ang lumang URL hanggang sa i-update mo ito sa DingTalk.',
+  'admin.mindbot.rotateConfirm': 'Bumuo ng bagong callback URL? Hihinto sa paggana ang lumang URL hanggang sa i-update mo ito sa DingTalk.',
   'admin.mindbot.callbackRotated': 'Na-update ang callback URL. I-update ang DingTalk gamit ang bagong URL.',
-  'admin.mindbot.usageNeedSave':
-    'I-save ang configuration nang isang beses upang paganahin ang callback URL, log, at monitor.',
+  'admin.mindbot.usageNeedSave': 'I-save ang configuration nang isang beses upang paganahin ang callback URL, log, at monitor.',
   'admin.mindbot.usageEmpty': 'Wala pang mga kaganapan sa paggamit.',
   'admin.mindbot.usageLoadError': 'Nabigong i-load ang mga kaganapan sa paggamit',
   'admin.mindbot.loadMore': 'Mag-load pa',
@@ -315,23 +284,18 @@ export default {
   'admin.mindbot.exportEmpty': 'Walang mai-export para sa kasalukuyang filter.',
   'admin.mindbot.exportError': 'Nabigo ang pag-export. Subukan muli.',
   'admin.mindbot.exportSuccess': 'Na-download ang pag-export.',
-  'admin.mindbot.exportDisclaimer':
-    'MindBot metadata ng paggamit para sa pananaliksik na pang-edukasyon. Ang mga katawan ng mensahe ay hindi nakaimbak; ang mga hilera ay telemetry lamang.',
-  'admin.mindbot.logTabHint':
-    'Mga hilaw na linya ng paggamit para sa paaralang ito (pinakabago muna). Mag-click ng linya para sa buong metadata. Hindi nakaimbak ang text ng mensahe.',
-  'admin.mindbot.monitorTabHint':
-    'Pinagsama-sama ang mga pag-uusap mula sa na-load na pahina. Mag-click ng row para buksan ang thread; i-click ang isang turn para sa mga detalye.',
+  'admin.mindbot.exportDisclaimer': 'MindBot metadata ng paggamit para sa pananaliksik na pang-edukasyon. Ang mga katawan ng mensahe ay hindi nakaimbak; ang mga hilera ay telemetry lamang.',
+  'admin.mindbot.logTabHint': 'Mga hilaw na linya ng paggamit para sa paaralang ito (pinakabago muna). Mag-click ng linya para sa buong metadata. Hindi nakaimbak ang text ng mensahe.',
+  'admin.mindbot.monitorTabHint': 'Pinagsama-sama ang mga pag-uusap mula sa na-load na pahina. Mag-click ng row para buksan ang thread; i-click ang isang turn para sa mga detalye.',
   'admin.mindbot.colConvThread': 'Pag-uusap',
   'admin.mindbot.colTurnsLoaded': 'Pagliko (pahina)',
   'admin.mindbot.convNoThreadId': '(walang thread id)',
   'admin.mindbot.conversationDrawerTitle': 'Lumiliko ang pag-uusap',
-  'admin.mindbot.conversationDrawerHint':
-    'Hindi nakaimbak ang mga katawan ng mensahe. Ang mga value ay metadata mula sa MindBot na paaralang ito.',
+  'admin.mindbot.conversationDrawerHint': 'Hindi nakaimbak ang mga katawan ng mensahe. Ang mga value ay metadata mula sa MindBot na paaralang ito.',
   'admin.mindbot.threadEmpty': 'Walang nakitang mga kaganapan sa thread.',
   'admin.mindbot.threadLoadMore': 'Mag-load ng mas lumang mga liko',
   'admin.mindbot.usageEventDetailTitle': 'Kaganapan sa paggamit',
-  'admin.mindbot.usageEventDetailPrivacy':
-    'Para sa privacy, hindi iniimbak ang mga prompt ng user at mga sagot sa bot—metadata lang sa ibaba.',
+  'admin.mindbot.usageEventDetailPrivacy': 'Para sa privacy, hindi iniimbak ang mga prompt ng user at mga sagot sa bot—metadata lang sa ibaba.',
   'admin.mindbot.detailId': 'Event id',
   'admin.mindbot.detailStreaming': 'Streaming',
   'admin.mindbot.detailYes': 'Oo',
@@ -351,12 +315,10 @@ export default {
   'admin.library.colVisible': 'Nakikita',
   'admin.library.deleteBook': 'Tanggalin ang Aklat',
   'admin.library.deleteBookConfirm': 'Oo, tanggalin ang lahat',
-  'admin.library.deleteBookConfirmMsg':
-    'Permanenteng tanggalin ang lahat ng {count} na larawan ng pahina mula sa disk AT ang database record para sa "{name}"? Hindi na ito maaaring bawiin.',
+  'admin.library.deleteBookConfirmMsg': 'Permanenteng tanggalin ang lahat ng {count} na larawan ng pahina mula sa disk AT ang database record para sa "{name}"? Hindi na ito maaaring bawiin.',
   'admin.library.deleteBookSuccess': 'Tinanggal ang aklat',
   'admin.library.deleteBookTitle': 'Tanggalin ang Aklat',
-  'admin.library.deleteConfirmMsg':
-    'Permanenteng tanggalin ang database record para sa "{name}"? Ang mga larawan ng pahina sa disk ay hindi apektado.',
+  'admin.library.deleteConfirmMsg': 'Permanenteng tanggalin ang database record para sa "{name}"? Ang mga larawan ng pahina sa disk ay hindi apektado.',
   'admin.library.deleteConfirmTitle': 'Tanggalin ang Record ng Dokumento',
   'admin.library.deleteError': 'Nabigong tanggalin',
   'admin.library.deleteRecord': 'Tanggalin ang Tala',
@@ -424,8 +386,7 @@ export default {
   'admin.noExpiration': 'Walang expiration',
   'admin.noManagersFound': 'Walang school managers',
   'admin.noRoleMembersFound': 'Wala pang miyembrong nakatalaga para sa tungkuling ito',
-  'admin.noRoleMembersEmptyHint':
-    'Gamitin ang Magdagdag ng miyembro sa itaas upang italaga ang tungkuling ito sa isang user.',
+  'admin.noRoleMembersEmptyHint': 'Gamitin ang Magdagdag ng miyembro sa itaas upang italaga ang tungkuling ito sa isang user.',
   'admin.inviteOrgsEmpty': 'Hindi ka pa nakakagawa ng anumang imbitasyon sa mga paaralan',
   'admin.roleAddMemberNoSearchResults': 'Walang mga user na tumutugma sa iyong paghahanap',
   'admin.noTokenStats': 'Walang magagamit na istatistika ng token',
@@ -449,16 +410,14 @@ export default {
   'admin.dingtalkCardClickToEditApiKeys': 'I-click upang i-edit ang API key',
   'admin.dingtalkApiKeysDialogTitle': 'DingTalk na larawan — pagsasama ng API na mga key',
   'admin.dingtalkApiKeysDialogNote': 'X-API-Key · generate_dingtalk at temp image URL',
-  'admin.dingtalkApiKeysDialogIntro':
-    'Gamitin ang X-API-Key header. Ang mga key na ito ay nagpapatotoo sa mga pampublikong API na tawag tulad ng diagram na PNG na henerasyon para sa DingTalk. Ang mga tugon ay markdown na may limitadong oras na mga URL ng larawan; ang pagkuha ng isang larawan ay nangangailangan lamang ng naka-sign na link, hindi ang key na ito.',
+  'admin.dingtalkApiKeysDialogIntro': 'Gamitin ang X-API-Key header. Ang mga key na ito ay nagpapatotoo sa mga pampublikong API na tawag tulad ng diagram na PNG na henerasyon para sa DingTalk. Ang mga tugon ay markdown na may limitadong oras na mga URL ng larawan; ang pagkuha ng isang larawan ay nangangailangan lamang ng naka-sign na link, hindi ang key na ito.',
   'admin.apiKeysTableStats': 'Token (lahat ng oras)',
   'admin.apiKeysRequestCount': 'Mga kahilingan',
   'admin.apiKeysTableQuota': 'Kota',
   'admin.apiKeysUnlimited': 'Walang limitasyon',
   'admin.apiKeyCopy': 'Kopyahin ang susi',
   'admin.apiKeysStatus': 'Katayuan',
-  'admin.apiKeysDeleteConfirm':
-    'Tanggalin ang API key na “{name}”? Ang mga integrasyon na gumagamit nito ay titigil sa paggana.',
+  'admin.apiKeysDeleteConfirm': 'Tanggalin ang API key na “{name}”? Ang mga integrasyon na gumagamit nito ay titigil sa paggana.',
   'admin.apiKeysDeleteSuccess': 'API key ang tinanggal',
   'admin.apiKeysCreateSuccess': 'Nagawa ang API key',
   'admin.apiKeysLoadError': 'Nabigong i-load ang API key',
@@ -466,8 +425,7 @@ export default {
   'admin.apiKeysExpiresDays': 'Mag-e-expire sa (araw)',
   'admin.apiKeysExpiresDaysHint': 'Opsyonal; iwanang walang laman para walang expiration mula sa oras ng paglikha',
   'admin.apiKeysCreatedSecretTitle': 'I-save ang iyong bagong key',
-  'admin.apiKeysCreatedSecretBody':
-    'Kopyahin ang key sa iyong integration (Dify, callback, o script) bilang X-API-Key header. Maaari mo ring kopyahin ito mula sa listahan anumang oras.',
+  'admin.apiKeysCreatedSecretBody': 'Kopyahin ang key sa iyong integration (Dify, callback, o script) bilang X-API-Key header. Maaari mo ring kopyahin ito mula sa listahan anumang oras.',
   'admin.apiKeysDisable': 'Huwag paganahin',
   'admin.apiKeysEnable': 'Paganahin',
   'admin.apiKeysNameRequired': 'Pangalan ang kailangan',
@@ -479,20 +437,17 @@ export default {
   'admin.performance.tab': 'Pagganap',
   'admin.publicDashboard.tab': 'Pambansang sentro ng data',
   'admin.publicDashboard.title': 'MG National Data Center',
-  'admin.publicDashboard.subtitle':
-    'Super-admin Dashboard ng mapa ng China na may mga live na online na user, token, at aktibidad.',
+  'admin.publicDashboard.subtitle': 'Super-admin Dashboard ng mapa ng China na may mga live na online na user, token, at aktibidad.',
   'admin.publicDashboard.backToAdmin': 'Bumalik sa admin',
   'admin.publicDashboard.accessDeniedTitle': 'Super-admin lang',
-  'admin.publicDashboard.accessDeniedHint':
-    'Tanging ang mga super-admin ng platform ang makakapagbukas ng tab ng mga setting ng pambansang data center.',
+  'admin.publicDashboard.accessDeniedHint': 'Tanging ang mga super-admin ng platform ang makakapagbukas ng tab ng mga setting ng pambansang data center.',
   'admin.errors.tab': 'Pagkolekta ng error',
   'admin.errors.groupOverview': 'Pangkalahatang-ideya',
   'admin.errors.groupBreakdown': 'Breakdown sa 24h',
   'admin.errors.groupFeed': 'Feed ng kaganapan',
   'admin.errors.bySeverity24h': 'Sa kalubhaan',
   'admin.errors.bySource24h': 'Sa pamamagitan ng pinagmulan',
-  'admin.errors.feedHint':
-    'Monospace log lines · i-click para sa detalye · i-mute ang mga alerto sa bawat fingerprint sa view ng mga grupo',
+  'admin.errors.feedHint': 'Monospace log lines · i-click para sa detalye · i-mute ang mga alerto sa bawat fingerprint sa view ng mga grupo',
   'admin.errors.viewEvents': 'Mga kaganapan',
   'admin.errors.viewGroups': 'Mga grupo',
   'admin.errors.viewMode': 'Tingnan',
@@ -535,11 +490,9 @@ export default {
   'admin.errors.unmuteSuccess': 'Na-restore ang mga alerto para sa fingerprint na ito',
   'admin.errors.muteError': 'Nabigong i-update ang mute state',
   'admin.errors.copyAll': 'Kopyahin lahat',
-  'admin.errors.copyAllHint':
-    'Kopyahin ang buong mga detalye ng error (path, mensahe, stacktrace, mga tag) para sa kasalukuyang mga filter',
+  'admin.errors.copyAllHint': 'Kopyahin ang buong mga detalye ng error (path, mensahe, stacktrace, mga tag) para sa kasalukuyang mga filter',
   'admin.errors.copyAllSuccess': 'Kinopya ang {count} error sa clipboard',
-  'admin.errors.copyAllSuccessTruncated':
-    'Kinopya ang {count} ng {total} error (limitasyon {limit}); pinuhin ang mga filter para sa iba pa',
+  'admin.errors.copyAllSuccessTruncated': 'Kinopya ang {count} ng {total} error (limitasyon {limit}); pinuhin ang mga filter para sa iba pa',
   'admin.errors.copyAllPartial': 'Kinopya ng {failed} na nawawalang (mga) stacktrace; kasama pa rin ang mga list field',
   'admin.errors.copyAllEmpty': 'Walang dapat kopyahin',
   'admin.errors.copyAllError': 'Nabigong kopyahin ang mga error',
@@ -552,47 +505,39 @@ export default {
   'admin.performance.sectionRedis': 'Redis memory ng server',
   'admin.performance.sectionConnections': 'Mga WebSocket at session',
   'admin.performance.sectionAiCardStreaming': 'AI card streaming (live)',
-  'admin.performance.hintAiCardStreaming':
-    'In-flight Dify card stream (cluster sum). 24h = pinakamahusay na oras-oras na mataas (UTC, Redis).',
+  'admin.performance.hintAiCardStreaming': 'In-flight Dify card stream (cluster sum). 24h = pinakamahusay na oras-oras na mataas (UTC, Redis).',
   'admin.performance.mindbotStreamingNowError': 'Hindi available ang live na bilang ({reason}).',
   'admin.performance.streamingMax24hLabel': '24h mataas (kasabay) ·',
   'admin.performance.streamingMax24hError': '24h mataas na hindi magagamit ({reason}).',
   'admin.performance.sectionMindmateStreaming': 'MindMate (site · Dify SSE)',
-  'admin.performance.hintMindmateStreaming':
-    'Site MindMate stream count (cluster sum). 24h = pinakamahusay na oras-oras na mataas (UTC, Redis).',
+  'admin.performance.hintMindmateStreaming': 'Site MindMate stream count (cluster sum). 24h = pinakamahusay na oras-oras na mataas (UTC, Redis).',
   'admin.performance.mindmateStreamingNowError': 'Hindi available ang live na bilang ({reason}).',
   'admin.performance.sectionDingtalk': 'DingTalk Stream client',
   'admin.performance.sectionMindbotPipelines': 'MindBot (DingTalk) — live',
   'admin.performance.convStreaming': 'Streaming',
   'admin.performance.convSending': 'Bina-block ang pagpapadala',
   'admin.performance.convReceiving': 'Stream WS (papasok)',
-  'admin.performance.hintMindbotConv':
-    'Cluster sum. Streaming = Dify SSE card stream na kasalukuyang isinasagawa; blocking send = one-shot Dify + reply; pagtanggap = DingTalk Stream SDK WebSocket gawain na tumatakbo (bawat key ng app).',
+  'admin.performance.hintMindbotConv': 'Cluster sum. Streaming = Dify SSE card stream na kasalukuyang isinasagawa; blocking send = one-shot Dify + reply; pagtanggap = DingTalk Stream SDK WebSocket gawain na tumatakbo (bawat key ng app).',
   'admin.performance.mindbotConcurrencyUnavailable': 'Hindi available ang Dify bilang ng pipeline ({reason}).',
   'admin.performance.dingtalkStreamUnavailable': 'DingTalk Hindi available ang mga sukatan ng stream client ({reason}).',
   'admin.performance.mindbotModuleCumulative': 'Kumulatibo (database)',
   'admin.performance.mindbotSchools': 'Mga paaralan na may bot',
   'admin.performance.mindbotRepliesOk': 'Naihatid ang mga tugon (OK, kabuuan)',
   'admin.performance.mindbotModuleStatsError': 'Hindi ma-load ang mga istatistika ng module ({reason}).',
-  'admin.performance.hintMindbotModule':
-    'Mga natatanging organisasyon na may hindi bababa sa isang MindBot config; mga tugon = mga hilera ng paggamit na may error_code MINDBOT_OK (sa lahat ng oras).',
+  'admin.performance.hintMindbotModule': 'Mga natatanging organisasyon na may hindi bababa sa isang MindBot config; mga tugon = mga hilera ng paggamit na may error_code MINDBOT_OK (sa lahat ng oras).',
   'admin.performance.mindbotPeaks24hSection': 'Mataas na tubig (24h, cluster)',
   'admin.performance.peakStreaming24h': 'Streaming (24h mataas)',
   'admin.performance.peakBlocking24h': 'Pag-block (24h mataas)',
   'admin.performance.peakWs24h': 'Stream WS (24h mataas)',
   'admin.performance.mindbotPeaks24hError': 'Hindi available ang 24h peak stats ({reason}).',
-  'admin.performance.hintMindbotPeaks24h':
-    'Max na naobserbahan ang bawat UTC oras sa Redis, pagkatapos ay ang pinakamalaki sa huling 24 na oras. Gamitin sa MINDBOT_MAX_ACTIVE_STREAMING / per-org caps para makita ang headroom. Nangangailangan ng Redis.',
+  'admin.performance.hintMindbotPeaks24h': 'Max na naobserbahan ang bawat UTC oras sa Redis, pagkatapos ay ang pinakamalaki sa huling 24 na oras. Gamitin sa MINDBOT_MAX_ACTIVE_STREAMING / per-org caps para makita ang headroom. Nangangailangan ng Redis.',
   'admin.performance.sectionPools': 'Mga pool ng koneksyon sa database',
   'admin.performance.sectionServices': 'Mga pinamamahalaang serbisyo',
   'admin.performance.sectionLlm': 'LLM tracker (cluster)',
-  'admin.performance.hintProcessCpuSingle':
-    'Proseso ng manggagawang ito CPU % (psutil). Sa ilang manggagawa, ang kabuuang kabuuan ng bawat manggagawa % (maaaring lumampas sa 100%).',
+  'admin.performance.hintProcessCpuSingle': 'Proseso ng manggagawang ito CPU % (psutil). Sa ilang manggagawa, ang kabuuang kabuuan ng bawat manggagawa % (maaaring lumampas sa 100%).',
   'admin.performance.hintNetwork': 'KB/s tinantyang mula sa mga interface counter sa host na ito.',
-  'admin.performance.hintConnections':
-    'WebSocket chat/workshop ang mga bilang ay pinagsama-sama sa mga manggagawa; aktibong kabuuang paggamit Redis kapag available.',
-  'admin.performance.hintRedis':
-    'Nagamit na memorya at peak sa subtitle; bar ay nagpapakita ng fragmentation ratio (naka-scale para sa display).',
+  'admin.performance.hintConnections': 'WebSocket chat/workshop ang mga bilang ay pinagsama-sama sa mga manggagawa; aktibong kabuuang paggamit Redis kapag available.',
+  'admin.performance.hintRedis': 'Nagamit na memorya at peak sa subtitle; bar ay nagpapakita ng fragmentation ratio (naka-scale para sa display).',
   'admin.performance.diskHint': '{mount} · ginamit {used} · libre {free} · kabuuang {total}',
   'admin.performance.version': 'App {version}',
   'admin.performance.uptimeSec': 'Uptime {sec}s',
@@ -666,8 +611,7 @@ export default {
   'admin.performance.dtClientTable': 'Mga detalye ng kliyente',
   'admin.performance.workersReportingCluster': 'Cluster · {n} manggagawa na nag-uulat',
   'admin.performance.workersRssHint': 'Σ iproseso ang RSS sa {n} na mga manggagawa',
-  'admin.performance.processCpuSumHint':
-    'Σ CPU {sum}% (ring nalimitahan sa 100%) · pinakamainit na manggagawa {max}% · {n} manggagawa',
+  'admin.performance.processCpuSumHint': 'Σ CPU {sum}% (ring nalimitahan sa 100%) · pinakamainit na manggagawa {max}% · {n} manggagawa',
   'admin.previous': 'Nakaraang',
   'admin.refresh': 'I-refresh',
   'admin.refreshInvitationCode': 'I-refresh ang Code ng Imbitasyon',
@@ -683,17 +627,12 @@ export default {
   'admin.revokeRole': 'Alisin ang tungkulin',
   'admin.revokeRoleConfirm': 'Alisin ang tungkulin mula sa',
   'admin.roleControl': 'Pagkontrol sa Tungkulin',
-  'admin.roleControlDesc':
-    'Pamahalaan ang superadmin access. Maa-access ng mga user na may ganitong tungkulin ang buong panel ng pamamahala.',
-  'admin.roleControlDescPlatformBd':
-    'Pamahalaan ang pag-access ng mananaliksik sa pagtuturo. Maaaring tingnan ng mga mananaliksik sa pagtuturo ang pandaigdigang data at pamamahala ng imbitasyon sa paaralan.',
-  'admin.roleControlDescExpert':
-    'Pamahalaan ang access ng eksperto. Ang mga eksperto ay maaaring lumikha ng mga paaralan at pamahalaan ang mga organisasyon sa kanilang saklaw ng pag-imbita.',
-  'admin.roleControlDescManagers':
-    'Pamahalaan ang mga admin ng paaralan. Maa-access nila ang dashboard ng paaralan para sa kanilang organisasyon. Dapat ay kabilang na sa isang paaralan ang mga user bago mabigyan ng tungkuling ito.',
+  'admin.roleControlDesc': 'Pamahalaan ang superadmin access. Maa-access ng mga user na may ganitong tungkulin ang buong panel ng pamamahala.',
+  'admin.roleControlDescPlatformBd': 'Pamahalaan ang pag-access ng mananaliksik sa pagtuturo. Maaaring tingnan ng mga mananaliksik sa pagtuturo ang pandaigdigang data at pamamahala ng imbitasyon sa paaralan.',
+  'admin.roleControlDescExpert': 'Pamahalaan ang access ng eksperto. Ang mga eksperto ay maaaring lumikha ng mga paaralan at pamahalaan ang mga organisasyon sa kanilang saklaw ng pag-imbita.',
+  'admin.roleControlDescManagers': 'Pamahalaan ang mga admin ng paaralan. Maa-access nila ang dashboard ng paaralan para sa kanilang organisasyon. Dapat ay kabilang na sa isang paaralan ang mga user bago mabigyan ng tungkuling ito.',
   'admin.roleAssignmentTab': 'Pagtatalaga ng tungkulin',
-  'admin.roleAssignmentDesc':
-    'Magtalaga ng isa sa pitong tungkulin sa isang user. Ang mga tungkulin sa Platform, B2B, at C2C ay may iba\'t ibang pahintulot.',
+  'admin.roleAssignmentDesc': 'Magtalaga ng isa sa pitong tungkulin sa isang user. Ang mga tungkulin sa Platform, B2B, at C2C ay may iba\'t ibang pahintulot.',
   'admin.roleTierPlatform': 'Plataporma',
   'admin.roleTierB2B': 'B2B organisasyon',
   'admin.roleTierC2C': 'C2C personal',
@@ -709,8 +648,7 @@ export default {
   'admin.schoolCodeRequired': 'Hindi mabuo ang school code mula sa pangalan. Mangyaring maglagay ng code.',
   'admin.schoolDashboard': 'Dashboard ng Paaralan',
   'admin.schoolDashboardNoOrg': 'Dapat kang kabilang sa isang paaralan upang makita ang dashboard.',
-  'admin.usersTabSchoolDashboardHint':
-    'Ang mga miyembro ng paaralan ay pinamamahalaan mula sa Dashboard ng Paaralan. Buksan ito para magdagdag o mag-edit ng mga user sa iyong organisasyon.',
+  'admin.usersTabSchoolDashboardHint': 'Ang mga miyembro ng paaralan ay pinamamahalaan mula sa Dashboard ng Paaralan. Buksan ito para magdagdag o mag-edit ng mga user sa iyong organisasyon.',
   'admin.memberSeats': 'Mga upuan ng miyembro',
   'admin.managerSeats': 'Mga upuan ng admin',
   'admin.resourceSpace': 'Espasyo ng resources',
@@ -748,14 +686,10 @@ export default {
   'admin.schoolAddMemberInvalidNameForName': 'Ang {name} ay hindi wastong pangalan (hindi bababa sa 2 character, walang digit)',
   'admin.schoolAddMemberType': 'Uri',
   'admin.schoolAddMemberBatchTitle': 'Batch na import',
-  'admin.schoolAddMemberBatchHint':
-    'Kopyahin ang mga row mula sa Excel, WPS, o Word, pagkatapos ay mag-click dito at i-paste (Ctrl+V).',
-  'admin.schoolAddMemberBatchPastePlaceholder':
-    'I-paste ang mga row ng spreadsheet dito — mobile/email at pangalan sa dalawang column; gumagana ang alinmang order',
-  'admin.schoolAddMemberBatchPasteHint':
-    'Tip: pumili ng mga row sa Excel/WPS/Word, kopyahin, pagkatapos ay i-paste dito; Awtomatikong nade-detect ang mga mobile number at email.',
-  'admin.schoolAddMemberBatchInvalidPaste':
-    'Hindi mabasa ang mga naka-paste na row. Gumamit ng dalawang column: mobile number o email, at pangalan (alinman sa order).',
+  'admin.schoolAddMemberBatchHint': 'Kopyahin ang mga row mula sa Excel, WPS, o Word, pagkatapos ay mag-click dito at i-paste (Ctrl+V).',
+  'admin.schoolAddMemberBatchPastePlaceholder': 'I-paste ang mga row ng spreadsheet dito — mobile/email at pangalan sa dalawang column; gumagana ang alinmang order',
+  'admin.schoolAddMemberBatchPasteHint': 'Tip: pumili ng mga row sa Excel/WPS/Word, kopyahin, pagkatapos ay i-paste dito; Awtomatikong nade-detect ang mga mobile number at email.',
+  'admin.schoolAddMemberBatchInvalidPaste': 'Hindi mabasa ang mga naka-paste na row. Gumamit ng dalawang column: mobile number o email, at pangalan (alinman sa order).',
   'admin.schoolAddMemberBatchTooLarge': 'Hindi hihigit sa {max} miyembro bawat batch ({count} na-paste)',
   'admin.schoolAddMemberBatchDuplicatesRemoved': '({count} duplicate inalis)',
   'admin.schoolAddMemberBatchEmpty': 'I-paste ang mga hilera ng miyembro bago mag-import',
@@ -771,8 +705,7 @@ export default {
   'admin.schoolAddMemberBatchPartial': 'Nagdagdag ng {created} na miyembro; Nabigo ang {failed}',
   'admin.schoolAddMemberBatchResultTitle': 'Mag-import ng mga resulta',
   'admin.schoolAddMemberBatchResultSuccess': 'Matagumpay na naidagdag ang {created} na miyembro',
-  'admin.schoolAddMemberBatchResultPartial':
-    'Nagdagdag ng {created} na miyembro. Hindi maidagdag ang {failed} — tingnan ang mga detalye sa ibaba.',
+  'admin.schoolAddMemberBatchResultPartial': 'Nagdagdag ng {created} na miyembro. Hindi maidagdag ang {failed} — tingnan ang mga detalye sa ibaba.',
   'admin.schoolAddMemberBatchResultAllFailed': 'Walang naidagdag na miyembro. Nabigo ang {failed} — tingnan ang mga detalye sa ibaba.',
   'admin.schoolAddMemberBatchFailedListTitle': 'Nabigo ang {count}',
   'admin.schoolAddMemberBatchFailedReason': 'Dahilan',
@@ -785,12 +718,10 @@ export default {
   'admin.schoolAddMemberCreateError': 'Nabigong magdagdag ng miyembro',
   'admin.schoolAddMemberRequired': 'Punan ang pangalan at numero ng mobile o email, o mag-paste ng isang batch',
   'admin.schoolUserUnlock': 'I-unlock',
-  'admin.schoolUserUnlockConfirm':
-    'I-unlock ang account na ito? Ang lock ng nabigong pag-login at pagtatangka sa counter ay iki-clear.',
+  'admin.schoolUserUnlockConfirm': 'I-unlock ang account na ito? Ang lock ng nabigong pag-login at pagtatangka sa counter ay iki-clear.',
   'admin.listRange': '{start}–{end} ng {total}',
   'admin.listRangeEmpty': 'Walang resulta',
-  'admin.schoolManagerGrantRequiresOrg':
-    'Ang user na ito ay wala pa sa isang paaralan. Idagdag sila sa isang paaralan bago ibigay ang manager ng paaralan.',
+  'admin.schoolManagerGrantRequiresOrg': 'Ang user na ito ay wala pa sa isang paaralan. Idagdag sila sa isang paaralan bago ibigay ang manager ng paaralan.',
   'admin.schoolManagersTab': 'Mga Tagapamahala ng Paaralan',
   'admin.schoolName': 'Pangalan ng Paaralan',
   'admin.schoolNamePlaceholder': 'hal. Mataas na Paaralan ng Beijing',
@@ -808,30 +739,23 @@ export default {
   'admin.extraMemberSeatsLabel': 'Mga dagdag na upuan ng miyembro',
   'admin.extraMemberSeatsHint': 'Mga Miyembro: {current} / {effectiveLimit} (base {base} + dagdag {extra}).',
   'admin.extraMemberSeatsPreset': '+{count}',
-  'admin.schoolVersionHint':
-    'Ang antas ng subscription ay nagtatakda ng cap ng miyembro at imbakan ng diagram para sa paaralang ito. Mga Miyembro: {current} / {limit}.',
+  'admin.schoolVersionHint': 'Ang antas ng subscription ay nagtatakda ng cap ng miyembro at imbakan ng diagram para sa paaralang ito. Mga Miyembro: {current} / {limit}.',
   'admin.unlimited': 'Walang limitasyon',
   'admin.unlimitedMembers': 'Walang limitasyong mga miyembro',
-  'admin.schoolManagerNotAvailableTrial':
-    'Ang mga pagsubok na paaralan ay hindi maaaring magtalaga ng mga tagapamahala ng paaralan.',
+  'admin.schoolManagerNotAvailableTrial': 'Ang mga pagsubok na paaralan ay hindi maaaring magtalaga ng mga tagapamahala ng paaralan.',
   'admin.noSchoolManagersShort': 'Hindi available',
-  'admin.schoolVersionLiteFeaturesHint':
-    'Ang mga pagsubok at pangunahing tier ay hindi kasama ang: online na pakikipagtulungan, mga tool sa pagtatanghal, extension ng Chrome, API token, at OpenClaw na pagsasama.',
+  'admin.schoolVersionLiteFeaturesHint': 'Ang mga pagsubok at pangunahing tier ay hindi kasama ang: online na pakikipagtulungan, mga tool sa pagtatanghal, extension ng Chrome, API token, at OpenClaw na pagsasama.',
   'admin.schoolVersionTierTrial': 'Karanasan sa pagsubok',
   'admin.schoolVersionTierLite': 'Pangunahing pagtuturo at pananaliksik',
   'admin.schoolVersionTierStandard': 'Standard na pagtuturo at pananaliksik',
   'admin.schoolVersionTierProfessional': 'Co-build ng paaralan',
-  'admin.schoolVersionTierOption':
-    '{label} · {members} miyembro · {managers} managers · {storage} GB/imbak ng diagram ng miyembro',
-  'admin.schoolVersionTierOptionTrial':
-    '{label} · Walang limitasyong mga miyembro · Walang mga manager ng paaralan · {diagrams} diagram/guro · {storage} GB/imbakan ng miyembro',
+  'admin.schoolVersionTierOption': '{label} · {members} miyembro · {managers} managers · {storage} GB/imbak ng diagram ng miyembro',
+  'admin.schoolVersionTierOptionTrial': '{label} · Walang limitasyong mga miyembro · Walang mga manager ng paaralan · {diagrams} diagram/guro · {storage} GB/imbakan ng miyembro',
   'admin.schoolManagerLimitHint': 'Mga tagapamahala ng paaralan {current} / {limit}',
   'admin.schoolManagerLimitReached': 'Naabot ng paaralang ito ang limitasyon ng manager nito ({limit})',
-  'admin.schoolTierDowngradeBlocked':
-    'Hindi maaaring lumipat sa tier na ito: {members} miyembro (max {memberLimit}) at {managers} manager (max {managerLimit})',
+  'admin.schoolTierDowngradeBlocked': 'Hindi maaaring lumipat sa tier na ito: {members} miyembro (max {memberLimit}) at {managers} manager (max {managerLimit})',
   'admin.schoolModal.tabMindbot': 'MindBot',
-  'admin.schoolModal.mindbotIntro':
-    'I-configure ang DingTalk na mga robot para sa paaralang ito. Bilang default, gumagamit ang bawat bot ng MindMate Dify na mga setting; maaari kang magtakda ng custom na Dify bawat bot sa ibaba ng template na AI card kapag kinakailangan.',
+  'admin.schoolModal.mindbotIntro': 'I-configure ang DingTalk na mga robot para sa paaralang ito. Bilang default, gumagamit ang bawat bot ng MindMate Dify na mga setting; maaari kang magtakda ng custom na Dify bawat bot sa ibaba ng template na AI card kapag kinakailangan.',
   'admin.schoolModal.mindbotSelectBot': 'Pumili ng bot',
   'admin.schoolModal.mindbotAddBot': 'Magdagdag ng bot',
   'admin.schoolModal.mindbotCreateHint': 'Gumagawa ng bagong MindBot config (hanggang {cap} bot bawat paaralan).',
@@ -841,8 +765,7 @@ export default {
   'admin.schoolMindmateAgentAvatar': 'Avatar ng ahente',
   'admin.schoolMindmateAgentAvatarUpload': 'Mag-upload ng avatar',
   'admin.schoolMindmateAgentAvatarRemove': 'Alisin ang avatar',
-  'admin.schoolMindmateAgentAvatarHint':
-    'PNG, JPG, GIF, o WebP; max 1MB; min 64×64; pinapayagan ang mga animated na GIF (max 120 frame); na-crop sa isang 256 × 256 square.',
+  'admin.schoolMindmateAgentAvatarHint': 'PNG, JPG, GIF, o WebP; max 1MB; min 64×64; pinapayagan ang mga animated na GIF (max 120 frame); na-crop sa isang 256 × 256 square.',
   'admin.schoolMindmateAvatarUploaded': 'Na-upload at naproseso ang avatar.',
   'admin.schoolMindmateAvatarRemoved': 'Inalis ang avatar.',
   'admin.schoolMindmateAvatarUploadFailed': 'Nabigo ang pag-upload ng avatar. Pakisubukang muli.',
@@ -863,23 +786,19 @@ export default {
   'admin.schoolDifyApiKeyRequired': 'Kinakailangan ang API key kapag nakatakda ang base URL.',
   'admin.schoolDifyUrlRequired': 'Kinakailangan ang base URL kapag may nakatakdang API key.',
   'admin.schoolDifyPairRequired': 'Parehong kinakailangan ang base URL at API key para sa pag-override sa paaralan.',
-  'admin.schoolDifyApiKeyHintOptional':
-    'Kinakailangan lang kapag nagtatakda ng override na partikular sa paaralan. Iwanang walang laman ang parehong field para magamit ang mga global na setting ng .env.',
+  'admin.schoolDifyApiKeyHintOptional': 'Kinakailangan lang kapag nagtatakda ng override na partikular sa paaralan. Iwanang walang laman ang parehong field para magamit ang mga global na setting ng .env.',
   'admin.schoolDifyBlankUsesGlobal': 'Iwanang blangko upang magamit ang pandaigdigang URL: {url}',
   'admin.schoolDifyApiKeyBlankUsesGlobal': 'Iwanang blangko upang magamit ang pandaigdigang API key ({masked}).',
   'admin.schoolDifyAuthTest': 'Pagsusuri ng Dify auth',
   'admin.schoolDifyAuthTestRunning': 'Pagsubok…',
-  'admin.schoolDifyAuthTestTooltip':
-    'Subukan ang Dify auth gamit ang URL at key sa form na ito (kasama ang mga hindi na-save na pag-edit).',
+  'admin.schoolDifyAuthTestTooltip': 'Subukan ang Dify auth gamit ang URL at key sa form na ito (kasama ang mga hindi na-save na pag-edit).',
   'admin.schoolDifyAuthTestPassed': 'Nagtagumpay ang Dify auth.',
   'admin.schoolDifyAuthTestFailed': 'Nabigo ang Dify auth. Suriin ang base URL at API key.',
   'admin.schoolDifyAuthRequiredBeforeSave': 'Matagumpay na patakbuhin ang Dify auth test bago i-save.',
   'admin.schoolDifyAuthRequiredOnCreate': 'Matagumpay na magpatakbo ng Dify auth test bago gawin ang paaralan.',
   'admin.copyShortInvite': 'Kopyahin ang maikling link',
-  'admin.schoolDifyAuthErrorNoKey':
-    'Hindi naka-configure ang API key (magpasok ng isa o magtakda ng global DIFY_API_KEY sa .env).',
-  'admin.schoolDifyAuthErrorNoUrl':
-    'Hindi naka-configure ang base URL (magpasok ng isa o magtakda ng pandaigdigang DIFY_API_URL sa .env).',
+  'admin.schoolDifyAuthErrorNoKey': 'Hindi naka-configure ang API key (magpasok ng isa o magtakda ng global DIFY_API_KEY sa .env).',
+  'admin.schoolDifyAuthErrorNoUrl': 'Hindi naka-configure ang base URL (magpasok ng isa o magtakda ng pandaigdigang DIFY_API_URL sa .env).',
   'admin.schoolDifyAuthErrorTimeout': 'Nag-time out sa pagkonekta sa Dify. Suriin ang URL at network.',
   'admin.schoolDifyAuthErrorNetwork': 'Hindi maabot ang Dify. Suriin ang network at base URL.',
   'admin.schoolDifyAuthErrorUnauthorized': 'Di-wasto o hindi awtorisadong API key (HTTP 401).',
@@ -891,17 +810,14 @@ export default {
   'admin.schoolDifyServer2': 'Server 2',
   'admin.schoolDifyActiveServer': 'Aktibong server',
   'admin.schoolDifyFailover': 'Awtomatikong failover',
-  'admin.schoolDifyDualServerHint':
-    'I-configure ang dalawang Dify server sa bawat paaralan. Pinangangasiwaan ng aktibong server ang live na MindMate chat; kung ang auto failover ay naka-on, ang trapiko ay lilipat sa standby kapag ang aktibong server ay hindi maabot at bumalik sa pagbawi.',
+  'admin.schoolDifyDualServerHint': 'I-configure ang dalawang Dify server sa bawat paaralan. Pinangangasiwaan ng aktibong server ang live na MindMate chat; kung ang auto failover ay naka-on, ang trapiko ay lilipat sa standby kapag ang aktibong server ay hindi maabot at bumalik sa pagbawi.',
   'admin.mindmateExport.navLabel': 'MindMate i-export',
   'admin.mindmateExport.tabExport': 'Maghanap at mga filter',
   'admin.mindmateExport.tabDumps': 'Magtapon ng mga file',
   'admin.mindmateExport.panelModeLabel': 'Mode ng MindMate export',
   'admin.mindmateExport.title': 'MindMate pag-export ng pag-uusap',
-  'admin.mindmateExport.description':
-    'Tingnan at i-export ang MindMate (Dify) kasaysayan ng pag-uusap para sa isang user, maraming user, o isang buong paaralan sa loob ng isang hanay ng oras. Pinagsama ang kasaysayan sa parehong Dify server.',
-  'admin.mindmateExport.privacyNotice':
-    'Ang view na ito ay naglalantad ng tunay na nilalaman ng mensahe. Ang bawat pag-export ay sinusuri (na nag-export kung aling org/users/range/format). Pangasiwaan ang na-export na data nang responsable.',
+  'admin.mindmateExport.description': 'Tingnan at i-export ang MindMate (Dify) kasaysayan ng pag-uusap para sa isang user, maraming user, o isang buong paaralan sa loob ng isang hanay ng oras. Pinagsama ang kasaysayan sa parehong Dify server.',
+  'admin.mindmateExport.privacyNotice': 'Ang view na ito ay naglalantad ng tunay na nilalaman ng mensahe. Ang bawat pag-export ay sinusuri (na nag-export kung aling org/users/range/format). Pangasiwaan ang na-export na data nang responsable.',
   'admin.mindmateExport.orgLabel': 'Paaralan',
   'admin.mindmateExport.orgPlaceholder': 'Pumili ng paaralan',
   'admin.mindmateExport.scopeLabel': 'Saklaw',
@@ -920,8 +836,7 @@ export default {
   'admin.mindmateExport.dateRangeLabel': 'Saklaw ng petsa at oras',
   'admin.mindmateExport.startDateTime': 'Magsimula',
   'admin.mindmateExport.endDateTime': 'Tapusin',
-  'admin.mindmateExport.dateTimeHint':
-    'Gumamit ng mabilis na preset o pumili ng petsa at oras ng pagsisimula/pagtatapos. Gumagamit ang mga date-only pick ng buong araw sa kalendaryo (00:00–23:59). Iwanang walang laman (Lahat) para sa buong kasaysayan.',
+  'admin.mindmateExport.dateTimeHint': 'Gumamit ng mabilis na preset o pumili ng petsa at oras ng pagsisimula/pagtatapos. Gumagamit ang mga date-only pick ng buong araw sa kalendaryo (00:00–23:59). Iwanang walang laman (Lahat) para sa buong kasaysayan.',
   'admin.mindmateExport.startDate': 'Petsa ng pagsisimula',
   'admin.mindmateExport.endDate': 'Petsa ng pagtatapos',
   'admin.mindmateExport.loadConversations': 'Mag-load ng mga pag-uusap',
@@ -929,13 +844,10 @@ export default {
   'admin.mindmateExport.conversationsTitle': 'Mga pag-uusap',
   'admin.mindmateExport.conversationCount': '{count} pag-uusap',
   'admin.mindmateExport.noConversations': 'Walang pag-uusap. Ayusin ang mga filter at i-load muli.',
-  'admin.mindmateExport.truncatedNotice':
-    'Masyadong maraming user sa saklaw (max {max}); ang mga resulta ay pinutol. Paliitin ang pagpili para sa kumpletong pag-export.',
-  'admin.mindmateExport.conversationsTruncatedNotice':
-    'Masyadong maraming pag-uusap ang tumugma; nilimitahan ang listahan. Paliitin ang hanay ng petsa o saklaw.',
+  'admin.mindmateExport.truncatedNotice': 'Masyadong maraming user sa saklaw (max {max}); ang mga resulta ay pinutol. Paliitin ang pagpili para sa kumpletong pag-export.',
+  'admin.mindmateExport.conversationsTruncatedNotice': 'Masyadong maraming pag-uusap ang tumugma; nilimitahan ang listahan. Paliitin ang hanay ng petsa o saklaw.',
   'admin.mindmateExport.truncatedDownloadTitle': 'Maaaring hindi kumpleto ang pag-export',
-  'admin.mindmateExport.truncatedDownloadConfirm':
-    'Ang pag-export na ito ay lumampas sa {max}-limitasyon ng user o limitasyon sa pag-uusap. Magpatuloy pa rin?',
+  'admin.mindmateExport.truncatedDownloadConfirm': 'Ang pag-export na ito ay lumampas sa {max}-limitasyon ng user o limitasyon sa pag-uusap. Magpatuloy pa rin?',
   'admin.mindmateExport.loadPrompt': 'Magtakda ng mga filter at i-click ang Mag-load ng mga pag-uusap.',
   'admin.mindmateExport.serverBadge': 'Server {server}',
   'admin.mindmateExport.viewTranscript': 'Pumili ng pag-uusap upang tingnan ang transcript nito.',
@@ -962,11 +874,9 @@ export default {
   'admin.mindmateExport.jobResume': 'Ipagpatuloy',
   'admin.mindmateExport.jobCancel': 'Kanselahin ang trabaho',
   'admin.mindmateExport.jobDownload': 'I-download ang pag-export',
-  'admin.mindmateExport.requiresJobNotice':
-    'Malaki ang saklaw na ito; gumamit ng background export job sa halip na direktang pag-download.',
+  'admin.mindmateExport.requiresJobNotice': 'Malaki ang saklaw na ito; gumamit ng background export job sa halip na direktang pag-download.',
   'admin.mindmateExport.loadMore': 'Mag-load pa',
-  'admin.mindmateExport.dumps.intro':
-    'Mag-upload ng dify-dump_*.zip mula sa bawat Dify host at import. Ang bawat pag-import ay nagsasama sa pinagsama-samang library na ginagamit ng Paghahanap at mga filter. Ang mga archive ng snapshot ay itinatago para sa pag-audit.',
+  'admin.mindmateExport.dumps.intro': 'Mag-upload ng dify-dump_*.zip mula sa bawat Dify host at import. Ang bawat pag-import ay nagsasama sa pinagsama-samang library na ginagamit ng Paghahanap at mga filter. Ang mga archive ng snapshot ay itinatago para sa pag-audit.',
   'admin.mindmateExport.dumps.libraryDify': 'Dify library (Server 1)',
   'admin.mindmateExport.dumps.libraryNeodify': 'NeoDify library (Server 2)',
   'admin.mindmateExport.dumps.libraryEmpty': 'Wala pang library — mag-import ng dump para magsimula.',
@@ -1016,8 +926,7 @@ export default {
   'admin.userSearchFailed': 'Nabigo ang paghahanap ng user',
   'admin.selectSchool': 'Pumili ng paaralan',
   'admin.setManager': 'Itakda bilang Manager',
-  'admin.shareInviteMessage':
-    '{orgName}: Maligayang pagdating sa Mind thinking & teaching AI agent platform!\nGinagabayan ng BNU Thinking Training Center at co-built kasama ang 100+ thinking-development alliance school — samahan kami para palaguin ang mga kasanayan sa pag-iisip sa panahon ng AI.\nPaano: buksan sa computer o telepono; magparehistro gamit ang numero ng telepono + code ng imbitasyon sa unang pagkakataon, pagkatapos ay mag-sign in gamit ang SMS na pag-verify.\nURL: {siteUrl}\nCode ng imbitasyon ng organisasyon: {code}',
+  'admin.shareInviteMessage': '{orgName}: Maligayang pagdating sa Mind thinking & teaching AI agent platform!\nGinagabayan ng BNU Thinking Training Center at co-built kasama ang 100+ thinking-development alliance school — samahan kami para palaguin ang mga kasanayan sa pag-iisip sa panahon ng AI.\nPaano: buksan sa computer o telepono; magparehistro gamit ang numero ng telepono + code ng imbitasyon sa unang pagkakataon, pagkatapos ay mag-sign in gamit ang SMS na pag-verify.\nURL: {siteUrl}\nCode ng imbitasyon ng organisasyon: {code}',
   'admin.shareInviteTitle': 'Ibahagi ang Imbitasyon',
   'admin.source': 'Pinagmulan',
   'admin.sourceDatabase': 'Database',
@@ -1035,15 +944,13 @@ export default {
   'admin.systemSettings': 'Mga Setting ng System',
   'admin.readOnly': 'Basahin lang',
   'admin.dataCenterGlobal': 'Platform (lahat ng paaralan)',
-  'admin.inviteUsersSelectSchool':
-    'Pumili ng paaralan upang tingnan at kopyahin ang code ng imbitasyon ng organisasyon nito.',
+  'admin.inviteUsersSelectSchool': 'Pumili ng paaralan upang tingnan at kopyahin ang code ng imbitasyon ng organisasyon nito.',
   'admin.today': 'Ngayong araw',
   'admin.todayRegistrations': 'Mga Pagpaparehistro ngayon',
   'admin.tokenStatsLoadError': 'Nabigong i-load ang mga istatistika ng token',
   'admin.tokenStatsNetworkError': 'Error sa network, hindi na-load ang mga istatistika ng token',
   'admin.tokenUsageByService': 'Paggamit ng Token ayon sa Serbisyo',
-  'admin.tokenUsageCompare':
-    'Paghambingin ang paggamit ng token sa pagitan ng MindGraph (mga diagram) at MindMate (AI assistant)',
+  'admin.tokenUsageCompare': 'Paghambingin ang paggamit ng token sa pagitan ng MindGraph (mga diagram) at MindMate (AI assistant)',
   'admin.tokens': 'Paggamit ng Token',
   'admin.tokensUsed': 'Mga Token na Ginamit',
   'admin.tokensUsedAllTime': 'Mga Token na Ginamit (Lahat ng Panahon)',
@@ -1057,8 +964,7 @@ export default {
   'admin.paidBenefitRemaining': 'Bayad na benepisyo hanggang',
   'admin.paidBenefitPermanent': 'Permanente',
   'admin.rankingBeijingTodayHint': 'Ang mga ranggo ay para sa kasalukuyang araw (00:00–24:00, oras ng Beijing, UTC+8).',
-  'admin.usersTokensAllTimeHint':
-    'Ang mga bilang ng token ay mga kabuuan sa lahat ng oras. Mag-click ng pangalan o halaga ng token para buksan ang trend chart sa All Time.',
+  'admin.usersTokensAllTimeHint': 'Ang mga bilang ng token ay mga kabuuan sa lahat ng oras. Mag-click ng pangalan o halaga ng token para buksan ang trend chart sa All Time.',
   'admin.topSchoolsByTokens': 'Mga Nangungunang Paaralan ayon sa Paggamit ng Token',
   'admin.topSchoolsByMindGraphTokens': 'MindGraph · Mga Paaralan ayon sa Paggamit ng Token',
   'admin.topSchoolsByMindMateTokens': 'MindMate · Mga Paaralan ayon sa Paggamit ng Token',
@@ -1104,8 +1010,7 @@ export default {
   'admin.userActivityTab.empty': 'Wala pang aktibidad',
   'admin.userActivityTab.loadError': 'Nabigong i-load ang aktibidad',
   'admin.userActivityTab.loadMore': 'Mag-load pa',
-  'admin.userActivityTab.privacyNotice':
-    'Pinutol na mga preview lamang; ang buong transcript ay nangangailangan ng access sa pag-export.',
+  'admin.userActivityTab.privacyNotice': 'Pinutol na mga preview lamang; ang buong transcript ay nangangailangan ng access sa pag-export.',
   'admin.schoolTeachersTab.colName': 'Pangalan',
   'admin.schoolTeachersTab.colRole': 'Tungkulin',
   'admin.schoolTeachersTab.colTokens': 'Token (lahat ng oras)',
@@ -1135,8 +1040,7 @@ export default {
   'admin.orgActivityTab.empty': 'Wala pang aktibidad',
   'admin.orgActivityTab.loadError': 'Nabigong i-load ang aktibidad',
   'admin.orgActivityTab.loadMore': 'Mag-load pa',
-  'admin.orgActivityTab.privacyNotice':
-    'Pinutol na mga preview lamang; ang buong transcript ay nangangailangan ng access sa pag-export.',
+  'admin.orgActivityTab.privacyNotice': 'Pinutol na mga preview lamang; ang buong transcript ay nangangailangan ng access sa pag-export.',
   'admin.trendUsers': 'Kabuuang Trend ng Mga User',
   'admin.unlockOrganization': 'I-unlock ang Organisasyon',
   'admin.usage': 'Paggamit',
@@ -1235,21 +1139,18 @@ export default {
   'admin.database.skipped': 'Nilaktawan',
   'admin.database.orphaned': 'Naulila',
   'admin.database.pgExportImport': 'PostgreSQL I-export / I-import',
-  'admin.database.pgExportImportDesc':
-    'I-export ang kasalukuyang database sa isang dump file sa backup/, o i-restore mula sa isang umiiral na dump.',
+  'admin.database.pgExportImportDesc': 'I-export ang kasalukuyang database sa isang dump file sa backup/, o i-restore mula sa isang umiiral na dump.',
   'admin.database.exportNow': 'I-export Ngayon',
   'admin.database.exportSuccess': 'Na-export ang database',
   'admin.database.exportError': 'Nabigo ang pag-export',
   'admin.database.noDumpFiles': 'Walang nakitang dump file sa backup/',
   'admin.database.restore': 'Ibalik',
   'admin.database.importConfirmTitle': 'Kumpirmahin ang Pagpapanumbalik',
-  'admin.database.importConfirmMsg':
-    'BABALA: Papalitan nito ang LAHAT ng umiiral na data sa PostgreSQL ng mga nilalaman ng dump file. Hindi na ito maaaring bawiin. Sigurado ka ba?',
+  'admin.database.importConfirmMsg': 'BABALA: Papalitan nito ang LAHAT ng umiiral na data sa PostgreSQL ng mga nilalaman ng dump file. Hindi na ito maaaring bawiin. Sigurado ka ba?',
   'admin.database.importSuccess': 'Matagumpay na naibalik ang database',
   'admin.database.importError': 'Nabigo ang pag-restore',
   'admin.database.orphanCleanup': 'Paglilinis ng Ulila',
-  'admin.database.orphanCleanupDesc':
-    'I-detect at alisin ang mga record na may mga sirang foreign key reference sa kasalukuyang PostgreSQL database.',
+  'admin.database.orphanCleanupDesc': 'I-detect at alisin ang mga record na may mga sirang foreign key reference sa kasalukuyang PostgreSQL database.',
   'admin.database.detectOrphans': 'I-detect ang mga Ulila',
   'admin.database.orphanDetectError': 'Nabigong matukoy ang mga ulila',
   'admin.database.noOrphansFound': 'Walang nakitang mga naulilang talaan — malinis ang database.',
@@ -1267,8 +1168,7 @@ export default {
   'admin.database.pgLiveRows': 'Mga Live na Hanay',
   'admin.database.pgExecuteMerge': 'Pagsamahin Sa Live DB',
   'admin.database.pgMergeConfirmTitle': 'Kumpirmahin ang PG Merge',
-  'admin.database.pgMergeConfirmMsg':
-    'Isasama nito ang data mula sa dump sa live na database. Ang mga kasalukuyang tala ay pananatilihin. Magpatuloy?',
+  'admin.database.pgMergeConfirmMsg': 'Isasama nito ang data mula sa dump sa live na database. Ang mga kasalukuyang tala ay pananatilihin. Magpatuloy?',
   'admin.database.pgMergeSuccess': 'Matagumpay na na-merge ang PG dump',
   'admin.database.pgMergeError': 'Nabigo ang PG dump merge',
   'admin.database.pgNewRows': 'Bago',
@@ -1347,8 +1247,7 @@ export default {
   'admin.showcase.colTitle': 'Pamagat',
   'admin.showcase.colType': 'Uri',
   'admin.showcase.empty': 'Walang mga kaso sa pila na ito',
-  'admin.showcase.featureDisabled':
-    'Showcase ay hindi pinagana. Paganahin ang FEATURE_SHOWCASE upang magamit ang panel na ito.',
+  'admin.showcase.featureDisabled': 'Showcase ay hindi pinagana. Paganahin ang FEATURE_SHOWCASE upang magamit ang panel na ito.',
   'admin.showcase.fieldCategory.grade': 'Baitang',
   'admin.showcase.fieldCategory.recommended_tag': 'Inirerekomendang tag',
   'admin.showcase.fieldCategory.subject': 'Paksa',
@@ -1369,8 +1268,7 @@ export default {
   'admin.showcase.fieldsCategoryAria': 'Mga kategorya ng field',
   'admin.showcase.fieldsExisting': 'Mga kasalukuyang opsyon',
   'admin.showcase.fieldsIntro': 'Pamahalaan ang mga opsyon sa paksa, grado, at inirerekomendang tag.',
-  'admin.showcase.intro':
-    'Suriin ang mga pagsusumite, pamahalaan ang mga na-publish na kaso, mga opsyon sa field, at mga pahintulot ng kawani.',
+  'admin.showcase.intro': 'Suriin ang mga pagsusumite, pamahalaan ang mga na-publish na kaso, mga opsyon sa field, at mga pahintulot ng kawani.',
   'admin.showcase.nextPage': 'Susunod',
   'admin.showcase.openProxyForm': 'Buksan ang proxy publish form',
   'admin.showcase.perm.showcase_dashboard_view': 'Tingnan ang dashboard',

@@ -1,4 +1,6 @@
-/** vi UI — auth */
+/**
+ * vi UI � auth
+ */
 
 export default {
   'auth.accountInfo': 'Tài khoản',
@@ -15,13 +17,10 @@ export default {
   'auth.pwaIosInstallHint': 'Chạm Chia sẻ trong Safari, Chrome hoặc Edge, rồi chọn “Thêm vào Màn hình chính”.',
   'auth.pwaAndroidInstallHint': 'Mở menu trình duyệt (⋮) và chạm Cài đặt ứng dụng hoặc Thêm vào Màn hình chính.',
   'auth.pwaSafariMacInstallHint': 'Trong Safari, chọn File → Add to Dock, hoặc Share → Add to Dock (macOS Sonoma trở lên).',
-  'auth.pwaDesktopInstallHint':
-    'Dùng menu trình duyệt (⋮) hoặc biểu tượng cài đặt trên thanh địa chỉ (Chrome, Edge hoặc Brave).',
+  'auth.pwaDesktopInstallHint': 'Dùng menu trình duyệt (⋮) hoặc biểu tượng cài đặt trên thanh địa chỉ (Chrome, Edge hoặc Brave).',
   'auth.pwaInstallSuccess': 'MindGraph đã được thêm vào màn hình của bạn.',
-  'auth.pwaDevInstallHint':
-    'Cài đặt PWA tắt trong chế độ dev thông thường. Dùng bản build production (npm run build + backend) hoặc chạy npm run dev:pwa, rồi dùng Chrome/Edge trên HTTPS hoặc localhost.',
-  'auth.pwaInsecureOriginHint':
-    'Mở MindGraph trong trình duyệt tại địa chỉ HTTPS (không phải file HTML đã lưu) trước khi cài lên màn hình.',
+  'auth.pwaDevInstallHint': 'Cài đặt PWA tắt trong chế độ dev thông thường. Dùng bản build production (npm run build + backend) hoặc chạy npm run dev:pwa, rồi dùng Chrome/Edge trên HTTPS hoặc localhost.',
+  'auth.pwaInsecureOriginHint': 'Mở MindGraph trong trình duyệt tại địa chỉ HTTPS (không phải file HTML đã lưu) trước khi cài lên màn hình.',
   'auth.backToLogin': 'Quay lại đăng nhập',
   'auth.captcha': 'Captcha',
   'auth.captchaLength4': 'Vui lòng nhập captcha 4 ký tự',
@@ -32,10 +31,8 @@ export default {
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Tiện ích Chrome',
   'auth.schoolTierFeatureUnavailable': 'Tính năng này yêu cầu gói trường Standard hoặc Professional (không bao gồm Basic).',
-  'auth.schoolSubscriptionExpiredDowngraded':
-    'Gói đăng ký trường của bạn đã hết hạn. Tài khoản hiện ở gói dùng thử. Liên hệ quản trị viên nền tảng để gia hạn.',
-  'auth.diagramLimitReached':
-    'Trường dùng thử cho phép tối đa {max} sơ đồ đã lưu mỗi giáo viên. Hãy xóa một sơ đồ để lưu sơ đồ mới.',
+  'auth.schoolSubscriptionExpiredDowngraded': 'Gói đăng ký trường của bạn đã hết hạn. Tài khoản hiện ở gói dùng thử. Liên hệ quản trị viên nền tảng để gia hạn.',
+  'auth.diagramLimitReached': 'Trường dùng thử cho phép tối đa {max} sơ đồ đã lưu mỗi giáo viên. Hãy xóa một sơ đồ để lưu sơ đồ mới.',
   'auth.downloadOpenclawSkill': 'Kỹ năng OpenClaw',
   'auth.changePhoneButton': 'Đổi số điện thoại',
   'auth.passwordChangeSuccess': 'Đổi mật khẩu thành công',
@@ -113,8 +110,7 @@ export default {
   'auth.modal.hybridRegisterEmailTab': 'Email giáo dục',
   'auth.modal.hybridRegisterEmailTabAny': 'Email',
   'auth.modal.hybridRegisterPhoneTab': 'Điện thoại + mã mời',
-  'auth.modal.mainlandSalesNotice':
-    'Cần truy cập tại Trung Quốc đại lục? Dùng số di động và mã mời, hoặc liên hệ hỗ trợ khách hàng.',
+  'auth.modal.mainlandSalesNotice': 'Cần truy cập tại Trung Quốc đại lục? Dùng số di động và mã mời, hoặc liên hệ hỗ trợ khách hàng.',
   'auth.modal.registrationEmailLabel': 'Chỉ email giáo dục',
   'auth.modal.registrationEmailLabelAny': 'Địa chỉ email',
   'auth.modal.registrationEmailHint': '',
@@ -129,8 +125,7 @@ export default {
   'auth.modal.emailCodePlaceholder': 'Mã 6 chữ số từ email',
   'auth.modal.acknowledgeOverseas': 'Tôi hiểu và sẽ chỉ dùng phần mềm cho mục đích giáo dục.',
   'auth.modal.acknowledgeOverseasAny': 'Tôi hiểu và đồng ý với điều khoản đăng ký từ nước ngoài.',
-  'auth.modal.acknowledgeOverseasAnyScBrowser':
-    'Tôi hiểu và đồng ý với điều khoản đăng ký từ nước ngoài, và tiếng Trung giản thể không khả dụng trên lộ trình này.',
+  'auth.modal.acknowledgeOverseasAnyScBrowser': 'Tôi hiểu và đồng ý với điều khoản đăng ký từ nước ngoài, và tiếng Trung giản thể không khả dụng trên lộ trình này.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Vui lòng xác nhận thông báo ở trên.',
   'auth.loginPhoneOrEmail': 'Điện thoại hoặc email',
@@ -145,16 +140,13 @@ export default {
   'auth.username': 'Tên người dùng',
   'auth.waitCaptchaLoad': 'Vui lòng đợi captcha tải xong',
   'auth.quickRegPageTitle': 'Đăng ký nhanh',
-  'auth.quickRegPageHint':
-    'Mở trang này từ liên kết trường đã chia sẻ. Nhập số điện thoại và mã phòng 6 chữ số hiển thị trong cửa sổ đăng ký nhanh của người điều phối (làm mới khoảng mỗi 30 giây). Mã cho thấy bạn đang trong phiên; nó không xác minh quyền sở hữu số điện thoại như mã SMS.',
-  'auth.quickRegLinkInvalid':
-    'Liên kết đăng ký này không còn hoạt động (hết hạn hoặc đã đóng). Mở lại liên kết hiện tại từ người điều phối.',
+  'auth.quickRegPageHint': 'Mở trang này từ liên kết trường đã chia sẻ. Nhập số điện thoại và mã phòng 6 chữ số hiển thị trong cửa sổ đăng ký nhanh của người điều phối (làm mới khoảng mỗi 30 giây). Mã cho thấy bạn đang trong phiên; nó không xác minh quyền sở hữu số điện thoại như mã SMS.',
+  'auth.quickRegLinkInvalid': 'Liên kết đăng ký này không còn hoạt động (hết hạn hoặc đã đóng). Mở lại liên kết hiện tại từ người điều phối.',
   'auth.quickRegProbeRateLimited': 'Kiểm tra từ trang này quá nhiều. Đợi một lát rồi làm mới, hoặc thử lại sau.',
   'auth.quickRegSessionSignups': 'Đã đăng ký trong phiên này: {n}',
   'auth.quickRegRoomCodeLabel': 'Mã phòng',
   'auth.quickRegRoomCodePlaceholder': '6 chữ số',
-  'auth.quickRegRoomCodeHint':
-    'Khớp với các chữ số lớn trong hộp thoại đăng ký nhanh của người điều phối; nhập mã trước khi nó đổi.',
+  'auth.quickRegRoomCodeHint': 'Khớp với các chữ số lớn trong hộp thoại đăng ký nhanh của người điều phối; nhập mã trước khi nó đổi.',
   'auth.quickRegRoomCodeEnter6': 'Nhập mã phòng 6 chữ số',
   'auth.quickRegMaxUses': 'Số đăng ký tối đa cho liên kết này',
   'auth.quickRegHeadcount': 'Tối đa',
@@ -164,16 +156,14 @@ export default {
   'auth.quickRegSubmit': 'Hoàn tất đăng ký',
   'auth.quickRegSubmitting': 'Đang đăng ký…',
   'auth.quickRegRegisterSuccess': 'Đăng ký thành công',
-  'auth.quickRegSessionUnsure':
-    'Đăng ký có thể đã thành công. Nếu chưa đăng nhập, quay lại dùng đăng nhập bằng mã xác minh, hoặc làm mới trang này.',
+  'auth.quickRegSessionUnsure': 'Đăng ký có thể đã thành công. Nếu chưa đăng nhập, quay lại dùng đăng nhập bằng mã xác minh, hoặc làm mới trang này.',
   'auth.quickRegBackToSignIn': 'Dùng đăng nhập / đăng ký thông thường',
   'auth.quickRegSelectOrg': 'Chọn trường',
   'auth.quickRegOrgLoadError': 'Không tải được danh sách trường. Vui lòng thử lại.',
   'auth.quickRegMintError': 'Không mở được kênh đăng ký. Vui lòng thử lại.',
   'auth.setPasswordWithSms': 'Đặt mật khẩu đăng nhập',
   'auth.setPasswordWithSmsTitle': 'Đặt mật khẩu qua SMS',
-  'auth.setPasswordWithSmsHint':
-    'Chúng tôi gửi mã tới số điện thoại đã liên kết. Sau khi đặt mật khẩu, bạn có thể đăng nhập bằng mật khẩu hoặc mã xác minh.',
+  'auth.setPasswordWithSmsHint': 'Chúng tôi gửi mã tới số điện thoại đã liên kết. Sau khi đặt mật khẩu, bạn có thể đăng nhập bằng mật khẩu hoặc mã xác minh.',
   'auth.setPasswordWithSmsSubmit': 'Lưu mật khẩu',
   'auth.setPasswordWithSmsSubmitting': 'Đang lưu…',
   'auth.accountDisplayName': 'Tên hiển thị',
@@ -189,8 +179,7 @@ export default {
   'auth.dingtalkBindUnbindError': 'Không hủy liên kết được. Vui lòng thử lại.',
   'auth.dingtalkBindRebind': 'Liên kết lại',
   'auth.dingtalkBindTitle': 'Liên kết tài khoản DingTalk',
-  'auth.dingtalkBindInstructions':
-    'Gửi mã 6 chữ số bên dưới (ví dụ 123-456) dưới dạng tin nhắn tới DingTalk MindBot của trường bạn.',
+  'auth.dingtalkBindInstructions': 'Gửi mã 6 chữ số bên dưới (ví dụ 123-456) dưới dạng tin nhắn tới DingTalk MindBot của trường bạn.',
   'auth.dingtalkBindPairWaiting': 'Đang chờ MindBot nhận mã của bạn…',
   'auth.dingtalkBindCodeHint': 'Chỉ gửi mã này — không thêm văn bản khác.',
   'auth.dingtalkBindCountdown': 'Phiên hết hạn sau {s}s',
@@ -218,8 +207,7 @@ export default {
   'auth.qrLoginInviteRequired': 'Nhập mã mời trường trước khi dùng đăng nhập QR',
   'auth.qrLoginProvidersFailed': 'Không tải được cài đặt đăng nhập QR. Vui lòng thử lại.',
   'auth.qrLoginProviderDisabled': 'Phương thức đăng nhập này chưa bật cho trường của bạn',
-  'auth.qrLoginNotLinked':
-    'Tài khoản chưa liên kết — đăng nhập bằng mật khẩu và liên kết trong mục Liên kết tài khoản trước',
+  'auth.qrLoginNotLinked': 'Tài khoản chưa liên kết — đăng nhập bằng mật khẩu và liên kết trong mục Liên kết tài khoản trước',
   'auth.qrLoginExchangeFailed': 'Đăng nhập QR thất bại. Vui lòng thử lại.',
   'auth.qrLoginInvalidState': 'Phiên QR đã hết hạn. Đóng và quét lại.',
   'auth.qrLoginCorpMismatch': 'Tổ chức DingTalk không khớp cài đặt trường của bạn.',

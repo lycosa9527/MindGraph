@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+import copy
 import logging
 import uuid as uuid_module
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Optional, Set
 
 from fastapi import HTTPException, UploadFile, status
@@ -13,6 +14,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.attributes import flag_modified
 
 from models.domain.auth import User
 from models.domain.showcase import ShowcasePost, ShowcasePostFavorite, ShowcasePostLike
@@ -42,8 +44,10 @@ from .helpers import (
     apply_gallery_image_uploads,
     assert_gallery_uploads_resolved,
     assert_post_ready_for_approval,
+    assert_showcase_spec_size,
     count_pending_gallery_images,
     delete_case_file,
+    heal_gallery_image_paths,
     parse_tags_json,
     resolve_gallery_image_storage_path,
     save_case_file,
@@ -237,10 +241,20 @@ async def _review_case_post_handler(
         )
 
     if action == "approve":
-        assert_post_ready_for_approval(
-            case_type=post.case_type,
-            spec=post.spec if isinstance(post.spec, dict) else None,
-        )
+        # Recover gallery paths when bytes exist but JSONB nested writes were lost.
+        if isinstance(post.spec, dict):
+            healed_spec = copy.deepcopy(post.spec)
+            if heal_gallery_image_paths(post.id, healed_spec):
+                post.spec = healed_spec
+                flag_modified(post, "spec")
+                save_spec_json(post.id, healed_spec)
+                logger.info(
+                    "[Showcase] Healed gallery image paths before approve post=%s",
+                    post.id,
+                )
+            assert_post_ready_for_approval(case_type=post.case_type, spec=healed_spec)
+        else:
+            assert_post_ready_for_approval(case_type=post.case_type, spec=None)
 
     now = datetime.now(UTC)
 
@@ -588,7 +602,8 @@ async def _apply_author_case_update(
 
     tag_list = parse_tags_json(tags)
     post_id = post.id
-    spec_obj: Optional[dict] = dict(post.spec) if isinstance(post.spec, dict) else None
+    # Deep copy nested gallery/attachment fields so JSONB mutations persist.
+    spec_obj: Optional[dict] = copy.deepcopy(post.spec) if isinstance(post.spec, dict) else None
     thumbnail_path = post.thumbnail_path
 
     if case_type == "teaching_design":
@@ -668,6 +683,7 @@ async def _apply_author_case_update(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="diagram_type is required")
         _validate_optional_diagram_type(diagram_type)
         if spec:
+            assert_showcase_spec_size(spec)
             spec_obj = parse_spec_json(spec)
         if not spec_obj:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="spec is required for diagram cases")
@@ -715,5 +731,7 @@ async def _apply_author_case_update(
     post.grade = grade
     post.diagram_type = diagram_type
     post.spec = spec_obj
+    if spec_obj is not None:
+        flag_modified(post, "spec")
     post.thumbnail_path = thumbnail_path
     post.updated_at = datetime.now(UTC)
