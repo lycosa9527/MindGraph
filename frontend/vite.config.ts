@@ -6,12 +6,17 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { homedir } from 'os'
 import { resolve, dirname, join } from 'path'
-import { readFileSync } from 'fs'
+import { existsSync, readdirSync, readFileSync, rmSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+
+/** True when the project lives on a Windows drive mounted into WSL (`/mnt/c`, …). */
+function isWslWindowsMount(projectRoot: string): boolean {
+  return process.platform === 'linux' && projectRoot.startsWith('/mnt/')
+}
 
 /** WSL projects on /mnt/c often hit EACCES when Vite renames deps_temp → deps under node_modules/.vite. */
 function resolveCacheDir(projectRoot: string): string {
@@ -19,13 +24,49 @@ function resolveCacheDir(projectRoot: string): string {
   if (override) {
     return resolve(override)
   }
-  if (process.platform === 'linux' && projectRoot.startsWith('/mnt/')) {
+  if (isWslWindowsMount(projectRoot)) {
     return join(homedir(), '.cache', 'mindgraph-vite')
   }
   return join(projectRoot, 'node_modules', '.vite')
 }
 
+/**
+ * Vite's prepare-out-dir uses `rmSync` without retries. On WSL `/mnt/*` (drvfs), deleting
+ * large public asset trees (e.g. pdf.js `cmaps/` with 160+ files) often fails with ENOTEMPTY.
+ * Empty child-by-child with Node maxRetries instead, and skip Vite's emptyOutDir on those mounts.
+ */
+function emptyDirWithRetry(dir: string): void {
+  if (!existsSync(dir)) {
+    return
+  }
+  for (const name of readdirSync(dir)) {
+    rmSync(resolve(dir, name), {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 50,
+    })
+  }
+}
+
+function wslSafeEmptyOutDirPlugin(projectRoot: string, outDir: string): Plugin {
+  const absOutDir = resolve(projectRoot, outDir)
+  return {
+    name: 'mindgraph-wsl-safe-empty-out-dir',
+    apply: 'build',
+    enforce: 'pre',
+    buildStart() {
+      if (!isWslWindowsMount(projectRoot)) {
+        return
+      }
+      emptyDirWithRetry(absOutDir)
+    },
+  }
+}
+
 const cacheDir = resolveCacheDir(__dirname)
+const onWslWindowsMount = isWslWindowsMount(__dirname)
+const buildOutDir = 'dist'
 
 const devPort = Number(process.env.PORT) || 41732
 const devHost = process.env.VITE_HOST || '0.0.0.0'
@@ -201,6 +242,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    wslSafeEmptyOutDirPlugin(__dirname, buildOutDir),
     devCspConnectSrcPlugin(backendOrigin),
     vue({
       template: {
@@ -374,7 +416,10 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist',
+    outDir: buildOutDir,
+    // On WSL `/mnt/*`, Vite's emptyOutDir hits ENOTEMPTY on large trees (pdf.js cmaps).
+    // mindgraph-wsl-safe-empty-out-dir handles cleanup with retries instead.
+    emptyOutDir: !onWslWindowsMount,
     sourcemap: process.env.SOURCEMAP === '1' ? true : false,
     // Vite’s default 500 kB is aggressive for feature-rich SPAs; 1000 kB is a
     // practical bar once vendors are split (below). Revisit if a single chunk
