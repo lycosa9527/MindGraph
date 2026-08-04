@@ -97,6 +97,11 @@ export const useShowcaseStore = defineStore('showcase', () => {
 
   function markCoverPending(postId: string) {
     if (!postId) return
+    // Already watching this post — keep the existing EventSource (reconnect
+    // storms + loadPost retries used to tear down and re-enqueue every few seconds).
+    if (coverPendingIds.value[postId] && coverStreamTeardowns.has(postId)) {
+      return
+    }
     coverPendingIds.value = { ...coverPendingIds.value, [postId]: true }
     stopCoverStream(postId)
     const teardown = createShowcaseCoverStream(postId, {

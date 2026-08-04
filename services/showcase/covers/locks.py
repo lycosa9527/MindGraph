@@ -12,13 +12,35 @@ from services.utils.error_types import REDIS_ERRORS
 logger = logging.getLogger(__name__)
 
 _LOCK_PREFIX = "showcase:cover:"
+_ENQUEUE_PREFIX = "showcase:cover:enq:"
 _LOCK_TTL_SECONDS = 300
+# Coalesce GET-post + cover-stream + EventSource reconnect enqueue spam.
+_ENQUEUE_TTL_SECONDS = 90
 _RELEASE_LUA = """
 if redis.call('get', KEYS[1]) == ARGV[1] then
   return redis.call('del', KEYS[1])
 end
 return 0
 """
+
+
+def try_claim_cover_enqueue(post_id: str) -> bool:
+    """Return True when this process should ``send_task`` (first claim wins).
+
+    Fail-open when Redis is unavailable so local/dev still enqueues.
+    """
+    if not is_redis_available():
+        return True
+    redis = get_redis()
+    if redis is None:
+        return True
+    key = f"{_ENQUEUE_PREFIX}{post_id}"
+    try:
+        acquired = redis.set(key, "1", nx=True, ex=_ENQUEUE_TTL_SECONDS)
+    except REDIS_ERRORS as exc:
+        logger.debug("[ShowcaseCover] enqueue claim failed post=%s: %s", post_id[:8], exc)
+        return True
+    return bool(acquired)
 
 
 def acquire_cover_lock(post_id: str) -> Optional[str]:

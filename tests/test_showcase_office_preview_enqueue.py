@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from services.showcase.covers.enqueue import (
     enqueue_missing_office_preview,
+    enqueue_teaching_design_cover,
     office_attachment_needs_preview,
 )
 
@@ -69,3 +70,30 @@ def test_enqueue_missing_office_preview_noop_when_ready() -> None:
         )
     assert ok is False
     enqueue.assert_not_called()
+
+
+def test_enqueue_teaching_design_cover_dedupes_send_task() -> None:
+    """Second enqueue for the same post must not call Celery again."""
+    post_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    attachment = f"showcase/posts/{post_id}/attachment.docx"
+    with (
+        patch("services.showcase.covers.enqueue.showcase_server_covers_enabled", return_value=True),
+        patch("services.showcase.covers.enqueue.try_claim_cover_enqueue", side_effect=[True, False]),
+        patch("services.showcase.covers.enqueue.celery_app") as celery_app,
+    ):
+        celery_app.send_task = MagicMock()
+        enqueue_teaching_design_cover(
+            post_id=post_id,
+            user_id=1,
+            attachment_key=attachment,
+            case_type="teaching_design",
+            author_id=1,
+        )
+        enqueue_teaching_design_cover(
+            post_id=post_id,
+            user_id=1,
+            attachment_key=attachment,
+            case_type="teaching_design",
+            author_id=1,
+        )
+    celery_app.send_task.assert_called_once()

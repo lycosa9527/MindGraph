@@ -96,8 +96,26 @@ def cos_object_key(relative_key: str, prefix: Optional[str] = None) -> str:
     return f"{base}/{rel}"
 
 
+class _CosClientHolder:
+    """Process-wide CosS3Client cache (avoids per-request pool setup)."""
+
+    __slots__ = ("client",)
+
+    def __init__(self) -> None:
+        self.client: Optional[Any] = None
+
+
+_COS_CLIENT_HOLDER = _CosClientHolder()
+
+
 def get_cos_client() -> Optional[Any]:
-    """Return configured CosS3Client or None if unavailable."""
+    """Return configured CosS3Client or None if unavailable.
+
+    Reuses one client per process — CosS3Client construction logs connection-pool
+    setup at DEBUG and is unnecessary per showcase asset request.
+    """
+    if _COS_CLIENT_HOLDER.client is not None:
+        return _COS_CLIENT_HOLDER.client
     if not cos_sdk_available():
         return None
     if not cos_credentials_configured():
@@ -110,7 +128,8 @@ def get_cos_client() -> Optional[Any]:
         SecretKey=COS_SECRET_KEY,
         Scheme="https",
     )
-    return CosS3Client(config)
+    _COS_CLIENT_HOLDER.client = CosS3Client(config)
+    return _COS_CLIENT_HOLDER.client
 
 
 def _is_retryable_cos_error(exc: Exception) -> bool:

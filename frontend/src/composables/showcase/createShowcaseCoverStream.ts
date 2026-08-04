@@ -110,8 +110,9 @@ export function createShowcaseCoverStream(
   }
   eventSource.onerror = (event) => {
     options.onError?.(event)
-    // EventSource reconnects by default; if the server closed after a
-    // terminal frame we already cleaned up. Otherwise treat drop as fail.
+    // EventSource reconnects while CONNECTING (needed for long LO jobs).
+    // Enqueue is Redis-deduped server-side, so reconnects must not spam Celery.
+    // Only treat a fully closed socket (no auto-retry) as terminal failure.
     if (!closed && !terminal && eventSource?.readyState === EventSource.CLOSED) {
       handleTerminal({ type: 'cover_fail', postId, reason: 'stream_closed' })
     }

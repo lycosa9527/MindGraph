@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.165.1] - 2026-08-04
+
+> **Harden DEBUG logs against Cookie/COS secret dumps; stop Showcase Office cover enqueue storm.**
+
+### Fixed
+
+- **Secret logging** — Pin `uvicorn.error` to INFO so WebSocket handshake DEBUG no longer dumps `Cookie`/JWT; set `qcloud_cos*` / `urllib3` to WARNING unless `COS_DEBUG=1` or `HTTP_DEBUG=1` (`logging_config.py`).
+- **Office cover enqueue storm** — Persist `preview_path` with `flag_modified`; Redis NX dedupe on Celery enqueue; stop detail-modal `loadPost` loop on thumb-only `cover_ready`; keep existing cover SSE when already pending (`generate.py`, `enqueue.py`, `locks.py`, `ShowcaseDetailModal.vue`, `showcase.ts`).
+- **COS client churn** — Reuse one `CosS3Client` per process instead of reconstructing on every asset request (`tencent_cos_client.py`).
+
+### Changed
+
+- **Locale** — Refresh fa showcase message bundle.
+- **CrowdSec** — Refresh committed blocklist baseline.
+
+### Tests
+
+- **Backend** — Enqueue dedupe unit coverage (`test_showcase_office_preview_enqueue.py`).
+
 ## [5.165.0] - 2026-08-04
 
 > **Showcase diagram AI copy + 15-item gallery publish; MindMate case attachments; COS asset proxy for pdf.js; Office preview.pdf backfill.**

@@ -9,6 +9,7 @@ from typing import Any, Optional
 from config.celery import celery_app
 from services.showcase.covers.config import showcase_server_covers_enabled
 from services.showcase.covers.events import publish_showcase_cover_event_sync
+from services.showcase.covers.locks import try_claim_cover_enqueue
 from services.showcase.infra.observability import showcase_wf_log
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
@@ -52,6 +53,13 @@ def enqueue_teaching_design_cover(
         return
     suffix = Path(attachment_key).suffix.lower()
     if suffix not in _COVER_SUFFIXES:
+        return
+    if not try_claim_cover_enqueue(post_id):
+        logger.debug(
+            "[ShowcaseCover] enqueue deduped post=%s key=%s",
+            post_id[:8],
+            attachment_key[:48],
+        )
         return
     try:
         celery_app.send_task(

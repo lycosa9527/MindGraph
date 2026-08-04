@@ -649,6 +649,9 @@ def setup_logging():
             uvicorn_logger.addHandler(handler)
         uvicorn_logger.addFilter(UvicornInvalidRequestFilter())  # Downgrade invalid request warnings
         uvicorn_logger.propagate = False
+    # websockets handshake DEBUG is emitted via uvicorn.error and dumps Cookie/JWT.
+    # Parent "uvicorn" may be DEBUG above; pin error logger so headers stay out of logs.
+    logging.getLogger("uvicorn.error").setLevel(logging.INFO)
 
     # Create main logger early
     logger = logging.getLogger(__name__)
@@ -689,12 +692,15 @@ def setup_logging():
     logging.getLogger("websockets.server").setLevel(logging.WARNING)
     logging.getLogger("uvicorn.protocols.websockets").setLevel(logging.INFO)
 
-    # Other external libraries can remain at DEBUG for troubleshooting
-    logging.getLogger("qcloud_cos").setLevel(logging.DEBUG)
-    logging.getLogger("qcloud_cos.cos_client").setLevel(logging.DEBUG)
-    logging.getLogger("qcloud_cos.cos_auth").setLevel(logging.DEBUG)
-    logging.getLogger("urllib3").setLevel(logging.DEBUG)
-    logging.getLogger("urllib3.connectionpool").setLevel(logging.DEBUG)
+    # COS SDK DEBUG logs Authorization / q-ak / sign_key. urllib3 DEBUG is noisy.
+    # Opt in with COS_DEBUG=1 (or HTTP_DEBUG=1) when troubleshooting storage.
+    cos_debug_enabled = os.getenv("COS_DEBUG", "").lower() in ("1", "true", "yes")
+    cos_level = logging.DEBUG if (http_debug_enabled or cos_debug_enabled) else logging.WARNING
+    logging.getLogger("qcloud_cos").setLevel(cos_level)
+    logging.getLogger("qcloud_cos.cos_client").setLevel(cos_level)
+    logging.getLogger("qcloud_cos.cos_auth").setLevel(cos_level)
+    logging.getLogger("urllib3").setLevel(cos_level)
+    logging.getLogger("urllib3.connectionpool").setLevel(cos_level)
 
     # Enable OpenAI SDK logging for HTTP request/response visibility
     # This provides detailed logs for Hunyuan and Doubao API calls

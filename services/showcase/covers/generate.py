@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from sqlalchemy import select
+from sqlalchemy.orm.attributes import flag_modified
 
 from models.domain.showcase import ShowcasePost
 from services.redis.cache import redis_showcase_cache as showcase_cache
@@ -198,9 +199,13 @@ async def generate_showcase_cover(
                 )
             post.thumbnail_path = thumb_key
             if preview_key is not None:
+                # JSONB: reassignment alone can miss persistence (gallery/upload paths
+                # always flag_modified). Without preview_path stuck, detail opens
+                # re-enqueue forever.
                 spec_obj = dict(post.spec) if isinstance(post.spec, dict) else {}
                 spec_obj["preview_path"] = preview_key
                 post.spec = spec_obj
+                flag_modified(post, "spec")
             await db.commit()
 
         await showcase_cache.invalidate_post(post_id)

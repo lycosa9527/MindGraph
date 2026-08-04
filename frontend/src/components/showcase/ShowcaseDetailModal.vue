@@ -284,13 +284,12 @@ watch(
 
 const offCoverReady = eventBus.on('showcase:cover_ready', ({ postId, thumbnailUrl, previewUrl }) => {
   if (!props.visible || !post.value || post.value.id !== postId) return
+  // Patch URLs from SSE only. Do not reload the post on thumb-only ready —
+  // that re-enqueues + reopens cover-stream in a loop while preview_path is missing.
   post.value = {
     ...post.value,
     ...(thumbnailUrl ? { thumbnail_url: thumbnailUrl } : {}),
     ...(previewUrl ? { preview_url: previewUrl } : {}),
-  }
-  if (!previewUrl && !post.value.preview_url) {
-    void loadPost()
   }
 })
 
