@@ -1,17 +1,17 @@
-import { nextTick, onUnmounted, ref, watch, type Ref } from 'vue'
+import { type Ref, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { DEFAULT_MINDMAP_RANK_SEPARATION } from '@/composables/diagrams/layoutConfig'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { MINDMAP_UNDERLINE_STROKE_WIDTH } from '@/config/mindMapGeometry'
 import { mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
-import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
-import type { Connection, DiagramNode, NodeStyle } from '@/types'
 import { getMindMapVisibleCollapsedNodeIds } from '@/stores/diagram/mindMapCollapse'
+import type { Connection, DiagramNode, NodeStyle } from '@/types'
 
-/** Match `.mind-map-collapse-overlay__btn--collapse` */
-const COLLAPSE_HANDLE_HALF = 9
-/** Match `.mind-map-collapse-overlay__btn--expand` pill half-width */
-const EXPAND_PILL_HALF = 14
+/** Match `.mind-map-collapse-overlay__btn--collapse` (base size before e-blackboard scale). */
+export const COLLAPSE_HANDLE_HALF = 9
+/** Match `.mind-map-collapse-overlay__btn--expand` pill half-width (base before scale). */
+export const EXPAND_PILL_HALF = 14
 const OUTWARD_GAP = 6
 
 export type CollapseOverlayHandle = {
@@ -149,14 +149,7 @@ function resolveToggleFlowPoint(
   const anchorY = mindMapConnectionAnchorY(parent.position.y, ph, parentShape)
   const parentOutX = isLeftBranch ? parent.position.x : parent.position.x + pw
 
-  const childId = nearestChildId(
-    parentId,
-    connections,
-    nodes,
-    widths,
-    heights,
-    isLeftBranch
-  )
+  const childId = nearestChildId(parentId, connections, nodes, widths, heights, isLeftBranch)
 
   let toggleX: number
   if (childId) {
@@ -195,7 +188,8 @@ function resolveToggleHandle(
   strokeColor: string,
   mode: 'collapse' | 'expand',
   count?: number,
-  diagramStyleId?: string | null
+  diagramStyleId?: string | null,
+  controlScale = 1
 ): CollapseOverlayHandle | null {
   const flow = resolveToggleFlowPoint(
     nodeId,
@@ -209,7 +203,8 @@ function resolveToggleHandle(
   if (!flow) return null
 
   const isLeftBranch = nodeId.startsWith('branch-l-')
-  const handleHalf = mode === 'expand' ? EXPAND_PILL_HALF : COLLAPSE_HANDLE_HALF
+  const baseHalf = mode === 'expand' ? EXPAND_PILL_HALF : COLLAPSE_HANDLE_HALF
+  const handleHalf = baseHalf * controlScale
   const parentRect = container
     .querySelector(`.vue-flow__node[data-id="${nodeId}"]`)
     ?.getBoundingClientRect()
@@ -222,18 +217,9 @@ function resolveToggleHandle(
     anchorTop = domAnchorY(container, nodeId, parentRect)
     lineStartLeft = isLeftBranch ? parentRect.left : parentRect.right
 
-    const childId = nearestChildId(
-      nodeId,
-      connections,
-      nodes,
-      widths,
-      heights,
-      isLeftBranch
-    )
+    const childId = nearestChildId(nodeId, connections, nodes, widths, heights, isLeftBranch)
     const childRect = childId
-      ? container
-          .querySelector(`.vue-flow__node[data-id="${childId}"]`)
-          ?.getBoundingClientRect()
+      ? container.querySelector(`.vue-flow__node[data-id="${childId}"]`)?.getBoundingClientRect()
       : undefined
 
     if (childRect) {
@@ -243,9 +229,7 @@ function resolveToggleHandle(
     } else {
       const vp = readViewport(container)
       const halfStub = (DEFAULT_MINDMAP_RANK_SEPARATION * vp.zoom) / 2
-      toggleLeft = isLeftBranch
-        ? parentRect.left - halfStub
-        : parentRect.right + halfStub
+      toggleLeft = isLeftBranch ? parentRect.left - halfStub : parentRect.right + halfStub
     }
 
     if (isLeftBranch) {
@@ -286,6 +270,8 @@ export function useMindMapCollapseOverlayPositions(options: {
   editingNodeId: Ref<string | null>
   getDescendantCount: (nodeId: string) => number
   getDescendantIds: (rootId: string) => Set<string>
+  /** 1 = default; 2 = e-blackboard (see `MIND_MAP_E_BLACKBOARD_CONTROL_SCALE`). */
+  controlScale?: Ref<number>
 }) {
   const handles = ref<CollapseOverlayHandle[]>([])
   const visible = ref(false)
@@ -307,6 +293,7 @@ export function useMindMapCollapseOverlayPositions(options: {
     const styles = options.nodeStyles.value
     const stroke = options.strokeColor.value
     const styleId = options.diagramStyleId?.value
+    const scale = options.controlScale?.value ?? 1
     const next: CollapseOverlayHandle[] = []
     const collapsedNodeIds = getMindMapVisibleCollapsedNodeIds(
       nodes,
@@ -332,7 +319,8 @@ export function useMindMapCollapseOverlayPositions(options: {
         stroke,
         'expand',
         count,
-        styleId
+        styleId,
+        scale
       )
       if (handle) next.push(handle)
     }
@@ -355,7 +343,8 @@ export function useMindMapCollapseOverlayPositions(options: {
         stroke,
         'collapse',
         undefined,
-        styleId
+        styleId,
+        scale
       )
       if (handle) next.push(handle)
     }
@@ -381,6 +370,7 @@ export function useMindMapCollapseOverlayPositions(options: {
         options.editingNodeId.value,
         options.strokeColor.value,
         options.diagramStyleId?.value,
+        options.controlScale?.value ?? 1,
         Object.keys(options.nodeWidths.value).length,
         Object.values(options.nodeWidths.value).join(','),
         Object.values(options.nodeHeights.value).join(','),

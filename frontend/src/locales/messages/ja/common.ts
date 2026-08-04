@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'クラシックキャンバス',
   'settings.language.mindMapCanvasV2': '新キャンバス',
   'settings.language.mindMapCanvasRefreshHint': '切り替え後、キャンバスページを更新すると完全に反映されます',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'UI バージョン',
   'settings.version.chinese': 'プロフェッショナルモード',
   'settings.version.international': 'シンプルモード',

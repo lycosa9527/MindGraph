@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Canevas classique',
   'settings.language.mindMapCanvasV2': 'Nouveau canevas',
   'settings.language.mindMapCanvasRefreshHint': 'Actualisez la page du canevas après le changement pour un effet complet',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'Version de l’interface',
   'settings.version.chinese': 'Mode professionnel',
   'settings.version.international': 'Mode simplifié',

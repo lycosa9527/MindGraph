@@ -197,6 +197,7 @@ export const MIND_MAP_PRESENTATION_EXPANDABLE_TOOLS = [
   'laser',
   'highlighter',
   'pen',
+  'spotlight',
 ] as const satisfies readonly MindMapPresentationToolId[]
 
 /** Freehand strokes in presentation highlighter mode (Vue Flow coordinates). */

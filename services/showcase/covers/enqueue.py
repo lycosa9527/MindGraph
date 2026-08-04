@@ -8,7 +8,10 @@ from typing import Any, Optional
 
 from config.celery import celery_app
 from services.showcase.covers.config import showcase_server_covers_enabled
-from services.showcase.covers.events import publish_showcase_cover_event_sync
+from services.showcase.covers.events import (
+    clear_cover_last_event_sync,
+    publish_showcase_cover_event_sync,
+)
 from services.showcase.covers.locks import try_claim_cover_enqueue
 from services.showcase.infra.observability import showcase_wf_log
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -61,6 +64,9 @@ def enqueue_teaching_design_cover(
             attachment_key[:48],
         )
         return
+    # Invalidate prior terminal replay so SSE cannot short-circuit a live job
+    # with a stale cover_fail / cover_ready from an earlier attempt.
+    clear_cover_last_event_sync(post_id)
     try:
         celery_app.send_task(
             _COVER_TASK_NAME,

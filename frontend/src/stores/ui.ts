@@ -6,6 +6,7 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import { htmlLangForLocale, loadLocaleMessages, setI18nLocale } from '@/i18n'
 import type { LocaleCode, PromptOutputLanguageCode } from '@/i18n/locales'
 import {
@@ -16,7 +17,6 @@ import {
   matchedPromptLanguageForUiLocale,
 } from '@/i18n/locales'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
-import { eventBus } from '@/composables/core/useEventBus'
 import { computeIsMobileClient } from '@/utils/isMobileClient'
 
 export type Theme = 'light' | 'dark' | 'system'
@@ -35,6 +35,7 @@ const UI_LANGUAGE_EXPLICIT_KEY = 'mindgraph_ui_language_explicit'
 const BROWSER_LOCALE_HINT_KEY = 'mindgraph_browser_locale_hint_dismissed'
 const UI_VERSION_KEY = 'mindgraph_ui_version'
 export const MINDMAP_CANVAS_MODE_KEY = 'mindgraph_mindmap_canvas_mode'
+export const E_BLACKBOARD_OPTIMIZE_KEY = 'mindgraph_e_blackboard_optimize'
 
 const VALID_MINDMAP_CANVAS_MODES: ReadonlySet<string> = new Set(['legacy', 'v2'])
 
@@ -99,6 +100,12 @@ export const useUIStore = defineStore('ui', () => {
   const uiVersion = ref<UiVersion>(detectDefaultUiVersion())
   /** Mind map canvas chrome: legacy (Option 1) or v2 side-toolbar layout (Option 2). Default: v2. */
   const mindMapCanvasMode = ref<MindMapCanvasMode>('v2')
+  /**
+   * Classroom e-blackboard: enlarge V2 +/- and collapse chrome; desktop touch uses
+   * tap=select, double-tap=edit, two-finger pan/zoom. Default off; scale in
+   * `mindMapEBlackboard.ts`.
+   */
+  const eBlackboardOptimize = ref(false)
   const isMobile = ref(false)
   const sidebarCollapsed = ref(false)
 
@@ -253,6 +260,8 @@ export const useUIStore = defineStore('ui', () => {
       mindMapCanvasMode.value = 'v2'
     }
 
+    eBlackboardOptimize.value = localStorage.getItem(E_BLACKBOARD_OPTIMIZE_KEY) === '1'
+
     if (isValidLanguage(storedLanguage)) {
       language.value = storedLanguage
     } else if (!uiLanguageExplicit.value) {
@@ -389,6 +398,11 @@ export const useUIStore = defineStore('ui', () => {
     mindMapCanvasMode.value = mode
     localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, mode)
     eventBus.emit('mindmap:canvas_mode_changed', { previousMode, newMode: mode })
+  }
+
+  function setEBlackboardOptimize(value: boolean): void {
+    eBlackboardOptimize.value = value
+    localStorage.setItem(E_BLACKBOARD_OPTIMIZE_KEY, value ? '1' : '0')
   }
 
   function applyUiVersionFromServerProfile(version: string | null | undefined): void {
@@ -545,6 +559,7 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.removeItem(BROWSER_LOCALE_HINT_KEY)
     localStorage.removeItem(UI_VERSION_KEY)
     localStorage.removeItem(MINDMAP_CANVAS_MODE_KEY)
+    localStorage.removeItem(E_BLACKBOARD_OPTIMIZE_KEY)
     applyTheme()
     initFromStorage()
   }
@@ -562,6 +577,7 @@ export const useUIStore = defineStore('ui', () => {
     browserLocaleHintDismissed,
     uiVersion,
     mindMapCanvasMode,
+    eBlackboardOptimize,
     isMobile,
     sidebarCollapsed,
     wireframeMode,
@@ -590,6 +606,7 @@ export const useUIStore = defineStore('ui', () => {
     setLanguagePolicyAllowZh,
     setUiVersion,
     setMindMapCanvasMode,
+    setEBlackboardOptimize,
     applyUiVersionFromServerProfile,
     applyLanguageFromServerProfile,
     applyGuestLocaleFromBrowser,

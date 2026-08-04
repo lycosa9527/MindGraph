@@ -1,26 +1,28 @@
 /**
  * Vertical stacking helpers for first-level mind-map branches on one side.
- * Multi-root sides pack sequentially with a uniform cross-branch gap (no n=2
+ * Multi-root sides pack sequentially with a uniform or per-boundary gap (no n=2
  * special case — that inflated gaps when subtree spans differed).
  *
  * Incremental L1 Enter uses UID position restore + insert/shift so the map
  * grows like L2 (nodes below move) instead of re-centering the whole side.
  */
+import { DEFAULT_NODE_HEIGHT } from '@/composables/diagrams/layoutConfig'
 import {
-  DEFAULT_MINDMAP_BRANCH_GAP,
-  DEFAULT_NODE_HEIGHT,
-  MINDMAP_SIBLING_GAP,
-} from '@/composables/diagrams/layoutConfig'
+  mindMapAdaptiveBranchGap,
+  mindMapAdaptiveSiblingGap,
+  normalizeMindMapPackGaps,
+} from '@/config/mindMapAdaptiveGaps'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
 import { findNodeIdByMindMapUid, readMindMapNodeUid } from '@/utils/mindMapNodeUid'
+import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 /** Topic-centered sequential start tops for one side's root subtrees. */
 export function computeSymmetricRootStartYs(
   subtreeSpans: number[],
   topicCenterY: number,
-  crossBranchGap: number
+  crossBranchGap: number | readonly number[]
 ): number[] {
   const n = subtreeSpans.length
   if (n === 0) return []
@@ -29,11 +31,13 @@ export function computeSymmetricRootStartYs(
     return [topicCenterY - subtreeSpans[0] / 2]
   }
 
-  const totalHeight = subtreeSpans.reduce((a, b) => a + b, 0) + (n - 1) * crossBranchGap
+  const gaps = normalizeMindMapPackGaps(n, crossBranchGap)
+  const gapSum = gaps.reduce((a, b) => a + b, 0)
+  const totalHeight = subtreeSpans.reduce((a, b) => a + b, 0) + gapSum
   let y = topicCenterY - totalHeight / 2
-  return subtreeSpans.map((span) => {
+  return subtreeSpans.map((span, i) => {
     const start = y
-    y += span + crossBranchGap
+    y += span + (gaps[i] ?? 0)
     return start
   })
 }
@@ -42,12 +46,13 @@ export function computeSymmetricRootStartYs(
 export function computeSequentialRootStartYsFrom(
   startY: number,
   subtreeSpans: number[],
-  crossBranchGap: number
+  crossBranchGap: number | readonly number[]
 ): number[] {
+  const gaps = normalizeMindMapPackGaps(subtreeSpans.length, crossBranchGap)
   let y = startY
-  return subtreeSpans.map((span) => {
+  return subtreeSpans.map((span, i) => {
     const start = y
-    y += span + crossBranchGap
+    y += span + (gaps[i] ?? 0)
     return start
   })
 }
@@ -229,7 +234,8 @@ export function settleMindMapPreserveYLayout(
       result,
       connections,
       nodeHeights,
-      collapsedNodeIds
+      collapsedNodeIds,
+      diagramStyleId
     )
   }
   return centerMindMapSidePacksOnTopic(
@@ -244,14 +250,15 @@ export function settleMindMapPreserveYLayout(
  * Push sibling subtrees apart when their vertical bounds collide (or gap is too
  * small). Used after children-on-parent centering under sticky preserve — L1
  * Enter pins root tops, so growing child fans would otherwise overlap.
- * Same-side L1 roots use {@link DEFAULT_MINDMAP_BRANCH_GAP}; deeper siblings use
- * {@link MINDMAP_SIBLING_GAP}. Each shifted root moves rigidly with descendants.
+ * Gaps are pairwise from contacting-edge shapes (v2 adaptive). Only pushes —
+ * never shrinks existing separation (Enter-safe).
  */
 export function resolveMindMapSiblingSubtreeOverlaps(
   nodes: DiagramNode[],
   connections: Connection[],
   nodeHeights?: Record<string, number>,
-  collapsedNodeIds: ReadonlySet<string> = new Set<string>()
+  collapsedNodeIds: ReadonlySet<string> = new Set<string>(),
+  diagramStyleId?: string | null
 ): DiagramNode[] {
   const childrenMap = buildChildrenMap(connections)
   let result = nodes
@@ -264,7 +271,14 @@ export function resolveMindMapSiblingSubtreeOverlaps(
   for (const parentId of parents) {
     const kids = (childrenMap.get(parentId) ?? []).filter((id) => !collapsedNodeIds.has(id))
     if (kids.length < 2) continue
-    result = resolveSiblingListOverlaps(result, kids, MINDMAP_SIBLING_GAP, childrenMap, nodeHeights)
+    result = resolveSiblingListOverlaps(
+      result,
+      kids,
+      childrenMap,
+      nodeHeights,
+      diagramStyleId,
+      'sibling'
+    )
   }
 
   const topicKids = childrenMap.get('topic') ?? []
@@ -273,16 +287,18 @@ export function resolveMindMapSiblingSubtreeOverlaps(
   result = resolveSiblingListOverlaps(
     result,
     leftL1,
-    DEFAULT_MINDMAP_BRANCH_GAP,
     childrenMap,
-    nodeHeights
+    nodeHeights,
+    diagramStyleId,
+    'branch'
   )
   result = resolveSiblingListOverlaps(
     result,
     rightL1,
-    DEFAULT_MINDMAP_BRANCH_GAP,
     childrenMap,
-    nodeHeights
+    nodeHeights,
+    diagramStyleId,
+    'branch'
   )
   return result
 }
@@ -415,16 +431,98 @@ function subtreeVerticalBounds(
   return { minY, maxY }
 }
 
+function nodeShapeForLayout(
+  node: DiagramNode | undefined,
+  diagramStyleId?: string | null
+): NodeShape {
+  if (!node) return 'rounded'
+  return resolveMindMapNodeShape(
+    { id: node.id, type: node.type ?? 'branch', style: node.style },
+    diagramStyleId
+  )
+}
+
+/** Shape of the node that owns the bottom AABB edge of a subtree. */
+function contactingBottomShape(
+  rootId: string,
+  nodeById: Map<string, DiagramNode>,
+  childrenMap: Map<string, string[]>,
+  nodeHeights: Record<string, number> | undefined,
+  diagramStyleId?: string | null
+): NodeShape {
+  const root = nodeById.get(rootId)
+  if (!root?.position) return 'rounded'
+  let bestY = root.position.y + nodeHeightForLayout(root, nodeHeights)
+  let best = root
+  for (const id of collectDescendantIds(rootId, childrenMap)) {
+    const node = nodeById.get(id)
+    if (!node?.position) continue
+    const bottom = node.position.y + nodeHeightForLayout(node, nodeHeights)
+    if (bottom >= bestY - 0.01) {
+      bestY = bottom
+      best = node
+    }
+  }
+  return nodeShapeForLayout(best, diagramStyleId)
+}
+
+/** Shape of the node that owns the top AABB edge of a subtree. */
+function contactingTopShape(
+  rootId: string,
+  nodeById: Map<string, DiagramNode>,
+  childrenMap: Map<string, string[]>,
+  nodeHeights: Record<string, number> | undefined,
+  diagramStyleId?: string | null
+): NodeShape {
+  const root = nodeById.get(rootId)
+  if (!root?.position) return 'rounded'
+  let bestY = root.position.y
+  let best = root
+  for (const id of collectDescendantIds(rootId, childrenMap)) {
+    const node = nodeById.get(id)
+    if (!node?.position) continue
+    if (node.position.y <= bestY + 0.01) {
+      bestY = node.position.y
+      best = node
+    }
+  }
+  return nodeShapeForLayout(best, diagramStyleId)
+}
+
+function adaptiveGapForSiblingPacks(
+  prevId: string,
+  currId: string,
+  nodeById: Map<string, DiagramNode>,
+  childrenMap: Map<string, string[]>,
+  nodeHeights: Record<string, number> | undefined,
+  diagramStyleId: string | null | undefined,
+  role: 'sibling' | 'branch'
+): number {
+  const upper = contactingBottomShape(
+    prevId,
+    nodeById,
+    childrenMap,
+    nodeHeights,
+    diagramStyleId
+  )
+  const lower = contactingTopShape(currId, nodeById, childrenMap, nodeHeights, diagramStyleId)
+  return role === 'branch'
+    ? mindMapAdaptiveBranchGap(upper, lower)
+    : mindMapAdaptiveSiblingGap(upper, lower)
+}
+
 /**
  * Sort siblings by current top Y and push each next subtree down until the
- * required gap below the previous subtree's bottom edge is satisfied.
+ * adaptive gap below the previous subtree's bottom edge is satisfied.
+ * Only pushes — never shrinks (preserve / Enter safe).
  */
 function resolveSiblingListOverlaps(
   nodes: DiagramNode[],
   siblingIds: string[],
-  gap: number,
   childrenMap: Map<string, string[]>,
-  nodeHeights?: Record<string, number>
+  nodeHeights: Record<string, number> | undefined,
+  diagramStyleId: string | null | undefined,
+  role: 'sibling' | 'branch'
 ): DiagramNode[] {
   if (siblingIds.length < 2) return nodes
 
@@ -445,6 +543,15 @@ function resolveSiblingListOverlaps(
     const currBounds = subtreeVerticalBounds(currId, byId, childrenMap, nodeHeights)
     if (!prevBounds || !currBounds) continue
 
+    const gap = adaptiveGapForSiblingPacks(
+      prevId,
+      currId,
+      byId,
+      childrenMap,
+      nodeHeights,
+      diagramStyleId,
+      role
+    )
     const minTop = prevBounds.maxY + gap
     const delta = minTop - currBounds.minY
     if (delta < 0.5) continue
@@ -478,9 +585,9 @@ export function applyMindMapIncrementalTopLevelSiblingLayout(
     topicY: number
     crossBranchGap?: number
     nodeHeights?: Record<string, number>
+    diagramStyleId?: string | null
   }
 ): DiagramNode[] {
-  const gap = options.crossBranchGap ?? DEFAULT_MINDMAP_BRANCH_GAP
   const beforeByUid = new Map<string, { x: number; y: number }>()
   for (const node of beforeNodes) {
     if (!node.position) continue
@@ -516,6 +623,31 @@ export function applyMindMapIncrementalTopLevelSiblingLayout(
   const anchorBounds = subtreeVerticalBounds(anchorId, nodeById, childrenMap, options.nodeHeights)
   const newNode = nodeById.get(newId)
   if (!anchorBounds || !newNode?.position) return nodes
+
+  const newShape = nodeShapeForLayout(newNode, options.diagramStyleId)
+  const gap =
+    options.crossBranchGap ??
+    (options.insert === 'below'
+      ? mindMapAdaptiveBranchGap(
+          contactingBottomShape(
+            anchorId,
+            nodeById,
+            childrenMap,
+            options.nodeHeights,
+            options.diagramStyleId
+          ),
+          newShape
+        )
+      : mindMapAdaptiveBranchGap(
+          newShape,
+          contactingTopShape(
+            anchorId,
+            nodeById,
+            childrenMap,
+            options.nodeHeights,
+            options.diagramStyleId
+          )
+        ))
 
   const newH = nodeLayoutHeight(newNode)
   const placedY =
@@ -698,9 +830,12 @@ export function applyMindMapIncrementalDeleteLayout(
     const deletedNode = beforeById.get(deletedId)
     if (!bounds || !deletedNode?.position) continue
 
+    const deletedShape = nodeShapeForLayout(deletedNode, options.diagramStyleId)
+    // Close the hole using the deleted node's shape against itself as a
+    // conservative pair (box→28/12, underline→14/6).
     const gap = isTopLevelBranchId(deletedId)
-      ? DEFAULT_MINDMAP_BRANCH_GAP
-      : MINDMAP_SIBLING_GAP
+      ? mindMapAdaptiveBranchGap(deletedShape, deletedShape)
+      : mindMapAdaptiveSiblingGap(deletedShape, deletedShape)
     const shift = -(bounds.maxY - bounds.minY + gap)
     if (Math.abs(shift) < 0.5) continue
 

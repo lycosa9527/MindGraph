@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any, Iterable, Optional
 from urllib.parse import quote
@@ -27,8 +28,11 @@ from services.utils.tencent_cos_client import (
     get_object_bytes,
     head_object,
     list_prefix,
+    open_object_stream,
     upload_bytes,
 )
+
+_STREAM_CHUNK_BYTES = 64 * 1024
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +150,44 @@ def get_bytes_sync(logical_key: str, *, max_bytes: Optional[int] = None) -> Opti
 async def get_bytes(logical_key: str, *, max_bytes: Optional[int] = None) -> Optional[bytes]:
     """Async get via to_thread."""
     return await asyncio.to_thread(get_bytes_sync, logical_key, max_bytes=max_bytes)
+
+
+def open_bytes_stream_sync(logical_key: str) -> Optional[Any]:
+    """Open a readable stream for a Showcase object (caller must close)."""
+    if cos_showcase_enabled() and not logical_key.startswith(f"{LEGACY_LOGICAL_PREFIX}/"):
+        stream = open_object_stream(full_cos_key(logical_key), log_prefix="[Showcase/COS]")
+        if stream is None:
+            return None
+        return stream
+    if logical_key.startswith(f"{LEGACY_LOGICAL_PREFIX}/") or not cos_showcase_enabled():
+        path = resolve_local_safe(logical_key)
+        if not path.is_file():
+            return None
+        return path.open("rb")
+    stream = open_object_stream(full_cos_key(logical_key), log_prefix="[Showcase/COS]")
+    if stream is None:
+        return None
+    return stream
+
+
+async def aiter_bytes(
+    logical_key: str,
+    *,
+    chunk_size: int = _STREAM_CHUNK_BYTES,
+) -> AsyncGenerator[bytes, None]:
+    """Yield object bytes in chunks without buffering the full body in RAM."""
+    handle = await asyncio.to_thread(open_bytes_stream_sync, logical_key)
+    if handle is None:
+        return
+    read_size = chunk_size if chunk_size > 0 else _STREAM_CHUNK_BYTES
+    try:
+        while True:
+            chunk = await asyncio.to_thread(handle.read, read_size)
+            if not chunk:
+                break
+            yield chunk
+    finally:
+        await asyncio.to_thread(handle.close)
 
 
 def head_object_sync(logical_key: str) -> Optional[dict[str, Any]]:

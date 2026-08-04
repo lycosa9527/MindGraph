@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'සම්ප්‍රදායික කැන්වස්',
   'settings.language.mindMapCanvasV2': 'නව කැන්වස්',
   'settings.language.mindMapCanvasRefreshHint': 'Switch පසු full effect සඳහා canvas page refresh',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'UI අනුවාදය',
   'settings.version.chinese': 'වෘත්තීය ප්‍රකාරය',
   'settings.version.international': 'සරල ප්‍රකාරය',

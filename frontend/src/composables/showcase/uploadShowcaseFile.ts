@@ -60,6 +60,7 @@ async function putToPresignedUrl(
   putUrl: string,
   file: File,
   headers: Record<string, string>,
+  signal?: AbortSignal,
 ): Promise<void> {
   const contentType = headers['Content-Type'] || guessContentType(file)
   let response: Response
@@ -71,8 +72,12 @@ async function putToPresignedUrl(
         'Content-Type': contentType,
       },
       body: file,
+      signal,
     })
   } catch (error) {
+    if (signal?.aborted) {
+      throw error
+    }
     if (isBrowserCorsOrNetworkFailure(error)) {
       // Browser→COS blocked: bucket CORS, CSP connect-src, or offline
       throw new Error('SHOWCASE_STORAGE_CORS_OR_NETWORK')
@@ -89,6 +94,7 @@ export async function uploadShowcaseFile(options: {
   role: ShowcaseUploadRole
   file: File
   filename?: string
+  signal?: AbortSignal
 }): Promise<{ key: string; url: string; post: ShowcasePost }> {
   const filename = options.filename || options.file.name
   const contentType = guessContentType(options.file)
@@ -98,9 +104,15 @@ export async function uploadShowcaseFile(options: {
     content_type: contentType,
     size_bytes: options.file.size,
   })
+  if (options.signal?.aborted) {
+    throw new DOMException('Showcase upload aborted', 'AbortError')
+  }
 
   if (init.put_url) {
-    await putToPresignedUrl(init.put_url, options.file, init.headers || {})
+    await putToPresignedUrl(init.put_url, options.file, init.headers || {}, options.signal)
+    if (options.signal?.aborted) {
+      throw new DOMException('Showcase upload aborted', 'AbortError')
+    }
     return completeShowcaseUpload(options.postId, {
       role: options.role,
       key: init.key,

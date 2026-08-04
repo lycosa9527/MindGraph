@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Classic na canvas',
   'settings.language.mindMapCanvasV2': 'Bagong canvas',
   'settings.language.mindMapCanvasRefreshHint': 'I-refresh ang canvas page pagkatapos magpalit para sa buong epekto',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'Bersyon ng UI',
   'settings.version.chinese': 'Propesyonal na mode',
   'settings.version.international': 'Pinasimpleng mode',

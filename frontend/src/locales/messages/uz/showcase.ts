@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Tam ekran',
   'showcase.detail.exitFullscreen': 'Tam ekrandan chix',
   'showcase.detail.pptxPreviewPending': 'Slaydlar onko’rish uchun chevrilir…',
+  'showcase.detail.officePreviewPending': 'Slaydlar onko’rish uchun chevrilir…',
   'showcase.detail.docPreviewLoading': 'Hujjat yuklanmoqda…',
   'showcase.detail.docPreviewFailed': 'Onko’rish yuklanmadi. Yangi tabda ochishmaga qayta urinib ko’ring.',
   'showcase.detail.legacyDocHint': 'Eski .doc fayllar brauzerda ko‘rinmaydi. Faylni oching yoki yuklab oling, yoki brauzer ko‘rinishi uchun .docx yuklang.',

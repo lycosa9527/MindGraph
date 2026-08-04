@@ -936,7 +936,8 @@ function handleDoubleClick(event: MouseEvent): void {
 
 let lastTapTime = 0
 let wasMultiTouch = false
-const DOUBLE_TAP_THRESHOLD = 350
+/** Slightly loose for classroom e-blackboards / slower touch digitizers. */
+const DOUBLE_TAP_THRESHOLD = 450
 
 function handleTouchStart(event: TouchEvent): void {
   if (event.touches.length > 1) {

@@ -14,6 +14,7 @@ function buildUiOptions(overrides: Partial<Parameters<typeof useDiagramCanvasVue
     presentationPointerEditMode: ref(false),
     presentationHandPanMode: ref(false),
     panOnDragButtons: ref<number[] | null>(null),
+    enableTouchPanPinch: ref(false),
     presentationTool: ref<'pointer' | 'highlighter' | 'pen' | 'timer'>('pointer'),
     presentationHighlighterColor: ref('#fef08a'),
     presentationPenColor: ref('#ef4444'),
@@ -42,6 +43,20 @@ describe('useDiagramCanvasVueFlowUi', () => {
     expect(ui.selectionKeyCode.value).toBe(null)
     expect(ui.effectivePanOnDrag.value).toBe(false)
     // Tap-to-select nodes must still work
+    expect(ui.elementsSelectable.value).toBe(true)
+  })
+
+  it('e-blackboard two-finger touch keeps mouse middle-button VF pan and disables marquee', () => {
+    learningSheetPickActive.value = false
+    const ui = useDiagramCanvasVueFlowUi(
+      buildUiOptions({
+        enableTouchPanPinch: ref(true),
+      })
+    )
+    expect(ui.selectNodesOnDrag.value).toBe(false)
+    expect(ui.selectionKeyCode.value).toBe(null)
+    // Unlike mobile page: mouse middle-button pan must remain
+    expect(ui.effectivePanOnDrag.value).toEqual([1])
     expect(ui.elementsSelectable.value).toBe(true)
   })
 

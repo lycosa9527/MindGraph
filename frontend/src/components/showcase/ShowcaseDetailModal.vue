@@ -268,6 +268,8 @@ function formatDate(iso: string): string {
   }
 }
 
+let loadPostToken = 0
+
 watch(
   () => [props.visible, props.postId] as const,
   ([visible, id]) => {
@@ -295,19 +297,25 @@ const offCoverReady = eventBus.on('showcase:cover_ready', ({ postId, thumbnailUr
 
 onUnmounted(() => {
   offCoverReady()
+  loadPostToken += 1
 })
 
 async function loadPost() {
-  if (!props.postId) return
+  const requestId = props.postId
+  if (!requestId) return
+  const token = ++loadPostToken
   isLoading.value = true
   loadError.value = null
   try {
-    post.value = await getShowcasePost(props.postId)
+    const loaded = await getShowcasePost(requestId)
+    if (token !== loadPostToken || props.postId !== requestId) return
+    post.value = loaded
     // get_post enqueues missing LO preview; open SSE so the reader updates live.
-    if (post.value && teachingDocNeedsPreview(post.value)) {
-      useShowcaseStore().markCoverPending(post.value.id)
+    if (loaded && teachingDocNeedsPreview(loaded)) {
+      useShowcaseStore().markCoverPending(loaded.id)
     }
   } catch (e) {
+    if (token !== loadPostToken || props.postId !== requestId) return
     const msg = e instanceof Error ? e.message : String(t('showcase.detail.loadFailed'))
     if (!props.postPreview) {
       loadError.value = msg
@@ -317,7 +325,9 @@ async function loadPost() {
       post.value = props.postPreview
     }
   } finally {
-    isLoading.value = false
+    if (token === loadPostToken) {
+      isLoading.value = false
+    }
   }
 }
 
@@ -616,6 +626,7 @@ function close() {
 
             <div class="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
               <ShowcaseTeachingDocPreview
+                :post-id="post.id"
                 :attachment-url="post.attachment_url"
                 :preview-url="post.preview_url"
                 :fallback-text="docFallbackText"

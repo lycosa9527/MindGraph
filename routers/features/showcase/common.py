@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import copy
 import logging
 import uuid as uuid_module
@@ -244,7 +245,8 @@ async def _review_case_post_handler(
         # Recover gallery paths when bytes exist but JSONB nested writes were lost.
         if isinstance(post.spec, dict):
             healed_spec = copy.deepcopy(post.spec)
-            if heal_gallery_image_paths(post.id, healed_spec):
+            # COS head probes are sync I/O — keep the FastAPI loop free.
+            if await asyncio.to_thread(heal_gallery_image_paths, post.id, healed_spec):
                 post.spec = healed_spec
                 flag_modified(post, "spec")
                 save_spec_json(post.id, healed_spec)

@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': '전체 화면',
   'showcase.detail.exitFullscreen': '전체 화면 종료',
   'showcase.detail.pptxPreviewPending': '미리보기용 슬라이드 변환 중…',
+  'showcase.detail.officePreviewPending': '미리보기용 슬라이드 변환 중…',
   'showcase.detail.docPreviewLoading': '문서 로딩 중…',
   'showcase.detail.docPreviewFailed': '미리보기를 불러올 수 없습니다. 새 탭에서 열어 보세요.',
   'showcase.detail.legacyDocHint': '레거시 .doc 파일은 인라인 미리보기를 지원하지 않습니다. 파일을 열거나 다운로드하거나 .docx를 업로드하세요.',

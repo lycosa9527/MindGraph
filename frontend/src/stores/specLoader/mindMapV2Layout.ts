@@ -2,15 +2,16 @@
  * V2 mind-map side layout — subtree-relative X, sequential root stacking.
  */
 import {
-  DEFAULT_MINDMAP_BRANCH_GAP,
-  MINDMAP_SIBLING_GAP,
-} from '@/composables/diagrams/layoutConfig'
+  mindMapAdaptiveBranchGap,
+  mindMapAdaptiveSiblingGap,
+} from '@/config/mindMapAdaptiveGaps'
 import {
   getMindMapDiagramStyleById,
   mindMapNodeShapeFromPreset,
 } from '@/config/mindMapDiagramStyles'
 import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
 import type { Connection, DiagramNode } from '@/types'
+import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 import {
   ensureMindMapBranchUid,
@@ -56,6 +57,7 @@ export function layoutMindMapSideV2(
     estimatedHeight: number
     children: LayoutNode[]
     branchIndex: number
+    shape: NodeShape
   }
 
   const globalCounter = { value: 0 }
@@ -65,17 +67,19 @@ export function layoutMindMapSideV2(
     const id = `branch-${sideChar}-${depth}-${idx}`
     const text = getBranchText(b)
     const uid = ensureMindMapBranchUid(b)
-    const estimatedWidth = estimateNodeWidthForCanvasMode(text, id, 'v2')
     const shape = mindMapNodeShapeFromPreset(
       { id, type: 'branch' },
       diagramStyle
     )
+    // Oval padding is wider than rounded/rectangle — width must match painted chrome
+    // or child columns sit too close and overlap after a 导图样式 switch.
+    const estimatedWidth = estimateNodeWidthForCanvasMode(text, id, 'v2', shape)
     const estimatedHeight =
       shape === 'underline'
         ? measureMindMapUnderlineBoxMetrics(text, id).totalHeight
         : measureBranchNodeHeightForCanvasMode(text, id, 'v2')
     const children = (b.children ?? []).map((c) => buildTree(c, depth + 1, branchIndex))
-    return { id, text, uid, depth, estimatedWidth, estimatedHeight, children, branchIndex }
+    return { id, text, uid, depth, estimatedWidth, estimatedHeight, children, branchIndex, shape }
   }
 
   const topLevel = branches.map((b, i) => {
@@ -83,11 +87,41 @@ export function layoutMindMapSideV2(
     return buildTree(b, 1, branchIndex)
   })
 
+  function firstLeafShape(node: LayoutNode): NodeShape {
+    let cur = node
+    while (cur.children.length > 0) {
+      const next = cur.children[0]
+      if (!next) break
+      cur = next
+    }
+    return cur.shape
+  }
+
+  function lastLeafShape(node: LayoutNode): NodeShape {
+    let cur = node
+    while (cur.children.length > 0) {
+      const next = cur.children[cur.children.length - 1]
+      if (!next) break
+      cur = next
+    }
+    return cur.shape
+  }
+
+  function siblingGapSum(siblings: LayoutNode[]): number {
+    let total = 0
+    for (let i = 0; i < siblings.length - 1; i++) {
+      const upper = siblings[i]
+      const lower = siblings[i + 1]
+      if (!upper || !lower) continue
+      total += mindMapAdaptiveSiblingGap(lastLeafShape(upper), firstLeafShape(lower))
+    }
+    return total
+  }
+
   function subtreeHeight(node: LayoutNode): number {
     if (node.children.length === 0) return node.estimatedHeight
     const heights = node.children.map((c) => subtreeHeight(c))
-    const childrenSpan =
-      heights.reduce((a, b) => a + b, 0) + (node.children.length - 1) * MINDMAP_SIBLING_GAP
+    const childrenSpan = heights.reduce((a, b) => a + b, 0) + siblingGapSum(node.children)
     return Math.max(node.estimatedHeight, childrenSpan)
   }
 
@@ -104,7 +138,12 @@ export function layoutMindMapSideV2(
   function assignChildrenY(siblings: LayoutNode[], startY: number): number {
     let y = startY
     siblings.forEach((node, i) => {
-      if (i > 0) y += MINDMAP_SIBLING_GAP
+      if (i > 0) {
+        const prev = siblings[i - 1]
+        if (prev) {
+          y += mindMapAdaptiveSiblingGap(lastLeafShape(prev), firstLeafShape(node))
+        }
+      }
       if (node.children.length === 0) {
         yPos.set(node.id, y)
         y += node.estimatedHeight
@@ -130,8 +169,6 @@ export function layoutMindMapSideV2(
     })
     return y
   }
-
-  const crossBranchGap = DEFAULT_MINDMAP_BRANCH_GAP
 
   function layoutSubtreeFromTop(node: LayoutNode, startY: number): number {
     if (node.children.length === 0) {
@@ -159,10 +196,17 @@ export function layoutMindMapSideV2(
   }
 
   const topLevelSpans = topLevel.map((node) => subtreeHeight(node))
+  const branchGaps: number[] = []
+  for (let i = 0; i < topLevel.length - 1; i++) {
+    const upper = topLevel[i]
+    const lower = topLevel[i + 1]
+    if (!upper || !lower) continue
+    branchGaps.push(mindMapAdaptiveBranchGap(lastLeafShape(upper), firstLeafShape(lower)))
+  }
   const rootStartYs = computeSymmetricRootStartYs(
     topLevelSpans,
     topicCenterY,
-    crossBranchGap
+    branchGaps
   )
   topLevel.forEach((node, i) => {
     layoutSubtreeFromTop(node, rootStartYs[i] ?? topicCenterY)
@@ -183,6 +227,7 @@ export function layoutMindMapSideV2(
       text: node.text,
       type: 'branch',
       position: { x, y },
+      style: { nodeShape: node.shape },
       data: {
         branchIndex: node.branchIndex,
         estimatedWidth: node.estimatedWidth,

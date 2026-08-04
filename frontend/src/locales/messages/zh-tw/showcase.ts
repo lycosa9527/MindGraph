@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': '全屏閱讀',
   'showcase.detail.exitFullscreen': '退出全屏',
   'showcase.detail.pptxPreviewPending': '正在轉換文件以供預覽…',
+  'showcase.detail.officePreviewPending': '正在轉換文件以供預覽…',
   'showcase.detail.docPreviewLoading': '正在加載文檔…',
   'showcase.detail.docPreviewFailed': '文檔預覽加載失敗，請嘗試在新標籤頁打開',
   'showcase.detail.legacyDocHint': '此 .doc 檔案仍在轉換預覽，或轉換暫不可用。請下載/新標籤頁打開，或重新上傳以重新產生預覽。',

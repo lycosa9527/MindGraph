@@ -40,6 +40,12 @@ async function fetchPdfBytes(url: string, signal?: AbortSignal): Promise<Uint8Ar
   return normalizePdfBytes(new Uint8Array(await response.arrayBuffer()))
 }
 
+function displayPixelRatio(): number {
+  if (typeof window === 'undefined') return 1
+  const ratio = window.devicePixelRatio || 1
+  return Math.min(Math.max(ratio, 1), 2)
+}
+
 async function renderPdfCanvas(
   data: Uint8Array,
   container: HTMLElement,
@@ -58,23 +64,30 @@ async function renderPdfCanvas(
     return
   }
 
+  const pixelRatio = displayPixelRatio()
   container.replaceChildren()
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum += 1) {
     if (signal?.aborted) break
     const page = await pdf.getPage(pageNum)
-    const viewport = page.getViewport({ scale })
+    const logicalViewport = page.getViewport({ scale })
+    const renderViewport = page.getViewport({ scale: scale * pixelRatio })
     const canvas = document.createElement('canvas')
     canvas.className = 'showcase-pdf-page mx-auto block max-w-full'
-    canvas.style.width = '100%'
+    // Logical CSS width — never stretch with width:100% (keeps page aspect; avoids blur).
+    canvas.style.width = `${logicalViewport.width}px`
+    canvas.style.maxWidth = '100%'
     canvas.style.height = 'auto'
     const context = canvas.getContext('2d')
     if (!context) continue
-    canvas.width = viewport.width
-    canvas.height = viewport.height
-    await page.render({ canvasContext: context, viewport }).promise
+    canvas.width = Math.floor(renderViewport.width)
+    canvas.height = Math.floor(renderViewport.height)
+    await page.render({ canvasContext: context, viewport: renderViewport }).promise
 
     const pageWrap = document.createElement('div')
-    pageWrap.className = 'showcase-pdf-page-wrap showcase-watermark-host relative mx-auto mb-4 w-full max-w-full'
+    pageWrap.className =
+      'showcase-pdf-page-wrap showcase-watermark-host relative mx-auto mb-4 max-w-full'
+    pageWrap.style.width = 'fit-content'
+    pageWrap.style.maxWidth = '100%'
     pageWrap.appendChild(canvas)
     if (watermarkText?.trim()) {
       stampWatermarkOnElement(pageWrap, watermarkText.trim())
@@ -100,7 +113,7 @@ function renderPdfBlobIframe(data: Uint8Array, container: HTMLElement): () => vo
 }
 
 export async function renderPdfPreview(options: RenderPdfPreviewOptions): Promise<() => void> {
-  const { url, container, scale = 1.35, signal, watermarkText } = options
+  const { url, container, scale = 1.5, signal, watermarkText } = options
   const data = await fetchPdfBytes(url, signal)
 
   try {

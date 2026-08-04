@@ -252,20 +252,18 @@ export function remapMindMapCollapsedPathsAfterReload(
   const kept = new Set<string>()
 
   for (const path of collapsedPaths) {
-    const directId = findNodeIdByPathKey(newNodes, newConnections, path)
-    if (directId && mindMapNodeHasChildren(directId, newConnections)) {
-      kept.add(path)
-      continue
-    }
-
     const oldId = findNodeIdByPathKey(oldNodes, oldConnections, path)
     if (!oldId) continue
 
-    const segments = getMindMapTextSegments(oldId, oldNodes, oldConnections)
-    if (!segments) continue
-
-    const side: 'l' | 'r' = oldId.startsWith('branch-l-') ? 'l' : 'r'
-    const newId = findNodeIdByTextSegmentsOnSide(segments, side, newNodes, newConnections)
+    // Follow stable identity (mindMapUid / text path), including cross-side moves
+    // from clockwise redistribute / left-only rebalance after delete.
+    const newId = remapMindMapNodeIdAfterReload(
+      oldId,
+      oldNodes,
+      oldConnections,
+      newNodes,
+      newConnections
+    )
     if (!newId || !mindMapNodeHasChildren(newId, newConnections)) continue
 
     const newPath = mindMapNodePathKey(newId, newConnections)

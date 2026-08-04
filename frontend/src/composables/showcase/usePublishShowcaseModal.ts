@@ -99,7 +99,28 @@ export function usePublishShowcaseModal(
   const isHistorySpecLoading = ref(false)
   const isGalleryImagesProcessing = ref(false)
   let galleryPickAbort: AbortController | null = null
+  let publishSubmitAbort: AbortController | null = null
   const showHistoryPicker = ref(false)
+
+  function abortPublishSubmit(): void {
+    publishSubmitAbort?.abort()
+    publishSubmitAbort = null
+    if (isSubmitting.value) {
+      isSubmitting.value = false
+      submitPhaseLabel.value = ''
+      notify.hideLoading()
+    }
+  }
+
+  function releasePublishSubmit(): void {
+    publishSubmitAbort = null
+  }
+
+  function beginPublishSubmit(): AbortSignal {
+    abortPublishSubmit()
+    publishSubmitAbort = new AbortController()
+    return publishSubmitAbort.signal
+  }
 
   const uploadedFile = ref<File | null>(null)
   const uploadedFileName = ref('')
@@ -351,6 +372,9 @@ export function usePublishShowcaseModal(
     () => props.visible,
     (visible) => {
       if (!visible) {
+        if (isSubmitting.value) {
+          abortPublishSubmit()
+        }
         abortGalleryImagePick()
         clearAllAiPrefetch()
         props.restoreAfterThumbnail?.()
@@ -420,6 +444,9 @@ export function usePublishShowcaseModal(
   }
 
   function close() {
+    if (isSubmitting.value) {
+      abortPublishSubmit()
+    }
     emit('update:visible', false)
   }
 
@@ -785,6 +812,8 @@ export function usePublishShowcaseModal(
     resolvePublishDiagramType,
     resetForm,
     isSessionExpiredMessage,
+    beginPublishSubmit,
+    releasePublishSubmit,
   })
 
   const uploadAccept = computed(() => {

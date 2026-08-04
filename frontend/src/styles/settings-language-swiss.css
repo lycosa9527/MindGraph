@@ -149,6 +149,10 @@
   line-height: 1.35;
 }
 
+.language-settings-swiss__kicker--spaced {
+  margin-top: 1rem;
+}
+
 .language-settings-swiss__kicker::before {
   content: '';
   display: inline-block;

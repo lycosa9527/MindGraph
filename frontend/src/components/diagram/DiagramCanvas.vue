@@ -106,6 +106,11 @@ interface Props {
   mindMapSlideFocusNodeId?: string | null
   mindMapSlideDimFocusNodeIds?: Set<string> | null
   panOnDragButtons?: number[] | null
+  /**
+   * Desktop classroom e-blackboard: two-finger pan/zoom (1-finger stays tap/select);
+   * mouse middle-button pan stays. Phone mobile uses panOnDragButtons instead.
+   */
+  enableTouchPanPinch?: boolean
   presentationRailOpen?: boolean
   presentationSideToolbarVisible?: boolean
 }
@@ -122,6 +127,7 @@ const props = withDefaults(defineProps<Props>(), {
   mindMapSlideFocusNodeId: null,
   mindMapSlideDimFocusNodeIds: null,
   panOnDragButtons: null,
+  enableTouchPanPinch: false,
   presentationRailOpen: false,
   presentationSideToolbarVisible: true,
 })
@@ -240,10 +246,18 @@ const {
   presentationPointerEditMode: toRef(props, 'presentationPointerEditMode'),
   presentationHandPanMode: toRef(props, 'presentationHandPanMode'),
   panOnDragButtons: toRef(props, 'panOnDragButtons'),
+  enableTouchPanPinch: toRef(props, 'enableTouchPanPinch'),
   presentationTool,
   presentationHighlighterColor,
   presentationPenColor,
 })
+
+/** Mobile page or desktop e-blackboard — CSS touch-action + marquee hide. */
+const canvasTouchGesturesActive = computed(
+  () =>
+    props.enableTouchPanPinch ||
+    (Array.isArray(props.panOnDragButtons) && props.panOnDragButtons.length > 0)
+)
 
 const presentationDiagramEditLocked = diagramPresentationReadOnlyRef
 
@@ -549,7 +563,17 @@ const { setupMobileTouchZoom, mobileTouchCleanup } = useDiagramCanvasMobileTouch
   getViewport,
   setViewport,
   branchMove,
+  // Phone mobile keeps 1-finger pan; e-blackboard uses 2-finger pan so 1-finger can select.
+  allowSingleFingerPan: () => !props.enableTouchPanPinch,
 })
+
+function syncTouchPanPinchLayer(): void {
+  mobileTouchCleanup.value?.()
+  mobileTouchCleanup.value = null
+  if (props.enableTouchPanPinch || props.panOnDragButtons) {
+    setupMobileTouchZoom()
+  }
+}
 
 useDiagramCanvasVueFlowHandlers({
   diagramStore,
@@ -593,10 +617,15 @@ onMounted(() => {
     restoreViewportAfterCommunityExport,
     regenerateForNodeIfNeeded,
   })
-  if (props.panOnDragButtons) {
-    setupMobileTouchZoom()
-  }
+  syncTouchPanPinchLayer()
 })
+
+watch(
+  () => [props.panOnDragButtons, props.enableTouchPanPinch] as const,
+  () => {
+    syncTouchPanPinchLayer()
+  }
+)
 
 onUnmounted(() => {
   document.documentElement.classList.remove('mg-learning-sheet-pick')
@@ -606,6 +635,7 @@ onUnmounted(() => {
   clearFitTimersOnUnmount()
   clearDoubleBubbleTimer()
   mobileTouchCleanup.value?.()
+  mobileTouchCleanup.value = null
 })
 
 defineExpose({
@@ -623,6 +653,7 @@ defineExpose({
     class="diagram-canvas relative w-full h-full"
     :class="{
       'mind-map-canvas': useMindMapV2,
+      'canvas-touch': canvasTouchGesturesActive,
       'diagram-canvas--hand-tool': useHandToolPanClass,
       'diagram-canvas--learning-sheet-pick': isLearningSheetPickActive,
       'diagram-canvas--bulk-load': mindMapBulkLoading,

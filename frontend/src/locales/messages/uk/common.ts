@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Класичне полотно',
   'settings.language.mindMapCanvasV2': 'Нове полотно',
   'settings.language.mindMapCanvasRefreshHint': 'Оновіть сторінку полотна після перемикання для повного ефекту',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'Версія інтерфейсу',
   'settings.version.chinese': 'Професійний режим',
   'settings.version.international': 'Спрощений режим',

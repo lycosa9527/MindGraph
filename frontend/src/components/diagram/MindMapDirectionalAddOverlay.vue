@@ -3,12 +3,13 @@
  * Canvas-level four-directional + overlay (Teleport) — avoids per-node mount/clipping issues.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { Teleport } from 'vue'
 
 import { useLanguage } from '@/composables'
 import { useMindMapDirectionalAddPosition } from '@/composables/canvasToolbar/useMindMapDirectionalAddPosition'
 import { eventBus } from '@/composables/core/useEventBus'
+import { mindMapControlScale } from '@/config/mindMapEBlackboard'
 import { useDiagramStore } from '@/stores/diagram'
+import { useUIStore } from '@/stores/ui'
 
 const props = defineProps<{
   containerRef: HTMLElement | null
@@ -16,7 +17,13 @@ const props = defineProps<{
 }>()
 
 const diagramStore = useDiagramStore()
+const uiStore = useUIStore()
 const { t } = useLanguage()
+
+const controlScale = computed(() => mindMapControlScale(uiStore.eBlackboardOptimize))
+const overlayStyle = computed(() => ({
+  '--mm-eb-scale': String(controlScale.value),
+}))
 
 const editingNodeId = ref<string | null>(null)
 
@@ -30,10 +37,7 @@ const selectedNodeId = computed(() => {
 })
 
 const overlayEnabled = computed(
-  () =>
-    isMindMap.value &&
-    !!selectedNodeId.value &&
-    editingNodeId.value !== selectedNodeId.value
+  () => isMindMap.value && !!selectedNodeId.value && editingNodeId.value !== selectedNodeId.value
 )
 
 const containerRef = computed(() => props.containerRef)
@@ -42,6 +46,7 @@ const { handles, visible, scheduleMeasure } = useMindMapDirectionalAddPosition({
   containerRef,
   selectedNodeId,
   enabled: overlayEnabled,
+  controlScale,
 })
 
 watch(
@@ -62,10 +67,7 @@ function tooltipFor(direction: 'top' | 'bottom' | 'left' | 'right', nodeId: stri
   return isLeftBranch ? t('mindMap.add.insertParent') : t('mindMap.add.addChild')
 }
 
-function handleClick(
-  direction: 'top' | 'bottom' | 'left' | 'right',
-  event: MouseEvent
-): void {
+function handleClick(direction: 'top' | 'bottom' | 'left' | 'right', event: MouseEvent): void {
   event.stopPropagation()
   event.preventDefault()
   const nodeId = selectedNodeId.value
@@ -108,6 +110,7 @@ onUnmounted(() => {
     <div
       v-if="visible && overlayEnabled && handles.length"
       class="mind-map-add-overlay"
+      :style="overlayStyle"
       aria-hidden="false"
     >
       <button
@@ -130,6 +133,7 @@ onUnmounted(() => {
 
 <style scoped>
 .mind-map-add-overlay {
+  --mm-eb-scale: 1;
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -141,15 +145,15 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: calc(16px * var(--mm-eb-scale));
+  height: calc(16px * var(--mm-eb-scale));
   margin: 0;
   padding: 0;
   border: 1px solid #cbd5e1;
   border-radius: 50%;
   background: #fff;
   color: #64748b;
-  font-size: 12px;
+  font-size: calc(12px * var(--mm-eb-scale));
   font-weight: 500;
   line-height: 1;
   cursor: pointer;

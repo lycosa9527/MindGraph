@@ -69,8 +69,10 @@ export const PANEL = {
  * Use these instead of hardcoded values like 300, 150, 50
  */
 export const ANIMATION = {
-  /** Long-press duration to trigger branch move (ms) */
+  /** Long-press duration to trigger branch move on mouse (ms) */
   LONG_PRESS_MS: 1500,
+  /** Finger long-press for branch move — shorter than mouse; thumbs jitter more */
+  TOUCH_LONG_PRESS_MS: 550,
   /** Fast animations: hover effects, small transitions */
   DURATION_FAST: 150,
   /** Normal animations: panel open/close, fit view */

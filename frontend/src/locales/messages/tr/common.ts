@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Klasik tuval',
   'settings.language.mindMapCanvasV2': 'Yeni tuval',
   'settings.language.mindMapCanvasRefreshHint': 'Tam etki için geçişten sonra tuval sayfasını yenileyin',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'Arayüz sürümü',
   'settings.version.chinese': 'Profesyonel mod',
   'settings.version.international': 'Basitleştirilmiş mod',

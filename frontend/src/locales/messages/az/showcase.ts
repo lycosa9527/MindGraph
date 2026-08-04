@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Tam ekran',
   'showcase.detail.exitFullscreen': 'Tam ekrandan çıx',
   'showcase.detail.pptxPreviewPending': 'Slaydlar önbaxış üçün çevrilir…',
+  'showcase.detail.officePreviewPending': 'Slaydlar önbaxış üçün çevrilir…',
   'showcase.detail.docPreviewLoading': 'Sənəd yüklənir…',
   'showcase.detail.docPreviewFailed': 'Önbaxış yüklənmədi. Yeni tabda açmağa cəhd edin.',
   'showcase.detail.legacyDocHint': 'Köhnə .doc faylları sətir içində önbaxış edilə bilməz. Faylı açın və ya endirin, ya da brauzer önbaxışı üçün .docx yükləyin.',

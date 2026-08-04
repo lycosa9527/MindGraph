@@ -26,6 +26,7 @@ _QDRANT_REL = "sync/qdrant"
 _CELERY_REL = "sync/celery"
 _PLAYWRIGHT_REL = "sync/playwright"
 _MINDMAP_EXPORT_FONTS_REL = "sync/fonts/mindmap-export"
+_OFFICE_PREVIEW_FONTS_REL = "sync/fonts/office-preview"
 
 _DEFAULT_COS_SYNC_KEY_PREFIX = "backups/mindgraph-shared"
 
@@ -184,6 +185,24 @@ def mindmap_export_font_cos_key(filename: str) -> str:
 def mindmap_export_fonts_meta_cos_key() -> str:
     """COS key for mind-map export fonts meta JSON."""
     return cos_sync_object_key(f"{_MINDMAP_EXPORT_FONTS_REL}/meta.json")
+
+
+def office_preview_fonts_rel_prefix() -> str:
+    """Relative sync prefix for Showcase LibreOffice CJK preview fonts."""
+    return _OFFICE_PREVIEW_FONTS_REL
+
+
+def office_preview_font_cos_key(filename: str) -> str:
+    """COS key for an office-preview font file (basename only)."""
+    safe = filename.strip().lstrip("/").replace("\\", "/")
+    if "/" in safe or ".." in safe:
+        raise ValueError(f"Invalid office-preview font name: {filename}")
+    return cos_sync_object_key(f"{_OFFICE_PREVIEW_FONTS_REL}/{safe}")
+
+
+def office_preview_fonts_meta_cos_key() -> str:
+    """COS key for office-preview fonts meta JSON."""
+    return cos_sync_object_key(f"{_OFFICE_PREVIEW_FONTS_REL}/meta.json")
 
 
 def cos_config_snapshot() -> dict:

@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Canvas cổ điển',
   'settings.language.mindMapCanvasV2': 'Canvas mới',
   'settings.language.mindMapCanvasRefreshHint': 'Làm mới trang canvas sau khi chuyển để có hiệu lực đầy đủ',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'Phiên bản UI',
   'settings.version.chinese': 'Chế độ chuyên nghiệp',
   'settings.version.international': 'Chế độ đơn giản',

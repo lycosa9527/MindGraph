@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'На весь екран',
   'showcase.detail.exitFullscreen': 'Вийти з повноекранного режиму',
   'showcase.detail.pptxPreviewPending': 'Конвертація слайдів для перегляду…',
+  'showcase.detail.officePreviewPending': 'Конвертація слайдів для перегляду…',
   'showcase.detail.docPreviewLoading': 'Завантаження документа…',
   'showcase.detail.docPreviewFailed': 'Не вдалося завантажити перегляд. Спробуйте відкрити в новій вкладці.',
   'showcase.detail.legacyDocHint': 'Застарілі файли .doc не можна переглянути тут. Відкрийте або завантажте файл, або завантажте .docx для перегляду в браузері.',

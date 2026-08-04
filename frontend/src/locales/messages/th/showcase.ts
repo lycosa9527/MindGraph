@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'เต็มจอ',
   'showcase.detail.exitFullscreen': 'ออกจากเต็มจอ',
   'showcase.detail.pptxPreviewPending': 'กำลังแปลงสไลด์สำหรับตัวอย่าง…',
+  'showcase.detail.officePreviewPending': 'กำลังแปลงสไลด์สำหรับตัวอย่าง…',
   'showcase.detail.docPreviewLoading': 'กำลังโหลดเอกสาร…',
   'showcase.detail.docPreviewFailed': 'โหลดตัวอย่างไม่ได้ ลองเปิดในแท็บใหม่',
   'showcase.detail.legacyDocHint': 'ไฟล์ .doc แบบเก่าดูตัวอย่างในเบราว์เซอร์ไม่ได้ เปิดหรือดาวน์โหลดไฟล์ หรืออัปโหลด .docx เพื่อดูในเบราว์เซอร์',

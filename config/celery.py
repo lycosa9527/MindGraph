@@ -24,6 +24,9 @@ from dotenv import load_dotenv
 from config.celery_broker_redis import patch_kombu_redis_connection_pool
 from config.settings import config
 from services.infrastructure.http.error_handler import LLMServiceError
+from services.infrastructure.sync.office_preview_fonts_cos import (
+    warm_office_preview_fonts_once,
+)
 from services.infrastructure.utils.launch_commands import error_footer_launch_reference
 from services.llm import llm_service
 from services.redis.redis_client import (
@@ -549,6 +552,12 @@ def on_worker_process_init(_sender=None, **_kwargs):
     logger.info("[Celery] Initializing services in worker process...")
 
     _init_worker_services()
+
+    # Warm Showcase LO CJK fonts before cover jobs hit the soft time limit.
+    try:
+        warm_office_preview_fonts_once()
+    except BACKGROUND_INFRA_ERRORS as font_exc:
+        logger.warning("[Celery] Office preview font warm skipped: %s", font_exc)
 
     logger.info("[Celery] ===== ForkPoolWorker process ready: PID=%s =====", pid)
 

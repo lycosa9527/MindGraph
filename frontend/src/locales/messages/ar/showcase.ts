@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Fullscreen',
   'showcase.detail.exitFullscreen': 'Exit fullscreen',
   'showcase.detail.pptxPreviewPending': 'تحويل الشرائح للمعاينة...',
+  'showcase.detail.officePreviewPending': 'تحويل الشرائح للمعاينة...',
   'showcase.detail.docPreviewLoading': 'جاري تحميل المستند...',
   'showcase.detail.docPreviewFailed': 'تعذر تحميل المعاينة. حاول الفتح في علامة تبويب جديدة.',
   'showcase.detail.legacyDocHint': 'لا يمكن معاينة ملفات .doc القديمة مضمنة. افتح الملف أو قم بتنزيله، أو قم بتحميل .docx للمعاينة داخل المتصفح.',

@@ -40,6 +40,8 @@ export const useShowcaseStore = defineStore('showcase', () => {
   const error = ref<string | null>(null)
   const lastQuery = ref<ShowcaseFeedQuery | null>(null)
   const coverPendingIds = ref<Record<string, true>>({})
+  /** Posts where the publishing author should see cover_fail toasts (not readers). */
+  const coverAuthorNotifyIds = ref<Record<string, true>>({})
   const coverStreamTeardowns = new Map<string, () => void>()
 
   const hasPosts = computed(() => posts.value.length > 0)
@@ -80,8 +82,16 @@ export const useShowcaseStore = defineStore('showcase', () => {
     }
   }
 
+  function clearAuthorCoverNotify(postId: string) {
+    if (!coverAuthorNotifyIds.value[postId]) return
+    const next = { ...coverAuthorNotifyIds.value }
+    delete next[postId]
+    coverAuthorNotifyIds.value = next
+  }
+
   function clearCoverPending(postId: string) {
     stopCoverStream(postId)
+    clearAuthorCoverNotify(postId)
     if (!coverPendingIds.value[postId]) return
     const next = { ...coverPendingIds.value }
     delete next[postId]
@@ -93,10 +103,17 @@ export const useShowcaseStore = defineStore('showcase', () => {
       stopCoverStream(postId)
     }
     coverPendingIds.value = {}
+    coverAuthorNotifyIds.value = {}
   }
 
-  function markCoverPending(postId: string) {
+  function markCoverPending(
+    postId: string,
+    options?: { notifyAuthorOnFail?: boolean },
+  ) {
     if (!postId) return
+    if (options?.notifyAuthorOnFail) {
+      coverAuthorNotifyIds.value = { ...coverAuthorNotifyIds.value, [postId]: true }
+    }
     // Already watching this post — keep the existing EventSource (reconnect
     // storms + loadPost retries used to tear down and re-enqueue every few seconds).
     if (coverPendingIds.value[postId] && coverStreamTeardowns.has(postId)) {
@@ -116,8 +133,12 @@ export const useShowcaseStore = defineStore('showcase', () => {
         emitCoverReady(postId, thumbnailUrl, previewUrl)
       },
       onFail: ({ reason }) => {
+        // Capture before clearCoverPending removes the author-toast flag.
+        const shouldToast = Boolean(coverAuthorNotifyIds.value[postId])
         clearCoverPending(postId)
         emitCoverFail(postId, reason)
+        // Readers see TeachingDocPreview fail UI; only toast the publishing author.
+        if (!shouldToast) return
         const key =
           reason === 'timeout' || reason === 'soft_time_limit' || reason === 'hard_time_limit'
             ? 'showcase.publishModal.coverFailedTimeout'

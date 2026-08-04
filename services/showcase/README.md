@@ -104,22 +104,25 @@ before the stream opens; client disconnect cancels the LLM stream.
 ## Server-side teaching-design covers
 
 Package: `services/showcase/covers/` (LibreOffice → PDF on temp disk + PyMuPDF page-1 PNG).
-No Gotenberg. For `.doc`/`.docx`/`.pptx`, the LO PDF is also uploaded as `preview.pdf` so the
-detail reader can render full pages (images, shapes, layout) via pdf.js — same path PPTX already used.
+No Gotenberg. Teachers upload the original `.pdf` / `.doc` / `.docx` / `.pptx`. Native PDF is
+shown as-is; Office files are converted with high-quality LO export (`UseLosslessCompression`,
+no image DPI downscale) to `preview.pdf`. The detail reader is **pdf.js only** (no browser
+`docx-preview`) — pending until `preview_url` is ready, then full pages (images, shapes, layout).
 
 | Step | Detail |
 |------|--------|
 | Trigger | `uploads/complete` with `role=attachment`, `case_type=teaching_design`, `.pdf/.doc/.docx/.pptx` |
 | Download | `download_to_path` / `download_file` (stream to temp; never full `get_bytes`) |
-| Render | PDF → PyMuPDF; Office → soffice with per-job `-env:UserInstallation` then PNG |
+| Render | PDF → PyMuPDF; Office → soffice (`writer_pdf_Export` / `impress_pdf_Export` + lossless filter) then PNG |
 | Upload | `put_bytes` → `thumbnail.png`; Office also → `preview.pdf` + `spec.preview_path` |
-| Reader | Detail pdf.js loads `/api/showcase/assets/…?proxy=1` (AuthZ + server bytes). Default asset GET stays 302→COS for ``<img>`` thumbs — credentialed `fetch` following that redirect fails browser CORS |
+| Reader | Detail pdf.js loads `/api/showcase/assets/…?proxy=1` (AuthZ + server bytes); HiDPI canvas, natural page width. Default asset GET stays 302→COS for ``<img>`` thumbs — credentialed `fetch` following that redirect fails browser CORS |
 | Backfill | `GET /posts/{id}` + cover-stream re-enqueue when Office attachment lacks `preview_path` (legacy thumbs-only posts) |
 | Events | Redis pub/sub → `GET …/posts/{id}/cover-stream` SSE (`cover_ready` / `cover_fail`); FE no poll |
 | Hard stop | LO 120s; Celery soft 180 / hard 210; SSE max 210s then `cover_fail` reason=timeout |
 | Guard | Redis lock `showcase:cover:{post_id}`; abort if post gone or `attachment_key` stale; overwrite thumb when key matches; RLS write as `author_id` |
 | Flag | `SHOWCASE_SERVER_COVERS` (default on when `COS_SHOWCASE_ENABLED`); Celery soft-starts for covers |
 | Host | Startup hard-gate: LibreOffice Writer+Impress + `fonts-noto-cjk` when covers enabled (`host_deps.py`); failure messages include `apt-get install` + verify (`soffice --version`, Writer/Impress binaries, `fc-list`); `LIBREOFFICE_PATH` / `resolve_soffice_path` |
+| CJK fonts | Optional private COS pack (`sync/fonts/office-preview/`: 宋体/楷体/仿宋/黑体/微软雅黑). Publish once from Windows Fonts: `python scripts/db/publish_office_preview_fonts_to_cos.py`. Cover jobs auto-pull into `data/office_preview_fonts/` (or `--pull` to warm). Noto remains fallback. Do not commit font binaries. |
 
 Logical keys in PG stay under `showcase/posts/{uuid}/…`; COS uses `full_cos_key` + `COS_SHOWCASE_PREFIX`.
 

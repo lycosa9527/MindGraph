@@ -41,7 +41,9 @@ import {
   distributeBranchesClockwise,
   findBranchByNodeId,
   loadMindMapSpec,
+  mindMapBranchesClockwiseOrder,
   nodesAndConnectionsToMindMapSpec,
+  rebalanceMindMapBranchesIfLeftOnly,
 } from '../specLoader'
 import type { SpecLoaderResult } from '../specLoader/types'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
@@ -703,7 +705,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
     const newBranch = newTopLevelMindMapBranchSpec(text, childText)
 
-    const allBranches = [...spec.rightBranches, ...spec.leftBranches.slice().reverse()]
+    const allBranches = mindMapBranchesClockwiseOrder(spec.rightBranches, spec.leftBranches)
     allBranches.push(newBranch)
     const { rightBranches, leftBranches } = distributeBranchesClockwise(allBranches)
     const pathKey = resolvePathKeyForBranchSpec(newBranch, rightBranches, leftBranches)
@@ -832,44 +834,53 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (deletedCount === 0) return 0
 
     const deletedNodeIds = toRemoveWithParent.map((item) => item.nodeId)
+    // Deleting every right L1 leaves a left-only map (no structure mode for that).
+    // Redistribute clockwise so survivors split across both sides again.
+    const balanced = rebalanceMindMapBranchesIfLeftOnly(spec.leftBranches, spec.rightBranches)
     const result = loadMindMapSpec({
       topic: spec.topic,
-      leftBranches: spec.leftBranches,
-      rightBranches: spec.rightBranches,
+      leftBranches: balanced.leftBranches,
+      rightBranches: balanced.rightBranches,
       preserveLeftRight: true,
     })
 
-    const collapsedPaths = getMindMapCollapsedPaths(data.value)
-    const collapsedNodeIds = getMindMapCollapsedNodeIds(
-      beforeNodes,
-      beforeConnections,
-      collapsedPaths
-    )
-    const incremental = applyMindMapIncrementalDeleteLayout(
-      beforeNodes,
-      beforeConnections,
-      result.nodes,
-      result.connections,
-      {
-        deletedNodeIds,
-        topicY: typeof topicY === 'number' ? topicY : undefined,
-        nodeHeights: ctx.mindMapNodeHeights.value,
-        collapsedNodeIds,
-        diagramStyleId:
-          typeof data.value._mindmap_diagram_style === 'string'
-            ? data.value._mindmap_diagram_style
-            : undefined,
-      }
-    )
-    commitMindMapReload(
-      ctx,
-      { ...result, nodes: incremental.nodes },
-      {
-        skipMindMapRecalc: incremental.usedIncremental,
-        // Same engine as the v2 display computed, applied before first paint.
-        syncV2LayoutBeforeShow: incremental.usedIncremental,
-      }
-    )
+    if (balanced.redistributed) {
+      commitMindMapReload(ctx, result)
+      // Survivor layout ids change side/index; drop inline-rec state keyed by old ids.
+      useInlineRecommendationsStore().invalidateAll()
+    } else {
+      const collapsedPaths = getMindMapCollapsedPaths(data.value)
+      const collapsedNodeIds = getMindMapCollapsedNodeIds(
+        beforeNodes,
+        beforeConnections,
+        collapsedPaths
+      )
+      const incremental = applyMindMapIncrementalDeleteLayout(
+        beforeNodes,
+        beforeConnections,
+        result.nodes,
+        result.connections,
+        {
+          deletedNodeIds,
+          topicY: typeof topicY === 'number' ? topicY : undefined,
+          nodeHeights: ctx.mindMapNodeHeights.value,
+          collapsedNodeIds,
+          diagramStyleId:
+            typeof data.value._mindmap_diagram_style === 'string'
+              ? data.value._mindmap_diagram_style
+              : undefined,
+        }
+      )
+      commitMindMapReload(
+        ctx,
+        { ...result, nodes: incremental.nodes },
+        {
+          skipMindMapRecalc: incremental.usedIncremental,
+          // Same engine as the v2 display computed, applied before first paint.
+          syncV2LayoutBeforeShow: incremental.usedIncremental,
+        }
+      )
+    }
 
     nodeIds.forEach((id) => {
       ctx.clearCustomPosition(id)
@@ -1063,7 +1074,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (!data.value?.nodes || !data.value?.connections) return false
 
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
-    const allBranches = [...spec.rightBranches, ...spec.leftBranches.slice().reverse()]
+    const allBranches = mindMapBranchesClockwiseOrder(spec.rightBranches, spec.leftBranches)
 
     if (mode === 'right') {
       return applyMindMapSpecReload(spec.topic, [], allBranches, 'Structure: right')
@@ -1258,6 +1269,10 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
             insert: position,
             topicY,
             nodeHeights: ctx.mindMapNodeHeights.value,
+            diagramStyleId:
+              typeof ctx.data.value?._mindmap_diagram_style === 'string'
+                ? ctx.data.value._mindmap_diagram_style
+                : undefined,
           }
         )
         usedIncrementalL1Layout = true

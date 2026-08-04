@@ -3,17 +3,21 @@
  * Mind-map collapse (−) / expand (count pill) on the connector midpoint, with stub line when collapsed.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { Teleport } from 'vue'
 
 import { useLanguage } from '@/composables'
-import { useMindMapCollapseOverlayPositions, resolveMindMapCollapseHoverNodeId, isMindMapCollapseEligibleNode } from '@/composables/canvasToolbar/useMindMapCollapseTogglePosition'
-import { eventBus } from '@/composables/core/useEventBus'
-import { MIND_MAP_GEOMETRY, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import {
-  isMindMapPathCollapsed,
-  mindMapDescendantCount,
-} from '@/stores/diagram/mindMapCollapse'
+  COLLAPSE_HANDLE_HALF,
+  EXPAND_PILL_HALF,
+  isMindMapCollapseEligibleNode,
+  resolveMindMapCollapseHoverNodeId,
+  useMindMapCollapseOverlayPositions,
+} from '@/composables/canvasToolbar/useMindMapCollapseTogglePosition'
+import { eventBus } from '@/composables/core/useEventBus'
+import { mindMapControlScale } from '@/config/mindMapEBlackboard'
+import { MIND_MAP_GEOMETRY, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { useDiagramStore } from '@/stores/diagram'
+import { isMindMapPathCollapsed, mindMapDescendantCount } from '@/stores/diagram/mindMapCollapse'
+import { useUIStore } from '@/stores/ui'
 
 const props = defineProps<{
   containerRef: HTMLElement | null
@@ -21,15 +25,19 @@ const props = defineProps<{
 }>()
 
 const diagramStore = useDiagramStore()
+const uiStore = useUIStore()
 const { t } = useLanguage()
+
+const controlScale = computed(() => mindMapControlScale(uiStore.eBlackboardOptimize))
+const overlayStyle = computed(() => ({
+  '--mm-eb-scale': String(controlScale.value),
+}))
 
 const editingNodeId = ref<string | null>(null)
 const hoveredNodeId = ref<string | null>(null)
 const pinnedCollapseNodeId = ref<string | null>(null)
 
-const activeCollapseNodeId = computed(
-  () => hoveredNodeId.value ?? pinnedCollapseNodeId.value
-)
+const activeCollapseNodeId = computed(() => hoveredNodeId.value ?? pinnedCollapseNodeId.value)
 
 let hoverClearTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -57,10 +65,7 @@ function isCollapseOverlayTarget(target: EventTarget | null): boolean {
 }
 
 function onContainerMouseOver(event: MouseEvent): void {
-  const id = resolveMindMapCollapseHoverNodeId(
-    event.target,
-    diagramStore.data?.connections
-  )
+  const id = resolveMindMapCollapseHoverNodeId(event.target, diagramStore.data?.connections)
   if (id) {
     setHoveredNodeId(id)
     return
@@ -70,10 +75,7 @@ function onContainerMouseOver(event: MouseEvent): void {
 
 function onContainerClick(event: MouseEvent): void {
   if (isCollapseOverlayTarget(event.target)) return
-  const id = resolveMindMapCollapseHoverNodeId(
-    event.target,
-    diagramStore.data?.connections
-  )
+  const id = resolveMindMapCollapseHoverNodeId(event.target, diagramStore.data?.connections)
   if (id && isMindMapCollapseEligibleNode(id, diagramStore.data?.connections)) {
     pinnedCollapseNodeId.value = id
     setHoveredNodeId(id)
@@ -97,10 +99,7 @@ function onCollapseButtonLeave(nodeId: string, event: PointerEvent): void {
     const relatedNodeId = related.closest('.vue-flow__node')?.getAttribute('data-id')
     if (relatedNodeId === nodeId) return
     if (related.closest('.mind-map-collapse-overlay__btn')) return
-    const edgeParentId = resolveMindMapCollapseHoverNodeId(
-      related,
-      diagramStore.data?.connections
-    )
+    const edgeParentId = resolveMindMapCollapseHoverNodeId(related, diagramStore.data?.connections)
     if (edgeParentId === nodeId) return
   }
   setHoveredNodeId(null)
@@ -141,6 +140,7 @@ const { handles, visible, scheduleMeasure } = useMindMapCollapseOverlayPositions
   strokeColor,
   enabled: overlayEnabled,
   editingNodeId,
+  controlScale,
   getDescendantCount: (nodeId) =>
     mindMapDescendantCount(nodeId, diagramStore.getMindMapDescendantIds),
   getDescendantIds: diagramStore.getMindMapDescendantIds,
@@ -149,14 +149,15 @@ const { handles, visible, scheduleMeasure } = useMindMapCollapseOverlayPositions
 const expandHandles = computed(() => handles.value.filter((h) => h.mode === 'expand'))
 
 watch(
-  () =>
-    diagramStore.data?.nodes
-      ?.map((n) => `${n.id}:${n.position?.x}:${n.position?.y}`)
-      .join('|'),
+  () => diagramStore.data?.nodes?.map((n) => `${n.id}:${n.position?.x}:${n.position?.y}`).join('|'),
   () => scheduleMeasure()
 )
 
-function tooltipFor(handle: { nodeId: string; mode: 'collapse' | 'expand'; count?: number }): string {
+function tooltipFor(handle: {
+  nodeId: string
+  mode: 'collapse' | 'expand'
+  count?: number
+}): string {
   if (handle.mode === 'expand') {
     return t('mindMap.collapse.expand', { count: handle.count ?? 0 })
   }
@@ -183,7 +184,8 @@ function handleClick(
 }
 
 function lineEndX(handle: { nodeId: string; left: number; mode: 'collapse' | 'expand' }): number {
-  const half = handle.mode === 'expand' ? 14 : 9
+  const baseHalf = handle.mode === 'expand' ? EXPAND_PILL_HALF : COLLAPSE_HANDLE_HALF
+  const half = baseHalf * controlScale.value
   return handle.nodeId.startsWith('branch-l-') ? handle.left + half : handle.left - half
 }
 
@@ -250,6 +252,7 @@ onUnmounted(() => {
     <div
       v-if="visible && overlayEnabled && handles.length"
       class="mind-map-collapse-overlay"
+      :style="overlayStyle"
       aria-hidden="false"
     >
       <svg
@@ -289,7 +292,11 @@ onUnmounted(() => {
         @mousedown.stop
         @pointerdown.stop
       >
-        <span v-if="handle.mode === 'collapse'" class="mind-map-collapse-overlay__minus">−</span>
+        <span
+          v-if="handle.mode === 'collapse'"
+          class="mind-map-collapse-overlay__minus"
+          >−</span
+        >
         <span v-else>{{ handle.count }}</span>
       </button>
     </div>
@@ -298,6 +305,7 @@ onUnmounted(() => {
 
 <style scoped>
 .mind-map-collapse-overlay {
+  --mm-eb-scale: 1;
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -320,7 +328,7 @@ onUnmounted(() => {
   justify-content: center;
   margin: 0;
   padding: 0;
-  border: 1.5px solid;
+  border: calc(1.5px * var(--mm-eb-scale)) solid;
   background: #fff;
   font-weight: 600;
   line-height: 1;
@@ -334,24 +342,24 @@ onUnmounted(() => {
 }
 
 .mind-map-collapse-overlay__btn--collapse {
-  width: 18px;
-  height: 18px;
+  width: calc(18px * var(--mm-eb-scale));
+  height: calc(18px * var(--mm-eb-scale));
   border-radius: 50%;
 }
 
 .mind-map-collapse-overlay__minus {
-  font-size: 14px;
+  font-size: calc(14px * var(--mm-eb-scale));
   font-weight: 500;
   line-height: 1;
-  margin-top: -1px;
+  margin-top: calc(-1px * var(--mm-eb-scale));
 }
 
 .mind-map-collapse-overlay__btn--expand {
-  min-width: 28px;
-  height: 18px;
-  padding: 0 6px;
+  min-width: calc(28px * var(--mm-eb-scale));
+  height: calc(18px * var(--mm-eb-scale));
+  padding: 0 calc(6px * var(--mm-eb-scale));
   border-radius: 999px;
-  font-size: 11px;
+  font-size: calc(11px * var(--mm-eb-scale));
 }
 
 .mind-map-collapse-overlay__btn:hover {

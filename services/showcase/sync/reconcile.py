@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,7 +40,7 @@ async def reconcile_showcase_storage(db: AsyncSession) -> ShowcaseReconcileRepor
     tracked, legacy = split_legacy_local_keys(db_keys)
 
     if cos_showcase_enabled():
-        cos_keys = list_cos_logical_keys()
+        cos_keys = await asyncio.to_thread(list_cos_logical_keys)
         matched, orphan, missing, unscoped = diff_key_sets(
             db_logical_keys=tracked,
             cos_logical_keys=cos_keys,
@@ -125,7 +126,11 @@ async def purge_orphans_from_reconcile(
 ) -> dict[str, Any]:
     """Run reconcile then purge orphan_cos entries."""
     report = await reconcile_showcase_storage(db)
-    purge = purge_orphan_cos_objects(report.orphan_cos, dry_run=dry_run)
+    purge = await asyncio.to_thread(
+        purge_orphan_cos_objects,
+        report.orphan_cos,
+        dry_run=dry_run,
+    )
     return {
         "report": report.to_dict(),
         "purge": purge,

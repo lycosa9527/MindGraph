@@ -328,6 +328,12 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       if (nodeId === 'topic') {
         ctx.mindMapTopicActualWidth.value = null
       }
+      if (shapeChanged) {
+        // Mirror 导图样式 switch: shape regime change must full-restack with
+        // adaptive gaps (do not keep sticky L1 Enter preserve).
+        ctx.mindMapPreserveIncomingY.value = false
+        ctx.mindMapPreserveIncomingYNodeId.value = null
+      }
       ctx.scheduleMindMapRecalc()
     }
 

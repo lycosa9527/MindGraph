@@ -1,11 +1,13 @@
 import {
   DEFAULT_CENTER_X,
-  DEFAULT_MINDMAP_BRANCH_GAP,
   DEFAULT_MINDMAP_RANK_SEPARATION,
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
-  MINDMAP_SIBLING_GAP,
 } from '@/composables/diagrams/layoutConfig'
+import {
+  mindMapAdaptiveBranchGap,
+  mindMapAdaptiveSiblingGap,
+} from '@/config/mindMapAdaptiveGaps'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import {
   mindMapConnectionAnchorY,
@@ -13,6 +15,7 @@ import {
   resolveMindMapTopicLayoutWidth,
 } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
+import type { NodeShape } from '@/utils/nodeShapeStyle'
 import { isMindMapConnectorVerboseDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
 import { logMindMapProcess } from '@/utils/mindMapConnectorDebugVerbose'
 import {
@@ -23,8 +26,8 @@ import {
 import {
   applyMindMapL1HeightDeltaShift,
   centerMindMapSidePacksOnTopic,
-  computeSequentialRootStartYsFrom,
   computeSymmetricRootStartYs,
+  resolveMindMapSiblingSubtreeOverlaps,
   settleMindMapPreserveYLayout,
 } from '@/utils/mindMapSideStacking'
 
@@ -566,8 +569,6 @@ function correctYPositions(
   const topicChildren = childrenMap.get('topic') ?? []
   if (topicChildren.length === 0) return nodes
 
-  const crossBranchGap = DEFAULT_MINDMAP_BRANCH_GAP
-
   // First-level branches by side — connection list order is sibling SoT
   const rightRoots: string[] = []
   const leftRoots: string[] = []
@@ -581,6 +582,57 @@ function correctYPositions(
   const newY = new Map<string, number>()
   /** One span per node per restack — assignSubtreeY would otherwise re-walk each subtree. */
   const subtreeSpanCache = new Map<string, number>()
+
+  function shapeOf(nodeId: string): NodeShape {
+    const node = nodeMap.get(nodeId)
+    return resolveMindMapNodeShape(
+      { id: nodeId, type: node?.type ?? 'branch', style: node?.style },
+      diagramStyleId
+    )
+  }
+
+  function firstLeafId(nodeId: string): string {
+    let cur = nodeId
+    while (!collapsedNodeIds.has(cur)) {
+      const kids = childrenMap.get(cur)
+      if (!kids?.length) return cur
+      const next = kids[0]
+      if (next == null) return cur
+      cur = next
+    }
+    return cur
+  }
+
+  function lastLeafId(nodeId: string): string {
+    let cur = nodeId
+    while (!collapsedNodeIds.has(cur)) {
+      const kids = childrenMap.get(cur)
+      if (!kids?.length) return cur
+      const next = kids[kids.length - 1]
+      if (next == null) return cur
+      cur = next
+    }
+    return cur
+  }
+
+  function siblingGapBetween(upperId: string, lowerId: string): number {
+    return mindMapAdaptiveSiblingGap(shapeOf(lastLeafId(upperId)), shapeOf(firstLeafId(lowerId)))
+  }
+
+  function branchGapBetween(upperId: string, lowerId: string): number {
+    return mindMapAdaptiveBranchGap(shapeOf(lastLeafId(upperId)), shapeOf(firstLeafId(lowerId)))
+  }
+
+  function sumSiblingGaps(kids: string[]): number {
+    let total = 0
+    for (let i = 0; i < kids.length - 1; i++) {
+      const upper = kids[i]
+      const lower = kids[i + 1]
+      if (upper == null || lower == null) continue
+      total += siblingGapBetween(upper, lower)
+    }
+    return total
+  }
 
   function computeSubtreeSpan(nodeId: string): number {
     const cached = subtreeSpanCache.get(nodeId)
@@ -597,7 +649,7 @@ function correctYPositions(
     }
     const childSpans = kids.map((kid) => computeSubtreeSpan(kid))
     const childrenTotalSpan =
-      childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * MINDMAP_SIBLING_GAP
+      childSpans.reduce((a, b) => a + b, 0) + sumSiblingGaps(kids)
     const span = Math.max(h, childrenTotalSpan)
     subtreeSpanCache.set(nodeId, span)
     return span
@@ -614,7 +666,7 @@ function correctYPositions(
 
     const childSpans = kids.map((kid) => computeSubtreeSpan(kid))
     const childrenTotalSpan =
-      childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * MINDMAP_SIBLING_GAP
+      childSpans.reduce((a, b) => a + b, 0) + sumSiblingGaps(kids)
 
     // Sole underline child: align its connection anchor to the parent's so the
     // stem is flat horizontal (underline continues from parent mid; text sits above).
@@ -676,7 +728,11 @@ function correctYPositions(
     if (childrenTotalSpan >= h) {
       let y = startY
       for (let i = 0; i < kids.length; i++) {
-        if (i > 0) y += MINDMAP_SIBLING_GAP
+        if (i > 0) {
+          const prev = kids[i - 1]
+          const cur = kids[i]
+          if (prev != null && cur != null) y += siblingGapBetween(prev, cur)
+        }
         y = assignSubtreeY(kids[i], y)
       }
       const firstKid = kids[0]
@@ -706,7 +762,11 @@ function correctYPositions(
     const parentAnchorY = getNodeAnchorY(nodeId, startY, nodeMap, nodeHeights, diagramStyleId)
     let y = startY
     for (let i = 0; i < kids.length; i++) {
-      if (i > 0) y += MINDMAP_SIBLING_GAP
+      if (i > 0) {
+        const prev = kids[i - 1]
+        const cur = kids[i]
+        if (prev != null && cur != null) y += siblingGapBetween(prev, cur)
+      }
       y = assignSubtreeY(kids[i], y)
     }
     const firstKid = kids[0]
@@ -730,19 +790,6 @@ function correctYPositions(
     return Math.max(startY + h, y + delta)
   }
 
-  function sidePackOriginTop(roots: string[]): number | undefined {
-    const firstRoot = roots[0]
-    if (firstRoot == null) return undefined
-    // Subtree packing starts at the first child's top when present. The L1 node
-    // itself is often re-centered inside a taller child span, so its Y is not
-    // a safe pack origin.
-    const firstKids = childrenMap.get(firstRoot)
-    if (firstKids && firstKids.length > 0 && !collapsedNodeIds.has(firstRoot)) {
-      return nodeMap.get(firstKids[0])?.position?.y
-    }
-    return nodeMap.get(firstRoot)?.position?.y
-  }
-
   function shiftSubtreeInNewY(rootId: string, delta: number): void {
     if (Math.abs(delta) < 0.5) return
     const stack = [rootId]
@@ -761,31 +808,18 @@ function correctYPositions(
   function stackBranches(roots: string[], topicCenterY: number): void {
     if (roots.length === 0) return
 
-    const allPinned = roots.every((rootId) => {
-      const y = nodeMap.get(rootId)?.position?.y
-      return y != null && Number.isFinite(y)
-    })
-
-    // Multi-root with existing tops: keep each L1 where it is (Enter / measure
-    // must not re-center the side). Reflow children inside each subtree only.
-    if (roots.length >= 2 && allPinned) {
-      for (const rootId of roots) {
-        const pinY = nodeMap.get(rootId)?.position?.y
-        if (pinY == null) continue
-        assignSubtreeY(rootId, pinY)
-        const laidOutY = newY.get(rootId)
-        if (laidOutY == null) continue
-        shiftSubtreeInNewY(rootId, pinY - laidOutY)
-      }
-      return
-    }
-
+    // Always full-pack with adaptive pairwise gaps. Do NOT pin L1 tops here —
+    // that froze library/style-switch spacing (underline looked like boxes).
+    // L1 Enter is protected by preserveIncomingY, which skips correctYPositions.
     const spans = roots.map((r) => computeSubtreeSpan(r))
-    const packOrigin = sidePackOriginTop(roots)
-    const startYs =
-      roots.length >= 2 && packOrigin != null
-        ? computeSequentialRootStartYsFrom(packOrigin, spans, crossBranchGap)
-        : computeSymmetricRootStartYs(spans, topicCenterY, crossBranchGap)
+    const branchGaps: number[] = []
+    for (let i = 0; i < roots.length - 1; i++) {
+      const upper = roots[i]
+      const lower = roots[i + 1]
+      if (upper == null || lower == null) continue
+      branchGaps.push(branchGapBetween(upper, lower))
+    }
+    const startYs = computeSymmetricRootStartYs(spans, topicCenterY, branchGaps)
 
     for (let i = 0; i < roots.length; i++) {
       assignSubtreeY(roots[i], startYs[i] ?? topicCenterY)
@@ -862,10 +896,21 @@ function correctYPositions(
     return { ...node, position: { ...node.position, y: correctedY } }
   })
 
+  // Pinned-L1 reflow can leave adjacent fans overlapping when measured heights
+  // outgrow the packing (导图样式 underline → rectangle/oval). Push packs
+  // apart before centering the side on the topic.
+  const separated = resolveMindMapSiblingSubtreeOverlaps(
+    yCorrected,
+    connections,
+    nodeHeights,
+    collapsedNodeIds,
+    diagramStyleId
+  )
+
   // Multi-root packs: rigid-slide each side onto the topic. Sole roots already
   // match the topic connection anchor (and their fans moved with them).
   return centerMindMapSidePacksOnTopic(
-    yCorrected,
+    separated,
     connections,
     nodeHeights,
     diagramStyleId

@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Plein écran',
   'showcase.detail.exitFullscreen': 'Quitter le plein écran',
   'showcase.detail.pptxPreviewPending': 'Conversion des diapositives pour l’aperçu…',
+  'showcase.detail.officePreviewPending': 'Conversion des diapositives pour l’aperçu…',
   'showcase.detail.docPreviewLoading': 'Chargement du document…',
   'showcase.detail.docPreviewFailed': 'Impossible de charger l’aperçu. Essayez d’ouvrir dans un nouvel onglet.',
   'showcase.detail.legacyDocHint': 'Les fichiers .doc hérités ne peuvent pas être prévisualisés en ligne. Ouvrez ou téléchargez le fichier, ou téléversez un .docx pour l’aperçu dans le navigateur.',

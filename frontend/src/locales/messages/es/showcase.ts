@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Pantalla completa',
   'showcase.detail.exitFullscreen': 'Salir de pantalla completa',
   'showcase.detail.pptxPreviewPending': 'Convirtiendo diapositivas para vista previa…',
+  'showcase.detail.officePreviewPending': 'Convirtiendo diapositivas para vista previa…',
   'showcase.detail.docPreviewLoading': 'Cargando documento…',
   'showcase.detail.docPreviewFailed': 'No se pudo cargar la vista previa. Intente abrir en una nueva pestaña.',
   'showcase.detail.legacyDocHint': 'Los archivos .doc heredados no se pueden previsualizar en línea. Abra o descargue el archivo, o suba .docx para vista previa en el navegador.',

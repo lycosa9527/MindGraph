@@ -304,6 +304,67 @@ describe('v2 sibling Enter anchor Y stability', () => {
     ).toBeGreaterThan(requirePosition(requireNode(separated, 'branch-r-1-0'), 'branch-r-1-0').y)
   })
 
+  it('full y-correct separates formal rectangle L2 fans pinned too close (library/style)', () => {
+    // Xiaomi-Car repro: L1 tops pinned from classic/underline packing; formal
+    // rectangle L2 heights (~34) make Model Lineup's last child overlap Hardware's first.
+    const nodes: DiagramNode[] = [
+      node('topic', 200, { height: 40, width: 120, x: 400 }),
+      node('branch-r-1-0', 100, {
+        height: 40,
+        x: 600,
+        uid: 'l1-model',
+      }),
+      node('branch-r-2-5', 80, { height: 34, x: 700, uid: 'su7' }),
+      node('branch-r-2-6', 126, { height: 34, x: 700, uid: 'su7max' }),
+      node('branch-r-2-7', 172, { height: 34, x: 700, uid: 'su7pro' }),
+      node('branch-r-1-1', 220, {
+        height: 40,
+        x: 600,
+        uid: 'l1-hw',
+      }),
+      node('branch-r-2-9', 200, { height: 34, x: 700, uid: 'awd' }),
+      node('branch-r-2-10', 246, { height: 34, x: 700, uid: 'sic' }),
+      node('branch-r-2-11', 292, { height: 34, x: 700, uid: '800v' }),
+      node('branch-r-2-12', 338, { height: 34, x: 700, uid: 'aero' }),
+    ].map((n) =>
+      n.id.startsWith('branch-')
+        ? { ...n, style: { nodeShape: 'rectangle' as const } }
+        : n
+    )
+    const connections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'branch-r-1-0' },
+      { id: 'c1', source: 'branch-r-1-0', target: 'branch-r-2-5' },
+      { id: 'c2', source: 'branch-r-1-0', target: 'branch-r-2-6' },
+      { id: 'c3', source: 'branch-r-1-0', target: 'branch-r-2-7' },
+      { id: 'c4', source: 'topic', target: 'branch-r-1-1' },
+      { id: 'c5', source: 'branch-r-1-1', target: 'branch-r-2-9' },
+      { id: 'c6', source: 'branch-r-1-1', target: 'branch-r-2-10' },
+      { id: 'c7', source: 'branch-r-1-1', target: 'branch-r-2-11' },
+      { id: 'c8', source: 'branch-r-1-1', target: 'branch-r-2-12' },
+    ]
+    const heights: Record<string, number> = Object.fromEntries(
+      nodes.map((n) => [n.id, (n.data?.estimatedHeight as number) ?? 40])
+    )
+
+    // Precondition: SU7 Pro (172+34=206) overlaps Dual Motor AWD at 200.
+    expect(172 + 34).toBeGreaterThan(200)
+
+    const { nodes: laidOut } = recalculateMindMapV2ColumnPositions(
+      nodes,
+      120,
+      {},
+      heights,
+      connections,
+      new Set(),
+      'formal'
+    )
+
+    const upperBottom =
+      requirePosition(requireNode(laidOut, 'branch-r-2-7'), 'branch-r-2-7').y + 34
+    const lowerTop = requirePosition(requireNode(laidOut, 'branch-r-2-9'), 'branch-r-2-9').y
+    expect(lowerTop).toBeGreaterThanOrEqual(upperBottom + DEFAULT_MINDMAP_BRANCH_GAP - 0.5)
+  })
+
   it('centerMindMapChildrenGroupsOnParents aligns connection anchors (classic underline L2)', () => {
     const nodes: DiagramNode[] = [
       node('topic', 0, { height: 40 }),
@@ -337,15 +398,20 @@ describe('v2 sibling Enter anchor Y stability', () => {
     )
   })
 
-  it('pins L1 relative gaps and centers the side pack on the topic', () => {
+  it('full restack packs L1 fans with adaptive gaps (not pinned library spacing)', () => {
+    // Spacious pinned L1s (as after soft library load) must compact on y-correct.
     const nodes: DiagramNode[] = [
       node('topic', 0, { height: 40, width: 120, x: 400 }),
       node('branch-l-1-0', -74, { uid: 'uid-a', height: 40, x: 100 }),
       node('branch-l-2-1', -100, { uid: 'uid-a0', height: 40, x: 40 }),
       node('branch-l-2-2', -48, { uid: 'uid-a1', height: 40, x: 40 }),
-      node('branch-l-1-3', 20, { uid: 'uid-b', height: 40, x: 100 }),
-      node('branch-l-2-4', 20, { uid: 'uid-b0', height: 40, x: 40 }),
-    ]
+      node('branch-l-1-3', 120, { uid: 'uid-b', height: 40, x: 100 }),
+      node('branch-l-2-4', 120, { uid: 'uid-b0', height: 40, x: 40 }),
+    ].map((n) =>
+      n.id === 'topic'
+        ? n
+        : { ...n, style: { nodeShape: 'underline' as const } }
+    )
     const connections: Connection[] = [
       { id: 'c0', source: 'topic', target: 'branch-l-1-0' },
       { id: 'c1', source: 'branch-l-1-0', target: 'branch-l-2-1' },
@@ -362,23 +428,29 @@ describe('v2 sibling Enter anchor Y stability', () => {
       'branch-l-2-4': 40,
     }
 
+    // Precondition: library-style air between fans (~128px root gap).
+    expect(
+      requirePosition(requireNode(nodes, 'branch-l-1-3'), 'branch-l-1-3').y -
+        requirePosition(requireNode(nodes, 'branch-l-1-0'), 'branch-l-1-0').y
+    ).toBeGreaterThan(100)
+
     const { nodes: laidOut } = recalculateMindMapV2ColumnPositions(
       nodes,
       120,
       {},
       heights,
-      connections
+      connections,
+      new Set(),
+      'underline'
     )
 
-    // Topic stays; pack slides so L1 mid (-54…40 → -7) aligns with topic center 20.
     expect(laidOut.find((n) => n.id === 'topic')?.position?.y).toBeCloseTo(0, 5)
-    expect(laidOut.find((n) => n.id === 'branch-l-1-0')?.position?.y).toBeCloseTo(-47, 5)
-    expect(laidOut.find((n) => n.id === 'branch-l-1-3')?.position?.y).toBeCloseTo(47, 5)
-    // Relative gap between the two L1 roots preserved (was 94).
-    expect(
-      (laidOut.find((n) => n.id === 'branch-l-1-3')?.position?.y ?? 0) -
-        (laidOut.find((n) => n.id === 'branch-l-1-0')?.position?.y ?? 0)
-    ).toBeCloseTo(94, 5)
+    const upperBottom =
+      requirePosition(requireNode(laidOut, 'branch-l-2-2'), 'branch-l-2-2').y + 40
+    const lowerTop = requirePosition(requireNode(laidOut, 'branch-l-2-4'), 'branch-l-2-4').y
+    // Underline↔underline branch gap is 14 — much tighter than the pinned 100+ air.
+    expect(lowerTop - upperBottom).toBeGreaterThanOrEqual(14 - 0.5)
+    expect(lowerTop - upperBottom).toBeLessThan(40)
   })
 
   it('keeps left L1 on one outer column when measured widths differ (edit-end / canvas click)', () => {

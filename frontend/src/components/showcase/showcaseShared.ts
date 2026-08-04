@@ -398,7 +398,7 @@ export function isValidThumbnailBlob(blob: Blob | null | undefined): blob is Blo
   return Boolean(blob && blob.size > 64)
 }
 
-/** Reject all-white captures from off-screen docx/html-to-image (shows as empty cover). */
+/** Reject all-white captures from off-screen html-to-image (shows as empty cover). */
 export async function isMostlyBlankImageBlob(blob: Blob): Promise<boolean> {
   if (typeof createImageBitmap !== 'function') return false
   try {

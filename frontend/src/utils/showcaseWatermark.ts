@@ -51,7 +51,7 @@ export function stampWatermarksInContainer(
 
 /**
  * Re-stamp after layout so tall pages get enough tiles.
- * Call once after fonts/images settle (rAF is enough for docx-preview).
+ * Call once after fonts/images settle (rAF is enough after pdf.js paint).
  */
 export function refreshWatermarkDensity(root: HTMLElement, text: string): void {
   if (!text.trim()) return

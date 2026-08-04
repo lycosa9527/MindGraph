@@ -178,6 +178,13 @@ const sourceExceedsModelInput = computed(() => {
   const chars = activeSource.value?.extract_char_count
   return typeof chars === 'number' && chars > DOC_SUMMARY_MAX_INPUT_CHARS
 })
+/** Local file picked but not yet ingested — replaces dropzone + paste. */
+const hasPendingUpload = computed(() => uploadedFile.value !== null)
+const pendingUploadSizeLabel = computed(() => {
+  const file = uploadedFile.value
+  if (!file) return ''
+  return formatPendingFileSize(file.size)
+})
 
 const hasPendingLiteDraft = computed(
   () =>
@@ -189,6 +196,12 @@ const hasPendingLiteDraft = computed(
       webUrl: webUrl.value,
     }) !== 'none'
 )
+
+function formatPendingFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 const canGenerate = computed(() => {
   if (
@@ -381,6 +394,7 @@ function handleFileChange(event: Event): void {
   }
   uploadedFile.value = file
   uploadedFileName.value = file.name
+  pastedText.value = ''
   if (isImageUploadFile(file)) {
     filePreviewUrl.value = URL.createObjectURL(file)
   }
@@ -887,61 +901,89 @@ const liteSourceBound = computed(
           v-if="docSummaryLiteUi && activeTab === 'file' && !hasActiveSource"
           class="flex flex-col gap-3"
         >
-          <button
-            v-if="!filePreviewUrl"
-            type="button"
-            class="doc-summary-upload-box"
-            @click="openFilePicker"
-          >
-            <Upload
-              class="mb-2 h-5 w-5 text-(--swiss-subtle,#a8a29e)"
-              :stroke-width="1.75"
-            />
-            <span class="text-sm font-medium text-(--swiss-ink,#1c1917)">
-              {{ t('canvas.mindMapDocumentSummary.uploadFileHint') }}
-            </span>
-            <span class="mt-1 text-[11px] leading-relaxed text-(--swiss-muted,#78716c)">
-              {{ t('canvas.mindMapDocumentSummary.uploadFileSubhint') }}
-            </span>
-            <span
-              v-if="uploadedFileName"
-              class="mt-2 max-w-full truncate text-xs font-medium text-(--swiss-geek-cyan-ui,#0e7490)"
-            >
-              {{ uploadedFileName }}
-            </span>
-          </button>
           <div
-            v-else
-            class="relative overflow-hidden rounded-xl border border-(--swiss-border,#e7e5e4) bg-(--swiss-inset,#fafaf9)"
+            v-if="hasPendingUpload"
+            class="doc-summary-source-card"
           >
-            <img
-              :src="filePreviewUrl"
-              alt=""
-              class="max-h-32 w-full object-contain"
-            />
+            <div class="flex items-start gap-2.5">
+              <div
+                v-if="filePreviewUrl"
+                class="doc-summary-pending-thumb shrink-0 overflow-hidden"
+              >
+                <img
+                  :src="filePreviewUrl"
+                  alt=""
+                  class="h-full w-full object-cover"
+                />
+              </div>
+              <div
+                v-else
+                class="doc-summary-source-icon shrink-0"
+              >
+                <FileText
+                  class="h-4 w-4"
+                  :stroke-width="2"
+                />
+              </div>
+              <div class="min-w-0 flex-1">
+                <p
+                  class="doc-summary-md-name truncate"
+                  :title="uploadedFileName"
+                >
+                  {{ uploadedFileName }}
+                </p>
+                <p
+                  v-if="pendingUploadSizeLabel"
+                  class="mt-0.5 text-[11px] text-(--swiss-muted,#78716c)"
+                >
+                  {{ pendingUploadSizeLabel }}
+                </p>
+              </div>
+              <button
+                type="button"
+                class="doc-summary-delete-btn shrink-0"
+                :disabled="isAdding || isGenerating || collabActive"
+                :aria-label="t('common.delete')"
+                :title="t('common.delete')"
+                @click="clearUploadedFile"
+              >
+                <X
+                  class="h-3.5 w-3.5"
+                  :stroke-width="2"
+                />
+              </button>
+            </div>
+          </div>
+          <template v-else>
             <button
               type="button"
-              class="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-(--swiss-muted,#78716c) shadow-sm"
-              @click="clearUploadedFile"
+              class="doc-summary-upload-box"
+              @click="openFilePicker"
             >
-              <X
-                class="h-3.5 w-3.5"
-                :stroke-width="2"
+              <Upload
+                class="mb-2 h-5 w-5 text-(--swiss-subtle,#a8a29e)"
+                :stroke-width="1.75"
               />
+              <span class="text-sm font-medium text-(--swiss-ink,#1c1917)">
+                {{ t('canvas.mindMapDocumentSummary.uploadFileHint') }}
+              </span>
+              <span class="mt-1 text-[11px] leading-relaxed text-(--swiss-muted,#78716c)">
+                {{ t('canvas.mindMapDocumentSummary.uploadFileSubhint') }}
+              </span>
             </button>
-          </div>
+            <textarea
+              v-model="pastedText"
+              class="doc-summary-textarea w-full resize-none rounded-xl border border-(--swiss-border,#e7e5e4) bg-white px-3 py-2.5 text-sm leading-relaxed text-(--swiss-ink,#1c1917) placeholder:text-(--swiss-subtle,#a8a29e) focus:border-(--swiss-border-strong,#d6d3d1) focus:outline-none focus:ring-2 focus:ring-(--swiss-geek-cyan-soft,#ecfeff)"
+              :placeholder="t('canvas.mindMapDocumentSummary.pastePlaceholder')"
+              rows="4"
+            />
+          </template>
           <input
             ref="fileInputRef"
             type="file"
             class="hidden"
             :accept="DOC_SUMMARY_UPLOAD_ACCEPT"
             @change="handleFileChange"
-          />
-          <textarea
-            v-model="pastedText"
-            class="doc-summary-textarea w-full resize-none rounded-xl border border-(--swiss-border,#e7e5e4) bg-white px-3 py-2.5 text-sm leading-relaxed text-(--swiss-ink,#1c1917) placeholder:text-(--swiss-subtle,#a8a29e) focus:border-(--swiss-border-strong,#d6d3d1) focus:outline-none focus:ring-2 focus:ring-(--swiss-geek-cyan-soft,#ecfeff)"
-            :placeholder="t('canvas.mindMapDocumentSummary.pastePlaceholder')"
-            rows="4"
           />
         </div>
 
@@ -1286,6 +1328,14 @@ const liteSourceBound = computed(
   border-radius: 8px;
   background: var(--swiss-surface, #ffffff);
   color: var(--swiss-body, #44403c);
+}
+
+.doc-summary-pending-thumb {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--swiss-border, #e7e5e4);
+  border-radius: 8px;
+  background: var(--swiss-surface, #ffffff);
 }
 
 .doc-summary-md-badge {

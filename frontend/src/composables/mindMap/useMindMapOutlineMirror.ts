@@ -1,8 +1,11 @@
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import { isMindMapPathCollapsed } from '@/stores/diagram/mindMapCollapse'
 import { useDiagramStore } from '@/stores'
-import { buildMindMapOutlineTree, type MindMapOutlineNode } from '@/utils/mindMapOutlineTree'
+import {
+  buildMindMapOutlineTree,
+  type MindMapOutlineNode,
+} from '@/utils/mindMapOutlineTree'
 
 /** Collect ancestor node ids from root to target (exclusive of target). */
 export function getMindMapAncestorIds(
@@ -20,12 +23,34 @@ export function getMindMapAncestorIds(
   return ancestors
 }
 
+/**
+ * Keep 层级大纲 mirrored with the live diagram: structure, labels, canvas Y order,
+ * selection, and branch collapse.
+ */
 export function useMindMapOutlineMirror(options: {
   enabled: () => boolean
   scrollToRow: (nodeId: string) => void
 }) {
   const diagramStore = useDiagramStore()
   const syncingFromOutline = ref(false)
+
+  /** Reactive tree — tracks text, topology, and positions used for canvas-Y ordering. */
+  const outlineTree = computed((): MindMapOutlineNode[] => {
+    const nodes = diagramStore.data?.nodes ?? []
+    const connections = diagramStore.data?.connections ?? []
+    for (const node of nodes) {
+      void node.id
+      void node.text
+      void node.position?.y
+      void (node.data as { label?: string } | undefined)?.label
+    }
+    for (const conn of connections) {
+      void conn.id
+      void conn.source
+      void conn.target
+    }
+    return buildMindMapOutlineTree(nodes, connections)
+  })
 
   function isOutlineBranchCollapsed(nodeId: string): boolean {
     const connections = diagramStore.data?.connections ?? []
@@ -65,13 +90,10 @@ export function useMindMapOutlineMirror(options: {
   )
 
   return {
+    outlineTree,
     focusNodeFromOutline,
     toggleOutlineBranch,
     isOutlineBranchCollapsed,
-    getOutlineTree: (): MindMapOutlineNode[] =>
-      buildMindMapOutlineTree(
-        diagramStore.data?.nodes ?? [],
-        diagramStore.data?.connections ?? []
-      ),
+    getOutlineTree: (): MindMapOutlineNode[] => outlineTree.value,
   }
 }

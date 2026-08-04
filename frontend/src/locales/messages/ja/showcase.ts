@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': '全画面',
   'showcase.detail.exitFullscreen': '全画面を終了',
   'showcase.detail.pptxPreviewPending': 'プレビュー用にスライドを変換中…',
+  'showcase.detail.officePreviewPending': 'プレビュー用にスライドを変換中…',
   'showcase.detail.docPreviewLoading': '文書を読み込み中…',
   'showcase.detail.docPreviewFailed': 'プレビューを読み込めませんでした。新しいタブで開いてみてください。',
   'showcase.detail.legacyDocHint': '旧式 .doc ファイルはインラインでプレビューできません。ファイルを開くかダウンロードするか、ブラウザ内プレビューには .docx をアップロードしてください。',

@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'पूर्ण स्क्रीन',
   'showcase.detail.exitFullscreen': 'पूर्ण स्क्रीन बंद',
   'showcase.detail.pptxPreviewPending': 'स्लाइड पूर्वावलोकन…',
+  'showcase.detail.officePreviewPending': 'स्लाइड पूर्वावलोकन…',
   'showcase.detail.docPreviewLoading': 'दस्तावेज़ लोड…',
   'showcase.detail.docPreviewFailed': 'पूर्वावलोकन नहीं। नए टैब में।',
   'showcase.detail.legacyDocHint': 'पुरानी .doc इनलाइन नहीं। खोलें/डाउनलोड या .docx अपलोड।',

@@ -4,10 +4,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { FileText, Loader2, Maximize2, Minimize2, ZoomIn, ZoomOut } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
-import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
-import { renderDocxPreview } from '@/utils/renderDocxPreview'
+import { eventBus } from '@/composables/core/useEventBus'
 import { renderPdfPreview } from '@/utils/renderPdfPreview'
-import { refreshWatermarkDensity } from '@/utils/showcaseWatermark'
 
 type FileKind = 'pdf' | 'docx' | 'doc' | 'pptx' | 'unknown'
 
@@ -33,6 +31,8 @@ const props = defineProps<{
   attachmentUrl?: string | null
   /** LibreOffice-converted PDF for Office docs (PPTX/DOCX/DOC) inline preview. */
   previewUrl?: string | null
+  /** Post id — used to stop pending on showcase:cover_fail. */
+  postId?: string | null
   fallbackText?: string
   watermarkName?: string | null
   watermarkOrganization?: string | null
@@ -41,12 +41,19 @@ const props = defineProps<{
 const { t } = useLanguage()
 
 const WATERMARK_TILE_COUNT = 36
-const PDF_BASE_SCALE = 1.35
+const PDF_BASE_SCALE = 1.5
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 2.5
 const ZOOM_STEP = 0.15
+/** Align with backend COVER_SSE_MAX_SECONDS — fail UI if SSE never delivers. */
+const OFFICE_PENDING_TIMEOUT_MS = 210_000
 
 const fileKind = computed<FileKind>(() => attachmentFileKind(props.attachmentUrl))
+
+const isOfficeKind = computed(
+  () =>
+    fileKind.value === 'docx' || fileKind.value === 'doc' || fileKind.value === 'pptx'
+)
 
 const absoluteAttachmentUrl = computed(() => {
   if (!props.attachmentUrl || typeof window === 'undefined') return null
@@ -58,32 +65,51 @@ const absolutePreviewUrl = computed(() => {
   return new URL(props.previewUrl, window.location.origin).href
 })
 
+/** True after SSE cover_fail while preview.pdf is still missing. */
+const previewConversionFailed = ref(false)
+let officePendingTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearOfficePendingTimer(): void {
+  if (officePendingTimer != null) {
+    clearTimeout(officePendingTimer)
+    officePendingTimer = null
+  }
+}
+
+watch(
+  () => props.previewUrl,
+  (url) => {
+    if (url) previewConversionFailed.value = false
+  }
+)
+
+watch(
+  () => props.postId,
+  () => {
+    previewConversionFailed.value = false
+    clearOfficePendingTimer()
+  }
+)
+
 /**
  * PDF bytes for pdf.js: native PDF attachment, or LO preview for Office.
- * DOCX/DOC without previewUrl keep the client fallback (legacy posts).
  */
 const pdfSourceUrl = computed(() => {
   if (fileKind.value === 'pdf') return absoluteAttachmentUrl.value
-  if (fileKind.value === 'pptx') return absolutePreviewUrl.value
-  if (
-    (fileKind.value === 'docx' || fileKind.value === 'doc') &&
-    absolutePreviewUrl.value
-  ) {
-    return absolutePreviewUrl.value
-  }
+  if (isOfficeKind.value) return absolutePreviewUrl.value
   return null
 })
 
+/** Office + PDF always use the pdf.js reader (pending / fail / ready). */
 const showPdfReader = computed(
-  () =>
-    fileKind.value === 'pdf' ||
-    fileKind.value === 'pptx' ||
-    ((fileKind.value === 'docx' || fileKind.value === 'doc') &&
-      Boolean(absolutePreviewUrl.value))
+  () => fileKind.value === 'pdf' || isOfficeKind.value
 )
 
-const pptxPreviewPending = computed(
-  () => fileKind.value === 'pptx' && !absolutePreviewUrl.value
+const officePreviewPending = computed(
+  () =>
+    isOfficeKind.value &&
+    !absolutePreviewUrl.value &&
+    !previewConversionFailed.value
 )
 
 const watermarkText = computed(() => {
@@ -97,32 +123,8 @@ const watermarkTiles = computed(() =>
   watermarkText.value ? Array.from({ length: WATERMARK_TILE_COUNT }, (_, i) => i) : []
 )
 
-function isPublicHttpsUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url)
-    if (parsed.protocol !== 'https:') return false
-    const host = parsed.hostname.toLowerCase()
-    if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) return false
-    if (host.startsWith('10.') || host.startsWith('192.168.') || host.startsWith('172.')) return false
-    return true
-  } catch {
-    return false
-  }
-}
-
-const legacyDocOfficeSrc = computed(() => {
-  if (!absoluteAttachmentUrl.value || fileKind.value !== 'doc') return null
-  if (!isPublicHttpsUrl(absoluteAttachmentUrl.value)) return null
-  return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(absoluteAttachmentUrl.value)}`
-})
-
 const hasAttachmentPreview = computed(
-  () =>
-    fileKind.value === 'pdf' ||
-    fileKind.value === 'pptx' ||
-    fileKind.value === 'docx' ||
-    Boolean(absolutePreviewUrl.value && fileKind.value === 'doc') ||
-    Boolean(legacyDocOfficeSrc.value)
+  () => fileKind.value === 'pdf' || isOfficeKind.value
 )
 
 const hasReaderContent = computed(
@@ -140,7 +142,14 @@ const zoomLevel = computed(() => {
 
 const zoomPercent = computed(() => `${Math.round(zoomLevel.value * 100)}%`)
 
-/** CSS `zoom` shrinks layout + paint together (avoids transform empty-space / h-scroll). */
+/**
+ * Fit-to-width via CSS zoom only. User zoom re-rasters pdf.js (keeps text sharp).
+ */
+const fitZoomStyle = computed(() => ({
+  zoom: fitZoom.value,
+}))
+
+/** Fallback text reader still uses combined zoom. */
 const contentZoomStyle = computed(() => ({
   zoom: zoomLevel.value,
 }))
@@ -199,11 +208,6 @@ function blockCopyKeydown(event: KeyboardEvent) {
   }
 }
 
-const docxContainer = ref<HTMLElement | null>(null)
-const docxLoading = ref(false)
-const docxError = ref<string | null>(null)
-let docxLoadToken = 0
-
 const pdfContainer = ref<HTMLElement | null>(null)
 const pdfLoading = ref(false)
 const pdfError = ref<string | null>(null)
@@ -211,15 +215,37 @@ let pdfLoadToken = 0
 let pdfCleanup: (() => void) | null = null
 let pdfAbort: AbortController | null = null
 
+function markOfficePreviewFailed(): void {
+  previewConversionFailed.value = true
+  pdfError.value = String(t('showcase.detail.legacyDocHint'))
+}
+
+watch(
+  officePreviewPending,
+  (pending) => {
+    clearOfficePendingTimer()
+    if (!pending) return
+    if (typeof EventSource === 'undefined') {
+      markOfficePreviewFailed()
+      return
+    }
+    officePendingTimer = setTimeout(() => {
+      if (
+        isOfficeKind.value &&
+        !absolutePreviewUrl.value &&
+        !previewConversionFailed.value
+      ) {
+        markOfficePreviewFailed()
+      }
+    }, OFFICE_PENDING_TIMEOUT_MS)
+  },
+  { immediate: true }
+)
+
 function measureContentWidth(): number {
   if (showPdfReader.value && pdfContainer.value) {
     const page = pdfContainer.value.querySelector<HTMLElement>('.showcase-pdf-page, canvas')
     return page?.scrollWidth || pdfContainer.value.scrollWidth
-  }
-  if (fileKind.value === 'docx' && docxContainer.value) {
-    const wrapper =
-      docxContainer.value.querySelector<HTMLElement>('.showcase-docx-wrapper') ?? docxContainer.value
-    return wrapper.scrollWidth
   }
   return 0
 }
@@ -227,22 +253,16 @@ function measureContentWidth(): number {
 function recomputeFitZoom(): void {
   const viewport = viewportEl.value
   if (!viewport) return
-  const available = viewport.clientWidth
+  // px-3 padding on the PDF host wrapper
+  const available = viewport.clientWidth - 24
   if (available <= 0) return
 
-  // Measure at identity zoom so fit is absolute.
-  const savedUser = userZoom.value
-  userZoom.value = 1
+  // Measure at fitZoom=1; do not touch userZoom (avoids pdf.js re-raster).
   fitZoom.value = 1
-
   void nextTick(() => {
     const natural = measureContentWidth()
     fitZoom.value =
       natural > available + 2 ? Math.max(ZOOM_MIN, Math.min(1, available / natural)) : 1
-    userZoom.value = savedUser
-    if (watermarkText.value && docxContainer.value) {
-      refreshWatermarkDensity(docxContainer.value, watermarkText.value)
-    }
   })
 }
 
@@ -253,7 +273,7 @@ async function loadPdfPreview(url: string, container: HTMLElement): Promise<void
   pdfCleanup = null
   container.replaceChildren()
 
-  // Fit-to-width is CSS (max-width:100%); only userZoom changes raster scale.
+  // Page width is natural CSS px (max-width:100%); userZoom changes raster scale.
   pdfCleanup = await renderPdfPreview({
     url,
     container,
@@ -264,16 +284,23 @@ async function loadPdfPreview(url: string, container: HTMLElement): Promise<void
 }
 
 watch(
-  [pdfSourceUrl, showPdfReader, () => pdfContainer.value, userZoom],
-  async ([url, usesPdfReader, container]) => {
-    if (!usesPdfReader || !url || !container) {
+  [pdfSourceUrl, showPdfReader, () => pdfContainer.value, userZoom, officePreviewPending],
+  async ([url, usesPdfReader, container, , pending]) => {
+    if (!usesPdfReader || !container || pending || !url) {
       pdfAbort?.abort()
       pdfAbort = null
       pdfCleanup?.()
       pdfCleanup = null
       pdfLoading.value = false
-      pdfError.value = null
-      if (usesPdfReader) {
+      if (!pending) {
+        // Keep conversion-fail message when Office preview is missing.
+        if (!(isOfficeKind.value && previewConversionFailed.value && !url)) {
+          pdfError.value = null
+        }
+      } else {
+        pdfError.value = null
+      }
+      if (usesPdfReader && !pending) {
         container?.replaceChildren()
       }
       return
@@ -287,7 +314,8 @@ watch(
       await loadPdfPreview(url, container)
       if (token !== pdfLoadToken) return
       await nextTick()
-      fitZoom.value = 1
+      // Fit narrow viewports; userZoom stays for sharp re-raster.
+      recomputeFitZoom()
     } catch (e) {
       if (token !== pdfLoadToken) return
       if (e instanceof DOMException && e.name === 'AbortError') return
@@ -295,47 +323,6 @@ watch(
     } finally {
       if (token === pdfLoadToken) {
         pdfLoading.value = false
-      }
-    }
-  },
-  { immediate: true, flush: 'post' }
-)
-
-watch(
-  [absoluteAttachmentUrl, fileKind, absolutePreviewUrl, () => docxContainer.value],
-  async ([url, kind, previewUrl, container]) => {
-    // Prefer LibreOffice PDF via pdf.js when available (full images/layout).
-    if (kind !== 'docx' || !url || !container || previewUrl) {
-      docxLoading.value = false
-      docxError.value = null
-      container?.replaceChildren()
-      return
-    }
-
-    const token = ++docxLoadToken
-    docxLoading.value = true
-    docxError.value = null
-    container.replaceChildren()
-    fitZoom.value = 1
-    userZoom.value = 1
-
-    try {
-      const response = await fetchShowcaseAsset(url)
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-      const blob = await response.blob()
-      if (token !== docxLoadToken || !container) return
-      await renderDocxPreview(blob, container, watermarkText.value)
-      if (token !== docxLoadToken) return
-      await nextTick()
-      recomputeFitZoom()
-    } catch {
-      if (token !== docxLoadToken) return
-      docxError.value = String(t('showcase.detail.docPreviewFailed'))
-    } finally {
-      if (token === docxLoadToken) {
-        docxLoading.value = false
       }
     }
   },
@@ -351,6 +338,7 @@ watch(
 )
 
 let resizeObserver: ResizeObserver | null = null
+let offCoverFail: (() => void) | null = null
 
 onMounted(() => {
   document.addEventListener('fullscreenchange', syncFullscreenState)
@@ -362,10 +350,18 @@ onMounted(() => {
     })
     resizeObserver.observe(viewportEl.value)
   }
+  offCoverFail = eventBus.on('showcase:cover_fail', ({ postId }) => {
+    if (!props.postId || props.postId !== postId) return
+    if (absolutePreviewUrl.value) return
+    markOfficePreviewFailed()
+  })
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', syncFullscreenState)
+  clearOfficePendingTimer()
+  offCoverFail?.()
+  offCoverFail = null
   resizeObserver?.disconnect()
   resizeObserver = null
   pdfAbort?.abort()
@@ -391,7 +387,7 @@ onBeforeUnmount(() => {
       <button
         type="button"
         class="doc-reader-toolbar-btn inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800 disabled:opacity-40"
-        :disabled="zoomLevel <= ZOOM_MIN + 0.001"
+        :disabled="zoomLevel <= ZOOM_MIN + 0.001 || officePreviewPending"
         :title="String(t('showcase.detail.zoomOut'))"
         @click="zoomOut"
       >
@@ -401,7 +397,7 @@ onBeforeUnmount(() => {
       <button
         type="button"
         class="doc-reader-toolbar-btn inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-800 disabled:opacity-40"
-        :disabled="zoomLevel >= ZOOM_MAX - 0.001"
+        :disabled="zoomLevel >= ZOOM_MAX - 0.001 || officePreviewPending"
         :title="String(t('showcase.detail.zoomIn'))"
         @click="zoomIn"
       >
@@ -410,6 +406,7 @@ onBeforeUnmount(() => {
       <button
         type="button"
         class="doc-reader-toolbar-btn rounded-lg px-2 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+        :disabled="officePreviewPending"
         :title="String(t('showcase.detail.zoomReset'))"
         @click="resetZoom"
       >
@@ -444,63 +441,31 @@ onBeforeUnmount(() => {
       <div
         v-if="showPdfReader"
         class="relative min-h-full px-3 py-3"
+        :style="fitZoomStyle"
       >
         <div
-          v-if="pptxPreviewPending || pdfLoading"
+          v-if="officePreviewPending || pdfLoading"
           class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-gray-500"
         >
           <Loader2 class="mr-2 h-5 w-5 animate-spin" />
           <span class="text-sm">{{
-            pptxPreviewPending
-              ? t('showcase.detail.pptxPreviewPending')
+            officePreviewPending
+              ? t('showcase.detail.officePreviewPending')
               : t('showcase.detail.docPreviewLoading')
           }}</span>
         </div>
         <div
-          v-if="pdfError && !pptxPreviewPending"
+          v-if="pdfError && !officePreviewPending"
           class="absolute inset-0 z-20 flex min-h-[50vh] flex-col items-center justify-center gap-3 bg-white px-8 text-center"
         >
           <FileText class="h-12 w-12 text-gray-300" />
           <p class="text-sm text-gray-500">{{ pdfError }}</p>
         </div>
         <div
-          v-show="!pptxPreviewPending"
+          v-show="!officePreviewPending"
           ref="pdfContainer"
           class="showcase-pdf-host mx-auto w-full max-w-full"
         />
-      </div>
-
-      <div v-else-if="fileKind === 'docx'" class="relative min-h-full" :style="contentZoomStyle">
-        <div
-          v-if="docxLoading"
-          class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-gray-500"
-        >
-          <Loader2 class="mr-2 h-5 w-5 animate-spin" />
-          <span class="text-sm">{{ t('showcase.detail.docPreviewLoading') }}</span>
-        </div>
-        <div
-          v-if="docxError"
-          class="absolute inset-0 z-20 flex min-h-[50vh] flex-col items-center justify-center gap-3 bg-white px-8 text-center"
-        >
-          <FileText class="h-12 w-12 text-gray-300" />
-          <p class="text-sm text-gray-500">{{ docxError }}</p>
-        </div>
-        <div ref="docxContainer" class="showcase-docx-host w-full max-w-full px-3 py-3" />
-      </div>
-
-      <iframe
-        v-else-if="legacyDocOfficeSrc"
-        :src="legacyDocOfficeSrc"
-        :title="t('showcase.detail.docPreview')"
-        class="block min-h-full w-full border-0"
-      />
-
-      <div
-        v-else-if="fileKind === 'doc'"
-        class="flex min-h-[50vh] flex-col items-center justify-center gap-4 px-8 pb-8 text-center"
-      >
-        <FileText class="h-12 w-12 text-gray-300" />
-        <p class="text-sm text-gray-500">{{ t('showcase.detail.legacyDocHint') }}</p>
       </div>
 
       <div
@@ -596,71 +561,12 @@ onBeforeUnmount(() => {
   opacity: 0.16;
 }
 
-.showcase-docx-host {
-  box-sizing: border-box;
-}
-
-.showcase-docx-host :deep(.showcase-docx-wrapper) {
-  background: #fff !important;
-  background-color: #fff !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  box-shadow: none !important;
-}
-
-.showcase-docx-host :deep(.showcase-docx),
-.showcase-docx-host :deep(section),
-.showcase-docx-host :deep(article) {
-  background: #fff !important;
-  background-color: #fff !important;
-  color: #111827;
-  box-sizing: border-box !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  height: auto !important;
-  min-height: 0 !important;
-  margin: 0 0 1.25rem !important;
-  padding: 0.25rem 0.15rem 1rem !important;
-  box-shadow: none !important;
-  border: none !important;
-  overflow: visible !important;
-}
-
-.showcase-docx-host :deep(section + section),
-.showcase-docx-host :deep(article + article) {
-  border-top: 1px solid #f3f4f6;
-  padding-top: 1.25rem !important;
-}
-
-.showcase-docx-host :deep(p),
-.showcase-docx-host :deep(span),
-.showcase-docx-host :deep(td),
-.showcase-docx-host :deep(th),
-.showcase-docx-host :deep(li) {
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.showcase-docx-host :deep(table) {
-  max-width: 100% !important;
-}
-
-.showcase-docx-host :deep(img) {
-  max-width: 100% !important;
-  height: auto !important;
-}
-
 .showcase-pdf-host :deep(.showcase-pdf-page) {
   max-width: 100%;
-  width: 100%;
   height: auto !important;
 }
 
 .showcase-pdf-host :deep(.showcase-pdf-page-wrap) {
-  width: 100%;
   max-width: 100%;
 }
 

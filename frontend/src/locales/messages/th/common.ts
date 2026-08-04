@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'แคนวาสคลาสสิก',
   'settings.language.mindMapCanvasV2': 'แคนวาสใหม่',
   'settings.language.mindMapCanvasRefreshHint': 'รีเฟรชหน้าแคนวาสหลังสลับเพื่อผลเต็มรูปแบบ',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'เวอร์ชัน UI',
   'settings.version.chinese': 'โหมดมืออาชีพ',
   'settings.version.international': 'โหมดเรียบง่าย',

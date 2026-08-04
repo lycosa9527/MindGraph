@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid as uuid_module
 from datetime import UTC, datetime, timedelta
@@ -789,7 +790,8 @@ async def admin_showcase_storage_status(
     """COS / local storage health for Showcase media."""
     if not await can_view_showcase_dashboard(db, current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient Showcase permission")
-    return build_storage_status().to_dict()
+    status_snapshot = await asyncio.to_thread(build_storage_status)
+    return status_snapshot.to_dict()
 
 
 @router.get("/admin/showcase/storage/reconcile")

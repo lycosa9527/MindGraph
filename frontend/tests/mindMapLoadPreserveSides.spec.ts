@@ -5,7 +5,9 @@ import { loadSpecForDiagramType } from '@/stores/specLoader'
 import {
   distributeBranchesClockwise,
   loadMindMapSpec,
+  mindMapBranchesClockwiseOrder,
   nodesAndConnectionsToMindMapSpec,
+  rebalanceMindMapBranchesIfLeftOnly,
 } from '@/stores/specLoader/mindMap'
 import { useUIStore } from '@/stores/ui'
 
@@ -100,5 +102,53 @@ describe('mindmap load preserves left/right sides', () => {
     expect(buggy.leftBranches.map((b) => b.text)).not.toEqual(
       extracted.leftBranches.map((b) => b.text)
     )
+  })
+
+  it('rebalances left-only maps after all right branches are removed', () => {
+    const initial = loadMindMapSpec({
+      topic: 'Topic',
+      children: [
+        { text: 'R1' },
+        { text: 'R2' },
+        { text: 'L1' },
+        { text: 'L2' },
+      ],
+    })
+    const extracted = nodesAndConnectionsToMindMapSpec(initial.nodes, initial.connections)
+    expect(extracted.rightBranches.map((b) => b.text)).toEqual(['R1', 'R2'])
+    expect(extracted.leftBranches.map((b) => b.text)).toEqual(['L2', 'L1'])
+
+    const afterDeleteRight = rebalanceMindMapBranchesIfLeftOnly(extracted.leftBranches, [])
+    expect(afterDeleteRight.redistributed).toBe(true)
+    expect(afterDeleteRight.rightBranches.map((b) => b.text)).toEqual(['L1'])
+    expect(afterDeleteRight.leftBranches.map((b) => b.text)).toEqual(['L2'])
+
+    // Clockwise reconstruct + redistribute is idempotent for a balanced split.
+    const again = rebalanceMindMapBranchesIfLeftOnly(
+      afterDeleteRight.leftBranches,
+      afterDeleteRight.rightBranches
+    )
+    expect(again.redistributed).toBe(false)
+  })
+
+  it('leaves right-only maps alone (intentional structure mode)', () => {
+    const result = rebalanceMindMapBranchesIfLeftOnly(
+      [],
+      [{ text: 'OnlyRight' }, { text: 'AlsoRight' }]
+    )
+    expect(result.redistributed).toBe(false)
+    expect(result.rightBranches.map((b) => b.text)).toEqual(['OnlyRight', 'AlsoRight'])
+    expect(result.leftBranches).toEqual([])
+  })
+
+  it('mindMapBranchesClockwiseOrder is the inverse of distributeBranchesClockwise', () => {
+    const branches = [{ text: 'A' }, { text: 'B' }, { text: 'C' }, { text: 'D' }]
+    const { rightBranches, leftBranches } = distributeBranchesClockwise(branches)
+    expect(mindMapBranchesClockwiseOrder(rightBranches, leftBranches).map((b) => b.text)).toEqual([
+      'A',
+      'B',
+      'C',
+      'D',
+    ])
   })
 })

@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Klassieke canvas',
   'settings.language.mindMapCanvasV2': 'Nuwe canvas',
   'settings.language.mindMapCanvasRefreshHint': 'Verfris die canvas-bladsy na wisseling vir volle effek',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'UI-weergawe',
   'settings.version.chinese': 'Professionele modus',
   'settings.version.international': 'Vereenvoudigde modus',

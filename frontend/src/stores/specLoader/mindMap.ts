@@ -8,6 +8,10 @@ import {
   DEFAULT_NODE_WIDTH,
   MINDMAP_TARGET_EXTENT,
 } from '@/composables/diagrams/layoutConfig'
+import {
+  getMindMapDiagramStyleById,
+  mindMapNodeShapeFromPreset,
+} from '@/config/mindMapDiagramStyles'
 import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import {
   buildMindMapChildrenMapByConnectionOrder,
@@ -17,6 +21,7 @@ import {
 import type { Connection, DiagramNode } from '@/types'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { readMindMapNodeUid } from '@/utils/mindMapNodeUid'
+import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 import { layoutMindMapSideLegacy } from './mindMapLegacyLayout'
 import type { MindMapBranchSpec } from './mindMapLegacyLayout'
@@ -25,6 +30,7 @@ import {
   estimateTopicNodeHeightForCanvasMode,
   estimateTopicNodeWidthForCanvasMode,
   measureBranchNodeHeightForCanvasMode,
+  resolveMindMapMeasureShape,
 } from './mindMapMeasurements'
 import { measureMindMapUnderlineBoxMetrics as measureMindMapUnderlineBoxMetricsForCanvasMode } from './mindMapMeasurements'
 import {
@@ -35,6 +41,7 @@ import {
   hasCustomMindMapTypography,
   measureBranchNodeHeightWithTypography,
   measureMindMapUnderlineBoxMetricsWithTypography,
+  resolveShapeFromMeasureStyle,
 } from './mindMapTypographyMeasure'
 import { layoutMindMapSideV2 } from './mindMapV2Layout'
 import type { SpecLoaderResult } from './types'
@@ -49,12 +56,14 @@ function activeCanvasMode(): 'legacy' | 'v2' {
 export function estimateNodeWidth(
   text: string,
   nodeId?: string,
-  typography?: MindMapMeasureTypography
+  typography?: MindMapMeasureTypography,
+  shape?: NodeShape | null
 ): number {
+  const resolvedShape = resolveShapeFromMeasureStyle(typography, shape)
   if (hasCustomMindMapTypography(typography)) {
-    return estimateNodeWidthWithTypography(text, nodeId, typography)
+    return estimateNodeWidthWithTypography(text, nodeId, typography, resolvedShape)
   }
-  return estimateNodeWidthForCanvasMode(text, nodeId, activeCanvasMode())
+  return estimateNodeWidthForCanvasMode(text, nodeId, activeCanvasMode(), resolvedShape)
 }
 
 export function measureBranchNodeHeight(
@@ -89,12 +98,14 @@ export function measureMindMapUnderlineBoxMetrics(
 
 export function estimateTopicNodeWidth(
   text: string,
-  typography?: MindMapMeasureTypography
+  typography?: MindMapMeasureTypography,
+  shape?: NodeShape | null
 ): number {
+  const resolvedShape = resolveShapeFromMeasureStyle(typography, shape)
   if (hasCustomMindMapTypography(typography)) {
-    return estimateTopicNodeWidthWithTypography(text, typography)
+    return estimateTopicNodeWidthWithTypography(text, typography, resolvedShape)
   }
-  return estimateTopicNodeWidthForCanvasMode(text, activeCanvasMode())
+  return estimateTopicNodeWidthForCanvasMode(text, activeCanvasMode(), resolvedShape)
 }
 
 export function estimateTopicNodeHeight(
@@ -121,6 +132,42 @@ export function distributeBranchesClockwise(branches: MindMapBranch[]): {
   const leftBranches = branches.slice(midPoint).reverse()
 
   return { rightBranches, leftBranches }
+}
+
+/**
+ * Rebuild clockwise order from side arrays (inverse of distributeBranchesClockwise).
+ */
+export function mindMapBranchesClockwiseOrder(
+  rightBranches: MindMapBranch[],
+  leftBranches: MindMapBranch[]
+): MindMapBranch[] {
+  return [...rightBranches, ...leftBranches.slice().reverse()]
+}
+
+/**
+ * When every top-level branch sits on the left (right empty), redistributes
+ * clockwise so the map is balanced again. Right-only maps are left alone —
+ * that matches the intentional "right" structure mode.
+ */
+export function rebalanceMindMapBranchesIfLeftOnly(
+  leftBranches: MindMapBranch[],
+  rightBranches: MindMapBranch[]
+): {
+  leftBranches: MindMapBranch[]
+  rightBranches: MindMapBranch[]
+  redistributed: boolean
+} {
+  if (rightBranches.length > 0 || leftBranches.length === 0) {
+    return { leftBranches, rightBranches, redistributed: false }
+  }
+  const distributed = distributeBranchesClockwise(
+    mindMapBranchesClockwiseOrder(rightBranches, leftBranches)
+  )
+  return {
+    leftBranches: distributed.leftBranches,
+    rightBranches: distributed.rightBranches,
+    redistributed: true,
+  }
 }
 
 /**
@@ -355,12 +402,19 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   const allBranches = [...rightBranches, ...leftBranches]
   const v2Visuals = readMindMapV2VisualDesignActive()
   const canvasMode = v2Visuals ? 'v2' : 'legacy'
+  const diagramStyleId =
+    (spec._mindmap_diagram_style as string | undefined) ??
+    (spec.mindmap_diagram_style as string | undefined)
+  const diagramStyle = getMindMapDiagramStyleById(diagramStyleId)
+  const topicShape = v2Visuals
+    ? mindMapNodeShapeFromPreset({ id: 'topic', type: 'topic' }, diagramStyle)
+    : resolveMindMapMeasureShape(null)
 
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
   const rankSeparation = DEFAULT_MINDMAP_RANK_SEPARATION
 
-  const topicWidth = estimateTopicNodeWidthForCanvasMode(topic, canvasMode)
+  const topicWidth = estimateTopicNodeWidthForCanvasMode(topic, canvasMode, topicShape)
   const topicEstimatedHeight = estimateTopicNodeHeightForCanvasMode(topic, canvasMode)
 
   const nodes: DiagramNode[] = []
@@ -379,14 +433,12 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       estimatedWidth: topicWidth,
       estimatedHeight: topicEstimatedHeight,
     },
+    ...(v2Visuals ? { style: { nodeShape: topicShape } } : {}),
   }
   nodes.push(topicNode)
 
   if (v2Visuals) {
     const topicBorderColor = resolveMindMapTopicBorderColor(topicNode)
-    const diagramStyleId =
-      (spec._mindmap_diagram_style as string | undefined) ??
-      (spec.mindmap_diagram_style as string | undefined)
     layoutMindMapSideV2(
       rightBranches,
       'right',

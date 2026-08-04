@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import mimetypes
+from collections.abc import AsyncIterator
 from pathlib import Path
 
 import orjson
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import FileResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, RedirectResponse, Response, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,13 +18,16 @@ from models.domain.showcase import ShowcasePost
 from services.showcase.field_options import load_meta_payload
 from services.showcase.infra.observability import showcase_wf_log
 from services.showcase.storage import (
+    aiter_bytes,
     collect_keys_from_post,
     cos_showcase_enabled,
     create_presigned_get,
     get_bytes,
+    head_object_async,
     is_showcase_logical_key,
     storage_backend,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user
 
 from .constants import (
@@ -31,6 +35,7 @@ from .constants import (
     DIAGRAM_TYPE_LABELS,
 )
 from .helpers import (
+    VIDEO_MAX_BYTES,
     post_id_from_showcase_asset_path,
     resolve_showcase_disk_path,
 )
@@ -38,6 +43,21 @@ from .permissions import can_view_non_approved_post
 from .routes_posts import list_posts
 
 router = APIRouter()
+
+
+def _content_length_from_head(meta: dict | None) -> int | None:
+    """Parse Content-Length from COS/local head metadata."""
+    if not meta:
+        return None
+    raw = meta.get("Content-Length")
+    if raw is None:
+        raw = meta.get("content-length")
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
 
 
 def _key_belongs_to_post(post: ShowcasePost, logical_key: str) -> bool:
@@ -64,8 +84,35 @@ async def _proxy_showcase_asset_bytes(
     disposition: str,
 ) -> Response:
     """Stream object bytes through the API after AuthZ (avoids browser→COS CORS)."""
-    data = await get_bytes(normalized)
-    if data is None:
+    head_meta = await head_object_async(normalized)
+    content_length = _content_length_from_head(head_meta)
+    if head_meta is None and content_length is None:
+        # Local/COS miss — confirm with a stream open attempt below.
+        pass
+    if content_length is not None and content_length > VIDEO_MAX_BYTES:
+        showcase_wf_log(
+            "download_deny",
+            f"proxy_too_large size={content_length}",
+            post_id=post_id,
+            user_id=user_id,
+            key=normalized,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Asset too large to proxy",
+        )
+
+    stream = aiter_bytes(normalized)
+    first: bytes | None = None
+    try:
+        first = await anext(stream)
+    except StopAsyncIteration:
+        first = None
+    except BACKGROUND_INFRA_ERRORS:
+        await stream.aclose()
+        raise
+    if first is None:
+        await stream.aclose()
         showcase_wf_log(
             "download_deny",
             "bytes_missing",
@@ -74,6 +121,19 @@ async def _proxy_showcase_asset_bytes(
             key=normalized,
         )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    async def _chunked() -> AsyncIterator[bytes]:
+        try:
+            yield first
+            async for chunk in stream:
+                yield chunk
+        finally:
+            await stream.aclose()
+
+    headers = {"Content-Disposition": disposition}
+    if content_length is not None:
+        headers["Content-Length"] = str(content_length)
+
     showcase_wf_log(
         "download",
         "proxy_bytes",
@@ -82,10 +142,10 @@ async def _proxy_showcase_asset_bytes(
         key=normalized,
         backend=storage_backend(),
     )
-    return Response(
-        content=data,
+    return StreamingResponse(
+        _chunked(),
         media_type=media_type or "application/octet-stream",
-        headers={"Content-Disposition": disposition},
+        headers=headers,
     )
 
 
@@ -106,7 +166,7 @@ async def download_showcase_asset(
     Serve Showcase files with AuthZ.
 
     Default (COS): 302 to short-TTL presigned GET (``<img>`` / navigation).
-    ``proxy=1``: stream bytes same-origin for pdf.js / docx-preview (no CORS).
+    ``proxy=1``: stream bytes same-origin for pdf.js (no CORS).
     Local/legacy: FileResponse or bytes. API never embeds durable COS host URLs
     in list JSON — only redirect Location or ephemeral proxy body.
     """

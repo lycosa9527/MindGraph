@@ -14,15 +14,23 @@ from services.redis.redis_client import get_redis, is_redis_available
 logger = logging.getLogger(__name__)
 
 CHANNEL_PREFIX = "showcase:cover"
+LAST_EVENT_PREFIX = "showcase:cover:last:"
 HEARTBEAT_SECONDS = 25
 # Must outlast Celery soft limit; closes SSE if no terminal event arrives.
 COVER_SSE_MAX_SECONDS = 210
+# Replay window for subscribe-after-publish races.
+LAST_EVENT_TTL_SECONDS = 600
 TERMINAL_EVENT_TYPES = frozenset({"cover_ready", "cover_fail"})
 
 
 def cover_event_channel(post_id: str) -> str:
     """Redis channel for one post's cover lifecycle events."""
     return f"{CHANNEL_PREFIX}:{post_id}"
+
+
+def cover_last_event_key(post_id: str) -> str:
+    """Redis key storing the latest terminal cover event payload."""
+    return f"{LAST_EVENT_PREFIX}{post_id}"
 
 
 def build_cover_event_payload(
@@ -61,6 +69,110 @@ def decode_pubsub_data(raw: Any) -> Optional[str]:
     return None
 
 
+def _store_last_event_sync(post_id: str, payload: str, event_type: str) -> None:
+    """Persist terminal event for SSE replay (sync Redis)."""
+    if event_type not in TERMINAL_EVENT_TYPES:
+        return
+    if not is_redis_available():
+        return
+    redis = get_redis()
+    if redis is None:
+        return
+    try:
+        redis.set(cover_last_event_key(post_id), payload, ex=LAST_EVENT_TTL_SECONDS)
+    except (RedisError, TypeError, ValueError, RuntimeError) as exc:
+        logger.debug(
+            "[ShowcaseCover] last-event store failed post=%s: %s",
+            post_id[:8],
+            exc,
+        )
+
+
+async def _store_last_event_async(post_id: str, payload: str, event_type: str) -> None:
+    """Persist terminal event for SSE replay (async Redis)."""
+    if event_type not in TERMINAL_EVENT_TYPES:
+        return
+    redis = get_async_redis()
+    if redis is None:
+        return
+    try:
+        await redis.set(cover_last_event_key(post_id), payload, ex=LAST_EVENT_TTL_SECONDS)
+    except (RedisError, TypeError, ValueError) as exc:
+        logger.debug(
+            "[ShowcaseCover] last-event store failed post=%s: %s",
+            post_id[:8],
+            exc,
+        )
+
+
+def get_cover_last_event_sync(post_id: str) -> Optional[str]:
+    """Read the latest terminal cover event payload, if any."""
+    if not is_redis_available():
+        return None
+    redis = get_redis()
+    if redis is None:
+        return None
+    try:
+        raw = redis.get(cover_last_event_key(post_id))
+    except (RedisError, TypeError, ValueError, RuntimeError) as exc:
+        logger.debug(
+            "[ShowcaseCover] last-event get failed post=%s: %s",
+            post_id[:8],
+            exc,
+        )
+        return None
+    return decode_pubsub_data(raw)
+
+
+async def get_cover_last_event(post_id: str) -> Optional[str]:
+    """Read the latest terminal cover event payload (async Redis)."""
+    redis = get_async_redis()
+    if redis is None:
+        return None
+    try:
+        raw = await redis.get(cover_last_event_key(post_id))
+    except (RedisError, TypeError, ValueError) as exc:
+        logger.debug(
+            "[ShowcaseCover] last-event get failed post=%s: %s",
+            post_id[:8],
+            exc,
+        )
+        return None
+    return decode_pubsub_data(raw)
+
+
+def clear_cover_last_event_sync(post_id: str) -> None:
+    """Drop stale terminal replay when a new cover job is claimed."""
+    if not is_redis_available():
+        return
+    redis = get_redis()
+    if redis is None:
+        return
+    try:
+        redis.delete(cover_last_event_key(post_id))
+    except (RedisError, TypeError, ValueError, RuntimeError) as exc:
+        logger.debug(
+            "[ShowcaseCover] last-event clear failed post=%s: %s",
+            post_id[:8],
+            exc,
+        )
+
+
+async def clear_cover_last_event(post_id: str) -> None:
+    """Drop stale terminal replay (async Redis)."""
+    redis = get_async_redis()
+    if redis is None:
+        return
+    try:
+        await redis.delete(cover_last_event_key(post_id))
+    except (RedisError, TypeError, ValueError) as exc:
+        logger.debug(
+            "[ShowcaseCover] last-event clear failed post=%s: %s",
+            post_id[:8],
+            exc,
+        )
+
+
 async def publish_showcase_cover_event(
     post_id: str,
     event_type: str,
@@ -80,6 +192,7 @@ async def publish_showcase_cover_event(
         preview_url=preview_url,
         reason=reason,
     )
+    await _store_last_event_async(post_id, payload, event_type)
     try:
         await redis.publish(cover_event_channel(post_id), payload)
     except (RedisError, TypeError, ValueError) as exc:
@@ -112,6 +225,7 @@ def publish_showcase_cover_event_sync(
         preview_url=preview_url,
         reason=reason,
     )
+    _store_last_event_sync(post_id, payload, event_type)
     try:
         redis.publish(cover_event_channel(post_id), payload)
     except (RedisError, TypeError, ValueError, RuntimeError) as exc:

@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'بوم کلاسیک',
   'settings.language.mindMapCanvasV2': 'بوم نقاشی جدید',
   'settings.language.mindMapCanvasRefreshHint': 'برای مشاهده‌ی افکت کامل، پس از تغییر، صفحه‌ی بوم را رفرش کنید.',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'نسخه رابط کاربری',
   'settings.version.chinese': 'حالت حرفه‌ای',
   'settings.version.international': 'حالت ساده‌شده',

@@ -37,8 +37,10 @@ export {
   distributeBranchesClockwise,
   findBranchByNodeId,
   loadMindMapSpec,
+  mindMapBranchesClockwiseOrder,
   nodesAndConnectionsToMindMapSpec,
   normalizeMindMapHorizontalSymmetry,
+  rebalanceMindMapBranchesIfLeftOnly,
 } from './mindMap'
 export type { SpecLoaderResult } from './types'
 

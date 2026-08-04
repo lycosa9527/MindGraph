@@ -142,12 +142,16 @@ import {
   type PresentationLaserSize,
 } from '@/config/presentationLaser'
 import {
+  PRESENTATION_SPOTLIGHT_SIZE_SCALE,
+  type PresentationSpotlightSize,
+} from '@/config/presentationSpotlight'
+import {
   PRESENTATION_BOARD_THICKNESS_SCALE,
   type PresentationBoardColorId,
   type PresentationBoardThickness,
   presentationBoardColorStroke,
 } from '@/config/presentationPen'
-import { FIT_PADDING, PANEL, PANEL_INSET } from '@/config/uiConfig'
+import { ANIMATION, FIT_PADDING, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
@@ -215,6 +219,7 @@ const {
   onTimerSetMinutes,
   laserCursorStyle,
   spotlightStyle,
+  pointerOverPresentationRail,
   handleZoomChange,
   handleZoomIn,
   handleZoomOut,
@@ -334,6 +339,10 @@ function applyPenColor(id: PresentationBoardColorId): void {
 
 function applyLaserSize(size: PresentationLaserSize): void {
   presentationPointerStore.setScaleForTool('laser', PRESENTATION_LASER_SIZE_SCALE[size])
+}
+
+function applySpotlightSize(size: PresentationSpotlightSize): void {
+  presentationPointerStore.setScaleForTool('spotlight', PRESENTATION_SPOTLIGHT_SIZE_SCALE[size])
 }
 
 function applyHighlighterColor(index: number): void {
@@ -487,7 +496,7 @@ const presentationPenColor = ref(presentationBoardColorStroke('red'))
 const highlighterColorIndex = ref(0)
 const presentationStrokeEraserActive = ref(false)
 const presentationPointerStore = usePresentationPointerStore()
-const { laserScale, highlighterScale } = storeToRefs(presentationPointerStore)
+const { laserScale, highlighterScale, spotlightScale } = storeToRefs(presentationPointerStore)
 
 const slidePresentation = useMindMapSlidePresentation({
   active: () => isMindMapPresentationMode.value && mindMapPresentationTool.value === 'slides',
@@ -934,13 +943,21 @@ watch(
     if (open && useMindMapV2.value) {
       closeActiveTool()
       mindMapPresentationTool.value = 'pointer'
-      void enterPresentationFullscreen()
-      void nextTick(() => {
-        eventBus.emit('view:fit_to_canvas_requested', { animate: true, userInitiated: true })
+      void enterPresentationFullscreen().finally(() => {
+        void nextTick(() => {
+          setTimeout(() => {
+            eventBus.emit('view:fit_to_canvas_requested', { animate: true, userInitiated: true })
+          }, ANIMATION.FIT_VIEWPORT_DELAY)
+        })
       })
     } else if (open) {
       mindMapPresentationTool.value = 'laser'
       presentationTool.value = 'laser'
+      void nextTick(() => {
+        setTimeout(() => {
+          eventBus.emit('view:fit_to_canvas_requested', { animate: true, userInitiated: true })
+        }, ANIMATION.FIT_VIEWPORT_DELAY)
+      })
     } else {
       mindMapPresentationTool.value = 'pointer'
       slidePresentation.reset()
@@ -1333,6 +1350,10 @@ onUnmounted(() => {
         (mindMapPresentationTool === 'pen' || mindMapPresentationTool === 'highlighter'),
       'presentation-timer-mode':
         showSimplifiedPresentationRail && mindMapPresentationTool === 'timer',
+      'presentation-spotlight-rail-hover':
+        isMindMapPresentationMode &&
+        mindMapPresentationTool === 'spotlight' &&
+        pointerOverPresentationRail,
     }"
   >
     <!-- Laser pointer cursor (presentation mode, laser tool) -->
@@ -1352,6 +1373,7 @@ onUnmounted(() => {
       <div
         v-if="isMindMapPresentationMode && mindMapPresentationTool === 'spotlight'"
         class="spotlight-overlay"
+        :class="{ 'is-suspended': pointerOverPresentationRail }"
         :style="spotlightStyle"
         aria-hidden="true"
       />
@@ -1378,6 +1400,7 @@ onUnmounted(() => {
         :color-id="penColorId"
         :thickness="penThickness"
         :laser-scale="laserScale"
+        :spotlight-scale="spotlightScale"
         :highlighter-scale="highlighterScale"
         :highlighter-color-index="highlighterColorIndex"
         :stroke-eraser-active="presentationStrokeEraserActive"
@@ -1386,6 +1409,7 @@ onUnmounted(() => {
         @select-color="applyPenColor"
         @select-thickness="applyPenThickness"
         @select-laser-size="applyLaserSize"
+        @select-spotlight-size="applySpotlightSize"
         @select-highlighter-color="applyHighlighterColor"
         @select-highlighter-scale="applyHighlighterScale"
         @toggle-stroke-eraser="toggleStrokeEraser"
@@ -1536,6 +1560,7 @@ onUnmounted(() => {
           :mind-map-slide-dim-focus-node-ids="slidePresentation.slideDimFocusNodeIds.value"
           :presentation-rail-open="presentationRailOpen"
           :presentation-side-toolbar-visible="showMindMapPresentationSideToolbar"
+          :enable-touch-pan-pinch="uiStore.eBlackboardOptimize"
           @node-double-click="handleNodeDoubleClick"
         />
 
@@ -1615,7 +1640,7 @@ onUnmounted(() => {
           />
           <div
             v-if="showZoomControls"
-            class="bottom-controls-divider hidden md:block order-1 md:order-2 w-px h-[22px] mx-2 bg-gray-200 dark:bg-gray-600 shrink-0 self-center"
+            class="bottom-controls-divider hidden md:block order-1 md:order-2 w-px h-5.5 mx-2 bg-gray-200 dark:bg-gray-600 shrink-0 self-center"
           />
           <div
             v-if="showZoomControls"

@@ -109,6 +109,10 @@ export type PublishSubmitDeps = {
   resolvePublishDiagramType: (raw: string, spec: Record<string, unknown>) => string
   resetForm: () => void
   isSessionExpiredMessage: (message: string) => boolean
+  /** Start a new abortable submit; previous in-flight submit is aborted. */
+  beginPublishSubmit: () => AbortSignal
+  /** Detach the active submit signal without aborting (call after success). */
+  releasePublishSubmit: () => void
 }
 
 function blobToPngFile(blob: Blob, name = 'thumbnail.png'): File {
@@ -179,6 +183,8 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     resolvePublishDiagramType,
     resetForm,
     isSessionExpiredMessage,
+    beginPublishSubmit,
+    releasePublishSubmit,
   } = deps
 
   const showcaseStore = useShowcaseStore()
@@ -191,6 +197,18 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
   function clearSubmitProgress(): void {
     submitPhaseLabel.value = ''
     notify.hideLoading()
+  }
+
+  function throwIfSubmitAborted(signal: AbortSignal): void {
+    if (signal.aborted) {
+      throw new DOMException('Showcase publish aborted', 'AbortError')
+    }
+  }
+
+  function isAbortError(error: unknown): boolean {
+    if (error instanceof DOMException && error.name === 'AbortError') return true
+    if (error instanceof Error && error.name === 'AbortError') return true
+    return false
   }
 
   function displayNameForUpload(item: {
@@ -271,6 +289,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
   async function uploadPendingMedia(
     postId: string,
     pending: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }>,
+    signal: AbortSignal,
   ): Promise<{ coverUploadFailed: boolean }> {
     const required = pending.filter((item) => !isThumbnailUploadRole(item.role))
     const covers = pending.filter((item) => isThumbnailUploadRole(item.role))
@@ -279,6 +298,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     let uploaded = 0
 
     for (const item of required) {
+      throwIfSubmitAborted(signal)
       uploaded += 1
       setSubmitProgress(
         String(
@@ -294,10 +314,12 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         role: item.role,
         file: item.file,
         filename: item.filename,
+        signal,
       })
     }
 
     if (galleryUploadCount > 0) {
+      throwIfSubmitAborted(signal)
       // Fail publish if JSONB paths did not land (approve would otherwise reject).
       await ensureGalleryImagesPersisted(postId, galleryUploadCount, {
         uploadFailed: String(t('showcase.publishModal.galleryUploadFailed')),
@@ -307,6 +329,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
 
     let coverUploadFailed = false
     for (const item of covers) {
+      throwIfSubmitAborted(signal)
       uploaded += 1
       setSubmitProgress(
         String(
@@ -323,8 +346,10 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
           role: item.role,
           file: item.file,
           filename: item.filename,
+          signal,
         })
       } catch (coverError) {
+        if (isAbortError(coverError)) throw coverError
         // Keep attachment/gallery/source; cover is best-effort for card display.
         console.warn('[Showcase] cover upload soft-failed', postId, coverError)
         coverUploadFailed = true
@@ -364,26 +389,36 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
   async function createThenUpload(
     createFn: () => Promise<{ post: { id: string } }>,
     pending: Array<{ role: ShowcaseUploadRole; file: File; filename?: string }>,
+    signal: AbortSignal,
     options: { proxyMode?: boolean; approveAfterUpload?: boolean } = {},
   ): Promise<{ postId: string; coverUploadFailed: boolean }> {
     const proxyMode = options.proxyMode === true
     const approveAfterUpload = options.approveAfterUpload === true
     setSubmitProgress(String(t('showcase.publishModal.creatingCase')))
     const result = await createFn()
+    throwIfSubmitAborted(signal)
     const postId = result.post.id
     if (pending.length === 0) {
       setSubmitProgress(String(t('showcase.publishModal.finishing')))
       return { postId, coverUploadFailed: false }
     }
     try {
-      const { coverUploadFailed } = await uploadPendingMedia(postId, pending)
+      const { coverUploadFailed } = await uploadPendingMedia(postId, pending, signal)
+      throwIfSubmitAborted(signal)
       if (approveAfterUpload) {
         setSubmitProgress(String(t('showcase.publishModal.finishing')))
         await reviewAdminShowcasePost(postId, 'approve')
+        throwIfSubmitAborted(signal)
       }
       setSubmitProgress(String(t('showcase.publishModal.finishing')))
       return { postId, coverUploadFailed }
     } catch (uploadError) {
+      const aborted = isAbortError(uploadError) || signal.aborted
+      // Modal close mid-upload must not leave a draft with missing media.
+      if (aborted) {
+        await rollbackCreatedPost(postId, proxyMode, 'publish_aborted')
+        throw uploadError
+      }
       const cause =
         uploadError instanceof Error && uploadError.message.trim()
           ? uploadError.message.trim()
@@ -400,6 +435,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
 
   async function submit() {
     if (isSubmitting.value) return
+    const signal = beginPublishSubmit()
     isSubmitting.value = true
     try {
       const sizeError = validateUploadSizes()
@@ -407,6 +443,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         notify.error(sizeError)
         return
       }
+      throwIfSubmitAborted(signal)
       const formTags = [...tags.value]
       if (tagDraft.value.trim() && formTags.length < TAG_MAX_COUNT) {
         const draft = tagDraft.value.trim()
@@ -605,20 +642,24 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         const created = await createThenUpload(
           () => proxyCreateShowcasePost(formData),
           pendingUploads,
+          signal,
           { proxyMode: true, approveAfterUpload },
         )
         savedPostId = created.postId
         coverUploadFailed = created.coverUploadFailed
+        throwIfSubmitAborted(signal)
         clearSubmitProgress()
         notify.success(String(t('admin.showcase.proxySuccess')), 3000)
         showcaseStore.emitAdminUpdated()
       } else if (isEditMode.value && savedPostId) {
         setSubmitProgress(String(t('showcase.publishModal.submitting')))
         await updateShowcasePost(savedPostId, formData)
+        throwIfSubmitAborted(signal)
         if (pendingUploads.length > 0) {
-          const uploaded = await uploadPendingMedia(savedPostId, pendingUploads)
+          const uploaded = await uploadPendingMedia(savedPostId, pendingUploads, signal)
           coverUploadFailed = uploaded.coverUploadFailed
         }
+        throwIfSubmitAborted(signal)
         setSubmitProgress(String(t('showcase.publishModal.finishing')))
         clearSubmitProgress()
         notify.success(String(t('showcase.resubmitted')), 3000)
@@ -628,31 +669,42 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
         const created = await createThenUpload(
           () => createShowcasePost(formData),
           pendingUploads,
+          signal,
         )
         savedPostId = created.postId
         coverUploadFailed = created.coverUploadFailed
+        throwIfSubmitAborted(signal)
         clearSubmitProgress()
         notify.success(String(t('showcase.publishModal.success')), 3000)
         showcaseStore.emitFeedInvalidate('publish')
       }
+      throwIfSubmitAborted(signal)
       if (teachingDesignAttachmentUploaded && savedPostId) {
-        showcaseStore.markCoverPending(savedPostId)
+        showcaseStore.markCoverPending(savedPostId, { notifyAuthorOnFail: true })
         notify.info(String(t('showcase.publishModal.coverGenerating')), 5000)
       } else if (coverUploadFailed) {
         notify.warning(String(t('showcase.publishModal.coverUploadSkipped')), 8000)
       } else if (coverSkipKey) {
         notify.warning(String(t(coverSkipKey)), 8000)
       }
+      // Detach before close so watch(visible) does not abort a finished submit.
+      releasePublishSubmit()
+      isSubmitting.value = false
       emit('update:visible', false)
       emit('success')
       resetForm()
     } catch (e) {
       clearSubmitProgress()
+      if (isAbortError(e) || signal.aborted) {
+        return
+      }
       // Longer duration — upload failures are easy to miss after the loading toast closes
       notify.error(mapSubmitError(e), 10000)
     } finally {
       clearSubmitProgress()
-      isSubmitting.value = false
+      if (!signal.aborted) {
+        isSubmitting.value = false
+      }
     }
   }
 

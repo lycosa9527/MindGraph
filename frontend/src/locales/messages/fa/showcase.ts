@@ -199,6 +199,7 @@ export default {
   "showcase.detail.enterFullscreen": "Fullscreen",
   "showcase.detail.exitFullscreen": "Exit fullscreen",
   "showcase.detail.pptxPreviewPending": "Converting document for preview…",
+  "showcase.detail.officePreviewPending": "Converting document for preview…",
   "showcase.detail.docPreviewLoading": "Loading document…",
   "showcase.detail.docPreviewFailed": "Could not load preview. Try opening in a new tab.",
   "showcase.detail.legacyDocHint": "This .doc file is still converting for preview, or conversion is unavailable. Open or download the file, or re-upload to regenerate the preview.",

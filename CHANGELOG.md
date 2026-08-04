@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.166.0] - 2026-08-05
+
+> **Shape-aware mind-map gaps + e-blackboard chrome; presentation spotlight sizes; Showcase Office→pdf.js with COS CJK fonts and cover SSE replay.**
+
+### Added
+
+- **Adaptive mind-map gaps (v2)** — Sibling/branch vertical gaps follow adjacent node shapes (underline / mixed / box) instead of fixed legacy constants (`mindMapAdaptiveGaps.ts`, `mindMapSideStacking.ts`, `mindMapV2Layout.ts`).
+- **E-blackboard optimization** — Settings toggle enlarges mind-map +/- and collapse controls for classroom boards (`mindMapEBlackboard.ts`, `LanguageSettingsModal.vue`, `ui.ts`).
+- **Presentation spotlight sizes** — Small / medium / large spotlight presets on the presentation rail (`presentationSpotlight.ts`, `MindMapPresentationSideToolbar.vue`).
+- **Office preview CJK fonts (COS)** — Optional Windows font pack (宋体/楷体/仿宋/黑体/微软雅黑) under `sync/fonts/office-preview/`; cover workers warm/pull into `data/office_preview_fonts/` (`office_preview_fonts_cos.py`, `publish_office_preview_fonts_to_cos.py`, Celery worker init).
+
+### Changed
+
+- **Mind-map layout** — Stronger side stacking, outline-tree mirror, shape-aware measurements/typography, left-only rebalance identity, and chrome positioning for collapse/directional-add overlays.
+- **Showcase teaching docs** — Detail reader is **pdf.js only** (drop browser `docx-preview`); LibreOffice export uses lossless PDF filters; HiDPI natural-width pages; remove client HTML thumbnail capture path.
+- **Cover SSE** — Replay last cover event for late subscribers; stream/backfill hardening (`covers/events.py`, `covers/stream.py`, `routes_feed.py`).
+- **Locale** — Canvas/common keys for spotlight sizes + e-blackboard; showcase copy refresh (en/zh); fa thinkingCoins refresh.
+
+### Fixed
+
+- **Mobile canvas touch / Vue Flow UI** — Touch and chrome interaction coverage for presentation and overlays.
+- **Mind-map side identity** — Load/preserve sides and sibling Y anchors under adaptive stacking.
+
+### Tests
+
+- **Frontend** — Adaptive gaps, e-blackboard scale, outline tree, shape-aware estimates, left-only rebalance, PG layout audits, mobile touch / Vue Flow UI.
+- **Backend** — Office preview fonts COS, cover SSE replay, Office PDF export (`test_office_preview_fonts_cos.py`, `test_showcase_cover_sse_replay.py`, `test_showcase_office_pdf_export.py`).
+
 ## [5.165.1] - 2026-08-04
 
 > **Harden DEBUG logs against Cookie/COS secret dumps; stop Showcase Office cover enqueue storm.**

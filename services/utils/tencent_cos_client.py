@@ -328,6 +328,38 @@ def get_object_bytes(
     return None
 
 
+def open_object_stream(
+    object_key: str,
+    *,
+    log_prefix: str = "[COS]",
+) -> Optional[Any]:
+    """
+    Open a readable body stream for a COS object.
+
+    Caller must ``close()`` the returned stream. Prefer chunked reads over
+    ``get_object_bytes`` for large Showcase proxy responses.
+    """
+    client = get_cos_client()
+    if client is None:
+        return None
+    try:
+        response = client.get_object(Bucket=COS_BUCKET, Key=object_key)
+        body = response.get("Body")
+        if body is None:
+            return None
+        stream = body.get_raw_stream()
+        if stream is None:
+            return None
+        return stream
+    except _cos_fetch_errors() as exc:
+        if CosServiceError is not None and isinstance(exc, CosServiceError):
+            if cos_exc_call(exc, "get_error_code", "") == "NoSuchKey":
+                logger.debug("%s object missing key=%s", log_prefix, object_key)
+                return None
+        logger.debug("%s open_object_stream failed key=%s: %s", log_prefix, object_key, exc)
+        return None
+
+
 def head_object(object_key: str) -> Optional[Dict[str, Any]]:
     """Return COS head_object metadata or None."""
     client = get_cos_client()

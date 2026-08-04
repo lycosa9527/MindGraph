@@ -1,5 +1,5 @@
 /**
- * Fetch Showcase asset bytes for in-app readers (pdf.js / docx-preview).
+ * Fetch Showcase asset bytes for in-app readers (pdf.js).
  *
  * AuthZ URLs are same-origin `/api/showcase/assets/...`. With COS enabled the
  * default response is a 302 to a cross-origin presigned GET — credentialed

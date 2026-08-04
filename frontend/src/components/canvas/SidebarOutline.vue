@@ -47,10 +47,10 @@ const { handlePaste: handleMindMapMultiLinePaste } = useMindMapMultiLinePaste({
 })
 
 const {
+  outlineTree,
   focusNodeFromOutline,
   toggleOutlineBranch,
   isOutlineBranchCollapsed,
-  getOutlineTree,
 } = useMindMapOutlineMirror({
   enabled: () => true,
   scrollToRow: (nodeId) => {
@@ -89,10 +89,9 @@ function collectVisibleRows(nodes: MindMapOutlineNode[], depth = 0): OutlineRow[
 }
 
 const visibleRows = computed(() => {
-  void diagramStore.data?.nodes?.length
-  void diagramStore.data?.connections?.length
+  // Collapse paths are not part of outlineTree; touch so chevrons stay live.
   void diagramStore.data?._collapsed_paths
-  return collectVisibleRows(getOutlineTree())
+  return collectVisibleRows(outlineTree.value)
 })
 
 function setRowRef(nodeId: string, el: Element | null): void {

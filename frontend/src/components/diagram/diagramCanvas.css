@@ -75,7 +75,14 @@
   display: block !important;
 }
 
-/* Mobile canvas: keep marquee hidden — touch pan/pinch owns the gesture */
+/* Mobile / e-blackboard: browser must not scroll; custom touch owns pan/pinch */
+.diagram-canvas.canvas-touch,
+.diagram-canvas.canvas-touch .vue-flow__viewport,
+.diagram-canvas.canvas-touch .vue-flow__node {
+  touch-action: none;
+}
+
+/* Keep marquee hidden — touch pan/pinch owns the gesture */
 .diagram-canvas.canvas-touch.mind-map-canvas .vue-flow__nodesselection,
 .diagram-canvas.canvas-touch.mind-map-canvas .vue-flow__nodesselection-rect {
   display: none !important;

@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Kanavacë klasike',
   'settings.language.mindMapCanvasV2': 'Kanavacë e re',
   'settings.language.mindMapCanvasRefreshHint': 'Rifreskoni faqen e kanavacës pas ndryshimit për efekt të plotë',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'Versioni i ndërfaqes',
   'settings.version.chinese': 'Modaliteti profesional',
   'settings.version.international': 'Modaliteti i thjeshtuar',

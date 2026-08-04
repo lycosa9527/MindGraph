@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Классический холст',
   'settings.language.mindMapCanvasV2': 'Увеличен размер холста',
   'settings.language.mindMapCanvasRefreshHint': 'Обновите страницу холста после переключения для полного эффекта',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'Версия пользовательского интерфейса',
   'settings.version.chinese': 'Профессиональный режим',
   'settings.version.international': 'Режим «Упрощенный»',

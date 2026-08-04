@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Volledig scherm',
   'showcase.detail.exitFullscreen': 'Volledig scherm afsluiten',
   'showcase.detail.pptxPreviewPending': 'Dia\'s converteren voor voorbeeld…',
+  'showcase.detail.officePreviewPending': 'Dia\'s converteren voor voorbeeld…',
   'showcase.detail.docPreviewLoading': 'Document laden…',
   'showcase.detail.docPreviewFailed': 'Kan voorbeeld niet laden. Probeer een nieuw tabblad te openen.',
   'showcase.detail.legacyDocHint': 'Verouderde .doc-bestanden kunnen niet inline worden bekeken. Open of download het bestand, of upload .docx voor een voorbeeld in de browser.',

@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': '클래식 캔버스',
   'settings.language.mindMapCanvasV2': '새 캔버스',
   'settings.language.mindMapCanvasRefreshHint': '전환 후 캔버스 페이지를 새로고침하면 효과가 완전히 적용됩니다',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'UI 버전',
   'settings.version.chinese': '프로페셔널 모드',
   'settings.version.international': '간편 모드',

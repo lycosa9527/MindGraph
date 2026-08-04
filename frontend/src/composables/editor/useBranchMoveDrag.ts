@@ -37,8 +37,9 @@ import { nodeShapeBorderRadius } from '@/utils/nodeShapeStyle'
 
 const DEFAULT_NODE_WIDTH = 120
 const DEFAULT_NODE_HEIGHT = 50
-const LONG_PRESS_MOVE_THRESHOLD_SQ = 15 * 15
-/** Start branch drag after this movement (px) — no need to wait for long-press. */
+/** Touch: allow finger jitter before cancelling the long-press timer. */
+const TOUCH_LONG_PRESS_MOVE_THRESHOLD_SQ = 28 * 28
+/** Start branch drag after this movement (px) — mouse only; no need to wait for long-press. */
 const DRAG_START_THRESHOLD_SQ = 8 * 8
 
 /** Tree map: categories (tree-cat-X) are top-level. */
@@ -420,8 +421,10 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     document.removeEventListener('mousemove', handleDocumentMouseMove, captureOpt)
     document.removeEventListener('touchmove', handleDocumentTouchMove, captureOpt)
     document.removeEventListener('touchend', handleDocumentTouchEnd, captureOpt)
+    document.removeEventListener('touchcancel', handleDocumentTouchCancel, captureOpt)
     document.removeEventListener('mouseup', handleCancelTimer, captureOpt)
     document.removeEventListener('touchend', handleCancelTimer, captureOpt)
+    document.removeEventListener('touchcancel', handleCancelTimer, captureOpt)
     document.removeEventListener('touchmove', handleCancelTouchMove, captureOpt)
     document.removeEventListener('mousemove', handlePreDragMouseMove, captureOpt)
     document.documentElement.removeEventListener('mouseleave', handleMouseLeave)
@@ -486,6 +489,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
   function attachActiveDragListeners(): void {
     document.removeEventListener('mouseup', handleCancelTimer, captureOpt)
     document.removeEventListener('touchend', handleCancelTimer, captureOpt)
+    document.removeEventListener('touchcancel', handleCancelTimer, captureOpt)
     document.removeEventListener('touchmove', handleCancelTouchMove, captureOpt)
     document.removeEventListener('mousemove', handlePreDragMouseMove, captureOpt)
 
@@ -494,6 +498,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     if (touchOrigin) {
       document.addEventListener('touchmove', handleDocumentTouchMove, captureOpt)
       document.addEventListener('touchend', handleDocumentTouchEnd, captureOpt)
+      document.addEventListener('touchcancel', handleDocumentTouchCancel, captureOpt)
     }
     document.documentElement.addEventListener('mouseleave', handleMouseLeave)
     document.addEventListener('keydown', handleEscape)
@@ -575,13 +580,18 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     document.addEventListener('keydown', handleEscape)
   }
 
+  /** Interrupted drag (OS steal / incoming call) — abort, do not await tap-confirm. */
+  function handleDocumentTouchCancel(): void {
+    cleanup()
+  }
+
   function handleCancelTouchMove(e: TouchEvent): void {
     if (!longPressTimer.value || !lastMouseDownPos.value) return
     if (e.touches.length !== 1) return
     const touch = e.touches[0]
     const dx = touch.clientX - lastMouseDownPos.value.clientX
     const dy = touch.clientY - lastMouseDownPos.value.clientY
-    if (dx * dx + dy * dy > LONG_PRESS_MOVE_THRESHOLD_SQ) {
+    if (dx * dx + dy * dy > TOUCH_LONG_PRESS_MOVE_THRESHOLD_SQ) {
       handleCancelTimer()
     }
   }
@@ -661,12 +671,13 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
       lastMouseDownPos.value = { clientX, clientY }
     }
     longPressNodeId.value = nodeId
+    const armMs = fromTouch ? ANIMATION.TOUCH_LONG_PRESS_MS : ANIMATION.LONG_PRESS_MS
     longPressTimer.value = setTimeout(() => {
       longPressTimer.value = null
       if (longPressNodeId.value) {
         beginDragForNode(longPressNodeId.value)
       }
-    }, ANIMATION.LONG_PRESS_MS)
+    }, armMs)
 
     document.addEventListener('mouseup', handleCancelTimer, captureOpt)
     if (!fromTouch) {
@@ -674,6 +685,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     }
     if (fromTouch) {
       document.addEventListener('touchend', handleCancelTimer, captureOpt)
+      document.addEventListener('touchcancel', handleCancelTimer, captureOpt)
       document.addEventListener('touchmove', handleCancelTouchMove, captureOpt)
     }
     return false
@@ -687,6 +699,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
       touchOrigin = false
       document.removeEventListener('mouseup', handleCancelTimer, captureOpt)
       document.removeEventListener('touchend', handleCancelTimer, captureOpt)
+      document.removeEventListener('touchcancel', handleCancelTimer, captureOpt)
       document.removeEventListener('touchmove', handleCancelTouchMove, captureOpt)
       document.removeEventListener('mousemove', handlePreDragMouseMove, captureOpt)
     }

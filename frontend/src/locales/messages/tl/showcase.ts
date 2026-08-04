@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Fullscreen',
   'showcase.detail.exitFullscreen': 'Lumabas sa fullscreen',
   'showcase.detail.pptxPreviewPending': 'Kino-convert ang mga slide para sa preview...',
+  'showcase.detail.officePreviewPending': 'Kino-convert ang mga slide para sa preview...',
   'showcase.detail.docPreviewLoading': 'Nilo-load ang dokumento...',
   'showcase.detail.docPreviewFailed': 'Hindi ma-load ang preview. Subukang magbukas sa isang bagong tab.',
   'showcase.detail.legacyDocHint': 'Ang mga legacy na .doc na file ay hindi maaaring i-preview nang inline. Buksan o i-download ang file, o i-upload ang .docx para sa in-browser na preview.',

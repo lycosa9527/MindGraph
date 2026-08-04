@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Lienzo clásico',
   'settings.language.mindMapCanvasV2': 'Lienzo nuevo',
   'settings.language.mindMapCanvasRefreshHint': 'Actualice la página del lienzo después de cambiar para el efecto completo',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'Versión de la interfaz',
   'settings.version.chinese': 'Modo profesional',
   'settings.version.international': 'Modo simplificado',

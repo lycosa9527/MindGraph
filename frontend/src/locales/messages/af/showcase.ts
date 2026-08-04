@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Volskerm',
   'showcase.detail.exitFullscreen': 'Verlaat volskerm',
   'showcase.detail.pptxPreviewPending': 'Skakels word vir voorskou omgeskakel…',
+  'showcase.detail.officePreviewPending': 'Skakels word vir voorskou omgeskakel…',
   'showcase.detail.docPreviewLoading': 'Laai dokument…',
   'showcase.detail.docPreviewFailed': 'Kon nie voorskou laai nie. Probeer om in \'n nuwe oortjie oop te maak.',
   'showcase.detail.legacyDocHint': 'Verouderde .doc-lêers kan nie inline voorskou word nie. Open of laai die lêer af, of laai .docx op vir voorskou in die blaaier.',

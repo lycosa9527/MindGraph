@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Ekran i plotë',
   'showcase.detail.exitFullscreen': 'Dil nga ekrani i plotë',
   'showcase.detail.pptxPreviewPending': 'Duke konvertuar slajdet për pamje…',
+  'showcase.detail.officePreviewPending': 'Duke konvertuar slajdet për pamje…',
   'showcase.detail.docPreviewLoading': 'Duke ngarkuar dokumentin…',
   'showcase.detail.docPreviewFailed': 'Nuk u ngarkua pamja. Provoni ta hapni në skedë të re.',
   'showcase.detail.legacyDocHint': 'Skedarët e vjetër .doc nuk mund të shfaqen këtu. Hapni ose shkarkoni skedarin, ose ngarkoni .docx për pamje në shfletues.',

@@ -1,10 +1,9 @@
-import { nextTick, onUnmounted, ref, watch, type Ref } from 'vue'
+import { type Ref, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { MINDMAP_UNDERLINE_STROKE_WIDTH } from '@/config/mindMapGeometry'
 
-/** Match `.mind-map-add-overlay__btn` — used to place bottom handle below the underline. */
+/** Match `.mind-map-add-overlay__btn` base size (before e-blackboard scale). */
 const ADD_HANDLE_SIZE = 16
-const ADD_HANDLE_HALF = ADD_HANDLE_SIZE / 2
 /** Screen-space gap between underline bar and bottom + button (before handle radius). */
 const UNDERLINE_BOTTOM_HANDLE_GAP = 10
 
@@ -18,6 +17,8 @@ export function useMindMapDirectionalAddPosition(options: {
   containerRef: Ref<HTMLElement | null>
   selectedNodeId: Ref<string | null>
   enabled: Ref<boolean>
+  /** 1 = default; 2 = e-blackboard (see `MIND_MAP_E_BLACKBOARD_CONTROL_SCALE`). */
+  controlScale?: Ref<number>
 }) {
   const handles = ref<DirectionalAddHandlePosition[]>([])
   const visible = ref(false)
@@ -47,6 +48,8 @@ export function useMindMapDirectionalAddPosition(options: {
       return
     }
 
+    const scale = options.controlScale?.value ?? 1
+    const addHandleHalf = (ADD_HANDLE_SIZE * scale) / 2
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
     const isUnderline = nodeEl.querySelector('.mind-map-underline-node') != null
@@ -58,9 +61,7 @@ export function useMindMapDirectionalAddPosition(options: {
         ? rect.bottom - MINDMAP_UNDERLINE_STROKE_WIDTH / 2
         : cy
     const bottomTop =
-      lineRect != null
-        ? lineRect.bottom + UNDERLINE_BOTTOM_HANDLE_GAP + ADD_HANDLE_HALF
-        : rect.bottom
+      lineRect != null ? lineRect.bottom + UNDERLINE_BOTTOM_HANDLE_GAP + addHandleHalf : rect.bottom
     const isTopic = nodeId === 'topic'
 
     if (isTopic) {
@@ -87,7 +88,12 @@ export function useMindMapDirectionalAddPosition(options: {
   }
 
   watch(
-    () => [options.selectedNodeId.value, options.enabled.value] as const,
+    () =>
+      [
+        options.selectedNodeId.value,
+        options.enabled.value,
+        options.controlScale?.value ?? 1,
+      ] as const,
     scheduleMeasure,
     { immediate: true }
   )

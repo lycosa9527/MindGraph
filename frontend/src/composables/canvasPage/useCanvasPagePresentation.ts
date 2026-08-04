@@ -10,7 +10,6 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { ANIMATION } from '@/config'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
 import { PRESENTATION_Z } from '@/config/uiConfig'
-import { useDiagramStore } from '@/stores'
 import {
   PRESENTATION_POINTER_SCALE_STEP,
   usePresentationPointerStore,
@@ -32,7 +31,6 @@ const SPOTLIGHT_OUTER_RADIUS_PX = 195
 const LASER_CURSOR_BASE_PX = 12
 
 export function useCanvasPagePresentation() {
-  const diagramStore = useDiagramStore()
   const canvasZoom = ref<number | null>(null)
   const handToolActive = ref(false)
   /** Bottom-bar hand state saved while the presentation rail owns pan (zoom hand is hidden). */
@@ -135,10 +133,25 @@ export function useCanvasPagePresentation() {
 
   const laserX = ref(0)
   const laserY = ref(0)
+  /** True while the pointer is over the presentation tool rail (suspend spotlight). */
+  const pointerOverPresentationRail = ref(false)
 
-  function handleLaserMouseMove(event: MouseEvent) {
+  /**
+   * Track laser/spotlight from mouse, pen, and touch on desktop canvas.
+   * (Mobile canvas strips presentation; this is for touch-capable desktop devices.)
+   */
+  function handleLaserPointerMove(event: PointerEvent) {
+    if (!event.isPrimary) return
     laserX.value = event.clientX
     laserY.value = event.clientY
+    const target = event.target
+    if (target instanceof Element) {
+      pointerOverPresentationRail.value = Boolean(
+        target.closest('.mind-map-presentation-toolbar, .presentation-side-toolbar')
+      )
+      return
+    }
+    pointerOverPresentationRail.value = false
   }
 
   const spotlightStyle = computed(() => {
@@ -223,7 +236,9 @@ export function useCanvasPagePresentation() {
 
   watch(presentationRailOpen, (active) => {
     if (active) {
-      window.addEventListener('mousemove', handleLaserMouseMove)
+      // pointerdown places the laser under a finger/stylus immediately; pointermove tracks it.
+      window.addEventListener('pointerdown', handleLaserPointerMove)
+      window.addEventListener('pointermove', handleLaserPointerMove)
       window.addEventListener('keydown', handlePresentationKeyboardShortcuts, true)
       presentationTool.value = 'laser'
       timerRunning.value = false
@@ -232,8 +247,10 @@ export function useCanvasPagePresentation() {
       timerTotalSeconds.value = TIMER_DEFAULT_SECONDS
       timerRemainingSeconds.value = TIMER_DEFAULT_SECONDS
     } else {
-      window.removeEventListener('mousemove', handleLaserMouseMove)
+      window.removeEventListener('pointerdown', handleLaserPointerMove)
+      window.removeEventListener('pointermove', handleLaserPointerMove)
       window.removeEventListener('keydown', handlePresentationKeyboardShortcuts, true)
+      pointerOverPresentationRail.value = false
       presentationHighlightStrokes.value = []
       presentationTool.value = 'laser'
       presentationHighlighterColor.value = DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR
@@ -284,7 +301,9 @@ export function useCanvasPagePresentation() {
   function handleStartPresentation() {
     const wasOpen = presentationRailOpen.value
     presentationRailOpen.value = !presentationRailOpen.value
-    if (wasOpen && diagramStore.type !== 'concept_map') {
+    // Zoom-fit when leaving so the diagram recovers after the rail / fullscreen chrome.
+    // Enter fit is scheduled from CanvasPage after layout (and fullscreen) settles.
+    if (wasOpen) {
       nextTick().then(() => {
         setTimeout(emitFitToCanvas, ANIMATION.FIT_VIEWPORT_DELAY)
       })
@@ -294,7 +313,8 @@ export function useCanvasPagePresentation() {
   function handleModelChange(_model: string) {}
 
   onUnmounted(() => {
-    window.removeEventListener('mousemove', handleLaserMouseMove)
+    window.removeEventListener('pointerdown', handleLaserPointerMove)
+    window.removeEventListener('pointermove', handleLaserPointerMove)
     window.removeEventListener('keydown', handlePresentationKeyboardShortcuts, true)
     clearPresentationTimerTick()
   })
@@ -332,6 +352,7 @@ export function useCanvasPagePresentation() {
     onTimerSetMinutes,
     laserCursorStyle,
     spotlightStyle,
+    pointerOverPresentationRail,
     handleZoomChange,
     handleZoomIn,
     handleZoomOut,

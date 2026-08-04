@@ -256,6 +256,11 @@ export default {
   'settings.language.mindMapCanvasLegacy': 'Klassik kətan',
   'settings.language.mindMapCanvasV2': 'Yeni kətan',
   'settings.language.mindMapCanvasRefreshHint': 'Tam effekt üçün dəyişdikdən sonra kətan səhifəsini yeniləyin',
+  'settings.language.eBlackboardOptimize': 'E-blackboard optimization',
+  'settings.language.eBlackboardOff': 'Off',
+  'settings.language.eBlackboardOn': 'On',
+  'settings.language.eBlackboardHint':
+    'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
   'settings.version.title': 'UI versiyası',
   'settings.version.chinese': 'Peşəkar rejim',
   'settings.version.international': 'Sadələşdirilmiş rejim',

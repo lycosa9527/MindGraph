@@ -12,6 +12,7 @@ import {
   computeMindMapUnderlineBoxMetrics,
 } from '@/config/mindMapGeometry'
 import type { NodeStyle } from '@/types'
+import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 import {
   diagramLabelLikelyNeedsRenderedMeasure,
@@ -21,7 +22,10 @@ import {
 } from './textMeasurement'
 import { computeScriptAwareMaxWidth } from './textMeasurementFallback'
 
-export type MindMapMeasureTypography = Pick<NodeStyle, 'fontSize' | 'fontWeight' | 'fontFamily'>
+export type MindMapMeasureTypography = Pick<
+  NodeStyle,
+  'fontSize' | 'fontWeight' | 'fontFamily' | 'nodeShape'
+>
 
 function resolveBranchFontSize(
   nodeId: string | undefined,
@@ -83,14 +87,24 @@ export function hasCustomMindMapTypography(typography?: MindMapMeasureTypography
   return Boolean(typography?.fontSize ?? typography?.fontFamily ?? typography?.fontWeight)
 }
 
+export function resolveShapeFromMeasureStyle(
+  typography?: MindMapMeasureTypography,
+  shape?: NodeShape | null
+): NodeShape {
+  return shape ?? typography?.nodeShape ?? 'rounded'
+}
+
 export function estimateNodeWidthWithTypography(
   text: string,
   nodeId?: string,
-  typography?: MindMapMeasureTypography
+  typography?: MindMapMeasureTypography,
+  shape?: NodeShape | null
 ): number {
   if (!text) return MIND_MAP_GEOMETRY.minWidth
   const branchFontSize = resolveBranchFontSize(nodeId, typography)
-  const nodeHorizontalExtra = mindMapNodeHorizontalExtra('rounded')
+  const nodeHorizontalExtra = mindMapNodeHorizontalExtra(
+    resolveShapeFromMeasureStyle(typography, shape)
+  )
   const minNodeWidth = MIND_MAP_GEOMETRY.minWidth
   const weight = resolveMeasureFontWeight(typography, 'normal')
 
@@ -196,12 +210,14 @@ export function measureMindMapUnderlineBoxMetricsWithTypography(
 
 export function estimateTopicNodeWidthWithTypography(
   text: string,
-  typography?: MindMapMeasureTypography
+  typography?: MindMapMeasureTypography,
+  shape?: NodeShape | null
 ): number {
   if (!text) return MIND_MAP_GEOMETRY.minWidth
   const topicFontSize = resolveTopicFontSize(typography)
-  const topicPaddingX = MIND_MAP_GEOMETRY.paddingX * 2
-  const topicBorderX = MIND_MAP_GEOMETRY.borderWidth * 2
+  const topicHorizontalExtra = mindMapNodeHorizontalExtra(
+    resolveShapeFromMeasureStyle(typography, shape)
+  )
   const minTopicWidth = MIND_MAP_GEOMETRY.minWidth
   const fontWeight = resolveMeasureFontWeight(typography, 'bold')
 
@@ -212,7 +228,7 @@ export function estimateTopicNodeWidthWithTypography(
     const rawWidth = cjkCount * 19 + otherCount * 11
     return Math.max(
       minTopicWidth,
-      Math.min(rawWidth, TOPIC_BASE_MAX_TEXT_WIDTH) + topicPaddingX + topicBorderX
+      Math.min(rawWidth, TOPIC_BASE_MAX_TEXT_WIDTH) + topicHorizontalExtra
     )
   }
 
@@ -220,7 +236,7 @@ export function estimateTopicNodeWidthWithTypography(
   const effectiveTextWidth =
     fullWidth > TOPIC_BASE_MAX_TEXT_WIDTH ? TOPIC_BASE_MAX_TEXT_WIDTH : fullWidth
 
-  return Math.max(minTopicWidth, effectiveTextWidth + topicPaddingX + topicBorderX)
+  return Math.max(minTopicWidth, effectiveTextWidth + topicHorizontalExtra)
 }
 
 export function estimateTopicNodeHeightWithTypography(

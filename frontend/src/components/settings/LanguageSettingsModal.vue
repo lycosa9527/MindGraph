@@ -1,14 +1,14 @@
 <script setup lang="ts">
 /**
- * Language & prompt language settings (interface vs LLM prompt language).
+ * UI settings: interface / prompt language, mind-map canvas mode, e-blackboard chrome.
  * Shell: light Swiss stone (user settings).
  */
 import { computed, ref, watch } from 'vue'
 
 import { ElCheckbox } from 'element-plus'
 
-import { useLanguage } from '@/composables/core/useLanguage'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import {
@@ -20,9 +20,8 @@ import {
 import { useAuthStore } from '@/stores'
 import type { Language, MindMapCanvasMode, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
-import { MULTISCRIPT_SANS_STACK } from '@/utils/diagramNodeFontStack'
-
 import '@/styles/settings-language-swiss.css'
+import { MULTISCRIPT_SANS_STACK } from '@/utils/diagramNodeFontStack'
 
 const visible = defineModel<boolean>({ required: true })
 
@@ -35,6 +34,7 @@ const { featureMindmapV2Canvas } = useFeatureFlags()
 const draftUi = ref<Language>(uiStore.language)
 const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
 const draftMindMapCanvasMode = ref<MindMapCanvasMode>(uiStore.mindMapCanvasMode)
+const draftEBlackboardOptimize = ref(uiStore.eBlackboardOptimize)
 const matchPromptToInterface = ref(uiStore.matchPromptToUi)
 
 const allowSimplifiedChinesePicker = computed(() => uiStore.languagePolicyAllowZh)
@@ -120,6 +120,7 @@ watch(visible, (v) => {
     draftUi.value = ui
     draftPrompt.value = pr
     draftMindMapCanvasMode.value = uiStore.mindMapCanvasMode
+    draftEBlackboardOptimize.value = uiStore.eBlackboardOptimize
     matchPromptToInterface.value = uiStore.matchPromptToUi
     void ensureFontsForLanguageCode(draftPrompt.value)
     void ensureFontsForLanguageCode(draftUi.value)
@@ -178,6 +179,7 @@ async function save(): Promise<void> {
   if (featureMindmapV2Canvas.value) {
     const prevMindMapMode = uiStore.mindMapCanvasMode
     uiStore.setMindMapCanvasMode(draftMindMapCanvasMode.value)
+    uiStore.setEBlackboardOptimize(draftEBlackboardOptimize.value)
     if (prevMindMapMode !== draftMindMapCanvasMode.value) {
       notify.info(t('settings.language.mindMapCanvasRefreshHint'))
     }
@@ -206,7 +208,8 @@ function onClose(): void {
         <span
           class="language-settings-swiss__glyph"
           aria-hidden="true"
-        >◇</span>
+          >◇</span
+        >
         <span class="language-settings-swiss__title">{{ t('settings.language.title') }}</span>
         <span
           class="language-settings-swiss__divider"
@@ -330,6 +333,39 @@ function onClose(): void {
         </div>
         <p class="language-settings-swiss__hint">
           {{ t('settings.language.mindMapCanvasRefreshHint') }}
+        </p>
+
+        <div class="language-settings-swiss__kicker language-settings-swiss__kicker--spaced">
+          <span>{{ t('settings.language.eBlackboardOptimize') }}</span>
+        </div>
+        <div
+          class="language-settings-canvas-segmented"
+          role="radiogroup"
+          :aria-label="t('settings.language.eBlackboardOptimize')"
+        >
+          <button
+            type="button"
+            role="radio"
+            class="language-settings-canvas-segment"
+            :class="{ 'is-active': !draftEBlackboardOptimize }"
+            :aria-checked="!draftEBlackboardOptimize"
+            @click="draftEBlackboardOptimize = false"
+          >
+            {{ t('settings.language.eBlackboardOff') }}
+          </button>
+          <button
+            type="button"
+            role="radio"
+            class="language-settings-canvas-segment"
+            :class="{ 'is-active': draftEBlackboardOptimize }"
+            :aria-checked="draftEBlackboardOptimize"
+            @click="draftEBlackboardOptimize = true"
+          >
+            {{ t('settings.language.eBlackboardOn') }}
+          </button>
+        </div>
+        <p class="language-settings-swiss__hint">
+          {{ t('settings.language.eBlackboardHint') }}
         </p>
       </section>
     </div>

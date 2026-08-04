@@ -160,7 +160,7 @@ async def _prepare_teaching_copy_document(
         temp_path = Path(tmp.name)
 
     try:
-        document_text = extract_document_text(str(temp_path))
+        document_text = await asyncio.to_thread(extract_document_text, str(temp_path))
     except (ValueError, *_EXTRACT_IO_ERRORS) as exc:
         temp_path.unlink(missing_ok=True)
         _raise_extract_http(exc)
@@ -408,7 +408,11 @@ async def _prepare_diagram_copy_text_async(
         )
 
     try:
-        return extract_diagram_texts(body.specs, body.diagram_type or "mind_map")
+        return await asyncio.to_thread(
+            extract_diagram_texts,
+            body.specs,
+            body.diagram_type or "mind_map",
+        )
     except ValueError as exc:
         if str(exc) == "no_text_extracted":
             raise HTTPException(

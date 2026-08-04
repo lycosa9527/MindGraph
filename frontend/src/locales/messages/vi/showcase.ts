@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Toàn màn hình',
   'showcase.detail.exitFullscreen': 'Thoát toàn màn hình',
   'showcase.detail.pptxPreviewPending': 'Đang chuyển đổi trang trình bày để xem trước…',
+  'showcase.detail.officePreviewPending': 'Đang chuyển đổi trang trình bày để xem trước…',
   'showcase.detail.docPreviewLoading': 'Đang tải tài liệu…',
   'showcase.detail.docPreviewFailed': 'Không thể tải bản xem trước. Hãy thử mở trong một tab mới.',
   'showcase.detail.legacyDocHint': 'Không thể xem trước các tệp .doc cũ. Mở hoặc tải xuống tệp hoặc tải lên .docx để xem trước trong trình duyệt.',

@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Tam ekran',
   'showcase.detail.exitFullscreen': 'Tam ekrandan çık',
   'showcase.detail.pptxPreviewPending': 'Önizleme için slaytlar dönüştürülüyor…',
+  'showcase.detail.officePreviewPending': 'Önizleme için slaytlar dönüştürülüyor…',
   'showcase.detail.docPreviewLoading': 'Belge yükleniyor…',
   'showcase.detail.docPreviewFailed': 'Önizleme yüklenemedi. Yeni sekmede açmayı deneyin.',
   'showcase.detail.legacyDocHint': 'Eski .doc dosyaları satır içi önizlenemez. Dosyayı açın veya indirin ya da tarayıcı önizlemesi için .docx yükleyin.',

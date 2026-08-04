@@ -152,12 +152,26 @@ export const DEFAULT_HORIZONTAL_SPACING = 180
 export const DEFAULT_VERTICAL_SPACING = 60
 
 /** Fixed vertical gap between the bottom edge of one sibling and the top edge
- *  of the next sibling within the same mind map branch. */
+ *  of the next sibling within the same mind map branch.
+ *  Box↔box default; v2 adaptive packing may use compact values for underlines. */
 export const MINDMAP_SIBLING_GAP = 12
 
 /** Vertical gap between top-level branches in a mind map.
- *  Larger than sibling spacing to visually separate independent branches. */
+ *  Larger than sibling spacing to visually separate independent branches.
+ *  Box↔box default; v2 adaptive packing may use compact values for underlines. */
 export const DEFAULT_MINDMAP_BRANCH_GAP = 28
+
+/** v2: underline↔underline sibling gap (edge-to-edge AABB). */
+export const MINDMAP_UNDERLINE_SIBLING_GAP = 6
+
+/** v2: underline↔box (or box↔underline) sibling gap. */
+export const MINDMAP_MIXED_SIBLING_GAP = 8
+
+/** v2: underline↔underline L1 / cross-branch gap. */
+export const MINDMAP_UNDERLINE_BRANCH_GAP = 14
+
+/** v2: underline↔box L1 / cross-branch gap. */
+export const MINDMAP_MIXED_BRANCH_GAP = 20
 
 /** Mindmap column width (rank separation) - horizontal distance between depth levels. */
 export const DEFAULT_MINDMAP_RANK_SEPARATION = 52

@@ -220,6 +220,12 @@
   inset: 0;
   pointer-events: none;
   /* background is set via inline :style (dynamic gradient position) */
+  transition: opacity 0.18s ease;
+}
+
+/* Hide dimming while the pointer is on the tool rail */
+.spotlight-overlay.is-suspended {
+  opacity: 0;
 }
 
 /* Soft fade so the overlay doesn't pop in harshly */
@@ -231,4 +237,12 @@
 .spotlight-fade-enter-from,
 .spotlight-fade-leave-to {
   opacity: 0;
+}
+
+/* Spotlight + rail hover: restore system cursor on the rail */
+.presentation-active.presentation-spotlight-rail-hover .mind-map-presentation-toolbar,
+.presentation-active.presentation-spotlight-rail-hover .mind-map-presentation-toolbar *,
+.presentation-active.presentation-spotlight-rail-hover .presentation-side-toolbar,
+.presentation-active.presentation-spotlight-rail-hover .presentation-side-toolbar * {
+  cursor: auto !important;
 }

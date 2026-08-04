@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Fullscreen',
   'showcase.detail.exitFullscreen': 'Exit fullscreen',
   'showcase.detail.pptxPreviewPending': 'Converting slides for preview…',
+  'showcase.detail.officePreviewPending': 'Converting slides for preview…',
   'showcase.detail.docPreviewLoading': 'Loading document…',
   'showcase.detail.docPreviewFailed': 'Could not load preview. Try opening in a new tab.',
   'showcase.detail.legacyDocHint': 'Legacy .doc files cannot be previewed inline. Open or download the file, or upload .docx for in-browser preview.',

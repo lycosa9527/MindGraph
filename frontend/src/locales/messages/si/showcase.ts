@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'පූර්ණ තිර',
   'showcase.detail.exitFullscreen': 'පූර්ණ තිරයෙන් පිට',
   'showcase.detail.pptxPreviewPending': 'preview සඳහා slides පරිවර්තනය වෙමින්…',
+  'showcase.detail.officePreviewPending': 'preview සඳහා slides පරිවර්තනය වෙමින්…',
   'showcase.detail.docPreviewLoading': 'ලේඛනය පූරණය වෙමින්…',
   'showcase.detail.docPreviewFailed': 'preview පූරණය කළ නොහැක. නව tab එකක විවෘත කිරීමට උත්සාහ කරන්න.',
   'showcase.detail.legacyDocHint': 'Legacy .doc ගොනු පේළිගතව පෙරදසුන් කළ නොහැක. ගොනුව විවෘත කරන්න හෝ බාගන්න, නැතහොත් බ්‍රවුසරයේ පෙරදසුන සඳහා .docx උඩුගත කරන්න.',

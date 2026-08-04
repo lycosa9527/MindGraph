@@ -12,6 +12,7 @@ import {
 } from '@/config/mindMapGeometry'
 import { MIND_MAP_LEGACY_GEOMETRY } from '@/config/mindMapLegacyGeometry'
 import type { MindMapCanvasMode } from '@/stores/ui'
+import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 import {
   diagramLabelLikelyNeedsRenderedMeasure,
@@ -20,6 +21,11 @@ import {
   measureTextWidth,
 } from './textMeasurement'
 import { computeScriptAwareMaxWidth } from './textMeasurementFallback'
+
+/** Layout estimate shape — oval uses wider horizontal padding than rounded/rectangle. */
+export function resolveMindMapMeasureShape(shape?: NodeShape | null): NodeShape {
+  return shape ?? 'rounded'
+}
 
 const BRANCH_BASE_MAX_TEXT_WIDTH = 200
 const BALANCE_PADDING = 5
@@ -48,7 +54,8 @@ function resolveCanvasMode(mode?: MindMapCanvasMode): MindMapCanvasMode {
 export function estimateNodeWidthForCanvasMode(
   text: string,
   nodeId?: string,
-  mode?: MindMapCanvasMode
+  mode?: MindMapCanvasMode,
+  shape?: NodeShape | null
 ): number {
   const canvasMode = resolveCanvasMode(mode)
   if (canvasMode === 'legacy') {
@@ -71,7 +78,7 @@ export function estimateNodeWidthForCanvasMode(
 
   if (!text) return MIND_MAP_GEOMETRY.minWidth
   const branchFontSize = mindMapBranchFontSize(nodeId)
-  const nodeHorizontalExtra = mindMapNodeHorizontalExtra('rounded')
+  const nodeHorizontalExtra = mindMapNodeHorizontalExtra(resolveMindMapMeasureShape(shape))
   const minNodeWidth = MIND_MAP_GEOMETRY.minWidth
 
   if (typeof document === 'undefined') {
@@ -213,7 +220,8 @@ export function measureBranchNodeUnderlineHeight(text: string, nodeId?: string):
 
 export function estimateTopicNodeWidthForCanvasMode(
   text: string,
-  mode?: MindMapCanvasMode
+  mode?: MindMapCanvasMode,
+  shape?: NodeShape | null
 ): number {
   const canvasMode = resolveCanvasMode(mode)
   if (canvasMode === 'legacy') {
@@ -244,8 +252,7 @@ export function estimateTopicNodeWidthForCanvasMode(
 
   if (!text) return MIND_MAP_GEOMETRY.minWidth
   const topicFontSize = MIND_MAP_GEOMETRY.topicFontSize
-  const topicPaddingX = MIND_MAP_GEOMETRY.paddingX * 2
-  const topicBorderX = MIND_MAP_GEOMETRY.borderWidth * 2
+  const topicHorizontalExtra = mindMapNodeHorizontalExtra(resolveMindMapMeasureShape(shape))
   const minTopicWidth = MIND_MAP_GEOMETRY.minWidth
 
   if (typeof document === 'undefined') {
@@ -255,7 +262,7 @@ export function estimateTopicNodeWidthForCanvasMode(
     const rawWidth = cjkCount * 19 + otherCount * 11
     return Math.max(
       minTopicWidth,
-      Math.min(rawWidth, TOPIC_BASE_MAX_TEXT_WIDTH) + topicPaddingX + topicBorderX
+      Math.min(rawWidth, TOPIC_BASE_MAX_TEXT_WIDTH) + topicHorizontalExtra
     )
   }
 
@@ -267,7 +274,7 @@ export function estimateTopicNodeWidthForCanvasMode(
     effectiveTextWidth = Math.min(effectiveTextWidth, TOPIC_BASE_MAX_TEXT_WIDTH)
   }
 
-  return Math.max(minTopicWidth, effectiveTextWidth + topicPaddingX + topicBorderX)
+  return Math.max(minTopicWidth, effectiveTextWidth + topicHorizontalExtra)
 }
 
 export function estimateTopicNodeHeightForCanvasMode(

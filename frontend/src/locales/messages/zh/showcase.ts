@@ -218,10 +218,11 @@ export default {
   'showcase.detail.enterFullscreen': '全屏阅读',
   'showcase.detail.exitFullscreen': '退出全屏',
   'showcase.detail.pptxPreviewPending': '正在转换文档以供预览…',
+  'showcase.detail.officePreviewPending': '正在转换文档以供预览…',
   'showcase.detail.docPreviewLoading': '正在加载文档…',
   'showcase.detail.docPreviewFailed': '文档预览加载失败，请尝试在新标签页打开',
   'showcase.detail.legacyDocHint':
-    '该 .doc 文件仍在转换预览，或转换暂不可用。请下载/新标签页打开，或重新上传以重新生成预览。',
+    '该 Office 文档预览转换暂不可用。请下载/新标签页打开，或重新上传以重新生成预览。',
   'showcase.detail.noDocument': '暂无文档预览',
   'showcase.detail.noDiagramPreview': '暂无图示预览',
   'showcase.detail.diagramPreviewLoading': '正在加载图示…',

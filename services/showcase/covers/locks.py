@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 _LOCK_PREFIX = "showcase:cover:"
 _ENQUEUE_PREFIX = "showcase:cover:enq:"
-_LOCK_TTL_SECONDS = 300
+# Slightly above Celery hard time limit (210s) so lost workers unblock promptly.
+_LOCK_TTL_SECONDS = 240
 # Coalesce GET-post + cover-stream + EventSource reconnect enqueue spam.
 _ENQUEUE_TTL_SECONDS = 90
 _RELEASE_LUA = """

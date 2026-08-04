@@ -2,12 +2,12 @@
  * In-place mind-map sibling insert (v2): mint one id + edge, place Y, shift below.
  * Connection-list order under a parent is the sibling SoT — no full spec reload.
  */
+import { BRANCH_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import {
-  BRANCH_NODE_HEIGHT,
-  DEFAULT_MINDMAP_BRANCH_GAP,
-  DEFAULT_NODE_WIDTH,
-  MINDMAP_SIBLING_GAP,
-} from '@/composables/diagrams/layoutConfig'
+  mindMapAdaptiveBranchGap,
+  mindMapAdaptiveSiblingGap,
+} from '@/config/mindMapAdaptiveGaps'
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
 import { MINDMAP_NODE_UID_DATA_KEY, readMindMapNodeUid } from '@/utils/mindMapNodeUid'
@@ -16,6 +16,7 @@ import {
   applyMindMapIncrementalTopLevelSiblingLayout,
   settleMindMapPreserveYLayout,
 } from '@/utils/mindMapSideStacking'
+import type { NodeShape } from '@/utils/nodeShapeStyle'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 import { buildMindMapChildrenMapByConnectionOrder } from './mindMapStylePreservation'
@@ -365,6 +366,17 @@ function spliceParentConnections(
   return result
 }
 
+function shapeOfNode(
+  node: DiagramNode | undefined,
+  diagramStyleId?: string | null
+): NodeShape {
+  if (!node) return 'rounded'
+  return resolveMindMapNodeShape(
+    { id: node.id, type: node.type ?? 'branch', style: node.style },
+    diagramStyleId
+  )
+}
+
 function applyInPlaceYLayout(
   nodes: DiagramNode[],
   connections: Connection[],
@@ -374,6 +386,7 @@ function applyInPlaceYLayout(
     isTopLevel: boolean
     side: 'l' | 'r' | null
     heights?: Record<string, number>
+    diagramStyleId?: string | null
   }
 ): DiagramNode[] {
   const childrenMap = buildMindMapChildrenMapByConnectionOrder(connections)
@@ -381,7 +394,16 @@ function applyInPlaceYLayout(
   const newNode = nodeById.get(options.newNodeId)
   if (!newNode?.position) return nodes
 
-  const gap = options.isTopLevel ? DEFAULT_MINDMAP_BRANCH_GAP : MINDMAP_SIBLING_GAP
+  const newShape = shapeOfNode(newNode, options.diagramStyleId)
+  const gapFor = (neighborId: string, neighborIsUpper: boolean): number => {
+    const neighbor = nodeById.get(neighborId)
+    const neighborShape = shapeOfNode(neighbor, options.diagramStyleId)
+    const upper = neighborIsUpper ? neighborShape : newShape
+    const lower = neighborIsUpper ? newShape : neighborShape
+    return options.isTopLevel
+      ? mindMapAdaptiveBranchGap(upper, lower)
+      : mindMapAdaptiveSiblingGap(upper, lower)
+  }
   const newH = nodeLayoutHeight(newNode, options.heights)
   // L1: only same-side roots participate in vertical stack / shift.
   const siblings = siblingIdsForInsert(
@@ -401,6 +423,7 @@ function applyInPlaceYLayout(
   if (prevId) {
     const prevBounds = subtreeVerticalBounds(prevId, nodeById, childrenMap, options.heights)
     if (prevBounds) {
+      const gap = gapFor(prevId, true)
       placedY = prevBounds.maxY + gap
       shiftDelta = newH + gap
     }
@@ -408,6 +431,7 @@ function applyInPlaceYLayout(
     // Insert at start: occupy next's top and push next (and below) down.
     const nextBounds = subtreeVerticalBounds(nextId, nodeById, childrenMap, options.heights)
     if (nextBounds) {
+      const gap = gapFor(nextId, false)
       placedY = nextBounds.minY
       shiftDelta = newH + gap
     }
@@ -583,6 +607,7 @@ export function insertMindMapSiblingInPlace(
         insert: insertDir,
         topicY,
         nodeHeights: options.nodeHeights,
+        diagramStyleId: options.diagramStyleId,
       }
     )
   } else {
@@ -592,6 +617,7 @@ export function insertMindMapSiblingInPlace(
       isTopLevel: false,
       side,
       heights: options.nodeHeights,
+      diagramStyleId: options.diagramStyleId,
     })
     // First paint: center fans + separate overlapping sibling packs.
     nextNodes = settleMindMapPreserveYLayout(

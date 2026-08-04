@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Vollbild',
   'showcase.detail.exitFullscreen': 'Vollbild beenden',
   'showcase.detail.pptxPreviewPending': 'Folien werden für die Vorschau konvertiert …',
+  'showcase.detail.officePreviewPending': 'Folien werden für die Vorschau konvertiert …',
   'showcase.detail.docPreviewLoading': 'Dokument wird geladen …',
   'showcase.detail.docPreviewFailed': 'Vorschau konnte nicht geladen werden. Versuchen Sie, in einem neuen Tab zu öffnen.',
   'showcase.detail.legacyDocHint': 'Legacy-.doc-Dateien können nicht inline angezeigt werden. Öffnen oder laden Sie die Datei herunter, oder laden Sie .docx für die Browser-Vorschau hoch.',

@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Layar penuh',
   'showcase.detail.exitFullscreen': 'Keluar dari layar penuh',
   'showcase.detail.pptxPreviewPending': 'Mengonversi slide untuk pratinjau…',
+  'showcase.detail.officePreviewPending': 'Mengonversi slide untuk pratinjau…',
   'showcase.detail.docPreviewLoading': 'Memuat dokumen…',
   'showcase.detail.docPreviewFailed': 'Tidak boleh memuat pratinjau. Coba buka di tab baru.',
   'showcase.detail.legacyDocHint': 'Fail .doc lama tidak boleh dipratonton secara sebaris. Buka atau muat turun fail, atau muat naik .docx untuk pratonton dalam pelayar.',

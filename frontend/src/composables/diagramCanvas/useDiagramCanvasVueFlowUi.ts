@@ -15,6 +15,8 @@ export interface UseDiagramCanvasVueFlowUiOptions {
   presentationPointerEditMode: Ref<boolean>
   presentationHandPanMode: Ref<boolean>
   panOnDragButtons: Ref<number[] | null | undefined>
+  /** Desktop e-blackboard: finger pan/pinch without taking over mouse VF pan. */
+  enableTouchPanPinch: Ref<boolean>
   presentationTool: Ref<PresentationToolId>
   presentationHighlighterColor: Ref<string>
   presentationPenColor: Ref<string>
@@ -43,6 +45,7 @@ export function useDiagramCanvasVueFlowUi(
     presentationPointerEditMode,
     presentationHandPanMode,
     panOnDragButtons,
+    enableTouchPanPinch,
     presentationTool,
     presentationHighlighterColor,
     presentationPenColor,
@@ -69,14 +72,17 @@ export function useDiagramCanvasVueFlowUi(
   )
 
   /**
-   * MobileCanvasPage passes panOnDragButtons and mounts capture-phase touch pan/pinch.
-   * Those handlers own 1-finger pan and 2-finger zoom; Vue Flow must not start rubber-band
-   * select (desktop new-canvas pointer mode) on the same pointer stream.
+   * MobileCanvasPage passes panOnDragButtons — full ownership of pan (VF primary pan off).
+   * Desktop e-blackboard uses enableTouchPanPinch — TouchEvents pan/pinch, mouse keeps VF pan.
    */
-  const mobileTouchGesturesActive = computed(() => {
+  const mobilePageTouchGesturesActive = computed(() => {
     const buttons = panOnDragButtons.value
     return Array.isArray(buttons) && buttons.length > 0
   })
+
+  const touchPanPinchActive = computed(
+    () => mobilePageTouchGesturesActive.value || enableTouchPanPinch.value
+  )
 
   const effectivePanOnDrag = computed((): number[] | boolean => {
     if (presentationHandPanMode.value) {
@@ -91,10 +97,11 @@ export function useDiagramCanvasVueFlowUi(
     if (presentationStrokeToolActive.value) {
       return false
     }
-    // Mobile: custom touch handlers own pan; keep VF from competing on button 0.
-    if (mobileTouchGesturesActive.value) {
+    // Phone mobile page: custom touch owns pan; disable VF button-0 pan entirely.
+    if (mobilePageTouchGesturesActive.value) {
       return false
     }
+    // Desktop e-blackboard: keep middle-button (and hand-tool) mouse pan.
     return [1]
   })
 
@@ -122,8 +129,8 @@ export function useDiagramCanvasVueFlowUi(
 
   const selectNodesOnDrag = computed(() => {
     if (learningSheetPickActive.value) return false
-    // Mobile touch pan/pinch — never start always-on marquee (desktop v2 pointer stays on).
-    if (mobileTouchGesturesActive.value) return false
+    // Finger pan/pinch (mobile page or e-blackboard) — never start rubber-band on touch.
+    if (touchPanPinchActive.value) return false
     if (presentationStrokeToolActive.value) return false
     if (presentationPointerEditMode.value) return true
     if (presentationDiagramEditLocked.value) return false

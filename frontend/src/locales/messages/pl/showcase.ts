@@ -201,6 +201,7 @@ export default {
   'showcase.detail.enterFullscreen': 'Pełny ekran',
   'showcase.detail.exitFullscreen': 'Wyjdź z pełnego ekranu',
   'showcase.detail.pptxPreviewPending': 'Konwertowanie slajdów do podglądu…',
+  'showcase.detail.officePreviewPending': 'Konwertowanie slajdów do podglądu…',
   'showcase.detail.docPreviewLoading': 'Ładowanie dokumentu…',
   'showcase.detail.docPreviewFailed': 'Nie udało się wczytać podglądu. Spróbuj otworzyć w nowej karcie.',
   'showcase.detail.legacyDocHint': 'Starsze pliki .doc nie mogą być podglądane w linii. Otwórz lub pobierz plik albo prześlij .docx do podglądu w przeglądarce.',

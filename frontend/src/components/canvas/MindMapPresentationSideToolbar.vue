@@ -10,10 +10,14 @@ import { useLanguage } from '@/composables'
 import { resolvePresentationTeleportTarget } from '@/composables/presentation/presentationDiagramEdit'
 import {
   PRESENTATION_LASER_SIZE_OPTIONS,
-  PRESENTATION_LASER_SIZE_SCALE,
   type PresentationLaserSize,
   laserSizeFromScale,
 } from '@/config/presentationLaser'
+import {
+  PRESENTATION_SPOTLIGHT_SIZE_OPTIONS,
+  type PresentationSpotlightSize,
+  spotlightSizeFromScale,
+} from '@/config/presentationSpotlight'
 import {
   PRESENTATION_BOARD_COLORS_TOOLBAR,
   type PresentationBoardColorId,
@@ -34,6 +38,7 @@ const props = defineProps<{
   colorId: PresentationBoardColorId
   thickness: PresentationBoardThickness
   laserScale: number
+  spotlightScale: number
   highlighterScale: number
   highlighterColorIndex: number
   strokeEraserActive: boolean
@@ -45,6 +50,7 @@ const emit = defineEmits<{
   (e: 'selectColor', id: PresentationBoardColorId): void
   (e: 'selectThickness', value: PresentationBoardThickness): void
   (e: 'selectLaserSize', value: PresentationLaserSize): void
+  (e: 'selectSpotlightSize', value: PresentationSpotlightSize): void
   (e: 'selectHighlighterColor', index: number): void
   (e: 'selectHighlighterScale', value: number): void
   (e: 'toggleStrokeEraser'): void
@@ -55,6 +61,7 @@ const { t } = useLanguage()
 
 const thicknessOptions: PresentationBoardThickness[] = ['thin', 'medium', 'thick']
 const activeLaserSize = computed(() => laserSizeFromScale(props.laserScale))
+const activeSpotlightSize = computed(() => spotlightSizeFromScale(props.spotlightScale))
 
 const floatingTip = ref<{ text: string; x: number; y: number } | null>(null)
 
@@ -100,6 +107,12 @@ function laserSizeLabel(value: PresentationLaserSize): string {
   if (value === 'small') return t('canvas.mindMapPresentationToolbar.laserSmall')
   if (value === 'large') return t('canvas.mindMapPresentationToolbar.laserLarge')
   return t('canvas.mindMapPresentationToolbar.laserMedium')
+}
+
+function spotlightSizeLabel(value: PresentationSpotlightSize): string {
+  if (value === 'small') return t('canvas.mindMapPresentationToolbar.spotlightSmall')
+  if (value === 'large') return t('canvas.mindMapPresentationToolbar.spotlightLarge')
+  return t('canvas.mindMapPresentationToolbar.spotlightMedium')
 }
 
 function onHighlighterScaleInput(event: Event): void {
@@ -383,6 +396,39 @@ function onHighlighterScaleInput(event: Event): void {
           </button>
         </div>
 
+        <template v-if="props.activeTool === 'spotlight'">
+          <div
+            class="toolbar-divider"
+            aria-hidden="true"
+          />
+          <div
+            class="tool-params-block w-full"
+            role="group"
+            :aria-label="t('canvas.mindMapPresentationToolbar.spotlightSizeGroup')"
+          >
+            <div
+              v-for="size in PRESENTATION_SPOTLIGHT_SIZE_OPTIONS"
+              :key="size"
+              class="presentation-tool-slot flex h-10 w-full items-center justify-center"
+            >
+              <button
+                type="button"
+                class="spotlight-size-btn"
+                :class="{ 'is-selected': activeSpotlightSize === size }"
+                :data-tip="spotlightSizeLabel(size)"
+                :title="spotlightSizeLabel(size)"
+                :aria-label="spotlightSizeLabel(size)"
+                @click="emit('selectSpotlightSize', size)"
+              >
+                <span
+                  class="spotlight-size-dot"
+                  :class="`spotlight-size-dot--${size}`"
+                />
+              </button>
+            </div>
+          </div>
+        </template>
+
         <div class="presentation-tool-slot flex h-10 w-full items-center justify-center">
           <button
             type="button"
@@ -485,7 +531,8 @@ function onHighlighterScaleInput(event: Event): void {
 .presentation-tool-btn,
 .pen-color-btn,
 .pen-thickness-btn,
-.laser-size-btn {
+.laser-size-btn,
+.spotlight-size-btn {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -506,7 +553,8 @@ function onHighlighterScaleInput(event: Event): void {
 
 .pen-color-btn:hover,
 .pen-thickness-btn:hover,
-.laser-size-btn:hover {
+.laser-size-btn:hover,
+.spotlight-size-btn:hover {
   background: rgb(243 244 246);
 }
 
@@ -554,6 +602,33 @@ function onHighlighterScaleInput(event: Event): void {
 .laser-size-btn.is-selected {
   background: rgb(254 226 226);
   box-shadow: inset 0 0 0 1.5px rgb(248 113 113 / 0.55);
+}
+
+.spotlight-size-dot {
+  display: block;
+  border-radius: 999px;
+  background: rgb(245 158 11);
+  box-shadow: 0 0 0 2px rgb(254 243 199);
+}
+
+.spotlight-size-dot--small {
+  width: 6px;
+  height: 6px;
+}
+
+.spotlight-size-dot--medium {
+  width: 9px;
+  height: 9px;
+}
+
+.spotlight-size-dot--large {
+  width: 13px;
+  height: 13px;
+}
+
+.spotlight-size-btn.is-selected {
+  background: rgb(254 243 199);
+  box-shadow: inset 0 0 0 1.5px rgb(251 191 36 / 0.65);
 }
 
 .pen-thickness-btn.is-selected {
@@ -628,7 +703,8 @@ function onHighlighterScaleInput(event: Event): void {
 .dark .presentation-tool-btn,
 .dark .pen-color-btn,
 .dark .pen-thickness-btn,
-.dark .laser-size-btn {
+.dark .laser-size-btn,
+.dark .spotlight-size-btn {
   color: #e5e7eb;
 }
 
@@ -663,7 +739,8 @@ function onHighlighterScaleInput(event: Event): void {
 .dark .presentation-tool-btn:hover,
 .dark .pen-color-btn:hover,
 .dark .pen-thickness-btn:hover,
-.dark .laser-size-btn:hover {
+.dark .laser-size-btn:hover,
+.dark .spotlight-size-btn:hover {
   background-color: #4b5563;
 }
 
@@ -678,5 +755,9 @@ function onHighlighterScaleInput(event: Event): void {
 
 .dark .laser-size-btn.is-selected {
   background: rgb(127 29 29 / 0.45);
+}
+
+.dark .spotlight-size-btn.is-selected {
+  background: rgb(120 53 15 / 0.45);
 }
 </style>
