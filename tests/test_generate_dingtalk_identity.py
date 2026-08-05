@@ -90,15 +90,28 @@ def test_library_save_limit_notice_en() -> None:
 
 
 def test_library_save_skip_user_notice_unbound_staff() -> None:
-    """Unbound staff skip yields bind DingTalk guidance."""
-    notice = library_save_skip_user_notice("unbound_staff", "en")
-    assert "bind DingTalk" in notice
+    """MindBot unbound staff skip yields DingTalk bind guidance."""
+    notice = library_save_skip_user_notice(
+        "unbound_staff",
+        "en",
+        dify_user_key="mindbot_5_staff42",
+    )
+    assert "Link DingTalk" in notice or "bind DingTalk" in notice.lower()
+    assert "X-MG-Dify-User" not in notice
 
 
-def test_library_save_skip_user_notice_no_user() -> None:
-    """No user skip yields X-MG-Dify-User guidance."""
-    notice = library_save_skip_user_notice("no_user", "zh")
-    assert "X-MG-Dify-User" in notice
+def test_library_save_skip_user_notice_no_user_mindmate() -> None:
+    """Web MindMate no_user skip uses end-user wording, not ops header text."""
+    notice = library_save_skip_user_notice("no_user", "zh", dify_user_key="mg_user_7")
+    assert "重新生成" in notice
+    assert "X-MG-Dify-User" not in notice
+
+
+def test_library_save_skip_user_notice_no_user_guest() -> None:
+    """Guest Dify key asks the user to sign in."""
+    notice = library_save_skip_user_notice("no_user", "zh", dify_user_key="guest_123")
+    assert "请登录" in notice
+    assert "X-MG-Dify-User" not in notice
 
 
 def test_library_save_skip_user_notice_success_empty() -> None:

@@ -738,7 +738,11 @@ async def generate_dingtalk_png(
             if saved_id == SAVE_LIMIT_REACHED:
                 plain_text += f"\n{library_save_limit_notice(language)}"
             else:
-                notice = library_save_skip_user_notice(skip_reason, language)
+                notice = library_save_skip_user_notice(
+                    skip_reason,
+                    language,
+                    dify_user_key=save_identity.dify_user_key,
+                )
                 if notice:
                     plain_text += f"\n{notice}"
 

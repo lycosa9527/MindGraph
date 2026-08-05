@@ -89,6 +89,17 @@ export function hasLibrarySaveSkipNotice(content: string): boolean {
   return LIBRARY_SAVE_SKIP_NOTICE_RE.test((content || '').trim())
 }
 
+const LIBRARY_SAVE_SKIP_NOTICE_LINE_RE =
+  /^[^\n]*(?:Diagram preview only|导图仅预览|library save failed|图库保存失败|图库已满|library is full|绑定钉钉|bind DingTalk|X-MG-Dify-User|Link DingTalk|联系.*管理员|MindBot 配置)[^\n]*$/gim
+
+/** Remove embedded library-save skip / full notices (e.g. after claim recovers a library id). */
+export function stripLibrarySaveSkipNotices(content: string): string {
+  return (content || '')
+    .replace(LIBRARY_SAVE_SKIP_NOTICE_LINE_RE, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 /** Backend notice indicates diagram library quota is full. */
 export function hasLibraryFullNotice(content: string): boolean {
   return LIBRARY_FULL_NOTICE_RE.test((content || '').trim())

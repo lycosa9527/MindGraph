@@ -10,6 +10,7 @@ import {
   needsLibrarySaveHint,
   parseMindmateDiagramLibraryId,
   rewriteMindmateTempImageUrls,
+  stripLibrarySaveSkipNotices,
   stripMindmateDiagramIdComments,
 } from '@/utils/mindmateDiagramMeta'
 
@@ -112,6 +113,16 @@ describe('rewriteMindmateTempImageUrls', () => {
       '![](http://localhost:9527/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x&exp=1)'
     expect(rewriteMindmateTempImageUrls(content)).toBe(
       '![](/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x&exp=1)'
+    )
+  })
+})
+
+describe('stripLibrarySaveSkipNotices', () => {
+  it('removes preview-only notice lines after claim recovery', () => {
+    const content =
+      '![](https://host/temp_images/dingtalk_deadbeef_1710000000.png)\n导图仅预览，未保存到图库。请登录后重新生成，即可在画布中编辑。'
+    expect(stripLibrarySaveSkipNotices(content)).toBe(
+      '![](https://host/temp_images/dingtalk_deadbeef_1710000000.png)'
     )
   })
 })

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.168.1] - 2026-08-05
+
+> **MindMate / generate_dingtalk library-save notices use end-user wording; strip stale preview-only lines after claim.**
+
+### Fixed
+
+- **MindMate diagram preview notices** — `generate_dingtalk` embeds MindMate / guest / DingTalk skip wording instead of ops `X-MG-Dify-User` text; after library claim, web MindMate hides the stale preview-only line (`library_save_user_notices.py`, `mindmateDiagramMeta.ts`).
+
+### Changed
+
+- **Docs** — Clarify `generate_dingtalk` identity order and Dify header ops note (`identity_unification.md`).
+
+### Tests
+
+- **Backend** — Audience mapping + guest/MindMate skip notices (`test_library_save_user_notices.py`, `test_generate_dingtalk_identity.py`).
+- **Frontend** — `stripLibrarySaveSkipNotices` after claim recovery (`mindmateDiagramMeta.spec.ts`).
+
 ## [5.168.0] - 2026-08-05
 
 > **Thinking-coin daily login bucket (Beijing midnight expire); Showcase cover job manifesto + admin refresh; diagram AI copy structure outline; field-options community read + admin panel RLS pin.**

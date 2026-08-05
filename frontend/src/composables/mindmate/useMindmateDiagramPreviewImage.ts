@@ -6,7 +6,9 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 
 import {
   hasGeneratedDiagramImage,
+  hasLibrarySaveSkipNotice,
   rewriteMindmateTempImageUrls,
+  stripLibrarySaveSkipNotices,
   stripMindmateDiagramIdComments,
 } from '@/utils/mindmateDiagramMeta'
 import { replaceMindmatePreviewImageUrl } from '@/utils/mindmateDiagramPreviewDisplay'
@@ -109,7 +111,12 @@ export function useMindmateDiagramPreviewImage(options: {
     if (previewBlobUrl.value) {
       text = replaceMindmatePreviewImageUrl(text, previewBlobUrl.value)
     }
-    return stripMindmateDiagramIdComments(text)
+    text = stripMindmateDiagramIdComments(text)
+    const libraryId = options.libraryDiagramId?.()
+    if (libraryId && hasLibrarySaveSkipNotice(text)) {
+      text = stripLibrarySaveSkipNotices(text)
+    }
+    return text
   })
 
   return { displayContent, previewBlobUrl, previewUnavailable }

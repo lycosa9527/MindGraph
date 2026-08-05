@@ -42,9 +42,9 @@ When MindMate or MindBot opens a Dify chat, MindGraph records in Redis (~`GEN_SE
 `/api/generate_dingtalk` (Dify HTTP tool, no browser cookies) resolves library save via:
 
 1. JWT / API token (direct callers)
-2. `conversation_id` / `mg_conversation_id` / `dify_user_id` / `mg_dify_user` from tool body
-3. Session registry lookup
-4. DingTalk bind table for `mindbot_*` keys
+2. Header `X-MG-Dify-User`, then body `dify_user_id` / `mg_dify_user` (DingTalk bind for `mindbot_*`)
+3. Session registry lookup by `conversation_id` / `mg_conversation_id` / Dify key
+4. Solo recent MindBot session fallback (MindBot-only)
 
 See [`docs/ops/dify_generate_dingtalk_header.md`](../ops/dify_generate_dingtalk_header.md).
 

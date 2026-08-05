@@ -6,6 +6,7 @@ from services.diagram.library_save_user_notices import (
     library_save_limit_notice,
     library_save_skip_user_notice,
     library_save_user_notice,
+    notice_audience_for_dify_key,
 )
 
 
@@ -54,3 +55,32 @@ def test_skip_user_notice_excludes_limit() -> None:
     """Legacy helper skips limit_reached."""
     assert library_save_skip_user_notice("limit_reached", "en") == ""
     assert library_save_skip_user_notice(None, "en") == ""
+
+
+def test_notice_audience_for_dify_key() -> None:
+    """MindBot keys map to dingtalk; web/guest map to mindmate."""
+    assert notice_audience_for_dify_key("mindbot_5_staff") == "dingtalk"
+    assert notice_audience_for_dify_key("mg_user_7") == "mindmate"
+    assert notice_audience_for_dify_key("guest_abc") == "mindmate"
+    assert notice_audience_for_dify_key("") == "mindmate"
+
+
+def test_skip_user_notice_mindmate_no_ops_header() -> None:
+    """Embedded chat notice for web must not mention X-MG-Dify-User."""
+    notice = library_save_skip_user_notice("no_user", "en", dify_user_key="")
+    assert "administrator" in notice.lower() or "regenerat" in notice.lower()
+    assert "X-MG-Dify-User" not in notice
+
+
+def test_skip_user_notice_guest_login() -> None:
+    """Guest preview notice asks to sign in."""
+    notice = library_save_skip_user_notice("no_user", "en", dify_user_key="guest_1")
+    assert "sign in" in notice.lower()
+    assert "X-MG-Dify-User" not in notice
+
+
+def test_mindmate_no_user_audience() -> None:
+    """Explicit mindmate audience omits ops header guidance."""
+    notice = library_save_user_notice("no_user", "zh", audience="mindmate")
+    assert "联系管理员" in notice or "重新生成" in notice
+    assert "X-MG-Dify-User" not in notice

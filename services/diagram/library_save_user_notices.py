@@ -24,6 +24,26 @@ def library_save_limit_notice(language: str) -> str:
     return "图库已满，请在 MindGraph 删除旧图后再试。"
 
 
+def notice_audience_for_dify_key(dify_user_key: str) -> NoticeAudience:
+    """
+    Pick end-user notice audience for generate_dingtalk markdown.
+
+    Ops-oriented ``dify`` (X-MG-Dify-User) stays available via ``library_save_user_notice``
+    for docs/tests; chat replies use MindBot or MindMate wording.
+    """
+    key = (dify_user_key or "").strip()
+    if key.startswith("mindbot_"):
+        return "dingtalk"
+    return "mindmate"
+
+
+def library_save_guest_no_user_notice(language: str) -> str:
+    """Preview-only notice when the Dify user is an anonymous MindMate guest."""
+    if _use_english(language):
+        return "Diagram preview only — sign in, then regenerate to save to your library and edit in canvas."
+    return "导图仅预览，未保存到图库。请登录后重新生成，即可在画布中编辑。"
+
+
 def library_save_user_notice(
     reason: Optional[str],
     language: str,
@@ -86,8 +106,25 @@ def library_save_user_notice(
     return ""
 
 
-def library_save_skip_user_notice(reason: Optional[str], language: str) -> str:
-    """Dify markdown notice (excludes limit_reached — use library_save_limit_notice)."""
+def library_save_skip_user_notice(
+    reason: Optional[str],
+    language: str,
+    *,
+    dify_user_key: str = "",
+) -> str:
+    """
+    End-user markdown notice for generate_dingtalk (excludes limit_reached).
+
+    Audience follows the Dify user key: ``mindbot_*`` → DingTalk teachers,
+    ``guest_*`` → sign-in guidance, otherwise MindMate.
+    """
     if not reason or reason == "limit_reached":
         return ""
-    return library_save_user_notice(reason, language, audience="dify")
+    key = (dify_user_key or "").strip()
+    if reason == "no_user" and key.startswith("guest_"):
+        return library_save_guest_no_user_notice(language)
+    return library_save_user_notice(
+        reason,
+        language,
+        audience=notice_audience_for_dify_key(key),
+    )
