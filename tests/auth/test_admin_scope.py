@@ -31,6 +31,7 @@ from utils.auth.admin_panel_permissions import (
     CAP_TAB_SCHOOL_DASHBOARD_VIEW,
     CAP_TAB_SETTINGS_EDIT,
     CAP_TAB_SETTINGS_VIEW,
+    CAP_TAB_SHOWCASE_VIEW,
     CAP_TAB_USERS_EDIT,
     CAP_TAB_USERS_VIEW,
     ROLE_PANEL_CAPABILITIES,
@@ -91,6 +92,7 @@ def test_expert_invites_only():
     assert CAP_SCOPE_INVITED_ORGS in caps
     assert CAP_TAB_USERS_VIEW not in caps
     assert CAP_TAB_DATA_CENTER_VIEW not in caps
+    assert CAP_TAB_SHOWCASE_VIEW not in caps
 
 
 def test_expert_scope_empty_without_db():

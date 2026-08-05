@@ -55,14 +55,12 @@ const visibleSubtabs = computed(() =>
     if (tab === 'permissions') return can('tab.showcase.permissions')
     if (tab === 'fields') return can('tab.showcase.fields')
     if (tab === 'publish') return can('tab.showcase.edit')
-    if (tab === 'dashboard') return can('tab.showcase.dashboard') || can('tab.showcase.view')
+    if (tab === 'dashboard') return can('tab.showcase.dashboard')
     if (tab === 'published') {
-      return (
-        can('tab.showcase.view') ||
-        can('tab.showcase.edit') ||
-        can('tab.showcase.recommend')
-      )
+      return can('tab.showcase.view') || can('tab.showcase.edit')
     }
+    // Moderation is staff management only (not recommend-only experts).
+    if (tab === 'moderation') return can('tab.showcase.edit')
     return can('tab.showcase.view') || can('tab.showcase.edit')
   })
 )

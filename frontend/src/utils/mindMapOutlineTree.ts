@@ -59,8 +59,9 @@ function sortChildIdsByCanvasY(
 }
 
 /**
- * Topic children: right column top→bottom, then left column top→bottom.
- * Matches each side's on-canvas stack (connection order can drift under sticky Y).
+ * Topic children in clockwise reading order: right column top→bottom, then
+ * left column bottom→top. Matches layout `mindMapBranchesClockwiseOrder` and
+ * presentation deep traversal (connection order can drift under sticky Y).
  */
 function sortTopicLevelChildIds(
   childIds: string[],
@@ -74,9 +75,12 @@ function sortTopicLevelChildIds(
     return sortChildIdsByCanvasY(sortMindMapTopicChildIds(childIds), nodeById)
   }
 
+  // Left stack is top→bottom on canvas; reverse for clockwise continuation.
+  const leftClockwise = sortChildIdsByCanvasY(left, nodeById).slice().reverse()
+
   return [
     ...sortChildIdsByCanvasY(right, nodeById),
-    ...sortChildIdsByCanvasY(left, nodeById),
+    ...leftClockwise,
     ...sortChildIdsByCanvasY(other, nodeById),
   ]
 }

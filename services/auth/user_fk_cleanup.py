@@ -206,9 +206,7 @@ async def _delete_thinking_coins_for_user(db: AsyncSession, user_id: int) -> Non
     try:
         await db.execute(delete(ThinkingCoinLedger).where(ThinkingCoinLedger.user_id == user_id))
         await db.execute(delete(ThinkingCoinCheckin).where(ThinkingCoinCheckin.user_id == user_id))
-        await db.execute(
-            delete(ThinkingCoinDailyActivity).where(ThinkingCoinDailyActivity.user_id == user_id)
-        )
+        await db.execute(delete(ThinkingCoinDailyActivity).where(ThinkingCoinDailyActivity.user_id == user_id))
         await db.execute(delete(ThinkingCoinWallet).where(ThinkingCoinWallet.user_id == user_id))
     finally:
         if isinstance(previous, RlsContext):

@@ -13,7 +13,7 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.13+-blue.svg" alt="Python"></a>
   <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.104+-green.svg" alt="FastAPI"></a>
   <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3.5+-42b883.svg" alt="Vue"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.147.0-brightgreen.svg" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.168.2-brightgreen.svg" alt="Version"></a>
 </p>
 
 ---
@@ -55,7 +55,7 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 - Concept Map focus question validation and SSE suggestion streams
 - Multi-LLM support: Qwen, DeepSeek, Kimi, Doubao (Volcengine)
 - Output in 149+ languages (ISO/BCP-47, filterable prompt-language picker)
-- **Thinking coins** (思维币): optional trial-school wallet for LLM usage metering — see [docs/architecture/thinking_coins.md](docs/architecture/thinking_coins.md)
+- **Thinking coins** (思维币): optional trial-school wallet for LLM usage metering; daily login bucket expires at Beijing midnight (no rollover) — see [docs/architecture/thinking_coins.md](docs/architecture/thinking_coins.md)
 
 **MindMate & MindBot**
 
@@ -69,23 +69,25 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 - Interactive canvas with export (PNG, SVG, PDF, JSON)
 - KaTeX math rendering in diagram labels (mhchem for chemistry notation)
 - Branch drag-and-drop (long-press to reparent or swap nodes)
-- Presentation mode with pointer, hand, laser, spotlight, highlighter, pen, and countdown timer
+- Presentation mode with pointer, hand, laser, spotlight (size presets), highlighter, pen, and countdown timer
 - Learning sheet float bar: custom pick and random blank sessions
 - Auto-save with dirty/saving indicators and relative timestamps
 - Diagram snapshots: up to 10 point-in-time versions per diagram with click-to-recall
 - Canvas history baseline: first edit is undoable; session reset clears ephemeral state
 - Text alignment and rich text-style toolbar
-- Mind map v2 canvas (default when `FEATURE_MINDMAP_V2_CANVAS=True`): side-toolbar chrome, orthogonal edges, Document Summary panel; classic still selectable in Language settings
+- Mind map v2 canvas (default when `FEATURE_MINDMAP_V2_CANVAS=True`): side-toolbar chrome, orthogonal edges, adaptive branch gaps, e-blackboard chrome, Document Summary panel; classic still selectable in Language settings
 - Mobile web shell (`/m/*`) with touch pinch-zoom and pane pan
 
 **Collaboration & Platform**
 
 - Online canvas collaboration (WebSocket, Redis live-spec merge)
 - Workshop Chat (教研坊): school-scoped real-time channels, topics, DMs, reactions, and file attachments
+- **Showcase** (案例广场): community case gallery with teaching-design / diagram publish, AI copy, Office→PDF preview, cover job manifesto, and admin moderation — see [services/showcase/README.md](services/showcase/README.md)
+- **迈特学习法 (Maite Learning)**: native async learning module (PG + RLS, Redis, event-bus UI) — see [services/maite/README.md](services/maite/README.md)
 - International landing page with Chinese / International UI version toggle
 - Knowledge Space (RAG) for document management and retrieval
 - Library with image-based document viewing
-- DebateVerse, AskOnce, and Showcase AI features
+- DebateVerse and AskOnce
 - Teacher usage tracking
 
 **Internationalization**
@@ -178,6 +180,9 @@ Default: `http://localhost:9527`
 | `/knowledge-space` | RAG document management |
 | `/library` | Document library |
 | `/workshop-chat` | Workshop Chat — real-time teacher collaboration |
+| `/showcase` | Showcase — community case gallery |
+| `/maite` | 迈特学习法 (Maite Learning) |
+| `/thinking-coins/upgrade` | Thinking coins upgrade / school consult |
 | `/admin` | Admin panel (API keys, users, features, database) |
 | `/docs` | API docs (when `DEBUG=True`) |
 | `/m/*` | Mobile web shell |
@@ -235,6 +240,8 @@ API keys are created in the admin panel (`/admin`). See [docs/API_REFERENCE.md](
 - [Architecture](docs/ARCHITECTURE.md)
 - [OAuth QR Login](docs/architecture/oauth_qr_login.md)
 - [Thinking Coins](docs/architecture/thinking_coins.md)
+- [Showcase](services/showcase/README.md)
+- [Maite Learning](services/maite/README.md)
 - [DingTalk Account Binding](docs/architecture/dingtalk_account_binding.md)
 - [MindBot Tool Ingress](docs/architecture/mindbot_tool_ingress.md)
 - [Production Security Deploy](docs/architecture/production_security_deploy.md)

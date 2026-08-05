@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.168.2] - 2026-08-05
+
+> **Showcase approve / engagement under RLS; recommend-only experts stay out of admin panel; mind-map outline clockwise order; SelectiveGZip Starlette compat.**
+
+### Fixed
+
+- **Showcase approve + community engagement under RLS** — Credit case rewards as the author (owner/system coin policies); bump community like/comment counters via system sessions; widen community write policies for moderation cascades (rev `0095`/`0096`, `case_earn.py`, `counters.py`).
+- **Recommend-only Showcase grants** — Recommend is a gallery action only; experts with recommend-only perms no longer get admin panel access or moderation subtabs (`staff_permissions.py`, `AdminShowcaseTab.vue`, `stats.py`).
+- **Mind-map outline / presentation order** — Topic-level children follow clockwise reading order (right top→bottom, then left bottom→top), matching layout `mindMapBranchesClockwiseOrder` (`mindMapOutlineTree.ts`).
+- **SelectiveGZipMiddleware** — Use public `GZipMiddleware` API so gzip works across Starlette versions that disagree on `GZipResponder.thread_minimum_size`.
+
+### Changed
+
+- **Docs** — README version badge, Showcase / Maite routes and links, thinking-coins daily bucket note, mind-map v2 / presentation spotlight wording.
+
+### Tests
+
+- **Backend** — Showcase staff→panel capability mapping; community panel / thinking-coins system RLS migrations; public static gzip middleware.
+- **Frontend** — Outline tree matches layout clockwise order after `loadMindMapSpec`; slides deep traversal left bottom→top.
+
 ## [5.168.1] - 2026-08-05
 
 > **MindMate / generate_dingtalk library-save notices use end-user wording; strip stale preview-only lines after claim.**

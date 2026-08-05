@@ -39,12 +39,29 @@ PLATFORM_BD_DEFAULT: frozenset[str] = ALL_SHOWCASE_PERMS - frozenset({PERM_PERMI
 VALID_GRANT_PERMISSIONS: frozenset[str] = ALL_SHOWCASE_PERMS
 
 
+_SHOWCASE_MANAGEMENT_PERMS: frozenset[str] = frozenset(
+    {
+        PERM_DASHBOARD,
+        PERM_REVIEW,
+        PERM_DELETE,
+        PERM_PUBLISH_PROXY,
+        PERM_FIELDS,
+        PERM_PERMISSIONS,
+    }
+)
+
+
 def showcase_panel_capabilities(perms: frozenset[str]) -> frozenset[str]:
-    """Map business permissions to admin panel capability keys for the UI."""
-    caps: set[str] = set()
-    if not perms:
+    """Map Showcase *management* permissions to admin panel capability keys.
+
+    Recommend is a gallery action (``can_expert_recommend`` / ``showcase.recommend``),
+    not admin-panel access. Recommend-only users (专家) get no panel caps here;
+    ``tab.showcase.recommend`` is emitted only alongside management access so staff
+    can recommend from the admin published list.
+    """
+    if not perms & _SHOWCASE_MANAGEMENT_PERMS:
         return frozenset()
-    caps.add("tab.showcase.view")
+    caps: set[str] = {"tab.showcase.view"}
     if PERM_REVIEW in perms or PERM_DELETE in perms or PERM_PUBLISH_PROXY in perms:
         caps.add("tab.showcase.edit")
     if PERM_RECOMMEND in perms:

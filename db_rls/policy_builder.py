@@ -69,9 +69,7 @@ USER_OR_SPACE_VISIBLE = (
 )
 EMBEDDINGS_EXPR = "rls_is_system_mode() OR rls_community_read_allowed()"
 DIRECT_MESSAGE_EXPR = "rls_user_visible(sender_id) OR rls_user_visible(recipient_id)"
-COMMUNITY_POST_WRITE = (
-    "author_id = rls_current_user_id() OR rls_is_panel_mode() OR rls_is_system_mode()"
-)
+COMMUNITY_POST_WRITE = "author_id = rls_current_user_id() OR rls_is_panel_mode() OR rls_is_system_mode()"
 
 KNOWLEDGE_DOCUMENT_EXPR = "rls_knowledge_document_visible(id)"
 KNOWLEDGE_SPACE_CHILD_TABLES = [
@@ -281,9 +279,7 @@ ORGS_EXPR = (
 
 # Group D
 COMMUNITY_READ = "rls_community_read_allowed()"
-COMMUNITY_WRITE = (
-    "user_id = rls_current_user_id() OR rls_is_panel_mode() OR rls_is_system_mode()"
-)
+COMMUNITY_WRITE = "user_id = rls_current_user_id() OR rls_is_panel_mode() OR rls_is_system_mode()"
 LIBRARY_DOC_READ = "rls_community_read_allowed()"
 LIBRARY_DOC_WRITE = "rls_platform_admin_only()"
 

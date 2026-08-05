@@ -21,9 +21,7 @@ async def adjust_post_likes_count(post_id: str, delta: int) -> int | None:
         if row is None:
             return None
         new_count = max(0, int(row) + delta)
-        await bump_db.execute(
-            update(CommunityPost).where(CommunityPost.id == post_id).values(likes_count=new_count)
-        )
+        await bump_db.execute(update(CommunityPost).where(CommunityPost.id == post_id).values(likes_count=new_count))
         await bump_db.commit()
         return new_count
 
@@ -46,8 +44,6 @@ async def adjust_post_comments_count(post_id: str, delta: int) -> int | None:
         if row is None:
             return None
         new_count = max(0, int(row) + delta)
-        await bump_db.execute(
-            update(CommunityPost).where(CommunityPost.id == post_id).values(comments_count=new_count)
-        )
+        await bump_db.execute(update(CommunityPost).where(CommunityPost.id == post_id).values(comments_count=new_count))
         await bump_db.commit()
         return new_count

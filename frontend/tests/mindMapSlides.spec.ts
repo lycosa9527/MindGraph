@@ -62,6 +62,35 @@ describe('buildMindMapSlides', () => {
     ])
   })
 
+  it('depth traversal walks left branches bottom→top (clockwise)', () => {
+    const clockwiseNodes: DiagramNode[] = [
+      { id: 'topic', text: '中心', type: 'topic', position: { x: 0, y: 100 } },
+      { id: 'branch-r-1-0', text: '1', type: 'branch', position: { x: 200, y: 40 } },
+      { id: 'branch-r-1-1', text: '2', type: 'branch', position: { x: 200, y: 200 } },
+      { id: 'branch-l-1-0', text: '4', type: 'branch', position: { x: -200, y: 40 } },
+      { id: 'branch-l-1-1', text: '3', type: 'branch', position: { x: -200, y: 200 } },
+    ]
+    const clockwiseConnections: Connection[] = [
+      { id: 'e1', source: 'topic', target: 'branch-r-1-0' },
+      { id: 'e2', source: 'topic', target: 'branch-r-1-1' },
+      { id: 'e3', source: 'topic', target: 'branch-l-1-0' },
+      { id: 'e4', source: 'topic', target: 'branch-l-1-1' },
+    ]
+    const slides = buildMindMapSlides(
+      clockwiseNodes,
+      clockwiseConnections,
+      (id) => getDescendantIds(id, clockwiseConnections),
+      'deep'
+    )
+    expect(slides.map((slide) => slide.id)).toEqual([
+      'overview',
+      'branch-r-1-0',
+      'branch-r-1-1',
+      'branch-l-1-1',
+      'branch-l-1-0',
+    ])
+  })
+
   it('focuses each deep slide on the node and its descendants', () => {
     const slides = buildMindMapSlides(nodes, connections, descendants, 'deep')
     const childSlide = slides.find((slide) => slide.id === 'branch-r-2-0')

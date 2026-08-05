@@ -35,8 +35,7 @@ def _recreate_write_policies(table: str, write_expr: str) -> None:
     op.execute(sa.text(f'CREATE POLICY "{table}_write" ON "{table}" FOR INSERT WITH CHECK ({write_expr})'))
     op.execute(
         sa.text(
-            f'CREATE POLICY "{table}_update" ON "{table}" FOR UPDATE '
-            f"USING ({write_expr}) WITH CHECK ({write_expr})"
+            f'CREATE POLICY "{table}_update" ON "{table}" FOR UPDATE USING ({write_expr}) WITH CHECK ({write_expr})'
         )
     )
     op.execute(sa.text(f'CREATE POLICY "{table}_delete" ON "{table}" FOR DELETE USING ({write_expr})'))

@@ -35,6 +35,7 @@ from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import get_current_user, get_user_role, is_admin, is_management_panel_user
 from utils.auth.admin_panel_permissions import (
     CAP_PANEL_ACCESS,
+    CAP_TAB_SHOWCASE_VIEW,
     user_panel_capabilities,
 )
 from utils.auth.admin_scope import AdminScope, assert_panel_org_readable, panel_read_only_for_user
@@ -99,9 +100,13 @@ async def get_admin_capabilities(
     role = get_user_role(current_user)
     caps = set(user_panel_capabilities(current_user))
     sq_perms = await load_user_showcase_permissions(db, current_user)
-    caps |= showcase_panel_capabilities(sq_perms)
+    sq_caps = showcase_panel_capabilities(sq_perms)
+    caps |= sq_caps
     org_id = getattr(current_user, "organization_id", None)
-    panel_access = CAP_PANEL_ACCESS in caps or is_management_panel_user(current_user) or bool(sq_perms)
+    # Recommend-only Showcase grants must not open the management panel.
+    panel_access = (
+        CAP_PANEL_ACCESS in caps or is_management_panel_user(current_user) or CAP_TAB_SHOWCASE_VIEW in sq_caps
+    )
     read_only = panel_read_only_for_user(current_user) if panel_access else False
     return {
         "role": role,

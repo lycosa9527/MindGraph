@@ -100,9 +100,7 @@ async def try_publish_case_earn_as_author(
     Admin review runs in panel mode; wallet RLS is owner-or-system only, so the
     credit must execute as the author (same transaction, savepoint-isolated).
     """
-    org_id = (
-        await db.execute(select(User.organization_id).where(User.id == author_id))
-    ).scalar_one_or_none()
+    org_id = (await db.execute(select(User.organization_id).where(User.id == author_id))).scalar_one_or_none()
     await apply_rls_context_async(db, RlsContext.for_celery_user(author_id, org_id))
     try:
         async with db.begin_nested():
