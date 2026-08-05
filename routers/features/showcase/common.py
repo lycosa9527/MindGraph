@@ -20,7 +20,7 @@ from sqlalchemy.orm.attributes import flag_modified
 from models.domain.auth import User
 from models.domain.showcase import ShowcaseCoverJob, ShowcasePost, ShowcasePostFavorite, ShowcasePostLike
 from routers.features.community.helpers import parse_spec_json
-from services.auth.thinking_coin.case_earn import try_publish_case_earn
+from services.auth.thinking_coin.case_earn import try_publish_case_earn_as_author
 from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.showcase.audit import write_showcase_audit
 from services.showcase.covers.events import get_cover_last_event
@@ -291,10 +291,18 @@ async def _review_case_post_handler(
 
     credited = 0
     if action == "approve":
+        # Author RLS + savepoint: panel must not write wallets; failures stay isolated.
         try:
-            credited, _ = await try_publish_case_earn(db, post.author_id, post.id)
-        except BACKGROUND_INFRA_ERRORS as exc:
+            credited, _ = await try_publish_case_earn_as_author(
+                db,
+                post.author_id,
+                post.id,
+                restore_ctx=panel_ctx,
+            )
+        except (*BACKGROUND_INFRA_ERRORS, *DATABASE_ERRORS) as exc:
             logger.warning("[Showcase] Thinking coin credit failed for %s: %s", post_id, exc)
+            credited = 0
+            await apply_rls_context_async(db, panel_ctx)
 
     await _safe_showcase_audit(
         db,

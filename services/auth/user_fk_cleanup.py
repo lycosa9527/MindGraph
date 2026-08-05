@@ -36,6 +36,12 @@ from models.domain.school_zone import (
     SharedDiagramComment,
     SharedDiagramLike,
 )
+from models.domain.thinking_coin import (
+    ThinkingCoinCheckin,
+    ThinkingCoinDailyActivity,
+    ThinkingCoinLedger,
+    ThinkingCoinWallet,
+)
 from models.domain.token_usage import TokenUsage
 from models.domain.user_activity_log import UserActivityLog
 from models.domain.user_usage_activity import UserUsageActivity
@@ -44,8 +50,11 @@ from models.domain.user_usage_stats import UserUsageStats
 from models.domain.workshop_chat import ChatTopic
 from services.online_collab.core.purge_user_collab import purge_user_from_active_collab
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.db.rls_context import RlsContext, apply_rls_context_async
 
 logger = logging.getLogger(__name__)
+
+_SESSION_RLS_KEY = "rls_context"
 
 
 async def _null_token_usage_user_id(db: AsyncSession, user_id: int) -> None:
@@ -190,6 +199,22 @@ async def _delete_dingtalk_staff_links_for_user(db: AsyncSession, user_id: int) 
     await db.execute(delete(DingtalkStaffLink).where(DingtalkStaffLink.user_id == user_id))
 
 
+async def _delete_thinking_coins_for_user(db: AsyncSession, user_id: int) -> None:
+    """Delete thinking-coin rows under system RLS (owner-or-system policy)."""
+    previous = db.info.get(_SESSION_RLS_KEY)
+    await apply_rls_context_async(db, RlsContext.system_bootstrap())
+    try:
+        await db.execute(delete(ThinkingCoinLedger).where(ThinkingCoinLedger.user_id == user_id))
+        await db.execute(delete(ThinkingCoinCheckin).where(ThinkingCoinCheckin.user_id == user_id))
+        await db.execute(
+            delete(ThinkingCoinDailyActivity).where(ThinkingCoinDailyActivity.user_id == user_id)
+        )
+        await db.execute(delete(ThinkingCoinWallet).where(ThinkingCoinWallet.user_id == user_id))
+    finally:
+        if isinstance(previous, RlsContext):
+            await apply_rls_context_async(db, previous)
+
+
 async def delete_user_fk_dependent_rows(db: AsyncSession, user_id: int) -> None:
     """
     Delete child rows and null FKs that would block ``DELETE FROM users`` for this id.
@@ -212,6 +237,7 @@ async def delete_user_fk_dependent_rows(db: AsyncSession, user_id: int) -> None:
     await db.execute(delete(UserUsageActivity).where(UserUsageActivity.user_id == user_id))
     await _delete_dingtalk_staff_links_for_user(db, user_id)
     await db.execute(delete(Diagram).where(Diagram.user_id == user_id))
+    await _delete_thinking_coins_for_user(db, user_id)
 
     await _delete_community_for_user(db, user_id)
     await _delete_school_zone_for_user(db, user_id)

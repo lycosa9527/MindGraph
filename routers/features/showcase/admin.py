@@ -841,6 +841,7 @@ async def proxy_create_post(
             "status": initial_status,
         },
     )
+
     try:
         await db.commit()
     except DATABASE_ERRORS as exc:

@@ -69,7 +69,9 @@ USER_OR_SPACE_VISIBLE = (
 )
 EMBEDDINGS_EXPR = "rls_is_system_mode() OR rls_community_read_allowed()"
 DIRECT_MESSAGE_EXPR = "rls_user_visible(sender_id) OR rls_user_visible(recipient_id)"
-COMMUNITY_POST_WRITE = "author_id = rls_current_user_id() OR rls_is_panel_mode()"
+COMMUNITY_POST_WRITE = (
+    "author_id = rls_current_user_id() OR rls_is_panel_mode() OR rls_is_system_mode()"
+)
 
 KNOWLEDGE_DOCUMENT_EXPR = "rls_knowledge_document_visible(id)"
 KNOWLEDGE_SPACE_CHILD_TABLES = [
@@ -279,7 +281,9 @@ ORGS_EXPR = (
 
 # Group D
 COMMUNITY_READ = "rls_community_read_allowed()"
-COMMUNITY_WRITE = "user_id = rls_current_user_id() OR rls_is_panel_mode()"
+COMMUNITY_WRITE = (
+    "user_id = rls_current_user_id() OR rls_is_panel_mode() OR rls_is_system_mode()"
+)
 LIBRARY_DOC_READ = "rls_community_read_allowed()"
 LIBRARY_DOC_WRITE = "rls_platform_admin_only()"
 
@@ -346,7 +350,7 @@ def upgrade_group_cde() -> None:
 
     community_tables = [
         ("community_posts", COMMUNITY_READ, COMMUNITY_POST_WRITE),
-        ("community_post_likes", COMMUNITY_READ, "user_id = rls_current_user_id()"),
+        ("community_post_likes", COMMUNITY_READ, COMMUNITY_WRITE),
         ("community_post_comments", COMMUNITY_READ, COMMUNITY_WRITE),
     ]
     for table, read_expr, write_expr in community_tables:
@@ -452,7 +456,7 @@ def iter_all_table_policies() -> list[tuple[str, str]]:
     rows.append(("community_posts", COMMUNITY_READ))
     rows.append(("community_posts", COMMUNITY_POST_WRITE))
     rows.append(("community_post_likes", COMMUNITY_READ))
-    rows.append(("community_post_likes", "user_id = rls_current_user_id()"))
+    rows.append(("community_post_likes", COMMUNITY_WRITE))
     rows.append(("community_post_comments", COMMUNITY_READ))
     rows.append(("community_post_comments", COMMUNITY_WRITE))
     for table, read_expr, write_expr in (

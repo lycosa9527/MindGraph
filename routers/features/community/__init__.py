@@ -24,7 +24,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from sqlalchemy import case, delete, select, update
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -48,7 +48,13 @@ from services.redis.cache.redis_community_cache import (
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import get_current_user, is_school_admin, is_superadmin
+from utils.db.rls_context import RlsContext, apply_rls_context_async
 
+from .counters import (
+    adjust_post_comments_count,
+    adjust_post_likes_count,
+    read_post_likes_count,
+)
 from .helpers import (
     COMMUNITY_THUMBNAIL_DIR,
     delete_spec_json,
@@ -551,11 +557,6 @@ async def create_comment(
 
     try:
         db.add(comment)
-        await db.execute(
-            update(CommunityPost)
-            .where(CommunityPost.id == post_id)
-            .values(comments_count=CommunityPost.comments_count + 1)
-        )
         await db.commit()
         await db.refresh(comment)
     except DATABASE_ERRORS as exc:
@@ -566,6 +567,7 @@ async def create_comment(
             detail="Failed to add comment",
         ) from exc
 
+    await adjust_post_comments_count(post_id, 1)
     await invalidate_post(post_id)
     await invalidate_all()
 
@@ -619,18 +621,11 @@ async def delete_comment(
             detail="You can only delete your own comments",
         ) from None
 
+    if comment.user_id != current_user.id:
+        await apply_rls_context_async(db, RlsContext.system_bootstrap())
+
     try:
         await db.delete(comment)
-        await db.execute(
-            update(CommunityPost)
-            .where(CommunityPost.id == post_id)
-            .values(
-                comments_count=case(
-                    (CommunityPost.comments_count > 0, CommunityPost.comments_count - 1),
-                    else_=0,
-                )
-            )
-        )
         await db.commit()
     except DATABASE_ERRORS as exc:
         await db.rollback()
@@ -645,6 +640,7 @@ async def delete_comment(
             detail="Failed to delete comment",
         ) from exc
 
+    await adjust_post_comments_count(post_id, -1)
     await invalidate_post(post_id)
     await invalidate_all()
 
@@ -750,6 +746,9 @@ async def delete_post(
         )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=delete_err)
 
+    # System RLS: cascade may delete other users' likes/comments on this post.
+    await apply_rls_context_async(db, RlsContext.system_bootstrap())
+
     try:
         await db.execute(delete(CommunityPostComment).where(CommunityPostComment.post_id == post_id))
         await db.execute(delete(CommunityPostLike).where(CommunityPostLike.post_id == post_id))
@@ -805,43 +804,23 @@ async def toggle_like(
     )
     existing = result.scalar_one_or_none()
 
+    is_liked = False
+    delta = 0
     if existing:
         await db.delete(existing)
-        await db.execute(
-            update(CommunityPost)
-            .where(CommunityPost.id == post_id)
-            .values(
-                likes_count=case(
-                    (CommunityPost.likes_count > 0, CommunityPost.likes_count - 1),
-                    else_=0,
-                )
-            )
-        )
         is_liked = False
+        delta = -1
     else:
         db.add(CommunityPostLike(post_id=post_id, user_id=current_user.id))
-        await db.execute(
-            update(CommunityPost).where(CommunityPost.id == post_id).values(likes_count=CommunityPost.likes_count + 1)
-        )
         is_liked = True
+        delta = 1
 
     try:
         await db.commit()
-        await db.refresh(post)
     except IntegrityError:
         await db.rollback()
-        await db.refresh(post)
-        result = await db.execute(
-            select(CommunityPostLike).where(
-                CommunityPostLike.post_id == post_id,
-                CommunityPostLike.user_id == current_user.id,
-            )
-        )
-        existing_after = result.scalar_one_or_none()
-        return {
-            "is_liked": existing_after is not None,
-            "likes_count": post.likes_count,
-        }
+        is_liked = True
+        delta = 0
     except DATABASE_ERRORS as exc:
         await db.rollback()
         logger.error("[Community] Failed to toggle like on post %s: %s", post_id, exc)
@@ -850,7 +829,15 @@ async def toggle_like(
             detail="Failed to toggle like",
         ) from exc
 
+    if delta != 0:
+        likes_count = await adjust_post_likes_count(post_id, delta)
+    else:
+        likes_count = await read_post_likes_count(post_id)
+
+    if likes_count is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
     await invalidate_post(post_id)
     await invalidate_all()
 
-    return {"is_liked": is_liked, "likes_count": post.likes_count}
+    return {"is_liked": is_liked, "likes_count": likes_count}

@@ -5,6 +5,7 @@ from __future__ import annotations
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from models.domain.auth import User
 from models.domain.thinking_coin import ThinkingCoinLedger
 from services.auth.thinking_coin.daily_cap import daily_earn_cap_blocks
 from services.auth.thinking_coin.dates import beijing_month_utc_bounds
@@ -15,6 +16,7 @@ from utils.auth.thinking_coin_config import (
     SLUG_PUBLISH_CASE,
     feature_thinking_coins_enabled,
 )
+from utils.db.rls_context import RlsContext, apply_rls_context_async
 
 
 async def _already_credited_for_case(db: AsyncSession, user_id: int, case_id: str) -> bool:
@@ -84,3 +86,26 @@ async def try_publish_case_earn(
         ref_id=case_id,
     )
     return amount, task.slug
+
+
+async def try_publish_case_earn_as_author(
+    db: AsyncSession,
+    author_id: int,
+    case_id: str,
+    *,
+    restore_ctx: RlsContext,
+) -> tuple[int, str | None]:
+    """Credit under the author's RLS, then restore the caller's context.
+
+    Admin review runs in panel mode; wallet RLS is owner-or-system only, so the
+    credit must execute as the author (same transaction, savepoint-isolated).
+    """
+    org_id = (
+        await db.execute(select(User.organization_id).where(User.id == author_id))
+    ).scalar_one_or_none()
+    await apply_rls_context_async(db, RlsContext.for_celery_user(author_id, org_id))
+    try:
+        async with db.begin_nested():
+            return await try_publish_case_earn(db, author_id, case_id)
+    finally:
+        await apply_rls_context_async(db, restore_ctx)
