@@ -13,13 +13,13 @@ import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { mindMapBranchFontSize, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { estimateNodeWidth, measureBranchNodeHeight } from '@/stores/specLoader/mindMap'
 import type { MindGraphNode } from '@/types'
 
 export interface UseDiagramCanvasMindMapPaletteDropOptions {
-  diagramStore: ReturnType<typeof useDiagramStore>
+  diagramStore: ReturnType<typeof useDiagramSession>
 }
 
 interface MindMapPaletteDragPayload {
@@ -52,7 +52,7 @@ function buildPaletteGhostLabel(items: MindMapPaletteDragItem[]): string {
 
 function buildPaletteDragGhost(
   items: MindMapPaletteDragItem[],
-  diagramData: ReturnType<typeof useDiagramStore>['data']
+  diagramData: ReturnType<typeof useDiagramSession>['data']
 ): BranchMoveGhostPreview | null {
   const texts = items.map((i) => (i.text ?? '').trim()).filter(Boolean)
   if (texts.length === 0) return null
@@ -112,7 +112,7 @@ export function useDiagramCanvasMindMapPaletteDrop(
   options: UseDiagramCanvasMindMapPaletteDropOptions
 ) {
   const { diagramStore } = options
-  const { screenToFlowCoordinate, getNodes } = useVueFlow()
+  const { screenToFlowCoordinate, getNodes } = useVueFlow(diagramStore.vueFlowId)
   const { t } = useLanguage()
   const { removeDroppedSuggestions } = getAiBrainstorm()
 

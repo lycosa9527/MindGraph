@@ -14,7 +14,7 @@
  * overlays (brace/tree/bridge) use SVG <text>; bidi for all-RTL strings can be weaker
  * in some browsers — if reported, consider foreignObject + HTML for those labels.
  */
-import { computed, onMounted, onUnmounted, provide, ref, toRef, unref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, provide, ref, toRef, unref, watch, toValue } from 'vue'
 
 import { Background } from '@vue-flow/background'
 import { type GraphNode, SelectionMode, VueFlow, useVueFlow } from '@vue-flow/core'
@@ -68,7 +68,8 @@ import {
 } from '@/composables/presentation/presentationDiagramEdit'
 import { LEARNING_SHEET_HAMMER_CURSOR } from '@/config/learningSheetCursor'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
-import { useDiagramStore, usePanelsStore, usePresentationPointerStore, useUIStore } from '@/stores'
+import { usePanelsStore, usePresentationPointerStore, useUIStore } from '@/stores'
+import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } from '@/types'
@@ -161,8 +162,8 @@ const emit = defineEmits<{
   (e: 'paneClick'): void
 }>()
 
-const diagramStore = useDiagramStore()
-const { mindMapBulkLoading } = storeToRefs(diagramStore)
+const diagramStore = useDiagramSession()
+const mindMapBulkLoading = diagramSessionRef(diagramStore, 'mindMapBulkLoading')
 const panelsStore = usePanelsStore()
 const uiStore = useUIStore()
 
@@ -192,7 +193,7 @@ const {
   zoomIn,
   zoomOut,
   screenToFlowCoordinate,
-} = useVueFlow()
+} = useVueFlow(diagramStore.vueFlowId)
 
 onEdgeClick(({ edge }) => {
   if (diagramStore.type === 'concept_map') {
@@ -259,7 +260,10 @@ const canvasTouchGesturesActive = computed(
     (Array.isArray(props.panOnDragButtons) && props.panOnDragButtons.length > 0)
 )
 
-const presentationDiagramEditLocked = diagramPresentationReadOnlyRef
+const presentationDiagramEditLocked = computed(
+  () =>
+    diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)
+)
 
 const presentationStrokeOverlayMode = computed((): 'pen' | 'highlighter' | 'eraser' => {
   if (presentationStrokeEraserActive.value) return 'eraser'
@@ -673,6 +677,7 @@ defineExpose({
       @drop="handleCanvasDrop"
     >
       <VueFlow
+        :id="diagramStore.vueFlowId"
         :nodes="nodes"
         :edges="edges"
         :node-types="diagramCanvasNodeTypes"

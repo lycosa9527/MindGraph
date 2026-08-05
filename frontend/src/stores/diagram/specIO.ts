@@ -94,7 +94,10 @@ export function useSpecIOSlice(ctx: DiagramContext) {
 
     ctx.nodeDimensions.value = {}
     ctx.layoutRecalcTrigger.value = 0
-    useConceptMapRelationshipStore().clearAll()
+    // Readonly / quiet sessions must not clear the editor concept-map picker store.
+    if (ctx.emitDiagramEvents && !ctx.isReadonly.value) {
+      useConceptMapRelationshipStore().clearAll()
+    }
 
     if (!ctx.setDiagramType(diagramTypeValue)) return false
 
@@ -261,10 +264,16 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     }
 
     if (options?.emitLoaded !== false) {
-      eventBus.emit('diagram:loaded', {
+      const loadedPayload = {
         diagramType: diagramTypeValue,
         skipFit: options?.skipFit === true,
-      })
+      }
+      if (ctx.emitDiagramEvents) {
+        eventBus.emit('diagram:loaded', loadedPayload)
+      } else {
+        // Quiet / Showcase sessions: keep fit listeners on the private view bus.
+        ctx.viewBus.emit('diagram:loaded', loadedPayload)
+      }
     }
     if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
       markMindMapLoadStage('spec:load:done', {

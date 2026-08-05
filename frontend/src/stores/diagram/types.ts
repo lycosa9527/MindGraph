@@ -2,6 +2,8 @@ import type { Ref } from 'vue'
 
 import type { DiagramData, DiagramNode, DiagramType, HistoryEntry } from '@/types'
 
+import type { DiagramViewBus } from './diagramViewBus'
+
 /** Optional flags for `loadFromSpec` (same-document layout refresh vs full load). */
 export type LoadFromSpecOptions = {
   /** When false, skip `diagram:loaded` so listeners do not treat it as a new diagram. */
@@ -109,6 +111,15 @@ export interface DiagramContext {
   collabSessionActive: Ref<boolean>
   /** Node ids another participant is inline-editing; blocks delete while collab active. */
   collabForeignLockedNodeIds: Ref<Set<string>>
+
+  /** Session is a readonly preview (Showcase); mutations no-op via presentation guard. */
+  isReadonly: Ref<boolean>
+  /** Vue Flow instance id for this session (required when multiple canvases mount). */
+  vueFlowId: string
+  /** Fit/zoom bus scoped to this session. */
+  viewBus: DiagramViewBus
+  /** When false, do not bridge diagram mutations onto the global app eventBus. */
+  emitDiagramEvents: boolean
 
   // Cross-cutting functions (filled during two-phase init)
   pushHistory: (action: string) => void

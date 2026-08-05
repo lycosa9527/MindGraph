@@ -1,9 +1,8 @@
-import { eventBus } from '@/composables/core/useEventBus'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection } from '@/types'
 
 import { recalculateBraceMapLayout, recalculateBubbleMapLayout } from '../specLoader'
-import { emitEvent } from './events'
+import { emitCtxEvent } from './events'
 import type { DiagramContext } from './types'
 
 export function useNodeSwapOpsSlice(ctx: DiagramContext) {
@@ -256,8 +255,8 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       ctx.selectedNodes.value = []
       ctx.selectedConnectionId.value = null
       ctx.pushHistory('Move node')
-      emitEvent('diagram:operation_completed', { operation: 'move_branch' })
-      eventBus.emit('diagram:branch_moved', {})
+      emitCtxEvent(ctx, 'diagram:operation_completed', { operation: 'move_branch' })
+      ctx.viewBus.emit('diagram:branch_moved', {})
     }
     return success
   }
@@ -440,8 +439,8 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       ctx.selectedNodes.value = []
       ctx.selectedConnectionId.value = null
       ctx.pushHistory('Move node')
-      emitEvent('diagram:operation_completed', { operation: 'move_branch' })
-      eventBus.emit('diagram:branch_moved', {})
+      emitCtxEvent(ctx, 'diagram:operation_completed', { operation: 'move_branch' })
+      ctx.viewBus.emit('diagram:branch_moved', {})
     }
     return success
   }
@@ -533,8 +532,8 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       ctx.selectedNodes.value = []
       ctx.selectedConnectionId.value = null
       ctx.pushHistory('Move node')
-      emitEvent('diagram:operation_completed', { operation: 'move_branch' })
-      eventBus.emit('diagram:branch_moved', {})
+      emitCtxEvent(ctx, 'diagram:operation_completed', { operation: 'move_branch' })
+      ctx.viewBus.emit('diagram:branch_moved', {})
     }
     return success
   }

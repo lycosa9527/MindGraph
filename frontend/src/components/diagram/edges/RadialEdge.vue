@@ -11,13 +11,13 @@ import { computed } from 'vue'
 
 import { type EdgeProps, useVueFlow } from '@vue-flow/core'
 
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData } from '@/types'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
-const { getNodes } = useVueFlow()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
+const { getNodes } = useVueFlow(diagramStore.vueFlowId)
 
 /** True if target is a double-bubble similarity or difference capsule node */
 function isDoubleBubbleCapsuleTarget(targetId: string): boolean {

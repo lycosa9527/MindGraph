@@ -8,7 +8,14 @@ import type { DiagramEvent, DiagramEventType, EventCallback, MindMapCurveExtents
 
 const eventSubscribers = new Map<DiagramEventType | '*', Set<EventCallback>>()
 
-export function emitEvent(type: DiagramEventType, payload?: unknown): void {
+export function emitEvent(
+  type: DiagramEventType,
+  payload?: unknown,
+  bridgeToAppBus = true
+): void {
+  // Quiet / preview sessions must not touch the shared subscriber map or app bus.
+  if (!bridgeToAppBus) return
+
   const event: DiagramEvent = { type, payload, timestamp: Date.now() }
 
   eventSubscribers.get(type)?.forEach((cb) => cb(event))
@@ -44,6 +51,15 @@ export function emitEvent(type: DiagramEventType, payload?: unknown): void {
       eventBus.emit('diagram:positions_cleared', {})
       break
   }
+}
+
+/** Slice helper — respects quiet Showcase sessions (`emitDiagramEvents: false`). */
+export function emitCtxEvent(
+  ctx: { emitDiagramEvents: boolean },
+  type: DiagramEventType,
+  payload?: unknown
+): void {
+  emitEvent(type, payload, ctx.emitDiagramEvents)
 }
 
 export function subscribeToDiagramEvents(

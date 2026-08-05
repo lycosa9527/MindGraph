@@ -1,3 +1,4 @@
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { watch } from 'vue'
 
 import type { useDiagramStore } from '@/stores/diagram'
@@ -15,7 +16,7 @@ import {
  */
 
 export function useConceptMapCmapMeasuredLayoutRelax(
-  diagramStore: ReturnType<typeof useDiagramStore>
+  diagramStore: ReturnType<typeof useDiagramSession>
 ): void {
   watch(
     () => diagramStore.layoutRecalcTrigger,

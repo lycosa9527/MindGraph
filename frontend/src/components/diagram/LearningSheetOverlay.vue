@@ -9,11 +9,11 @@ import { useVueFlow } from '@vue-flow/core'
 
 import { useLanguage } from '@/composables'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 
-const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
+const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow(diagramStore.vueFlowId)
 const { t } = useLanguage()
 
 const viewport = computed(() => vueFlowViewport.value ?? getViewport())

@@ -16,6 +16,7 @@ import { type Ref, computed, watch } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 import { useBreakpoints, useDebounceFn, useElementSize, useMediaQuery } from '@vueuse/core'
 
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { ANIMATION, BREAKPOINTS, FIT_PADDING } from '@/config/uiConfig'
 import { isTouchDeviceUserAgent } from '@/utils/isMobileClient'
 
@@ -91,7 +92,7 @@ export function useCanvasState(
   // VueFlow: Fit View Integration
   // =========================================================================
 
-  const { fitView, getNodes } = useVueFlow()
+  const { fitView, getNodes } = useVueFlow(useDiagramSession().vueFlowId)
 
   /**
    * Fit diagram to canvas with animation

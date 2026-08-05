@@ -261,16 +261,20 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
       if (key) {
         uiStore.setSelectedChartType(key)
       }
+      // New-canvas contract: always blank when opening by type (no diagramId).
       diagramStore.setDiagramType(typeFromUrl)
-      if (!diagramStore.data) {
-        diagramStore.loadDefaultTemplate(typeFromUrl)
-      }
+      savedDiagramsStore.clearActiveDiagram()
+      diagramStore.loadDefaultTemplate(typeFromUrl)
       return
     }
 
     if (diagramType.value) {
       diagramStore.setDiagramType(diagramType.value)
-      if (!diagramStore.data) {
+      // No library id → new canvas; always start from default template.
+      if (!savedDiagramsStore.activeDiagramId || !diagramStore.data) {
+        if (!savedDiagramsStore.activeDiagramId) {
+          savedDiagramsStore.clearActiveDiagram()
+        }
         diagramStore.loadDefaultTemplate(diagramType.value)
       }
     }

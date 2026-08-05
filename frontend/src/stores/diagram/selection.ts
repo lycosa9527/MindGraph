@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { emitEvent } from './events'
+import { emitCtxEvent } from './events'
 import { releaseMindMapPendingInlineEditIfSelectionMoved } from './mindMapOps'
 import type { DiagramContext } from './types'
 
@@ -29,7 +29,7 @@ export function useSelectionSlice(ctx: DiagramContext) {
 
     selectedConnectionId.value = null
     selectedNodes.value = ids
-    emitEvent('diagram:selection_changed', { selectedNodes: ids })
+    emitCtxEvent(ctx, 'diagram:selection_changed', { selectedNodes: ids })
     return true
   }
 
@@ -39,14 +39,14 @@ export function useSelectionSlice(ctx: DiagramContext) {
       selectedNodes.value = []
     }
     selectedConnectionId.value = connectionId
-    emitEvent('diagram:selection_changed', { selectedNodes: [] })
+    emitCtxEvent(ctx, 'diagram:selection_changed', { selectedNodes: [] })
   }
 
   function clearSelection(): void {
     releaseMindMapPendingInlineEditIfSelectionMoved(ctx, [])
     selectedConnectionId.value = null
     selectedNodes.value = []
-    emitEvent('diagram:selection_changed', { selectedNodes: [] })
+    emitCtxEvent(ctx, 'diagram:selection_changed', { selectedNodes: [] })
   }
 
   function addToSelection(nodeId: string): void {

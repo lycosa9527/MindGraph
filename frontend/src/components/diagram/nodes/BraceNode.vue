@@ -11,6 +11,7 @@ import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
+import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
@@ -21,6 +22,7 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const braceNodeRef = ref<HTMLElement | null>(null)
 useNodeDimensions(braceNodeRef, props.id)
@@ -178,7 +180,7 @@ function handleBranchMovePointerUp(): void {
   >
     <InlineEditableText
       :text="data.label || ''"
-      :readonly="data.hidden === true"
+      :readonly="isTextReadonly"
       :node-id="id"
       :is-editing="isEditing"
       :max-width="braceNodeMaxWidth"
@@ -196,12 +198,12 @@ function handleBranchMovePointerUp(): void {
       v-if="!isWholeNode"
       type="target"
       :position="Position.Left"
-      class="!bg-slate-400"
+      class="bg-slate-400!"
     />
     <Handle
       type="source"
       :position="Position.Right"
-      class="!bg-slate-400"
+      class="bg-slate-400!"
     />
   </div>
 </template>

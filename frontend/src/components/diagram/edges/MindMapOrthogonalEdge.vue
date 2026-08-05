@@ -15,7 +15,7 @@ import {
   resolveMindMapTopicBorderColor,
   resolveMindMapTopicStemWidth,
 } from '@/config/mindMapGeometry'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData, MindGraphNodeData, NodeStyle } from '@/types'
 import {
   mindMapBranchSide,
@@ -33,9 +33,8 @@ const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
 const isHovered = ref(false)
 
-const { nodes: vueFlowNodes } = useVueFlow()
-
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
+const { nodes: vueFlowNodes } = useVueFlow(diagramStore.vueFlowId)
 const exportOutlineActive = useMindMapExportOutlineWireframeActive()
 const preservedNodeStyles = computed(
   () => (diagramStore.data?._node_styles ?? {}) as Record<string, NodeStyle>

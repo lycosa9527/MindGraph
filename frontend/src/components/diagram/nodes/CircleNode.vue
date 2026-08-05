@@ -20,7 +20,8 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { useDiagramStore } from '@/stores'
+import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { TOPIC_FONT_SIZE } from '@/stores/specLoader/textMeasurement'
 import {
   CONTEXT_MAX_TEXT_WIDTH,
@@ -34,7 +35,8 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
+const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const topicBorderPx = 3
 const contextBorderPx = 2
@@ -363,7 +365,7 @@ function handleBranchMovePointerUp(): void {
         :text="data.label || ''"
         :node-id="id"
         :is-editing="isEditing"
-        :readonly="data.hidden === true"
+        :readonly="isTextReadonly"
         :max-width="`${textMaxWidth}px`"
         text-align="center"
         :text-decoration="data.style?.textDecoration || 'none'"

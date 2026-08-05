@@ -15,7 +15,8 @@ import { Menu } from '@element-plus/icons-vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
-import { useDiagramStore } from '@/stores'
+import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { getConceptMapFocusQuestionEditableSplit } from '@/stores/diagram/diagramDefaultLabels'
 import { useUIStore } from '@/stores/ui'
 import type { MindGraphNodeProps } from '@/types'
@@ -30,8 +31,9 @@ const props = defineProps<MindGraphNodeProps>()
 const conceptNodeRef = ref<HTMLElement | null>(null)
 useNodeDimensions(conceptNodeRef, props.id)
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const uiStore = useUIStore()
+const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const { getNodeStyle } = useTheme({
   diagramType: computed(() => props.data.diagramType),
@@ -329,7 +331,7 @@ onUnmounted(() => {
       />
       <InlineEditableText
         :text="data.label || ''"
-        :readonly="data.hidden === true"
+        :readonly="isTextReadonly"
         :node-id="id"
         :is-editing="isEditing"
         :max-width="conceptMapInlineMaxWidth"

@@ -4,10 +4,17 @@
 import { nextTick } from 'vue'
 
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
-import type { useDiagramStore } from '@/stores/diagram'
+import type { DiagramSession } from '@/stores/diagram'
 import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
 
-type DiagramStore = ReturnType<typeof useDiagramStore>
+type DiagramStore = Pick<
+  DiagramSession,
+  | 'isLearningSheet'
+  | 'hasBlankedLearningSheetNodes'
+  | 'learningSheetShowAnswers'
+  | 'setLearningSheetShowAnswers'
+  | 'runWithLearningSheetAnswersRevealed'
+>
 
 async function waitForCanvasPaint(): Promise<void> {
   await nextTick()

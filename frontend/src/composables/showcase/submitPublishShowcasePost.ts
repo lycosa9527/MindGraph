@@ -101,8 +101,6 @@ export type PublishSubmitDeps = {
   showPublishDiagramPreview: { value: boolean }
   publishPreviewDiagramType: { value: string }
   inlinePreviewRef: Ref<{ captureThumbnail?: () => Promise<Blob | null> } | null>
-  thumbnailCaptureHost: Ref<HTMLElement | null>
-  showThumbnailCapture: Ref<boolean>
   ensureSelectedDiagramSpec: () => Promise<boolean>
   ensureMgUploadSpecReady: () => Promise<boolean>
   isMgUploadedFile: (file: File | null | undefined) => boolean
@@ -175,8 +173,6 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
     showPublishDiagramPreview,
     publishPreviewDiagramType,
     inlinePreviewRef,
-    thumbnailCaptureHost,
-    showThumbnailCapture,
     ensureSelectedDiagramSpec,
     ensureMgUploadSpecReady,
     isMgUploadedFile,
@@ -232,8 +228,6 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
       selectedDiagramSpec: selectedDiagramSpec.value,
       selectedDiagram: selectedDiagram.value,
       publishPreviewDiagramType: publishPreviewDiagramType.value,
-      thumbnailCaptureHost,
-      showThumbnailCapture,
     })
   }
 

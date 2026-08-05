@@ -155,7 +155,9 @@ import { ANIMATION, FIT_PADDING, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
+import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
 import {
+  type DiagramSession,
   type LLMResult,
   useAuthStore,
   useConceptMapRelationshipStore,
@@ -181,6 +183,7 @@ import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 const route = useRoute()
 const router = useRouter()
 const diagramStore = useDiagramStore()
+provide(DiagramSessionKey, diagramStore as unknown as DiagramSession)
 const oneSentenceStore = useOneSentenceStore()
 getDiagramOperations()
 const relationshipStore = useConceptMapRelationshipStore()
@@ -1065,16 +1068,26 @@ const { handleSaveKey } = useCanvasPageEditorShortcuts({
 watch(
   () => uiStore.selectedChartType,
   () => {
-    if (diagramType.value) {
-      diagramStore.setDiagramType(diagramType.value)
-      // Load default template if we have a type and no existing diagram
-      if (!diagramStore.data) {
-        // Load static default template (no AI generation)
-        diagramStore.loadDefaultTemplate(diagramType.value)
-      }
+    if (!diagramType.value) {
+      // If no type specified, user should go back and select one
+      // The canvas will show empty state
+      return
     }
-    // If no type specified, user should go back and select one
-    // The canvas will show empty state
+    diagramStore.setDiagramType(diagramType.value)
+    // New-canvas contract: ?type= without diagramId always starts from the default
+    // template (must not reuse leftover session data from Showcase or prior canvas).
+    const typeQuery = route.query.type
+    const hasTypeQuery =
+      typeof typeQuery === 'string' && VALID_DIAGRAM_TYPES.includes(typeQuery as DiagramType)
+    const hasDiagramId = Boolean(route.query.diagramId ?? route.query.diagram_id)
+    if (hasTypeQuery && !hasDiagramId) {
+      savedDiagramsStore.clearActiveDiagram()
+      diagramStore.loadDefaultTemplate(diagramType.value)
+      return
+    }
+    if (!diagramStore.data) {
+      diagramStore.loadDefaultTemplate(diagramType.value)
+    }
   },
   { immediate: true }
 )
@@ -1263,10 +1276,10 @@ onMounted(async () => {
     if (chineseName) {
       uiStore.setSelectedChartType(chineseName)
     }
+    // New-canvas contract: always blank template when opening by type (no diagramId).
     diagramStore.setDiagramType(typeFromUrl)
-    if (!diagramStore.data) {
-      diagramStore.loadDefaultTemplate(typeFromUrl)
-    }
+    savedDiagramsStore.clearActiveDiagram()
+    diagramStore.loadDefaultTemplate(typeFromUrl)
     applyCanvasKittySeedFromRoute(typeFromUrl, route.query, diagramStore)
     if (canvasKittySeedQueryKeysPresent(route.query)) {
       const restQuery = { ...route.query }
@@ -1282,9 +1295,12 @@ onMounted(async () => {
   // Priority 3: Use UI store (backward compat, will be lost on refresh)
   if (diagramType.value) {
     diagramStore.setDiagramType(diagramType.value)
-    // Load default template on mount if type is provided and no existing diagram
-    if (!diagramStore.data) {
-      // Load static default template (no AI generation)
+    // No library id → new canvas; always start from default template.
+    // Keep existing data only when an active library diagram is already bound.
+    if (!savedDiagramsStore.activeDiagramId || !diagramStore.data) {
+      if (!savedDiagramsStore.activeDiagramId) {
+        savedDiagramsStore.clearActiveDiagram()
+      }
       diagramStore.loadDefaultTemplate(diagramType.value)
     }
   }

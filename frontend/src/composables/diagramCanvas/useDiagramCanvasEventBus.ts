@@ -1,12 +1,12 @@
 import type { Ref } from 'vue'
-import { nextTick } from 'vue'
+import { nextTick, toValue } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { showcaseReaderLockRef } from '@/composables/presentation/presentationDiagramEdit'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { ANIMATION } from '@/config/uiConfig'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
-import { useCanvasExportStore, useDiagramStore } from '@/stores'
+import { useCanvasExportStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramNode, DiagramType, MindGraphNode } from '@/types'
 import { isManualViewportMode } from '@/utils/conceptMapDesktopViewport'
@@ -30,7 +30,7 @@ type FitApi = {
   ) => void
 }
 
-type DiagramStore = ReturnType<typeof useDiagramStore>
+type DiagramStore = ReturnType<typeof useDiagramSession>
 
 export interface DiagramCanvasEventBusContext {
   diagramStore: DiagramStore
@@ -102,8 +102,12 @@ export function useDiagramCanvasEventBus(): {
       regenerateForNodeIfNeeded,
     } = ctx
 
+    const viewBus = diagramStore.viewBus
+    const sessionReadonly = () => toValue(diagramStore.isReadonly)
+
     unsubscribers.push(
-      eventBus.on('node:edit_requested', ({ nodeId }) => {
+      viewBus.on('node:edit_requested', ({ nodeId }) => {
+        if (sessionReadonly()) return
         const node = getNodes().find((n) => n.id === nodeId)
         if (node) {
           emit('nodeDoubleClick', node as unknown as MindGraphNode)
@@ -112,7 +116,8 @@ export function useDiagramCanvasEventBus(): {
     )
 
     unsubscribers.push(
-      eventBus.on('diagram:double_bubble_relayout_requested', () => {
+      viewBus.on('diagram:double_bubble_relayout_requested', () => {
+        if (sessionReadonly()) return
         if (diagramStore.type === 'double_bubble_map') {
           scheduleDoubleBubbleRebuild(diagramStore)
         }
@@ -122,15 +127,14 @@ export function useDiagramCanvasEventBus(): {
     function allowViewportFitEvent(
       data: { userInitiated?: boolean; forExport?: boolean } | undefined
     ): boolean {
-      // Showcase .mg reader is read-only: auto fit-on-init / reset must work even
-      // when mind-map v2 or desktop concept map would otherwise require userInitiated.
-      if (showcaseReaderLockRef.value) return true
+      // Readonly preview sessions must accept auto fit-on-init / reset.
+      if (sessionReadonly()) return true
       if (!isManualViewportMode(diagramStore, uiStore)) return true
       return Boolean(data?.userInitiated || data?.forExport)
     }
 
     unsubscribers.push(
-      eventBus.on('view:fit_to_window_requested', (data) => {
+      viewBus.on('view:fit_to_window_requested', (data) => {
         if (!allowViewportFitEvent(data)) return
         const animate = data?.animate !== false
         fitApi.fitToFullCanvas(animate)
@@ -138,7 +142,7 @@ export function useDiagramCanvasEventBus(): {
     )
 
     unsubscribers.push(
-      eventBus.on('view:fit_to_canvas_requested', (data) => {
+      viewBus.on('view:fit_to_canvas_requested', (data) => {
         if (!allowViewportFitEvent(data)) return
         const animate = data?.animate !== false
         fitApi.fitWithPanel(animate)
@@ -146,7 +150,7 @@ export function useDiagramCanvasEventBus(): {
     )
 
     unsubscribers.push(
-      eventBus.on('view:fit_to_nodes_requested', (data) => {
+      viewBus.on('view:fit_to_nodes_requested', (data) => {
         if (!allowViewportFitEvent(data)) return
         void fitApi.fitToNodes(data.nodeIds, {
           animate: data.animate !== false,
@@ -158,7 +162,7 @@ export function useDiagramCanvasEventBus(): {
 
     // Pan-only keep-in-view after child add — always allowed (does not zoom-fit).
     unsubscribers.push(
-      eventBus.on('view:ensure_node_visible_requested', (data) => {
+      viewBus.on('view:ensure_node_visible_requested', (data) => {
         if (!data?.nodeId) return
         fitApi.ensureNodeVisibleInSafeFraction(data.nodeId, {
           safeFraction: data.safeFraction,
@@ -168,27 +172,51 @@ export function useDiagramCanvasEventBus(): {
     )
 
     unsubscribers.push(
-      eventBus.on('diagram:branch_moved', () => {
+      viewBus.on('diagram:branch_moved', () => {
+        if (sessionReadonly()) return
         if (isManualViewportMode(diagramStore, uiStore)) return
         setTimeout(() => {
-          eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+          viewBus.emit('view:fit_to_canvas_requested', { animate: true })
         }, ANIMATION.FIT_DELAY)
       })
     )
 
     unsubscribers.push(
-      eventBus.on('view:fit_diagram_requested', () => {
-        if (isManualViewportMode(diagramStore, uiStore)) return
+      viewBus.on('view:fit_diagram_requested', () => {
+        if (isManualViewportMode(diagramStore, uiStore) && !sessionReadonly()) return
         fitApi.fitDiagram(true)
       })
     )
 
     // Reserved for callers that only want the export framing (no emit sites in repo today).
     unsubscribers.push(
-      eventBus.on('view:fit_for_export_requested', () => {
+      viewBus.on('view:fit_for_export_requested', () => {
         fitApi.fitForExport()
       })
     )
+
+    if (sessionReadonly()) {
+      unsubscribers.push(
+        viewBus.on('view:zoom_in_requested', () => {
+          zoomIn()
+        })
+      )
+      unsubscribers.push(
+        viewBus.on('view:zoom_out_requested', () => {
+          zoomOut()
+        })
+      )
+      unsubscribers.push(
+        viewBus.on('view:zoom_set_requested', ({ zoom }) => {
+          const vp = getViewport()
+          setViewport({ x: vp.x, y: vp.y, zoom }, { duration: ANIMATION.DURATION_FAST })
+        })
+      )
+      return () => {
+        unsubscribers.forEach((unsub) => unsub())
+        unsubscribers.length = 0
+      }
+    }
 
     unsubscribers.push(
       eventBus.on('toolbar:export_requested', async ({ format, options }) => {
@@ -235,19 +263,19 @@ export function useDiagramCanvasEventBus(): {
     )
 
     unsubscribers.push(
-      eventBus.on('view:zoom_in_requested', () => {
+      viewBus.on('view:zoom_in_requested', () => {
         zoomIn()
       })
     )
 
     unsubscribers.push(
-      eventBus.on('view:zoom_out_requested', () => {
+      viewBus.on('view:zoom_out_requested', () => {
         zoomOut()
       })
     )
 
     unsubscribers.push(
-      eventBus.on('view:zoom_set_requested', ({ zoom }) => {
+      viewBus.on('view:zoom_set_requested', ({ zoom }) => {
         const vp = getViewport()
         setViewport({ x: vp.x, y: vp.y, zoom }, { duration: ANIMATION.DURATION_FAST })
       })
@@ -256,13 +284,13 @@ export function useDiagramCanvasEventBus(): {
     let slideShowViewportSnapshot: { x: number; y: number; zoom: number } | null = null
 
     unsubscribers.push(
-      eventBus.on('view:viewport_snapshot_save', () => {
+      viewBus.on('view:viewport_snapshot_save', () => {
         slideShowViewportSnapshot = getViewport()
       })
     )
 
     unsubscribers.push(
-      eventBus.on('view:viewport_snapshot_restore', (data) => {
+      viewBus.on('view:viewport_snapshot_restore', (data) => {
         if (!slideShowViewportSnapshot) return
         setViewport(slideShowViewportSnapshot, {
           duration: data?.animate === false ? 0 : (data?.duration ?? ANIMATION.DURATION_FAST),
@@ -273,7 +301,7 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       eventBus.on('node:text_updated', ({ nodeId, text }) => {
-        if (isDiagramPresentationReadOnly()) return
+        if (isDiagramPresentationReadOnly() || sessionReadonly()) return
         const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
         const currentText = (node?.text ?? (node?.data as { label?: string })?.label ?? '').trim()
         const alreadyUpdated = currentText === text.trim()
@@ -313,7 +341,7 @@ export function useDiagramCanvasEventBus(): {
     )
 
     unsubscribers.push(
-      eventBus.on('multi_flow_map:topic_width_changed', ({ nodeId, width }) => {
+      viewBus.on('multi_flow_map:topic_width_changed', ({ nodeId, width }) => {
         if (diagramStore.type !== 'multi_flow_map' || nodeId !== 'event' || width === null) {
           return
         }
@@ -322,7 +350,7 @@ export function useDiagramCanvasEventBus(): {
     )
 
     unsubscribers.push(
-      eventBus.on('multi_flow_map:node_width_changed', ({ nodeId, width }) => {
+      viewBus.on('multi_flow_map:node_width_changed', ({ nodeId, width }) => {
         if (diagramStore.type !== 'multi_flow_map' || !nodeId || width === null) {
           return
         }

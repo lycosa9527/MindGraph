@@ -20,13 +20,13 @@ import { useVueFlow } from '@vue-flow/core'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { useDiagramStore } from '@/stores'
-
-// Vue Flow instance for viewport tracking and getting nodes with measured dimensions
-const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow()
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 
 // Diagram store for diagram type
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
+
+// Vue Flow instance for viewport tracking and getting nodes with measured dimensions
+const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow(diagramStore.vueFlowId)
 
 // Current viewport - use Vue Flow's reactive viewport if available, otherwise poll
 const viewport = computed(() => {

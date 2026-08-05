@@ -19,6 +19,8 @@ import { type ComputedRef, computed, onUnmounted, watch } from 'vue'
 import { type Edge, type Node, useVueFlow } from '@vue-flow/core'
 import { useStorage, useThrottleFn } from '@vueuse/core'
 
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -70,7 +72,7 @@ export function useDiagramPersistence(
   // VueFlow State
   // =========================================================================
 
-  const { nodes, edges, setNodes, setEdges } = useVueFlow()
+  const { nodes, edges, setNodes, setEdges } = useVueFlow(useDiagramSession().vueFlowId)
 
   // =========================================================================
   // VueUse: Reactive Storage

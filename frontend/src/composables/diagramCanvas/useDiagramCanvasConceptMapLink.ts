@@ -10,7 +10,8 @@ import {
   type RelationshipLinkDragPayload,
 } from '@/composables/diagramCanvas/conceptMapLinkMime'
 import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'
-import { useDiagramStore, useLLMResultsStore } from '@/stores'
+import { useLLMResultsStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 import { conceptMapLinkChaseActive } from './conceptMapLinkChaseState'
@@ -25,7 +26,7 @@ import {
   pickAnchorNodeIdForRelationshipToNewConcept,
 } from './conceptMapLinkPreviewGeometry'
 
-type DiagramStore = ReturnType<typeof useDiagramStore>
+type DiagramStore = ReturnType<typeof useDiagramSession>
 
 type LinkRelationshipOrigin = {
   connectionId: string

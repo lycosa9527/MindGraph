@@ -2,14 +2,14 @@ import { getMindmapBranchColor } from '@/config/mindmapColors'
 
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
-import { emitEvent } from './events'
+import { emitCtxEvent } from './events'
 import type { DiagramContext } from './types'
 
 export function useBubbleMapOpsSlice(ctx: DiagramContext) {
   const { type, data } = ctx
 
   function removeBubbleMapNodes(nodeIds: string[]): number {
-    if (isDiagramPresentationReadOnly()) return 0
+    if (isDiagramPresentationReadOnly(ctx)) return 0
     if (type.value !== 'bubble_map' || !data.value?.nodes) return 0
 
     const idsToRemove = new Set(nodeIds.filter((id) => id.startsWith('bubble-')))
@@ -45,7 +45,7 @@ export function useBubbleMapOpsSlice(ctx: DiagramContext) {
       style: { strokeColor: getMindmapBranchColor(i).border },
     }))
 
-    emitEvent('diagram:nodes_deleted', { nodeIds: deletedIds })
+    emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds: deletedIds })
     return deletedIds.length
   }
 

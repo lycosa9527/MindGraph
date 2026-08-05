@@ -17,7 +17,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useTheme } from '@/composables/core/useTheme'
 import { getPositionsFromAngle } from '@/composables/diagramCanvas/conceptMapLinkPreviewGeometry'
 import { CONCEPT_MAP_GENERATING_KEY } from '@/composables/editor/useConceptMapRelationship'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import type { DiagramType, MindGraphEdgeData } from '@/types'
 import { splitBezierPathAtMidpoint } from '@/utils/bezierSplit'
@@ -31,9 +31,9 @@ const generatingConnectionIds = inject<{ value: Set<string> }>(
   ref(new Set<string>())
 )
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const { t } = useLanguage()
-const { edges: vueFlowEdges } = useVueFlow()
+const { edges: vueFlowEdges } = useVueFlow(diagramStore.vueFlowId)
 
 const isMindMap = computed(() => {
   const dt = props.data?.diagramType as DiagramType | undefined

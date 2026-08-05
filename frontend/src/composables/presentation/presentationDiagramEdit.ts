@@ -7,23 +7,9 @@ export function setPresentationDiagramEditLocked(locked: boolean): void {
   presentationDiagramEditLockedRef.value = locked
 }
 
-/** Case-square .mg reader lock — independent depth counter so other unlock calls cannot open edits. */
-let showcaseReaderLockDepth = 0
-export const showcaseReaderLockRef = ref(false)
-
-export function pushShowcaseReaderLock(): void {
-  showcaseReaderLockDepth += 1
-  showcaseReaderLockRef.value = true
-}
-
-export function popShowcaseReaderLock(): void {
-  showcaseReaderLockDepth = Math.max(0, showcaseReaderLockDepth - 1)
-  showcaseReaderLockRef.value = showcaseReaderLockDepth > 0
-}
-
-/** True when any presentation or showcase reader lock is active. */
+/** True when presentation / slideshow edit lock is active. */
 export const diagramPresentationReadOnlyRef = computed(
-  () => presentationDiagramEditLockedRef.value || showcaseReaderLockRef.value
+  () => presentationDiagramEditLockedRef.value
 )
 
 /** Teleport target for presentation overlays/tooltips (must stay inside fullscreen root). */

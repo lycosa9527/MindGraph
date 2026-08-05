@@ -2,7 +2,7 @@
 /**
  * MindMapV2TopicNode — v2 mind map topic node (themes, shapes, underline, trunk handles).
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, toValue } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
@@ -32,7 +32,8 @@ import {
   mindMapUnderlineContentPadding,
 } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
-import { useDiagramStore, useLLMResultsStore } from '@/stores'
+import { useLLMResultsStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { markMindMapLoadShellMounted } from '@/utils/mindMapLoadDebug'
@@ -47,7 +48,7 @@ import InlineEditableText from '../InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const llmResultsStore = useLLMResultsStore()
 const { isGenerating: isWholeDiagramGenerating } = storeToRefs(llmResultsStore)
 const exportOutlineActive = useMindMapExportOutlineWireframeActive()
@@ -75,7 +76,7 @@ function finalizeMindMapExportNodeStyle(style: CSSProperties): CSSProperties {
 }
 
 const isTextReadonly = computed(
-  () => props.data.hidden === true || diagramPresentationReadOnlyRef.value
+  () => props.data.hidden === true || (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))
 )
 
 const { getNodeStyle } = useTheme({

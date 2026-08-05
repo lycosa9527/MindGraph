@@ -1,8 +1,6 @@
-import { eventBus } from '@/composables/core/useEventBus'
-
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
-import { emitEvent } from './events'
+import { emitCtxEvent } from './events'
 import type { DiagramContext } from './types'
 
 export function useTreeMapOpsSlice(ctx: DiagramContext) {
@@ -56,7 +54,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
   }
 
   function removeTreeMapNodes(nodeIds: string[]): number {
-    if (isDiagramPresentationReadOnly()) return 0
+    if (isDiagramPresentationReadOnly(ctx)) return 0
     if (type.value !== 'tree_map' || !data.value?.nodes) return 0
     const spec = buildTreeMapSpecFromNodes()
     if (!spec) return 0
@@ -132,7 +130,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
       ctx.removeFromSelection(id)
     })
     ctx.pushHistory('Delete nodes')
-    emitEvent('diagram:nodes_deleted', { nodeIds: deletedIds })
+    emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds: deletedIds })
     return deletedCount
   }
 
@@ -166,7 +164,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     targetType: 'topic' | 'child' | 'sibling',
     targetId?: string
   ): boolean {
-    if (isDiagramPresentationReadOnly()) return false
+    if (isDiagramPresentationReadOnly(ctx)) return false
     if (type.value !== 'tree_map') return false
     const spec = buildTreeMapSpecFromNodes()
     if (!spec) return false
@@ -279,8 +277,8 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     selectedNodes.value = []
     ctx.selectedConnectionId.value = null
     ctx.pushHistory('Move branch')
-    emitEvent('diagram:operation_completed', { operation: 'move_branch' })
-    eventBus.emit('diagram:branch_moved', {})
+    emitCtxEvent(ctx, 'diagram:operation_completed', { operation: 'move_branch' })
+    ctx.viewBus.emit('diagram:branch_moved', {})
     return true
   }
 
@@ -297,7 +295,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     root.children.push({ text, children: [] })
     ctx.loadFromSpec(spec, 'tree_map', { mergePreviousNodeStyles: true })
     ctx.pushHistory('Add tree category')
-    emitEvent('diagram:node_added', { node: null })
+    emitCtxEvent(ctx, 'diagram:node_added', { node: null })
     return true
   }
 
@@ -316,7 +314,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     category.children.push({ text })
     ctx.loadFromSpec(spec, 'tree_map', { mergePreviousNodeStyles: true })
     ctx.pushHistory('Add tree child')
-    emitEvent('diagram:node_added', { node: null })
+    emitCtxEvent(ctx, 'diagram:node_added', { node: null })
     return true
   }
 

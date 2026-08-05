@@ -95,7 +95,13 @@ export function reconcileAfterHistoryRestore(ctx: DiagramContext): void {
   }
 
   layoutRecalcTrigger.value += 1
-  useConceptMapRelationshipStore().clearAll()
 
-  eventBus.emit('diagram:history_restored', { diagramType: diagramType ?? undefined })
+  // Preview / quiet sessions must not wipe the editor concept-map picker store.
+  if (ctx.emitDiagramEvents && !ctx.isReadonly.value) {
+    useConceptMapRelationshipStore().clearAll()
+  }
+
+  if (ctx.emitDiagramEvents) {
+    eventBus.emit('diagram:history_restored', { diagramType: diagramType ?? undefined })
+  }
 }

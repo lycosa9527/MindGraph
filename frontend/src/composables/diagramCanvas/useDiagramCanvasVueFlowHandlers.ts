@@ -1,6 +1,6 @@
 import type { GraphNode, NodeChange, NodeDragEvent, NodeMouseEvent, NodeSelectionChange } from '@vue-flow/core'
 
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphNode } from '@/types'
 
 const FIT_TRIGGERING_CHANGE_TYPES = ['position', 'dimensions', 'remove', 'add'] as const
@@ -13,7 +13,7 @@ export interface DiagramCanvasVueFlowHandlerApi {
 }
 
 export interface UseDiagramCanvasVueFlowHandlersOptions {
-  diagramStore: ReturnType<typeof useDiagramStore>
+  diagramStore: ReturnType<typeof useDiagramSession>
   getVueFlowNodes: () => GraphNode[]
   emit: {
     (e: 'nodeClick', node: MindGraphNode): void
@@ -83,6 +83,7 @@ export function useDiagramCanvasVueFlowHandlers(
 
     changes.forEach((change) => {
       if (change.type === 'position' && change.position) {
+        if (diagramStore.isReadonly) return
         diagramStore.updateNodePosition(change.id, change.position, false)
         if (diagramStore.type === 'concept_map') {
           conceptMapPositionNodeIds.add(change.id)
@@ -121,6 +122,7 @@ export function useDiagramCanvasVueFlowHandlers(
   })
 
   onNodeDragStop(({ node }) => {
+    if (diagramStore.isReadonly) return
     diagramStore.saveCustomPosition(node.id, node.position.x, node.position.y)
     if (diagramStore.type === 'concept_map') {
       diagramStore.updateConnectionArrowheadsForNode(node.id)

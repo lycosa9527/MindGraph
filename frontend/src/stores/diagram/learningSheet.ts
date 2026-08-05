@@ -7,7 +7,7 @@ import {
   measureBranchNodeHeight as measureMindMapBranchHeight,
 } from '../specLoader/mindMap'
 import { LEARNING_SHEET_BLANK_TEXT, isLearningSheetBlankDisplayText } from '../specLoader/utils'
-import { emitEvent } from './events'
+import { emitCtxEvent } from './events'
 import type { DiagramContext } from './types'
 
 export function useLearningSheetSlice(ctx: DiagramContext) {
@@ -79,6 +79,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
   })
 
   function notifyLearningSheetChanged(): void {
+    if (!ctx.emitDiagramEvents) return
     eventBus.emit('diagram:learning_sheet_changed', {})
   }
 
@@ -149,8 +150,10 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
 
     reconcileHiddenAnswersFromBlankedNodes()
 
-    emitEvent('diagram:node_updated', { nodeId, updates: { text: originalText } })
-    eventBus.emit('node:text_updated', { nodeId, text: originalText })
+    emitCtxEvent(ctx, 'diagram:node_updated', { nodeId, updates: { text: originalText } })
+    if (ctx.emitDiagramEvents) {
+      eventBus.emit('node:text_updated', { nodeId, text: originalText })
+    }
     return true
   }
 
@@ -195,8 +198,10 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
 
     reconcileHiddenAnswersFromBlankedNodes()
 
-    emitEvent('diagram:node_updated', { nodeId, updates: { text: LEARNING_SHEET_BLANK_TEXT } })
-    eventBus.emit('node:text_updated', { nodeId, text: LEARNING_SHEET_BLANK_TEXT })
+    emitCtxEvent(ctx, 'diagram:node_updated', { nodeId, updates: { text: LEARNING_SHEET_BLANK_TEXT } })
+    if (ctx.emitDiagramEvents) {
+      eventBus.emit('node:text_updated', { nodeId, text: LEARNING_SHEET_BLANK_TEXT })
+    }
     return true
   }
 
@@ -259,7 +264,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
       }
       delete ctx.mindMapNodeWidths.value[node.id]
       delete ctx.mindMapNodeHeights.value[node.id]
-      emitEvent('diagram:node_updated', { nodeId: node.id, updates: { text: originalText } })
+      emitCtxEvent(ctx, 'diagram:node_updated', { nodeId: node.id, updates: { text: originalText } })
     })
 
     syncLearningSheetFlags(d, false)
@@ -300,7 +305,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
           layoutData.estimatedHeight
         )
       }
-      emitEvent('diagram:node_updated', {
+      emitCtxEvent(ctx, 'diagram:node_updated', {
         nodeId: node.id,
         updates: { text: LEARNING_SHEET_BLANK_TEXT },
       })
@@ -366,13 +371,13 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
           hidden: false,
         },
       }
-      emitEvent('diagram:node_updated', { nodeId: node.id, updates: { text: answer } })
+      emitCtxEvent(ctx, 'diagram:node_updated', { nodeId: node.id, updates: { text: answer } })
     })
 
     const restore = (): void => {
       snapshots.forEach(({ idx, node }) => {
         dv.nodes[idx] = node
-        emitEvent('diagram:node_updated', {
+        emitCtxEvent(ctx, 'diagram:node_updated', {
           nodeId: node.id,
           updates: { text: node.text ?? LEARNING_SHEET_BLANK_TEXT },
         })

@@ -2,7 +2,6 @@ import type { Ref } from 'vue'
 import { ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { DiagramNode, MindGraphNode } from '@/types'
 
 /** Narrow store surface for this composable (avoids Pinia `Store` deep instantiation). */
@@ -51,7 +50,7 @@ export function useDiagramCanvasContextMenu(options: {
   const DOUBLE_CLICK_POSITION_THRESHOLD = 10
 
   function handlePaneClick(event?: MouseEvent) {
-    if (isDiagramPresentationReadOnly()) {
+    if (presentationDiagramEditLocked.value) {
       if (shouldSuppressPaneClear?.()) {
         return
       }
@@ -156,7 +155,7 @@ export function useDiagramCanvasContextMenu(options: {
 
   function handleContextMenuEvent(event: Event): void {
     event.preventDefault()
-    if (isDiagramPresentationReadOnly()) {
+    if (presentationDiagramEditLocked.value) {
       return
     }
     applyContextMenuFromEvent(event as MouseEvent)

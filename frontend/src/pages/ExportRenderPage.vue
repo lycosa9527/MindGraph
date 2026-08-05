@@ -13,11 +13,12 @@
  * `fit-view-on-init` is off so DiagramCanvas does not schedule its own delayed fit
  * (e.g. FIT_VIEWPORT_DELAY) on top of this page’s explicit `forExport` fits.
  */
-import { nextTick, onMounted } from 'vue'
+import { nextTick, onMounted, provide } from 'vue'
 
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import { eventBus } from '@/composables/core/useEventBus'
-import { useDiagramStore } from '@/stores'
+import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
+import { useDiagramStore, type DiagramSession } from '@/stores'
 import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import type { DiagramType } from '@/types'
 import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
@@ -48,6 +49,7 @@ function waitForFitCompletedSafety(): Promise<void> {
 }
 
 const diagramStore = useDiagramStore()
+provide(DiagramSessionKey, diagramStore as unknown as DiagramSession)
 
 declare global {
   interface Window {

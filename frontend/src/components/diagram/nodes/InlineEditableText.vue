@@ -14,7 +14,6 @@
  */
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { storeToRefs } from 'pinia'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
@@ -27,7 +26,7 @@ import {
   setMindMapPostEditSiblingAnchor,
 } from '@/composables/mindMap/mindMapCanvasEnterGuard'
 import { isLearningSheetCustomPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
-import { useDiagramStore } from '@/stores'
+import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   isNodeDisplayPlaceholderLabel,
   shouldReplaceLabelWithMathInsert,
@@ -133,8 +132,9 @@ const collabCanvas = inject<{ isNodeLockedByOther?: (nodeId: string) => boolean 
 )
 const notifyCollab = useNotifications()
 const { t } = useLanguage()
-const diagramStore = useDiagramStore()
-const { mindMapPendingEditNodeId, mindMapEditingNodeId } = storeToRefs(diagramStore)
+const diagramStore = useDiagramSession()
+const mindMapPendingEditNodeId = diagramSessionRef(diagramStore, 'mindMapPendingEditNodeId')
+const mindMapEditingNodeId = diagramSessionRef(diagramStore, 'mindMapEditingNodeId')
 
 const resolvedPlaceholder = computed(() => {
   if (props.placeholder != null && props.placeholder !== '') {
@@ -382,7 +382,7 @@ onMounted(() => {
 })
 
 // Post-add layout write-back can remount hosts after onMounted; keep watching.
-// Use storeToRefs so Pinia pending changes always invalidate this watcher.
+// Use diagramSessionRef so pending-edit changes always invalidate this watcher.
 watch(
   mindMapPendingEditNodeId,
   (pendingId) => {

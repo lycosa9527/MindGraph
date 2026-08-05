@@ -1,15 +1,12 @@
 import { type ComputedRef, type Ref, computed } from 'vue'
 
-import {
-  showcaseReaderLockRef,
-  presentationDiagramEditLockedRef,
-} from '@/composables/presentation/presentationDiagramEdit'
+import { presentationDiagramEditLockedRef } from '@/composables/presentation/presentationDiagramEdit'
 import { learningSheetPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { PresentationToolId } from '@/types'
 
 export interface UseDiagramCanvasVueFlowUiOptions {
-  diagramStore: ReturnType<typeof useDiagramStore>
+  diagramStore: ReturnType<typeof useDiagramSession>
   presentationRailOpen: Ref<boolean>
   handToolActive: Ref<boolean>
   presentationPointerEditMode: Ref<boolean>
@@ -60,8 +57,8 @@ export function useDiagramCanvasVueFlowUi(
   /** Block diagram edits unless presentation pointer (default edit) mode is active. */
   const presentationDiagramEditLocked = computed(
     () =>
+      Boolean(diagramStore.isReadonly) ||
       presentationDiagramEditLockedRef.value ||
-      showcaseReaderLockRef.value ||
       (presentationRailOpen.value && !presentationPointerEditMode.value)
   )
 

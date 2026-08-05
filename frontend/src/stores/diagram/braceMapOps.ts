@@ -9,7 +9,7 @@ import {
 } from './braceMapParentResolve'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
-import { emitEvent } from './events'
+import { emitCtxEvent } from './events'
 import type { DiagramContext } from './types'
 
 export function useBraceMapOpsSlice(ctx: DiagramContext) {
@@ -70,7 +70,7 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
     }
 
     ctx.pushHistory('Add brace map part')
-    emitEvent('diagram:node_added', { node: null })
+    emitCtxEvent(ctx, 'diagram:node_added', { node: null })
 
     const layoutNodes = recalculateBraceMapLayout(
       data.value.nodes,
@@ -83,7 +83,7 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
   }
 
   function removeBraceMapNodes(nodeIds: string[]): number {
-    if (isDiagramPresentationReadOnly()) return 0
+    if (isDiagramPresentationReadOnly(ctx)) return 0
     if (type.value !== 'brace_map' || !data.value?.nodes) return 0
 
     const connections = data.value.connections ?? []
@@ -136,11 +136,13 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
       data.value.connections = data.value.connections.filter(
         (c) => !toRemove.has(c.source) && !toRemove.has(c.target)
       )
-      const relStore = useConceptMapRelationshipStore()
-      removedConnIds.forEach((id) => relStore.clearConnection(id))
+      if (ctx.emitDiagramEvents && !ctx.isReadonly.value) {
+        const relStore = useConceptMapRelationshipStore()
+        removedConnIds.forEach((id) => relStore.clearConnection(id))
+      }
     }
 
-    emitEvent('diagram:nodes_deleted', { nodeIds: deletedIds })
+    emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds: deletedIds })
     return deletedIds.length
   }
 

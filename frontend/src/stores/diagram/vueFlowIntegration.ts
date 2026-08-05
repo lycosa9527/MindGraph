@@ -2,7 +2,6 @@ import { computed } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { eventBus } from '@/composables/core/useEventBus'
 import {
   augmentConnectionWithOptimalHandles,
   splitMixedArrowHandleGroups,
@@ -32,6 +31,7 @@ import {
 } from '../specLoader'
 import { getEdgeTypeForDiagram } from './events'
 import { getMindMapCollapsedNodeIds, getMindMapCollapsedPaths } from './mindMapCollapse'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import {
   type MindMapDisplayLayoutResult,
   computeMindMapDisplayLayout,
@@ -189,7 +189,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
           editingId: ctx.mindMapEditingNodeId.value,
           hasInput: !!input,
         })
-        eventBus.emit('node:edit_requested', { nodeId: editId })
+        ctx.viewBus.emit('node:edit_requested', { nodeId: editId })
       })
     }
   }
@@ -464,7 +464,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     position: { x: number; y: number },
     isUserDrag: boolean = false
   ): boolean {
-    if (!ctx.data.value?.nodes) return false
+    if (!ctx.data.value?.nodes || isDiagramPresentationReadOnly(ctx)) return false
 
     const nodeIndex = ctx.data.value.nodes.findIndex((n) => n.id === nodeId)
     if (nodeIndex === -1) return false

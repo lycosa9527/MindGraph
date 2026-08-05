@@ -1,16 +1,14 @@
 import type { Ref } from 'vue'
-import { ref, watch } from 'vue'
+import { ref, toValue, watch } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
-import { eventBus } from '@/composables/core/useEventBus'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
-import { showcaseReaderLockRef } from '@/composables/presentation/presentationDiagramEdit'
 import { ANIMATION, CANVAS, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
-import { animateViewportTransition, cancelViewportTransition } from '@/utils/viewportTransition'
-import type { useDiagramStore } from '@/stores/diagram'
 import type { usePanelsStore } from '@/stores/panels'
+import { animateViewportTransition, cancelViewportTransition } from '@/utils/viewportTransition'
 import { useUIStore } from '@/stores/ui'
 import {
   isDesktopConceptMapManualViewport,
@@ -22,7 +20,7 @@ import {
 } from '@/utils/mindMapSideToolbarFitReserve'
 import { computePanToKeepNodeInSafeFraction } from '@/utils/mindMapEnsureNodeVisible'
 
-type DiagramStore = ReturnType<typeof useDiagramStore>
+type DiagramStore = ReturnType<typeof useDiagramSession>
 type PanelsStore = ReturnType<typeof usePanelsStore>
 
 type FitViewFn = ReturnType<typeof useVueFlow>['fitView']
@@ -84,6 +82,7 @@ export function useDiagramCanvasFit(options: {
     nodesLength,
   } = options
 
+  const viewBus = diagramStore.viewBus
   const uiStore = useUIStore()
   const useMindMapV2 = useMindMapV2Chrome()
   const { sidebarExpanded, sidebarVisible } = useMindMapSideToolbarState()
@@ -109,12 +108,12 @@ export function useDiagramCanvasFit(options: {
     const apply = (): void => {
       // Showcase reader always wants true zoom-fit (including mind-map v1).
       // Editor v1 keeps center-at-default-zoom after load.
-      if (useMindMapV2.value || showcaseReaderLockRef.value) {
+      if (useMindMapV2.value || toValue(diagramStore.isReadonly)) {
         fitToFullCanvas(true)
         return
       }
       centerDiagramAtDefaultZoom(false)
-      eventBus.emit('view:fit_completed', { mode: 'mind_map_centered', animate: false })
+      viewBus.emit('view:fit_completed', { mode: 'mind_map_centered', animate: false })
     }
     if (typeof requestAnimationFrame === 'function') {
       requestAnimationFrame(() => {
@@ -137,7 +136,7 @@ export function useDiagramCanvasFit(options: {
 
   /** One-shot initial fit resets only when a new diagram is loaded, not on edits. */
   fitEventUnsubscribers.push(
-    eventBus.on('diagram:loaded', (payload) => {
+    viewBus.on('diagram:loaded', (payload) => {
       if (payload?.skipFit) {
         pendingFitAfterMindMapBulk = false
         clearFitAfterLoadTimer()
@@ -155,11 +154,11 @@ export function useDiagramCanvasFit(options: {
           fitAfterLoadTimeoutId = null
           if (hasInitialFitDoneForDiagram.value) return
           hasInitialFitDoneForDiagram.value = true
-          eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+          viewBus.emit('view:fit_to_canvas_requested', { animate: true })
         }, ANIMATION.FIT_VIEWPORT_DELAY)
       }
     }),
-    eventBus.on('diagram:loaded_from_library', () => {
+    viewBus.on('diagram:loaded_from_library', () => {
       hasInitialFitDoneForDiagram.value = false
     })
   )
@@ -195,7 +194,7 @@ export function useDiagramCanvasFit(options: {
   }
 
   function handleViewportChange(viewport: { x: number; y: number; zoom: number }): void {
-    eventBus.emit('view:zoom_changed', {
+    viewBus.emit('view:zoom_changed', {
       zoom: viewport.zoom,
       zoomPercent: Math.round(viewport.zoom * 100),
     })
@@ -264,7 +263,7 @@ export function useDiagramCanvasFit(options: {
       duration: animate ? ANIMATION.DURATION_NORMAL : 0,
     } as Parameters<FitViewFn>[0])
 
-    eventBus.emit('view:fit_completed', {
+    viewBus.emit('view:fit_completed', {
       mode: 'full_canvas',
       animate,
     })
@@ -331,7 +330,7 @@ export function useDiagramCanvasFit(options: {
       )
     }, delay)
 
-    eventBus.emit('view:fit_completed', {
+    viewBus.emit('view:fit_completed', {
       mode: 'with_panel',
       animate,
       panelWidth: totalPanelWidth,
@@ -375,7 +374,7 @@ export function useDiagramCanvasFit(options: {
     if (!animate) {
       cancelViewportTransition()
       void fitView({ ...fitOptions, duration: 0 })
-      eventBus.emit('view:fit_completed', { mode: 'nodes', animate: false })
+      viewBus.emit('view:fit_completed', { mode: 'nodes', animate: false })
       return
     }
 
@@ -389,7 +388,7 @@ export function useDiagramCanvasFit(options: {
       setViewport(vp, { duration: 0 })
     })
 
-    eventBus.emit('view:fit_completed', { mode: 'nodes', animate: true })
+    viewBus.emit('view:fit_completed', { mode: 'nodes', animate: true })
   }
 
   type FlowNodeLike = {
@@ -554,7 +553,7 @@ export function useDiagramCanvasFit(options: {
             fitToFullCanvas(true)
           } else {
             centerDiagramAtDefaultZoom(false)
-            eventBus.emit('view:fit_completed', { mode: 'mind_map_centered', animate: false })
+            viewBus.emit('view:fit_completed', { mode: 'mind_map_centered', animate: false })
           }
         }, Math.max(ANIMATION.FIT_VIEWPORT_DELAY, 450))
         return
@@ -573,7 +572,7 @@ export function useDiagramCanvasFit(options: {
             if (dv && typeof dv === 'object' && cmapImportFitPending) {
               delete dv['_import_cmap_fit_view_pending']
               fitDiagram(true)
-              eventBus.emit('view:fit_completed', { mode: 'cmap_import_hull', animate: true })
+              viewBus.emit('view:fit_completed', { mode: 'cmap_import_hull', animate: true })
               return
             }
             if (!conceptMapInitialTopicFit.value) {
@@ -591,7 +590,7 @@ export function useDiagramCanvasFit(options: {
                 includeHiddenNodes: false,
               } as Parameters<FitViewFn>[0]
               void fitView(fitOptions)
-              eventBus.emit('view:fit_completed', { mode: 'concept_map_topic', animate: true })
+              viewBus.emit('view:fit_completed', { mode: 'concept_map_topic', animate: true })
               return
             }
             setViewport({ x: 0, y: 0, zoom: ZOOM.DEFAULT }, { duration: 0 })
@@ -611,7 +610,7 @@ export function useDiagramCanvasFit(options: {
     }
     hasInitialFitDoneForDiagram.value = true
     setTimeout(() => {
-      eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+      viewBus.emit('view:fit_to_canvas_requested', { animate: true })
     }, ANIMATION.FIT_VIEWPORT_DELAY)
   }
 
@@ -628,7 +627,7 @@ export function useDiagramCanvasFit(options: {
     if (fitFromNodesChangeTimeoutId) clearTimeout(fitFromNodesChangeTimeoutId)
     fitFromNodesChangeTimeoutId = setTimeout(() => {
       fitFromNodesChangeTimeoutId = null
-      eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+      viewBus.emit('view:fit_to_canvas_requested', { animate: true })
     }, ANIMATION.FIT_DELAY)
   }
 
@@ -650,7 +649,7 @@ export function useDiagramCanvasFit(options: {
       if (oldLength === undefined) return
       if (diagramStore.type === 'concept_map') return
       setTimeout(() => {
-        eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+        viewBus.emit('view:fit_to_canvas_requested', { animate: true })
       }, ANIMATION.FIT_DELAY)
     }
   )
@@ -714,7 +713,7 @@ export function useDiagramCanvasFit(options: {
           fitToFullCanvas(true)
           return
         }
-        eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+        viewBus.emit('view:fit_to_canvas_requested', { animate: true })
       }, ANIMATION.FIT_VIEWPORT_DELAY)
     }
   )

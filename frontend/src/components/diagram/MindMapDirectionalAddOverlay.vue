@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 /**
  * Canvas-level four-directional + overlay (Teleport) — avoids per-node mount/clipping issues.
  */
@@ -16,7 +17,7 @@ const props = defineProps<{
   teleportTarget?: HTMLElement | string
 }>()
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const uiStore = useUIStore()
 const { t } = useLanguage()
 

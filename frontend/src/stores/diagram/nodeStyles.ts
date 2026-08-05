@@ -24,7 +24,7 @@ import {
   measureBranchNodeHeight as measureMindMapBranchHeight,
   measureBranchNodeUnderlineHeight as measureMindMapBranchUnderlineHeight,
 } from '../specLoader/mindMap'
-import { emitEvent } from './events'
+import { emitCtxEvent } from './events'
 import type { DiagramContext } from './types'
 
 export function useNodeStylesSlice(ctx: DiagramContext) {
@@ -42,7 +42,7 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
       ...style,
     }
 
-    emitEvent('diagram:style_changed', { nodeId, style: data.value._node_styles[nodeId] })
+    emitCtxEvent(ctx, 'diagram:style_changed', { nodeId, style: data.value._node_styles[nodeId] })
   }
 
   function getNodeStyle(nodeId: string): NodeStyle | undefined {
@@ -52,14 +52,14 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
   function clearNodeStyle(nodeId: string): void {
     if (data.value?._node_styles?.[nodeId]) {
       delete data.value._node_styles[nodeId]
-      emitEvent('diagram:style_changed', { nodeId, style: null })
+      emitCtxEvent(ctx, 'diagram:style_changed', { nodeId, style: null })
     }
   }
 
   function clearAllNodeStyles(): void {
     if (data.value) {
       data.value._node_styles = {}
-      emitEvent('diagram:style_changed', { all: true })
+      emitCtxEvent(ctx, 'diagram:style_changed', { all: true })
     }
   }
 
@@ -207,7 +207,7 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     if (!options?.skipHistory) {
       ctx.pushHistory('Apply style preset')
     }
-    emitEvent('diagram:style_changed', { preset: true })
+    emitCtxEvent(ctx, 'diagram:style_changed', { preset: true })
   }
 
   function applyMindMapAppearance(options: {
@@ -236,7 +236,7 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
 
     applyMindMapDiagramStyleShapes(options.diagramStyleId)
     ctx.pushHistory('Apply mind map appearance')
-    emitEvent('diagram:style_changed', { preset: true, diagramStyleId: options.diagramStyleId })
+    emitCtxEvent(ctx, 'diagram:style_changed', { preset: true, diagramStyleId: options.diagramStyleId })
   }
 
   return {

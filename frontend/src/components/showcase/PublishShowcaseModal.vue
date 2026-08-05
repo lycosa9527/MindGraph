@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Loader2 } from '@lucide/vue'
 
-import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import {
   type PublishShowcaseModalProps,
@@ -23,8 +22,6 @@ const emit = defineEmits<{
 const {
   isMgSpecDecoding,
   isStep1Advancing,
-  showThumbnailCapture,
-  thumbnailCaptureHost,
   inlinePreviewRef,
   TITLE_MAX_LENGTH,
   step,
@@ -846,20 +843,4 @@ const {
     @select="onHistorySelect"
   />
 
-  <Teleport to="body">
-    <div
-      v-if="showThumbnailCapture"
-      class="pointer-events-none fixed left-[-12000px] top-0 z-0 h-200 w-300 overflow-hidden bg-white"
-    >
-      <div
-        ref="thumbnailCaptureHost"
-        class="h-full w-full"
-      >
-        <DiagramCanvas
-          :show-minimap="false"
-          :fit-view-on-init="true"
-        />
-      </div>
-    </div>
-  </Teleport>
 </template>

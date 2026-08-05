@@ -15,7 +15,7 @@ import {
   remapMindMapNodeIdsAfterReload,
   setMindMapCollapsedPaths,
 } from './mindMapCollapse'
-import { emitEvent, getMindMapCurveExtents } from './events'
+import { emitCtxEvent, getMindMapCurveExtents } from './events'
 import {
   applyMindMapStylesByPath,
   collectMindMapStylesByPath,
@@ -306,6 +306,6 @@ export function reconcileMindMapCanvasModeSwitch(
   if (ctx.pushHistory) {
     ctx.pushHistory('Switch mind map canvas mode')
   }
-  emitEvent('diagram:style_changed', { preset: true })
+  emitCtxEvent(ctx, 'diagram:style_changed', { preset: true })
   return true
 }

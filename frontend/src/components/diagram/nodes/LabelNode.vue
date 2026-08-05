@@ -13,7 +13,8 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { translateDimension, useLanguage } from '@/composables/core/useLanguage'
 import { BRANCH_NODE_HEIGHT } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
-import { useDiagramStore, useUIStore } from '@/stores'
+import { useUIStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphNodeProps } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
@@ -31,8 +32,8 @@ const isBridgeDimension = computed(
 // Position recalculation for bridge map dimension labels
 const labelRef = ref<HTMLElement | null>(null)
 useNodeDimensions(labelRef, props.id)
-const { getNodes, updateNode } = useVueFlow()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
+const { getNodes, updateNode } = useVueFlow(diagramStore.vueFlowId)
 let resizeObserver: ResizeObserver | null = null
 
 // Recalculate position when text changes to prevent overlap and maintain vertical centering

@@ -172,6 +172,7 @@ declare module 'vue' {
     DiagramHistory: typeof import('./components/sidebar/DiagramHistory.vue')['default']
     DiagramHistoryRow: typeof import('./components/sidebar/DiagramHistoryRow.vue')['default']
     DiagramPreviewSvg: typeof import('./components/mindgraph/DiagramPreviewSvg.vue')['default']
+    DiagramSessionProvider: typeof import('./components/diagram/DiagramSessionProvider.vue')['default']
     DiagramSlotFullModal: typeof import('./components/canvas/DiagramSlotFullModal.vue')['default']
     DiagramTemplateInput: typeof import('./components/mindgraph/DiagramTemplateInput.vue')['default']
     DiagramTypeGrid: typeof import('./components/mindgraph/DiagramTypeGrid.vue')['default']

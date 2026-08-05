@@ -7,7 +7,8 @@ import {
 } from '@/composables'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import { ANIMATION } from '@/config/uiConfig'
-import { useDiagramStore, useUIStore } from '@/stores'
+import { useUIStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
 import { captureDiagramPngData } from '@/utils/diagramExportRasterCapture'
 import { runLearningSheetRasterCapture } from '@/utils/diagramExportLearningSheet'
@@ -25,7 +26,7 @@ type CanvasViewport = { x: number; y: number; zoom: number }
 
 export interface UseDiagramCanvasExportOptions {
   vueFlowWrapper: Ref<HTMLElement | null>
-  diagramStore: ReturnType<typeof useDiagramStore>
+  diagramStore: ReturnType<typeof useDiagramSession>
   fitForExport?: () => void
   getViewport?: () => CanvasViewport
   setViewport?: (viewport: CanvasViewport, opts?: { duration?: number }) => void

@@ -76,8 +76,6 @@ export function usePublishShowcaseModal(
   const uploadedMgSpec = ref<Record<string, unknown> | null>(null)
   const isMgSpecDecoding = ref(false)
   const isStep1Advancing = ref(false)
-  const showThumbnailCapture = ref(false)
-  const thumbnailCaptureHost = ref<HTMLElement | null>(null)
   const inlinePreviewRef = ref<{ captureThumbnail?: () => Promise<Blob | null> } | null>(null)
 
   const TITLE_MAX_LENGTH = 40
@@ -812,8 +810,6 @@ export function usePublishShowcaseModal(
     showPublishDiagramPreview,
     publishPreviewDiagramType,
     inlinePreviewRef,
-    thumbnailCaptureHost,
-    showThumbnailCapture,
     ensureSelectedDiagramSpec,
     ensureMgUploadSpecReady,
     isMgUploadedFile,
@@ -842,8 +838,6 @@ export function usePublishShowcaseModal(
     uploadedMgSpec,
     isMgSpecDecoding,
     isStep1Advancing,
-    showThumbnailCapture,
-    thumbnailCaptureHost,
     inlinePreviewRef,
     TITLE_MAX_LENGTH,
     step,

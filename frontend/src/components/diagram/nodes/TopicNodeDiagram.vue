@@ -2,7 +2,7 @@
 /**
  * TopicNodeDiagram — non-mind-map topic node (bubble, tree, flow, brace, multi-flow, etc.).
  */
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, toValue } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
@@ -13,7 +13,8 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
-import { useDiagramStore, useLLMResultsStore } from '@/stores'
+import { useLLMResultsStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -23,12 +24,12 @@ import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const llmResultsStore = useLLMResultsStore()
 const { isGenerating: isWholeDiagramGenerating } = storeToRefs(llmResultsStore)
 
 const isTextReadonly = computed(
-  () => props.data.hidden === true || diagramPresentationReadOnlyRef.value
+  () => props.data.hidden === true || (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))
 )
 
 const { getNodeStyle } = useTheme({

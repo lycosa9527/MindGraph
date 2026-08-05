@@ -10,6 +10,8 @@ import { onMounted, onUnmounted, watch } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 import { useMagicKeys } from '@vueuse/core'
 
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+
 import { eventBus } from './useEventBus'
 
 export interface KeyboardShortcut {
@@ -183,14 +185,14 @@ export function useVueFlowKeyboard(options: UseVueFlowKeyboardOptions = {}): voi
     onEscape,
   } = options
 
-  // VueFlow instance
+  const diagramSession = useDiagramSession()
   const {
     removeNodes,
     removeEdges,
     getSelectedNodes,
     getSelectedEdges,
     nodes: allNodes,
-  } = useVueFlow()
+  } = useVueFlow(diagramSession.vueFlowId)
 
   // VueUse magic keys - reactive keyboard state
   const keys = useMagicKeys({

@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
 /**
  * MindMapV2BranchNode — v2 mind map branch node (themes, shapes, underline, subgraph ring).
  */
-import { computed, inject, onMounted, ref, watch, type WritableComputedRef } from 'vue'
+import { computed, inject, onMounted, ref, watch, type WritableComputedRef, toValue } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
-import { storeToRefs } from 'pinia'
 
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
 import { aiBrainstormGlowingNodeIds } from '@/composables/aiBrainstorm/useAiBrainstorm'
@@ -49,12 +49,13 @@ import InlineEditableText from '../InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
-const diagramStore = useDiagramStore()
-const { mindMapPendingEditNodeId, mindMapEditingNodeId } = storeToRefs(diagramStore)
+const diagramStore = useDiagramSession()
+const mindMapPendingEditNodeId = diagramSessionRef(diagramStore, 'mindMapPendingEditNodeId')
+const mindMapEditingNodeId = diagramSessionRef(diagramStore, 'mindMapEditingNodeId')
 const isTextReadonly = computed(
   () =>
     (props.data.hidden === true && diagramStore.isLearningSheet) ||
-    diagramPresentationReadOnlyRef.value
+    (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))
 )
 const branchNodeRef = ref<HTMLDivElement | null>(null)
 const exportOutlineActive = useMindMapExportOutlineWireframeActive()
@@ -358,7 +359,7 @@ function handleEditCancel() {
 
 function handleBranchNodeDoubleClick(): void {
   if (isLearningSheetCustomPickActive()) return
-  if (diagramPresentationReadOnlyRef.value) return
+  if ((diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))) return
   if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))

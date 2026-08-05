@@ -1,7 +1,8 @@
 /**
  * Thumbnail capture helpers for the Showcase publish modal.
+ * Never mutates the editor diagram Pinia store — PNG export / existing thumbs only.
  */
-import { nextTick, type Ref } from 'vue'
+import type { Ref } from 'vue'
 
 import {
   acceptThumbnailBlob,
@@ -9,17 +10,10 @@ import {
   imageFileToPngBlob,
   isDiagramImageFile,
 } from '@/components/showcase/showcaseShared'
-import { eventBus } from '@/composables/core/useEventBus'
-import { setPresentationDiagramEditLocked } from '@/composables/presentation/presentationDiagramEdit'
-import { useDiagramStore } from '@/stores'
 import { useSavedDiagramsStore, type SavedDiagram } from '@/stores/savedDiagrams'
-import type { DiagramType } from '@/types'
 import {
-  cloneShowcaseDiagramSpec,
   fetchDiagramSpecPngBlob,
-  resolveShowcaseDiagramType,
 } from '@/utils/showcaseDiagramThumbnail'
-import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
 
 import type { GalleryImageDraft } from './usePublishShowcaseGalleryDrafts'
 
@@ -39,66 +33,6 @@ export async function captureCanvasThumbnail(props: ThumbnailProps): Promise<Blo
   const htmlToImage = await import('html-to-image')
   const dataUrl = await htmlToImage.toPng(container, { pixelRatio: 1.5, cacheBust: true })
   return acceptThumbnailBlob(await dataUrlToPngBlob(dataUrl))
-}
-
-export async function captureSpecThumbnailClient(
-  spec: Record<string, unknown>,
-  diagramTypeValue: string,
-  thumbnailCaptureHost: Ref<HTMLElement | null>,
-  showThumbnailCapture: Ref<boolean>,
-): Promise<Blob | null> {
-  const diagramStore = useDiagramStore()
-  const specClone = cloneShowcaseDiagramSpec(spec)
-  const normalizedType = resolveShowcaseDiagramType(specClone, diagramTypeValue)
-  const backup = {
-    type: diagramStore.type,
-    spec: diagramStore.getSpecForSave() as Record<string, unknown> | null,
-  }
-
-  if (!diagramStore.loadFromSpec(specClone, normalizedType, { emitLoaded: false })) {
-    return null
-  }
-
-  showThumbnailCapture.value = true
-  setPresentationDiagramEditLocked(true)
-  try {
-    await nextTick()
-    await waitForNextPaint()
-    eventBus.emit('view:fit_to_canvas_requested', { animate: false, forExport: true })
-    try {
-      await new Promise<void>((resolve, reject) => {
-        let off: (() => void) | null = null
-        const timer = window.setTimeout(() => {
-          off?.()
-          reject(new Error('fit timeout'))
-        }, 12_000)
-        off = eventBus.once('view:fit_completed', () => {
-          window.clearTimeout(timer)
-          resolve()
-        })
-      })
-    } catch {
-      // Best-effort fit before capture.
-    }
-    await waitForNextPaint()
-    await new Promise((resolve) => setTimeout(resolve, 600))
-    const container = thumbnailCaptureHost.value
-    if (!container) return null
-    const captureTarget =
-      (container.querySelector('.diagram-canvas') as HTMLElement | null) ?? container
-    const htmlToImage = await import('html-to-image')
-    const dataUrl = await htmlToImage.toPng(captureTarget, { pixelRatio: 1.5, cacheBust: true })
-    const blob = await dataUrlToPngBlob(dataUrl)
-    return acceptThumbnailBlob(blob)
-  } catch {
-    return null
-  } finally {
-    showThumbnailCapture.value = false
-    setPresentationDiagramEditLocked(false)
-    if (backup.type && backup.spec) {
-      diagramStore.loadFromSpec(backup.spec, backup.type as DiagramType, { emitLoaded: false })
-    }
-  }
 }
 
 export async function resolveHistoryDiagramThumbnail(
@@ -142,16 +76,7 @@ export async function resolveHistoryDiagramThumbnail(
 export async function resolveSpecThumbnail(
   spec: Record<string, unknown>,
   diagramTypeValue: string,
-  thumbnailCaptureHost: Ref<HTMLElement | null>,
-  showThumbnailCapture: Ref<boolean>,
 ): Promise<Blob | null> {
-  const fromClient = await captureSpecThumbnailClient(
-    spec,
-    diagramTypeValue,
-    thumbnailCaptureHost,
-    showThumbnailCapture,
-  )
-  if (fromClient) return fromClient
   return fetchDiagramSpecPngBlob(spec, diagramTypeValue)
 }
 
@@ -166,8 +91,6 @@ export async function resolvePublishThumbnail(options: {
   selectedDiagramSpec: Record<string, unknown> | null
   selectedDiagram: SavedDiagram | null
   publishPreviewDiagramType: string
-  thumbnailCaptureHost: Ref<HTMLElement | null>
-  showThumbnailCapture: Ref<boolean>
 }): Promise<Blob | null> {
   if (options.fromCanvas) {
     return captureCanvasThumbnail(options.props)
@@ -192,8 +115,6 @@ export async function resolvePublishThumbnail(options: {
     const fromSpec = await resolveSpecThumbnail(
       options.uploadedMgSpec,
       options.publishPreviewDiagramType,
-      options.thumbnailCaptureHost,
-      options.showThumbnailCapture,
     )
     if (fromSpec) return fromSpec
   }
@@ -202,8 +123,6 @@ export async function resolvePublishThumbnail(options: {
     const fromSpec = await resolveSpecThumbnail(
       options.selectedDiagramSpec,
       options.publishPreviewDiagramType,
-      options.thumbnailCaptureHost,
-      options.showThumbnailCapture,
     )
     if (fromSpec) return fromSpec
   }

@@ -7,6 +7,7 @@ import type { Connection } from '@/types'
 import { normalizeTopicRootLabelIfNeeded } from '@/utils/conceptMapTopicRootEdge'
 
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
 /**
@@ -89,6 +90,7 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
   }
 
   function removeConnection(connectionId: string): boolean {
+    if (isDiagramPresentationReadOnly(ctx)) return false
     if (!ctx.data.value?.connections || ctx.type.value !== 'concept_map') {
       return false
     }
@@ -128,9 +130,11 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
       return false
     }
 
-    const relStore = useConceptMapRelationshipStore()
-    for (const id of toRemove) {
-      relStore.clearConnection(id)
+    if (ctx.emitDiagramEvents && !ctx.isReadonly.value) {
+      const relStore = useConceptMapRelationshipStore()
+      for (const id of toRemove) {
+        relStore.clearConnection(id)
+      }
     }
 
     ctx.data.value.connections = conns.filter((c) => !toRemove.has(c.id))

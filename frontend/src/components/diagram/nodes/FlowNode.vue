@@ -17,7 +17,8 @@ import { useTheme } from '@/composables/core/useTheme'
 import { MULTI_FLOW_FLOW_NODE_LABEL_MAX_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { useDiagramStore } from '@/stores'
+import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
@@ -145,7 +146,8 @@ const isHovering = ref(false)
 // Dynamic width for editing
 const dynamicWidth = ref<number | null>(null)
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
+const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 // Layout width for multi-flow map (from recalculateMultiFlowMapLayout)
 // Used when not editing so node displays full text instead of fixed 140px
@@ -287,7 +289,7 @@ function handleBranchMovePointerUp(): void {
 
     <InlineEditableText
       :text="data.label || ''"
-      :readonly="data.hidden === true"
+      :readonly="isTextReadonly"
       :node-id="id"
       :is-editing="isEditing"
       :max-width="flowMaxWidth"

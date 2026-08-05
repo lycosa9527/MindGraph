@@ -4,12 +4,12 @@
  */
 import { computed } from 'vue'
 
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 
 import DiagramCanvas from './DiagramCanvas.vue'
 import MindMapCanvasRouter from './MindMapCanvasRouter.vue'
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 
 const isMindMap = computed(
   () => diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map'

@@ -1,6 +1,6 @@
 import { type Ref, onMounted, onUnmounted } from 'vue'
 
-import { useDiagramStore } from '@/stores/diagram'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 
 /**
  * Shared composable for measuring actual DOM node dimensions via ResizeObserver.
@@ -24,7 +24,7 @@ export function useNodeDimensions(
     observeRoot?: boolean
   }
 ) {
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   let resizeObserver: ResizeObserver | null = null
   let rafId: number | null = null
 

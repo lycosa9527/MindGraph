@@ -12,13 +12,13 @@ import { useVueFlow } from '@vue-flow/core'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
-import { useDiagramStore } from '@/stores'
-
-// Vue Flow instance for viewport tracking and getting nodes with measured dimensions
-const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow()
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 
 // Diagram store for diagram type and spec metadata
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
+
+// Vue Flow instance for viewport tracking and getting nodes with measured dimensions
+const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow(diagramStore.vueFlowId)
 const { t } = useLanguage()
 
 // Hover state for pairs

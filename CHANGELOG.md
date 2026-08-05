@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.169.1] - 2026-08-06
+
+> **Injectable DiagramSession: Showcase vector preview isolated from the editor Pinia store.**
+
+### Fixed
+
+- **Showcase preview vs editor isolation** — Live Showcase vector previews use an injectable readonly `DiagramSession` (private VueFlow id + view bus, quiet emits) instead of the editor Pinia store; removes backup/restore and reader-lock hijacks. Opening `?type=` without `diagramId` always blanks via `clearActiveDiagram` + `loadDefaultTemplate` so leftover preview content cannot appear as a new mind map (desktop + mobile). Preview UX: session-scoped VueFlow, context-menu/inline-edit/drag blocked when `isReadonly`. Quiet sessions gate slice `emitCtxEvent` / history-restore and node-delete concept-map picker clears, and route view events through `ctx.viewBus`. Also: drop dead showcase reader-lock API; `ExportRenderPage` provides the editor session; editor keyboard/canvas helpers bind VueFlow by session id (`createDiagramSession.ts`, `DiagramSessionProvider.vue`, `ShowcaseDiagramPreview.vue`, `CanvasPage.vue`, `MobileCanvasPage.vue`).
+
+### Tests
+
+- **Frontend** — Diagram session isolation (preview vs editor Pinia, dual viewBus, new-canvas mindmap-after-showcase, quiet `diagram:loaded`).
+
 ## [5.169.0] - 2026-08-06
 
 > **Showcase media-status phases (cover vs preview); cover-job manifesto under system RLS; mind-map Enter/reload style SoT; frontend + Python dependency bump.**

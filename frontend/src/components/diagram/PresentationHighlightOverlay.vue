@@ -6,6 +6,7 @@ import { computed, onUnmounted, ref } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
 import type { PresentationHighlightStroke } from '@/types'
 
@@ -25,7 +26,8 @@ const props = withDefaults(
 
 const strokes = defineModel<PresentationHighlightStroke[]>({ default: () => [] })
 
-const { screenToFlowCoordinate, viewport: vueFlowViewport, getViewport } = useVueFlow()
+const diagramStore = useDiagramSession()
+const { screenToFlowCoordinate, viewport: vueFlowViewport, getViewport } = useVueFlow(diagramStore.vueFlowId)
 
 const viewport = computed(() => vueFlowViewport.value ?? getViewport())
 
@@ -290,7 +292,7 @@ onUnmounted(() => {
   <div
     v-if="showLayer"
     class="presentation-highlight-layer absolute inset-0 w-full h-full"
-    :class="props.active ? 'z-[250]' : 'z-[240] pointer-events-none'"
+    :class="props.active ? 'z-250' : 'z-240 pointer-events-none'"
   >
     <svg
       class="absolute inset-0 h-full w-full overflow-visible pointer-events-none"

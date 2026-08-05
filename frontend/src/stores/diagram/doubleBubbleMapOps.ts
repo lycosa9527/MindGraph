@@ -26,7 +26,7 @@ export function useDoubleBubbleMapOpsSlice(ctx: DiagramContext) {
   }
 
   function removeDoubleBubbleMapNodes(nodeIds: string[]): number {
-    if (isDiagramPresentationReadOnly()) return 0
+    if (isDiagramPresentationReadOnly(ctx)) return 0
     const spec = ctx.getDoubleBubbleSpecFromData()
     if (!spec) return 0
 

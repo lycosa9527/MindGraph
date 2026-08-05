@@ -1,4 +1,4 @@
-import { emitEvent } from './events'
+import { emitCtxEvent } from './events'
 import type { DiagramContext } from './types'
 
 export function useFlowMapOpsSlice(ctx: DiagramContext) {
@@ -49,7 +49,7 @@ export function useFlowMapOpsSlice(ctx: DiagramContext) {
 
     ctx.loadFromSpec(newSpec, 'flow_map', { mergePreviousNodeStyles: true })
     ctx.pushHistory(`Toggle orientation to ${newOrientation}`)
-    emitEvent('diagram:orientation_changed', { orientation: newOrientation })
+    emitCtxEvent(ctx, 'diagram:orientation_changed', { orientation: newOrientation })
   }
 
   function addFlowMapStep(text: string, defaultSubsteps?: [string, string]): boolean {
@@ -66,7 +66,7 @@ export function useFlowMapOpsSlice(ctx: DiagramContext) {
       mergePreviousNodeStyles: true,
     })
     ctx.pushHistory('Add flow step')
-    emitEvent('diagram:node_added', { node: null })
+    emitCtxEvent(ctx, 'diagram:node_added', { node: null })
     return true
   }
 
@@ -85,7 +85,7 @@ export function useFlowMapOpsSlice(ctx: DiagramContext) {
       mergePreviousNodeStyles: true,
     })
     ctx.pushHistory('Add flow substep')
-    emitEvent('diagram:node_added', { node: null })
+    emitCtxEvent(ctx, 'diagram:node_added', { node: null })
     return true
   }
 

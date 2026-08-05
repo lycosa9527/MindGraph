@@ -3,7 +3,7 @@ import { type MaybeRefOrGetter, computed, toValue } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import {
@@ -14,7 +14,7 @@ import { useUIStore } from '@/stores/ui'
 import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 export interface UseDiagramCanvasNodesEdgesOptions {
-  diagramStore: ReturnType<typeof useDiagramStore>
+  diagramStore: ReturnType<typeof useDiagramSession>
   branchMove: ReturnType<typeof useBranchMoveDrag>
   collabLockedNodeIds: MaybeRefOrGetter<string[]>
   mindMapSlideFocusNodeId?: MaybeRefOrGetter<string | null | undefined>

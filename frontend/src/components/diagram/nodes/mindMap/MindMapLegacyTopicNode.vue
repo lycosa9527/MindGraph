@@ -2,7 +2,7 @@
 /**
  * MindMapLegacyTopicNode — classic mind map topic node only (oval pill, per-branch handles).
  */
-import { computed, ref } from 'vue'
+import { computed, ref, toValue } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
@@ -23,7 +23,8 @@ import {
   wrapMindMapNodeStyleForExport,
 } from '@/composables/mindMap/useMindMapExportOutlineWireframe'
 import { diagramPresentationReadOnlyRef } from '@/composables/presentation/presentationDiagramEdit'
-import { useDiagramStore, useLLMResultsStore } from '@/stores'
+import { useLLMResultsStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { buildClassicMindMapTopicHandlePositions } from '@/utils/classicMindMapTopicHandles'
@@ -36,7 +37,7 @@ import InlineEditableText from '../InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const llmResultsStore = useLLMResultsStore()
 const { isGenerating: isWholeDiagramGenerating } = storeToRefs(llmResultsStore)
 const exportOutlineActive = useMindMapExportOutlineWireframeActive()
@@ -49,7 +50,7 @@ function finalizeMindMapExportNodeStyle(style: CSSProperties): CSSProperties {
 }
 
 const isTextReadonly = computed(
-  () => props.data.hidden === true || diagramPresentationReadOnlyRef.value
+  () => props.data.hidden === true || (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))
 )
 
 const { getNodeStyle } = useTheme({

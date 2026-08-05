@@ -13,16 +13,11 @@ import {
 } from '@lucide/vue'
 
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
+import DiagramSessionProvider from '@/components/diagram/DiagramSessionProvider.vue'
 import { resolveCarouselSlides, type ShowcaseCarouselSlide } from '@/components/showcase/showcaseGallery'
 import { useLanguage } from '@/composables'
-import { eventBus } from '@/composables/core/useEventBus'
-import {
-  popShowcaseReaderLock,
-  pushShowcaseReaderLock,
-} from '@/composables/presentation/presentationDiagramEdit'
 import { ANIMATION } from '@/config/uiConfig'
-import { useDiagramStore } from '@/stores'
-import type { DiagramType } from '@/types'
+import type { DiagramSession } from '@/stores/diagram'
 import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 import { decodeMgFileToJsonText } from '@/utils/mgInterchange'
 import {
@@ -30,8 +25,6 @@ import {
   resolveShowcaseDiagramType,
 } from '@/utils/showcaseDiagramThumbnail'
 import { resolveDevStaticUrl } from '@/utils/devStaticUrl'
-
-pushShowcaseReaderLock()
 
 const props = withDefaults(
   defineProps<{
@@ -174,12 +167,20 @@ const carouselCounter = computed(() => {
   return `${activeGalleryIndex.value + 1} / ${carouselSlides.value.length}`
 })
 
-const diagramStore = useDiagramStore()
+const previewSessionRef = ref<{ session: DiagramSession } | null>(null)
 
-let diagramBackup: {
-  type: DiagramType | null
-  spec: Record<string, unknown> | null
-} | null = null
+const activePreviewDiagramType = computed(() => {
+  if (!loadedDiagramSpec.value) return null
+  return resolveShowcaseDiagramType(
+    loadedDiagramSpec.value,
+    activeSlide.value ? slideDiagramType(activeSlide.value) : (props.diagramType ?? null)
+  )
+})
+
+const previewSessionKey = computed(() => {
+  if (!loadedDiagramSpec.value || !activePreviewDiagramType.value) return 'empty'
+  return `${activeGalleryIndex.value}:${activePreviewDiagramType.value}:${JSON.stringify(loadedDiagramSpec.value).length}`
+})
 
 const watermarkText = computed(() => {
   const name = props.watermarkName?.trim()
@@ -222,16 +223,20 @@ function syncDiagramZoomFromEvent(payload: { zoom?: number }): void {
   }
 }
 
+function previewViewBus() {
+  return previewSessionRef.value?.session.viewBus ?? null
+}
+
 function diagramZoomIn(): void {
-  eventBus.emit('view:zoom_in_requested', {})
+  previewViewBus()?.emit('view:zoom_in_requested', {})
 }
 
 function diagramZoomOut(): void {
-  eventBus.emit('view:zoom_out_requested', {})
+  previewViewBus()?.emit('view:zoom_out_requested', {})
 }
 
 function diagramResetZoom(): void {
-  eventBus.emit('view:fit_to_canvas_requested', { animate: false })
+  previewViewBus()?.emit('view:fit_to_canvas_requested', { animate: false })
 }
 
 function isRenderableSpec(spec: unknown): spec is Record<string, unknown> {
@@ -288,20 +293,6 @@ async function resolveDiagramSpecForSlide(slide: ShowcaseCarouselSlide | null): 
   return null
 }
 
-function backupDiagramStore(): void {
-  diagramBackup = {
-    type: diagramStore.type,
-    spec: diagramStore.getSpecForSave() as Record<string, unknown> | null,
-  }
-}
-
-function restoreDiagramStore(): void {
-  const backup = diagramBackup
-  diagramBackup = null
-  if (!backup?.type || !backup.spec) return
-  diagramStore.loadFromSpec(backup.spec, backup.type, { emitLoaded: false })
-}
-
 async function loadPreview(): Promise<void> {
   if (hasCarousel.value && isAllImageCarousel.value) {
     previewMode.value = 'image'
@@ -327,14 +318,7 @@ async function loadPreview(): Promise<void> {
     const spec = await resolveDiagramSpecForSlide(activeSlide.value)
     if (token !== previewLoadToken) return
     if (spec) {
-      if (!diagramBackup) backupDiagramStore()
       const specClone = cloneShowcaseDiagramSpec(spec)
-      const diagramType = resolveShowcaseDiagramType(
-        specClone,
-        activeSlide.value ? slideDiagramType(activeSlide.value) : (props.diagramType ?? null)
-      )
-      const loaded = diagramStore.loadFromSpec(specClone, diagramType, { emitLoaded: false })
-      if (!loaded) throw new Error('Failed to load diagram spec')
       loadedDiagramSpec.value = specClone
       previewMode.value = 'diagram'
       return
@@ -393,7 +377,7 @@ function getActiveDiagramSpec(): Record<string, unknown> | null {
   if (slide?.kind === 'diagram' && slide.spec && isRenderableSpec(slide.spec)) {
     return cloneShowcaseDiagramSpec(slide.spec)
   }
-  // Reader may have fetched .mg / spec_json into diagramStore when slide.spec was absent.
+  // Reader may have fetched .mg / spec_json when slide.spec was absent.
   if (
     (!slide || slide.kind === 'diagram') &&
     loadedDiagramSpec.value &&
@@ -454,7 +438,7 @@ async function toggleFullscreen() {
         void nextTick(() => {
           fullscreenFitTimer = setTimeout(() => {
             fullscreenFitTimer = null
-            eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+            previewViewBus()?.emit('view:fit_to_canvas_requested', { animate: true })
           }, ANIMATION.FIT_VIEWPORT_DELAY)
         })
       }
@@ -566,9 +550,20 @@ watch(
   { immediate: true }
 )
 
+let zoomChangedOff: (() => void) | null = null
+
+watch(
+  () => previewSessionRef.value?.session ?? null,
+  (session) => {
+    zoomChangedOff?.()
+    zoomChangedOff = null
+    if (!session) return
+    zoomChangedOff = session.viewBus.on('view:zoom_changed', syncDiagramZoomFromEvent)
+  }
+)
+
 onMounted(() => {
   document.addEventListener('fullscreenchange', syncFullscreenState)
-  eventBus.on('view:zoom_changed', syncDiagramZoomFromEvent)
 })
 
 onBeforeUnmount(() => {
@@ -576,11 +571,10 @@ onBeforeUnmount(() => {
     window.clearTimeout(fullscreenFitTimer)
     fullscreenFitTimer = null
   }
-  popShowcaseReaderLock()
+  zoomChangedOff?.()
+  zoomChangedOff = null
   revokeSlideBlobUrls()
   document.removeEventListener('fullscreenchange', syncFullscreenState)
-  eventBus.off('view:zoom_changed', syncDiagramZoomFromEvent)
-  restoreDiagramStore()
   if (document.fullscreenElement === readerRoot.value) {
     void document.exitFullscreen()
   }
@@ -773,12 +767,21 @@ onBeforeUnmount(() => {
                     {{ watermarkText }}
                   </span>
                 </div>
-                <DiagramCanvas
-                  :show-minimap="false"
-                  :fit-view-on-init="true"
-                  :hand-tool-active="true"
-                  :presentation-hand-pan-mode="true"
-                />
+                <DiagramSessionProvider
+                  v-if="loadedDiagramSpec && activePreviewDiagramType"
+                  ref="previewSessionRef"
+                  :key="previewSessionKey"
+                  mode="readonly"
+                  :spec="loadedDiagramSpec"
+                  :diagram-type="activePreviewDiagramType"
+                >
+                  <DiagramCanvas
+                    :show-minimap="false"
+                    :fit-view-on-init="true"
+                    :hand-tool-active="true"
+                    :presentation-hand-pan-mode="true"
+                  />
+                </DiagramSessionProvider>
               </div>
               <div
                 v-else-if="index === activeGalleryIndex && previewMode === 'loading'"
@@ -834,12 +837,21 @@ onBeforeUnmount(() => {
               {{ watermarkText }}
             </span>
           </div>
-          <DiagramCanvas
-            :show-minimap="false"
-            :fit-view-on-init="true"
-            :hand-tool-active="true"
-            :presentation-hand-pan-mode="true"
-          />
+          <DiagramSessionProvider
+            v-if="loadedDiagramSpec && activePreviewDiagramType"
+            ref="previewSessionRef"
+            :key="previewSessionKey"
+            mode="readonly"
+            :spec="loadedDiagramSpec"
+            :diagram-type="activePreviewDiagramType"
+          >
+            <DiagramCanvas
+              :show-minimap="false"
+              :fit-view-on-init="true"
+              :hand-tool-active="true"
+              :presentation-hand-pan-mode="true"
+            />
+          </DiagramSessionProvider>
         </div>
 
         <div

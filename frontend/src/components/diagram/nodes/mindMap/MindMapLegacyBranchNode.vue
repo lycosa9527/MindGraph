@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 /**
  * MindMapLegacyBranchNode — classic mind map branch node (pill, per-branch palette).
  */
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, toValue } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
@@ -34,11 +35,11 @@ import InlineEditableText from '../InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const isTextReadonly = computed(
   () =>
     (props.data.hidden === true && diagramStore.isLearningSheet) ||
-    diagramPresentationReadOnlyRef.value
+    (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))
 )
 const branchNodeRef = ref<HTMLDivElement | null>(null)
 const exportOutlineActive = useMindMapExportOutlineWireframeActive()
@@ -174,7 +175,7 @@ function handleEditCancel() {
 
 function handleBranchNodeDoubleClick(): void {
   if (isLearningSheetCustomPickActive()) return
-  if (diagramPresentationReadOnlyRef.value) return
+  if ((diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))) return
   if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))

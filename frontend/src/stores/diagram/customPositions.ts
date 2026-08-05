@@ -1,20 +1,25 @@
 import type { Position } from '@/types'
 
-import { emitEvent } from './events'
+import { emitCtxEvent } from './events'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
 export function useCustomPositionsSlice(ctx: DiagramContext) {
   const { data, type } = ctx
 
   function saveCustomPosition(nodeId: string, x: number, y: number): void {
-    if (!data.value) return
+    if (!data.value || isDiagramPresentationReadOnly(ctx)) return
 
     if (!data.value._customPositions) {
       data.value._customPositions = {}
     }
 
     data.value._customPositions[nodeId] = { x, y }
-    emitEvent('diagram:position_changed', { nodeId, position: { x, y }, isCustom: true })
+    emitCtxEvent(ctx, 'diagram:position_changed', {
+      nodeId,
+      position: { x, y },
+      isCustom: true,
+    })
   }
 
   function hasCustomPosition(nodeId: string): boolean {
@@ -32,10 +37,9 @@ export function useCustomPositionsSlice(ctx: DiagramContext) {
   }
 
   function resetToAutoLayout(): void {
-    if (data.value) {
-      data.value._customPositions = {}
-      emitEvent('diagram:layout_reset', { type: type.value })
-    }
+    if (!data.value || isDiagramPresentationReadOnly(ctx)) return
+    data.value._customPositions = {}
+    emitCtxEvent(ctx, 'diagram:layout_reset', { type: type.value })
   }
 
   return {

@@ -133,9 +133,7 @@ export function useShowcaseDiagramAction() {
         return
       }
 
-      // Do not setActiveDiagram before navigation. CanvasPage skips library reload when
-      // ?diagramId= already matches activeDiagramId, while ShowcaseDiagramPreview unmount
-      // restores a stale diagramStore backup — leaving canvas empty/wrong despite a save.
+      // Clear sticky active id so CanvasPage always loads the freshly saved diagram.
       savedDiagramsStore.clearActiveDiagram()
       notify.success(String(t('community.post.importOk')))
       options?.closeModal?.()

@@ -10,8 +10,15 @@ export { useInlineRecommendationsStore } from './inlineRecommendations'
 export {
   useDiagramStore,
   subscribeToDiagramEvents,
+  createDiagramSession,
+  createDiagramViewBus,
+  EDITOR_DIAGRAM_VUE_FLOW_ID,
   type DiagramEventType,
   type DiagramEvent,
+  type DiagramSession,
+  type DiagramSessionMode,
+  type DiagramViewBus,
+  type CreateDiagramSessionOptions,
 } from './diagram'
 export { usePanelsStore } from './panels'
 export { useAuthStore } from './auth'

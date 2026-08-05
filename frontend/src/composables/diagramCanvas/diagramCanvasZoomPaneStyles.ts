@@ -1,9 +1,9 @@
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { GraphNode } from '@vue-flow/core'
 
 import type { BranchMoveGhostPreview } from '@/composables/editor/useBranchMoveDrag'
 import type { DropTarget } from '@/composables/editor/useBranchMoveDrag'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
-import { useDiagramStore } from '@/stores/diagram'
 import type { DiagramNode, NodeStyle } from '@/types'
 import type { MindGraphNode } from '@/types/vueflow'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
@@ -30,7 +30,7 @@ function resolveMindMapDropPreviewShape(node: MindGraphNode): NodeShape | null {
   if (!readMindMapV2VisualDesignActive()) return null
 
   const nodeId = node.id ?? ''
-  const diagramData = useDiagramStore().data
+  const diagramData = useDiagramSession().data
   const storeNode = diagramData?.nodes.find((n) => n.id === nodeId)
   const style = {
     ...(diagramData?._node_styles?.[nodeId] ?? {}),

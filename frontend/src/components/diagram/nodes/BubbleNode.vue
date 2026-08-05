@@ -8,6 +8,7 @@ import { computed, ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
+import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
@@ -17,6 +18,7 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const bubbleNodeRef = ref<HTMLElement | null>(null)
 useNodeDimensions(bubbleNodeRef, props.id)
@@ -90,7 +92,7 @@ function handleEditCancel() {
   >
     <InlineEditableText
       :text="data.label || ''"
-      :readonly="data.hidden === true"
+      :readonly="isTextReadonly"
       :node-id="id"
       :is-editing="isEditing"
       :max-width="bubbleMaxWidth"

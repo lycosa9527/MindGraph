@@ -6,8 +6,8 @@
  * and other desktop-only features. Concept map: 启用 AI in top bar; bottom shows inline
  * rec only while active (tap canvas to dismiss, same as desktop coordinator).
  */
-import { computed, onUnmounted, ref, watch } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
+import { computed, onUnmounted, provide, ref, watch } from 'vue'
+import { onBeforeRouteLeave, useRoute } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
@@ -57,7 +57,9 @@ import { useMobileCanvasEventHandlers } from '@/composables/mobile/useMobileCanv
 import { useMobileCanvasInlineRecBar } from '@/composables/mobile/useMobileCanvasInlineRecBar'
 import { useMobileCanvasRouteLoader } from '@/composables/mobile/useMobileCanvasRouteLoader'
 import { useMobileCanvasToolbar } from '@/composables/mobile/useMobileCanvasToolbar'
+import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
 import {
+  type DiagramSession,
   useAuthStore,
   useConceptMapRelationshipStore,
   useDiagramStore,
@@ -72,9 +74,15 @@ import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConc
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
-import { DEFAULT_CHART_TYPE_KEY, diagramTypeFromKey } from '@/utils/diagramTypeKeys'
+import {
+  DEFAULT_CHART_TYPE_KEY,
+  VALID_DIAGRAM_TYPES,
+  diagramTypeFromKey,
+} from '@/utils/diagramTypeKeys'
 
 const diagramStore = useDiagramStore()
+provide(DiagramSessionKey, diagramStore as unknown as DiagramSession)
+const route = useRoute()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const savedDiagramsStore = useSavedDiagramsStore()
@@ -258,11 +266,22 @@ watch(isConceptMap, (v) => {
 watch(
   () => uiStore.selectedChartType,
   () => {
-    if (diagramType.value) {
-      diagramStore.setDiagramType(diagramType.value)
-      if (!diagramStore.data) {
-        diagramStore.loadDefaultTemplate(diagramType.value)
-      }
+    if (!diagramType.value) {
+      return
+    }
+    diagramStore.setDiagramType(diagramType.value)
+    // New-canvas contract: ?type= without diagramId always blanks (parity with CanvasPage).
+    const typeQuery = route.query.type
+    const hasTypeQuery =
+      typeof typeQuery === 'string' && VALID_DIAGRAM_TYPES.includes(typeQuery as DiagramType)
+    const hasDiagramId = Boolean(route.query.diagramId ?? route.query.diagram_id)
+    if (hasTypeQuery && !hasDiagramId) {
+      savedDiagramsStore.clearActiveDiagram()
+      diagramStore.loadDefaultTemplate(diagramType.value)
+      return
+    }
+    if (!diagramStore.data) {
+      diagramStore.loadDefaultTemplate(diagramType.value)
     }
   },
   { immediate: true }

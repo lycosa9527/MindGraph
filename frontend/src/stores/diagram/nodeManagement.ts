@@ -1,4 +1,3 @@
-import { eventBus } from '@/composables/core/useEventBus'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
@@ -20,7 +19,7 @@ import {
 import { applyTreeMapTopicLayoutToNodes } from '../specLoader/treeMapTopicLayout'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
-import { emitEvent } from './events'
+import { emitCtxEvent } from './events'
 import type { DiagramContext } from './types'
 
 /**
@@ -73,7 +72,7 @@ function shouldInvalidateNodeDimensionsOnTextEdit(
 
 export function useNodeManagementSlice(ctx: DiagramContext) {
   function updateNode(nodeId: string, updates: Partial<DiagramNode>): boolean {
-    if (isDiagramPresentationReadOnly()) return false
+    if (isDiagramPresentationReadOnly(ctx)) return false
     if (!ctx.data.value?.nodes) return false
 
     const nodeIndex = ctx.data.value.nodes.findIndex((n) => n.id === nodeId)
@@ -268,7 +267,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         updates.style.fontFamily !== undefined)
     ) {
       delete ctx.nodeDimensions.value[nodeId]
-      eventBus.emit('diagram:double_bubble_relayout_requested', {})
+      ctx.viewBus.emit('diagram:double_bubble_relayout_requested', {})
     }
 
     if (
@@ -337,7 +336,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       ctx.scheduleMindMapRecalc()
     }
 
-    emitEvent('diagram:node_updated', { nodeId, updates })
+    emitCtxEvent(ctx, 'diagram:node_updated', { nodeId, updates })
     return true
   }
 
@@ -373,12 +372,12 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       }
     }
 
-    emitEvent('diagram:node_updated', { nodeId, updates: { text: '' } })
+    emitCtxEvent(ctx, 'diagram:node_updated', { nodeId, updates: { text: '' } })
     return true
   }
 
   function addNode(node: DiagramNode): void {
-    if (isDiagramPresentationReadOnly()) return
+    if (isDiagramPresentationReadOnly(ctx)) return
     if (ctx.collabSessionActive.value && node.id) {
       const suffix = safeRandomUUID().slice(0, 8)
       node.id = `${node.id}-c${suffix}`
@@ -473,17 +472,17 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         text: node.text || '????',
       }
       ctx.data.value.nodes.push(conceptNode)
-      emitEvent('diagram:node_added', { node: conceptNode })
+      emitCtxEvent(ctx, 'diagram:node_added', { node: conceptNode })
       return
     } else {
       ctx.data.value.nodes.push(node)
     }
 
-    emitEvent('diagram:node_added', { node })
+    emitCtxEvent(ctx, 'diagram:node_added', { node })
   }
 
   function removeNode(nodeId: string): boolean {
-    if (isDiagramPresentationReadOnly()) return false
+    if (isDiagramPresentationReadOnly(ctx)) return false
     if (!ctx.data.value?.nodes) return false
 
     if (collabForeignLockBlocksAnyId(ctx, [nodeId])) {
@@ -571,7 +570,9 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
 
       ctx.data.value.nodes = recalculatedNodes
       ctx.data.value.connections = recalculatedConnections
-      useConceptMapRelationshipStore().clearAll()
+      if (ctx.emitDiagramEvents && !ctx.isReadonly.value) {
+        useConceptMapRelationshipStore().clearAll()
+      }
 
       ctx.multiFlowMapRecalcTrigger.value++
     } else if (ctx.type.value === 'flow_map') {
@@ -600,7 +601,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       if (spec) {
         ctx.loadFromSpec(spec, 'flow_map', { mergePreviousNodeStyles: true })
       }
-      emitEvent('diagram:nodes_deleted', { nodeIds: [...idsToRemove] })
+      emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds: [...idsToRemove] })
       return true
     } else if (ctx.type.value === 'bubble_map' && nodeId.startsWith('bubble-')) {
       ctx.data.value.nodes.splice(index, 1)
@@ -617,7 +618,9 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         target: `bubble-${i}`,
         style: { strokeColor: getMindmapBranchColor(i).border },
       }))
-      useConceptMapRelationshipStore().clearAll()
+      if (ctx.emitDiagramEvents && !ctx.isReadonly.value) {
+        useConceptMapRelationshipStore().clearAll()
+      }
     } else {
       if (ctx.data.value.connections) {
         const removedConnIds = ctx.data.value.connections
@@ -627,8 +630,10 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
         ctx.data.value.connections = ctx.data.value.connections.filter(
           (c) => c.source !== nodeId && c.target !== nodeId
         )
-        const relStore = useConceptMapRelationshipStore()
-        removedConnIds.forEach((id) => relStore.clearConnection(id))
+        if (ctx.emitDiagramEvents && !ctx.isReadonly.value) {
+          const relStore = useConceptMapRelationshipStore()
+          removedConnIds.forEach((id) => relStore.clearConnection(id))
+        }
       }
       ctx.data.value.nodes.splice(index, 1)
     }
@@ -637,7 +642,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     ctx.clearNodeStyle(nodeId)
     ctx.removeFromSelection(nodeId)
 
-    emitEvent('diagram:nodes_deleted', { nodeIds: [nodeId] })
+    emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds: [nodeId] })
     return true
   }
 

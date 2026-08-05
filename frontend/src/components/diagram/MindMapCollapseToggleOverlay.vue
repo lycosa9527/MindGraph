@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 /**
  * Mind-map collapse (−) / expand (count pill) on the connector midpoint, with stub line when collapsed.
  */
@@ -24,7 +25,7 @@ const props = defineProps<{
   teleportTarget?: HTMLElement | string
 }>()
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const uiStore = useUIStore()
 const { t } = useLanguage()
 

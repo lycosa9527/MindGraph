@@ -10,6 +10,7 @@ import { computed, inject, ref } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { useDiagramNodeTextReadonly } from '@/composables/diagram/useDiagramNodeTextReadonly'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
@@ -20,6 +21,7 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+const isTextReadonly = useDiagramNodeTextReadonly(() => props.data.hidden === true)
 
 const flowSubstepNodeRef = ref<HTMLElement | null>(null)
 useNodeDimensions(flowSubstepNodeRef, props.id)
@@ -149,7 +151,7 @@ function handleBranchMovePointerUp(): void {
   >
     <InlineEditableText
       :text="data.label || ''"
-      :readonly="data.hidden === true"
+      :readonly="isTextReadonly"
       :node-id="id"
       :is-editing="isEditing"
       :max-width="substepMaxWidth"
@@ -168,41 +170,41 @@ function handleBranchMovePointerUp(): void {
       id="left"
       type="target"
       :position="Position.Left"
-      class="!bg-blue-400"
+      class="bg-blue-400!"
     />
     <!-- Top handle for substeps below step (vertical layout) -->
     <Handle
       id="top-target"
       type="target"
       :position="Position.Top"
-      class="!bg-blue-400"
+      class="bg-blue-400!"
     />
     <!-- Bottom handle for substeps above step (vertical layout) -->
     <Handle
       id="bottom-target"
       type="target"
       :position="Position.Bottom"
-      class="!bg-blue-400"
+      class="bg-blue-400!"
     />
     <!-- Bottom source handle for main flow: connect from bottom substep to next step -->
     <Handle
       id="bottom-source"
       type="source"
       :position="Position.Bottom"
-      class="!bg-blue-400"
+      class="bg-blue-400!"
     />
     <!-- Center handles for flow map: connect to node center (experiment to eliminate gap) -->
     <Handle
       id="center-target"
       type="target"
       :position="Position.Top"
-      class="center-handle !bg-blue-400"
+      class="center-handle bg-blue-400!"
     />
     <Handle
       id="center-source"
       type="source"
       :position="Position.Top"
-      class="center-handle !bg-blue-400"
+      class="center-handle bg-blue-400!"
     />
   </div>
 </template>

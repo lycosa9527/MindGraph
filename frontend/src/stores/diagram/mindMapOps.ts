@@ -1,4 +1,3 @@
-import { eventBus } from '@/composables/core/useEventBus'
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { inferMindMapThemeIdFromNodes, resolveActiveMindMapThemeId } from '@/config/mindMapThemes'
 import { i18n } from '@/i18n'
@@ -47,7 +46,7 @@ import {
 } from '../specLoader'
 import type { SpecLoaderResult } from '../specLoader/types'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
-import { emitEvent, getMindMapCurveExtents } from './events'
+import { emitCtxEvent, getMindMapCurveExtents } from './events'
 import {
   getMindMapCollapsedNodeIds,
   getMindMapCollapsedPaths,
@@ -291,7 +290,7 @@ function escapeMindMapNodeSelectorId(nodeId: string): string {
 function selectMindMapNode(ctx: DiagramContext, nodeId: string): void {
   ctx.selectedConnectionId.value = null
   ctx.selectedNodes.value = [nodeId]
-  emitEvent('diagram:selection_changed', { selectedNodes: [nodeId] })
+  emitCtxEvent(ctx, 'diagram:selection_changed', { selectedNodes: [nodeId] })
 }
 
 function clearMindMapPendingEditIfCurrent(ctx: DiagramContext, nodeId: string): void {
@@ -388,7 +387,7 @@ function requestMindMapNodeInlineEdit(ctx: DiagramContext, nodeId: string): void
         generation,
         attempt: attempts,
       })
-      eventBus.emit('node:edit_requested', { nodeId })
+      ctx.viewBus.emit('node:edit_requested', { nodeId })
       markMindMapInlineEditStage('pending:edit_requested', {
         nodeId,
         generation,
@@ -460,7 +459,7 @@ function requestMindMapNodeInlineEdit(ctx: DiagramContext, nodeId: string): void
       attempt: attempts,
     })
     if (attempts >= MIND_MAP_INLINE_EDIT_MAX_ATTEMPTS) {
-      eventBus.emit('node:edit_requested', { nodeId })
+      ctx.viewBus.emit('node:edit_requested', { nodeId })
       markMindMapInlineEditStage('pending:max-attempts', {
         nodeId,
         generation,
@@ -532,7 +531,7 @@ function commitMindMapReloadWithSelect(
   if (!ctx.data.value?.nodes || !ctx.data.value?.connections) return false
   commitMindMapReload(ctx, result, options)
   ctx.pushHistory(historyLabel)
-  emitEvent('diagram:node_added', { node: null })
+  emitCtxEvent(ctx, 'diagram:node_added', { node: null })
   selectAndEditByPathKey(
     ctx,
     result.nodes,
@@ -688,7 +687,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     text = defaultNewNodeText(),
     childText = defaultNewChildText()
   ): boolean {
-    if (isDiagramPresentationReadOnly()) return false
+    if (isDiagramPresentationReadOnly(ctx)) return false
     if (readMindMapV2VisualDesignActive()) {
       return addMindMapBranchOnSide(side, text)
     }
@@ -744,7 +743,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function addMindMapChild(parentNodeId: string, text = defaultNewNodeText()): boolean {
-    if (isDiagramPresentationReadOnly()) return false
+    if (isDiagramPresentationReadOnly(ctx)) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
 
@@ -777,7 +776,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       const newChildId = findNodeIdByPathKey(result.nodes, result.connections, pathKey)
       if (newChildId) {
         // Pan-only: keep new child in the central ~75% of the canvas (no zoom-fit).
-        eventBus.emit('view:ensure_node_visible_requested', {
+        ctx.viewBus.emit('view:ensure_node_visible_requested', {
           nodeId: newChildId,
           animate: true,
         })
@@ -787,7 +786,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function removeMindMapNodes(nodeIds: string[]): number {
-    if (isDiagramPresentationReadOnly()) return 0
+    if (isDiagramPresentationReadOnly(ctx)) return 0
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return 0
     if (!data.value?.nodes || !data.value?.connections) return 0
 
@@ -888,7 +887,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       ctx.removeFromSelection(id)
     })
     ctx.pushHistory('Delete nodes')
-    emitEvent('diagram:nodes_deleted', { nodeIds })
+    emitCtxEvent(ctx, 'diagram:nodes_deleted', { nodeIds })
     return deletedCount
   }
 
@@ -918,7 +917,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     _targetIndex?: number,
     cursorFlowX?: number
   ): boolean {
-    if (isDiagramPresentationReadOnly()) return false
+    if (isDiagramPresentationReadOnly(ctx)) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
     if (branchNodeId === 'topic') return false
@@ -1031,9 +1030,9 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     selectedNodes.value = []
     ctx.selectedConnectionId.value = null
     ctx.pushHistory('Move branch')
-    emitEvent('diagram:operation_completed', { operation: 'move_branch' })
+    emitCtxEvent(ctx, 'diagram:operation_completed', { operation: 'move_branch' })
     // Fit via branch_moved only — do not emit diagram:loaded (that resets palette/AI/fit flags).
-    eventBus.emit('diagram:branch_moved', {})
+    ctx.viewBus.emit('diagram:branch_moved', {})
 
     const targetDescendantIds =
       (targetType === 'sibling' && targetId) || (targetType === 'child' && targetId)
@@ -1115,7 +1114,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     const newNode = data.value.nodes.find((node) => node.id === inserted.newNodeId) ?? null
     ctx.pushHistory(historyLabel)
-    emitEvent('diagram:node_added', newNode)
+    emitCtxEvent(ctx, 'diagram:node_added', newNode)
 
     // Sync write-back first so the big position merge happens before edit starts.
     // Then arm pending edit; scheduled recalc is usually a no-op merge + trigger.
@@ -1144,10 +1143,10 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       at,
       selected: selectedNodes.value.slice(),
       v2: readMindMapV2VisualDesignActive(),
-      presentationReadOnly: isDiagramPresentationReadOnly(),
+      presentationReadOnly: isDiagramPresentationReadOnly(ctx),
       type: type.value,
     })
-    if (isDiagramPresentationReadOnly()) {
+    if (isDiagramPresentationReadOnly(ctx)) {
       recordMindMapSiblingInsertFailure('presentation_read_only', { nodeId })
       return false
     }
@@ -1323,7 +1322,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     lines: string[],
     options?: { topicSide?: 'left' | 'right' }
   ): number {
-    if (isDiagramPresentationReadOnly()) return 0
+    if (isDiagramPresentationReadOnly(ctx)) return 0
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return 0
     if (!data.value?.nodes || !data.value?.connections) return 0
 
@@ -1433,7 +1432,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     nodeId: string,
     direction: 'top' | 'bottom' | 'left' | 'right'
   ): boolean {
-    if (isDiagramPresentationReadOnly()) return false
+    if (isDiagramPresentationReadOnly(ctx)) return false
     if (!readMindMapV2VisualDesignActive()) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
 
@@ -1495,7 +1494,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return
     commitMindMapReload(ctx, result)
     ctx.scheduleMindMapRecalc()
-    emitEvent('diagram:operation_completed', { operation: 'subgraph_preview' })
+    emitCtxEvent(ctx, 'diagram:operation_completed', { operation: 'subgraph_preview' })
   }
 
   function restoreMindMapSubgraphSnapshot(snapshot: {
@@ -1527,7 +1526,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function toggleMindMapCollapse(nodeId: string): boolean {
-    if (isDiagramPresentationReadOnly()) return false
+    if (isDiagramPresentationReadOnly(ctx)) return false
     if (!readMindMapV2VisualDesignActive()) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
@@ -1547,7 +1546,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     ctx.mindMapPreserveIncomingYNodeId.value = null
     ctx.scheduleMindMapRecalc()
     ctx.pushHistory(collapsed ? 'Expand branch' : 'Collapse branch')
-    emitEvent('diagram:operation_completed', {
+    emitCtxEvent(ctx, 'diagram:operation_completed', {
       operation: collapsed ? 'expand_branch' : 'collapse_branch',
     })
     return true

@@ -29,7 +29,7 @@ import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { mindMapBranchFontSize, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
 import { ANIMATION } from '@/config/uiConfig'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindGraphNode } from '@/types'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
@@ -127,8 +127,10 @@ export interface BranchMoveState {
 }
 
 export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
-  const diagramStore = useDiagramStore()
-  const { screenToFlowCoordinate, getNodes, getViewport } = useVueFlow()
+  const diagramStore = useDiagramSession()
+  const { screenToFlowCoordinate, getNodes, getViewport } = useVueFlow(
+    diagramStore.vueFlowId
+  )
 
   const pendingNodeId = ref<string | null>(null)
   const longPressNodeId = ref<string | null>(null)
@@ -643,7 +645,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     clientY?: number,
     fromTouch?: boolean
   ): boolean {
-    if (isDiagramPresentationReadOnly()) return false
+    if (isDiagramPresentationReadOnly() || Boolean(diagramStore.isReadonly)) return false
     if (isLearningSheetCustomPickActive()) return false
     if (options?.allowNodeMove && !options.allowNodeMove()) return false
     const dt = diagramStore.type

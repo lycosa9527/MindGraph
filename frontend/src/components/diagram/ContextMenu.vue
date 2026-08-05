@@ -15,7 +15,8 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
-import { useDiagramStore, useUIStore } from '@/stores'
+import { useUIStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isProtectedClipboardNode } from '@/stores/diagram/hierarchicalClipboardExtract'
 import type { DiagramNode, MindGraphNode } from '@/types'
 
@@ -50,7 +51,7 @@ const emit = defineEmits<{
   (e: 'explainNode', payload: { nodeId: string; nodeLabel: string }): void
 }>()
 
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const uiStore = useUIStore()
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -80,7 +81,7 @@ function getDoubleBubbleGroupFromNodeId(
 // Build menu items based on context (reactive to UI locale via uiStore.language)
 const menuItems = computed<MenuItem[]>(() => {
   void uiStore.language
-  if (isDiagramPresentationReadOnly()) return []
+  if (isDiagramPresentationReadOnly() || Boolean(diagramStore.isReadonly)) return []
 
   const items: MenuItem[] = []
 
