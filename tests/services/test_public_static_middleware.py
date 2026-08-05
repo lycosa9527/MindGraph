@@ -13,6 +13,7 @@ from starlette.testclient import TestClient
 
 from services.infrastructure.http.exception_handlers import general_exception_handler
 from services.infrastructure.http.middleware import (
+    SelectiveGZipMiddleware,
     auth_context_middleware,
     enforce_streaming_body_limit,
     log_requests,
@@ -212,3 +213,36 @@ async def test_general_exception_handler_reroutes_http_exception() -> None:
 
     assert response.status_code == 401
     assert response.body == b'{"detail":"Invalid or expired token"}'
+
+
+def _app_with_selective_gzip() -> FastAPI:
+    """Minimal app with SelectiveGZipMiddleware."""
+    app = FastAPI()
+    app.add_middleware(SelectiveGZipMiddleware, minimum_size=10)
+
+    @app.get("/text")
+    async def text_payload() -> PlainTextResponse:
+        return PlainTextResponse("x" * 2000)
+
+    @app.get("/files/report.pdf")
+    async def pdf_payload() -> Response:
+        return Response(content=b"%PDF-1.4 " + (b"y" * 2000), media_type="application/pdf")
+
+    return app
+
+
+def test_selective_gzip_middleware_serves_compressible_response() -> None:
+    """Non-PDF responses must not crash under SelectiveGZipMiddleware."""
+    client = TestClient(_app_with_selective_gzip())
+    response = client.get("/text", headers={"Accept-Encoding": "gzip"})
+    assert response.status_code == 200
+    assert response.text == "x" * 2000
+
+
+def test_selective_gzip_middleware_skips_pdf_paths() -> None:
+    """PDF paths bypass GZip so range-friendly bodies stay uncompressed."""
+    client = TestClient(_app_with_selective_gzip())
+    response = client.get("/files/report.pdf", headers={"Accept-Encoding": "gzip"})
+    assert response.status_code == 200
+    assert response.headers.get("content-encoding") is None
+    assert response.content.startswith(b"%PDF-1.4")

@@ -23,7 +23,7 @@ from urllib.parse import urlparse
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
-from starlette.middleware.gzip import GZipResponder
+from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.requests import ClientDisconnect
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -458,16 +458,20 @@ class SelectiveGZipMiddleware:
         app: ASGIApp,
         minimum_size: int = 1000,
         compresslevel: int = 9,
-        thread_minimum_size: int = 128 * 1024,
     ):
-        """init  ."""
+        """Wrap Starlette GZipMiddleware; skip compression for range-sensitive paths."""
         self.app = app
-        self.minimum_size = minimum_size
-        self.compresslevel = compresslevel
-        self.thread_minimum_size = thread_minimum_size
+        # Use the public GZipMiddleware API (not GZipResponder). Newer Starlette
+        # requires thread_minimum_size on GZipResponder; GZipMiddleware supplies
+        # the default and stays compatible with older FastAPI-pinned releases.
+        self._gzip = GZipMiddleware(
+            app,
+            minimum_size=minimum_size,
+            compresslevel=compresslevel,
+        )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """call  ."""
+        """Bypass gzip for PDF/media; otherwise delegate to GZipMiddleware."""
         if scope["type"] == "http":
             path = scope.get("path", "")
             lower_path = path.lower()
@@ -482,14 +486,7 @@ class SelectiveGZipMiddleware:
                 # This preserves range request support
                 await self.app(scope, receive, send)
             else:
-                # Use GZipResponder for other responses (standard compression)
-                responder = GZipResponder(
-                    self.app,
-                    minimum_size=self.minimum_size,
-                    compresslevel=self.compresslevel,
-                    thread_minimum_size=self.thread_minimum_size,
-                )
-                await responder(scope, receive, send)
+                await self._gzip(scope, receive, send)
         else:
             await self.app(scope, receive, send)
 
