@@ -172,7 +172,7 @@ onMounted(() => {
         {{ t('admin.showcase.fieldsAdd') }}
       </h3>
       <div class="flex flex-wrap items-end gap-3">
-        <div class="min-w-[140px] flex-1">
+        <div class="min-w-35 flex-1">
           <label class="mb-1 block text-xs text-gray-500">{{ t('admin.showcase.fields.value') }}</label>
           <input
             v-model="newValue"
@@ -181,7 +181,7 @@ onMounted(() => {
             class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-gray-400"
           />
         </div>
-        <div class="min-w-[140px] flex-1">
+        <div class="min-w-35 flex-1">
           <label class="mb-1 block text-xs text-gray-500">{{ t('admin.showcase.fields.label') }}</label>
           <input
             v-model="newLabel"

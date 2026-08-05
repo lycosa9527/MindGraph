@@ -409,7 +409,7 @@ defineExpose({
           type="warning"
           :closable="false"
           :title="t('admin.mindbot.managerNoOrg')"
-          class="!items-start"
+          class="items-start!"
         />
         <template v-else>
           <div
@@ -521,7 +521,7 @@ defineExpose({
           </p>
           <div class="flex flex-col gap-2">
             <span
-              class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--mindbot-swiss-muted)]"
+              class="text-[11px] font-semibold uppercase tracking-[0.12em] text-(--mindbot-swiss-muted)"
               >{{ t('admin.mindbot.moveTarget') }}</span
             >
             <el-select

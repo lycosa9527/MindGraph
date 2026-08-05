@@ -299,11 +299,11 @@ function onNextPage(): void {
 <template>
   <div
     v-loading="loading && !summary"
-    class="max-w-[1400px] mx-auto space-y-6 pb-8"
+    class="max-w-350 mx-auto space-y-6 pb-8"
   >
     <p
       v-if="fetchError"
-      class="text-sm text-[var(--swiss-stat-danger-accent,#e30613)]"
+      class="text-sm text-(--swiss-stat-danger-accent,#e30613)"
     >
       {{ fetchError }}
     </p>
@@ -365,7 +365,7 @@ function onNextPage(): void {
           v-if="severityBreakdown.length > 0"
           class="rounded-lg border border-stone-200 dark:border-stone-600 p-3"
         >
-          <p class="text-xs font-medium text-[var(--swiss-muted)] mb-2 uppercase tracking-wide">
+          <p class="text-xs font-medium text-(--swiss-muted) mb-2 uppercase tracking-wide">
             {{ t('admin.errors.bySeverity24h') }}
           </p>
           <div class="flex flex-wrap gap-2">
@@ -383,7 +383,7 @@ function onNextPage(): void {
           v-if="sourceBreakdown.length > 0"
           class="rounded-lg border border-stone-200 dark:border-stone-600 p-3"
         >
-          <p class="text-xs font-medium text-[var(--swiss-muted)] mb-2 uppercase tracking-wide">
+          <p class="text-xs font-medium text-(--swiss-muted) mb-2 uppercase tracking-wide">
             {{ t('admin.errors.bySource24h') }}
           </p>
           <div class="flex flex-wrap gap-2">
@@ -408,7 +408,7 @@ function onNextPage(): void {
         {{ t('admin.errors.groupFeed') }}
       </h3>
 
-      <p class="text-xs text-[var(--swiss-muted)] mb-3">
+      <p class="text-xs text-(--swiss-muted) mb-3">
         {{ t('admin.errors.feedHint') }}
       </p>
 
@@ -587,7 +587,7 @@ function onNextPage(): void {
 
       <p
         v-else-if="!loading"
-        class="text-sm text-[var(--swiss-muted)] py-8 text-center font-mono"
+        class="text-sm text-(--swiss-muted) py-8 text-center font-mono"
       >
         {{ t('admin.errors.emptyFeed') }}
       </p>

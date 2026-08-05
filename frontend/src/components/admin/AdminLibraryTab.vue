@@ -331,7 +331,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
         </h2>
         <p class="text-xs text-stone-400 m-0">{{ t('admin.library.tabSubtitle') }}</p>
       </div>
-      <div class="flex items-center gap-2 flex-shrink-0">
+      <div class="flex items-center gap-2 shrink-0">
         <span
           v-if="scanData"
           class="text-[11px] text-stone-400"
@@ -357,7 +357,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
             size="small"
             effect="dark"
             round
-            class="ml-1.5 !bg-white/20 !border-0 !text-white !text-xs !px-1.5 !py-0 !h-4 !leading-4"
+            class="ml-1.5 bg-white/20! border-0! text-white! text-xs! px-1.5! py-0! h-4! leading-4!"
             >{{ repairBooks.length }}</el-tag
           >
         </el-button>
@@ -372,7 +372,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
             size="small"
             effect="dark"
             round
-            class="ml-1.5 !bg-white/20 !border-0 !text-white !text-xs !px-1.5 !py-0 !h-4 !leading-4"
+            class="ml-1.5 bg-white/20! border-0! text-white! text-xs! px-1.5! py-0! h-4! leading-4!"
             >{{ newBooks.length }}</el-tag
           >
         </el-button>
@@ -383,8 +383,8 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
     <div
       class="flex items-center gap-1.5 mb-4 px-3 py-2 rounded-lg bg-stone-50 border border-stone-100"
     >
-      <el-icon class="text-stone-400 flex-shrink-0"><FolderOpened /></el-icon>
-      <span class="text-[11px] text-stone-400 flex-shrink-0"
+      <el-icon class="text-stone-400 shrink-0"><FolderOpened /></el-icon>
+      <span class="text-[11px] text-stone-400 shrink-0"
         >{{ t('admin.library.storageDir') }}:</span
       >
       <span
@@ -494,7 +494,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
               "
             >
               <el-icon
-                class="flex-shrink-0"
+                class="shrink-0"
                 :class="row.exists_on_disk ? 'text-green-400' : 'text-red-400'"
               >
                 <component :is="row.exists_on_disk ? 'FolderOpened' : 'FolderRemove'" />

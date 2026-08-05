@@ -225,7 +225,7 @@ function cancelCreate(): void {
 
         <div class="api-keys-tool-row">
           <span
-            class="text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[var(--mindbot-swiss-muted)]"
+            class="text-[0.65rem] font-semibold uppercase tracking-widest text-(--mindbot-swiss-muted)"
             >{{ t('admin.apiKeys') }}</span
           >
           <el-button
