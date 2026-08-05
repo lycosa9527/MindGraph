@@ -453,11 +453,18 @@ class SelectiveGZipMiddleware:
     3. Range requests require byte-level accuracy which is lost with compression
     """
 
-    def __init__(self, app: ASGIApp, minimum_size: int = 1000, compresslevel: int = 9):
+    def __init__(
+        self,
+        app: ASGIApp,
+        minimum_size: int = 1000,
+        compresslevel: int = 9,
+        thread_minimum_size: int = 128 * 1024,
+    ):
         """init  ."""
         self.app = app
         self.minimum_size = minimum_size
         self.compresslevel = compresslevel
+        self.thread_minimum_size = thread_minimum_size
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """call  ."""
@@ -480,6 +487,7 @@ class SelectiveGZipMiddleware:
                     self.app,
                     minimum_size=self.minimum_size,
                     compresslevel=self.compresslevel,
+                    thread_minimum_size=self.thread_minimum_size,
                 )
                 await responder(scope, receive, send)
         else:
