@@ -61,6 +61,7 @@ from models.domain.community import (
     CommunityPostComment,
 )
 from models.domain.showcase import (
+    ShowcaseCoverJob,
     ShowcasePost,
     ShowcasePostFavorite,
     ShowcasePostLike,
@@ -185,6 +186,7 @@ __all__ = [
     "ShowcasePost",
     "ShowcasePostLike",
     "ShowcasePostFavorite",
+    "ShowcaseCoverJob",
     "ShowcaseStaffGrant",
     "ShowcaseFieldOption",
     "ShowcaseAuditLog",

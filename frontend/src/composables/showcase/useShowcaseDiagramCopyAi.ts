@@ -1,15 +1,17 @@
 /**
  * Auto-stream Showcase diagram AI copy into form fields.
  *
- * Streams into description + classroom application. Step 2 entry can start
- * generation automatically. Button click while in-flight aborts; idle click
- * clears AI fields and regenerates.
+ * Streams into description + classroom application. Specs use JSON extract;
+ * gallery images use Qwen OCR multipart. Step 2 can auto-start; button click
+ * while in-flight aborts; idle click clears AI fields and regenerates.
  */
 import { type Ref, ref, watch } from 'vue'
 
 import {
   diagramCopyFingerprint,
+  diagramCopyImagesFingerprint,
   streamShowcaseDiagramCopy,
+  streamShowcaseDiagramCopyFromImages,
   type ShowcaseDiagramCopyFields,
   type ShowcaseDiagramCopyResult,
 } from '@/composables/showcase/generateShowcaseDiagramCopy'
@@ -41,7 +43,17 @@ type DiagramCopyStreamState = {
 
 export type DiagramCopySpecSource = {
   specs: Record<string, unknown>[]
+  images?: File[]
+  /** Stable keys for edit-mode existing gallery images (path/filename). */
+  existingImageKeys?: string[]
   diagramType: string
+}
+
+type PrefetchOptions = {
+  notifyStart?: boolean
+  notifySuccess?: boolean
+  notifyError?: boolean
+  forceOverwrite?: boolean
 }
 
 export function useShowcaseDiagramCopyAi(options: {
@@ -54,6 +66,7 @@ export function useShowcaseDiagramCopyAi(options: {
   description: Ref<string>
   classroomApplication: Ref<string>
   resolveSpecSource: () => DiagramCopySpecSource | null
+  resolveImageFiles?: () => Promise<File[]>
   step?: Ref<number>
 }) {
   const { t, notify, caseType, title, subject, grade } = options
@@ -170,113 +183,44 @@ export function useShowcaseDiagramCopyAi(options: {
   function currentDiagramCopyFingerprint(): string | null {
     if (!isDiagramCaseType()) return null
     const source = options.resolveSpecSource()
-    if (!source || source.specs.length < 1) return null
-    return diagramCopyFingerprint({
-      specs: source.specs,
-      title: title.value,
-      subject: subject.value,
-      grade: grade.value,
-      diagramType: source.diagramType,
-    })
-  }
-
-  function beginDiagramCopyPrefetch(prefetchOptions?: {
-    notifyStart?: boolean
-    notifySuccess?: boolean
-    notifyError?: boolean
-    forceOverwrite?: boolean
-  }): void {
-    if (!isDiagramCaseType()) return
-    const source = options.resolveSpecSource()
-    if (!source || source.specs.length < 1) return
-
-    const fingerprint = diagramCopyFingerprint({
-      specs: source.specs,
-      title: title.value,
-      subject: subject.value,
-      grade: grade.value,
-      diagramType: source.diagramType,
-    })
-    const forceOverwrite = prefetchOptions?.forceOverwrite === true
-    const notifySuccess = prefetchOptions?.notifySuccess !== false
-    const notifyError = prefetchOptions?.notifyError !== false
-    if (
-      diagramCopyStream &&
-      diagramCopyStream.fingerprint === fingerprint &&
-      !diagramCopyStream.error &&
-      diagramCopyStream.forceOverwrite === forceOverwrite &&
-      !diagramCopyStream.result
-    ) {
-      return
-    }
-
-    clearDiagramCopyPrefetch()
-    const abort = new AbortController()
-    isGenerating.value = true
-    aiGeneratePhase.value = 'sending'
-    if (prefetchOptions?.notifyStart) {
-      notify.info(String(t('showcase.publishModal.aiGenerating')))
-    }
-
-    const phaseTimer = setTimeout(() => {
-      if (aiGeneratePhase.value === 'sending') {
-        aiGeneratePhase.value = 'waiting'
-      }
-    }, 450)
-
-    const emptyAtStart = {
-      description: !options.description.value.trim(),
-      classroomApplication: !options.classroomApplication.value.trim(),
-    }
-
-    const state: DiagramCopyStreamState = {
-      fingerprint,
-      promise: undefined as unknown as Promise<ShowcaseDiagramCopyResult | void>,
-      result: null,
-      error: null,
-      abort,
-      phaseTimer,
-      forceOverwrite,
-      emptyAtStart,
-      notifySuccess,
-      notifyError,
-    }
-    diagramCopyStream = state
-
-    state.promise = streamShowcaseDiagramCopy(
-      {
+    if (!source) return null
+    if (source.specs.length > 0) {
+      return diagramCopyFingerprint({
         specs: source.specs,
         title: title.value,
         subject: subject.value,
         grade: grade.value,
         diagramType: source.diagramType,
-        signal: abort.signal,
-      },
-      {
-        onPhase: (phase) => {
-          if (diagramCopyStream?.fingerprint !== fingerprint) return
-          if (phase === 'extracting' || phase === 'generating') {
-            if (aiGeneratePhase.value === 'sending' || aiGeneratePhase.value === 'idle') {
-              aiGeneratePhase.value = 'waiting'
-            }
-          }
-        },
-        onFields: (fields) => {
-          if (diagramCopyStream?.fingerprint !== fingerprint) return
-          if (aiGeneratePhase.value !== 'streaming') {
-            aiGeneratePhase.value = 'streaming'
-          }
-          applyStreamFields(fields, state)
-        },
-        onDone: (result) => {
-          if (diagramCopyStream?.fingerprint !== fingerprint) return
-          diagramCopyStream.result = result
-          diagramCopyStream.error = null
-          applyFinalResult(result, forceOverwrite)
-          aiGeneratePhase.value = 'streaming'
-        },
-      },
-    )
+      })
+    }
+    const draftImages = source.images ?? []
+    const existingKeys = source.existingImageKeys ?? []
+    if (draftImages.length > 0 || existingKeys.length > 0) {
+      const draftPart = draftImages
+        .map((file) => `${file.name}:${file.size}:${file.lastModified}`)
+        .join(',')
+      return [
+        diagramCopyImagesFingerprint({
+          images: draftImages,
+          title: title.value,
+          subject: subject.value,
+          grade: grade.value,
+          diagramType: source.diagramType,
+        }),
+        existingKeys.join(','),
+        draftPart,
+      ].join('|')
+    }
+    return null
+  }
+
+  function attachStreamHandlers(
+    state: DiagramCopyStreamState,
+    fingerprint: string,
+    forceOverwrite: boolean,
+    streamPromise: Promise<ShowcaseDiagramCopyResult>,
+  ): void {
+    state.promise = streamPromise
       .then((result) => {
         if (diagramCopyStream?.fingerprint !== fingerprint) {
           return result
@@ -290,7 +234,7 @@ export function useShowcaseDiagramCopyAi(options: {
         return result
       })
       .catch((error: unknown) => {
-        if (abort.signal.aborted) {
+        if (state.abort.signal.aborted) {
           return
         }
         const message =
@@ -320,6 +264,185 @@ export function useShowcaseDiagramCopyAi(options: {
       })
   }
 
+  function startStreamState(
+    fingerprint: string,
+    prefetchOptions: PrefetchOptions | undefined,
+  ): DiagramCopyStreamState {
+    clearDiagramCopyPrefetch()
+    const abort = new AbortController()
+    isGenerating.value = true
+    aiGeneratePhase.value = 'sending'
+    if (prefetchOptions?.notifyStart) {
+      notify.info(String(t('showcase.publishModal.aiGenerating')))
+    }
+
+    const phaseTimer = setTimeout(() => {
+      if (aiGeneratePhase.value === 'sending') {
+        aiGeneratePhase.value = 'waiting'
+      }
+    }, 450)
+
+    const state: DiagramCopyStreamState = {
+      fingerprint,
+      promise: undefined as unknown as Promise<ShowcaseDiagramCopyResult | void>,
+      result: null,
+      error: null,
+      abort,
+      phaseTimer,
+      forceOverwrite: prefetchOptions?.forceOverwrite === true,
+      emptyAtStart: {
+        description: !options.description.value.trim(),
+        classroomApplication: !options.classroomApplication.value.trim(),
+      },
+      notifySuccess: prefetchOptions?.notifySuccess !== false,
+      notifyError: prefetchOptions?.notifyError !== false,
+    }
+    diagramCopyStream = state
+    return state
+  }
+
+  function streamHandlers(fingerprint: string, state: DiagramCopyStreamState) {
+    return {
+      onPhase: (phase: 'extracting' | 'generating') => {
+        if (diagramCopyStream?.fingerprint !== fingerprint) return
+        if (phase === 'extracting' || phase === 'generating') {
+          if (aiGeneratePhase.value === 'sending' || aiGeneratePhase.value === 'idle') {
+            aiGeneratePhase.value = 'waiting'
+          }
+        }
+      },
+      onFields: (fields: ShowcaseDiagramCopyFields) => {
+        if (diagramCopyStream?.fingerprint !== fingerprint) return
+        if (aiGeneratePhase.value !== 'streaming') {
+          aiGeneratePhase.value = 'streaming'
+        }
+        applyStreamFields(fields, state)
+      },
+      onDone: (result: ShowcaseDiagramCopyResult) => {
+        if (diagramCopyStream?.fingerprint !== fingerprint) return
+        diagramCopyStream.result = result
+        diagramCopyStream.error = null
+        applyFinalResult(result, state.forceOverwrite)
+        aiGeneratePhase.value = 'streaming'
+      },
+    }
+  }
+
+  function beginSpecsStream(
+    source: DiagramCopySpecSource,
+    prefetchOptions?: PrefetchOptions,
+  ): void {
+    const fingerprint = diagramCopyFingerprint({
+      specs: source.specs,
+      title: title.value,
+      subject: subject.value,
+      grade: grade.value,
+      diagramType: source.diagramType,
+    })
+    const forceOverwrite = prefetchOptions?.forceOverwrite === true
+    if (
+      diagramCopyStream &&
+      diagramCopyStream.fingerprint === fingerprint &&
+      !diagramCopyStream.error &&
+      diagramCopyStream.forceOverwrite === forceOverwrite &&
+      !diagramCopyStream.result
+    ) {
+      return
+    }
+
+    const state = startStreamState(fingerprint, prefetchOptions)
+    attachStreamHandlers(
+      state,
+      fingerprint,
+      forceOverwrite,
+      streamShowcaseDiagramCopy(
+        {
+          specs: source.specs,
+          title: title.value,
+          subject: subject.value,
+          grade: grade.value,
+          diagramType: source.diagramType,
+          signal: state.abort.signal,
+        },
+        streamHandlers(fingerprint, state),
+      ),
+    )
+  }
+
+  function beginImagesStream(
+    images: File[],
+    diagramTypeValue: string,
+    prefetchOptions?: PrefetchOptions,
+  ): void {
+    const fingerprint = diagramCopyImagesFingerprint({
+      images,
+      title: title.value,
+      subject: subject.value,
+      grade: grade.value,
+      diagramType: diagramTypeValue,
+    })
+    const forceOverwrite = prefetchOptions?.forceOverwrite === true
+    if (
+      diagramCopyStream &&
+      diagramCopyStream.fingerprint === fingerprint &&
+      !diagramCopyStream.error &&
+      diagramCopyStream.forceOverwrite === forceOverwrite &&
+      !diagramCopyStream.result
+    ) {
+      return
+    }
+
+    const state = startStreamState(fingerprint, prefetchOptions)
+    attachStreamHandlers(
+      state,
+      fingerprint,
+      forceOverwrite,
+      streamShowcaseDiagramCopyFromImages(
+        {
+          images,
+          title: title.value,
+          subject: subject.value,
+          grade: grade.value,
+          diagramType: diagramTypeValue,
+          signal: state.abort.signal,
+        },
+        streamHandlers(fingerprint, state),
+      ),
+    )
+  }
+
+  function beginDiagramCopyPrefetch(prefetchOptions?: PrefetchOptions): void {
+    if (!isDiagramCaseType()) return
+    const source = options.resolveSpecSource()
+    if (source && source.specs.length > 0) {
+      beginSpecsStream(source, prefetchOptions)
+      return
+    }
+
+    const draftImages = source?.images ?? []
+    const diagramTypeValue = source?.diagramType || 'mind_map'
+    if (draftImages.length > 0 && !options.resolveImageFiles) {
+      beginImagesStream(draftImages, diagramTypeValue, prefetchOptions)
+      return
+    }
+    if (!options.resolveImageFiles && draftImages.length < 1) {
+      return
+    }
+
+    void (async () => {
+      const images =
+        (await options.resolveImageFiles?.()) ??
+        draftImages
+      if (images.length < 1) {
+        if (prefetchOptions?.notifyError !== false) {
+          notify.error(String(t('showcase.publishModal.aiGenerateNeedDiagram')))
+        }
+        return
+      }
+      beginImagesStream(images, diagramTypeValue, prefetchOptions)
+    })()
+  }
+
   function generateDiagramCopy(): void {
     if (!title.value.trim()) {
       notify.error(String(t('showcase.publishModal.validationTitle')))
@@ -330,7 +453,12 @@ export function useShowcaseDiagramCopyAi(options: {
       return
     }
     const source = options.resolveSpecSource()
-    if (!source || source.specs.length < 1) {
+    const hasSpecs = Boolean(source && source.specs.length > 0)
+    const hasImageSource = Boolean(
+      (source?.images && source.images.length > 0) ||
+        (source?.existingImageKeys && source.existingImageKeys.length > 0),
+    )
+    if (!hasSpecs && !hasImageSource) {
       notify.error(String(t('showcase.publishModal.aiGenerateNeedDiagram')))
       return
     }

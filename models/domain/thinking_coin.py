@@ -30,7 +30,11 @@ from models.domain.auth import Base
 
 
 class ThinkingCoinWallet(Base):
-    """Per-user thinking coin balance."""
+    """Per-user thinking coin balance.
+
+    ``daily_balance`` is the unused portion of today's login check-in reward.
+    It expires at Beijing midnight (lazy expiry on wallet access).
+    """
 
     __tablename__ = "thinking_coin_wallets"
 
@@ -40,12 +44,21 @@ class ThinkingCoinWallet(Base):
         primary_key=True,
     )
     balance: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    daily_balance: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    daily_balance_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
     )
 
-    __table_args__ = (CheckConstraint("balance >= 0", name="ck_thinking_coin_wallets_balance_nonneg"),)
+    __table_args__ = (
+        CheckConstraint("balance >= 0", name="ck_thinking_coin_wallets_balance_nonneg"),
+        CheckConstraint("daily_balance >= 0", name="ck_thinking_coin_wallets_daily_nonneg"),
+        CheckConstraint(
+            "daily_balance <= balance",
+            name="ck_thinking_coin_wallets_daily_lte_balance",
+        ),
+    )
 
 
 class ThinkingCoinLedger(Base):

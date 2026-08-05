@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': '画像をアップロード（複数可）',
   'showcase.publishModal.galleryHint': '複数の画像と保存済み図を追加できます（最大 {max} 件）',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} 件追加済み',
   'showcase.publishModal.galleryImageItem': '画像：{name}',
   'showcase.publishModal.galleryDiagramItem': '図：{name}',

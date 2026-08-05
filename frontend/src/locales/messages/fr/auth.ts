@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Dernière mise à jour : {date}',
   'privacy.backToSignIn': 'Retour à la connexion',
   'auth.downloadDesktopShortcut': 'Ajouter au bureau',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Dans Safari, Chrome ou Edge, appuyez sur Partager, puis choisissez « Sur l’écran d’accueil ».',
   'auth.pwaAndroidInstallHint': 'Ouvrez le menu du navigateur (⋮) et appuyez sur Installer l’application ou Ajouter à l’écran d’accueil.',
   'auth.pwaSafariMacInstallHint': 'Dans Safari, choisissez Fichier → Ajouter au Dock, ou Partager → Ajouter au Dock (macOS Sonoma ou plus récent).',

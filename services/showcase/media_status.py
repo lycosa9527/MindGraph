@@ -61,11 +61,16 @@ def resolve_showcase_media_status(
     thumbnail_path: Optional[str],
     spec: Any,
     cover_failed: bool = False,
+    cover_job_status: Optional[str] = None,
 ) -> str:
     """Return a stable media_status token for admin moderation tables.
 
     Teaching designs move through upload → Office PDF convert → preview ready →
     cover ready. Diagram cases only report upload completeness and optional cover.
+
+    When ``cover_job_status`` is set (cold manifesto), prefer it over Redis
+    ephemeral failure: queued/running → converting; failed → conversion_failed;
+    succeeded → derive from stored paths only (no COS probe).
     """
     spec_obj = spec if isinstance(spec, dict) else {}
     has_thumb = _has_nonempty_path(thumbnail_path)
@@ -74,6 +79,11 @@ def resolve_showcase_media_status(
         attachment = spec_obj.get("attachment_path")
         if not _has_nonempty_path(attachment):
             return MEDIA_STATUS_AWAITING_UPLOAD
+
+        if cover_job_status in {"queued", "running"}:
+            return MEDIA_STATUS_CONVERTING_PREVIEW
+        if cover_job_status == "failed":
+            cover_failed = True
 
         if _office_needs_preview(spec_obj):
             if cover_failed:

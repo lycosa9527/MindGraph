@@ -3,7 +3,7 @@
  * ThinkingCoinsModal — wallet balance, earn tasks, ledger, subscription reference.
  * Design: Swiss grid + bold typography with Bauhaus-inspired color blocks.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import {
   Calendar,
@@ -26,6 +26,8 @@ import {
 import { useLanguage } from '@/composables'
 import { SHOW_PERSONAL_SUBSCRIPTION_TAB } from '@/composables/auth/thinkingCoinsUpgradeUi'
 import { formatThinkingCoinBalance, useThinkingCoins } from '@/composables/auth/useThinkingCoins'
+import { patchEarnTasksFromMutation } from '@/composables/auth/useThinkingCoinSync'
+import { eventBus } from '@/composables/core/useEventBus'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 
 const PERSONAL_TIERS = ['trial', 'monthly', 'sub', 'annual'] as const
@@ -140,6 +142,8 @@ const balanceText = computed(() =>
   formatThinkingCoinBalance(wallet.value?.balance ?? 0)
 )
 
+const dailyBalance = computed(() => wallet.value?.daily_balance ?? 0)
+
 const earnTasks = computed(() => wallet.value?.earn_tasks ?? [])
 
 function taskTheme(index: number): TaskTheme {
@@ -220,6 +224,22 @@ watch(
   }
 )
 
+const offThinkingCoinMutation = eventBus.on('thinking_coins:mutation', (payload) => {
+  if (!props.visible || !wallet.value?.eligible || !payload.eligible) {
+    return
+  }
+  wallet.value = {
+    ...wallet.value,
+    balance: payload.balance,
+    daily_balance: payload.daily_balance ?? 0,
+    earn_tasks: patchEarnTasksFromMutation(wallet.value.earn_tasks, payload),
+  }
+})
+
+onUnmounted(() => {
+  offThinkingCoinMutation()
+})
+
 watch(ledgerOpen, (open) => {
   if (open && props.visible) {
     ledgerPage.value = 1
@@ -254,7 +274,7 @@ function onUpgradeClick() {
   <Teleport to="body">
     <div
       v-if="isVisible"
-      class="fixed inset-0 z-[2000] flex items-center justify-center p-4"
+      class="fixed inset-0 z-2000 flex items-center justify-center p-4"
     >
       <div
         class="absolute inset-0 bg-stone-900/45 backdrop-blur-[2px]"
@@ -306,6 +326,15 @@ function onUpgradeClick() {
                     </p>
                     <p class="mt-1 text-4xl font-bold tabular-nums tracking-tight text-stone-900">
                       {{ balanceText }}
+                    </p>
+                    <p class="mt-2 text-xs text-stone-500">
+                      {{ t('thinkingCoins.dailyExpiresHint') }}
+                    </p>
+                    <p
+                      v-if="dailyBalance > 0"
+                      class="mt-1 text-xs tabular-nums text-amber-700"
+                    >
+                      {{ t('thinkingCoins.dailyBalanceRemaining', { n: dailyBalance }) }}
                     </p>
                   </div>
                   <button

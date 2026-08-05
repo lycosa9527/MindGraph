@@ -34,6 +34,7 @@ from models.domain.showcase import ShowcasePost, ShowcasePostFavorite, ShowcaseP
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.showcase.covers.enqueue import enqueue_missing_office_preview
+from services.showcase.covers.job_manifest import fetch_cover_jobs_by_post_ids
 from services.showcase.field_options import validate_grade, validate_subject
 from services.showcase.post_delete import (
     clear_showcase_post_engagement,
@@ -288,6 +289,7 @@ async def list_posts(
     author_profiles = await _load_public_author_profiles(
         {p.author_id for p in posts if p.author is None and p.author_id is not None}
     )
+    cover_jobs = await fetch_cover_jobs_by_post_ids(db, [p.id for p in posts])
     formatted = [
         await _format_post(
             p,
@@ -296,6 +298,7 @@ async def list_posts(
             liked_post_ids,
             favorited_post_ids,
             author_profiles,
+            cover_jobs,
         )
         for p in posts
     ]

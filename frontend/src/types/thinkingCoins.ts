@@ -21,6 +21,7 @@ export interface ThinkingCoinEarnTask {
 export interface ThinkingCoinMutationPayload {
   eligible: boolean
   balance: number
+  daily_balance?: number
   credited?: number
   debited?: number
   task_slug?: string | null
@@ -30,6 +31,8 @@ export interface ThinkingCoinMutationPayload {
 
 export interface ThinkingCoinsWallet {
   balance: number
+  /** Unused daily login coins that expire at Beijing midnight. */
+  daily_balance?: number
   eligible: boolean
   earn_tasks: ThinkingCoinEarnTask[]
 }

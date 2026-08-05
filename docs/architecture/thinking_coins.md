@@ -22,6 +22,14 @@ flowchart LR
 - **Awaited path:** LLM pre-flight, post-success debit, client-event earn when the HTTP/SSE response must include balance.
 - **Async path:** structured mutation audit logs via `asyncio.create_task` (never blocks callers).
 
+## Daily login coins (no rollover)
+
+- Daily check-in (`daily_checkin`) credits go into a **daily bucket** (`thinking_coin_wallets.daily_balance`).
+- Unused daily login coins **expire at Beijing midnight** (lazy expiry on wallet read / credit / debit).
+- Spend order: daily bucket first, then persistent balance (signup grant, task rewards, etc.).
+- Ledger reason for expiry: `daily_expire`.
+- Other earn sources remain persistent and do not expire overnight.
+
 ## Billing rules
 
 | Request type | Default cost |

@@ -18,12 +18,19 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.attributes import flag_modified
 
 from models.domain.auth import User
-from models.domain.showcase import ShowcasePost, ShowcasePostFavorite, ShowcasePostLike
+from models.domain.showcase import ShowcaseCoverJob, ShowcasePost, ShowcasePostFavorite, ShowcasePostLike
 from routers.features.community.helpers import parse_spec_json
 from services.auth.thinking_coin.case_earn import try_publish_case_earn
 from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.showcase.audit import write_showcase_audit
 from services.showcase.covers.events import get_cover_last_event
+from services.showcase.covers.job_manifest import (
+    COVER_JOB_FAILED,
+    COVER_JOB_SUCCEEDED,
+    cover_job_public_payload,
+    get_cover_job,
+    job_is_in_flight,
+)
 from services.showcase.media_status import (
     MEDIA_STATUS_COVER_READY,
     cover_event_indicates_failure,
@@ -425,6 +432,7 @@ async def _format_post(
     liked_post_ids: Optional[Set[str]] = None,
     favorited_post_ids: Optional[Set[str]] = None,
     author_profiles: Optional[dict[int, dict]] = None,
+    cover_jobs: Optional[dict[str, ShowcaseCoverJob]] = None,
 ) -> dict:
     user_id = current_user.id
     is_liked = False
@@ -490,13 +498,30 @@ async def _format_post(
 
     gallery_items = _format_gallery_items(post.spec if isinstance(post.spec, dict) else None, post.id)
 
+    cover_job: ShowcaseCoverJob | None = None
+    if cover_jobs is not None:
+        cover_job = cover_jobs.get(post.id)
+    elif post.case_type == "teaching_design":
+        cover_job = await get_cover_job(db, post.id)
+
+    cover_job_status = None
+    if cover_job is not None:
+        # Stale queued/running: ignore stage (same reclaim window as Refresh).
+        if job_is_in_flight(cover_job.status, cover_job.updated_at):
+            cover_job_status = cover_job.status
+        elif cover_job.status == COVER_JOB_FAILED:
+            cover_job_status = COVER_JOB_FAILED
+        elif cover_job.status == COVER_JOB_SUCCEEDED:
+            cover_job_status = COVER_JOB_SUCCEEDED
     media_status = resolve_showcase_media_status(
         case_type=post.case_type,
         thumbnail_path=post.thumbnail_path,
         spec=post.spec,
         cover_failed=False,
+        cover_job_status=cover_job_status,
     )
-    if post.case_type == "teaching_design" and media_status != MEDIA_STATUS_COVER_READY:
+    # Legacy posts without a manifesto: Redis last-event only (ephemeral).
+    if post.case_type == "teaching_design" and cover_job is None and media_status != MEDIA_STATUS_COVER_READY:
         last_cover_event = await get_cover_last_event(str(post.id))
         if cover_event_indicates_failure(last_cover_event):
             media_status = resolve_showcase_media_status(
@@ -554,6 +579,7 @@ async def _format_post(
         "gallery_items": gallery_items,
         "status": post.status,
         "media_status": media_status,
+        "cover_job": cover_job_public_payload(cover_job),
         "is_expert_recommended": post.is_expert_recommended,
         "publish_source": post.publish_source,
         "attribution": post.attribution if post.publish_source == "proxy" else None,

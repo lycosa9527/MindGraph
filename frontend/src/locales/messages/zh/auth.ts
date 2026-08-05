@@ -12,6 +12,7 @@ export default {
   'auth.softwareAgreementUpdated': '更新日期：{date}',
   'privacy.backToSignIn': '返回登录',
   'auth.downloadDesktopShortcut': '添加到桌面',
+  'auth.platformQuickGuide': '平台快速使用指南',
   'auth.pwaIosInstallHint':
     '在 Safari、Chrome 或 Edge 中点分享，再选择「添加到主屏幕」。',
   'auth.pwaAndroidInstallHint':

@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Останнє оновлення: {date}',
   'privacy.backToSignIn': 'Назад до входу',
   'auth.downloadDesktopShortcut': 'Додати на робочий стіл',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Натисніть «Поділитися» в Safari, Chrome або Edge, потім оберіть «На екран «Додому»».',
   'auth.pwaAndroidInstallHint': 'Відкрийте меню браузера (⋮) і натисніть «Встановити застосунок» або «На головний екран».',
   'auth.pwaSafariMacInstallHint': 'У Safari оберіть «Файл» → «Додати до Dock» або «Поділитися» → «Додати до Dock» (macOS Sonoma або новіше).',

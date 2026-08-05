@@ -1,5 +1,5 @@
 """
-Showcase diagram-case / template AI copy: extract node text then draft case fields.
+Showcase diagram-case / template AI copy: outline structure then draft case fields.
 
 Uses DashScope ``qwen3.7-flash`` with an education-focused prompt (思维发展型课堂).
 
@@ -11,10 +11,14 @@ Proprietary License
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterator, Iterable
+from collections.abc import AsyncIterator
 from typing import Any, Dict, List, Optional
 
-from services.kitty.infra.bootstrap.kitty_native_spec import native_spec_to_pseudo_nodes
+from services.knowledge.document_ocr import (
+    OCR_CALL_ERRORS,
+    dashscope_vision_ocr,
+    ocr_image_bytes,
+)
 from services.llm import llm_service
 from services.showcase.ai_copy import (
     SHOWCASE_AI_COPY_MAX_INPUT_CHARS,
@@ -22,6 +26,11 @@ from services.showcase.ai_copy import (
     clean_ai_copy_field,
     extract_partial_json_string_fields,
     parse_json_object,
+)
+from services.showcase.diagram_structure_outline import (
+    build_diagram_structure_outline,
+    diagram_type_zh_label,
+    resolve_diagram_type,
 )
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 
@@ -37,10 +46,25 @@ _DIAGRAM_FIELD_ALIASES: dict[str, tuple[str, ...]] = {
     ),
 }
 
+_DIAGRAM_IMAGE_OCR_PROMPT = (
+    "请提取图片中思维图示/图表的全部文字，尽量按从上到下、从中心到分支的顺序整理。"
+    "保留标题、节点与标签原文。若几乎没有文字，用一两句中文概括图中可见主题与结构。"
+)
+
+_IMAGE_MIME_BY_SUFFIX = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+}
+
 _SYSTEM_PROMPT_ZH = """\
 你是面向中小学教师的思维发展型课堂教研助手（MindGraph 案例广场）。用户会提供一份图示\
-（思维可视化图）的节点文字内容，请据此撰写可直接发布的中文文案。平台强调「思维可视化\
-+ 思维策略」，文案必须写出具体图示类型与课堂用法，不能只写空泛目标。
+（思维可视化图）的「图示内容」——可能是系统从图示 JSON 解析出的结构概要（类型、层级与\
+节点角色），也可能是从图示图片经 OCR / 视觉识别得到的文字，请据此撰写可直接发布的中文\
+文案。平台强调「思维可视化 + 思维策略」，文案必须写出具体图示类型与课堂用法，不能只写\
+空泛目标。
 
 读者是忙碌的中小学老师：用语要口语化、好读、好懂，减轻阅读负担。
 - 多用短句和日常教研说法，少用论文腔、翻译腔和堆叠术语。
@@ -49,100 +73,49 @@ _SYSTEM_PROMPT_ZH = """\
 （如：搭梯子、回头看自己的想法、换一种问法、负担太大、说清楚、自己想明白）。
 - 图示名称（气泡图、双气泡图、流程图、思维导图等）和常见思维说法（比较、因果、\
 批判性思考）可保留，但要用「谁在什么环节用它做什么」说清楚，不要只甩术语。
-- 直接写内容，勿提及 AI、模型、节点提取、Markdown 或本提示本身。
+- 直接写内容，勿提及 AI、模型、JSON、节点提取、Markdown 或本提示本身。
 
-每个字段必须尽量落到图示中的真实内容，并点明：
-1) 这是什么图示/思维工具，图里主要画了哪些关键信息（图示没写的不要编）；
-2) 主要练什么思维（如：观察归类、比较异同、找因果关系、按顺序梳理、打比方迁移、\
+写作要点（必须做到）：
+1) 先准确点明图示类型（以结构概要里的「图示类型」为准，如：这是一张思维导图），\
+再概括结构长什么样（中心主题、一级分支、层级关系，或原因/结果、异同点等——\
+按该图类型真实结构写）；
+2) 简介里要落到图中真实主题与主要分支/要点，图示没写的不要编；
+3) 点明主要练什么思维（如：观察归类、比较异同、找因果关系、按顺序梳理、打比方迁移、\
 质疑证据、多角度看问题等）；
-3) 在课堂上可以怎么用、帮助学生解决什么困难。
+4) 课堂应用要能对应这张图的结构，说明怎么用、帮助学生解决什么困难。
 
 输出要求：
 - 仅输出一个 JSON 对象（不要代码围栏、不要额外说明）。
 - 字段仅两项：description（图示简介）、classroom_application（课堂应用）。\
 不要输出其他字段。
 - 每个字段写成一整段连贯中文（完整句子），不要分条、不要项目符号、不要用换行罗列；\
-在段落里自然写清「图示/工具 + 思维类型 + 作用」。
+在段落里自然写清「图示/工具 + 结构要点 + 思维类型 + 作用」。
 - 字数硬性目标：图示简介、课堂应用各约 200 字（建议 190–210 字），\
 两字段合计约 400 字；不要明显偏短，也不要某一字段独长。
-- 紧扣学科、年级与图示内容；图示未写明的活动不要虚构。"""
+- 紧扣学科、年级与图示结构；图示未写明的活动不要虚构。"""
 
 _USER_PROMPT_TEMPLATE_ZH = """\
 【案例元信息】
 标题：{title}
 学科：{subject}
 年级：{grade}
-图示类型：{diagram_type}
+图示类型：{diagram_type_zh}（{diagram_type}）
 
-【图示节点文字】
+【图示内容】（结构概要或图片 OCR / 视觉识别文本；请据此分析后写文案）
 {diagram_text}
 
 请输出 JSON：仅 description 与 classroom_application，各约 200 字、合计约 400 字；\
-每字段一整段完整句子；写清图示与思维，但用语要通俗、给中小学老师减负；\
-勿分条、勿论文腔。\
+description 开头先点明图示类型并概括结构，再落到真实内容；用语通俗、给中小学老师减负；\
+勿分条、勿论文腔、勿编造图示内容里没有的内容。\
 {{"description":"...","classroom_application":"..."}}"""
-
-
-def _collect_node_texts(nodes: Iterable[Any]) -> List[str]:
-    texts: List[str] = []
-    for node in nodes:
-        if not isinstance(node, dict):
-            continue
-        text = node.get("text")
-        if text is None:
-            continue
-        cleaned = str(text).strip()
-        if cleaned:
-            texts.append(cleaned)
-    return texts
-
-
-def _walk_nested_text(value: Any, sink: List[str], *, depth: int = 0) -> None:
-    """Collect string ``text`` / ``label`` fields from nested dict/list structures."""
-    if depth > 40:
-        return
-    if isinstance(value, dict):
-        for key in ("text", "label", "topic", "title", "name"):
-            raw = value.get(key)
-            if isinstance(raw, str) and raw.strip():
-                sink.append(raw.strip())
-        for child_key in ("children", "branches", "nodes", "items", "parts", "subparts"):
-            child = value.get(child_key)
-            if isinstance(child, list):
-                for item in child:
-                    _walk_nested_text(item, sink, depth=depth + 1)
-        return
-    if isinstance(value, list):
-        for item in value:
-            _walk_nested_text(item, sink, depth=depth + 1)
 
 
 def extract_diagram_text(
     spec: Dict[str, Any],
     diagram_type: str,
 ) -> str:
-    """Extract plain node labels from a diagram spec for LLM prompting."""
-    texts: List[str] = []
-    nodes = spec.get("nodes")
-    if isinstance(nodes, list) and nodes:
-        texts.extend(_collect_node_texts(nodes))
-    else:
-        pseudo = native_spec_to_pseudo_nodes(spec, diagram_type)
-        if pseudo:
-            texts.extend(_collect_node_texts(pseudo))
-        else:
-            _walk_nested_text(spec, texts)
-
-    # Stable unique order (first occurrence wins).
-    seen: set[str] = set()
-    unique: List[str] = []
-    for item in texts:
-        if item in seen:
-            continue
-        seen.add(item)
-        unique.append(item)
-
-    cleaned = "\n".join(unique).strip()
+    """Build a structural outline from a diagram spec for LLM prompting."""
+    cleaned = build_diagram_structure_outline(spec, diagram_type).strip()
     if not cleaned:
         raise ValueError("no_text_extracted")
     if len(cleaned) > SHOWCASE_AI_COPY_MAX_INPUT_CHARS:
@@ -154,17 +127,70 @@ def extract_diagram_texts(
     specs: List[Dict[str, Any]],
     diagram_type: str,
 ) -> str:
-    """Join text from one or more diagram specs (gallery cases)."""
+    """Join structural outlines from one or more diagram specs (gallery cases)."""
     chunks: List[str] = []
     for index, spec in enumerate(specs, start=1):
         try:
-            chunk = extract_diagram_text(spec, diagram_type)
+            per_type = resolve_diagram_type(spec, diagram_type)
+            chunk = extract_diagram_text(spec, per_type)
         except ValueError:
             continue
         if len(specs) > 1:
             chunks.append(f"【图示 {index}】\n{chunk}")
         else:
             chunks.append(chunk)
+    joined = "\n\n".join(chunks).strip()
+    if not joined:
+        raise ValueError("no_text_extracted")
+    if len(joined) > SHOWCASE_AI_COPY_MAX_INPUT_CHARS:
+        joined = joined[:SHOWCASE_AI_COPY_MAX_INPUT_CHARS]
+    return joined
+
+
+def _mime_for_image_suffix(suffix: str) -> str:
+    return _IMAGE_MIME_BY_SUFFIX.get(suffix.lower(), "image/png")
+
+
+def _ocr_one_diagram_image(image_bytes: bytes, mime_type: str) -> str:
+    """OCR one gallery image via Qwen vision, with Tesseract soft fallback."""
+    resolved_mime = mime_type if mime_type.startswith("image/") else "image/png"
+    try:
+        text = dashscope_vision_ocr(
+            image_bytes,
+            resolved_mime,
+            prompt=_DIAGRAM_IMAGE_OCR_PROMPT,
+        ).strip()
+        if text:
+            return text
+    except (*OCR_CALL_ERRORS, ValueError) as exc:
+        logger.warning("[ShowcaseDiagramAI] vision OCR failed: %s", exc)
+    # Soft PNG/JPEG fallback path (Tesseract); never raises.
+    return ocr_image_bytes(image_bytes).strip()
+
+
+def extract_diagram_text_from_images(
+    images: List[tuple[bytes, str]],
+) -> str:
+    """OCR gallery images into prompt text for diagram AI copy.
+
+    Each item is ``(image_bytes, mime_type_or_filename_suffix)``.
+    """
+    chunks: List[str] = []
+    for index, (image_bytes, mime_or_suffix) in enumerate(images, start=1):
+        if not image_bytes:
+            continue
+        mime_type = mime_or_suffix
+        if mime_or_suffix.startswith("."):
+            mime_type = _mime_for_image_suffix(mime_or_suffix)
+        elif "/" not in mime_or_suffix:
+            mime_type = _mime_for_image_suffix(f".{mime_or_suffix.lstrip('.')}")
+        text = _ocr_one_diagram_image(image_bytes, mime_type)
+        if not text:
+            continue
+        if len(images) > 1:
+            chunks.append(f"【图片 {index} OCR】\n{text}")
+        else:
+            chunks.append(f"【图片 OCR】\n{text}")
     joined = "\n\n".join(chunks).strip()
     if not joined:
         raise ValueError("no_text_extracted")
@@ -203,11 +229,13 @@ def _build_diagram_copy_user_prompt(
     grade: str,
     diagram_type: str,
 ) -> str:
+    slug = (diagram_type or "").strip() or "未指定"
     return _USER_PROMPT_TEMPLATE_ZH.format(
         title=title.strip() or "未命名案例",
         subject=subject.strip() or "未指定",
         grade=grade.strip() or "未指定",
-        diagram_type=diagram_type.strip() or "未指定",
+        diagram_type=slug,
+        diagram_type_zh=diagram_type_zh_label(slug),
         diagram_text=diagram_text.strip(),
     )
 

@@ -14,6 +14,15 @@ from sqlalchemy.orm.attributes import flag_modified
 from models.domain.showcase import ShowcasePost
 from services.redis.cache import redis_showcase_cache as showcase_cache
 from services.showcase.covers.events import publish_showcase_cover_event
+from services.showcase.covers.job_manifest import (
+    STAGE_CONVERT,
+    STAGE_DOWNLOAD,
+    STAGE_UPLOAD,
+    bind_cover_job_succeeded,
+    mark_cover_job_failed,
+    mark_cover_job_running,
+    mark_cover_job_stage,
+)
 from services.showcase.covers.locks import acquire_cover_lock, release_cover_lock
 from services.showcase.covers.render import (
     render_pdf_first_page_png,
@@ -59,8 +68,11 @@ async def _emit_fail(
     user_id: int,
     attachment_key: str,
     reason: str,
+    organization_id: Optional[int] = None,
+    author_id: Optional[int] = None,
+    celery_task_id: Optional[str] = None,
 ) -> bool:
-    """Log cover_fail, notify SSE subscribers, return False."""
+    """Log cover_fail, persist manifesto failure, notify SSE, return False."""
     showcase_wf_log(
         "cover_fail",
         reason[:200],
@@ -68,6 +80,21 @@ async def _emit_fail(
         user_id=user_id,
         key=attachment_key,
     )
+    rls_user_id = int(author_id) if author_id is not None else int(user_id)
+    try:
+        async with rls_async_session(RlsContext.for_celery_user(rls_user_id, organization_id)) as db:
+            await mark_cover_job_failed(
+                db,
+                post_id=post_id,
+                reason=reason,
+                celery_task_id=celery_task_id,
+            )
+    except DATABASE_ERRORS as exc:
+        logger.warning(
+            "[ShowcaseCover] manifesto fail write post=%s: %s",
+            post_id[:8],
+            exc,
+        )
     await publish_showcase_cover_event(post_id, "cover_fail", reason=reason)
     return False
 
@@ -79,6 +106,7 @@ async def generate_showcase_cover(
     attachment_key: str,
     organization_id: Optional[int] = None,
     author_id: Optional[int] = None,
+    celery_task_id: Optional[str] = None,
 ) -> bool:
     """Download attachment, render cover PNG, upload, bind ``thumbnail_path``.
 
@@ -94,6 +122,9 @@ async def generate_showcase_cover(
             user_id=user_id,
             attachment_key=attachment_key,
             reason="key_out_of_scope",
+            organization_id=organization_id,
+            author_id=rls_user_id,
+            celery_task_id=celery_task_id,
         )
 
     suffix = Path(attachment_key).suffix.lower()
@@ -103,6 +134,9 @@ async def generate_showcase_cover(
             user_id=user_id,
             attachment_key=attachment_key,
             reason=f"unsupported_suffix={suffix}",
+            organization_id=organization_id,
+            author_id=rls_user_id,
+            celery_task_id=celery_task_id,
         )
 
     lock_token = acquire_cover_lock(post_id)
@@ -129,6 +163,13 @@ async def generate_showcase_cover(
         )
 
         async with rls_async_session(RlsContext.for_celery_user(rls_user_id, organization_id)) as db:
+            await mark_cover_job_running(
+                db,
+                post_id=post_id,
+                attachment_key=attachment_key,
+                celery_task_id=celery_task_id,
+                stage=STAGE_DOWNLOAD,
+            )
             result = await db.execute(select(ShowcasePost).where(ShowcasePost.id == post_id))
             post = result.scalar_one_or_none()
             if post is None:
@@ -137,6 +178,9 @@ async def generate_showcase_cover(
                     user_id=user_id,
                     attachment_key=attachment_key,
                     reason="post_missing",
+                    organization_id=organization_id,
+                    author_id=rls_user_id,
+                    celery_task_id=celery_task_id,
                 )
             if post.case_type != "teaching_design":
                 return await _emit_fail(
@@ -144,6 +188,9 @@ async def generate_showcase_cover(
                     user_id=user_id,
                     attachment_key=attachment_key,
                     reason="not_teaching_design",
+                    organization_id=organization_id,
+                    author_id=rls_user_id,
+                    celery_task_id=celery_task_id,
                 )
             current_key = _spec_attachment_path(post.spec)
             if current_key != attachment_key:
@@ -152,6 +199,9 @@ async def generate_showcase_cover(
                     user_id=user_id,
                     attachment_key=attachment_key,
                     reason="stale_attachment_key",
+                    organization_id=organization_id,
+                    author_id=rls_user_id,
+                    celery_task_id=celery_task_id,
                 )
             # Prefer DB author for RLS write even if enqueue omitted author_id.
             rls_user_id = int(post.author_id)
@@ -164,11 +214,21 @@ async def generate_showcase_cover(
                 user_id=user_id,
                 attachment_key=attachment_key,
                 reason="download_failed",
+                organization_id=organization_id,
+                author_id=rls_user_id,
+                celery_task_id=celery_task_id,
             )
+
+        async with rls_async_session(RlsContext.for_celery_user(rls_user_id, organization_id)) as db:
+            await mark_cover_job_stage(db, post_id=post_id, stage=STAGE_CONVERT)
 
         pdf_path = resolve_cover_pdf_path(source_path, work_dir / "lo")
         png_bytes = shrink_png_bytes(render_pdf_first_page_png(pdf_path))
         thumb_key = build_object_key(post_id, "thumbnail", ".png")
+
+        async with rls_async_session(RlsContext.for_celery_user(rls_user_id, organization_id)) as db:
+            await mark_cover_job_stage(db, post_id=post_id, stage=STAGE_UPLOAD)
+
         put_bytes_sync(thumb_key, png_bytes, content_type="image/png")
 
         preview_key: Optional[str] = None
@@ -189,6 +249,9 @@ async def generate_showcase_cover(
                     user_id=user_id,
                     attachment_key=attachment_key,
                     reason="post_gone_before_write",
+                    organization_id=organization_id,
+                    author_id=rls_user_id,
+                    celery_task_id=celery_task_id,
                 )
             if _spec_attachment_path(post.spec) != attachment_key:
                 return await _emit_fail(
@@ -196,6 +259,9 @@ async def generate_showcase_cover(
                     user_id=user_id,
                     attachment_key=attachment_key,
                     reason="stale_attachment_before_write",
+                    organization_id=organization_id,
+                    author_id=rls_user_id,
+                    celery_task_id=celery_task_id,
                 )
             post.thumbnail_path = thumb_key
             if preview_key is not None:
@@ -206,6 +272,8 @@ async def generate_showcase_cover(
                 spec_obj["preview_path"] = preview_key
                 post.spec = spec_obj
                 flag_modified(post, "spec")
+            # COS (or local) put already done; commit paths + cold succeeded together.
+            await bind_cover_job_succeeded(db, post_id=post_id)
             await db.commit()
 
         await showcase_cache.invalidate_post(post_id)
@@ -238,6 +306,9 @@ async def generate_showcase_cover(
             user_id=user_id,
             attachment_key=attachment_key,
             reason=str(exc)[:200],
+            organization_id=organization_id,
+            author_id=rls_user_id,
+            celery_task_id=celery_task_id,
         )
     finally:
         release_cover_lock(post_id, lock_token)

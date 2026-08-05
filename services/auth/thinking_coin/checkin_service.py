@@ -100,6 +100,7 @@ async def try_daily_checkin(
         LEDGER_DAILY_CHECKIN,
         ref_type="earn_task",
         ref_id=str(task.id),
+        daily=True,
     )
     return reward
 

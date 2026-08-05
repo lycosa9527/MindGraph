@@ -18,7 +18,7 @@ from services.auth.thinking_coin.event_hub import (
 async def test_empty_mutation_footer_is_ineligible() -> None:
     """Ineligible users get minimal footer."""
     footer = mutation_to_footer(empty_mutation())
-    assert footer == {"eligible": False, "balance": 0}
+    assert footer == {"eligible": False, "balance": 0, "daily_balance": 0}
 
 
 def test_merge_mutation_footers_prefers_last_eligible() -> None:
@@ -81,7 +81,11 @@ async def test_mutation_footer_includes_completed_slugs(
         AsyncMock(return_value=120),
     )
     monkeypatch.setattr(
-        "services.auth.thinking_coin.event_hub.safe_commit",
+        "services.auth.thinking_coin.event_hub.get_daily_balance",
+        AsyncMock(return_value=25),
+    )
+    monkeypatch.setattr(
+        "services.auth.thinking_coin.event_hub.commit_wallet_changes",
         AsyncMock(return_value=None),
     )
     monkeypatch.setattr(
@@ -91,5 +95,6 @@ async def test_mutation_footer_includes_completed_slugs(
     mutation = await track_client_event(db, user, org, "diagram_export")
     footer = mutation_to_footer(mutation)
     assert footer["balance"] == 120
+    assert footer["daily_balance"] == 25
     assert footer["credited"] == 10
     assert "daily_diagram_export" in footer["completed_slugs_today"]

@@ -14,7 +14,10 @@ async def test_debit_wallet_raises_when_insufficient() -> None:
     """Debit fails when balance is below amount."""
     db = AsyncMock()
     wallet = MagicMock()
+    wallet.user_id = 1
     wallet.balance = 3
+    wallet.daily_balance = 0
+    wallet.daily_balance_date = None
     db.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=wallet)))
 
     with pytest.raises(ValueError, match="insufficient_thinking_coins"):

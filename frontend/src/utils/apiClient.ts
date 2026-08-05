@@ -761,6 +761,14 @@ export interface ShowcasePost {
     | 'cover_ready'
     | 'ready'
     | 'conversion_failed'
+  /** Cold cover/PDF job manifesto summary (admin tooltips). */
+  cover_job?: {
+    status: 'queued' | 'running' | 'succeeded' | 'failed'
+    attempt_count: number
+    error_message?: string | null
+    updated_at?: string | null
+    current_stage?: string | null
+  } | null
   is_expert_recommended: boolean
   publish_source?: 'self' | 'proxy'
   attribution?: { display_name?: string; organization?: string | null; is_external?: boolean } | null
@@ -1079,6 +1087,22 @@ export async function deleteShowcasePost(postId: string): Promise<{ message: str
     throw new Error(err.detail || 'Failed to delete case')
   }
   return response.json()
+}
+
+export async function refreshAdminShowcaseCover(
+  postId: string
+): Promise<{ message: string; post: ShowcasePost }> {
+  const id = postId.trim()
+  if (!id) {
+    throw new Error('Missing case id')
+  }
+  const response = await apiPost(`/api/auth/admin/showcase/posts/${id}/refresh-cover`, {})
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ detail: 'Failed to refresh cover' }))
+    throw new Error(err.detail || 'Failed to refresh cover')
+  }
+  const data = (await response.json()) as { message: string; post: ShowcasePost }
+  return { ...data, post: normalizeShowcasePost(data.post) }
 }
 
 export async function deleteAdminShowcasePost(postId: string): Promise<{ message: string }> {

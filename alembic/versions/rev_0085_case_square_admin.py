@@ -7,8 +7,9 @@ Revises: 0084
 from typing import Sequence, Union
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects import postgresql as pg
+
+from alembic import op
 
 revision: str = "0085"
 down_revision: Union[str, None] = "0084"
@@ -16,6 +17,8 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 PANEL_RW = "rls_is_panel_mode()"
+# Field options are a publish/filter catalog: authenticated readers + panel writers.
+CATALOG_READ = "rls_community_read_allowed()"
 
 SUBJECTS = [
     "数学",
@@ -58,6 +61,7 @@ RECOMMENDED_TAGS = [
 
 
 def _panel_rls(table: str) -> None:
+    """Panel-only SELECT/write policies for staff grants and audit tables."""
     op.execute(sa.text(f'ALTER TABLE "{table}" ENABLE ROW LEVEL SECURITY'))
     op.execute(sa.text(f'ALTER TABLE "{table}" FORCE ROW LEVEL SECURITY'))
     op.execute(sa.text(f'CREATE POLICY "{table}_select" ON "{table}" FOR SELECT USING ({PANEL_RW})'))
@@ -68,7 +72,20 @@ def _panel_rls(table: str) -> None:
     op.execute(sa.text(f'CREATE POLICY "{table}_delete" ON "{table}" FOR DELETE USING ({PANEL_RW})'))
 
 
+def _catalog_rls(table: str) -> None:
+    """Community-readable catalog rows; mutations stay panel-only."""
+    op.execute(sa.text(f'ALTER TABLE "{table}" ENABLE ROW LEVEL SECURITY'))
+    op.execute(sa.text(f'ALTER TABLE "{table}" FORCE ROW LEVEL SECURITY'))
+    op.execute(sa.text(f'CREATE POLICY "{table}_select" ON "{table}" FOR SELECT USING ({CATALOG_READ})'))
+    op.execute(sa.text(f'CREATE POLICY "{table}_write" ON "{table}" FOR INSERT WITH CHECK ({PANEL_RW})'))
+    op.execute(
+        sa.text(f'CREATE POLICY "{table}_update" ON "{table}" FOR UPDATE USING ({PANEL_RW}) WITH CHECK ({PANEL_RW})')
+    )
+    op.execute(sa.text(f'CREATE POLICY "{table}_delete" ON "{table}" FOR DELETE USING ({PANEL_RW})'))
+
+
 def upgrade() -> None:
+    """Add proxy-publish columns, staff grants, field options catalog, audit log."""
     bind = op.get_bind()
     if not sa.inspect(bind).has_table("case_square_posts"):
         return
@@ -132,7 +149,7 @@ def upgrade() -> None:
             "case_square_field_options",
             ["category", "sort_order"],
         )
-        _panel_rls("case_square_field_options")
+        _catalog_rls("case_square_field_options")
 
         field_table = sa.table(
             "case_square_field_options",
@@ -181,6 +198,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Drop admin tables and proxy-publish columns added in upgrade."""
     bind = op.get_bind()
     for table in (
         "case_square_audit_log",

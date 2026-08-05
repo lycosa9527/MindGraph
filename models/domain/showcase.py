@@ -114,3 +114,35 @@ class ShowcasePostFavorite(Base):
     user: Mapped["User"] = relationship("User", lazy="selectin")
 
     __table_args__ = (Index("ix_case_square_post_favorites_unique", "post_id", "user_id", unique=True),)
+
+
+class ShowcaseCoverJob(Base):
+    """Cold manifesto for teaching-design cover/PDF generation (one row per post)."""
+
+    __tablename__ = "case_square_cover_jobs"
+
+    post_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("case_square_posts.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    # queued | running | succeeded | failed
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="queued", index=True)
+    current_stage: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    celery_task_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    attachment_key: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    attempts: Mapped[list] = mapped_column(pg.JSONB, nullable=False, default=list)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    post: Mapped["ShowcasePost"] = relationship("ShowcasePost", lazy="selectin")
+
+    __table_args__ = (Index("ix_case_square_cover_jobs_status_updated", "status", "updated_at"),)

@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'छवियाँ अपलोड (कई)',
   'showcase.publishModal.galleryHint': 'कई छवियाँ और आरेख, {max} तक',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} जोड़े',
   'showcase.publishModal.galleryImageItem': 'छवि: {name}',
   'showcase.publishModal.galleryDiagramItem': 'आरेख: {name}',

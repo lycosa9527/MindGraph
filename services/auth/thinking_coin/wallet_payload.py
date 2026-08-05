@@ -12,7 +12,7 @@ from services.auth.thinking_coin.activity_earn import completed_usage_slugs_toda
 from services.auth.thinking_coin.checkin_service import is_checkin_completed_today
 from services.auth.thinking_coin.eligibility import user_eligible_for_thinking_coins
 from services.auth.thinking_coin.task_registry import load_active_tasks
-from services.auth.thinking_coin.wallet_service import get_balance
+from services.auth.thinking_coin.wallet_service import get_balance, get_daily_balance
 from utils.auth.thinking_coin_config import (
     HANDLER_AUTO_LOGIN,
     HANDLER_CLIENT_EVENT,
@@ -60,9 +60,10 @@ async def build_wallet_payload(
     eligible = user_eligible_for_thinking_coins(user, org)
     user_id = int(user.id)
     if not eligible:
-        return {"balance": 0, "eligible": False, "earn_tasks": []}
+        return {"balance": 0, "daily_balance": 0, "eligible": False, "earn_tasks": []}
 
     balance = await get_balance(db, user_id)
+    daily_balance = await get_daily_balance(db, user_id)
     tasks = await load_active_tasks(db)
     checkin_done = await is_checkin_completed_today(db, user_id)
     usage_slugs = await completed_usage_slugs_today(db, user_id)
@@ -93,6 +94,7 @@ async def build_wallet_payload(
 
     return {
         "balance": balance,
+        "daily_balance": daily_balance,
         "eligible": True,
         "earn_tasks": earn_tasks,
     }

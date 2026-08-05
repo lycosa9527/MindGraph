@@ -79,6 +79,9 @@ export function resolveDiagramAction(params: {
   if (params.caseType === 'teaching_design') return null
   if (params.caseType === 'diagram_template') return 'apply_template'
 
+  // diagram_case: only .mg / personal-library diagram specs support open → canvas edit.
+  // Image-only cases must not show 打开图示 / 去画一张 (spec_json_url alone is not enough —
+  // gallery image posts also have a JSON sidecar).
   if (isRenderableShowcaseSpec(params.spec)) return 'import_open'
   if (params.hasGalleryDiagram) return 'import_open'
 
@@ -97,15 +100,11 @@ export function resolveDiagramAction(params: {
       if (hasDiagram) return 'import_open'
     }
   }
-  if (spec?.source === 'image_upload') return 'go_draw'
 
   const source = params.sourceFileUrl ?? ''
-  if (/\.(png|jpe?g|webp|gif)(\?|$)/i.test(source)) return 'go_draw'
   if (/\.mg(\?|$)/i.test(source)) return 'import_open'
 
-  if (params.specJsonUrl) return 'import_open'
-
-  return 'go_draw'
+  return null
 }
 
 export function caseTypeEmoji(caseType: ShowcaseCaseType): string {

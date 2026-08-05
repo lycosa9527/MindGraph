@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': '最終更新：{date}',
   'privacy.backToSignIn': 'サインインに戻る',
   'auth.downloadDesktopShortcut': 'デスクトップに追加',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Safari、Chrome、または Edge で共有をタップし、「ホーム画面に追加」を選んでください。',
   'auth.pwaAndroidInstallHint': 'ブラウザメニュー（⋮）を開き、「アプリをインストール」または「ホーム画面に追加」をタップしてください。',
   'auth.pwaSafariMacInstallHint': 'Safari で「ファイル → Dock に追加」、または「共有 → Dock に追加」（macOS Sonoma 以降）を選んでください。',

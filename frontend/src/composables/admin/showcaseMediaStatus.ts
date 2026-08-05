@@ -53,3 +53,34 @@ export function showcaseMediaStatusChipClass(status: ShowcaseMediaStatus): strin
   if (status === 'conversion_failed') return 'bg-red-50 text-red-700'
   return 'bg-emerald-50 text-emerald-800'
 }
+
+/** Teaching-design rows with an attachment can force-regenerate cover/PDF. */
+export function showcaseCanRefreshCover(post: ShowcasePost): boolean {
+  return post.case_type === 'teaching_design' && Boolean(post.attachment_url)
+}
+
+/** Match backend IN_FLIGHT_STALE_SECONDS — stale rows are reclaimable. */
+const COVER_IN_FLIGHT_STALE_MS = 270_000
+
+/** Disable Refresh while a cold job is actively queued/running. */
+export function showcaseCoverRefreshBusy(post: ShowcasePost): boolean {
+  const status = post.cover_job?.status
+  if (status !== 'queued' && status !== 'running') return false
+  const updatedAt = post.cover_job?.updated_at
+  if (!updatedAt) return true
+  const ageMs = Date.now() - new Date(updatedAt).getTime()
+  if (Number.isNaN(ageMs)) return true
+  return ageMs < COVER_IN_FLIGHT_STALE_MS
+}
+
+/** Tooltip text from cold manifesto (error / attempts). */
+export function showcaseCoverJobTooltip(post: ShowcasePost): string {
+  const job = post.cover_job
+  if (!job) return ''
+  const parts: string[] = []
+  if (job.error_message) parts.push(job.error_message)
+  if (typeof job.attempt_count === 'number' && job.attempt_count > 0) {
+    parts.push(`attempts: ${job.attempt_count}`)
+  }
+  return parts.join(' · ')
+}

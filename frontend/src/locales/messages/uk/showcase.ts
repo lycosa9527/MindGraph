@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Завантажити зображення (кілька)',
   'showcase.publishModal.galleryHint': 'Додайте кілька зображень і збережених діаграм, до {max} елементів',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': 'Додано {count}/{max} елементів',
   'showcase.publishModal.galleryImageItem': 'Зображення: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Діаграма: {name}',

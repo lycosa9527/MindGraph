@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Son güncelleme: {date}',
   'privacy.backToSignIn': 'Girişe dön',
   'auth.downloadDesktopShortcut': 'Masaüstüne ekle',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Safari, Chrome veya Edge\'de Paylaş\'a dokunun, ardından “Ana Ekrana Ekle”yi seçin.',
   'auth.pwaAndroidInstallHint': 'Tarayıcı menüsünü (⋮) açın ve Uygulamayı yükle veya Ana ekrana ekle\'ye dokunun.',
   'auth.pwaSafariMacInstallHint': 'Safari\'de Dosya → Dock\'a Ekle veya Paylaş → Dock\'a Ekle\'yi seçin (macOS Sonoma veya üzeri).',

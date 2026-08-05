@@ -49,8 +49,11 @@ When product says …                    Use on API routes …
                                        or ``require_mindmate_export_access``: superadmin
                                        gate + ``user_has_feature_access``.
 
-RLS: declare auth deps **before** ``get_async_db`` / use
-``get_async_db_with_request_rls`` with ``get_admin_scope``.
+RLS: ``get_admin_scope`` pins panel context on ``request.state`` *before*
+``get_async_db`` opens (via ``resolve_admin_scope_rls``), then refreshes
+SET LOCAL through ``get_async_db_with_request_rls``. Do not open the
+request session before AdminScope RLS is bound — experts need panel mode
+for org INSERT (``rls_panel_org_invited_by_actor``).
 
 Long requests that do **not** use ``Depends(get_async_db)`` in the handler
 (PG dump merge, admin log/realtime SSE, etc.) must use
@@ -318,12 +321,10 @@ async def get_async_db_with_request_rls(
     """
     Apply ``request.state.rls_context`` on the open DB transaction.
 
-    Auth dependencies (``require_admin``, ``require_mindbot_admin_access``,
-    ``get_admin_scope``) bind panel scope on ``request.state``. Declare them
-    **before** this dependency so ``get_async_db`` opens with the correct context;
-    this call refreshes SET LOCAL when ``after_begin`` already ran with a stale context.
-    Also pins the context on ``session.info`` so post-commit ``after_begin``
-    re-applies panel GUCs even if the ContextVar was cleared.
+    Panel routes must declare ``resolve_admin_scope_rls`` (via ``get_admin_scope``)
+    *before* this dependency so ``get_async_db`` opens under panel GUCs. This call
+    refreshes SET LOCAL and re-pins ``session.info`` when ``after_begin`` already
+    ran with a stale context (survives BaseHTTPMiddleware ContextVar loss).
     """
     ctx = getattr(request.state, "rls_context", None)
     if ctx is not None:
@@ -386,17 +387,18 @@ def _assert_invite_org_scope(scope: AdminScope, lang: Language) -> None:
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
 
-async def get_admin_scope(
+async def resolve_admin_scope_rls(
     request: Request,
     organization_id: Optional[int] = Query(None),
     current_user: User = Depends(require_management_panel),
     lang: Language = Depends(get_language_dependency),
-    db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> AdminScope:
     """
-    Base dependency for panel routes — resolves capabilities, org scope, and RLS.
+    Resolve AdminScope and pin panel RLS on ``request.state`` before DB opens.
 
-    Stack ``require_panel_capability(CAP_*)`` on top for tab/subtab checks.
+    Must run as a dependency *ahead of* ``get_async_db`` / ``get_async_db_with_request_rls``
+    so ``after_begin`` applies panel GUCs (not authenticated-user defaults). Expert
+    org create relies on panel mode + ``rls_panel_org_invited_by_actor``.
     """
     scope = await build_admin_scope_async(
         current_user,
@@ -406,6 +408,24 @@ async def get_admin_scope(
     ctx = RlsContext.from_admin_scope(scope)
     request.state.rls_context = ctx
     set_rls_context(ctx)
+    return scope
+
+
+async def get_admin_scope(
+    request: Request,
+    scope: AdminScope = Depends(resolve_admin_scope_rls),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
+) -> AdminScope:
+    """
+    Base dependency for panel routes — resolves capabilities, org scope, and RLS.
+
+    Stack ``require_panel_capability(CAP_*)`` on top for tab/subtab checks.
+    """
+    ctx = getattr(request.state, "rls_context", None)
+    if ctx is None:
+        ctx = RlsContext.from_admin_scope(scope)
+        request.state.rls_context = ctx
+        set_rls_context(ctx)
     await apply_rls_context_async(db, ctx)
     return scope
 
@@ -423,14 +443,12 @@ async def get_admin_scope_short_lived(
     HTTP request open past ``idle_in_transaction_session_timeout`` while not
     using the FastAPI ``get_async_db`` session.
     """
-    scope = await build_admin_scope_async(
-        current_user,
+    return await resolve_admin_scope_rls(
+        request,
         organization_id=organization_id,
+        current_user=current_user,
         lang=lang,
     )
-    ctx = RlsContext.from_admin_scope(scope)
-    request.state.rls_context = ctx
-    return scope
 
 
 def require_panel_capability(capability: str):

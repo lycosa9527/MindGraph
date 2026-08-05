@@ -53,6 +53,7 @@ export function extractThinkingCoinsFooter(
   return {
     eligible: true,
     balance: Number(footer.balance ?? 0),
+    daily_balance: Number(footer.daily_balance ?? 0),
     credited: Number(footer.credited ?? 0),
     debited: Number(footer.debited ?? 0),
     task_slug: typeof footer.task_slug === 'string' ? footer.task_slug : null,

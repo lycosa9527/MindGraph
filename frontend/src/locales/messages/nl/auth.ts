@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Laatst bijgewerkt: {date}',
   'privacy.backToSignIn': 'Terug naar inloggen',
   'auth.downloadDesktopShortcut': 'Toevoegen aan bureaublad',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Tik op Delen in Safari, Chrome of Edge en kies vervolgens \'Toevoegen aan startscherm\'.',
   'auth.pwaAndroidInstallHint': 'Open het browsermenu (⋮) en tik op App installeren of Toevoegen aan startscherm.',
   'auth.pwaSafariMacInstallHint': 'Kies in Safari Bestand → Toevoegen aan Dock of Delen → Toevoegen aan Dock (macOS Sonoma of hoger).',

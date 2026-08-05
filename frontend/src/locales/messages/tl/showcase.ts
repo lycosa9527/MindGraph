@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Mag-upload ng mga larawan (marami)',
   'showcase.publishModal.galleryHint': 'Magdagdag ng maraming larawan at naka-save na diagram, hanggang {max} item',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} item ang idinagdag',
   'showcase.publishModal.galleryImageItem': 'Larawan: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Diagram: {name}',

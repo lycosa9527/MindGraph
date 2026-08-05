@@ -431,13 +431,41 @@ const {
                   <template v-else-if="isDiagramGalleryCase">
                     <p class="mb-2 text-xs text-gray-400">
                       {{
-                        t('showcase.publishModal.galleryHint', {
-                          max: DIAGRAM_GALLERY_MAX_ITEMS,
-                        })
+                        t(
+                          isDiagramTemplate
+                            ? 'showcase.publishModal.galleryHintTemplate'
+                            : 'showcase.publishModal.galleryHintCase',
+                          { max: DIAGRAM_GALLERY_MAX_ITEMS },
+                        )
                       }}
                     </p>
                     <div class="grid grid-cols-2 gap-3">
                       <label
+                        v-if="isDiagramTemplate"
+                        class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-3 py-6 transition-colors"
+                        :class="
+                          directFileUploadsEnabled && !uploadedFileName
+                            ? 'cursor-pointer hover:border-gray-300 hover:bg-gray-50'
+                            : 'pointer-events-none cursor-not-allowed opacity-50'
+                        "
+                      >
+                        <Upload class="mb-2 h-6 w-6 text-gray-300" />
+                        <span class="text-xs text-gray-500">{{
+                          t('showcase.publishModal.uploadFile')
+                        }}</span>
+                        <span class="mt-1 text-[10px] text-gray-400">
+                          {{ t('showcase.publishModal.templateFileHint') }}
+                        </span>
+                        <input
+                          type="file"
+                          class="hidden"
+                          :accept="uploadAccept"
+                          :disabled="!directFileUploadsEnabled || Boolean(uploadedFileName)"
+                          @change="onFileInput"
+                        />
+                      </label>
+                      <label
+                        v-else
                         class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-3 py-6 transition-colors"
                         :class="
                           directFileUploadsEnabled &&
@@ -515,27 +543,29 @@ const {
                             {{ t('showcase.publishModal.removeFile') }}
                           </button>
                         </div>
-                        <div
-                          v-for="draft in galleryImageDrafts"
-                          :key="draft.id"
-                          class="flex items-center gap-2 rounded-lg border border-gray-100 bg-white px-3 py-2"
-                        >
-                          <img
-                            :src="draft.previewUrl"
-                            :alt="draft.filename"
-                            class="h-10 w-10 shrink-0 rounded object-cover"
-                          />
-                          <span class="min-w-0 flex-1 truncate text-xs text-gray-700">{{
-                            draft.filename
-                          }}</span>
-                          <button
-                            type="button"
-                            class="publish-remove-pill"
-                            @click="removeGalleryImageDraft(draft.id)"
+                        <template v-if="!isDiagramTemplate">
+                          <div
+                            v-for="draft in galleryImageDrafts"
+                            :key="draft.id"
+                            class="flex items-center gap-2 rounded-lg border border-gray-100 bg-white px-3 py-2"
                           >
-                            {{ t('showcase.publishModal.removeFile') }}
-                          </button>
-                        </div>
+                            <img
+                              :src="draft.previewUrl"
+                              :alt="draft.filename"
+                              class="h-10 w-10 shrink-0 rounded object-cover"
+                            />
+                            <span class="min-w-0 flex-1 truncate text-xs text-gray-700">{{
+                              draft.filename
+                            }}</span>
+                            <button
+                              type="button"
+                              class="publish-remove-pill"
+                              @click="removeGalleryImageDraft(draft.id)"
+                            >
+                              {{ t('showcase.publishModal.removeFile') }}
+                            </button>
+                          </div>
+                        </template>
                         <div
                           v-for="draft in galleryDiagramDrafts"
                           :key="draft.id"
@@ -558,49 +588,8 @@ const {
                     </div>
                   </template>
 
-                  <template v-else>
-                    <div
-                      v-if="!uploadedFileName"
-                      class="grid grid-cols-2 gap-3"
-                    >
-                      <label
-                        class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-3 py-6 transition-colors"
-                        :class="
-                          directFileUploadsEnabled
-                            ? 'cursor-pointer hover:border-gray-300 hover:bg-gray-50'
-                            : 'pointer-events-none cursor-not-allowed opacity-50'
-                        "
-                      >
-                        <Upload class="mb-2 h-6 w-6 text-gray-300" />
-                        <span class="text-xs text-gray-500">{{
-                          t('showcase.publishModal.uploadFile')
-                        }}</span>
-                        <span class="mt-1 text-[10px] text-gray-400">
-                          {{ t('showcase.publishModal.templateFileHint') }}
-                        </span>
-                        <input
-                          type="file"
-                          class="hidden"
-                          :accept="uploadAccept"
-                          :disabled="!directFileUploadsEnabled"
-                          @change="onFileInput"
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        class="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-3 py-6 transition-colors hover:border-gray-300 hover:bg-gray-50"
-                        @click="showHistoryPicker = true"
-                      >
-                        <History class="mb-2 h-6 w-6 text-gray-300" />
-                        <span class="text-xs text-gray-500">
-                          {{ t('showcase.publishModal.pickHistory') }}
-                        </span>
-                      </button>
-                    </div>
-                  </template>
-
                   <div
-                    v-if="uploadedFileName && !isDiagramGalleryCase"
+                    v-if="uploadedFileName && (!isDiagramGalleryCase || isDiagramTemplate)"
                     class="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
                   >
                     <span class="truncate text-sm text-gray-700">{{ uploadedFileName }}</span>

@@ -37,7 +37,14 @@ def test_office_attachment_needs_preview_skips_native_pdf() -> None:
 
 def test_enqueue_missing_office_preview_calls_cover_job() -> None:
     """Backfill helper enqueues cover generation for Office without preview."""
-    with patch("services.showcase.covers.enqueue.enqueue_teaching_design_cover") as enqueue:
+    with (
+        patch(
+            "services.showcase.covers.enqueue.cover_job_blocks_auto_enqueue_sync",
+            return_value=False,
+        ),
+        patch("services.showcase.covers.enqueue.enqueue_teaching_design_cover") as enqueue,
+    ):
+        enqueue.return_value = True
         ok = enqueue_missing_office_preview(
             post_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
             case_type="teaching_design",
@@ -72,16 +79,41 @@ def test_enqueue_missing_office_preview_noop_when_ready() -> None:
     enqueue.assert_not_called()
 
 
+def test_enqueue_missing_office_preview_skips_cold_succeeded() -> None:
+    """Automatic backfill must not re-queue a cold-succeeded manifesto."""
+    with (
+        patch(
+            "services.showcase.covers.enqueue.cover_job_blocks_auto_enqueue_sync",
+            return_value=True,
+        ),
+        patch("services.showcase.covers.enqueue.enqueue_teaching_design_cover") as enqueue,
+    ):
+        ok = enqueue_missing_office_preview(
+            post_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            case_type="teaching_design",
+            spec={"attachment_path": "showcase/posts/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/a.pptx"},
+            author_id=1,
+        )
+    assert ok is False
+    enqueue.assert_not_called()
+
+
 def test_enqueue_teaching_design_cover_dedupes_send_task() -> None:
     """Second enqueue for the same post must not call Celery again."""
     post_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
     attachment = f"showcase/posts/{post_id}/attachment.docx"
     with (
         patch("services.showcase.covers.enqueue.showcase_server_covers_enabled", return_value=True),
+        patch(
+            "services.showcase.covers.enqueue.cover_job_blocks_auto_enqueue_sync",
+            return_value=False,
+        ),
         patch("services.showcase.covers.enqueue.try_claim_cover_enqueue", side_effect=[True, False]),
+        patch("services.showcase.covers.enqueue.mark_cover_job_queued_sync", return_value=True),
+        patch("services.showcase.covers.enqueue.clear_cover_last_event_sync"),
         patch("services.showcase.covers.enqueue.celery_app") as celery_app,
     ):
-        celery_app.send_task = MagicMock()
+        celery_app.send_task = MagicMock(return_value=MagicMock(id="task-1"))
         enqueue_teaching_design_cover(
             post_id=post_id,
             user_id=1,
@@ -96,4 +128,62 @@ def test_enqueue_teaching_design_cover_dedupes_send_task() -> None:
             case_type="teaching_design",
             author_id=1,
         )
+    celery_app.send_task.assert_called_once()
+
+
+def test_enqueue_force_can_queue_after_succeeded() -> None:
+    """Admin force refresh bypasses cold-succeeded auto-skip."""
+    post_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    attachment = f"showcase/posts/{post_id}/attachment.docx"
+    with (
+        patch("services.showcase.covers.enqueue.showcase_server_covers_enabled", return_value=True),
+        patch(
+            "services.showcase.covers.enqueue.get_cover_job_snapshot_sync",
+            return_value={"status": "succeeded", "attachment_key": attachment},
+        ),
+        patch("services.showcase.covers.enqueue.try_claim_cover_enqueue") as claim,
+        patch("services.showcase.covers.enqueue.mark_cover_job_queued_sync", return_value=True) as queued,
+        patch("services.showcase.covers.enqueue.clear_cover_last_event_sync"),
+        patch("services.showcase.covers.enqueue.celery_app") as celery_app,
+    ):
+        celery_app.send_task = MagicMock(return_value=MagicMock(id="task-force"))
+        ok = enqueue_teaching_design_cover(
+            post_id=post_id,
+            user_id=1,
+            attachment_key=attachment,
+            case_type="teaching_design",
+            author_id=1,
+            force=True,
+        )
+    assert ok is True
+    celery_app.send_task.assert_called_once()
+    claim.assert_not_called()
+    assert queued.call_args.kwargs.get("force") is True
+
+
+def test_enqueue_force_ignores_dedupe_lock() -> None:
+    """Force refresh must send_task even when enqueue claim would deny."""
+    post_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    attachment = f"showcase/posts/{post_id}/attachment.docx"
+    with (
+        patch("services.showcase.covers.enqueue.showcase_server_covers_enabled", return_value=True),
+        patch(
+            "services.showcase.covers.enqueue.get_cover_job_snapshot_sync",
+            return_value={"status": "failed", "attachment_key": attachment},
+        ),
+        patch("services.showcase.covers.enqueue.try_claim_cover_enqueue", return_value=False),
+        patch("services.showcase.covers.enqueue.mark_cover_job_queued_sync", return_value=True),
+        patch("services.showcase.covers.enqueue.clear_cover_last_event_sync"),
+        patch("services.showcase.covers.enqueue.celery_app") as celery_app,
+    ):
+        celery_app.send_task = MagicMock(return_value=MagicMock(id="task-force-2"))
+        ok = enqueue_teaching_design_cover(
+            post_id=post_id,
+            user_id=1,
+            attachment_key=attachment,
+            case_type="teaching_design",
+            author_id=1,
+            force=True,
+        )
+    assert ok is True
     celery_app.send_task.assert_called_once()

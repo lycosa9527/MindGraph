@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': '최종 업데이트: {date}',
   'privacy.backToSignIn': '로그인으로 돌아가기',
   'auth.downloadDesktopShortcut': '바탕화면에 추가',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Safari, Chrome 또는 Edge에서 공유를 탭한 뒤 "홈 화면에 추가"를 선택하세요.',
   'auth.pwaAndroidInstallHint': '브라우저 메뉴(⋮)를 열고 앱 설치 또는 홈 화면에 추가를 탭하세요.',
   'auth.pwaSafariMacInstallHint': 'Safari에서 파일 → Dock에 추가, 또는 공유 → Dock에 추가(macOS Sonoma 이상)를 선택하세요.',

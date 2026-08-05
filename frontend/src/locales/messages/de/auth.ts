@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Zuletzt aktualisiert: {date}',
   'privacy.backToSignIn': 'Zurück zur Anmeldung',
   'auth.downloadDesktopShortcut': 'Zum Desktop hinzufügen',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Tippen Sie in Safari, Chrome oder Edge auf Teilen und wählen Sie „Zum Home-Bildschirm“.',
   'auth.pwaAndroidInstallHint': 'Öffnen Sie das Browsermenü (⋮) und tippen Sie auf App installieren oder Zum Home-Bildschirm.',
   'auth.pwaSafariMacInstallHint': 'Wählen Sie in Safari Ablage → Im Dock ablegen oder Teilen → Im Dock ablegen (macOS Sonoma oder neuer).',

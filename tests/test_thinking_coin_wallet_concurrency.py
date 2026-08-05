@@ -17,7 +17,10 @@ async def test_get_or_create_wallet_uses_for_update() -> None:
     """Wallet pre-flight locks the row to prevent TOCTOU races."""
     db = AsyncMock()
     wallet = MagicMock()
+    wallet.user_id = 42
     wallet.balance = 12
+    wallet.daily_balance = 0
+    wallet.daily_balance_date = None
     db.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=wallet)))
 
     result = await wallet_mod.get_or_create_wallet(db, 42)
@@ -71,7 +74,10 @@ async def test_debit_wallet_serial_failure_on_insufficient() -> None:
     """Second debit fails when balance was consumed by first debit."""
     db = AsyncMock()
     wallet = MagicMock()
+    wallet.user_id = 1
     wallet.balance = 8
+    wallet.daily_balance = 0
+    wallet.daily_balance_date = None
     db.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=wallet)))
     db.add = MagicMock()
     db.flush = AsyncMock()

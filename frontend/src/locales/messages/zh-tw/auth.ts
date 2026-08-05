@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': '更新日期：{date}',
   'privacy.backToSignIn': '返回登錄',
   'auth.downloadDesktopShortcut': '添加到桌面',
+  'auth.platformQuickGuide': '平臺快速使用指南',
   'auth.pwaIosInstallHint': '在 Safari、Chrome 或 Edge 中点分享，再选择「添加到主屏幕」。',
   'auth.pwaAndroidInstallHint': '打开浏览器菜单（⋮），选择「安装应用」或「添加到主屏幕」。',
   'auth.pwaSafariMacInstallHint': '在 Safari 中选择「文件 → 添加到程序坞」，或使用「共享 → 添加到程序坞」（macOS Sonoma 及以上）。',

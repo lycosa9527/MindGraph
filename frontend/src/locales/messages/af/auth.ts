@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Laas opgedateer: {date}',
   'privacy.backToSignIn': 'Terug na aanmelding',
   'auth.downloadDesktopShortcut': 'Voeg by lessenaar',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Tik Deel in Safari, Chrome of Edge, kies dan “Voeg by tuisskerm”.',
   'auth.pwaAndroidInstallHint': 'Maak die blaaierkieslys (⋮) oop en tik Installeer app of Voeg by tuisskerm.',
   'auth.pwaSafariMacInstallHint': 'Kies in Safari Lêer → Voeg by Dock, of Deel → Voeg by Dock (macOS Sonoma of later).',

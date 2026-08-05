@@ -1,7 +1,9 @@
 /**
  * Showcase diagram AI copy: send specs → extract node text + LLM fields.
+ * Gallery images use multipart OCR (`/diagram-copy/images`).
  */
 import { authFetch } from '@/utils/api'
+import { apiUpload } from '@/utils/apiClient'
 
 export type ShowcaseDiagramCopyResult = {
   description: string
@@ -11,6 +13,15 @@ export type ShowcaseDiagramCopyResult = {
 
 export type ShowcaseDiagramCopyRequest = {
   specs: Record<string, unknown>[]
+  title: string
+  subject: string
+  grade: string
+  diagramType: string
+  signal?: AbortSignal
+}
+
+export type ShowcaseDiagramCopyImagesRequest = {
+  images: File[]
   title: string
   subject: string
   grade: string
@@ -52,7 +63,27 @@ function diagramCopyFingerprint(input: {
   ].join('|')
 }
 
-export { diagramCopyFingerprint }
+function diagramCopyImagesFingerprint(input: {
+  images: File[]
+  title: string
+  subject: string
+  grade: string
+  diagramType: string
+}): string {
+  const imageFingerprint = input.images
+    .map((file) => `${file.name}:${file.size}:${file.lastModified}`)
+    .join(',')
+  return [
+    'images',
+    input.diagramType.trim(),
+    input.title.trim(),
+    input.subject.trim(),
+    input.grade.trim(),
+    imageFingerprint,
+  ].join('|')
+}
+
+export { diagramCopyFingerprint, diagramCopyImagesFingerprint }
 
 async function parseErrorDetail(response: Response, fallback: string): Promise<string> {
   try {
@@ -73,6 +104,18 @@ function buildDiagramCopyBody(input: ShowcaseDiagramCopyRequest): Record<string,
     diagram_type: input.diagramType.trim(),
     specs: input.specs,
   }
+}
+
+function buildDiagramCopyImagesFormData(input: ShowcaseDiagramCopyImagesRequest): FormData {
+  const formData = new FormData()
+  formData.append('title', input.title.trim())
+  formData.append('subject', input.subject.trim())
+  formData.append('grade', input.grade.trim())
+  formData.append('diagram_type', input.diagramType.trim())
+  for (const file of input.images) {
+    formData.append('files', file, file.name)
+  }
+  return formData
 }
 
 function parseSseDataLine(line: string): Record<string, unknown> | null {
@@ -134,25 +177,11 @@ async function generateShowcaseDiagramCopy(
   }
 }
 
-/**
- * Stream diagram-copy SSE into field callbacks (JSON body via authFetch).
- */
-async function streamShowcaseDiagramCopy(
-  input: ShowcaseDiagramCopyRequest,
-  handlers: ShowcaseDiagramCopyStreamHandlers = {},
+async function consumeDiagramCopySse(
+  response: Response,
+  handlers: ShowcaseDiagramCopyStreamHandlers,
+  signal?: AbortSignal,
 ): Promise<ShowcaseDiagramCopyResult> {
-  const response = await authFetch('/api/showcase/ai/diagram-copy/stream', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(buildDiagramCopyBody(input)),
-    signal: input.signal,
-  })
-
-  if (!response.ok) {
-    const detail = await parseErrorDetail(response, 'AI generation failed')
-    throw new Error(detail)
-  }
-
   const contentType = response.headers.get('content-type') ?? ''
   if (!contentType.includes('text/event-stream')) {
     throw new Error('AI stream response was not event-stream')
@@ -170,7 +199,7 @@ async function streamShowcaseDiagramCopy(
 
   try {
     while (true) {
-      if (input.signal?.aborted) {
+      if (signal?.aborted) {
         break
       }
       const { done, value } = await reader.read()
@@ -227,7 +256,7 @@ async function streamShowcaseDiagramCopy(
     reader.releaseLock()
   }
 
-  if (input.signal?.aborted) {
+  if (signal?.aborted) {
     throw new DOMException('Aborted', 'AbortError')
   }
   if (streamError) {
@@ -239,4 +268,54 @@ async function streamShowcaseDiagramCopy(
   return finalResult
 }
 
-export { generateShowcaseDiagramCopy, streamShowcaseDiagramCopy }
+/**
+ * Stream diagram-copy SSE into field callbacks (JSON body via authFetch).
+ */
+async function streamShowcaseDiagramCopy(
+  input: ShowcaseDiagramCopyRequest,
+  handlers: ShowcaseDiagramCopyStreamHandlers = {},
+): Promise<ShowcaseDiagramCopyResult> {
+  const response = await authFetch('/api/showcase/ai/diagram-copy/stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildDiagramCopyBody(input)),
+    signal: input.signal,
+  })
+
+  if (!response.ok) {
+    const detail = await parseErrorDetail(response, 'AI generation failed')
+    throw new Error(detail)
+  }
+
+  return consumeDiagramCopySse(response, handlers, input.signal)
+}
+
+/**
+ * Stream diagram-copy SSE from gallery images (Qwen OCR → LLM).
+ */
+async function streamShowcaseDiagramCopyFromImages(
+  input: ShowcaseDiagramCopyImagesRequest,
+  handlers: ShowcaseDiagramCopyStreamHandlers = {},
+): Promise<ShowcaseDiagramCopyResult> {
+  if (!input.images.length) {
+    throw new Error('At least one gallery image required')
+  }
+  const response = await apiUpload(
+    '/api/showcase/ai/diagram-copy/images/stream',
+    buildDiagramCopyImagesFormData(input),
+    { signal: input.signal },
+  )
+
+  if (!response.ok) {
+    const detail = await parseErrorDetail(response, 'AI generation failed')
+    throw new Error(detail)
+  }
+
+  return consumeDiagramCopySse(response, handlers, input.signal)
+}
+
+export {
+  generateShowcaseDiagramCopy,
+  streamShowcaseDiagramCopy,
+  streamShowcaseDiagramCopyFromImages,
+}

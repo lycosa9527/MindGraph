@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Shekiller yuklash (bir neche)',
   'showcase.publishModal.galleryHint': 'Bir neche shekil va saqlangan diagramma qo’shing, eng ko’p {max} element',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} element elave etilib',
   'showcase.publishModal.galleryImageItem': 'Shekil: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Diagramma: {name}',

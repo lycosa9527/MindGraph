@@ -6,6 +6,7 @@ import { computed, inject, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import {
+  BookOpen,
   ChevronDown,
   Coins,
   Flame,
@@ -45,6 +46,12 @@ const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarTh
   sidebarCtx.thinkingCoinEarnTasks,
   () => s.t('thinkingCoins.invitePromo')
 )
+
+const PLATFORM_QUICK_GUIDE_URL = 'https://365.kdocs.cn/l/caSETdpB0Akg'
+
+function openPlatformQuickGuide(): void {
+  window.open(PLATFORM_QUICK_GUIDE_URL, '_blank', 'noopener,noreferrer')
+}
 
 </script>
 
@@ -258,6 +265,10 @@ const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarTh
               <Link2 class="w-4 h-4 mr-2" />
               {{ s.t('auth.downloadDesktopShortcut') }}
             </el-dropdown-item>
+            <el-dropdown-item @click="openPlatformQuickGuide">
+              <BookOpen class="w-4 h-4 mr-2" />
+              {{ s.t('auth.platformQuickGuide') }}
+            </el-dropdown-item>
             <el-dropdown-item
               divided
               class="user-dropdown-item--logout"
@@ -335,6 +346,10 @@ const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarTh
             >
               <Link2 class="w-4 h-4 mr-2" />
               {{ s.t('auth.downloadDesktopShortcut') }}
+            </el-dropdown-item>
+            <el-dropdown-item @click="openPlatformQuickGuide">
+              <BookOpen class="w-4 h-4 mr-2" />
+              {{ s.t('auth.platformQuickGuide') }}
             </el-dropdown-item>
             <el-dropdown-item
               divided

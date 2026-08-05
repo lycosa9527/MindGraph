@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Ostatnia aktualizacja: {date}',
   'privacy.backToSignIn': 'Wróć do logowania',
   'auth.downloadDesktopShortcut': 'Dodaj do pulpitu',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'W Safari, Chrome lub Edge stuknij Udostępnij, a następnie wybierz „Dodaj do ekranu początkowego”.',
   'auth.pwaAndroidInstallHint': 'Otwórz menu przeglądarki (⋮) i stuknij Zainstaluj aplikację lub Dodaj do ekranu głównego.',
   'auth.pwaSafariMacInstallHint': 'W Safari wybierz Plik → Dodaj do Docka lub Udostępnij → Dodaj do Docka (macOS Sonoma lub nowszy).',

@@ -32,6 +32,12 @@ from services.showcase.staff_permissions import (
     PLATFORM_BD_DEFAULT,
     can_view_dashboard as can_view_showcase_dashboard,
 )
+from services.showcase.covers.enqueue import enqueue_teaching_design_cover
+from services.showcase.covers.job_manifest import (
+    get_cover_job,
+    job_is_in_flight,
+    load_post_attachment_key,
+)
 from services.showcase.storage import cos_showcase_enabled, delete_post_assets
 from services.showcase.sync import (
     build_storage_status,
@@ -604,6 +610,89 @@ async def admin_review_case_post(
         db,
         skip_self_review_guard=True,
     )
+
+
+@router.post("/admin/showcase/posts/{post_id}/refresh-cover")
+async def admin_refresh_cover(
+    post_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
+    _scope: AdminScope = Depends(require_panel_capability(CAP_TAB_SHOWCASE_EDIT)),
+):
+    """Force re-generate teaching-design cover/PDF (cold manifesto refresh)."""
+    perms = await load_user_showcase_permissions(db, current_user)
+    if PERM_REVIEW not in perms and PERM_DELETE not in perms:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot refresh cover for this case",
+        )
+    try:
+        uuid_module.UUID(post_id)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid post ID format",
+        ) from exc
+
+    post = (await db.execute(select(ShowcasePost).where(ShowcasePost.id == post_id))).scalar_one_or_none()
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+    if post.case_type != "teaching_design":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cover refresh applies to teaching_design cases only",
+        )
+
+    attachment_key = await load_post_attachment_key(db, post_id)
+    if not attachment_key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Case has no teaching attachment to convert",
+        )
+
+    existing = await get_cover_job(db, post_id)
+    if existing is not None and job_is_in_flight(existing.status, existing.updated_at):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cover job already queued or running",
+        )
+
+    org_id = getattr(current_user, "organization_id", None)
+    enqueued = enqueue_teaching_design_cover(
+        post_id=post_id,
+        user_id=int(current_user.id),
+        attachment_key=attachment_key,
+        case_type=post.case_type,
+        organization_id=int(org_id) if org_id is not None else None,
+        author_id=int(post.author_id),
+        force=True,
+    )
+    if not enqueued:
+        # Race: another worker flipped to in-flight after our check.
+        raced = await get_cover_job(db, post_id)
+        if raced is not None and job_is_in_flight(raced.status, raced.updated_at):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cover job already queued or running",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Cover refresh could not be enqueued",
+        )
+
+    await write_showcase_audit(
+        db,
+        actor_id=current_user.id,
+        action="cover_refresh",
+        post_id=post_id,
+        payload={"attachment_key": attachment_key},
+    )
+    await db.commit()
+    refreshed = await _load_post_for_format(db, post_id)
+    return {
+        "message": "Cover refresh enqueued",
+        "post": await _format_post(refreshed, current_user, db),
+    }
 
 
 @router.post("/admin/showcase/posts/proxy")

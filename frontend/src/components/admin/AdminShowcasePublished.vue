@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
-import { Award, Search, Trash2 } from '@lucide/vue'
+import { Award, RefreshCw, Search, Trash2 } from '@lucide/vue'
 import { ElMessageBox } from 'element-plus'
 
 import ShowcaseDetailModal from '@/components/showcase/ShowcaseDetailModal.vue'
 import ShowcaseFilterDropdown from '@/components/showcase/ShowcaseFilterDropdown.vue'
 import { type ShowcaseCaseType } from '@/components/showcase/showcaseShared'
+import {
+  resolveShowcaseMediaStatus,
+  showcaseCanRefreshCover,
+  showcaseCoverJobTooltip,
+  showcaseCoverRefreshBusy,
+  showcaseMediaStatusChipClass,
+  showcaseMediaStatusLabelKey,
+} from '@/composables/admin/showcaseMediaStatus'
 import { useAdminAccess } from '@/composables/admin/useAdminAccess'
 import { useLanguage, useNotifications } from '@/composables'
 import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
@@ -15,6 +23,7 @@ import {
   type ShowcasePost,
   deleteAdminShowcasePost,
   getShowcasePosts,
+  refreshAdminShowcaseCover,
   toggleShowcaseExpertRecommend,
 } from '@/utils/apiClient'
 
@@ -54,6 +63,7 @@ const page = ref(1)
 const pageSize = 20
 const isLoading = ref(false)
 const loadError = ref<string | null>(null)
+const refreshingIds = ref<Set<string>>(new Set())
 const searchQuery = ref('')
 const filterSubject = ref('')
 const filterGrade = ref('')
@@ -97,6 +107,44 @@ function caseTypeLabel(caseType: ShowcaseCaseType): string {
   if (caseType === 'teaching_design') return String(t('showcase.type.teachingDesign'))
   if (caseType === 'diagram_case') return String(t('showcase.type.diagramCase'))
   return String(t('showcase.type.diagramTemplate'))
+}
+
+function mediaStatusLabel(post: ShowcasePost): string {
+  return String(t(showcaseMediaStatusLabelKey(resolveShowcaseMediaStatus(post))))
+}
+
+function mediaStatusChipClass(post: ShowcasePost): string {
+  return showcaseMediaStatusChipClass(resolveShowcaseMediaStatus(post))
+}
+
+function mediaStatusTitle(post: ShowcasePost): string {
+  return showcaseCoverJobTooltip(post)
+}
+
+function canRefreshCover(post: ShowcasePost): boolean {
+  return showcaseCanRefreshCover(post)
+}
+
+function refreshBusy(post: ShowcasePost): boolean {
+  return refreshingIds.value.has(post.id) || showcaseCoverRefreshBusy(post)
+}
+
+async function refreshCover(post: ShowcasePost): Promise<void> {
+  if (!canRefreshCover(post) || refreshBusy(post)) return
+  const next = new Set(refreshingIds.value)
+  next.add(post.id)
+  refreshingIds.value = next
+  try {
+    const res = await refreshAdminShowcaseCover(post.id)
+    patchPost(res.post)
+    notify.success(String(t('admin.showcase.refreshStatusOk')))
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : String(t('admin.showcase.refreshStatusFail')))
+  } finally {
+    const done = new Set(refreshingIds.value)
+    done.delete(post.id)
+    refreshingIds.value = done
+  }
 }
 
 function formatDate(iso: string | null | undefined): string {
@@ -280,7 +328,7 @@ onMounted(() => {
       >
         {{ t('showcase.expertRecommend') }}
       </button>
-      <div class="relative min-w-[220px] flex-1 sm:max-w-xs">
+      <div class="relative min-w-55 flex-1 sm:max-w-xs">
         <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <input
           v-model="searchQuery"
@@ -426,6 +474,20 @@ onMounted(() => {
         </template>
       </el-table-column>
       <el-table-column
+        :label="t('admin.showcase.colMediaStatus')"
+        min-width="140"
+      >
+        <template #default="{ row }">
+          <span
+            class="inline-flex max-w-full items-center rounded-md px-2 py-0.5 text-xs font-medium"
+            :class="mediaStatusChipClass(row)"
+            :title="mediaStatusTitle(row) || undefined"
+          >
+            {{ mediaStatusLabel(row) }}
+          </span>
+        </template>
+      </el-table-column>
+      <el-table-column
         :label="t('admin.showcase.colReviewer')"
         min-width="120"
       >
@@ -451,7 +513,7 @@ onMounted(() => {
       </el-table-column>
       <el-table-column
         :label="t('admin.actions')"
-        width="180"
+        width="220"
         fixed="right"
       >
         <template #default="{ row }">
@@ -462,6 +524,19 @@ onMounted(() => {
               @click.stop="openPost(row)"
             >
               {{ t('admin.showcase.review') }}
+            </button>
+            <button
+              v-if="canRefreshCover(row)"
+              type="button"
+              :title="String(t('admin.showcase.refreshStatus'))"
+              :disabled="refreshBusy(row)"
+              class="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+              @click.stop="refreshCover(row)"
+            >
+              <RefreshCw
+                class="h-4 w-4"
+                :class="refreshBusy(row) ? 'animate-spin' : ''"
+              />
             </button>
             <button
               v-if="canRecommendPost(row)"

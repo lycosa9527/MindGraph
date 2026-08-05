@@ -36,6 +36,7 @@ describe('useThinkingCoinSync', () => {
     expect(footer).toEqual({
       eligible: true,
       balance: 42,
+      daily_balance: 0,
       credited: 5,
       debited: 0,
       task_slug: null,

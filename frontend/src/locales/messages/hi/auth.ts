@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'अंतिम अपडेट: {date}',
   'privacy.backToSignIn': 'साइन इन पर वापस',
   'auth.downloadDesktopShortcut': 'डेस्कटॉप में जोड़ें',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Safari, Chrome या Edge में Share टैप करें, फिर "Add to Home Screen" चुनें।',
   'auth.pwaAndroidInstallHint': 'ब्राउज़र मेनू (⋮) खोलें और Install app या Add to Home screen टैप करें।',
   'auth.pwaSafariMacInstallHint': 'Safari में File → Add to Dock, या Share → Add to Dock (macOS Sonoma या बाद)।',

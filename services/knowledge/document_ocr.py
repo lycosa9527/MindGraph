@@ -70,7 +70,11 @@ else:
     OCR_CALL_ERRORS = FILE_IO_ERRORS
 
 
-def dashscope_vision_ocr(image_bytes: bytes, mime_type: str = "image/png") -> str:
+def dashscope_vision_ocr(
+    image_bytes: bytes,
+    mime_type: str = "image/png",
+    prompt: str | None = None,
+) -> str:
     """Run OCR on raw image bytes via the DashScope multimodal endpoint.
 
     Uses the configurable ``DASHSCOPE_VISION_MODEL`` (default ``qwen3.6-flash``).
@@ -83,6 +87,7 @@ def dashscope_vision_ocr(image_bytes: bytes, mime_type: str = "image/png") -> st
     if not api_key:
         raise ValueError("DashScope API key required for OCR")
 
+    text_prompt = prompt if prompt is not None else OCR_PROMPT
     image_base64 = base64.b64encode(image_bytes).decode("utf-8")
     headers = build_dashscope_headers(
         api_key,
@@ -96,7 +101,7 @@ def dashscope_vision_ocr(image_bytes: bytes, mime_type: str = "image/png") -> st
                     "role": "user",
                     "content": [
                         {"image": f"data:{mime_type};base64,{image_base64}"},
-                        {"text": OCR_PROMPT},
+                        {"text": text_prompt},
                     ],
                 }
             ]

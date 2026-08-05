@@ -5,6 +5,7 @@
 import { type Ref } from 'vue'
 
 import {
+  DIAGRAM_GALLERY_MAX_ITEMS,
   buildGallerySpecPayload,
   type ShowcaseGalleryItem,
 } from '@/components/showcase/showcaseGallery'
@@ -517,7 +518,26 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
               return
             }
           }
+
+          // Template .mg + library/gallery: fold decoded .mg into gallery so it is
+          // not silently dropped by the gallery publish branch.
+          const includeTemplateMg =
+            caseType.value === 'diagram_template' && Boolean(uploadedMgSpec.value)
+          const allowNewImageDrafts = caseType.value !== 'diagram_template'
+          const projectedCount =
+            galleryExistingImages.value.length +
+            (allowNewImageDrafts ? galleryImageDrafts.value.length : 0) +
+            galleryDiagramDrafts.value.length +
+            (includeTemplateMg ? 1 : 0)
+          if (projectedCount > DIAGRAM_GALLERY_MAX_ITEMS) {
+            notify.error(
+              String(t('showcase.publishModal.galleryLimit', { max: DIAGRAM_GALLERY_MAX_ITEMS })),
+            )
+            return
+          }
+
           const galleryItems: ShowcaseGalleryItem[] = []
+          // Keep existing images on edit; templates cannot add new raster drafts.
           for (const existing of galleryExistingImages.value) {
             galleryItems.push({
               kind: 'image',
@@ -525,8 +545,30 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
               filename: existing.filename,
             })
           }
-          for (const img of galleryImageDrafts.value) {
-            galleryItems.push({ kind: 'image', filename: img.filename, pending: true })
+          if (allowNewImageDrafts) {
+            for (const img of galleryImageDrafts.value) {
+              galleryItems.push({ kind: 'image', filename: img.filename, pending: true })
+            }
+          }
+          if (includeTemplateMg && uploadedMgSpec.value) {
+            const mgTitle =
+              uploadedFile.value?.name.replace(/\.mg$/i, '').trim() ||
+              title.value.trim() ||
+              'template'
+            galleryItems.push({
+              kind: 'diagram',
+              diagram_id: `mg-upload:${mgTitle}`,
+              title: mgTitle,
+              diagram_type: resolvePublishDiagramType(diagramType.value, uploadedMgSpec.value),
+              spec: cloneShowcaseDiagramSpec(uploadedMgSpec.value),
+            })
+            if (uploadedFile.value && isMgUploadedFile(uploadedFile.value)) {
+              pendingUploads.push({
+                role: 'source',
+                file: uploadedFile.value,
+                filename: uploadedFile.value.name,
+              })
+            }
           }
           for (const draft of galleryDiagramDrafts.value) {
             galleryItems.push({
@@ -536,6 +578,10 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
               diagram_type: resolvePublishDiagramType(draft.diagram.diagram_type, draft.spec!),
               spec: cloneShowcaseDiagramSpec(draft.spec!),
             })
+          }
+          if (galleryItems.length < 1) {
+            notify.error(String(t('showcase.publishModal.validationFile')))
+            return
           }
           const specObj: Record<string, unknown> = {
             type: caseType.value,
@@ -547,7 +593,7 @@ export function createPublishShowcaseSubmitHandlers(deps: PublishSubmitDeps) {
           }
           formData.append('spec', JSON.stringify(specObj))
 
-          // Match pending image slots to gallery indices
+          // Match pending image slots to gallery indices (diagram_case only).
           let imageDraftIdx = 0
           const payloadGallery = buildGallerySpecPayload(galleryItems)
           for (let slot = 0; slot < payloadGallery.length; slot += 1) {

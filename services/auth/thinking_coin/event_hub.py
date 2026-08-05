@@ -14,7 +14,11 @@ from services.auth.thinking_coin.activity_earn import completed_usage_slugs_toda
 from services.auth.thinking_coin.checkin_service import is_checkin_completed_today, try_daily_checkin
 from services.auth.thinking_coin.client_event_earn import try_client_event_earn
 from services.auth.thinking_coin.eligibility import user_eligible_for_thinking_coins
-from services.auth.thinking_coin.wallet_service import get_balance, safe_commit
+from services.auth.thinking_coin.wallet_service import (
+    commit_wallet_changes,
+    get_balance,
+    get_daily_balance,
+)
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth.thinking_coin_config import SLUG_DAILY_CHECKIN, feature_thinking_coins_enabled
 
@@ -30,6 +34,7 @@ class ThinkingCoinMutation:
     credited: int
     debited: int
     task_slug: str | None
+    daily_balance: int = 0
     earn_events: tuple[dict[str, int | str], ...] = field(default_factory=tuple)
     completed_slugs_today: tuple[str, ...] = field(default_factory=tuple)
 
@@ -42,6 +47,7 @@ def empty_mutation() -> ThinkingCoinMutation:
         credited=0,
         debited=0,
         task_slug=None,
+        daily_balance=0,
     )
 
 
@@ -64,12 +70,14 @@ async def _build_mutation(
     earn_events: list[dict[str, int | str]] | None = None,
 ) -> ThinkingCoinMutation:
     completed = await _completed_slugs_for_user(db, user_id) if eligible else ()
+    daily_balance = await get_daily_balance(db, user_id) if eligible else 0
     return ThinkingCoinMutation(
         eligible=eligible,
         balance=balance,
         credited=credited,
         debited=debited,
         task_slug=task_slug,
+        daily_balance=daily_balance,
         earn_events=tuple(earn_events or ()),
         completed_slugs_today=completed,
     )
@@ -87,10 +95,11 @@ def merge_mutation_footers(*footers: dict[str, Any]) -> dict[str, Any]:
 def mutation_to_footer(mutation: ThinkingCoinMutation) -> dict[str, Any]:
     """JSON-serializable footer for API and SSE payloads."""
     if not mutation.eligible:
-        return {"eligible": False, "balance": 0}
+        return {"eligible": False, "balance": 0, "daily_balance": 0}
     return {
         "eligible": True,
         "balance": mutation.balance,
+        "daily_balance": mutation.daily_balance,
         "credited": mutation.credited,
         "debited": mutation.debited,
         "task_slug": mutation.task_slug,
@@ -139,8 +148,7 @@ async def track_client_event(
     balance_before = await get_balance(db, user_id)
     credited, slug = await try_client_event_earn(db, user_id, event_key)
     balance = await get_balance(db, user_id)
-    if credited > 0:
-        await safe_commit(db)
+    await commit_wallet_changes(db, force=credited > 0)
 
     mutation = await _build_mutation(
         db,
@@ -168,8 +176,7 @@ async def track_checkin(
     user_id = int(user.id)
     credited = await try_daily_checkin(db, user, org)
     balance = await get_balance(db, user_id)
-    if credited > 0:
-        await safe_commit(db)
+    await commit_wallet_changes(db, force=credited > 0)
 
     mutation = await _build_mutation(
         db,

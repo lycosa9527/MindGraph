@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Görseller yükle (birden fazla)',
   'showcase.publishModal.galleryHint': 'Birden fazla görsel ve kayıtlı diyagram ekleyin, en fazla {max} öğe',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} öğe eklendi',
   'showcase.publishModal.galleryImageItem': 'Görsel: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Diyagram: {name}',

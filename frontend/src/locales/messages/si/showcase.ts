@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'රූප උඩුගත කරන්න (බහු)',
   'showcase.publishModal.galleryHint': 'රූප සහ සුරැකි රූප සටහන් කිහිපයක් එක් කරන්න, {max} දක්වා',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} අයිතම එක් කරන ලදි',
   'showcase.publishModal.galleryImageItem': 'රූපය: {name}',
   'showcase.publishModal.galleryDiagramItem': 'රූප සටහන: {name}',

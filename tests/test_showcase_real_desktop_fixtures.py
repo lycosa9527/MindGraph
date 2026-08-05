@@ -193,6 +193,22 @@ async def test_generate_persists_preview_for_real_office(source: Path, tmp_path:
             "services.showcase.covers.generate.tempfile.mkdtemp",
             return_value=str(tmp_path / "job"),
         ),
+        patch(
+            "services.showcase.covers.generate.mark_cover_job_running",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "services.showcase.covers.generate.mark_cover_job_stage",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "services.showcase.covers.generate.bind_cover_job_succeeded",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "services.showcase.covers.generate.mark_cover_job_failed",
+            new_callable=AsyncMock,
+        ),
     ):
         (tmp_path / "job").mkdir(parents=True, exist_ok=True)
         ok = await generate_showcase_cover(
@@ -309,6 +325,22 @@ async def test_generate_pdf_fixture_thumb_without_preview(tmp_path: Path) -> Non
         patch(
             "services.showcase.covers.generate.tempfile.mkdtemp",
             return_value=str(tmp_path / "job-pdf"),
+        ),
+        patch(
+            "services.showcase.covers.generate.mark_cover_job_running",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "services.showcase.covers.generate.mark_cover_job_stage",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "services.showcase.covers.generate.bind_cover_job_succeeded",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "services.showcase.covers.generate.mark_cover_job_failed",
+            new_callable=AsyncMock,
         ),
     ):
         (tmp_path / "job-pdf").mkdir(parents=True, exist_ok=True)

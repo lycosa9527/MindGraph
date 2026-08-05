@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'อัปเดตล่าสุด: {date}',
   'privacy.backToSignIn': 'กลับไปเข้าสู่ระบบ',
   'auth.downloadDesktopShortcut': 'เพิ่มไปเดสก์ท็อป',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'แตะแชร์ใน Safari, Chrome หรือ Edge แล้วเลือก “เพิ่มไปหน้าจอโฮม”',
   'auth.pwaAndroidInstallHint': 'เปิดเมนูเบราว์เซอร์ (⋮) แล้วแตะติดตั้งแอปหรือเพิ่มไปหน้าจอโฮม',
   'auth.pwaSafariMacInstallHint': 'ใน Safari เลือก File → Add to Dock หรือ Share → Add to Dock (macOS Sonoma ขึ้นไป)',

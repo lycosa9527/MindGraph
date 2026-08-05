@@ -9,6 +9,7 @@ import {
 } from '@/composables/showcase/useShowcaseDiagramCopyAi'
 import { useShowcaseTeachingCopyAi } from '@/composables/showcase/useShowcaseTeachingCopyAi'
 import { cloneShowcaseDiagramSpec } from '@/utils/showcaseDiagramThumbnail'
+import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 
 type NotifyLike = {
   info: (message: string) => void
@@ -21,6 +22,18 @@ type TranslateFn = (key: string) => unknown
 type GalleryDiagramDraft = {
   spec: Record<string, unknown> | null
 }
+
+type GalleryImageDraft = {
+  file: File
+}
+
+type GalleryExistingImage = {
+  path: string
+  filename: string
+  url: string
+}
+
+const MAX_DIAGRAM_OCR_IMAGES = 8
 
 export function usePublishShowcaseAiOrchestration(options: {
   t: TranslateFn
@@ -42,6 +55,8 @@ export function usePublishShowcaseAiOrchestration(options: {
   uploadedMgSpec: Ref<Record<string, unknown> | null>
   selectedDiagramSpec: Ref<Record<string, unknown> | null>
   galleryDiagramDrafts: Ref<GalleryDiagramDraft[]>
+  galleryImageDrafts: Ref<GalleryImageDraft[]>
+  galleryExistingImages: Ref<GalleryExistingImage[]>
 }) {
   const {
     t,
@@ -63,11 +78,20 @@ export function usePublishShowcaseAiOrchestration(options: {
     uploadedMgSpec,
     selectedDiagramSpec,
     galleryDiagramDrafts,
+    galleryImageDrafts,
+    galleryExistingImages,
   } = options
 
+  function resolvedDiagramType(): string {
+    return publishPreviewDiagramType.value || diagramType.value || 'mind_map'
+  }
+
+  function hasGalleryImages(): boolean {
+    return galleryImageDrafts.value.length > 0 || galleryExistingImages.value.length > 0
+  }
+
   function resolveDiagramCopySpecSource(): DiagramCopySpecSource | null {
-    const resolvedType =
-      publishPreviewDiagramType.value || diagramType.value || 'mind_map'
+    const resolvedType = resolvedDiagramType()
     if (fromCanvas.value && getDiagramSpec) {
       const canvasSpec = getDiagramSpec()
       if (canvasSpec && typeof canvasSpec === 'object') {
@@ -91,9 +115,41 @@ export function usePublishShowcaseAiOrchestration(options: {
           diagramType: resolvedType,
         }
       }
+      if (hasGalleryImages()) {
+        return {
+          specs: [],
+          images: galleryImageDrafts.value.map((draft) => draft.file),
+          existingImageKeys: galleryExistingImages.value.map(
+            (entry) => `${entry.path}:${entry.filename}`,
+          ),
+          diagramType: resolvedType,
+        }
+      }
       return null
     }
     return null
+  }
+
+  async function resolveGalleryImageFiles(): Promise<File[]> {
+    const files: File[] = galleryImageDrafts.value
+      .map((draft) => draft.file)
+      .slice(0, MAX_DIAGRAM_OCR_IMAGES)
+    if (files.length >= MAX_DIAGRAM_OCR_IMAGES) {
+      return files
+    }
+    for (const existing of galleryExistingImages.value) {
+      if (files.length >= MAX_DIAGRAM_OCR_IMAGES) break
+      try {
+        const response = await fetchShowcaseAsset(existing.url)
+        if (!response.ok) continue
+        const blob = await response.blob()
+        const type = blob.type && blob.type.startsWith('image/') ? blob.type : 'image/png'
+        files.push(new File([blob], existing.filename || 'image.png', { type }))
+      } catch {
+        // Skip unreadable existing gallery slots.
+      }
+    }
+    return files
   }
 
   const {
@@ -136,6 +192,7 @@ export function usePublishShowcaseAiOrchestration(options: {
     description,
     classroomApplication,
     resolveSpecSource: resolveDiagramCopySpecSource,
+    resolveImageFiles: resolveGalleryImageFiles,
     step,
   })
 
@@ -184,7 +241,8 @@ export function usePublishShowcaseAiOrchestration(options: {
       })
       return
     }
-    if (isDiagramType.value && resolveDiagramCopySpecSource()) {
+    const source = resolveDiagramCopySpecSource()
+    if (isDiagramType.value && (source?.specs.length || hasGalleryImages())) {
       beginDiagramCopyPrefetch({
         notifyStart: true,
         notifySuccess: true,

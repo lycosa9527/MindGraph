@@ -144,6 +144,14 @@ async def test_generate_aborts_on_stale_attachment_key() -> None:
             "services.showcase.covers.generate.rls_async_session",
             return_value=session,
         ),
+        patch(
+            "services.showcase.covers.generate.mark_cover_job_running",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "services.showcase.covers.generate.mark_cover_job_failed",
+            new_callable=AsyncMock,
+        ),
         patch("services.showcase.covers.generate.download_to_path_sync") as download,
         patch("services.showcase.covers.generate.put_bytes_sync") as put,
         patch(
@@ -171,10 +179,23 @@ async def test_generate_aborts_on_stale_attachment_key() -> None:
 @pytest.mark.asyncio
 async def test_generate_refuses_out_of_scope_key() -> None:
     """Emit cover_fail when attachment_key is outside the post prefix."""
-    with patch(
-        "services.showcase.covers.generate.publish_showcase_cover_event",
-        new_callable=AsyncMock,
-    ) as publish:
+    session = AsyncMock()
+    session.__aenter__.return_value = session
+    session.__aexit__.return_value = None
+    with (
+        patch(
+            "services.showcase.covers.generate.publish_showcase_cover_event",
+            new_callable=AsyncMock,
+        ) as publish,
+        patch(
+            "services.showcase.covers.generate.mark_cover_job_failed",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "services.showcase.covers.generate.rls_async_session",
+            return_value=session,
+        ),
+    ):
         ok = await generate_showcase_cover(
             post_id="11111111-2222-3333-4444-555555555555",
             user_id=1,
@@ -253,6 +274,22 @@ async def test_generate_persists_preview_pdf_for_docx(tmp_path: Path) -> None:
             "services.showcase.covers.generate.showcase_public_asset_url",
             side_effect=lambda key: f"/assets/{key}",
         ),
+        patch(
+            "services.showcase.covers.generate.mark_cover_job_running",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "services.showcase.covers.generate.mark_cover_job_stage",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "services.showcase.covers.generate.bind_cover_job_succeeded",
+            new_callable=AsyncMock,
+        ) as mark_ok,
+        patch(
+            "services.showcase.covers.generate.mark_cover_job_failed",
+            new_callable=AsyncMock,
+        ),
     ):
         ok = await generate_showcase_cover(
             post_id=post_id,
@@ -263,6 +300,7 @@ async def test_generate_persists_preview_pdf_for_docx(tmp_path: Path) -> None:
         )
 
     assert ok is True
+    mark_ok.assert_awaited()
     put_keys = [call.args[0] for call in put.call_args_list]
     assert f"showcase/posts/{post_id}/thumbnail.png" in put_keys
     assert f"showcase/posts/{post_id}/preview.pdf" in put_keys

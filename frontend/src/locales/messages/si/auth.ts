@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'අවසන් යාවත්කාලීනය: {date}',
   'privacy.backToSignIn': 'පිවිසීමට ආපසු',
   'auth.downloadDesktopShortcut': 'ඩෙස්‍ක්‍ටොප්‍ට එක් කරන්න',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Safari, Chrome හෝ Edge හි Share තට්‍ටු කර “Add to Home Screen” තෝරන්න.',
   'auth.pwaAndroidInstallHint': 'බ්‍රවුසර් මෙනුව (⋮) විවෘත කර Install app හෝ Add to Home screen තට්‍ටු කරන්න.',
   'auth.pwaSafariMacInstallHint': 'Safari හි File → Add to Dock, හෝ Share → Add to Dock (macOS Sonoma හෝ නවත) තෝරන්න.',

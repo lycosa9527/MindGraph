@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import { useRoute, useRouter } from 'vue-router'
 
-import { Search } from '@lucide/vue'
+import { RefreshCw, Search } from '@lucide/vue'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import ShowcaseDetailModal from '@/components/showcase/ShowcaseDetailModal.vue'
@@ -17,13 +17,21 @@ import {
 } from '@/composables/admin/adminShowcaseNav'
 import {
   resolveShowcaseMediaStatus,
+  showcaseCanRefreshCover,
+  showcaseCoverJobTooltip,
+  showcaseCoverRefreshBusy,
   showcaseMediaStatusChipClass,
   showcaseMediaStatusLabelKey,
 } from '@/composables/admin/showcaseMediaStatus'
-import { useLanguage } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
 import { eventBus } from '@/composables/core/useEventBus'
-import { type ShowcasePost, getShowcasePendingCount, getShowcasePosts } from '@/utils/apiClient'
+import {
+  type ShowcasePost,
+  getShowcasePendingCount,
+  getShowcasePosts,
+  refreshAdminShowcaseCover,
+} from '@/utils/apiClient'
 
 const ADMIN_SORT_OPTIONS = [
   { value: 'newest', labelKey: 'admin.showcase.sort.newest' },
@@ -50,6 +58,7 @@ const PUBLISH_SOURCE_OPTIONS = [
 ] as const
 
 const { t } = useLanguage()
+const notify = useNotifications()
 const { subjectOptions, gradeOptions } = useShowcaseMeta()
 const route = useRoute()
 const router = useRouter()
@@ -60,6 +69,7 @@ const page = ref(1)
 const pageSize = 20
 const isLoading = ref(false)
 const loadError = ref<string | null>(null)
+const refreshingIds = ref<Set<string>>(new Set())
 const searchQuery = ref('')
 const filterSubject = ref('')
 const filterGrade = ref('')
@@ -132,6 +142,39 @@ function mediaStatusLabel(post: ShowcasePost): string {
 
 function mediaStatusChipClass(post: ShowcasePost): string {
   return showcaseMediaStatusChipClass(resolveShowcaseMediaStatus(post))
+}
+
+function mediaStatusTitle(post: ShowcasePost): string {
+  return showcaseCoverJobTooltip(post)
+}
+
+function canRefreshCover(post: ShowcasePost): boolean {
+  return showcaseCanRefreshCover(post)
+}
+
+function refreshBusy(post: ShowcasePost): boolean {
+  return refreshingIds.value.has(post.id) || showcaseCoverRefreshBusy(post)
+}
+
+async function refreshCover(post: ShowcasePost): Promise<void> {
+  if (!canRefreshCover(post) || refreshBusy(post)) return
+  const next = new Set(refreshingIds.value)
+  next.add(post.id)
+  refreshingIds.value = next
+  try {
+    const res = await refreshAdminShowcaseCover(post.id)
+    const idx = posts.value.findIndex((p) => p.id === post.id)
+    if (idx >= 0) {
+      posts.value[idx] = res.post
+    }
+    notify.success(String(t('admin.showcase.refreshStatusOk')))
+  } catch (e) {
+    notify.error(e instanceof Error ? e.message : String(t('admin.showcase.refreshStatusFail')))
+  } finally {
+    const done = new Set(refreshingIds.value)
+    done.delete(post.id)
+    refreshingIds.value = done
+  }
 }
 
 function formatDate(iso: string | null | undefined): string {
@@ -392,7 +435,6 @@ onMounted(() => {
         </template>
       </el-table-column>
       <el-table-column
-        v-if="activeQueue === 'pending'"
         :label="t('admin.showcase.colMediaStatus')"
         min-width="140"
       >
@@ -400,6 +442,7 @@ onMounted(() => {
           <span
             class="inline-flex max-w-full items-center rounded-md px-2 py-0.5 text-xs font-medium"
             :class="mediaStatusChipClass(row)"
+            :title="mediaStatusTitle(row) || undefined"
           >
             {{ mediaStatusLabel(row) }}
           </span>
@@ -442,17 +485,32 @@ onMounted(() => {
       </el-table-column>
       <el-table-column
         :label="t('admin.actions')"
-        width="100"
+        width="140"
         fixed="right"
       >
         <template #default="{ row }">
-          <button
-            type="button"
-            class="text-sm font-medium text-gray-700"
-            @click.stop="openPost(row)"
-          >
-            {{ t('admin.showcase.review') }}
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="text-sm font-medium text-gray-700"
+              @click.stop="openPost(row)"
+            >
+              {{ t('admin.showcase.review') }}
+            </button>
+            <button
+              v-if="canRefreshCover(row)"
+              type="button"
+              :title="String(t('admin.showcase.refreshStatus'))"
+              :disabled="refreshBusy(row)"
+              class="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+              @click.stop="refreshCover(row)"
+            >
+              <RefreshCw
+                class="h-4 w-4"
+                :class="refreshBusy(row) ? 'animate-spin' : ''"
+              />
+            </button>
+          </div>
         </template>
       </el-table-column>
     </el-table>

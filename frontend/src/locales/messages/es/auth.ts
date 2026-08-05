@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Última actualización: {date}',
   'privacy.backToSignIn': 'Volver al inicio de sesión',
   'auth.downloadDesktopShortcut': 'Agregar al escritorio',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Toque Compartir en Safari, Chrome o Edge y elija «Agregar a la pantalla de inicio».',
   'auth.pwaAndroidInstallHint': 'Abra el menú del navegador (⋮) y toque Instalar aplicación o Agregar a la pantalla de inicio.',
   'auth.pwaSafariMacInstallHint': 'En Safari, elija Archivo → Agregar al Dock, o Compartir → Agregar al Dock (macOS Sonoma o posterior).',

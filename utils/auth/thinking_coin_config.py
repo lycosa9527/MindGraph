@@ -24,6 +24,7 @@ SETTING_COST_CANVAS: Final[str] = "cost_canvas_assist"
 
 LEDGER_SIGNUP_GRANT: Final[str] = "signup_grant"
 LEDGER_DAILY_CHECKIN: Final[str] = "daily_checkin"
+LEDGER_DAILY_EXPIRE: Final[str] = "daily_expire"
 LEDGER_REFERRAL: Final[str] = "referral_reward"
 LEDGER_CASE: Final[str] = "case_reward"
 LEDGER_TASK: Final[str] = "task_reward"

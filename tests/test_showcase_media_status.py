@@ -59,6 +59,19 @@ def test_teaching_office_conversion_failed() -> None:
     )
 
 
+def test_teaching_conversion_failed_from_cover_job_status() -> None:
+    """Cold manifesto failed status maps to conversion_failed without Redis."""
+    assert (
+        resolve_showcase_media_status(
+            case_type="teaching_design",
+            thumbnail_path=None,
+            spec={"attachment_path": "showcase/posts/a/attachment.docx"},
+            cover_job_status="failed",
+        )
+        == MEDIA_STATUS_CONVERSION_FAILED
+    )
+
+
 def test_teaching_preview_ready_native_pdf() -> None:
     """Native PDF is previewable before cover generation finishes."""
     assert (

@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Son yenilənmə: {date}',
   'privacy.backToSignIn': 'Girişə qayıt',
   'auth.downloadDesktopShortcut': 'Masaüstünə əlavə et',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Safari, Chrome və ya Edge-də Paylaş düyməsinə toxunun, sonra “Ana ekrana əlavə et” seçin.',
   'auth.pwaAndroidInstallHint': 'Brauzer menyusunu (⋮) açın və Tətbiqi quraşdır və ya Ana ekrana əlavə et seçin.',
   'auth.pwaSafariMacInstallHint': 'Safari-də Fayl → Dock-a əlavə et və ya Paylaş → Dock-a əlavə et (macOS Sonoma və ya daha yeni).',

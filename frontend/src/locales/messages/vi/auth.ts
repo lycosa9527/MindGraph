@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Cập nhật lần cuối: {date}',
   'privacy.backToSignIn': 'Quay lại đăng nhập',
   'auth.downloadDesktopShortcut': 'Thêm vào màn hình',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Chạm Chia sẻ trong Safari, Chrome hoặc Edge, rồi chọn “Thêm vào Màn hình chính”.',
   'auth.pwaAndroidInstallHint': 'Mở menu trình duyệt (⋮) và chạm Cài đặt ứng dụng hoặc Thêm vào Màn hình chính.',
   'auth.pwaSafariMacInstallHint': 'Trong Safari, chọn File → Add to Dock, hoặc Share → Add to Dock (macOS Sonoma trở lên).',

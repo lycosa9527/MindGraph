@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': '이미지 업로드(여러 개)',
   'showcase.publishModal.galleryHint': '여러 이미지와 저장된 다이어그램 추가, 최대 {max}개',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max}개 추가됨',
   'showcase.publishModal.galleryImageItem': '이미지: {name}',
   'showcase.publishModal.galleryDiagramItem': '다이어그램: {name}',

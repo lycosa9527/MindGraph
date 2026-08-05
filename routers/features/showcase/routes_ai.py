@@ -45,6 +45,7 @@ from services.showcase.ai_copy import (
     stream_teaching_design_copy,
 )
 from services.showcase.diagram_ai_copy import (
+    extract_diagram_text_from_images,
     extract_diagram_texts,
     generate_diagram_case_copy,
     stream_diagram_case_copy,
@@ -52,7 +53,12 @@ from services.showcase.diagram_ai_copy import (
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.auth import get_current_user
 
-from .helpers import ALLOWED_DOC_SUFFIXES, ATTACHMENT_MAX_BYTES, _validate_magic_bytes
+from .helpers import (
+    ALLOWED_DOC_SUFFIXES,
+    ATTACHMENT_MAX_BYTES,
+    GALLERY_IMAGE_SUFFIXES,
+    _validate_magic_bytes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +68,19 @@ _ENDPOINT_PATH = "/api/showcase/ai/teaching-copy"
 _STREAM_ENDPOINT_PATH = "/api/showcase/ai/teaching-copy/stream"
 _DIAGRAM_ENDPOINT_PATH = "/api/showcase/ai/diagram-copy"
 _DIAGRAM_STREAM_ENDPOINT_PATH = "/api/showcase/ai/diagram-copy/stream"
-_MAX_DIAGRAM_SPECS = 12
+_DIAGRAM_IMAGES_ENDPOINT_PATH = "/api/showcase/ai/diagram-copy/images"
+_DIAGRAM_IMAGES_STREAM_ENDPOINT_PATH = "/api/showcase/ai/diagram-copy/images/stream"
+# Keep in sync with frontend DIAGRAM_GALLERY_MAX_ITEMS.
+_MAX_DIAGRAM_SPECS = 15
+_MAX_DIAGRAM_OCR_IMAGES = 8
+_MAX_DIAGRAM_OCR_TOTAL_BYTES = 40 * 1024 * 1024
+_IMAGE_MIME_BY_SUFFIX = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+}
 
 
 class DiagramCopyBody(BaseModel):
@@ -425,6 +443,85 @@ async def _prepare_diagram_copy_text_async(
         ) from exc
 
 
+async def _read_validated_gallery_image(
+    upload: UploadFile,
+) -> tuple[bytes, str]:
+    """Validate one gallery image upload; return ``(bytes, mime_type)``."""
+    filename = (upload.filename or "image.png").strip() or "image.png"
+    suffix = Path(filename).suffix.lower()
+    if suffix not in GALLERY_IMAGE_SUFFIXES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported image type",
+        )
+    raw = await upload.read()
+    if not raw:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Empty image",
+        )
+    if len(raw) > ATTACHMENT_MAX_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Image too large",
+        )
+    _validate_magic_bytes(raw, suffix)
+    mime_type = _IMAGE_MIME_BY_SUFFIX.get(suffix, "image/png")
+    return raw, mime_type
+
+
+async def _prepare_diagram_copy_images_async(
+    *,
+    request: Request,
+    files: list[UploadFile],
+    current_user: User,
+) -> str:
+    """Rate-limit, validate gallery images, OCR via Qwen vision."""
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "showcase_ai_diagram_copy",
+        identifier,
+        max_requests=12,
+        window_seconds=60,
+    )
+
+    if not files:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one gallery image required",
+        )
+    if len(files) > _MAX_DIAGRAM_OCR_IMAGES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"At most {_MAX_DIAGRAM_OCR_IMAGES} images for AI copy",
+        )
+
+    images: list[tuple[bytes, str]] = []
+    total_bytes = 0
+    for upload in files:
+        raw, mime_type = await _read_validated_gallery_image(upload)
+        total_bytes += len(raw)
+        if total_bytes > _MAX_DIAGRAM_OCR_TOTAL_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Total image size for AI copy exceeds limit",
+            )
+        images.append((raw, mime_type))
+
+    try:
+        return await asyncio.to_thread(extract_diagram_text_from_images, images)
+    except ValueError as exc:
+        if str(exc) == "no_text_extracted":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="No text extracted from images",
+            ) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Failed to extract text from images",
+        ) from exc
+
+
 async def _stream_diagram_copy_events(
     *,
     http_request: Request,
@@ -575,6 +672,86 @@ async def generate_diagram_ai_copy_stream(
             subject=body.subject,
             grade=body.grade,
             diagram_type=body.diagram_type,
+            user_id=getattr(current_user, "id", None),
+            organization_id=getattr(current_user, "organization_id", None),
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.post("/ai/diagram-copy/images")
+async def generate_diagram_ai_copy_from_images(
+    request: Request,
+    title: str = Form(""),
+    subject: str = Form(""),
+    grade: str = Form(""),
+    diagram_type: str = Form(""),
+    files: list[UploadFile] = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """OCR gallery images (Qwen vision) then draft intro / classroom application."""
+    diagram_text = await _prepare_diagram_copy_images_async(
+        request=request,
+        files=files,
+        current_user=current_user,
+    )
+    try:
+        fields = await generate_diagram_case_copy(
+            diagram_text=diagram_text,
+            title=title,
+            subject=subject,
+            grade=grade,
+            diagram_type=diagram_type,
+            user_id=getattr(current_user, "id", None),
+            organization_id=getattr(current_user, "organization_id", None),
+            endpoint_path=_DIAGRAM_IMAGES_ENDPOINT_PATH,
+        )
+    except (
+        LLMRateLimitError,
+        LLMTimeoutError,
+        LLMAccessDeniedError,
+        LLMContentFilterError,
+        LLMProviderError,
+        *LLM_PIPELINE_ERRORS,
+    ) as exc:
+        raise _map_llm_http(exc) from exc
+
+    return {
+        "description": fields["description"],
+        "classroom_application": fields["classroom_application"],
+        "model": "qwen3.7-flash",
+    }
+
+
+@router.post("/ai/diagram-copy/images/stream")
+async def generate_diagram_ai_copy_from_images_stream(
+    request: Request,
+    title: str = Form(""),
+    subject: str = Form(""),
+    grade: str = Form(""),
+    diagram_type: str = Form(""),
+    files: list[UploadFile] = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """SSE stream for gallery-image OCR → diagram AI copy."""
+    diagram_text = await _prepare_diagram_copy_images_async(
+        request=request,
+        files=files,
+        current_user=current_user,
+    )
+    return StreamingResponse(
+        _stream_diagram_copy_events(
+            http_request=request,
+            diagram_text=diagram_text,
+            title=title,
+            subject=subject,
+            grade=grade,
+            diagram_type=diagram_type,
             user_id=getattr(current_user, "id", None),
             organization_id=getattr(current_user, "organization_id", None),
         ),

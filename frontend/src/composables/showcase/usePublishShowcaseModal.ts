@@ -333,6 +333,8 @@ export function usePublishShowcaseModal(
     uploadedMgSpec,
     selectedDiagramSpec,
     galleryDiagramDrafts,
+    galleryImageDrafts,
+    galleryExistingImages,
   })
 
   function resetForm() {
@@ -407,16 +409,18 @@ export function usePublishShowcaseModal(
 
   watch(caseType, (type) => {
     clearAllAiPrefetch()
-    if (type === 'teaching_design') {
-      diagramType.value = ''
-      selectedDiagram.value = null
-      selectedDiagramSpec.value = null
-    } else if (!diagramType.value) {
-      diagramType.value = props.diagramType || 'mind_map'
-    }
+    // Cross-type leftover gallery/file state must not satisfy step1 or steer submit.
+    clearGalleryDrafts()
+    selectedDiagram.value = null
+    selectedDiagramSpec.value = null
     uploadedFile.value = null
     uploadedFileName.value = ''
     uploadedMgSpec.value = null
+    if (type === 'teaching_design') {
+      diagramType.value = ''
+    } else if (!diagramType.value) {
+      diagramType.value = props.diagramType || 'mind_map'
+    }
   })
 
   function addTag() {
@@ -452,7 +456,8 @@ export function usePublishShowcaseModal(
 
   function validateFile(file: File): boolean {
     if (caseType.value === 'teaching_design') return isTeachingDocFile(file.name)
-    if (isDiagramGalleryCase.value) return isDiagramImageFile(file.name)
+    if (caseType.value === 'diagram_template') return isTemplateSourceFile(file.name)
+    if (caseType.value === 'diagram_case') return isDiagramImageFile(file.name)
     return isTemplateSourceFile(file.name)
   }
 
@@ -604,6 +609,10 @@ export function usePublishShowcaseModal(
     uploadedMgSpec.value = null
     selectedDiagram.value = null
     selectedDiagramSpec.value = null
+    // Edit mode: clearing the chip means the prior attachment is no longer kept.
+    if (caseType.value === 'teaching_design') {
+      editHasAttachment.value = false
+    }
   }
 
   function diagramTypeFromSavedDiagram(raw: string): string {
@@ -818,7 +827,8 @@ export function usePublishShowcaseModal(
 
   const uploadAccept = computed(() => {
     if (caseType.value === 'teaching_design') return '.doc,.docx,.pdf,.pptx'
-    if (isDiagramGalleryCase.value) return '.png,.jpg,.jpeg,.webp,.gif'
+    if (caseType.value === 'diagram_template') return '.mg'
+    if (caseType.value === 'diagram_case') return '.png,.jpg,.jpeg,.webp,.gif'
     return '.mg'
   })
 

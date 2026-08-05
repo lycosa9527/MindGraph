@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Unggah gambar (banyak)',
   'showcase.publishModal.galleryHint': 'Tambahkan beberapa gambar dan rajah tersimpan, hingga {max} item',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} item ditambahkan',
   'showcase.publishModal.galleryImageItem': 'Gambar: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Rajah: {name}',

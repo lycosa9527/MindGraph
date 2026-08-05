@@ -81,7 +81,7 @@ async def get_wallet(
 ) -> dict[str, Any]:
     """Balance and active earn tasks."""
     if not feature_thinking_coins_enabled():
-        return {"balance": 0, "eligible": False, "earn_tasks": []}
+        return {"balance": 0, "daily_balance": 0, "eligible": False, "earn_tasks": []}
 
     org = await _load_org(current_user)
     if user_eligible_for_thinking_coins(current_user, org):

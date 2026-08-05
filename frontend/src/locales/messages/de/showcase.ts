@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Bilder hochladen (mehrere)',
   'showcase.publishModal.galleryHint': 'Fügen Sie mehrere Bilder und gespeicherte Diagramme hinzu, bis zu {max} Einträge',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} Einträge hinzugefügt',
   'showcase.publishModal.galleryImageItem': 'Bild: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Diagramm: {name}',

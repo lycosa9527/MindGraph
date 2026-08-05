@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Përditësimi i fundit: {date}',
   'privacy.backToSignIn': 'Kthehu te hyrja',
   'auth.downloadDesktopShortcut': 'Shto në desktop',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Prekni «Ndaj» në Safari, Chrome ose Edge, pastaj zgjidhni «Shto në ekranin kryesor».',
   'auth.pwaAndroidInstallHint': 'Hapni menunë e shfletuesit (⋮) dhe prekni «Instalo aplikacionin» ose «Shto në ekranin kryesor».',
   'auth.pwaSafariMacInstallHint': 'Në Safari, zgjidhni «Skedari» → «Shto në Dock» ose «Ndaj» → «Shto në Dock» (macOS Sonoma ose më i ri).',

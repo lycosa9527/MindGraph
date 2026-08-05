@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Oxirgi yangilanish: {date}',
   'privacy.backToSignIn': 'Kirishga qaytish',
   'auth.downloadDesktopShortcut': 'Ish stoliga qo’shish',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Safari, Chrome yoki Edge-da Ulashish tugmasini bosing, keyin “Bosh ekranga qo’shish” ni tanlang.',
   'auth.pwaAndroidInstallHint': 'Brauzer menyusini (⋮) oching va Ilovani o’rnatish yoki Bosh ekranga qo’shish ni tanlang.',
   'auth.pwaSafariMacInstallHint': 'Safari-da Fayl → Dock-ga qo’shish yoki Ulashish → Dock-ga qo’shish (macOS Sonoma yoki undan keyin).',

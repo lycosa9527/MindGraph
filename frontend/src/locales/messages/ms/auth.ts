@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Terakhir diperbarui: {date}',
   'privacy.backToSignIn': 'Kembali ke masuk',
   'auth.downloadDesktopShortcut': 'Tambahkan ke desktop',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Ketuk Bagikan di Safari, Chrome, atau Edge, lalu pilih “Tambahkan ke Layar Utama”.',
   'auth.pwaAndroidInstallHint': 'Buka menu browser (⋮) dan ketuk Instal aplikasi atau Tambahkan ke layar utama.',
   'auth.pwaSafariMacInstallHint': 'Di Safari, pilih File → Add to Dock, atau Share → Add to Dock (macOS Sonoma atau lebih baru).',

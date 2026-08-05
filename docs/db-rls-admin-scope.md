@@ -47,13 +47,11 @@ Built by [`admin_scope_to_session_vars()`](../utils/db/rls_admin_scope.py) and a
 ## 4. Session lifecycle
 
 1. **Auth middleware** sets context var to authenticated user or deny-default.
-2. **Route dependencies** override `request.state.rls_context`:
-   - `get_admin_scope` → panel context from AdminScope + `set_rls_context(ctx)`
-   - `require_superadmin` → `bind_panel_superadmin_rls` + `set_rls_context(ctx)`
+2. **`resolve_admin_scope_rls`** (dependency of `get_admin_scope`) builds AdminScope and pins panel `request.state.rls_context` **before** the request DB session opens. `require_superadmin` uses `bind_panel_superadmin_rls` the same way.
 3. **`get_async_db`** reads `request.state.rls_context`, sets context var, and pins the same `RlsContext` on `session.info["rls_context"]`.
 4. **`after_begin`** on each transaction runs `set_config` for all GUCs (transaction-local), preferring `session.info` over the ContextVar (survives BaseHTTPMiddleware / nested `rls_*_session` ContextVar resets).
 5. **After `commit`:** new transaction re-applies GUCs from `session.info` (and ContextVar when still set) — must stay in panel mode for admin mutations.
-6. **Expert org create** also needs Alembic **`0072`** (`rls_panel_org_invited_by_actor`) so `INSERT` WITH CHECK passes when `invited_by_user_id = app.user_id`.
+6. **Expert org create** also needs Alembic **`0072`** (`rls_panel_org_invited_by_actor`) so `INSERT` WITH CHECK passes when `invited_by_user_id = app.user_id`. Create handler re-applies panel SET LOCAL immediately before INSERT.
 
 ## 5. User-owned table policies (rev 0051+)
 
@@ -103,7 +101,7 @@ pytest tests/db/test_rls_explain_hot_paths.py -q
 
 | ID | Item | Status |
 |----|------|--------|
-| Q1 | Panel RLS before `get_async_db` (remove double apply) | Deferred |
+| Q1 | Panel RLS before `get_async_db` (`resolve_admin_scope_rls`) | Done |
 | Q2 | Batch GUC setup (`rls_apply_context`) | Deferred |
 | Q3 | Lazy invited-org load on global admin deps | Deferred |
 | M1 | Unify `panel` / `panel_superadmin` modes | Deferred |

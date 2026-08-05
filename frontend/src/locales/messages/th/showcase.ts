@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'อัปโหลดรูป (หลายรูป)',
   'showcase.publishModal.galleryHint': 'เพิ่มรูปและไดอะแกรมที่บันทึกได้สูงสุด {max} รายการ',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': 'เพิ่มแล้ว {count}/{max} รายการ',
   'showcase.publishModal.galleryImageItem': 'รูป: {name}',
   'showcase.publishModal.galleryDiagramItem': 'ไดอะแกรม: {name}',

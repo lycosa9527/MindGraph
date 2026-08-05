@@ -116,8 +116,11 @@ no image DPI downscale) to `preview.pdf`. The detail reader is **pdf.js only** (
 | Render | PDF → PyMuPDF; Office → soffice (`writer_pdf_Export` / `impress_pdf_Export` + lossless filter) then PNG |
 | Upload | `put_bytes` → `thumbnail.png`; Office also → `preview.pdf` + `spec.preview_path` |
 | Reader | Detail pdf.js loads `/api/showcase/assets/…?proxy=1` (AuthZ + server bytes); HiDPI canvas, natural page width. Default asset GET stays 302→COS for ``<img>`` thumbs — credentialed `fetch` following that redirect fails browser CORS |
-| Backfill | `GET /posts/{id}` + cover-stream re-enqueue when Office attachment lacks `preview_path` (legacy thumbs-only posts) |
-| Events | Redis pub/sub → `GET …/posts/{id}/cover-stream` SSE (`cover_ready` / `cover_fail`); FE no poll |
+| Backfill | `GET /posts/{id}` + cover-stream re-enqueue when Office attachment lacks `preview_path` **and** cover job is not cold-`succeeded` |
+| Manifesto | Postgres `case_square_cover_jobs` (one row/post): `queued`/`running`/`succeeded`/`failed` + attempts JSON. Admin lists read this cold — **no per-row COS HEAD**. Mark `succeeded` only after storage put + path commit. |
+| Admin refresh | `POST /api/auth/admin/showcase/posts/{id}/refresh-cover` force-requeues even when `succeeded` (Published + moderation Refresh status button) |
+| Celery retry | `showcase.generate_cover` total tries = `max_attempts` (3); exponential backoff; re-queues manifesto during backoff (not terminal `failed`); permanent reasons do not retry; stale in-flight (>270s) is reclaimable by admin Refresh |
+| Events | Redis pub/sub → `GET …/posts/{id}/cover-stream` SSE (`cover_ready` / `cover_fail`); FE no poll. Redis fail TTL is live-only; admin uses manifesto. |
 | Hard stop | LO 120s; Celery soft 180 / hard 210; SSE max 210s then `cover_fail` reason=timeout |
 | Guard | Redis lock `showcase:cover:{post_id}`; abort if post gone or `attachment_key` stale; overwrite thumb when key matches; RLS write as `author_id` |
 | Flag | `SHOWCASE_SERVER_COVERS` (default on when `COS_SHOWCASE_ENABLED`); Celery soft-starts for covers |

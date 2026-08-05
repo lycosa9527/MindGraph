@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Tải lên hình ảnh (nhiều)',
   'showcase.publishModal.galleryHint': 'Thêm nhiều hình ảnh và sơ đồ đã lưu, tối đa {max} mục',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} mục đã được thêm',
   'showcase.publishModal.galleryImageItem': 'Hình ảnh: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Sơ đồ: {name}',

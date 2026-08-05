@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Huling na-update: {date}',
   'privacy.backToSignIn': 'Bumalik sa sign in',
   'auth.downloadDesktopShortcut': 'Idagdag sa desktop',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'I-tap ang Share sa Safari, Chrome, o Edge, pagkatapos piliin ang “Add to Home Screen”.',
   'auth.pwaAndroidInstallHint': 'Buksan ang menu ng browser (⋮) at i-tap ang Install app o Add to Home screen.',
   'auth.pwaSafariMacInstallHint': 'Sa Safari, piliin ang File → Add to Dock, o Share → Add to Dock (macOS Sonoma o mas bago).',

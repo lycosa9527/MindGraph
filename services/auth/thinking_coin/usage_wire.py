@@ -23,6 +23,7 @@ from services.auth.thinking_coin.token_usage_link import (
     insert_token_usage_row,
 )
 from services.auth.thinking_coin.wallet_service import (
+    commit_wallet_changes,
     debit_wallet,
     get_balance,
     get_or_create_wallet,
@@ -93,6 +94,8 @@ async def _assert_balance_with_lock(
     wallet = await get_or_create_wallet(db, int(user_id))
     balance = int(wallet.balance)
     if balance < cost:
+        # Persist lazy daily expiry before 402 so client balance matches DB.
+        await commit_wallet_changes(db, force=False)
         message = thinking_coin_limit_message(lang, balance, cost)
         raise ThinkingCoinInsufficientError(balance=balance, cost=cost, user_message=message)
     return cost
@@ -263,8 +266,7 @@ async def thinking_coin_post_diagram_generation_mutation(
     async with user_rls_session(int(user_id), organization_id) as db:
         events = await try_learning_sheet_diagram_earn(db, int(user_id), result)
         balance = await get_balance(db, int(user_id))
-        if events:
-            await safe_commit(db)
+        await commit_wallet_changes(db, force=bool(events))
         credited = sum(int(item.get("amount", 0)) for item in events)
         return await build_eligible_mutation(
             db,

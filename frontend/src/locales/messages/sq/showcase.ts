@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Ngarko imazhe (të shumta)',
   'showcase.publishModal.galleryHint': 'Shtoni imazhe dhe diagrame të ruajtura, deri në {max} artikuj',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} artikuj të shtuar',
   'showcase.publishModal.galleryImageItem': 'Imazh: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Diagram: {name}',

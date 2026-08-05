@@ -367,8 +367,8 @@ async def create_organization_admin(
         allow_explicit_tier=is_superadmin(current_user),
     )
 
-    # Panel RLS must be active for expert INSERT (rev 0072 invited_by_actor).
-    # Re-apply from AdminScope in case ContextVar was lost under BaseHTTPMiddleware.
+    # Expert INSERT needs panel GUCs (rev 0072 invited_by_actor). Re-apply here
+    # so SET LOCAL is correct even if an earlier read txn began before panel pin.
     panel_ctx = RlsContext.from_admin_scope(scope)
     set_rls_context(panel_ctx)
     await apply_rls_context_async(db, panel_ctx)

@@ -88,6 +88,8 @@ export default {
   'showcase.publishModal.diagramImageHint': '.png / .jpg / .jpeg / .webp / .gif',
   'showcase.publishModal.uploadImages': 'Şəkillər yüklə (bir neçə)',
   'showcase.publishModal.galleryHint': 'Bir neçə şəkil və saxlanmış diaqram əlavə edin, ən çox {max} element',
+  'showcase.publishModal.galleryHintCase': 'Add multiple images and saved diagrams, up to {max} items',
+  'showcase.publishModal.galleryHintTemplate': 'Upload a .mg file and pick saved diagrams, up to {max} items',
   'showcase.publishModal.galleryCount': '{count}/{max} element əlavə edilib',
   'showcase.publishModal.galleryImageItem': 'Şəkil: {name}',
   'showcase.publishModal.galleryDiagramItem': 'Diaqram: {name}',

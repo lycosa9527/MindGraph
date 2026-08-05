@@ -14,6 +14,7 @@ export default {
   'auth.softwareAgreementUpdated': 'Last updated: {date}',
   'privacy.backToSignIn': 'Back to sign in',
   'auth.downloadDesktopShortcut': 'Add to desktop',
+  'auth.platformQuickGuide': 'Platform quick start guide',
   'auth.pwaIosInstallHint': 'Tap Share in Safari, Chrome, or Edge, then choose “Add to Home Screen”.',
   'auth.pwaAndroidInstallHint': 'Open the browser menu (⋮) and tap Install app or Add to Home screen.',
   'auth.pwaSafariMacInstallHint': 'In Safari, choose File → Add to Dock, or Share → Add to Dock (macOS Sonoma or later).',

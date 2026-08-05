@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.168.0] - 2026-08-05
+
+> **Thinking-coin daily login bucket (Beijing midnight expire); Showcase cover job manifesto + admin refresh; diagram AI copy structure outline; field-options community read + admin panel RLS pin.**
+
+### Added
+
+- **Daily login coins (no rollover)** — Check-in credits go to `thinking_coin_wallets.daily_balance`; unused daily coins expire at Beijing midnight (lazy on read/credit/debit); spend daily bucket first then persistent balance (`wallet_service.py`, rev `0093`).
+- **Showcase cover job manifesto** — Cold Postgres `case_square_cover_jobs` (queued/running/succeeded/failed + attempts); admin media status without per-row COS HEAD; Celery retries with exponential backoff (`job_manifest.py`, rev `0092`).
+- **Admin cover refresh** — `POST …/admin/showcase/posts/{id}/refresh-cover` force-requeues teaching-design cover/PDF; Refresh status button on moderation + published lists.
+- **Diagram structure outline for AI copy** — Hierarchical outline from library/native specs (and image OCR prompt) so publish AI fills intro/classroom use from real diagram structure (`diagram_structure_outline.py`, `routes_ai.py`).
+- **Admin panel RLS pin** — `resolve_admin_scope_rls` builds AdminScope and pins panel `request.state.rls_context` before the request DB session opens (`dependencies.py`).
+- **Platform quick start guide** — Account menu link to the platform guide (`AppSidebarAccountFooter.vue`).
+
+### Fixed
+
+- **Showcase field options meta** — Authenticated community SELECT on `case_square_field_options` so publish/filter meta is not empty (rev `0094`; greenfield policy also corrected in rev `0085`).
+
+### Changed
+
+- **Showcase publish AI / gallery** — Stronger diagram-copy orchestration (image / library / `.mg`); case vs template gallery hints; OCR accepts custom prompts for diagram vision.
+- **Cover pipeline** — Enqueue/generate/tasks honor manifesto cold status; backfill skips cold-`succeeded`; media_status prefers job row.
+- **Locale** — Daily-expire / remaining balance, admin refresh-status, platform guide, showcase publish hints across locale bundles.
+- **Docs** — Thinking-coins daily bucket; admin-scope RLS Q1 done; Showcase README manifesto/retry/refresh.
+- **CrowdSec** — Refresh committed blocklist baseline.
+
+### Tests
+
+- **Backend** — Cover job manifesto, daily expire, field-options wiring, admin-scope RLS resolve, diagram AI copy / media status / enqueue / covers updates.
+- **Frontend** — Showcase diagram action + copy AI specs; thinking-coin sync payload field.
+
 ## [5.167.0] - 2026-08-05
 
 > **Showcase moderation media pipeline status; fix Showcase .mg reader fit (init + fullscreen).**

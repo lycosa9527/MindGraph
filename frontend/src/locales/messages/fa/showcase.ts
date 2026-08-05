@@ -86,6 +86,8 @@ export default {
   "showcase.publishModal.diagramImageHint": ".png / .jpg / .jpeg / .webp / .gif",
   "showcase.publishModal.uploadImages": "Upload images (multiple)",
   "showcase.publishModal.galleryHint": "Diagram cases and templates can include multiple images and saved diagrams, up to {max} items",
+  "showcase.publishModal.galleryHintCase": "Add multiple images and saved diagrams, up to {max} items",
+  "showcase.publishModal.galleryHintTemplate": "Upload a .mg file and pick saved diagrams, up to {max} items",
   "showcase.publishModal.galleryCount": "{count}/{max} items added",
   "showcase.publishModal.galleryImageItem": "Image: {name}",
   "showcase.publishModal.galleryDiagramItem": "Diagram: {name}",
