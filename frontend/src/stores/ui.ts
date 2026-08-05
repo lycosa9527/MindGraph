@@ -35,12 +35,35 @@ const UI_LANGUAGE_EXPLICIT_KEY = 'mindgraph_ui_language_explicit'
 const BROWSER_LOCALE_HINT_KEY = 'mindgraph_browser_locale_hint_dismissed'
 const UI_VERSION_KEY = 'mindgraph_ui_version'
 export const MINDMAP_CANVAS_MODE_KEY = 'mindgraph_mindmap_canvas_mode'
+/**
+ * One-time stamp: browsers that still had Classic stored (pre–v2-default era, or
+ * early defaults) are moved onto New canvas. After this runs, Classic is honored
+ * only when the user explicitly selects it in Language settings.
+ */
+export const MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY =
+  'mindgraph_mindmap_canvas_v2_default_migrated'
 export const E_BLACKBOARD_OPTIMIZE_KEY = 'mindgraph_e_blackboard_optimize'
 
 const VALID_MINDMAP_CANVAS_MODES: ReadonlySet<string> = new Set(['legacy', 'v2'])
 
 function isValidMindMapCanvasMode(value: string | null): value is MindMapCanvasMode {
   return value !== null && VALID_MINDMAP_CANVAS_MODES.has(value)
+}
+
+type CanvasModeStorage = Pick<Storage, 'getItem' | 'setItem'>
+
+/**
+ * Force New (v2) canvas once per browser so Classic is opt-in, not sticky from
+ * older defaults. Idempotent via {@link MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY}.
+ */
+export function ensureMindMapCanvasV2DefaultMigration(
+  storage: CanvasModeStorage = localStorage
+): void {
+  if (storage.getItem(MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY) === '1') {
+    return
+  }
+  storage.setItem(MINDMAP_CANVAS_MODE_KEY, 'v2')
+  storage.setItem(MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY, '1')
 }
 
 const VALID_UI_VERSIONS: ReadonlySet<string> = new Set(['chinese', 'international'])
@@ -251,9 +274,11 @@ export const useUIStore = defineStore('ui', () => {
       uiVersion.value = detectDefaultUiVersion()
     }
 
+    // Move every browser onto New canvas once; Classic only after an explicit choice.
+    ensureMindMapCanvasV2DefaultMigration()
     const storedMindMapCanvasMode = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
-    // Restore explicit choice; otherwise default to new (v2) layout.
-    // Flag sync may force legacy if FEATURE_MINDMAP_V2_CANVAS is disabled.
+    // Restore post-migration choice; otherwise default to new (v2) layout.
+    // Flag sync may force Classic in-memory only when FEATURE_MINDMAP_V2_CANVAS is off.
     if (isValidMindMapCanvasMode(storedMindMapCanvasMode)) {
       mindMapCanvasMode.value = storedMindMapCanvasMode
     } else {
@@ -392,11 +417,28 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.setItem(UI_VERSION_KEY, version)
   }
 
-  function setMindMapCanvasMode(mode: MindMapCanvasMode): void {
+  /**
+   * @param persist - When false, update in-memory mode only (used when the v2
+   * feature flag is off so Classic is forced at runtime without overwriting the
+   * user's saved New-canvas preference).
+   */
+  function setMindMapCanvasMode(
+    mode: MindMapCanvasMode,
+    options: { persist?: boolean } = {}
+  ): void {
+    const persist = options.persist !== false
     const previousMode = mindMapCanvasMode.value
-    if (previousMode === mode) return
+    if (previousMode === mode) {
+      // Runtime-only Classic can leave storage on v2; still persist an explicit opt-in.
+      if (persist && localStorage.getItem(MINDMAP_CANVAS_MODE_KEY) !== mode) {
+        localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, mode)
+      }
+      return
+    }
     mindMapCanvasMode.value = mode
-    localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, mode)
+    if (persist) {
+      localStorage.setItem(MINDMAP_CANVAS_MODE_KEY, mode)
+    }
     eventBus.emit('mindmap:canvas_mode_changed', { previousMode, newMode: mode })
   }
 
@@ -559,6 +601,7 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.removeItem(BROWSER_LOCALE_HINT_KEY)
     localStorage.removeItem(UI_VERSION_KEY)
     localStorage.removeItem(MINDMAP_CANVAS_MODE_KEY)
+    localStorage.removeItem(MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY)
     localStorage.removeItem(E_BLACKBOARD_OPTIMIZE_KEY)
     applyTheme()
     initFromStorage()

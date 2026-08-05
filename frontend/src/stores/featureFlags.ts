@@ -12,13 +12,15 @@ import { apiRequest } from '@/utils/apiClient'
 function syncMindMapCanvasModeForFlags(data: FeatureFlagsResponse): void {
   const uiStore = useUIStore()
   if (!data.feature_mindmap_v2_canvas) {
+    // Runtime-only Classic: do not persist, or re-enabling the flag would stick
+    // everyone on Classic after the v2-default migration.
     if (uiStore.mindMapCanvasMode === 'v2') {
-      uiStore.setMindMapCanvasMode('legacy')
+      uiStore.setMindMapCanvasMode('legacy', { persist: false })
     }
     return
   }
   const stored = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
-  // Explicit classic stays classic; missing/invalid/v2 → new layout default.
+  // Explicit Classic (after v2-default migration) stays Classic; else New canvas.
   if (stored === 'legacy') {
     uiStore.setMindMapCanvasMode('legacy')
     return

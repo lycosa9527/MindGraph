@@ -18,12 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Mind map New canvas default** — One-time localStorage migration puts all browsers on New canvas; Classic is opt-in in Language settings. Feature-flag-off Classic is runtime-only so it cannot sticky-overwrite the New default (`ui.ts`, `featureFlags.ts`, `LanguageSettingsModal.vue`).
 - **Docs** — README version badge, Showcase / Maite routes and links, thinking-coins daily bucket note, mind-map v2 / presentation spotlight wording.
 
 ### Tests
 
 - **Backend** — Showcase staff→panel capability mapping; community panel / thinking-coins system RLS migrations; public static gzip middleware.
-- **Frontend** — Outline tree matches layout clockwise order after `loadMindMapSpec`; slides deep traversal left bottom→top.
+- **Frontend** — Outline tree matches layout clockwise order after `loadMindMapSpec`; slides deep traversal left bottom→top; mind-map v2-default migration + persist-flag coverage; separation fixture includes selection/preserve/bulk refs for reload paths.
 
 ## [5.168.1] - 2026-08-05
 

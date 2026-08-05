@@ -183,8 +183,6 @@ async function save(): Promise<void> {
     if (prevMindMapMode !== draftMindMapCanvasMode.value) {
       notify.info(t('settings.language.mindMapCanvasRefreshHint'))
     }
-  } else if (uiStore.mindMapCanvasMode === 'v2') {
-    uiStore.setMindMapCanvasMode('legacy')
   }
   uiStore.setUiLanguageExplicit(true)
   visible.value = false
@@ -314,21 +312,21 @@ function onClose(): void {
             type="button"
             role="radio"
             class="language-settings-canvas-segment"
-            :class="{ 'is-active': draftMindMapCanvasMode === 'legacy' }"
-            :aria-checked="draftMindMapCanvasMode === 'legacy'"
-            @click="draftMindMapCanvasMode = 'legacy'"
-          >
-            {{ t('settings.language.mindMapCanvasLegacy') }}
-          </button>
-          <button
-            type="button"
-            role="radio"
-            class="language-settings-canvas-segment"
             :class="{ 'is-active': draftMindMapCanvasMode === 'v2' }"
             :aria-checked="draftMindMapCanvasMode === 'v2'"
             @click="draftMindMapCanvasMode = 'v2'"
           >
             {{ t('settings.language.mindMapCanvasV2') }}
+          </button>
+          <button
+            type="button"
+            role="radio"
+            class="language-settings-canvas-segment"
+            :class="{ 'is-active': draftMindMapCanvasMode === 'legacy' }"
+            :aria-checked="draftMindMapCanvasMode === 'legacy'"
+            @click="draftMindMapCanvasMode = 'legacy'"
+          >
+            {{ t('settings.language.mindMapCanvasLegacy') }}
           </button>
         </div>
         <p class="language-settings-swiss__hint">
