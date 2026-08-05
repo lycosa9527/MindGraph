@@ -4,6 +4,8 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
+import { ElTable } from 'element-plus'
+
 import AdminMindBotConfigDialog from '@/components/admin/AdminMindBotConfigDialog.vue'
 import type {
   MindbotConfigRow,
@@ -284,7 +286,7 @@ defineExpose({
             {{ t('admin.mindbot.emptyState') }}
           </p>
         </div>
-        <el-table
+        <ElTable
           v-else-if="configs.length > 0"
           :data="configs"
           stripe
@@ -349,12 +351,12 @@ defineExpose({
                   size="small"
                   plain
                   class="mindbot-pill mindbot-pill--table-edit"
-                  @click="openEdit(row)"
+                  @click="openEdit(row as MindbotConfigRow)"
                 >
                   {{ t('admin.mindbot.edit') }}
                 </el-button>
                 <el-tooltip
-                  :disabled="canMoveBot(row)"
+                  :disabled="canMoveBot(row as MindbotConfigRow)"
                   :content="t('admin.mindbot.moveNoTargets')"
                   placement="top"
                 >
@@ -364,8 +366,8 @@ defineExpose({
                       size="small"
                       plain
                       class="mindbot-pill mindbot-pill--table-move"
-                      :disabled="!canMoveBot(row)"
-                      @click="openMoveDialog(row)"
+                  :disabled="!canMoveBot(row as MindbotConfigRow)"
+                  @click="openMoveDialog(row as MindbotConfigRow)"
                     >
                       {{ t('admin.mindbot.move') }}
                     </el-button>
@@ -376,14 +378,14 @@ defineExpose({
                   size="small"
                   plain
                   class="mindbot-pill mindbot-pill--table-delete"
-                  @click="removeRow(row)"
+                  @click="removeRow(row as MindbotConfigRow)"
                 >
                   {{ t('admin.mindbot.delete') }}
                 </el-button>
               </div>
             </template>
           </el-table-column>
-        </el-table>
+        </ElTable>
       </el-card>
     </template>
 
@@ -418,7 +420,7 @@ defineExpose({
               {{ t('admin.mindbot.managerNoConfig') }}
             </p>
           </div>
-          <el-table
+          <ElTable
             v-else-if="configs.length > 0"
             :data="configs"
             stripe
@@ -480,7 +482,7 @@ defineExpose({
                 </el-tag>
               </template>
             </el-table-column>
-          </el-table>
+          </ElTable>
         </template>
       </el-card>
     </template>

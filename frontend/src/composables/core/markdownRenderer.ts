@@ -58,6 +58,9 @@ const md = new MarkdownIt({
   },
 })
 
+// markdown-it v15 / linkify-it: fuzzy links (example.com) are off by default.
+md.linkify.set({ fuzzyLink: true })
+
 md.use(resolveMarkdownItKatexPlugin(), { throwOnError: false, katex })
 
 export function renderRichMarkdownHtmlImpl(content: string): string {

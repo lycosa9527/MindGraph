@@ -4,6 +4,8 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
+import { ElTable } from 'element-plus'
+
 import { useLanguage, useNotifications } from '@/composables'
 import {
   deleteMindMateExportDumpIncoming,
@@ -301,7 +303,7 @@ onMounted(() => {
       >
         {{ t('admin.mindmateExport.dumps.incomingEmpty') }}
       </p>
-      <el-table
+      <ElTable
         v-else
         :data="incomingRows"
         size="small"
@@ -338,20 +340,20 @@ onMounted(() => {
               link
               type="primary"
               :disabled="importing || !!row.peek_error"
-              @click="importOne(row)"
+              @click="importOne(row as MindMateExportIncomingDumpRow)"
             >
               {{ t('admin.mindmateExport.dumps.importOne') }}
             </el-button>
             <el-button
               link
               type="danger"
-              @click="removeIncoming(row)"
+              @click="removeIncoming(row as MindMateExportIncomingDumpRow)"
             >
               {{ t('admin.mindmateExport.dumps.delete') }}
             </el-button>
           </template>
         </el-table-column>
-      </el-table>
+      </ElTable>
     </section>
 
     <section
@@ -371,7 +373,7 @@ onMounted(() => {
       >
         {{ t('admin.mindmateExport.dumps.snapshotsEmpty') }}
       </p>
-      <el-table
+      <ElTable
         v-else
         :data="block.rows"
         size="small"
@@ -388,7 +390,7 @@ onMounted(() => {
         >
           <template #default="{ row }">
             <el-tag
-              :type="statusTagType(row)"
+              :type="statusTagType(row as MindMateExportDumpSnapshotRow)"
               size="small"
             >
               {{ row.status }}
@@ -409,13 +411,13 @@ onMounted(() => {
             <el-button
               link
               type="danger"
-              @click="removeSnapshot(block.label, row)"
+              @click="removeSnapshot(block.label, row as MindMateExportDumpSnapshotRow)"
             >
               {{ t('admin.mindmateExport.dumps.delete') }}
             </el-button>
           </template>
         </el-table-column>
-      </el-table>
+      </ElTable>
     </section>
   </div>
 </template>

@@ -122,7 +122,7 @@ const getVersionInfo = (dataset: Benchmark) => {
         show-overflow-tooltip
       >
         <template #default="{ row }">
-          <span class="text-stone-600 text-sm truncate">{{ getVersionInfo(row) }}</span>
+          <span class="text-stone-600 text-sm truncate">{{ getVersionInfo(row as Benchmark) }}</span>
         </template>
       </ElTableColumn>
     </ElTable>

@@ -54,13 +54,14 @@ async function renderPdfCanvas(
   watermarkText?: string
 ): Promise<void> {
   ensurePdfWorker()
-  const loadingTask = getDocument({ data, isEvalSupported: false, disableAutoFetch: true })
+  // pdfjs 6: isEvalSupported removed; prefer canvas over canvasContext-only render.
+  const loadingTask = getDocument({ data, disableAutoFetch: true })
   if (signal) {
-    signal.addEventListener('abort', () => loadingTask.destroy(), { once: true })
+    signal.addEventListener('abort', () => void loadingTask.destroy(), { once: true })
   }
   const pdf = await loadingTask.promise
   if (signal?.aborted) {
-    pdf.destroy()
+    await pdf.cleanup()
     return
   }
 
@@ -81,7 +82,7 @@ async function renderPdfCanvas(
     if (!context) continue
     canvas.width = Math.floor(renderViewport.width)
     canvas.height = Math.floor(renderViewport.height)
-    await page.render({ canvasContext: context, viewport: renderViewport }).promise
+    await page.render({ canvas, canvasContext: context, viewport: renderViewport }).promise
 
     const pageWrap = document.createElement('div')
     pageWrap.className =
@@ -94,7 +95,7 @@ async function renderPdfCanvas(
     }
     container.appendChild(pageWrap)
   }
-  pdf.destroy()
+  await pdf.cleanup()
   if (watermarkText?.trim()) {
     refreshWatermarkDensity(container, watermarkText.trim())
   }

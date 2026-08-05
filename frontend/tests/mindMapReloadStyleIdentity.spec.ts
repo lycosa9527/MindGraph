@@ -2,8 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
 import {
+  applyMindMapStylesByPath,
+  buildMindMapStyleForNewBranchNode,
+  collectMindMapStylesByPath,
   mergeMindMapReloadStyles,
   mindMapNodePathKey,
+  resolveMindMapLiveSiblingStyle,
 } from '@/stores/diagram/mindMapStylePreservation'
 import { remapMindMapNodeIdAfterReload } from '@/stores/diagram/mindMapCollapse'
 import { loadMindMapSpec } from '@/stores/specLoader/mindMap'
@@ -132,6 +136,289 @@ describe('mindmap reload style identity', () => {
     // Classic L2 uses underline when depth changes.
     expect(merged[moved!.id]?.nodeShape).toBe('underline')
     expect(moved!.style?.nodeShape).toBe('underline')
+  })
+
+  it('new same-row path inherits sibling colors and shape (not parent)', () => {
+    const nodes: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic' },
+      {
+        id: 'branch-r-1-0',
+        text: 'Existing',
+        type: 'branch',
+        style: {
+          backgroundColor: '#dbeafe',
+          borderColor: '#0f766e',
+          textColor: '#134e4a',
+          nodeShape: 'oval',
+        },
+      },
+      { id: 'branch-r-1-1', text: '新分支', type: 'branch' },
+    ]
+    const connections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'branch-r-1-0' },
+      { id: 'c1', source: 'topic', target: 'branch-r-1-1' },
+    ]
+    const stylesByPath = collectMindMapStylesByPath(nodes.slice(0, 2), connections)
+    const merged = applyMindMapStylesByPath(
+      nodes,
+      connections,
+      stylesByPath,
+      'vibrantBlue',
+      'bubble'
+    )
+
+    expect(merged['branch-r-1-1']?.backgroundColor).toBe('#dbeafe')
+    expect(merged['branch-r-1-1']?.borderColor).toBe('#0f766e')
+    expect(merged['branch-r-1-1']?.textColor).toBe('#134e4a')
+    expect(merged['branch-r-1-1']?.nodeShape).toBe('oval')
+  })
+
+  it('insert-above (index 0) still inherits from the later sibling', () => {
+    const nodes: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic' },
+      { id: 'branch-r-1-0', text: '新分支', type: 'branch' },
+      {
+        id: 'branch-r-1-1',
+        text: 'Existing',
+        type: 'branch',
+        style: {
+          backgroundColor: '#f3e8ff',
+          borderColor: '#6366f1',
+          nodeShape: 'rounded',
+        },
+      },
+    ]
+    const connections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'branch-r-1-0' },
+      { id: 'c1', source: 'topic', target: 'branch-r-1-1' },
+    ]
+    // Only the existing sibling has a preserved path style.
+    const stylesByPath = new Map<string, NodeStyle>([
+      [
+        'r/1',
+        {
+          backgroundColor: '#f3e8ff',
+          borderColor: '#6366f1',
+          nodeShape: 'rounded',
+        },
+      ],
+    ])
+    const merged = applyMindMapStylesByPath(
+      nodes,
+      connections,
+      stylesByPath,
+      'vibrantBlue',
+      'classic'
+    )
+
+    expect(merged['branch-r-1-0']?.backgroundColor).toBe('#f3e8ff')
+    expect(merged['branch-r-1-0']?.nodeShape).toBe('rounded')
+  })
+
+  it('buildMindMapStyleForNewBranchNode matches live sibling style', () => {
+    const nodes: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic' },
+      {
+        id: 'branch-r-1-0',
+        text: 'A',
+        type: 'branch',
+        style: {
+          backgroundColor: '#e2e8f0',
+          borderColor: '#64748b',
+          textColor: '#334155',
+          nodeShape: 'oval',
+        },
+      },
+      { id: 'branch-r-1-2', text: '新分支', type: 'branch' },
+    ]
+    const connections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'branch-r-1-0' },
+      { id: 'c1', source: 'topic', target: 'branch-r-1-2' },
+    ]
+    const siblingStyle = resolveMindMapLiveSiblingStyle(
+      'branch-r-1-2',
+      nodes,
+      connections,
+      undefined
+    )
+    expect(siblingStyle?.backgroundColor).toBe('#e2e8f0')
+
+    const seeded = buildMindMapStyleForNewBranchNode(
+      { id: 'branch-r-1-2', type: 'branch' },
+      connections,
+      {
+        themeId: 'morandi',
+        diagramStyleId: 'soft',
+        siblingStyle,
+      }
+    )
+    expect(seeded.backgroundColor).toBe('#e2e8f0')
+    expect(seeded.borderColor).toBe('#64748b')
+    expect(seeded.nodeShape).toBe('oval')
+  })
+
+  it('live sibling style ignores opposite-side L1 under topic', () => {
+    const nodes: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic' },
+      {
+        id: 'branch-r-1-0',
+        text: 'Right',
+        type: 'branch',
+        style: {
+          backgroundColor: '#ff0000',
+          borderColor: '#990000',
+          nodeShape: 'oval',
+        },
+      },
+      { id: 'branch-l-1-0', text: 'Left new', type: 'branch' },
+    ]
+    // Loader order: rights then lefts — left's "earlier" topic child is the right branch.
+    const connections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'branch-r-1-0' },
+      { id: 'c1', source: 'topic', target: 'branch-l-1-0' },
+    ]
+    const siblingStyle = resolveMindMapLiveSiblingStyle(
+      'branch-l-1-0',
+      nodes,
+      connections,
+      undefined
+    )
+    expect(siblingStyle).toBeUndefined()
+
+    const seeded = buildMindMapStyleForNewBranchNode(
+      { id: 'branch-l-1-0', type: 'branch' },
+      connections,
+      {
+        themeId: 'vibrantBlue',
+        diagramStyleId: 'bubble',
+        siblingStyle,
+      }
+    )
+    expect(seeded.backgroundColor).not.toBe('#ff0000')
+    expect(seeded.nodeShape).toBe('oval') // bubble L1 preset, not copied from right
+  })
+
+  it('rainbow new L1 keeps its own accent (does not copy sibling fill)', () => {
+    const nodes: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic' },
+      {
+        id: 'branch-r-1-0',
+        text: 'A',
+        type: 'branch',
+        style: {
+          backgroundColor: '#FA8055',
+          borderColor: '#d96c48',
+          textColor: '#ffffff',
+          nodeShape: 'rounded',
+        },
+      },
+      { id: 'branch-r-1-1', text: 'B', type: 'branch' },
+    ]
+    const connections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'branch-r-1-0' },
+      { id: 'c1', source: 'topic', target: 'branch-r-1-1' },
+    ]
+    const stylesByPath = collectMindMapStylesByPath(nodes.slice(0, 2), connections)
+    const merged = applyMindMapStylesByPath(
+      nodes,
+      connections,
+      stylesByPath,
+      'rainbow',
+      'classic'
+    )
+    expect(merged['branch-r-1-1']?.backgroundColor).toBeTruthy()
+    expect(merged['branch-r-1-1']?.backgroundColor).not.toBe('#FA8055')
+
+    const seeded = buildMindMapStyleForNewBranchNode(
+      { id: 'branch-r-1-1', type: 'branch' },
+      connections,
+      {
+        themeId: 'rainbow',
+        diagramStyleId: 'classic',
+        siblingStyle: nodes[1].style,
+      }
+    )
+    expect(seeded.backgroundColor).not.toBe('#FA8055')
+  })
+
+  it('first L2 under styled L1 uses depth preset underline (not parent oval)', () => {
+    const before = loadMindMapSpec({
+      topic: '中心主题',
+      rightBranches: [{ text: '父分支', children: [] }],
+      leftBranches: [],
+      preserveLeftRight: true,
+      diagramStyleId: 'bubble',
+    })
+    const parent = before.nodes.find((n) => n.text === '父分支')
+    expect(parent).toBeTruthy()
+    parent!.style = {
+      backgroundColor: '#dbeafe',
+      borderColor: '#0f766e',
+      nodeShape: 'oval',
+    }
+    const existingStyles: Record<string, NodeStyle> = {
+      [parent!.id]: { ...parent!.style! },
+    }
+
+    const after = loadMindMapSpec({
+      topic: '中心主题',
+      rightBranches: [{ text: '父分支', children: [{ text: '子项' }] }],
+      leftBranches: [],
+      preserveLeftRight: true,
+      diagramStyleId: 'bubble',
+    })
+    const merged = mergeMindMapReloadStyles(
+      before.nodes,
+      before.connections,
+      after.nodes,
+      after.connections,
+      existingStyles,
+      'vibrantBlue',
+      'bubble',
+      remapMindMapNodeIdAfterReload
+    )
+    const child = after.nodes.find((n) => n.text === '子项')
+    expect(child).toBeTruthy()
+    expect(merged[child!.id]?.nodeShape).toBe('underline')
+    expect(merged[child!.id]?.backgroundColor).not.toBe('#dbeafe')
+  })
+
+  it('reload new sibling keeps sibling shape over loader depth stub', () => {
+    const nodes: DiagramNode[] = [
+      { id: 'topic', text: 'T', type: 'topic' },
+      {
+        id: 'branch-r-1-0',
+        text: 'A',
+        type: 'branch',
+        style: {
+          backgroundColor: '#e2e8f0',
+          borderColor: '#64748b',
+          nodeShape: 'oval',
+        },
+      },
+      // Loader stub: classic L1 would be rounded
+      {
+        id: 'branch-r-1-1',
+        text: '新分支',
+        type: 'branch',
+        style: { nodeShape: 'rounded' },
+      },
+    ]
+    const connections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'branch-r-1-0' },
+      { id: 'c1', source: 'topic', target: 'branch-r-1-1' },
+    ]
+    const stylesByPath = collectMindMapStylesByPath(nodes.slice(0, 2), connections)
+    const merged = applyMindMapStylesByPath(
+      nodes,
+      connections,
+      stylesByPath,
+      'vibrantBlue',
+      'classic'
+    )
+    expect(merged['branch-r-1-1']?.nodeShape).toBe('oval')
+    expect(merged['branch-r-1-1']?.backgroundColor).toBe('#e2e8f0')
+    expect(nodes.find((n) => n.id === 'branch-r-1-1')?.style?.nodeShape).toBe('oval')
   })
 
   it('path-keyed merge without remapper keeps styles on slots', () => {

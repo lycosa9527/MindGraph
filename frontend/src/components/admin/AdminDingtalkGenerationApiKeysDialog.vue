@@ -5,7 +5,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElTable, ElTableColumn } from 'element-plus'
 
 import { DocumentCopy, Plus } from '@element-plus/icons-vue'
 
@@ -242,7 +242,7 @@ function cancelCreate(): void {
           v-loading="listLoading"
           class="api-keys-data-panel api-keys-floating-load"
         >
-          <el-table
+          <ElTable
             :data="rows"
             class="api-keys-table w-full"
             :empty-text="t('admin.noData')"
@@ -330,14 +330,14 @@ function cancelCreate(): void {
                   <el-button
                     type="danger"
                     link
-                    @click="confirmDelete(row)"
+                    @click="confirmDelete(row as AdminApiKeyRow)"
                   >
                     {{ t('admin.delete') }}
                   </el-button>
                 </div>
               </template>
             </el-table-column>
-          </el-table>
+          </ElTable>
         </div>
       </div>
     </div>

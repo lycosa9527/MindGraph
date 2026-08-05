@@ -6,6 +6,7 @@ import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { Loading, UserFilled } from '@element-plus/icons-vue'
+import { ElTable } from 'element-plus'
 
 import AdminRoleAddMemberDialog from '@/components/admin/AdminRoleAddMemberDialog.vue'
 import { useLanguage } from '@/composables'
@@ -15,6 +16,7 @@ import {
   isRoleControlTab,
   ROLE_CONTROL_TABS,
 } from '@/composables/admin/adminRoleControlNav'
+import type { RoleMemberRow } from '@/composables/admin/useAdminRoleControl'
 import { useAdminEventBus } from '@/composables/admin/useAdminEventBus'
 import { useAdminPanelStore } from '@/stores'
 
@@ -163,7 +165,7 @@ onUnmounted(() => {
       </p>
     </div>
 
-    <el-table
+    <ElTable
       v-else
       :data="activeRows"
       class="admin-swiss-table w-full"
@@ -200,7 +202,7 @@ onUnmounted(() => {
         width="120"
       >
         <template #default="{ row }">
-          {{ roleLabel(row.role) }}
+          {{ 'role' in row ? roleLabel(row.role) : '—' }}
         </template>
       </el-table-column>
       <el-table-column
@@ -209,7 +211,7 @@ onUnmounted(() => {
         width="200"
       >
         <template #default="{ row }">
-          {{ isEnvRow(row) ? '—' : row.created_at || '—' }}
+          {{ isEnvRow(row as RoleMemberRow) ? '—' : row.created_at || '—' }}
         </template>
       </el-table-column>
       <el-table-column
@@ -219,7 +221,7 @@ onUnmounted(() => {
         width="120"
       >
         <template #default="{ row }">
-          {{ isEnvRow(row) ? t('admin.sourceEnv') : t('admin.sourceDatabase') }}
+          {{ isEnvRow(row as RoleMemberRow) ? t('admin.sourceEnv') : t('admin.sourceDatabase') }}
         </template>
       </el-table-column>
       <el-table-column
@@ -228,17 +230,17 @@ onUnmounted(() => {
       >
         <template #default="{ row }">
           <el-button
-            v-if="canEdit && !isEnvRow(row)"
+            v-if="canEdit && !isEnvRow(row as RoleMemberRow)"
             type="danger"
             link
             size="small"
             :loading="revokingId === row.id"
-            @click="revokeMember(row)"
+            @click="revokeMember(row as RoleMemberRow)"
           >
             {{ t('admin.revokeRole') }}
           </el-button>
           <span
-            v-else-if="isEnvRow(row)"
+            v-else-if="isEnvRow(row as RoleMemberRow)"
             class="admin-roles-tab__env-note"
           >
             {{ t('admin.envAdminsNote') }}
@@ -251,7 +253,7 @@ onUnmounted(() => {
           </span>
         </template>
       </el-table-column>
-    </el-table>
+    </ElTable>
 
     <AdminRoleAddMemberDialog
       v-model:visible="addModalVisible"

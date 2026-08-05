@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElTable } from 'element-plus'
 
 import { FolderOpened, Loading } from '@element-plus/icons-vue'
 
@@ -455,7 +455,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
     </div>
 
     <!-- Books table -->
-    <el-table
+    <ElTable
       v-else-if="scanData && scanData.total > 0"
       :data="sortedBooks(scanData.books)"
       :stripe="true"
@@ -502,7 +502,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
             </el-tooltip>
             <div class="min-w-0">
               <p class="text-[13px] font-medium text-stone-800 m-0 truncate">
-                {{ displayLabel(row) }}
+                {{ displayLabel(row as BookEntry) }}
               </p>
               <p
                 v-if="row.title && row.title !== row.folder_name"
@@ -536,9 +536,9 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           <div class="inline-flex items-center gap-1.5">
             <span
               class="status-dot"
-              :class="STATUS_DOT_CLASS[getStatus(row)]"
+              :class="STATUS_DOT_CLASS[getStatus(row as BookEntry)]"
             />
-            <span class="text-xs text-stone-500">{{ statusLabel(row) }}</span>
+            <span class="text-xs text-stone-500">{{ statusLabel(row as BookEntry) }}</span>
           </div>
         </template>
       </el-table-column>
@@ -556,7 +556,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
             :loading="row.document_id !== null && togglingIds.has(row.document_id)"
             :disabled="!row.exists_on_disk"
             size="small"
-            @change="toggleVisibility(row)"
+            @change="toggleVisibility(row as BookEntry)"
           />
           <span
             v-else
@@ -580,7 +580,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
             size="small"
             :loading="registeringFolders.has(row.folder_name)"
             :disabled="!row.exists_on_disk"
-            @click="registerBook(row)"
+            @click="registerBook(row as BookEntry)"
           >
             {{ t('admin.library.register') }}
           </el-button>
@@ -602,14 +602,14 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
               <el-dropdown-menu>
                 <el-dropdown-item
                   :disabled="registeringFolders.has(row.folder_name)"
-                  @click="registerBook(row)"
+                  @click="registerBook(row as BookEntry)"
                 >
                   <el-icon><Refresh /></el-icon>
                   {{ t('admin.library.reRegister') }}
                 </el-dropdown-item>
                 <el-dropdown-item
                   :disabled="!row.exists_on_disk || generatingCoverIds.has(row.document_id)"
-                  @click="generateCover(row)"
+                  @click="generateCover(row as BookEntry)"
                 >
                   <el-icon><Picture /></el-icon>
                   {{ t('admin.library.generateCover') }}
@@ -617,7 +617,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
                 <el-dropdown-item
                   divided
                   :disabled="!row.exists_on_disk"
-                  @click="openRenameDialog(row)"
+                  @click="openRenameDialog(row as BookEntry)"
                 >
                   <el-icon><EditPen /></el-icon>
                   {{ t('admin.library.renamePages') }}
@@ -626,7 +626,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
                   divided
                   class="text-red-500"
                   :disabled="deletingIds.has(row.document_id)"
-                  @click="deleteBook(row, row.exists_on_disk)"
+                  @click="deleteBook(row as BookEntry, row.exists_on_disk)"
                 >
                   <el-icon><Delete /></el-icon>
                   {{
@@ -640,7 +640,7 @@ onAdminEvent('admin:refresh_requested', ({ domain }) => {
           </el-dropdown>
         </template>
       </el-table-column>
-    </el-table>
+    </ElTable>
 
     <!-- Rename Pages Dialog -->
     <el-dialog

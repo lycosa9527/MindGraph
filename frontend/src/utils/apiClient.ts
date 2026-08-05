@@ -757,9 +757,12 @@ export interface ShowcasePost {
   media_status?:
     | 'awaiting_upload'
     | 'converting_preview'
+    | 'generating_cover'
     | 'preview_ready'
     | 'cover_ready'
     | 'ready'
+    | 'preview_failed'
+    | 'cover_failed'
     | 'conversion_failed'
   /** Cold cover/PDF job manifesto summary (admin tooltips). */
   cover_job?: {

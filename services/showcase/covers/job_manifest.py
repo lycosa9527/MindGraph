@@ -153,6 +153,17 @@ async def get_cover_job(db: AsyncSession, post_id: str) -> Optional[ShowcaseCove
     return (await db.execute(select(ShowcaseCoverJob).where(ShowcaseCoverJob.post_id == post_id))).scalar_one_or_none()
 
 
+def _manifesto_system_context() -> RlsContext:
+    """System mode for cover-job manifesto writes/reads in workers.
+
+    WRITE policy on ``case_square_cover_jobs`` requires an EXISTS on
+    ``case_square_posts``. Using system mode avoids coupling worker
+    persistence to author-scoped post SELECT (and survives future
+    tightening of post read policies).
+    """
+    return RlsContext.system_bootstrap()
+
+
 def get_cover_job_snapshot_sync(
     *,
     post_id: str,
@@ -160,7 +171,9 @@ def get_cover_job_snapshot_sync(
     organization_id: Optional[int] = None,
 ) -> Optional[dict[str, Any]]:
     """Sync load of job fields for Celery helpers (detached-safe)."""
-    with rls_sync_session(RlsContext.for_celery_user(user_id, organization_id)) as db:
+    # user_id / organization_id kept for call-site compat; manifesto uses system RLS.
+    _ = (user_id, organization_id)
+    with rls_sync_session(_manifesto_system_context()) as db:
         job = db.execute(select(ShowcaseCoverJob).where(ShowcaseCoverJob.post_id == post_id)).scalar_one_or_none()
         if job is None:
             return None
@@ -280,7 +293,7 @@ def mark_cover_job_failed_sync(
 ) -> None:
     """Sync fail update for Celery time-limit / retry paths."""
     try:
-        with rls_sync_session(RlsContext.for_celery_user(user_id, organization_id)) as db:
+        with rls_sync_session(_manifesto_system_context()) as db:
             job = db.execute(select(ShowcaseCoverJob).where(ShowcaseCoverJob.post_id == post_id)).scalar_one_or_none()
             if job is None:
                 job = ShowcaseCoverJob(
@@ -305,8 +318,10 @@ def mark_cover_job_failed_sync(
             db.commit()
     except DATABASE_ERRORS as exc:
         logger.warning(
-            "[ShowcaseCoverJob] sync fail mark post=%s: %s",
+            "[ShowcaseCoverJob] sync fail mark post=%s user=%s org=%s: %s",
             post_id[:8],
+            user_id,
+            organization_id,
             exc,
         )
 
@@ -322,7 +337,7 @@ def mark_cover_job_queued_sync(
 ) -> bool:
     """Sync queued upsert. Returns False when skipped (cold succeeded)."""
     try:
-        with rls_sync_session(RlsContext.for_celery_user(user_id, organization_id)) as db:
+        with rls_sync_session(_manifesto_system_context()) as db:
             job = db.execute(select(ShowcaseCoverJob).where(ShowcaseCoverJob.post_id == post_id)).scalar_one_or_none()
             if job is not None and not force and job_is_succeeded(job.status) and job.attachment_key == attachment_key:
                 return False
@@ -349,8 +364,10 @@ def mark_cover_job_queued_sync(
             return True
     except DATABASE_ERRORS as exc:
         logger.warning(
-            "[ShowcaseCoverJob] sync queue mark post=%s: %s",
+            "[ShowcaseCoverJob] sync queue mark post=%s user=%s org=%s: %s",
             post_id[:8],
+            user_id,
+            organization_id,
             exc,
         )
         return True

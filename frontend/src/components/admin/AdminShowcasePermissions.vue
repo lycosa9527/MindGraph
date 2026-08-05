@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { useDebounceFn } from '@vueuse/core'
+import { ElTable } from 'element-plus'
 
 import {
   SHOWCASE_STAFF_PERMISSIONS,
@@ -206,7 +207,7 @@ onMounted(() => {
       {{ loadError }}
     </p>
 
-    <el-table
+    <ElTable
       v-if="allRows.length > 0 || isLoading"
       :data="allRows"
       stripe
@@ -280,14 +281,14 @@ onMounted(() => {
             <button
               type="button"
               class="mr-3 text-sm text-gray-700 hover:text-gray-900"
-              @click="openEditDialog(row)"
+              @click="openEditDialog(row as ShowcaseStaffGrantRow)"
             >
               {{ t('admin.edit') }}
             </button>
             <button
               type="button"
               class="text-sm text-red-600 hover:text-red-700"
-              @click="revokeGrant(row)"
+              @click="revokeGrant(row as ShowcaseStaffGrantRow)"
             >
               {{ t('admin.showcase.permissions.revoke') }}
             </button>
@@ -300,7 +301,7 @@ onMounted(() => {
           </span>
         </template>
       </el-table-column>
-    </el-table>
+    </ElTable>
 
     <div
       v-else-if="!isLoading"

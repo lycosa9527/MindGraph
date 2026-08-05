@@ -535,8 +535,9 @@ body {
 
 /*
  * KaTeX sets vertical-align: -<depth>em on .katex-html (inline style) and on internal
- * .strut elements.  These shifts extend the line box asymmetrically downward, which
- * makes formulas appear off-center inside flex-aligned diagram nodes (items-center).
+ * .katex-strut elements (0.18+; formerly .strut).  These shifts extend the line box
+ * asymmetrically downward, which makes formulas appear off-center inside flex-aligned
+ * diagram nodes (items-center).
  *
  * Making .katex an inline-flex container turns .katex-html into a flex item, where
  * vertical-align is ignored.  align-items:center then symmetrically centers the

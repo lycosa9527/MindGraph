@@ -78,6 +78,65 @@ describe('insertMindMapSiblingInPlace', () => {
 
     const rightTargets = result.connections.filter((c) => c.source === 'topic').map((c) => c.target)
     expect(rightTargets).toEqual(['branch-r-1-0', result.newNodeId, 'branch-r-1-1'])
+    expect(result.seededStyle.nodeShape).toBeTruthy()
+    expect(result.nodes.find((n) => n.id === result.newNodeId)?.style).toEqual(result.seededStyle)
+  })
+
+  it('mints style matching same-side sibling (not opposite side)', () => {
+    const nodes: DiagramNode[] = [
+      {
+        id: 'topic',
+        text: '中心主题',
+        type: 'topic',
+        position: { x: 400, y: 300 },
+        data: { estimatedWidth: 100, estimatedHeight: 40 },
+      },
+      {
+        id: 'branch-r-1-0',
+        text: '右',
+        type: 'branch',
+        position: { x: 560, y: 220 },
+        data: { estimatedWidth: 90, estimatedHeight: 36 },
+        style: {
+          backgroundColor: '#dbeafe',
+          borderColor: '#0f766e',
+          nodeShape: 'oval',
+        },
+      },
+      {
+        id: 'branch-l-1-0',
+        text: '左',
+        type: 'branch',
+        position: { x: 200, y: 220 },
+        data: { estimatedWidth: 90, estimatedHeight: 36 },
+        style: {
+          backgroundColor: '#ff0000',
+          borderColor: '#990000',
+          nodeShape: 'rounded',
+        },
+      },
+    ]
+    const connections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'branch-r-1-0' },
+      { id: 'c1', source: 'topic', target: 'branch-l-1-0' },
+    ]
+    const result = insertMindMapSiblingInPlace(nodes, connections, {
+      anchorNodeId: 'branch-r-1-0',
+      text: '新分支',
+      position: 'below',
+      themeId: 'vibrantBlue',
+      diagramStyleId: 'bubble',
+      nodeStyles: {
+        'branch-r-1-0': nodes[1].style!,
+        'branch-l-1-0': nodes[2].style!,
+      },
+    })
+    expect(result).toBeTruthy()
+    if (!result) throw new Error('expected insert result')
+    expect(result.seededStyle.backgroundColor).toBe('#dbeafe')
+    expect(result.seededStyle.borderColor).toBe('#0f766e')
+    expect(result.seededStyle.nodeShape).toBe('oval')
+    expect(result.seededStyle.backgroundColor).not.toBe('#ff0000')
   })
 
   it('supports after_node_id and insert_index under parent', () => {

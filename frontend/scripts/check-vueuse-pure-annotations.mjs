@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Fail if @vueuse/core dist still contains Rolldown-invalid #__PURE__ annotations.
- * Matches upstream vueuse/vueuse#5388 until a release > 14.3.0 ships the fix.
+ * Upstream vueuse#5388 shipped in 14.4.0; keep this gate so a downgrade cannot regress.
  *
  * Run from frontend/: npm run check:vueuse-pure
  */

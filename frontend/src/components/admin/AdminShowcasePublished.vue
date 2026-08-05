@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
+import { ElTable } from 'element-plus'
+
 import { Award, RefreshCw, Search, Trash2 } from '@lucide/vue'
 import { ElMessageBox } from 'element-plus'
 
@@ -399,7 +401,7 @@ onMounted(() => {
       {{ loadError }}
     </p>
 
-    <el-table
+    <ElTable
       v-if="posts.length > 0 || isLoading"
       :data="posts"
       stripe
@@ -480,10 +482,10 @@ onMounted(() => {
         <template #default="{ row }">
           <span
             class="inline-flex max-w-full items-center rounded-md px-2 py-0.5 text-xs font-medium"
-            :class="mediaStatusChipClass(row)"
-            :title="mediaStatusTitle(row) || undefined"
+            :class="mediaStatusChipClass(row as ShowcasePost)"
+            :title="mediaStatusTitle(row as ShowcasePost) || undefined"
           >
-            {{ mediaStatusLabel(row) }}
+            {{ mediaStatusLabel(row as ShowcasePost) }}
           </span>
         </template>
       </el-table-column>
@@ -521,25 +523,25 @@ onMounted(() => {
             <button
               type="button"
               class="text-sm font-medium text-gray-700"
-              @click.stop="openPost(row)"
+              @click.stop="openPost(row as ShowcasePost)"
             >
               {{ t('admin.showcase.review') }}
             </button>
             <button
-              v-if="canRefreshCover(row)"
+              v-if="canRefreshCover(row as ShowcasePost)"
               type="button"
               :title="String(t('admin.showcase.refreshStatus'))"
-              :disabled="refreshBusy(row)"
+              :disabled="refreshBusy(row as ShowcasePost)"
               class="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
-              @click.stop="refreshCover(row)"
+              @click.stop="refreshCover(row as ShowcasePost)"
             >
               <RefreshCw
                 class="h-4 w-4"
-                :class="refreshBusy(row) ? 'animate-spin' : ''"
+                :class="refreshBusy(row as ShowcasePost) ? 'animate-spin' : ''"
               />
             </button>
             <button
-              v-if="canRecommendPost(row)"
+              v-if="canRecommendPost(row as ShowcasePost)"
               type="button"
               :title="
                 row.is_expert_recommended
@@ -552,23 +554,23 @@ onMounted(() => {
                   ? 'text-amber-600 hover:bg-amber-50'
                   : 'text-gray-400 hover:bg-gray-100 hover:text-amber-600',
               ]"
-              @click.stop="toggleRecommend(row)"
+              @click.stop="toggleRecommend(row as ShowcasePost)"
             >
               <Award class="h-4 w-4" :class="row.is_expert_recommended ? 'fill-current' : ''" />
             </button>
             <button
-              v-if="canDeletePost(row)"
+              v-if="canDeletePost(row as ShowcasePost)"
               type="button"
               :title="String(t('admin.showcase.published.deleteTitle'))"
               class="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-red-50"
-              @click.stop="confirmDeletePost(row)"
+              @click.stop="confirmDeletePost(row as ShowcasePost)"
             >
               <Trash2 class="h-4 w-4" />
             </button>
           </div>
         </template>
       </el-table-column>
-    </el-table>
+    </ElTable>
 
     <div
       v-else-if="!isLoading"

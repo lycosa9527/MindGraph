@@ -82,7 +82,8 @@ async def _emit_fail(
     )
     rls_user_id = int(author_id) if author_id is not None else int(user_id)
     try:
-        async with rls_async_session(RlsContext.for_celery_user(rls_user_id, organization_id)) as db:
+        # System RLS: cover-job WRITE EXISTS must not depend on author post SELECT.
+        async with rls_async_session(RlsContext.system_bootstrap()) as db:
             await mark_cover_job_failed(
                 db,
                 post_id=post_id,
@@ -91,8 +92,10 @@ async def _emit_fail(
             )
     except DATABASE_ERRORS as exc:
         logger.warning(
-            "[ShowcaseCover] manifesto fail write post=%s: %s",
+            "[ShowcaseCover] manifesto fail write post=%s user=%s org=%s: %s",
             post_id[:8],
+            rls_user_id,
+            organization_id,
             exc,
         )
     await publish_showcase_cover_event(post_id, "cover_fail", reason=reason)
@@ -162,7 +165,7 @@ async def generate_showcase_cover(
             backend=storage_backend(),
         )
 
-        async with rls_async_session(RlsContext.for_celery_user(rls_user_id, organization_id)) as db:
+        async with rls_async_session(RlsContext.system_bootstrap()) as db:
             await mark_cover_job_running(
                 db,
                 post_id=post_id,
@@ -203,7 +206,7 @@ async def generate_showcase_cover(
                     author_id=rls_user_id,
                     celery_task_id=celery_task_id,
                 )
-            # Prefer DB author for RLS write even if enqueue omitted author_id.
+            # Keep author id for fail telemetry / enqueue kwargs compatibility.
             rls_user_id = int(post.author_id)
 
         work_dir = Path(tempfile.mkdtemp(prefix="showcase-cover-"))
@@ -219,14 +222,14 @@ async def generate_showcase_cover(
                 celery_task_id=celery_task_id,
             )
 
-        async with rls_async_session(RlsContext.for_celery_user(rls_user_id, organization_id)) as db:
+        async with rls_async_session(RlsContext.system_bootstrap()) as db:
             await mark_cover_job_stage(db, post_id=post_id, stage=STAGE_CONVERT)
 
         pdf_path = resolve_cover_pdf_path(source_path, work_dir / "lo")
         png_bytes = shrink_png_bytes(render_pdf_first_page_png(pdf_path))
         thumb_key = build_object_key(post_id, "thumbnail", ".png")
 
-        async with rls_async_session(RlsContext.for_celery_user(rls_user_id, organization_id)) as db:
+        async with rls_async_session(RlsContext.system_bootstrap()) as db:
             await mark_cover_job_stage(db, post_id=post_id, stage=STAGE_UPLOAD)
 
         put_bytes_sync(thumb_key, png_bytes, content_type="image/png")
@@ -240,7 +243,7 @@ async def generate_showcase_cover(
                 content_type="application/pdf",
             )
 
-        async with rls_async_session(RlsContext.for_celery_user(rls_user_id, organization_id)) as db:
+        async with rls_async_session(RlsContext.system_bootstrap()) as db:
             result = await db.execute(select(ShowcasePost).where(ShowcasePost.id == post_id))
             post = result.scalar_one_or_none()
             if post is None:

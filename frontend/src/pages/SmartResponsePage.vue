@@ -50,7 +50,7 @@
               </div>
             </template>
 
-            <el-table
+            <ElTable
               v-loading="isLoading"
               :data="watches"
             >
@@ -88,20 +88,20 @@
                   <el-button
                     v-if="row.status === 'unassigned'"
                     size="small"
-                    @click="showAssignModal(row)"
+                    @click="showAssignModal(row as Watch)"
                   >
                     Assign
                   </el-button>
                   <el-button
                     v-else
                     size="small"
-                    @click="showUnassignModal(row)"
+                    @click="showUnassignModal(row as Watch)"
                   >
                     Unassign
                   </el-button>
                 </template>
               </el-table-column>
-            </el-table>
+            </ElTable>
           </el-card>
         </el-col>
       </el-row>
@@ -117,6 +117,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+
+import { ElTable } from 'element-plus'
 
 import WatchAssignmentModal from '@/components/smart-response/WatchAssignmentModal.vue'
 import { type Watch, useSmartResponseStore } from '@/stores/smartResponse'

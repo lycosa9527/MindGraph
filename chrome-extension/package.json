@@ -8,6 +8,6 @@
     "publish:edge": "cd ../.. && PYTHONPATH=. python scripts/publish_edge_addon.py"
   },
   "devDependencies": {
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.10"
   }
 }

@@ -160,20 +160,73 @@ function resolveParentNodeShape(
   return undefined
 }
 
-/** Inherit shape from an earlier sibling on the same parent row (e.g. new child matches siblings). */
-function resolvePriorSiblingNodeShape(
+/**
+ * Same-parent sibling styles, nearest earlier first then later
+ * (so insert-above / index-0 still matches a neighbor).
+ */
+function siblingStylesNearestFirst(
+  pathKey: string,
+  stylesByPath: Map<string, NodeStyle>
+): NodeStyle[] {
+  const parentKey = parentPathKey(pathKey)
+  if (!parentKey) return []
+  const idx = parseInt(pathKey.slice(pathKey.lastIndexOf('/') + 1), 10)
+  if (!Number.isFinite(idx) || idx < 0) return []
+  const prefix = `${parentKey}/`
+  const before: { i: number; style: NodeStyle }[] = []
+  const after: { i: number; style: NodeStyle }[] = []
+  for (const [key, style] of stylesByPath) {
+    if (!key.startsWith(prefix)) continue
+    const rest = key.slice(prefix.length)
+    if (rest.includes('/')) continue
+    const i = parseInt(rest, 10)
+    if (!Number.isFinite(i) || i === idx) continue
+    if (!style || Object.keys(style).length === 0) continue
+    if (i < idx) before.push({ i, style })
+    else after.push({ i, style })
+  }
+  before.sort((a, b) => b.i - a.i)
+  after.sort((a, b) => a.i - b.i)
+  return [...before, ...after].map((entry) => entry.style)
+}
+
+/** Inherit shape from a same-parent sibling (prefer earlier index, then later). */
+function resolveSiblingNodeShape(
   pathKey: string,
   stylesByPath: Map<string, NodeStyle>
 ): NodeStyle['nodeShape'] | undefined {
-  const parentKey = parentPathKey(pathKey)
-  if (!parentKey) return undefined
-  const idx = parseInt(pathKey.slice(pathKey.lastIndexOf('/') + 1), 10)
-  if (!Number.isFinite(idx) || idx <= 0) return undefined
-  for (let i = idx - 1; i >= 0; i--) {
-    const shape = stylesByPath.get(`${parentKey}/${i}`)?.nodeShape
-    if (shape) return shape
+  for (const style of siblingStylesNearestFirst(pathKey, stylesByPath)) {
+    if (style.nodeShape) return style.nodeShape
   }
   return undefined
+}
+
+/** Full visual style from a same-parent sibling (prefer earlier index, then later). */
+function resolveSiblingStyle(
+  pathKey: string,
+  stylesByPath: Map<string, NodeStyle>
+): NodeStyle | undefined {
+  const styles = siblingStylesNearestFirst(pathKey, stylesByPath)
+  return styles[0]
+}
+
+/**
+ * Colors + typography copied from a sibling for a new node at the same depth.
+ * Shape is resolved separately (depth preset / sibling shape / heal rules).
+ */
+function visualStyleFromSibling(sibling: NodeStyle): Partial<NodeStyle> {
+  const next: Partial<NodeStyle> = {}
+  if (sibling.backgroundColor) next.backgroundColor = sibling.backgroundColor
+  if (sibling.borderColor) next.borderColor = sibling.borderColor
+  if (sibling.textColor) next.textColor = sibling.textColor
+  if (sibling.borderWidth !== undefined) next.borderWidth = sibling.borderWidth
+  if (sibling.borderStyle) next.borderStyle = sibling.borderStyle
+  if (sibling.fontFamily) next.fontFamily = sibling.fontFamily
+  if (sibling.fontSize !== undefined) next.fontSize = sibling.fontSize
+  if (sibling.fontWeight) next.fontWeight = sibling.fontWeight
+  if (sibling.fontStyle) next.fontStyle = sibling.fontStyle
+  if (sibling.textDecoration) next.textDecoration = sibling.textDecoration
+  return next
 }
 
 /**
@@ -203,7 +256,7 @@ function resolveMindMapRestoredNodeShape(
 
   const fromPreserved = preserved?.nodeShape
   if (!fromPreserved) {
-    return resolvePriorSiblingNodeShape(pathKey, stylesByPath) ?? presetShape
+    return resolveSiblingNodeShape(pathKey, stylesByPath) ?? presetShape
   }
 
   const parentShape = resolveParentNodeShape(pathKey, stylesByPath, nodes, connections)
@@ -245,31 +298,15 @@ export function applyMindMapStylesByPath(
       node.style = { ...(node.style || {}), ...merged }
       nodeStyles[node.id] = { ...merged }
     } else {
-      let themeDefaults = {
-        ...mindMapStyleFromTheme(node, defaultTheme, diagramStyleId),
+      // Single SoT with in-place insert — theme / rainbow / same-row sibling match.
+      const themeDefaults = buildMindMapStyleForNewBranchNode(node, connections, {
+        themeId,
+        diagramStyleId,
+        siblingStyle: resolveSiblingStyle(key, stylesByPath),
         nodeShape,
-      }
-      if (isRainbowMindMapTheme(themeId)) {
-        if (node.id === 'topic' || node.type === 'topic' || node.type === 'center') {
-          themeDefaults = {
-            ...themeDefaults,
-            backgroundColor: MIND_MAP_RAINBOW_TOPIC_COLORS.topicBackgroundColor,
-            textColor: MIND_MAP_RAINBOW_TOPIC_COLORS.topicTextColor,
-            borderColor: MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor,
-          }
-        } else {
-          const branchColors = mindMapRainbowColorsForNode(node.id, connections)
-          if (branchColors) {
-            themeDefaults = {
-              ...themeDefaults,
-              backgroundColor: branchColors.backgroundColor,
-              textColor: branchColors.textColor,
-              borderColor: branchColors.borderColor,
-            }
-          }
-        }
-      }
-      node.style = { ...themeDefaults, ...(node.style || {}) }
+      })
+      // themeDefaults last so resolution wins over loader stub `style: { nodeShape }`.
+      node.style = { ...(node.style || {}), ...themeDefaults }
       nodeStyles[node.id] = { ...node.style }
     }
   }
@@ -290,6 +327,80 @@ export function applyMindMapStylesByPath(
     syncLegacyMindMapConnectionStrokeColors(connections, nodes)
   }
   return nodeStyles
+}
+
+/**
+ * Resolve a same-parent sibling style from live graph state (v2 in-place insert).
+ * Delegates to the path-keyed nearest-sibling SoT so Enter and reload cannot drift.
+ * Topic L1 same-side is inherent in path keys (`r/…` vs `l/…`).
+ */
+export function resolveMindMapLiveSiblingStyle(
+  nodeId: string,
+  nodes: DiagramNode[],
+  connections: Connection[],
+  nodeStylesRecord?: Record<string, NodeStyle>
+): NodeStyle | undefined {
+  const pathKey = mindMapNodePathKey(nodeId, connections)
+  if (!pathKey) return undefined
+  const stylesByPath = collectMindMapStylesByPath(nodes, connections, nodeStylesRecord)
+  return resolveSiblingStyle(pathKey, stylesByPath)
+}
+
+/**
+ * Single SoT for a newly added branch node (in-place Enter + reload new path).
+ * Theme / diagram-style defaults; rainbow keeps per-L1 accents; non-rainbow matches
+ * same-row sibling fill/border/text when present.
+ */
+export function buildMindMapStyleForNewBranchNode(
+  node: Pick<DiagramNode, 'id' | 'type'>,
+  connections: Connection[],
+  options: {
+    themeId?: MindMapThemeId | string | null
+    diagramStyleId?: string | null
+    siblingStyle?: NodeStyle
+    /** Reload heal/depth resolution — wins over sibling/preset when set. */
+    nodeShape?: NodeStyle['nodeShape']
+  }
+): NodeStyle {
+  const theme = getMindMapThemeById(resolveMindMapThemeId(options.themeId))
+  const diagramStyle = getMindMapDiagramStyleById(
+    resolveMindMapDiagramStyleId(options.diagramStyleId)
+  )
+  const presetShape = mindMapNodeShapeFromPreset(node, diagramStyle)
+  const nodeShape = options.nodeShape ?? options.siblingStyle?.nodeShape ?? presetShape
+
+  let style: NodeStyle = {
+    ...mindMapStyleFromTheme(node, theme, options.diagramStyleId),
+    nodeShape,
+  }
+
+  if (isRainbowMindMapTheme(options.themeId)) {
+    if (node.id === 'topic' || node.type === 'topic' || node.type === 'center') {
+      return {
+        ...style,
+        backgroundColor: MIND_MAP_RAINBOW_TOPIC_COLORS.topicBackgroundColor,
+        textColor: MIND_MAP_RAINBOW_TOPIC_COLORS.topicTextColor,
+        borderColor: MIND_MAP_RAINBOW_TOPIC_COLORS.topicBorderColor,
+      }
+    }
+    const branchColors = mindMapRainbowColorsForNode(node.id, connections)
+    if (!branchColors) return style
+    return {
+      ...style,
+      backgroundColor: branchColors.backgroundColor,
+      textColor: branchColors.textColor,
+      borderColor: branchColors.borderColor,
+    }
+  }
+
+  if (options.siblingStyle) {
+    return {
+      ...style,
+      ...visualStyleFromSibling(options.siblingStyle),
+      nodeShape,
+    }
+  }
+  return style
 }
 
 /** Reconcile persisted connection stroke colors when canvas mode changes or diagram reloads. */

@@ -9,7 +9,7 @@ import {
 } from '@/config/mindMapAdaptiveGaps'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, NodeStyle } from '@/types'
 import { MINDMAP_NODE_UID_DATA_KEY, readMindMapNodeUid } from '@/utils/mindMapNodeUid'
 import { recordMindMapSiblingInsertFailure } from '@/utils/mindMapSiblingDebug'
 import {
@@ -19,7 +19,11 @@ import {
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
-import { buildMindMapChildrenMapByConnectionOrder } from './mindMapStylePreservation'
+import {
+  buildMindMapChildrenMapByConnectionOrder,
+  buildMindMapStyleForNewBranchNode,
+  resolveMindMapLiveSiblingStyle,
+} from './mindMapStylePreservation'
 
 export type InsertMindMapSiblingPosition = 'above' | 'below'
 
@@ -38,6 +42,10 @@ export type InsertMindMapSiblingInPlaceOptions = {
   nodeWidths?: Record<string, number>
   /** Diagram style — needed so underline L2 anchors match edge routing. */
   diagramStyleId?: string | null
+  /** Active color theme — seeds `_node_styles` for the minted node. */
+  themeId?: string | null
+  /** Existing per-node styles — used to match same-row siblings. */
+  nodeStyles?: Record<string, NodeStyle>
   /** Collapsed nodes — settle must ignore hidden fans (same as layout). */
   collapsedNodeIds?: ReadonlySet<string>
 }
@@ -51,6 +59,8 @@ export type InsertMindMapSiblingInPlaceResult = {
   /** Estimated dims to seed measured maps (no DOM yet). */
   estimatedWidth: number
   estimatedHeight: number
+  /** Style stamped on the new node (commit writes `_node_styles`). */
+  seededStyle: NodeStyle
 }
 
 function parseBranchId(
@@ -550,7 +560,10 @@ export function insertMindMapSiblingInPlace(
       ? layoutSibling.data.branchIndex
       : insertIndex
 
-  const newNode: DiagramNode = {
+  const newConn = buildNewConnection(parentId, newNodeId, side, strokeColor)
+  const nextConnections = spliceParentConnections(connections, parentId, newConn, insertIndex, side)
+
+  const newNodeDraft: DiagramNode = {
     id: newNodeId,
     text: options.text,
     type: 'branch',
@@ -565,9 +578,25 @@ export function insertMindMapSiblingInPlace(
       [MINDMAP_NODE_UID_DATA_KEY]: newUid,
     },
   }
-
-  const newConn = buildNewConnection(parentId, newNodeId, side, strokeColor)
-  const nextConnections = spliceParentConnections(connections, parentId, newConn, insertIndex, side)
+  const siblingStyle = resolveMindMapLiveSiblingStyle(
+    newNodeId,
+    [...nodes, newNodeDraft],
+    nextConnections,
+    options.nodeStyles
+  )
+  const seededStyle = buildMindMapStyleForNewBranchNode(
+    { id: newNodeId, type: 'branch' },
+    nextConnections,
+    {
+      themeId: options.themeId,
+      diagramStyleId: options.diagramStyleId,
+      siblingStyle,
+    }
+  )
+  const newNode: DiagramNode = {
+    ...newNodeDraft,
+    style: { ...seededStyle },
+  }
 
   const isTopLevel = parentId === 'topic'
   let nextNodes: DiagramNode[]
@@ -637,6 +666,7 @@ export function insertMindMapSiblingInPlace(
     isTopLevel,
     estimatedWidth,
     estimatedHeight,
+    seededStyle,
   }
 }
 

@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.169.0] - 2026-08-06
+
+> **Showcase media-status phases (cover vs preview); cover-job manifesto under system RLS; mind-map Enter/reload style SoT; frontend + Python dependency bump.**
+
+### Added
+
+- **Showcase media-status phases** — Teaching-design pipeline reports `generating_cover`, `preview_failed`, and `cover_failed` (in addition to convert/preview/cover-ready); admin chips and locales updated (`media_status.py`, `showcaseMediaStatus.ts`).
+
+### Fixed
+
+- **Cover-job manifesto under RLS** — Celery cover workers write job stages/fail/success via system bootstrap so manifesto persistence does not depend on author-scoped post SELECT (`generate.py`, `job_manifest.py`).
+- **Mind-map sibling style identity** — Single SoT for in-place Enter insert and path-keyed reload: mint `_node_styles`, match nearest same-parent sibling colors/typography, keep rainbow/theme rules aligned (`mindMapStylePreservation.ts`, `mindMapSiblingInsert.ts`, `mindMapOps.ts`).
+
+### Changed
+
+- **Frontend deps** — `mathlive` 0.110 (XSS fix for `\text{}`/`\mbox{}`); `@vueuse/core` 14.4 (drop local Rolldown PURE patch); `pinia` 4 + `@vue/devtools-api`; `pdfjs-dist` 6.2.108 with re-vendored `public/pdf.worker.min.mjs` and preview render API updates (`canvas` + `cleanup`); `katex` 0.18; `markdown-it` 15 (bundled types, keep fuzzy linkify); `jsdom` 30; Element Plus table slot rows cast to concrete types (Vue SFC templates cannot host `ElTable<Row>` generics); plus routine Vue/Vite/ESLint/fontsource minors. Patch sweep: `dompurify` 3.4.13, `jspdf`/`fflate`/`html-to-image`/`undici`/`@vue-flow/core`/`@element-plus/icons-vue`/`unplugin-vue-components`, chrome-extension `vitest` 4.1.10. **TypeScript stays on 6.x** — TS 7 is stable but lacks the public compiler API Vue tooling (`vue-tsc` / typescript-eslint) needs until 7.1.
+- **Python deps (`requirements.txt`)** — Raise PyPI floors (FastAPI/uvicorn/LangChain/LangGraph/openai/playwright/redis/tooling, etc.); `datasets` ≥5.0.1. Keep `websockets` on 15.x (`<16`) until `langgraph-sdk` allows 17+; keep `pydantic` `<3` and `qdrant-client` `<1.19` (paired with server 1.18.x).
+
+### Tests
+
+- **Backend** — Media-status phase/fail derivation; cover-job manifesto system-RLS paths.
+- **Frontend** — Showcase media-status resolve/chip/tooltip; mind-map reload style identity, sibling insert in-place style, undo/redo coverage.
+
 ## [5.168.2] - 2026-08-05
 
 > **Showcase approve / engagement under RLS; recommend-only experts stay out of admin panel; mind-map outline clockwise order; SelectiveGZip Starlette compat.**

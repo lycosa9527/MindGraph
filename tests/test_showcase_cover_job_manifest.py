@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
+from services.showcase.covers import generate as generate_mod
+from services.showcase.covers import job_manifest as manifest_mod
 from services.showcase.covers.job_manifest import (
     COVER_JOB_FAILED,
     COVER_JOB_QUEUED,
@@ -16,9 +19,10 @@ from services.showcase.covers.job_manifest import (
     job_is_succeeded,
 )
 from services.showcase.media_status import (
-    MEDIA_STATUS_CONVERSION_FAILED,
     MEDIA_STATUS_CONVERTING_PREVIEW,
     MEDIA_STATUS_COVER_READY,
+    MEDIA_STATUS_GENERATING_COVER,
+    MEDIA_STATUS_PREVIEW_FAILED,
     resolve_showcase_media_status,
 )
 
@@ -31,6 +35,17 @@ def test_cover_reason_retryable_classification() -> None:
     assert cover_reason_is_retryable("stale_attachment_key") is False
     assert cover_reason_is_retryable("unsupported_suffix=.xyz") is False
     assert cover_reason_is_retryable("enqueue_failed:broker down") is False
+
+
+def test_manifesto_sync_writes_use_system_rls() -> None:
+    """Worker manifesto persistence must not couple to author post SELECT RLS."""
+    manifest_src = Path(manifest_mod.__file__).read_text(encoding="utf-8")
+    generate_src = Path(generate_mod.__file__).read_text(encoding="utf-8")
+    assert "def _manifesto_system_context" in manifest_src
+    assert "rls_sync_session(_manifesto_system_context())" in manifest_src
+    assert "for_celery_user" not in manifest_src
+    assert generate_src.count("RlsContext.system_bootstrap()") >= 4
+    assert "for_celery_user" not in generate_src
 
 
 def test_job_status_helpers() -> None:
@@ -52,7 +67,7 @@ def test_cover_job_public_payload_none() -> None:
 
 
 def test_media_status_prefers_queued_job() -> None:
-    """Queued/running manifesto forces converting even when paths exist."""
+    """Queued/running with preview satisfied forces generating_cover."""
     assert (
         resolve_showcase_media_status(
             case_type="teaching_design",
@@ -63,7 +78,7 @@ def test_media_status_prefers_queued_job() -> None:
             },
             cover_job_status=COVER_JOB_QUEUED,
         )
-        == MEDIA_STATUS_CONVERTING_PREVIEW
+        == MEDIA_STATUS_GENERATING_COVER
     )
     assert (
         resolve_showcase_media_status(
@@ -75,12 +90,21 @@ def test_media_status_prefers_queued_job() -> None:
             },
             cover_job_status=COVER_JOB_RUNNING,
         )
+        == MEDIA_STATUS_GENERATING_COVER
+    )
+    assert (
+        resolve_showcase_media_status(
+            case_type="teaching_design",
+            thumbnail_path=None,
+            spec={"attachment_path": "showcase/posts/a/attachment.docx"},
+            cover_job_status=COVER_JOB_QUEUED,
+        )
         == MEDIA_STATUS_CONVERTING_PREVIEW
     )
 
 
 def test_media_status_prefers_failed_job() -> None:
-    """Failed manifesto surfaces conversion_failed from cold data."""
+    """Failed manifesto surfaces preview_failed from cold data."""
     assert (
         resolve_showcase_media_status(
             case_type="teaching_design",
@@ -88,7 +112,7 @@ def test_media_status_prefers_failed_job() -> None:
             spec={"attachment_path": "showcase/posts/a/attachment.pptx"},
             cover_job_status=COVER_JOB_FAILED,
         )
-        == MEDIA_STATUS_CONVERSION_FAILED
+        == MEDIA_STATUS_PREVIEW_FAILED
     )
 
 

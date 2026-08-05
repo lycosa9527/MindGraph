@@ -285,20 +285,20 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
             <ElTag
               size="small"
               effect="light"
-              :type="ragBadgeView(resolveRagStatus(row)).type"
+              :type="ragBadgeView(resolveRagStatus(row as KnowledgeDocument)).type"
               class="pipeline-badge"
             >
               {{ t('knowledge.pipelineBadge.rag.label') }} ·
-              {{ pipelineBadgeLabel(ragBadgeView(resolveRagStatus(row)).labelKey) }}
+              {{ pipelineBadgeLabel(ragBadgeView(resolveRagStatus(row as KnowledgeDocument)).labelKey) }}
             </ElTag>
             <ElTag
               size="small"
               effect="light"
-              :type="wikiBadgeView(resolveWikiStatus(row)).type"
+              :type="wikiBadgeView(resolveWikiStatus(row as KnowledgeDocument)).type"
               class="pipeline-badge"
             >
               {{ t('knowledge.pipelineBadge.wiki.label') }} ·
-              {{ pipelineBadgeLabel(wikiBadgeView(resolveWikiStatus(row)).labelKey) }}
+              {{ pipelineBadgeLabel(wikiBadgeView(resolveWikiStatus(row as KnowledgeDocument)).labelKey) }}
             </ElTag>
           </div>
         </template>
@@ -336,7 +336,7 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
             class="text-sm"
             :class="greyOutDataset ? 'text-stone-400' : 'text-stone-600'"
           >
-            {{ (row as any).dataset_name || '-' }}
+            {{ (row as KnowledgeDocument & { dataset_name?: string }).dataset_name || '-' }}
           </span>
         </template>
       </ElTableColumn>

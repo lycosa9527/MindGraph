@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
+import { ElTable } from 'element-plus'
+
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useQueryClient } from '@tanstack/vue-query'
@@ -206,7 +208,7 @@ onMounted(() => {
       </h3>
     </div>
 
-    <el-table
+    <ElTable
       v-if="filteredOptions.length > 0 || isLoading"
       :data="filteredOptions"
       stripe
@@ -249,27 +251,27 @@ onMounted(() => {
           <button
             type="button"
             class="mr-3 text-sm text-gray-700 hover:text-gray-900"
-            @click="openEdit(row)"
+            @click="openEdit(row as ShowcaseFieldOptionRow)"
           >
             {{ t('admin.edit') }}
           </button>
           <button
             type="button"
             class="mr-3 text-sm text-gray-700 hover:text-gray-900"
-            @click="toggleActive(row)"
+            @click="toggleActive(row as ShowcaseFieldOptionRow)"
           >
             {{ row.is_active ? t('admin.showcase.fields.deactivate') : t('admin.showcase.fields.activate') }}
           </button>
           <button
             type="button"
             class="text-sm text-red-600 hover:text-red-700"
-            @click="removeOption(row)"
+            @click="removeOption(row as ShowcaseFieldOptionRow)"
           >
             {{ t('admin.delete') }}
           </button>
         </template>
       </el-table-column>
-    </el-table>
+    </ElTable>
 
     <div
       v-else-if="!isLoading"

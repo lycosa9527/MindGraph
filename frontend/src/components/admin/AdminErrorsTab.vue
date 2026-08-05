@@ -4,6 +4,7 @@
  */
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { Bell, Connection, DocumentCopy, WarningFilled } from '@element-plus/icons-vue'
+import { ElTable } from 'element-plus'
 
 import AdminErrorEventDetailDialog from '@/components/admin/AdminErrorEventDetailDialog.vue'
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
@@ -502,7 +503,7 @@ function onNextPage(): void {
         v-loading="loading"
         class="rounded-lg border border-stone-200 dark:border-stone-600 overflow-hidden"
       >
-        <el-table
+        <ElTable
           :data="groups"
           stripe
           size="small"
@@ -575,13 +576,13 @@ function onNextPage(): void {
                 size="small"
                 class="admin-swiss-pill-btn"
                 :loading="mutingGroupId === row.id"
-                @click.stop="toggleGroupMute(row)"
+                @click.stop="toggleGroupMute(row as AdminErrorGroupItem)"
               >
                 {{ row.muted ? t('admin.errors.unmute') : t('admin.errors.mute') }}
               </el-button>
             </template>
           </el-table-column>
-        </el-table>
+        </ElTable>
       </div>
 
       <p

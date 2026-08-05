@@ -1100,6 +1100,11 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       ...ctx.mindMapNodeHeights.value,
       [inserted.newNodeId]: inserted.estimatedHeight,
     }
+    // Style is minted on the node in insertMindMapSiblingInPlace; mirror into SoT map.
+    data.value._node_styles = {
+      ...(data.value._node_styles || {}),
+      [inserted.newNodeId]: { ...inserted.seededStyle },
+    }
 
     if (inserted.isTopLevel) {
       // Keep preserve across measure/edit-end (full restack caused delayed L1 shift).
@@ -1108,7 +1113,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       ctx.mindMapPreserveIncomingYNodeId.value = inserted.newNodeId
     }
 
-    const newNode = inserted.nodes.find((node) => node.id === inserted.newNodeId) ?? null
+    const newNode = data.value.nodes.find((node) => node.id === inserted.newNodeId) ?? null
     ctx.pushHistory(historyLabel)
     emitEvent('diagram:node_added', newNode)
 
@@ -1199,6 +1204,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
         nodeHeights: ctx.mindMapNodeHeights.value,
         nodeWidths: ctx.mindMapNodeWidths.value,
         diagramStyleId: data.value._mindmap_diagram_style as string | undefined,
+        themeId: resolveActiveMindMapThemeId(data.value),
+        nodeStyles: data.value._node_styles,
         collapsedNodeIds,
       })
       if (!inserted) return false

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 
+import { ElTable } from 'element-plus'
+
 import { useRoute, useRouter } from 'vue-router'
 
 import { RefreshCw, Search } from '@lucide/vue'
@@ -366,7 +368,7 @@ onMounted(() => {
       {{ loadError }}
     </p>
 
-    <el-table
+    <ElTable
       v-if="posts.length > 0 || isLoading"
       :data="posts"
       stripe
@@ -441,10 +443,10 @@ onMounted(() => {
         <template #default="{ row }">
           <span
             class="inline-flex max-w-full items-center rounded-md px-2 py-0.5 text-xs font-medium"
-            :class="mediaStatusChipClass(row)"
-            :title="mediaStatusTitle(row) || undefined"
+            :class="mediaStatusChipClass(row as ShowcasePost)"
+            :title="mediaStatusTitle(row as ShowcasePost) || undefined"
           >
-            {{ mediaStatusLabel(row) }}
+            {{ mediaStatusLabel(row as ShowcasePost) }}
           </span>
         </template>
       </el-table-column>
@@ -493,27 +495,27 @@ onMounted(() => {
             <button
               type="button"
               class="text-sm font-medium text-gray-700"
-              @click.stop="openPost(row)"
+              @click.stop="openPost(row as ShowcasePost)"
             >
               {{ t('admin.showcase.review') }}
             </button>
             <button
-              v-if="canRefreshCover(row)"
+              v-if="canRefreshCover(row as ShowcasePost)"
               type="button"
               :title="String(t('admin.showcase.refreshStatus'))"
-              :disabled="refreshBusy(row)"
+              :disabled="refreshBusy(row as ShowcasePost)"
               class="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
-              @click.stop="refreshCover(row)"
+              @click.stop="refreshCover(row as ShowcasePost)"
             >
               <RefreshCw
                 class="h-4 w-4"
-                :class="refreshBusy(row) ? 'animate-spin' : ''"
+                :class="refreshBusy(row as ShowcasePost) ? 'animate-spin' : ''"
               />
             </button>
           </div>
         </template>
       </el-table-column>
-    </el-table>
+    </ElTable>
 
     <div
       v-else-if="!isLoading"
