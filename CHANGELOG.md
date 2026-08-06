@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.169.4] - 2026-08-06
+
+> **Restore Material-20 for thinking maps / classic mind map; isolate classic vs v2 canvas style buckets.**
+
+### Fixed
+
+- **Thinking-map / classic branch palette** — Default `MINDMAP_BRANCH_COLORS` is Material-20 again (baseline `7c7df0d3`); Radix-12 is `V2_MINDMAP_BRANCH_COLORS` only via `getMindmapBranchColor(i, 'v2')`. Bubble, flow, double-bubble, tree, brace, circle, multi-flow, and classic mind map share Material fills/borders (`mindmapColors.ts`, `mindMapLegacyColors.ts`, `useBranchMoveDrag.ts`).
+- **Classic vs v2 mind-map style isolation** — Persist `diagram_style` in `_mindmap_canvas.v2`; clear/restore live `_mindmap_theme` and `_mindmap_diagram_style` on mode switch like theme. Classic apply/reload/spec hydrate never seeds v2 theme defaults; `sanitizeLegacyNodeStyle` also strips `fontFamily` / `borderWidth` (`mindMapCanvasModeSwitch.ts`, `mindMapStylePreservation.ts`, `mindMapOps.ts`, `specIO.ts`, `diagram.ts`).
+- **Template label contrast** — Seeded defaults (主题, 联想1, …) no longer render as muted placeholders; only whitespace and editable “Enter text” / “输入文本” stay muted (`diagramDefaultLabels.ts`).
+- **Auth locale** — Shorten Chinese platform quick-guide label to “快速指南” (`zh/auth.ts`).
+
+### Tests
+
+- **Frontend** — Palette Material default vs Radix-on-v2; separation sanitize / empty-bucket v2→legacy / diagram_style clear-restore; placeholder mute vs template contrast (`mindMapColorPalettes.spec.ts`, `mindMapSeparation.spec.ts`, `diagramDefaultLabels.spec.ts`).
+
 ## [5.169.3] - 2026-08-06
 
 > **Deduplicate auth/bootstrap and diagram-list fetches (in-flight coalesce + guarded TTL).**

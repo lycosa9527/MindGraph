@@ -269,7 +269,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     const theme = getMindMapThemeForDiagram(diagramStore.data)
     const v2Visuals = isSessionMindMapV2VisualDesignActive(diagramStore.mindMapCanvasMode)
     const branchIndex = (node.data?.branchIndex as number | undefined) ?? 0
-    const branchPalette = getMindmapBranchColor(branchIndex, v2Visuals ? undefined : 'legacy')
+    const branchPalette = getMindmapBranchColor(branchIndex, v2Visuals ? 'v2' : 'legacy')
     const nodeShape = v2Visuals
       ? resolveMindMapNodeShape(
           {
@@ -611,9 +611,9 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     const diagramType = node?.data?.diagramType as string | undefined
     const isMindMapNode = diagramType === 'mindmap' || diagramType === 'mind_map'
     const paletteMode =
-      isMindMapNode && !isSessionMindMapV2VisualDesignActive(diagramStore.mindMapCanvasMode)
-        ? ('legacy' as const)
-        : undefined
+      isMindMapNode && isSessionMindMapV2VisualDesignActive(diagramStore.mindMapCanvasMode)
+        ? ('v2' as const)
+        : ('legacy' as const)
     capturedBranchColor.value = getMindmapBranchColor(idx, paletteMode)
     const pos = node?.position ?? { x: 0, y: 0 }
     const { w, h } = node

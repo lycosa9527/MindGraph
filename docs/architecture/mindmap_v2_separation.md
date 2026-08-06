@@ -70,12 +70,14 @@ Size estimates: [`mindMapMeasurements.ts`](../../frontend/src/stores/specLoader/
 
 ## Color split
 
+Baseline for Material fills/borders/default text: commit `7c7df0d3` (pre–v2 layout port).
+
 | Mode | Branches | Topic | Connections |
 |------|----------|-------|-------------|
-| Legacy | 20 Material hues — `getMindmapBranchColor(i, 'legacy')` / `LEGACY_MINDMAP_BRANCH_COLORS` | Blue pill via `LEGACY_MINDMAP_THEME` (render ignores persisted v2 theme colors) | Per-branch palette, curved edges; topic handles indexed per side, **evenly spaced on the pill** (`classicMindMapTopicHandles.ts`); **Add branch** redistributes clockwise and seeds two children |
-| V2 | Unified `mindMapThemes` presets | Theme accent | Unified topic border, orthogonal edges |
+| Legacy | 20 Material hues — default `getMindmapBranchColor(i)` / `LEGACY_MINDMAP_BRANCH_COLORS` (alias of `MINDMAP_BRANCH_COLORS`) | Blue pill via `LEGACY_MINDMAP_THEME` (`#1976d2` / `#ffffff`); classic apply paths never seed v2 theme `textColor` | Per-branch palette, curved edges; topic handles indexed per side, **evenly spaced on the pill** (`classicMindMapTopicHandles.ts`); **Add branch** redistributes clockwise and seeds two children |
+| V2 | Unified `mindMapThemes` presets for node paint; Radix-12 only via `getMindmapBranchColor(i, 'v2')` when a branch-index caller still needs it | Theme accent | Unified topic border, orthogonal edges |
 
-Other diagram types (tree map, flow map, …) keep the shared 12 Radix hues in `MINDMAP_BRANCH_COLORS`.
+Other diagram types (tree map, flow map, bubble, double-bubble, …) use the same Material-20 default as classic mind map.
 
 ## V2-only surfaces
 
@@ -92,8 +94,14 @@ Other diagram types (tree map, flow map, …) keep the shared 12 Radix hues in `
 ## Persisted data (dual buckets)
 
 `_mindmap_canvas.legacy` and `_mindmap_canvas.v2` store independent path-keyed node styles.
-Legacy bucket strips `nodeShape`, `backgroundColor`, and `borderColor` (classic render uses palette/theme defaults).
-On legacy load, `_mindmap_theme` is cleared.
+
+| Bucket | Contents |
+|--------|----------|
+| `legacy` | `node_styles_by_path` only (sanitized) |
+| `v2` | `node_styles_by_path`, `theme`, `diagram_style`, `collapsed_paths` |
+
+Legacy sanitize strips `nodeShape`, `backgroundColor`, `borderColor`, `fontFamily`, and `borderWidth` (classic render uses Material palette + `LEGACY_MINDMAP_THEME`). Keeps user text formatting (`textColor`, font size/weight/style).
+On legacy load/switch, live `_mindmap_theme` and `_mindmap_diagram_style` are cleared; returning to v2 restores them from the v2 bucket. Classic apply never calls `buildMindMapStyleForNewBranchNode`.
 
 Mode switch: `reconcileMindMapCanvasModeSwitch` — snapshot outgoing mode, reload spec, restore target bucket, sync strokes.
 

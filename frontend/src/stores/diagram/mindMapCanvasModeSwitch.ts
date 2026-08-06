@@ -48,6 +48,8 @@ export function sanitizeLegacyNodeStyle(style: NodeStyle): NodeStyle {
   delete cleaned.nodeShape
   delete cleaned.backgroundColor
   delete cleaned.borderColor
+  delete cleaned.fontFamily
+  delete cleaned.borderWidth
   return cleaned
 }
 
@@ -103,6 +105,7 @@ export function snapshotMindMapCanvasBucket(
   buckets.v2 = {
     node_styles_by_path: stylesMapToRecord(stylesByPath),
     theme: data._mindmap_theme,
+    diagram_style: data._mindmap_diagram_style,
     collapsed_paths: data._collapsed_paths?.length ? [...data._collapsed_paths] : undefined,
   }
 }
@@ -148,12 +151,16 @@ export function hydrateMindMapCanvasStylesOnLoad(
   if (bucketStyles.size > 0) {
     const themeId =
       mode === 'v2' ? (data._mindmap_canvas?.v2?.theme ?? data._mindmap_theme) : undefined
+    const diagramStyleId =
+      mode === 'v2'
+        ? (data._mindmap_canvas?.v2?.diagram_style ?? data._mindmap_diagram_style)
+        : undefined
     data._node_styles = applyMindMapStylesByPath(
       data.nodes,
       connections,
       bucketStyles,
       themeId,
-      data._mindmap_diagram_style,
+      diagramStyleId,
       undefined,
       mode
     )
@@ -170,7 +177,7 @@ export function hydrateMindMapCanvasStylesOnLoad(
   } else if (mode === 'legacy' && data._node_styles) {
     data._node_styles = sanitizeLegacyNodeStylesRecord(data._node_styles)
     for (const node of data.nodes) {
-      if (node.style?.nodeShape) {
+      if (node.style) {
         node.style = sanitizeLegacyNodeStyle(node.style)
       }
     }
@@ -181,12 +188,18 @@ export function hydrateMindMapCanvasStylesOnLoad(
     if (theme) {
       data._mindmap_theme = theme
     }
+    const diagramStyle =
+      data._mindmap_canvas?.v2?.diagram_style ?? data._mindmap_diagram_style
+    if (diagramStyle) {
+      data._mindmap_diagram_style = diagramStyle
+    }
     const collapsed = data._mindmap_canvas?.v2?.collapsed_paths ?? data._collapsed_paths
     if (collapsed?.length) {
       setMindMapCollapsedPaths(data as Record<string, unknown>, collapsed)
     }
   } else {
     delete data._mindmap_theme
+    delete data._mindmap_diagram_style
     setMindMapCollapsedPaths(data as Record<string, unknown>, [])
   }
 
@@ -229,13 +242,20 @@ export function reconcileMindMapCanvasModeSwitch(
   const v2Bucket = data._mindmap_canvas?.v2
 
   let themeId: string | null | undefined
+  let diagramStyleId: string | null | undefined
   if (newMode === 'v2') {
     themeId = v2Bucket?.theme ?? data._mindmap_theme
     if (themeId) {
       data._mindmap_theme = themeId
     }
+    diagramStyleId = v2Bucket?.diagram_style ?? data._mindmap_diagram_style
+    if (diagramStyleId) {
+      data._mindmap_diagram_style = diagramStyleId
+    }
   } else {
     delete data._mindmap_theme
+    delete data._mindmap_diagram_style
+    diagramStyleId = undefined
   }
 
   const mergedNodeStyles = applyMindMapStylesByPath(
@@ -243,7 +263,7 @@ export function reconcileMindMapCanvasModeSwitch(
     result.connections,
     stylesByPath,
     themeId,
-    data._mindmap_diagram_style,
+    diagramStyleId,
     undefined,
     newMode
   )

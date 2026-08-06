@@ -323,18 +323,22 @@ export function isEditablePlaceholderLabel(text: string): boolean {
 }
 
 /**
- * True when node label text is still a template / new-node placeholder (display as muted).
+ * True when node label should render muted (low-contrast placeholder chrome).
+ *
+ * Only whitespace and the editable "Enter text" / "输入文本" labels are muted.
+ * Seeded template defaults (主题, 联想1, 属性1, …) keep full theme contrast
+ * (#ffffff on topic blues, #333333 on pastel branches) — baseline 7c7df0d3.
+ * Math-insert still uses {@link shouldReplaceLabelWithMathInsert} separately.
  */
 export function isNodeDisplayPlaceholderLabel(
-  diagramType: DiagramType | null | undefined,
-  nodeId: string,
+  _diagramType: DiagramType | null | undefined,
+  _nodeId: string,
   text: string
 ): boolean {
   if (isWhitespaceOnlyNodeText(text)) return true
   const trimmed = text.trim()
   if (!trimmed) return false
-  if (isEditablePlaceholderLabel(trimmed)) return true
-  return shouldReplaceLabelWithMathInsert(diagramType, nodeId, text)
+  return isEditablePlaceholderLabel(trimmed)
 }
 
 function conceptT(key: string, lang: LocaleCode): string {

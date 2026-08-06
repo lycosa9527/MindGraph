@@ -274,9 +274,27 @@ export function applyMindMapStylesByPath(
   canvasMode: MindMapCanvasMode = readEffectiveMindMapCanvasMode()
 ): Record<string, NodeStyle> {
   const v2Visuals = canvasMode === 'v2'
+  const nodeStyles: Record<string, NodeStyle> = {}
+
+  // Classic: restore sanitized path styles only — never seed v2 theme defaults.
+  if (!v2Visuals) {
+    for (const node of nodes) {
+      const key = mindMapNodePathKey(node.id, connections)
+      if (!key) continue
+      const preserved = stylesByPath.get(key)
+      if (preserved) {
+        const merged = { ...preserved }
+        delete merged.nodeShape
+        node.style = { ...(node.style || {}), ...merged }
+        nodeStyles[node.id] = { ...merged }
+      }
+    }
+    syncLegacyMindMapConnectionStrokeColors(connections, nodes)
+    return nodeStyles
+  }
+
   const defaultTheme = getMindMapThemeById(resolveMindMapThemeId(themeId))
   const diagramStyle = getMindMapDiagramStyleById(resolveMindMapDiagramStyleId(diagramStyleId))
-  const nodeStyles: Record<string, NodeStyle> = {}
   for (const node of nodes) {
     const key = mindMapNodePathKey(node.id, connections)
     if (!key) continue
@@ -311,7 +329,7 @@ export function applyMindMapStylesByPath(
   }
   if (isRainbowMindMapTheme(themeId)) {
     syncRainbowMindMapConnectionColors(connections, nodes)
-  } else if (v2Visuals) {
+  } else {
     const layered = mindMapDiagramStyleUsesLayeredBranchColors(diagramStyleId)
     const topicBorder =
       nodes.find((n) => n.id === 'topic')?.style?.borderColor ??
@@ -322,8 +340,6 @@ export function applyMindMapStylesByPath(
     if (strokeColor) {
       syncMindMapConnectionStrokeColors(connections, strokeColor)
     }
-  } else {
-    syncLegacyMindMapConnectionStrokeColors(connections, nodes)
   }
   return nodeStyles
 }

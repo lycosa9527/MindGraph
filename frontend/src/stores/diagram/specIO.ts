@@ -157,24 +157,27 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ctx.mindMapPreserveIncomingY.value = false
       ctx.mindMapPreserveIncomingYNodeId.value = null
 
-      const themeFromSpec = getMindMapThemeForDiagram(spec as { _mindmap_theme?: string | null })
-      const diagramStyleId = (spec as { _mindmap_diagram_style?: string | null })
-        ._mindmap_diagram_style
-      nodesToStore = nodesToStore.map((node) => {
-        if (node.type === 'boundary' || nodeHasMindMapThemeColors(node.style)) return node
-        return {
-          ...node,
-          style: {
-            ...mindMapStyleFromTheme(node, themeFromSpec, diagramStyleId),
-            ...(node.style || {}),
-          },
-        }
-      })
-      const layered = mindMapDiagramStyleUsesLayeredBranchColors(diagramStyleId)
-      syncMindMapConnectionStrokeColors(
-        result.connections,
-        layered ? themeFromSpec.borderColor : themeFromSpec.topicBorderColor
-      )
+      // V2 only: classic hydrate restores Material palette / LEGACY_MINDMAP_THEME defaults.
+      if (sessionCanvasMode === 'v2') {
+        const themeFromSpec = getMindMapThemeForDiagram(spec as { _mindmap_theme?: string | null })
+        const diagramStyleId = (spec as { _mindmap_diagram_style?: string | null })
+          ._mindmap_diagram_style
+        nodesToStore = nodesToStore.map((node) => {
+          if (node.type === 'boundary' || nodeHasMindMapThemeColors(node.style)) return node
+          return {
+            ...node,
+            style: {
+              ...mindMapStyleFromTheme(node, themeFromSpec, diagramStyleId),
+              ...(node.style || {}),
+            },
+          }
+        })
+        const layered = mindMapDiagramStyleUsesLayeredBranchColors(diagramStyleId)
+        syncMindMapConnectionStrokeColors(
+          result.connections,
+          layered ? themeFromSpec.borderColor : themeFromSpec.topicBorderColor
+        )
+      }
 
       if (nodesToStore.length > 0) {
         const topicNode = nodesToStore.find(

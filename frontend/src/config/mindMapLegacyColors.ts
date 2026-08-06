@@ -1,5 +1,5 @@
 /**
- * Classic mind-map branch palette — 20 Material hues (pre-v2 canvas, baseline c2611060e).
+ * Classic / thinking-map branch palette — 20 Material hues (baseline 7c7df0d3).
  */
 import type { MindMapCanvasMode } from '@/stores/ui'
 

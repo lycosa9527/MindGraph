@@ -205,15 +205,25 @@ describe('mind map classic vs v2 separation', () => {
     expect(connections[0].style?.strokeColor).toBe('#2563eb')
   })
 
-  it('sanitizeLegacyNodeStyle removes v2 nodeShape', () => {
+  it('sanitizeLegacyNodeStyle removes v2 geometry but keeps classic text formatting', () => {
     const cleaned = sanitizeLegacyNodeStyle({
       nodeShape: 'underline',
       backgroundColor: '#fff',
       borderColor: '#000',
+      fontFamily: 'Inter, sans-serif',
+      borderWidth: 1.5,
+      textColor: '#333333',
+      fontSize: 16,
+      fontWeight: 'bold',
     })
     expect(cleaned.nodeShape).toBeUndefined()
     expect(cleaned.backgroundColor).toBeUndefined()
     expect(cleaned.borderColor).toBeUndefined()
+    expect(cleaned.fontFamily).toBeUndefined()
+    expect(cleaned.borderWidth).toBeUndefined()
+    expect(cleaned.textColor).toBe('#333333')
+    expect(cleaned.fontSize).toBe(16)
+    expect(cleaned.fontWeight).toBe('bold')
   })
 
   it('snapshotMindMapCanvasBucket stores path-keyed styles per mode', () => {
@@ -253,6 +263,8 @@ describe('mind map classic vs v2 separation', () => {
       ],
       connections: [{ id: 'e0', source: 'topic', target: 'branch-r-0-0' }],
       _node_styles: { 'branch-r-0-0': { nodeShape: 'rounded' } },
+      _mindmap_theme: 'vibrantBlue',
+      _mindmap_diagram_style: 'classic',
       _mindmap_canvas: {
         legacy: {
           node_styles_by_path: {
@@ -265,6 +277,7 @@ describe('mind map classic vs v2 separation', () => {
     expect(data.nodes[1].style?.nodeShape).toBeUndefined()
     expect(data.nodes[1].style?.backgroundColor).toBeUndefined()
     expect(data._mindmap_theme).toBeUndefined()
+    expect(data._mindmap_diagram_style).toBeUndefined()
   })
 
   it('reconcileMindMapCanvasModeSwitch restores legacy bucket and clears v2 theme', () => {
@@ -283,6 +296,7 @@ describe('mind map classic vs v2 separation', () => {
       nodes: loaded.nodes,
       connections: loaded.connections,
       _mindmap_theme: 'ocean',
+      _mindmap_diagram_style: 'formal',
       _node_styles: {},
       _mindmap_canvas: {
         legacy: {
@@ -295,6 +309,7 @@ describe('mind map classic vs v2 separation', () => {
             'r/0': { nodeShape: 'rounded', backgroundColor: '#fff' },
           },
           theme: 'ocean',
+          diagram_style: 'formal',
         },
       },
     }
@@ -302,11 +317,90 @@ describe('mind map classic vs v2 separation', () => {
     const changed = reconcileMindMapCanvasModeSwitch(ctx, 'v2', 'legacy')
     expect(changed).toBe(true)
     expect(data._mindmap_theme).toBeUndefined()
+    expect(data._mindmap_diagram_style).toBeUndefined()
+    expect(data._mindmap_canvas?.v2?.theme).toBe('ocean')
+    expect(data._mindmap_canvas?.v2?.diagram_style).toBe('formal')
     const branchNode = data.nodes.find((n) => n.id.startsWith('branch-r-1'))
     expect(branchNode?.style?.nodeShape).toBeUndefined()
     expect(branchNode?.style?.backgroundColor).toBeUndefined()
     const branchConn = data.connections?.find((c) => c.source === 'topic')
     expect(branchConn?.style?.strokeColor).toBe(getMindmapBranchColor(0, 'legacy').border)
+  })
+
+  it('v2 to legacy with empty legacy bucket does not seed theme textColor', () => {
+    enableMindMapV2CanvasFlag()
+    const uiStore = useUIStore()
+    uiStore.mindMapCanvasMode = 'legacy'
+
+    const loaded = loadMindMapSpec({
+      topic: 'Topic',
+      rightBranches: [{ text: 'Branch A' }],
+      leftBranches: [],
+      preserveLeftRight: true,
+    })
+    const data: DiagramData = {
+      type: 'mindmap',
+      nodes: loaded.nodes,
+      connections: loaded.connections,
+      _mindmap_theme: 'vibrantBlue',
+      _mindmap_diagram_style: 'classic',
+      _node_styles: {
+        'branch-r-0-0': { textColor: '#2a3d66', backgroundColor: '#eef2fb' },
+      },
+      _mindmap_canvas: {
+        v2: {
+          node_styles_by_path: {
+            'r/0': { textColor: '#2a3d66', backgroundColor: '#eef2fb', nodeShape: 'rounded' },
+          },
+          theme: 'vibrantBlue',
+          diagram_style: 'classic',
+        },
+      },
+    }
+    const ctx = makeMindMapCtx(data)
+    reconcileMindMapCanvasModeSwitch(ctx, 'v2', 'legacy')
+    const branchNode = data.nodes.find((n) => n.id.startsWith('branch-'))
+    expect(branchNode?.style?.textColor).toBeUndefined()
+    expect(branchNode?.style?.backgroundColor).toBeUndefined()
+    expect(data._mindmap_theme).toBeUndefined()
+    expect(data._mindmap_diagram_style).toBeUndefined()
+  })
+
+  it('reconcileMindMapCanvasModeSwitch restores v2 diagram_style from bucket', () => {
+    enableMindMapV2CanvasFlag()
+    const uiStore = useUIStore()
+    uiStore.mindMapCanvasMode = 'v2'
+
+    const loaded = loadMindMapSpec(
+      {
+        topic: 'Topic',
+        rightBranches: [{ text: 'Branch A' }],
+        leftBranches: [],
+        preserveLeftRight: true,
+      },
+      { canvasMode: 'v2' }
+    )
+    const data: DiagramData = {
+      type: 'mindmap',
+      nodes: loaded.nodes,
+      connections: loaded.connections,
+      _node_styles: {},
+      _mindmap_canvas: {
+        legacy: { node_styles_by_path: {} },
+        v2: {
+          node_styles_by_path: {
+            'r/0': { backgroundColor: '#fff', textColor: '#134e4a' },
+          },
+          theme: 'oceanTeal',
+          diagram_style: 'bubble',
+        },
+      },
+    }
+    const ctx = makeMindMapCtx(data)
+    const changed = reconcileMindMapCanvasModeSwitch(ctx, 'legacy', 'v2')
+    expect(changed).toBe(true)
+    expect(data._mindmap_theme).toBe('oceanTeal')
+    expect(data._mindmap_diagram_style).toBe('bubble')
   })
 
   it('legacy loadMindMapSpec uses indexed topic handles and column layout', () => {
@@ -335,10 +429,11 @@ describe('mind map classic vs v2 separation', () => {
     expect(topicEdge?.style?.strokeColor).toBe(getMindmapBranchColor(0, 'legacy').border)
   })
 
-  it('legacy palette uses material colors distinct from shared radix branch hues', () => {
+  it('default and legacy palettes share Material-20; Radix is v2-only', () => {
     expect(getMindmapBranchColor(0, 'legacy').fill).toBe('#e3f2fd')
     expect(getMindmapBranchColor(0, 'legacy').border).toBe('#0d47a1')
-    expect(getMindmapBranchColor(0).fill).toBe('#e6f4fe')
+    expect(getMindmapBranchColor(0).fill).toBe('#e3f2fd')
+    expect(getMindmapBranchColor(0, 'v2').fill).toBe('#e6f4fe')
     expect(LEGACY_MINDMAP_BRANCH_COLORS.length).toBe(20)
   })
 
@@ -609,4 +704,5 @@ describe('mind map classic vs v2 separation', () => {
     expect(handles[0]?.transform).toMatch(/^translate\(-\d+(\.\d+)?px, -50%\)$/)
     expect(handles[2]?.transform).toMatch(/^translate\(-\d+(\.\d+)?px, -50%\)$/)
   })
+
 })

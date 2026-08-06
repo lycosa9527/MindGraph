@@ -592,16 +592,17 @@ function commitMindMapReload(
     if (inferred) ctx.data.value._mindmap_theme = inferred
   }
 
+  const reloadCanvasMode = ctxCanvasMode(ctx)
   const mergedNodeStyles = mergeMindMapReloadStyles(
     ctx.data.value.nodes,
     ctx.data.value.connections,
     result.nodes,
     result.connections,
     ctx.data.value._node_styles,
-    resolveActiveMindMapThemeId(ctx.data.value),
-    ctx.data.value._mindmap_diagram_style,
+    reloadCanvasMode === 'v2' ? resolveActiveMindMapThemeId(ctx.data.value) : null,
+    reloadCanvasMode === 'v2' ? ctx.data.value._mindmap_diagram_style : undefined,
     remapMindMapNodeIdAfterReload,
-    ctxCanvasMode(ctx)
+    reloadCanvasMode
   )
 
   const oldNodes = ctx.data.value.nodes

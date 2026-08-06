@@ -121,6 +121,8 @@ export interface MindMapCanvasLegacyBucket {
 export interface MindMapCanvasV2Bucket {
   node_styles_by_path?: MindMapCanvasStylesByPath
   theme?: string
+  /** Persisted with v2 only — cleared from live data on classic canvas. */
+  diagram_style?: string
   collapsed_paths?: string[]
 }
 

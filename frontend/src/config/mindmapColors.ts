@@ -1,22 +1,29 @@
 /**
- * Mind-map branch color palette — 12 hues for nodes and connection lines.
+ * Shared branch color palettes for thinking maps and mind-map canvases.
  *
- * Radix UI Colors light scales (MIT, https://www.radix-ui.com/colors):
- * step 3 fills on canvas, step 8 borders for readable contrast.
+ * Default / classic: 20 Material hues (baseline 7c7df0d3) — bubble, flow,
+ * double-bubble, tree, brace, circle, multi-flow, and classic mind map.
  *
- * Classic mind-map canvas uses LEGACY_MINDMAP_BRANCH_COLORS via getMindmapBranchColor(..., 'legacy').
+ * New (v2) mind map node paint uses mindMapThemes; pass canvasMode `'v2'` only
+ * when a branch-index caller still needs the Radix-12 scale.
  */
 import type { MindMapCanvasMode } from '@/stores/ui'
 
-import { getLegacyMindmapBranchColor } from './mindMapLegacyColors'
+import { LEGACY_MINDMAP_BRANCH_COLORS } from './mindMapLegacyColors'
 
 export interface MindmapBranchColor {
   fill: string
   border: string
 }
 
-/** Twelve Radix accent scales — tree map, flow map, and other diagram types. */
-export const MINDMAP_BRANCH_COLORS: MindmapBranchColor[] = [
+/** Material-20 — shared thinking-map / classic mind-map palette (7c7df0d3). */
+export const MINDMAP_BRANCH_COLORS: MindmapBranchColor[] = LEGACY_MINDMAP_BRANCH_COLORS
+
+/**
+ * Twelve Radix accent scales — explicit v2 mind-map branch-index use only.
+ * (MIT, https://www.radix-ui.com/colors — step 3 fills, step 8 borders.)
+ */
+export const V2_MINDMAP_BRANCH_COLORS: MindmapBranchColor[] = [
   { fill: '#e6f4fe', border: '#5eb1ef' }, // blue
   { fill: '#def7f9', border: '#3db9cf' }, // cyan
   { fill: '#e0f8f3', border: '#53b9ab' }, // teal
@@ -35,8 +42,9 @@ export function getMindmapBranchColor(
   branchIndex: number,
   canvasMode?: MindMapCanvasMode
 ): MindmapBranchColor {
-  if (canvasMode === 'legacy') {
-    return getLegacyMindmapBranchColor(branchIndex)
+  // Default and classic (`'legacy'`) share Material-20; only explicit v2 differs.
+  if (canvasMode === 'v2') {
+    return V2_MINDMAP_BRANCH_COLORS[branchIndex % V2_MINDMAP_BRANCH_COLORS.length]
   }
   return MINDMAP_BRANCH_COLORS[branchIndex % MINDMAP_BRANCH_COLORS.length]
 }
