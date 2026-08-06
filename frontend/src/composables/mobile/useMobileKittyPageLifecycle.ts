@@ -7,6 +7,10 @@ import type { Router } from 'vue-router'
 import { eventBus } from '@/composables/core/useEventBus'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
 import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrateMobileKittyStoreFromBootstrap'
+import {
+  isKittyWsIntentionalClose,
+  isKittyWsPolicyDenyClose,
+} from '@/composables/kitty/kittyConnectFailure'
 import type { createKittyWsAuthReconnectGate } from '@/composables/kitty/kittyWsAuthReconnect'
 import type { useAuthStore } from '@/stores/auth'
 import type { useFeatureFlagsStore } from '@/stores/featureFlags'
@@ -138,7 +142,19 @@ export function useMobileKittyPageLifecycle(options: UseMobileKittyPageLifecycle
     eventBus.onWithOwner(
       'voice:ws_closed',
       (data) => {
-        if (data.wasClean || authGate.isHardStopped() || !authStore.isAuthenticated) {
+        if (authGate.isHardStopped() || !authStore.isAuthenticated) {
+          return
+        }
+        const currentScope = kittyPairScope.value.trim()
+        if (data.scope && currentScope && data.scope !== currentScope) {
+          return
+        }
+        // Intentional preempt / cleanup / local reconnect — no reconnect storm.
+        if (isKittyWsIntentionalClose(data.code, data.wasClean)) {
+          return
+        }
+        if (isKittyWsPolicyDenyClose(data.code)) {
+          authGate.markHardStopped()
           return
         }
         // Drop mid-turn pipeline so unclean reconnect cannot stick awaiting_result.

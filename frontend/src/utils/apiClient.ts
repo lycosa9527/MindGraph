@@ -19,6 +19,7 @@ import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import {
   ensureFreshSessionAfterAuthFailure,
   getSessionRefreshEpoch,
+  isSessionRefreshRateLimited,
 } from '@/utils/sessionRefresh'
 
 const API_BASE = '/api'
@@ -74,7 +75,24 @@ function mergeApiHeaders(
 
 function handleUploadUnauthorizedAfterRetry(): void {
   const authStore = useAuthStore()
-  authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined)
+  // Caller already attempted ensureFreshSessionAfterAuthFailure.
+  authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined, {
+    skipRecovery: true,
+  })
+}
+
+function handleUnauthorizedAfterFailedRefresh(hadUserBeforeRefresh: boolean): void {
+  if (!hadUserBeforeRefresh) {
+    return
+  }
+  // 429 means we hammered /refresh — keep the session; caller can retry later.
+  if (isSessionRefreshRateLimited()) {
+    return
+  }
+  const authStore = useAuthStore()
+  authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined, {
+    skipRecovery: true,
+  })
 }
 
 /**
@@ -112,8 +130,8 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
       return response
     }
 
-    const authStore = useAuthStore()
     // Check if user was previously authenticated (before refresh attempt)
+    const authStore = useAuthStore()
     const hadUserBeforeRefresh = !!authStore.user || !!sessionStorage.getItem('auth_user')
 
     const refreshed = await ensureFreshSessionAfterAuthFailure(epochAtStart)
@@ -131,15 +149,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
         credentials: 'same-origin',
       })
     } else {
-      // Refresh failed - only show session expired modal if user was previously authenticated
-      // If user was never authenticated, just return the 401 response (for public endpoints)
-      if (hadUserBeforeRefresh) {
-        // Pass null to stay on current page (no redirect)
-        authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined)
-      } else {
-        // User was never authenticated - return 401 without showing modal
-        // This allows public endpoints to handle 401 gracefully
-      }
+      handleUnauthorizedAfterFailedRefresh(hadUserBeforeRefresh)
     }
   }
 
@@ -323,9 +333,7 @@ export async function apiUpload(
         throw new Error('SESSION_EXPIRED')
       }
     } else {
-      const authStore = useAuthStore()
-      // Pass null to stay on current page (no redirect)
-      authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined)
+      handleUnauthorizedAfterFailedRefresh(true)
     }
   }
 
@@ -381,8 +389,7 @@ export async function apiPutFormData(
         throw new Error('SESSION_EXPIRED')
       }
     } else {
-      const authStore = useAuthStore()
-      authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined)
+      handleUnauthorizedAfterFailedRefresh(true)
     }
   }
 

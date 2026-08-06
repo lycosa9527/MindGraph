@@ -10,9 +10,13 @@ import { type ComputedRef, type Ref, onUnmounted, watch } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { buildKittyDiagramContext } from '@/composables/kitty/buildKittyDiagramContext'
 import {
+  isKittyWsIntentionalClose,
+  isKittyWsPolicyDenyClose,
+} from '@/composables/kitty/kittyConnectFailure'
+import {
   type KittyConnectAttemptResult,
+  classifyKittyConnectError,
   createKittyWsAuthReconnectGate,
-  isKittyConnectAbortError,
   runKittyConnectWithAuthRecovery,
 } from '@/composables/kitty/kittyWsAuthReconnect'
 import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiagramFingerprint'
@@ -25,6 +29,7 @@ import { useOneSentenceStore } from '@/stores/oneSentence'
 import { useKittySessionStore } from '@/stores/kittySession'
 
 const RECONNECT_DEBOUNCE_MS = 400
+const RECONNECT_MAX_BACKOFF_MS = 8_000
 const HUB_BACKGROUND_DEBOUNCE_MS = 500
 
 export function useKittyCanvasOwnerAgent(options: {
@@ -55,6 +60,10 @@ export function useKittyCanvasOwnerAgent(options: {
   let ensureInFlight: Promise<boolean> | null = null
   /** True while intentionally tearing down — ignore voice:ws_closed reconnect. */
   let releasingOwnership = false
+  /** Exponential backoff after failed ensureConnected (reset on success / scope change). */
+  let reconnectAttempt = 0
+  /** Bumped on scope/enabled changes so stale ensureConnected results are ignored. */
+  let connectGeneration = 0
 
   function buildContext() {
     return buildKittyDiagramContext(diagramStore, 'one_sentence', {
@@ -67,8 +76,8 @@ export function useKittyCanvasOwnerAgent(options: {
   function clearReconnectTimer(): void {
     if (reconnectTimer != null) {
       clearTimeout(reconnectTimer)
-      reconnectTimer = null
     }
+    reconnectTimer = null
   }
 
   function clearHubSyncTimer(): void {
@@ -76,6 +85,13 @@ export function useKittyCanvasOwnerAgent(options: {
       clearTimeout(hubSyncTimer)
       hubSyncTimer = null
     }
+  }
+
+  function reconnectDelayMs(): number {
+    return Math.min(
+      RECONNECT_MAX_BACKOFF_MS,
+      RECONNECT_DEBOUNCE_MS * 2 ** Math.min(reconnectAttempt, 5)
+    )
   }
 
   function scheduleReconnect(): void {
@@ -86,22 +102,26 @@ export function useKittyCanvasOwnerAgent(options: {
       return
     }
     clearReconnectTimer()
+    const delay = reconnectDelayMs()
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null
       void ensureConnected()
-    }, RECONNECT_DEBOUNCE_MS)
+    }, delay)
   }
 
-  function releaseOwnership(): void {
+  async function releaseOwnership(): Promise<void> {
     releasingOwnership = true
+    connectGeneration += 1
     clearReconnectTimer()
     clearHubSyncTimer()
     lastHubFingerprint = ''
     kittySession.setOwnsKittySession(false)
     kittySession.setMutationAckSender(null)
-    void kitty.stopConversation().finally(() => {
+    try {
+      await kitty.stopConversation()
+    } finally {
       releasingOwnership = false
-    })
+    }
   }
 
   async function connectOnce(): Promise<KittyConnectAttemptResult> {
@@ -127,10 +147,7 @@ export function useKittyCanvasOwnerAgent(options: {
       return 'failed'
     } catch (error) {
       kittySession.setOwnsKittySession(false)
-      if (isKittyConnectAbortError(error)) {
-        return 'aborted'
-      }
-      return 'failed'
+      return classifyKittyConnectError(error)
     }
   }
 
@@ -145,20 +162,33 @@ export function useKittyCanvasOwnerAgent(options: {
     if (ensureInFlight != null) {
       return ensureInFlight
     }
+    const generation = connectGeneration
     ensureInFlight = (async () => {
       try {
-        return await runKittyConnectWithAuthRecovery({
+        const ok = await runKittyConnectWithAuthRecovery({
           isHardStopped: authGate.isHardStopped,
           markHardStopped: authGate.markHardStopped,
           hasAuthenticatedUser: () => Boolean(authStore.isAuthenticated || authStore.user),
+          canAttemptAuthRefresh: authGate.canAttemptAuthRefresh,
+          markAuthRefreshConsumed: authGate.markAuthRefreshConsumed,
           onSessionExpired: () => {
             authStore.handleTokenExpired(
               'Your session has expired. Please log in again.',
-              undefined
+              undefined,
+              { skipRecovery: true }
             )
           },
           connectOnce,
         })
+        if (generation !== connectGeneration) {
+          return false
+        }
+        if (ok) {
+          reconnectAttempt = 0
+        } else if (!authGate.isHardStopped()) {
+          reconnectAttempt += 1
+        }
+        return ok
       } finally {
         ensureInFlight = null
       }
@@ -211,19 +241,46 @@ export function useKittyCanvasOwnerAgent(options: {
       const wasEnabled = previous?.[0]
       if (enabled && wasEnabled === false) {
         authGate.reset()
+        reconnectAttempt = 0
       }
       if (!options.enabled.value) {
-        releaseOwnership()
+        void releaseOwnership()
         return
       }
       const scope = options.libraryDiagramId.value?.trim() ?? ''
       if (!scope) {
-        releaseOwnership()
+        void releaseOwnership()
         return
       }
-      // Scope change: allow one auth refresh again for the new socket.
-      if (previous != null && previous[1] !== current[1]) {
+      const scopeChanged = previous != null && previous[1] !== current[1]
+      if (scopeChanged) {
         authGate.reset()
+        reconnectAttempt = 0
+        connectGeneration += 1
+        // Serialize: stop prior socket before opening the new scope so cleanup
+        // / preempt races cannot leave a short-lived accepted peer thrashing.
+        void (async () => {
+          const generation = connectGeneration
+          releasingOwnership = true
+          clearReconnectTimer()
+          try {
+            await kitty.stopConversation()
+          } finally {
+            releasingOwnership = false
+          }
+          if (generation !== connectGeneration) {
+            return
+          }
+          if (!options.enabled.value) {
+            return
+          }
+          const nextScope = options.libraryDiagramId.value?.trim() ?? ''
+          if (!nextScope) {
+            return
+          }
+          scheduleReconnect()
+        })()
+        return
       }
       // Debounce so loadFromSpec first paint is not competing with WS start +
       // full diagram context JSON.stringify on the main thread.
@@ -237,6 +294,7 @@ export function useKittyCanvasOwnerAgent(options: {
     (authenticated, wasAuthenticated) => {
       if (authenticated && !wasAuthenticated) {
         authGate.reset()
+        reconnectAttempt = 0
       }
       if (!authenticated) {
         authGate.markHardStopped()
@@ -254,12 +312,30 @@ export function useKittyCanvasOwnerAgent(options: {
 
   eventBus.onWithOwner(
     'voice:ws_closed',
-    (payload?: { wasClean?: boolean }) => {
+    (payload?: {
+      wasClean?: boolean
+      code?: number
+      reason?: string
+      scope?: string
+    }) => {
       if (!options.enabled.value || authGate.isHardStopped() || releasingOwnership) {
         return
       }
-      // Intentional close during ownership handoff — do not fight stopConversation.
-      if (payload?.wasClean === true) {
+      const currentScope = options.libraryDiagramId.value?.trim() ?? ''
+      if (!currentScope) {
+        return
+      }
+      // Ignore closes for a different scope (stale handoff / cleanup of prior id).
+      if (payload?.scope && payload.scope !== currentScope) {
+        return
+      }
+      // Intentional server/client closes (preempt, cleanup, local reconnect).
+      if (isKittyWsIntentionalClose(payload?.code, payload?.wasClean)) {
+        return
+      }
+      // Policy denials — do not reconnect-storm.
+      if (isKittyWsPolicyDenyClose(payload?.code)) {
+        authGate.markHardStopped()
         return
       }
       scheduleReconnect()
@@ -289,7 +365,7 @@ export function useKittyCanvasOwnerAgent(options: {
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
     eventBus.removeAllListenersForOwner('KittyCanvasOwnerAgent')
-    releaseOwnership()
+    void releaseOwnership()
   })
 
   return { kitty, ensureConnected }

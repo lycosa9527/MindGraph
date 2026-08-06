@@ -172,7 +172,13 @@ export type EventTypes = {
   'voice:started': { sessionId: string }
   'voice:stopped': Record<string, never>
   'voice:connected': { sessionId: string }
-  'voice:ws_closed': { code?: number; reason?: string; wasClean?: boolean }
+  'voice:ws_closed': {
+    code?: number
+    reason?: string
+    wasClean?: boolean
+    /** Diagram/session scope of the socket that closed (owner filters stale closes). */
+    scope?: string
+  }
   'voice:ws_error': { error: string; wsState?: unknown }
   'voice:transcription': { text: string }
   'voice:text_chunk': { text: string }

@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.169.6] - 2026-08-06
+
+> **Kitty WS auth close codes + ownership serialization; stop speculative refresh → 429 / forced re-login.**
+
+### Fixed
+
+- **Kitty WS auth signaling** — Reject paths `accept()` then `close(4001|4003|4400|4403)` so browsers receive real close codes instead of HTTP 403 → opaque 1006 (`reject_kitty_websocket` in `lifecycle.py`).
+- **Kitty refresh only on 4001** — Client classifies close codes; cookie refresh runs only for `auth_failed`. Access/scope denials hard-stop without login modal; transport failures backoff-reconnect without rotating cookies (`kittyConnectFailure.ts`, `kittyWsAuthReconnect.ts`, `useKittyAgent.ts`).
+- **Canvas owner scope churn** — Serialize stop→start on scope change; ignore stale `voice:ws_closed` (wrong scope / 1001 / clean / policy codes); skip Redis cleanup when old scope equals next SoT; auth-store 401 paths use epoch helper; 429 ≠ logout (`useKittyCanvasOwnerAgent.ts`, `useMobileKittyPageLifecycle.ts`, `CanvasPage.vue`, `auth.ts`, `apiClient.ts`).
+- **HTTP 401 stampede grace** — Keep 20s success grace for apiClient/auth peers only (not Kitty speculative refresh).
+
+### Tests
+
+- **Backend** — Accept-then-close reject helper codes (`test_kitty_ws_reject_close.py`).
+- **Frontend** — Close-code helpers; refresh only on `auth_failed`; budget / 429 / post-refresh policy-deny (`kittyConnectFailure.spec.ts`, `kittyWsAuthReconnect.spec.ts`, `sessionRefresh.spec.ts`).
+
 ## [5.169.5] - 2026-08-06
 
 > **Auth refresh 401 stampede coordination (Kitty + apiClient); autoWrap inline edit grows with draft / IME-safe.**

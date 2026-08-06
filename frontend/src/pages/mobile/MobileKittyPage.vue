@@ -26,8 +26,8 @@ import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobile
 import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrateMobileKittyStoreFromBootstrap'
 import {
   type KittyConnectAttemptResult,
+  classifyKittyConnectError,
   createKittyWsAuthReconnectGate,
-  isKittyConnectAbortError,
   runKittyConnectWithAuthRecovery,
 } from '@/composables/kitty/kittyWsAuthReconnect'
 import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesktopLlmModelPublish'
@@ -420,10 +420,7 @@ async function connectKittyOnce(): Promise<KittyConnectAttemptResult> {
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error)
     pushKittyDebugLine('#connect', `fail ${detail.slice(0, 100)}`)
-    if (isKittyConnectAbortError(error)) {
-      return 'aborted'
-    }
-    return 'failed'
+    return classifyKittyConnectError(error)
   }
 }
 
@@ -432,10 +429,13 @@ async function ensureConnected(): Promise<boolean> {
     isHardStopped: mobileKittyAuthGate.isHardStopped,
     markHardStopped: mobileKittyAuthGate.markHardStopped,
     hasAuthenticatedUser: () => Boolean(authStore.isAuthenticated || authStore.user),
+    canAttemptAuthRefresh: mobileKittyAuthGate.canAttemptAuthRefresh,
+    markAuthRefreshConsumed: mobileKittyAuthGate.markAuthRefreshConsumed,
     onSessionExpired: () => {
       authStore.handleTokenExpired(
         'Your session has expired. Please log in again.',
-        undefined
+        undefined,
+        { skipRecovery: true }
       )
     },
     connectOnce: connectKittyOnce,

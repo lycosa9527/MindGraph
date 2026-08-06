@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from fastapi import WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocketState
 
 from config.settings import config
 from models.domain.auth import User
@@ -24,6 +25,7 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_kitty_ws_inbound_reject,
     record_kitty_ws_rate_limit_close,
 )
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.infra.desktop.kitty_canvas_owner_presence import (
     mark_kitty_canvas_owner_present,
@@ -66,6 +68,9 @@ from utils.ws_limits import (
 )
 
 
+_WS_CLOSE_REASON_MAX = 123
+
+
 @dataclass(slots=True)
 class KittyWsAuthResult:
     """KittyWsAuthResult helper."""
@@ -76,6 +81,31 @@ class KittyWsAuthResult:
     hub_session_id: str
 
 
+async def reject_kitty_websocket(
+    websocket: WebSocket,
+    code: int,
+    reason: str,
+) -> None:
+    """
+    Accept (if needed) then close with a real WebSocket close code.
+
+    Closing before accept makes Starlette return HTTP 403; browsers report
+    that as close code 1006, so the client cannot distinguish auth (4001)
+    from transport failure and wrongly refreshes cookies.
+    """
+    clipped = (reason or "rejected")[:_WS_CLOSE_REASON_MAX]
+    try:
+        if websocket.client_state == WebSocketState.CONNECTING:
+            await websocket.accept()
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.debug("Kitty WS accept before reject skipped: %s", exc)
+    try:
+        if websocket.client_state == WebSocketState.CONNECTED:
+            await websocket.close(code=code, reason=clipped)
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.debug("Kitty WS reject close skipped: %s", exc)
+
+
 async def authenticate_kitty_websocket(
     websocket: WebSocket,
     diagram_session_id: str,
@@ -83,13 +113,17 @@ async def authenticate_kitty_websocket(
     """Auth, feature gate, accept WS, and open hub session. Returns None when rejected."""
     if not config.FEATURE_KITTY_WS_ENABLED:
         logger.warning("Kitty Agent WebSocket connection rejected: feature disabled")
-        await websocket.close(code=4003, reason="Kitty Agent feature is disabled")
+        await reject_kitty_websocket(
+            websocket, 4003, "Kitty Agent feature is disabled"
+        )
         return None
 
     current_user, auth_error = await authenticate_websocket_user(websocket)
     if auth_error or current_user is None:
         logger.warning("WebSocket auth failed: %s", auth_error)
-        await websocket.close(code=4001, reason=auth_error or "Authentication failed")
+        await reject_kitty_websocket(
+            websocket, 4001, auth_error or "Authentication failed"
+        )
         return None
 
     if not await user_has_feature_access(current_user, "feature_kitty_agent"):
@@ -97,7 +131,15 @@ async def authenticate_kitty_websocket(
             "Kitty Agent WebSocket connection rejected: access denied user_id=%s",
             getattr(current_user, "id", None),
         )
-        await websocket.close(code=4003, reason="Kitty Agent access denied")
+        await reject_kitty_websocket(websocket, 4003, "Kitty Agent access denied")
+        return None
+
+    # Accept before remaining policy checks so VPN/scope rejects also carry codes.
+    try:
+        if websocket.client_state == WebSocketState.CONNECTING:
+            await websocket.accept()
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning("Kitty WS accept failed user_id=%s: %s", current_user.id, exc)
         return None
 
     if await maybe_close_websocket_for_vpn_cn_geo(websocket):
@@ -107,7 +149,7 @@ async def authenticate_kitty_websocket(
     diagram_session_id_norm = normalize_kitty_diagram_session_id(diagram_session_id)
     if diagram_session_id_norm is None:
         logger.warning("Kitty WS rejected: invalid diagram_session_id")
-        await websocket.close(code=4400, reason="Invalid diagram session id")
+        await reject_kitty_websocket(websocket, 4400, "Invalid diagram session id")
         return None
 
     if not await user_may_access_kitty_scope(int(current_user.id), diagram_session_id_norm):
@@ -116,10 +158,9 @@ async def authenticate_kitty_websocket(
             current_user.id,
             diagram_session_id_norm[:16],
         )
-        await websocket.close(code=4403, reason="Diagram scope access denied")
+        await reject_kitty_websocket(websocket, 4403, "Diagram scope access denied")
         return None
 
-    await websocket.accept()
     logger.info("WebSocket connection accepted user_id=%s", current_user.id)
 
     hub = get_mind_graph_agent_hub()

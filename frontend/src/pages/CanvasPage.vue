@@ -614,8 +614,19 @@ const { showKittyDesktopIndicator } = useCanvasKittyDesktopPairing({
   isViewer: computed(() => isViewer.value),
   kittyFeatureEnabled: computed(() => featureFlagsStore.getFeatureKittyAgent()),
   onLibraryScopeSwitchedCleanup: (oldScope: string) => {
+    const trimmed = oldScope.trim()
+    if (!trimmed) {
+      return
+    }
+    // Skip Redis cleanup when the owner is already moving to this same scope
+    // (lib ↔ ephemeral flicker). Owner serializes stop→start; cleanup of the
+    // prior id is still posted when the id actually changes.
+    const nextScope = currentDiagramId.value?.trim() || oneSentenceStore.diagramScope?.trim() || ''
+    if (trimmed === nextScope) {
+      return
+    }
     if (authStore.isAuthenticated && featureFlagsStore.getFeatureKittyAgent()) {
-      fetch(`/api/kitty/cleanup/${encodeURIComponent(oldScope)}`, {
+      fetch(`/api/kitty/cleanup/${encodeURIComponent(trimmed)}`, {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },

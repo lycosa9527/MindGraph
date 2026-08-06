@@ -39,7 +39,11 @@ import {
 } from '@/constants/schoolTier'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
-import { refreshSessionAccessToken } from '@/utils/sessionRefresh'
+import {
+  ensureFreshSessionAfterAuthFailure,
+  getSessionRefreshEpoch,
+  refreshSessionAccessToken,
+} from '@/utils/sessionRefresh'
 import { clearSavedLoginCredentials } from '@/utils/savedLoginCredentials'
 import {
   type AdminCapabilitiesPayload,
@@ -621,9 +625,10 @@ export const useAuthStore = defineStore('auth', () => {
 
     loadAdminCapabilitiesPromise = (async () => {
       try {
+        const epochAtStart = getSessionRefreshEpoch()
         let response = await fetchAdminCapabilitiesResponse()
         if (response.status === 401) {
-          const refreshed = await refreshSessionAccessToken()
+          const refreshed = await ensureFreshSessionAfterAuthFailure(epochAtStart)
           if (refreshed) {
             response = await fetchAdminCapabilitiesResponse()
           }
@@ -693,6 +698,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       // Token is in httpOnly cookie, so we just make the API call
       // The cookie will be sent automatically
+      const epochAtStart = getSessionRefreshEpoch()
       const response = await fetch(`${API_BASE}/me`, {
         credentials: 'same-origin',
       })
@@ -714,7 +720,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       // If 401, try to refresh the access token silently (refresh cookie may still be valid)
       if (response.status === 401) {
-        const recovered = await tryRecoverSessionFromRefresh()
+        const recovered = await tryRecoverSessionFromRefresh(epochAtStart)
         if (recovered) {
           return true
         }
@@ -778,10 +784,14 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Refresh access token via httpOnly cookie, then load /me. Used when access JWT
    * expired but the refresh session is still valid (common after idle tab time).
+   *
+   * Pass ``epochAtFailure`` from before the failing request so a peer refresh
+   * (or recent grace window) does not rotate cookies again.
    */
-  async function tryRecoverSessionFromRefresh(): Promise<boolean> {
-    const refreshResult = await refreshAccessToken()
-    if (!refreshResult.success) {
+  async function tryRecoverSessionFromRefresh(epochAtFailure?: number): Promise<boolean> {
+    const epoch = epochAtFailure ?? getSessionRefreshEpoch()
+    const refreshed = await ensureFreshSessionAfterAuthFailure(epoch)
+    if (!refreshed) {
       return false
     }
     try {
@@ -819,16 +829,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
     lastProfileRefreshTime.value = now
     try {
+      const epochAtStart = getSessionRefreshEpoch()
       let response = await fetch(`${API_BASE}/me`, {
         method: 'GET',
         credentials: 'same-origin',
       })
       if (response.status === 401) {
-        const recovered = await tryRecoverSessionFromRefresh()
+        const recovered = await tryRecoverSessionFromRefresh(epochAtStart)
         if (recovered) {
           return true
         }
-        handleTokenExpired('您的登录已过期，请重新登录')
+        handleTokenExpired('您的登录已过期，请重新登录', undefined, { skipRecovery: true })
         return false
       }
       if (!response.ok) {
@@ -955,19 +966,16 @@ export const useAuthStore = defineStore('auth', () => {
     lastSessionCheckTime.value = Date.now()
 
     try {
+      const epochAtStart = getSessionRefreshEpoch()
       const response = await fetch(`${API_BASE}/session-status`, {
         method: 'GET',
         credentials: 'same-origin',
       })
 
       if (response.status === 401) {
-        // Try to refresh the token first
-        const refreshResult = await refreshAccessToken()
-        if (!refreshResult.success) {
-          // Use backend error message if available, otherwise use generic message
-          const errorMessage =
-            refreshResult.errorMessage || getTranslatedMessage('notification.sessionInvalidated')
-          handleSessionInvalidation(errorMessage)
+        const refreshed = await ensureFreshSessionAfterAuthFailure(epochAtStart)
+        if (!refreshed) {
+          handleSessionInvalidation(getTranslatedMessage('notification.sessionInvalidated'))
         }
         return
       }
@@ -997,16 +1005,26 @@ export const useAuthStore = defineStore('auth', () => {
    * This is called when API calls return 401 due to expired JWT token
    * @param message - Optional message to display
    * @param redirectPath - Optional path to redirect to after successful login
+   * @param options.skipRecovery - When true, skip another /refresh (caller already failed recovery)
    */
-  function handleTokenExpired(message?: string, redirectPath?: string): void {
+  function handleTokenExpired(
+    message?: string,
+    redirectPath?: string,
+    options?: { skipRecovery?: boolean }
+  ): void {
     // Prevent multiple triggers
     if (showSessionExpiredModal.value) {
       return
     }
 
     void (async (): Promise<void> => {
-      const recovered = await tryRecoverSessionFromRefresh()
-      if (recovered || showSessionExpiredModal.value) {
+      if (!options?.skipRecovery) {
+        const recovered = await tryRecoverSessionFromRefresh()
+        if (recovered || showSessionExpiredModal.value) {
+          return
+        }
+      }
+      if (showSessionExpiredModal.value) {
         return
       }
 

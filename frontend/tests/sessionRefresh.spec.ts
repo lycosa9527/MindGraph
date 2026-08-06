@@ -88,6 +88,35 @@ describe('sessionRefresh stampede coordinator', () => {
     expect(getSessionRefreshEpoch()).toBe(epochAtStart)
   })
 
+  it('ensureFreshSessionAfterAuthFailure skips HTTP within success grace', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(null, { status: 200 }))
+    )
+    const {
+      refreshSessionAccessToken,
+      ensureFreshSessionAfterAuthFailure,
+      getSessionRefreshEpoch,
+    } = await loadSessionRefresh()
+    expect(await refreshSessionAccessToken()).toBe(true)
+    const epochAfter = getSessionRefreshEpoch()
+    vi.mocked(fetch).mockClear()
+    // Same epoch (simulates a new Kitty reconnect cycle after the prior refresh).
+    const ok = await ensureFreshSessionAfterAuthFailure(epochAfter)
+    expect(ok).toBe(true)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('marks rate_limit failure on HTTP 429', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(null, { status: 429 }))
+    )
+    const { refreshSessionAccessToken, isSessionRefreshRateLimited } = await loadSessionRefresh()
+    expect(await refreshSessionAccessToken()).toBe(false)
+    expect(isSessionRefreshRateLimited()).toBe(true)
+  })
+
   it('awaitSessionRefreshIdle waits for in-flight refresh', async () => {
     let release!: () => void
     const gate = new Promise<void>((resolve) => {

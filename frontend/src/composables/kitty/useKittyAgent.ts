@@ -4,6 +4,7 @@
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { KittyConnectCloseError } from '@/composables/kitty/kittyConnectFailure'
 import { arrayBufferToBase64 } from '@/composables/kitty/kittyAgentAudioCodec'
 import {
   createKittyCapture,
@@ -386,13 +387,14 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
 
       socket.onerror = () => {
         if (ws.value !== socket) {
-          settleReject(new Error('Connection superseded by a newer socket'))
           return
         }
+        // Do not settle here — onclose carries the close code after server
+        // accept-then-close auth rejects (4001/4003/440x). Premature reject
+        // would hide the code behind a generic "connection failed".
         state.value = 'error'
         lastError.value = 'WebSocket connection failed'
         eventBus.emit('voice:ws_error', { error: lastError.value })
-        settleReject(new Error(lastError.value))
       }
 
       socket.onclose = (event) => {
@@ -415,9 +417,10 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
           code: event.code,
           reason: event.reason,
           wasClean: event.wasClean,
+          scope: diagSessionId,
         })
         if (!settled) {
-          settleReject(new Error(event.reason || 'WebSocket closed before connected'))
+          settleReject(new KittyConnectCloseError(event.code, event.reason || ''))
         }
       }
     })
