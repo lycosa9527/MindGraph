@@ -43,7 +43,6 @@ import { CANVAS_TOP_BAR } from '@/config/uiConfig'
 import { CANVAS_STANDARD_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM } from '@/config/canvasExportMenu'
 import { isPdfExportCommand } from '@/utils/diagramPdfExport'
 import { useAuthStore, useCanvasExportStore, useDiagramStore, usePanelsStore } from '@/stores'
-import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { navigateBackFromCanvas } from '@/utils/canvasBackNavigation'
 
 const { resetToDefaultTemplate } = useCanvasReset()
@@ -108,7 +107,6 @@ const router = useRouter()
 const { promptLanguage, t, currentLanguage } = useLanguage()
 const diagramStore = useDiagramStore()
 
-const savedDiagramsStore = useSavedDiagramsStore()
 const authStore = useAuthStore()
 const panelsStore = usePanelsStore()
 
@@ -175,8 +173,6 @@ onMounted(() => {
       diagramStore.initTitle(generateDefaultName())
     }
   }
-  // Fetch diagrams to get current slot count
-  savedDiagramsStore.fetchDiagrams()
 
   const root = topBarRootRef.value
   if (root) {

@@ -224,10 +224,13 @@ export function useAdminAccess() {
 
 
 
-  async function loadCapabilities(): Promise<void> {
-
-    await authStore.loadAdminCapabilities()
-
+  /**
+   * Load panel capabilities. Uses the store TTL by default so AdminPage /
+   * sidebar mounts reuse the router force-refresh from admin route entry.
+   * Pass ``force: true`` only when caps must be re-fetched immediately.
+   */
+  async function loadCapabilities(options?: { force?: boolean }): Promise<void> {
+    await authStore.loadAdminCapabilities(options)
   }
 
 

@@ -11,10 +11,9 @@ import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useMindmateCollabNotify } from '@/composables/social/useMindmateCollabNotify'
-import { useAuthStore, useVoiceStore } from '@/stores'
+import { useVoiceStore } from '@/stores'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 
-const authStore = useAuthStore()
 const featureFlagsStore = useFeatureFlagsStore()
 const { canUseOnlineCollab } = useSchoolTierFeatures()
 const notify = useNotifications()
@@ -64,7 +63,6 @@ async function consumeShowcasePostQuery(): Promise<void> {
 
 onMounted(async () => {
   void ensureMarkdownRenderer()
-  void authStore.checkAuth(true)
   await featureFlagsStore.fetchFlags()
   await consumeJoinCollabQuery()
   await consumeShowcasePostQuery()

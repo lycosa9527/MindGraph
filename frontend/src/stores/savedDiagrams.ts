@@ -233,6 +233,13 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   /** In-memory cache so showcase / history picker can show previews instantly. */
   const diagramDetailCache = new Map<string, SavedDiagramFull>()
 
+  /** Last successful list+folders fetch; 0 means never loaded / cleared. */
+  let lastListFetchAt = 0
+  /** User id that owns the cached list — invalidates TTL across account switches. */
+  let listOwnerUserId: string | null = null
+  let fetchDiagramsPromise: Promise<boolean> | null = null
+  const LIST_CACHE_MS = 15_000
+
   // Getters
   const authStore = useAuthStore()
   const uiStore = useUIStore()
@@ -254,67 +261,130 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     folders.value = syncFolderDiagramCounts(folders.value, diagrams.value)
   }
 
-  async function fetchDiagrams(page: number = 1, pageSize: number = 50): Promise<boolean> {
+  function clearListCacheState(): void {
+    diagrams.value = []
+    folders.value = []
+    foldersLoadFailed.value = false
+    total.value = 0
+    lastListFetchAt = 0
+    listOwnerUserId = null
+  }
+
+  function currentAuthUserId(): string {
+    const id = authStore.user?.id
+    return id == null ? '' : String(id)
+  }
+
+  async function fetchDiagrams(
+    page: number = 1,
+    pageSize: number = 50,
+    options?: { force?: boolean }
+  ): Promise<boolean> {
     if (!authStore.isAuthenticated) {
-      diagrams.value = []
-      folders.value = []
-      foldersLoadFailed.value = false
+      clearListCacheState()
       return false
     }
 
-    isLoading.value = true
-    error.value = null
-    foldersLoadFailed.value = false
+    const userId = currentAuthUserId()
+    // Prevent TTL from serving another account's list after logout/login without
+    // DiagramHistory mounted (that watcher is the only other reset path).
+    if (listOwnerUserId != null && userId && listOwnerUserId !== userId) {
+      clearListCacheState()
+    }
 
-    try {
-      const [diagramResponse, folderResponse] = await Promise.all([
-        authFetch(`/api/diagrams?page=${page}&page_size=${pageSize}`),
-        authFetch('/api/diagram-folders'),
-      ])
+    const force = options?.force === true
+    if (
+      !force &&
+      listOwnerUserId === userId &&
+      lastListFetchAt > 0 &&
+      Date.now() - lastListFetchAt < LIST_CACHE_MS
+    ) {
+      return true
+    }
 
-      if (!diagramResponse.ok) {
-        if (diagramResponse.status === 401) {
-          authStore.handleTokenExpired('您的登录已过期，请重新登录后查看图表')
+    // Share one in-flight request. Force callers reuse a successful shared fetch;
+    // if the shared fetch failed, force retries once below.
+    if (fetchDiagramsPromise) {
+      const shared = await fetchDiagramsPromise
+      if (!force || shared) {
+        return shared
+      }
+    }
+    // Another force caller may have started the retry while we awaited.
+    if (fetchDiagramsPromise) {
+      return fetchDiagramsPromise
+    }
+
+    fetchDiagramsPromise = (async () => {
+      const requestUserId = currentAuthUserId()
+      isLoading.value = true
+      error.value = null
+      foldersLoadFailed.value = false
+
+      try {
+        const [diagramResponse, folderResponse] = await Promise.all([
+          authFetch(`/api/diagrams?page=${page}&page_size=${pageSize}`),
+          authFetch('/api/diagram-folders'),
+        ])
+
+        // Drop stale responses if the signed-in user changed mid-flight.
+        if (currentAuthUserId() !== requestUserId) {
           return false
         }
-        throw new Error(`Failed to fetch diagrams: ${diagramResponse.status}`)
+
+        if (!diagramResponse.ok) {
+          if (diagramResponse.status === 401) {
+            authStore.handleTokenExpired('您的登录已过期，请重新登录后查看图表')
+            return false
+          }
+          throw new Error(`Failed to fetch diagrams: ${diagramResponse.status}`)
+        }
+
+        const data: DiagramListResponse = await diagramResponse.json()
+        let merged = [...data.diagrams]
+        let nextPage = data.page
+        let hasMore = data.has_more
+        while (hasMore && merged.length < data.total) {
+          nextPage += 1
+          const nextResponse = await authFetch(
+            `/api/diagrams?page=${nextPage}&page_size=${pageSize}`
+          )
+          if (!nextResponse.ok) break
+          const nextData: DiagramListResponse = await nextResponse.json()
+          merged = [...merged, ...nextData.diagrams]
+          hasMore = nextData.has_more
+        }
+
+        if (currentAuthUserId() !== requestUserId) {
+          return false
+        }
+
+        diagrams.value = merged
+        total.value = data.total
+        maxDiagrams.value = data.max_diagrams
+
+        if (folderResponse.ok) {
+          const folderData: DiagramFolderListResponse = await folderResponse.json()
+          folders.value = folderData.folders
+        } else {
+          foldersLoadFailed.value = true
+        }
+        applyFolderCounts()
+        lastListFetchAt = Date.now()
+        listOwnerUserId = requestUserId
+
+        return true
+      } catch (e) {
+        error.value = e instanceof Error ? e.message : 'Failed to load diagrams'
+        console.error('[SavedDiagrams] Fetch error:', e)
+        return false
+      } finally {
+        isLoading.value = false
+        fetchDiagramsPromise = null
       }
+    })()
 
-      const data: DiagramListResponse = await diagramResponse.json()
-      let merged = [...data.diagrams]
-      let nextPage = data.page
-      let hasMore = data.has_more
-      while (hasMore && merged.length < data.total) {
-        nextPage += 1
-        const nextResponse = await authFetch(
-          `/api/diagrams?page=${nextPage}&page_size=${pageSize}`
-        )
-        if (!nextResponse.ok) break
-        const nextData: DiagramListResponse = await nextResponse.json()
-        merged = [...merged, ...nextData.diagrams]
-        hasMore = nextData.has_more
-      }
-
-      diagrams.value = merged
-      total.value = data.total
-      maxDiagrams.value = data.max_diagrams
-
-      if (folderResponse.ok) {
-        const folderData: DiagramFolderListResponse = await folderResponse.json()
-        folders.value = folderData.folders
-      } else {
-        foldersLoadFailed.value = true
-      }
-      applyFolderCounts()
-
-      return true
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to load diagrams'
-      console.error('[SavedDiagrams] Fetch error:', e)
-      return false
-    } finally {
-      isLoading.value = false
-    }
+    return fetchDiagramsPromise
   }
 
   async function createFolder(name: string): Promise<DiagramFolder | null> {
@@ -1099,16 +1169,14 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   }
 
   function reset(): void {
-    diagrams.value = []
-    folders.value = []
-    foldersLoadFailed.value = false
-    total.value = 0
+    clearListCacheState()
     isLoading.value = false
     error.value = null
     currentDiagramId.value = null
     activeDiagramId.value = null
     isAutoSaving.value = false
     diagramDetailCache.clear()
+    fetchDiagramsPromise = null
   }
 
   return {

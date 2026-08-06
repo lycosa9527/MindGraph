@@ -4,7 +4,7 @@
  * Uses useMindMate composable for SSE streaming
  * Features: Markdown rendering, code highlighting, message actions, stop generation
  */
-import { computed, defineAsyncComponent, nextTick, onActivated, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import { ElButton, ElIcon } from 'element-plus'
@@ -344,19 +344,6 @@ watch(
   },
   { immediate: true }
 )
-
-function refreshBrandingFromServer() {
-  void authStore.checkAuth(true)
-}
-
-/** Branding refresh on mount; thread restore is handled in useMindMate init. */
-onMounted(() => {
-  refreshBrandingFromServer()
-})
-
-onActivated(() => {
-  refreshBrandingFromServer()
-})
 
 // Watch for title changes to sync display (from store)
 watch(

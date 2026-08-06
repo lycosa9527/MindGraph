@@ -400,7 +400,7 @@ export function usePublishShowcaseModal(
   )
 
   async function warmHistoryDiagramCache(): Promise<void> {
-    const loaded = await savedDiagramsStore.fetchDiagrams()
+    const loaded = await savedDiagramsStore.fetchDiagrams(1, 50, { force: true })
     if (!loaded) return
     void savedDiagramsStore.prefetchDiagramSpecs(savedDiagramsStore.diagrams.map((d) => d.id))
   }

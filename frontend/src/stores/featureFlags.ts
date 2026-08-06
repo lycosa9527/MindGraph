@@ -70,121 +70,130 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   const isLoading = ref(false)
   const lastFetchTime = ref<number>(0)
   const CACHE_DURATION = 60 * 1000 // 1 minute — keep nav close to admin hot toggles
+  let fetchFlagsPromise: Promise<FeatureFlagsResponse> | null = null
+  /** Bumped by markStale so in-flight completions cannot re-mark a stale cache as fresh. */
+  let staleEpoch = 0
+
+  function defaultFeatureFlags(): FeatureFlagsResponse {
+    return {
+      external_base_url: '',
+      feature_rag_chunk_test: false,
+      feature_course: false,
+      feature_mate_learning: false,
+      feature_template: false,
+      feature_community: false,
+      feature_showcase: false,
+      feature_askonce: false,
+      feature_debateverse: false,
+      feature_knowledge_space: false,
+      feature_mindmap_v2_canvas: true,
+      feature_library: false,
+      feature_gewe: false,
+      feature_smart_response: false,
+      feature_teacher_usage: false,
+      feature_workshop_chat: false,
+      feature_mindmate_collab: false,
+      feature_markets: false,
+      feature_mindbot: false,
+      feature_mindmate_export: false,
+      feature_kitty_agent: false,
+      feature_auth_pixel_battle: false,
+      feature_test_server_banner: false,
+      feature_oauth_login: false,
+      feature_thinking_coins: false,
+      workshop_chat_preview_org_ids: [],
+      feature_org_access: {},
+    }
+  }
+
+  function isFlagsCacheFresh(now: number = Date.now()): boolean {
+    return Boolean(flags.value && now - lastFetchTime.value < CACHE_DURATION)
+  }
 
   /**
    * Fetch feature flags directly (for use in router guards)
-   * Uses cache if available and not stale
+   * Uses cache if available and not stale; concurrent callers share one in-flight request.
+   * If markStale() runs during an in-flight fetch, waiters re-fetch after it settles.
    */
   async function fetchFlags(): Promise<FeatureFlagsResponse> {
-    const now = Date.now()
-
-    // Return cached flags if still fresh
-    if (flags.value && now - lastFetchTime.value < CACHE_DURATION) {
-      syncMindMapCanvasModeForFlags(flags.value)
-      return flags.value
+    if (isFlagsCacheFresh()) {
+      const cached = flags.value as FeatureFlagsResponse
+      syncMindMapCanvasModeForFlags(cached)
+      return cached
     }
 
-    isLoading.value = true
-    try {
-      const response = await apiRequest('/api/config/features')
+    if (fetchFlagsPromise) {
+      const shared = await fetchFlagsPromise
+      // markStale during the shared fetch leaves lastFetchTime at 0 — refetch below.
+      if (isFlagsCacheFresh()) {
+        return flags.value ?? shared
+      }
+    }
 
-      if (!response.ok) {
-        // Default to all features disabled if endpoint is not available
-        const defaultFlags: FeatureFlagsResponse = {
-          external_base_url: '',
-          feature_rag_chunk_test: false,
-          feature_course: false,
-          feature_mate_learning: false,
-          feature_template: false,
-          feature_community: false,
-          feature_showcase: false,
-          feature_askonce: false,
-          feature_debateverse: false,
-          feature_knowledge_space: false,
-          feature_mindmap_v2_canvas: true,
-          feature_library: false,
-          feature_gewe: false,
-          feature_smart_response: false,
-          feature_teacher_usage: false,
-          feature_workshop_chat: false,
-          feature_mindmate_collab: false,
-          feature_markets: false,
-          feature_mindbot: false,
-          feature_mindmate_export: false,
-          feature_kitty_agent: false,
-          feature_auth_pixel_battle: false,
-          feature_test_server_banner: false,
-          feature_oauth_login: false,
-          feature_thinking_coins: false,
-          workshop_chat_preview_org_ids: [],
-          feature_org_access: {},
+    if (fetchFlagsPromise) {
+      return fetchFlagsPromise
+    }
+
+    const epochAtStart = staleEpoch
+    fetchFlagsPromise = (async () => {
+      isLoading.value = true
+      try {
+        const response = await apiRequest('/api/config/features')
+        const fetchedAt = Date.now()
+
+        if (!response.ok) {
+          // Default to all features disabled if endpoint is not available
+          const defaultFlags = defaultFeatureFlags()
+          flags.value = defaultFlags
+          lastFetchTime.value = epochAtStart === staleEpoch ? fetchedAt : 0
+          syncMindMapCanvasModeForFlags(defaultFlags)
+          return defaultFlags
         }
+
+        const raw = (await response.json()) as FeatureFlagsResponse
+        const data: FeatureFlagsResponse = {
+          ...raw,
+          feature_org_access: raw.feature_org_access ?? {},
+          feature_mindmate_collab: raw.feature_mindmate_collab ?? false,
+          feature_markets: raw.feature_markets ?? false,
+          feature_mindbot: raw.feature_mindbot ?? false,
+          feature_mindmate_export: raw.feature_mindmate_export ?? false,
+          feature_kitty_agent: raw.feature_kitty_agent ?? false,
+          feature_auth_pixel_battle: raw.feature_auth_pixel_battle ?? false,
+          feature_test_server_banner: raw.feature_test_server_banner ?? false,
+          feature_oauth_login: raw.feature_oauth_login ?? false,
+          feature_thinking_coins: raw.feature_thinking_coins ?? false,
+          feature_mindmap_v2_canvas: raw.feature_mindmap_v2_canvas ?? true,
+        }
+        flags.value = data
+        lastFetchTime.value = epochAtStart === staleEpoch ? fetchedAt : 0
+        syncMindMapCanvasModeForFlags(data)
+        return data
+      } catch (error) {
+        console.error('[FeatureFlags] Fetch error:', error)
+        // Return cached flags or defaults on error
+        if (flags.value) {
+          return flags.value
+        }
+        const defaultFlags = defaultFeatureFlags()
         flags.value = defaultFlags
-        lastFetchTime.value = now
         syncMindMapCanvasModeForFlags(defaultFlags)
         return defaultFlags
+      } finally {
+        isLoading.value = false
+        fetchFlagsPromise = null
       }
+    })()
 
-      const raw = (await response.json()) as FeatureFlagsResponse
-      const data: FeatureFlagsResponse = {
-        ...raw,
-        feature_org_access: raw.feature_org_access ?? {},
-        feature_mindmate_collab: raw.feature_mindmate_collab ?? false,
-        feature_markets: raw.feature_markets ?? false,
-        feature_mindbot: raw.feature_mindbot ?? false,
-        feature_mindmate_export: raw.feature_mindmate_export ?? false,
-        feature_kitty_agent: raw.feature_kitty_agent ?? false,
-        feature_auth_pixel_battle: raw.feature_auth_pixel_battle ?? false,
-        feature_test_server_banner: raw.feature_test_server_banner ?? false,
-        feature_oauth_login: raw.feature_oauth_login ?? false,
-        feature_thinking_coins: raw.feature_thinking_coins ?? false,
-        feature_mindmap_v2_canvas: raw.feature_mindmap_v2_canvas ?? true,
-      }
-      flags.value = data
-      lastFetchTime.value = now
-      syncMindMapCanvasModeForFlags(data)
-      return data
-    } catch (error) {
-      console.error('[FeatureFlags] Fetch error:', error)
-      // Return cached flags or defaults on error
-      if (flags.value) {
-        return flags.value
-      }
-      const defaultFlags: FeatureFlagsResponse = {
-        external_base_url: '',
-        feature_rag_chunk_test: false,
-        feature_course: false,
-        feature_mate_learning: false,
-        feature_template: false,
-        feature_community: false,
-        feature_showcase: false,
-        feature_askonce: false,
-        feature_debateverse: false,
-        feature_knowledge_space: false,
-        feature_mindmap_v2_canvas: true,
-        feature_library: false,
-        feature_gewe: false,
-        feature_smart_response: false,
-        feature_teacher_usage: false,
-        feature_workshop_chat: false,
-        feature_mindmate_collab: false,
-        feature_markets: false,
-        feature_mindbot: false,
-        feature_mindmate_export: false,
-        feature_kitty_agent: false,
-        feature_auth_pixel_battle: false,
-        feature_test_server_banner: false,
-        feature_oauth_login: false,
-        feature_thinking_coins: false,
-        workshop_chat_preview_org_ids: [],
-        feature_org_access: {},
-      }
-      flags.value = defaultFlags
-      syncMindMapCanvasModeForFlags(defaultFlags)
-      return defaultFlags
-    } finally {
-      isLoading.value = false
+    const result = await fetchFlagsPromise
+    if (isFlagsCacheFresh()) {
+      return flags.value ?? result
     }
+    // Own fetch was invalidated by markStale — one follow-up fetch.
+    if (epochAtStart !== staleEpoch) {
+      return fetchFlags()
+    }
+    return flags.value ?? result
   }
 
   /**
@@ -291,6 +300,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
 
   function markStale(): void {
     lastFetchTime.value = 0
+    staleEpoch += 1
   }
 
   return {

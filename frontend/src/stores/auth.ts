@@ -90,8 +90,10 @@ export const useAuthStore = defineStore('auth', () => {
   const adminCapabilitiesPayload = ref<AdminCapabilitiesPayload | null>(null)
   const adminCapabilitiesLoaded = ref(false)
   const lastProfileRefreshTime = ref<number>(0)
+  const lastAdminCapabilitiesFetchTime = ref<number>(0)
   const hasVerifiedAuthThisSession = ref(false) // Track if we've verified auth with server in this session
   const PROFILE_REFRESH_MIN_MS = 30_000
+  const ADMIN_CAPABILITIES_CACHE_MS = 60_000
   let profileVisibilityListener: (() => void) | null = null
   /**
    * True when the last /me (or refresh) attempt failed before an HTTP status was obtained
@@ -451,6 +453,8 @@ export const useAuthStore = defineStore('auth', () => {
     subscriptionExpiredNotified.value = false
     adminCapabilitiesPayload.value = null
     adminCapabilitiesLoaded.value = false
+    lastAdminCapabilitiesFetchTime.value = 0
+    lastProfileRefreshTime.value = 0
     // Clear sessionStorage
     sessionStorage.removeItem(USER_KEY)
     sessionStorage.removeItem(MODE_KEY)
@@ -491,6 +495,7 @@ export const useAuthStore = defineStore('auth', () => {
         const normalizedUser = normalizeUser(data.user)
         setUser(normalizedUser)
         hasVerifiedAuthThisSession.value = true // Login is verification
+        lastProfileRefreshTime.value = Date.now()
         startSessionMonitoring()
         eventBus.emit('auth:login_success', {})
         return { success: true, user: normalizedUser }
@@ -526,6 +531,7 @@ export const useAuthStore = defineStore('auth', () => {
         const normalizedUser = normalizeUser(userPayload)
         setUser(normalizedUser)
         hasVerifiedAuthThisSession.value = true
+        lastProfileRefreshTime.value = Date.now()
         startSessionMonitoring()
         eventBus.emit('auth:login_success', {})
         return { success: true, user: normalizedUser }
@@ -574,21 +580,43 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
-  async function loadAdminCapabilities(): Promise<void> {
-    if (loadAdminCapabilitiesPromise) {
-      return loadAdminCapabilitiesPromise
-    }
-
+  async function loadAdminCapabilities(options?: { force?: boolean }): Promise<void> {
     // sessionStorage can restore a panel role before cookies are valid. Fetching
     // here races checkAuth's /me → refresh and paints a console 401; wait until
     // the session has been verified (or recovered) in this tab.
     if (!user.value) {
       adminCapabilitiesPayload.value = null
       adminCapabilitiesLoaded.value = true
+      lastAdminCapabilitiesFetchTime.value = 0
       return
     }
     if (!hasVerifiedAuthThisSession.value) {
       return
+    }
+
+    const force = options?.force === true
+    const now = Date.now()
+    if (
+      !force &&
+      adminCapabilitiesLoaded.value &&
+      adminCapabilitiesPayload.value != null &&
+      now - lastAdminCapabilitiesFetchTime.value < ADMIN_CAPABILITIES_CACHE_MS
+    ) {
+      return
+    }
+
+    if (loadAdminCapabilitiesPromise) {
+      await loadAdminCapabilitiesPromise
+      if (
+        !force ||
+        (adminCapabilitiesPayload.value != null &&
+          Date.now() - lastAdminCapabilitiesFetchTime.value < ADMIN_CAPABILITIES_CACHE_MS)
+      ) {
+        return
+      }
+    }
+    if (loadAdminCapabilitiesPromise) {
+      return loadAdminCapabilitiesPromise
     }
 
     loadAdminCapabilitiesPromise = (async () => {
@@ -606,6 +634,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
         const payload = (await response.json()) as AdminCapabilitiesPayload
         adminCapabilitiesPayload.value = payload
+        lastAdminCapabilitiesFetchTime.value = Date.now()
         const apiRole = payload.role
         if (apiRole && user.value) {
           const normalizedRole = normalizeUserRole(apiRole)
@@ -673,6 +702,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (data.user || data.id) {
           setUser(data.user || data)
           hasVerifiedAuthThisSession.value = true // Mark as verified
+          lastProfileRefreshTime.value = Date.now()
           void loadAdminCapabilities()
           // Only start monitoring if not already started
           if (!sessionMonitorInterval.value) {
@@ -768,6 +798,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
       setUser(data.user || data)
       hasVerifiedAuthThisSession.value = true
+      lastProfileRefreshTime.value = Date.now()
       void loadAdminCapabilities()
       if (!sessionMonitorInterval.value) {
         startSessionMonitoring()
@@ -806,6 +837,7 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await response.json()
       if (data.user || data.id) {
         setUser(data.user || data)
+        lastProfileRefreshTime.value = Date.now()
         return true
       }
       return false
@@ -888,12 +920,14 @@ export const useAuthStore = defineStore('auth', () => {
       await refreshUserProfile({ bypassThrottle: true })
     }, 120000) // 2 minutes - balance between responsiveness and server load
 
-    // Only check immediately if not checked recently (within last 5 seconds)
+    // Only check immediately if not checked recently (within last 5 seconds).
+    // Profile refresh respects PROFILE_REFRESH_MIN_MS so a just-completed /me
+    // from checkAuth/login is not duplicated (interval still uses bypassThrottle).
     const now = Date.now()
     if (now - lastSessionCheckTime.value > 5000) {
       checkSessionStatus()
       lastSessionCheckTime.value = now
-      void refreshUserProfile({ bypassThrottle: true })
+      void refreshUserProfile()
     }
   }
 

@@ -413,7 +413,7 @@ router.beforeEach(async (to, from) => {
     Boolean(to.meta.requiresAdminOrManager)
 
   if (needsAdminCapabilities && authStore.isAuthenticated) {
-    await authStore.loadAdminCapabilities()
+    await authStore.loadAdminCapabilities({ force: true })
   }
 
   // Check management panel access

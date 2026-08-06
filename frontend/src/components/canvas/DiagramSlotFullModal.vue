@@ -66,7 +66,7 @@ watch(
       selectedDiagramId.value = ''
       isDeleting.value = false
       // Fetch latest diagrams
-      savedDiagramsStore.fetchDiagrams()
+      savedDiagramsStore.fetchDiagrams(1, 50, { force: true })
     }
   }
 )

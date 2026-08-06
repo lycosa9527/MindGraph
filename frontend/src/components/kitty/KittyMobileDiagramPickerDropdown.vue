@@ -60,7 +60,7 @@ watch(open, (visible) => {
     searchQuery.value = ''
     return
   }
-  void savedDiagramsStore.fetchDiagrams()
+  void savedDiagramsStore.fetchDiagrams(1, 50, { force: true })
 })
 
 function typeLabelFor(type: string): string {

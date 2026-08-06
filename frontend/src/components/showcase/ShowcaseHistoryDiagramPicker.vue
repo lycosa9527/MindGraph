@@ -48,7 +48,7 @@ watch(
       searchQuery.value = ''
       return
     }
-    void savedDiagramsStore.fetchDiagrams().then((loaded) => {
+    void savedDiagramsStore.fetchDiagrams(1, 50, { force: true }).then((loaded) => {
       if (!loaded) return
       void savedDiagramsStore.prefetchDiagramSpecs(
         savedDiagramsStore.diagrams.map((d) => d.id)

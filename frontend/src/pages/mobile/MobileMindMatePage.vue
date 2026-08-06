@@ -4,7 +4,7 @@
  * Single top bar: home/history on left, "MindMate" center, new chat on right.
  * Reuses MindmatePanel internals but with a custom mobile header.
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 
@@ -97,10 +97,6 @@ watch(showWelcome, (welcome) => {
   if (welcome) {
     syncHeaderTitleFromBranding()
   }
-})
-
-onMounted(() => {
-  void authStore.checkAuth(true)
 })
 
 const { data: conversationsData } = useConversations()

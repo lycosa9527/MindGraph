@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.169.3] - 2026-08-06
+
+> **Deduplicate auth/bootstrap and diagram-list fetches (in-flight coalesce + guarded TTL).**
+
+### Fixed
+
+- **Auth / bootstrap duplicate GETs** — Stamp profile refresh time on successful `/me`; session-monitor immediate kick uses throttled profile refresh (keeps `session-status`); drop MindMate/mobile mount `checkAuth(true)`; admin capabilities use a 60s cache with router `{ force: true }` on admin entry while AdminPage/sidebar reuse TTL (`auth.ts`, `MindMatePage.vue`, `MindmatePanel.vue`, `useAdminAccess.ts`, `router/index.ts`).
+- **Feature flags race** — Concurrent `fetchFlags()` share one in-flight request; `markStale()` bumps an epoch so in-flight completions cannot re-mark a stale cache as fresh, with one follow-up fetch when invalidated (`featureFlags.ts`).
+- **Diagram list fan-out** — `fetchDiagrams()` coalesces in-flight calls, applies a 15s TTL keyed by user id (clears across account switch), and supports `{ force: true }` for pickers/modals/kitty follow; remove redundant CanvasTopBar mount fetch (`savedDiagrams.ts`, `CanvasTopBar.vue`).
+
+### Tests
+
+- **Frontend** — Feature-flags coalesce/TTL/`markStale` mid-flight; auth no double-`/me` after monitor start + capabilities TTL/force; diagram list coalesce/TTL/force/user-switch/force-after-failed-share.
+
 ## [5.169.2] - 2026-08-06
 
 > **Session-owned mind-map canvas mode for Showcase/export; sole new-canvas blank-load owners with dedupe.**

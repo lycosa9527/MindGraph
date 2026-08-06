@@ -33,7 +33,7 @@ export function useKittyMobileLibraryDiagramSelect(options: {
   const selecting = ref(false)
 
   async function openPicker(): Promise<void> {
-    await savedDiagramsStore.fetchDiagrams()
+    await savedDiagramsStore.fetchDiagrams(1, 50, { force: true })
     showPicker.value = true
   }
 

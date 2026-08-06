@@ -412,7 +412,7 @@ export function useMobileKittyPairing(
           : ''
         clearForceEphemeralSession()
         savedDiagramsStore.setActiveDiagram(id)
-        await savedDiagramsStore.fetchDiagrams()
+        await savedDiagramsStore.fetchDiagrams(1, 50, { force: true })
         await refreshMobileKittyBootstrap(id)
         await hydrateMobileKittyFromLibrary(id)
         if (promotingEphemeralCreate && fromScope && fromScope !== id) {
