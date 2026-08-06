@@ -25,7 +25,9 @@ import { applyKittyRemoteLlmModel } from '@/composables/kitty/applyKittyRemoteLl
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
 import { hydrateMobileKittyStoreFromBootstrap } from '@/composables/kitty/hydrateMobileKittyStoreFromBootstrap'
 import {
+  type KittyConnectAttemptResult,
   createKittyWsAuthReconnectGate,
+  isKittyConnectAbortError,
   runKittyConnectWithAuthRecovery,
 } from '@/composables/kitty/kittyWsAuthReconnect'
 import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesktopLlmModelPublish'
@@ -366,15 +368,15 @@ function isKittyLiveForScope(scope: string): boolean {
   return kitty.isLiveForScope(scope)
 }
 
-async function connectKittyOnce(): Promise<boolean> {
+async function connectKittyOnce(): Promise<KittyConnectAttemptResult> {
   const requestedScope = kittyPairScope.value
   kitty.reconcileLiveState()
   if (isKittyLiveForScope(requestedScope)) {
-    return true
+    return 'connected'
   }
   if (!authStore.isAuthenticated) {
     notify.warning(t('notification.signInToUse'))
-    return false
+    return 'aborted'
   }
   if (!kittyServerEnabled.value) {
     notify.warning(
@@ -383,7 +385,7 @@ async function connectKittyOnce(): Promise<boolean> {
         '请在服务端 .env 中设置 FEATURE_KITTY_AGENT=True 并重启 API。'
       )
     )
-    return false
+    return 'aborted'
   }
   try {
     micDenied.value = false
@@ -412,12 +414,16 @@ async function connectKittyOnce(): Promise<boolean> {
         '#connect',
         `state=${kitty.state.value} active=${kitty.isActive.value ? 1 : 0} ws=${kittyWsReadyLabel()} scope=${scope.slice(0, 8)} socket=${kitty.diagramSessionId.value?.slice(0, 8) ?? '—'}`
       )
+      return 'failed'
     }
-    return connectedOk
+    return 'connected'
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error)
     pushKittyDebugLine('#connect', `fail ${detail.slice(0, 100)}`)
-    return false
+    if (isKittyConnectAbortError(error)) {
+      return 'aborted'
+    }
+    return 'failed'
   }
 }
 
@@ -426,7 +432,6 @@ async function ensureConnected(): Promise<boolean> {
     isHardStopped: mobileKittyAuthGate.isHardStopped,
     markHardStopped: mobileKittyAuthGate.markHardStopped,
     hasAuthenticatedUser: () => Boolean(authStore.isAuthenticated || authStore.user),
-    refreshAccessToken: () => authStore.refreshAccessToken(),
     onSessionExpired: () => {
       authStore.handleTokenExpired(
         'Your session has expired. Please log in again.',

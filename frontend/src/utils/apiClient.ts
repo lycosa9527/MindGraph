@@ -16,7 +16,10 @@ import type { LocaleCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
-import { refreshSessionAccessToken } from '@/utils/sessionRefresh'
+import {
+  ensureFreshSessionAfterAuthFailure,
+  getSessionRefreshEpoch,
+} from '@/utils/sessionRefresh'
 
 const API_BASE = '/api'
 
@@ -67,15 +70,7 @@ function mergeApiHeaders(
   return merged
 }
 
-// Refresh mutex lives in sessionRefresh.ts (shared with auth store).
-
-/**
- * Attempt to refresh the access token using the refresh token cookie
- * Returns true if refresh successful, false otherwise
- */
-async function refreshAccessToken(): Promise<boolean> {
-  return refreshSessionAccessToken()
-}
+// Refresh mutex + 401 stampede coordination live in sessionRefresh.ts.
 
 function handleUploadUnauthorizedAfterRetry(): void {
   const authStore = useAuthStore()
@@ -99,6 +94,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
     options
   )
 
+  const epochAtStart = getSessionRefreshEpoch()
   // Make the initial request
   let response = await fetch(url, {
     ...options,
@@ -120,7 +116,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
     // Check if user was previously authenticated (before refresh attempt)
     const hadUserBeforeRefresh = !!authStore.user || !!sessionStorage.getItem('auth_user')
 
-    const refreshed = await refreshAccessToken()
+    const refreshed = await ensureFreshSessionAfterAuthFailure(epochAtStart)
 
     if (refreshed) {
       const retryHeaders = mergeApiHeaders(
@@ -299,6 +295,7 @@ export async function apiUpload(
       credentials,
     })
 
+  const epochAtStart = getSessionRefreshEpoch()
   let response: Response
   try {
     response = await uploadOnce()
@@ -312,7 +309,7 @@ export async function apiUpload(
     if (isMindgraphHeadlessExportSession()) {
       return response
     }
-    const refreshed = await refreshAccessToken()
+    const refreshed = await ensureFreshSessionAfterAuthFailure(epochAtStart)
 
     if (refreshed) {
       try {
@@ -357,6 +354,7 @@ export async function apiPutFormData(
       credentials,
     })
 
+  const epochAtStart = getSessionRefreshEpoch()
   let response: Response
   try {
     response = await uploadOnce()
@@ -369,7 +367,7 @@ export async function apiPutFormData(
     if (isMindgraphHeadlessExportSession()) {
       return response
     }
-    const refreshed = await refreshAccessToken()
+    const refreshed = await ensureFreshSessionAfterAuthFailure(epochAtStart)
 
     if (refreshed) {
       try {

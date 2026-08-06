@@ -56,7 +56,6 @@ vi.mock('@/stores/auth', () => ({
   useAuthStore: () => ({
     isAuthenticated: true,
     user: { id: 1 },
-    refreshAccessToken: vi.fn(async () => ({ success: true })),
     handleTokenExpired: vi.fn(),
   }),
 }))

@@ -162,14 +162,26 @@ const inputRef = ref<HTMLInputElement | HTMLTextAreaElement | null>(null)
 const displayRef = ref<HTMLElement | null>(null)
 const wrapperRef = ref<HTMLDivElement | null>(null)
 const inputWidth = ref<string | undefined>(undefined)
-/** When autoWrap: lock edit box to display size so wrapped labels don't expand to single-line width. */
+/**
+ * When autoWrap: edit box width grows with the draft up to maxWidth, then wraps.
+ * Seeded from display width at edit start so the first frame matches the node.
+ */
 const editLockedWidthPx = ref<number | null>(null)
 const editLockedMinHeightPx = ref<number | null>(null)
-/** autoWrap: textarea only when display already wraps; single-line labels use input. */
+/**
+ * autoWrap: prefer single-line <input> (vertically centered) until the draft needs to wrap;
+ * then promote to <textarea>. Never swap mid-IME — wait for compositionend.
+ */
 const editUsesMultilineControl = ref(false)
 /** When user inserts a manual line break on a single-line input control. */
 const forceMultilineEdit = ref(false)
 const measureRef = ref<HTMLSpanElement | null>(null) // Hidden span for measuring text width
+/** Live draft for autoWrap width measure (DOM value during IME; v-model may lag). */
+const measureSample = ref('M')
+/** True while an IME composition session is active on the edit control. */
+const isImeComposing = ref(false)
+/** Promote input→textarea after composition ends (wrap needed during IME). */
+let pendingAutoWrapMultilinePromote = false
 
 /** Matches computed font on display/edit for measureTextWidth (multiscript stack). */
 const displayFontSizePx = ref(14)
@@ -274,6 +286,17 @@ function clearEditLock(): void {
   editLockedMinHeightPx.value = null
   editUsesMultilineControl.value = false
   forceMultilineEdit.value = false
+  isImeComposing.value = false
+  pendingAutoWrapMultilinePromote = false
+}
+
+function isDisplaySingleLine(el: HTMLElement): boolean {
+  const cs = getComputedStyle(el)
+  let lineHeight = parseFloat(cs.lineHeight)
+  if (!Number.isFinite(lineHeight) || lineHeight <= 0) {
+    lineHeight = (parseFloat(cs.fontSize) || 14) * 1.4
+  }
+  return el.offsetHeight <= lineHeight * 1.5
 }
 
 function usesMultilineEditControl(): boolean {
@@ -301,13 +324,97 @@ function ensureMultilineEditControl(): void {
   }
 }
 
-function isDisplaySingleLine(el: HTMLElement): boolean {
-  const cs = getComputedStyle(el)
-  let lineHeight = parseFloat(cs.lineHeight)
-  if (!Number.isFinite(lineHeight) || lineHeight <= 0) {
-    lineHeight = (parseFloat(cs.fontSize) || 14) * 1.4
+/** Prefer the focused control's value so IME composition is included in width measure. */
+function getLiveEditText(): string {
+  const el = inputRef.value
+  if (el && typeof el.value === 'string') {
+    return el.value
   }
-  return el.offsetHeight <= lineHeight * 1.5
+  if (props.focusQuestionEditableSplit) {
+    return editBody.value
+  }
+  return editText.value
+}
+
+/**
+ * Switch autoWrap from centered <input> to wrapping <textarea>, restoring caret.
+ * Skipped during IME — queued until compositionend.
+ */
+function promoteAutoWrapToMultiline(): void {
+  if (!localIsEditing.value || !props.autoWrap) return
+  if (editUsesMultilineControl.value || props.focusQuestionEditableSplit) return
+
+  if (isImeComposing.value) {
+    pendingAutoWrapMultilinePromote = true
+    return
+  }
+
+  const el = inputRef.value
+  const start = el && 'selectionStart' in el ? el.selectionStart : null
+  const end = el && 'selectionEnd' in el ? el.selectionEnd : null
+  const baseH =
+    el?.offsetHeight ?? displayRef.value?.offsetHeight ?? editLockedMinHeightPx.value ?? 20
+
+  editUsesMultilineControl.value = true
+  editLockedMinHeightPx.value = Math.max(baseH, 20)
+  pendingAutoWrapMultilinePromote = false
+
+  nextTick(() => {
+    if (!localIsEditing.value) return
+    focusHtmlControl(inputRef.value)
+    const next = inputRef.value
+    if (next && start != null && typeof next.setSelectionRange === 'function') {
+      const len = next.value.length
+      next.setSelectionRange(Math.min(start, len), Math.min(end ?? start, len))
+    }
+  })
+}
+
+function applyAutoWrapInputWidth(): void {
+  if (!localIsEditing.value || !props.autoWrap) return
+
+  const maxWidthPx = parseInt(props.maxWidth, 10) || 200
+  const measured = measureRef.value
+    ? Math.max(measureRef.value.offsetWidth, measureRef.value.scrollWidth)
+    : 40
+  // Match non-autoWrap padding so the caret is not clipped at the edge.
+  const needed = Math.max(measured + 8, 40)
+  const nextWidth = Math.min(needed, maxWidthPx)
+  editLockedWidthPx.value = nextWidth
+  inputWidth.value = `${nextWidth}px`
+  emit('widthChange', nextWidth)
+
+  // Past maxWidth: wrap in a textarea so the full draft stays visible.
+  if (needed > maxWidthPx) {
+    promoteAutoWrapToMultiline()
+  }
+}
+
+function scheduleAutoWrapWidthUpdate(): void {
+  if (!localIsEditing.value || !props.autoWrap) return
+  measureSample.value = getLiveEditText() || 'M'
+  nextTick(() => {
+    applyAutoWrapInputWidth()
+  })
+}
+
+/** Grow/wrap the autoWrap editor while typing (including during IME composition). */
+function handleEditInputResize(): void {
+  if (!localIsEditing.value || !props.autoWrap) return
+  scheduleAutoWrapWidthUpdate()
+}
+
+function handleCompositionStart(): void {
+  isImeComposing.value = true
+}
+
+function handleCompositionEnd(): void {
+  isImeComposing.value = false
+  if (!localIsEditing.value || !props.autoWrap) return
+  scheduleAutoWrapWidthUpdate()
+  if (pendingAutoWrapMultilinePromote) {
+    promoteAutoWrapToMultiline()
+  }
 }
 
 /**
@@ -316,12 +423,9 @@ function isDisplaySingleLine(el: HTMLElement): boolean {
 function updateInputWidth(): void {
   if (!localIsEditing.value) return
 
-  // autoWrap display uses normal pre-wrap at maxWidth (no balanced line lengths).
-  // Keep the edit box at the display width — do not re-measure as a single line.
+  // autoWrap: grow with draft up to maxWidth, then CSS pre-wrap shows full text.
   if (props.autoWrap) {
-    if (editLockedWidthPx.value != null) {
-      inputWidth.value = `${editLockedWidthPx.value}px`
-    }
+    scheduleAutoWrapWidthUpdate()
     return
   }
 
@@ -510,10 +614,15 @@ function startEditing(): void {
     const textWidth = Math.max(displayRef.value.offsetWidth, displayRef.value.scrollWidth)
     const textHeight = displayRef.value.offsetHeight
     if (props.autoWrap) {
-      editUsesMultilineControl.value = !isDisplaySingleLine(displayRef.value)
+      // Single-line labels keep <input> so glyphs stay vertically centered in the
+      // node; already-wrapped labels use <textarea>. Width still grows with draft.
+      const singleLine = isDisplaySingleLine(displayRef.value)
+      editUsesMultilineControl.value = !singleLine
       editLockedWidthPx.value = Math.max(textWidth, 40)
-      editLockedMinHeightPx.value = editUsesMultilineControl.value ? Math.max(textHeight, 20) : null
+      editLockedMinHeightPx.value = singleLine ? null : Math.max(textHeight, 20)
       inputWidth.value = `${editLockedWidthPx.value}px`
+      measureSample.value =
+        (props.focusQuestionEditableSplit ? editBody.value : editText.value) || 'M'
     } else if (props.textAlign === 'right') {
       const maxWidthPx = parseInt(props.maxWidth, 10) || 180
       inputWidth.value = `${Math.max(textWidth, maxWidthPx)}px`
@@ -521,8 +630,11 @@ function startEditing(): void {
       inputWidth.value = `${textWidth}px`
     }
   } else if (props.autoWrap) {
+    editUsesMultilineControl.value = false
     editLockedWidthPx.value = null
     editLockedMinHeightPx.value = null
+    measureSample.value =
+      (props.focusQuestionEditableSplit ? editBody.value : editText.value) || 'M'
   }
 
   if (props.focusQuestionEditableSplit) {
@@ -1163,9 +1275,9 @@ onUnmounted(() => {
     @touchend.passive="handleTouchEnd"
     @mousedown="handleMouseDown"
   >
-    <!-- Hidden span for measuring text width -->
+    <!-- Hidden span for measuring text width (autoWrap uses measureSample for live IME draft) -->
     <span
-      v-if="localIsEditing && !autoWrap"
+      v-if="localIsEditing"
       ref="measureRef"
       class="inline-edit-measure"
       :style="{
@@ -1182,7 +1294,11 @@ onUnmounted(() => {
         padding: '2px 4px',
       }"
     >
-      {{ (focusQuestionEditableSplit && localIsEditing ? editBody : editText) || 'M' }}
+      {{
+        autoWrap
+          ? measureSample
+          : (focusQuestionEditableSplit && localIsEditing ? editBody : editText) || 'M'
+      }}
     </span>
 
     <!-- Edit mode: show input with ghost text -->
@@ -1244,6 +1360,10 @@ onUnmounted(() => {
           :rows="autoWrap ? 1 : 2"
           @keydown="handleKeydown"
           @blur="handleBlur"
+          @input="handleEditInputResize"
+          @compositionstart="handleCompositionStart"
+          @compositionupdate="handleEditInputResize"
+          @compositionend="handleCompositionEnd"
           @mousedown.stop
           @click.stop
         />
@@ -1265,6 +1385,10 @@ onUnmounted(() => {
             :maxlength="maxLength"
             @keydown="handleKeydown"
             @blur="handleBlur"
+            @input="handleEditInputResize"
+            @compositionstart="handleCompositionStart"
+            @compositionupdate="handleEditInputResize"
+            @compositionend="handleCompositionEnd"
             @mousedown.stop
             @click.stop
           />
@@ -1524,7 +1648,10 @@ textarea.inline-edit-input {
 }
 
 textarea.inline-edit-input--auto-wrap {
+  /* Match display metrics — avoid the extra UA/textarea padding that shifts glyphs up. */
   min-height: 0;
+  padding: 0;
+  margin: 0;
   line-height: 1.4;
   white-space: pre-wrap;
   word-break: normal;
@@ -1533,5 +1660,6 @@ textarea.inline-edit-input--auto-wrap {
   overflow: hidden;
   resize: none;
   field-sizing: content;
+  vertical-align: middle;
 }
 </style>

@@ -12,6 +12,7 @@ import {
   KITTY_PAIR_POLL_MS,
 } from '@/composables/kitty/runKittyIntervalPoll'
 import { apiRequest } from '@/utils/apiClient'
+import { awaitSessionRefreshIdle } from '@/utils/sessionRefresh'
 
 const DEBOUNCE_MS = 480
 /** Keep Redis focus fresh while canvas stays open (mobile freshness checks). */
@@ -19,6 +20,9 @@ const FOCUS_HEARTBEAT_MS = 60_000
 
 async function putDesktopFocusDiagram(diagramLibraryId: string | null): Promise<void> {
   try {
+    // Wait out Kitty / apiClient refresh so this PUT does not race Redis delete of
+    // the access session and trigger a second token rotation.
+    await awaitSessionRefreshIdle()
     // apiRequest refreshes once on 401 then expires the session — stops idle heartbeat spam.
     await apiRequest('/api/kitty/desktop_focus', {
       method: 'PUT',

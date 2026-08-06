@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.169.5] - 2026-08-06
+
+> **Auth refresh 401 stampede coordination (Kitty + apiClient); autoWrap inline edit grows with draft / IME-safe.**
+
+### Fixed
+
+- **Auth refresh 401 stampede (Kitty + apiClient)** — Sequential `/api/auth/refresh` after cookie rotation deleted the new Redis access session while in-flight `desktop_focus` / Kitty WS still carried the old cookie (401 + WS 403 storm). Root fix: shared refresh **epoch** in `sessionRefresh.ts` (`ensureFreshSessionAfterAuthFailure`) so peers retry without re-rotating; wire `apiClient` 401 paths and slim Kitty recovery; keep single-flight canvas-owner connect, aborted/supersede skip, and focus idle await (`sessionRefresh.ts`, `apiClient.ts`, `kittyWsAuthReconnect.ts`, `useKittyCanvasOwnerAgent.ts`, `useKittyDesktopFocus.ts`, `MobileKittyPage.vue`).
+- **Inline edit autoWrap grow / IME** — autoWrap editors start as a centered single-line `<input>`, grow width with the live draft (including IME composition) up to `maxWidth`, then promote to `<textarea>` without swapping mid-composition (`InlineEditableText.vue`).
+
+### Tests
+
+- **Frontend** — Session refresh coalesce / epoch skip / await-idle; Kitty WS auth reconnect aborted vs failed; canvas-owner ownership coverage (`sessionRefresh.spec.ts`, `kittyWsAuthReconnect.spec.ts`, `useKittyCanvasOwnerAgentOwnership.spec.ts`).
+
 ## [5.169.4] - 2026-08-06
 
 > **Restore Material-20 for thinking maps / classic mind map; isolate classic vs v2 canvas style buckets.**

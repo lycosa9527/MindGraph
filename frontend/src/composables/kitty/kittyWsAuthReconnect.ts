@@ -1,40 +1,44 @@
 /**
- * Kitty WS reconnect auth recovery — refresh once, then hard-stop.
+ * Kitty WS reconnect auth recovery — 401-stampede via shared refresh epoch.
  *
  * Auth is rejected before websocket.accept(), so the browser typically sees
- * HTTP 403 / close 1006 rather than close code 4001. Reconnect loops must
- * therefore recover via POST /api/auth/refresh (same as apiClient 401), not
- * via workshop-style close-code lists alone.
+ * HTTP 403 / close 1006 rather than close code 4001. Recovery uses the same
+ * ensureFreshSessionAfterAuthFailure helper as apiClient: if a peer already
+ * refreshed since connect start, retry without rotating again.
  */
 
-export type KittyWsAuthRecoverResult = 'recovered' | 'hard_stop'
+import {
+  awaitSessionRefreshIdle,
+  ensureFreshSessionAfterAuthFailure,
+  getSessionRefreshEpoch,
+} from '@/utils/sessionRefresh'
 
-export async function recoverKittyWsAuthOrHardStop(deps: {
-  hasAuthenticatedUser: boolean
-  refreshAccessToken: () => Promise<{ success: boolean }>
-  onSessionExpired: () => void
-}): Promise<KittyWsAuthRecoverResult> {
-  if (!deps.hasAuthenticatedUser) {
-    return 'hard_stop'
+/** Outcome of one Kitty connect attempt (before any auth refresh). */
+export type KittyConnectAttemptResult = 'connected' | 'aborted' | 'failed'
+
+export function isKittyConnectAbortError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false
   }
-  const refreshed = await deps.refreshAccessToken()
-  if (refreshed.success) {
-    return 'recovered'
-  }
-  deps.onSessionExpired()
-  return 'hard_stop'
+  const msg = error.message
+  return (
+    msg.includes('superseded') ||
+    msg.includes('Cleanup started') ||
+    msg.includes('Conversation stopped') ||
+    msg.includes('has been destroyed')
+  )
 }
 
 /**
- * Connect once; on failure try silent refresh + one retry; hard-stop on refresh failure.
+ * Connect once; on failure use shared stampede helper + one retry.
+ * Hard-stop when refresh fails (session expired).
  */
 export async function runKittyConnectWithAuthRecovery(deps: {
   isHardStopped: () => boolean
   markHardStopped: () => void
   hasAuthenticatedUser: () => boolean
-  refreshAccessToken: () => Promise<{ success: boolean }>
   onSessionExpired: () => void
-  connectOnce: () => Promise<boolean>
+  connectOnce: () => Promise<KittyConnectAttemptResult>
 }): Promise<boolean> {
   if (deps.isHardStopped()) {
     return false
@@ -42,22 +46,33 @@ export async function runKittyConnectWithAuthRecovery(deps: {
   if (!deps.hasAuthenticatedUser()) {
     return false
   }
-  if (await deps.connectOnce()) {
+
+  await awaitSessionRefreshIdle()
+  if (deps.isHardStopped() || !deps.hasAuthenticatedUser()) {
+    return false
+  }
+
+  const epochAtStart = getSessionRefreshEpoch()
+  const first = await deps.connectOnce()
+  if (first === 'connected') {
     return true
   }
-  if (deps.isHardStopped()) {
+  if (first === 'aborted' || deps.isHardStopped()) {
     return false
   }
-  const result = await recoverKittyWsAuthOrHardStop({
-    hasAuthenticatedUser: deps.hasAuthenticatedUser(),
-    refreshAccessToken: deps.refreshAccessToken,
-    onSessionExpired: deps.onSessionExpired,
-  })
-  if (result === 'hard_stop') {
+
+  const refreshed = await ensureFreshSessionAfterAuthFailure(epochAtStart)
+  if (!refreshed) {
     deps.markHardStopped()
+    deps.onSessionExpired()
     return false
   }
-  return deps.connectOnce()
+
+  await awaitSessionRefreshIdle()
+  if (deps.isHardStopped() || !deps.hasAuthenticatedUser()) {
+    return false
+  }
+  return (await deps.connectOnce()) === 'connected'
 }
 
 /** Per-agent gate so concurrent voice:ws_closed handlers share one hard-stop flag. */

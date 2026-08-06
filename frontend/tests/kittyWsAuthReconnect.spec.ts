@@ -1,95 +1,100 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const {
+  ensureFreshSessionAfterAuthFailure,
+  awaitSessionRefreshIdle,
+  getSessionRefreshEpoch,
+} = vi.hoisted(() => ({
+  ensureFreshSessionAfterAuthFailure: vi.fn(async () => true),
+  awaitSessionRefreshIdle: vi.fn(async () => undefined),
+  getSessionRefreshEpoch: vi.fn(() => 0),
+}))
+
+vi.mock('@/utils/sessionRefresh', () => ({
+  awaitSessionRefreshIdle,
+  ensureFreshSessionAfterAuthFailure,
+  getSessionRefreshEpoch,
+}))
 
 import {
   createKittyWsAuthReconnectGate,
-  recoverKittyWsAuthOrHardStop,
+  isKittyConnectAbortError,
   runKittyConnectWithAuthRecovery,
 } from '@/composables/kitty/kittyWsAuthReconnect'
 
-describe('recoverKittyWsAuthOrHardStop', () => {
-  it('hard-stops when there is no authenticated user', async () => {
-    const refreshAccessToken = vi.fn(async () => ({ success: true }))
-    const onSessionExpired = vi.fn()
-    const result = await recoverKittyWsAuthOrHardStop({
-      hasAuthenticatedUser: false,
-      refreshAccessToken,
-      onSessionExpired,
-    })
-    expect(result).toBe('hard_stop')
-    expect(refreshAccessToken).not.toHaveBeenCalled()
-    expect(onSessionExpired).not.toHaveBeenCalled()
-  })
-
-  it('recovers when silent refresh succeeds', async () => {
-    const onSessionExpired = vi.fn()
-    const result = await recoverKittyWsAuthOrHardStop({
-      hasAuthenticatedUser: true,
-      refreshAccessToken: async () => ({ success: true }),
-      onSessionExpired,
-    })
-    expect(result).toBe('recovered')
-    expect(onSessionExpired).not.toHaveBeenCalled()
-  })
-
-  it('hard-stops and expires session when refresh fails', async () => {
-    const onSessionExpired = vi.fn()
-    const result = await recoverKittyWsAuthOrHardStop({
-      hasAuthenticatedUser: true,
-      refreshAccessToken: async () => ({ success: false }),
-      onSessionExpired,
-    })
-    expect(result).toBe('hard_stop')
-    expect(onSessionExpired).toHaveBeenCalledTimes(1)
+describe('isKittyConnectAbortError', () => {
+  it('detects superseded / stop / cleanup messages', () => {
+    expect(isKittyConnectAbortError(new Error('Connection superseded by a newer socket'))).toBe(
+      true
+    )
+    expect(isKittyConnectAbortError(new Error('Conversation stopped'))).toBe(true)
+    expect(isKittyConnectAbortError(new Error('Cleanup started during connection'))).toBe(true)
+    expect(isKittyConnectAbortError(new Error('WebSocket connection failed'))).toBe(false)
   })
 })
 
 describe('runKittyConnectWithAuthRecovery', () => {
-  it('returns true on first successful connect without refreshing', async () => {
-    const refreshAccessToken = vi.fn(async () => ({ success: true }))
-    const connectOnce = vi.fn(async () => true)
-    const ok = await runKittyConnectWithAuthRecovery({
-      isHardStopped: () => false,
-      markHardStopped: vi.fn(),
-      hasAuthenticatedUser: () => true,
-      refreshAccessToken,
-      onSessionExpired: vi.fn(),
-      connectOnce,
-    })
-    expect(ok).toBe(true)
-    expect(connectOnce).toHaveBeenCalledTimes(1)
-    expect(refreshAccessToken).not.toHaveBeenCalled()
+  beforeEach(() => {
+    ensureFreshSessionAfterAuthFailure.mockReset()
+    ensureFreshSessionAfterAuthFailure.mockResolvedValue(true)
+    awaitSessionRefreshIdle.mockClear()
+    getSessionRefreshEpoch.mockReset()
+    getSessionRefreshEpoch.mockReturnValue(0)
   })
 
-  it('refreshes once and retries connect after the first failure', async () => {
+  function baseDeps(overrides: Record<string, unknown> = {}) {
+    const gate = createKittyWsAuthReconnectGate()
+    return {
+      isHardStopped: gate.isHardStopped,
+      markHardStopped: gate.markHardStopped,
+      hasAuthenticatedUser: () => true,
+      onSessionExpired: vi.fn(),
+      connectOnce: vi.fn(async () => 'connected' as const),
+      ...overrides,
+    }
+  }
+
+  it('returns true on first successful connect without stampede helper', async () => {
+    const deps = baseDeps()
+    const ok = await runKittyConnectWithAuthRecovery(deps)
+    expect(ok).toBe(true)
+    expect(deps.connectOnce).toHaveBeenCalledTimes(1)
+    expect(ensureFreshSessionAfterAuthFailure).not.toHaveBeenCalled()
+  })
+
+  it('does not refresh when the first attempt is aborted', async () => {
+    const deps = baseDeps({
+      connectOnce: vi.fn(async () => 'aborted' as const),
+    })
+    const ok = await runKittyConnectWithAuthRecovery(deps)
+    expect(ok).toBe(false)
+    expect(ensureFreshSessionAfterAuthFailure).not.toHaveBeenCalled()
+    expect(deps.connectOnce).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses stampede helper once then retries connect after failure', async () => {
+    getSessionRefreshEpoch.mockReturnValue(3)
     const connectOnce = vi
       .fn()
-      .mockResolvedValueOnce(false)
-      .mockResolvedValueOnce(true)
-    const refreshAccessToken = vi.fn(async () => ({ success: true }))
-    const markHardStopped = vi.fn()
-    const ok = await runKittyConnectWithAuthRecovery({
-      isHardStopped: () => false,
-      markHardStopped,
-      hasAuthenticatedUser: () => true,
-      refreshAccessToken,
-      onSessionExpired: vi.fn(),
-      connectOnce,
-    })
+      .mockResolvedValueOnce('failed')
+      .mockResolvedValueOnce('connected')
+    const deps = baseDeps({ connectOnce })
+    const ok = await runKittyConnectWithAuthRecovery(deps)
     expect(ok).toBe(true)
-    expect(refreshAccessToken).toHaveBeenCalledTimes(1)
+    expect(ensureFreshSessionAfterAuthFailure).toHaveBeenCalledTimes(1)
+    expect(ensureFreshSessionAfterAuthFailure).toHaveBeenCalledWith(3)
     expect(connectOnce).toHaveBeenCalledTimes(2)
-    expect(markHardStopped).not.toHaveBeenCalled()
   })
 
-  it('hard-stops the reconnect loop when refresh fails', async () => {
+  it('hard-stops when stampede helper returns false', async () => {
+    ensureFreshSessionAfterAuthFailure.mockResolvedValue(false)
     const markHardStopped = vi.fn()
     const onSessionExpired = vi.fn()
-    const connectOnce = vi.fn(async () => false)
+    const connectOnce = vi.fn(async () => 'failed' as const)
     const ok = await runKittyConnectWithAuthRecovery({
       isHardStopped: () => false,
       markHardStopped,
       hasAuthenticatedUser: () => true,
-      refreshAccessToken: async () => ({ success: false }),
       onSessionExpired,
       connectOnce,
     })
@@ -100,17 +105,17 @@ describe('runKittyConnectWithAuthRecovery', () => {
   })
 
   it('does not connect when already hard-stopped', async () => {
-    const connectOnce = vi.fn(async () => true)
+    const connectOnce = vi.fn(async () => 'connected' as const)
     const ok = await runKittyConnectWithAuthRecovery({
       isHardStopped: () => true,
       markHardStopped: vi.fn(),
       hasAuthenticatedUser: () => true,
-      refreshAccessToken: async () => ({ success: true }),
       onSessionExpired: vi.fn(),
       connectOnce,
     })
     expect(ok).toBe(false)
     expect(connectOnce).not.toHaveBeenCalled()
+    expect(ensureFreshSessionAfterAuthFailure).not.toHaveBeenCalled()
   })
 })
 
