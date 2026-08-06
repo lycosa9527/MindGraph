@@ -48,6 +48,9 @@ def stack_check_exit_code(
         return 2
     if not any(artifact_on_cos(plan) for plan in plans):
         return 2
+    mismatch_reasons = {"package_newer_than_cos", "cos_newer_than_package"}
+    if any(plan.get("reason") in mismatch_reasons for plan in plans):
+        return 2
     if any(plan.get("update_needed") for plan in plans):
         return 1
     return 0

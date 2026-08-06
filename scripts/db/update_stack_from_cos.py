@@ -169,6 +169,9 @@ def _describe_plan(label: str, plan: dict) -> None:
     cos_version = plan.get("cos_version") or "(missing on COS)"
     print(f"[{label}]")
     print(f"  Installed: {installed}")
+    package_version = plan.get("package_version")
+    if label == "Playwright" and package_version:
+        print(f"  Package:   {package_version}")
     print(f"  COS:       {cos_version}")
     reason = plan.get("reason")
     if reason == "cos_not_configured":
@@ -177,6 +180,16 @@ def _describe_plan(label: str, plan: dict) -> None:
         print("  Result:    COS SDK missing for this Python (use conda python313)")
     elif reason == "cos_meta_missing":
         print("  Result:    COS meta.json not found")
+    elif reason == "package_newer_than_cos":
+        print(f"  Result:    blocked — local package {package_version or '?'} is newer than COS {cos_version}")
+        hint = plan.get("hint")
+        if hint:
+            print(f"  Hint:      {hint}")
+    elif reason == "cos_newer_than_package":
+        print(f"  Result:    blocked — COS {cos_version} is newer than local package {package_version or '?'}")
+        hint = plan.get("hint")
+        if hint:
+            print(f"  Hint:      {hint}")
     elif plan.get("update_needed"):
         print("  Result:    update available (COS is newer)")
     else:
@@ -269,7 +282,15 @@ async def _run_stack_updates(update_plan: StackUpdatePlan) -> int:
                 if missing:
                     print(f"  Missing: {', '.join(str(item) for item in missing[:12])}", file=sys.stderr)
         else:
-            print("[ERROR] Playwright Chromium update failed", file=sys.stderr)
+            error = playwright_result.get("error")
+            hint = playwright_result.get("hint")
+            if error in ("package_newer_than_cos", "cos_newer_than_package") and hint:
+                print(f"[ERROR] Playwright version mismatch: {error}", file=sys.stderr)
+                print(f"  {hint}", file=sys.stderr)
+            else:
+                print("[ERROR] Playwright Chromium update failed", file=sys.stderr)
+                if hint:
+                    print(f"  {hint}", file=sys.stderr)
         exit_code = max(exit_code, code)
 
     return exit_code

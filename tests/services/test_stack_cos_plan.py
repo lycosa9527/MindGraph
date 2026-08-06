@@ -54,6 +54,28 @@ def test_stack_check_exit_code_both_meta_missing():
     )
 
 
+def test_stack_check_exit_code_playwright_package_mismatch():
+    assert (
+        stack_cos_plan.stack_check_exit_code(
+            _plan(update_needed=False),
+            _plan(update_needed=False),
+            _plan(reason="package_newer_than_cos", update_needed=False, cos_version="1.60.0"),
+        )
+        == 2
+    )
+
+
+def test_stack_check_exit_code_playwright_cos_newer_than_package():
+    assert (
+        stack_cos_plan.stack_check_exit_code(
+            _plan(update_needed=False),
+            _plan(update_needed=False),
+            _plan(reason="cos_newer_than_package", update_needed=False, cos_version="1.62.0"),
+        )
+        == 2
+    )
+
+
 def test_stack_check_exit_code_one_meta_missing_one_ok():
     assert (
         stack_cos_plan.stack_check_exit_code(

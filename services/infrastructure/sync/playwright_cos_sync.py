@@ -43,29 +43,81 @@ from services.utils import tencent_cos_client
 
 logger = logging.getLogger(__name__)
 
+_PACKAGE_NEWER = "package_newer_than_cos"
+_COS_NEWER = "cos_newer_than_package"
+
 
 def read_playwright_cos_meta() -> Optional[Dict[str, Any]]:
     """Read Playwright Chromium release meta from COS."""
     return tencent_cos_client.get_json(playwright_meta_cos_key())
 
 
+def playwright_package_cos_mismatch(
+    package_version: Optional[str],
+    cos_version: str,
+) -> Optional[Dict[str, Any]]:
+    """
+    Return a blocked update plan when pip package and COS Chromium versions differ.
+
+    Chromium builds are tied to the Playwright package revision; a mismatch always
+    fails install (opaque ``install_failed`` without this check).
+    """
+    if not package_version or not cos_version:
+        return None
+    cmp = compare_release_versions(package_version, cos_version)
+    if cmp == 0:
+        return None
+    if cmp > 0:
+        hint = (
+            f"Local Playwright package {package_version} is newer than COS Chromium "
+            f"{cos_version}. Republish Playwright to COS from a host with package "
+            f"{package_version}."
+        )
+        return {
+            "update_needed": False,
+            "reason": _PACKAGE_NEWER,
+            "package_version": package_version,
+            "cos_version": cos_version,
+            "hint": hint,
+        }
+    hint = (
+        f"COS Chromium {cos_version} is newer than local Playwright package "
+        f"{package_version}. Upgrade the package first "
+        f"(pip install 'playwright=={cos_version}'), then retry."
+    )
+    return {
+        "update_needed": False,
+        "reason": _COS_NEWER,
+        "package_version": package_version,
+        "cos_version": cos_version,
+        "hint": hint,
+    }
+
+
 def playwright_cos_update_needed() -> Dict[str, Any]:
     """True when COS meta version is newer than the locally installed Chromium."""
     cos_meta = read_playwright_cos_meta()
     installed = detect_installed_playwright_browser_version()
+    package = playwright_package_version()
     if not cos_meta or not isinstance(cos_meta.get("version"), str):
         return {
             "update_needed": False,
             "reason": "cos_meta_missing",
             "installed_version": installed,
+            "package_version": package,
             "cos_version": None,
         }
     cos_version = cos_meta["version"]
+    mismatch = playwright_package_cos_mismatch(package, cos_version)
+    if mismatch is not None:
+        mismatch["installed_version"] = installed
+        return mismatch
     if installed is None:
         return {
             "update_needed": True,
             "reason": "not_installed",
             "installed_version": None,
+            "package_version": package,
             "cos_version": cos_version,
         }
     cos_revision = cos_meta.get("browser_revision")
@@ -80,6 +132,7 @@ def playwright_cos_update_needed() -> Dict[str, Any]:
             "update_needed": True,
             "reason": "revision_mismatch",
             "installed_version": installed,
+            "package_version": package,
             "cos_version": cos_version,
         }
     if compare_release_versions(installed, cos_version) < 0:
@@ -87,12 +140,14 @@ def playwright_cos_update_needed() -> Dict[str, Any]:
             "update_needed": True,
             "reason": "cos_newer",
             "installed_version": installed,
+            "package_version": package,
             "cos_version": cos_version,
         }
     return {
         "update_needed": False,
         "reason": "up_to_date",
         "installed_version": installed,
+        "package_version": package,
         "cos_version": cos_version,
     }
 
@@ -291,6 +346,15 @@ async def install_playwright_from_cos(*, force: bool = False) -> Dict[str, Any]:
         result["error"] = "platform_mismatch"
         result["cos_platform"] = platform_tag
         result["local_platform"] = local_platform
+        return result
+
+    package = await asyncio.to_thread(playwright_package_version)
+    mismatch = playwright_package_cos_mismatch(package, version)
+    if mismatch is not None:
+        result["error"] = str(mismatch["reason"])
+        result["package_version"] = mismatch.get("package_version")
+        result["cos_version"] = mismatch.get("cos_version")
+        result["hint"] = mismatch.get("hint")
         return result
 
     installed = await asyncio.to_thread(detect_installed_playwright_browser_version)
