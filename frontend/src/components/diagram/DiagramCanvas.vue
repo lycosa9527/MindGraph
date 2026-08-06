@@ -30,7 +30,7 @@ import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasE
 import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
 import { useCanvasExportStore } from '@/stores/canvasExport'
 import { useNodeFloatingToolbarPosition } from '@/composables/canvasToolbar'
-import { registerDiagramLayoutRecalcBootstrap } from '@/composables/core/diagramLayoutRecalcBootstrap'
+import { registerDiagramLayoutRecalcSession } from '@/composables/core/diagramLayoutRecalcBootstrap'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useTheme } from '@/composables/core/useTheme'
 import {
@@ -324,7 +324,7 @@ useMindMapConnectorDebugLog({
 const { handlePaste: handleMindMapMultiLinePaste } = useMindMapMultiLinePaste()
 
 function onCanvasPaste(event: ClipboardEvent): void {
-  if (isDiagramPresentationReadOnly()) return
+  if (isDiagramPresentationReadOnly(diagramStore)) return
   if (diagramStore.canPaste) {
     event.preventDefault()
     const anchor = diagramStore.selectedNodes[0]
@@ -594,9 +594,10 @@ useDiagramCanvasVueFlowHandlers({
 })
 
 let unsubscribeEventBus: (() => void) | null = null
+let unregisterLayoutRecalcSession: (() => void) | null = null
 
 onMounted(() => {
-  registerDiagramLayoutRecalcBootstrap()
+  unregisterLayoutRecalcSession = registerDiagramLayoutRecalcSession(diagramStore)
   void ensureMarkdownRenderer()
   unsubscribeEventBus = mountSubscriptions({
     diagramStore,
@@ -634,6 +635,8 @@ watch(
 onUnmounted(() => {
   document.documentElement.classList.remove('mg-learning-sheet-pick')
   document.documentElement.style.removeProperty('--mg-hammer-cursor')
+  unregisterLayoutRecalcSession?.()
+  unregisterLayoutRecalcSession = null
   unsubscribeEventBus?.()
   unsubscribeEventBus = null
   clearFitTimersOnUnmount()

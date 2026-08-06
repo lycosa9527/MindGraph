@@ -5,6 +5,7 @@
 import { ref } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { loadBlankCanvasForType } from '@/composables/canvasPage/newCanvasBootstrap'
 import { reportKittySessionIngress } from '@/composables/kitty/useKittySessionManager'
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { useDiagramStore } from '@/stores/diagram'
@@ -125,8 +126,16 @@ export function useKittyMobileLibraryDiagramSelect(options: {
       options.onUserDiagramOverride?.()
 
       diagramStore.clearHistory()
-      diagramStore.setDiagramType('mindmap')
-      if (!diagramStore.loadDefaultTemplate('mindmap')) {
+      if (
+        !loadBlankCanvasForType({
+          diagramType: 'mindmap',
+          force: true,
+          setDiagramType: (type) => diagramStore.setDiagramType(type),
+          clearActiveDiagram: () => savedDiagramsStore.clearActiveDiagram(),
+          loadDefaultTemplate: (type) => diagramStore.loadDefaultTemplate(type),
+          setSelectedChartType: (name) => uiStore.setSelectedChartType(name),
+        })
+      ) {
         notify.error(t('mobile.kittyNewMindmapCreateFailed', '新建思维导图失败，请重试'))
         return
       }

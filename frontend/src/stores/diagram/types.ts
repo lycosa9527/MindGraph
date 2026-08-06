@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 
+import type { MindMapCanvasMode } from '@/stores/ui'
 import type { DiagramData, DiagramNode, DiagramType, HistoryEntry } from '@/types'
 
 import type { DiagramViewBus } from './diagramViewBus'
@@ -114,6 +115,11 @@ export interface DiagramContext {
 
   /** Session is a readonly preview (Showcase); mutations no-op via presentation guard. */
   isReadonly: Ref<boolean>
+  /**
+   * Mind-map canvas mode owned by this session (always set).
+   * Editor syncs from UI preference; Showcase/export sessions are created with gallery policy.
+   */
+  mindMapCanvasMode: Ref<MindMapCanvasMode>
   /** Vue Flow instance id for this session (required when multiple canvases mount). */
   vueFlowId: string
   /** Fit/zoom bus scoped to this session. */

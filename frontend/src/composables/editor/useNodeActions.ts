@@ -19,11 +19,11 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import { consumeMindMapPostEditSiblingAnchor } from '@/composables/mindMap/mindMapCanvasEnterGuard'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { DiagramNode } from '@/types'
-import { readEffectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import {
   getLastMindMapSiblingInsertFailure,
   isMindMapSiblingDebugEnabled,
@@ -31,8 +31,8 @@ import {
 } from '@/utils/mindMapSiblingDebug'
 
 /** V2 canvas: Enter/Tab create focuses inline edit — success toasts steal focus. */
-function shouldToastMindMapNodeAdd(): boolean {
-  return readEffectiveMindMapCanvasMode() !== 'v2'
+function shouldToastMindMapNodeAdd(sessionMode: 'legacy' | 'v2'): boolean {
+  return !isSessionMindMapV2VisualDesignActive(sessionMode)
 }
 
 export type UseNodeActionsOptions = {
@@ -62,14 +62,14 @@ function getDoubleBubbleGroup(
 
 export function useNodeActions(options: UseNodeActionsOptions = {}) {
   const opts = { ...DEFAULT_NODE_ACTIONS_OPTIONS, ...options }
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const { t } = useLanguage()
   const notify = useNotifications()
 
   // ---- Add helpers ----
 
   function handleAddBranch(): void {
-    if (isDiagramPresentationReadOnly()) return
+    if (isDiagramPresentationReadOnly(diagramStore)) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))
@@ -116,14 +116,14 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
         t('canvas.toolbar.newBranch'),
         t('canvas.toolbar.newChild')
       ) &&
-      shouldToastMindMapNodeAdd()
+      shouldToastMindMapNodeAdd(diagramStore.mindMapCanvasMode)
     ) {
       notify.success(t('canvas.toolbar.branchAdded'))
     }
   }
 
   function handleAddChild(): void {
-    if (isDiagramPresentationReadOnly()) return
+    if (isDiagramPresentationReadOnly(diagramStore)) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))
@@ -192,7 +192,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
     if (diagramStore.addMindMapChild(selectedId, t('canvas.toolbar.newChild'))) {
-      if (shouldToastMindMapNodeAdd()) {
+      if (shouldToastMindMapNodeAdd(diagramStore.mindMapCanvasMode)) {
         notify.success(t('canvas.toolbar.childAdded'))
       }
     } else {
@@ -201,7 +201,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
   }
 
   function handleAddSibling(): void {
-    if (isDiagramPresentationReadOnly()) return
+    if (isDiagramPresentationReadOnly(diagramStore)) return
     const diagramType = diagramStore.type
     if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
     if (!diagramStore.data?.nodes) {
@@ -230,7 +230,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
       return
     }
     if (diagramStore.addMindMapSibling(anchorId, t('canvas.toolbar.newBranch'))) {
-      if (shouldToastMindMapNodeAdd()) {
+      if (shouldToastMindMapNodeAdd(diagramStore.mindMapCanvasMode)) {
         notify.success(t('canvas.toolbar.siblingAdded'))
       }
     } else {
@@ -247,7 +247,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
   // ---- Main add handler ----
 
   function handleAddNode(): void {
-    if (isDiagramPresentationReadOnly()) return
+    if (isDiagramPresentationReadOnly(diagramStore)) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))
@@ -584,7 +584,7 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
   // ---- Main delete handler ----
 
   async function handleDeleteNode(): Promise<void> {
-    if (isDiagramPresentationReadOnly()) return
+    if (isDiagramPresentationReadOnly(diagramStore)) return
     const diagramType = diagramStore.type
     if (!diagramStore.data?.nodes) {
       notify.warning(t('canvas.toolbar.createDiagramFirst'))

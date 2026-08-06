@@ -76,6 +76,7 @@ function makeMindMapCtx(data: DiagramData): DiagramContext {
     mindMapPreserveIncomingY: ref(false),
     mindMapPreserveIncomingYNodeId: ref(null),
     mindMapBulkLoading: ref(false),
+    mindMapCanvasMode: ref(useUIStore().mindMapCanvasMode),
     pushHistory: vi.fn(),
     scheduleMindMapRecalc: vi.fn(),
   } as DiagramContext

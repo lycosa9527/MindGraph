@@ -4,8 +4,6 @@
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { useUIStore } from '@/stores/ui'
-import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import {
   buildMindMapVectorSnapshot,
   isMindMapVectorExportType,
@@ -17,6 +15,7 @@ import {
   mindMapVectorSvgToDataUrl,
   type MindMapVectorSvgResult,
 } from '@/utils/diagramMindMapVectorSvg'
+import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import type { PdfPageOrientation } from '@/utils/diagramPdfExport'
 
 type DiagramStore = ReturnType<typeof useDiagramStore>
@@ -30,11 +29,7 @@ export function snapshotMindMapVectorFromStores(
   diagramStore: DiagramStore,
   uiStore: UiStore
 ): MindMapVectorSnapshot | null {
-  const featureFlagsStore = useFeatureFlagsStore()
-  const canvasMode = effectiveMindMapCanvasMode(
-    uiStore.mindMapCanvasMode,
-    featureFlagsStore.getFeatureMindmapV2Canvas()
-  )
+  const canvasMode = resolveSessionMindMapCanvasMode(diagramStore.mindMapCanvasMode)
   return buildMindMapVectorSnapshot({
     store: {
       type: diagramStore.type,

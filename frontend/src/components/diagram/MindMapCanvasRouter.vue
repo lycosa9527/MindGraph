@@ -3,21 +3,18 @@
  * Routes mind maps to legacy or v2 canvas shells.
  * V2 is eager — async canvas was the dominant library-open delay (~1–2s to first shell mount).
  * Legacy stays lazy (rare mode switch).
+ * Mode comes from the injected diagram session (editor syncs UI; Showcase uses gallery policy).
  */
 import { computed, defineAsyncComponent } from 'vue'
 
 import MindMapV2Canvas from '@/components/diagram/MindMapV2Canvas.vue'
-import { useFeatureFlagsStore, useUIStore } from '@/stores'
-import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
-const uiStore = useUIStore()
-const featureFlagsStore = useFeatureFlagsStore()
+const diagramStore = useDiagramSession()
 
 const effectiveMode = computed(() =>
-  effectiveMindMapCanvasMode(
-    uiStore.mindMapCanvasMode,
-    featureFlagsStore.getFeatureMindmapV2Canvas()
-  )
+  resolveSessionMindMapCanvasMode(diagramStore.mindMapCanvasMode)
 )
 
 const MindMapLegacyCanvas = defineAsyncComponent(() => import('./MindMapLegacyCanvas.vue'))

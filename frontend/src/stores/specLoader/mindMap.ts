@@ -18,6 +18,7 @@ import {
   mindMapNodePathKey,
   sortMindMapNodeIdsByGlobalIndex,
 } from '@/stores/diagram/mindMapStylePreservation'
+import type { MindMapCanvasMode } from '@/stores/ui'
 import type { Connection, DiagramNode } from '@/types'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { readMindMapNodeUid } from '@/utils/mindMapNodeUid'
@@ -373,7 +374,18 @@ export function findBranchByNodeId(
   return null
 }
 
-export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
+export type LoadMindMapSpecOptions = {
+  /**
+   * Session-owned canvas mode. When omitted, falls back to the viewer UI preference
+   * (editor mutation paths). Showcase / export must pass the session mode.
+   */
+  canvasMode?: MindMapCanvasMode
+}
+
+export function loadMindMapSpec(
+  spec: Record<string, unknown>,
+  options?: LoadMindMapSpecOptions
+): SpecLoaderResult {
   const topic = (spec.topic as string) || (spec.central_topic as string) || ''
 
   let rightBranches: MindMapBranch[]
@@ -400,8 +412,9 @@ export function loadMindMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   }
 
   const allBranches = [...rightBranches, ...leftBranches]
-  const v2Visuals = readMindMapV2VisualDesignActive()
-  const canvasMode = v2Visuals ? 'v2' : 'legacy'
+  const canvasMode: MindMapCanvasMode =
+    options?.canvasMode ?? (readMindMapV2VisualDesignActive() ? 'v2' : 'legacy')
+  const v2Visuals = canvasMode === 'v2'
   const diagramStyleId =
     (spec._mindmap_diagram_style as string | undefined) ??
     (spec.mindmap_diagram_style as string | undefined)

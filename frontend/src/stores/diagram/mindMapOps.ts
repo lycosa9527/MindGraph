@@ -1,8 +1,14 @@
+import { toValue } from 'vue'
+
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { inferMindMapThemeIdFromNodes, resolveActiveMindMapThemeId } from '@/config/mindMapThemes'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
-import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import {
+  isSessionMindMapV2VisualDesignActive,
+  readEffectiveMindMapCanvasMode,
+  resolveSessionMindMapCanvasMode,
+} from '@/utils/mindMapCanvasMode'
 import {
   MINDMAP_NODE_UID_DATA_KEY,
   collectMindMapNodeUids,
@@ -69,6 +75,24 @@ import {
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
+
+function ctxCanvasMode(ctx: DiagramContext) {
+  const sessionMode = ctx.mindMapCanvasMode
+  if (sessionMode == null) {
+    return readEffectiveMindMapCanvasMode()
+  }
+  return resolveSessionMindMapCanvasMode(toValue(sessionMode))
+}
+
+function ctxV2Visuals(ctx: DiagramContext): boolean {
+  return isSessionMindMapV2VisualDesignActive(ctxCanvasMode(ctx))
+}
+
+function loadCtxMindMapSpec(ctx: DiagramContext, spec: Record<string, unknown>) {
+  return loadMindMapSpec(spec, { canvasMode: ctxCanvasMode(ctx) })
+}
+
+
 function defaultNewNodeText(): string {
   return String(i18n.global.t('diagram.editable.placeholder')).replace(/[….]{1,3}$/u, '')
 }
@@ -90,9 +114,10 @@ function defaultLegacyBranchWithChildren(
 /** Legacy canvas: new top-level branches include two default children; v2: text only. */
 function newTopLevelMindMapBranchSpec(
   text: string,
+  v2Visuals: boolean,
   childText = defaultNewChildText()
 ): { text: string; children?: { text: string }[] } {
-  if (readMindMapV2VisualDesignActive()) {
+  if (v2Visuals) {
     return { text }
   }
   return defaultLegacyBranchWithChildren(text, childText)
@@ -553,7 +578,7 @@ function commitMindMapReload(
   ctx.mindMapPreserveIncomingY.value = false
   ctx.mindMapPreserveIncomingYNodeId.value = null
 
-  const v2Visuals = readMindMapV2VisualDesignActive()
+  const v2Visuals = ctxV2Visuals(ctx)
   const skipRecalc = options?.skipMindMapRecalc === true
   const syncV2 = options?.syncV2LayoutBeforeShow === true && v2Visuals
   const holdBulk = syncV2
@@ -575,7 +600,8 @@ function commitMindMapReload(
     ctx.data.value._node_styles,
     resolveActiveMindMapThemeId(ctx.data.value),
     ctx.data.value._mindmap_diagram_style,
-    remapMindMapNodeIdAfterReload
+    remapMindMapNodeIdAfterReload,
+    ctxCanvasMode(ctx)
   )
 
   const oldNodes = ctx.data.value.nodes
@@ -688,7 +714,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     childText = defaultNewChildText()
   ): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
-    if (readMindMapV2VisualDesignActive()) {
+    if (ctxV2Visuals(ctx)) {
       return addMindMapBranchOnSide(side, text)
     }
     return addMindMapBranchClockwise(text, childText)
@@ -702,14 +728,14 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (!data.value?.nodes || !data.value?.connections) return false
 
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
-    const newBranch = newTopLevelMindMapBranchSpec(text, childText)
+    const newBranch = newTopLevelMindMapBranchSpec(text, ctxV2Visuals(ctx), childText)
 
     const allBranches = mindMapBranchesClockwiseOrder(spec.rightBranches, spec.leftBranches)
     allBranches.push(newBranch)
     const { rightBranches, leftBranches } = distributeBranchesClockwise(allBranches)
     const pathKey = resolvePathKeyForBranchSpec(newBranch, rightBranches, leftBranches)
 
-    const result = loadMindMapSpec({
+    const result = loadCtxMindMapSpec(ctx, {
       topic: spec.topic,
       leftBranches,
       rightBranches,
@@ -733,7 +759,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       spec.rightBranches.push(newBranch)
     }
 
-    const result = loadMindMapSpec({
+    const result = loadCtxMindMapSpec(ctx, {
       topic: spec.topic,
       leftBranches: spec.leftBranches,
       rightBranches: spec.rightBranches,
@@ -765,7 +791,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     const parentPath = mindMapNodePathKey(parentNodeId, connections)
     const pathKey = parentPath ? `${parentPath}/${branch.children.length - 1}` : null
 
-    const result = loadMindMapSpec({
+    const result = loadCtxMindMapSpec(ctx, {
       topic: spec.topic,
       leftBranches: spec.leftBranches,
       rightBranches: spec.rightBranches,
@@ -836,7 +862,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     // Deleting every right L1 leaves a left-only map (no structure mode for that).
     // Redistribute clockwise so survivors split across both sides again.
     const balanced = rebalanceMindMapBranchesIfLeftOnly(spec.leftBranches, spec.rightBranches)
-    const result = loadMindMapSpec({
+    const result = loadCtxMindMapSpec(ctx, {
       topic: spec.topic,
       leftBranches: balanced.leftBranches,
       rightBranches: balanced.rightBranches,
@@ -1020,7 +1046,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       return false
     }
 
-    const result = loadMindMapSpec({
+    const result = loadCtxMindMapSpec(ctx, {
       topic: spec.topic,
       leftBranches: spec.leftBranches,
       rightBranches: spec.rightBranches,
@@ -1052,7 +1078,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     historyLabel: string,
     selectPathKey: string | null = null
   ): boolean {
-    const result = loadMindMapSpec({
+    const result = loadCtxMindMapSpec(ctx, {
       topic,
       leftBranches,
       rightBranches,
@@ -1142,7 +1168,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       position,
       at,
       selected: selectedNodes.value.slice(),
-      v2: readMindMapV2VisualDesignActive(),
+      v2: ctxV2Visuals(ctx),
       presentationReadOnly: isDiagramPresentationReadOnly(ctx),
       type: type.value,
     })
@@ -1164,7 +1190,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     }
 
     // v2: mint one id + edge; connection order is SoT — no loadMindMapSpec.
-    if (readMindMapV2VisualDesignActive()) {
+    if (ctxV2Visuals(ctx)) {
       // Stale free-index ids after an accidental library reload leave selection
       // pointing at a node with no parent edge — recover another valid selection.
       let anchorNodeId = nodeId === 'topic' ? undefined : nodeId
@@ -1250,12 +1276,12 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     const insertIndex = position === 'above' ? found.indexInParent : found.indexInParent + 1
     const parentId = getMindMapParentId(connections, nodeId)
     const isTopLevel = parentId === 'topic'
-    const newSibling = isTopLevel ? newTopLevelMindMapBranchSpec(text) : { text }
+    const newSibling = isTopLevel ? newTopLevelMindMapBranchSpec(text, ctxV2Visuals(ctx)) : { text }
     const newSiblingUid = ensureMindMapBranchUid(newSibling)
     found.parentArray.splice(insertIndex, 0, newSibling)
 
     const beforeNodes = data.value.nodes
-    const result = loadMindMapSpec({
+    const result = loadCtxMindMapSpec(ctx, {
       topic: spec.topic,
       leftBranches: spec.leftBranches,
       rightBranches: spec.rightBranches,
@@ -1335,7 +1361,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     }
 
     // v2: shared in-place sibling helper (same path as Enter).
-    if (readMindMapV2VisualDesignActive() && anchorNodeId !== 'topic') {
+    if (ctxV2Visuals(ctx) && anchorNodeId !== 'topic') {
       let inserted = 0
       let cursorId = anchorNodeId
       for (const label of labels) {
@@ -1349,7 +1375,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       return inserted
     }
 
-    if (readMindMapV2VisualDesignActive() && anchorNodeId === 'topic') {
+    if (ctxV2Visuals(ctx) && anchorNodeId === 'topic') {
       // Topic paste: append top-level branches on the chosen side via branch add.
       const side = options?.topicSide ?? 'right'
       let inserted = 0
@@ -1433,7 +1459,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     direction: 'top' | 'bottom' | 'left' | 'right'
   ): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
-    if (!readMindMapV2VisualDesignActive()) return false
+    if (!ctxV2Visuals(ctx)) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
 
     if (nodeId === 'topic') {
@@ -1454,7 +1480,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function expandMindMapPathToNode(nodeId: string): boolean {
-    if (!readMindMapV2VisualDesignActive()) return false
+    if (!ctxV2Visuals(ctx)) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
     if (!nodeId || nodeId === 'topic') return false
@@ -1490,7 +1516,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function applyMindMapSubgraphPreview(result: SpecLoaderResult): void {
-    if (!readMindMapV2VisualDesignActive()) return
+    if (!ctxV2Visuals(ctx)) return
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return
     commitMindMapReload(ctx, result)
     ctx.scheduleMindMapRecalc()
@@ -1503,7 +1529,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     nodeStyles?: Record<string, NodeStyle>
     collapsedPaths?: string[]
   }): void {
-    if (!readMindMapV2VisualDesignActive()) return
+    if (!ctxV2Visuals(ctx)) return
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return
     if (!data.value) return
     data.value.nodes = snapshot.nodes
@@ -1514,7 +1540,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   }
 
   function clearMindMapSubgraphPreviewTags(): void {
-    if (!readMindMapV2VisualDesignActive()) return
+    if (!ctxV2Visuals(ctx)) return
     if (!data.value?.nodes) return
     for (const node of data.value.nodes) {
       if (node.data && (node.data as Record<string, unknown>).subgraphPreview) {
@@ -1527,7 +1553,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
   function toggleMindMapCollapse(nodeId: string): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
-    if (!readMindMapV2VisualDesignActive()) return false
+    if (!ctxV2Visuals(ctx)) return false
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
     if (nodeId === 'topic') return false

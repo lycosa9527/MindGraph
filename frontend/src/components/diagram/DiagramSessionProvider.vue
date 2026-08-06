@@ -13,6 +13,7 @@ import {
   type DiagramSession,
   type DiagramSessionMode,
 } from '@/stores/diagram'
+import type { MindMapCanvasMode } from '@/stores/ui'
 import type { DiagramType } from '@/types'
 
 const props = withDefaults(
@@ -22,6 +23,8 @@ const props = withDefaults(
     /** When session is omitted, create one with this mode. */
     mode?: DiagramSessionMode
     vueFlowId?: string
+    /** Session-owned mind-map canvas mode (Showcase gallery policy). */
+    mindMapCanvasMode?: MindMapCanvasMode | null
     /** Load this spec into a created session (preview). */
     spec?: Record<string, unknown> | null
     diagramType?: DiagramType | string | null
@@ -30,6 +33,7 @@ const props = withDefaults(
     session: null,
     mode: 'readonly',
     vueFlowId: undefined,
+    mindMapCanvasMode: null,
     spec: null,
     diagramType: null,
   }
@@ -45,6 +49,7 @@ const resolvedSession: DiagramSession =
       vueFlowId: props.vueFlowId ?? `diagram-session-${Math.random().toString(36).slice(2, 10)}`,
       viewBus: viewBus ?? undefined,
       emitDiagramEvents: props.mode === 'edit',
+      mindMapCanvasMode: props.mindMapCanvasMode ?? undefined,
     })
   )
 

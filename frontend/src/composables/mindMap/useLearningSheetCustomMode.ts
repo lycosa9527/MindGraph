@@ -1,6 +1,7 @@
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toValue } from 'vue'
 
 import { notify } from '@/composables/core/notifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores'
 import { claimThinkingCoinEvent } from '@/utils/claimThinkingCoinEvent'
@@ -47,6 +48,12 @@ export function isLearningSheetCustomPickActive(): boolean {
 /** Safe to call from node click handlers (outside component setup). */
 export function handleLearningSheetPickNodeClick(nodeId: string): boolean {
   if (!customPickActive.value) return false
+
+  // Showcase / export sessions are readonly — never mutate the editor store from a preview click.
+  const activeSession = useDiagramSession()
+  if (toValue(activeSession.isReadonly)) {
+    return true
+  }
 
   const diagramStore = useDiagramStore()
 
@@ -132,7 +139,7 @@ export function resumeLearningSheetAfterPresentation(): void {
 }
 
 export function useLearningSheetCustomMode() {
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
 
   const isPickActive = computed(() => customPickActive.value)
   const blankCount = computed(() => {

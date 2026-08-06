@@ -27,6 +27,7 @@ import logging
 import os
 from typing import Any, Dict, List
 
+from config.settings import config
 from services.infrastructure.utils.browser import BrowserContextManager
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
@@ -35,6 +36,9 @@ logger = logging.getLogger(__name__)
 # sessionStorage keys — keep in sync with ExportRenderPage.vue and headlessExportSession.ts
 EXPORT_SPEC_SESSION_KEY = "mindgraph_export_spec"
 HEADLESS_EXPORT_SESSION_KEY = "mindgraph_headless_export"
+# localStorage keys — keep in sync with frontend/src/stores/ui.ts
+MINDMAP_CANVAS_MODE_KEY = "mindgraph_mindmap_canvas_mode"
+MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY = "mindgraph_mindmap_canvas_v2_default_migrated"
 RENDER_TIMEOUT_SECONDS = 20
 RENDER_POLL_INTERVAL_MS = 500
 # Playwright and layout behave poorly at extreme sizes; keep server PNG requests bounded.
@@ -105,14 +109,30 @@ def _log_debug_info(
             logger.error("[VueFlowScreenshot]   %s", err)
 
 
+def _showcase_mindmap_canvas_mode() -> str:
+    """
+    Match frontend readShowcaseMindMapCanvasMode(): New canvas when the v2 feature
+    flag is on; Classic when off. Headless export skips /api/config/features.
+    """
+    return "v2" if config.FEATURE_MINDMAP_V2_CANVAS else "legacy"
+
+
 async def _inject_spec_and_navigate(page, base_url: str, spec_json: str):
     """Inject spec via init script and navigate directly to /export-render."""
     escaped_spec = json.dumps(spec_json)
+    canvas_mode = _showcase_mindmap_canvas_mode()
+    # Stamp migration so ensureMindMapCanvasV2DefaultMigration does not overwrite
+    # a flag-off Classic mode with New canvas.
     await page.add_init_script(
         f"sessionStorage.setItem('{HEADLESS_EXPORT_SESSION_KEY}', '1');"
-        f"sessionStorage.setItem('{EXPORT_SPEC_SESSION_KEY}', {escaped_spec});",
+        f"sessionStorage.setItem('{EXPORT_SPEC_SESSION_KEY}', {escaped_spec});"
+        f"localStorage.setItem('{MINDMAP_CANVAS_MODE_KEY}', '{canvas_mode}');"
+        f"localStorage.setItem('{MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY}', '1');",
     )
-    logger.debug("[VueFlowScreenshot] Spec will be injected via init script")
+    logger.debug(
+        "[VueFlowScreenshot] Spec will be injected via init script (canvas_mode=%s)",
+        canvas_mode,
+    )
 
     export_url = f"{base_url}/export-render"
     logger.debug("[VueFlowScreenshot] Navigating directly to: %s", export_url)

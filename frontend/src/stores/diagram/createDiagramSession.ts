@@ -6,6 +6,10 @@ import { computed, reactive, ref, type UnwrapNestedRefs } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import type { DiagramData, DiagramNode, DiagramType, HistoryEntry } from '@/types'
+import {
+  readEffectiveMindMapCanvasMode,
+  resolveSessionMindMapCanvasMode,
+} from '@/utils/mindMapCanvasMode'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import type { MindMapCanvasMode } from '../ui'
@@ -57,6 +61,11 @@ export type CreateDiagramSessionOptions = {
   viewBus?: DiagramViewBus
   /** When false, do not emit diagram:* / type_changed onto the global app bus. */
   emitDiagramEvents?: boolean
+  /**
+   * Session-owned mind-map canvas mode. Defaults to the effective UI preference.
+   * Showcase passes gallery policy (`readShowcaseMindMapCanvasMode()`).
+   */
+  mindMapCanvasMode?: MindMapCanvasMode
 }
 
 export function createDiagramSession(options: CreateDiagramSessionOptions = {}) {
@@ -67,6 +76,9 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
   const viewBus: DiagramViewBus =
     options.viewBus ??
     (mode === 'edit' ? adaptGlobalEventBusAsViewBus(eventBus) : createDiagramViewBus())
+  const mindMapCanvasMode = ref<MindMapCanvasMode>(
+    options.mindMapCanvasMode ?? readEffectiveMindMapCanvasMode()
+  )
 
   // Core state refs
   const type = ref<DiagramType | null>(null)
@@ -145,6 +157,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     collabSessionActive,
     collabForeignLockedNodeIds,
     isReadonly,
+    mindMapCanvasMode,
     vueFlowId,
     viewBus,
     emitDiagramEvents,
@@ -377,11 +390,13 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
   const nodeCount = computed(() => data.value?.nodes?.length ?? 0)
 
   function resyncMindMapConnectionStrokeColors(): void {
+    const canvasMode = resolveSessionMindMapCanvasMode(mindMapCanvasMode.value)
     if (
       !resyncMindMapConnectionStrokeColorsForActiveMode(
         type.value,
         data.value?.nodes,
-        data.value?.connections
+        data.value?.connections,
+        canvasMode
       )
     ) {
       return
@@ -393,6 +408,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     previousMode: MindMapCanvasMode,
     newMode: MindMapCanvasMode
   ): boolean {
+    mindMapCanvasMode.value = newMode
     return reconcileMindMapCanvasModeSwitch(ctx, previousMode, newMode)
   }
 
@@ -573,6 +589,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     getMindMapDescendantIds,
     resyncMindMapConnectionStrokeColors,
     reconcileMindMapCanvasMode,
+    mindMapCanvasMode,
     copySelectedNodes,
     cutSelectedNodes,
     pasteClipboardAt,

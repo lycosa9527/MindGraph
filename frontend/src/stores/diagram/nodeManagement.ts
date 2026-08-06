@@ -3,7 +3,7 @@ import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
-import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
@@ -273,7 +273,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     if (
       (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') &&
       updates.style &&
-      readMindMapV2VisualDesignActive() &&
+      isSessionMindMapV2VisualDesignActive(ctx.mindMapCanvasMode.value) &&
       (updates.style.textAlign !== undefined ||
         updates.style.textDecoration !== undefined ||
         updates.style.fontSize !== undefined ||

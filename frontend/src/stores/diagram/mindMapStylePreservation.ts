@@ -22,11 +22,9 @@ import {
   mindMapRainbowColorsForNode,
   syncRainbowMindMapConnectionColors,
 } from '@/config/mindMapVibrantThemes'
+import type { MindMapCanvasMode } from '@/stores/ui'
 import type { Connection, DiagramNode, DiagramType, NodeStyle } from '@/types'
-import {
-  readEffectiveMindMapCanvasMode,
-  readMindMapV2VisualDesignActive,
-} from '@/utils/mindMapCanvasMode'
+import { readEffectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 /** Injected to avoid a circular import with mindMapCollapse remap helpers. */
 export type MindMapNodeIdRemapper = (
@@ -272,9 +270,10 @@ export function applyMindMapStylesByPath(
   stylesByPath: Map<string, NodeStyle>,
   themeId?: MindMapThemeId | string | null,
   diagramStyleId?: string | null,
-  previousDepthByPath?: Map<string, number>
+  previousDepthByPath?: Map<string, number>,
+  canvasMode: MindMapCanvasMode = readEffectiveMindMapCanvasMode()
 ): Record<string, NodeStyle> {
-  const v2Visuals = readMindMapV2VisualDesignActive()
+  const v2Visuals = canvasMode === 'v2'
   const defaultTheme = getMindMapThemeById(resolveMindMapThemeId(themeId))
   const diagramStyle = getMindMapDiagramStyleById(resolveMindMapDiagramStyleId(diagramStyleId))
   const nodeStyles: Record<string, NodeStyle> = {}
@@ -407,15 +406,12 @@ export function buildMindMapStyleForNewBranchNode(
 export function resyncMindMapConnectionStrokeColorsForActiveMode(
   diagramType: DiagramType | null,
   nodes: DiagramNode[] | undefined,
-  connections: Connection[] | undefined
+  connections: Connection[] | undefined,
+  canvasMode: MindMapCanvasMode = readEffectiveMindMapCanvasMode()
 ): boolean {
   if (!nodes?.length || !connections?.length) return false
   if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return false
-  syncMindMapConnectionStrokeColorsForCanvasMode(
-    connections,
-    nodes,
-    readEffectiveMindMapCanvasMode()
-  )
+  syncMindMapConnectionStrokeColorsForCanvasMode(connections, nodes, canvasMode)
   return true
 }
 
@@ -433,11 +429,20 @@ export function mergeMindMapReloadStyles(
   existingNodeStyles?: Record<string, NodeStyle>,
   themeId?: MindMapThemeId | string | null,
   diagramStyleId?: string | null,
-  remapNodeId?: MindMapNodeIdRemapper
+  remapNodeId?: MindMapNodeIdRemapper,
+  canvasMode: MindMapCanvasMode = readEffectiveMindMapCanvasMode()
 ): Record<string, NodeStyle> {
   if (!remapNodeId) {
     const stylesByPath = collectMindMapStylesByPath(oldNodes, oldConnections, existingNodeStyles)
-    return applyMindMapStylesByPath(newNodes, newConnections, stylesByPath, themeId, diagramStyleId)
+    return applyMindMapStylesByPath(
+      newNodes,
+      newConnections,
+      stylesByPath,
+      themeId,
+      diagramStyleId,
+      undefined,
+      canvasMode
+    )
   }
 
   const stylesByPath = new Map<string, NodeStyle>()
@@ -465,6 +470,7 @@ export function mergeMindMapReloadStyles(
     stylesByPath,
     themeId,
     diagramStyleId,
-    previousDepthByPath
+    previousDepthByPath,
+    canvasMode
   )
 }

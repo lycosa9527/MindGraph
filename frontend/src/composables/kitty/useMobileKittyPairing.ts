@@ -6,6 +6,7 @@ import { type ComputedRef, type Ref, computed, onMounted, onUnmounted, ref, watc
 import { storeToRefs } from 'pinia'
 
 import { useLanguage } from '@/composables'
+import { loadBlankCanvasForType } from '@/composables/canvasPage/newCanvasBootstrap'
 import { shouldUseOneSentenceEditFlow } from '@/composables/canvasToolbar/mindMapOneSentencePhase'
 import { kittyInteractionLanguageFromUi } from '@/composables/kitty/buildKittyDiagramContext'
 import { hydrateMobileKittyFromLibrary } from '@/composables/kitty/hydrateMobileKittyFromLibrary'
@@ -170,8 +171,13 @@ export function useMobileKittyPairing(
     sessionId.value = createKittySessionId()
     if (loadTemplate) {
       diagramStore.clearHistory()
-      diagramStore.setDiagramType('mindmap')
-      diagramStore.loadDefaultTemplate('mindmap')
+      loadBlankCanvasForType({
+        diagramType: 'mindmap',
+        force: true,
+        setDiagramType: (type) => diagramStore.setDiagramType(type),
+        clearActiveDiagram: () => savedDiagramsStore.clearActiveDiagram(),
+        loadDefaultTemplate: (type) => diagramStore.loadDefaultTemplate(type),
+      })
     }
     options.onDebugLine?.('#sess', `ephemeral ${sessionId.value.slice(0, 8)}`)
     return sessionId.value

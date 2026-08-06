@@ -1,8 +1,6 @@
 import { nextTick, watch, type Ref } from 'vue'
 
-import { storeToRefs } from 'pinia'
-
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdge, MindGraphNode, MindGraphNodeData } from '@/types'
 import { dumpMindMapConnectorDebug } from '@/utils/mindMapConnectorDebug'
 import { isMindMapConnectorVerboseDebugEnabled } from '@/utils/mindMapConnectorDebugLevel'
@@ -22,11 +20,10 @@ export function useMindMapConnectorDebugLog(options: {
   containerRef: Ref<HTMLElement | null>
   screenToFlowCoordinate: (pos: { x: number; y: number }) => { x: number; y: number }
 }): void {
-  const diagramStore = useDiagramStore()
-  const { mindMapRecalcTrigger } = storeToRefs(diagramStore)
+  const diagramStore = useDiagramSession()
 
   function readRecalcGeneration(): number {
-    return mindMapRecalcTrigger?.value ?? 0
+    return diagramStore.mindMapRecalcTrigger ?? 0
   }
 
   let rafId = 0

@@ -44,14 +44,17 @@ vi.mock('@/utils/safeRandomUUID', () => ({
 vi.mock('@/stores/diagram', () => ({
   useDiagramStore: () => ({
     clearHistory: vi.fn(),
-    setDiagramType: vi.fn(),
+    setDiagramType: vi.fn(() => true),
     loadDefaultTemplate: loadDefaultTemplateMock,
     getSpecForSave: getSpecForSaveMock,
   }),
 }))
 
 vi.mock('@/stores/ui', () => ({
-  useUIStore: () => ({ language: 'zh' }),
+  useUIStore: () => ({
+    language: 'zh',
+    setSelectedChartType: vi.fn(),
+  }),
 }))
 
 vi.mock('@/stores/savedDiagrams', () => ({
@@ -61,6 +64,7 @@ vi.mock('@/stores/savedDiagrams', () => ({
     },
     saveDiagram: saveDiagramMock,
     setActiveDiagram: setActiveDiagramMock,
+    clearActiveDiagram: vi.fn(),
     error: null,
     fetchDiagrams: vi.fn(async () => undefined),
   }),

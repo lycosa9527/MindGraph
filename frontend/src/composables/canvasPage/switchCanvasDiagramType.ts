@@ -2,9 +2,9 @@ import type { RouteLocationNormalizedLoaded, Router } from 'vue-router'
 
 import { applyCanvasSessionReset } from '@/composables/canvasPage/applyCanvasSessionReset'
 import { applyKittyTopicSeedToDiagram } from '@/composables/canvasPage/applyKittyTopicSeedToDiagram'
-import { diagramTypeToChineseMap } from '@/composables/canvasPage/diagramTypeMaps'
 import type { KittyTopicSeed } from '@/composables/canvasPage/diagramTypeFromPrompt'
-import { useDiagramStore, useUIStore } from '@/stores'
+import { loadBlankCanvasForType } from '@/composables/canvasPage/newCanvasBootstrap'
+import { useDiagramStore, useSavedDiagramsStore, useUIStore } from '@/stores'
 import type { DiagramType } from '@/types'
 
 export type SwitchCanvasDiagramTypeOptions = {
@@ -23,19 +23,21 @@ export function switchCanvasDiagramType(
 ): boolean {
   const diagramStore = useDiagramStore()
   const uiStore = useUIStore()
+  const savedDiagramsStore = useSavedDiagramsStore()
 
   applyCanvasSessionReset()
 
-  const chineseName = diagramTypeToChineseMap[targetType]
-  if (chineseName) {
-    uiStore.setSelectedChartType(chineseName)
-  }
-
-  if (!diagramStore.setDiagramType(targetType)) {
-    return false
-  }
-
-  if (!diagramStore.loadDefaultTemplate(targetType)) {
+  if (
+    !loadBlankCanvasForType({
+      diagramType: targetType,
+      setDiagramType: (type) => diagramStore.setDiagramType(type),
+      clearActiveDiagram: () => savedDiagramsStore.clearActiveDiagram(),
+      loadDefaultTemplate: (type) => diagramStore.loadDefaultTemplate(type),
+      setSelectedChartType: (name) => uiStore.setSelectedChartType(name),
+      // Session still has prior-type data until load replaces it — allow switch↔watch dedupe.
+      hasDiagramData: true,
+    })
+  ) {
     return false
   }
 

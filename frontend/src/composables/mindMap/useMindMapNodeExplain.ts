@@ -4,8 +4,9 @@
 import { computed, ref } from 'vue'
 
 import { useLanguage } from '@/composables'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
-import { useDiagramStore, useSavedDiagramsStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 import { collectMindMapExplainContext } from '@/utils/mindMapExplainContext'
@@ -42,7 +43,7 @@ function normalizeDiagramType(type: DiagramType | null): string {
 
 export function useMindMapNodeExplain() {
   const { promptLanguage, t } = useLanguage()
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const savedDiagramsStore = useSavedDiagramsStore()
 
   const visible = ref(false)

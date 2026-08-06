@@ -6,7 +6,7 @@ import type { DropTarget } from '@/composables/editor/useBranchMoveDrag'
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import type { DiagramNode, NodeStyle } from '@/types'
 import type { MindGraphNode } from '@/types/vueflow'
-import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { nodeShapeBorderRadius, type NodeShape } from '@/utils/nodeShapeStyle'
 
 import {
@@ -27,10 +27,11 @@ interface NodeWithDimensions {
 function resolveMindMapDropPreviewShape(node: MindGraphNode): NodeShape | null {
   const diagramType = node.data?.diagramType
   if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return null
-  if (!readMindMapV2VisualDesignActive()) return null
+  const session = useDiagramSession()
+  if (!isSessionMindMapV2VisualDesignActive(session.mindMapCanvasMode)) return null
 
   const nodeId = node.id ?? ''
-  const diagramData = useDiagramSession().data
+  const diagramData = session.data
   const storeNode = diagramData?.nodes.find((n) => n.id === nodeId)
   const style = {
     ...(diagramData?._node_styles?.[nodeId] ?? {}),

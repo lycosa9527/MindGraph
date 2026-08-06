@@ -81,6 +81,15 @@ import {
   diagramTypeMap,
   diagramTypeToChineseMap,
 } from '@/composables/canvasPage/diagramTypeMaps'
+import {
+  clearBlankCanvasLoadDedupe,
+  getDiagramDataType,
+  isNewCanvasTypeQuery,
+  loadBlankCanvasForType,
+  resolveDiagramTypeFromQuery,
+  shouldPriority3LoadDefaultTemplate,
+} from '@/composables/canvasPage/newCanvasBootstrap'
+import { useNewCanvasTypeQueryBootstrap } from '@/composables/canvasPage/useNewCanvasTypeQueryBootstrap'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
 import { registerCanvasPageResetHandler } from '@/composables/canvasPage/registerCanvasPageResetHandler'
@@ -177,7 +186,6 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import type { MindMapPresentationToolId } from '@/types/diagram'
 import { MIND_MAP_PRESENTATION_EXPANDABLE_TOOLS } from '@/types/diagram'
-import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 
 const route = useRoute()
@@ -458,9 +466,8 @@ const useMindMapV2 = useMindMapV2Chrome()
 eventBus.onWithOwner(
   'mindmap:canvas_mode_changed',
   ({ previousMode, newMode }) => {
-    if (isMindMapDiagramType(diagramStore.type)) {
-      diagramStore.reconcileMindMapCanvasMode(previousMode, newMode)
-    }
+    // Always keep session-owned mode in sync; bucket reconcile runs only for mind maps.
+    diagramStore.reconcileMindMapCanvasMode(previousMode, newMode)
   },
   'CanvasPage'
 )
@@ -1073,24 +1080,35 @@ watch(
       // The canvas will show empty state
       return
     }
+    // Sync chrome type only. Blank loads are owned by route bootstrap
+    // / switchCanvasDiagramType / useCanvasReset — never load here (double paint).
     diagramStore.setDiagramType(diagramType.value)
-    // New-canvas contract: ?type= without diagramId always starts from the default
-    // template (must not reuse leftover session data from Showcase or prior canvas).
-    const typeQuery = route.query.type
-    const hasTypeQuery =
-      typeof typeQuery === 'string' && VALID_DIAGRAM_TYPES.includes(typeQuery as DiagramType)
-    const hasDiagramId = Boolean(route.query.diagramId ?? route.query.diagram_id)
-    if (hasTypeQuery && !hasDiagramId) {
-      savedDiagramsStore.clearActiveDiagram()
-      diagramStore.loadDefaultTemplate(diagramType.value)
-      return
-    }
-    if (!diagramStore.data) {
-      diagramStore.loadDefaultTemplate(diagramType.value)
-    }
   },
   { immediate: true }
 )
+
+function afterNewCanvasTypeBlank(typeFromUrl: DiagramType): void {
+  applyCanvasKittySeedFromRoute(typeFromUrl, route.query, diagramStore)
+  if (!canvasKittySeedQueryKeysPresent(route.query)) return
+  const restQuery = { ...route.query }
+  delete restQuery.kitty_topic
+  delete restQuery.kitty_left
+  delete restQuery.kitty_right
+  delete restQuery.kitty_scope
+  void router.replace({ path: route.path, query: restQuery })
+}
+
+useNewCanvasTypeQueryBootstrap({
+  route,
+  setDiagramType: (type) => diagramStore.setDiagramType(type),
+  clearActiveDiagram: () => savedDiagramsStore.clearActiveDiagram(),
+  loadDefaultTemplate: (type) => diagramStore.loadDefaultTemplate(type),
+  setSelectedChartType: (name) => uiStore.setSelectedChartType(name),
+  hasDiagramData: () => Boolean(diagramStore.data),
+  afterBlankLoad: (type) => {
+    afterNewCanvasTypeBlank(type)
+  },
+})
 
 // Watch for diagram ID changes (sidebar switch) - load new diagram and clear node palette
 watch(
@@ -1268,39 +1286,36 @@ onMounted(async () => {
     }
   }
 
-  // Priority 2: Load new diagram by type from URL (survives page refresh)
-  const typeFromUrl = route.query.type as DiagramType | undefined
-  if (typeFromUrl && VALID_DIAGRAM_TYPES.includes(typeFromUrl)) {
-    // Sync UI store with type from URL
-    const chineseName = diagramTypeToChineseMap[typeFromUrl]
-    if (chineseName) {
-      uiStore.setSelectedChartType(chineseName)
-    }
-    // New-canvas contract: always blank template when opening by type (no diagramId).
-    diagramStore.setDiagramType(typeFromUrl)
-    savedDiagramsStore.clearActiveDiagram()
-    diagramStore.loadDefaultTemplate(typeFromUrl)
-    applyCanvasKittySeedFromRoute(typeFromUrl, route.query, diagramStore)
-    if (canvasKittySeedQueryKeysPresent(route.query)) {
-      const restQuery = { ...route.query }
-      delete restQuery.kitty_topic
-      delete restQuery.kitty_left
-      delete restQuery.kitty_right
-      delete restQuery.kitty_scope
-      await router.replace({ path: route.path, query: restQuery })
-    }
+  // Priority 2: blank typed canvas (?type= without diagramId).
+  const typeFromUrl = resolveDiagramTypeFromQuery(route.query)
+  if (typeFromUrl && isNewCanvasTypeQuery(route.query)) {
+    loadBlankCanvasForType({
+      diagramType: typeFromUrl,
+      setDiagramType: (type) => diagramStore.setDiagramType(type),
+      clearActiveDiagram: () => savedDiagramsStore.clearActiveDiagram(),
+      loadDefaultTemplate: (type) => diagramStore.loadDefaultTemplate(type),
+      setSelectedChartType: (name) => uiStore.setSelectedChartType(name),
+      hasDiagramData: Boolean(diagramStore.data),
+    })
+    afterNewCanvasTypeBlank(typeFromUrl)
     return
   }
 
-  // Priority 3: Use UI store (backward compat, will be lost on refresh)
+  // Priority 3: UI store only (no ?type=). Keeps landing-generated Pinia specs
+  // when data.type matches; blanks empty / wrong-type leftovers.
   if (diagramType.value) {
     diagramStore.setDiagramType(diagramType.value)
-    // No library id → new canvas; always start from default template.
-    // Keep existing data only when an active library diagram is already bound.
-    if (!savedDiagramsStore.activeDiagramId || !diagramStore.data) {
-      if (!savedDiagramsStore.activeDiagramId) {
-        savedDiagramsStore.clearActiveDiagram()
-      }
+    if (!savedDiagramsStore.activeDiagramId) {
+      savedDiagramsStore.clearActiveDiagram()
+    }
+    if (
+      shouldPriority3LoadDefaultTemplate({
+        hasActiveDiagramId: Boolean(savedDiagramsStore.activeDiagramId),
+        hasDiagramData: Boolean(diagramStore.data),
+        selectedDiagramType: diagramType.value,
+        dataDiagramType: getDiagramDataType(diagramStore.data),
+      })
+    ) {
       diagramStore.loadDefaultTemplate(diagramType.value)
     }
   }
@@ -1321,6 +1336,7 @@ onUnmounted(() => {
   clearCanvasEphemeralSession()
 
   // Clean up state when leaving canvas - matches old JS behavior
+  clearBlankCanvasLoadDedupe()
   diagramStore.reset()
   // One-sentence / Kitty chat is scoped per diagram; clear Pinia so a new canvas
   // does not show the previous diagram's conversation.

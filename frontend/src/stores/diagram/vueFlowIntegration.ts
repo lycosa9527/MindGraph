@@ -1,14 +1,10 @@
 import { computed } from 'vue'
 
-import { storeToRefs } from 'pinia'
-
 import {
   augmentConnectionWithOptimalHandles,
   splitMixedArrowHandleGroups,
 } from '@/composables/diagrams/conceptMapHandles'
 import { resolveLegacyMindMapConnectionStrokeColor } from '@/config/mindMapGeometry'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
-import { useUIStore } from '@/stores/ui'
 import type { Connection, MindGraphEdge, MindGraphEdgeType, MindGraphNode } from '@/types'
 import {
   connectionToVueFlowEdge,
@@ -16,7 +12,7 @@ import {
   vueFlowNodeToDiagramNode,
 } from '@/types/vueflow'
 import { withClassicMindMapTopicSourceHandle } from '@/utils/classicMindMapTopicHandles'
-import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
 
@@ -40,14 +36,8 @@ import {
 import type { DiagramContext } from './types'
 
 export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
-  const uiStore = useUIStore()
-  const featureFlagsStore = useFeatureFlagsStore()
-  const { mindMapCanvasMode } = storeToRefs(uiStore)
   const effectiveMindMapMode = computed(() =>
-    effectiveMindMapCanvasMode(
-      mindMapCanvasMode.value,
-      featureFlagsStore.getFeatureMindmapV2Canvas()
-    )
+    resolveSessionMindMapCanvasMode(ctx.mindMapCanvasMode.value)
   )
 
   const circleMapLayoutNodes = computed(() => {

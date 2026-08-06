@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.169.2] - 2026-08-06
+
+> **Session-owned mind-map canvas mode for Showcase/export; sole new-canvas blank-load owners with dedupe.**
+
+### Fixed
+
+- **Showcase / export mind-map canvas mode** — Each `DiagramSession` owns `mindMapCanvasMode`; Showcase and headless VueFlow screenshots use gallery policy (v2 when the feature flag is on, Classic when off) instead of the viewer UI preference. Theme, mind-map ops, style reload, and vector export read the session mode (`mindMapCanvasMode.ts`, `createDiagramSession.ts`, `vueflow_screenshot.py`).
+- **New-canvas blank load ownership** — `?type=` without `diagramId` loads only via route bootstrap, in-place type-query watch, switch/reset, and Kitty helpers (`newCanvasBootstrap.ts`, `useNewCanvasTypeQueryBootstrap.ts`). `selectedChartType` watch syncs type only (no template load / double paint). Same-turn dedupe avoids remount/helper double measure-batch; Priority 3 keeps landing-generated Pinia specs when `data.type` matches.
+- **Layout recalc across sessions** — `diagram:layout_recalc_bump` increments every mounted diagram session (and pending bumps apply on late mount) so Showcase previews are not skipped / do not only poke the editor store (`diagramLayoutRecalcBootstrap.ts`).
+
+### Tests
+
+- **Frontend** — New-canvas bootstrap ownership/dedupe/Priority 3; mind-map canvas visuals session mode; Kitty mobile library select; diagram session isolation coverage.
+
 ## [5.169.1] - 2026-08-06
 
 > **Injectable DiagramSession: Showcase vector preview isolated from the editor Pinia store.**

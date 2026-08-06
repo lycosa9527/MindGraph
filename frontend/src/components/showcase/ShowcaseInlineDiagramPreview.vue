@@ -3,14 +3,17 @@ import { computed, ref, watch } from 'vue'
 
 import { Loader2 } from '@lucide/vue'
 
-import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
+import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import DiagramSessionProvider from '@/components/diagram/DiagramSessionProvider.vue'
 import { useLanguage } from '@/composables'
+import { readShowcaseMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import {
   cloneShowcaseDiagramSpec,
   fetchDiagramSpecPngBlob,
   resolveShowcaseDiagramType,
 } from '@/utils/showcaseDiagramThumbnail'
+
+const showcaseMindMapCanvasMode = readShowcaseMindMapCanvasMode()
 
 const props = defineProps<{
   spec: Record<string, unknown> | null
@@ -101,10 +104,11 @@ defineExpose({ captureThumbnail })
         v-if="canvasMounted && previewSpec && previewDiagramType"
         :key="previewSessionKey"
         mode="readonly"
+        :mind-map-canvas-mode="showcaseMindMapCanvasMode"
         :spec="previewSpec"
         :diagram-type="previewDiagramType"
       >
-        <DiagramCanvas
+        <DiagramCanvasHost
           class="relative z-1"
           :show-minimap="false"
           :fit-view-on-init="true"

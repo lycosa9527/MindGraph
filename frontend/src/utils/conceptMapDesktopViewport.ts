@@ -1,9 +1,8 @@
 import type { DiagramSession } from '@/stores/diagram'
 import type { useUIStore } from '@/stores/ui'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
-import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 
-type DiagramSessionLike = Pick<DiagramSession, 'type'>
+type DiagramSessionLike = Pick<DiagramSession, 'type' | 'mindMapCanvasMode'>
 
 export function isMindMapDiagramType(type: string | null | undefined): boolean {
   return type === 'mindmap' || type === 'mind_map'
@@ -14,24 +13,17 @@ export function isMindMapDiagramType(type: string | null | undefined): boolean {
  * Mobile (`uiStore.isMobile`) keeps assistive fits (e.g. after palette close, initial topic zoom).
  */
 export function isDesktopConceptMapManualViewport(
-  diagramStore: DiagramSessionLike,
+  diagramStore: Pick<DiagramSession, 'type'>,
   uiStore: ReturnType<typeof useUIStore>
 ): boolean {
   return diagramStore.type === 'concept_map' && !uiStore.isMobile
 }
 
 /** Mind map v2: assistive fit only on first canvas enter; user/export fits use userInitiated / forExport. */
-export function isMindMapManualViewport(
-  diagramStore: DiagramSessionLike,
-  uiStore: ReturnType<typeof useUIStore>
-): boolean {
-  const featureFlagsStore = useFeatureFlagsStore()
+export function isMindMapManualViewport(diagramStore: DiagramSessionLike): boolean {
   return (
     isMindMapDiagramType(diagramStore.type) &&
-    effectiveMindMapCanvasMode(
-      uiStore.mindMapCanvasMode,
-      featureFlagsStore.getFeatureMindmapV2Canvas()
-    ) === 'v2'
+    isSessionMindMapV2VisualDesignActive(diagramStore.mindMapCanvasMode)
   )
 }
 
@@ -41,7 +33,7 @@ export function isManualViewportMode(
   uiStore: ReturnType<typeof useUIStore>
 ): boolean {
   return (
-    isMindMapManualViewport(diagramStore, uiStore) ||
+    isMindMapManualViewport(diagramStore) ||
     isDesktopConceptMapManualViewport(diagramStore, uiStore)
   )
 }

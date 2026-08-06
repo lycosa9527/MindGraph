@@ -1,5 +1,5 @@
 import type { Connection, DiagramNode } from '@/types'
-import { readEffectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 import { getMindMapCollapsedNodeIds, getMindMapCollapsedPaths } from './mindMapCollapse'
 import { type MindMapV2LayoutOptions, recalculateMindMapV2ColumnPositions } from './mindMapLayout'
@@ -49,7 +49,7 @@ export function syncMindMapStoreLayoutPositions(ctx: DiagramContext): void {
   if (!ctx.data.value?.nodes) return
 
   const connections = ctx.data.value.connections ?? []
-  const canvasMode = readEffectiveMindMapCanvasMode()
+  const canvasMode = resolveSessionMindMapCanvasMode(ctx.mindMapCanvasMode.value)
 
   // v2: sole layout owner is mindMapV2LayoutResult — write-back only (no second compute).
   if (canvasMode === 'v2' && ctx.writeBackMindMapV2LayoutFromComputed) {

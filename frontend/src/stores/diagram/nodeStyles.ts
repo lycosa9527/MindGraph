@@ -14,7 +14,7 @@ import {
   syncRainbowMindMapConnectionColors,
 } from '@/config/mindMapVibrantThemes'
 import type { DiagramNode, NodeStyle } from '@/types'
-import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 import {
@@ -190,7 +190,7 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     })
     const diagramType = data.value?.type
     if (
-      readMindMapV2VisualDesignActive() &&
+      isSessionMindMapV2VisualDesignActive(ctx.mindMapCanvasMode.value) &&
       data.value?.connections &&
       (diagramType === 'mindmap' || diagramType === 'mind_map')
     ) {

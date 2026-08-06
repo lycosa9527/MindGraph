@@ -13,7 +13,7 @@
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.13+-blue.svg" alt="Python"></a>
   <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.104+-green.svg" alt="FastAPI"></a>
   <a href="https://vuejs.org/"><img src="https://img.shields.io/badge/Vue-3.5+-42b883.svg" alt="Vue"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.169.1-brightgreen.svg" alt="Version"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-5.169.2-brightgreen.svg" alt="Version"></a>
 </p>
 
 ---

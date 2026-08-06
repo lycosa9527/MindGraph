@@ -6,6 +6,7 @@
  * This separates the spec-to-data conversion logic from the store,
  * making it easier to maintain and test each diagram type independently.
  */
+import type { MindMapCanvasMode } from '@/stores/ui'
 import type { DiagramType } from '@/types'
 
 import { loadBraceMapSpec } from './braceMap'
@@ -42,6 +43,7 @@ export {
   normalizeMindMapHorizontalSymmetry,
   rebalanceMindMapBranchesIfLeftOnly,
 } from './mindMap'
+export type { LoadMindMapSpecOptions } from './mindMap'
 export type { SpecLoaderResult } from './types'
 
 /** Optional flags for {@link loadSpecForDiagramType}. */
@@ -51,6 +53,8 @@ export type LoadSpecForDiagramTypeOptions = {
    * generic load instead of re-running `loadMindMapSpec` (LLM model switch).
    */
   preferLaidOutMindMapNodes?: boolean
+  /** Session-owned mind-map canvas mode for initial layout (Showcase / export). */
+  mindMapCanvasMode?: MindMapCanvasMode
 }
 
 /**
@@ -86,7 +90,10 @@ export function loadSpecForDiagramType(
         // Keep existing left/right sides. Redistributing via
         // [...left, ...right] + distributeBranchesClockwise is not idempotent and
         // reshuffles branches on every library reload / first autosave URL sync.
-        result = loadMindMapSpec({ ...mindSpec, preserveLeftRight: true })
+        result = loadMindMapSpec(
+          { ...mindSpec, preserveLeftRight: true },
+          { canvasMode: options?.mindMapCanvasMode }
+        )
       }
     } else {
       result = loadGenericSpec(spec)
@@ -94,6 +101,8 @@ export function loadSpecForDiagramType(
     if (diagramType === 'tree_map') {
       result = { ...result, nodes: ensureTreeMapTopicLayout(result.nodes) }
     }
+  } else if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+    result = loadMindMapSpec(spec, { canvasMode: options?.mindMapCanvasMode })
   } else {
     const loader = SPEC_LOADERS[diagramType]
     result = loader ? loader(spec) : loadGenericSpec(spec)

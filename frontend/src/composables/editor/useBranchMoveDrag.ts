@@ -32,7 +32,7 @@ import { ANIMATION } from '@/config/uiConfig'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindGraphNode } from '@/types'
-import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { nodeShapeBorderRadius } from '@/utils/nodeShapeStyle'
 
 const DEFAULT_NODE_WIDTH = 120
@@ -267,7 +267,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
         : {}
 
     const theme = getMindMapThemeForDiagram(diagramStore.data)
-    const v2Visuals = readMindMapV2VisualDesignActive()
+    const v2Visuals = isSessionMindMapV2VisualDesignActive(diagramStore.mindMapCanvasMode)
     const branchIndex = (node.data?.branchIndex as number | undefined) ?? 0
     const branchPalette = getMindmapBranchColor(branchIndex, v2Visuals ? undefined : 'legacy')
     const nodeShape = v2Visuals
@@ -611,7 +611,9 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     const diagramType = node?.data?.diagramType as string | undefined
     const isMindMapNode = diagramType === 'mindmap' || diagramType === 'mind_map'
     const paletteMode =
-      isMindMapNode && !readMindMapV2VisualDesignActive() ? ('legacy' as const) : undefined
+      isMindMapNode && !isSessionMindMapV2VisualDesignActive(diagramStore.mindMapCanvasMode)
+        ? ('legacy' as const)
+        : undefined
     capturedBranchColor.value = getMindmapBranchColor(idx, paletteMode)
     const pos = node?.position ?? { x: 0, y: 0 }
     const { w, h } = node

@@ -7,7 +7,6 @@ import { handleKittyAddNodeWithRecommendationsRequest } from '@/composables/kitt
 import { handleKittyAutoCompleteBranchRequest } from '@/composables/kitty/handleKittyAutoCompleteBranchRequest'
 import { resolveKittyChildNodeId } from '@/composables/kitty/kittyDiagramChildren'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
-import { isMindMapDiagramType } from '@/utils/conceptMapDesktopViewport'
 import type { useAuthStore } from '@/stores/auth'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { useInlineRecommendationsStore } from '@/stores/inlineRecommendations'
@@ -207,9 +206,8 @@ export function useMobileCanvasEventHandlers(
   eventBus.onWithOwner(
     'mindmap:canvas_mode_changed',
     ({ previousMode, newMode }) => {
-      if (isMindMapDiagramType(diagramStore.type)) {
-        diagramStore.reconcileMindMapCanvasMode(previousMode, newMode)
-      }
+      // Always keep session-owned mode in sync; bucket reconcile runs only for mind maps.
+      diagramStore.reconcileMindMapCanvasMode(previousMode, newMode)
     },
     OWNER
   )

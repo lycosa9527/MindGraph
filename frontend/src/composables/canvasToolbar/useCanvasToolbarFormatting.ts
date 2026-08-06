@@ -4,17 +4,17 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { STYLE_PRESET_PALETTES, type StylePresetColors } from '@/config/colorPalette'
 import { syncMindMapConnectionStrokeColors } from '@/config/mindMapGeometry'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { type BorderStyleType, getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { colorToHex, hexToRgba, parseAlphaFromColor } from '@/utils/colorFormat'
-import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 
 export function useCanvasToolbarFormatting(options?: {
   silentUpdates?: boolean
   /** When set, formatting applies to this node even if canvas selection was cleared (floating toolbar). */
   pinnedNodeId?: Ref<string | null | undefined>
 }) {
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const { t } = useLanguage()
   const notify = useNotifications()
   const notifyOnApply = !options?.silentUpdates
@@ -240,7 +240,7 @@ export function useCanvasToolbarFormatting(options?: {
     })
     const diagramType = diagramStore.type
     if (
-      readMindMapV2VisualDesignActive() &&
+      isSessionMindMapV2VisualDesignActive(diagramStore.mindMapCanvasMode) &&
       updates.borderColor &&
       (diagramType === 'mindmap' || diagramType === 'mind_map') &&
       ids.includes('topic') &&

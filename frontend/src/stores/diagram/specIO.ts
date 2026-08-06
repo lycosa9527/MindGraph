@@ -13,7 +13,7 @@ import {
 } from '@/config/mindMapThemes'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
-import { readEffectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import {
   beginMindMapSpecLoadSession,
   markMindMapLoadStage,
@@ -101,8 +101,11 @@ export function useSpecIOSlice(ctx: DiagramContext) {
 
     if (!ctx.setDiagramType(diagramTypeValue)) return false
 
+    const sessionCanvasMode = resolveSessionMindMapCanvasMode(ctx.mindMapCanvasMode.value)
+
     const result = loadSpecForDiagramType(spec, diagramTypeValue, {
       preferLaidOutMindMapNodes: options?.preferLaidOutMindMapNodes,
+      mindMapCanvasMode: sessionCanvasMode,
     })
 
     let nodesToStore = result.nodes
@@ -250,11 +253,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
 
     if (diagramTypeValue === 'mindmap' || diagramTypeValue === 'mind_map') {
       if (ctx.data.value) {
-        hydrateMindMapCanvasStylesOnLoad(ctx.data.value, readEffectiveMindMapCanvasMode())
+        hydrateMindMapCanvasStylesOnLoad(ctx.data.value, sessionCanvasMode)
         resyncMindMapConnectionStrokeColorsForActiveMode(
           diagramTypeValue,
           ctx.data.value.nodes,
-          ctx.data.value.connections
+          ctx.data.value.connections,
+          sessionCanvasMode
         )
       }
     }
@@ -471,7 +475,8 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       }
     }
     if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
-      snapshotMindMapCanvasBucket(ctx.data.value, readEffectiveMindMapCanvasMode())
+      const canvasMode = resolveSessionMindMapCanvasMode(ctx.mindMapCanvasMode.value)
+      snapshotMindMapCanvasBucket(ctx.data.value, canvasMode)
       const canvasBuckets = ctx.data.value._mindmap_canvas
       if (canvasBuckets) {
         spec._mindmap_canvas = canvasBuckets

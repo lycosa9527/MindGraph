@@ -30,7 +30,9 @@ const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasC
 </script>
 
 <template>
-  <LearningSheetFloatBar v-if="!uiStore.exportWireframeOutline" />
+  <LearningSheetFloatBar
+    v-if="!presentationDiagramEditLocked && !uiStore.exportWireframeOutline"
+  />
 
   <CanvasNodeFloatingToolbar
     v-if="!presentationDiagramEditLocked"

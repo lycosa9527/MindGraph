@@ -127,7 +127,7 @@ describe('diagram session isolation (Showcase vs editor)', () => {
     expect(editor.type).toBe('circle_map')
     expect(editor.data?.nodes?.some((n) => n.text.includes('Xiaomi'))).toBe(true)
 
-    // CanvasPage ?type=mindmap without diagramId always does this pair.
+    // Route bootstrap (?type=mindmap, no diagramId) owns this blank load once.
     expect(editor.loadDefaultTemplate('mindmap')).toBe(true)
 
     expect(editor.type).toBe('mindmap')

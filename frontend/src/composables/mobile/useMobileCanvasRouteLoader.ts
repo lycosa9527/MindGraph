@@ -6,6 +6,13 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { eventBus, useDiagramSpecForSave } from '@/composables'
 import { applyDiagramTypeForCanvasChrome } from '@/composables/canvasPage/diagramTypeMaps'
+import {
+  getDiagramDataType,
+  isNewCanvasTypeQuery,
+  loadBlankCanvasForType,
+  resolveDiagramTypeFromQuery,
+  shouldPriority3LoadDefaultTemplate,
+} from '@/composables/canvasPage/newCanvasBootstrap'
 import { shouldSkipLibraryReloadDuringGeneration } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
 import { unloadCanvasForLibrarySwitch } from '@/composables/canvasPage/unloadCanvasForLibrarySwitch'
 import type { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
@@ -255,26 +262,33 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
       }
     }
 
-    const typeFromUrl = route.query.type as DiagramType | undefined
-    if (typeFromUrl && VALID_DIAGRAM_TYPES.includes(typeFromUrl)) {
-      const key = diagramTypeKeyForType(typeFromUrl)
-      if (key) {
-        uiStore.setSelectedChartType(key)
-      }
-      // New-canvas contract: always blank when opening by type (no diagramId).
-      diagramStore.setDiagramType(typeFromUrl)
-      savedDiagramsStore.clearActiveDiagram()
-      diagramStore.loadDefaultTemplate(typeFromUrl)
+    const typeFromUrl = resolveDiagramTypeFromQuery(route.query)
+    if (typeFromUrl && isNewCanvasTypeQuery(route.query)) {
+      loadBlankCanvasForType({
+        diagramType: typeFromUrl,
+        setDiagramType: (type) => diagramStore.setDiagramType(type),
+        clearActiveDiagram: () => savedDiagramsStore.clearActiveDiagram(),
+        loadDefaultTemplate: (type) => diagramStore.loadDefaultTemplate(type),
+        setSelectedChartType: (name) => uiStore.setSelectedChartType(name),
+        hasDiagramData: Boolean(diagramStore.data),
+      })
       return
     }
 
+    // No ?type=: keep landing-generated Pinia when data.type matches; else blank.
     if (diagramType.value) {
       diagramStore.setDiagramType(diagramType.value)
-      // No library id → new canvas; always start from default template.
-      if (!savedDiagramsStore.activeDiagramId || !diagramStore.data) {
-        if (!savedDiagramsStore.activeDiagramId) {
-          savedDiagramsStore.clearActiveDiagram()
-        }
+      if (!savedDiagramsStore.activeDiagramId) {
+        savedDiagramsStore.clearActiveDiagram()
+      }
+      if (
+        shouldPriority3LoadDefaultTemplate({
+          hasActiveDiagramId: Boolean(savedDiagramsStore.activeDiagramId),
+          hasDiagramData: Boolean(diagramStore.data),
+          selectedDiagramType: diagramType.value,
+          dataDiagramType: getDiagramDataType(diagramStore.data),
+        })
+      ) {
         diagramStore.loadDefaultTemplate(diagramType.value)
       }
     }

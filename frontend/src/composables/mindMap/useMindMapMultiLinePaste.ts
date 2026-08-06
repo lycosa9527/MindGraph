@@ -1,16 +1,16 @@
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, toValue } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { useDiagramStore } from '@/stores'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { parseMultiLinePasteText } from '@/utils/mindMapPasteLines'
 
 export function useMindMapMultiLinePaste(options?: {
   /** When true, paste is handled elsewhere (e.g. outline row input). */
   isBlocked?: () => boolean
 }) {
-  const diagramStore = useDiagramStore()
+  const diagramStore = useDiagramSession()
   const notify = useNotifications()
   const { t } = useLanguage()
 
@@ -23,6 +23,7 @@ export function useMindMapMultiLinePaste(options?: {
 
   function handlePaste(event: ClipboardEvent): boolean {
     if (options?.isBlocked?.()) return false
+    if (toValue(diagramStore.isReadonly)) return false
     if (activeEditorNodeId.value) return false
     if (!isMindMapType()) return false
     if (diagramStore.selectedNodes.length !== 1) return false

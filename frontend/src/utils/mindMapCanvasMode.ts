@@ -16,7 +16,36 @@ export function readEffectiveMindMapCanvasMode(): MindMapCanvasMode {
   )
 }
 
-/** V2 visual design: unified connection color, theme presets, node shapes, geometry. */
+/**
+ * Showcase / public gallery policy: New canvas when the v2 feature flag is on;
+ * Classic when the flag is off. Viewer Classic/New preference does not apply.
+ */
+export function readShowcaseMindMapCanvasMode(): MindMapCanvasMode {
+  const featureFlagsStore = useFeatureFlagsStore()
+  return featureFlagsStore.getFeatureMindmapV2Canvas() ? 'v2' : 'legacy'
+}
+
+/**
+ * Effective canvas mode for a diagram session (flag clamp).
+ * Prefer this over {@link readEffectiveMindMapCanvasMode} inside session-backed code.
+ */
+export function resolveSessionMindMapCanvasMode(
+  sessionMode: MindMapCanvasMode
+): MindMapCanvasMode {
+  return effectiveMindMapCanvasMode(
+    sessionMode,
+    useFeatureFlagsStore().getFeatureMindmapV2Canvas()
+  )
+}
+
+/** True when the given session mode is New (v2) canvas after flag clamp. */
+export function isSessionMindMapV2VisualDesignActive(
+  sessionMode: MindMapCanvasMode
+): boolean {
+  return resolveSessionMindMapCanvasMode(sessionMode) === 'v2'
+}
+
+/** V2 visual design from the viewer UI preference (editor chrome without a session). */
 export function readMindMapV2VisualDesignActive(): boolean {
   return readEffectiveMindMapCanvasMode() === 'v2'
 }

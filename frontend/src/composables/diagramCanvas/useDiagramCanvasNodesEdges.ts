@@ -1,17 +1,13 @@
 import { type MaybeRefOrGetter, computed, toValue } from 'vue'
 
-import { storeToRefs } from 'pinia'
-
 import { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
-import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import {
   getMindMapCollapseHiddenIds,
   getMindMapCollapsedPaths,
 } from '@/stores/diagram/mindMapCollapse'
-import { useUIStore } from '@/stores/ui'
-import { effectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 export interface UseDiagramCanvasNodesEdgesOptions {
   diagramStore: ReturnType<typeof useDiagramSession>
@@ -24,13 +20,8 @@ export interface UseDiagramCanvasNodesEdgesOptions {
 export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOptions) {
   const { diagramStore, branchMove, collabLockedNodeIds, mindMapSlideFocusNodeId, mindMapSlideDimFocusNodeIds } = options
   const indicatorStore = useCanvasNodeIndicatorsStore()
-  const { mindMapCanvasMode } = storeToRefs(useUIStore())
-  const featureFlagsStore = useFeatureFlagsStore()
   const effectiveMindMapMode = computed(() =>
-    effectiveMindMapCanvasMode(
-      mindMapCanvasMode.value,
-      featureFlagsStore.getFeatureMindmapV2Canvas()
-    )
+    resolveSessionMindMapCanvasMode(diagramStore.mindMapCanvasMode)
   )
 
   const storeNodes = computed(() => diagramStore.vueFlowNodes)

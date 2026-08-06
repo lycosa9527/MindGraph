@@ -12,7 +12,7 @@ import {
   ZoomOut,
 } from '@lucide/vue'
 
-import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
+import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import DiagramSessionProvider from '@/components/diagram/DiagramSessionProvider.vue'
 import { resolveCarouselSlides, type ShowcaseCarouselSlide } from '@/components/showcase/showcaseGallery'
 import { useLanguage } from '@/composables'
@@ -20,11 +20,14 @@ import { ANIMATION } from '@/config/uiConfig'
 import type { DiagramSession } from '@/stores/diagram'
 import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 import { decodeMgFileToJsonText } from '@/utils/mgInterchange'
+import { readShowcaseMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import {
   cloneShowcaseDiagramSpec,
   resolveShowcaseDiagramType,
 } from '@/utils/showcaseDiagramThumbnail'
 import { resolveDevStaticUrl } from '@/utils/devStaticUrl'
+
+const showcaseMindMapCanvasMode = readShowcaseMindMapCanvasMode()
 
 const props = withDefaults(
   defineProps<{
@@ -772,10 +775,11 @@ onBeforeUnmount(() => {
                   ref="previewSessionRef"
                   :key="previewSessionKey"
                   mode="readonly"
+                  :mind-map-canvas-mode="showcaseMindMapCanvasMode"
                   :spec="loadedDiagramSpec"
                   :diagram-type="activePreviewDiagramType"
                 >
-                  <DiagramCanvas
+                  <DiagramCanvasHost
                     :show-minimap="false"
                     :fit-view-on-init="true"
                     :hand-tool-active="true"
@@ -842,10 +846,11 @@ onBeforeUnmount(() => {
             ref="previewSessionRef"
             :key="previewSessionKey"
             mode="readonly"
+            :mind-map-canvas-mode="showcaseMindMapCanvasMode"
             :spec="loadedDiagramSpec"
             :diagram-type="activePreviewDiagramType"
           >
-            <DiagramCanvas
+            <DiagramCanvasHost
               :show-minimap="false"
               :fit-view-on-init="true"
               :hand-tool-active="true"

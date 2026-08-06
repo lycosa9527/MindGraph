@@ -7,11 +7,11 @@ import { computed } from 'vue'
 import { Hammer, Shuffle, X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useLearningSheetCustomMode } from '@/composables/mindMap/useLearningSheetCustomMode'
-import { useDiagramStore } from '@/stores'
 
 const { t } = useLanguage()
-const diagramStore = useDiagramStore()
+const diagramStore = useDiagramSession()
 const { isPickActive, blankCount, isFloatBarOpen, dismissFloatBar } = useLearningSheetCustomMode()
 
 const showBar = computed(() => isFloatBarOpen.value && diagramStore.isLearningSheet)
@@ -35,14 +35,14 @@ function onHideAnswersChange(event: Event): void {
         class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white shadow-sm"
         :class="
           isPickActive
-            ? 'bg-gradient-to-b from-blue-500 to-blue-600'
-            : 'bg-gradient-to-b from-amber-500 to-amber-600'
+            ? 'bg-linear-to-b from-blue-500 to-blue-600'
+            : 'bg-linear-to-b from-amber-500 to-amber-600'
         "
         aria-hidden="true"
       >
         <Hammer
           v-if="isPickActive"
-          class="h-4 w-4 -rotate-[38deg]"
+          class="h-4 w-4 rotate-[-38deg]"
           :stroke-width="2"
         />
         <Shuffle

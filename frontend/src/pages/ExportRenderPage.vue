@@ -3,7 +3,7 @@
  * ExportRenderPage - Minimal page for server-side diagram screenshot export.
  *
  * Playwright navigates here with the diagram spec pre-loaded in sessionStorage.
- * Renders only DiagramCanvas (no auth, toolbar, sidebar, panels, etc.)
+ * Renders only DiagramCanvasHost (no auth, toolbar, sidebar, panels, etc.)
  *
  * Sequence: first fit (wait for `view:fit_completed` + `waitForNextPaint`) →
  * set `__MINDGRAPH_EXPORT_HEADLESS_CLICK_PENDING`. Playwright clicks the Vue Flow
@@ -15,13 +15,14 @@
  */
 import { nextTick, onMounted, provide } from 'vue'
 
-import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
+import DiagramCanvasHost from '@/components/diagram/DiagramCanvasHost.vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
 import { useDiagramStore, type DiagramSession } from '@/stores'
 import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import type { DiagramType } from '@/types'
 import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
+import { readEffectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 const EXPORT_SPEC_KEY = 'mindgraph_export_spec'
 /** Fails if `view:fit_completed` never fires (e.g. zero nodes so fit is a no-op). Shorter than server poll window. */
@@ -49,6 +50,11 @@ function waitForFitCompletedSafety(): Promise<void> {
 }
 
 const diagramStore = useDiagramStore()
+// Headless init sets localStorage canvas mode before this page runs; keep session in sync.
+const exportCanvasMode = readEffectiveMindMapCanvasMode()
+if (diagramStore.mindMapCanvasMode !== exportCanvasMode) {
+  diagramStore.reconcileMindMapCanvasMode(diagramStore.mindMapCanvasMode, exportCanvasMode)
+}
 provide(DiagramSessionKey, diagramStore as unknown as DiagramSession)
 
 declare global {
@@ -123,7 +129,7 @@ onMounted(async () => {
 
 <template>
   <div class="export-render-container">
-    <DiagramCanvas
+    <DiagramCanvasHost
       :show-background="false"
       :show-minimap="false"
       :fit-view-on-init="false"

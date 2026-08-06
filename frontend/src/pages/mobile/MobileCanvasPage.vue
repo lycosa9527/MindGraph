@@ -50,6 +50,8 @@ import { useCanvasAutoSaveStatus } from '@/composables/canvasPage/useCanvasAutoS
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useCanvasUnsavedLeaveGuard } from '@/composables/canvasPage/useCanvasUnsavedLeaveGuard'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
+import { clearBlankCanvasLoadDedupe } from '@/composables/canvasPage/newCanvasBootstrap'
+import { useNewCanvasTypeQueryBootstrap } from '@/composables/canvasPage/useNewCanvasTypeQueryBootstrap'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
@@ -76,7 +78,6 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import {
   DEFAULT_CHART_TYPE_KEY,
-  VALID_DIAGRAM_TYPES,
   diagramTypeFromKey,
 } from '@/utils/diagramTypeKeys'
 
@@ -269,23 +270,21 @@ watch(
     if (!diagramType.value) {
       return
     }
+    // Sync chrome type only. Blank loads owned by route bootstrap /
+    // switch helpers — never load here (double paint).
     diagramStore.setDiagramType(diagramType.value)
-    // New-canvas contract: ?type= without diagramId always blanks (parity with CanvasPage).
-    const typeQuery = route.query.type
-    const hasTypeQuery =
-      typeof typeQuery === 'string' && VALID_DIAGRAM_TYPES.includes(typeQuery as DiagramType)
-    const hasDiagramId = Boolean(route.query.diagramId ?? route.query.diagram_id)
-    if (hasTypeQuery && !hasDiagramId) {
-      savedDiagramsStore.clearActiveDiagram()
-      diagramStore.loadDefaultTemplate(diagramType.value)
-      return
-    }
-    if (!diagramStore.data) {
-      diagramStore.loadDefaultTemplate(diagramType.value)
-    }
   },
   { immediate: true }
 )
+
+useNewCanvasTypeQueryBootstrap({
+  route,
+  setDiagramType: (type) => diagramStore.setDiagramType(type),
+  clearActiveDiagram: () => savedDiagramsStore.clearActiveDiagram(),
+  loadDefaultTemplate: (type) => diagramStore.loadDefaultTemplate(type),
+  setSelectedChartType: (name) => uiStore.setSelectedChartType(name),
+  hasDiagramData: () => Boolean(diagramStore.data),
+})
 
 onUnmounted(() => {
   inlineRecCoordinator.teardown()
@@ -296,6 +295,7 @@ onUnmounted(() => {
   rootConceptReviewStore.clear()
 
   if (!preserveDiagramForKittyHub.value) {
+    clearBlankCanvasLoadDedupe()
     diagramStore.reset()
   }
   useLLMResultsStore().reset()

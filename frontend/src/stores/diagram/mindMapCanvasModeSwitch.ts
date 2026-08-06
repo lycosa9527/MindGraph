@@ -153,7 +153,9 @@ export function hydrateMindMapCanvasStylesOnLoad(
       connections,
       bucketStyles,
       themeId,
-      data._mindmap_diagram_style
+      data._mindmap_diagram_style,
+      undefined,
+      mode
     )
     if (mode === 'legacy') {
       for (const node of data.nodes) {
@@ -213,12 +215,15 @@ export function reconcileMindMapCanvasModeSwitch(
   snapshotMindMapCanvasBucket(data, previousMode)
 
   const spec = nodesAndConnectionsToMindMapSpec(oldNodes, oldConnections)
-  const result = loadMindMapSpec({
-    topic: spec.topic,
-    leftBranches: spec.leftBranches,
-    rightBranches: spec.rightBranches,
-    preserveLeftRight: true,
-  })
+  const result = loadMindMapSpec(
+    {
+      topic: spec.topic,
+      leftBranches: spec.leftBranches,
+      rightBranches: spec.rightBranches,
+      preserveLeftRight: true,
+    },
+    { canvasMode: newMode }
+  )
 
   const stylesByPath = stylesByPathForMode(data, newMode)
   const v2Bucket = data._mindmap_canvas?.v2
@@ -238,7 +243,9 @@ export function reconcileMindMapCanvasModeSwitch(
     result.connections,
     stylesByPath,
     themeId,
-    data._mindmap_diagram_style
+    data._mindmap_diagram_style,
+    undefined,
+    newMode
   )
 
   if (newMode === 'legacy') {
