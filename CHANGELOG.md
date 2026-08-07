@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.171.1] - 2026-08-08
+
+> **Bump transitive `nanoid` for npm high audit.**
+
+### Fixed
+
+- **`nanoid` < 3.3.17** — Lockfile bump to 3.3.18 (via PostCSS/Vite) for [GHSA-2v37-7h3g-55p8](https://github.com/advisories/GHSA-2v37-7h3g-55p8); `npm audit --audit-level=high` clean.
+
 ## [5.171.0] - 2026-08-08
 
 > **ZhiHui teacher narration (Kitty TTS), phased lesson planning, and long-job session hardening.**
