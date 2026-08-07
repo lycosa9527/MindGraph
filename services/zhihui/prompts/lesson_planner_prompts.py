@@ -16,20 +16,23 @@ LESSON_PLANNER_SYSTEM = """你是资深 K12 课程设计师 + 批判性思维教
 1. **全课件第一帧 = 主题总览（topic_overview）**
    - 介绍整张导图的中心主题：它是什么、为什么值得学、后面将从哪些大方向展开。
    - focus_branch 必须为 ""；focus_child 必须为 ""。
-2. **进入每个一级分支时，先做「分支总览（branch_intro）」**
+2. **一级分支必须按 outline.branches 的给定顺序展开（顺时针）**
+   - outline.branches 已按画布顺时针排好：右列上→下，再左列下→上（branch_order=clockwise）。
+   - **禁止重排、跳过或打乱**一级分支顺序；从 branches[0] 讲到 branches[N-1]。
+3. **进入每个一级分支时，先做「分支总览（branch_intro）」**
    - 先给该分支的整体画像：这条支线解决什么问题、内部有哪些子点将出场。
-   - 然后再用后续帧展开其 children 的细节（child_detail）。
+   - 然后再用后续帧展开其 children 的细节（child_detail）；children 数组顺序即讲解顺序。
    - 不要一上来就拆碎子点；分支总览不可省略（除非该分支完全没有可教内容）。
-3. **子点细节帧（child_detail）**
+4. **子点细节帧（child_detail）**
    - 每个有教学价值的 child 至少可有 1 帧；内容稀薄的子点可合并，内容丰富的可拆 2 帧。
    - 紧扣该 child 原文，讲清「是什么 / 如何表现 / 与分支主线的关系」。
-4. **认知冲突帧（cognitive_conflict）— 特别高亮**
+5. **认知冲突帧（cognitive_conflict）— 特别高亮**
    - 当某分支的 children（或 child 与常识/其他子点）之间存在：
      对立、反例、常见误解、两难选择、看似矛盾却都成立 时，
      **必须**安排专门的 cognitive_conflict 帧（可插在相关 child_detail 之后）。
    - 该帧要：并置冲突双方 → 抛出 think_prompt（引发思考的问句）→ 不急于给标准答案，促使学习者自己判断。
    - cognitive_conflict 字段设为 true；think_prompt 必填。
-5. **收束（close / synthesis）**
+6. **收束（close / synthesis）**
    - 回到整图：串联各分支、点明批判性收获（学会质疑什么、比较什么、迁移到何处）。
    - focus_branch / focus_child 为空。
 
@@ -102,7 +105,8 @@ def build_lesson_planner_user_message(
         "outline": outline_payload,
         "pedagogy_checklist": [
             "第一帧：主题总览（整图）",
-            "每个一级分支：先 branch_intro，再 child_detail",
+            "一级分支严格按 outline.branches 顺时针顺序展开（勿重排）",
+            "每个一级分支：先 branch_intro，再按 children 顺序 child_detail",
             "发现对立/误解/两难时：加 cognitive_conflict，并写 think_prompt",
             "每帧必须有 learning_point + 可画的 manifestation",
             "目标：提升批判性思维，而非复述节点标题",
@@ -110,6 +114,6 @@ def build_lesson_planner_user_message(
     }
     return (
         "请根据以下思维导图大纲设计课件分镜 JSON。"
-        "严格遵循系统消息中的叙事结构与批判性思维目标。\n"
+        "严格遵循系统消息中的叙事结构、顺时针分支顺序与批判性思维目标。\n"
         f"{json.dumps(payload, ensure_ascii=False)}"
     )

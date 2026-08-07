@@ -53,6 +53,62 @@ def test_extract_nodes_outline() -> None:
     assert outline.branches[0].children == ["子点"]
 
 
+def test_extract_nodes_outline_clockwise() -> None:
+    """First-level branches follow canvas clockwise: right top→bottom, left bottom→top."""
+    outline = extract_mindmap_outline(
+        {
+            "nodes": [
+                {"id": "topic", "type": "topic", "text": "中心", "position": {"x": 0, "y": 100}},
+                {
+                    "id": "branch-r-1-0",
+                    "type": "branch",
+                    "text": "右下",
+                    "position": {"x": 200, "y": 200},
+                },
+                {
+                    "id": "branch-r-1-1",
+                    "type": "branch",
+                    "text": "右上",
+                    "position": {"x": 200, "y": 40},
+                },
+                {
+                    "id": "branch-l-1-0",
+                    "type": "branch",
+                    "text": "左下",
+                    "position": {"x": -200, "y": 220},
+                },
+                {
+                    "id": "branch-l-1-1",
+                    "type": "branch",
+                    "text": "左上",
+                    "position": {"x": -200, "y": 50},
+                },
+            ],
+            # Connection order intentionally not clockwise.
+            "connections": [
+                {"source": "topic", "target": "branch-r-1-0"},
+                {"source": "topic", "target": "branch-r-1-1"},
+                {"source": "topic", "target": "branch-l-1-0"},
+                {"source": "topic", "target": "branch-l-1-1"},
+            ],
+        }
+    )
+    assert [branch.text for branch in outline.branches] == ["右上", "右下", "左下", "左上"]
+    assert outline.to_planner_payload()["branch_order"] == "clockwise"
+
+
+def test_extract_left_right_hierarchical_clockwise() -> None:
+    """leftBranches are stored top→bottom; outline reverses them for clockwise."""
+    outline = extract_mindmap_outline(
+        {
+            "topic": "中心",
+            "rightBranches": [{"text": "1"}, {"text": "2"}],
+            "leftBranches": [{"text": "4"}, {"text": "3"}],  # top→bottom on canvas
+        }
+    )
+    assert [branch.text for branch in outline.branches] == ["1", "2", "3", "4"]
+
+
 def test_extract_requires_branches() -> None:
     """Topic-only mind maps are rejected."""
     with pytest.raises(ValueError):

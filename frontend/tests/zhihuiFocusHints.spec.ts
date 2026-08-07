@@ -16,14 +16,43 @@ describe('resolveZhihuiSlideFocusHints', () => {
     ).toEqual([])
   })
 
-  it('prefers stored focus_node_ids on branch slides', () => {
+  it('uses branch for branch_intro even when a child is present', () => {
     expect(
       resolveZhihuiSlideFocusHints({
         slideIndex: 1,
         focusNodeIds: ['branch-a'],
-        lessonPlan: { frames: [{}, { focus_branch: 'other' }] },
+        lessonPlan: {
+          frames: [
+            {},
+            {
+              frame_role: 'branch_intro',
+              focus_branch: 'branch-a',
+              focus_child: 'child-x',
+            },
+          ],
+        },
       })
     ).toEqual(['branch-a'])
+  })
+
+  it('prefers focus_child for child_detail so highlight tracks the PPT', () => {
+    expect(
+      resolveZhihuiSlideFocusHints({
+        slideIndex: 2,
+        focusNodeIds: ['branch-a'],
+        lessonPlan: {
+          frames: [
+            {},
+            {},
+            {
+              frame_role: 'child_detail',
+              focus_branch: 'branch-a',
+              focus_child: '叶绿体',
+            },
+          ],
+        },
+      })
+    ).toEqual(['叶绿体'])
   })
 
   it('falls back to nested batches[].frames focus_branch', () => {
@@ -39,6 +68,19 @@ describe('resolveZhihuiSlideFocusHints', () => {
         },
       })
     ).toEqual(['分支二'])
+  })
+
+  it('uses slide title when plan child is missing on detail slides', () => {
+    expect(
+      resolveZhihuiSlideFocusHints({
+        slideIndex: 1,
+        focusNodeIds: ['branch-a'],
+        slideTitle: '光反应',
+        lessonPlan: {
+          frames: [{}, { frame_role: 'child_detail', focus_branch: 'branch-a' }],
+        },
+      })
+    ).toEqual(['光反应'])
   })
 
   it('flattens planner batches in order', () => {

@@ -34,6 +34,16 @@ withDefaults(
 )
 
 const model = defineModel<T>({ required: true })
+
+const emit = defineEmits<{
+  /** Fires on every segment click, including re-selecting the active value. */
+  select: [value: T]
+}>()
+
+function onSegmentClick(value: T): void {
+  model.value = value
+  emit('select', value)
+}
 </script>
 
 <template>
@@ -58,7 +68,7 @@ const model = defineModel<T>({ required: true })
       :class="{ 'is-active': model === opt.value }"
       :aria-checked="model === opt.value"
       :disabled="disabled"
-      @click="model = opt.value"
+      @click="onSegmentClick(opt.value)"
     >
       <span class="admin-swiss-segment-label">{{ opt.label }}</span>
       <span

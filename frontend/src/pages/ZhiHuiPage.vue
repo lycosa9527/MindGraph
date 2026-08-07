@@ -23,6 +23,8 @@ const mode = ref<ZhihuiMode>('image')
 const diagramId = ref<string | null>(null)
 const diagramBusy = ref(false)
 const diagramStudioRef = ref<{ generate: () => Promise<void> } | null>(null)
+/** Remount diagram studio so local job chrome cannot linger on blank create. */
+const diagramStudioMountKey = ref(0)
 /** Prevent dropdown↔conversation sync loops while hydrating a history row. */
 const syncingFromConversation = ref(false)
 
@@ -55,6 +57,12 @@ function isDiagramConversation(id: string): boolean {
   return historyStore.items.find((row) => row.id === id)?.mode === 'diagram'
 }
 
+/** Blank 图示生图 create surface — no map, no in-flight job chrome. */
+function resetDiagramCreateSurface(): void {
+  diagramId.value = null
+  diagramBusy.value = false
+}
+
 onMounted(() => {
   void historyStore.fetchHistory()
 })
@@ -67,10 +75,12 @@ watch(
       const landing = historyStore.landingStudioMode
       if (landing === 'image') {
         mode.value = 'image'
+        resetDiagramCreateSurface()
       } else if (landing === 'diagram') {
+        // Keep diagramId — user may have just picked a map from the dropdown.
         mode.value = 'diagram'
       }
-      // 'preserve' → keep the mode the user just selected in the segmented control
+      // 'preserve' → mode already set by segmented control / create reset
       return
     }
     syncingFromConversation.value = true
@@ -98,8 +108,8 @@ watch(
       }
       mode.value = 'image'
     } finally {
-      // Hold the guard through the mode-watch flush so hydration cannot
-      // be mistaken for a manual mode click (which would clear selection).
+      // Hold the guard through the next tick so hydration mode writes are not
+      // mistaken for a segmented-control click (which would clear selection).
       await nextTick()
       syncingFromConversation.value = false
     }
@@ -107,23 +117,27 @@ watch(
 )
 
 /**
- * Mode segmented control is source of truth for landing switches.
- * Do not clear a history selection when mode merely matches that conversation
- * (hydration sets mode → must not bounce back to landing).
+ * Segmented control click (including re-click of the active mode).
+ * 图示生图 always opens a blank create surface — pick map, then 生成.
+ * History select sets `mode` without emitting `select`, so it is not wiped.
  */
-watch(mode, (next, prev) => {
+function onStudioModeSelect(next: ZhihuiMode): void {
   if (syncingFromConversation.value) return
-  if (next === prev) return
-  if (next === 'image') {
-    diagramBusy.value = false
+
+  if (next === 'diagram') {
+    if (historyStore.currentId) {
+      historyStore.startLanding('preserve')
+    }
+    resetDiagramCreateSurface()
+    diagramStudioMountKey.value += 1
+    return
   }
-  const id = historyStore.currentId
-  if (!id) return
-  if (next === 'diagram' && isDiagramConversation(id)) return
-  if (next === 'image' && !isDiagramConversation(id)) return
-  // User switched away from the open conversation's studio type.
-  historyStore.startLanding('preserve')
-})
+
+  diagramBusy.value = false
+  if (historyStore.currentId) {
+    historyStore.startLanding('preserve')
+  }
+}
 
 function onDiagramIdUpdate(id: string | null): void {
   diagramId.value = id
@@ -135,6 +149,7 @@ function onDiagramIdUpdate(id: string | null): void {
       ? historyStore.currentDetail.diagram_id
       : historyStore.items.find((row) => row.id === current)?.diagram_id
   if (id !== convDiagramId) {
+    // Leave the open conversation but keep the newly picked map for 生成.
     historyStore.startLanding('diagram')
   }
 }
@@ -176,6 +191,7 @@ async function onGenerateDiagram(): Promise<void> {
             :options="modeOptions"
             :ariaLabel="String(t('zhihui.modeAria'))"
             fit
+            @select="onStudioModeSelect"
           />
         </div>
       </div>
@@ -184,6 +200,7 @@ async function onGenerateDiagram(): Promise<void> {
     <div class="zhihui-page__body">
       <ZhiHuiDiagramStudio
         v-if="mode === 'diagram'"
+        :key="diagramStudioMountKey"
         ref="diagramStudioRef"
         :diagram-id="diagramId"
         @update:busy="diagramBusy = $event"

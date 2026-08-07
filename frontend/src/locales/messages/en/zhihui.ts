@@ -84,7 +84,6 @@ export default {
   'zhihui.deleteFailed': 'Failed to delete',
   'zhihui.prompt': 'Prompt',
   'zhihui.openImage': 'Open image',
-  'zhihui.landingGalleryRecent': 'Recent generations',
   'zhihui.landingGallerySeed': 'Inspiration',
   'zhihui.landingSeedAlt': 'Inspiration sample {n}',
 }

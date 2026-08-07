@@ -31,9 +31,7 @@ from routers.auth.dependencies import (
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS
 from services.zhihui.lesson_deck import create_diagram_lesson_conversation
 from services.zhihui.storage import (
-    LANDING_SEED_FILENAMES,
     aiter_bytes,
-    build_seed_key,
     cos_zhihui_enabled,
     create_presigned_get,
     delete_key,
@@ -475,25 +473,6 @@ async def delete_zhihui_history(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     await delete_key(logical_key)
     return {"id": generation_id, "status": "deleted"}
-
-
-@router.get("/seeds")
-async def list_zhihui_landing_seeds(
-    request: Request,
-    _scope: AdminScope = Depends(require_panel_capability(CAP_FEATURE_ZHIHUI)),
-) -> dict[str, Any]:
-    """Stable asset URLs for landing-gallery seed images (panel capability)."""
-    _require_zhihui_enabled()
-    items: list[dict[str, str]] = []
-    for filename in LANDING_SEED_FILENAMES:
-        logical = build_seed_key(filename)
-        items.append(
-            {
-                "id": filename,
-                "image_url": _stable_asset_url(request, logical),
-            }
-        )
-    return {"items": items}
 
 
 @router.get("/assets/{asset_path:path}")

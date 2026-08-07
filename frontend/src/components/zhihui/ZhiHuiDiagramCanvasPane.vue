@@ -46,9 +46,14 @@ const vueFlowId = computed(
 
 type FocusSession = DiagramSession & {
   selectNodes?: (nodeIds: string | string[]) => boolean
+  clearSelection?: () => void
   getMindMapDescendantIds?: (rootNodeId: string) => Set<string>
   expandMindMapPathToNode?: (nodeId: string) => boolean
 }
+
+const focusDimmed = computed(
+  () => Boolean(spec.value) && !props.topicOverview && (props.focusNodeIds?.length ?? 0) > 0
+)
 
 function clearFocusTimer(): void {
   if (focusTimer !== null) {
@@ -107,7 +112,21 @@ function expandFocusIds(session: FocusSession, hints: string[]): string[] {
   return [...expanded]
 }
 
+function topicNodeId(session: FocusSession): string | null {
+  const nodes = session.data?.nodes ?? []
+  const topic = nodes.find(
+    (node) => node.id === 'topic' || String(node.type || '').toLowerCase() === 'topic'
+  )
+  return topic?.id ?? null
+}
+
 function applyTopicFit(session: FocusSession): void {
+  const topicId = topicNodeId(session)
+  if (topicId) {
+    session.selectNodes?.(topicId)
+  } else {
+    session.clearSelection?.()
+  }
   session.viewBus.emit('view:fit_to_canvas_requested', {
     animate: true,
     userInitiated: true,
@@ -115,6 +134,7 @@ function applyTopicFit(session: FocusSession): void {
 }
 
 function applyBranchFit(session: FocusSession, nodeIds: string[]): void {
+  // Selection drives the pulse-glow highlight on .vue-flow__node.selected
   session.selectNodes?.(nodeIds)
   session.viewBus.emit('view:fit_to_nodes_requested', {
     nodeIds,
@@ -223,7 +243,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="zhihui-diagram-canvas flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-stone-200 bg-white">
+  <div
+    class="zhihui-diagram-canvas flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-stone-200 bg-white"
+    :class="{ 'zhihui-diagram-canvas--focus-dim': focusDimmed }"
+  >
     <div
       v-if="!diagramId"
       class="flex flex-1 items-center justify-center px-4 text-center text-xs text-stone-400"
@@ -262,3 +285,16 @@ onBeforeUnmount(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Emphasize the slide-correlated selection while browsing the PPT deck. */
+.zhihui-diagram-canvas--focus-dim :deep(.vue-flow__node:not(.selected)) {
+  opacity: 0.38;
+  transition: opacity 0.28s ease;
+}
+
+.zhihui-diagram-canvas--focus-dim :deep(.vue-flow__node.selected) {
+  opacity: 1;
+  z-index: 4;
+}
+</style>

@@ -58,13 +58,15 @@ const canvasDiagramId = computed(
 /** First PPT is always the whole-case topic → fit full mind map. */
 const topicOverview = computed(() => slideIndex.value === 0)
 
-const focusNodeIds = computed(() =>
-  resolveZhihuiSlideFocusHints({
+const focusNodeIds = computed(() => {
+  const slide = slides.value[slideIndex.value]
+  return resolveZhihuiSlideFocusHints({
     slideIndex: slideIndex.value,
-    focusNodeIds: slides.value[slideIndex.value]?.focus_node_ids,
+    focusNodeIds: slide?.focus_node_ids,
     lessonPlan: lessonPlan.value,
+    slideTitle: slide?.slide_title || slide?.prompt || null,
   })
-)
+})
 
 watch(busy, (value) => emit('update:busy', value), { immediate: true })
 
@@ -110,6 +112,7 @@ async function hydrateFromId(id: string | null): Promise<void> {
     slides.value = []
     slideIndex.value = 0
     userPinnedSlide.value = false
+    starting.value = false
     historyStore.stopPolling()
     return
   }

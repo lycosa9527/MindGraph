@@ -40,6 +40,8 @@ const prompt = ref('')
 const smartRewrite = ref(true)
 const references = ref<ZhihuiReferenceImage[]>([])
 const isGenerating = ref(false)
+/** Bumped on unmount / new submit so late responses cannot selectItem after leave. */
+const generateEpoch = ref(0)
 const modelMenuOpen = ref(false)
 const modelMenuRef = ref<HTMLElement | null>(null)
 const turns = ref<ZhihuiSessionTurn[]>([])
@@ -118,12 +120,11 @@ watch(
     if (!item) {
       return
     }
-    if (item.mode === 'diagram') {
-      mode.value = 'diagram'
+    // Page owns studio mode; image studio only hydrates image conversations.
+    if (item.mode !== 'image') {
       turns.value = []
       return
     }
-    mode.value = 'image'
     turns.value = turnFromConversation(item)
   },
   { immediate: true }
@@ -156,6 +157,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  generateEpoch.value += 1
   document.removeEventListener('mousedown', onDocumentPointerDown)
 })
 
@@ -241,6 +243,8 @@ async function submitGenerate(): Promise<void> {
   prompt.value = ''
   references.value = []
   isGenerating.value = true
+  const epoch = generateEpoch.value + 1
+  generateEpoch.value = epoch
 
   try {
     const lang = currentLanguage.value === 'zh' || currentLanguage.value.startsWith('zh') ? 'zh' : 'en'
@@ -265,8 +269,12 @@ async function submitGenerate(): Promise<void> {
     if (!url) {
       throw new Error(String(t('zhihui.generateFailed')))
     }
-    notify.success(String(t('zhihui.generateSuccess')))
+    // Still refresh history if the user left mid-request; do not yank mode/selection.
     await historyStore.fetchHistory()
+    if (epoch !== generateEpoch.value) {
+      return
+    }
+    notify.success(String(t('zhihui.generateSuccess')))
     const newest = historyStore.sortedItems[0]
     patchTurn(localId, {
       status: 'done',
@@ -278,6 +286,9 @@ async function submitGenerate(): Promise<void> {
     }
     emit('generated')
   } catch (err) {
+    if (epoch !== generateEpoch.value) {
+      return
+    }
     const message = err instanceof Error ? err.message : String(t('zhihui.generateFailed'))
     patchTurn(localId, {
       status: 'error',
@@ -287,7 +298,9 @@ async function submitGenerate(): Promise<void> {
     references.value = attachedRefs
     notify.error(message)
   } finally {
-    isGenerating.value = false
+    if (epoch === generateEpoch.value) {
+      isGenerating.value = false
+    }
   }
 }
 </script>

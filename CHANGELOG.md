@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.170.2] - 2026-08-07
+
+> **ZhiHui: blank 图示生图 create, bundled landing seeds, clockwise outline + focus polish.**
+
+### Fixed
+
+- **图示生图 blank create** — Segmented control re-click opens a fresh create surface (clear map selection, remount studio); sticky “generating” chrome cleared on hydrate.
+- **Image studio race** — Leaving mid-generate no longer `selectItem`s back into the new conversation after unmount.
+- **Delete open conversation** — Returns to landing with mode preserved (`startLanding('preserve')`).
+
+### Changed
+
+- **图片生成 landing gallery** — Always shows bundled `frontend/public/zhihui/seeds/*.jpg` (no recent covers, no COS redirect).
+- **Outline order** — Mind-map branches ordered clockwise for lesson decks; planner prompted to keep that order.
+- **Canvas focus** — Child-detail slides prefer `focus_child`; browsing dims non-focused nodes.
+
+### Removed
+
+- `GET /api/zhihui/seeds`, seed key helpers, and `scripts/db/seed_zhihui_landing_images.py` (gallery is frontend-static only).
+
+### Tests
+
+- Clockwise outline cases; focus hint coverage for child slides.
+
 ## [5.170.1] - 2026-08-07
 
 > **ZhiHui polish: landing/conversation UX, canvas focus sync, lesson prompts, stale-job hardening.**

@@ -350,15 +350,23 @@ async def run_diagram_lesson_deck(
                 frame = frames[url_index] if url_index < len(frames) else {}
                 title = ""
                 focus_branch = None
+                focus_child = ""
+                frame_role = ""
                 if isinstance(frame, dict):
                     title = str(frame.get("title") or "").strip()
                     focus_branch = frame.get("focus_branch")
-                focus_ids = resolve_frame_focus_node_ids(
-                    outline,
-                    slide_index=slide_index,
-                    batch_role=batch_role,
-                    focus_branch=focus_branch,
-                )
+                    focus_child = str(frame.get("focus_child") or "").strip()
+                    frame_role = str(frame.get("frame_role") or "").strip().lower()
+                # Child/conflict slides store the child cue so canvas highlight tracks the PPT.
+                if focus_child and frame_role != "branch_intro":
+                    focus_ids = [focus_child]
+                else:
+                    focus_ids = resolve_frame_focus_node_ids(
+                        outline,
+                        slide_index=slide_index,
+                        batch_role=batch_role,
+                        focus_branch=focus_branch,
+                    )
                 await _persist_slide(
                     conversation_id=conversation_id,
                     language=language,

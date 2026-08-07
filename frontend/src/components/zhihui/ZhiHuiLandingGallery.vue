@@ -1,82 +1,34 @@
 <script setup lang="ts">
 /**
- * Landing strip — up to 6 recent generations, or COS/local seed images when empty.
+ * 图片生成 landing strip — always the bundled frontend seed images.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { ImagePreviewModal } from '@/components/common'
 import { useLanguage } from '@/composables'
-import {
-  type ZhihuiConversationItem,
-  useZhihuiHistoryStore,
-  zhihuiConversationTitle,
-} from '@/stores/zhihuiHistory'
-import { apiGet } from '@/utils/apiClient'
 
-import {
-  ZHIHUI_LANDING_GALLERY_LIMIT,
-  ZHIHUI_SEED_IMAGE_URLS,
-} from './zhihuiSeeds'
+import { ZHIHUI_SEED_IMAGE_URLS } from './zhihuiSeeds'
 
 type GalleryTile = {
   key: string
   imageUrl: string
   title: string
-  historyId: string | null
-  isSeed: boolean
 }
 
 const { t } = useLanguage()
-const historyStore = useZhihuiHistoryStore()
 
 const previewOpen = ref(false)
 const previewIndex = ref(0)
-const remoteSeedUrls = ref<string[]>([])
 
-const localSeedTiles = computed<GalleryTile[]>(() =>
+const tiles = computed<GalleryTile[]>(() =>
   ZHIHUI_SEED_IMAGE_URLS.map((url, index) => ({
-    key: `seed-local-${index + 1}`,
+    key: `seed-${index + 1}`,
     imageUrl: url,
     title: String(t('zhihui.landingSeedAlt', { n: index + 1 })),
-    historyId: null,
-    isSeed: true,
   }))
 )
 
-const seedTiles = computed<GalleryTile[]>(() => {
-  if (remoteSeedUrls.value.length > 0) {
-    return remoteSeedUrls.value.map((url, index) => ({
-      key: `seed-remote-${index + 1}`,
-      imageUrl: url,
-      title: String(t('zhihui.landingSeedAlt', { n: index + 1 })),
-      historyId: null,
-      isSeed: true,
-    }))
-  }
-  return localSeedTiles.value
-})
-
-const tiles = computed<GalleryTile[]>(() => {
-  const recent = historyStore.sortedItems.slice(0, ZHIHUI_LANDING_GALLERY_LIMIT)
-  if (recent.length > 0) {
-    return recent
-      .filter((item: ZhihuiConversationItem) => Boolean(item.cover_image_url))
-      .map((item: ZhihuiConversationItem) => ({
-        key: item.id,
-        imageUrl: item.cover_image_url || '',
-        title: zhihuiConversationTitle(item) || String(t('zhihui.prompt')),
-        historyId: item.id,
-        isSeed: false,
-      }))
-  }
-  return seedTiles.value
-})
-
-const sectionTitle = computed(() =>
-  tiles.value.some((row) => !row.isSeed)
-    ? String(t('zhihui.landingGalleryRecent'))
-    : String(t('zhihui.landingGallerySeed'))
-)
+const sectionTitle = computed(() => String(t('zhihui.landingGallerySeed')))
 
 const previewImages = computed(() =>
   tiles.value.map((row) => ({
@@ -85,36 +37,10 @@ const previewImages = computed(() =>
   }))
 )
 
-function openTile(tile: GalleryTile, index: number): void {
-  if (tile.historyId) {
-    historyStore.selectItem(tile.historyId)
-    return
-  }
+function openTile(_tile: GalleryTile, index: number): void {
   previewIndex.value = index
   previewOpen.value = true
 }
-
-async function loadRemoteSeeds(): Promise<void> {
-  try {
-    const res = await apiGet('/api/zhihui/seeds')
-    if (!res.ok) {
-      return
-    }
-    const data = (await res.json()) as { items?: Array<{ image_url?: string }> }
-    const urls = (data.items ?? [])
-      .map((row) => row.image_url?.trim() ?? '')
-      .filter((url) => url.length > 0)
-    if (urls.length > 0) {
-      remoteSeedUrls.value = urls
-    }
-  } catch {
-    // Keep local /zhihui/seeds fallback.
-  }
-}
-
-onMounted(() => {
-  void loadRemoteSeeds()
-})
 </script>
 
 <template>

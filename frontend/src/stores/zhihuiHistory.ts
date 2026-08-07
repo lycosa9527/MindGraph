@@ -344,8 +344,8 @@ export const useZhihuiHistoryStore = defineStore('zhihuiHistory', () => {
     }
     items.value = items.value.filter((row) => row.id !== id)
     if (currentId.value === id) {
-      currentId.value = null
-      currentDetail.value = null
+      // Preserve current studio mode; page resets diagram create on landing=preserve.
+      startLanding('preserve')
     }
     return true
   }

@@ -1,40 +1,67 @@
 /**
  * Resolve canvas focus hints for a ZhiHui diagram lesson slide.
  *
- * Slide 0 is always topic overview (empty → fit whole map).
- * Later slides prefer generation.focus_node_ids, then lesson_plan
- * batches[].frames (flat by slide index) focus_branch / focus_child.
+ * Slide 0 is always topic overview (empty → fit whole map / select topic).
+ * Later slides: prefer focus_child for detail/conflict, else branch / stored ids.
  */
 export function resolveZhihuiSlideFocusHints(options: {
   slideIndex: number
   focusNodeIds?: string[] | null
   lessonPlan?: Record<string, unknown> | null
+  /** Generation slide_title — last-resort text match to a child node. */
+  slideTitle?: string | null
 }): string[] {
   if (options.slideIndex <= 0) return []
-  const ids = options.focusNodeIds
-  if (Array.isArray(ids)) {
-    const cleaned = ids.map(String).filter((id) => id.trim())
-    if (cleaned.length > 0) return cleaned
-  }
+
   const frame = frameAtSlideIndex(options.lessonPlan, options.slideIndex)
-  if (!frame) return []
-  const branch = String(frame.focus_branch ?? '').trim()
-  const child = String(frame.focus_child ?? '').trim()
-  // Canvas currently pans to first-level branch (+ descendants).
-  if (branch) return [branch]
+  const role = String(frame?.frame_role ?? '')
+    .trim()
+    .toLowerCase()
+  const branch = String(frame?.focus_branch ?? '').trim()
+  const child = String(frame?.focus_child ?? '').trim()
+  const stored = Array.isArray(options.focusNodeIds)
+    ? options.focusNodeIds.map(String).filter((id) => id.trim())
+    : []
+  const title = String(options.slideTitle ?? '').trim()
+
+  // Branch intro should frame the whole branch (+ children via canvas expand).
+  if (role === 'branch_intro') {
+    if (branch) return [branch]
+    if (stored.length > 0) return stored
+    return title ? [title] : []
+  }
+
+  // Child / conflict / generic develop frames: pinpoint the child when known.
   if (child) return [child]
+  if (title && role !== 'synthesis' && role !== 'close' && role !== 'topic_overview') {
+    // Prefer title over a coarse stored branch id so highlight tracks the PPT.
+    if (stored.length === 0 || role === 'child_detail' || role === 'cognitive_conflict') {
+      return [title]
+    }
+  }
+  if (stored.length > 0) return stored
+  if (branch) return [branch]
+  if (title) return [title]
   return []
 }
 
 function frameAtSlideIndex(
   plan: Record<string, unknown> | null | undefined,
   slideIndex: number
-): { focus_branch?: unknown; focus_child?: unknown } | null {
+): {
+  focus_branch?: unknown
+  focus_child?: unknown
+  frame_role?: unknown
+} | null {
   if (!plan || typeof plan !== 'object') return null
   const flat = flattenLessonPlanFrames(plan)
   const frame = flat[slideIndex]
   if (!frame || typeof frame !== 'object') return null
-  return frame as { focus_branch?: unknown; focus_child?: unknown }
+  return frame as {
+    focus_branch?: unknown
+    focus_child?: unknown
+    frame_role?: unknown
+  }
 }
 
 /** Flatten planner batches[].frames into a deck-ordered list. */

@@ -84,7 +84,6 @@ export default {
   'zhihui.deleteFailed': '删除失败',
   'zhihui.prompt': '提示词',
   'zhihui.openImage': '打开图片',
-  'zhihui.landingGalleryRecent': '最近生成',
   'zhihui.landingGallerySeed': '灵感示例',
   'zhihui.landingSeedAlt': '灵感示例 {n}',
 }
