@@ -9,6 +9,8 @@ export type CanvasSpecExportCommand = 'mg'
 
 export type CanvasCommunityExportCommand = 'community'
 
+export type CanvasZhihuiDiagramCommand = 'zhihui_diagram'
+
 /** Legacy alias — resolves to landscape/portrait from diagram aspect ratio at export time. */
 export type CanvasLegacyPdfExportCommand = 'pdf'
 
@@ -17,6 +19,7 @@ export type CanvasExportCommand =
   | CanvasLegacyPdfExportCommand
   | CanvasSpecExportCommand
   | CanvasCommunityExportCommand
+  | CanvasZhihuiDiagramCommand
 
 export type CanvasExportMenuItem = {
   command: CanvasRasterExportCommand | CanvasLegacyPdfExportCommand | CanvasSpecExportCommand
@@ -44,6 +47,13 @@ export const CANVAS_COMMUNITY_EXPORT_MENU_ITEM = {
   labelKey: 'canvas.topBar.shareCommunity',
   divided: true,
 }
+
+/** Open 智绘 图示生图 — visible only with ``feature.zhihui`` (superadmin). */
+export const CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM = {
+  command: 'zhihui_diagram' as CanvasZhihuiDiagramCommand,
+  labelKey: 'zhihui.mode.diagram',
+  divided: true,
+} as const
 
 /** Mind map v2 export menu — DOCX/PDF (with paper orientation) lives in the worksheet modal. */
 export const CANVAS_MINDMAP_EXPORT_MENU_ITEMS: readonly CanvasExportMenuItem[] = [

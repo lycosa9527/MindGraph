@@ -92,6 +92,7 @@ import {
 import { useNewCanvasTypeQueryBootstrap } from '@/composables/canvasPage/useNewCanvasTypeQueryBootstrap'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
+import { handoffMindMapToZhihuiDiagram } from '@/composables/zhihui/handoffMindMapToZhihuiDiagram'
 import { registerCanvasPageResetHandler } from '@/composables/canvasPage/registerCanvasPageResetHandler'
 import { shouldSkipLibraryReloadForActiveDiagram } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
@@ -820,6 +821,23 @@ function handleNodeDoubleClick(_node: { id?: string; type?: string }): void {
 // through the WebSocket collab pipeline instead.
 const isCollabActive = computed(() => diagramStore.collabSessionActive)
 const diagramAutoSave = useDiagramAutoSave({ isCollabGuest, isCollabActive })
+
+eventBus.onWithOwner(
+  'toolbar:zhihui_diagram_requested',
+  () => {
+    void handoffMindMapToZhihuiDiagram({
+      router,
+      flush: () =>
+        diagramAutoSave.flush({
+          bypassSubgraphGuard: true,
+          bypassSuppressGuard: true,
+          bypassGeneratingGuard: true,
+        }),
+      language: promptLanguage.value,
+    })
+  },
+  'CanvasPage'
+)
 
 // Tick counter for relative time reactivity (increments every RELATIVE_TIME_TICK_MS)
 const relativeTimeTick = ref(0)

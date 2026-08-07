@@ -2,7 +2,7 @@
 /**
  * Mindmap-only library picker for 图示生图 header.
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { ChevronDown } from '@lucide/vue'
 
@@ -55,10 +55,18 @@ function onDocumentPointerDown(event: MouseEvent): void {
   }
 }
 
+function refreshLibraryIfSelectionMissing(): void {
+  const id = props.modelValue
+  if (!id || !authStore.isAuthenticated) return
+  if (mindmaps.value.some((d) => d.id === id)) return
+  void store.fetchDiagrams(1, 50, { force: true })
+}
+
 onMounted(() => {
   if (authStore.isAuthenticated) {
     void store.fetchDiagrams()
   }
+  refreshLibraryIfSelectionMissing()
   document.addEventListener('pointerdown', onDocumentPointerDown)
 })
 
@@ -66,9 +74,19 @@ onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', onDocumentPointerDown)
 })
 
+watch(
+  () => props.modelValue,
+  () => {
+    refreshLibraryIfSelectionMissing()
+  }
+)
+
 function toggle(): void {
   if (props.disabled) return
   open.value = !open.value
+  if (open.value) {
+    refreshLibraryIfSelectionMissing()
+  }
 }
 
 function pick(diagram: SavedDiagram): void {

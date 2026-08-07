@@ -171,6 +171,29 @@ class ZhihuiConversationRepository(BaseRepository[ZhihuiConversation]):
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
+    async def get_latest_diagram_conversation(
+        self,
+        *,
+        user_id: int,
+        diagram_id: str,
+    ) -> Optional[ZhihuiConversation]:
+        """Newest diagram-mode conversation for one library mind map (owner-scoped)."""
+        cleaned = (diagram_id or "").strip()
+        if not cleaned:
+            return None
+        stmt = (
+            select(ZhihuiConversation)
+            .where(
+                ZhihuiConversation.user_id == user_id,
+                ZhihuiConversation.mode == "diagram",
+                ZhihuiConversation.diagram_id == cleaned,
+            )
+            .order_by(desc(ZhihuiConversation.updated_at))
+            .limit(1)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def count_conversations(self, *, user_id: Optional[int] = None) -> int:
         """Total conversation rows."""
         stmt = select(func.count()).select_from(ZhihuiConversation)

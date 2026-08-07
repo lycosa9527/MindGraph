@@ -358,6 +358,42 @@ async def list_zhihui_conversations(
     }
 
 
+@router.get("/conversations/by-diagram/{diagram_id}")
+async def get_latest_conversation_for_diagram(
+    diagram_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
+    _scope: AdminScope = Depends(require_panel_capability(CAP_FEATURE_ZHIHUI)),
+) -> dict[str, Any]:
+    """
+    Latest diagram-mode conversation for a library mind map (canvas → 智绘 handoff).
+
+    404 when the user has never generated 图示生图 for this diagram.
+    """
+    _require_zhihui_enabled()
+    cleaned = diagram_id.strip()
+    if not cleaned:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    user_id = int(current_user.id)
+    conv_repo = ZhihuiConversationRepository(db)
+    gen_repo = ZhihuiGenerationRepository(db)
+    row = await conv_repo.get_latest_diagram_conversation(
+        user_id=user_id,
+        diagram_id=cleaned,
+    )
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    meta = await gen_repo.cover_and_counts([row.id])
+    cover, slide_count = meta.get(row.id, (None, 0))
+    return _conversation_list_item(
+        row,
+        request,
+        cover_key=cover,
+        slide_count=slide_count,
+    )
+
+
 @router.get("/conversations/{conversation_id}")
 async def get_zhihui_conversation(
     conversation_id: str,
@@ -499,7 +535,8 @@ async def download_zhihui_asset(
     """
     Serve ZhiHui images.
 
-    Access: valid signed query (Dify markdown) or authenticated admin JWT.
+    Access: valid signed query (Dify markdown) or authenticated admin JWT
+    with ``feature.zhihui`` while FEATURE_ZHIHUI is enabled.
     COS default: 302 to short-TTL presigned GET; ``proxy=1`` streams bytes.
     """
     normalized = asset_path.lstrip("/").replace("\\", "/")
@@ -509,7 +546,11 @@ async def download_zhihui_asset(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
     signed_ok = bool(sig and exp and verify_signed_url(normalized, sig, exp))
-    admin_ok = current_user is not None and CAP_FEATURE_ZHIHUI in user_panel_capabilities(current_user)
+    admin_ok = (
+        current_user is not None
+        and config.FEATURE_ZHIHUI
+        and CAP_FEATURE_ZHIHUI in user_panel_capabilities(current_user)
+    )
     if not signed_ok and not admin_ok:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid or expired image URL")
 

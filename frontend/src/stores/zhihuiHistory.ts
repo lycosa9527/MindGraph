@@ -288,6 +288,35 @@ export const useZhihuiHistoryStore = defineStore('zhihuiHistory', () => {
     }
   }
 
+  /**
+   * Latest diagram-mode conversation for a library mind map (canvas handoff).
+   * Returns null when none exists (404) or the request fails.
+   */
+  async function findLatestConversationForDiagram(
+    diagramId: string
+  ): Promise<ZhihuiConversationItem | null> {
+    const cleaned = diagramId.trim()
+    if (!cleaned) return null
+    const cached = sortedItems.value.find(
+      (row) => row.mode === 'diagram' && row.diagram_id === cleaned
+    )
+    if (cached) return cached
+
+    const res = await apiGet(
+      `/api/zhihui/conversations/by-diagram/${encodeURIComponent(cleaned)}`
+    )
+    if (res.status === 404) return null
+    if (!res.ok) return null
+    const item = (await res.json()) as ZhihuiConversationItem
+    const idx = items.value.findIndex((row) => row.id === item.id)
+    if (idx >= 0) {
+      items.value[idx] = { ...items.value[idx], ...item }
+    } else {
+      items.value = [item, ...items.value]
+    }
+    return item
+  }
+
   async function loadConversation(id: string): Promise<ZhihuiConversationItem | null> {
     const epoch = ++loadEpoch
     const res = await apiGet(`/api/zhihui/conversations/${id}`)
@@ -370,6 +399,7 @@ export const useZhihuiHistoryStore = defineStore('zhihuiHistory', () => {
     pollingId,
     landingStudioMode,
     fetchHistory,
+    findLatestConversationForDiagram,
     loadConversation,
     selectItem,
     startLanding,

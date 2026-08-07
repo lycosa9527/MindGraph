@@ -136,7 +136,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 
         <!-- ZhiHui (智绘) — admin only; fill layout keeps 管理面板 pinned below -->
         <el-tooltip
-          v-if="s.featureZhihui && s.isAdmin"
+          v-if="s.featureZhihui && s.canAccessZhihui"
           :content="s.t('sidebar.zhihui')"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -159,7 +159,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </el-tooltip>
         <transition name="panel-slide">
           <div
-            v-if="s.featureZhihui && s.isAdmin && s.showPanel('zhihui')"
+            v-if="s.featureZhihui && s.canAccessZhihui && s.showPanel('zhihui')"
             class="sidebar-panel sidebar-panel--fill"
           >
             <ZhiHuiHistory />
@@ -260,7 +260,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             :class="s.navItemClass('askonce')"
             @click="s.setMode('askonce')"
           >
-            <Wand2
+            <Bot
               class="nav-icon"
               :size="NAV_ICON_SIZE"
             />

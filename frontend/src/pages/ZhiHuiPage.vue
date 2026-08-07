@@ -2,8 +2,11 @@
 /**
  * ZhiHui (智绘) — landing and conversations are separate (MindMate-style).
  * Sidebar 智绘 → landing; history select → conversation; dropdown follows diagram.
+ * Canvas export can deep-link via ``?conversationId=…`` (resume) or
+ * ``?mode=diagram&diagramId=…`` (blank create with map selected).
  */
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import AdminSwissSegmented from '@/components/admin/swiss/AdminSwissSegmented.vue'
 import ZhiHuiDiagramDropdown from '@/components/zhihui/ZhiHuiDiagramDropdown.vue'
@@ -14,14 +17,23 @@ import {
   type ZhihuiMode,
 } from '@/components/zhihui/zhihuiModes'
 import { useLanguage } from '@/composables'
-import { useZhihuiHistoryStore } from '@/stores/zhihuiHistory'
+import {
+  parseZhihuiDiagramHandoffQuery,
+  ZHIHUI_DIAGRAM_HANDOFF_QUERY_KEYS,
+} from '@/composables/zhihui/zhihuiDiagramHandoffQuery'
+import { isZhihuiJobActive, useZhihuiHistoryStore } from '@/stores/zhihuiHistory'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
 const { t } = useLanguage()
+const route = useRoute()
+const router = useRouter()
 const historyStore = useZhihuiHistoryStore()
+const savedDiagramsStore = useSavedDiagramsStore()
 
 const mode = ref<ZhihuiMode>('image')
 const diagramId = ref<string | null>(null)
 const diagramBusy = ref(false)
+const handoffDiagramTitle = ref<string | null>(null)
 const diagramStudioRef = ref<{
   generate: () => Promise<void>
   hasSlides?: { value: boolean } | boolean
@@ -30,6 +42,16 @@ const diagramStudioRef = ref<{
 const diagramStudioMountKey = ref(0)
 /** Prevent dropdown↔conversation sync loops while hydrating a history row. */
 const syncingFromConversation = ref(false)
+/**
+ * While a canvas deep-link is being applied, skip the currentId watcher so it
+ * does not race (and clear syncingFromConversation mid-handoff).
+ */
+const handoffFromRoutePending = ref((() => {
+  const handoff = parseZhihuiDiagramHandoffQuery(
+    route.query as Record<string, unknown>
+  )
+  return Boolean(handoff.mode || handoff.diagramId || handoff.conversationId)
+})())
 
 const modeOptions = computed(() =>
   ZHIHUI_MODE_ORDER.map((value) => ({
@@ -66,6 +88,8 @@ const diagramGenerateLabel = computed(() =>
 
 /** Title fallback when the conversation diagram is not in the library list yet. */
 const diagramFallbackLabel = computed(() => {
+  const handoff = (handoffDiagramTitle.value || '').trim()
+  if (handoff) return handoff
   const id = historyStore.currentId
   if (!id) return null
   const detail =
@@ -86,15 +110,136 @@ function isDiagramConversation(id: string): boolean {
 function resetDiagramCreateSurface(): void {
   diagramId.value = null
   diagramBusy.value = false
+  handoffDiagramTitle.value = null
+}
+
+function stripHandoffQuery(): void {
+  const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>
+  let changed = false
+  for (const key of ZHIHUI_DIAGRAM_HANDOFF_QUERY_KEYS) {
+    if (key in nextQuery) {
+      delete nextQuery[key]
+      changed = true
+    }
+  }
+  if (changed) {
+    void router.replace({ path: route.path, query: nextQuery })
+  }
+}
+
+/**
+ * Apply canvas → 智绘 deep-link once.
+ * Prefer ``conversationId`` (resume existing deck); else blank create + diagramId.
+ */
+async function applyDiagramHandoffFromRoute(): Promise<boolean> {
+  const handoff = parseZhihuiDiagramHandoffQuery(
+    route.query as Record<string, unknown>
+  )
+  if (!handoff.mode && !handoff.diagramId && !handoff.conversationId) {
+    handoffFromRoutePending.value = false
+    return false
+  }
+
+  handoffFromRoutePending.value = true
+  // Refresh library so dropdown can resolve a just-saved mind map.
+  void savedDiagramsStore.fetchDiagrams(1, 50, { force: true })
+
+  try {
+    if (handoff.conversationId) {
+      syncingFromConversation.value = true
+      try {
+        historyStore.selectItem(handoff.conversationId)
+        mode.value = 'diagram'
+        diagramStudioMountKey.value += 1
+        const detail = await historyStore.loadConversation(handoff.conversationId)
+        if (detail?.mode === 'diagram') {
+          diagramId.value = detail.diagram_id ?? handoff.diagramId
+          handoffDiagramTitle.value =
+            (detail.diagram_title || '').trim() || handoff.diagramTitle
+          if (isZhihuiJobActive(detail.status)) {
+            historyStore.startPolling(handoff.conversationId)
+          } else {
+            historyStore.stopPolling()
+          }
+        } else {
+          // Missing / wrong-mode id — fall back to create with known diagram.
+          historyStore.startLanding('diagram')
+          mode.value = 'diagram'
+          diagramId.value = handoff.diagramId
+          handoffDiagramTitle.value = handoff.diagramTitle
+        }
+      } finally {
+        await nextTick()
+        syncingFromConversation.value = false
+      }
+      stripHandoffQuery()
+      return true
+    }
+
+    historyStore.startLanding('diagram')
+    mode.value = 'diagram'
+    diagramId.value = handoff.diagramId
+    handoffDiagramTitle.value = handoff.diagramTitle
+    diagramStudioMountKey.value += 1
+    stripHandoffQuery()
+    return true
+  } finally {
+    handoffFromRoutePending.value = false
+  }
 }
 
 onMounted(() => {
-  void historyStore.fetchHistory()
+  void (async () => {
+    const applied = await applyDiagramHandoffFromRoute()
+    await historyStore.fetchHistory()
+    // Handoff ran before history was warm; if we only got diagramId, try to
+    // upgrade to an existing conversation now that the list (or API) is available.
+    if (
+      applied &&
+      !historyStore.currentId &&
+      diagramId.value &&
+      mode.value === 'diagram'
+    ) {
+      const existing = await historyStore.findLatestConversationForDiagram(
+        diagramId.value
+      )
+      if (existing?.id) {
+        syncingFromConversation.value = true
+        try {
+          historyStore.selectItem(existing.id)
+          diagramStudioMountKey.value += 1
+          const detail = await historyStore.loadConversation(existing.id)
+          if (detail?.diagram_id) {
+            diagramId.value = detail.diagram_id
+          }
+          if (isZhihuiJobActive(detail?.status)) {
+            historyStore.startPolling(existing.id)
+          }
+        } finally {
+          await nextTick()
+          syncingFromConversation.value = false
+        }
+      }
+    }
+  })()
 })
+
+watch(
+  () =>
+    route.query.conversationId ??
+    route.query.conversation_id ??
+    route.query.diagramId ??
+    route.query.diagram_id ??
+    route.query.mode,
+  () => {
+    void applyDiagramHandoffFromRoute()
+  }
+)
 
 watch(
   () => historyStore.currentId,
   async (id) => {
+    if (handoffFromRoutePending.value) return
     if (!id) {
       diagramBusy.value = false
       const landing = historyStore.landingStudioMode
@@ -129,6 +274,9 @@ watch(
       if (detail.mode === 'diagram') {
         mode.value = 'diagram'
         diagramId.value = detail.diagram_id ?? null
+        if (isZhihuiJobActive(detail.status)) {
+          historyStore.startPolling(id)
+        }
         return
       }
       mode.value = 'image'
@@ -138,7 +286,10 @@ watch(
       await nextTick()
       syncingFromConversation.value = false
     }
-  }
+  },
+  // Handoff may selectItem before this page mounts with the same id — without
+  // immediate, mode would stay on the default image studio.
+  { immediate: true }
 )
 
 /**
@@ -165,6 +316,9 @@ function onStudioModeSelect(next: ZhihuiMode): void {
 }
 
 function onDiagramIdUpdate(id: string | null): void {
+  if (id !== diagramId.value) {
+    handoffDiagramTitle.value = null
+  }
   diagramId.value = id
   if (syncingFromConversation.value) return
   const current = historyStore.currentId

@@ -1077,4 +1077,7 @@ export default {
   'canvasPage.collabConnected': 'Aangesloten',
   'canvas.topBar.viewOnly': 'Alleen bekijken',
   'canvasPage.collabParticipantsMore': 'meer',
+  'canvas.topBar.zhihuiUnavailable': 'ZhiHui diagram-to-image is unavailable',
+  'canvas.topBar.zhihuiNeedMindmap': 'Diagram-to-image only supports mind maps',
+  'canvas.topBar.zhihuiSaveFailed': 'Could not save the mind map for ZhiHui',
 } as const

@@ -206,6 +206,14 @@ export function canViewUsersTab(caps: AdminCapability[]): boolean {
   return caps.includes('tab.users.view') && caps.includes('scope.global')
 }
 
+/**
+ * 智绘 (ZhiHui) sidebar + canvas handoff — superadmin ``feature.zhihui`` only.
+ * School managers / teachers never receive this capability.
+ */
+export function canAccessZhihui(caps: readonly AdminCapability[]): boolean {
+  return caps.includes('feature.zhihui')
+}
+
 export function canViewDataCenterTab(caps: AdminCapability[]): boolean {
   return caps.includes('tab.data_center.view') || caps.includes('tab.school_dashboard.view')
 }

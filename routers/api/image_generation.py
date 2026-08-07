@@ -10,7 +10,7 @@ import logging
 import time
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -45,6 +45,7 @@ from services.utils.error_types import (
     HTTP_CLIENT_ERRORS,
 )
 from utils.auth import get_current_user_or_api_key
+from utils.auth.admin_panel_permissions import CAP_FEATURE_ZHIHUI, user_panel_capabilities
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -78,10 +79,24 @@ async def generate_text_to_image(
     Generate an image from a text prompt and return markdown ``![](url)``.
 
     Persists bytes to COS (or local fallback) and records ZhiHui history.
+
+    Auth:
+    - X-API-Key (Dify / external): allowed when the key validates.
+    - Browser JWT: requires ``feature.zhihui`` (superadmin) and FEATURE_ZHIHUI.
     """
     prompt = req.prompt.strip()
     if not prompt:
         return PlainTextResponse(content="Error: Prompt is required", status_code=400)
+
+    # JWT / mgat user path (not API-key): ZhiHui UI only — not school managers/teachers.
+    if current_user is not None:
+        if CAP_FEATURE_ZHIHUI not in user_panel_capabilities(current_user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="ZhiHui is restricted to platform administrators",
+            )
+        if not config.FEATURE_ZHIHUI:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZhiHui disabled")
 
     language = (req.language or "zh").strip()
     api_key_id = None

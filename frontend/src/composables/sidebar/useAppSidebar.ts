@@ -133,6 +133,7 @@ export function useAppSidebar() {
   })
   const isAdminOrManager = computed(() => authStore.isAdminOrManager)
   const isAdmin = computed(() => authStore.isAdmin)
+  const canAccessZhihui = computed(() => authStore.canAccessZhihui)
   const isManagementPanelUser = computed(() => authStore.isManagementPanelUser)
   const { tabs: adminNavTabs, loadCapabilities: loadAdminNavCapabilities } = useAdminPanelTabs({
     loadOnMount: false,
@@ -744,6 +745,7 @@ export function useAppSidebar() {
     isAuthenticated,
     isAdminOrManager,
     isAdmin,
+    canAccessZhihui,
     isManagementPanelUser,
     adminNavTabs,
     singleAdminNavTab,

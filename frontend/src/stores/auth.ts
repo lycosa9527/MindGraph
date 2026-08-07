@@ -47,6 +47,7 @@ import {
 import { clearSavedLoginCredentials } from '@/utils/savedLoginCredentials'
 import {
   type AdminCapabilitiesPayload,
+  canAccessZhihui as capsIncludeZhihui,
   hasSuperadminPanelAccess,
   roleHasPanelAccess,
 } from '@/utils/adminCapabilities'
@@ -138,6 +139,16 @@ export const useAuthStore = defineStore('auth', () => {
   const isC2CConsumer = computed(() => isPersonalTrial.value || isPersonalPaid.value)
   /** Full platform admin — alias kept for existing admin-only routes */
   const isAdmin = computed(() => isSuperAdmin.value)
+  /**
+   * 智绘 access: prefer loaded panel capabilities (``feature.zhihui``);
+   * fall back to superadmin role before capabilities hydrate.
+   */
+  const canAccessZhihui = computed(() => {
+    if (adminCapabilitiesLoaded.value && adminCapabilitiesPayload.value != null) {
+      return capsIncludeZhihui(adminCapabilitiesPayload.value.capabilities)
+    }
+    return isSuperAdmin.value
+  })
   /** Legacy alias for school admin */
   const isManager = computed(() => isSchoolAdmin.value)
   /** Superadmin or school admin — school dashboard and org-scoped admin routes */
@@ -1149,6 +1160,7 @@ export const useAuthStore = defineStore('auth', () => {
     isB2BOrgMember,
     isC2CConsumer,
     isAdmin,
+    canAccessZhihui,
     isManager,
     isAdminOrManager,
     isManagementPanelUser,

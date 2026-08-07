@@ -34,7 +34,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
-import { CANVAS_MINDMAP_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM, CANVAS_WORKSHEET_TEXT_MENU_ITEM } from '@/config/canvasExportMenu'
+import { CANVAS_MINDMAP_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM, CANVAS_WORKSHEET_TEXT_MENU_ITEM, CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM } from '@/config/canvasExportMenu'
 import { useAuthStore, useCanvasExportStore, useDiagramStore } from '@/stores'
 
 import MindMapStructureIcon from './MindMapStructureIcon.vue'
@@ -45,11 +45,15 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const diagramStore = useDiagramStore()
 const authStore = useAuthStore()
-const { featureCommunity } = useFeatureFlags()
+const { featureCommunity, featureZhihui } = useFeatureFlags()
 const { triggerImportInPlace } = useDiagramImport()
 
 const showCommunityExport = computed(
   () => featureCommunity.value && authStore.isAuthenticated
+)
+
+const showZhihuiDiagramExport = computed(
+  () => featureZhihui.value && authStore.isAuthenticated && authStore.canAccessZhihui
 )
 
 const { handleAddChild, handleAddSibling, handleDeleteNode, handleAddBranch } = useNodeActions({
@@ -97,6 +101,11 @@ function handleExportCommand(format: string) {
     format,
     options: { ...mergedExportOptions.value },
   })
+}
+
+function handleZhihuiDiagramMenuClick() {
+  exportDropdownOpen.value = false
+  eventBus.emit('toolbar:zhihui_diagram_requested', {})
 }
 
 function handleWorksheetTextMenuClick() {
@@ -414,6 +423,15 @@ function handleAddChildClick() {
                     @click="handleExportCommand(item.command)"
                   >
                     {{ t(item.labelKey) }}
+                  </button>
+                  <button
+                    v-if="showZhihuiDiagramExport"
+                    type="button"
+                    class="mm-list-item"
+                    :class="{ 'mm-list-item--divided': CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM.divided }"
+                    @click="handleZhihuiDiagramMenuClick"
+                  >
+                    {{ t(CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM.labelKey) }}
                   </button>
                   <button
                     v-if="showCommunityExport"

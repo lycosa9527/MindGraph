@@ -87,6 +87,32 @@ def test_generate_text_to_image_requires_auth() -> None:
     assert response.status_code == 401
 
 
+def test_generate_text_to_image_jwt_without_zhihui_cap_forbidden() -> None:
+    """Browser JWT without feature.zhihui (e.g. teacher) cannot use ZhiHui T2I."""
+    app = FastAPI()
+    app.include_router(image_generation.router, prefix="/api")
+
+    teacher = MagicMock()
+    teacher.id = 9
+    teacher.role = "teacher"
+    teacher.name = "Teacher"
+
+    async def _teacher_user():
+        return teacher
+
+    async def _fake_db():
+        yield MagicMock()
+
+    app.dependency_overrides[get_current_user_or_api_key] = _teacher_user
+    app.dependency_overrides[get_async_db] = _fake_db
+    client = TestClient(app, raise_server_exceptions=False)
+
+    response = client.post("/api/generate-text-to-image", json={"prompt": "一只猫在草地上"})
+
+    assert response.status_code == 403
+    assert "ZhiHui" in response.json()["detail"]
+
+
 def test_generate_text_to_image_success_markdown() -> None:
     """Happy path returns plain-text markdown with signed ZhiHui asset URL."""
     client = _build_client()

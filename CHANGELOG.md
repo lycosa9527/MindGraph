@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.170.6] - 2026-08-07
+
+> **Canvas → 智绘 图示生图 handoff, conversation resume, and admin-only ZhiHui access.**
+
+### Added
+
+- **Mind-map export → 图示生图** — Export menu jumps to ZhiHui with the current map selected; resumes the latest diagram conversation when one exists (`GET /api/zhihui/conversations/by-diagram/{id}`), otherwise opens a blank create surface.
+- **Handoff deep-link** — Query params `conversationId` / `diagramId` / `diagramTitle`; page hydrates mode, dropdown, slides, and polling; strips query after apply.
+- **Admin-only ZhiHui** — `feature.zhihui` / `canAccessZhihui` gated to superadmin; JWT text-to-image requires the same capability.
+
+### Fixed
+
+- **Handoff outside setup** — Event-handler path uses the i18n singleton (not `useLanguage` / `useI18n`) so toolbar click no longer throws.
+- **Stale Pinia session** — Immediate `currentId` hydrate + handoff pending guard; remount diagram studio; force-refresh library when the selected map is missing from the dropdown cache.
+
+### Tests
+
+- Handoff query parse (incl. `conversationId`); `canAccessZhihui`; ZhiHui capability + T2I teacher 403.
+
 ## [5.170.5] - 2026-08-07
 
 > **Fix AutoComplete UI freeze from save-spec stamping.**

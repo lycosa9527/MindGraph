@@ -672,6 +672,7 @@ export type EventTypes = {
   // Toolbar Events
   'toolbar:export_requested': { format: string; options?: CanvasExportOptions }
   'toolbar:worksheet_text_requested': Record<string, never>
+  'toolbar:zhihui_diagram_requested': Record<string, never>
   'toolbar:import_file': { file: File }
 
   // File Events
