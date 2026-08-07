@@ -774,17 +774,10 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     }
 
     try {
-      const cachedDetail = diagramDetailCache.get(diagramId)
-      const body = {
-        ...updates,
-        ...(cachedDetail?.updated_at
-          ? { if_updated_at: cachedDetail.updated_at }
-          : {}),
-      }
       const response = await authFetch(`/api/diagrams/${diagramId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify(updates),
       })
 
       if (!response.ok) {

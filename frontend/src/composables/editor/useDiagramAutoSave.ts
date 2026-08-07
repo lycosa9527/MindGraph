@@ -37,7 +37,7 @@ import {
   shouldAutoSaveAfterLlmModelCompleted,
 } from './diagramSaveFeedback'
 import { useLanguage } from '../core/useLanguage'
-import { useDiagramSpecForSave } from './useDiagramSpecForSave'
+import { useDiagramSpecForPersist } from './useDiagramSpecForSave'
 
 type DiagramDataLike = { nodes?: unknown[]; connections?: unknown[] } | null
 
@@ -215,7 +215,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   const authStore = useAuthStore()
   const previewStore = useMindMapSubgraphPreviewStore()
   const { isGenerating: isSubgraphGenerating } = storeToRefs(previewStore)
-  const getDiagramSpec = useDiagramSpecForSave()
+  const getDiagramSpecForPersist = useDiagramSpecForPersist()
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let intervalTimer: ReturnType<typeof setInterval> | null = null
@@ -302,7 +302,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       return { ok: false, result: { saved: false, reason: 'error' } }
     }
 
-    const spec = getDiagramSpec()
+    const spec = getDiagramSpecForPersist()
     if (!spec) return { ok: false, result: { saved: false, reason: 'skipped_empty' } }
 
     const diagramType = diagramStore.type

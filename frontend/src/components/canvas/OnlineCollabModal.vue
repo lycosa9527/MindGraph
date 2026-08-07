@@ -10,7 +10,7 @@ import { ElButton, ElDialog, ElPopover, ElRadioButton, ElRadioGroup, ElTag } fro
 import { Copy, Settings, Users } from '@lucide/vue'
 
 import {
-  useDiagramSpecForSave,
+  useDiagramSpecForPersist,
   useLanguage,
   useNotifications,
 } from '@/composables'
@@ -159,7 +159,7 @@ function emitClearCollabSession() {
   emit('collabSession', { code: null, visibility: null })
 }
 
-const getDiagramSpec = useDiagramSpecForSave()
+const getDiagramSpecForPersist = useDiagramSpecForPersist()
 
 function getDiagramTitle(): string {
   return resolveDiagramTitleForSave(
@@ -182,7 +182,7 @@ async function ensureDiagramSaved(): Promise<string | null> {
     notify.warning(t('collab.noDiagramToSave'))
     return null
   }
-  const spec = getDiagramSpec()
+  const spec = getDiagramSpecForPersist()
   if (!spec) {
     notify.warning(t('collab.invalidDiagramData'))
     return null

@@ -236,8 +236,16 @@ function handleAutoSaveStatusClick() {
   }
 }
 
-/** Get diagram spec for saving (includes llm_results when 2+ models) */
+/** Pure read — never stamp from the template (that freezes AutoComplete). */
 const getDiagramSpec = useDiagramSpecForSave()
+/** Snapshot at modal open so template does not re-evaluate on every render. */
+const pendingSpecForSlotModal = ref<Record<string, unknown>>({})
+
+watch(showSlotFullModal, (open) => {
+  if (open) {
+    pendingSpecForSlotModal.value = getDiagramSpec() || {}
+  }
+})
 
 // Handle slot full modal success
 function handleSlotModalSuccess(_diagramId: string): void {
@@ -534,7 +542,7 @@ async function handleReset() {
       v-model:visible="showSlotFullModal"
       :pending-title="fileName"
       :pending-diagram-type="diagramStore.type || ''"
-      :pending-spec="getDiagramSpec() || {}"
+      :pending-spec="pendingSpecForSlotModal"
       :pending-language="promptLanguage"
       @success="handleSlotModalSuccess"
       @cancel="handleSlotModalCancel"

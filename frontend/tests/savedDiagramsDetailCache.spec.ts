@@ -117,7 +117,8 @@ describe('savedDiagrams detail cache after update', () => {
       spec: fullDiagram(diagramId, 13).spec as Record<string, unknown>,
     })
     expect(updated).toBe(true)
-    expect(putBody?.if_updated_at).toBe('2026-01-01T00:00:00Z')
+    expect(putBody?.if_updated_at).toBeUndefined()
+    expect(putBody?.spec).toBeTruthy()
 
     authFetchMock.mockClear()
     const second = await store.getDiagram(diagramId)

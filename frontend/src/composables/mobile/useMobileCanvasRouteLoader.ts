@@ -4,7 +4,7 @@
 import { type ComputedRef, nextTick, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { eventBus, useDiagramSpecForSave } from '@/composables'
+import { eventBus, useDiagramSpecForPersist } from '@/composables'
 import { applyDiagramTypeForCanvasChrome } from '@/composables/canvasPage/diagramTypeMaps'
 import {
   getDiagramDataType,
@@ -261,8 +261,8 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
                 currentLanguage.value as LocaleCode
               )
               diagramStore.initTitle(importTitle)
-              const getDiagramSpec = useDiagramSpecForSave()
-              const specToSave = getDiagramSpec()
+              const getDiagramSpecForPersist = useDiagramSpecForPersist()
+              const specToSave = getDiagramSpecForPersist()
               if (specToSave && authStore.isAuthenticated) {
                 const saveResult = await savedDiagramsStore.manualSaveDiagram(
                   importTitle,

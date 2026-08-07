@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.170.5] - 2026-08-07
+
+> **Fix AutoComplete UI freeze from save-spec stamping.**
+
+### Fixed
+
+- **AutoComplete freeze** — `getDiagramSpec()` must stay pure; stamping the live canvas into `llm_results` now lives only in `useDiagramSpecForPersist()` (save/flush paths). Template evaluation in `CanvasTopBar` no longer mutates Pinia and cannot re-enter an infinite render loop.
+- **Multi-model autosave 409s** — SPA PUTs no longer send `if_updated_at` on routine autosave (queued per-model saves shared one cached timestamp). Server optional CAS remains for future callers.
+
+### Changed
+
+- **Diagram spec helpers** — Split pure `useDiagramSpecForSave` vs persist `useDiagramSpecForPersist`; slot-full modal snapshots pending spec once on open.
+
+### Tests
+
+- Pure-vs-persist stamp regression; detail-cache PUT no longer expects client CAS headers.
+
 ## [5.170.4] - 2026-08-07
 
 > **Library save durability + ZhiHui lesson decks that follow the mind-map order.**

@@ -61,7 +61,7 @@ import {
   getNodePalette,
   getPanelCoordinator,
   useCanvasKittyDesktopPairing,
-  useDiagramSpecForSave,
+  useDiagramSpecForPersist,
   useEventBus,
   useInlineRecommendations,
   useInlineRecommendationsCoordinator,
@@ -1263,8 +1263,8 @@ onMounted(async () => {
               currentLanguage.value
             )
             diagramStore.initTitle(importTitle)
-            const getDiagramSpec = useDiagramSpecForSave()
-            const specToSave = getDiagramSpec()
+            const getDiagramSpecForPersist = useDiagramSpecForPersist()
+            const specToSave = getDiagramSpecForPersist()
             if (specToSave && authStore.isAuthenticated) {
               const saveResult = await savedDiagramsStore.manualSaveDiagram(
                 importTitle,
