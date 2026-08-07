@@ -10,13 +10,23 @@ import { useLanguage } from '@/composables'
 import type { ZhihuiGenerationItem } from '@/stores/zhihuiHistory'
 import { isZhihuiJobActive } from '@/stores/zhihuiHistory'
 
-const props = defineProps<{
-  slides: ZhihuiGenerationItem[]
-  slideIndex: number
-  status?: string | null
-  progress?: Record<string, unknown> | null
-  errorMessage?: string | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    slides: ZhihuiGenerationItem[]
+    slideIndex: number
+    status?: string | null
+    progress?: Record<string, unknown> | null
+    errorMessage?: string | null
+    /** True while the create request is in flight (before status arrives). */
+    starting?: boolean
+  }>(),
+  {
+    status: null,
+    progress: null,
+    errorMessage: null,
+    starting: false,
+  }
+)
 
 const emit = defineEmits<{
   'update:slideIndex': [index: number]
@@ -27,7 +37,7 @@ const { t } = useLanguage()
 
 const current = computed(() => props.slides[props.slideIndex] ?? null)
 const total = computed(() => props.slides.length)
-const active = computed(() => isZhihuiJobActive(props.status))
+const active = computed(() => props.starting || isZhihuiJobActive(props.status))
 const canResume = computed(
   () => props.status === 'failed' || props.status === 'partial'
 )
@@ -47,6 +57,13 @@ const phaseLabel = computed(() => {
   if (status === 'partial') return String(t('zhihui.diagram.phasePartial'))
   if (status === 'failed') return String(t('zhihui.diagram.phaseFailed'))
   return ''
+})
+
+/** Header/body copy when there is no slide yet — never pretend a job is running when idle. */
+const emptyStateLabel = computed(() => {
+  if (phaseLabel.value) return phaseLabel.value
+  if (active.value) return String(t('zhihui.diagram.waitingSlides'))
+  return String(t('zhihui.diagram.emptyDeck'))
 })
 
 const progressHint = computed(() => {
@@ -152,7 +169,7 @@ onBeforeUnmount(() => {
           {{ slideIndex + 1 }} / {{ total }}
         </template>
         <template v-else>
-          {{ phaseLabel || t('zhihui.diagram.waitingSlides') }}
+          {{ emptyStateLabel }}
         </template>
       </div>
       <button
@@ -180,7 +197,7 @@ onBeforeUnmount(() => {
         v-if="displaySrc && !imgLoaded && !imgBroken"
         class="absolute inset-0 flex items-center justify-center px-6 text-center text-xs text-stone-400"
       >
-        {{ phaseLabel || t('zhihui.diagram.waitingSlides') }}
+        {{ emptyStateLabel }}
       </div>
       <div
         v-else-if="imgBroken"
@@ -199,7 +216,7 @@ onBeforeUnmount(() => {
         v-else-if="!displaySrc"
         class="px-6 text-center text-xs text-stone-400"
       >
-        <p>{{ phaseLabel || t('zhihui.diagram.waitingSlides') }}</p>
+        <p>{{ emptyStateLabel }}</p>
         <p
           v-if="progressHint"
           class="mt-1"

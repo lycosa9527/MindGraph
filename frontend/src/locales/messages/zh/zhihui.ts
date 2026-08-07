@@ -29,6 +29,7 @@ export default {
   'zhihui.diagram.selectMindmapFirst': '请先选择思维导图',
   'zhihui.diagram.emptyLibrary': '暂无思维导图，请先在图示库中保存',
   'zhihui.diagram.loadFailed': '加载思维导图失败',
+  'zhihui.diagram.emptyDeck': '选择思维导图后，点击生成',
   'zhihui.diagram.waitingSlides': '课件生成中，请稍候…',
   'zhihui.diagram.jobStarted': '已开始生成课件，可在历史中查看进度',
   'zhihui.diagram.phaseQueued': '任务排队中…',

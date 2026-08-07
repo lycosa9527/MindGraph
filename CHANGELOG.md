@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.170.3] - 2026-08-07
+
+> **ZhiHui: idle 图示生图 deck no longer says “generating”.**
+
+### Fixed
+
+- **Empty deck copy** — Blank 图示生图 (no map / no job) shows “选择思维导图后，点击生成” instead of “课件生成中，请稍候…”.
+
 ## [5.170.2] - 2026-08-07
 
 > **ZhiHui: blank 图示生图 create, bundled landing seeds, clockwise outline + focus polish.**

@@ -29,6 +29,7 @@ export default {
   'zhihui.diagram.selectMindmapFirst': 'Select a mind map first',
   'zhihui.diagram.emptyLibrary': 'No mind maps yet — save one in your library first',
   'zhihui.diagram.loadFailed': 'Failed to load mind map',
+  'zhihui.diagram.emptyDeck': 'Select a mind map, then click Generate',
   'zhihui.diagram.waitingSlides': 'Building your deck…',
   'zhihui.diagram.jobStarted': 'Deck generation started — track progress in history',
   'zhihui.diagram.phaseQueued': 'Queued…',

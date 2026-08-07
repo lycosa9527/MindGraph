@@ -281,6 +281,7 @@ defineExpose({ generate, busy })
         :status="status"
         :progress="progress"
         :error-message="errorMessage"
+        :starting="starting"
         @update:slide-index="onSlideIndexUpdate"
         @resume="resume"
       />
