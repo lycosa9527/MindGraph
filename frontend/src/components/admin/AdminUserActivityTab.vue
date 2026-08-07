@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Admin user modal — curated activity timeline (MindGraph / MindMate / DingTalk).
+ * Admin user modal — curated activity timeline (MindGraph / MindMate / DingTalk / ZhiHui).
  */
 import { computed, ref, watch } from 'vue'
 
@@ -22,7 +22,7 @@ const props = defineProps<{
   canLoad: boolean
 }>()
 
-type SourceFilter = 'all' | 'mindgraph' | 'mindmate' | 'dingtalk'
+type SourceFilter = 'all' | 'mindgraph' | 'mindmate' | 'dingtalk' | 'zhihui'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -41,6 +41,7 @@ const sourceFilterOptions = computed(() => [
   { label: t('admin.userActivityTab.filterMindgraph'), value: 'mindgraph' as const },
   { label: t('admin.userActivityTab.filterMindmate'), value: 'mindmate' as const },
   { label: t('admin.userActivityTab.filterDingtalk'), value: 'dingtalk' as const },
+  { label: t('admin.userActivityTab.filterZhihui'), value: 'zhihui' as const },
 ])
 
 const summaryLabels = computed<ActivitySummaryLabels>(() => ({
@@ -49,9 +50,11 @@ const summaryLabels = computed<ActivitySummaryLabels>(() => ({
   generate: t('admin.userActivityTab.generate'),
   save: t('admin.userActivityTab.save'),
   dingtalkGenerate: t('admin.userActivityTab.dingtalkGenerate'),
+  zhihuiGenerate: t('admin.userActivityTab.zhihuiGenerate'),
   sourceMindgraph: t('admin.userActivityTab.sourceMindgraph'),
   sourceMindmate: t('admin.userActivityTab.sourceMindmate'),
   sourceDingtalk: t('admin.userActivityTab.sourceDingtalk'),
+  sourceZhihui: t('admin.userActivityTab.sourceZhihui'),
   failedSuffix: t('admin.userActivityTab.failedSuffix'),
 }))
 

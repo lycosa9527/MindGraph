@@ -753,6 +753,22 @@ export type EventTypes = {
   }
   'showcase:cover_fail': { postId: string; reason?: string | null }
 
+  // ZhiHui (智绘) — conversation job lifecycle (store-owned poller)
+  'zhihui:conversation_updated': {
+    conversationId: string
+    status: string
+    slideCount: number
+  }
+  'zhihui:job_terminal': {
+    conversationId: string
+    status: string
+  }
+  'zhihui:focus_slide': {
+    conversationId: string
+    slideIndex: number
+    focusNodeIds: string[]
+  }
+
   // Mate Learning (迈特学习法)
   'maite:mode_changed': { mode: 'demo' | 'inquiry' | 'map' }
   'maite:session_opened': { sessionId: number; mode: string }

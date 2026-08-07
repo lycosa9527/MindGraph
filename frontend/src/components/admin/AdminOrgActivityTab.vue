@@ -26,7 +26,7 @@ const props = defineProps<{
   canLoad: boolean
 }>()
 
-type SourceFilter = 'all' | 'mindgraph' | 'mindmate' | 'dingtalk'
+type SourceFilter = 'all' | 'mindgraph' | 'mindmate' | 'dingtalk' | 'zhihui'
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -46,6 +46,7 @@ const sourceFilterOptions = computed(() => [
   { label: t('admin.orgActivityTab.filterMindgraph'), value: 'mindgraph' as const },
   { label: t('admin.orgActivityTab.filterMindmate'), value: 'mindmate' as const },
   { label: t('admin.orgActivityTab.filterDingtalk'), value: 'dingtalk' as const },
+  { label: t('admin.orgActivityTab.filterZhihui'), value: 'zhihui' as const },
 ])
 
 const summaryLabels = computed<ActivitySummaryLabels>(() => ({
@@ -54,9 +55,11 @@ const summaryLabels = computed<ActivitySummaryLabels>(() => ({
   generate: t('admin.orgActivityTab.generate'),
   save: t('admin.orgActivityTab.save'),
   dingtalkGenerate: t('admin.orgActivityTab.dingtalkGenerate'),
+  zhihuiGenerate: t('admin.orgActivityTab.zhihuiGenerate'),
   sourceMindgraph: t('admin.orgActivityTab.sourceMindgraph'),
   sourceMindmate: t('admin.orgActivityTab.sourceMindmate'),
   sourceDingtalk: t('admin.orgActivityTab.sourceDingtalk'),
+  sourceZhihui: t('admin.orgActivityTab.sourceZhihui'),
   failedSuffix: t('admin.orgActivityTab.failedSuffix'),
 }))
 

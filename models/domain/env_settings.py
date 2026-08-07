@@ -209,6 +209,10 @@ class FeatureFlagSettings(BaseModel):
         default=True,
         description="Enable Showcase (案例广场) moderated public case gallery",
     )
+    FEATURE_ZHIHUI: bool = Field(
+        default=True,
+        description="Enable ZhiHui (智绘) text-to-image history (admin UI for now)",
+    )
     FEATURE_ASKONCE: bool = Field(default=True, description="Enable AskOnce (多应) multi-LLM chat feature")
     FEATURE_MARKETS: bool = Field(default=False, description="Enable Market (市场) catalog and Alipay checkout")
     FEATURE_MINDBOT: bool = Field(

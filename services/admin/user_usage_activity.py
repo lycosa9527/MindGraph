@@ -30,13 +30,15 @@ _PREVIEW_MAX = 120
 _TITLE_MAX = 200
 _WHITESPACE_RE = re.compile(r"\s+")
 
-_VALID_SOURCES = frozenset({"mindgraph", "mindmate", "dingtalk"})
+VALID_ACTIVITY_SOURCES = frozenset({"mindgraph", "mindmate", "dingtalk", "zhihui"})
+_VALID_SOURCES = VALID_ACTIVITY_SOURCES
 _VALID_ACTIONS = frozenset(
     {
         "diagram_generate",
         "diagram_save",
         "chat_turn",
         "dingtalk_diagram",
+        "t2i_image",
         "one_sentence_generate",
         "one_sentence_edit",
         "autocomplete",

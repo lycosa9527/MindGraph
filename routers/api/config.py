@@ -81,6 +81,7 @@ class FeatureFlagsResponse(BaseModel):
     feature_template: bool
     feature_community: bool
     feature_showcase: bool
+    feature_zhihui: bool
     feature_askonce: bool
     feature_debateverse: bool
     feature_knowledge_space: bool
@@ -136,6 +137,7 @@ async def get_feature_flags(
         feature_template=config.FEATURE_TEMPLATE,
         feature_community=config.FEATURE_COMMUNITY,
         feature_showcase=config.FEATURE_SHOWCASE,
+        feature_zhihui=config.FEATURE_ZHIHUI,
         feature_askonce=config.FEATURE_ASKONCE,
         feature_debateverse=config.FEATURE_DEBATEVERSE,
         feature_knowledge_space=config.FEATURE_KNOWLEDGE_SPACE,

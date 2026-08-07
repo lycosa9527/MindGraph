@@ -403,6 +403,16 @@ declare module 'vue' {
     WorkshopGearMenu: typeof import('./components/workshop-chat/WorkshopGearMenu.vue')['default']
     WorkshopInboxWelcome: typeof import('./components/workshop-chat/WorkshopInboxWelcome.vue')['default']
     WorkshopPersonalMenu: typeof import('./components/workshop-chat/WorkshopPersonalMenu.vue')['default']
+    ZhiHuiComposer: typeof import('./components/zhihui/ZhiHuiComposer.vue')['default']
+    ZhiHuiDiagramCanvasPane: typeof import('./components/zhihui/ZhiHuiDiagramCanvasPane.vue')['default']
+    ZhiHuiDiagramDeck: typeof import('./components/zhihui/ZhiHuiDiagramDeck.vue')['default']
+    ZhiHuiDiagramDropdown: typeof import('./components/zhihui/ZhiHuiDiagramDropdown.vue')['default']
+    ZhiHuiDiagramStudio: typeof import('./components/zhihui/ZhiHuiDiagramStudio.vue')['default']
+    ZhiHuiDoodleWait: typeof import('./components/zhihui/ZhiHuiDoodleWait.vue')['default']
+    ZhiHuiHistory: typeof import('./components/sidebar/ZhiHuiHistory.vue')['default']
+    ZhiHuiLandingGallery: typeof import('./components/zhihui/ZhiHuiLandingGallery.vue')['default']
+    ZhiHuiMessages: typeof import('./components/zhihui/ZhiHuiMessages.vue')['default']
+    ZhiHuiStudio: typeof import('./components/zhihui/ZhiHuiStudio.vue')['default']
     ZoomControls: typeof import('./components/canvas/ZoomControls.vue')['default']
   }
   export interface GlobalDirectives {

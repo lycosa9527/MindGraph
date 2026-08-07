@@ -60,6 +60,7 @@ from .env_settings import EnvSetting
 from .gewe_message import GeweMessage
 from .gewe_contact import GeweContact
 from .gewe_group_member import GeweGroupMember
+from .zhihui import ZhihuiConversation, ZhihuiGeneration
 
 __all__ = [
     # Base
@@ -122,4 +123,7 @@ __all__ = [
     "GeweContact",
     # Gewe Group Members
     "GeweGroupMember",
+    # ZhiHui
+    "ZhihuiConversation",
+    "ZhihuiGeneration",
 ]

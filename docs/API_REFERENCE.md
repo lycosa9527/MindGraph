@@ -34,6 +34,9 @@ API密钥通过管理面板 `/admin` 生成（需要管理员账户）。
 - ✅ `/api/generate_png` - PNG generation
 - ✅ `/api/generate_graph` - Graph generation
 - ✅ `/api/generate_dingtalk` - DingTalk integration
+- ✅ `/api/generate-text-to-image` - ZhiHui text-to-image (Dify)
+- ✅ `/api/zhihui/diagram-lesson` - ZhiHui mind-map → Wan lesson deck (Celery)
+- ✅ `/api/zhihui/conversations` - ZhiHui conversation list/detail/delete
 - ✅ `/api/generate_multi_*` - Multi-generation endpoints
 
 **Example | 示例:**
@@ -129,7 +132,94 @@ X-API-Key: your_api_key_here
 
 Returns a PNG image file that can be displayed directly in a web browser, downloaded, or embedded in documents.
 
-### 2. DingTalk Integration
+### 2. ZhiHui text-to-image (Dify)
+
+Generates an image via DashScope Qwen Image 3.0 (`MultiModalConversation` / multimodal-generation), stores it on COS (Showcase-style private objects), records history for the admin **智绘** module, and returns markdown `![](url)`.
+
+Supported models: `qwen-image-3.0` (default), `qwen-image-3.0-pro`.
+
+Uses DashScope `MultiModalConversation` (multimodal-generation). Failures map Bailian codes via the shared DashScope error parser (e.g. `DataInspectionFailed` → 400, throttling/arrears → 429); logs include DashScope `request_id` for model-monitor lookup.
+
+```http
+POST /api/generate-text-to-image
+```
+
+**Authentication**: Required (`X-API-Key` or JWT) — same generation API keys as `generate_dingtalk`.
+
+**Production Endpoint**: `https://mg.mindspringedu.com/api/generate-text-to-image`
+
+#### Request
+
+**Headers:**
+```
+Content-Type: application/json
+X-API-Key: your_api_key_here
+```
+
+**Body:**
+```json
+{
+  "prompt": "{{#sys.query#}}",
+  "model": "qwen-image-3.0",
+  "language": "zh",
+  "conversation_id": "{{#sys.conversation_id#}}",
+  "dify_user_id": "{{#sys.user_id#}}"
+}
+```
+
+#### Response
+
+Plain text (not JSON):
+
+```
+![](https://mg.mindspringedu.com/api/zhihui/assets/zhihui/generations/<uuid>.png?sig=...&exp=...)
+```
+
+Asset URLs are signed (long TTL). Prefer conversation APIs below; legacy admin list: `GET /api/zhihui/history`.
+
+#### ZhiHui conversations (admin UI)
+
+```http
+GET /api/zhihui/conversations?offset=0&limit=50
+GET /api/zhihui/conversations/{conversation_id}
+DELETE /api/zhihui/conversations/{conversation_id}
+POST /api/zhihui/conversations/{conversation_id}/resume
+```
+
+**Authentication**: Admin JWT. List/detail include `status`, `progress`, and ordered `generations` (poll target for background jobs). Delete cancels in-flight work, removes child generations/COS objects, and best-effort Celery revoke. Resume re-enqueues `failed`/`partial` diagram jobs that still have `lesson_plan_json` (idempotent continue from last slide). List also sweeps jobs stuck active longer than ~60 minutes.
+
+#### ZhiHui diagram lesson (图示生图)
+
+Starts a mind-map → learner PPT deck job: creates a `mode=diagram` conversation (`queued`), enqueues Celery `zhihui.run_diagram_lesson`, returns immediately. Pipeline uses `qwen3.7-plus` for lesson planning and DashScope Wan `wan2.7-image` async 组图; slides land on COS incrementally.
+
+```http
+POST /api/zhihui/diagram-lesson
+```
+
+**Authentication**: Super-admin JWT.
+
+**Body:**
+```json
+{
+  "diagram_id": "<saved mind map uuid>",
+  "language": "zh"
+}
+```
+
+**Response** `202 Accepted`:
+```json
+{
+  "conversation_id": "<uuid>",
+  "status": "queued",
+  "celery_task_id": "<optional>"
+}
+```
+
+Statuses: `queued` → `planning` → `generating` → `complete` | `partial` | `failed` (or `cancelled` on delete while running). Poll `GET /api/zhihui/conversations/{id}`. Pipeline resumes idempotently from persisted `lesson_plan_json` + slide indexes after worker requeue. Max **2** concurrent active diagram jobs per user (`429` when exceeded).
+
+Mind maps only (`mindmap` / `mind_map`). Planner model override: `ZHIHUI_LESSON_PLANNER_MODEL` (default `qwen3.7-plus`).
+
+### 3. DingTalk Integration
 
 Generates a PNG image for DingTalk platform and returns markdown format with image URL.
 

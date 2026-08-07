@@ -68,6 +68,7 @@ export function useAppSidebar() {
     featureTemplate,
     featureCommunity,
     featureShowcase,
+    featureZhihui,
     featureAskOnce,
     featureMateLearning,
     featureDebateverse,
@@ -107,6 +108,7 @@ export function useAppSidebar() {
     if (path.startsWith('/template')) return 'template'
     if (path.startsWith('/course')) return 'course'
     if (path.startsWith('/showcase')) return 'showcase'
+    if (path.startsWith('/zhihui')) return 'zhihui'
     if (path.startsWith('/community')) return 'community'
     if (path.startsWith('/library')) return 'library'
     if (
@@ -332,6 +334,7 @@ export function useAppSidebar() {
     course: '/course',
     community: '/community',
     'showcase': '/showcase',
+    zhihui: '/zhihui',
     library: '/library',
     admin: '/admin',
     'workshop-chat': '/workshop-chat',
@@ -577,20 +580,26 @@ export function useAppSidebar() {
   }
 
   /**
-   * Keep MindMate / MindGraph / Mate Learning history accordions in sync with the route:
-   * only one open, and the active app shows its history panel.
+   * Keep MindMate / MindGraph / Mate Learning / ZhiHui history accordions in sync
+   * with the route: only one open, and the active app shows its history panel.
    */
   watch(
     currentMode,
     (mode) => {
-      if (mode === 'mindmate' || mode === 'mindgraph' || mode === 'maite') {
+      if (
+        mode === 'mindmate' ||
+        mode === 'mindgraph' ||
+        mode === 'maite' ||
+        mode === 'zhihui'
+      ) {
         expandedPanel.value = mode
         return
       }
       if (
         expandedPanel.value === 'mindmate' ||
         expandedPanel.value === 'mindgraph' ||
-        expandedPanel.value === 'maite'
+        expandedPanel.value === 'maite' ||
+        expandedPanel.value === 'zhihui'
       ) {
         expandedPanel.value = null
       }
@@ -704,6 +713,7 @@ export function useAppSidebar() {
     featureTemplate,
     featureCommunity,
     featureShowcase,
+    featureZhihui,
     featureAskOnce,
     featureMateLearning,
     featureDebateverse,

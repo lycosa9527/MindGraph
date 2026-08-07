@@ -97,6 +97,37 @@ def test_invalid_source_returns_400(client: TestClient) -> None:
     assert response.status_code == 400
 
 
+def test_zhihui_source_filter_accepted(client: TestClient) -> None:
+    """ZhiHui source filter is allowed for people-tracking parity with DingTalk."""
+    target_user = SimpleNamespace(id=1, organization_id=2)
+    mock_db = _mock_db_with_user(target_user)
+
+    async def override_db():
+        yield mock_db
+
+    list_mock = AsyncMock(return_value=[])
+    app.dependency_overrides[get_current_user] = lambda: _make_user("platform_bd", user_id=9)
+    app.dependency_overrides[get_language_dependency] = lambda: "en"
+    app.dependency_overrides[get_async_db] = override_db
+
+    with (
+        patch(
+            "routers.auth.admin.user_activity.assert_panel_user_readable",
+            new=AsyncMock(),
+        ),
+        patch(
+            "routers.auth.admin.user_activity.list_user_usage_activities",
+            new=list_mock,
+        ),
+    ):
+        response = client.get("/api/auth/admin/users/1/activity?source=zhihui")
+    assert response.status_code == 200
+    list_mock.assert_awaited_once()
+    await_args = list_mock.await_args
+    assert await_args is not None
+    assert await_args.kwargs.get("source") == "zhihui"
+
+
 def test_activity_response_shape(client: TestClient) -> None:
     """Successful list returns items and hasMore."""
     target_user = SimpleNamespace(id=1, organization_id=2)

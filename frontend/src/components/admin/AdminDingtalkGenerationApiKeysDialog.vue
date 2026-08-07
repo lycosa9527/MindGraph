@@ -282,12 +282,38 @@ function cancelCreate(): void {
               </template>
             </el-table-column>
             <el-table-column
+              :label="t('admin.apiKeysDiagramRequestCount')"
+              width="88"
+              align="right"
+            >
+              <template #default="{ row }">
+                {{
+                  (row.diagram_request_count ?? row.dingtalk_request_count ?? 0).toLocaleString()
+                }}
+              </template>
+            </el-table-column>
+            <el-table-column
+              :label="t('admin.apiKeysImageRequestCount')"
+              width="88"
+              align="right"
+            >
+              <template #default="{ row }">
+                {{ (row.image_request_count ?? 0).toLocaleString() }}
+              </template>
+            </el-table-column>
+            <el-table-column
               :label="t('admin.apiKeysRequestCount')"
               width="100"
               align="right"
             >
               <template #default="{ row }">
-                {{ (row.dingtalk_request_count ?? row.usage_count ?? 0).toLocaleString() }}
+                {{
+                  (
+                    row.external_api_request_count ??
+                    (row.diagram_request_count ?? row.dingtalk_request_count ?? 0) +
+                      (row.image_request_count ?? 0)
+                  ).toLocaleString()
+                }}
               </template>
             </el-table-column>
             <el-table-column

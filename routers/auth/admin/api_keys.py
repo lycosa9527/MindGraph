@@ -29,7 +29,7 @@ from services.redis.cache.redis_api_key_cache import api_key_cache
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth import generate_api_key
 from utils.auth.admin_scope import AdminScope
-from utils.auth.api_key_usage_stats import dingtalk_request_counts_by_api_key_id
+from utils.auth.api_key_usage_stats import external_api_request_counts_by_api_key_id
 
 from ..dependencies import get_language_dependency, require_settings_tokens
 from ..helpers import utc_to_beijing_iso
@@ -56,11 +56,11 @@ async def list_api_keys_admin(
     """List all API keys with usage stats (ADMIN ONLY)"""
     keys = (await db.execute(select(APIKey).order_by(APIKey.created_at.desc()))).scalars().all()
 
-    dingtalk_counts_by_key: Dict[int, int] = {}
+    external_counts_by_key: Dict[int, Dict[str, int]] = {}
     try:
-        dingtalk_counts_by_key = await dingtalk_request_counts_by_api_key_id(db)
+        external_counts_by_key = await external_api_request_counts_by_api_key_id(db)
     except DATABASE_ERRORS as e:
-        logger.debug("DingTalk API key usage not available: %s", e)
+        logger.debug("External API key usage not available: %s", e)
 
     token_stats_by_key: Dict[int, Dict[str, int]] = {}
     try:
@@ -102,6 +102,10 @@ async def list_api_keys_admin(
         pending_usage = await api_key_cache.get_pending_usage(key.id)
         effective_usage = int(key.usage_count or 0) + pending_usage
 
+        ext_counts = external_counts_by_key.get(
+            key.id,
+            {"diagram": 0, "image": 0, "total": 0},
+        )
         result.append(
             {
                 "id": key.id,
@@ -110,7 +114,11 @@ async def list_api_keys_admin(
                 "description": key.description,
                 "quota_limit": key.quota_limit,
                 "usage_count": effective_usage,
-                "dingtalk_request_count": dingtalk_counts_by_key.get(key.id, 0),
+                "diagram_request_count": int(ext_counts.get("diagram", 0)),
+                "image_request_count": int(ext_counts.get("image", 0)),
+                # Backward-compatible alias of diagram_request_count
+                "dingtalk_request_count": int(ext_counts.get("diagram", 0)),
+                "external_api_request_count": int(ext_counts.get("total", 0)),
                 "is_active": key.is_active,
                 "created_at": utc_to_beijing_iso(key.created_at),
                 "last_used_at": utc_to_beijing_iso(key.last_used_at),

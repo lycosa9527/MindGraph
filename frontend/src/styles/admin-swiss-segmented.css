@@ -19,6 +19,11 @@
   width: 100%;
 }
 
+.admin-swiss-segmented--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .admin-swiss-segment {
   flex: 1 1 0;
   min-width: 0;

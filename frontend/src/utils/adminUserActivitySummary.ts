@@ -18,9 +18,11 @@ export interface ActivitySummaryLabels {
   generate: string
   save: string
   dingtalkGenerate: string
+  zhihuiGenerate: string
   sourceMindgraph: string
   sourceMindmate: string
   sourceDingtalk: string
+  sourceZhihui: string
   failedSuffix: string
 }
 
@@ -56,6 +58,7 @@ const ACTION_VERBS_ZH: Record<string, string> = {
   diagram_generate: '生成',
   diagram_save: '保存',
   dingtalk_diagram: '钉钉导图',
+  t2i_image: '智绘生成',
   autocomplete: '自动补全',
   export_diagram: '导出',
   voice_session: '语音会话',
@@ -79,6 +82,7 @@ const ACTION_VERBS_EN: Record<string, string> = {
   diagram_generate: 'Generated',
   diagram_save: 'Saved',
   dingtalk_diagram: 'DingTalk diagram',
+  t2i_image: 'ZhiHui image',
   autocomplete: 'Autocomplete',
   export_diagram: 'Exported',
   voice_session: 'Voice session',
@@ -114,6 +118,9 @@ export function activitySourceLabel(source: string, labels: ActivitySummaryLabel
   if (source === 'dingtalk') {
     return labels.sourceDingtalk
   }
+  if (source === 'zhihui') {
+    return labels.sourceZhihui
+  }
   return labels.sourceMindgraph
 }
 
@@ -127,6 +134,9 @@ function actionVerb(
   }
   if (action === 'dingtalk_diagram') {
     return labels.dingtalkGenerate
+  }
+  if (action === 't2i_image') {
+    return labels.zhihuiGenerate
   }
   if (action === 'diagram_generate') {
     return labels.generate

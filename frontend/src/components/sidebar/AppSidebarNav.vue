@@ -38,6 +38,7 @@ const KnowledgeSpaceHistory = defineAsyncComponent(() => import('./KnowledgeSpac
 const LibraryCommentsHistory = defineAsyncComponent(() => import('./LibraryCommentsHistory.vue'))
 const MaitePracticeHistory = defineAsyncComponent(() => import('./MaitePracticeHistory.vue'))
 const WorkshopChatHistory = defineAsyncComponent(() => import('./WorkshopChatHistory.vue'))
+const ZhiHuiHistory = defineAsyncComponent(() => import('./ZhiHuiHistory.vue'))
 
 const NAV_ICON_SIZE = 18
 
@@ -65,7 +66,8 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
       <div
         class="sidebar-nav-mind-section"
         :class="{
-          'sidebar-nav-mind-section--expanded': s.showPanel('mindmate') || s.showPanel('mindgraph'),
+          'sidebar-nav-mind-section--expanded':
+            s.showPanel('mindmate') || s.showPanel('mindgraph') || s.showPanel('zhihui'),
         }"
       >
         <el-tooltip
@@ -131,12 +133,45 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             <DiagramHistory @select="s.handleDiagramSelect" />
           </div>
         </transition>
+
+        <!-- ZhiHui (智绘) — admin only; fill layout keeps 管理面板 pinned below -->
+        <el-tooltip
+          v-if="s.featureZhihui && s.isAdmin"
+          :content="s.t('sidebar.zhihui')"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('zhihui')"
+            @click="s.setMode('zhihui')"
+          >
+            <Wand2
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.zhihui') }}</span
+            >
+          </div>
+        </el-tooltip>
+        <transition name="panel-slide">
+          <div
+            v-if="s.featureZhihui && s.isAdmin && s.showPanel('zhihui')"
+            class="sidebar-panel sidebar-panel--fill"
+          >
+            <ZhiHuiHistory />
+          </div>
+        </transition>
       </div>
 
       <div
         class="sidebar-nav-rest"
         :class="{
-          'sidebar-nav-rest--below-history': s.showPanel('mindmate') || s.showPanel('mindgraph'),
+          'sidebar-nav-rest--below-history':
+            s.showPanel('mindmate') || s.showPanel('mindgraph') || s.showPanel('zhihui'),
         }"
       >
         <!-- Knowledge Space -->

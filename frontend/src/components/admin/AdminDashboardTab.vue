@@ -81,6 +81,10 @@ interface PlatformTokenStats {
   past_week: TokenPeriodStats
   past_month: TokenPeriodStats
   total: TokenPeriodStats
+  external_api_generations?: {
+    diagram?: Record<string, number>
+    image?: Record<string, number>
+  }
   dingtalk_generations?: Record<string, number>
   by_service: {
     mindgraph: ServiceStats

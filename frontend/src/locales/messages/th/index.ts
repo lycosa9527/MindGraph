@@ -7,6 +7,7 @@ import canvas from './canvas.ts'
 import common from './common.ts'
 import community from './community.ts'
 import showcase from './showcase.ts'
+import zhihui from './zhihui.ts'
 import knowledge from './knowledge.ts'
 import mindmate from './mindmate.ts'
 import notification from './notification.ts'
@@ -25,6 +26,7 @@ export default {
   ...knowledge,
   ...community,
   ...showcase,
+  ...zhihui,
   ...sidebar,
   ...auth,
   ...notification,

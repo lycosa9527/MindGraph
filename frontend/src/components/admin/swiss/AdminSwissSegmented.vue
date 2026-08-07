@@ -21,12 +21,15 @@ withDefaults(
     equal?: boolean
     /** Width follows label text (no equal flex columns). */
     fit?: boolean
+    /** Disable all segments (e.g. while a ZhiHui job is running). */
+    disabled?: boolean
   }>(),
   {
     ariaLabel: undefined,
     block: false,
     equal: false,
     fit: false,
+    disabled: false,
   }
 )
 
@@ -40,9 +43,11 @@ const model = defineModel<T>({ required: true })
       'admin-swiss-segmented--block': block,
       'admin-swiss-segmented--equal': equal,
       'admin-swiss-segmented--fit': fit,
+      'admin-swiss-segmented--disabled': disabled,
     }"
     role="radiogroup"
     :aria-label="ariaLabel"
+    :aria-disabled="disabled || undefined"
   >
     <button
       v-for="opt in options"
@@ -52,6 +57,7 @@ const model = defineModel<T>({ required: true })
       class="admin-swiss-segment"
       :class="{ 'is-active': model === opt.value }"
       :aria-checked="model === opt.value"
+      :disabled="disabled"
       @click="model = opt.value"
     >
       <span class="admin-swiss-segment-label">{{ opt.label }}</span>

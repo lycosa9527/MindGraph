@@ -16,6 +16,7 @@ import type { UserRole } from '@/types'
 
 export type AdminCapability =
   | 'panel.access'
+  | 'feature.zhihui'
   | 'tab.data_center.view'
   | 'tab.data_center.edit'
   | 'tab.school_dashboard.view'
@@ -67,6 +68,7 @@ export interface AdminCapabilitiesPayload {
 const SUPERADMIN_CAPS: AdminCapability[] = [
   // All panel + settings capabilities (super-admin only unless also listed below).
   'panel.access',
+  'feature.zhihui',
   'tab.data_center.view',
   'tab.data_center.edit',
   'tab.school_dashboard.view',

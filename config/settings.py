@@ -34,6 +34,7 @@ from config.dashscope_endpoint_config import DashScopeEndpointConfigMixin
 from config.features_config import FeaturesConfigMixin
 from config.knowledge_config import KnowledgeConfigMixin
 from config.llm_config import LLMConfigMixin
+from config.t2i_config import T2IConfigMixin
 from config.rate_limiting import RateLimitingConfigMixin
 from utils.env_utils import ensure_utf8_env_file
 
@@ -48,6 +49,7 @@ class Config(
     BaseConfig,
     DashScopeEndpointConfigMixin,
     LLMConfigMixin,
+    T2IConfigMixin,
     RateLimitingConfigMixin,
     KnowledgeConfigMixin,
     FeaturesConfigMixin,

@@ -27,6 +27,7 @@ function flagsResponse(overrides: Record<string, unknown> = {}): Response {
       feature_template: false,
       feature_community: false,
       feature_showcase: true,
+      feature_zhihui: false,
       feature_askonce: false,
       feature_debateverse: false,
       feature_knowledge_space: false,

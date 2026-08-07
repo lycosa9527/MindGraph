@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
-from models.requests.requests_diagram import GenerateDingTalkRequest
 from services.diagram.generation_library_save import SAVE_LIMIT_REACHED
 from services.diagram.generation_session_registry import (
     lookup_generation_session,
@@ -42,7 +41,7 @@ class DiagramSaveIdentity:
 
 def _dify_user_key_from_request(
     request: Request,
-    req: Optional[GenerateDingTalkRequest],
+    req: Optional[Any],
 ) -> str:
     """
     Read the Dify ``user`` string forwarded by the HTTP tool.
@@ -60,8 +59,8 @@ def _dify_user_key_from_request(
     return ""
 
 
-def conversation_id_from_request(req: Optional[GenerateDingTalkRequest]) -> Optional[str]:
-    """Read Dify conversation id from generate_dingtalk body fields."""
+def conversation_id_from_request(req: Optional[Any]) -> Optional[str]:
+    """Read Dify conversation id from generate_dingtalk / T2I body fields."""
     if req is None:
         return None
     for field_name in ("conversation_id", "mg_conversation_id"):
@@ -71,7 +70,7 @@ def conversation_id_from_request(req: Optional[GenerateDingTalkRequest]) -> Opti
     return None
 
 
-def _conversation_id_from_request(req: Optional[GenerateDingTalkRequest]) -> Optional[str]:
+def _conversation_id_from_request(req: Optional[Any]) -> Optional[str]:
     return conversation_id_from_request(req)
 
 
@@ -143,7 +142,7 @@ async def resolve_diagram_save_identity(
     db: AsyncSession,
     request: Request,
     current_user: Optional[User],
-    req: Optional[GenerateDingTalkRequest] = None,
+    req: Optional[Any] = None,
 ) -> DiagramSaveIdentity:
     """Resolve MindGraph user, org, and Dify key for library persistence."""
     if current_user is not None and hasattr(current_user, "id"):

@@ -38,7 +38,11 @@ except ImportError:
     TokenUsage = None
 
 from routers.auth.dependencies import get_async_db_with_request_rls as _PANEL_MUTATE_DB
-from services.admin.user_usage_activity import activity_to_admin_dict, list_org_usage_activities
+from services.admin.user_usage_activity import (
+    VALID_ACTIVITY_SOURCES,
+    activity_to_admin_dict,
+    list_org_usage_activities,
+)
 from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
@@ -845,25 +849,17 @@ async def list_organization_activity_admin(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
     await assert_panel_org_readable(scope, org_id, db, lang)
 
-    if (
-        source is not None
-        and source.strip()
-        and source.strip()
-        not in (
-            "mindgraph",
-            "mindmate",
-            "dingtalk",
-        )
-    ):
+    source_key = source.strip().lower() if source and source.strip() else None
+    if source_key is not None and source_key not in VALID_ACTIVITY_SOURCES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="source must be mindgraph, mindmate, or dingtalk",
+            detail="source must be mindgraph, mindmate, dingtalk, or zhihui",
         )
 
     rows = await list_org_usage_activities(
         db,
         org_id,
-        source=source,
+        source=source_key,
         limit=limit,
         before_id=before_id,
     )

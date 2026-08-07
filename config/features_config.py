@@ -118,6 +118,14 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_SHOWCASE", "True").lower() == "true"
 
     @property
+    def FEATURE_ZHIHUI(self):
+        """Enable ZhiHui (智绘) text-to-image history module.
+
+        Enabled by default. UI is admin-only for now; set FEATURE_ZHIHUI=False to hide.
+        """
+        return self._get_cached_value("FEATURE_ZHIHUI", "True").lower() == "true"
+
+    @property
     def FEATURE_ASKONCE(self):
         """Enable AskOnce (多应) multi-LLM chat feature.
 

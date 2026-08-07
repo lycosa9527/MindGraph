@@ -11,7 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Language, Messages
-from services.admin.user_usage_activity import activity_to_admin_dict, list_user_usage_activities
+from services.admin.user_usage_activity import (
+    VALID_ACTIVITY_SOURCES,
+    activity_to_admin_dict,
+    list_user_usage_activities,
+)
 from utils.auth.admin_scope import AdminScope, assert_panel_user_readable
 
 from ..dependencies import get_language_dependency, require_global_users_read
@@ -39,25 +43,17 @@ async def list_user_activity_admin(
 
     await assert_panel_user_readable(scope, user.organization_id, db, lang)
 
-    if (
-        source is not None
-        and source.strip()
-        and source.strip()
-        not in (
-            "mindgraph",
-            "mindmate",
-            "dingtalk",
-        )
-    ):
+    source_key = source.strip().lower() if source and source.strip() else None
+    if source_key is not None and source_key not in VALID_ACTIVITY_SOURCES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="source must be mindgraph, mindmate, or dingtalk",
+            detail="source must be mindgraph, mindmate, dingtalk, or zhihui",
         )
 
     rows = await list_user_usage_activities(
         db,
         user_id,
-        source=source,
+        source=source_key,
         limit=limit,
         before_id=before_id,
     )

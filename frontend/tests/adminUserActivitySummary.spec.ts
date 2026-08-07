@@ -14,9 +14,11 @@ const labels: ActivitySummaryLabels = {
   generate: 'Generated',
   save: 'Saved',
   dingtalkGenerate: 'DingTalk diagram',
+  zhihuiGenerate: 'ZhiHui image',
   sourceMindgraph: 'MindGraph',
   sourceMindmate: 'MindMate',
   sourceDingtalk: 'DingTalk',
+  sourceZhihui: 'ZhiHui',
   failedSuffix: ' (failed)',
 }
 
@@ -54,6 +56,7 @@ describe('formatAdminUserActivitySummary', () => {
 
   it('labels sources', () => {
     expect(activitySourceLabel('dingtalk', labels)).toBe('DingTalk')
+    expect(activitySourceLabel('zhihui', labels)).toBe('ZhiHui')
   })
 
   it('uses English diagram type labels', () => {
@@ -82,6 +85,21 @@ describe('formatAdminUserActivitySummary', () => {
       'en'
     )
     expect(summary).toContain('DingTalk diagram')
+    expect(summary).not.toContain('Generated')
+  })
+
+  it('uses distinct verb for zhihui images', () => {
+    const summary = formatAdminUserActivitySummary(
+      {
+        source: 'zhihui',
+        action: 't2i_image',
+        title: 'Spring classroom',
+      },
+      labels,
+      'en'
+    )
+    expect(summary).toContain('ZhiHui image')
+    expect(summary).toContain('Spring classroom')
     expect(summary).not.toContain('Generated')
   })
 

@@ -261,6 +261,21 @@ class KnowledgeConfigMixin:
         return int(self._get_cached_value("COS_SHOWCASE_PRESIGN_GET_TTL", "300"))
 
     @property
+    def COS_ZHIHUI_ENABLED(self) -> bool:
+        """Private-bucket ZhiHui (智绘) media. Default on; local if COS auth missing."""
+        return self._get_cached_value("COS_ZHIHUI_ENABLED", "true").lower() == "true"
+
+    @property
+    def COS_ZHIHUI_PREFIX(self) -> str:
+        """COS key prefix for ZhiHui generations (private bucket objects)."""
+        return self._get_cached_value("COS_ZHIHUI_PREFIX", "zhihui/mindgraph").strip().rstrip("/")
+
+    @property
+    def COS_ZHIHUI_PRESIGN_GET_TTL(self) -> int:
+        """Seconds for COS→browser presigned GET URLs (short-lived)."""
+        return int(self._get_cached_value("COS_ZHIHUI_PRESIGN_GET_TTL", "300"))
+
+    @property
     def FILE_CENTER_WIKI_COMPILE(self) -> bool:
         """Compile a per-package wiki (markdown on disk) after chunk indexing (v2a)."""
         return self._get_cached_value("FILE_CENTER_WIKI_COMPILE", "true").lower() == "true"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Platform token overview — overall usage summary and DingTalk generation card.
+ * Platform token overview — overall usage summary and External API (外端API) card.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -17,11 +17,24 @@ interface TokenPeriodStats {
   total_tokens: number
 }
 
+interface ExternalApiModuleCounts {
+  today?: number
+  week?: number
+  month?: number
+  total?: number
+}
+
 interface TokenStats {
   today: TokenPeriodStats
   past_week: TokenPeriodStats
   past_month: TokenPeriodStats
   total: TokenPeriodStats
+  /** Split counts for X-API-Key diagram vs image endpoints. */
+  external_api_generations?: {
+    diagram?: ExternalApiModuleCounts
+    image?: ExternalApiModuleCounts
+  }
+  /** @deprecated Alias of external_api_generations.diagram */
   dingtalk_generations?: Record<string, number>
 }
 
@@ -49,12 +62,24 @@ const dingtalkApiKeysDialogVisible = ref(false)
 
 const apiKeysQuery = useAdminApiKeys()
 
-const dingtalkGenerationTotal = computed(() => {
-  const generations = props.tokenStats.dingtalk_generations
-  if (!generations) {
-    return null
+const diagramTotal = computed(() => {
+  const fromSplit = props.tokenStats.external_api_generations?.diagram?.total
+  if (typeof fromSplit === 'number') {
+    return fromSplit
   }
-  return generations.total ?? 0
+  const legacy = props.tokenStats.dingtalk_generations
+  if (legacy) {
+    return legacy.total ?? 0
+  }
+  return null
+})
+
+const imageTotal = computed(() => {
+  const fromSplit = props.tokenStats.external_api_generations?.image?.total
+  if (typeof fromSplit === 'number') {
+    return fromSplit
+  }
+  return null
 })
 
 const overallPeriods = [
@@ -190,16 +215,33 @@ function onDingtalkCardKeydown(e: KeyboardEvent): void {
           </p>
         </div>
       </template>
-      <div class="dingtalk-generation-body">
-        <p
-          class="text-xl font-semibold tabular-nums sm:text-2xl"
-          style="color: var(--stat-accent)"
-        >
-          <template v-if="dingtalkGenerationTotal !== null">
-            {{ t('admin.dingtalkCardTotalUses', { count: dingtalkGenerationTotal }) }}
-          </template>
-          <template v-else>—</template>
-        </p>
+      <div class="dingtalk-generation-body external-api-body">
+        <div class="external-api-split">
+          <div class="external-api-split__item">
+            <p class="external-api-split__label">{{ t('admin.externalApiDiagramLabel') }}</p>
+            <p
+              class="text-lg font-semibold tabular-nums sm:text-xl"
+              style="color: var(--stat-accent)"
+            >
+              <template v-if="diagramTotal !== null">
+                {{ t('admin.dingtalkCardTotalUses', { count: diagramTotal }) }}
+              </template>
+              <template v-else>—</template>
+            </p>
+          </div>
+          <div class="external-api-split__item">
+            <p class="external-api-split__label">{{ t('admin.externalApiImageLabel') }}</p>
+            <p
+              class="text-lg font-semibold tabular-nums sm:text-xl"
+              style="color: var(--stat-accent)"
+            >
+              <template v-if="imageTotal !== null">
+                {{ t('admin.dingtalkCardTotalUses', { count: imageTotal }) }}
+              </template>
+              <template v-else>—</template>
+            </p>
+          </div>
+        </div>
         <p class="text-center text-xs leading-snug text-[var(--swiss-muted)]">
           {{ t('admin.dingtalkCardClickToEditApiKeys') }}
         </p>
@@ -211,3 +253,32 @@ function onDingtalkCardKeydown(e: KeyboardEvent): void {
 </template>
 
 <style scoped src="@/styles/admin-token-by-service.css"></style>
+<style scoped>
+.external-api-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: stretch;
+  justify-content: center;
+  min-height: 100%;
+}
+
+.external-api-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.external-api-split__item {
+  text-align: center;
+}
+
+.external-api-split__label {
+  margin: 0 0 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--swiss-muted);
+}
+</style>

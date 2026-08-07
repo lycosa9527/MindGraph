@@ -113,17 +113,13 @@ async def authenticate_kitty_websocket(
     """Auth, feature gate, accept WS, and open hub session. Returns None when rejected."""
     if not config.FEATURE_KITTY_WS_ENABLED:
         logger.warning("Kitty Agent WebSocket connection rejected: feature disabled")
-        await reject_kitty_websocket(
-            websocket, 4003, "Kitty Agent feature is disabled"
-        )
+        await reject_kitty_websocket(websocket, 4003, "Kitty Agent feature is disabled")
         return None
 
     current_user, auth_error = await authenticate_websocket_user(websocket)
     if auth_error or current_user is None:
         logger.warning("WebSocket auth failed: %s", auth_error)
-        await reject_kitty_websocket(
-            websocket, 4001, auth_error or "Authentication failed"
-        )
+        await reject_kitty_websocket(websocket, 4001, auth_error or "Authentication failed")
         return None
 
     if not await user_has_feature_access(current_user, "feature_kitty_agent"):

@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.170.0] - 2026-08-07
+
+> **ZhiHui (智绘): Qwen image studio + Wan mind-map → lesson PPT decks.**
+
+### Added
+
+- **ZhiHui studio (admin)** — `/zhihui` image mode (Qwen) and 图示生图 diagram-lesson decks from mind maps; sidebar history, live poll + event bus, resume on failed/partial, mode lock while busy (`ZhiHuiPage.vue`, `ZhiHuiStudio.vue`, `zhihuiHistory.ts`).
+- **Diagram lesson pipeline** — Celery `zhihui.run_diagram_lesson`: planner (`qwen3.7-plus`) → Wan `wan2.7-image` async 组图 → COS; concurrent cap, stale sweeper, cancel/revoke, resume (`services/zhihui/`, `tasks/zhihui_lesson_tasks.py`).
+- **API** — `POST /api/zhihui/diagram-lesson`, conversation list/detail/delete/resume, signed assets, landing seeds; image generations wrapped in conversations (`routers/features/zhihui/`, `routers/api/image_generation.py`).
+- **Schema & config** — Migrations `0097`/`0098` (`zhihui_generations` / `zhihui_conversations`); `FEATURE_ZHIHUI`, `COS_ZHIHUI_*`, `ZHIHUI_LESSON_PLANNER_MODEL`, `CAP_FEATURE_ZHIHUI` panel gate; admin activity / token counters for ZhiHui.
+
+### Tests
+
+- **Backend** — Wan helpers, outline/shell/planner parse, T2I generate, ZhiHui keys.
+- **Frontend** — ZhiHui modes; admin activity summary / feature-flag coverage for ZhiHui.
+
 ## [5.169.6] - 2026-08-06
 
 > **Kitty WS auth close codes + ownership serialization; stop speculative refresh → 429 / forced re-login.**

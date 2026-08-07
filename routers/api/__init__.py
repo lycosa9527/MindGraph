@@ -35,6 +35,7 @@ from . import (
     dify_files,
     feedback,
     frontend_logging,
+    image_generation,
     image_proxy,
     live_translate_ws,
     llm_operations,
@@ -97,6 +98,7 @@ router.include_router(diagram_generation.router)
 router.include_router(canvas_translate.router)
 router.include_router(web_content_generation.router)
 router.include_router(png_export.router)
+router.include_router(image_generation.router)
 router.include_router(worksheet_docx_export.router)
 router.include_router(mindmap_export_fonts.router)
 router.include_router(sse_streaming.router)

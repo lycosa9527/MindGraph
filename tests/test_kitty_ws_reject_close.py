@@ -12,6 +12,7 @@ from services.kitty.ws.lifecycle import reject_kitty_websocket
 
 @pytest.mark.asyncio
 async def test_reject_kitty_websocket_accepts_then_closes_with_code() -> None:
+    """CONNECTING sockets are accepted before close so browsers see the code."""
     websocket = MagicMock()
     websocket.client_state = WebSocketState.CONNECTING
 
@@ -31,6 +32,7 @@ async def test_reject_kitty_websocket_accepts_then_closes_with_code() -> None:
 
 @pytest.mark.asyncio
 async def test_reject_kitty_websocket_skips_accept_when_already_connected() -> None:
+    """Already-connected sockets only close (no second accept)."""
     websocket = MagicMock()
     websocket.client_state = WebSocketState.CONNECTED
     websocket.accept = AsyncMock()

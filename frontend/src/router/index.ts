@@ -177,6 +177,17 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'main', ...pageTitle('showcase') },
   },
   {
+    path: '/zhihui',
+    name: 'ZhiHui',
+    component: () => import('@/pages/ZhiHuiPage.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      layout: 'main',
+      ...pageTitle('zhihui'),
+    },
+  },
+  {
     path: '/community',
     name: 'Community',
     component: () => import('@/pages/CommunityPage.vue'),
@@ -483,6 +494,9 @@ router.beforeEach(async (to, from) => {
     return { name: 'MindMate' }
   }
   if (to.name === 'Showcase' && !featureFlagsStore.getFeatureShowcase()) {
+    return { name: 'MindMate' }
+  }
+  if (to.name === 'ZhiHui' && !featureFlagsStore.getFeatureZhihui()) {
     return { name: 'MindMate' }
   }
   if (to.name === 'Community' && !featureFlagsStore.getFeatureCommunity()) {

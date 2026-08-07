@@ -29,6 +29,7 @@ export function useFeatureFlags() {
   const featureTemplate = computed(() => data.value?.feature_template ?? false)
   const featureCommunity = computed(() => data.value?.feature_community ?? false)
   const featureShowcase = computed(() => data.value?.feature_showcase ?? false)
+  const featureZhihui = computed(() => data.value?.feature_zhihui ?? false)
   const featureAskOnce = computed(() => data.value?.feature_askonce ?? false)
   const featureDebateverse = computed(() => data.value?.feature_debateverse ?? false)
   const featureKnowledgeSpace = computed(() => data.value?.feature_knowledge_space ?? false)
@@ -55,6 +56,7 @@ export function useFeatureFlags() {
     featureTemplate,
     featureCommunity,
     featureShowcase,
+    featureZhihui,
     featureAskOnce,
     featureDebateverse,
     featureKnowledgeSpace,

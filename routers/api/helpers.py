@@ -143,6 +143,34 @@ def _authority_for_public_temp_url(authority: str) -> str:
     return auth
 
 
+def _build_public_api_media_url(request: Request, api_prefix: str, signed_path: str) -> str:
+    """
+    Public absolute URL for signed media under an /api/... prefix.
+
+    Order: EXTERNAL_BASE_URL, then X-Forwarded-Proto/Host, then EXTERNAL_HOST.
+    """
+    path_seg = _signed_path_for_public_url(signed_path)
+    prefix = api_prefix.strip("/")
+
+    external_base = normalize_external_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
+    if external_base:
+        return f"{external_base}/{prefix}/{path_seg}"
+
+    forwarded_proto = (request.headers.get("X-Forwarded-Proto") or "").strip()
+    forwarded_host_raw = (request.headers.get("X-Forwarded-Host") or "").strip()
+    if forwarded_proto and forwarded_host_raw:
+        host_only = strip_leading_http_schemes(forwarded_host_raw).strip().rstrip("/")
+        if host_only:
+            return f"{forwarded_proto}://{host_only}/{prefix}/{path_seg}"
+
+    protocol = request.url.scheme
+    raw_host = strip_leading_http_schemes(os.getenv("EXTERNAL_HOST", "localhost") or "localhost")
+    if not raw_host:
+        raw_host = "localhost"
+    public_authority = _authority_for_public_temp_url(raw_host)
+    return f"{protocol}://{public_authority}/{prefix}/{path_seg}"
+
+
 def build_public_temp_image_url(request: Request, signed_path: str) -> str:
     """
     Public URL for /api/temp_images (signed path).
@@ -150,25 +178,12 @@ def build_public_temp_image_url(request: Request, signed_path: str) -> str:
     Order: EXTERNAL_BASE_URL, then X-Forwarded-Proto/Host, then EXTERNAL_HOST (see
     _authority_for_public_temp_url: public hostnames omit bind PORT unless EXTERNAL_PUBLIC_PORT).
     """
-    path_seg = _signed_path_for_public_url(signed_path)
+    return _build_public_api_media_url(request, "api/temp_images", signed_path)
 
-    external_base = normalize_external_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
-    if external_base:
-        return f"{external_base}/api/temp_images/{path_seg}"
 
-    forwarded_proto = (request.headers.get("X-Forwarded-Proto") or "").strip()
-    forwarded_host_raw = (request.headers.get("X-Forwarded-Host") or "").strip()
-    if forwarded_proto and forwarded_host_raw:
-        host_only = strip_leading_http_schemes(forwarded_host_raw).strip().rstrip("/")
-        if host_only:
-            return f"{forwarded_proto}://{host_only}/api/temp_images/{path_seg}"
-
-    protocol = request.url.scheme
-    raw_host = strip_leading_http_schemes(os.getenv("EXTERNAL_HOST", "localhost") or "localhost")
-    if not raw_host:
-        raw_host = "localhost"
-    public_authority = _authority_for_public_temp_url(raw_host)
-    return f"{protocol}://{public_authority}/api/temp_images/{path_seg}"
+def build_public_zhihui_asset_url(request: Request, signed_path: str) -> str:
+    """Public URL for /api/zhihui/assets (signed logical key path)."""
+    return _build_public_api_media_url(request, "api/zhihui/assets", signed_path)
 
 
 async def log_diagram_edit(user: User, db: AsyncSession, count: int = 1) -> None:

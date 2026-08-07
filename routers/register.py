@@ -66,6 +66,9 @@ COMMUNITY_MODULE = getattr(_community_mod, "router", None) if _community_mod els
 _showcase_mod = _try_import_module("routers.features.showcase", "showcase")
 SHOWCASE_MODULE = getattr(_showcase_mod, "router", None) if _showcase_mod else None
 
+_zhihui_mod = _try_import_module("routers.features.zhihui", "zhihui")
+ZHIHUI_MODULE = getattr(_zhihui_mod, "router", None) if _zhihui_mod else None
+
 _gewe_mod = _try_import_module("routers.features.gewe", "gewe")
 GEWE_MODULE = getattr(_gewe_mod, "router", None) if _gewe_mod else None
 
@@ -145,6 +148,7 @@ def register_routers(app: FastAPI) -> None:
 
     _mount_feature(app, COMMUNITY_MODULE, "/api/community", registered_feature_paths)
     _mount_feature(app, SHOWCASE_MODULE, "/api/showcase", registered_feature_paths)
+    _mount_feature(app, ZHIHUI_MODULE, "/api/zhihui", registered_feature_paths)
 
     if MARKETS_MODULE is not None:
         _mount_feature(app, MARKETS_MODULE.router, "/api/markets", registered_feature_paths)

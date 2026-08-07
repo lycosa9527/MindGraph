@@ -122,6 +122,12 @@ export interface AdminPlatformTokenStats {
   total: AdminTokenPeriodStats
   top_users?: Array<Record<string, unknown>>
   top_users_today?: Array<Record<string, unknown>>
+  /** Diagram (/api/generate_dingtalk) vs image (/api/generate-text-to-image) counts. */
+  external_api_generations?: {
+    diagram?: Record<string, number>
+    image?: Record<string, number>
+  }
+  /** @deprecated Alias of external_api_generations.diagram */
   dingtalk_generations?: Record<string, number>
   by_service: Record<string, AdminServicePeriodStats>
 }
@@ -147,7 +153,13 @@ export interface AdminApiKeyRow {
   description: string | null
   quota_limit: number | null
   usage_count: number
-  /** Successful POST /api/generate_dingtalk calls (TokenUsage; same source as dingtalk card). */
+  /** Successful POST /api/generate_dingtalk calls. */
+  diagram_request_count?: number
+  /** Successful POST /api/generate-text-to-image calls. */
+  image_request_count?: number
+  /** diagram + image request counts. */
+  external_api_request_count?: number
+  /** @deprecated Alias of diagram_request_count */
   dingtalk_request_count?: number
   is_active: boolean
   created_at: string | null

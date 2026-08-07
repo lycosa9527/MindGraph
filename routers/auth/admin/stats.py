@@ -14,7 +14,7 @@ from datetime import timedelta, timezone
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import and_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import coalesce as sa_coalesce
 from sqlalchemy.sql.functions import sum as sa_sum
@@ -46,7 +46,11 @@ from utils.auth.mindbot_token_stats import (
     aggregate_mindbot_tokens_by_org,
     merge_org_token_stats,
 )
-from utils.auth.api_key_usage_stats import GENERATE_DINGTALK_ENDPOINT
+from utils.auth.api_key_usage_stats import (
+    GENERATE_DINGTALK_ENDPOINT,
+    GENERATE_TEXT_TO_IMAGE_ENDPOINT,
+    count_successful_endpoint_calls,
+)
 from utils.auth.school_tier import school_dashboard_quotas_payload
 
 from ..dependencies import (
@@ -401,7 +405,9 @@ async def get_token_stats_admin(
     Returns separate stats for:
     - mindgraph: Diagram generation and related features
     - mindmate: Web MindMate (Dify) plus DingTalk bot (MindBot / Dify) token usage
-    - dingtalk_generations: Counts of successful /api/generate_dingtalk (PNG + markdown) calls
+    - external_api_generations: Counts for diagram (/api/generate_dingtalk) and image
+      (/api/generate-text-to-image) X-API-Key endpoints
+    - dingtalk_generations: Alias of external_api_generations.diagram (backward compatible)
     """
     # Use Beijing time for "today" calculations
     # Convert to UTC for database queries since timestamps are stored in UTC
@@ -447,13 +453,14 @@ async def get_token_stats_admin(
             "total": empty_breakdown.copy(),
         },
     }
-    # Successful POST /api/generate_dingtalk rows (DingTalk PNG + markdown image flow)
-    dingtalk_generations = {
-        "today": 0,
-        "week": 0,
-        "month": 0,
-        "total": 0,
+    # External API (X-API-Key): diagram vs image generation counts
+    empty_ext = {"today": 0, "week": 0, "month": 0, "total": 0}
+    external_api_generations = {
+        "diagram": empty_ext.copy(),
+        "image": empty_ext.copy(),
     }
+    # Backward-compatible alias of diagram counts
+    dingtalk_generations = empty_ext.copy()
 
     # Build base filter for organization if specified
     try:
@@ -652,23 +659,28 @@ async def get_token_stats_admin(
                 mindbot_period,
             )
 
-        _dingtalk_path = and_(
-            TokenUsage.endpoint_path == GENERATE_DINGTALK_ENDPOINT,
-            TokenUsage.success,
-        )
+        org_id_for_ext = int(organization_id) if organization_id else None
         for d_key, d_since in (
             ("today", today_start),
             ("week", week_ago),
             ("month", month_ago),
             ("total", None),
         ):
-            d_stmt = select(_sql_count(TokenUsage.id)).where(_dingtalk_path)
-            if d_since is not None:
-                d_stmt = d_stmt.where(TokenUsage.created_at >= d_since)
-            if org_filter:
-                d_stmt = d_stmt.where(*org_filter)
-            d_row = (await db.execute(d_stmt)).scalar()
-            dingtalk_generations[d_key] = int(d_row or 0)
+            diagram_count = await count_successful_endpoint_calls(
+                db,
+                GENERATE_DINGTALK_ENDPOINT,
+                created_since=d_since,
+                organization_id=org_id_for_ext,
+            )
+            image_count = await count_successful_endpoint_calls(
+                db,
+                GENERATE_TEXT_TO_IMAGE_ENDPOINT,
+                created_since=d_since,
+                organization_id=org_id_for_ext,
+            )
+            external_api_generations["diagram"][d_key] = diagram_count
+            external_api_generations["image"][d_key] = image_count
+            dingtalk_generations[d_key] = diagram_count
 
         top_users = await top_users_by_tokens_all_time(
             db,
@@ -722,5 +734,6 @@ async def get_token_stats_admin(
         "top_users": top_users,
         "top_users_today": top_users_today,
         "by_service": by_service,  # MindGraph vs MindMate breakdown
+        "external_api_generations": external_api_generations,
         "dingtalk_generations": dingtalk_generations,
     }

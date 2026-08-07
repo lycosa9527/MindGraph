@@ -42,6 +42,9 @@ from utils.auth.role_constants import (
 
 CAP_PANEL_ACCESS: Final[str] = "panel.access"
 
+# Sidebar feature (智绘) — superadmin-only for now; not a management-panel tab.
+CAP_FEATURE_ZHIHUI: Final[str] = "feature.zhihui"
+
 CAP_TAB_DATA_CENTER_VIEW: Final[str] = "tab.data_center.view"
 CAP_TAB_DATA_CENTER_EDIT: Final[str] = "tab.data_center.edit"
 CAP_TAB_SCHOOL_DASHBOARD_VIEW: Final[str] = "tab.school_dashboard.view"
@@ -111,6 +114,7 @@ _SUPERADMIN_CAPS: frozenset[str] = (
     frozenset(
         {
             CAP_PANEL_ACCESS,
+            CAP_FEATURE_ZHIHUI,
             CAP_TAB_DATA_CENTER_VIEW,
             CAP_TAB_DATA_CENTER_EDIT,
             CAP_TAB_SCHOOL_DASHBOARD_VIEW,

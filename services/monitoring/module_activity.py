@@ -44,6 +44,7 @@ VALID_MODULES = frozenset(
         "markets",
         "library",
         "showcase",
+        "zhihui",
         "auth",
         "dingtalk",
         "maite",

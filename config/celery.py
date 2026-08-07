@@ -284,6 +284,7 @@ celery_app = Celery(
         "tasks.knowledge_space_tasks",
         "tasks.mindmate_export_tasks",
         "tasks.showcase_cover_tasks",
+        "tasks.zhihui_lesson_tasks",
     ],
 )
 
@@ -308,6 +309,7 @@ celery_app.conf.update(
         "knowledge_space.*": {"queue": "knowledge"},
         "mindmate_export.*": {"queue": "default"},
         "showcase.*": {"queue": "default"},
+        "zhihui.*": {"queue": "default"},
     },
     # Default queue
     task_default_queue="default",
