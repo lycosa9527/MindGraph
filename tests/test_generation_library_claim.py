@@ -142,3 +142,40 @@ async def test_claim_allows_when_owner_matches() -> None:
         diagram_id, err = await claim_generation_preview_for_user("deadbeef", user)
     assert err == ""
     assert diagram_id == "550e8400-e29b-41d4-a716-446655440000"
+
+
+@pytest.mark.asyncio
+async def test_claim_coerces_numeric_spec_labels_before_save() -> None:
+    """Cached preview specs with numeric labels are coerced before library save."""
+    user = MagicMock()
+    user.id = 3
+    user.organization_id = 5
+    save_mock = AsyncMock(return_value="550e8400-e29b-41d4-a716-446655440000")
+    with (
+        patch(
+            "services.diagram.generation_library_claim.get_generation_preview_outcome",
+            new=AsyncMock(
+                return_value={
+                    "reason": "no_user",
+                    "diagram_type": "mind_map",
+                    "spec": {"topic": 99, "children": [{"text": 1}]},
+                    "user_id": None,
+                }
+            ),
+        ),
+        patch(
+            "services.diagram.generation_library_claim.try_save_diagram_to_library",
+            new=save_mock,
+        ),
+        patch(
+            "services.diagram.generation_library_claim.update_generation_preview_diagram_id",
+            new=AsyncMock(return_value=True),
+        ),
+    ):
+        diagram_id, err = await claim_generation_preview_for_user("deadbeef", user)
+    assert err == ""
+    assert diagram_id == "550e8400-e29b-41d4-a716-446655440000"
+    assert save_mock.await_args is not None
+    saved_spec = save_mock.await_args.kwargs["spec"]
+    assert saved_spec["topic"] == "99"
+    assert saved_spec["children"][0]["text"] == "1"

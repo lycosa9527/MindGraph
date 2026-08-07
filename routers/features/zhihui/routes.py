@@ -28,6 +28,7 @@ from routers.auth.dependencies import (
     require_panel_capability,
     require_panel_capability_short_lived,
 )
+from services.features.dashscope_tts import get_tts_service
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS
 from services.zhihui.lesson_deck import create_diagram_lesson_conversation
 from services.zhihui.storage import (
@@ -140,6 +141,7 @@ def _generation_payload(row: Any, request: Request) -> dict[str, Any]:
         "cos_logical_key": row.cos_logical_key,
         "slide_index": getattr(row, "slide_index", None),
         "slide_title": getattr(row, "slide_title", None),
+        "teacher_script": getattr(row, "teacher_script", None),
         "focus_node_ids": getattr(row, "focus_node_ids", None),
         "image_url": _stable_asset_url(request, str(row.cos_logical_key)),
         "created_at": row.created_at.isoformat() if row.created_at else None,
@@ -624,3 +626,49 @@ async def download_zhihui_asset(
     except FILE_IO_ERRORS as exc:
         logger.warning("[ZhiHui] Asset read failed key=%s err=%s", normalized, exc)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found") from exc
+
+
+class TeacherTtsRequest(BaseModel):
+    """Speak a slide teacher_script with DashScope TTS."""
+
+    text: str = Field(..., min_length=1, max_length=2000)
+
+
+@router.post("/teacher-tts")
+async def synthesize_teacher_script(
+    body: TeacherTtsRequest,
+    _scope: AdminScope = Depends(require_panel_capability(CAP_FEATURE_ZHIHUI)),
+):
+    """Return MP3 audio for classroom narration under a diagram slide."""
+    if not config.FEATURE_ZHIHUI:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZhiHui disabled")
+    text = (body.text or "").strip()
+    if not text:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty text")
+    tts = get_tts_service()
+    if not tts.is_available():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="TTS unavailable",
+        )
+    try:
+        audio = await tts.synthesize_text(text, voice="Cherry", model_id="qwen")
+    except BACKGROUND_INFRA_ERRORS as exc:
+        logger.warning("[ZhiHui] Teacher TTS failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="TTS synthesis failed",
+        ) from exc
+    if not audio:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="TTS returned no audio",
+        )
+    return Response(
+        content=audio,
+        media_type="audio/mpeg",
+        headers={
+            "Cache-Control": "private, max-age=300",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )

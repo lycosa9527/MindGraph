@@ -22,6 +22,7 @@ from models.domain.debateverse import DebateMessage, DebateParticipant, DebateSe
 from services.features.debateverse_context_builder import DebateVerseContextBuilder
 from services.llm import llm_service
 from services.llm.llm_utils import stream_enable_thinking
+from utils.db.session_open import release_open_transaction
 
 logger = logging.getLogger(__name__)
 
@@ -259,6 +260,8 @@ class DebateVerseService:
             stage,
         )
 
+        await release_open_transaction(self.db)
+
         response_content = ""
         async for chunk in llm_service.chat_stream(
             messages=messages,
@@ -320,6 +323,8 @@ class DebateVerseService:
         enable_thinking = stream_enable_thinking(model)
 
         logger.info("Generating judge commentary for stage %s", stage)
+
+        await release_open_transaction(self.db)
 
         response_content = ""
         async for chunk in llm_service.chat_stream(

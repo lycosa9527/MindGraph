@@ -8,6 +8,7 @@ import uuid
 from typing import Any, Optional
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from models.domain.diagrams import Diagram
 from models.domain.zhihui import ZhihuiConversation
@@ -22,6 +23,12 @@ from services.t2i.wan_image_client import (
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from services.zhihui.focus import resolve_frame_focus_node_ids
+from services.zhihui.lesson_lease import (
+    LeaseLost,
+    mark_terminal_from_error,
+    require_run_lease,
+    set_status_with_lease,
+)
 from services.zhihui.lesson_planner import (
     normalize_lesson_plan_to_outline,
     plan_lesson_from_outline,
@@ -29,6 +36,7 @@ from services.zhihui.lesson_planner import (
 )
 from services.zhihui.outline import MindMapOutline, extract_mindmap_outline, is_mindmap_type
 from services.zhihui.storage import build_generation_key, delete_key, put_bytes
+from services.zhihui.storage.backend import STORAGE_LOCAL, storage_backend
 from services.zhihui.wan_prompt_shell import build_wan_batch_prompt, plan_batches_to_wan_jobs
 from utils.db.session_open import system_rls_session
 
@@ -37,8 +45,6 @@ logger = logging.getLogger(__name__)
 _PIPELINE_ERRORS = BACKGROUND_INFRA_ERRORS + DATABASE_ERRORS + (LLMServiceError,)
 _TERMINAL_OK = frozenset({"complete"})
 _TERMINAL_STOP = frozenset({"cancelled", "failed"})
-# External stale sweep marks ``partial``/``failed``; user delete marks ``cancelled``.
-_STOP_MID_RUN = frozenset({"cancelled", "failed", "partial"})
 
 
 async def _load_diagram(diagram_id: str) -> Diagram:
@@ -48,54 +54,6 @@ async def _load_diagram(diagram_id: str) -> Diagram:
         if diagram is None:
             raise ValueError("Diagram not found")
         return diagram
-
-
-async def _set_status(
-    conversation_id: str,
-    *,
-    status: str,
-    progress: Optional[dict[str, Any]] = None,
-    error_message: Optional[str] = None,
-    style_seed: Optional[str] = None,
-    lesson_plan_json: Optional[dict[str, Any]] = None,
-    clear_error: bool = False,
-) -> None:
-    async with system_rls_session() as db:
-        repo = ZhihuiConversationRepository(db)
-        await repo.update_conversation(
-            conversation_id,
-            status=status,
-            progress=progress,
-            error_message=error_message,
-            style_seed=style_seed,
-            lesson_plan_json=lesson_plan_json,
-            clear_error=clear_error,
-            commit=True,
-        )
-
-
-async def _conversation_status(conversation_id: str) -> Optional[str]:
-    async with system_rls_session() as db:
-        repo = ZhihuiConversationRepository(db)
-        row = await repo.get_by_uuid(conversation_id)
-        return row.status if row else None
-
-
-async def _mark_terminal_from_error(conversation_id: str, exc: BaseException) -> str:
-    """Set failed/partial from any pipeline exception; return final status."""
-    async with system_rls_session() as db:
-        gen_repo = ZhihuiGenerationRepository(db)
-        existing = await gen_repo.list_by_conversation(conversation_id)
-        status = "partial" if existing else "failed"
-        conv_repo = ZhihuiConversationRepository(db)
-        await conv_repo.update_conversation(
-            conversation_id,
-            status=status,
-            error_message=str(exc)[:2000],
-            progress={"phase": status, "slide_count": len(existing)},
-            commit=True,
-        )
-        return status
 
 
 async def _track_usage(
@@ -229,6 +187,7 @@ async def _persist_slide(
     size: Optional[str],
     slide_index: int,
     slide_title: Optional[str],
+    teacher_script: Optional[str],
     focus_node_ids: Optional[list[str]],
 ) -> dict[str, Any]:
     """Download, store, and persist one slide; return debug metadata."""
@@ -236,6 +195,7 @@ async def _persist_slide(
     generation_id = str(uuid.uuid4())
     logical_key = build_generation_key(generation_id=generation_id, suffix=".png")
     await put_bytes(logical_key, image_bytes, content_type="image/png")
+    script = (teacher_script or "").strip() or None
     try:
         async with system_rls_session() as db:
             gen_repo = ZhihuiGenerationRepository(db)
@@ -251,9 +211,13 @@ async def _persist_slide(
                 size=size or DEFAULT_WAN_SIZE,
                 slide_index=slide_index,
                 slide_title=slide_title[:256] if slide_title else None,
+                teacher_script=script[:4000] if script else None,
                 focus_node_ids=focus_node_ids,
                 commit=True,
             )
+    except IntegrityError as exc:
+        await delete_key(logical_key)
+        raise LeaseLost(f"duplicate slide_index={slide_index}") from exc
     except DATABASE_ERRORS:
         await delete_key(logical_key)
         raise
@@ -386,6 +350,12 @@ async def run_diagram_lesson_deck(
         language,
         user_id,
     )
+    if storage_backend() == STORAGE_LOCAL:
+        logger.warning(
+            "[ZhiHui] Local disk storage active conversation=%s — "
+            "enable COS_ZHIHUI for multi-host API/worker deployments",
+            conversation_id,
+        )
 
     try:
         diagram = await _load_diagram(diagram_id)
@@ -411,20 +381,40 @@ async def run_diagram_lesson_deck(
                 await _wipe_generations(conversation_id)
                 slide_index = 0
                 saved = 0
-            await _set_status(
+            await set_status_with_lease(
                 conversation_id,
                 status="planning",
-                progress={"phase": "planning"},
+                progress={"phase": "planning", "planning_stage": "open", "branch_index": 0},
                 clear_error=True,
+                celery_task_id=celery_task_id,
             )
             logger.info("[ZhiHui] Planning start conversation=%s model=%s", conversation_id, planner_model_id())
             started = time.monotonic()
+
+            async def _on_planning_progress(payload: dict[str, Any]) -> None:
+                await require_run_lease(conversation_id, celery_task_id=celery_task_id)
+                progress = {"phase": "planning", **payload}
+                await set_status_with_lease(
+                    conversation_id,
+                    status="planning",
+                    progress=progress,
+                    celery_task_id=celery_task_id,
+                )
+                logger.info(
+                    "[ZhiHui] Planning progress conversation=%s stage=%s branch=%s/%s",
+                    conversation_id,
+                    progress.get("planning_stage"),
+                    progress.get("branch_index"),
+                    progress.get("branch_total"),
+                )
+
             plan, usage = await plan_lesson_from_outline(
                 outline,
                 language=language,
                 diagram_title=diagram.title or outline.topic,
                 user_id=user_id,
                 organization_id=organization_id,
+                on_progress=_on_planning_progress,
             )
             await _track_usage(
                 model_alias="qwen",
@@ -475,7 +465,7 @@ async def run_diagram_lesson_deck(
         for line in _summarize_jobs(jobs, outline):
             logger.info("[ZhiHui] Plan %s conversation=%s", line, conversation_id)
 
-        await _set_status(
+        await set_status_with_lease(
             conversation_id,
             status="generating",
             progress={
@@ -488,21 +478,13 @@ async def run_diagram_lesson_deck(
             style_seed=str(plan.get("style_seed") or ""),
             lesson_plan_json=plan,
             clear_error=True,
+            celery_task_id=celery_task_id,
         )
 
         batch_counts = [len(job.get("frames") or []) for job in jobs]
         resume_ranges = iter_batch_resume_ranges(batch_counts, slide_index)
         for batch_index, job in enumerate(jobs):
-            status_now = await _conversation_status(conversation_id)
-            if status_now in _STOP_MID_RUN:
-                logger.info(
-                    "[ZhiHui] Stop mid-run conversation=%s status=%s saved=%s slide_index=%s",
-                    conversation_id,
-                    status_now,
-                    saved,
-                    slide_index,
-                )
-                return False
+            await require_run_lease(conversation_id, celery_task_id=celery_task_id)
 
             frames = job.get("frames") or []
             batch_start, batch_end, skip_in_batch, _frame_count = resume_ranges[batch_index]
@@ -537,7 +519,7 @@ async def run_diagram_lesson_deck(
                 )
             )
 
-            await _set_status(
+            await set_status_with_lease(
                 conversation_id,
                 status="generating",
                 progress={
@@ -548,6 +530,7 @@ async def run_diagram_lesson_deck(
                     "planned_slides": planned_frames,
                     "batch_role": batch_role,
                 },
+                celery_task_id=celery_task_id,
             )
             logger.info(
                 "[ZhiHui] Wan batch start conversation=%s batch=%s/%s role=%s "
@@ -601,14 +584,19 @@ async def run_diagram_lesson_deck(
             for url_index, image_url in enumerate(image_urls):
                 if url_index >= need_count:
                     break
+                await require_run_lease(conversation_id, celery_task_id=celery_task_id)
                 frame_offset = skip_in_batch + url_index
                 frame = frames[frame_offset] if frame_offset < len(frames) else {}
                 title = ""
+                teacher_script = ""
                 focus_branch = None
                 focus_child = ""
                 frame_role = ""
                 if isinstance(frame, dict):
                     title = str(frame.get("title") or "").strip()
+                    teacher_script = str(frame.get("teacher_script") or "").strip()
+                    if not teacher_script:
+                        teacher_script = str(frame.get("learning_point") or "").strip()
                     focus_branch = frame.get("focus_branch")
                     focus_child = str(frame.get("focus_child") or "").strip()
                     frame_role = str(frame.get("frame_role") or "").strip().lower()
@@ -632,6 +620,7 @@ async def run_diagram_lesson_deck(
                     size=batch.size or DEFAULT_WAN_SIZE,
                     slide_index=slide_index,
                     slide_title=title or None,
+                    teacher_script=teacher_script or None,
                     focus_node_ids=focus_ids,
                 )
                 logger.info(
@@ -655,9 +644,22 @@ async def run_diagram_lesson_deck(
                 )
                 slide_index += 1
                 saved += 1
+                await set_status_with_lease(
+                    conversation_id,
+                    status="generating",
+                    progress={
+                        "phase": "generating",
+                        "batch_index": batch_index + 1,
+                        "batch_total": len(jobs),
+                        "slide_count": saved,
+                        "planned_slides": planned_frames,
+                        "batch_role": batch_role,
+                    },
+                    celery_task_id=celery_task_id,
+                )
 
             if len(image_urls) < need_count:
-                await _set_status(
+                await set_status_with_lease(
                     conversation_id,
                     status="partial",
                     progress={
@@ -671,6 +673,7 @@ async def run_diagram_lesson_deck(
                     error_message=(f"Wan returned {len(image_urls)}/{need_count} images for batch {batch_index + 1}")[
                         :2000
                     ],
+                    celery_task_id=celery_task_id,
                 )
                 logger.warning(
                     "[ZhiHui] Incomplete Wan batch conversation=%s batch=%s/%s "
@@ -695,7 +698,7 @@ async def run_diagram_lesson_deck(
                 saved,
                 slide_index,
             )
-        await _set_status(
+        await set_status_with_lease(
             conversation_id,
             status="complete",
             progress={
@@ -706,6 +709,7 @@ async def run_diagram_lesson_deck(
                 "planned_slides": planned_frames,
             },
             clear_error=True,
+            celery_task_id=celery_task_id,
         )
         logger.info(
             "[ZhiHui] Deck complete conversation=%s slides=%s/%s batches=%s elapsed=%.1fs diagram=%s",
@@ -717,6 +721,16 @@ async def run_diagram_lesson_deck(
             diagram_id,
         )
         return True
+    except LeaseLost as exc:
+        logger.info(
+            "[ZhiHui] Deck lease lost conversation=%s celery=%s saved=%s slide_index=%s reason=%s",
+            conversation_id,
+            celery_task_id,
+            saved,
+            slide_index,
+            exc,
+        )
+        return False
     except _PIPELINE_ERRORS as exc:
         logger.exception(
             "[ZhiHui] Lesson deck failed conversation=%s saved=%s slide_index=%s err=%s",
@@ -725,7 +739,11 @@ async def run_diagram_lesson_deck(
             slide_index,
             exc,
         )
-        await _mark_terminal_from_error(conversation_id, exc)
+        await mark_terminal_from_error(
+            conversation_id,
+            exc,
+            celery_task_id=celery_task_id,
+        )
         return False
 
 

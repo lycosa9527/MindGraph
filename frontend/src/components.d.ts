@@ -413,6 +413,7 @@ declare module 'vue' {
     ZhiHuiLandingGallery: typeof import('./components/zhihui/ZhiHuiLandingGallery.vue')['default']
     ZhiHuiMessages: typeof import('./components/zhihui/ZhiHuiMessages.vue')['default']
     ZhiHuiStudio: typeof import('./components/zhihui/ZhiHuiStudio.vue')['default']
+    ZhiHuiTeacherCaption: typeof import('./components/zhihui/ZhiHuiTeacherCaption.vue')['default']
     ZoomControls: typeof import('./components/canvas/ZoomControls.vue')['default']
   }
   export interface GlobalDirectives {

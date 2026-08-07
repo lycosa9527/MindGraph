@@ -47,9 +47,11 @@ class DocSummaryStorageConflictError(ValueError):
         *,
         package_id: int,
         object_id: Optional[str] = None,
+        document_id: Optional[int] = None,
     ) -> None:
         self.package_id = package_id
         self.object_id = object_id
+        self.document_id = document_id
         super().__init__(
             "Document Summary storage is out of sync with Postgres; "
             "the extract was cleared. Please upload or paste again."

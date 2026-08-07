@@ -26,6 +26,11 @@ class T2IConfigMixin:
         return self._get_cached_value("ZHIHUI_LESSON_PLANNER_MODEL", "qwen3.7-plus")
 
     @property
+    def ZHIHUI_LESSON_PLANNER_MAX_TOKENS(self) -> int:
+        """Max completion tokens per planner phase (open / one branch / close)."""
+        return int(self._get_cached_value("ZHIHUI_LESSON_PLANNER_MAX_TOKENS", "2500"))
+
+    @property
     def IMAGE_MODEL(self) -> str:
         """DashScope Qwen Image 3.0 model for ZhiHui /generate-text-to-image."""
         return self._get_cached_value("IMAGE_MODEL", "qwen-image-3.0")

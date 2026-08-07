@@ -64,8 +64,36 @@ describe('frontendLog', () => {
     vi.stubEnv('DEV', false)
 
     reportFrontendError('Script error.', { source: 'window.onerror' })
+    reportFrontendError('Script error', { source: 'window.onerror' })
 
     expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('skips WeChat bridge postMessage noise', () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+    vi.stubEnv('PROD', true)
+    vi.stubEnv('DEV', false)
+
+    reportFrontendError(
+      new Error('Cannot read properties of undefined (reading \'weixinPostMessageHandlers\')'),
+      { source: 'window.onerror' }
+    )
+
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('does not skip generic offsetHeight layout errors', () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubEnv('PROD', true)
+    vi.stubEnv('DEV', false)
+
+    reportFrontendError(
+      new Error("Cannot read properties of null (reading 'offsetHeight')"),
+      { source: 'vue' }
+    )
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('skips stale chunk load errors from reporting', () => {

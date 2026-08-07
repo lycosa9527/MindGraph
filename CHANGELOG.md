@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.171.0] - 2026-08-08
+
+> **ZhiHui teacher narration (Kitty TTS), phased lesson planning, and long-job session hardening.**
+
+### Added
+
+- **Teacher script + Kitty caption** — Deck slides store `teacher_script`; perched Kitty caption auto-plays DashScope TTS via `POST /api/zhihui/teacher-tts` (migrations `0099` / `0100` unique conversation+slide).
+- **Phased lesson planner** — Open / per-branch / close planner calls with progress callbacks, truncation-aware JSON repair, and `ZHIHUI_LESSON_PLANNER_MAX_TOKENS` (default 2500 per phase).
+- **Celery run lease** — Diagram lesson tasks stop cleanly when cancelled, failed, or superseded (`lesson_lease`).
+- **`.mg` decode CLI** — `python scripts/decode_mg_file.py path.mg` documented in `AGENTS.md` / `MG_FILE_FORMAT.md`.
+- **Shared LLM→HTTP mapping** — `llm_http_errors` for stable status codes across generation routes.
+
+### Changed
+
+- **Wan prompt shell / deck pipeline** — Richer focus framing and batch persistence aligned with outline order.
+- **DebateVerse stream** — Streaming/TTS path extracted to `routers/features/debateverse/stream.py`.
+- **Postgres setup** — Pointer to orphan-cluster recovery when 5432 is refused / service masked.
+
+### Fixed
+
+- **Frontend error noise** — Drop ResizeObserver, opaque `Script error`, WeChat bridge, and stale-chunk reports from error collection (client + server).
+- **Long LLM jobs holding DB** — DingTalk PNG, web-content, and doc-summary package flows open short RLS sessions instead of keeping a txn across LLM/browser work.
+- **Prompt-to-diagram labels** — Coerce null/non-string LLM label fields so PNG/DingTalk generation does not blow up on type mismatches.
+- **Generation library claim** — Cover additional claim/skip paths in tests.
+
+### Tests
+
+- Teacher TTS route; ZhiHui lease; frontend noise; LLM HTTP mapping; DingTalk/doc-summary session scoping; DebateVerse stream session; planner phase/outline fixtures.
+
 ## [5.170.6] - 2026-08-07
 
 > **Canvas → 智绘 图示生图 handoff, conversation resume, and admin-only ZhiHui access.**

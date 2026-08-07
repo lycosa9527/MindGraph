@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 from models import FrontendLogBatchRequest, FrontendLogRequest
 from services.monitoring.error_reporting import record_failure
+from services.monitoring.frontend_noise import is_benign_frontend_noise
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from utils.auth.request_helpers import get_client_ip
 
@@ -74,14 +75,15 @@ async def frontend_log(req: FrontendLogRequest, request: Request):
     if level >= logging.ERROR:
         client_component = (req.source or "browser").strip()[:128] or "browser"
         client_tags = {"client_source": req.source} if req.source else None
-        record_failure(
-            source="frontend",
-            component=client_component,
-            message=message,
-            severity="error",
-            exception_type="FrontendError",
-            tags=client_tags,
-        )
+        if not is_benign_frontend_noise(message):
+            record_failure(
+                source="frontend",
+                component=client_component,
+                message=message,
+                severity="error",
+                exception_type="FrontendError",
+                tags=client_tags,
+            )
 
     return {"status": "logged"}
 
@@ -149,13 +151,14 @@ async def frontend_log_batch(req: FrontendLogBatchRequest, request: Request):
         if level >= logging.ERROR:
             client_component = (log_entry.source or "browser").strip()[:128] or "browser"
             client_tags = {"client_source": log_entry.source} if log_entry.source else None
-            record_failure(
-                source="frontend",
-                component=client_component,
-                message=message,
-                severity="error",
-                exception_type="FrontendError",
-                tags=client_tags,
-            )
+            if not is_benign_frontend_noise(message):
+                record_failure(
+                    source="frontend",
+                    component=client_component,
+                    message=message,
+                    severity="error",
+                    exception_type="FrontendError",
+                    tags=client_tags,
+                )
 
     return {"status": "logged", "count": req.batch_size}

@@ -6,6 +6,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 
+import ZhiHuiTeacherCaption from '@/components/zhihui/ZhiHuiTeacherCaption.vue'
 import { useLanguage } from '@/composables'
 import type { ZhihuiGenerationItem } from '@/stores/zhihuiHistory'
 import { isZhihuiJobActive } from '@/stores/zhihuiHistory'
@@ -300,21 +301,20 @@ onBeforeUnmount(() => {
     </div>
 
     <div
-      v-if="current?.slide_title || canResume || errorMessage"
-      class="flex flex-col items-center justify-center gap-2 border-t border-stone-100 px-3 py-2"
+      v-if="current?.slide_title || current?.teacher_script || canResume || errorMessage"
+      class="zhihui-diagram-deck__caption flex flex-col items-center justify-center gap-2 overflow-visible border-t border-stone-100 px-3 pb-2.5 pt-1"
     >
+      <ZhiHuiTeacherCaption
+        v-if="current?.slide_title || current?.teacher_script"
+        :slide-title="current?.slide_title"
+        :teacher-script="current?.teacher_script"
+        :auto-play="!active"
+      />
       <div
-        v-if="current?.slide_title || canResume"
-        class="flex w-full items-center justify-center gap-3"
+        v-if="canResume"
+        class="flex justify-center"
       >
-        <p
-          v-if="current?.slide_title"
-          class="text-center text-xs text-stone-600"
-        >
-          {{ current.slide_title }}
-        </p>
         <button
-          v-if="canResume"
           type="button"
           class="shrink-0 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
           @click="emit('resume')"

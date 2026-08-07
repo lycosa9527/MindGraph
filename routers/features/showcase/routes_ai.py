@@ -39,6 +39,7 @@ from services.infrastructure.http.error_handler import (
     LLMServiceError,
     LLMTimeoutError,
 )
+from services.infrastructure.http.llm_http_errors import http_exception_for_llm_error
 from services.showcase.ai_copy import (
     extract_document_text,
     generate_teaching_design_copy,
@@ -187,37 +188,7 @@ async def _prepare_teaching_copy_document(
 
 
 def _map_llm_http(exc: Exception) -> HTTPException:
-    if isinstance(exc, LLMRateLimitError):
-        return HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="AI rate limited, please retry shortly",
-        )
-    if isinstance(exc, LLMTimeoutError):
-        return HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail="AI generation timed out",
-        )
-    if isinstance(exc, LLMAccessDeniedError):
-        return HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="AI access denied",
-        )
-    if isinstance(exc, LLMContentFilterError):
-        return HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="AI content filtered",
-        )
-    if isinstance(exc, LLMProviderError):
-        logger.warning("[ShowcaseAI] provider error: %s", exc)
-        return HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="AI provider error",
-        )
-    logger.warning("[ShowcaseAI] generate failed: %s", exc)
-    return HTTPException(
-        status_code=status.HTTP_502_BAD_GATEWAY,
-        detail="AI generation failed",
-    )
+    return http_exception_for_llm_error(exc)
 
 
 def _sse_line(payload: dict[str, Any]) -> str:

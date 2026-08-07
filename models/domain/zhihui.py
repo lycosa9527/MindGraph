@@ -6,7 +6,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any, Optional
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -108,6 +108,7 @@ class ZhihuiGeneration(Base):
     api_key_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     slide_index: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     slide_title: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    teacher_script: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     focus_node_ids: Mapped[Optional[list[Any]]] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -121,4 +122,13 @@ class ZhihuiGeneration(Base):
         back_populates="generations",
     )
 
-    __table_args__ = (Index("ix_zhihui_generations_created_at_desc", "created_at"),)
+    __table_args__ = (
+        Index("ix_zhihui_generations_created_at_desc", "created_at"),
+        Index(
+            "uq_zhihui_generations_conversation_slide",
+            "conversation_id",
+            "slide_index",
+            unique=True,
+            postgresql_where=text("conversation_id IS NOT NULL AND slide_index IS NOT NULL"),
+        ),
+    )

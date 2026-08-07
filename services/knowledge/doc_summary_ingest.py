@@ -255,12 +255,11 @@ class DocSummaryIngestService:
         finally:
             await lock.release()
 
-    async def fetch_package_markdown(self, package_id: int) -> Optional[str]:
-        """Return extracted markdown for the owned doc_summary package.
+    async def list_completed_extract_candidates(self, package_id: int) -> list[dict[str, Any]]:
+        """DB-only: validate package and return completed extract metadata rows.
 
-        When Postgres marks a source completed but the COS/local blob is missing,
-        reconcile (delete residual blob + PG row) and raise
-        :class:`DocSummaryStorageConflictError` so callers can notify the user.
+        Each item is ``{"document_id": int, "meta": dict}``. Callers should exit
+        the RLS session before COS/Redis I/O via :meth:`read_candidates_markdown`.
         """
         package = await self.get_package(package_id)
         if not package:
@@ -269,20 +268,67 @@ class DocSummaryIngestService:
             raise ValueError("Package is not a Document Summary session")
 
         documents = await self._package_documents(package_id)
+        candidates: list[dict[str, Any]] = []
         for document in documents:
             if document.status != "completed":
                 continue
             meta = document.doc_metadata or {}
+            candidates.append({"document_id": int(document.id), "meta": dict(meta)})
+        return candidates
+
+    @staticmethod
+    async def read_candidates_markdown(
+        package_id: int,
+        candidates: list[dict[str, Any]],
+    ) -> Optional[str]:
+        """Fetch markdown from Redis/COS using DB-collected candidates (no DB).
+
+        Raises :class:`DocSummaryStorageConflictError` with ``document_id`` when
+        Postgres claims a blob that is missing — callers reconcile in a short session.
+        """
+        for entry in candidates:
+            raw_meta = entry.get("meta")
+            meta: dict[str, Any] = raw_meta if isinstance(raw_meta, dict) else {}
             text = await fetch_extracted_markdown_cached(package_id, meta)
             if text and text.strip():
                 return text.strip()
-            if self._metadata_claims_extract_blob(meta):
-                await self.reconcile_missing_extract(package_id, document)
+            if DocSummaryIngestService._metadata_claims_extract_blob(meta):
+                doc_id_raw = entry.get("document_id")
+                document_id = int(doc_id_raw) if doc_id_raw is not None else None
                 raise DocSummaryStorageConflictError(
                     package_id=package_id,
                     object_id=str(meta.get("object_id") or "") or None,
+                    document_id=document_id,
                 )
         return None
+
+    async def reconcile_conflict_document(
+        self,
+        package_id: int,
+        document_id: int,
+    ) -> None:
+        """Owner-scoped reconcile for a known document id after COS miss."""
+        documents = await self._package_documents(package_id)
+        document = next((row for row in documents if int(row.id) == int(document_id)), None)
+        if document is None:
+            raise ValueError(f"Document {document_id} not found in package {package_id}")
+        await self.reconcile_missing_extract(package_id, document)
+
+    async def fetch_package_markdown(self, package_id: int) -> Optional[str]:
+        """Return extracted markdown for the owned doc_summary package.
+
+        Loads extract metadata in the current session, releases the open
+        transaction before COS/Redis I/O, then reconciles on PG/COS mismatch.
+        """
+        candidates = await self.list_completed_extract_candidates(package_id)
+        await release_open_transaction(self.db)
+        try:
+            return await self.read_candidates_markdown(package_id, candidates)
+        except DocSummaryStorageConflictError as exc:
+            if exc.document_id is None:
+                raise
+            await self.reconcile_conflict_document(package_id, exc.document_id)
+            raise
 
     @staticmethod
     def _metadata_claims_extract_blob(meta: dict) -> bool:

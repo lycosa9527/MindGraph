@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  isZhihuiPollTerminalHttpStatus,
   stabilizeZhihuiGenerations,
   type ZhihuiGenerationItem,
 } from '@/stores/zhihuiHistory'
@@ -38,5 +39,16 @@ describe('stabilizeZhihuiGenerations', () => {
     const out = stabilizeZhihuiGenerations(previous, next)
     expect(out).toHaveLength(2)
     expect(out?.[1]?.id).toBe('b')
+  })
+})
+
+describe('isZhihuiPollTerminalHttpStatus', () => {
+  it('stops only on auth and not-found', () => {
+    expect(isZhihuiPollTerminalHttpStatus(401)).toBe(true)
+    expect(isZhihuiPollTerminalHttpStatus(403)).toBe(true)
+    expect(isZhihuiPollTerminalHttpStatus(404)).toBe(true)
+    expect(isZhihuiPollTerminalHttpStatus(500)).toBe(false)
+    expect(isZhihuiPollTerminalHttpStatus(502)).toBe(false)
+    expect(isZhihuiPollTerminalHttpStatus(429)).toBe(false)
   })
 })

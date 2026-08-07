@@ -151,7 +151,9 @@ async function applyDiagramHandoffFromRoute(): Promise<boolean> {
         historyStore.selectItem(handoff.conversationId)
         mode.value = 'diagram'
         diagramStudioMountKey.value += 1
-        const detail = await historyStore.loadConversation(handoff.conversationId)
+        const detail = await historyStore
+          .loadConversation(handoff.conversationId)
+          .catch(() => null)
         if (detail?.mode === 'diagram') {
           diagramId.value = detail.diagram_id ?? handoff.diagramId
           handoffDiagramTitle.value =
@@ -208,7 +210,7 @@ onMounted(() => {
         try {
           historyStore.selectItem(existing.id)
           diagramStudioMountKey.value += 1
-          const detail = await historyStore.loadConversation(existing.id)
+          const detail = await historyStore.loadConversation(existing.id).catch(() => null)
           if (detail?.diagram_id) {
             diagramId.value = detail.diagram_id
           }
@@ -268,7 +270,7 @@ watch(
       }
       let detail = historyStore.currentDetail?.id === id ? historyStore.currentDetail : null
       if (!detail) {
-        detail = await historyStore.loadConversation(id)
+        detail = await historyStore.loadConversation(id).catch(() => null)
       }
       if (!detail || detail.id !== id || historyStore.currentId !== id) return
       if (detail.mode === 'diagram') {

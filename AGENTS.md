@@ -18,6 +18,8 @@ Repository: https://github.com/lycosa9527/MindGraph
 
 **Production security deploy:** env/proxy checklist, paired rollout, ESP32 headers — see [`docs/architecture/production_security_deploy.md`](docs/architecture/production_security_deploy.md).
 
+**`.mg` diagram files:** native interchange (AES-GCM obfuscation of JSON spec). Format + decode recipe: [`docs/MG_FILE_FORMAT.md`](docs/MG_FILE_FORMAT.md); codec: [`frontend/src/utils/mgInterchange.ts`](frontend/src/utils/mgInterchange.ts); CLI: `python scripts/decode_mg_file.py path.mg`.
+
 ## Quality gates
 
 ### Before commit or push (required)

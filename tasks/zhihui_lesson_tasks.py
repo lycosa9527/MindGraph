@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from typing import Optional
 
 from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
 
@@ -76,7 +77,7 @@ def run_diagram_lesson_task(self, conversation_id: str) -> bool:
             exc=exc,
             tags={"conversation_id": conversation_id},
         )
-        asyncio.run(_mark_terminal(conversation_id, "soft_time_limit"))
+        asyncio.run(_mark_terminal(conversation_id, "soft_time_limit", celery_task_id=task_id_str))
         return False
     except TimeLimitExceeded as exc:
         logger.error(
@@ -91,7 +92,7 @@ def run_diagram_lesson_task(self, conversation_id: str) -> bool:
             tags={"conversation_id": conversation_id},
         )
         try:
-            asyncio.run(_mark_terminal(conversation_id, "hard_time_limit"))
+            asyncio.run(_mark_terminal(conversation_id, "hard_time_limit", celery_task_id=task_id_str))
         except _TASK_ERRORS:
             pass
         raise
@@ -108,17 +109,35 @@ def run_diagram_lesson_task(self, conversation_id: str) -> bool:
             exc,
         )
         try:
-            asyncio.run(_mark_terminal(conversation_id, str(exc)))
+            asyncio.run(_mark_terminal(conversation_id, str(exc), celery_task_id=task_id_str))
         except _TASK_ERRORS:
             pass
         return False
 
 
-async def _mark_terminal(conversation_id: str, message: str) -> None:
+async def _mark_terminal(
+    conversation_id: str,
+    message: str,
+    *,
+    celery_task_id: Optional[str] = None,
+) -> None:
     async with system_rls_session() as db:
+        conv_repo = ZhihuiConversationRepository(db)
+        row = await conv_repo.get_by_uuid(conversation_id)
+        if row is None:
+            return
+        owned = row.celery_task_id
+        if celery_task_id and owned and owned != celery_task_id:
+            logger.info(
+                "[ZhiHuiLessonTask] Skip terminal mark conversation=%s lease lost have=%s want=%s",
+                conversation_id,
+                celery_task_id,
+                owned,
+            )
+            return
         gens = await ZhihuiGenerationRepository(db).list_by_conversation(conversation_id)
         status = "partial" if gens else "failed"
-        await ZhihuiConversationRepository(db).update_conversation(
+        await conv_repo.update_conversation(
             conversation_id,
             status=status,
             error_message=message[:2000],

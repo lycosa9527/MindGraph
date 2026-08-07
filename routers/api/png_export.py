@@ -24,10 +24,10 @@ import aiofiles
 import aiofiles.os
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse, Response
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.core.agent_utils import extract_json_from_response
 from agents.core.prompt_to_diagram_result import (
+    coerce_prompt_to_diagram_spec,
     is_llm_clarification_dict,
     normalize_prompt_to_diagram_result,
 )
@@ -36,7 +36,6 @@ from agents.core.learning_sheet import (
     _detect_learning_sheet_from_prompt,
 )
 from config.settings import config
-from config.database import get_async_db
 from models import (
     ExportPNGRequest,
     GenerateDingTalkRequest,
@@ -71,10 +70,13 @@ from services.diagram.generation_skip_registry import (
 )
 from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.diagram.library_save_user_notices import library_save_user_notice
+from services.infrastructure.http.error_handler import LLMServiceError
+from services.infrastructure.http.llm_http_errors import raise_http_for_llm_error
 from services.infrastructure.utils.browser import BrowserUnavailableError
 from services.monitoring.module_activity import schedule_module_activity
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.auth import get_current_user, get_current_user_or_api_key
+from utils.db.session_open import actor_rls_session, system_rls_session
 from .helpers import (
     build_public_temp_image_url,
     check_endpoint_rate_limit,
@@ -160,6 +162,9 @@ def _resolve_prompt_to_diagram_payload(
             status_code=400,
             detail=Messages.error("generate_png_unclear_intent", lang=lang),
         )
+
+    if isinstance(spec, dict):
+        spec = coerce_prompt_to_diagram_spec(spec, str(diagram_type or ""))
 
     return spec, diagram_type
 
@@ -472,6 +477,9 @@ async def generate_png_from_prompt(
             headers={"Content-Disposition": 'attachment; filename="diagram.png"'},
         )
 
+    except LLMServiceError as e:
+        logger.error("[GeneratePNG] LLM error: %s", e)
+        raise_http_for_llm_error(e)
     except BrowserUnavailableError as e:
         logger.error("[GeneratePNG] Browser unavailable: %s", e)
         _raise_png_generation_http(e, lang)
@@ -486,7 +494,6 @@ async def generate_dingtalk_png(
     request: Request,
     x_language: Optional[str] = None,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
-    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Generate PNG for DingTalk integration using simplified prompt-to-diagram agent.
@@ -510,7 +517,13 @@ async def generate_dingtalk_png(
             language,
         )
 
-        save_identity = await resolve_diagram_save_identity(db, request, current_user, req)
+        # Short RLS session for identity only — LLM + Playwright must not hold an open txn.
+        if current_user is not None and hasattr(current_user, "id"):
+            async with actor_rls_session(current_user) as db:
+                save_identity = await resolve_diagram_save_identity(db, request, current_user, req)
+        else:
+            async with system_rls_session() as db:
+                save_identity = await resolve_diagram_save_identity(db, request, current_user, req)
         user_id = save_identity.user_id
         organization_id = save_identity.organization_id
 
@@ -705,18 +718,35 @@ async def generate_dingtalk_png(
             )
 
         stored_diagram_id = saved_id if saved_id and saved_id != SAVE_LIMIT_REACHED else None
-        await store_generation_preview_outcome(
-            unique_id,
-            reason=skip_reason,
-            language=language,
-            diagram_id=stored_diagram_id,
-            diagram_type=diagram_type,
-            title=save_title,
-            spec=spec if isinstance(spec, dict) and not stored_diagram_id else None,
-            user_id=user_id,
-            organization_id=organization_id,
-            db=db,
-        )
+        preview_spec = spec if isinstance(spec, dict) and not stored_diagram_id else None
+        if current_user is not None and hasattr(current_user, "id"):
+            async with actor_rls_session(current_user) as preview_db:
+                await store_generation_preview_outcome(
+                    unique_id,
+                    reason=skip_reason,
+                    language=language,
+                    diagram_id=stored_diagram_id,
+                    diagram_type=diagram_type,
+                    title=save_title,
+                    spec=preview_spec,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    db=preview_db,
+                )
+        else:
+            async with system_rls_session() as preview_db:
+                await store_generation_preview_outcome(
+                    unique_id,
+                    reason=skip_reason,
+                    language=language,
+                    diagram_id=stored_diagram_id,
+                    diagram_type=diagram_type,
+                    title=save_title,
+                    spec=preview_spec,
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    db=preview_db,
+                )
 
         # Write PNG content to file using aiofiles (100% async, non-blocking)
         async with aiofiles.open(temp_path, "wb") as f:
@@ -763,6 +793,9 @@ async def generate_dingtalk_png(
 
         return PlainTextResponse(content=plain_text)
 
+    except LLMServiceError as e:
+        logger.error("[GenerateDingTalk] LLM error: %s", e)
+        raise_http_for_llm_error(e)
     except BrowserUnavailableError as e:
         logger.error("[GenerateDingTalk] Browser unavailable: %s", e)
         _raise_png_generation_http(e, lang)

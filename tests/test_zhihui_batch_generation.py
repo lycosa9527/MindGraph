@@ -163,24 +163,77 @@ def test_mixed_develop_batch_frames_sorted_before_wan() -> None:
     assert first_seen == EXPECTED_IDS
 
     jobs = plan_batches_to_wan_jobs(normalized)
-    # 1 open + chunked develop (20 frames → 12 + 8) + close
+    # Branch-aware packing: never mix focus_branch, so one job per branch (2 frames).
     assert jobs[0]["batch_role"] == "open"
     assert jobs[-1]["batch_role"] == "close"
     develop_jobs = [job for job in jobs if job["batch_role"] == "develop"]
-    assert len(develop_jobs) == 2
-    assert develop_jobs[0]["n"] == 12
-    assert develop_jobs[1]["n"] == 8
+    assert len(develop_jobs) == 10
+    assert all(job["n"] == 2 for job in develop_jobs)
     flat_ids = [frame["focus_branch"] for job in develop_jobs for frame in job["frames"]]
     assert flat_ids == [frame["focus_branch"] for frame in develop_frames]
+    for job in develop_jobs:
+        branch_keys = {frame["focus_branch"] for frame in job["frames"]}
+        assert len(branch_keys) == 1
+        assert len(job["prompt"]) <= 5000
 
 
 def test_wan_chunking_preserves_frame_order() -> None:
-    """split_frames_for_wan keeps order and respects n≤12."""
-    frames = [{"title": f"f{index}"} for index in range(25)]
-    chunks = split_frames_for_wan(frames)
+    """Same-branch frames pack by n≤12 and keep order."""
+    frames = [{"title": f"f{index}", "focus_branch": "same"} for index in range(25)]
+    chunks = split_frames_for_wan(frames, style_seed="短")
     assert [len(chunk) for chunk in chunks] == [12, 12, 1]
     flat = [frame["title"] for chunk in chunks for frame in chunk]
     assert flat == [f"f{index}" for index in range(25)]
+
+
+def test_wan_packing_splits_on_branch_boundary() -> None:
+    """Different focus_branch never share a Wan job even under n/char limits."""
+    frames = [
+        _frame("a1", "b1"),
+        _frame("a2", "b1"),
+        _frame("b1", "b2"),
+        _frame("b2", "b2"),
+    ]
+    jobs = plan_batches_to_wan_jobs(
+        {
+            "style_seed": "课堂",
+            "batches": [{"batch_role": "develop", "frames": frames}],
+        }
+    )
+    assert len(jobs) == 2
+    assert [frame["focus_branch"] for frame in jobs[0]["frames"]] == ["b1", "b1"]
+    assert [frame["focus_branch"] for frame in jobs[1]["frames"]] == ["b2", "b2"]
+    assert all(len(job["prompt"]) <= 5000 for job in jobs)
+
+
+def test_wan_packing_splits_on_char_budget() -> None:
+    """Verbose same-branch frames split before exceeding 5000 chars."""
+    long_scene = "具象场景描述" * 200
+    frames = [
+        {
+            "title": f"帧{index}",
+            "frame_role": "child_detail",
+            "focus_branch": "b1",
+            "lesson_beat": long_scene,
+            "learning_point": long_scene,
+            "manifestation": long_scene,
+            "think_prompt": "",
+            "visual_subjects": ["a", "b", "c"],
+            "cognitive_conflict": False,
+        }
+        for index in range(4)
+    ]
+    jobs = plan_batches_to_wan_jobs(
+        {
+            "style_seed": "课堂水彩风统一扁平",
+            "batches": [{"batch_role": "develop", "frames": frames}],
+        }
+    )
+    assert len(jobs) >= 2
+    assert sum(job["n"] for job in jobs) == 4
+    assert all(len(job["prompt"]) <= 5000 for job in jobs)
+    flat = [frame["title"] for job in jobs for frame in job["frames"]]
+    assert flat == [f"帧{index}" for index in range(4)]
 
 
 def test_resume_ranges_match_wan_job_sizes_for_sams_plan() -> None:

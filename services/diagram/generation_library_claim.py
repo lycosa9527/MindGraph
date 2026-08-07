@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
+from agents.core.prompt_to_diagram_result import coerce_prompt_to_diagram_spec
 from models.domain.auth import User
 from services.diagram.generation_library_save import SAVE_LIMIT_REACHED, try_save_diagram_to_library
 from services.diagram.generation_skip_registry import (
@@ -57,6 +58,7 @@ async def claim_generation_preview_for_user(
     title = str(outcome.get("title") or "Diagram").strip()[:200] or "Diagram"
     diagram_type = str(outcome.get("diagram_type") or "mind_map").strip() or "mind_map"
     language = str(outcome.get("language") or "zh").strip() or "zh"
+    spec = coerce_prompt_to_diagram_spec(spec, diagram_type)
 
     saved_id = await try_save_diagram_to_library(
         int(current_user.id),

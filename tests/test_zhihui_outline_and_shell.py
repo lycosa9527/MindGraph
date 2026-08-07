@@ -2,17 +2,27 @@
 
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import pytest
 
+from services.zhihui import lesson_planner as planner_mod
 from services.zhihui.focus import resolve_frame_focus_node_ids
 from services.zhihui.lesson_deck import iter_batch_resume_ranges, next_slide_index
-from services.zhihui.lesson_planner import parse_lesson_plan_json, reorder_develop_batches_to_outline
+from services.zhihui.lesson_planner import (
+    parse_lesson_plan_json,
+    plan_lesson_from_outline,
+    planner_max_tokens,
+    reorder_develop_batches_to_outline,
+)
 from services.zhihui.outline import MindMapBranchOutline, MindMapOutline, extract_mindmap_outline
 from services.zhihui.prompts.lesson_planner_prompts import (
     LESSON_PLANNER_SYSTEM,
+    build_branch_planner_message,
+    build_close_planner_message,
     build_lesson_planner_user_message,
+    build_open_planner_message,
 )
 from services.zhihui.prompts.wan_image_shell import WAN_IMAGE_SHELL
 from services.zhihui.wan_prompt_shell import build_wan_batch_prompt, plan_batches_to_wan_jobs
@@ -217,6 +227,130 @@ def test_parse_lesson_plan_json_rejects_empty() -> None:
         parse_lesson_plan_json('{"batches":[]}')
 
 
+def test_parse_lesson_plan_json_flags_truncated() -> None:
+    """Truncated mid-string JSON surfaces a clearer decode error."""
+    truncated = (
+        '{"style_seed":"课堂水彩","batches":[{"batch_role":"open","frames":'
+        '[{"title":"导入","lesson_beat":"好奇","manifestation":"半截'
+    )
+    with pytest.raises(json.JSONDecodeError, match="likely truncated"):
+        parse_lesson_plan_json(truncated)
+
+
+def test_planner_max_tokens_default() -> None:
+    """Per-phase planner budget stays modest (full deck is multi-call)."""
+    assert planner_max_tokens() == 2500
+
+
+@pytest.mark.asyncio
+async def test_plan_lesson_from_outline_is_branch_scoped(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Open + one call per branch + close; merged plan stays clockwise."""
+    outline = MindMapOutline(
+        topic="中心",
+        branches=[
+            MindMapBranchOutline(id="b1", text="分支一", children=["子点"]),
+            MindMapBranchOutline(id="b2", text="分支二", children=[]),
+        ],
+    )
+    calls: list[str] = []
+    progress_events: list[dict] = []
+
+    async def fake_chat(**kwargs):
+        prompt = str(kwargs.get("prompt") or "")
+        calls.append(prompt)
+        if "阶段：开场" in prompt:
+            body = {
+                "style_seed": "课堂水彩",
+                "batches": [
+                    {
+                        "batch_role": "open",
+                        "frames": [
+                            {
+                                "title": "钩子",
+                                "frame_role": "topic_overview",
+                                "focus_branch": "",
+                                "focus_child": "",
+                                "lesson_beat": "好奇",
+                                "learning_point": "点",
+                                "manifestation": "场景",
+                                "think_prompt": "为什么？",
+                                "teacher_script": "今天我们一起聊聊这个主题，先抛个问题。",
+                                "visual_subjects": ["a", "b", "c"],
+                                "cognitive_conflict": False,
+                            }
+                        ],
+                    }
+                ],
+            }
+        elif "阶段：单分支展开" in prompt:
+            focus = "b1" if "分支一" in prompt else "b2"
+            body = {
+                "batches": [
+                    {
+                        "batch_role": "develop",
+                        "frames": [
+                            {
+                                "title": f"{focus}-intro",
+                                "frame_role": "branch_intro",
+                                "focus_branch": focus,
+                                "focus_child": "",
+                                "lesson_beat": "画像",
+                                "learning_point": "点",
+                                "manifestation": "类比",
+                                "think_prompt": "",
+                                "teacher_script": f"接下来我们聚焦{focus}这条线。",
+                                "visual_subjects": ["a", "b", "c"],
+                                "cognitive_conflict": False,
+                            }
+                        ],
+                    }
+                ],
+            }
+        else:
+            body = {
+                "batches": [
+                    {
+                        "batch_role": "close",
+                        "frames": [
+                            {
+                                "title": "收束",
+                                "frame_role": "synthesis",
+                                "focus_branch": "",
+                                "focus_child": "",
+                                "lesson_beat": "金句",
+                                "learning_point": "收获",
+                                "manifestation": "大图",
+                                "think_prompt": "",
+                                "teacher_script": "最后用一句金句把今天的主线收住。",
+                                "visual_subjects": ["a", "b", "c"],
+                                "cognitive_conflict": False,
+                            }
+                        ],
+                    }
+                ],
+            }
+        return json.dumps(body, ensure_ascii=False), {
+            "prompt_tokens": 10,
+            "completion_tokens": 20,
+            "total_tokens": 30,
+        }
+
+    async def on_progress(payload: dict) -> None:
+        progress_events.append(payload)
+
+    monkeypatch.setattr(planner_mod.llm_service, "chat_with_usage", fake_chat)
+    plan, usage = await plan_lesson_from_outline(outline, on_progress=on_progress)
+    assert len(calls) == 4
+    assert [batch["batch_role"] for batch in plan["batches"]] == ["open", "develop", "develop", "close"]
+    assert plan["batches"][1]["frames"][0]["focus_branch"] == "b1"
+    assert plan["batches"][2]["frames"][0]["focus_branch"] == "b2"
+    assert plan["style_seed"] == "课堂水彩"
+    assert usage is not None
+    assert usage["total_tokens"] == 120
+    assert any(event.get("planning_stage") == "develop" for event in progress_events)
+    assert any(event.get("branch_index") == 2 for event in progress_events)
+
+
 def test_reorder_develop_batches_to_outline() -> None:
     """Develop batches are permuted to match outline clockwise order."""
     outline = MindMapOutline(
@@ -335,6 +469,7 @@ def test_wan_shell_and_jobs() -> None:
                         "learning_point": "暗反应不直接依赖光照但仍属光合整体",
                         "manifestation": "白天叶片 vs 夜间仍进行的碳固定对比",
                         "think_prompt": "没有光，植物还能「制造食物」吗？",
+                        "teacher_script": "同学们今天先别急着下结论——暗反应真的完全不需要光吗？",
                         "visual_subjects": ["白天叶片", "夜间实验室"],
                         "focus_branch": "暗反应",
                     }
@@ -356,25 +491,63 @@ def test_wan_shell_and_jobs() -> None:
     conflict_prompt = jobs[1]["prompt"]
     assert "认知冲突" in conflict_prompt
     assert "思考问句" in conflict_prompt
+    # Teacher narration is UI-only — must not consume Wan's 5000-char budget.
+    assert "同学们今天" not in conflict_prompt
+
+
+def test_wan_prompt_excludes_teacher_script() -> None:
+    """teacher_script is for the deck caption, not the Wan image prompt."""
+    frames = [
+        {
+            "title": "导入",
+            "frame_role": "topic_overview",
+            "lesson_beat": "引起好奇",
+            "learning_point": "核心点",
+            "manifestation": "阳光场景",
+            "teacher_script": "同学们，今天我们一起来聊聊光合作用。",
+            "visual_subjects": ["阳光"],
+        }
+    ]
+    prompt = build_wan_batch_prompt(style_seed="课堂", frames=frames, batch_role="open")
+    assert "引起好奇" in prompt
+    assert "同学们，今天我们一起来聊聊光合作用。" not in prompt
+    assert "teacher_script" not in prompt
 
 
 def test_lesson_planner_user_message_has_pedagogy() -> None:
-    """Planner reinforces mindmap-first order plus hook/conflict craft."""
+    """Phase prompts keep mindmap-first craft; system keeps shared frame rules."""
     assert "topic_overview" in LESSON_PLANNER_SYSTEM
     assert "cognitive_conflict" in LESSON_PLANNER_SYSTEM
     assert "批判性思维" in LESSON_PLANNER_SYSTEM
-    assert "顺时针" in LESSON_PLANNER_SYSTEM
-    assert "禁止重排" in LESSON_PLANNER_SYSTEM
-    assert "outline.branches" in LESSON_PLANNER_SYSTEM
-    assert "反直觉" in LESSON_PLANNER_SYSTEM
-    assert "金句" in LESSON_PLANNER_SYSTEM
+    assert "teacher_script" in LESSON_PLANNER_SYSTEM
+    open_msg = build_open_planner_message(
+        {"topic": "光合作用", "branches": [{"id": "b1", "text": "光反应", "children": []}]},
+        language="zh",
+        diagram_title="光合作用",
+    )
+    assert "反直觉" in open_msg
+    assert "style_seed" in open_msg
+    branch_msg = build_branch_planner_message(
+        {"topic": "光合作用", "branches": [{"id": "b1", "text": "光反应", "children": []}]},
+        {"id": "b1", "text": "光反应", "children": []},
+        style_seed="课堂水彩",
+        branch_index=1,
+        branch_total=1,
+    )
+    assert "branch_intro" in branch_msg
+    assert "develop" in branch_msg
+    close_msg = build_close_planner_message(
+        {"topic": "光合作用", "branches": [{"id": "b1", "text": "光反应", "children": []}]},
+        style_seed="课堂水彩",
+    )
+    assert "金句" in close_msg
+    # Compatibility alias still returns open-phase prompt.
     msg = build_lesson_planner_user_message(
         {"topic": "光合作用", "branches": [{"id": "b1", "text": "光反应", "children": []}]},
         language="zh",
         diagram_title="光合作用",
     )
-    assert "跟随 outline" in msg or "outline.branches" in msg
-    assert "顺时针" in msg
+    assert "开场" in msg or "open" in msg
 
 
 def test_wan_shell_follows_mindmap_and_craft() -> None:
@@ -383,10 +556,12 @@ def test_wan_shell_follows_mindmap_and_craft() -> None:
     assert "教科书" in WAN_IMAGE_SHELL
     assert "认知冲突" in WAN_IMAGE_SHELL
     assert "少字" in WAN_IMAGE_SHELL or "短标题" in WAN_IMAGE_SHELL
-    message = build_lesson_planner_user_message(
+    message = build_branch_planner_message(
         {"topic": "中心", "branches": [{"id": "b1", "text": "分支", "children": ["子"]}]},
-        language="zh",
-        diagram_title="示例",
+        {"id": "b1", "text": "分支", "children": ["子"]},
+        style_seed="课堂",
+        branch_index=1,
+        branch_total=1,
     )
     assert "branch_intro" in message
     assert "cognitive_conflict" in message

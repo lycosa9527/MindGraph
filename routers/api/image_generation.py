@@ -12,9 +12,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import PlainTextResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_async_db
 from config.settings import config
 from models.domain.auth import User
 from models.requests.requests_t2i import GenerateTextToImageRequest
@@ -46,7 +44,7 @@ from services.utils.error_types import (
 )
 from utils.auth import get_current_user_or_api_key
 from utils.auth.admin_panel_permissions import CAP_FEATURE_ZHIHUI, user_panel_capabilities
-from utils.db.session_open import system_rls_session
+from utils.db.session_open import actor_rls_session, system_rls_session
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +71,6 @@ async def generate_text_to_image(
     req: GenerateTextToImageRequest,
     request: Request,
     current_user: Optional[User] = Depends(get_current_user_or_api_key),
-    db: AsyncSession = Depends(get_async_db),
 ) -> PlainTextResponse:
     """
     Generate an image from a text prompt and return markdown ``![](url)``.
@@ -104,7 +101,13 @@ async def generate_text_to_image(
         api_key_id = getattr(request.state, "api_key_id", None)
 
     try:
-        save_identity = await resolve_diagram_save_identity(db, request, current_user, req)
+        # Short RLS for identity only — DashScope/COS must not hold an open request txn.
+        if current_user is not None and hasattr(current_user, "id"):
+            async with actor_rls_session(current_user) as db:
+                save_identity = await resolve_diagram_save_identity(db, request, current_user, req)
+        else:
+            async with system_rls_session() as db:
+                save_identity = await resolve_diagram_save_identity(db, request, current_user, req)
         user_id = save_identity.user_id
         organization_id = save_identity.organization_id
         conversation_id = conversation_id_from_request(req)

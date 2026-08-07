@@ -27,6 +27,8 @@ export type ZhihuiGenerationItem = {
   size?: string | null
   slide_index?: number | null
   slide_title?: string | null
+  /** Spoken classroom narration aligned with this slide + diagram focus. */
+  teacher_script?: string | null
   focus_node_ids?: string[] | null
   conversation_id?: string | null
 }
@@ -60,6 +62,11 @@ export type ZhihuiHistoryItem = ZhihuiConversationItem & {
 
 const TITLE_MAX = 40
 const POLL_MS = 2500
+
+/** Stop polling only on auth/not-found; retry other HTTP failures. */
+export function isZhihuiPollTerminalHttpStatus(status: number): boolean {
+  return status === 401 || status === 403 || status === 404
+}
 
 export function zhihuiConversationTitle(item: ZhihuiConversationItem): string {
   const raw = (item.title || item.diagram_title || '').replace(/\s+/g, ' ').trim()
@@ -245,6 +252,12 @@ export const useZhihuiHistoryStore = defineStore('zhihuiHistory', () => {
         return
       }
       schedulePoll(conversationId, epoch)
+    } catch {
+      if (epoch !== pollEpoch || pollingId.value !== conversationId) {
+        return
+      }
+      // Transient network / 5xx — keep polling; job may still be running.
+      schedulePoll(conversationId, epoch)
     } finally {
       pollInFlight = false
     }
@@ -331,7 +344,10 @@ export const useZhihuiHistoryStore = defineStore('zhihuiHistory', () => {
           stopPolling()
         }
       }
-      return null
+      if (isZhihuiPollTerminalHttpStatus(res.status)) {
+        return null
+      }
+      throw new Error(`ZhiHui conversation load failed: HTTP ${res.status}`)
     }
     const detail = (await res.json()) as ZhihuiConversationItem
     if (epoch !== loadEpoch) {

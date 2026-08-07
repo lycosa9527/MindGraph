@@ -5,11 +5,10 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from config.database import get_async_db
 from models.requests.requests_t2i import GenerateTextToImageRequest
 from routers.api import image_generation
 from services.diagram.dify_user_resolve import DiagramSaveIdentity
@@ -19,19 +18,23 @@ from services.t2i.image_service import T2IGenerationResult
 from utils.auth import get_current_user_or_api_key
 
 
+def _fake_rls_session_cm(db: MagicMock | None = None) -> MagicMock:
+    """Async context manager stub for actor/system RLS sessions."""
+    session_cm = MagicMock()
+    session_cm.__aenter__ = AsyncMock(return_value=db if db is not None else MagicMock())
+    session_cm.__aexit__ = AsyncMock(return_value=None)
+    return session_cm
+
+
 def _build_client() -> TestClient:
-    """Minimal FastAPI app with auth/db overrides."""
+    """Minimal FastAPI app with auth override (no request-scoped DB)."""
     app = FastAPI()
     app.include_router(image_generation.router, prefix="/api")
 
     async def _fake_user():
         return None
 
-    async def _fake_db():
-        yield MagicMock()
-
     app.dependency_overrides[get_current_user_or_api_key] = _fake_user
-    app.dependency_overrides[get_async_db] = _fake_db
     return TestClient(app)
 
 
@@ -100,11 +103,7 @@ def test_generate_text_to_image_jwt_without_zhihui_cap_forbidden() -> None:
     async def _teacher_user():
         return teacher
 
-    async def _fake_db():
-        yield MagicMock()
-
     app.dependency_overrides[get_current_user_or_api_key] = _teacher_user
-    app.dependency_overrides[get_async_db] = _fake_db
     client = TestClient(app, raise_server_exceptions=False)
 
     response = client.post("/api/generate-text-to-image", json={"prompt": "一只猫在草地上"})
@@ -151,7 +150,16 @@ def test_generate_text_to_image_success_markdown() -> None:
             "get_activity_stream_service",
             return_value=MagicMock(broadcast_activity=AsyncMock()),
         ),
-        patch.object(image_generation, "system_rls_session") as mock_session,
+        patch.object(
+            image_generation,
+            "system_rls_session",
+            return_value=_fake_rls_session_cm(),
+        ),
+        patch.object(
+            image_generation,
+            "actor_rls_session",
+            return_value=_fake_rls_session_cm(),
+        ),
         patch.object(image_generation, "ZhihuiConversationRepository") as mock_conv_cls,
         patch.object(image_generation, "ZhihuiGenerationRepository") as mock_repo_cls,
         patch.object(
@@ -165,10 +173,6 @@ def test_generate_text_to_image_success_markdown() -> None:
             return_value="https://mg.example/api/zhihui/assets/zhihui/generations/x.jpg?sig=abc&exp=1",
         ),
     ):
-        session_cm = MagicMock()
-        session_cm.__aenter__ = AsyncMock(return_value=MagicMock())
-        session_cm.__aexit__ = AsyncMock(return_value=None)
-        mock_session.return_value = session_cm
         mock_conv = MagicMock()
         mock_conv.create_conversation = AsyncMock(
             return_value=MagicMock(id="conv-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
@@ -201,6 +205,11 @@ def test_generate_text_to_image_validation_error() -> None:
     with (
         patch.object(
             image_generation,
+            "system_rls_session",
+            return_value=_fake_rls_session_cm(),
+        ),
+        patch.object(
+            image_generation,
             "resolve_diagram_save_identity",
             new=AsyncMock(return_value=DiagramSaveIdentity(None, None, "")),
         ),
@@ -223,6 +232,11 @@ def test_generate_text_to_image_content_filter_maps_to_400() -> None:
     with (
         patch.object(
             image_generation,
+            "system_rls_session",
+            return_value=_fake_rls_session_cm(),
+        ),
+        patch.object(
+            image_generation,
             "resolve_diagram_save_identity",
             new=AsyncMock(return_value=DiagramSaveIdentity(None, None, "")),
         ),
@@ -235,6 +249,86 @@ def test_generate_text_to_image_content_filter_maps_to_400() -> None:
         response = client.post("/api/generate-text-to-image", json={"prompt": "ok prompt"})
     assert response.status_code == 400
     assert "不当" in response.text or "Error:" in response.text
+
+
+@pytest.mark.asyncio
+async def test_generate_text_to_image_closes_rls_before_generation() -> None:
+    """Identity short session must exit before DashScope/COS generation."""
+    session_open = {"value": False}
+    generate_saw_closed: list[bool] = []
+
+    fake_cm = MagicMock()
+
+    async def _enter(_self: object) -> MagicMock:
+        session_open["value"] = True
+        return MagicMock()
+
+    async def _exit(_self: object, *_args: object) -> bool:
+        session_open["value"] = False
+        return False
+
+    fake_cm.__aenter__ = _enter
+    fake_cm.__aexit__ = _exit
+
+    async def _generate(*_args: object, **_kwargs: object) -> T2IGenerationResult:
+        generate_saw_closed.append(not session_open["value"])
+        return T2IGenerationResult(
+            generation_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            logical_key="zhihui/generations/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.jpg",
+            content_type="image/jpeg",
+            original_prompt="一只猫",
+            enhanced_prompt=None,
+            size="1280*960",
+            usage_data=None,
+            image_bytes_len=12,
+        )
+
+    request = MagicMock(spec=Request)
+    request.state = MagicMock()
+    request.state.api_key_id = None
+    request.headers = {}
+    req = GenerateTextToImageRequest.model_validate({"prompt": "一只猫"})
+
+    with (
+        patch.object(image_generation, "system_rls_session", return_value=fake_cm),
+        patch.object(image_generation, "actor_rls_session", return_value=fake_cm),
+        patch.object(
+            image_generation,
+            "resolve_diagram_save_identity",
+            new=AsyncMock(return_value=DiagramSaveIdentity(None, None, "")),
+        ),
+        patch.object(
+            image_generation,
+            "generate_and_store_image",
+            new=AsyncMock(side_effect=_generate),
+        ),
+        patch.object(
+            image_generation,
+            "get_token_tracker",
+            return_value=MagicMock(track_usage=AsyncMock()),
+        ),
+        patch.object(
+            image_generation,
+            "ZhihuiConversationRepository",
+            return_value=MagicMock(create_conversation=AsyncMock(return_value=MagicMock(id="c1"))),
+        ),
+        patch.object(
+            image_generation,
+            "ZhihuiGenerationRepository",
+            return_value=MagicMock(create_generation=AsyncMock()),
+        ),
+        patch.object(image_generation, "generate_signed_url", return_value="x?sig=1"),
+        patch.object(
+            image_generation,
+            "build_public_zhihui_asset_url",
+            return_value="https://x/img",
+        ),
+    ):
+        response = await image_generation.generate_text_to_image(req, request, None)
+
+    assert response.status_code == 200
+    assert generate_saw_closed == [True]
+    assert session_open["value"] is False
 
 
 def test_normalize_size_rejects_out_of_range() -> None:

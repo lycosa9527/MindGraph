@@ -76,7 +76,7 @@ function formatError(err: unknown, context?: { source?: string; info?: string })
   return `${message.slice(0, MAX_MESSAGE_LEN)}\n... [truncated]`
 }
 
-/** Browser quirk / opaque cross-origin noise that floods error collection. */
+/** Browser quirk / opaque cross-origin / WeChat bridge noise that floods error collection. */
 function isBenignBrowserNoise(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err)
   if (
@@ -85,7 +85,10 @@ function isBenignBrowserNoise(err: unknown): boolean {
     return true
   }
   // Cross-origin sanitized errors have no useful stack.
-  if (message === 'Script error.' || message === 'Script error') {
+  if (/^Script error\.?$/i.test(message.trim())) {
+    return true
+  }
+  if (/weixinPostMessageHandlers|weixinDispatchMessage|WeixinJSBridge/i.test(message)) {
     return true
   }
   return false

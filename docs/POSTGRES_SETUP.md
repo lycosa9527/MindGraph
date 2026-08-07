@@ -263,6 +263,10 @@ PYTHONPATH=. python scripts/db/run_migrations.py
 
 Run **option 3** (status) or **option 4** (full setup). Ensure `.env` has `DATABASE_URL` pointing at `mindgraph_app` after cutover.
 
+### `Connection refused` on 5432 / `postgresql.service` masked / empty `pg_lsclusters`
+
+Data may still be under `/var/lib/postgresql/mindgraph` while cluster registration is missing. Do **not** delete that directory. Follow [`POSTGRES_ORPHAN_CLUSTER_RECOVERY.md`](POSTGRES_ORPHAN_CLUSTER_RECOVERY.md).
+
 ## Production tuning (PostgreSQL 18)
 
 PostgreSQL 18 defaults to `io_method = worker`. Example `postgresql.conf` for a dedicated host:

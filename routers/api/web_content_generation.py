@@ -28,6 +28,8 @@ from models import (
 from models.domain.auth import User
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.api.vueflow_screenshot import capture_diagram_screenshot
+from services.infrastructure.http.error_handler import LLMServiceError
+from services.infrastructure.http.llm_http_errors import raise_http_for_llm_error
 from services.knowledge.document_processor import DocumentProcessor
 from services.knowledge.doc_summary_ingest import DocSummaryIngestService
 from services.knowledge.doc_summary_limits import (
@@ -165,19 +167,28 @@ async def _generate_mindmap_from_resolved_content(
 
     agent = WebContentMindMapAgent(model="qwen")
     kind = source_kind if source_kind in ("web", "document") else "web"
-    result = await agent.generate_from_page_content(
-        page_content=page_content.strip(),
-        language=language,
-        content_format=content_format,
-        page_title=page_title,
-        page_url=page_url,
-        user_id=user_id,
-        organization_id=organization_id,
-        request_type="diagram_generation",
-        endpoint_path=endpoint_path,
-        http_request_id=http_request_id,
-        source_kind=kind,
-    )
+    try:
+        result = await agent.generate_from_page_content(
+            page_content=page_content.strip(),
+            language=language,
+            content_format=content_format,
+            page_title=page_title,
+            page_url=page_url,
+            user_id=user_id,
+            organization_id=organization_id,
+            request_type="diagram_generation",
+            endpoint_path=endpoint_path,
+            http_request_id=http_request_id,
+            source_kind=kind,
+        )
+    except LLMServiceError as exc:
+        logger.error(
+            "[ContentMindMap] LLM error endpoint=%s user=%s: %s",
+            endpoint_path,
+            user_id,
+            exc,
+        )
+        raise_http_for_llm_error(exc)
 
     if not result.get("success"):
         detail = result.get("error") or "Generation failed"
@@ -566,71 +577,125 @@ async def canvas_generate_mindmap_from_package(
     query = (req.topic_hint or "").strip() or "key themes and structure"
     language = req.language
 
+    path: Optional[str] = None
+    lite_package_id: Optional[int] = None
+    lite_candidates: list = []
+    rag_scope = None
+
     try:
         async with actor_rls_session(current_user) as db:
-            ingest_service = DocSummaryIngestService(db, user_id)
             pkg_service = KnowledgePackageService(db, user_id)
             package = await pkg_service.resolve_package_for_mindmap_generate(
                 package_id=int(req.package_id) if req.package_id else None,
                 diagram_id=str(req.diagram_id) if req.diagram_id else None,
             )
 
-            # Document Summary lite path does not require FEATURE_KNOWLEDGE_SPACE.
+            # Document Summary lite: collect extract metas only (COS/LLM outside session).
             if package is not None and package.source == "doc_summary":
-                try:
-                    markdown = await ingest_service.fetch_package_markdown(package.id)
-                except DocSummaryStorageConflictError as exc:
-                    raise HTTPException(
-                        status_code=409,
-                        detail=storage_conflict_detail(
-                            package_id=exc.package_id,
-                            object_id=exc.object_id,
-                        ),
-                    ) from exc
-                if not markdown:
-                    raise HTTPException(status_code=422, detail="No extracted content in package yet")
-                if content_exceeds_model_input(len(markdown)):
-                    raise HTTPException(
-                        status_code=413,
-                        detail=content_too_long_detail(char_count=len(markdown)),
-                    )
-                return await _generate_mindmap_from_resolved_content(
-                    page_content=markdown,
-                    language=language,
-                    content_format="text/markdown",
-                    page_title=req.topic_hint or "Document Summary",
-                    page_url=None,
-                    request=request,
-                    current_user=current_user,
-                    endpoint_path="/api/canvas/generate_mindmap_from_package",
-                    rate_limit_key="canvas_generate_mindmap_from_package",
-                    require_chrome_tier=False,
-                    source_kind="document",
-                )
-
-            if package is None:
+                ingest_service = DocSummaryIngestService(db, user_id)
+                lite_package_id = int(package.id)
+                lite_candidates = await ingest_service.list_completed_extract_candidates(lite_package_id)
+                path = "lite"
+            elif package is None:
                 raise HTTPException(
                     status_code=422,
                     detail="No Document Summary package found for this diagram",
                 )
-
-            if not config.FEATURE_KNOWLEDGE_SPACE:
+            elif not config.FEATURE_KNOWLEDGE_SPACE:
                 raise HTTPException(status_code=403, detail="Knowledge Space is disabled")
-
-            if req.package_id:
-                scope = await resolve_package_rag_scope_by_id(db, user_id, int(req.package_id))
+            elif req.package_id:
+                rag_scope = await resolve_package_rag_scope_by_id(db, user_id, int(req.package_id))
+                path = "rag"
             else:
-                scope = await resolve_diagram_rag_scope(db, user_id, str(req.diagram_id))
+                rag_scope = await resolve_diagram_rag_scope(db, user_id, str(req.diagram_id))
+                path = "rag"
+    except ValueError as exc:
+        logger.warning("[DocSummary] generate resolve denied user=%s: %s", user_id, exc)
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except DATABASE_ERRORS as exc:
+        logger.error("[DocSummary] generate resolve DB failed user=%s: %s", user_id, exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Database temporarily unavailable",
+        ) from exc
+
+    if path == "lite":
+        assert lite_package_id is not None
+        try:
+            markdown = await DocSummaryIngestService.read_candidates_markdown(
+                lite_package_id,
+                lite_candidates,
+            )
+        except DocSummaryStorageConflictError as exc:
+            if exc.document_id is not None:
+                try:
+                    async with actor_rls_session(current_user) as db:
+                        ingest_service = DocSummaryIngestService(db, user_id)
+                        await ingest_service.reconcile_conflict_document(
+                            exc.package_id,
+                            exc.document_id,
+                        )
+                except (ValueError, *DATABASE_ERRORS) as reconcile_exc:
+                    logger.error(
+                        "[DocSummary] reconcile after COS miss failed user=%s: %s",
+                        user_id,
+                        reconcile_exc,
+                    )
+            raise HTTPException(
+                status_code=409,
+                detail=storage_conflict_detail(
+                    package_id=exc.package_id,
+                    object_id=exc.object_id,
+                ),
+            ) from exc
+        except (*LLM_PIPELINE_ERRORS, *REDIS_ERRORS) as exc:
+            logger.error("[DocSummary] generate COS/Redis failed user=%s: %s", user_id, exc)
+            raise HTTPException(
+                status_code=503,
+                detail="Storage temporarily unavailable",
+            ) from exc
+
+        if not markdown:
+            raise HTTPException(status_code=422, detail="No extracted content in package yet")
+        if content_exceeds_model_input(len(markdown)):
+            raise HTTPException(
+                status_code=413,
+                detail=content_too_long_detail(char_count=len(markdown)),
+            )
+        return await _generate_mindmap_from_resolved_content(
+            page_content=markdown,
+            language=language,
+            content_format="text/markdown",
+            page_title=req.topic_hint or "Document Summary",
+            page_url=None,
+            request=request,
+            current_user=current_user,
+            endpoint_path="/api/canvas/generate_mindmap_from_package",
+            rate_limit_key="canvas_generate_mindmap_from_package",
+            require_chrome_tier=False,
+            source_kind="document",
+        )
+
+    try:
         pkg_result = await resolve_package_context_for_scope(
             user_id,
-            scope,
+            rag_scope,
             query,
             language,
             stage="doc_summary_generate",
         )
-    except (*LLM_PIPELINE_ERRORS, *DATABASE_ERRORS) as exc:
-        logger.error("[DocSummary] generate context failed user=%s: %s", user_id, exc)
-        raise HTTPException(status_code=500, detail="Failed to retrieve package context") from exc
+    except DATABASE_ERRORS as exc:
+        logger.error("[DocSummary] generate RAG context DB failed user=%s: %s", user_id, exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Database temporarily unavailable",
+        ) from exc
+    except LLM_PIPELINE_ERRORS as exc:
+        logger.error("[DocSummary] generate RAG context failed user=%s: %s", user_id, exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Retrieval service temporarily unavailable",
+        ) from exc
 
     if not pkg_result.package_active:
         raise HTTPException(status_code=422, detail="No indexed sources in package yet")

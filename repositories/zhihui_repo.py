@@ -93,6 +93,7 @@ class ZhihuiGenerationRepository(BaseRepository[ZhihuiGeneration]):
         api_key_id: Optional[int] = None,
         slide_index: Optional[int] = None,
         slide_title: Optional[str] = None,
+        teacher_script: Optional[str] = None,
         focus_node_ids: Optional[list[Any]] = None,
         commit: bool = True,
     ) -> ZhihuiGeneration:
@@ -113,6 +114,7 @@ class ZhihuiGenerationRepository(BaseRepository[ZhihuiGeneration]):
             api_key_id=api_key_id,
             slide_index=slide_index,
             slide_title=slide_title,
+            teacher_script=teacher_script,
             focus_node_ids=focus_node_ids,
         )
         self.session.add(row)

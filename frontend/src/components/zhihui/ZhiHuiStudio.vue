@@ -114,7 +114,7 @@ watch(
         return
       }
     }
-    const detail = await historyStore.loadConversation(id)
+    const detail = await historyStore.loadConversation(id).catch(() => null)
     if (historyStore.currentId !== id) return
     const item = detail ?? historyStore.currentItem
     if (!item) {

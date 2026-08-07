@@ -116,7 +116,7 @@ async function hydrateFromId(id: string | null): Promise<void> {
     historyStore.stopPolling()
     return
   }
-  const detail = await historyStore.loadConversation(id)
+  const detail = await historyStore.loadConversation(id).catch(() => null)
   if (historyStore.currentId !== id) {
     return
   }

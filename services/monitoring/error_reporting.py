@@ -15,6 +15,7 @@ from typing import Any
 from services.monitoring.error_collector import ErrorCollectorService, record_error_async
 from services.monitoring.error_alert_config import error_collection_enabled
 from services.monitoring.error_record import ErrorRecord
+from services.monitoring.frontend_noise import is_benign_frontend_noise
 
 VALID_ERROR_SOURCES = frozenset(
     {
@@ -80,6 +81,8 @@ def record_failure(
 ) -> None:
     """Enqueue a non-exception failure for async persistence."""
     if not error_collection_enabled():
+        return
+    if source == "frontend" and is_benign_frontend_noise(message):
         return
     record = _build_record(
         source=source,
@@ -176,6 +179,8 @@ async def record_failure_async(
     http_status: int | None = None,
 ) -> int | None:
     """Persist a non-exception failure and return the new event id."""
+    if source == "frontend" and is_benign_frontend_noise(message):
+        return None
     record = _build_record(
         source=source,
         component=component,
