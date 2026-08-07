@@ -2,7 +2,7 @@
 /**
  * Right-side PPT deck for 图示生图.
  */
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 
@@ -32,6 +32,13 @@ const canResume = computed(
   () => props.status === 'failed' || props.status === 'partial'
 )
 
+/** Display URL may gain a cache-buster after a failed load (COS eventual consistency). */
+const displaySrc = ref('')
+const imgLoaded = ref(false)
+const imgBroken = ref(false)
+let loadRetry = 0
+let retryTimer: ReturnType<typeof setTimeout> | null = null
+
 const phaseLabel = computed(() => {
   const status = props.status || ''
   if (status === 'queued') return String(t('zhihui.diagram.phaseQueued'))
@@ -55,6 +62,65 @@ const progressHint = computed(() => {
   return ''
 })
 
+function clearRetryTimer(): void {
+  if (retryTimer !== null) {
+    clearTimeout(retryTimer)
+    retryTimer = null
+  }
+}
+
+function resetImageState(url: string): void {
+  clearRetryTimer()
+  loadRetry = 0
+  imgLoaded.value = false
+  imgBroken.value = false
+  displaySrc.value = url
+}
+
+watch(
+  () => [current.value?.id, current.value?.image_url] as const,
+  ([id, url]) => {
+    if (!id || !url) {
+      resetImageState('')
+      return
+    }
+    // Keep a working src when poll only refreshes metadata for the same slide.
+    if (displaySrc.value && displaySrc.value.split('?')[0] === url.split('?')[0] && imgLoaded.value) {
+      return
+    }
+    resetImageState(url)
+  },
+  { immediate: true }
+)
+
+function onImgLoad(): void {
+  imgLoaded.value = true
+  imgBroken.value = false
+  loadRetry = 0
+}
+
+function onImgError(): void {
+  imgLoaded.value = false
+  const raw = current.value?.image_url || displaySrc.value || ''
+  if (!raw || loadRetry >= 4) {
+    imgBroken.value = true
+    return
+  }
+  loadRetry += 1
+  clearRetryTimer()
+  const delayMs = Math.min(2000, 300 * loadRetry)
+  retryTimer = window.setTimeout(() => {
+    // Preserve sig/exp (or stable path); only bump a cache-buster.
+    try {
+      const parsed = new URL(raw, 'https://local.invalid')
+      parsed.searchParams.set('retry', String(Date.now()))
+      displaySrc.value = `${parsed.pathname}${parsed.search}`
+    } catch {
+      displaySrc.value = `${raw.split('?')[0]}?retry=${Date.now()}`
+    }
+  }, delayMs)
+}
+
 function prev(): void {
   if (props.slideIndex <= 0) return
   emit('update:slideIndex', props.slideIndex - 1)
@@ -64,6 +130,10 @@ function next(): void {
   if (props.slideIndex >= total.value - 1) return
   emit('update:slideIndex', props.slideIndex + 1)
 }
+
+onBeforeUnmount(() => {
+  clearRetryTimer()
+})
 </script>
 
 <template>
@@ -97,13 +167,36 @@ function next(): void {
 
     <div class="relative flex min-h-0 flex-1 items-center justify-center bg-stone-50 p-3">
       <img
-        v-if="current?.image_url"
-        :src="current.image_url"
-        :alt="current.slide_title || current.prompt || 'slide'"
-        class="max-h-full max-w-full rounded-lg object-contain shadow-sm"
+        v-if="displaySrc"
+        :key="current?.id || displaySrc"
+        :src="displaySrc"
+        :alt="current?.slide_title || current?.prompt || 'slide'"
+        class="max-h-full max-w-full rounded-lg object-contain shadow-sm transition-opacity duration-200"
+        :class="imgLoaded ? 'opacity-100' : 'opacity-0'"
+        @load="onImgLoad"
+        @error="onImgError"
       >
       <div
-        v-else
+        v-if="displaySrc && !imgLoaded && !imgBroken"
+        class="absolute inset-0 flex items-center justify-center px-6 text-center text-xs text-stone-400"
+      >
+        {{ phaseLabel || t('zhihui.diagram.waitingSlides') }}
+      </div>
+      <div
+        v-else-if="imgBroken"
+        class="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center text-xs text-stone-400"
+      >
+        <p>{{ t('zhihui.diagram.imageLoadFailed') }}</p>
+        <button
+          type="button"
+          class="rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
+          @click="resetImageState(current?.image_url || '')"
+        >
+          {{ t('zhihui.diagram.retryImage') }}
+        </button>
+      </div>
+      <div
+        v-else-if="!displaySrc"
         class="px-6 text-center text-xs text-stone-400"
       >
         <p>{{ phaseLabel || t('zhihui.diagram.waitingSlides') }}</p>
@@ -121,7 +214,7 @@ function next(): void {
         </p>
       </div>
       <div
-        v-if="active && current?.image_url"
+        v-if="active && displaySrc && imgLoaded"
         class="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-3 py-1 text-[11px] text-amber-700 shadow"
       >
         {{ phaseLabel }}

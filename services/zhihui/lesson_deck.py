@@ -21,6 +21,7 @@ from services.t2i.wan_image_client import (
     generate_wan_image_batch,
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
+from services.zhihui.focus import resolve_frame_focus_node_ids
 from services.zhihui.lesson_planner import plan_lesson_from_outline, planner_model_id
 from services.zhihui.outline import extract_mindmap_outline, is_mindmap_type
 from services.zhihui.storage import build_generation_key, delete_key, put_bytes
@@ -32,6 +33,8 @@ logger = logging.getLogger(__name__)
 _PIPELINE_ERRORS = BACKGROUND_INFRA_ERRORS + DATABASE_ERRORS + (LLMServiceError,)
 _TERMINAL_OK = frozenset({"complete"})
 _TERMINAL_STOP = frozenset({"cancelled", "failed"})
+# External stale sweep marks ``partial``/``failed``; user delete marks ``cancelled``.
+_STOP_MID_RUN = frozenset({"cancelled", "failed", "partial"})
 
 
 async def _load_diagram(diagram_id: str) -> Diagram:
@@ -230,8 +233,18 @@ async def run_diagram_lesson_deck(
     slide_index = next_slide_index(existing_gens)
     saved = len(existing_gens)
     plan = existing_plan
+    outline = None
 
     try:
+        diagram = await _load_diagram(diagram_id)
+        if not is_mindmap_type(diagram.diagram_type):
+            raise ValueError("Only mind maps are supported for 图示生图")
+        outline = extract_mindmap_outline(
+            diagram.spec,
+            diagram_type=diagram.diagram_type,
+            fallback_title=diagram.title or "",
+        )
+
         if plan is None:
             if existing_gens:
                 await _wipe_generations(conversation_id)
@@ -242,14 +255,6 @@ async def run_diagram_lesson_deck(
                 status="planning",
                 progress={"phase": "planning"},
                 clear_error=True,
-            )
-            diagram = await _load_diagram(diagram_id)
-            if not is_mindmap_type(diagram.diagram_type):
-                raise ValueError("Only mind maps are supported for 图示生图")
-            outline = extract_mindmap_outline(
-                diagram.spec,
-                diagram_type=diagram.diagram_type,
-                fallback_title=diagram.title or "",
             )
             started = time.monotonic()
             plan, usage = await plan_lesson_from_outline(
@@ -291,8 +296,12 @@ async def run_diagram_lesson_deck(
         frames_done = slide_index
         for batch_index, job in enumerate(jobs):
             status_now = await _conversation_status(conversation_id)
-            if status_now == "cancelled":
-                logger.info("[ZhiHui] Cancelled mid-run conversation=%s", conversation_id)
+            if status_now in _STOP_MID_RUN:
+                logger.info(
+                    "[ZhiHui] Stop mid-run conversation=%s status=%s",
+                    conversation_id,
+                    status_now,
+                )
                 return False
 
             frames = job.get("frames") or []
@@ -333,7 +342,9 @@ async def run_diagram_lesson_deck(
                 success=True,
             )
 
-            for url_index, image_url in enumerate(batch.image_urls):
+            image_urls = list(batch.image_urls or [])
+            batch_role = str(job.get("batch_role") or "")
+            for url_index, image_url in enumerate(image_urls):
                 if url_index < skip_in_batch:
                     continue
                 frame = frames[url_index] if url_index < len(frames) else {}
@@ -342,7 +353,12 @@ async def run_diagram_lesson_deck(
                 if isinstance(frame, dict):
                     title = str(frame.get("title") or "").strip()
                     focus_branch = frame.get("focus_branch")
-                focus_ids = [str(focus_branch)] if focus_branch else None
+                focus_ids = resolve_frame_focus_node_ids(
+                    outline,
+                    slide_index=slide_index,
+                    batch_role=batch_role,
+                    focus_branch=focus_branch,
+                )
                 await _persist_slide(
                     conversation_id=conversation_id,
                     language=language,
@@ -357,6 +373,29 @@ async def run_diagram_lesson_deck(
                 )
                 slide_index += 1
                 saved += 1
+
+            if len(image_urls) < len(frames):
+                await _set_status(
+                    conversation_id,
+                    status="partial",
+                    progress={
+                        "phase": "partial",
+                        "batch_index": batch_index + 1,
+                        "batch_total": len(jobs),
+                        "slide_count": saved,
+                        "shortfall": True,
+                    },
+                    error_message=(f"Wan returned {len(image_urls)}/{len(frames)} images for batch {batch_index + 1}")[
+                        :2000
+                    ],
+                )
+                logger.warning(
+                    "[ZhiHui] Incomplete Wan batch conversation=%s got=%s need=%s",
+                    conversation_id,
+                    len(image_urls),
+                    len(frames),
+                )
+                return False
 
             frames_done = batch_end
 

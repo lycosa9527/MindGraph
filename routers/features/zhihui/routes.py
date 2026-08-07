@@ -19,7 +19,6 @@ from models.domain.auth import User
 from repositories.zhihui_repo import ZhihuiConversationRepository, ZhihuiGenerationRepository
 from routers.api.helpers import (
     build_public_zhihui_asset_url,
-    generate_signed_url,
     verify_signed_url,
 )
 from routers.auth.dependencies import (
@@ -54,11 +53,11 @@ _STALE_ACTIVE_MINUTES = 60
 
 
 async def _sweep_stale_jobs(user_id: int) -> None:
-    """Best-effort stale active-job cleanup for one user."""
+    """Best-effort stale active-job cleanup for one user; revoke Celery tasks."""
     try:
         async with system_rls_session() as db:
             repo = ZhihuiConversationRepository(db)
-            marked = await repo.mark_stale_active_jobs(
+            marked, task_ids = await repo.mark_stale_active_jobs(
                 max_age_minutes=_STALE_ACTIVE_MINUTES,
                 user_id=user_id,
             )
@@ -67,6 +66,19 @@ async def _sweep_stale_jobs(user_id: int) -> None:
                     "[ZhiHui] Marked %s stale active conversation(s) user=%s",
                     marked,
                     user_id,
+                )
+        for task_id in task_ids:
+            try:
+                await asyncio.to_thread(
+                    celery_app.control.revoke,
+                    task_id,
+                    terminate=False,
+                )
+            except BACKGROUND_INFRA_ERRORS as rev_exc:
+                logger.warning(
+                    "[ZhiHui] Stale Celery revoke failed task=%s err=%s",
+                    task_id,
+                    rev_exc,
                 )
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[ZhiHui] Stale sweep failed user=%s: %s", user_id, exc)
@@ -96,12 +108,19 @@ async def _enqueue_lesson_task(conversation_id: str) -> Optional[str]:
         ) from exc
 
 
+def _stable_asset_url(request: Request, logical_key: str) -> str:
+    """
+    Same-origin asset URL without rotating ``sig``/``exp``.
+
+    Admin studio polls every few seconds; signed query strings change each
+    response and force ``<img>`` reloads (broken-icon races). Cookie/JWT auth
+    on ``GET /api/zhihui/assets/...`` already authorizes the browser.
+    """
+    return build_public_zhihui_asset_url(request, logical_key.lstrip("/"))
+
+
 def _generation_payload(row: Any, request: Request) -> dict[str, Any]:
     """Serialize a generation row for admin history JSON."""
-    signed = generate_signed_url(
-        row.cos_logical_key,
-        expiration_seconds=config.T2I_ASSET_URL_TTL_SECONDS,
-    )
     return {
         "id": row.id,
         "prompt": row.prompt,
@@ -118,7 +137,7 @@ def _generation_payload(row: Any, request: Request) -> dict[str, Any]:
         "slide_index": getattr(row, "slide_index", None),
         "slide_title": getattr(row, "slide_title", None),
         "focus_node_ids": getattr(row, "focus_node_ids", None),
-        "image_url": build_public_zhihui_asset_url(request, signed),
+        "image_url": _stable_asset_url(request, str(row.cos_logical_key)),
         "created_at": row.created_at.isoformat() if row.created_at else None,
     }
 
@@ -133,11 +152,7 @@ def _conversation_list_item(
     """Serialize a conversation for sidebar list."""
     cover_url = None
     if cover_key:
-        signed = generate_signed_url(
-            cover_key,
-            expiration_seconds=config.T2I_ASSET_URL_TTL_SECONDS,
-        )
-        cover_url = build_public_zhihui_asset_url(request, signed)
+        cover_url = _stable_asset_url(request, cover_key)
     return {
         "id": row.id,
         "mode": row.mode,
@@ -465,23 +480,17 @@ async def delete_zhihui_history(
 @router.get("/seeds")
 async def list_zhihui_landing_seeds(
     request: Request,
-    current_user: User = Depends(get_current_user),
+    _scope: AdminScope = Depends(require_panel_capability(CAP_FEATURE_ZHIHUI)),
 ) -> dict[str, Any]:
-    """Signed URLs for landing-gallery seed images (auth required)."""
-    _ = current_user
-    if not config.FEATURE_ZHIHUI:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZhiHui disabled")
+    """Stable asset URLs for landing-gallery seed images (panel capability)."""
+    _require_zhihui_enabled()
     items: list[dict[str, str]] = []
     for filename in LANDING_SEED_FILENAMES:
         logical = build_seed_key(filename)
-        signed = generate_signed_url(
-            logical,
-            expiration_seconds=config.T2I_ASSET_URL_TTL_SECONDS,
-        )
         items.append(
             {
                 "id": filename,
-                "image_url": build_public_zhihui_asset_url(request, signed),
+                "image_url": _stable_asset_url(request, logical),
             }
         )
     return {"items": items}
@@ -553,7 +562,15 @@ async def download_zhihui_asset(
 
     url = create_presigned_get(normalized, filename=filename)
     if url:
-        return RedirectResponse(url=url, status_code=status.HTTP_302_FOUND)
+        return RedirectResponse(
+            url=url,
+            status_code=status.HTTP_302_FOUND,
+            headers={
+                # Do not cache the redirect: COS presign TTL is short; stable
+                # same-origin ``image_url`` already stops ``<img>`` poll thrash.
+                "Cache-Control": "private, no-store",
+            },
+        )
 
     # Fallback stream if presign failed
     try:

@@ -33,6 +33,7 @@ import { useAdminSettingsNav } from '@/composables/admin/useAdminSettingsNav'
 import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
+import { useZhihuiHistoryStore } from '@/stores/zhihuiHistory'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { ThinkingCoinEarnTask } from '@/types/thinkingCoins'
 import { getShowcasePendingCount } from '@/utils/apiClient'
@@ -463,6 +464,16 @@ export function useAppSidebar() {
   function setMode(index: string) {
     if (index === 'admin') {
       toggleManagementPanel()
+      return
+    }
+    // 智绘: always open landing (conversation only via history select), like MindMate new chat.
+    if (index === 'zhihui') {
+      useZhihuiHistoryStore().startLanding()
+      expandedPanel.value = 'zhihui'
+      const target = routeMap.zhihui
+      if (target && !isOnRouteForMode('zhihui')) {
+        void router.push(target)
+      }
       return
     }
     const targetRoute = routeMap[index]

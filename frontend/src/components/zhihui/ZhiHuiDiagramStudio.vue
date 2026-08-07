@@ -2,11 +2,12 @@
 /**
  * 图示生图 studio — 30/70 mindmap + PPT deck; job lifecycle via history store + event bus.
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 
 import { useEventBus, useLanguage, useNotifications } from '@/composables'
 import {
   isZhihuiJobActive,
+  stabilizeZhihuiGenerations,
   type ZhihuiConversationItem,
   type ZhihuiGenerationItem,
   useZhihuiHistoryStore,
@@ -15,6 +16,7 @@ import { apiPost } from '@/utils/apiClient'
 
 import ZhiHuiDiagramCanvasPane from './ZhiHuiDiagramCanvasPane.vue'
 import ZhiHuiDiagramDeck from './ZhiHuiDiagramDeck.vue'
+import { resolveZhihuiSlideFocusHints } from './zhihuiFocus'
 
 const props = defineProps<{
   diagramId: string | null
@@ -36,32 +38,54 @@ const status = ref<string | null>(null)
 const progress = ref<Record<string, unknown> | null>(null)
 const errorMessage = ref<string | null>(null)
 const activeConversationId = ref<string | null>(null)
+/** Diagram bound to the open conversation — used for canvas restore. */
+const conversationDiagramId = ref<string | null>(null)
+const lessonPlan = ref<Record<string, unknown> | null>(null)
 const starting = ref(false)
 const userPinnedSlide = ref(false)
+/** Bumps when a conversation is (re)hydrated so the canvas re-applies focus. */
+const focusEpoch = ref(0)
 
 const busy = computed(
   () => starting.value || isZhihuiJobActive(status.value)
 )
 
-const focusNodeIds = computed(() => {
-  const slide = slides.value[slideIndex.value]
-  const ids = slide?.focus_node_ids
-  return Array.isArray(ids) ? ids.map(String) : null
-})
+/** Prefer conversation diagram on restore; fall back to header dropdown. */
+const canvasDiagramId = computed(
+  () => conversationDiagramId.value || props.diagramId
+)
+
+/** First PPT is always the whole-case topic → fit full mind map. */
+const topicOverview = computed(() => slideIndex.value === 0)
+
+const focusNodeIds = computed(() =>
+  resolveZhihuiSlideFocusHints({
+    slideIndex: slideIndex.value,
+    focusNodeIds: slides.value[slideIndex.value]?.focus_node_ids,
+    lessonPlan: lessonPlan.value,
+  })
+)
 
 watch(busy, (value) => emit('update:busy', value), { immediate: true })
 
 function applyDetail(
   detail: ZhihuiConversationItem,
-  options: { followLatest: boolean }
+  options: { followLatest: boolean; resetSlide?: boolean }
 ): void {
   status.value = detail.status
   progress.value = detail.progress ?? null
   errorMessage.value = detail.error_message ?? null
-  const nextSlides = detail.generations ?? []
+  conversationDiagramId.value = detail.diagram_id ?? null
+  lessonPlan.value =
+    detail.lesson_plan_json && typeof detail.lesson_plan_json === 'object'
+      ? detail.lesson_plan_json
+      : null
+  const nextSlides = stabilizeZhihuiGenerations(slides.value, detail.generations) ?? []
   const prevLen = slides.value.length
   slides.value = nextSlides
-  if (options.followLatest && isZhihuiJobActive(detail.status) && !userPinnedSlide.value) {
+  if (options.resetSlide) {
+    slideIndex.value = 0
+  } else if (options.followLatest && isZhihuiJobActive(detail.status) && !userPinnedSlide.value) {
     if (nextSlides.length > 0 && nextSlides.length !== prevLen) {
       slideIndex.value = nextSlides.length - 1
     }
@@ -78,6 +102,8 @@ function onSlideIndexUpdate(index: number): void {
 async function hydrateFromId(id: string | null): Promise<void> {
   if (!id) {
     activeConversationId.value = null
+    conversationDiagramId.value = null
+    lessonPlan.value = null
     status.value = null
     progress.value = null
     errorMessage.value = null
@@ -88,13 +114,23 @@ async function hydrateFromId(id: string | null): Promise<void> {
     return
   }
   const detail = await historyStore.loadConversation(id)
+  if (historyStore.currentId !== id) {
+    return
+  }
   if (!detail || detail.mode !== 'diagram') {
     return
   }
+  const switching = activeConversationId.value !== id
   activeConversationId.value = id
   userPinnedSlide.value = false
-  applyDetail(detail, { followLatest: true })
-  if (isZhihuiJobActive(detail.status)) {
+  const activeJob = isZhihuiJobActive(detail.status)
+  // Later visits: start at topic slide so canvas fits the whole map first.
+  applyDetail(detail, {
+    followLatest: activeJob,
+    resetSlide: switching && !activeJob,
+  })
+  focusEpoch.value += 1
+  if (activeJob) {
     historyStore.startPolling(id)
   } else {
     historyStore.stopPolling()
@@ -125,10 +161,6 @@ onMounted(() => {
     }
     emit('generated')
   })
-})
-
-onBeforeUnmount(() => {
-  // Store poller outlives the studio so mode switches keep tracking the job.
 })
 
 async function resume(): Promise<void> {
@@ -199,11 +231,14 @@ async function generate(): Promise<void> {
       throw new Error(String(t('zhihui.generateFailed')))
     }
     activeConversationId.value = conversationId
+    conversationDiagramId.value = props.diagramId
+    lessonPlan.value = null
     status.value = data.status || 'queued'
     slides.value = []
     slideIndex.value = 0
     userPinnedSlide.value = false
     errorMessage.value = null
+    focusEpoch.value += 1
     historyStore.upsertConversation({
       id: conversationId,
       mode: 'diagram',
@@ -230,8 +265,10 @@ defineExpose({ generate, busy })
   <div class="zhihui-diagram-studio flex min-h-0 flex-1 gap-3 p-3">
     <div class="min-h-0 w-[30%] shrink-0">
       <ZhiHuiDiagramCanvasPane
-        :diagram-id="diagramId"
+        :diagram-id="canvasDiagramId"
+        :topic-overview="topicOverview"
         :focus-node-ids="focusNodeIds"
+        :focus-epoch="focusEpoch"
       />
     </div>
     <div class="min-h-0 min-w-0 flex-1">

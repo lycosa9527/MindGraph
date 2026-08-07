@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.170.1] - 2026-08-07
+
+> **ZhiHui polish: landing/conversation UX, canvas focus sync, lesson prompts, stale-job hardening.**
+
+### Fixed
+
+- **Stale / incomplete jobs** — Worker stops on `cancelled`/`failed`/`partial`; incomplete Wan batches mark `partial` (not `complete`); stale sweep revokes Celery task ids; `partial` resumes via `claim_for_run`.
+- **Studio navigation** — Sidebar 智绘 always opens landing; mode switch image↔diagram no longer sticks; history select syncs dropdown + canvas; optimistic image/diagram mode; canvas load race guard.
+- **Image thrash** — Stable same-origin asset URLs for admin poll; stabilize only rotating `sig`/`exp`; deck retry preserves query params.
+- **Seeds gate** — `/api/zhihui/seeds` requires `CAP_FEATURE_ZHIHUI`.
+
+### Changed
+
+- **Lesson planner prompts** — Topic overview → branch intro → child detail + 认知冲突 highlights for critical thinking; richer Wan shell fields (`learning_point`, `manifestation`, `think_prompt`).
+- **Focus restore** — Flatten `lesson_plan.batches[].frames` for canvas pan fallback; first slide fits whole map.
+
+### Removed
+
+- Temporary COS seed copy script; unused `zhihui:focus_slide` bus event / dead helpers.
+
+### Tests
+
+- Planner pedagogy + Wan conflict shell; focus hint flatten; stabilize signed vs stable URLs.
+
 ## [5.170.0] - 2026-08-07
 
 > **ZhiHui (智绘): Qwen image studio + Wan mind-map → lesson PPT decks.**

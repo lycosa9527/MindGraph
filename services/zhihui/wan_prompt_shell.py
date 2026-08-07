@@ -10,15 +10,30 @@ from services.zhihui.prompts.wan_image_shell import WAN_IMAGE_SHELL
 
 def _frame_line(index: int, frame: dict[str, Any]) -> str:
     title = str(frame.get("title") or "").strip() or f"第{index}帧"
+    role = str(frame.get("frame_role") or "").strip()
     beat = str(frame.get("lesson_beat") or "").strip()
+    learning = str(frame.get("learning_point") or "").strip()
+    manifestation = str(frame.get("manifestation") or "").strip()
+    think = str(frame.get("think_prompt") or "").strip()
+    conflict = frame.get("cognitive_conflict") is True
     subjects = frame.get("visual_subjects") or []
     if isinstance(subjects, list):
         subject_text = "、".join(str(item).strip() for item in subjects if str(item).strip())
     else:
         subject_text = str(subjects).strip()
     parts = [f"第{index}张：{title}"]
+    if role:
+        parts.append(f"分镜角色：{role}")
+    if conflict or role == "cognitive_conflict":
+        parts.append("认知冲突高亮页：并置对立/误解，画面有思考张力")
     if beat:
         parts.append(beat)
+    if learning:
+        parts.append(f"学习要点：{learning}")
+    if manifestation:
+        parts.append(f"直接具象：{manifestation}")
+    if think:
+        parts.append(f"思考问句：{think}")
     if subject_text:
         parts.append(f"画面主体：{subject_text}")
     return "；".join(parts)

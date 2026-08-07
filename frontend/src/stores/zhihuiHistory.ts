@@ -81,6 +81,46 @@ export function isZhihuiJobActive(status: string | undefined | null): boolean {
   return status === 'queued' || status === 'planning' || status === 'generating'
 }
 
+function assetPathOnly(url: string | null | undefined): string {
+  if (!url) return ''
+  const trimmed = url.trim()
+  if (!trimmed) return ''
+  try {
+    return new URL(trimmed, 'https://local.invalid').pathname
+  } catch {
+    return trimmed.split('?')[0] || ''
+  }
+}
+
+function hasSignedAssetQuery(url: string): boolean {
+  return /[?&](sig|exp)=/i.test(url)
+}
+
+/**
+ * Avoid `<img>` thrash when poll refreshes rotating ``sig``/``exp`` on the same asset.
+ * Same-origin stable asset URLs (no sig/exp) always take the fresh poll value.
+ */
+export function stabilizeZhihuiGenerations(
+  previous: ZhihuiGenerationItem[] | undefined,
+  next: ZhihuiGenerationItem[] | undefined
+): ZhihuiGenerationItem[] | undefined {
+  if (!next?.length) return next
+  if (!previous?.length) return next
+  const prevById = new Map(previous.map((row) => [row.id, row]))
+  return next.map((row) => {
+    const prior = prevById.get(row.id)
+    if (
+      prior?.image_url &&
+      assetPathOnly(prior.image_url) === assetPathOnly(row.image_url) &&
+      hasSignedAssetQuery(prior.image_url) &&
+      hasSignedAssetQuery(row.image_url)
+    ) {
+      return { ...row, image_url: prior.image_url }
+    }
+    return row
+  })
+}
+
 export const useZhihuiHistoryStore = defineStore('zhihuiHistory', () => {
   const items = ref<ZhihuiConversationItem[]>([])
   const isLoading = ref(false)
@@ -115,21 +155,41 @@ export const useZhihuiHistoryStore = defineStore('zhihuiHistory', () => {
   })
 
   function mergeDetail(detail: ZhihuiConversationItem): void {
-    currentDetail.value = detail
-    const idx = items.value.findIndex((row) => row.id === detail.id)
+    const priorGens =
+      currentDetail.value?.id === detail.id
+        ? currentDetail.value.generations
+        : items.value.find((row) => row.id === detail.id)?.generations
+    const generations = stabilizeZhihuiGenerations(priorGens, detail.generations)
+    const priorCover =
+      currentDetail.value?.id === detail.id
+        ? currentDetail.value.cover_image_url
+        : items.value.find((row) => row.id === detail.id)?.cover_image_url
+    const cover_image_url =
+      priorCover &&
+      detail.cover_image_url &&
+      assetPathOnly(priorCover) === assetPathOnly(detail.cover_image_url)
+        ? priorCover
+        : detail.cover_image_url
+    const merged: ZhihuiConversationItem = {
+      ...detail,
+      generations,
+      cover_image_url,
+    }
+    currentDetail.value = merged
+    const idx = items.value.findIndex((row) => row.id === merged.id)
     if (idx >= 0) {
       items.value[idx] = {
         ...items.value[idx],
-        ...detail,
-        generations: detail.generations,
+        ...merged,
+        generations: merged.generations,
       }
     } else {
-      items.value = [detail, ...items.value]
+      items.value = [merged, ...items.value]
     }
-    const slideCount = detail.generations?.length ?? detail.slide_count ?? 0
+    const slideCount = merged.generations?.length ?? merged.slide_count ?? 0
     eventBus.emit('zhihui:conversation_updated', {
-      conversationId: detail.id,
-      status: String(detail.status),
+      conversationId: merged.id,
+      status: String(merged.status),
       slideCount,
     })
   }
@@ -222,7 +282,7 @@ export const useZhihuiHistoryStore = defineStore('zhihuiHistory', () => {
       }
     } catch {
       loadError.value = true
-      items.value = []
+      // Keep prior sidebar rows on transient fetch failure.
     } finally {
       isLoading.value = false
     }
@@ -252,6 +312,13 @@ export const useZhihuiHistoryStore = defineStore('zhihuiHistory', () => {
     return detail
   }
 
+  /**
+   * Studio mode to apply when selection clears.
+   * - image/diagram: force that landing surface
+   * - preserve: leave the page mode control as-is (user just clicked it)
+   */
+  const landingStudioMode = ref<'image' | 'diagram' | 'preserve'>('image')
+
   function selectItem(id: string | null): void {
     currentId.value = id
     if (!id) {
@@ -259,6 +326,12 @@ export const useZhihuiHistoryStore = defineStore('zhihuiHistory', () => {
       stopPolling()
       return
     }
+  }
+
+  /** Clear selection and return to the ZhiHui landing surface (MindMate-style). */
+  function startLanding(studioMode: 'image' | 'diagram' | 'preserve' = 'image'): void {
+    landingStudioMode.value = studioMode
+    selectItem(null)
   }
 
   async function deleteItem(id: string): Promise<boolean> {
@@ -295,9 +368,11 @@ export const useZhihuiHistoryStore = defineStore('zhihuiHistory', () => {
     currentItem,
     currentDetail,
     pollingId,
+    landingStudioMode,
     fetchHistory,
     loadConversation,
     selectItem,
+    startLanding,
     deleteItem,
     upsertConversation,
     startPolling,

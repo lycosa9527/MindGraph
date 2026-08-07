@@ -198,12 +198,12 @@ class ZhihuiConversationRepository(BaseRepository[ZhihuiConversation]):
         *,
         max_age_minutes: int = _DEFAULT_STALE_MINUTES,
         user_id: Optional[int] = None,
-    ) -> int:
+    ) -> tuple[int, list[str]]:
         """
         Mark long-stuck active jobs as failed/partial.
 
         Jobs with generations become ``partial``; others ``failed``.
-        Returns number of conversations updated.
+        Returns ``(updated_count, celery_task_ids)`` for revoke.
         """
         cutoff = datetime.now(UTC) - timedelta(minutes=max(5, int(max_age_minutes)))
         stmt = select(ZhihuiConversation).where(
@@ -215,9 +215,10 @@ class ZhihuiConversationRepository(BaseRepository[ZhihuiConversation]):
         result = await self.session.execute(stmt)
         rows = list(result.scalars().all())
         if not rows:
-            return 0
+            return 0, []
         gen_repo = ZhihuiGenerationRepository(self.session)
         updated = 0
+        task_ids: list[str] = []
         for row in rows:
             gens = await gen_repo.list_by_conversation(row.id)
             row.status = "partial" if gens else "failed"
@@ -228,10 +229,12 @@ class ZhihuiConversationRepository(BaseRepository[ZhihuiConversation]):
                 "stale": True,
             }
             row.updated_at = datetime.now(UTC)
+            if row.celery_task_id:
+                task_ids.append(str(row.celery_task_id))
             updated += 1
         if updated:
             await self.session.commit()
-        return updated
+        return updated, task_ids
 
     @staticmethod
     def max_active_diagram_jobs() -> int:
@@ -342,8 +345,8 @@ class ZhihuiConversationRepository(BaseRepository[ZhihuiConversation]):
             return None
         if row.status in ("complete", "cancelled"):
             return row
-        # Resume after transient failure when a lesson plan was already persisted.
-        if row.status == "failed":
+        # Resume after transient failure / partial when a lesson plan was persisted.
+        if row.status in ("failed", "partial"):
             if not isinstance(row.lesson_plan_json, dict):
                 return row
             row.status = "generating"

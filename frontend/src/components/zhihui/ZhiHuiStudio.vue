@@ -94,14 +94,26 @@ function turnFromConversation(item: ZhihuiConversationItem): ZhihuiSessionTurn[]
 watch(
   () => historyStore.currentId,
   async (id) => {
-    if (isGenerating.value) {
-      return
-    }
+    // Landing / history select always wins over an in-flight generate UI.
     if (!id) {
+      isGenerating.value = false
       turns.value = []
       return
     }
+    if (isGenerating.value) {
+      // Keep doodle wait only while the new selection is still this in-flight turn.
+      const active = turns.value.find((turn) => turn.status === 'waiting')
+      if (active?.historyId && active.historyId !== id) {
+        isGenerating.value = false
+      } else if (!active?.historyId) {
+        // Local generate not yet bound to a conversation id — allow switch away.
+        isGenerating.value = false
+      } else {
+        return
+      }
+    }
     const detail = await historyStore.loadConversation(id)
+    if (historyStore.currentId !== id) return
     const item = detail ?? historyStore.currentItem
     if (!item) {
       return

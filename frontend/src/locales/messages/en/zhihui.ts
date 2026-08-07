@@ -38,6 +38,8 @@ export default {
   'zhihui.diagram.phaseFailed': 'Generation failed',
   'zhihui.diagram.batchProgress': 'Batch {current}/{total}',
   'zhihui.diagram.resume': 'Resume generation',
+  'zhihui.diagram.imageLoadFailed': 'Could not load this slide',
+  'zhihui.diagram.retryImage': 'Retry',
   'zhihui.refUploadSoon': 'Reference upload coming soon',
   'zhihui.attachReference': 'Add reference image',
   'zhihui.attachReferenceHint': 'Up to 3 images as Qwen reference',

@@ -763,11 +763,6 @@ export type EventTypes = {
     conversationId: string
     status: string
   }
-  'zhihui:focus_slide': {
-    conversationId: string
-    slideIndex: number
-    focusNodeIds: string[]
-  }
 
   // Mate Learning (迈特学习法)
   'maite:mode_changed': { mode: 'demo' | 'inquiry' | 'map' }

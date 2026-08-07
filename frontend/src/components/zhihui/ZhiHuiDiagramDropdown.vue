@@ -13,6 +13,8 @@ import { type SavedDiagram, useSavedDiagramsStore } from '@/stores/savedDiagrams
 const props = defineProps<{
   modelValue: string | null
   disabled?: boolean
+  /** Shown when modelValue is set but the diagram is not in the library list. */
+  fallbackLabel?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -39,6 +41,8 @@ const selected = computed(
 
 const label = computed(() => {
   if (selected.value?.title) return selected.value.title
+  const fallback = (props.fallbackLabel || '').trim()
+  if (props.modelValue && fallback) return fallback
   return String(t('zhihui.diagram.selectMindmap'))
 })
 

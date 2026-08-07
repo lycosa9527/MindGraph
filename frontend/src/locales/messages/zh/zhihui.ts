@@ -38,6 +38,8 @@ export default {
   'zhihui.diagram.phaseFailed': '生成失败',
   'zhihui.diagram.batchProgress': '批次 {current}/{total}',
   'zhihui.diagram.resume': '继续生成',
+  'zhihui.diagram.imageLoadFailed': '幻灯片加载失败',
+  'zhihui.diagram.retryImage': '重试',
   'zhihui.refUploadSoon': '参考图上传即将支持',
   'zhihui.attachReference': '添加参考图',
   'zhihui.attachReferenceHint': '最多 3 张，作为 Qwen 参考',
