@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Too many snapshot actions. Wait a moment and try again.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Diagram not found. Reload the page or open it from your library.',
   'canvas.library.diagramNotFound': 'Diagram not found. It may have been deleted. Open another diagram from your library.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Could not save snapshot (conflict). Please try again.',
   'canvas.toolbar.newAssociation': 'New association',
   'canvas.toolbar.newAttribute': 'New Attribute',

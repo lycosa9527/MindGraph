@@ -62,6 +62,229 @@ def parse_lesson_plan_json(raw: str) -> dict[str, Any]:
     return data
 
 
+def _normalize_branch_hint(hint: Any) -> str:
+    return str(hint or "").strip().lower()
+
+
+def _outline_branch_rank(outline: MindMapOutline, hint: Any) -> int:
+    """Return outline index for a focus_branch hint, or a large sentinel if unknown."""
+    normalized = _normalize_branch_hint(hint)
+    if not normalized:
+        return len(outline.branches) + 100
+    for index, branch in enumerate(outline.branches):
+        branch_id = (branch.id or "").strip().lower()
+        text = (branch.text or "").strip().lower()
+        if branch_id and branch_id == normalized:
+            return index
+        if text and text == normalized:
+            return index
+    for index, branch in enumerate(outline.branches):
+        text = (branch.text or "").strip().lower()
+        if not text:
+            continue
+        if normalized in text or text in normalized:
+            return index
+    return len(outline.branches) + 100
+
+
+def _batch_branch_hints(batch: dict[str, Any]) -> list[str]:
+    """All non-empty focus_branch values in frame order (deduped)."""
+    frames = batch.get("frames")
+    if not isinstance(frames, list):
+        return []
+    hints: list[str] = []
+    seen: set[str] = set()
+    for frame in frames:
+        if not isinstance(frame, dict):
+            continue
+        hint = str(frame.get("focus_branch") or "").strip()
+        if not hint:
+            continue
+        key = hint.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        hints.append(hint)
+    return hints
+
+
+def _batch_primary_branch_hint(batch: dict[str, Any]) -> str:
+    hints = _batch_branch_hints(batch)
+    return hints[0] if hints else ""
+
+
+def _batch_sort_rank(outline: MindMapOutline, batch: dict[str, Any]) -> int:
+    """
+    Sort key for a develop batch: earliest outline branch among its focus_branches.
+
+    Mixed-branch batches follow the first clockwise branch they cover.
+    """
+    hints = _batch_branch_hints(batch)
+    if not hints:
+        return len(outline.branches) + 100
+    return min(_outline_branch_rank(outline, hint) for hint in hints)
+
+
+def _develop_first_seen_order(batches: list[Any], outline: MindMapOutline) -> list[int]:
+    """Outline ranks for develop batches in plan order (earliest branch each)."""
+    ranks: list[int] = []
+    seen: set[int] = set()
+    for batch in batches:
+        if not isinstance(batch, dict):
+            continue
+        role = str(batch.get("batch_role") or "").strip().lower()
+        if role and role != "develop":
+            continue
+        rank = _batch_sort_rank(outline, batch)
+        if rank >= len(outline.branches):
+            continue
+        if rank in seen:
+            continue
+        seen.add(rank)
+        ranks.append(rank)
+    return ranks
+
+
+def _stable_sort_frames_by_branch(batch: dict[str, Any], outline: MindMapOutline) -> bool:
+    """
+    Stable-sort frames in a develop batch by outline branch rank.
+
+    Keeps relative order within the same branch (intro → children → conflict).
+    Returns True when the frame list changed.
+    """
+    frames = batch.get("frames")
+    if not isinstance(frames, list) or len(frames) <= 1:
+        return False
+
+    indexed = list(enumerate(frames))
+    indexed.sort(
+        key=lambda item: (
+            _outline_branch_rank(
+                outline,
+                item[1].get("focus_branch") if isinstance(item[1], dict) else "",
+            ),
+            item[0],
+        )
+    )
+    new_frames = [frame for _, frame in indexed]
+    if new_frames == frames:
+        return False
+    batch["frames"] = new_frames
+    return True
+
+
+def develop_branch_first_seen_texts(
+    plan: dict[str, Any],
+    outline: MindMapOutline,
+) -> list[str]:
+    """Clockwise-facing develop branch texts in first-seen slide order."""
+    batches = plan.get("batches")
+    if not isinstance(batches, list) or not outline.branches:
+        return []
+    texts: list[str] = []
+    seen: set[int] = set()
+    for batch in batches:
+        if not isinstance(batch, dict):
+            continue
+        role = str(batch.get("batch_role") or "").strip().lower()
+        if role and role not in {"develop", ""}:
+            continue
+        frames = batch.get("frames")
+        if not isinstance(frames, list):
+            continue
+        for frame in frames:
+            if not isinstance(frame, dict):
+                continue
+            rank = _outline_branch_rank(outline, frame.get("focus_branch"))
+            if rank >= len(outline.branches) or rank in seen:
+                continue
+            seen.add(rank)
+            texts.append(outline.branches[rank].text)
+    return texts
+
+
+def normalize_lesson_plan_to_outline(
+    plan: dict[str, Any],
+    outline: MindMapOutline,
+) -> dict[str, Any]:
+    """
+    Align lesson-plan batches/frames to outline clockwise order.
+
+    - Permute develop batches to outline order (open/close kept).
+    - Stable-sort frames inside each develop batch by branch rank.
+    """
+    batches = plan.get("batches")
+    if not isinstance(batches, list) or not batches or not outline.branches:
+        return plan
+
+    open_batches: list[dict[str, Any]] = []
+    develop_batches: list[dict[str, Any]] = []
+    close_batches: list[dict[str, Any]] = []
+    other_batches: list[dict[str, Any]] = []
+
+    for batch in batches:
+        if not isinstance(batch, dict):
+            continue
+        role = str(batch.get("batch_role") or "").strip().lower()
+        if role == "open":
+            open_batches.append(batch)
+        elif role == "close":
+            close_batches.append(batch)
+        elif role == "develop" or not role:
+            develop_batches.append(batch)
+        else:
+            other_batches.append(batch)
+
+    before = _develop_first_seen_order(batches, outline)
+    expected = list(range(len(outline.branches)))
+    expected_present = [rank for rank in expected if rank in before]
+    reordered_batches = False
+    if len(develop_batches) > 1 and before != expected_present:
+        indexed = list(enumerate(develop_batches))
+        indexed.sort(
+            key=lambda item: (
+                _batch_sort_rank(outline, item[1]),
+                item[0],
+            )
+        )
+        develop_batches = [batch for _, batch in indexed]
+        reordered_batches = True
+
+    frames_fixed = False
+    for batch in develop_batches:
+        if _stable_sort_frames_by_branch(batch, outline):
+            frames_fixed = True
+
+    plan["batches"] = open_batches + other_batches + develop_batches + close_batches
+    after = _develop_first_seen_order(plan["batches"], outline)
+    if reordered_batches or frames_fixed:
+        logger.warning(
+            "[ZhiHui] Normalized lesson plan to outline clockwise "
+            "reordered_batches=%s frames_fixed=%s before=%s after=%s outline=%s",
+            reordered_batches,
+            frames_fixed,
+            before,
+            after,
+            [branch.text for branch in outline.branches],
+        )
+    elif after != expected_present:
+        logger.warning(
+            "[ZhiHui] Develop branch order still mismatched after normalize got=%s expected=%s outline=%s",
+            after,
+            expected_present,
+            [branch.text for branch in outline.branches],
+        )
+    return plan
+
+
+def reorder_develop_batches_to_outline(
+    plan: dict[str, Any],
+    outline: MindMapOutline,
+) -> dict[str, Any]:
+    """Backward-compatible alias for ``normalize_lesson_plan_to_outline``."""
+    return normalize_lesson_plan_to_outline(plan, outline)
+
+
 async def plan_lesson_from_outline(
     outline: MindMapOutline,
     *,
@@ -92,7 +315,8 @@ async def plan_lesson_from_outline(
             user_id=user_id,
             organization_id=organization_id,
         )
-        return parse_lesson_plan_json(response or ""), usage
+        plan = parse_lesson_plan_json(response or "")
+        return normalize_lesson_plan_to_outline(plan, outline), usage
     except (json.JSONDecodeError, ValueError, TypeError) as first_exc:
         logger.warning("[ZhiHui] Lesson plan parse failed, retrying: %s", first_exc)
         try:
@@ -106,7 +330,8 @@ async def plan_lesson_from_outline(
                 user_id=user_id,
                 organization_id=organization_id,
             )
-            return parse_lesson_plan_json(response or ""), usage
+            plan = parse_lesson_plan_json(response or "")
+            return normalize_lesson_plan_to_outline(plan, outline), usage
         except (json.JSONDecodeError, ValueError, TypeError, *BACKGROUND_INFRA_ERRORS) as exc:
             raise ValueError(f"Lesson planner failed: {exc}") from exc
     except BACKGROUND_INFRA_ERRORS as exc:

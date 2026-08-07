@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': '스냅샷 작업이 너무 많습니다. 잠시 후 다시 시도하세요.',
   'canvas.toolbar.snapshotDiagramNotFound': '다이어그램을 찾을 수 없습니다. 페이지를 새로고침하거나 라이브러리에서 여세요.',
   'canvas.library.diagramNotFound': '다이어그램을 찾을 수 없습니다. 삭제되었을 수 있습니다. 라이브러리에서 다른 다이어그램을 여세요.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': '스냅샷을 저장하지 못했습니다(충돌). 다시 시도하세요.',
   'canvas.toolbar.newAssociation': '새 연관',
   'canvas.toolbar.newAttribute': '새 속성',

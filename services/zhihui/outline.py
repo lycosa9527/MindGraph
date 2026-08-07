@@ -77,6 +77,52 @@ def _sort_ids_by_y(
     return ordered
 
 
+def _topic_and_children_have_positions(
+    child_ids: list[str],
+    by_id: dict[str, dict[str, Any]],
+    topic_id: str,
+) -> bool:
+    topic = by_id.get(topic_id) or {}
+    if _node_coord(topic, "x") is None or _node_coord(topic, "y") is None:
+        return False
+    for node_id in child_ids:
+        node = by_id.get(node_id) or {}
+        if _node_coord(node, "x") is None or _node_coord(node, "y") is None:
+            return False
+    return True
+
+
+def _sort_ids_by_side_of_topic(
+    child_ids: list[str],
+    by_id: dict[str, dict[str, Any]],
+    topic_id: str,
+) -> list[str]:
+    """
+    Geometric clockwise helper: right of topic top→bottom, then left bottom→top.
+
+    Side is ``x >= topic.x`` → right, else left.
+    """
+    topic = by_id.get(topic_id) or {}
+    tx = _node_coord(topic, "x")
+    if tx is None:
+        return _sort_ids_by_y(child_ids, by_id)
+
+    right: list[str] = []
+    left: list[str] = []
+    for node_id in child_ids:
+        node = by_id.get(node_id) or {}
+        x_val = _node_coord(node, "x")
+        if x_val is None or x_val >= tx:
+            right.append(node_id)
+        else:
+            left.append(node_id)
+
+    return [
+        *_sort_ids_by_y(right, by_id),
+        *_sort_ids_by_y(left, by_id, reverse=True),
+    ]
+
+
 def _sort_ids_clockwise_from_topic(
     child_ids: list[str],
     by_id: dict[str, dict[str, Any]],
@@ -116,10 +162,16 @@ def sort_topic_branch_ids_clockwise(
 ) -> list[str]:
     """
     Match canvas presentation order: right column top→bottom, then left
-    column bottom→top (continuation of clockwise). Falls back to polar angle.
+    column bottom→top (continuation of clockwise).
+
+    Prefer geometric side-of-topic when positions exist; else ``branch-r-`` /
+    ``branch-l-`` prefixes; else polar angle.
     """
     if len(child_ids) <= 1:
         return list(child_ids)
+
+    if _topic_and_children_have_positions(child_ids, by_id, topic_id):
+        return _sort_ids_by_side_of_topic(child_ids, by_id, topic_id)
 
     right = [node_id for node_id in child_ids if node_id.startswith("branch-r-")]
     left = [node_id for node_id in child_ids if node_id.startswith("branch-l-")]

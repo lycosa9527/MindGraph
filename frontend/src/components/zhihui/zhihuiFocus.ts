@@ -2,7 +2,8 @@
  * Resolve canvas focus hints for a ZhiHui diagram lesson slide.
  *
  * Slide 0 is always topic overview (empty → fit whole map / select topic).
- * Later slides: prefer focus_child for detail/conflict, else branch / stored ids.
+ * Prefer persisted generation ``focus_node_ids`` so resume / plan edits cannot
+ * desync canvas highlight from the saved slide.
  */
 export function resolveZhihuiSlideFocusHints(options: {
   slideIndex: number
@@ -13,33 +14,30 @@ export function resolveZhihuiSlideFocusHints(options: {
 }): string[] {
   if (options.slideIndex <= 0) return []
 
+  const stored = Array.isArray(options.focusNodeIds)
+    ? options.focusNodeIds.map(String).filter((id) => id.trim())
+    : []
+  if (stored.length > 0) return stored
+
   const frame = frameAtSlideIndex(options.lessonPlan, options.slideIndex)
   const role = String(frame?.frame_role ?? '')
     .trim()
     .toLowerCase()
   const branch = String(frame?.focus_branch ?? '').trim()
   const child = String(frame?.focus_child ?? '').trim()
-  const stored = Array.isArray(options.focusNodeIds)
-    ? options.focusNodeIds.map(String).filter((id) => id.trim())
-    : []
   const title = String(options.slideTitle ?? '').trim()
 
   // Branch intro should frame the whole branch (+ children via canvas expand).
   if (role === 'branch_intro') {
     if (branch) return [branch]
-    if (stored.length > 0) return stored
     return title ? [title] : []
   }
 
   // Child / conflict / generic develop frames: pinpoint the child when known.
   if (child) return [child]
   if (title && role !== 'synthesis' && role !== 'close' && role !== 'topic_overview') {
-    // Prefer title over a coarse stored branch id so highlight tracks the PPT.
-    if (stored.length === 0 || role === 'child_detail' || role === 'cognitive_conflict') {
-      return [title]
-    }
+    return [title]
   }
-  if (stored.length > 0) return stored
   if (branch) return [branch]
   if (title) return [title]
   return []

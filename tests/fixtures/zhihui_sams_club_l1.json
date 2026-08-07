@@ -1,0 +1,381 @@
+{
+  "type": "mindmap",
+  "nodes": [
+    {
+      "id": "topic",
+      "text": "山姆会员商店",
+      "type": "topic",
+      "position": {
+        "x": 332.5,
+        "y": 269.5
+      },
+      "data": {
+        "totalBranchCount": 10,
+        "estimatedWidth": 135,
+        "estimatedHeight": 61
+      },
+      "style": {
+        "fontFamily": "'Inter', 'Noto Sans SC', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
+        "fontSize": 18,
+        "fontWeight": "bold",
+        "borderWidth": 1.5,
+        "backgroundColor": "#4A72D4",
+        "textColor": "#ffffff",
+        "borderColor": "#3d5eaf",
+        "nodeShape": "rectangle"
+      }
+    },
+    {
+      "id": "branch-r-1-0",
+      "text": "竞争对手",
+      "type": "branch",
+      "position": {
+        "x": 519.5,
+        "y": -74
+      },
+      "data": {
+        "branchIndex": 0,
+        "estimatedWidth": 91,
+        "estimatedHeight": 43,
+        "mindMapUid": "7b1257c0-5091-4d7b-9985-410a104d56cb"
+      },
+      "style": {
+        "fontFamily": "'Inter', 'Noto Sans SC', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
+        "fontSize": 16,
+        "fontWeight": "normal",
+        "borderWidth": 1.5,
+        "backgroundColor": "#e9eefa",
+        "textColor": "#2a3d66",
+        "borderColor": "#4A72D4",
+        "nodeShape": "rounded"
+      }
+    },
+    {
+      "id": "branch-r-1-7",
+      "text": "分布特点",
+      "type": "branch",
+      "position": {
+        "x": 519.5,
+        "y": 57
+      },
+      "data": {
+        "branchIndex": 1,
+        "estimatedWidth": 91,
+        "estimatedHeight": 43,
+        "mindMapUid": "3e5a2230-505c-4d01-9b8a-5d1c700fdd39"
+      },
+      "style": {
+        "fontFamily": "'Inter', 'Noto Sans SC', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
+        "fontSize": 16,
+        "fontWeight": "normal",
+        "borderWidth": 1.5,
+        "backgroundColor": "#e9eefa",
+        "textColor": "#2a3d66",
+        "borderColor": "#4A72D4",
+        "nodeShape": "rounded"
+      }
+    },
+    {
+      "id": "branch-r-1-8",
+      "text": "分部特",
+      "type": "branch",
+      "position": {
+        "x": 519.5,
+        "y": 197.5
+      },
+      "data": {
+        "branchIndex": 2,
+        "estimatedWidth": 90,
+        "estimatedHeight": 43,
+        "mindMapUid": "c30e6a2f-327e-4028-afc8-793ea1b96373"
+      },
+      "style": {
+        "fontFamily": "'Inter', 'Noto Sans SC', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
+        "fontSize": 16,
+        "fontWeight": "normal",
+        "borderWidth": 1.5,
+        "backgroundColor": "#e9eefa",
+        "textColor": "#2a3d66",
+        "borderColor": "#4A72D4",
+        "nodeShape": "rounded"
+      }
+    },
+    {
+      "id": "branch-r-1-14",
+      "text": "产品与货品策略",
+      "type": "branch",
+      "position": {
+        "x": 519.5,
+        "y": 415.5
+      },
+      "data": {
+        "branchIndex": 3,
+        "estimatedWidth": 139,
+        "estimatedHeight": 43,
+        "mindMapUid": "fbb66cbd-44d7-4c87-8441-28bf5ac964d1"
+      },
+      "style": {
+        "fontFamily": "'Inter', 'Noto Sans SC', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
+        "fontSize": 16,
+        "fontWeight": "normal",
+        "borderWidth": 1.5,
+        "backgroundColor": "#e9eefa",
+        "textColor": "#2a3d66",
+        "borderColor": "#4A72D4",
+        "nodeShape": "rounded"
+      }
+    },
+    {
+      "id": "branch-r-1-24",
+      "text": "营销聚焦：目标客群与价值主张",
+      "type": "branch",
+      "position": {
+        "x": 519.5,
+        "y": 616
+      },
+      "data": {
+        "branchIndex": 4,
+        "estimatedWidth": 251,
+        "estimatedHeight": 43,
+        "mindMapUid": "6996d55b-8845-49cb-a4ba-7a4f1fe79b03"
+      },
+      "style": {
+        "fontFamily": "'Inter', 'Noto Sans SC', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
+        "fontSize": 16,
+        "fontWeight": "normal",
+        "borderWidth": 1.5,
+        "backgroundColor": "#e9eefa",
+        "textColor": "#2a3d66",
+        "borderColor": "#4A72D4",
+        "nodeShape": "rounded"
+      }
+    },
+    {
+      "id": "branch-l-1-0",
+      "text": "汇源汁商店",
+      "type": "branch",
+      "position": {
+        "x": 125.5,
+        "y": -51.25
+      },
+      "data": {
+        "branchIndex": 5,
+        "estimatedWidth": 107,
+        "estimatedHeight": 43,
+        "mindMapUid": "35c8d28a-981f-47a4-b7f1-63f470bbd3e1"
+      },
+      "style": {
+        "fontFamily": "'Inter', 'Noto Sans SC', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
+        "fontSize": 16,
+        "fontWeight": "normal",
+        "borderWidth": 1.5,
+        "backgroundColor": "#e9eefa",
+        "textColor": "#2a3d66",
+        "borderColor": "#4A72D4",
+        "nodeShape": "rounded"
+      }
+    },
+    {
+      "id": "branch-l-1-7",
+      "text": "Costco对比",
+      "type": "branch",
+      "position": {
+        "x": 125.5,
+        "y": 166.75
+      },
+      "data": {
+        "branchIndex": 6,
+        "estimatedWidth": 107,
+        "estimatedHeight": 43,
+        "mindMapUid": "7c4fff03-1a7a-44dc-919d-f72a7a04f3a9"
+      },
+      "style": {
+        "fontFamily": "'Inter', 'Noto Sans SC', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
+        "fontSize": 16,
+        "fontWeight": "normal",
+        "borderWidth": 1.5,
+        "backgroundColor": "#e9eefa",
+        "textColor": "#2a3d66",
+        "borderColor": "#4A72D4",
+        "nodeShape": "rounded"
+      }
+    },
+    {
+      "id": "branch-l-1-14",
+      "text": "店内体验与多渠道",
+      "type": "branch",
+      "position": {
+        "x": 125.5,
+        "y": 349.75
+      },
+      "data": {
+        "branchIndex": 7,
+        "estimatedWidth": 155,
+        "estimatedHeight": 43,
+        "mindMapUid": "a04f35b8-8dd6-4842-be1e-031d5fb3d24d"
+      },
+      "style": {
+        "fontFamily": "'Inter', 'Noto Sans SC', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
+        "fontSize": 16,
+        "fontWeight": "normal",
+        "borderWidth": 1.5,
+        "backgroundColor": "#e9eefa",
+        "textColor": "#2a3d66",
+        "borderColor": "#4A72D4",
+        "nodeShape": "rounded"
+      }
+    },
+    {
+      "id": "branch-l-1-19",
+      "text": "运营与精益管理",
+      "type": "branch",
+      "position": {
+        "x": 125.5,
+        "y": 497.75
+      },
+      "data": {
+        "branchIndex": 8,
+        "estimatedWidth": 139,
+        "estimatedHeight": 43,
+        "mindMapUid": "cd8e96e0-3666-4121-8c9a-8674a62de083"
+      },
+      "style": {
+        "fontFamily": "'Inter', 'Noto Sans SC', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
+        "fontSize": 16,
+        "fontWeight": "normal",
+        "borderWidth": 1.5,
+        "backgroundColor": "#e9eefa",
+        "textColor": "#2a3d66",
+        "borderColor": "#4A72D4",
+        "nodeShape": "rounded"
+      }
+    },
+    {
+      "id": "branch-l-1-24",
+      "text": "新分支",
+      "type": "branch",
+      "position": {
+        "x": 125.5,
+        "y": 593.25
+      },
+      "data": {
+        "branchIndex": 9,
+        "estimatedWidth": 90,
+        "estimatedHeight": 43,
+        "mindMapUid": "c38bd50b-e401-458f-b6e4-119992daeb99"
+      },
+      "style": {
+        "fontFamily": "'Inter', 'Noto Sans SC', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
+        "fontSize": 16,
+        "fontWeight": "normal",
+        "borderWidth": 1.5,
+        "backgroundColor": "#e9eefa",
+        "textColor": "#2a3d66",
+        "borderColor": "#4A72D4",
+        "nodeShape": "rounded"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "edge-topic-branch-r-1-0",
+      "source": "topic",
+      "target": "branch-r-1-0",
+      "sourceHandle": "mindmap-right",
+      "targetHandle": "left",
+      "style": {
+        "strokeColor": "#3d5eaf"
+      }
+    },
+    {
+      "id": "edge-topic-branch-r-1-7",
+      "source": "topic",
+      "target": "branch-r-1-7",
+      "sourceHandle": "mindmap-right",
+      "targetHandle": "left",
+      "style": {
+        "strokeColor": "#3d5eaf"
+      }
+    },
+    {
+      "id": "edge-topic-branch-r-1-8",
+      "source": "topic",
+      "target": "branch-r-1-8",
+      "sourceHandle": "mindmap-right",
+      "targetHandle": "left",
+      "style": {
+        "strokeColor": "#3d5eaf"
+      }
+    },
+    {
+      "id": "edge-topic-branch-r-1-14",
+      "source": "topic",
+      "target": "branch-r-1-14",
+      "sourceHandle": "mindmap-right",
+      "targetHandle": "left",
+      "style": {
+        "strokeColor": "#3d5eaf"
+      }
+    },
+    {
+      "id": "edge-topic-branch-r-1-24",
+      "source": "topic",
+      "target": "branch-r-1-24",
+      "sourceHandle": "mindmap-right",
+      "targetHandle": "left",
+      "style": {
+        "strokeColor": "#3d5eaf"
+      }
+    },
+    {
+      "id": "edge-topic-branch-l-1-0",
+      "source": "topic",
+      "target": "branch-l-1-0",
+      "sourceHandle": "mindmap-left",
+      "targetHandle": "right-target",
+      "style": {
+        "strokeColor": "#3d5eaf"
+      }
+    },
+    {
+      "id": "edge-topic-branch-l-1-7",
+      "source": "topic",
+      "target": "branch-l-1-7",
+      "sourceHandle": "mindmap-left",
+      "targetHandle": "right-target",
+      "style": {
+        "strokeColor": "#3d5eaf"
+      }
+    },
+    {
+      "id": "edge-topic-branch-l-1-14",
+      "source": "topic",
+      "target": "branch-l-1-14",
+      "sourceHandle": "mindmap-left",
+      "targetHandle": "right-target",
+      "style": {
+        "strokeColor": "#3d5eaf"
+      }
+    },
+    {
+      "id": "edge-topic-branch-l-1-19",
+      "source": "topic",
+      "target": "branch-l-1-19",
+      "sourceHandle": "mindmap-left",
+      "targetHandle": "right-target",
+      "style": {
+        "strokeColor": "#3d5eaf"
+      }
+    },
+    {
+      "id": "edge-topic-branch-l-1-24",
+      "source": "topic",
+      "target": "branch-l-1-24",
+      "sourceHandle": "mindmap-left",
+      "targetHandle": "right-target",
+      "style": {
+        "strokeColor": "#3d5eaf"
+      }
+    }
+  ]
+}

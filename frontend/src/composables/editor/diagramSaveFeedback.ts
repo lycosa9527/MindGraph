@@ -84,6 +84,7 @@ export function saveFlushFailureMessageKey(result: SaveFlushResult): string | nu
     case 'skipped_empty':
       return 'editor.saveNothingToSave'
     case 'error':
+    case 'skipped_guards':
       return 'editor.saveFailed'
     default:
       return null

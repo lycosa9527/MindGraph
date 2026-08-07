@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Quá nhiều hành động chụp nhanh. Hãy đợi một lát và thử lại.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Không tìm thấy sơ đồ. Tải lại trang hoặc mở nó từ thư viện của bạn.',
   'canvas.library.diagramNotFound': 'Không tìm thấy sơ đồ. Nó có thể đã bị xóa. Mở một sơ đồ khác từ thư viện của bạn.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Không thể lưu ảnh chụp nhanh (xung đột). Vui lòng thử lại.',
   'canvas.toolbar.newAssociation': 'Hiệp hội mới',
   'canvas.toolbar.newAttribute': 'Thuộc tính mới',

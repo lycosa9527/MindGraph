@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Chox sayda anliq goruntu amali. Bir az kuting va qayta urinib ko’ring.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Diagramma topilmadi. Sahifani yangilashyin yoki kutubxonadan oching.',
   'canvas.library.diagramNotFound': 'Diagramma topilmadi. O’chiringmish mumkin. Kutubxonanizdan bashqa diagramma oching.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Anliq goruntu saqlashnmnomi (ziddiyyet). Qayta qayta urinib ko’ring.',
   'canvas.toolbar.newAssociation': 'Yangi assosiasiya',
   'canvas.toolbar.newAttribute': 'Yangi atribut',

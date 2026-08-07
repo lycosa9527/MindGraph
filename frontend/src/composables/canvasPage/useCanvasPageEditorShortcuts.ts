@@ -274,7 +274,7 @@ export function useCanvasPageEditorShortcuts(options: {
       return
     }
     await flushDiagramSaveWithFeedback({
-      flush: () => diagramAutoSave.flush(),
+      flush: () => diagramAutoSave.flush({ bypassSuppressGuard: true }),
       guardState: buildDiagramSaveGuardState({
         llmGenerating: llmResultsStore.isGenerating,
         subgraphGenerating: previewStore.isGenerating,

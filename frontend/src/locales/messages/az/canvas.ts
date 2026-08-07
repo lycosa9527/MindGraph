@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Çox sayda anlıq görüntü əməliyyatı. Bir az gözləyin və yenidən cəhd edin.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Diaqram tapılmadı. Səhifəni yeniləyin və ya kitabxanadan açın.',
   'canvas.library.diagramNotFound': 'Diaqram tapılmadı. Silinmiş ola bilər. Kitabxananızdan başqa diaqram açın.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Anlıq görüntü saxlanmadı (ziddiyyət). Yenidən cəhd edin.',
   'canvas.toolbar.newAssociation': 'Yeni assosiasiya',
   'canvas.toolbar.newAttribute': 'Yeni atribut',

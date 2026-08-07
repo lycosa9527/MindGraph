@@ -101,9 +101,8 @@ export async function handleKittyReloadLibraryDiagramAction(
     return
   }
 
-  // Bust detail cache so we pick up the mobile-written snapshot.
-  options.savedDiagramsStore.invalidateDiagramDetail(targetId)
-  const result = await options.savedDiagramsStore.getDiagram(targetId)
+  // Authoritative reload so we pick up the mobile-written snapshot.
+  const result = await options.savedDiagramsStore.getDiagram(targetId, { force: true })
   if (!result.ok || !result.diagram?.spec) {
     return
   }

@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'การทำสแนปชอตถี่เกินไป รอสักครู่แล้วลองอีกครั้ง',
   'canvas.toolbar.snapshotDiagramNotFound': 'ไม่พบไดอะแกรม โหลดหน้าใหม่หรือเปิดจากคลัง',
   'canvas.library.diagramNotFound': 'ไม่พบไดอะแกรม อาจถูกลบแล้ว เปิดไดอะแกรมอื่นจากห้องสมุดของคุณ',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'บันทึกสแนปชอตไม่ได้ (ขัดแย้ง) ลองอีกครั้ง',
   'canvas.toolbar.newAssociation': 'ความเชื่อมโยงใหม่',
   'canvas.toolbar.newAttribute': 'คุณลักษณะใหม่',

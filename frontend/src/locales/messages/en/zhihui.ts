@@ -38,6 +38,8 @@ export default {
   'zhihui.diagram.phasePartial': 'Partially complete',
   'zhihui.diagram.phaseFailed': 'Generation failed',
   'zhihui.diagram.batchProgress': 'Batch {current}/{total}',
+  'zhihui.diagram.slideProgress': 'Slides {current}/{total}',
+  'zhihui.diagram.regenerate': 'Regenerate',
   'zhihui.diagram.resume': 'Resume generation',
   'zhihui.diagram.imageLoadFailed': 'Could not load this slide',
   'zhihui.diagram.retryImage': 'Retry',

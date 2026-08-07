@@ -22,7 +22,10 @@ const historyStore = useZhihuiHistoryStore()
 const mode = ref<ZhihuiMode>('image')
 const diagramId = ref<string | null>(null)
 const diagramBusy = ref(false)
-const diagramStudioRef = ref<{ generate: () => Promise<void> } | null>(null)
+const diagramStudioRef = ref<{
+  generate: () => Promise<void>
+  hasSlides?: { value: boolean } | boolean
+} | null>(null)
 /** Remount diagram studio so local job chrome cannot linger on blank create. */
 const diagramStudioMountKey = ref(0)
 /** Prevent dropdown↔conversation sync loops while hydrating a history row. */
@@ -37,6 +40,28 @@ const modeOptions = computed(() =>
 
 const canGenerateDiagram = computed(
   () => Boolean(diagramId.value) && !diagramBusy.value
+)
+
+/** True when the open conversation already has slides for the selected map. */
+const isDiagramRegenerate = computed(() => {
+  if (!diagramId.value) return false
+  const detail = historyStore.currentDetail
+  const sameDiagram =
+    detail?.mode === 'diagram' && detail.diagram_id === diagramId.value
+  if (!sameDiagram) return false
+  if ((detail.generations?.length ?? 0) > 0) return true
+  const exposed = diagramStudioRef.value?.hasSlides
+  if (typeof exposed === 'boolean') return exposed
+  if (exposed && typeof exposed === 'object' && 'value' in exposed) {
+    return Boolean(exposed.value)
+  }
+  return false
+})
+
+const diagramGenerateLabel = computed(() =>
+  isDiagramRegenerate.value
+    ? String(t('zhihui.diagram.regenerate'))
+    : String(t('zhihui.generate'))
 )
 
 /** Title fallback when the conversation diagram is not in the library list yet. */
@@ -183,7 +208,7 @@ async function onGenerateDiagram(): Promise<void> {
           :disabled="!canGenerateDiagram"
           @click="onGenerateDiagram"
         >
-          {{ t('zhihui.generate') }}
+          {{ diagramGenerateLabel }}
         </button>
         <div class="zhihui-page__modes">
           <AdminSwissSegmented

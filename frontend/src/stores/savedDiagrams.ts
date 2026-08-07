@@ -240,6 +240,33 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
   let fetchDiagramsPromise: Promise<boolean> | null = null
   const LIST_CACHE_MS = 15_000
 
+  function diagramUpdatedAtMs(value: string | undefined | null): number {
+    if (!value) return 0
+    const ms = Date.parse(value)
+    return Number.isFinite(ms) ? ms : 0
+  }
+
+  /**
+   * Write detail cache. Non-force writers skip if the incoming snapshot is older
+   * than what is already cached (prefetch / in-flight GET races). Force writers
+   * always win — used for authoritative editor opens.
+   */
+  function setDiagramDetailCache(
+    diagram: SavedDiagramFull,
+    opts?: { force?: boolean }
+  ): void {
+    if (!opts?.force) {
+      const existing = diagramDetailCache.get(diagram.id)
+      if (
+        existing &&
+        diagramUpdatedAtMs(diagram.updated_at) < diagramUpdatedAtMs(existing.updated_at)
+      ) {
+        return
+      }
+    }
+    diagramDetailCache.set(diagram.id, diagram)
+  }
+
   // Getters
   const authStore = useAuthStore()
   const uiStore = useUIStore()
@@ -585,14 +612,20 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     )
   }
 
-  async function getDiagram(diagramId: string): Promise<GetDiagramResult> {
+  async function getDiagram(
+    diagramId: string,
+    options?: { force?: boolean }
+  ): Promise<GetDiagramResult> {
     if (!authStore.isAuthenticated) {
       return { ok: false, reason: 'unauthenticated', status: null }
     }
 
-    const cached = diagramDetailCache.get(diagramId)
-    if (cached) {
-      return { ok: true, diagram: cached }
+    const force = options?.force === true
+    if (!force) {
+      const cached = diagramDetailCache.get(diagramId)
+      if (cached) {
+        return { ok: true, diagram: cached }
+      }
     }
 
     try {
@@ -619,7 +652,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       }
 
       const diagram: SavedDiagramFull = await response.json()
-      diagramDetailCache.set(diagramId, diagram)
+      setDiagramDetailCache(diagram, { force })
       return { ok: true, diagram }
     } catch (e) {
       console.error('[SavedDiagrams] Get diagram error:', e)
@@ -688,7 +721,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       applyThinkingCoinMutation(extractThinkingCoinsFooter(saved as unknown as Record<string, unknown>))
 
       // Warm detail cache so canvas can open the new row without a second GET.
-      diagramDetailCache.set(saved.id, saved)
+      setDiagramDetailCache(saved)
 
       // Add to local list
       diagrams.value.unshift({
@@ -741,15 +774,31 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     }
 
     try {
+      const cachedDetail = diagramDetailCache.get(diagramId)
+      const body = {
+        ...updates,
+        ...(cachedDetail?.updated_at
+          ? { if_updated_at: cachedDetail.updated_at }
+          : {}),
+      }
       const response = await authFetch(`/api/diagrams/${diagramId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
+        body: JSON.stringify(body),
       })
 
       if (!response.ok) {
         if (response.status === 401) {
           authStore.handleTokenExpired('您的登录已过期，请重新登录后更新图表')
+          return false
+        }
+        if (response.status === 409) {
+          invalidateDiagramDetail(diagramId)
+          const apiDetail = await readDiagramApiErrorDetail(response)
+          const message =
+            apiDetail || 'Diagram was modified elsewhere; reload and retry.'
+          error.value = message
+          console.error('[SavedDiagrams] Update conflict:', message)
           return false
         }
         const apiDetail = await readDiagramApiErrorDetail(response)
@@ -761,6 +810,10 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
 
       const updated: SavedDiagramFull = await response.json()
       applyThinkingCoinMutation(extractThinkingCoinsFooter(updated as unknown as Record<string, unknown>))
+
+      // Keep detail cache in sync so library reopen does not hydrate a stale
+      // pre-edit snapshot (and then autosave it back over the good PUT).
+      setDiagramDetailCache(updated)
 
       // Update local list
       const index = diagrams.value.findIndex((d) => d.id === diagramId)
@@ -801,34 +854,13 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
           console.warn(
             `[SavedDiagrams] Diagram ${diagramId} not found (404), removing from local list`
           )
-          diagrams.value = diagrams.value.filter((d) => d.id !== diagramId)
-          total.value--
-          if (currentDiagramId.value === diagramId) {
-            currentDiagramId.value = null
-          }
-          // Clear active diagram if it's the one being deleted
-          if (activeDiagramId.value === diagramId) {
-            activeDiagramId.value = null
-          }
+          removeDiagramFromLocalList(diagramId)
           return true // Consider it successful since it's already gone
         }
         throw new Error(`Failed to delete diagram: ${response.status}`)
       }
 
-      // Remove from local list
-      diagrams.value = diagrams.value.filter((d) => d.id !== diagramId)
-      total.value--
-
-      // Clear current if deleted
-      if (currentDiagramId.value === diagramId) {
-        currentDiagramId.value = null
-      }
-
-      // Clear active diagram if it's the one being deleted
-      if (activeDiagramId.value === diagramId) {
-        activeDiagramId.value = null
-      }
-
+      removeDiagramFromLocalList(diagramId)
       return true
     } catch (e) {
       console.error('[SavedDiagrams] Delete error:', e)
@@ -867,6 +899,9 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
       }
 
       const duplicated: SavedDiagramFull = await response.json()
+
+      // Warm detail cache so opening the duplicate skips a redundant GET.
+      setDiagramDetailCache(duplicated)
 
       // Add to local list
       diagrams.value.unshift({

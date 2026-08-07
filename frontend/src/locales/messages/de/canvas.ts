@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Zu viele Schnappschuss-Aktionen. Warten Sie einen Moment und versuchen Sie es erneut.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Diagramm nicht gefunden. Laden Sie die Seite neu oder öffnen Sie es aus Ihrer Bibliothek.',
   'canvas.library.diagramNotFound': 'Diagramm nicht gefunden. Es wurde möglicherweise gelöscht. Öffnen Sie ein anderes Diagramm aus Ihrer Bibliothek.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Schnappschuss konnte nicht gespeichert werden (Konflikt). Bitte versuchen Sie es erneut.',
   'canvas.toolbar.newAssociation': 'Neue Zuordnung',
   'canvas.toolbar.newAttribute': 'Neues Attribut',

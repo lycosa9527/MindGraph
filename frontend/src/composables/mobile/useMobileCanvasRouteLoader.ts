@@ -1,7 +1,7 @@
 /**
  * Mobile canvas route/query bootstrap (type, import, library diagram).
  */
-import { type ComputedRef, nextTick, onMounted } from 'vue'
+import { type ComputedRef, nextTick, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { eventBus, useDiagramSpecForSave } from '@/composables'
@@ -105,8 +105,18 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
 
     const loadGen = ++libraryLoadGeneration
 
+    // flushOnLeave bypasses suppress/LLM/subgraph; fail closed unless collab
+    // owns durability via live_spec (REST save is intentionally blocked).
     if (diagramAutoSave.isDirty.value) {
-      await diagramAutoSave.flush()
+      const flushResult = await diagramAutoSave.flushOnLeave()
+      const collabOwnsPersist = diagramStore.collabSessionActive
+      if (
+        !flushResult.saved &&
+        !(collabOwnsPersist && flushResult.reason === 'skipped_guards')
+      ) {
+        notifyWarning(translate('canvas.library.saveBeforeSwitchFailed'))
+        return false
+      }
     }
     if (loadGen !== libraryLoadGeneration) {
       return false
@@ -118,7 +128,7 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
     markMindMapLoadStage('library:fetch:start', { diagramId })
     const listed = savedDiagramsStore.diagrams.find((d) => d.id === diagramId)
     unloadCanvasForLibrarySwitch(listed?.diagram_type)
-    const result = await savedDiagramsStore.getDiagram(diagramId)
+    const result = await savedDiagramsStore.getDiagram(diagramId, { force: true })
     if (loadGen !== libraryLoadGeneration) {
       return false
     }
@@ -165,6 +175,29 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
     notifyError(translate('canvas.library.diagramNotFound'))
     return false
   }
+
+  // Query changes after mount (library switch / deep link). Initial load stays in onMounted.
+  watch(
+    () => {
+      const q = route.query
+      const id = q.diagramId ?? q.diagram_id
+      return typeof id === 'string' ? id : Array.isArray(id) ? id[0] : undefined
+    },
+    async (newId, oldId) => {
+      if (newId && typeof newId === 'string' && newId !== oldId) {
+        if (
+          shouldSkipLibraryReloadDuringGeneration(
+            llmResultsStore.isGenerating,
+            newId,
+            savedDiagramsStore.activeDiagramId
+          )
+        ) {
+          return
+        }
+        await loadDiagramFromLibrary(newId)
+      }
+    }
+  )
 
   onMounted(async () => {
     onCollabClear()

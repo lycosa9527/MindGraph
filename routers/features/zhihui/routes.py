@@ -86,7 +86,13 @@ async def _enqueue_lesson_task(conversation_id: str) -> Optional[str]:
     """Enqueue Celery runner; return task id or raise HTTP 503."""
     try:
         async_result = run_diagram_lesson_task.delay(conversation_id)
-        return getattr(async_result, "id", None)
+        task_id = getattr(async_result, "id", None)
+        logger.info(
+            "[ZhiHui] Enqueued lesson task conversation=%s celery=%s",
+            conversation_id,
+            task_id,
+        )
+        return task_id if isinstance(task_id, str) else None
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.error("[ZhiHui] Failed to enqueue lesson task: %s", exc)
         try:
@@ -217,6 +223,13 @@ async def start_diagram_lesson(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
+    logger.info(
+        "[ZhiHui] Diagram lesson accepted conversation=%s diagram=%s user=%s lang=%s",
+        conversation.id,
+        body.diagram_id.strip(),
+        user_id,
+        language,
+    )
     task_id = await _enqueue_lesson_task(conversation.id)
     if task_id:
         try:

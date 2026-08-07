@@ -26,7 +26,7 @@ export async function hydrateMobileKittyFromLibrary(diagramId: string): Promise<
   }
   const savedDiagramsStore = useSavedDiagramsStore()
   const diagramStore = useDiagramStore()
-  const diagram = await savedDiagramsStore.getDiagram(trimmed)
+  const diagram = await savedDiagramsStore.getDiagram(trimmed, { force: true })
   if (!diagram.ok) {
     return false
   }

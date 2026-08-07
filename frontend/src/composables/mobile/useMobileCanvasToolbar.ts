@@ -64,7 +64,7 @@ export function useMobileCanvasToolbar(options: UseMobileCanvasToolbarOptions) {
     isSaving.value = true
     try {
       await flushDiagramSaveWithFeedback({
-        flush: () => diagramAutoSave.flush(),
+        flush: () => diagramAutoSave.flush({ bypassSuppressGuard: true }),
         guardState: saveGuardState?.() ??
           buildDiagramSaveGuardState({
             llmGenerating: llmResultsStore.isGenerating,

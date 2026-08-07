@@ -20,6 +20,8 @@ export function useDiagramSpecForSave(): () => Record<string, unknown> | null {
     const base = diagramStore.getSpecForSave()
     if (!base) return null
 
+    // Stamp live canvas into the current model slot before persisting llm_results.
+    llmResultsStore.updateCurrentModelSpec(base)
     const persisted = llmResultsStore.getResultsForPersistence()
     if (!persisted) return base
 

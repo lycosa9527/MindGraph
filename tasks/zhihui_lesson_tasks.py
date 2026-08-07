@@ -44,12 +44,12 @@ def run_diagram_lesson_task(self, conversation_id: str) -> bool:
     task_id = getattr(self.request, "id", None)
     task_id_str = task_id if isinstance(task_id, str) else None
     logger.info(
-        "[ZhiHuiLessonTask] start conversation=%s task=%s",
+        "[ZhiHui] Celery start conversation=%s task=%s",
         conversation_id,
         task_id_str,
     )
     try:
-        return bool(
+        ok = bool(
             asyncio.run(
                 run_diagram_lesson_deck(
                     conversation_id,
@@ -57,6 +57,13 @@ def run_diagram_lesson_task(self, conversation_id: str) -> bool:
                 )
             )
         )
+        logger.info(
+            "[ZhiHui] Celery finish conversation=%s task=%s ok=%s",
+            conversation_id,
+            task_id_str,
+            ok,
+        )
+        return ok
     except SoftTimeLimitExceeded as exc:
         logger.error(
             "[ZhiHuiLessonTask] soft time limit conversation=%s",

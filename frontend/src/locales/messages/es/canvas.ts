@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Demasiadas acciones de instantánea. Espere un momento e inténtelo de nuevo.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Diagrama no encontrado. Recargue la página o ábralo desde su biblioteca.',
   'canvas.library.diagramNotFound': 'Diagrama no encontrado. Puede que se haya eliminado. Abra otro diagrama desde su biblioteca.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'No se pudo guardar la instantánea (conflicto). Inténtelo de nuevo.',
   'canvas.toolbar.newAssociation': 'Nueva asociación',
   'canvas.toolbar.newAttribute': 'Nuevo atributo',

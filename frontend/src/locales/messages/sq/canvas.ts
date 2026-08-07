@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Shumë veprime instate. Prisni një moment dhe provoni përsëri.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Diagrami nuk u gjet. Ringarkoni faqen ose hapeni nga biblioteka.',
   'canvas.library.diagramNotFound': 'Diagrami nuk u gjet. Mund të jetë fshirë. Hapni një diagram tjetër nga biblioteka.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Instata nuk u ruajt (konflikt). Ju lutemi provoni përsëri.',
   'canvas.toolbar.newAssociation': 'Lidhje e re',
   'canvas.toolbar.newAttribute': 'Atribut i ri',

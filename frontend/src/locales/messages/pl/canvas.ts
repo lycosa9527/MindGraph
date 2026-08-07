@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Zbyt wiele operacji migawki. Poczekaj chwilę i spróbuj ponownie.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Nie znaleziono diagramu. Odśwież stronę lub otwórz z biblioteki.',
   'canvas.library.diagramNotFound': 'Nie znaleziono diagramu. Mógł zostać usunięty. Otwórz inny diagram z biblioteki.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Nie udało się zapisać migawki (konflikt). Spróbuj ponownie.',
   'canvas.toolbar.newAssociation': 'Nowe skojarzenie',
   'canvas.toolbar.newAttribute': 'Nowy atrybut',

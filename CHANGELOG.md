@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.170.4] - 2026-08-07
+
+> **Library save durability + ZhiHui lesson decks that follow the mind-map order.**
+
+### Fixed
+
+- **Diagram reopen lost edits** — Canvas library open force-fetches (`getDiagram({ force })`); detail cache is write-through / `updated_at`-guarded so stale SPA snapshots cannot hydrate and autosave over a good PUT.
+- **Library switch wipe** — Dirty switch uses leave-style flush and fails closed (except live collab, which owns durability via `live_spec`); manual save bypasses suppress and surfaces skipped guards.
+- **Autosave `llm_results`** — Live canvas is stamped into the current model slot before persist so multi-model reopen keeps user deletes/edits.
+- **Backend cache poison** — Title-only PUT never rewrites `spec` from Redis; Redis write-fail deletes the diagram key; collab flush/stop invalidate per-diagram cache; soft CAS via `if_updated_at`.
+- **Mobile canvas** — Watches `?diagramId=` so in-app library switches flush/load like desktop.
+
+### Changed
+
+- **ZhiHui lesson planner** — Outline is the sole knowledge skeleton (clockwise branch order, focus fields); stronger anti-reorder / anti-invent prompts; hookier topic open + analogy-heavy branch intros.
+- **ZhiHui deck pipeline** — Normalize/reorder develop batches to outline after plan; richer batch logging; deck UI shows batch bar + planned slide progress.
+- **Outline helpers** — Clockwise branch ordering coverage expanded for lesson decks and focus hints.
+
+### Tests
+
+- Detail-cache force/write-through/409; save flush feedback; diagram cache durability (CAS helpers + Redis invalidate); ZhiHui outline/order/batch fixtures (incl. Sam’s Club L1).
+
 ## [5.170.3] - 2026-08-07
 
 > **ZhiHui: idle 图示生图 deck no longer says “generating”.**

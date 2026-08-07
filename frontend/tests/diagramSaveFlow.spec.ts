@@ -58,7 +58,9 @@ describe('diagram save guards and feedback', () => {
   it('maps block and flush failure reasons to message keys', () => {
     expect(saveBlockReasonToMessageKey('llm_generating')).toBe('editor.saveWaitForGeneration')
     expect(saveFlushFailureMessageKey({ saved: false, reason: 'error' })).toBe('editor.saveFailed')
-    expect(saveFlushFailureMessageKey({ saved: false, reason: 'skipped_guards' })).toBeNull()
+    expect(saveFlushFailureMessageKey({ saved: false, reason: 'skipped_guards' })).toBe(
+      'editor.saveFailed'
+    )
   })
 
   it('allows autosave during LLM generation only when bypass flag is set', () => {

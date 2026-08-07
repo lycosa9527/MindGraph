@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Забагато дій зі знімками. Зачекайте трохи та спробуйте знову.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Діаграму не знайдено. Перезавантажте сторінку або відкрийте її з бібліотеки.',
   'canvas.library.diagramNotFound': 'Діаграму не знайдено. Можливо, її видалено. Відкрийте іншу діаграму з бібліотеки.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Не вдалося зберегти знімок (конфлікт). Спробуйте ще раз.',
   'canvas.toolbar.newAssociation': 'Новий зв\'язок',
   'canvas.toolbar.newAttribute': 'Новий атрибут',

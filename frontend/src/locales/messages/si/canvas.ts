@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'ස්නැප්ෂොට් ක්‍රියා වැඩියි. මොහොතක් රැඳී සිට නැවත උත්සාහ කරන්න.',
   'canvas.toolbar.snapshotDiagramNotFound': 'රූප සටහන හමු නොවීය. පිටුව නැවත පූරණය කරන්න හෝ ඔබේ පුස්තකාලයෙන් එය විවෘත කරන්න.',
   'canvas.library.diagramNotFound': 'රූප සටහන හමු නොවීය. එය මකා දමා තිබිය හැක. ඔබේ පුස්තකාලයෙන් තවත් රූප සටහනක් විවෘත කරන්න.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'ස්නැප්ෂොට් (ගැටුම්) සුරැකීමට නොහැකි විය. කරුණාකර නැවත උත්සාහ කරන්න.',
   'canvas.toolbar.newAssociation': 'නව සංගමය',
   'canvas.toolbar.newAttribute': 'නව ගුණාංගය',

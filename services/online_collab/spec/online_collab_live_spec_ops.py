@@ -47,7 +47,9 @@ from services.online_collab.spec.online_collab_live_spec import (
     spec_for_snapshot,
 )
 from services.online_collab.spec.online_collab_live_spec_json import json_get_live_spec
+from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_async_client import get_async_redis
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -511,6 +513,22 @@ async def _flush_live_spec_to_db_impl(code: str, diagram_id: str) -> bool:
                 return False
             await db.commit()
             await mark_live_spec_db_flushed(redis, code)
+            owner_result = await db.execute(STMT_DIAGRAM_BY_ID, {"p_id": diagram_id})
+            owner_diagram = owner_result.scalars().first()
+            if owner_diagram is not None:
+                owner_id = getattr(owner_diagram, "user_id", None)
+                if owner_id is not None:
+                    try:
+                        await get_diagram_cache().invalidate_diagram(
+                            int(owner_id),
+                            diagram_id,
+                        )
+                    except BACKGROUND_INFRA_ERRORS as cache_exc:
+                        logger.debug(
+                            "[LiveSpec] diagram cache invalidate after flush failed (non-fatal) diagram=%s: %s",
+                            diagram_id,
+                            cache_exc,
+                        )
             return True
         except (RedisError, OSError, RuntimeError, TypeError, ValueError, AttributeError, SQLAlchemyError) as exc:
             logger.error("[LiveSpec] flush failed: %s", exc, exc_info=True)

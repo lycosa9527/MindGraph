@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Te veel momentopnameacties. Wacht even en probeer het opnieuw.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Diagram niet gevonden. Laad de pagina opnieuw of open deze vanuit uw bibliotheek.',
   'canvas.library.diagramNotFound': 'Diagram niet gevonden. Mogelijk is deze verwijderd. Open een ander diagram uit uw bibliotheek.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Kan momentopname niet opslaan (conflict). Probeer het opnieuw.',
   'canvas.toolbar.newAssociation': 'Nieuwe vereniging',
   'canvas.toolbar.newAttribute': 'Nieuw attribuut',

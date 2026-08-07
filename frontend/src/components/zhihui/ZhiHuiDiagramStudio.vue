@@ -261,7 +261,9 @@ async function generate(): Promise<void> {
   }
 }
 
-defineExpose({ generate, busy })
+const hasSlides = computed(() => slides.value.length > 0)
+
+defineExpose({ generate, busy, hasSlides })
 </script>
 
 <template>

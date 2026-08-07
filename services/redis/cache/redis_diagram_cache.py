@@ -257,8 +257,8 @@ class RedisDiagramCache:
         if self._use_redis():
             redis = get_async_redis()
             if redis:
+                diagram_key = self._get_diagram_key(user_id, diagram_id)
                 try:
-                    diagram_key = self._get_diagram_key(user_id, diagram_id)
                     meta_key = self._get_user_meta_key(user_id)
                     list_key = self._get_user_list_key(user_id)
 
@@ -284,6 +284,15 @@ class RedisDiagramCache:
                         "[DiagramCache] Redis cache update failed (diagram saved to database): %s",
                         e,
                     )
+                    # Drop the key so the next GET falls through to Postgres
+                    # instead of serving a stale pre-write blob.
+                    try:
+                        await redis.delete(diagram_key)
+                    except REDIS_ERRORS as delete_exc:
+                        logger.warning(
+                            "[DiagramCache] Redis diagram key delete after cache write failure failed: %s",
+                            delete_exc,
+                        )
 
         return True, diagram_id, None
 
@@ -381,10 +390,10 @@ class RedisDiagramCache:
         thumbnail: Optional[str],
     ) -> Tuple[bool, Optional[str]]:
         """
-        Persist title/thumbnail without touching ``spec`` (collab-safe).
+        Persist title/thumbnail without touching ``spec``.
 
-        Used when a live workshop is active: cache-aside ``spec`` would be stale
-        relative to Redis live_spec.
+        Safe for title-only PUTs and live workshops: avoids rewriting ``spec``
+        from a possibly stale cache-aside blob.
         """
         existing = await self.get_diagram(user_id, diagram_id)
         if not existing:
@@ -1062,6 +1071,28 @@ class RedisDiagramCache:
             await redis.delete(self._get_user_list_key(user_id))
         except REDIS_ERRORS as exc:
             logger.warning("[DiagramCache] invalidate_user_list failed user=%s: %s", user_id, exc)
+
+    async def invalidate_diagram(self, user_id: int, diagram_id: str) -> None:
+        """Delete per-diagram Redis key and user list cache (e.g. after collab flush)."""
+        if not self._use_redis():
+            return
+        redis = get_async_redis()
+        if not redis:
+            return
+        try:
+            diagram_key = self._get_diagram_key(user_id, diagram_id)
+            list_key = self._get_user_list_key(user_id)
+            async with redis.pipeline(transaction=False) as pipe:
+                pipe.delete(diagram_key)
+                pipe.delete(list_key)
+                await pipe.execute()
+        except REDIS_ERRORS as exc:
+            logger.warning(
+                "[DiagramCache] invalidate_diagram failed user=%s diagram=%s: %s",
+                user_id,
+                diagram_id,
+                exc,
+            )
 
     def get_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""

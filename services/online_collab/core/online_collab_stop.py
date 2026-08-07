@@ -176,10 +176,12 @@ async def stop_online_collab_impl(diagram_id: str, user_id: int) -> bool:
                 diagram_id,
             )
             try:
-                await get_diagram_cache().invalidate_user_list(user_id)
+                cache = get_diagram_cache()
+                await cache.invalidate_user_list(user_id)
+                await cache.invalidate_diagram(user_id, diagram_id)
             except BACKGROUND_INFRA_ERRORS as cache_exc:
                 logger.debug(
-                    "[OnlineCollabMgr] List cache invalidation failed (non-fatal): %s",
+                    "[OnlineCollabMgr] Diagram cache invalidation failed (non-fatal): %s",
                     cache_exc,
                 )
             return True
@@ -283,6 +285,17 @@ async def stop_online_collab_for_room_idle_impl(
                 ws_code,
                 diagram_id,
             )
+            owner_id = getattr(diagram, "user_id", None)
+            if owner_id is not None:
+                try:
+                    cache = get_diagram_cache()
+                    await cache.invalidate_user_list(int(owner_id))
+                    await cache.invalidate_diagram(int(owner_id), diagram_id)
+                except BACKGROUND_INFRA_ERRORS as cache_exc:
+                    logger.debug(
+                        "[OnlineCollabMgr] Idle-stop diagram cache invalidation failed (non-fatal): %s",
+                        cache_exc,
+                    )
             return True
 
         except DATABASE_ERRORS as exc:

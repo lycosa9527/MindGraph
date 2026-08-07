@@ -190,7 +190,7 @@ async function loadDiagram(id: string | null): Promise<void> {
   if (!id) return
   loading.value = true
   try {
-    const result = await savedStore.getDiagram(id)
+    const result = await savedStore.getDiagram(id, { force: true })
     if (epoch !== loadEpoch || id !== props.diagramId) return
     if (!result.ok) {
       error.value = String(t('zhihui.diagram.loadFailed'))

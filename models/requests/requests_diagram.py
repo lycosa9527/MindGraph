@@ -10,7 +10,8 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Literal, Optional, Dict, Any, List
+from datetime import datetime
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -423,10 +424,12 @@ class GenerateMindmapFromPackageRequest(BaseModel):
     @field_validator("language")
     @classmethod
     def validate_package_generate_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
         return _validate_prompt_output_language(value)
 
     @model_validator(mode="after")
     def require_scope(self) -> "GenerateMindmapFromPackageRequest":
+        """Require either diagram_id or package_id for corpus scope."""
         if not self.diagram_id and not self.package_id:
             raise ValueError("Either diagram_id or package_id is required")
         return self
@@ -480,6 +483,10 @@ class DiagramUpdateRequest(BaseModel):
         ge=0,
         le=1000,
         description="Number of content edits (add/delete/change nodes) since last save",
+    )
+    if_updated_at: Optional[datetime] = Field(
+        None,
+        description="If set, update only when the stored updated_at matches (optimistic concurrency).",
     )
 
     model_config = ConfigDict(

@@ -66,14 +66,57 @@ const emptyStateLabel = computed(() => {
   return String(t('zhihui.diagram.emptyDeck'))
 })
 
+const showBatchProgress = computed(() => {
+  const status = props.status || ''
+  return (
+    props.starting ||
+    status === 'queued' ||
+    status === 'planning' ||
+    status === 'generating' ||
+    status === 'partial' ||
+    status === 'failed'
+  )
+})
+
+const batchIndex = computed(() => {
+  const raw = props.progress?.batch_index
+  return typeof raw === 'number' && Number.isFinite(raw) ? raw : null
+})
+
+const batchTotal = computed(() => {
+  const raw = props.progress?.batch_total
+  return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : null
+})
+
 const progressHint = computed(() => {
+  if (batchIndex.value === null || batchTotal.value === null) return ''
+  return String(
+    t('zhihui.diagram.batchProgress', {
+      current: batchIndex.value,
+      total: batchTotal.value,
+    })
+  )
+})
+
+const batchPercent = computed(() => {
+  if (batchIndex.value === null || batchTotal.value === null || batchTotal.value <= 0) {
+    return 0
+  }
+  return Math.min(100, Math.max(0, (batchIndex.value / batchTotal.value) * 100))
+})
+
+const plannedSlideHint = computed(() => {
   const p = props.progress
   if (!p) return ''
-  const batchIndex = p.batch_index
-  const batchTotal = p.batch_total
-  if (typeof batchIndex === 'number' && typeof batchTotal === 'number' && batchTotal > 0) {
+  const slideCount = p.slide_count
+  const planned = p.planned_slides
+  if (
+    typeof slideCount === 'number' &&
+    typeof planned === 'number' &&
+    planned > 0
+  ) {
     return String(
-      t('zhihui.diagram.batchProgress', { current: batchIndex, total: batchTotal })
+      t('zhihui.diagram.slideProgress', { current: slideCount, total: planned })
     )
   }
   return ''
@@ -164,13 +207,31 @@ onBeforeUnmount(() => {
       >
         <ChevronLeft class="h-4 w-4" />
       </button>
-      <div class="text-xs text-stone-500">
-        <template v-if="total > 0">
-          {{ slideIndex + 1 }} / {{ total }}
-        </template>
-        <template v-else>
-          {{ emptyStateLabel }}
-        </template>
+      <div class="min-w-0 flex-1 px-2 text-center text-xs text-stone-500">
+        <div class="truncate">
+          <template v-if="total > 0">
+            {{ slideIndex + 1 }} / {{ total }}
+            <span
+              v-if="plannedSlideHint && showBatchProgress"
+              class="ml-1 text-stone-400"
+            >· {{ plannedSlideHint }}</span>
+          </template>
+          <template v-else>
+            {{ emptyStateLabel }}
+          </template>
+        </div>
+        <div
+          v-if="showBatchProgress && progressHint"
+          class="mt-1 flex flex-col items-center gap-1"
+        >
+          <div class="h-1 w-28 overflow-hidden rounded-full bg-stone-200">
+            <div
+              class="h-full rounded-full bg-amber-500 transition-[width] duration-300"
+              :style="{ width: `${batchPercent}%` }"
+            />
+          </div>
+          <span class="text-[10px] leading-none text-stone-400">{{ progressHint }}</span>
+        </div>
       </div>
       <button
         type="button"
@@ -239,23 +300,35 @@ onBeforeUnmount(() => {
     </div>
 
     <div
-      v-if="current?.slide_title || canResume"
-      class="flex items-center justify-center gap-3 border-t border-stone-100 px-3 py-2"
+      v-if="current?.slide_title || canResume || errorMessage"
+      class="flex flex-col items-center justify-center gap-2 border-t border-stone-100 px-3 py-2"
     >
+      <div
+        v-if="current?.slide_title || canResume"
+        class="flex w-full items-center justify-center gap-3"
+      >
+        <p
+          v-if="current?.slide_title"
+          class="text-center text-xs text-stone-600"
+        >
+          {{ current.slide_title }}
+        </p>
+        <button
+          v-if="canResume"
+          type="button"
+          class="shrink-0 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
+          @click="emit('resume')"
+        >
+          {{ t('zhihui.diagram.resume') }}
+        </button>
+      </div>
       <p
-        v-if="current?.slide_title"
-        class="text-center text-xs text-stone-600"
+        v-if="errorMessage"
+        class="max-w-full truncate text-center text-[11px] text-rose-500"
+        :title="errorMessage"
       >
-        {{ current.slide_title }}
+        {{ errorMessage }}
       </p>
-      <button
-        v-if="canResume"
-        type="button"
-        class="shrink-0 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
-        @click="emit('resume')"
-      >
-        {{ t('zhihui.diagram.resume') }}
-      </button>
     </div>
   </div>
 </template>

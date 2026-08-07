@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Terlalu banyak tindakan cuplikan. Tunggu sebentar dan coba lagi.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Rajah tidak ditemukan. Muat ulang halaman atau buka dari perpustakaan Anda.',
   'canvas.library.diagramNotFound': 'Rajah tidak ditemukan. Itu mungkin telah dipadam. Buka rajah lain dari perpustakaan Anda.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Tidak boleh menyimpan snapshot (konflik). Sila coba lagi.',
   'canvas.toolbar.newAssociation': 'Asosiasi baru',
   'canvas.toolbar.newAttribute': 'Atribut Baru',

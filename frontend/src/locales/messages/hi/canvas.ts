@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'बहुत सारे स्नैपशॉट। थोड़ा प्रतीक्षा करें और पुनः।',
   'canvas.toolbar.snapshotDiagramNotFound': 'आरेख नहीं मिला। पृष्ठ रीलोड या पुस्तकालय से खोलें।',
   'canvas.library.diagramNotFound': 'आरेख नहीं मिला। हटाया गया हो सकता है। पुस्तकालय से दूसरा खोलें।',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'नहीं हो सका: save snapshot (conflict). Please try again.',
   'canvas.toolbar.newAssociation': 'नया association',
   'canvas.toolbar.newAttribute': 'नया Attribute',

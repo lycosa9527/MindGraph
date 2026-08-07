@@ -56,8 +56,18 @@ export function useCanvasPageLibrarySnapshots(options: {
 
     // Persist the previous canvas before tearing it down — clearing data while
     // activeDiagramId still points at the old row could autosave an empty wipe.
+    // flushOnLeave bypasses suppress/LLM/subgraph; fail closed unless collab
+    // owns durability via live_spec (REST save is intentionally blocked).
     if (diagramAutoSave.isDirty.value) {
-      await diagramAutoSave.flush()
+      const flushResult = await diagramAutoSave.flushOnLeave()
+      const collabOwnsPersist = diagramStore.collabSessionActive
+      if (
+        !flushResult.saved &&
+        !(collabOwnsPersist && flushResult.reason === 'skipped_guards')
+      ) {
+        notify.warning(t('canvas.library.saveBeforeSwitchFailed'))
+        return false
+      }
     }
     if (loadGen !== libraryLoadGeneration) {
       return false
@@ -72,7 +82,7 @@ export function useCanvasPageLibrarySnapshots(options: {
     // Unload old canvas + sync chrome in the same tick so neither previous
     // toolbar nor previous nodes can paint during the fetch await.
     unloadCanvasForLibrarySwitch(listed?.diagram_type)
-    const result = await savedDiagramsStore.getDiagram(diagramId)
+    const result = await savedDiagramsStore.getDiagram(diagramId, { force: true })
     if (loadGen !== libraryLoadGeneration) {
       return false
     }

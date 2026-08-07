@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Trop d’actions de capture. Attendez un instant et réessayez.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Diagramme introuvable. Rechargez la page ou ouvrez-le depuis votre bibliothèque.',
   'canvas.library.diagramNotFound': 'Diagramme introuvable. Il a peut-être été supprimé. Ouvrez un autre diagramme depuis votre bibliothèque.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Impossible d’enregistrer la capture (conflit). Réessayez.',
   'canvas.toolbar.newAssociation': 'Nouvelle association',
   'canvas.toolbar.newAttribute': 'Nouvel attribut',

@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Masyadong maraming mga pagkilos ng snapshot. Maghintay sandali at subukang muli.',
   'canvas.toolbar.snapshotDiagramNotFound': 'Hindi nakita ang diagram. I-reload ang page o buksan ito mula sa iyong library.',
   'canvas.library.diagramNotFound': 'Hindi nakita ang diagram. Maaaring ito ay tinanggal. Magbukas ng isa pang diagram mula sa iyong library.',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': 'Hindi ma-save ang snapshot (conflict). Pakisubukang muli.',
   'canvas.toolbar.newAssociation': 'Bagong samahan',
   'canvas.toolbar.newAttribute': 'Bagong Katangian',

@@ -99,6 +99,24 @@ def _diagram_limit_http_detail(error: str | None, lang: Language) -> str | None:
     return diagram_limit_reached_message(lang, cap)
 
 
+def _as_utc_aware_datetime(value: datetime | str) -> datetime:
+    """Normalize ISO strings / naive datetimes to UTC-aware for CAS compare."""
+    if isinstance(value, str):
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    else:
+        parsed = value
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
+def _updated_at_matches(expected: datetime, stored: datetime | str | None) -> bool:
+    """Return True when expected matches stored updated_at (Z / +00:00 tolerant)."""
+    if stored is None:
+        return False
+    return _as_utc_aware_datetime(expected) == _as_utc_aware_datetime(stored)
+
+
 async def _get_diagram_as_org_workshop_participant(
     diagram_id: str,
     requesting_org_id: Optional[int],
@@ -435,10 +453,20 @@ async def update_diagram(
     if not existing:
         raise HTTPException(status_code=404, detail="Diagram not found")
 
+    if req.if_updated_at is not None and not _updated_at_matches(
+        req.if_updated_at,
+        existing.get("updated_at"),
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="Diagram was modified elsewhere; reload and retry.",
+        )
+
     title = req.title if req.title is not None else existing["title"]
     thumbnail = req.thumbnail if req.thumbnail is not None else existing.get("thumbnail")
 
-    if active_code and req.spec is None:
+    if req.spec is None:
+        # Title/thumbnail-only: never rewrite spec from a possibly stale cache blob.
         success, error = await cache.update_diagram_meta_only(
             user_id=current_user.id,
             diagram_id=diagram_id,
@@ -448,13 +476,12 @@ async def update_diagram(
         if not success:
             raise HTTPException(status_code=400, detail=error or "Failed to update diagram")
     else:
-        spec = req.spec if req.spec is not None else existing["spec"]
         success, _, error = await cache.save_diagram(
             user_id=current_user.id,
             diagram_id=diagram_id,
             title=title,
             diagram_type=existing["diagram_type"],
-            spec=spec,
+            spec=req.spec,
             language=existing.get("language", "zh"),
             thumbnail=thumbnail,
             organization_id=getattr(current_user, "organization_id", None),

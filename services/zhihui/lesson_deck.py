@@ -22,10 +22,14 @@ from services.t2i.wan_image_client import (
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from services.zhihui.focus import resolve_frame_focus_node_ids
-from services.zhihui.lesson_planner import plan_lesson_from_outline, planner_model_id
-from services.zhihui.outline import extract_mindmap_outline, is_mindmap_type
+from services.zhihui.lesson_planner import (
+    normalize_lesson_plan_to_outline,
+    plan_lesson_from_outline,
+    planner_model_id,
+)
+from services.zhihui.outline import MindMapOutline, extract_mindmap_outline, is_mindmap_type
 from services.zhihui.storage import build_generation_key, delete_key, put_bytes
-from services.zhihui.wan_prompt_shell import plan_batches_to_wan_jobs
+from services.zhihui.wan_prompt_shell import build_wan_batch_prompt, plan_batches_to_wan_jobs
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -130,6 +134,90 @@ async def _track_usage(
         logger.warning("[ZhiHui] Token tracking failed: %s", exc)
 
 
+def _frame_title(frame: Any) -> str:
+    if not isinstance(frame, dict):
+        return ""
+    return str(frame.get("title") or "").strip()
+
+
+def _outline_branch_label(outline: Optional[MindMapOutline], hint: Any) -> str:
+    """Human label like ``3/8「产品与货品策略」`` for logs."""
+    if outline is None or not outline.branches:
+        raw = str(hint or "").strip()
+        return raw or "-"
+    normalized = str(hint or "").strip().lower()
+    if not normalized:
+        return "-"
+    total = len(outline.branches)
+    for index, branch in enumerate(outline.branches, start=1):
+        branch_id = (branch.id or "").strip()
+        text = (branch.text or "").strip()
+        if branch_id and branch_id.lower() == normalized:
+            return f"{index}/{total}「{text or branch_id}」"
+        if text and text.lower() == normalized:
+            return f"{index}/{total}「{text}」"
+    for index, branch in enumerate(outline.branches, start=1):
+        text = (branch.text or "").strip()
+        if not text:
+            continue
+        text_lower = text.lower()
+        if normalized in text_lower or text_lower in normalized:
+            return f"{index}/{total}「{text}」"
+    return str(hint).strip() or "-"
+
+
+def _batch_branch_labels(job: dict[str, Any], outline: Optional[MindMapOutline]) -> str:
+    frames = job.get("frames") or []
+    labels: list[str] = []
+    seen: set[str] = set()
+    for frame in frames:
+        if not isinstance(frame, dict):
+            continue
+        hint = str(frame.get("focus_branch") or "").strip()
+        if not hint:
+            continue
+        label = _outline_branch_label(outline, hint)
+        if label in seen:
+            continue
+        seen.add(label)
+        labels.append(label)
+    return ",".join(labels) if labels else "-"
+
+
+def _format_outline_branches(outline: MindMapOutline) -> str:
+    parts: list[str] = []
+    for index, branch in enumerate(outline.branches, start=1):
+        branch_id = (branch.id or "").strip() or "-"
+        text = (branch.text or "").strip() or "-"
+        parts.append(f"{index}:{branch_id}/{text}")
+    return " | ".join(parts)
+
+
+def _summarize_jobs(
+    jobs: list[dict[str, Any]],
+    outline: Optional[MindMapOutline] = None,
+) -> list[str]:
+    """One short line per Wan batch for INFO logs."""
+    lines: list[str] = []
+    frames_done = 0
+    for index, job in enumerate(jobs, start=1):
+        frames = job.get("frames") or []
+        batch_start = frames_done
+        batch_end = frames_done + len(frames)
+        titles = [_frame_title(frame) or f"frame-{offset + 1}" for offset, frame in enumerate(frames)]
+        title_preview = " | ".join(titles[:6])
+        if len(titles) > 6:
+            title_preview = f"{title_preview} | …(+{len(titles) - 6})"
+        branch_labels = _batch_branch_labels(job, outline)
+        lines.append(
+            f"batch={index}/{len(jobs)} role={job.get('batch_role') or '-'} "
+            f"branch={branch_labels} slides={batch_start}-{max(batch_start, batch_end - 1)} "
+            f"n={job.get('n')} frames={len(frames)} titles=[{title_preview}]"
+        )
+        frames_done = batch_end
+    return lines
+
+
 async def _persist_slide(
     *,
     conversation_id: str,
@@ -142,7 +230,8 @@ async def _persist_slide(
     slide_index: int,
     slide_title: Optional[str],
     focus_node_ids: Optional[list[str]],
-) -> None:
+) -> dict[str, Any]:
+    """Download, store, and persist one slide; return debug metadata."""
     image_bytes = await download_image_bytes(image_url)
     generation_id = str(uuid.uuid4())
     logical_key = build_generation_key(generation_id=generation_id, suffix=".png")
@@ -168,6 +257,13 @@ async def _persist_slide(
     except DATABASE_ERRORS:
         await delete_key(logical_key)
         raise
+    return {
+        "generation_id": generation_id,
+        "logical_key": logical_key,
+        "bytes": len(image_bytes),
+        "size": size or DEFAULT_WAN_SIZE,
+        "source_host": image_url.split("?", 1)[0][:120],
+    }
 
 
 async def _wipe_generations(conversation_id: str) -> None:
@@ -178,16 +274,59 @@ async def _wipe_generations(conversation_id: str) -> None:
         for gen in gens:
             await gen_repo.delete_generation(gen.id, commit=False)
         await db.commit()
+    logger.info(
+        "[ZhiHui] Wipe generations conversation=%s count=%s",
+        conversation_id,
+        len(keys),
+    )
     for key in keys:
         await delete_key(key)
 
 
 def next_slide_index(gens: list[Any]) -> int:
-    """Resume index after the highest persisted ``slide_index``."""
-    indexes = [int(gen.slide_index) for gen in gens if getattr(gen, "slide_index", None) is not None]
+    """
+    Resume cursor: first missing ``slide_index`` in ``0..max``, else ``max+1``.
+
+    Backfills holes (e.g. indexes ``{0,1,3}`` → ``2``) so resume does not skip gaps.
+    """
+    indexes = sorted({int(gen.slide_index) for gen in gens if getattr(gen, "slide_index", None) is not None})
     if not indexes:
         return len(gens)
-    return max(indexes) + 1
+    expected = 0
+    for index in indexes:
+        if index < 0:
+            continue
+        if index > expected:
+            return expected
+        if index == expected:
+            expected += 1
+    return expected
+
+
+def iter_batch_resume_ranges(
+    batch_frame_counts: list[int],
+    resume_slide: int,
+) -> list[tuple[int, int, int, int]]:
+    """
+    Absolute slide ranges and skip offsets for each Wan batch.
+
+    Returns list of ``(batch_start, batch_end, skip_in_batch, frames_in_batch)``.
+    ``frames_done`` always starts at 0 so resume indexes align with the plan.
+    """
+    ranges: list[tuple[int, int, int, int]] = []
+    frames_done = 0
+    resume = max(0, int(resume_slide))
+    for count in batch_frame_counts:
+        frame_count = max(0, int(count))
+        batch_start = frames_done
+        batch_end = frames_done + frame_count
+        if resume >= batch_end:
+            skip_in_batch = frame_count
+        else:
+            skip_in_batch = max(0, resume - batch_start)
+        ranges.append((batch_start, batch_end, skip_in_batch, frame_count))
+        frames_done = batch_end
+    return ranges
 
 
 async def run_diagram_lesson_deck(
@@ -199,7 +338,7 @@ async def run_diagram_lesson_deck(
     Background pipeline for one diagram-lesson conversation.
 
     Idempotent resume: if ``lesson_plan_json`` exists, skip planning and continue
-    from ``max(slide_index)+1``. Returns True on complete, False otherwise.
+    from the first missing ``slide_index`` (or ``max+1``). Returns True on complete.
     """
     async with system_rls_session() as db:
         conv_repo = ZhihuiConversationRepository(db)
@@ -234,6 +373,19 @@ async def run_diagram_lesson_deck(
     saved = len(existing_gens)
     plan = existing_plan
     outline = None
+    pipeline_started = time.monotonic()
+
+    logger.info(
+        "[ZhiHui] Deck start conversation=%s diagram=%s celery=%s resume_slide=%s saved=%s has_plan=%s lang=%s user=%s",
+        conversation_id,
+        diagram_id,
+        celery_task_id,
+        slide_index,
+        saved,
+        plan is not None,
+        language,
+        user_id,
+    )
 
     try:
         diagram = await _load_diagram(diagram_id)
@@ -243,6 +395,15 @@ async def run_diagram_lesson_deck(
             diagram.spec,
             diagram_type=diagram.diagram_type,
             fallback_title=diagram.title or "",
+        )
+        logger.info(
+            "[ZhiHui] Outline conversation=%s topic=%r branches=%s diagram_type=%s title=%r order=[%s]",
+            conversation_id,
+            outline.topic,
+            len(outline.branches),
+            diagram.diagram_type,
+            diagram.title or "",
+            _format_outline_branches(outline),
         )
 
         if plan is None:
@@ -256,6 +417,7 @@ async def run_diagram_lesson_deck(
                 progress={"phase": "planning"},
                 clear_error=True,
             )
+            logger.info("[ZhiHui] Planning start conversation=%s model=%s", conversation_id, planner_model_id())
             started = time.monotonic()
             plan, usage = await plan_lesson_from_outline(
                 outline,
@@ -274,43 +436,106 @@ async def run_diagram_lesson_deck(
                 response_time=time.monotonic() - started,
                 success=True,
             )
+            usage_data = usage or {}
+            logger.info(
+                "[ZhiHui] Planning done conversation=%s elapsed=%.1fs tokens_in=%s tokens_out=%s style_seed=%r",
+                conversation_id,
+                time.monotonic() - started,
+                usage_data.get("prompt_tokens") or usage_data.get("input_tokens"),
+                usage_data.get("completion_tokens") or usage_data.get("output_tokens"),
+                str(plan.get("style_seed") or "")[:80],
+            )
+        else:
+            # Never permute a persisted plan after slides exist — slide_index
+            # must stay aligned with the frozen frame order.
+            if saved == 0:
+                plan = normalize_lesson_plan_to_outline(plan, outline)
+            logger.info(
+                "[ZhiHui] Reusing lesson plan conversation=%s style_seed=%r saved=%s reorder=%s",
+                conversation_id,
+                str(plan.get("style_seed") or "")[:80],
+                saved,
+                saved == 0,
+            )
 
         jobs = plan_batches_to_wan_jobs(plan)
         if not jobs:
             raise ValueError("Lesson plan produced no image batches")
+
+        planned_frames = sum(len(job.get("frames") or []) for job in jobs)
+        logger.info(
+            "[ZhiHui] Wan jobs ready conversation=%s batches=%s planned_slides=%s resume_slide=%s model=%s size=%s",
+            conversation_id,
+            len(jobs),
+            planned_frames,
+            slide_index,
+            DEFAULT_WAN_IMAGE_MODEL,
+            DEFAULT_WAN_SIZE,
+        )
+        for line in _summarize_jobs(jobs, outline):
+            logger.info("[ZhiHui] Plan %s conversation=%s", line, conversation_id)
 
         await _set_status(
             conversation_id,
             status="generating",
             progress={
                 "phase": "generating",
-                "batch_index": 0,
+                "batch_index": 1 if jobs else 0,
                 "batch_total": len(jobs),
                 "slide_count": saved,
+                "planned_slides": planned_frames,
             },
             style_seed=str(plan.get("style_seed") or ""),
             lesson_plan_json=plan,
             clear_error=True,
         )
 
-        frames_done = slide_index
+        batch_counts = [len(job.get("frames") or []) for job in jobs]
+        resume_ranges = iter_batch_resume_ranges(batch_counts, slide_index)
         for batch_index, job in enumerate(jobs):
             status_now = await _conversation_status(conversation_id)
             if status_now in _STOP_MID_RUN:
                 logger.info(
-                    "[ZhiHui] Stop mid-run conversation=%s status=%s",
+                    "[ZhiHui] Stop mid-run conversation=%s status=%s saved=%s slide_index=%s",
                     conversation_id,
                     status_now,
+                    saved,
+                    slide_index,
                 )
                 return False
 
             frames = job.get("frames") or []
-            batch_start = frames_done
-            batch_end = frames_done + len(frames)
-            if slide_index >= batch_end:
-                frames_done = batch_end
+            batch_start, batch_end, skip_in_batch, _frame_count = resume_ranges[batch_index]
+            if skip_in_batch >= len(frames):
+                logger.info(
+                    "[ZhiHui] Skip batch conversation=%s batch=%s/%s "
+                    "branch=%s slides=%s-%s (already past resume_slide=%s)",
+                    conversation_id,
+                    batch_index + 1,
+                    len(jobs),
+                    _batch_branch_labels(job, outline),
+                    batch_start,
+                    batch_end - 1,
+                    slide_index,
+                )
                 continue
-            skip_in_batch = max(0, slide_index - batch_start)
+
+            remaining_frames = frames[skip_in_batch:]
+            need_count = len(remaining_frames)
+            batch_role = str(job.get("batch_role") or "")
+            frame_titles = [
+                _frame_title(frame) or f"#{skip_in_batch + offset}" for offset, frame in enumerate(remaining_frames)
+            ]
+            branch_labels = _batch_branch_labels(job, outline)
+            wan_prompt = (
+                str(job.get("prompt") or "")
+                if skip_in_batch == 0
+                else build_wan_batch_prompt(
+                    style_seed=str(job.get("style_seed") or ""),
+                    frames=remaining_frames,
+                    batch_role=batch_role,
+                )
+            )
 
             await _set_status(
                 conversation_id,
@@ -320,17 +545,35 @@ async def run_diagram_lesson_deck(
                     "batch_index": batch_index + 1,
                     "batch_total": len(jobs),
                     "slide_count": saved,
+                    "planned_slides": planned_frames,
+                    "batch_role": batch_role,
                 },
+            )
+            logger.info(
+                "[ZhiHui] Wan batch start conversation=%s batch=%s/%s role=%s "
+                "branch=%s n=%s skip=%s resume_slide=%s slide_range=%s-%s titles=%s",
+                conversation_id,
+                batch_index + 1,
+                len(jobs),
+                batch_role or "-",
+                branch_labels,
+                need_count,
+                skip_in_batch,
+                slide_index,
+                batch_start + skip_in_batch,
+                batch_end - 1,
+                frame_titles,
             )
             wan_started = time.monotonic()
             batch = await generate_wan_image_batch(
-                prompt=job["prompt"],
+                prompt=wan_prompt,
                 model=DEFAULT_WAN_IMAGE_MODEL,
-                n=int(job["n"]),
+                n=need_count,
                 size=DEFAULT_WAN_SIZE,
                 watermark=False,
                 enable_sequential=True,
             )
+            wan_elapsed = time.monotonic() - wan_started
             await _track_usage(
                 model_alias="wan",
                 usage=batch.usage,
@@ -338,16 +581,28 @@ async def run_diagram_lesson_deck(
                 user_id=user_id,
                 organization_id=organization_id,
                 conversation_id=conversation_id,
-                response_time=time.monotonic() - wan_started,
+                response_time=wan_elapsed,
                 success=True,
             )
 
             image_urls = list(batch.image_urls or [])
-            batch_role = str(job.get("batch_role") or "")
+            logger.info(
+                "[ZhiHui] Wan batch result conversation=%s batch=%s/%s "
+                "task_id=%s urls=%s need=%s elapsed=%.1fs size=%s",
+                conversation_id,
+                batch_index + 1,
+                len(jobs),
+                batch.task_id,
+                len(image_urls),
+                need_count,
+                wan_elapsed,
+                batch.size or DEFAULT_WAN_SIZE,
+            )
             for url_index, image_url in enumerate(image_urls):
-                if url_index < skip_in_batch:
-                    continue
-                frame = frames[url_index] if url_index < len(frames) else {}
+                if url_index >= need_count:
+                    break
+                frame_offset = skip_in_batch + url_index
+                frame = frames[frame_offset] if frame_offset < len(frames) else {}
                 title = ""
                 focus_branch = None
                 focus_child = ""
@@ -367,22 +622,41 @@ async def run_diagram_lesson_deck(
                         batch_role=batch_role,
                         focus_branch=focus_branch,
                     )
-                await _persist_slide(
+                meta = await _persist_slide(
                     conversation_id=conversation_id,
                     language=language,
                     user_id=user_id,
                     organization_id=organization_id,
-                    prompt=str(job.get("prompt") or ""),
+                    prompt=wan_prompt,
                     image_url=image_url,
                     size=batch.size or DEFAULT_WAN_SIZE,
                     slide_index=slide_index,
                     slide_title=title or None,
                     focus_node_ids=focus_ids,
                 )
+                logger.info(
+                    "[ZhiHui] Slide saved conversation=%s slide=%s/%s title=%r "
+                    "role=%s batch=%s/%s batch_role=%s branch=%s focus=%s gen=%s key=%s "
+                    "bytes=%s img_size=%s",
+                    conversation_id,
+                    slide_index + 1,
+                    planned_frames,
+                    title,
+                    frame_role or "-",
+                    batch_index + 1,
+                    len(jobs),
+                    batch_role or "-",
+                    _outline_branch_label(outline, focus_branch),
+                    focus_ids,
+                    meta["generation_id"],
+                    meta["logical_key"],
+                    meta["bytes"],
+                    meta["size"],
+                )
                 slide_index += 1
                 saved += 1
 
-            if len(image_urls) < len(frames):
+            if len(image_urls) < need_count:
                 await _set_status(
                     conversation_id,
                     status="partial",
@@ -391,22 +665,36 @@ async def run_diagram_lesson_deck(
                         "batch_index": batch_index + 1,
                         "batch_total": len(jobs),
                         "slide_count": saved,
+                        "planned_slides": planned_frames,
                         "shortfall": True,
                     },
-                    error_message=(f"Wan returned {len(image_urls)}/{len(frames)} images for batch {batch_index + 1}")[
+                    error_message=(f"Wan returned {len(image_urls)}/{need_count} images for batch {batch_index + 1}")[
                         :2000
                     ],
                 )
                 logger.warning(
-                    "[ZhiHui] Incomplete Wan batch conversation=%s got=%s need=%s",
+                    "[ZhiHui] Incomplete Wan batch conversation=%s batch=%s/%s "
+                    "got=%s need=%s skip=%s saved=%s missing_titles=%s",
                     conversation_id,
+                    batch_index + 1,
+                    len(jobs),
                     len(image_urls),
-                    len(frames),
+                    need_count,
+                    skip_in_batch,
+                    saved,
+                    frame_titles[len(image_urls) :],
                 )
                 return False
 
-            frames_done = batch_end
-
+            logger.info(
+                "[ZhiHui] Wan batch complete conversation=%s batch=%s/%s branch=%s saved_total=%s next_slide=%s",
+                conversation_id,
+                batch_index + 1,
+                len(jobs),
+                branch_labels,
+                saved,
+                slide_index,
+            )
         await _set_status(
             conversation_id,
             status="complete",
@@ -415,12 +703,28 @@ async def run_diagram_lesson_deck(
                 "batch_index": len(jobs),
                 "batch_total": len(jobs),
                 "slide_count": saved,
+                "planned_slides": planned_frames,
             },
             clear_error=True,
         )
+        logger.info(
+            "[ZhiHui] Deck complete conversation=%s slides=%s/%s batches=%s elapsed=%.1fs diagram=%s",
+            conversation_id,
+            saved,
+            planned_frames,
+            len(jobs),
+            time.monotonic() - pipeline_started,
+            diagram_id,
+        )
         return True
     except _PIPELINE_ERRORS as exc:
-        logger.exception("[ZhiHui] Lesson deck failed conversation=%s", conversation_id)
+        logger.exception(
+            "[ZhiHui] Lesson deck failed conversation=%s saved=%s slide_index=%s err=%s",
+            conversation_id,
+            saved,
+            slide_index,
+            exc,
+        )
         await _mark_terminal_from_error(conversation_id, exc)
         return False
 

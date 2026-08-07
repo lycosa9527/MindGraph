@@ -38,6 +38,8 @@ export default {
   'zhihui.diagram.phasePartial': '部分完成',
   'zhihui.diagram.phaseFailed': '生成失败',
   'zhihui.diagram.batchProgress': '批次 {current}/{total}',
+  'zhihui.diagram.slideProgress': '已生成 {current}/{total}',
+  'zhihui.diagram.regenerate': '重新生成',
   'zhihui.diagram.resume': '继续生成',
   'zhihui.diagram.imageLoadFailed': '幻灯片加载失败',
   'zhihui.diagram.retryImage': '重试',

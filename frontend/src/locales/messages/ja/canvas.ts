@@ -422,6 +422,7 @@ export default {
   'canvas.toolbar.snapshotRateLimited': 'Too many snapshot actions. Wait a moment and try again。',
   'canvas.toolbar.snapshotDiagramNotFound': '未找到図。ページを更新してくださいページ面或从资料库開く。',
   'canvas.library.diagramNotFound': '未找到図，可能已被削除。请从图库開く其他マインドマップ。',
+  'canvas.library.saveBeforeSwitchFailed': 'Could not save the current diagram before switching. Stay here and try again.',
   'canvas.toolbar.snapshotConflict': '保存できません快照（冲突）。もう一度お試しください。',
   'canvas.toolbar.newAssociation': '新規 association',
   'canvas.toolbar.newAttribute': '新規 Attribute',
