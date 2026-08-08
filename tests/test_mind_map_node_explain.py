@@ -18,8 +18,8 @@ def test_normalize_facet_defaults_unknown_to_meaning() -> None:
     assert _normalize_facet("other") == "meaning"
 
 
-def test_meaning_prompt_stays_on_topic_relationship() -> None:
-    """Meaning facet should explain node-topic relation and avoid other panels."""
+def test_meaning_prompt_asks_for_direct_topic_definition() -> None:
+    """Meaning facet should ask for a clean definition from the topic's perspective."""
     prompt = _build_facet_prompt(
         facet="meaning",
         node_label="光合作用",
@@ -33,6 +33,9 @@ def test_meaning_prompt_stays_on_topic_relationship() -> None:
     )
     assert "光合作用" in prompt
     assert "中心主题：植物" in prompt
+    assert "清晰定义" in prompt
+    assert "先答本质" in prompt
+    assert "不要讲层级位置" in prompt
     assert "不要写认知冲突" in prompt
     assert "不要列问题" in prompt
 

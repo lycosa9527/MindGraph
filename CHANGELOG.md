@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.173.1] - 2026-08-09
+
+> **Node explain: hide floating toolbar; sharper 节点含义 prompt.**
+
+### Fixed
+
+- **Floating toolbar over explain modal** — Suppress toolbar via position `enabled` while the modal is open, with same-tick hide (no rAF flash above ElDialog).
+
+### Changed
+
+- **节点含义 prompt** — Asks for a clean, direct definition from the topic’s perspective (glossary-style essence first), not hierarchy/coaching filler.
+
 ## [5.173.0] - 2026-08-09
 
 > **Mind map node explain: three parallel facet panels.**

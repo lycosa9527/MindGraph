@@ -73,9 +73,10 @@ _UNTITLED_LABELS = {
 _FACET_TASKS: Dict[PromptShell, Dict[ExplainFacet, str]] = {
     "zh": {
         "meaning": (
-            "只解释该节点在整张图中的含义：它与中心主题的关系、在层级中的位置，"
-            "以及它如何支撑或延伸主题。不要写认知冲突，不要列问题。"
-            "写成 1–2 段短文，约 80–140 字。"
+            "直接给出该节点的清晰定义与解释：站在中心主题的视角，说明它是什么、指什么。"
+            "先答本质（像短释义），必要时再用一两句点明它在本主题下的具体含义；"
+            "不要讲层级位置，不要寒暄铺垫，不要写认知冲突，不要列问题。"
+            "写成 1–2 段短文，约 60–120 字，干净直给。"
         ),
         "conflict": (
             "只讨论该节点可能引发的认知冲突、张力或常见误解：可点名与主题或其他分支的对比。"
@@ -88,10 +89,11 @@ _FACET_TASKS: Dict[PromptShell, Dict[ExplainFacet, str]] = {
     },
     "en": {
         "meaning": (
-            "Only explain what this node means in the diagram: its relation to the central topic, "
-            "its place in the hierarchy, and how it supports or extends the topic. "
-            "Do not discuss cognitive conflict or list questions. "
-            "Write 1–2 short paragraphs, about 60–110 words."
+            "Give a clear, direct definition of this node from the central topic's perspective: "
+            "what it is and what it means here. Lead with the essence (short glossary style); "
+            "add at most one or two sentences on its meaning under this topic if needed. "
+            "No hierarchy lecture, no soft opener, no cognitive conflict, no questions. "
+            "1–2 short paragraphs, about 50–100 words — clean and straight."
         ),
         "conflict": (
             "Only discuss cognitive conflicts, tensions, or common misconceptions this node may spark "
@@ -107,9 +109,11 @@ _FACET_TASKS: Dict[PromptShell, Dict[ExplainFacet, str]] = {
     },
     "az": {
         "meaning": (
-            "Yalnız bu düyünün diaqramdakı mənasını izah edin: mərkəz mövzu ilə əlaqəsi, "
-            "iərarxiyadakı yeri və mövzunu necə dəstəkləməsi. Koqnitiv konflikt və suallar yazmayın. "
-            "1–2 qısa abzas, təxminən 60–110 söz."
+            "Mərkəz mövzunun perspektivindən bu düyünün aydın, birbaşa tərifini verin: "
+            "nədir və burada nə deməkdir. Əvvəlcə mahiyyəti (qısa lüğət üslubu); "
+            "lazım gələrsə mövzu altındakı mənasına 1–2 cümlə əlavə edin. "
+            "İerarxiya izahı, giriş salamı, koqnitiv konflikt və suallar olmasın. "
+            "1–2 qısa abzas, təxminən 50–100 söz — təmiz və birbaşa."
         ),
         "conflict": (
             "Yalnız bu düyünün yarada biləcəyi koqnitiv konflikt, gərginlik və ya ümumi səhv "

@@ -352,12 +352,23 @@ watch(
   { immediate: true }
 )
 
+const nodeExplain = useMindMapNodeExplain()
+const {
+  visible: nodeExplainVisible,
+  target: nodeExplainTarget,
+  panels: nodeExplainPanels,
+  loading: nodeExplainLoading,
+  openExplain: openNodeExplain,
+  close: closeNodeExplain,
+} = nodeExplain
+
 const floatingToolbarNodeIds = computed(() => {
   if (!useMindMapV2.value) return []
   return diagramStore.selectedNodes.slice()
 })
 
-const floatingToolbarEnabled = computed(() => floatingToolbarNodeIds.value.length > 0)
+/** Context gate only; selection lives in node ids. Off while explain modal owns the UI. */
+const floatingToolbarEnabled = computed(() => !nodeExplainVisible.value)
 
 const floatingToolbarAnchorId = computed(() => floatingToolbarNodeIds.value[0] ?? null)
 
@@ -391,6 +402,12 @@ const { isGenerating: subgraphGenerating, generateSubgraph } = useMindMapSubgrap
 
 async function handleAiSubgraphGenerate() {
   await generateSubgraph(floatingToolbarAnchorId.value)
+}
+
+function handleFloatingToolbarExplainNode(): void {
+  const nodeId = floatingToolbarAnchorId.value
+  if (!nodeId) return
+  openNodeExplain(nodeId)
 }
 
 const {
@@ -542,22 +559,6 @@ const {
   handleContextMenuPaste,
   handleContextMenuAddConcept,
 } = contextMenu
-
-const nodeExplain = useMindMapNodeExplain()
-const {
-  visible: nodeExplainVisible,
-  target: nodeExplainTarget,
-  panels: nodeExplainPanels,
-  loading: nodeExplainLoading,
-  openExplain: openNodeExplain,
-  close: closeNodeExplain,
-} = nodeExplain
-
-function handleFloatingToolbarExplainNode(): void {
-  const nodeId = floatingToolbarAnchorId.value
-  if (!nodeId) return
-  openNodeExplain(nodeId)
-}
 
 const { mountSubscriptions, clearDoubleBubbleTimer } = useDiagramCanvasEventBus()
 
