@@ -5,6 +5,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { useEventBus, useLanguage, useNotifications } from '@/composables'
+import { zhihuiDiagramStatusToast } from '@/components/zhihui/zhihuiDiagramProgress'
 import {
   isZhihuiJobActive,
   stabilizeZhihuiGenerations,
@@ -45,6 +46,9 @@ const starting = ref(false)
 const userPinnedSlide = ref(false)
 /** Bumps when a conversation is (re)hydrated so the canvas re-applies focus. */
 const focusEpoch = ref(0)
+/** Announce milestone toasts only for jobs started/watched in this session. */
+const announceMilestones = ref(false)
+const lastAnnouncedStatus = ref<string | null>(null)
 
 const busy = computed(
   () => starting.value || isZhihuiJobActive(status.value)
@@ -70,10 +74,29 @@ const focusNodeIds = computed(() => {
 
 watch(busy, (value) => emit('update:busy', value), { immediate: true })
 
+function announceStatusChange(
+  nextStatus: string | null | undefined,
+  detailError: string | null | undefined
+): void {
+  if (!announceMilestones.value) return
+  const announcement = zhihuiDiagramStatusToast(lastAnnouncedStatus.value, nextStatus)
+  lastAnnouncedStatus.value = nextStatus ? String(nextStatus) : null
+  if (!announcement) return
+  const message =
+    announcement.useErrorMessage && detailError
+      ? detailError
+      : String(t(announcement.messageKey))
+  if (announcement.level === 'success') notify.success(message)
+  else if (announcement.level === 'warning') notify.warning(message)
+  else if (announcement.level === 'error') notify.error(message)
+  else notify.info(message)
+}
+
 function applyDetail(
   detail: ZhihuiConversationItem,
   options: { followLatest: boolean; resetSlide?: boolean }
 ): void {
+  const previousStatus = status.value
   status.value = detail.status
   progress.value = detail.progress ?? null
   errorMessage.value = detail.error_message ?? null
@@ -94,6 +117,9 @@ function applyDetail(
   } else if (slideIndex.value >= nextSlides.length) {
     slideIndex.value = Math.max(0, nextSlides.length - 1)
   }
+  if (announceMilestones.value && String(previousStatus || '') !== String(detail.status || '')) {
+    announceStatusChange(detail.status, detail.error_message)
+  }
 }
 
 function onSlideIndexUpdate(index: number): void {
@@ -113,6 +139,8 @@ async function hydrateFromId(id: string | null): Promise<void> {
     slideIndex.value = 0
     userPinnedSlide.value = false
     starting.value = false
+    announceMilestones.value = false
+    lastAnnouncedStatus.value = null
     historyStore.stopPolling()
     return
   }
@@ -127,6 +155,9 @@ async function hydrateFromId(id: string | null): Promise<void> {
   activeConversationId.value = id
   userPinnedSlide.value = false
   const activeJob = isZhihuiJobActive(detail.status)
+  // Resume announcing for in-flight jobs; seed last status so we don't re-toast current phase.
+  announceMilestones.value = activeJob
+  lastAnnouncedStatus.value = activeJob ? String(detail.status) : null
   // Later visits: start at topic slide so canvas fits the whole map first.
   applyDetail(detail, {
     followLatest: activeJob,
@@ -157,10 +188,12 @@ onMounted(() => {
   })
   on('zhihui:job_terminal', ({ conversationId, status: terminal }) => {
     if (conversationId !== activeConversationId.value) return
-    status.value = terminal
     const detail = historyStore.currentDetail
     if (detail?.id === conversationId) {
       applyDetail(detail, { followLatest: false })
+    } else {
+      announceStatusChange(terminal, errorMessage.value)
+      status.value = terminal
     }
     emit('generated')
   })
@@ -186,6 +219,8 @@ async function resume(): Promise<void> {
     status.value = 'queued'
     errorMessage.value = null
     userPinnedSlide.value = false
+    announceMilestones.value = true
+    lastAnnouncedStatus.value = 'queued'
     historyStore.upsertConversation({
       id: conversationId,
       mode: 'diagram',
@@ -241,6 +276,8 @@ async function generate(): Promise<void> {
     slideIndex.value = 0
     userPinnedSlide.value = false
     errorMessage.value = null
+    announceMilestones.value = true
+    lastAnnouncedStatus.value = String(status.value)
     focusEpoch.value += 1
     historyStore.upsertConversation({
       id: conversationId,

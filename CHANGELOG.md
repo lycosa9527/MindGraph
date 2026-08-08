@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.171.2] - 2026-08-08
+
+> **ZhiHui diagram progress UX and Wan/planner observability.**
+
+### Added
+
+- **Finer diagram phase labels** — Banner copy follows planning stages (topics / branch N of M / close) and distinguishes waiting for first slides vs drawing (`zhihuiDiagramProgress`).
+- **Milestone toasts** — Session-scoped status announcements for planning → drawing → complete / partial / cancelled / failed (no re-toast on hydrate).
+
+### Changed
+
+- **Wan image client logs** — Conversation/batch `log_context`, 30s poll heartbeats, and clear success/timeout/failure lines.
+- **Lesson planner / ZhiHui routes** — Phase timing + token usage logs; clearer queued/resume/cancel/delete audit lines.
+
+### Tests
+
+- Wan poll heartbeat + timeout logging; frontend phase label / toast milestone helpers.
+
 ## [5.171.1] - 2026-08-08
 
 > **Bump transitive `nanoid` for npm high audit.**

@@ -21,7 +21,17 @@ DEFAULT_WAN_SIZE = "1920*1080"
 _POLL_INTERVAL_SECONDS = 2.0
 # Keep under Celery soft limit when several batches run sequentially.
 _POLL_TIMEOUT_SECONDS = 420.0
+_POLL_HEARTBEAT_SECONDS = 30.0
 _HTTP_ATTEMPTS = 8
+
+
+def _format_log_context(log_context: Optional[str]) -> str:
+    """Suffix for Wan log lines (e.g. conversation=… batch=1/3)."""
+    cleaned = (log_context or "").strip()
+    if not cleaned:
+        return ""
+    return f" {cleaned}"
+
 
 _TRANSIENT_HTTP_ERRORS = (
     requests.RequestException,
@@ -143,6 +153,7 @@ async def submit_wan_image_task(
     watermark: bool = False,
     enable_sequential: bool = True,
     api_key: Optional[str] = None,
+    log_context: Optional[str] = None,
 ) -> str:
     """
     Create an async Wan image-generation task.
@@ -177,6 +188,7 @@ async def submit_wan_image_task(
             "watermark": bool(watermark),
         },
     }
+    ctx = _format_log_context(log_context)
     data = await asyncio.to_thread(
         _request_json,
         "POST",
@@ -190,8 +202,22 @@ async def submit_wan_image_task(
     if not isinstance(task_id, str) or not task_id.strip():
         code = data.get("code")
         message = data.get("message")
+        logger.error(
+            "[WanImage] Submit missing task_id n=%s model=%s%s code=%s message=%s",
+            clamp_wan_n(n),
+            model,
+            ctx,
+            code,
+            message,
+        )
         raise LLMProviderError(f"Wan submit missing task_id: {code or ''} {message or data}")
-    logger.info("[WanImage] Submitted task_id=%s n=%s model=%s", task_id, clamp_wan_n(n), model)
+    logger.info(
+        "[WanImage] Submitted task_id=%s n=%s model=%s%s",
+        task_id,
+        clamp_wan_n(n),
+        model,
+        ctx,
+    )
     return task_id.strip()
 
 
@@ -201,16 +227,30 @@ async def poll_wan_image_task(
     api_key: Optional[str] = None,
     poll_interval: float = _POLL_INTERVAL_SECONDS,
     timeout_seconds: float = _POLL_TIMEOUT_SECONDS,
+    log_context: Optional[str] = None,
 ) -> WanImageBatchResult:
     """Poll Wan task until SUCCEEDED / FAILED / timeout."""
     key = (api_key or _dashscope_api_key()).strip()
     base = _api_v1_base()
     url = f"{base}/tasks/{task_id}"
     headers = {"Authorization": f"Bearer {key}"}
-    deadline = asyncio.get_running_loop().time() + max(30.0, float(timeout_seconds))
+    loop = asyncio.get_running_loop()
+    started = loop.time()
+    deadline = started + max(30.0, float(timeout_seconds))
+    ctx = _format_log_context(log_context)
+    last_heartbeat = started - _POLL_HEARTBEAT_SECONDS
+    last_logged_status = ""
 
     while True:
-        if asyncio.get_running_loop().time() > deadline:
+        now = loop.time()
+        if now > deadline:
+            logger.error(
+                "[WanImage] Timed out task_id=%s elapsed=%.1fs timeout=%.0fs%s",
+                task_id,
+                now - started,
+                timeout_seconds,
+                ctx,
+            )
             raise LLMProviderError(f"Wan task timed out: {task_id}")
         try:
             data = await asyncio.to_thread(
@@ -222,7 +262,13 @@ async def poll_wan_image_task(
             )
         except LLMProviderError as exc:
             # Keep polling through flaky TLS; only abort on hard timeout above.
-            logger.warning("[WanImage] poll transport hiccup task=%s: %s", task_id, exc)
+            logger.warning(
+                "[WanImage] poll transport hiccup task_id=%s elapsed=%.1fs%s: %s",
+                task_id,
+                loop.time() - started,
+                ctx,
+                exc,
+            )
             await asyncio.sleep(max(1.0, float(poll_interval)))
             continue
         output = data.get("output") if isinstance(data.get("output"), dict) else {}
@@ -232,11 +278,32 @@ async def poll_wan_image_task(
             if isinstance(raw_status, str):
                 task_status = raw_status.upper()
         if task_status in {"PENDING", "RUNNING", ""}:
+            now = loop.time()
+            status_label = task_status or "UNKNOWN"
+            status_changed = status_label != last_logged_status
+            due_heartbeat = (now - last_heartbeat) >= _POLL_HEARTBEAT_SECONDS
+            if status_changed or due_heartbeat:
+                logger.info(
+                    "[WanImage] Waiting task_id=%s status=%s elapsed=%.1fs timeout=%.0fs%s",
+                    task_id,
+                    status_label,
+                    now - started,
+                    timeout_seconds,
+                    ctx,
+                )
+                last_heartbeat = now
+                last_logged_status = status_label
             await asyncio.sleep(max(0.5, float(poll_interval)))
             continue
         if task_status == "SUCCEEDED":
             urls = extract_image_urls_from_task_output(output)
             if not urls:
+                logger.error(
+                    "[WanImage] Succeeded without images task_id=%s elapsed=%.1fs%s",
+                    task_id,
+                    loop.time() - started,
+                    ctx,
+                )
                 raise LLMProviderError(f"Wan task succeeded without images: {task_id}")
             usage = data.get("usage") if isinstance(data.get("usage"), dict) else None
             size_val = None
@@ -248,6 +315,14 @@ async def poll_wan_image_task(
                     image_count = int(usage["image_count"])
                 except (TypeError, ValueError):
                     image_count = len(urls)
+            logger.info(
+                "[WanImage] Succeeded task_id=%s urls=%s elapsed=%.1fs size=%s%s",
+                task_id,
+                len(urls),
+                loop.time() - started,
+                size_val or "-",
+                ctx,
+            )
             return WanImageBatchResult(
                 image_urls=tuple(urls),
                 task_id=task_id,
@@ -257,6 +332,15 @@ async def poll_wan_image_task(
             )
         code = data.get("code")
         message = data.get("message") or task_status
+        logger.error(
+            "[WanImage] Failed task_id=%s status=%s elapsed=%.1fs code=%s message=%s%s",
+            task_id,
+            task_status,
+            loop.time() - started,
+            code,
+            message,
+            ctx,
+        )
         raise LLMProviderError(f"Wan task failed status={task_status}: {code or ''} {message}")
 
 
@@ -268,6 +352,7 @@ async def generate_wan_image_batch(
     size: str = DEFAULT_WAN_SIZE,
     watermark: bool = False,
     enable_sequential: bool = True,
+    log_context: Optional[str] = None,
 ) -> WanImageBatchResult:
     """Submit Wan async 组图 and wait for image URLs."""
     task_id = await submit_wan_image_task(
@@ -277,8 +362,9 @@ async def generate_wan_image_batch(
         size=size,
         watermark=watermark,
         enable_sequential=enable_sequential,
+        log_context=log_context,
     )
-    return await poll_wan_image_task(task_id)
+    return await poll_wan_image_task(task_id, log_context=log_context)
 
 
 def _download_bytes_sync(image_url: str, timeout: float) -> bytes:

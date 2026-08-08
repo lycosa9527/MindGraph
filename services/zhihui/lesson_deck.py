@@ -548,6 +548,7 @@ async def run_diagram_lesson_deck(
                 frame_titles,
             )
             wan_started = time.monotonic()
+            wan_log_context = f"conversation={conversation_id} batch={batch_index + 1}/{len(jobs)}"
             batch = await generate_wan_image_batch(
                 prompt=wan_prompt,
                 model=DEFAULT_WAN_IMAGE_MODEL,
@@ -555,6 +556,7 @@ async def run_diagram_lesson_deck(
                 size=DEFAULT_WAN_SIZE,
                 watermark=False,
                 enable_sequential=True,
+                log_context=wan_log_context,
             )
             wan_elapsed = time.monotonic() - wan_started
             await _track_usage(

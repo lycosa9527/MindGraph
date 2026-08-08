@@ -226,7 +226,7 @@ async def start_diagram_lesson(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     logger.info(
-        "[ZhiHui] Diagram lesson accepted conversation=%s diagram=%s user=%s lang=%s",
+        "[ZhiHui] Diagram lesson accepted conversation=%s diagram=%s user=%s lang=%s status=queued",
         conversation.id,
         body.diagram_id.strip(),
         user_id,
@@ -303,6 +303,11 @@ async def resume_diagram_lesson(
             commit=True,
         )
 
+    logger.info(
+        "[ZhiHui] Resume accepted conversation=%s user=%s status=queued",
+        conversation_id,
+        user_id,
+    )
     task_id = await _enqueue_lesson_task(conversation_id)
     if task_id:
         try:
@@ -448,6 +453,7 @@ async def delete_zhihui_conversation(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
     task_id = row.celery_task_id
+    prior_status = row.status
     if row.status in ("queued", "planning", "generating"):
         await conv_repo.update_conversation(
             conversation_id,
@@ -456,6 +462,13 @@ async def delete_zhihui_conversation(
             error_message="Cancelled by user",
             commit=True,
         )
+        logger.info(
+            "[ZhiHui] Cancelled conversation=%s user=%s prior_status=%s celery=%s",
+            conversation_id,
+            int(current_user.id),
+            prior_status,
+            task_id,
+        )
 
     if task_id:
         try:
@@ -463,6 +476,11 @@ async def delete_zhihui_conversation(
                 celery_app.control.revoke,
                 task_id,
                 terminate=False,
+            )
+            logger.info(
+                "[ZhiHui] Celery revoke requested conversation=%s celery=%s",
+                conversation_id,
+                task_id,
             )
         except BACKGROUND_INFRA_ERRORS as exc:
             logger.warning("[ZhiHui] Celery revoke failed task=%s err=%s", task_id, exc)
@@ -473,6 +491,12 @@ async def delete_zhihui_conversation(
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
+    logger.info(
+        "[ZhiHui] Deleted conversation=%s user=%s slides=%s",
+        conversation_id,
+        int(current_user.id),
+        len(keys),
+    )
     for key in keys:
         await delete_key(key)
     return {"id": conversation_id, "status": "deleted"}
