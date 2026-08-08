@@ -76,6 +76,7 @@ class RedisActivityTracker:
         "diagram_generation": "Generating Diagram",
         "diagram_save": "Saving Diagram",
         "node_palette": "Using Node Palette",
+        "mindmap_node_explain": "Node Explanation",
         "autocomplete": "Auto-complete",
         "voice_conversation": "Voice Conversation",
         "voice_notes": "Voice Notes",

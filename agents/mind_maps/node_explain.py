@@ -1,8 +1,7 @@
 """
-Mind map node explain — Kitty educational helper on cognitive conflict and inquiry.
+Mind map node explain — three focused educational panels for one node.
 
-Helps learners reflect on why a selected node may spark questions, tension, or
-misconceptions within their diagram.
+Streams meaning, cognitive conflict, and inquiry questions as separate facets.
 """
 
 from __future__ import annotations
@@ -13,8 +12,9 @@ from services.llm import llm_service
 from utils.prompt_locale import is_chinese_prompt_shell_language, output_language_instruction
 
 _MAX_BRANCHES = 16
-_MAX_TOKENS = 520
+_MAX_TOKENS = 320
 PromptShell = Literal["zh", "en", "az"]
+ExplainFacet = Literal["meaning", "conflict", "questions"]
 
 _DIAGRAM_TYPE_LABELS: Dict[str, Dict[str, str]] = {
     "zh": {
@@ -70,6 +70,71 @@ _UNTITLED_LABELS = {
     "az": "(adsız)",
 }
 
+_FACET_TASKS: Dict[PromptShell, Dict[ExplainFacet, str]] = {
+    "zh": {
+        "meaning": (
+            "只解释该节点在整张图中的含义：它与中心主题的关系、在层级中的位置，"
+            "以及它如何支撑或延伸主题。不要写认知冲突，不要列问题。"
+            "写成 1–2 段短文，约 80–140 字。"
+        ),
+        "conflict": (
+            "只讨论该节点可能引发的认知冲突、张力或常见误解：可点名与主题或其他分支的对比。"
+            "不要做完整释义，不要列启发问题。写成 1–2 段短文，约 80–140 字。"
+        ),
+        "questions": (
+            "只给出 3 条简短、有趣、可继续探究的问题，帮助学习者围绕该节点深入思考。"
+            "用编号列表（1. 2. 3.），每条一行；不要解释节点含义，不要展开长篇分析。"
+        ),
+    },
+    "en": {
+        "meaning": (
+            "Only explain what this node means in the diagram: its relation to the central topic, "
+            "its place in the hierarchy, and how it supports or extends the topic. "
+            "Do not discuss cognitive conflict or list questions. "
+            "Write 1–2 short paragraphs, about 60–110 words."
+        ),
+        "conflict": (
+            "Only discuss cognitive conflicts, tensions, or common misconceptions this node may spark "
+            "(you may name contrasts with the topic or other branches). "
+            "Do not give a full definition or list inquiry questions. "
+            "Write 1–2 short paragraphs, about 60–110 words."
+        ),
+        "questions": (
+            "Only provide 3 short, interesting inquiry questions that help the learner dig deeper "
+            "into this node. Use a numbered list (1. 2. 3.), one line each. "
+            "Do not explain the node or write long analysis."
+        ),
+    },
+    "az": {
+        "meaning": (
+            "Yalnız bu düyünün diaqramdakı mənasını izah edin: mərkəz mövzu ilə əlaqəsi, "
+            "iərarxiyadakı yeri və mövzunu necə dəstəkləməsi. Koqnitiv konflikt və suallar yazmayın. "
+            "1–2 qısa abzas, təxminən 60–110 söz."
+        ),
+        "conflict": (
+            "Yalnız bu düyünün yarada biləcəyi koqnitiv konflikt, gərginlik və ya ümumi səhv "
+            "anlayışları müzakirə edin. Tam izah və sual siyahısı verməyin. "
+            "1–2 qısa abzas, təxminən 60–110 söz."
+        ),
+        "questions": (
+            "Yalnız bu düyün haqqında dərin düşünməyə kömək edən 3 qısa, maraqlı sual verin. "
+            "Nömrələnmiş siyahı (1. 2. 3.), hər sətirdə bir sual. Uzun izah yazmayın."
+        ),
+    },
+}
+
+_ROLE_LINES: Dict[PromptShell, str] = {
+    "zh": "你是面向课堂与自主学习的思维图示助教。",
+    "en": "You are a classroom-friendly diagram learning coach.",
+    "az": "Siz sinif və müstəqil öyrənmə üçün diaqram köməkçisisiniz.",
+}
+
+_STYLE_LINES: Dict[PromptShell, str] = {
+    "zh": "亲切、专业；不要 Markdown 标题；不要寒暄开场。",
+    "en": "Supportive and educational; no Markdown headings; no small-talk opener.",
+    "az": "Dəstəkləyici və təhsil yönümlü; Markdown başlıqları və giriş salamı olmasın.",
+}
+
 
 def _prompt_shell_key(language: str) -> PromptShell:
     normalized = (language or "en").strip().lower().replace("_", "-")
@@ -105,172 +170,13 @@ def _path_line(path: List[str], shell: PromptShell) -> str:
     return f"Node path: topic → {joined}\n"
 
 
-def _build_zh_prompt(
-    *,
-    diagram_label: str,
-    topic: str,
-    node_label: str,
-    branches_text: str,
-    path_line: str,
-    siblings_text: str,
-    children_text: str,
-    language: str,
-) -> str:
-    return (
-        "你是 Kitty，面向课堂与自主学习的思维图示助教。学习者正在绘制一张"
-        f"{diagram_label}，请你以温和、启发式口吻帮助其反思所选节点。\n"
-        f"{output_language_instruction(language)}\n"
-        "【图示情境】\n"
-        f"- 中心主题：{topic}\n"
-        f"- 主要分支：{branches_text}\n"
-        f"- 学习者选中的节点：{node_label}\n"
-        f"{path_line}"
-        f"- 同层相关节点：{siblings_text}\n"
-        f"- 该节点下的子节点：{children_text}\n\n"
-        "【你的任务】\n"
-        "说明这个节点为什么值得停下来想一想：它可能引发哪些认知冲突、疑问、"
-        "与主题或其他分支的张力，或学习者常见的误解？\n"
-        "请自然写成一段对话式辅导（可分 2–3 短段，不要堆很多条列点），并涵盖：\n"
-        "1. 该节点在整张图中的位置与含义；\n"
-        "2. 至少 1–2 个可能引发认知冲突或追问的具体角度（可点名与哪些分支形成对比或张力）；\n"
-        "3. 1–2 条简短的后续思考建议（如何继续完善、讨论或验证）。\n\n"
-        "【文风与长度】\n"
-        "亲切、专业、面向学习者；总长约 120–220 字；不要 Markdown 标题；"
-        "结尾可用一句简短问句邀请学习者继续思考。"
-    )
-
-
-def _build_en_prompt(
-    *,
-    diagram_label: str,
-    topic: str,
-    node_label: str,
-    branches_text: str,
-    path_line: str,
-    siblings_text: str,
-    children_text: str,
-    language: str,
-) -> str:
-    return (
-        "You are Kitty, a classroom-friendly diagram learning coach. "
-        f"The learner is building a {diagram_label}. "
-        "Help them reflect on the node they selected.\n"
-        f"{output_language_instruction(language)}\n"
-        "【Diagram context】\n"
-        f"- Central topic: {topic}\n"
-        f"- Main branches: {branches_text}\n"
-        f"- Selected node: {node_label}\n"
-        f"{path_line}"
-        f"- Sibling / related nodes: {siblings_text}\n"
-        f"- Child nodes under selection: {children_text}\n\n"
-        "【Your task】\n"
-        "Explain why this node is worth pausing on: what cognitive conflict, open questions, "
-        "tension with the topic or other branches, or common misconceptions might it trigger?\n"
-        "Write as a warm coaching reply in 2–3 short paragraphs (not a long bullet list), covering:\n"
-        "1. What this node means and where it sits in the diagram;\n"
-        "2. At least 1–2 specific angles of conflict or inquiry (name branches it may tension with);\n"
-        "3. 1–2 brief next-step suggestions (how to refine, discuss, or verify).\n\n"
-        "【Tone & length】\n"
-        "Supportive and educational; about 80–150 words; no Markdown headings; "
-        "you may end with one short question inviting further thought."
-    )
-
-
-def _build_az_prompt(
-    *,
-    diagram_label: str,
-    topic: str,
-    node_label: str,
-    branches_text: str,
-    path_line: str,
-    siblings_text: str,
-    children_text: str,
-    language: str,
-) -> str:
-    return (
-        "Siz Kitty-siniz — sinif və müstəqil öyrənmə üçün diaqram köməkçisi. "
-        f"Öyrənən bir {diagram_label} qurur; seçdiyi düyün haqqında düşünməsinə "
-        "səmimi və açıq şəkildə kömək edin.\n"
-        f"{output_language_instruction(language)}\n"
-        "【Diaqram konteksti】\n"
-        f"- Mərkəz mövzu: {topic}\n"
-        f"- Əsas budaqlar: {branches_text}\n"
-        f"- Seçilmiş düyün: {node_label}\n"
-        f"{path_line}"
-        f"- Eyni səviyyəli / əlaqəli düyünlər: {siblings_text}\n"
-        f"- Seçim altındakı alt düyünlər: {children_text}\n\n"
-        "【Tapşırığınız】\n"
-        "Bu düyünün niyə dayanıb düşünməyə dəyər olduğunu izah edin: hansı "
-        "koqnitiv konflikt, açıq suallar, mövzu və ya digər budaqlarla gərginlik "
-        "və ya ümumi səhv anlayışlar yarana bilər?\n"
-        "Cavabı 2–3 qısa abzasda, söhbət tərzində yazın (uzun siyahı yox), və bunları əhatə edin:\n"
-        "1. Bu düyünün diaqramdakı yeri və mənası;\n"
-        "2. Ən azı 1–2 konkret konflikt və ya sorğu bucağı (hansı budaqlarla ziddiyyət "
-        "və ya gərginlik yarada biləcəyini adlandırın);\n"
-        "3. 1–2 qısa növbəti addım təklifi (necə təkmilləşdirmək, müzakirə etmək və ya yoxlamaq).\n\n"
-        "【Ton və həcm】\n"
-        "Dəstəkləyici və təhsil yönümlü; təxminən 80–150 söz; Markdown başlıqları olmasın; "
-        "sonda daha çox düşünməyə dəvət edən qısa bir sualla bitirə bilərsiniz."
-    )
-
-
-def _build_follow_up_system_prompt(
-    *,
-    diagram_label: str,
-    topic: str,
-    node_label: str,
-    branches_text: str,
-    path_line: str,
-    siblings_text: str,
-    children_text: str,
-    language: str,
-) -> str:
-    """System context for follow-up turns in the node explain chat."""
-    shell = _prompt_shell_key(language)
-    if shell == "zh":
-        return (
-            "你是 Kitty，面向课堂与自主学习的思维图示助教。学习者正在一张"
-            f"{diagram_label}上讨论节点「{node_label}」。"
-            f"{output_language_instruction(language)}\n"
-            "【图示情境】\n"
-            f"- 中心主题：{topic}\n"
-            f"- 主要分支：{branches_text}\n"
-            f"{path_line}"
-            f"- 同层相关节点：{siblings_text}\n"
-            f"- 该节点下的子节点：{children_text}\n\n"
-            "继续以温和、启发式口吻回答学习者的追问，帮助其反思认知冲突、"
-            "疑问与后续思考；保持对话式短段，约 80–150 字，不要 Markdown 标题。"
-        )
-    if shell == "az":
-        return (
-            "Siz Kitty-siniz — sinif və müstəqil öyrənmə üçün diaqram köməkçisi. "
-            f"Öyrənən «{node_label}» düyünü haqqında {diagram_label} üzərində "
-            "söhbəti davam etdirir.\n"
-            f"{output_language_instruction(language)}\n"
-            "【Diaqram konteksti】\n"
-            f"- Mərkəz mövzu: {topic}\n"
-            f"- Əsas budaqlar: {branches_text}\n"
-            f"{path_line}"
-            f"- Eyni səviyyəli düyünlər: {siblings_text}\n"
-            f"- Alt düyünlər: {children_text}\n\n"
-            "Öyrənənin suallarına səmimi, açıq şəkildə cavab verin; koqnitif konflikt "
-            "və növbəti addımlara kömək edin. 2–3 qısa abzas, Markdown başlıqları olmasın."
-        )
-    return (
-        "You are Kitty, a classroom-friendly diagram learning coach. "
-        f"The learner is continuing a conversation about node «{node_label}» "
-        f"on a {diagram_label}.\n"
-        f"{output_language_instruction(language)}\n"
-        "【Diagram context】\n"
-        f"- Central topic: {topic}\n"
-        f"- Main branches: {branches_text}\n"
-        f"{path_line}"
-        f"- Sibling / related nodes: {siblings_text}\n"
-        f"- Child nodes: {children_text}\n\n"
-        "Answer follow-up questions warmly and educationally; help reflect on "
-        "cognitive conflict and next steps. Keep replies conversational, about "
-        "60–120 words, no Markdown headings."
-    )
+def _normalize_facet(facet: str) -> ExplainFacet:
+    normalized = (facet or "meaning").strip().lower()
+    if normalized == "conflict":
+        return "conflict"
+    if normalized == "questions":
+        return "questions"
+    return "meaning"
 
 
 def _diagram_context_fields(
@@ -294,12 +200,47 @@ def _diagram_context_fields(
         "siblings_text": _join_labels(sibling_branches, shell),
         "children_text": _join_labels(child_branches, shell),
         "path_line": _path_line(ancestor_path, shell),
-        "language": language,
     }
 
 
-def _build_explain_prompt(
+def _build_context_block(fields: Dict[str, str], shell: PromptShell) -> str:
+    if shell == "zh":
+        return (
+            "【图示情境】\n"
+            f"- 图示类型：{fields['diagram_label']}\n"
+            f"- 中心主题：{fields['topic']}\n"
+            f"- 主要分支：{fields['branches_text']}\n"
+            f"- 学习者选中的节点：{fields['node_label']}\n"
+            f"{fields['path_line']}"
+            f"- 同层相关节点：{fields['siblings_text']}\n"
+            f"- 该节点下的子节点：{fields['children_text']}\n"
+        )
+    if shell == "az":
+        return (
+            "【Diaqram konteksti】\n"
+            f"- Diaqram növü: {fields['diagram_label']}\n"
+            f"- Mərkəz mövzu: {fields['topic']}\n"
+            f"- Əsas budaqlar: {fields['branches_text']}\n"
+            f"- Seçilmiş düyün: {fields['node_label']}\n"
+            f"{fields['path_line']}"
+            f"- Eyni səviyyəli düyünlər: {fields['siblings_text']}\n"
+            f"- Alt düyünlər: {fields['children_text']}\n"
+        )
+    return (
+        "【Diagram context】\n"
+        f"- Diagram type: {fields['diagram_label']}\n"
+        f"- Central topic: {fields['topic']}\n"
+        f"- Main branches: {fields['branches_text']}\n"
+        f"- Selected node: {fields['node_label']}\n"
+        f"{fields['path_line']}"
+        f"- Sibling / related nodes: {fields['siblings_text']}\n"
+        f"- Child nodes: {fields['children_text']}\n"
+    )
+
+
+def _build_facet_prompt(
     *,
+    facet: ExplainFacet,
     node_label: str,
     topic: str,
     diagram_type: str,
@@ -309,7 +250,7 @@ def _build_explain_prompt(
     child_branches: List[str],
     language: str,
 ) -> str:
-    """Build an education-focused cognitive-conflict explain prompt."""
+    """Build a single-facet educational prompt for one panel."""
     fields = _diagram_context_fields(
         node_label=node_label,
         topic=topic,
@@ -321,47 +262,26 @@ def _build_explain_prompt(
         language=language,
     )
     shell = _prompt_shell_key(language)
-
+    task = _FACET_TASKS[shell][facet]
     if shell == "zh":
-        return _build_zh_prompt(**fields)
-    if shell == "az":
-        return _build_az_prompt(**fields)
-    return _build_en_prompt(**fields)
+        task_header = "【你的任务】"
+        style_header = "【文风】"
+    elif shell == "az":
+        task_header = "【Tapşırığınız】"
+        style_header = "【Ton】"
+    else:
+        task_header = "【Your task】"
+        style_header = "【Tone】"
 
-
-def _build_follow_up_messages(
-    *,
-    node_label: str,
-    topic: str,
-    diagram_type: str,
-    top_level_branches: List[str],
-    ancestor_path: List[str],
-    sibling_branches: List[str],
-    child_branches: List[str],
-    language: str,
-    history: List[Dict[str, str]],
-    user_message: str,
-) -> List[Dict[str, str]]:
-    fields = _diagram_context_fields(
-        node_label=node_label,
-        topic=topic,
-        diagram_type=diagram_type,
-        top_level_branches=top_level_branches,
-        ancestor_path=ancestor_path,
-        sibling_branches=sibling_branches,
-        child_branches=child_branches,
-        language=language,
+    return (
+        f"{_ROLE_LINES[shell]}\n"
+        f"{output_language_instruction(language)}\n"
+        f"{_build_context_block(fields, shell)}\n"
+        f"{task_header}\n"
+        f"{task}\n\n"
+        f"{style_header}\n"
+        f"{_STYLE_LINES[shell]}"
     )
-    system_prompt = _build_follow_up_system_prompt(**fields)
-    messages: List[Dict[str, str]] = [{"role": "system", "content": system_prompt}]
-    for turn in history:
-        role = turn.get("role", "").strip()
-        content = (turn.get("content") or "").strip()
-        if role not in ("user", "assistant") or not content:
-            continue
-        messages.append({"role": role, "content": content})
-    messages.append({"role": "user", "content": user_message.strip()})
-    return messages
 
 
 class _GeneratorHolder:
@@ -371,7 +291,7 @@ class _GeneratorHolder:
 
 
 class MindMapNodeExplainGenerator:
-    """Streams an educational node reflection from a single LLM."""
+    """Streams one educational facet for a selected diagram node."""
 
     def __init__(self) -> None:
         self.llm_service = llm_service
@@ -387,60 +307,50 @@ class MindMapNodeExplainGenerator:
         sibling_branches: Optional[List[str]] = None,
         child_branches: Optional[List[str]] = None,
         language: str = "en",
+        facet: str = "meaning",
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         endpoint_path: str = "/thinking_mode/mindmap/explain_node",
         diagram_id: Optional[str] = None,
-        history: Optional[List[Dict[str, str]]] = None,
-        user_message: Optional[str] = None,
+        session_id: Optional[str] = None,
+        request_token: Optional[str] = None,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Yield SSE-friendly event dicts: token chunks and end."""
+        resolved_facet = _normalize_facet(facet)
         branches = top_level_branches or []
         ancestors = ancestor_path or []
         siblings = sibling_branches or []
         children = child_branches or []
-        follow_up_text = (user_message or "").strip()
-        session_id = f"explain_{diagram_id or 'anon'}"
+        token = (request_token or "req").strip() or "req"
+        user_part = str(user_id) if user_id is not None else "anon"
+        base_session = (session_id or "").strip() or f"explain_{diagram_id or 'anon'}_{user_part}"
+        # Per-facet stream id keeps token rows distinct while sharing the client session prefix.
+        stream_session_id = f"{base_session}:{resolved_facet}:{token}"
         saw_token = False
 
-        if follow_up_text:
-            chat_messages = _build_follow_up_messages(
-                node_label=node_label,
-                topic=topic,
-                diagram_type=diagram_type,
-                top_level_branches=branches,
-                ancestor_path=ancestors,
-                sibling_branches=siblings,
-                child_branches=children,
-                language=language,
-                history=history or [],
-                user_message=follow_up_text,
-            )
-            stream_kwargs: Dict[str, Any] = {"messages": chat_messages}
-        else:
-            prompt = _build_explain_prompt(
-                node_label=node_label,
-                topic=topic,
-                diagram_type=diagram_type,
-                top_level_branches=branches,
-                ancestor_path=ancestors,
-                sibling_branches=siblings,
-                child_branches=children,
-                language=language,
-            )
-            stream_kwargs = {"prompt": prompt}
+        prompt = _build_facet_prompt(
+            facet=resolved_facet,
+            node_label=node_label,
+            topic=topic,
+            diagram_type=diagram_type,
+            top_level_branches=branches,
+            ancestor_path=ancestors,
+            sibling_branches=siblings,
+            child_branches=children,
+            language=language,
+        )
 
         async for chunk in self.llm_service.chat_stream(
-            **stream_kwargs,
+            prompt=prompt,
             model="qwen",
             max_tokens=_MAX_TOKENS,
             temperature=0.6,
             user_id=user_id,
             organization_id=organization_id,
-            request_type="diagram_generation",
+            request_type="mindmap_node_explain",
             diagram_type=diagram_type or "mindmap",
             endpoint_path=endpoint_path,
-            session_id=session_id,
+            session_id=stream_session_id,
             use_knowledge_base=False,
             yield_structured=True,
         ):
@@ -452,12 +362,12 @@ class MindMapNodeExplainGenerator:
             if not content:
                 continue
             saw_token = True
-            yield {"event": "token", "text": content}
+            yield {"event": "token", "text": content, "facet": resolved_facet}
 
         if not saw_token:
-            yield {"event": "error", "message": "No response"}
+            # Router emits a localized empty-response error when no chunks arrive.
             return
-        yield {"event": "end"}
+        yield {"event": "end", "facet": resolved_facet}
 
 
 def get_mind_map_node_explain_generator() -> MindMapNodeExplainGenerator:

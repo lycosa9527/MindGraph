@@ -6,7 +6,6 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { eventBus } from '@/composables/core/useEventBus'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import {
@@ -30,8 +29,6 @@ interface MenuItem {
   swatch?: string
   stroke?: string
   sectionHeader?: boolean
-  glow?: boolean
-  trailingEmoji?: string
 }
 
 interface Props {
@@ -48,7 +45,6 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'paste', payload: { x: number; y: number; anchorNodeId?: string }): void
   (e: 'addConcept', position: { x: number; y: number }): void
-  (e: 'explainNode', payload: { nodeId: string; nodeLabel: string }): void
 }>()
 
 const diagramStore = useDiagramSession()
@@ -56,17 +52,6 @@ const uiStore = useUIStore()
 const { t } = useLanguage()
 const notify = useNotifications()
 const menuRef = ref<HTMLElement | null>(null)
-const useMindMapV2 = useMindMapV2Chrome()
-
-function resolveContextNodeLabel(node: MindGraphNode): string {
-  const data = node.data
-  const fromData = typeof data?.label === 'string' ? data.label.trim() : ''
-  if (fromData) return fromData
-  const alt = typeof data?.text === 'string' ? data.text.trim() : ''
-  if (alt) return alt
-  const storeNode = diagramStore.data?.nodes?.find((n) => n.id === node.id)
-  return (storeNode?.text ?? '').trim()
-}
 
 /** Resolve double bubble group from node id: similarity-*, left-diff-*, right-diff-* */
 function getDoubleBubbleGroupFromNodeId(
@@ -98,25 +83,6 @@ const menuItems = computed<MenuItem[]>(() => {
         eventBus.emit('node:edit_requested', { nodeId: node.id })
       },
     })
-
-    if (
-      useMindMapV2.value &&
-      (diagramStore.type === 'mindmap' || diagramStore.type === 'mind_map') &&
-      !isBoundaryNode
-    ) {
-      const nodeLabel = resolveContextNodeLabel(node)
-      items.push({
-        label: t('diagram.contextMenu.explain'),
-        trailingEmoji: '💡',
-        disabled: !nodeLabel,
-        glow: true,
-        action: () => {
-          if (!nodeLabel) return
-          emit('explainNode', { nodeId: node.id, nodeLabel })
-          emit('close')
-        },
-      })
-    }
 
     items.push({
       label: t('diagram.contextMenu.lineBreak'),
@@ -618,7 +584,6 @@ function handleItemClick(item: MenuItem) {
             divider: item.divider,
             'swatch-pick': !!item.swatch,
             'section-title-row': item.sectionHeader && !item.action,
-            'kitty-glow': item.glow,
           }"
           @click="handleItemClick(item)"
         >
@@ -641,15 +606,9 @@ function handleItemClick(item: MenuItem) {
               class="context-menu-label"
               :class="{
                 'is-section-title': item.sectionHeader,
-                'is-kitty-glow': item.glow,
               }"
             >
-              {{ item.label }}<span
-                v-if="item.trailingEmoji"
-                class="context-menu-inline-emoji"
-                aria-hidden="true"
-                >{{ item.trailingEmoji }}</span
-              >
+              {{ item.label }}
             </span>
           </template>
         </div>
@@ -739,11 +698,11 @@ function handleItemClick(item: MenuItem) {
   padding-bottom: 4px;
 }
 
-.context-menu-item:hover:not(.disabled):not(.divider):not(.kitty-glow) {
+.context-menu-item:hover:not(.disabled):not(.divider) {
   background-color: #f3f4f6;
 }
 
-.dark .context-menu-item:hover:not(.disabled):not(.divider):not(.kitty-glow) {
+.dark .context-menu-item:hover:not(.disabled):not(.divider) {
   background-color: #374151;
 }
 
@@ -772,80 +731,6 @@ function handleItemClick(item: MenuItem) {
 
 .dark .context-menu-label {
   color: #d1d5db;
-}
-
-.context-menu-inline-emoji {
-  margin-left: 0.35em;
-}
-
-.context-menu-item.kitty-glow {
-  position: relative;
-  margin: 3px 6px;
-  border-radius: 6px;
-  animation: kittyMenuGlow 2.2s ease-in-out infinite;
-}
-
-.context-menu-item.kitty-glow:hover:not(.disabled) {
-  background-color: rgb(250 204 21 / 0.18);
-}
-
-.context-menu-label.is-kitty-glow {
-  font-weight: 600;
-  color: #a16207;
-}
-
-.dark .context-menu-label.is-kitty-glow {
-  color: #fcd34d;
-}
-
-.context-menu-item.kitty-glow.disabled {
-  animation: none;
-  box-shadow: none;
-  background-color: transparent;
-}
-
-.context-menu-item.kitty-glow.disabled .context-menu-label.is-kitty-glow {
-  font-weight: 500;
-}
-
-@keyframes kittyMenuGlow {
-  0%,
-  100% {
-    background-color: rgb(250 204 21 / 0.08);
-    box-shadow:
-      inset 0 0 0 1px rgb(234 179 8 / 0.28),
-      0 0 6px rgb(250 204 21 / 0.16);
-  }
-  50% {
-    background-color: rgb(250 204 21 / 0.16);
-    box-shadow:
-      inset 0 0 0 1px rgb(234 179 8 / 0.45),
-      0 0 14px rgb(250 204 21 / 0.34);
-  }
-}
-
-.dark .context-menu-item.kitty-glow {
-  animation-name: kittyMenuGlowDark;
-}
-
-.dark .context-menu-item.kitty-glow:hover:not(.disabled) {
-  background-color: rgb(250 204 21 / 0.14);
-}
-
-@keyframes kittyMenuGlowDark {
-  0%,
-  100% {
-    background-color: rgb(234 179 8 / 0.12);
-    box-shadow:
-      inset 0 0 0 1px rgb(250 204 21 / 0.28),
-      0 0 8px rgb(234 179 8 / 0.22);
-  }
-  50% {
-    background-color: rgb(234 179 8 / 0.2);
-    box-shadow:
-      inset 0 0 0 1px rgb(250 204 21 / 0.48),
-      0 0 16px rgb(234 179 8 / 0.36);
-  }
 }
 
 /* Transition animations */

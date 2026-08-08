@@ -31,8 +31,7 @@ _TITLE_MAX = 200
 _WHITESPACE_RE = re.compile(r"\s+")
 
 VALID_ACTIVITY_SOURCES = frozenset({"mindgraph", "mindmate", "dingtalk", "zhihui"})
-_VALID_SOURCES = VALID_ACTIVITY_SOURCES
-_VALID_ACTIONS = frozenset(
+VALID_ACTIVITY_ACTIONS = frozenset(
     {
         "diagram_generate",
         "diagram_save",
@@ -58,6 +57,8 @@ _VALID_ACTIONS = frozenset(
         "relationship_labels",
     }
 )
+_VALID_SOURCES = VALID_ACTIVITY_SOURCES
+_VALID_ACTIONS = VALID_ACTIVITY_ACTIONS
 
 
 def clip_activity_preview(text: Optional[str], max_len: int = _PREVIEW_MAX) -> Optional[str]:

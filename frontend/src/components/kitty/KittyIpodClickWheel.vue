@@ -9,7 +9,7 @@ import { useKittyClickWheel } from '@/composables/kitty/useKittyClickWheel'
 
 const props = defineProps<{
   onSelectionChange?: () => void
-  /** Re-tap active chip (e.g. open 学习提示). */
+  /** Re-tap active chip (e.g. open 节点解释). */
   onActiveRetap?: (node: { id: string; text: string }) => void
 }>()
 

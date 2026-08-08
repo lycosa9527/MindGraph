@@ -764,14 +764,11 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
 
 const {
   visible: nodeExplainVisible,
-  messages: nodeExplainMessages,
-  draft: nodeExplainDraft,
+  target: nodeExplainTarget,
+  panels: nodeExplainPanels,
   loading: nodeExplainLoading,
-  errorMessage: nodeExplainError,
-  kittyAgentState: nodeExplainKittyAgentState,
   openExplain: openNodeExplain,
   close: closeNodeExplain,
-  sendDraft: sendNodeExplainDraft,
 } = useMindMapNodeExplain()
 
 function handleChipActiveRetap(node: { id: string; text: string }): void {
@@ -1107,13 +1104,10 @@ function handleChipActiveRetap(node: { id: string; text: string }): void {
 
     <MindMapNodeExplainModal
       v-model:visible="nodeExplainVisible"
-      v-model:draft="nodeExplainDraft"
-      :messages="nodeExplainMessages"
+      :target="nodeExplainTarget"
+      :panels="nodeExplainPanels"
       :loading="nodeExplainLoading"
-      :error-message="nodeExplainError"
-      :kitty-agent-state="nodeExplainKittyAgentState"
       @close="closeNodeExplain"
-      @send="sendNodeExplainDraft"
     />
   </div>
 </template>

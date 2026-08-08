@@ -11,6 +11,7 @@ import {
   AlignLeft,
   AlignRight,
   ChevronDown,
+  Lightbulb,
   Minus,
   Square,
 } from '@lucide/vue'
@@ -34,6 +35,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   aiSubgraphGenerate: []
+  explainNode: []
 }>()
 
 const { t } = useLanguage()
@@ -446,6 +448,20 @@ function onShapePick(shape: NodeShape) {
             </ElDropdownMenu>
           </template>
         </ElDropdown>
+
+        <!-- Node explanation (Kitty) -->
+        <button
+          type="button"
+          class="nft-btn nft-btn--explain"
+          :title="t('canvas.floatingToolbar.explain')"
+          :disabled="!nodeId"
+          @click="emit('explainNode')"
+        >
+          <Lightbulb
+            class="nft-icon nft-icon--explain"
+            :stroke-width="1.75"
+          />
+        </button>
       </div>
     </div>
   </Teleport>
@@ -537,9 +553,27 @@ function onShapePick(shape: NodeShape) {
   padding-right: 4px;
 }
 
+.nft-btn--explain {
+  color: #d97706;
+}
+
+.nft-btn--explain:hover:not(:disabled) {
+  background: rgba(254, 243, 199, 0.9);
+  color: #b45309;
+}
+
+.nft-btn--explain:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .nft-icon {
   width: 16px;
   height: 16px;
+}
+
+.nft-icon--explain {
+  fill: rgba(251, 191, 36, 0.22);
 }
 
 .nft-chevron {

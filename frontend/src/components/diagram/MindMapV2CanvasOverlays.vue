@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * V2 mind map canvas overlays — lazy chunk paired with MindMapV2Canvas.vue.
- * Floating toolbar, learning-sheet bar, directional add, collapse toggles.
+ * Floating toolbar (incl. node explain), learning-sheet bar, directional add, collapse toggles.
  */
 import { type Ref, computed, unref } from 'vue'
 
@@ -22,6 +22,7 @@ const props = defineProps<{
   canvasContainer: Ref<HTMLElement | null> | HTMLElement | null
   presentationTeleportTarget: string | HTMLElement | undefined
   onAiSubgraphGenerate: () => void
+  onExplainNode: () => void
 }>()
 
 const uiStore = useUIStore()
@@ -41,6 +42,7 @@ const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasC
     :ai-generating="subgraphGenerating"
     :show-ai-subgraph="floatingToolbarShowAiSubgraph"
     @ai-subgraph-generate="onAiSubgraphGenerate()"
+    @explain-node="onExplainNode()"
   />
 
   <MindMapDirectionalAddOverlay

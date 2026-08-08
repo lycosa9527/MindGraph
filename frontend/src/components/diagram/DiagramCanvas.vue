@@ -546,18 +546,17 @@ const {
 const nodeExplain = useMindMapNodeExplain()
 const {
   visible: nodeExplainVisible,
-  messages: nodeExplainMessages,
-  draft: nodeExplainDraft,
+  target: nodeExplainTarget,
+  panels: nodeExplainPanels,
   loading: nodeExplainLoading,
-  errorMessage: nodeExplainError,
-  kittyAgentState: nodeExplainKittyAgentState,
   openExplain: openNodeExplain,
   close: closeNodeExplain,
-  sendDraft: sendNodeExplainDraft,
 } = nodeExplain
 
-function handleContextMenuExplainNode(payload: { nodeId: string; nodeLabel: string }): void {
-  openNodeExplain(payload.nodeId, payload.nodeLabel)
+function handleFloatingToolbarExplainNode(): void {
+  const nodeId = floatingToolbarAnchorId.value
+  if (!nodeId) return
+  openNodeExplain(nodeId)
 }
 
 const { mountSubscriptions, clearDoubleBubbleTimer } = useDiagramCanvasEventBus()
@@ -761,6 +760,7 @@ defineExpose({
       :canvas-container="canvasContainer"
       :presentation-teleport-target="presentationTeleportTarget"
       :on-ai-subgraph-generate="handleAiSubgraphGenerate"
+      :on-explain-node="handleFloatingToolbarExplainNode"
     />
 
     <ContextMenu
@@ -772,18 +772,14 @@ defineExpose({
       @close="closeContextMenu"
       @paste="handleContextMenuPaste"
       @add-concept="handleContextMenuAddConcept"
-      @explain-node="handleContextMenuExplainNode"
     />
 
     <MindMapNodeExplainModal
       v-model:visible="nodeExplainVisible"
-      v-model:draft="nodeExplainDraft"
-      :messages="nodeExplainMessages"
+      :target="nodeExplainTarget"
+      :panels="nodeExplainPanels"
       :loading="nodeExplainLoading"
-      :error-message="nodeExplainError"
-      :kitty-agent-state="nodeExplainKittyAgentState"
       @close="closeNodeExplain"
-      @send="sendNodeExplainDraft"
     />
 
     <ExportToCommunityModal

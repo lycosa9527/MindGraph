@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.173.0] - 2026-08-09
+
+> **Mind map node explain: three parallel facet panels.**
+
+### Changed
+
+- **Node explain UX** — Replaces the Kitty chat follow-up flow with a Swiss-style modal: meaning, cognitive conflict, and inquiry questions stream in parallel; Kitty mascot with rotating speech bubbles while loading.
+- **Entry point** — Explain moves from the context menu to the node floating toolbar (lightbulb); Kitty click-wheel / Mobile Kitty re-tap opens the same three-panel flow.
+- **API / prompts** — `POST` explain accepts `session_id` + `facet` (`meaning` | `conflict` | `questions`); each facet has a focused prompt (no chat history). Bills as canvas-assist (`mindmap_node_explain`, 4 coins).
+
+### Tests
+
+- Facet normalization and prompt focus; canvas-assist / live-activity registration for `mindmap_node_explain`.
+
 ## [5.172.0] - 2026-08-08
 
 > **Voice Notes realtime transcription and canvas AI 学段 preference.**
