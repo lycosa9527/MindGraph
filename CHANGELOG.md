@@ -5,13 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.173.2] - 2026-08-09
+
+> **Node explain: hide floating toolbar and directional + handles.**
+
+### Fixed
+
+- **Canvas chrome over explain modal** — Gate floating toolbar and four-direction `+` overlays with `nodeExplainOpen` in v2 canvas overlays (same `v-if` pattern as presentation/export); directional-add position clears handles on the same tick when disabled.
+
 ## [5.173.1] - 2026-08-09
 
 > **Node explain: hide floating toolbar; sharper 节点含义 prompt.**
 
 ### Fixed
 
-- **Floating toolbar over explain modal** — Suppress toolbar via position `enabled` while the modal is open, with same-tick hide (no rAF flash above ElDialog).
+- **Floating toolbar over explain modal** — Suppress toolbar while the modal is open (no flash above ElDialog).
 
 ### Changed
 

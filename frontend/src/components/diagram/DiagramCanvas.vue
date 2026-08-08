@@ -367,8 +367,7 @@ const floatingToolbarNodeIds = computed(() => {
   return diagramStore.selectedNodes.slice()
 })
 
-/** Context gate only; selection lives in node ids. Off while explain modal owns the UI. */
-const floatingToolbarEnabled = computed(() => !nodeExplainVisible.value)
+const floatingToolbarEnabled = computed(() => floatingToolbarNodeIds.value.length > 0)
 
 const floatingToolbarAnchorId = computed(() => floatingToolbarNodeIds.value[0] ?? null)
 
@@ -758,6 +757,7 @@ defineExpose({
       :floating-toolbar-anchor-id="floatingToolbarAnchorId"
       :subgraph-generating="subgraphGenerating"
       :floating-toolbar-show-ai-subgraph="floatingToolbarShowAiSubgraph"
+      :node-explain-open="nodeExplainVisible"
       :canvas-container="canvasContainer"
       :presentation-teleport-target="presentationTeleportTarget"
       :on-ai-subgraph-generate="handleAiSubgraphGenerate"
