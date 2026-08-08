@@ -1080,4 +1080,13 @@ export default {
   'canvas.topBar.zhihuiUnavailable': 'ZhiHui diagram-to-image is unavailable',
   'canvas.topBar.zhihuiNeedMindmap': 'Diagram-to-image only supports mind maps',
   'canvas.topBar.zhihuiSaveFailed': 'Could not save the mind map for ZhiHui',
+  'canvas.toolbar.educationStage': 'Audience',
+  'canvas.toolbar.educationStageTooltip': 'Choose audience level for AI generation',
+  'canvas.toolbar.educationStageClear': 'General',
+  'canvas.toolbar.educationStagePrimary': 'Primary',
+  'canvas.toolbar.educationStageMiddle': 'Middle school',
+  'canvas.toolbar.educationStageHigh': 'High school',
+  'canvas.toolbar.educationStageUniversity': 'University',
+  'canvas.toolbar.educationStageAdult': 'Adult',
+  'canvas.toolbar.educationStageExpert': 'Expert',
 } as const

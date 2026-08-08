@@ -85,6 +85,7 @@ class UserCache:
             "allows_simplified_chinese": "1" if getattr(user, "allows_simplified_chinese", True) else "0",
             "email_login_whitelisted_from_cn": "1" if getattr(user, "email_login_whitelisted_from_cn", False) else "0",
             "login_password_set": "1" if getattr(user, "login_password_set", True) else "0",
+            "education_stage": getattr(user, "education_stage", None) or "",
         }
 
     def _deserialize_user(self, data: dict[bytes | str, bytes | str]) -> User:
@@ -151,6 +152,8 @@ class UserCache:
 
         lp = normalized.get("login_password_set", "1")
         user.login_password_set = lp not in ("0", "false", "False")
+
+        user.education_stage = normalized.get("education_stage") or None
 
         return user
 

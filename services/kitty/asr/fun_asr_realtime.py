@@ -54,12 +54,13 @@ def build_fun_asr_run_task(
     *,
     model: str,
     language_hints: Optional[list[str]] = None,
+    semantic_punctuation_enabled: bool = False,
 ) -> dict[str, Any]:
     """Client ``run-task`` for Fun-ASR realtime (PCM 16 kHz)."""
     parameters: dict[str, Any] = {
         "format": "pcm",
         "sample_rate": 16000,
-        "semantic_punctuation_enabled": False,
+        "semantic_punctuation_enabled": bool(semantic_punctuation_enabled),
     }
     if language_hints:
         parameters["language_hints"] = language_hints
@@ -112,10 +113,12 @@ class FunAsrRealtimeClient:
         on_partial: PartialCallback,
         on_error: Optional[ErrorCallback] = None,
         language_hints: Optional[list[str]] = None,
+        semantic_punctuation_enabled: bool = False,
     ) -> None:
         self._on_partial = on_partial
         self._on_error = on_error
         self._language_hints = language_hints
+        self._semantic_punctuation_enabled = bool(semantic_punctuation_enabled)
         self._ws: Optional[ClientConnection] = None
         self._task_id = ""
         self._reader_task: Optional[asyncio.Task[None]] = None
@@ -166,6 +169,7 @@ class FunAsrRealtimeClient:
                     self._task_id,
                     model=model,
                     language_hints=self._language_hints,
+                    semantic_punctuation_enabled=self._semantic_punctuation_enabled,
                 )
             )
         )

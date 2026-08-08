@@ -10,13 +10,21 @@ import {
   Package,
 } from '@lucide/vue'
 
+import {
+  applyThinkingCoinMutation,
+  extractThinkingCoinsFooter,
+} from '@/composables/auth/useThinkingCoinSync'
+import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { eventBus } from '@/composables/core/useEventBus'
-import { applyThinkingCoinMutation, extractThinkingCoinsFooter } from '@/composables/auth/useThinkingCoinSync'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
-import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import {
+  buildEducationStageInstructions,
+  isEducationStage,
+  mergeGenerationInstructions,
+} from '@/constants/educationStage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
@@ -179,9 +187,17 @@ export function useCanvasToolbarApps() {
       return
     }
 
+    const stageRaw = authStore.getEffectiveEducationStage()
+    const stage = isEducationStage(stageRaw) ? stageRaw : null
+    const stageBlock = buildEducationStageInstructions(stage, uiStore.promptLanguage)
+    const generationInstructions = mergeGenerationInstructions(
+      stageBlock,
+      options?.generationInstructions
+    )
+
     const result = await autoComplete({
       promptSuffix: diagramStore.isLearningSheet ? ' 半成品' : undefined,
-      generationInstructions: options?.generationInstructions,
+      generationInstructions,
       topicOverride: options?.topicOverride,
     })
     if (!result.success && result.error) {

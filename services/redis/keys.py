@@ -95,7 +95,8 @@ ENV_RELOAD_CHANNEL = "mg:env:reload"
 # ---------------------------------------------------------------------------
 DIFY_SERVER_HEALTH = "dify:health:{org_id}:{server}"
 DIFY_HEALTH_POLLER_LOCK = "dify:health:poller:lock"
-TTL_DIFY_SERVER_HEALTH = 300  # safety net; poller refreshes every ~30 s
+# Must outlive DIFY_HEALTH_POLL_INTERVAL_SECONDS and default max-age (poll*4+60).
+TTL_DIFY_SERVER_HEALTH = 900  # safety net; poller refreshes every ~120 s by default
 TTL_DIFY_HEALTH_POLLER_LOCK = 300  # must exceed worst-case probe cycle duration
 
 # ---------------------------------------------------------------------------

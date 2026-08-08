@@ -85,6 +85,8 @@ class RedisTokenBuffer:
         "doubao": {"input": 0.8, "output": 2.0, "provider": "volcengine"},
         # Dify MindMate - uses Dify's hosted models (pricing estimated based on typical usage)
         "dify": {"input": 0.5, "output": 1.5, "provider": "dify"},
+        # Fun-ASR realtime — duration proxy tokens (see voice_notes_usage).
+        "fun-asr-realtime": {"input": 0.8, "output": 0.8, "provider": "dashscope"},
     }
 
     # Display names for resolved DashScope model ids (Qwen 3.6 family defaults).
@@ -100,6 +102,7 @@ class RedisTokenBuffer:
         "hunyuan": "hunyuan-turbo",
         "doubao": "doubao-1-5-pro-32k",
         "dify": "dify-mindmate",
+        "fun-asr-realtime": "fun-asr-realtime",
     }
 
     def __init__(self):

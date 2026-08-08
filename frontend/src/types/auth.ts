@@ -61,6 +61,8 @@ export interface User {
   matchPromptToUi?: boolean
   /** Persisted UI version (chinese | international); absent until loaded from server */
   uiVersion?: string | null
+  /** Persisted AI generate audience (学段); null = unset */
+  educationStage?: string | null
   /** False for overseas email accounts: Simplified Chinese (`zh`) UI is not available */
   allowsSimplifiedChinese?: boolean
   /** False for quick-registration users until they set a known password (SMS) */
@@ -113,6 +115,7 @@ export interface BackendUser {
   prompt_language?: string | null
   ui_version?: string | null
   match_prompt_to_ui?: boolean
+  education_stage?: string | null
   allows_simplified_chinese?: boolean
   login_password_set?: boolean
   thinking_coins?: {

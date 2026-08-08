@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.172.0] - 2026-08-08
+
+> **Voice Notes realtime transcription and canvas AI 学段 preference.**
+
+### Added
+
+- **Voice Notes** — Authenticated Fun-ASR WebSocket bridge (`/api/ws/voice-notes`); draggable FAB + transcript modal; sidebar entry; PCM streaming with pause/resume, 60m cap, 2m silence auto-stop; mindmap bootstrap/save and Document Summary handoff; daily-cap / thinking-coin settle via audio-duration proxy.
+- **AI generate 学段** — User `education_stage` column (migration `0101`); split「AI生成图示」toolbar control (primary generate + caret 学段 picker); `PATCH /diagram-preferences`; stage-aware `generation_instructions` for auto-complete (guest session value until login).
+
+### Changed
+
+- **Dify health poll default** — `DIFY_HEALTH_POLL_INTERVAL_SECONDS` default 30s → 120s (documented in `env.example`); stale-health max age follows the new interval.
+
+### Tests
+
+- Voice Notes ASR bridge relay, token estimate, budget errors, Fun-ASR semantic punctuation; WS metrics endpoint mapping.
+
 ## [5.171.2] - 2026-08-08
 
 > **ZhiHui diagram progress UX and Wan/planner observability.**

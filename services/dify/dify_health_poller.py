@@ -58,7 +58,8 @@ from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
 
-DIFY_HEALTH_POLL_INTERVAL_SECONDS = int(os.getenv("DIFY_HEALTH_POLL_INTERVAL_SECONDS", "30"))
+# 120s balances failover latency (~4 min with failure threshold 2) vs probe/log noise.
+DIFY_HEALTH_POLL_INTERVAL_SECONDS = int(os.getenv("DIFY_HEALTH_POLL_INTERVAL_SECONDS", "120"))
 DIFY_PROBE_CONCURRENCY = max(1, int(os.getenv("DIFY_PROBE_CONCURRENCY", "10")))
 _LOCK_REFRESH_EVERY_ASSIGNMENTS = 25
 
