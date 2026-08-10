@@ -24,6 +24,7 @@ import { ElProgress } from 'element-plus'
 
 import { useLanguage, useNotifications } from '@/composables'
 import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
+import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import {
@@ -671,6 +672,13 @@ const liteSourceBound = computed(
       :intro="featureEnabled ? t('canvas.mindMapDocumentSummary.intro') : undefined"
       @close="handleClose"
     />
+
+    <div
+      v-if="featureEnabled"
+      class="shrink-0 border-b border-slate-100 px-3 py-2"
+    >
+      <ProfessionalContentAudienceBanner />
+    </div>
 
     <div
       v-if="!featureEnabled"

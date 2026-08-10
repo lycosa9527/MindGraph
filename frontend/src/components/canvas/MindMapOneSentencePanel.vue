@@ -9,6 +9,7 @@ import { ElAvatar } from 'element-plus'
 import { Camera, Mic, Send } from '@lucide/vue'
 
 import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
+import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
 import OneSentenceKittyAvatar from '@/components/canvas/OneSentenceKittyAvatar.vue'
 import OneSentenceNodeActionGuide from '@/components/canvas/OneSentenceNodeActionGuide.vue'
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
@@ -185,6 +186,10 @@ onUnmounted(() => {
       :intro="t('canvas.mindMapSideToolbar.oneSentenceIntro')"
       @close="handleClose"
     />
+
+    <div class="shrink-0 border-b border-slate-100 px-3 py-2">
+      <ProfessionalContentAudienceBanner />
+    </div>
 
     <div
       :ref="setChatScrollEl"

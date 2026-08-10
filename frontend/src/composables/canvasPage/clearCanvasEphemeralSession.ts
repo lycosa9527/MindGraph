@@ -10,6 +10,7 @@ import {
   useConceptMapRelationshipStore,
   useInlineRecommendationsStore,
   useLLMResultsStore,
+  useMindClassroomStore,
   usePanelsStore,
 } from '@/stores'
 import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
@@ -32,4 +33,12 @@ export function clearCanvasEphemeralSession(): void {
   resetLearningSheetCustomModeUi()
   resetMindMapSideToolbarState()
   canvasVirtualKeyboardOpen.value = false
+  const classroom = useMindClassroomStore()
+  if (classroom.isLecturing) {
+    classroom.clearSession()
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+    }
+  }
+  classroom.closeModal()
 }

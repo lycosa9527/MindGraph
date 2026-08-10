@@ -42,6 +42,9 @@ import {
   ConceptMapRootConceptPicker,
   InlineRecommendationsPicker,
   MindMapPresentationSideToolbar,
+  MindClassroomLectureOverlay,
+  MindClassroomMascot,
+  MindClassroomSlidePane,
   MindMapSidePanel,
   MindMapSideToolbar,
   MindMapSlideOverlay,
@@ -138,6 +141,7 @@ import {
   resumeLearningSheetAfterPresentation,
   suspendLearningSheetForPresentation,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import {
@@ -175,6 +179,7 @@ import {
   useFeatureFlagsStore,
   useInlineRecommendationsStore,
   useLLMResultsStore,
+  useMindClassroomStore,
   usePanelsStore,
   useUIStore,
 } from '@/stores'
@@ -518,6 +523,21 @@ const slidePresentation = useMindMapSlidePresentation({
   },
 })
 
+const mindClassroomStore = useMindClassroomStore()
+const {
+  isLecturing: mindClassroomLecturing,
+  isSlideDeckMode: mindClassroomSlideDeck,
+  isCanvasTourMode: mindClassroomCanvasTour,
+} = storeToRefs(mindClassroomStore)
+useMindClassroomLecture()
+
+const mindMapTourFocusNodeId = computed(
+  () => mindClassroomStore.focusNodeId ?? slidePresentation.slideFocusNodeId.value
+)
+const mindMapTourDimFocusNodeIds = computed(
+  () => mindClassroomStore.dimFocusNodeIds ?? slidePresentation.slideDimFocusNodeIds.value
+)
+
 const presentationPointerEditMode = computed(
   () => showSimplifiedPresentationRail.value && mindMapPresentationTool.value === 'pointer'
 )
@@ -527,10 +547,16 @@ const presentationHandPanMode = computed(
 )
 
 watch(
-  [showSimplifiedPresentationRail, mindMapPresentationTool, presentationRailOpen],
+  [
+    showSimplifiedPresentationRail,
+    mindMapPresentationTool,
+    presentationRailOpen,
+    mindClassroomLecturing,
+  ],
   () => {
     setPresentationDiagramEditLocked(
-      showSimplifiedPresentationRail.value && mindMapPresentationTool.value !== 'pointer'
+      mindClassroomLecturing.value ||
+        (showSimplifiedPresentationRail.value && mindMapPresentationTool.value !== 'pointer')
     )
   },
   { immediate: true }
@@ -558,22 +584,37 @@ const showMindMapPresentationSideToolbar = computed(
     mindMapPresentationTool.value !== 'slides'
 )
 
-const showBottomBar = computed(() => !isMindMapPresentationMode.value)
+const showBottomBar = computed(
+  () => !isMindMapPresentationMode.value && !mindClassroomSlideDeck.value
+)
 
 const showMindMapShortcutGuide = computed(
-  () => useMindMapV2.value && !presentationRailOpen.value && Boolean(diagramStore.data)
+  () =>
+    useMindMapV2.value &&
+    !presentationRailOpen.value &&
+    !mindClassroomSlideDeck.value &&
+    Boolean(diagramStore.data)
 )
 
 const showMindMapSideToolbar = computed(
   () =>
     useMindMapV2.value &&
     !presentationRailOpen.value &&
+    !mindClassroomSlideDeck.value &&
     Boolean(diagramStore.data) &&
     !isViewer.value
 )
 
 const showLearningSheetExportNudge = computed(
-  () => useMindMapV2.value && !isMindMapPresentationMode.value && !isViewer.value
+  () =>
+    useMindMapV2.value &&
+    !isMindMapPresentationMode.value &&
+    !mindClassroomSlideDeck.value &&
+    !isViewer.value
+)
+
+const showCanvasChrome = computed(
+  () => !isMindMapPresentationMode.value && !mindClassroomSlideDeck.value
 )
 
 const { activeTool, sidebarVisible, closeActiveTool } = useMindMapSideToolbarState()
@@ -1523,7 +1564,7 @@ onUnmounted(() => {
       @exit="slidePresentation.exitSlideShow()"
     />
 
-    <CanvasChrome v-if="!isMindMapPresentationMode">
+    <CanvasChrome v-if="showCanvasChrome">
       <CanvasTopBar
         :auto-saved-status="autoSavedStatusText"
         :slot-full-and-new-diagram="isSlotsFullAndNewDiagram"
@@ -1546,6 +1587,7 @@ onUnmounted(() => {
 
     <!-- Collab UI: participant rail, session modal, active-session banner -->
     <CanvasCollabOverlay
+      v-if="!mindClassroomSlideDeck"
       ref="collabOverlayRef"
       :workshop-code="workshopCode"
       :workshop-visibility="workshopVisibility"
@@ -1561,9 +1603,10 @@ onUnmounted(() => {
       @retryConnection="reconnect"
     />
 
-    <CanvasTranslateProgressBanner />
+    <CanvasTranslateProgressBanner v-if="!mindClassroomSlideDeck" />
 
     <KittyCanvasAnchor
+      v-if="!mindClassroomSlideDeck"
       :visible="showKittyDesktopIndicator"
       :state="kittyVoicePhase"
       variant="fab"
@@ -1571,11 +1614,14 @@ onUnmounted(() => {
     />
 
     <!-- Main canvas area - merged chrome (top bar + toolbar) in CanvasChrome -->
-    <div class="flex-1 relative overflow-hidden flex flex-row min-h-0">
+    <div
+      class="flex-1 relative overflow-hidden flex flex-row min-h-0"
+      :class="{ 'mc-slide-lecture-fullscreen': mindClassroomSlideDeck }"
+    >
       <!-- Node Palette panel (瀑布流) - left 50%, inset to clear floating toolbars -->
       <Transition name="node-palette-slide">
         <div
-          v-if="panelsStore.nodePalettePanel.isOpen && !isViewer && !useMindMapV2"
+          v-if="panelsStore.nodePalettePanel.isOpen && !isViewer && !useMindMapV2 && !mindClassroomSlideDeck"
           class="node-palette-panel-split shrink-0 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden ml-4 mr-2 self-stretch"
           :style="{
             width: '50%',
@@ -1597,8 +1643,12 @@ onUnmounted(() => {
         </div>
       </Transition>
 
-      <!-- Diagram area - takes remaining space -->
-      <div class="flex-1 min-w-0 flex flex-col relative">
+      <!-- Diagram area - takes remaining space; slide lecture splits left map / right PPT -->
+      <div
+        class="flex-1 min-w-0 flex flex-row relative min-h-0"
+        :class="{ 'mc-dual-lecture': mindClassroomSlideDeck }"
+      >
+        <div class="flex-1 min-w-0 flex flex-col relative min-h-0">
         <DiagramCanvasHost
           v-if="diagramStore.data"
           v-model:presentation-highlight-strokes="presentationHighlightStrokes"
@@ -1617,8 +1667,8 @@ onUnmounted(() => {
           :presentation-pointer-edit-mode="presentationPointerEditMode"
           :presentation-hand-pan-mode="presentationHandPanMode"
           :collab-locked-node-ids="collabLockedNodeIds"
-          :mind-map-slide-focus-node-id="slidePresentation.slideFocusNodeId.value"
-          :mind-map-slide-dim-focus-node-ids="slidePresentation.slideDimFocusNodeIds.value"
+          :mind-map-slide-focus-node-id="mindMapTourFocusNodeId"
+          :mind-map-slide-dim-focus-node-ids="mindMapTourDimFocusNodeIds"
           :presentation-rail-open="presentationRailOpen"
           :presentation-side-toolbar-visible="showMindMapPresentationSideToolbar"
           :enable-touch-pan-pinch="uiStore.eBlackboardOptimize"
@@ -1631,12 +1681,16 @@ onUnmounted(() => {
           :tool="activeTool"
           @close="closeActiveTool"
         />
+        <MindClassroomMascot v-if="showMindMapSideToolbar && !mindClassroomLecturing" />
+        <MindClassroomLectureOverlay v-if="mindClassroomCanvasTour" />
+        </div>
+        <MindClassroomSlidePane v-if="mindClassroomSlideDeck" />
       </div>
 
       <!-- MindMate floating panel - rounded card, inset to clear floating toolbars -->
       <Transition name="mindmate-slide">
         <div
-          v-if="panelsStore.mindmatePanel.isOpen"
+          v-if="panelsStore.mindmatePanel.isOpen && !mindClassroomSlideDeck"
           class="mindmate-panel-float fixed z-50 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden"
           :style="{
             width: `${PANEL.MINDMATE_WIDTH}px`,

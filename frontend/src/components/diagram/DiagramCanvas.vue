@@ -560,6 +560,12 @@ function handleContextMenuExplainNode(payload: { nodeId: string; nodeLabel: stri
   openNodeExplain(payload.nodeId, payload.nodeLabel)
 }
 
+function handleFloatingToolbarExplainNode(): void {
+  const nodeId = floatingToolbarAnchorId.value
+  if (!nodeId) return
+  openNodeExplain(nodeId)
+}
+
 const { mountSubscriptions, clearDoubleBubbleTimer } = useDiagramCanvasEventBus()
 
 const { setupMobileTouchZoom, mobileTouchCleanup } = useDiagramCanvasMobileTouch({
@@ -761,6 +767,7 @@ defineExpose({
       :canvas-container="canvasContainer"
       :presentation-teleport-target="presentationTeleportTarget"
       :on-ai-subgraph-generate="handleAiSubgraphGenerate"
+      :on-node-explain="handleFloatingToolbarExplainNode"
     />
 
     <ContextMenu

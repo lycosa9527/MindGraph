@@ -170,6 +170,36 @@ export default {
   'canvas.toolbar.aiGenerate': 'Hasilkan AI',
   'canvas.toolbar.aiGenerateTooltip': 'Hasilkan dari topik utama',
   'canvas.toolbar.aiGenerating': 'Menghasilkan…',
+  'canvas.toolbar.professionalContent.label': 'Content level',
+  'canvas.toolbar.professionalContent.tooltip': 'Choose AI content audience difficulty',
+  'canvas.toolbar.professionalContent.panelTitle': 'Content level',
+  'canvas.toolbar.professionalContent.guideTitle': 'Choose an audience level',
+  'canvas.toolbar.professionalContent.guideBody':
+    'Pick a school stage or audience here. AI generate and chat edits will match that difficulty. After you choose, this control shrinks to a level tag.',
+  'canvas.toolbar.professionalContent.guideAction': 'Choose',
+  'canvas.toolbar.professionalContent.guideDismiss': 'Got it',
+  'canvas.toolbar.professionalContent.level.general.title': 'General',
+  'canvas.toolbar.professionalContent.level.general.description': 'Default style',
+  'canvas.toolbar.professionalContent.level.primary.title': 'Primary',
+  'canvas.toolbar.professionalContent.level.primary.description': 'Concrete & short',
+  'canvas.toolbar.professionalContent.level.junior.title': 'Middle school',
+  'canvas.toolbar.professionalContent.level.junior.description': 'Core concepts',
+  'canvas.toolbar.professionalContent.level.senior.title': 'High school',
+  'canvas.toolbar.professionalContent.level.senior.description': 'Fuller abstraction',
+  'canvas.toolbar.professionalContent.level.university.title': 'University',
+  'canvas.toolbar.professionalContent.level.university.description': 'Disciplinary',
+  'canvas.toolbar.professionalContent.level.adult.title': 'Adult',
+  'canvas.toolbar.professionalContent.level.adult.description': 'Practical',
+  'canvas.toolbar.professionalContent.level.expert.title': 'Expert',
+  'canvas.toolbar.professionalContent.level.expert.description': 'Deep & concise',
+  'canvas.toolbar.professionalContent.notify.preference':
+    'Later AI generation will better match the “{level}” audience',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
+    'Later AI generation will use the General style with no extra difficulty constraint',
+  'canvas.toolbar.professionalContent.notify.afterGenerated':
+    'Current content is at “{current}” level; later help will follow “{next}”',
+  'canvas.toolbar.professionalContent.audienceLine':
+    'Audience: {level} (from top “Audience level”)',
   'canvas.toolbar.alignLabel': 'Meluruskan',
   'canvas.toolbar.analogyPairAdded': 'Pasangan analogi ditambahkan',
   'canvas.toolbar.applied': 'Terapan',
@@ -362,6 +392,7 @@ export default {
   'canvas.floatingToolbar.fontDefault': 'Bawaan',
   'canvas.floatingToolbar.fontSimSun': 'SimSun',
   'canvas.floatingToolbar.fontKaiTi': 'KaiTi',
+  'canvas.floatingToolbar.nodeExplain': 'Learning tip',
   'canvas.floatingToolbar.aiSubgraph': 'Hasilkan subgraf dengan AI',
   'canvas.subgraphPreview.hint': 'Pratinjau subgraf AI',
   'canvas.subgraphPreview.accept': 'Menerima',
@@ -827,6 +858,99 @@ export default {
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Ekstrak yang disimpan hilang atau tidak sinkron dan telah dipadam. Sila unggah atau tempel kembali dokumen tersebut.',
   'canvas.mindMapSideToolbar.learningSheet': 'Lembar pembelajaran',
   'canvas.mindMapSideToolbar.oneSentence': 'Hasilkan satu kalimat',
+  'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',
+  'canvas.mindClassroom.title': 'Mind Classroom',
+  'canvas.mindClassroom.intro':
+    'Lecture around the map — set familiarity, presentation, and tone.',
+  'canvas.mindClassroom.lead': 'Let an AI teacher walk you through this mind map',
+  'canvas.mindClassroom.mascotBubble': 'Mind Classroom is here!',
+  'canvas.mindClassroom.mascotDismiss': 'Dock to bottom',
+  'canvas.mindClassroom.audienceLine': 'Audience: {level} (from top “Audience level”)',
+  'canvas.mindClassroom.start': 'Start lecture',
+  'canvas.mindClassroom.startPreview':
+    'Selected “{mastery}” · “{presentation}” · “{tone}” · audience “{audience}”. Lecture engine comes next — UI preview only.',
+  'canvas.mindClassroom.settings.masteryTitle': 'How familiar am I with this map?',
+  'canvas.mindClassroom.settings.mastery.first_look.title': 'First look',
+  'canvas.mindClassroom.settings.mastery.review.title': 'Review',
+  'canvas.mindClassroom.settings.mastery.teach.title': 'Prep to teach',
+  'canvas.mindClassroom.settings.presentationTitle': 'How should the lecture be presented?',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.title': 'Canvas voice tour',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
+    'Voice lecture on the map canvas — main branches or node-by-node.',
+  'canvas.mindClassroom.settings.presentation.slide_deck.title': 'Slide lecture',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
+    'AI slides beside the map — dual-pane, page-by-page narration.',
+  'canvas.mindClassroom.settings.tourScopeTitle': 'Tour detail',
+  'canvas.mindClassroom.settings.tourScope.main_branch.title': 'Main branches',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc': 'Walk first-level branches at a steady pace.',
+  'canvas.mindClassroom.settings.tourScope.each_node.title': 'Node by node',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc': 'Visit every node — better for close reading.',
+  'canvas.mindClassroom.settings.slideStyleTitle': 'Slide style',
+  'canvas.mindClassroom.settings.slideStyle.general.title': 'General slides',
+  'canvas.mindClassroom.settings.slideStyle.chalkboard.title': 'Chalkboard',
+  'canvas.mindClassroom.settings.slideStyle.comic.title': 'Comic',
+  'canvas.mindClassroom.settings.slideStyle.handdrawn.title': 'Hand-drawn',
+  'canvas.mindClassroom.slide.kindOverview': 'Opening',
+  'canvas.mindClassroom.slide.kindBranch': 'Develop',
+  'canvas.mindClassroom.slide.kindClosing': 'Close',
+  'canvas.mindClassroom.settings.toneTitle': 'What lecture tone do I want?',
+  'canvas.mindClassroom.settings.tone.classroom': 'Classroom',
+  'canvas.mindClassroom.settings.tone.story': 'Storytelling',
+  'canvas.mindClassroom.settings.tone.dialogue': 'Dialogue',
+  'canvas.mindClassroom.settings.tone.socratic': 'Socratic',
+  'canvas.mindClassroom.settings.tone.fast': 'Fast talk',
+  'canvas.mindClassroom.settings.tone.close_read': 'Close reading',
+  'canvas.mindClassroom.settings.tone.examples': 'Rich examples',
+  'canvas.mindClassroom.settings.tone.exam_outline': 'Exam outline',
+  'canvas.mindClassroom.lecture.needDiagram': 'Create a mind map on the canvas first, then start the lecture.',
+  'canvas.mindClassroom.lecture.emptySteps': 'This map has no nodes to lecture on.',
+  'canvas.mindClassroom.lecture.pause': 'Pause',
+  'canvas.mindClassroom.lecture.resume': 'Resume',
+  'canvas.mindClassroom.lecture.prev': 'Previous',
+  'canvas.mindClassroom.lecture.next': 'Next',
+  'canvas.mindClassroom.lecture.stop': 'End lecture',
+  'canvas.mindClassroom.lecture.mute': 'Mute narration',
+  'canvas.mindClassroom.lecture.unmute': 'Unmute narration',
+  'canvas.mindClassroom.lecture.script.noBranches': 'several key points',
+  'canvas.mindClassroom.lecture.script.leafNode': 'no deeper nodes under this branch',
+  'canvas.mindClassroom.lecture.script.overview.classroom':
+    'Welcome. Today we study “{topic}” for a “{audience}” audience at a “{mastery}” pace. The map covers: {branches}. We start with the whole picture, then each branch.',
+  'canvas.mindClassroom.lecture.script.overview.story':
+    'Treat “{topic}” as a story title. For “{audience}”, we move from the big picture into chapters: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.dialogue':
+    'Let’s look at “{topic}” together. As a “{audience}” learner, what stands out first? The map includes: {branches}. We’ll go Q&A style.',
+  'canvas.mindClassroom.lecture.script.overview.socratic':
+    'Hold the conclusions. Why is “{topic}” worth a map? At “{mastery}” depth we’ll question these branches: {branches}.',
+  'canvas.mindClassroom.lecture.script.overview.fast':
+    'Quick tour of “{topic}” ({audience}). Trunk: {branches}. Short stops on each branch next.',
+  'canvas.mindClassroom.lecture.script.overview.close_read':
+    'Close-read open: topic “{topic}”. Hold the structure—{branches}—before reading each branch. Audience: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.examples':
+    'Start with examples. “{topic}” is like scenes in class or life; branches are scenes: {branches}. Audience: {audience}.',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline':
+    'Exam overview: “{topic}”. Memorize the trunk—{branches}. Level: {audience}; pace: {mastery}.',
+  'canvas.mindClassroom.lecture.script.branch.classroom':
+    'Branch {index}/{total}: “{title}”. Under it: {children}. See where this sits in the whole map.',
+  'canvas.mindClassroom.lecture.script.branch.story':
+    'Chapter {index}: “{title}”. It introduces: {children}. Notice how they move the story forward.',
+  'canvas.mindClassroom.lecture.script.branch.dialogue':
+    'Quick question: what comes to mind for “{title}”? The map shows: {children}. Compare ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.branch.socratic':
+    'Why is “{title}” its own branch? How does it relate to {children}? Answer first, then check the map ({index}/{total}).',
+  'canvas.mindClassroom.lecture.script.branch.fast':
+    '“{title}” → {children}. ({index}/{total})',
+  'canvas.mindClassroom.lecture.script.branch.close_read':
+    'Close-read “{title}”. Trace: {children}. This is segment {index}/{total}—watch wording and levels.',
+  'canvas.mindClassroom.lecture.script.branch.examples':
+    'Example for “{title}”: picture a concrete scene with {children}. Branch {index}/{total}.',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline':
+    'Point {index}/{total}: “{title}”. Sub-points: {children}. Memorize the title, then details.',
+  'canvas.mindClassroom.lecture.script.closing.first_look':
+    'Wrap-up: you now have the skeleton of “{topic}”. Scan the map once more and mark two unfamiliar spots for next time.',
+  'canvas.mindClassroom.lecture.script.closing.review':
+    'Review close: can you retell the trunk of “{topic}” without looking? If a branch sticks, revisit just that branch.',
+  'canvas.mindClassroom.lecture.script.closing.teach':
+    'Prep close: for a “{audience}” class on “{topic}”, follow open–develop–close on the map. Any branch can become a classroom question.',
   'canvas.mindMapSideToolbar.oneSentenceIntro': 'Jelaskan topik atau permintaan edit dalam satu kalimat untuk membuat atau menyempurnakan peta',
   'canvas.mindMapSideToolbar.documentSummary': 'Ringkasan Dokumen',
   'fileCenter.intro': 'Paket adalah kumpulan sumber yang dikurasi untuk rajah ini. Tambahkan file, catatan, atau halaman web — rajah melengkapi cabangnya dari sumber ini.',

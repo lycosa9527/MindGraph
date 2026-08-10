@@ -18,7 +18,7 @@ import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { useDiagramStore } from '@/stores'
+import { useAiContentLevelStore, useDiagramStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -52,6 +52,7 @@ export function useCanvasToolbarApps() {
   const diagramStore = useDiagramStore()
   const diagramTranslateUi = useDiagramTranslateUiStore()
   const savedDiagramsStore = useSavedDiagramsStore()
+  const aiContentLevelStore = useAiContentLevelStore()
   const uiStore = useUIStore()
   const authStore = useAuthStore()
   const { t } = useLanguage()
@@ -179,12 +180,16 @@ export function useCanvasToolbarApps() {
       return
     }
 
+    const levelAtGenerate = aiContentLevelStore.level
     const result = await autoComplete({
       promptSuffix: diagramStore.isLearningSheet ? ' 半成品' : undefined,
       generationInstructions: options?.generationInstructions,
       topicOverride: options?.topicOverride,
     })
-    if (!result.success && result.error) {
+    if (result.success) {
+      const diagramKey = savedDiagramsStore.activeDiagramId || 'unsaved'
+      aiContentLevelStore.markDiagramGenerated(diagramKey, levelAtGenerate)
+    } else if (result.error) {
       console.error('Auto-complete failed:', result.error)
     }
   }

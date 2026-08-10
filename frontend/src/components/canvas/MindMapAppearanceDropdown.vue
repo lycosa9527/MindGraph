@@ -6,7 +6,7 @@ import { computed, ref, watch } from 'vue'
 
 import { ElDropdown, ElTooltip } from 'element-plus'
 
-import { Check, ChevronDown, Palette } from '@lucide/vue'
+import { Check, Palette } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -24,7 +24,7 @@ import {
 import { MIND_MAP_RAINBOW_THEME_ID } from '@/config/mindMapVibrantThemes'
 import { useDiagramStore } from '@/stores'
 
-const props = withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
+withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -96,7 +96,6 @@ function handlePickRainbow(): void {
   <ElTooltip
     :content="t('canvas.toolbar.mindMapAppearanceLabel')"
     placement="bottom"
-    :disabled="!props.compact"
   >
     <span class="inline-flex shrink-0">
       <ElDropdown
@@ -107,8 +106,7 @@ function handlePickRainbow(): void {
       >
         <button
           type="button"
-          class="mm-btn mm-btn--select"
-          :class="{ 'mm-btn--appearance-compact': props.compact }"
+          class="mm-btn mm-btn--appearance"
           :aria-label="t('canvas.toolbar.mindMapAppearanceLabel')"
         >
           <Palette class="w-4 h-4 text-gray-500 shrink-0" />
@@ -117,14 +115,6 @@ function handlePickRainbow(): void {
             :class="{ 'mm-btn__color-dot--rainbow': isRainbowActive }"
             :style="isRainbowActive ? undefined : { backgroundColor: activeTheme.topicBorderColor }"
             aria-hidden="true"
-          />
-          <span
-            v-if="!props.compact"
-            class="mm-btn__label"
-          >{{ t('canvas.toolbar.mindMapAppearanceLabel') }}</span>
-          <ChevronDown
-            v-if="!props.compact"
-            class="mm-btn__chevron"
           />
         </button>
         <template #dropdown>
@@ -238,13 +228,10 @@ function handlePickRainbow(): void {
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
 }
 
-.mm-btn__label {
-  font-weight: 500;
-}
-
-.mm-btn--appearance-compact {
+.mm-btn--appearance {
   width: auto;
   max-width: none;
+  gap: 6px;
   padding: 0 8px;
 }
 
@@ -254,13 +241,6 @@ function handlePickRainbow(): void {
   border-radius: 9999px;
   border: 1px solid rgb(0 0 0 / 0.12);
   flex-shrink: 0;
-}
-
-.mm-btn__chevron {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-  color: #9ca3af;
 }
 </style>
 

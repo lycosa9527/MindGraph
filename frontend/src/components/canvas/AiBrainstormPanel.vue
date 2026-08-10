@@ -8,6 +8,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Check, Loader2, RefreshCw } from '@lucide/vue'
 
 import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
+import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { PALETTE_MINDMAP_DRAG_MIME } from '@/composables/nodePalette/constants'
@@ -243,6 +244,10 @@ onUnmounted(() => {
         </div>
       </template>
     </MindMapSidePanelHeader>
+
+    <div class="shrink-0 border-b border-slate-100 px-3 py-2">
+      <ProfessionalContentAudienceBanner />
+    </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto px-3 py-3">
       <div

@@ -172,6 +172,36 @@ export default {
   'canvas.toolbar.aiGenerate': 'AI生成图示',
   'canvas.toolbar.aiGenerateTooltip': '根据中心主题生成',
   'canvas.toolbar.aiGenerating': '生成中…',
+  'canvas.toolbar.professionalContent.label': '专业内容',
+  'canvas.toolbar.professionalContent.tooltip': '选择 AI 生成内容的受众难度',
+  'canvas.toolbar.professionalContent.panelTitle': '期望的AI生成内容专业程度',
+  'canvas.toolbar.professionalContent.guideTitle': '先选受众难度',
+  'canvas.toolbar.professionalContent.guideBody':
+    '点这里选择学段或场景，AI 生成、对话改图等会按该难度组织内容。选过后按钮会收成学段标签。',
+  'canvas.toolbar.professionalContent.guideAction': '去选择',
+  'canvas.toolbar.professionalContent.guideDismiss': '知道了',
+  'canvas.toolbar.professionalContent.level.general.title': '通用',
+  'canvas.toolbar.professionalContent.level.general.description': '默认风格',
+  'canvas.toolbar.professionalContent.level.primary.title': '小学',
+  'canvas.toolbar.professionalContent.level.primary.description': '具象短句',
+  'canvas.toolbar.professionalContent.level.junior.title': '初中',
+  'canvas.toolbar.professionalContent.level.junior.description': '基础概念',
+  'canvas.toolbar.professionalContent.level.senior.title': '高中',
+  'canvas.toolbar.professionalContent.level.senior.description': '抽象完整',
+  'canvas.toolbar.professionalContent.level.university.title': '大学',
+  'canvas.toolbar.professionalContent.level.university.description': '学科框架',
+  'canvas.toolbar.professionalContent.level.adult.title': '成人',
+  'canvas.toolbar.professionalContent.level.adult.description': '实用场景',
+  'canvas.toolbar.professionalContent.level.expert.title': '专家',
+  'canvas.toolbar.professionalContent.level.expert.description': '深度精炼',
+  'canvas.toolbar.professionalContent.notify.preference':
+    '后续 AI 生成内容将更符合「{level}」受众认知水平',
+  'canvas.toolbar.professionalContent.notify.preferenceGeneral':
+    '后续 AI 生成内容将按「通用」风格，不额外约束难度',
+  'canvas.toolbar.professionalContent.notify.afterGenerated':
+    '当前内容为「{current}」难度；后续我将按「{next}」为你辅助生成',
+  'canvas.toolbar.professionalContent.audienceLine':
+    '当前受众：{level}（来自顶部「专业内容」）',
   'canvas.toolbar.alignLabel': '对齐',
   'canvas.toolbar.analogyPairAdded': '已添加类比对',
   'canvas.toolbar.applied': '已应用',
@@ -366,6 +396,7 @@ export default {
   'canvas.floatingToolbar.fontDefault': '默认字体',
   'canvas.floatingToolbar.fontSimSun': '宋体',
   'canvas.floatingToolbar.fontKaiTi': '楷体',
+  'canvas.floatingToolbar.nodeExplain': '学习提示',
   'canvas.floatingToolbar.aiSubgraph': '智能生成子图',
   'canvas.subgraphPreview.hint': 'AI 子图预览',
   'canvas.subgraphPreview.accept': '采纳',
@@ -863,6 +894,98 @@ export default {
     '已保存的提取内容缺失或与存储不同步，已自动清除。请重新上传或粘贴文档。',
   'canvas.mindMapSideToolbar.learningSheet': '挖空支架图',
   'canvas.mindMapSideToolbar.oneSentence': '对话式修改',
+  'canvas.mindMapSideToolbar.mindClassroom': '思维讲堂',
+  'canvas.mindClassroom.title': '思维讲堂',
+  'canvas.mindClassroom.intro': '围着导图讲解：可选画布语音巡讲或双栏幻灯片讲解。',
+  'canvas.mindClassroom.lead': '让 AI 老师围着这张思维导图讲给你听',
+  'canvas.mindClassroom.mascotBubble': '思维讲堂在这呢！',
+  'canvas.mindClassroom.mascotDismiss': '收起到底部',
+  'canvas.mindClassroom.audienceLine': '当前受众：{level}（来自顶部「专业内容」）',
+  'canvas.mindClassroom.start': '开始讲解',
+  'canvas.mindClassroom.startPreview':
+    '已选「{mastery}」·「{presentation}」·「{tone}」· 受众「{audience}」。讲解引擎稍后接入，当前为界面预览。',
+  'canvas.mindClassroom.settings.masteryTitle': '我对这张图的熟悉程度',
+  'canvas.mindClassroom.settings.mastery.first_look.title': '初识',
+  'canvas.mindClassroom.settings.mastery.review.title': '复习巩固',
+  'canvas.mindClassroom.settings.mastery.teach.title': '备课讲授',
+  'canvas.mindClassroom.settings.presentationTitle': '我希望的讲解呈现方式',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.title': '画布语音巡讲',
+  'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
+    '在导图画布上聚焦语音讲解，可选主分支或逐节点。',
+  'canvas.mindClassroom.settings.presentation.slide_deck.title': '幻灯片讲解',
+  'canvas.mindClassroom.settings.presentation.slide_deck.desc':
+    'AI 生成幻灯片，左侧导图对照，右侧翻页讲解。',
+  'canvas.mindClassroom.settings.tourScopeTitle': '巡讲粒度',
+  'canvas.mindClassroom.settings.tourScope.main_branch.title': '按主分支',
+  'canvas.mindClassroom.settings.tourScope.main_branch.desc': '一级分支逐步讲，节奏更稳。',
+  'canvas.mindClassroom.settings.tourScope.each_node.title': '逐个节点',
+  'canvas.mindClassroom.settings.tourScope.each_node.desc': '深入每一层节点，适合精读。',
+  'canvas.mindClassroom.settings.slideStyleTitle': '幻灯片风格',
+  'canvas.mindClassroom.settings.slideStyle.general.title': '通用幻灯片',
+  'canvas.mindClassroom.settings.slideStyle.chalkboard.title': '黑板报风',
+  'canvas.mindClassroom.settings.slideStyle.comic.title': '漫画风',
+  'canvas.mindClassroom.settings.slideStyle.handdrawn.title': '手绘风',
+  'canvas.mindClassroom.slide.kindOverview': '开场',
+  'canvas.mindClassroom.slide.kindBranch': '展开',
+  'canvas.mindClassroom.slide.kindClosing': '收束',
+  'canvas.mindClassroom.settings.toneTitle': '我希望的讲解语气是',
+  'canvas.mindClassroom.settings.tone.classroom': '课堂',
+  'canvas.mindClassroom.settings.tone.story': '讲故事',
+  'canvas.mindClassroom.settings.tone.dialogue': '对话追问',
+  'canvas.mindClassroom.settings.tone.socratic': '苏格拉底',
+  'canvas.mindClassroom.settings.tone.fast': '速讲',
+  'canvas.mindClassroom.settings.tone.close_read': '精读',
+  'canvas.mindClassroom.settings.tone.examples': '举例丰富',
+  'canvas.mindClassroom.settings.tone.exam_outline': '考点提纲',
+  'canvas.mindClassroom.lecture.needDiagram': '请先在画布上创建思维导图，再开始讲解。',
+  'canvas.mindClassroom.lecture.emptySteps': '当前导图没有可讲解的节点。',
+  'canvas.mindClassroom.lecture.pause': '暂停',
+  'canvas.mindClassroom.lecture.resume': '继续',
+  'canvas.mindClassroom.lecture.prev': '上一节',
+  'canvas.mindClassroom.lecture.next': '下一节',
+  'canvas.mindClassroom.lecture.stop': '结束讲解',
+  'canvas.mindClassroom.lecture.mute': '关闭朗读',
+  'canvas.mindClassroom.lecture.unmute': '开启朗读',
+  'canvas.mindClassroom.lecture.script.noBranches': '若干要点',
+  'canvas.mindClassroom.lecture.script.leafNode': '这一支下暂无更细节点',
+  'canvas.mindClassroom.lecture.script.overview.classroom':
+    '同学们好。今天我们围绕「{topic}」来学习，面向「{audience}」受众，以「{mastery}」节奏展开。整张图主要包括：{branches}。先看全局，再逐支梳理。',
+  'canvas.mindClassroom.lecture.script.overview.story':
+    '先把「{topic}」当成一个故事的标题。面向「{audience}」，我们会从全貌走进细节：故事里有这些章节——{branches}。',
+  'canvas.mindClassroom.lecture.script.overview.dialogue':
+    '我们先一起看「{topic}」。如果你是「{audience}」，你会先注意到哪些部分？整图大致包括：{branches}。我们一问一答地往下走。',
+  'canvas.mindClassroom.lecture.script.overview.socratic':
+    '先别急着记结论。面对「{topic}」，你认为它为什么值得做成一张图？我们按「{mastery}」深度，从这些分支追问：{branches}。',
+  'canvas.mindClassroom.lecture.script.overview.fast':
+    '速览「{topic}」（{audience}）。主干：{branches}。接下来逐支点到为止。',
+  'canvas.mindClassroom.lecture.script.overview.close_read':
+    '精读开场：主题是「{topic}」。请先抓住全局结构——{branches}——再进入各支细读。受众设定：{audience}。',
+  'canvas.mindClassroom.lecture.script.overview.examples':
+    '用例子开场。主题「{topic}」可以想成生活或课堂里的一幕；整图分支像不同场景：{branches}。受众：{audience}。',
+  'canvas.mindClassroom.lecture.script.overview.exam_outline':
+    '考点总览：「{topic}」。按提纲记主干——{branches}。难度对齐「{audience}」，节奏为「{mastery}」。',
+  'canvas.mindClassroom.lecture.script.branch.classroom':
+    '第 {index}/{total} 支：看「{title}」。它下面还有：{children}。请对照导图位置理解这一段在整体中的作用。',
+  'canvas.mindClassroom.lecture.script.branch.story':
+    '故事走到第 {index} 章「{title}」。这一章里出现了：{children}。想想它们怎样推进整张图的情节。',
+  'canvas.mindClassroom.lecture.script.branch.dialogue':
+    '问你一句：提到「{title}」，你会联想到什么？图上给出了：{children}。我们对照看看（{index}/{total}）。',
+  'canvas.mindClassroom.lecture.script.branch.socratic':
+    '追问：「{title}」为什么要单独成支？它与子点「{children}」是什么关系？请先自己答，再对照导图（{index}/{total}）。',
+  'canvas.mindClassroom.lecture.script.branch.fast':
+    '「{title}」→ {children}。（{index}/{total}）',
+  'canvas.mindClassroom.lecture.script.branch.close_read':
+    '精读「{title}」。请逐条看清下属信息：{children}。这一支在第 {index}/{total} 段，留意用词与层级。',
+  'canvas.mindClassroom.lecture.script.branch.examples':
+    '举个例子帮助理解「{title}」：可以把它想成具体场景，里面有 {children}。我们处在第 {index}/{total} 支。',
+  'canvas.mindClassroom.lecture.script.branch.exam_outline':
+    '考点 {index}/{total}：「{title}」。下属要点：{children}。复习时先背标题，再补细节。',
+  'canvas.mindClassroom.lecture.script.closing.first_look':
+    '全局回顾：我们刚认识了「{topic}」的骨架。建议你再扫一眼整张图，标出还陌生的两三个点，下次从那里开始。',
+  'canvas.mindClassroom.lecture.script.closing.review':
+    '复习收束：把「{topic}」合上书能否复述主干？若某一支卡壳，回到导图那一支再过一遍即可。',
+  'canvas.mindClassroom.lecture.script.closing.teach':
+    '备课收束：面向「{audience}」讲「{topic}」时，可按导图顺序开场—展开—收束。你也可以把某一支拆成课堂提问。',
   'canvas.mindMapSideToolbar.oneSentenceIntro':
     '用一句话描述主题或修改要求，智能生成并调整导图',
   'canvas.mindMapSideToolbar.documentSummary': '文档总结',

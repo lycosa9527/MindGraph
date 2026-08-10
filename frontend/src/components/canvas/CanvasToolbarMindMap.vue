@@ -2,26 +2,52 @@
 /**
  * Mind-map dedicated toolbar — single-row horizontal flow, lightweight UI.
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type Component } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { ElDropdown, ElTooltip } from 'element-plus'
+import { ElDropdown, ElPopover, ElTooltip } from 'element-plus'
 
 import {
+  Award,
+  BookOpen,
+  Briefcase,
+  Check,
   ChevronDown,
   Download,
   GitBranchPlus,
+  GraduationCap,
+  Landmark,
   Plus,
   RotateCcw,
   RotateCw,
+  School,
+  Sparkles,
   Trash2,
   Upload,
   Wand2,
+  X,
 } from '@lucide/vue'
 
 import MindMapAppearanceDropdown from '@/components/canvas/MindMapAppearanceDropdown.vue'
 import MindMapExportOptionsPanel from '@/components/canvas/MindMapExportOptionsPanel.vue'
+
+import {
+  AI_CONTENT_LEVEL_COLORS,
+  AI_CONTENT_LEVEL_IDS,
+  DEFAULT_AI_CONTENT_LEVEL,
+  type AiContentLevelId,
+} from '@/config/aiContentLevels'
+
+const AI_CONTENT_LEVEL_ICONS: Record<AiContentLevelId, Component> = {
+  general: Sparkles,
+  primary: School,
+  junior: BookOpen,
+  senior: GraduationCap,
+  university: Landmark,
+  adult: Briefcase,
+  expert: Award,
+}
 
 import {
   tryCollabGuardedRedo,
@@ -35,7 +61,13 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { CANVAS_MINDMAP_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM, CANVAS_WORKSHEET_TEXT_MENU_ITEM, CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM } from '@/config/canvasExportMenu'
-import { useAuthStore, useCanvasExportStore, useDiagramStore } from '@/stores'
+import {
+  useAiContentLevelStore,
+  useAuthStore,
+  useCanvasExportStore,
+  useDiagramStore,
+  useSavedDiagramsStore,
+} from '@/stores'
 
 import MindMapStructureIcon from './MindMapStructureIcon.vue'
 
@@ -64,6 +96,176 @@ const { isAIGenerating, handleAIGenerate } = useCanvasToolbarApps()
 
 const canvasExportStore = useCanvasExportStore()
 const { exportOptions, mergedExportOptions } = storeToRefs(canvasExportStore)
+
+const aiContentLevelStore = useAiContentLevelStore()
+const savedDiagramsStore = useSavedDiagramsStore()
+const { level: proContentLevel, userSet: proContentUserSet, showFirstRunGuide } =
+  storeToRefs(aiContentLevelStore)
+const proContentPanelOpen = ref(false)
+const proContentGuideReady = ref(false)
+const proContentAnchorRect = ref<DOMRect | null>(null)
+
+const proContentLevelOptions = computed(() =>
+  AI_CONTENT_LEVEL_IDS.map((id) => ({
+    id,
+    title: t(`canvas.toolbar.professionalContent.level.${id}.title`),
+    description: t(`canvas.toolbar.professionalContent.level.${id}.description`),
+    color: AI_CONTENT_LEVEL_COLORS[id],
+    icon: AI_CONTENT_LEVEL_ICONS[id],
+  }))
+)
+
+const proContentActiveOption = computed(
+  () =>
+    proContentLevelOptions.value.find((option) => option.id === proContentLevel.value) ??
+    proContentLevelOptions.value[0]
+)
+
+/** First-time hint: show「专业内容」until the user has picked a level once. */
+const showProContentHintLabel = computed(
+  () => !props.compact && !proContentUserSet.value
+)
+
+const proContentButtonTitle = computed(
+  () =>
+    `${t('canvas.toolbar.professionalContent.label')} · ${proContentActiveOption.value.title}`
+)
+
+const showProContentGuide = computed(
+  () =>
+    showFirstRunGuide.value &&
+    proContentGuideReady.value &&
+    !diagramStore.collabSessionActive &&
+    !proContentPanelOpen.value
+)
+
+const proContentGuideStyle = computed(() => {
+  const rect = proContentAnchorRect.value
+  if (!rect) {
+    return {
+      top: '56px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+    }
+  }
+  return {
+    top: `${rect.bottom + 10}px`,
+    left: `${rect.left + rect.width / 2}px`,
+    transform: 'translateX(-50%)',
+  }
+})
+
+let proContentGuideTimer: number | undefined
+let proContentGuideRaf = 0
+
+function findProContentAnchor(): HTMLElement | null {
+  const el = document.querySelector('[data-pro-content-anchor]')
+  return el instanceof HTMLElement ? el : null
+}
+
+function updateProContentAnchorRect(): void {
+  proContentAnchorRect.value = findProContentAnchor()?.getBoundingClientRect() ?? null
+}
+
+function scheduleProContentAnchorUpdate(): void {
+  cancelAnimationFrame(proContentGuideRaf)
+  proContentGuideRaf = requestAnimationFrame(updateProContentAnchorRect)
+}
+
+function bindProContentGuideListeners(): void {
+  window.addEventListener('resize', scheduleProContentAnchorUpdate)
+  window.addEventListener('scroll', scheduleProContentAnchorUpdate, true)
+}
+
+function unbindProContentGuideListeners(): void {
+  window.removeEventListener('resize', scheduleProContentAnchorUpdate)
+  window.removeEventListener('scroll', scheduleProContentAnchorUpdate, true)
+  cancelAnimationFrame(proContentGuideRaf)
+}
+
+function dismissProContentGuide(): void {
+  aiContentLevelStore.dismissGuide()
+  proContentGuideReady.value = false
+}
+
+function openProContentFromGuide(): void {
+  updateProContentAnchorRect()
+  dismissProContentGuide()
+  void nextTick(() => {
+    proContentPanelOpen.value = true
+  })
+}
+
+watch(showProContentGuide, (visible) => {
+  if (visible) {
+    bindProContentGuideListeners()
+    scheduleProContentAnchorUpdate()
+    return
+  }
+  unbindProContentGuideListeners()
+})
+
+watch(proContentPanelOpen, (open) => {
+  if (open && showFirstRunGuide.value) {
+    aiContentLevelStore.dismissGuide()
+  }
+})
+
+onMounted(() => {
+  if (!showFirstRunGuide.value || diagramStore.collabSessionActive) return
+  proContentGuideTimer = window.setTimeout(() => {
+    updateProContentAnchorRect()
+    if (findProContentAnchor()) {
+      proContentGuideReady.value = true
+    }
+  }, 700)
+})
+
+onBeforeUnmount(() => {
+  if (proContentGuideTimer !== undefined) window.clearTimeout(proContentGuideTimer)
+  unbindProContentGuideListeners()
+})
+
+function proContentDiagramKey(): string {
+  return savedDiagramsStore.activeDiagramId || 'unsaved'
+}
+
+function proContentLevelTitle(id: AiContentLevelId): string {
+  return t(`canvas.toolbar.professionalContent.level.${id}.title`)
+}
+
+function handleProContentPick(id: AiContentLevelId): void {
+  if (id === proContentLevel.value && aiContentLevelStore.userSet) {
+    proContentPanelOpen.value = false
+    return
+  }
+
+  const diagramKey = proContentDiagramKey()
+  const generatedAt = aiContentLevelStore.getGeneratedLevel(diagramKey)
+  aiContentLevelStore.setLevel(id)
+  proContentPanelOpen.value = false
+
+  if (generatedAt && generatedAt !== id) {
+    notify.info(
+      t('canvas.toolbar.professionalContent.notify.afterGenerated', {
+        current: proContentLevelTitle(generatedAt),
+        next: proContentLevelTitle(id),
+      })
+    )
+    return
+  }
+
+  if (id === DEFAULT_AI_CONTENT_LEVEL) {
+    notify.info(t('canvas.toolbar.professionalContent.notify.preferenceGeneral'))
+    return
+  }
+
+  notify.info(
+    t('canvas.toolbar.professionalContent.notify.preference', {
+      level: proContentLevelTitle(id),
+    })
+  )
+}
 
 const structureDropdownOpen = ref(false)
 const exportDropdownOpen = ref(false)
@@ -130,7 +332,6 @@ function handleAddChildClick() {
       <ElTooltip
         :content="structureLabel"
         placement="bottom"
-        :disabled="!props.compact"
       >
         <span class="inline-flex shrink-0">
           <ElDropdown
@@ -143,21 +344,12 @@ function handleAddChildClick() {
           >
             <button
               type="button"
-              class="mm-btn mm-btn--select"
-              :class="{ 'mm-btn--structure-compact': props.compact }"
+              class="mm-btn mm-btn--structure"
               :aria-label="structureLabel"
             >
               <MindMapStructureIcon
                 class="mm-btn__structure-preview"
                 :mode="structureMode"
-              />
-              <span
-                v-if="!props.compact"
-                class="mm-btn__label"
-              >{{ structureLabel }}</span>
-              <ChevronDown
-                v-if="!props.compact"
-                class="mm-btn__chevron"
               />
             </button>
         <template #dropdown>
@@ -312,6 +504,155 @@ function handleAddChildClick() {
       <MindMapAppearanceDropdown :compact="props.compact" />
 
       <span class="mm-sep" />
+
+      <!-- Audience level picker — before AI generate so users set audience first -->
+      <ElPopover
+        v-if="!diagramStore.collabSessionActive"
+        v-model:visible="proContentPanelOpen"
+        placement="bottom-start"
+        :width="280"
+        trigger="click"
+        popper-class="mm-toolbar-popper mm-toolbar-popper--pro-content"
+      >
+        <template #reference>
+          <button
+            type="button"
+            class="mm-btn mm-btn--pro-content"
+            data-pro-content-anchor
+            :class="{
+              'mm-btn--icon': props.compact,
+              'mm-btn--pro-content-compact': !showProContentHintLabel && !props.compact,
+              'mm-btn--pro-content-guide': showProContentGuide,
+              'is-open': proContentPanelOpen,
+            }"
+            :title="proContentButtonTitle"
+            :aria-label="proContentButtonTitle"
+            :aria-expanded="proContentPanelOpen"
+          >
+            <span
+              class="mm-pro-icon"
+              :style="{
+                color: proContentActiveOption.color,
+                backgroundColor: `color-mix(in srgb, ${proContentActiveOption.color} 16%, transparent)`,
+              }"
+              aria-hidden="true"
+            >
+              <component
+                :is="proContentActiveOption.icon"
+                class="mm-pro-icon__svg"
+              />
+            </span>
+            <span
+              v-if="showProContentHintLabel"
+              class="mm-btn__label"
+            >{{ t('canvas.toolbar.professionalContent.label') }}</span>
+            <span
+              v-if="!props.compact"
+              class="mm-pro-level-tag"
+              :style="{ color: proContentActiveOption.color }"
+            >{{ proContentActiveOption.title }}</span>
+            <ChevronDown
+              class="mm-btn__chevron"
+              :class="{ 'mm-btn__chevron--open': proContentPanelOpen }"
+            />
+          </button>
+        </template>
+
+        <div
+          class="mm-pro-panel"
+          role="listbox"
+          :aria-label="t('canvas.toolbar.professionalContent.panelTitle')"
+        >
+          <div class="mm-pro-panel__eyebrow">
+            {{ t('canvas.toolbar.professionalContent.panelTitle') }}
+          </div>
+          <div class="mm-pro-panel__list">
+            <button
+              v-for="option in proContentLevelOptions"
+              :key="option.id"
+              type="button"
+              class="mm-pro-level"
+              :class="{ 'is-active': option.id === proContentLevel }"
+              role="option"
+              :aria-selected="option.id === proContentLevel"
+              @click="handleProContentPick(option.id)"
+            >
+              <span
+                class="mm-pro-icon"
+                :style="{
+                  color: option.color,
+                  backgroundColor: `color-mix(in srgb, ${option.color} 16%, transparent)`,
+                }"
+                aria-hidden="true"
+              >
+                <component
+                  :is="option.icon"
+                  class="mm-pro-icon__svg"
+                />
+              </span>
+              <span class="mm-pro-level__title">{{ option.title }}</span>
+              <span class="mm-pro-level__hint">{{ option.description }}</span>
+              <Check
+                v-if="option.id === proContentLevel"
+                class="mm-pro-level__check"
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+        </div>
+      </ElPopover>
+
+      <Teleport to="body">
+        <Transition name="mm-pro-guide">
+          <div
+            v-if="showProContentGuide"
+            class="mm-pro-guide"
+            role="dialog"
+            :aria-label="t('canvas.toolbar.professionalContent.guideTitle')"
+            :style="proContentGuideStyle"
+          >
+            <div
+              class="mm-pro-guide__arrow"
+              aria-hidden="true"
+            />
+            <div class="mm-pro-guide__card">
+              <button
+                type="button"
+                class="mm-pro-guide__close"
+                :aria-label="t('canvas.toolbar.professionalContent.guideDismiss')"
+                @click="dismissProContentGuide"
+              >
+                <X
+                  class="h-3.5 w-3.5"
+                  :stroke-width="2.5"
+                />
+              </button>
+              <p class="mm-pro-guide__title">
+                {{ t('canvas.toolbar.professionalContent.guideTitle') }}
+              </p>
+              <p class="mm-pro-guide__body">
+                {{ t('canvas.toolbar.professionalContent.guideBody') }}
+              </p>
+              <div class="mm-pro-guide__actions">
+                <button
+                  type="button"
+                  class="mm-pro-guide__dismiss"
+                  @click="dismissProContentGuide"
+                >
+                  {{ t('canvas.toolbar.professionalContent.guideDismiss') }}
+                </button>
+                <button
+                  type="button"
+                  class="mm-pro-guide__action"
+                  @click="openProContentFromGuide"
+                >
+                  {{ t('canvas.toolbar.professionalContent.guideAction') }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
 
       <!-- AI generate -->
       <ElTooltip
@@ -627,7 +968,7 @@ function handleAddChildClick() {
   padding: 0;
 }
 
-.mm-btn--structure-compact {
+.mm-btn--structure {
   width: auto;
   max-width: none;
   padding: 0 6px;
@@ -666,6 +1007,292 @@ function handleAddChildClick() {
 
 .mm-btn--ai .mm-btn__label {
   color: #fff;
+}
+
+.mm-pro-level-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  max-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mm-btn--pro-content {
+  border-color: #3b82f6;
+}
+
+.mm-btn--pro-content:hover:not(:disabled) {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.mm-btn--pro-content.is-open {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+:global(.dark) .mm-btn--pro-content {
+  border-color: #60a5fa;
+}
+
+:global(.dark) .mm-btn--pro-content:hover:not(:disabled),
+:global(.dark) .mm-btn--pro-content.is-open {
+  border-color: #93c5fd;
+  background: rgb(59 130 246 / 0.12);
+}
+
+.mm-btn--pro-content-compact .mm-pro-level-tag {
+  max-width: 3em;
+}
+
+.mm-btn--pro-content-guide {
+  border-color: #2563eb;
+  box-shadow:
+    0 0 0 2px rgb(59 130 246 / 0.35),
+    0 2px 8px rgb(37 99 235 / 0.28),
+    inset 0 1px 0 rgb(255 255 255 / 0.2);
+  animation: mm-pro-guide-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes mm-pro-guide-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgb(59 130 246 / 0.35),
+      0 2px 8px rgb(37 99 235 / 0.28),
+      inset 0 1px 0 rgb(255 255 255 / 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgb(59 130 246 / 0.5),
+      0 4px 14px rgb(37 99 235 / 0.4),
+      inset 0 1px 0 rgb(255 255 255 / 0.2);
+  }
+}
+
+.mm-pro-guide {
+  position: fixed;
+  z-index: 4100;
+  width: min(280px, calc(100vw - 24px));
+  pointer-events: auto;
+}
+
+.mm-pro-guide__arrow {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-left: 1px solid rgb(191 219 254 / 0.95);
+  border-top: 1px solid rgb(191 219 254 / 0.95);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.mm-pro-guide__card {
+  position: relative;
+  padding: 14px 14px 12px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgb(191 219 254 / 0.95);
+  box-shadow:
+    0 12px 32px rgb(15 23 42 / 0.12),
+    0 2px 8px rgb(37 99 235 / 0.12);
+}
+
+.mm-pro-guide__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.mm-pro-guide__close:hover {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.mm-pro-guide__title {
+  margin: 0 24px 6px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.mm-pro-guide__body {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.mm-pro-guide__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mm-pro-guide__dismiss {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mm-pro-guide__dismiss:hover {
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.mm-pro-guide__action {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgb(59 130 246) 0%, rgb(37 99 235) 100%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(37 99 235 / 0.35);
+}
+
+.mm-pro-guide__action:hover {
+  background: linear-gradient(180deg, rgb(37 99 235) 0%, rgb(29 78 216) 100%);
+}
+
+.mm-pro-guide-enter-active,
+.mm-pro-guide-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mm-pro-guide-enter-from,
+.mm-pro-guide-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-btn--pro-content-guide {
+    animation: none;
+  }
+}
+
+.mm-btn--pro-content.is-open .mm-btn__chevron--open {
+  transform: rotate(180deg);
+}
+
+.mm-btn__chevron {
+  transition: transform 0.15s ease;
+}
+
+.mm-pro-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+
+.mm-pro-icon__svg {
+  width: 13px;
+  height: 13px;
+}
+
+.mm-pro-panel__eyebrow {
+  padding: 2px 8px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.mm-pro-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mm-pro-level {
+  display: grid;
+  grid-template-columns: 22px minmax(0, auto) minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mm-pro-level:hover {
+  background: #f3f4f6;
+}
+
+.mm-pro-level.is-active {
+  background: #f8fafc;
+}
+
+.mm-pro-level__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+}
+
+.mm-pro-level__hint {
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mm-pro-level__check {
+  width: 16px;
+  height: 16px;
+  color: #2563eb;
+  justify-self: end;
+}
+
+:global(.dark) .mm-pro-level-tag {
+  color: #94a3b8;
+}
+
+:global(.dark) .mm-pro-panel__eyebrow {
+  color: #6b7280;
+}
+
+:global(.dark) .mm-pro-level:hover,
+:global(.dark) .mm-pro-level.is-active {
+  background: #1f2937;
+}
+
+:global(.dark) .mm-pro-level__title {
+  color: #f9fafb;
+}
+
+:global(.dark) .mm-pro-level__hint {
+  color: #6b7280;
 }
 
 :global(.dark) .mm-btn--ai {
@@ -724,6 +1351,10 @@ function handleAddChildClick() {
     0 4px 16px rgb(15 23 42 / 0.08),
     0 1px 4px rgb(15 23 42 / 0.04) !important;
   overflow: hidden !important;
+}
+
+.mm-toolbar-popper--pro-content.el-popper {
+  padding: 10px !important;
 }
 
 /* Export dropdown — Swiss stone panel (matches AdminSwissSegmented / collab menus). */

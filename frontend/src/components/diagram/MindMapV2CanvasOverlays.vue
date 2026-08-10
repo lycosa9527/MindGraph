@@ -22,6 +22,7 @@ const props = defineProps<{
   canvasContainer: Ref<HTMLElement | null> | HTMLElement | null
   presentationTeleportTarget: string | HTMLElement | undefined
   onAiSubgraphGenerate: () => void
+  onNodeExplain: () => void
 }>()
 
 const uiStore = useUIStore()
@@ -41,6 +42,7 @@ const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasC
     :ai-generating="subgraphGenerating"
     :show-ai-subgraph="floatingToolbarShowAiSubgraph"
     @ai-subgraph-generate="onAiSubgraphGenerate()"
+    @node-explain="onNodeExplain()"
   />
 
   <MindMapDirectionalAddOverlay

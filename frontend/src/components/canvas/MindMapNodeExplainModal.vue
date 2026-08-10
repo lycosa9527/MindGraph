@@ -1,12 +1,10 @@
 <script setup lang="ts">
 /**
- * Mind map node explain modal — Kitty chatroom-style helper.
+ * Mind map node explain panel — Kitty chatroom-style helper (fixed right rail).
  */
 import { computed, watch } from 'vue'
 
-import { ElDialog } from 'element-plus'
-
-import { Send } from '@lucide/vue'
+import { X, Send } from '@lucide/vue'
 
 import OneSentenceKittyAvatar from '@/components/canvas/OneSentenceKittyAvatar.vue'
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
@@ -86,94 +84,188 @@ function handleInputKeydown(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <ElDialog
-    v-model="visible"
-    :title="t('canvas.mindMapNodeExplain.title')"
-    width="460px"
-    append-to-body
-    destroy-on-close
-    class="mind-map-node-explain-modal"
-    @close="handleClose"
-  >
-    <div
-      class="mind-map-node-explain-chat flex max-h-[min(50vh,360px)] min-h-[180px] flex-col gap-3 overflow-y-auto px-0.5 py-1"
-      role="log"
+  <Teleport to="body">
+    <aside
+      v-if="visible"
+      class="mind-map-node-explain-panel"
+      role="dialog"
+      aria-modal="false"
       :aria-label="t('canvas.mindMapNodeExplain.title')"
     >
-      <div
-        v-for="message in messages"
-        :key="message.id"
-        class="one-sentence-chat-row"
-        :class="
-          message.role === 'user' ? 'one-sentence-chat-row--user' : 'one-sentence-chat-row--kitty'
-        "
-      >
-        <div
-          class="one-sentence-chat-message flex items-start gap-2"
-          :class="message.role === 'user' ? 'flex-row-reverse' : ''"
+      <header class="mind-map-node-explain-header">
+        <h2 class="mind-map-node-explain-title">
+          {{ t('canvas.mindMapNodeExplain.title') }}
+        </h2>
+        <button
+          type="button"
+          class="mind-map-node-explain-close"
+          :aria-label="t('canvas.mindMapNodeExplain.close')"
+          @click="handleClose"
         >
-          <OneSentenceKittyAvatar
-            v-if="message.role === 'kitty'"
-            :size="32"
+          <X
+            class="h-4 w-4"
+            :stroke-width="2"
           />
+        </button>
+      </header>
+
+      <div class="mind-map-node-explain-body">
+        <div
+          class="mind-map-node-explain-chat"
+          role="log"
+          :aria-label="t('canvas.mindMapNodeExplain.title')"
+        >
           <div
-            class="one-sentence-chat-bubble"
-            :class="{
-              'one-sentence-chat-bubble--user': message.role === 'user',
-              'one-sentence-chat-bubble--kitty': message.role === 'kitty',
-              'one-sentence-chat-bubble--streaming': message.streaming,
-              'one-sentence-chat-bubble--error':
-                message.role === 'kitty' &&
-                message.id === lastKittyMessageId &&
-                !!errorMessage &&
-                !message.text,
-            }"
+            v-for="message in messages"
+            :key="message.id"
+            class="one-sentence-chat-row"
+            :class="
+              message.role === 'user'
+                ? 'one-sentence-chat-row--user'
+                : 'one-sentence-chat-row--kitty'
+            "
           >
-            {{ displayText(message) }}
+            <div
+              class="one-sentence-chat-message flex items-start gap-2"
+              :class="message.role === 'user' ? 'flex-row-reverse' : ''"
+            >
+              <OneSentenceKittyAvatar
+                v-if="message.role === 'kitty'"
+                :size="32"
+              />
+              <div
+                class="one-sentence-chat-bubble"
+                :class="{
+                  'one-sentence-chat-bubble--user': message.role === 'user',
+                  'one-sentence-chat-bubble--kitty': message.role === 'kitty',
+                  'one-sentence-chat-bubble--streaming': message.streaming,
+                  'one-sentence-chat-bubble--error':
+                    message.role === 'kitty' &&
+                    message.id === lastKittyMessageId &&
+                    !!errorMessage &&
+                    !message.text,
+                }"
+              >
+                {{ displayText(message) }}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <footer class="mind-map-node-explain-footer mt-3 shrink-0">
-      <div class="one-sentence-input-stack">
-        <div
-          class="one-sentence-input-container"
-          :class="{ 'one-sentence-input-container--disabled': inputDisabled }"
-        >
-          <KittyBlackCatMascot
-            class="one-sentence-input-kitty"
-            :agent-state="kittyAgentState"
-          />
+        <footer class="mind-map-node-explain-footer">
+          <div class="one-sentence-input-stack">
+            <div
+              class="one-sentence-input-container"
+              :class="{ 'one-sentence-input-container--disabled': inputDisabled }"
+            >
+              <KittyBlackCatMascot
+                class="one-sentence-input-kitty"
+                :agent-state="kittyAgentState"
+              />
 
-          <textarea
-            v-model="draft"
-            class="one-sentence-input-field"
-            :placeholder="t('canvas.mindMapNodeExplain.inputPlaceholder')"
-            rows="1"
-            :disabled="inputDisabled"
-            @keydown="handleInputKeydown"
-          />
-          <button
-            type="button"
-            class="one-sentence-input-send"
-            :disabled="sendDisabled"
-            :aria-label="t('canvas.mindMapNodeExplain.sendButton')"
-            @click="handleSend"
-          >
-            <Send
-              class="h-[18px] w-[18px]"
-              :stroke-width="2"
-            />
-          </button>
-        </div>
+              <textarea
+                v-model="draft"
+                class="one-sentence-input-field"
+                :placeholder="t('canvas.mindMapNodeExplain.inputPlaceholder')"
+                rows="1"
+                :disabled="inputDisabled"
+                @keydown="handleInputKeydown"
+              />
+              <button
+                type="button"
+                class="one-sentence-input-send"
+                :disabled="sendDisabled"
+                :aria-label="t('canvas.mindMapNodeExplain.sendButton')"
+                @click="handleSend"
+              >
+                <Send
+                  class="h-[18px] w-[18px]"
+                  :stroke-width="2"
+                />
+              </button>
+            </div>
+          </div>
+        </footer>
       </div>
-    </footer>
-  </ElDialog>
+    </aside>
+  </Teleport>
 </template>
 
 <style scoped>
+.mind-map-node-explain-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2100;
+  display: flex;
+  width: min(400px, 100vw);
+  flex-direction: column;
+  background: #fff;
+  box-shadow: -8px 0 28px rgb(15 23 42 / 0.12);
+  pointer-events: auto;
+}
+
+.mind-map-node-explain-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 16px 12px;
+}
+
+.mind-map-node-explain-title {
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #0f172a;
+}
+
+.mind-map-node-explain-close {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.mind-map-node-explain-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.mind-map-node-explain-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+
+.mind-map-node-explain-chat {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 2px 2px 4px;
+}
+
 .mind-map-node-explain-footer {
+  flex-shrink: 0;
   overflow: visible;
 }
 
@@ -334,18 +426,36 @@ function handleInputKeydown(event: KeyboardEvent): void {
   transform: none;
 }
 
-.dark .one-sentence-chat-bubble--user {
+:global(.dark) .mind-map-node-explain-panel {
+  background: #0f172a;
+  box-shadow: -8px 0 28px rgb(0 0 0 / 0.35);
+}
+
+:global(.dark) .mind-map-node-explain-title {
+  color: #f1f5f9;
+}
+
+:global(.dark) .mind-map-node-explain-close {
+  color: #94a3b8;
+}
+
+:global(.dark) .mind-map-node-explain-close:hover {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+:global(.dark) .one-sentence-chat-bubble--user {
   background: #312e81;
   color: #e2e8f0;
 }
 
-.dark .one-sentence-chat-bubble--kitty {
+:global(.dark) .one-sentence-chat-bubble--kitty {
   background: #1e293b;
   border-color: #334155;
   color: #e2e8f0;
 }
 
-.dark .one-sentence-chat-bubble--error {
+:global(.dark) .one-sentence-chat-bubble--error {
   background: #431407;
   border-color: #9a3412;
   color: #fed7aa;

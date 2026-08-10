@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.172.0] - 2026-08-10
+
+> **Mind-map v2 classroom lecture, audience-level prefs, and learning-tip rail.**
+
+### Added
+
+- **思维讲堂** — Mint blob IP entry (bottom-right) opens launch prefs: mastery, **画布语音巡讲** / **幻灯片讲解**, tour scope, lecture tone; canvas-tour runner with captions/TTS controls; slide-deck dual-pane fullscreen player.
+- **幻灯片风格** — Presets: 通用幻灯片 / 黑板报风 / 漫画风 / 手绘风 (legacy styles migrate automatically).
+- **专业内容（受众难度）** — Toolbar picker (学段/场景) shared across AI surfaces; first-run coach tip; after the first pick the control collapses to icon + level tag; blue frame beside **AI生成图示**.
+- **节点学习提示** — Floating toolbar「释」opens Kitty tip chat in a fixed **right rail** (does not cover the whole map); same flow as context-menu explain.
+
+### Changed
+
+- **思维讲堂入口** — Side-toolbar item removed; only the bottom-right mascot remains.
+- **Mind-map top bar** — Structure and theme controls are icon-only (tooltip for labels); audience control sits **before** AI generate.
+- **学习提示 UI** — Centered modal replaced with a non-modal right-side panel.
+
+### Removed
+
+- **MindMapClassroomPanel** — Left-rail classroom shell (launch UI lives in the mascot dialog).
+
 ## [5.171.1] - 2026-08-08
 
 > **Bump transitive `nanoid` for npm high audit.**

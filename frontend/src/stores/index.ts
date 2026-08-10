@@ -61,6 +61,8 @@ export {
   PRESENTATION_POINTER_SCALE_STEP,
 } from './presentationPointer'
 export { useCanvasExportStore } from './canvasExport'
+export { useAiContentLevelStore } from './aiContentLevel'
+export { useMindClassroomStore } from './mindClassroom'
 export { useLibraryStore } from './library'
 export { useShowcaseStore } from './showcase'
 export { useSmartResponseStore, type Watch, type SmartResponseSession } from './smartResponse'
