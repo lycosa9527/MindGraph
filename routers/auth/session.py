@@ -331,6 +331,7 @@ async def get_me(
             "ui_version": getattr(current_user, "ui_version", None),
             "match_prompt_to_ui": getattr(current_user, "match_prompt_to_ui", True),
             "allows_simplified_chinese": getattr(current_user, "allows_simplified_chinese", True),
+            "education_stage": getattr(current_user, "education_stage", None),
         }
     except BACKGROUND_INFRA_ERRORS as me_error:
         logger.error("Error in /me endpoint: %s", me_error, exc_info=True)

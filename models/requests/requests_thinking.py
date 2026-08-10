@@ -395,20 +395,23 @@ class NodePaletteCleanupRequest(BaseModel):
     )
 
 
-class MindMapNodeExplainHistoryTurn(BaseModel):
-    """One turn in a node-explain follow-up conversation."""
-
-    role: Literal["user", "assistant"]
-    content: str = Field(..., min_length=1, max_length=4000)
-
-
 class MindMapNodeExplainRequest(BaseModel):
     """Request model for /thinking_mode/mindmap/explain_node."""
 
+    session_id: str = Field(
+        ...,
+        min_length=8,
+        max_length=100,
+        description="Client session id shared by the three parallel facet streams",
+    )
     node_id: str = Field(..., min_length=1, max_length=120, description="Selected node id")
     node_label: str = Field(..., min_length=1, max_length=500, description="Selected node display text")
     topic: str = Field("", max_length=500, description="Central topic text")
     diagram_type: str = Field("mindmap", max_length=40, description="Diagram type key")
+    facet: Literal["meaning", "conflict", "questions"] = Field(
+        "meaning",
+        description="Which educational panel to generate",
+    )
     top_level_branches: Optional[List[str]] = Field(
         None,
         max_length=24,
@@ -434,17 +437,6 @@ class MindMapNodeExplainRequest(BaseModel):
         description="Prompt / generation language code (see prompt output registry)",
     )
     diagram_id: Optional[str] = Field(None, max_length=64, description="Saved diagram id for collab guard")
-    history: Optional[List[MindMapNodeExplainHistoryTurn]] = Field(
-        None,
-        max_length=30,
-        description="Prior user/assistant turns for follow-up chat",
-    )
-    user_message: Optional[str] = Field(
-        None,
-        min_length=1,
-        max_length=2000,
-        description="Follow-up user message; omit for the initial explain turn",
-    )
 
     @field_validator("language")
     @classmethod

@@ -1,66 +1,83 @@
 /**
- * Stream Kitty's educational reflection on a mind map node (cognitive conflict / inquiry).
+ * Stream three educational panels for a mind map node in parallel.
  */
-import { computed, ref } from 'vue'
+import { onUnmounted, ref, watch } from 'vue'
 
 import { useLanguage } from '@/composables'
+import { eventBus } from '@/composables/core/useEventBus'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
+import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { useSavedDiagramsStore } from '@/stores'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 import { collectMindMapExplainContext } from '@/utils/mindMapExplainContext'
 import { consumeSseDataLines } from '@/utils/mindMateSseStream'
+import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 export type MindMapNodeExplainTarget = {
   nodeId: string
   nodeLabel: string
 }
 
-export type MindMapNodeExplainMessage = {
-  id: string
-  role: 'user' | 'kitty'
+export type MindMapExplainFacet = 'meaning' | 'conflict' | 'questions'
+
+export type MindMapExplainPanel = {
+  facet: MindMapExplainFacet
   text: string
-  streaming?: boolean
+  streaming: boolean
+  error: string | null
 }
 
-type ExplainHistoryTurn = {
-  role: 'user' | 'assistant'
-  content: string
-}
-
-let messageSeq = 0
-
-function nextMessageId(): string {
-  messageSeq += 1
-  return `node-explain-${messageSeq}`
-}
+const EXPLAIN_FACETS: MindMapExplainFacet[] = ['meaning', 'conflict', 'questions']
 
 function normalizeDiagramType(type: DiagramType | null): string {
   if (!type) return 'mindmap'
   return type === 'mind_map' ? 'mindmap' : type
 }
 
+function emptyPanels(): MindMapExplainPanel[] {
+  return EXPLAIN_FACETS.map((facet) => ({
+    facet,
+    text: '',
+    streaming: false,
+    error: null,
+  }))
+}
+
+function formatHttpErrorDetail(detail: unknown, fallback: string): string {
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail
+  }
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item) => {
+        if (typeof item === 'string') return item
+        if (item && typeof item === 'object' && 'msg' in item) {
+          const msg = (item as { msg?: unknown }).msg
+          return typeof msg === 'string' ? msg : ''
+        }
+        return ''
+      })
+      .filter(Boolean)
+    if (parts.length > 0) return parts.join('; ')
+  }
+  return fallback
+}
+
 export function useMindMapNodeExplain() {
   const { promptLanguage, t } = useLanguage()
+  const notify = useNotifications()
   const diagramStore = useDiagramSession()
   const savedDiagramsStore = useSavedDiagramsStore()
 
   const visible = ref(false)
   const target = ref<MindMapNodeExplainTarget | null>(null)
-  const messages = ref<MindMapNodeExplainMessage[]>([])
-  const draft = ref('')
+  const panels = ref<MindMapExplainPanel[]>(emptyPanels())
   const loading = ref(false)
-  const errorMessage = ref<string | null>(null)
   const abortController = ref<AbortController | null>(null)
-
-  const kittyAgentState = computed((): KittyAgentState => {
-    if (errorMessage.value) return 'error'
-    const streaming = messages.value.find((msg) => msg.streaming)
-    if (loading.value && (!streaming || !streaming.text)) return 'connecting'
-    if (loading.value) return 'speaking'
-    return 'idle'
-  })
+  /** Monotonic run id — ignore late writes from aborted generations. */
+  const activeRunId = ref(0)
 
   function resolveNodeLabel(nodeId: string): string {
     const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
@@ -70,7 +87,8 @@ export function useMindMapNodeExplain() {
   function buildExplainPayload(
     nodeId: string,
     nodeLabel: string,
-    options?: { history?: ExplainHistoryTurn[]; userMessage?: string }
+    facet: MindMapExplainFacet,
+    explainSessionId: string
   ) {
     const nodes = diagramStore.data?.nodes ?? []
     const connections = diagramStore.data?.connections ?? []
@@ -79,175 +97,244 @@ export function useMindMapNodeExplain() {
     const fallbackTopic = (topicNode?.text ?? diagramStore.effectiveTitle ?? '').trim()
 
     return {
+      session_id: explainSessionId,
       node_id: nodeId,
       node_label: nodeLabel,
       topic: ctx?.topic || fallbackTopic,
       diagram_type: normalizeDiagramType(diagramStore.type),
+      facet,
       top_level_branches: ctx?.topLevelBranches ?? [],
       ancestor_path: ctx?.ancestorPath ?? [],
       sibling_branches: ctx?.siblingBranches ?? [],
       child_branches: ctx?.childBranches ?? [],
       language: promptLanguage.value,
       diagram_id: savedDiagramsStore.activeDiagramId ?? undefined,
-      history: options?.history,
-      user_message: options?.userMessage,
     }
   }
 
-  function pushMessage(role: MindMapNodeExplainMessage['role'], text: string, streaming = false): string {
-    const id = nextMessageId()
-    messages.value.push({ id, role, text, streaming })
-    return id
+  function panelForRun(runId: number, facet: MindMapExplainFacet): MindMapExplainPanel | null {
+    if (activeRunId.value !== runId) return null
+    return panels.value.find((panel) => panel.facet === facet) ?? null
   }
 
-  function appendToMessage(messageId: string, chunk: string): void {
-    const message = messages.value.find((item) => item.id === messageId)
-    if (message) {
-      message.text += chunk
-    }
-  }
-
-  function finalizeMessage(messageId: string): void {
-    const message = messages.value.find((item) => item.id === messageId)
-    if (message) {
-      message.streaming = false
-    }
-  }
-
-  function buildHistoryBeforeLastUser(): ExplainHistoryTurn[] {
-    const completed = messages.value.filter((msg) => !msg.streaming)
-    if (completed.length < 2) return []
-    const prior = completed.slice(0, -1)
-    return prior.map((msg) => ({
-      role: msg.role === 'kitty' ? 'assistant' : 'user',
-      content: msg.text,
-    }))
+  /** Abort in-flight streams and drop panel/session state (idempotent). */
+  function clearSession(): void {
+    abortController.value?.abort()
+    abortController.value = null
+    activeRunId.value += 1
+    target.value = null
+    panels.value = emptyPanels()
+    loading.value = false
   }
 
   function close(): void {
-    abortController.value?.abort()
-    abortController.value = null
+    clearSession()
     visible.value = false
-    target.value = null
-    messages.value = []
-    draft.value = ''
-    loading.value = false
-    errorMessage.value = null
   }
 
-  function openExplain(nodeId: string, nodeLabel?: string): void {
-    const label = (nodeLabel ?? resolveNodeLabel(nodeId)).trim()
-    if (!label) return
-
-    abortController.value?.abort()
-    abortController.value = null
-    target.value = { nodeId, nodeLabel: label }
-    messages.value = []
-    draft.value = ''
-    errorMessage.value = null
-    visible.value = true
-
-    const initialPrompt = t('canvas.mindMapNodeExplain.userPrompt', { node: label })
-    pushMessage('user', initialPrompt)
-    void startExplain()
+  function notifyRunError(runId: number, message: string, errorType?: string): void {
+    if (activeRunId.value !== runId) return
+    if (errorType === 'thinking_coin_insufficient') {
+      eventBus.emit('thinking_coins:insufficient', {})
+    }
+    notify.error(message || t('canvas.mindMapNodeExplain.requestFailed'))
   }
 
-  async function startExplain(followUpText?: string): Promise<void> {
-    const current = target.value
-    if (!current) return
+  async function streamFacet(
+    runId: number,
+    facet: MindMapExplainFacet,
+    payload: Record<string, unknown>,
+    signal: AbortSignal,
+    onCrossCuttingError: (message: string, errorType?: string) => void
+  ): Promise<void> {
+    const panel = panelForRun(runId, facet)
+    if (!panel || signal.aborted) return
 
-    abortController.value?.abort()
-    const controller = new AbortController()
-    abortController.value = controller
-
-    loading.value = true
-    errorMessage.value = null
-
-    const kittyMessageId = pushMessage('kitty', '', true)
-
-    const trimmedFollowUp = followUpText?.trim()
-    const payload = buildExplainPayload(current.nodeId, current.nodeLabel, {
-      history: trimmedFollowUp ? buildHistoryBeforeLastUser() : undefined,
-      userMessage: trimmedFollowUp,
-    })
+    panel.streaming = true
+    panel.text = ''
+    panel.error = null
 
     try {
       const response = await authFetch('/thinking_mode/mindmap/explain_node', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-        signal: controller.signal,
+        signal,
       })
 
+      if (activeRunId.value !== runId || signal.aborted) return
+
       if (!response.ok) {
-        const errBody = (await response.json().catch(() => ({}))) as { detail?: string }
-        throw new Error(
-          typeof errBody.detail === 'string'
-            ? errBody.detail
-            : t('canvas.mindMapNodeExplain.requestFailed')
+        const errBody = (await response.json().catch(() => ({}))) as {
+          detail?: unknown
+          error_type?: string
+        }
+        const message = formatHttpErrorDetail(
+          errBody.detail,
+          t('canvas.mindMapNodeExplain.requestFailed')
         )
+        onCrossCuttingError(
+          message,
+          typeof errBody.error_type === 'string' ? errBody.error_type : undefined
+        )
+        throw new Error(message)
       }
 
       const reader = response.body?.getReader()
       if (!reader) {
-        throw new Error(t('canvas.mindMapNodeExplain.requestFailed'))
+        const message = t('canvas.mindMapNodeExplain.requestFailed')
+        onCrossCuttingError(message)
+        throw new Error(message)
       }
 
       await consumeSseDataLines(
         reader,
-        (payload) => {
-          const event = payload.event as string | undefined
-          if (event === 'token' && typeof payload.text === 'string') {
-            appendToMessage(kittyMessageId, payload.text)
+        (eventPayload) => {
+          if (activeRunId.value !== runId || signal.aborted) {
+            return false
+          }
+          const livePanel = panelForRun(runId, facet)
+          if (!livePanel) return false
+
+          const event = eventPayload.event as string | undefined
+          if (event === 'token' && typeof eventPayload.text === 'string') {
+            livePanel.text += eventPayload.text
             return
           }
-          if (event === 'error' && typeof payload.message === 'string') {
-            errorMessage.value = payload.message
+          if (event === 'error' && typeof eventPayload.message === 'string') {
+            livePanel.error = eventPayload.message
+            const errorType =
+              typeof eventPayload.error_type === 'string' ? eventPayload.error_type : undefined
+            onCrossCuttingError(eventPayload.message, errorType)
             return false
           }
           if (event === 'end') {
             return false
           }
         },
-        controller.signal
+        signal
       )
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         return
       }
-      const msg = err instanceof Error ? err.message : t('canvas.mindMapNodeExplain.requestFailed')
-      errorMessage.value = msg
-    } finally {
-      finalizeMessage(kittyMessageId)
-      const kittyMessage = messages.value.find((item) => item.id === kittyMessageId)
-      if (kittyMessage && !kittyMessage.text && errorMessage.value) {
-        kittyMessage.text = errorMessage.value
+      if (activeRunId.value !== runId || signal.aborted) {
+        return
       }
-      if (abortController.value === controller) {
+      const livePanel = panelForRun(runId, facet)
+      if (!livePanel) return
+      if (!livePanel.error) {
+        livePanel.error =
+          err instanceof Error ? err.message : t('canvas.mindMapNodeExplain.requestFailed')
+      }
+    } finally {
+      if (activeRunId.value !== runId) return
+      const livePanel = panelForRun(runId, facet)
+      if (!livePanel) return
+      livePanel.streaming = false
+      if (!livePanel.text && livePanel.error) {
+        livePanel.text = livePanel.error
+      }
+    }
+  }
+
+  async function startExplain(): Promise<void> {
+    const current = target.value
+    if (!current) return
+
+    abortController.value?.abort()
+    const controller = new AbortController()
+    abortController.value = controller
+    const runId = activeRunId.value + 1
+    activeRunId.value = runId
+
+    const explainSessionId = safeRandomUUID()
+
+    loading.value = true
+    panels.value = emptyPanels()
+
+    let toastedError = false
+    const onCrossCuttingError = (message: string, errorType?: string): void => {
+      if (toastedError || activeRunId.value !== runId) return
+      toastedError = true
+      notifyRunError(runId, message, errorType)
+    }
+
+    const payloads = EXPLAIN_FACETS.map((facet) => ({
+      facet,
+      payload: buildExplainPayload(current.nodeId, current.nodeLabel, facet, explainSessionId),
+    }))
+
+    try {
+      await Promise.all(
+        payloads.map(({ facet, payload }) =>
+          streamFacet(runId, facet, payload, controller.signal, onCrossCuttingError)
+        )
+      )
+
+      if (activeRunId.value !== runId || controller.signal.aborted || !visible.value) {
+        return
+      }
+
+      const failed = panels.value.filter((panel) => panel.error)
+      const succeeded = panels.value.filter((panel) => !panel.error && panel.text.trim())
+      if (failed.length === 0 && succeeded.length === EXPLAIN_FACETS.length) {
+        notify.success(t('canvas.mindMapNodeExplain.toastSuccess'))
+      } else if (failed.length > 0 && succeeded.length > 0 && !toastedError) {
+        notify.warning(t('canvas.mindMapNodeExplain.toastPartial'))
+      } else if (failed.length === EXPLAIN_FACETS.length && !toastedError) {
+        notify.error(t('canvas.mindMapNodeExplain.requestFailed'))
+      }
+    } finally {
+      if (activeRunId.value === runId && abortController.value === controller) {
         loading.value = false
         abortController.value = null
       }
     }
   }
 
-  function sendDraft(): void {
-    const text = draft.value.trim()
-    if (!text || loading.value) return
-    draft.value = ''
-    pushMessage('user', text)
-    void startExplain(text)
+  function openExplain(nodeId: string, nodeLabel?: string): void {
+    const label = (nodeLabel ?? resolveNodeLabel(nodeId)).trim()
+    if (!label || isPlaceholderText(label)) return
+
+    // Drop any prior node session before starting a new one.
+    clearSession()
+    target.value = { nodeId, nodeLabel: label }
+    visible.value = true
+    void startExplain()
   }
+
+  // Closing the dialog (X / mask / Esc) only flips v-model — still tear down streams.
+  watch(visible, (isOpen) => {
+    if (!isOpen) {
+      clearSession()
+    }
+  })
+
+  // Leave / switch diagram / canvas reset must abort streams and drop modal state.
+  watch(
+    () => savedDiagramsStore.activeDiagramId,
+    (nextId, prevId) => {
+      if (nextId === prevId) return
+      close()
+    }
+  )
+
+  const stopResetListener = eventBus.on('diagram:reset_requested', () => {
+    close()
+  })
+
+  onUnmounted(() => {
+    stopResetListener()
+    close()
+  })
 
   return {
     visible,
     target,
-    messages,
-    draft,
+    panels,
     loading,
-    errorMessage,
-    kittyAgentState,
     openExplain,
     close,
-    sendDraft,
   }
 }

@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Language, Messages
-from models.requests.requests_auth import LanguagePreferencesUpdate
+from models.requests.requests_auth import DiagramPreferencesUpdate, LanguagePreferencesUpdate
 from services.redis.cache.redis_user_cache import user_cache
 from services.utils.error_types import REDIS_ERRORS
 from utils.auth import get_current_user
@@ -100,4 +100,45 @@ async def update_language_preferences(
         "prompt_language": user.prompt_language,
         "ui_version": user.ui_version,
         "match_prompt_to_ui": getattr(user, "match_prompt_to_ui", True),
+    }
+
+
+@router.patch("/diagram-preferences")
+async def update_diagram_preferences(
+    body: DiagramPreferencesUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """Persist AI diagram generation audience (学段) for the signed-in user."""
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    user.education_stage = body.education_stage
+
+    try:
+        await db.commit()
+        await db.refresh(user)
+    except REDIS_ERRORS as exc:
+        logger.error(
+            "Failed to save diagram preferences for user %s: %s",
+            user.id,
+            exc,
+            exc_info=True,
+        )
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save preferences",
+        ) from exc
+
+    await user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
+    await user_cache.cache_user(user)
+
+    return {
+        "education_stage": getattr(user, "education_stage", None),
     }

@@ -18,7 +18,7 @@ export interface KittyClickWheelChild {
 export interface UseKittyClickWheelOptions {
   onSelectionChange?: () => void
   canvasHighlight?: boolean
-  /** Fired when the already-active chip is tapped again (e.g. open 学习提示). */
+  /** Fired when the already-active chip is tapped again (e.g. open 节点解释). */
   onActiveRetap?: (node: KittyClickWheelChild) => void
 }
 

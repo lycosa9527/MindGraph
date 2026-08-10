@@ -63,7 +63,13 @@ SLUG_PUBLISH_CASE: Final[str] = "publish_case"
 SLUG_REFERRAL: Final[str] = "referral_register"
 
 CANVAS_ASSIST_REQUEST_TYPES: Final[frozenset[str]] = frozenset(
-    {"autocomplete", "node_palette", "canvas_translate", "voice_omni"}
+    {
+        "autocomplete",
+        "node_palette",
+        "canvas_translate",
+        "voice_omni",
+        "mindmap_node_explain",
+    }
 )
 
 THINKING_COIN_MODE_NORMAL: Final[str] = "normal"

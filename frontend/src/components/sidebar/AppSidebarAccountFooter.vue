@@ -6,6 +6,7 @@ import { computed, inject, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import {
+  AudioLines,
   BookOpen,
   ChevronDown,
   Coins,
@@ -29,6 +30,7 @@ import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 import { useSidebarPhilosophyQuote } from '@/composables/sidebar/useSidebarPhilosophyQuote'
 import { useSidebarThinkingCoinTaskPromo } from '@/composables/sidebar/useSidebarThinkingCoinTaskPromo'
 import { usePwaInstall } from '@/composables/usePwaInstall'
+import { useVoiceNotesStore } from '@/stores/voiceNotes'
 import { isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
 
 const sidebarCtx = inject(appSidebarInjectionKey)
@@ -37,6 +39,7 @@ if (!sidebarCtx) {
 }
 const s = reactive(sidebarCtx)
 const route = useRoute()
+const voiceNotesStore = useVoiceNotesStore()
 const showShareSiteModal = ref(false)
 const { triggerImport } = useDiagramImport()
 const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.path))
@@ -51,6 +54,10 @@ const PLATFORM_QUICK_GUIDE_URL = 'https://365.kdocs.cn/l/caSETdpB0Akg'
 
 function openPlatformQuickGuide(): void {
   window.open(PLATFORM_QUICK_GUIDE_URL, '_blank', 'noopener,noreferrer')
+}
+
+function handleVoiceNotes(): void {
+  void voiceNotesStore.enableAndOpen()
 }
 
 </script>
@@ -254,6 +261,10 @@ function openPlatformQuickGuide(): void {
               <UserRound class="w-4 h-4 mr-2" />
               {{ s.t('auth.accountInfo') }}
             </el-dropdown-item>
+            <el-dropdown-item @click="handleVoiceNotes">
+              <AudioLines class="w-4 h-4 mr-2" />
+              {{ s.t('auth.voiceNotes') }}
+            </el-dropdown-item>
             <el-dropdown-item @click="s.openUpdateLogModal">
               <ScrollText class="w-4 h-4 mr-2" />
               {{ s.t('auth.updateLog') }}
@@ -335,6 +346,10 @@ function openPlatformQuickGuide(): void {
             <el-dropdown-item @click="s.openAccountModal">
               <UserRound class="w-4 h-4 mr-2" />
               {{ s.t('auth.accountInfo') }}
+            </el-dropdown-item>
+            <el-dropdown-item @click="handleVoiceNotes">
+              <AudioLines class="w-4 h-4 mr-2" />
+              {{ s.t('auth.voiceNotes') }}
             </el-dropdown-item>
             <el-dropdown-item @click="s.openUpdateLogModal">
               <ScrollText class="w-4 h-4 mr-2" />

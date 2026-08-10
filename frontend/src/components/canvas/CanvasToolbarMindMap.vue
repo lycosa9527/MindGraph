@@ -25,13 +25,14 @@ import {
   Sparkles,
   Trash2,
   Upload,
-  Wand2,
+Wand2,
   X,
 } from '@lucide/vue'
 
+import CanvasToolbarAiGenerateSplit from '@/components/canvas/CanvasToolbarAiGenerateSplit.vue'
 import MindMapAppearanceDropdown from '@/components/canvas/MindMapAppearanceDropdown.vue'
 import MindMapExportOptionsPanel from '@/components/canvas/MindMapExportOptionsPanel.vue'
-
+import { useFeatureFlags } from '@/composables'
 import {
   AI_CONTENT_LEVEL_COLORS,
   AI_CONTENT_LEVEL_IDS,
@@ -54,13 +55,17 @@ import {
   tryCollabGuardedUndo,
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
 import { useCanvasToolbarApps } from '@/composables/canvasToolbar'
-import { useFeatureFlags } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
-import { CANVAS_MINDMAP_EXPORT_MENU_ITEMS, CANVAS_COMMUNITY_EXPORT_MENU_ITEM, CANVAS_WORKSHEET_TEXT_MENU_ITEM, CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM } from '@/config/canvasExportMenu'
+import {
+  CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
+  CANVAS_MINDMAP_EXPORT_MENU_ITEMS,
+  CANVAS_WORKSHEET_TEXT_MENU_ITEM,
+  CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM,
+} from '@/config/canvasExportMenu'
 import {
   useAiContentLevelStore,
   useAuthStore,
@@ -80,9 +85,7 @@ const authStore = useAuthStore()
 const { featureCommunity, featureZhihui } = useFeatureFlags()
 const { triggerImportInPlace } = useDiagramImport()
 
-const showCommunityExport = computed(
-  () => featureCommunity.value && authStore.isAuthenticated
-)
+const showCommunityExport = computed(() => featureCommunity.value && authStore.isAuthenticated)
 
 const showZhihuiDiagramExport = computed(
   () => featureZhihui.value && authStore.isAuthenticated && authStore.canAccessZhihui
@@ -351,34 +354,34 @@ function handleAddChildClick() {
                 class="mm-btn__structure-preview"
                 :mode="structureMode"
               />
-            </button>
-        <template #dropdown>
-          <div class="mm-panel mm-panel--structure">
-            <button
-              type="button"
-              class="mm-structure-card"
-              :class="{ 'is-active': structureMode === 'balanced' }"
-              @click="handleStructurePick('balanced')"
-            >
-              <MindMapStructureIcon mode="balanced" />
-              <span class="mm-structure-card__label">{{
-                t('canvas.toolbar.mindMapStructureBalanced')
-              }}</span>
-            </button>
-            <div class="mm-panel__divider-v" />
-            <button
-              type="button"
-              class="mm-structure-card"
-              :class="{ 'is-active': structureMode === 'right' }"
-              @click="handleStructurePick('right')"
-            >
-              <MindMapStructureIcon mode="right" />
-              <span class="mm-structure-card__label">{{
-                t('canvas.toolbar.mindMapStructureRight')
-              }}</span>
-            </button>
-          </div>
-        </template>
+</button>
+            <template #dropdown>
+              <div class="mm-panel mm-panel--structure">
+                <button
+                  type="button"
+                  class="mm-structure-card"
+                  :class="{ 'is-active': structureMode === 'balanced' }"
+                  @click="handleStructurePick('balanced')"
+                >
+                  <MindMapStructureIcon mode="balanced" />
+                  <span class="mm-structure-card__label">{{
+                    t('canvas.toolbar.mindMapStructureBalanced')
+                  }}</span>
+                </button>
+                <div class="mm-panel__divider-v" />
+                <button
+                  type="button"
+                  class="mm-structure-card"
+                  :class="{ 'is-active': structureMode === 'right' }"
+                  @click="handleStructurePick('right')"
+                >
+                  <MindMapStructureIcon mode="right" />
+                  <span class="mm-structure-card__label">{{
+                    t('canvas.toolbar.mindMapStructureRight')
+                  }}</span>
+                </button>
+              </div>
+            </template>
           </ElDropdown>
         </span>
       </ElTooltip>
@@ -455,7 +458,8 @@ function handleAddChildClick() {
             <span
               v-if="!props.compact"
               class="mm-btn__label"
-            >{{ t('canvas.toolbar.addChildNode') }}</span>
+              >{{ t('canvas.toolbar.addChildNode') }}</span
+            >
           </button>
         </ElTooltip>
         <ElTooltip
@@ -474,7 +478,8 @@ function handleAddChildClick() {
             <span
               v-if="!props.compact"
               class="mm-btn__label"
-            >{{ t('canvas.toolbar.addSiblingNode') }}</span>
+              >{{ t('canvas.toolbar.addSiblingNode') }}</span
+            >
           </button>
         </ElTooltip>
         <ElTooltip
@@ -493,7 +498,8 @@ function handleAddChildClick() {
             <span
               v-if="!props.compact"
               class="mm-btn__label"
-            >{{ t('canvas.toolbar.deleteNode') }}</span>
+              >{{ t('canvas.toolbar.deleteNode') }}</span
+            >
           </button>
         </ElTooltip>
       </div>
@@ -655,35 +661,15 @@ function handleAddChildClick() {
       </Teleport>
 
       <!-- AI generate -->
-      <ElTooltip
+      <CanvasToolbarAiGenerateSplit
         v-if="!diagramStore.collabSessionActive"
-        :content="
-          isAIGenerating
-            ? t('canvas.toolbar.aiGenerating')
-            : t('canvas.toolbar.aiGenerateTooltip')
-        "
-        placement="bottom"
-        :disabled="!props.compact"
-      >
-        <button
-          type="button"
-          class="mm-btn mm-btn--ai"
-          :class="{ 'mm-btn--icon': props.compact }"
-          :disabled="isAIGenerating"
-          :aria-label="
-            isAIGenerating ? t('canvas.toolbar.aiGenerating') : t('canvas.toolbar.aiGenerate')
-          "
-          @click="() => handleAIGenerate()"
-        >
-          <Wand2 class="h-4 w-4 shrink-0 text-white" />
-          <span
-            v-if="!props.compact"
-            class="mm-btn__label"
-          >{{
-            isAIGenerating ? t('canvas.toolbar.aiGenerating') : t('canvas.toolbar.aiGenerate')
-          }}</span>
-        </button>
-      </ElTooltip>
+        variant="mindmap"
+        :compact="props.compact"
+        :is-a-i-generating="isAIGenerating"
+        :ai-generate-label="t('canvas.toolbar.aiGenerate')"
+        :ai-generating-label="t('canvas.toolbar.aiGenerating')"
+        @ai-generate="() => handleAIGenerate()"
+      />
 
       <span
         v-if="!diagramStore.collabSessionActive"
@@ -708,7 +694,8 @@ function handleAddChildClick() {
             <span
               v-if="!props.compact"
               class="mm-btn__label"
-            >{{ t('canvas.toolbar.import') }}</span>
+              >{{ t('canvas.toolbar.import') }}</span
+            >
           </button>
         </ElTooltip>
 
@@ -737,55 +724,62 @@ function handleAddChildClick() {
                   <span
                     v-if="!props.compact"
                     class="mm-btn__label"
-                  >{{ t('canvas.toolbar.export') }}</span>
+                    >{{ t('canvas.toolbar.export') }}</span
+                  >
                   <ChevronDown
                     v-if="!props.compact"
                     class="mm-btn__chevron mm-btn__chevron--on-dark"
                   />
                 </button>
-            <template #dropdown>
-              <div class="mm-panel mm-panel--export">
-                <MindMapExportOptionsPanel v-model="exportOptions" />
-                <div class="mm-panel mm-panel--list mm-panel--export-formats">
-                  <button
-                    type="button"
-                    class="mm-list-item"
-                    :class="{ 'mm-list-item--divided': CANVAS_WORKSHEET_TEXT_MENU_ITEM.divided }"
-                    @click="handleWorksheetTextMenuClick"
-                  >
-                    {{ t(CANVAS_WORKSHEET_TEXT_MENU_ITEM.labelKey) }}
-                  </button>
-                  <button
-                    v-for="item in CANVAS_MINDMAP_EXPORT_MENU_ITEMS"
-                    :key="item.command"
-                    type="button"
-                    class="mm-list-item"
-                    :class="{ 'mm-list-item--divided': item.divided }"
-                    @click="handleExportCommand(item.command)"
-                  >
-                    {{ t(item.labelKey) }}
-                  </button>
-                  <button
-                    v-if="showZhihuiDiagramExport"
-                    type="button"
-                    class="mm-list-item"
-                    :class="{ 'mm-list-item--divided': CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM.divided }"
-                    @click="handleZhihuiDiagramMenuClick"
-                  >
-                    {{ t(CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM.labelKey) }}
-                  </button>
-                  <button
-                    v-if="showCommunityExport"
-                    type="button"
-                    class="mm-list-item"
-                    :class="{ 'mm-list-item--divided': CANVAS_COMMUNITY_EXPORT_MENU_ITEM.divided }"
-                    @click="handleExportCommand(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command)"
-                  >
-                    {{ t(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey) }}
-                  </button>
-                </div>
-              </div>
-            </template>
+                <template #dropdown>
+                  <div class="mm-panel mm-panel--export">
+                    <MindMapExportOptionsPanel v-model="exportOptions" />
+                    <div class="mm-panel mm-panel--list mm-panel--export-formats">
+                      <button
+                        type="button"
+                        class="mm-list-item"
+                        :class="{
+                          'mm-list-item--divided': CANVAS_WORKSHEET_TEXT_MENU_ITEM.divided,
+                        }"
+                        @click="handleWorksheetTextMenuClick"
+                      >
+                        {{ t(CANVAS_WORKSHEET_TEXT_MENU_ITEM.labelKey) }}
+                      </button>
+                      <button
+                        v-for="item in CANVAS_MINDMAP_EXPORT_MENU_ITEMS"
+                        :key="item.command"
+                        type="button"
+                        class="mm-list-item"
+                        :class="{ 'mm-list-item--divided': item.divided }"
+                        @click="handleExportCommand(item.command)"
+                      >
+                        {{ t(item.labelKey) }}
+                      </button>
+                      <button
+                        v-if="showZhihuiDiagramExport"
+                        type="button"
+                        class="mm-list-item"
+                        :class="{
+                          'mm-list-item--divided': CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM.divided,
+                        }"
+                        @click="handleZhihuiDiagramMenuClick"
+                      >
+                        {{ t(CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM.labelKey) }}
+                      </button>
+                      <button
+                        v-if="showCommunityExport"
+                        type="button"
+                        class="mm-list-item"
+                        :class="{
+                          'mm-list-item--divided': CANVAS_COMMUNITY_EXPORT_MENU_ITEM.divided,
+                        }"
+                        @click="handleExportCommand(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.command)"
+                      >
+                        {{ t(CANVAS_COMMUNITY_EXPORT_MENU_ITEM.labelKey) }}
+                      </button>
+                    </div>
+                  </div>
+                </template>
               </ElDropdown>
             </span>
           </ElTooltip>
@@ -793,7 +787,6 @@ function handleAddChildClick() {
       </div>
     </div>
   </div>
-
 </template>
 
 <style src="./mindMapToolbarButtons.css"></style>

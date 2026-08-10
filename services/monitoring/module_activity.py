@@ -38,6 +38,7 @@ VALID_MODULES = frozenset(
         "kitty",
         "knowledge",
         "doc_summary",
+        "voice_notes",
         "workshop",
         "askonce",
         "debateverse",

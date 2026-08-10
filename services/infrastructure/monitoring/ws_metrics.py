@@ -74,6 +74,7 @@ _local: Dict[str, int | float] = {
     "ws_asr_connections": 0,
     "ws_translate_connections": 0,
     "ws_voice_connections": 0,
+    "ws_voice_notes_connections": 0,
     # Fan-out throughput
     "ws_fanout_chat_published": 0,
     "ws_fanout_chat_received": 0,
@@ -153,6 +154,7 @@ _ENDPOINT_COUNTER: Dict[str, str] = {
     "asr": "ws_asr_connections",
     "translate": "ws_translate_connections",
     "voice": "ws_voice_connections",
+    "voice_notes_asr": "ws_voice_notes_connections",
 }
 
 

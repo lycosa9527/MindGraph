@@ -363,7 +363,7 @@ export default defineConfig({
       '/api': {
         target: backendHost,
         changeOrigin: true,
-        // Workshop chat + canvas-asr: browser opens ws(s)://dev-host/api/ws/...
+        // Workshop chat + canvas-asr + voice-notes: browser opens ws(s)://dev-host/api/ws/...
         ws: true,
         // Long-lived WS/SSE: avoid proxy closing idle connections too eagerly
         timeout: 0,

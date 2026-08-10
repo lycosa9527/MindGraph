@@ -43,6 +43,12 @@ const LoginModal = defineAsyncComponent(() => import('@/components/auth/LoginMod
 const CanvasLiveSubtitleOverlay = defineAsyncComponent(
   () => import('@/components/canvas/CanvasLiveSubtitleOverlay.vue')
 )
+const VoiceNotesFab = defineAsyncComponent(
+  () => import('@/components/voiceNotes/VoiceNotesFab.vue')
+)
+const VoiceNotesModal = defineAsyncComponent(
+  () => import('@/components/voiceNotes/VoiceNotesModal.vue')
+)
 const ChatMessageToast = defineAsyncComponent(
   () => import('@/components/common/ChatMessageToast.vue')
 )
@@ -337,6 +343,9 @@ onUnmounted(() => {
       :lines="translationDisplayLines"
       :live="translationLive"
     />
+
+    <VoiceNotesFab />
+    <VoiceNotesModal />
   </ElConfigProvider>
 </template>
 

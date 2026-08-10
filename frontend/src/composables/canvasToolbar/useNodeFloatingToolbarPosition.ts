@@ -8,24 +8,31 @@ export type FloatingToolbarPosition = {
   visible: boolean
 }
 
+function hiddenPosition(): FloatingToolbarPosition {
+  return { left: 0, top: 0, visible: false }
+}
+
 export function useNodeFloatingToolbarPosition(options: {
   containerRef: Ref<HTMLElement | null>
   selectedNodeIds: Ref<string[]>
+  /** When false, toolbar hides immediately (no rAF delay). */
   enabled: Ref<boolean>
 }) {
-  const position = ref<FloatingToolbarPosition>({
-    left: 0,
-    top: 0,
-    visible: false,
-  })
+  const position = ref<FloatingToolbarPosition>(hiddenPosition())
 
   let rafId = 0
+
+  function hide() {
+    cancelAnimationFrame(rafId)
+    rafId = 0
+    position.value = hiddenPosition()
+  }
 
   function measure() {
     const ids = options.selectedNodeIds.value
     const container = options.containerRef.value
     if (!options.enabled.value || ids.length === 0 || !container) {
-      position.value = { left: 0, top: 0, visible: false }
+      hide()
       return
     }
 
@@ -45,7 +52,7 @@ export function useNodeFloatingToolbarPosition(options: {
     }
 
     if (found === 0) {
-      position.value = { left: 0, top: 0, visible: false }
+      hide()
       return
     }
 
@@ -57,6 +64,11 @@ export function useNodeFloatingToolbarPosition(options: {
   }
 
   function scheduleMeasure() {
+    // Suppressors (e.g. open modal) must clear the teleported toolbar in the same tick.
+    if (!options.enabled.value || options.selectedNodeIds.value.length === 0) {
+      hide()
+      return
+    }
     cancelAnimationFrame(rafId)
     rafId = requestAnimationFrame(() => {
       void nextTick(measure)

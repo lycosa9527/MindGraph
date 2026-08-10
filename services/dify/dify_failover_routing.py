@@ -17,7 +17,7 @@ from services.redis.cache.redis_dify_server_health_cache import DifyServerHealth
 
 def health_max_age_seconds() -> float:
     """Treat health snapshots older than this as stale (not trusted for routing)."""
-    poll_interval = int(os.getenv("DIFY_HEALTH_POLL_INTERVAL_SECONDS", "30"))
+    poll_interval = int(os.getenv("DIFY_HEALTH_POLL_INTERVAL_SECONDS", "120"))
     default = poll_interval * 4 + 60
     return float(os.getenv("DIFY_HEALTH_MAX_AGE_SECONDS", str(default)))
 

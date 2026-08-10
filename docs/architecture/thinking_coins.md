@@ -36,7 +36,7 @@ flowchart LR
 |--------------|--------------|
 | mindmate | 6 |
 | diagram_generation | 15 |
-| autocomplete, node_palette, canvas_translate, voice_omni | 4 |
+| autocomplete, node_palette, canvas_translate, voice_omni, mindmap_node_explain | 4 |
 
 Multi-LLM batches (`stream_progressive`) debit **once** per user gesture using `thinking_coin_mode=batch_inner` on inner streams.
 

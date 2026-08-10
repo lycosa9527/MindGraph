@@ -7,6 +7,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 
 import ZhiHuiTeacherCaption from '@/components/zhihui/ZhiHuiTeacherCaption.vue'
+import { zhihuiDiagramPhaseLabel } from '@/components/zhihui/zhihuiDiagramProgress'
 import { useLanguage } from '@/composables'
 import type { ZhihuiGenerationItem } from '@/stores/zhihuiHistory'
 import { isZhihuiJobActive } from '@/stores/zhihuiHistory'
@@ -50,15 +51,11 @@ const imgBroken = ref(false)
 let loadRetry = 0
 let retryTimer: ReturnType<typeof setTimeout> | null = null
 
-const phaseLabel = computed(() => {
-  const status = props.status || ''
-  if (status === 'queued') return String(t('zhihui.diagram.phaseQueued'))
-  if (status === 'planning') return String(t('zhihui.diagram.phasePlanning'))
-  if (status === 'generating') return String(t('zhihui.diagram.phaseGenerating'))
-  if (status === 'partial') return String(t('zhihui.diagram.phasePartial'))
-  if (status === 'failed') return String(t('zhihui.diagram.phaseFailed'))
-  return ''
-})
+const phaseLabel = computed(() =>
+  zhihuiDiagramPhaseLabel(props.status, props.progress, (key, params) =>
+    params ? String(t(key, params)) : String(t(key))
+  )
+)
 
 /** Header/body copy when there is no slide yet — never pretend a job is running when idle. */
 const emptyStateLabel = computed(() => {

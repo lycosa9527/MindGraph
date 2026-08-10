@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * V2 mind map canvas overlays — lazy chunk paired with MindMapV2Canvas.vue.
- * Floating toolbar, learning-sheet bar, directional add, collapse toggles.
+ * Floating toolbar (incl. node explain), learning-sheet bar, directional add, collapse toggles.
  */
 import { type Ref, computed, unref } from 'vue'
 
@@ -19,10 +19,12 @@ const props = defineProps<{
   floatingToolbarAnchorId: string | null
   subgraphGenerating: boolean
   floatingToolbarShowAiSubgraph: boolean
+  /** Hide teleported node chrome that sits above ElDialog. */
+  nodeExplainOpen: boolean
   canvasContainer: Ref<HTMLElement | null> | HTMLElement | null
   presentationTeleportTarget: string | HTMLElement | undefined
   onAiSubgraphGenerate: () => void
-  onNodeExplain: () => void
+  onExplainNode: () => void
 }>()
 
 const uiStore = useUIStore()
@@ -35,18 +37,19 @@ const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasC
     v-if="!presentationDiagramEditLocked && !uiStore.exportWireframeOutline"
   />
 
+  <!-- nodeExplainOpen: modal owns UI; these teleports sit above ElDialog -->
   <CanvasNodeFloatingToolbar
-    v-if="!presentationDiagramEditLocked"
+    v-if="!presentationDiagramEditLocked && !nodeExplainOpen"
     :position="floatingToolbarPosition"
     :node-id="floatingToolbarAnchorId"
     :ai-generating="subgraphGenerating"
     :show-ai-subgraph="floatingToolbarShowAiSubgraph"
     @ai-subgraph-generate="onAiSubgraphGenerate()"
-    @node-explain="onNodeExplain()"
+    @explain-node="onExplainNode()"
   />
 
   <MindMapDirectionalAddOverlay
-    v-if="!presentationDiagramEditLocked && !uiStore.exportWireframeOutline"
+    v-if="!presentationDiagramEditLocked && !uiStore.exportWireframeOutline && !nodeExplainOpen"
     :container-ref="resolvedContainer"
     :teleport-target="presentationTeleportTarget"
   />

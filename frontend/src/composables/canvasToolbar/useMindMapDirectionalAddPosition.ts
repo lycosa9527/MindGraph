@@ -16,6 +16,7 @@ export type DirectionalAddHandlePosition = {
 export function useMindMapDirectionalAddPosition(options: {
   containerRef: Ref<HTMLElement | null>
   selectedNodeId: Ref<string | null>
+  /** When false, handles hide immediately (no rAF delay). */
   enabled: Ref<boolean>
   /** 1 = default; 2 = e-blackboard (see `MIND_MAP_E_BLACKBOARD_CONTROL_SCALE`). */
   controlScale?: Ref<number>
@@ -25,26 +26,30 @@ export function useMindMapDirectionalAddPosition(options: {
 
   let rafId = 0
 
+  function hide(): void {
+    cancelAnimationFrame(rafId)
+    rafId = 0
+    handles.value = []
+    visible.value = false
+  }
+
   function measure(): void {
     const nodeId = options.selectedNodeId.value
     const container = options.containerRef.value
     if (!options.enabled.value || !nodeId || !container) {
-      handles.value = []
-      visible.value = false
+      hide()
       return
     }
 
     const nodeEl = container.querySelector(`.vue-flow__node[data-id="${nodeId}"]`)
     if (!nodeEl) {
-      handles.value = []
-      visible.value = false
+      hide()
       return
     }
 
     const rect = nodeEl.getBoundingClientRect()
     if (rect.width < 1 || rect.height < 1) {
-      handles.value = []
-      visible.value = false
+      hide()
       return
     }
 
@@ -81,6 +86,11 @@ export function useMindMapDirectionalAddPosition(options: {
   }
 
   function scheduleMeasure(): void {
+    // Suppressors (e.g. open modal) must clear teleported + handles in the same tick.
+    if (!options.enabled.value || !options.selectedNodeId.value) {
+      hide()
+      return
+    }
     cancelAnimationFrame(rafId)
     rafId = requestAnimationFrame(() => {
       void nextTick(measure)

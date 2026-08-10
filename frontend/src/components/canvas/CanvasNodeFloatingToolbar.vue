@@ -11,6 +11,7 @@ import {
   AlignLeft,
   AlignRight,
   ChevronDown,
+  Lightbulb,
   Minus,
   Square,
 } from '@lucide/vue'
@@ -34,7 +35,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   aiSubgraphGenerate: []
-  nodeExplain: []
+  explainNode: []
 }>()
 
 const { t } = useLanguage()
@@ -126,20 +127,6 @@ function onShapePick(shape: NodeShape) {
       @click.stop
     >
       <div class="node-floating-toolbar__inner">
-        <!-- Node explain / 学习提示 — circle with 楷体「释」 -->
-        <button
-          type="button"
-          class="nft-btn nft-btn--explain"
-          :title="t('canvas.floatingToolbar.nodeExplain')"
-          :aria-label="t('canvas.floatingToolbar.nodeExplain')"
-          @click="emit('nodeExplain')"
-        >
-          <span
-            class="nft-explain-mark"
-            aria-hidden="true"
-          >释</span>
-        </button>
-
         <!-- AI subgraph generation (branch / child nodes only; hidden on central topic) -->
         <button
           v-if="aiSubgraphVisible"
@@ -153,7 +140,10 @@ function onShapePick(shape: NodeShape) {
           <MindMapSubgraphAiMark :loading="aiGenerating" />
         </button>
 
-        <span class="nft-divider" />
+        <span
+          v-if="aiSubgraphVisible"
+          class="nft-divider"
+        />
 
         <!-- Shape selector -->
         <ElDropdown
@@ -458,6 +448,20 @@ function onShapePick(shape: NodeShape) {
             </ElDropdownMenu>
           </template>
         </ElDropdown>
+
+        <!-- Node explanation (Kitty) -->
+        <button
+          type="button"
+          class="nft-btn nft-btn--explain"
+          :title="t('canvas.floatingToolbar.explain')"
+          :disabled="!nodeId"
+          @click="emit('explainNode')"
+        >
+          <Lightbulb
+            class="nft-icon nft-icon--explain"
+            :stroke-width="1.75"
+          />
+        </button>
       </div>
     </div>
   </Teleport>
@@ -502,35 +506,6 @@ function onShapePick(shape: NodeShape) {
 
 .nft-btn:hover {
   background: rgba(241, 245, 249, 0.9);
-}
-
-.nft-btn--explain {
-  padding: 0 5px;
-}
-
-.nft-explain-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  border: 1.5px solid #475569;
-  color: #334155;
-  font-family: KaiTi, 'Kaiti SC', STKaiti, 'Songti SC', serif;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-  transition:
-    border-color 0.15s ease,
-    color 0.15s ease,
-    background 0.15s ease;
-}
-
-.nft-btn--explain:hover .nft-explain-mark {
-  border-color: #2563eb;
-  color: #1d4ed8;
-  background: #eff6ff;
 }
 
 .nft-btn--ai {
@@ -578,9 +553,27 @@ function onShapePick(shape: NodeShape) {
   padding-right: 4px;
 }
 
+.nft-btn--explain {
+  color: #d97706;
+}
+
+.nft-btn--explain:hover:not(:disabled) {
+  background: rgba(254, 243, 199, 0.9);
+  color: #b45309;
+}
+
+.nft-btn--explain:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .nft-icon {
   width: 16px;
   height: 16px;
+}
+
+.nft-icon--explain {
+  fill: rgba(251, 191, 36, 0.22);
 }
 
 .nft-chevron {

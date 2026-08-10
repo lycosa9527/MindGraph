@@ -17,6 +17,7 @@ from typing import Annotated, Literal, Optional
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from services.auth.quick_register_redis import WORKSHOP_MAX_USES_CAP
+from services.utils.education_stage import is_valid_education_stage
 from utils.prompt_output_languages import is_prompt_output_language
 from utils.ui_languages import UI_LANGUAGE_CODES
 
@@ -896,4 +897,28 @@ class LanguagePreferencesUpdate(BaseModel):
         stripped = value.strip().lower()
         if stripped not in _VALID_UI_VERSIONS:
             raise ValueError("ui_version must be 'chinese' or 'international'")
+        return stripped
+
+
+class DiagramPreferencesUpdate(BaseModel):
+    """PATCH body for /api/auth/diagram-preferences.
+
+    ``education_stage`` must be present: a allowlisted label, or ``null`` to clear.
+    """
+
+    education_stage: Optional[str] = Field(
+        ...,
+        max_length=32,
+        description="学段 label (小学…专家), or null to clear",
+    )
+
+    @field_validator("education_stage")
+    @classmethod
+    def validate_education_stage(cls, value):
+        """Allow null (clear) or a known Chinese education-stage label."""
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not is_valid_education_stage(stripped):
+            raise ValueError("education_stage must be a supported 学段 label")
         return stripped

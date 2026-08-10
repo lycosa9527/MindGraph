@@ -5,26 +5,89 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.172.0] - 2026-08-10
+## [5.174.0] - 2026-08-10
 
-> **Mind-map v2 classroom lecture, audience-level prefs, and learning-tip rail.**
+> **Mind-map v2 classroom lecture and toolbar audience UX.**
 
 ### Added
 
 - **思维讲堂** — Mint blob IP entry (bottom-right) opens launch prefs: mastery, **画布语音巡讲** / **幻灯片讲解**, tour scope, lecture tone; canvas-tour runner with captions/TTS controls; slide-deck dual-pane fullscreen player.
 - **幻灯片风格** — Presets: 通用幻灯片 / 黑板报风 / 漫画风 / 手绘风 (legacy styles migrate automatically).
-- **专业内容（受众难度）** — Toolbar picker (学段/场景) shared across AI surfaces; first-run coach tip; after the first pick the control collapses to icon + level tag; blue frame beside **AI生成图示**.
-- **节点学习提示** — Floating toolbar「释」opens Kitty tip chat in a fixed **right rail** (does not cover the whole map); same flow as context-menu explain.
+- **专业内容（受众难度）** — Toolbar picker (学段/场景) beside AI generate; first-run coach tip; after the first pick the control collapses to icon + level tag.
 
 ### Changed
 
 - **思维讲堂入口** — Side-toolbar item removed; only the bottom-right mascot remains.
 - **Mind-map top bar** — Structure and theme controls are icon-only (tooltip for labels); audience control sits **before** AI generate.
-- **学习提示 UI** — Centered modal replaced with a non-modal right-side panel.
 
-### Removed
+## [5.173.2] - 2026-08-09
 
-- **MindMapClassroomPanel** — Left-rail classroom shell (launch UI lives in the mascot dialog).
+> **Node explain: hide floating toolbar and directional + handles.**
+
+### Fixed
+
+- **Canvas chrome over explain modal** — Gate floating toolbar and four-direction `+` overlays with `nodeExplainOpen` in v2 canvas overlays (same `v-if` pattern as presentation/export); directional-add position clears handles on the same tick when disabled.
+
+## [5.173.1] - 2026-08-09
+
+> **Node explain: hide floating toolbar; sharper 节点含义 prompt.**
+
+### Fixed
+
+- **Floating toolbar over explain modal** — Suppress toolbar while the modal is open (no flash above ElDialog).
+
+### Changed
+
+- **节点含义 prompt** — Asks for a clean, direct definition from the topic’s perspective (glossary-style essence first), not hierarchy/coaching filler.
+
+## [5.173.0] - 2026-08-09
+
+> **Mind map node explain: three parallel facet panels.**
+
+### Changed
+
+- **Node explain UX** — Replaces the Kitty chat follow-up flow with a Swiss-style modal: meaning, cognitive conflict, and inquiry questions stream in parallel; Kitty mascot with rotating speech bubbles while loading.
+- **Entry point** — Explain moves from the context menu to the node floating toolbar (lightbulb); Kitty click-wheel / Mobile Kitty re-tap opens the same three-panel flow.
+- **API / prompts** — `POST` explain accepts `session_id` + `facet` (`meaning` | `conflict` | `questions`); each facet has a focused prompt (no chat history). Bills as canvas-assist (`mindmap_node_explain`, 4 coins).
+
+### Tests
+
+- Facet normalization and prompt focus; canvas-assist / live-activity registration for `mindmap_node_explain`.
+
+## [5.172.0] - 2026-08-08
+
+> **Voice Notes realtime transcription and canvas AI 学段 preference.**
+
+### Added
+
+- **Voice Notes** — Authenticated Fun-ASR WebSocket bridge (`/api/ws/voice-notes`); draggable FAB + transcript modal; sidebar entry; PCM streaming with pause/resume, 60m cap, 2m silence auto-stop; mindmap bootstrap/save and Document Summary handoff; daily-cap / thinking-coin settle via audio-duration proxy.
+- **AI generate 学段** — User `education_stage` column (migration `0101`); split「AI生成图示」toolbar control (primary generate + caret 学段 picker); `PATCH /diagram-preferences`; stage-aware `generation_instructions` for auto-complete (guest session value until login).
+
+### Changed
+
+- **Dify health poll default** — `DIFY_HEALTH_POLL_INTERVAL_SECONDS` default 30s → 120s (documented in `env.example`); stale-health max age follows the new interval.
+
+### Tests
+
+- Voice Notes ASR bridge relay, token estimate, budget errors, Fun-ASR semantic punctuation; WS metrics endpoint mapping.
+
+## [5.171.2] - 2026-08-08
+
+> **ZhiHui diagram progress UX and Wan/planner observability.**
+
+### Added
+
+- **Finer diagram phase labels** — Banner copy follows planning stages (topics / branch N of M / close) and distinguishes waiting for first slides vs drawing (`zhihuiDiagramProgress`).
+- **Milestone toasts** — Session-scoped status announcements for planning → drawing → complete / partial / cancelled / failed (no re-toast on hydrate).
+
+### Changed
+
+- **Wan image client logs** — Conversation/batch `log_context`, 30s poll heartbeats, and clear success/timeout/failure lines.
+- **Lesson planner / ZhiHui routes** — Phase timing + token usage logs; clearer queued/resume/cancel/delete audit lines.
+
+### Tests
+
+- Wan poll heartbeat + timeout logging; frontend phase label / toast milestone helpers.
 
 ## [5.171.1] - 2026-08-08
 

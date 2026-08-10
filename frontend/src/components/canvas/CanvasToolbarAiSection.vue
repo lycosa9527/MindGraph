@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ElButton, ElTooltip } from 'element-plus'
 
-import { Sparkles, Wand2 } from '@lucide/vue'
+import { Sparkles } from '@lucide/vue'
+
+import CanvasToolbarAiGenerateSplit from '@/components/canvas/CanvasToolbarAiGenerateSplit.vue'
 
 withDefaults(
   defineProps<{
@@ -42,26 +44,13 @@ const emit = defineEmits<{
   </template>
   <template v-else>
     <div class="divider" />
-    <ElTooltip
-      :content="isAIGenerating ? aiGeneratingLabel : aiGenerateLabel"
-      placement="bottom"
-      :disabled="!compact"
-    >
-      <ElButton
-        type="primary"
-        size="small"
-        class="ai-btn"
-        :class="{ 'ai-btn--generating': isAIGenerating }"
-        :disabled="isAIGenerating"
-        @click="emit('aiGenerate')"
-      >
-        <Wand2
-          class="w-4 h-4 shrink-0"
-          :class="isAIGenerating ? 'opacity-30' : ''"
-          aria-hidden="true"
-        />
-        <span v-if="!compact">{{ isAIGenerating ? aiGeneratingLabel : aiGenerateLabel }}</span>
-      </ElButton>
-    </ElTooltip>
+    <CanvasToolbarAiGenerateSplit
+      variant="classic"
+      :compact="compact"
+      :is-a-i-generating="isAIGenerating"
+      :ai-generate-label="aiGenerateLabel"
+      :ai-generating-label="aiGeneratingLabel"
+      @ai-generate="emit('aiGenerate')"
+    />
   </template>
 </template>

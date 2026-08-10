@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import time
 from collections.abc import Awaitable, Callable
 from functools import partial
 from typing import Any, Optional
@@ -409,6 +410,15 @@ def _branch_payload(branch: MindMapBranchOutline) -> dict[str, Any]:
     }
 
 
+def _usage_token_pair(usage: Optional[dict[str, Any]]) -> tuple[Any, Any]:
+    """Extract prompt/completion token counts for planning logs."""
+    if not isinstance(usage, dict):
+        return None, None
+    tokens_in = usage.get("prompt_tokens") or usage.get("input_tokens")
+    tokens_out = usage.get("completion_tokens") or usage.get("output_tokens")
+    return tokens_in, tokens_out
+
+
 async def _chat_phase(
     *,
     prompt: str,
@@ -423,6 +433,13 @@ async def _chat_phase(
 ) -> tuple[Any, Optional[dict[str, Any]]]:
     response = ""
     usage: Optional[dict[str, Any]] = None
+    logger.info(
+        "[ZhiHui] Planning LLM start phase=%s model=%s max_tokens=%s",
+        phase_label,
+        model,
+        max_tokens,
+    )
+    started = time.monotonic()
     try:
         response, usage = await llm_service.chat_with_usage(
             prompt=prompt,
@@ -433,16 +450,27 @@ async def _chat_phase(
             user_id=user_id,
             organization_id=organization_id,
         )
-        return parse_fn(response or ""), usage
+        parsed = parse_fn(response or "")
+        tokens_in, tokens_out = _usage_token_pair(usage)
+        logger.info(
+            "[ZhiHui] Planning LLM done phase=%s elapsed=%.1fs tokens_in=%s tokens_out=%s",
+            phase_label,
+            time.monotonic() - started,
+            tokens_in,
+            tokens_out,
+        )
+        return parsed, usage
     except (json.JSONDecodeError, ValueError, TypeError) as first_exc:
         logger.warning(
-            "[ZhiHui] Lesson plan %s parse failed chars=%s max_tokens=%s err=%s; retrying",
+            "[ZhiHui] Lesson plan %s parse failed chars=%s max_tokens=%s elapsed=%.1fs err=%s; retrying",
             phase_label,
             len(response or ""),
             max_tokens,
+            time.monotonic() - started,
             first_exc,
         )
         try:
+            repair_started = time.monotonic()
             response, usage = await llm_service.chat_with_usage(
                 prompt=f"{prompt}\n\n{repair_suffix}",
                 model=model,
@@ -452,10 +480,31 @@ async def _chat_phase(
                 user_id=user_id,
                 organization_id=organization_id,
             )
-            return parse_fn(response or ""), usage
+            parsed = parse_fn(response or "")
+            tokens_in, tokens_out = _usage_token_pair(usage)
+            logger.info(
+                "[ZhiHui] Planning LLM done phase=%s repair=1 elapsed=%.1fs tokens_in=%s tokens_out=%s",
+                phase_label,
+                time.monotonic() - repair_started,
+                tokens_in,
+                tokens_out,
+            )
+            return parsed, usage
         except (json.JSONDecodeError, ValueError, TypeError, *BACKGROUND_INFRA_ERRORS) as exc:
+            logger.error(
+                "[ZhiHui] Planning LLM failed phase=%s elapsed=%.1fs err=%s",
+                phase_label,
+                time.monotonic() - started,
+                exc,
+            )
             raise ValueError(f"Lesson planner failed ({phase_label}): {exc}") from exc
     except BACKGROUND_INFRA_ERRORS as exc:
+        logger.error(
+            "[ZhiHui] Planning LLM failed phase=%s elapsed=%.1fs err=%s",
+            phase_label,
+            time.monotonic() - started,
+            exc,
+        )
         raise ValueError(f"Lesson planner failed ({phase_label}): {exc}") from exc
 
 

@@ -13,13 +13,16 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { eventBus } from '@/composables/core/useEventBus'
 import { notify } from '@/composables/core/notifications'
+import { eventBus } from '@/composables/core/useEventBus'
 import { difyKeys } from '@/composables/queries/difyKeys'
+import { isEducationStage } from '@/constants/educationStage'
+import { mergeSchoolTierFeatures, normalizeSchoolTier } from '@/constants/schoolTier'
 import { i18n } from '@/i18n'
-import { getAppQueryClient } from '@/utils/appQueryClient'
 import { isPromptOutputLanguageCode, isUiLocale } from '@/i18n/locales'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { useMindMateStore } from '@/stores/mindmate'
+import { useShowcaseStore } from '@/stores/showcase'
 import { useUIStore } from '@/stores/ui'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import type {
@@ -34,28 +37,23 @@ import type {
   UserRole,
 } from '@/types'
 import {
-  mergeSchoolTierFeatures,
-  normalizeSchoolTier,
-} from '@/constants/schoolTier'
-import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
-import { getSafePostAuthPath } from '@/utils/authRedirect'
-import {
-  ensureFreshSessionAfterAuthFailure,
-  getSessionRefreshEpoch,
-  refreshSessionAccessToken,
-} from '@/utils/sessionRefresh'
-import { clearSavedLoginCredentials } from '@/utils/savedLoginCredentials'
-import {
   type AdminCapabilitiesPayload,
   canAccessZhihui as capsIncludeZhihui,
   hasSuperadminPanelAccess,
   roleHasPanelAccess,
 } from '@/utils/adminCapabilities'
-import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
-import { useMindMateStore } from '@/stores/mindmate'
-import { useShowcaseStore } from '@/stores/showcase'
-import { normalizeUserRole } from '@/utils/userRoleDisplay'
+import { getAppQueryClient } from '@/utils/appQueryClient'
+import { getSafePostAuthPath } from '@/utils/authRedirect'
+import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
+import { clearSavedLoginCredentials } from '@/utils/savedLoginCredentials'
+import {
+  ensureFreshSessionAfterAuthFailure,
+  getSessionRefreshEpoch,
+  refreshSessionAccessToken,
+} from '@/utils/sessionRefresh'
 import { DEFAULT_USER_AVATAR_EMOJI } from '@/utils/userAvatarEmoji'
+import { normalizeUserRole } from '@/utils/userRoleDisplay'
+import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
 import {
   disconnectWorkshopChatWsIfAny,
   resetWorkshopChatOnAuthClear,
@@ -110,6 +108,11 @@ export const useAuthStore = defineStore('auth', () => {
   /** Avoid duplicate PATCH when seeding DB from client for users with no saved server prefs. */
   const languagePrefsSeededForUserId = ref<string | null>(null)
   let languagePrefsSeedInFlight = false
+  /**
+   * In-session 学段 for AI generate (mirrors user.educationStage when logged in).
+   * Guests can still pick a value that applies until login/logout.
+   */
+  const sessionEducationStage = ref<string | null>(null)
 
   // Getters
   const isAuthenticated = computed(() => !!user.value)
@@ -174,6 +177,9 @@ export const useAuthStore = defineStore('auth', () => {
           parsed.role = normalizeUserRole(parsed.role)
         }
         user.value = parsed
+        sessionEducationStage.value = isEducationStage(parsed.educationStage)
+          ? parsed.educationStage
+          : null
       } catch {
         user.value = null
       }
@@ -239,12 +245,11 @@ export const useAuthStore = defineStore('auth', () => {
       orgIsObject && org.school_tier != null ? normalizeSchoolTier(org.school_tier) : undefined
     const schoolTierFeaturesRaw =
       orgIsObject && org.school_tier_features != null ? org.school_tier_features : undefined
-    const schoolTier: SchoolTier | undefined = orgId ? schoolTierRaw ?? 'trial' : undefined
+    const schoolTier: SchoolTier | undefined = orgId ? (schoolTierRaw ?? 'trial') : undefined
     const schoolTierFeatures: SchoolTierFeatures | undefined = orgId
       ? mergeSchoolTierFeatures(schoolTier, schoolTierFeaturesRaw)
       : undefined
-    const subscriptionExpired =
-      orgIsObject && org.subscription_expired === true ? true : undefined
+    const subscriptionExpired = orgIsObject && org.subscription_expired === true ? true : undefined
     const displayLabel = orgDisplayName || orgName || backendUser.schoolName || ''
 
     const allowsZh = backendUser.allows_simplified_chinese !== false
@@ -292,6 +297,9 @@ export const useAuthStore = defineStore('auth', () => {
       promptLanguage: promptLang,
       matchPromptToUi: matchPrompt,
       uiVersion: backendUser.ui_version ?? null,
+      educationStage: isEducationStage(backendUser.education_stage)
+        ? backendUser.education_stage
+        : null,
       allowsSimplifiedChinese: allowsZh,
       loginPasswordSet,
       mindmateAgentName: mindmateAgentName || null,
@@ -308,10 +316,7 @@ export const useAuthStore = defineStore('auth', () => {
       return
     }
     const current = user.value.thinkingCoins
-    if (
-      current?.balance === summary.balance &&
-      current?.eligible === summary.eligible
-    ) {
+    if (current?.balance === summary.balance && current?.eligible === summary.eligible) {
       return
     }
     user.value = {
@@ -376,6 +381,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Normalize backend user format to frontend format
     const normalizedUser = normalizeUser(newUser)
     user.value = normalizedUser
+    sessionEducationStage.value = normalizedUser.educationStage ?? null
     maybeNotifySubscriptionExpired(normalizedUser)
     // Store in sessionStorage (cleared on browser close, not a security risk like localStorage)
     sessionStorage.setItem(USER_KEY, JSON.stringify(normalizedUser))
@@ -446,6 +452,55 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Persist AI generate 学段 preference. Pass null to clear.
+   * Updates in-memory session (and user on success) immediately for generate.
+   */
+  async function saveDiagramPreferences(educationStage: string | null): Promise<boolean> {
+    const nextStage = isEducationStage(educationStage) ? educationStage : null
+    const previous = sessionEducationStage.value
+    sessionEducationStage.value = nextStage
+    if (!isAuthenticated.value) {
+      return true
+    }
+    try {
+      const response = await fetch(`${API_BASE}/diagram-preferences`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ education_stage: nextStage }),
+      })
+      const data = (await response.json().catch(() => ({}))) as {
+        detail?: string
+        education_stage?: string | null
+      }
+      if (!response.ok) {
+        sessionEducationStage.value = previous
+        notify.error(typeof data.detail === 'string' ? data.detail : 'Failed to save preferences')
+        return false
+      }
+      const saved = isEducationStage(data.education_stage) ? data.education_stage : null
+      sessionEducationStage.value = saved
+      if (user.value) {
+        const next: User = {
+          ...user.value,
+          educationStage: saved,
+        }
+        user.value = next
+        sessionStorage.setItem(USER_KEY, JSON.stringify(next))
+      }
+      return true
+    } catch {
+      sessionEducationStage.value = previous
+      notify.error('Failed to save preferences')
+      return false
+    }
+  }
+
+  function getEffectiveEducationStage(): string | null {
+    return sessionEducationStage.value
+  }
+
   function setMode(newMode: AuthMode): void {
     mode.value = newMode
     sessionStorage.setItem(MODE_KEY, newMode)
@@ -464,6 +519,7 @@ export const useAuthStore = defineStore('auth', () => {
     hasVerifiedAuthThisSession.value = false // Reset verification flag
     languagePrefsSeededForUserId.value = null
     languagePrefsSeedInFlight = false
+    sessionEducationStage.value = null
     authVerificationBlockedByNetwork.value = false
     subscriptionExpiredNotified.value = false
     adminCapabilitiesPayload.value = null
@@ -841,7 +897,7 @@ export const useAuthStore = defineStore('auth', () => {
     lastProfileRefreshTime.value = now
     try {
       const epochAtStart = getSessionRefreshEpoch()
-      let response = await fetch(`${API_BASE}/me`, {
+      const response = await fetch(`${API_BASE}/me`, {
         method: 'GET',
         credentials: 'same-origin',
       })
@@ -1120,9 +1176,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function requireAuth(redirectUrl?: string): Promise<boolean> {
     const authenticated = await checkAuth()
     if (!authenticated) {
-      window.location.href = redirectUrl
-        ? getSafePostAuthPath(redirectUrl, '/auth')
-        : '/auth'
+      window.location.href = redirectUrl ? getSafePostAuthPath(redirectUrl, '/auth') : '/auth'
       return false
     }
     return true
@@ -1191,5 +1245,8 @@ export const useAuthStore = defineStore('auth', () => {
     setPendingRedirect,
     getAndClearPendingRedirect,
     saveLanguagePreferences,
+    saveDiagramPreferences,
+    getEffectiveEducationStage,
+    sessionEducationStage,
   }
 })
