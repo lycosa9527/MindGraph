@@ -1,4 +1,4 @@
-/* global MG_CLIENT_ID, mgAuthStatus, mgBaseUrl, mgLoadPrefs, mgT */
+/* global MG_CLIENT_ID, mgAuthStatus, mgBaseUrl, mgHydratePrefs, mgLoadPrefs, mgT */
 /**
  * Dedicated Voice Notes session for the Word add-in dialog.
  * Mic → WS /api/ws/voice-notes (mgat_ + account query) → Fun-ASR.
@@ -88,6 +88,39 @@ function mgVoiceWsUrl(prefs) {
     '&client=' +
     client
   )
+}
+
+/**
+ * HTTPS Office shell cannot open ws:// to a local HTTP API (mixed content).
+ * @param {string} baseUrl
+ * @returns {boolean}
+ */
+function mgVoiceMixedContentBlocked(baseUrl) {
+  try {
+    if (typeof window === 'undefined' || !window.location) {
+      return false
+    }
+    if (String(window.location.protocol || '') !== 'https:') {
+      return false
+    }
+    return String(baseUrl || '').indexOf('http://') === 0
+  } catch (err) {
+    return false
+  }
+}
+
+/**
+ * @param {string} baseUrl
+ * @returns {string}
+ */
+function mgVoiceBaseHostLabel(baseUrl) {
+  try {
+    return String(baseUrl || '')
+      .replace(/^https?:\/\//i, '')
+      .replace(/\/+$/, '')
+  } catch (err2) {
+    return ''
+  }
 }
 
 /**
@@ -408,16 +441,7 @@ function mgBootVoiceNotes(ui) {
     resetSessionUi()
   }
 
-  function startRecording() {
-    var prefs = mgLoadPrefs()
-    if (mgAuthStatus(prefs) !== 'saved') {
-      setStatus(mgT('voiceNeedAuth'), 'err')
-      syncButtons()
-      return
-    }
-    if (recording || connecting) {
-      return
-    }
+  function beginSocketSession(prefs) {
     lines = []
     liveText = ''
     renderTranscript()
@@ -431,7 +455,11 @@ function mgBootVoiceNotes(ui) {
     startedAt = Date.now()
     pausedAccumMs = 0
     markSpeech()
-    setStatus(mgT('voiceConnecting'), '')
+    var hostLabel = mgVoiceBaseHostLabel(mgBaseUrl(prefs))
+    setStatus(
+      hostLabel ? mgT('voiceConnectingTo').replace('{host}', hostLabel) : mgT('voiceConnecting'),
+      ''
+    )
     syncButtons()
     armSessionWatchers(stamp)
 
@@ -498,11 +526,51 @@ function mgBootVoiceNotes(ui) {
       }
       if (event.code === 4001) {
         setStatus(mgT('voiceAuthFailed'), 'err')
+      } else if (event.code === 1008) {
+        setStatus(mgT('voiceWsOrigin'), 'err')
+      } else if (event.code === 4403) {
+        setStatus(mgT('voiceWsPolicy'), 'err')
       } else {
         setStatus(mgT('voiceWsClosed'), 'err')
       }
       resetSessionUi()
     }
+  }
+
+  function startRecording() {
+    if (recording || connecting) {
+      return
+    }
+    connecting = true
+    syncButtons()
+    setStatus(mgT('voiceConnecting'), '')
+    var hydrate =
+      typeof mgHydratePrefs === 'function'
+        ? mgHydratePrefs()
+        : Promise.resolve(mgLoadPrefs())
+    hydrate
+      .then(function (prefs) {
+        connecting = false
+        if (recording) {
+          return
+        }
+        if (mgAuthStatus(prefs) !== 'saved') {
+          setStatus(mgT('voiceNeedAuth'), 'err')
+          syncButtons()
+          return
+        }
+        if (mgVoiceMixedContentBlocked(mgBaseUrl(prefs))) {
+          setStatus(mgT('voiceMixedContent'), 'err')
+          syncButtons()
+          return
+        }
+        beginSocketSession(prefs)
+      })
+      .catch(function () {
+        connecting = false
+        setStatus(mgT('voiceWsError'), 'err')
+        syncButtons()
+      })
   }
 
   function togglePause() {

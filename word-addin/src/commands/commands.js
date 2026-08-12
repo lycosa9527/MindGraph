@@ -1,7 +1,8 @@
-/* global Office */
+/* global Office, mgBaseUrl, mgHydratePrefs, mgLoadPrefs, mgWordAddinPageUrl */
 /**
  * Ribbon executeFunction handlers.
- * MindMate / Voice / Settings open dedicated dialogs (not task panes).
+ * MindMate / Settings open shell dialogs; Voice opens on Settings baseUrl
+ * (same Origin as Fun-ASR WebSocket / CSWSH allowlist).
  */
 
 /** @type {Record<string, Office.Dialog | null>} */
@@ -27,11 +28,11 @@ function mgCompleteRibbonEvent(event) {
 
 /**
  * @param {string} key
- * @param {string} relativeHtml e.g. '../taskpane/settings.html'
+ * @param {string} absoluteUrl
  * @param {{ height: number, width: number }} size percent of screen
  * @param {*} event
  */
-function mgOpenNamedDialog(key, relativeHtml, size, event) {
+function mgOpenDialogAtUrl(key, absoluteUrl, size, event) {
   try {
     if (typeof Office === 'undefined' || !Office.context || !Office.context.ui) {
       mgCompleteRibbonEvent(event)
@@ -44,7 +45,7 @@ function mgOpenNamedDialog(key, relativeHtml, size, event) {
     }
 
     Office.context.ui.displayDialogAsync(
-      mgDialogPageUrl(relativeHtml),
+      absoluteUrl,
       {
         height: size.height,
         width: size.width,
@@ -74,6 +75,16 @@ function mgOpenNamedDialog(key, relativeHtml, size, event) {
   }
 }
 
+/**
+ * @param {string} key
+ * @param {string} relativeHtml e.g. '../taskpane/settings.html'
+ * @param {{ height: number, width: number }} size percent of screen
+ * @param {*} event
+ */
+function mgOpenNamedDialog(key, relativeHtml, size, event) {
+  mgOpenDialogAtUrl(key, mgDialogPageUrl(relativeHtml), size, event)
+}
+
 function openMindMateDialog(event) {
   mgOpenNamedDialog(
     'mindmate',
@@ -84,7 +95,7 @@ function openMindMateDialog(event) {
 }
 
 function openSettingsDialog(event) {
-  // Compact login-only window
+  // Compact login-only window (stays on shell so Server preset can change).
   mgOpenNamedDialog(
     'settings',
     '../taskpane/settings.html',
@@ -94,13 +105,28 @@ function openSettingsDialog(event) {
 }
 
 function openVoiceDialog(event) {
-  // Dedicated recorder window (mic → Fun-ASR); not the SPA task pane.
-  mgOpenNamedDialog(
-    'voice',
-    '../taskpane/voice.html',
-    { height: 64, width: 36 },
-    event
-  )
+  // Same-origin with Settings API host → WS Origin matches CSWSH allowlist.
+  var size = { height: 64, width: 36 }
+  var hydrate =
+    typeof mgHydratePrefs === 'function'
+      ? mgHydratePrefs()
+      : Promise.resolve(typeof mgLoadPrefs === 'function' ? mgLoadPrefs() : null)
+
+  hydrate
+    .then(function (prefs) {
+      var url =
+        typeof mgWordAddinPageUrl === 'function'
+          ? mgWordAddinPageUrl('taskpane/voice.html', prefs)
+          : mgBaseUrl(prefs) + '/word-addin/src/taskpane/voice.html'
+      mgOpenDialogAtUrl('voice', url, size, event)
+    })
+    .catch(function () {
+      var fallback =
+        typeof mgWordAddinPageUrl === 'function'
+          ? mgWordAddinPageUrl('taskpane/voice.html', null)
+          : mgDialogPageUrl('../taskpane/voice.html')
+      mgOpenDialogAtUrl('voice', fallback, size, event)
+    })
 }
 
 Office.onReady(function () {

@@ -26,9 +26,13 @@ mindgraph-word-addin/
 
 - **Windows 10 / 11:** double-click `windows\Install.cmd` (copies to `%LOCALAPPDATA%\MindGraph\WordAddin\`; unzip can be deleted)
 - **macOS:** double-click `mac/Install.command` (copies into Word `wef`; unzip can be deleted)
-- Then: **MindGraph** ribbon → **Settings** (server, phone, `mgat_`)
+- Fully **quit Word**, reopen a **document**
+- If the **MindGraph** tab is missing: **Home → Add-ins → More/Advanced → SHARED FOLDER** (or **Upload My Add-in**) and add MindGraph once. Acrobat is a COM add-in; MindGraph is a web add-in and often needs this step.
+- Then: **Sign in** (server, phone, `mgat_`)
 
 Remove: `windows\Uninstall.cmd` or `mac/Uninstall.command`.
+
+**Do not run `npm start` for the production install.** Dev sideload uses a different add-in Id (`MindGraph Dev` / localhost).
 
 ### 3. Optional — school M365 admin
 
@@ -43,7 +47,7 @@ Upload root `manifest.xml` via **Integrated apps** (Centralized Deployment).
 
 ## Developer sideload (localhost only)
 
-For coding the shell itself. Manifest in git still uses `https://localhost:3000`.
+For coding the shell itself. Repo manifest = **MindGraph Dev** Id + `https://localhost:3000` (separate from the production zip Id).
 
 Do **not** run npm on a `\\wsl$\...` path from Windows PowerShell.
 
@@ -65,5 +69,7 @@ npm start      # terminal 2
 ## Notes
 
 - MindMate / Voice / Sign-in = Office **dialogs**; MindGraph / Showcase / Manual = **task panes**.
-- Voice is a dedicated recorder window (mic → `WS /api/ws/voice-notes` with saved `mgat_` → Fun-ASR), not the SPA.
+- Voice opens **`{Settings baseUrl}/word-addin/src/taskpane/voice.html`** (same origin as the API), then mic → `WS /api/ws/voice-notes` with saved `mgat_` → Fun-ASR. Sign-in stays on the shell so you can change Server.
+- Production zip AppDomains must be **origins only** (never `…/word-addin`); path AppDomains make Office skip the CustomTab.
+- After Windows install: open a **document** (not only the blank start screen) to see the MindGraph ribbon.
 - AppSource public store listing is out of scope for v1.

@@ -161,6 +161,24 @@ function mgLoadPrefs() {
 }
 
 /**
+ * Hosted ``/word-addin/`` shell must call the same origin (CSP connect-src).
+ * Vite ``localhost:3000`` shells keep the Settings server preset.
+ * @param {object} prefs
+ * @returns {boolean} true when baseUrl was rewritten
+ */
+function mgApplyHostedBaseUrlInPlace(prefs) {
+  var host = mgShellHostOrigin()
+  if (!host) {
+    return false
+  }
+  if (mgNormalizeBaseUrl(prefs.baseUrl) === host) {
+    return false
+  }
+  prefs.baseUrl = host
+  return true
+}
+
+/**
  * Prefer OfficeRuntime.storage when available (shared across task panes),
  * then mirror into localStorage for sync reads.
  * Applies Office UI language when the user has not set language explicitly.
@@ -177,6 +195,9 @@ function mgHydratePrefs() {
         if (detected !== prefs.language) {
           prefs = mgSavePrefs({ language: detected, languageExplicit: false })
         }
+      }
+      if (mgApplyHostedBaseUrlInPlace(prefs)) {
+        void mgWritePrefsToStorage(JSON.stringify(prefs))
       }
       resolve(prefs)
     }
@@ -196,6 +217,20 @@ function mgHydratePrefs() {
       .catch(function () {
         finish(mgReadLocalStorage())
       })
+  })
+}
+
+function mgWritePrefsToStorage(raw) {
+  mgWriteLocalStorage(raw)
+  if (
+    typeof OfficeRuntime === 'undefined' ||
+    !OfficeRuntime.storage ||
+    typeof OfficeRuntime.storage.setItem !== 'function'
+  ) {
+    return Promise.resolve()
+  }
+  return OfficeRuntime.storage.setItem(MG_PREFS_KEY, raw).catch(function () {
+    // ignore
   })
 }
 
@@ -224,22 +259,38 @@ function mgSavePrefs(partial) {
       prefs.agentAvatarUrl = partial.agentAvatarUrl.trim()
     }
   }
+  mgApplyHostedBaseUrlInPlace(prefs)
   var raw = JSON.stringify(prefs)
-  mgWriteLocalStorage(raw)
-  if (
-    typeof OfficeRuntime !== 'undefined' &&
-    OfficeRuntime.storage &&
-    typeof OfficeRuntime.storage.setItem === 'function'
-  ) {
-    OfficeRuntime.storage.setItem(MG_PREFS_KEY, raw).catch(function () {
-      // ignore
-    })
-  }
+  void mgWritePrefsToStorage(raw)
   return prefs
+}
+
+/**
+ * Same as ``mgSavePrefs`` but waits for OfficeRuntime.storage (shared across dialogs).
+ * @returns {Promise<object>}
+ */
+function mgSavePrefsAsync(partial) {
+  var prefs = mgSavePrefs(partial)
+  var raw = JSON.stringify(prefs)
+  return mgWritePrefsToStorage(raw).then(function () {
+    return prefs
+  })
 }
 
 function mgClearAuthPrefs() {
   return mgSavePrefs({
+    phone: '',
+    apiToken: '',
+    agentName: '',
+    agentAvatarUrl: '',
+  })
+}
+
+/**
+ * @returns {Promise<object>}
+ */
+function mgClearAuthPrefsAsync() {
+  return mgSavePrefsAsync({
     phone: '',
     apiToken: '',
     agentName: '',
@@ -258,4 +309,19 @@ function mgAuthStatus(prefs) {
 function mgBaseUrl(prefs) {
   var p = prefs || mgLoadPrefs()
   return mgNormalizeBaseUrl(p.baseUrl || mgDefaultBaseUrl())
+}
+
+/**
+ * Absolute URL for a page under the hosted ``/word-addin/src/`` tree on Settings baseUrl.
+ * Used so Voice (and similar) dialogs share Origin with the API / WebSocket host.
+ * @param {string} relativeUnderSrc e.g. ``taskpane/voice.html``
+ * @param {{ baseUrl?: string } | null | undefined} prefs
+ * @returns {string}
+ */
+function mgWordAddinPageUrl(relativeUnderSrc, prefs) {
+  var base = mgBaseUrl(prefs)
+  var rel = String(relativeUnderSrc || '')
+    .replace(/^\/+/, '')
+    .replace(/^src\//, '')
+  return base + '/word-addin/src/' + rel
 }

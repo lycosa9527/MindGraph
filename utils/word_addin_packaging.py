@@ -15,6 +15,11 @@ DEFAULT_OUTPUT = WORD_ADDIN_DIR / "dist" / "mindgraph-word-addin.zip"
 _DEV_ORIGIN = "https://localhost:3000"
 _SHELL_PREFIX = "/word-addin"
 
+# Stable production add-in Id (must differ from repo/dev Id so npm start cannot
+# overwrite Install.cmd's WEF Developer registry value).
+PRODUCTION_ADDIN_ID = "a8f3c2e1-4b5d-6e7f-8901-23456789abcd"
+PRODUCTION_DISPLAY_NAME = "MindGraph"
+
 _ALWAYS_APP_DOMAINS = (
     "https://test.mindspringedu.com",
     "https://mg.mindspringedu.com",
@@ -70,8 +75,9 @@ Requires desktop **Microsoft Word** (Microsoft 365 or Office 2016+). No admin ri
 3. Installer copies the manifest to  
    `%LOCALAPPDATA%\\MindGraph\\WordAddin\\manifest.xml`  
    and registers that path — **you may delete the unzip folder**
-4. Word should open → **MindGraph** ribbon
-5. **Settings** → server + phone + `mgat_` → Save
+4. Installer closes Word if it was open, then relaunches it
+5. **Open or create a document** (custom tabs often hide on the blank start screen)
+6. **MindGraph** ribbon → **Settings** → server + phone + `mgat_` → Save
 
 Remove: run **`windows\\Uninstall.cmd`** from the zip (or keep a copy of `windows\\`), or delete  
 `%LOCALAPPDATA%\\MindGraph\\WordAddin` after clearing the WEF Developer registry entry via Uninstall.cmd.
@@ -133,34 +139,77 @@ def build_production_manifest_xml(public_origin: str) -> str:
         raise FileNotFoundError(str(MANIFEST_TEMPLATE))
     raw = MANIFEST_TEMPLATE.read_text(encoding="utf-8")
     shell = f"{origin}{_SHELL_PREFIX}"
-    rewritten = raw.replace(_DEV_ORIGIN, shell)
 
-    # Ensure the hosting origin is listed as an AppDomain.
-    domain_line = f"    <AppDomain>{origin}</AppDomain>"
-    if f"<AppDomain>{origin}</AppDomain>" not in rewritten:
-        rewritten = rewritten.replace(
-            "  <AppDomains>\n",
-            f"  <AppDomains>\n{domain_line}\n",
-            1,
+    # Distinct production Id / labels (repo template is localhost "MindGraph Dev").
+    rewritten = re.sub(
+        r"<Id>[^<]+</Id>",
+        f"<Id>{PRODUCTION_ADDIN_ID}</Id>",
+        raw,
+        count=1,
+    )
+    rewritten = re.sub(
+        r'(<DisplayName\s+DefaultValue=")[^"]*(")',
+        rf"\g<1>{PRODUCTION_DISPLAY_NAME}\2",
+        rewritten,
+        count=1,
+    )
+    for resid in (
+        "GetStarted.Title",
+        "Tab.Label",
+        "Group.Label",
+    ):
+        rewritten = re.sub(
+            rf'(<bt:String id="{re.escape(resid)}" DefaultValue=")[^"]*(")',
+            rf"\g<1>{PRODUCTION_DISPLAY_NAME}\2",
+            rewritten,
+            count=1,
         )
 
-    # Drop loopback AppDomains from production manifests (dev-only trust).
+    # AppDomain must be an origin (scheme + host [+ port]), never a path.
+    # Rewrite loopback AppDomains to the public origin BEFORE replacing asset
+    # URLs with ``{origin}/word-addin`` — a blind replace would turn
+    # ``https://localhost:3000`` into ``https://host/word-addin``, which Office
+    # rejects (add-in installs but CustomTab never appears on the ribbon).
     rewritten = re.sub(
-        r"\s*<AppDomain>https?://(?:localhost|127\.0\.0\.1)(?::\d+)?/?</AppDomain>\s*",
-        "\n",
+        r"<AppDomain>https?://(?:localhost|127\.0\.0\.1)(?::\d+)?/?</AppDomain>",
+        f"<AppDomain>{origin}</AppDomain>",
         rewritten,
     )
+    rewritten = rewritten.replace(_DEV_ORIGIN, shell)
 
-    for host in _ALWAYS_APP_DOMAINS:
-        if f"<AppDomain>{host}</AppDomain>" not in rewritten:
-            rewritten = rewritten.replace(
-                "  <AppDomains>\n",
-                f"  <AppDomains>\n    <AppDomain>{host}</AppDomain>\n",
-                1,
-            )
+    # Rebuild AppDomains: unique origins only (no paths, no loopback).
+    preferred = [origin, *_ALWAYS_APP_DOMAINS]
+    unique_domains: list[str] = []
+    for host in preferred:
+        if host not in unique_domains:
+            unique_domains.append(host)
+    domains_xml = (
+        "  <AppDomains>\n"
+        + "".join(f"    <AppDomain>{host}</AppDomain>\n" for host in unique_domains)
+        + "  </AppDomains>"
+    )
+    rewritten, domain_subs = re.subn(
+        r"  <AppDomains>.*?</AppDomains>",
+        domains_xml,
+        rewritten,
+        count=1,
+        flags=re.DOTALL,
+    )
+    if domain_subs != 1:
+        raise RuntimeError("production manifest rewrite failed (AppDomains block)")
 
     if f"{shell}/src/taskpane/mindgraph.html" not in rewritten:
         raise RuntimeError("production manifest rewrite failed (mindgraph URL missing)")
+    if f"<AppDomain>{shell}</AppDomain>" in rewritten:
+        raise RuntimeError("production manifest rewrite failed (path AppDomain)")
+    if f"<AppDomain>{origin}</AppDomain>" not in rewritten:
+        raise RuntimeError("production manifest rewrite failed (origin AppDomain missing)")
+    if f"<Id>{PRODUCTION_ADDIN_ID}</Id>" not in rewritten:
+        raise RuntimeError("production manifest rewrite failed (production Id missing)")
+    if "MindGraph Dev" in rewritten:
+        raise RuntimeError("production manifest rewrite failed (dev label left in)")
+    if _DEV_ORIGIN in rewritten:
+        raise RuntimeError("production manifest rewrite failed (localhost URL left in)")
     return rewritten
 
 

@@ -1,4 +1,4 @@
-/* global MG_CLIENT_ID, mgAuthStatus, mgBaseUrl, mgExpandTaskPaneHalfSoon, mgLoadPrefs, mgT */
+/* global MG_CLIENT_ID, mgAuthStatus, mgBaseUrl, mgExpandTaskPaneHalfSoon, mgHydratePrefs, mgLoadPrefs, mgT */
 /**
  * Open a live MindGraph SPA path in the task pane (desktop embed).
  * With saved mgat_: handoff → cookies → redirect; else guest with ?embed=word-addin.
@@ -65,8 +65,6 @@ function mgProbeEmbedAuth(prefs) {
  * @param {{ statusEl?: HTMLElement|null, guestRow?: HTMLElement|null, openGuestBtn?: HTMLElement|null, expandPane?: boolean }} ui
  */
 function mgOpenSpaHost(path, ui) {
-  var prefs = mgLoadPrefs()
-  var base = mgBaseUrl(prefs)
   var statusEl = ui && ui.statusEl
   var guestRow = ui && ui.guestRow
   var openGuestBtn = ui && ui.openGuestBtn
@@ -75,10 +73,6 @@ function mgOpenSpaHost(path, ui) {
   // Widen before navigating away (SPA origin may not have Office.js).
   if (expandPane && typeof mgExpandTaskPaneHalfSoon === 'function') {
     mgExpandTaskPaneHalfSoon()
-  }
-
-  function openGuest() {
-    window.location.replace(mgSpaGuestUrl(base, path))
   }
 
   function showGuestOption(messageKey) {
@@ -90,53 +84,66 @@ function mgOpenSpaHost(path, ui) {
     }
   }
 
-  if (openGuestBtn) {
-    openGuestBtn.addEventListener('click', openGuest)
-  }
-
-  if (mgAuthStatus(prefs) !== 'saved') {
-    showGuestOption('spaNeedAuth')
-    return
-  }
-
   if (statusEl) {
     statusEl.textContent = mgT('spaOpening')
   }
 
-  fetch(base + '/api/auth/embed/handoff', {
-    method: 'POST',
-    headers: {
-      Authorization: 'Bearer ' + prefs.apiToken,
-      'X-MG-Account': prefs.phone,
-      'X-MG-Client': MG_CLIENT_ID,
-      Accept: 'application/json',
-    },
+  var hydrate =
+    typeof mgHydratePrefs === 'function'
+      ? mgHydratePrefs()
+      : Promise.resolve(mgLoadPrefs())
+
+  hydrate.then(function (prefs) {
+    var base = mgBaseUrl(prefs)
+
+    function openGuest() {
+      window.location.replace(mgSpaGuestUrl(base, path))
+    }
+
+    if (openGuestBtn) {
+      openGuestBtn.addEventListener('click', openGuest)
+    }
+
+    if (mgAuthStatus(prefs) !== 'saved') {
+      showGuestOption('spaNeedAuth')
+      return
+    }
+
+    fetch(base + '/api/auth/embed/handoff', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + prefs.apiToken,
+        'X-MG-Account': prefs.phone,
+        'X-MG-Client': MG_CLIENT_ID,
+        Accept: 'application/json',
+      },
+    })
+      .then(function (res) {
+        if (!res.ok) {
+          throw new Error('handoff ' + res.status)
+        }
+        return res.json()
+      })
+      .then(function (body) {
+        if (!body || !body.handoff) {
+          throw new Error('missing handoff')
+        }
+        var nextPath = String(path || '/mindgraph').split('?')[0]
+        if (nextPath.charAt(0) !== '/') {
+          nextPath = '/' + nextPath
+        }
+        var complete =
+          base +
+          '/api/auth/embed/complete?handoff=' +
+          encodeURIComponent(body.handoff) +
+          '&next=' +
+          encodeURIComponent(nextPath)
+        // Top-level navigation: Set-Cookie on SPA origin → login-free session.
+        window.location.replace(complete)
+      })
+      .catch(function () {
+        // Stay on the shell — do not auto-open guest (guest hits /auth on protected routes).
+        showGuestOption('handoffFailed')
+      })
   })
-    .then(function (res) {
-      if (!res.ok) {
-        throw new Error('handoff ' + res.status)
-      }
-      return res.json()
-    })
-    .then(function (body) {
-      if (!body || !body.handoff) {
-        throw new Error('missing handoff')
-      }
-      var nextPath = String(path || '/mindgraph').split('?')[0]
-      if (nextPath.charAt(0) !== '/') {
-        nextPath = '/' + nextPath
-      }
-      var complete =
-        base +
-        '/api/auth/embed/complete?handoff=' +
-        encodeURIComponent(body.handoff) +
-        '&next=' +
-        encodeURIComponent(nextPath)
-      // Top-level navigation: Set-Cookie on SPA origin → login-free session.
-      window.location.replace(complete)
-    })
-    .catch(function () {
-      // Stay on the shell — do not auto-open guest (guest hits /auth on protected routes).
-      showGuestOption('handoffFailed')
-    })
 }

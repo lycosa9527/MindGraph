@@ -46,8 +46,17 @@
       var saveBtn = document.getElementById('btn-save')
       var verifying = false
 
-      function fillPresets(lang) {
+      function fillPresets(lang, lockedUrl) {
         preset.innerHTML = ''
+        if (lockedUrl) {
+          var locked = document.createElement('option')
+          locked.value = lockedUrl
+          locked.textContent = lockedUrl
+          preset.appendChild(locked)
+          preset.disabled = true
+          return
+        }
+        preset.disabled = false
         MG_BASE_URL_PRESETS.forEach(function (entry) {
           var opt = document.createElement('option')
           opt.value = entry.url
@@ -76,8 +85,11 @@
 
       function paint(p, statusKind) {
         var prefsLang = p.language === 'zh' ? 'zh' : 'en'
-        fillPresets(prefsLang)
-        preset.value = matchPreset(p.baseUrl || MG_DEFAULT_PREFS.baseUrl)
+        var hosted =
+          typeof mgIsHostedSameOriginShell === 'function' && mgIsHostedSameOriginShell()
+        var lockedUrl = hosted ? mgNormalizeBaseUrl(p.baseUrl || mgShellHostOrigin()) : ''
+        fillPresets(prefsLang, lockedUrl)
+        preset.value = lockedUrl || matchPreset(p.baseUrl || MG_DEFAULT_PREFS.baseUrl)
         phone.value = p.phone
         apiToken.value = p.apiToken
         if (statusKind === 'verified') {
@@ -102,41 +114,63 @@
           return
         }
         var chosenUrl = mgNormalizeBaseUrl(preset.value || MG_DEFAULT_PREFS.baseUrl)
-        var next = mgSavePrefs({
-          baseUrl: chosenUrl,
-          phone: phone.value,
-          apiToken: apiToken.value,
-        })
-        paint(next)
-        if (mgAuthStatus(next) !== 'saved') {
-          mgShowToast(mgT('settingsSavedToast'))
-          return
+        if (typeof mgIsHostedSameOriginShell === 'function' && mgIsHostedSameOriginShell()) {
+          chosenUrl = mgShellHostOrigin() || chosenUrl
         }
         verifying = true
         saveBtn.disabled = true
         setStatus(mgT('settingsVerifying'), '')
-        mgProbeEmbedAuth(next).then(function (result) {
-          verifying = false
-          saveBtn.disabled = false
-          if (result.ok) {
-            paint(next, 'verified')
-            mgShowToast(mgT('settingsVerifiedToast'))
+        var savePromise =
+          typeof mgSavePrefsAsync === 'function'
+            ? mgSavePrefsAsync({
+                baseUrl: chosenUrl,
+                phone: phone.value,
+                apiToken: apiToken.value,
+              })
+            : Promise.resolve(
+                mgSavePrefs({
+                  baseUrl: chosenUrl,
+                  phone: phone.value,
+                  apiToken: apiToken.value,
+                })
+              )
+        savePromise.then(function (next) {
+          paint(next)
+          if (mgAuthStatus(next) !== 'saved') {
+            verifying = false
+            saveBtn.disabled = false
+            mgShowToast(mgT('settingsSavedToast'))
             return
           }
-          if (result.reason === 'network') {
-            paint(next, 'network')
-          } else if (result.reason === 'unsupported' || result.reason === 'server') {
-            paint(next, 'server')
-          } else {
-            paint(next, 'invalid')
-          }
-          mgShowToast(mgT('settingsSavedToast'))
+          mgProbeEmbedAuth(next).then(function (result) {
+            verifying = false
+            saveBtn.disabled = false
+            if (result.ok) {
+              paint(next, 'verified')
+              mgShowToast(mgT('settingsVerifiedToast'))
+              return
+            }
+            if (result.reason === 'network') {
+              paint(next, 'network')
+            } else if (result.reason === 'unsupported' || result.reason === 'server') {
+              paint(next, 'server')
+            } else {
+              paint(next, 'invalid')
+            }
+            mgShowToast(mgT('settingsSavedToast'))
+          })
         })
       })
 
       document.getElementById('btn-clear').addEventListener('click', function () {
-        paint(mgClearAuthPrefs())
-        mgShowToast(mgT('settingsClearedToast'))
+        var clearPromise =
+          typeof mgClearAuthPrefsAsync === 'function'
+            ? mgClearAuthPrefsAsync()
+            : Promise.resolve(mgClearAuthPrefs())
+        clearPromise.then(function (cleared) {
+          paint(cleared)
+          mgShowToast(mgT('settingsClearedToast'))
+        })
       })
     })
   </script>

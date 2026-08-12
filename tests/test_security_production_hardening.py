@@ -347,3 +347,5 @@ async def test_word_addin_csp_allows_office_js_cdn() -> None:
     assert "https://appsforoffice.microsoft.com" in csp
     assert "script-src 'self' 'unsafe-inline' https://appsforoffice.microsoft.com" in csp
     assert "frame-src 'self' blob: https://365.kdocs.cn" in csp
+    assert "frame-ancestors *" in csp
+    assert "X-Frame-Options" not in result.headers

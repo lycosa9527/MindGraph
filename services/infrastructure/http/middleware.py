@@ -285,6 +285,9 @@ def _word_addin_content_security_policy() -> str:
     Task panes load Office.js from Microsoft's CDN and use inline boot scripts;
     the main SPA CSP (nonce / no external scripts) would break the add-in.
     Manual task pane embeds the platform quick guide (Kingsoft Docs).
+
+    ``frame-ancestors`` stays permissive enough for Office desktop/web hosts;
+    pairing with ``X-Frame-Options: DENY`` would block the task pane runtime.
     """
     return (
         "default-src 'self'; "
@@ -296,7 +299,7 @@ def _word_addin_content_security_policy() -> str:
         f"connect-src 'self' {_OFFICE_JS_CDN}; "
         "media-src 'self' blob:; "
         f"frame-src 'self' blob: {_WORD_ADDIN_MANUAL_FRAME}; "
-        "frame-ancestors 'none'; "
+        "frame-ancestors *; "
         "base-uri 'self'; "
         "form-action 'self';"
     )
@@ -331,10 +334,15 @@ async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
 
     path = request.url.path
+    is_word_addin = isinstance(path, str) and path.startswith("/word-addin/")
     same_origin_frame = allows_same_origin_showcase_frame(path)
 
-    # Prevent clickjacking (stops site being embedded in iframes)
-    response.headers["X-Frame-Options"] = "SAMEORIGIN" if same_origin_frame else "DENY"
+    # Prevent clickjacking (stops site being embedded in iframes).
+    # Office Word hosts the add-in shell in a runtime frame/WebView — do not DENY.
+    if is_word_addin:
+        response.headers.pop("X-Frame-Options", None)
+    else:
+        response.headers["X-Frame-Options"] = "SAMEORIGIN" if same_origin_frame else "DENY"
 
     # Prevent MIME sniffing (stops browser from guessing content types)
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -353,7 +361,7 @@ async def add_security_headers(request: Request, call_next):
     cos_connect = cos_browser_csp_sources() if cos_showcase_enabled() else ""
     cos_connect_clause = f" {cos_connect}" if cos_connect else ""
     media_src = f"media-src 'self' blob:{cos_connect_clause}; " if cos_connect else "media-src 'self' blob:; "
-    if isinstance(path, str) and path.startswith("/word-addin/"):
+    if is_word_addin:
         response.headers["Content-Security-Policy"] = _word_addin_content_security_policy()
     elif config.debug:
         # DEBUG mode: Allow Swagger UI resources from CDN (including source maps)

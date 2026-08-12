@@ -8,6 +8,7 @@ from io import BytesIO
 import pytest
 
 from utils.word_addin_packaging import (
+    PRODUCTION_ADDIN_ID,
     build_production_manifest_xml,
     build_word_addin_deploy_zip_bytes,
 )
@@ -23,6 +24,16 @@ def test_production_manifest_rewrites_shell_urls() -> None:
     assert "127.0.0.1" not in xml
     assert "<AppDomain>https://mg.mindspringedu.com</AppDomain>" in xml
     assert "<AppDomain>https://365.kdocs.cn</AppDomain>" in xml
+    # Path-suffixed AppDomains are invalid and prevent the CustomTab from showing.
+    assert "<AppDomain>https://mg.mindspringedu.com/word-addin</AppDomain>" not in xml
+    assert "/word-addin</AppDomain>" not in xml
+    # Must not share the git/Vite Dev Id — npm start would overwrite Install.cmd.
+    assert f"<Id>{PRODUCTION_ADDIN_ID}</Id>" in xml
+    assert "c7b2e9a4-1d3f-4e68-9c05-8f2a6b1d4e70" not in xml
+    assert 'DefaultValue="MindGraph"' in xml
+    assert "MindGraph Dev" not in xml
+    assert 'id="Tab.Label" DefaultValue="MindGraph"' in xml
+    assert 'id="Group.Label" DefaultValue="MindGraph"' in xml
 
 
 def test_deploy_zip_tree_windows_mac_readme() -> None:

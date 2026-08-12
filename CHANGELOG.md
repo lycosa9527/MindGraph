@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.175.1] - 2026-08-12
+
+> **Word add-in: production packaging/CSP framing, Voice same-origin WS, Windows install catalogs.**
+
+### Fixed
+
+- **Office task-pane framing** — `/word-addin/*` CSP uses `frame-ancestors *` and omits `X-Frame-Options` so Word can host the shell (DENY/`frame-ancestors 'none'` blocked the runtime).
+- **Production AppDomains** — Manifest rewrite keeps origin-only AppDomains (never `…/word-addin` paths); path AppDomains installed but hid the CustomTab.
+- **Dev vs production add-in Id** — Repo/Vite sideload uses **MindGraph Dev**; production zip rewrites a distinct Id/labels so `npm start` cannot overwrite Install.cmd registration.
+- **Voice CSWSH / mixed content** — Ribbon Voice opens `{Settings baseUrl}/word-addin/.../voice.html` (same Origin as Fun-ASR WS); clearer WS close / mixed-content errors.
+
+### Changed
+
+- **Windows installer** — Closes/relaunches Word; validates AppDomains; registers trusted shared-folder catalog; strips Dev/localhost registry leftovers; prompts to open a document (not blank start screen).
+- **Sign-in / prefs** — Hosted shell pins Settings baseUrl; async OfficeRuntime.storage save; SPA handoff waits for prefs hydrate.
+- **Docs / README** — Voice same-origin note; production vs Dev install guidance; `Reset-DevSideload.ps1` for clearing stale WEF cache.
+
+### Tests
+
+- Word add-in CSP framing; production packaging Id / AppDomain / display-name assertions.
+
 ## [5.175.0] - 2026-08-12
 
 > **Word add-in: dedicated Voice dialog, embed probe, packaging; WS mgat_ auth hardening.**

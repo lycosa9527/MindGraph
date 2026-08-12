@@ -5,12 +5,14 @@
   xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
   xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
   xsi:type="TaskPaneApp">
-  <Id>a8f3c2e1-4b5d-6e7f-8901-23456789abcd</Id>
-  <Version>1.0.3.0</Version>
+  <!-- Dev sideload Id (localhost). Production zip rewrites to PROD Id — never share one Id or npm start overwrites Install.cmd. -->
+  <Id>c7b2e9a4-1d3f-4e68-9c05-8f2a6b1d4e70</Id>
+  <Version>1.0.7.0</Version>
   <ProviderName>MindGraph</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <!-- Empty-looking title: Office always draws a task-pane header; ZWSP hides the label. -->
-  <DisplayName DefaultValue="&#x200B;"/>
+  <!-- Catalog / Add-ins list name. Task-pane chrome title is still controlled by each page. -->
+  <DisplayName DefaultValue="MindGraph Dev"/>
+
   <Description DefaultValue="MindMate, diagram studio, voice notes, and showcase in Microsoft Word.">
     <Override Locale="zh-CN" Value="在 Word 中使用 MindMate、图示工作室、语音笔记与案例广场。"/>
   </Description>
@@ -184,9 +186,9 @@
         <bt:Url id="Taskpane.Settings.Url" DefaultValue="https://localhost:3000/src/taskpane/settings.html"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GetStarted.Title" DefaultValue="&#x200B;"/>
-        <bt:String id="Tab.Label" DefaultValue="MindGraph"/>
-        <bt:String id="Group.Label" DefaultValue="MindGraph"/>
+        <bt:String id="GetStarted.Title" DefaultValue="MindGraph Dev"/>
+        <bt:String id="Tab.Label" DefaultValue="MindGraph Dev"/>
+        <bt:String id="Group.Label" DefaultValue="MindGraph Dev"/>
         <bt:String id="BtnMindMate.Label" DefaultValue="MindMate"/>
         <bt:String id="BtnMindGraph.Label" DefaultValue="MindGraph"/>
         <bt:String id="BtnVoice.Label" DefaultValue="Voice">
