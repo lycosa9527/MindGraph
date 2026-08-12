@@ -44,6 +44,7 @@
   <script src="../shared/prefs.js"></script>
   <script src="../shared/i18n.js"></script>
   <script src="../shared/page-boot.js"></script>
+  <script src="../shared/spa-host.js"></script>
   <script>
     mgBootPage(function (prefs) {
       var language = document.getElementById('language')
@@ -52,6 +53,8 @@
       var phone = document.getElementById('phone')
       var apiToken = document.getElementById('apiToken')
       var statusEl = document.getElementById('auth-status')
+      var saveBtn = document.getElementById('btn-save')
+      var verifying = false
 
       function fillPresets(lang) {
         preset.innerHTML = ''
@@ -77,16 +80,29 @@
         return '__custom__'
       }
 
-      function paint(p) {
+      function setStatus(text, kind) {
+        statusEl.textContent = text
+        statusEl.className = 'mg-status' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : '')
+      }
+
+      function paint(p, statusKind) {
         language.value = p.language
         fillPresets(p.language)
         baseUrl.value = p.baseUrl
         preset.value = matchPreset(p.baseUrl)
         phone.value = p.phone
         apiToken.value = p.apiToken
-        statusEl.textContent =
-          mgAuthStatus(p) === 'saved' ? mgT('settingsStatusSaved') : mgT('settingsStatusEmpty')
-        statusEl.className = 'mg-status' + (mgAuthStatus(p) === 'saved' ? ' ok' : '')
+        if (statusKind === 'verified') {
+          setStatus(mgT('settingsStatusVerified'), 'ok')
+        } else if (statusKind === 'invalid') {
+          setStatus(mgT('settingsStatusInvalid'), 'err')
+        } else if (statusKind === 'network') {
+          setStatus(mgT('settingsStatusNetwork'), 'err')
+        } else if (mgAuthStatus(p) === 'saved') {
+          setStatus(mgT('settingsStatusSaved'), '')
+        } else {
+          setStatus(mgT('settingsStatusEmpty'), '')
+        }
       }
 
       paint(prefs)
@@ -107,7 +123,10 @@
         preset.value = matchPreset(baseUrl.value.trim().replace(/\/+$/, ''))
       })
 
-      document.getElementById('btn-save').addEventListener('click', function () {
+      saveBtn.addEventListener('click', function () {
+        if (verifying) {
+          return
+        }
         var next = mgSavePrefs({
           language: language.value,
           languageExplicit: true,
@@ -116,7 +135,28 @@
           apiToken: apiToken.value,
         })
         paint(next)
-        mgShowToast(mgT('settingsSavedToast'))
+        if (mgAuthStatus(next) !== 'saved') {
+          mgShowToast(mgT('settingsSavedToast'))
+          return
+        }
+        verifying = true
+        saveBtn.disabled = true
+        setStatus(mgT('settingsVerifying'), '')
+        mgProbeEmbedAuth(next).then(function (result) {
+          verifying = false
+          saveBtn.disabled = false
+          if (result.ok) {
+            paint(next, 'verified')
+            mgShowToast(mgT('settingsVerifiedToast'))
+            return
+          }
+          if (result.reason === 'network') {
+            paint(next, 'network')
+          } else {
+            paint(next, 'invalid')
+          }
+          mgShowToast(mgT('settingsSavedToast'))
+        })
       })
 
       document.getElementById('btn-clear').addEventListener('click', function () {

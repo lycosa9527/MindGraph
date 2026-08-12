@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -100,8 +101,6 @@ def _draw_gear(draw: ImageDraw.ImageDraw, size: int, color: tuple[int, int, int]
     draw.ellipse((cx - outer, cy - outer, cx + outer, cy + outer), outline=color, width=max(3, size // 12))
     draw.ellipse((cx - inner, cy - inner, cx + inner, cy + inner), fill=color)
     for angle in range(0, 360, 45):
-        import math
-
         rad = math.radians(angle)
         x = cx + int(math.cos(rad) * (outer + size // 14))
         y = cy + int(math.sin(rad) * (outer + size // 14))

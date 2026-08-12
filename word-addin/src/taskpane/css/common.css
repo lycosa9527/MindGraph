@@ -208,6 +208,10 @@ body.mg-panel-body {
   color: var(--mg-accent);
 }
 
+.mg-status.err {
+  color: #b42318;
+}
+
 /* MindMate chat */
 .mg-chat {
   display: flex;

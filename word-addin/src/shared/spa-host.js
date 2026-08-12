@@ -13,8 +13,49 @@ function mgSpaGuestUrl(base, path) {
 }
 
 /**
+ * Probe phone + mgat_ against embed handoff (does not complete / set cookies).
+ * @param {{ baseUrl?: string, phone?: string, apiToken?: string }} prefs
+ * @returns {Promise<{ ok: boolean, status: number, reason: string }>}
+ */
+function mgProbeEmbedAuth(prefs) {
+  var p = prefs || mgLoadPrefs()
+  var phone = String(p.phone || '').trim()
+  var token = String(p.apiToken || '').trim()
+  if (!phone || !token) {
+    return Promise.resolve({ ok: false, status: 0, reason: 'empty' })
+  }
+  if (token.indexOf('mgat_') !== 0) {
+    return Promise.resolve({ ok: false, status: 0, reason: 'token' })
+  }
+  var base = mgBaseUrl(p)
+  return fetch(base + '/api/auth/embed/handoff', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'X-MG-Account': phone,
+      'X-MG-Client': MG_CLIENT_ID,
+      Accept: 'application/json',
+    },
+  })
+    .then(function (res) {
+      if (!res.ok) {
+        return { ok: false, status: res.status, reason: 'auth' }
+      }
+      return res.json().then(function (body) {
+        if (!body || !body.handoff) {
+          return { ok: false, status: res.status, reason: 'missing' }
+        }
+        return { ok: true, status: res.status, reason: 'ok' }
+      })
+    })
+    .catch(function () {
+      return { ok: false, status: 0, reason: 'network' }
+    })
+}
+
+/**
  * @param {string} path SPA path e.g. /mindmate, /mindgraph, /showcase
- * @param {{ statusEl?: HTMLElement|null, guestRow?: HTMLElement|null, openGuestBtn?: HTMLElement|null }} ui
+ * @param {{ statusEl?: HTMLElement|null, guestRow?: HTMLElement|null, openGuestBtn?: HTMLElement|null, expandPane?: boolean }} ui
  */
 function mgOpenSpaHost(path, ui) {
   var prefs = mgLoadPrefs()
@@ -33,17 +74,21 @@ function mgOpenSpaHost(path, ui) {
     window.location.replace(mgSpaGuestUrl(base, path))
   }
 
+  function showGuestOption(messageKey) {
+    if (statusEl) {
+      statusEl.textContent = mgT(messageKey)
+    }
+    if (guestRow) {
+      guestRow.style.display = 'flex'
+    }
+  }
+
   if (openGuestBtn) {
     openGuestBtn.addEventListener('click', openGuest)
   }
 
   if (mgAuthStatus(prefs) !== 'saved') {
-    if (statusEl) {
-      statusEl.textContent = mgT('spaNeedAuth')
-    }
-    if (guestRow) {
-      guestRow.style.display = 'flex'
-    }
+    showGuestOption('spaNeedAuth')
     return
   }
 
@@ -80,15 +125,11 @@ function mgOpenSpaHost(path, ui) {
         encodeURIComponent(body.handoff) +
         '&next=' +
         encodeURIComponent(nextPath)
+      // Top-level navigation: Set-Cookie on SPA origin → login-free session.
       window.location.replace(complete)
     })
     .catch(function () {
-      if (statusEl) {
-        statusEl.textContent = mgT('handoffFailed')
-      }
-      if (guestRow) {
-        guestRow.style.display = 'flex'
-      }
-      window.setTimeout(openGuest, 1200)
+      // Stay on the shell — do not auto-open guest (guest hits /auth on protected routes).
+      showGuestOption('handoffFailed')
     })
 }

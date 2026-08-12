@@ -5,7 +5,7 @@ Microsoft Word **Office.js** add-in: ribbon tab **MindGraph** with MindMate, Min
 - Task panes use **Edge WebView2** (document stays below the ribbon).
 - Default API: `https://test.mindspringedu.com`
 - Client header: `X-MG-Client: word-addin`
-- With phone + `mgat_` in Settings, MindGraph / Showcase / MindMate open **login-free** via `/api/auth/embed/handoff` → `/complete` (httpOnly session cookies) and **desktop** UI (`?embed=word-addin`).
+- With phone + `mgat_` in Settings (verified on Save), MindGraph / Showcase / MindMate open **login-free** via `/api/auth/embed/handoff` → `/complete` (httpOnly session cookies on the SPA origin) and **desktop** UI (`?embed=word-addin`). Handoff failure stays on the shell (optional guest) — it does not dump into the web login page.
 - **MindMate** opens a medium **separate dialog window** (Office Dialog API) so it can run beside the MindGraph task pane.
 
 ## Requirements
