@@ -1,12 +1,21 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   computeIsMobileClient,
   isSmallViewportWidth,
   isTouchDeviceUserAgent,
 } from '@/utils/isMobileClient'
+import {
+  isOfficeEmbedDesktop,
+  resetOfficeEmbedForTests,
+  syncOfficeEmbedFromSearch,
+} from '@/utils/officeEmbed'
 
 describe('isMobileClient', () => {
+  afterEach(() => {
+    resetOfficeEmbedForTests()
+  })
+
   it('detects touch user agents regardless of width', () => {
     const ipadUa =
       'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
@@ -27,5 +36,13 @@ describe('isMobileClient', () => {
     const desktopUa =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     expect(computeIsMobileClient(1280, desktopUa)).toBe(false)
+  })
+
+  it('treats word-addin embed query as desktop even when narrow', () => {
+    syncOfficeEmbedFromSearch('?embed=word-addin')
+    expect(isOfficeEmbedDesktop()).toBe(true)
+    const ipadUa =
+      'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+    expect(computeIsMobileClient(480, ipadUa)).toBe(false)
   })
 })
