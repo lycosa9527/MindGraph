@@ -3,28 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Settings</title>
+  <title>Login</title>
   <link rel="stylesheet" href="css/common.css" />
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 </head>
 <body>
   <div class="mg-shell">
     <div class="mg-header">
-      <h1 class="mg-title" data-i18n="btnSettings">Settings</h1>
+      <h1 class="mg-title" data-i18n="settingsLoginTitle">Sign in</h1>
     </div>
+    <p class="mg-hint" data-i18n="settingsLoginHint"></p>
     <div class="mg-card">
       <div class="mg-field">
-        <label for="language" data-i18n="settingsLanguage">Language</label>
-        <select id="language">
-          <option value="en">English</option>
-          <option value="zh">中文</option>
-        </select>
-        <p class="mg-hint" data-i18n="settingsLanguageHint" style="margin-top: 6px"></p>
-      </div>
-      <div class="mg-field">
-        <label for="baseUrlPreset" data-i18n="settingsBaseUrl">Server URL</label>
+        <label for="baseUrlPreset" data-i18n="settingsServer">Server</label>
         <select id="baseUrlPreset"></select>
-        <input id="baseUrl" type="url" style="margin-top: 8px" />
       </div>
       <div class="mg-field">
         <label for="phone" data-i18n="settingsPhone">Phone</label>
@@ -35,7 +27,7 @@
         <input id="apiToken" type="password" autocomplete="off" />
       </div>
       <div class="mg-btn-row">
-        <button type="button" class="mg-btn" id="btn-save" data-i18n="settingsSave">Save</button>
+        <button type="button" class="mg-btn" id="btn-save" data-i18n="settingsLogin">Sign in</button>
         <button type="button" class="mg-btn mg-btn-secondary" id="btn-clear" data-i18n="settingsClear">Clear</button>
       </div>
       <p id="auth-status" class="mg-status" style="margin-top: 12px"></p>
@@ -47,9 +39,7 @@
   <script src="../shared/spa-host.js"></script>
   <script>
     mgBootPage(function (prefs) {
-      var language = document.getElementById('language')
       var preset = document.getElementById('baseUrlPreset')
-      var baseUrl = document.getElementById('baseUrl')
       var phone = document.getElementById('phone')
       var apiToken = document.getElementById('apiToken')
       var statusEl = document.getElementById('auth-status')
@@ -61,23 +51,22 @@
         MG_BASE_URL_PRESETS.forEach(function (entry) {
           var opt = document.createElement('option')
           opt.value = entry.url
-          opt.textContent = (lang === 'en' ? entry.labelEn : entry.labelZh) + ' — ' + entry.url
+          opt.textContent =
+            (lang === 'en' ? entry.labelEn : entry.labelZh) + ' — ' + entry.url
           preset.appendChild(opt)
         })
-        var custom = document.createElement('option')
-        custom.value = '__custom__'
-        custom.textContent = lang === 'en' ? 'Custom…' : '自定义…'
-        preset.appendChild(custom)
       }
 
       function matchPreset(url) {
+        var normalized = mgNormalizeBaseUrl(url)
         var i
         for (i = 0; i < MG_BASE_URL_PRESETS.length; i += 1) {
-          if (MG_BASE_URL_PRESETS[i].url === url) {
+          if (MG_BASE_URL_PRESETS[i].url === normalized) {
             return MG_BASE_URL_PRESETS[i].url
           }
         }
-        return '__custom__'
+        // Unknown saved URL → fall back to default (test).
+        return MG_DEFAULT_PREFS.baseUrl
       }
 
       function setStatus(text, kind) {
@@ -86,10 +75,9 @@
       }
 
       function paint(p, statusKind) {
-        language.value = p.language
-        fillPresets(p.language)
-        baseUrl.value = p.baseUrl
-        preset.value = matchPreset(p.baseUrl)
+        var prefsLang = p.language === 'zh' ? 'zh' : 'en'
+        fillPresets(prefsLang)
+        preset.value = matchPreset(p.baseUrl || MG_DEFAULT_PREFS.baseUrl)
         phone.value = p.phone
         apiToken.value = p.apiToken
         if (statusKind === 'verified') {
@@ -98,6 +86,8 @@
           setStatus(mgT('settingsStatusInvalid'), 'err')
         } else if (statusKind === 'network') {
           setStatus(mgT('settingsStatusNetwork'), 'err')
+        } else if (statusKind === 'server') {
+          setStatus(mgT('settingsStatusServer'), 'err')
         } else if (mgAuthStatus(p) === 'saved') {
           setStatus(mgT('settingsStatusSaved'), '')
         } else {
@@ -107,30 +97,13 @@
 
       paint(prefs)
 
-      language.addEventListener('change', function () {
-        mgSavePrefs({ language: language.value, languageExplicit: true })
-        mgApplyI18n(document)
-        paint(mgLoadPrefs())
-      })
-
-      preset.addEventListener('change', function () {
-        if (preset.value !== '__custom__') {
-          baseUrl.value = preset.value
-        }
-      })
-
-      baseUrl.addEventListener('input', function () {
-        preset.value = matchPreset(baseUrl.value.trim().replace(/\/+$/, ''))
-      })
-
       saveBtn.addEventListener('click', function () {
         if (verifying) {
           return
         }
+        var chosenUrl = mgNormalizeBaseUrl(preset.value || MG_DEFAULT_PREFS.baseUrl)
         var next = mgSavePrefs({
-          language: language.value,
-          languageExplicit: true,
-          baseUrl: baseUrl.value,
+          baseUrl: chosenUrl,
           phone: phone.value,
           apiToken: apiToken.value,
         })
@@ -152,6 +125,8 @@
           }
           if (result.reason === 'network') {
             paint(next, 'network')
+          } else if (result.reason === 'unsupported' || result.reason === 'server') {
+            paint(next, 'server')
           } else {
             paint(next, 'invalid')
           }

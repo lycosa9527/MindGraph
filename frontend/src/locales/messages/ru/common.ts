@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'Library',
   'meta.pageTitle.libraryBookmark': 'Добавить в избранное',
   'meta.pageTitle.libraryViewer': 'Средство просмотра библиотек',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'Зарегистрироваться',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

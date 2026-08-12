@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Розширення',
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Розширення Chrome',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Ця функція доступна на шкільних тарифах Standard або Professional (Basic не підтримується).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Шкільну підписку завершено. Ваш обліковий запис переведено на пробний тариф. Зверніться до адміністратора платформи для поновлення.',
   'auth.diagramLimitReached': 'На пробних шкільних облікових записах можна зберегти до {max} діаграм на вчителя. Видаліть одну, щоб зберегти нову.',

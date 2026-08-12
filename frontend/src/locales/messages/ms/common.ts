@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'Perpustakaan',
   'meta.pageTitle.libraryBookmark': 'Penanda halaman',
   'meta.pageTitle.libraryViewer': 'Paparan perpustakaan',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'Log masuk',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

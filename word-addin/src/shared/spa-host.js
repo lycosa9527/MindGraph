@@ -13,7 +13,7 @@ function mgSpaGuestUrl(base, path) {
 }
 
 /**
- * Probe phone + mgat_ against embed handoff (does not complete / set cookies).
+ * Probe phone + mgat_ via validate-only endpoint (no Redis handoff code minted).
  * @param {{ baseUrl?: string, phone?: string, apiToken?: string }} prefs
  * @returns {Promise<{ ok: boolean, status: number, reason: string }>}
  */
@@ -28,7 +28,7 @@ function mgProbeEmbedAuth(prefs) {
     return Promise.resolve({ ok: false, status: 0, reason: 'token' })
   }
   var base = mgBaseUrl(p)
-  return fetch(base + '/api/auth/embed/handoff', {
+  return fetch(base + '/api/auth/embed/probe', {
     method: 'POST',
     headers: {
       Authorization: 'Bearer ' + token,
@@ -38,15 +38,22 @@ function mgProbeEmbedAuth(prefs) {
     },
   })
     .then(function (res) {
-      if (!res.ok) {
+      if (res.ok) {
+        return res.json().then(function (body) {
+          if (!body || body.ok !== true) {
+            return { ok: false, status: res.status, reason: 'missing' }
+          }
+          return { ok: true, status: res.status, reason: 'ok' }
+        })
+      }
+      // 401/403 = credentials; 404/405 = probe not deployed / wrong method; else server.
+      if (res.status === 401 || res.status === 403) {
         return { ok: false, status: res.status, reason: 'auth' }
       }
-      return res.json().then(function (body) {
-        if (!body || !body.handoff) {
-          return { ok: false, status: res.status, reason: 'missing' }
-        }
-        return { ok: true, status: res.status, reason: 'ok' }
-      })
+      if (res.status === 404 || res.status === 405) {
+        return { ok: false, status: res.status, reason: 'unsupported' }
+      }
+      return { ok: false, status: res.status, reason: 'server' }
     })
     .catch(function () {
       return { ok: false, status: 0, reason: 'network' }

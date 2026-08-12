@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Optional
 
-from fastapi import HTTPException, Request, status
+from fastapi import HTTPException, status
 from sqlalchemy import select
 
 from models.domain.auth import User
@@ -30,7 +30,8 @@ except ImportError:
     org_cache = None
     user_cache = None
 
-from utils.auth.mg_client import bind_mg_client_from_header, mg_client_display_label
+from utils.auth.connection_types import HttpOrWebSocket
+from utils.auth.mg_client import bind_mg_client_from_connection, mg_client_display_label
 from utils.auth.org_subscription import ensure_org_subscription_current
 from utils.auth.request_helpers import get_client_ip
 from utils.auth.school_tier import TIER_FEATURE_API_TOKEN, user_has_school_tier_feature
@@ -78,16 +79,29 @@ async def _check_org_access_async(user: User) -> None:
     await ensure_org_subscription_current(org_row)
 
 
-def _log_mgat_audit(request: Optional[Request], user_id: int) -> None:
-    """Bind X-MG-Client and emit TokenAudit line for mgat_ validation."""
-    if request is None:
+def _connection_path(connection: HttpOrWebSocket) -> str:
+    """HTTP path or WebSocket path for TokenAudit."""
+    url = getattr(connection, "url", None)
+    if url is not None and getattr(url, "path", None):
+        return str(url.path)
+    scope = getattr(connection, "scope", None)
+    if isinstance(scope, dict):
+        path = scope.get("path")
+        if isinstance(path, str) and path:
+            return path
+    return ""
+
+
+def _log_mgat_audit(connection: Optional[HttpOrWebSocket], user_id: int) -> None:
+    """Bind client label and emit TokenAudit line for mgat_ validation."""
+    if connection is None:
         return
-    if getattr(request.state, "_mgat_audit_logged", False):
+    if getattr(connection.state, "_mgat_audit_logged", False):
         return
-    setattr(request.state, "_mgat_audit_logged", True)
-    client = bind_mg_client_from_header(request)
-    ip = get_client_ip(request)
-    path = request.url.path
+    setattr(connection.state, "_mgat_audit_logged", True)
+    client = bind_mg_client_from_connection(connection)
+    ip = get_client_ip(connection)
+    path = _connection_path(connection)
     logger.info(
         "[TokenAudit] mgat validated: user=%s, ip=%s, client=%s (%s), path=%s",
         user_id,
@@ -101,7 +115,7 @@ def _log_mgat_audit(request: Optional[Request], user_id: int) -> None:
 async def validate_user_token(
     token: str,
     account_number: str,
-    request: Optional[Request] = None,
+    request: Optional[HttpOrWebSocket] = None,
 ) -> User:
     """
     Validate mgat_ token + account phone binding.

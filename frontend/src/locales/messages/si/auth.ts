@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Chrome extension',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'මෙම විශේෂාංගයට Standard හෝ Professional පාසල් මට්‍ටම අවශ්‍ය (Basic ඇතුළත් නොවේ).',
   'auth.schoolSubscriptionExpiredDowngraded': 'ඔබේ පාසල් දායකත්‍වය අවසන්. ගිණුම දැන් trial tier හි. අලුත් කිරීමට වේදිකා පරිපාලක අමතන්න.',
   'auth.diagramLimitReached': 'Trial පාසල් ගුරුවරයෙකුට {max} දක්වා සුරැකි රූප සටහන්. අලුත් එකක් සුරැකීමට එකක් මකන්න.',

@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Chrome genişlənməsi',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Bu funksiya Standart və ya Peşəkar məktəb səviyyəsi tələb edir (Əsas səviyyə istisna).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Məktəb abunəliyiniz bitib. Hesabınız indi sınaq səviyyəsindədir. Yeniləmək üçün platforma admininizlə əlaqə saxlayın.',
   'auth.diagramLimitReached': 'Sınaq məktəblərində hər müəllim üçün ən çox {max} saxlanmış diaqram ola bilər. Yeni diaqram saxlamaq üçün birini silin.',

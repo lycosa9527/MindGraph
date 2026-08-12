@@ -107,6 +107,20 @@ def bind_mg_client_from_header(request: Optional[Request]) -> str:
     return bind_mg_client(request, raw)
 
 
+def bind_mg_client_from_connection(connection: Optional[HttpOrWebSocket]) -> str:
+    """
+    Bind client label for HTTP or WebSocket mgat_ traffic.
+
+    Prefers ``X-MG-Client``; WebSocket browsers may only send ``?client=``.
+    """
+    if connection is None:
+        return MG_CLIENT_UNSPECIFIED
+    raw = connection.headers.get(MG_CLIENT_HEADER) or ""
+    if not str(raw).strip():
+        raw = connection.query_params.get("client") or ""
+    return bind_mg_client(connection, raw)
+
+
 def bind_mg_client_for_web(request: Optional[Request]) -> str:
     """Bind browser JWT / cookie session traffic as ``web``."""
     return bind_mg_client(request, MG_CLIENT_WEB)

@@ -20,6 +20,12 @@ def test_sanitize_embed_next_allows_mindgraph() -> None:
     assert sanitize_embed_next_path("/mindgraph/foo") == "/mindgraph/foo"
 
 
+def test_sanitize_embed_next_rejects_voice_notes_for_word_handoff() -> None:
+    """Word Voice uses a dedicated dialog; embed handoff no longer allows /voice-notes."""
+    assert sanitize_embed_next_path("/voice-notes") == "/mindgraph"
+    assert sanitize_embed_next_path("/voice-notes/") == "/mindgraph"
+
+
 def test_sanitize_embed_next_rejects_open_redirect() -> None:
     """External URLs and non-allowlisted paths fall back to /mindgraph."""
     assert sanitize_embed_next_path("https://evil.example/x") == "/mindgraph"

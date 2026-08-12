@@ -9,6 +9,7 @@ var MG_CLIENT_ID = 'word-addin'
 var MG_DEFAULT_PREFS = {
   language: 'en',
   languageExplicit: false,
+  // Fallback for Vite localhost:3000 shell only; hosted /word-addin/ uses location.origin.
   baseUrl: 'https://test.mindspringedu.com',
   phone: '',
   apiToken: '',
@@ -18,15 +19,50 @@ var MG_DEFAULT_PREFS = {
 
 var MG_BASE_URL_PRESETS = [
   { id: 'test', url: 'https://test.mindspringedu.com', labelZh: '测试', labelEn: 'Test' },
-  { id: 'production', url: 'https://mg.mindspringedu.com', labelZh: '生产', labelEn: 'Production' },
-  { id: 'local', url: 'http://localhost:9527', labelZh: '本地', labelEn: 'Local' },
+  { id: 'mg', url: 'https://mg.mindspringedu.com', labelZh: 'MG', labelEn: 'MG' },
+  // Vite shell is :3000; MindGraph API + SPA for handoff is :9527.
+  { id: 'local', url: 'http://localhost:9527', labelZh: '本地 :9527', labelEn: 'Local :9527' },
 ]
+
+/**
+ * When the shell is served from MindGraph at ``/word-addin/...``, return that origin.
+ * Empty string for Vite/dev shells (path is ``/src/taskpane/...``).
+ */
+function mgShellHostOrigin() {
+  try {
+    if (typeof window === 'undefined' || !window.location) {
+      return ''
+    }
+    var path = String(window.location.pathname || '')
+    if (path.indexOf('/word-addin/') === -1) {
+      return ''
+    }
+    return String(window.location.origin || '').replace(/\/+$/, '')
+  } catch (err) {
+    return ''
+  }
+}
+
+function mgNormalizeBaseUrl(url) {
+  return String(url || '')
+    .trim()
+    .replace(/\/+$/, '')
+}
+
+/** True when Settings must use the same origin as the hosted shell (CSP connect-src). */
+function mgIsHostedSameOriginShell() {
+  return Boolean(mgShellHostOrigin())
+}
+
+function mgDefaultBaseUrl() {
+  return MG_DEFAULT_PREFS.baseUrl
+}
 
 function mgCloneDefaults() {
   return {
     language: MG_DEFAULT_PREFS.language,
     languageExplicit: MG_DEFAULT_PREFS.languageExplicit,
-    baseUrl: MG_DEFAULT_PREFS.baseUrl,
+    baseUrl: mgDefaultBaseUrl(),
     phone: MG_DEFAULT_PREFS.phone,
     apiToken: MG_DEFAULT_PREFS.apiToken,
     agentName: MG_DEFAULT_PREFS.agentName,
@@ -99,7 +135,7 @@ function mgMergePrefsRaw(raw, prefs) {
         prefs.languageExplicit = true
       }
       if (typeof parsed.baseUrl === 'string' && parsed.baseUrl.trim()) {
-        prefs.baseUrl = parsed.baseUrl.trim().replace(/\/+$/, '')
+        prefs.baseUrl = mgNormalizeBaseUrl(parsed.baseUrl)
       }
       if (typeof parsed.phone === 'string') {
         prefs.phone = parsed.phone.trim()
@@ -173,7 +209,7 @@ function mgSavePrefs(partial) {
       prefs.languageExplicit = partial.languageExplicit
     }
     if (typeof partial.baseUrl === 'string' && partial.baseUrl.trim()) {
-      prefs.baseUrl = partial.baseUrl.trim().replace(/\/+$/, '')
+      prefs.baseUrl = mgNormalizeBaseUrl(partial.baseUrl)
     }
     if (typeof partial.phone === 'string') {
       prefs.phone = partial.phone.trim()
@@ -221,5 +257,5 @@ function mgAuthStatus(prefs) {
 
 function mgBaseUrl(prefs) {
   var p = prefs || mgLoadPrefs()
-  return String(p.baseUrl || MG_DEFAULT_PREFS.baseUrl).replace(/\/+$/, '')
+  return mgNormalizeBaseUrl(p.baseUrl || mgDefaultBaseUrl())
 }

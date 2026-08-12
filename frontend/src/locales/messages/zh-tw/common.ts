@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': '圖書館',
   'meta.pageTitle.libraryBookmark': '書籤',
   'meta.pageTitle.libraryViewer': '閱讀',
+  'meta.pageTitle.voiceNotes': '語音筆記',
   'meta.pageTitle.login': '登錄',
   'meta.pageTitle.main': '邁特教研',
   'meta.pageTitle.mindgraph': 'MindGraph',

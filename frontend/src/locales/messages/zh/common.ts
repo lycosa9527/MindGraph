@@ -110,6 +110,7 @@ export default {
   'meta.pageTitle.login': '登录',
   'meta.pageTitle.main': '迈特教研',
   'meta.pageTitle.mindgraph': 'MindGraph',
+  'meta.pageTitle.voiceNotes': '语音笔记',
   'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.kitty': 'Kitty',

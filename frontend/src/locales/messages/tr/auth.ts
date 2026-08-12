@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Eklenti',
   'auth.apiTokenButton': 'API Jetonu',
   'auth.downloadChromeExtension': 'Chrome eklentisi',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Bu özellik Standart veya Profesyonel okul katmanı gerektirir (Temel katman hariç).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Okul aboneliğiniz sona erdi. Hesabınız artık deneme katmanında. Yenilemek için platform yöneticinizle iletişime geçin.',
   'auth.diagramLimitReached': 'Deneme okulları öğretmen başına en fazla {max} kayıtlı diyagrama izin verir. Yeni diyagram kaydetmek için birini silin.',

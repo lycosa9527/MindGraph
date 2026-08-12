@@ -112,6 +112,12 @@ def test_should_apply_no_cache_html_by_suffix_and_content_type() -> None:
     assert should_apply_no_cache("/unexpected", "text/html; charset=utf-8") is True
 
 
+def test_should_apply_no_cache_word_addin_shell_js() -> None:
+    """Word add-in shell scripts must revalidate after deploy; assets may cache."""
+    assert should_apply_no_cache("/word-addin/src/shared/spa-host.js") is True
+    assert should_apply_no_cache("/word-addin/assets/icons/mindgraph-32.png") is False
+
+
 def test_should_apply_api_no_cache_only_when_unset() -> None:
     """Test should apply api no cache only when unset."""
     response = Response()

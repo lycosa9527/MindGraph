@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'プラグイン',
   'auth.apiTokenButton': 'API トークン',
   'auth.downloadChromeExtension': 'Chrome 拡張機能',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'この機能には Standard または Professional 学校プランが必要です（Basic は対象外）。',
   'auth.schoolSubscriptionExpiredDowngraded': '学校のサブスクリプションが終了しました。アカウントはトライアルプランになりました。更新はプラットフォーム管理者にお問い合わせください。',
   'auth.diagramLimitReached': 'トライアル学校では教師あたり最大 {max} 件の図を保存できます。新しい図を保存するには 1 件削除してください。',

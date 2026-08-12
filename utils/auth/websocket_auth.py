@@ -18,7 +18,7 @@ from fastapi.websockets import WebSocketDisconnect
 from sqlalchemy import select
 
 from models.domain.auth import User
-from services.auth.http_auth_token import extract_bearer_token_from_websocket
+from services.auth.bearer_token import extract_bearer_token_from_websocket
 
 try:
     from services.redis.cache.redis_user_cache import user_cache

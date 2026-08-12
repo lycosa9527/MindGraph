@@ -14,6 +14,7 @@ import {
   Heart,
   Image as ImageIcon,
   LayoutTemplate,
+  PanelLeftOpen,
   Plus,
   Search,
   Star,
@@ -37,6 +38,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
 import { useAuthStore } from '@/stores'
 import { useShowcaseStore } from '@/stores/showcase'
+import { useUIStore } from '@/stores/ui'
 import {
   type ShowcasePost,
   getShowcasePost,
@@ -45,6 +47,7 @@ import {
 
 const { t } = useLanguage()
 const authStore = useAuthStore()
+const uiStore = useUIStore()
 const showcaseStore = useShowcaseStore()
 const { subjectOptions, gradeOptions } = useShowcaseMeta()
 
@@ -352,9 +355,21 @@ watch(searchQuery, () => {
       <div class="mx-auto w-[90%] px-4 py-3 pb-6 sm:px-5">
       <!-- Header -->
       <div class="mb-3 flex items-center justify-between gap-4">
-        <div class="min-w-0">
-          <h1 class="text-xl font-bold text-gray-900">{{ t('showcase.title') }}</h1>
-          <p class="mt-0.5 truncate text-xs text-gray-500">{{ t('showcase.subtitle') }}</p>
+        <div class="flex min-w-0 items-start gap-2">
+          <button
+            v-if="uiStore.sidebarCollapsed"
+            type="button"
+            class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-white text-gray-600 transition-colors hover:bg-gray-50"
+            :title="t('sidebar.expandSidebar')"
+            :aria-label="t('sidebar.expandSidebar')"
+            @click="uiStore.toggleSidebar()"
+          >
+            <PanelLeftOpen class="h-[18px] w-[18px]" />
+          </button>
+          <div class="min-w-0">
+            <h1 class="text-xl font-bold text-gray-900">{{ t('showcase.title') }}</h1>
+            <p class="mt-0.5 truncate text-xs text-gray-500">{{ t('showcase.subtitle') }}</p>
+          </div>
         </div>
         <div class="flex shrink-0 items-center gap-2">
           <button

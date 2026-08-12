@@ -125,8 +125,8 @@ from .tokens import (
 )
 from .user_tokens import validate_user_token
 
-# WebSocket auth exports
-from .websocket_auth import get_current_user_ws
+# get_current_user_ws lives in utils.auth.websocket_auth (import that module
+# directly). Eager re-export here created auth_ws ↔ package init cycles.
 
 # Legacy variable names for backward compatibility
 _JWT_SECRET_REDIS_KEY = JWT_SECRET_REDIS_KEY
@@ -227,8 +227,6 @@ __all__ = [
     "validate_api_key",
     "track_api_key_usage",
     "generate_api_key",
-    # WebSocket auth
-    "get_current_user_ws",
     # Legacy names
     "_JWT_SECRET_REDIS_KEY",
     "_JWT_SECRET_BACKUP_FILE",

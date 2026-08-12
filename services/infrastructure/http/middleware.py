@@ -29,7 +29,7 @@ from starlette.requests import ClientDisconnect
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from config.settings import config
-from services.auth.http_auth_token import has_authorization_mgat_bearer
+from services.auth.bearer_token import has_authorization_mgat_bearer
 from services.auth.security_logger import security_log
 from services.auth.vpn_geo_enforcement import maybe_enforce_vpn_cn_geo_async
 from services.infrastructure.http.feature_gate import feature_flag_gate
@@ -274,6 +274,34 @@ async def csrf_protection(request: Request, call_next):
     return response
 
 
+_OFFICE_JS_CDN = "https://appsforoffice.microsoft.com"
+_WORD_ADDIN_MANUAL_FRAME = "https://365.kdocs.cn"
+
+
+def _word_addin_content_security_policy() -> str:
+    """
+    CSP for ``/word-addin/*`` Office.js shell pages.
+
+    Task panes load Office.js from Microsoft's CDN and use inline boot scripts;
+    the main SPA CSP (nonce / no external scripts) would break the add-in.
+    Manual task pane embeds the platform quick guide (Kingsoft Docs).
+    """
+    return (
+        "default-src 'self'; "
+        f"script-src 'self' 'unsafe-inline' {_OFFICE_JS_CDN}; "
+        "worker-src 'self' blob:; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https: blob:; "
+        "font-src 'self' data:; "
+        f"connect-src 'self' {_OFFICE_JS_CDN}; "
+        "media-src 'self' blob:; "
+        f"frame-src 'self' blob: {_WORD_ADDIN_MANUAL_FRAME}; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self';"
+    )
+
+
 async def add_security_headers(request: Request, call_next):
     """
     Add security headers to all HTTP responses.
@@ -289,6 +317,7 @@ async def add_security_headers(request: Request, call_next):
       handler on request.state) so 'unsafe-inline' is dropped for the app shell.
       Legacy template responses without a nonce keep 'unsafe-inline' for their
       inline onclick handlers / config bootstrap.
+    - /word-addin/*: allow Microsoft Office.js CDN (see ``_word_addin_content_security_policy``).
     - style-src: keeps 'unsafe-inline' — Vue/Element Plus inject styles at runtime
       via JS, which a nonce cannot cover.
     - ws:/wss:: Required for Kitty Agent WebSocket connections
@@ -324,7 +353,9 @@ async def add_security_headers(request: Request, call_next):
     cos_connect = cos_browser_csp_sources() if cos_showcase_enabled() else ""
     cos_connect_clause = f" {cos_connect}" if cos_connect else ""
     media_src = f"media-src 'self' blob:{cos_connect_clause}; " if cos_connect else "media-src 'self' blob:; "
-    if config.debug:
+    if isinstance(path, str) and path.startswith("/word-addin/"):
+        response.headers["Content-Security-Policy"] = _word_addin_content_security_policy()
+    elif config.debug:
         # DEBUG mode: Allow Swagger UI resources from CDN (including source maps)
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "

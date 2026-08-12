@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'Biblioteek',
   'meta.pageTitle.libraryBookmark': 'Boekmerk',
   'meta.pageTitle.libraryViewer': 'Biblioteek-kyker',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'Teken in',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

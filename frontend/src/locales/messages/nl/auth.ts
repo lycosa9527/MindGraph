@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Plug-in',
   'auth.apiTokenButton': 'API-token',
   'auth.downloadChromeExtension': 'Chrome extension',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Voor deze functie is het Standard- of Professional-schoolniveau vereist (Basic-niveau uitgesloten).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Je schoolabonnement is beëindigd. Uw account bevindt zich nu op het proefniveau. Neem contact op met uw platformbeheerder om te verlengen.',
   'auth.diagramLimitReached': 'Proefscholen staan ​​maximaal {max} opgeslagen diagrammen per leraar toe. Verwijder er één om een ​​nieuw diagram op te slaan.',

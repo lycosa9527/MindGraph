@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Plagin',
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Chrome extension',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Bu funksiya Standart yoki Professional maktab darajasini talab qiladi (Boshlang’ich daraja mustasno).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Maktab obunangiz tugadi. Hisobingiz endi sinov darajasida. Yangilash uchun platforma adminingiz bilan bog’laning.',
   'auth.diagramLimitReached': 'Sinov maktablarida har bir o’qituvchi uchun eng ko’pi bilan {max} ta saqlangan diagramma mumkin. Yangi diagramma saqlash uchun birini o’chiring.',

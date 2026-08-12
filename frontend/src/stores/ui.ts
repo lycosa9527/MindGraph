@@ -18,6 +18,7 @@ import {
 } from '@/i18n/locales'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { computeIsMobileClient } from '@/utils/isMobileClient'
+import { isOfficeEmbedDesktop } from '@/utils/officeEmbed'
 
 export type Theme = 'light' | 'dark' | 'system'
 export type Language = LocaleCode
@@ -130,7 +131,8 @@ export const useUIStore = defineStore('ui', () => {
    */
   const eBlackboardOptimize = ref(false)
   const isMobile = ref(false)
-  const sidebarCollapsed = ref(false)
+  // Word task panes are narrow — start collapsed; user can expand.
+  const sidebarCollapsed = ref(isOfficeEmbedDesktop())
 
   // New: App mode state (MindMate chat vs MindGraph diagram)
   const currentMode = ref<AppMode>('mindmate')
@@ -583,7 +585,7 @@ export const useUIStore = defineStore('ui', () => {
     uiLanguageExplicit.value = false
     browserLocaleHintDismissed.value = false
     isMobile.value = false
-    sidebarCollapsed.value = false
+    sidebarCollapsed.value = isOfficeEmbedDesktop()
     wireframeMode.value = false
     exportWireframeOutline.value = false
     exportRasterCapture.value = false

@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'Biblioteka',
   'meta.pageTitle.libraryBookmark': 'Faqeshënim',
   'meta.pageTitle.libraryViewer': 'Shikuesi i bibliotekës',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'Hyr',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

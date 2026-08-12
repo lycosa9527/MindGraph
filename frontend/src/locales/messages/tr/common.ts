@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'Kitaplık',
   'meta.pageTitle.libraryBookmark': 'Yer imi',
   'meta.pageTitle.libraryViewer': 'Kitaplık görüntüleyici',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'Giriş',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

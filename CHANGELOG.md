@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.175.0] - 2026-08-12
+
+> **Word add-in: dedicated Voice dialog, embed probe, packaging; WS mgat_ auth hardening.**
+
+### Added
+
+- **Embed probe** — `POST /api/auth/embed/probe` validates phone + `mgat_` without minting a Redis handoff code (Settings Sign-in).
+- **Word Voice dialog** — Ribbon Voice opens a dedicated Office.js recorder (Start/Pause/Stop/Copy) over `WS /api/ws/voice-notes` with saved `mgat_`; 60m cap, silence auto-stop, started timeout.
+- **Word add-in packaging** — Deploy zip helpers (`utils/word_addin_packaging.py`), Windows/Mac install scripts, download API wiring; static `/word-addin/` hosting helpers.
+- **Bearer extract leaf** — `services/auth/bearer_token.py` breaks `http_auth_token` ↔ `utils.auth` import cycles.
+
+### Changed
+
+- **Sign-in UX** — Compact Settings dialog; server presets (Test / MG / Local); probe failures distinguish credentials vs network vs unsupported server.
+- **MindMate / Voice / Sign-in** — Office dialogs; MindGraph / Showcase / Manual remain task panes.
+- **WS mgat_ auth** — `authenticate_websocket_user` accepts `mgat_` + account (header or query); TokenAudit + `?client=` bind for Word Voice.
+- **Office embed chrome** — Desktop layout for embed; sidebar collapse defaults; Showcase expand control; Manual iframes Kingsoft guide.
+
+### Fixed
+
+- **False “invalid token” on undeployed probe** — Client no longer maps HTTP 404/405 to credential failure.
+- **CSP / shell** — `/word-addin/*` allows Office.js CDN + Manual frame-src; shell JS no-store.
+
+### Tests
+
+- Embed probe/handoff sanitize; WS mgat_ auth; Word add-in packaging; SPA cache-control / security hardening coverage.
+
 ## [5.174.0] - 2026-08-12
 
 > **Word add-in embed auth; semantic diagram spec validation; floating toolbar fit-aware placement.**

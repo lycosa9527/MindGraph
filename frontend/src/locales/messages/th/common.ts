@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'ห้องสมุด',
   'meta.pageTitle.libraryBookmark': 'บุ๊กมาร์ก',
   'meta.pageTitle.libraryViewer': 'ตัวดูห้องสมุด',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'เข้าสู่ระบบ',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

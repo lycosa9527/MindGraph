@@ -7,20 +7,24 @@
   <link rel="stylesheet" href="css/common.css" />
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 </head>
-<body>
-  <div class="mg-shell">
-    <div class="mg-header">
-      <h1 class="mg-title" data-i18n="manualTitle">Manual</h1>
+<body class="mg-panel-body">
+  <div class="mg-manual-shell">
+    <div class="mg-manual-bar">
+      <a
+        class="mg-manual-external"
+        href="https://365.kdocs.cn/l/caSETdpB0Akg"
+        target="_blank"
+        rel="noopener noreferrer"
+        data-i18n="manualOpenExternal"
+      >Open in browser</a>
     </div>
-    <div class="mg-card">
-      <p class="mg-hint" data-i18n="manualIntro"></p>
-      <ol class="mg-hint" style="padding-left: 1.2rem">
-        <li data-i18n="manualStep1"></li>
-        <li data-i18n="manualStep2"></li>
-        <li data-i18n="manualStep3"></li>
-        <li data-i18n="manualStep4"></li>
-      </ol>
-    </div>
+    <iframe
+      class="mg-manual-frame"
+      title="MindGraph manual"
+      src="https://365.kdocs.cn/l/caSETdpB0Akg"
+      referrerpolicy="no-referrer-when-downgrade"
+      allow="fullscreen"
+    ></iframe>
   </div>
   <script src="../shared/prefs.js"></script>
   <script src="../shared/i18n.js"></script>

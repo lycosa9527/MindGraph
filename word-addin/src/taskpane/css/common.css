@@ -36,6 +36,42 @@ body.mg-panel-body {
   overflow: hidden;
 }
 
+.mg-manual-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background: #fff;
+}
+
+.mg-manual-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--mg-border);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.mg-manual-external {
+  font-size: 12px;
+  color: var(--mg-accent);
+  text-decoration: none;
+}
+
+.mg-manual-external:hover {
+  text-decoration: underline;
+}
+
+.mg-manual-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  min-height: 0;
+}
+
 .mg-shell {
   display: flex;
   flex-direction: column;
@@ -371,4 +407,48 @@ body.mg-panel-body {
 
 .mg-toast.show {
   opacity: 1;
+}
+
+/* Voice Notes dialog */
+.mg-voice-shell {
+  min-height: calc(100vh - 32px);
+}
+
+.mg-voice-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.mg-voice-meter-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(26, 35, 50, 0.08);
+  overflow: hidden;
+}
+
+.mg-voice-meter-fill {
+  height: 100%;
+  width: 4%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--mg-accent), #2a9d8f);
+  transition: width 0.08s linear;
+}
+
+.mg-voice-transcript {
+  margin: 14px 0 0;
+  flex: 1;
+  min-height: 180px;
+  max-height: 42vh;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--mg-border);
+  background: #fff;
+  font: inherit;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: var(--mg-ink);
 }

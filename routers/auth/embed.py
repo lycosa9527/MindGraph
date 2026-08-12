@@ -49,18 +49,11 @@ _bearer = HTTPBearer(auto_error=False)
 EMBED_CLIENT_WORD = "word-addin"
 
 
-@router.post("/embed/handoff")
-async def create_embed_session_handoff(
+async def _authenticate_embed_mgat(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
-    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
-) -> dict[str, Any]:
-    """
-    Exchange a valid mgat_ token for a short-lived one-time handoff code.
-
-    The Word add-in (or similar) then navigates to ``/embed/complete`` so cookies
-    are issued on the MindGraph origin.
-    """
+    credentials: Optional[HTTPAuthorizationCredentials],
+) -> User:
+    """Validate Bearer mgat_ + X-MG-Account for embed routes (shared by probe/handoff)."""
     bind_mg_client_from_header(request)
     account = (request.headers.get("X-MG-Account") or "").strip()
     ip_id = get_rate_limit_identifier(None, request)
@@ -83,7 +76,35 @@ async def create_embed_session_handoff(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="API token required",
         )
-    user = await validate_user_token(token, account, request)
+    return await validate_user_token(token, account, request)
+
+
+@router.post("/embed/probe")
+async def probe_embed_auth(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
+) -> dict[str, Any]:
+    """
+    Validate phone + mgat_ for Settings Save without minting a session handoff code.
+    """
+    await _authenticate_embed_mgat(request, credentials)
+    return {"ok": True}
+
+
+@router.post("/embed/handoff")
+async def create_embed_session_handoff(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
+) -> dict[str, Any]:
+    """
+    Exchange a valid mgat_ token for a short-lived one-time handoff code.
+
+    The Word add-in (or similar) then navigates to ``/embed/complete`` so cookies
+    are issued on the MindGraph origin.
+    """
+    user = await _authenticate_embed_mgat(request, credentials)
     code = await create_embed_handoff(int(user.id))
     if not code:
         raise HTTPException(
@@ -158,5 +179,13 @@ async def complete_embed_session(
         status_code=status.HTTP_302_FOUND,
     )
     set_auth_cookies(redirect, access_token, refresh_token_value, request)
+    # Avoid leaking one-time handoff codes via Referer to the SPA or third parties.
+    redirect.headers["Referrer-Policy"] = "no-referrer"
     await record_vpn_login_geo(user.id, request)
+    logger.info(
+        "[TokenAudit] Embed session complete: user=%s, client=%s, ip=%s",
+        user.id,
+        EMBED_CLIENT_WORD,
+        client_ip,
+    )
     return redirect

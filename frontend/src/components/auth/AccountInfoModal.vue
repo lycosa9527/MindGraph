@@ -82,6 +82,7 @@ const nameSaving = ref(false)
 /** Same-origin API paths; cookies sent for GET (session). */
 const openclawSkillZipUrl = '/api/downloads/mindgraph-openclaw-skill'
 const chromeExtensionZipUrl = '/api/downloads/mindgraph-chrome-extension'
+const wordAddinZipUrl = '/api/downloads/mindgraph-word-addin'
 
 // Get user data
 const userPhone = computed(() => {
@@ -634,6 +635,14 @@ watch(
                     >
                       {{ t('auth.downloadChromeExtension') }}
                     </a>
+                    <a
+                      v-if="canUseChromeExtension"
+                      class="account-plugin-pill account-plugin-pill--word"
+                      :href="wordAddinZipUrl"
+                      download
+                    >
+                      {{ t('auth.downloadWordAddin') }}
+                    </a>
                     <button
                       v-if="canUseApiToken"
                       type="button"
@@ -784,6 +793,18 @@ watch(
   background: #dde6ec;
   border-color: #a8b8cc;
   color: #1e293b;
+}
+
+.account-plugin-pill--word {
+  color: #1e3a5f;
+  background: #e8f0f8;
+  border-color: #b8cce0;
+}
+
+.account-plugin-pill--word:hover {
+  background: #dce8f4;
+  border-color: #9ab4d0;
+  color: #0f2744;
 }
 
 .account-plugin-pill--token {

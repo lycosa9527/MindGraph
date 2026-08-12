@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': '플러그인',
   'auth.apiTokenButton': 'API 토큰',
   'auth.downloadChromeExtension': 'Chrome 확장 프로그램',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': '이 기능은 Standard 또는 Professional 학교 요금제가 필요합니다(Basic 제외).',
   'auth.schoolSubscriptionExpiredDowngraded': '학교 구독이 종료되었습니다. 계정이 체험 요금제로 변경되었습니다. 갱신하려면 플랫폼 관리자에게 문의하세요.',
   'auth.diagramLimitReached': '체험 학교는 교사당 저장 다이어그램을 최대 {max}개까지 허용합니다. 새로 저장하려면 하나를 삭제하세요.',

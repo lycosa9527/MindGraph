@@ -1,68 +1,112 @@
 /* global Office */
 /**
  * Ribbon executeFunction handlers.
- * MindMate opens a medium dedicated dialog so it can run beside the MindGraph task pane.
+ * MindMate / Voice / Settings open dedicated dialogs (not task panes).
  */
 
-var MIND_MATE_DIALOG_URL = 'https://localhost:3000/src/taskpane/mindmate.html'
+/** @type {Record<string, Office.Dialog | null>} */
+var mgDialogs = {
+  mindmate: null,
+  settings: null,
+  voice: null,
+}
 
-/** @type {Office.Dialog | null} */
-var mindMateDialog = null
-
-function openMindMateDialog(event) {
-  function done() {
-    if (event && typeof event.completed === 'function') {
-      event.completed()
-    }
+function mgDialogPageUrl(relativeHtml) {
+  try {
+    return new URL(relativeHtml, window.location.href).href
+  } catch (err) {
+    return 'https://localhost:3000/src/taskpane/' + relativeHtml.replace(/^\.\.\/taskpane\//, '')
   }
+}
 
+function mgCompleteRibbonEvent(event) {
+  if (event && typeof event.completed === 'function') {
+    event.completed()
+  }
+}
+
+/**
+ * @param {string} key
+ * @param {string} relativeHtml e.g. '../taskpane/settings.html'
+ * @param {{ height: number, width: number }} size percent of screen
+ * @param {*} event
+ */
+function mgOpenNamedDialog(key, relativeHtml, size, event) {
   try {
     if (typeof Office === 'undefined' || !Office.context || !Office.context.ui) {
-      done()
+      mgCompleteRibbonEvent(event)
       return
     }
 
-    // One dialog at a time — if already open, just finish (user can focus that window).
-    if (mindMateDialog) {
-      done()
+    if (mgDialogs[key]) {
+      mgCompleteRibbonEvent(event)
       return
     }
 
     Office.context.ui.displayDialogAsync(
-      MIND_MATE_DIALOG_URL,
+      mgDialogPageUrl(relativeHtml),
       {
-        // Percent of screen — medium dedicated chat window
-        height: 72,
-        width: 42,
+        height: size.height,
+        width: size.width,
         displayInIframe: false,
       },
       function (asyncResult) {
         if (asyncResult.status === Office.AsyncResultStatus.Failed) {
-          mindMateDialog = null
-          done()
+          mgDialogs[key] = null
+          mgCompleteRibbonEvent(event)
           return
         }
-        mindMateDialog = asyncResult.value
-        mindMateDialog.addEventHandler(
+        mgDialogs[key] = asyncResult.value
+        mgDialogs[key].addEventHandler(
           Office.EventType.DialogEventReceived,
           function (arg) {
-            // Closed or navigation error — allow opening again
             if (arg && (arg.error === 12006 || arg.error === 12002)) {
-              mindMateDialog = null
+              mgDialogs[key] = null
             }
           }
         )
-        done()
+        mgCompleteRibbonEvent(event)
       }
     )
   } catch (err) {
-    mindMateDialog = null
-    done()
+    mgDialogs[key] = null
+    mgCompleteRibbonEvent(event)
   }
+}
+
+function openMindMateDialog(event) {
+  mgOpenNamedDialog(
+    'mindmate',
+    '../taskpane/mindmate.html',
+    { height: 72, width: 42 },
+    event
+  )
+}
+
+function openSettingsDialog(event) {
+  // Compact login-only window
+  mgOpenNamedDialog(
+    'settings',
+    '../taskpane/settings.html',
+    { height: 48, width: 32 },
+    event
+  )
+}
+
+function openVoiceDialog(event) {
+  // Dedicated recorder window (mic → Fun-ASR); not the SPA task pane.
+  mgOpenNamedDialog(
+    'voice',
+    '../taskpane/voice.html',
+    { height: 64, width: 36 },
+    event
+  )
 }
 
 Office.onReady(function () {
   if (Office.actions && typeof Office.actions.associate === 'function') {
     Office.actions.associate('openMindMateDialog', openMindMateDialog)
+    Office.actions.associate('openSettingsDialog', openSettingsDialog)
+    Office.actions.associate('openVoiceDialog', openVoiceDialog)
   }
 })

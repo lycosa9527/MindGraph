@@ -1,4 +1,4 @@
-"""On-demand zip downloads for OpenClaw skill folder and Chrome extension.
+"""On-demand zip downloads for OpenClaw skill, Chrome extension, and Word add-in.
 
 Tier-gated for school lite organizations; requires authenticated session.
 
@@ -14,12 +14,13 @@ import logging
 import zipfile
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 
 from models.domain.auth import User
 from models.domain.messages import Language
 from routers.auth.dependencies import get_language_dependency
+from services.infrastructure.utils.pwa_manifest import public_site_origin_from_request
 from utils.auth import get_current_user
 from utils.auth.school_tier import (
     TIER_FEATURE_API_TOKEN,
@@ -28,6 +29,7 @@ from utils.auth.school_tier import (
 )
 from utils.db.session_open import actor_rls_session
 from utils.extension_store_packaging import build_store_zip_bytes
+from utils.word_addin_packaging import build_word_addin_deploy_zip_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +136,42 @@ async def download_extension_zip(
 ) -> Response:
     """Alias for mindgraph-chrome-extension (same store-ready zip)."""
     return await download_chrome_extension_zip(current_user=current_user, lang=lang)
+
+
+@router.get("/downloads/mindgraph-word-addin")
+async def download_word_addin_zip(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    lang: Language = Depends(get_language_dependency),
+) -> Response:
+    """
+    Production deploy zip: ``README.md`` + ``manifest.xml`` + ``windows/`` + ``mac/``.
+
+    IT uploads the manifest via Microsoft 365 Centralized Deployment. Users do not run Node.
+    """
+    async with actor_rls_session(current_user) as db:
+        await assert_user_has_school_tier_feature(
+            db,
+            current_user,
+            TIER_FEATURE_CHROME_EXTENSION,
+            lang,
+        )
+    # Prefer EXTERNAL_BASE_URL (same resolver as PWA / public media URLs).
+    origin = public_site_origin_from_request(request)
+    try:
+        data = build_word_addin_deploy_zip_bytes(origin)
+    except (FileNotFoundError, RuntimeError, ValueError) as exc:
+        logger.warning("[ClientBundles] Word add-in zip failed: %s", exc)
+        raise HTTPException(
+            status_code=404,
+            detail="Word add-in bundle not available on this server",
+        ) from None
+    logger.info(
+        "[ClientBundles] Word add-in zip downloaded user_id=%s origin=%s",
+        current_user.id,
+        origin,
+    )
+    return _bundle_response(data, "mindgraph-word-addin.zip")
 
 
 @router.get("/downloads/mindgraph-file-reader")

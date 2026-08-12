@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'Bibliothek',
   'meta.pageTitle.libraryBookmark': 'Lesezeichen',
   'meta.pageTitle.libraryViewer': 'Bibliotheksviewer',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'Anmelden',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

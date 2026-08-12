@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'ปลั๊กอิน',
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'ส่วนขยาย Chrome',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'ฟีเจอร์นี้ต้องใช้ระดับโรงเรียน Standard หรือ Professional (ไม่รวม Basic)',
   'auth.schoolSubscriptionExpiredDowngraded': 'การสมัครโรงเรียนของคุณสิ้นสุดแล้ว บัญชีอยู่ระดับทดลอง ติดต่อผู้ดูแลแพลตฟอร์มเพื่อต่ออายุ',
   'auth.diagramLimitReached': 'โรงเรียนทดลองบันทึกไดอะแกรมได้ครูละสูงสุด {max} รายการ ลบบางรายการเพื่อบันทึกใหม่',

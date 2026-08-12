@@ -180,6 +180,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'main', ...pageTitle('showcase') },
   },
   {
+    path: '/voice-notes',
+    name: 'VoiceNotes',
+    component: () => import('@/pages/VoiceNotesPage.vue'),
+    meta: { requiresAuth: true, layout: 'main', ...pageTitle('voiceNotes') },
+  },
+  {
     path: '/zhihui',
     name: 'ZhiHui',
     component: () => import('@/pages/ZhiHuiPage.vue'),

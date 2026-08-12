@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Erweiterung',
   'auth.apiTokenButton': 'API-Token',
   'auth.downloadChromeExtension': 'Chrome-Erweiterung',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Diese Funktion erfordert die Schulstufe Standard oder Professional (Basic ausgeschlossen).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Das Schulabonnement ist abgelaufen. Ihr Konto befindet sich nun in der Testversion. Wenden Sie sich an Ihren Plattformadministrator zur Verlängerung.',
   'auth.diagramLimitReached': 'Testschulen erlauben bis zu {max} gespeicherte Diagramme pro Lehrkraft. Löschen Sie eines, um ein neues zu speichern.',
