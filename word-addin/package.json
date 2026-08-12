@@ -1,0 +1,24 @@
+{
+  "name": "mindgraph-word-addin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MindGraph for Word — Office.js task-pane add-in",
+  "scripts": {
+    "dev": "vite --port 3000",
+    "start": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/sideload.ps1 start",
+    "stop": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/sideload.ps1 stop",
+    "build": "vite build",
+    "validate": "node ./scripts/validate-manifest.mjs",
+    "signin": "office-addin-dev-certs install"
+  },
+  "config": {
+    "app_to_debug": "word",
+    "app_type_to_debug": "desktop",
+    "dev_server_port": 3000
+  },
+  "devDependencies": {
+    "@types/office-js": "^1.0.396",
+    "office-addin-dev-certs": "^2.0.10",
+    "vite": "^6.4.3"
+  }
+}

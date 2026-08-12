@@ -35,6 +35,7 @@ KNOWN_MG_CLIENTS = frozenset(
         "openclaw",
         "file-reader",
         "mcp",
+        "word-addin",
         MG_CLIENT_UNSPECIFIED,
     }
 )
@@ -46,6 +47,7 @@ MG_CLIENT_DISPLAY_LABELS = {
     "openclaw": "OpenClaw",
     "file-reader": "File reader",
     "mcp": "MCP",
+    "word-addin": "Word add-in",
     MG_CLIENT_UNSPECIFIED: "Unspecified",
 }
 

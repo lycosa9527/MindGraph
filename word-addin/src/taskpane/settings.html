@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings</title>
+  <link rel="stylesheet" href="css/common.css" />
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+  <div class="mg-shell">
+    <div class="mg-header">
+      <h1 class="mg-title" data-i18n="btnSettings">Settings</h1>
+    </div>
+    <div class="mg-card">
+      <div class="mg-field">
+        <label for="language" data-i18n="settingsLanguage">Language</label>
+        <select id="language">
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+        </select>
+        <p class="mg-hint" data-i18n="settingsLanguageHint" style="margin-top: 6px"></p>
+      </div>
+      <div class="mg-field">
+        <label for="baseUrlPreset" data-i18n="settingsBaseUrl">Server URL</label>
+        <select id="baseUrlPreset"></select>
+        <input id="baseUrl" type="url" style="margin-top: 8px" />
+      </div>
+      <div class="mg-field">
+        <label for="phone" data-i18n="settingsPhone">Phone</label>
+        <input id="phone" type="text" autocomplete="username" />
+      </div>
+      <div class="mg-field">
+        <label for="apiToken" data-i18n="settingsToken">Token</label>
+        <input id="apiToken" type="password" autocomplete="off" />
+      </div>
+      <div class="mg-btn-row">
+        <button type="button" class="mg-btn" id="btn-save" data-i18n="settingsSave">Save</button>
+        <button type="button" class="mg-btn mg-btn-secondary" id="btn-clear" data-i18n="settingsClear">Clear</button>
+      </div>
+      <p id="auth-status" class="mg-status" style="margin-top: 12px"></p>
+    </div>
+  </div>
+  <script src="../shared/prefs.js"></script>
+  <script src="../shared/i18n.js"></script>
+  <script src="../shared/page-boot.js"></script>
+  <script>
+    mgBootPage(function (prefs) {
+      var language = document.getElementById('language')
+      var preset = document.getElementById('baseUrlPreset')
+      var baseUrl = document.getElementById('baseUrl')
+      var phone = document.getElementById('phone')
+      var apiToken = document.getElementById('apiToken')
+      var statusEl = document.getElementById('auth-status')
+
+      function fillPresets(lang) {
+        preset.innerHTML = ''
+        MG_BASE_URL_PRESETS.forEach(function (entry) {
+          var opt = document.createElement('option')
+          opt.value = entry.url
+          opt.textContent = (lang === 'en' ? entry.labelEn : entry.labelZh) + ' — ' + entry.url
+          preset.appendChild(opt)
+        })
+        var custom = document.createElement('option')
+        custom.value = '__custom__'
+        custom.textContent = lang === 'en' ? 'Custom…' : '自定义…'
+        preset.appendChild(custom)
+      }
+
+      function matchPreset(url) {
+        var i
+        for (i = 0; i < MG_BASE_URL_PRESETS.length; i += 1) {
+          if (MG_BASE_URL_PRESETS[i].url === url) {
+            return MG_BASE_URL_PRESETS[i].url
+          }
+        }
+        return '__custom__'
+      }
+
+      function paint(p) {
+        language.value = p.language
+        fillPresets(p.language)
+        baseUrl.value = p.baseUrl
+        preset.value = matchPreset(p.baseUrl)
+        phone.value = p.phone
+        apiToken.value = p.apiToken
+        statusEl.textContent =
+          mgAuthStatus(p) === 'saved' ? mgT('settingsStatusSaved') : mgT('settingsStatusEmpty')
+        statusEl.className = 'mg-status' + (mgAuthStatus(p) === 'saved' ? ' ok' : '')
+      }
+
+      paint(prefs)
+
+      language.addEventListener('change', function () {
+        mgSavePrefs({ language: language.value, languageExplicit: true })
+        mgApplyI18n(document)
+        paint(mgLoadPrefs())
+      })
+
+      preset.addEventListener('change', function () {
+        if (preset.value !== '__custom__') {
+          baseUrl.value = preset.value
+        }
+      })
+
+      baseUrl.addEventListener('input', function () {
+        preset.value = matchPreset(baseUrl.value.trim().replace(/\/+$/, ''))
+      })
+
+      document.getElementById('btn-save').addEventListener('click', function () {
+        var next = mgSavePrefs({
+          language: language.value,
+          languageExplicit: true,
+          baseUrl: baseUrl.value,
+          phone: phone.value,
+          apiToken: apiToken.value,
+        })
+        paint(next)
+        mgShowToast(mgT('settingsSavedToast'))
+      })
+
+      document.getElementById('btn-clear').addEventListener('click', function () {
+        paint(mgClearAuthPrefs())
+        mgShowToast(mgT('settingsClearedToast'))
+      })
+    })
+  </script>
+</body>
+</html>

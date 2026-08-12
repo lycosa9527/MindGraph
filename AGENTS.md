@@ -20,6 +20,8 @@ Repository: https://github.com/lycosa9527/MindGraph
 
 **`.mg` diagram files:** native interchange (AES-GCM obfuscation of JSON spec). Format + decode recipe: [`docs/MG_FILE_FORMAT.md`](docs/MG_FILE_FORMAT.md); codec: [`frontend/src/utils/mgInterchange.ts`](frontend/src/utils/mgInterchange.ts); CLI: `python scripts/decode_mg_file.py path.mg`.
 
+**Word add-in:** Office.js host in [`word-addin/`](word-addin/) (`X-MG-Client: word-addin`); login-free embed via [`docs/architecture/word_addin_embed_auth.md`](docs/architecture/word_addin_embed_auth.md).
+
 ## Quality gates
 
 ### Before commit or push (required)

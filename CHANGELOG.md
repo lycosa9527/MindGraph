@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.174.0] - 2026-08-12
+
+> **Word add-in embed auth; semantic diagram spec validation; floating toolbar fit-aware placement.**
+
+### Added
+
+- **Word add-in** — Office.js host in [`word-addin/`](word-addin/) (MindGraph / MindMate / Voice / Showcase / Settings task panes); `X-MG-Client: word-addin`.
+- **Embed session handoff** — `POST /api/auth/embed/handoff` + `GET /api/auth/embed/complete` exchanges a short-lived Redis code for SPA cookies on the MindGraph origin (no `mgat_` in the query string). Docs: [`docs/architecture/word_addin_embed_auth.md`](docs/architecture/word_addin_embed_auth.md).
+- **Semantic spec validation** — Create / patch / PNG export reject invalid agent-authored specs with structured `400 invalid_diagram_spec` (canvas `{nodes, connections}` persist specs pass through).
+- **OpenClaw skill 1.4.0** — Slimmer `SKILL.md`: agent-authored semantic `spec` vs `generate_graph`, intent→type table, cookbook; README covers install/env.
+
+### Changed
+
+- **Office embed layout** — `?embed=word-addin` / Office host always treated as desktop (never `/m/*`).
+- **CORS** — Allow `localhost` / `127.0.0.1` (any port) for the Word add-in HTTPS shell calling API hosts; private-LAN regex remains debug-only.
+- **Mind map fit-after-load** — Always fit-to-full-canvas (drops center-at-default-zoom path).
+
+### Fixed
+
+- **Floating toolbar clipping** — Anchor stays inside the canvas container; flips below when fit-to-screen leaves no room above; measures bar size via `ResizeObserver`.
+
+### Tests
+
+- Embed handoff sanitize/consume; semantic spec validation; floating toolbar placement; mobile detect Office embed.
+
 ## [5.173.2] - 2026-08-09
 
 > **Node explain: hide floating toolbar and directional + handles.**

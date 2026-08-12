@@ -3,6 +3,7 @@
  * Matches router redirects: viewport below mobile breakpoint OR touch-class UA.
  */
 import { BREAKPOINTS } from '@/config/uiConfig'
+import { isOfficeEmbedDesktop } from '@/utils/officeEmbed'
 
 const TOUCH_DEVICE_UA =
   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
@@ -27,6 +28,9 @@ export function computeIsMobileClient(
   width?: number,
   userAgent?: string
 ): boolean {
+  if (isOfficeEmbedDesktop()) {
+    return false
+  }
   const resolvedWidth =
     width ??
     (typeof window !== 'undefined' ? window.innerWidth : BREAKPOINTS.MOBILE)

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Voice</title>
+  <link rel="stylesheet" href="css/common.css" />
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+  <div class="mg-shell">
+    <div class="mg-header">
+      <h1 class="mg-title" data-i18n="btnVoice">Voice</h1>
+      <span class="mg-badge" data-i18n="protoBadge">Prototype</span>
+    </div>
+    <p class="mg-hint" data-i18n="voiceHint"></p>
+    <div class="mg-card">
+      <div id="voice-status" class="mg-status" data-i18n="voiceIdle">Idle</div>
+      <div id="voice-meter" class="mg-meter" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="mg-btn-row">
+        <button type="button" class="mg-btn" id="voice-start" data-i18n="voiceStart">Start</button>
+        <button type="button" class="mg-btn mg-btn-secondary" id="voice-pause" data-i18n="voicePause" disabled>Pause</button>
+        <button type="button" class="mg-btn mg-btn-secondary" id="voice-stop" data-i18n="voiceStop" disabled>Stop</button>
+      </div>
+    </div>
+    <div class="mg-card">
+      <div id="voice-transcript" class="mg-transcript" data-i18n="voiceTranscript"></div>
+    </div>
+  </div>
+  <script src="../shared/prefs.js"></script>
+  <script src="../shared/i18n.js"></script>
+  <script src="../shared/page-boot.js"></script>
+  <script>
+    mgBootPage(function () {
+      var state = 'idle'
+      var lines = []
+      var tickTimer = null
+      var statusEl = document.getElementById('voice-status')
+      var meter = document.getElementById('voice-meter')
+      var transcript = document.getElementById('voice-transcript')
+      var btnStart = document.getElementById('voice-start')
+      var btnPause = document.getElementById('voice-pause')
+      var btnStop = document.getElementById('voice-stop')
+
+      function render() {
+        if (state === 'recording') {
+          statusEl.textContent = mgT('voiceRecording')
+          meter.classList.add('live')
+          btnStart.disabled = true
+          btnPause.disabled = false
+          btnPause.textContent = mgT('voicePause')
+          btnStop.disabled = false
+        } else if (state === 'paused') {
+          statusEl.textContent = mgT('voicePaused')
+          meter.classList.remove('live')
+          btnStart.disabled = true
+          btnPause.disabled = false
+          btnPause.textContent = mgT('voiceResume')
+          btnStop.disabled = false
+        } else {
+          statusEl.textContent = mgT('voiceIdle')
+          meter.classList.remove('live')
+          btnStart.disabled = false
+          btnPause.disabled = true
+          btnPause.textContent = mgT('voicePause')
+          btnStop.disabled = true
+        }
+        transcript.textContent = lines.length ? lines.join('\n') : mgT('voiceTranscript')
+      }
+
+      function clearTick() {
+        if (tickTimer) {
+          window.clearInterval(tickTimer)
+          tickTimer = null
+        }
+      }
+
+      btnStart.addEventListener('click', function () {
+        state = 'recording'
+        lines = []
+        clearTick()
+        tickTimer = window.setInterval(function () {
+          lines.push('… ' + new Date().toLocaleTimeString())
+          render()
+        }, 900)
+        render()
+      })
+      btnPause.addEventListener('click', function () {
+        if (state === 'recording') {
+          state = 'paused'
+          clearTick()
+        } else if (state === 'paused') {
+          state = 'recording'
+          tickTimer = window.setInterval(function () {
+            lines.push('… ' + new Date().toLocaleTimeString())
+            render()
+          }, 900)
+        }
+        render()
+      })
+      btnStop.addEventListener('click', function () {
+        state = 'idle'
+        clearTick()
+        render()
+      })
+      render()
+    })
+  </script>
+</body>
+</html>

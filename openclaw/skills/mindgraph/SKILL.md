@@ -1,225 +1,246 @@
 ---
 name: mindgraph
-description: MindGraph diagrams from a topic plus diagram type (8 Thinking Maps, mind map, or concept map), or precise node text edits via PATCH.
+description: Author MindGraph semantic diagram specs (or generate from a topic), save, and render PNG. Prefer agent-authored spec when you already have content; use generate_graph only for topic-only requests.
 metadata: {"openclaw": {"emoji": "🧠", "requires": {"env": ["MINDGRAPH_BASE_URL", "MINDGRAPH_ACCOUNT", "MINDGRAPH_TOKEN"]}}}
 ---
 
 # MindGraph
 
-MindGraph is an AI-assisted diagram platform. Use this skill with the configured base URL, account number (phone), and API token.
+Use env `MINDGRAPH_BASE_URL`, `MINDGRAPH_ACCOUNT` (phone), `MINDGRAPH_TOKEN` (`mgat_…`). Never echo token/account. Human setup: see `README.md`.
 
-## What the user usually provides
+## Which flow
 
-**Typical request — two inputs:**
+Two ways (both end in **save → PNG**):
 
-1. **Topic / subject** — the central idea or short instruction (maps to API field **`prompt`**).
-2. **Diagram type** — which chart they want (maps to **`diagram_type`**).
+| Way | When | Pipeline |
+|-----|------|----------|
+| **1. Agent diagram spec** | You already organized the content | Intent → type → author semantic `spec` → `POST /api/diagrams` → `GET …/png`. **No** `generate_graph`. |
+| **2. Native prompt** | Topic / short instruction only | `POST /api/generate_graph` → if `success` + `spec` → create with that `diagram_type` + `spec` → PNG |
 
-For `POST /api/generate_graph`, **`prompt`** is always required except special dimension-only modes. Add **`diagram_type`** when the user names one of the chart types above; if they only give a topic and not a type, you may omit **`diagram_type`** so MindGraph can **auto-detect** a suitable type from the text.
+Label fixes on an existing diagram: `GET /api/diagrams/{id}` → `PATCH …/nodes` → PNG.
 
-**Advanced request — fix specific node text:**
+**Do not** invent canvas `{nodes, connections}` or mind-map `_layout`. Frontend lays out.
 
-If the user wants **exact labels** on certain nodes (not a full regeneration), use **`GET /api/diagrams/{id}`** to read **`spec`** and node IDs, then **`PATCH /api/diagrams/{id}/nodes`** with structured **`updates`** (`node_id`, `new_text`). Re-fetch the PNG after edits (see §3).
+## Intent → `diagram_type`
 
-### Supported `diagram_type` values (MindGraph)
+If the user does not name a type, pick from intent. Ask once if two types are equally plausible.
 
-**Eight Thinking Maps** (use these strings in JSON):
+| `diagram_type` | 中文名 | 思维意图 | User cues |
+|----------------|--------|----------|-----------|
+| `circle_map` | 圆圈图 | 联想 / 脑暴 | 联想、头脑风暴、围绕…想到什么 |
+| `bubble_map` | 气泡图 | 描述特性 | 描述、特征、属性、特点 |
+| `double_bubble_map` | 双气泡图 | 比较与对比 | 比较、对比、相同点、不同点、A和B |
+| `tree_map` | 树形图 | 分类与归纳 | 分类、归纳、类别、分组 |
+| `brace_map` | 括号图 | 整体与部分 | 组成、部分、结构、拆解 |
+| `flow_map` | 流程图 | 顺序与步骤 | 步骤、流程、顺序、先…再… |
+| `multi_flow_map` | 复流程图 | 因果分析 | 原因、结果、导致、因为、所以 |
+| `bridge_map` | 桥形图 | 类比推理 | 类比、正如、好像、A之于B |
+| `mind_map` | 思维导图 | 概念梳理 | 导图、分支；alias `mindmap` → `mind_map` |
+| `concept_map` | 概念图 | 概念关系 | 概念之间的关系 / labeled links |
 
-| `diagram_type` | Typical use |
-|----------------|-------------|
-| `circle_map` | Brainstorm & associate around a center |
-| `bubble_map` | Describe attributes of a topic |
-| `double_bubble_map` | Compare & contrast two topics |
-| `tree_map` | Classify & group |
-| `brace_map` | Whole & parts |
-| `flow_map` | Sequence & steps |
-| `multi_flow_map` | Cause & effect |
-| `bridge_map` | Analogies |
+Topic only, no cue: omit `diagram_type` on `generate_graph` (auto-detect) or pick closest and state it briefly.
 
-**Also supported:**
+## Auth (every request)
 
-| `diagram_type` | Notes |
-|----------------|--------|
-| `mind_map` | Hierarchical mind map. Alias **`mindmap`** is normalized to **`mind_map`**. |
-| `concept_map` | Concept maps (concepts + labeled links). Extra fields like **`concept_map_topic`**, **`concept_a`**, **`concept_b`** exist for focused modes — see OpenAPI / `GenerateRequest` when the user asks for relationship-only or similar. |
+- `Authorization: Bearer {MINDGRAPH_TOKEN}`
+- `X-MG-Account: {MINDGRAPH_ACCOUNT}` (**required** with `mgat_`)
+- `X-MG-Client: openclaw` (recommended)
+- `X-Request-Id` (recommended on long PNG calls)
 
-Other diagram features are optional; use them only when the user’s wording clearly requires that mode:
+Use **current** env values every time. After user changes credentials, host may need restart/reload before new env applies.
 
-- **`fixed_dimension`** — tree / brace / bridge maps (preserve a classification, decomposition, or analogy pattern)
-- **`dimension_only_mode`** — tree / brace maps only (dimension known, topic generated)
+## A. Agent-authored spec → render
 
-## Authentication (every request)
+### A1. Build `spec`
 
-Set headers on all HTTP calls:
+Match cookbook below. Set `title` from the topic; set `language` to the user’s language (`zh` / `en`).
 
-- `Authorization: Bearer {MINDGRAPH_TOKEN}` — token starts with `mgat_`
-- `X-MG-Account: {MINDGRAPH_ACCOUNT}` — same phone number as the MindGraph account (no spaces); **required** with `mgat_` (auth fails without a matching account)
-- `X-MG-Client: openclaw` — **recommended** on every request for attribution (not required for auth). Missing → server treats client as `unspecified`. Matches Chrome extension `chrome-extension`; `[TokenAudit]` / `client_source` use this label
-- `X-Request-Id` — optional; **recommended on long calls** (especially web-content PNG). Use a fresh UUID per request. On the web-content PNG path it appears in `[TokenAudit]` and LLM metadata (`http_request_id`); general `mgat_` TokenAudit logs client/path only
-
-Never print or log the token or account in assistant-visible output.
-
-**Use current env on every request.** Substitute `MINDGRAPH_BASE_URL`, `MINDGRAPH_ACCOUNT`, and `MINDGRAPH_TOKEN` from the skill environment each time you build a URL or headers. Do not reuse token or account values from earlier messages if the user said they updated credentials—use the latest configured values.
-
-## Updating auth (works immediately on the server)
-
-- **MindGraph API** checks the Bearer token and `X-MG-Account` on **every** request. There is no sync delay: after the user generates or regenerates a token in the app, that token is valid on the **next** HTTP call with matching headers. Regenerating revokes the previous token immediately.
-- **OpenClaw / WorkBuddy host** may inject `env` only when the app starts or when the skill reloads. If the user changed `MINDGRAPH_*` in config but requests still behave like the old credentials, they should **save** the config and **restart** the client (or use the host’s reload/restart skill action if it has one). After the new env is loaded, requests use the new values immediately—no extra step on MindGraph’s side.
-
-## Setup
-
-1. Log into MindGraph in the browser.
-2. Open **账户信息** → **API Token** → **生成 Token**.
-3. Copy the token once; set `MINDGRAPH_TOKEN` and `MINDGRAPH_ACCOUNT` (phone) and `MINDGRAPH_BASE_URL` (default test deployment: `https://test.mindspringedu.com`; override for your own host) in OpenClaw skill env.
-4. Tokens expire after 90 days; regenerate from the same UI.
-
-## 1. Generate diagram spec
-
-`POST {MINDGRAPH_BASE_URL}/api/generate_graph`
-
-JSON body (minimal — topic + type):
-
-```json
-{
-  "prompt": "Photosynthesis",
-  "diagram_type": "mind_map",
-  "language": "en",
-  "llm": "qwen"
-}
-```
-
-- **`prompt`** — user’s **topic** or instruction (required except special dimension-only modes; see `GenerateRequest` in the app).
-- **`diagram_type`** — one of the **Thinking Maps**, **`mind_map`**, or **`concept_map`** (see tables above). Optional for auto-detection.
-- **`language`** / **`llm`** — match user preference and host defaults when relevant.
-
-Response JSON includes **`success`**, **`spec`** (diagram JSON), **`diagram_type`**, and optional **`error`**. Prefer checking **`success`** before saving.
-
-## 2. Save diagram
+### A2. Save
 
 `POST {MINDGRAPH_BASE_URL}/api/diagrams`
 
 ```json
 {
-  "title": "My diagram",
+  "title": "Photosynthesis",
   "diagram_type": "mind_map",
-  "spec": { }
+  "spec": { },
+  "language": "zh"
 }
 ```
 
-Use the `spec` from step 1. Response includes `id` (diagram id string).
+Response includes `id`. Server validates `spec`; on failure → **400** (see Spec errors).
 
-## 3. Push diagram image to the user
-
-After create or any edit:
+### A3. PNG for the user
 
 `GET {MINDGRAPH_BASE_URL}/api/diagrams/{id}/png`
 
-Use the same auth headers as every other call (**Authorization** + **X-MG-Account**; `mgat_` requires both). Omitting them returns **401** (`JWT token required for this endpoint`).
+→ `{ "url", "filename" }`. Pass **`url`** to the image tool (signed query; no Bearer on fetch). Long client timeout (Playwright; often >60s).
 
-Response JSON:
+### Spec errors
 
-- **`url`** — Signed, time-limited link to a PNG under **`/api/temp_images/`**. The **path** ends with **`.png`** (e.g. `.../temp_images/diagram_<uuid>.png?sig=...&exp=...`); the **`?sig=` / `&exp=`** part is required for access, not optional decoration.
-- **`filename`** — Suggested filename (always **`diagram_<hex>.png`**) for downloads or the image tool.
-
-Pass **`url`** to the **image** tool so the user sees the current canvas. Fetching **`url`** does **not** send Bearer tokens (signature is in the query string). The **`GET /api/temp_images/...`** response includes `Content-Disposition` with a **`.png`** filename for browser downloads.
-
-## 4. Read diagram (before edits)
-
-`GET {MINDGRAPH_BASE_URL}/api/diagrams/{id}`
-
-Use the returned `spec` and node IDs before patching.
-
-## 5. Patch nodes (optional)
-
-`PATCH {MINDGRAPH_BASE_URL}/api/diagrams/{id}/nodes`
-
-Use this when the user has **specific edits** (wording on named nodes) rather than regenerating from a topic alone.
-
-Either full replace:
+- **422** — broken JSON (brackets/commas). Fix syntax; retry.
+- **400** `detail.error === "invalid_diagram_spec"` — fix every string in `detail.issues`; retry save. Do **not** call `generate_graph` to dodge a bad spec.
 
 ```json
-{ "spec": { } }
+{
+  "detail": {
+    "error": "invalid_diagram_spec",
+    "diagram_type": "bubble_map",
+    "issues": ["Missing required field 'attributes' for bubble_map"]
+  }
+}
 ```
 
-Or structured updates (preferred for targeted label changes):
+## Semantic spec cookbook
+
+Required shapes only. Aliases accepted: `contexts`→`context`; `left_topic`/`right_topic`; `categories`→`children`; `topic`→`whole`/`title`/`event` where noted. Nodes need **`text` or `label`** (brace parts use **`name`**).
+
+### `circle_map`
+
+```json
+{ "topic": "Photosynthesis", "context": ["sun", "water", "CO2", "chlorophyll"] }
+```
+
+### `bubble_map`
+
+```json
+{ "topic": "Lion", "attributes": ["fierce", "mane", "predator"] }
+```
+
+### `double_bubble_map`
+
+```json
+{
+  "left": "Cat",
+  "right": "Dog",
+  "similarities": ["pets"],
+  "left_differences": ["meows"],
+  "right_differences": ["barks"]
+}
+```
+
+### `tree_map`
+
+```json
+{
+  "topic": "Animals",
+  "children": [
+    { "text": "Mammals", "children": [{ "text": "Dog", "children": [] }] }
+  ]
+}
+```
+
+### `brace_map`
+
+```json
+{
+  "whole": "Plant",
+  "parts": [{ "name": "Root", "subparts": [{ "name": "Hair" }] }]
+}
+```
+
+### `flow_map`
+
+```json
+{
+  "title": "Brew coffee",
+  "steps": ["Grind", "Brew"],
+  "substeps": [{ "step": "Grind", "substeps": ["Measure beans"] }]
+}
+```
+
+(`substeps` optional.)
+
+### `multi_flow_map`
+
+```json
+{ "event": "Rain", "causes": ["Clouds"], "effects": ["Wet ground"] }
+```
+
+### `bridge_map`
+
+```json
+{
+  "relating_factor": "as",
+  "analogies": [{ "left": "bird", "right": "plane" }]
+}
+```
+
+### `mind_map`
+
+```json
+{
+  "topic": "Central idea",
+  "children": [
+    {
+      "id": "branch_0",
+      "label": "Branch",
+      "text": "Branch",
+      "children": [
+        { "id": "sub_0_0", "label": "Leaf", "text": "Leaf", "children": [] }
+      ]
+    }
+  ]
+}
+```
+
+### `concept_map`
+
+```json
+{
+  "topic": "What is water?",
+  "focus_question": "What is water?",
+  "concepts": ["H2O"],
+  "relationships": [{ "from": "What is water?", "to": "H2O", "label": "is" }]
+}
+```
+
+(`concepts` / `relationships` may be `[]`.)
+
+## B. Native prompt (fallback)
+
+`POST {MINDGRAPH_BASE_URL}/api/generate_graph`
+
+```json
+{
+  "prompt": "Photosynthesis",
+  "diagram_type": "mind_map",
+  "language": "zh",
+  "llm": "qwen"
+}
+```
+
+- `diagram_type` optional (auto-detect).
+- Response: `success`, `spec`, `diagram_type`, optional `error`.
+
+**Only continue when `success` is true and `spec` is present.** HTTP **200** + `"success": false` means stop — surface `error` (timeout/LLM). Do not save.
+
+Then **A2 + A3** with the response **`diagram_type`** and **`spec`** unchanged (unless the user asked for edits).
+
+## C. Patch existing
+
+`GET {MINDGRAPH_BASE_URL}/api/diagrams/{id}` then:
 
 ```json
 { "action": "update", "updates": [{ "node_id": "branch_0", "new_text": "New label" }] }
 ```
 
-Actions: `update`, `add`, `delete` (see API error messages for required fields). **`add`** appends a new child under the diagram root (server assigns the id); there is no parent-targeting field. **Always** `GET` the diagram first (§4) when **`node_id`** values are unknown. Then call step 3 again for a fresh image.
+Or full replace `{ "spec": { } }` (same validator as create). Actions: `update` | `add` | `delete`. Then **A3**.
 
-## 6. Inline recommendations
+## Optional shortcuts
 
-These routes live **without** the `/api` prefix (root of `MINDGRAPH_BASE_URL`):
+| Path | When |
+|------|------|
+| `POST /api/export_png` | Spec → PNG bytes (no library save); body `diagram_data` + `diagram_type` |
+| `GET /api/diagrams` | List before editing |
+| Web-content / inline recommendations / DingTalk one-shots | Prefer browser UI or product docs; not the default chat path |
 
-- `POST {MINDGRAPH_BASE_URL}/thinking_mode/inline_recommendations/start`
-- `POST {MINDGRAPH_BASE_URL}/thinking_mode/inline_recommendations/next_batch`
-- `POST {MINDGRAPH_BASE_URL}/thinking_mode/inline_recommendations/cleanup`
-
-**Response type:** `start` and `next_batch` return **`text/event-stream` (SSE)**, not a single JSON body. The stream emits `data: {...}` lines. Parse JSON after each `data:` prefix; handle events such as `recommendation_generated` (includes recommendation text) and `error`.
-
-Request bodies must match the server schema (e.g. `session_id`, `diagram_type`, `stage`, `node_id`, `nodes`, `language`, `count` — see the app’s OpenAPI or `InlineRecommendationsStartRequest` / `InlineRecommendationsNextRequest`).
-
-Workflow: `start` (SSE) → optional `next_batch` (SSE) for more items → `cleanup` (JSON) with `node_ids`. Present suggestions to the user; apply the chosen item via PATCH (step 5) and push image (step 3).
-
-If the HTTP client cannot read SSE, inline recommendations may not be usable from that environment — prefer the browser UI for that flow.
-
-## 7. Web page → mind map PNG (API / Chrome extension)
-
-Mind map **only** from extracted page text (same auth headers as above).
-
-**JSON spec only**
-
-`POST {MINDGRAPH_BASE_URL}/api/generate_from_web_content`
-
-```json
-{
-  "page_content": "plain or markdown text",
-  "content_format": "text/plain",
-  "page_title": "Optional title",
-  "page_url": "https://...",
-  "language": "zh"
-}
-```
-
-`content_format` is `text/plain` or `text/markdown`. `page_content` max length **32000** characters. Returns **JSON** with the generated spec (LLM only; faster than the PNG route).
-
-**Single-step PNG download**
-
-`POST {MINDGRAPH_BASE_URL}/api/web_content_mindmap_png`
-
-Same JSON body as above, plus optional `width` and `height` (viewport size for PNG capture; defaults **1200×800** if omitted). Response: **`image/png`** body (**not** JSON). Default `Content-Disposition` filename is **`mindgraph-web-content.png`**; when the server also saves the diagram, it may send **`X-MG-Diagram-Id`** and rename the file to **`mindgraph-{diagram_id}.png`**. On error, the server may return **JSON** with `detail` (HTTP 4xx/5xx). **Do not** call `response.json()` on success—read bytes.
-
-Both web-content routes require the account’s **chrome_extension** school-tier feature (same gate family as API tokens). Trial / lite orgs that lack that feature get **403**.
-
-**Timeouts (critical for OpenClaw / any HTTP client)**  
-The PNG path runs **LLM generation** plus **Playwright screenshot** of the export page. End-to-end latency often exceeds **60 seconds**. Use a **client read timeout of at least 180 seconds (3 minutes)** on this request (the Chrome extension uses the same). Shorter timeouts produce misleading “network” failures. The JSON-only route (`generate_from_web_content`) is also LLM-bound; allow **several minutes** if your stack defaults to 30–60s.
-
-**Chrome extension (same API)**  
-The repo ships **`chrome-extension/`** (Load unpacked in `chrome://extensions`). It captures the active tab via a **short** message to the service worker, then runs **`fetch` + download in the popup** so the MV3 worker is not held across a long request. **Base URL** in settings must be the **API origin** (e.g. `https://your-host.example.com`), same as `MINDGRAPH_BASE_URL` here—not the SPA path `/mindgraph` alone.
-
-## 8. Also useful (optional shortcuts)
-
-Same auth headers as above. Use when the default generate → save → PNG flow is heavier than needed:
-
-| Method | Path | When |
-|--------|------|------|
-| `GET` | `/api/diagrams` | List the user’s diagrams (paginated) before editing an existing one |
-| `POST` | `/api/generate_png` | Prompt → PNG bytes in one call (skip explicit save) |
-| `POST` | `/api/export_png` | Existing spec → PNG bytes |
-| `POST` | `/api/generate_dingtalk` | Prompt → markdown-friendly image URL (DingTalk / similar bots) |
-
-Rate limits apply (e.g. diagram PNG URL around **20/min**; many generate routes around **100/min**). On **429**, back off and retry.
+Rate limits: PNG URL ~**20/min**; many generate/export ~**100/min**. On **429**, back off.
 
 ## Best practices
 
-- Always send **Authorization** + **X-MG-Account** on every `mgat_` call, using **current** `MINDGRAPH_*` env values (see **Authentication** and **Updating auth** above).
-- Prefer **`X-MG-Client: openclaw`** on every call; add **`X-Request-Id`** especially on long web-content PNG calls.
-- Default flow: map the user’s **topic** → **`prompt`** and their **chart choice** → **`diagram_type`** from the eight Thinking Maps plus **`mind_map`** / **`concept_map`** as needed.
-- Use **long HTTP timeouts** for **`web_content_mindmap_png`** and other heavy routes (see §7).
-- After **any** mutation, fetch the PNG URL (step 3) before replying.
-- Prefer reading the diagram (step 4) before PATCH when IDs are unknown.
-- Warn the user before token expiry when relevant (tokens last **90 days**).
-- If auth fails after the user updated env in WorkBuddy/OpenClaw, suggest saving config and restarting the host app so new variables are picked up; then retry.
-- On **403** for web-content or token minting, the school tier may lack `api_token` / `chrome_extension` (trial / lite).
+- Prefer way **1** when you have content; way **2** for topic-only.
+- Match `language` to the user; use topic as `title`.
+- On **400** `invalid_diagram_spec`, fix `issues` and retry; on **422**, fix JSON.
+- After any mutation, fetch PNG (**A3**) before replying.
+- Tokens last **90 days**. **403** may mean school tier lacks `api_token` / `chrome_extension`, or diagram library cap.

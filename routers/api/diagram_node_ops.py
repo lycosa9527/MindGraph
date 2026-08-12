@@ -24,6 +24,7 @@ from routers.api.helpers import (
 )
 from routers.api.png_export import TEMP_IMAGES_DIR
 from routers.api.vueflow_screenshot import capture_diagram_screenshot
+from services.diagram.semantic_spec_validation import ensure_valid_semantic_spec
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from utils.auth import get_current_user
 
@@ -132,6 +133,9 @@ async def patch_diagram_nodes(
         spec = {}
 
     updated_spec = _apply_spec_patch(dict(spec), body)
+    diagram_type = record.get("diagram_type") or "bubble_map"
+    if body.spec is not None:
+        ensure_valid_semantic_spec(str(diagram_type), updated_spec)
 
     ok, _, err = await cache.save_diagram(
         user_id=current_user.id,

@@ -7,7 +7,10 @@ import { type Ref, computed, unref } from 'vue'
 
 import { CanvasNodeFloatingToolbar } from '@/components/canvas'
 import LearningSheetFloatBar from '@/components/canvas/LearningSheetFloatBar.vue'
-import type { FloatingToolbarPosition } from '@/composables/canvasToolbar/useNodeFloatingToolbarPosition'
+import type {
+  FloatingToolbarPosition,
+  FloatingToolbarSize,
+} from '@/composables/canvasToolbar/useNodeFloatingToolbarPosition'
 import { useUIStore } from '@/stores'
 
 import MindMapCollapseToggleOverlay from './MindMapCollapseToggleOverlay.vue'
@@ -25,6 +28,7 @@ const props = defineProps<{
   presentationTeleportTarget: string | HTMLElement | undefined
   onAiSubgraphGenerate: () => void
   onExplainNode: () => void
+  onFloatingToolbarSizeChange: (size: FloatingToolbarSize | null) => void
 }>()
 
 const uiStore = useUIStore()
@@ -46,6 +50,7 @@ const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasC
     :show-ai-subgraph="floatingToolbarShowAiSubgraph"
     @ai-subgraph-generate="onAiSubgraphGenerate()"
     @explain-node="onExplainNode()"
+    @size-change="onFloatingToolbarSizeChange($event)"
   />
 
   <MindMapDirectionalAddOverlay

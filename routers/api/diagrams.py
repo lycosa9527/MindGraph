@@ -61,6 +61,7 @@ from services.online_collab.spec.online_collab_live_spec import (
     read_live_spec,
     spec_for_snapshot,
 )
+from services.diagram.semantic_spec_validation import ensure_valid_semantic_spec
 from services.redis.cache._redis_diagram_cache_helpers import MAX_SPEC_SIZE_KB
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.auth.thinking_coin.client_event_service import load_user_org
@@ -236,6 +237,8 @@ async def create_diagram(
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
+
+    ensure_valid_semantic_spec(req.diagram_type, req.spec)
 
     cache = get_diagram_cache()
     async with actor_rls_session(current_user) as tier_db:

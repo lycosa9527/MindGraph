@@ -699,15 +699,21 @@ def setup_middleware(app: FastAPI):
         # Production: Restrict to specific origins
         allowed_origins = [base_server_url]
 
+    # Localhost any port: Office Word add-in (https) and local Vite/dev shells
+    # calling deployed API hosts for embed handoff. Private LAN remains debug-only.
+    localhost_origin_regex = r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
+    lan_origin_regex = (
+        r"^https?://(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+        r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$"
+    )
+    cors_origin_regex = (
+        f"(?:{localhost_origin_regex})|(?:{lan_origin_regex})" if config.debug else localhost_origin_regex
+    )
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
-        allow_origin_regex=(
-            r"^http://(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
-            r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$"
-            if config.debug
-            else None
-        ),
+        allow_origin_regex=cors_origin_regex,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

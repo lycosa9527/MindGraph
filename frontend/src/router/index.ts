@@ -3,7 +3,10 @@
  */
 import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 
-import { useMobileDetect } from '@/composables/core/useMobileDetect'
+import {
+  refreshOfficeEmbedLayout,
+  useMobileDetect,
+} from '@/composables/core/useMobileDetect'
 import { HIDE_KNOWLEDGE_SPACE_NAV } from '@/config/docSummaryLite'
 import { userCanUseOnlineCollab } from '@/constants/schoolTier'
 import { useAuthStore } from '@/stores/auth'
@@ -331,6 +334,7 @@ const router = createRouter({
 router.beforeEach(async (to, from) => {
   const authStore = useAuthStore()
   const featureFlagsStore = useFeatureFlagsStore()
+  refreshOfficeEmbedLayout(to.query as Record<string, unknown>)
   const { isMobile } = useMobileDetect()
 
   const fromPath = from.path

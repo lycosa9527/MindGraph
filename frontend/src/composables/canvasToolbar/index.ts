@@ -16,5 +16,8 @@ export {
 } from './useMindMapSideToolbarState'
 export {
   useNodeFloatingToolbarPosition,
+  resolveFloatingToolbarAnchor,
+  type FloatingToolbarPlacement,
   type FloatingToolbarPosition,
+  type FloatingToolbarSize,
 } from './useNodeFloatingToolbarPosition'

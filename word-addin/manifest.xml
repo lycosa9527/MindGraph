@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+  <Id>a8f3c2e1-4b5d-6e7f-8901-23456789abcd</Id>
+  <Version>1.0.2.0</Version>
+  <ProviderName>MindGraph</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <!-- Empty-looking title: Office always draws a task-pane header; ZWSP hides the label. -->
+  <DisplayName DefaultValue="&#x200B;"/>
+  <Description DefaultValue="MindMate, diagram studio, voice notes, and showcase in Microsoft Word.">
+    <Override Locale="zh-CN" Value="在 Word 中使用 MindMate、图示工作室、语音笔记与案例广场。"/>
+  </Description>
+  <IconUrl DefaultValue="https://localhost:3000/assets/icons/mindgraph-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icons/mindgraph-80.png"/>
+  <SupportUrl DefaultValue="https://test.mindspringedu.com"/>
+  <AppDomains>
+    <AppDomain>https://localhost:3000</AppDomain>
+    <AppDomain>https://test.mindspringedu.com</AppDomain>
+    <AppDomain>https://mg.mindspringedu.com</AppDomain>
+    <AppDomain>http://localhost:9527</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Document"/>
+  </Hosts>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://localhost:3000/src/taskpane/mindgraph.html"/>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="GetStarted.LearnMoreUrl"/>
+          </GetStarted>
+          <FunctionFile resid="Commands.Url"/>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="TabMindGraph">
+              <Group id="GrpMindGraph">
+                <Label resid="Group.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.MindGraph.16"/>
+                  <bt:Image size="32" resid="Icon.MindGraph.32"/>
+                  <bt:Image size="80" resid="Icon.MindGraph.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="BtnMindMate">
+                  <Label resid="BtnMindMate.Label"/>
+                  <Supertip>
+                    <Title resid="BtnMindMate.Label"/>
+                    <Description resid="BtnMindMate.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.MindMate.16"/>
+                    <bt:Image size="32" resid="Icon.MindMate.32"/>
+                    <bt:Image size="80" resid="Icon.MindMate.80"/>
+                  </Icon>
+                  <!-- Separate dialog so MindMate + MindGraph task pane can run together -->
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>openMindMateDialog</FunctionName>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="BtnMindGraph">
+                  <Label resid="BtnMindGraph.Label"/>
+                  <Supertip>
+                    <Title resid="BtnMindGraph.Label"/>
+                    <Description resid="BtnMindGraph.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.MindGraph.16"/>
+                    <bt:Image size="32" resid="Icon.MindGraph.32"/>
+                    <bt:Image size="80" resid="Icon.MindGraph.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>MindGraphPane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.MindGraph.Url"/>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="BtnVoice">
+                  <Label resid="BtnVoice.Label"/>
+                  <Supertip>
+                    <Title resid="BtnVoice.Label"/>
+                    <Description resid="BtnVoice.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.Voice.16"/>
+                    <bt:Image size="32" resid="Icon.Voice.32"/>
+                    <bt:Image size="80" resid="Icon.Voice.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>VoicePane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Voice.Url"/>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="BtnShowcase">
+                  <Label resid="BtnShowcase.Label"/>
+                  <Supertip>
+                    <Title resid="BtnShowcase.Label"/>
+                    <Description resid="BtnShowcase.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.Showcase.16"/>
+                    <bt:Image size="32" resid="Icon.Showcase.32"/>
+                    <bt:Image size="80" resid="Icon.Showcase.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ShowcasePane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Showcase.Url"/>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="BtnManual">
+                  <Label resid="BtnManual.Label"/>
+                  <Supertip>
+                    <Title resid="BtnManual.Label"/>
+                    <Description resid="BtnManual.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.Manual.16"/>
+                    <bt:Image size="32" resid="Icon.Manual.32"/>
+                    <bt:Image size="80" resid="Icon.Manual.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ManualPane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Manual.Url"/>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="BtnSettings">
+                  <Label resid="BtnSettings.Label"/>
+                  <Supertip>
+                    <Title resid="BtnSettings.Label"/>
+                    <Description resid="BtnSettings.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.Settings.16"/>
+                    <bt:Image size="32" resid="Icon.Settings.32"/>
+                    <bt:Image size="80" resid="Icon.Settings.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>SettingsPane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Settings.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+              <Label resid="Tab.Label"/>
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.MindMate.16" DefaultValue="https://localhost:3000/assets/icons/mindmate-16.png"/>
+        <bt:Image id="Icon.MindMate.32" DefaultValue="https://localhost:3000/assets/icons/mindmate-32.png"/>
+        <bt:Image id="Icon.MindMate.80" DefaultValue="https://localhost:3000/assets/icons/mindmate-80.png"/>
+        <bt:Image id="Icon.MindGraph.16" DefaultValue="https://localhost:3000/assets/icons/mindgraph-16.png"/>
+        <bt:Image id="Icon.MindGraph.32" DefaultValue="https://localhost:3000/assets/icons/mindgraph-32.png"/>
+        <bt:Image id="Icon.MindGraph.80" DefaultValue="https://localhost:3000/assets/icons/mindgraph-80.png"/>
+        <bt:Image id="Icon.Voice.16" DefaultValue="https://localhost:3000/assets/icons/voice-16.png"/>
+        <bt:Image id="Icon.Voice.32" DefaultValue="https://localhost:3000/assets/icons/voice-32.png"/>
+        <bt:Image id="Icon.Voice.80" DefaultValue="https://localhost:3000/assets/icons/voice-80.png"/>
+        <bt:Image id="Icon.Showcase.16" DefaultValue="https://localhost:3000/assets/icons/showcase-16.png"/>
+        <bt:Image id="Icon.Showcase.32" DefaultValue="https://localhost:3000/assets/icons/showcase-32.png"/>
+        <bt:Image id="Icon.Showcase.80" DefaultValue="https://localhost:3000/assets/icons/showcase-80.png"/>
+        <bt:Image id="Icon.Manual.16" DefaultValue="https://localhost:3000/assets/icons/manual-16.png"/>
+        <bt:Image id="Icon.Manual.32" DefaultValue="https://localhost:3000/assets/icons/manual-32.png"/>
+        <bt:Image id="Icon.Manual.80" DefaultValue="https://localhost:3000/assets/icons/manual-80.png"/>
+        <bt:Image id="Icon.Settings.16" DefaultValue="https://localhost:3000/assets/icons/settings-16.png"/>
+        <bt:Image id="Icon.Settings.32" DefaultValue="https://localhost:3000/assets/icons/settings-32.png"/>
+        <bt:Image id="Icon.Settings.80" DefaultValue="https://localhost:3000/assets/icons/settings-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://test.mindspringedu.com"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://localhost:3000/src/commands/commands.html"/>
+        <bt:Url id="Taskpane.MindMate.Url" DefaultValue="https://localhost:3000/src/taskpane/mindmate.html"/>
+        <bt:Url id="Taskpane.MindGraph.Url" DefaultValue="https://localhost:3000/src/taskpane/mindgraph.html"/>
+        <bt:Url id="Taskpane.Voice.Url" DefaultValue="https://localhost:3000/src/taskpane/voice.html"/>
+        <bt:Url id="Taskpane.Showcase.Url" DefaultValue="https://localhost:3000/src/taskpane/showcase.html"/>
+        <bt:Url id="Taskpane.Manual.Url" DefaultValue="https://localhost:3000/src/taskpane/manual.html"/>
+        <bt:Url id="Taskpane.Settings.Url" DefaultValue="https://localhost:3000/src/taskpane/settings.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title" DefaultValue="&#x200B;"/>
+        <bt:String id="Tab.Label" DefaultValue="MindGraph"/>
+        <bt:String id="Group.Label" DefaultValue="MindGraph"/>
+        <bt:String id="BtnMindMate.Label" DefaultValue="MindMate"/>
+        <bt:String id="BtnMindGraph.Label" DefaultValue="MindGraph"/>
+        <bt:String id="BtnVoice.Label" DefaultValue="Voice">
+          <bt:Override Locale="zh-CN" Value="语音笔记"/>
+        </bt:String>
+        <bt:String id="BtnShowcase.Label" DefaultValue="Showcase">
+          <bt:Override Locale="zh-CN" Value="案例广场"/>
+        </bt:String>
+        <bt:String id="BtnManual.Label" DefaultValue="Manual">
+          <bt:Override Locale="zh-CN" Value="使用手册"/>
+        </bt:String>
+        <bt:String id="BtnSettings.Label" DefaultValue="Settings">
+          <bt:Override Locale="zh-CN" Value="设置"/>
+        </bt:String>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="Open MindGraph tools from the MindGraph ribbon tab.">
+          <bt:Override Locale="zh-CN" Value="从 MindGraph 功能区打开 MindMate、图示工作室等工具。"/>
+        </bt:String>
+        <bt:String id="BtnMindMate.Tooltip" DefaultValue="Open MindMate in a separate chat window">
+          <bt:Override Locale="zh-CN" Value="在独立聊天窗口中打开 MindMate"/>
+        </bt:String>
+        <bt:String id="BtnMindGraph.Tooltip" DefaultValue="Open MindGraph studio (desktop)">
+          <bt:Override Locale="zh-CN" Value="打开 MindGraph 桌面版工作室"/>
+        </bt:String>
+        <bt:String id="BtnVoice.Tooltip" DefaultValue="Open Voice Notes">
+          <bt:Override Locale="zh-CN" Value="打开语音笔记"/>
+        </bt:String>
+        <bt:String id="BtnShowcase.Tooltip" DefaultValue="Open Showcase">
+          <bt:Override Locale="zh-CN" Value="打开案例广场"/>
+        </bt:String>
+        <bt:String id="BtnManual.Tooltip" DefaultValue="Open the manual">
+          <bt:Override Locale="zh-CN" Value="打开使用手册"/>
+        </bt:String>
+        <bt:String id="BtnSettings.Tooltip" DefaultValue="Server URL, phone, and API token">
+          <bt:Override Locale="zh-CN" Value="服务器地址、手机号与 API 令牌"/>
+        </bt:String>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

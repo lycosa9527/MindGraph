@@ -17,6 +17,7 @@ from . import (
     avatar,
     captcha,
     email,
+    embed,
     login,
     password,
     personal_token,
@@ -74,6 +75,7 @@ router.include_router(preferences.router)
 router.include_router(avatar.router)
 router.include_router(phone.router)
 router.include_router(personal_token.router)
+router.include_router(embed.router)
 router.include_router(thinking_coins.router)
 router.include_router(dingtalk_bind_router)
 router.include_router(oauth_router)

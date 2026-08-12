@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { ref, toValue, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
@@ -103,25 +103,15 @@ export function useDiagramCanvasFit(options: {
   function runMindMapFitAfterLoad(): void {
     if (getNodes().length === 0) return
     hasInitialFitDoneForDiagram.value = true
-    // Run on the next frame so fitView is not inside a long setTimeout task
+    // Double rAF so fitView is not inside a long setTimeout task
     // (Chrome "[Violation] setTimeout handler took …ms").
-    const apply = (): void => {
-      // Showcase reader always wants true zoom-fit (including mind-map v1).
-      // Editor v1 keeps center-at-default-zoom after load.
-      if (useMindMapV2.value || toValue(diagramStore.isReadonly)) {
-        fitToFullCanvas(true)
-        return
-      }
-      centerDiagramAtDefaultZoom(false)
-      viewBus.emit('view:fit_completed', { mode: 'mind_map_centered', animate: false })
-    }
     if (typeof requestAnimationFrame === 'function') {
       requestAnimationFrame(() => {
-        requestAnimationFrame(apply)
+        requestAnimationFrame(() => fitToFullCanvas(true))
       })
       return
     }
-    apply()
+    fitToFullCanvas(true)
   }
 
   function scheduleMindMapFitAfterLoad(): void {
@@ -475,50 +465,6 @@ export function useDiagramCanvasFit(options: {
     tryApply(0)
   }
 
-  /** Center diagram bounding box in viewport at default zoom (no scale-to-fit). */
-  function centerDiagramAtDefaultZoom(animate = false): void {
-    const list = getNodes() as FlowNodeLike[]
-    if (!Array.isArray(list) || list.length === 0) return
-
-    let minX = Infinity
-    let minY = Infinity
-    let maxX = -Infinity
-    let maxY = -Infinity
-    for (const node of list) {
-      const x = node.position?.x ?? 0
-      const y = node.position?.y ?? 0
-      const { width, height } = getNodeWidthHeight(node)
-      minX = Math.min(minX, x)
-      minY = Math.min(minY, y)
-      maxX = Math.max(maxX, x + width)
-      maxY = Math.max(maxY, y + height)
-    }
-    if (!Number.isFinite(minX)) return
-
-    const centerX = (minX + maxX) / 2
-    const centerY = (minY + maxY) / 2
-    const zoom = ZOOM.DEFAULT
-
-    const container = canvasContainer.value
-    const viewW = container?.clientWidth ?? CANVAS.DEFAULT_WIDTH
-    const viewH = container?.clientHeight ?? CANVAS.DEFAULT_HEIGHT
-    const topPad = getFitViewTopPx()
-    const bottomPad = getFitViewBottomPx()
-    const leftPad = parseFitPaddingPx(getFitViewLeftPx())
-    const rightPad = parseFitPaddingPx(getFitViewRightPx())
-    const visibleCenterX = leftPad + (viewW - leftPad - rightPad) / 2
-    const visibleCenterY = topPad + (viewH - topPad - bottomPad) / 2
-
-    setViewport(
-      {
-        x: visibleCenterX - centerX * zoom,
-        y: visibleCenterY - centerY * zoom,
-        zoom,
-      },
-      { duration: animate ? ANIMATION.DURATION_NORMAL : 0 }
-    )
-  }
-
   function getConceptMapFocusNodeIdForFit(): string | null {
     const list = getNodes() as unknown
     if (!Array.isArray(list) || list.length === 0) return null
@@ -549,12 +495,7 @@ export function useDiagramCanvasFit(options: {
         }
         hasInitialFitDoneForDiagram.value = true
         setTimeout(() => {
-          if (useMindMapV2.value) {
-            fitToFullCanvas(true)
-          } else {
-            centerDiagramAtDefaultZoom(false)
-            viewBus.emit('view:fit_completed', { mode: 'mind_map_centered', animate: false })
-          }
+          fitToFullCanvas(true)
         }, Math.max(ANIMATION.FIT_VIEWPORT_DELAY, 450))
         return
       }
