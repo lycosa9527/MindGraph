@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'Thư viện',
   'meta.pageTitle.libraryBookmark': 'Dấu trang',
   'meta.pageTitle.libraryViewer': 'Trình xem thư viện',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'Đăng nhập',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

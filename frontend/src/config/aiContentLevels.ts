@@ -1,7 +1,7 @@
 /**
- * AI content audience levels (frontend preference only for now).
- * Backend prompt wiring is intentionally deferred.
+ * AI content audience levels used by canvas generation and classroom narration.
  */
+import { type EducationStage, buildEducationStageInstructions } from '@/constants/educationStage'
 
 export const AI_CONTENT_LEVEL_IDS = [
   'general',
@@ -16,6 +16,23 @@ export const AI_CONTENT_LEVEL_IDS = [
 export type AiContentLevelId = (typeof AI_CONTENT_LEVEL_IDS)[number]
 
 export const DEFAULT_AI_CONTENT_LEVEL: AiContentLevelId = 'general'
+
+const AI_CONTENT_LEVEL_STAGE: Record<AiContentLevelId, EducationStage | null> = {
+  general: null,
+  primary: '小学',
+  junior: '初中',
+  senior: '高中',
+  university: '大学',
+  adult: '成人',
+  expert: '专家',
+}
+
+export function buildAiContentLevelInstructions(
+  level: AiContentLevelId,
+  language: string
+): string | undefined {
+  return buildEducationStageInstructions(AI_CONTENT_LEVEL_STAGE[level], language)
+}
 
 /** Accent color for the scope-style level picker (icon tint). */
 export const AI_CONTENT_LEVEL_COLORS: Record<AiContentLevelId, string> = {

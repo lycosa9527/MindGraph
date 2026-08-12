@@ -35,6 +35,7 @@ KNOWN_MG_CLIENTS = frozenset(
         "openclaw",
         "file-reader",
         "mcp",
+        "word-addin",
         MG_CLIENT_UNSPECIFIED,
     }
 )
@@ -46,6 +47,7 @@ MG_CLIENT_DISPLAY_LABELS = {
     "openclaw": "OpenClaw",
     "file-reader": "File reader",
     "mcp": "MCP",
+    "word-addin": "Word add-in",
     MG_CLIENT_UNSPECIFIED: "Unspecified",
 }
 
@@ -103,6 +105,20 @@ def bind_mg_client_from_header(request: Optional[Request]) -> str:
         return MG_CLIENT_UNSPECIFIED
     raw = request.headers.get(MG_CLIENT_HEADER) or ""
     return bind_mg_client(request, raw)
+
+
+def bind_mg_client_from_connection(connection: Optional[HttpOrWebSocket]) -> str:
+    """
+    Bind client label for HTTP or WebSocket mgat_ traffic.
+
+    Prefers ``X-MG-Client``; WebSocket browsers may only send ``?client=``.
+    """
+    if connection is None:
+        return MG_CLIENT_UNSPECIFIED
+    raw = connection.headers.get(MG_CLIENT_HEADER) or ""
+    if not str(raw).strip():
+        raw = connection.query_params.get("client") or ""
+    return bind_mg_client(connection, raw)
 
 
 def bind_mg_client_for_web(request: Optional[Request]) -> str:

@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Pemalam',
   'auth.apiTokenButton': 'Token API',
   'auth.downloadChromeExtension': 'Ekstensi Chrome',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Fitur ini memerlukan tingkat sekolah Standard atau Professional (Basic tidak termasuk).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Langganan sekolah Anda telah berakhir. Akaun Anda sekarang pada tingkat percubaan. Hubungi administrator platform untuk memperpanjang.',
   'auth.diagramLimitReached': 'Sekolah percubaan mengizinkan hingga {max} rajah tersimpan per guru. Padam satu untuk menyimpan rajah baru.',

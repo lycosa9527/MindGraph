@@ -13,8 +13,11 @@ import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useMindmateCollabNotify } from '@/composables/social/useMindmateCollabNotify'
 import { useVoiceStore } from '@/stores'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { useUIStore } from '@/stores/ui'
+import { isOfficeEmbedDesktop } from '@/utils/officeEmbed'
 
 const featureFlagsStore = useFeatureFlagsStore()
+const uiStore = useUIStore()
 const { canUseOnlineCollab } = useSchoolTierFeatures()
 const notify = useNotifications()
 const { t } = useLanguage()
@@ -62,6 +65,10 @@ async function consumeShowcasePostQuery(): Promise<void> {
 }
 
 onMounted(async () => {
+  // Word add-in dialog / embed: keep chat full-width (same as MindGraph/Showcase).
+  if (isOfficeEmbedDesktop()) {
+    uiStore.setSidebarCollapsed(true)
+  }
   void ensureMarkdownRenderer()
   await featureFlagsStore.fetchFlags()
   await consumeJoinCollabQuery()

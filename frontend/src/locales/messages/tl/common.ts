@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'Aklatan',
   'meta.pageTitle.libraryBookmark': 'Bookmark',
   'meta.pageTitle.libraryViewer': 'Viewer ng aklatan',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'Mag-sign in',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

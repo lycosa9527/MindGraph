@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Wtyczka',
   'auth.apiTokenButton': 'Token API',
   'auth.downloadChromeExtension': 'Rozszerzenie Chrome',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Ta funkcja wymaga poziomu szkoły Standard lub Professional (poziom Basic wykluczony).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Subskrypcja szkoły zakończyła się. Konto jest teraz na poziomie próbnym. Skontaktuj się z administratorem platformy, aby odnowić.',
   'auth.diagramLimitReached': 'Szkoły próbne pozwalają na maksymalnie {max} zapisanych diagramów na nauczyciela. Usuń jeden, aby zapisać nowy.',

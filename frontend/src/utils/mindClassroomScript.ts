@@ -1,18 +1,18 @@
 /**
  * Build Mind Classroom lecture steps from the mind-map outline + user prefs.
  */
+import type { AiContentLevelId } from '@/config/aiContentLevels'
 import type {
   MindClassroomMasteryId,
   MindClassroomPresentationId,
   MindClassroomToneId,
   MindClassroomTourScopeId,
 } from '@/config/mindClassroom'
-import type { AiContentLevelId } from '@/config/aiContentLevels'
 import type { Connection, DiagramNode } from '@/types'
 import {
-  buildMindMapSlides,
   type MindMapSlide,
   type MindMapSlideTraversalMode,
+  buildMindMapSlides,
 } from '@/utils/mindMapSlides'
 
 export interface MindClassroomLectureStep {
@@ -43,8 +43,8 @@ const SLIDE_THEME_COUNT = 5
 
 function traversalForOptions(opts: MindClassroomScriptOptions): MindMapSlideTraversalMode {
   if (opts.presentation === 'slide_deck') {
-    // Slide decks prefer main-branch structure for readable PPT pages
-    return opts.tourScope === 'each_node' ? 'deep' : 'firstLevel'
+    // Slide decks always stay concise; tour scope only applies to canvas walkthroughs.
+    return 'firstLevel'
   }
   return opts.tourScope === 'each_node' ? 'deep' : 'firstLevel'
 }
@@ -122,12 +122,7 @@ export function buildMindClassroomLectureSteps(
 ): MindClassroomLectureStep[] {
   if (!nodes.length) return []
 
-  const slides = buildMindMapSlides(
-    nodes,
-    connections,
-    getDescendantIds,
-    traversalForOptions(opts)
-  )
+  const slides = buildMindMapSlides(nodes, connections, getDescendantIds, traversalForOptions(opts))
   if (!slides.length) return []
 
   const nodeById = new Map(nodes.map((n) => [n.id, n]))
@@ -165,13 +160,7 @@ export function buildMindClassroomLectureSteps(
   const branchTotal = branches.length
   branches.forEach((slide, i) => {
     const bullets = childBulletList(slide, nodeById)
-    const caption = narrateBranch(
-      slide,
-      opts,
-      childTitlesHint(bullets, opts),
-      i + 1,
-      branchTotal
-    )
+    const caption = narrateBranch(slide, opts, childTitlesHint(bullets, opts), i + 1, branchTotal)
     const focusIds =
       opts.tourScope === 'each_node' && slide.branchNodeId
         ? [slide.branchNodeId]

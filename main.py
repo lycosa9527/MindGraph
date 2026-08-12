@@ -60,6 +60,7 @@ from services.infrastructure.lifecycle.lifespan import lifespan
 from services.infrastructure.http.middleware import setup_middleware
 from services.infrastructure.http.exception_handlers import setup_exception_handlers
 from services.infrastructure.utils.spa_handler import setup_vue_spa, is_dev_mode
+from services.infrastructure.utils.word_addin_static import setup_word_addin_static
 from services.infrastructure.process.server_launcher import run_server
 
 # Early configuration setup (must happen before logging)
@@ -107,6 +108,9 @@ if _VUE_SPA_ENABLED:
 elif not is_dev_mode():
     # Only warn in production - in dev mode, Vite handles browser UI
     logger.warning("Vue SPA not available - run 'npm run build' in frontend/ directory")
+
+# MindGraph for Word (Office.js) shell — production HTTPS URLs in downloaded manifest
+setup_word_addin_static(app)
 
 # ============================================================================
 # ROUTER REGISTRATION

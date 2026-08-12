@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Voice Notes</title>
+  <link rel="stylesheet" href="css/common.css" />
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+  <div class="mg-shell mg-voice-shell">
+    <div class="mg-header">
+      <h1 class="mg-title" data-i18n="voiceTitle">Voice Notes</h1>
+      <span class="mg-badge" id="elapsed">00:00</span>
+    </div>
+    <p class="mg-hint" data-i18n="voiceHint"></p>
+    <div class="mg-card mg-voice-card">
+      <div class="mg-voice-meter-track" aria-hidden="true">
+        <div class="mg-voice-meter-fill" id="meter"></div>
+      </div>
+      <div class="mg-btn-row" style="margin-top: 12px">
+        <button type="button" class="mg-btn" id="btn-start" data-i18n="voiceStart">Start</button>
+        <button type="button" class="mg-btn mg-btn-secondary" id="btn-pause" data-i18n="voicePause" disabled>Pause</button>
+        <button type="button" class="mg-btn mg-btn-secondary" id="btn-stop" data-i18n="voiceStop" disabled>Stop</button>
+        <button type="button" class="mg-btn mg-btn-secondary" id="btn-copy" data-i18n="voiceCopy" disabled>Copy</button>
+      </div>
+      <pre class="mg-voice-transcript" id="transcript"></pre>
+      <p id="status" class="mg-status" style="margin-top: 10px"></p>
+    </div>
+  </div>
+  <script src="../shared/prefs.js"></script>
+  <script src="../shared/i18n.js"></script>
+  <script src="../shared/page-boot.js"></script>
+  <script src="../shared/voice-notes.js"></script>
+  <script>
+    mgBootPage(function () {
+      mgBootVoiceNotes({
+        statusEl: document.getElementById('status'),
+        meterEl: document.getElementById('meter'),
+        transcriptEl: document.getElementById('transcript'),
+        elapsedEl: document.getElementById('elapsed'),
+        startBtn: document.getElementById('btn-start'),
+        pauseBtn: document.getElementById('btn-pause'),
+        stopBtn: document.getElementById('btn-stop'),
+        copyBtn: document.getElementById('btn-copy'),
+      })
+    })
+  </script>
+</body>
+</html>

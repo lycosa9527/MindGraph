@@ -137,10 +137,12 @@ export function loadMindClassroomPresentation(): MindClassroomPresentationId {
     // migrate old ppt / node_focus stored under presentation key
     if (next === 'ppt') {
       localStorage.setItem(PRESENTATION_STORAGE_KEY, 'slide_deck')
+      localStorage.setItem(TOUR_SCOPE_STORAGE_KEY, 'main_branch')
       return 'slide_deck'
     }
     if (next === 'node_focus') {
       localStorage.setItem(PRESENTATION_STORAGE_KEY, 'canvas_tour')
+      localStorage.setItem(TOUR_SCOPE_STORAGE_KEY, 'each_node')
       return 'canvas_tour'
     }
     return DEFAULT_MIND_CLASSROOM_PRESENTATION
@@ -163,8 +165,9 @@ export function loadMindClassroomTourScope(): MindClassroomTourScopeId {
   try {
     const next = localStorage.getItem(TOUR_SCOPE_STORAGE_KEY)
     if (isMindClassroomTourScopeId(next)) return next
-    const legacy = mapLegacyToTourScope(localStorage.getItem(PRESENTATION_STORAGE_KEY))
-      ?? mapLegacyToTourScope(localStorage.getItem(LEGACY_STYLE_STORAGE_KEY))
+    const legacy =
+      mapLegacyToTourScope(localStorage.getItem(PRESENTATION_STORAGE_KEY)) ??
+      mapLegacyToTourScope(localStorage.getItem(LEGACY_STYLE_STORAGE_KEY))
     if (legacy) {
       localStorage.setItem(TOUR_SCOPE_STORAGE_KEY, legacy)
       return legacy

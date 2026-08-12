@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'Token API',
   'auth.downloadChromeExtension': 'Estensione Chrome',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Questa funzione richiede il piano scolastico Standard o Professional (piano Basic escluso).',
   'auth.schoolSubscriptionExpiredDowngraded': 'L\'abbonamento della tua scuola è terminato. Il tuo account è ora in prova. Contatta l\'amministratore della piattaforma per rinnovare.',
   'auth.diagramLimitReached': 'Le scuole in prova consentono fino a {max} diagrammi salvati per docente. Elimina uno per salvarne uno nuovo.',

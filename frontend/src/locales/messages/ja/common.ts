@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'ライブラリ',
   'meta.pageTitle.libraryBookmark': 'ブックマーク',
   'meta.pageTitle.libraryViewer': 'ライブラリビューア',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'サインイン',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

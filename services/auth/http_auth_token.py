@@ -1,8 +1,8 @@
 """
-Extract and decode JWT access tokens from HTTP and WebSocket scopes (Bearer,
-cookie, then query ?token= only when it plausibly identifies a session).
+Extract and decode JWT access tokens from HTTP and WebSocket scopes.
 
-Shared by VPN/geo middleware, auth context middleware, and WebSocket auth.
+Extraction lives in ``bearer_token`` (cycle-safe leaf). This module adds JWT
+decode helpers that need ``utils.auth`` secrets/config.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -13,88 +13,30 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import Request, WebSocket
+from fastapi import Request
 from jose import JWTError, jwt
 
+from services.auth.bearer_token import (
+    extract_bearer_token,
+    extract_bearer_token_from_websocket,
+    extract_session_token,
+    has_authorization_mgat_bearer,
+    query_token_looks_like_session_credential,
+)
 from utils.auth.config import JWT_ALGORITHM
 from utils.auth.connection_types import HttpOrWebSocket
 from utils.auth.jwt_secret import get_jwt_secret
 
-
-def _query_token_looks_like_session_credential(s: str) -> bool:
-    """
-    Return True if ?token= may be an access or mgat_ token (not an opaque
-    per-feature secret such as quick-registration channel tokens).
-    """
-    t = s.strip()
-    if not t:
-        return False
-    if t.startswith("mgat_"):
-        return True
-    return t.count(".") >= 2
-
-
-def extract_session_token(connection: HttpOrWebSocket) -> Optional[str]:
-    """Session token from HTTP request or WebSocket (Bearer, cookie, shaped ?token=)."""
-    if isinstance(connection, WebSocket):
-        return extract_bearer_token_from_websocket(connection)
-    return extract_bearer_token(connection)
-
-
-def has_authorization_mgat_bearer(request: Request) -> bool:
-    """True when the client sent ``Authorization: Bearer mgat_…`` (user API token auth)."""
-    credentials = request.headers.get("Authorization", "")
-    if not credentials.startswith("Bearer "):
-        return False
-    return credentials[7:].strip().startswith("mgat_")
-
-
-def extract_bearer_token(request: Request) -> Optional[str]:
-    """
-    Session token: Authorization: Bearer, then access_token cookie, then ?token=
-    only if it plausibly matches a JWT (three segments) or mgat_.
-    Opaque ?token= (e.g. quick-register channel keys) is ignored for auth
-    so middleware does not try to parse it as a JWT.
-    """
-    credentials = request.headers.get("Authorization", "")
-    if credentials.startswith("Bearer "):
-        token = credentials[7:].strip()
-        if token:
-            return token
-    cookie_token = request.cookies.get("access_token")
-    if cookie_token and cookie_token.strip():
-        return cookie_token.strip()
-    query_token = request.query_params.get("token")
-    if not query_token or not query_token.strip():
-        return None
-    if _query_token_looks_like_session_credential(query_token):
-        return query_token.strip()
-    return None
-
-
-def extract_bearer_token_from_websocket(websocket: WebSocket) -> Optional[str]:
-    """
-    Session token for WebSocket: same policy as ``extract_bearer_token`` (Bearer
-    header, then cookie, then ?token= only if JWT- or mgat_-shaped). Ignores
-    opaque query ?token= so channel secrets are not sent to the JWT decoder.
-
-    ``?token=`` for JWT/mgat_ is an intentional fallback when cookies are unavailable
-    on WebSocket handshakes; it may appear in proxy logs — prefer cookies when possible.
-    """
-    auth = websocket.headers.get("Authorization", "")
-    if auth.startswith("Bearer "):
-        bearer = auth[7:].strip()
-        if bearer:
-            return bearer
-    from_cookie = (websocket.cookies.get("access_token") or "").strip()
-    if from_cookie:
-        return from_cookie
-    q = (websocket.query_params.get("token") or "").strip()
-    if not q:
-        return None
-    if _query_token_looks_like_session_credential(q):
-        return q
-    return None
+# Re-export extraction helpers for existing importers.
+__all__ = [
+    "extract_bearer_token",
+    "extract_bearer_token_from_websocket",
+    "extract_session_token",
+    "has_authorization_mgat_bearer",
+    "query_token_looks_like_session_credential",
+    "try_decode_access_token_payload",
+    "try_decode_access_token_payload_from_connection",
+]
 
 
 def try_decode_access_token_payload(request: Request) -> Optional[dict]:

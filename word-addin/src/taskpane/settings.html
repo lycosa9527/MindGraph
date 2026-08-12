@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login</title>
+  <link rel="stylesheet" href="css/common.css" />
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+  <div class="mg-shell">
+    <div class="mg-header">
+      <h1 class="mg-title" data-i18n="settingsLoginTitle">Sign in</h1>
+    </div>
+    <p class="mg-hint" data-i18n="settingsLoginHint"></p>
+    <div class="mg-card">
+      <div class="mg-field">
+        <label for="baseUrlPreset" data-i18n="settingsServer">Server</label>
+        <select id="baseUrlPreset"></select>
+      </div>
+      <div class="mg-field">
+        <label for="phone" data-i18n="settingsPhone">Phone</label>
+        <input id="phone" type="text" autocomplete="username" />
+      </div>
+      <div class="mg-field">
+        <label for="apiToken" data-i18n="settingsToken">Token</label>
+        <input id="apiToken" type="password" autocomplete="off" />
+      </div>
+      <div class="mg-btn-row">
+        <button type="button" class="mg-btn" id="btn-save" data-i18n="settingsLogin">Sign in</button>
+        <button type="button" class="mg-btn mg-btn-secondary" id="btn-clear" data-i18n="settingsClear">Clear</button>
+      </div>
+      <p id="auth-status" class="mg-status" style="margin-top: 12px"></p>
+    </div>
+  </div>
+  <script src="../shared/prefs.js"></script>
+  <script src="../shared/i18n.js"></script>
+  <script src="../shared/page-boot.js"></script>
+  <script src="../shared/spa-host.js"></script>
+  <script>
+    mgBootPage(function (prefs) {
+      var preset = document.getElementById('baseUrlPreset')
+      var phone = document.getElementById('phone')
+      var apiToken = document.getElementById('apiToken')
+      var statusEl = document.getElementById('auth-status')
+      var saveBtn = document.getElementById('btn-save')
+      var verifying = false
+
+      function fillPresets(lang, lockedUrl) {
+        preset.innerHTML = ''
+        if (lockedUrl) {
+          var locked = document.createElement('option')
+          locked.value = lockedUrl
+          locked.textContent = lockedUrl
+          preset.appendChild(locked)
+          preset.disabled = true
+          return
+        }
+        preset.disabled = false
+        MG_BASE_URL_PRESETS.forEach(function (entry) {
+          var opt = document.createElement('option')
+          opt.value = entry.url
+          opt.textContent =
+            (lang === 'en' ? entry.labelEn : entry.labelZh) + ' — ' + entry.url
+          preset.appendChild(opt)
+        })
+      }
+
+      function matchPreset(url) {
+        var normalized = mgNormalizeBaseUrl(url)
+        var i
+        for (i = 0; i < MG_BASE_URL_PRESETS.length; i += 1) {
+          if (MG_BASE_URL_PRESETS[i].url === normalized) {
+            return MG_BASE_URL_PRESETS[i].url
+          }
+        }
+        // Unknown saved URL → fall back to default (test).
+        return MG_DEFAULT_PREFS.baseUrl
+      }
+
+      function setStatus(text, kind) {
+        statusEl.textContent = text
+        statusEl.className = 'mg-status' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : '')
+      }
+
+      function paint(p, statusKind) {
+        var prefsLang = p.language === 'zh' ? 'zh' : 'en'
+        var hosted =
+          typeof mgIsHostedSameOriginShell === 'function' && mgIsHostedSameOriginShell()
+        var lockedUrl = hosted ? mgNormalizeBaseUrl(p.baseUrl || mgShellHostOrigin()) : ''
+        fillPresets(prefsLang, lockedUrl)
+        preset.value = lockedUrl || matchPreset(p.baseUrl || MG_DEFAULT_PREFS.baseUrl)
+        phone.value = p.phone
+        apiToken.value = p.apiToken
+        if (statusKind === 'verified') {
+          setStatus(mgT('settingsStatusVerified'), 'ok')
+        } else if (statusKind === 'invalid') {
+          setStatus(mgT('settingsStatusInvalid'), 'err')
+        } else if (statusKind === 'network') {
+          setStatus(mgT('settingsStatusNetwork'), 'err')
+        } else if (statusKind === 'server') {
+          setStatus(mgT('settingsStatusServer'), 'err')
+        } else if (mgAuthStatus(p) === 'saved') {
+          setStatus(mgT('settingsStatusSaved'), '')
+        } else {
+          setStatus(mgT('settingsStatusEmpty'), '')
+        }
+      }
+
+      paint(prefs)
+
+      saveBtn.addEventListener('click', function () {
+        if (verifying) {
+          return
+        }
+        var chosenUrl = mgNormalizeBaseUrl(preset.value || MG_DEFAULT_PREFS.baseUrl)
+        if (typeof mgIsHostedSameOriginShell === 'function' && mgIsHostedSameOriginShell()) {
+          chosenUrl = mgShellHostOrigin() || chosenUrl
+        }
+        verifying = true
+        saveBtn.disabled = true
+        setStatus(mgT('settingsVerifying'), '')
+        var savePromise =
+          typeof mgSavePrefsAsync === 'function'
+            ? mgSavePrefsAsync({
+                baseUrl: chosenUrl,
+                phone: phone.value,
+                apiToken: apiToken.value,
+              })
+            : Promise.resolve(
+                mgSavePrefs({
+                  baseUrl: chosenUrl,
+                  phone: phone.value,
+                  apiToken: apiToken.value,
+                })
+              )
+        savePromise.then(function (next) {
+          paint(next)
+          if (mgAuthStatus(next) !== 'saved') {
+            verifying = false
+            saveBtn.disabled = false
+            mgShowToast(mgT('settingsSavedToast'))
+            return
+          }
+          mgProbeEmbedAuth(next).then(function (result) {
+            verifying = false
+            saveBtn.disabled = false
+            if (result.ok) {
+              paint(next, 'verified')
+              mgShowToast(mgT('settingsVerifiedToast'))
+              return
+            }
+            if (result.reason === 'network') {
+              paint(next, 'network')
+            } else if (result.reason === 'unsupported' || result.reason === 'server') {
+              paint(next, 'server')
+            } else {
+              paint(next, 'invalid')
+            }
+            mgShowToast(mgT('settingsSavedToast'))
+          })
+        })
+      })
+
+      document.getElementById('btn-clear').addEventListener('click', function () {
+        var clearPromise =
+          typeof mgClearAuthPrefsAsync === 'function'
+            ? mgClearAuthPrefsAsync()
+            : Promise.resolve(mgClearAuthPrefs())
+        clearPromise.then(function (cleared) {
+          paint(cleared)
+          mgShowToast(mgT('settingsClearedToast'))
+        })
+      })
+    })
+  </script>
+</body>
+</html>

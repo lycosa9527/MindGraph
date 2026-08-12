@@ -2,7 +2,7 @@
 /**
  * Mind Classroom launch settings — readable modal / panel layout.
  */
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
@@ -17,7 +17,6 @@ import {
 } from '@lucide/vue'
 
 import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
-
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
@@ -122,6 +121,34 @@ function pickTone(id: MindClassroomToneId): void {
   classroomStore.setTone(id)
 }
 
+function handleRadioGroupKeydown<T extends string>(
+  event: KeyboardEvent,
+  ids: readonly T[],
+  current: T,
+  pick: (id: T) => void
+): void {
+  const currentIndex = ids.indexOf(current)
+  let nextIndex: number | null = null
+  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+    nextIndex = (currentIndex + 1) % ids.length
+  } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    nextIndex = (currentIndex - 1 + ids.length) % ids.length
+  } else if (event.key === 'Home') {
+    nextIndex = 0
+  } else if (event.key === 'End') {
+    nextIndex = ids.length - 1
+  }
+  if (nextIndex === null) return
+  event.preventDefault()
+  const nextId = ids[nextIndex]
+  if (!nextId) return
+  pick(nextId)
+  const group = (event.currentTarget as HTMLElement).closest('[role="radiogroup"]')
+  void nextTick(() => {
+    group?.querySelectorAll<HTMLElement>('[role="radio"]')[nextIndex]?.focus()
+  })
+}
+
 function handleStart(): void {
   const result = startLecture()
   if (!result.ok) {
@@ -169,7 +196,11 @@ function handleStart(): void {
             class="mc-seg__item"
             :class="{ 'is-active': mastery === option.id }"
             :aria-checked="mastery === option.id"
+            :tabindex="mastery === option.id ? 0 : -1"
             @click="pickMastery(option.id)"
+            @keydown="
+              handleRadioGroupKeydown($event, MIND_CLASSROOM_MASTERY_IDS, mastery, pickMastery)
+            "
           >
             <component
               :is="option.icon"
@@ -190,14 +221,29 @@ function handleStart(): void {
           </h3>
         </header>
 
-        <div class="mc-mode-grid">
+        <div
+          class="mc-mode-grid"
+          role="radiogroup"
+          :aria-label="t('canvas.mindClassroom.settings.presentationTitle')"
+        >
           <button
             v-for="option in presentationOptions"
             :key="option.id"
             type="button"
             class="mc-mode"
             :class="{ 'is-active': presentation === option.id }"
+            role="radio"
+            :aria-checked="presentation === option.id"
+            :tabindex="presentation === option.id ? 0 : -1"
             @click="pickPresentation(option.id)"
+            @keydown="
+              handleRadioGroupKeydown(
+                $event,
+                MIND_CLASSROOM_PRESENTATION_IDS,
+                presentation,
+                pickPresentation
+              )
+            "
           >
             <span class="mc-mode__top">
               <span class="mc-mode__icon">
@@ -225,14 +271,29 @@ function handleStart(): void {
           <p class="mc-sub__label">
             {{ t('canvas.mindClassroom.settings.tourScopeTitle') }}
           </p>
-          <div class="mc-sub__row">
+          <div
+            class="mc-sub__row"
+            role="radiogroup"
+            :aria-label="t('canvas.mindClassroom.settings.tourScopeTitle')"
+          >
             <button
               v-for="option in tourScopeOptions"
               :key="option.id"
               type="button"
               class="mc-sub__btn"
               :class="{ 'is-active': tourScope === option.id }"
+              role="radio"
+              :aria-checked="tourScope === option.id"
+              :tabindex="tourScope === option.id ? 0 : -1"
               @click="pickTourScope(option.id)"
+              @keydown="
+                handleRadioGroupKeydown(
+                  $event,
+                  MIND_CLASSROOM_TOUR_SCOPE_IDS,
+                  tourScope,
+                  pickTourScope
+                )
+              "
             >
               <span class="mc-sub__btn-title">{{ option.title }}</span>
               <span class="mc-sub__btn-desc">{{ option.desc }}</span>
@@ -247,14 +308,29 @@ function handleStart(): void {
           <p class="mc-sub__label">
             {{ t('canvas.mindClassroom.settings.slideStyleTitle') }}
           </p>
-          <div class="mc-skins">
+          <div
+            class="mc-skins"
+            role="radiogroup"
+            :aria-label="t('canvas.mindClassroom.settings.slideStyleTitle')"
+          >
             <button
               v-for="option in slideStyleOptions"
               :key="option.id"
               type="button"
               class="mc-skin"
               :class="[`mc-skin--${option.id}`, { 'is-active': slideStyle === option.id }]"
+              role="radio"
+              :aria-checked="slideStyle === option.id"
+              :tabindex="slideStyle === option.id ? 0 : -1"
               @click="pickSlideStyle(option.id)"
+              @keydown="
+                handleRadioGroupKeydown(
+                  $event,
+                  MIND_CLASSROOM_SLIDE_STYLE_IDS,
+                  slideStyle,
+                  pickSlideStyle
+                )
+              "
             >
               <span
                 class="mc-skin__swatch"
@@ -274,14 +350,22 @@ function handleStart(): void {
             {{ t('canvas.mindClassroom.settings.toneTitle') }}
           </h3>
         </header>
-        <div class="mc-tones">
+        <div
+          class="mc-tones"
+          role="radiogroup"
+          :aria-label="t('canvas.mindClassroom.settings.toneTitle')"
+        >
           <button
             v-for="option in toneOptions"
             :key="option.id"
             type="button"
             class="mc-tone"
             :class="{ 'is-active': tone === option.id }"
+            role="radio"
+            :aria-checked="tone === option.id"
+            :tabindex="tone === option.id ? 0 : -1"
             @click="pickTone(option.id)"
+            @keydown="handleRadioGroupKeydown($event, MIND_CLASSROOM_TONE_IDS, tone, pickTone)"
           >
             {{ option.title }}
           </button>
@@ -307,465 +391,4 @@ function handleStart(): void {
   </div>
 </template>
 
-<style scoped>
-.mc-launch {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  color: #0f172a;
-}
-
-.mc-launch--panel {
-  height: 100%;
-  flex: 1 1 auto;
-}
-
-.mc-launch__body {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-height: 0;
-}
-
-.mc-launch--panel .mc-launch__body {
-  flex: 1 1 auto;
-  overflow-x: hidden;
-  overflow-y: auto;
-  padding-bottom: 8px;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-}
-
-.mc-launch--modal .mc-launch__body {
-  gap: 22px;
-  max-height: min(62vh, 560px);
-  overflow-y: auto;
-  padding-right: 2px;
-  scrollbar-gutter: stable;
-}
-
-.mc-launch__lead {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.55;
-  color: #64748b;
-}
-
-.mc-block {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.mc-block__head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mc-block__index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: #e0f2fe;
-  color: #0369a1;
-  font-size: 11px;
-  font-weight: 800;
-  flex-shrink: 0;
-}
-
-.mc-block__title {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: #334155;
-  letter-spacing: 0.01em;
-}
-
-/* Segmented mastery */
-.mc-seg {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px;
-  padding: 3px;
-  border-radius: 12px;
-  background: #f1f5f9;
-}
-
-.mc-seg__item {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-height: 32px;
-  padding: 5px 4px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.15;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.mc-launch--panel .mc-seg__item {
-  gap: 3px;
-  min-height: 30px;
-  font-size: 11px;
-}
-
-.mc-seg__item:hover {
-  color: #334155;
-}
-
-.mc-seg__item.is-active {
-  background: #fff;
-  color: #0f172a;
-  box-shadow: 0 1px 3px rgb(15 23 42 / 0.08);
-}
-
-.mc-seg__icon {
-  width: 13px;
-  height: 13px;
-  flex-shrink: 0;
-  opacity: 0.75;
-}
-
-.mc-seg__item.is-active .mc-seg__icon {
-  color: #2563eb;
-  opacity: 1;
-}
-
-/* Presentation modes */
-.mc-mode-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.mc-launch--modal .mc-mode-grid {
-  grid-template-columns: 1fr 1fr;
-}
-
-.mc-mode {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-rows: auto auto;
-  column-gap: 10px;
-  row-gap: 2px;
-  align-items: start;
-  padding: 10px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #fff;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.mc-mode:hover {
-  border-color: #cbd5e1;
-  background: #f8fafc;
-}
-
-.mc-mode.is-active {
-  border-color: transparent;
-  background: #eff6ff;
-  box-shadow: inset 0 0 0 1.5px #2563eb;
-}
-
-.mc-mode__top {
-  display: contents;
-}
-
-.mc-mode__icon {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  align-self: center;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  color: #0f766e;
-  background: #ecfdf5;
-}
-
-.mc-mode.is-active .mc-mode__icon {
-  color: #1d4ed8;
-  background: #dbeafe;
-}
-
-.mc-mode__check {
-  grid-column: 3;
-  grid-row: 1 / span 2;
-  align-self: center;
-  width: 15px;
-  height: 15px;
-  color: #2563eb;
-}
-
-.mc-mode__title {
-  grid-column: 2;
-  grid-row: 1;
-  font-size: 13px;
-  font-weight: 750;
-  color: #0f172a;
-  line-height: 1.25;
-}
-
-.mc-mode__desc {
-  grid-column: 2;
-  grid-row: 2;
-  font-size: 11px;
-  line-height: 1.35;
-  color: #64748b;
-}
-
-.mc-launch--panel .mc-mode {
-  padding: 9px 10px;
-}
-
-.mc-launch--panel .mc-mode__desc {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Sub options — flat, no nested frame */
-.mc-sub {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.mc-sub__label {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 650;
-  color: #64748b;
-}
-
-.mc-sub__row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.mc-sub__btn {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px;
-  border: none;
-  border-radius: 12px;
-  background: #f8fafc;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.mc-sub__btn:hover {
-  background: #f1f5f9;
-}
-
-.mc-sub__btn.is-active {
-  background: #eff6ff;
-  box-shadow: inset 0 0 0 1.5px #2563eb;
-}
-
-.mc-sub__btn-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.mc-sub__btn.is-active .mc-sub__btn-title {
-  color: #1d4ed8;
-}
-
-.mc-sub__btn-desc {
-  font-size: 11px;
-  line-height: 1.35;
-  color: #94a3b8;
-}
-
-/* Slide skins */
-.mc-skins {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.mc-launch--panel .mc-skins {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: thin;
-}
-
-.mc-launch--panel .mc-skin {
-  flex: 0 0 72px;
-  width: 72px;
-}
-
-.mc-skin {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  text-align: center;
-}
-
-.mc-skin__swatch {
-  display: block;
-  height: 48px;
-  border-radius: 10px;
-  box-shadow: inset 0 0 0 1px rgb(15 23 42 / 0.06);
-  transition:
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
-}
-
-.mc-skin:hover .mc-skin__swatch {
-  transform: translateY(-1px);
-}
-
-.mc-skin.is-active .mc-skin__swatch {
-  box-shadow:
-    inset 0 0 0 1px rgb(37 99 235 / 0.2),
-    0 0 0 2px #2563eb;
-}
-
-.mc-skin--general .mc-skin__swatch {
-  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
-}
-
-.mc-skin--chalkboard .mc-skin__swatch {
-  background: linear-gradient(160deg, #1f2937 0%, #111827 100%);
-}
-
-.mc-skin--comic .mc-skin__swatch {
-  background:
-    linear-gradient(135deg, #fef08a 0%, #fdba74 45%, #f472b6 100%);
-}
-
-.mc-skin--handdrawn .mc-skin__swatch {
-  background-color: #fffbeb;
-  background-image:
-    radial-gradient(circle at 20% 30%, rgb(120 53 15 / 0.12) 1.2px, transparent 1.5px),
-    radial-gradient(circle at 70% 60%, rgb(120 53 15 / 0.1) 1px, transparent 1.4px),
-    linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
-  background-size: 10px 10px, 14px 14px, auto;
-}
-
-.mc-skin__name {
-  font-size: 11px;
-  font-weight: 650;
-  color: #64748b;
-  line-height: 1.2;
-}
-
-.mc-skin.is-active .mc-skin__name {
-  color: #1d4ed8;
-  font-weight: 750;
-}
-
-/* Tone chips */
-.mc-tones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.mc-tone {
-  padding: 7px 12px;
-  border: none;
-  border-radius: 999px;
-  background: #f1f5f9;
-  color: #475569;
-  font-size: 12px;
-  font-weight: 650;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-}
-
-.mc-tone:hover {
-  background: #e2e8f0;
-  color: #1e293b;
-}
-
-.mc-tone.is-active {
-  background: #2563eb;
-  color: #fff;
-}
-
-/* Footer — pinned under scroll body in panel */
-.mc-launch__footer {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex-shrink: 0;
-  margin-top: auto;
-  padding: 12px 0 14px;
-  border-top: 1px solid #e2e8f0;
-  background: #fff;
-}
-
-.mc-launch--panel .mc-launch__footer {
-  margin-top: 0;
-  padding-left: 0;
-  padding-right: 0;
-}
-
-.mc-launch--modal .mc-launch__footer {
-  margin-top: 14px;
-}
-
-.mc-launch__start {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  height: 44px;
-  border: none;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 750;
-  color: #fff;
-  background: #2563eb;
-  box-shadow: 0 8px 20px rgb(37 99 235 / 0.22);
-  cursor: pointer;
-}
-
-.mc-launch__start:hover {
-  background: #1d4ed8;
-}
-
-.mc-launch--panel .mc-block {
-  gap: 8px;
-}
-</style>
+<style scoped src="./mindClassroomLaunchContent.css"></style>

@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.174.0] - 2026-08-10
+## [5.176.0] - 2026-08-12
 
 > **Mind-map v2 classroom lecture and toolbar audience UX.**
 
@@ -19,6 +19,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **思维讲堂入口** — Side-toolbar item removed; only the bottom-right mascot remains.
 - **Mind-map top bar** — Structure and theme controls are icon-only (tooltip for labels); audience control sits **before** AI generate.
+
+## [5.175.1] - 2026-08-12
+
+> **Word add-in: production packaging/CSP framing, Voice same-origin WS, Windows install catalogs.**
+
+### Fixed
+
+- **Office task-pane framing** — `/word-addin/*` CSP uses `frame-ancestors *` and omits `X-Frame-Options` so Word can host the shell (DENY/`frame-ancestors 'none'` blocked the runtime).
+- **Production AppDomains** — Manifest rewrite keeps origin-only AppDomains (never `…/word-addin` paths); path AppDomains installed but hid the CustomTab.
+- **Dev vs production add-in Id** — Repo/Vite sideload uses **MindGraph Dev**; production zip rewrites a distinct Id/labels so `npm start` cannot overwrite Install.cmd registration.
+- **Voice CSWSH / mixed content** — Ribbon Voice opens `{Settings baseUrl}/word-addin/.../voice.html` (same Origin as Fun-ASR WS); clearer WS close / mixed-content errors.
+
+### Changed
+
+- **Windows installer** — Closes/relaunches Word; validates AppDomains; registers trusted shared-folder catalog; strips Dev/localhost registry leftovers; prompts to open a document (not blank start screen).
+- **Sign-in / prefs** — Hosted shell pins Settings baseUrl; async OfficeRuntime.storage save; SPA handoff waits for prefs hydrate.
+- **Docs / README** — Voice same-origin note; production vs Dev install guidance; `Reset-DevSideload.ps1` for clearing stale WEF cache.
+
+### Tests
+
+- Word add-in CSP framing; production packaging Id / AppDomain / display-name assertions.
+
+## [5.175.0] - 2026-08-12
+
+> **Word add-in: dedicated Voice dialog, embed probe, packaging; WS mgat_ auth hardening.**
+
+### Added
+
+- **Embed probe** — `POST /api/auth/embed/probe` validates phone + `mgat_` without minting a Redis handoff code (Settings Sign-in).
+- **Word Voice dialog** — Ribbon Voice opens a dedicated Office.js recorder (Start/Pause/Stop/Copy) over `WS /api/ws/voice-notes` with saved `mgat_`; 60m cap, silence auto-stop, started timeout.
+- **Word add-in packaging** — Deploy zip helpers (`utils/word_addin_packaging.py`), Windows/Mac install scripts, download API wiring; static `/word-addin/` hosting helpers.
+- **Bearer extract leaf** — `services/auth/bearer_token.py` breaks `http_auth_token` ↔ `utils.auth` import cycles.
+
+### Changed
+
+- **Sign-in UX** — Compact Settings dialog; server presets (Test / MG / Local); probe failures distinguish credentials vs network vs unsupported server.
+- **MindMate / Voice / Sign-in** — Office dialogs; MindGraph / Showcase / Manual remain task panes.
+- **WS mgat_ auth** — `authenticate_websocket_user` accepts `mgat_` + account (header or query); TokenAudit + `?client=` bind for Word Voice.
+- **Office embed chrome** — Desktop layout for embed; sidebar collapse defaults; Showcase expand control; Manual iframes Kingsoft guide.
+
+### Fixed
+
+- **False “invalid token” on undeployed probe** — Client no longer maps HTTP 404/405 to credential failure.
+- **CSP / shell** — `/word-addin/*` allows Office.js CDN + Manual frame-src; shell JS no-store.
+
+### Tests
+
+- Embed probe/handoff sanitize; WS mgat_ auth; Word add-in packaging; SPA cache-control / security hardening coverage.
+
+## [5.174.0] - 2026-08-12
+
+> **Word add-in embed auth; semantic diagram spec validation; floating toolbar fit-aware placement.**
+
+### Added
+
+- **Word add-in** — Office.js host in [`word-addin/`](word-addin/) (MindGraph / MindMate / Voice / Showcase / Settings task panes); `X-MG-Client: word-addin`.
+- **Embed session handoff** — `POST /api/auth/embed/handoff` + `GET /api/auth/embed/complete` exchanges a short-lived Redis code for SPA cookies on the MindGraph origin (no `mgat_` in the query string). Docs: [`docs/architecture/word_addin_embed_auth.md`](docs/architecture/word_addin_embed_auth.md).
+- **Semantic spec validation** — Create / patch / PNG export reject invalid agent-authored specs with structured `400 invalid_diagram_spec` (canvas `{nodes, connections}` persist specs pass through).
+- **OpenClaw skill 1.4.0** — Slimmer `SKILL.md`: agent-authored semantic `spec` vs `generate_graph`, intent→type table, cookbook; README covers install/env.
+
+### Changed
+
+- **Office embed layout** — `?embed=word-addin` / Office host always treated as desktop (never `/m/*`).
+- **CORS** — Allow `localhost` / `127.0.0.1` (any port) for the Word add-in HTTPS shell calling API hosts; private-LAN regex remains debug-only.
+- **Mind map fit-after-load** — Always fit-to-full-canvas (drops center-at-default-zoom path).
+
+### Fixed
+
+- **Floating toolbar clipping** — Anchor stays inside the canvas container; flips below when fit-to-screen leaves no room above; measures bar size via `ResizeObserver`.
+
+### Tests
+
+- Embed handoff sanitize/consume; semantic spec validation; floating toolbar placement; mobile detect Office embed.
 
 ## [5.173.2] - 2026-08-09
 

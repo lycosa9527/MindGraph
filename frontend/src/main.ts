@@ -27,6 +27,10 @@ import { installFrontendErrorReporting } from './utils/installFrontendErrorRepor
 import { loadMobileDebugConsole } from './utils/loadMobileDebugConsole'
 import { bindPwaInstallListeners } from './utils/pwaInstall'
 import { reloadForStaleChunk } from './utils/staleChunkReload'
+import { syncOfficeEmbedFromSearch } from './utils/officeEmbed'
+
+// Office Word task-pane / ?embed=word-addin → desktop layout before first paint.
+syncOfficeEmbedFromSearch()
 
 // Attach X-CSRF-Token to same-origin mutations before any request is made.
 installCsrfFetchInterceptor()

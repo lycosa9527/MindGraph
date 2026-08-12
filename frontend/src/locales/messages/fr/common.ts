@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'Bibliothèque',
   'meta.pageTitle.libraryBookmark': 'Signet',
   'meta.pageTitle.libraryViewer': 'Visionneuse bibliothèque',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'Connexion',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

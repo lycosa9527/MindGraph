@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Tiện ích Chrome',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Tính năng này yêu cầu gói trường Standard hoặc Professional (không bao gồm Basic).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Gói đăng ký trường của bạn đã hết hạn. Tài khoản hiện ở gói dùng thử. Liên hệ quản trị viên nền tảng để gia hạn.',
   'auth.diagramLimitReached': 'Trường dùng thử cho phép tối đa {max} sơ đồ đã lưu mỗi giáo viên. Hãy xóa một sơ đồ để lưu sơ đồ mới.',

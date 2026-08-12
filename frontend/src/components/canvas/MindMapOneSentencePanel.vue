@@ -9,11 +9,9 @@ import { ElAvatar } from 'element-plus'
 import { Camera, Mic, Send } from '@lucide/vue'
 
 import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
-import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
 import OneSentenceKittyAvatar from '@/components/canvas/OneSentenceKittyAvatar.vue'
 import OneSentenceNodeActionGuide from '@/components/canvas/OneSentenceNodeActionGuide.vue'
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
-
 import { useLanguage } from '@/composables'
 import { useMindMapOneSentenceChat } from '@/composables/canvasToolbar/useMindMapOneSentenceChat'
 import {
@@ -49,9 +47,7 @@ const userAvatar = computed(() => resolveUserAvatarEmoji(authStore.user?.avatar)
 const photoInputRef = ref<HTMLInputElement | null>(null)
 const photoUploading = ref(false)
 
-const inputDisabled = computed(
-  () => isInputBlocked.value
-)
+const inputDisabled = computed(() => isInputBlocked.value)
 
 const sendDisabled = computed(() => inputDisabled.value || !draft.value.trim())
 
@@ -61,10 +57,7 @@ const nodeActionGuideOpen = ref(false)
 let suggestionRotateTimer: ReturnType<typeof setInterval> | null = null
 
 const showSuggestionBubble = computed(
-  () =>
-    !inputDisabled.value
-    && !draft.value.trim()
-    && !nodeActionGuideOpen.value
+  () => !inputDisabled.value && !draft.value.trim() && !nodeActionGuideOpen.value
 )
 
 const activeSuggestionKey = computed(
@@ -76,8 +69,7 @@ function startSuggestionRotation(): void {
     return
   }
   suggestionRotateTimer = setInterval(() => {
-    activeSuggestionIndex.value =
-      (activeSuggestionIndex.value + 1) % suggestionKeys.length
+    activeSuggestionIndex.value = (activeSuggestionIndex.value + 1) % suggestionKeys.length
   }, ONE_SENTENCE_SUGGESTION_ROTATE_MS)
 }
 
@@ -187,9 +179,7 @@ onUnmounted(() => {
       @close="handleClose"
     />
 
-    <div class="shrink-0 border-b border-slate-100 px-3 py-2">
-      <ProfessionalContentAudienceBanner />
-    </div>
+    <div class="shrink-0 border-b border-slate-100 px-3 py-2" />
 
     <div
       :ref="setChatScrollEl"
@@ -199,7 +189,9 @@ onUnmounted(() => {
         v-for="msg in messages"
         :key="msg.id"
         class="one-sentence-chat-row"
-        :class="msg.role === 'user' ? 'one-sentence-chat-row--user' : 'one-sentence-chat-row--kitty'"
+        :class="
+          msg.role === 'user' ? 'one-sentence-chat-row--user' : 'one-sentence-chat-row--kitty'
+        "
       >
         <div
           class="one-sentence-chat-message flex items-start gap-2"
@@ -345,7 +337,7 @@ onUnmounted(() => {
               accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
               class="one-sentence-photo-input"
               @change="onPhotoSelected"
-            >
+            />
             <button
               type="button"
               class="one-sentence-input-icon"

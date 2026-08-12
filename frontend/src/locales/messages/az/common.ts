@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'Kitabxana',
   'meta.pageTitle.libraryBookmark': 'Əlfəcin',
   'meta.pageTitle.libraryViewer': 'Kitabxana baxışı',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'Daxil ol',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

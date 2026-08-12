@@ -6,16 +6,7 @@ import { computed } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  Pause,
-  Play,
-  Square,
-  Volume2,
-  VolumeX,
-  X,
-} from '@lucide/vue'
+import { ChevronLeft, ChevronRight, Pause, Play, Square, Volume2, VolumeX, X } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
@@ -79,9 +70,7 @@ const styleTitle = computed(() =>
           </p>
         </div>
       </div>
-      <span class="mc-slide-pane__page">
-        {{ stepIndex + 1 }} / {{ stepCount }}
-      </span>
+      <span class="mc-slide-pane__page"> {{ stepIndex + 1 }} / {{ stepCount }} </span>
     </header>
 
     <div class="mc-slide-pane__stage">
@@ -98,6 +87,8 @@ const styleTitle = computed(() =>
       <div
         class="mc-slide-card"
         :class="`mc-slide-card--${slideStyle}`"
+        aria-live="polite"
+        aria-atomic="true"
       >
         <span class="mc-slide-card__kind">{{ kindLabel }}</span>
         <h2 class="mc-slide-card__title">
@@ -208,7 +199,7 @@ const styleTitle = computed(() =>
   display: flex;
   flex-direction: column;
   width: min(50vw, 640px);
-  min-width: 360px;
+  min-width: min(360px, 50vw);
   flex-shrink: 0;
   height: 100%;
   border-left: 1px solid #e2e8f0;
@@ -436,7 +427,10 @@ const styleTitle = computed(() =>
     radial-gradient(circle at 18% 28%, rgb(120 53 15 / 0.1) 1.2px, transparent 1.6px),
     radial-gradient(circle at 72% 64%, rgb(120 53 15 / 0.08) 1px, transparent 1.4px),
     linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
-  background-size: 12px 12px, 16px 16px, auto;
+  background-size:
+    12px 12px,
+    16px 16px,
+    auto;
   border: 1.5px dashed #c2410c;
 }
 
@@ -505,5 +499,17 @@ const styleTitle = computed(() =>
 
 .mc-dock-btn--stop:hover:not(:disabled) {
   background: #fef2f2;
+}
+
+@media (max-width: 768px) {
+  .mc-slide-pane {
+    width: 100%;
+    min-width: 0;
+    border-left: none;
+  }
+
+  .mc-slide-pane__stage {
+    padding-inline: 38px;
+  }
 }
 </style>

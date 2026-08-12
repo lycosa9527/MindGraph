@@ -11,6 +11,11 @@ import {
   DEFAULT_MIND_CLASSROOM_SLIDE_STYLE,
   DEFAULT_MIND_CLASSROOM_TONE,
   DEFAULT_MIND_CLASSROOM_TOUR_SCOPE,
+  type MindClassroomMasteryId,
+  type MindClassroomPresentationId,
+  type MindClassroomSlideStyleId,
+  type MindClassroomToneId,
+  type MindClassroomTourScopeId,
   loadMindClassroomMastery,
   loadMindClassroomPresentation,
   loadMindClassroomSlideStyle,
@@ -21,11 +26,6 @@ import {
   saveMindClassroomSlideStyle,
   saveMindClassroomTone,
   saveMindClassroomTourScope,
-  type MindClassroomMasteryId,
-  type MindClassroomPresentationId,
-  type MindClassroomSlideStyleId,
-  type MindClassroomToneId,
-  type MindClassroomTourScopeId,
 } from '@/config/mindClassroom'
 import type { MindClassroomLectureStep } from '@/utils/mindClassroomScript'
 
@@ -67,12 +67,8 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
   })
 
   const isLecturing = computed(() => status.value !== 'idle')
-  const isSlideDeckMode = computed(
-    () => isLecturing.value && activeMode.value === 'slide_deck'
-  )
-  const isCanvasTourMode = computed(
-    () => isLecturing.value && activeMode.value === 'canvas_tour'
-  )
+  const isSlideDeckMode = computed(() => isLecturing.value && activeMode.value === 'slide_deck')
+  const isCanvasTourMode = computed(() => isLecturing.value && activeMode.value === 'canvas_tour')
   const currentStep = computed(() => steps.value[stepIndex.value] ?? null)
   const stepCount = computed(() => steps.value.length)
   const canGoPrev = computed(() => stepIndex.value > 0)

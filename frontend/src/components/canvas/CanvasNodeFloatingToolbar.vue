@@ -2,7 +2,7 @@
 /**
  * Frosted-glass floating toolbar anchored above the selected mind-map node.
  */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
@@ -21,7 +21,10 @@ import MindMapSubgraphAiMark from './MindMapSubgraphAiMark.vue'
 import { useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { FLOATING_TOOLBAR_COLORS, FLOATING_TOOLBAR_FONT_SIZES } from '@/config/floatingToolbarColors'
-import type { FloatingToolbarPosition } from '@/composables/canvasToolbar/useNodeFloatingToolbarPosition'
+import type {
+  FloatingToolbarPosition,
+  FloatingToolbarSize,
+} from '@/composables/canvasToolbar/useNodeFloatingToolbarPosition'
 import { NODE_SHAPE_OPTIONS, type NodeShape } from '@/utils/nodeShapeStyle'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
@@ -36,7 +39,46 @@ const props = defineProps<{
 const emit = defineEmits<{
   aiSubgraphGenerate: []
   explainNode: []
+  sizeChange: [size: FloatingToolbarSize | null]
 }>()
+
+const rootEl = ref<HTMLElement | null>(null)
+let sizeObserver: ResizeObserver | null = null
+
+function publishSize(el: HTMLElement | null): void {
+  if (!el) {
+    emit('sizeChange', null)
+    return
+  }
+  const rect = el.getBoundingClientRect()
+  if (rect.width < 1 || rect.height < 1) {
+    emit('sizeChange', null)
+    return
+  }
+  emit('sizeChange', { width: rect.width, height: rect.height })
+}
+
+watch(
+  rootEl,
+  (el) => {
+    sizeObserver?.disconnect()
+    sizeObserver = null
+    if (!el) {
+      publishSize(null)
+      return
+    }
+    publishSize(el)
+    sizeObserver = new ResizeObserver(() => publishSize(el))
+    sizeObserver.observe(el)
+  },
+  { flush: 'post' }
+)
+
+onUnmounted(() => {
+  sizeObserver?.disconnect()
+  sizeObserver = null
+  emit('sizeChange', null)
+})
 
 const { t } = useLanguage()
 
@@ -79,6 +121,8 @@ const toolbarStyle = computed(() => ({
   top: `${props.position.top}px`,
   position: 'fixed' as const,
   zIndex: 5000,
+  // above: anchor is bar bottom; below: anchor is bar top (fit-to-screen flip).
+  transform: props.position.placement === 'below' ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
 }))
 
 const fontOptions = computed(() => [
@@ -121,6 +165,7 @@ function onShapePick(shape: NodeShape) {
   <Teleport to="body">
     <div
       v-if="position.visible"
+      ref="rootEl"
       class="node-floating-toolbar pointer-events-auto"
       :style="toolbarStyle"
       @mousedown.stop
@@ -471,7 +516,6 @@ function onShapePick(shape: NodeShape) {
 .node-floating-toolbar {
   position: fixed;
   z-index: 5000;
-  transform: translate(-50%, -100%);
 }
 
 .node-floating-toolbar__inner {

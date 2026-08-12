@@ -2,7 +2,9 @@
 
 This folder is versioned with the MindGraph app. It teaches OpenClaw how to call MindGraph’s HTTP API using your account token.
 
-**Agent behavior:** Most users only specify a **topic** (sent as **`prompt`**) and a **diagram type** — the eight **Thinking Maps** plus **mind map** (and **concept map** when needed). If someone wants **exact text on certain nodes**, the skill describes **`GET` diagram + `PATCH` nodes** instead of regenerating from scratch.
+**Agent behavior (`SKILL.md`):** Two generate paths — (1) **agent-authored semantic `spec`** → save → PNG (no LLM), or (2) **native prompt** via `generate_graph` when the user only gives a topic. Both converge on `POST /api/diagrams` + `GET …/png`. Intent→type table and per-type cookbook live in `SKILL.md`. Bad specs → **400** `invalid_diagram_spec`; broken JSON → **422**.
+
+Human install / env / WorkBuddy notes stay in this README so the skill file stays short for the model.
 
 ## Install (end users)
 
@@ -51,6 +53,13 @@ WorkBuddy is built on the OpenClaw stack, but **the UI changes by version** and 
 
 If nothing works, use **WorkBuddy / CodeBuddy in-app feedback** or **Tencent Cloud support** and ask specifically: *where to set `skills.entries.<name>.env` for OpenClaw skills* for your build.
 
+### Setup (first-time)
+
+1. Log into MindGraph in the browser.
+2. Open **账户信息** → **API Token** → **生成 Token**.
+3. Set `MINDGRAPH_TOKEN`, `MINDGRAPH_ACCOUNT` (phone), and `MINDGRAPH_BASE_URL` (default test: `https://test.mindspringedu.com`) in the skill env (see above).
+4. Tokens expire after **90 days**; regenerate from the same UI.
+
 ### After you change auth
 
 MindGraph applies new tokens and account checks on **every request**—no wait on the server. If you edit `MINDGRAPH_*` in OpenClaw/WorkBuddy and calls still fail or act like the old token, your **client** may have loaded env only at startup: **save** the config, then **restart** WorkBuddy or OpenClaw (or use a “reload skills / config” action if the product provides one). The next requests will use the new values.
@@ -62,17 +71,15 @@ From the MindGraph repo root:
 ```bash
 npm i -g clawhub
 clawhub login
-clawhub skill publish ./openclaw/skills/mindgraph --slug mindgraph --name "MindGraph" --version 1.3.0 --tags latest
+clawhub skill publish ./openclaw/skills/mindgraph --slug mindgraph --name "MindGraph" --version 1.4.0 --tags latest
 ```
 
-Bump the **ClawHub** `--version` when `SKILL.md` or this README changes (current publish target: **1.3.0**).
-
-**Inline recommendations:** the `start` and `next_batch` HTTP endpoints use **Server-Sent Events (SSE)**, not JSON-only responses. See `SKILL.md` §6.
+Bump the **ClawHub** `--version` when `SKILL.md` or this README changes (current publish target: **1.4.0**).
 
 ## Files in this bundle
 
 | File | Role |
 |------|------|
-| `SKILL.md` | Agent instructions (API paths, auth, timeouts, §3 `url` + `filename`, PNG signing, §8 shortcuts) |
+| `SKILL.md` | Slim agent instructions: 2 generate paths, intent table, cookbook, auth headers, 400/422 |
 | `demo.json` | Copy-paste `skills.entries.mindgraph` for `openclaw.json` |
-| `README.md` | Install, configure, WorkBuddy hints, publish command |
+| `README.md` | Install, env, WorkBuddy hints, setup, publish command |

@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Shtesë',
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Shtesa Chrome',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Ky funksion kërkon nivelin shkollor Standard ose Professional (Basic përjashtohet).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Abonimi shkollor ka përfunduar. Llogaria juaj është në nivelin provë. Kontaktoni administratorin e platformës për rinovim.',
   'auth.diagramLimitReached': 'Shkollat provë lejojnë deri në {max} diagrame të ruajtura për mësues. Fshini një për të ruajtur një të re.',

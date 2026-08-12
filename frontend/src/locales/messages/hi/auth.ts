@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'प्लगइन',
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Chrome एक्सटेंशन',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'इस सुविधा के लिए Standard या Professional स्कूल टियर (Basic बाहर) आवश्यक।',
   'auth.schoolSubscriptionExpiredDowngraded': 'आपकी स्कूल सदस्यता समाप्त। खाता अब परीक्षण टियर पर। नवीनीकरण के लिए प्लेटफ़ॉर्म व्यवस्थापक से संपर्क करें।',
   'auth.diagramLimitReached': 'परीक्षण स्कूल प्रति शिक्षक {max} सहेजे आरेख तक। नया सहेजने के लिए एक हटाएँ।',

@@ -18,7 +18,7 @@ from typing import Optional
 from fastapi import HTTPException, Request, status
 
 from models.domain.auth import User
-from services.auth.http_auth_token import extract_bearer_token
+from services.auth.bearer_token import extract_bearer_token
 
 try:
     from services.redis.cache.redis_org_cache import org_cache

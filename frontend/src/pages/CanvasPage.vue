@@ -41,10 +41,10 @@ import {
   ConceptMapLabelPicker,
   ConceptMapRootConceptPicker,
   InlineRecommendationsPicker,
-  MindMapPresentationSideToolbar,
   MindClassroomLectureOverlay,
   MindClassroomMascot,
   MindClassroomSlidePane,
+  MindMapPresentationSideToolbar,
   MindMapSidePanel,
   MindMapSideToolbar,
   MindMapSlideOverlay,
@@ -84,6 +84,7 @@ import {
   diagramTypeMap,
   diagramTypeToChineseMap,
 } from '@/composables/canvasPage/diagramTypeMaps'
+import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import {
   clearBlankCanvasLoadDedupe,
   getDiagramDataType,
@@ -92,10 +93,7 @@ import {
   resolveDiagramTypeFromQuery,
   shouldPriority3LoadDefaultTemplate,
 } from '@/composables/canvasPage/newCanvasBootstrap'
-import { useNewCanvasTypeQueryBootstrap } from '@/composables/canvasPage/useNewCanvasTypeQueryBootstrap'
-import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
-import { handoffMindMapToZhihuiDiagram } from '@/composables/zhihui/handoffMindMapToZhihuiDiagram'
 import { registerCanvasPageResetHandler } from '@/composables/canvasPage/registerCanvasPageResetHandler'
 import { shouldSkipLibraryReloadForActiveDiagram } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
@@ -105,6 +103,7 @@ import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPag
 import { useCanvasPageTabRecIndicator } from '@/composables/canvasPage/useCanvasPageTabRecIndicator'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
 import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
+import { useNewCanvasTypeQueryBootstrap } from '@/composables/canvasPage/useNewCanvasTypeQueryBootstrap'
 import {
   ensureCanvasVirtualKeyboardUiVersionSync,
   toggleCanvasVirtualKeyboard,
@@ -118,6 +117,7 @@ import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
+import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useMindMapRagBranchExpand } from '@/composables/editor/useMindMapRagBranchExpand'
 import {
@@ -148,6 +148,7 @@ import {
   setPresentationDiagramEditLocked,
   setPresentationFullscreenRoot,
 } from '@/composables/presentation/presentationDiagramEdit'
+import { handoffMindMapToZhihuiDiagram } from '@/composables/zhihui/handoffMindMapToZhihuiDiagram'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { PRESENTATION_HIGHLIGHTER_PALETTE_TOOLBAR } from '@/config/presentationHighlighter'
@@ -156,20 +157,19 @@ import {
   type PresentationLaserSize,
 } from '@/config/presentationLaser'
 import {
-  PRESENTATION_SPOTLIGHT_SIZE_SCALE,
-  type PresentationSpotlightSize,
-} from '@/config/presentationSpotlight'
-import {
   PRESENTATION_BOARD_THICKNESS_SCALE,
   type PresentationBoardColorId,
   type PresentationBoardThickness,
   presentationBoardColorStroke,
 } from '@/config/presentationPen'
+import {
+  PRESENTATION_SPOTLIGHT_SIZE_SCALE,
+  type PresentationSpotlightSize,
+} from '@/config/presentationSpotlight'
 import { ANIMATION, FIT_PADDING, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
-import { DiagramSessionKey } from '@/composables/diagram/useDiagramSession'
 import {
   type DiagramSession,
   type LLMResult,
@@ -529,7 +529,7 @@ const {
   isSlideDeckMode: mindClassroomSlideDeck,
   isCanvasTourMode: mindClassroomCanvasTour,
 } = storeToRefs(mindClassroomStore)
-useMindClassroomLecture()
+useMindClassroomLecture({ bootstrap: true })
 
 const mindMapTourFocusNodeId = computed(
   () => mindClassroomStore.focusNodeId ?? slidePresentation.slideFocusNodeId.value
@@ -1291,8 +1291,7 @@ onMounted(async () => {
           notify.error(t('notification.importUnsupportedType'))
         } else {
           const llmResults = spec.llm_results as
-            | { results?: Record<string, unknown>; selectedModel?: string }
-            | undefined
+            { results?: Record<string, unknown>; selectedModel?: string } | undefined
           let specForLoad = spec
           if (llmResults?.results && typeof llmResults.results === 'object') {
             llmResultsStore.restoreFromSaved(
@@ -1621,7 +1620,12 @@ onUnmounted(() => {
       <!-- Node Palette panel (瀑布流) - left 50%, inset to clear floating toolbars -->
       <Transition name="node-palette-slide">
         <div
-          v-if="panelsStore.nodePalettePanel.isOpen && !isViewer && !useMindMapV2 && !mindClassroomSlideDeck"
+          v-if="
+            panelsStore.nodePalettePanel.isOpen &&
+            !isViewer &&
+            !useMindMapV2 &&
+            !mindClassroomSlideDeck
+          "
           class="node-palette-panel-split shrink-0 flex flex-col bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden ml-4 mr-2 self-stretch"
           :style="{
             width: '50%',
@@ -1648,41 +1652,41 @@ onUnmounted(() => {
         class="flex-1 min-w-0 flex flex-row relative min-h-0"
         :class="{ 'mc-dual-lecture': mindClassroomSlideDeck }"
       >
-        <div class="flex-1 min-w-0 flex flex-col relative min-h-0">
-        <DiagramCanvasHost
-          v-if="diagramStore.data"
-          v-model:presentation-highlight-strokes="presentationHighlightStrokes"
-          v-model:presentation-tool="presentationTool"
-          v-model:presentation-highlighter-color="presentationHighlighterColor"
-          v-model:presentation-pen-color="presentationPenColor"
-          v-model:presentation-stroke-eraser-active="presentationStrokeEraserActive"
-          class="w-full flex-1 min-h-0"
-          :show-background="true"
-          :show-minimap="false"
-          :fit-view-on-init="fitViewOnInit"
-          :concept-map-initial-topic-fit="false"
-          :hand-tool-active="
-            showSimplifiedPresentationRail ? presentationHandPanMode : handToolActive
-          "
-          :presentation-pointer-edit-mode="presentationPointerEditMode"
-          :presentation-hand-pan-mode="presentationHandPanMode"
-          :collab-locked-node-ids="collabLockedNodeIds"
-          :mind-map-slide-focus-node-id="mindMapTourFocusNodeId"
-          :mind-map-slide-dim-focus-node-ids="mindMapTourDimFocusNodeIds"
-          :presentation-rail-open="presentationRailOpen"
-          :presentation-side-toolbar-visible="showMindMapPresentationSideToolbar"
-          :enable-touch-pan-pinch="uiStore.eBlackboardOptimize"
-          @node-double-click="handleNodeDoubleClick"
-        />
+        <div class="mc-dual-lecture__canvas flex-1 min-w-0 flex flex-col relative min-h-0">
+          <DiagramCanvasHost
+            v-if="diagramStore.data"
+            v-model:presentation-highlight-strokes="presentationHighlightStrokes"
+            v-model:presentation-tool="presentationTool"
+            v-model:presentation-highlighter-color="presentationHighlighterColor"
+            v-model:presentation-pen-color="presentationPenColor"
+            v-model:presentation-stroke-eraser-active="presentationStrokeEraserActive"
+            class="w-full flex-1 min-h-0"
+            :show-background="true"
+            :show-minimap="false"
+            :fit-view-on-init="fitViewOnInit"
+            :concept-map-initial-topic-fit="false"
+            :hand-tool-active="
+              showSimplifiedPresentationRail ? presentationHandPanMode : handToolActive
+            "
+            :presentation-pointer-edit-mode="presentationPointerEditMode"
+            :presentation-hand-pan-mode="presentationHandPanMode"
+            :collab-locked-node-ids="collabLockedNodeIds"
+            :mind-map-slide-focus-node-id="mindMapTourFocusNodeId"
+            :mind-map-slide-dim-focus-node-ids="mindMapTourDimFocusNodeIds"
+            :presentation-rail-open="presentationRailOpen"
+            :presentation-side-toolbar-visible="showMindMapPresentationSideToolbar"
+            :enable-touch-pan-pinch="uiStore.eBlackboardOptimize"
+            @node-double-click="handleNodeDoubleClick"
+          />
 
-        <MindMapSideToolbar v-if="showMindMapSideToolbar && sidebarVisible" />
-        <MindMapSidePanel
-          v-if="showMindMapSideToolbar && activeTool"
-          :tool="activeTool"
-          @close="closeActiveTool"
-        />
-        <MindClassroomMascot v-if="showMindMapSideToolbar && !mindClassroomLecturing" />
-        <MindClassroomLectureOverlay v-if="mindClassroomCanvasTour" />
+          <MindMapSideToolbar v-if="showMindMapSideToolbar && sidebarVisible" />
+          <MindMapSidePanel
+            v-if="showMindMapSideToolbar && activeTool"
+            :tool="activeTool"
+            @close="closeActiveTool"
+          />
+          <MindClassroomMascot v-if="showMindMapSideToolbar && !mindClassroomLecturing" />
+          <MindClassroomLectureOverlay v-if="mindClassroomCanvasTour" />
         </div>
         <MindClassroomSlidePane v-if="mindClassroomSlideDeck" />
       </div>

@@ -254,3 +254,9 @@
   z-index: 80;
   background: #f8fafc;
 }
+
+@media (max-width: 768px) {
+  .mc-dual-lecture__canvas {
+    display: none;
+  }
+}

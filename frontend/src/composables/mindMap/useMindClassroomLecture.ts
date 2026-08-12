@@ -1,13 +1,13 @@
 /**
  * Mind Classroom lecture runner — walk map, caption, optional TTS.
  */
-import { nextTick, onUnmounted, watch } from 'vue'
+import { nextTick, onBeforeUnmount, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
+import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { setPresentationDiagramEditLocked } from '@/composables/presentation/presentationDiagramEdit'
 import {
   useAiContentLevelStore,
@@ -21,8 +21,7 @@ const FIT_MS = 900
 
 let advanceTimer: ReturnType<typeof setTimeout> | null = null
 let transitionTimer: ReturnType<typeof setTimeout> | null = null
-let keyboardBound = false
-let engineBootstrapped = false
+let layoutTimer: ReturnType<typeof setTimeout> | null = null
 
 function clearAdvanceTimer(): void {
   if (advanceTimer !== null) {
@@ -38,6 +37,13 @@ function clearTransitionTimer(): void {
   }
 }
 
+function clearLayoutTimer(): void {
+  if (layoutTimer !== null) {
+    clearTimeout(layoutTimer)
+    layoutTimer = null
+  }
+}
+
 function stopSpeech(): void {
   if (typeof window === 'undefined' || !window.speechSynthesis) return
   window.speechSynthesis.cancel()
@@ -50,7 +56,12 @@ function speakCaption(text: string, lang: string, onEnd: () => void): void {
   }
   stopSpeech()
   const utter = new SpeechSynthesisUtterance(text)
-  utter.lang = lang.startsWith('zh') ? 'zh-CN' : 'en-US'
+  const normalizedLanguage = lang.replace('_', '-')
+  utter.lang = normalizedLanguage.startsWith('zh')
+    ? normalizedLanguage.toLowerCase().includes('tw')
+      ? 'zh-TW'
+      : 'zh-CN'
+    : normalizedLanguage
   utter.rate = 1.02
   utter.onend = () => onEnd()
   utter.onerror = () => onEnd()
@@ -66,7 +77,11 @@ function isTypingInInput(): boolean {
   )
 }
 
-export function useMindClassroomLecture() {
+interface MindClassroomLectureOptions {
+  bootstrap?: boolean
+}
+
+export function useMindClassroomLecture(options: MindClassroomLectureOptions = {}) {
   const { t, currentLanguage } = useLanguage()
   const diagramStore = useDiagramStore()
   const classroomStore = useMindClassroomStore()
@@ -143,6 +158,7 @@ export function useMindClassroomLecture() {
     const next = Math.max(0, Math.min(steps.value.length - 1, index))
     clearAdvanceTimer()
     clearTransitionTimer()
+    clearLayoutTimer()
     stopSpeech()
     classroomStore.stepIndex = next
     classroomStore.transitioning = true
@@ -154,9 +170,7 @@ export function useMindClassroomLecture() {
     const data = diagramStore.data
     if (!data?.nodes?.length) return { ok: false, reason: 'no_diagram' }
 
-    const audienceTitle = t(
-      `canvas.toolbar.professionalContent.level.${aiLevelStore.level}.title`
-    )
+    const audienceTitle = t(`canvas.toolbar.professionalContent.level.${aiLevelStore.level}.title`)
     const mode = classroomStore.presentation
     const nextSteps = buildMindClassroomLectureSteps(
       data.nodes ?? [],
@@ -185,7 +199,7 @@ export function useMindClassroomLecture() {
     void nextTick(() => {
       goToStep(0)
       if (mode === 'slide_deck') {
-        window.setTimeout(() => goToStep(0), 160)
+        layoutTimer = window.setTimeout(() => goToStep(0), 160)
       }
     })
     return { ok: true }
@@ -229,6 +243,7 @@ export function useMindClassroomLecture() {
   function stopLecture(): void {
     clearAdvanceTimer()
     clearTransitionTimer()
+    clearLayoutTimer()
     stopSpeech()
     classroomStore.clearSession()
     diagramStore.clearSelection()
@@ -268,8 +283,7 @@ export function useMindClassroomLecture() {
   }
 
   function bootstrapEngine(): void {
-    if (engineBootstrapped) return
-    engineBootstrapped = true
+    let keyboardBound = false
     watch(
       isLecturing,
       (on) => {
@@ -284,15 +298,29 @@ export function useMindClassroomLecture() {
       { immediate: true }
     )
     watch(voiceEnabled, (on) => {
-      if (!on) stopSpeech()
+      if (on) return
+      stopSpeech()
+      clearAdvanceTimer()
+      const step = currentStep.value
+      if (step && status.value === 'running') {
+        scheduleAdvance(step.dwellMs)
+      }
+    })
+
+    onBeforeUnmount(() => {
+      if (keyboardBound) {
+        window.removeEventListener('keydown', handleKeyboard, true)
+      }
+      clearAdvanceTimer()
+      clearTransitionTimer()
+      clearLayoutTimer()
+      stopSpeech()
+      classroomStore.clearSession()
+      setPresentationDiagramEditLocked(false)
     })
   }
 
-  bootstrapEngine()
-
-  onUnmounted(() => {
-    // Keep singleton engine across mounts; only clear timers if session ends with page.
-  })
+  if (options.bootstrap) bootstrapEngine()
 
   return {
     isLecturing,

@@ -7,6 +7,7 @@ import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 
 import {
+  type AiContentLevelId,
   DEFAULT_AI_CONTENT_LEVEL,
   loadAiContentLevelGuideSeen,
   loadAiContentLevelPreference,
@@ -14,7 +15,6 @@ import {
   saveAiContentLevelGuideSeen,
   saveAiContentLevelPreference,
   saveGeneratedLevelsByDiagram,
-  type AiContentLevelId,
 } from '@/config/aiContentLevels'
 
 export const useAiContentLevelStore = defineStore('aiContentLevel', () => {
@@ -22,7 +22,10 @@ export const useAiContentLevelStore = defineStore('aiContentLevel', () => {
   const level = ref<AiContentLevelId>(initial.level)
   const userSet = ref(initial.userSet)
   const guideSeen = ref(loadAiContentLevelGuideSeen())
-  const generatedLevelByDiagram = ref<Record<string, AiContentLevelId>>(loadGeneratedLevelsByDiagram())
+  const generatedLevelByDiagram = ref<Record<string, AiContentLevelId>>(
+    loadGeneratedLevelsByDiagram()
+  )
+  const unsavedDiagramKey = ref(createUnsavedDiagramKey())
 
   /** Non-general levels are treated as an active audience constraint. */
   const activeLevel = computed(() =>
@@ -70,6 +73,10 @@ export const useAiContentLevelStore = defineStore('aiContentLevel', () => {
     return generatedLevelByDiagram.value[diagramKey] ?? null
   }
 
+  function diagramKey(diagramId: string | null | undefined): string {
+    return diagramId ? `diagram:${diagramId}` : unsavedDiagramKey.value
+  }
+
   /** Record which audience level was active when AI last generated for this diagram. */
   function markDiagramGenerated(diagramKey: string, atLevel: AiContentLevelId = level.value): void {
     if (!diagramKey) return
@@ -77,6 +84,24 @@ export const useAiContentLevelStore = defineStore('aiContentLevel', () => {
       ...generatedLevelByDiagram.value,
       [diagramKey]: atLevel,
     }
+  }
+
+  function migrateGeneratedLevel(fromKey: string, diagramId: string | null | undefined): void {
+    if (!diagramId) return
+    const levelAtGeneration = generatedLevelByDiagram.value[fromKey]
+    const destinationKey = diagramKey(diagramId)
+    if (!levelAtGeneration || fromKey === destinationKey) return
+    const next = { ...generatedLevelByDiagram.value }
+    delete next[fromKey]
+    next[destinationKey] = levelAtGeneration
+    generatedLevelByDiagram.value = next
+  }
+
+  function resetGeneratedLevelSession(): void {
+    const next = { ...generatedLevelByDiagram.value }
+    delete next[unsavedDiagramKey.value]
+    generatedLevelByDiagram.value = next
+    unsavedDiagramKey.value = createUnsavedDiagramKey()
   }
 
   return {
@@ -89,7 +114,14 @@ export const useAiContentLevelStore = defineStore('aiContentLevel', () => {
     setLevel,
     reset,
     dismissGuide,
+    diagramKey,
     getGeneratedLevel,
     markDiagramGenerated,
+    migrateGeneratedLevel,
+    resetGeneratedLevelSession,
   }
 })
+
+function createUnsavedDiagramKey(): string {
+  return `unsaved:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`
+}

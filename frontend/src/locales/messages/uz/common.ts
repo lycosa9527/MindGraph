@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'Kutubxona',
   'meta.pageTitle.libraryBookmark': 'Xatcho’p',
   'meta.pageTitle.libraryViewer': 'Kutubxona ko’rishi',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'Kirish',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

@@ -202,3 +202,9 @@ TTL_MINDMATE_STREAMING_HOUR_MAX = 100_800
 # ---------------------------------------------------------------------------
 MAITE_PRACTICE = "maite:practice:{user_id}"
 TTL_MAITE_PRACTICE = 300
+
+# ---------------------------------------------------------------------------
+# Office / embed session handoff (mgat_ → browser cookies)
+# ---------------------------------------------------------------------------
+EMBED_SESSION_HANDOFF = "auth:embed:handoff:{code}"
+TTL_EMBED_SESSION_HANDOFF = 60

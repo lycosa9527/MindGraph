@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Extension',
   'auth.apiTokenButton': 'Jeton API',
   'auth.downloadChromeExtension': 'Extension Chrome',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Cette fonctionnalité nécessite l’offre école Standard ou Professionnelle (offre Basique exclue).',
   'auth.schoolSubscriptionExpiredDowngraded': 'L’abonnement de votre école a pris fin. Votre compte est désormais en essai. Contactez l’administrateur de la plateforme pour renouveler.',
   'auth.diagramLimitReached': 'Les écoles en essai autorisent jusqu’à {max} diagrammes enregistrés par enseignant. Supprimez-en un pour en enregistrer un nouveau.',

@@ -29,7 +29,10 @@ import { useBranchMoveDrag, useLanguage } from '@/composables'
 import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasExportOptions'
 import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
 import { useCanvasExportStore } from '@/stores/canvasExport'
-import { useNodeFloatingToolbarPosition } from '@/composables/canvasToolbar'
+import {
+  useNodeFloatingToolbarPosition,
+  type FloatingToolbarSize,
+} from '@/composables/canvasToolbar'
 import { registerDiagramLayoutRecalcSession } from '@/composables/core/diagramLayoutRecalcBootstrap'
 import { ensureMarkdownRenderer } from '@/composables/core/useMarkdown'
 import { useTheme } from '@/composables/core/useTheme'
@@ -375,12 +378,19 @@ const floatingToolbarShowAiSubgraph = computed(() =>
   isMindMapSubgraphExpandable(floatingToolbarAnchorId.value)
 )
 
+const floatingToolbarSize = ref<FloatingToolbarSize | null>(null)
+
 const { position: floatingToolbarPosition, scheduleMeasure: scheduleFloatingToolbarMeasure } =
   useNodeFloatingToolbarPosition({
     containerRef: canvasContainer,
     selectedNodeIds: floatingToolbarNodeIds,
     enabled: floatingToolbarEnabled,
+    toolbarSize: floatingToolbarSize,
   })
+
+function handleFloatingToolbarSizeChange(size: FloatingToolbarSize | null): void {
+  floatingToolbarSize.value = size
+}
 
 watch(
   () => {
@@ -761,7 +771,8 @@ defineExpose({
       :canvas-container="canvasContainer"
       :presentation-teleport-target="presentationTeleportTarget"
       :on-ai-subgraph-generate="handleAiSubgraphGenerate"
-:on-explain-node="handleFloatingToolbarExplainNode"
+      :on-explain-node="handleFloatingToolbarExplainNode"
+      :on-floating-toolbar-size-change="handleFloatingToolbarSizeChange"
     />
 
     <ContextMenu

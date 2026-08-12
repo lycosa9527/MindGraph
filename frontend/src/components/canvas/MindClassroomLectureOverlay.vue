@@ -6,15 +6,7 @@ import { computed } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  Pause,
-  Play,
-  Square,
-  Volume2,
-  VolumeX,
-} from '@lucide/vue'
+import { ChevronLeft, ChevronRight, Pause, Play, Square, Volume2, VolumeX } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
@@ -58,14 +50,15 @@ const isPaused = computed(() => status.value === 'paused')
         <span class="mc-lecture-overlay__badge">
           {{ t('canvas.mindClassroom.title') }}
         </span>
-        <span class="mc-lecture-overlay__counter">
-          {{ stepIndex + 1 }} / {{ stepCount }}
-        </span>
+        <span class="mc-lecture-overlay__counter"> {{ stepIndex + 1 }} / {{ stepCount }} </span>
       </div>
       <p class="mc-lecture-overlay__title">
         {{ currentStep?.title }}
       </p>
-      <p class="mc-lecture-overlay__text">
+      <p
+        class="mc-lecture-overlay__text"
+        aria-live="polite"
+      >
         {{ currentStep?.caption }}
       </p>
       <div

@@ -46,6 +46,7 @@ from models import (
 from models.domain.messages import Language
 from models.domain.auth import User
 from prompts import get_prompt
+from services.diagram.semantic_spec_validation import ensure_valid_semantic_spec
 from services.llm import llm_service
 from services.monitoring.activity_stream import get_activity_stream_service
 from services.redis.redis_token_buffer import get_token_tracker
@@ -204,6 +205,11 @@ async def export_png(
     if not diagram_data:
         raise HTTPException(status_code=400, detail=Messages.error("diagram_data_required", lang))
 
+    if diagram_type == "mindmap":
+        diagram_type = "mind_map"
+
+    ensure_valid_semantic_spec(diagram_type, diagram_data)
+
     if current_user and hasattr(current_user, "id"):
         schedule_module_activity(
             user=current_user,
@@ -226,10 +232,6 @@ async def export_png(
     )
 
     try:
-        # Normalize diagram type (same as generate_dingtalk)
-        if diagram_type == "mindmap":
-            diagram_type = "mind_map"
-
         # Ensure diagram_data is a dict and add any missing metadata (same as generate_dingtalk)
         if isinstance(diagram_data, dict):
             # Add learning sheet metadata if not present (defaults to False/0)

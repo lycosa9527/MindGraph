@@ -360,10 +360,14 @@ def should_apply_no_cache(path: str, content_type: str | None = None) -> bool:
 
     Covers SPA shell routes, HTML files, PWA bootstrap assets, and text/html
     responses (safety net when index.html is served on an unexpected path).
+    Word add-in shell JS under ``/word-addin/src/`` is also no-store so Settings /
+    handoff logic refreshes after deploy (icons under ``/word-addin/assets/`` can cache).
     """
     if is_pwa_no_cache_path(path):
         return True
     if path.endswith(".html"):
+        return True
+    if path.startswith("/word-addin/src/") and path.endswith(".js"):
         return True
     if is_spa_route(path):
         return True

@@ -6,6 +6,7 @@ import { canvasVirtualKeyboardOpen } from '@/composables/canvasToolbar/useCanvas
 import { resetMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { resetLearningSheetCustomModeUi } from '@/composables/mindMap/useLearningSheetCustomMode'
 import {
+  useAiContentLevelStore,
   useConceptMapFocusReviewStore,
   useConceptMapRelationshipStore,
   useInlineRecommendationsStore,
@@ -33,6 +34,7 @@ export function clearCanvasEphemeralSession(): void {
   resetLearningSheetCustomModeUi()
   resetMindMapSideToolbarState()
   canvasVirtualKeyboardOpen.value = false
+  useAiContentLevelStore().resetGeneratedLevelSession()
   const classroom = useMindClassroomStore()
   if (classroom.isLecturing) {
     classroom.clearSession()

@@ -31,12 +31,14 @@ const uiStore = useUIStore()
 const { t } = useLanguage()
 const { canViewSettingsSubtab } = useAdminAccess()
 
-/** Inline expand control exists on MindMate toolbar and MindGraph gallery headers. */
+/** Inline expand control exists on MindMate, MindGraph, Showcase, Voice Notes. */
 const showCollapsedSidebarExpand = computed(
   () =>
     uiStore.sidebarCollapsed &&
     !route.path.startsWith('/mindmate') &&
-    !route.path.startsWith('/mindgraph')
+    !route.path.startsWith('/mindgraph') &&
+    !route.path.startsWith('/showcase') &&
+    !route.path.startsWith('/voice-notes')
 )
 
 const isGuest = computed(() => !authStore.isAuthenticated)

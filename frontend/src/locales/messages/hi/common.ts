@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'पुस्तकालय',
   'meta.pageTitle.libraryBookmark': 'बुकमार्क',
   'meta.pageTitle.libraryViewer': 'पुस्तकालय दर्शक',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'साइन इन',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

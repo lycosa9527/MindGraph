@@ -72,6 +72,7 @@ export default {
   'auth.accountPlugin': '插件',
   'auth.apiTokenButton': 'API令牌',
   'auth.downloadChromeExtension': 'Chrome 扩展',
+  'auth.downloadWordAddin': 'Word 加载项',
   'auth.schoolTierFeatureUnavailable':
     '当前学校版本不支持此功能，请升级至标准教研版或校本共建版（基础教研版不含此功能）',
   'auth.schoolSubscriptionExpiredDowngraded':

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MindMate</title>
+  <link rel="stylesheet" href="css/common.css" />
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+  <div class="mg-shell">
+    <p class="mg-hint" id="status" data-i18n="spaOpening">Opening…</p>
+    <div class="mg-btn-row" id="guest-row" style="display: none; margin-top: 12px">
+      <button type="button" class="mg-btn" id="open-guest" data-i18n="spaOpenGuest">Open as guest</button>
+    </div>
+  </div>
+  <script src="../shared/prefs.js"></script>
+  <script src="../shared/i18n.js"></script>
+  <script src="../shared/page-boot.js"></script>
+  <script src="../shared/spa-host.js"></script>
+  <script>
+    // Loaded inside an Office dialog (not the task pane) — no pane widen.
+    mgBootPage(function () {
+      mgOpenSpaHost('/mindmate', {
+        statusEl: document.getElementById('status'),
+        guestRow: document.getElementById('guest-row'),
+        openGuestBtn: document.getElementById('open-guest'),
+        expandPane: false,
+      })
+    })
+  </script>
+</body>
+</html>

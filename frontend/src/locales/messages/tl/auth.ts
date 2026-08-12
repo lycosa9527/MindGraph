@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'API Token',
   'auth.downloadChromeExtension': 'Extension ng Chrome',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Kailangan ng feature na ito ang Standard o Professional school tier (hindi kasama ang Basic).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Natapos na ang subscription ng iyong paaralan. Nasa trial tier na ang account mo. Makipag-ugnayan sa platform administrator para mag-renew.',
   'auth.diagramLimitReached': 'Hanggang {max} saved diagram bawat guro ang pinapayagan ng trial schools. Mag-delete ng isa para mag-save ng bago.',

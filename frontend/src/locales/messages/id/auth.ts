@@ -31,6 +31,7 @@ export default {
   'auth.accountPlugin': 'Pengaya',
   'auth.apiTokenButton': 'Token API',
   'auth.downloadChromeExtension': 'Ekstensi Chrome',
+  'auth.downloadWordAddin': 'Word add-in',
   'auth.schoolTierFeatureUnavailable': 'Fitur ini memerlukan tingkat sekolah Standard atau Professional (Basic tidak termasuk).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Langganan sekolah Anda telah berakhir. Akun Anda sekarang pada tingkat uji coba. Hubungi administrator platform untuk memperpanjang.',
   'auth.diagramLimitReached': 'Sekolah uji coba mengizinkan hingga {max} diagram tersimpan per guru. Hapus satu untuk menyimpan diagram baru.',

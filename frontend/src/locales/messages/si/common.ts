@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': 'පුස්තකාලය',
   'meta.pageTitle.libraryBookmark': 'පිටු සලකුණ',
   'meta.pageTitle.libraryViewer': 'පුස්තකාල දසුන',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': 'පිවිසෙන්න',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

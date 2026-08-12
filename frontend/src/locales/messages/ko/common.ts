@@ -108,6 +108,7 @@ export default {
   'meta.pageTitle.library': '라이브러리',
   'meta.pageTitle.libraryBookmark': '북마크',
   'meta.pageTitle.libraryViewer': '라이브러리 뷰어',
+  'meta.pageTitle.voiceNotes': 'Voice notes',
   'meta.pageTitle.login': '로그인',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',

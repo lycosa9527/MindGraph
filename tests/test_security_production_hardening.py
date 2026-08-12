@@ -323,3 +323,29 @@ async def test_security_headers_allow_same_origin_frame_for_showcase_pdf() -> No
     assert result.headers["X-Frame-Options"] == "SAMEORIGIN"
     assert "frame-ancestors 'self'" in result.headers["Content-Security-Policy"]
     assert "frame-src 'self' blob: https://view.officeapps.live.com" in result.headers["Content-Security-Policy"]
+
+
+@pytest.mark.asyncio
+async def test_word_addin_csp_allows_office_js_cdn() -> None:
+    """Hosted Word add-in shell must load Office.js from Microsoft CDN under prod CSP."""
+    request = MagicMock()
+    request.url.scheme = "https"
+    request.url.path = "/word-addin/src/taskpane/mindgraph.html"
+    request.state = SimpleNamespace()
+    response = MagicMock()
+    response.headers = {}
+
+    async def _call_next(_req):
+        return response
+
+    with patch.object(middleware_module, "is_https", return_value=True):
+        with patch.object(middleware_module, "config") as mock_config:
+            mock_config.debug = False
+            result = await middleware_module.add_security_headers(request, _call_next)
+
+    csp = result.headers["Content-Security-Policy"]
+    assert "https://appsforoffice.microsoft.com" in csp
+    assert "script-src 'self' 'unsafe-inline' https://appsforoffice.microsoft.com" in csp
+    assert "frame-src 'self' blob: https://365.kdocs.cn" in csp
+    assert "frame-ancestors *" in csp
+    assert "X-Frame-Options" not in result.headers
