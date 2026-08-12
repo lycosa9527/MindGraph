@@ -63,7 +63,11 @@ const isPaused = computed(() => status.value === 'paused')
       </p>
       <div
         class="mc-lecture-overlay__progress"
-        aria-hidden="true"
+        role="progressbar"
+        :aria-label="t('canvas.mindClassroom.title')"
+        :aria-valuenow="progressPercent"
+        aria-valuemin="0"
+        aria-valuemax="100"
       >
         <span
           class="mc-lecture-overlay__progress-fill"

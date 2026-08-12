@@ -186,7 +186,7 @@ export default {
   'canvas.toolbar.professionalContent.panelTitle': '期望的AI生成內容專業程度',
   'canvas.toolbar.professionalContent.guideTitle': '先選受眾難度',
   'canvas.toolbar.professionalContent.guideBody':
-    '点这里选择学段或场景，AI 生成、对话改图等会按该难度组织内容。选过后按钮会收成学段标签。',
+    '點這裡選擇學段或場景，AI 生成、對話改圖等會按該難度組織內容。選過後按鈕會收成學段標籤。',
   'canvas.toolbar.professionalContent.guideAction': '去選擇',
   'canvas.toolbar.professionalContent.guideDismiss': '知道了',
   'canvas.toolbar.professionalContent.level.general.title': '通用',
@@ -204,13 +204,12 @@ export default {
   'canvas.toolbar.professionalContent.level.expert.title': '專家',
   'canvas.toolbar.professionalContent.level.expert.description': '深度精煉',
   'canvas.toolbar.professionalContent.notify.preference':
-    '后续 AI 生成内容将更符合「{level}」受众认知水平',
+    '後續 AI 生成內容將更符合「{level}」受眾認知水平',
   'canvas.toolbar.professionalContent.notify.preferenceGeneral':
-    '后续 AI 生成内容将按「通用」风格，不额外约束难度',
+    '後續 AI 生成內容將按「通用」風格，不額外約束難度',
   'canvas.toolbar.professionalContent.notify.afterGenerated':
-    '当前内容为「{current}」难度；后续我将按「{next}」为你辅助生成',
-  'canvas.toolbar.professionalContent.audienceLine':
-    '当前受众：{level}（来自顶部「专业内容」）',
+    '當前內容為「{current}」難度；後續我將按「{next}」為你輔助生成',
+  'canvas.toolbar.professionalContent.audienceLine': '當前受眾：{level}（來自頂部「專業內容」）',
   'canvas.toolbar.alignLabel': '對齊',
   'canvas.toolbar.analogyPairAdded': '已添加類比對',
   'canvas.toolbar.applied': '已應用',
@@ -631,7 +630,8 @@ export default {
   'canvas.mindMapSlideOverlay.branch': '分支',
   'canvas.mindMapSlideOverlay.region': '幻燈片放映控制',
   'canvas.mindMapSlideOverlay.progress': '幻燈片進度，點擊跳轉',
-  'canvas.mindMapSlideOverlay.shortcuts': '點擊畫布或按 Space/→ 下一頁 · ← 上一頁 · Home/End 首尾頁 · Esc 退出幻燈片',
+  'canvas.mindMapSlideOverlay.shortcuts':
+    '點擊畫布或按 Space/→ 下一頁 · ← 上一頁 · Home/End 首尾頁 · Esc 退出幻燈片',
   'canvas.mindMapSlideOverlay.exit': '退出幻燈片',
   'canvas.mindMapSlideOverlay.collapse': '收起控制欄',
   'canvas.mindMapSlideOverlay.expand': '展開控制欄',
@@ -738,18 +738,19 @@ export default {
     '检测到手绘思维导图「{topic}」。已重建到画布，结构大纲已保存到文档总结。',
   'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
     '检测到手绘思维导图「{topic}」。已在本机画布重建，结构大纲已保存到文档总结。图库同步未完成，请保存或重试。',
-  'canvas.mindMapOneSentence.photoOcrReply':
-    '已识别图片文字：\n{excerpt}\n\n全文已存入文档总结。',
+  'canvas.mindMapOneSentence.photoOcrReply': '已识别图片文字：\n{excerpt}\n\n全文已存入文档总结。',
   'canvas.mindMapOneSentence.photoFailed': '無法處理該圖片。',
   'canvas.mindMapOneSentence.micDenied': '麥克風不可用，請檢查瀏覽器權限',
   'canvas.mindMapOneSentence.ttsToggle': '朗讀開關',
-  'canvas.mindMapOneSentence.kittyWelcome': '你好，告訴我你想畫什麼思維圖示，或之後繼續讓我幫你修改。',
+  'canvas.mindMapOneSentence.kittyWelcome':
+    '你好，告訴我你想畫什麼思維圖示，或之後繼續讓我幫你修改。',
   'canvas.mindMapOneSentence.switchDiagramType': '好的，正在切換到{type}…',
   'canvas.mindMapOneSentence.kittyGenerating': '好的，正在生成導圖…',
   'canvas.mindMapOneSentence.kittyGenerateDone': '導圖已生成。繼續輸入即可修改分支或節點。',
   'canvas.mindMapOneSentence.kittyGenerateFailed': '導圖生成失敗，請重試或調整描述。',
   'canvas.mindMapOneSentence.kittyEditFailed': '未能完成修改，請換個說法再試。',
-  'canvas.mindMapOneSentence.kittyEditStale': '這次修改未在畫布生效（可能已過期或無變化），請再試一次。',
+  'canvas.mindMapOneSentence.kittyEditStale':
+    '這次修改未在畫布生效（可能已過期或無變化），請再試一次。',
   'canvas.mindMapOneSentence.kittyEditVerifyFailed': '畫布未能確認這次修改，導圖已保持原樣。',
   'canvas.mindMapOneSentence.kittyEditPersistFailed': '本地已改好，但同步失敗，請稍後再試。',
   'canvas.mindMapOneSentence.kittyContextSyncFailed': '畫布同步失敗，請稍後再試一次。',
@@ -766,20 +767,23 @@ export default {
   'canvas.mindMapOneSentence.kittyEditAccessDenied': '當前沒有權限修改這張導圖。',
   'canvas.mindMapOneSentence.kittyEditCollabActive':
     '实时协作进行中，Kitty 暂不修改导图，以免和协作编辑冲突。',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision': '導圖剛被更新過，這次修改過期了。請再說一次你的修改。',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    '導圖剛被更新過，這次修改過期了。請再說一次你的修改。',
   'canvas.mindMapOneSentence.kittyEditTimeout': '這次修改超時了，導圖可能未更新。請再試一次。',
   'canvas.mindMapOneSentence.kittyEditNoOwner': '暫時找不到可編輯的畫布，請確認畫布已打開後再試。',
   'canvas.mindMapOneSentence.kittyEditAddFailed': '抱歉，沒能添加該節點。請確認名稱後再試。',
   'canvas.mindMapOneSentence.kittyEditUpdateFailed': '抱歉，沒能修改該節點。請確認名稱後再試。',
   'canvas.mindMapOneSentence.kittyEditCenterFailed': '抱歉，沒能更新主題。請再試一次。',
   'canvas.mindMapOneSentence.kittyEditDeleteFailed': '抱歉，沒能刪除該節點。請確認名稱後再試。',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': '抱歉，沒能為該分支自動補全。你可以再說一次「自動補全」。',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    '抱歉，沒能為該分支自動補全。你可以再說一次「自動補全」。',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': '這個分支補全好了。',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': '這幾個分支都補全好了。',
   'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
     '有的分支补全好了，有的没成功。你可以再说一次「自动补全」。',
   'canvas.mindMapOneSentence.kittyWorking': '好的，正在處理…',
-  'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty 暫不可用，請確認已開啟 FEATURE_KITTY_AGENT。',
+  'canvas.mindMapOneSentence.kittyUnavailable':
+    'Kitty 暫不可用，請確認已開啟 FEATURE_KITTY_AGENT。',
   'canvas.mindMapOneSentence.kittyConnectFailed':
     '暂时无法连接画布 Kitty。请确认电脑端已打开该导图，然后重试。',
   'canvas.mindMapOneSentence.clarifyChoices': '請選擇一項',
@@ -830,7 +834,8 @@ export default {
   'canvas.mindMapDocumentSummary.sourceDeleted': '已刪除來源，可以重新上傳',
   'canvas.mindMapDocumentSummary.extractStarted': '正在提取內容…',
   'canvas.mindMapDocumentSummary.extractFailed': '無法從該文件提取文字',
-  'canvas.mindMapDocumentSummary.sourceBoundHint': 'Markdown 已就緒。可生成思維導圖，或刪除後來源後重新上傳。',
+  'canvas.mindMapDocumentSummary.sourceBoundHint':
+    'Markdown 已就緒。可生成思維導圖，或刪除後來源後重新上傳。',
   'canvas.mindMapDocumentSummary.deleteToRetry': '請先刪除此來源，再重新上傳、粘貼或粘貼網頁鏈接。',
   'canvas.mindMapDocumentSummary.chatIntroLite':
     '下载文件读取工具，输入配对码，将微信或钉钉聊天记录发送到此图表。',
@@ -915,7 +920,7 @@ export default {
   'canvas.mindClassroom.audienceLine': '當前受眾：{level}（來自頂部「專業內容」）',
   'canvas.mindClassroom.start': '開始講解',
   'canvas.mindClassroom.startPreview':
-    '已选「{mastery}」·「{presentation}」·「{tone}」· 受众「{audience}」。讲解引擎稍后接入，当前为界面预览。',
+    '已選「{mastery}」·「{presentation}」·「{tone}」· 受眾「{audience}」。講解引擎稍後接入，當前為介面預覽。',
   'canvas.mindClassroom.settings.masteryTitle': '我對這張圖的熟悉程度',
   'canvas.mindClassroom.settings.mastery.first_look.title': '初識',
   'canvas.mindClassroom.settings.mastery.review.title': '複習鞏固',
@@ -923,10 +928,10 @@ export default {
   'canvas.mindClassroom.settings.presentationTitle': '我希望的講解呈現方式',
   'canvas.mindClassroom.settings.presentation.canvas_tour.title': '畫布語音巡講',
   'canvas.mindClassroom.settings.presentation.canvas_tour.desc':
-    '在导图画布上聚焦语音讲解，可选主分支或逐节点。',
+    '在導圖畫布上聚焦語音講解，可選主分支或逐節點。',
   'canvas.mindClassroom.settings.presentation.slide_deck.title': '幻燈片講解',
   'canvas.mindClassroom.settings.presentation.slide_deck.desc':
-    'AI 生成幻灯片，左侧导图对照，右侧翻页讲解。',
+    'AI 生成幻燈片，左側導圖對照，右側翻頁講解。',
   'canvas.mindClassroom.settings.tourScopeTitle': '巡講粒度',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': '按主分支',
   'canvas.mindClassroom.settings.tourScope.main_branch.desc': '一級分支逐步講，節奏更穩。',
@@ -961,45 +966,43 @@ export default {
   'canvas.mindClassroom.lecture.script.noBranches': '若干要點',
   'canvas.mindClassroom.lecture.script.leafNode': '這一支下暫無更細節點',
   'canvas.mindClassroom.lecture.script.overview.classroom':
-    '同学们好。今天我们围绕「{topic}」来学习，面向「{audience}」受众，以「{mastery}」节奏展开。整张图主要包括：{branches}。先看全局，再逐支梳理。',
+    '同學們好。今天我們圍繞「{topic}」來學習，面向「{audience}」受眾，以「{mastery}」節奏展開。整張圖主要包括：{branches}。先看全域，再逐支梳理。',
   'canvas.mindClassroom.lecture.script.overview.story':
-    '先把「{topic}」当成一个故事的标题。面向「{audience}」，我们会从全貌走进细节：故事里有这些章节——{branches}。',
+    '先把「{topic}」當成一個故事的標題。面向「{audience}」，我們會從全貌走進細節：故事裡有這些章節——{branches}。',
   'canvas.mindClassroom.lecture.script.overview.dialogue':
-    '我们先一起看「{topic}」。如果你是「{audience}」，你会先注意到哪些部分？整图大致包括：{branches}。我们一问一答地往下走。',
+    '我們先一起看「{topic}」。如果你是「{audience}」，你會先注意到哪些部分？整圖大致包括：{branches}。我們一問一答地往下走。',
   'canvas.mindClassroom.lecture.script.overview.socratic':
-    '先别急着记结论。面对「{topic}」，你认为它为什么值得做成一张图？我们按「{mastery}」深度，从这些分支追问：{branches}。',
+    '先別急著記結論。面對「{topic}」，你認為它為什麼值得做成一張圖？我們按「{mastery}」深度，從這些分支追問：{branches}。',
   'canvas.mindClassroom.lecture.script.overview.fast':
-    '速览「{topic}」（{audience}）。主干：{branches}。接下来逐支点到为止。',
+    '速覽「{topic}」（{audience}）。主幹：{branches}。接下來逐支點到為止。',
   'canvas.mindClassroom.lecture.script.overview.close_read':
-    '精读开场：主题是「{topic}」。请先抓住全局结构——{branches}——再进入各支细读。受众设定：{audience}。',
+    '精讀開場：主題是「{topic}」。請先抓住全域結構——{branches}——再進入各支細讀。受眾設定：{audience}。',
   'canvas.mindClassroom.lecture.script.overview.examples':
-    '用例子开场。主题「{topic}」可以想成生活或课堂里的一幕；整图分支像不同场景：{branches}。受众：{audience}。',
+    '用例子開場。主題「{topic}」可以想成生活或課堂裡的一幕；整圖分支像不同場景：{branches}。受眾：{audience}。',
   'canvas.mindClassroom.lecture.script.overview.exam_outline':
-    '考点总览：「{topic}」。按提纲记主干——{branches}。难度对齐「{audience}」，节奏为「{mastery}」。',
+    '考點總覽：「{topic}」。按提綱記主幹——{branches}。難度對齊「{audience}」，節奏為「{mastery}」。',
   'canvas.mindClassroom.lecture.script.branch.classroom':
-    '第 {index}/{total} 支：看「{title}」。它下面还有：{children}。请对照导图位置理解这一段在整体中的作用。',
+    '第 {index}/{total} 支：看「{title}」。它下面還有：{children}。請對照導圖位置理解這一段在整體中的作用。',
   'canvas.mindClassroom.lecture.script.branch.story':
-    '故事走到第 {index} 章「{title}」。这一章里出现了：{children}。想想它们怎样推进整张图的情节。',
+    '故事走到第 {index} 章「{title}」。這一章裡出現了：{children}。想想它們怎樣推進整張圖的情節。',
   'canvas.mindClassroom.lecture.script.branch.dialogue':
-    '问你一句：提到「{title}」，你会联想到什么？图上给出了：{children}。我们对照看看（{index}/{total}）。',
+    '問你一句：提到「{title}」，你會聯想到什麼？圖上給出了：{children}。我們對照看看（{index}/{total}）。',
   'canvas.mindClassroom.lecture.script.branch.socratic':
-    '追问：「{title}」为什么要单独成支？它与子点「{children}」是什么关系？请先自己答，再对照导图（{index}/{total}）。',
-  'canvas.mindClassroom.lecture.script.branch.fast':
-    '「{title}」→ {children}。（{index}/{total}）',
+    '追問：「{title}」為什麼要單獨成支？它與子點「{children}」是什麼關係？請先自己答，再對照導圖（{index}/{total}）。',
+  'canvas.mindClassroom.lecture.script.branch.fast': '「{title}」→ {children}。（{index}/{total}）',
   'canvas.mindClassroom.lecture.script.branch.close_read':
-    '精读「{title}」。请逐条看清下属信息：{children}。这一支在第 {index}/{total} 段，留意用词与层级。',
+    '精讀「{title}」。請逐條看清下屬資訊：{children}。這一支在第 {index}/{total} 段，留意用詞與層級。',
   'canvas.mindClassroom.lecture.script.branch.examples':
-    '举个例子帮助理解「{title}」：可以把它想成具体场景，里面有 {children}。我们处在第 {index}/{total} 支。',
+    '舉個例子幫助理解「{title}」：可以把它想成具體場景，裡面有 {children}。我們處在第 {index}/{total} 支。',
   'canvas.mindClassroom.lecture.script.branch.exam_outline':
-    '考点 {index}/{total}：「{title}」。下属要点：{children}。复习时先背标题，再补细节。',
+    '考點 {index}/{total}：「{title}」。下屬要點：{children}。複習時先背標題，再補細節。',
   'canvas.mindClassroom.lecture.script.closing.first_look':
-    '全局回顾：我们刚认识了「{topic}」的骨架。建议你再扫一眼整张图，标出还陌生的两三个点，下次从那里开始。',
+    '全域回顧：我們剛認識了「{topic}」的骨架。建議你再掃一眼整張圖，標出還陌生的兩三個點，下次從那裡開始。',
   'canvas.mindClassroom.lecture.script.closing.review':
-    '复习收束：把「{topic}」合上书能否复述主干？若某一支卡壳，回到导图那一支再过一遍即可。',
+    '複習收束：把「{topic}」合上書能否複述主幹？若某一支卡殼，回到導圖那一支再過一遍即可。',
   'canvas.mindClassroom.lecture.script.closing.teach':
-    '备课收束：面向「{audience}」讲「{topic}」时，可按导图顺序开场—展开—收束。你也可以把某一支拆成课堂提问。',
-  'canvas.mindMapSideToolbar.oneSentenceIntro':
-    '用一句话描述主题或修改要求，智能生成并调整导图',
+    '備課收束：面向「{audience}」講「{topic}」時，可按導圖順序開場—展開—收束。你也可以把某一支拆成課堂提問。',
+  'canvas.mindMapSideToolbar.oneSentenceIntro': '用一句话描述主题或修改要求，智能生成并调整导图',
   'canvas.mindMapSideToolbar.documentSummary': '文檔總結',
   'fileCenter.intro':
     '资料包是为当前图表整理的来源集合。添加文件、笔记或网页后，图表会基于这些来源自动补全分支。',
@@ -1037,8 +1040,7 @@ export default {
   'canvas.mindMapSideToolbar.outlineEmpty': '暫無節點內容',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI智能生成',
   'canvas.mindMapSideToolbar.outlineEditHint': '雙擊節點文字可以直接實時修改噢',
-  'canvas.mindMapSideToolbar.outlineIntro':
-    '用大纲编辑导图结构，拖拽调序，粘贴多行可批量添加',
+  'canvas.mindMapSideToolbar.outlineIntro': '用大纲编辑导图结构，拖拽调序，粘贴多行可批量添加',
   'canvas.mindMapSideToolbar.outlineDragHint':
     '拖拽调整顺序；放到节点上方/下方为同级换位，放到中间为子节点',
   'canvas.mindMapSideToolbar.outlinePasteHint': '選中節點後粘貼多行文本，可批量添加同級節點',

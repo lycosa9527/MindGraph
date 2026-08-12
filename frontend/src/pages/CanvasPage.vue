@@ -319,6 +319,9 @@ async function handleStartPresentationWithTier(): Promise<void> {
       return
     }
   }
+  if (opening && mindClassroomLecturing.value) {
+    stopMindClassroomLecture()
+  }
   handleStartPresentation()
 }
 
@@ -529,7 +532,7 @@ const {
   isSlideDeckMode: mindClassroomSlideDeck,
   isCanvasTourMode: mindClassroomCanvasTour,
 } = storeToRefs(mindClassroomStore)
-useMindClassroomLecture({ bootstrap: true })
+const { stopLecture: stopMindClassroomLecture } = useMindClassroomLecture({ bootstrap: true })
 
 const mindMapTourFocusNodeId = computed(
   () => mindClassroomStore.focusNodeId ?? slidePresentation.slideFocusNodeId.value

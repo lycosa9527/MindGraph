@@ -15,6 +15,7 @@ import {
   useMindClassroomStore,
   usePanelsStore,
 } from '@/stores'
+import { setMindMapCollapsedPaths } from '@/stores/diagram/mindMapCollapse'
 import { buildMindClassroomLectureSteps } from '@/utils/mindClassroomScript'
 
 const FIT_MS = 900
@@ -22,6 +23,7 @@ const FIT_MS = 900
 let advanceTimer: ReturnType<typeof setTimeout> | null = null
 let transitionTimer: ReturnType<typeof setTimeout> | null = null
 let layoutTimer: ReturnType<typeof setTimeout> | null = null
+let preLectureCollapsedPaths: string[] | null = null
 
 function clearAdvanceTimer(): void {
   if (advanceTimer !== null) {
@@ -77,8 +79,48 @@ function isTypingInInput(): boolean {
   )
 }
 
+function isInteractiveTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    Boolean(
+      target.closest(
+        'button, a, input, select, textarea, [contenteditable="true"], [role="option"], [role="radio"]'
+      )
+    )
+  )
+}
+
 interface MindClassroomLectureOptions {
   bootstrap?: boolean
+}
+
+export function teardownMindClassroomLecture(options: { restoreViewport?: boolean } = {}): void {
+  const classroomStore = useMindClassroomStore()
+  const diagramStore = useDiagramStore()
+  const hadLectureState = classroomStore.isLecturing || preLectureCollapsedPaths !== null
+
+  clearAdvanceTimer()
+  clearTransitionTimer()
+  clearLayoutTimer()
+  stopSpeech()
+  classroomStore.clearSession()
+  diagramStore.clearSelection()
+  setPresentationDiagramEditLocked(false)
+
+  if (preLectureCollapsedPaths && diagramStore.data) {
+    setMindMapCollapsedPaths(diagramStore.data as Record<string, unknown>, preLectureCollapsedPaths)
+    diagramStore.mindMapRecalcTrigger += 1
+  }
+  preLectureCollapsedPaths = null
+
+  if (hadLectureState && options.restoreViewport !== false) {
+    void nextTick(() => {
+      eventBus.emit('view:viewport_snapshot_restore', {
+        animate: true,
+        duration: FIT_MS,
+      })
+    })
+  }
 }
 
 export function useMindClassroomLecture(options: MindClassroomLectureOptions = {}) {
@@ -193,6 +235,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     panelsStore.closeMindmate()
     panelsStore.closeNodePalette()
     setPresentationDiagramEditLocked(true)
+    preLectureCollapsedPaths = data._collapsed_paths ? [...data._collapsed_paths] : []
     eventBus.emit('view:viewport_snapshot_save', {})
     classroomStore.beginSession(nextSteps, mode)
     // Dual-pane layout changes canvas size — fit after mount.
@@ -241,24 +284,13 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
   }
 
   function stopLecture(): void {
-    clearAdvanceTimer()
-    clearTransitionTimer()
-    clearLayoutTimer()
-    stopSpeech()
-    classroomStore.clearSession()
-    diagramStore.clearSelection()
-    setPresentationDiagramEditLocked(false)
-    void nextTick(() => {
-      eventBus.emit('view:viewport_snapshot_restore', {
-        animate: true,
-        duration: FIT_MS,
-      })
-    })
+    teardownMindClassroomLecture()
   }
 
   function handleKeyboard(event: KeyboardEvent): void {
     if (!isLecturing.value) return
     if (isTypingInInput()) return
+    if (isInteractiveTarget(event.target)) return
     if (event.key === 'Escape') {
       event.preventDefault()
       event.stopPropagation()
@@ -311,12 +343,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       if (keyboardBound) {
         window.removeEventListener('keydown', handleKeyboard, true)
       }
-      clearAdvanceTimer()
-      clearTransitionTimer()
-      clearLayoutTimer()
-      stopSpeech()
-      classroomStore.clearSession()
-      setPresentationDiagramEditLocked(false)
+      teardownMindClassroomLecture({ restoreViewport: false })
     })
   }
 

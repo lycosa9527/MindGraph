@@ -2,7 +2,7 @@
 /**
  * Bottom Mind Classroom entry — mint blob tutor holding chalk mind-map board (QQ edge dock).
  */
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
@@ -27,18 +27,6 @@ const peekHover = ref(false)
 const showEntry = computed(() => Boolean(diagramStore.data?.nodes?.length))
 
 const isPeeking = computed(() => docked.value && !peekHover.value)
-
-let bubbleTimer: number | undefined
-
-onMounted(() => {
-  bubbleTimer = window.setTimeout(() => {
-    bubbleVisible.value = true
-  }, 400)
-})
-
-onBeforeUnmount(() => {
-  if (bubbleTimer !== undefined) window.clearTimeout(bubbleTimer)
-})
 
 function handleSpriteClick(): void {
   if (docked.value && isPeeking.value) {
@@ -66,6 +54,12 @@ function handleHotzoneEnter(): void {
 
 function handleHotzoneLeave(): void {
   peekHover.value = false
+}
+
+function handleHotzoneReveal(event: PointerEvent): void {
+  if (!docked.value) return
+  event.preventDefault()
+  peekHover.value = true
 }
 
 function handleRootEnter(): void {
@@ -105,6 +99,7 @@ function handleStarted(): void {
       aria-hidden="true"
       @mouseenter="handleHotzoneEnter"
       @mouseleave="handleHotzoneLeave"
+      @pointerdown="handleHotzoneReveal"
     />
 
     <div class="mc-sprite-stack pointer-events-auto">
