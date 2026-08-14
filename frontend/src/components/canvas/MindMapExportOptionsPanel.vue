@@ -80,12 +80,7 @@ const answerOptions = computed(() => [
   flex-direction: column;
   gap: 10px;
   width: 100%;
-  padding: 10px 12px 8px;
-  border-bottom: 1px solid var(--swiss-border, #e7e5e4);
-}
-
-:global(.dark) .mm-export-options {
-  border-bottom-color: #44403c;
+  padding: 10px 12px 4px;
 }
 
 .mm-export-options__row {

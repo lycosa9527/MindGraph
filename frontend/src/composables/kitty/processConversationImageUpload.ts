@@ -3,6 +3,7 @@
  * Hand-drawn → rebuild canvas + outline extract; text → OCR extract.
  */
 import { resizeImageFileForVisionUpload } from '@/composables/media/resizeImageFileForVisionUpload'
+import { appendMindMapAudienceFormField } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { apiUpload } from '@/utils/apiClient'
 
 export type ConversationImageMode = 'handdrawn' | 'text'
@@ -74,6 +75,7 @@ export async function processConversationImageUpload(options: {
   const formData = new FormData()
   formData.append('file', resized)
   formData.append('language', options.language || 'zh')
+  appendMindMapAudienceFormField(formData, options.language || 'zh')
   formData.append('diagram_id', diagramId)
   if (options.diagramTitle?.trim()) {
     formData.append('diagram_title', options.diagramTitle.trim())

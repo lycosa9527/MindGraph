@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any, AsyncGenerator, Dict, List, Literal, Optional
 
+from prompts.ai_content_level import append_audience_instructions
 from services.llm import llm_service
 from utils.prompt_locale import is_chinese_prompt_shell_language, output_language_instruction
 
@@ -253,6 +254,7 @@ def _build_facet_prompt(
     sibling_branches: List[str],
     child_branches: List[str],
     language: str,
+    generation_instructions: Optional[str] = None,
 ) -> str:
     """Build a single-facet educational prompt for one panel."""
     fields = _diagram_context_fields(
@@ -277,14 +279,17 @@ def _build_facet_prompt(
         task_header = "【Your task】"
         style_header = "【Tone】"
 
-    return (
-        f"{_ROLE_LINES[shell]}\n"
-        f"{output_language_instruction(language)}\n"
-        f"{_build_context_block(fields, shell)}\n"
-        f"{task_header}\n"
-        f"{task}\n\n"
-        f"{style_header}\n"
-        f"{_STYLE_LINES[shell]}"
+    return append_audience_instructions(
+        (
+            f"{_ROLE_LINES[shell]}\n"
+            f"{output_language_instruction(language)}\n"
+            f"{_build_context_block(fields, shell)}\n"
+            f"{task_header}\n"
+            f"{task}\n\n"
+            f"{style_header}\n"
+            f"{_STYLE_LINES[shell]}"
+        ),
+        generation_instructions,
     )
 
 
@@ -318,6 +323,7 @@ class MindMapNodeExplainGenerator:
         diagram_id: Optional[str] = None,
         session_id: Optional[str] = None,
         request_token: Optional[str] = None,
+        generation_instructions: Optional[str] = None,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Yield SSE-friendly event dicts: token chunks and end."""
         resolved_facet = _normalize_facet(facet)
@@ -342,6 +348,7 @@ class MindMapNodeExplainGenerator:
             sibling_branches=siblings,
             child_branches=children,
             language=language,
+            generation_instructions=generation_instructions,
         )
 
         async for chunk in self.llm_service.chat_stream(

@@ -20,14 +20,13 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
-import { buildAiContentLevelInstructions } from '@/config/aiContentLevels'
 import {
   buildEducationStageInstructions,
   isEducationStage,
   mergeGenerationInstructions,
 } from '@/constants/educationStage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { useAiContentLevelStore, useDiagramStore } from '@/stores'
+import { useDiagramStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramTranslateUiStore } from '@/stores/diagramTranslateUi'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -61,7 +60,6 @@ export function useCanvasToolbarApps() {
   const diagramStore = useDiagramStore()
   const diagramTranslateUi = useDiagramTranslateUiStore()
   const savedDiagramsStore = useSavedDiagramsStore()
-  const aiContentLevelStore = useAiContentLevelStore()
   const uiStore = useUIStore()
   const authStore = useAuthStore()
   const { t } = useLanguage()
@@ -189,30 +187,20 @@ export function useCanvasToolbarApps() {
       return
     }
 
-    const levelAtGenerate = aiContentLevelStore.level
     const stageRaw = authStore.getEffectiveEducationStage()
     const stage = isEducationStage(stageRaw) ? stageRaw : null
     const stageBlock = buildEducationStageInstructions(stage, uiStore.promptLanguage)
-    const audienceBlock = buildAiContentLevelInstructions(levelAtGenerate, uiStore.promptLanguage)
-    const preferenceBlock = aiContentLevelStore.userSet ? audienceBlock : stageBlock
     const generationInstructions = mergeGenerationInstructions(
-      preferenceBlock,
+      stageBlock,
       options?.generationInstructions
     )
-    const generatedDiagramKey = aiContentLevelStore.diagramKey(savedDiagramsStore.activeDiagramId)
 
     const result = await autoComplete({
       promptSuffix: diagramStore.isLearningSheet ? ' 半成品' : undefined,
       generationInstructions,
       topicOverride: options?.topicOverride,
     })
-    if (result.success) {
-      aiContentLevelStore.markDiagramGenerated(generatedDiagramKey, levelAtGenerate)
-      aiContentLevelStore.migrateGeneratedLevel(
-        generatedDiagramKey,
-        savedDiagramsStore.activeDiagramId
-      )
-    } else if (result.error) {
+    if (!result.success && result.error) {
       console.error('Auto-complete failed:', result.error)
     }
   }

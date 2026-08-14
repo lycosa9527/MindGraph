@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.177.0] - 2026-08-15
+
+> **Mind-map 专业程度 drives new-canvas AI; classic autocomplete stays on 学段.**
+
+### Added
+
+- **Copy to clipboard** — Export menu copies the canvas PNG as shown; if clipboard write is blocked, downloads a PNG instead.
+
+### Changed
+
+- **Mind-map toolbar** — 「专业内容」picker extracted to its own control; 「AI生成图示」is a single button (no 学段 caret). Audience copy is native zh/en templates (用语/句子/前提/深度 · Voice/Length/Assume/Depth), not 学段 “生成图示”.
+- **New-canvas AI** — Generate, one-sentence create, branch expand, brainstorm, document/image/package summarize, node explain, and Kitty paragraph (mind-map only) send the picker level.
+- **Classic thinking-maps** — Autocomplete keeps the 学段 caret and `education_stage` path. Inline rec, relationship labels, concept-map helpers, and thinking-map palette are unchanged.
+
+### Tests
+
+- `frontend/tests/mindMapAudience.spec.ts` — all six constrained levels share the four slots and stay distinct; general unconstrained; payload injection.
+- `frontend/tests/copyPngBlobToClipboard.spec.ts` — clipboard write plus download fallback.
+- `tests/test_ai_content_level.py` — audience instruction append helper.
+
 ## [5.176.0] - 2026-08-12
 
 > **Mind-map v2 classroom lecture and toolbar audience UX.**

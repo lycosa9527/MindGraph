@@ -2,17 +2,17 @@ import type { Ref } from 'vue'
 import { nextTick, toValue } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
-import { ANIMATION } from '@/config/uiConfig'
-import type { CanvasExportOptions } from '@/config/canvasExportOptions'
-import { useCanvasExportStore } from '@/stores'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
+import type { CanvasExportOptions } from '@/config/canvasExportOptions'
+import { ANIMATION } from '@/config/uiConfig'
+import { useCanvasExportStore } from '@/stores'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramNode, DiagramType, MindGraphNode } from '@/types'
+import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
 import { isManualViewportMode } from '@/utils/conceptMapDesktopViewport'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
-import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
 import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 
 type FitApi = {
@@ -45,6 +45,8 @@ export interface DiagramCanvasEventBusContext {
   fitApi: FitApi
   emit: (e: 'nodeDoubleClick', node: MindGraphNode) => void
   exportByFormat: (format: string, options?: CanvasExportOptions) => Promise<void>
+  capturePngBlob: (options?: CanvasExportOptions, asShown?: boolean) => Promise<Blob>
+  copyPngToClipboard: (blobSource: Promise<Blob>) => Promise<void>
   showExportToCommunityModal: Ref<boolean>
   getExportContainer: () => HTMLElement | null
   prepareForCommunityExport: () => Promise<void>
@@ -95,10 +97,11 @@ export function useDiagramCanvasEventBus(): {
       fitApi,
       emit,
       exportByFormat,
+      capturePngBlob,
+      copyPngToClipboard,
       showExportToCommunityModal,
       getExportContainer,
       prepareForCommunityExport,
-      restoreViewportAfterCommunityExport,
       regenerateForNodeIfNeeded,
     } = ctx
 
@@ -238,21 +241,33 @@ export function useDiagramCanvasEventBus(): {
           return
         }
 
-        await canvasExportStore.runExportSession(async () => {
+        async function runFittedVisualExport<T>(run: () => Promise<T>): Promise<T> {
           const savedViewport = getViewport()
           fitApi.fitForExport()
           await nextTick()
           await waitForNextPaint()
-          await runWithExportVisualMode(
-            uiStore,
-            getExportContainer(),
-            mergedOptions,
-            async () => {
-              await exportByFormat(format, mergedOptions)
-            }
+          try {
+            return await runWithExportVisualMode(uiStore, getExportContainer(), mergedOptions, run)
+          } finally {
+            setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
+          }
+        }
+
+        if (format === 'clipboard') {
+          // Start clipboard.write in this turn (user gesture) with a Promise
+          // that resolves after fit + color/B&W visual mode + PNG capture.
+          const blobPromise = canvasExportStore.runExportSession(() =>
+            runFittedVisualExport(() => capturePngBlob(mergedOptions, true))
           )
-          setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
-        })
+          await copyPngToClipboard(blobPromise)
+          return
+        }
+
+        await canvasExportStore.runExportSession(() =>
+          runFittedVisualExport(async () => {
+            await exportByFormat(format, mergedOptions)
+          })
+        )
       })
     )
 

@@ -7,6 +7,8 @@ export type CanvasRasterExportCommand = 'png' | 'svg' | 'pdf_landscape' | 'pdf_p
 
 export type CanvasSpecExportCommand = 'mg'
 
+export type CanvasClipboardExportCommand = 'clipboard'
+
 export type CanvasCommunityExportCommand = 'community'
 
 export type CanvasZhihuiDiagramCommand = 'zhihui_diagram'
@@ -18,11 +20,16 @@ export type CanvasExportCommand =
   | CanvasRasterExportCommand
   | CanvasLegacyPdfExportCommand
   | CanvasSpecExportCommand
+  | CanvasClipboardExportCommand
   | CanvasCommunityExportCommand
   | CanvasZhihuiDiagramCommand
 
 export type CanvasExportMenuItem = {
-  command: CanvasRasterExportCommand | CanvasLegacyPdfExportCommand | CanvasSpecExportCommand
+  command:
+    | CanvasRasterExportCommand
+    | CanvasLegacyPdfExportCommand
+    | CanvasSpecExportCommand
+    | CanvasClipboardExportCommand
   labelKey: string
   divided?: boolean
 }
@@ -62,7 +69,11 @@ export const CANVAS_MINDMAP_EXPORT_MENU_ITEMS: readonly CanvasExportMenuItem[] =
   { command: 'mg', labelKey: 'canvas.topBar.exportJson', divided: true },
 ]
 
+export const CANVAS_CLIPBOARD_EXPORT_MENU_ITEM = {
+  command: 'clipboard' as CanvasClipboardExportCommand,
+  labelKey: 'canvas.topBar.exportClipboard',
+} as const
+
 export const CANVAS_WORKSHEET_TEXT_MENU_ITEM = {
   labelKey: 'canvas.topBar.addWorksheetText',
-  divided: true,
 } as const

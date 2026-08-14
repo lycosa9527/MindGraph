@@ -9,6 +9,10 @@ import {
   fileCenterKeys,
 } from '@/composables/fileCenter/useFileCenter'
 import { resizeImageFileForVisionUpload } from '@/composables/media/resizeImageFileForVisionUpload'
+import {
+  appendMindMapAudienceFormField,
+  withMindMapAudienceContext,
+} from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import {
   DOC_SUMMARY_CONTENT_TOO_LONG_CODE,
@@ -186,6 +190,7 @@ export function useMindMapDocumentSummary() {
       const formData = new FormData()
       formData.append('file', uploadFile)
       formData.append('language', promptLanguage.value)
+      appendMindMapAudienceFormField(formData, promptLanguage.value)
       const diagramId = savedDiagramsStore.activeDiagramId
       if (diagramId) {
         formData.append('diagram_id', diagramId)
@@ -266,12 +271,17 @@ export function useMindMapDocumentSummary() {
 
       const response = await authFetch('/api/canvas/generate_mindmap_from_package', {
         method: 'POST',
-        body: JSON.stringify({
-          package_id: packageId,
-          diagram_id: diagramId,
-          topic_hint: options.topicHint,
-          language: promptLanguage.value,
-        }),
+        body: JSON.stringify(
+          withMindMapAudienceContext(
+            {
+              package_id: packageId,
+              diagram_id: diagramId,
+              topic_hint: options.topicHint,
+              language: promptLanguage.value,
+            },
+            promptLanguage.value
+          )
+        ),
       })
 
       const result = (await response.json().catch(() => ({}))) as WebContentResult

@@ -116,6 +116,8 @@ declare module 'vue' {
     CanvasToolbarBackgroundDropdown: typeof import('./components/canvas/CanvasToolbarBackgroundDropdown.vue')['default']
     CanvasToolbarBorderDropdown: typeof import('./components/canvas/CanvasToolbarBorderDropdown.vue')['default']
     CanvasToolbarMindMap: typeof import('./components/canvas/CanvasToolbarMindMap.vue')['default']
+    CanvasToolbarMindMapAiGenerate: typeof import('./components/canvas/CanvasToolbarMindMapAiGenerate.vue')['default']
+    CanvasToolbarMindMapAudiencePicker: typeof import('./components/canvas/CanvasToolbarMindMapAudiencePicker.vue')['default']
     CanvasToolbarMoreAppsDropdown: typeof import('./components/canvas/CanvasToolbarMoreAppsDropdown.vue')['default']
     CanvasToolbarStyleDropdown: typeof import('./components/canvas/CanvasToolbarStyleDropdown.vue')['default']
     CanvasToolbarTextDropdown: typeof import('./components/canvas/CanvasToolbarTextDropdown.vue')['default']

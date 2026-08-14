@@ -1,11 +1,11 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { useNotifications } from '@/composables/core/useNotifications'
-import { useLanguage } from '@/composables/core/useLanguage'
 import { getAiBrainstorm } from '@/composables/aiBrainstorm/useAiBrainstorm'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
+import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMindMapAudienceGenerate'
 import { getAiBrainstormDiagramKey } from '@/composables/nodePalette/sessionKeys'
-import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import { useDiagramStore, usePanelsStore, useSavedDiagramsStore } from '@/stores'
 
 export type MindMapSideToolId =
@@ -28,7 +28,7 @@ export function useMindMapSideToolbarState() {
   const savedDiagramsStore = useSavedDiagramsStore()
   const notify = useNotifications()
   const { t } = useLanguage()
-  const { handleAIGenerate } = useCanvasToolbarApps()
+  const { handleMindMapAiGenerate } = useMindMapAudienceGenerate()
 
   const sidebarVisible = computed(() => activeTool.value === null)
   const outlinePanelOpen = computed(() => activeTool.value === 'outline')
@@ -77,7 +77,7 @@ export function useMindMapSideToolbarState() {
       notify.warning(t('canvas.toolbar.collabLiveAiDisabled'))
       return
     }
-    void handleAIGenerate({ generationInstructions })
+    void handleMindMapAiGenerate({ generationInstructions })
   }
 
   function handleToolSelect(toolId: MindMapSideToolId): void {

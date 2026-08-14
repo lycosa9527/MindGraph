@@ -25,6 +25,8 @@ export interface KittyAgentContext {
   diagram_write_lock?: { holder: 'llm' | 'tool' | null }
   /** Active multi-LLM pill: qwen | deepseek | doubao (null clears). */
   selected_llm_model?: string | null
+  /** Mind-map 专业程度 block; ignored on classic diagrams. */
+  audience_instructions?: string
 }
 
 export interface KittyLibrarySnapshot {

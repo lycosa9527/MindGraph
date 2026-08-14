@@ -16,6 +16,7 @@ from agents.core.agent_utils import extract_json_from_response
 from agents.mind_maps.mind_map_agent import MindMapAgent
 from config.settings import config
 from prompts import get_prompt
+from prompts.ai_content_level import append_audience_instructions
 from services.llm import llm_service
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.prompt_locale import build_extracted_content_user_block
@@ -44,6 +45,7 @@ class WebContentMindMapAgent(MindMapAgent):
         endpoint_path: Optional[str] = None,
         http_request_id: Optional[str] = None,
         source_kind: ContentSourceKind = "web",
+        generation_instructions: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Generate a mind map from extracted page or document content."""
         try:
@@ -59,6 +61,7 @@ class WebContentMindMapAgent(MindMapAgent):
                 endpoint_path=endpoint_path,
                 http_request_id=http_request_id,
                 source_kind=source_kind,
+                generation_instructions=generation_instructions,
             )
             if not spec:
                 return {
@@ -106,6 +109,7 @@ class WebContentMindMapAgent(MindMapAgent):
         endpoint_path: Optional[str],
         http_request_id: Optional[str] = None,
         source_kind: ContentSourceKind = "web",
+        generation_instructions: Optional[str] = None,
     ) -> Tuple[Optional[Dict[str, Any]], Optional[List[str]]]:
         """Call LLM to build mind map spec from extracted text."""
         prompt_type = _PROMPT_TYPE_BY_SOURCE.get(source_kind, "web_content_generation")
@@ -113,13 +117,16 @@ class WebContentMindMapAgent(MindMapAgent):
         if not system_prompt:
             return None, None
 
-        user_block = build_extracted_content_user_block(
-            page_content=page_content,
-            language=language,
-            content_format=content_format,
-            page_title=page_title,
-            page_url=page_url,
-            source_kind=source_kind,
+        user_block = append_audience_instructions(
+            build_extracted_content_user_block(
+                page_content=page_content,
+                language=language,
+                content_format=content_format,
+                page_title=page_title,
+                page_url=page_url,
+                source_kind=source_kind,
+            ),
+            generation_instructions,
         )
 
         response = await llm_service.chat(

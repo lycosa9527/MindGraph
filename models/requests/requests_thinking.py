@@ -436,6 +436,11 @@ class MindMapNodeExplainRequest(BaseModel):
         "en",
         description="Prompt / generation language code (see prompt output registry)",
     )
+    generation_instructions: Optional[str] = Field(
+        None,
+        max_length=5000,
+        description="Optional mind-map audience / content-expertise instructions",
+    )
     diagram_id: Optional[str] = Field(None, max_length=64, description="Saved diagram id for collab guard")
 
     @field_validator("language")

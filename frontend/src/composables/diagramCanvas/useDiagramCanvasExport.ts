@@ -1,25 +1,18 @@
 import { type Ref, ref } from 'vue'
 
-import {
-  useDiagramExport,
-  useDiagramSpecForSave,
-  useLanguage,
-} from '@/composables'
+import { useDiagramExport, useDiagramSpecForSave, useLanguage } from '@/composables'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { CanvasExportOptions } from '@/config/canvasExportOptions'
 import { ANIMATION } from '@/config/uiConfig'
 import { useUIStore } from '@/stores'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { runWithExportVisualMode } from '@/utils/canvasExportVisualMode'
-import { captureDiagramPngData } from '@/utils/diagramExportRasterCapture'
 import { runLearningSheetRasterCapture } from '@/utils/diagramExportLearningSheet'
 import {
   prepareDiagramCanvasForRasterCapture,
   waitForDiagramExportFonts,
 } from '@/utils/diagramExportPrep'
-import {
-  getDiagramCanvasPdfHtmlToImageOptions,
-  waitForNextPaint,
-} from '@/utils/diagramHtmlToImage'
+import { captureDiagramPngData } from '@/utils/diagramExportRasterCapture'
+import { getDiagramCanvasPdfHtmlToImageOptions, waitForNextPaint } from '@/utils/diagramHtmlToImage'
 import { resolveDiagramTitleForSave } from '@/utils/diagramTitleForSave'
 
 type CanvasViewport = { x: number; y: number; zoom: number }
@@ -55,7 +48,7 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
 
   const getExportSpec = useDiagramSpecForSave()
 
-  const { exportByFormat } = useDiagramExport({
+  const { exportByFormat, capturePngBlob, copyPngToClipboard } = useDiagramExport({
     getContainer: () => vueFlowWrapper.value,
     getDiagramSpec: getExportSpec,
     getTitle: getExportTitle,
@@ -95,14 +88,8 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
       await waitForNextPaint()
       let dataUrl: string | null = null
       await runWithExportVisualMode(uiStore, container, exportOptions, async () => {
-        const capture = await runLearningSheetRasterCapture(
-          diagramStore,
-          exportOptions,
-          () =>
-            captureDiagramPngData(
-              container,
-              getDiagramCanvasPdfHtmlToImageOptions({ pixelRatio: 1 })
-            )
+        const capture = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
+          captureDiagramPngData(container, getDiagramCanvasPdfHtmlToImageOptions({ pixelRatio: 1 }))
         )
         dataUrl = capture.dataUrl
       })
@@ -120,6 +107,8 @@ export function useDiagramCanvasExport(options: UseDiagramCanvasExportOptions) {
     getExportTitle,
     getExportSpec,
     exportByFormat,
+    capturePngBlob,
+    copyPngToClipboard,
     prepareForCommunityExport,
     restoreViewportAfterCommunityExport,
     captureWorksheetPreviewPng,

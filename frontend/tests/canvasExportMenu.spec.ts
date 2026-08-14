@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  CANVAS_CLIPBOARD_EXPORT_MENU_ITEM,
   CANVAS_COMMUNITY_EXPORT_MENU_ITEM,
   CANVAS_MINDMAP_EXPORT_MENU_ITEMS,
   CANVAS_RASTER_EXPORT_COMMANDS,
@@ -51,6 +52,13 @@ describe('canvasExportMenu', () => {
   it('defines mind map export menu without standalone pdf (DOCX/PDF via worksheet modal)', () => {
     const commands = CANVAS_MINDMAP_EXPORT_MENU_ITEMS.map((item) => item.command)
     expect(commands).toEqual(['png', 'svg', 'mg'])
+  })
+
+  it('defines clipboard copy as a standalone mind map export command', () => {
+    expect(CANVAS_CLIPBOARD_EXPORT_MENU_ITEM).toEqual({
+      command: 'clipboard',
+      labelKey: 'canvas.topBar.exportClipboard',
+    })
   })
 
   it('marks mg as divided from raster formats in mind map menu', () => {

@@ -420,6 +420,11 @@ class GenerateMindmapFromPackageRequest(BaseModel):
     package_id: Optional[int] = Field(default=None, ge=1)
     topic_hint: Optional[str] = Field(default=None, max_length=500)
     language: str = Field(default="zh")
+    generation_instructions: Optional[str] = Field(
+        default=None,
+        max_length=5000,
+        description="Optional mind-map audience / content-expertise instructions",
+    )
 
     @field_validator("language")
     @classmethod

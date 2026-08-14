@@ -1,6 +1,7 @@
 /**
  * Canvas AI content audience level (UI preference).
- * Persisted locally; not yet sent to generation APIs.
+ * Persisted locally. Mind-map generate reads this via
+ * ``resolveMindMapAudienceInstructions``; classic canvas does not.
  */
 import { computed, ref, watch } from 'vue'
 

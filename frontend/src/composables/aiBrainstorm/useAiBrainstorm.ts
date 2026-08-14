@@ -13,6 +13,7 @@ import { storeToRefs } from 'pinia'
 import { applyAiBrainstormSelection } from '@/composables/aiBrainstorm/applyAiBrainstormSelection'
 import { eventBus } from '@/composables/core/useEventBus'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { buildDiagramData } from '@/composables/nodePalette/diagramDataBuilder'
 import {
   MINDMAP_WATERFALL_NODES_PER_LLM,
@@ -164,7 +165,12 @@ export function useAiBrainstorm(options: UseAiBrainstormOptions = {}) {
       useGlobalAbort?: boolean
     }
   ): Promise<number> {
-    return streamNodePaletteBatch(streamDeps, url, payload, batchOptions)
+    return streamNodePaletteBatch(
+      streamDeps,
+      url,
+      withMindMapAudienceContext(payload, promptLanguage.value),
+      batchOptions
+    )
   }
 
   const diagramData = computed(() => {

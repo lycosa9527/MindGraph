@@ -19,6 +19,7 @@ import {
   verifySubgraphChildTextsPresent,
 } from '@/composables/kitty/diagramEditApply'
 import type { DiagramHubPersistDeps } from '@/composables/kitty/diagramEditHubPersist'
+import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { i18n } from '@/i18n'
 import { useDiagramStore, useLLMResultsStore, useSavedDiagramsStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
@@ -460,6 +461,7 @@ async function runMindMapSubgraphGeneration(
       parent_branch: subgraphContext.parentBranch,
       ...(diagramId ? { diagram_id: diagramId } : {}),
     }
+    Object.assign(requestBody, withMindMapAudienceContext(requestBody, promptLanguage))
 
     const requestDebug: MindMapSubgraphRequestDebug = {
       endpoint: '/api/generate_graph',

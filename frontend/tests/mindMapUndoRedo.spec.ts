@@ -80,6 +80,8 @@ describe('mind map undo/redo', () => {
       },
       emit: () => {},
       exportByFormat: async () => {},
+      capturePngBlob: async () => new Blob(),
+      copyPngToClipboard: async () => {},
       showExportToCommunityModal: { value: false } as { value: boolean },
       getExportContainer: () => null,
       prepareForCommunityExport: async () => {},

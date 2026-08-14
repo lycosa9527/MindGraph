@@ -26,7 +26,6 @@ import {
   shouldLockDesktopIngressForMobileKitty,
   useKittySessionManager,
 } from '@/composables/kitty/useKittySessionManager'
-import { useCanvasToolbarApps } from '@/composables/canvasToolbar/useCanvasToolbarApps'
 import {
   appendOneSentenceTurn,
   fetchOneSentenceTurns,
@@ -63,6 +62,7 @@ import { prepareConversationImageCapture } from '@/composables/kitty/prepareConv
 import { processConversationImageUpload } from '@/composables/kitty/processConversationImageUpload'
 import { useKittyFunAsrMic } from '@/composables/kitty/useKittyFunAsrMic'
 import { useKittyUserMobileActive } from '@/composables/kitty/useKittyUserMobileActive'
+import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMindMapAudienceGenerate'
 import { mergeMindMapPresentationExtrasIntoSpec } from '@/utils/mindMapLiveSpecExtras'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 import {
@@ -95,7 +95,7 @@ export function useMindMapOneSentenceChat() {
   const llmResultsStore = useLLMResultsStore()
   const featureFlagsStore = useFeatureFlagsStore()
   const oneSentence = useOneSentenceStore()
-  const { isAIGenerating, handleAIGenerate } = useCanvasToolbarApps()
+  const { isAIGenerating, handleMindMapAiGenerate } = useMindMapAudienceGenerate()
   const bus = useEventBus(PANEL_OWNER)
 
   const {
@@ -409,7 +409,7 @@ export function useMindMapOneSentenceChat() {
     maybeSwitchDiagramTypeForCreate(text)
     pendingGenerateReply = true
     pushKittyMessage(pickOneSentenceGenerating(currentLanguage.value))
-    await handleAIGenerate({ generationInstructions: text })
+    await handleMindMapAiGenerate({ generationInstructions: text })
   }
 
   function buildBusyQueuedReply(): string {
