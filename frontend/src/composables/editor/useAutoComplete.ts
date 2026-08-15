@@ -646,12 +646,9 @@ export function useAutoComplete() {
     const override = typeof topicOverride === 'string' ? topicOverride.trim() : ''
     const baseTopic = override || extractMainTopic() || ''
     const instructions = (generationInstructions ?? '').trim()
-    const reqLabel = t('autoComplete.generationInstructionsLabel')
-    let topic = baseTopic
-    if (instructions) {
-      topic = baseTopic ? `${baseTopic}\n\n${reqLabel}\n${instructions}` : instructions
-    }
-    topic += promptSuffix ?? ''
+    // Backend appends generation_instructions with the locale marker.
+    // Do not also splice them into prompt — that duplicated 【用户要求】.
+    const topic = `${baseTopic}${promptSuffix ?? ''}`
 
     const requestBody: Record<string, unknown> = {
       prompt: topic,
@@ -699,6 +696,7 @@ export function useAutoComplete() {
 
     // Start generation before font wait so the topic LlmPhaseRing shows immediately.
     llmResultsStore.startGeneration(newSessionId, diagramType, modelsToRun, baseTopic || null)
+    const generationSessionId = llmResultsStore.sessionId
 
     eventBus.emit('llm:generation_started', {
       models: modelsToRun,
@@ -729,7 +727,8 @@ export function useAutoComplete() {
               model,
               result.spec,
               result.diagramType || diagramType,
-              result.elapsed
+              result.elapsed,
+              generationSessionId
             )
 
             if (rendered && !firstResultHandled) {
@@ -757,7 +756,8 @@ export function useAutoComplete() {
               model,
               displayError,
               result.elapsed,
-              result.errorType
+              result.errorType,
+              generationSessionId
             )
             eventBus.emit('llm:model_completed', { model, success: false })
             if (
@@ -769,7 +769,7 @@ export function useAutoComplete() {
           }
         } catch (err) {
           const reason = err instanceof Error ? err.message : 'Request failed'
-          llmResultsStore.handleModelError(model, reason, 0)
+          llmResultsStore.handleModelError(model, reason, 0, undefined, generationSessionId)
           eventBus.emit('llm:model_completed', { model, success: false })
           if (import.meta.env.DEV) {
             console.warn(`[AutoComplete] ${model} rejected:`, err)

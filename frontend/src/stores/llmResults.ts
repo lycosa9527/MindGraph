@@ -23,6 +23,11 @@ import {
 } from '@/utils/mindMapLiveSpecExtras'
 
 import { useDiagramStore } from './diagram'
+import {
+  isLlmResultForCurrentSession,
+  shouldPaintCompletedLlmModel,
+  shouldStampCanvasOntoLlmResult,
+} from './llmResultsPaint'
 import { useSavedDiagramsStore } from './savedDiagrams'
 
 // Types
@@ -68,6 +73,12 @@ export type LLMModel = (typeof MODELS)[number]
 
 const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes
 
+export {
+  isLlmResultForCurrentSession,
+  shouldPaintCompletedLlmModel,
+  shouldStampCanvasOntoLlmResult,
+} from './llmResultsPaint'
+
 export const useLLMResultsStore = defineStore('llmResults', () => {
   const diagramStore = useDiagramStore()
 
@@ -97,6 +108,9 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
 
   /** Canvas topic captured at auto-complete start; applied on every model switch/load. */
   const lockedTopic = ref<string | null>(null)
+
+  /** Model painted by first-result-wins in the current generate round. */
+  const paintedThisSession = ref<string | null>(null)
 
   // Getters
   const models = computed(() => MODELS)
@@ -263,6 +277,7 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     selectedModel.value = null
     totalModels.value = null
     lockedTopic.value = null
+    paintedThisSession.value = null
   }
 
   function applyLockedTopicToSpec(
@@ -320,13 +335,9 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     modelsToRun?: string[],
     topicToLock?: string | null
   ): void {
-    // Cancel any existing requests
     cancelAllRequests()
+    clearCachedResultsOnly()
 
-    // Clear previous cache
-    clearCache()
-
-    // Set state
     isGenerating.value = true
     sessionId.value = newSessionId
     const trimmedLock = typeof topicToLock === 'string' ? topicToLock.trim() : ''
@@ -353,9 +364,13 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     model: string,
     spec: Record<string, unknown>,
     diagramType: string,
-    elapsed: number
+    elapsed: number,
+    forSessionId?: string | null
   ): Promise<boolean> {
-    // Verify context hasn't changed
+    if (!isLlmResultForCurrentSession(sessionId.value, forSessionId)) {
+      return false
+    }
+
     const currentDiagramType = diagramStore.type
     let normalizedCurrentType = currentDiagramType
     if (normalizedCurrentType === 'mind_map') {
@@ -369,7 +384,6 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       return false
     }
 
-    // Store result
     storeResult(model, {
       success: true,
       spec,
@@ -377,27 +391,41 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       elapsed,
     })
 
-    // If this is the first successful result, render it
-    // Claim selectedModel synchronously before await to prevent race when two LLMs complete together
-    if (selectedModel.value === null) {
-      selectedModel.value = model
-      const loaded = await switchToModel(model)
-      if (!loaded) {
-        selectedModel.value = null
-      }
-      return loaded
+    const isFirstPaint = paintedThisSession.value === null
+    if (
+      !shouldPaintCompletedLlmModel({
+        paintedModel: paintedThisSession.value,
+        selectedModel: selectedModel.value,
+        completedModel: model,
+      })
+    ) {
+      return true
     }
-
-    return true
+    if (isFirstPaint) {
+      selectedModel.value = model
+    }
+    const loaded = await switchToModel(model)
+    if (!isLlmResultForCurrentSession(sessionId.value, forSessionId)) {
+      return false
+    }
+    if (loaded) {
+      paintedThisSession.value = model
+    } else if (isFirstPaint && selectedModel.value === model) {
+      selectedModel.value = null
+    }
+    return loaded
   }
 
-  // Handle model error
   function handleModelError(
     model: string,
     error: string,
     elapsed: number,
-    errorType?: string
+    errorType?: string,
+    forSessionId?: string | null
   ): void {
+    if (!isLlmResultForCurrentSession(sessionId.value, forSessionId)) {
+      return
+    }
     storeResult(model, {
       success: false,
       error,
@@ -478,6 +506,14 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
   function updateCurrentModelSpec(spec: Record<string, unknown>): void {
     const model = selectedModel.value
     if (!model || !results.value[model]?.success) return
+    if (
+      !shouldStampCanvasOntoLlmResult({
+        isGenerating: isGenerating.value,
+        selectedModel: model,
+      })
+    ) {
+      return
+    }
     results.value[model] = {
       ...results.value[model],
       spec: { ...spec },
@@ -494,6 +530,9 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     saved: { results?: Record<string, LLMResult>; selectedModel?: string },
     diagramType: string
   ): void {
+    if (isGenerating.value) {
+      return
+    }
     if (!saved || typeof saved !== 'object' || !saved.results) return
 
     const normalizedType = diagramType === 'mind_map' ? 'mindmap' : diagramType

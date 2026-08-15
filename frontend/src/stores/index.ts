@@ -37,7 +37,16 @@ export {
   type SavedDiagramFull,
   type AutoSaveResult,
 } from './savedDiagrams'
-export { useLLMResultsStore, type LLMResult, type LLMModel, type ModelState, type ModelLoadPhase } from './llmResults'
+export {
+  useLLMResultsStore,
+  isLlmResultForCurrentSession,
+  shouldPaintCompletedLlmModel,
+  shouldStampCanvasOntoLlmResult,
+  type LLMResult,
+  type LLMModel,
+  type ModelState,
+  type ModelLoadPhase,
+} from './llmResults'
 export { useLiveSubtitlesStore } from './liveSubtitles'
 export { useVoiceNotesStore } from './voiceNotes'
 export { useAskOnceStore, type AskOnceMessage, type ModelResponse, type ModelId } from './askonce'

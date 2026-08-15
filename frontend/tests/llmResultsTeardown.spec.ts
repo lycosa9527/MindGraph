@@ -6,7 +6,12 @@ import {
   shouldSkipLibraryReloadDuringGeneration,
   shouldSkipLibraryReloadForActiveDiagram,
 } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
-import { useLLMResultsStore } from '@/stores/llmResults'
+import {
+  isLlmResultForCurrentSession,
+  shouldPaintCompletedLlmModel,
+  shouldStampCanvasOntoLlmResult,
+  useLLMResultsStore,
+} from '@/stores/llmResults'
 
 describe('shouldSkipLibraryReloadForActiveDiagram', () => {
   it('skips when route id matches the already-active diagram (first autosave URL sync)', () => {
@@ -81,5 +86,134 @@ describe('llmResults teardown', () => {
     expect(store.isGenerating).toBe(true)
     expect(store.hasAnyResults).toBe(false)
     expect(store.selectedModel).toBeNull()
+  })
+})
+
+describe('llmResults regenerate paint / stamp', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: false,
+        media: '',
+        onchange: null,
+        addListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+    )
+  })
+
+  it('paints the first success of the round even if selectedModel was reclaimed', () => {
+    expect(
+      shouldPaintCompletedLlmModel({
+        paintedModel: null,
+        selectedModel: 'deepseek',
+        completedModel: 'deepseek',
+      })
+    ).toBe(true)
+    expect(
+      shouldPaintCompletedLlmModel({
+        paintedModel: null,
+        selectedModel: 'qwen',
+        completedModel: 'deepseek',
+      })
+    ).toBe(true)
+    expect(
+      shouldPaintCompletedLlmModel({
+        paintedModel: 'deepseek',
+        selectedModel: 'deepseek',
+        completedModel: 'qwen',
+      })
+    ).toBe(false)
+    expect(
+      shouldPaintCompletedLlmModel({
+        paintedModel: 'deepseek',
+        selectedModel: 'deepseek',
+        completedModel: 'deepseek',
+      })
+    ).toBe(true)
+  })
+
+  it('drops completions from a superseded generate session', () => {
+    expect(isLlmResultForCurrentSession('gen_2', 'gen_1')).toBe(false)
+    expect(isLlmResultForCurrentSession('gen_2', 'gen_2')).toBe(true)
+    expect(isLlmResultForCurrentSession(null, 'gen_2')).toBe(false)
+  })
+
+  it('refuses any canvas stamp while generating', () => {
+    expect(
+      shouldStampCanvasOntoLlmResult({
+        isGenerating: true,
+        selectedModel: 'deepseek',
+      })
+    ).toBe(false)
+    expect(
+      shouldStampCanvasOntoLlmResult({
+        isGenerating: false,
+        selectedModel: 'deepseek',
+      })
+    ).toBe(true)
+  })
+
+  it('drops store writes from a superseded generate session', async () => {
+    setActivePinia(createPinia())
+    const store = useLLMResultsStore()
+    store.startGeneration('gen_2', 'mindmap', ['qwen', 'deepseek'])
+
+    const painted = await store.handleModelSuccess(
+      'deepseek',
+      { topic: 'stale' },
+      'mindmap',
+      1,
+      'gen_1'
+    )
+    store.handleModelError('qwen', 'timeout', 1, undefined, 'gen_1')
+
+    expect(painted).toBe(false)
+    expect(store.results.deepseek).toBeUndefined()
+    expect(store.results.qwen).toBeUndefined()
+  })
+
+  it('does not restore saved llm_results over an in-flight generate', () => {
+    setActivePinia(createPinia())
+    const store = useLLMResultsStore()
+    store.startGeneration('gen_live', 'mindmap', ['qwen'])
+    store.restoreFromSaved(
+      {
+        results: {
+          qwen: { success: true, spec: { topic: 'library' }, elapsed: 1 },
+        },
+        selectedModel: 'qwen',
+      },
+      'mindmap'
+    )
+
+    expect(store.hasAnyResults).toBe(false)
+    expect(store.selectedModel).toBeNull()
+    expect(store.isGenerating).toBe(true)
+  })
+
+  it('does not overwrite a fresh DeepSeek spec with the stale canvas mid-generate', () => {
+    setActivePinia(createPinia())
+    const store = useLLMResultsStore()
+    store.startGeneration('session-regen', 'mindmap', ['qwen', 'deepseek', 'doubao'])
+    store.storeResult('deepseek', {
+      success: true,
+      spec: { topic: 'FastAPI', children: [{ text: '小学' }] },
+      elapsed: 1,
+    })
+    store.setSelectedModel('deepseek')
+
+    store.updateCurrentModelSpec({
+      topic: 'FastAPI',
+      nodes: [{ id: 'topic', text: '专家旧图' }],
+    })
+
+    expect(store.results.deepseek.spec).toEqual({
+      topic: 'FastAPI',
+      children: [{ text: '小学' }],
+    })
   })
 })

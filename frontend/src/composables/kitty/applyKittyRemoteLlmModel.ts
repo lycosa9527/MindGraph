@@ -29,6 +29,11 @@ export function normalizeKittyLlmModel(raw: unknown): LLMModel | null {
  */
 export async function applyKittyRemoteLlmModel(rawModel: unknown): Promise<boolean> {
   const llmResultsStore = useLLMResultsStore()
+  // Do not claim selectedModel from a background live_context poll while
+  // auto-complete is regenerating — that skips first-result paint.
+  if (llmResultsStore.isGenerating) {
+    return false
+  }
   const model = normalizeKittyLlmModel(rawModel)
 
   if (model == null) {

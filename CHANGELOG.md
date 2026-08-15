@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.177.1] - 2026-08-15
+
+> **Canvas multi-LLM regenerate keeps the current session spec (no stale first-finisher).**
+
+### Fixed
+
+- **Canvas multi-LLM regenerate** — First success of the current generate session always paints; persist cannot stamp the previous canvas over a fresh spec; late results from a prior session are dropped. Background Kitty `live_context` cannot reclaim the model slot or recover Redis over a smaller regenerate. Also stop sending 专业程度 twice (prompt + `generation_instructions`), which duplicated `【用户要求】`.
+
+### Tests
+
+- `frontend/tests/llmResultsTeardown.spec.ts` / `kittyLlmModelSync.spec.ts` / `useKittyDesktopRemoteSyncHubPersist.spec.ts` — session-owned paint; no canvas stamp or live_context recover while generating.
+
 ## [5.177.0] - 2026-08-15
 
 > **Mind-map 专业程度 drives new-canvas AI; classic autocomplete stays on 学段.**
