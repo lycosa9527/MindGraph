@@ -38,6 +38,7 @@ except ImportError:
     is_redis_available = None
     _REDIS_AVAILABLE = False
 
+from services.mind_classroom.temp_cleanup import cleanup_classroom_temp_files
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, FILE_IO_ERRORS, REDIS_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -291,6 +292,7 @@ async def start_cleanup_scheduler(interval_hours: int = 1):
                     # Lock reacquired, continue with cleanup
 
             await cleanup_temp_images()
+            await cleanup_classroom_temp_files()
         except asyncio.CancelledError:
             logger.info("[Cleanup] Cleanup scheduler stopped")
             break

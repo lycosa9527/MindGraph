@@ -62,7 +62,7 @@ export function zhihuiDiagramPhaseLabel(
   if (normalized === 'failed') {
     return String(t('zhihui.diagram.phaseFailed'))
   }
-  if (normalized === 'complete') {
+  if (normalized === 'complete' || normalized === 'ready') {
     return String(t('zhihui.diagram.phaseComplete'))
   }
   if (normalized === 'cancelled') {
@@ -96,7 +96,7 @@ export function zhihuiDiagramStatusToast(
   if (next === 'generating' && (prev === 'planning' || prev === 'queued' || prev === '')) {
     return { level: 'info', messageKey: 'zhihui.diagram.toastGenerating' }
   }
-  if (next === 'complete') {
+  if (next === 'complete' || next === 'ready') {
     return { level: 'success', messageKey: 'zhihui.diagram.toastComplete' }
   }
   if (next === 'partial') {

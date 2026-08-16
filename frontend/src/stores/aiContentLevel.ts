@@ -1,15 +1,18 @@
 /**
  * Canvas AI content audience level (UI preference).
- * Persisted locally. Mind-map generate reads this via
- * ``resolveMindMapAudienceInstructions``; classic canvas does not.
+ * Guests use localStorage; signed-in users persist to Postgres via
+ * ``PATCH /api/auth/diagram-preferences`` (``ai_content_level``).
+ * Mind-map generate reads this via ``resolveMindMapAudienceInstructions``.
  */
 import { computed, ref, watch } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { notify } from '@/composables/core/notifications'
 import {
   type AiContentLevelId,
   DEFAULT_AI_CONTENT_LEVEL,
+  isAiContentLevelId,
   loadAiContentLevelGuideSeen,
   loadAiContentLevelPreference,
   loadGeneratedLevelsByDiagram,
@@ -17,6 +20,8 @@ import {
   saveAiContentLevelPreference,
   saveGeneratedLevelsByDiagram,
 } from '@/config/aiContentLevels'
+
+const API_PATH = '/api/auth/diagram-preferences'
 
 export const useAiContentLevelStore = defineStore('aiContentLevel', () => {
   const initial = loadAiContentLevelPreference()
@@ -59,15 +64,73 @@ export const useAiContentLevelStore = defineStore('aiContentLevel', () => {
     saveAiContentLevelGuideSeen(true)
   }
 
-  function setLevel(next: AiContentLevelId): void {
+  function applyPreference(next: AiContentLevelId, explicit: boolean): void {
     level.value = next
-    userSet.value = true
-    dismissGuide()
+    userSet.value = explicit
+    if (explicit) {
+      dismissGuide()
+    }
+  }
+
+  function hydrateFromProfile(saved: string | null): void {
+    if (isAiContentLevelId(saved)) {
+      applyPreference(saved, true)
+      return
+    }
+    applyPreference(DEFAULT_AI_CONTENT_LEVEL, false)
+  }
+
+  function hydrateFromLocal(): void {
+    const stored = loadAiContentLevelPreference()
+    applyPreference(stored.level, stored.userSet)
+  }
+
+  async function persistToServer(next: AiContentLevelId): Promise<boolean> {
+    const { useAuthStore } = await import('@/stores/auth')
+    const authStore = useAuthStore()
+    if (!authStore.isAuthenticated) {
+      return true
+    }
+    try {
+      const response = await fetch(API_PATH, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ ai_content_level: next }),
+      })
+      const data = (await response.json().catch(() => ({}))) as {
+        detail?: string
+        ai_content_level?: string | null
+      }
+      if (!response.ok) {
+        notify.error(typeof data.detail === 'string' ? data.detail : 'Failed to save preferences')
+        return false
+      }
+      const saved = isAiContentLevelId(data.ai_content_level)
+        ? data.ai_content_level
+        : next
+      authStore.patchPersistedUser({ aiContentLevel: saved })
+      return true
+    } catch {
+      notify.error('Failed to save preferences')
+      return false
+    }
+  }
+
+  async function setLevel(next: AiContentLevelId): Promise<boolean> {
+    const previousLevel = level.value
+    const previousUserSet = userSet.value
+    applyPreference(next, true)
+    const ok = await persistToServer(next)
+    if (!ok && level.value === next) {
+      applyPreference(previousLevel, previousUserSet)
+      return false
+    }
+    return ok
   }
 
   function reset(): void {
-    level.value = DEFAULT_AI_CONTENT_LEVEL
-    userSet.value = false
+    applyPreference(DEFAULT_AI_CONTENT_LEVEL, false)
   }
 
   function getGeneratedLevel(diagramKey: string): AiContentLevelId | null {
@@ -113,6 +176,8 @@ export const useAiContentLevelStore = defineStore('aiContentLevel', () => {
     activeLevel,
     isConstrained,
     setLevel,
+    hydrateFromProfile,
+    hydrateFromLocal,
     reset,
     dismissGuide,
     diagramKey,

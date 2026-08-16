@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   resolveEnterKeyEvent,
+  resolveInsertKeyEvent,
   resolveTabKeyEvent,
 } from '@/composables/canvasPage/canvasPageEditorShortcutRouting'
 import type { DiagramType } from '@/types'
@@ -37,6 +38,21 @@ const TAB_EXPECTED: Record<DiagramType, ReturnType<typeof resolveTabKeyEvent>> =
   diagram: 'diagram:add_node_requested',
 }
 
+const INSERT_EXPECTED: Record<DiagramType, ReturnType<typeof resolveInsertKeyEvent>> = {
+  circle_map: null,
+  bubble_map: null,
+  double_bubble_map: null,
+  tree_map: null,
+  brace_map: null,
+  flow_map: null,
+  multi_flow_map: null,
+  bridge_map: null,
+  concept_map: null,
+  mindmap: 'diagram:add_child_requested',
+  mind_map: 'diagram:add_child_requested',
+  diagram: null,
+}
+
 const ENTER_EXPECTED: Record<DiagramType, ReturnType<typeof resolveEnterKeyEvent>> = {
   circle_map: 'diagram:add_node_requested',
   bubble_map: 'diagram:add_node_requested',
@@ -61,11 +77,17 @@ describe('canvasPageEditorShortcutRouting — all diagram types', () => {
     expect(resolveEnterKeyEvent(diagramType)).toBe(ENTER_EXPECTED[diagramType])
   })
 
-  it('returns null Tab/Enter when diagram type is unset', () => {
+  it.each(ALL_DIAGRAM_TYPES)('Insert routing for %s', (diagramType) => {
+    expect(resolveInsertKeyEvent(diagramType)).toBe(INSERT_EXPECTED[diagramType])
+  })
+
+  it('returns null Tab/Enter/Insert when diagram type is unset', () => {
     expect(resolveTabKeyEvent(null)).toBeNull()
     expect(resolveTabKeyEvent(undefined)).toBeNull()
     expect(resolveEnterKeyEvent(null)).toBeNull()
     expect(resolveEnterKeyEvent(undefined)).toBeNull()
+    expect(resolveInsertKeyEvent(null)).toBeNull()
+    expect(resolveInsertKeyEvent(undefined)).toBeNull()
   })
 })
 
@@ -76,10 +98,11 @@ describe('canvas global shortcuts (type-agnostic on CanvasPage)', () => {
     expect(resolveEnterKeyEvent('concept_map')).toBeNull()
   })
 
-  it('covers every DiagramType in Tab and Enter matrices', () => {
+  it('covers every DiagramType in Tab, Enter, and Insert matrices', () => {
     for (const type of ALL_DIAGRAM_TYPES) {
       expect(TAB_EXPECTED).toHaveProperty(type)
       expect(ENTER_EXPECTED).toHaveProperty(type)
+      expect(INSERT_EXPECTED).toHaveProperty(type)
     }
   })
 })

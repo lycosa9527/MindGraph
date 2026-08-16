@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   resolveEnterKeyEvent,
+  resolveInsertKeyEvent,
   resolveTabKeyEvent,
 } from '@/composables/canvasPage/canvasPageEditorShortcutRouting'
 import { collabHistoryWouldBlock } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
@@ -30,6 +31,21 @@ describe('canvasPageEditorShortcutRouting', () => {
 
     it('returns null for concept map', () => {
       expect(resolveTabKeyEvent('concept_map')).toBeNull()
+    })
+  })
+
+  describe('resolveInsertKeyEvent', () => {
+    it('routes mind map Insert to add child (Tab alias)', () => {
+      expect(resolveInsertKeyEvent('mindmap')).toBe('diagram:add_child_requested')
+      expect(resolveInsertKeyEvent('mind_map')).toBe('diagram:add_child_requested')
+    })
+
+    it('ignores Insert on non-mind-map diagram types', () => {
+      expect(resolveInsertKeyEvent('brace_map')).toBeNull()
+      expect(resolveInsertKeyEvent('flow_map')).toBeNull()
+      expect(resolveInsertKeyEvent('bubble_map')).toBeNull()
+      expect(resolveInsertKeyEvent('concept_map')).toBeNull()
+      expect(resolveInsertKeyEvent(null)).toBeNull()
     })
   })
 
@@ -69,13 +85,13 @@ describe('mindMapShortcutGuide parity', () => {
     }
   })
 
-  it('documents mind-map Tab and Enter shortcuts', () => {
+  it('documents mind-map Tab/Insert and Enter shortcuts', () => {
     const tabRow = MIND_MAP_SHORTCUT_GUIDE_ROWS.find((row) => row.id === 'tab')
     const enterRow = MIND_MAP_SHORTCUT_GUIDE_ROWS.find((row) => row.id === 'enter')
     expect(tabRow?.kind).toBe('keys')
     expect(enterRow?.kind).toBe('keys')
     if (tabRow?.kind === 'keys') {
-      expect(tabRow.keys).toEqual(['Tab'])
+      expect(tabRow.keys).toEqual(['Tab', 'Insert'])
     }
     if (enterRow?.kind === 'keys') {
       expect(enterRow.keys).toEqual(['Enter'])

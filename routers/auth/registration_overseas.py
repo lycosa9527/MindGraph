@@ -219,5 +219,6 @@ async def register_overseas(
             "prompt_language": getattr(new_user, "prompt_language", None),
             "match_prompt_to_ui": getattr(new_user, "match_prompt_to_ui", True),
             "education_stage": getattr(new_user, "education_stage", None),
+            "ai_content_level": getattr(new_user, "ai_content_level", None),
         },
     }

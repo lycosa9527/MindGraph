@@ -50,14 +50,12 @@ const { t } = useLanguage()
 const notify = useNotifications()
 const diagramStore = useDiagramStore()
 const authStore = useAuthStore()
-const { featureCommunity, featureZhihui } = useFeatureFlags()
+const { featureCommunity } = useFeatureFlags()
 const { triggerImportInPlace } = useDiagramImport()
 
 const showCommunityExport = computed(() => featureCommunity.value && authStore.isAuthenticated)
 
-const showZhihuiDiagramExport = computed(
-  () => featureZhihui.value && authStore.isAuthenticated && authStore.canAccessZhihui
-)
+const showZhihuiDiagramExport = computed(() => true)
 
 const { handleAddChild, handleAddSibling, handleDeleteNode, handleAddBranch } = useNodeActions({
   registerEventBusListeners: false,

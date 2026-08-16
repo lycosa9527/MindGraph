@@ -8,7 +8,9 @@ import { storeToRefs } from 'pinia'
 
 import { ChevronLeft, ChevronRight, Pause, Play, Square, Volume2, VolumeX, X } from '@lucide/vue'
 
+import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
 import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import { useMindClassroomStore } from '@/stores'
 
@@ -22,12 +24,20 @@ const {
   canGoPrev,
   voiceEnabled,
   transitioning,
+  narrating,
   slideStyle,
 } = storeToRefs(classroomStore)
 
 const { togglePause, nextStep, prevStep, stopLecture, setVoiceEnabled } = useMindClassroomLecture()
 
 const isPaused = computed(() => status.value === 'paused')
+
+const kittyState = computed<KittyAgentState>(() => {
+  if (isPaused.value) return 'idle'
+  if (narrating.value && voiceEnabled.value) return 'speaking'
+  if (transitioning.value) return 'connecting'
+  return 'active'
+})
 
 const kindLabel = computed(() => {
   const kind = currentStep.value?.kind
@@ -91,6 +101,12 @@ const styleTitle = computed(() =>
         aria-atomic="true"
       >
         <span class="mc-slide-card__kind">{{ kindLabel }}</span>
+        <img
+          v-if="currentStep?.imageUrl"
+          class="mc-slide-card__image"
+          :src="currentStep.imageUrl"
+          :alt="currentStep.title"
+        />
         <h2 class="mc-slide-card__title">
           {{ currentStep?.title }}
         </h2>
@@ -106,6 +122,12 @@ const styleTitle = computed(() =>
           </li>
         </ul>
         <div class="mc-slide-card__caption">
+          <div
+            class="mc-slide-card__kitty"
+            aria-hidden="true"
+          >
+            <KittyBlackCatMascot :agent-state="kittyState" />
+          </div>
           {{ currentStep?.caption }}
         </div>
       </div>
@@ -323,6 +345,15 @@ const styleTitle = computed(() =>
   overflow: hidden;
 }
 
+.mc-slide-card__image {
+  width: 100%;
+  max-height: 46%;
+  object-fit: contain;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: rgb(15 23 42 / 0.06);
+}
+
 .mc-slide-card__kind {
   align-self: flex-start;
   margin-bottom: 12px;
@@ -354,13 +385,39 @@ const styleTitle = computed(() =>
 }
 
 .mc-slide-card__caption {
-  margin-top: 14px;
+  position: relative;
+  margin-top: 22px;
   padding: 10px 12px;
   border-radius: 12px;
   font-size: 12px;
   line-height: 1.5;
-  max-height: 5.4em;
-  overflow: hidden;
+  max-height: 8em;
+  overflow: auto;
+}
+
+.mc-slide-card__kitty {
+  position: absolute;
+  left: 8px;
+  bottom: calc(100% - 6px);
+  z-index: 3;
+  width: 2.35rem;
+  max-height: 3rem;
+  aspect-ratio: 272 / 344;
+  pointer-events: none;
+}
+
+.mc-slide-card__kitty :deep(.kitty-black-cat-mascot) {
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  aspect-ratio: 272 / 344;
+  margin: 0;
+}
+
+.mc-slide-card__kitty :deep(.black-cat-container),
+.mc-slide-card__kitty :deep(.black-cat-container .kitty-svg) {
+  width: 100%;
+  height: 100%;
 }
 
 /* —— Style presets —— */

@@ -1,5 +1,5 @@
 /**
- * Mind Classroom launch prefs + live lecture session. Frontend-only.
+ * Mind Classroom launch prefs, queue job state, and live lecture session.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -44,7 +44,13 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
   const steps = ref<MindClassroomLectureStep[]>([])
   const stepIndex = ref(0)
   const transitioning = ref(false)
+  const narrating = ref(false)
   const voiceEnabled = ref(true)
+  const jobId = ref<string | null>(null)
+  const jobStatus = ref<string | null>(null)
+  const jobProgress = ref<Record<string, unknown> | null>(null)
+  const jobError = ref<string | null>(null)
+  const preparedSteps = ref<MindClassroomLectureStep[]>([])
 
   watch(mastery, (value) => {
     saveMindClassroomMastery(value)
@@ -130,6 +136,10 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     voiceEnabled.value = next
   }
 
+  function setNarrating(next: boolean): void {
+    narrating.value = next
+  }
+
   function beginSession(
     nextSteps: MindClassroomLectureStep[],
     mode: MindClassroomPresentationId
@@ -137,8 +147,33 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     steps.value = nextSteps
     stepIndex.value = 0
     transitioning.value = false
+    narrating.value = false
     activeMode.value = mode
     status.value = 'running'
+  }
+
+  function setJobState(next: {
+    id?: string | null
+    status?: string | null
+    progress?: Record<string, unknown> | null
+    error?: string | null
+  }): void {
+    if (next.id !== undefined) jobId.value = next.id
+    if (next.status !== undefined) jobStatus.value = next.status
+    if (next.progress !== undefined) jobProgress.value = next.progress
+    if (next.error !== undefined) jobError.value = next.error
+  }
+
+  function setPreparedSteps(next: MindClassroomLectureStep[]): void {
+    preparedSteps.value = next
+  }
+
+  function clearPrepared(): void {
+    preparedSteps.value = []
+    jobId.value = null
+    jobStatus.value = null
+    jobProgress.value = null
+    jobError.value = null
   }
 
   function clearSession(): void {
@@ -147,6 +182,8 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     steps.value = []
     stepIndex.value = 0
     transitioning.value = false
+    narrating.value = false
+    clearPrepared()
   }
 
   return {
@@ -161,7 +198,13 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     steps,
     stepIndex,
     transitioning,
+    narrating,
     voiceEnabled,
+    jobId,
+    jobStatus,
+    jobProgress,
+    jobError,
+    preparedSteps,
     isLecturing,
     isSlideDeckMode,
     isCanvasTourMode,
@@ -181,6 +224,10 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     closeModal,
     resetSettings,
     setVoiceEnabled,
+    setNarrating,
+    setJobState,
+    setPreparedSteps,
+    clearPrepared,
     beginSession,
     clearSession,
   }

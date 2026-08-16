@@ -4,6 +4,8 @@ import type { Connection, DiagramNode } from '@/types'
 import {
   type MindClassroomScriptOptions,
   buildMindClassroomLectureSteps,
+  lectureCaptionDwellMs,
+  lectureTtsSafetyMs,
 } from '@/utils/mindClassroomScript'
 
 const nodes: DiagramNode[] = [
@@ -88,5 +90,12 @@ describe('buildMindClassroomLectureSteps', () => {
     )
 
     expect(steps.map((step) => step.branchNodeId)).not.toContain('leaf-a')
+  })
+
+  it('sizes TTS safety from caption length instead of a 20s cap', () => {
+    const caption = '我们先看右上角这一支，地理区位。'.repeat(15)
+    const dwell = lectureCaptionDwellMs(caption)
+    expect(dwell).toBeGreaterThan(20_000)
+    expect(lectureTtsSafetyMs(caption, dwell)).toBeGreaterThan(dwell)
   })
 })

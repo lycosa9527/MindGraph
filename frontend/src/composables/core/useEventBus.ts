@@ -336,6 +336,10 @@ export type EventTypes = {
     choices?: Array<{ index: number; label: string }>
     requestId?: string
   }
+  'kitty:lecture_caption': { text: string; stepId?: string }
+  'kitty:lecture_tts_done': { fallback?: boolean; stepId?: string }
+  'kitty:lecture_narrate_requested': { text: string; stepId?: string }
+  'kitty:lecture_interrupt_requested': Record<string, never>
 
   // One-sentence mini-chat (Pinia SoT + cooperators)
   'oneSentence:request_queued': {

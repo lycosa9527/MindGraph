@@ -285,6 +285,7 @@ celery_app = Celery(
         "tasks.mindmate_export_tasks",
         "tasks.showcase_cover_tasks",
         "tasks.zhihui_lesson_tasks",
+        "tasks.mind_classroom_tasks",
     ],
 )
 
@@ -310,6 +311,7 @@ celery_app.conf.update(
         "mindmate_export.*": {"queue": "default"},
         "showcase.*": {"queue": "default"},
         "zhihui.*": {"queue": "default"},
+        "mind_classroom.*": {"queue": "default"},
     },
     # Default queue
     task_default_queue="default",

@@ -148,7 +148,6 @@ import {
   setPresentationDiagramEditLocked,
   setPresentationFullscreenRoot,
 } from '@/composables/presentation/presentationDiagramEdit'
-import { handoffMindMapToZhihuiDiagram } from '@/composables/zhihui/handoffMindMapToZhihuiDiagram'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { PRESENTATION_HIGHLIGHTER_PALETTE_TOOLBAR } from '@/config/presentationHighlighter'
@@ -869,16 +868,8 @@ const diagramAutoSave = useDiagramAutoSave({ isCollabGuest, isCollabActive })
 eventBus.onWithOwner(
   'toolbar:zhihui_diagram_requested',
   () => {
-    void handoffMindMapToZhihuiDiagram({
-      router,
-      flush: () =>
-        diagramAutoSave.flush({
-          bypassSubgraphGuard: true,
-          bypassSuppressGuard: true,
-          bypassGeneratingGuard: true,
-        }),
-      language: promptLanguage.value,
-    })
+    mindClassroomStore.setPresentation('slide_deck')
+    mindClassroomStore.openModal()
   },
   'CanvasPage'
 )

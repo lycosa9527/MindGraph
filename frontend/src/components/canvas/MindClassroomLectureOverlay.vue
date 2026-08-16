@@ -8,7 +8,9 @@ import { storeToRefs } from 'pinia'
 
 import { ChevronLeft, ChevronRight, Pause, Play, Square, Volume2, VolumeX } from '@lucide/vue'
 
+import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
 import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import { PRESENTATION_Z } from '@/config/uiConfig'
 import { useMindClassroomStore } from '@/stores'
@@ -24,6 +26,7 @@ const {
   progress,
   voiceEnabled,
   transitioning,
+  narrating,
 } = storeToRefs(classroomStore)
 
 const { togglePause, nextStep, prevStep, stopLecture, setVoiceEnabled } = useMindClassroomLecture()
@@ -36,6 +39,13 @@ const regionLabel = computed(() => {
 const progressPercent = computed(() => Math.round(progress.value * 100))
 
 const isPaused = computed(() => status.value === 'paused')
+
+const kittyState = computed<KittyAgentState>(() => {
+  if (isPaused.value) return 'idle'
+  if (narrating.value && voiceEnabled.value) return 'speaking'
+  if (transitioning.value) return 'connecting'
+  return 'active'
+})
 </script>
 
 <template>
@@ -46,6 +56,12 @@ const isPaused = computed(() => status.value === 'paused')
     :aria-label="regionLabel"
   >
     <div class="mc-lecture-overlay__caption">
+      <div
+        class="mc-lecture-overlay__kitty"
+        aria-hidden="true"
+      >
+        <KittyBlackCatMascot :agent-state="kittyState" />
+      </div>
       <div class="mc-lecture-overlay__meta">
         <span class="mc-lecture-overlay__badge">
           {{ t('canvas.mindClassroom.title') }}
@@ -167,9 +183,11 @@ const isPaused = computed(() => status.value === 'paused')
   flex-direction: column;
   gap: 10px;
   pointer-events: auto;
+  overflow: visible;
 }
 
 .mc-lecture-overlay__caption {
+  position: relative;
   padding: 14px 16px 12px;
   border-radius: 18px;
   border: 1px solid rgb(186 230 253 / 0.95);
@@ -178,6 +196,38 @@ const isPaused = computed(() => status.value === 'paused')
     0 16px 40px rgb(14 165 233 / 0.16),
     0 2px 8px rgb(15 23 42 / 0.06);
   backdrop-filter: blur(12px);
+  overflow: visible;
+}
+
+.mc-lecture-overlay__kitty {
+  position: absolute;
+  left: 10px;
+  bottom: calc(100% - 8px);
+  z-index: 5;
+  width: 2.75rem;
+  max-height: 3.5rem;
+  aspect-ratio: 272 / 344;
+  pointer-events: none;
+}
+
+.mc-lecture-overlay__kitty :deep(.kitty-black-cat-mascot) {
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  aspect-ratio: 272 / 344;
+  margin: 0;
+}
+
+.mc-lecture-overlay__kitty :deep(.black-cat-container) {
+  width: 100%;
+  height: 100%;
+}
+
+.mc-lecture-overlay__kitty :deep(.black-cat-container .kitty-svg) {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 2px 4px rgb(15 23 42 / 0.12));
 }
 
 .mc-lecture-overlay__meta {
@@ -217,8 +267,8 @@ const isPaused = computed(() => status.value === 'paused')
   font-size: 13px;
   line-height: 1.55;
   color: #334155;
-  max-height: 4.8em;
-  overflow: hidden;
+  max-height: min(12em, 28vh);
+  overflow: auto;
 }
 
 .mc-lecture-overlay__progress {

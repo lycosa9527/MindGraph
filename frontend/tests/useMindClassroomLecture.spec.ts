@@ -5,7 +5,7 @@ import { createPinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
-import { useDiagramStore, useMindClassroomStore } from '@/stores'
+import { useAuthStore, useDiagramStore, useMindClassroomStore } from '@/stores'
 import type { DiagramData } from '@/types'
 import type { MindClassroomLectureStep } from '@/utils/mindClassroomScript'
 
@@ -95,7 +95,7 @@ describe('useMindClassroomLecture lifecycle', () => {
     vi.unstubAllGlobals()
   })
 
-  it('switches from TTS safety timing to deterministic dwell timing when muted', async () => {
+  it('advances only after TTS ends, then uses dwell when muted', async () => {
     const pinia = createPinia()
     const app = createApp(LectureProbe)
     app.use(pinia)
@@ -105,17 +105,19 @@ describe('useMindClassroomLecture lifecycle', () => {
     classroom.beginSession(steps, 'canvas_tour')
     lecture?.goToStep(0)
     await vi.advanceTimersByTimeAsync(960)
-
-    lecture?.setVoiceEnabled(false)
-    await nextTick()
-    await vi.advanceTimersByTimeAsync(2_999)
     expect(classroom.stepIndex).toBe(0)
 
-    await vi.advanceTimersByTimeAsync(1)
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(classroom.stepIndex).toBe(0)
+
+    const spoken = vi.mocked(window.speechSynthesis.speak).mock.calls.at(-1)?.[0] as {
+      onend: (() => void) | null
+    }
+    spoken.onend?.()
+    await nextTick()
     expect(classroom.stepIndex).toBe(1)
 
     app.unmount()
-    expect(classroom.status).toBe('idle')
   })
 
   it('does not consume lecture shortcuts from focused controls', async () => {
@@ -138,7 +140,24 @@ describe('useMindClassroomLecture lifecycle', () => {
     host.remove()
   })
 
-  it('restores collapsed branches when a lecture stops', () => {
+  it('refuses to start a lecture without login', async () => {
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'topic', text: 'Topic', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+
+    expect(await lecture?.startLecture()).toEqual({ ok: false, reason: 'unauthenticated' })
+    app.unmount()
+  })
+
+  it('restores collapsed branches when a lecture stops', async () => {
     const pinia = createPinia()
     const app = createApp(LectureProbe)
     app.use(pinia)
@@ -155,7 +174,11 @@ describe('useMindClassroomLecture lifecycle', () => {
       _collapsed_paths: ['r/0'],
     } satisfies DiagramData
 
-    expect(lecture?.startLecture()).toEqual({ ok: true })
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const classroom = useMindClassroomStore(pinia)
+    classroom.setPreparedSteps(steps)
+    expect(await lecture?.startLecture()).toEqual({ ok: true, phase: 'playing' })
     diagram.data._collapsed_paths = []
     lecture?.stopLecture()
 

@@ -436,11 +436,26 @@
   margin-top: 14px;
 }
 
+.mc-launch__hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.mc-launch__actions {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
 .mc-launch__start {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
   width: 100%;
   height: 44px;
   border: none;
@@ -453,8 +468,74 @@
   cursor: pointer;
 }
 
-.mc-launch__start:hover {
+.mc-launch__start:hover:not(:disabled) {
   background: #1d4ed8;
+}
+
+.mc-launch__start:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.mc-launch__start.is-busy {
+  background: #3b82f6;
+  box-shadow: none;
+}
+
+.mc-launch__start.is-busy:disabled {
+  opacity: 1;
+  cursor: wait;
+}
+
+.mc-launch__start.is-ready {
+  background: #059669;
+  box-shadow: 0 8px 20px rgb(5 150 105 / 0.22);
+}
+
+.mc-launch__start.is-ready:hover:not(:disabled) {
+  background: #047857;
+}
+
+.mc-launch__start.is-failed {
+  background: #dc2626;
+  box-shadow: none;
+}
+
+.mc-launch__start.is-failed:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.mc-launch__restart {
+  flex: 0 0 auto;
+  min-width: 88px;
+  padding: 0 12px;
+  height: 44px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mc-launch__restart:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.mc-launch__restart:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mc-seg__item:disabled,
+.mc-mode:disabled,
+.mc-sub__btn:disabled,
+.mc-skin:disabled,
+.mc-tone:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .mc-launch--panel .mc-block {

@@ -2,7 +2,7 @@
 /**
  * Mind Classroom launch settings — readable modal / panel layout.
  */
-import { computed, nextTick } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
@@ -32,7 +32,12 @@ import {
   type MindClassroomToneId,
   type MindClassroomTourScopeId,
 } from '@/config/mindClassroom'
-import { useMindClassroomStore } from '@/stores'
+import { useAiContentLevelStore, useAuthStore, useMindClassroomStore } from '@/stores'
+import {
+  isMindClassroomQueueBusy,
+  mindClassroomStartLabelKey,
+  shouldShowMindClassroomRestart,
+} from '@/utils/mindClassroomLaunchState'
 
 const props = withDefaults(
   defineProps<{
@@ -47,9 +52,46 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const authStore = useAuthStore()
 const classroomStore = useMindClassroomStore()
-const { mastery, presentation, tourScope, slideStyle, tone } = storeToRefs(classroomStore)
-const { startLecture } = useMindClassroomLecture()
+const { mastery, presentation, tourScope, slideStyle, tone, jobStatus, jobError, preparedSteps } =
+  storeToRefs(classroomStore)
+const { startLecture, restartLecture, restorePreparedFromServer } = useMindClassroomLecture()
+const aiLevelStore = useAiContentLevelStore()
+const { level: audienceLevel } = storeToRefs(aiLevelStore)
+const starting = ref(false)
+
+const hasPrepared = computed(() => preparedSteps.value.length > 0)
+const queueBusy = computed(() => isMindClassroomQueueBusy(jobStatus.value, starting.value))
+const startLocked = computed(() => queueBusy.value || !authStore.isAuthenticated)
+const showRestart = computed(() =>
+  shouldShowMindClassroomRestart({
+    jobStatus: jobStatus.value,
+    hasPrepared: hasPrepared.value,
+    authenticated: authStore.isAuthenticated,
+  })
+)
+const startLabel = computed(() =>
+  t(
+    mindClassroomStartLabelKey({
+      jobStatus: jobStatus.value,
+      starting: starting.value,
+      hasPrepared: hasPrepared.value,
+      presentation: presentation.value,
+    })
+  )
+)
+const startFailed = computed(() => jobStatus.value === 'failed' && !hasPrepared.value)
+
+watch([mastery, presentation, tourScope, slideStyle, tone, audienceLevel], () => {
+  if (queueBusy.value) return
+  classroomStore.clearPrepared()
+  void restorePreparedFromServer()
+})
+
+onMounted(() => {
+  void restorePreparedFromServer()
+})
 
 const masteryIcons = {
   first_look: Sparkles,
@@ -102,22 +144,27 @@ const toneOptions = computed(() =>
 )
 
 function pickMastery(id: MindClassroomMasteryId): void {
+  if (queueBusy.value) return
   classroomStore.setMastery(id)
 }
 
 function pickPresentation(id: MindClassroomPresentationId): void {
+  if (queueBusy.value) return
   classroomStore.setPresentation(id)
 }
 
 function pickTourScope(id: MindClassroomTourScopeId): void {
+  if (queueBusy.value) return
   classroomStore.setTourScope(id)
 }
 
 function pickSlideStyle(id: MindClassroomSlideStyleId): void {
+  if (queueBusy.value) return
   classroomStore.setSlideStyle(id)
 }
 
 function pickTone(id: MindClassroomToneId): void {
+  if (queueBusy.value) return
   classroomStore.setTone(id)
 }
 
@@ -149,17 +196,58 @@ function handleRadioGroupKeydown<T extends string>(
   })
 }
 
-function handleStart(): void {
-  const result = startLecture()
-  if (!result.ok) {
-    notify.warning(
-      result.reason === 'no_diagram'
-        ? t('canvas.mindClassroom.lecture.needDiagram')
-        : t('canvas.mindClassroom.lecture.emptySteps')
-    )
+async function handleStart(): Promise<void> {
+  if (startLocked.value) return
+  if (!authStore.isAuthenticated) {
+    notify.warning(t('canvas.mindClassroom.queue.loginRequired'))
     return
   }
-  emit('started')
+  const playNow = hasPrepared.value
+  if (!playNow) starting.value = true
+  try {
+    const result = await startLecture()
+    if (!result.ok) {
+      if (result.reason === 'cancelled') return
+      if (result.reason === 'failed') {
+        notify.error(jobError.value || t('canvas.mindClassroom.lecture.queueFailed'))
+        return
+      }
+      notify.warning(
+        result.reason === 'no_diagram'
+          ? t('canvas.mindClassroom.lecture.needDiagram')
+          : t('canvas.mindClassroom.lecture.emptySteps')
+      )
+      return
+    }
+    if (result.phase === 'playing') emit('started')
+  } finally {
+    starting.value = false
+  }
+}
+
+async function handleRestart(): Promise<void> {
+  if (!authStore.isAuthenticated) {
+    notify.warning(t('canvas.mindClassroom.queue.loginRequired'))
+    return
+  }
+  starting.value = true
+  try {
+    const result = await restartLecture()
+    if (!result.ok) {
+      if (result.reason === 'cancelled') return
+      if (result.reason === 'failed') {
+        notify.error(jobError.value || t('canvas.mindClassroom.lecture.queueFailed'))
+        return
+      }
+      notify.warning(
+        result.reason === 'no_diagram'
+          ? t('canvas.mindClassroom.lecture.needDiagram')
+          : t('canvas.mindClassroom.lecture.emptySteps')
+      )
+    }
+  } finally {
+    starting.value = false
+  }
 }
 </script>
 
@@ -196,6 +284,7 @@ function handleStart(): void {
             class="mc-seg__item"
             :class="{ 'is-active': mastery === option.id }"
             :aria-checked="mastery === option.id"
+            :disabled="queueBusy"
             :tabindex="mastery === option.id ? 0 : -1"
             @click="pickMastery(option.id)"
             @keydown="
@@ -234,6 +323,7 @@ function handleStart(): void {
             :class="{ 'is-active': presentation === option.id }"
             role="radio"
             :aria-checked="presentation === option.id"
+            :disabled="queueBusy"
             :tabindex="presentation === option.id ? 0 : -1"
             @click="pickPresentation(option.id)"
             @keydown="
@@ -284,6 +374,7 @@ function handleStart(): void {
               :class="{ 'is-active': tourScope === option.id }"
               role="radio"
               :aria-checked="tourScope === option.id"
+              :disabled="queueBusy"
               :tabindex="tourScope === option.id ? 0 : -1"
               @click="pickTourScope(option.id)"
               @keydown="
@@ -321,6 +412,7 @@ function handleStart(): void {
               :class="[`mc-skin--${option.id}`, { 'is-active': slideStyle === option.id }]"
               role="radio"
               :aria-checked="slideStyle === option.id"
+              :disabled="queueBusy"
               :tabindex="slideStyle === option.id ? 0 : -1"
               @click="pickSlideStyle(option.id)"
               @keydown="
@@ -363,6 +455,7 @@ function handleStart(): void {
             :class="{ 'is-active': tone === option.id }"
             role="radio"
             :aria-checked="tone === option.id"
+            :disabled="queueBusy"
             :tabindex="tone === option.id ? 0 : -1"
             @click="pickTone(option.id)"
             @keydown="handleRadioGroupKeydown($event, MIND_CLASSROOM_TONE_IDS, tone, pickTone)"
@@ -375,18 +468,44 @@ function handleStart(): void {
 
     <footer class="mc-launch__footer">
       <ProfessionalContentAudienceBanner />
-      <button
-        type="button"
-        class="mc-launch__start"
-        @click="handleStart"
+      <p
+        v-if="!authStore.isAuthenticated"
+        class="mc-launch__hint"
       >
-        <GraduationCap
-          class="h-4 w-4"
-          :stroke-width="2.25"
-          aria-hidden="true"
-        />
-        {{ t('canvas.mindClassroom.start') }}
-      </button>
+        {{ t('canvas.mindClassroom.queue.loginRequired') }}
+      </p>
+      <div class="mc-launch__actions">
+        <button
+          type="button"
+          class="mc-launch__start"
+          :class="{
+            'is-busy': queueBusy,
+            'is-ready': hasPrepared && !startLocked,
+            'is-failed': startFailed,
+          }"
+          :disabled="startLocked"
+          :title="startFailed ? jobError || startLabel : undefined"
+          :aria-live="queueBusy || hasPrepared || startFailed ? 'polite' : undefined"
+          @click="handleStart"
+        >
+          <GraduationCap
+            class="h-4 w-4"
+            :stroke-width="2.25"
+            aria-hidden="true"
+          />
+          {{ startLabel }}
+        </button>
+        <button
+          v-if="showRestart"
+          type="button"
+          class="mc-launch__restart"
+          :disabled="!authStore.isAuthenticated"
+          :title="t('canvas.mindClassroom.queue.restartHint')"
+          @click="handleRestart"
+        >
+          {{ t('canvas.mindClassroom.queue.restart') }}
+        </button>
+      </div>
     </footer>
   </div>
 </template>

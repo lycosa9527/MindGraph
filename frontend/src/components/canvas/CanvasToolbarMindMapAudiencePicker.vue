@@ -187,7 +187,7 @@ function proContentLevelTitle(id: AiContentLevelId): string {
   return t(`canvas.toolbar.professionalContent.level.${id}.title`)
 }
 
-function handleProContentPick(id: AiContentLevelId): void {
+async function handleProContentPick(id: AiContentLevelId): Promise<void> {
   if (id === proContentLevel.value && aiContentLevelStore.userSet) {
     proContentPanelOpen.value = false
     return
@@ -195,8 +195,11 @@ function handleProContentPick(id: AiContentLevelId): void {
 
   const diagramKey = proContentDiagramKey()
   const generatedAt = aiContentLevelStore.getGeneratedLevel(diagramKey)
-  aiContentLevelStore.setLevel(id)
+  const saved = await aiContentLevelStore.setLevel(id)
   proContentPanelOpen.value = false
+  if (!saved) {
+    return
+  }
 
   if (generatedAt && generatedAt !== id) {
     notify.info(

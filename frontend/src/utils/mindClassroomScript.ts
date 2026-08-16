@@ -27,6 +27,8 @@ export interface MindClassroomLectureStep {
   dwellMs: number
   /** Visual theme index for slide cards */
   themeIndex: number
+  /** Wan slide image when presentation is slide_deck */
+  imageUrl?: string
 }
 
 export interface MindClassroomScriptOptions {
@@ -40,6 +42,24 @@ export interface MindClassroomScriptOptions {
 }
 
 const SLIDE_THEME_COUNT = 5
+const DWELL_MS_PER_CHAR = 280
+const DWELL_FLOOR_MS = 2200
+const TTS_SAFETY_MS_PER_CHAR = 400
+const TTS_SAFETY_FLOOR_MS = 20_000
+const TTS_SAFETY_CEILING_MS = 480_000
+
+export function lectureCaptionDwellMs(caption: string): number {
+  const chars = caption.trim().length
+  return Math.max(DWELL_FLOOR_MS, 2400 + chars * DWELL_MS_PER_CHAR)
+}
+
+export function lectureTtsSafetyMs(caption: string, dwellMs: number): number {
+  const chars = caption.trim().length
+  return Math.min(
+    TTS_SAFETY_CEILING_MS,
+    Math.max(dwellMs + 8_000, chars * TTS_SAFETY_MS_PER_CHAR + TTS_SAFETY_FLOOR_MS)
+  )
+}
 
 function traversalForOptions(opts: MindClassroomScriptOptions): MindMapSlideTraversalMode {
   if (opts.presentation === 'slide_deck') {
@@ -68,8 +88,7 @@ function baseDwellMs(
   mastery: MindClassroomMasteryId,
   tone: MindClassroomToneId
 ): number {
-  const chars = caption.length
-  let ms = 2800 + Math.min(9000, chars * 55)
+  let ms = lectureCaptionDwellMs(caption)
   if (mastery === 'first_look') ms += 800
   if (mastery === 'teach') ms += 400
   if (tone === 'fast') ms = Math.max(2200, ms * 0.65)

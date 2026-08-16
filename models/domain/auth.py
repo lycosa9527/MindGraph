@@ -145,6 +145,7 @@ class User(Base):
     ui_version: Mapped[str | None] = mapped_column(String(32), nullable=True, default="international")
     allows_simplified_chinese: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     education_stage: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    ai_content_level: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     email_login_whitelisted_from_cn: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     login_password_set: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

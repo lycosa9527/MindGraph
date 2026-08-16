@@ -311,6 +311,31 @@ export function useKittyCanvasOwnerAgent(options: {
   )
 
   eventBus.onWithOwner(
+    'kitty:lecture_narrate_requested',
+    (payload) => {
+      void (async () => {
+        const connected = await ensureConnected()
+        if (!connected || !kitty.sendNarrate(payload.text, payload.stepId)) {
+          eventBus.emit('kitty:lecture_tts_done', { fallback: true })
+        }
+      })()
+    },
+    'KittyCanvasOwnerAgent'
+  )
+
+  eventBus.onWithOwner(
+    'kitty:lecture_interrupt_requested',
+    () => {
+      kitty.stopAudioPlayback()
+      const socket = kitty.ws.value
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'tts_interrupt' }))
+      }
+    },
+    'KittyCanvasOwnerAgent'
+  )
+
+  eventBus.onWithOwner(
     'voice:ws_closed',
     (payload?: {
       wasClean?: boolean

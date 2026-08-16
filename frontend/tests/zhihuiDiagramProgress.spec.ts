@@ -53,6 +53,10 @@ describe('zhihuiDiagramStatusToast', () => {
       level: 'success',
       messageKey: 'zhihui.diagram.toastComplete',
     })
+    expect(zhihuiDiagramStatusToast('generating', 'ready')).toEqual({
+      level: 'success',
+      messageKey: 'zhihui.diagram.toastComplete',
+    })
     expect(zhihuiDiagramStatusToast('generating', 'failed')).toEqual({
       level: 'error',
       messageKey: 'zhihui.diagram.phaseFailed',

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.178.0] - 2026-08-16
+
+> **思维讲堂 runs as a server job (script / slide deck); Kitty narrates captions; 专业程度 persists.**
+
+### Added
+
+- **思维讲堂 jobs** — Signed-in start enqueues canvas-tour or slide-deck work (`POST /api/mind-classroom/jobs`, Celery `mind_classroom.*`, migration `0103` + owner RLS). Launch modal shows queue / planning / generating; reuse same spec+settings; cancel or restart. Guests keep local template scripts.
+- **Kitty lecture narrate** — Canvas-owner Kitty TTS speaks captions via WS `narrate` (no command router / one-sentence persist). Overlay waits for PCM `lecture_tts_done`; interrupt stops playback.
+- **Mind-map 专业程度** — Picker value is stored on `users.ai_content_level` (migration `0102`) with other personal prefs. Login / `/me` restore it; `PATCH /api/auth/diagram-preferences` saves it. Guests still use localStorage. Classroom jobs send the same audience level.
+
+### Changed
+
+- **ZhiHui planner share** — Lesson planner, outline, and Wan image shell live in `services/mind_classroom/`; ZhiHui re-exports the same helpers so diagram studio and 思维讲堂 share one planner path.
+- **Slide lecture** — Dual-pane player maps classroom slides (or legacy ZhiHui generations) onto the existing deck chrome; transcript markdown is persisted with the job.
+
+### Tests
+
+- Classroom prompts (tone / audience / mastery), steps, slide adapter, transcript, temp cleanup, RLS; Kitty narrate; `test_ai_content_level_pref.py`.
+- Frontend: launch/queue state, remote steps, lecture runner, classroom→ZhiHui slide map, audience hydrate/persist.
+
 ## [5.177.1] - 2026-08-15
 
 > **Canvas multi-LLM regenerate keeps the current session spec (no stale first-finisher).**
