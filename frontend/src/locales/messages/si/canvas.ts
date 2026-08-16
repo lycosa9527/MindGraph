@@ -131,6 +131,12 @@ export default {
   'canvas.toolbar.mindMapAppearanceButtonLabel': '{style} · {theme}',
   'canvas.toolbar.mindMapAppearanceDiagramStyle': 'රූප සටහන් විලාසය',
   'canvas.toolbar.mindMapAppearanceThemeColor': 'තේමා වර්ණය',
+
+  'canvas.toolbar.mindMapAppearanceNumbering': 'Numbering',
+  'canvas.toolbar.mindMapAppearanceNumberingEnable': 'On',
+  'canvas.toolbar.mindMapAppearanceNumberingHide': 'Hide',
+  'canvas.toolbar.mindMapAppearanceNumberingPrefix': 'Prefix style',
+  'canvas.toolbar.mindMapAppearanceNumberingNested': 'Nested style',
   'canvas.toolbar.mindMapThemeVibrantBlue': 'නිල්',
   'canvas.toolbar.mindMapThemeVibrantOrange': 'දොඩම්',
   'canvas.toolbar.mindMapThemeVibrantYellow': 'කහ',

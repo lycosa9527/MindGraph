@@ -136,8 +136,9 @@ export function useDiagramCanvasNodesEdges(options: UseDiagramCanvasNodesEdgesOp
     const withSlideEdgeDim = baseList.map((e) => {
       const existingClass = typeof e.class === 'string' ? e.class : ''
       if (slideDimFocusNodeIds && slideDimFocusNodeIds.size > 0) {
-        const inFocus =
-          slideDimFocusNodeIds.has(e.source) && slideDimFocusNodeIds.has(e.target)
+        // Light the stem into a focused node (topic → branch) without
+        // lighting edges that leave the focus set (each-node → children).
+        const inFocus = slideDimFocusNodeIds.has(e.target)
         if (inFocus) return { ...e, class: existingClass }
         const merged = existingClass
           ? `${existingClass} mind-map-slide-edge-dimmed`

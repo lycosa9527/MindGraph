@@ -1,3 +1,5 @@
+import { nextTick } from 'vue'
+
 import type { MindMapDiagramStyleId } from '@/config/mindMapDiagramStyles'
 import {
   getMindMapDiagramStyleById,
@@ -14,17 +16,28 @@ import {
   syncRainbowMindMapConnectionColors,
 } from '@/config/mindMapVibrantThemes'
 import type { DiagramNode, NodeStyle } from '@/types'
+import {
+  DEFAULT_MIND_MAP_NUMBERING_NESTED,
+  DEFAULT_MIND_MAP_NUMBERING_PREFIX,
+  type MindMapNumberingGlyphStyle,
+  type MindMapNumberingNestedStyle,
+  invalidateMindMapBranchNumberMapCache,
+  mindMapBranchNumberMapFromData,
+  resolveMindMapBranchNumberingNested,
+  resolveMindMapBranchNumberingPrefix,
+} from '@/utils/mindMapBranchNumbering'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 import {
-  estimateNodeWidth as estimateMindMapBranchWidth,
+  estimateNumberedBranchWidth,
   estimateTopicNodeHeight,
   estimateTopicNodeWidth,
-  measureBranchNodeHeight as measureMindMapBranchHeight,
-  measureBranchNodeUnderlineHeight as measureMindMapBranchUnderlineHeight,
+  measureNumberedBranchHeight,
+  measureNumberedBranchUnderlineHeight,
 } from '../specLoader/mindMap'
 import { emitCtxEvent } from './events'
+import { snapshotMindMapCanvasBucket } from './mindMapCanvasModeSwitch'
 import type { DiagramContext } from './types'
 
 export function useNodeStylesSlice(ctx: DiagramContext) {
@@ -83,16 +96,18 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
       }
       ctx.mindMapTopicActualWidth.value = null
     } else {
+      const numberMap = mindMapBranchNumberMapFromData(data.value)
+      const prefix = numberMap.get(node.id) ?? ''
       const newShape = resolveNodeShape(mergedStyle, true)
       const freshHeight =
         newShape === 'underline'
-          ? measureMindMapBranchUnderlineHeight(text, node.id, mergedStyle)
-          : measureMindMapBranchHeight(text, node.id, mergedStyle)
+          ? measureNumberedBranchUnderlineHeight(text, prefix, node.id, mergedStyle)
+          : measureNumberedBranchHeight(text, prefix, node.id, mergedStyle)
       data.value.nodes[nodeIndex] = {
         ...node,
         data: {
           ...node.data,
-          estimatedWidth: estimateMindMapBranchWidth(text, node.id, mergedStyle),
+          estimatedWidth: estimateNumberedBranchWidth(text, prefix, node.id, mergedStyle),
           estimatedHeight: freshHeight,
         },
       }
@@ -236,7 +251,102 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
 
     applyMindMapDiagramStyleShapes(options.diagramStyleId)
     ctx.pushHistory('Apply mind map appearance')
-    emitCtxEvent(ctx, 'diagram:style_changed', { preset: true, diagramStyleId: options.diagramStyleId })
+    emitCtxEvent(ctx, 'diagram:style_changed', {
+      preset: true,
+      diagramStyleId: options.diagramStyleId,
+    })
+  }
+
+  function refreshMindMapNumberingEstimates(options?: { preserveIncomingY?: boolean }): void {
+    const nodes = data.value?.nodes
+    if (!nodes?.length) return
+    invalidateMindMapBranchNumberMapCache()
+    ctx.beginMindMapNumberingLayoutHold()
+    const numberMap = mindMapBranchNumberMapFromData(data.value)
+    const nextWidths = { ...ctx.mindMapNodeWidths.value }
+    const nextHeights = { ...ctx.mindMapNodeHeights.value }
+    nodes.forEach((node, nodeIndex) => {
+      if (node.id === 'topic' || node.type === 'topic' || node.type === 'center') return
+      const rawText = node.text ?? ''
+      const prefix = numberMap.get(node.id) ?? ''
+      const mergedStyle = node.style
+      const newShape = resolveNodeShape(mergedStyle, true)
+      const freshWidth = estimateNumberedBranchWidth(rawText, prefix, node.id, mergedStyle)
+      const freshHeight =
+        newShape === 'underline'
+          ? measureNumberedBranchUnderlineHeight(rawText, prefix, node.id, mergedStyle)
+          : measureNumberedBranchHeight(rawText, prefix, node.id, mergedStyle)
+      nodes[nodeIndex] = {
+        ...node,
+        data: {
+          ...node.data,
+          estimatedWidth: freshWidth,
+          estimatedHeight: freshHeight,
+        },
+      }
+      nextWidths[node.id] = freshWidth
+      nextHeights[node.id] = freshHeight
+      delete ctx.nodeDimensions.value[node.id]
+    })
+    ctx.mindMapNodeWidths.value = nextWidths
+    ctx.mindMapNodeHeights.value = nextHeights
+    if (!options?.preserveIncomingY) {
+      ctx.mindMapPreserveIncomingY.value = false
+      ctx.mindMapPreserveIncomingYNodeId.value = null
+    }
+    ctx.scheduleMindMapRecalc()
+    void nextTick(() => {
+      ctx.scheduleMindMapRecalc()
+    })
+  }
+
+  function persistNumberingCanvasBucket(): void {
+    if (!data.value) return
+    if (!isSessionMindMapV2VisualDesignActive(ctx.mindMapCanvasMode.value)) return
+    snapshotMindMapCanvasBucket(data.value, 'v2')
+  }
+
+  function setMindMapBranchNumbering(enabled: boolean): void {
+    if (!data.value) return
+    data.value._mindmap_branch_numbering = enabled
+    if (enabled) {
+      if (!data.value._mindmap_branch_numbering_prefix) {
+        data.value._mindmap_branch_numbering_prefix = DEFAULT_MIND_MAP_NUMBERING_PREFIX
+      }
+      if (!data.value._mindmap_branch_numbering_nested) {
+        data.value._mindmap_branch_numbering_nested = DEFAULT_MIND_MAP_NUMBERING_NESTED
+      }
+    }
+    persistNumberingCanvasBucket()
+    refreshMindMapNumberingEstimates()
+    ctx.pushHistory(enabled ? 'Enable branch numbering' : 'Hide branch numbering')
+    emitCtxEvent(ctx, 'diagram:style_changed', { numbering: enabled })
+  }
+
+  function setMindMapBranchNumberingPrefix(style: MindMapNumberingGlyphStyle): void {
+    if (!data.value) return
+    const next = resolveMindMapBranchNumberingPrefix(style)
+    const alreadyOn = data.value._mindmap_branch_numbering === true
+    if (alreadyOn && data.value._mindmap_branch_numbering_prefix === next) return
+    data.value._mindmap_branch_numbering = true
+    data.value._mindmap_branch_numbering_prefix = next
+    persistNumberingCanvasBucket()
+    refreshMindMapNumberingEstimates()
+    ctx.pushHistory('Change numbering prefix style')
+    emitCtxEvent(ctx, 'diagram:style_changed', { numberingPrefix: style })
+  }
+
+  function setMindMapBranchNumberingNested(style: MindMapNumberingNestedStyle): void {
+    if (!data.value) return
+    const next = resolveMindMapBranchNumberingNested(style)
+    const alreadyOn = data.value._mindmap_branch_numbering === true
+    if (alreadyOn && data.value._mindmap_branch_numbering_nested === next) return
+    data.value._mindmap_branch_numbering = true
+    data.value._mindmap_branch_numbering_nested = next
+    persistNumberingCanvasBucket()
+    refreshMindMapNumberingEstimates()
+    ctx.pushHistory('Change numbering nested style')
+    emitCtxEvent(ctx, 'diagram:style_changed', { numberingNested: style })
   }
 
   return {
@@ -246,5 +356,9 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
     clearAllNodeStyles,
     applyStylePreset,
     applyMindMapAppearance,
+    setMindMapBranchNumbering,
+    setMindMapBranchNumberingPrefix,
+    setMindMapBranchNumberingNested,
+    refreshMindMapNumberingEstimates,
   }
 }

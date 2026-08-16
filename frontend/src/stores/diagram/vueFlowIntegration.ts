@@ -112,6 +112,10 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     }
 
     // Layout deps only — not selectedNodes, not recalc trigger (trigger remaps VF only).
+    // Numbering changes node box width; track the flags so columns reflow with prefixes.
+    void ctx.data.value._mindmap_branch_numbering
+    void ctx.data.value._mindmap_branch_numbering_prefix
+    void ctx.data.value._mindmap_branch_numbering_nested
     const connections = ctx.data.value.connections ?? []
     const collapsedPaths = getMindMapCollapsedPaths(ctx.data.value)
     const collapsedNodeIds = getMindMapCollapsedNodeIds(

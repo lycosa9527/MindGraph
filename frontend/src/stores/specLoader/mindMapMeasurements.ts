@@ -12,6 +12,11 @@ import {
 } from '@/config/mindMapGeometry'
 import { MIND_MAP_LEGACY_GEOMETRY } from '@/config/mindMapLegacyGeometry'
 import type { MindMapCanvasMode } from '@/stores/ui'
+import {
+  MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
+  estimateMindMapNumberedContentWidthPx,
+  resolveMindMapBranchBodyMaxWidthPx,
+} from '@/utils/mindMapTextWrap'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 import {
@@ -21,6 +26,18 @@ import {
   measureTextWidth,
 } from './textMeasurement'
 import { computeScriptAwareMaxWidth } from './textMeasurementFallback'
+
+export type MindMapNumberedFont = {
+  fontSize?: number
+  fontWeight?: string
+  fontFamily?: string
+}
+
+function resolveNumberedFontSize(nodeId: string | undefined, font?: MindMapNumberedFont): number {
+  const custom = font?.fontSize
+  if (custom != null && Number.isFinite(custom) && custom > 0) return custom
+  return mindMapBranchFontSize(nodeId)
+}
 
 /** Layout estimate shape — oval uses wider horizontal padding than rounded/rectangle. */
 export function resolveMindMapMeasureShape(shape?: NodeShape | null): NodeShape {
@@ -340,4 +357,131 @@ export function estimateTopicNodeHeightForCanvasMode(
   const lineHeight = 20
   const numLines = Math.max(1, Math.ceil(textHeight / lineHeight))
   return Math.max(MIND_MAP_GEOMETRY.minHeight, numLines * lineHeight + paddingY + borderY)
+}
+
+/** Box width for prefix chrome + body. Empty prefix uses the un-numbered v2 estimate. */
+export function estimateNumberedBranchBoxWidth(
+  label: string,
+  prefix: string,
+  nodeId?: string,
+  shape?: NodeShape | null,
+  font?: MindMapNumberedFont
+): number {
+  if (!prefix) {
+    return estimateNodeWidthForCanvasMode(label, nodeId, 'v2', shape)
+  }
+  const fontSize = resolveNumberedFontSize(nodeId, font)
+  const content = estimateMindMapNumberedContentWidthPx(label, prefix, fontSize, {
+    fontWeight: font?.fontWeight ?? 'normal',
+    fontFamily: font?.fontFamily,
+  })
+  const textCol = Math.min(content, MIND_MAP_BRANCH_MAX_TEXT_WIDTH)
+  return Math.max(
+    MIND_MAP_GEOMETRY.minWidth,
+    textCol + mindMapNodeHorizontalExtra(resolveMindMapMeasureShape(shape))
+  )
+}
+
+function numberedBodyWrapWidth(
+  label: string,
+  prefix: string,
+  nodeId: string | undefined,
+  font?: MindMapNumberedFont
+): { fontSize: number; maxTextWidth: number; fontWeight: string; fontFamily: string | undefined } {
+  const fontSize = resolveNumberedFontSize(nodeId, font)
+  const fontWeight = font?.fontWeight ?? 'normal'
+  const fontFamily = font?.fontFamily
+  const maxTextWidth = resolveMindMapBranchBodyMaxWidthPx(label, prefix, fontSize, {
+    fontWeight,
+    fontFamily,
+  })
+  return { fontSize, maxTextWidth, fontWeight, fontFamily }
+}
+
+/** Height of the body wrap column beside prefix chrome (v2). */
+export function measureNumberedBranchHeightForCanvasMode(
+  label: string,
+  prefix: string,
+  nodeId?: string,
+  mode?: MindMapCanvasMode,
+  font?: MindMapNumberedFont
+): number {
+  if (!prefix) {
+    return measureBranchNodeHeightForCanvasMode(label, nodeId, mode)
+  }
+  const text = (label || '').trim()
+  if (!text) return BRANCH_NODE_HEIGHT
+  const { fontSize, maxTextWidth, fontWeight, fontFamily } = numberedBodyWrapWidth(
+    text,
+    prefix,
+    nodeId,
+    font
+  )
+  const branchPaddingY = MIND_MAP_GEOMETRY.paddingY * 2
+  const branchBorderY = MIND_MAP_GEOMETRY.borderWidth * 2
+  if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
+    const contentH = measureRenderedDiagramLabelHeight(text, fontSize, maxTextWidth, {
+      fontWeight,
+      fontFamily,
+    })
+    return Math.max(BRANCH_NODE_HEIGHT, Math.ceil(contentH + branchPaddingY + branchBorderY))
+  }
+  const { height: textHeight } = measureTextDimensions(text, fontSize, {
+    maxWidth: maxTextWidth,
+    paddingX: 0,
+    paddingY: 0,
+    fontWeight,
+    fontFamily,
+  })
+  return Math.max(BRANCH_NODE_HEIGHT, textHeight + branchPaddingY + branchBorderY)
+}
+
+/** Underline box metrics using the body wrap column beside prefix chrome. */
+export function measureNumberedUnderlineBoxMetrics(
+  label: string,
+  prefix: string,
+  nodeId?: string,
+  font?: MindMapNumberedFont
+): { textBlockHeight: number; totalHeight: number; lineMidlineOffsetFromTop: number } {
+  if (!prefix) {
+    return measureMindMapUnderlineBoxMetrics(label, nodeId)
+  }
+  const extra = mindMapUnderlineVerticalExtra()
+  const { fontSize, maxTextWidth, fontWeight, fontFamily } = numberedBodyWrapWidth(
+    (label || '').trim(),
+    prefix,
+    nodeId,
+    font
+  )
+  const minTextHeight = fontSize
+  const text = (label || '').trim()
+  let textBlockHeight = minTextHeight
+  if (text) {
+    if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
+      textBlockHeight = Math.max(
+        minTextHeight,
+        measureRenderedDiagramLabelHeight(text, fontSize, maxTextWidth, {
+          fontWeight,
+          fontFamily,
+        })
+      )
+    } else {
+      const { height: textHeight } = measureTextDimensions(text, fontSize, {
+        maxWidth: maxTextWidth,
+        paddingX: 0,
+        paddingY: 0,
+        fontWeight,
+        fontFamily,
+      })
+      textBlockHeight = Math.max(minTextHeight, textHeight * (1.35 / 1.4))
+    }
+  }
+  const { totalHeight: rawTotalHeight } = computeMindMapUnderlineBoxMetrics(textBlockHeight)
+  const minHeight = fontSize + extra
+  const totalHeight = Math.max(minHeight, Math.ceil(rawTotalHeight))
+  return {
+    textBlockHeight,
+    totalHeight,
+    lineMidlineOffsetFromTop: totalHeight - MINDMAP_UNDERLINE_STROKE_WIDTH / 2,
+  }
 }

@@ -131,6 +131,12 @@ export default {
   'canvas.toolbar.mindMapAppearanceButtonLabel': '{style} · {theme}',
   'canvas.toolbar.mindMapAppearanceDiagramStyle': '다이어그램 스타일',
   'canvas.toolbar.mindMapAppearanceThemeColor': '테마 색상',
+
+  'canvas.toolbar.mindMapAppearanceNumbering': 'Numbering',
+  'canvas.toolbar.mindMapAppearanceNumberingEnable': 'On',
+  'canvas.toolbar.mindMapAppearanceNumberingHide': 'Hide',
+  'canvas.toolbar.mindMapAppearanceNumberingPrefix': 'Prefix style',
+  'canvas.toolbar.mindMapAppearanceNumberingNested': 'Nested style',
   'canvas.toolbar.mindMapThemeVibrantBlue': '파랑',
   'canvas.toolbar.mindMapThemeVibrantOrange': '주황',
   'canvas.toolbar.mindMapThemeVibrantYellow': '노랑',

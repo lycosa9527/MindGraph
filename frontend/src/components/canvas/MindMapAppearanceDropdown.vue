@@ -8,18 +8,19 @@ import { ElDropdown, ElTooltip } from 'element-plus'
 
 import { Check, Palette } from '@lucide/vue'
 
+import MindMapDiagramStylePreview from '@/components/canvas/MindMapDiagramStylePreview.vue'
+import MindMapNumberingControls from '@/components/canvas/MindMapNumberingControls.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import MindMapDiagramStylePreview from '@/components/canvas/MindMapDiagramStylePreview.vue'
 import {
   MIND_MAP_DIAGRAM_STYLES,
-  resolveMindMapDiagramStyleId,
   type MindMapDiagramStyleId,
+  resolveMindMapDiagramStyleId,
 } from '@/config/mindMapDiagramStyles'
 import {
+  type MindMapThemeId,
   getMindMapCommonThemes,
   resolveMindMapThemeId,
-  type MindMapThemeId,
 } from '@/config/mindMapThemes'
 import { MIND_MAP_RAINBOW_THEME_ID } from '@/config/mindMapVibrantThemes'
 import { useDiagramStore } from '@/stores'
@@ -31,6 +32,14 @@ const notify = useNotifications()
 const diagramStore = useDiagramStore()
 
 const dropdownOpen = ref(false)
+const numberingOverlayLock = ref(false)
+
+function handleAppearanceVisible(visible: boolean): void {
+  if (!visible && numberingOverlayLock.value) {
+    return
+  }
+  dropdownOpen.value = visible
+}
 
 const activeThemeId = ref<MindMapThemeId>(
   resolveMindMapThemeId(diagramStore.data?._mindmap_theme as string | undefined)
@@ -69,10 +78,7 @@ function ensureDiagram(): boolean {
   return true
 }
 
-function applyAppearance(
-  themeId: MindMapThemeId,
-  diagramStyleId: MindMapDiagramStyleId
-): void {
+function applyAppearance(themeId: MindMapThemeId, diagramStyleId: MindMapDiagramStyleId): void {
   if (!ensureDiagram()) return
   diagramStore.applyMindMapAppearance({ themeId, diagramStyleId })
   activeThemeId.value = themeId
@@ -99,10 +105,12 @@ function handlePickRainbow(): void {
   >
     <span class="inline-flex shrink-0">
       <ElDropdown
-        v-model:visible="dropdownOpen"
+        :visible="dropdownOpen"
+        :hide-on-click="false"
         trigger="click"
         placement="bottom"
         popper-class="mm-toolbar-popper mm-toolbar-popper--appearance"
+        @update:visible="handleAppearanceVisible"
       >
         <button
           type="button"
@@ -118,88 +126,90 @@ function handlePickRainbow(): void {
           />
         </button>
         <template #dropdown>
-      <div class="mm-appearance-card">
-        <div class="mm-appearance-card__title">
-          {{ t('canvas.toolbar.mindMapAppearanceLabel') }}
-        </div>
+          <div class="mm-appearance-card">
+            <div class="mm-appearance-card__title">
+              {{ t('canvas.toolbar.mindMapAppearanceLabel') }}
+            </div>
 
-        <div class="mm-appearance-row">
-          <span class="mm-appearance-row__label">
-            {{ t('canvas.toolbar.mindMapAppearanceThemeColor') }}
-          </span>
-          <div
-            class="mm-appearance-colors"
-            role="listbox"
-            :aria-label="t('canvas.toolbar.mindMapAppearanceThemeColor')"
-          >
-            <button
-              v-for="theme in commonThemes"
-              :key="theme.id"
-              type="button"
-              class="mm-appearance-color-dot"
-              :class="{ 'is-active': theme.id === activeThemeId }"
-              :style="{ backgroundColor: theme.topicBorderColor }"
-              :title="t(theme.nameKey)"
-              :aria-label="t(theme.nameKey)"
-              :aria-selected="theme.id === activeThemeId"
-              role="option"
-              @click="handlePickTheme(theme.id)"
-            >
-              <Check
-                v-if="theme.id === activeThemeId"
-                class="mm-appearance-color-dot__check"
-                :stroke-width="3"
-              />
-            </button>
-            <button
-              type="button"
-              class="mm-appearance-color-dot mm-appearance-color-dot--rainbow"
-              :class="{ 'is-active': isRainbowActive }"
-              :title="t('canvas.toolbar.mindMapThemeRainbow')"
-              :aria-label="t('canvas.toolbar.mindMapThemeRainbow')"
-              :aria-selected="isRainbowActive"
-              role="option"
-              @click="handlePickRainbow()"
-            >
-              <Check
-                v-if="isRainbowActive"
-                class="mm-appearance-color-dot__check"
-                :stroke-width="3"
-              />
-            </button>
-          </div>
-        </div>
+            <div class="mm-appearance-row">
+              <span class="mm-appearance-row__label">
+                {{ t('canvas.toolbar.mindMapAppearanceThemeColor') }}
+              </span>
+              <div
+                class="mm-appearance-colors"
+                role="listbox"
+                :aria-label="t('canvas.toolbar.mindMapAppearanceThemeColor')"
+              >
+                <button
+                  v-for="theme in commonThemes"
+                  :key="theme.id"
+                  type="button"
+                  class="mm-appearance-color-dot"
+                  :class="{ 'is-active': theme.id === activeThemeId }"
+                  :style="{ backgroundColor: theme.topicBorderColor }"
+                  :title="t(theme.nameKey)"
+                  :aria-label="t(theme.nameKey)"
+                  :aria-selected="theme.id === activeThemeId"
+                  role="option"
+                  @click="handlePickTheme(theme.id)"
+                >
+                  <Check
+                    v-if="theme.id === activeThemeId"
+                    class="mm-appearance-color-dot__check"
+                    :stroke-width="3"
+                  />
+                </button>
+                <button
+                  type="button"
+                  class="mm-appearance-color-dot mm-appearance-color-dot--rainbow"
+                  :class="{ 'is-active': isRainbowActive }"
+                  :title="t('canvas.toolbar.mindMapThemeRainbow')"
+                  :aria-label="t('canvas.toolbar.mindMapThemeRainbow')"
+                  :aria-selected="isRainbowActive"
+                  role="option"
+                  @click="handlePickRainbow()"
+                >
+                  <Check
+                    v-if="isRainbowActive"
+                    class="mm-appearance-color-dot__check"
+                    :stroke-width="3"
+                  />
+                </button>
+              </div>
+            </div>
 
-        <div class="mm-appearance-style-section">
-          <div class="mm-appearance-section-label">
-            {{ t('canvas.toolbar.mindMapAppearanceDiagramStyle') }}
+            <div class="mm-appearance-style-section">
+              <div class="mm-appearance-section-label">
+                {{ t('canvas.toolbar.mindMapAppearanceDiagramStyle') }}
+              </div>
+              <div
+                class="mm-appearance-style-grid"
+                role="listbox"
+                :aria-label="t('canvas.toolbar.mindMapAppearanceDiagramStyle')"
+              >
+                <button
+                  v-for="style in MIND_MAP_DIAGRAM_STYLES"
+                  :key="style.id"
+                  type="button"
+                  class="mm-appearance-style-tile"
+                  :class="{ 'is-active': style.id === activeDiagramStyleId }"
+                  :title="t(style.nameKey)"
+                  :aria-label="t(style.nameKey)"
+                  :aria-selected="style.id === activeDiagramStyleId"
+                  role="option"
+                  @click="handlePickDiagramStyle(style.id)"
+                >
+                  <MindMapDiagramStylePreview
+                    :preset="style"
+                    :active="style.id === activeDiagramStyleId"
+                  />
+                </button>
+              </div>
+            </div>
+
+            <MindMapNumberingControls @overlay-lock="numberingOverlayLock = $event" />
           </div>
-          <div
-            class="mm-appearance-style-grid"
-            role="listbox"
-            :aria-label="t('canvas.toolbar.mindMapAppearanceDiagramStyle')"
-          >
-          <button
-            v-for="style in MIND_MAP_DIAGRAM_STYLES"
-            :key="style.id"
-            type="button"
-            class="mm-appearance-style-tile"
-            :class="{ 'is-active': style.id === activeDiagramStyleId }"
-            :title="t(style.nameKey)"
-            :aria-label="t(style.nameKey)"
-            :aria-selected="style.id === activeDiagramStyleId"
-            role="option"
-            @click="handlePickDiagramStyle(style.id)"
-          >
-            <MindMapDiagramStylePreview
-              :preset="style"
-              :active="style.id === activeDiagramStyleId"
-            />
-          </button>
-        </div>
-        </div>
-      </div>
-    </template>
+        </template>
       </ElDropdown>
     </span>
   </ElTooltip>

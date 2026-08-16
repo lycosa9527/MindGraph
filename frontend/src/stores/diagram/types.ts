@@ -150,6 +150,10 @@ export interface DiagramContext {
   setExpectedNodeCount: (count: number) => void
   /** Arm mind-map measure batch so ResizeObserver reports coalesce into one recalc. */
   armMindMapMeasureBatch: (count: number) => void
+  /** Ignore stale prefix-box width reports until the new chrome has painted. */
+  beginMindMapNumberingLayoutHold: () => void
+  /** Re-seed prefix-aware box estimates after numbering or tree edits. */
+  refreshMindMapNumberingEstimates: (options?: { preserveIncomingY?: boolean }) => void
   /** Coalesce mind-map layout invalidations to one recalc per animation frame. */
   scheduleMindMapRecalc: () => void
   /**

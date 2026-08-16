@@ -22,6 +22,9 @@ def test_diagram_data_from_saved_spec_keeps_mindmap_extras() -> None:
         "connections": [{"id": "c0", "source": "topic", "target": "branch-r-1-0"}],
         "_mindmap_diagram_style": "classic",
         "_mindmap_theme": "ocean",
+        "_mindmap_branch_numbering": True,
+        "_mindmap_branch_numbering_prefix": "chinese",
+        "_mindmap_branch_numbering_nested": "outline",
         "_node_styles": {"branch-r-1-0": {"nodeShape": "rounded"}},
         "_collapsed_paths": ["r/0"],
         "_mindmap_canvas": {"v2": {"theme": "ocean"}},
@@ -31,6 +34,9 @@ def test_diagram_data_from_saved_spec_keeps_mindmap_extras() -> None:
 
     assert diagram_data["_mindmap_diagram_style"] == "classic"
     assert diagram_data["_mindmap_theme"] == "ocean"
+    assert diagram_data["_mindmap_branch_numbering"] is True
+    assert diagram_data["_mindmap_branch_numbering_prefix"] == "chinese"
+    assert diagram_data["_mindmap_branch_numbering_nested"] == "outline"
     assert diagram_data["_node_styles"] == {"branch-r-1-0": {"nodeShape": "rounded"}}
     assert diagram_data["_collapsed_paths"] == ["r/0"]
     assert diagram_data["_mindmap_canvas"] == {"v2": {"theme": "ocean"}}

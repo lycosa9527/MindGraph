@@ -494,6 +494,11 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       if (ctx.data.value._mindmap_diagram_style) {
         spec._mindmap_diagram_style = ctx.data.value._mindmap_diagram_style
       }
+      if (ctx.data.value._mindmap_branch_numbering === true) {
+        spec._mindmap_branch_numbering = true
+        spec._mindmap_branch_numbering_prefix = ctx.data.value._mindmap_branch_numbering_prefix
+        spec._mindmap_branch_numbering_nested = ctx.data.value._mindmap_branch_numbering_nested
+      }
     }
     return spec
   }

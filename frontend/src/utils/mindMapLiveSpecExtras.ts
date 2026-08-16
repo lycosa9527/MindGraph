@@ -8,6 +8,9 @@ const MINDMAP_LIVE_SPEC_EXTRA_KEYS = [
   '_node_styles',
   '_mindmap_theme',
   '_mindmap_diagram_style',
+  '_mindmap_branch_numbering',
+  '_mindmap_branch_numbering_prefix',
+  '_mindmap_branch_numbering_nested',
   '_mindmap_canvas',
   '_collapsed_paths',
 ] as const
@@ -60,6 +63,8 @@ export function mindMapLiveSpecExtrasFingerprint(
 const MINDMAP_PRESENTATION_EXTRA_KEYS = [
   '_mindmap_theme',
   '_mindmap_diagram_style',
+  '_mindmap_branch_numbering_prefix',
+  '_mindmap_branch_numbering_nested',
   '_mindmap_canvas',
 ] as const
 
@@ -67,6 +72,7 @@ const MINDMAP_PRESENTATION_EXTRA_KEYS = [
  * Merge current canvas theme / diagram style / canvas buckets into an incoming
  * mindmap spec before bare `loadFromSpec` (auto-complete, model switch, doc
  * summary, hand-drawn photo). Mirrors flow_map orientation preservation.
+ * Numbering stays off on a new tree unless the incoming spec enables it.
  */
 export function mergeMindMapPresentationExtrasIntoSpec(
   spec: Record<string, unknown>,

@@ -131,6 +131,12 @@ export default {
   'canvas.toolbar.mindMapAppearanceButtonLabel': '{style} · {theme}',
   'canvas.toolbar.mindMapAppearanceDiagramStyle': 'Estilo de diagrama',
   'canvas.toolbar.mindMapAppearanceThemeColor': 'Color del tema',
+
+  'canvas.toolbar.mindMapAppearanceNumbering': 'Numbering',
+  'canvas.toolbar.mindMapAppearanceNumberingEnable': 'On',
+  'canvas.toolbar.mindMapAppearanceNumberingHide': 'Hide',
+  'canvas.toolbar.mindMapAppearanceNumberingPrefix': 'Prefix style',
+  'canvas.toolbar.mindMapAppearanceNumberingNested': 'Nested style',
   'canvas.toolbar.mindMapThemeVibrantBlue': 'Azul',
   'canvas.toolbar.mindMapThemeVibrantOrange': 'Naranja',
   'canvas.toolbar.mindMapThemeVibrantYellow': 'Amarillo',

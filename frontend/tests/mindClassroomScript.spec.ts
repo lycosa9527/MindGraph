@@ -4,6 +4,7 @@ import type { Connection, DiagramNode } from '@/types'
 import {
   type MindClassroomScriptOptions,
   buildMindClassroomLectureSteps,
+  expandLectureFocusNodeIds,
   lectureCaptionDwellMs,
   lectureTtsSafetyMs,
 } from '@/utils/mindClassroomScript'
@@ -66,6 +67,60 @@ describe('buildMindClassroomLectureSteps', () => {
     expect(steps[0]?.bullets).toEqual(['Branch A', 'Branch B'])
     expect(steps.at(-1)?.kind).toBe('closing')
     expect(steps.every((step) => step.dwellMs >= 2_200)).toBe(true)
+  })
+
+  it('keeps the whole main-branch subtree in focus without selecting leaves', () => {
+    const steps = buildMindClassroomLectureSteps(nodes, connections, descendants, options())
+    const branchStep = steps.find((step) => step.branchNodeId === 'branch-a')
+    expect(branchStep?.focusNodeIds).toEqual(['branch-a', 'leaf-a'])
+    expect(
+      expandLectureFocusNodeIds(
+        {
+          kind: 'branch',
+          focusNodeIds: ['branch-a'],
+          branchNodeId: 'branch-a',
+        },
+        'main_branch',
+        descendants
+      )
+    ).toEqual(['branch-a', 'leaf-a'])
+    expect(
+      expandLectureFocusNodeIds(
+        {
+          kind: 'branch',
+          focusNodeIds: ['leaf-a'],
+          branchNodeId: 'leaf-a',
+        },
+        'each_node',
+        descendants
+      )
+    ).toEqual(['leaf-a'])
+    expect(
+      expandLectureFocusNodeIds(
+        {
+          kind: 'branch',
+          focusNodeIds: ['branch-a'],
+          branchNodeId: 'branch-a',
+        },
+        'each_node',
+        descendants,
+        'slide_deck'
+      )
+    ).toEqual(['branch-a', 'leaf-a'])
+    expect(
+      expandLectureFocusNodeIds(
+        { kind: 'overview', focusNodeIds: ['topic', 'branch-a'] },
+        'main_branch',
+        descendants
+      )
+    ).toEqual(['topic', 'branch-a'])
+    expect(
+      expandLectureFocusNodeIds(
+        { kind: 'branch', focusNodeIds: [], branchNodeId: undefined },
+        'main_branch',
+        descendants
+      )
+    ).toEqual([])
   })
 
   it('uses deep traversal and single-node focus for each-node tours', () => {

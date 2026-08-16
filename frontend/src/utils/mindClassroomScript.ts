@@ -69,6 +69,46 @@ function traversalForOptions(opts: MindClassroomScriptOptions): MindMapSlideTrav
   return opts.tourScope === 'each_node' ? 'deep' : 'firstLevel'
 }
 
+export function shouldExpandLectureBranchSubtree(
+  tourScope: MindClassroomTourScopeId,
+  presentation?: MindClassroomPresentationId | null
+): boolean {
+  // Slide decks always walk first-level branches; tour scope only applies to canvas tours.
+  if (presentation === 'slide_deck') return true
+  return tourScope !== 'each_node'
+}
+
+/**
+ * Canvas dim/fit ids for a lecture step.
+ *
+ * Remote jobs store only the branch head (backend: FE expands children).
+ * Main-branch / slide-deck tours keep the whole subtree lit; each-node stays
+ * on that node. Selection / pulse glow still uses ``branchNodeId`` only.
+ */
+export function expandLectureFocusNodeIds(
+  step: Pick<MindClassroomLectureStep, 'kind' | 'focusNodeIds' | 'branchNodeId'>,
+  tourScope: MindClassroomTourScopeId,
+  getDescendantIds: (rootNodeId: string) => Set<string>,
+  presentation?: MindClassroomPresentationId | null
+): string[] {
+  if (step.kind !== 'branch' || !shouldExpandLectureBranchSubtree(tourScope, presentation)) {
+    return [...step.focusNodeIds]
+  }
+  const roots = step.branchNodeId ? [step.branchNodeId] : step.focusNodeIds
+  const expanded = new Set<string>()
+  for (const root of roots) {
+    const descendants = getDescendantIds(root)
+    if (descendants.size > 0) {
+      for (const id of descendants) {
+        expanded.add(id)
+      }
+    } else {
+      expanded.add(root)
+    }
+  }
+  return expanded.size > 0 ? [...expanded] : [...step.focusNodeIds]
+}
+
 function childBulletList(slide: MindMapSlide, nodeById: Map<string, DiagramNode>): string[] {
   if (!slide.branchNodeId) return []
   return slide.focusNodeIds

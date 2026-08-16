@@ -131,6 +131,12 @@ export default {
   'canvas.toolbar.mindMapAppearanceButtonLabel': '{style} · {theme}',
   'canvas.toolbar.mindMapAppearanceDiagramStyle': 'Estilo ng diagram',
   'canvas.toolbar.mindMapAppearanceThemeColor': 'Kulay ng tema',
+
+  'canvas.toolbar.mindMapAppearanceNumbering': 'Numbering',
+  'canvas.toolbar.mindMapAppearanceNumberingEnable': 'On',
+  'canvas.toolbar.mindMapAppearanceNumberingHide': 'Hide',
+  'canvas.toolbar.mindMapAppearanceNumberingPrefix': 'Prefix style',
+  'canvas.toolbar.mindMapAppearanceNumberingNested': 'Nested style',
   'canvas.toolbar.mindMapThemeVibrantBlue': 'Asul',
   'canvas.toolbar.mindMapThemeVibrantOrange': 'Kahel',
   'canvas.toolbar.mindMapThemeVibrantYellow': 'Dilaw',

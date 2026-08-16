@@ -133,6 +133,12 @@ export default {
   'canvas.toolbar.mindMapAppearanceButtonLabel': '{style} · {theme}',
   'canvas.toolbar.mindMapAppearanceDiagramStyle': '导图样式',
   'canvas.toolbar.mindMapAppearanceThemeColor': '主题颜色',
+
+  'canvas.toolbar.mindMapAppearanceNumbering': '编号',
+  'canvas.toolbar.mindMapAppearanceNumberingEnable': '启用',
+  'canvas.toolbar.mindMapAppearanceNumberingHide': '隐藏',
+  'canvas.toolbar.mindMapAppearanceNumberingPrefix': '前缀风格',
+  'canvas.toolbar.mindMapAppearanceNumberingNested': '下级编号',
   'canvas.toolbar.mindMapThemeVibrantBlue': '蓝色',
   'canvas.toolbar.mindMapThemeVibrantOrange': '橙色',
   'canvas.toolbar.mindMapThemeVibrantYellow': '黄色',

@@ -131,6 +131,12 @@ export default {
   'canvas.toolbar.mindMapAppearanceButtonLabel': '{style} · {theme}',
   'canvas.toolbar.mindMapAppearanceDiagramStyle': 'สไตล์ไดอะแกรม',
   'canvas.toolbar.mindMapAppearanceThemeColor': 'สีธีม',
+
+  'canvas.toolbar.mindMapAppearanceNumbering': 'Numbering',
+  'canvas.toolbar.mindMapAppearanceNumberingEnable': 'On',
+  'canvas.toolbar.mindMapAppearanceNumberingHide': 'Hide',
+  'canvas.toolbar.mindMapAppearanceNumberingPrefix': 'Prefix style',
+  'canvas.toolbar.mindMapAppearanceNumberingNested': 'Nested style',
   'canvas.toolbar.mindMapThemeVibrantBlue': 'น้ำเงิน',
   'canvas.toolbar.mindMapThemeVibrantOrange': 'ส้ม',
   'canvas.toolbar.mindMapThemeVibrantYellow': 'เหลือง',

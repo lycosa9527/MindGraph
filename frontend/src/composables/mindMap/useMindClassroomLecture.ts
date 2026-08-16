@@ -28,7 +28,11 @@ import {
 } from '@/stores'
 import { setMindMapCollapsedPaths } from '@/stores/diagram/mindMapCollapse'
 import { collectLiveNodeIds, mapRemoteLectureSteps } from '@/utils/mindClassroomRemoteSteps'
-import { lectureTtsSafetyMs, type MindClassroomLectureStep } from '@/utils/mindClassroomScript'
+import {
+  expandLectureFocusNodeIds,
+  lectureTtsSafetyMs,
+  type MindClassroomLectureStep,
+} from '@/utils/mindClassroomScript'
 
 const FIT_MS = 900
 
@@ -228,15 +232,21 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     } else {
       diagramStore.clearSelection()
     }
+    const focusIds = expandLectureFocusNodeIds(
+      step,
+      classroomStore.sessionTourScope,
+      (id) => diagramStore.getMindMapDescendantIds(id),
+      classroomStore.activeMode
+    )
     void nextTick(() => {
       eventBus.emit('view:fit_to_nodes_requested', {
-        nodeIds: step.focusNodeIds,
+        nodeIds: focusIds,
         animate: true,
         duration: FIT_MS,
         padding:
           step.kind === 'overview' || step.kind === 'closing'
             ? 0.28
-            : step.focusNodeIds.length <= 1
+            : focusIds.length <= 1
               ? 0.48
               : 0.36,
         userInitiated: true,

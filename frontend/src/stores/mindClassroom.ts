@@ -27,11 +27,16 @@ import {
   saveMindClassroomTone,
   saveMindClassroomTourScope,
 } from '@/config/mindClassroom'
-import type { MindClassroomLectureStep } from '@/utils/mindClassroomScript'
+import { useDiagramStore } from '@/stores/diagram'
+import {
+  expandLectureFocusNodeIds,
+  type MindClassroomLectureStep,
+} from '@/utils/mindClassroomScript'
 
 export type MindClassroomLectureStatus = 'idle' | 'running' | 'paused'
 
 export const useMindClassroomStore = defineStore('mindClassroom', () => {
+  const diagramStore = useDiagramStore()
   const mastery = ref<MindClassroomMasteryId>(loadMindClassroomMastery())
   const presentation = ref<MindClassroomPresentationId>(loadMindClassroomPresentation())
   const tourScope = ref<MindClassroomTourScopeId>(loadMindClassroomTourScope())
@@ -41,6 +46,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
 
   const status = ref<MindClassroomLectureStatus>('idle')
   const activeMode = ref<MindClassroomPresentationId | null>(null)
+  const activeTourScope = ref<MindClassroomTourScopeId | null>(null)
   const steps = ref<MindClassroomLectureStep[]>([])
   const stepIndex = ref(0)
   const transitioning = ref(false)
@@ -88,16 +94,27 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     return (stepIndex.value + 1) / steps.value.length
   })
 
+  const sessionTourScope = computed(() => activeTourScope.value ?? tourScope.value)
+
   const focusNodeId = computed(() => {
     if (!isLecturing.value) return null
-    return currentStep.value?.branchNodeId ?? null
+    const step = currentStep.value
+    if (!step || step.kind !== 'branch') return null
+    return step.branchNodeId ?? null
   })
 
   const dimFocusNodeIds = computed(() => {
     if (!isLecturing.value) return null
     const step = currentStep.value
     if (!step || step.kind === 'overview' || step.kind === 'closing') return null
-    return new Set(step.focusNodeIds)
+    const expanded = expandLectureFocusNodeIds(
+      step,
+      sessionTourScope.value,
+      (id) => diagramStore.getMindMapDescendantIds(id),
+      activeMode.value
+    )
+    if (!expanded.length) return null
+    return new Set(expanded)
   })
 
   function setMastery(next: MindClassroomMasteryId): void {
@@ -153,6 +170,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     transitioning.value = false
     narrating.value = false
     activeMode.value = mode
+    activeTourScope.value = tourScope.value
     status.value = 'running'
   }
 
@@ -201,6 +219,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
   function clearSession(): void {
     status.value = 'idle'
     activeMode.value = null
+    activeTourScope.value = null
     steps.value = []
     stepIndex.value = 0
     transitioning.value = false
@@ -217,6 +236,8 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     modalOpen,
     status,
     activeMode,
+    activeTourScope,
+    sessionTourScope,
     steps,
     stepIndex,
     transitioning,

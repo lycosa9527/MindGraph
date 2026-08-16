@@ -131,6 +131,12 @@ export default {
   'canvas.toolbar.mindMapAppearanceButtonLabel': '{style} · {theme}',
   'canvas.toolbar.mindMapAppearanceDiagramStyle': 'Kiểu sơ đồ',
   'canvas.toolbar.mindMapAppearanceThemeColor': 'Màu chủ đề',
+
+  'canvas.toolbar.mindMapAppearanceNumbering': 'Numbering',
+  'canvas.toolbar.mindMapAppearanceNumberingEnable': 'On',
+  'canvas.toolbar.mindMapAppearanceNumberingHide': 'Hide',
+  'canvas.toolbar.mindMapAppearanceNumberingPrefix': 'Prefix style',
+  'canvas.toolbar.mindMapAppearanceNumberingNested': 'Nested style',
   'canvas.toolbar.mindMapThemeVibrantBlue': 'Màu xanh da trời',
   'canvas.toolbar.mindMapThemeVibrantOrange': 'Quả cam',
   'canvas.toolbar.mindMapThemeVibrantYellow': 'Màu vàng',

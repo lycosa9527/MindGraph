@@ -124,6 +124,9 @@ export interface MindMapCanvasV2Bucket {
   /** Persisted with v2 only — cleared from live data on classic canvas. */
   diagram_style?: string
   collapsed_paths?: string[]
+  branch_numbering?: boolean
+  branch_numbering_prefix?: string
+  branch_numbering_nested?: string
 }
 
 /** Independent visual state for classic vs new mind-map canvas. */
@@ -150,6 +153,12 @@ export interface DiagramData {
   _mindmap_theme?: string
   /** Mind map node shape combo preset (topic + branch depth shapes) */
   _mindmap_diagram_style?: string
+  /** V2: show computed un-editable branch number prefixes */
+  _mindmap_branch_numbering?: boolean
+  /** V2: L1 prefix glyph style */
+  _mindmap_branch_numbering_prefix?: string
+  /** V2: L2+ nested style (`outline` or a glyph id) */
+  _mindmap_branch_numbering_nested?: string
   /** Mind map: stable path keys of branches with collapsed subtrees */
   _collapsed_paths?: string[]
   /** Mind map: per-canvas-mode style snapshots (classic vs new canvas) */

@@ -20,6 +20,11 @@ import {
 } from '@/stores/diagram/mindMapStylePreservation'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { Connection, DiagramNode } from '@/types'
+import {
+  isMindMapBranchNumberingEnabled,
+  resolveMindMapBranchNumberingNested,
+  resolveMindMapBranchNumberingPrefix,
+} from '@/utils/mindMapBranchNumbering'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import { readMindMapNodeUid } from '@/utils/mindMapNodeUid'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
@@ -27,10 +32,13 @@ import type { NodeShape } from '@/utils/nodeShapeStyle'
 import { layoutMindMapSideLegacy } from './mindMapLegacyLayout'
 import type { MindMapBranchSpec } from './mindMapLegacyLayout'
 import {
+  estimateNumberedBranchBoxWidth,
   estimateNodeWidthForCanvasMode,
   estimateTopicNodeHeightForCanvasMode,
   estimateTopicNodeWidthForCanvasMode,
   measureBranchNodeHeightForCanvasMode,
+  measureNumberedBranchHeightForCanvasMode,
+  measureNumberedUnderlineBoxMetrics,
   resolveMindMapMeasureShape,
 } from './mindMapMeasurements'
 import { measureMindMapUnderlineBoxMetrics as measureMindMapUnderlineBoxMetricsForCanvasMode } from './mindMapMeasurements'
@@ -65,6 +73,79 @@ export function estimateNodeWidth(
     return estimateNodeWidthWithTypography(text, nodeId, typography, resolvedShape)
   }
   return estimateNodeWidthForCanvasMode(text, nodeId, activeCanvasMode(), resolvedShape)
+}
+
+function numberedFontFromTypography(typography?: MindMapMeasureTypography): {
+  fontSize?: number
+  fontWeight?: string
+  fontFamily?: string
+} {
+  const custom = typography?.fontSize
+  let fontSize: number | undefined
+  if (custom != null) {
+    const parsed = typeof custom === 'number' ? custom : parseFloat(String(custom))
+    if (Number.isFinite(parsed) && parsed > 0) fontSize = parsed
+  }
+  return {
+    fontSize,
+    fontWeight: typography?.fontWeight != null ? String(typography.fontWeight) : undefined,
+    fontFamily: typography?.fontFamily,
+  }
+}
+
+/** Box width for prefix chrome + body (``1.`` vs ``第一章`` use different advances). */
+export function estimateNumberedBranchWidth(
+  label: string,
+  prefix: string,
+  nodeId?: string,
+  typography?: MindMapMeasureTypography,
+  shape?: NodeShape | null
+): number {
+  if (!prefix) {
+    return estimateNodeWidth(label, nodeId, typography, shape)
+  }
+  return estimateNumberedBranchBoxWidth(
+    label,
+    prefix,
+    nodeId,
+    resolveShapeFromMeasureStyle(typography, shape),
+    numberedFontFromTypography(typography)
+  )
+}
+
+export function measureNumberedBranchHeight(
+  label: string,
+  prefix: string,
+  nodeId?: string,
+  typography?: MindMapMeasureTypography
+): number {
+  if (!prefix) {
+    return measureBranchNodeHeight(label, nodeId, typography)
+  }
+  return measureNumberedBranchHeightForCanvasMode(
+    label,
+    prefix,
+    nodeId,
+    'v2',
+    numberedFontFromTypography(typography)
+  )
+}
+
+export function measureNumberedBranchUnderlineHeight(
+  label: string,
+  prefix: string,
+  nodeId?: string,
+  typography?: MindMapMeasureTypography
+): number {
+  if (!prefix) {
+    return measureBranchNodeUnderlineHeight(label, nodeId, typography)
+  }
+  return measureNumberedUnderlineBoxMetrics(
+    label,
+    prefix,
+    nodeId,
+    numberedFontFromTypography(typography)
+  ).totalHeight
 }
 
 export function measureBranchNodeHeight(
@@ -452,6 +533,11 @@ export function loadMindMapSpec(
 
   if (v2Visuals) {
     const topicBorderColor = resolveMindMapTopicBorderColor(topicNode)
+    const layoutNumbering = {
+      enabled: isMindMapBranchNumberingEnabled(spec),
+      prefixStyle: resolveMindMapBranchNumberingPrefix(spec._mindmap_branch_numbering_prefix),
+      nestedStyle: resolveMindMapBranchNumberingNested(spec._mindmap_branch_numbering_nested),
+    }
     layoutMindMapSideV2(
       rightBranches,
       'right',
@@ -464,7 +550,8 @@ export function loadMindMapSpec(
       0,
       allBranches.length,
       topicBorderColor,
-      diagramStyleId
+      diagramStyleId,
+      layoutNumbering
     )
     layoutMindMapSideV2(
       leftBranches,
@@ -478,7 +565,8 @@ export function loadMindMapSpec(
       rightBranches.length,
       allBranches.length,
       topicBorderColor,
-      diagramStyleId
+      diagramStyleId,
+      layoutNumbering
     )
   } else {
     layoutMindMapSideLegacy(

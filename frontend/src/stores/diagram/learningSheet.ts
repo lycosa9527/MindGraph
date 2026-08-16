@@ -2,9 +2,13 @@ import { computed } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import type { NodeStyle } from '@/types'
+import { mindMapBranchNumberMapFromData } from '@/utils/mindMapBranchNumbering'
+
 import {
   estimateNodeWidth as estimateMindMapBranchWidth,
+  estimateNumberedBranchWidth,
   measureBranchNodeHeight as measureMindMapBranchHeight,
+  measureNumberedBranchHeight,
 } from '../specLoader/mindMap'
 import { LEARNING_SHEET_BLANK_TEXT, isLearningSheetBlankDisplayText } from '../specLoader/utils'
 import { emitCtxEvent } from './events'
@@ -25,10 +29,17 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     nodeStyle?: NodeStyle
   ): Record<string, unknown> | undefined {
     if (!isMindMap()) return existingData
-    const existing = existingData as { estimatedWidth?: number; estimatedHeight?: number } | undefined
+    const existing = existingData as
+      { estimatedWidth?: number; estimatedHeight?: number } | undefined
+    const numberMap = mindMapBranchNumberMapFromData(data.value)
+    const prefix = nodeId ? (numberMap.get(nodeId) ?? '') : ''
     const fromText = {
-      estimatedWidth: estimateMindMapBranchWidth(layoutText, nodeId, nodeStyle),
-      estimatedHeight: measureMindMapBranchHeight(layoutText, nodeId, nodeStyle),
+      estimatedWidth: nodeId
+        ? estimateNumberedBranchWidth(layoutText, prefix, nodeId, nodeStyle)
+        : estimateMindMapBranchWidth(layoutText, nodeId, nodeStyle),
+      estimatedHeight: nodeId
+        ? measureNumberedBranchHeight(layoutText, prefix, nodeId, nodeStyle)
+        : measureMindMapBranchHeight(layoutText, nodeId, nodeStyle),
     }
     return {
       ...existingData,
@@ -164,7 +175,8 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
     if (nodeIndex === -1) return false
 
     const node = data.value.nodes[nodeIndex]
-    const nodeData = node.data as { hidden?: boolean; hiddenAnswer?: string; label?: string } | undefined
+    const nodeData = node.data as
+      { hidden?: boolean; hiddenAnswer?: string; label?: string } | undefined
     const originalText = String(node.text ?? nodeData?.label ?? '').trim()
     if (!originalText || isLearningSheetBlankDisplayText(originalText) || nodeData?.hidden) {
       return false
@@ -198,7 +210,10 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
 
     reconcileHiddenAnswersFromBlankedNodes()
 
-    emitCtxEvent(ctx, 'diagram:node_updated', { nodeId, updates: { text: LEARNING_SHEET_BLANK_TEXT } })
+    emitCtxEvent(ctx, 'diagram:node_updated', {
+      nodeId,
+      updates: { text: LEARNING_SHEET_BLANK_TEXT },
+    })
     if (ctx.emitDiagramEvents) {
       eventBus.emit('node:text_updated', { nodeId, text: LEARNING_SHEET_BLANK_TEXT })
     }
@@ -264,7 +279,10 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
       }
       delete ctx.mindMapNodeWidths.value[node.id]
       delete ctx.mindMapNodeHeights.value[node.id]
-      emitCtxEvent(ctx, 'diagram:node_updated', { nodeId: node.id, updates: { text: originalText } })
+      emitCtxEvent(ctx, 'diagram:node_updated', {
+        nodeId: node.id,
+        updates: { text: originalText },
+      })
     })
 
     syncLearningSheetFlags(d, false)
@@ -361,7 +379,10 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
       if (!isNodeBlankedForLearningSheet(node.id)) return
       const answer = nodeHiddenAnswer(node)
       if (!answer) return
-      snapshots.push({ idx, node: { ...node, data: { ...(node.data as Record<string, unknown>) } } })
+      snapshots.push({
+        idx,
+        node: { ...node, data: { ...(node.data as Record<string, unknown>) } },
+      })
       dv.nodes[idx] = {
         ...node,
         text: answer,

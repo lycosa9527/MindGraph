@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.0] - 2026-08-17
+
+> **Mind-map 编号 is chrome on the new canvas; 按主分支 lecture lights the whole branch.**
+
+### Added
+
+- **思维导图 编号** — 主题风格 panel: enable/hide plus prefix and nested styles. Prefixes are painted chrome (not stored in `node.text`). L1 uses 前缀风格; L2+ uses 下级编号 (outline path or restarting glyphs, including 章/节/段 and 条/款/项). Topic/center is never numbered. New / regenerated diagrams stay off unless the spec enables it. Box width and wrap use this node’s glyphs (`1.` vs `①` vs `第一章` vs `1.1.1`). PDF/SVG draws the same chrome; body wraps beside it.
+
+### Fixed
+
+- **思维讲堂 highlight** — In 按主分支 (and slide-deck canvas), the current branch and its descendants stay fully visible; only the head is selected / blue-outlined. Incoming stem from the topic stays lit. Overview and closing no longer outline the topic. Empty focus no longer dims the whole map. Tour scope is snapshotted for the session.
+- **Mind-map PDF text Y** — Export baseline matches canvas `line-height` (half-leading + ascent) so branch labels sit in the box instead of a few pixels high.
+- **Celery Redis pools** — Result-backend pools get the same RESP2 / no-SCH defaults as the broker, so OSS Redis is not probed for `CLIENT MAINT_NOTIFICATIONS`.
+
+### Tests
+
+- Numbering glyphs, clockwise L1, per-prefix width/height, outline cache fingerprint, vector prefix chrome, PDF baseline.
+- `expandLectureFocusNodeIds` — main-branch / slide-deck expand the subtree; each-node stays on one node.
+- Celery Redis result-backend pool options.
+
 ## [5.179.0] - 2026-08-17
 
 > **思维讲堂 is event-bus + Pinia; CosyVoice prefetches the next slide; lecture scripts stay on a stable COS key.**

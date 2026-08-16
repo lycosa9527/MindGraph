@@ -35,7 +35,8 @@ function normalizeWeight(fontWeight?: string): 'normal' | 'bold' {
   return fontWeight === 'bold' || fontWeight === '700' ? 'bold' : 'normal'
 }
 
-function measureLabelWidth(
+/** Shared label advance (canvas estimate + vector export). */
+export function measureMindMapLabelWidthPx(
   text: string,
   fontSize: number,
   options: MindMapTextMeasureOptions = {}
@@ -70,11 +71,59 @@ export function resolveMindMapBranchTextMaxWidthPx(
   const text = (label || '').trim()
   if (!text) return MIND_MAP_BRANCH_MAX_TEXT_WIDTH
   const wrapThreshold = computeScriptAwareMaxWidth(text, MIND_MAP_BRANCH_MAX_TEXT_WIDTH)
-  const textWidth = measureLabelWidth(text, fontSize, options)
+  const textWidth = measureMindMapLabelWidthPx(text, fontSize, options)
   if (textWidth <= wrapThreshold) {
     return wrapThreshold
   }
   return MIND_MAP_BRANCH_MAX_TEXT_WIDTH
+}
+
+export const MIND_MAP_NUMBER_PREFIX_GAP_PX = 6
+const MIN_BRANCH_BODY_MAX_WIDTH_PX = 48
+
+/** Advance of the painted prefix chrome (glyphs + gap before the body). */
+export function measureMindMapNumberPrefixAdvancePx(
+  prefix: string,
+  fontSize: number,
+  options: MindMapTextMeasureOptions = {}
+): number {
+  if (!prefix) return 0
+  return measureMindMapLabelWidthPx(prefix, fontSize, options) + MIND_MAP_NUMBER_PREFIX_GAP_PX
+}
+
+/**
+ * Content width of prefix chrome + body, using this node's actual prefix glyphs.
+ * ``1.`` / ``①`` / ``第一章`` therefore produce different widths.
+ */
+export function estimateMindMapNumberedContentWidthPx(
+  label: string,
+  prefix: string,
+  fontSize: number,
+  options: MindMapTextMeasureOptions = {}
+): number {
+  const bodyWidth = measureMindMapLabelWidthPx((label || '').trim(), fontSize, options)
+  if (!prefix) return bodyWidth
+  return measureMindMapNumberPrefixAdvancePx(prefix, fontSize, options) + bodyWidth
+}
+
+/**
+ * Wrap budget for the editable body when a numbering prefix sits beside it.
+ * Keeps prefix + gap + body within the same column as an un-numbered label.
+ */
+export function resolveMindMapBranchBodyMaxWidthPx(
+  label: string,
+  prefix: string,
+  fontSize: number,
+  options: MindMapTextMeasureOptions = {}
+): number {
+  const totalMax = resolveMindMapBranchTextMaxWidthPx(
+    prefix ? `${prefix} ${label}`.trim() : label,
+    fontSize,
+    options
+  )
+  if (!prefix) return totalMax
+  const prefixAdvance = measureMindMapNumberPrefixAdvancePx(prefix, fontSize, options)
+  return Math.max(MIN_BRANCH_BODY_MAX_WIDTH_PX, totalMax - prefixAdvance)
 }
 
 /** Canvas topic ``:max-width`` in px. */
@@ -135,7 +184,10 @@ export function wrapMindMapExportLabelLines(options: {
       : resolveMindMapBranchTextMaxWidthPx(plain, options.fontSize, measureOpts)
 
   // No manual newlines and text fits host column → canvas stays single-line.
-  if (!plain.includes('\n') && measureLabelWidth(plain, options.fontSize, measureOpts) <= hostMax) {
+  if (
+    !plain.includes('\n') &&
+    measureMindMapLabelWidthPx(plain, options.fontSize, measureOpts) <= hostMax
+  ) {
     return [plain]
   }
 
@@ -259,7 +311,7 @@ export function wrapMindMapTextLines(
   const width = Math.max(8, maxWidth)
   const fontSize = options.fontSize
   const measure = (text: string) =>
-    measureLabelWidth(text, fontSize, {
+    measureMindMapLabelWidthPx(text, fontSize, {
       fontWeight: options.fontWeight,
       fontFamily: options.fontFamily,
     })

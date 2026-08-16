@@ -3,13 +3,14 @@
  */
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { MIND_MAP_GEOMETRY } from '@/config/mindMapGeometry'
-import type { Connection, DiagramData, DiagramNode, NodeStyle } from '@/types'
-import type { MindMapCanvasMode } from '@/stores/ui'
 import {
   getMindMapCollapseHiddenIds,
   getMindMapCollapsedPaths,
 } from '@/stores/diagram/mindMapCollapse'
+import type { MindMapCanvasMode } from '@/stores/ui'
+import type { Connection, DiagramData, DiagramNode, NodeStyle } from '@/types'
 import type { MindMapVectorNodeDraw } from '@/utils/diagramMindMapVectorNodes'
+import { mindMapBranchNumberMapFromData } from '@/utils/mindMapBranchNumbering'
 
 export type MindMapVectorSnapshot = {
   canvasMode: MindMapCanvasMode
@@ -98,14 +99,10 @@ export function buildMindMapVectorSnapshot(options: {
 
   const collapsedPaths = canvasMode === 'v2' ? getMindMapCollapsedPaths(data) : []
   const getDescendants =
-    store.getDescendantIds ??
-    ((rootId: string) => descendantIdsFromChildIds(nodes, rootId))
-  const hiddenIds = getMindMapCollapseHiddenIds(
-    nodes,
-    connections,
-    collapsedPaths,
-    getDescendants
-  )
+    store.getDescendantIds ?? ((rootId: string) => descendantIdsFromChildIds(nodes, rootId))
+  const hiddenIds = getMindMapCollapseHiddenIds(nodes, connections, collapsedPaths, getDescendants)
+
+  const numberMap = mindMapBranchNumberMapFromData(data)
 
   const drawNodes: MindMapVectorNodeDraw[] = []
   for (const node of nodes) {
@@ -125,9 +122,11 @@ export function buildMindMapVectorSnapshot(options: {
       store.mindMapNodeHeights,
       store.nodeDimensions
     )
+    const numberPrefix = numberMap.get(node.id) ?? ''
     drawNodes.push({
       id: node.id,
       text: node.text ?? '',
+      ...(numberPrefix ? { numberPrefix } : {}),
       type: node.type,
       x: node.position.x,
       y: node.position.y,
