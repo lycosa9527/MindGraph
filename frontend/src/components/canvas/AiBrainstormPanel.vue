@@ -244,6 +244,8 @@ onUnmounted(() => {
       </template>
     </MindMapSidePanelHeader>
 
+    <div class="shrink-0 border-b border-slate-100 px-3 py-2" />
+
     <div class="min-h-0 flex-1 overflow-y-auto px-3 py-3">
       <div
         v-if="isLoading && suggestions.length === 0"

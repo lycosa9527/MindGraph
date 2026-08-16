@@ -67,6 +67,7 @@ from models.domain.showcase import (
     ShowcasePostLike,
 )
 from models.domain.zhihui import ZhihuiConversation, ZhihuiGeneration
+from models.domain.mind_classroom import MindClassroomJob, MindClassroomSlide
 from models.domain.showcase_admin import (
     ShowcaseAuditLog,
     ShowcaseFieldOption,
@@ -193,6 +194,8 @@ __all__ = [
     "ShowcaseAuditLog",
     "ZhihuiConversation",
     "ZhihuiGeneration",
+    "MindClassroomJob",
+    "MindClassroomSlide",
     "SharedDiagram",
     "SharedDiagramLike",
     "SharedDiagramComment",

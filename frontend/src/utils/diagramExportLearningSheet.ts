@@ -33,6 +33,14 @@ export function learningSheetIncludeAnswers(options?: CanvasExportOptions): bool
   return options?.answerMode === 'include'
 }
 
+/** Capture whatever is on the canvas now — do not toggle learning-sheet answers. */
+export async function runAsShownRasterCapture<T>(
+  capture: () => T | Promise<T>
+): Promise<T> {
+  await waitForCanvasPaint()
+  return capture()
+}
+
 /** Run capture with answers revealed, answers hidden, or unchanged (non–learning-sheet). */
 export async function runLearningSheetRasterCapture<T>(
   store: DiagramStore,

@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 
 import {
   resolveEnterKeyEvent,
+  resolveInsertKeyEvent,
   resolveTabKeyEvent,
 } from '@/composables/canvasPage/canvasPageEditorShortcutRouting'
 import {
@@ -130,6 +131,15 @@ export function useCanvasPageEditorShortcuts(options: {
       return
     }
     handleAddBranchKey()
+  }
+
+  function handleInsertKey(event: KeyboardEvent) {
+    if (event.repeat) return
+    if (isTypingInInput()) return
+    const routed = resolveInsertKeyEvent(diagramStore.type)
+    if (routed) {
+      eventBus.emit(routed, {})
+    }
   }
 
   function handleEnterKey(event: KeyboardEvent) {
@@ -320,6 +330,7 @@ export function useCanvasPageEditorShortcuts(options: {
 
   useKeyboard([
     { key: 'Tab', handler: handleTabKey },
+    { key: 'Insert', handler: handleInsertKey },
     { key: 'Enter', handler: handleEnterKey },
     { key: ' ', handler: handleSpaceEditKey },
     { key: 'ArrowUp', handler: () => handleMindMapArrowKey('ArrowUp') },

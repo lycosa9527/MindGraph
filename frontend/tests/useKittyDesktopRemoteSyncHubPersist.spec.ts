@@ -11,6 +11,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { applyKittyDiagramUpdate } from '@/composables/kitty/kittyAgentActions'
 import { useKittyDesktopRemoteSync } from '@/composables/kitty/useKittyDesktopRemoteSync'
 import { useKittySessionStore } from '@/stores/kittySession'
+import { useLLMResultsStore } from '@/stores/llmResults'
 
 const { syncDiagramStoreFromVoiceContext, runKittyHubSyncMock, localNodes } = vi.hoisted(() => ({
   syncDiagramStoreFromVoiceContext: vi.fn(),
@@ -157,6 +158,21 @@ describe('useKittyDesktopRemoteSync hub persist recovery', () => {
       { id: 'branch-1', text: 'DIY' },
       { id: 'child-1', text: 'Paint' },
     ]
+
+    const sync = useKittyDesktopRemoteSync({
+      libraryDiagramId: ref('lib-1'),
+      syncEnabled: computed(() => true),
+      collabSessionActive: computed(() => false),
+    })
+    await sync.refresh()
+
+    expect(syncDiagramStoreFromVoiceContext).not.toHaveBeenCalled()
+  })
+
+  it('does not recover live_context diagram while auto-complete is generating', async () => {
+    useKittySessionStore().setOwnsKittySession(false)
+    localNodes.value = []
+    useLLMResultsStore().startGeneration('gen_regen', 'mindmap', ['qwen', 'deepseek', 'doubao'])
 
     const sync = useKittyDesktopRemoteSync({
       libraryDiagramId: ref('lib-1'),

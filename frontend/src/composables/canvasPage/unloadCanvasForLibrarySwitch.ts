@@ -7,12 +7,14 @@ import { canvasVirtualKeyboardOpen } from '@/composables/canvasToolbar/useCanvas
 import { resetMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { applyDiagramTypeForCanvasChrome } from '@/composables/canvasPage/diagramTypeMaps'
 import { resetLearningSheetCustomModeUi } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { teardownMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import {
   useConceptMapFocusReviewStore,
   useConceptMapRelationshipStore,
   useDiagramStore,
   useInlineRecommendationsStore,
   useLLMResultsStore,
+  useMindClassroomStore,
   usePanelsStore,
 } from '@/stores'
 import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
@@ -46,6 +48,8 @@ function clearEphemeralUiForLibrarySwitch(): void {
   resetLearningSheetCustomModeUi()
   resetMindMapSideToolbarState()
   canvasVirtualKeyboardOpen.value = false
+  teardownMindClassroomLecture({ restoreViewport: false })
+  useMindClassroomStore().closeModal()
 }
 
 export function unloadCanvasForLibrarySwitch(

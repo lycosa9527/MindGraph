@@ -215,6 +215,26 @@ function buildNode(
   }
 }
 
+/**
+ * Stable sibling-order key for numbering cache.
+ * Same sort as {@link buildMindMapOutlineTree}; ignores raw x/y float noise.
+ */
+export function mindMapOutlineOrderFingerprint(
+  nodes: DiagramNode[],
+  connections: Connection[]
+): string {
+  if (!nodes.length) return ''
+  const nodeById = new Map(nodes.map((node) => [node.id, node]))
+  const childrenMap = buildChildrenMap(connections)
+  const parts: string[] = []
+  for (const [parentId, childIds] of childrenMap) {
+    const ordered = sortOutlineChildIds(parentId, childIds, nodeById)
+    parts.push(`${parentId}:${ordered.join(',')}`)
+  }
+  parts.sort()
+  return parts.join('|')
+}
+
 /** Flatten outline tree to id + text rows (pre-order), for sync assertions. */
 export function flattenMindMapOutline(
   nodes: MindMapOutlineNode[]

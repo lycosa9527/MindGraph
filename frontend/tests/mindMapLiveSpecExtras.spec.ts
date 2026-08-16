@@ -15,6 +15,9 @@ describe('mindMapLiveSpecExtras', () => {
       connections: [],
       _mindmap_diagram_style: 'classic',
       _mindmap_theme: 'ocean',
+      _mindmap_branch_numbering: true,
+      _mindmap_branch_numbering_prefix: 'decimal',
+      _mindmap_branch_numbering_nested: 'outline',
       _node_styles: { 'branch-r-1-0': { nodeShape: 'rounded' } },
       _collapsed_paths: ['r/0'],
       _mindmap_canvas: { v2: { theme: 'ocean' } },
@@ -23,6 +26,9 @@ describe('mindMapLiveSpecExtras', () => {
     expect(picked).toEqual({
       _mindmap_diagram_style: 'classic',
       _mindmap_theme: 'ocean',
+      _mindmap_branch_numbering: true,
+      _mindmap_branch_numbering_prefix: 'decimal',
+      _mindmap_branch_numbering_nested: 'outline',
       _node_styles: { 'branch-r-1-0': { nodeShape: 'rounded' } },
       _collapsed_paths: ['r/0'],
       _mindmap_canvas: { v2: { theme: 'ocean' } },
@@ -92,6 +98,9 @@ describe('mindMapLiveSpecExtras', () => {
     const current = {
       _mindmap_theme: 'ocean',
       _mindmap_diagram_style: 'formal',
+      _mindmap_branch_numbering: true,
+      _mindmap_branch_numbering_prefix: 'circled',
+      _mindmap_branch_numbering_nested: 'outline',
       _mindmap_canvas: { v2: { theme: 'ocean' } },
       _node_styles: { 'branch-r-1-0': { borderColor: '#f00' } },
       _collapsed_paths: ['r/0'],
@@ -99,6 +108,9 @@ describe('mindMapLiveSpecExtras', () => {
     const merged = mergeMindMapPresentationExtrasIntoSpec(incoming, current)
     expect(merged._mindmap_theme).toBe('ocean')
     expect(merged._mindmap_diagram_style).toBe('formal')
+    expect(merged._mindmap_branch_numbering).toBeUndefined()
+    expect(merged._mindmap_branch_numbering_prefix).toBe('circled')
+    expect(merged._mindmap_branch_numbering_nested).toBe('outline')
     expect(merged._mindmap_canvas).toEqual({ v2: { theme: 'ocean' } })
     expect(merged._node_styles).toBeUndefined()
     expect(merged._collapsed_paths).toBeUndefined()

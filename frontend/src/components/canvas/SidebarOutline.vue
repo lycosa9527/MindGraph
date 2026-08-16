@@ -9,15 +9,19 @@ import { ElTooltip } from 'element-plus'
 import { ChevronDown, GitCommit, GripVertical, Plus, Trash2 } from '@lucide/vue'
 
 import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
-
 import { useLanguage } from '@/composables'
-import { useMindMapOutlineMirror } from '@/composables/mindMap/useMindMapOutlineMirror'
-import { useMindMapOutlineDrag } from '@/composables/mindMap/useMindMapOutlineDrag'
-import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
 import { eventBus } from '@/composables/core/useEventBus'
-import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
+import { useMindMapBranchNumbering } from '@/composables/mindMap/useMindMapBranchNumbering'
+import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
+import { useMindMapOutlineDrag } from '@/composables/mindMap/useMindMapOutlineDrag'
+import { useMindMapOutlineMirror } from '@/composables/mindMap/useMindMapOutlineMirror'
 import { useDiagramStore } from '@/stores'
+import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { focusHtmlControl, selectHtmlControl } from '@/utils/focusHtmlControl'
+import {
+  joinMindMapBranchDisplayText,
+  stripMatchingBranchNumberPrefix,
+} from '@/utils/mindMapBranchNumbering'
 import type { MindMapOutlineNode } from '@/utils/mindMapOutlineTree'
 
 const emit = defineEmits<{
@@ -26,6 +30,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
+const { prefixFor } = useMindMapBranchNumbering()
 
 const DEPTH_INDENT_PX = 22
 const ROOT_PADDING_PX = 12
@@ -46,17 +51,13 @@ const { handlePaste: handleMindMapMultiLinePaste } = useMindMapMultiLinePaste({
   isBlocked: () => editingNodeId.value !== null,
 })
 
-const {
-  outlineTree,
-  focusNodeFromOutline,
-  toggleOutlineBranch,
-  isOutlineBranchCollapsed,
-} = useMindMapOutlineMirror({
-  enabled: () => true,
-  scrollToRow: (nodeId) => {
-    rowRefs.value.get(nodeId)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  },
-})
+const { outlineTree, focusNodeFromOutline, toggleOutlineBranch, isOutlineBranchCollapsed } =
+  useMindMapOutlineMirror({
+    enabled: () => true,
+    scrollToRow: (nodeId) => {
+      rowRefs.value.get(nodeId)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    },
+  })
 
 const {
   draggingNodeId,
@@ -112,6 +113,10 @@ function handleRowClick(nodeId: string): void {
   focusNodeFromOutline(nodeId)
 }
 
+function outlineDisplayText(nodeId: string, text: string): string {
+  return joinMindMapBranchDisplayText(prefixFor(nodeId), text)
+}
+
 async function startEdit(nodeId: string, text: string): Promise<void> {
   editingNodeId.value = nodeId
   editDraft.value = text
@@ -125,7 +130,7 @@ async function startEdit(nodeId: string, text: string): Promise<void> {
 function commitEdit(): void {
   const nodeId = editingNodeId.value
   if (!nodeId) return
-  const text = editDraft.value.trim()
+  const text = stripMatchingBranchNumberPrefix(editDraft.value, prefixFor(nodeId))
   if (text) {
     eventBus.emit('node:text_updated', { nodeId, text })
   }
@@ -267,7 +272,7 @@ function showActions(nodeId: string): boolean {
                 @click="handleRowClick(row.node.id)"
                 @dblclick.stop="startEdit(row.node.id, row.node.text)"
               >
-                {{ row.node.text }}
+                {{ outlineDisplayText(row.node.id, row.node.text) }}
               </button>
 
               <button
@@ -277,7 +282,7 @@ function showActions(nodeId: string): boolean {
                 @click="handleRowClick(row.node.id)"
                 @dblclick.stop="startEdit(row.node.id, row.node.text)"
               >
-                {{ row.node.text }}
+                {{ outlineDisplayText(row.node.id, row.node.text) }}
               </button>
 
               <input

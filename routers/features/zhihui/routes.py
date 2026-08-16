@@ -343,8 +343,8 @@ async def list_zhihui_conversations(
     await _sweep_stale_jobs(user_id)
     conv_repo = ZhihuiConversationRepository(db)
     gen_repo = ZhihuiGenerationRepository(db)
-    rows = await conv_repo.list_recent(offset=offset, limit=limit, user_id=user_id)
-    total = await conv_repo.count_conversations(user_id=user_id)
+    rows = await conv_repo.list_recent(offset=offset, limit=limit, user_id=user_id, mode="image")
+    total = await conv_repo.count_conversations(user_id=user_id, mode="image")
     meta = await gen_repo.cover_and_counts([row.id for row in rows])
     items: list[dict[str, Any]] = []
     for row in rows:

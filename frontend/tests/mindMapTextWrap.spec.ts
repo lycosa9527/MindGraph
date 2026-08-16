@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest'
 import {
   MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
   MIND_MAP_TOPIC_MAX_TEXT_WIDTH,
+  estimateMindMapNumberedContentWidthPx,
+  measureMindMapNumberPrefixAdvancePx,
+  resolveMindMapBranchBodyMaxWidthPx,
   resolveMindMapBranchTextMaxWidthPx,
   resolveMindMapExportWrapColumnPx,
   resolveMindMapTopicTextMaxWidthPx,
@@ -19,6 +22,26 @@ describe('mindMapTextWrap', () => {
     const max = resolveMindMapBranchTextMaxWidthPx('中心主题', 18, { fontWeight: 'bold' })
     expect(max).toBeGreaterThanOrEqual(MIND_MAP_BRANCH_MAX_TEXT_WIDTH)
     expect(max).toBeLessThanOrEqual(Math.round(MIND_MAP_BRANCH_MAX_TEXT_WIDTH * 1.5))
+  })
+
+  it('gives wider chrome to 第一章 than 1. or ①', () => {
+    const fontSize = 16
+    const chapter = measureMindMapNumberPrefixAdvancePx('第一章', fontSize)
+    const circled = measureMindMapNumberPrefixAdvancePx('①', fontSize)
+    const decimal = measureMindMapNumberPrefixAdvancePx('1.', fontSize)
+    expect(chapter).toBeGreaterThan(circled)
+    expect(chapter).toBeGreaterThan(decimal)
+    expect(estimateMindMapNumberedContentWidthPx('分支1', '第一章', fontSize)).toBeGreaterThan(
+      estimateMindMapNumberedContentWidthPx('分支1', '1.', fontSize)
+    )
+  })
+
+  it('shrinks the editable body wrap budget when a numbering prefix is present', () => {
+    const label = 'china'
+    const withoutPrefix = resolveMindMapBranchTextMaxWidthPx(label, 14)
+    const withPrefix = resolveMindMapBranchBodyMaxWidthPx(label, '1.1.1.1.1', 14)
+    expect(withPrefix).toBeLessThan(withoutPrefix)
+    expect(withPrefix).toBeGreaterThanOrEqual(48)
   })
 
   it('caps long branch wrap column at 200', () => {

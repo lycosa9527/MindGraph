@@ -172,6 +172,8 @@ run_backend() {
     tests/test_workshop_chat_file_service.py \
     tests/test_dingtalk_bind_service.py \
     tests/test_showcase_helpers.py \
+    tests/test_celery_manager_stale.py \
+    tests/services/test_celery_health_check.py \
     tests/test_showcase_create_response.py \
     tests/test_showcase_storage_cos.py \
     tests/test_showcase_withdraw_reason.py \
@@ -179,7 +181,22 @@ run_backend() {
     tests/test_showcase_cos_live_matrix.py \
     tests/test_showcase_lifecycle_gates.py \
     tests/test_pg_merge_showcase_remap.py \
-    tests/test_diagram_folders_api.py
+    tests/test_diagram_folders_api.py \
+    tests/test_mind_classroom_tone_prompts.py \
+    tests/test_mind_classroom_audience_prompts.py \
+    tests/test_mind_classroom_mastery_prompts.py \
+    tests/test_mind_classroom_temp_cleanup.py \
+    tests/test_mind_classroom_transcript.py \
+    tests/test_mind_classroom_steps.py \
+    tests/test_mind_classroom_slide_adapter.py \
+    tests/test_mind_classroom_rls.py \
+    tests/test_mind_classroom_celery_log.py \
+    tests/test_mind_classroom_enqueue.py \
+    tests/test_kitty_narrate.py \
+    tests/test_kitty_idle.py \
+    tests/test_generate_text_to_image.py \
+    tests/test_zhihui_outline_and_shell.py \
+    tests/test_zhihui_lease.py
 }
 
 run_frontend() {
@@ -202,8 +219,13 @@ run_frontend() {
   log "npm audit (high severity)"
   npm audit --audit-level=high
 
-  log "Vitest (workshop reconnect + diagram meta)"
-  npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts
+  log "Vitest (workshop reconnect + diagram meta + classroom)"
+  npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts \
+    tests/useMindClassroomLecture.spec.ts tests/useMindClassroomLectureQueue.spec.ts \
+    tests/mindClassroomLaunchState.spec.ts tests/mindClassroomRemoteSteps.spec.ts \
+    tests/mindClassroomScript.spec.ts \
+    tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts \
+    tests/unloadCanvasForLibrarySwitch.spec.ts
 }
 
 run_chrome_extension() {

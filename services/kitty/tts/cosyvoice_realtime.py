@@ -30,6 +30,38 @@ from services.utils.error_types import LLM_PIPELINE_ERRORS
 
 logger = logging.getLogger(__name__)
 
+# CosyVoice flash often stops a single continue-task around 20s of audio.
+_TTS_CHUNK_CHARS = 90
+_TTS_CHUNK_FINISH_SEC = 45.0
+_SENTENCE_BREAKS = "。！？；!?…\n"
+
+
+def split_cosyvoice_text(text: str) -> list[str]:
+    """Split lecture captions so each CosyVoice task stays under ~20s of speech."""
+    cleaned = str(text or "").strip()
+    if not cleaned:
+        return []
+    if len(cleaned) <= _TTS_CHUNK_CHARS:
+        return [cleaned]
+    chunks: list[str] = []
+    start = 0
+    length = len(cleaned)
+    while start < length:
+        end = min(start + _TTS_CHUNK_CHARS, length)
+        if end < length:
+            window = cleaned[start:end]
+            cut = max(window.rfind(mark) for mark in _SENTENCE_BREAKS)
+            if cut < 24:
+                cut = max(window.rfind("，"), window.rfind(","), window.rfind("、"))
+            if cut >= 24:
+                end = start + cut + 1
+        piece = cleaned[start:end].strip()
+        if piece:
+            chunks.append(piece)
+        start = end
+    return chunks
+
+
 AudioCallback = Callable[[str, str], Awaitable[None]]
 DoneCallback = Callable[[], Awaitable[None]]
 ErrorCallback = Callable[[str], Awaitable[None]]
@@ -172,6 +204,26 @@ class CosyVoiceRealtimeClient:
         )
         self._reader_task = asyncio.create_task(self._read_loop())
 
+    async def _release_socket(self) -> None:
+        """Drop the inference socket without cancelling the current ``speak()``."""
+        self._closed = True
+        reader = self._reader_task
+        self._reader_task = None
+        socket = self._ws
+        self._ws = None
+        if reader is not None and not reader.done():
+            reader.cancel()
+            try:
+                await reader
+            except (asyncio.CancelledError, ConnectionClosed, ConnectionClosedError):
+                pass
+        if socket is not None:
+            try:
+                await socket.close()
+            except (ConnectionClosed, ConnectionClosedError, ConnectionClosedOK, OSError):
+                pass
+        self._closed = False
+
     async def speak(self, text: str) -> None:
         """Synthesize ``text`` and stream base64 PCM via ``on_audio``."""
         message = str(text or "").strip()
@@ -180,6 +232,18 @@ class CosyVoiceRealtimeClient:
         if not resolve_kitty_tts_enabled():
             return
         self._cancel_requested = False
+        chunks = split_cosyvoice_text(message)
+        for index, chunk in enumerate(chunks):
+            if self._cancel_requested:
+                return
+            await self._speak_chunk(chunk)
+            if index < len(chunks) - 1 and not self._cancel_requested:
+                await self._release_socket()
+        if self._on_done and not self._cancel_requested:
+            await self._on_done()
+
+    async def _speak_chunk(self, message: str) -> None:
+        """One CosyVoice run-task. Flash models drop audio after ~20s per task."""
         await self.connect()
         assert self._ws is not None
         model, voice = resolve_kitty_tts_model_and_voice()
@@ -197,11 +261,9 @@ class CosyVoiceRealtimeClient:
         await self._ws.send(json.dumps(build_cosyvoice_continue_task(self._task_id, message)))
         await self._send_finish()
         try:
-            await asyncio.wait_for(self._finished.wait(), timeout=60.0)
+            await asyncio.wait_for(self._finished.wait(), timeout=_TTS_CHUNK_FINISH_SEC)
         except asyncio.TimeoutError:
             logger.warning("CosyVoice task-finished timeout")
-        if self._on_done and not self._cancel_requested:
-            await self._on_done()
 
     async def interrupt(self) -> None:
         """Cancel in-flight synthesis."""

@@ -1,18 +1,21 @@
 <script setup lang="ts">
 /**
- * 图示生图 studio — 30/70 mindmap + PPT deck; job lifecycle via history store + event bus.
+ * Superadmin 图示生图 demo — classroom slide_deck jobs + deck chrome.
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
-import { useEventBus, useLanguage, useNotifications } from '@/composables'
 import { zhihuiDiagramStatusToast } from '@/components/zhihui/zhihuiDiagramProgress'
+import { useLanguage, useNotifications } from '@/composables'
 import {
-  isZhihuiJobActive,
-  stabilizeZhihuiGenerations,
-  type ZhihuiConversationItem,
-  type ZhihuiGenerationItem,
-  useZhihuiHistoryStore,
-} from '@/stores/zhihuiHistory'
+  enqueueMindClassroomJob,
+  fetchMindClassroomJobByDiagram,
+  isClassroomJobActive,
+  pollMindClassroomJob,
+  type MindClassroomJobDetail,
+} from '@/composables/mindMap/mindClassroomJobApi'
+import { classroomSlidesToGenerations } from '@/composables/zhihui/classroomDiagramJob'
+import { useAiContentLevelStore, useMindClassroomStore } from '@/stores'
+import { stabilizeZhihuiGenerations, type ZhihuiGenerationItem } from '@/stores/zhihuiHistory'
 import { apiPost } from '@/utils/apiClient'
 
 import ZhiHuiDiagramCanvasPane from './ZhiHuiDiagramCanvasPane.vue'
@@ -30,28 +33,27 @@ const emit = defineEmits<{
 
 const { t, currentLanguage } = useLanguage()
 const notify = useNotifications()
-const historyStore = useZhihuiHistoryStore()
-const { on } = useEventBus()
+const aiLevelStore = useAiContentLevelStore()
+const classroomStore = useMindClassroomStore()
 
 const slides = ref<ZhihuiGenerationItem[]>([])
 const slideIndex = ref(0)
 const status = ref<string | null>(null)
 const progress = ref<Record<string, unknown> | null>(null)
 const errorMessage = ref<string | null>(null)
-const activeConversationId = ref<string | null>(null)
-/** Diagram bound to the open conversation — used for canvas restore. */
+const activeJobId = ref<string | null>(null)
+const legacyZhihui = ref(false)
 const conversationDiagramId = ref<string | null>(null)
 const lessonPlan = ref<Record<string, unknown> | null>(null)
 const starting = ref(false)
 const userPinnedSlide = ref(false)
-/** Bumps when a conversation is (re)hydrated so the canvas re-applies focus. */
 const focusEpoch = ref(0)
-/** Announce milestone toasts only for jobs started/watched in this session. */
 const announceMilestones = ref(false)
 const lastAnnouncedStatus = ref<string | null>(null)
+let pollGeneration = 0
 
 const busy = computed(
-  () => starting.value || isZhihuiJobActive(status.value)
+  () => starting.value || isClassroomJobActive(status.value)
 )
 
 /** Prefer conversation diagram on restore; fall back to header dropdown. */
@@ -92,25 +94,27 @@ function announceStatusChange(
   else notify.info(message)
 }
 
-function applyDetail(
-  detail: ZhihuiConversationItem,
+function applyJob(
+  detail: MindClassroomJobDetail,
   options: { followLatest: boolean; resetSlide?: boolean }
 ): void {
   const previousStatus = status.value
-  status.value = detail.status
+  status.value = String(detail.status || '')
   progress.value = detail.progress ?? null
   errorMessage.value = detail.error_message ?? null
-  conversationDiagramId.value = detail.diagram_id ?? null
+  conversationDiagramId.value = detail.diagram_id ?? conversationDiagramId.value
   lessonPlan.value =
     detail.lesson_plan_json && typeof detail.lesson_plan_json === 'object'
       ? detail.lesson_plan_json
-      : null
-  const nextSlides = stabilizeZhihuiGenerations(slides.value, detail.generations) ?? []
+      : lessonPlan.value
+  legacyZhihui.value = Boolean(detail.legacy_zhihui)
+  const mapped = classroomSlidesToGenerations(detail)
+  const nextSlides = stabilizeZhihuiGenerations(slides.value, mapped) ?? []
   const prevLen = slides.value.length
   slides.value = nextSlides
   if (options.resetSlide) {
     slideIndex.value = 0
-  } else if (options.followLatest && isZhihuiJobActive(detail.status) && !userPinnedSlide.value) {
+  } else if (options.followLatest && isClassroomJobActive(detail.status) && !userPinnedSlide.value) {
     if (nextSlides.length > 0 && nextSlides.length !== prevLen) {
       slideIndex.value = nextSlides.length - 1
     }
@@ -127,9 +131,95 @@ function onSlideIndexUpdate(index: number): void {
   slideIndex.value = index
 }
 
-async function hydrateFromId(id: string | null): Promise<void> {
-  if (!id) {
-    activeConversationId.value = null
+async function watchJob(jobId: string): Promise<void> {
+  const generation = pollGeneration
+  try {
+    await pollMindClassroomJob(jobId, {
+      shouldStop: () => generation !== pollGeneration,
+      onUpdate: (detail) => {
+        applyJob(detail, { followLatest: true })
+      },
+    })
+    emit('generated')
+  } catch (err) {
+    if (generation !== pollGeneration) return
+    const message = err instanceof Error ? err.message : String(err)
+    if (message !== 'cancelled') {
+      errorMessage.value = message
+      status.value = 'failed'
+    }
+  }
+}
+
+async function startSlideJob(reuse: boolean): Promise<void> {
+  if (!props.diagramId) {
+    notify.warning(String(t('zhihui.diagram.selectMindmapFirst')))
+    return
+  }
+  if (busy.value) return
+  starting.value = true
+  pollGeneration += 1
+  try {
+    const lang =
+      currentLanguage.value === 'zh' || currentLanguage.value.startsWith('zh') ? 'zh' : 'en'
+    const created = await enqueueMindClassroomJob({
+      mode: 'slide_deck',
+      diagram_id: props.diagramId,
+      language: lang,
+      audience_level: aiLevelStore.level,
+      audience_title: t(`canvas.toolbar.professionalContent.level.${aiLevelStore.level}.title`),
+      tone: classroomStore.tone,
+      reuse,
+    })
+    activeJobId.value = created.job_id
+    conversationDiagramId.value = props.diagramId
+    lessonPlan.value = null
+    status.value = created.status || 'queued'
+    if (!reuse) {
+      slides.value = []
+      slideIndex.value = 0
+    }
+    userPinnedSlide.value = false
+    errorMessage.value = null
+    announceMilestones.value = true
+    lastAnnouncedStatus.value = String(status.value)
+    focusEpoch.value += 1
+    notify.success(String(t('zhihui.diagram.jobStarted')))
+    void watchJob(created.job_id)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(t('zhihui.generateFailed'))
+    notify.error(message)
+  } finally {
+    starting.value = false
+  }
+}
+
+async function resume(): Promise<void> {
+  if (legacyZhihui.value && activeJobId.value) {
+    starting.value = true
+    try {
+      const res = await apiPost(`/api/zhihui/conversations/${activeJobId.value}/resume`, {})
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      notify.success(String(t('zhihui.diagram.jobStarted')))
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(t('zhihui.generateFailed'))
+      notify.error(message)
+    } finally {
+      starting.value = false
+    }
+    return
+  }
+  await startSlideJob(false)
+}
+
+async function generate(): Promise<void> {
+  await startSlideJob(true)
+}
+
+async function hydrateFromDiagram(diagramId: string | null): Promise<void> {
+  if (!diagramId) {
+    pollGeneration += 1
+    activeJobId.value = null
     conversationDiagramId.value = null
     lessonPlan.value = null
     status.value = null
@@ -138,165 +228,31 @@ async function hydrateFromId(id: string | null): Promise<void> {
     slides.value = []
     slideIndex.value = 0
     userPinnedSlide.value = false
-    starting.value = false
-    announceMilestones.value = false
-    lastAnnouncedStatus.value = null
-    historyStore.stopPolling()
+    legacyZhihui.value = false
     return
   }
-  const detail = await historyStore.loadConversation(id).catch(() => null)
-  if (historyStore.currentId !== id) {
-    return
-  }
-  if (!detail || detail.mode !== 'diagram') {
-    return
-  }
-  const switching = activeConversationId.value !== id
-  activeConversationId.value = id
-  userPinnedSlide.value = false
-  const activeJob = isZhihuiJobActive(detail.status)
-  // Resume announcing for in-flight jobs; seed last status so we don't re-toast current phase.
-  announceMilestones.value = activeJob
-  lastAnnouncedStatus.value = activeJob ? String(detail.status) : null
-  // Later visits: start at topic slide so canvas fits the whole map first.
-  applyDetail(detail, {
-    followLatest: activeJob,
-    resetSlide: switching && !activeJob,
-  })
-  focusEpoch.value += 1
-  if (activeJob) {
-    historyStore.startPolling(id)
-  } else {
-    historyStore.stopPolling()
+  try {
+    const detail = await fetchMindClassroomJobByDiagram(diagramId)
+    activeJobId.value = detail.id
+    applyJob(detail, { followLatest: isClassroomJobActive(detail.status), resetSlide: true })
+    focusEpoch.value += 1
+    if (isClassroomJobActive(detail.status) && !detail.legacy_zhihui) {
+      announceMilestones.value = true
+      lastAnnouncedStatus.value = String(detail.status)
+      void watchJob(detail.id)
+    }
+  } catch {
+    /* no prior deck */
   }
 }
 
 watch(
-  () => historyStore.currentId,
+  () => props.diagramId,
   (id) => {
-    void hydrateFromId(id)
+    void hydrateFromDiagram(id)
   },
   { immediate: true }
 )
-
-onMounted(() => {
-  on('zhihui:conversation_updated', ({ conversationId }) => {
-    if (conversationId !== activeConversationId.value) return
-    const detail = historyStore.currentDetail
-    if (!detail || detail.id !== conversationId) return
-    applyDetail(detail, { followLatest: true })
-  })
-  on('zhihui:job_terminal', ({ conversationId, status: terminal }) => {
-    if (conversationId !== activeConversationId.value) return
-    const detail = historyStore.currentDetail
-    if (detail?.id === conversationId) {
-      applyDetail(detail, { followLatest: false })
-    } else {
-      announceStatusChange(terminal, errorMessage.value)
-      status.value = terminal
-    }
-    emit('generated')
-  })
-})
-
-async function resume(): Promise<void> {
-  const conversationId = activeConversationId.value
-  if (!conversationId || busy.value) return
-  starting.value = true
-  try {
-    const res = await apiPost(`/api/zhihui/conversations/${conversationId}/resume`, {})
-    if (!res.ok) {
-      const raw = await res.text()
-      let message = raw || `HTTP ${res.status}`
-      try {
-        const body = JSON.parse(raw) as { detail?: string }
-        if (body.detail) message = String(body.detail)
-      } catch {
-        // keep raw
-      }
-      throw new Error(message)
-    }
-    status.value = 'queued'
-    errorMessage.value = null
-    userPinnedSlide.value = false
-    announceMilestones.value = true
-    lastAnnouncedStatus.value = 'queued'
-    historyStore.upsertConversation({
-      id: conversationId,
-      mode: 'diagram',
-      title: historyStore.currentDetail?.title || '',
-      status: 'queued',
-      diagram_id: props.diagramId,
-    })
-    historyStore.startPolling(conversationId)
-    notify.success(String(t('zhihui.diagram.jobStarted')))
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(t('zhihui.generateFailed'))
-    notify.error(message)
-  } finally {
-    starting.value = false
-  }
-}
-
-async function generate(): Promise<void> {
-  if (!props.diagramId) {
-    notify.warning(String(t('zhihui.diagram.selectMindmapFirst')))
-    return
-  }
-  if (busy.value) return
-  starting.value = true
-  try {
-    const lang =
-      currentLanguage.value === 'zh' || currentLanguage.value.startsWith('zh') ? 'zh' : 'en'
-    const res = await apiPost('/api/zhihui/diagram-lesson', {
-      diagram_id: props.diagramId,
-      language: lang,
-    })
-    if (!res.ok) {
-      const raw = await res.text()
-      let message = raw || `HTTP ${res.status}`
-      try {
-        const body = JSON.parse(raw) as { detail?: string }
-        if (body.detail) message = String(body.detail)
-      } catch {
-        // keep raw text
-      }
-      throw new Error(message)
-    }
-    const data = (await res.json()) as { conversation_id?: string; status?: string }
-    const conversationId = data.conversation_id
-    if (!conversationId) {
-      throw new Error(String(t('zhihui.generateFailed')))
-    }
-    activeConversationId.value = conversationId
-    conversationDiagramId.value = props.diagramId
-    lessonPlan.value = null
-    status.value = data.status || 'queued'
-    slides.value = []
-    slideIndex.value = 0
-    userPinnedSlide.value = false
-    errorMessage.value = null
-    announceMilestones.value = true
-    lastAnnouncedStatus.value = String(status.value)
-    focusEpoch.value += 1
-    historyStore.upsertConversation({
-      id: conversationId,
-      mode: 'diagram',
-      title: '',
-      status: status.value,
-      diagram_id: props.diagramId,
-    })
-    historyStore.selectItem(conversationId)
-    historyStore.startPolling(conversationId)
-    void historyStore.fetchHistory()
-    notify.success(String(t('zhihui.diagram.jobStarted')))
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(t('zhihui.generateFailed'))
-    notify.error(message)
-  } finally {
-    starting.value = false
-  }
-}
 
 const hasSlides = computed(() => slides.value.length > 0)
 

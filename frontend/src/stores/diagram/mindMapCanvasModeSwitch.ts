@@ -8,18 +8,20 @@ import type {
   MindMapCanvasStylesByPath,
   NodeStyle,
 } from '@/types'
+import {
+  deleteMindMapNumberingLiveFields,
+  writeMindMapNumberingLiveFields,
+} from '@/utils/mindMapBranchNumbering'
+
 import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from '../specLoader'
+import { emitCtxEvent, getMindMapCurveExtents } from './events'
 import {
   pruneMindMapCollapsedPaths,
   remapMindMapCollapsedPathsAfterReload,
   remapMindMapNodeIdsAfterReload,
   setMindMapCollapsedPaths,
 } from './mindMapCollapse'
-import { emitCtxEvent, getMindMapCurveExtents } from './events'
-import {
-  applyMindMapStylesByPath,
-  collectMindMapStylesByPath,
-} from './mindMapStylePreservation'
+import { applyMindMapStylesByPath, collectMindMapStylesByPath } from './mindMapStylePreservation'
 import type { DiagramContext } from './types'
 
 function isMindMapType(type: string | null | undefined): boolean {
@@ -53,9 +55,7 @@ export function sanitizeLegacyNodeStyle(style: NodeStyle): NodeStyle {
   return cleaned
 }
 
-function sanitizeLegacyStylesByPath(
-  styles: MindMapCanvasStylesByPath
-): MindMapCanvasStylesByPath {
+function sanitizeLegacyStylesByPath(styles: MindMapCanvasStylesByPath): MindMapCanvasStylesByPath {
   const out: MindMapCanvasStylesByPath = {}
   for (const [pathKey, style] of Object.entries(styles)) {
     out[pathKey] = sanitizeLegacyNodeStyle(style)
@@ -79,19 +79,12 @@ function hasMindMapNodes(data: DiagramData): boolean {
 }
 
 /** Persist live diagram styles into the bucket for the given canvas mode. */
-export function snapshotMindMapCanvasBucket(
-  data: DiagramData,
-  mode: MindMapCanvasMode
-): void {
+export function snapshotMindMapCanvasBucket(data: DiagramData, mode: MindMapCanvasMode): void {
   if (!hasMindMapNodes(data)) return
 
   const connections = data.connections ?? []
   const buckets = ensureMindMapCanvasBuckets(data)
-  const stylesByPath = collectMindMapStylesByPath(
-    data.nodes,
-    connections,
-    data._node_styles
-  )
+  const stylesByPath = collectMindMapStylesByPath(data.nodes, connections, data._node_styles)
   const stylesRecord =
     mode === 'legacy'
       ? sanitizeLegacyStylesByPath(stylesMapToRecord(stylesByPath))
@@ -107,6 +100,9 @@ export function snapshotMindMapCanvasBucket(
     theme: data._mindmap_theme,
     diagram_style: data._mindmap_diagram_style,
     collapsed_paths: data._collapsed_paths?.length ? [...data._collapsed_paths] : undefined,
+    branch_numbering: data._mindmap_branch_numbering === true,
+    branch_numbering_prefix: data._mindmap_branch_numbering_prefix,
+    branch_numbering_nested: data._mindmap_branch_numbering_nested,
   }
 }
 
@@ -124,10 +120,7 @@ function retainMeasuredDimensions(ctx: DiagramContext, newNodes: DiagramNode[]):
   }
 }
 
-function stylesByPathForMode(
-  data: DiagramData,
-  mode: MindMapCanvasMode
-): Map<string, NodeStyle> {
+function stylesByPathForMode(data: DiagramData, mode: MindMapCanvasMode): Map<string, NodeStyle> {
   const buckets = data._mindmap_canvas
   if (mode === 'v2') {
     return stylesRecordToMap(buckets?.v2?.node_styles_by_path)
@@ -139,10 +132,7 @@ function stylesByPathForMode(
 /**
  * Apply saved per-mode buckets after load (or when UI mode differs from inline _node_styles).
  */
-export function hydrateMindMapCanvasStylesOnLoad(
-  data: DiagramData,
-  mode: MindMapCanvasMode
-): void {
+export function hydrateMindMapCanvasStylesOnLoad(data: DiagramData, mode: MindMapCanvasMode): void {
   if (!hasMindMapNodes(data)) return
 
   const connections = data.connections ?? []
@@ -188,8 +178,7 @@ export function hydrateMindMapCanvasStylesOnLoad(
     if (theme) {
       data._mindmap_theme = theme
     }
-    const diagramStyle =
-      data._mindmap_canvas?.v2?.diagram_style ?? data._mindmap_diagram_style
+    const diagramStyle = data._mindmap_canvas?.v2?.diagram_style ?? data._mindmap_diagram_style
     if (diagramStyle) {
       data._mindmap_diagram_style = diagramStyle
     }
@@ -197,9 +186,24 @@ export function hydrateMindMapCanvasStylesOnLoad(
     if (collapsed?.length) {
       setMindMapCollapsedPaths(data as Record<string, unknown>, collapsed)
     }
+    writeMindMapNumberingLiveFields(
+      data,
+      {
+        branch_numbering: data._mindmap_branch_numbering === true,
+        branch_numbering_prefix:
+          data._mindmap_branch_numbering_prefix ?? data._mindmap_canvas?.v2?.branch_numbering_prefix,
+        branch_numbering_nested:
+          data._mindmap_branch_numbering_nested ?? data._mindmap_canvas?.v2?.branch_numbering_nested,
+      },
+      data
+    )
+    if (data._mindmap_canvas?.v2) {
+      data._mindmap_canvas.v2.branch_numbering = data._mindmap_branch_numbering === true
+    }
   } else {
     delete data._mindmap_theme
     delete data._mindmap_diagram_style
+    deleteMindMapNumberingLiveFields(data)
     setMindMapCollapsedPaths(data as Record<string, unknown>, [])
   }
 
@@ -252,9 +256,11 @@ export function reconcileMindMapCanvasModeSwitch(
     if (diagramStyleId) {
       data._mindmap_diagram_style = diagramStyleId
     }
+    writeMindMapNumberingLiveFields(data, v2Bucket, data)
   } else {
     delete data._mindmap_theme
     delete data._mindmap_diagram_style
+    deleteMindMapNumberingLiveFields(data)
     diagramStyleId = undefined
   }
 
@@ -312,11 +318,7 @@ export function reconcileMindMapCanvasModeSwitch(
 
   snapshotMindMapCanvasBucket(data, newMode)
 
-  syncMindMapConnectionStrokeColorsForCanvasMode(
-    data.connections ?? [],
-    data.nodes,
-    newMode
-  )
+  syncMindMapConnectionStrokeColorsForCanvasMode(data.connections ?? [], data.nodes, newMode)
 
   ctx.mindMapRecalcTrigger.value += 1
   if (result.nodes.length > 0) {

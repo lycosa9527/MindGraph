@@ -11,6 +11,7 @@ from typing import Any, Dict
 
 from fastapi import WebSocket
 
+from prompts.ai_content_level import append_audience_instructions
 from prompts.kitty_agent import KITTY_AGENT_PROMPTS
 from services.kitty.content.paragraph_batch_apply import apply_paragraph_batch_add_nodes
 from services.kitty.context.messaging import safe_websocket_send
@@ -113,6 +114,10 @@ async def process_paragraph_with_qwen_plus(
             has_existing_content=has_existing_content,
         )
         prompt = prompt + output_language_instruction(language)
+        if current_diagram_type in {"mindmap", "mind_map"}:
+            audience = session_context.get("audience_instructions")
+            if isinstance(audience, str):
+                prompt = append_audience_instructions(prompt, audience)
 
         session = voice_sessions.get(voice_session_id) or {}
         user_id_raw = session.get("user_id")

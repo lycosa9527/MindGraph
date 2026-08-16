@@ -211,7 +211,12 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     clearAllNodeStyles,
     applyStylePreset,
     applyMindMapAppearance,
+    setMindMapBranchNumbering,
+    setMindMapBranchNumberingPrefix,
+    setMindMapBranchNumberingNested,
+    refreshMindMapNumberingEstimates,
   } = nodeStylesSlice
+  ctx.refreshMindMapNumberingEstimates = refreshMindMapNumberingEstimates
   const {
     isLearningSheet,
     hiddenAnswers,
@@ -326,8 +331,10 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     setMindMapNodeWidth: setMindMapNodeWidthSlice,
     setMindMapNodeDimensions,
     clearMindMapNodeWidths,
+    beginMindMapNumberingLayoutHold,
   } = mindMapLayoutSlice
   ctx.armMindMapMeasureBatch = armMindMapMeasureBatch
+  ctx.beginMindMapNumberingLayoutHold = beginMindMapNumberingLayoutHold
 
   const specIOSlice = useSpecIOSlice(ctx)
   const {
@@ -610,6 +617,9 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     clearAllNodeStyles,
     applyStylePreset,
     applyMindMapAppearance,
+    setMindMapBranchNumbering,
+    setMindMapBranchNumberingPrefix,
+    setMindMapBranchNumberingNested,
     loadFromSpec,
     loadDefaultTemplate,
     mergeGranularUpdate,

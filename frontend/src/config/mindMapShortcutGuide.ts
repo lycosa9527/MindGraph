@@ -26,7 +26,7 @@ export type MindMapShortcutGuideRow =
     }
 
 export const MIND_MAP_SHORTCUT_GUIDE_ROWS: MindMapShortcutGuideRow[] = [
-  { id: 'tab', labelKey: 'canvas.shortcutGuide.addChild', kind: 'keys', keys: ['Tab'] },
+  { id: 'tab', labelKey: 'canvas.shortcutGuide.addChild', kind: 'keys', keys: ['Tab', 'Insert'] },
   { id: 'enter', labelKey: 'canvas.shortcutGuide.addSibling', kind: 'keys', keys: ['Enter'] },
   { id: 'edit', labelKey: 'canvas.shortcutGuide.editText', kind: 'edit' },
   {

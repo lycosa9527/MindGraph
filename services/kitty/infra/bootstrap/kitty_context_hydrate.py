@@ -57,6 +57,9 @@ _MINDMAP_LIVE_SPEC_EXTRA_KEYS = (
     "_node_styles",
     "_mindmap_theme",
     "_mindmap_diagram_style",
+    "_mindmap_branch_numbering",
+    "_mindmap_branch_numbering_prefix",
+    "_mindmap_branch_numbering_nested",
     "_mindmap_canvas",
     "_collapsed_paths",
 )

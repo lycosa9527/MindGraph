@@ -57,6 +57,30 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
   let measureBatchReported: Set<string> | null = null
   let measureBatchSafetyTimer: ReturnType<typeof setTimeout> | null = null
   let measureBatchQuietTimer: ReturnType<typeof setTimeout> | null = null
+  let numberingLayoutHold = false
+  let numberingHoldTimer: ReturnType<typeof setTimeout> | null = null
+
+  function beginMindMapNumberingLayoutHold(): void {
+    numberingLayoutHold = true
+    if (numberingHoldTimer != null) {
+      clearTimeout(numberingHoldTimer)
+    }
+    numberingHoldTimer = setTimeout(() => {
+      numberingHoldTimer = null
+      numberingLayoutHold = false
+      if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
+        ctx.scheduleMindMapRecalc()
+      }
+    }, 120)
+  }
+
+  function isStaleNumberingWidth(nodeId: string, width: number): boolean {
+    if (!numberingLayoutHold) return false
+    const node = ctx.data.value?.nodes?.find((item) => item.id === nodeId)
+    const estimate = node?.data?.estimatedWidth
+    if (typeof estimate !== 'number') return false
+    return Math.abs(width - estimate) > 4
+  }
 
   function clearMindMapMeasureBatchTimers(): void {
     if (measureBatchSafetyTimer != null) {
@@ -200,7 +224,7 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
         delete ctx.mindMapNodeWidths.value[nodeId]
         changed = true
       }
-    } else if (width !== undefined) {
+    } else if (width !== undefined && !isStaleNumberingWidth(nodeId, width)) {
       const prev = ctx.mindMapNodeWidths.value[nodeId]
       if (prev === undefined || Math.abs(prev - width) >= 1) {
         ctx.mindMapNodeWidths.value[nodeId] = width
@@ -279,6 +303,7 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
     setMindMapNodeWidth,
     setMindMapNodeDimensions,
     clearMindMapNodeWidths,
+    beginMindMapNumberingLayoutHold,
   }
 }
 

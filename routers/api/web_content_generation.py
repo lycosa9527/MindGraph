@@ -141,6 +141,7 @@ async def _generate_mindmap_from_resolved_content(
     rate_limit_key: str,
     require_chrome_tier: bool,
     source_kind: str = "web",
+    generation_instructions: Optional[str] = None,
 ) -> dict:
     """Shared mind map generation from resolved extracted text."""
     identifier = get_rate_limit_identifier(current_user, request)
@@ -180,6 +181,7 @@ async def _generate_mindmap_from_resolved_content(
             endpoint_path=endpoint_path,
             http_request_id=http_request_id,
             source_kind=kind,
+            generation_instructions=generation_instructions,
         )
     except LLMServiceError as exc:
         logger.error(
@@ -440,6 +442,7 @@ async def canvas_generate_mindmap_from_image(
     language: str = Form("zh"),
     diagram_id: Optional[str] = Form(None),
     apply_to_library: bool = Form(False),
+    generation_instructions: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
 ):
     """Vision auto-detect hand-drawn mind maps; else OCR text then generate.
@@ -553,6 +556,7 @@ async def canvas_generate_mindmap_from_image(
             rate_limit_key="canvas_generate_mindmap_from_image",
             require_chrome_tier=False,
             source_kind="document",
+            generation_instructions=generation_instructions,
         )
         if isinstance(generated, dict):
             generated["is_mindmap"] = False
@@ -674,6 +678,7 @@ async def canvas_generate_mindmap_from_package(
             rate_limit_key="canvas_generate_mindmap_from_package",
             require_chrome_tier=False,
             source_kind="document",
+            generation_instructions=req.generation_instructions,
         )
 
     try:
@@ -716,6 +721,7 @@ async def canvas_generate_mindmap_from_package(
         rate_limit_key="canvas_generate_mindmap_from_package",
         require_chrome_tier=False,
         source_kind="document",
+        generation_instructions=req.generation_instructions,
     )
 
 

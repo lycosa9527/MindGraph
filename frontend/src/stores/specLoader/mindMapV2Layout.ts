@@ -18,12 +18,26 @@ import {
   MINDMAP_NODE_UID_DATA_KEY,
 } from '@/utils/mindMapNodeUid'
 
+import {
+  formatMindMapBranchPrefix,
+  mindMapClockwiseL1Index,
+  type MindMapNumberingGlyphStyle,
+  type MindMapNumberingNestedStyle,
+} from '@/utils/mindMapBranchNumbering'
+
 import type { MindMapBranchSpec } from './mindMapLegacyLayout'
 import {
+  estimateNumberedBranchBoxWidth,
   estimateNodeWidthForCanvasMode,
-  measureBranchNodeHeightForCanvasMode,
-  measureMindMapUnderlineBoxMetrics,
+  measureNumberedBranchHeightForCanvasMode,
+  measureNumberedUnderlineBoxMetrics,
 } from './mindMapMeasurements'
+
+export type MindMapV2LayoutNumbering = {
+  enabled: boolean
+  prefixStyle: MindMapNumberingGlyphStyle
+  nestedStyle: MindMapNumberingNestedStyle
+}
 
 function getBranchText(branch: { text?: string; label?: string }): string {
   return (branch.text ?? branch.label ?? '') as string
@@ -41,7 +55,8 @@ export function layoutMindMapSideV2(
   startHandleIndex: number,
   _totalBranches: number,
   topicBorderColor: string,
-  diagramStyleId?: string | null
+  diagramStyleId?: string | null,
+  numbering?: MindMapV2LayoutNumbering | null
 ): void {
   if (branches.length === 0) return
 
@@ -62,7 +77,18 @@ export function layoutMindMapSideV2(
 
   const globalCounter = { value: 0 }
 
-  function buildTree(b: MindMapBranchSpec, depth: number, branchIndex: number): LayoutNode {
+  function prefixForParts(parts: number[]): string {
+    if (!numbering?.enabled || parts.length === 0) return ''
+    return formatMindMapBranchPrefix(parts, numbering.prefixStyle, numbering.nestedStyle)
+  }
+
+  function buildTree(
+    b: MindMapBranchSpec,
+    depth: number,
+    branchIndex: number,
+    ancestorParts: number[],
+    siblingIndex: number
+  ): LayoutNode {
     const idx = globalCounter.value++
     const id = `branch-${sideChar}-${depth}-${idx}`
     const text = getBranchText(b)
@@ -71,20 +97,30 @@ export function layoutMindMapSideV2(
       { id, type: 'branch' },
       diagramStyle
     )
-    // Oval padding is wider than rounded/rectangle — width must match painted chrome
-    // or child columns sit too close and overlap after a 导图样式 switch.
-    const estimatedWidth = estimateNodeWidthForCanvasMode(text, id, 'v2', shape)
+    const parts = [...ancestorParts, siblingIndex]
+    const prefix = prefixForParts(parts)
+    const estimatedWidth = prefix
+      ? estimateNumberedBranchBoxWidth(text, prefix, id, shape)
+      : estimateNodeWidthForCanvasMode(text, id, 'v2', shape)
     const estimatedHeight =
       shape === 'underline'
-        ? measureMindMapUnderlineBoxMetrics(text, id).totalHeight
-        : measureBranchNodeHeightForCanvasMode(text, id, 'v2')
-    const children = (b.children ?? []).map((c) => buildTree(c, depth + 1, branchIndex))
+        ? measureNumberedUnderlineBoxMetrics(text, prefix, id).totalHeight
+        : measureNumberedBranchHeightForCanvasMode(text, prefix, id, 'v2')
+    const children = (b.children ?? []).map((child, childIndex) =>
+      buildTree(child, depth + 1, branchIndex, parts, childIndex + 1)
+    )
     return { id, text, uid, depth, estimatedWidth, estimatedHeight, children, branchIndex, shape }
   }
 
   const topLevel = branches.map((b, i) => {
     const branchIndex = side === 'right' ? i : startHandleIndex + i
-    return buildTree(b, 1, branchIndex)
+    const l1Index = mindMapClockwiseL1Index(
+      side,
+      i,
+      side === 'right' ? branches.length : startHandleIndex,
+      side === 'left' ? branches.length : 0
+    )
+    return buildTree(b, 1, branchIndex, [], l1Index)
   })
 
   function firstLeafShape(node: LayoutNode): NodeShape {

@@ -246,3 +246,17 @@
 .presentation-active.presentation-spotlight-rail-hover .presentation-side-toolbar * {
   cursor: auto !important;
 }
+
+/* Mind Classroom slide lecture: edge-to-edge dual pane, no chrome */
+.mc-slide-lecture-fullscreen {
+  position: fixed !important;
+  inset: 0;
+  z-index: 80;
+  background: #f8fafc;
+}
+
+@media (max-width: 768px) {
+  .mc-dual-lecture__canvas {
+    display: none;
+  }
+}

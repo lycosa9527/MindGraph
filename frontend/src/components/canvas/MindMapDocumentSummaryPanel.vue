@@ -7,6 +7,8 @@
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import { ElProgress } from 'element-plus'
+
 import {
   ChevronDown,
   ChevronUp,
@@ -20,16 +22,12 @@ import {
   Upload,
   X,
 } from '@lucide/vue'
-import { ElProgress } from 'element-plus'
 
-import { useLanguage, useNotifications } from '@/composables'
 import MindMapSidePanelHeader from '@/components/canvas/MindMapSidePanelHeader.vue'
+import { useLanguage, useNotifications } from '@/composables'
 import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
-import {
-  useFileCenterMutations,
-  usePackageDetail,
-} from '@/composables/fileCenter/useFileCenter'
+import { useFileCenterMutations, usePackageDetail } from '@/composables/fileCenter/useFileCenter'
 import { useFileCenterActivePackage } from '@/composables/fileCenter/useFileCenterActivePackage'
 import { useChatHandoff } from '@/composables/mindMap/useChatHandoff'
 import {
@@ -41,10 +39,7 @@ import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { DOC_SUMMARY_MAX_INPUT_CHARS } from '@/config/docSummaryApi'
 import { DOC_SUMMARY_LITE_UI } from '@/config/docSummaryLite'
 import { useDiagramStore } from '@/stores'
-import {
-  docSummarySourceLabel,
-  toDocSummaryMarkdownName,
-} from '@/utils/docSummaryMarkdownName'
+import { docSummarySourceLabel, toDocSummaryMarkdownName } from '@/utils/docSummaryMarkdownName'
 
 type SummaryTab = 'file' | 'chat' | 'document' | 'image' | 'web'
 
@@ -61,9 +56,7 @@ const useMindMapV2 = useMindMapV2Chrome()
 
 // Lite Document Summary is split from Knowledge Space; only need mind-map v2.
 const featureEnabled = computed(() =>
-  DOC_SUMMARY_LITE_UI
-    ? useMindMapV2.value
-    : featureKnowledgeSpace.value && useMindMapV2.value
+  DOC_SUMMARY_LITE_UI ? useMindMapV2.value : featureKnowledgeSpace.value && useMindMapV2.value
 )
 
 const {
@@ -79,9 +72,10 @@ const detailQuery = usePackageDetail(activePackageId, {
   enabled: featureEnabled,
   apiMode: 'doc_summary',
 })
-const { uploadFile, ingestText, ingestWebUrl, deleteSource, updatePackage } = useFileCenterMutations({
-  apiMode: 'doc_summary',
-})
+const { uploadFile, ingestText, ingestWebUrl, deleteSource, updatePackage } =
+  useFileCenterMutations({
+    apiMode: 'doc_summary',
+  })
 const {
   isGenerating,
   isIndexingCorpus,
@@ -96,14 +90,8 @@ const {
   MAX_CONTENT_LENGTH,
 } = useMindMapDocumentSummary()
 
-const {
-  pairingCode,
-  handoffStatus,
-  expiresInSeconds,
-  isMinting,
-  mintError,
-  mintPairingCode,
-} = useChatHandoff(activePackageId)
+const { pairingCode, handoffStatus, expiresInSeconds, isMinting, mintError, mintPairingCode } =
+  useChatHandoff(activePackageId)
 
 const activeTab = ref<SummaryTab>(DOC_SUMMARY_LITE_UI ? 'file' : 'document')
 const corpusExpanded = ref(true)
@@ -138,16 +126,13 @@ const completedCount = computed(
   () => documents.value.filter((doc) => doc.status === 'completed').length
 )
 const isIndexing = computed(
-  () =>
-    isIndexingCorpus.value ||
-    documents.value.some((doc) => doc.status === 'processing')
+  () => isIndexingCorpus.value || documents.value.some((doc) => doc.status === 'processing')
 )
 /** Lite mode keeps a single active source per diagram session. */
 const activeSource = computed(() => documents.value[0] ?? null)
 const hasActiveSource = computed(() => activeSource.value !== null)
 const isSourceProcessing = computed(
-  () =>
-    activeSource.value?.status === 'processing' || activeSource.value?.status === 'pending'
+  () => activeSource.value?.status === 'processing' || activeSource.value?.status === 'pending'
 )
 const isSourceReady = computed(() => activeSource.value?.status === 'completed')
 const isSourceFailed = computed(() => activeSource.value?.status === 'failed')
@@ -162,12 +147,8 @@ const extractStageText = computed(() => {
   return extractStageLabel(doc.processing_progress)
 })
 /** User-facing markdown name, e.g. report.pptx → report.md */
-const markdownDisplayName = computed(() =>
-  toDocSummaryMarkdownName(activeSource.value?.file_name)
-)
-const originalSourceLabel = computed(() =>
-  docSummarySourceLabel(activeSource.value?.file_name)
-)
+const markdownDisplayName = computed(() => toDocSummaryMarkdownName(activeSource.value?.file_name))
+const originalSourceLabel = computed(() => docSummarySourceLabel(activeSource.value?.file_name))
 const showOriginalSource = computed(() => {
   const original = originalSourceLabel.value
   if (!original) return false
@@ -657,7 +638,10 @@ const canAdd = computed(() => {
 })
 
 const liteSourceBound = computed(
-  () => docSummaryLiteUi && hasActiveSource.value && (activeTab.value === 'file' || activeTab.value === 'web')
+  () =>
+    docSummaryLiteUi &&
+    hasActiveSource.value &&
+    (activeTab.value === 'file' || activeTab.value === 'web')
 )
 </script>
 
@@ -670,6 +654,11 @@ const liteSourceBound = computed(
       :title="t('canvas.mindMapSideToolbar.documentSummary')"
       :intro="featureEnabled ? t('canvas.mindMapDocumentSummary.intro') : undefined"
       @close="handleClose"
+    />
+
+    <div
+      v-if="featureEnabled"
+      class="shrink-0 border-b border-slate-100 px-3 py-2"
     />
 
     <div
@@ -856,11 +845,7 @@ const liteSourceBound = computed(
             type="button"
             class="doc-summary-delete-btn shrink-0"
             :disabled="
-              isDeletingSource ||
-              collabActive ||
-              isAdding ||
-              isGenerating ||
-              isSourceProcessing
+              isDeletingSource || collabActive || isAdding || isGenerating || isSourceProcessing
             "
             :aria-label="t('common.delete')"
             :title="t('canvas.mindMapDocumentSummary.deleteSource')"
@@ -1156,7 +1141,9 @@ const liteSourceBound = computed(
             />
             {{ t('canvas.mindMapDocumentSummary.downloadReader') }}
           </a>
-          <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-center">
+          <div
+            class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-center"
+          >
             <MessageSquare
               class="mx-auto mb-2 h-5 w-5 text-slate-400"
               :stroke-width="1.75"
@@ -1243,11 +1230,7 @@ const liteSourceBound = computed(
               :disabled="isMinting || collabActive"
               @click="startChatPairing()"
             >
-              {{
-                isMinting
-                  ? '…'
-                  : t('canvas.mindMapDocumentSummary.startPairingCode')
-              }}
+              {{ isMinting ? '…' : t('canvas.mindMapDocumentSummary.startPairingCode') }}
             </button>
             <button
               v-if="handoffStatus === 'expired' || handoffStatus === 'failed' || mintError"
@@ -1304,17 +1287,29 @@ const liteSourceBound = computed(
 }
 
 .doc-summary-source-card--processing {
-  border-color: color-mix(in srgb, var(--swiss-geek-cyan-ui, #0e7490) 28%, var(--swiss-border, #e7e5e4));
+  border-color: color-mix(
+    in srgb,
+    var(--swiss-geek-cyan-ui, #0e7490) 28%,
+    var(--swiss-border, #e7e5e4)
+  );
   background: var(--swiss-geek-cyan-soft, #ecfeff);
 }
 
 .doc-summary-source-card--ready {
-  border-color: color-mix(in srgb, var(--swiss-geek-teal-ui, #0f766e) 24%, var(--swiss-border, #e7e5e4));
+  border-color: color-mix(
+    in srgb,
+    var(--swiss-geek-teal-ui, #0f766e) 24%,
+    var(--swiss-border, #e7e5e4)
+  );
   background: var(--swiss-geek-teal-soft, #f0fdfa);
 }
 
 .doc-summary-source-card--failed {
-  border-color: color-mix(in srgb, var(--swiss-geek-red-ui, #e30613) 24%, var(--swiss-border, #e7e5e4));
+  border-color: color-mix(
+    in srgb,
+    var(--swiss-geek-red-ui, #e30613) 24%,
+    var(--swiss-border, #e7e5e4)
+  );
   background: var(--swiss-geek-red-soft, #fef2f2);
 }
 

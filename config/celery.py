@@ -21,7 +21,7 @@ from celery.app import Celery
 from celery.signals import worker_process_init, worker_ready
 from dotenv import load_dotenv
 
-from config.celery_broker_redis import patch_kombu_redis_connection_pool
+from config.celery_broker_redis import patch_celery_redis_pools
 from config.settings import config
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.sync.office_preview_fonts_cos import (
@@ -52,8 +52,8 @@ def _bootstrap_rls_migration_from_env() -> None:
 
 _bootstrap_rls_migration_from_env()
 
-# Celery/kombu broker pools use RESP2 (see patch_kombu_redis_connection_pool).
-patch_kombu_redis_connection_pool()
+# Celery broker + result-backend pools use RESP2 and skip SCH probing.
+patch_celery_redis_pools()
 
 
 def _celery_worker_log_level() -> int:
@@ -285,6 +285,7 @@ celery_app = Celery(
         "tasks.mindmate_export_tasks",
         "tasks.showcase_cover_tasks",
         "tasks.zhihui_lesson_tasks",
+        "tasks.mind_classroom_tasks",
     ],
 )
 
@@ -310,6 +311,7 @@ celery_app.conf.update(
         "mindmate_export.*": {"queue": "default"},
         "showcase.*": {"queue": "default"},
         "zhihui.*": {"queue": "default"},
+        "mind_classroom.*": {"queue": "default"},
     },
     # Default queue
     task_default_queue="default",

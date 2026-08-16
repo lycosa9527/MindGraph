@@ -19,10 +19,12 @@ from services.kitty.asr.fun_asr_realtime import (
 from services.kitty.audio import session_bridge as bridge
 from services.kitty.session.runtime_state import voice_sessions
 from services.kitty.tts.cosyvoice_realtime import (
+    CosyVoiceRealtimeClient,
     build_cosyvoice_continue_task,
     build_cosyvoice_finish_task,
     build_cosyvoice_run_task,
     resolve_kitty_tts_model_and_voice,
+    split_cosyvoice_text,
 )
 
 PartialCb = Callable[[str, bool], Awaitable[None]]
@@ -430,3 +432,124 @@ async def test_fun_asr_send_pcm_reports_provider_disconnect() -> None:
     await client.send_pcm(b"\x00\x01\x02\x03")
     assert len(errors) == 1
     assert "closed" in errors[0].lower() or "sending" in errors[0].lower()
+
+
+def test_split_cosyvoice_text_keeps_short_captions() -> None:
+    """A short line stays one CosyVoice task."""
+    assert split_cosyvoice_text("右上看地理区位。") == ["右上看地理区位。"]
+    assert not split_cosyvoice_text("   ")
+
+
+def test_split_cosyvoice_text_breaks_long_lecture_captions() -> None:
+    """Long classroom captions must not go out as one 20-second CosyVoice task."""
+    sentence = "我们先看右上角这一支，地理区位。它主要回答昌平在哪、怎么去、地形如何。"
+    text = sentence * 8
+    chunks = split_cosyvoice_text(text)
+    assert len(chunks) >= 3
+    assert "".join(chunks).replace(" ", "") == text.replace(" ", "")
+    assert all(len(chunk) <= 90 for chunk in chunks)
+
+
+@pytest.mark.asyncio
+async def test_speak_calls_on_done_once_after_all_chunks(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``tts_done`` must wait until every CosyVoice chunk of this caption finishes."""
+    spoken: list[str] = []
+    done: list[int] = []
+    released = 0
+
+    async def on_audio(_audio: str, _fmt: str) -> None:
+        """Ignore PCM; this test only tracks chunk boundaries."""
+        return None
+
+    async def on_done() -> None:
+        """Record that synthesis reported completion."""
+        done.append(1)
+
+    client = CosyVoiceRealtimeClient(on_audio=on_audio, on_done=on_done)
+
+    async def fake_chunk(message: str) -> None:
+        """Record one CosyVoice task without opening a socket."""
+        spoken.append(message)
+
+    async def fake_release() -> None:
+        """Count reconnects between caption chunks."""
+        nonlocal released
+        released += 1
+
+    monkeypatch.setattr(client, "_speak_chunk", fake_chunk)
+    monkeypatch.setattr(client, "_release_socket", fake_release)
+    monkeypatch.setattr(
+        "services.kitty.tts.cosyvoice_realtime.resolve_kitty_tts_enabled",
+        lambda: True,
+    )
+    sentence = "我们先看右上角这一支，地理区位。它主要回答昌平在哪、怎么去、地形如何。"
+    await client.speak(sentence * 8)
+    assert len(spoken) >= 3
+    assert released == len(spoken) - 1
+    assert done == [1]
+
+
+@pytest.mark.asyncio
+async def test_lecture_tts_done_includes_lecture_and_step(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Lecture utterances tag ``tts_done`` so the client can wait for playback."""
+    monkeypatch.setenv("KITTY_TTS_ENABLED", "true")
+    vid = "voice-lecture-tts-done"
+    voice_sessions[vid] = {
+        "_kitty_tts_enabled": True,
+        "_kitty_lecture": True,
+        "_kitty_lecture_step_id": "step-overview",
+    }
+    sent: list[dict[str, Any]] = []
+
+    async def fake_send(_websocket: Any, payload: dict[str, Any]) -> None:
+        """Capture outbound Kitty frames."""
+        sent.append(payload)
+
+    async def fake_fanout(_voice_session_id: str, _kind: str) -> None:
+        """Skip desktop voice-phase fanout in this unit test."""
+        return None
+
+    class FakeClient:
+        """Stub CosyVoice that immediately completes synthesis."""
+
+        def __init__(
+            self,
+            *,
+            on_audio: Callable[[str, str], Awaitable[None]],
+            on_done: Callable[[], Awaitable[None]],
+            on_error: Callable[[str], Awaitable[None]],
+        ) -> None:
+            del on_audio, on_error
+            self._on_done = on_done
+
+        async def speak(self, text: str) -> None:
+            """Complete immediately so the worker emits ``tts_done``."""
+            del text
+            await self._on_done()
+
+        async def interrupt(self) -> None:
+            """No-op interrupt for teardown."""
+            return None
+
+        async def close(self) -> None:
+            """No-op close for teardown."""
+            return None
+
+    monkeypatch.setattr(bridge, "safe_websocket_send", fake_send)
+    monkeypatch.setattr(bridge, "fanout_voice_phase_from_outbound_type", fake_fanout)
+    monkeypatch.setattr(bridge, "resolve_kitty_tts_enabled", lambda: True)
+    monkeypatch.setattr(bridge, "CosyVoiceRealtimeClient", FakeClient)
+
+    ws = MagicMock()
+    try:
+        await bridge.speak_kitty_final_reply(ws, vid, "右上看地理区位。", force=True)
+        for _ in range(50):
+            if any(item.get("type") == "tts_done" for item in sent):
+                break
+            await asyncio.sleep(0.02)
+        done = next(item for item in sent if item.get("type") == "tts_done")
+        assert done.get("lecture") is True
+        assert done.get("step_id") == "step-overview"
+    finally:
+        await bridge.teardown_session_audio(vid)
+        voice_sessions.pop(vid, None)

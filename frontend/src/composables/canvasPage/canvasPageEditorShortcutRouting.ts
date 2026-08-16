@@ -31,6 +31,16 @@ export function resolveTabKeyEvent(
   return 'diagram:add_node_requested'
 }
 
+/** Insert key: mind-map alias of Tab (add child). Other diagram types ignore Insert. */
+export function resolveInsertKeyEvent(
+  diagramType: string | null | undefined
+): CanvasPageShortcutEvent | null {
+  if (!isMindMapDiagramType(diagramType)) {
+    return null
+  }
+  return 'diagram:add_child_requested'
+}
+
 /** Enter key routing when not typing in an input (matches useCanvasPageEditorShortcuts). */
 export function resolveEnterKeyEvent(
   diagramType: string | null | undefined

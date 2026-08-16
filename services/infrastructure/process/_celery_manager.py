@@ -31,6 +31,12 @@ else:
     except ImportError:
         celery_app = None
 
+ACTION_START = "start"
+ACTION_REUSE = "reuse"
+ACTION_RETRY = "retry"
+ACTION_SHUTDOWN_STALE = "shutdown_stale"
+ACTION_REPLACE = "replace"
+
 
 def required_app_task_names() -> set[str]:
     """Task names registered on this process's Celery app (exclude built-ins)."""
@@ -52,15 +58,96 @@ def workers_missing_required_tasks(registered: dict[str, Any]) -> list[str]:
     return stale
 
 
-def shutdown_stale_celery_workers(stale_names: list[str]) -> None:
-    """Ask only the named workers to shut down; leave healthy peers running."""
-    if celery_app is None or not stale_names:
-        return
+def stale_active_worker_names(
+    active: dict[str, Any],
+    registered: dict[str, Any],
+) -> list[str]:
+    """Live workers that omitted inspect.registered or any required app task."""
+    required = required_app_task_names()
+    stale: list[str] = []
+    for raw_name in active:
+        name = str(raw_name)
+        if name not in registered:
+            stale.append(name)
+            continue
+        if required and not required.issubset(set(registered.get(name) or [])):
+            stale.append(name)
+    return stale
+
+
+def active_workers_are_current(
+    active: dict[str, Any],
+    registered: Optional[dict[str, Any]],
+) -> bool:
+    """True when every live worker advertises the full current task set."""
+    if not active or not registered:
+        return False
+    return not stale_active_worker_names(active, registered)
+
+
+def celery_banner_is_current(app: Any) -> Optional[bool]:
+    """
+    Compare live worker banners to this process's required task names.
+
+    Returns True when current, False when stale or empty, None when inspect
+    does not answer (do not restart on an unknown result).
+    """
+    if app is None:
+        return None
+    try:
+        inspect = app.control.inspect(timeout=2.0)
+        active = inspect.active()
+        registered = inspect.registered()
+    except BACKGROUND_INFRA_ERRORS:
+        return None
+    if active is None:
+        return None
+    if not active:
+        return False
+    return active_workers_are_current(active, registered)
+
+
+def existing_workers_plan(
+    active: dict[str, Any],
+    registered: Optional[dict[str, Any]],
+    *,
+    last_attempt: bool = False,
+) -> tuple[str, list[str]]:
+    """
+    Decide how to treat workers already on the broker.
+
+    Unverified inspect replies must not reuse — that left pre-deploy workers
+    running after API-only restarts. A stale consumer on ``default`` discards
+    unknown task names, so it must be gone before a current worker starts.
+    """
+    if not active:
+        return ACTION_START, []
+    names = [str(name) for name in active]
+    if not registered:
+        if last_attempt:
+            return ACTION_REPLACE, names
+        return ACTION_RETRY, names
+    stale = stale_active_worker_names(active, registered)
+    if not stale:
+        return ACTION_REUSE, []
+    healthy = [name for name in names if name not in stale]
+    if healthy:
+        return ACTION_SHUTDOWN_STALE, stale
+    return ACTION_REPLACE, stale
+
+
+def shutdown_stale_celery_workers(stale_names: list[str]) -> bool:
+    """Ask only the named workers to shut down. True when none remain active."""
+    if celery_app is None:
+        return not stale_names
+    if not stale_names:
+        return True
     print(f"[CELERY] Existing worker(s) missing app tasks — shutting down: {', '.join(stale_names)}")
     try:
         celery_app.control.broadcast("shutdown", destination=stale_names)
     except BACKGROUND_INFRA_ERRORS as exc:
         print(f"[CELERY] Shutdown broadcast failed: {exc}")
+        return False
     stale_set = set(stale_names)
     for _ in range(20):
         time.sleep(0.5)
@@ -70,11 +157,12 @@ def shutdown_stale_celery_workers(stale_names: list[str]) -> None:
             still_stale = stale_set.intersection(active.keys())
             if not still_stale:
                 print("[CELERY] Stale worker(s) stopped")
-                return
+                return True
         except BACKGROUND_INFRA_ERRORS:
-            # Broker unreachable mid-shutdown — still attempt local relaunch.
-            return
-    print("[CELERY] Stale worker(s) still reporting active; continuing startup check")
+            print("[CELERY] Lost broker while waiting for stale worker shutdown")
+            return False
+    print("[CELERY] Stale worker(s) still reporting active")
+    return False
 
 
 def start_celery_worker(server_state) -> Optional[subprocess.Popen[bytes]]:
@@ -94,38 +182,59 @@ def start_celery_worker(server_state) -> Optional[subprocess.Popen[bytes]]:
     if celery_app is None:
         raise RuntimeError("Celery app not available")
     for attempt in range(3):
+        last_attempt = attempt >= 2
         try:
             inspect = celery_app.control.inspect(timeout=2.0)
             active_workers = inspect.active()
 
-            if active_workers is not None and active_workers:
-                worker_count = len(active_workers)
-                worker_names = list(active_workers.keys())
-                print(f"[CELERY] Found {worker_count} existing Celery worker(s):")
-                for worker_name in worker_names:
-                    print(f"        - {worker_name}")
-
-                registered = inspect.registered()
-                if registered:
-                    stale = workers_missing_required_tasks(registered)
-                    if stale:
-                        shutdown_stale_celery_workers(stale)
-                        # Re-inspect: healthy peers may remain after targeted shutdown.
-                        if attempt < 2:
-                            time.sleep(0.5)
-                            continue
-                        break
-                else:
-                    print("[CELERY] Could not verify registered tasks; using existing worker(s)")
-
-                print("[CELERY] ✓ Using existing Celery worker(s), skipping startup")
-                return None
-            break
-        except BACKGROUND_INFRA_ERRORS:
-            if attempt < 2:
+            if active_workers is None:
+                if last_attempt:
+                    break
+                print("[CELERY] Inspect active() did not reply; retrying")
                 time.sleep(0.5)
                 continue
-            break
+            if not active_workers:
+                break
+
+            worker_names = [str(name) for name in active_workers]
+            print(f"[CELERY] Found {len(worker_names)} existing Celery worker(s):")
+            for worker_name in worker_names:
+                print(f"        - {worker_name}")
+
+            action, stale = existing_workers_plan(
+                active_workers,
+                inspect.registered(),
+                last_attempt=last_attempt,
+            )
+            if action == ACTION_REUSE:
+                print("[CELERY] ✓ Using existing Celery worker(s), skipping startup")
+                return None
+            if action == ACTION_RETRY:
+                print("[CELERY] Could not verify registered tasks; retrying inspect")
+                time.sleep(0.5)
+                continue
+            print(f"[CELERY] Existing worker(s) not current ({action}); will not reuse: {', '.join(stale)}")
+            stopped = shutdown_stale_celery_workers(stale)
+            if not stopped:
+                if last_attempt:
+                    print(
+                        "[ERROR] Stale Celery worker still consuming queues. "
+                        "Refusing to start a second worker (it would race and "
+                        "discard unknown tasks such as mind_classroom.*)."
+                    )
+                    print("        Stop the old worker, then start the app again.")
+                    sys.exit(1)
+                time.sleep(0.5)
+                continue
+            if last_attempt:
+                break
+            time.sleep(0.5)
+            continue
+        except BACKGROUND_INFRA_ERRORS:
+            if last_attempt:
+                break
+            time.sleep(0.5)
+            continue
 
     print("[CELERY] Starting Celery worker for background task processing...")
 
@@ -209,7 +318,10 @@ def start_celery_worker(server_state) -> Optional[subprocess.Popen[bytes]]:
                 inspect = celery_app.control.inspect(timeout=2.0)
                 active_workers = inspect.active()
 
-                if active_workers is not None and active_workers:
+                if active_workers and active_workers_are_current(
+                    active_workers,
+                    inspect.registered(),
+                ):
                     if start_new_session:
                         worker_pid = server_state.celery_worker_process.pid
                         log_path = os.path.join(celery_log_dir, "celery_worker.log")

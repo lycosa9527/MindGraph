@@ -8,6 +8,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { withMindMapAudienceContext } from '@/composables/mindMap/audience/withMindMapAudienceContext'
 import { useSavedDiagramsStore } from '@/stores'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
@@ -96,20 +97,23 @@ export function useMindMapNodeExplain() {
     const topicNode = nodes.find((n) => n.id === 'topic')
     const fallbackTopic = (topicNode?.text ?? diagramStore.effectiveTitle ?? '').trim()
 
-    return {
-      session_id: explainSessionId,
-      node_id: nodeId,
-      node_label: nodeLabel,
-      topic: ctx?.topic || fallbackTopic,
-      diagram_type: normalizeDiagramType(diagramStore.type),
-      facet,
-      top_level_branches: ctx?.topLevelBranches ?? [],
-      ancestor_path: ctx?.ancestorPath ?? [],
-      sibling_branches: ctx?.siblingBranches ?? [],
-      child_branches: ctx?.childBranches ?? [],
-      language: promptLanguage.value,
-      diagram_id: savedDiagramsStore.activeDiagramId ?? undefined,
-    }
+    return withMindMapAudienceContext(
+      {
+        session_id: explainSessionId,
+        node_id: nodeId,
+        node_label: nodeLabel,
+        topic: ctx?.topic || fallbackTopic,
+        diagram_type: normalizeDiagramType(diagramStore.type),
+        facet,
+        top_level_branches: ctx?.topLevelBranches ?? [],
+        ancestor_path: ctx?.ancestorPath ?? [],
+        sibling_branches: ctx?.siblingBranches ?? [],
+        child_branches: ctx?.childBranches ?? [],
+        language: promptLanguage.value,
+        diagram_id: savedDiagramsStore.activeDiagramId ?? undefined,
+      },
+      promptLanguage.value
+    )
   }
 
   function panelForRun(runId: number, facet: MindMapExplainFacet): MindMapExplainPanel | null {

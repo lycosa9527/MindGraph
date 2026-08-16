@@ -5,11 +5,14 @@
 import { canvasVirtualKeyboardOpen } from '@/composables/canvasToolbar/useCanvasVirtualKeyboardOpen'
 import { resetMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { resetLearningSheetCustomModeUi } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { teardownMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import {
+  useAiContentLevelStore,
   useConceptMapFocusReviewStore,
   useConceptMapRelationshipStore,
   useInlineRecommendationsStore,
   useLLMResultsStore,
+  useMindClassroomStore,
   usePanelsStore,
 } from '@/stores'
 import { useCanvasNodeIndicatorsStore } from '@/stores/canvasNodeIndicators'
@@ -32,4 +35,8 @@ export function clearCanvasEphemeralSession(): void {
   resetLearningSheetCustomModeUi()
   resetMindMapSideToolbarState()
   canvasVirtualKeyboardOpen.value = false
+  useAiContentLevelStore().resetGeneratedLevelSession()
+  const classroom = useMindClassroomStore()
+  teardownMindClassroomLecture()
+  classroom.closeModal()
 }

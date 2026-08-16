@@ -109,7 +109,15 @@ async def update_diagram_preferences(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Persist AI diagram generation audience (学段) for the signed-in user."""
+    """Persist classic 学段 and/or mind-map 专业程度 for the signed-in user."""
+    stage_set = "education_stage" in body.model_fields_set
+    level_set = "ai_content_level" in body.model_fields_set
+    if not stage_set and not level_set:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provide at least one of education_stage, ai_content_level",
+        )
+
     result = await db.execute(select(User).where(User.id == current_user.id))
     user = result.scalar_one_or_none()
     if not user:
@@ -118,7 +126,10 @@ async def update_diagram_preferences(
             detail="User not found",
         )
 
-    user.education_stage = body.education_stage
+    if stage_set:
+        user.education_stage = body.education_stage
+    if level_set:
+        user.ai_content_level = body.ai_content_level
 
     try:
         await db.commit()
@@ -141,4 +152,5 @@ async def update_diagram_preferences(
 
     return {
         "education_stage": getattr(user, "education_stage", None),
+        "ai_content_level": getattr(user, "ai_content_level", None),
     }

@@ -35,6 +35,8 @@ export interface KittyInboundHandlerDeps {
   ) => void
   playAudioChunk: (audioBase64: string, sampleRateHz?: number) => Promise<void>
   stopAudioPlayback: () => void
+  /** Wait until queued PCM finishes playing before emitting lecture_tts_done. */
+  markLectureSynthesisDone?: (stepId?: string) => void
 }
 
 /** Dispatch verified diagram_update: canvas owners apply; thin mobile shows chat only. */
@@ -165,6 +167,13 @@ export function handleKittyServerMessage(
       {
         const text = String(data.text ?? '')
         const replyKindRaw = data.reply_kind
+        if (replyKindRaw === 'lecture') {
+          eventBus.emit('kitty:lecture_caption', {
+            text,
+            stepId: typeof data.step_id === 'string' ? data.step_id : undefined,
+          })
+          break
+        }
         const kind =
           replyKindRaw === 'progress'
             ? 'progress'
@@ -204,7 +213,8 @@ export function handleKittyServerMessage(
     case 'audio_chunk':
       {
         const kittySession = useKittySessionStore()
-        if (!kittySession.ttsEnabled) break
+        const isLecture = data.lecture === true
+        if (!isLecture && !kittySession.ttsEnabled) break
         if (!deps.destroyed() && !deps.cleaningUp() && !deps.isVoiceActive.value) {
           const rateRaw = data.sample_rate
           const sampleRateHz =
@@ -218,7 +228,16 @@ export function handleKittyServerMessage(
       break
 
     case 'tts_done':
-      deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
+      {
+        const stepId =
+          typeof data.step_id === 'string' && data.step_id.trim() ? data.step_id.trim() : undefined
+        if (deps.markLectureSynthesisDone) {
+          deps.markLectureSynthesisDone(stepId)
+        } else {
+          eventBus.emit('kitty:lecture_tts_done', { stepId })
+          deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
+        }
+      }
       break
 
     case 'tts_interrupted':
@@ -367,8 +386,25 @@ export interface KittyPlaybackDeps {
 /** CosyVoice realtime PCM default (matches services/kitty/tts/cosyvoice_realtime.py). */
 export const KITTY_TTS_PCM_SAMPLE_RATE = 22050
 
+export function lecturePlaybackIsIdle(input: {
+  synthesisDone: boolean
+  decodeInFlight: number
+  scheduledCount: number
+  queuedCount: number
+}): boolean {
+  return (
+    input.synthesisDone &&
+    input.decodeInFlight === 0 &&
+    input.scheduledCount === 0 &&
+    input.queuedCount === 0
+  )
+}
+
 export function createKittyPlayback(deps: KittyPlaybackDeps) {
   let nextPlayTime = 0
+  let decodeInFlight = 0
+  let lectureSynthesisDone = false
+  let lectureStepId: string | undefined
   const scheduledSources = new Set<AudioBufferSourceNode>()
 
   function resolvePlaybackRate(sampleRateHz?: number): number {
@@ -378,6 +414,29 @@ export function createKittyPlayback(deps: KittyPlaybackDeps) {
     return deps.sampleRate > 0 ? deps.sampleRate : KITTY_TTS_PCM_SAMPLE_RATE
   }
 
+  function emitLectureDoneIfIdle(): void {
+    if (
+      !lecturePlaybackIsIdle({
+        synthesisDone: lectureSynthesisDone,
+        decodeInFlight,
+        scheduledCount: scheduledSources.size,
+        queuedCount: deps.audioQueue.length,
+      })
+    ) {
+      return
+    }
+    lectureSynthesisDone = false
+    const stepId = lectureStepId
+    lectureStepId = undefined
+    eventBus.emit('kitty:lecture_tts_done', { stepId })
+  }
+
+  function markLectureSynthesisDone(stepId?: string): void {
+    lectureSynthesisDone = true
+    lectureStepId = stepId
+    queueMicrotask(() => emitLectureDoneIfIdle())
+  }
+
   function markIdleIfDone(): void {
     if (scheduledSources.size > 0 || deps.audioQueue.length > 0) {
       return
@@ -385,6 +444,7 @@ export function createKittyPlayback(deps: KittyPlaybackDeps) {
     deps.isPlaying.value = false
     deps.currentAudioSource.value = null
     deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
+    emitLectureDoneIfIdle()
   }
 
   function stopSource(source: AudioBufferSourceNode): void {
@@ -459,6 +519,7 @@ export function createKittyPlayback(deps: KittyPlaybackDeps) {
     if (!deps.audioContext.value || deps.destroyed() || deps.cleaningUp()) return
     if (deps.isVoiceActive.value) return
 
+    decodeInFlight += 1
     try {
       if (deps.audioContext.value.state === 'suspended') {
         await deps.audioContext.value.resume()
@@ -479,10 +540,15 @@ export function createKittyPlayback(deps: KittyPlaybackDeps) {
       scheduleQueuedChunks()
     } catch (error) {
       console.error('[KittyAgent] Audio playback error:', error)
+    } finally {
+      decodeInFlight -= 1
+      emitLectureDoneIfIdle()
     }
   }
 
   function stopAudioPlayback(): void {
+    lectureSynthesisDone = false
+    lectureStepId = undefined
     for (const source of [...scheduledSources]) {
       stopSource(source)
     }
@@ -492,7 +558,7 @@ export function createKittyPlayback(deps: KittyPlaybackDeps) {
     deps.isPlaying.value = false
   }
 
-  return { playAudioChunk, stopAudioPlayback }
+  return { playAudioChunk, stopAudioPlayback, markLectureSynthesisDone }
 }
 
 export interface KittyCaptureDeps {

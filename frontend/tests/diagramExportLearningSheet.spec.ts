@@ -5,6 +5,7 @@ import { useDiagramStore } from '@/stores/diagram'
 import {
   isLearningSheetRasterCapture,
   learningSheetIncludeAnswers,
+  runAsShownRasterCapture,
   runLearningSheetRasterCapture,
 } from '@/utils/diagramExportLearningSheet'
 import { LEARNING_SHEET_BLANK_TEXT } from '@/stores/specLoader/utils'
@@ -59,5 +60,26 @@ describe('diagramExportLearningSheet', () => {
 
     const blanked = store.data?.nodes.find((node) => node.id === branch.id)
     expect(blanked?.text).toBe(LEARNING_SHEET_BLANK_TEXT)
+  })
+
+  it('as-shown capture leaves knocked-out nodes and answer visibility unchanged', async () => {
+    const store = useDiagramStore()
+    store.loadDefaultTemplate('mindmap')
+    store.setLearningSheetMode(true)
+    const branch = store.data?.nodes.find((node) => node.id.startsWith('branch-'))
+    if (!branch) throw new Error('missing branch')
+    store.emptyNodeForLearningSheet(branch.id)
+    store.setLearningSheetShowAnswers(false)
+
+    await runAsShownRasterCapture(() => {
+      expect(store.learningSheetShowAnswers).toBe(false)
+      const blanked = store.data?.nodes.find((node) => node.id === branch.id)
+      expect(blanked?.text).toBe(LEARNING_SHEET_BLANK_TEXT)
+      return 'ok'
+    })
+
+    expect(store.learningSheetShowAnswers).toBe(false)
+    const after = store.data?.nodes.find((node) => node.id === branch.id)
+    expect(after?.text).toBe(LEARNING_SHEET_BLANK_TEXT)
   })
 })

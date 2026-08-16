@@ -16,10 +16,12 @@ import { defineStore } from 'pinia'
 import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
 import { difyKeys } from '@/composables/queries/difyKeys'
+import { isAiContentLevelId } from '@/config/aiContentLevels'
 import { isEducationStage } from '@/constants/educationStage'
 import { mergeSchoolTierFeatures, normalizeSchoolTier } from '@/constants/schoolTier'
 import { i18n } from '@/i18n'
 import { isPromptOutputLanguageCode, isUiLocale } from '@/i18n/locales'
+import { useAiContentLevelStore } from '@/stores/aiContentLevel'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useMindMateStore } from '@/stores/mindmate'
 import { useShowcaseStore } from '@/stores/showcase'
@@ -180,6 +182,9 @@ export const useAuthStore = defineStore('auth', () => {
         sessionEducationStage.value = isEducationStage(parsed.educationStage)
           ? parsed.educationStage
           : null
+        useAiContentLevelStore().hydrateFromProfile(
+          isAiContentLevelId(parsed.aiContentLevel) ? parsed.aiContentLevel : null
+        )
       } catch {
         user.value = null
       }
@@ -300,6 +305,9 @@ export const useAuthStore = defineStore('auth', () => {
       educationStage: isEducationStage(backendUser.education_stage)
         ? backendUser.education_stage
         : null,
+      aiContentLevel: isAiContentLevelId(backendUser.ai_content_level)
+        ? backendUser.ai_content_level
+        : null,
       allowsSimplifiedChinese: allowsZh,
       loginPasswordSet,
       mindmateAgentName: mindmateAgentName || null,
@@ -382,6 +390,7 @@ export const useAuthStore = defineStore('auth', () => {
     const normalizedUser = normalizeUser(newUser)
     user.value = normalizedUser
     sessionEducationStage.value = normalizedUser.educationStage ?? null
+    useAiContentLevelStore().hydrateFromProfile(normalizedUser.aiContentLevel ?? null)
     maybeNotifySubscriptionExpired(normalizedUser)
     // Store in sessionStorage (cleared on browser close, not a security risk like localStorage)
     sessionStorage.setItem(USER_KEY, JSON.stringify(normalizedUser))
@@ -501,6 +510,18 @@ export const useAuthStore = defineStore('auth', () => {
     return sessionEducationStage.value
   }
 
+  function patchPersistedUser(partial: Partial<User>): void {
+    if (!user.value) {
+      return
+    }
+    const next: User = {
+      ...user.value,
+      ...partial,
+    }
+    user.value = next
+    sessionStorage.setItem(USER_KEY, JSON.stringify(next))
+  }
+
   function setMode(newMode: AuthMode): void {
     mode.value = newMode
     sessionStorage.setItem(MODE_KEY, newMode)
@@ -520,6 +541,7 @@ export const useAuthStore = defineStore('auth', () => {
     languagePrefsSeededForUserId.value = null
     languagePrefsSeedInFlight = false
     sessionEducationStage.value = null
+    useAiContentLevelStore().hydrateFromLocal()
     authVerificationBlockedByNetwork.value = false
     subscriptionExpiredNotified.value = false
     adminCapabilitiesPayload.value = null
@@ -1247,6 +1269,7 @@ export const useAuthStore = defineStore('auth', () => {
     saveLanguagePreferences,
     saveDiagramPreferences,
     getEffectiveEducationStage,
+    patchPersistedUser,
     sessionEducationStage,
   }
 })

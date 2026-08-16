@@ -37,7 +37,16 @@ export {
   type SavedDiagramFull,
   type AutoSaveResult,
 } from './savedDiagrams'
-export { useLLMResultsStore, type LLMResult, type LLMModel, type ModelState, type ModelLoadPhase } from './llmResults'
+export {
+  useLLMResultsStore,
+  isLlmResultForCurrentSession,
+  shouldPaintCompletedLlmModel,
+  shouldStampCanvasOntoLlmResult,
+  type LLMResult,
+  type LLMModel,
+  type ModelState,
+  type ModelLoadPhase,
+} from './llmResults'
 export { useLiveSubtitlesStore } from './liveSubtitles'
 export { useVoiceNotesStore } from './voiceNotes'
 export { useAskOnceStore, type AskOnceMessage, type ModelResponse, type ModelId } from './askonce'
@@ -62,6 +71,8 @@ export {
   PRESENTATION_POINTER_SCALE_STEP,
 } from './presentationPointer'
 export { useCanvasExportStore } from './canvasExport'
+export { useAiContentLevelStore } from './aiContentLevel'
+export { useMindClassroomStore } from './mindClassroom'
 export { useLibraryStore } from './library'
 export { useShowcaseStore } from './showcase'
 export { useSmartResponseStore, type Watch, type SmartResponseSession } from './smartResponse'

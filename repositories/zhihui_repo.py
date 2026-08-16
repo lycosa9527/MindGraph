@@ -164,11 +164,14 @@ class ZhihuiConversationRepository(BaseRepository[ZhihuiConversation]):
         offset: int = 0,
         limit: int = 50,
         user_id: Optional[int] = None,
+        mode: Optional[str] = None,
     ) -> Sequence[ZhihuiConversation]:
         """Newest-updated conversations first."""
         stmt = select(ZhihuiConversation)
         if user_id is not None:
             stmt = stmt.where(ZhihuiConversation.user_id == user_id)
+        if mode:
+            stmt = stmt.where(ZhihuiConversation.mode == mode)
         stmt = stmt.order_by(desc(ZhihuiConversation.updated_at)).offset(max(0, offset)).limit(max(1, min(limit, 200)))
         result = await self.session.execute(stmt)
         return result.scalars().all()
@@ -196,11 +199,13 @@ class ZhihuiConversationRepository(BaseRepository[ZhihuiConversation]):
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def count_conversations(self, *, user_id: Optional[int] = None) -> int:
+    async def count_conversations(self, *, user_id: Optional[int] = None, mode: Optional[str] = None) -> int:
         """Total conversation rows."""
         stmt = select(func.count()).select_from(ZhihuiConversation)
         if user_id is not None:
             stmt = stmt.where(ZhihuiConversation.user_id == user_id)
+        if mode:
+            stmt = stmt.where(ZhihuiConversation.mode == mode)
         result = await self.session.execute(stmt)
         return int(result.scalar_one())
 

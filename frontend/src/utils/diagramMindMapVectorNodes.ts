@@ -18,6 +18,8 @@ import { renderMindMapSvgText } from '@/utils/diagramMindMapVectorText'
 export type MindMapVectorNodeDraw = {
   id: string
   text: string
+  /** Un-editable prefix chrome; body wrap excludes this string. */
+  numberPrefix?: string
   type: string
   x: number
   y: number
@@ -124,6 +126,7 @@ export function renderMindMapVectorNode(
       width: node.width,
       height: node.height,
       rawText: node.text,
+      numberPrefix: node.numberPrefix,
       fontSize,
       fontWeight: fontWeight === 'bold' ? 'bold' : 'normal',
       textColor: colors.textColor,

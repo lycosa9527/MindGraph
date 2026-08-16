@@ -14,6 +14,8 @@ exclude = [
     "esp32/**",
     "archive",
     "archive/**",
+    "tmp",
+    "tmp/**",
 ]
 stubPath = "typings"
 # Miniconda env (conda activate python313 or mindgraph); .venv excluded from analysis

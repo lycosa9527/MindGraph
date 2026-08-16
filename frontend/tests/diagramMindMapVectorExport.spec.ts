@@ -6,6 +6,7 @@ import { renderMindMapVectorNode } from '@/utils/diagramMindMapVectorNodes'
 import {
   escapeXml,
   mindMapExportPlainText,
+  mindMapSvgTextBaselineY,
   parseMindMapExportText,
   wrapMindMapExportLines,
 } from '@/utils/diagramMindMapVectorText'
@@ -71,6 +72,22 @@ function tinyMindMapSnapshot(shape: 'rounded' | 'underline' = 'rounded') {
 }
 
 describe('diagramMindMapVectorText', () => {
+  it('drops the first-line baseline below the old 0.85 line-box fudge', () => {
+    const fontSize = 16
+    const lineHeight = fontSize * 1.4
+    const next = mindMapSvgTextBaselineY({
+      boxY: 0,
+      boxHeight: 42,
+      blockHeight: lineHeight,
+      fontSize,
+      lineHeight,
+      paddingY: 9,
+      borderWidth: 1.5,
+    })
+    const previous = Math.max(9, (42 - lineHeight) / 2) + fontSize * 0.85
+    expect(next).toBeGreaterThan(previous)
+  })
+
   it('escapes XML', () => {
     expect(escapeXml('a<b>&"\'')).toContain('&lt;')
     expect(escapeXml('a<b>&"\'')).toContain('&amp;')
@@ -92,6 +109,58 @@ describe('diagramMindMapVectorText', () => {
     expect(wrapMindMapExportLines('中心主题', 200, 18, { fontWeight: 'bold' })).toEqual([
       '中心主题',
     ])
+  })
+})
+
+describe('diagramMindMapVector numbering chrome', () => {
+  it('keeps body text separate from prefix chrome', () => {
+    const snapshot = buildMindMapVectorSnapshot({
+      canvasMode: 'v2',
+      outlineWireframe: false,
+      store: {
+        type: 'mind_map',
+        mindMapTopicActualWidth: 120,
+        mindMapNodeWidths: { topic: 120, 'branch-r-1-0': 140 },
+        mindMapNodeHeights: { topic: 40, 'branch-r-1-0': 34 },
+        nodeDimensions: {},
+        data: {
+          type: 'mind_map',
+          _mindmap_branch_numbering: true,
+          _mindmap_branch_numbering_prefix: 'chineseChapter',
+          _mindmap_branch_numbering_nested: 'outline',
+          nodes: [
+            {
+              id: 'topic',
+              text: '主题',
+              type: 'topic',
+              position: { x: 200, y: 200 },
+              style: { nodeShape: 'rectangle' },
+            },
+            {
+              id: 'branch-r-1-0',
+              text: '引言',
+              type: 'branch',
+              position: { x: 400, y: 180 },
+              style: { nodeShape: 'rounded' },
+              parentId: 'topic',
+            },
+          ],
+          connections: [{ id: 'e1', source: 'topic', target: 'branch-r-1-0' } satisfies Connection],
+        },
+      },
+    })
+    expect(snapshot).not.toBeNull()
+    if (!snapshot) return
+    const branch = snapshot.nodes.find((node) => node.id === 'branch-r-1-0')
+    expect(branch?.text).toBe('引言')
+    expect(branch?.numberPrefix).toBe('第一章')
+    const nodeSvg = renderMindMapVectorNode(branch!, {
+      diagramStyleId: 'classic',
+      outlineWireframe: false,
+    })
+    expect(nodeSvg).toContain('第一章')
+    expect(nodeSvg).toContain('引言')
+    expect(nodeSvg).not.toContain('第一章 引言')
   })
 })
 

@@ -283,6 +283,12 @@ function onToolClick(toolId: MindMapSideToolId): void {
   background: rgb(255 228 230);
 }
 
+.mind-map-side-toolbar__item--orange:hover .mind-map-side-toolbar__icon,
+.mind-map-side-toolbar__item--orange.is-active .mind-map-side-toolbar__icon {
+  color: rgb(234 88 12);
+  background: rgb(255 237 213);
+}
+
 .mind-map-side-toolbar__handle {
   display: flex;
   flex-shrink: 0;

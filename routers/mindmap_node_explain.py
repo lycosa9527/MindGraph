@@ -214,6 +214,7 @@ async def _stream_explain(
             diagram_id=diagram_id,
             session_id=session_id,
             request_token=request_token,
+            generation_instructions=req.generation_instructions,
         ):
             chunk_count += 1
             event = chunk.get("event")

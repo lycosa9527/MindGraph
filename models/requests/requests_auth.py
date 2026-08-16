@@ -17,6 +17,7 @@ from typing import Annotated, Literal, Optional
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from services.auth.quick_register_redis import WORKSHOP_MAX_USES_CAP
+from services.utils.ai_content_level import is_valid_ai_content_level
 from services.utils.education_stage import is_valid_education_stage
 from utils.prompt_output_languages import is_prompt_output_language
 from utils.ui_languages import UI_LANGUAGE_CODES
@@ -903,13 +904,18 @@ class LanguagePreferencesUpdate(BaseModel):
 class DiagramPreferencesUpdate(BaseModel):
     """PATCH body for /api/auth/diagram-preferences.
 
-    ``education_stage`` must be present: a allowlisted label, or ``null`` to clear.
+    At least one field must be present. ``null`` clears that preference.
     """
 
     education_stage: Optional[str] = Field(
-        ...,
+        None,
         max_length=32,
         description="学段 label (小学…专家), or null to clear",
+    )
+    ai_content_level: Optional[str] = Field(
+        None,
+        max_length=32,
+        description="Mind-map 专业程度 id (general…expert), or null to clear",
     )
 
     @field_validator("education_stage")
@@ -921,4 +927,15 @@ class DiagramPreferencesUpdate(BaseModel):
         stripped = value.strip()
         if not is_valid_education_stage(stripped):
             raise ValueError("education_stage must be a supported 学段 label")
+        return stripped
+
+    @field_validator("ai_content_level")
+    @classmethod
+    def validate_ai_content_level(cls, value):
+        """Allow null (clear) or a known mind-map 专业程度 id."""
+        if value is None:
+            return None
+        stripped = value.strip().lower()
+        if not is_valid_ai_content_level(stripped):
+            raise ValueError("ai_content_level must be a supported 专业程度 id")
         return stripped

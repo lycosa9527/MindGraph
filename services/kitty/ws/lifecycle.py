@@ -51,6 +51,7 @@ from services.kitty.session.voice_lock import (
     diagram_session_voice_lock,
     release_diagram_session_voice_lock_if_idle,
 )
+from services.kitty.ws.idle import kitty_idle_should_close
 from services.kitty.ws.inbound import (
     KittyWsInboundContext,
     build_kitty_inbound_context,
@@ -524,7 +525,12 @@ async def run_kitty_idle_watchdog(
             await mark_kitty_canvas_owner_present(int(current_user.id), diagram_session_id)
         if idle_timeout_sec is None:
             continue
-        if time.monotonic() - last_client_inbound[0] >= idle_timeout_sec:
+        if kitty_idle_should_close(
+            sess,
+            last_inbound_monotonic=last_client_inbound[0],
+            now_monotonic=time.monotonic(),
+            timeout_sec=float(idle_timeout_sec),
+        ):
             logger.info(
                 "Kitty WS idle timeout (no inbound client message for %.0fs) "
                 "diagram_session_id=%s user_id=%s voice_session_id=%s",

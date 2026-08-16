@@ -270,6 +270,7 @@ async def _complete_login_after_otp_verified(
             "match_prompt_to_ui": getattr(user, "match_prompt_to_ui", True),
             "allows_simplified_chinese": getattr(user, "allows_simplified_chinese", True),
             "education_stage": getattr(user, "education_stage", None),
+            "ai_content_level": getattr(user, "ai_content_level", None),
         },
     }
 
@@ -526,6 +527,7 @@ async def login(
             "match_prompt_to_ui": getattr(user, "match_prompt_to_ui", True),
             "allows_simplified_chinese": getattr(user, "allows_simplified_chinese", True),
             "education_stage": getattr(user, "education_stage", None),
+            "ai_content_level": getattr(user, "ai_content_level", None),
         },
     }
 
@@ -885,5 +887,6 @@ async def verify_bayi_passkey_login(
             "prompt_language": getattr(auth_user, "prompt_language", None),
             "match_prompt_to_ui": getattr(auth_user, "match_prompt_to_ui", True),
             "education_stage": getattr(auth_user, "education_stage", None),
+            "ai_content_level": getattr(auth_user, "ai_content_level", None),
         },
     }

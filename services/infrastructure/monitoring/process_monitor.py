@@ -40,6 +40,7 @@ except ImportError:
     is_redis_available = None
     _REDIS_AVAILABLE = False
 
+from services.infrastructure.process._celery_manager import celery_banner_is_current
 from services.infrastructure.process.process_manager import (
     ServerState,
     start_celery_worker,
@@ -96,6 +97,16 @@ PROCESS_MONITOR_ENABLED = os.getenv("PROCESS_MONITOR_ENABLED", "true").lower() i
     "yes",
 )
 PROCESS_MONITOR_INTERVAL_SECONDS = int(os.getenv("PROCESS_MONITOR_INTERVAL_SECONDS", "30"))
+CELERY_BANNER_CHECK_SECONDS = int(os.getenv("CELERY_BANNER_CHECK_SECONDS", "60"))
+
+
+class _CeleryBannerCheckState:
+    """Throttle inspect.registered() so pidbox is not hit every monitor tick."""
+
+    last_ok_at: float = 0.0
+
+
+_CELERY_BANNER_STATE = _CeleryBannerCheckState()
 PROCESS_MONITOR_MAX_RESTARTS = int(os.getenv("PROCESS_MONITOR_MAX_RESTARTS", "3"))
 PROCESS_MONITOR_RESTART_WINDOW_SECONDS = int(os.getenv("PROCESS_MONITOR_RESTART_WINDOW_SECONDS", "300"))
 PROCESS_MONITOR_CIRCUIT_BREAKER_ENABLED = os.getenv("PROCESS_MONITOR_CIRCUIT_BREAKER_ENABLED", "true").lower() in (
@@ -134,17 +145,25 @@ class ServiceStatus(Enum):
     UNKNOWN = "unknown"
 
 
+def reset_celery_banner_check_state() -> None:
+    """Test helper: force the next health check to inspect worker banners."""
+    _CELERY_BANNER_STATE.last_ok_at = 0.0
+
+
 async def check_celery_worker_health(
     *,
     app: Any,
     managed_process: Any,
     worker_needed: bool,
+    now: Optional[float] = None,
 ) -> ServiceStatus:
     """
-    Celery liveness for process monitor.
+    Celery liveness plus a throttled task-banner check.
 
-    When the app owns the worker subprocess, a live PID is enough (avoids
-    broker inspect/pidbox spam). Unmanaged deployments ping workers instead.
+    A live PID is not enough after a deploy: a stale worker discards new
+    task names. ``DEGRADED`` means the banner is stale and the monitor
+    should replace the worker. Inspect is skipped for ``CELERY_BANNER_CHECK_SECONDS``
+    after a confirmed-current result so pidbox is not spammed.
     """
     if not worker_needed:
         return ServiceStatus.HEALTHY
@@ -162,15 +181,28 @@ async def check_celery_worker_health(
                     return_code,
                 )
                 return ServiceStatus.UNHEALTHY
+        else:
+            inspect = app.control.inspect(timeout=2.0)
+            ping_replies = await asyncio.to_thread(inspect.ping)
+            if ping_replies is None or not ping_replies:
+                logger.warning("[ProcessMonitor] No Celery workers responded to ping")
+                return ServiceStatus.UNHEALTHY
+
+        clock = time.time() if now is None else now
+        if _CELERY_BANNER_STATE.last_ok_at and clock - _CELERY_BANNER_STATE.last_ok_at < max(
+            15, CELERY_BANNER_CHECK_SECONDS
+        ):
             return ServiceStatus.HEALTHY
 
-        inspect = app.control.inspect(timeout=2.0)
-        ping_replies = await asyncio.to_thread(inspect.ping)
-
-        if ping_replies is None or not ping_replies:
-            logger.warning("[ProcessMonitor] No Celery workers responded to ping")
-            return ServiceStatus.UNHEALTHY
-
+        current = await asyncio.to_thread(celery_banner_is_current, app)
+        if current is True:
+            _CELERY_BANNER_STATE.last_ok_at = clock
+            return ServiceStatus.HEALTHY
+        if current is False:
+            logger.warning(
+                "[ProcessMonitor] Celery worker banner is stale (missing current app tasks); requesting restart"
+            )
+            return ServiceStatus.DEGRADED
         return ServiceStatus.HEALTHY
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[ProcessMonitor] Celery health check failed: %s", exc)
@@ -641,7 +673,7 @@ class ProcessMonitor:
             )
             return False
 
-    async def _check_and_restart_service(self, service_name: str, status: ServiceStatus) -> None:
+    async def apply_service_status(self, service_name: str, status: ServiceStatus) -> None:
         """
         Check service status and restart if needed.
 
@@ -677,6 +709,38 @@ class ProcessMonitor:
                 old_status.value,
                 status.value,
             )
+
+        if service_name == "celery" and status == ServiceStatus.DEGRADED:
+            logger.warning("[ProcessMonitor] Celery task banner is stale; replacing the worker")
+            if PROCESS_MONITOR_CIRCUIT_BREAKER_ENABLED:
+                restart_count = await self._check_restart_count(service_name)
+                if restart_count >= PROCESS_MONITOR_MAX_RESTARTS:
+                    if not metrics.circuit_breaker_open:
+                        metrics.circuit_breaker_open = True
+                        logger.error(
+                            "[ProcessMonitor] Circuit breaker OPEN for %s (%d restarts in %d seconds)",
+                            service_name,
+                            restart_count,
+                            PROCESS_MONITOR_RESTART_WINDOW_SECONDS,
+                        )
+                        await self._send_sms_alert(
+                            service_name,
+                            f"Circuit breaker triggered - {service_name} failed {restart_count} times",
+                        )
+                    return
+            restart_success = await self._restart_service(service_name)
+            if restart_success:
+                reset_celery_banner_check_state()
+                metrics.restart_count += 1
+                metrics.last_restart_time = time.time()
+                metrics.start_time = time.time()
+                metrics.circuit_breaker_open = False
+                await self._increment_restart_count(service_name)
+                logger.info("[ProcessMonitor] Celery replaced after stale banner")
+            else:
+                logger.error("[ProcessMonitor] Failed to replace stale Celery worker")
+                await self._increment_restart_count(service_name)
+            return
 
         # Handle restart logic (only for Qdrant, Celery, and PostgreSQL, not Redis)
         if service_name in ("qdrant", "celery", "postgresql") and status == ServiceStatus.UNHEALTHY:
@@ -842,13 +906,13 @@ class ProcessMonitor:
                     postgresql_status = ServiceStatus.HEALTHY  # Not using PostgreSQL
 
                 # Check and restart services if needed
-                await self._check_and_restart_service("redis", redis_status)
+                await self.apply_service_status("redis", redis_status)
                 if rag_enabled:
-                    await self._check_and_restart_service("qdrant", qdrant_status)
+                    await self.apply_service_status("qdrant", qdrant_status)
                 if celery_needed:
-                    await self._check_and_restart_service("celery", celery_status)
+                    await self.apply_service_status("celery", celery_status)
                 if using_postgresql:
-                    await self._check_and_restart_service("postgresql", postgresql_status)
+                    await self.apply_service_status("postgresql", postgresql_status)
 
                 # Check for multiple services down
                 statuses = [redis_status]

@@ -17,9 +17,11 @@ import { mergeCanvasExportOptions } from '@/utils/mergeCanvasExportOptions'
 import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'
 import { apiRequestJson, apiUpload } from '@/utils/apiClient'
+import { copyPngBlobWithFallback } from '@/utils/copyPngBlobToClipboard'
 import { loadHtmlToImageModule } from '@/utils/diagramExportHtmlToImage'
 import {
   isLearningSheetRasterCapture,
+  runAsShownRasterCapture,
   runLearningSheetRasterCapture,
   waitForExportCanvasPaint,
 } from '@/utils/diagramExportLearningSheet'
@@ -235,35 +237,78 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     return resolvePdfOrientationFromExportOptions(format, width, height, exportOptions?.layout)
   }
 
-  async function exportAsPng(exportOptions?: CanvasExportOptions): Promise<void> {
+  async function capturePngBlob(
+    exportOptions?: CanvasExportOptions,
+    asShown = false
+  ): Promise<Blob> {
     const container = getContainer()
     if (!container) {
-      notify.warning(t('canvas.export.canvasNotReady'))
-      return
+      throw new Error('canvas-not-ready')
     }
+    await waitForExportFonts()
+    const captureOptions = getDiagramCanvasHtmlToImageOptions()
+    const runCapture = () => captureDiagramPngBlob(container, captureOptions)
+    const blob = asShown
+      ? await runAsShownRasterCapture(runCapture)
+      : await runLearningSheetRasterCapture(diagramStore, exportOptions, runCapture)
+    if (!blob || blob.size === 0) {
+      throw new Error('PNG export produced empty image')
+    }
+    return blob
+  }
 
+  function downloadPngBlob(blob: Blob): void {
+    const baseName = sanitizeFilename(getTitle())
+    const timestamp = new Date().toISOString().slice(0, 10)
+    triggerDownloadBlob(blob, `${baseName}_${timestamp}.png`)
+  }
+
+  function notifyCanvasNotReady(error: unknown): boolean {
+    if (error instanceof Error && error.message === 'canvas-not-ready') {
+      notify.warning(t('canvas.export.canvasNotReady'))
+      return true
+    }
+    return false
+  }
+
+  async function exportAsPng(exportOptions?: CanvasExportOptions): Promise<void> {
     isExporting.value = true
     try {
-      await waitForExportFonts()
-      const captureOptions = getDiagramCanvasHtmlToImageOptions()
-
-      const blob = await runLearningSheetRasterCapture(diagramStore, exportOptions, () =>
-        captureDiagramPngBlob(container, captureOptions)
-      )
-
-      if (!blob) {
-        throw new Error('PNG export produced empty image')
-      }
-
-      const baseName = sanitizeFilename(getTitle())
-      const timestamp = new Date().toISOString().slice(0, 10)
-      triggerDownloadBlob(blob, `${baseName}_${timestamp}.png`)
-
+      const blob = await capturePngBlob(exportOptions)
+      downloadPngBlob(blob)
       logDiagramExport('png')
       notify.success(t('canvas.export.pngSuccess'))
     } catch (error) {
+      if (notifyCanvasNotReady(error)) {
+        return
+      }
       console.error('PNG export failed:', error)
       notify.error(t('canvas.export.pngError'))
+    } finally {
+      isExporting.value = false
+    }
+  }
+
+  async function copyPngToClipboard(blobSource: Promise<Blob>): Promise<void> {
+    if (isExporting.value) {
+      return
+    }
+    isExporting.value = true
+    try {
+      const outcome = await copyPngBlobWithFallback(blobSource, downloadPngBlob)
+      if (outcome === 'copied') {
+        logDiagramExport('clipboard')
+        notify.success(t('notification.copied'))
+        return
+      }
+      logDiagramExport('png')
+      notify.warning(t('canvas.export.clipboardFallback'))
+    } catch (error) {
+      if (notifyCanvasNotReady(error)) {
+        return
+      }
+      console.error('Clipboard export failed:', error)
+      notify.error(t('notification.copyFailed'))
     } finally {
       isExporting.value = false
     }
@@ -549,6 +594,9 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       return
     }
     switch (format) {
+      case 'clipboard':
+        await copyPngToClipboard(capturePngBlob(exportOptions, true))
+        break
       case 'png':
         await exportAsPng(exportOptions)
         break
@@ -576,6 +624,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
   }
 
   return {
+    capturePngBlob,
+    copyPngToClipboard,
     exportAsPng,
     exportAsSvg,
     exportAsPdf,

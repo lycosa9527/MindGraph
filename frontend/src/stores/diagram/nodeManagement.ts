@@ -1,25 +1,28 @@
+import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
-import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
-import { resolveNodeShape } from '@/utils/nodeShapeStyle'
+import { mindMapBranchNumberMapFromData } from '@/utils/mindMapBranchNumbering'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBubbleMapLayout, recalculateMultiFlowMapLayout } from '../specLoader'
-import { isLearningSheetBlankDisplayText } from '../specLoader/utils'
 import {
   estimateNodeWidth as estimateMindMapBranchWidth,
+  estimateNumberedBranchWidth,
   estimateTopicNodeHeight,
   estimateTopicNodeWidth,
   measureBranchNodeHeight as measureMindMapBranchHeight,
-  measureBranchNodeUnderlineHeight as measureMindMapBranchUnderlineHeight,
+  measureNumberedBranchHeight,
+  measureNumberedBranchUnderlineHeight,
 } from '../specLoader/mindMap'
 import { applyTreeMapTopicLayoutToNodes } from '../specLoader/treeMapTopicLayout'
+import { isLearningSheetBlankDisplayText } from '../specLoader/utils'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
-import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import { emitCtxEvent } from './events'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
 /**
@@ -180,15 +183,17 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
           ...(ctx.data.value._node_styles?.[nodeId] || {}),
           ...(currentNode.style || {}),
         }
-        const freshWidth = estimateMindMapBranchWidth(newText, nodeId, nodeStyle)
+        const numberMap = mindMapBranchNumberMapFromData(ctx.data.value)
+        const prefix = numberMap.get(nodeId) ?? ''
+        const freshWidth = estimateNumberedBranchWidth(newText, prefix, nodeId, nodeStyle)
         const shape = resolveMindMapNodeShape(
           { id: nodeId, type: currentNode.type ?? 'branch', style: nodeStyle },
           ctx.data.value._mindmap_diagram_style as string | undefined
         )
         const freshHeight =
           shape === 'underline'
-            ? measureMindMapBranchUnderlineHeight(newText, nodeId, nodeStyle)
-            : measureMindMapBranchHeight(newText, nodeId, nodeStyle)
+            ? measureNumberedBranchUnderlineHeight(newText, prefix, nodeId, nodeStyle)
+            : measureNumberedBranchHeight(newText, prefix, nodeId, nodeStyle)
         ctx.data.value.nodes[nodeIndex] = {
           ...ctx.data.value.nodes[nodeIndex],
           data: {
@@ -306,16 +311,18 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
             },
           }
         } else {
+          const numberMap = mindMapBranchNumberMapFromData(ctx.data.value)
+          const prefix = numberMap.get(nodeId) ?? ''
           const newShape = resolveNodeShape(mergedStyle, true)
           const freshHeight =
             newShape === 'underline'
-              ? measureMindMapBranchUnderlineHeight(text, nodeId, mergedStyle)
-              : measureMindMapBranchHeight(text, nodeId, mergedStyle)
+              ? measureNumberedBranchUnderlineHeight(text, prefix, nodeId, mergedStyle)
+              : measureNumberedBranchHeight(text, prefix, nodeId, mergedStyle)
           ctx.data.value.nodes[nodeIndex] = {
             ...refreshed,
             data: {
               ...refreshed.data,
-              estimatedWidth: estimateMindMapBranchWidth(text, nodeId, mergedStyle),
+              estimatedWidth: estimateNumberedBranchWidth(text, prefix, nodeId, mergedStyle),
               estimatedHeight: freshHeight,
             },
           }

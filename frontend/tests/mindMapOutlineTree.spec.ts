@@ -15,6 +15,7 @@ import { useUIStore } from '@/stores/ui'
 import {
   buildMindMapOutlineTree,
   flattenMindMapOutline,
+  mindMapOutlineOrderFingerprint,
 } from '@/utils/mindMapOutlineTree'
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -364,4 +365,17 @@ describe('buildMindMapOutlineTree vs loadMindMapSpec layouts', () => {
       expect(clockwise).toEqual(children.map((c) => c.text))
     }
   )
+})
+
+describe('mindMapOutlineOrderFingerprint', () => {
+  it('stays stable when Y nudges without changing sibling order', () => {
+    const { nodes, connections } = diagramFromClockwiseLabels(['A', 'B', 'C', 'D'])
+    const before = mindMapOutlineOrderFingerprint(nodes, connections)
+    const nudged = nodes.map((item) =>
+      item.id === 'topic'
+        ? item
+        : { ...item, position: { x: item.position?.x ?? 0, y: (item.position?.y ?? 0) + 0.4 } }
+    )
+    expect(mindMapOutlineOrderFingerprint(nudged, connections)).toBe(before)
+  })
 })

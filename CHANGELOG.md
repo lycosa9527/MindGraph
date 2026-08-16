@@ -5,6 +5,130 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.0] - 2026-08-17
+
+> **Mind-map 编号 is chrome on the new canvas; 按主分支 lecture lights the whole branch.**
+
+### Added
+
+- **思维导图 编号** — 主题风格 panel: enable/hide plus prefix and nested styles. Prefixes are painted chrome (not stored in `node.text`). L1 uses 前缀风格; L2+ uses 下级编号 (outline path or restarting glyphs, including 章/节/段 and 条/款/项). Topic/center is never numbered. New / regenerated diagrams stay off unless the spec enables it. Box width and wrap use this node’s glyphs (`1.` vs `①` vs `第一章` vs `1.1.1`). PDF/SVG draws the same chrome; body wraps beside it.
+
+### Fixed
+
+- **思维讲堂 highlight** — In 按主分支 (and slide-deck canvas), the current branch and its descendants stay fully visible; only the head is selected / blue-outlined. Incoming stem from the topic stays lit. Overview and closing no longer outline the topic. Empty focus no longer dims the whole map. Tour scope is snapshotted for the session.
+- **Mind-map PDF text Y** — Export baseline matches canvas `line-height` (half-leading + ascent) so branch labels sit in the box instead of a few pixels high.
+- **Celery Redis pools** — Result-backend pools get the same RESP2 / no-SCH defaults as the broker, so OSS Redis is not probed for `CLIENT MAINT_NOTIFICATIONS`.
+
+### Tests
+
+- Numbering glyphs, clockwise L1, per-prefix width/height, outline cache fingerprint, vector prefix chrome, PDF baseline.
+- `expandLectureFocusNodeIds` — main-branch / slide-deck expand the subtree; each-node stays on one node.
+- Celery Redis result-backend pool options.
+
+## [5.179.0] - 2026-08-17
+
+> **思维讲堂 is event-bus + Pinia; CosyVoice prefetches the next slide; lecture scripts stay on a stable COS key.**
+
+### Added
+
+- **Lecture command bus** — Start, restart, stop, pause, next/prev, and voice go through `classroom:*` events. Pinia holds job, session, generations, and `startInFlight`. Closing the launch modal does not cancel the server job; restore reattaches when it is ready.
+- **TTS lookahead** — While slide N plays, a second CosyVoice socket synthesizes N+1 and the next narrate plays from cache. Skip/pause still interrupt.
+
+### Changed
+
+- **Lecture scripts** — Stable COS key `mind_classroom/transcripts/{user}/{diagram}/{mode}.md`; regenerate overwrites that key and then deletes leftover `{job_id}.md`. `.md` assets use `Cache-Control: private, no-store`.
+- **Celery banners** — Process monitor replaces a worker whose `[tasks]` list is stale after an API recycle. Manual WSL restart is documented in `docs/CELERY_SETUP.md`.
+
+### Tests
+
+- Frontend: event-bus start, queue attach/abandon, launch lock, lecture TTS prefetch generation.
+- Backend: Kitty narrate + prefetch cache, transcript key replace, enqueue/reuse, Celery stale-banner health.
+
+## [5.178.1] - 2026-08-16
+
+> **思维讲堂 stays on the current canvas; Celery job status is visible in backend logs.**
+
+### Fixed
+
+- **Lecture session isolation** — Switching library diagrams or unloading the canvas tears down the lecture overlay and abandons in-flight polls so they cannot stamp the next canvas. Server jobs stay queued (reusable when returning). First persist does not kill a live tour.
+
+### Changed
+
+- **Kitty idle** — CosyVoice lecture TTS holds the 300s idle close so the socket does not drop mid-caption.
+- **Celery status logs** — Uvicorn logs enqueue / reuse / revoke; workers log start / status / finish / error when manifesto `status` or `stage` actually moves. GET polls and planning heartbeats stay quiet.
+
+### Tests
+
+- `tests/test_kitty_idle.py`, `tests/test_mind_classroom_celery_log.py`
+- Frontend: diagram-switch teardown, queue-abandon, unloadCanvas closeModal.
+
+## [5.178.0] - 2026-08-16
+
+> **思维讲堂 runs as a server job (script / slide deck); Kitty narrates captions; 专业程度 persists.**
+
+### Added
+
+- **思维讲堂 jobs** — Signed-in start enqueues canvas-tour or slide-deck work (`POST /api/mind-classroom/jobs`, Celery `mind_classroom.*`, migration `0103` + owner RLS). Launch modal shows queue / planning / generating; reuse same spec+settings; cancel or restart. Guests keep local template scripts.
+- **Kitty lecture narrate** — Canvas-owner Kitty TTS speaks captions via WS `narrate` (no command router / one-sentence persist). Overlay waits for PCM `lecture_tts_done`; interrupt stops playback.
+- **Mind-map 专业程度** — Picker value is stored on `users.ai_content_level` (migration `0102`) with other personal prefs. Login / `/me` restore it; `PATCH /api/auth/diagram-preferences` saves it. Guests still use localStorage. Classroom jobs send the same audience level.
+
+### Changed
+
+- **ZhiHui planner share** — Lesson planner, outline, and Wan image shell live in `services/mind_classroom/`; ZhiHui re-exports the same helpers so diagram studio and 思维讲堂 share one planner path.
+- **Slide lecture** — Dual-pane player maps classroom slides (or legacy ZhiHui generations) onto the existing deck chrome; transcript markdown is persisted with the job.
+
+### Tests
+
+- Classroom prompts (tone / audience / mastery), steps, slide adapter, transcript, temp cleanup, RLS; Kitty narrate; `test_ai_content_level_pref.py`.
+- Frontend: launch/queue state, remote steps, lecture runner, classroom→ZhiHui slide map, audience hydrate/persist.
+
+## [5.177.1] - 2026-08-15
+
+> **Canvas multi-LLM regenerate keeps the current session spec (no stale first-finisher).**
+
+### Fixed
+
+- **Canvas multi-LLM regenerate** — First success of the current generate session always paints; persist cannot stamp the previous canvas over a fresh spec; late results from a prior session are dropped. Background Kitty `live_context` cannot reclaim the model slot or recover Redis over a smaller regenerate. Also stop sending 专业程度 twice (prompt + `generation_instructions`), which duplicated `【用户要求】`.
+
+### Tests
+
+- `frontend/tests/llmResultsTeardown.spec.ts` / `kittyLlmModelSync.spec.ts` / `useKittyDesktopRemoteSyncHubPersist.spec.ts` — session-owned paint; no canvas stamp or live_context recover while generating.
+
+## [5.177.0] - 2026-08-15
+
+> **Mind-map 专业程度 drives new-canvas AI; classic autocomplete stays on 学段.**
+
+### Added
+
+- **Copy to clipboard** — Export menu copies the canvas PNG as shown; if clipboard write is blocked, downloads a PNG instead.
+
+### Changed
+
+- **Mind-map toolbar** — 「专业内容」picker extracted to its own control; 「AI生成图示」is a single button (no 学段 caret). Audience copy is native zh/en templates (用语/句子/前提/深度 · Voice/Length/Assume/Depth), not 学段 “生成图示”.
+- **New-canvas AI** — Generate, one-sentence create, branch expand, brainstorm, document/image/package summarize, node explain, and Kitty paragraph (mind-map only) send the picker level.
+- **Classic thinking-maps** — Autocomplete keeps the 学段 caret and `education_stage` path. Inline rec, relationship labels, concept-map helpers, and thinking-map palette are unchanged.
+
+### Tests
+
+- `frontend/tests/mindMapAudience.spec.ts` — all six constrained levels share the four slots and stay distinct; general unconstrained; payload injection.
+- `frontend/tests/copyPngBlobToClipboard.spec.ts` — clipboard write plus download fallback.
+- `tests/test_ai_content_level.py` — audience instruction append helper.
+
+## [5.176.0] - 2026-08-12
+
+> **Mind-map v2 classroom lecture and toolbar audience UX.**
+
+### Added
+
+- **思维讲堂** — Mint blob IP entry (bottom-right) opens launch prefs: mastery, **画布语音巡讲** / **幻灯片讲解**, tour scope, lecture tone; canvas-tour runner with captions/TTS controls; slide-deck dual-pane fullscreen player.
+- **幻灯片风格** — Presets: 通用幻灯片 / 黑板报风 / 漫画风 / 手绘风 (legacy styles migrate automatically).
+- **专业内容（受众难度）** — Toolbar picker (学段/场景) beside AI generate; first-run coach tip; after the first pick the control collapses to icon + level tag.
+
+### Changed
+
+- **思维讲堂入口** — Side-toolbar item removed; only the bottom-right mascot remains.
+- **Mind-map top bar** — Structure and theme controls are icon-only (tooltip for labels); audience control sits **before** AI generate.
+
 ## [5.175.1] - 2026-08-12
 
 > **Word add-in: production packaging/CSP framing, Voice same-origin WS, Windows install catalogs.**

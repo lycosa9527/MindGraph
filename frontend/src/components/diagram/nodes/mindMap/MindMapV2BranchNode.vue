@@ -1,23 +1,24 @@
 <script setup lang="ts">
-import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
 /**
  * MindMapV2BranchNode — v2 mind map branch node (themes, shapes, underline, subgraph ring).
  */
-import { computed, inject, onMounted, ref, watch, type WritableComputedRef, toValue } from 'vue'
+import { type WritableComputedRef, computed, inject, onMounted, ref, toValue, watch } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
 import LlmPhaseRing from '@/components/shared/LlmPhaseRing.vue'
-import { aiBrainstormGlowingNodeIds } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { useLanguage, useNotifications } from '@/composables'
+import { aiBrainstormGlowingNodeIds } from '@/composables/aiBrainstorm/useAiBrainstorm'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
+import { diagramSessionRef, useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import {
   handleLearningSheetPickNodeClick,
   isLearningSheetCustomPickActive,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { useMindMapBranchNumbering } from '@/composables/mindMap/useMindMapBranchNumbering'
 import {
   useMindMapExportOutlineWireframeActive,
   wrapMindMapNodeStyleForExport,
@@ -33,15 +34,16 @@ import {
   mindMapUnderlineContentPadding,
 } from '@/config/mindMapGeometry'
 import { getMindMapThemeForDiagram } from '@/config/mindMapThemes'
-import { useDiagramStore } from '@/stores/diagram'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
+import { stripMatchingBranchNumberPrefix } from '@/utils/mindMapBranchNumbering'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import { markMindMapLoadShellMounted } from '@/utils/mindMapLoadDebug'
 import {
   MIND_MAP_BRANCH_MAX_TEXT_WIDTH,
-  resolveMindMapBranchTextMaxWidthPx,
+  MIND_MAP_NUMBER_PREFIX_GAP_PX,
+  resolveMindMapBranchBodyMaxWidthPx,
 } from '@/utils/mindMapTextWrap'
 import { applyNodeShapeToStyle, mindMapUnderlineHandleStyle } from '@/utils/nodeShapeStyle'
 
@@ -55,7 +57,8 @@ const mindMapEditingNodeId = diagramSessionRef(diagramStore, 'mindMapEditingNode
 const isTextReadonly = computed(
   () =>
     (props.data.hidden === true && diagramStore.isLearningSheet) ||
-    (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))
+    diagramPresentationReadOnlyRef.value ||
+    toValue(diagramStore.isReadonly)
 )
 const branchNodeRef = ref<HTMLDivElement | null>(null)
 const exportOutlineActive = useMindMapExportOutlineWireframeActive()
@@ -183,17 +186,6 @@ const nodeStyle = computed((): CSSProperties => {
   return finalizeMindMapExportNodeStyle(result)
 })
 
-const textMaxWidth = computed(() => {
-  const label = ((props.data.label as string) || '').trim()
-  if (!label) return `${MIND_MAP_BRANCH_MAX_TEXT_WIDTH}px`
-  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || mindMapBranchFontSize(props.id)
-  const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
-  return `${resolveMindMapBranchTextMaxWidthPx(label, fontSize, {
-    fontWeight,
-    fontFamily: MIND_MAP_GEOMETRY.fontFamily,
-  })}px`
-})
-
 // Store-owned session survives Vue Flow remount after Enter sibling write-back.
 const isEditing: WritableComputedRef<boolean> = computed({
   get: () => mindMapEditingNodeId.value === props.id,
@@ -206,11 +198,33 @@ const isEditing: WritableComputedRef<boolean> = computed({
   },
 })
 
+const { prefixFor } = useMindMapBranchNumbering()
+const numberPrefix = computed(() => prefixFor(props.id))
+const showNumberPrefix = computed(() => Boolean(numberPrefix.value) && !isEditing.value)
+const numberPrefixGapStyle = {
+  gap: `${MIND_MAP_NUMBER_PREFIX_GAP_PX}px`,
+}
+const accessibleBranchLabel = computed(() => {
+  const label = String(props.data.label || '').trim()
+  const prefix = numberPrefix.value
+  if (!prefix) return label || undefined
+  return label ? `${prefix} ${label}` : prefix
+})
+
+const textMaxWidth = computed(() => {
+  const label = ((props.data.label as string) || '').trim()
+  if (!label && !numberPrefix.value) return `${MIND_MAP_BRANCH_MAX_TEXT_WIDTH}px`
+  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || mindMapBranchFontSize(props.id)
+  const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
+  return `${resolveMindMapBranchBodyMaxWidthPx(label, numberPrefix.value, fontSize, {
+    fontWeight,
+    fontFamily: MIND_MAP_GEOMETRY.fontFamily,
+  })}px`
+})
+
 const previewStore = useMindMapSubgraphPreviewStore()
 const isSubgraphGenerating = computed(
-  () =>
-    previewStore.isGeneratingFor(props.id) ||
-    aiBrainstormGlowingNodeIds.value.has(props.id)
+  () => previewStore.isGeneratingFor(props.id) || aiBrainstormGlowingNodeIds.value.has(props.id)
 )
 const subgraphRingBorderRadius = computed(() => {
   const radius = nodeStyle.value.borderRadius
@@ -349,7 +363,7 @@ function handleTextSave(newText: string) {
   isEditing.value = false
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
-    text: newText,
+    text: stripMatchingBranchNumberPrefix(newText, numberPrefix.value),
   })
 }
 
@@ -359,7 +373,7 @@ function handleEditCancel() {
 
 function handleBranchNodeDoubleClick(): void {
   if (isLearningSheetCustomPickActive()) return
-  if ((diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly))) return
+  if (diagramPresentationReadOnlyRef.value || toValue(diagramStore.isReadonly)) return
   if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
   if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
     notifyCollab.warning(t('collab.nodeLocked'))
@@ -400,6 +414,7 @@ function handleBranchNodeClick(event: MouseEvent): void {
         },
       ]"
       :style="nodeStyle"
+      :aria-label="accessibleBranchLabel"
       @mousedown.capture="handleBranchMovePointerDown"
       @mouseup.capture="handleBranchMovePointerUp"
       @touchstart.passive.capture="handleBranchMoveTouchStart"
@@ -411,43 +426,65 @@ function handleBranchNodeClick(event: MouseEvent): void {
           class="mind-map-underline-text"
           :style="underlineTextStyle"
         >
-          <InlineEditableText
-            :text="data.label || ''"
-            :node-id="id"
-            :is-editing="isEditing"
-            :readonly="isTextReadonly"
-            :max-width="textMaxWidth"
-            :text-align="resolvedStyle.textAlign || 'center'"
-            :text-decoration="resolvedStyle.textDecoration || 'none'"
-            auto-wrap
-            render-markdown
-            @save="handleTextSave"
-            @cancel="handleEditCancel"
-            @close="handleEditCancel"
-            @edit-start="isEditing = true"
-          />
+          <div
+            class="mm-branch-text-row"
+            :style="numberPrefixGapStyle"
+          >
+            <span
+              v-if="showNumberPrefix"
+              class="mm-branch-number"
+              aria-hidden="true"
+              >{{ numberPrefix }}</span
+            >
+            <InlineEditableText
+              :text="data.label || ''"
+              :node-id="id"
+              :is-editing="isEditing"
+              :readonly="isTextReadonly"
+              :max-width="textMaxWidth"
+              :text-align="resolvedStyle.textAlign || 'center'"
+              :text-decoration="resolvedStyle.textDecoration || 'none'"
+              auto-wrap
+              render-markdown
+              @save="handleTextSave"
+              @cancel="handleEditCancel"
+              @close="handleEditCancel"
+              @edit-start="isEditing = true"
+            />
+          </div>
         </div>
         <div
           class="mind-map-underline-line"
           :style="underlineLineStyle"
         />
       </template>
-      <InlineEditableText
+      <div
         v-else
-        :text="data.label || ''"
-        :node-id="id"
-        :is-editing="isEditing"
-        :readonly="isTextReadonly"
-        :max-width="textMaxWidth"
-        :text-align="resolvedStyle.textAlign || 'center'"
-        :text-decoration="resolvedStyle.textDecoration || 'none'"
-        auto-wrap
-        render-markdown
-        @save="handleTextSave"
-        @cancel="handleEditCancel"
-        @close="handleEditCancel"
-        @edit-start="isEditing = true"
-      />
+        class="mm-branch-text-row"
+        :style="numberPrefixGapStyle"
+      >
+        <span
+          v-if="showNumberPrefix"
+          class="mm-branch-number"
+          aria-hidden="true"
+          >{{ numberPrefix }}</span
+        >
+        <InlineEditableText
+          :text="data.label || ''"
+          :node-id="id"
+          :is-editing="isEditing"
+          :readonly="isTextReadonly"
+          :max-width="textMaxWidth"
+          :text-align="resolvedStyle.textAlign || 'center'"
+          :text-decoration="resolvedStyle.textDecoration || 'none'"
+          auto-wrap
+          render-markdown
+          @save="handleTextSave"
+          @cancel="handleEditCancel"
+          @close="handleEditCancel"
+          @edit-start="isEditing = true"
+        />
+      </div>
 
       <Handle
         id="left"
@@ -551,5 +588,26 @@ function handleBranchNodeClick(event: MouseEvent): void {
   opacity: 0;
   border: none;
   background: transparent;
+}
+
+.mm-branch-text-row {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.mind-map-underline-node .mm-branch-text-row {
+  align-items: flex-start;
+  width: 100%;
+}
+
+.mm-branch-number {
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: inherit;
+  user-select: none;
+  pointer-events: none;
 }
 </style>

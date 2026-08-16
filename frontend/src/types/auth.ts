@@ -63,6 +63,8 @@ export interface User {
   uiVersion?: string | null
   /** Persisted AI generate audience (学段); null = unset */
   educationStage?: string | null
+  /** Persisted mind-map 专业程度 id; null = unset (defaults to general) */
+  aiContentLevel?: string | null
   /** False for overseas email accounts: Simplified Chinese (`zh`) UI is not available */
   allowsSimplifiedChinese?: boolean
   /** False for quick-registration users until they set a known password (SMS) */
@@ -116,6 +118,7 @@ export interface BackendUser {
   ui_version?: string | null
   match_prompt_to_ui?: boolean
   education_stage?: string | null
+  ai_content_level?: string | null
   allows_simplified_chinese?: boolean
   login_password_set?: boolean
   thinking_coins?: {

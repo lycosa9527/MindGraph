@@ -28,6 +28,7 @@ import type { KittyAgentContext } from '@/composables/kitty/kittyAgentTypes'
 import { syncDiagramStoreFromVoiceContext } from '@/composables/kitty/syncDiagramStoreFromVoiceContext'
 import { useDiagramStore } from '@/stores/diagram'
 import { useKittySessionStore } from '@/stores/kittySession'
+import { useLLMResultsStore } from '@/stores/llmResults'
 import { apiRequest } from '@/utils/apiClient'
 import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import type { DiagramType } from '@/types'
@@ -263,6 +264,12 @@ export function useKittyDesktopRemoteSync(options: {
       return
     }
     if (canonicalDiagramKind(dt) !== canonicalDiagramKind(storeType)) {
+      return
+    }
+
+    // Redis still holds the previous first-finisher. A smaller regenerate
+    // would fail the "local ahead hub" check and paint the old map back.
+    if (useLLMResultsStore().isGenerating) {
       return
     }
 

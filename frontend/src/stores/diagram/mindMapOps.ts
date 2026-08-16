@@ -4,6 +4,7 @@ import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { inferMindMapThemeIdFromNodes, resolveActiveMindMapThemeId } from '@/config/mindMapThemes'
 import { i18n } from '@/i18n'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
+import { isMindMapBranchNumberingEnabled } from '@/utils/mindMapBranchNumbering'
 import {
   isSessionMindMapV2VisualDesignActive,
   readEffectiveMindMapCanvasMode,
@@ -1130,6 +1131,10 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     data.value._node_styles = {
       ...(data.value._node_styles || {}),
       [inserted.newNodeId]: { ...inserted.seededStyle },
+    }
+
+    if (isMindMapBranchNumberingEnabled(data.value)) {
+      ctx.refreshMindMapNumberingEstimates({ preserveIncomingY: true })
     }
 
     if (inserted.isTopLevel) {
