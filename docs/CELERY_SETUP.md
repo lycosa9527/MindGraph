@@ -83,12 +83,16 @@ Expected log lines:
 [CELERY] Worker started (PID: xxxxx)
 ```
 
-If a worker is already running:
+If a worker is already running **and** `inspect.registered()` lists every app task (including `mind_classroom.*`):
 
 ```
 [CELERY] Found 1 existing Celery worker(s):
 [CELERY] ✓ Using existing Celery worker(s), skipping startup
 ```
+
+If registered tasks cannot be verified, or the live worker is missing a task added since it booted, startup shuts that worker down and launches a current one. Do not treat “worker is alive” as enough after a deploy. If the stale worker is still consuming after shutdown, startup **exits** instead of starting a second consumer (the old worker would discard unknown task names).
+
+While the app is running, the process monitor compares the live worker banner to this process’s task list (throttled, default 60s). A stale banner (for example after an API recycle that left an old Celery PID) marks Celery `DEGRADED` and **replaces the worker automatically**.
 
 Worker logs (Linux):
 
@@ -97,7 +101,7 @@ Worker logs (Linux):
 
 ### Post-deploy checklist (test + production)
 
-1. Restart API **and** Celery together so new tasks (e.g. `showcase.generate_cover`) are registered.
+1. Restart API **and** Celery together so new tasks (e.g. `showcase.generate_cover`, `mind_classroom.*`) are registered. For a standalone worker, use the restart command below.
 2. Confirm registration: `celery -A config.celery inspect registered` includes knowledge, showcase, and mindmate_export tasks.
 3. If covers/PNG/DingTalk fail on test with Playwright errors, install Chromium in the app conda env (`python -m playwright install chromium` + OS deps, or COS stack sync).
 4. Verify DashScope / Qwen API keys and region match each host’s `.env`.
@@ -111,6 +115,19 @@ python -m celery -A config.celery worker --loglevel=info
 ```
 
 Set `CELERY_MANAGED_BY_APP=false` if you run a long-lived external worker and do not want `main.py` to stop it on exit.
+
+### Restart a standalone worker (fresh task banner)
+
+After pulling code that adds Celery tasks (for example `mind_classroom.*`), stop the old worker and start a new one so the `[tasks]` banner matches this checkout:
+
+```bash
+source ~/miniconda3/etc/profile.d/conda.sh && conda activate python313
+cd /home/royw/src/MindGraph
+pkill -f "celery -A config.celery worker"
+python -m celery -A config.celery worker --loglevel=info --concurrency=2 -Q default,knowledge
+```
+
+On boot, `[tasks]` must include `mind_classroom.run_script` and `mind_classroom.run_slides`. If the API manages Celery (`CELERY_MANAGED_BY_APP=true`), restart the API instead — it replaces a stale banner on its own.
 
 ## Why Qdrant server mode?
 

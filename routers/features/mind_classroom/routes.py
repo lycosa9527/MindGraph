@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.celery import celery_app
 from models.domain.auth import User
+from models.domain.mind_classroom import MindClassroomJob
 from repositories.mind_classroom_repo import MindClassroomJobRepository, MindClassroomSlideRepository
 from repositories.zhihui_repo import ZhihuiConversationRepository, ZhihuiGenerationRepository
 from routers.auth.dependencies import get_async_db_with_request_rls, get_current_user
@@ -20,6 +21,7 @@ from services.mind_classroom.celery_log import log_classroom_celery
 from services.mind_classroom.diagram_spec import load_owned_diagram_spec
 from services.mind_classroom.enqueue import create_and_enqueue_job
 from services.mind_classroom.job_payload import job_payload
+from services.mind_classroom.queue_dispatch import ensure_queued_dispatch, task_name_for_settings
 from services.mind_classroom.storage import delete_key
 from services.mind_classroom.transcript_persist import (
     ensure_transcript_on_server,
@@ -108,6 +110,14 @@ async def _sweep_stale(user_id: int) -> None:
         logger.warning("[MindClassroom] Stale sweep failed user=%s: %s", user_id, exc)
 
 
+async def _refresh_queued_job(row: MindClassroomJob, db: AsyncSession) -> MindClassroomJob:
+    if row.status != "queued":
+        return row
+    await ensure_queued_dispatch(row.id, task_name_for_settings(row.settings))
+    await db.refresh(row)
+    return row
+
+
 @router.post("/jobs", status_code=status.HTTP_202_ACCEPTED)
 async def start_classroom_job(
     body: ClassroomJobRequest,
@@ -162,6 +172,7 @@ async def get_job_by_diagram(
     wanted = mode.strip() if mode and mode.strip() in _MODES else "slide_deck"
     row = await repo.latest_job_for_diagram(user_id=user_id, diagram_id=cleaned, mode=wanted)
     if row is not None:
+        row = await _refresh_queued_job(row, db)
         await ensure_transcript_on_server(row.result_json)
         slides = list(await MindClassroomSlideRepository(db).list_by_job(row.id))
         return job_payload(row, request, slides=slides)
@@ -192,6 +203,7 @@ async def get_classroom_job(
     row = await repo.get_by_uuid(job_id)
     if row is None or row.user_id != int(current_user.id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    row = await _refresh_queued_job(row, db)
     await ensure_transcript_on_server(row.result_json)
     slides = list(await MindClassroomSlideRepository(db).list_by_job(job_id))
     return job_payload(row, request, slides=slides)
@@ -248,11 +260,23 @@ async def delete_classroom_job(
     slide_repo = MindClassroomSlideRepository(db)
     row = await repo.get_by_uuid(job_id)
     transcript_key = transcript_key_from_result(getattr(row, "result_json", None) if row else None)
+    keep_shared_transcript = False
+    if transcript_key and row is not None and row.diagram_id:
+        row_mode = (row.settings or {}).get("mode")
+        siblings = await repo.list_jobs_for_diagram(
+            user_id=int(row.user_id),
+            diagram_id=str(row.diagram_id),
+            mode=str(row_mode) if row_mode else None,
+        )
+        keep_shared_transcript = any(
+            sibling.id != job_id and transcript_key_from_result(sibling.result_json) == transcript_key
+            for sibling in siblings
+        )
     keys = await slide_repo.delete_by_job(job_id, commit=False)
     deleted = await repo.delete_job(job_id, commit=True)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    if transcript_key:
+    if transcript_key and not keep_shared_transcript:
         keys.append(transcript_key)
     for key in keys:
         await delete_key(key)

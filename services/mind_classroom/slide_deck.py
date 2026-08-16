@@ -75,6 +75,7 @@ async def run_slide_deck_job(
         language = str(settings.get("language") or "zh")
         user_id = claimed.user_id
         organization_id = claimed.organization_id
+        diagram_id = claimed.diagram_id
         existing_plan = claimed.lesson_plan_json if isinstance(claimed.lesson_plan_json, dict) else None
         slides = list(await MindClassroomSlideRepository(db).list_by_job(job_id))
 
@@ -282,6 +283,8 @@ async def run_slide_deck_job(
                     settings=settings,
                     steps=steps,
                     result_json={"steps": steps},
+                    user_id=user_id,
+                    diagram_id=diagram_id,
                 )
                 await set_status_with_lease(
                     job_id,
@@ -317,6 +320,8 @@ async def run_slide_deck_job(
             settings=settings,
             steps=steps,
             result_json={"steps": steps},
+            user_id=user_id,
+            diagram_id=diagram_id,
         )
         await set_status_with_lease(
             job_id,

@@ -172,6 +172,8 @@ run_backend() {
     tests/test_workshop_chat_file_service.py \
     tests/test_dingtalk_bind_service.py \
     tests/test_showcase_helpers.py \
+    tests/test_celery_manager_stale.py \
+    tests/services/test_celery_health_check.py \
     tests/test_showcase_create_response.py \
     tests/test_showcase_storage_cos.py \
     tests/test_showcase_withdraw_reason.py \
@@ -189,6 +191,7 @@ run_backend() {
     tests/test_mind_classroom_slide_adapter.py \
     tests/test_mind_classroom_rls.py \
     tests/test_mind_classroom_celery_log.py \
+    tests/test_mind_classroom_enqueue.py \
     tests/test_kitty_narrate.py \
     tests/test_kitty_idle.py \
     tests/test_generate_text_to_image.py \

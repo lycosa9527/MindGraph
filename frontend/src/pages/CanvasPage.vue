@@ -141,6 +141,7 @@ import {
   resumeLearningSheetAfterPresentation,
   suspendLearningSheetForPresentation,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
+import { requestClassroomStop } from '@/composables/mindMap/classroomCommands'
 import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
 import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
@@ -319,7 +320,7 @@ async function handleStartPresentationWithTier(): Promise<void> {
     }
   }
   if (opening && mindClassroomLecturing.value) {
-    stopMindClassroomLecture()
+    requestClassroomStop()
   }
   handleStartPresentation()
 }
@@ -531,7 +532,7 @@ const {
   isSlideDeckMode: mindClassroomSlideDeck,
   isCanvasTourMode: mindClassroomCanvasTour,
 } = storeToRefs(mindClassroomStore)
-const { stopLecture: stopMindClassroomLecture } = useMindClassroomLecture({ bootstrap: true })
+useMindClassroomLecture({ bootstrap: true })
 
 const mindMapTourFocusNodeId = computed(
   () => mindClassroomStore.focusNodeId ?? slidePresentation.slideFocusNodeId.value

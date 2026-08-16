@@ -2,7 +2,7 @@
 /**
  * Mind Classroom launch settings — readable modal / panel layout.
  */
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
@@ -19,7 +19,11 @@ import {
 import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
+import {
+  requestClassroomRestart,
+  requestClassroomRestorePrepared,
+  requestClassroomStart,
+} from '@/composables/mindMap/classroomCommands'
 import {
   MIND_CLASSROOM_MASTERY_IDS,
   MIND_CLASSROOM_PRESENTATION_IDS,
@@ -46,23 +50,26 @@ const props = withDefaults(
   { variant: 'panel' }
 )
 
-const emit = defineEmits<{
-  started: []
-}>()
-
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
 const classroomStore = useMindClassroomStore()
-const { mastery, presentation, tourScope, slideStyle, tone, jobStatus, jobError, preparedSteps } =
-  storeToRefs(classroomStore)
-const { startLecture, restartLecture, restorePreparedFromServer } = useMindClassroomLecture()
+const {
+  mastery,
+  presentation,
+  tourScope,
+  slideStyle,
+  tone,
+  jobStatus,
+  jobError,
+  preparedSteps,
+  startInFlight,
+} = storeToRefs(classroomStore)
 const aiLevelStore = useAiContentLevelStore()
 const { level: audienceLevel } = storeToRefs(aiLevelStore)
-const starting = ref(false)
 
 const hasPrepared = computed(() => preparedSteps.value.length > 0)
-const queueBusy = computed(() => isMindClassroomQueueBusy(jobStatus.value, starting.value))
+const queueBusy = computed(() => isMindClassroomQueueBusy(jobStatus.value, startInFlight.value))
 const startLocked = computed(() => queueBusy.value || !authStore.isAuthenticated)
 const showRestart = computed(() =>
   shouldShowMindClassroomRestart({
@@ -75,7 +82,7 @@ const startLabel = computed(() =>
   t(
     mindClassroomStartLabelKey({
       jobStatus: jobStatus.value,
-      starting: starting.value,
+      starting: startInFlight.value,
       hasPrepared: hasPrepared.value,
       presentation: presentation.value,
     })
@@ -86,11 +93,11 @@ const startFailed = computed(() => jobStatus.value === 'failed' && !hasPrepared.
 watch([mastery, presentation, tourScope, slideStyle, tone, audienceLevel], () => {
   if (queueBusy.value) return
   classroomStore.clearPrepared()
-  void restorePreparedFromServer()
+  requestClassroomRestorePrepared()
 })
 
 onMounted(() => {
-  void restorePreparedFromServer()
+  requestClassroomRestorePrepared()
 })
 
 const masteryIcons = {
@@ -196,58 +203,21 @@ function handleRadioGroupKeydown<T extends string>(
   })
 }
 
-async function handleStart(): Promise<void> {
+function handleStart(): void {
   if (startLocked.value) return
   if (!authStore.isAuthenticated) {
     notify.warning(t('canvas.mindClassroom.queue.loginRequired'))
     return
   }
-  const playNow = hasPrepared.value
-  if (!playNow) starting.value = true
-  try {
-    const result = await startLecture()
-    if (!result.ok) {
-      if (result.reason === 'cancelled') return
-      if (result.reason === 'failed') {
-        notify.error(jobError.value || t('canvas.mindClassroom.lecture.queueFailed'))
-        return
-      }
-      notify.warning(
-        result.reason === 'no_diagram'
-          ? t('canvas.mindClassroom.lecture.needDiagram')
-          : t('canvas.mindClassroom.lecture.emptySteps')
-      )
-      return
-    }
-    if (result.phase === 'playing') emit('started')
-  } finally {
-    starting.value = false
-  }
+  requestClassroomStart()
 }
 
-async function handleRestart(): Promise<void> {
+function handleRestart(): void {
   if (!authStore.isAuthenticated) {
     notify.warning(t('canvas.mindClassroom.queue.loginRequired'))
     return
   }
-  starting.value = true
-  try {
-    const result = await restartLecture()
-    if (!result.ok) {
-      if (result.reason === 'cancelled') return
-      if (result.reason === 'failed') {
-        notify.error(jobError.value || t('canvas.mindClassroom.lecture.queueFailed'))
-        return
-      }
-      notify.warning(
-        result.reason === 'no_diagram'
-          ? t('canvas.mindClassroom.lecture.needDiagram')
-          : t('canvas.mindClassroom.lecture.emptySteps')
-      )
-    }
-  } finally {
-    starting.value = false
-  }
+  requestClassroomRestart()
 }
 </script>
 

@@ -51,11 +51,13 @@ async def download_classroom_asset(
 
     filename = Path(normalized).name
     media_type, _ = mimetypes.guess_type(filename)
-    if normalized.endswith(".md"):
+    is_markdown = normalized.endswith(".md")
+    if is_markdown:
         media_type = "text/markdown; charset=utf-8"
     elif not media_type:
         media_type = "image/png"
     disposition = f'inline; filename="{filename}"'
+    cache_control = "private, no-store" if is_markdown else "public, max-age=86400"
 
     if proxy or not cos_zhihui_enabled():
         if not cos_zhihui_enabled():
@@ -70,7 +72,7 @@ async def download_classroom_asset(
                 media_type=media_type,
                 filename=filename,
                 headers={
-                    "Cache-Control": "public, max-age=86400",
+                    "Cache-Control": cache_control,
                     "Content-Disposition": disposition,
                     "X-Content-Type-Options": "nosniff",
                 },
@@ -84,7 +86,7 @@ async def download_classroom_asset(
             _stream(),
             media_type=media_type,
             headers={
-                "Cache-Control": "public, max-age=86400",
+                "Cache-Control": cache_control,
                 "Content-Disposition": disposition,
                 "X-Content-Type-Options": "nosniff",
             },
@@ -107,7 +109,7 @@ async def download_classroom_asset(
             content=body,
             media_type=media_type,
             headers={
-                "Cache-Control": "public, max-age=86400",
+                "Cache-Control": cache_control,
                 "Content-Disposition": disposition,
                 "X-Content-Type-Options": "nosniff",
             },

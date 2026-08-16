@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import { useAuthStore, useDiagramStore, useMindClassroomStore, useSavedDiagramsStore } from '@/stores'
 import type { DiagramData } from '@/types'
@@ -140,6 +141,32 @@ describe('useMindClassroomLecture lifecycle', () => {
     host.remove()
   })
 
+  it('prefetches the next caption when Kitty TTS starts a slide', async () => {
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const classroom = useMindClassroomStore(pinia)
+    classroom.beginSession(steps, 'canvas_tour')
+    const emitSpy = vi.spyOn(eventBus, 'emit')
+    lecture?.goToStep(0)
+    await vi.advanceTimersByTimeAsync(960)
+
+    const narrate = emitSpy.mock.calls.find(([name]) => name === 'kitty:lecture_narrate_requested')
+    expect(narrate?.[1]).toMatchObject({
+      text: 'First caption',
+      stepId: 'first',
+      prefetchText: 'Second caption',
+      prefetchStepId: 'second',
+    })
+    expect(typeof (narrate?.[1] as { generation?: number }).generation).toBe('number')
+    emitSpy.mockRestore()
+    app.unmount()
+  })
+
   it('refuses to start a lecture without login', async () => {
     const pinia = createPinia()
     const app = createApp(LectureProbe)
@@ -154,6 +181,36 @@ describe('useMindClassroomLecture lifecycle', () => {
     } satisfies DiagramData
 
     expect(await lecture?.startLecture()).toEqual({ ok: false, reason: 'unauthenticated' })
+    app.unmount()
+  })
+
+  it('plays a prepared lecture from the classroom event bus', async () => {
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'topic', text: 'Topic', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const classroom = useMindClassroomStore(pinia)
+    classroom.setPreparedSteps(steps)
+
+    const results: unknown[] = []
+    const off = eventBus.on('classroom:queue_result', (payload) => {
+      results.push(payload)
+    })
+    eventBus.emit('classroom:start_requested', { reuse: true })
+    await vi.waitFor(() => {
+      expect(results).toEqual([{ ok: true, phase: 'playing', action: 'start' }])
+    })
+    expect(classroom.isLecturing).toBe(true)
+    off()
     app.unmount()
   })
 

@@ -23,6 +23,7 @@ import { getKittyDiagramContentFingerprint } from '@/composables/kitty/kittyDiag
 import { runKittyHubSync } from '@/composables/kitty/pipeline/hubSyncWorker'
 import { KITTY_HUB_BACKGROUND_SYNC_TIMEOUT_MS } from '@/composables/kitty/syncKittyHubContext'
 import { useKittyAgent } from '@/composables/kitty/useKittyAgent'
+import { lectureSpeakGeneration } from '@/composables/mindMap/useMindClassroomLecture'
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'
 import { useOneSentenceStore } from '@/stores/oneSentence'
@@ -314,8 +315,19 @@ export function useKittyCanvasOwnerAgent(options: {
     'kitty:lecture_narrate_requested',
     (payload) => {
       void (async () => {
+        const requestedGeneration = payload.generation
         const connected = await ensureConnected()
-        if (!connected || !kitty.sendNarrate(payload.text, payload.stepId)) {
+        if (
+          requestedGeneration !== undefined &&
+          requestedGeneration !== lectureSpeakGeneration()
+        ) {
+          return
+        }
+        const prefetch =
+          payload.prefetchText?.trim()
+            ? { text: payload.prefetchText, stepId: payload.prefetchStepId }
+            : undefined
+        if (!connected || !kitty.sendNarrate(payload.text, payload.stepId, prefetch)) {
           eventBus.emit('kitty:lecture_tts_done', { fallback: true })
         }
       })()

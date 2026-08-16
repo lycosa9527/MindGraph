@@ -11,7 +11,13 @@ import { ChevronLeft, ChevronRight, Pause, Play, Square, Volume2, VolumeX, X } f
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
-import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
+import {
+  requestClassroomNext,
+  requestClassroomPrev,
+  requestClassroomSetVoice,
+  requestClassroomStop,
+  requestClassroomTogglePause,
+} from '@/composables/mindMap/classroomCommands'
 import { useMindClassroomStore } from '@/stores'
 
 const { t } = useLanguage()
@@ -27,8 +33,6 @@ const {
   narrating,
   slideStyle,
 } = storeToRefs(classroomStore)
-
-const { togglePause, nextStep, prevStep, stopLecture, setVoiceEnabled } = useMindClassroomLecture()
 
 const isPaused = computed(() => status.value === 'paused')
 
@@ -63,7 +67,7 @@ const styleTitle = computed(() =>
           class="mc-slide-pane__icon-btn"
           :aria-label="t('canvas.mindClassroom.lecture.stop')"
           :title="t('canvas.mindClassroom.lecture.stop')"
-          @click="stopLecture()"
+          @click="requestClassroomStop()"
         >
           <X
             class="h-4 w-4"
@@ -89,7 +93,7 @@ const styleTitle = computed(() =>
         class="mc-slide-pane__nav mc-slide-pane__nav--prev"
         :disabled="!canGoPrev || transitioning"
         :aria-label="t('canvas.mindClassroom.lecture.prev')"
-        @click="prevStep()"
+        @click="requestClassroomPrev()"
       >
         <ChevronLeft class="h-6 w-6" />
       </button>
@@ -137,7 +141,7 @@ const styleTitle = computed(() =>
         class="mc-slide-pane__nav mc-slide-pane__nav--next"
         :disabled="transitioning"
         :aria-label="t('canvas.mindClassroom.lecture.next')"
-        @click="nextStep()"
+        @click="requestClassroomNext()"
       >
         <ChevronRight class="h-6 w-6" />
       </button>
@@ -152,7 +156,7 @@ const styleTitle = computed(() =>
             ? t('canvas.mindClassroom.lecture.mute')
             : t('canvas.mindClassroom.lecture.unmute')
         "
-        @click="setVoiceEnabled(!voiceEnabled)"
+        @click="requestClassroomSetVoice(!voiceEnabled)"
       >
         <Volume2
           v-if="voiceEnabled"
@@ -169,7 +173,7 @@ const styleTitle = computed(() =>
         class="mc-dock-btn"
         :disabled="!canGoPrev || transitioning"
         :aria-label="t('canvas.mindClassroom.lecture.prev')"
-        @click="prevStep()"
+        @click="requestClassroomPrev()"
       >
         <ChevronLeft class="h-4 w-4" />
       </button>
@@ -182,7 +186,7 @@ const styleTitle = computed(() =>
             ? t('canvas.mindClassroom.lecture.resume')
             : t('canvas.mindClassroom.lecture.pause')
         "
-        @click="togglePause()"
+        @click="requestClassroomTogglePause()"
       >
         <Play
           v-if="isPaused"
@@ -199,7 +203,7 @@ const styleTitle = computed(() =>
         class="mc-dock-btn"
         :disabled="transitioning"
         :aria-label="t('canvas.mindClassroom.lecture.next')"
-        @click="nextStep()"
+        @click="requestClassroomNext()"
       >
         <ChevronRight class="h-4 w-4" />
       </button>
@@ -208,7 +212,7 @@ const styleTitle = computed(() =>
         type="button"
         class="mc-dock-btn mc-dock-btn--stop"
         :aria-label="t('canvas.mindClassroom.lecture.stop')"
-        @click="stopLecture()"
+        @click="requestClassroomStop()"
       >
         <Square class="h-3.5 w-3.5" />
       </button>

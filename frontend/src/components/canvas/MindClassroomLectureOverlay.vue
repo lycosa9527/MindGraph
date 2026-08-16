@@ -11,7 +11,13 @@ import { ChevronLeft, ChevronRight, Pause, Play, Square, Volume2, VolumeX } from
 import KittyBlackCatMascot from '@/components/kitty/KittyBlackCatMascot.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { KittyAgentState } from '@/composables/kitty/useKittyAgent'
-import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
+import {
+  requestClassroomNext,
+  requestClassroomPrev,
+  requestClassroomSetVoice,
+  requestClassroomStop,
+  requestClassroomTogglePause,
+} from '@/composables/mindMap/classroomCommands'
 import { PRESENTATION_Z } from '@/config/uiConfig'
 import { useMindClassroomStore } from '@/stores'
 
@@ -28,8 +34,6 @@ const {
   transitioning,
   narrating,
 } = storeToRefs(classroomStore)
-
-const { togglePause, nextStep, prevStep, stopLecture, setVoiceEnabled } = useMindClassroomLecture()
 
 const regionLabel = computed(() => {
   const title = currentStep.value?.title ?? ''
@@ -106,7 +110,7 @@ const kittyState = computed<KittyAgentState>(() => {
             ? t('canvas.mindClassroom.lecture.mute')
             : t('canvas.mindClassroom.lecture.unmute')
         "
-        @click="setVoiceEnabled(!voiceEnabled)"
+        @click="requestClassroomSetVoice(!voiceEnabled)"
       >
         <Volume2
           v-if="voiceEnabled"
@@ -123,7 +127,7 @@ const kittyState = computed<KittyAgentState>(() => {
         class="mc-ctrl"
         :disabled="!canGoPrev || transitioning"
         :aria-label="t('canvas.mindClassroom.lecture.prev')"
-        @click="prevStep()"
+        @click="requestClassroomPrev()"
       >
         <ChevronLeft class="h-4 w-4" />
       </button>
@@ -136,7 +140,7 @@ const kittyState = computed<KittyAgentState>(() => {
             ? t('canvas.mindClassroom.lecture.resume')
             : t('canvas.mindClassroom.lecture.pause')
         "
-        @click="togglePause()"
+        @click="requestClassroomTogglePause()"
       >
         <Play
           v-if="isPaused"
@@ -153,7 +157,7 @@ const kittyState = computed<KittyAgentState>(() => {
         class="mc-ctrl"
         :disabled="transitioning"
         :aria-label="t('canvas.mindClassroom.lecture.next')"
-        @click="nextStep()"
+        @click="requestClassroomNext()"
       >
         <ChevronRight class="h-4 w-4" />
       </button>
@@ -163,7 +167,7 @@ const kittyState = computed<KittyAgentState>(() => {
         class="mc-ctrl mc-ctrl--stop"
         :aria-label="t('canvas.mindClassroom.lecture.stop')"
         :title="t('canvas.mindClassroom.lecture.stop')"
-        @click="stopLecture()"
+        @click="requestClassroomStop()"
       >
         <Square class="h-3.5 w-3.5" />
         <span>{{ t('canvas.mindClassroom.lecture.stop') }}</span>

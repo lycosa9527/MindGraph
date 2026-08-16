@@ -51,6 +51,10 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
   const jobProgress = ref<Record<string, unknown> | null>(null)
   const jobError = ref<string | null>(null)
   const preparedSteps = ref<MindClassroomLectureStep[]>([])
+  const startInFlight = ref(false)
+  const speakGeneration = ref(0)
+  const queueGeneration = ref(0)
+  const preLectureCollapsedPaths = ref<string[] | null>(null)
 
   watch(mastery, (value) => {
     saveMindClassroomMastery(value)
@@ -168,6 +172,24 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     preparedSteps.value = next
   }
 
+  function setStartInFlight(next: boolean): void {
+    startInFlight.value = next
+  }
+
+  function bumpSpeakGeneration(): number {
+    speakGeneration.value += 1
+    return speakGeneration.value
+  }
+
+  function bumpQueueGeneration(): number {
+    queueGeneration.value += 1
+    return queueGeneration.value
+  }
+
+  function setPreLectureCollapsedPaths(next: string[] | null): void {
+    preLectureCollapsedPaths.value = next
+  }
+
   function clearPrepared(): void {
     preparedSteps.value = []
     jobId.value = null
@@ -205,6 +227,10 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     jobProgress,
     jobError,
     preparedSteps,
+    startInFlight,
+    speakGeneration,
+    queueGeneration,
+    preLectureCollapsedPaths,
     isLecturing,
     isSlideDeckMode,
     isCanvasTourMode,
@@ -227,6 +253,10 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     setNarrating,
     setJobState,
     setPreparedSteps,
+    setStartInFlight,
+    bumpSpeakGeneration,
+    bumpQueueGeneration,
+    setPreLectureCollapsedPaths,
     clearPrepared,
     beginSession,
     clearSession,

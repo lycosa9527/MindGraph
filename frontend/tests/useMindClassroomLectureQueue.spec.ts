@@ -8,18 +8,29 @@ import {
   teardownMindClassroomLecture,
   useMindClassroomLecture,
 } from '@/composables/mindMap/useMindClassroomLecture'
-import { useAuthStore, useDiagramStore, useMindClassroomStore } from '@/stores'
+import {
+  useAuthStore,
+  useDiagramStore,
+  useMindClassroomStore,
+  useSavedDiagramsStore,
+} from '@/stores'
 import type { DiagramData } from '@/types'
 
 const enqueueMindClassroomJob = vi.fn()
 const pollMindClassroomJob = vi.fn()
 const cancelMindClassroomJob = vi.fn()
+const fetchMindClassroomJobByDiagram = vi.fn()
 
-vi.mock('@/composables/mindMap/mindClassroomJobApi', () => ({
-  enqueueMindClassroomJob: (...args: unknown[]) => enqueueMindClassroomJob(...args),
-  pollMindClassroomJob: (...args: unknown[]) => pollMindClassroomJob(...args),
-  cancelMindClassroomJob: (...args: unknown[]) => cancelMindClassroomJob(...args),
-}))
+vi.mock('@/composables/mindMap/mindClassroomJobApi', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/composables/mindMap/mindClassroomJobApi')>()
+  return {
+    ...actual,
+    enqueueMindClassroomJob: (...args: unknown[]) => enqueueMindClassroomJob(...args),
+    pollMindClassroomJob: (...args: unknown[]) => pollMindClassroomJob(...args),
+    cancelMindClassroomJob: (...args: unknown[]) => cancelMindClassroomJob(...args),
+    fetchMindClassroomJobByDiagram: (...args: unknown[]) => fetchMindClassroomJobByDiagram(...args),
+  }
+})
 
 vi.mock('@/composables/core/useLanguage', () => ({
   useLanguage: () => ({
@@ -51,6 +62,8 @@ describe('useMindClassroomLecture queued start', () => {
     enqueueMindClassroomJob.mockReset()
     pollMindClassroomJob.mockReset()
     cancelMindClassroomJob.mockReset()
+    fetchMindClassroomJobByDiagram.mockReset()
+    fetchMindClassroomJobByDiagram.mockRejectedValue(new Error('no job'))
     vi.stubGlobal(
       'matchMedia',
       vi.fn(() => ({
@@ -174,12 +187,87 @@ describe('useMindClassroomLecture queued start', () => {
       id: 'job-stale',
       status: 'ready',
       result_json: {
-        steps: [{ id: 'late', kind: 'overview', title: 'Late', caption: 'Nope', focus_node_ids: [] }],
+        steps: [
+          { id: 'late', kind: 'overview', title: 'Late', caption: 'Nope', focus_node_ids: [] },
+        ],
       },
     })
     expect(await pending).toEqual({ ok: false, reason: 'cancelled' })
     expect(classroom.preparedSteps).toEqual([])
     expect(classroom.isLecturing).toBe(false)
+    app.unmount()
+  })
+
+  it('reattaches a queued server job after the modal is closed so start is ready later', async () => {
+    const matchingSettings = {
+      mode: 'canvas_tour',
+      mastery: 'first_look',
+      tone: 'classroom',
+      tour_scope: 'main_branch',
+      slide_style: 'general',
+      audience_level: 'general',
+    }
+    fetchMindClassroomJobByDiagram.mockResolvedValue({
+      id: 'job-keep',
+      status: 'queued',
+      settings: matchingSettings,
+      progress: { phase: 'queued' },
+    })
+    let finishPoll: ((value: unknown) => void) | null = null
+    pollMindClassroomJob.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishPoll = resolve
+        })
+    )
+
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const saved = useSavedDiagramsStore(pinia)
+    saved.setActiveDiagram('diagram-keep')
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'topic', text: 'Topic', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+
+    const classroom = useMindClassroomStore(pinia)
+    classroom.closeModal()
+    const attached = await lecture?.restorePreparedFromServer()
+    expect(attached).toBe(true)
+    expect(classroom.jobId).toBe('job-keep')
+    expect(classroom.jobStatus).toBe('queued')
+    expect(enqueueMindClassroomJob).not.toHaveBeenCalled()
+
+    finishPoll?.({
+      id: 'job-keep',
+      status: 'ready',
+      result_json: {
+        steps: [
+          {
+            id: 'kept',
+            kind: 'overview',
+            title: 'Kept',
+            caption: 'Still here',
+            focus_node_ids: ['topic'],
+          },
+        ],
+      },
+    })
+    await vi.waitFor(() => {
+      expect(classroom.preparedSteps[0]?.id).toBe('kept')
+    })
+    expect(classroom.jobStatus).toBe('ready')
+
+    const started = await lecture?.startLecture()
+    expect(started).toEqual({ ok: true, phase: 'playing' })
+    expect(enqueueMindClassroomJob).not.toHaveBeenCalled()
     app.unmount()
   })
 })

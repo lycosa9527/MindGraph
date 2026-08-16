@@ -592,13 +592,24 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     state.value = isActive.value ? 'active' : 'idle'
   }
 
-  function sendNarrate(text: string, stepId?: string): boolean {
+  function sendNarrate(
+    text: string,
+    stepId?: string,
+    prefetch?: { text: string; stepId?: string }
+  ): boolean {
     if (!text.trim() || !ws.value || ws.value.readyState !== WebSocket.OPEN) {
       return false
     }
     const payload: Record<string, string> = { type: 'narrate', text: text.trim() }
     if (stepId?.trim()) {
       payload.step_id = stepId.trim()
+    }
+    const prefetchText = prefetch?.text.trim()
+    if (prefetchText) {
+      payload.prefetch_text = prefetchText
+      if (prefetch?.stepId?.trim()) {
+        payload.prefetch_step_id = prefetch.stepId.trim()
+      }
     }
     try {
       ws.value.send(JSON.stringify(payload))

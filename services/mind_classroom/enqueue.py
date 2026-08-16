@@ -5,10 +5,16 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
-from config.celery import celery_app
 from repositories.mind_classroom_repo import MindClassroomJobRepository
 from services.mind_classroom.celery_log import log_classroom_celery
 from services.mind_classroom.job_manifest import hash_spec_snapshot, mark_job_failed, mark_job_queued
+from services.mind_classroom.queue_dispatch import (
+    WORKER_MISSING_MSG,
+    ensure_queued_dispatch,
+    send_classroom_task,
+    task_name_for_settings,
+    workers_register_task,
+)
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.db.session_open import system_rls_session
 
@@ -22,6 +28,18 @@ def _task_name(mode: str) -> str:
     return TASK_SLIDES if mode == "slide_deck" else TASK_SCRIPT
 
 
+async def _reuse_payload(job_id: str, status: str, settings: dict[str, Any]) -> dict[str, Any]:
+    if status == "queued":
+        status = await ensure_queued_dispatch(job_id, task_name_for_settings(settings))
+    log_classroom_celery(
+        "reuse",
+        job_id=job_id,
+        status=status,
+        detail=f"mode={settings.get('mode') or 'canvas_tour'}",
+    )
+    return {"job_id": job_id, "status": status, "reused": True}
+
+
 async def create_and_enqueue_job(
     *,
     user_id: int,
@@ -32,7 +50,7 @@ async def create_and_enqueue_job(
     reuse: bool = True,
 ) -> dict[str, Any]:
     """
-    Create a classroom job (or reuse a ready one) and enqueue Celery.
+    Create a classroom job (or reuse a ready/in-flight one) and enqueue Celery.
 
     Returns a public job payload including ``reused``.
     """
@@ -46,15 +64,7 @@ async def create_and_enqueue_job(
                 settings=settings,
             )
             if existing is not None:
-                log_classroom_celery(
-                    "reuse",
-                    job_id=existing.id,
-                    celery_task_id=existing.celery_task_id,
-                    status=existing.status,
-                    stage=existing.current_stage,
-                    detail=f"mode={settings.get('mode') or 'canvas_tour'}",
-                )
-                return {"job_id": existing.id, "status": existing.status, "reused": True}
+                return await _reuse_payload(existing.id, existing.status, settings)
         active = await repo.count_active_jobs(user_id)
         if active >= repo.max_active_jobs():
             raise RuntimeError(f"Too many active classroom jobs ({active}/{repo.max_active_jobs()}). Wait or cancel.")
@@ -69,10 +79,20 @@ async def create_and_enqueue_job(
         )
 
     mode = str(settings.get("mode") or "canvas_tour")
+    task_name = _task_name(mode)
+    if workers_register_task(task_name) is False:
+        await mark_job_failed(job.id, WORKER_MISSING_MSG)
+        log_classroom_celery(
+            "error",
+            job_id=job.id,
+            status="failed",
+            detail="reason=worker_missing_task",
+        )
+        return {"job_id": job.id, "status": "failed", "reused": False, "celery_task_id": None}
+
     task_id: Optional[str] = None
     try:
-        async_result = celery_app.send_task(_task_name(mode), kwargs={"job_id": job.id}, queue="default")
-        task_id = str(async_result.id) if async_result.id else None
+        task_id = send_classroom_task(task_name, job.id)
     except BACKGROUND_INFRA_ERRORS as exc:
         logger.warning("[MindClassroom] Enqueue failed job=%s err=%s", job.id, exc)
         await mark_job_failed(job.id, f"enqueue_failed: {exc}")
@@ -85,7 +105,7 @@ async def create_and_enqueue_job(
         job_id=job.id,
         celery_task_id=task_id,
         status="queued",
-        detail=f"mode={mode} task={_task_name(mode)}",
+        detail=f"mode={mode} task={task_name}",
     )
     return {
         "job_id": job.id,

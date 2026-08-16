@@ -11,13 +11,17 @@ import { ElDialog } from 'element-plus'
 import { ChevronDown } from '@lucide/vue'
 
 import MindClassroomLaunchContent from '@/components/canvas/MindClassroomLaunchContent.vue'
+import { useEventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramStore, useMindClassroomStore } from '@/stores'
 
 const { t } = useLanguage()
+const notify = useNotifications()
+const eventBus = useEventBus('MindClassroomMascot')
 const diagramStore = useDiagramStore()
 const classroomStore = useMindClassroomStore()
-const { modalOpen } = storeToRefs(classroomStore)
+const { modalOpen, jobError } = storeToRefs(classroomStore)
 
 /** Session-only tuck; hover bottom edge to reveal again. */
 const docked = ref(false)
@@ -77,9 +81,28 @@ function handleModalClose(): void {
   classroomStore.closeModal()
 }
 
-function handleStarted(): void {
-  classroomStore.closeModal()
-}
+eventBus.on('classroom:queue_result', (result) => {
+  if (!result.ok) {
+    if (result.reason === 'cancelled') return
+    if (result.reason === 'failed') {
+      notify.error(jobError.value || t('canvas.mindClassroom.lecture.queueFailed'))
+      return
+    }
+    if (result.reason === 'unauthenticated') {
+      notify.warning(t('canvas.mindClassroom.queue.loginRequired'))
+      return
+    }
+    notify.warning(
+      result.reason === 'no_diagram'
+        ? t('canvas.mindClassroom.lecture.needDiagram')
+        : t('canvas.mindClassroom.lecture.emptySteps')
+    )
+    return
+  }
+  if (result.action === 'start' && result.phase === 'playing') {
+    classroomStore.closeModal()
+  }
+})
 </script>
 
 <template>
@@ -538,10 +561,7 @@ function handleStarted(): void {
     class="mc-classroom-dialog"
     @close="handleModalClose"
   >
-    <MindClassroomLaunchContent
-      variant="modal"
-      @started="handleStarted"
-    />
+    <MindClassroomLaunchContent variant="modal" />
   </ElDialog>
 </template>
 

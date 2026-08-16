@@ -164,6 +164,7 @@ async def run_canvas_tour_job(
         settings = claimed.settings if isinstance(claimed.settings, dict) else {}
         user_id = claimed.user_id
         organization_id = claimed.organization_id
+        diagram_id = claimed.diagram_id
 
     started = time.monotonic()
     try:
@@ -213,6 +214,8 @@ async def run_canvas_tour_job(
             settings=settings,
             steps=steps,
             result_json={"steps": steps},
+            user_id=user_id,
+            diagram_id=diagram_id,
         )
         await require_run_lease(job_id, celery_task_id=celery_task_id)
         await mark_job_ready(

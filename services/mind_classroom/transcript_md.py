@@ -15,6 +15,7 @@ def render_transcript_markdown(
     job_id: str,
     settings: dict[str, Any],
     steps: list[dict[str, Any]],
+    diagram_id: str = "",
 ) -> str:
     """Human-readable script / lesson plan. Kitty speaks step captions, not this file."""
     mode = _setting(settings, "mode", "canvas_tour")
@@ -23,14 +24,21 @@ def render_transcript_markdown(
         "# Mind Classroom script / lesson plan",
         "",
         f"- job_id: {job_id}",
-        f"- mode: {mode}",
-        f"- language: {language}",
-        f"- mastery: {_setting(settings, 'mastery', 'first_look')}",
-        f"- tone: {_setting(settings, 'tone', 'classroom')}",
-        f"- audience: {_setting(settings, 'audience_level', 'general')}",
-        f"- tour_scope: {_setting(settings, 'tour_scope', 'main_branch')}",
-        "",
     ]
+    cleaned_diagram = (diagram_id or "").strip()
+    if cleaned_diagram:
+        lines.append(f"- diagram_id: {cleaned_diagram}")
+    lines.extend(
+        [
+            f"- mode: {mode}",
+            f"- language: {language}",
+            f"- mastery: {_setting(settings, 'mastery', 'first_look')}",
+            f"- tone: {_setting(settings, 'tone', 'classroom')}",
+            f"- audience: {_setting(settings, 'audience_level', 'general')}",
+            f"- tour_scope: {_setting(settings, 'tour_scope', 'main_branch')}",
+            "",
+        ]
+    )
     for index, step in enumerate(steps, start=1):
         if not isinstance(step, dict):
             continue

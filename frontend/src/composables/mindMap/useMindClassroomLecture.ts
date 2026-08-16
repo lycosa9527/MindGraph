@@ -9,9 +9,11 @@ import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindM
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import {
+  type MindClassroomJobDetail,
   cancelMindClassroomJob,
   enqueueMindClassroomJob,
   fetchMindClassroomJobByDiagram,
+  isClassroomJobActive,
   isClassroomJobPlayable,
   pollMindClassroomJob,
 } from '@/composables/mindMap/mindClassroomJobApi'
@@ -26,16 +28,20 @@ import {
 } from '@/stores'
 import { setMindMapCollapsedPaths } from '@/stores/diagram/mindMapCollapse'
 import { collectLiveNodeIds, mapRemoteLectureSteps } from '@/utils/mindClassroomRemoteSteps'
-import type { MindClassroomLectureStep } from '@/utils/mindClassroomScript'
+import { lectureTtsSafetyMs, type MindClassroomLectureStep } from '@/utils/mindClassroomScript'
 
 const FIT_MS = 900
 
 let advanceTimer: ReturnType<typeof setTimeout> | null = null
 let transitionTimer: ReturnType<typeof setTimeout> | null = null
 let layoutTimer: ReturnType<typeof setTimeout> | null = null
-let preLectureCollapsedPaths: string[] | null = null
-let speakGeneration = 0
-let queueGeneration = 0
+let watchJobId: string | null = null
+let watchPromise: Promise<
+  { ok: true; phase: 'prepared' } | { ok: false; reason: 'empty' | 'cancelled' | 'failed' }
+> | null = null
+
+type QueueStartResult =
+  { ok: true; phase: 'prepared' } | { ok: false; reason: 'empty' | 'cancelled' | 'failed' }
 
 function clearAdvanceTimer(): void {
   if (advanceTimer !== null) {
@@ -58,8 +64,12 @@ function clearLayoutTimer(): void {
   }
 }
 
+export function lectureSpeakGeneration(): number {
+  return useMindClassroomStore().speakGeneration
+}
+
 function stopSpeech(): void {
-  speakGeneration += 1
+  useMindClassroomStore().bumpSpeakGeneration()
   eventBus.emit('kitty:lecture_interrupt_requested', {})
   if (typeof window === 'undefined' || !window.speechSynthesis) return
   window.speechSynthesis.cancel()
@@ -91,12 +101,14 @@ function speakCaption(
   lang: string,
   onEnd: () => void,
   stepId: string | undefined,
-  preferKitty: boolean
+  preferKitty: boolean,
+  prefetch?: { text: string; stepId?: string }
 ): void {
-  const generation = speakGeneration
+  const generation = lectureSpeakGeneration()
   let settled = false
+  let safetyTimer: ReturnType<typeof setTimeout> | null = null
   const onKittyDone = (payload?: { fallback?: boolean; stepId?: string }): void => {
-    if (generation !== speakGeneration) {
+    if (generation !== lectureSpeakGeneration()) {
       eventBus.off('kitty:lecture_tts_done', onKittyDone)
       return
     }
@@ -111,8 +123,12 @@ function speakCaption(
     settle()
   }
   const settle = (): void => {
-    if (settled || generation !== speakGeneration) return
+    if (settled || generation !== lectureSpeakGeneration()) return
     settled = true
+    if (safetyTimer !== null) {
+      clearTimeout(safetyTimer)
+      safetyTimer = null
+    }
     eventBus.off('kitty:lecture_tts_done', onKittyDone)
     onEnd()
   }
@@ -121,7 +137,16 @@ function speakCaption(
     return
   }
   eventBus.on('kitty:lecture_tts_done', onKittyDone)
-  eventBus.emit('kitty:lecture_narrate_requested', { text, stepId })
+  safetyTimer = window.setTimeout(() => {
+    settle()
+  }, lectureTtsSafetyMs(text, 0))
+  eventBus.emit('kitty:lecture_narrate_requested', {
+    text,
+    stepId,
+    prefetchText: prefetch?.text,
+    prefetchStepId: prefetch?.stepId,
+    generation,
+  })
 }
 
 function isTypingInInput(): boolean {
@@ -151,9 +176,12 @@ interface MindClassroomLectureOptions {
 export function teardownMindClassroomLecture(options: { restoreViewport?: boolean } = {}): void {
   const classroomStore = useMindClassroomStore()
   const diagramStore = useDiagramStore()
-  const hadLectureState = classroomStore.isLecturing || preLectureCollapsedPaths !== null
+  const collapsed = classroomStore.preLectureCollapsedPaths
+  const hadLectureState = classroomStore.isLecturing || collapsed !== null
 
-  queueGeneration += 1
+  classroomStore.bumpQueueGeneration()
+  watchJobId = null
+  watchPromise = null
   clearAdvanceTimer()
   clearTransitionTimer()
   clearLayoutTimer()
@@ -162,11 +190,11 @@ export function teardownMindClassroomLecture(options: { restoreViewport?: boolea
   diagramStore.clearSelection()
   setPresentationDiagramEditLocked(false)
 
-  if (preLectureCollapsedPaths && diagramStore.data) {
-    setMindMapCollapsedPaths(diagramStore.data as Record<string, unknown>, preLectureCollapsedPaths)
+  if (collapsed && diagramStore.data) {
+    setMindMapCollapsedPaths(diagramStore.data as Record<string, unknown>, collapsed)
     diagramStore.mindMapRecalcTrigger += 1
   }
-  preLectureCollapsedPaths = null
+  classroomStore.setPreLectureCollapsedPaths(null)
 
   if (hadLectureState && options.restoreViewport !== false) {
     void nextTick(() => {
@@ -222,7 +250,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       stopLecture()
       return
     }
-    goToStep(stepIndex.value + 1)
+    goToStep(stepIndex.value + 1, { interruptVoice: false })
   }
 
   function scheduleAdvance(dwellMs: number): void {
@@ -248,7 +276,12 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       }
       classroomStore.setNarrating(true)
       const preferKitty = useAuthStore().isAuthenticated
-      speakCaption(step.caption, currentLanguage.value, settle, step.id, preferKitty)
+      const upcoming = steps.value[index + 1]
+      const prefetch =
+        upcoming?.caption.trim()
+          ? { text: upcoming.caption, stepId: upcoming.id }
+          : undefined
+      speakCaption(step.caption, currentLanguage.value, settle, step.id, preferKitty, prefetch)
       return
     }
 
@@ -256,14 +289,18 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     scheduleAdvance(step.dwellMs)
   }
 
-  function goToStep(index: number): void {
+  function goToStep(index: number, options: { interruptVoice?: boolean } = {}): void {
     if (!steps.value.length) return
     const next = Math.max(0, Math.min(steps.value.length - 1, index))
     clearAdvanceTimer()
     clearTransitionTimer()
     clearLayoutTimer()
     classroomStore.setNarrating(false)
-    stopSpeech()
+    if (options.interruptVoice === false) {
+      classroomStore.bumpSpeakGeneration()
+    } else {
+      stopSpeech()
+    }
     classroomStore.stepIndex = next
     classroomStore.transitioning = true
     emitFitStep(next)
@@ -281,7 +318,9 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     panelsStore.closeMindmate()
     panelsStore.closeNodePalette()
     setPresentationDiagramEditLocked(true)
-    preLectureCollapsedPaths = data?._collapsed_paths ? [...data._collapsed_paths] : []
+    classroomStore.setPreLectureCollapsedPaths(
+      data?._collapsed_paths ? [...data._collapsed_paths] : []
+    )
     eventBus.emit('view:viewport_snapshot_save', {})
     classroomStore.beginSession(nextSteps, mode)
     void nextTick(() => {
@@ -308,6 +347,61 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     return settings.audience_level === aiLevelStore.level
   }
 
+  function applyReadyDetail(detail: MindClassroomJobDetail): QueueStartResult {
+    const mapped = mapRemoteLectureSteps(
+      detail.result_json?.steps ?? [],
+      collectLiveNodeIds(diagramStore.data?.nodes)
+    )
+    if (!mapped.length) return { ok: false, reason: 'empty' }
+    classroomStore.setJobState({
+      id: detail.id,
+      status: detail.status,
+      progress: detail.progress ?? null,
+      error: null,
+    })
+    classroomStore.setPreparedSteps(mapped)
+    return { ok: true, phase: 'prepared' }
+  }
+
+  function awaitJobReady(jobId: string, generation: number): Promise<QueueStartResult> {
+    if (watchJobId === jobId && watchPromise) {
+      return watchPromise
+    }
+    watchJobId = jobId
+    watchPromise = (async () => {
+      try {
+        const detail = await pollMindClassroomJob(jobId, {
+          shouldStop: () => generation !== classroomStore.queueGeneration,
+          onUpdate: (next) => {
+            classroomStore.setJobState({
+              status: next.status,
+              progress: next.progress ?? null,
+              error: next.error_message ?? null,
+            })
+          },
+        })
+        if (generation !== classroomStore.queueGeneration) {
+          return { ok: false, reason: 'cancelled' as const }
+        }
+        return applyReadyDetail(detail)
+      } catch (err) {
+        if (generation !== classroomStore.queueGeneration) {
+          return { ok: false, reason: 'cancelled' as const }
+        }
+        const message = err instanceof Error ? err.message : String(err)
+        if (message === 'cancelled') return { ok: false, reason: 'cancelled' as const }
+        classroomStore.setJobState({ status: 'failed', error: message })
+        return { ok: false, reason: 'failed' as const }
+      } finally {
+        if (watchJobId === jobId) {
+          watchJobId = null
+          watchPromise = null
+        }
+      }
+    })()
+    return watchPromise
+  }
+
   async function restorePreparedFromServer(): Promise<boolean> {
     const authStore = useAuthStore()
     if (!authStore.isAuthenticated) return false
@@ -315,35 +409,31 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     if (!diagramId) return false
     try {
       const detail = await fetchMindClassroomJobByDiagram(diagramId, classroomStore.presentation)
-      if (!isClassroomJobPlayable(detail.status) || !jobSettingsMatch(detail.settings)) {
+      if (!jobSettingsMatch(detail.settings)) {
         return false
       }
-      const mapped = mapRemoteLectureSteps(
-        detail.result_json?.steps ?? [],
-        collectLiveNodeIds(diagramStore.data?.nodes)
-      )
-      if (!mapped.length) return false
+      if (isClassroomJobPlayable(detail.status)) {
+        return applyReadyDetail(detail).ok
+      }
+      if (!isClassroomJobActive(detail.status)) {
+        return false
+      }
       classroomStore.setJobState({
         id: detail.id,
         status: detail.status,
         progress: detail.progress ?? null,
-        error: null,
+        error: detail.error_message ?? null,
       })
-      classroomStore.setPreparedSteps(mapped)
+      void awaitJobReady(detail.id, classroomStore.queueGeneration)
       return true
     } catch {
       return false
     }
   }
 
-  async function startQueuedLecture(
-    reuse = true
-  ): Promise<
-    | { ok: true; phase: 'prepared' }
-    | { ok: false; reason: 'empty' | 'cancelled' | 'failed' }
-  > {
+  async function startQueuedLecture(reuse = true): Promise<QueueStartResult> {
     const data = diagramStore.data
-    const generation = queueGeneration
+    const generation = classroomStore.queueGeneration
     const mode = classroomStore.presentation
     const language = currentLanguage.value.startsWith('zh') ? 'zh' : 'en'
     const saved = useSavedDiagramsStore()
@@ -370,31 +460,18 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
         language,
         reuse,
       })
-      if (generation !== queueGeneration) return { ok: false, reason: 'cancelled' }
+      if (generation !== classroomStore.queueGeneration) return { ok: false, reason: 'cancelled' }
       classroomStore.setJobState({ id: created.job_id, status: created.status || 'queued' })
-      const detail = await pollMindClassroomJob(created.job_id, {
-        shouldStop: () => generation !== queueGeneration,
-        onUpdate: (next) => {
-          classroomStore.setJobState({
-            status: next.status,
-            progress: next.progress ?? null,
-            error: next.error_message ?? null,
-          })
-        },
-      })
-      if (generation !== queueGeneration) return { ok: false, reason: 'cancelled' }
-      const liveIds = collectLiveNodeIds(diagramStore.data?.nodes)
-      const mapped = mapRemoteLectureSteps(detail.result_json?.steps ?? [], liveIds)
-      if (!mapped.length) return { ok: false, reason: 'empty' }
-      classroomStore.setJobState({
-        status: detail.status,
-        progress: detail.progress ?? null,
-        error: null,
-      })
-      classroomStore.setPreparedSteps(mapped)
-      return { ok: true, phase: 'prepared' as const }
+      if (isClassroomJobPlayable(created.status)) {
+        return awaitJobReady(created.job_id, generation)
+      }
+      if (created.status === 'failed') {
+        classroomStore.setJobState({ status: 'failed', error: 'failed' })
+        return { ok: false, reason: 'failed' }
+      }
+      return awaitJobReady(created.job_id, generation)
     } catch (err) {
-      if (generation !== queueGeneration) return { ok: false, reason: 'cancelled' }
+      if (generation !== classroomStore.queueGeneration) return { ok: false, reason: 'cancelled' }
       const message = err instanceof Error ? err.message : String(err)
       if (message === 'cancelled') return { ok: false, reason: 'cancelled' }
       classroomStore.setJobState({ status: 'failed', error: message })
@@ -402,24 +479,55 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     }
   }
 
-  async function startLecture(): Promise<
+  type LectureStartResult =
     | { ok: true; phase: 'prepared' | 'playing' }
     | { ok: false; reason: 'empty' | 'no_diagram' | 'cancelled' | 'failed' | 'unauthenticated' }
-  > {
-    const data = diagramStore.data
-    if (!data?.nodes?.length) return { ok: false, reason: 'no_diagram' }
-    const authStore = useAuthStore()
-    if (!authStore.isAuthenticated) return { ok: false, reason: 'unauthenticated' }
-    const mode = classroomStore.presentation
-    if (classroomStore.preparedSteps.length) {
-      const played = playPreparedSteps(classroomStore.preparedSteps, mode)
-      return played.ok ? { ok: true, phase: 'playing' } : played
+
+  function publishQueueResult(
+    action: 'start' | 'restart',
+    result: LectureStartResult
+  ): LectureStartResult {
+    eventBus.emit('classroom:queue_result', { ...result, action })
+    return result
+  }
+
+  async function startLecture(reuse = true): Promise<LectureStartResult> {
+    classroomStore.setStartInFlight(true)
+    try {
+      const data = diagramStore.data
+      if (!data?.nodes?.length) {
+        return publishQueueResult('start', { ok: false, reason: 'no_diagram' })
+      }
+      const authStore = useAuthStore()
+      if (!authStore.isAuthenticated) {
+        return publishQueueResult('start', { ok: false, reason: 'unauthenticated' })
+      }
+      const mode = classroomStore.presentation
+      if (classroomStore.preparedSteps.length) {
+        const played = playPreparedSteps(classroomStore.preparedSteps, mode)
+        return publishQueueResult(
+          'start',
+          played.ok ? { ok: true, phase: 'playing' } : played
+        )
+      }
+      const attached = await restorePreparedFromServer()
+      if (classroomStore.preparedSteps.length) {
+        return publishQueueResult('start', { ok: true, phase: 'prepared' })
+      }
+      if (attached && classroomStore.jobId && isClassroomJobActive(classroomStore.jobStatus)) {
+        return publishQueueResult(
+          'start',
+          await awaitJobReady(classroomStore.jobId, classroomStore.queueGeneration)
+        )
+      }
+      return publishQueueResult('start', await startQueuedLecture(reuse))
+    } finally {
+      classroomStore.setStartInFlight(false)
     }
-    return startQueuedLecture()
   }
 
   async function cancelQueuedJob(): Promise<void> {
-    queueGeneration += 1
+    classroomStore.bumpQueueGeneration()
     const jobId = classroomStore.jobId
     if (jobId) {
       try {
@@ -431,16 +539,22 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     classroomStore.clearPrepared()
   }
 
-  async function restartLecture(): Promise<
-    | { ok: true; phase: 'prepared' }
-    | { ok: false; reason: 'empty' | 'no_diagram' | 'cancelled' | 'failed' | 'unauthenticated' }
-  > {
-    const data = diagramStore.data
-    if (!data?.nodes?.length) return { ok: false, reason: 'no_diagram' }
-    const authStore = useAuthStore()
-    if (!authStore.isAuthenticated) return { ok: false, reason: 'unauthenticated' }
-    await cancelQueuedJob()
-    return startQueuedLecture(false)
+  async function restartLecture(): Promise<LectureStartResult> {
+    classroomStore.setStartInFlight(true)
+    try {
+      const data = diagramStore.data
+      if (!data?.nodes?.length) {
+        return publishQueueResult('restart', { ok: false, reason: 'no_diagram' })
+      }
+      const authStore = useAuthStore()
+      if (!authStore.isAuthenticated) {
+        return publishQueueResult('restart', { ok: false, reason: 'unauthenticated' })
+      }
+      await cancelQueuedJob()
+      return publishQueueResult('restart', await startQueuedLecture(false))
+    } finally {
+      classroomStore.setStartInFlight(false)
+    }
   }
 
   function pauseLecture(): void {
@@ -510,6 +624,64 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
   }
 
   function bootstrapEngine(): void {
+    const owner = 'MindClassroomLectureEngine'
+    eventBus.onWithOwner(
+      'classroom:start_requested',
+      (payload) => {
+        void startLecture(payload.reuse !== false)
+      },
+      owner
+    )
+    eventBus.onWithOwner(
+      'classroom:restart_requested',
+      () => {
+        void restartLecture()
+      },
+      owner
+    )
+    eventBus.onWithOwner(
+      'classroom:stop_requested',
+      (payload) => {
+        teardownMindClassroomLecture({ restoreViewport: payload.restoreViewport })
+      },
+      owner
+    )
+    eventBus.onWithOwner(
+      'classroom:toggle_pause_requested',
+      () => {
+        togglePause()
+      },
+      owner
+    )
+    eventBus.onWithOwner(
+      'classroom:next_requested',
+      () => {
+        nextStep()
+      },
+      owner
+    )
+    eventBus.onWithOwner(
+      'classroom:prev_requested',
+      () => {
+        prevStep()
+      },
+      owner
+    )
+    eventBus.onWithOwner(
+      'classroom:set_voice_requested',
+      (payload) => {
+        classroomStore.setVoiceEnabled(payload.enabled)
+      },
+      owner
+    )
+    eventBus.onWithOwner(
+      'classroom:restore_prepared_requested',
+      () => {
+        void restorePreparedFromServer()
+      },
+      owner
+    )
+
     let keyboardBound = false
     watch(
       isLecturing,
@@ -536,13 +708,18 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     watch(
       () => savedDiagramsStore.activeDiagramId,
       (nextId, prevId) => {
-        if (nextId === prevId || prevId == null) return
-        teardownMindClassroomLecture({ restoreViewport: false })
-        classroomStore.closeModal()
-      }
+        if (nextId === prevId) return
+        if (prevId != null) {
+          teardownMindClassroomLecture({ restoreViewport: false })
+          classroomStore.closeModal()
+        }
+        if (nextId) eventBus.emit('classroom:restore_prepared_requested', {})
+      },
+      { immediate: true }
     )
 
     onBeforeUnmount(() => {
+      eventBus.removeAllListenersForOwner(owner)
       if (keyboardBound) {
         window.removeEventListener('keydown', handleKeyboard, true)
       }

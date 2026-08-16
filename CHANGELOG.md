@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.179.0] - 2026-08-17
+
+> **思维讲堂 is event-bus + Pinia; CosyVoice prefetches the next slide; lecture scripts stay on a stable COS key.**
+
+### Added
+
+- **Lecture command bus** — Start, restart, stop, pause, next/prev, and voice go through `classroom:*` events. Pinia holds job, session, generations, and `startInFlight`. Closing the launch modal does not cancel the server job; restore reattaches when it is ready.
+- **TTS lookahead** — While slide N plays, a second CosyVoice socket synthesizes N+1 and the next narrate plays from cache. Skip/pause still interrupt.
+
+### Changed
+
+- **Lecture scripts** — Stable COS key `mind_classroom/transcripts/{user}/{diagram}/{mode}.md`; regenerate overwrites that key and then deletes leftover `{job_id}.md`. `.md` assets use `Cache-Control: private, no-store`.
+- **Celery banners** — Process monitor replaces a worker whose `[tasks]` list is stale after an API recycle. Manual WSL restart is documented in `docs/CELERY_SETUP.md`.
+
+### Tests
+
+- Frontend: event-bus start, queue attach/abandon, launch lock, lecture TTS prefetch generation.
+- Backend: Kitty narrate + prefetch cache, transcript key replace, enqueue/reuse, Celery stale-banner health.
+
 ## [5.178.1] - 2026-08-16
 
 > **思维讲堂 stays on the current canvas; Celery job status is visible in backend logs.**

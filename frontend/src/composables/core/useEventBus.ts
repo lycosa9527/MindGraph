@@ -338,8 +338,28 @@ export type EventTypes = {
   }
   'kitty:lecture_caption': { text: string; stepId?: string }
   'kitty:lecture_tts_done': { fallback?: boolean; stepId?: string }
-  'kitty:lecture_narrate_requested': { text: string; stepId?: string }
+  'kitty:lecture_narrate_requested': {
+    text: string
+    stepId?: string
+    prefetchText?: string
+    prefetchStepId?: string
+    generation?: number
+  }
   'kitty:lecture_interrupt_requested': Record<string, never>
+  'classroom:start_requested': { reuse?: boolean }
+  'classroom:restart_requested': Record<string, never>
+  'classroom:stop_requested': { restoreViewport?: boolean }
+  'classroom:toggle_pause_requested': Record<string, never>
+  'classroom:next_requested': Record<string, never>
+  'classroom:prev_requested': Record<string, never>
+  'classroom:set_voice_requested': { enabled: boolean }
+  'classroom:restore_prepared_requested': Record<string, never>
+  'classroom:queue_result': {
+    ok: boolean
+    phase?: 'prepared' | 'playing'
+    reason?: 'empty' | 'no_diagram' | 'cancelled' | 'failed' | 'unauthenticated'
+    action: 'start' | 'restart'
+  }
 
   // One-sentence mini-chat (Pinia SoT + cooperators)
   'oneSentence:request_queued': {
