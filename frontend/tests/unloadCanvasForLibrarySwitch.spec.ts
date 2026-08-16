@@ -34,12 +34,15 @@ const closeAllPanels = vi.fn()
 const clearNodePaletteState = vi.fn()
 const clearAiBrainstormState = vi.fn()
 
+const closeModal = vi.fn()
+
 vi.mock('@/stores', () => ({
   useDiagramStore: () => diagramState,
   useLLMResultsStore: () => ({ reset: vi.fn() }),
   useInlineRecommendationsStore: () => ({ reset: vi.fn() }),
   useConceptMapFocusReviewStore: () => ({ clear: vi.fn() }),
   useConceptMapRelationshipStore: () => ({ clearAll: vi.fn() }),
+  useMindClassroomStore: () => ({ closeModal }),
   usePanelsStore: () => ({
     closeAllPanels,
     clearNodePaletteState,
@@ -83,6 +86,11 @@ vi.mock('@/composables/mindMap/useLearningSheetCustomMode', () => ({
   resetLearningSheetCustomModeUi: vi.fn(),
 }))
 
+const teardownMindClassroomLecture = vi.fn()
+vi.mock('@/composables/mindMap/useMindClassroomLecture', () => ({
+  teardownMindClassroomLecture: (...args: unknown[]) => teardownMindClassroomLecture(...args),
+}))
+
 describe('unloadCanvasForLibrarySwitch', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -108,6 +116,8 @@ describe('unloadCanvasForLibrarySwitch', () => {
     expect(closeAllPanels).toHaveBeenCalledOnce()
     expect(clearNodePaletteState).toHaveBeenCalledWith({ clearSessions: false })
     expect(clearAiBrainstormState).toHaveBeenCalledWith({ clearSessions: false })
+    expect(teardownMindClassroomLecture).toHaveBeenCalledWith({ restoreViewport: false })
+    expect(closeModal).toHaveBeenCalledOnce()
   })
 
   it('preserves collabSessionActive when a workshop was live', async () => {

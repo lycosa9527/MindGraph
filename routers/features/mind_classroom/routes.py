@@ -16,6 +16,7 @@ from repositories.mind_classroom_repo import MindClassroomJobRepository, MindCla
 from repositories.zhihui_repo import ZhihuiConversationRepository, ZhihuiGenerationRepository
 from routers.auth.dependencies import get_async_db_with_request_rls, get_current_user
 from routers.features.zhihui.routes import _conversation_list_item, _generation_payload
+from services.mind_classroom.celery_log import log_classroom_celery
 from services.mind_classroom.diagram_spec import load_owned_diagram_spec
 from services.mind_classroom.enqueue import create_and_enqueue_job
 from services.mind_classroom.job_payload import job_payload
@@ -208,7 +209,8 @@ async def cancel_classroom_job(
     if row is None or row.user_id != int(current_user.id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     task_id = row.celery_task_id
-    if row.status in ("queued", "planning", "generating"):
+    did_cancel = row.status in ("queued", "planning", "generating")
+    if did_cancel:
         await repo.update_job(
             job_id,
             status="cancelled",
@@ -223,6 +225,14 @@ async def cancel_classroom_job(
             await asyncio.to_thread(celery_app.control.revoke, task_id, terminate=False)
         except BACKGROUND_INFRA_ERRORS as exc:
             logger.warning("[MindClassroom] Cancel revoke failed task=%s err=%s", task_id, exc)
+    if did_cancel or task_id:
+        log_classroom_celery(
+            "revoke",
+            job_id=job_id,
+            celery_task_id=task_id,
+            status="cancelled" if did_cancel else row.status,
+            detail="reason=user",
+        )
     return {"id": job_id, "status": "cancelled"}
 
 

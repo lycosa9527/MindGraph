@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from config.celery import celery_app
 from repositories.mind_classroom_repo import MindClassroomJobRepository
+from services.mind_classroom.celery_log import log_classroom_celery
 from services.mind_classroom.job_manifest import hash_spec_snapshot, mark_job_failed, mark_job_queued
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 from utils.db.session_open import system_rls_session
@@ -45,6 +46,14 @@ async def create_and_enqueue_job(
                 settings=settings,
             )
             if existing is not None:
+                log_classroom_celery(
+                    "reuse",
+                    job_id=existing.id,
+                    celery_task_id=existing.celery_task_id,
+                    status=existing.status,
+                    stage=existing.current_stage,
+                    detail=f"mode={settings.get('mode') or 'canvas_tour'}",
+                )
                 return {"job_id": existing.id, "status": existing.status, "reused": True}
         active = await repo.count_active_jobs(user_id)
         if active >= repo.max_active_jobs():
@@ -71,6 +80,13 @@ async def create_and_enqueue_job(
 
     if task_id:
         await mark_job_queued(job.id, celery_task_id=task_id)
+    log_classroom_celery(
+        "enqueue",
+        job_id=job.id,
+        celery_task_id=task_id,
+        status="queued",
+        detail=f"mode={mode} task={_task_name(mode)}",
+    )
     return {
         "job_id": job.id,
         "status": "queued",

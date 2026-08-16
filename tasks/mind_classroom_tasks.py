@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-import logging
+from collections.abc import Callable
 from typing import Optional
 
 from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
@@ -12,12 +12,11 @@ from config.celery import celery_app
 from repositories.mind_classroom_repo import MindClassroomJobRepository, MindClassroomSlideRepository
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.mind_classroom.canvas_tour import run_canvas_tour_job
+from services.mind_classroom.celery_log import classroom_status_changed, log_classroom_celery
 from services.mind_classroom.slide_deck import run_slide_deck_job
 from services.monitoring.error_reporting import record_exception_from_celery
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.db.session_open import system_rls_session
-
-logger = logging.getLogger(__name__)
 
 _SCRIPT_SOFT = 120
 _SCRIPT_HARD = 150
@@ -35,6 +34,10 @@ def _run_slides(job_id: str, celery_task_id: Optional[str]) -> bool:
 
 
 async def _mark_terminal(job_id: str, message: str, *, celery_task_id: Optional[str] = None) -> None:
+    owned: Optional[str] = None
+    previous_status: Optional[str] = None
+    previous_stage: Optional[str] = None
+    status: Optional[str] = None
     async with system_rls_session() as db:
         job_repo = MindClassroomJobRepository(db)
         row = await job_repo.get_by_uuid(job_id)
@@ -43,6 +46,8 @@ async def _mark_terminal(job_id: str, message: str, *, celery_task_id: Optional[
         owned = row.celery_task_id
         if celery_task_id and owned and owned != celery_task_id:
             return
+        previous_status = row.status
+        previous_stage = row.current_stage
         slides = await MindClassroomSlideRepository(db).list_by_job(job_id)
         status = "partial" if slides else "failed"
         await job_repo.update_job(
@@ -54,9 +59,22 @@ async def _mark_terminal(job_id: str, message: str, *, celery_task_id: Optional[
             finished=True,
             commit=True,
         )
+    if status and classroom_status_changed(previous_status, previous_stage, status, status):
+        log_classroom_celery(
+            "status",
+            job_id=job_id,
+            celery_task_id=celery_task_id or owned,
+            status=status,
+        )
 
 
 def _handle_task_error(job_id: str, celery_task_id: Optional[str], exc: BaseException, component: str) -> None:
+    log_classroom_celery(
+        "error",
+        job_id=job_id,
+        celery_task_id=celery_task_id,
+        detail=f"{type(exc).__name__}: {str(exc)[:200]}",
+    )
     record_exception_from_celery(
         source="background",
         component=component,
@@ -67,6 +85,39 @@ def _handle_task_error(job_id: str, celery_task_id: Optional[str], exc: BaseExce
         asyncio.run(_mark_terminal(job_id, str(exc), celery_task_id=celery_task_id))
     except _TASK_ERRORS:
         pass
+
+
+def _run_named_task(
+    job_id: str,
+    celery_task_id: Optional[str],
+    runner: Callable[[str, Optional[str]], bool],
+    component: str,
+    task_name: str,
+) -> bool:
+    log_classroom_celery(
+        "start",
+        job_id=job_id,
+        celery_task_id=celery_task_id,
+        detail=f"task={task_name}",
+    )
+    try:
+        ok = bool(runner(job_id, celery_task_id))
+        log_classroom_celery(
+            "finish",
+            job_id=job_id,
+            celery_task_id=celery_task_id,
+            detail=f"ok={ok}",
+        )
+        return ok
+    except SoftTimeLimitExceeded as exc:
+        _handle_task_error(job_id, celery_task_id, exc, component)
+        return False
+    except TimeLimitExceeded as exc:
+        _handle_task_error(job_id, celery_task_id, exc, component)
+        raise
+    except _TASK_ERRORS as exc:
+        _handle_task_error(job_id, celery_task_id, exc, component)
+        return False
 
 
 @celery_app.task(
@@ -81,17 +132,13 @@ def run_script_task(self, job_id: str) -> bool:
     """Short canvas-tour script generation."""
     task_id = getattr(self.request, "id", None)
     task_id_str = task_id if isinstance(task_id, str) else None
-    try:
-        return _run_script(job_id, task_id_str)
-    except SoftTimeLimitExceeded as exc:
-        _handle_task_error(job_id, task_id_str, exc, "MindClassroomScriptTask")
-        return False
-    except TimeLimitExceeded as exc:
-        _handle_task_error(job_id, task_id_str, exc, "MindClassroomScriptTask")
-        raise
-    except _TASK_ERRORS as exc:
-        _handle_task_error(job_id, task_id_str, exc, "MindClassroomScriptTask")
-        return False
+    return _run_named_task(
+        job_id,
+        task_id_str,
+        _run_script,
+        "MindClassroomScriptTask",
+        "mind_classroom.run_script",
+    )
 
 
 @celery_app.task(
@@ -106,14 +153,10 @@ def run_slides_task(self, job_id: str) -> bool:
     """Long slide-deck Wan generation."""
     task_id = getattr(self.request, "id", None)
     task_id_str = task_id if isinstance(task_id, str) else None
-    try:
-        return _run_slides(job_id, task_id_str)
-    except SoftTimeLimitExceeded as exc:
-        _handle_task_error(job_id, task_id_str, exc, "MindClassroomSlideTask")
-        return False
-    except TimeLimitExceeded as exc:
-        _handle_task_error(job_id, task_id_str, exc, "MindClassroomSlideTask")
-        raise
-    except _TASK_ERRORS as exc:
-        _handle_task_error(job_id, task_id_str, exc, "MindClassroomSlideTask")
-        return False
+    return _run_named_task(
+        job_id,
+        task_id_str,
+        _run_slides,
+        "MindClassroomSlideTask",
+        "mind_classroom.run_slides",
+    )

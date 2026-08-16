@@ -4,7 +4,10 @@ import { createPinia } from 'pinia'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
+import {
+  teardownMindClassroomLecture,
+  useMindClassroomLecture,
+} from '@/composables/mindMap/useMindClassroomLecture'
 import { useAuthStore, useDiagramStore, useMindClassroomStore } from '@/stores'
 import type { DiagramData } from '@/types'
 
@@ -134,6 +137,49 @@ describe('useMindClassroomLecture queued start', () => {
     const restarted = await lecture?.restartLecture()
     expect(restarted).toEqual({ ok: true, phase: 'prepared' })
     expect(enqueueMindClassroomJob).toHaveBeenCalledWith(expect.objectContaining({ reuse: false }))
+    app.unmount()
+  })
+
+  it('abandons an in-flight queue when the canvas session tears down', async () => {
+    let finishPoll: ((value: unknown) => void) | null = null
+    enqueueMindClassroomJob.mockResolvedValue({ job_id: 'job-stale', status: 'queued' })
+    pollMindClassroomJob.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishPoll = resolve
+        })
+    )
+
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'topic', text: 'Topic', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+
+    const classroom = useMindClassroomStore(pinia)
+    const pending = lecture?.startLecture()
+    await vi.waitFor(() => {
+      expect(pollMindClassroomJob).toHaveBeenCalled()
+    })
+    teardownMindClassroomLecture({ restoreViewport: false })
+    finishPoll?.({
+      id: 'job-stale',
+      status: 'ready',
+      result_json: {
+        steps: [{ id: 'late', kind: 'overview', title: 'Late', caption: 'Nope', focus_node_ids: [] }],
+      },
+    })
+    expect(await pending).toEqual({ ok: false, reason: 'cancelled' })
+    expect(classroom.preparedSteps).toEqual([])
+    expect(classroom.isLecturing).toBe(false)
     app.unmount()
   })
 })

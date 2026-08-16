@@ -6,6 +6,7 @@ import logging
 from typing import Any, Optional
 
 from repositories.mind_classroom_repo import MindClassroomJobRepository, MindClassroomSlideRepository
+from services.mind_classroom.celery_log import classroom_status_changed, log_classroom_celery
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -58,10 +59,12 @@ async def set_status_with_lease(
         owned = row.celery_task_id
         if celery_task_id and owned and owned != celery_task_id:
             raise LeaseLost(f"celery lease lost have={celery_task_id} want={owned}")
+        next_stage = stage or status
+        should_log = classroom_status_changed(row.status, row.current_stage, status, next_stage)
         await repo.update_job(
             job_id,
             status=status,
-            current_stage=stage or status,
+            current_stage=next_stage,
             progress=progress,
             error_message=error_message,
             result_json=result_json,
@@ -70,6 +73,14 @@ async def set_status_with_lease(
             started=started,
             finished=finished,
             commit=True,
+        )
+    if should_log:
+        log_classroom_celery(
+            "status",
+            job_id=job_id,
+            celery_task_id=celery_task_id or owned,
+            status=status,
+            stage=next_stage,
         )
 
 
@@ -80,6 +91,10 @@ async def mark_terminal_from_error(
     celery_task_id: Optional[str] = None,
 ) -> Optional[str]:
     """Set failed/partial from a pipeline exception when this task still owns the lease."""
+    owned: Optional[str] = None
+    previous_status: Optional[str] = None
+    previous_stage: Optional[str] = None
+    status: Optional[str] = None
     async with system_rls_session() as db:
         job_repo = MindClassroomJobRepository(db)
         row = await job_repo.get_by_uuid(job_id)
@@ -96,6 +111,8 @@ async def mark_terminal_from_error(
             return None
         slides = await MindClassroomSlideRepository(db).list_by_job(job_id)
         status = "partial" if slides else "failed"
+        previous_status = row.status
+        previous_stage = row.current_stage
         await job_repo.update_job(
             job_id,
             status=status,
@@ -105,4 +122,13 @@ async def mark_terminal_from_error(
             finished=True,
             commit=True,
         )
-        return status
+    if status is None:
+        return None
+    if classroom_status_changed(previous_status, previous_stage, status, status):
+        log_classroom_celery(
+            "status",
+            job_id=job_id,
+            celery_task_id=celery_task_id or owned,
+            status=status,
+        )
+    return status

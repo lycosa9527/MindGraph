@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import logging
 from datetime import UTC, datetime
 from typing import Any, Optional
 
 from repositories.mind_classroom_repo import MindClassroomJobRepository
+from services.mind_classroom.celery_log import classroom_status_changed, log_classroom_celery
 from utils.db.session_open import system_rls_session
-
-logger = logging.getLogger(__name__)
 
 JOB_QUEUED = "queued"
 JOB_PLANNING = "planning"
@@ -22,7 +20,6 @@ JOB_FAILED = "failed"
 JOB_CANCELLED = "cancelled"
 
 _ACTIVE = frozenset({JOB_QUEUED, JOB_PLANNING, JOB_GENERATING})
-_TERMINAL_OK = frozenset({JOB_READY, JOB_PARTIAL})
 
 
 def hash_spec_snapshot(spec: dict[str, Any]) -> str:
@@ -76,8 +73,16 @@ async def mark_job_stage(
     finished: bool = False,
 ) -> None:
     """Update job status/stage on the manifesto."""
+    previous_status: Optional[str] = None
+    previous_stage: Optional[str] = None
+    owned: Optional[str] = None
     async with system_rls_session() as db:
         repo = MindClassroomJobRepository(db)
+        row = await repo.get_by_uuid(job_id)
+        if row is not None:
+            previous_status = row.status
+            previous_stage = row.current_stage
+            owned = row.celery_task_id
         await repo.update_job(
             job_id,
             status=status,
@@ -93,6 +98,14 @@ async def mark_job_stage(
             started=started,
             finished=finished,
             commit=True,
+        )
+    if classroom_status_changed(previous_status, previous_stage, status, stage):
+        log_classroom_celery(
+            "status",
+            job_id=job_id,
+            celery_task_id=celery_task_id or owned,
+            status=status,
+            stage=stage,
         )
 
 

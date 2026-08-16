@@ -153,6 +153,7 @@ export function teardownMindClassroomLecture(options: { restoreViewport?: boolea
   const diagramStore = useDiagramStore()
   const hadLectureState = classroomStore.isLecturing || preLectureCollapsedPaths !== null
 
+  queueGeneration += 1
   clearAdvanceTimer()
   clearTransitionTimer()
   clearLayoutTimer()
@@ -184,6 +185,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
   const aiLevelStore = useAiContentLevelStore()
   const panelsStore = usePanelsStore()
   const { closeActiveTool } = useMindMapSideToolbarState()
+  const savedDiagramsStore = useSavedDiagramsStore()
   const { status, stepIndex, steps, voiceEnabled, isLecturing, currentStep } =
     storeToRefs(classroomStore)
 
@@ -531,6 +533,14 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
         scheduleAdvance(step.dwellMs)
       }
     })
+    watch(
+      () => savedDiagramsStore.activeDiagramId,
+      (nextId, prevId) => {
+        if (nextId === prevId || prevId == null) return
+        teardownMindClassroomLecture({ restoreViewport: false })
+        classroomStore.closeModal()
+      }
+    )
 
     onBeforeUnmount(() => {
       if (keyboardBound) {

@@ -188,7 +188,9 @@ run_backend() {
     tests/test_mind_classroom_steps.py \
     tests/test_mind_classroom_slide_adapter.py \
     tests/test_mind_classroom_rls.py \
+    tests/test_mind_classroom_celery_log.py \
     tests/test_kitty_narrate.py \
+    tests/test_kitty_idle.py \
     tests/test_generate_text_to_image.py \
     tests/test_zhihui_outline_and_shell.py \
     tests/test_zhihui_lease.py
@@ -219,7 +221,8 @@ run_frontend() {
     tests/useMindClassroomLecture.spec.ts tests/useMindClassroomLectureQueue.spec.ts \
     tests/mindClassroomLaunchState.spec.ts tests/mindClassroomRemoteSteps.spec.ts \
     tests/mindClassroomScript.spec.ts \
-    tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts
+    tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts \
+    tests/unloadCanvasForLibrarySwitch.spec.ts
 }
 
 run_chrome_extension() {

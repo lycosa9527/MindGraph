@@ -5,7 +5,7 @@ import { createPinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
-import { useAuthStore, useDiagramStore, useMindClassroomStore } from '@/stores'
+import { useAuthStore, useDiagramStore, useMindClassroomStore, useSavedDiagramsStore } from '@/stores'
 import type { DiagramData } from '@/types'
 import type { MindClassroomLectureStep } from '@/utils/mindClassroomScript'
 
@@ -183,6 +183,27 @@ describe('useMindClassroomLecture lifecycle', () => {
     lecture?.stopLecture()
 
     expect(diagram.data._collapsed_paths).toEqual(['r/0'])
+    app.unmount()
+  })
+
+  it('stops the lecture when the active diagram session changes', async () => {
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const saved = useSavedDiagramsStore(pinia)
+    saved.setActiveDiagram('diagram-a')
+    await nextTick()
+    const classroom = useMindClassroomStore(pinia)
+    classroom.beginSession(steps, 'canvas_tour')
+    expect(classroom.isLecturing).toBe(true)
+
+    saved.setActiveDiagram('diagram-b')
+    await nextTick()
+    expect(classroom.isLecturing).toBe(false)
+    expect(classroom.preparedSteps).toEqual([])
+    expect(classroom.modalOpen).toBe(false)
     app.unmount()
   })
 })

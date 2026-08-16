@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.178.1] - 2026-08-16
+
+> **思维讲堂 stays on the current canvas; Celery job status is visible in backend logs.**
+
+### Fixed
+
+- **Lecture session isolation** — Switching library diagrams or unloading the canvas tears down the lecture overlay and abandons in-flight polls so they cannot stamp the next canvas. Server jobs stay queued (reusable when returning). First persist does not kill a live tour.
+
+### Changed
+
+- **Kitty idle** — CosyVoice lecture TTS holds the 300s idle close so the socket does not drop mid-caption.
+- **Celery status logs** — Uvicorn logs enqueue / reuse / revoke; workers log start / status / finish / error when manifesto `status` or `stage` actually moves. GET polls and planning heartbeats stay quiet.
+
+### Tests
+
+- `tests/test_kitty_idle.py`, `tests/test_mind_classroom_celery_log.py`
+- Frontend: diagram-switch teardown, queue-abandon, unloadCanvas closeModal.
+
 ## [5.178.0] - 2026-08-16
 
 > **思维讲堂 runs as a server job (script / slide deck); Kitty narrates captions; 专业程度 persists.**
