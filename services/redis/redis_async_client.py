@@ -113,6 +113,7 @@ class _AsyncRedisState:
     """Encapsulates module-level state to keep ``global`` out of call sites."""
 
     client: Optional[aioredis.Redis] = None
+    loop: Optional[asyncio.AbstractEventLoop] = None
 
 
 def _build_async_client() -> aioredis.Redis:
@@ -172,10 +173,27 @@ def get_async_redis() -> aioredis.Redis:
 
     Must be called from the event loop (not from worker threads).  See the
     ``redis.asyncio`` docs for thread-safety constraints.
+
+    Celery prefork children call ``asyncio.run`` per task. Rebuild the client
+    when the running loop is not the one that created it, otherwise publish
+    fails with ``Event loop is closed``.
     """
 
+    running: Optional[asyncio.AbstractEventLoop]
+    try:
+        running = asyncio.get_running_loop()
+    except RuntimeError:
+        running = None
+    if (
+        _AsyncRedisState.client is not None
+        and _AsyncRedisState.loop is not None
+        and _AsyncRedisState.loop is not running
+    ):
+        _AsyncRedisState.client = None
+        _AsyncRedisState.loop = None
     if _AsyncRedisState.client is None:
         _AsyncRedisState.client = _build_async_client()
+        _AsyncRedisState.loop = running
     return _AsyncRedisState.client
 
 
@@ -219,3 +237,4 @@ async def close_async_redis() -> None:
         logger.warning("[RedisAsync] close error: %s", exc)
     finally:
         _AsyncRedisState.client = None
+        _AsyncRedisState.loop = None

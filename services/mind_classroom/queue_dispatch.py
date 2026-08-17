@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 
 KICK_AFTER_SECONDS = 20
 QUEUED_GIVE_UP_SECONDS = 180
-WORKER_MISSING_MSG = "Celery worker did not pick up this lecture job. Restart Celery after deploy, then tap Restart."
+WORKER_MISSING_MSG = (
+    "Celery worker did not pick up this lecture job. Restart Celery after deploy, then rewrite the lesson plan."
+)
 
 
 def _aware(value: datetime) -> datetime:

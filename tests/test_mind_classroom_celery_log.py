@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 
 from services.mind_classroom.celery_log import (
+    celery_log_level,
     classroom_status_changed,
     format_classroom_celery_line,
     log_classroom_celery,
@@ -56,3 +59,19 @@ def test_log_classroom_celery_writes_info(caplog: pytest.LogCaptureFixture) -> N
             detail="task=mind_classroom.run_script",
         )
     assert any("[MindClassroom] Celery start job=job-1" in rec.message for rec in caplog.records)
+
+
+def test_celery_error_event_is_error_level(caplog: pytest.LogCaptureFixture) -> None:
+    """Failed enqueue / worker miss must show as ERROR, not INFO."""
+    assert celery_log_level("enqueue") == logging.INFO
+    assert celery_log_level("start") == logging.INFO
+    assert celery_log_level("finish") == logging.INFO
+    assert celery_log_level("error") == logging.ERROR
+    with caplog.at_level("INFO", logger="services.mind_classroom"):
+        log_classroom_celery(
+            "error",
+            job_id="job-1",
+            status="failed",
+            detail="reason=worker_missing_task",
+        )
+    assert any(rec.levelno == logging.ERROR and "Celery error" in rec.message for rec in caplog.records)

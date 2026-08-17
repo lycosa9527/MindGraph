@@ -390,6 +390,8 @@ class UnifiedFormatter(logging.Formatter):
             source = "CLIE"
         elif source.startswith("services"):
             source = "SERV"
+        elif source in ("mindgraph.performance", "PERF"):
+            source = "PERF"
         elif source.startswith("agents"):
             source = "AGNT"
         elif source == "openai":

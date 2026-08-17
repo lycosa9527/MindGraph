@@ -70,4 +70,7 @@ async def wipe_slides(job_id: str) -> None:
         keys = await repo.delete_by_job(job_id, commit=True)
     for key in keys:
         await delete_key(key)
-    logger.info("[MindClassroom] Wipe slides job=%s count=%s", job_id, len(keys))
+    if keys:
+        logger.info("[MindClassroom] Wipe slides job=%s count=%s", job_id, len(keys))
+    else:
+        logger.debug("[MindClassroom] Wipe slides job=%s count=0", job_id)

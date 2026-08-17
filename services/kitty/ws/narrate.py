@@ -14,6 +14,43 @@ from services.kitty.tts.lecture_cache import log_lecture_tts, schedule_lecture_p
 from services.kitty.ws.guards import KITTY_WS_MAX_TEXT_CHARS
 
 
+async def handle_kitty_prefetch(
+    websocket: WebSocket,
+    voice_session_id: str,
+    message: dict[str, Any],
+) -> None:
+    """Synthesize a slide into the lookahead buffer without playing it."""
+    text = str(message.get("text") or "").strip()
+    if not text:
+        return
+    if len(text) > KITTY_WS_MAX_TEXT_CHARS:
+        await safe_websocket_send(websocket, {"type": "error", "error": "Text too long"})
+        return
+    step_id = str(message.get("step_id") or "").strip()
+    session = voice_sessions.get(voice_session_id)
+    if not isinstance(session, dict) or not resolve_kitty_tts_enabled():
+        log_lecture_tts(
+            "prefetch_skip",
+            voice_session_id=voice_session_id,
+            step_id=step_id,
+            detail="reason=no_session_or_tts_off",
+        )
+        return
+    log_lecture_tts(
+        "prefetch_request",
+        voice_session_id=voice_session_id,
+        step_id=step_id,
+        detail=f"chars={len(text)}",
+    )
+    schedule_lecture_prefetch(
+        voice_session_id,
+        text,
+        step_id,
+        notify_ws=websocket,
+        replace=False,
+    )
+
+
 async def handle_kitty_narrate(
     websocket: WebSocket,
     voice_session_id: str,
@@ -57,12 +94,11 @@ async def handle_kitty_narrate(
         session["_kitty_lecture_step_id"] = step_id
     else:
         session.pop("_kitty_lecture_step_id", None)
-    try:
-        await speak_kitty_final_reply(websocket, voice_session_id, text, force=True)
-    finally:
-        live = voice_sessions.get(voice_session_id)
-        if isinstance(live, dict):
-            live["_kitty_lecture"] = False
-            live.pop("_kitty_lecture_step_id", None)
-    if prefetch_text:
-        schedule_lecture_prefetch(voice_session_id, prefetch_text, prefetch_step_id)
+    await speak_kitty_final_reply(
+        websocket,
+        voice_session_id,
+        text,
+        force=True,
+        prefetch_text=prefetch_text,
+        prefetch_step_id=prefetch_step_id,
+    )

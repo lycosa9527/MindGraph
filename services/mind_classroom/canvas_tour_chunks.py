@@ -26,6 +26,17 @@ def split_each_node_families(tour_nodes: list[dict[str, Any]]) -> list[list[dict
     return families
 
 
+def family_branch_label(family: list[dict[str, Any]]) -> str:
+    """Trunk title for logs and job progress (first node with text or id)."""
+    for node in family:
+        if not isinstance(node, dict):
+            continue
+        text = str(node.get("text") or node.get("id") or "").strip()
+        if text:
+            return text[:80]
+    return ""
+
+
 def merge_usage(
     left: Optional[dict[str, Any]],
     right: Optional[dict[str, Any]],

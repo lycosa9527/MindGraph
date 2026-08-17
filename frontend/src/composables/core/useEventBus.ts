@@ -345,6 +345,12 @@ export type EventTypes = {
     prefetchStepId?: string
     generation?: number
   }
+  'kitty:lecture_prefetch_requested': {
+    text: string
+    stepId?: string
+  }
+  'kitty:lecture_prefetch_ready': { stepId?: string }
+  'kitty:lecture_prefetch_failed': { stepId?: string }
   'kitty:lecture_interrupt_requested': Record<string, never>
   'classroom:start_requested': { reuse?: boolean }
   'classroom:restart_requested': Record<string, never>

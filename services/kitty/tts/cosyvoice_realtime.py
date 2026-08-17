@@ -26,9 +26,14 @@ from config.dashscope_urls import (
 )
 from config.settings import config
 from services.kitty.asr.fun_asr_realtime import resolve_dashscope_api_key
+from services.kitty.tts.voice_design import cached_designed_voice_id, locate_cosyvoice_v35_voice
+from services.tts.routing import default_voice_for_model
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 
 logger = logging.getLogger(__name__)
+
+V3_FLASH_FALLBACK_MODEL = "cosyvoice-v3-flash"
+V3_FLASH_FALLBACK_VOICE = "longyumi_v3"
 
 # CosyVoice flash often stops a single continue-task around 20s of audio.
 _TTS_CHUNK_CHARS = 90
@@ -74,34 +79,46 @@ def resolve_kitty_tts_enabled() -> bool:
 
 
 def resolve_kitty_tts_model() -> str:
-    """Primary ``cosyvoice-v3.5-flash``; override via ``KITTY_TTS_MODEL``."""
+    """Default ``cosyvoice-v3.5-flash``. Override via ``KITTY_TTS_MODEL``."""
     raw = os.getenv("KITTY_TTS_MODEL", "cosyvoice-v3.5-flash").strip()
     return raw or "cosyvoice-v3.5-flash"
 
 
 def resolve_kitty_tts_voice() -> str:
-    """
-    Voice id for CosyVoice (default YUMI: ``longyumi_v3``).
+    """Voice for the configured ``KITTY_TTS_MODEL``.
 
-    v3.5 clone/design voices can override via ``KITTY_TTS_VOICE``.
+    Unset ``KITTY_TTS_VOICE`` uses the family default (YUMI, Cherry, …).
+    CosyVoice v3.5 has no system voice: empty until design/locate, then the
+    process-local ``mgv35f`` id.
     """
-    raw = os.getenv("KITTY_TTS_VOICE", "longyumi_v3").strip()
-    return raw or "longyumi_v3"
+    raw = os.getenv("KITTY_TTS_VOICE", "").strip()
+    if raw:
+        return raw
+    catalog = default_voice_for_model(resolve_kitty_tts_model())
+    if catalog:
+        return catalog
+    return cached_designed_voice_id()
 
 
 def resolve_kitty_tts_model_and_voice() -> tuple[str, str]:
-    """Return (model, voice); YUMI ``longyumi_v3`` is the default voice.
+    """Return (model, voice). v3.5 voice may be empty until design runs."""
+    return resolve_kitty_tts_model(), resolve_kitty_tts_voice()
 
-    When ``KITTY_TTS_MODEL`` is v3.5 and voice is still the system default,
-    fall back to ``cosyvoice-v3-flash`` (v3.5 has no system voices).
-    """
-    model = resolve_kitty_tts_model()
-    voice = resolve_kitty_tts_voice()
-    voice_explicit = bool(os.getenv("KITTY_TTS_VOICE", "").strip())
-    if model.startswith("cosyvoice-v3.5") and not voice_explicit:
-        logger.info("KITTY_TTS_VOICE unset with v3.5 model; using cosyvoice-v3-flash + longyumi_v3 (YUMI)")
-        return "cosyvoice-v3-flash", "longyumi_v3"
-    return model, voice
+
+async def resolve_runtime_model_and_voice() -> tuple[str, str]:
+    """v3.5 + designed voice, or v3-flash + YUMI when the voice cannot be located."""
+    model, voice = resolve_kitty_tts_model_and_voice()
+    if not model.startswith("cosyvoice-v3.5"):
+        return model, voice or V3_FLASH_FALLBACK_VOICE
+    located = await locate_cosyvoice_v35_voice(voice, model)
+    if located:
+        return model, located
+    logger.warning(
+        "CosyVoice v3.5 voice not found; falling back to %s + %s",
+        V3_FLASH_FALLBACK_MODEL,
+        V3_FLASH_FALLBACK_VOICE,
+    )
+    return V3_FLASH_FALLBACK_MODEL, V3_FLASH_FALLBACK_VOICE
 
 
 def build_cosyvoice_run_task(
@@ -145,20 +162,23 @@ def build_cosyvoice_continue_task(task_id: str, text: str) -> dict[str, Any]:
     }
 
 
-def build_cosyvoice_finish_task(task_id: str) -> dict[str, Any]:
-    """Client ``finish-task`` (required)."""
+def build_cosyvoice_finish_task(task_id: str, *, cancel: bool = False) -> dict[str, Any]:
+    """Client ``finish-task``. ``cancel=True`` stops audio (Aliyun ``directive``)."""
+    payload_input: dict[str, Any] = {"directive": "cancel"} if cancel else {}
     return {
         "header": {
             "action": "finish-task",
             "task_id": task_id,
             "streaming": "duplex",
         },
-        "payload": {"input": {}},
+        "payload": {"input": payload_input},
     }
 
 
 class CosyVoiceRealtimeClient:
     """Reusable CosyVoice MaaS WS; one synthesis task per ``speak()``."""
+
+    sample_rate: int = 22050
 
     def __init__(
         self,
@@ -166,10 +186,14 @@ class CosyVoiceRealtimeClient:
         on_audio: AudioCallback,
         on_done: Optional[DoneCallback] = None,
         on_error: Optional[ErrorCallback] = None,
+        model: Optional[str] = None,
+        voice: Optional[str] = None,
     ) -> None:
         self._on_audio = on_audio
         self._on_done = on_done
         self._on_error = on_error
+        self._pin_model = (model or "").strip()
+        self._pin_voice = (voice or "").strip()
         self._ws: Optional[ClientConnection] = None
         self._reader_task: Optional[asyncio.Task[None]] = None
         self._task_id = ""
@@ -177,6 +201,9 @@ class CosyVoiceRealtimeClient:
         self._finished = asyncio.Event()
         self._closed = False
         self._cancel_requested = False
+        self._heard_audio = False
+        self._live_task_ran = False
+        self._task_failed = ""
 
     async def connect(self) -> None:
         """Open (or reuse) the inference WebSocket."""
@@ -232,21 +259,34 @@ class CosyVoiceRealtimeClient:
         if not resolve_kitty_tts_enabled():
             return
         self._cancel_requested = False
+        self._heard_audio = False
+        self._live_task_ran = False
+        self._task_failed = ""
         chunks = split_cosyvoice_text(message)
         for index, chunk in enumerate(chunks):
-            if self._cancel_requested:
-                return
+            if self._cancel_requested or self._task_failed:
+                break
             await self._speak_chunk(chunk)
-            if index < len(chunks) - 1 and not self._cancel_requested:
+            if index < len(chunks) - 1 and not self._cancel_requested and not self._task_failed:
                 await self._release_socket()
-        if self._on_done and not self._cancel_requested:
+        if self._cancel_requested:
+            return
+        if self._task_failed:
+            raise RuntimeError(self._task_failed)
+        if self._live_task_ran and not self._heard_audio:
+            raise RuntimeError("CosyVoice returned no audio")
+        if self._on_done:
             await self._on_done()
 
     async def _speak_chunk(self, message: str) -> None:
         """One CosyVoice run-task. Flash models drop audio after ~20s per task."""
         await self.connect()
         assert self._ws is not None
-        model, voice = resolve_kitty_tts_model_and_voice()
+        self._live_task_ran = True
+        if self._pin_model:
+            model, voice = self._pin_model, self._pin_voice
+        else:
+            model, voice = await resolve_runtime_model_and_voice()
         self._task_id = str(uuid.uuid4())
         self._started = asyncio.Event()
         self._finished = asyncio.Event()
@@ -270,7 +310,7 @@ class CosyVoiceRealtimeClient:
         self._cancel_requested = True
         if self._task_id and self._ws is not None:
             try:
-                await self._send_finish()
+                await self._send_finish(cancel=True)
             except (ConnectionClosed, ConnectionClosedError, ConnectionClosedOK, OSError):
                 pass
         self._finished.set()
@@ -294,10 +334,10 @@ class CosyVoiceRealtimeClient:
                 pass
             self._ws = None
 
-    async def _send_finish(self) -> None:
+    async def _send_finish(self, *, cancel: bool = False) -> None:
         if self._ws is None or not self._task_id:
             return
-        await self._ws.send(json.dumps(build_cosyvoice_finish_task(self._task_id)))
+        await self._ws.send(json.dumps(build_cosyvoice_finish_task(self._task_id, cancel=cancel)))
 
     async def _read_loop(self) -> None:
         assert self._ws is not None
@@ -307,6 +347,7 @@ class CosyVoiceRealtimeClient:
                     if self._cancel_requested:
                         continue
                     encoded = base64.b64encode(bytes(message)).decode("ascii")
+                    self._heard_audio = True
                     await self._on_audio(encoded, "pcm")
                     continue
                 try:
@@ -335,6 +376,7 @@ class CosyVoiceRealtimeClient:
             raw_payload = data.get("payload")
             payload: dict[str, Any] = raw_payload if isinstance(raw_payload, dict) else {}
             err = str(payload.get("message") or header.get("error_message") or "CosyVoice failed")
+            self._task_failed = err
             self._finished.set()
             if self._on_error:
                 await self._on_error(err)

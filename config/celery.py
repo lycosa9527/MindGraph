@@ -275,6 +275,24 @@ REDIS_DB = os.getenv("REDIS_CELERY_DB", "1")  # Use DB 1 for Celery (DB 0 for ca
 BROKER_URL = os.getenv("CELERY_BROKER_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")
 BACKEND_URL = os.getenv("CELERY_RESULT_BACKEND", f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")
 
+_DEFAULT_WORKER_CONCURRENCY = 4
+_MAX_WORKER_CONCURRENCY = 32
+
+
+def celery_worker_concurrency() -> int:
+    """Prefork slot count from ``CELERY_WORKER_CONCURRENCY`` (default 4)."""
+    raw = (os.getenv("CELERY_WORKER_CONCURRENCY") or "").strip()
+    if not raw:
+        return _DEFAULT_WORKER_CONCURRENCY
+    try:
+        value = int(raw)
+    except ValueError:
+        return _DEFAULT_WORKER_CONCURRENCY
+    if value < 1:
+        return _DEFAULT_WORKER_CONCURRENCY
+    return min(value, _MAX_WORKER_CONCURRENCY)
+
+
 # Create Celery app
 celery_app = Celery(
     "mindgraph",
@@ -302,7 +320,7 @@ celery_app.conf.update(
     task_reject_on_worker_lost=True,  # Requeue if worker crashes
     # Worker settings
     worker_prefetch_multiplier=1,  # One task at a time per worker (for long-running tasks)
-    worker_concurrency=2,  # 2 concurrent tasks per worker
+    worker_concurrency=celery_worker_concurrency(),
     # Result settings
     result_expires=3600,  # Results expire after 1 hour
     # Task queues (like Dify's queue isolation)

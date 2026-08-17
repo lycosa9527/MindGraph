@@ -416,6 +416,12 @@ export default defineConfig({
     },
   },
   build: {
+    // Vite 8 default is 2026 baseline (chrome111 / safari16.4). School WeChat /
+    // older iOS WebViews need a lower JS floor. Oxc still cannot rewrite
+    // Iterator helpers — see iteratorHelpersPolyfill.ts for that global.
+    target: ['es2020', 'chrome87', 'edge88', 'firefox78', 'safari14', 'ios14'],
+    // WeChat Android WebView rejects #RGBA; Vite documents chrome61 for CSS.
+    cssTarget: 'chrome61',
     outDir: buildOutDir,
     // On WSL `/mnt/*`, Vite's emptyOutDir hits ENOTEMPTY on large trees (pdf.js cmaps).
     // mindgraph-wsl-safe-empty-out-dir handles cleanup with retries instead.

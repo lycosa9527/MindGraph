@@ -34,6 +34,7 @@ import {
 } from '@/utils/mindClassroomScript'
 
 export type MindClassroomLectureStatus = 'idle' | 'running' | 'paused'
+export type MindClassroomVoiceWarmup = 'idle' | 'loading' | 'ready' | 'failed'
 
 export const useMindClassroomStore = defineStore('mindClassroom', () => {
   const diagramStore = useDiagramStore()
@@ -57,6 +58,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
   const jobProgress = ref<Record<string, unknown> | null>(null)
   const jobError = ref<string | null>(null)
   const preparedSteps = ref<MindClassroomLectureStep[]>([])
+  const voiceWarmup = ref<MindClassroomVoiceWarmup>('idle')
   const startInFlight = ref(false)
   const speakGeneration = ref(0)
   const queueGeneration = ref(0)
@@ -190,6 +192,10 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     preparedSteps.value = next
   }
 
+  function setVoiceWarmup(next: MindClassroomVoiceWarmup): void {
+    voiceWarmup.value = next
+  }
+
   function setStartInFlight(next: boolean): void {
     startInFlight.value = next
   }
@@ -210,6 +216,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
 
   function clearPrepared(): void {
     preparedSteps.value = []
+    voiceWarmup.value = 'idle'
     jobId.value = null
     jobStatus.value = null
     jobProgress.value = null
@@ -248,6 +255,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     jobProgress,
     jobError,
     preparedSteps,
+    voiceWarmup,
     startInFlight,
     speakGeneration,
     queueGeneration,
@@ -274,6 +282,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     setNarrating,
     setJobState,
     setPreparedSteps,
+    setVoiceWarmup,
     setStartInFlight,
     bumpSpeakGeneration,
     bumpQueueGeneration,

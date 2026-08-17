@@ -50,6 +50,10 @@ from services.mcp.session_lifespan import mindgraph_mcp_session_run
 from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService, admin_sms_alerts_enabled
 from services.infrastructure.monitoring.health_monitor import get_health_monitor
+from services.infrastructure.monitoring.perf_sample_log import (
+    perf_sample_enabled,
+    start_perf_sample_loop,
+)
 from services.infrastructure.monitoring.process_monitor import get_process_monitor
 from services.infrastructure.monitoring.worker_perf_heartbeat import start_worker_perf_heartbeat
 from services.infrastructure.process.fatal_process_exit import fatal_startup_exit
@@ -443,6 +447,20 @@ async def lifespan(fastapi_app: FastAPI):
         if is_main_worker:
             logger.warning("Failed to start admin worker perf heartbeat: %s", e)
 
+    perf_sample_task: asyncio.Task[None] | None = None
+    perf_sample_stop: asyncio.Event | None = None
+    if perf_sample_enabled():
+        try:
+            perf_sample_task, perf_sample_stop = start_perf_sample_loop()
+            if is_main_worker:
+                logger.info(
+                    "[PerfSample] Host/queue samples → logs/performance.*.log "
+                    "(Redis lock picks one writer; not app.log)"
+                )
+        except BACKGROUND_INFRA_ERRORS as e:
+            if is_main_worker:
+                logger.warning("Failed to start performance sample log: %s", e)
+
     # Start inline recommendations cleanup scheduler (prunes stale sessions)
     try:
         asyncio.create_task(start_inline_rec_cleanup_scheduler(interval_minutes=30))
@@ -572,6 +590,8 @@ async def lifespan(fastapi_app: FastAPI):
         session_manager_task=session_manager_task,
         worker_perf_task=worker_perf_task,
         worker_perf_stop=worker_perf_stop,
+        perf_sample_task=perf_sample_task,
+        perf_sample_stop=perf_sample_stop,
         backup_scheduler_task=backup_scheduler_task,
         abuseipdb_scheduler_task=abuseipdb_scheduler_task,
         cos_mirror_task=cos_mirror_task,

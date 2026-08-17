@@ -102,7 +102,7 @@ async def mark_terminal_from_error(
             return None
         owned = row.celery_task_id
         if celery_task_id and owned and owned != celery_task_id:
-            logger.info(
+            logger.debug(
                 "[MindClassroom] Skip terminal mark job=%s lease lost have=%s want=%s",
                 job_id,
                 celery_task_id,

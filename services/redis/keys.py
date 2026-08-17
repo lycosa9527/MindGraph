@@ -148,6 +148,7 @@ TTL_USER_DAILY_TOKENS = 90_000  # 25 h — covers Beijing midnight rollover
 LOCK = "lock:{resource}"
 LOCK_STARTUP_SMS = "lock:mindgraph:lifespan:startup_sms"
 LOCK_LAUNCH_COMPLETE = "lock:mindgraph:lifespan:launch_complete"
+LOCK_PERF_SAMPLE = "lock:mindgraph:perf_sample:{host}"
 TTL_LOCK_DEFAULT = 10
 TTL_LOCK_STARTUP = 300
 TTL_LOCK_LAUNCH_COMPLETE = 120

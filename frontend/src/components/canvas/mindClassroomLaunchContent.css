@@ -449,7 +449,14 @@
   gap: 8px;
 }
 
+@property --mc-launch-ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .mc-launch__start {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -466,6 +473,14 @@
   background: #2563eb;
   box-shadow: 0 8px 20px rgb(37 99 235 / 0.22);
   cursor: pointer;
+  overflow: visible;
+}
+
+.mc-launch__start-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mc-launch__start:hover:not(:disabled) {
@@ -478,8 +493,76 @@
 }
 
 .mc-launch__start.is-busy {
-  background: #3b82f6;
+  --mc-launch-fill: 0%;
+  overflow: hidden;
+  background: #1e3a8a;
   box-shadow: none;
+}
+
+.mc-launch__start.is-busy::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: var(--mc-launch-fill);
+  max-width: calc(100% - 4px);
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    90deg,
+    #1d4ed8 0%,
+    #2563eb 40%,
+    #3b82f6 72%,
+    #93c5fd 100%
+  );
+  transition: width 0.45s ease;
+}
+
+.mc-launch__start.is-busy > * {
+  position: relative;
+  z-index: 1;
+}
+
+.mc-launch__start.is-busy .mc-launch__start-label {
+  text-shadow: 0 1px 2px rgb(15 23 42 / 0.35);
+}
+
+.mc-launch__start.is-busy::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 2px;
+  --mc-launch-ring-angle: 0deg;
+  pointer-events: none;
+  z-index: 0;
+  background: conic-gradient(
+    from var(--mc-launch-ring-angle) at 50% 50%,
+    rgba(191, 219, 254, 0.2) 0deg,
+    rgba(219, 234, 254, 0.12) 50deg,
+    #93c5fd 130deg,
+    #dbeafe 180deg,
+    #60a5fa 230deg,
+    rgba(219, 234, 254, 0.12) 310deg,
+    rgba(191, 219, 254, 0.2) 360deg
+  );
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  animation: mc-launch-ring-spin 2.5s linear infinite;
+}
+
+@keyframes mc-launch-ring-spin {
+  to {
+    --mc-launch-ring-angle: 360deg;
+  }
 }
 
 .mc-launch__start.is-busy:disabled {
@@ -508,7 +591,8 @@
 .mc-launch__restart {
   flex: 0 0 auto;
   min-width: 88px;
-  padding: 0 12px;
+  padding: 0 14px;
+  white-space: nowrap;
   height: 44px;
   border: 1px solid #cbd5e1;
   border-radius: 12px;

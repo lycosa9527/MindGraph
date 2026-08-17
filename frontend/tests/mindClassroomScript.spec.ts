@@ -153,4 +153,10 @@ describe('buildMindClassroomLectureSteps', () => {
     expect(dwell).toBeGreaterThan(20_000)
     expect(lectureTtsSafetyMs(caption, dwell)).toBeGreaterThan(dwell)
   })
+
+  it('keeps a 4000-char teacher_script under the safety ceiling', () => {
+    const caption = '讲'.repeat(4000)
+    expect(lectureTtsSafetyMs(caption, 0)).toBeGreaterThan(480_000)
+    expect(lectureTtsSafetyMs(caption, 0)).toBeLessThanOrEqual(1_800_000)
+  })
 })

@@ -46,7 +46,7 @@ const DWELL_MS_PER_CHAR = 280
 const DWELL_FLOOR_MS = 2200
 const TTS_SAFETY_MS_PER_CHAR = 400
 const TTS_SAFETY_FLOOR_MS = 20_000
-const TTS_SAFETY_CEILING_MS = 480_000
+const TTS_SAFETY_CEILING_MS = 1_800_000
 
 export function lectureCaptionDwellMs(caption: string): number {
   const chars = caption.trim().length

@@ -227,14 +227,32 @@ export function handleKittyServerMessage(
       }
       break
 
+    case 'prefetch_ready':
+      {
+        const stepId =
+          typeof data.step_id === 'string' && data.step_id.trim() ? data.step_id.trim() : undefined
+        eventBus.emit('kitty:lecture_prefetch_ready', { stepId })
+      }
+      break
+
+    case 'prefetch_failed':
+      {
+        const stepId =
+          typeof data.step_id === 'string' && data.step_id.trim() ? data.step_id.trim() : undefined
+        eventBus.emit('kitty:lecture_prefetch_failed', { stepId })
+      }
+      break
+
     case 'tts_done':
       {
         const stepId =
           typeof data.step_id === 'string' && data.step_id.trim() ? data.step_id.trim() : undefined
-        if (deps.markLectureSynthesisDone) {
+        if (data.lecture === true && deps.markLectureSynthesisDone) {
           deps.markLectureSynthesisDone(stepId)
-        } else {
+        } else if (data.lecture === true) {
           eventBus.emit('kitty:lecture_tts_done', { stepId })
+          deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
+        } else {
           deps.state.value = deps.isVoiceActive.value ? 'listening' : 'active'
         }
       }

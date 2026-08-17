@@ -9,6 +9,7 @@ from typing import Any, Optional
 
 from repositories.mind_classroom_repo import MindClassroomJobRepository
 from services.mind_classroom.celery_log import classroom_status_changed, log_classroom_celery
+from services.mind_classroom.job_events import publish_classroom_job_snapshot
 from utils.db.session_open import system_rls_session
 
 JOB_QUEUED = "queued"
@@ -56,6 +57,7 @@ async def mark_job_queued(
             attempt_entry=_attempt_entry(JOB_QUEUED, "queued"),
             commit=True,
         )
+    await publish_classroom_job_snapshot(job_id)
 
 
 async def mark_job_stage(
@@ -71,11 +73,13 @@ async def mark_job_stage(
     clear_error: bool = False,
     started: bool = False,
     finished: bool = False,
+    record_attempt: bool = True,
 ) -> None:
     """Update job status/stage on the manifesto."""
     previous_status: Optional[str] = None
     previous_stage: Optional[str] = None
     owned: Optional[str] = None
+    payload = progress or {"phase": stage}
     async with system_rls_session() as db:
         repo = MindClassroomJobRepository(db)
         row = await repo.get_by_uuid(job_id)
@@ -87,26 +91,32 @@ async def mark_job_stage(
             job_id,
             status=status,
             current_stage=stage,
-            progress=progress or {"phase": stage},
+            progress=payload,
             result_json=result_json,
             lesson_plan_json=lesson_plan_json,
             celery_task_id=celery_task_id,
             error_message=error_message,
             clear_error=clear_error,
-            increment_attempt=status in _ACTIVE,
-            attempt_entry=_attempt_entry(status, stage, error_message),
+            increment_attempt=record_attempt and status in _ACTIVE,
+            attempt_entry=_attempt_entry(status, stage, error_message) if record_attempt else None,
             started=started,
             finished=finished,
             commit=True,
         )
     if classroom_status_changed(previous_status, previous_stage, status, stage):
+        phase = payload.get("phase") if isinstance(payload, dict) else None
+        detail = None
+        if isinstance(phase, str) and phase and phase not in {status, stage}:
+            detail = f"phase={phase}"
         log_classroom_celery(
             "status",
             job_id=job_id,
             celery_task_id=celery_task_id or owned,
             status=status,
             stage=stage,
+            detail=detail,
         )
+    await publish_classroom_job_snapshot(job_id)
 
 
 async def mark_job_ready(

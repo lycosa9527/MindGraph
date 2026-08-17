@@ -39,6 +39,8 @@ import {
 import { useAiContentLevelStore, useAuthStore, useMindClassroomStore } from '@/stores'
 import {
   isMindClassroomQueueBusy,
+  mindClassroomProgressStats,
+  mindClassroomStartFillPercent,
   mindClassroomStartLabelKey,
   shouldShowMindClassroomRestart,
 } from '@/utils/mindClassroomLaunchState'
@@ -61,15 +63,19 @@ const {
   slideStyle,
   tone,
   jobStatus,
+  jobProgress,
   jobError,
   preparedSteps,
+  voiceWarmup,
   startInFlight,
 } = storeToRefs(classroomStore)
 const aiLevelStore = useAiContentLevelStore()
 const { level: audienceLevel } = storeToRefs(aiLevelStore)
 
 const hasPrepared = computed(() => preparedSteps.value.length > 0)
-const queueBusy = computed(() => isMindClassroomQueueBusy(jobStatus.value, startInFlight.value))
+const queueBusy = computed(() =>
+  isMindClassroomQueueBusy(jobStatus.value, startInFlight.value, voiceWarmup.value)
+)
 const startLocked = computed(() => queueBusy.value || !authStore.isAuthenticated)
 const showRestart = computed(() =>
   shouldShowMindClassroomRestart({
@@ -78,15 +84,28 @@ const showRestart = computed(() =>
     authenticated: authStore.isAuthenticated,
   })
 )
+const progressStats = computed(() => mindClassroomProgressStats(jobProgress.value))
+const startLabelKey = computed(() =>
+  mindClassroomStartLabelKey({
+    jobStatus: jobStatus.value,
+    starting: startInFlight.value,
+    hasPrepared: hasPrepared.value,
+    presentation: presentation.value,
+    voiceWarmup: voiceWarmup.value,
+    branchName: progressStats.value.branchName,
+    ttsReady: progressStats.value.ttsReady,
+    remaining: progressStats.value.inFlight,
+  })
+)
 const startLabel = computed(() =>
-  t(
-    mindClassroomStartLabelKey({
-      jobStatus: jobStatus.value,
-      starting: startInFlight.value,
-      hasPrepared: hasPrepared.value,
-      presentation: presentation.value,
-    })
-  )
+  t(startLabelKey.value, {
+    name: progressStats.value.branchName,
+    done: progressStats.value.done,
+    total: progressStats.value.total,
+  })
+)
+const startFillPercent = computed(() =>
+  mindClassroomStartFillPercent(progressStats.value.done, progressStats.value.total)
 )
 const startFailed = computed(() => jobStatus.value === 'failed' && !hasPrepared.value)
 
@@ -453,17 +472,29 @@ function handleRestart(): void {
             'is-ready': hasPrepared && !startLocked,
             'is-failed': startFailed,
           }"
+          :style="
+            queueBusy ? { '--mc-launch-fill': `${startFillPercent}%` } : undefined
+          "
           :disabled="startLocked"
           :title="startFailed ? jobError || startLabel : undefined"
+          :role="queueBusy && progressStats.total > 0 ? 'progressbar' : undefined"
+          :aria-valuemin="queueBusy && progressStats.total > 0 ? 0 : undefined"
+          :aria-valuemax="queueBusy && progressStats.total > 0 ? 100 : undefined"
+          :aria-valuenow="queueBusy && progressStats.total > 0 ? startFillPercent : undefined"
+          :aria-valuetext="
+            queueBusy && progressStats.total > 0
+              ? `${progressStats.done}/${progressStats.total}`
+              : undefined
+          "
           :aria-live="queueBusy || hasPrepared || startFailed ? 'polite' : undefined"
           @click="handleStart"
         >
           <GraduationCap
-            class="h-4 w-4"
+            class="h-4 w-4 shrink-0"
             :stroke-width="2.25"
             aria-hidden="true"
           />
-          {{ startLabel }}
+          <span class="mc-launch__start-label">{{ startLabel }}</span>
         </button>
         <button
           v-if="showRestart"

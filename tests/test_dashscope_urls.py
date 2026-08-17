@@ -7,7 +7,10 @@ from config.dashscope_urls import (
     build_chat_completions_url,
     build_dashscope_headers,
     build_dashscope_inference_ws_url,
+    build_multimodal_generation_url,
+    build_qwen_tts_realtime_ws_url,
     build_realtime_ws_base,
+    build_speech_synthesizer_url,
     dashscope_endpoint_summary,
     normalize_dashscope_region,
     resolve_chat_completions_url,
@@ -128,4 +131,19 @@ def test_build_dashscope_headers_omits_workspace_when_unset() -> None:
     """Legacy mode keeps Bearer-only headers."""
     headers = build_dashscope_headers("sk-test", workspace_id=None, content_type=None)
     assert headers == {"Authorization": "Bearer sk-test"}
-    assert WORKSPACE_HEADER not in headers
+
+
+def test_speech_and_qwen_tts_http_and_realtime_urls() -> None:
+    """Non-realtime HTTP and Qwen-TTS Realtime URLs use workspace MaaS hosts."""
+    speech = build_speech_synthesizer_url(workspace_id="ws-test123", region="cn-beijing")
+    assert speech.endswith("/api/v1/services/audio/tts/SpeechSynthesizer")
+    assert "ws-test123.cn-beijing.maas.aliyuncs.com" in speech
+    qwen_http = build_multimodal_generation_url(workspace_id="ws-test123", region="cn-beijing")
+    assert qwen_http.endswith("/api/v1/services/aigc/multimodal-generation/generation")
+    qwen_ws = build_qwen_tts_realtime_ws_url(
+        "qwen3-tts-flash-realtime",
+        workspace_id="ws-test123",
+        region="cn-beijing",
+    )
+    assert qwen_ws.endswith("/api-ws/v1/realtime?model=qwen3-tts-flash-realtime")
+    assert qwen_ws.startswith("wss://ws-test123.cn-beijing.maas.aliyuncs.com/")

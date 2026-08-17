@@ -619,6 +619,22 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     }
   }
 
+  function sendPrefetch(text: string, stepId?: string): boolean {
+    if (!text.trim() || !ws.value || ws.value.readyState !== WebSocket.OPEN) {
+      return false
+    }
+    const payload: Record<string, string> = { type: 'prefetch', text: text.trim() }
+    if (stepId?.trim()) {
+      payload.step_id = stepId.trim()
+    }
+    try {
+      ws.value.send(JSON.stringify(payload))
+      return true
+    } catch {
+      return false
+    }
+  }
+
   function sendTextMessage(
     text: string,
     requestIdOrMeta?:
@@ -835,6 +851,7 @@ export function useKittyAgent(options: KittyAgentOptions = {}) {
     startVoiceInput,
     stopVoiceInput,
     sendNarrate,
+    sendPrefetch,
     sendTextMessage,
     setTtsEnabled,
     stopAudioPlayback,

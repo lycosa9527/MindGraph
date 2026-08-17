@@ -24,10 +24,14 @@ import { setAppQueryClient } from './utils/appQueryClient'
 import { isGuestAuthPath } from './utils/authRedirect'
 import { installCsrfFetchInterceptor } from './utils/installCsrfFetchInterceptor'
 import { installFrontendErrorReporting } from './utils/installFrontendErrorReporting'
+import { installIteratorHelpersPolyfill } from './utils/iteratorHelpersPolyfill'
 import { loadMobileDebugConsole } from './utils/loadMobileDebugConsole'
+import { syncOfficeEmbedFromSearch } from './utils/officeEmbed'
 import { bindPwaInstallListeners } from './utils/pwaInstall'
 import { reloadForStaleChunk } from './utils/staleChunkReload'
-import { syncOfficeEmbedFromSearch } from './utils/officeEmbed'
+
+// WeChat / older WebViews: install before any lazy route chunk evaluates.
+installIteratorHelpersPolyfill()
 
 // Office Word task-pane / ?embed=word-addin → desktop layout before first paint.
 syncOfficeEmbedFromSearch()

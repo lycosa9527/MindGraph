@@ -35,13 +35,8 @@ def slide_payload(row: Any, request: Request) -> dict[str, Any]:
     }
 
 
-def job_payload(
-    row: Any,
-    request: Request,
-    *,
-    slides: Optional[list[Any]] = None,
-) -> dict[str, Any]:
-    """Serialize a job for poll/detail."""
+def job_event_dict(row: Any) -> dict[str, Any]:
+    """Serialize a job for SSE / Redis without a request object."""
     settings = row.settings if isinstance(row.settings, dict) else {}
     result = row.result_json if isinstance(row.result_json, dict) else None
     payload: dict[str, Any] = {
@@ -62,9 +57,20 @@ def job_payload(
         transcript_key = str(result.get("transcript_key") or "").strip()
     if transcript_key:
         try:
-            payload["transcript_url"] = classroom_asset_url(request, transcript_key)
+            payload["transcript_url"] = classroom_public_asset_url(transcript_key.lstrip("/"))
         except ValueError:
             payload["transcript_url"] = None
+    return payload
+
+
+def job_payload(
+    row: Any,
+    request: Request,
+    *,
+    slides: Optional[list[Any]] = None,
+) -> dict[str, Any]:
+    """Serialize a job for detail GET."""
+    payload = job_event_dict(row)
     if slides is not None:
         payload["slides"] = [slide_payload(slide, request) for slide in slides]
     return payload

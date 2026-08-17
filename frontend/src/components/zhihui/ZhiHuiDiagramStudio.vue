@@ -10,7 +10,7 @@ import {
   enqueueMindClassroomJob,
   fetchMindClassroomJobByDiagram,
   isClassroomJobActive,
-  pollMindClassroomJob,
+  watchMindClassroomJob,
   type MindClassroomJobDetail,
 } from '@/composables/mindMap/mindClassroomJobApi'
 import { classroomSlidesToGenerations } from '@/composables/zhihui/classroomDiagramJob'
@@ -134,7 +134,7 @@ function onSlideIndexUpdate(index: number): void {
 async function watchJob(jobId: string): Promise<void> {
   const generation = pollGeneration
   try {
-    await pollMindClassroomJob(jobId, {
+    await watchMindClassroomJob(jobId, {
       shouldStop: () => generation !== pollGeneration,
       onUpdate: (detail) => {
         applyJob(detail, { followLatest: true })

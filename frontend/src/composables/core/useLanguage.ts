@@ -2,11 +2,12 @@
  * Language composable — wraps vue-i18n + Pinia UI/prompt locale.
  */
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
+import { i18n } from '@/i18n'
 import type { MessageSchema } from '@/i18n/messageSchema'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
+import { safeI18nTranslate } from '@/utils/safeI18nTranslate'
 
 type MessageKey = keyof MessageSchema
 
@@ -34,8 +35,16 @@ export function translateDimension(value: string, toChinese: boolean): string {
   return DIMENSION_TRANSLATIONS[trimmed] ?? trimmed
 }
 
+function globalTranslate(key: string, named?: Record<string, unknown>): string {
+  if (named) {
+    return String(i18n.global.t(key, named))
+  }
+  return String(i18n.global.t(key))
+}
+
 export function useLanguage() {
-  const { t: i18nT } = useI18n()
+  // Use the i18n singleton — ``useI18n()`` throws MUST_BE_CALL_SETUP_TOP
+  // (production ``SyntaxError: 26``) from event handlers / dialog remounts.
   const uiStore = useUIStore()
 
   const currentLanguage = computed(() => uiStore.language)
@@ -53,15 +62,7 @@ export function useLanguage() {
   function t(key: string, fallback?: string): string
   function t(key: string, named: Record<string, unknown>): string
   function t(key: string, second?: string | Record<string, unknown>): string {
-    if (second === undefined) {
-      return String(i18nT(key))
-    }
-    if (typeof second === 'string') {
-      const result = i18nT(key)
-      if (result === key) return second
-      return String(result)
-    }
-    return String(i18nT(key, second))
+    return safeI18nTranslate(globalTranslate, key, second)
   }
 
   function setLanguage(lang: Language): void {

@@ -167,6 +167,35 @@ describe('useMindClassroomLecture lifecycle', () => {
     app.unmount()
   })
 
+  it('starts playback without cancelling first-slide warmup', async () => {
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'topic', text: 'Topic', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    }
+    const classroom = useMindClassroomStore(pinia)
+    classroom.setPreparedSteps(steps)
+    const emitSpy = vi.spyOn(eventBus, 'emit')
+    await lecture?.startLecture()
+    expect(emitSpy).toHaveBeenCalledWith('kitty:lecture_prefetch_requested', {
+      text: 'First caption',
+      stepId: 'first',
+    })
+    expect(emitSpy.mock.calls.some(([name]) => name === 'kitty:lecture_interrupt_requested')).toBe(
+      false
+    )
+    emitSpy.mockRestore()
+    app.unmount()
+  })
+
   it('refuses to start a lecture without login', async () => {
     const pinia = createPinia()
     const app = createApp(LectureProbe)

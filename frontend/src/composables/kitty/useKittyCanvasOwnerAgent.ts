@@ -336,6 +336,18 @@ export function useKittyCanvasOwnerAgent(options: {
   )
 
   eventBus.onWithOwner(
+    'kitty:lecture_prefetch_requested',
+    (payload) => {
+      void (async () => {
+        const connected = await ensureConnected()
+        if (!connected) return
+        kitty.sendPrefetch(payload.text, payload.stepId)
+      })()
+    },
+    'KittyCanvasOwnerAgent'
+  )
+
+  eventBus.onWithOwner(
     'kitty:lecture_interrupt_requested',
     () => {
       kitty.stopAudioPlayback()

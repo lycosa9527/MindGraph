@@ -55,7 +55,12 @@ class LogStreamer:
         self.max_lines_per_second = max_lines_per_second
 
         # Log file patterns (base names - will resolve to timestamped files)
-        self.log_files = {"app": "app", "uvicorn": "uvicorn.log", "error": "error.log"}
+        self.log_files = {
+            "app": "app",
+            "uvicorn": "uvicorn.log",
+            "error": "error.log",
+            "performance": "performance",
+        }
 
         logger.info("LogStreamer initialized for directory: %s", self.log_dir)
 
@@ -94,6 +99,9 @@ class LogStreamer:
         except OSError:
             pass
 
+        direct = self.log_dir / f"{base_name}.log"
+        if direct.is_file():
+            return direct
         return None
 
     async def tail_logs(
@@ -353,7 +361,7 @@ class LogStreamer:
         try:
             for name, base_name in self.log_files.items():
                 # For timestamped files (like 'app'), find the latest one
-                if name == "app":
+                if name in {"app", "performance"}:
                     log_path = self._find_latest_log_file(base_name)
                     if log_path:
                         stat = log_path.stat()

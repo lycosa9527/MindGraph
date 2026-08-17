@@ -1,0 +1,176 @@
+"""CosyVoice v3-flash / v3-plus system voices (Aliyun Model Studio).
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
+
+from __future__ import annotations
+
+from services.tts.voices.types import (
+    ANHUAN_V3_LANGS,
+    BJ,
+    BJ_SG,
+    COSY_V3_FLASH,
+    COSY_V3_PLUS,
+    FAMILY_COSYVOICE,
+    ZH_DONGBEI_EN,
+    ZH_EN,
+    ZH_MIN_EN,
+    ZH_SHAANXI_EN,
+    ZH_YUE_EN,
+    TtsVoice,
+    make_voice,
+)
+
+_V3 = (COSY_V3_FLASH,)
+_V3_BOTH = (COSY_V3_FLASH, COSY_V3_PLUS)
+
+
+def _cv(
+    voice_id: str,
+    name: str,
+    scene: str,
+    trait: str,
+    *,
+    age: str,
+    languages: tuple[str, ...] = ZH_EN,
+    models: tuple[str, ...] = _V3,
+    ssml: bool = True,
+    instruct: bool = False,
+    word_timestamp: bool = True,
+    regions: tuple[str, ...] = BJ,
+) -> TtsVoice:
+    """CosyVoice v3 system voice."""
+    return make_voice(
+        voice_id,
+        name,
+        scene,
+        trait,
+        languages,
+        family=FAMILY_COSYVOICE,
+        models=models,
+        age=age,
+        ssml=ssml,
+        instruct=instruct,
+        word_timestamp=word_timestamp,
+        regions=regions,
+    )
+
+
+def _en(
+    voice_id: str,
+    name: str,
+    trait: str,
+    language: str,
+    *,
+    age: str,
+    regions: tuple[str, ...] = BJ,
+) -> TtsVoice:
+    """Overseas CosyVoice v3 voice (no SSML / instruct / timestamp)."""
+    return _cv(
+        voice_id,
+        name,
+        "出海营销",
+        trait,
+        age=age,
+        languages=(language,),
+        ssml=False,
+        instruct=False,
+        word_timestamp=False,
+        regions=regions,
+    )
+
+
+COSYVOICE_V3_VOICES: tuple[TtsVoice, ...] = (
+    _cv("longanyang", "龙安洋", "社交陪伴", "阳光大男孩", age="20-30", instruct=True, regions=BJ_SG, models=_V3_BOTH),
+    _cv(
+        "longanhuan_v3", "龙安欢（V3）", "社交陪伴", "欢脱元气女", age="20-30", languages=ANHUAN_V3_LANGS, instruct=True
+    ),
+    _cv("longanhuan", "龙安欢", "社交陪伴", "欢脱元气女", age="20-30", instruct=True, regions=BJ_SG, models=_V3_BOTH),
+    _cv("longhuhu_v3", "龙呼呼", "童声", "天真烂漫女童", age="6-10", instruct=True, regions=BJ_SG),
+    _cv("longpaopao_v3", "龙泡泡", "智能玩具", "飞天泡泡音", age="6-15"),
+    _cv("longjielidou_v3", "龙杰力豆", "智能玩具", "阳光顽皮男", age="10", regions=BJ_SG),
+    _cv("longxian_v3", "龙仙", "智能玩具", "豪放可爱女", age="12"),
+    _cv("longling_v3", "龙铃", "智能玩具", "稚气呆板女", age="10"),
+    _cv("longshanshan_v3", "龙闪闪", "儿童有声书", "戏剧化童声", age="6-15", regions=BJ_SG),
+    _cv("longniuniu_v3", "龙牛牛", "儿童有声书", "阳光男童声", age="6-15", regions=BJ_SG),
+    _cv("longjiaxin_v3", "龙嘉欣", "方言", "优雅粤语女", age="30-35", languages=ZH_YUE_EN),
+    _cv("longjiayi_v3", "龙嘉怡", "方言", "知性粤语女", age="25-30", languages=ZH_YUE_EN),
+    _cv("longanyue_v3", "龙安粤", "方言", "欢脱粤语男", age="25-35", languages=ZH_YUE_EN, regions=BJ_SG),
+    _cv("longlaotie_v3", "龙老铁", "方言", "东北直率男", age="25-30", languages=ZH_DONGBEI_EN),
+    _cv("longshange_v3", "龙陕哥", "方言", "原味陕北男", age="25-35", languages=ZH_SHAANXI_EN, regions=BJ_SG),
+    _cv("longanmin_v3", "龙安闽", "方言", "清纯萝莉女", age="18-25", languages=ZH_MIN_EN, regions=BJ_SG),
+    _en("loongkyong_v3", "loongkyong", "韩语女", "ko", age="25-30"),
+    _en("loongriko_v3", "Riko", "二次元霓虹女", "ja", age="18-25"),
+    _en("loongtomoka_v3", "loongtomoka", "日语女", "ja", age="30-35"),
+    _en("loongabby_v3", "loongabby", "美式英文女", "en-us", age="30-35"),
+    _en("loongandy_v3", "loongandy", "美式英文男", "en-us", age="30-35", regions=BJ_SG),
+    _en("loongannie_v3", "loongannie", "美式英文女", "en-us", age="30-35"),
+    _en("loongava_v3", "loongava", "美式英文女", "en-us", age="35-40"),
+    _en("loongbeth_v3", "loongbeth", "美式英文女", "en-us", age="35-40"),
+    _en("loongbetty_v3", "loongbetty", "美式英文女", "en-us", age="35-40"),
+    _en("loongcally_v3", "loongcally", "美式英文女", "en-us", age="25-30"),
+    _en("loongcindy_v3", "loongcindy", "美式英文女", "en-us", age="30-35"),
+    _en("loongdavid_v3", "loongdavid", "美式英文男", "en-us", age="35-40"),
+    _en("loongdonna_v3", "loongdonna", "美式英文女", "en-us", age="35-40"),
+    _en("loongemily_v3", "loongemily", "英式英文女", "en-gb", age="35-40"),
+    _en("loongeric_v3", "loongeric", "英式英文男", "en-gb", age="35-40"),
+    _en("loongluna_v3", "loongluna", "英式英文女", "en-gb", age="35-40"),
+    _en("loongluca_v3", "loongluca", "英式英文男", "en-gb", age="25-30"),
+    _en("loongtomoya_v3", "loongtomoya", "日语男", "ja", age="30-35"),
+    _en("loongyuuna_v3", "Yuuna", "日语女", "ja", age="18-25"),
+    _en("loongyuuma_v3", "Yuuma", "日语男", "ja", age="20-25"),
+    _en("loongjihun_v3", "Jihun", "韩语男", "ko", age="25-30"),
+    _en("loongindah_v3", "loongindah", "印尼女", "id", age="22-27", regions=BJ_SG),
+    _cv("longfei_v3", "龙飞", "诗词朗诵", "热血磁性男", age="30-35"),
+    _cv("longyingxiao_v3", "龙应笑", "电话销售", "清甜推销女", age="20-25", regions=BJ_SG),
+    _cv("longyingxun_v3", "龙应询", "客服", "年轻青涩男", age="20-25", regions=BJ_SG),
+    _cv("longyingjing_v3", "龙应静", "客服", "低调冷静女", age="25-35"),
+    _cv("longyingling_v3", "龙应聆", "客服", "温和共情女", age="25-30"),
+    _cv("longyingtao_v3", "龙应桃", "客服", "温柔淡定女", age="25-30", regions=BJ_SG),
+    _cv("longxiaochun_v3", "龙小淳", "语音助手", "知性积极女", age="25-30"),
+    _cv("longxiaoxia_v3", "龙小夏", "语音助手", "沉稳权威女", age="25-30"),
+    _cv("longyumi_v3", "YUMI", "语音助手", "正经青年女", age="20-25"),
+    _cv("longanyun_v3", "龙安昀", "语音助手", "居家暖男", age="30-35", regions=BJ_SG),
+    _cv("longanwen_v3", "龙安温", "语音助手", "优雅知性女", age="25-35", regions=BJ_SG),
+    _cv("longanli_v3", "龙安莉", "语音助手", "利落从容女", age="25-35", regions=BJ_SG),
+    _cv("longanlang_v3", "龙安朗", "语音助手", "清爽利落男", age="20-25", regions=BJ_SG),
+    _cv("longyingmu_v3", "龙应沐", "语音助手", "优雅知性女", age="25-30", regions=BJ_SG),
+    _cv("longantai_v3", "龙安台", "社交陪伴", "嗲甜台湾女", age="20-25"),
+    _cv("longhua_v3", "龙华", "社交陪伴", "元气甜美女", age="20-25", regions=BJ_SG),
+    _cv("longcheng_v3", "龙橙", "社交陪伴", "智慧青年男", age="20-25"),
+    _cv("longze_v3", "龙泽", "社交陪伴", "温暖元气男", age="25-30"),
+    _cv("longzhe_v3", "龙哲", "社交陪伴", "呆板大暖男", age="25-30"),
+    _cv("longyan_v3", "龙颜", "社交陪伴", "温暖春风女", age="30-35"),
+    _cv("longxing_v3", "龙星", "社交陪伴", "温婉邻家女", age="20-25"),
+    _cv("longtian_v3", "龙天", "社交陪伴", "磁性理智男", age="30-35"),
+    _cv("longwan_v3", "龙婉", "社交陪伴", "细腻柔声女", age="20-30", regions=BJ_SG),
+    _cv("longqiang_v3", "龙嫱", "社交陪伴", "浪漫风情女", age="30-35"),
+    _cv("longfeifei_v3", "龙菲菲", "社交陪伴", "甜美娇气女", age="20-25"),
+    _cv("longhao_v3", "龙浩", "社交陪伴", "多情忧郁男", age="30-35"),
+    _cv("longanrou_v3", "龙安柔", "社交陪伴", "温柔闺蜜女", age="20-35"),
+    _cv("longhan_v3", "龙寒", "社交陪伴", "温暖痴情男", age="30-35"),
+    _cv("longanzhi_v3", "龙安智", "社交陪伴", "睿智轻熟男", age="25-35", regions=BJ_SG),
+    _cv("longanling_v3", "龙安灵", "社交陪伴", "思维灵动女", age="20-30"),
+    _cv("longanya_v3", "龙安雅", "社交陪伴", "高雅气质女", age="25-35", regions=BJ_SG),
+    _cv("longanqin_v3", "龙安亲", "社交陪伴", "亲和活泼女", age="20-25", regions=BJ_SG),
+    _cv("longmiao_v3", "龙妙", "有声书", "抑扬顿挫女", age="25-30"),
+    _cv("longsanshu_v3", "龙三叔", "有声书", "沉稳质感男", age="25-45"),
+    _cv("longyuan_v3", "龙媛", "有声书", "温暖治愈女", age="35-40"),
+    _cv("longyue_v3", "龙悦", "有声书", "温暖磁性女", age="30-35"),
+    _cv("longxiu_v3", "龙修", "有声书", "博才说书男", age="25-35"),
+    _cv("longnan_v3", "龙楠", "有声书", "睿智青年男", age="25-30"),
+    _cv("longwanjun_v3", "龙婉君", "有声书", "细腻柔声女", age="20-30", regions=BJ_SG),
+    _cv("longyichen_v3", "龙逸尘", "有声书", "洒脱活力男", age="20-30", regions=BJ_SG),
+    _cv("longlaobo_v3", "龙老伯", "有声书", "沧桑岁月爷", age="60+", regions=BJ_SG),
+    _cv("longlaoyi_v3", "龙老姨", "有声书", "烟火从容阿姨", age="60+", regions=BJ_SG),
+    _cv("longjiqi_v3", "龙机器", "短视频配音", "呆萌机器人", age="20-30", regions=BJ_SG),
+    _cv("longhouge_v3", "龙猴哥", "短视频配音", "经典猴哥", age="20-25", regions=BJ_SG),
+    _cv("longdaiyu_v3", "龙黛玉", "短视频配音", "娇率才女音", age="15-25", regions=BJ_SG),
+    _cv("longanran_v3", "龙安燃", "直播带货", "活泼质感女", age="30-40"),
+    _cv("longanxuan_v3", "龙安宣", "直播带货", "经典直播女", age="30-40", regions=BJ_SG),
+    _cv("longshuo_v3", "龙硕", "新闻播报", "博才干练男", age="25-30"),
+    _cv("longshu_v3", "龙书", "新闻播报", "沉稳青年男", age="20-25"),
+    _cv("loongbella_v3", "Bella3.0", "新闻播报", "精准干练女", age="25-30"),
+)

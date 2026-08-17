@@ -23,11 +23,25 @@ from services.kitty.infra.desktop.kitty_voice_phase_fanout import (
     fanout_voice_phase_from_session,
 )
 from services.kitty.session.runtime_state import voice_sessions
-from services.kitty.tts.cosyvoice_realtime import CosyVoiceRealtimeClient, resolve_kitty_tts_enabled
+from services.kitty.tts.cosyvoice_realtime import resolve_kitty_tts_enabled
+from services.kitty.tts.factory import (
+    KittyTtsClient,
+    create_kitty_tts_client,
+    is_kitty_tts_client,
+)
 from services.kitty.tts.lecture_cache import (
+    TTS_PCM_BYTES_KEY,
     cancel_lecture_prefetch,
+    clear_lecture_idle_hold,
+    extend_lecture_idle_hold,
+    log_lecture_synthesize_done,
     log_lecture_tts,
+    mark_lecture_tts_start,
+    pcm_duration_from_chunks,
+    pcm_duration_sec,
     play_cached_lecture_pcm,
+    record_live_lecture_audio,
+    schedule_lecture_prefetch,
     take_lecture_prefetch,
 )
 from services.utils.error_types import LLM_PIPELINE_ERRORS
@@ -78,8 +92,10 @@ async def interrupt_kitty_tts(voice_session_id: str) -> None:
     _bump_tts_generation(session)
     _drain_tts_queue(session)
     session[_TTS_SPEAKING_KEY] = False
+    session["_kitty_lecture"] = False
+    clear_lecture_idle_hold(session)
     client = session.get(_COSYVOICE_KEY)
-    if isinstance(client, CosyVoiceRealtimeClient):
+    if is_kitty_tts_client(client):
         try:
             await client.interrupt()
         except LLM_PIPELINE_ERRORS as exc:
@@ -89,7 +105,6 @@ async def interrupt_kitty_tts(voice_session_id: str) -> None:
         except LLM_PIPELINE_ERRORS as exc:
             logger.debug("CosyVoice close after interrupt skipped: %s", exc)
         session[_COSYVOICE_KEY] = None
-    await cancel_lecture_prefetch(session)
     await fanout_voice_phase_from_outbound_type(voice_session_id, "tts_interrupted")
 
 
@@ -97,32 +112,32 @@ async def _get_or_create_cosyvoice_client(
     websocket: WebSocket,
     voice_session_id: str,
     session: dict[str, Any],
-) -> CosyVoiceRealtimeClient:
-    """Reuse CosyVoice client across serial utterances (do not tear down mid-speak)."""
+) -> KittyTtsClient:
+    """Reuse the lecture TTS client across serial utterances."""
 
     existing = session.get(_COSYVOICE_KEY)
-    if isinstance(existing, CosyVoiceRealtimeClient):
+    if is_kitty_tts_client(existing):
         return existing
 
     async def on_audio(audio_b64: str, fmt: str) -> None:
         lecture = bool(session.get("_kitty_lecture"))
+        sample_rate = 22050
+        stored = session.get(_COSYVOICE_KEY)
+        if is_kitty_tts_client(stored):
+            sample_rate = stored.sample_rate
         payload: dict[str, Any] = {
             "type": "audio_chunk",
             "audio": audio_b64,
             "format": fmt,
-            "sample_rate": 22050,
+            "sample_rate": sample_rate,
         }
         if lecture:
             payload["lecture"] = True
-            if not session.get("_kitty_lecture_first_audio"):
-                session["_kitty_lecture_first_audio"] = True
-                step_id = str(session.get("_kitty_lecture_step_id") or "")
-                log_lecture_tts(
-                    "first_audio",
-                    voice_session_id=voice_session_id,
-                    step_id=step_id,
-                    detail="source=live",
-                )
+            record_live_lecture_audio(
+                session,
+                audio_b64,
+                voice_session_id=voice_session_id,
+            )
         await safe_websocket_send(websocket, payload)
         await fanout_voice_phase_from_outbound_type(voice_session_id, "audio_chunk")
 
@@ -139,15 +154,15 @@ async def _get_or_create_cosyvoice_client(
     async def on_error(err: str) -> None:
         logger.warning("CosyVoice error session=%s: %s", voice_session_id, err)
 
-    client = CosyVoiceRealtimeClient(on_audio=on_audio, on_done=on_done, on_error=on_error)
+    client = create_kitty_tts_client(on_audio=on_audio, on_done=on_done, on_error=on_error)
     session[_COSYVOICE_KEY] = client
     return client
 
 
 def _parse_tts_queue_item(
     item: Any,
-) -> tuple[Any, str, int, bool, bool, str]:
-    """Unpack a TTS queue tuple (3, 4, or 6 fields)."""
+) -> tuple[Any, str, int, bool, bool, str, str, str]:
+    """Unpack a TTS queue tuple (3, 4, 6, or 8 fields)."""
     if not isinstance(item, tuple) or len(item) < 3:
         raise TypeError("invalid TTS queue item")
     text = str(item[1])
@@ -156,7 +171,11 @@ def _parse_tts_queue_item(
     lecture = bool(item[4]) if len(item) >= 5 else False
     raw_step = item[5] if len(item) >= 6 else ""
     step_id = raw_step.strip() if isinstance(raw_step, str) else ""
-    return item[0], text, generation, force, lecture, step_id
+    raw_prefetch = item[6] if len(item) >= 7 else ""
+    prefetch_text = raw_prefetch.strip() if isinstance(raw_prefetch, str) else ""
+    raw_next = item[7] if len(item) >= 8 else ""
+    prefetch_step_id = raw_next.strip() if isinstance(raw_next, str) else ""
+    return item[0], text, generation, force, lecture, step_id, prefetch_text, prefetch_step_id
 
 
 async def _emit_lecture_tts_done(
@@ -192,7 +211,16 @@ async def _tts_worker_loop(voice_session_id: str) -> None:
         if item is None:
             return
         try:
-            websocket, text, generation, force, lecture, step_id = _parse_tts_queue_item(item)
+            (
+                websocket,
+                text,
+                generation,
+                force,
+                lecture,
+                step_id,
+                prefetch_text,
+                prefetch_step_id,
+            ) = _parse_tts_queue_item(item)
         except (TypeError, ValueError):
             continue
         live = voice_sessions.get(voice_session_id)
@@ -224,25 +252,36 @@ async def _tts_worker_loop(voice_session_id: str) -> None:
             )
             if not _generation_is_current(voice_session_id, generation):
                 continue
+            if prefetch_text:
+                schedule_lecture_prefetch(voice_session_id, prefetch_text, prefetch_step_id)
             if cached:
+                chunks, sample_rate = cached
+                mark_lecture_tts_start(live, chars=len(text))
                 log_lecture_tts(
                     "cache_hit",
                     voice_session_id=voice_session_id,
                     step_id=step_id,
-                    detail=f"chunks={len(cached)}",
+                    detail=f"chunks={len(chunks)}",
                 )
                 await play_cached_lecture_pcm(
                     websocket,
                     voice_session_id,
-                    cached,
+                    chunks,
                     step_id,
+                    sample_rate=sample_rate,
                     still_current=lambda current=generation: _generation_is_current(
                         voice_session_id,
                         current,
                     ),
                 )
+                if lecture and _generation_is_current(voice_session_id, generation):
+                    extend_lecture_idle_hold(
+                        live,
+                        audio_sec=pcm_duration_from_chunks(chunks, sample_rate),
+                    )
             else:
                 if lecture:
+                    mark_lecture_tts_start(live, chars=len(text))
                     log_lecture_tts(
                         "synthesize",
                         voice_session_id=voice_session_id,
@@ -251,6 +290,19 @@ async def _tts_worker_loop(voice_session_id: str) -> None:
                     )
                 client = await _get_or_create_cosyvoice_client(websocket, voice_session_id, live)
                 await client.speak(text)
+                if lecture and _generation_is_current(voice_session_id, generation):
+                    log_lecture_synthesize_done(
+                        live,
+                        voice_session_id=voice_session_id,
+                        step_id=step_id,
+                        chars=len(text),
+                        sample_rate=client.sample_rate,
+                    )
+                    pcm_bytes = int(live.get(TTS_PCM_BYTES_KEY) or 0)
+                    extend_lecture_idle_hold(
+                        live,
+                        audio_sec=pcm_duration_sec(pcm_bytes, client.sample_rate),
+                    )
         except LLM_PIPELINE_ERRORS as exc:
             logger.warning("CosyVoice speak failed: %s", exc)
             live[_COSYVOICE_KEY] = None
@@ -288,6 +340,8 @@ async def speak_kitty_final_reply(
     text: str,
     *,
     force: bool = False,
+    prefetch_text: str = "",
+    prefetch_step_id: str = "",
 ) -> None:
     """
     Enqueue a Kitty reply for CosyVoice (serial per session).
@@ -310,8 +364,21 @@ async def speak_kitty_final_reply(
     lecture = bool(session.get("_kitty_lecture"))
     raw_step = session.get("_kitty_lecture_step_id")
     step_id = raw_step.strip() if isinstance(raw_step, str) else ""
+    next_text = str(prefetch_text or "").strip()
+    next_step = str(prefetch_step_id or "").strip()
     queue = _ensure_tts_worker(voice_session_id, session)
-    await queue.put((websocket, message, _tts_generation(session), force, lecture, step_id))
+    await queue.put(
+        (
+            websocket,
+            message,
+            _tts_generation(session),
+            force,
+            lecture,
+            step_id,
+            next_text,
+            next_step,
+        )
+    )
 
 
 def _reset_asr_audio_counters(session: dict[str, Any]) -> None:
@@ -591,6 +658,8 @@ async def teardown_session_audio(voice_session_id: str) -> None:
     if isinstance(asr, FunAsrRealtimeClient):
         await asr.close()
     tts = session.pop(_COSYVOICE_KEY, None)
-    if isinstance(tts, CosyVoiceRealtimeClient):
+    if is_kitty_tts_client(tts):
         await tts.close()
+    session["_kitty_lecture"] = False
+    clear_lecture_idle_hold(session)
     await cancel_lecture_prefetch(session)

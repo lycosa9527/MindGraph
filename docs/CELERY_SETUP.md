@@ -54,7 +54,10 @@ Process monitor restarts the worker if it crashes (default on):
 ```bash
 PROCESS_MONITOR_ENABLED=true
 CELERY_MANAGED_BY_APP=true   # default — app starts/stops the worker with main.py
+CELERY_WORKER_CONCURRENCY=4  # default — prefork slots; lower on small WSL boxes
 CELERY_WORKER_LOGLEVEL=info  # default — use debug only for short local diagnosis
+PERF_SAMPLE_LOG=true         # default — one line / 60s in logs/performance.*.log (not app.log)
+# Redis lock (per hostname) picks one Uvicorn worker as writer; needs REDIS_URL
 ```
 
 Do **not** set `CELERY_MANAGED_BY_APP=false` on WSL or production servers unless you are debugging a standalone worker.
@@ -98,6 +101,7 @@ Worker logs (Linux):
 
 - `logs/celery_worker.log` (stdout)
 - `logs/celery_worker_error.log` (stderr — should stay small at `info`; rotate/truncate after upgrades if bloated by old DEBUG runs)
+- `logs/performance.YYYY-MM-DD_HH-MM-SS.log` — one host/queue/job-count line per minute (not `app.log`; same `[HH:MM:SS]` clock and 72h period stamp as `app.*`). After a workshop: `q_default` high + `ram_free_gb` above 2 and `cpu` under 70 → raise `CELERY_WORKER_CONCURRENCY`; `api_cpu` near `100 * uv_c` with free RAM → raise `UVICORN_WORKERS`; `ram_free_gb` under 1.5 → do not add workers.
 
 ### Post-deploy checklist (test + production)
 
@@ -124,7 +128,7 @@ After pulling code that adds Celery tasks (for example `mind_classroom.*`), stop
 source ~/miniconda3/etc/profile.d/conda.sh && conda activate python313
 cd /home/royw/src/MindGraph
 pkill -f "celery -A config.celery worker"
-python -m celery -A config.celery worker --loglevel=info --concurrency=2 -Q default,knowledge
+python -m celery -A config.celery worker --loglevel=info --concurrency=4 -Q default,knowledge
 ```
 
 On boot, `[tasks]` must include `mind_classroom.run_script` and `mind_classroom.run_slides`. If the API manages Celery (`CELERY_MANAGED_BY_APP=true`), restart the API instead — it replaces a stale banner on its own.

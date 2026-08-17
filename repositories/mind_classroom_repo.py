@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime, timedelta
 from typing import Any, Optional, Sequence
 
@@ -118,7 +119,10 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
 
     @staticmethod
     def max_active_jobs() -> int:
-        """Per-user concurrent classroom job cap."""
+        """Per-user concurrent classroom job cap (env ``MIND_CLASSROOM_MAX_ACTIVE_JOBS``)."""
+        raw = (os.getenv("MIND_CLASSROOM_MAX_ACTIVE_JOBS") or "").strip()
+        if raw.isdigit():
+            return max(1, int(raw))
         return _MAX_ACTIVE_JOBS
 
     async def find_reusable(

@@ -21,6 +21,7 @@ from services.mind_classroom.lesson_planner import (
     normalize_lesson_plan_to_outline,
     plan_lesson_from_outline,
 )
+from services.mind_classroom.metrics_log import log_job_completed, log_phase_completed
 from services.mind_classroom.outline import extract_mindmap_outline, is_mindmap_type
 from services.mind_classroom.slide_adapter import frames_to_steps
 from services.mind_classroom.slide_persist import persist_slide, wipe_slides
@@ -83,6 +84,8 @@ async def run_slide_deck_job(
     saved = len(slides)
     plan = existing_plan
     pipeline_started = time.monotonic()
+    plan_elapsed = 0.0
+    wan_elapsed = 0.0
 
     try:
         diagram_type = str(spec.get("type") or spec.get("diagramType") or "mind_map")
@@ -125,6 +128,7 @@ async def run_slide_deck_job(
                 organization_id=organization_id,
                 on_progress=_on_planning_progress,
             )
+            plan_elapsed = time.monotonic() - started
             await track_classroom_usage(
                 model_alias="qwen",
                 usage=usage,
@@ -132,8 +136,14 @@ async def run_slide_deck_job(
                 user_id=user_id,
                 organization_id=organization_id,
                 job_id=job_id,
-                response_time=time.monotonic() - started,
+                response_time=plan_elapsed,
                 success=True,
+            )
+            log_phase_completed(
+                phase="Lesson plan",
+                elapsed=plan_elapsed,
+                extra=f"job={job_id}",
+                usage=usage,
             )
         elif saved == 0:
             plan = normalize_lesson_plan_to_outline(plan, outline)
@@ -202,6 +212,8 @@ async def run_slide_deck_job(
                 enable_sequential=True,
                 log_context=f"job={job_id} batch={batch_index + 1}/{len(jobs)}",
             )
+            batch_elapsed = time.monotonic() - wan_started
+            wan_elapsed += batch_elapsed
             await track_classroom_usage(
                 model_alias="wan",
                 usage=batch.usage,
@@ -209,8 +221,13 @@ async def run_slide_deck_job(
                 user_id=user_id,
                 organization_id=organization_id,
                 job_id=job_id,
-                response_time=time.monotonic() - wan_started,
+                response_time=batch_elapsed,
                 success=True,
+            )
+            log_phase_completed(
+                phase=f"Wan batch {batch_index + 1}/{len(jobs)}",
+                elapsed=batch_elapsed,
+                extra=f"urls={len(batch.image_urls or [])} job={job_id}",
             )
             image_urls = list(batch.image_urls or [])
             for url_index, image_url in enumerate(image_urls):
@@ -306,6 +323,7 @@ async def run_slide_deck_job(
                 )
                 return False
 
+        persist_started = time.monotonic()
         async with system_rls_session() as db:
             persisted = list(await MindClassroomSlideRepository(db).list_by_job(job_id))
         steps = frames_to_steps(
@@ -323,6 +341,7 @@ async def run_slide_deck_job(
             user_id=user_id,
             diagram_id=diagram_id,
         )
+        persist_elapsed = time.monotonic() - persist_started
         await set_status_with_lease(
             job_id,
             status="ready",
@@ -339,16 +358,20 @@ async def run_slide_deck_job(
             celery_task_id=celery_task_id,
             finished=True,
         )
-        logger.info(
-            "[MindClassroom] Slide deck ready job=%s slides=%s/%s elapsed=%.1fs",
-            job_id,
-            saved,
-            planned_frames,
-            time.monotonic() - pipeline_started,
+        log_job_completed(
+            kind="Slide deck",
+            elapsed=time.monotonic() - pipeline_started,
+            breakdown={
+                "plan": plan_elapsed,
+                "wan": wan_elapsed,
+                "persist": persist_elapsed,
+            },
+            target="slide_deck",
+            extra=f"slides={saved}/{planned_frames} job={job_id}",
         )
         return True
     except LeaseLost as exc:
-        logger.info("[MindClassroom] Slide deck lease lost job=%s reason=%s", job_id, exc)
+        logger.debug("[MindClassroom] Slide deck lease lost job=%s reason=%s", job_id, exc)
         return False
     except _PIPELINE_ERRORS as exc:
         logger.exception("[MindClassroom] Slide deck failed job=%s err=%s", job_id, exc)

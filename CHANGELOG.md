@@ -5,6 +5,116 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.7] - 2026-08-18
+
+> **思维讲堂 job progress is Redis/SSE — the Start button no longer polls every 1.5s.**
+
+### Changed
+
+- **Event-driven job watch** — Workers publish each manifesto write to `mind_classroom:job:{id}`. The client opens `GET /api/mind-classroom/jobs/{id}/stream` and updates the button from those events. There is no HTTP poll loop and no 20s voice-ready timer; first-slide TTS unlocks only when Kitty reports prefetch ready/failed.
+- **Concurrent classroom jobs** — `MIND_CLASSROOM_MAX_ACTIVE_JOBS` can raise the per-user in-flight cap (default remains 1) so a 4-worker load run can enqueue several maps at once.
+- **Celery loop-bound Redis** — Prefork workers that run a second `asyncio.run` no longer reuse a Redis client from the closed first loop (`Event loop is closed`).
+
+### Tests
+
+- `tests/test_mind_classroom_job_events.py` — channel, payload, snapshot without a request.
+- `tests/test_redis_async_loop_reuse.py` — second `asyncio.run` gets a new Redis client.
+- `frontend/tests/mindClassroomJobApi.spec.ts` — SSE watch resolves on the first playable snapshot.
+
+## [5.180.6] - 2026-08-18
+
+> **Start stays on writing the lesson plan until every branch script is done; voice-wait is only after that.**
+
+### Fixed
+
+- **Start label vs TTS** — First-slide voice ready (or still loading) while other families are in flight no longer shows 正在加载语音. That copy is only when `in_flight === 0` and Kitty is still warming. Mid-job the button stays on 正在写其余教案 / 正在为分支…写教案.
+
+## [5.180.5] - 2026-08-18
+
+> **思维讲堂 TTS catches up as each finished branch lands, without dropping the opening slide.**
+
+### Changed
+
+- **Script prefix persist** — As soon as family 0…N is a contiguous finished prefix, those steps are written while the job is still `generating`. A later family finishing first does not jump the queue.
+- **TTS catch-up** — The client updates prepared steps on each poll and prefetches up to three slides. Kitty keeps ready PCM in a small bank; warmup `prefetch` queues behind the opening slide instead of replacing it.
+
+### Tests
+
+- `contiguous_raw_prefix` — hole at family 0 writes nothing; 0 then 1 writes both.
+- `warmupLectureTts` — later family on the job prefetches slide 2 once.
+- `test_catchup_prefetch_does_not_drop_ready_first_slide`.
+
+## [5.180.4] - 2026-08-18
+
+> **思维讲堂 Start fill tracks finished branches while the traveling ring keeps moving.**
+
+### Changed
+
+- **Start progress fill** — Busy Start keeps the blue traveling ring and adds a left-to-right fill in stacked blues. Width is `done / total` families (1/6 → 17%, 3/6 → 50%). No ledger yet stays navy; the ring still spins.
+
+### Tests
+
+- `mindClassroomStartFillPercent` — 0/6, 1/6, 3/6, 6/6.
+
+## [5.180.3] - 2026-08-18
+
+> **思维讲堂 parallel branches share one sticky progress ledger; Start follows writing → voice → remaining.**
+
+### Fixed
+
+- **Progress last-write-wins** — Parallel streams no longer replace the whole manifesto `progress` blob. Each family is a slot (`pending` / `streaming` / `done`); `tts_ready` stays true after the opening family lands. The Start name is the lowest-index still-writing branch, not whoever emitted the latest first token.
+- **Start label while generating** — After the first family is stored, the button shows 正在加载语音, then 正在写其余教案（done/total） once opening TTS is ready. It no longer stays on 正在为分支…写教案 through voice warmup.
+- **按主分支 fan-out** — Same one-DashScope-call-per-L1-family path as 逐个节点. A map with several main branches no longer waits on a single full-tour call.
+
+### Changed
+
+- Sibling family LLM tasks are cancelled if one family fails mid-job.
+- Poll INFO includes `done=N/M` and `tts_ready` so uvicorn tracks the ledger, not only the last phase string.
+
+### Tests
+
+- `tests/test_mind_classroom_tour_progress.py` — sticky `tts_ready`, stable display branch, no done→streaming regress.
+- `test_main_branch_families_call_llm_in_parallel` — 按主分支 starts all L1 calls before any finishes.
+- `mindClassroomLaunchState.spec.ts` — loading-voice and remaining labels while `generating`.
+
+## [5.180.2] - 2026-08-17
+
+> **思维讲堂 Start stays in motion while writing the lesson plan; poll logs name the stage.**
+
+### Changed
+
+- **Start button busy** — Same blue traveling ring as auto-complete / avatar while queued, writing 讲稿／教案, or loading voice.
+- **重写教案** — Restart control is no longer “重新开始”; zh / zh-tw / en match rewrite-lesson-plan.
+- **Job stage logs** — Worker INFO: reading diagram spec, generating script for branch N, DashScope request sent, LLM waiting / received. GET `/api/mind-classroom/jobs/{id}` logs `poll … phase=…` on change or every 15s (uvicorn no longer looks like a silent 200).
+- **Script timeout** — Canvas-tour Celery soft/hard limit 120s/150s → 600s/660s so a slow DashScope wave is not killed mid-write.
+- **each_node scripts** — One DashScope call per trunk family, all at once (7 branches = 7 concurrent calls). The previous sequential loop is what made rewrite look like a 120s timeout.
+- **Early TTS** — When the first trunk family returns, those steps are written while the job is still `generating`. The client prefetches opening-slide voice immediately; Start stays locked until the rest of the script is ready.
+- **Script LLM stream** — Canvas-tour uses DashScope `chat_stream`. Worker INFO: `LLM result streaming for branch N/M` on first token, every 800 chars, and every 15s.
+- **Start label** — While writing a canvas-tour script, the button shows 正在为分支{name}写教案 using the live `progress.branch_label`.
+
+### Tests
+
+- `tests/test_mind_classroom_progress_log.py` — poll line, heartbeat dedupe, branch label.
+- `test_each_node_families_call_llm_in_parallel` — all trunk families start before any finishes.
+- `test_first_family_persists_before_other_branches_finish` — opening family is stored before the rest return.
+- `tests/test_mind_classroom_tour_stream.py` — stream chunk parse, heartbeat cadence, token join.
+- Script-task limit assertion updated.
+
+## [5.180.1] - 2026-08-17
+
+> **WeChat / older WebViews no longer crash on `Iterator`; node-explain i18n works outside setup.**
+
+### Fixed
+
+- **`Iterator is not defined`** — Oxc does not lower ES2025 Iterator helpers, so a `Iterator.from` polyfill is installed at startup. Vite JS target is also pinned to ES2020 + Chrome 87 / Safari 14 (not 2026 baseline `chrome111`); CSS target is `chrome61` for WeChat `#RGBA`.
+- **vue-i18n `SyntaxError: 26`** — That code is `MUST_BE_CALL_SETUP_TOP` (`useI18n()` with no component instance). `useLanguage()` now uses the `i18n.global` singleton (same pattern as ZhiHui handoff) so node-explain / dialog remounts do not throw.
+
+### Tests
+
+- `iteratorHelpersPolyfill.spec.ts` — install when missing, map/filter, raw iterator, reject non-iterables.
+- `useLanguage.spec.ts` — translate without a Vue setup instance.
+- `safeI18nTranslate.spec.ts` — fallback when the translator throws.
+
 ## [5.180.0] - 2026-08-17
 
 > **Mind-map 编号 is chrome on the new canvas; 按主分支 lecture lights the whole branch.**

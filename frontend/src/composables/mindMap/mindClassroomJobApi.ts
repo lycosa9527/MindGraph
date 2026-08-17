@@ -1,9 +1,7 @@
 /**
- * Mind Classroom job enqueue / poll.
+ * Mind Classroom job enqueue / SSE watch.
  */
 import { apiGet, apiPost } from '@/utils/apiClient'
-
-const POLL_MS = 1500
 
 export type MindClassroomJobStatus =
   | 'queued'
@@ -112,27 +110,88 @@ export async function fetchMindClassroomJobByDiagram(
   return (await res.json()) as MindClassroomJobDetail
 }
 
-export async function pollMindClassroomJob(
+function applyClassroomJobEvent(
+  data: unknown,
+  options: {
+    shouldStop?: () => boolean
+    onUpdate?: (detail: MindClassroomJobDetail) => void
+  }
+): MindClassroomJobDetail | 'heartbeat' | 'cancelled' {
+  if (options.shouldStop?.()) {
+    return 'cancelled'
+  }
+  if (!data || typeof data !== 'object') {
+    return 'heartbeat'
+  }
+  const payload = data as { type?: string; job?: MindClassroomJobDetail; error?: string }
+  if (payload.type === 'heartbeat') {
+    return 'heartbeat'
+  }
+  if (payload.type === 'error') {
+    throw new Error(payload.error || 'stream_unavailable')
+  }
+  const detail = payload.job
+  if (!detail || typeof detail.status !== 'string') {
+    return 'heartbeat'
+  }
+  options.onUpdate?.(detail)
+  if (isClassroomJobPlayable(detail.status)) {
+    return detail
+  }
+  if (detail.status === 'failed' || detail.status === 'cancelled') {
+    throw new Error(detail.error_message || detail.status)
+  }
+  return 'heartbeat'
+}
+
+export async function watchMindClassroomJob(
   jobId: string,
   options: {
-    intervalMs?: number
     shouldStop?: () => boolean
     onUpdate?: (detail: MindClassroomJobDetail) => void
   } = {}
 ): Promise<MindClassroomJobDetail> {
-  const interval = options.intervalMs ?? POLL_MS
-  while (!options.shouldStop?.()) {
-    const detail = await fetchMindClassroomJob(jobId)
-    options.onUpdate?.(detail)
-    if (isClassroomJobPlayable(detail.status)) {
-      return detail
+  const url = `/api/mind-classroom/jobs/${encodeURIComponent(jobId)}/stream`
+  return new Promise((resolve, reject) => {
+    if (typeof EventSource === 'undefined') {
+      reject(new Error('stream_unavailable'))
+      return
     }
-    if (detail.status === 'failed' || detail.status === 'cancelled') {
-      throw new Error(detail.error_message || detail.status)
+    const source = new EventSource(url, { withCredentials: true })
+    let settled = false
+    const finish = (action: () => void) => {
+      if (settled) return
+      settled = true
+      source.close()
+      action()
     }
-    await new Promise((resolve) => {
-      window.setTimeout(resolve, interval)
-    })
-  }
-  throw new Error('cancelled')
+    source.onmessage = (event) => {
+      try {
+        const parsed = event.data ? (JSON.parse(event.data) as unknown) : null
+        const next = applyClassroomJobEvent(parsed, options)
+        if (next === 'cancelled') {
+          finish(() => reject(new Error('cancelled')))
+          return
+        }
+        if (next !== 'heartbeat') {
+          finish(() => resolve(next))
+        }
+      } catch (err) {
+        finish(() => reject(err instanceof Error ? err : new Error(String(err))))
+      }
+    }
+    source.onerror = () => {
+      if (settled) return
+      if (options.shouldStop?.()) {
+        finish(() => reject(new Error('cancelled')))
+        return
+      }
+      if (source.readyState === EventSource.CLOSED) {
+        finish(() => reject(new Error('stream_unavailable')))
+      }
+    }
+  })
 }
+
+/** @deprecated Use watchMindClassroomJob — kept for existing test spies. */
+export const pollMindClassroomJob = watchMindClassroomJob

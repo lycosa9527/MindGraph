@@ -26,6 +26,7 @@ from services.kitty.tts.cosyvoice_realtime import (
     resolve_kitty_tts_model_and_voice,
     split_cosyvoice_text,
 )
+from services.kitty.tts.voice_design import reset_designed_voice_for_tests
 
 PartialCb = Callable[[str, bool], Awaitable[None]]
 ErrorCb = Callable[[str], Awaitable[None]]
@@ -85,15 +86,28 @@ def test_cosyvoice_run_continue_finish_flow() -> None:
     fin = build_cosyvoice_finish_task(task_id)
     assert fin["header"]["action"] == "finish-task"
     assert fin["header"]["task_id"] == task_id
+    assert not fin["payload"]["input"]
+    cancelled = build_cosyvoice_finish_task(task_id, cancel=True)
+    assert cancelled["payload"]["input"] == {"directive": "cancel"}
 
 
-def test_tts_voice_fallback_without_env(monkeypatch) -> None:
-    """Unset KITTY_TTS_VOICE uses YUMI longyumi_v3 with v3-flash for v3.5 models."""
+def test_tts_v35_has_no_system_voice_until_design(monkeypatch) -> None:
+    """Default model is v3.5-flash; unset voice is designed on first speak."""
+    reset_designed_voice_for_tests()
     monkeypatch.delenv("KITTY_TTS_VOICE", raising=False)
+    monkeypatch.delenv("KITTY_TTS_MODEL", raising=False)
+    model, voice = resolve_kitty_tts_model_and_voice()
+    assert model == "cosyvoice-v3.5-flash"
+    assert voice == ""
+
+
+def test_tts_v35_uses_explicit_designed_voice(monkeypatch) -> None:
+    """KITTY_TTS_VOICE is passed through to cosyvoice-v3.5-flash."""
+    monkeypatch.setenv("KITTY_TTS_VOICE", "my-designed-voice")
     monkeypatch.setenv("KITTY_TTS_MODEL", "cosyvoice-v3.5-flash")
     model, voice = resolve_kitty_tts_model_and_voice()
-    assert voice == "longyumi_v3"
-    assert model == "cosyvoice-v3-flash"
+    assert model == "cosyvoice-v3.5-flash"
+    assert voice == "my-designed-voice"
 
 
 @pytest.mark.asyncio
@@ -204,7 +218,7 @@ async def test_interrupt_drains_pending_tts(monkeypatch) -> None:
 
 
 def test_tts_voice_default_yumi(monkeypatch) -> None:
-    """Default voice parameter is longyumi_v3 (YUMI)."""
+    """Explicit v3-flash still uses YUMI longyumi_v3."""
     monkeypatch.delenv("KITTY_TTS_VOICE", raising=False)
     monkeypatch.setenv("KITTY_TTS_MODEL", "cosyvoice-v3-flash")
     model, voice = resolve_kitty_tts_model_and_voice()
@@ -490,6 +504,60 @@ async def test_speak_calls_on_done_once_after_all_chunks(monkeypatch: pytest.Mon
 
 
 @pytest.mark.asyncio
+async def test_speak_raises_when_live_task_returns_no_audio(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A silent CosyVoice task must not emit tts_done and advance the lecture."""
+    done: list[int] = []
+
+    async def on_audio(_audio: str, _fmt: str) -> None:
+        return None
+
+    async def on_done() -> None:
+        done.append(1)
+
+    client = CosyVoiceRealtimeClient(on_audio=on_audio, on_done=on_done)
+
+    async def fake_chunk(_message: str) -> None:
+        setattr(client, "_live_task_ran", True)
+
+    monkeypatch.setattr(client, "_speak_chunk", fake_chunk)
+    monkeypatch.setattr(
+        "services.kitty.tts.cosyvoice_realtime.resolve_kitty_tts_enabled",
+        lambda: True,
+    )
+    with pytest.raises(RuntimeError, match="no audio"):
+        await client.speak("右上看地理区位。")
+    assert not done
+
+
+@pytest.mark.asyncio
+async def test_speak_raises_when_task_failed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """task-failed must fail the utterance instead of completing silence."""
+    done: list[int] = []
+
+    async def on_audio(_audio: str, _fmt: str) -> None:
+        return None
+
+    async def on_done() -> None:
+        done.append(1)
+
+    client = CosyVoiceRealtimeClient(on_audio=on_audio, on_done=on_done)
+
+    async def fake_chunk(_message: str) -> None:
+        setattr(client, "_task_failed", "engine 418: voice not found")
+
+    monkeypatch.setattr(client, "_speak_chunk", fake_chunk)
+    monkeypatch.setattr(
+        "services.kitty.tts.cosyvoice_realtime.resolve_kitty_tts_enabled",
+        lambda: True,
+    )
+    with pytest.raises(RuntimeError, match="engine 418"):
+        await client.speak("右上看地理区位。")
+    assert not done
+
+
+@pytest.mark.asyncio
 async def test_lecture_tts_done_includes_lecture_and_step(monkeypatch: pytest.MonkeyPatch) -> None:
     """Lecture utterances tag ``tts_done`` so the client can wait for playback."""
     monkeypatch.setenv("KITTY_TTS_ENABLED", "true")
@@ -511,6 +579,8 @@ async def test_lecture_tts_done_includes_lecture_and_step(monkeypatch: pytest.Mo
 
     class FakeClient:
         """Stub CosyVoice that immediately completes synthesis."""
+
+        sample_rate = 22050
 
         def __init__(
             self,
@@ -535,10 +605,17 @@ async def test_lecture_tts_done_includes_lecture_and_step(monkeypatch: pytest.Mo
             """No-op close for teardown."""
             return None
 
+    def fake_create(**kwargs: Any) -> FakeClient:
+        return FakeClient(
+            on_audio=kwargs["on_audio"],
+            on_done=kwargs["on_done"],
+            on_error=kwargs["on_error"],
+        )
+
     monkeypatch.setattr(bridge, "safe_websocket_send", fake_send)
     monkeypatch.setattr(bridge, "fanout_voice_phase_from_outbound_type", fake_fanout)
     monkeypatch.setattr(bridge, "resolve_kitty_tts_enabled", lambda: True)
-    monkeypatch.setattr(bridge, "CosyVoiceRealtimeClient", FakeClient)
+    monkeypatch.setattr(bridge, "create_kitty_tts_client", fake_create)
 
     ws = MagicMock()
     try:

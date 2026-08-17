@@ -23,13 +23,20 @@ from services.infrastructure.process._process_io import (
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
+
+def _fallback_worker_concurrency() -> int:
+    """Prefork slot count when the Celery app module is unavailable."""
+    return 4
+
+
 if TYPE_CHECKING:
-    from config.celery import celery_app
+    from config.celery import celery_app, celery_worker_concurrency
 else:
     try:
-        from config.celery import celery_app
+        from config.celery import celery_app, celery_worker_concurrency
     except ImportError:
         celery_app = None
+        celery_worker_concurrency = _fallback_worker_concurrency
 
 ACTION_START = "start"
 ACTION_REUSE = "reuse"
@@ -236,7 +243,8 @@ def start_celery_worker(server_state) -> Optional[subprocess.Popen[bytes]]:
             time.sleep(0.5)
             continue
 
-    print("[CELERY] Starting Celery worker for background task processing...")
+    concurrency = celery_worker_concurrency()
+    print(f"[CELERY] Starting Celery worker for background task processing (concurrency={concurrency})...")
 
     python_exe = sys.executable
     worker_loglevel = (os.getenv("CELERY_WORKER_LOGLEVEL") or "info").strip() or "info"
@@ -249,7 +257,7 @@ def start_celery_worker(server_state) -> Optional[subprocess.Popen[bytes]]:
         "config.celery",
         "worker",
         f"--loglevel={worker_loglevel}",
-        "--concurrency=2",
+        f"--concurrency={concurrency}",
         "-Q",
         "default,knowledge",
     ]

@@ -441,7 +441,7 @@ async def _chat_phase(
     response = ""
     usage: Optional[dict[str, Any]] = None
     system_message = build_lesson_planner_system_message(settings)
-    logger.info(
+    logger.debug(
         "[ZhiHui] Planning LLM start phase=%s model=%s max_tokens=%s",
         phase_label,
         model,

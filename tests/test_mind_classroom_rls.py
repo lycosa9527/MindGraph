@@ -14,9 +14,10 @@ def test_alembic_0103_owner_rls_not_panel_mode() -> None:
 
 
 def test_script_task_is_short_and_slides_are_long() -> None:
-    """Canvas-tour jobs stay short so they are not starved by Wan decks."""
+    """Canvas-tour jobs stay shorter than Wan decks; each_node needs minutes."""
     text = Path("tasks/mind_classroom_tasks.py").read_text(encoding="utf-8")
-    assert "_SCRIPT_SOFT = 120" in text
+    assert "_SCRIPT_SOFT = 600" in text
+    assert "_SCRIPT_HARD = 660" in text
     assert "_SLIDE_SOFT = 2400" in text
     assert 'name="mind_classroom.run_script"' in text
     assert 'name="mind_classroom.run_slides"' in text

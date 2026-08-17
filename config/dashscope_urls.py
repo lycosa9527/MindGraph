@@ -217,6 +217,51 @@ def build_dashscope_inference_ws_url(
     return f"wss://{host}/api-ws/v1/inference"
 
 
+def _join_api_v1_path(base: str, path: str) -> str:
+    return f"{base.rstrip('/')}/{path.lstrip('/')}"
+
+
+def build_speech_synthesizer_url(
+    *,
+    workspace_id: Optional[str] = None,
+    region: DashScopeRegion = "cn-beijing",
+) -> str:
+    """Non-realtime CosyVoice / Qwen-Audio-TTS HTTP synthesizer."""
+    return _join_api_v1_path(
+        build_api_v1_base(workspace_id=workspace_id, region=region),
+        "services/audio/tts/SpeechSynthesizer",
+    )
+
+
+def build_multimodal_generation_url(
+    *,
+    workspace_id: Optional[str] = None,
+    region: DashScopeRegion = "cn-beijing",
+) -> str:
+    """Non-realtime Qwen-TTS HTTP (``MultiModalConversation``)."""
+    return _join_api_v1_path(
+        build_api_v1_base(workspace_id=workspace_id, region=region),
+        "services/aigc/multimodal-generation/generation",
+    )
+
+
+def build_qwen_tts_realtime_ws_url(
+    model: str,
+    *,
+    workspace_id: Optional[str] = None,
+    region: DashScopeRegion = "cn-beijing",
+    explicit_url: Optional[str] = None,
+) -> str:
+    """Qwen-TTS Realtime WS: ``/api-ws/v1/realtime?model=…``."""
+    cleaned = (model or "").strip() or "qwen3-tts-flash-realtime"
+    base = resolve_realtime_ws_base(
+        explicit_url=explicit_url,
+        workspace_id=workspace_id,
+        region=region,
+    )
+    return f"{base.rstrip('/')}?model={cleaned}"
+
+
 def resolve_realtime_ws_base(
     *,
     explicit_url: Optional[str],

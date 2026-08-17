@@ -15,8 +15,14 @@ import {
   fetchMindClassroomJobByDiagram,
   isClassroomJobActive,
   isClassroomJobPlayable,
-  pollMindClassroomJob,
+  watchMindClassroomJob,
 } from '@/composables/mindMap/mindClassroomJobApi'
+import {
+  beginFirstLectureSlideWarmup,
+  bindLectureVoiceWarmupEvents,
+  requestFirstLectureSlidePrefetch,
+  tryWarmupFromJobSteps,
+} from '@/composables/mindMap/warmupLectureTts'
 import { setPresentationDiagramEditLocked } from '@/composables/presentation/presentationDiagramEdit'
 import {
   useAiContentLevelStore,
@@ -276,7 +282,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     const step = steps.value[index]
     if (!step || status.value !== 'running') return
 
-    if (voiceEnabled.value) {
+    if (voiceEnabled.value && step.caption.trim()) {
       let settled = false
       const settle = (): void => {
         if (settled || status.value !== 'running') return
@@ -333,10 +339,13 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     )
     eventBus.emit('view:viewport_snapshot_save', {})
     classroomStore.beginSession(nextSteps, mode)
+    if (voiceEnabled.value) {
+      requestFirstLectureSlidePrefetch(nextSteps)
+    }
     void nextTick(() => {
-      goToStep(0)
+      goToStep(0, { interruptVoice: false })
       if (mode === 'slide_deck') {
-        layoutTimer = window.setTimeout(() => goToStep(0), 160)
+        layoutTimer = window.setTimeout(() => emitFitStep(0), 160)
       }
     })
     return { ok: true }
@@ -370,6 +379,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       error: null,
     })
     classroomStore.setPreparedSteps(mapped)
+    beginFirstLectureSlideWarmup(mapped, classroomStore.voiceEnabled)
     return { ok: true, phase: 'prepared' }
   }
 
@@ -380,7 +390,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     watchJobId = jobId
     watchPromise = (async () => {
       try {
-        const detail = await pollMindClassroomJob(jobId, {
+        const detail = await watchMindClassroomJob(jobId, {
           shouldStop: () => generation !== classroomStore.queueGeneration,
           onUpdate: (next) => {
             classroomStore.setJobState({
@@ -388,6 +398,11 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
               progress: next.progress ?? null,
               error: next.error_message ?? null,
             })
+            tryWarmupFromJobSteps(
+              next.result_json?.steps,
+              collectLiveNodeIds(diagramStore.data?.nodes),
+              classroomStore.voiceEnabled
+            )
           },
         })
         if (generation !== classroomStore.queueGeneration) {
@@ -635,6 +650,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
 
   function bootstrapEngine(): void {
     const owner = 'MindClassroomLectureEngine'
+    bindLectureVoiceWarmupEvents(owner)
     eventBus.onWithOwner(
       'classroom:start_requested',
       (payload) => {
@@ -707,7 +723,12 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       { immediate: true }
     )
     watch(voiceEnabled, (on) => {
-      if (on) return
+      if (on) {
+        if (!isLecturing.value && classroomStore.preparedSteps.length) {
+          beginFirstLectureSlideWarmup(classroomStore.preparedSteps, true)
+        }
+        return
+      }
       stopSpeech()
       clearAdvanceTimer()
       const step = currentStep.value

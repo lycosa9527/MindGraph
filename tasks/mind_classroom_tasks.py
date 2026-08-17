@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Optional
 
 from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
@@ -13,24 +13,33 @@ from repositories.mind_classroom_repo import MindClassroomJobRepository, MindCla
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.mind_classroom.canvas_tour import run_canvas_tour_job
 from services.mind_classroom.celery_log import classroom_status_changed, log_classroom_celery
+from services.mind_classroom.job_events import publish_classroom_job_snapshot
 from services.mind_classroom.slide_deck import run_slide_deck_job
 from services.monitoring.error_reporting import record_exception_from_celery
+from services.redis.redis_async_client import close_async_redis
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.db.session_open import system_rls_session
 
-_SCRIPT_SOFT = 120
-_SCRIPT_HARD = 150
+_SCRIPT_SOFT = 600
+_SCRIPT_HARD = 660
 _SLIDE_SOFT = 2400
 _SLIDE_HARD = 2460
 _TASK_ERRORS = BACKGROUND_INFRA_ERRORS + DATABASE_ERRORS + (LLMServiceError, SoftTimeLimitExceeded, TimeLimitExceeded)
 
 
+async def _run_and_close(coro: Awaitable[object]) -> bool:
+    try:
+        return bool(await coro)
+    finally:
+        await close_async_redis()
+
+
 def _run_script(job_id: str, celery_task_id: Optional[str]) -> bool:
-    return bool(asyncio.run(run_canvas_tour_job(job_id, celery_task_id=celery_task_id)))
+    return bool(asyncio.run(_run_and_close(run_canvas_tour_job(job_id, celery_task_id=celery_task_id))))
 
 
 def _run_slides(job_id: str, celery_task_id: Optional[str]) -> bool:
-    return bool(asyncio.run(run_slide_deck_job(job_id, celery_task_id=celery_task_id)))
+    return bool(asyncio.run(_run_and_close(run_slide_deck_job(job_id, celery_task_id=celery_task_id))))
 
 
 async def _mark_terminal(job_id: str, message: str, *, celery_task_id: Optional[str] = None) -> None:
@@ -66,6 +75,9 @@ async def _mark_terminal(job_id: str, message: str, *, celery_task_id: Optional[
             celery_task_id=celery_task_id or owned,
             status=status,
         )
+    if status:
+        await publish_classroom_job_snapshot(job_id)
+    await close_async_redis()
 
 
 def _handle_task_error(job_id: str, celery_task_id: Optional[str], exc: BaseException, component: str) -> None:

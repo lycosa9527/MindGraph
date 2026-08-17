@@ -24,7 +24,7 @@ from services.kitty.audio.session_bridge import (
     start_session_asr,
     stop_session_asr,
 )
-from services.kitty.ws.narrate import handle_kitty_narrate
+from services.kitty.ws.narrate import handle_kitty_narrate, handle_kitty_prefetch
 from services.kitty.context.hub_context import apply_kitty_ws_context_patch
 from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.infra.desktop.kitty_voice_phase_fanout import (
@@ -185,6 +185,10 @@ async def dispatch_kitty_ws_inbound_message(
             stopped_payload["text"] = final_text
         await safe_websocket_send(websocket, stopped_payload)
         await fanout_voice_phase_from_outbound_type(voice_session_id, "asr_stopped")
+        return "continue"
+
+    if msg_type == "prefetch":
+        await handle_kitty_prefetch(websocket, voice_session_id, message)
         return "continue"
 
     if msg_type == "narrate":

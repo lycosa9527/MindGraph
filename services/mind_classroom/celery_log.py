@@ -7,6 +7,8 @@ from typing import Optional
 
 logger = logging.getLogger("services.mind_classroom")
 
+_CELERY_ERROR_EVENTS = frozenset({"error"})
+
 
 def classroom_status_changed(
     previous_status: Optional[str],
@@ -41,6 +43,11 @@ def format_classroom_celery_line(
     return " ".join(parts)
 
 
+def celery_log_level(event: str) -> int:
+    """ERROR for failed dispatch/run; INFO for enqueue / status / finish."""
+    return logging.ERROR if event in _CELERY_ERROR_EVENTS else logging.INFO
+
+
 def log_classroom_celery(
     event: str,
     *,
@@ -50,8 +57,9 @@ def log_classroom_celery(
     stage: Optional[str] = None,
     detail: Optional[str] = None,
 ) -> None:
-    """INFO line for enqueue, stage moves, and Celery start/finish."""
-    logger.info(
+    """Job lifecycle line. Failures are ERROR; the rest stay INFO."""
+    logger.log(
+        celery_log_level(event),
         format_classroom_celery_line(
             event,
             job_id=job_id,
@@ -59,5 +67,5 @@ def log_classroom_celery(
             status=status,
             stage=stage,
             detail=detail,
-        )
+        ),
     )

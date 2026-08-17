@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import {
   teardownMindClassroomLecture,
   useMindClassroomLecture,
@@ -17,7 +18,7 @@ import {
 import type { DiagramData } from '@/types'
 
 const enqueueMindClassroomJob = vi.fn()
-const pollMindClassroomJob = vi.fn()
+const watchMindClassroomJob = vi.fn()
 const cancelMindClassroomJob = vi.fn()
 const fetchMindClassroomJobByDiagram = vi.fn()
 
@@ -26,7 +27,8 @@ vi.mock('@/composables/mindMap/mindClassroomJobApi', async (importOriginal) => {
   return {
     ...actual,
     enqueueMindClassroomJob: (...args: unknown[]) => enqueueMindClassroomJob(...args),
-    pollMindClassroomJob: (...args: unknown[]) => pollMindClassroomJob(...args),
+    watchMindClassroomJob: (...args: unknown[]) => watchMindClassroomJob(...args),
+    pollMindClassroomJob: (...args: unknown[]) => watchMindClassroomJob(...args),
     cancelMindClassroomJob: (...args: unknown[]) => cancelMindClassroomJob(...args),
     fetchMindClassroomJobByDiagram: (...args: unknown[]) => fetchMindClassroomJobByDiagram(...args),
   }
@@ -60,7 +62,7 @@ describe('useMindClassroomLecture queued start', () => {
   beforeEach(() => {
     lecture = null
     enqueueMindClassroomJob.mockReset()
-    pollMindClassroomJob.mockReset()
+    watchMindClassroomJob.mockReset()
     cancelMindClassroomJob.mockReset()
     fetchMindClassroomJobByDiagram.mockReset()
     fetchMindClassroomJobByDiagram.mockRejectedValue(new Error('no job'))
@@ -85,7 +87,7 @@ describe('useMindClassroomLecture queued start', () => {
 
   it('enqueues a classroom job, holds the transcript, then plays on the second start', async () => {
     enqueueMindClassroomJob.mockResolvedValue({ job_id: 'job-1', status: 'queued' })
-    pollMindClassroomJob.mockResolvedValue({
+    watchMindClassroomJob.mockResolvedValue({
       id: 'job-1',
       status: 'ready',
       result_json: {
@@ -116,12 +118,18 @@ describe('useMindClassroomLecture queued start', () => {
     } satisfies DiagramData
 
     const classroom = useMindClassroomStore(pinia)
+    const emitSpy = vi.spyOn(eventBus, 'emit')
     const prepared = await lecture?.startLecture()
     expect(prepared).toEqual({ ok: true, phase: 'prepared' })
     expect(classroom.isLecturing).toBe(false)
     expect(classroom.preparedSteps[0]?.focusNodeIds).toEqual(['topic'])
+    expect(emitSpy).toHaveBeenCalledWith('kitty:lecture_prefetch_requested', {
+      text: 'Welcome',
+      stepId: 's1',
+    })
+    emitSpy.mockRestore()
     expect(enqueueMindClassroomJob).toHaveBeenCalled()
-    expect(pollMindClassroomJob).toHaveBeenCalledWith(
+    expect(watchMindClassroomJob).toHaveBeenCalledWith(
       'job-1',
       expect.objectContaining({ shouldStop: expect.any(Function) })
     )
@@ -132,7 +140,7 @@ describe('useMindClassroomLecture queued start', () => {
 
     enqueueMindClassroomJob.mockClear()
     enqueueMindClassroomJob.mockResolvedValue({ job_id: 'job-2', status: 'queued' })
-    pollMindClassroomJob.mockResolvedValue({
+    watchMindClassroomJob.mockResolvedValue({
       id: 'job-2',
       status: 'ready',
       result_json: {
@@ -156,7 +164,7 @@ describe('useMindClassroomLecture queued start', () => {
   it('abandons an in-flight queue when the canvas session tears down', async () => {
     let finishPoll: ((value: unknown) => void) | null = null
     enqueueMindClassroomJob.mockResolvedValue({ job_id: 'job-stale', status: 'queued' })
-    pollMindClassroomJob.mockImplementation(
+    watchMindClassroomJob.mockImplementation(
       () =>
         new Promise((resolve) => {
           finishPoll = resolve
@@ -180,7 +188,7 @@ describe('useMindClassroomLecture queued start', () => {
     const classroom = useMindClassroomStore(pinia)
     const pending = lecture?.startLecture()
     await vi.waitFor(() => {
-      expect(pollMindClassroomJob).toHaveBeenCalled()
+      expect(watchMindClassroomJob).toHaveBeenCalled()
     })
     teardownMindClassroomLecture({ restoreViewport: false })
     finishPoll?.({
@@ -214,7 +222,7 @@ describe('useMindClassroomLecture queued start', () => {
       progress: { phase: 'queued' },
     })
     let finishPoll: ((value: unknown) => void) | null = null
-    pollMindClassroomJob.mockImplementation(
+    watchMindClassroomJob.mockImplementation(
       () =>
         new Promise((resolve) => {
           finishPoll = resolve
