@@ -1,5 +1,5 @@
 """
-Mind map node explain API — facet streams for meaning / conflict / questions.
+Mind map node explain API — short everyday gloss stream for a selected node.
 """
 
 from __future__ import annotations
@@ -305,10 +305,10 @@ async def explain_mindmap_node(
     request: Request,
     current_user: User = Depends(get_current_user),
 ):
-    """Stream one educational facet for a mind map node."""
+    """Stream a short everyday gloss for a mind map node."""
     session_id = req.session_id.strip()
     # Ephemeral assist: track live activity + logs only. Do not persist LLM text
-    # (or usage-timeline previews) — results live in the modal for this open only.
+    # (or usage-timeline previews) — results live in the bubble for this open only.
     await track_module_activity(
         user=current_user,
         module="canvas",

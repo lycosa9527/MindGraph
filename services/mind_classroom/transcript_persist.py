@@ -62,6 +62,7 @@ async def retire_superseded_transcripts(
     diagram_id: Optional[str],
     mode: str,
     keep_key: str,
+    llm_model: Optional[str] = None,
 ) -> None:
     """Delete older lecture backups and drop their job pointers."""
     cleaned_diagram = (diagram_id or "").strip()
@@ -74,6 +75,7 @@ async def retire_superseded_transcripts(
                 user_id=int(user_id),
                 diagram_id=cleaned_diagram,
                 mode=normalize_transcript_mode(mode),
+                llm_model=(llm_model or "").strip() or None,
             )
             siblings = [(row.id, row.result_json) for row in rows]
             stale_keys, updates = plan_transcript_replacement(
@@ -119,11 +121,13 @@ async def attach_transcript_md(
             steps=steps,
             diagram_id=diagram_id or "",
         )
+        llm_model = str(settings.get("llm_model") or "").strip()
         key = build_transcript_key(
             job_id,
             user_id=user_id,
             diagram_id=diagram_id,
             mode=mode,
+            llm_model=llm_model,
         )
         await put_local_and_cos(
             key,
@@ -136,6 +140,7 @@ async def attach_transcript_md(
             diagram_id=diagram_id,
             mode=mode,
             keep_key=key,
+            llm_model=llm_model,
         )
     except FILE_IO_ERRORS as exc:
         logger.warning("[MindClassroom] Transcript upload failed job=%s err=%s", job_id, exc)

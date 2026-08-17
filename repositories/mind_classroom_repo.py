@@ -14,6 +14,7 @@ from models.domain.mind_classroom import (
     generate_classroom_id,
 )
 from repositories.base import BaseRepository
+from services.mind_classroom.job_match import job_matches_llm_model
 
 _ACTIVE_STATUSES = ("queued", "planning", "generating")
 _REUSABLE_STATUSES = ("ready", "partial", "queued", "planning", "generating")
@@ -131,18 +132,20 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
         user_id: int,
         spec_hash: str,
         settings: dict[str, Any],
+        diagram_id: Optional[str] = None,
     ) -> Optional[MindClassroomJob]:
-        """Latest ready/partial/in-flight job with the same spec hash and settings."""
-        stmt = (
-            select(MindClassroomJob)
-            .where(
-                MindClassroomJob.user_id == user_id,
-                MindClassroomJob.spec_hash == spec_hash,
-                MindClassroomJob.status.in_(_REUSABLE_STATUSES),
-            )
-            .order_by(desc(MindClassroomJob.updated_at))
-            .limit(8)
-        )
+        """Latest ready/partial/in-flight job with the same spec, settings, and map."""
+        cleaned = (diagram_id or "").strip()
+        filters = [
+            MindClassroomJob.user_id == user_id,
+            MindClassroomJob.spec_hash == spec_hash,
+            MindClassroomJob.status.in_(_REUSABLE_STATUSES),
+        ]
+        if cleaned:
+            filters.append(MindClassroomJob.diagram_id == cleaned)
+        else:
+            filters.append(MindClassroomJob.diagram_id.is_(None))
+        stmt = select(MindClassroomJob).where(*filters).order_by(desc(MindClassroomJob.updated_at)).limit(8)
         result = await self.session.execute(stmt)
         for row in result.scalars().all():
             if row.settings == settings:
@@ -155,6 +158,7 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
         user_id: int,
         diagram_id: str,
         mode: Optional[str] = None,
+        llm_model: Optional[str] = None,
         limit: int = 24,
     ) -> list[MindClassroomJob]:
         """Newest classroom jobs for a library mind map, optionally filtered by mode."""
@@ -162,7 +166,7 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
         if not cleaned:
             return []
         fetch_limit = max(1, min(int(limit), 48))
-        lookback = fetch_limit * 2 if mode else fetch_limit
+        lookback = fetch_limit * 4 if mode or llm_model else fetch_limit
         stmt = (
             select(MindClassroomJob)
             .where(
@@ -178,6 +182,8 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
             row_mode = (row.settings or {}).get("mode")
             if mode and row_mode != mode:
                 continue
+            if not job_matches_llm_model(row.settings, llm_model):
+                continue
             matched.append(row)
             if len(matched) >= fetch_limit:
                 break
@@ -189,12 +195,14 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
         user_id: int,
         diagram_id: str,
         mode: Optional[str] = None,
+        llm_model: Optional[str] = None,
     ) -> Optional[MindClassroomJob]:
         """Newest classroom job for a library mind map, optionally filtered by mode."""
         rows = await self.list_jobs_for_diagram(
             user_id=user_id,
             diagram_id=diagram_id,
             mode=mode,
+            llm_model=llm_model,
             limit=1,
         )
         return rows[0] if rows else None

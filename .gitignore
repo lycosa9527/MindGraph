@@ -219,9 +219,9 @@ frontend/coverage/
 # These are user uploads, not part of the codebase
 static/
 
-# Library storage directory
-# These are user uploads, images, PDFs, and other library content, not part of the codebase
-storage/library/
+# Runtime object/file storage (library pages, knowledge docs, tiktoken, leftover local qdrant)
+# Not part of the codebase — Knowledge Space still creates knowledge_documents/ at runtime
+storage/
 
 # Documentation — ship operator/setup guides; ignore local drafts and bulky assets
 docs/*
@@ -250,9 +250,6 @@ docs/operations/*
 !docs/operations/mcp_http.md
 # ruff
 .ruff_cache/
-
-# Tiktoken encoding cache (downloaded files, ~1.6MB)
-storage/tiktoken_cache/
 
 # RAG test datasets
 services/knowledge/rag_chunk_test/rag-test/

@@ -27,11 +27,12 @@ async def resolve_classroom_asset_owner_id(
         return int(job.user_id)
     parsed = parse_diagram_transcript_key(logical_key)
     if parsed:
-        user_id, diagram_id, mode = parsed
+        user_id, diagram_id, mode, llm_model = parsed
         job = await repo.latest_job_for_diagram(
             user_id=user_id,
             diagram_id=diagram_id,
             mode=mode,
+            llm_model=llm_model or None,
         )
         if job is None:
             return None

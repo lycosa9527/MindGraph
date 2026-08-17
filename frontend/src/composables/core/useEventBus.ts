@@ -360,6 +360,7 @@ export type EventTypes = {
   'classroom:prev_requested': Record<string, never>
   'classroom:set_voice_requested': { enabled: boolean }
   'classroom:restore_prepared_requested': Record<string, never>
+  'classroom:ready': Record<string, never>
   'classroom:queue_result': {
     ok: boolean
     phase?: 'prepared' | 'playing'

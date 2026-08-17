@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from repositories.mind_classroom_repo import MindClassroomJobRepository, MindClassroomSlideRepository
 from services.mind_classroom.celery_log import classroom_status_changed, log_classroom_celery
+from services.mind_classroom.job_manifest import should_apply_job_stage
 from utils.db.session_open import system_rls_session
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,8 @@ async def set_status_with_lease(
         owned = row.celery_task_id
         if celery_task_id and owned and owned != celery_task_id:
             raise LeaseLost(f"celery lease lost have={celery_task_id} want={owned}")
+        if not should_apply_job_stage(row.status, status):
+            raise LeaseLost(f"status={row.status}")
         next_stage = stage or status
         should_log = classroom_status_changed(row.status, row.current_stage, status, next_stage)
         await repo.update_job(

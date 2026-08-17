@@ -13,7 +13,6 @@ import traceback
 from typing import Any, Dict, List, Optional, Tuple
 
 from config.settings import config
-from llm_chunking.ingest_context import ingest_attribution
 from models.domain.knowledge_space import KnowledgeDocument
 from services.knowledge.chunking_service import ChunkingService
 from services.knowledge.document_structure import (
@@ -22,6 +21,7 @@ from services.knowledge.document_structure import (
     extract_document_structure,
 )
 from services.knowledge.knowledge_settings import segmentation_from_rules, server_defaults
+from services.knowledge.llm_chunking.ingest_context import ingest_attribution
 from services.knowledge.section_query import parse_section_hint
 from services.llm.embedding_cache import get_embedding_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, QDRANT_ERRORS

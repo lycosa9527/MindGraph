@@ -130,7 +130,7 @@ run_backend() {
   PYTHONPATH=. python scripts/check_privacy_policy_crawlable.py
 
   log "Pylint (full Python tree; minimal policy disables)"
-  python -m pylint services routers agents clients config utils scripts tests loadtests tasks alembic/env.py \
+  python -m pylint services routers agents clients config utils scripts tests tasks alembic/env.py \
     --fail-under=10.0
 
   log "Pytest (focused + collab)"
@@ -192,6 +192,8 @@ run_backend() {
     tests/test_mind_classroom_rls.py \
     tests/test_mind_classroom_celery_log.py \
     tests/test_mind_classroom_enqueue.py \
+    tests/test_mind_classroom_job_match.py \
+    tests/test_mind_classroom_job_events.py \
     tests/test_kitty_narrate.py \
     tests/test_kitty_idle.py \
     tests/test_generate_text_to_image.py \
@@ -223,7 +225,8 @@ run_frontend() {
   npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts \
     tests/useMindClassroomLecture.spec.ts tests/useMindClassroomLectureQueue.spec.ts \
     tests/mindClassroomLaunchState.spec.ts tests/mindClassroomRemoteSteps.spec.ts \
-    tests/mindClassroomScript.spec.ts \
+    tests/mindClassroomScript.spec.ts tests/mindClassroomPrepSlot.spec.ts \
+    tests/mindClassroomJobApi.spec.ts tests/warmupLectureTts.spec.ts \
     tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts \
     tests/unloadCanvasForLibrarySwitch.spec.ts
 }

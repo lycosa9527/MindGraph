@@ -1,8 +1,21 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { isClassroomJobPlayable, watchMindClassroomJob } from '@/composables/mindMap/mindClassroomJobApi'
+import {
+  isClassroomJobPlayable,
+  mindClassroomByDiagramPath,
+  watchMindClassroomJob,
+} from '@/composables/mindMap/mindClassroomJobApi'
 
 describe('mindClassroomJobApi watch', () => {
+  it('looks up a diagram job by mode and LLM variant', () => {
+    expect(mindClassroomByDiagramPath('diag-1', 'canvas_tour', 'qwen')).toBe(
+      '/api/mind-classroom/jobs/by-diagram/diag-1?mode=canvas_tour&llm_model=qwen'
+    )
+    expect(mindClassroomByDiagramPath('diag-1', 'canvas_tour')).toBe(
+      '/api/mind-classroom/jobs/by-diagram/diag-1?mode=canvas_tour'
+    )
+  })
+
   it('treats ready and partial as playable', () => {
     expect(isClassroomJobPlayable('ready')).toBe(true)
     expect(isClassroomJobPlayable('partial')).toBe(true)

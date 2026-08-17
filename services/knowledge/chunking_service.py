@@ -29,8 +29,8 @@ from services.llm import llm_service as llm_svc
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 try:
-    from llm_chunking.chunker import LLMSemanticChunker
-    from llm_chunking.models import ParentChunk, QAChunk
+    from services.knowledge.llm_chunking.chunker import LLMSemanticChunker
+    from services.knowledge.llm_chunking.models import ParentChunk, QAChunk
 
     HAS_LLM_CHUNKING = True
 except ImportError:
@@ -395,7 +395,7 @@ def _initialize_mindchunk_service():
 
     if not HAS_LLM_CHUNKING or LLMSemanticChunker is None:
         raise RuntimeError(
-            "[ChunkingService] llm_chunking module not available. MindChunk requires llm_chunking package."
+            "[ChunkingService] services.knowledge.llm_chunking is not available. MindChunk requires that package."
         )
 
     chunker = LLMSemanticChunker(
@@ -598,7 +598,8 @@ class MindChunkAdapter(BaseChunkingService):
 
         if not HAS_LLM_CHUNKING or ParentChunk is None or QAChunk is None:
             raise RuntimeError(
-                "[MindChunkAdapter] llm_chunking.models not available. Cannot convert chunks to legacy format."
+                "[MindChunkAdapter] services.knowledge.llm_chunking.models not available. "
+                "Cannot convert chunks to legacy format."
             )
 
         chunks = []

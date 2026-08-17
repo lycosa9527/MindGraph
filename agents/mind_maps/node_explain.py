@@ -1,7 +1,8 @@
 """
-Mind map node explain — three focused educational panels for one node.
+Mind map node explain — a short everyday gloss for one selected node.
 
-Streams meaning, cognitive conflict, and inquiry questions as separate facets.
+The canvas streams the meaning facet into a bubble beside the node.
+Conflict and questions facets remain available on the API.
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ from services.llm import llm_service
 from utils.prompt_locale import is_chinese_prompt_shell_language, output_language_instruction
 
 _MAX_BRANCHES = 16
-_MAX_TOKENS = 320
+_MAX_TOKENS = 96
 PromptShell = Literal["zh", "en", "az"]
 ExplainFacet = Literal["meaning", "conflict", "questions"]
 
@@ -74,10 +75,10 @@ _UNTITLED_LABELS = {
 _FACET_TASKS: Dict[PromptShell, Dict[ExplainFacet, str]] = {
     "zh": {
         "meaning": (
-            "直接给出该节点的清晰定义与解释：站在中心主题的视角，说明它是什么、指什么。"
-            "先答本质（像短释义），必要时再用一两句点明它在本主题下的具体含义；"
-            "不要讲层级位置，不要寒暄铺垫，不要写认知冲突，不要列问题。"
-            "写成 1–2 段短文，约 60–120 字，干净直给。"
+            "用一两句日常口语说明这个节点是什么，像给小朋友解释「苹果」："
+            "苹果是长在树上的红色水果。"
+            "站在中心主题的视角，只说它是什么、指什么；约 40–50 字，最多不超过 60 字。"
+            "不要讲层级位置，不要寒暄，不要写认知冲突，不要列问题，不要分点。"
         ),
         "conflict": (
             "只讨论该节点可能引发的认知冲突、张力或常见误解：可点名与主题或其他分支的对比。"
@@ -90,11 +91,10 @@ _FACET_TASKS: Dict[PromptShell, Dict[ExplainFacet, str]] = {
     },
     "en": {
         "meaning": (
-            "Give a clear, direct definition of this node from the central topic's perspective: "
-            "what it is and what it means here. Lead with the essence (short glossary style); "
-            "add at most one or two sentences on its meaning under this topic if needed. "
-            "No hierarchy lecture, no soft opener, no cognitive conflict, no questions. "
-            "1–2 short paragraphs, about 50–100 words — clean and straight."
+            "In one or two everyday sentences, say what this node is — like explaining apple: "
+            "a red fruit that grows on trees. From the central topic's perspective, only what it is "
+            "and what it means here. About 25–30 words, never more than 35. "
+            "No hierarchy lecture, no soft opener, no cognitive conflict, no questions, no lists."
         ),
         "conflict": (
             "Only discuss cognitive conflicts, tensions, or common misconceptions this node may spark "
@@ -110,11 +110,10 @@ _FACET_TASKS: Dict[PromptShell, Dict[ExplainFacet, str]] = {
     },
     "az": {
         "meaning": (
-            "Mərkəz mövzunun perspektivindən bu düyünün aydın, birbaşa tərifini verin: "
-            "nədir və burada nə deməkdir. Əvvəlcə mahiyyəti (qısa lüğət üslubu); "
-            "lazım gələrsə mövzu altındakı mənasına 1–2 cümlə əlavə edin. "
-            "İerarxiya izahı, giriş salamı, koqnitiv konflikt və suallar olmasın. "
-            "1–2 qısa abzas, təxminən 50–100 söz — təmiz və birbaşa."
+            "Bir-iki gündəlik cümlə ilə bu düyünün nə olduğunu deyin — alma kimi: "
+            "ağacda bitən qırmızı meyvə. Mərkəz mövzunun perspektivindən yalnız nədir "
+            "və burada nə deməkdir. Təxminən 25–30 söz, 35-dən çox olmasın. "
+            "İerarxiya, giriş salamı, koqnitiv konflikt, sual və siyahı olmasın."
         ),
         "conflict": (
             "Yalnız bu düyünün yarada biləcəyi koqnitiv konflikt, gərginlik və ya ümumi səhv "

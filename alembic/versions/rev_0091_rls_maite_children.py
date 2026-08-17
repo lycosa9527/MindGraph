@@ -9,7 +9,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-from db_rls.policy_builder import (
+from utils.db_rls.policy_builder import (
     MAITE_CHILD_TABLES,
     MAITE_TASK_REFERENCE_EXPR,
     _create_all_policy,

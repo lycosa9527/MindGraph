@@ -266,6 +266,29 @@ async def persist_ready_tour_prefix(
     return len(steps)
 
 
+async def _persist_ready_prefix_if_job(
+    job_id: Optional[str],
+    *,
+    spec: Optional[dict[str, Any]],
+    slots: list[Optional[list[dict[str, Any]]]],
+    celery_task_id: Optional[str],
+    labels: list[str],
+    completed_index: int,
+) -> bool:
+    """Write a contiguous prefix when this run has a job and a spec."""
+    if not job_id or spec is None:
+        return False
+    await persist_ready_tour_prefix(
+        job_id,
+        spec=spec,
+        slots=slots,
+        celery_task_id=celery_task_id,
+        labels=labels,
+        completed_index=completed_index,
+    )
+    return True
+
+
 async def generate_tour_steps(
     tour_nodes: list[dict[str, Any]],
     *,
@@ -301,7 +324,16 @@ async def generate_tour_steps(
             branch_total=None,
             branch_label=label,
         )
-        return await _chat_script(chat, prompt=prompt, settings=settings)
+        parsed, usage = await _chat_script(chat, prompt=prompt, settings=settings)
+        await _persist_ready_prefix_if_job(
+            job_id,
+            spec=spec,
+            slots=[parsed],
+            celery_task_id=celery_task_id,
+            labels=[label],
+            completed_index=0,
+        )
+        return parsed, usage
     return await _generate_family_scripts_parallel(
         tour_nodes,
         families,
@@ -383,15 +415,14 @@ async def _generate_family_scripts_parallel(
                 raw_steps, chunk_usage = task.result()
                 slots[index] = raw_steps
                 usage = merge_usage(usage, chunk_usage)
-                if job_id and spec is not None:
-                    await persist_ready_tour_prefix(
-                        job_id,
-                        spec=spec,
-                        slots=slots,
-                        celery_task_id=celery_task_id,
-                        labels=[chat.branch_label for chat, _prompt in jobs],
-                        completed_index=index,
-                    )
+                if await _persist_ready_prefix_if_job(
+                    job_id,
+                    spec=spec,
+                    slots=slots,
+                    celery_task_id=celery_task_id,
+                    labels=[chat.branch_label for chat, _prompt in jobs],
+                    completed_index=index,
+                ):
                     continue
                 await patch_tour_progress(
                     job_id,

@@ -9,8 +9,8 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-from db_rls.functions_sql import rls_functions_upgrade_statements
-from db_rls.policy_builder import ORGS_EXPR, _create_all_policy, _drop_policy
+from utils.db_rls.functions_sql import rls_functions_upgrade_statements
+from utils.db_rls.policy_builder import ORGS_EXPR, _create_all_policy, _drop_policy
 
 revision: str = "0072"
 down_revision: Union[str, None] = "0071"

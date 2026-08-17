@@ -5,7 +5,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-from db_rls.policy_builder import (
+from utils.db_rls.policy_builder import (
     MINDMATE_COLLAB_TABLES,
     _create_all_policy,
     downgrade_policies_for_tables,

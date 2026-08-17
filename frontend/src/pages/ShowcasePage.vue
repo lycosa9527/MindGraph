@@ -34,6 +34,7 @@ import {
   type ShowcaseCaseType,
 } from '@/components/showcase/showcaseShared'
 import { useLanguage } from '@/composables'
+import { showcaseCoverMediaPending } from '@/composables/admin/showcaseMediaStatus'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useShowcaseMeta } from '@/composables/showcase/useShowcaseMeta'
 import { useAuthStore } from '@/stores'
@@ -114,7 +115,16 @@ function showPostThumbnail(post: ShowcasePost): boolean {
 }
 
 function isCoverPending(post: ShowcasePost): boolean {
-  return showcaseStore.isCoverPending(post.id) && !showPostThumbnail(post)
+  if (showPostThumbnail(post)) return false
+  return showcaseStore.isCoverPending(post.id) || showcaseCoverMediaPending(post)
+}
+
+function attachPendingCoverStreams(rows: ShowcasePost[]): void {
+  for (const post of rows) {
+    if (showcaseCoverMediaPending(post)) {
+      showcaseStore.markCoverPending(post.id)
+    }
+  }
 }
 
 function hideBlankThumb(postId: string): void {
@@ -196,6 +206,7 @@ async function fetchPosts(append = false) {
     })
     posts.value = append ? [...posts.value, ...res.posts] : res.posts
     total.value = res.total
+    attachPendingCoverStreams(res.posts)
   } catch (e) {
     loadError.value = e instanceof Error ? e.message : 'Failed to load'
     if (!append) posts.value = []
@@ -331,6 +342,7 @@ onUnmounted(() => {
   offPostUpdated()
   offAdminShowcase()
   offCoverReady()
+  showcaseStore.clearAllCoverPending()
 })
 
 watch(

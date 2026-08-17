@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
@@ -16,9 +15,9 @@ from services.showcase.covers.events import (
 from services.showcase.covers.job_manifest import (
     cover_job_blocks_auto_enqueue_sync,
     get_cover_job_snapshot_sync,
-    job_is_in_flight,
     mark_cover_job_failed_sync,
     mark_cover_job_queued_sync,
+    snapshot_job_is_in_flight,
 )
 from services.showcase.covers.locks import try_claim_cover_enqueue
 from services.showcase.infra.observability import showcase_wf_log
@@ -89,17 +88,12 @@ def enqueue_teaching_design_cover(
             user_id=rls_user_id,
             organization_id=organization_id,
         )
-        if snapshot is not None:
-            status_raw = snapshot.get("status")
-            updated_raw = snapshot.get("updated_at")
-            status_val = status_raw if isinstance(status_raw, str) else None
-            updated_at = updated_raw if isinstance(updated_raw, datetime) else None
-            if job_is_in_flight(status_val, updated_at):
-                logger.debug(
-                    "[ShowcaseCover] force refresh rejected in-flight post=%s",
-                    post_id[:8],
-                )
-                return False
+        if snapshot_job_is_in_flight(snapshot):
+            logger.debug(
+                "[ShowcaseCover] force refresh rejected in-flight post=%s",
+                post_id[:8],
+            )
+            return False
 
     # Admin force must always send_task; dedupe lock is only for auto spam coalesce.
     if not force and not try_claim_cover_enqueue(post_id):

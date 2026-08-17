@@ -40,6 +40,8 @@ export interface MindClassroomJobDetail {
   progress?: Record<string, unknown> | null
   error_message?: string | null
   diagram_id?: string | null
+  spec_hash?: string | null
+  spec_node_ids?: string[]
   settings?: Record<string, unknown>
   result_json?: {
     steps?: MindClassroomRemoteStep[]
@@ -96,14 +98,26 @@ export async function cancelMindClassroomJob(jobId: string): Promise<void> {
   }
 }
 
+export function mindClassroomByDiagramPath(
+  diagramId: string,
+  mode?: string,
+  llmModel?: string | null
+): string {
+  const params = new URLSearchParams()
+  if (mode) params.set('mode', mode)
+  const model = (llmModel || '').trim()
+  if (model) params.set('llm_model', model)
+  const query = params.toString()
+  const base = `/api/mind-classroom/jobs/by-diagram/${encodeURIComponent(diagramId)}`
+  return query ? `${base}?${query}` : base
+}
+
 export async function fetchMindClassroomJobByDiagram(
   diagramId: string,
-  mode?: string
+  mode?: string,
+  llmModel?: string | null
 ): Promise<MindClassroomJobDetail> {
-  const query = mode ? `?mode=${encodeURIComponent(mode)}` : ''
-  const res = await apiGet(
-    `/api/mind-classroom/jobs/by-diagram/${encodeURIComponent(diagramId)}${query}`
-  )
+  const res = await apiGet(mindClassroomByDiagramPath(diagramId, mode, llmModel))
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`)
   }

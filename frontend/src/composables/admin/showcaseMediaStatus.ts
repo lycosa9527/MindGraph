@@ -37,6 +37,12 @@ function teachingHasPreview(post: ShowcasePost): boolean {
   return Boolean(post.preview_url) || attachmentIsNativePdf(post)
 }
 
+/** Teaching-design cover/PDF still running — feed spinner + SSE attach. */
+export function showcaseCoverMediaPending(post: ShowcasePost): boolean {
+  const status = resolveShowcaseMediaStatus(post)
+  return status === 'converting_preview' || status === 'generating_cover'
+}
+
 /** Disable Refresh while a cold job is actively queued/running. */
 export function showcaseCoverRefreshBusy(post: ShowcasePost): boolean {
   const status = post.cover_job?.status

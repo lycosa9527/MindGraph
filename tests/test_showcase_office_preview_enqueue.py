@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from services.showcase.covers.enqueue import (
@@ -9,6 +11,8 @@ from services.showcase.covers.enqueue import (
     enqueue_teaching_design_cover,
     office_attachment_needs_preview,
 )
+from services.showcase.covers.job_manifest import cover_job_blocks_auto_enqueue_sync
+from tasks import showcase_cover_tasks
 
 
 def test_office_attachment_needs_preview_for_pptx_without_path() -> None:
@@ -187,3 +191,66 @@ def test_enqueue_force_ignores_dedupe_lock() -> None:
         )
     assert ok is True
     celery_app.send_task.assert_called_once()
+
+
+def test_blocks_auto_enqueue_when_in_flight() -> None:
+    """GET-post / cover-stream must not send a second task while one is live."""
+    attachment = "showcase/posts/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/attachment.docx"
+    replacement = "showcase/posts/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/attachment.pptx"
+    with patch(
+        "services.showcase.covers.job_manifest.get_cover_job_snapshot_sync",
+        return_value={
+            "status": "running",
+            "attachment_key": attachment,
+            "updated_at": datetime.now(UTC),
+        },
+    ):
+        assert (
+            cover_job_blocks_auto_enqueue_sync(
+                post_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                attachment_key=attachment,
+                user_id=1,
+            )
+            is True
+        )
+        assert (
+            cover_job_blocks_auto_enqueue_sync(
+                post_id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+                attachment_key=replacement,
+                user_id=1,
+            )
+            is False
+        )
+
+
+def test_enqueue_skips_send_task_when_in_flight() -> None:
+    """Auto-enqueue after the 90s Redis NX window must not start a second worker."""
+    post_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    attachment = f"showcase/posts/{post_id}/attachment.docx"
+    with (
+        patch("services.showcase.covers.enqueue.showcase_server_covers_enabled", return_value=True),
+        patch(
+            "services.showcase.covers.enqueue.cover_job_blocks_auto_enqueue_sync",
+            return_value=True,
+        ),
+        patch("services.showcase.covers.enqueue.try_claim_cover_enqueue") as claim,
+        patch("services.showcase.covers.enqueue.celery_app") as celery_app,
+    ):
+        celery_app.send_task = MagicMock()
+        ok = enqueue_teaching_design_cover(
+            post_id=post_id,
+            user_id=1,
+            attachment_key=attachment,
+            case_type="teaching_design",
+            author_id=1,
+        )
+    assert ok is False
+    claim.assert_not_called()
+    celery_app.send_task.assert_not_called()
+
+
+def test_cover_task_closes_async_redis() -> None:
+    """Prefork workers must close the loop-bound Redis client after asyncio.run."""
+    src = Path(showcase_cover_tasks.__file__).read_text(encoding="utf-8")
+    assert "close_async_redis" in src
+    assert "def _run_and_close" in src

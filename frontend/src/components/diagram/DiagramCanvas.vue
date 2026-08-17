@@ -24,7 +24,7 @@ import { storeToRefs } from 'pinia'
 
 import { ExportToCommunityModal } from '@/components/canvas'
 import CanvasWorksheetTextModal from '@/components/canvas/CanvasWorksheetTextModal.vue'
-import MindMapNodeExplainModal from '@/components/canvas/MindMapNodeExplainModal.vue'
+import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
 import { useBranchMoveDrag, useLanguage } from '@/composables'
 import type { CanvasExportColorMode, CanvasExportLayout } from '@/config/canvasExportOptions'
 import type { CanvasWorksheetTextOptions } from '@/config/canvasWorksheetText'
@@ -46,6 +46,7 @@ import {
   useDiagramCanvasExport,
   useDiagramCanvasFit,
   useDiagramCanvasMobileTouch,
+  useDiagramCanvasNodeExplain,
   useDiagramCanvasNodesEdges,
   useDiagramCanvasVueFlowHandlers,
   useDiagramCanvasVueFlowUi,
@@ -64,7 +65,6 @@ import {
 import { useMindMapCanvasVisuals } from '@/composables/mindMap/useMindMapCanvasVisuals'
 import { useMindMapConnectorDebugLog } from '@/composables/mindMap/useMindMapConnectorDebugLog'
 import { useMindMapMultiLinePaste } from '@/composables/mindMap/useMindMapMultiLinePaste'
-import { useMindMapNodeExplain } from '@/composables/mindMap/useMindMapNodeExplain'
 import {
   diagramPresentationReadOnlyRef,
   resolvePresentationTeleportTarget,
@@ -355,16 +355,6 @@ watch(
   { immediate: true }
 )
 
-const nodeExplain = useMindMapNodeExplain()
-const {
-  visible: nodeExplainVisible,
-  target: nodeExplainTarget,
-  panels: nodeExplainPanels,
-  loading: nodeExplainLoading,
-  openExplain: openNodeExplain,
-  close: closeNodeExplain,
-} = nodeExplain
-
 const floatingToolbarNodeIds = computed(() => {
   if (!useMindMapV2.value) return []
   return diagramStore.selectedNodes.slice()
@@ -407,16 +397,27 @@ watch(
   }
 )
 
+const {
+  nodeExplainVisible,
+  nodeExplainTarget,
+  nodeExplainText,
+  nodeExplainError,
+  nodeExplainLoading,
+  explainBubblePosition,
+  closeNodeExplain,
+  handleExplainBubbleSizeChange,
+  handleFloatingToolbarExplainNode,
+  scheduleExplainBubbleMeasure,
+} = useDiagramCanvasNodeExplain({
+  canvasContainer,
+  nodes,
+  floatingToolbarAnchorId,
+})
+
 const { isGenerating: subgraphGenerating, generateSubgraph } = useMindMapSubgraphSuggest()
 
 async function handleAiSubgraphGenerate() {
   await generateSubgraph(floatingToolbarAnchorId.value)
-}
-
-function handleFloatingToolbarExplainNode(): void {
-  const nodeId = floatingToolbarAnchorId.value
-  if (!nodeId) return
-  openNodeExplain(nodeId)
 }
 
 const {
@@ -504,6 +505,7 @@ async function captureWorksheetPreview(preview?: {
 function handleViewportChangeWithToolbar(...args: Parameters<typeof handleViewportChange>) {
   handleViewportChange(...args)
   scheduleFloatingToolbarMeasure()
+  scheduleExplainBubbleMeasure()
 }
 
 useConceptMapCmapMeasuredLayoutRelax(diagramStore)
@@ -790,12 +792,16 @@ defineExpose({
       @add-concept="handleContextMenuAddConcept"
     />
 
-    <MindMapNodeExplainModal
+    <MindMapNodeExplainBubble
       v-model:visible="nodeExplainVisible"
       :target="nodeExplainTarget"
-      :panels="nodeExplainPanels"
+      :text="nodeExplainText"
+      :error="nodeExplainError"
       :loading="nodeExplainLoading"
+      :position="explainBubblePosition"
+      :allow-fallback="false"
       @close="closeNodeExplain"
+      @size-change="handleExplainBubbleSizeChange"
     />
 
     <ExportToCommunityModal

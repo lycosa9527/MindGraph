@@ -62,6 +62,7 @@ async def create_and_enqueue_job(
                 user_id=user_id,
                 spec_hash=spec_hash,
                 settings=settings,
+                diagram_id=diagram_id,
             )
             if existing is not None:
                 return await _reuse_payload(existing.id, existing.status, settings)

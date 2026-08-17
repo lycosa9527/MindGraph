@@ -7,7 +7,7 @@ import os
 import pytest
 from sqlalchemy import text
 
-from db_rls.policy_builder import USERS_EXPR
+from utils.db_rls.policy_builder import USERS_EXPR
 from utils.db.rls_context import RlsContext, rls_async_session
 
 pytestmark_rls_db = pytest.mark.skipif(

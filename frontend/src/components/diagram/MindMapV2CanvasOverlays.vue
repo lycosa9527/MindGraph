@@ -22,7 +22,7 @@ const props = defineProps<{
   floatingToolbarAnchorId: string | null
   subgraphGenerating: boolean
   floatingToolbarShowAiSubgraph: boolean
-  /** Hide teleported node chrome that sits above ElDialog. */
+  /** Hide teleported node chrome while the explain bubble is open. */
   nodeExplainOpen: boolean
   canvasContainer: Ref<HTMLElement | null> | HTMLElement | null
   presentationTeleportTarget: string | HTMLElement | undefined
@@ -41,7 +41,7 @@ const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasC
     v-if="!presentationDiagramEditLocked && !uiStore.exportWireframeOutline"
   />
 
-  <!-- nodeExplainOpen: modal owns UI; these teleports sit above ElDialog -->
+  <!-- Hide toolbar / add handles so they do not cover the explain bubble. -->
   <CanvasNodeFloatingToolbar
     v-if="!presentationDiagramEditLocked && !nodeExplainOpen"
     :position="floatingToolbarPosition"

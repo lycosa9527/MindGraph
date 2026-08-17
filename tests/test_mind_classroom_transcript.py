@@ -127,7 +127,32 @@ def test_transcript_key_stable_per_diagram() -> None:
     assert key == f"mind_classroom/transcripts/7/{diagram_id}/slide_deck.md"
     assert is_classroom_logical_key(key)
     assert job_id_from_transcript_key(key) is None
-    assert parse_diagram_transcript_key(key) == (7, diagram_id, "slide_deck")
+    assert parse_diagram_transcript_key(key) == (7, diagram_id, "slide_deck", "")
+
+
+def test_transcript_key_isolates_llm_slots() -> None:
+    """Qwen and DeepSeek lectures must not share one markdown backup."""
+    job_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    diagram_id = "11111111-2222-3333-4444-555555555555"
+    qwen = build_transcript_key(
+        job_id,
+        user_id=7,
+        diagram_id=diagram_id,
+        mode="canvas_tour",
+        llm_model="qwen",
+    )
+    deepseek = build_transcript_key(
+        job_id,
+        user_id=7,
+        diagram_id=diagram_id,
+        mode="canvas_tour",
+        llm_model="deepseek",
+    )
+    assert qwen == f"mind_classroom/transcripts/7/{diagram_id}/canvas_tour/qwen.md"
+    assert deepseek == f"mind_classroom/transcripts/7/{diagram_id}/canvas_tour/deepseek.md"
+    assert qwen != deepseek
+    assert is_classroom_logical_key(qwen)
+    assert parse_diagram_transcript_key(qwen) == (7, diagram_id, "canvas_tour", "qwen")
     assert not is_classroom_logical_key(f"mind_classroom/transcripts/7/{diagram_id}/../secret.md")
 
 

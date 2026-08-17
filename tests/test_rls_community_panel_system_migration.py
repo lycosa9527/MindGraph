@@ -28,7 +28,7 @@ def test_community_panel_system_migration_widens_writes() -> None:
 
 def test_policy_builder_community_writes_include_system() -> None:
     """Greenfield policy builder must keep system mode on community writes."""
-    text = _read("db_rls/policy_builder.py")
+    text = _read("utils/db_rls/policy_builder.py")
     assert "OR rls_is_system_mode()" in text
     assert '("community_post_likes", COMMUNITY_READ, COMMUNITY_WRITE)' in text
 

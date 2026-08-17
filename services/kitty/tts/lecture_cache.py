@@ -1,9 +1,7 @@
-"""Lookahead CosyVoice cache for Mind Classroom lecture slides.
+"""One-ahead CosyVoice cache for Mind Classroom lecture slides.
 
-After the script is ready, slide 1 is warmed into this buffer. While slide N
-plays, slide N+1 synthesizes on a second socket. The next narrate plays the
-buffer instead of reconnecting. Manual skip still TTS the current caption
-(cache hit when the buffer matches, otherwise live).
+Slide 0 warms in the launch modal. While slide N plays, only slide N+1
+synthesizes. The next narrate plays that buffer when it matches.
 """
 
 from __future__ import annotations
@@ -283,6 +281,17 @@ def _prefetch_queue(session: dict[str, Any]) -> list[tuple[str, str]]:
     queue: list[tuple[str, str]] = []
     session[PREFETCH_QUEUE_KEY] = queue
     return queue
+
+
+def drop_unrelated_lecture_buffers(session: dict[str, Any], text: str, step_id: str) -> None:
+    """Keep a matching opening buffer; drop leftover slides from a prior map."""
+    session.pop(PREFETCH_QUEUE_KEY, None)
+    ready = _ready_buffers(session)
+    step_key = step_id.strip()
+    for key in list(ready):
+        parked = ready.get(key)
+        if not isinstance(parked, LecturePrefetch) or not parked.matches(text, step_key):
+            ready.pop(key, None)
 
 
 async def cancel_lecture_prefetch(session: dict[str, Any]) -> None:

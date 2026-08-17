@@ -1,4 +1,4 @@
-"""Tests for ``db_rls`` loader helpers (no live PostgreSQL)."""
+"""Tests for ``utils.db_rls`` loader helpers (no live PostgreSQL)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 def test_db_rls_package_exists():
     """Test db rls package exists."""
-    path = _PROJECT_ROOT / "db_rls" / "policy_builder.py"
+    path = _PROJECT_ROOT / "utils" / "db_rls" / "policy_builder.py"
     assert path.is_file()
 
 

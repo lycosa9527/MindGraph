@@ -70,6 +70,7 @@ class ClassroomJobRequest(BaseModel):
     audience_level: str = Field(default="", max_length=64)
     audience_title: str = Field(default="", max_length=128)
     language: str = Field(default="zh", max_length=16)
+    llm_model: str = Field(default="", max_length=64)
     reuse: bool = True
 
 
@@ -91,6 +92,7 @@ def _normalize_settings(body: ClassroomJobRequest) -> dict[str, Any]:
         "audience_level": audience,
         "audience_title": (body.audience_title or "").strip()[:128],
         "language": (body.language or "zh").strip() or "zh",
+        "llm_model": (body.llm_model or "").strip()[:64],
     }
 
 
@@ -163,6 +165,7 @@ async def get_job_by_diagram(
     diagram_id: str,
     request: Request,
     mode: Optional[str] = Query(default=None, max_length=32),
+    llm_model: Optional[str] = Query(default=None, max_length=64),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db_with_request_rls),
 ) -> dict[str, Any]:
@@ -173,7 +176,12 @@ async def get_job_by_diagram(
     user_id = int(current_user.id)
     repo = MindClassroomJobRepository(db)
     wanted = mode.strip() if mode and mode.strip() in _MODES else "slide_deck"
-    row = await repo.latest_job_for_diagram(user_id=user_id, diagram_id=cleaned, mode=wanted)
+    row = await repo.latest_job_for_diagram(
+        user_id=user_id,
+        diagram_id=cleaned,
+        mode=wanted,
+        llm_model=(llm_model or "").strip() or None,
+    )
     if row is not None:
         row = await _refresh_queued_job(row, db)
         await ensure_transcript_on_server(row.result_json)
@@ -286,10 +294,12 @@ async def delete_classroom_job(
     keep_shared_transcript = False
     if transcript_key and row is not None and row.diagram_id:
         row_mode = (row.settings or {}).get("mode")
+        row_llm = (row.settings or {}).get("llm_model")
         siblings = await repo.list_jobs_for_diagram(
             user_id=int(row.user_id),
             diagram_id=str(row.diagram_id),
             mode=str(row_mode) if row_mode else None,
+            llm_model=str(row_llm).strip() if row_llm else None,
         )
         keep_shared_transcript = any(
             sibling.id != job_id and transcript_key_from_result(sibling.result_json) == transcript_key

@@ -27,14 +27,26 @@ import {
   saveMindClassroomTone,
   saveMindClassroomTourScope,
 } from '@/config/mindClassroom'
+import { useAiContentLevelStore } from '@/stores/aiContentLevel'
 import { useDiagramStore } from '@/stores/diagram'
+import { useLLMResultsStore } from '@/stores/llmResults'
+import { useUIStore } from '@/stores/ui'
+import { collectLiveNodeIds } from '@/utils/mindClassroomRemoteSteps'
+import {
+  classroomPrepSettingsOf,
+  emptyMindClassroomPrep,
+  parkMindClassroomPrep,
+  type MindClassroomPrepSettings,
+  type MindClassroomPrepSnapshot,
+  type MindClassroomVoiceWarmup,
+} from '@/utils/mindClassroomPrepSlot'
 import {
   expandLectureFocusNodeIds,
   type MindClassroomLectureStep,
 } from '@/utils/mindClassroomScript'
 
+export type { MindClassroomVoiceWarmup } from '@/utils/mindClassroomPrepSlot'
 export type MindClassroomLectureStatus = 'idle' | 'running' | 'paused'
-export type MindClassroomVoiceWarmup = 'idle' | 'loading' | 'ready' | 'failed'
 
 export const useMindClassroomStore = defineStore('mindClassroom', () => {
   const diagramStore = useDiagramStore()
@@ -58,11 +70,16 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
   const jobProgress = ref<Record<string, unknown> | null>(null)
   const jobError = ref<string | null>(null)
   const preparedSteps = ref<MindClassroomLectureStep[]>([])
+  const specNodeIds = ref<string[]>([])
+  const prepSettings = ref<MindClassroomPrepSettings | null>(null)
   const voiceWarmup = ref<MindClassroomVoiceWarmup>('idle')
   const startInFlight = ref(false)
   const speakGeneration = ref(0)
   const queueGeneration = ref(0)
   const preLectureCollapsedPaths = ref<string[] | null>(null)
+  const activePrepKey = ref('')
+  const unsavedPrepEpoch = ref(0)
+  const prepByKey = ref<Record<string, MindClassroomPrepSnapshot>>({})
 
   watch(mastery, (value) => {
     saveMindClassroomMastery(value)
@@ -188,8 +205,30 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     if (next.error !== undefined) jobError.value = next.error
   }
 
-  function setPreparedSteps(next: MindClassroomLectureStep[]): void {
+  function livePrepSettings(): MindClassroomPrepSettings {
+    return classroomPrepSettingsOf({
+      mode: presentation.value,
+      mastery: mastery.value,
+      tone: tone.value,
+      tourScope: tourScope.value,
+      slideStyle: slideStyle.value,
+      audienceLevel: useAiContentLevelStore().level,
+      language: useUIStore().language,
+      llmModel: useLLMResultsStore().selectedModel,
+    })
+  }
+
+  function setPreparedSteps(next: MindClassroomLectureStep[], nodeIds?: string[]): void {
     preparedSteps.value = next
+    if (!next.length) {
+      specNodeIds.value = []
+      prepSettings.value = null
+      return
+    }
+    specNodeIds.value = nodeIds?.length
+      ? nodeIds
+      : [...collectLiveNodeIds(diagramStore.data?.nodes)]
+    prepSettings.value = livePrepSettings()
   }
 
   function setVoiceWarmup(next: MindClassroomVoiceWarmup): void {
@@ -214,16 +253,74 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     preLectureCollapsedPaths.value = next
   }
 
-  function clearPrepared(): void {
-    preparedSteps.value = []
-    voiceWarmup.value = 'idle'
-    jobId.value = null
-    jobStatus.value = null
-    jobProgress.value = null
-    jobError.value = null
+  function livePrepSnapshot(): MindClassroomPrepSnapshot {
+    return {
+      jobId: jobId.value,
+      jobStatus: jobStatus.value,
+      jobProgress: jobProgress.value,
+      jobError: jobError.value,
+      preparedSteps: preparedSteps.value,
+      voiceWarmup: voiceWarmup.value,
+      specNodeIds: specNodeIds.value,
+      prepSettings: prepSettings.value,
+    }
   }
 
-  function clearSession(): void {
+  function applyPrepSnapshot(next: MindClassroomPrepSnapshot): void {
+    jobId.value = next.jobId
+    jobStatus.value = next.jobStatus
+    jobProgress.value = next.jobProgress
+    jobError.value = next.jobError
+    preparedSteps.value = next.preparedSteps
+    voiceWarmup.value = next.voiceWarmup
+    specNodeIds.value = next.specNodeIds
+    prepSettings.value = next.prepSettings
+  }
+
+  function listPreparedJobs(): Array<{ id: string; status: string | null }> {
+    const rows: Array<{ id: string; status: string | null }> = []
+    const seen = new Set<string>()
+    const push = (id: string | null, status: string | null): void => {
+      if (!id || seen.has(id)) return
+      seen.add(id)
+      rows.push({ id, status })
+    }
+    push(jobId.value, jobStatus.value)
+    for (const snap of Object.values(prepByKey.value)) {
+      push(snap.jobId, snap.jobStatus)
+    }
+    return rows
+  }
+
+  function activatePrepKey(nextKey: string): boolean {
+    if (!nextKey || nextKey === activePrepKey.value) return false
+    if (activePrepKey.value) {
+      prepByKey.value = {
+        ...prepByKey.value,
+        [activePrepKey.value]: parkMindClassroomPrep(livePrepSnapshot()),
+      }
+    }
+    activePrepKey.value = nextKey
+    applyPrepSnapshot(prepByKey.value[nextKey] ?? emptyMindClassroomPrep())
+    startInFlight.value = false
+    return true
+  }
+
+  function clearPrepared(): void {
+    applyPrepSnapshot(emptyMindClassroomPrep())
+    if (!activePrepKey.value) return
+    const next = { ...prepByKey.value }
+    delete next[activePrepKey.value]
+    prepByKey.value = next
+  }
+
+  function clearAllPrepared(): void {
+    queueGeneration.value += 1
+    applyPrepSnapshot(emptyMindClassroomPrep())
+    prepByKey.value = {}
+  }
+
+  function endSession(): void {
     status.value = 'idle'
     activeMode.value = null
     activeTourScope.value = null
@@ -231,7 +328,16 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     stepIndex.value = 0
     transitioning.value = false
     narrating.value = false
+  }
+
+  function bumpUnsavedPrepEpoch(): void {
+    unsavedPrepEpoch.value += 1
+  }
+
+  function clearSession(): void {
+    endSession()
     clearPrepared()
+    bumpUnsavedPrepEpoch()
   }
 
   return {
@@ -255,11 +361,20 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     jobProgress,
     jobError,
     preparedSteps,
+    specNodeIds,
+    prepSettings,
     voiceWarmup,
     startInFlight,
     speakGeneration,
     queueGeneration,
     preLectureCollapsedPaths,
+    activePrepKey,
+    unsavedPrepEpoch,
+    activatePrepKey,
+    bumpUnsavedPrepEpoch,
+    livePrepSettings,
+    listPreparedJobs,
+    endSession,
     isLecturing,
     isSlideDeckMode,
     isCanvasTourMode,
@@ -288,6 +403,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     bumpQueueGeneration,
     setPreLectureCollapsedPaths,
     clearPrepared,
+    clearAllPrepared,
     beginSession,
     clearSession,
   }

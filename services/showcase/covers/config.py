@@ -22,5 +22,6 @@ def showcase_server_covers_enabled() -> bool:
 
 
 def celery_worker_needed_for_app() -> bool:
-    """True when the app should start/monitor a Celery worker."""
-    return bool(config.FEATURE_KNOWLEDGE_SPACE) or showcase_server_covers_enabled()
+    """True when Knowledge Space, Showcase covers, or Mind Classroom need a worker."""
+    # 思维讲堂 lecture jobs always enqueue Celery for signed-in start.
+    return True

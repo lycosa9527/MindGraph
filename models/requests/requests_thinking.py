@@ -402,7 +402,7 @@ class MindMapNodeExplainRequest(BaseModel):
         ...,
         min_length=8,
         max_length=100,
-        description="Client session id shared by the three parallel facet streams",
+        description="Client session id for the node-explain stream",
     )
     node_id: str = Field(..., min_length=1, max_length=120, description="Selected node id")
     node_label: str = Field(..., min_length=1, max_length=500, description="Selected node display text")

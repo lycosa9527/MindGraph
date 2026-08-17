@@ -21,3 +21,10 @@ export {
   type FloatingToolbarPosition,
   type FloatingToolbarSize,
 } from './useNodeFloatingToolbarPosition'
+export {
+  useNodeExplainBubblePosition,
+  resolveNodeExplainBubbleAnchor,
+  type ExplainBubblePlacement,
+  type ExplainBubblePosition,
+  type ExplainBubbleSize,
+} from './useNodeExplainBubblePosition'

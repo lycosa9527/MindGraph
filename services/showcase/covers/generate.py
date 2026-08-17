@@ -81,15 +81,17 @@ async def _emit_fail(
         key=attachment_key,
     )
     rls_user_id = int(author_id) if author_id is not None else int(user_id)
+    wrote = True
     try:
         # System RLS: cover-job WRITE EXISTS must not depend on author post SELECT.
         async with rls_async_session(RlsContext.system_bootstrap()) as db:
-            await mark_cover_job_failed(
+            written = await mark_cover_job_failed(
                 db,
                 post_id=post_id,
                 reason=reason,
                 celery_task_id=celery_task_id,
             )
+            wrote = written is not None
     except DATABASE_ERRORS as exc:
         logger.warning(
             "[ShowcaseCover] manifesto fail write post=%s user=%s org=%s: %s",
@@ -98,7 +100,8 @@ async def _emit_fail(
             organization_id,
             exc,
         )
-    await publish_showcase_cover_event(post_id, "cover_fail", reason=reason)
+    if wrote:
+        await publish_showcase_cover_event(post_id, "cover_fail", reason=reason)
     return False
 
 
@@ -166,13 +169,22 @@ async def generate_showcase_cover(
         )
 
         async with rls_async_session(RlsContext.system_bootstrap()) as db:
-            await mark_cover_job_running(
+            running = await mark_cover_job_running(
                 db,
                 post_id=post_id,
                 attachment_key=attachment_key,
                 celery_task_id=celery_task_id,
                 stage=STAGE_DOWNLOAD,
             )
+            if running is None:
+                showcase_wf_log(
+                    "cover_skip",
+                    "lease_lost",
+                    post_id=post_id,
+                    user_id=user_id,
+                    key=attachment_key,
+                )
+                return False
             result = await db.execute(select(ShowcasePost).where(ShowcasePost.id == post_id))
             post = result.scalar_one_or_none()
             if post is None:
@@ -276,7 +288,21 @@ async def generate_showcase_cover(
                 post.spec = spec_obj
                 flag_modified(post, "spec")
             # COS (or local) put already done; commit paths + cold succeeded together.
-            await bind_cover_job_succeeded(db, post_id=post_id)
+            bound = await bind_cover_job_succeeded(
+                db,
+                post_id=post_id,
+                celery_task_id=celery_task_id,
+            )
+            if bound is None:
+                await db.rollback()
+                showcase_wf_log(
+                    "cover_skip",
+                    "lease_lost",
+                    post_id=post_id,
+                    user_id=user_id,
+                    key=attachment_key,
+                )
+                return False
             await db.commit()
 
         await showcase_cache.invalidate_post(post_id)

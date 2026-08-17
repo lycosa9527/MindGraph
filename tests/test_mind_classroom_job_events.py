@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from services.mind_classroom.job_manifest import should_apply_job_stage
 from services.mind_classroom.job_events import (
     TERMINAL_JOB_STATUSES,
     build_progress_payload,
@@ -43,6 +44,8 @@ def test_job_event_dict_serializes_without_request() -> None:
         error_message=None,
         diagram_id="diag-1",
         settings={"mode": "canvas_tour", "tour_scope": "main_branch"},
+        spec_hash="abc",
+        spec_snapshot={"nodes": [{"id": "n1"}], "connections": []},
         result_json={"steps": [{"id": "s1", "caption": "Hello"}], "partial": True},
         celery_task_id="task-1",
         created_at=None,
@@ -53,6 +56,8 @@ def test_job_event_dict_serializes_without_request() -> None:
     assert payload["status"] == "generating"
     assert payload["result_json"]["partial"] is True
     assert payload["progress"]["in_flight"] == 2
+    assert payload["spec_node_ids"] == ["n1"]
+    assert payload["spec_hash"] == "abc"
 
 
 def test_ready_is_terminal_for_sse() -> None:
@@ -60,3 +65,11 @@ def test_ready_is_terminal_for_sse() -> None:
     assert "ready" in TERMINAL_JOB_STATUSES
     assert "partial" in TERMINAL_JOB_STATUSES
     assert "generating" not in TERMINAL_JOB_STATUSES
+
+
+def test_cancelled_job_does_not_resurrect_to_generating() -> None:
+    """In-flight prefix writes must not revive a cancelled manifesto."""
+    assert should_apply_job_stage("cancelled", "generating") is False
+    assert should_apply_job_stage("ready", "generating") is False
+    assert should_apply_job_stage("generating", "ready") is True
+    assert should_apply_job_stage("generating", "generating") is True

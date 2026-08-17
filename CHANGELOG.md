@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.9] - 2026-08-18
+
+> **节点解释 is a short bubble beside the node; 思维讲堂 prep stays per map and LLM.**
+
+### Changed
+
+- **Node explain bubble** — 节点解释 now streams one everyday gloss (~25–30 words) into a speech bubble anchored around the selected node. Click empty canvas, press Esc, or use the close button to dismiss. The old three-panel modal is gone.
+- **Classroom prep slots** — Switching maps or the canvas LLM parks the in-flight 思维讲堂 job (progress, prepared steps, voice warmup) and restores it when you come back. Jobs and transcripts are keyed by diagram + LLM so a reuse lookup cannot attach another model's script.
+- **Ready toast** — When first-slide voice is playable, a global toast opens the 思维讲堂 modal (skipped if a lecture is already running).
+- **Autoplay prefetch** — Playing slide N warms only N+1; a manual jump TTS the landed caption instead of the old three-slide bank.
+- **Showcase cover lease** — A later Celery run no longer overwrites a cover job it does not own. The feed spinner follows `converting_preview` / `generating_cover` and attaches SSE; auto-enqueue stays off while a job is in flight. Unknown fail reasons are not retried.
+
+### Tests
+
+- `test_meaning_prompt_asks_for_short_everyday_gloss` / `test_english_meaning_prompt_asks_for_twenty_five_words`
+- `frontend/tests/useNodeExplainBubblePosition.spec.ts` — right / left / below placement
+- `frontend/tests/mindClassroomPrepSlot.spec.ts` — park/restore per diagram+LLM
+- `tests/test_mind_classroom_job_match.py` — spec/LLM/live-node match
+- `tests/test_lecture_autoplay_prefetch.py` — next-slide only
+- `tests/test_showcase_cover_job_manifest.py` — lease lost / in-flight block
+
+## [5.180.8] - 2026-08-18
+
+> **Repo root cleanup: MindChunk lives under knowledge, Locust loadtests are gone, and `storage/` is runtime-only.**
+
+### Changed
+
+- **MindChunk package** — Moved `llm_chunking/` to [`services/knowledge/llm_chunking/`](services/knowledge/llm_chunking/). Imports and logger lists follow the knowledge package; CI pylint now covers the chunker.
+- **RLS SQL package** — Moved `db_rls/` to [`utils/db_rls/`](utils/db_rls/) so it sits with runtime RLS helpers in `utils/db/` without colliding with PyPI `alembic`. Migrations and dump scripts import `utils.db_rls`.
+- **Load tests** — Removed unused `loadtests/collab` Locust harness, [`.github/workflows/nightly-collab.yml`](.github/workflows/nightly-collab.yml), and `typings/locust`. Collab soaks stay on [`scripts/collab_synthetic_probe.py`](scripts/collab_synthetic_probe.py) and the online-collab runbook.
+- **Runtime storage** — Stopped tracking leftover `storage/qdrant` lock files. `.gitignore` now ignores the whole `storage/` tree (library pages, knowledge docs, tiktoken cache). Library covers were never migrated to COS because the public library module is unused.
+
 ## [5.180.7] - 2026-08-18
 
 > **思维讲堂 job progress is Redis/SSE — the Start button no longer polls every 1.5s.**

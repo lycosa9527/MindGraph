@@ -18,8 +18,8 @@ def test_normalize_facet_defaults_unknown_to_meaning() -> None:
     assert _normalize_facet("other") == "meaning"
 
 
-def test_meaning_prompt_asks_for_direct_topic_definition() -> None:
-    """Meaning facet should ask for a clean definition from the topic's perspective."""
+def test_meaning_prompt_asks_for_short_everyday_gloss() -> None:
+    """Meaning facet should ask for a short everyday gloss, not a long definition."""
     prompt = _build_facet_prompt(
         facet="meaning",
         node_label="光合作用",
@@ -33,11 +33,30 @@ def test_meaning_prompt_asks_for_direct_topic_definition() -> None:
     )
     assert "光合作用" in prompt
     assert "中心主题：植物" in prompt
-    assert "清晰定义" in prompt
-    assert "先答本质" in prompt
+    assert "日常口语" in prompt
+    assert "40–50 字" in prompt
     assert "不要讲层级位置" in prompt
     assert "不要写认知冲突" in prompt
     assert "不要列问题" in prompt
+
+
+def test_english_meaning_prompt_asks_for_twenty_five_words() -> None:
+    """English meaning facet should cap the gloss at about 25–30 words."""
+    prompt = _build_facet_prompt(
+        facet="meaning",
+        node_label="Apple",
+        topic="Fruit",
+        diagram_type="mindmap",
+        top_level_branches=["Citrus", "Berries"],
+        ancestor_path=[],
+        sibling_branches=["Pear"],
+        child_branches=[],
+        language="en",
+    )
+    assert "Apple" in prompt
+    assert "25–30 words" in prompt
+    assert "red fruit that grows on trees" in prompt
+    assert "No hierarchy lecture" in prompt
 
 
 def test_conflict_prompt_excludes_full_definition() -> None:

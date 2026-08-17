@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { eventBus } from '@/composables/core/useEventBus'
 import {
   beginFirstLectureSlideWarmup,
+  markLectureVoiceWarmupFailed,
   markLectureVoiceWarmupReady,
   requestFirstLectureSlidePrefetch,
   resetLectureTtsCatchup,
@@ -76,6 +77,18 @@ describe('warmupLectureTts', () => {
     })
     markLectureVoiceWarmupReady('s1')
     expect(classroom.voiceWarmup).toBe('ready')
+    expect(emitSpy).toHaveBeenCalledWith('classroom:ready', {})
+    emitSpy.mockRestore()
+  })
+
+  it('does not toast ready when first-slide TTS fails', () => {
+    const classroom = useMindClassroomStore()
+    classroom.setPreparedSteps([first])
+    const emitSpy = vi.spyOn(eventBus, 'emit')
+    beginFirstLectureSlideWarmup([first], true)
+    markLectureVoiceWarmupFailed('s1')
+    expect(classroom.voiceWarmup).toBe('failed')
+    expect(emitSpy).not.toHaveBeenCalledWith('classroom:ready', {})
     emitSpy.mockRestore()
   })
 
@@ -115,17 +128,38 @@ describe('warmupLectureTts', () => {
       caption: 'Later slide',
     }
     beginFirstLectureSlideWarmup([opening, later], true)
-    expect(emitSpy).toHaveBeenCalledTimes(2)
-    expect(emitSpy).toHaveBeenLastCalledWith('kitty:lecture_prefetch_requested', {
-      text: 'Later slide',
-      stepId: 'branch-1',
-    })
+    expect(emitSpy).toHaveBeenCalledTimes(1)
     beginFirstLectureSlideWarmup([opening, later], true)
-    expect(emitSpy).toHaveBeenCalledTimes(2)
+    expect(emitSpy).toHaveBeenCalledTimes(1)
     emitSpy.mockRestore()
   })
 
-  it('catches up TTS when a later family lands on the job', () => {
+  it('prefetches again when a new map reuses the same slide id', () => {
+    const emitSpy = vi.spyOn(eventBus, 'emit')
+    const classroom = useMindClassroomStore()
+    tryWarmupFromJobSteps(
+      [{ id: 'overview-0', kind: 'overview', caption: 'Deepseek opening' }],
+      new Set(['deepseek-a']),
+      true
+    )
+    expect(emitSpy).toHaveBeenCalledTimes(1)
+    classroom.setVoiceWarmup('idle')
+    classroom.setPreparedSteps([])
+    resetLectureTtsCatchup()
+    tryWarmupFromJobSteps(
+      [{ id: 'overview-0', kind: 'overview', caption: 'Qwen opening' }],
+      new Set(['qwen-a']),
+      true
+    )
+    expect(emitSpy).toHaveBeenCalledTimes(2)
+    expect(emitSpy).toHaveBeenLastCalledWith('kitty:lecture_prefetch_requested', {
+      text: 'Qwen opening',
+      stepId: 'overview-0',
+    })
+    emitSpy.mockRestore()
+  })
+
+  it('does not prefetch later slides when a later family lands on the job', () => {
     const emitSpy = vi.spyOn(eventBus, 'emit')
     tryWarmupFromJobSteps(
       [{ id: 'overview-0', kind: 'overview', caption: 'Welcome to the map' }],
@@ -143,7 +177,7 @@ describe('warmupLectureTts', () => {
         true
       )
     ).toBe(true)
-    expect(emitSpy).toHaveBeenCalledTimes(2)
+    expect(emitSpy).toHaveBeenCalledTimes(1)
     expect(useMindClassroomStore().preparedSteps).toHaveLength(2)
     emitSpy.mockRestore()
   })

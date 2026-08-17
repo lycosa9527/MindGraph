@@ -1,6 +1,6 @@
 """RLS function SQL helpers."""
 
-from db_rls.functions_sql import (
+from utils.db_rls.functions_sql import (
     build_grant_rls_functions_to_app_sql,
     rls_functions_upgrade_statements,
 )

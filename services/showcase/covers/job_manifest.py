@@ -56,12 +56,30 @@ NON_RETRYABLE_COVER_REASONS = frozenset(
 def cover_reason_is_retryable(reason: Optional[str]) -> bool:
     """True when Celery should retry after a cover soft-fail."""
     if not reason:
-        return True
+        return False
     if reason.startswith("unsupported_suffix="):
         return False
     if reason.startswith("enqueue_failed:"):
         return False
     return reason not in NON_RETRYABLE_COVER_REASONS
+
+
+def cover_job_lease_lost(owned_task_id: Optional[str], celery_task_id: Optional[str]) -> bool:
+    """True when this Celery run no longer owns the manifesto."""
+    if not celery_task_id or not owned_task_id:
+        return False
+    return owned_task_id != celery_task_id
+
+
+def snapshot_job_is_in_flight(snapshot: Optional[dict[str, Any]]) -> bool:
+    """True when a manifesto snapshot is actively queued/running (not stale)."""
+    if snapshot is None:
+        return False
+    status_raw = snapshot.get("status")
+    updated_raw = snapshot.get("updated_at")
+    status_val = status_raw if isinstance(status_raw, str) else None
+    updated_at = updated_raw if isinstance(updated_raw, datetime) else None
+    return job_is_in_flight(status_val, updated_at)
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -199,6 +217,8 @@ async def mark_cover_job_running(
 ) -> Optional[ShowcaseCoverJob]:
     """Mark job running and bump attempt_count for this Celery try."""
     job = await get_cover_job(db, post_id)
+    if job is not None and cover_job_lease_lost(job.celery_task_id, celery_task_id):
+        return None
     if job is None:
         job = ShowcaseCoverJob(post_id=post_id, attempts=[], max_attempts=DEFAULT_MAX_ATTEMPTS)
         db.add(job)
@@ -238,9 +258,12 @@ async def bind_cover_job_succeeded(
     db: AsyncSession,
     *,
     post_id: str,
-) -> ShowcaseCoverJob:
+    celery_task_id: Optional[str] = None,
+) -> Optional[ShowcaseCoverJob]:
     """Mutate job to succeeded in the open session (caller commits with post paths)."""
     job = await get_cover_job(db, post_id)
+    if job is not None and cover_job_lease_lost(job.celery_task_id, celery_task_id):
+        return None
     if job is None:
         job = ShowcaseCoverJob(post_id=post_id, attempts=[], max_attempts=DEFAULT_MAX_ATTEMPTS)
         db.add(job)
@@ -262,6 +285,11 @@ async def mark_cover_job_failed(
 ) -> Optional[ShowcaseCoverJob]:
     """Persist terminal or intermediate failure on the cold manifesto."""
     job = await get_cover_job(db, post_id)
+    if job is not None:
+        if cover_job_lease_lost(job.celery_task_id, celery_task_id):
+            return None
+        if job_is_succeeded(job.status):
+            return None
     if job is None:
         job = ShowcaseCoverJob(post_id=post_id, attempts=[], max_attempts=DEFAULT_MAX_ATTEMPTS)
         db.add(job)
@@ -290,11 +318,19 @@ def mark_cover_job_failed_sync(
     reason: str,
     organization_id: Optional[int] = None,
     celery_task_id: Optional[str] = None,
-) -> None:
-    """Sync fail update for Celery time-limit / retry paths."""
+) -> bool:
+    """Sync fail update for Celery time-limit / retry paths.
+
+    Returns False when the write was skipped (lease lost or already succeeded).
+    """
     try:
         with rls_sync_session(_manifesto_system_context()) as db:
             job = db.execute(select(ShowcaseCoverJob).where(ShowcaseCoverJob.post_id == post_id)).scalar_one_or_none()
+            if job is not None:
+                if cover_job_lease_lost(job.celery_task_id, celery_task_id):
+                    return False
+                if job_is_succeeded(job.status):
+                    return False
             if job is None:
                 job = ShowcaseCoverJob(
                     post_id=post_id,
@@ -316,6 +352,7 @@ def mark_cover_job_failed_sync(
                 celery_task_id=celery_task_id,
             )
             db.commit()
+            return True
     except DATABASE_ERRORS as exc:
         logger.warning(
             "[ShowcaseCoverJob] sync fail mark post=%s user=%s org=%s: %s",
@@ -324,6 +361,7 @@ def mark_cover_job_failed_sync(
             organization_id,
             exc,
         )
+        return False
 
 
 def mark_cover_job_queued_sync(
@@ -373,19 +411,6 @@ def mark_cover_job_queued_sync(
         return True
 
 
-async def cover_job_blocks_auto_enqueue(
-    db: AsyncSession,
-    *,
-    post_id: str,
-    attachment_key: str,
-) -> bool:
-    """True when automatic backfill must not re-queue a cold-succeeded job."""
-    job = await get_cover_job(db, post_id)
-    if job is None:
-        return False
-    return job_is_succeeded(job.status) and job.attachment_key == attachment_key
-
-
 def cover_job_blocks_auto_enqueue_sync(
     *,
     post_id: str,
@@ -393,7 +418,7 @@ def cover_job_blocks_auto_enqueue_sync(
     user_id: int,
     organization_id: Optional[int] = None,
 ) -> bool:
-    """Sync variant for enqueue helpers without an open AsyncSession."""
+    """True when automatic backfill must not re-queue (succeeded or still in-flight)."""
     snapshot = get_cover_job_snapshot_sync(
         post_id=post_id,
         user_id=user_id,
@@ -401,7 +426,11 @@ def cover_job_blocks_auto_enqueue_sync(
     )
     if snapshot is None:
         return False
-    return job_is_succeeded(snapshot.get("status")) and snapshot.get("attachment_key") == attachment_key
+    if snapshot.get("attachment_key") != attachment_key:
+        return False
+    if job_is_succeeded(snapshot.get("status")):
+        return True
+    return snapshot_job_is_in_flight(snapshot)
 
 
 async def load_post_attachment_key(db: AsyncSession, post_id: str) -> Optional[str]:

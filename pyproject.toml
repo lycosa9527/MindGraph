@@ -16,6 +16,8 @@ exclude = [
     "archive/**",
     "tmp",
     "tmp/**",
+    "storage",
+    "storage/**",
 ]
 stubPath = "typings"
 # Miniconda env (conda activate python313 or mindgraph); .venv excluded from analysis

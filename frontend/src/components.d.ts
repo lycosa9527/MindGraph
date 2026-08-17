@@ -309,7 +309,7 @@ declare module 'vue' {
     MindMapLegacyBranchNode: typeof import('./components/diagram/nodes/mindMap/MindMapLegacyBranchNode.vue')['default']
     MindMapLegacyCanvas: typeof import('./components/diagram/MindMapLegacyCanvas.vue')['default']
     MindMapLegacyTopicNode: typeof import('./components/diagram/nodes/mindMap/MindMapLegacyTopicNode.vue')['default']
-    MindMapNodeExplainModal: typeof import('./components/canvas/MindMapNodeExplainModal.vue')['default']
+    MindMapNodeExplainBubble: typeof import('./components/canvas/MindMapNodeExplainBubble.vue')['default']
     MindMapNumberingControls: typeof import('./components/canvas/MindMapNumberingControls.vue')['default']
     MindMapOneSentencePanel: typeof import('./components/canvas/MindMapOneSentencePanel.vue')['default']
     MindMapOrthogonalEdge: typeof import('./components/diagram/edges/MindMapOrthogonalEdge.vue')['default']

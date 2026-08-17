@@ -37,6 +37,16 @@ _TRANSCRIPT_DIAGRAM_RE = re.compile(
     r"\.md$",
     re.IGNORECASE,
 )
+_TRANSCRIPT_DIAGRAM_LLM_RE = re.compile(
+    rf"^{re.escape(TRANSCRIPT_PREFIX)}/"
+    r"(\d{1,12})/"
+    r"([0-9a-fA-F-]{8,36})/"
+    r"(canvas_tour|slide_deck)/"
+    r"([a-z0-9_-]{1,64})"
+    r"\.md$",
+    re.IGNORECASE,
+)
+_LLM_UNSAFE = re.compile(r"[^a-z0-9_-]+")
 
 
 def build_slide_key(*, slide_id: str | None = None, suffix: str = ".png") -> str:
@@ -58,22 +68,34 @@ def normalize_transcript_mode(mode: str | None) -> str:
     return "canvas_tour"
 
 
+def normalize_transcript_llm(llm_model: str | None) -> str:
+    """Safe path segment for the visible LLM map slot."""
+    cleaned = _LLM_UNSAFE.sub("", (llm_model or "").strip().lower())
+    return cleaned[:64]
+
+
 def build_transcript_key(
     job_id: str,
     *,
     user_id: int | None = None,
     diagram_id: str | None = None,
     mode: str | None = None,
+    llm_model: str | None = None,
 ) -> str:
     """Logical key for lecture markdown.
 
-    Library maps use one replaceable backup per user+diagram+mode. Jobs without a
-    diagram id keep a per-job key.
+    Library maps use one replaceable backup per user+diagram+mode+LLM slot.
+    Jobs without a diagram id keep a per-job key. Empty llm_model keeps the
+    legacy user/diagram/mode path so older objects stay readable.
     """
     diagram = (diagram_id or "").strip()
     owner = int(user_id) if user_id is not None else 0
     if owner > 0 and diagram and _ID_RE.match(diagram):
-        return f"{TRANSCRIPT_PREFIX}/{owner}/{diagram}/{normalize_transcript_mode(mode)}.md"
+        mode_name = normalize_transcript_mode(mode)
+        slot = normalize_transcript_llm(llm_model)
+        if slot:
+            return f"{TRANSCRIPT_PREFIX}/{owner}/{diagram}/{mode_name}/{slot}.md"
+        return f"{TRANSCRIPT_PREFIX}/{owner}/{diagram}/{mode_name}.md"
     cleaned = (job_id or "").strip()
     if not _ID_RE.match(cleaned):
         raise ValueError(f"Invalid job_id: {job_id}")
@@ -87,20 +109,31 @@ def job_id_from_transcript_key(logical_key: str) -> Optional[str]:
     return match.group(1) if match else None
 
 
-def parse_diagram_transcript_key(logical_key: str) -> Optional[tuple[int, str, str]]:
-    """Return (user_id, diagram_id, mode) for a replaceable diagram transcript."""
+def parse_diagram_transcript_key(logical_key: str) -> Optional[tuple[int, str, str, str]]:
+    """Return (user_id, diagram_id, mode, llm_model) for a diagram transcript."""
     normalized = logical_key.lstrip("/").replace("\\", "/")
+    slotted = _TRANSCRIPT_DIAGRAM_LLM_RE.match(normalized)
+    if slotted is not None:
+        return (
+            int(slotted.group(1)),
+            slotted.group(2),
+            slotted.group(3).lower(),
+            slotted.group(4).lower(),
+        )
     match = _TRANSCRIPT_DIAGRAM_RE.match(normalized)
     if match is None:
         return None
-    return int(match.group(1)), match.group(2), match.group(3).lower()
+    return int(match.group(1)), match.group(2), match.group(3).lower(), ""
 
 
 def is_classroom_logical_key(logical_key: str) -> bool:
     """True if key is a serveable classroom slide or transcript."""
     normalized = logical_key.lstrip("/").replace("\\", "/")
     return bool(
-        _SLIDE_RE.match(normalized) or _TRANSCRIPT_JOB_RE.match(normalized) or _TRANSCRIPT_DIAGRAM_RE.match(normalized)
+        _SLIDE_RE.match(normalized)
+        or _TRANSCRIPT_JOB_RE.match(normalized)
+        or _TRANSCRIPT_DIAGRAM_RE.match(normalized)
+        or _TRANSCRIPT_DIAGRAM_LLM_RE.match(normalized)
     )
 
 

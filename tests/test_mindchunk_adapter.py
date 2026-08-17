@@ -11,12 +11,12 @@ from typing import cast
 
 import pytest
 
-from llm_chunking.agents.structure_agent import StructureAgent
-from llm_chunking.models import ChildChunk, DocumentStructure, ParentChunk, QAChunk
-from llm_chunking.models import Chunk as LCChunk
 from models.domain.knowledge_space import KnowledgeDocument
 from services.knowledge import document_processing as dp
 from services.knowledge.chunking_service import MindChunkAdapter
+from services.knowledge.llm_chunking.agents.structure_agent import StructureAgent
+from services.knowledge.llm_chunking.models import ChildChunk, DocumentStructure, ParentChunk, QAChunk
+from services.knowledge.llm_chunking.models import Chunk as LCChunk
 
 
 class _FakeChunker:

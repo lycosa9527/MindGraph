@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   resolveShowcaseMediaStatus,
   showcaseCoverJobTooltip,
+  showcaseCoverMediaPending,
   showcaseMediaStatusChipClass,
   showcaseMediaStatusLabelKey,
 } from '@/composables/admin/showcaseMediaStatus'
@@ -103,6 +104,32 @@ describe('resolveShowcaseMediaStatus', () => {
         })
       )
     ).toBe('cover_failed')
+  })
+
+  it('treats converting and generating as cover-pending', () => {
+    expect(
+      showcaseCoverMediaPending(
+        basePost({
+          attachment_url: '/api/showcase/assets/showcase/posts/a/attachment.docx',
+        })
+      )
+    ).toBe(true)
+    expect(
+      showcaseCoverMediaPending(
+        basePost({
+          media_status: 'generating_cover',
+          attachment_url: '/api/showcase/assets/showcase/posts/a/attachment.pdf',
+        })
+      )
+    ).toBe(true)
+    expect(
+      showcaseCoverMediaPending(
+        basePost({
+          media_status: 'cover_ready',
+          thumbnail_url: '/api/showcase/assets/showcase/posts/a/thumbnail.png',
+        })
+      )
+    ).toBe(false)
   })
 
   it('derives cover_ready when cover and preview both exist', () => {

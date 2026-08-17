@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Awaitable
 from typing import Optional
 
 from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
 
 from config.celery import celery_app
 from services.monitoring.error_reporting import record_exception_from_celery
+from services.redis.redis_async_client import close_async_redis
 from services.showcase.covers.events import publish_showcase_cover_event_sync
 from services.showcase.covers.generate import generate_showcase_cover
 from services.showcase.covers.job_manifest import (
@@ -34,6 +36,13 @@ def _rls_user_id(user_id: int, author_id: Optional[int]) -> int:
     return int(author_id) if author_id is not None else int(user_id)
 
 
+async def _run_and_close(coro: Awaitable[object]) -> bool:
+    try:
+        return bool(await coro)
+    finally:
+        await close_async_redis()
+
+
 def _persist_fail(
     *,
     post_id: str,
@@ -43,14 +52,15 @@ def _persist_fail(
     reason: str,
     celery_task_id: Optional[str],
 ) -> None:
-    mark_cover_job_failed_sync(
+    wrote = mark_cover_job_failed_sync(
         post_id=post_id,
         user_id=_rls_user_id(user_id, author_id),
         reason=reason,
         organization_id=organization_id,
         celery_task_id=celery_task_id,
     )
-    publish_showcase_cover_event_sync(post_id, "cover_fail", reason=reason)
+    if wrote:
+        publish_showcase_cover_event_sync(post_id, "cover_fail", reason=reason)
 
 
 def _requeue_for_retry(
@@ -114,13 +124,15 @@ def generate_cover_task(
     )
     try:
         ok = asyncio.run(
-            generate_showcase_cover(
-                post_id=post_id,
-                user_id=int(user_id),
-                attachment_key=attachment_key,
-                organization_id=organization_id,
-                author_id=int(author_id) if author_id is not None else int(user_id),
-                celery_task_id=task_id_str,
+            _run_and_close(
+                generate_showcase_cover(
+                    post_id=post_id,
+                    user_id=int(user_id),
+                    attachment_key=attachment_key,
+                    organization_id=organization_id,
+                    author_id=int(author_id) if author_id is not None else int(user_id),
+                    celery_task_id=task_id_str,
+                )
             )
         )
     except SoftTimeLimitExceeded as exc:

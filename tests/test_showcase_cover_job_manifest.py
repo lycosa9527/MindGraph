@@ -13,10 +13,12 @@ from services.showcase.covers.job_manifest import (
     COVER_JOB_RUNNING,
     COVER_JOB_SUCCEEDED,
     IN_FLIGHT_STALE_SECONDS,
+    cover_job_lease_lost,
     cover_job_public_payload,
     cover_reason_is_retryable,
     job_is_in_flight,
     job_is_succeeded,
+    snapshot_job_is_in_flight,
 )
 from services.showcase.media_status import (
     MEDIA_STATUS_CONVERTING_PREVIEW,
@@ -35,6 +37,26 @@ def test_cover_reason_retryable_classification() -> None:
     assert cover_reason_is_retryable("stale_attachment_key") is False
     assert cover_reason_is_retryable("unsupported_suffix=.xyz") is False
     assert cover_reason_is_retryable("enqueue_failed:broker down") is False
+    assert cover_reason_is_retryable(None) is False
+    assert cover_reason_is_retryable("") is False
+
+
+def test_cover_job_lease_lost() -> None:
+    """A superseded Celery task must not write the manifesto."""
+    assert cover_job_lease_lost("task-a", "task-b") is True
+    assert cover_job_lease_lost("task-a", "task-a") is False
+    assert cover_job_lease_lost(None, "task-a") is False
+    assert cover_job_lease_lost("task-a", None) is False
+
+
+def test_snapshot_job_is_in_flight() -> None:
+    """Snapshot helper matches job_is_in_flight and ignores stale rows."""
+    fresh = datetime.now(UTC)
+    assert snapshot_job_is_in_flight({"status": COVER_JOB_RUNNING, "updated_at": fresh}) is True
+    assert snapshot_job_is_in_flight({"status": COVER_JOB_FAILED, "updated_at": fresh}) is False
+    assert snapshot_job_is_in_flight(None) is False
+    stale = fresh - timedelta(seconds=IN_FLIGHT_STALE_SECONDS + 1)
+    assert snapshot_job_is_in_flight({"status": COVER_JOB_QUEUED, "updated_at": stale}) is False
 
 
 def test_manifesto_sync_writes_use_system_rls() -> None:

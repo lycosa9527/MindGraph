@@ -242,7 +242,7 @@ def run_server() -> None:
         else:
             logger.debug("[QDRANT] Skipping Qdrant (Knowledge Space feature is disabled)")
 
-        # 4. Celery — required for Knowledge Space; soft-start for Showcase covers
+        # 4. Celery — required for Knowledge Space, Showcase covers, and 思维讲堂
         celery_worker = None
         need_celery = celery_worker_needed_for_app()
         celery_hard_required = bool(config.FEATURE_KNOWLEDGE_SPACE)

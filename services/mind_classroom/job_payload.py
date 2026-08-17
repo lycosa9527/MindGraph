@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 from fastapi import Request
 
+from services.mind_classroom.job_match import spec_snapshot_node_ids
 from services.mind_classroom.storage_keys import classroom_public_asset_url
 
 
@@ -47,6 +48,8 @@ def job_event_dict(row: Any) -> dict[str, Any]:
         "error_message": row.error_message,
         "diagram_id": row.diagram_id,
         "settings": settings,
+        "spec_hash": getattr(row, "spec_hash", None),
+        "spec_node_ids": spec_snapshot_node_ids(getattr(row, "spec_snapshot", None)),
         "result_json": result,
         "celery_task_id": row.celery_task_id,
         "created_at": row.created_at.isoformat() if row.created_at else None,

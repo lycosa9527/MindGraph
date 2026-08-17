@@ -79,7 +79,7 @@ except ImportError:
 
 
 def celery_worker_needed_for_app() -> bool:
-    """True when Celery should be monitored for Knowledge Space or Showcase covers."""
+    """True when Celery should be monitored (KS, Showcase covers, 思维讲堂)."""
     if _covers_need_celery is not None:
         return _covers_need_celery()
     return bool(_CONFIG_AVAILABLE and config is not None and config.FEATURE_KNOWLEDGE_SPACE)

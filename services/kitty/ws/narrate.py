@@ -10,7 +10,11 @@ from services.kitty.audio.session_bridge import speak_kitty_final_reply
 from services.kitty.context.messaging import safe_websocket_send
 from services.kitty.session.runtime_state import voice_sessions
 from services.kitty.tts.cosyvoice_realtime import resolve_kitty_tts_enabled
-from services.kitty.tts.lecture_cache import log_lecture_tts, schedule_lecture_prefetch
+from services.kitty.tts.lecture_cache import (
+    drop_unrelated_lecture_buffers,
+    log_lecture_tts,
+    schedule_lecture_prefetch,
+)
 from services.kitty.ws.guards import KITTY_WS_MAX_TEXT_CHARS
 
 
@@ -42,12 +46,13 @@ async def handle_kitty_prefetch(
         step_id=step_id,
         detail=f"chars={len(text)}",
     )
+    drop_unrelated_lecture_buffers(session, text, step_id)
     schedule_lecture_prefetch(
         voice_session_id,
         text,
         step_id,
         notify_ws=websocket,
-        replace=False,
+        replace=True,
     )
 
 

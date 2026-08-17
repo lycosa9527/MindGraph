@@ -627,7 +627,6 @@ def setup_logging():
     # Set specific loggers to DEBUG
     for logger_name in [
         "services",
-        "llm_chunking",
         "tasks",
         "clients",
         "agents",

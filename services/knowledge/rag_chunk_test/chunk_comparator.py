@@ -21,6 +21,16 @@ from services.knowledge.chunking_service import Chunk, ChunkingService, MindChun
 from services.knowledge.rag_chunk_test.qa_generator import QAGenerator
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
+LLMSemanticChunker: Any = None
+HAS_LLM_CHUNKING = False
+try:
+    from services.knowledge.llm_chunking.chunker import LLMSemanticChunker as _LLMSemanticChunker
+
+    LLMSemanticChunker = _LLMSemanticChunker
+    HAS_LLM_CHUNKING = True
+except ImportError:
+    pass
+
 np: Any = None
 HAS_NUMPY = False
 try:
@@ -68,16 +78,6 @@ try:
 
     RecursiveCharacterTextSplitter = _RecursiveCharacterTextSplitter
     HAS_LANGCHAIN = True
-except ImportError:
-    pass
-
-LLMSemanticChunker: Any = None
-HAS_LLM_CHUNKING = False
-try:
-    from llm_chunking.chunker import LLMSemanticChunker as _LLMSemanticChunker
-
-    LLMSemanticChunker = _LLMSemanticChunker
-    HAS_LLM_CHUNKING = True
 except ImportError:
     pass
 
@@ -326,9 +326,7 @@ class ChunkComparator:
             # Create mindchunk service instance directly (thread-safe)
             # Need to create LLMSemanticChunker first, then wrap it
             if not HAS_LLM_CHUNKING or LLMSemanticChunker is None:
-                raise ValueError(
-                    "MindChunk chunking requires llm_chunking library. Install with: pip install llm-chunking"
-                )
+                raise ValueError("MindChunk chunking requires services.knowledge.llm_chunking")
 
             chunker = LLMSemanticChunker()
             service = MindChunkAdapter(chunker)

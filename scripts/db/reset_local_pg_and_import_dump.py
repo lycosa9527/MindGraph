@@ -21,7 +21,7 @@ from pathlib import Path
 
 from sqlalchemy.engine import make_url
 
-from db_rls.roles_sql import (
+from utils.db_rls.roles_sql import (
     build_create_roles_sql,
     build_ensure_postgresql_extensions_sql,
     build_grants_sql,

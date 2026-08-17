@@ -208,7 +208,6 @@ def setup_celery_logging():
     # Set all application loggers to DEBUG for verbose logging
     app_loggers = [
         "services",
-        "llm_chunking",
         "tasks",
         "clients",
         "agents",

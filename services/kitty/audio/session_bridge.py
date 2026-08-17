@@ -253,7 +253,12 @@ async def _tts_worker_loop(voice_session_id: str) -> None:
             if not _generation_is_current(voice_session_id, generation):
                 continue
             if prefetch_text:
-                schedule_lecture_prefetch(voice_session_id, prefetch_text, prefetch_step_id)
+                schedule_lecture_prefetch(
+                    voice_session_id,
+                    prefetch_text,
+                    prefetch_step_id,
+                    replace=False,
+                )
             if cached:
                 chunks, sample_rate = cached
                 mark_lecture_tts_start(live, chars=len(text))

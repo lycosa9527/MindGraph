@@ -42,7 +42,7 @@ import psycopg
 from sqlalchemy import text
 
 from config.database import DATABASE_URL, init_db, libpq_database_url
-from db_rls.roles_sql import build_grants_sql
+from utils.db_rls.roles_sql import build_grants_sql
 from scripts.db.rls_roles_bootstrap import ensure_postgresql_extensions
 from services.utils.error_types import (
     BACKGROUND_INFRA_ERRORS,

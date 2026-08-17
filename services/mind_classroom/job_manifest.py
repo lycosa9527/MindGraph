@@ -21,6 +21,16 @@ JOB_FAILED = "failed"
 JOB_CANCELLED = "cancelled"
 
 _ACTIVE = frozenset({JOB_QUEUED, JOB_PLANNING, JOB_GENERATING})
+_TERMINAL = frozenset({JOB_READY, JOB_PARTIAL, JOB_FAILED, JOB_CANCELLED})
+
+
+def should_apply_job_stage(previous: Optional[str], next_status: str) -> bool:
+    """Refuse writes that resurrect a cancelled or finished job."""
+    if previous == JOB_CANCELLED:
+        return False
+    if previous in _TERMINAL and next_status in _ACTIVE:
+        return False
+    return True
 
 
 def hash_spec_snapshot(spec: dict[str, Any]) -> str:
@@ -87,6 +97,8 @@ async def mark_job_stage(
             previous_status = row.status
             previous_stage = row.current_stage
             owned = row.celery_task_id
+        if not should_apply_job_stage(previous_status, status):
+            return
         await repo.update_job(
             job_id,
             status=status,

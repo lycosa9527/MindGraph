@@ -15,7 +15,8 @@ import KittyIpodClickWheel from '@/components/kitty/KittyIpodClickWheel.vue'
 import KittyMobileChatTranscript from '@/components/kitty/KittyMobileChatTranscript.vue'
 import KittyMobileDiagramPickerDropdown from '@/components/kitty/KittyMobileDiagramPickerDropdown.vue'
 import KittyMobileLlmModelRow from '@/components/kitty/KittyMobileLlmModelRow.vue'
-import MindMapNodeExplainModal from '@/components/canvas/MindMapNodeExplainModal.vue'
+import MindMapNodeExplainBubble from '@/components/canvas/MindMapNodeExplainBubble.vue'
+import type { ExplainBubblePosition } from '@/composables/canvasToolbar'
 import {
   useKittyAgent,
   useLanguage,
@@ -765,11 +766,19 @@ function handleClarifyChoice(choice: OneSentenceClarifyChoice): void {
 const {
   visible: nodeExplainVisible,
   target: nodeExplainTarget,
-  panels: nodeExplainPanels,
+  text: nodeExplainText,
+  error: nodeExplainError,
   loading: nodeExplainLoading,
   openExplain: openNodeExplain,
   close: closeNodeExplain,
 } = useMindMapNodeExplain()
+
+const mobileExplainPosition: ExplainBubblePosition = {
+  left: 0,
+  top: 0,
+  visible: false,
+  placement: 'below',
+}
 
 function handleChipActiveRetap(node: { id: string; text: string }): void {
   openNodeExplain(node.id, node.text)
@@ -1102,11 +1111,13 @@ function handleChipActiveRetap(node: { id: string; text: string }): void {
       </p>
     </div>
 
-    <MindMapNodeExplainModal
+    <MindMapNodeExplainBubble
       v-model:visible="nodeExplainVisible"
       :target="nodeExplainTarget"
-      :panels="nodeExplainPanels"
+      :text="nodeExplainText"
+      :error="nodeExplainError"
       :loading="nodeExplainLoading"
+      :position="mobileExplainPosition"
       @close="closeNodeExplain"
     />
   </div>

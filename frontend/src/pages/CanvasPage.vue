@@ -588,7 +588,7 @@ const showMindMapPresentationSideToolbar = computed(
 )
 
 const showBottomBar = computed(
-  () => !isMindMapPresentationMode.value && !mindClassroomSlideDeck.value
+  () => !isMindMapPresentationMode.value && !mindClassroomLecturing.value
 )
 
 const showMindMapShortcutGuide = computed(

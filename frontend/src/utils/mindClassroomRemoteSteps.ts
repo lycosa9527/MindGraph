@@ -18,6 +18,22 @@ export function collectLiveNodeIds(
   return ids
 }
 
+export function classroomJobFitsLiveNodes(
+  raw: MindClassroomRemoteStep[] | null | undefined,
+  liveIds: Set<string>
+): boolean {
+  if (!raw?.length) return true
+  const refs: string[] = []
+  for (const step of raw) {
+    for (const id of step.focus_node_ids ?? []) {
+      if (id) refs.push(id)
+    }
+    if (step.branch_node_id) refs.push(step.branch_node_id)
+  }
+  if (!refs.length) return true
+  return refs.some((id) => liveIds.has(id))
+}
+
 export function mapRemoteLectureSteps(
   raw: MindClassroomRemoteStep[],
   liveIds: Set<string>

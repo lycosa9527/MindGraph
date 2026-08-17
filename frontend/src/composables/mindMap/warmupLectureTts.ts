@@ -7,12 +7,12 @@ import { useMindClassroomStore } from '@/stores/mindClassroom'
 import { mapRemoteLectureSteps } from '@/utils/mindClassroomRemoteSteps'
 import type { MindClassroomLectureStep } from '@/utils/mindClassroomScript'
 
-const CATCHUP_SLIDES = 3
-
 const requestedPrefetchIds = new Set<string>()
+let warmupPrepKey = ''
 
 export function resetLectureTtsCatchup(): void {
   requestedPrefetchIds.clear()
+  warmupPrepKey = ''
 }
 
 export function requestLectureSlidePrefetch(step: MindClassroomLectureStep | undefined): void {
@@ -32,51 +32,60 @@ export function requestFirstLectureSlidePrefetch(
   requestLectureSlidePrefetch(steps[0])
 }
 
-export function requestLectureCatchupPrefetch(
-  steps: readonly MindClassroomLectureStep[],
-  voiceEnabled: boolean
-): void {
-  if (!voiceEnabled) return
-  let sent = 0
-  for (const step of steps) {
-    if (sent >= CATCHUP_SLIDES) return
-    if (!step.caption.trim()) continue
-    requestLectureSlidePrefetch(step)
-    sent += 1
-  }
-}
-
 export function beginFirstLectureSlideWarmup(
   steps: readonly MindClassroomLectureStep[],
   voiceEnabled: boolean
 ): void {
   const store = useMindClassroomStore()
+  warmupPrepKey = store.activePrepKey
   const first = steps[0]
-  if (first && store.preparedSteps[0]?.id && store.preparedSteps[0].id !== first.id) {
-    resetLectureTtsCatchup()
-  }
+  const sameOpening = Boolean(first?.id) && store.preparedSteps[0]?.id === first.id
   if (
-    first &&
-    store.preparedSteps[0]?.id === first.id &&
+    sameOpening &&
     (store.voiceWarmup === 'loading' || store.voiceWarmup === 'ready')
   ) {
-    requestLectureCatchupPrefetch(steps, voiceEnabled)
     return
   }
+  resetLectureTtsCatchup()
+  warmupPrepKey = store.activePrepKey
   if (!voiceEnabled || !first?.caption.trim()) {
+    const alreadyReady = store.voiceWarmup === 'ready'
     store.setVoiceWarmup('ready')
+    if (!alreadyReady) emitClassroomReady()
     return
   }
   store.setVoiceWarmup('loading')
-  requestLectureCatchupPrefetch(steps, voiceEnabled)
+  requestFirstLectureSlidePrefetch(steps)
+}
+
+export function emitClassroomReady(): void {
+  const store = useMindClassroomStore()
+  if (store.isLecturing || !store.preparedSteps.length) return
+  eventBus.emit('classroom:ready', {})
+}
+
+function warmupBelongsToActiveSlot(): boolean {
+  const store = useMindClassroomStore()
+  return !warmupPrepKey || warmupPrepKey === store.activePrepKey
 }
 
 export function markLectureVoiceWarmupReady(stepId?: string): void {
   const store = useMindClassroomStore()
+  if (!warmupBelongsToActiveSlot()) return
   const first = store.preparedSteps[0]
   if (stepId && first?.id && stepId !== first.id) return
   if (store.voiceWarmup !== 'loading') return
   store.setVoiceWarmup('ready')
+  emitClassroomReady()
+}
+
+export function markLectureVoiceWarmupFailed(stepId?: string): void {
+  const store = useMindClassroomStore()
+  if (!warmupBelongsToActiveSlot()) return
+  const first = store.preparedSteps[0]
+  if (stepId && first?.id && stepId !== first.id) return
+  if (store.voiceWarmup !== 'loading') return
+  store.setVoiceWarmup('failed')
 }
 
 export function tryWarmupFromJobSteps(
@@ -89,15 +98,12 @@ export function tryWarmupFromJobSteps(
   if (!mapped[0]?.caption.trim()) return false
   const grew = mapped.length > store.preparedSteps.length
   if (grew || store.preparedSteps.length === 0) {
-    store.setPreparedSteps(mapped)
+    store.setPreparedSteps(mapped, [...liveIds])
   }
   if (store.voiceWarmup === 'idle') {
     resetLectureTtsCatchup()
     beginFirstLectureSlideWarmup(mapped, voiceEnabled)
     return true
-  }
-  if (grew) {
-    requestLectureCatchupPrefetch(mapped, voiceEnabled)
   }
   return grew
 }
@@ -113,7 +119,7 @@ export function bindLectureVoiceWarmupEvents(owner: string): void {
   eventBus.onWithOwner(
     'kitty:lecture_prefetch_failed',
     (payload) => {
-      markLectureVoiceWarmupReady(payload.stepId)
+      markLectureVoiceWarmupFailed(payload.stepId)
     },
     owner
   )

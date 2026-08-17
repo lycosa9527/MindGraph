@@ -210,6 +210,50 @@ async def test_first_family_persists_before_other_branches_finish(
     assert len(steps) == 2
 
 
+@pytest.mark.asyncio
+async def test_single_family_persists_as_soon_as_script_parses(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One-trunk tours must write steps before the job returns so TTS can start."""
+    persisted = asyncio.Event()
+    saved: list[dict] = []
+
+    async def _fake_chat(chat: object, *, prompt: str, settings: dict) -> tuple[list[dict], dict]:
+        del chat, prompt, settings
+        return (
+            [{"kind": "overview", "title": "开场", "caption": "欢迎来到这张图"}],
+            {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        )
+
+    async def _fake_persist(*_args: object, **kwargs: object) -> int:
+        payload = kwargs.get("slots")
+        if isinstance(payload, list):
+            saved.extend(contiguous_raw_prefix(payload))
+        persisted.set()
+        return 1
+
+    monkeypatch.setattr("services.mind_classroom.canvas_tour._chat_script", _fake_chat)
+    monkeypatch.setattr("services.mind_classroom.canvas_tour.persist_ready_tour_prefix", _fake_persist)
+    tour_nodes = [
+        {"id": "topic", "kind": "topic", "text": "主题", "stop": "trunk"},
+        {"id": "b1", "kind": "branch", "text": "第一支", "stop": "trunk"},
+    ]
+    task = asyncio.create_task(
+        generate_tour_steps(
+            tour_nodes,
+            settings={"tour_scope": "main_branch"},
+            user_id=3,
+            organization_id=1,
+            job_id="job-one-trunk",
+            spec={"nodes": tour_nodes},
+        )
+    )
+    await asyncio.wait_for(persisted.wait(), timeout=1)
+    assert saved[0]["caption"] == "欢迎来到这张图"
+    steps, _usage = await task
+    assert steps[0]["kind"] == "overview"
+
+
 def test_contiguous_raw_prefix_stops_at_first_hole() -> None:
     """TTS only sees finished families in order; a later hole does not jump ahead."""
     family_a = [{"kind": "overview", "title": "开场"}]

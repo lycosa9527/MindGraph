@@ -8,7 +8,7 @@ from sqlalchemy import text
 from utils.auth.admin_panel_permissions import CAP_SCOPE_INVITED_ORGS
 from utils.auth.admin_scope import build_admin_scope
 from utils.db.rls_context import RlsContext, rls_async_session
-from db_rls.policy_builder import ORGS_EXPR
+from utils.db_rls.policy_builder import ORGS_EXPR
 
 pytestmark_rls_db = pytest.mark.skipif(
     os.getenv("RUN_RLS_DB_TESTS", "").lower() not in ("1", "true", "yes"),

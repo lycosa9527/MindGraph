@@ -132,6 +132,45 @@ async def test_handle_kitty_prefetch_does_not_speak(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.asyncio
+async def test_opening_prefetch_drops_stale_ready_bank(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Modal warmup must start slide 0, not sit behind leftover next-slide PCM."""
+    stale = LecturePrefetch(step_id="branch-1", text="Old next", token=1)
+    stale.chunks = [("YmFzZQ==", "pcm")]
+    stale.ready.set()
+    session: dict[str, Any] = {
+        PREFETCH_READY_KEY: {"branch-1": stale, "branch-2": stale},
+        PREFETCH_QUEUE_KEY: [("Old next", "branch-2")],
+    }
+
+    async def fake_run(*_args: object, **_kwargs: object) -> None:
+        return None
+
+    monkeypatch.setattr("services.kitty.ws.narrate.voice_sessions", {"sid": session})
+    monkeypatch.setattr("services.kitty.ws.narrate.resolve_kitty_tts_enabled", lambda: True)
+    monkeypatch.setattr("services.kitty.ws.narrate.log_lecture_tts", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("services.kitty.tts.lecture_cache.voice_sessions", {"sid": session})
+    monkeypatch.setattr("services.kitty.tts.lecture_cache.resolve_kitty_tts_enabled", lambda: True)
+    monkeypatch.setattr("services.kitty.tts.lecture_cache._run_prefetch", fake_run)
+
+    await handle_kitty_prefetch(
+        MagicMock(),
+        "sid",
+        {"text": "Open", "step_id": "overview-0"},
+    )
+    live = session.get(PREFETCH_KEY)
+    assert isinstance(live, LecturePrefetch)
+    assert live.step_id == "overview-0"
+    assert live.text == "Open"
+    assert not session.get(PREFETCH_QUEUE_KEY)
+    assert "branch-1" not in session.get(PREFETCH_READY_KEY, {})
+    live_task = live.task
+    if isinstance(live_task, asyncio.Task):
+        await live_task
+
+
+@pytest.mark.asyncio
 async def test_notify_lecture_prefetch_status_signals_ready(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -339,7 +378,7 @@ async def test_tts_worker_takes_warmup_before_next_prefetch(
     async def fake_play(*_args, **_kwargs) -> None:
         order.append("play")
 
-    def fake_schedule(_sid: str, text: str, step_id: str) -> None:
+    def fake_schedule(_sid: str, text: str, step_id: str, **_kwargs: object) -> None:
         order.append(f"prefetch:{text}:{step_id}")
 
     monkeypatch.setattr(bridge, "play_cached_lecture_pcm", fake_play)

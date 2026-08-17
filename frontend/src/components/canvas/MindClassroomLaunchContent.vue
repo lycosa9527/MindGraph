@@ -2,7 +2,7 @@
 /**
  * Mind Classroom launch settings — readable modal / panel layout.
  */
-import { computed, nextTick, onMounted, watch } from 'vue'
+import { computed, nextTick, onMounted } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
@@ -108,12 +108,6 @@ const startFillPercent = computed(() =>
   mindClassroomStartFillPercent(progressStats.value.done, progressStats.value.total)
 )
 const startFailed = computed(() => jobStatus.value === 'failed' && !hasPrepared.value)
-
-watch([mastery, presentation, tourScope, slideStyle, tone, audienceLevel], () => {
-  if (queueBusy.value) return
-  classroomStore.clearPrepared()
-  requestClassroomRestorePrepared()
-})
 
 onMounted(() => {
   requestClassroomRestorePrepared()
@@ -500,7 +494,7 @@ function handleRestart(): void {
           v-if="showRestart"
           type="button"
           class="mc-launch__restart"
-          :disabled="!authStore.isAuthenticated"
+          :disabled="!authStore.isAuthenticated || queueBusy"
           :title="t('canvas.mindClassroom.queue.restartHint')"
           @click="handleRestart"
         >
