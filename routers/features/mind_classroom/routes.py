@@ -1,4 +1,4 @@
-"""Mind Classroom job enqueue, poll, cancel, and by-diagram lookup."""
+"""Mind Classroom job enqueue, SSE watch, cancel, and by-diagram lookup."""
 
 from __future__ import annotations
 
@@ -20,7 +20,10 @@ from routers.features.zhihui.routes import _conversation_list_item, _generation_
 from services.mind_classroom.celery_log import log_classroom_celery
 from services.mind_classroom.diagram_spec import load_owned_diagram_spec
 from services.mind_classroom.enqueue import create_and_enqueue_job
+from services.mind_classroom.job_events import publish_classroom_job_snapshot
 from services.mind_classroom.job_payload import job_payload
+from services.mind_classroom.job_stream import classroom_job_stream_response
+from services.mind_classroom.progress_log import job_elapsed_seconds, log_job_poll
 from services.mind_classroom.queue_dispatch import ensure_queued_dispatch, task_name_for_settings
 from services.mind_classroom.storage import delete_key
 from services.mind_classroom.transcript_persist import (
@@ -191,6 +194,17 @@ async def get_job_by_diagram(
     return payload
 
 
+@router.get("/jobs/{job_id}/stream")
+async def stream_classroom_job(
+    job_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db_with_request_rls),
+) -> Any:
+    """SSE progress for one classroom job. Redis pub/sub; no poll loop."""
+    return await classroom_job_stream_response(request, db, job_id, current_user)
+
+
 @router.get("/jobs/{job_id}")
 async def get_classroom_job(
     job_id: str,
@@ -206,6 +220,13 @@ async def get_classroom_job(
     row = await _refresh_queued_job(row, db)
     await ensure_transcript_on_server(row.result_json)
     slides = list(await MindClassroomSlideRepository(db).list_by_job(job_id))
+    progress = row.progress if isinstance(row.progress, dict) else None
+    log_job_poll(
+        row.id,
+        status=str(row.status or ""),
+        progress=progress,
+        elapsed_s=job_elapsed_seconds(row),
+    )
     return job_payload(row, request, slides=slides)
 
 
@@ -245,6 +266,8 @@ async def cancel_classroom_job(
             status="cancelled" if did_cancel else row.status,
             detail="reason=user",
         )
+    if did_cancel:
+        await publish_classroom_job_snapshot(job_id)
     return {"id": job_id, "status": "cancelled"}
 
 
