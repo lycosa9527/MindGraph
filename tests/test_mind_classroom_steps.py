@@ -175,8 +175,12 @@ async def test_first_family_persists_before_other_branches_finish(
         persisted.set()
         return 1
 
+    async def _fake_progress(*_args: object, **_kwargs: object) -> dict:
+        raise ConnectionError("database unavailable")
+
     monkeypatch.setattr("services.mind_classroom.canvas_tour._chat_script", _fake_chat)
     monkeypatch.setattr("services.mind_classroom.canvas_tour.persist_ready_tour_prefix", _fake_persist)
+    monkeypatch.setattr("services.mind_classroom.canvas_tour.patch_tour_progress", _fake_progress)
     tour_nodes = [
         {"id": "topic", "kind": "topic", "text": "主题", "stop": "trunk"},
         {"id": "b1", "kind": "branch", "text": "第一支", "stop": "trunk"},
@@ -192,7 +196,12 @@ async def test_first_family_persists_before_other_branches_finish(
             spec={"nodes": tour_nodes},
         )
     )
-    await asyncio.wait_for(persisted.wait(), timeout=1)
+    try:
+        await asyncio.wait_for(persisted.wait(), timeout=1)
+    except TimeoutError:
+        if task.done():
+            await task
+        raise
     assert saved[0]["kind"] == "overview"
     assert not task.done()
     hold_rest.set()

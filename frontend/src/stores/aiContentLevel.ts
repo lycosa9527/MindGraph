@@ -20,6 +20,10 @@ import {
   saveAiContentLevelPreference,
   saveGeneratedLevelsByDiagram,
 } from '@/config/aiContentLevels'
+import {
+  isAiContentLevelAuthAuthenticated,
+  patchAuthPersistedAiContentLevel,
+} from '@/utils/aiContentLevelAuthBridge'
 
 const API_PATH = '/api/auth/diagram-preferences'
 
@@ -86,9 +90,7 @@ export const useAiContentLevelStore = defineStore('aiContentLevel', () => {
   }
 
   async function persistToServer(next: AiContentLevelId): Promise<boolean> {
-    const { useAuthStore } = await import('@/stores/auth')
-    const authStore = useAuthStore()
-    if (!authStore.isAuthenticated) {
+    if (!isAiContentLevelAuthAuthenticated()) {
       return true
     }
     try {
@@ -109,7 +111,7 @@ export const useAiContentLevelStore = defineStore('aiContentLevel', () => {
       const saved = isAiContentLevelId(data.ai_content_level)
         ? data.ai_content_level
         : next
-      authStore.patchPersistedUser({ aiContentLevel: saved })
+      patchAuthPersistedAiContentLevel(saved)
       return true
     } catch {
       notify.error('Failed to save preferences')

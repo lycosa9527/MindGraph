@@ -44,6 +44,7 @@ import {
   hasSuperadminPanelAccess,
   roleHasPanelAccess,
 } from '@/utils/adminCapabilities'
+import { registerAiContentLevelAuthBridge } from '@/utils/aiContentLevelAuthBridge'
 import { getAppQueryClient } from '@/utils/appQueryClient'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
@@ -1206,6 +1207,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Initialize from storage on store creation
   initFromStorage()
+
+  registerAiContentLevelAuthBridge({
+    isAuthenticated: () => isAuthenticated.value,
+    patchAiContentLevel: (level) => {
+      patchPersistedUser({ aiContentLevel: level })
+    },
+  })
 
   return {
     // State

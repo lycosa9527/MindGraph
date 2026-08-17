@@ -100,4 +100,15 @@ describe('AI content level generation instructions', () => {
     expect(authStore.user?.aiContentLevel).toBe('university')
     expect(store.level).toBe('university')
   })
+
+  it('skips the server persist for a guest', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    useAuthStore()
+    const store = useAiContentLevelStore()
+    const saved = await store.setLevel('primary')
+    expect(saved).toBe(true)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(store.level).toBe('primary')
+  })
 })

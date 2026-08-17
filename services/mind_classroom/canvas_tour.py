@@ -33,7 +33,7 @@ from services.mind_classroom.prompts.canvas_tour_prompts import (
 from services.mind_classroom.steps import MAX_STEPS_DEFAULT, normalize_steps
 from services.mind_classroom.transcript_persist import attach_transcript_md
 from services.mind_classroom.token_usage import track_classroom_usage
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from repositories.mind_classroom_repo import MindClassroomJobRepository
 from utils.db.session_open import system_rls_session
 
@@ -362,20 +362,19 @@ async def _generate_family_scripts_parallel(
             status="generating",
             phase="script_parallel",
         )
-    await patch_tour_progress(
-        job_id,
-        celery_task_id=celery_task_id,
-        status="generating",
-        stage="script_parallel",
-        phase="script_parallel",
-        seed_labels=[chat.branch_label for chat, _prompt in jobs],
-    )
     pending: dict[asyncio.Task[tuple[list[dict[str, Any]], Optional[dict[str, Any]]]], int] = {}
     for index, (chat, prompt) in enumerate(jobs):
         task = asyncio.create_task(_chat_script(chat, prompt=prompt, settings=settings))
         pending[task] = index
     slots: list[Optional[list[dict[str, Any]]]] = [None] * len(jobs)
     usage: Optional[dict[str, Any]] = None
+    seed_progress = asyncio.create_task(
+        _seed_parallel_tour_progress(
+            job_id,
+            celery_task_id=celery_task_id,
+            labels=[chat.branch_label for chat, _prompt in jobs],
+        )
+    )
     try:
         while pending:
             finished, _ = await asyncio.wait(pending.keys(), return_when=asyncio.FIRST_COMPLETED)
@@ -406,11 +405,35 @@ async def _generate_family_scripts_parallel(
                 )
     finally:
         await _cancel_pending_family_tasks(pending)
+        if not seed_progress.done():
+            seed_progress.cancel()
+        await asyncio.gather(seed_progress, return_exceptions=True)
     merged: list[dict[str, Any]] = []
     for raw_steps in slots:
         if raw_steps:
             merged.extend(raw_steps)
     return merged, usage
+
+
+async def _seed_parallel_tour_progress(
+    job_id: Optional[str],
+    *,
+    celery_task_id: Optional[str],
+    labels: list[str],
+) -> None:
+    """Seed the branch ledger without blocking family LLM calls on a dead DB."""
+    try:
+        await patch_tour_progress(
+            job_id,
+            celery_task_id=celery_task_id,
+            status="generating",
+            stage="script_parallel",
+            phase="script_parallel",
+            seed_labels=labels,
+        )
+    except DATABASE_ERRORS as exc:
+        if job_id:
+            logger.debug("[MindClassroom] seed progress skipped job=%s: %s", job_id, exc)
 
 
 async def _cancel_pending_family_tasks(
