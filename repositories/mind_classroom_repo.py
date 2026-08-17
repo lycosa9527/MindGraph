@@ -6,7 +6,7 @@ import os
 from datetime import UTC, datetime, timedelta
 from typing import Any, Optional, Sequence
 
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, select
 
 from models.domain.mind_classroom import (
     MindClassroomJob,
@@ -14,11 +14,15 @@ from models.domain.mind_classroom import (
     generate_classroom_id,
 )
 from repositories.base import BaseRepository
-from services.mind_classroom.job_match import job_matches_llm_model
+from services.mind_classroom.job_match import (
+    classroom_ready_job_reusable,
+    job_matches_llm_model,
+    spec_snapshot_node_ids,
+)
 
 _ACTIVE_STATUSES = ("queued", "planning", "generating")
 _REUSABLE_STATUSES = ("ready", "partial", "queued", "planning", "generating")
-_DEFAULT_STALE_MINUTES = 60
+_DEFAULT_STALE_MINUTES = 15
 _MAX_ACTIVE_JOBS = 1
 _ATTEMPTS_CAP = 20
 
@@ -105,18 +109,22 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
         """Load one job by UUID."""
         return await self.session.get(MindClassroomJob, job_id)
 
-    async def count_active_jobs(self, user_id: int) -> int:
-        """Count non-terminal jobs for concurrency gating."""
+    async def list_active_jobs(self, user_id: int) -> list[MindClassroomJob]:
+        """In-flight jobs for this user, newest first."""
         stmt = (
-            select(func.count())
-            .select_from(MindClassroomJob)
+            select(MindClassroomJob)
             .where(
                 MindClassroomJob.user_id == user_id,
                 MindClassroomJob.status.in_(_ACTIVE_STATUSES),
             )
+            .order_by(desc(MindClassroomJob.updated_at))
         )
         result = await self.session.execute(stmt)
-        return int(result.scalar_one())
+        return list(result.scalars().all())
+
+    async def count_active_jobs(self, user_id: int) -> int:
+        """Count non-terminal jobs for concurrency gating."""
+        return len(await self.list_active_jobs(user_id))
 
     @staticmethod
     def max_active_jobs() -> int:
@@ -130,15 +138,20 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
         self,
         *,
         user_id: int,
-        spec_hash: str,
         settings: dict[str, Any],
         diagram_id: Optional[str] = None,
+        spec_hash: Optional[str] = None,
+        live_ids: Optional[set[str]] = None,
     ) -> Optional[MindClassroomJob]:
-        """Latest ready/partial/in-flight job with the same spec, settings, and map."""
+        """Latest job for this map and launch settings.
+
+        In-flight rows always reattach (Kitty redraws change ``spec_hash``).
+        Ready/partial rows reuse only when Postgres still has a script that
+        binds to the live canvas; otherwise Start creates a new job.
+        """
         cleaned = (diagram_id or "").strip()
         filters = [
             MindClassroomJob.user_id == user_id,
-            MindClassroomJob.spec_hash == spec_hash,
             MindClassroomJob.status.in_(_REUSABLE_STATUSES),
         ]
         if cleaned:
@@ -147,8 +160,20 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
             filters.append(MindClassroomJob.diagram_id.is_(None))
         stmt = select(MindClassroomJob).where(*filters).order_by(desc(MindClassroomJob.updated_at)).limit(8)
         result = await self.session.execute(stmt)
+        wanted_hash = (spec_hash or "").strip()
+        live = live_ids if live_ids is not None else set()
         for row in result.scalars().all():
-            if row.settings == settings:
+            if row.settings != settings:
+                continue
+            if row.status in _ACTIVE_STATUSES:
+                return row
+            if classroom_ready_job_reusable(
+                spec_hash=str(row.spec_hash or ""),
+                wanted_hash=wanted_hash,
+                spec_node_ids=spec_snapshot_node_ids(row.spec_snapshot),
+                live_ids=live,
+                result_json=row.result_json,
+            ):
                 return row
         return None
 
@@ -352,8 +377,8 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
         *,
         max_age_minutes: int = _DEFAULT_STALE_MINUTES,
         user_id: Optional[int] = None,
-    ) -> tuple[int, list[str]]:
-        """Mark long-stuck jobs failed/partial. Returns (count, celery ids)."""
+    ) -> tuple[int, list[str], list[str]]:
+        """Mark long-stuck jobs failed/partial. Returns (count, celery ids, job ids)."""
         cutoff = datetime.now(UTC) - timedelta(minutes=max(5, int(max_age_minutes)))
         stmt = select(MindClassroomJob).where(
             MindClassroomJob.status.in_(_ACTIVE_STATUSES),
@@ -364,10 +389,11 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
         result = await self.session.execute(stmt)
         rows = list(result.scalars().all())
         if not rows:
-            return 0, []
+            return 0, [], []
         slide_repo = MindClassroomSlideRepository(self.session)
         updated = 0
         task_ids: list[str] = []
+        job_ids: list[str] = []
         for row in rows:
             slides = await slide_repo.list_by_job(row.id)
             row.status = "partial" if slides else "failed"
@@ -378,10 +404,11 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
             row.updated_at = datetime.now(UTC)
             if row.celery_task_id:
                 task_ids.append(str(row.celery_task_id))
+            job_ids.append(row.id)
             updated += 1
         if updated:
             await self.session.commit()
-        return updated, task_ids
+        return updated, task_ids, job_ids
 
     async def delete_job(self, job_id: str, *, commit: bool = True) -> bool:
         """Delete job and cascaded slides."""

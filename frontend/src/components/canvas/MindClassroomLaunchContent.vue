@@ -38,11 +38,9 @@ import {
 } from '@/config/mindClassroom'
 import { useAiContentLevelStore, useAuthStore, useMindClassroomStore } from '@/stores'
 import {
-  isMindClassroomQueueBusy,
+  mindClassroomButtonChrome,
   mindClassroomProgressStats,
   mindClassroomStartFillPercent,
-  mindClassroomStartLabelKey,
-  shouldShowMindClassroomRestart,
 } from '@/utils/mindClassroomLaunchState'
 
 const props = withDefaults(
@@ -73,23 +71,13 @@ const aiLevelStore = useAiContentLevelStore()
 const { level: audienceLevel } = storeToRefs(aiLevelStore)
 
 const hasPrepared = computed(() => preparedSteps.value.length > 0)
-const queueBusy = computed(() =>
-  isMindClassroomQueueBusy(jobStatus.value, startInFlight.value, voiceWarmup.value)
-)
-const startLocked = computed(() => queueBusy.value || !authStore.isAuthenticated)
-const showRestart = computed(() =>
-  shouldShowMindClassroomRestart({
-    jobStatus: jobStatus.value,
-    hasPrepared: hasPrepared.value,
-    authenticated: authStore.isAuthenticated,
-  })
-)
 const progressStats = computed(() => mindClassroomProgressStats(jobProgress.value))
-const startLabelKey = computed(() =>
-  mindClassroomStartLabelKey({
+const buttonChrome = computed(() =>
+  mindClassroomButtonChrome({
     jobStatus: jobStatus.value,
     starting: startInFlight.value,
     hasPrepared: hasPrepared.value,
+    authenticated: authStore.isAuthenticated,
     presentation: presentation.value,
     voiceWarmup: voiceWarmup.value,
     branchName: progressStats.value.branchName,
@@ -97,6 +85,10 @@ const startLabelKey = computed(() =>
     remaining: progressStats.value.inFlight,
   })
 )
+const queueBusy = computed(() => buttonChrome.value.busy)
+const startLocked = computed(() => buttonChrome.value.locked)
+const showRestart = computed(() => buttonChrome.value.showRestart)
+const startLabelKey = computed(() => buttonChrome.value.labelKey)
 const startLabel = computed(() =>
   t(startLabelKey.value, {
     name: progressStats.value.branchName,
@@ -107,7 +99,7 @@ const startLabel = computed(() =>
 const startFillPercent = computed(() =>
   mindClassroomStartFillPercent(progressStats.value.done, progressStats.value.total)
 )
-const startFailed = computed(() => jobStatus.value === 'failed' && !hasPrepared.value)
+const startFailed = computed(() => buttonChrome.value.tone === 'failed')
 
 onMounted(() => {
   requestClassroomRestorePrepared()
@@ -462,9 +454,9 @@ function handleRestart(): void {
           type="button"
           class="mc-launch__start"
           :class="{
-            'is-busy': queueBusy,
-            'is-ready': hasPrepared && !startLocked,
-            'is-failed': startFailed,
+            'is-busy': buttonChrome.tone === 'busy',
+            'is-ready': buttonChrome.tone === 'ready',
+            'is-failed': buttonChrome.tone === 'failed',
           }"
           :style="
             queueBusy ? { '--mc-launch-fill': `${startFillPercent}%` } : undefined

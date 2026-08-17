@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   isMindClassroomQueueBusy,
+  mindClassroomButtonChrome,
   mindClassroomProgressBranchName,
   mindClassroomProgressStats,
   mindClassroomStartFillPercent,
@@ -131,6 +132,40 @@ describe('mindClassroomLaunchState', () => {
     expect(mindClassroomStartFillPercent(3, 6)).toBe(50)
     expect(mindClassroomStartFillPercent(6, 6)).toBe(100)
     expect(mindClassroomStartFillPercent(9, 6)).toBe(100)
+  })
+
+  it('maps manifesto status onto start-button chrome', () => {
+    expect(mindClassroomButtonChrome({ jobStatus: null }).tone).toBe('start')
+    expect(mindClassroomButtonChrome({ jobStatus: 'queued' })).toMatchObject({
+      tone: 'busy',
+      locked: true,
+      showRestart: true,
+      labelKey: 'canvas.mindClassroom.queue.queued',
+    })
+    expect(mindClassroomButtonChrome({ jobStatus: 'planning' }).tone).toBe('busy')
+    expect(
+      mindClassroomButtonChrome({
+        jobStatus: 'generating',
+        branchName: '呼吸作用',
+      }).labelKey
+    ).toBe('canvas.mindClassroom.queue.transcriptBranch')
+    expect(
+      mindClassroomButtonChrome({ jobStatus: 'ready', hasPrepared: true })
+    ).toMatchObject({
+      tone: 'ready',
+      locked: false,
+      labelKey: 'canvas.mindClassroom.queue.ready',
+    })
+    expect(mindClassroomButtonChrome({ jobStatus: 'ready', hasPrepared: false }).tone).toBe(
+      'start'
+    )
+    expect(mindClassroomButtonChrome({ jobStatus: 'failed' })).toMatchObject({
+      tone: 'failed',
+      labelKey: 'canvas.mindClassroom.queue.failed',
+    })
+    expect(
+      mindClassroomButtonChrome({ jobStatus: 'generating', authenticated: false }).locked
+    ).toBe(true)
   })
 
   it('shows restart once a job exists or a script is ready', () => {

@@ -320,13 +320,14 @@ async def reusable_job_id(
     settings: dict[str, Any],
     diagram_id: Optional[str],
 ) -> Optional[str]:
-    """Reuse must stay on the same spec hash, map, and full settings blob."""
+    """In-flight reuse ignores hash drift; ready reuse requires a live-map fit."""
     async with system_rls_session() as db:
         row = await MindClassroomJobRepository(db).find_reusable(
             user_id=user_id,
-            spec_hash=hash_spec_snapshot(spec),
             settings=settings,
             diagram_id=diagram_id,
+            spec_hash=hash_spec_snapshot(spec),
+            live_ids=set(spec_snapshot_node_ids(spec)),
         )
         return row.id if row is not None else None
 

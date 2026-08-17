@@ -41,3 +41,36 @@ def job_matches_live_nodes(job_node_ids: Any, live_ids: set[str]) -> bool:
         return False
     hits = sum(1 for node_id in cleaned if node_id in live_ids)
     return hits * 2 >= len(cleaned)
+
+
+def playable_result_json(result_json: Any) -> bool:
+    """True when Postgres still has lecture steps and COS has not superseded them."""
+    if not isinstance(result_json, dict):
+        return False
+    if result_json.get("transcript_replaced") is True:
+        return False
+    steps = result_json.get("steps")
+    if not isinstance(steps, list):
+        return False
+    for step in steps:
+        if not isinstance(step, dict):
+            continue
+        if str(step.get("caption") or "").strip():
+            return True
+    return False
+
+
+def classroom_ready_job_reusable(
+    *,
+    spec_hash: str,
+    wanted_hash: str,
+    spec_node_ids: Any,
+    live_ids: set[str],
+    result_json: Any,
+) -> bool:
+    """Ready/partial reuse: stored script exists and still binds to the live map."""
+    if not playable_result_json(result_json):
+        return False
+    if wanted_hash and spec_hash == wanted_hash:
+        return True
+    return job_matches_live_nodes(spec_node_ids, live_ids)

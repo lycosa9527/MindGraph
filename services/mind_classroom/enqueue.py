@@ -8,6 +8,7 @@ from typing import Any, Optional
 from repositories.mind_classroom_repo import MindClassroomJobRepository
 from services.mind_classroom.celery_log import log_classroom_celery
 from services.mind_classroom.job_manifest import hash_spec_snapshot, mark_job_failed, mark_job_queued
+from services.mind_classroom.job_match import spec_snapshot_node_ids
 from services.mind_classroom.queue_dispatch import (
     WORKER_MISSING_MSG,
     ensure_queued_dispatch,
@@ -22,6 +23,16 @@ logger = logging.getLogger(__name__)
 
 TASK_SCRIPT = "mind_classroom.run_script"
 TASK_SLIDES = "mind_classroom.run_slides"
+
+
+class ClassroomJobsBusy(RuntimeError):
+    """Per-user in-flight classroom job cap. ``job_id`` is the blocking row."""
+
+    def __init__(self, active: int, max_jobs: int, job_id: Optional[str] = None) -> None:
+        self.active = active
+        self.max_jobs = max_jobs
+        self.job_id = job_id
+        super().__init__(f"Too many active classroom jobs ({active}/{max_jobs}). Wait or cancel.")
 
 
 def _task_name(mode: str) -> str:
@@ -60,15 +71,20 @@ async def create_and_enqueue_job(
         if reuse:
             existing = await repo.find_reusable(
                 user_id=user_id,
-                spec_hash=spec_hash,
                 settings=settings,
                 diagram_id=diagram_id,
+                spec_hash=spec_hash,
+                live_ids=set(spec_snapshot_node_ids(spec_snapshot)),
             )
             if existing is not None:
                 return await _reuse_payload(existing.id, existing.status, settings)
-        active = await repo.count_active_jobs(user_id)
-        if active >= repo.max_active_jobs():
-            raise RuntimeError(f"Too many active classroom jobs ({active}/{repo.max_active_jobs()}). Wait or cancel.")
+        active_rows = await repo.list_active_jobs(user_id)
+        if len(active_rows) >= repo.max_active_jobs():
+            raise ClassroomJobsBusy(
+                len(active_rows),
+                repo.max_active_jobs(),
+                active_rows[0].id,
+            )
         job = await repo.create_job(
             user_id=user_id,
             spec_snapshot=spec_snapshot,

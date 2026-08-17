@@ -7,8 +7,12 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { isClassroomJobActive } from '@/composables/mindMap/mindClassroomJobApi'
 import { useDiagramStore, useLLMResultsStore, useMindClassroomStore, useSavedDiagramsStore } from '@/stores'
 import { resetLectureTtsCatchup } from '@/composables/mindMap/warmupLectureTts'
-import { classroomPrepFitsLiveView, mindClassroomPrepKey } from '@/utils/mindClassroomPrepSlot'
-import { collectLiveNodeIds } from '@/utils/mindClassroomRemoteSteps'
+import { mindClassroomPrepKey } from '@/utils/mindClassroomPrepSlot'
+import {
+  collectLiveNodeIds,
+  preparedLectureFitsLive,
+  remapPreparedStepsToLive,
+} from '@/utils/mindClassroomRemoteSteps'
 
 export function bindClassroomPrepToDiagram(options: {
   awaitJobReady: (jobId: string, generation: number) => void
@@ -45,13 +49,17 @@ export function bindClassroomPrepToDiagram(options: {
       }
       if (!switched) return
       const liveIds = collectLiveNodeIds(diagramStore.data?.nodes)
-      if (
-        classroomStore.preparedSteps.length &&
-        !classroomPrepFitsLiveView(classroomStore.specNodeIds, liveIds)
-      ) {
-        classroomStore.clearPrepared()
+      if (classroomStore.preparedSteps.length) {
+        const remapped = remapPreparedStepsToLive(classroomStore.preparedSteps, liveIds)
+        if (
+          remapped.length &&
+          preparedLectureFitsLive(classroomStore.preparedSteps, liveIds, classroomStore.specNodeIds)
+        ) {
+          classroomStore.setPreparedSteps(remapped, [...liveIds])
+          return
+        }
+        classroomStore.setPreparedSteps([], [])
       }
-      if (classroomStore.preparedSteps.length) return
       if (classroomStore.jobId && isClassroomJobActive(classroomStore.jobStatus)) {
         options.awaitJobReady(classroomStore.jobId, classroomStore.queueGeneration)
         return

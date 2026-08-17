@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.10] - 2026-08-18
+
+> **思维讲堂 Start follows the Postgres manifesto — Redis pushes live, a rewritten map goes back to blue Start.**
+
+### Changed
+
+- **Classroom Start status** — The Start button follows the job row in Postgres (Redis live push, Postgres on SSE idle/drop). In-flight Start reattaches; a rewritten map goes back to blue Start; a 429 from another in-flight job no longer paints this map red. Stuck jobs fail after 15 minutes so they cannot hold the per-user cap.
+
+### Tests
+
+- `frontend/tests/mindClassroomLaunchState.spec.ts` — Start-button chrome from job status
+- `frontend/tests/useMindClassroomLectureQueue.spec.ts` — reattach, Kitty rewrite, 429
+- `scripts/audit_mind_classroom_status_e2e.py` — live Celery + Redis/PG + button cases
+
 ## [5.180.9] - 2026-08-18
 
 > **节点解释 is a short bubble beside the node; 思维讲堂 prep stays per map and LLM.**

@@ -6,12 +6,20 @@ from types import SimpleNamespace
 
 from services.mind_classroom.job_manifest import should_apply_job_stage
 from services.mind_classroom.job_events import (
+    HEARTBEAT_SECONDS,
     TERMINAL_JOB_STATUSES,
+    build_heartbeat_payload,
     build_progress_payload,
     classroom_job_channel,
     decode_pubsub_data,
+    sse_payload_is_terminal,
 )
 from services.mind_classroom.job_payload import job_event_dict
+
+
+def test_sse_heartbeat_is_under_common_proxy_idle_limits() -> None:
+    """A 25s heartbeat lined up with the test-server stream drops."""
+    assert HEARTBEAT_SECONDS <= 15
 
 
 def test_classroom_job_channel_is_per_job() -> None:
@@ -65,6 +73,9 @@ def test_ready_is_terminal_for_sse() -> None:
     assert "ready" in TERMINAL_JOB_STATUSES
     assert "partial" in TERMINAL_JOB_STATUSES
     assert "generating" not in TERMINAL_JOB_STATUSES
+    assert sse_payload_is_terminal(build_progress_payload({"id": "j", "status": "ready"})) is True
+    assert sse_payload_is_terminal(build_progress_payload({"id": "j", "status": "generating"})) is False
+    assert sse_payload_is_terminal(build_heartbeat_payload()) is False
 
 
 def test_cancelled_job_does_not_resurrect_to_generating() -> None:

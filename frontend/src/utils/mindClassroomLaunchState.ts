@@ -192,6 +192,49 @@ function generatingStartLabelKey(options: {
   return 'canvas.mindClassroom.queue.transcript'
 }
 
+export type MindClassroomButtonTone = 'start' | 'busy' | 'ready' | 'failed'
+
+export function mindClassroomButtonChrome(options: {
+  jobStatus: string | null | undefined
+  starting?: boolean
+  hasPrepared?: boolean
+  authenticated?: boolean
+  presentation?: MindClassroomPresentationId
+  voiceWarmup?: string | null
+  branchName?: string | null
+  ttsReady?: boolean
+  remaining?: number
+}): {
+  labelKey: string
+  busy: boolean
+  tone: MindClassroomButtonTone
+  showRestart: boolean
+  locked: boolean
+} {
+  const hasPrepared = options.hasPrepared === true
+  const busy = isMindClassroomQueueBusy(
+    options.jobStatus,
+    options.starting === true,
+    options.voiceWarmup
+  )
+  const authenticated = options.authenticated !== false
+  let tone: MindClassroomButtonTone = 'start'
+  if (busy) tone = 'busy'
+  else if (hasPrepared) tone = 'ready'
+  else if (options.jobStatus === 'failed') tone = 'failed'
+  return {
+    labelKey: mindClassroomStartLabelKey(options),
+    busy,
+    tone,
+    showRestart: shouldShowMindClassroomRestart({
+      jobStatus: options.jobStatus,
+      hasPrepared,
+      authenticated,
+    }),
+    locked: busy || !authenticated,
+  }
+}
+
 export function shouldShowMindClassroomRestart(options: {
   jobStatus: string | null | undefined
   hasPrepared?: boolean

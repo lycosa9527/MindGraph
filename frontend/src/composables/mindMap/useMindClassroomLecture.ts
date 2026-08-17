@@ -9,6 +9,7 @@ import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindM
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import {
+  ClassroomJobsBusyError,
   type MindClassroomJobDetail,
   cancelMindClassroomJob,
   enqueueMindClassroomJob,
@@ -49,14 +50,15 @@ import {
 import { setMindMapCollapsedPaths } from '@/stores/diagram/mindMapCollapse'
 import {
   classroomJobLlmModelMatches,
-  classroomPrepFitsLiveView,
   classroomPrepLanguage,
   classroomPrepSettingsMatch,
 } from '@/utils/mindClassroomPrepSlot'
 import {
-  classroomJobFitsLiveNodes,
+  classroomReadyJobIsUsable,
   collectLiveNodeIds,
   mapRemoteLectureSteps,
+  preparedLectureFitsLive,
+  remapPreparedStepsToLive,
 } from '@/utils/mindClassroomRemoteSteps'
 import {
   expandLectureFocusNodeIds,
@@ -303,21 +305,22 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       return { ok: false, reason: 'empty' }
     }
     const liveIds = collectLiveNodeIds(diagramStore.data?.nodes)
-    if (!classroomPrepFitsLiveView(detail.spec_node_ids, liveIds)) {
-      return { ok: false, reason: 'empty' }
-    }
-    if (!classroomJobFitsLiveNodes(detail.result_json?.steps, liveIds)) {
+    if (!classroomReadyJobIsUsable(detail, liveIds)) {
+      classroomStore.setPreparedSteps([], [])
       return { ok: false, reason: 'empty' }
     }
     const mapped = mapRemoteLectureSteps(detail.result_json?.steps ?? [], liveIds)
-    if (!mapped.length) return { ok: false, reason: 'empty' }
+    if (!mapped.some((step) => step.caption.trim())) {
+      classroomStore.setPreparedSteps([], [])
+      return { ok: false, reason: 'empty' }
+    }
     classroomStore.setJobState({
       id: detail.id,
       status: detail.status,
       progress: detail.progress ?? null,
       error: null,
     })
-    classroomStore.setPreparedSteps(mapped, detail.spec_node_ids)
+    classroomStore.setPreparedSteps(mapped, [...liveIds])
     beginFirstLectureSlideWarmup(mapped, classroomStore.voiceEnabled)
     return { ok: true, phase: 'prepared' }
   }
@@ -338,6 +341,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
             if (prepKey && prepKey !== classroomStore.activePrepKey) return
             if (next.id && next.id !== jobId) return
             classroomStore.setJobState({
+              id: next.id || jobId,
               status: next.status,
               progress: next.progress ?? null,
               error: next.error_message ?? null,
@@ -362,6 +366,9 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
         }
         const message = err instanceof Error ? err.message : String(err)
         if (message === 'cancelled') return { ok: false, reason: 'cancelled' as const }
+        if (message === 'stream_unavailable') {
+          return { ok: false, reason: 'empty' as const }
+        }
         classroomStore.setJobState({ status: 'failed', error: message })
         return { ok: false, reason: 'failed' as const }
       } finally {
@@ -390,27 +397,26 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       )
       if (generation !== classroomStore.queueGeneration) return false
       if (prepKey && prepKey !== classroomStore.activePrepKey) return false
-      if (!jobSettingsMatch(detail.settings)) {
-        return false
+      if (
+        isClassroomJobActive(detail.status) &&
+        classroomJobLlmModelMatches(detail.settings, llmModel)
+      ) {
+        classroomStore.setJobState({
+          id: detail.id,
+          status: detail.status,
+          progress: detail.progress ?? null,
+          error: detail.error_message ?? null,
+        })
+        void awaitJobReady(detail.id, classroomStore.queueGeneration)
+        return true
       }
-      const liveIds = collectLiveNodeIds(diagramStore.data?.nodes)
-      if (!classroomPrepFitsLiveView(detail.spec_node_ids, liveIds)) {
+      if (!jobSettingsMatch(detail.settings)) {
         return false
       }
       if (isClassroomJobPlayable(detail.status)) {
         return applyReadyDetail(detail).ok
       }
-      if (!isClassroomJobActive(detail.status)) {
-        return false
-      }
-      classroomStore.setJobState({
-        id: detail.id,
-        status: detail.status,
-        progress: detail.progress ?? null,
-        error: detail.error_message ?? null,
-      })
-      void awaitJobReady(detail.id, classroomStore.queueGeneration)
-      return true
+      return false
     } catch {
       return false
     }
@@ -460,6 +466,10 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       if (generation !== classroomStore.queueGeneration) return { ok: false, reason: 'cancelled' }
       const message = err instanceof Error ? err.message : String(err)
       if (message === 'cancelled') return { ok: false, reason: 'cancelled' }
+      if (err instanceof ClassroomJobsBusyError) {
+        classroomStore.setJobState({ status: null, progress: null, error: message })
+        return { ok: false, reason: 'failed' }
+      }
       classroomStore.setJobState({ status: 'failed', error: message })
       return { ok: false, reason: 'failed' }
     }
@@ -490,22 +500,37 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       }
       const mode = classroomStore.presentation
       const liveIds = collectLiveNodeIds(data.nodes)
-      const preparedFitsView =
-        classroomStore.preparedSteps.length > 0 &&
-        classroomPrepFitsLiveView(classroomStore.specNodeIds, liveIds) &&
-        classroomPrepSettingsMatch(classroomStore.prepSettings, classroomStore.livePrepSettings())
-      if (preparedFitsView) {
-        const played = playPreparedSteps(classroomStore.preparedSteps, mode)
+      const remapped = remapPreparedStepsToLive(classroomStore.preparedSteps, liveIds)
+      const preparedFitsSettings = classroomPrepSettingsMatch(
+        classroomStore.prepSettings,
+        classroomStore.livePrepSettings()
+      )
+      const preparedFitsLive = preparedLectureFitsLive(
+        classroomStore.preparedSteps,
+        liveIds,
+        classroomStore.specNodeIds
+      )
+      if (remapped.length && preparedFitsSettings && preparedFitsLive) {
+        classroomStore.setPreparedSteps(remapped, [...liveIds])
+        const played = playPreparedSteps(remapped, mode)
         return publishQueueResult(
           'start',
           played.ok ? { ok: true, phase: 'playing' } : played
         )
       }
-      if (classroomStore.preparedSteps.length) {
-        classroomStore.clearPrepared()
+      if (classroomStore.preparedSteps.length && (!preparedFitsSettings || !preparedFitsLive)) {
+        classroomStore.setPreparedSteps([], [])
       }
       const attached = await restorePreparedFromServer()
-      if (classroomStore.preparedSteps.length) {
+      if (
+        classroomStore.preparedSteps.length &&
+        classroomPrepSettingsMatch(classroomStore.prepSettings, classroomStore.livePrepSettings()) &&
+        preparedLectureFitsLive(
+          classroomStore.preparedSteps,
+          liveIds,
+          classroomStore.specNodeIds
+        )
+      ) {
         return publishQueueResult('start', { ok: true, phase: 'prepared' })
       }
       if (attached && classroomStore.jobId && isClassroomJobActive(classroomStore.jobStatus)) {
@@ -513,6 +538,9 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
           'start',
           await awaitJobReady(classroomStore.jobId, classroomStore.queueGeneration)
         )
+      }
+      if (classroomStore.preparedSteps.length) {
+        classroomStore.clearPrepared()
       }
       return publishQueueResult('start', await startQueuedLecture(reuse))
     } finally {

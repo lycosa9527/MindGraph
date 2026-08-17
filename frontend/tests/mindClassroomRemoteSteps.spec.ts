@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   classroomJobFitsLiveNodes,
+  classroomReadyJobIsUsable,
   collectLiveNodeIds,
   mapRemoteLectureSteps,
+  preparedLectureFitsLive,
+  remapPreparedStepsToLive,
 } from '@/utils/mindClassroomRemoteSteps'
 
 describe('mapRemoteLectureSteps', () => {
@@ -52,6 +55,50 @@ describe('mapRemoteLectureSteps', () => {
       )
     ).toBe(true)
     expect(classroomJobFitsLiveNodes([], live)).toBe(true)
+  })
+
+  it('treats a Kitty full node-id rewrite as unusable (blue Start)', () => {
+    const live = collectLiveNodeIds([{ id: 'new-root' }, { id: 'new-b1' }])
+    const steps = [
+      {
+        id: 'overview-0',
+        kind: 'overview' as const,
+        title: 'Open',
+        caption: 'Welcome',
+        bullets: [],
+        focusNodeIds: ['old-a', 'old-b'],
+        branchNodeId: 'old-a',
+        dwellMs: 1000,
+        themeIndex: 0,
+      },
+    ]
+    const remapped = remapPreparedStepsToLive(steps, live)
+    expect(remapped).toHaveLength(1)
+    expect(remapped[0]?.focusNodeIds).toEqual([])
+    expect(preparedLectureFitsLive(steps, live, ['old-a', 'old-b'])).toBe(false)
+    expect(
+      classroomReadyJobIsUsable(
+        {
+          spec_node_ids: ['old-a', 'old-b'],
+          result_json: {
+            steps: [{ id: 'overview-0', caption: 'Welcome', focus_node_ids: ['old-a'] }],
+          },
+        },
+        live
+      )
+    ).toBe(false)
+    expect(
+      classroomReadyJobIsUsable(
+        {
+          spec_node_ids: ['old-a'],
+          result_json: {
+            steps: [{ id: 'overview-0', caption: 'Welcome', focus_node_ids: ['old-a'] }],
+            transcript_replaced: true,
+          },
+        },
+        collectLiveNodeIds([{ id: 'old-a' }])
+      )
+    ).toBe(false)
   })
 
   it('gives long captions enough dwell so TTS is not cut at 20s', () => {

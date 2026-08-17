@@ -5,6 +5,7 @@ import { createPinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { ClassroomJobsBusyError } from '@/composables/mindMap/mindClassroomJobApi'
 import {
   teardownMindClassroomLecture,
   useMindClassroomLecture,
@@ -346,6 +347,161 @@ describe('useMindClassroomLecture queued start', () => {
     const started = await lecture?.startLecture()
     expect(started).toEqual({ ok: true, phase: 'playing' })
     expect(enqueueMindClassroomJob).not.toHaveBeenCalled()
+    app.unmount()
+  })
+
+  it('starts fresh when Kitty replaced every snapshot node id', async () => {
+    fetchMindClassroomJobByDiagram.mockRejectedValue(new Error('HTTP 404'))
+    enqueueMindClassroomJob.mockResolvedValue({ job_id: 'job-new', status: 'queued' })
+    watchMindClassroomJob.mockResolvedValue({
+      ...readyClassroomJob('job-new', {
+        id: 's1',
+        kind: 'overview',
+        title: 'Hello',
+        caption: 'Welcome',
+        focus_node_ids: ['new-root'],
+      }),
+      spec_node_ids: ['new-root'],
+    })
+
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const saved = useSavedDiagramsStore(pinia)
+    saved.setActiveDiagram('diagram-pillow')
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'new-root', text: '枕头', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+
+    const classroom = useMindClassroomStore(pinia)
+    classroom.setPreparedSteps(
+      [
+        {
+          id: 'overview-0',
+          kind: 'overview',
+          title: 'Open',
+          caption: 'Welcome',
+          bullets: [],
+          focusNodeIds: ['old-a'],
+          dwellMs: 1000,
+          themeIndex: 0,
+        },
+      ],
+      ['old-a', 'old-b']
+    )
+
+    const started = await lecture?.startLecture()
+    expect(started).toEqual({ ok: true, phase: 'prepared' })
+    expect(classroom.isLecturing).toBe(false)
+    expect(enqueueMindClassroomJob).toHaveBeenCalled()
+    expect(classroom.preparedSteps[0]?.focusNodeIds).toEqual(['new-root'])
+    app.unmount()
+  })
+
+  it('does not restore a ready job whose snapshot no longer fits the canvas', async () => {
+    fetchMindClassroomJobByDiagram.mockResolvedValue({
+      id: 'job-old',
+      status: 'ready',
+      settings: matchingSettings,
+      spec_node_ids: ['old-a', 'old-b'],
+      result_json: {
+        steps: [{ id: 's1', kind: 'overview', caption: 'Hi', focus_node_ids: ['old-a'] }],
+      },
+    })
+
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const saved = useSavedDiagramsStore(pinia)
+    saved.setActiveDiagram('diagram-pillow')
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'new-root', text: '枕头', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+
+    const classroom = useMindClassroomStore(pinia)
+    const attached = await lecture?.restorePreparedFromServer()
+    expect(attached).toBe(false)
+    expect(classroom.preparedSteps).toEqual([])
+    app.unmount()
+  })
+
+  it('reattaches a generating job even when Kitty replaced live node ids', async () => {
+    fetchMindClassroomJobByDiagram.mockResolvedValue({
+      id: 'job-live',
+      status: 'generating',
+      settings: { ...matchingSettings, llm_model: 'deepseek' },
+      spec_node_ids: ['old-a', 'old-b'],
+      progress: { phase: 'script_parallel' },
+    })
+    watchMindClassroomJob.mockImplementation(() => new Promise(() => undefined))
+
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const saved = useSavedDiagramsStore(pinia)
+    saved.setActiveDiagram('diagram-pillow')
+    const llm = useLLMResultsStore(pinia)
+    llm.setSelectedModel('deepseek')
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'new-root', text: '枕头', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+
+    const classroom = useMindClassroomStore(pinia)
+    const attached = await lecture?.restorePreparedFromServer()
+    expect(attached).toBe(true)
+    expect(classroom.jobId).toBe('job-live')
+    expect(classroom.jobStatus).toBe('generating')
+    expect(enqueueMindClassroomJob).not.toHaveBeenCalled()
+    app.unmount()
+  })
+
+  it('does not attach another map job when the per-user cap returns 429', async () => {
+    enqueueMindClassroomJob.mockRejectedValue(
+      new ClassroomJobsBusyError('Too many active classroom jobs (1/1). Wait or cancel.', 'job-busy')
+    )
+    fetchMindClassroomJobByDiagram.mockRejectedValue(new Error('HTTP 404'))
+
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'topic', text: 'Topic', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+
+    const classroom = useMindClassroomStore(pinia)
+    const started = await lecture?.startLecture()
+    expect(started).toEqual({ ok: false, reason: 'failed' })
+    expect(classroom.jobStatus).toBeNull()
+    expect(classroom.preparedSteps).toEqual([])
+    expect(watchMindClassroomJob).not.toHaveBeenCalled()
     app.unmount()
   })
 

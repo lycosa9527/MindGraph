@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from services.mind_classroom.enqueue import ClassroomJobsBusy
 from services.mind_classroom.queue_dispatch import (
     KICK_AFTER_SECONDS,
     QUEUED_GIVE_UP_SECONDS,
@@ -20,6 +21,24 @@ def test_find_reusable_includes_in_flight_jobs() -> None:
     text = Path("repositories/mind_classroom_repo.py").read_text(encoding="utf-8")
     assert '_REUSABLE_STATUSES = ("ready", "partial", "queued", "planning", "generating")' in text
     assert "MindClassroomJob.status.in_(_REUSABLE_STATUSES)" in text
+    assert "async def list_active_jobs" in text
+    routes = Path("routers/features/mind_classroom/routes.py").read_text(encoding="utf-8")
+    assert "_STALE_MINUTES = 15" in routes
+    assert (
+        "publish_classroom_job_snapshot(job_id)"
+        in routes.split("async def _sweep_stale")[1].split("async def _refresh_queued_job")[0]
+    )
+    body = text.split("async def find_reusable")[1].split("async def list_jobs_for_diagram")[0]
+    assert "if row.status in _ACTIVE_STATUSES:" in body
+    assert "classroom_ready_job_reusable" in body
+    assert "MindClassroomJob.spec_hash ==" not in body
+
+
+def test_busy_error_exposes_blocking_job_id() -> None:
+    """A 429 names the other in-flight job so the user can cancel it."""
+    exc = ClassroomJobsBusy(1, 1, "job-busy")
+    assert exc.job_id == "job-busy"
+    assert "1/1" in str(exc)
 
 
 def test_queued_watch_action_waits_then_kicks_then_fails() -> None:

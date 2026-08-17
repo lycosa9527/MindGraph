@@ -19,7 +19,7 @@ from routers.auth.dependencies import get_async_db_with_request_rls, get_current
 from routers.features.zhihui.routes import _conversation_list_item, _generation_payload
 from services.mind_classroom.celery_log import log_classroom_celery
 from services.mind_classroom.diagram_spec import load_owned_diagram_spec
-from services.mind_classroom.enqueue import create_and_enqueue_job
+from services.mind_classroom.enqueue import ClassroomJobsBusy, create_and_enqueue_job
 from services.mind_classroom.job_events import publish_classroom_job_snapshot
 from services.mind_classroom.job_payload import job_payload
 from services.mind_classroom.job_stream import classroom_job_stream_response
@@ -54,7 +54,7 @@ _TONES = frozenset(
 _SCOPES = frozenset({"main_branch", "each_node"})
 _STYLES = frozenset({"general", "chalkboard", "comic", "handdrawn"})
 _AUDIENCE = frozenset({"general", "primary", "junior", "senior", "university", "adult", "expert"})
-_STALE_MINUTES = 60
+_STALE_MINUTES = 15
 
 
 class ClassroomJobRequest(BaseModel):
@@ -100,12 +100,14 @@ async def _sweep_stale(user_id: int) -> None:
     try:
         async with system_rls_session() as db:
             repo = MindClassroomJobRepository(db)
-            marked, task_ids = await repo.mark_stale_active_jobs(
+            marked, task_ids, job_ids = await repo.mark_stale_active_jobs(
                 max_age_minutes=_STALE_MINUTES,
                 user_id=user_id,
             )
         if marked:
             logger.info("[MindClassroom] Marked %s stale job(s) user=%s", marked, user_id)
+        for job_id in job_ids:
+            await publish_classroom_job_snapshot(job_id)
         for task_id in task_ids:
             try:
                 await asyncio.to_thread(celery_app.control.revoke, task_id, terminate=False)
@@ -153,6 +155,11 @@ async def start_classroom_job(
             diagram_id=(body.diagram_id or "").strip() or None,
             reuse=body.reuse,
         )
+    except ClassroomJobsBusy as exc:
+        detail: dict[str, Any] = {"message": str(exc)}
+        if exc.job_id:
+            detail["job_id"] = exc.job_id
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=detail) from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
     except ValueError as exc:
