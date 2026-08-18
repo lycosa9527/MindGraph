@@ -49,5 +49,7 @@ async function invalidatePreparedForSettingsChange(): Promise<void> {
         }
       })
   )
-  eventBus.emit('classroom:restore_prepared_requested', {})
+  if (classroomStore.isLaunchActive) {
+    eventBus.emit('classroom:restore_prepared_requested', {})
+  }
 }

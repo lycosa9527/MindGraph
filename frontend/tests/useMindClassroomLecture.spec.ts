@@ -248,6 +248,80 @@ describe('useMindClassroomLecture lifecycle', () => {
     app.unmount()
   })
 
+  it('does not restore a classroom job when only the diagram or settings change', async () => {
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const saved = useSavedDiagramsStore(pinia)
+    const llm = useLLMResultsStore(pinia)
+    const classroom = useMindClassroomStore(pinia)
+    const emitSpy = vi.spyOn(eventBus, 'emit')
+
+    saved.setActiveDiagram('diagram-silent')
+    llm.setSelectedModel('qwen')
+    await nextTick()
+    classroom.setPreparedSteps(steps)
+    classroom.setMastery('review')
+    await nextTick()
+
+    expect(emitSpy).not.toHaveBeenCalledWith('classroom:restore_prepared_requested', {})
+    expect(emitSpy).not.toHaveBeenCalledWith(
+      'kitty:lecture_prefetch_requested',
+      expect.anything()
+    )
+    emitSpy.mockRestore()
+    app.unmount()
+  })
+
+  it('restores the job and warms TTS only after the classroom modal opens', async () => {
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const saved = useSavedDiagramsStore(pinia)
+    saved.setActiveDiagram('diagram-modal')
+    await nextTick()
+    const classroom = useMindClassroomStore(pinia)
+    classroom.setPreparedSteps(steps)
+    const emitSpy = vi.spyOn(eventBus, 'emit')
+    classroom.openModal()
+    await nextTick()
+    expect(emitSpy).toHaveBeenCalledWith('classroom:restore_prepared_requested', {})
+    expect(emitSpy).toHaveBeenCalledWith('kitty:lecture_prefetch_requested', {
+      text: 'First caption',
+      stepId: 'first',
+    })
+    emitSpy.mockRestore()
+    app.unmount()
+  })
+
+  it('restores classroom prep when the LLM changes while the modal is open', async () => {
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const saved = useSavedDiagramsStore(pinia)
+    const llm = useLLMResultsStore(pinia)
+    saved.setActiveDiagram('diagram-llm')
+    llm.setSelectedModel('qwen')
+    await nextTick()
+    const classroom = useMindClassroomStore(pinia)
+    classroom.openModal()
+    await nextTick()
+    const emitSpy = vi.spyOn(eventBus, 'emit')
+    llm.setSelectedModel('deepseek')
+    await nextTick()
+    expect(emitSpy).toHaveBeenCalledWith('classroom:restore_prepared_requested', {})
+    emitSpy.mockRestore()
+    app.unmount()
+  })
+
   it('starts playback without cancelling first-slide warmup', async () => {
     const pinia = createPinia()
     const app = createApp(LectureProbe)

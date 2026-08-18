@@ -1,10 +1,10 @@
 /**
- * Bind 思维讲堂 launch prep to the visible diagram (saved id + LLM variant).
+ * Park 思维讲堂 prep per diagram + LLM. Server restore only while launch is
+ * active — opening a map must not start classroom work.
  */
 import { watch } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { isClassroomJobActive } from '@/composables/mindMap/mindClassroomJobApi'
 import { useDiagramStore, useLLMResultsStore, useMindClassroomStore, useSavedDiagramsStore } from '@/stores'
 import { resetLectureTtsCatchup } from '@/composables/mindMap/warmupLectureTts'
 import { mindClassroomPrepKey } from '@/utils/mindClassroomPrepSlot'
@@ -15,7 +15,6 @@ import {
 } from '@/utils/mindClassroomRemoteSteps'
 
 export function bindClassroomPrepToDiagram(options: {
-  awaitJobReady: (jobId: string, generation: number) => void
   teardownLecture: (next: { restoreViewport?: boolean; preservePrepared?: boolean }) => void
 }): void {
   const classroomStore = useMindClassroomStore()
@@ -60,15 +59,12 @@ export function bindClassroomPrepToDiagram(options: {
           )
         ) {
           classroomStore.setPreparedSteps(remapped, [...collectLiveNodeIds(liveNodes)])
-          return
+        } else {
+          classroomStore.setPreparedSteps([], [])
         }
-        classroomStore.setPreparedSteps([], [])
       }
-      if (classroomStore.jobId && isClassroomJobActive(classroomStore.jobStatus)) {
-        options.awaitJobReady(classroomStore.jobId, classroomStore.queueGeneration)
-        return
-      }
-      if (nextId) eventBus.emit('classroom:restore_prepared_requested', {})
+      if (!classroomStore.isLaunchActive || !nextId) return
+      eventBus.emit('classroom:restore_prepared_requested', {})
     },
     { immediate: true }
   )

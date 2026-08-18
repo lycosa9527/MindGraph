@@ -28,6 +28,7 @@ import {
 } from '@/composables/mindMap/mindClassroomLectureSpeak'
 import {
   beginFirstLectureSlideWarmup,
+  bindClassroomLaunchToModal,
   bindLectureVoiceWarmupEvents,
   requestFirstLectureSlidePrefetch,
   resetLectureTtsCatchup,
@@ -397,6 +398,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
   }
 
   async function restorePreparedFromServer(): Promise<boolean> {
+    if (!classroomStore.isLaunchActive) return false
     const authStore = useAuthStore()
     if (!authStore.isAuthenticated) return false
     const diagramId = useSavedDiagramsStore().activeDiagramId
@@ -412,6 +414,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       )
       if (generation !== classroomStore.queueGeneration) return false
       if (prepKey && prepKey !== classroomStore.activePrepKey) return false
+      if (!classroomStore.isLaunchActive) return false
       if (
         isClassroomJobActive(detail.status) &&
         classroomJobLlmModelMatches(detail.settings, llmModel)
@@ -663,6 +666,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
   function bootstrapEngine(): void {
     const owner = 'MindClassroomLectureEngine'
     bindLectureVoiceWarmupEvents(owner)
+    bindClassroomLaunchToModal()
     bindClassroomReadyToast(owner)
     eventBus.onWithOwner(
       'classroom:start_requested',
@@ -753,7 +757,6 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       }
     })
     bindClassroomPrepToDiagram({
-      awaitJobReady,
       teardownLecture: teardownMindClassroomLecture,
     })
     bindClassroomPrepToSettings()

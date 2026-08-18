@@ -398,11 +398,21 @@ describe('useMindClassroomLecture queued start', () => {
 
     const classroom = useMindClassroomStore(pinia)
     classroom.closeModal()
+    expect(await lecture?.restorePreparedFromServer()).toBe(false)
+    expect(fetchMindClassroomJobByDiagram).not.toHaveBeenCalled()
+
+    classroom.openModal()
+    const emitSpy = vi.spyOn(eventBus, 'emit')
     const attached = await lecture?.restorePreparedFromServer()
     expect(attached).toBe(true)
     expect(classroom.jobId).toBe('job-keep')
     expect(classroom.jobStatus).toBe('queued')
     expect(enqueueMindClassroomJob).not.toHaveBeenCalled()
+    classroom.closeModal()
+    expect(emitSpy).not.toHaveBeenCalledWith(
+      'kitty:lecture_prefetch_requested',
+      expect.anything()
+    )
 
     finishPoll?.(
       readyClassroomJob('job-keep', {
@@ -417,6 +427,11 @@ describe('useMindClassroomLecture queued start', () => {
       expect(classroom.preparedSteps[0]?.id).toBe('kept')
     })
     expect(classroom.jobStatus).toBe('ready')
+    expect(emitSpy).not.toHaveBeenCalledWith(
+      'kitty:lecture_prefetch_requested',
+      expect.anything()
+    )
+    emitSpy.mockRestore()
 
     const started = await lecture?.startLecture()
     expect(started).toEqual({ ok: true, phase: 'playing' })
@@ -479,6 +494,79 @@ describe('useMindClassroomLecture queued start', () => {
     app.unmount()
   })
 
+  it('plays a job restored after the modal opens without enqueueing again', async () => {
+    fetchMindClassroomJobByDiagram.mockResolvedValue(
+      readyClassroomJob('job-ready', {
+        id: 'overview-0',
+        kind: 'overview',
+        title: 'Open',
+        caption: 'Welcome',
+        focus_node_ids: ['topic'],
+      })
+    )
+
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const saved = useSavedDiagramsStore(pinia)
+    saved.setActiveDiagram('diagram-ready-play')
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'topic', text: 'Topic', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+
+    const classroom = useMindClassroomStore(pinia)
+    classroom.openModal()
+    expect(await lecture?.restorePreparedFromServer()).toBe(true)
+    expect(classroom.preparedSteps[0]?.id).toBe('overview-0')
+    const started = await lecture?.startLecture()
+    expect(started).toEqual({ ok: true, phase: 'playing' })
+    expect(enqueueMindClassroomJob).not.toHaveBeenCalled()
+    app.unmount()
+  })
+
+  it('does not restore a classroom job while the launch modal is closed', async () => {
+    fetchMindClassroomJobByDiagram.mockResolvedValue(
+      readyClassroomJob('job-ready', {
+        id: 'overview-0',
+        kind: 'overview',
+        title: 'Open',
+        caption: 'Welcome',
+        focus_node_ids: ['topic'],
+      })
+    )
+
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const saved = useSavedDiagramsStore(pinia)
+    saved.setActiveDiagram('diagram-ready')
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'topic', text: 'Topic', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+
+    const classroom = useMindClassroomStore(pinia)
+    classroom.closeModal()
+    const attached = await lecture?.restorePreparedFromServer()
+    expect(attached).toBe(false)
+    expect(classroom.preparedSteps).toEqual([])
+    expect(fetchMindClassroomJobByDiagram).not.toHaveBeenCalled()
+    app.unmount()
+  })
+
   it('does not restore a ready job whose snapshot no longer fits the canvas', async () => {
     fetchMindClassroomJobByDiagram.mockResolvedValue({
       id: 'job-old',
@@ -507,6 +595,7 @@ describe('useMindClassroomLecture queued start', () => {
     } satisfies DiagramData
 
     const classroom = useMindClassroomStore(pinia)
+    classroom.openModal()
     const attached = await lecture?.restorePreparedFromServer()
     expect(attached).toBe(false)
     expect(classroom.preparedSteps).toEqual([])
@@ -542,6 +631,7 @@ describe('useMindClassroomLecture queued start', () => {
     } satisfies DiagramData
 
     const classroom = useMindClassroomStore(pinia)
+    classroom.openModal()
     const attached = await lecture?.restorePreparedFromServer()
     expect(attached).toBe(true)
     expect(classroom.jobId).toBe('job-live')
@@ -618,6 +708,7 @@ describe('useMindClassroomLecture queued start', () => {
     } satisfies DiagramData
 
     const classroom = useMindClassroomStore(pinia)
+    classroom.openModal()
     const attached = await lecture?.restorePreparedFromServer()
     expect(attached).toBe(false)
     expect(classroom.preparedSteps).toEqual([])
@@ -658,6 +749,7 @@ describe('useMindClassroomLecture queued start', () => {
     } satisfies DiagramData
 
     const classroom = useMindClassroomStore(pinia)
+    classroom.openModal()
     const pending = lecture?.restorePreparedFromServer()
     classroom.bumpQueueGeneration()
     finishRestore?.({
@@ -681,6 +773,51 @@ describe('useMindClassroomLecture queued start', () => {
     expect(await pending).toBe(false)
     expect(classroom.preparedSteps).toEqual([])
     expect(classroom.jobId).toBeNull()
+    app.unmount()
+  })
+
+  it('does not attach a classroom job if the modal closes before restore returns', async () => {
+    let finishRestore: ((detail: Record<string, unknown>) => void) | undefined
+    fetchMindClassroomJobByDiagram.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishRestore = resolve
+        })
+    )
+
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const saved = useSavedDiagramsStore(pinia)
+    saved.setActiveDiagram('diagram-ready')
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'topic', text: 'Topic', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+
+    const classroom = useMindClassroomStore(pinia)
+    classroom.openModal()
+    const pending = lecture?.restorePreparedFromServer()
+    classroom.closeModal()
+    finishRestore?.(
+      readyClassroomJob('job-late', {
+        id: 'late',
+        kind: 'overview',
+        title: 'Late',
+        caption: 'Too late',
+        focus_node_ids: ['topic'],
+      })
+    )
+    expect(await pending).toBe(false)
+    expect(classroom.preparedSteps).toEqual([])
+    expect(classroom.jobId).toBeNull()
+    expect(watchMindClassroomJob).not.toHaveBeenCalled()
     app.unmount()
   })
 

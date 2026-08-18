@@ -1,6 +1,8 @@
 /**
  * Ask Kitty to synthesize lecture captions into the lookahead buffer.
  */
+import { watch } from 'vue'
+
 import { eventBus } from '@/composables/core/useEventBus'
 import type { MindClassroomRemoteStep } from '@/composables/mindMap/mindClassroomJobApi'
 import { useMindClassroomStore } from '@/stores/mindClassroom'
@@ -41,11 +43,14 @@ export function beginFirstLectureSlideWarmup(
   voiceEnabled: boolean
 ): void {
   const store = useMindClassroomStore()
+  if (!store.isLaunchActive) return
   warmupPrepKey = store.activePrepKey
   const first = steps[0]
   const sameOpening = Boolean(first?.id) && store.preparedSteps[0]?.id === first.id
+  const alreadyRequested = Boolean(first?.id) && requestedPrefetchIds.has(first.id)
   if (
     sameOpening &&
+    alreadyRequested &&
     (store.voiceWarmup === 'loading' || store.voiceWarmup === 'ready')
   ) {
     return
@@ -106,12 +111,26 @@ export function tryWarmupFromJobSteps(
       live instanceof Set ? [...live] : [...collectLiveNodeIds(live)]
     store.setPreparedSteps(mapped, snapshotIds)
   }
-  if (store.voiceWarmup === 'idle') {
+  if (store.voiceWarmup === 'idle' && store.isLaunchActive) {
     resetLectureTtsCatchup()
     beginFirstLectureSlideWarmup(mapped, voiceEnabled)
     return true
   }
   return grew
+}
+
+export function bindClassroomLaunchToModal(): void {
+  const store = useMindClassroomStore()
+  watch(
+    () => store.modalOpen,
+    (open) => {
+      if (!open || store.isLecturing) return
+      eventBus.emit('classroom:restore_prepared_requested', {})
+      if (!store.preparedSteps.length) return
+      beginFirstLectureSlideWarmup(store.preparedSteps, store.voiceEnabled)
+    },
+    { immediate: true }
+  )
 }
 
 export function bindLectureVoiceWarmupEvents(owner: string): void {

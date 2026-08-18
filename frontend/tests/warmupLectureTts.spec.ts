@@ -65,8 +65,42 @@ describe('warmupLectureTts', () => {
     emitSpy.mockRestore()
   })
 
+  it('treats classroom launch as inactive until the modal opens or a lecture starts', () => {
+    const classroom = useMindClassroomStore()
+    expect(classroom.isLaunchActive).toBe(false)
+    classroom.openModal()
+    expect(classroom.isLaunchActive).toBe(true)
+    classroom.closeModal()
+    classroom.setStartInFlight(true)
+    expect(classroom.isLaunchActive).toBe(true)
+    classroom.setStartInFlight(false)
+    classroom.beginSession([first], 'canvas_tour')
+    expect(classroom.isLaunchActive).toBe(true)
+  })
+
+  it('does not start TTS warmup until the classroom modal is open', () => {
+    const classroom = useMindClassroomStore()
+    classroom.setPreparedSteps([first])
+    const emitSpy = vi.spyOn(eventBus, 'emit')
+    beginFirstLectureSlideWarmup([first], true)
+    expect(classroom.voiceWarmup).toBe('idle')
+    expect(emitSpy).not.toHaveBeenCalledWith('kitty:lecture_prefetch_requested', {
+      text: 'Welcome to the map',
+      stepId: 's1',
+    })
+    classroom.openModal()
+    beginFirstLectureSlideWarmup([first], true)
+    expect(classroom.voiceWarmup).toBe('loading')
+    expect(emitSpy).toHaveBeenCalledWith('kitty:lecture_prefetch_requested', {
+      text: 'Welcome to the map',
+      stepId: 's1',
+    })
+    emitSpy.mockRestore()
+  })
+
   it('marks the start button loading voice until first-slide TTS is ready', () => {
     const classroom = useMindClassroomStore()
+    classroom.openModal()
     classroom.setPreparedSteps([first])
     const emitSpy = vi.spyOn(eventBus, 'emit')
     beginFirstLectureSlideWarmup([first], true)
@@ -83,6 +117,7 @@ describe('warmupLectureTts', () => {
 
   it('does not toast ready when first-slide TTS fails', () => {
     const classroom = useMindClassroomStore()
+    classroom.openModal()
     classroom.setPreparedSteps([first])
     const emitSpy = vi.spyOn(eventBus, 'emit')
     beginFirstLectureSlideWarmup([first], true)
@@ -94,12 +129,14 @@ describe('warmupLectureTts', () => {
 
   it('skips voice warmup when lecture voice is off', () => {
     const classroom = useMindClassroomStore()
+    classroom.openModal()
     beginFirstLectureSlideWarmup([first], false)
     expect(classroom.voiceWarmup).toBe('ready')
   })
 
   it('starts TTS from a partial job payload and does not re-prefetch the same slide', () => {
     const classroom = useMindClassroomStore()
+    classroom.openModal()
     const emitSpy = vi.spyOn(eventBus, 'emit')
     expect(
       tryWarmupFromJobSteps(
@@ -137,6 +174,7 @@ describe('warmupLectureTts', () => {
   it('prefetches again when a new map reuses the same slide id', () => {
     const emitSpy = vi.spyOn(eventBus, 'emit')
     const classroom = useMindClassroomStore()
+    classroom.openModal()
     tryWarmupFromJobSteps(
       [{ id: 'overview-0', kind: 'overview', caption: 'Deepseek opening' }],
       new Set(['deepseek-a']),
@@ -161,6 +199,7 @@ describe('warmupLectureTts', () => {
 
   it('does not prefetch later slides when a later family lands on the job', () => {
     const emitSpy = vi.spyOn(eventBus, 'emit')
+    useMindClassroomStore().openModal()
     tryWarmupFromJobSteps(
       [{ id: 'overview-0', kind: 'overview', caption: 'Welcome to the map' }],
       new Set(),

@@ -13,7 +13,7 @@ export function bindClassroomReadyToast(owner: string): void {
   eventBus.onWithOwner(
     'classroom:ready',
     () => {
-      if (classroomStore.isLecturing) return
+      if (classroomStore.isLecturing || classroomStore.modalOpen) return
       notify.showNotification({
         title: t('canvas.mindClassroom.title'),
         message: t('canvas.mindClassroom.queue.readyHint'),

@@ -102,6 +102,9 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
   })
 
   const isLecturing = computed(() => status.value !== 'idle')
+  const isLaunchActive = computed(
+    () => modalOpen.value || isLecturing.value || startInFlight.value
+  )
   const isSlideDeckMode = computed(() => isLecturing.value && activeMode.value === 'slide_deck')
   const isCanvasTourMode = computed(() => isLecturing.value && activeMode.value === 'canvas_tour')
   const currentStep = computed(() => steps.value[stepIndex.value] ?? null)
@@ -376,6 +379,7 @@ export const useMindClassroomStore = defineStore('mindClassroom', () => {
     listPreparedJobs,
     endSession,
     isLecturing,
+    isLaunchActive,
     isSlideDeckMode,
     isCanvasTourMode,
     currentStep,

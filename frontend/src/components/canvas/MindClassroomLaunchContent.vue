@@ -2,7 +2,7 @@
 /**
  * Mind Classroom launch settings — readable modal / panel layout.
  */
-import { computed, nextTick, onMounted } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
@@ -21,7 +21,6 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import {
   requestClassroomRestart,
-  requestClassroomRestorePrepared,
   requestClassroomStart,
 } from '@/composables/mindMap/classroomCommands'
 import {
@@ -100,10 +99,6 @@ const startFillPercent = computed(() =>
   mindClassroomStartFillPercent(progressStats.value.done, progressStats.value.total)
 )
 const startFailed = computed(() => buttonChrome.value.tone === 'failed')
-
-onMounted(() => {
-  requestClassroomRestorePrepared()
-})
 
 const masteryIcons = {
   first_look: Sparkles,

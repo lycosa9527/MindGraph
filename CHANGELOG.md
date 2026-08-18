@@ -5,7 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.13] - 2026-08-19
+
+> **思维讲堂 does not start a job or TTS until the mascot modal opens.**
+
+### Fixed
+
+- **Classroom launch gate** — Opening a diagram no longer restores the 思维讲堂 job or prefetches first-slide TTS. The by-diagram GET, job watch, and CosyVoice warmup start when the user opens the mascot modal (or clicks Start). Closing the modal does not cancel an in-flight script; a late GET after close is dropped.
+
+### Tests
+
+- `frontend/tests/useMindClassroomLecture.spec.ts` — diagram / settings stay silent; modal open restores
+- `frontend/tests/useMindClassroomLectureQueue.spec.ts` — restore gated; Start still reuses; late GET after close is dropped
+- `frontend/tests/warmupLectureTts.spec.ts` — `isLaunchActive`
+
 ## [5.180.12] - 2026-08-19
+
 
 > **Mind-map branches keep a stable UUID; new main branches balance clockwise; v2 drag shows the dashed drop target.**
 
