@@ -31,6 +31,8 @@ def test_find_reusable_includes_in_flight_jobs() -> None:
     body = text.split("async def find_reusable")[1].split("async def list_jobs_for_diagram")[0]
     assert "if row.status in _ACTIVE_STATUSES:" in body
     assert "classroom_ready_job_reusable" in body
+    assert "classroom_settings_match" in body
+    assert "row.settings != settings" not in body
     assert "MindClassroomJob.spec_hash ==" not in body
 
 

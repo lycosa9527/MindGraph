@@ -22,6 +22,7 @@ import type { DiagramData } from '@/types'
 const enqueueMindClassroomJob = vi.fn()
 const watchMindClassroomJob = vi.fn()
 const cancelMindClassroomJob = vi.fn()
+const fetchMindClassroomJob = vi.fn()
 const fetchMindClassroomJobByDiagram = vi.fn()
 
 vi.mock('@/composables/mindMap/mindClassroomJobApi', async (importOriginal) => {
@@ -32,6 +33,7 @@ vi.mock('@/composables/mindMap/mindClassroomJobApi', async (importOriginal) => {
     watchMindClassroomJob: (...args: unknown[]) => watchMindClassroomJob(...args),
     pollMindClassroomJob: (...args: unknown[]) => watchMindClassroomJob(...args),
     cancelMindClassroomJob: (...args: unknown[]) => cancelMindClassroomJob(...args),
+    fetchMindClassroomJob: (...args: unknown[]) => fetchMindClassroomJob(...args),
     fetchMindClassroomJobByDiagram: (...args: unknown[]) => fetchMindClassroomJobByDiagram(...args),
   }
 })
@@ -90,6 +92,8 @@ describe('useMindClassroomLecture queued start', () => {
     enqueueMindClassroomJob.mockReset()
     watchMindClassroomJob.mockReset()
     cancelMindClassroomJob.mockReset()
+    fetchMindClassroomJob.mockReset()
+    fetchMindClassroomJob.mockRejectedValue(new Error('no job'))
     fetchMindClassroomJobByDiagram.mockReset()
     fetchMindClassroomJobByDiagram.mockRejectedValue(new Error('no job'))
     vi.stubGlobal(
@@ -242,6 +246,76 @@ describe('useMindClassroomLecture queued start', () => {
     )
     expect(await pending).toEqual({ ok: true, phase: 'prepared' })
     emitSpy.mockRestore()
+    app.unmount()
+  })
+
+  it('keeps the first-branch warmup when ready snapshot ids drifted', async () => {
+    enqueueMindClassroomJob.mockResolvedValue({ job_id: 'job-drift', status: 'queued' })
+    watchMindClassroomJob.mockResolvedValue({
+      ...readyClassroomJob('job-drift', {
+        id: 'overview-0',
+        kind: 'overview',
+        title: 'Open',
+        caption: 'Welcome',
+        focus_node_ids: ['topic'],
+      }),
+      spec_node_ids: ['stale-a', 'stale-b', 'stale-c'],
+    })
+
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'topic', text: 'Topic', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+
+    const classroom = useMindClassroomStore(pinia)
+    const started = await lecture?.startLecture()
+    expect(started).toEqual({ ok: true, phase: 'prepared' })
+    expect(classroom.preparedSteps[0]?.id).toBe('overview-0')
+    expect(classroom.jobStatus).toBe('ready')
+    app.unmount()
+  })
+
+  it('reattaches a ready row when the SSE watch drops at terminal', async () => {
+    enqueueMindClassroomJob.mockResolvedValue({ job_id: 'job-drop', status: 'queued' })
+    watchMindClassroomJob.mockRejectedValue(new Error('stream_unavailable'))
+    fetchMindClassroomJob.mockResolvedValue(
+      readyClassroomJob('job-drop', {
+        id: 'overview-0',
+        kind: 'overview',
+        title: 'Open',
+        caption: 'Welcome',
+        focus_node_ids: ['topic'],
+      })
+    )
+
+    const pinia = createPinia()
+    const app = createApp(LectureProbe)
+    app.use(pinia)
+    app.mount(document.createElement('div'))
+
+    const auth = useAuthStore(pinia)
+    auth.user = { id: 1, username: 'tester' } as never
+    const diagram = useDiagramStore(pinia)
+    diagram.data = {
+      type: 'mindmap',
+      nodes: [{ id: 'topic', text: 'Topic', type: 'topic', position: { x: 0, y: 0 } }],
+      connections: [],
+    } satisfies DiagramData
+
+    const classroom = useMindClassroomStore(pinia)
+    const started = await lecture?.startLecture()
+    expect(started).toEqual({ ok: true, phase: 'prepared' })
+    expect(classroom.preparedSteps[0]?.id).toBe('overview-0')
+    expect(fetchMindClassroomJob).toHaveBeenCalledWith('job-drop')
     app.unmount()
   })
 

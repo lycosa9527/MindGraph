@@ -16,6 +16,7 @@ from models.domain.mind_classroom import (
 from repositories.base import BaseRepository
 from services.mind_classroom.job_match import (
     classroom_ready_job_reusable,
+    classroom_settings_match,
     job_matches_llm_model,
     spec_snapshot_node_ids,
 )
@@ -163,7 +164,7 @@ class MindClassroomJobRepository(BaseRepository[MindClassroomJob]):
         wanted_hash = (spec_hash or "").strip()
         live = live_ids if live_ids is not None else set()
         for row in result.scalars().all():
-            if row.settings != settings:
+            if not classroom_settings_match(row.settings, settings):
                 continue
             if row.status in _ACTIVE_STATUSES:
                 return row

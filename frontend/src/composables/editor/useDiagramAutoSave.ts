@@ -437,6 +437,11 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     })
   }
 
+  /** Wait for in-flight PUTs before tearing down (library switch / leave). */
+  async function drainPersistQueue(): Promise<void> {
+    await persistQueue
+  }
+
   const contentFingerprint = computed(() =>
     getContentFingerprint(diagramStore.data as DiagramDataLike)
   )
@@ -507,6 +512,9 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     'llm:model_completed',
     (data: { success?: boolean }) => {
       if (shouldAutoSaveAfterLlmModelCompleted(data.success)) {
+        // Canvas fingerprint often unchanged for later models (first-result-wins).
+        // Mark dirty so library switch / leave flush cannot skip this persist.
+        isDirty.value = true
         void performSave({ bypassGeneratingGuard: true })
       }
     }
@@ -516,7 +524,10 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     'llm:generation_completed',
     (data: { allFailed?: boolean }) => {
       if (!data.allFailed) {
-        void flush()
+        void flush({
+          bypassSuppressGuard: true,
+          bypassGeneratingGuard: true,
+        })
       }
     }
   )
@@ -579,6 +590,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     trigger,
     flush,
     flushOnLeave,
+    drainPersistQueue,
     performSave,
     setSuppressFromLibrary,
     cancelTimer: cancelDebounce,

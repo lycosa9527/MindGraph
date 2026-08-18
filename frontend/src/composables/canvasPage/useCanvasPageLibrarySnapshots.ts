@@ -10,7 +10,8 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useSnapshotHistory } from '@/composables/editor/useSnapshotHistory'
-import { type LLMResult, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
+import { useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
+import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { mindMapLibraryLoadOptions } from '@/utils/mindMapLibraryLoadOptions'
@@ -20,6 +21,7 @@ import {
 } from '@/utils/mindMapLoadDebug'
 
 import { applyDiagramTypeForCanvasChrome, diagramTypeMap } from './diagramTypeMaps'
+import { flushCanvasBeforeLibrarySwitch } from './shouldFlushBeforeLibrarySwitch'
 import { shouldSkipLibraryReloadForActiveDiagram } from './skipLibraryReloadDuringGeneration'
 import { unloadCanvasForLibrarySwitch } from './unloadCanvasForLibrarySwitch'
 
@@ -58,16 +60,16 @@ export function useCanvasPageLibrarySnapshots(options: {
     // activeDiagramId still points at the old row could autosave an empty wipe.
     // flushOnLeave bypasses suppress/LLM/subgraph; fail closed unless collab
     // owns durability via live_spec (REST save is intentionally blocked).
-    if (diagramAutoSave.isDirty.value) {
-      const flushResult = await diagramAutoSave.flushOnLeave()
-      const collabOwnsPersist = diagramStore.collabSessionActive
-      if (
-        !flushResult.saved &&
-        !(collabOwnsPersist && flushResult.reason === 'skipped_guards')
-      ) {
-        notify.warning(t('canvas.library.saveBeforeSwitchFailed'))
-        return false
-      }
+    const flushBeforeSwitch = await flushCanvasBeforeLibrarySwitch({
+      isDirty: diagramAutoSave.isDirty.value,
+      isGenerating: llmResultsStore.isGenerating,
+      drainPersistQueue: () => diagramAutoSave.drainPersistQueue(),
+      flushOnLeave: () => diagramAutoSave.flushOnLeave(),
+      collabOwnsPersist: diagramStore.collabSessionActive,
+    })
+    if (flushBeforeSwitch === 'failed') {
+      notify.warning(t('canvas.library.saveBeforeSwitchFailed'))
+      return false
     }
     if (loadGen !== libraryLoadGeneration) {
       return false
@@ -100,17 +102,9 @@ export function useCanvasPageLibrarySnapshots(options: {
     savedDiagramsStore.setActiveDiagram(diagramId)
 
     const spec = diagram.spec as Record<string, unknown>
-    const llmResults = spec?.llm_results as
-      | { results?: Record<string, unknown>; selectedModel?: string }
-      | undefined
-    let specForLoad = spec
-    if (llmResults?.results && typeof llmResults.results === 'object') {
-      llmResultsStore.restoreFromSaved(
-        llmResults as { results?: Record<string, LLMResult>; selectedModel?: string },
-        diagram.diagram_type
-      )
-      specForLoad = { ...spec }
-      delete (specForLoad as Record<string, unknown>).llm_results
+    const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
+    if (llmResults) {
+      llmResultsStore.restoreFromSaved(llmResults, diagram.diagram_type)
     } else {
       llmResultsStore.clearCache()
     }

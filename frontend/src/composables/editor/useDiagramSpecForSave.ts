@@ -12,17 +12,17 @@
 import { SAVE } from '@/config'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
+import { attachLlmResultsWithinSizeLimit } from '@/stores/llmResultsPersist'
 
 function attachLlmResultsIfFit(
   base: Record<string, unknown>,
   llmResultsStore: ReturnType<typeof useLLMResultsStore>
 ): Record<string, unknown> {
-  const persisted = llmResultsStore.getResultsForPersistence()
-  if (!persisted) return base
-
-  const withLlm = { ...base, llm_results: persisted }
-  const sizeKB = new Blob([JSON.stringify(withLlm)]).size / 1024
-  return sizeKB <= SAVE.MAX_SPEC_SIZE_KB ? withLlm : base
+  return attachLlmResultsWithinSizeLimit(
+    base,
+    llmResultsStore.getResultsForPersistence(),
+    SAVE.MAX_SPEC_SIZE_KB
+  )
 }
 
 /**

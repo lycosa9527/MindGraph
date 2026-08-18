@@ -176,6 +176,29 @@ describe('llmResults regenerate paint / stamp', () => {
     expect(store.results.qwen).toBeUndefined()
   })
 
+  it('persists 2+ results even when selectedModel was never painted', () => {
+    setActivePinia(createPinia())
+    const store = useLLMResultsStore()
+    store.storeResult('qwen', { success: true, spec: { topic: 'q' }, elapsed: 1 })
+    store.storeResult('deepseek', { success: true, spec: { topic: 'd' }, elapsed: 1 })
+
+    const persisted = store.getResultsForPersistence()
+    expect(persisted?.selectedModel).toBe('qwen')
+    expect(Object.keys(persisted?.results ?? {}).sort()).toEqual(['deepseek', 'qwen'])
+  })
+
+  it('clones persisted results so a later store write cannot mutate a queued save', () => {
+    setActivePinia(createPinia())
+    const store = useLLMResultsStore()
+    store.setSelectedModel('qwen')
+    store.storeResult('qwen', { success: true, spec: { topic: 'q' }, elapsed: 1 })
+    store.storeResult('deepseek', { success: true, spec: { topic: 'd' }, elapsed: 1 })
+
+    const persisted = store.getResultsForPersistence()
+    store.storeResult('qwen', { success: true, spec: { topic: 'mutated' }, elapsed: 2 })
+    expect(persisted?.results.qwen.spec).toEqual({ topic: 'q' })
+  })
+
   it('does not restore saved llm_results over an in-flight generate', () => {
     setActivePinia(createPinia())
     const store = useLLMResultsStore()

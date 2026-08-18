@@ -228,7 +228,9 @@ run_frontend() {
     tests/mindClassroomScript.spec.ts tests/mindClassroomPrepSlot.spec.ts \
     tests/mindClassroomJobApi.spec.ts tests/warmupLectureTts.spec.ts \
     tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts \
-    tests/unloadCanvasForLibrarySwitch.spec.ts
+    tests/unloadCanvasForLibrarySwitch.spec.ts \
+    tests/llmResultsPersist.spec.ts tests/llmResultsPersistAudit.spec.ts \
+    tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts
 }
 
 run_chrome_extension() {

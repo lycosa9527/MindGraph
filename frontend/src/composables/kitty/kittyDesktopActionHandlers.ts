@@ -13,6 +13,7 @@ import { adoptOpenCanvasSessionScope } from '@/composables/kitty/adoptOpenCanvas
 import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
+import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { mindMapLibraryLoadOptions } from '@/utils/mindMapLibraryLoadOptions'
@@ -109,14 +110,20 @@ export async function handleKittyReloadLibraryDiagramAction(
   const diagramStore = useDiagramStore()
   const spec = result.diagram.spec as Record<string, unknown>
   const diagramType = (result.diagram.diagram_type || 'mindmap') as DiagramType
+  const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
+  const llmResultsStore = useLLMResultsStore()
+  if (llmResults) {
+    llmResultsStore.restoreFromSaved(llmResults, diagramType)
+  } else {
+    llmResultsStore.reset()
+  }
   const loaded = diagramStore.loadFromSpec(
-    spec,
+    specForLoad,
     diagramType,
-    mindMapLibraryLoadOptions(diagramType, spec)
+    mindMapLibraryLoadOptions(diagramType, specForLoad)
   )
   if (loaded) {
     options.savedDiagramsStore.setActiveDiagram(targetId)
-    useLLMResultsStore().reset()
     traceKittyWorkflow('desktop', 'desktop_nav', `reload_library ${targetId.slice(0, 12)}`, {
       scope: targetId,
     })

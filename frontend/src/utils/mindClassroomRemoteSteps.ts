@@ -19,18 +19,34 @@ export function collectLiveNodeIds(
   return ids
 }
 
-export function classroomJobFitsLiveNodes(
-  raw: MindClassroomRemoteStep[] | null | undefined,
-  liveIds: Set<string>
-): boolean {
-  if (!raw?.length) return true
+export function lectureStepNodeIds(
+  raw: MindClassroomRemoteStep[] | null | undefined
+): string[] {
   const refs: string[] = []
-  for (const step of raw) {
+  for (const step of raw ?? []) {
     for (const id of step.focus_node_ids ?? []) {
       if (id) refs.push(id)
     }
     if (step.branch_node_id) refs.push(step.branch_node_id)
   }
+  return refs
+}
+
+export function lectureStepsBindLive(
+  raw: MindClassroomRemoteStep[] | null | undefined,
+  liveIds: Set<string>
+): boolean {
+  const refs = lectureStepNodeIds(raw)
+  if (!refs.length) return false
+  return refs.some((id) => liveIds.has(id))
+}
+
+export function classroomJobFitsLiveNodes(
+  raw: MindClassroomRemoteStep[] | null | undefined,
+  liveIds: Set<string>
+): boolean {
+  if (!raw?.length) return true
+  const refs = lectureStepNodeIds(raw)
   if (!refs.length) return true
   return refs.some((id) => liveIds.has(id))
 }
@@ -74,8 +90,9 @@ export function classroomReadyJobIsUsable(
   if (!raw.some((step) => String(step.caption ?? '').trim())) return false
   if (!classroomJobFitsLiveNodes(raw, liveIds)) return false
   const specIds = detail.spec_node_ids
-  if (specIds?.length && !classroomPrepFitsLiveView(specIds, liveIds)) return false
-  return true
+  if (!specIds?.length) return true
+  if (classroomPrepFitsLiveView(specIds, liveIds)) return true
+  return lectureStepsBindLive(raw, liveIds)
 }
 
 export function mapRemoteLectureSteps(

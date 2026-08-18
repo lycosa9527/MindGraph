@@ -13,6 +13,7 @@ import {
   resolveDiagramTypeFromQuery,
   shouldPriority3LoadDefaultTemplate,
 } from '@/composables/canvasPage/newCanvasBootstrap'
+import { flushCanvasBeforeLibrarySwitch } from '@/composables/canvasPage/shouldFlushBeforeLibrarySwitch'
 import { shouldSkipLibraryReloadDuringGeneration } from '@/composables/canvasPage/skipLibraryReloadDuringGeneration'
 import { unloadCanvasForLibrarySwitch } from '@/composables/canvasPage/unloadCanvasForLibrarySwitch'
 import type { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
@@ -25,11 +26,11 @@ import { replayKittyPendingCanvasAction } from '@/composables/kitty/useKittyMobi
 import { IMPORT_SPEC_KEY } from '@/config'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import type { LocaleCode } from '@/i18n/locales'
-import type { LLMResult } from '@/stores'
 import type { useAuthStore } from '@/stores/auth'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { useFeatureFlagsStore } from '@/stores/featureFlags'
 import type { useLLMResultsStore } from '@/stores/llmResults'
+import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import type { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { useUIStore } from '@/stores/ui'
 import type { DiagramType } from '@/types'
@@ -107,16 +108,16 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
 
     // flushOnLeave bypasses suppress/LLM/subgraph; fail closed unless collab
     // owns durability via live_spec (REST save is intentionally blocked).
-    if (diagramAutoSave.isDirty.value) {
-      const flushResult = await diagramAutoSave.flushOnLeave()
-      const collabOwnsPersist = diagramStore.collabSessionActive
-      if (
-        !flushResult.saved &&
-        !(collabOwnsPersist && flushResult.reason === 'skipped_guards')
-      ) {
-        notifyWarning(translate('canvas.library.saveBeforeSwitchFailed'))
-        return false
-      }
+    const flushBeforeSwitch = await flushCanvasBeforeLibrarySwitch({
+      isDirty: diagramAutoSave.isDirty.value,
+      isGenerating: llmResultsStore.isGenerating,
+      drainPersistQueue: () => diagramAutoSave.drainPersistQueue(),
+      flushOnLeave: () => diagramAutoSave.flushOnLeave(),
+      collabOwnsPersist: diagramStore.collabSessionActive,
+    })
+    if (flushBeforeSwitch === 'failed') {
+      notifyWarning(translate('canvas.library.saveBeforeSwitchFailed'))
+      return false
     }
     if (loadGen !== libraryLoadGeneration) {
       return false
@@ -146,17 +147,22 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
     savedDiagramsStore.setActiveDiagram(diagramId)
 
     const spec = diagram.spec as Record<string, unknown>
-    llmResultsStore.clearCache()
+    const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
+    if (llmResults) {
+      llmResultsStore.restoreFromSaved(llmResults, diagram.diagram_type)
+    } else {
+      llmResultsStore.clearCache()
+    }
 
-    if (diagramSpecLikelyNeedsMarkdownPipeline(spec)) {
+    if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
       await loadDiagramMarkdownPipeline({ bumpLayout: false })
     }
     if (loadGen !== libraryLoadGeneration) {
       return false
     }
-    const loadOpts = mindMapLibraryLoadOptions(diagram.diagram_type, spec)
+    const loadOpts = mindMapLibraryLoadOptions(diagram.diagram_type, specForLoad)
     const loaded = diagramStore.loadFromSpec(
-      spec,
+      specForLoad,
       diagram.diagram_type as DiagramType,
       loadOpts
     )
@@ -226,17 +232,9 @@ export function useMobileCanvasRouteLoader(options: UseMobileCanvasRouteLoaderOp
           if (!loadedType || !VALID_DIAGRAM_TYPES.includes(loadedType)) {
             notifyError(translate('notification.importUnsupportedType'))
           } else {
-            const llmResults = spec.llm_results as
-              | { results?: Record<string, unknown>; selectedModel?: string }
-              | undefined
-            let specForLoad = spec
-            if (llmResults?.results && typeof llmResults.results === 'object') {
-              llmResultsStore.restoreFromSaved(
-                llmResults as { results?: Record<string, LLMResult>; selectedModel?: string },
-                loadedType
-              )
-              specForLoad = { ...spec }
-              delete (specForLoad as Record<string, unknown>).llm_results
+            const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
+            if (llmResults) {
+              llmResultsStore.restoreFromSaved(llmResults, loadedType)
             } else {
               llmResultsStore.clearCache()
             }

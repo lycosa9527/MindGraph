@@ -29,6 +29,7 @@ import { syncFolderDiagramCounts } from '@/composables/sidebar/useDiagramArchive
 import { useAuthStore } from './auth'
 import { useDiagramStore } from './diagram'
 import { useLLMResultsStore } from './llmResults'
+import { attachLlmResultsWithinSizeLimit } from './llmResultsPersist'
 import { usePanelsStore } from './panels'
 import { getDefaultTemplate, loadSpecForDiagramType } from './specLoader'
 
@@ -1070,12 +1071,11 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     if (!spec) return
 
     llmResultsStore.updateCurrentModelSpec(spec)
-    const persisted = llmResultsStore.getResultsForPersistence()
-    if (persisted) {
-      const withLlm = { ...spec, llm_results: persisted }
-      const sizeKB = new Blob([JSON.stringify(withLlm)]).size / 1024
-      spec = sizeKB <= SAVE.MAX_SPEC_SIZE_KB ? withLlm : spec
-    }
+    spec = attachLlmResultsWithinSizeLimit(
+      spec,
+      llmResultsStore.getResultsForPersistence(),
+      SAVE.MAX_SPEC_SIZE_KB
+    )
 
     const title = resolveDiagramTitleForSave(
       diagramStore.effectiveTitle,

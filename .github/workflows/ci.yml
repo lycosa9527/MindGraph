@@ -114,7 +114,7 @@ jobs:
       - name: npm audit (high severity)
         run: npm audit --audit-level=high
       - name: Vitest (workshop reconnect + diagram meta + classroom)
-        run: npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts tests/useMindClassroomLecture.spec.ts tests/useMindClassroomLectureQueue.spec.ts tests/mindClassroomLaunchState.spec.ts tests/mindClassroomRemoteSteps.spec.ts tests/mindClassroomScript.spec.ts tests/mindClassroomPrepSlot.spec.ts tests/mindClassroomJobApi.spec.ts tests/warmupLectureTts.spec.ts tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts tests/unloadCanvasForLibrarySwitch.spec.ts
+        run: npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts tests/useMindClassroomLecture.spec.ts tests/useMindClassroomLectureQueue.spec.ts tests/mindClassroomLaunchState.spec.ts tests/mindClassroomRemoteSteps.spec.ts tests/mindClassroomScript.spec.ts tests/mindClassroomPrepSlot.spec.ts tests/mindClassroomJobApi.spec.ts tests/warmupLectureTts.spec.ts tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts tests/unloadCanvasForLibrarySwitch.spec.ts tests/llmResultsPersist.spec.ts tests/llmResultsPersistAudit.spec.ts tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts
 
   chrome-extension:
     runs-on: ubuntu-latest

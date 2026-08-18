@@ -28,6 +28,10 @@ import {
   shouldPaintCompletedLlmModel,
   shouldStampCanvasOntoLlmResult,
 } from './llmResultsPaint'
+import {
+  clonePersistedLlmResults,
+  resolvePersistedSelectedModel,
+} from './llmResultsPersist'
 import { useSavedDiagramsStore } from './savedDiagrams'
 
 // Types
@@ -490,11 +494,12 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       }
     })
     const count = Object.keys(successResults).length
-    if (count < 2 || !selectedModel.value) return null
-    return {
+    const selected = resolvePersistedSelectedModel(successResults, selectedModel.value)
+    if (count < 2 || !selected) return null
+    return clonePersistedLlmResults({
       results: successResults,
-      selectedModel: selectedModel.value,
-    }
+      selectedModel: selected,
+    })
   }
 
   /**

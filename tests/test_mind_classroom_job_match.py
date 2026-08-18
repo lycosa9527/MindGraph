@@ -2,8 +2,10 @@
 
 from services.mind_classroom.job_match import (
     classroom_ready_job_reusable,
+    classroom_settings_match,
     job_matches_live_nodes,
     job_matches_llm_model,
+    lecture_steps_bind_live,
     playable_result_json,
     spec_snapshot_node_ids,
 )
@@ -67,4 +69,46 @@ def test_ready_job_reuse_requires_hash_or_live_majority() -> None:
             result_json=steps,
         )
         is False
+    )
+    assert (
+        classroom_ready_job_reusable(
+            spec_hash="old",
+            wanted_hash="new",
+            spec_node_ids=["old-a", "old-b"],
+            live_ids={"topic", "branch-1"},
+            result_json={
+                "steps": [{"caption": "Hello", "focus_node_ids": ["topic"]}],
+            },
+        )
+        is True
+    )
+
+
+def test_classroom_settings_match_ignores_audience_title() -> None:
+    """Reuse must not miss because the localized audience title string drifted."""
+    stored = {
+        "mode": "canvas_tour",
+        "mastery": "first_look",
+        "tone": "classroom",
+        "tour_scope": "main_branch",
+        "slide_style": "general",
+        "audience_level": "general",
+        "audience_title": "大众",
+        "language": "zh-CN",
+        "llm_model": "deepseek",
+    }
+    wanted = {
+        **stored,
+        "audience_title": "General public",
+        "language": "zh",
+    }
+    assert classroom_settings_match(stored, wanted) is True
+    assert classroom_settings_match(stored, {**wanted, "llm_model": "qwen"}) is False
+    assert lecture_steps_bind_live(
+        {"steps": [{"caption": "Hi", "focus_node_ids": ["topic"]}]},
+        {"topic"},
+    )
+    assert not lecture_steps_bind_live(
+        {"steps": [{"caption": "Hi", "focus_node_ids": ["old"]}]},
+        {"topic"},
     )

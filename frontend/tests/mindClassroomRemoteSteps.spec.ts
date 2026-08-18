@@ -101,6 +101,21 @@ describe('mapRemoteLectureSteps', () => {
     ).toBe(false)
   })
 
+  it('keeps a ready job when enqueue snapshot ids drifted but the script still hits live nodes', () => {
+    const live = collectLiveNodeIds([{ id: 'topic' }, { id: 'branch-1' }])
+    expect(
+      classroomReadyJobIsUsable(
+        {
+          spec_node_ids: ['stale-a', 'stale-b', 'stale-c'],
+          result_json: {
+            steps: [{ id: 'overview-0', caption: 'Welcome', focus_node_ids: ['topic'] }],
+          },
+        },
+        live
+      )
+    ).toBe(true)
+  })
+
   it('gives long captions enough dwell so TTS is not cut at 20s', () => {
     const live = collectLiveNodeIds([{ id: 'topic' }])
     const caption = '我们先看右上角这一支，地理区位。'.repeat(20)

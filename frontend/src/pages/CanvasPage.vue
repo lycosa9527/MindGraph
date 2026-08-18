@@ -172,7 +172,6 @@ import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
 import {
   type DiagramSession,
-  type LLMResult,
   useAuthStore,
   useConceptMapRelationshipStore,
   useDiagramStore,
@@ -186,6 +185,7 @@ import {
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
 import { useKittySessionStore } from '@/stores/kittySession'
+import { splitSavedLlmResultsFromSpec } from '@/stores/llmResultsPersist'
 import { useOneSentenceStore } from '@/stores/oneSentence'
 import { usePresentationPointerStore } from '@/stores/presentationPointer'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
@@ -1285,16 +1285,9 @@ onMounted(async () => {
         if (!diagramType || !VALID_DIAGRAM_TYPES.includes(diagramType)) {
           notify.error(t('notification.importUnsupportedType'))
         } else {
-          const llmResults = spec.llm_results as
-            { results?: Record<string, unknown>; selectedModel?: string } | undefined
-          let specForLoad = spec
-          if (llmResults?.results && typeof llmResults.results === 'object') {
-            llmResultsStore.restoreFromSaved(
-              llmResults as { results?: Record<string, LLMResult>; selectedModel?: string },
-              diagramType
-            )
-            specForLoad = { ...spec }
-            delete (specForLoad as Record<string, unknown>).llm_results
+          const { specForLoad, saved: llmResults } = splitSavedLlmResultsFromSpec(spec)
+          if (llmResults) {
+            llmResultsStore.restoreFromSaved(llmResults, diagramType)
           } else {
             llmResultsStore.clearCache()
           }

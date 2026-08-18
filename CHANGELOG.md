@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.11] - 2026-08-18
+
+> **思维讲堂 Start keeps the job that just finished; multi-LLM auto-complete no longer drops peers on save or library switch.**
+
+### Fixed
+
+- **Ready attach vs enqueue snapshot** — When the first branch is already playable, finishing the job no longer clears Start just because the enqueue-time node ids drifted (LLM switch / layout settle). The script stays attached if its focus ids are still on the canvas. A Kitty full rewrite still goes back to blue Start.
+- **Second Start reuse** — Reuse matches launch settings (mode, tone, LLM, …) and ignores localized `audience_title`. A ready job whose steps still hit the live map is reused instead of paying for another Celery run.
+- **SSE close at ready** — If the watch drops when the stream ends, Start re-reads the Postgres row (or keeps the mid-job warmup) instead of toasting empty and resetting.
+- **Multi-LLM persist** — A 3-model spec that exceeds the size cap no longer strips all `llm_results` (that overwrote a good 2-model save). Pack selected + as many peers as fit. Persist even when `selectedModel` was never painted; clone the blob so a later store write cannot mutate a queued PUT.
+- **Library switch during auto-complete** — Drain in-flight PUTs before teardown. Flush again while dirty or still generating (`llm:model_completed` marks dirty because later models do not change the canvas fingerprint). Desktop, mobile, and Kitty library reload restore `llm_results` the same way.
+
+### Tests
+
+- `tests/test_mind_classroom_job_match.py` — settings match; steps bind live
+- `frontend/tests/mindClassroomRemoteSteps.spec.ts` — drifted snapshot, live focus
+- `frontend/tests/useMindClassroomLectureQueue.spec.ts` — ready attach + SSE drop
+- `frontend/tests/llmResultsPersist.spec.ts` / `llmResultsPersistAudit.spec.ts` / `llmResultsTeardown.spec.ts`
+- `frontend/tests/shouldFlushBeforeLibrarySwitch.spec.ts`
+
 ## [5.180.10] - 2026-08-18
 
 > **思维讲堂 Start follows the Postgres manifesto — Redis pushes live, a rewritten map goes back to blue Start.**

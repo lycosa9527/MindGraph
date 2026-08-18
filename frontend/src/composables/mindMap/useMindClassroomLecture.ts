@@ -13,6 +13,7 @@ import {
   type MindClassroomJobDetail,
   cancelMindClassroomJob,
   enqueueMindClassroomJob,
+  fetchMindClassroomJob,
   fetchMindClassroomJobByDiagram,
   isClassroomJobActive,
   isClassroomJobPlayable,
@@ -367,7 +368,21 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
         const message = err instanceof Error ? err.message : String(err)
         if (message === 'cancelled') return { ok: false, reason: 'cancelled' as const }
         if (message === 'stream_unavailable') {
-          return { ok: false, reason: 'empty' as const }
+          try {
+            const snapshot = await fetchMindClassroomJob(jobId)
+            if (generation !== classroomStore.queueGeneration) {
+              return { ok: false, reason: 'cancelled' as const }
+            }
+            if (prepKey && prepKey !== classroomStore.activePrepKey) {
+              return { ok: false, reason: 'cancelled' as const }
+            }
+            return applyReadyDetail(snapshot)
+          } catch {
+            if (classroomStore.preparedSteps.length) {
+              return { ok: true, phase: 'prepared' as const }
+            }
+            return { ok: false, reason: 'empty' as const }
+          }
         }
         classroomStore.setJobState({ status: 'failed', error: message })
         return { ok: false, reason: 'failed' as const }
