@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Saxla',
   'canvas.shortcutGuide.clearText': 'Düyün mətnini təmizlə',
   'canvas.shortcutGuide.learningSheetAnswers': 'Öyrənmə vərəqi cavablarını göstər/gizlət',
+  'canvas.shortcutGuide.recalcLayout': 'Düzülüşü yenidən hesabla',
   'canvas.shortcutGuide.multiSelect': 'Çoxseçim',
   'canvas.shortcutGuide.multiSelectDesc': 'İşarəçi rejimində bir neçə düyün seçmək üçün qutu sürükləyin.',
   'canvas.shortcutGuide.multiSelectHint': 'Qutu seçimi üçün sürükləyin',

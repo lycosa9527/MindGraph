@@ -139,7 +139,7 @@ export function summarizeMindMapNodesForDebug(
   }
 
   const branchNodes = nodes
-    .filter((n) => n.id.startsWith('branch-'))
+    .filter((n) => n.id !== 'topic' && n.type === 'branch')
     .map((n) => ({
       id: n.id,
       text: (n.text ?? '').trim(),

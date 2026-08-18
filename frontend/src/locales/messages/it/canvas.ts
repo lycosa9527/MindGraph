@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Salva',
   'canvas.shortcutGuide.clearText': 'Cancella il testo del nodo',
   'canvas.shortcutGuide.learningSheetAnswers': 'Mostra/masquer i risposte di la scheda',
+  'canvas.shortcutGuide.recalcLayout': 'Ricalcola il layout',
   'canvas.shortcutGuide.multiSelect': 'Sélection multiple',
   'canvas.shortcutGuide.multiSelectDesc': 'Tracez un cadre en mode pointeur per selezionare vari nodi.',
   'canvas.shortcutGuide.multiSelectHint': 'Trascina per selezionare da cadre',

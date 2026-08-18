@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Saqlash',
   'canvas.shortcutGuide.clearText': 'Tugun metnini tozalash',
   'canvas.shortcutGuide.learningSheetAnswers': 'Oyrenme vareqi javoblarini ko’rsatish/yashirish',
+  'canvas.shortcutGuide.recalcLayout': 'Joylashuvni qayta hisobla',
   'canvas.shortcutGuide.multiSelect': 'Choxtanlashim',
   'canvas.shortcutGuide.multiSelectDesc': 'Isharechi rejiminde bir neche tugun tanlashmek uchun qutu surukleyin.',
   'canvas.shortcutGuide.multiSelectHint': 'Qutu tanlovi uchun surukleyin',

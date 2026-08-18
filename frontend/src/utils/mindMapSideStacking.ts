@@ -15,6 +15,12 @@ import {
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
+import {
+  isMindMapBranchNode,
+  isMindMapL1,
+  mindMapNodeDepth,
+  mindMapNodeSide,
+} from '@/utils/mindMapLocation'
 import { findNodeIdByMindMapUid, readMindMapNodeUid } from '@/utils/mindMapNodeUid'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 
@@ -72,18 +78,14 @@ export function applyMindMapSideAnchorYPreserve(
   const anchor = nodes.find((node) => readMindMapNodeUid(node) === trimmedUid)
   if (!anchor?.position) return nodes
 
-  const sidePrefix = anchor.id.startsWith('branch-l-')
-    ? 'branch-l-'
-    : anchor.id.startsWith('branch-r-')
-      ? 'branch-r-'
-      : null
-  if (!sidePrefix) return nodes
+  const side = mindMapNodeSide(anchor.id, { node: anchor, nodes })
+  if (!side) return nodes
 
   const delta = anchorY - anchor.position.y
   if (Math.abs(delta) < 0.5) return nodes
 
   return nodes.map((node) => {
-    if (!node.position || !node.id.startsWith(sidePrefix)) return node
+    if (!node.position || mindMapNodeSide(node.id, { node, nodes }) !== side) return node
     return {
       ...node,
       position: { ...node.position, y: node.position.y + delta },
@@ -127,9 +129,13 @@ export function centerMindMapSidePackOnTopic(
   const topic = nodes.find((node) => node.id === 'topic')
   if (!topic?.position) return nodes
 
-  const sidePrefix = side === 'l' ? 'branch-l-' : 'branch-r-'
+  const wanted = side === 'l' ? 'left' : 'right'
   const l1Ids = connections
-    .filter((conn) => conn.source === 'topic' && conn.target.startsWith(`${sidePrefix}1-`))
+    .filter(
+      (conn) =>
+        conn.source === 'topic' &&
+        mindMapNodeSide(conn.target, { nodes, connections }) === wanted
+    )
     .map((conn) => conn.target)
   if (l1Ids.length === 0) return nodes
 
@@ -153,7 +159,9 @@ export function centerMindMapSidePackOnTopic(
   if (Math.abs(delta) < 0.5) return nodes
 
   return nodes.map((node) => {
-    if (!node.position || !node.id.startsWith(sidePrefix)) return node
+    if (!node.position || mindMapNodeSide(node.id, { node, nodes, connections }) !== wanted) {
+      return node
+    }
     return withShiftedY(node, delta)
   })
 }
@@ -193,7 +201,10 @@ export function centerMindMapChildrenGroupsOnParents(
   if (parentIds.length === 0) return nodes
 
   // Deepest first: nested groups settle before an outer slide moves them.
-  parentIds.sort((a, b) => branchDepth(b) - branchDepth(a))
+  parentIds.sort(
+    (a, b) =>
+      mindMapNodeDepth(b, { nodes, connections }) - mindMapNodeDepth(a, { nodes, connections })
+  )
 
   let result = nodes
   for (const parentId of parentIds) {
@@ -266,7 +277,7 @@ export function resolveMindMapSiblingSubtreeOverlaps(
   // Deeper packs first, then L1 sides (fans may grow after inner pushes + re-center).
   const parents = [...childrenMap.keys()]
     .filter((id) => id !== 'topic' && !collapsedNodeIds.has(id))
-    .sort((a, b) => branchDepth(b) - branchDepth(a))
+    .sort((a, b) => mindMapNodeDepth(b, { nodes, connections }) - mindMapNodeDepth(a, { nodes, connections }))
 
   for (const parentId of parents) {
     const kids = (childrenMap.get(parentId) ?? []).filter((id) => !collapsedNodeIds.has(id))
@@ -282,8 +293,10 @@ export function resolveMindMapSiblingSubtreeOverlaps(
   }
 
   const topicKids = childrenMap.get('topic') ?? []
-  const leftL1 = topicKids.filter((id) => id.startsWith('branch-l-1-'))
-  const rightL1 = topicKids.filter((id) => id.startsWith('branch-r-1-'))
+  const leftL1 = topicKids.filter((id) => mindMapNodeSide(id, { nodes: result, connections }) === 'left')
+  const rightL1 = topicKids.filter(
+    (id) => mindMapNodeSide(id, { nodes: result, connections }) === 'right'
+  )
   result = resolveSiblingListOverlaps(
     result,
     leftL1,
@@ -320,20 +333,30 @@ function nodeLayoutHeight(node: DiagramNode): number {
   return typeof estimated === 'number' && estimated > 0 ? estimated : DEFAULT_NODE_HEIGHT
 }
 
-function isTopLevelBranchId(id: string): boolean {
-  return /^branch-[lr]-1-/.test(id)
+function isTopLevelBranch(id: string, connections: Connection[]): boolean {
+  return isMindMapL1(id, connections)
 }
 
-function branchDepth(id: string): number {
-  const match = /^branch-[lr]-(\d+)-/.exec(id)
-  if (!match) return 0
-  return Number.parseInt(match[1], 10)
+function depthFromParentMap(nodeId: string, parentOf: Map<string, string>): number {
+  let depth = 0
+  let current: string | undefined = nodeId
+  while (current && current !== 'topic') {
+    current = parentOf.get(current)
+    depth += 1
+    if (depth > 64) break
+  }
+  return depth
 }
 
-function sidePrefixForBranchId(id: string): 'branch-l-' | 'branch-r-' | null {
-  if (id.startsWith('branch-l-')) return 'branch-l-'
-  if (id.startsWith('branch-r-')) return 'branch-r-'
-  return null
+function sameSideAs(
+  nodeId: string,
+  anchorId: string,
+  nodes: DiagramNode[],
+  connections: Connection[]
+): boolean {
+  const wanted = mindMapNodeSide(anchorId, { nodes, connections })
+  if (!wanted) return false
+  return mindMapNodeSide(nodeId, { nodes, connections }) === wanted
 }
 
 function nodeConnectionAnchorY(
@@ -615,8 +638,7 @@ export function applyMindMapIncrementalTopLevelSiblingLayout(
   const newId = findNodeIdByMindMapUid(nodes, options.newSiblingUid)
   if (!anchorId || !newId) return nodes
 
-  const sidePrefix = sidePrefixForBranchId(anchorId)
-  if (!sidePrefix) return nodes
+  if (!mindMapNodeSide(anchorId, { nodes, connections })) return nodes
 
   const childrenMap = buildChildrenMap(connections)
   const nodeById = new Map(nodes.map((node) => [node.id, node]))
@@ -660,7 +682,9 @@ export function applyMindMapIncrementalTopLevelSiblingLayout(
   const shiftDelta = options.insert === 'below' ? newH + gap : -(newH + gap)
   const idsToShift = new Set<string>()
   for (const node of nodes) {
-    if (!node.id.startsWith(sidePrefix) || !isTopLevelBranchId(node.id)) continue
+    if (!sameSideAs(node.id, anchorId, nodes, connections) || !isTopLevelBranch(node.id, connections)) {
+      continue
+    }
     if (node.id === anchorId || node.id === newId) continue
     if (!node.position) continue
     const shouldShift =
@@ -697,20 +721,24 @@ export function applyMindMapL1HeightDeltaShift(
   nodeHeights?: Record<string, number>
 ): DiagramNode[] {
   if (Math.abs(heightDelta) < 0.5) return nodes
-  if (!isTopLevelBranchId(changedL1Id)) return nodes
+  if (!isTopLevelBranch(changedL1Id, connections)) return nodes
 
   const changed = nodes.find((node) => node.id === changedL1Id)
   if (!changed?.position) return nodes
 
-  const sidePrefix = sidePrefixForBranchId(changedL1Id)
-  if (!sidePrefix) return nodes
+  if (!mindMapNodeSide(changedL1Id, { node: changed, nodes, connections })) return nodes
 
   const childrenMap = buildChildrenMap(connections)
   const anchorY = changed.position.y
   const idsToShift = new Set<string>()
 
   for (const node of nodes) {
-    if (!node.id.startsWith(sidePrefix) || !isTopLevelBranchId(node.id)) continue
+    if (
+      !sameSideAs(node.id, changedL1Id, nodes, connections) ||
+      !isTopLevelBranch(node.id, connections)
+    ) {
+      continue
+    }
     if (node.id === changedL1Id || !node.position) continue
     if (node.position.y <= anchorY + 0.5) continue
     idsToShift.add(node.id)
@@ -762,7 +790,7 @@ export function applyMindMapIncrementalDeleteLayout(
   }
 ): { nodes: DiagramNode[]; usedIncremental: boolean } {
   const survivors = afterNodes.filter(
-    (node) => node.id !== 'topic' && node.id.startsWith('branch-')
+    (node) => isMindMapBranchNode(node)
   )
   if (survivors.length > 0) {
     const withUid = survivors.filter((node) => Boolean(readMindMapNodeUid(node)))
@@ -833,7 +861,7 @@ export function applyMindMapIncrementalDeleteLayout(
     const deletedShape = nodeShapeForLayout(deletedNode, options.diagramStyleId)
     // Close the hole using the deleted node's shape against itself as a
     // conservative pair (box→28/12, underline→14/6).
-    const gap = isTopLevelBranchId(deletedId)
+    const gap = isTopLevelBranch(deletedId, beforeConnections)
       ? mindMapAdaptiveBranchGap(deletedShape, deletedShape)
       : mindMapAdaptiveSiblingGap(deletedShape, deletedShape)
     const shift = -(bounds.maxY - bounds.minY + gap)
@@ -879,7 +907,7 @@ function collectDeletedSubtreeRoots(
   beforeChildren: Map<string, string[]>
 ): string[] {
   const deletedSet = new Set(
-    deletedNodeIds.filter((id) => typeof id === 'string' && id.startsWith('branch-'))
+    deletedNodeIds.filter((id) => typeof id === 'string' && id && id !== 'topic')
   )
   if (deletedSet.size === 0) return []
 
@@ -903,7 +931,7 @@ function collectDeletedSubtreeRoots(
   })
 
   roots.sort((a, b) => {
-    const depthDelta = branchDepth(b) - branchDepth(a)
+    const depthDelta = depthFromParentMap(b, parentOf) - depthFromParentMap(a, parentOf)
     if (depthDelta !== 0) return depthDelta
     return a.localeCompare(b)
   })

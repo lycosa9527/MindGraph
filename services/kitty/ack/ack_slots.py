@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
+from services.diagram.mindmap_identity import is_machine_node_id
+
 
 def enrich_ack_session_context(
     session_context: Optional[Dict[str, Any]],
@@ -51,6 +53,55 @@ def _branch_label_from_session(
     return ""
 
 
+def _node_label_from_session(
+    session_context: Optional[Dict[str, Any]],
+    hint: str,
+) -> str:
+    if not isinstance(session_context, dict) or not hint:
+        return ""
+    diagram_data = session_context.get("diagram_data")
+    if not isinstance(diagram_data, dict):
+        return ""
+    nodes = diagram_data.get("nodes")
+    if isinstance(nodes, list):
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            if str(node.get("id") or "") != hint:
+                continue
+            for key in ("text", "label"):
+                raw = node.get(key)
+                if isinstance(raw, str) and raw.strip():
+                    return raw.strip()
+            data = node.get("data")
+            if isinstance(data, dict):
+                label = data.get("label")
+                if isinstance(label, str) and label.strip():
+                    return label.strip()
+    children = diagram_data.get("children")
+    if isinstance(children, list):
+        for child in children:
+            if not isinstance(child, dict):
+                continue
+            if str(child.get("id") or "") != hint:
+                continue
+            for key in ("text", "label", "name"):
+                raw = child.get(key)
+                if isinstance(raw, str) and raw.strip():
+                    return raw.strip()
+    return ""
+
+
+def _display_slot(value: Any, session_context: Optional[Dict[str, Any]]) -> str:
+    text = _clip_label(value)
+    if not text:
+        return ""
+    if not is_machine_node_id(text):
+        return text
+    label = _node_label_from_session(session_context, text)
+    return _clip_label(label) if label else ""
+
+
 def slots_from_command(
     action: str,
     command: Dict[str, Any],
@@ -61,19 +112,34 @@ def slots_from_command(
 
     target = command.get("target")
     if isinstance(target, str) and target.strip():
-        slots["target"] = _clip_label(target)
+        display = _display_slot(target, session_context)
+        if display:
+            slots["target"] = display
 
     new_text = command.get("new_text")
     if isinstance(new_text, str) and new_text.strip():
-        slots["new_text"] = _clip_label(new_text)
+        display = _display_slot(new_text, session_context)
+        if display:
+            slots["new_text"] = display
     elif "target" in slots and action in ("update_node", "update_center"):
         slots["new_text"] = slots["target"]
 
     ident = command.get("node_identifier")
     if isinstance(ident, str) and ident.strip():
-        slots["old_text"] = _clip_label(ident)
+        display = _display_slot(ident, session_context)
+        if display:
+            slots["old_text"] = display
     elif ident is not None and str(ident).strip():
-        slots["old_text"] = _clip_label(ident)
+        display = _display_slot(ident, session_context)
+        if display:
+            slots["old_text"] = display
+
+    if "target" not in slots:
+        node_id = command.get("node_id")
+        if isinstance(node_id, str) and node_id.strip():
+            display = _display_slot(node_id, session_context)
+            if display:
+                slots["target"] = display
 
     branch_index_raw = command.get("branch_index")
     if branch_index_raw is not None:

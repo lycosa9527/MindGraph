@@ -278,6 +278,38 @@ def test_render_delete_branch_progress_and_done() -> None:
     assert "还需要改别的吗" in done
 
 
+def test_render_delete_branch_uses_label_not_uuid() -> None:
+    """Delete ack must speak the branch label, never the canvas UUID."""
+    node_id = "0292ae97-f986-4945-9b45-a175bd5a92b5"
+    command = {"action": "delete_node", "target": node_id, "node_id": node_id}
+    session = {
+        "diagram_type": "mindmap",
+        "conversation_history": [{"role": "user", "content": "删除争议分支"}],
+        "diagram_data": {"nodes": [{"id": node_id, "text": "争议", "type": "branch"}]},
+    }
+    progress = render_ack_for_command(
+        "delete_node",
+        command,
+        session,
+        lang="zh",
+        variant_index=0,
+    )
+    done = render_ack_for_command(
+        "delete_node",
+        command,
+        session,
+        lang="zh",
+        phase="done",
+        variant_index=0,
+    )
+    assert "0292ae97" not in progress
+    assert "0292ae97" not in done
+    assert "争议" in progress
+    assert "争议" in done
+    slots = slots_from_command("delete_node", command, session)
+    assert slots["target"] == "争议"
+
+
 def test_render_delete_child_with_branch_label() -> None:
     """Child delete under a branch uses branch-aware ack."""
     command = {"action": "delete_node", "branch_index": 0, "child_index": 1}

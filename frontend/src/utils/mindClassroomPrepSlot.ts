@@ -1,7 +1,9 @@
 /**
  * Per-diagram (and per-LLM) launch-prep snapshots for 思维讲堂.
  */
+import type { DiagramNode } from '@/types'
 import type { MindClassroomLectureStep } from '@/utils/mindClassroomScript'
+import { resolveMindMapIdentityId } from '@/utils/mindMapIdentityMigrate'
 
 export type MindClassroomVoiceWarmup = 'idle' | 'loading' | 'ready' | 'failed'
 
@@ -115,10 +117,13 @@ export function parkMindClassroomPrep(live: MindClassroomPrepSnapshot): MindClas
 
 export function classroomPrepFitsLiveView(
   specNodeIds: readonly string[] | null | undefined,
-  liveIds: Set<string>
+  live: Set<string> | ReadonlyArray<{ id?: string; data?: Record<string, unknown> | null }>
 ): boolean {
   if (!specNodeIds?.length) return false
-  const hits = specNodeIds.filter((id) => liveIds.has(id)).length
+  const hits = specNodeIds.filter((id) => {
+    if (live instanceof Set) return live.has(id)
+    return resolveMindMapIdentityId(id, live as DiagramNode[]) != null
+  }).length
   return hits * 2 >= specNodeIds.length
 }
 

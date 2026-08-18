@@ -138,6 +138,27 @@ describe('resolveMindMapEdgeEndpoint rounded L1 branch exits', () => {
     expect(resolved.y).toBe(mindMapConnectionAnchorY(200, 40, 'rounded'))
   })
 
+  it('UUID L1 with stamped side uses the box edge, not the vue-flow handle', () => {
+    const node = {
+      id: 'uid-l1',
+      position: { x: 520, y: 200 },
+      data: {
+        mindMapSide: 'right' as const,
+        style: { nodeShape: 'rounded' as const },
+      },
+    }
+    const resolved = resolveMindMapEdgeEndpoint(
+      node,
+      'source',
+      { x: 520, y: 250 },
+      node.data.style,
+      measured,
+      'classic'
+    )
+    expect(resolved.x).toBe(620)
+    expect(resolved.y).toBe(mindMapConnectionAnchorY(200, 40, 'rounded'))
+  })
+
   it('right L1 target uses inner (left) edge for topic→L1', () => {
     const node = {
       id: 'branch-r-1-0',

@@ -13,6 +13,8 @@ import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
 import type { Connection, DiagramNode } from '@/types'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 
+import { MINDMAP_LEGACY_ID_DATA_KEY } from '@/utils/mindMapIdentityMigrate'
+import { mindMapBranchDataFields } from '@/utils/mindMapLocation'
 import {
   ensureMindMapBranchUid,
   MINDMAP_NODE_UID_DATA_KEY,
@@ -60,13 +62,13 @@ export function layoutMindMapSideV2(
 ): void {
   if (branches.length === 0) return
 
-  const sideChar = side === 'right' ? 'r' : 'l'
   const diagramStyle = getMindMapDiagramStyleById(diagramStyleId)
 
   interface LayoutNode {
     id: string
     text: string
     uid: string
+    legacyId?: string
     depth: number
     estimatedWidth: number
     estimatedHeight: number
@@ -74,8 +76,6 @@ export function layoutMindMapSideV2(
     branchIndex: number
     shape: NodeShape
   }
-
-  const globalCounter = { value: 0 }
 
   function prefixForParts(parts: number[]): string {
     if (!numbering?.enabled || parts.length === 0) return ''
@@ -89,14 +89,10 @@ export function layoutMindMapSideV2(
     ancestorParts: number[],
     siblingIndex: number
   ): LayoutNode {
-    const idx = globalCounter.value++
-    const id = `branch-${sideChar}-${depth}-${idx}`
     const text = getBranchText(b)
     const uid = ensureMindMapBranchUid(b)
-    const shape = mindMapNodeShapeFromPreset(
-      { id, type: 'branch' },
-      diagramStyle
-    )
+    const id = uid
+    const shape = mindMapNodeShapeFromPreset({ id, type: 'branch' }, diagramStyle, depth)
     const parts = [...ancestorParts, siblingIndex]
     const prefix = prefixForParts(parts)
     const estimatedWidth = prefix
@@ -109,7 +105,8 @@ export function layoutMindMapSideV2(
     const children = (b.children ?? []).map((child, childIndex) =>
       buildTree(child, depth + 1, branchIndex, parts, childIndex + 1)
     )
-    return { id, text, uid, depth, estimatedWidth, estimatedHeight, children, branchIndex, shape }
+    const legacyId = typeof b.legacyId === 'string' && b.legacyId.trim() ? b.legacyId.trim() : undefined
+    return { id, text, uid, legacyId, depth, estimatedWidth, estimatedHeight, children, branchIndex, shape }
   }
 
   const topLevel = branches.map((b, i) => {
@@ -269,6 +266,8 @@ export function layoutMindMapSideV2(
         estimatedWidth: node.estimatedWidth,
         estimatedHeight: node.estimatedHeight,
         [MINDMAP_NODE_UID_DATA_KEY]: node.uid,
+        ...(node.legacyId ? { [MINDMAP_LEGACY_ID_DATA_KEY]: node.legacyId } : {}),
+        ...mindMapBranchDataFields(side, node.depth),
       },
     })
 

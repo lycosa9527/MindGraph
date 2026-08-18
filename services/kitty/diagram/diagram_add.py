@@ -11,7 +11,10 @@ from fastapi import WebSocket
 
 from services.diagram_edit.transport.kitty_ws import verified_edit_extras_pending
 from services.kitty.context.messaging import safe_websocket_send, send_kitty_diagram_update
-from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
+from services.kitty.diagram.diagram_utils import (
+    child_node_live_id,
+    session_context_child_record,
+)
 from services.kitty.routing.diagram_agent_context import resolve_diagram_node_ref
 from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.ops import get_agent_session_id
@@ -43,11 +46,12 @@ def _resolve_add_parent_id(
     return None
 
 
-def _mindmap_side(command: dict[str, Any]) -> str:
+def _mindmap_side(command: dict[str, Any]) -> str | None:
+    """Return an explicit L1 side, or None so the canvas can clockwise-balance."""
     side = command.get("side")
     if isinstance(side, str) and side.strip().lower() in ("left", "right"):
         return side.strip().lower()
-    return "right"
+    return None
 
 
 async def voice_apply_add_node_action(
@@ -219,9 +223,7 @@ async def voice_apply_add_node_action(
                     if "children" not in branch or not isinstance(branch["children"], list):
                         branch["children"] = []
 
-                    child_id = f"sub_{branch_index}_{len(branch['children'])}"
                     new_child = {
-                        "id": child_id,
                         "label": target,
                         "text": target,
                         "children": [],
@@ -373,8 +375,6 @@ async def voice_apply_add_node_action(
 
         # Get current nodes
         nodes = session_context.get("diagram_data", {}).get("children", [])
-        prefix_map = get_diagram_prefix_map()
-        prefix = prefix_map.get(diagram_type, "node")
 
         # If node_index is specified, check if node exists at that position
         if add_node_index is not None:
@@ -387,10 +387,17 @@ async def voice_apply_add_node_action(
                     target,
                 )
                 existing_node = nodes[add_node_index]
-                if isinstance(existing_node, dict):
-                    existing_node_id = existing_node.get("id")
-                else:
-                    existing_node_id = f"{prefix}_{add_node_index}"
+                existing_node_id = child_node_live_id(
+                    existing_node,
+                    add_node_index,
+                    diagram_type,
+                )
+                if not existing_node_id:
+                    logger.warning(
+                        "Mind map child at index %d has no live id; refusing invented branch id",
+                        add_node_index,
+                    )
+                    return False
 
                 await send_kitty_diagram_update(
                     websocket,
@@ -410,11 +417,7 @@ async def voice_apply_add_node_action(
             else:
                 # Node doesn't exist - insert at specified position
                 logger.info("Adding node at position %d: %s", add_node_index, target)
-                new_node = {
-                    "id": f"{prefix}_{add_node_index}",
-                    "index": add_node_index,
-                    "text": target,
-                }
+                new_node = session_context_child_record(target, add_node_index, diagram_type)
 
                 # Insert at specified position (pad with None if needed)
                 while len(nodes) < add_node_index:
@@ -467,12 +470,8 @@ async def voice_apply_add_node_action(
             elif parent_id:
                 logger.info("Adding child under parent_id=%s: %s", parent_id, target)
             else:
-                logger.info("Adding node to end (side=%s): %s", side, target)
-            new_node = {
-                "id": f"{prefix}_{len(nodes)}",
-                "index": len(nodes),
-                "text": target,
-            }
+                logger.info("Adding L1 branch (side=%s): %s", side or "clockwise", target)
+            new_node = session_context_child_record(target, len(nodes), diagram_type)
             if parent_id and not after_id:
                 # Keep voice-shaped children list best-effort; Pinia is SoT on verified path.
                 for branch in nodes:
@@ -504,7 +503,7 @@ async def voice_apply_add_node_action(
                 update_payload["insert_index"] = insert_at
             elif parent_id:
                 update_payload["parent_id"] = parent_id
-            else:
+            elif side:
                 update_payload["side"] = side
 
             category = command.get("category")

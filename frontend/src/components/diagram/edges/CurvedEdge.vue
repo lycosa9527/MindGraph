@@ -23,6 +23,7 @@ import type { DiagramType, MindGraphEdgeData } from '@/types'
 import { splitBezierPathAtMidpoint } from '@/utils/bezierSplit'
 import { isTopicToRootConceptConnection } from '@/utils/conceptMapTopicRootEdge'
 import { focusHtmlControl } from '@/utils/focusHtmlControl'
+import { isMindMapBranchId, mindMapNodeSide } from '@/utils/mindMapLocation'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
 
@@ -42,9 +43,10 @@ const isMindMap = computed(() => {
 
 function mindMapBranchSide(nodeId: string | undefined): 'left' | 'right' | null {
   if (!nodeId) return null
-  if (nodeId.startsWith('branch-l-')) return 'left'
-  if (nodeId.startsWith('branch-r-')) return 'right'
-  return null
+  return mindMapNodeSide(nodeId, {
+    nodes: diagramStore.data?.nodes,
+    connections: diagramStore.data?.connections,
+  })
 }
 
 const topicSideSiblingEdges = computed(() => {
@@ -256,7 +258,7 @@ const path = computed(() => {
   if (import.meta.env.DEV && (dt === 'mindmap' || dt === 'mind_map') && debugCurve) {
     const span = Math.abs(props.targetX - props.sourceX)
     if (props.source === 'topic') {
-      const side = props.target.startsWith('branch-l-') ? 'left' : 'right'
+      const side = mindMapBranchSide(props.target) ?? 'right'
       console.log('[CurveDebug] topic-to-branch', {
         target: props.target,
         side,
@@ -266,8 +268,11 @@ const path = computed(() => {
         targetPosition: props.targetPosition,
         horizontalSpan: span,
       })
-    } else if (props.source.startsWith('branch-') && props.target.startsWith('branch-')) {
-      const side = props.source.startsWith('branch-l-') ? 'left' : 'right'
+    } else if (
+      isMindMapBranchId(props.source, diagramStore.data?.nodes) &&
+      isMindMapBranchId(props.target, diagramStore.data?.nodes)
+    ) {
+      const side = mindMapBranchSide(props.source) ?? 'right'
       console.log('[CurveDebug] branch-to-child', {
         source: props.source,
         target: props.target,

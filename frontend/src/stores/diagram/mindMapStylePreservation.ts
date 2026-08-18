@@ -25,6 +25,7 @@ import {
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { Connection, DiagramNode, DiagramType, NodeStyle } from '@/types'
 import { readEffectiveMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { isMindMapBranchNode, mindMapLocationPathKey } from '@/utils/mindMapLocation'
 
 /** Injected to avoid a circular import with mindMapCollapse remap helpers. */
 export type MindMapNodeIdRemapper = (
@@ -34,19 +35,6 @@ export type MindMapNodeIdRemapper = (
   newNodes: DiagramNode[],
   newConnections: Connection[]
 ) => string | null
-
-function branchGlobalIndex(nodeId: string): number {
-  return parseInt(nodeId.split('-')[3] ?? '0', 10)
-}
-
-/**
- * Sort by layout global index in the id suffix.
- * Prefer {@link buildMindMapChildrenMapByConnectionOrder} for sibling order —
- * connection array order is the SoT for insert/path keys/layout.
- */
-export function sortMindMapNodeIdsByGlobalIndex(a: string, b: string): number {
-  return branchGlobalIndex(a) - branchGlobalIndex(b)
-}
 
 /** Children grouped by parent in connection-list order (no global-index sort). */
 export function buildMindMapChildrenMapByConnectionOrder(
@@ -65,29 +53,9 @@ function buildChildrenMap(connections: Connection[]): Map<string, string[]> {
   return buildMindMapChildrenMapByConnectionOrder(connections)
 }
 
-/** Stable tree path (side + sibling indices) — survives node id regeneration on reload. */
+/** Stable tree path (side + sibling indices). */
 export function mindMapNodePathKey(nodeId: string, connections: Connection[]): string | null {
-  if (nodeId === 'topic') return 'topic'
-  if (!nodeId.startsWith('branch-')) return null
-
-  const side = nodeId.startsWith('branch-l-') ? 'l' : 'r'
-  const parentMap = new Map<string, string>()
-  connections.forEach((c) => parentMap.set(c.target, c.source))
-  const childMap = buildChildrenMap(connections)
-
-  const indices: number[] = []
-  let current: string | undefined = nodeId
-  while (current && current !== 'topic') {
-    const parent = parentMap.get(current)
-    if (!parent) return null
-    const siblings = childMap.get(parent) ?? []
-    const idx = siblings.indexOf(current)
-    if (idx < 0) return null
-    indices.unshift(idx)
-    current = parent
-  }
-
-  return `${side}/${indices.join('/')}`
+  return mindMapLocationPathKey(nodeId, connections)
 }
 
 /** Resolve a stable path key to the current node id after a mind-map reload. */
@@ -246,8 +214,8 @@ function resolveMindMapRestoredNodeShape(
   const presetShape = mindMapNodeShapeFromPreset(node, diagramStyle)
   if (
     previousDepth !== undefined &&
-    node.id.startsWith('branch-') &&
-    previousDepth !== mindMapBranchDepth(node.id)
+    isMindMapBranchNode(node) &&
+    previousDepth !== mindMapBranchDepth(node.id, node)
   ) {
     return presetShape
   }
@@ -335,7 +303,7 @@ export function applyMindMapStylesByPath(
       nodes.find((n) => n.id === 'topic')?.style?.borderColor ??
       stylesByPath.get('topic')?.borderColor
     const branchAccent =
-      defaultTheme.borderColor ?? nodes.find((n) => n.id.startsWith('branch-'))?.style?.borderColor
+      defaultTheme.borderColor ?? nodes.find((n) => isMindMapBranchNode(n))?.style?.borderColor
     const strokeColor = layered && branchAccent ? branchAccent : topicBorder
     if (strokeColor) {
       syncMindMapConnectionStrokeColors(connections, strokeColor)
@@ -385,7 +353,7 @@ export function buildMindMapStyleForNewBranchNode(
   const nodeShape = options.nodeShape ?? options.siblingStyle?.nodeShape ?? presetShape
 
   let style: NodeStyle = {
-    ...mindMapStyleFromTheme(node, theme, options.diagramStyleId),
+    ...mindMapStyleFromTheme(node, theme, options.diagramStyleId, connections),
     nodeShape,
   }
 
@@ -475,8 +443,8 @@ export function mergeMindMapReloadStyles(
     if (!newPath) continue
 
     stylesByPath.set(newPath, merged)
-    if (oldNode.id.startsWith('branch-')) {
-      previousDepthByPath.set(newPath, mindMapBranchDepth(oldNode.id))
+    if (isMindMapBranchNode(oldNode)) {
+      previousDepthByPath.set(newPath, mindMapBranchDepth(oldNode.id, oldNode))
     }
   }
 

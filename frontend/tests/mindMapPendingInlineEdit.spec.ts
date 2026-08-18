@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDiagramStore } from '@/stores/diagram'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
+import { isMindMapBranchNode, mindMapNodeSide } from '@/utils/mindMapLocation'
 
 function enableMindMapV2Canvas(): void {
   const flagsStore = useFeatureFlagsStore()
@@ -65,8 +66,22 @@ describe('mind map pending post-add inline edit', () => {
     const diagramStore = useDiagramStore()
     diagramStore.loadDefaultTemplate('mindmap')
 
-    const left = diagramStore.data?.nodes.find((node) => node.id.startsWith('branch-l-'))
-    const right = diagramStore.data?.nodes.find((node) => node.id.startsWith('branch-r-'))
+    const left = diagramStore.data?.nodes.find(
+      (node) =>
+        isMindMapBranchNode(node) &&
+        mindMapNodeSide(node.id, {
+          nodes: diagramStore.data?.nodes,
+          connections: diagramStore.data?.connections,
+        }) === 'left'
+    )
+    const right = diagramStore.data?.nodes.find(
+      (node) =>
+        isMindMapBranchNode(node) &&
+        mindMapNodeSide(node.id, {
+          nodes: diagramStore.data?.nodes,
+          connections: diagramStore.data?.connections,
+        }) === 'right'
+    )
     if (!left || !right) {
       throw new Error('expected left and right branches')
     }

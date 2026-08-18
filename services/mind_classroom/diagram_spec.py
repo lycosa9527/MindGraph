@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Any
 
 from sqlalchemy import select
 
 from models.domain.diagrams import Diagram
+from services.diagram.mindmap_identity import migrate_mindmap_diagram_payload
 from utils.db.session_open import system_rls_session
 
 
@@ -22,9 +24,12 @@ async def load_owned_diagram_spec(diagram_id: str, user_id: int) -> dict[str, An
         raise ValueError("Diagram not found")
     if diagram.user_id != int(user_id):
         raise PermissionError("Diagram does not belong to user")
-    spec = diagram.spec if isinstance(diagram.spec, dict) else {}
+    spec = deepcopy(diagram.spec) if isinstance(diagram.spec, dict) else {}
     if not spec.get("type") and diagram.diagram_type:
         spec = {**spec, "type": diagram.diagram_type}
     if not spec.get("nodes"):
         raise ValueError("Diagram spec has no nodes")
+    diagram_type = str(spec.get("type") or diagram.diagram_type or "")
+    if diagram_type in {"mindmap", "mind_map"}:
+        migrate_mindmap_diagram_payload(spec)
     return spec

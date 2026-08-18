@@ -7,7 +7,8 @@
  * making it easier to maintain and test each diagram type independently.
  */
 import type { MindMapCanvasMode } from '@/stores/ui'
-import type { DiagramType } from '@/types'
+import type { DiagramType, NodeStyle } from '@/types'
+import { migrateMindMapIdentityIds } from '@/utils/mindMapIdentityMigrate'
 
 import { loadBraceMapSpec } from './braceMap'
 import { loadBridgeMapSpec } from './bridgeMap'
@@ -41,6 +42,7 @@ export {
   mindMapBranchesClockwiseOrder,
   nodesAndConnectionsToMindMapSpec,
   normalizeMindMapHorizontalSymmetry,
+  rebalanceMindMapBranchesAfterL1Delete,
   rebalanceMindMapBranchesIfLeftOnly,
 } from './mindMap'
 export type { LoadMindMapSpecOptions } from './mindMap'
@@ -50,7 +52,9 @@ export type { SpecLoaderResult } from './types'
 export type LoadSpecForDiagramTypeOptions = {
   /**
    * Mind-map with stamped `nodes[]`+`connections[]`: keep laid-out positions via
-   * generic load instead of re-running `loadMindMapSpec` (LLM model switch).
+   * generic load instead of re-running `loadMindMapSpec`. Default is true when
+   * connections exist so identity, hiddenAnswer, and legacy ids survive reload.
+   * Pass `false` to force extract + relayout.
    */
   preferLaidOutMindMapNodes?: boolean
   /** Session-owned mind-map canvas mode for initial layout (Showcase / export). */
@@ -81,19 +85,36 @@ export function loadSpecForDiagramType(
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {
       const hasConnections =
         Array.isArray(spec.connections) && (spec.connections as unknown[]).length > 0
-      // Soft path: stamped model-cache specs already have stable ids + positions.
-      if (options?.preferLaidOutMindMapNodes === true && hasConnections) {
-        result = loadGenericSpec(spec)
+      const generic = loadGenericSpec(spec)
+      const styles =
+        spec._node_styles && typeof spec._node_styles === 'object'
+          ? (spec._node_styles as Record<string, NodeStyle>)
+          : undefined
+      const migrated = migrateMindMapIdentityIds(generic.nodes, generic.connections, styles)
+      const styleMeta = migrated.nodeStyles
+        ? { _node_styles: migrated.nodeStyles }
+        : undefined
+      // Soft path: saved / model-cache specs already have stable ids + positions.
+      if (hasConnections && options?.preferLaidOutMindMapNodes !== false) {
+        result = {
+          ...generic,
+          nodes: migrated.nodes,
+          connections: migrated.connections,
+          metadata: styleMeta ? { ...(generic.metadata || {}), ...styleMeta } : generic.metadata,
+        }
       } else {
-        const generic = loadGenericSpec(spec)
-        const mindSpec = nodesAndConnectionsToMindMapSpec(generic.nodes, generic.connections)
+        const mindSpec = nodesAndConnectionsToMindMapSpec(migrated.nodes, migrated.connections)
         // Keep existing left/right sides. Redistributing via
         // [...left, ...right] + distributeBranchesClockwise is not idempotent and
         // reshuffles branches on every library reload / first autosave URL sync.
-        result = loadMindMapSpec(
+        const laidOut = loadMindMapSpec(
           { ...mindSpec, preserveLeftRight: true },
           { canvasMode: options?.mindMapCanvasMode }
         )
+        result = {
+          ...laidOut,
+          metadata: styleMeta ? { ...(laidOut.metadata || {}), ...styleMeta } : laidOut.metadata,
+        }
       }
     } else {
       result = loadGenericSpec(spec)

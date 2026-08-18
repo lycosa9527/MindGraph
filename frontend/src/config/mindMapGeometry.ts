@@ -5,6 +5,10 @@
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { Connection, DiagramNode } from '@/types'
+import {
+  mindMapNodeDepth,
+  sortMindMapTopicChildIdsBySide,
+} from '@/utils/mindMapLocation'
 
 export const MIND_MAP_GEOMETRY = {
   /** Depth 2+ branch / leaf labels */
@@ -37,25 +41,25 @@ export const MIND_MAP_GEOMETRY = {
   paddingY: 9,
   edgeStrokeWidth: 2,
   edgeStrokeOpacity: 0.7,
-  edgeStrokeWidthHover: 3,
 } as const
 
-/** Parse depth from mind-map branch id (`branch-r-2-3` → 2). */
-export function mindMapBranchDepth(nodeId: string): number {
-  const match = nodeId.match(/^branch-[lr]-(\d+)-/)
-  return match ? parseInt(match[1], 10) : 1
-}
-
-/** Parse clockwise global index from mind-map branch id (`branch-r-1-4` → 4). */
-export function mindMapBranchGlobalIndex(nodeId: string): number | null {
-  const match = nodeId.match(/^branch-[lr]-\d+-(\d+)$/)
-  return match ? parseInt(match[1], 10) : null
+/** Depth from stamped data, connections, or leftover positional id. */
+export function mindMapBranchDepth(
+  nodeId: string,
+  node?: { data?: Record<string, unknown> } | null,
+  connections?: Connection[] | null
+): number {
+  return mindMapNodeDepth(nodeId, { node, connections })
 }
 
 /** Font size for a mind-map branch node by depth (L1 = 16, L2+ = 14). */
-export function mindMapBranchFontSize(nodeId?: string): number {
-  if (!nodeId?.startsWith('branch-')) return MIND_MAP_GEOMETRY.branchFontSize
-  return mindMapBranchDepth(nodeId) <= 1
+export function mindMapBranchFontSize(
+  nodeId?: string,
+  node?: { data?: Record<string, unknown> } | null,
+  connections?: Connection[] | null
+): number {
+  if (!nodeId) return MIND_MAP_GEOMETRY.branchFontSize
+  return mindMapBranchDepth(nodeId, node, connections) <= 1
     ? MIND_MAP_GEOMETRY.branchFontSize
     : MIND_MAP_GEOMETRY.fontSize
 }
@@ -72,12 +76,13 @@ export function sortMindMapChildIds(childIds: string[]): string[] {
  * Topic depth-1 children: right side (connection order) then left side
  * (connection order). Does not re-sort by global id suffix.
  */
-export function sortMindMapTopicChildIds(childIds: string[]): string[] {
+export function sortMindMapTopicChildIds(
+  childIds: string[],
+  nodes?: DiagramNode[],
+  connections?: Connection[]
+): string[] {
   if (childIds.length <= 1) return childIds
-  const right = childIds.filter((id) => id.startsWith('branch-r-'))
-  const left = childIds.filter((id) => id.startsWith('branch-l-'))
-  if (right.length === 0 && left.length === 0) return childIds
-  return [...right, ...left]
+  return sortMindMapTopicChildIdsBySide(childIds, { nodes, connections })
 }
 
 export function mindMapHorizontalPadding(

@@ -17,12 +17,13 @@ import {
   rebalanceMindMapBranchesIfLeftOnly,
 } from '@/stores/specLoader/mindMap'
 import { useUIStore } from '@/stores/ui'
+import { mindMapNodeSide } from '@/utils/mindMapLocation'
 import { readMindMapNodeUid } from '@/utils/mindMapNodeUid'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
 
 function uidOf(nodes: DiagramNode[], text: string): string {
-  const node = nodes.find((n) => n.text === text && n.id.startsWith('branch-'))
-  const uid = readMindMapNodeUid(node)
+  const node = nodes.find((n) => n.text === text && n.type === 'branch')
+  const uid = readMindMapNodeUid(node) ?? (node && node.id !== 'topic' ? node.id : null)
   if (!uid) throw new Error(`missing uid for ${text}`)
   return uid
 }
@@ -133,8 +134,10 @@ describe('left-only rebalance identity (uid / style / collapse / dims)', () => {
 
     const movedNewId = idByUid(newNodes, movedUid)
     const stayedNewId = idByUid(newNodes, stayedUid)
-    expect(movedNewId.startsWith('branch-r-')).toBe(true)
-    expect(stayedNewId.startsWith('branch-l-')).toBe(true)
+    expect(movedNewId).toBe(movedUid)
+    expect(stayedNewId).toBe(stayedUid)
+    expect(mindMapNodeSide(movedNewId, { nodes: newNodes })).toBe('right')
+    expect(mindMapNodeSide(stayedNewId, { nodes: newNodes })).toBe('left')
     expect(uidOf(newNodes, 'MoveChild')).toBe('uid-move-child')
   })
 
@@ -202,9 +205,9 @@ describe('left-only rebalance identity (uid / style / collapse / dims)', () => {
     )
 
     const movedNewId = idByUid(newNodes, movedUid)
+    expect(movedNewId).toBe(movedOldId)
     expect(merged[movedNewId]?.fontSize).toBe(22)
     expect(merged[movedNewId]?.textColor).toBe('#112233')
-    expect(merged[movedOldId]).toBeUndefined()
   })
 
   it('keeps collapse state when the collapsed branch moves to the other side', () => {

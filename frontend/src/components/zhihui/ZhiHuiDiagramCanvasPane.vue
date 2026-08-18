@@ -13,6 +13,7 @@ import { useLanguage } from '@/composables'
 import { ANIMATION } from '@/config/uiConfig'
 import type { DiagramSession } from '@/stores/diagram'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { resolveMindMapIdentityId } from '@/utils/mindMapIdentityMigrate'
 
 const FOCUS_TRANSITION_MS = 920
 const FOCUS_RETRY_MS = 120
@@ -77,6 +78,8 @@ function resolveNodeId(session: FocusSession, hint: string): string | null {
   if (nodes.some((node) => node.id === cleaned)) {
     return cleaned
   }
+  const byAlias = resolveMindMapIdentityId(cleaned, nodes)
+  if (byAlias) return byAlias
   const needle = cleaned.toLowerCase()
   const exact = nodes.find((node) => {
     const text = String(node.text || '')

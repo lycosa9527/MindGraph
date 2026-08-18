@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Cứu',
   'canvas.shortcutGuide.clearText': 'Xóa văn bản nút',
   'canvas.shortcutGuide.learningSheetAnswers': 'Hiển thị/ẩn câu trả lời của phiếu học tập',
+  'canvas.shortcutGuide.recalcLayout': 'Tính lại bố cục',
   'canvas.shortcutGuide.multiSelect': 'Chọn nhiều lần',
   'canvas.shortcutGuide.multiSelectDesc': 'Kéo một hộp ở chế độ con trỏ để chọn nhiều nút.',
   'canvas.shortcutGuide.multiSelectHint': 'Kéo vào ô chọn',

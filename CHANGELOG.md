@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.12] - 2026-08-19
+
+> **Mind-map branches keep a stable UUID; new main branches balance clockwise; v2 drag shows the dashed drop target.**
+
+### Changed
+
+- **Stable node identity** — Live mind-map `node.id` is a UUID (topic stays `topic`). Location is connections plus `mindMapSide` / `mindMapDepth`. Leftover `branch-*` / invented ids stay aliases only (`mindMapLegacyId`). Agents target UUID and chain on `created_node_ids`; `add_node` does not invent ids. See [`docs/architecture/mindmap_node_identity.md`](docs/architecture/mindmap_node_identity.md).
+- **L1 add / delete** — `addMindMapBranch()` with no side clockwise-balances; an explicit `left` / `right` stays on that side. Deleting an L1 on a two-sided map redistributes the rest the same way. Kitty, toolbar, outline, paste, and brainstorm share that rule.
+- **Kitty spoken target** — Acks use the branch label, never a UUID or leftover id.
+- **Removed `FEATURE_DRAG_AND_DROP`** — Unused stub. Canvas / palette drag is always on.
+
+### Fixed
+
+- **v2 branch drag** — Hide the four `+` handles and the connector `−` while dragging. Hovering another node shows the dashed drop box (UUID hit-test; leftover `branch-*` prefix matching is gone). Underline children use the same box, not a thin baseline bar.
+
+### Tests
+
+- `tests/test_mindmap_identity.py` / `test_mindmap_identity_kitty_e2e.py`
+- `frontend/tests/mindMapIdentityMigrate.spec.ts` / `branchMoveHitTest.spec.ts` / `mindMapSeparation.spec.ts` / `mindMapLoadPreserveSides.spec.ts`
+- `tests/test_diagram_edit.py` — leftover delete still uses label; live UUID is the verify key
+- `tests/test_diagram_agent_context.py` / `test_kitty_ack_library.py`
+- CI (`ci.yml` / `ci-local.sh`) now runs the identity, ack, and v2 drag/add-balance specs
+
 ## [5.180.11] - 2026-08-18
 
 > **思维讲堂 Start keeps the job that just finished; multi-LLM auto-complete no longer drops peers on save or library switch.**

@@ -23,6 +23,7 @@ import {
   markMindMapLoadStage,
   scheduleMindMapLoadSettle,
 } from '@/utils/mindMapLoadDebug'
+import { mindMapNodeSide, mindMapSideToChar } from '@/utils/mindMapLocation'
 import {
   applyMindMapL1HeightDeltaShift,
   centerMindMapSidePacksOnTopic,
@@ -311,15 +312,13 @@ export function useMindMapLayoutSlice(ctx: DiagramContext) {
 // Pure helper: recalculate X positions from measured widths
 // ---------------------------------------------------------------------------
 
-interface ParsedNodeId {
-  side: 'r' | 'l'
-  depth: number
-}
-
-function parseNodeId(id: string): ParsedNodeId | null {
-  const m = id.match(/^branch-(r|l)-(\d+)-/)
-  if (!m) return null
-  return { side: m[1] as 'r' | 'l', depth: parseInt(m[2], 10) }
+function parseLayoutSide(
+  id: string,
+  nodes: DiagramNode[],
+  connections: Connection[]
+): 'r' | 'l' | null {
+  const side = mindMapNodeSide(id, { nodes, connections })
+  return side ? mindMapSideToChar(side) : null
 }
 
 function getNodeWidth(node: DiagramNode, nodeWidths: Record<string, number>): number {
@@ -464,7 +463,7 @@ export function recalculateMindMapV2ColumnPositions(
   // shorter labels jump toward the topic after edit-end measure / canvas click.
   let leftL1ColumnWidth = 0
   for (const rootId of childrenMap.get('topic') ?? []) {
-    if (!rootId.startsWith('branch-l-')) continue
+    if (mindMapNodeSide(rootId, { nodes, connections }) !== 'left') continue
     const root = nodeMap.get(rootId)
     if (!root) continue
     leftL1ColumnWidth = Math.max(leftL1ColumnWidth, getNodeWidth(root, nodeWidths))
@@ -502,15 +501,16 @@ export function recalculateMindMapV2ColumnPositions(
   }
 
   for (const rootId of childrenMap.get('topic') ?? []) {
-    const parsed = parseNodeId(rootId)
-    if (!parsed) continue
-    assignSubtreeX(rootId, 'topic', parsed.side)
+    const side = parseLayoutSide(rootId, nodes, connections)
+    if (!side) continue
+    assignSubtreeX(rootId, 'topic', side)
   }
 
-  const rightGap = (childrenMap.get('topic') ?? []).some((id) => id.startsWith('branch-r-'))
+  const topicKids = childrenMap.get('topic') ?? []
+  const rightGap = topicKids.some((id) => mindMapNodeSide(id, { nodes, connections }) === 'right')
     ? gap
     : 0
-  const leftGap = (childrenMap.get('topic') ?? []).some((id) => id.startsWith('branch-l-'))
+  const leftGap = topicKids.some((id) => mindMapNodeSide(id, { nodes, connections }) === 'left')
     ? gap
     : 0
 
@@ -598,9 +598,9 @@ function correctYPositions(
   const rightRoots: string[] = []
   const leftRoots: string[] = []
   for (const cid of topicChildren) {
-    const parsed = parseNodeId(cid)
-    if (!parsed) continue
-    if (parsed.side === 'r') rightRoots.push(cid)
+    const side = parseLayoutSide(cid, nodes, connections)
+    if (!side) continue
+    if (side === 'r') rightRoots.push(cid)
     else leftRoots.push(cid)
   }
 

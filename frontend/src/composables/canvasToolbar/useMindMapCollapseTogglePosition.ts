@@ -7,6 +7,7 @@ import { MINDMAP_UNDERLINE_STROKE_WIDTH } from '@/config/mindMapGeometry'
 import { mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
 import { getMindMapVisibleCollapsedNodeIds } from '@/stores/diagram/mindMapCollapse'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
+import { mindMapNodeSide } from '@/utils/mindMapLocation'
 
 /** Match `.mind-map-collapse-overlay__btn--collapse` (base size before e-blackboard scale). */
 export const COLLAPSE_HANDLE_HALF = 9
@@ -139,7 +140,7 @@ function resolveToggleFlowPoint(
   const parent = nodes.find((n) => n.id === parentId)
   if (!parent?.position) return null
 
-  const isLeftBranch = parentId.startsWith('branch-l-')
+  const isLeftBranch = mindMapNodeSide(parentId, { node: parent, nodes, connections }) === 'left'
   const parentStyle = resolveNodeMergedStyle(parent, nodeStyles)
   const parentShape = resolveMindMapNodeShape(
     { id: parentId, type: parent.type ?? 'branch', style: parentStyle },
@@ -202,7 +203,7 @@ function resolveToggleHandle(
   )
   if (!flow) return null
 
-  const isLeftBranch = nodeId.startsWith('branch-l-')
+  const isLeftBranch = mindMapNodeSide(nodeId, { nodes, connections }) === 'left'
   const baseHalf = mode === 'expand' ? EXPAND_PILL_HALF : COLLAPSE_HANDLE_HALF
   const handleHalf = baseHalf * controlScale
   const parentRect = container

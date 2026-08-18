@@ -12,6 +12,7 @@ import { useDiagramStore, useInlineRecommendationsStore, useSavedDiagramsStore }
 import type { Connection, DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 import { getConceptMapPrimaryIncidentConnection } from '@/utils/conceptMapInlineRec'
+import { isMindMapL1, mindMapNodeDepth } from '@/utils/mindMapLocation'
 
 import {
   INLINE_RECOMMENDATIONS_NEXT,
@@ -41,7 +42,10 @@ function getStageForNode(
   const defaultStage = getDefaultStage(dt as DiagramType | null, nodes, connections)
 
   if (dt === 'mindmap') {
-    if (nid.startsWith('branch-l-1-') || nid.startsWith('branch-r-1-')) {
+    const isL1 = connections?.length
+      ? isMindMapL1(nid, connections)
+      : mindMapNodeDepth(nid, { node }) === 1
+    if (isL1) {
       const hasChildren = connections?.some((c) => c.source === nid)
       return hasChildren
         ? {

@@ -83,7 +83,7 @@ export interface MindMapConnectorDebugNodeRow {
   domHandleVsLivePx: number | null
   /** @deprecated use formulaVsLivePx */
   underlineMisalignPx: number | null
-  /** Edge sampled for handle/resolved columns (e.g. edge-branch-r-1-0-branch-r-2-1). */
+  /** Edge sampled for handle/resolved columns (any live edge id). */
   sampleEdgeId: string | null
 }
 
@@ -109,7 +109,7 @@ export interface MindMapConnectorDebugEdgeRow {
   hLen: number | null
   siblingCount: number
   hasRoundedTee: boolean | null
-  /** rounded | sharp_no_q | flat | sole_topic | sole_underline */
+  /** rounded | sharp_no_q | flat | sole_underline */
   teeStatus: string | null
 }
 
@@ -542,14 +542,12 @@ function buildEdgeRows(options: MindMapConnectorDebugDumpOptions): MindMapConnec
         drawSpine: true,
         siblingToXs: siblingTargetXs,
         singleUnderlineChild: siblingYs.length === 1 && targetShape === 'underline',
-        singleTopicSideChild: row.source === 'topic' && siblingEdges.length === 1,
       }
     )
     const hasRoundedTee = path.includes('Q ')
     const dy = Math.abs(self.target.y - self.source.y)
     let teeStatus = 'rounded'
-    if (row.source === 'topic' && siblingEdges.length === 1) teeStatus = 'sole_topic'
-    else if (siblingYs.length === 1 && targetShape === 'underline') teeStatus = 'sole_underline'
+    if (siblingYs.length === 1 && targetShape === 'underline') teeStatus = 'sole_underline'
     else if (!hasRoundedTee && hLen < 0.5) teeStatus = 'sharp_no_q'
     else if (!hasRoundedTee && dy < MINDMAP_CONNECTOR_FLAT_DY) teeStatus = 'flat_dy'
     else if (!hasRoundedTee) teeStatus = 'sharp_or_flat'
@@ -616,9 +614,7 @@ export function dumpMindMapConnectorDebug(options: MindMapConnectorDebugDumpOpti
   const sharpTees = edgeRows.filter(
     (row) =>
       row.teeStatus === 'sharp_no_q' ||
-      (row.hasRoundedTee === false &&
-        row.teeStatus !== 'sole_topic' &&
-        row.teeStatus !== 'sole_underline')
+      (row.hasRoundedTee === false && row.teeStatus !== 'sole_underline')
   )
   if (sharpTees.length > 0) {
     console.warn(
@@ -658,7 +654,7 @@ export function dumpMindMapConnectorDebug(options: MindMapConnectorDebugDumpOpti
     'Levels: localStorage mindgraph.debugMindMapConnectors = "1" | "verbose" (or window.mindMapConnectorDebug.enableBasic())'
   )
   console.info(
-    'Inspect: mindMapConnectorDebug.inspect("branch-r-2-1") | mindMapConnectorDebug.inspectEdges("branch-r-2-1")'
+    'Inspect: mindMapConnectorDebug.inspect("<node.id>") | mindMapConnectorDebug.inspectEdges("<node.id>")'
   )
   console.info(
     'Sibling: localStorage mindgraph.debugMindMapSibling = "1" (or window.mindMapSiblingDebug.enable())'

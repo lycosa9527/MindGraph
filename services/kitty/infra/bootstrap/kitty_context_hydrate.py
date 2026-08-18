@@ -11,6 +11,7 @@ import copy
 import logging
 from typing import Any, Dict, List, Optional, Tuple
 
+from services.diagram.mindmap_identity import migrate_mindmap_diagram_payload
 from services.infrastructure.monitoring.ws_metrics import record_kitty_hydrate_cache_miss
 from services.kitty.infra.bootstrap.kitty_native_spec import native_spec_to_pseudo_nodes
 from services.kitty.infra.desktop.kitty_desktop_focus import get_kitty_desktop_focus_diagram
@@ -41,14 +42,24 @@ def _node_display_text(node: Dict[str, Any]) -> str:
 
 
 def _mindmap_uid_data_for_live(node: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Keep stable mindMapUid through library→live hydrate (positional ids change)."""
+    """Keep identity + stamped location through library→live hydrate."""
     data = node.get("data")
     if not isinstance(data, dict):
         return None
+    out: Dict[str, Any] = {}
     uid = data.get("mindMapUid")
     if isinstance(uid, str) and uid.strip():
-        return {"mindMapUid": uid.strip()}
-    return None
+        out["mindMapUid"] = uid.strip()
+    side = data.get("mindMapSide")
+    if side in ("left", "right"):
+        out["mindMapSide"] = side
+    depth = data.get("mindMapDepth")
+    if isinstance(depth, int) and depth >= 1:
+        out["mindMapDepth"] = depth
+    legacy = data.get("mindMapLegacyId")
+    if isinstance(legacy, str) and legacy.strip():
+        out["mindMapLegacyId"] = legacy.strip()
+    return out or None
 
 
 # Mind-map visuals survive loadFromSpec only via these top-level extras
@@ -122,6 +133,8 @@ def diagram_data_from_saved_spec(spec: Dict[str, Any], diagram_type: str) -> Dic
     elif isinstance(spec.get("center"), dict):
         diagram_data["center"] = spec["center"]
     _attach_mindmap_live_spec_extras(diagram_data, spec, diagram_type)
+    if diagram_type in ("mindmap", "mind_map"):
+        migrate_mindmap_diagram_payload(diagram_data)
     return diagram_data
 
 
@@ -258,6 +271,8 @@ async def try_build_context_from_live_spec(
         return None
 
     diagram_type = str(live.get("diagram_type") or diagram_data.get("diagram_type") or "circle_map")
+    if diagram_type in {"mindmap", "mind_map"}:
+        migrate_mindmap_diagram_payload(diagram_data)
     active_panel = str(live.get("active_panel") or "none")
     lib_raw = live.get("diagram_library_id")
     library_id = lib_raw if isinstance(lib_raw, str) and lib_raw.strip() else scope

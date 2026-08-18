@@ -305,12 +305,12 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
     if (!jobSettingsMatch(detail.settings)) {
       return { ok: false, reason: 'empty' }
     }
-    const liveIds = collectLiveNodeIds(diagramStore.data?.nodes)
-    if (!classroomReadyJobIsUsable(detail, liveIds)) {
+    const liveNodes = diagramStore.data?.nodes ?? []
+    if (!classroomReadyJobIsUsable(detail, liveNodes)) {
       classroomStore.setPreparedSteps([], [])
       return { ok: false, reason: 'empty' }
     }
-    const mapped = mapRemoteLectureSteps(detail.result_json?.steps ?? [], liveIds)
+    const mapped = mapRemoteLectureSteps(detail.result_json?.steps ?? [], liveNodes)
     if (!mapped.some((step) => step.caption.trim())) {
       classroomStore.setPreparedSteps([], [])
       return { ok: false, reason: 'empty' }
@@ -321,7 +321,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
       progress: detail.progress ?? null,
       error: null,
     })
-    classroomStore.setPreparedSteps(mapped, [...liveIds])
+    classroomStore.setPreparedSteps(mapped, [...collectLiveNodeIds(liveNodes)])
     beginFirstLectureSlideWarmup(mapped, classroomStore.voiceEnabled)
     return { ok: true, phase: 'prepared' }
   }
@@ -349,7 +349,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
             })
             tryWarmupFromJobSteps(
               next.result_json?.steps,
-              collectLiveNodeIds(diagramStore.data?.nodes),
+              diagramStore.data?.nodes ?? [],
               classroomStore.voiceEnabled
             )
           },
@@ -514,19 +514,19 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
         return publishQueueResult('start', { ok: false, reason: 'unauthenticated' })
       }
       const mode = classroomStore.presentation
-      const liveIds = collectLiveNodeIds(data.nodes)
-      const remapped = remapPreparedStepsToLive(classroomStore.preparedSteps, liveIds)
+      const liveNodes = data.nodes
+      const remapped = remapPreparedStepsToLive(classroomStore.preparedSteps, liveNodes)
       const preparedFitsSettings = classroomPrepSettingsMatch(
         classroomStore.prepSettings,
         classroomStore.livePrepSettings()
       )
       const preparedFitsLive = preparedLectureFitsLive(
         classroomStore.preparedSteps,
-        liveIds,
+        liveNodes,
         classroomStore.specNodeIds
       )
       if (remapped.length && preparedFitsSettings && preparedFitsLive) {
-        classroomStore.setPreparedSteps(remapped, [...liveIds])
+        classroomStore.setPreparedSteps(remapped, [...collectLiveNodeIds(liveNodes)])
         const played = playPreparedSteps(remapped, mode)
         return publishQueueResult(
           'start',
@@ -542,7 +542,7 @@ export function useMindClassroomLecture(options: MindClassroomLectureOptions = {
         classroomPrepSettingsMatch(classroomStore.prepSettings, classroomStore.livePrepSettings()) &&
         preparedLectureFitsLive(
           classroomStore.preparedSteps,
-          liveIds,
+          liveNodes,
           classroomStore.specNodeIds
         )
       ) {

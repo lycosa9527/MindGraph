@@ -255,6 +255,18 @@ export function isBridgeMapDefaultNodeLabel(nodeId: string, text: string): boole
   return false
 }
 
+function isMindmapDefaultBranchOrChildText(trimmed: string, loc: LocaleCode): boolean {
+  for (let n = 1; n <= 30; n++) {
+    if (trimmed === defaultsT('diagram.defaults.branchN', loc, { n })) return true
+  }
+  for (let n = 1; n <= 20; n++) {
+    for (let child = 1; child <= 20; child++) {
+      if (trimmed === defaultsT('diagram.defaults.childNM', loc, { n, m: child })) return true
+    }
+  }
+  return false
+}
+
 export function isMindmapDefaultNodeLabel(nodeId: string, text: string): boolean {
   const trimmed = text.trim()
   if (!trimmed) return true
@@ -283,19 +295,10 @@ export function isMindmapDefaultNodeLabel(nodeId: string, text: string): boolean
       }
       continue
     }
-    // Current spec-loader IDs: branch-r-DEPTH-IDX or branch-l-DEPTH-IDX
-    // The counter-based IDX does not encode the branch position directly, so we
-    // check the text against all reasonable branchN / childNM combinations.
-    if (/^branch-[rl]-\d+-\d+$/.test(nodeId)) {
-      for (let n = 1; n <= 30; n++) {
-        if (trimmed === defaultsT('diagram.defaults.branchN', loc, { n })) return true
-      }
-      for (let n = 1; n <= 20; n++) {
-        for (let cm = 1; cm <= 20; cm++) {
-          if (trimmed === defaultsT('diagram.defaults.childNM', loc, { n, m: cm })) return true
-        }
-      }
-    }
+    // After identity invert, node.id is a UUID. Leftover positional ids
+    // (`branch-r-1-0`) still appear until load-migrate. Default-ness is the
+    // label text against branchN / childNM combinations.
+    if (isMindmapDefaultBranchOrChildText(trimmed, loc)) return true
   }
   return false
 }

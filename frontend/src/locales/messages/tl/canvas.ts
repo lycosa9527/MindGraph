@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'I-save',
   'canvas.shortcutGuide.clearText': 'I-clear ang node text',
   'canvas.shortcutGuide.learningSheetAnswers': 'Ipakita/itago ang mga sagot sa learning sheet',
+  'canvas.shortcutGuide.recalcLayout': 'Recalculate layout',
   'canvas.shortcutGuide.multiSelect': 'Piliin nang marami',
   'canvas.shortcutGuide.multiSelectDesc': 'Mag-drag ng isang kahon sa pointer mode upang pumili ng maramihang node.',
   'canvas.shortcutGuide.multiSelectHint': 'I-drag sa kahon piliin',

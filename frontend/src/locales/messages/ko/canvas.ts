@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': '저장',
   'canvas.shortcutGuide.clearText': '노드 텍스트 지우기',
   'canvas.shortcutGuide.learningSheetAnswers': '학습지 답 표시/숨기기',
+  'canvas.shortcutGuide.recalcLayout': '레이아웃 다시 계산',
   'canvas.shortcutGuide.multiSelect': '다중 선택',
   'canvas.shortcutGuide.multiSelectDesc': '포인터 모드에서 상자를 드래그해 여러 노드를 선택합니다.',
   'canvas.shortcutGuide.multiSelectHint': '드래그로 상자 선택',

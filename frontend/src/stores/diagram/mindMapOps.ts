@@ -11,6 +11,12 @@ import {
   resolveSessionMindMapCanvasMode,
 } from '@/utils/mindMapCanvasMode'
 import {
+  isMindMapBranchId,
+  isMindMapBranchNode,
+  mindMapNodeDepth,
+  mindMapNodeSide,
+} from '@/utils/mindMapLocation'
+import {
   MINDMAP_NODE_UID_DATA_KEY,
   collectMindMapNodeUids,
   ensureMindMapBranchUid,
@@ -49,7 +55,7 @@ import {
   loadMindMapSpec,
   mindMapBranchesClockwiseOrder,
   nodesAndConnectionsToMindMapSpec,
-  rebalanceMindMapBranchesIfLeftOnly,
+  rebalanceMindMapBranchesAfterL1Delete,
 } from '../specLoader'
 import type { SpecLoaderResult } from '../specLoader/types'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
@@ -171,11 +177,12 @@ function getMindMapParentId(connections: Connection[], nodeId: string): string |
 function computeSiblingPathKey(
   nodeId: string,
   insertIndex: number,
-  connections: Connection[]
+  connections: Connection[],
+  nodes?: DiagramNode[]
 ): string | null {
   const parentId = getMindMapParentId(connections, nodeId)
   if (!parentId || parentId === 'topic') {
-    const side = nodeId.startsWith('branch-l-') ? 'l' : 'r'
+    const side = mindMapNodeSide(nodeId, { connections, nodes }) === 'left' ? 'l' : 'r'
     return `${side}/${insertIndex}`
   }
   const parentPath = mindMapNodePathKey(parentId, connections)
@@ -711,12 +718,12 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
   const { type, data, selectedNodes, mindMapCurveExtentBaseline } = ctx
 
   function addMindMapBranch(
-    side: 'left' | 'right',
+    side?: 'left' | 'right' | null,
     text = defaultNewNodeText(),
     childText = defaultNewChildText()
   ): boolean {
     if (isDiagramPresentationReadOnly(ctx)) return false
-    if (ctxV2Visuals(ctx)) {
+    if (side === 'left' || side === 'right') {
       return addMindMapBranchOnSide(side, text)
     }
     return addMindMapBranchClockwise(text, childText)
@@ -823,7 +830,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     const beforeConnections = connections
     const topicY = beforeNodes.find((node) => node.id === 'topic')?.position?.y
     const spec = nodesAndConnectionsToMindMapSpec(beforeNodes, connections)
-    const idsToRemove = new Set(nodeIds.filter((id) => id.startsWith('branch-')))
+    const hadBothSidesBefore = spec.leftBranches.length > 0 && spec.rightBranches.length > 0
+    const idsToRemove = new Set(nodeIds.filter((id) => isMindMapBranchId(id, beforeNodes)))
 
     if (collabForeignLockBlocksAnyId(ctx, idsToRemove)) {
       emitCollabDeleteBlocked()
@@ -846,7 +854,14 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       }
     })
 
-    const depth = (id: string) => parseInt(id.split('-')[2] ?? '0', 10)
+    const layoutNodes = data.value.nodes ?? []
+    const layoutConnections = data.value.connections ?? []
+    const depth = (id: string) =>
+      mindMapNodeDepth(id, {
+        node: layoutNodes.find((node) => node.id === id),
+        nodes: layoutNodes,
+        connections: layoutConnections,
+      })
     toRemoveWithParent.sort((a, b) => {
       const dA = depth(a.nodeId)
       const dB = depth(b.nodeId)
@@ -861,9 +876,16 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (deletedCount === 0) return 0
 
     const deletedNodeIds = toRemoveWithParent.map((item) => item.nodeId)
-    // Deleting every right L1 leaves a left-only map (no structure mode for that).
-    // Redistribute clockwise so survivors split across both sides again.
-    const balanced = rebalanceMindMapBranchesIfLeftOnly(spec.leftBranches, spec.rightBranches)
+    const deletedL1 = toRemoveWithParent.some(
+      (item) => item.parentArray === spec.leftBranches || item.parentArray === spec.rightBranches
+    )
+    const balanced = deletedL1
+      ? rebalanceMindMapBranchesAfterL1Delete(
+          spec.leftBranches,
+          spec.rightBranches,
+          hadBothSidesBefore
+        )
+      : { leftBranches: spec.leftBranches, rightBranches: spec.rightBranches, redistributed: false }
     const result = loadCtxMindMapSpec(ctx, {
       topic: spec.topic,
       leftBranches: balanced.leftBranches,
@@ -1326,7 +1348,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     const pathKey =
       newNodeId != null
         ? mindMapNodePathKey(newNodeId, result.connections)
-        : computeSiblingPathKey(nodeId, insertIndex, connections)
+        : computeSiblingPathKey(nodeId, insertIndex, connections, data.value?.nodes)
 
     const committed = commitMindMapReloadWithSelect(
       ctx,
@@ -1382,11 +1404,16 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     }
 
     if (ctxV2Visuals(ctx) && anchorNodeId === 'topic') {
-      // Topic paste: append top-level branches on the chosen side via branch add.
-      const side = options?.topicSide ?? 'right'
       let inserted = 0
+      if (options?.topicSide) {
+        for (const label of labels) {
+          if (!addMindMapBranchOnSide(options.topicSide, label)) break
+          inserted += 1
+        }
+        return inserted
+      }
       for (const label of labels) {
-        if (!addMindMapBranchOnSide(side, label)) break
+        if (!addMindMapBranch(undefined, label)) break
         inserted += 1
       }
       return inserted
@@ -1396,7 +1423,16 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, connections)
     let selectPathKey: string
 
-    if (anchorNodeId === 'topic') {
+    if (anchorNodeId === 'topic' && !options?.topicSide) {
+      const allBranches = mindMapBranchesClockwiseOrder(spec.rightBranches, spec.leftBranches)
+      allBranches.push(...labels.map((text) => ({ text })))
+      const distributed = distributeBranchesClockwise(allBranches)
+      spec.leftBranches = distributed.leftBranches
+      spec.rightBranches = distributed.rightBranches
+      const last = allBranches[allBranches.length - 1]
+      selectPathKey =
+        resolvePathKeyForBranchSpec(last, spec.rightBranches, spec.leftBranches) ?? 'r/0'
+    } else if (anchorNodeId === 'topic') {
       const side = options?.topicSide ?? 'right'
       const branches = side === 'left' ? spec.leftBranches : spec.rightBranches
       const startIndex = branches.length
@@ -1416,7 +1452,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       const pathKey = computeSiblingPathKey(
         anchorNodeId,
         insertIndex + labels.length - 1,
-        connections
+        connections,
+        data.value?.nodes
       )
       if (!pathKey) return 0
       selectPathKey = pathKey
@@ -1474,7 +1511,9 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       return false
     }
 
-    const isLeftBranch = nodeId.startsWith('branch-l-')
+    const isLeftBranch =
+      mindMapNodeSide(nodeId, { nodes: data.value?.nodes, connections: data.value?.connections }) ===
+      'left'
     const outward: 'left' | 'right' = isLeftBranch ? 'left' : 'right'
     const inward: 'left' | 'right' = isLeftBranch ? 'right' : 'left'
 
@@ -1655,7 +1694,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
         nodesBefore,
         nodesAfter: afterNodes.length,
         branchIdsAfter: afterNodes
-          .filter((n) => n.id.startsWith('branch-'))
+          .filter((n) => isMindMapBranchNode(n))
           .map((n) => ({
             id: n.id,
             text: n.text,
@@ -1667,7 +1706,6 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
   return {
     addMindMapBranch,
-    addMindMapBranchOnSide,
     addMindMapChild,
     addMindMapSibling,
     insertMindMapSiblingsFromLines,

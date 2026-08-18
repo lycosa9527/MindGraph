@@ -24,7 +24,7 @@ import {
   RADIX_LIGHT_VIOLET,
   RADIX_COLORS_URL,
 } from '@/config/radixMindMapPresets'
-import type { DiagramNode, NodeStyle } from '@/types'
+import type { Connection, DiagramNode, NodeStyle } from '@/types'
 
 export type MindMapThemeId =
   | 'vibrantBlue'
@@ -396,7 +396,9 @@ export function inferMindMapThemeIdFromNodes(
 ): MindMapThemeId | null {
   const topic = nodes.find((n) => n.id === 'topic' && (n.type === 'topic' || n.type === 'center'))
   const topicBorder = topic?.style?.borderColor?.toLowerCase()
-  const branchBorder = nodes.find((n) => n.id.startsWith('branch-'))?.style?.borderColor?.toLowerCase()
+  const branchBorder = nodes
+    .find((n) => n.type === 'branch' || (n.id !== 'topic' && n.id !== 'center'))
+    ?.style?.borderColor?.toLowerCase()
   for (const theme of MIND_MAP_THEMES) {
     if (topicBorder && theme.topicBorderColor.toLowerCase() === topicBorder) return theme.id
     if (branchBorder && theme.borderColor.toLowerCase() === branchBorder) return theme.id
@@ -432,14 +434,15 @@ function isMindMapTopicNode(node: Pick<DiagramNode, 'type'>): boolean {
 
 /** Default node colors from a mind-map theme preset (geometry typography included). */
 export function mindMapStyleFromTheme(
-  node: Pick<DiagramNode, 'type' | 'id'>,
+  node: Pick<DiagramNode, 'type' | 'id' | 'data'>,
   theme: MindMapThemePreset = getDefaultMindMapTheme(),
-  diagramStyleId?: string | null
+  diagramStyleId?: string | null,
+  connections?: Connection[] | null
 ): Partial<NodeStyle> {
   const useTopic = isMindMapTopicNode(node)
   const fontSize = useTopic
     ? MIND_MAP_GEOMETRY.topicFontSize
-    : mindMapBranchFontSize(node.id)
+    : mindMapBranchFontSize(node.id, node, connections)
   const geometry: Partial<NodeStyle> = {
     fontFamily: MIND_MAP_GEOMETRY.fontFamily,
     fontSize,
@@ -466,7 +469,12 @@ export function mindMapStyleFromTheme(
   }
 
   if (mindMapDiagramStyleUsesLayeredBranchColors(diagramStyleId)) {
-    const layered = mindMapLayeredBranchColorsForNode(node.id, theme.borderColor)
+    const layered = mindMapLayeredBranchColorsForNode(
+      node.id,
+      theme.borderColor,
+      connections,
+      node
+    )
     if (layered) {
       return {
         ...geometry,

@@ -2,6 +2,9 @@
 
 Agent-driven structural diagram edits go through one verified tool surface. **`applied` means the owning canvas proved the effect** — not “WebSocket sent” and not “LLM said so.”
 
+Mind-map `node.id` is a stable UUID. Location is derived. See
+[`mindmap_node_identity.md`](mindmap_node_identity.md).
+
 ## Package
 
 `services/diagram_edit/`

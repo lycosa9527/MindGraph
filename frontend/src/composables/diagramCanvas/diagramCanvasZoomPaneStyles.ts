@@ -275,22 +275,7 @@ export function getDropTargetStyle(
     pointerEvents: 'none',
   }
 
-  if (target.type === 'child') {
-    const v2Shape = resolveMindMapDropPreviewShape(node)
-    if (v2Shape === 'underline') {
-      // Match v2 underline nodes: highlight the baseline rather than a pill box.
-      return {
-        position: 'absolute',
-        left: `${node.position.x}px`,
-        top: `${node.position.y + nodeH - 3}px`,
-        width: `${nodeW}px`,
-        height: '4px',
-        borderRadius: '2px',
-        background: '#2563eb',
-        boxShadow: '0 0 0 2px rgb(37 99 235 / 0.25)',
-        pointerEvents: 'none',
-      }
-    }
+  if (target.type === 'child' || target.type === 'topic') {
     baseStyle.border = '2px dashed #2563eb'
     baseStyle.background = 'rgb(37 99 235 / 0.08)'
   }

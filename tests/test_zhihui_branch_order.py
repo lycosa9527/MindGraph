@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from services.diagram.mindmap_location import is_positional_mindmap_branch_id
 from services.zhihui.lesson_planner import reorder_develop_batches_to_outline
 from services.zhihui.outline import (
     MindMapBranchOutline,
@@ -33,29 +34,29 @@ def _sams_club_style_spec() -> dict:
     """
     topic = _node("topic", "山姆会员商店", 0, 400, node_type="topic")
     right = [
-        _node("branch-r-1-0", "竞争对手", 320, 80),
-        _node("branch-r-1-1", "分布特点", 320, 220),
-        _node("branch-r-1-2", "产品与货品策略", 320, 360),
-        _node("branch-r-1-3", "营销聚焦", 320, 500),
+        _node("uid-r0", "竞争对手", 320, 80),
+        _node("uid-r1", "分布特点", 320, 220),
+        _node("uid-r2", "产品与货品策略", 320, 360),
+        _node("uid-r3", "营销聚焦", 320, 500),
     ]
     left = [
         # Canvas stores left stack top→bottom.
-        _node("branch-l-1-0", "汇源汁商店", -320, 80),
-        _node("branch-l-1-1", "Costco对比", -320, 220),
-        _node("branch-l-1-2", "店内体验与多渠道", -320, 360),
-        _node("branch-l-1-3", "运营与精益管理", -320, 500),
+        _node("uid-l0", "汇源汁商店", -320, 80),
+        _node("uid-l1", "Costco对比", -320, 220),
+        _node("uid-l2", "店内体验与多渠道", -320, 360),
+        _node("uid-l3", "运营与精益管理", -320, 500),
     ]
     nodes = [topic, *right, *left]
     # Scrambled connection order (not clockwise).
     targets = [
-        "branch-l-1-2",
-        "branch-r-1-3",
-        "branch-l-1-0",
-        "branch-r-1-0",
-        "branch-l-1-3",
-        "branch-r-1-1",
-        "branch-l-1-1",
-        "branch-r-1-2",
+        "uid-l2",
+        "uid-r3",
+        "uid-l0",
+        "uid-r0",
+        "uid-l3",
+        "uid-r1",
+        "uid-l1",
+        "uid-r2",
     ]
     connections = [{"source": "topic", "target": tid} for tid in targets]
     return {"nodes": nodes, "connections": connections}
@@ -77,30 +78,21 @@ def test_sams_club_style_eight_branches_clockwise() -> None:
     """8 L1 branches: top-right first, down the right, then left bottom→up."""
     outline = extract_mindmap_outline(_sams_club_style_spec())
     assert [branch.text for branch in outline.branches] == EXPECTED_SAMS_CLOCKWISE
-    assert [branch.id for branch in outline.branches] == [
-        "branch-r-1-0",
-        "branch-r-1-1",
-        "branch-r-1-2",
-        "branch-r-1-3",
-        "branch-l-1-3",
-        "branch-l-1-2",
-        "branch-l-1-1",
-        "branch-l-1-0",
-    ]
+    assert all(branch.id and not is_positional_mindmap_branch_id(branch.id) for branch in outline.branches)
 
 
 def test_sams_club_style_without_side_id_prefixes() -> None:
     """Same layout with generic ids still uses geometric side-of-topic order."""
     spec = _sams_club_style_spec()
     rename = {
-        "branch-r-1-0": "r0",
-        "branch-r-1-1": "r1",
-        "branch-r-1-2": "r2",
-        "branch-r-1-3": "r3",
-        "branch-l-1-0": "l0",
-        "branch-l-1-1": "l1",
-        "branch-l-1-2": "l2",
-        "branch-l-1-3": "l3",
+        "uid-r0": "r0",
+        "uid-r1": "r1",
+        "uid-r2": "r2",
+        "uid-r3": "r3",
+        "uid-l0": "l0",
+        "uid-l1": "l1",
+        "uid-l2": "l2",
+        "uid-l3": "l3",
     }
     for node in spec["nodes"]:
         if node["id"] in rename:
@@ -138,11 +130,11 @@ def test_distribute_style_n_branches_clockwise(count: int, expected: list[str]) 
     nodes = [_node("topic", "中心", 0, 200, node_type="topic")]
     connections: list[dict] = []
     for index, label in enumerate(right_labels):
-        node_id = f"branch-r-1-{index}"
+        node_id = f"uid-r-{index}"
         nodes.append(_node(node_id, label, 200, 40 + index * 60))
         connections.append({"source": "topic", "target": node_id})
     for index, label in enumerate(left_stack):
-        node_id = f"branch-l-1-{index}"
+        node_id = f"uid-l-{index}"
         nodes.append(_node(node_id, label, -200, 40 + index * 60))
         connections.append({"source": "topic", "target": node_id})
 

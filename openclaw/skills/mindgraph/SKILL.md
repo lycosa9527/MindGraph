@@ -173,11 +173,10 @@ Required shapes only. Aliases accepted: `contexts`→`context`; `left_topic`/`ri
   "topic": "Central idea",
   "children": [
     {
-      "id": "branch_0",
       "label": "Branch",
       "text": "Branch",
       "children": [
-        { "id": "sub_0_0", "label": "Leaf", "text": "Leaf", "children": [] }
+        { "label": "Leaf", "text": "Leaf", "children": [] }
       ]
     }
   ]
@@ -222,7 +221,7 @@ Then **A2 + A3** with the response **`diagram_type`** and **`spec`** unchanged (
 `GET {MINDGRAPH_BASE_URL}/api/diagrams/{id}` then:
 
 ```json
-{ "action": "update", "updates": [{ "node_id": "branch_0", "new_text": "New label" }] }
+{ "action": "update", "updates": [{ "node_id": "<canvas-uuid>", "new_text": "New label" }] }
 ```
 
 Or full replace `{ "spec": { } }` (same validator as create). Actions: `update` | `add` | `delete`. Then **A3**.

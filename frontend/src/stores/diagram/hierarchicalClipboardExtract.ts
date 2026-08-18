@@ -3,6 +3,7 @@ import {
   nodesAndConnectionsToMindMapSpec,
 } from '@/stores/specLoader/mindMap'
 import type { Connection, DiagramData, DiagramNode, DiagramType } from '@/types'
+import { isMindMapBranchId } from '@/utils/mindMapLocation'
 import { deepCloneMindMapBranch } from '@/utils/mindMapSubgraphMerge'
 
 import type {
@@ -67,7 +68,7 @@ function extractMindMapBranches(
   }
 
   const branchIds = filterTopLevelNodeIds(
-    nodeIds.filter((id) => id.startsWith('branch-')),
+    nodeIds.filter((id) => isMindMapBranchId(id, data.nodes)),
     isDescendant
   )
   if (branchIds.length === 0) return null

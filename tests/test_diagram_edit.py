@@ -188,6 +188,7 @@ def test_build_expected_effect_add_branch() -> None:
     assert effect.op == "add_branch"
     assert effect.text == "DIY"
     assert effect.parent_ref == "topic"
+    assert effect.side is None
 
 
 def test_build_expected_effect_add_child_via_parent_ref() -> None:
@@ -300,6 +301,28 @@ def test_build_expected_effect_delete_omits_identifier_when_label_duplicated() -
     assert effect.node_identifier is None
     assert "node_absent" not in effect.checks
     assert "no_dangling_edges" in effect.checks
+
+
+def test_build_expected_effect_delete_uses_live_uuid_not_as_label() -> None:
+    """A live UUID is the verify key; a UUID spoken as target is not a label."""
+    live_id = "0292ae97-f986-4945-9b45-a175bd5a92b5"
+    before = {
+        "nodes": [
+            {"id": "topic", "text": "交换机"},
+            {"id": live_id, "text": "教学实践与应用"},
+        ],
+        "connections": [],
+    }
+    cmd = DiagramEditCommand(
+        tool="diagram.delete_node",
+        args={"node_id": live_id},
+        scope="scope-1",
+        diagram_type="mindmap",
+        legacy_command={"action": "delete_node", "node_id": live_id, "target": live_id},
+    )
+    effect = build_expected_effect(cmd, before)
+    assert effect.node_identifier == live_id
+    assert "node_absent" in effect.checks
 
 
 def test_extract_before_fingerprint_nodes() -> None:

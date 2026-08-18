@@ -3,6 +3,7 @@
  */
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import type { DiagramType } from '@/types'
+import { isMindMapL1, mindMapNodeDepth } from '@/utils/mindMapLocation'
 
 import { DIMENSION_FIRST_TYPES, STAGED_DIAGRAM_TYPES } from './constants'
 
@@ -15,6 +16,15 @@ export interface Stage2Parent {
 
 function normalizeDiagramType(dt: DiagramType | null): DiagramType | null {
   return dt === 'mind_map' ? 'mindmap' : dt
+}
+
+function isPaletteMindMapL1(
+  node: { id?: string; type?: string },
+  connections?: Array<{ source: string; target: string }>
+): boolean {
+  if (!node.id || node.id === 'topic') return false
+  if (connections && connections.length > 0) return isMindMapL1(node.id, connections)
+  return mindMapNodeDepth(node.id, { node }) === 1
 }
 
 export function hasDimension(
@@ -40,9 +50,7 @@ export function getDefaultStage(
   const dt = normalizeDiagramType(diagramType)
   switch (dt) {
     case 'mindmap': {
-      const branchNodes = nodes.filter(
-        (n) => n.id?.startsWith('branch-l-1-') || n.id?.startsWith('branch-r-1-')
-      )
+      const branchNodes = nodes.filter((n) => isPaletteMindMapL1(n, connections))
       const hasBranchesWithRealText =
         branchNodes.length > 0 &&
         branchNodes.some((n) => n.text && n.text.trim() && !isPlaceholderText(n.text))
@@ -119,10 +127,7 @@ export function getStage2ParentsForDiagram(
     n.text && n.text.trim() && !isPlaceholderText(n.text)
   if (dt === 'mindmap') {
     return nodes
-      .filter(
-        (n) =>
-          (n.id?.startsWith('branch-l-1-') || n.id?.startsWith('branch-r-1-')) && hasRealText(n)
-      )
+      .filter((n) => isPaletteMindMapL1(n, connections) && hasRealText(n))
       .map((n) => ({ id: n.id ?? '', name: String(n.text) }))
   }
   if (dt === 'flow_map') {

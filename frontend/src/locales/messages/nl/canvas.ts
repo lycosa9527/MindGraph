@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Redden',
   'canvas.shortcutGuide.clearText': 'Knooppunttekst wissen',
   'canvas.shortcutGuide.learningSheetAnswers': 'Toon/verberg antwoorden op het leerblad',
+  'canvas.shortcutGuide.recalcLayout': 'Layout herberekenen',
   'canvas.shortcutGuide.multiSelect': 'Meervoudig selecteren',
   'canvas.shortcutGuide.multiSelectDesc': 'Sleep een vak in de aanwijzermodus om meerdere knooppunten te selecteren.',
   'canvas.shortcutGuide.multiSelectHint': 'Sleep naar vakselectie',

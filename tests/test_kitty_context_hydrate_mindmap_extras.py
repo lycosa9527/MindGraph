@@ -37,13 +37,15 @@ def test_diagram_data_from_saved_spec_keeps_mindmap_extras() -> None:
     assert diagram_data["_mindmap_branch_numbering"] is True
     assert diagram_data["_mindmap_branch_numbering_prefix"] == "chinese"
     assert diagram_data["_mindmap_branch_numbering_nested"] == "outline"
-    assert diagram_data["_node_styles"] == {"branch-r-1-0": {"nodeShape": "rounded"}}
+    assert diagram_data["_node_styles"] == {"uid-branch-1": {"nodeShape": "rounded"}}
     assert diagram_data["_collapsed_paths"] == ["r/0"]
     assert diagram_data["_mindmap_canvas"] == {"v2": {"theme": "ocean"}}
     assert diagram_data["nodes"][0]["id"] == "topic"
     branch = diagram_data["nodes"][1]
-    assert branch["id"] == "branch-r-1-0"
-    assert branch["data"] == {"mindMapUid": "uid-branch-1"}
+    assert branch["id"] == "uid-branch-1"
+    assert branch["data"]["mindMapUid"] == "uid-branch-1"
+    assert branch["data"]["mindMapLegacyId"] == "branch-r-1-0"
+    assert branch["data"]["mindMapSide"] == "right"
 
 
 def test_diagram_data_from_saved_spec_skips_extras_for_non_mindmap() -> None:

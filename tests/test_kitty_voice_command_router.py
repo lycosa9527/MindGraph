@@ -232,9 +232,10 @@ async def test_route_omni_function_call_inline_recommendations_selected() -> Non
     vid = create_voice_session(user_id="7", diagram_session_id="scope_test", diagram_type="mindmap")
     voice_sessions[vid]["context"] = {
         "diagram_data": {
-            "children": [{"id": "branch-l-1-0", "text": "Sports"}],
+            "children": [{"id": "uid-sports", "text": "Sports"}],
+            "nodes": [{"id": "uid-sports", "text": "Sports"}],
         },
-        "selected_nodes": ["branch-l-1-0"],
+        "selected_nodes": ["uid-sports"],
     }
 
     send_mock = AsyncMock(return_value=True)
@@ -278,7 +279,7 @@ async def test_route_omni_function_call_inline_recommendations_selected() -> Non
         send_mock.assert_awaited()
         payload = mock_await_args(send_mock)[2]
         assert payload["action"] == "start_inline_recommendations"
-        assert payload["params"]["node_id"] == "branch-l-1-0"
+        assert payload["params"]["node_id"] == "uid-sports"
         ack_mock.assert_awaited()
     finally:
         voice_sessions.pop(vid, None)
@@ -292,7 +293,7 @@ async def test_route_update_node_emits_success_ack() -> None:
     voice_sessions[vid]["context"] = {
         "interaction_language": "zh",
         "diagram_data": {
-            "children": [{"id": "branch-0", "text": "食"}],
+            "children": [{"id": "uid-food", "text": "食"}],
             "center": {"text": "北京三日游"},
         },
     }

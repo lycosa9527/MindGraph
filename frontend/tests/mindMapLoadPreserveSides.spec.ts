@@ -7,28 +7,25 @@ import {
   loadMindMapSpec,
   mindMapBranchesClockwiseOrder,
   nodesAndConnectionsToMindMapSpec,
+  rebalanceMindMapBranchesAfterL1Delete,
   rebalanceMindMapBranchesIfLeftOnly,
 } from '@/stores/specLoader/mindMap'
 import { useUIStore } from '@/stores/ui'
+import { mindMapNodeSide } from '@/utils/mindMapLocation'
 
 function topicChildBranchTexts(
-  nodes: { id: string; text?: string }[],
-  connections: { source: string; target: string }[],
+  nodes: { id: string; text?: string; type?: string; data?: Record<string, unknown> }[],
+  connections: { source: string; target: string; sourceHandle?: string }[],
   side: 'l' | 'r'
 ): string[] {
-  const prefix = side === 'l' ? 'branch-l-' : 'branch-r-'
-  const childIds = connections
-    .filter((c) => c.source === 'topic' && c.target.startsWith(prefix))
-    .map((c) => c.target)
+  const wanted = side === 'l' ? 'left' : 'right'
   const byId = new Map(nodes.map((n) => [n.id, n.text ?? '']))
-  return childIds
-    .slice()
-    .sort((a, b) => {
-      const aIdx = parseInt(a.split('-')[3] ?? '0', 10)
-      const bIdx = parseInt(b.split('-')[3] ?? '0', 10)
-      return aIdx - bIdx
-    })
-    .map((id) => byId.get(id) ?? '')
+  return connections
+    .filter(
+      (c) =>
+        c.source === 'topic' && mindMapNodeSide(c.target, { nodes, connections }) === wanted
+    )
+    .map((c) => byId.get(c.target) ?? '')
 }
 
 describe('mindmap load preserves left/right sides', () => {
@@ -129,6 +126,42 @@ describe('mindmap load preserves left/right sides', () => {
       afterDeleteRight.rightBranches
     )
     expect(again.redistributed).toBe(false)
+  })
+
+  it('rebalances a two-sided map after deleting one L1 (5→4 clockwise)', () => {
+    const initial = loadMindMapSpec({
+      topic: 'Xiaomi Car',
+      children: [
+        { text: '机制' },
+        { text: '边界' },
+        { text: '产品线' },
+        { text: '争议' },
+        { text: '反例' },
+      ],
+    })
+    const extracted = nodesAndConnectionsToMindMapSpec(initial.nodes, initial.connections)
+    expect(extracted.rightBranches.map((b) => b.text)).toEqual(['机制', '边界', '产品线'])
+    expect(extracted.leftBranches.map((b) => b.text)).toEqual(['反例', '争议'])
+
+    const remainingLeft = extracted.leftBranches.filter((b) => b.text !== '争议')
+    const after = rebalanceMindMapBranchesAfterL1Delete(
+      remainingLeft,
+      extracted.rightBranches,
+      true
+    )
+    expect(after.redistributed).toBe(true)
+    expect(after.rightBranches.map((b) => b.text)).toEqual(['机制', '边界'])
+    expect(after.leftBranches.map((b) => b.text)).toEqual(['反例', '产品线'])
+  })
+
+  it('leaves right-only maps alone after L1 delete (intentional structure mode)', () => {
+    const result = rebalanceMindMapBranchesAfterL1Delete(
+      [],
+      [{ text: 'OnlyRight' }, { text: 'AlsoRight' }],
+      false
+    )
+    expect(result.redistributed).toBe(false)
+    expect(result.rightBranches.map((b) => b.text)).toEqual(['OnlyRight', 'AlsoRight'])
   })
 
   it('leaves right-only maps alone (intentional structure mode)', () => {

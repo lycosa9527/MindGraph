@@ -101,6 +101,7 @@ export default {
   'canvas.shortcutGuide.save': '保存',
   'canvas.shortcutGuide.clearText': '清空节点文字',
   'canvas.shortcutGuide.learningSheetAnswers': '显示/隐藏参考答案',
+  'canvas.shortcutGuide.recalcLayout': '重新计算布局',
   'canvas.shortcutGuide.multiSelect': '节点多选',
   'canvas.shortcutGuide.multiSelectDesc': '指针模式下拖拽框选多个节点。',
   'canvas.shortcutGuide.multiSelectHint': '拖拽框选',

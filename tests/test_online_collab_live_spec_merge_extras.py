@@ -32,3 +32,23 @@ def test_prune_drops_edges_to_deleted_endpoints():
     }
     merge_granular_into_spec(spec, None, None)
     assert not spec["connections"]
+
+
+def test_merge_remaps_leftover_patch_id_onto_live_uuid() -> None:
+    """Stale positional patches hit the live UUID via leftover alias."""
+    spec = {
+        "nodes": [
+            {"id": "topic", "type": "topic", "text": "Cars"},
+            {
+                "id": "uid-diy",
+                "type": "branch",
+                "text": "DIY",
+                "data": {"mindMapLegacyId": "branch_1"},
+            },
+        ],
+        "connections": [{"id": "e1", "source": "topic", "target": "uid-diy"}],
+    }
+    merge_granular_into_spec(spec, [{"id": "branch_1", "text": "Detail"}], None)
+    diy = next(node for node in spec["nodes"] if node["id"] == "uid-diy")
+    assert diy["text"] == "Detail"
+    assert not any(node.get("id") == "branch_1" for node in spec["nodes"])

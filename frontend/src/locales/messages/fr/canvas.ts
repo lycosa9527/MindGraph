@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Enregistrer',
   'canvas.shortcutGuide.clearText': 'Effacer le texte du nœud',
   'canvas.shortcutGuide.learningSheetAnswers': 'Afficher/masquer les réponses de la fiche',
+  'canvas.shortcutGuide.recalcLayout': 'Recalculer la disposition',
   'canvas.shortcutGuide.multiSelect': 'Sélection multiple',
   'canvas.shortcutGuide.multiSelectDesc': 'Tracez un cadre en mode pointeur pour sélectionner plusieurs nœuds.',
   'canvas.shortcutGuide.multiSelectHint': 'Glissez pour sélectionner par cadre',

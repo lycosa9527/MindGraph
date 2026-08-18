@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Stoor',
   'canvas.shortcutGuide.clearText': 'Maak knooppuntteks skoon',
   'canvas.shortcutGuide.learningSheetAnswers': 'Wys/versteek leerblad-antwoorde',
+  'canvas.shortcutGuide.recalcLayout': 'Recalculate layout',
   'canvas.shortcutGuide.multiSelect': 'Meervoudige seleksie',
   'canvas.shortcutGuide.multiSelectDesc': 'Sleep ’n blokkie in wyser-modus om verskeie knooppunte te kies.',
   'canvas.shortcutGuide.multiSelectHint': 'Sleep om blokkies te kies',

@@ -3,7 +3,7 @@
  * V2 mind map canvas overlays — lazy chunk paired with MindMapV2Canvas.vue.
  * Floating toolbar (incl. node explain), learning-sheet bar, directional add, collapse toggles.
  */
-import { type Ref, computed, unref } from 'vue'
+import { type Ref, computed, inject, unref } from 'vue'
 
 import { CanvasNodeFloatingToolbar } from '@/components/canvas'
 import LearningSheetFloatBar from '@/components/canvas/LearningSheetFloatBar.vue'
@@ -33,6 +33,9 @@ const props = defineProps<{
 
 const uiStore = useUIStore()
 
+const branchMove = inject<{ state: { value: { active: boolean } } } | null>('branchMove', null)
+const branchMoveActive = computed(() => branchMove?.state.value.active === true)
+
 const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasContainer))
 </script>
 
@@ -54,12 +57,17 @@ const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasC
   />
 
   <MindMapDirectionalAddOverlay
-    v-if="!presentationDiagramEditLocked && !uiStore.exportWireframeOutline && !nodeExplainOpen"
+    v-if="
+      !presentationDiagramEditLocked &&
+      !uiStore.exportWireframeOutline &&
+      !nodeExplainOpen &&
+      !branchMoveActive
+    "
     :container-ref="resolvedContainer"
     :teleport-target="presentationTeleportTarget"
   />
   <MindMapCollapseToggleOverlay
-    v-if="!presentationDiagramEditLocked && !uiStore.exportWireframeOutline"
+    v-if="!presentationDiagramEditLocked && !uiStore.exportWireframeOutline && !branchMoveActive"
     :container-ref="resolvedContainer"
     :teleport-target="presentationTeleportTarget"
   />

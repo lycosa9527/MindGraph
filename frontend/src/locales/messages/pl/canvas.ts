@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Zapisz',
   'canvas.shortcutGuide.clearText': 'Wyczyść tekst węzła',
   'canvas.shortcutGuide.learningSheetAnswers': 'Pokaż/ukryj odpowiedzi arkusza',
+  'canvas.shortcutGuide.recalcLayout': 'Przelicz układ',
   'canvas.shortcutGuide.multiSelect': 'Wielokrotne zaznaczenie',
   'canvas.shortcutGuide.multiSelectDesc': 'Przeciągnij prostokąt w trybie wskaźnika, aby zaznaczyć wiele węzłów.',
   'canvas.shortcutGuide.multiSelectHint': 'Przeciągnij, aby zaznaczyć prostokątem',

@@ -99,6 +99,16 @@ def verify_mindmap_effect(
 
     if effect.op == "update_node":
         record("node_count_unchanged", before_node_count is None or len(nodes) == before_node_count)
+        ident = effect.node_identifier or effect.node_id
+        if ident:
+            by_id = next((node for node in nodes if node.get("id") == ident), None)
+            record("node_exists", by_id is not None)
+            if effect.text:
+                record(
+                    "text_matches",
+                    by_id is not None and _node_text(by_id) == normalize_diagram_text(effect.text),
+                )
+            return _report(passed, failed)
         if effect.text:
             matches = [n for n in nodes if _node_text(n) == normalize_diagram_text(effect.text)]
             record("text_matches", len(matches) > 0)

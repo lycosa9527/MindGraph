@@ -14,6 +14,7 @@ import type { useDiagramStore } from '@/stores/diagram'
 import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
 import { recalculateCircleMapLayout } from '@/stores/specLoader'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
+import { mindMapNodeDepth } from '@/utils/mindMapLocation'
 
 type DiagramPiniaStore = ReturnType<typeof useDiagramStore>
 
@@ -32,10 +33,16 @@ function newNodeIds(before: Set<string>, store: DiagramPiniaStore): string[] {
   return (store.data?.nodes ?? []).filter((node) => !before.has(node.id)).map((node) => node.id)
 }
 
-function mindmapDepth(nodeId: string): number {
-  const parts = nodeId.split('-')
-  const depth = parseInt(parts[2] ?? '9', 10)
-  return Number.isFinite(depth) ? depth : 9
+function mindmapDepth(
+  nodeId: string,
+  nodes: DiagramNode[],
+  connections: Connection[] | undefined
+): number {
+  return mindMapNodeDepth(nodeId, {
+    node: nodes.find((row) => row.id === nodeId),
+    nodes,
+    connections,
+  })
 }
 
 export function pickInlineRecTargetNodeId(
@@ -52,7 +59,9 @@ export function pickInlineRecTargetNodeId(
   })
   if (eligible.length === 0) return null
   if (dt === 'mindmap') {
-    eligible.sort((a, b) => mindmapDepth(a) - mindmapDepth(b))
+    eligible.sort(
+      (a, b) => mindmapDepth(a, nodes, connections) - mindmapDepth(b, nodes, connections)
+    )
   }
   return eligible[0] ?? null
 }
@@ -101,9 +110,8 @@ function addNodeForDiagramType(
     if (selectedId && selectedId !== 'topic') {
       return store.addMindMapChild(selectedId, placeholder)
     }
-    const side: 'left' | 'right' = selectedId?.startsWith('branch-l-') ? 'left' : 'right'
     return store.addMindMapBranch(
-      side,
+      undefined,
       placeholder,
       translate('canvas.toolbar.newChild', 'New child')
     )

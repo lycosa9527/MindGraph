@@ -116,6 +116,50 @@ describe('mapRemoteLectureSteps', () => {
     ).toBe(true)
   })
 
+  it('remaps leftover branch-r-1-0 focus ids onto live UUIDs', () => {
+    const live = [
+      { id: 'topic', text: 'Cars' },
+      {
+        id: 'uid-diy',
+        text: 'DIY',
+        data: { mindMapLegacyId: 'branch-r-1-0', mindMapUid: 'uid-diy' },
+      },
+    ]
+    const steps = mapRemoteLectureSteps(
+      [
+        {
+          id: 's1',
+          kind: 'branch',
+          title: 'DIY',
+          caption: 'Look at DIY',
+          focus_node_ids: ['branch-r-1-0', 'topic'],
+          branch_node_id: 'branch-r-1-0',
+        },
+      ],
+      live
+    )
+    expect(steps[0]?.focusNodeIds).toEqual(['uid-diy', 'topic'])
+    expect(steps[0]?.branchNodeId).toBe('uid-diy')
+    expect(
+      classroomReadyJobIsUsable(
+        {
+          spec_node_ids: ['branch-r-1-0', 'topic'],
+          result_json: {
+            steps: [
+              {
+                id: 's1',
+                caption: 'Look at DIY',
+                focus_node_ids: ['branch-r-1-0'],
+                branch_node_id: 'branch-r-1-0',
+              },
+            ],
+          },
+        },
+        live
+      )
+    ).toBe(true)
+  })
+
   it('gives long captions enough dwell so TTS is not cut at 20s', () => {
     const live = collectLiveNodeIds([{ id: 'topic' }])
     const caption = '我们先看右上角这一支，地理区位。'.repeat(20)

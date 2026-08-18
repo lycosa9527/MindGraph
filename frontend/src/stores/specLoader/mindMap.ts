@@ -16,7 +16,6 @@ import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import {
   buildMindMapChildrenMapByConnectionOrder,
   mindMapNodePathKey,
-  sortMindMapNodeIdsByGlobalIndex,
 } from '@/stores/diagram/mindMapStylePreservation'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { Connection, DiagramNode } from '@/types'
@@ -26,7 +25,9 @@ import {
   resolveMindMapBranchNumberingPrefix,
 } from '@/utils/mindMapBranchNumbering'
 import { readMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
-import { readMindMapNodeUid } from '@/utils/mindMapNodeUid'
+import { MINDMAP_LEGACY_ID_DATA_KEY } from '@/utils/mindMapIdentityMigrate'
+import { isLeftoverMindMapBranchId, mindMapNodeSide } from '@/utils/mindMapLocation'
+import { hydrateMindMapBranchTree, readMindMapNodeUid } from '@/utils/mindMapNodeUid'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 import { layoutMindMapSideLegacy } from './mindMapLegacyLayout'
@@ -252,6 +253,48 @@ export function rebalanceMindMapBranchesIfLeftOnly(
   }
 }
 
+function sameMindMapBranchList(left: MindMapBranch[], right: MindMapBranch[]): boolean {
+  if (left.length !== right.length) return false
+  return left.every((branch, index) => {
+    const other = right[index]
+    if (!other) return false
+    if (branch === other) return true
+    const uid = typeof branch.uid === 'string' ? branch.uid : ''
+    const otherUid = typeof other.uid === 'string' ? other.uid : ''
+    return uid === otherUid && branch.text === other.text
+  })
+}
+
+/**
+ * After an L1 delete: if the map was two-sided, redistribute remaining branches
+ * clockwise (5→4 keeps 1–2 right and 3+5 left). Right-only structure mode is
+ * unchanged; left-only still splits across both sides.
+ */
+export function rebalanceMindMapBranchesAfterL1Delete(
+  leftBranches: MindMapBranch[],
+  rightBranches: MindMapBranch[],
+  hadBothSidesBefore: boolean
+): {
+  leftBranches: MindMapBranch[]
+  rightBranches: MindMapBranch[]
+  redistributed: boolean
+} {
+  if (!hadBothSidesBefore) {
+    return rebalanceMindMapBranchesIfLeftOnly(leftBranches, rightBranches)
+  }
+  const distributed = distributeBranchesClockwise(
+    mindMapBranchesClockwiseOrder(rightBranches, leftBranches)
+  )
+  const redistributed =
+    !sameMindMapBranchList(distributed.leftBranches, leftBranches) ||
+    !sameMindMapBranchList(distributed.rightBranches, rightBranches)
+  return {
+    leftBranches: distributed.leftBranches,
+    rightBranches: distributed.rightBranches,
+    redistributed,
+  }
+}
+
 /**
  * Normalize horizontal extent so left and right sides have equal curve length from center.
  */
@@ -260,8 +303,12 @@ export function normalizeMindMapHorizontalSymmetry(
   centerX: number,
   minExtent: number = DEFAULT_MINDMAP_RANK_SEPARATION
 ): void {
-  const leftNodes = nodes.filter((n) => n.type === 'branch' && n.id.startsWith('branch-l-'))
-  const rightNodes = nodes.filter((n) => n.type === 'branch' && n.id.startsWith('branch-r-'))
+  const leftNodes = nodes.filter(
+    (n) => n.type === 'branch' && mindMapNodeSide(n.id, { node: n, nodes }) === 'left'
+  )
+  const rightNodes = nodes.filter(
+    (n) => n.type === 'branch' && mindMapNodeSide(n.id, { node: n, nodes }) === 'right'
+  )
 
   if (leftNodes.length === 0 && rightNodes.length === 0) return
 
@@ -342,17 +389,31 @@ export function nodesAndConnectionsToMindMapSpec(
     const children = childIds
       .map((id) => buildBranch(id))
       .filter((b): b is MindMapBranch => b !== null)
-    const uid = readMindMapNodeUid(node) ?? undefined
+    const storedUid = readMindMapNodeUid(node)
+    const leftover = isLeftoverMindMapBranchId(nodeId)
+    const uid = storedUid ?? (leftover ? undefined : nodeId)
+    const storedLegacy = node.data?.[MINDMAP_LEGACY_ID_DATA_KEY]
+    const legacyId =
+      typeof storedLegacy === 'string' && storedLegacy.trim()
+        ? storedLegacy.trim()
+        : leftover
+          ? nodeId
+          : undefined
     return {
       text: node.text ?? '',
       uid,
+      legacyId,
       children: children.length > 0 ? children : undefined,
     }
   }
 
   const topicChildIds = childrenMap.get('topic') ?? []
-  const rightIds = topicChildIds.filter((id) => id.startsWith('branch-r-'))
-  const leftIds = topicChildIds.filter((id) => id.startsWith('branch-l-'))
+  const rightIds = topicChildIds.filter(
+    (id) => mindMapNodeSide(id, { nodes, connections }) === 'right'
+  )
+  const leftIds = topicChildIds.filter(
+    (id) => mindMapNodeSide(id, { nodes, connections }) === 'left'
+  )
 
   const rightBranches = rightIds
     .map((id) => buildBranch(id))
@@ -369,8 +430,6 @@ export interface FindBranchResult {
   parentArray: MindMapBranch[]
   indexInParent: number
 }
-
-export { sortMindMapNodeIdsByGlobalIndex }
 
 function buildMindMapChildrenMap(connections: Connection[]): Map<string, string[]> {
   return buildMindMapChildrenMapByConnectionOrder(connections)
@@ -442,8 +501,10 @@ export function findBranchByNodeId(
   }
 
   const topicChildIds = childrenMap.get('topic') ?? []
-  const rightIds = topicChildIds.filter((id) => id.startsWith('branch-r-'))
-  const leftIds = topicChildIds.filter((id) => id.startsWith('branch-l-'))
+  const rightIds = topicChildIds.filter(
+    (id) => mindMapNodeSide(id, { connections }) === 'right'
+  )
+  const leftIds = topicChildIds.filter((id) => mindMapNodeSide(id, { connections }) === 'left')
 
   if (walkLevel(rightIds, rightBranches, rightBranches)) return result
   if (walkLevel(leftIds, leftBranches, leftBranches)) return result
@@ -493,6 +554,8 @@ export function loadMindMapSpec(
   }
 
   const allBranches = [...rightBranches, ...leftBranches]
+  hydrateMindMapBranchTree(rightBranches)
+  hydrateMindMapBranchTree(leftBranches)
   const canvasMode: MindMapCanvasMode =
     options?.canvasMode ?? (readMindMapV2VisualDesignActive() ? 'v2' : 'legacy')
   const v2Visuals = canvasMode === 'v2'

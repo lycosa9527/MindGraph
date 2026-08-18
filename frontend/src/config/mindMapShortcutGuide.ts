@@ -45,6 +45,12 @@ export const MIND_MAP_SHORTCUT_GUIDE_ROWS: MindMapShortcutGuideRow[] = [
   },
   { id: 'save', labelKey: 'canvas.shortcutGuide.save', kind: 'keys', keys: ['Ctrl+S'] },
   {
+    id: 'recalcLayout',
+    labelKey: 'canvas.shortcutGuide.recalcLayout',
+    kind: 'keys',
+    keys: ['Ctrl+Shift+L'],
+  },
+  {
     id: 'learningSheetAnswers',
     labelKey: 'canvas.shortcutGuide.learningSheetAnswers',
     kind: 'keys',
@@ -78,6 +84,7 @@ export const MIND_MAP_SHORTCUT_GUIDE_WIRED_ROW_IDS = [
   'undo',
   'redo',
   'save',
+  'recalcLayout',
   'clearText',
   'learningSheetAnswers',
   'cancel',

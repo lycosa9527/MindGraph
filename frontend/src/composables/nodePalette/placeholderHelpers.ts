@@ -3,6 +3,7 @@
  */
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import type { DiagramType } from '@/types'
+import { isMindMapBranchNode, isMindMapL1, mindMapNodeDepth } from '@/utils/mindMapLocation'
 
 import { isLearningSheetBlankDisplayText } from '@/stores/specLoader/utils'
 
@@ -122,17 +123,16 @@ export function getPlaceholderNodes(
           connections.filter((c) => c.source === parentId).map((c) => c.target)
         )
         const childBranches = nodes.filter(
-          (n) =>
-            (n.id.startsWith('branch-l-') || n.id.startsWith('branch-r-')) &&
-            childIds.has(n.id) &&
-            isPlaceholder(n)
+          (n) => isMindMapBranchNode(n) && childIds.has(n.id) && isPlaceholder(n)
         )
         return childBranches.sort((a, b) => a.id.localeCompare(b.id))
       }
-      const firstLevelBranches = nodes.filter(
-        (n) =>
-          (n.id.startsWith('branch-l-1-') || n.id.startsWith('branch-r-1-')) && isPlaceholder(n)
-      )
+      const firstLevelBranches = nodes.filter((n) => {
+        const isL1 = connections?.length
+          ? isMindMapL1(n.id, connections)
+          : mindMapNodeDepth(n.id, { node: n }) === 1
+        return isL1 && isPlaceholder(n)
+      })
       return firstLevelBranches.sort((a, b) => a.id.localeCompare(b.id))
     }
     case 'bridge_map': {

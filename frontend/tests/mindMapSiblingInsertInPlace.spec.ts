@@ -2,7 +2,22 @@ import { describe, expect, it } from 'vitest'
 
 import { insertMindMapSiblingInPlace } from '@/stores/diagram/mindMapSiblingInsert'
 import type { Connection, DiagramNode } from '@/types'
+import { isMindMapL1, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { MINDMAP_NODE_UID_DATA_KEY } from '@/utils/mindMapNodeUid'
+
+const IDENTITY_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function topicTargets(
+  connections: Connection[],
+  nodes: DiagramNode[],
+  side?: 'left' | 'right'
+): string[] {
+  return connections
+    .filter((connection) => connection.source === 'topic')
+    .map((connection) => connection.target)
+    .filter((id) => !side || mindMapNodeSide(id, { nodes, connections }) === side)
+}
 
 function sampleGraph(): { nodes: DiagramNode[]; connections: Connection[] } {
   const nodes: DiagramNode[] = [
@@ -67,7 +82,7 @@ describe('insertMindMapSiblingInPlace', () => {
     if (!result) {
       throw new Error('expected insert result')
     }
-    expect(result.newNodeId).toMatch(/^branch-r-1-\d+$/)
+    expect(result.newNodeId).toMatch(IDENTITY_ID_RE)
     expect(result.newNodeId).not.toBe('branch-r-1-0')
     expect(result.newNodeId).not.toBe('branch-r-1-1')
 
@@ -240,14 +255,10 @@ describe('insertMindMapSiblingInPlace', () => {
       throw new Error('expected insert result for L1 Enter below')
     }
 
-    const leftTargets = result.connections
-      .filter((c) => c.source === 'topic' && c.target.startsWith('branch-l-'))
-      .map((c) => c.target)
+    const leftTargets = topicTargets(result.connections, result.nodes, 'left')
     expect(leftTargets).toEqual(['branch-l-1-0', result.newNodeId, 'branch-l-1-3'])
 
-    const rightTargets = result.connections
-      .filter((c) => c.source === 'topic' && c.target.startsWith('branch-r-'))
-      .map((c) => c.target)
+    const rightTargets = topicTargets(result.connections, result.nodes, 'right')
     expect(rightTargets).toEqual(['branch-r-1-0', 'branch-r-1-1'])
 
     const created = result.nodes.find((n) => n.id === result.newNodeId)
@@ -316,9 +327,7 @@ describe('insertMindMapSiblingInPlace', () => {
       throw new Error('expected insert result for L1 Enter above')
     }
 
-    const leftTargets = result.connections
-      .filter((c) => c.source === 'topic' && c.target.startsWith('branch-l-'))
-      .map((c) => c.target)
+    const leftTargets = topicTargets(result.connections, result.nodes, 'left')
     expect(leftTargets[0]).toBe(result.newNodeId)
     expect(leftTargets).toContain('branch-l-1-0')
 
@@ -420,7 +429,12 @@ describe('insertMindMapSiblingInPlace', () => {
     }
     const branch4Y = nodes.find((n) => n.id === 'branch-l-1-0')?.position?.y ?? 0
     expect(createdYs[0]).toBeGreaterThan(branch4Y)
-    const leftL1 = nodes.filter((n) => /^branch-l-1-/.test(n.id) && n.position)
+    const leftL1 = nodes.filter(
+      (n) =>
+        n.position &&
+        isMindMapL1(n.id, connections) &&
+        mindMapNodeSide(n.id, { nodes, connections }) === 'left'
+    )
     const leftAnchors = leftL1.map(
       (n) => (n.position?.y ?? 0) + ((n.data?.estimatedHeight as number) ?? 36) / 2
     )
@@ -492,7 +506,7 @@ describe('insertMindMapSiblingInPlace', () => {
     if (!l1) {
       throw new Error('expected L1 insert result')
     }
-    expect(l1.newNodeId).toMatch(/^branch-r-1-\d+$/)
+    expect(l1.newNodeId).toMatch(IDENTITY_ID_RE)
     expect(l1.connections.filter((c) => c.source === 'topic').map((c) => c.target)).toEqual([
       'branch-r-1-0',
       l1.newNodeId,
@@ -509,7 +523,7 @@ describe('insertMindMapSiblingInPlace', () => {
     if (!l2) {
       throw new Error('expected L2 insert result')
     }
-    expect(l2.newNodeId).toMatch(/^branch-r-2-\d+$/)
+    expect(l2.newNodeId).toMatch(IDENTITY_ID_RE)
     expect(l2.connections.filter((c) => c.source === 'branch-r-1-0').map((c) => c.target)).toEqual([
       'branch-r-2-0',
       l2.newNodeId,
@@ -526,7 +540,7 @@ describe('insertMindMapSiblingInPlace', () => {
     if (!l3) {
       throw new Error('expected L3 insert result')
     }
-    expect(l3.newNodeId).toMatch(/^branch-r-3-\d+$/)
+    expect(l3.newNodeId).toMatch(IDENTITY_ID_RE)
     expect(l3.connections.filter((c) => c.source === 'branch-r-2-0').map((c) => c.target)).toEqual([
       'branch-r-3-0',
       l3.newNodeId,
@@ -566,7 +580,7 @@ describe('insertMindMapSiblingInPlace', () => {
     if (!result) {
       throw new Error('expected insert result for right L1 Enter')
     }
-    expect(result.newNodeId).toMatch(/^branch-r-1-\d+$/)
+    expect(result.newNodeId).toMatch(IDENTITY_ID_RE)
     expect(result.connections.filter((c) => c.source === 'topic').map((c) => c.target)).toEqual([
       'branch-r-1-0',
       result.newNodeId,
@@ -698,7 +712,7 @@ describe('insertMindMapSiblingInPlace', () => {
     if (!result) {
       throw new Error('expected insert result for stale-depth L2')
     }
-    expect(result.newNodeId).toMatch(/^branch-l-2-\d+$/)
+    expect(result.newNodeId).toMatch(IDENTITY_ID_RE)
     expect(result.connections.find((c) => c.target === result.newNodeId)?.source).toBe(
       'branch-l-1-0'
     )

@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 import { i18n } from '@/i18n'
 import { useDiagramStore, usePanelsStore } from '@/stores'
 import type { DiagramNode, DiagramType } from '@/types'
+import { isMindMapBranchNode } from '@/utils/mindMapLocation'
 import type { NodeSuggestion } from '@/types/panels'
 
 import {
@@ -664,9 +665,7 @@ function applyRemainder(
       let resolvedParentId =
         branchId ??
         nodes.find(
-          (n) =>
-            (n.id.startsWith('branch-l-') || n.id.startsWith('branch-r-')) &&
-            (n.text ?? '').trim() === branchName
+          (n) => isMindMapBranchNode(n) && (n.text ?? '').trim() === branchName
         )?.id
       if (!resolvedParentId && branchName && connections) {
         const fallbackParents = getStage2ParentsForDiagram(diagramTypeVal, nodes, connections)
@@ -684,7 +683,11 @@ function applyRemainder(
       remainder.forEach((s) => {
         const text = (s.text ?? '').trim()
         if (text)
-          diagramStore.addMindMapBranch('right', text, String(i18n.global.t('diagram.newChild')))
+          diagramStore.addMindMapBranch(
+            undefined,
+            text,
+            String(i18n.global.t('diagram.newChild'))
+          )
       })
     }
   } else if (diagramTypeVal === 'flow_map') {

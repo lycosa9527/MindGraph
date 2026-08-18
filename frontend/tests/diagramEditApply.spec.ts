@@ -109,7 +109,9 @@ describe('diagramEditApply one-sentence canvas path', () => {
         mutation_id: 'mut-add-diy',
         verified: true,
         created_node_ids: expect.arrayContaining([
-          expect.stringMatching(/^branch-/),
+          expect.stringMatching(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+          ),
         ]),
       })
     )
@@ -174,7 +176,7 @@ describe('diagramEditApply one-sentence canvas path', () => {
     expect(result.verified).toBe(true)
   })
 
-  it('remove_nodes verifies by label so recycled branch-l-1-0 does not false-fail', async () => {
+  it('remove_nodes keeps the survivor id (no recycled positional slot)', async () => {
     const store = useDiagramStore()
     store.loadFromSpec(
       {
@@ -188,7 +190,10 @@ describe('diagramEditApply one-sentence canvas path', () => {
       'mindmap'
     )
     const firstLeft = store.data?.nodes.find((n) => n.text === '教学实践与应用')
+    const survivor = store.data?.nodes.find((n) => n.text === '基础与原理')
     expect(firstLeft?.id).toBeTruthy()
+    expect(survivor?.id).toBeTruthy()
+    const survivorId = survivor!.id
     const sendAck = vi.fn()
 
     const result = await applyVerifiedDiagramUpdate(
@@ -208,8 +213,7 @@ describe('diagramEditApply one-sentence canvas path', () => {
     expect(result.verified).toBe(true)
     expect(store.data?.nodes.some((n) => n.text === '教学实践与应用')).toBe(false)
     expect(store.data?.nodes.some((n) => n.text === '基础与原理')).toBe(true)
-    // After reload the former second left branch often becomes branch-l-1-0.
-    expect(store.data?.nodes.some((n) => n.id === 'branch-l-1-0')).toBe(true)
+    expect(store.data?.nodes.find((n) => n.text === '基础与原理')?.id).toBe(survivorId)
     expect(sendAck).toHaveBeenCalledWith(
       expect.objectContaining({
         verified: true,

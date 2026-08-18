@@ -7,7 +7,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from services.kitty.diagram.diagram_utils import resolve_voice_node_reference
+from services.kitty.diagram.diagram_utils import (
+    child_node_live_id,
+    resolve_voice_node_reference,
+    session_context_child_record,
+)
+from services.kitty.infra.bootstrap.kitty_native_spec import native_spec_to_pseudo_nodes
 from services.kitty.omni.tools import omni_function_call_to_command
 from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call
 from services.kitty.session.ops import create_voice_session
@@ -15,21 +20,134 @@ from services.kitty.session.runtime_state import voice_sessions
 from tests.typing_helpers import mock_await_args
 
 
+def test_child_node_live_id_never_invents_mindmap_branch_n() -> None:
+    """Mind-map voice snapshots must use the canvas UUID, never branch_N."""
+    assert child_node_live_id({"id": "uid-diy", "text": "DIY"}, 0, "mindmap") == "uid-diy"
+    assert child_node_live_id({"id": "branch-l-1-0", "text": "DIY"}, 0, "mindmap") is None
+    assert child_node_live_id({"id": "branch_1", "text": "DIY"}, 0, "mindmap") is None
+    assert child_node_live_id("DIY", 0, "mindmap") is None
+    assert child_node_live_id({"text": "DIY"}, 0, "mindmap") is None
+    assert child_node_live_id("Wheels", 0, "circle_map") == "context_0"
+    record = session_context_child_record("Paint", 2, "mindmap")
+    assert "id" not in record
+    assert record["text"] == "Paint"
+    circle = session_context_child_record("Wheels", 1, "circle_map")
+    assert circle["id"] == "context_1"
+
+
+def test_resolve_voice_mindmap_index_uses_uuid_not_invented_prefix() -> None:
+    """Index resolution on a UUID canvas must not emit branch_0."""
+    ctx: dict[str, object] = {
+        "diagram_data": {
+            "children": [{"id": "uid-diy", "text": "DIY"}],
+            "nodes": [
+                {"id": "topic", "text": "Cars", "type": "topic"},
+                {"id": "uid-diy", "text": "DIY", "type": "branch"},
+            ],
+        },
+    }
+    out = resolve_voice_node_reference(ctx, "mindmap", node_index=0)
+    assert out is not None
+    assert out["node_id"] == "uid-diy"
+    by_label = resolve_voice_node_reference(
+        {
+            "diagram_data": {
+                "children": ["DIY"],
+                "nodes": [{"id": "uid-diy", "text": "DIY", "type": "branch"}],
+            },
+        },
+        "mindmap",
+        node_index=0,
+    )
+    assert by_label is not None
+    assert by_label["node_id"] == "uid-diy"
+    missing = resolve_voice_node_reference(
+        {"diagram_data": {"children": ["DIY"], "nodes": []}},
+        "mindmap",
+        node_index=0,
+    )
+    assert missing is None
+
+
+def test_native_spec_mindmap_uses_stored_or_uuid_ids() -> None:
+    """Branches-only library specs keep stored ids and never invent mm-bN."""
+    nodes = native_spec_to_pseudo_nodes(
+        {
+            "topic": "Cars",
+            "branches": [{"id": "uid-diy", "text": "DIY", "children": [{"text": "Paint"}]}],
+        },
+        "mindmap",
+    )
+    assert nodes is not None
+    ids = [node["id"] for node in nodes]
+    assert "topic" in ids
+    assert "uid-diy" in ids
+    assert all(not str(node_id).startswith("mm-b") for node_id in ids)
+    paint = next(node for node in nodes if node["text"] == "Paint")
+    assert paint["id"] != "mm-b0-b0"
+    assert len(str(paint["id"])) >= 8
+
+
+def test_native_spec_leftover_branch_n_becomes_uuid() -> None:
+    """LLM ``branch_1`` / ``sub_*`` ids are not adopted as live canvas ids."""
+    nodes = native_spec_to_pseudo_nodes(
+        {
+            "topic": "Cars",
+            "children": [
+                {
+                    "id": "branch_1",
+                    "text": "DIY",
+                    "children": [{"id": "sub_1_1", "text": "Paint"}],
+                }
+            ],
+        },
+        "mindmap",
+    )
+    assert nodes is not None
+    diy = next(node for node in nodes if node["text"] == "DIY")
+    paint = next(node for node in nodes if node["text"] == "Paint")
+    assert diy["id"] != "branch_1"
+    assert paint["id"] != "sub_1_1"
+    assert diy["data"]["mindMapLegacyId"] == "branch_1"
+    assert paint["data"]["mindMapLegacyId"] == "sub_1_1"
+    assert len(str(diy["id"])) >= 8
+    assert len(str(paint["id"])) >= 8
+
+
 def test_resolve_voice_node_by_index_uses_child_id() -> None:
-    """Test resolve voice node by index uses child id."""
+    """Index resolve uses the live UUID, not a leftover invented child id."""
     ctx = {
         "diagram_data": {
             "children": [
-                {"id": "branch-l-1-0", "text": "Sports"},
-                {"id": "branch-r-1-1", "text": "Music"},
+                {"id": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", "text": "Sports"},
+                {"id": "ffffffff-1111-4222-8333-444444444444", "text": "Music"},
             ],
         },
         "selected_nodes": [],
     }
     out = resolve_voice_node_reference(ctx, "mindmap", node_index=0)
     assert out is not None
-    assert out["node_id"] == "branch-l-1-0"
+    assert out["node_id"] == "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
     assert out["node_label"] == "Sports"
+
+
+def test_resolve_voice_index_rejects_leftover_child_id() -> None:
+    """Stale leftover children[] ids are not adopted; unique label maps to UUID."""
+    leftover_only: dict[str, object] = {
+        "diagram_data": {
+            "children": [{"id": "branch-l-1-0", "text": "Sports"}],
+        },
+    }
+    assert resolve_voice_node_reference(leftover_only, "mindmap", node_index=0) is None
+    ctx: dict[str, object] = {
+        "diagram_data": {
+            "children": [{"id": "branch-l-1-0", "text": "Sports"}],
+            "nodes": [{"id": "uid-sports", "text": "Sports"}],
+        },
+    }
+    out = resolve_voice_node_reference(ctx, "mindmap", node_index=0)
+    assert out is not None
+    assert out["node_id"] == "uid-sports"
 
 
 def test_resolve_voice_node_by_text_match() -> None:

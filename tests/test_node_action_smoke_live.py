@@ -10,6 +10,7 @@ Run (WSL + conda):
 from __future__ import annotations
 
 import json
+import uuid
 from pathlib import Path
 
 import pytest
@@ -55,7 +56,12 @@ def _library_mindmap_context_fixture() -> dict:
     diagram_data = {
         "center": {"text": spec["topic"]},
         "children": [
-            {"text": label, "id": f"branch-{idx}"} for idx, label in enumerate(children) if isinstance(label, str)
+            {
+                "text": label,
+                "id": str(uuid.uuid5(uuid.NAMESPACE_DNS, f"mindmap-smoke-{label}")),
+            }
+            for label in children
+            if isinstance(label, str)
         ],
     }
     return {"language": "zh", "diagram_data": diagram_data}
@@ -89,14 +95,14 @@ async def test_node_action_library_fixture_mindmap(
     assert cmd.get("action") == expected_action, cmd
     target = str(cmd.get("target") or cmd.get("node_identifier") or "").strip()
     node_id = cmd.get("node_id")
+    branch_ids = {
+        item["text"]: item["id"]
+        for item in library_mindmap_context["diagram_data"]["children"]
+        if isinstance(item, dict)
+    }
     label_ok = expected_target in target or target == expected_target
     if expected_action in ("delete_node", "auto_complete_branch") and not label_ok:
-        branch_ids = {
-            item["text"]: item["id"]
-            for item in library_mindmap_context["diagram_data"]["children"]
-            if isinstance(item, dict)
-        }
         label_ok = node_id == branch_ids.get(expected_target)
     assert label_ok, cmd
     if expected_action in ("delete_node", "auto_complete_branch"):
-        assert isinstance(node_id, str) and node_id.startswith("branch-")
+        assert isinstance(node_id, str) and node_id in branch_ids.values()

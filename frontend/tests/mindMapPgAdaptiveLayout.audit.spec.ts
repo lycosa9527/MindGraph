@@ -28,6 +28,7 @@ import {
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramNode } from '@/types'
+import { isMindMapL1, mindMapNodeSide } from '@/utils/mindMapLocation'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 const FIXTURE_DIR = resolve(__dirname, '../../tmp_pg_mindmaps')
@@ -106,11 +107,11 @@ function nodeShapeOf(n: DiagramNode): NodeShape {
 }
 
 function sideSpan(nodes: DiagramNode[], side: 'l' | 'r'): number {
-  const prefix = `branch-${side}-`
+  const wanted = side === 'l' ? 'left' : 'right'
   let minY = Infinity
   let maxY = -Infinity
   for (const n of nodes) {
-    if (!n.id.startsWith(prefix) || !n.position) continue
+    if (!n.position || mindMapNodeSide(n.id, { nodes }) !== wanted) continue
     minY = Math.min(minY, n.position.y)
     maxY = Math.max(maxY, n.position.y + nodeHeight(n))
   }
@@ -188,12 +189,12 @@ function assertSiblingGapMath(
   const columns: { kids: string[]; mode: 'sibling' | 'branch'; name: string }[] = []
   const topicKids = childrenByParent.get('topic') ?? []
   columns.push({
-    kids: topicKids.filter((id) => id.startsWith('branch-l-1-')),
+    kids: topicKids.filter((id) => mindMapNodeSide(id, { nodes, connections }) === 'left'),
     mode: 'branch',
     name: 'L1-left',
   })
   columns.push({
-    kids: topicKids.filter((id) => id.startsWith('branch-r-1-')),
+    kids: topicKids.filter((id) => mindMapNodeSide(id, { nodes, connections }) === 'right'),
     mode: 'branch',
     name: 'L1-right',
   })
@@ -309,7 +310,7 @@ describe.runIf(hasFixtures)('PG mind-map adaptive layout audit', () => {
     expect(nodes.length).toBeGreaterThan(10)
 
     for (const n of nodes) {
-      if (n.position && n.id.startsWith('branch-')) {
+      if (n.position && n.id !== 'topic') {
         n.position = { ...n.position, y: n.position.y * 1.35 }
       }
       n.style = { ...(n.style || {}), nodeShape: 'underline' }
@@ -336,15 +337,14 @@ describe.runIf(hasFixtures)('PG mind-map adaptive layout audit', () => {
     assertSiblingGapMath(laidOut, connections, 'xiaomi/compact-underline')
 
     const l1 = laidOut
-      .filter((n) => n.id.startsWith('branch-r-1-'))
+      .filter(
+        (n) =>
+          isMindMapL1(n.id, connections) && mindMapNodeSide(n.id, { nodes: laidOut }) === 'right'
+      )
       .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))[0]
     expect(l1).toBeDefined()
     const kids = laidOut
-      .filter(
-        (n) =>
-          n.id.startsWith('branch-r-2-') &&
-          connections.some((c) => c.source === l1!.id && c.target === n.id)
-      )
+      .filter((n) => connections.some((c) => c.source === l1!.id && c.target === n.id))
       .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
     if (kids.length >= 2) {
       const gap =

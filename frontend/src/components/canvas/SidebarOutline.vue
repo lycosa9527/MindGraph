@@ -147,7 +147,7 @@ function handleAddChild(nodeId: string): void {
   diagramStore.selectNodes(nodeId)
   if (nodeId === 'topic') {
     diagramStore.addMindMapBranch(
-      'right',
+      undefined,
       t('canvas.toolbar.newBranch'),
       t('canvas.toolbar.newChild')
     )

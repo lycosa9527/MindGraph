@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nodesAndConnectionsToMindMapSpec, loadMindMapSpec } from '@/stores/specLoader/mindMap'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
+import { MINDMAP_LEGACY_ID_DATA_KEY } from '@/utils/mindMapIdentityMigrate'
 import {
   MINDMAP_NODE_UID_DATA_KEY,
   readMindMapNodeUid,
@@ -86,6 +87,8 @@ describe('mindMapUid round-trip', () => {
     expect(uidA).toBeTruthy()
     expect(uidB).toBeTruthy()
     expect(uidA).not.toBe(uidB)
+    expect(helloNodes[0]?.id).toBe(uidA)
+    expect(helloNodes[1]?.id).toBe(uidB)
 
     const extracted = nodesAndConnectionsToMindMapSpec(first.nodes, first.connections)
     expect(extracted.rightBranches[0].uid).toBe(uidA)
@@ -101,15 +104,35 @@ describe('mindMapUid round-trip', () => {
 
     const byUid = new Map(
       reloaded.nodes
-        .filter((n) => n.id.startsWith('branch-'))
+        .filter((n) => n.type === 'branch')
         .map((n) => [readMindMapNodeUid(n), n])
     )
     expect(byUid.get(uidA!)?.text).toBe('你好')
     expect(byUid.get(uidB!)?.text).toBe('你好')
     expect(byUid.get(uidA!)?.data?.[MINDMAP_NODE_UID_DATA_KEY]).toBe(uidA)
-    // First L1 is former second branch (uidB).
-    const firstL1 = reloaded.nodes.find((n) => n.id === 'branch-r-1-0')
-    expect(readMindMapNodeUid(firstL1)).toBe(uidB)
+    // First L1 is former second branch (uidB) — canvas id is the uid.
+    const firstL1 = reloaded.connections.find((c) => c.source === 'topic')?.target
+    expect(firstL1).toBe(uidB)
+    expect(readMindMapNodeUid(reloaded.nodes.find((n) => n.id === firstL1))).toBe(uidB)
+  })
+
+  it('keeps children-only stored UUID ids and leftover invented ids as aliases', () => {
+    const loaded = loadMindMapSpec({
+      topic: 'Cars',
+      children: [
+        {
+          id: 'uid-diy',
+          text: 'DIY',
+          children: [{ id: 'branch-r-2-0', text: 'Paint' }],
+        },
+      ],
+    })
+    const diy = loaded.nodes.find((node) => node.text === 'DIY')
+    const paint = loaded.nodes.find((node) => node.text === 'Paint')
+    expect(diy?.id).toBe('uid-diy')
+    expect(paint?.id).not.toBe('branch-r-2-0')
+    expect(paint?.data?.[MINDMAP_LEGACY_ID_DATA_KEY]).toBe('branch-r-2-0')
+    expect(readMindMapNodeUid(paint)).toBe(paint?.id)
   })
 
   it('rebinds paste uids when source still exists (copy) but keeps cut uids', () => {

@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'บันทึก',
   'canvas.shortcutGuide.clearText': 'ล้างข้อความโหนด',
   'canvas.shortcutGuide.learningSheetAnswers': 'แสดง/ซ่อนคำตอบใบเรียนรู้',
+  'canvas.shortcutGuide.recalcLayout': 'คำนวณเลย์เอาต์ใหม่',
   'canvas.shortcutGuide.multiSelect': 'เลือกหลายรายการ',
   'canvas.shortcutGuide.multiSelectDesc': 'ลากกรอบในโหมดตัวชี้เพื่อเลือกหลายโหนด',
   'canvas.shortcutGuide.multiSelectHint': 'ลากเพื่อเลือกแบบกรอบ',

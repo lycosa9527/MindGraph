@@ -108,11 +108,9 @@ export function useNodeActions(options: UseNodeActionsOptions = {}) {
 
     if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return
 
-    const selectedId = diagramStore.selectedNodes[0]
-    const side: 'left' | 'right' = selectedId?.startsWith('branch-l-') ? 'left' : 'right'
     if (
       diagramStore.addMindMapBranch(
-        side,
+        undefined,
         t('canvas.toolbar.newBranch'),
         t('canvas.toolbar.newChild')
       ) &&

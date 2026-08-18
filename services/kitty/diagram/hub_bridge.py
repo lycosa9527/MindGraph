@@ -14,7 +14,10 @@ from typing import Any, Dict, Optional
 from services.agent_hub.scope_lifecycle import get_mind_graph_agent_hub
 from services.kitty.context.hub_context import apply_kitty_ws_context_patch
 from services.kitty.diagram.diagram_spec_sync import sync_diagram_data_to_spec_shape
-from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
+from services.kitty.diagram.diagram_utils import (
+    child_node_live_id,
+    session_context_child_record,
+)
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.session.ops import get_voice_session
 from services.kitty.session.runtime_state import logger
@@ -82,21 +85,21 @@ def _preview_update_node(
     if not isinstance(nodes, list):
         return False
 
-    prefix_map = get_diagram_prefix_map()
-    prefix = prefix_map.get(diagram_type, "node")
-
     if resolved_node_index is not None:
         if not 0 <= resolved_node_index < len(nodes):
             return False
         node = nodes[resolved_node_index]
         if not resolved_node_id:
-            resolved_node_id = node.get("id") if isinstance(node, dict) else f"{prefix}_{resolved_node_index}"
+            resolved_node_id = child_node_live_id(node, resolved_node_index, diagram_type)
     elif node_identifier and not resolved_node_id:
         for idx, node in enumerate(nodes):
             node_text = node.get("text") if isinstance(node, dict) else str(node)
             if node_text and (node_identifier in node_text or node_text in node_identifier):
+                live_id = child_node_live_id(node, idx, diagram_type)
+                if not live_id:
+                    continue
                 resolved_node_index = idx
-                resolved_node_id = node.get("id") if isinstance(node, dict) else f"context_{idx}"
+                resolved_node_id = live_id
                 break
 
     if resolved_node_id is None or resolved_node_index is None or not 0 <= resolved_node_index < len(nodes):
@@ -121,8 +124,6 @@ def _preview_add_node(command: Dict[str, Any], diagram_data: Dict[str, Any], dia
     if not isinstance(nodes, list):
         return False
 
-    prefix_map = get_diagram_prefix_map()
-    prefix = prefix_map.get(diagram_type, "node")
     add_node_index = command.get("node_index")
     if isinstance(add_node_index, int):
         if 0 <= add_node_index < len(nodes):
@@ -132,20 +133,12 @@ def _preview_add_node(command: Dict[str, Any], diagram_data: Dict[str, Any], dia
             else:
                 nodes[add_node_index] = target.strip()
         else:
-            new_node = {
-                "id": f"{prefix}_{add_node_index}",
-                "index": add_node_index,
-                "text": target.strip(),
-            }
+            new_node = session_context_child_record(target.strip(), add_node_index, diagram_type)
             while len(nodes) < add_node_index:
                 nodes.append(None)
             nodes.insert(add_node_index, new_node)
     else:
-        new_node = {
-            "id": f"{prefix}_{len(nodes)}",
-            "index": len(nodes),
-            "text": target.strip(),
-        }
+        new_node = session_context_child_record(target.strip(), len(nodes), diagram_type)
         nodes.append(new_node)
     return True
 
@@ -158,22 +151,23 @@ def _preview_delete_node(command: Dict[str, Any], diagram_data: Dict[str, Any], 
     if not isinstance(nodes, list):
         return False
 
-    prefix_map = get_diagram_prefix_map()
-    prefix = prefix_map.get(diagram_type, "node")
     resolved_node_id = command.get("node_id")
     resolved_node_index: Optional[int] = node_index_raw if isinstance(node_index_raw, int) else None
 
     if not resolved_node_id and resolved_node_index is not None:
         if 0 <= resolved_node_index < len(nodes):
             node = nodes[resolved_node_index]
-            resolved_node_id = node.get("id") if isinstance(node, dict) else f"{prefix}_{resolved_node_index}"
+            resolved_node_id = child_node_live_id(node, resolved_node_index, diagram_type)
 
     if not resolved_node_id and isinstance(target, str) and target.strip():
         for idx, node in enumerate(nodes):
             node_text = node.get("text") if isinstance(node, dict) else str(node)
             if node_text and (target in node_text or node_text in target):
+                live_id = child_node_live_id(node, idx, diagram_type)
+                if not live_id:
+                    continue
                 resolved_node_index = idx
-                resolved_node_id = node.get("id") if isinstance(node, dict) else f"{prefix}_{idx}"
+                resolved_node_id = live_id
                 break
 
     if resolved_node_index is None or not 0 <= resolved_node_index < len(nodes):

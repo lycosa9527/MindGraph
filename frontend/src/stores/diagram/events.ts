@@ -1,6 +1,7 @@
 import { eventBus } from '@/composables/core/useEventBus'
 import { DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import type { DiagramNode, DiagramType, MindGraphEdgeType } from '@/types'
+import { mindMapNodeSide } from '@/utils/mindMapLocation'
 
 import type { MindMapCanvasMode } from '@/stores/ui'
 
@@ -101,8 +102,12 @@ export function getEdgeTypeForDiagram(
 }
 
 export function getMindMapCurveExtents(nodes: DiagramNode[], centerX: number): MindMapCurveExtents {
-  const leftNodes = nodes.filter((n) => n.type === 'branch' && n.id.startsWith('branch-l-'))
-  const rightNodes = nodes.filter((n) => n.type === 'branch' && n.id.startsWith('branch-r-'))
+  const leftNodes = nodes.filter(
+    (n) => n.type === 'branch' && mindMapNodeSide(n.id, { node: n, nodes }) === 'left'
+  )
+  const rightNodes = nodes.filter(
+    (n) => n.type === 'branch' && mindMapNodeSide(n.id, { node: n, nodes }) === 'right'
+  )
   const getCenterX = (n: DiagramNode) =>
     (n.position?.x ?? 0) + ((n.data?.estimatedWidth as number) || DEFAULT_NODE_WIDTH) / 2
   const left = leftNodes.length > 0 ? centerX - Math.min(...leftNodes.map(getCenterX)) : 0

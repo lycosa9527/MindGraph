@@ -33,6 +33,7 @@ import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import type { MindGraphNode } from '@/types'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { isMindMapBranchId, isPositionalMindMapBranchId } from '@/utils/mindMapLocation'
 import { nodeShapeBorderRadius } from '@/utils/nodeShapeStyle'
 
 const DEFAULT_NODE_WIDTH = 120
@@ -47,15 +48,39 @@ function isTopLevelTreeMapNode(nodeId: string): boolean {
   return /^tree-cat-\d+$/.test(nodeId)
 }
 
+const TREE_MAP_DROP_NODE_ID_RE = /^tree-(cat|leaf)-/
+
+/**
+ * Hierarchical drop targets after identity migrate: live mind-map branches
+ * are UUIDs (or leftover ``branch-*``). Do not key off the leftover prefix.
+ */
+export function isHierarchicalDropCandidate(
+  diagramType: string,
+  nodeId: string,
+  topicId: string,
+  nodes?: readonly { id?: string; type?: string }[] | null
+): boolean {
+  if (!nodeId || nodeId === topicId) return false
+  if (diagramType === 'tree_map') return TREE_MAP_DROP_NODE_ID_RE.test(nodeId)
+  if (diagramType === 'mindmap' || diagramType === 'mind_map') {
+    return isMindMapBranchId(nodeId, nodes)
+  }
+  return false
+}
+
 /**
  * Classify a node into a swap group. Nodes in the same group can be swapped.
  * Returns null if the node is not draggable (e.g. topic nodes).
  */
-function getSwapGroup(diagramType: string, nodeId: string): string | null {
+function getSwapGroup(
+  diagramType: string,
+  nodeId: string,
+  nodes?: { id?: string; type?: string }[]
+): string | null {
   switch (diagramType) {
     case 'mindmap':
     case 'mind_map':
-      return nodeId.startsWith('branch-') ? 'branch' : null
+      return isMindMapBranchId(nodeId, nodes) ? 'branch' : null
     case 'tree_map':
       if (nodeId.startsWith('tree-cat-') || nodeId.startsWith('tree-leaf-')) return 'tree-node'
       return null
@@ -180,7 +205,7 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
   function isMindMapBranchNode(nodeId: string, node?: MindGraphNode): boolean {
     const dt = resolveDiagramType(node)
     if (dt !== 'mindmap' && dt !== 'mind_map') return false
-    return nodeId.startsWith('branch-') || node?.type === 'branch'
+    return node?.type === 'branch' || isPositionalMindMapBranchId(nodeId)
   }
 
   function getNodeDimensions(node: MindGraphNode, nodeId?: string): { w: number; h: number } {
@@ -281,7 +306,11 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
         )
       : 'oval'
     const isUnderline = v2Visuals && nodeShape === 'underline'
-    const fontSizePx = dataStyle.fontSize ?? (v2Visuals ? mindMapBranchFontSize(nodeId) : 16)
+    const fontSizePx =
+      dataStyle.fontSize ??
+      (v2Visuals
+        ? mindMapBranchFontSize(nodeId, node, diagramStore.data?.connections)
+        : 16)
     const fontSize =
       typeof fontSizePx === 'number' ? `${fontSizePx}px` : String(fontSizePx ?? '16px')
     const shapeClass = getDropTargetShapeClass(node as MindGraphNode)
@@ -343,7 +372,6 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     flowY: number
   ): DropTarget | null {
     const dt = diagramStore.type ?? ''
-    const isTreeMap = dt === 'tree_map'
     const topicId = getTopicId(dt)
     const topic = nodes.find((n) => n.id === topicId)
     if (topic?.position) {
@@ -357,14 +385,19 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
         return { type: 'topic', nodeId: topicId }
       }
     }
-    const branchPattern = isTreeMap ? /^tree-(cat|leaf)-/ : /^branch-/
+    const storeNodes = diagramStore.data?.nodes
     const h = hiddenIds.value
     const draggedId = pendingNodeId.value
     let best: DropTarget | null = null
     let bestArea = Infinity
     for (const node of nodes) {
       const nid = node.id ?? ''
-      if (nid === topicId || !branchPattern.test(nid)) continue
+      if (
+        !isHierarchicalDropCandidate(dt, nid, topicId, nodes) &&
+        !isHierarchicalDropCandidate(dt, nid, topicId, storeNodes)
+      ) {
+        continue
+      }
       if (h.has(nid) || nid === draggedId) continue
       const hit = classifyBranchDrop(node, flowX, flowY)
       if (!hit) continue
@@ -383,13 +416,14 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
     const dt = diagramStore.type ?? ''
     const draggedId = pendingNodeId.value
     if (!draggedId) return null
-    const dragGroup = getSwapGroup(dt, draggedId)
+    const storeNodes = diagramStore.data?.nodes
+    const dragGroup = getSwapGroup(dt, draggedId, storeNodes)
     if (!dragGroup) return null
     const h = hiddenIds.value
     for (const node of nodes) {
       const nid = node.id ?? ''
       if (h.has(nid)) continue
-      if (getSwapGroup(dt, nid) !== dragGroup) continue
+      if (getSwapGroup(dt, nid, storeNodes) !== dragGroup) continue
       if (dt === 'brace_map' && node.data?.originalNode?.type === 'topic') continue
       const pos = node.position ?? { x: 0, y: 0 }
       const { w, h: nodeH } = getNodeDimensions(node)
@@ -656,14 +690,14 @@ export function useBranchMoveDrag(options?: { allowNodeMove?: () => boolean }) {
 
     if (active.value && pendingNodeId.value) {
       const draggedId = pendingNodeId.value
-      if (nodeId !== draggedId && getSwapGroup(dt, nodeId)) {
+      if (nodeId !== draggedId && getSwapGroup(dt, nodeId, diagramStore.data?.nodes)) {
         executeDrop(draggedId, nodeId)
       }
       cleanup()
       return true
     }
 
-    if (!getSwapGroup(dt, nodeId)) return false
+    if (!getSwapGroup(dt, nodeId, diagramStore.data?.nodes)) return false
     if (dt === 'brace_map') {
       const node = diagramStore.data?.nodes.find((n) => n.id === nodeId)
       if (node?.type === 'topic') return false

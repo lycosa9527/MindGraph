@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from services.diagram.mindmap_identity import identity_aliases
+
 _LAUNCH_SETTING_KEYS = (
     "mode",
     "mastery",
@@ -43,20 +45,14 @@ def job_matches_llm_model(settings: Any, llm_model: Optional[str]) -> bool:
 
 
 def spec_snapshot_node_ids(spec: Any) -> list[str]:
-    """Node ids from the spec the job was generated against."""
+    """Live node ids plus uid / leftover positional aliases from a spec."""
     if not isinstance(spec, dict):
         return []
     nodes = spec.get("nodes")
     if not isinstance(nodes, list):
         return []
-    ids: list[str] = []
-    for node in nodes:
-        if not isinstance(node, dict):
-            continue
-        node_id = str(node.get("id") or "").strip()
-        if node_id:
-            ids.append(node_id)
-    return ids
+    typed = [node for node in nodes if isinstance(node, dict)]
+    return list(identity_aliases(typed).keys())
 
 
 def job_matches_live_nodes(job_node_ids: Any, live_ids: set[str]) -> bool:

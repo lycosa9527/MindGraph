@@ -31,10 +31,6 @@ export type MindMapBracketBusOptions = {
    * (parent side → child), no vertical bus or rounded tee.
    */
   singleUnderlineChild?: boolean
-  /**
-   * Sole L1 branch on one side of the topic: straight connector (no rounded tee).
-   */
-  singleTopicSideChild?: boolean
 }
 
 function clampRadius(maxRadius: number, legA: number, legB: number): number {
@@ -187,8 +183,34 @@ function buildBranchHorizontalStub(
   return `M ${trunkX + sx * tee.radius} ${toY} L ${toX} ${toY}`
 }
 
+function allBranchHorizontals(
+  trunkX: number,
+  fromY: number,
+  branchYs: number[],
+  branchToXs: number[],
+  fallbackToX: number,
+  maxR: number,
+  flatThreshold: number,
+  roundDespiteFlat: boolean
+): string {
+  return branchYs
+    .map((y, i) =>
+      buildBranchHorizontalStub(
+        trunkX,
+        fromY,
+        branchToXs[i] ?? fallbackToX,
+        y,
+        maxR,
+        flatThreshold,
+        roundDespiteFlat
+      )
+    )
+    .join(' ')
+}
+
 /**
- * Bracket-bus path for one child edge. Sibling group shares trunkX; one edge draws the spine.
+ * Bracket-bus path for one sibling group. Only the spine owner paints — others
+ * return empty so translucent strokes cannot stack on the shared vertical.
  */
 export function buildMindMapBracketBusPath(
   fromX: number,
@@ -202,6 +224,9 @@ export function buildMindMapBracketBusPath(
   const maxR = options.maxRadius ?? MINDMAP_CONNECTOR_MAX_RADIUS
   const flatThreshold = options.flatDyThreshold ?? MINDMAP_CONNECTOR_FLAT_DY
   const drawSpine = options.drawSpine ?? false
+  if (!drawSpine) {
+    return ''
+  }
   const branchYs = siblingYs.length > 0 ? siblingYs : [toY]
 
   // Sole underline child: flat horizontal at the underline midline (parent → child).
@@ -209,46 +234,23 @@ export function buildMindMapBracketBusPath(
     return `M ${fromX} ${fromY} L ${toX} ${toY}`
   }
 
-  // Sole topic-side L1 branch: orthogonal segments only (no Q-rounded tee).
-  if (options.singleTopicSideChild && branchYs.length === 1) {
-    if (Math.abs(toY - fromY) < flatThreshold) {
-      return `M ${fromX} ${fromY} L ${toX} ${fromY}`
-    }
-    return `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${trunkX} ${toY} L ${toX} ${toY}`
-  }
-
-  const allFlat = branchYs.every((y) => Math.abs(y - fromY) < flatThreshold)
-  if (allFlat) {
-    if (!drawSpine) {
-      return `M ${trunkX} ${toY} L ${toX} ${toY}`
-    }
-    return `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${toX} ${toY}`
-  }
-
-  // Shared vertical spine: the near-parent child must still get a Q tee, otherwise
-  // it meets the bus at a sharp 90° while farther siblings look rounded (debug: sharp_or_flat).
-  const roundDespiteFlat = branchYs.length > 1
-
   const branchToXs =
     options.siblingToXs && options.siblingToXs.length === branchYs.length
       ? options.siblingToXs
       : branchYs.map(() => toX)
 
-  const stub = buildBranchHorizontalStub(
-    trunkX,
-    fromY,
-    toX,
-    toY,
-    maxR,
-    flatThreshold,
-    roundDespiteFlat
-  )
-
-  // Non-spine edges: horizontal only. Fillets live on the spine path so the Q never
-  // retraces the bus (opacity would thicken at the join).
-  if (!drawSpine) {
-    return stub
+  const allFlat = branchYs.every((y) => Math.abs(y - fromY) < flatThreshold)
+  if (allFlat) {
+    const stem = `M ${fromX} ${fromY} L ${trunkX} ${fromY}`
+    const stubs = branchYs
+      .map((y, i) => `M ${trunkX} ${y} L ${branchToXs[i] ?? toX} ${y}`)
+      .join(' ')
+    return `${stem} ${stubs}`
   }
+
+  // Shared vertical spine: the near-parent child must still get a Q tee, otherwise
+  // it meets the bus at a sharp 90° while farther siblings look rounded (debug: sharp_or_flat).
+  const roundDespiteFlat = branchYs.length > 1
 
   if (branchYs.length === 1) {
     const sx = toX >= trunkX ? 1 : -1
@@ -276,7 +278,17 @@ export function buildMindMapBracketBusPath(
     resolveTeeSpec(y, fromY, trunkX, branchToXs[i] ?? toX, maxR, flatThreshold, roundDespiteFlat)
   )
   const spine = buildSpineWithFilletTees(fromX, fromY, trunkX, tees)
-  return `${spine} ${stub}`
+  const stubs = allBranchHorizontals(
+    trunkX,
+    fromY,
+    branchYs,
+    branchToXs,
+    toX,
+    maxR,
+    flatThreshold,
+    roundDespiteFlat
+  )
+  return `${spine} ${stubs}`
 }
 
 /**

@@ -14,6 +14,7 @@ import {
 import { withClassicMindMapTopicSourceHandle } from '@/utils/classicMindMapTopicHandles'
 import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
+import { mindMapNodeSide } from '@/utils/mindMapLocation'
 import { buildMindMapOrthogonalSiblingMap } from '@/utils/mindMapOrthogonalSiblings'
 
 import {
@@ -387,6 +388,12 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       if (diagramType === 'concept_map') {
         edge.selectable = true
         edge.selected = ctx.selectedConnectionId.value === conn.id
+      } else if (isLegacyMindMap || isV2MindMap) {
+        // Vue Flow adds `.inactive` (no pointer hit) only when selectable is false
+        // and the instance has no edgeClick listeners. Do not register onEdgeClick
+        // on the canvas — concept-map selection lives on CurvedEdge.
+        edge.selectable = false
+        edge.focusable = false
       }
       return edge
     })
@@ -450,7 +457,12 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
 
   /** One parent→sibling list map for v2 orthogonal edges (avoids per-edge O(E) filter). */
   const mindMapOrthogonalSiblingsByGroup = computed(() =>
-    buildMindMapOrthogonalSiblingMap(vueFlowEdges.value)
+    buildMindMapOrthogonalSiblingMap(vueFlowEdges.value, (id) =>
+      mindMapNodeSide(id, {
+        nodes: ctx.data.value?.nodes,
+        connections: ctx.data.value?.connections,
+      })
+    )
   )
 
   function updateNodePosition(

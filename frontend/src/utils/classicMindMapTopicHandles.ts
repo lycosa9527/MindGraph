@@ -1,13 +1,9 @@
 import type { Connection, DiagramNode } from '@/types'
+import { mindMapNodeSide, mindMapSideToChar } from '@/utils/mindMapLocation'
 
 export function parseMindMapSideHandleIndex(sourceHandle: string | undefined): number {
   if (!sourceHandle) return 0
   const match = sourceHandle.match(/^mindmap-(?:left|right)-(\d+)$/)
-  return match ? parseInt(match[1], 10) : 0
-}
-
-function parseBranchSiblingIndex(nodeId: string): number {
-  const match = nodeId.match(/^branch-[lr]-\d+-(\d+)$/)
   return match ? parseInt(match[1], 10) : 0
 }
 
@@ -17,16 +13,16 @@ export function classicMindMapTopicSideConnections(
   side: 'l' | 'r',
   nodes: DiagramNode[] = []
 ): Connection[] {
-  const branchPrefix = `branch-${side}-`
+  const wanted = side === 'l' ? 'left' : 'right'
   const nodeById = new Map(nodes.map((node) => [node.id, node]))
 
   return connections
-    .filter((c) => c.source === 'topic' && c.target.startsWith(branchPrefix))
+    .filter(
+      (c) =>
+        c.source === 'topic' && mindMapNodeSide(c.target, { nodes, connections }) === wanted
+    )
     .slice()
     .sort((a, b) => {
-      const bySibling = parseBranchSiblingIndex(a.target) - parseBranchSiblingIndex(b.target)
-      if (bySibling !== 0) return bySibling
-
       const aY = nodeById.get(a.target)?.position?.y ?? 0
       const bY = nodeById.get(b.target)?.position?.y ?? 0
       if (aY !== bY) return aY - bY
@@ -98,11 +94,8 @@ export function withClassicMindMapTopicSourceHandle(
 ): Connection {
   if (conn.source !== 'topic') return conn
 
-  const side: 'l' | 'r' | null = conn.target.startsWith('branch-l-')
-    ? 'l'
-    : conn.target.startsWith('branch-r-')
-      ? 'r'
-      : null
+  const resolved = mindMapNodeSide(conn.target, { nodes, connections })
+  const side = resolved ? mindMapSideToChar(resolved) : null
   if (!side) return conn
 
   const prefix = side === 'r' ? 'mindmap-right' : 'mindmap-left'

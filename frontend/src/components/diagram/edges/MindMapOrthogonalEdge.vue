@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * MindMapOrthogonalEdge — 2px orthogonal connectors (0.7 opacity; 3px on hover).
+ * MindMapOrthogonalEdge — 2px orthogonal connectors (decorative; not interactive).
  */
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import { type EdgeProps, useVueFlow } from '@vue-flow/core'
 
@@ -18,11 +18,14 @@ import {
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { MindGraphEdgeData, MindGraphNodeData, NodeStyle } from '@/types'
 import {
-  mindMapBranchSide,
   resolveMindMapEdgeEndpoint,
   resolveMindMapNodeStyle,
 } from '@/utils/mindMapEdgeEndpoints'
-import { mindMapOrthogonalSiblingGroupKey } from '@/utils/mindMapOrthogonalSiblings'
+import { mindMapNodeSide } from '@/utils/mindMapLocation'
+import {
+  mindMapOrthogonalSiblingGroupKey,
+  mindMapOrthogonalSpineEdgeId,
+} from '@/utils/mindMapOrthogonalSiblings'
 import {
   buildMindMapBracketBusPath,
   computeMindMapSharedTrunkX,
@@ -30,8 +33,6 @@ import {
 import { resolveMindMapOutlineWireframeEdgeStroke } from '@/utils/mindMapOutlineWireframeStyle'
 
 const props = defineProps<EdgeProps<MindGraphEdgeData>>()
-
-const isHovered = ref(false)
 
 const diagramStore = useDiagramSession()
 const { nodes: vueFlowNodes } = useVueFlow(diagramStore.vueFlowId)
@@ -122,11 +123,15 @@ function edgeEndpoint(
 const isFromTopic = computed(() => props.source === 'topic')
 
 function branchSide(nodeId: string | undefined): 'left' | 'right' | null {
-  return mindMapBranchSide(nodeId)
+  if (!nodeId) return null
+  return mindMapNodeSide(nodeId, {
+    nodes: diagramStore.data?.nodes,
+    connections: diagramStore.data?.connections,
+  })
 }
 
 const siblingEdges = computed(() => {
-  const key = mindMapOrthogonalSiblingGroupKey(props.source, props.target)
+  const key = mindMapOrthogonalSiblingGroupKey(props.source, props.target, branchSide)
   return diagramStore.mindMapOrthogonalSiblingsByGroup.get(key) ?? []
 })
 
@@ -199,12 +204,11 @@ const siblingTargetYs = computed(() => siblingTargetPoints.value.map((point) => 
 
 const siblingTargetXs = computed(() => siblingTargetPoints.value.map((point) => point.x))
 
-/** One edge per sibling group draws the shared vertical spine + stem. */
+/** One edge per sibling group paints the shared stem + spine + all stubs. */
 const drawsBusSpine = computed(() => {
   const siblings = siblingEdges.value
   if (siblings.length <= 1) return true
-  const sorted = [...siblings].sort((a, b) => String(a.id).localeCompare(String(b.id)))
-  return sorted[0]?.id === props.id
+  return mindMapOrthogonalSpineEdgeId(siblings) === props.id
 })
 
 const sharedTrunkX = computed(() => {
@@ -225,8 +229,6 @@ const isSingleUnderlineChild = computed(
   () => siblingTargetYs.value.length === 1 && targetShape.value === 'underline'
 )
 
-const isSingleTopicSideChild = computed(() => isFromTopic.value && siblingEdges.value.length === 1)
-
 const path = computed(() => {
   const from = anchorPoint.value
   const to = targetPoint.value
@@ -237,7 +239,6 @@ const path = computed(() => {
     drawSpine: drawsBusSpine.value,
     siblingToXs: siblingTargetXs.value,
     singleUnderlineChild: isSingleUnderlineChild.value,
-    singleTopicSideChild: isSingleTopicSideChild.value,
   })
 
   return {
@@ -260,15 +261,11 @@ const edgeStrokeColor = computed(() =>
 const edgeStyle = computed(() => ({
   fill: 'none',
   stroke: edgeStrokeColor.value,
-  strokeWidth: isHovered.value
-    ? MIND_MAP_GEOMETRY.edgeStrokeWidthHover
-    : (props.data?.style?.strokeWidth ?? MIND_MAP_GEOMETRY.edgeStrokeWidth),
-  strokeOpacity:
-    exportOutlineActive.value || isHovered.value ? 1 : MIND_MAP_GEOMETRY.edgeStrokeOpacity,
+  strokeWidth: props.data?.style?.strokeWidth ?? MIND_MAP_GEOMETRY.edgeStrokeWidth,
+  strokeOpacity: exportOutlineActive.value ? 1 : MIND_MAP_GEOMETRY.edgeStrokeOpacity,
   strokeDasharray: props.data?.style?.strokeDasharray || 'none',
   strokeLinecap: 'butt' as const,
   strokeLinejoin: 'round' as const,
-  transition: 'stroke-width 0.15s ease, stroke-opacity 0.15s ease',
 }))
 
 /**
@@ -303,13 +300,12 @@ const underlineBarStyle = computed(() => ({
 
 <template>
   <path
+    v-if="drawsBusSpine"
     :id="id"
     class="vue-flow__edge-path mindmap-orthogonal-edge"
     :d="path.edgePath"
     fill="none"
     :style="edgeStyle"
-    @mouseenter="isHovered = true"
-    @mouseleave="isHovered = false"
   />
   <path
     v-if="underlineBar"
@@ -321,8 +317,8 @@ const underlineBarStyle = computed(() => ({
 </template>
 
 <style scoped>
-.mindmap-orthogonal-edge {
+.mindmap-orthogonal-edge,
+.mindmap-underline-bar {
   fill: none;
-  cursor: pointer;
 }
 </style>

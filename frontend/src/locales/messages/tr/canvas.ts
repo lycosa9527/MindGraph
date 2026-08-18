@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Kaydet',
   'canvas.shortcutGuide.clearText': 'Düğüm metnini temizle',
   'canvas.shortcutGuide.learningSheetAnswers': 'Öğrenme sayfası yanıtlarını göster/gizle',
+  'canvas.shortcutGuide.recalcLayout': 'Düzeni yeniden hesapla',
   'canvas.shortcutGuide.multiSelect': 'Çoklu seçim',
   'canvas.shortcutGuide.multiSelectDesc': 'Birden fazla düğüm seçmek için işaretçi modunda kutu sürükleyin.',
   'canvas.shortcutGuide.multiSelectHint': 'Kutu seçimi için sürükleyin',

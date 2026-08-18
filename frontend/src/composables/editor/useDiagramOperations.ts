@@ -244,7 +244,7 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
     for (const [nodeType, field] of Object.entries(config.value.arrayFields)) {
       const arr = (spec as Record<string, unknown>)[field]
       if (Array.isArray(arr)) {
-        // Match by pattern: nodeType_index (e.g., context_0, branch_1)
+        // Match by pattern: nodeType_index (e.g., context_0, attribute_1)
         const match = nodeId.match(new RegExp(`^${nodeType}_(\\d+)$`))
         if (match) {
           const index = parseInt(match[1], 10)

@@ -18,6 +18,7 @@ import {
 import { loadMindMapSpec } from '@/stores/specLoader/mindMap'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
+import { mindMapNodeDepth, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { computeSymmetricRootStartYs } from '@/utils/mindMapSideStacking'
 
 function enableMindMapV2Canvas(): void {
@@ -55,7 +56,9 @@ function enableMindMapV2Canvas(): void {
 }
 
 function sideSpan(nodes: { id: string; position?: { y: number }; data?: { estimatedHeight?: number } }[]): number {
-  const right = nodes.filter((n) => n.id.startsWith('branch-r-') && n.position)
+  const right = nodes.filter(
+    (n) => n.position && mindMapNodeSide(n.id, { nodes: nodes as never }) === 'right'
+  )
   if (right.length === 0) return 0
   let minY = Infinity
   let maxY = -Infinity
@@ -165,7 +168,7 @@ describe('adaptive layout across 导图样式', () => {
       ],
     })
     const kids = loaded.nodes
-      .filter((n) => n.id.startsWith('branch-r-2-'))
+      .filter((n) => mindMapNodeDepth(n.id, { node: n, nodes: loaded.nodes }) === 2)
       .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
     expect(kids).toHaveLength(4)
 

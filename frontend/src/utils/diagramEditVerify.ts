@@ -160,7 +160,15 @@ export function verifyMindMapEffect(
     if (beforeNodeCount !== undefined) {
       record('node_count_unchanged', nodes.length === beforeNodeCount)
     }
-    if (effect.text) {
+    const ident = (effect.node_identifier || effect.node_id || '').trim()
+    if (ident) {
+      const target = nodes.find((n) => n.id === ident)
+      record('node_exists', Boolean(target))
+      if (effect.text) {
+        const want = normalizeDiagramText(effect.text)
+        record('text_matches', target !== undefined && nodeText(target) === want)
+      }
+    } else if (effect.text) {
       const want = normalizeDiagramText(effect.text)
       const matches = nodes.filter((n) => nodeText(n) === want)
       record('text_matches', matches.length > 0)

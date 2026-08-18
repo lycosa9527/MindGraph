@@ -1143,11 +1143,10 @@ Each diagram type has a specific JSON structure. The API automatically normalize
   "topic": "Climate Change",
   "children": [
     {
-      "id": "branch_1",
       "label": "Causes",
       "children": [
-        {"id": "sub_1_1", "label": "Carbon emissions"},
-        {"id": "sub_1_2", "label": "Deforestation"}
+        {"label": "Carbon emissions"},
+        {"label": "Deforestation"}
       ]
     }
   ],

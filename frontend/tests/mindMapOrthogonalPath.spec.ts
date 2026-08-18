@@ -34,7 +34,7 @@ describe('buildMindMapBracketBusPath rounded tee', () => {
     )
     expect(spinePath).toContain(`Q ${trunkX} ${nearChildY}`)
 
-    // Non-spine edges are horizontal stubs only (fillet lives on the spine path).
+    // Non-spine edges paint nothing — the owner draws stem, spine, and every stub.
     const stubPath = buildMindMapBracketBusPath(
       fromX,
       parentY,
@@ -47,17 +47,20 @@ describe('buildMindMapBracketBusPath rounded tee', () => {
         siblingToXs: [toX, toX],
       }
     )
-    expect(stubPath).not.toContain('Q')
-    expect(stubPath).toMatch(/^M [\d.]+ 246 L /)
+    expect(stubPath).toBe('')
+    expect(spinePath).toContain(`L ${toX} ${nearChildY}`)
+    expect(spinePath).toContain(`L ${toX} ${farChildY}`)
   })
 
   it('keeps flat tee when every sibling is within flat threshold of parent', () => {
     const toY = 340
     const path = buildMindMapBracketBusPath(fromX, fromY, toX, toY, trunkX, [338, toY], {
-      drawSpine: false,
+      drawSpine: true,
       siblingToXs: [toX, toX],
     })
-    expect(path).toBe(`M ${trunkX} ${toY} L ${toX} ${toY}`)
+    expect(path).toContain(`M ${fromX} ${fromY} L ${trunkX} ${fromY}`)
+    expect(path).toContain(`M ${trunkX} ${toY} L ${toX} ${toY}`)
+    expect(path).toContain(`M ${trunkX} 338 L ${toX} 338`)
     expect(path).not.toContain('Q')
   })
 
@@ -71,6 +74,18 @@ describe('buildMindMapBracketBusPath rounded tee', () => {
     // Fillet is continuous from the bus (L → Q), not a second subpath along the trunk.
     expect(spinePath).toContain(`L ${trunkX} `)
     expect(spinePath).not.toMatch(new RegExp(`M ${trunkX} [\\d.]+ Q ${trunkX} ${toY}`))
+  })
+
+  it('rounds a single topic→L1 spoke (not sharp 90°)', () => {
+    const toY = 380
+    const path = buildMindMapBracketBusPath(fromX, fromY, toX, toY, trunkX, [toY], {
+      drawSpine: true,
+      siblingToXs: [toX],
+    })
+    expect(path).toContain('Q ')
+    expect(path).not.toBe(
+      `M ${fromX} ${fromY} L ${trunkX} ${fromY} L ${trunkX} ${toY} L ${toX} ${toY}`
+    )
   })
 
   it('does not retrace the bus under a translucent tee (no M→Q along trunk)', () => {
@@ -89,6 +104,7 @@ describe('buildMindMapBracketBusPath rounded tee', () => {
   it('sole underline child draws at target Y not source Y', () => {
     const toY = 240
     const path = buildMindMapBracketBusPath(fromX, fromY, toX, toY, trunkX, [toY], {
+      drawSpine: true,
       singleUnderlineChild: true,
     })
     expect(path).toBe(`M ${fromX} ${fromY} L ${toX} ${toY}`)

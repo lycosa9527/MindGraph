@@ -9,6 +9,8 @@ import {
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 
+import { MINDMAP_LEGACY_ID_DATA_KEY } from '@/utils/mindMapIdentityMigrate'
+import { mindMapBranchDataFields } from '@/utils/mindMapLocation'
 import {
   ensureMindMapBranchUid,
   MINDMAP_NODE_UID_DATA_KEY,
@@ -22,8 +24,12 @@ import {
 export interface MindMapBranchSpec {
   text: string
   children?: MindMapBranchSpec[]
+  /** Children-only wire id (UUID or leftover invented). Hydrated into uid/legacyId. */
+  id?: string
   /** Stable identity across positional id rebuilds (duplicate labels safe). */
   uid?: string
+  /** Leftover invented id from before the identity invert. */
+  legacyId?: string
 }
 
 function getBranchText(branch: { text?: string; label?: string }): string {
@@ -44,12 +50,11 @@ export function layoutMindMapSideLegacy(
 ): void {
   if (branches.length === 0) return
 
-  const sideChar = side === 'right' ? 'r' : 'l'
-
   interface LayoutNode {
     id: string
     text: string
     uid: string
+    legacyId?: string
     depth: number
     estimatedWidth: number
     estimatedHeight: number
@@ -57,17 +62,15 @@ export function layoutMindMapSideLegacy(
     branchIndex: number
   }
 
-  const globalCounter = { value: 0 }
-
   function buildTree(b: MindMapBranchSpec, depth: number, branchIndex: number): LayoutNode {
-    const idx = globalCounter.value++
-    const id = `branch-${sideChar}-${depth}-${idx}`
     const text = getBranchText(b)
     const uid = ensureMindMapBranchUid(b)
+    const id = uid
     const estimatedWidth = estimateNodeWidthForCanvasMode(text, id, 'legacy')
     const estimatedHeight = measureBranchNodeHeightForCanvasMode(text, id, 'legacy')
     const children = (b.children ?? []).map((c) => buildTree(c, depth + 1, branchIndex))
-    return { id, text, uid, depth, estimatedWidth, estimatedHeight, children, branchIndex }
+    const legacyId = typeof b.legacyId === 'string' && b.legacyId.trim() ? b.legacyId.trim() : undefined
+    return { id, text, uid, legacyId, depth, estimatedWidth, estimatedHeight, children, branchIndex }
   }
 
   const topLevel = branches.map((b, i) => {
@@ -196,6 +199,8 @@ export function layoutMindMapSideLegacy(
         estimatedWidth: node.estimatedWidth,
         estimatedHeight: node.estimatedHeight,
         [MINDMAP_NODE_UID_DATA_KEY]: node.uid,
+        ...(node.legacyId ? { [MINDMAP_LEGACY_ID_DATA_KEY]: node.legacyId } : {}),
+        ...mindMapBranchDataFields(side, node.depth),
       },
     })
     node.children.forEach((c) => createNodes(c))

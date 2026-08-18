@@ -6,6 +6,9 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from services.diagram.mindmap_identity import as_live_mindmap_node_id, migrate_mindmap_diagram_payload
+from services.diagram.mindmap_location import mindmap_node_side
+
 
 @dataclass
 class MindMapBranchOutline:
@@ -184,9 +187,9 @@ def canvas_place_code(
     node_x = _node_coord(node, "x")
     if node_x is not None and topic_x is not None:
         side = "right" if node_x >= topic_x else "left"
-    elif node_id.startswith("branch-r-"):
+    elif mindmap_node_side(node_id, nodes=list(by_id.values()), node=by_id.get(node_id)) == "right":
         side = "right"
-    elif node_id.startswith("branch-l-"):
+    elif mindmap_node_side(node_id, nodes=list(by_id.values()), node=by_id.get(node_id)) == "left":
         side = "left"
     else:
         return "center"
@@ -217,10 +220,9 @@ def _same_canvas_side(
     if node_x is not None and topic_x is not None:
         actual = "right" if node_x >= topic_x else "left"
         return actual == side
-    if node_id.startswith("branch-r-"):
-        return side == "right"
-    if node_id.startswith("branch-l-"):
-        return side == "left"
+    resolved = mindmap_node_side(node_id, nodes=list(by_id.values()), node=by_id.get(node_id))
+    if resolved:
+        return resolved == side
     return False
 
 
@@ -233,8 +235,8 @@ def sort_topic_branch_ids_clockwise(
     Match canvas presentation order: right column top→bottom, then left
     column bottom→top (continuation of clockwise).
 
-    Prefer geometric side-of-topic when positions exist; else ``branch-r-`` /
-    ``branch-l-`` prefixes; else polar angle.
+    Prefer geometric side-of-topic when positions exist; else stamped /
+    positional location; else polar angle.
     """
     if len(child_ids) <= 1:
         return list(child_ids)
@@ -242,10 +244,15 @@ def sort_topic_branch_ids_clockwise(
     if _topic_and_children_have_positions(child_ids, by_id, topic_id):
         return _sort_ids_by_side_of_topic(child_ids, by_id, topic_id)
 
-    right = [node_id for node_id in child_ids if node_id.startswith("branch-r-")]
-    left = [node_id for node_id in child_ids if node_id.startswith("branch-l-")]
+    nodes = list(by_id.values())
+    right = [
+        node_id for node_id in child_ids if mindmap_node_side(node_id, nodes=nodes, node=by_id.get(node_id)) == "right"
+    ]
+    left = [
+        node_id for node_id in child_ids if mindmap_node_side(node_id, nodes=nodes, node=by_id.get(node_id)) == "left"
+    ]
     other = [
-        node_id for node_id in child_ids if not node_id.startswith("branch-r-") and not node_id.startswith("branch-l-")
+        node_id for node_id in child_ids if mindmap_node_side(node_id, nodes=nodes, node=by_id.get(node_id)) is None
     ]
 
     if not right and not left:
@@ -280,20 +287,21 @@ def _child_texts(node: dict[str, Any]) -> list[str]:
     return texts
 
 
-def _branch_from_item(item: Any, index: int) -> Optional[MindMapBranchOutline]:
+def _branch_from_item(item: Any) -> Optional[MindMapBranchOutline]:
     if isinstance(item, str):
         text = item.strip()
         if not text:
             return None
-        return MindMapBranchOutline(id=f"branch-{index}", text=text)
+        return MindMapBranchOutline(id=None, text=text)
     if not isinstance(item, dict):
         return None
     text = _clean_text(item.get("text") or item.get("label") or item.get("topic"))
     if not text:
         return None
-    node_id = item.get("id") or item.get("uid")
+    raw_id = item.get("uid") or item.get("id")
+    node_id = as_live_mindmap_node_id(str(raw_id).strip() if isinstance(raw_id, str) else None)
     return MindMapBranchOutline(
-        id=str(node_id) if node_id else f"branch-{index}",
+        id=node_id,
         text=text,
         children=_child_texts(item),
     )
@@ -315,8 +323,8 @@ def _branches_from_hierarchical(spec: dict[str, Any]) -> list[MindMapBranchOutli
             raw_branches.extend(list(reversed(left)))
 
     branches: list[MindMapBranchOutline] = []
-    for index, item in enumerate(raw_branches):
-        branch = _branch_from_item(item, index)
+    for item in raw_branches:
+        branch = _branch_from_item(item)
         if branch is not None:
             branches.append(branch)
     return branches
@@ -410,12 +418,16 @@ def extract_mindmap_outline(
         # Still try hierarchical extract; reject clearly non-mindmap later in API.
         pass
 
-    topic = _clean_text(spec.get("topic") or spec.get("title") or spec.get("centralTopic"))
-    branches = _branches_from_hierarchical(spec)
+    working = dict(spec)
+    if isinstance(working.get("nodes"), list):
+        migrate_mindmap_diagram_payload(working)
+
+    topic = _clean_text(working.get("topic") or working.get("title") or working.get("centralTopic"))
+    branches = _branches_from_hierarchical(working)
 
     # Prefer nodes/connections when present — includes positions for clockwise order.
-    if isinstance(spec.get("nodes"), list):
-        node_topic, node_branches = _branches_from_nodes(spec)
+    if isinstance(working.get("nodes"), list):
+        node_topic, node_branches = _branches_from_nodes(working)
         if node_branches:
             branches = node_branches
             if not topic:

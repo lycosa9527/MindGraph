@@ -42,11 +42,6 @@ class FeaturesConfigMixin:
         return bool(self.FEATURE_KITTY_AGENT)
 
     @property
-    def FEATURE_DRAG_AND_DROP(self):
-        """Enable drag and drop functionality for diagram nodes."""
-        return self._get_cached_value("FEATURE_DRAG_AND_DROP", "False").lower() == "true"
-
-    @property
     def FEATURE_RAG_CHUNK_TEST(self):
         """Enable RAG Chunk Test feature (hidden by default)."""
         return self._get_cached_value("FEATURE_RAG_CHUNK_TEST", "False").lower() == "true"

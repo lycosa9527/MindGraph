@@ -147,6 +147,37 @@ def test_enrich_uses_node_id_when_label_changed() -> None:
     assert cmd.get("target") == "中华茶文化"
 
 
+def test_enrich_delete_replaces_uuid_target_with_label() -> None:
+    """User-facing target must be the label, never the canvas UUID."""
+    node_id = "0292ae97-f986-4945-9b45-a175bd5a92b5"
+    ctx = {
+        "diagram_data": {
+            "nodes": [
+                {"id": node_id, "text": "争议", "type": "branch"},
+            ],
+        },
+    }
+    cmd = enrich_node_action_command(
+        {"action": "delete_node", "target": node_id, "node_id": node_id, "confidence": 0.95},
+        ctx,
+    )
+    assert cmd["node_id"] == node_id
+    assert cmd["target"] == "争议"
+
+
+def test_delete_tool_call_does_not_put_uuid_in_target() -> None:
+    """diagram.delete_node maps a UUID identifier to node_id, not spoken target."""
+    node_id = "0292ae97-f986-4945-9b45-a175bd5a92b5"
+    cmd = command_from_tool_call(
+        "diagram.delete_node",
+        json.dumps({"node_identifier": node_id}),
+    )
+    assert cmd["action"] == "delete_node"
+    assert cmd["node_id"] == node_id
+    assert cmd.get("target") != node_id
+    assert "target" not in cmd or not cmd["target"]
+
+
 def test_command_from_tool_call_auto_complete_branch_with_node_id() -> None:
     """Tool call may pass node_id directly from the LLM."""
     cmd = command_from_tool_call(

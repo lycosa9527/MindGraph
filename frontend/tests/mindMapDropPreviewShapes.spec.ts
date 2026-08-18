@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import {
   getDropPreviewBorderRadius,
   getDropTargetShapeClass,
+  getDropTargetStyle,
 } from '@/composables/diagramCanvas/diagramCanvasZoomPaneStyles'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useDiagramStore } from '@/stores/diagram'
@@ -105,19 +106,32 @@ describe('mindmap v2 drop preview shapes', () => {
   })
 
   it('uses underline class for classic L2 branches', () => {
-    const l2 = useDiagramStore().data?.nodes.find(
-      (n) => n.text === '子项1.1' && n.id.startsWith('branch-')
-    )
+    const l2 = useDiagramStore().data?.nodes.find((n) => n.text === '子项1.1')
     expect(l2).toBeTruthy()
-    const node = branchNode(l2!.id)
+    const node = branchNode('branch-r-2-0')
     expect(getDropPreviewBorderRadius(node)).toBe('0px')
     expect(getDropTargetShapeClass(node)).toBe('is-underline')
   })
 
   it('keeps legacy pill radius when canvas mode is classic', () => {
     useUIStore().mindMapCanvasMode = 'legacy'
+    useDiagramStore().mindMapCanvasMode = 'legacy'
     const node = branchNode('branch-r-1-0')
     expect(getDropPreviewBorderRadius(node)).toBe('9999px')
     expect(getDropTargetShapeClass(node)).toBe('is-pill')
+  })
+
+  it('wraps a node-body drop in a dashed box, including v2 underline children', () => {
+    const l2 = useDiagramStore().data?.nodes.find((n) => n.text === '子项1.1')
+    expect(l2).toBeTruthy()
+    const node = {
+      ...branchNode(l2?.id ?? 'missing'),
+      position: { x: 10, y: 20 },
+      dimensions: { width: 80, height: 24 },
+    }
+    const style = getDropTargetStyle(() => [node], { type: 'child', nodeId: node.id ?? '' })
+    expect(style.height).not.toBe('4px')
+    expect(style.border).toContain('dashed')
+    expect(Number.parseFloat(String(style.width))).toBeGreaterThan(80)
   })
 })

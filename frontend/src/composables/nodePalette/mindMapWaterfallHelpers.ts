@@ -1,5 +1,6 @@
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import type { DiagramNode } from '@/types'
+import { isMindMapBranchId } from '@/utils/mindMapLocation'
 
 export interface MindMapWaterfallSource {
   id: string
@@ -24,7 +25,7 @@ export function resolveMindMapWaterfallSources(
 
   const eligibleIds =
     selectedNodeIds.length > 0
-      ? selectedNodeIds.filter((id) => id === 'topic' || id.startsWith('branch-'))
+      ? selectedNodeIds.filter((id) => id === 'topic' || isMindMapBranchId(id, nodes))
       : ['topic']
 
   const seen = new Set<string>()

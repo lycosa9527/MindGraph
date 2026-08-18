@@ -15,6 +15,7 @@ import {
 } from '@/composables/nodePalette/stageHelpers'
 import { useDiagramStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
+import { isMindMapBranchNode } from '@/utils/mindMapLocation'
 
 export interface ApplyAiBrainstormContext {
   diagramStore: ReturnType<typeof useDiagramStore>
@@ -111,7 +112,7 @@ export async function applyAiBrainstormSelection(
       branchId ??
       nodes.find(
         (n) =>
-          (n.id.startsWith('branch-l-') || n.id.startsWith('branch-r-')) &&
+          isMindMapBranchNode(n) &&
           (n.text ?? '').trim() === branchName
       )?.id
     if (!resolvedParentId && branchName && connections) {
@@ -130,7 +131,11 @@ export async function applyAiBrainstormSelection(
     remainder.forEach((s) => {
       const text = (s.text ?? '').trim()
       if (text) {
-        diagramStore.addMindMapBranch('right', text, String(i18n.global.t('diagram.newChild')))
+        diagramStore.addMindMapBranch(
+          undefined,
+          text,
+          String(i18n.global.t('diagram.newChild'))
+        )
       }
     })
   }

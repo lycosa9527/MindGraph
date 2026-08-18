@@ -30,7 +30,7 @@ describe('diagramExportLearningSheet', () => {
     expect(isLearningSheetRasterCapture(store)).toBe(false)
 
     store.setLearningSheetMode(true)
-    const branch = store.data?.nodes.find((node) => node.id.startsWith('branch-'))
+    const branch = store.data?.nodes.find((node) => node.type === 'branch')
     if (!branch) throw new Error('missing branch')
     store.emptyNodeForLearningSheet(branch.id)
     expect(isLearningSheetRasterCapture(store)).toBe(true)
@@ -45,7 +45,7 @@ describe('diagramExportLearningSheet', () => {
     const store = useDiagramStore()
     store.loadDefaultTemplate('mindmap')
     store.setLearningSheetMode(true)
-    const branch = store.data?.nodes.find((node) => node.id.startsWith('branch-'))
+    const branch = store.data?.nodes.find((node) => node.type === 'branch')
     if (!branch) throw new Error('missing branch')
     store.emptyNodeForLearningSheet(branch.id)
 
@@ -66,7 +66,7 @@ describe('diagramExportLearningSheet', () => {
     const store = useDiagramStore()
     store.loadDefaultTemplate('mindmap')
     store.setLearningSheetMode(true)
-    const branch = store.data?.nodes.find((node) => node.id.startsWith('branch-'))
+    const branch = store.data?.nodes.find((node) => node.type === 'branch')
     if (!branch) throw new Error('missing branch')
     store.emptyNodeForLearningSheet(branch.id)
     store.setLearningSheetShowAnswers(false)

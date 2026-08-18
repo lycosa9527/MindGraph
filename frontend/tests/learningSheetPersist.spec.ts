@@ -32,7 +32,7 @@ describe('learning sheet persistence', () => {
     diagramStore.loadDefaultTemplate('mindmap')
 
     const branch = diagramStore.data?.nodes.find(
-      (node) => node.id.startsWith('branch-') && String(node.text ?? '').trim().length > 0
+      (node) => node.type === 'branch' && String(node.text ?? '').trim().length > 0
     )
     if (!branch) {
       throw new Error('expected a branch node in default mind map template')

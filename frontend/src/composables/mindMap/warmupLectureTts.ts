@@ -4,7 +4,11 @@
 import { eventBus } from '@/composables/core/useEventBus'
 import type { MindClassroomRemoteStep } from '@/composables/mindMap/mindClassroomJobApi'
 import { useMindClassroomStore } from '@/stores/mindClassroom'
-import { mapRemoteLectureSteps } from '@/utils/mindClassroomRemoteSteps'
+import {
+  collectLiveNodeIds,
+  mapRemoteLectureSteps,
+  type LectureLiveRef,
+} from '@/utils/mindClassroomRemoteSteps'
 import type { MindClassroomLectureStep } from '@/utils/mindClassroomScript'
 
 const requestedPrefetchIds = new Set<string>()
@@ -90,15 +94,17 @@ export function markLectureVoiceWarmupFailed(stepId?: string): void {
 
 export function tryWarmupFromJobSteps(
   rawSteps: MindClassroomRemoteStep[] | null | undefined,
-  liveIds: Set<string>,
+  live: LectureLiveRef,
   voiceEnabled: boolean
 ): boolean {
   const store = useMindClassroomStore()
-  const mapped = mapRemoteLectureSteps(rawSteps ?? [], liveIds)
+  const mapped = mapRemoteLectureSteps(rawSteps ?? [], live)
   if (!mapped[0]?.caption.trim()) return false
   const grew = mapped.length > store.preparedSteps.length
   if (grew || store.preparedSteps.length === 0) {
-    store.setPreparedSteps(mapped, [...liveIds])
+    const snapshotIds =
+      live instanceof Set ? [...live] : [...collectLiveNodeIds(live)]
+    store.setPreparedSteps(mapped, snapshotIds)
   }
   if (store.voiceWarmup === 'idle') {
     resetLectureTtsCatchup()

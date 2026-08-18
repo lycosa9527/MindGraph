@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'सहेजें',
   'canvas.shortcutGuide.clearText': 'नोड पाठ साफ़ करें',
   'canvas.shortcutGuide.learningSheetAnswers': 'अध्ययन पत्र उत्तर दिखाएँ/छिपाएँ',
+  'canvas.shortcutGuide.recalcLayout': 'लेआउट पुनः गणना करें',
   'canvas.shortcutGuide.multiSelect': 'बहु-चयन',
   'canvas.shortcutGuide.multiSelectDesc': 'खींचें a box in pointer mode to select multiple nodes.',
   'canvas.shortcutGuide.multiSelectHint': 'खींचें to box select',

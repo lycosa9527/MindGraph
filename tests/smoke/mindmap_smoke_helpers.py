@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import os
+import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -41,6 +42,11 @@ def live_llm_enabled() -> bool:
         return False
     api_key = (os.getenv("QWEN_API_KEY") or "").strip()
     return bool(api_key) and "your-" not in api_key.lower()
+
+
+def _new_branch_id() -> str:
+    """Mint a stable identity id (same contract as canvas invert)."""
+    return str(uuid.uuid4())
 
 
 def _node_label(node: Dict[str, Any]) -> str:
@@ -132,7 +138,7 @@ def mindmap_spec_to_canvas(
             label = str(child.get("text") or child.get("label") or "").strip()
             if not label:
                 continue
-            node_id = f"branch-{side[0]}-{depth}-{idx}"
+            node_id = _new_branch_id()
             x_off = col_gap * depth if side == "right" else -col_gap * depth
             y_off = (idx - start_index) * row_gap
             nodes.append(
@@ -143,6 +149,11 @@ def mindmap_spec_to_canvas(
                     "position": {
                         "x": origin_x + x_off,
                         "y": origin_y + y_off,
+                    },
+                    "data": {
+                        "mindMapUid": node_id,
+                        "mindMapSide": side,
+                        "mindMapDepth": depth,
                     },
                 }
             )
@@ -201,9 +212,16 @@ def apply_add_branch(
     assert isinstance(nodes, list)
     assert isinstance(connections, list)
 
-    existing = [n for n in nodes if isinstance(n, dict) and str(n.get("id", "")).startswith(f"branch-{side[0]}-1-")]
+    existing = [
+        n
+        for n in nodes
+        if isinstance(n, dict)
+        and n.get("type") == "branch"
+        and str((n.get("data") or {}).get("mindMapSide") or "") == side
+        and int((n.get("data") or {}).get("mindMapDepth") or 0) == 1
+    ]
     next_idx = len(existing)
-    node_id = f"branch-{side[0]}-1-{next_idx}"
+    node_id = _new_branch_id()
     topic = next((n for n in nodes if isinstance(n, dict) and n.get("id") == "topic"), None)
     base_x = 400.0
     base_y = 300.0
@@ -219,6 +237,11 @@ def apply_add_branch(
             "type": "branch",
             "text": label,
             "position": {"x": base_x + x_off, "y": base_y + y_off},
+            "data": {
+                "mindMapUid": node_id,
+                "mindMapSide": side,
+                "mindMapDepth": 1,
+            },
         }
     )
     connections.append(

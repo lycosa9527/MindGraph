@@ -63,12 +63,12 @@ function diagramFromClockwiseLabels(labels: string[]): {
   let edge = 0
   // stackBranches walks each side top→bottom in array order.
   rightBranches.forEach((branch, i) => {
-    const id = `branch-r-1-${i}`
+    const id = `uid-r-${i}`
     nodes.push(node(id, branch.text, 40 + i * 80, 'branch', 200))
     connections.push({ id: `e${edge++}`, source: 'topic', target: id })
   })
   leftBranches.forEach((branch, i) => {
-    const id = `branch-l-1-${i}`
+    const id = `uid-l-${i}`
     nodes.push(node(id, branch.text, 40 + i * 80, 'branch', -200))
     connections.push({ id: `e${edge++}`, source: 'topic', target: id })
   })
@@ -97,17 +97,17 @@ describe('buildMindMapOutlineTree', () => {
   it('orders topic children clockwise: right top→bottom, left bottom→top', () => {
     const nodes: DiagramNode[] = [
       node('topic', '中心', 100, 'topic', 0),
-      node('branch-r-1-0', '右下', 200, 'branch', 200),
-      node('branch-r-1-1', '右上', 40, 'branch', 200),
-      node('branch-l-1-0', '左下', 220, 'branch', -200),
-      node('branch-l-1-1', '左上', 50, 'branch', -200),
+      node('uid-rb', '右下', 200, 'branch', 200),
+      node('uid-rt', '右上', 40, 'branch', 200),
+      node('uid-lb', '左下', 220, 'branch', -200),
+      node('uid-lt', '左上', 50, 'branch', -200),
     ]
     // Connection order intentionally inverted vs visual top→bottom.
     const connections: Connection[] = [
-      { id: 'e1', source: 'topic', target: 'branch-r-1-0' },
-      { id: 'e2', source: 'topic', target: 'branch-r-1-1' },
-      { id: 'e3', source: 'topic', target: 'branch-l-1-0' },
-      { id: 'e4', source: 'topic', target: 'branch-l-1-1' },
+      { id: 'e1', source: 'topic', target: 'uid-rb' },
+      { id: 'e2', source: 'topic', target: 'uid-rt' },
+      { id: 'e3', source: 'topic', target: 'uid-lb' },
+      { id: 'e4', source: 'topic', target: 'uid-lt' },
     ]
 
     const flat = flattenMindMapOutline(buildMindMapOutlineTree(nodes, connections))
@@ -118,24 +118,24 @@ describe('buildMindMapOutlineTree', () => {
     // Right top→bottom, then left bottom→top (connection order scrambled).
     const nodes: DiagramNode[] = [
       node('topic', '山姆会员商店', 400, 'topic', 0),
-      node('branch-r-1-0', '竞争对手', 80, 'branch', 320),
-      node('branch-r-1-1', '分布特点', 220, 'branch', 320),
-      node('branch-r-1-2', '产品与货品策略', 360, 'branch', 320),
-      node('branch-r-1-3', '营销聚焦', 500, 'branch', 320),
-      node('branch-l-1-0', '汇源汁商店', 80, 'branch', -320),
-      node('branch-l-1-1', 'Costco对比', 220, 'branch', -320),
-      node('branch-l-1-2', '店内体验与多渠道', 360, 'branch', -320),
-      node('branch-l-1-3', '运营与精益管理', 500, 'branch', -320),
+      node('uid-r0', '竞争对手', 80, 'branch', 320),
+      node('uid-r1', '分布特点', 220, 'branch', 320),
+      node('uid-r2', '产品与货品策略', 360, 'branch', 320),
+      node('uid-r3', '营销聚焦', 500, 'branch', 320),
+      node('uid-l0', '汇源汁商店', 80, 'branch', -320),
+      node('uid-l1', 'Costco对比', 220, 'branch', -320),
+      node('uid-l2', '店内体验与多渠道', 360, 'branch', -320),
+      node('uid-l3', '运营与精益管理', 500, 'branch', -320),
     ]
     const connections: Connection[] = [
-      { id: 'e1', source: 'topic', target: 'branch-l-1-2' },
-      { id: 'e2', source: 'topic', target: 'branch-r-1-3' },
-      { id: 'e3', source: 'topic', target: 'branch-l-1-0' },
-      { id: 'e4', source: 'topic', target: 'branch-r-1-0' },
-      { id: 'e5', source: 'topic', target: 'branch-l-1-3' },
-      { id: 'e6', source: 'topic', target: 'branch-r-1-1' },
-      { id: 'e7', source: 'topic', target: 'branch-l-1-1' },
-      { id: 'e8', source: 'topic', target: 'branch-r-1-2' },
+      { id: 'e1', source: 'topic', target: 'uid-l2' },
+      { id: 'e2', source: 'topic', target: 'uid-r3' },
+      { id: 'e3', source: 'topic', target: 'uid-l0' },
+      { id: 'e4', source: 'topic', target: 'uid-r0' },
+      { id: 'e5', source: 'topic', target: 'uid-l3' },
+      { id: 'e6', source: 'topic', target: 'uid-r1' },
+      { id: 'e7', source: 'topic', target: 'uid-l1' },
+      { id: 'e8', source: 'topic', target: 'uid-r2' },
     ]
     const flat = flattenMindMapOutline(buildMindMapOutlineTree(nodes, connections))
     expect(flat.map((r) => r.text)).toEqual([
@@ -255,14 +255,14 @@ describe('buildMindMapOutlineTree', () => {
   it('orders nested children top→bottom by Y', () => {
     const nodes: DiagramNode[] = [
       node('topic', 'T', 100, 'topic', 0),
-      node('branch-r-1-0', 'Parent', 80, 'branch', 200),
-      node('branch-r-2-0', 'ChildB', 160, 'branch', 280),
-      node('branch-r-2-1', 'ChildA', 90, 'branch', 280),
+      node('uid-parent', 'Parent', 80, 'branch', 200),
+      node('uid-child-b', 'ChildB', 160, 'branch', 280),
+      node('uid-child-a', 'ChildA', 90, 'branch', 280),
     ]
     const connections: Connection[] = [
-      { id: 'e1', source: 'topic', target: 'branch-r-1-0' },
-      { id: 'e2', source: 'branch-r-1-0', target: 'branch-r-2-0' },
-      { id: 'e3', source: 'branch-r-1-0', target: 'branch-r-2-1' },
+      { id: 'e1', source: 'topic', target: 'uid-parent' },
+      { id: 'e2', source: 'uid-parent', target: 'uid-child-b' },
+      { id: 'e3', source: 'uid-parent', target: 'uid-child-a' },
     ]
 
     const parent = buildMindMapOutlineTree(nodes, connections)[0]?.children[0]
@@ -293,12 +293,12 @@ describe('buildMindMapOutlineTree', () => {
   it('falls back to connection order when positions are missing', () => {
     const nodes: DiagramNode[] = [
       { id: 'topic', text: 'T', type: 'topic' },
-      { id: 'branch-r-1-0', text: 'First', type: 'branch' },
-      { id: 'branch-r-1-1', text: 'Second', type: 'branch' },
+      { id: 'uid-first', text: 'First', type: 'branch' },
+      { id: 'uid-second', text: 'Second', type: 'branch' },
     ]
     const connections: Connection[] = [
-      { id: 'e1', source: 'topic', target: 'branch-r-1-0' },
-      { id: 'e2', source: 'topic', target: 'branch-r-1-1' },
+      { id: 'e1', source: 'topic', target: 'uid-first' },
+      { id: 'e2', source: 'topic', target: 'uid-second' },
     ]
 
     const flat = flattenMindMapOutline(buildMindMapOutlineTree(nodes, connections))
@@ -308,10 +308,10 @@ describe('buildMindMapOutlineTree', () => {
   it('reflects live text labels from the diagram nodes', () => {
     const nodes: DiagramNode[] = [
       node('topic', 'Old topic', 0, 'topic'),
-      node('branch-r-1-0', 'Old branch', 40),
+      node('uid-branch', 'Old branch', 40),
     ]
     const connections: Connection[] = [
-      { id: 'e1', source: 'topic', target: 'branch-r-1-0' },
+      { id: 'e1', source: 'topic', target: 'uid-branch' },
     ]
 
     nodes[0] = { ...nodes[0], text: 'New topic' }

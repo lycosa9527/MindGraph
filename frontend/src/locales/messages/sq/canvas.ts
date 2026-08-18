@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Ruaj',
   'canvas.shortcutGuide.clearText': 'Pastro tekstin e nyjes',
   'canvas.shortcutGuide.learningSheetAnswers': 'Shfaq/fshih përgjigjet e fletës së mësimit',
+  'canvas.shortcutGuide.recalcLayout': 'Recalculate layout',
   'canvas.shortcutGuide.multiSelect': 'Zgjedhje e shumëfishtë',
   'canvas.shortcutGuide.multiSelectDesc': 'Tërhiqni një kuti në modalitet tregues për të zgjedhur shumë nyje.',
   'canvas.shortcutGuide.multiSelectHint': 'Tërhiqni për zgjedhje me kuti',

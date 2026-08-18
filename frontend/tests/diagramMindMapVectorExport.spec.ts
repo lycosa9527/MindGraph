@@ -137,7 +137,7 @@ describe('diagramMindMapVector numbering chrome', () => {
               style: { nodeShape: 'rectangle' },
             },
             {
-              id: 'branch-r-1-0',
+              id: 'uid-intro',
               text: '引言',
               type: 'branch',
               position: { x: 400, y: 180 },
@@ -145,13 +145,13 @@ describe('diagramMindMapVector numbering chrome', () => {
               parentId: 'topic',
             },
           ],
-          connections: [{ id: 'e1', source: 'topic', target: 'branch-r-1-0' } satisfies Connection],
+          connections: [{ id: 'e1', source: 'topic', target: 'uid-intro' } satisfies Connection],
         },
       },
     })
     expect(snapshot).not.toBeNull()
     if (!snapshot) return
-    const branch = snapshot.nodes.find((node) => node.id === 'branch-r-1-0')
+    const branch = snapshot.nodes.find((node) => node.id === 'uid-intro')
     expect(branch?.text).toBe('引言')
     expect(branch?.numberPrefix).toBe('第一章')
     const nodeSvg = renderMindMapVectorNode(branch!, {

@@ -46,6 +46,7 @@ import { useNodeDimensionSlice } from './nodeDimensionSlice'
 import { useNodeManagementSlice } from './nodeManagement'
 import { useNodeStylesSlice } from './nodeStyles'
 import { useNodeSwapOpsSlice } from './nodeSwapOps'
+import { requestDiagramLayoutRecalc } from './requestDiagramLayoutRecalc'
 import { useSelectionSlice } from './selection'
 import { useSpecIOSlice } from './specIO'
 import { useTitleSlice } from './titleManagement'
@@ -667,6 +668,7 @@ export function createDiagramSession(options: CreateDiagramSessionOptions = {}) 
     mindMapBulkLoading,
     nodeDimensions,
     layoutRecalcTrigger,
+    recalculateDiagramLayout: () => requestDiagramLayoutRecalc(ctx),
     setNodeDimensions: setNodeDimensionsSlice,
     clearNodeDimensions,
     getNodeDimension,

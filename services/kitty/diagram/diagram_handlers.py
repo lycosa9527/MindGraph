@@ -14,6 +14,7 @@ from services.kitty.context.messaging import (
     safe_websocket_send,
     send_kitty_diagram_update,
 )
+from services.kitty.diagram.diagram_utils import child_node_live_id
 from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.ops import get_agent_session_id
 from services.kitty.session.runtime_state import logger, voice_sessions
@@ -220,6 +221,7 @@ async def _handle_update_node_action(
     # Resolve node by index or by target text (node_identifier)
     resolved_node_id = command.get("node_id")
     resolved_node_index = node_index
+    diagram_type = str(voice_sessions[voice_session_id].get("diagram_type") or "circle_map")
 
     nodes = session_context.get("diagram_data", {}).get("children", [])
 
@@ -227,7 +229,9 @@ async def _handle_update_node_action(
     if resolved_node_index is not None:
         if 0 <= resolved_node_index < len(nodes):
             node = nodes[resolved_node_index]
-            resolved_node_id = node.get("id") if isinstance(node, dict) else f"context_{resolved_node_index}"
+            live_id = child_node_live_id(node, resolved_node_index, diagram_type)
+            if live_id:
+                resolved_node_id = live_id
         else:
             logger.warning("Node index %d out of bounds", resolved_node_index)
             return False
@@ -236,8 +240,11 @@ async def _handle_update_node_action(
         for idx, node in enumerate(nodes):
             node_text = node.get("text") if isinstance(node, dict) else str(node)
             if node_text and (node_identifier in node_text or node_text in node_identifier):
+                live_id = child_node_live_id(node, idx, diagram_type)
+                if not live_id:
+                    continue
                 resolved_node_index = idx
-                resolved_node_id = node.get("id") if isinstance(node, dict) else f"context_{idx}"
+                resolved_node_id = live_id
                 logger.debug(
                     "Resolved update_node by identifier '%s' to node_index=%d",
                     node_identifier,
@@ -245,7 +252,20 @@ async def _handle_update_node_action(
                 )
                 break
 
-    if resolved_node_id and resolved_node_index is not None:
+    if resolved_node_id and resolved_node_index is None:
+        for idx, node in enumerate(nodes):
+            if isinstance(node, dict) and str(node.get("id") or "") == str(resolved_node_id):
+                resolved_node_index = idx
+                break
+        if resolved_node_index is None:
+            vue_nodes = session_context.get("diagram_data", {}).get("nodes", [])
+            if isinstance(vue_nodes, list):
+                for idx, node in enumerate(vue_nodes):
+                    if isinstance(node, dict) and str(node.get("id") or "") == str(resolved_node_id):
+                        resolved_node_index = idx
+                        break
+
+    if resolved_node_id:
         logger.info(
             "Updating node %d (%s) to: %s",
             resolved_node_index,
@@ -279,7 +299,7 @@ async def _handle_update_node_action(
         )
 
         # CRITICAL: Update session context immediately
-        if 0 <= resolved_node_index < len(nodes):
+        if resolved_node_index is not None and 0 <= resolved_node_index < len(nodes):
             node = nodes[resolved_node_index]
             if isinstance(node, dict):
                 node["text"] = target
@@ -287,6 +307,13 @@ async def _handle_update_node_action(
                     node["label"] = target
             else:
                 nodes[resolved_node_index] = target
+        else:
+            vue_nodes = session_context.get("diagram_data", {}).get("nodes", [])
+            if isinstance(vue_nodes, list):
+                for node in vue_nodes:
+                    if isinstance(node, dict) and str(node.get("id") or "") == str(resolved_node_id):
+                        node["text"] = target
+                        break
 
         # Update agent state and instructions
         # CRITICAL: Agent is scoped to diagram_session_id, not voice_session_id

@@ -198,7 +198,12 @@ run_backend() {
     tests/test_kitty_idle.py \
     tests/test_generate_text_to_image.py \
     tests/test_zhihui_outline_and_shell.py \
-    tests/test_zhihui_lease.py
+    tests/test_zhihui_lease.py \
+    tests/test_mindmap_identity.py \
+    tests/test_mindmap_identity_kitty_e2e.py \
+    tests/test_diagram_edit.py \
+    tests/test_diagram_agent_context.py \
+    tests/test_kitty_ack_library.py
 }
 
 run_frontend() {
@@ -230,7 +235,10 @@ run_frontend() {
     tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts \
     tests/unloadCanvasForLibrarySwitch.spec.ts \
     tests/llmResultsPersist.spec.ts tests/llmResultsPersistAudit.spec.ts \
-    tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts
+    tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts \
+    tests/mindMapIdentityMigrate.spec.ts \
+    tests/branchMoveHitTest.spec.ts tests/mindMapDropPreviewShapes.spec.ts \
+    tests/mindMapSeparation.spec.ts tests/mindMapLoadPreserveSides.spec.ts
 }
 
 run_chrome_extension() {

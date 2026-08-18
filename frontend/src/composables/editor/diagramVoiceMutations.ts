@@ -12,6 +12,13 @@ import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
 import { recalculateCircleMapLayout } from '@/stores/specLoader'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
+import { resolveMindMapIdentityId } from '@/utils/mindMapIdentityMigrate'
+import {
+  isLeftoverMindMapBranchId,
+  isMindMapL1,
+  mindMapNodeDepth,
+  sortMindMapTopicChildIdsBySide,
+} from '@/utils/mindMapLocation'
 
 function normalizedDiagramType(storeType: DiagramType | null): string {
   if (!storeType) return ''
@@ -25,7 +32,12 @@ export function resolveVoiceNodeId(
   nodes: DiagramNode[]
 ): string | null {
   if (!rawId) return null
-  if (nodes.some((n) => n.id === rawId)) return rawId
+  const mindmap = diagramType === 'mindmap' || diagramType === 'mind_map'
+  if (nodes.some((n) => n.id === rawId)) {
+    if (!(mindmap && isLeftoverMindMapBranchId(rawId))) return rawId
+  }
+  const byAlias = resolveMindMapIdentityId(rawId, nodes)
+  if (byAlias && !(mindmap && isLeftoverMindMapBranchId(byAlias))) return byAlias
 
   const m = /^([a-zA-Z][\w-]*)_(\d+)$/.exec(rawId)
   if (!m) return null
@@ -64,14 +76,6 @@ export function resolveVoiceNodeId(
     case 'concept_map':
       if (prefix === 'concept') candidates.push(`concept-${idx}`)
       break
-    case 'mindmap':
-    case 'mind_map':
-      if (prefix === 'branch') {
-        for (const n of nodes) {
-          if (n.id.startsWith('branch-') && n.id.endsWith(`-${idx}`)) candidates.push(n.id)
-        }
-      }
-      break
     default:
       break
   }
@@ -85,19 +89,13 @@ export function resolveVoiceNodeId(
 function topLevelMindmapBranchIds(nodes: DiagramNode[], connections: Connection[] = []): string[] {
   const topicConns = connections.filter((c) => c.source === 'topic')
   if (topicConns.length > 0) {
-    const rights = topicConns.filter((c) => c.target.startsWith('branch-r-1-')).map((c) => c.target)
-    const lefts = topicConns.filter((c) => c.target.startsWith('branch-l-1-')).map((c) => c.target)
-    return [...rights, ...lefts]
+    const childIds = topicConns.map((c) => c.target).filter((id) => isMindMapL1(id, connections))
+    return sortMindMapTopicChildIdsBySide(childIds, { nodes, connections })
   }
-  // Fallback when connections unavailable: stable id order (legacy callers).
-  const sortIdx = (id: string): number => parseInt(id.split('-').pop() ?? '0', 10)
-  const rights = nodes
-    .filter((n) => n.id.startsWith('branch-r-1-'))
-    .sort((a, b) => sortIdx(a.id) - sortIdx(b.id))
-  const lefts = nodes
-    .filter((n) => n.id.startsWith('branch-l-1-'))
-    .sort((a, b) => sortIdx(a.id) - sortIdx(b.id))
-  return [...rights.map((n) => n.id), ...lefts.map((n) => n.id)]
+  const childIds = nodes
+    .filter((n) => n.id !== 'topic' && mindMapNodeDepth(n.id, { node: n, nodes, connections }) === 1)
+    .map((n) => n.id)
+  return sortMindMapTopicChildIdsBySide(childIds, { nodes })
 }
 
 function mindmapChildIdAt(
@@ -307,7 +305,7 @@ export function applyVoiceDiagramAddNodes(
       const insertIndex =
         typeof p.insert_index === 'number' && p.insert_index >= 0 ? p.insert_index : undefined
       const sideRaw = typeof p.side === 'string' ? p.side.trim().toLowerCase() : ''
-      const side = sideRaw === 'left' ? 'left' : 'right'
+      const explicitSide = sideRaw === 'left' || sideRaw === 'right' ? sideRaw : null
       if (afterNodeId && text) {
         if (store.addMindMapSibling(afterNodeId, text, 'below')) count++
       } else if (parentId !== '' && insertIndex !== undefined && text) {
@@ -326,7 +324,7 @@ export function applyVoiceDiagramAddNodes(
       } else if (parentId !== '' && text) {
         if (store.addMindMapChild(parentId, text)) count++
       } else if (text) {
-        if (store.addMindMapBranch(side, text)) count++
+        if (store.addMindMapBranch(explicitSide, text)) count++
       }
       continue
     }

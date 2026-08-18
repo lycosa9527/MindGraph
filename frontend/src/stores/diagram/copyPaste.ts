@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 
+import { isMindMapBranchId } from '@/utils/mindMapLocation'
 import type { MindMapBranchSpec } from '@/utils/mindMapSubgraphMerge'
 
 import { extractHierarchicalClipboard } from './hierarchicalClipboardExtract'
@@ -78,7 +79,9 @@ export function useCopyPasteSlice(
     if (!diagramType) return
 
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-      deps.removeMindMapNodes(nodeIds.filter((id) => id.startsWith('branch-')))
+      deps.removeMindMapNodes(
+        nodeIds.filter((id) => isMindMapBranchId(id, ctx.data.value?.nodes))
+      )
       return
     }
     if (diagramType === 'tree_map') {

@@ -16,13 +16,13 @@ describe('diagramEditVerify', () => {
     const after = captureDiagramFingerprint(
       [
         { id: 'topic', type: 'topic', text: 'Cars', position: { x: 0, y: 0 } },
-        { id: 'branch-r-1-0', text: 'DIY', position: { x: 0, y: 0 } },
+        { id: 'uid-diy', text: 'DIY', position: { x: 0, y: 0 } },
       ],
-      [{ source: 'topic', target: 'branch-r-1-0' }]
+      [{ source: 'topic', target: 'uid-diy' }]
     )
     expect(
       resolveCreatedNodeIds(before, after, { op: 'add_branch', text: 'DIY' })
-    ).toEqual(['branch-r-1-0'])
+    ).toEqual(['uid-diy'])
   })
 
   it('verifies add_branch with topic edge', () => {
@@ -33,9 +33,9 @@ describe('diagramEditVerify', () => {
     const after = captureDiagramFingerprint(
       [
         { id: 'topic', type: 'topic', text: 'Cars', position: { x: 0, y: 0 } },
-        { id: 'branch-r-1-0', text: 'DIY', position: { x: 0, y: 0 } },
+        { id: 'uid-diy', text: 'DIY', position: { x: 0, y: 0 } },
       ],
-      [{ source: 'topic', target: 'branch-r-1-0' }]
+      [{ source: 'topic', target: 'uid-diy' }]
     )
     const report = verifyMindMapEffect(
       { op: 'add_branch', text: 'DIY', parent_ref: 'topic' },
@@ -50,7 +50,7 @@ describe('diagramEditVerify', () => {
     const after = captureDiagramFingerprint(
       [
         { id: 'topic', type: 'topic', text: 'Cars', position: { x: 0, y: 0 } },
-        { id: 'branch-r-1-0', text: 'DIY', position: { x: 0, y: 0 } },
+        { id: 'uid-diy', text: 'DIY', position: { x: 0, y: 0 } },
       ],
       []
     )
@@ -66,19 +66,19 @@ describe('diagramEditVerify', () => {
     const before = captureDiagramFingerprint(
       [
         { id: 'topic', type: 'topic', text: '鼠标', position: { x: 0, y: 0 } },
-        { id: 'branch-r-1-0', text: '品牌', position: { x: 0, y: 0 } },
+        { id: 'uid-brand', text: '品牌', position: { x: 0, y: 0 } },
       ],
-      [{ source: 'topic', target: 'branch-r-1-0' }]
+      [{ source: 'topic', target: 'uid-brand' }]
     )
     const after = captureDiagramFingerprint(
       [
         { id: 'topic', type: 'topic', text: '鼠标', position: { x: 0, y: 0 } },
-        { id: 'branch-r-1-0', text: '品牌', position: { x: 0, y: 0 } },
-        { id: 'branch-r-1-0-0', text: '罗技', position: { x: 0, y: 0 } },
+        { id: 'uid-brand', text: '品牌', position: { x: 0, y: 0 } },
+        { id: 'uid-logitech', text: '罗技', position: { x: 0, y: 0 } },
       ],
       [
-        { source: 'topic', target: 'branch-r-1-0' },
-        { source: 'branch-r-1-0', target: 'branch-r-1-0-0' },
+        { source: 'topic', target: 'uid-brand' },
+        { source: 'uid-brand', target: 'uid-logitech' },
       ]
     )
     const report = verifyMindMapEffect(
@@ -93,12 +93,12 @@ describe('diagramEditVerify', () => {
     const after = captureDiagramFingerprint(
       [
         { id: 'topic', type: 'topic', text: '鼠标', position: { x: 0, y: 0 } },
-        { id: 'branch-r-1-0', text: '品牌', position: { x: 0, y: 0 } },
-        { id: 'branch-r-1-1', text: '罗技', position: { x: 0, y: 0 } },
+        { id: 'uid-brand', text: '品牌', position: { x: 0, y: 0 } },
+        { id: 'uid-logitech', text: '罗技', position: { x: 0, y: 0 } },
       ],
       [
-        { source: 'topic', target: 'branch-r-1-0' },
-        { source: 'topic', target: 'branch-r-1-1' },
+        { source: 'topic', target: 'uid-brand' },
+        { source: 'topic', target: 'uid-logitech' },
       ]
     )
     const report = verifyMindMapEffect(
@@ -107,5 +107,31 @@ describe('diagramEditVerify', () => {
       2
     )
     expect(report.ok).toBe(false)
+  })
+
+  it('verifies update_node by UUID when two nodes share the same text', () => {
+    const after = captureDiagramFingerprint(
+      [
+        { id: 'topic', type: 'topic', text: 'Cars', position: { x: 0, y: 0 } },
+        { id: 'uid-diy-a', text: 'Paint', position: { x: 0, y: 0 } },
+        { id: 'uid-diy-b', text: 'Paint', position: { x: 0, y: 0 } },
+      ],
+      [
+        { source: 'topic', target: 'uid-diy-a' },
+        { source: 'topic', target: 'uid-diy-b' },
+      ]
+    )
+    const hit = verifyMindMapEffect(
+      { op: 'update_node', node_id: 'uid-diy-b', text: 'Paint' },
+      after,
+      3
+    )
+    expect(hit.ok).toBe(true)
+    const miss = verifyMindMapEffect(
+      { op: 'update_node', node_identifier: 'uid-missing', text: 'Paint' },
+      after,
+      3
+    )
+    expect(miss.ok).toBe(false)
   })
 })

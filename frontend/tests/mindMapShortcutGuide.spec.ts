@@ -101,11 +101,13 @@ describe('mindMapShortcutGuide parity', () => {
   it('documents redo, save, clear text, and escape shortcuts', () => {
     const redo = MIND_MAP_SHORTCUT_GUIDE_ROWS.find((row) => row.id === 'redo')
     const save = MIND_MAP_SHORTCUT_GUIDE_ROWS.find((row) => row.id === 'save')
+    const recalcLayout = MIND_MAP_SHORTCUT_GUIDE_ROWS.find((row) => row.id === 'recalcLayout')
     const clearText = MIND_MAP_SHORTCUT_GUIDE_ROWS.find((row) => row.id === 'clearText')
     const cancel = MIND_MAP_SHORTCUT_GUIDE_ROWS.find((row) => row.id === 'cancel')
 
     expect(redo?.kind).toBe('keys')
     expect(save?.kind).toBe('keys')
+    expect(recalcLayout?.kind).toBe('keys')
     expect(clearText?.kind).toBe('keys')
     expect(cancel?.kind).toBe('keys')
 
@@ -114,6 +116,9 @@ describe('mindMapShortcutGuide parity', () => {
     }
     if (save?.kind === 'keys') {
       expect(save.keys).toEqual(['Ctrl+S'])
+    }
+    if (recalcLayout?.kind === 'keys') {
+      expect(recalcLayout.keys).toEqual(['Ctrl+Shift+L'])
     }
     if (clearText?.kind === 'keys') {
       expect(clearText.keys).toEqual(['-'])

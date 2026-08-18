@@ -18,6 +18,7 @@ from uuid import uuid4
 
 from fastapi import WebSocket
 
+from services.diagram.mindmap_identity import migrate_mindmap_diagram_payload
 from services.diagram_edit.ack import configure_mutation_ack_relay
 from services.infrastructure.monitoring.ws_metrics import (
     record_kitty_refcount_attach,
@@ -467,6 +468,11 @@ class MindGraphAgentHub:
                 diagram_type = res_dt
                 active_panel = res_panel
 
+        if diagram_type in {"mindmap", "mind_map"}:
+            live_dd = context_payload.get("diagram_data")
+            if isinstance(live_dd, dict):
+                migrate_mindmap_diagram_payload(live_dd)
+
         mut_id = _new_hub_mutation_id()
         request_id = _new_hub_request_id()
         persist_order = ["library_snapshot", "live_spec"]
@@ -478,6 +484,8 @@ class MindGraphAgentHub:
             if isinstance(lib_id, str) and lib_id.strip():
                 spec = lib_snapshot.get("spec")
                 if isinstance(spec, dict):
+                    if diagram_type in {"mindmap", "mind_map"}:
+                        migrate_mindmap_diagram_payload(spec)
                     title_raw = lib_snapshot.get("title") or context_payload.get("diagram_display_title") or "Untitled"
                     title = str(title_raw).strip() or "Untitled"
                     language = str(lib_snapshot.get("language") or "zh")

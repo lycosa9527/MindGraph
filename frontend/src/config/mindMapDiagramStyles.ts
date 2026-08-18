@@ -1,5 +1,6 @@
 import { mindMapBranchDepth } from '@/config/mindMapGeometry'
 import type { DiagramNode } from '@/types'
+import { isMindMapBranchNode } from '@/utils/mindMapLocation'
 import type { NodeShape } from '@/utils/nodeShapeStyle'
 
 export type MindMapDiagramStyleId =
@@ -108,14 +109,15 @@ export function mindMapDiagramStyleUsesLayeredBranchColors(
 }
 
 export function mindMapNodeShapeFromPreset(
-  node: Pick<DiagramNode, 'id' | 'type'>,
-  preset: MindMapDiagramStylePreset
+  node: Pick<DiagramNode, 'id' | 'type'> & { data?: Record<string, unknown> },
+  preset: MindMapDiagramStylePreset,
+  depthHint?: number
 ): NodeShape {
   if (node.type === 'topic' || node.type === 'center' || node.id === 'topic') {
     return preset.topicShape
   }
-  if (node.id.startsWith('branch-')) {
-    const depth = mindMapBranchDepth(node.id)
+  if (isMindMapBranchNode(node)) {
+    const depth = depthHint ?? mindMapBranchDepth(node.id, node)
     if (depth <= 1) return preset.branchDepth1Shape
     if (depth === 2) return preset.branchDepth2Shape
     return preset.branchDepth3PlusShape

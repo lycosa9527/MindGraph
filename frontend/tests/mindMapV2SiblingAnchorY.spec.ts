@@ -327,7 +327,7 @@ describe('v2 sibling Enter anchor Y stability', () => {
       node('branch-r-2-11', 292, { height: 34, x: 700, uid: '800v' }),
       node('branch-r-2-12', 338, { height: 34, x: 700, uid: 'aero' }),
     ].map((n) =>
-      n.id.startsWith('branch-')
+      n.type === 'branch'
         ? { ...n, style: { nodeShape: 'rectangle' as const } }
         : n
     )

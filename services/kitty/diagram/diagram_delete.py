@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional
 from fastapi import WebSocket
 
 from services.kitty.context.messaging import send_kitty_diagram_update
-from services.kitty.diagram.diagram_utils import get_diagram_prefix_map
+from services.kitty.diagram.diagram_utils import child_node_live_id
 from services.kitty.session.agent_state import kitty_agent_manager
 from services.kitty.session.ops import get_agent_session_id
 from services.kitty.session.runtime_state import logger, voice_sessions
@@ -221,20 +221,23 @@ async def voice_apply_delete_node_action(
     nodes = session_context.get("diagram_data", {}).get("children", [])
 
     if not resolved_node_id and resolved_node_index is not None:
-        diagram_type = voice_sessions[voice_session_id].get("diagram_type", "circle_map")
-        prefix_map = get_diagram_prefix_map()
-        prefix = prefix_map.get(diagram_type, "node")
-        resolved_node_id = f"{prefix}_{resolved_node_index}"
+        diagram_type = str(voice_sessions[voice_session_id].get("diagram_type") or "circle_map")
+        if isinstance(resolved_node_index, int) and 0 <= resolved_node_index < len(nodes):
+            resolved_node_id = child_node_live_id(
+                nodes[resolved_node_index],
+                resolved_node_index,
+                diagram_type,
+            )
 
     # Also try to resolve by target text if we have it
     if not resolved_node_id and target:
+        diagram_type = str(voice_sessions[voice_session_id].get("diagram_type") or "circle_map")
         for idx, node in enumerate(nodes):
             node_text = node.get("text") if isinstance(node, dict) else str(node)
             if node_text and target and (target in node_text or node_text in target):
-                diagram_type = voice_sessions[voice_session_id].get("diagram_type", "circle_map")
-                prefix_map = get_diagram_prefix_map()
-                prefix = prefix_map.get(diagram_type, "node")
-                resolved_node_id = f"{prefix}_{idx}"
+                resolved_node_id = child_node_live_id(node, idx, diagram_type)
+                if not resolved_node_id:
+                    continue
                 resolved_node_index = idx
                 break
 

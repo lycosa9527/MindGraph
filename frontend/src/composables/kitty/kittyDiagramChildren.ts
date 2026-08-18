@@ -7,6 +7,7 @@ import {
   sortMindMapTopicChildIds,
 } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
+import { isMindMapBranchId, isMindMapBranchNode } from '@/utils/mindMapLocation'
 
 export type KittyVoiceContextNode = {
   id: string
@@ -87,7 +88,7 @@ export function buildKittyChildren(
       return nodes.filter((n) => n.id.startsWith('concept-') && n.id !== 'topic').map(toChild)
     case 'mindmap':
     case 'mind_map':
-      return nodes.filter((n) => n.id.startsWith('branch-')).map(toChild)
+      return nodes.filter((n) => isMindMapBranchNode(n)).map(toChild)
     default:
       return nodes
         .filter(
@@ -165,13 +166,18 @@ function sortWheelSiblings(
   return childIds
 }
 
-function isWheelVisitableNode(dt: DiagramType, nodeId: string, rootId: string): boolean {
+function isWheelVisitableNode(
+  dt: DiagramType,
+  nodeId: string,
+  rootId: string,
+  nodes: KittyVoiceContextNode[]
+): boolean {
   if (nodeId === rootId || nodeId === 'dimension-label') {
     return false
   }
   const kind = dt === 'mind_map' ? 'mindmap' : dt
   if (kind === 'mindmap') {
-    return nodeId.startsWith('branch-')
+    return isMindMapBranchId(nodeId, nodes)
   }
   if (kind === 'tree_map') {
     return nodeId.startsWith('tree-cat-') || nodeId.startsWith('tree-leaf-')
@@ -207,7 +213,7 @@ export function buildKittyClickWheelNodes(
   const walk = (parentId: string): void => {
     const siblings = sortWheelSiblings(dt, parentId, directChildIds(parentId, connections, nodes))
     for (const id of siblings) {
-      if (visited.has(id) || !isWheelVisitableNode(dt, id, rootId)) {
+      if (visited.has(id) || !isWheelVisitableNode(dt, id, rootId, nodes)) {
         continue
       }
       const node = nodeById.get(id)

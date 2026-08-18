@@ -5,7 +5,7 @@ import type { DiagramType } from '@/types'
  * Soft-load options for any hydrate of a mind map that already has stamped
  * nodes + connections (library, snapshot recall, Kitty, import).
  * Does not set preserveMindMapMeasures — that would copy the previous diagram's
- * session width/height maps onto shared ids like `topic` / `branch-r-1-0`.
+ * session width/height maps onto recycled location ids from another diagram.
  * Estimates are seeded in loadFromSpec instead.
  */
 export function mindMapLibraryLoadOptions(

@@ -17,6 +17,7 @@ import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
 import { estimateNodeWidth, measureBranchNodeHeight } from '@/stores/specLoader/mindMap'
 import type { MindGraphNode } from '@/types'
+import { isMindMapBranchId } from '@/utils/mindMapLocation'
 
 export interface UseDiagramCanvasMindMapPaletteDropOptions {
   diagramStore: ReturnType<typeof useDiagramSession>
@@ -35,7 +36,7 @@ export interface MindMapPaletteDragPreviewState {
 
 const DEFAULT_NODE_WIDTH = 120
 const DEFAULT_NODE_HEIGHT = 50
-const GHOST_BRANCH_ID = 'branch-r-1-0'
+const GHOST_MEASURE_ID = 'palette-ghost'
 
 function resolveDropTargetNodeId(clientX: number, clientY: number): string | null {
   const el = document.elementFromPoint(clientX, clientY)
@@ -60,8 +61,8 @@ function buildPaletteDragGhost(
   const label = buildPaletteGhostLabel(items)
   const theme = getMindMapThemeForDiagram(diagramData)
   const topicNode = diagramData?.nodes?.find((n) => n.id === 'topic')
-  const width = Math.max(estimateNodeWidth(label, GHOST_BRANCH_ID), DEFAULT_NODE_WIDTH)
-  const height = Math.max(measureBranchNodeHeight(label, GHOST_BRANCH_ID), DEFAULT_NODE_HEIGHT)
+  const width = Math.max(estimateNodeWidth(label, GHOST_MEASURE_ID), DEFAULT_NODE_WIDTH)
+  const height = Math.max(measureBranchNodeHeight(label, GHOST_MEASURE_ID), DEFAULT_NODE_HEIGHT)
 
   return {
     label,
@@ -70,7 +71,7 @@ function buildPaletteDragGhost(
     backgroundColor: theme.backgroundColor,
     textColor: theme.textColor,
     borderColor: resolveMindMapTopicBorderColor(topicNode) ?? theme.borderColor,
-    fontSize: `${mindMapBranchFontSize(GHOST_BRANCH_ID)}px`,
+    fontSize: `${mindMapBranchFontSize(GHOST_MEASURE_ID)}px`,
     fontWeight: 'normal',
     borderRadius: '9999px',
     shapeClass: 'is-pill',
@@ -85,7 +86,9 @@ function resolvePaletteDropTarget(
 ): DropTarget | null {
   const targetId = resolveDropTargetNodeId(clientX, clientY)
   if (targetId === 'topic') return { type: 'topic', nodeId: 'topic' }
-  if (targetId?.startsWith('branch-')) return { type: 'child', nodeId: targetId }
+  if (targetId && isMindMapBranchId(targetId, vfNodes)) {
+    return { type: 'child', nodeId: targetId }
+  }
 
   const onCanvas = Boolean(
     document.elementFromPoint(clientX, clientY)?.closest('.diagram-canvas, .vue-flow')
@@ -244,7 +247,7 @@ export function useDiagramCanvasMindMapPaletteDrop(
       if (targetId === 'topic' && topicNode) {
         const side = resolveBranchSide(topicNode, flowPos.x)
         diagramStore.addMindMapBranch(side, text)
-      } else if (targetId?.startsWith('branch-')) {
+      } else if (targetId && isMindMapBranchId(targetId, vfNodes)) {
         diagramStore.addMindMapChild(targetId, text)
       } else if (topicNode) {
         const side = resolveBranchSide(topicNode, flowPos.x)

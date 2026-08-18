@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDiagramStore } from '@/stores/diagram'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
+import { isMindMapBranchNode, isMindMapL1, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { MINDMAP_NODE_UID_DATA_KEY } from '@/utils/mindMapNodeUid'
 
 function enableMindMapV2Canvas(): void {
@@ -68,7 +69,14 @@ describe('mindMapPreserveIncomingY policy', () => {
     const diagramStore = useDiagramStore()
     diagramStore.loadDefaultTemplate('mindmap')
 
-    const left = diagramStore.data?.nodes.find((node) => node.id.startsWith('branch-l-1-'))
+    const left = diagramStore.data?.nodes.find(
+      (node) =>
+        isMindMapL1(node.id, diagramStore.data?.connections ?? []) &&
+        mindMapNodeSide(node.id, {
+          nodes: diagramStore.data?.nodes,
+          connections: diagramStore.data?.connections,
+        }) === 'left'
+    )
     expect(left).toBeTruthy()
     if (!left) {
       throw new Error('expected left branch node')
@@ -108,7 +116,7 @@ describe('mindMapPreserveIncomingY policy', () => {
 
     const parentWithKids = diagramStore.data?.nodes.find(
       (node) =>
-        node.id.startsWith('branch-') &&
+        isMindMapBranchNode(node) &&
         (diagramStore.data?.connections ?? []).some((c) => c.source === node.id)
     )
     expect(parentWithKids).toBeTruthy()
@@ -116,7 +124,14 @@ describe('mindMapPreserveIncomingY policy', () => {
       throw new Error('expected parent with children')
     }
 
-    const l1 = diagramStore.data?.nodes.find((node) => node.id.startsWith('branch-l-1-'))
+    const l1 = diagramStore.data?.nodes.find(
+      (node) =>
+        isMindMapL1(node.id, diagramStore.data?.connections ?? []) &&
+        mindMapNodeSide(node.id, {
+          nodes: diagramStore.data?.nodes,
+          connections: diagramStore.data?.connections,
+        }) === 'left'
+    )
     expect(l1).toBeTruthy()
     if (!l1) {
       throw new Error('expected L1 branch node')

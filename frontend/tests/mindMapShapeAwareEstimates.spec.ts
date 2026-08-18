@@ -113,10 +113,10 @@ describe('mind-map shape-aware size estimates', () => {
 
     const classicTopic = classic.nodes.find((n) => n.id === 'topic')
     const bubbleTopic = bubble.nodes.find((n) => n.id === 'topic')
-    const classicL1 = classic.nodes.find((n) => n.id.startsWith('branch-r-1-'))
-    const bubbleL1 = bubble.nodes.find((n) => n.id.startsWith('branch-r-1-'))
-    const classicL2 = classic.nodes.find((n) => n.id.startsWith('branch-r-2-'))
-    const bubbleL2 = bubble.nodes.find((n) => n.id.startsWith('branch-r-2-'))
+    const classicL1 = classic.nodes.find((n) => n.text === '一级')
+    const bubbleL1 = bubble.nodes.find((n) => n.text === '一级')
+    const classicL2 = classic.nodes.find((n) => n.text === '二级')
+    const bubbleL2 = bubble.nodes.find((n) => n.text === '二级')
 
     expect(bubbleTopic?.style?.nodeShape).toBe('oval')
     expect(bubbleL1?.style?.nodeShape).toBe('oval')
@@ -144,8 +144,8 @@ describe('mind-map shape-aware size estimates', () => {
       children: [{ text: '一级', children: [{ text: '二级节点' }] }],
     })
 
-    const classicL2 = classic.nodes.find((n) => n.id.startsWith('branch-r-2-'))
-    const formalL2 = formal.nodes.find((n) => n.id.startsWith('branch-r-2-'))
+    const classicL2 = classic.nodes.find((n) => n.text === '二级节点')
+    const formalL2 = formal.nodes.find((n) => n.text === '二级节点')
     expect(formalL2?.style?.nodeShape).toBe('rectangle')
     expect(classicL2?.style?.nodeShape).toBe('underline')
     expect(formalL2?.data?.estimatedHeight as number).toBeGreaterThan(

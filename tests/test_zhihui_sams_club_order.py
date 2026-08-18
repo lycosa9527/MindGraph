@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from services.diagram.mindmap_location import is_positional_mindmap_branch_id
 from services.zhihui.lesson_planner import (
     develop_branch_first_seen_texts,
     normalize_lesson_plan_to_outline,
@@ -49,7 +50,7 @@ def test_real_sams_club_mg_l1_clockwise_order() -> None:
     outline = extract_mindmap_outline(spec, diagram_type="mindmap", fallback_title="山姆会员商店")
     assert outline.topic == "山姆会员商店"
     assert [branch.text for branch in outline.branches] == EXPECTED_CLOCKWISE
-    assert [branch.id for branch in outline.branches] == EXPECTED_IDS
+    assert all(branch.id and not is_positional_mindmap_branch_id(branch.id) for branch in outline.branches)
     # Connection order on disk is NOT the teaching order (left after right, but left top→bottom).
     conn_order = [conn["target"] for conn in spec["connections"] if conn.get("source") == "topic"]
     assert conn_order != EXPECTED_IDS

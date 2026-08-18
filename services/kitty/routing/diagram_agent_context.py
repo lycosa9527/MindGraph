@@ -10,6 +10,9 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Literal
 
+from services.diagram.mindmap_identity import identity_aliases, is_machine_node_id
+from services.diagram.mindmap_location import mindmap_location_path_key
+
 Lang = Literal["zh", "en"]
 
 _MAX_PAYLOAD_CHARS = 8000
@@ -46,7 +49,12 @@ def _node_display_text(node: Dict[str, Any]) -> str:
     return ""
 
 
-def _compact_node(node: Dict[str, Any]) -> Dict[str, str]:
+def _compact_node(
+    node: Dict[str, Any],
+    *,
+    connections: List[Dict[str, Any]] | None = None,
+    nodes: List[Dict[str, Any]] | None = None,
+) -> Dict[str, str]:
     entry: Dict[str, str] = {}
     node_id = node.get("id")
     if isinstance(node_id, str) and node_id.strip():
@@ -57,6 +65,10 @@ def _compact_node(node: Dict[str, Any]) -> Dict[str, str]:
     node_type = node.get("type")
     if isinstance(node_type, str) and node_type.strip():
         entry["type"] = node_type.strip()
+    if connections and isinstance(node_id, str) and node_id.strip():
+        path = mindmap_location_path_key(node_id.strip(), connections, nodes=nodes)
+        if path:
+            entry["path"] = path
     return entry
 
 
@@ -102,16 +114,21 @@ def _compact_children_tree(
     return out
 
 
-def _compact_nodes_from_pinia(nodes: Any, *, limit: int) -> List[Dict[str, str]]:
+def _compact_nodes_from_pinia(
+    nodes: Any,
+    *,
+    limit: int,
+    connections: Any = None,
+) -> List[Dict[str, str]]:
     if not isinstance(nodes, list):
         return []
+    typed = [item for item in nodes if isinstance(item, dict)]
+    conn_list = [item for item in connections if isinstance(item, dict)] if isinstance(connections, list) else []
     out: List[Dict[str, str]] = []
-    for item in nodes:
+    for item in typed:
         if len(out) >= limit:
             break
-        if not isinstance(item, dict):
-            continue
-        entry = _compact_node(item)
+        entry = _compact_node(item, connections=conn_list, nodes=typed)
         if entry.get("id") or entry.get("text"):
             out.append(entry)
     return out
@@ -164,7 +181,11 @@ def build_diagram_agent_payload(
         if isinstance(val, str) and val.strip():
             payload[key] = val.strip()
 
-    pinia_nodes = _compact_nodes_from_pinia(diagram_data.get("nodes"), limit=_MAX_NODES)
+    pinia_nodes = _compact_nodes_from_pinia(
+        diagram_data.get("nodes"),
+        limit=_MAX_NODES,
+        connections=diagram_data.get("connections"),
+    )
     if pinia_nodes:
         payload["nodes"] = pinia_nodes
 
@@ -312,12 +333,23 @@ def resolve_diagram_node_ref(
     """
     Resolve a canvas node to stable ``node_id`` + current label.
 
-    Matches exact id, exact label, then substring label (same as voice resolver).
+    Matches exact id, ``mindMapUid`` / leftover positional alias, exact label,
+    then substring label (same as voice resolver).
     """
-    pairs = _collect_id_text_pairs(diagram_data if isinstance(diagram_data, dict) else {})
+    data = diagram_data if isinstance(diagram_data, dict) else {}
+    nodes_raw = data.get("nodes")
+    typed = [node for node in nodes_raw if isinstance(node, dict)] if isinstance(nodes_raw, list) else []
+    aliases = identity_aliases(typed)
+    pairs = _collect_id_text_pairs(data)
 
     if isinstance(node_id, str) and node_id.strip():
         wanted = node_id.strip()
+        mapped = aliases.get(wanted)
+        if mapped:
+            for nid, lbl in pairs:
+                if nid == mapped:
+                    return {"node_id": nid, "node_label": lbl or nid}
+            return {"node_id": mapped, "node_label": mapped}
         for nid, lbl in pairs:
             if nid == wanted:
                 return {"node_id": nid, "node_label": lbl or nid}
@@ -408,8 +440,10 @@ def enrich_node_action_command(
         resolved = resolve_diagram_node_ref(diagram_data, node_id=existing_id.strip())
         if resolved:
             out["node_id"] = resolved["node_id"]
-            if resolved.get("node_label") and not out.get("target"):
-                out["target"] = resolved["node_label"]
+            label = resolved.get("node_label")
+            current_target = out.get("target")
+            if label and (not current_target or is_machine_node_id(str(current_target))):
+                out["target"] = label
         else:
             out.pop("node_id", None)
         if out.get("node_id"):
@@ -438,7 +472,9 @@ def enrich_node_action_command(
         out["node_id"] = resolved["node_id"]
         if resolved.get("node_label"):
             if action in ("auto_complete_branch", "update_node", "delete_node"):
-                out.setdefault("target", resolved["node_label"])
+                current_target = out.get("target")
+                if not current_target or is_machine_node_id(str(current_target)):
+                    out["target"] = resolved["node_label"]
             if action == "update_node" and not out.get("node_identifier"):
                 out["node_identifier"] = resolved["node_id"]
     return out

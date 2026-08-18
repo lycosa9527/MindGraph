@@ -177,7 +177,12 @@ export function useNodeStylesSlice(ctx: DiagramContext) {
       const useTopic = isTopicNode(node)
       let branchColors: Partial<NodeStyle> | null = null
       if (!useTopic && layeredBranches) {
-        branchColors = mindMapLayeredBranchColorsForNode(node.id, preset.borderColor)
+        branchColors = mindMapLayeredBranchColorsForNode(
+          node.id,
+          preset.borderColor,
+          data.value?.connections,
+          node
+        )
       }
       const centerTopic =
         layeredBranches && useTopic ? mindMapLayeredCenterTopicColors(preset) : null

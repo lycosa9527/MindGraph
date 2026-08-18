@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Save',
   'canvas.shortcutGuide.clearText': 'Clear node text',
   'canvas.shortcutGuide.learningSheetAnswers': 'Show/hide learning sheet answers',
+  'canvas.shortcutGuide.recalcLayout': 'Пересчитать макет',
   'canvas.shortcutGuide.multiSelect': 'Multi-select',
   'canvas.shortcutGuide.multiSelectDesc': 'Drag a box in pointer mode to select multiple nodes.',
   'canvas.shortcutGuide.multiSelectHint': 'Drag to box select',

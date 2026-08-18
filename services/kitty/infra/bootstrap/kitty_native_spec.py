@@ -8,6 +8,9 @@ Proprietary License
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
+
+from services.diagram.mindmap_location import is_leftover_mindmap_branch_id
 
 
 def _as_str_list(val: Any) -> List[str]:
@@ -181,19 +184,33 @@ def native_spec_to_pseudo_nodes(spec: Dict[str, Any], diagram_type: str) -> Opti
         if topic:
             nodes.append({"id": "topic", "text": topic, "type": "topic"})
 
-        def walk_branches(branches: Any, prefix: str) -> None:
+        def walk_branches(branches: Any) -> None:
             if not isinstance(branches, list):
                 return
-            for bi, br in enumerate(branches):
+            for br in branches:
                 if not isinstance(br, dict):
                     continue
                 label = str(br.get("text") or br.get("label") or "")
-                bid = f"{prefix}-b{bi}"
-                nodes.append({"id": bid, "text": label, "type": "branch"})
+                raw_id = br.get("id")
+                leftover = ""
+                if isinstance(raw_id, str) and raw_id.strip():
+                    leftover = raw_id.strip()
+                if leftover and not is_leftover_mindmap_branch_id(leftover):
+                    bid = leftover
+                    leftover = ""
+                else:
+                    bid = str(uuid4())
+                row: Dict[str, Any] = {"id": bid, "text": label, "type": "branch"}
+                if leftover:
+                    row["data"] = {"mindMapLegacyId": leftover}
+                nodes.append(row)
                 kids = br.get("children") or br.get("branches")
-                walk_branches(kids, bid)
+                walk_branches(kids)
 
-        walk_branches(spec.get("branches"), "mm")
+        top_branches = spec.get("branches")
+        if not isinstance(top_branches, list) or not top_branches:
+            top_branches = spec.get("children")
+        walk_branches(top_branches)
         return nodes
 
     return nodes

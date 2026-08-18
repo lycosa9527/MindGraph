@@ -23,13 +23,23 @@ import {
 import {
   buildMindMapOrthogonalSiblingMap,
   mindMapOrthogonalSiblingGroupKey,
+  mindMapOrthogonalSpineEdgeId,
 } from '@/utils/mindMapOrthogonalSiblings'
 import { resolveMindMapOutlineWireframeEdgeStroke } from '@/utils/mindMapOutlineWireframeStyle'
 import type { MindMapVectorNodeDraw } from '@/utils/diagramMindMapVectorNodes'
 
 type NodeMap = Map<string, MindMapVectorNodeDraw>
 
-function toFlowNode(node: MindMapVectorNodeDraw) {
+function vectorBranchSide(nodeId: string, nodes: NodeMap): 'left' | 'right' | null {
+  const fromId = mindMapBranchSide(nodeId)
+  if (fromId) return fromId
+  const target = nodes.get(nodeId)
+  const topic = nodes.get('topic')
+  if (!target || !topic) return null
+  return target.x + target.width / 2 < topic.x + topic.width / 2 ? 'left' : 'right'
+}
+
+function toFlowNode(node: MindMapVectorNodeDraw, side?: 'left' | 'right' | null) {
   const nodeType: MindGraphNodeType =
     node.id === 'topic' || node.type === 'topic' || node.type === 'center'
       ? 'topic'
@@ -43,6 +53,7 @@ function toFlowNode(node: MindMapVectorNodeDraw) {
       nodeType,
       diagramType: 'mind_map' as const,
       style: node.style,
+      ...(side ? { mindMapSide: side } : {}),
     },
   }
 }
@@ -54,6 +65,7 @@ function topicStemWidth(topic: MindMapVectorNodeDraw, topicActualWidth?: number 
 function topicSourcePoint(
   topic: MindMapVectorNodeDraw,
   targetId: string,
+  nodes: NodeMap,
   diagramStyleId: string | null | undefined,
   topicActualWidth?: number | null
 ): { x: number; y: number } {
@@ -62,7 +74,7 @@ function topicSourcePoint(
     { id: topic.id, type: 'topic', style: topic.style },
     diagramStyleId
   )
-  const side = mindMapBranchSide(targetId)
+  const side = vectorBranchSide(targetId, nodes)
   const baseX = side === 'left' ? topic.x : topic.x + w
   return resolveMindMapEdgeEndpoint(
     toFlowNode({ ...topic, width: w }),
@@ -78,11 +90,12 @@ function endpointFor(
   node: MindMapVectorNodeDraw | undefined,
   role: 'source' | 'target',
   fallback: { x: number; y: number },
-  diagramStyleId: string | null | undefined
+  diagramStyleId: string | null | undefined,
+  nodes: NodeMap
 ): { x: number; y: number } {
   if (!node) return fallback
   return resolveMindMapEdgeEndpoint(
-    toFlowNode(node),
+    toFlowNode(node, vectorBranchSide(node.id, nodes)),
     role,
     fallback,
     node.style,
@@ -135,7 +148,9 @@ function renderV2Edges(
   const visible = connections.filter(
     (c) => nodes.has(c.source) && nodes.has(c.target)
   )
-  const siblingMap = buildMindMapOrthogonalSiblingMap(visible)
+  const siblingMap = buildMindMapOrthogonalSiblingMap(visible, (id) =>
+    vectorBranchSide(id, nodes)
+  )
   const topic = nodes.get('topic')
   const chunks: string[] = []
   const drawnUnderlineBars = new Set<string>()
@@ -147,21 +162,27 @@ function renderV2Edges(
 
     const fromTopic = connection.source === 'topic'
     const from = fromTopic
-      ? topicSourcePoint(source, connection.target, diagramStyleId, topicActualWidth)
+      ? topicSourcePoint(source, connection.target, nodes, diagramStyleId, topicActualWidth)
       : endpointFor(
           source,
           'source',
           { x: source.x + source.width, y: source.y + source.height / 2 },
-          diagramStyleId
+          diagramStyleId,
+          nodes
         )
     const to = endpointFor(
       target,
       'target',
       { x: target.x, y: target.y + target.height / 2 },
-      diagramStyleId
+      diagramStyleId,
+      nodes
     )
 
-    const groupKey = mindMapOrthogonalSiblingGroupKey(connection.source, connection.target)
+    const groupKey = mindMapOrthogonalSiblingGroupKey(
+      connection.source,
+      connection.target,
+      (id) => vectorBranchSide(id, nodes)
+    )
     const siblings = siblingMap.get(groupKey) ?? [connection]
     const siblingTargets = siblings
       .map((edge) => nodes.get(edge.target))
@@ -172,15 +193,16 @@ function renderV2Edges(
         node,
         'target',
         { x: node.x, y: node.y + node.height / 2 },
-        diagramStyleId
+        diagramStyleId,
+        nodes
       )
     )
     const siblingYs = siblingPoints.map((p) => p.y)
     const siblingXs = siblingPoints.map((p) => p.x)
     const trunkX = computeMindMapSharedTrunkX(from.x, siblingXs, to.x)
 
-    const sorted = [...siblings].sort((a, b) => String(a.id).localeCompare(String(b.id)))
-    const drawSpine = siblings.length <= 1 || sorted[0]?.id === connection.id
+    const drawSpine =
+      siblings.length <= 1 || mindMapOrthogonalSpineEdgeId(siblings) === connection.id
 
     const targetShape = resolveMindMapNodeShape(
       { id: target.id, type: target.type as 'branch', style: target.style },
@@ -190,11 +212,12 @@ function renderV2Edges(
       drawSpine,
       siblingToXs: siblingXs,
       singleUnderlineChild: siblingYs.length === 1 && targetShape === 'underline',
-      singleTopicSideChild: fromTopic && siblings.length === 1,
     })
 
     const stroke = edgeStroke(topic, connection, outlineWireframe)
-    chunks.push(renderPath(d, stroke))
+    if (d) {
+      chunks.push(renderPath(d, stroke))
+    }
 
     if (targetShape === 'underline' && !drawnUnderlineBars.has(target.id)) {
       drawnUnderlineBars.add(target.id)
@@ -214,15 +237,15 @@ function renderV2Edges(
 
 function legacyHandlePositions(
   source: MindMapVectorNodeDraw,
-  target: MindMapVectorNodeDraw
+  target: MindMapVectorNodeDraw,
+  nodes: NodeMap
 ): { sourcePosition: Position; targetPosition: Position } {
-  const sourceSide = mindMapBranchSide(source.id)
-  const targetSide = mindMapBranchSide(target.id)
+  const sourceSide = vectorBranchSide(source.id, nodes)
+  const targetSide = vectorBranchSide(target.id, nodes)
   if (source.id === 'topic') {
-    const side = mindMapBranchSide(target.id)
     return {
-      sourcePosition: side === 'left' ? Position.Left : Position.Right,
-      targetPosition: side === 'left' ? Position.Right : Position.Left,
+      sourcePosition: targetSide === 'left' ? Position.Left : Position.Right,
+      targetPosition: targetSide === 'left' ? Position.Right : Position.Left,
     }
   }
   if (sourceSide === 'left' || targetSide === 'left') {
@@ -247,27 +270,29 @@ function renderLegacyEdges(
 
     const from =
       connection.source === 'topic'
-        ? topicSourcePoint(source, connection.target, diagramStyleId, source.width)
+        ? topicSourcePoint(source, connection.target, nodes, diagramStyleId, source.width)
         : endpointFor(
             source,
             'source',
             {
-              x: mindMapBranchSide(source.id) === 'left' ? source.x : source.x + source.width,
+              x: vectorBranchSide(source.id, nodes) === 'left' ? source.x : source.x + source.width,
               y: source.y + source.height / 2,
             },
-            diagramStyleId
+            diagramStyleId,
+            nodes
           )
     const to = endpointFor(
       target,
       'target',
       {
-        x: mindMapBranchSide(target.id) === 'left' ? target.x + target.width : target.x,
+        x: vectorBranchSide(target.id, nodes) === 'left' ? target.x + target.width : target.x,
         y: target.y + target.height / 2,
       },
-      diagramStyleId
+      diagramStyleId,
+      nodes
     )
 
-    const { sourcePosition, targetPosition } = legacyHandlePositions(source, target)
+    const { sourcePosition, targetPosition } = legacyHandlePositions(source, target, nodes)
     const [d] = getBezierPath({
       sourceX: from.x,
       sourceY: from.y,

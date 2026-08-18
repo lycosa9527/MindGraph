@@ -18,6 +18,7 @@ import { mindMapControlScale } from '@/config/mindMapEBlackboard'
 import { MIND_MAP_GEOMETRY, resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import { useDiagramStore } from '@/stores/diagram'
 import { isMindMapPathCollapsed, mindMapDescendantCount } from '@/stores/diagram/mindMapCollapse'
+import { mindMapNodeSide } from '@/utils/mindMapLocation'
 import { useUIStore } from '@/stores/ui'
 
 const props = defineProps<{
@@ -187,7 +188,12 @@ function handleClick(
 function lineEndX(handle: { nodeId: string; left: number; mode: 'collapse' | 'expand' }): number {
   const baseHalf = handle.mode === 'expand' ? EXPAND_PILL_HALF : COLLAPSE_HANDLE_HALF
   const half = baseHalf * controlScale.value
-  return handle.nodeId.startsWith('branch-l-') ? handle.left + half : handle.left - half
+  const isLeft =
+    mindMapNodeSide(handle.nodeId, {
+      nodes: diagramStore.data?.nodes,
+      connections: diagramStore.data?.connections,
+    }) === 'left'
+  return isLeft ? handle.left + half : handle.left - half
 }
 
 function buttonStyle(handle: { strokeColor: string }): Record<string, string> {

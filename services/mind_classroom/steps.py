@@ -4,22 +4,19 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from services.diagram.mindmap_identity import identity_aliases, remap_id_list, remap_optional_id
+
 MAX_STEPS_DEFAULT = 40
 _KINDS = frozenset({"overview", "branch", "closing"})
 
 
 def collect_spec_node_ids(spec: dict[str, Any]) -> set[str]:
-    """Collect node ids from a live or snapshot mind-map spec."""
-    ids: set[str] = set()
+    """Collect live node ids plus uid / legacy aliases from a mind-map spec."""
     nodes = spec.get("nodes")
-    if isinstance(nodes, list):
-        for node in nodes:
-            if not isinstance(node, dict):
-                continue
-            node_id = node.get("id")
-            if isinstance(node_id, str) and node_id.strip():
-                ids.add(node_id.strip())
-    return ids
+    if not isinstance(nodes, list):
+        return set()
+    typed = [node for node in nodes if isinstance(node, dict)]
+    return set(identity_aliases(typed).keys())
 
 
 def normalize_step(raw: Any, *, known_ids: set[str], index: int) -> Optional[dict[str, Any]]:
@@ -76,7 +73,10 @@ def normalize_steps(
     """Validate and cap a step list against the spec snapshot."""
     if not isinstance(raw_steps, list):
         return []
-    known = collect_spec_node_ids(spec)
+    nodes_raw = spec.get("nodes")
+    typed = [node for node in nodes_raw if isinstance(node, dict)] if isinstance(nodes_raw, list) else []
+    aliases = identity_aliases(typed)
+    known = set(aliases.keys())
     cap = max(1, int(max_steps))
     out: list[dict[str, Any]] = []
     for index, raw in enumerate(raw_steps):
@@ -84,6 +84,10 @@ def normalize_steps(
             break
         step = normalize_step(raw, known_ids=known, index=index)
         if step is not None:
+            step["focus_node_ids"] = remap_id_list(step.get("focus_node_ids"), aliases)
+            remapped_branch = remap_optional_id(step.get("branch_node_id"), aliases)
+            if remapped_branch is not None:
+                step["branch_node_id"] = remapped_branch
             out.append(step)
     return out
 

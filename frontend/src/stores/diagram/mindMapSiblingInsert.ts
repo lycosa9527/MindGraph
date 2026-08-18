@@ -10,6 +10,15 @@ import {
 import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { resolveMindMapTopicBorderColor } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode, NodeStyle } from '@/types'
+import {
+  type MindMapSideChar,
+  mindMapBranchDataFields,
+  mindMapNodeDepth,
+  mindMapNodeSide,
+  mindMapSideFromChar,
+  mindMapSideToChar,
+  parsePositionalMindMapBranchId,
+} from '@/utils/mindMapLocation'
 import { MINDMAP_NODE_UID_DATA_KEY, readMindMapNodeUid } from '@/utils/mindMapNodeUid'
 import { recordMindMapSiblingInsertFailure } from '@/utils/mindMapSiblingDebug'
 import {
@@ -64,26 +73,19 @@ export type InsertMindMapSiblingInPlaceResult = {
 }
 
 function parseBranchId(
-  nodeId: string
-): { side: 'l' | 'r'; depth: number; globalIndex: number } | null {
-  const m = /^branch-([lr])-(\d+)-(\d+)$/.exec(nodeId)
-  if (!m) return null
+  nodeId: string,
+  nodes: DiagramNode[],
+  connections: Connection[]
+): { side: MindMapSideChar; depth: number } | null {
+  const node = nodes.find((item) => item.id === nodeId)
+  const side = mindMapNodeSide(nodeId, { node, nodes, connections })
+  const positional = parsePositionalMindMapBranchId(nodeId)
+  if (!side && !positional) return null
+  const depth = mindMapNodeDepth(nodeId, { node, nodes, connections })
   return {
-    side: m[1] as 'l' | 'r',
-    depth: parseInt(m[2], 10),
-    globalIndex: parseInt(m[3], 10),
+    side: side ? mindMapSideToChar(side) : positional?.side ?? 'r',
+    depth,
   }
-}
-
-function nextFreeGlobalIndex(nodes: DiagramNode[], side: 'l' | 'r'): number {
-  const prefix = `branch-${side}-`
-  let max = -1
-  for (const node of nodes) {
-    if (!node.id.startsWith(prefix)) continue
-    const parsed = parseBranchId(node.id)
-    if (parsed && parsed.globalIndex > max) max = parsed.globalIndex
-  }
-  return max + 1
 }
 
 function nodeLayoutHeight(node: DiagramNode, heights?: Record<string, number>): number {
@@ -158,22 +160,27 @@ function estimateNewBranchDims(
 function siblingIdsForInsert(
   connections: Connection[],
   parentId: string,
-  side: 'l' | 'r' | null
+  side: MindMapSideChar | null,
+  nodes: DiagramNode[]
 ): string[] {
   const targets = connections.filter((c) => c.source === parentId).map((c) => c.target)
   if (parentId !== 'topic' || side == null) return targets
-  const prefix = `branch-${side}-`
-  return targets.filter((id) => id.startsWith(prefix))
+  const wanted = mindMapSideFromChar(side)
+  return targets.filter((id) => mindMapNodeSide(id, { nodes, connections }) === wanted)
 }
 
-function resolveSideHint(options: InsertMindMapSiblingInPlaceOptions): 'l' | 'r' | null {
+function resolveSideHint(
+  options: InsertMindMapSiblingInPlaceOptions,
+  nodes: DiagramNode[],
+  connections: Connection[]
+): MindMapSideChar | null {
   for (const id of [options.anchorNodeId, options.afterNodeId]) {
     if (!id) continue
-    const parsed = parseBranchId(id)
+    const parsed = parseBranchId(id, nodes, connections)
     if (parsed) return parsed.side
   }
   if (options.parentId && options.parentId !== 'topic') {
-    const parsed = parseBranchId(options.parentId)
+    const parsed = parseBranchId(options.parentId, nodes, connections)
     if (parsed) return parsed.side
   }
   // Bare topic insert_index: default right (Kitty side default).
@@ -182,6 +189,7 @@ function resolveSideHint(options: InsertMindMapSiblingInPlaceOptions): 'l' | 'r'
 }
 
 function resolveInsertContext(
+  nodes: DiagramNode[],
   connections: Connection[],
   options: InsertMindMapSiblingInPlaceOptions
 ): {
@@ -189,10 +197,10 @@ function resolveInsertContext(
   /** Index among {@link siblingIdsForInsert} (same-side for topic). */
   insertIndex: number
   anchorNodeId: string | null
-  side: 'l' | 'r' | null
+  side: MindMapSideChar | null
 } | null {
   const position = options.position ?? 'below'
-  const side = resolveSideHint(options)
+  const side = resolveSideHint(options, nodes, connections)
 
   if (typeof options.insertIndex === 'number' && options.insertIndex >= 0) {
     const parentId =
@@ -212,7 +220,7 @@ function resolveInsertContext(
       })
       return null
     }
-    const siblings = siblingIdsForInsert(connections, parentId, side)
+    const siblings = siblingIdsForInsert(connections, parentId, side, nodes)
     const insertIndex = Math.min(options.insertIndex, siblings.length)
     const anchorNodeId =
       options.anchorNodeId ??
@@ -231,8 +239,8 @@ function resolveInsertContext(
       })
       return null
     }
-    const afterSide = parseBranchId(options.afterNodeId)?.side ?? side
-    const siblings = siblingIdsForInsert(connections, parentId, afterSide)
+    const afterSide = parseBranchId(options.afterNodeId, nodes, connections)?.side ?? side
+    const siblings = siblingIdsForInsert(connections, parentId, afterSide, nodes)
     const afterIdx = siblings.indexOf(options.afterNodeId)
     if (afterIdx < 0) {
       recordMindMapSiblingInsertFailure('after_node_not_in_siblings', {
@@ -267,8 +275,8 @@ function resolveInsertContext(
     })
     return null
   }
-  const anchorSide = parseBranchId(anchorNodeId)?.side ?? side
-  const siblings = siblingIdsForInsert(connections, parentId, anchorSide)
+  const anchorSide = parseBranchId(anchorNodeId, nodes, connections)?.side ?? side
+  const siblings = siblingIdsForInsert(connections, parentId, anchorSide, nodes)
   const anchorIdx = siblings.indexOf(anchorNodeId)
   if (anchorIdx < 0) {
     recordMindMapSiblingInsertFailure('anchor_not_in_side_siblings', {
@@ -311,24 +319,34 @@ function buildNewConnection(
   }
 }
 
+function isTopicChildOnSide(
+  connection: Connection,
+  side: MindMapSideChar,
+  nodes: DiagramNode[],
+  connections: Connection[]
+): boolean {
+  if (connection.source !== 'topic') return false
+  return mindMapNodeSide(connection.target, { nodes, connections }) === mindMapSideFromChar(side)
+}
+
 function spliceParentConnections(
   connections: Connection[],
   parentId: string,
   newConn: Connection,
   insertIndex: number,
-  side: 'l' | 'r' | null
+  side: MindMapSideChar | null,
+  nodes: DiagramNode[]
 ): Connection[] {
   // Topic: splice within one side only so left/right stacks stay independent.
   if (parentId === 'topic' && side != null) {
-    const prefix = `branch-${side}-`
-    const sideConns = connections.filter((c) => c.source === 'topic' && c.target.startsWith(prefix))
+    const sideConns = connections.filter((c) => isTopicChildOnSide(c, side, nodes, connections))
     const nextSide = sideConns.slice()
     nextSide.splice(insertIndex, 0, newConn)
 
     const result: Connection[] = []
     let sideEmitted = false
     for (const conn of connections) {
-      if (conn.source === 'topic' && conn.target.startsWith(prefix)) {
+      if (isTopicChildOnSide(conn, side, nodes, connections)) {
         if (!sideEmitted) {
           result.push(...nextSide)
           sideEmitted = true
@@ -419,7 +437,8 @@ function applyInPlaceYLayout(
   const siblings = siblingIdsForInsert(
     connections,
     options.parentId,
-    options.isTopLevel ? options.side : null
+    options.isTopLevel ? options.side : null,
+    nodes
   )
   const newIdx = siblings.indexOf(options.newNodeId)
   if (newIdx < 0) return nodes
@@ -478,11 +497,11 @@ export function insertMindMapSiblingInPlace(
   connections: Connection[],
   options: InsertMindMapSiblingInPlaceOptions
 ): InsertMindMapSiblingInPlaceResult | null {
-  const ctx = resolveInsertContext(connections, options)
+  const ctx = resolveInsertContext(nodes, connections, options)
   if (!ctx) return null
 
   const { parentId, insertIndex, anchorNodeId } = ctx
-  const existingSiblings = siblingIdsForInsert(connections, parentId, ctx.side)
+  const existingSiblings = siblingIdsForInsert(connections, parentId, ctx.side, nodes)
   const layoutSiblingId =
     (anchorNodeId && existingSiblings.includes(anchorNodeId) ? anchorNodeId : null) ??
     options.afterNodeId ??
@@ -506,11 +525,13 @@ export function insertMindMapSiblingInPlace(
   let side: 'l' | 'r'
   let depth: number
   if (parentId === 'topic') {
-    const parsedSibling = layoutSiblingId ? parseBranchId(layoutSiblingId) : null
+    const parsedSibling = layoutSiblingId
+      ? parseBranchId(layoutSiblingId, nodes, connections)
+      : null
     side = parsedSibling?.side ?? ctx.side ?? 'r'
     depth = 1
   } else {
-    const parsedParent = parseBranchId(parentId)
+    const parsedParent = parseBranchId(parentId, nodes, connections)
     if (!parsedParent) {
       return recordMindMapSiblingInsertFailure('parent_id_unparsed', {
         parentId,
@@ -521,15 +542,14 @@ export function insertMindMapSiblingInPlace(
     depth = parsedParent.depth + 1
   }
 
-  const freeIdx = nextFreeGlobalIndex(nodes, side)
-  const newNodeId = `branch-${side}-${depth}-${freeIdx}`
+  const newUid = safeRandomUUID()
+  const newNodeId = newUid
   if (nodes.some((n) => n.id === newNodeId)) {
     return recordMindMapSiblingInsertFailure('id_collision', {
       newNodeId,
-      freeIdx,
       side,
       depth,
-      existingIds: nodes.map((n) => n.id).filter((id) => id.startsWith(`branch-${side}-`)),
+      existingIds: nodes.map((n) => n.id),
     })
   }
 
@@ -542,7 +562,6 @@ export function insertMindMapSiblingInPlace(
 
   const topic = nodes.find((n) => n.id === 'topic')
   const strokeColor = resolveMindMapTopicBorderColor(topic)
-  const newUid = safeRandomUUID()
 
   let x = layoutSibling?.position?.x ?? topic?.position?.x ?? 0
   if (layoutSibling?.position && side === 'l') {
@@ -561,7 +580,14 @@ export function insertMindMapSiblingInPlace(
       : insertIndex
 
   const newConn = buildNewConnection(parentId, newNodeId, side, strokeColor)
-  const nextConnections = spliceParentConnections(connections, parentId, newConn, insertIndex, side)
+  const nextConnections = spliceParentConnections(
+    connections,
+    parentId,
+    newConn,
+    insertIndex,
+    side,
+    nodes
+  )
 
   const newNodeDraft: DiagramNode = {
     id: newNodeId,
@@ -576,6 +602,7 @@ export function insertMindMapSiblingInPlace(
       estimatedWidth,
       estimatedHeight,
       [MINDMAP_NODE_UID_DATA_KEY]: newUid,
+      ...mindMapBranchDataFields(mindMapSideFromChar(side), depth),
     },
   }
   const siblingStyle = resolveMindMapLiveSiblingStyle(

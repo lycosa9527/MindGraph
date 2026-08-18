@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from services.diagram.mindmap_identity import as_live_mindmap_node_id, identity_aliases
 from services.kitty.session.runtime_state import logger
 
 NODE_TARGET_ACTIONS = frozenset(
@@ -131,6 +132,50 @@ def _prefix_node_id(diagram_type: str, index: int) -> str:
     return f"{prefix}_{index}"
 
 
+def is_mindmap_diagram_type(diagram_type: str | None) -> bool:
+    """True when the session is a mind map (UUID identity, never invent branch_N)."""
+    return diagram_type in {"mindmap", "mind_map"}
+
+
+def child_node_live_id(node: object, index: int, diagram_type: str) -> str | None:
+    """Prefer the child's live canvas id. Never invent or echo leftover mind-map ids."""
+    if isinstance(node, dict):
+        raw = node.get("id")
+        if isinstance(raw, str) and raw.strip():
+            live = raw.strip()
+            if is_mindmap_diagram_type(diagram_type):
+                return as_live_mindmap_node_id(live)
+            return live
+    if is_mindmap_diagram_type(diagram_type):
+        return None
+    return _prefix_node_id(diagram_type, index)
+
+
+def session_context_child_record(text: str, index: int, diagram_type: str) -> dict[str, Any]:
+    """Voice ``children[]`` snapshot. Mind maps omit invented prefix ids."""
+    record: dict[str, Any] = {"index": index, "text": text}
+    if not is_mindmap_diagram_type(diagram_type):
+        record["id"] = _prefix_node_id(diagram_type, index)
+    return record
+
+
+def typed_node_id_by_unique_label(
+    node: object,
+    typed_nodes: list[dict[str, Any]],
+) -> str | None:
+    """Resolve a voice child to a canvas id when the label is unique."""
+    text = _voice_node_text(node)
+    if not text:
+        return None
+    hits = [item for item in typed_nodes if _voice_node_text(item) == text]
+    if len(hits) != 1:
+        return None
+    raw = hits[0].get("id")
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return None
+
+
 def resolve_voice_node_reference(
     session_context: dict[str, object],
     diagram_type: str,
@@ -158,15 +203,31 @@ def resolve_voice_node_reference(
     if isinstance(selected_raw, list):
         selected = [str(item) for item in selected_raw if isinstance(item, str) and item.strip()]
 
+    nodes_raw = diagram_data.get("nodes")
+    typed_nodes = [item for item in nodes_raw if isinstance(item, dict)] if isinstance(nodes_raw, list) else []
+    aliases = identity_aliases(typed_nodes) if typed_nodes else {}
+
     if isinstance(node_id, str) and node_id.strip():
         resolved_id = node_id.strip()
+        if is_mindmap_diagram_type(diagram_type):
+            live = as_live_mindmap_node_id(resolved_id, aliases)
+            if live is None:
+                return None
+            resolved_id = live
+        else:
+            resolved_id = aliases.get(resolved_id, resolved_id)
         resolved_index: int | None = node_index
         resolved_label = ""
         for idx, node in enumerate(children):
-            if isinstance(node, dict) and node.get("id") == resolved_id:
+            if isinstance(node, dict) and str(node.get("id") or "") == resolved_id:
                 resolved_index = idx
                 resolved_label = _voice_node_text(node)
                 break
+        if not resolved_label:
+            for node in typed_nodes:
+                if str(node.get("id") or "") == resolved_id:
+                    resolved_label = _voice_node_text(node)
+                    break
         return {
             "node_id": resolved_id,
             "node_index": resolved_index,
@@ -176,7 +237,11 @@ def resolve_voice_node_reference(
     if isinstance(node_index, int):
         if 0 <= node_index < len(children):
             node = children[node_index]
-            resolved_id = node.get("id") if isinstance(node, dict) else _prefix_node_id(diagram_type, node_index)
+            resolved_id = child_node_live_id(node, node_index, diagram_type)
+            if not resolved_id:
+                resolved_id = typed_node_id_by_unique_label(node, typed_nodes)
+            if not resolved_id:
+                return None
             return {
                 "node_id": str(resolved_id),
                 "node_index": node_index,
@@ -189,7 +254,11 @@ def resolve_voice_node_reference(
         for idx, node in enumerate(children):
             text = _voice_node_text(node)
             if text and (ident in text or text in ident):
-                resolved_id = node.get("id") if isinstance(node, dict) else _prefix_node_id(diagram_type, idx)
+                resolved_id = child_node_live_id(node, idx, diagram_type)
+                if not resolved_id:
+                    resolved_id = typed_node_id_by_unique_label(node, typed_nodes)
+                if not resolved_id:
+                    continue
                 return {
                     "node_id": str(resolved_id),
                     "node_index": idx,
@@ -198,8 +267,15 @@ def resolve_voice_node_reference(
 
     if prefer_selected and selected:
         sel_id = selected[0]
+        if is_mindmap_diagram_type(diagram_type):
+            live = as_live_mindmap_node_id(sel_id, aliases)
+            if live is None:
+                return None
+            sel_id = live
+        else:
+            sel_id = aliases.get(sel_id, sel_id)
         for idx, node in enumerate(children):
-            if isinstance(node, dict) and node.get("id") == sel_id:
+            if isinstance(node, dict) and str(node.get("id") or "") == sel_id:
                 return {
                     "node_id": sel_id,
                     "node_index": idx,

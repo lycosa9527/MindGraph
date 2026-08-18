@@ -37,6 +37,7 @@ from services.online_collab.redis.online_collab_redis_keys import (
     participants_key,
     room_idle_kick_lock_key,
 )
+from services.diagram.mindmap_identity import identity_aliases
 from services.online_collab.spec.online_collab_live_spec import (
     apply_live_update,
     merge_granular_into_spec,
@@ -186,14 +187,17 @@ class TestMergeGranularIntoSpec:
                 }
             ],
         )
+        aliases = identity_aliases(spec["nodes"])
+        live_to_legacy = {live: leftover for leftover, live in aliases.items() if leftover != live}
         targets = [c["target"] for c in spec["connections"] if c["source"] == "topic"]
-        assert targets == [
+        assert [live_to_legacy.get(target, target) for target in targets] == [
             "branch-r-1-0",
             "branch-r-1-2",
             "branch-r-1-1",
             "branch-l-1-0",
         ]
-        assert "insert_after_target" not in spec["connections"][1]
+        new_edge = next(conn for conn in spec["connections"] if conn["id"] == "e-new")
+        assert "insert_after_target" not in new_edge
 
 
 # ---------------------------------------------------------------------------

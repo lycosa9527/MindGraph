@@ -5,12 +5,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDiagramStore } from '@/stores/diagram'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
+import { isMindMapBranchNode, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { MINDMAP_NODE_UID_DATA_KEY } from '@/utils/mindMapNodeUid'
 
-function nodeSide(nodeId: string): 'left' | 'right' | 'topic' {
+function nodeSide(
+  nodeId: string,
+  nodes: { id: string; type?: string; data?: Record<string, unknown> }[],
+  connections: { source: string; target: string; sourceHandle?: string }[]
+): 'left' | 'right' | 'topic' {
   if (nodeId === 'topic') return 'topic'
-  if (nodeId.startsWith('branch-l-')) return 'left'
-  if (nodeId.startsWith('branch-r-')) return 'right'
+  const side = mindMapNodeSide(nodeId, { nodes, connections })
+  if (side === 'left' || side === 'right') return side
   throw new Error(`unexpected node id: ${nodeId}`)
 }
 
@@ -66,8 +71,22 @@ describe('mind map sibling selection anchor', () => {
     const diagramStore = useDiagramStore()
     diagramStore.loadDefaultTemplate('mindmap')
 
-    const left = diagramStore.data?.nodes.find((node) => node.id.startsWith('branch-l-'))
-    const right = diagramStore.data?.nodes.find((node) => node.id.startsWith('branch-r-'))
+    const left = diagramStore.data?.nodes.find(
+      (node) =>
+        isMindMapBranchNode(node) &&
+        mindMapNodeSide(node.id, {
+          nodes: diagramStore.data?.nodes,
+          connections: diagramStore.data?.connections,
+        }) === 'left'
+    )
+    const right = diagramStore.data?.nodes.find(
+      (node) =>
+        isMindMapBranchNode(node) &&
+        mindMapNodeSide(node.id, {
+          nodes: diagramStore.data?.nodes,
+          connections: diagramStore.data?.connections,
+        }) === 'right'
+    )
     if (!left || !right) {
       throw new Error('expected left and right branches in default mind map template')
     }
@@ -77,7 +96,7 @@ describe('mind map sibling selection anchor', () => {
   function newestSiblingNodeId(beforeIds: Set<string>): string {
     const diagramStore = useDiagramStore()
     const added = diagramStore.data?.nodes.find(
-      (node) => node.id.startsWith('branch-') && !beforeIds.has(node.id)
+      (node) => isMindMapBranchNode(node) && !beforeIds.has(node.id)
     )
     if (!added) {
       throw new Error('expected a newly added branch node')
@@ -94,7 +113,9 @@ describe('mind map sibling selection anchor', () => {
     expect(diagramStore.addMindMapSibling(rightId, 'Right sibling')).toBe(true)
 
     const newId = newestSiblingNodeId(beforeIds)
-    expect(nodeSide(newId)).toBe('right')
+    expect(
+      nodeSide(newId, diagramStore.data?.nodes ?? [], diagramStore.data?.connections ?? [])
+    ).toBe('right')
   })
 
   it('uses stale left selection when anchor id is not updated (regression)', () => {
@@ -106,7 +127,9 @@ describe('mind map sibling selection anchor', () => {
     expect(diagramStore.addMindMapSibling(leftId, 'Left sibling')).toBe(true)
 
     const newId = newestSiblingNodeId(beforeIds)
-    expect(nodeSide(newId)).toBe('left')
+    expect(
+      nodeSide(newId, diagramStore.data?.nodes ?? [], diagramStore.data?.connections ?? [])
+    ).toBe('left')
     expect(newId).not.toBe(rightId)
   })
 
@@ -124,7 +147,7 @@ describe('mind map sibling selection anchor', () => {
     }
 
     const beforeIds = (diagramStore.data?.nodes ?? [])
-      .filter((node) => node.id.startsWith('branch-'))
+      .filter((node) => isMindMapBranchNode(node))
       .map((node) => node.id)
       .sort()
     diagramStore.selectNodes(leftId)
@@ -150,13 +173,20 @@ describe('mind map sibling selection anchor', () => {
     expect(created.position?.y).toBeGreaterThan(remappedAnchor?.position?.y ?? Number.NaN)
 
     const afterExisting = (diagramStore.data?.nodes ?? [])
-      .filter((node) => node.id.startsWith('branch-') && node.id !== created.id)
+      .filter((node) => isMindMapBranchNode(node) && node.id !== created.id)
       .map((node) => node.id)
       .sort()
     expect(afterExisting).toEqual(beforeIds)
 
     const topicChildTargets = (diagramStore.data?.connections ?? [])
-      .filter((c) => c.source === 'topic' && c.target.startsWith('branch-l-'))
+      .filter(
+        (c) =>
+          c.source === 'topic' &&
+          mindMapNodeSide(c.target, {
+            nodes: diagramStore.data?.nodes,
+            connections: diagramStore.data?.connections,
+          }) === 'left'
+      )
       .map((c) => c.target)
     const leftIdx = topicChildTargets.indexOf(leftId)
     expect(topicChildTargets[leftIdx + 1]).toBe(created.id)

@@ -31,32 +31,28 @@ The output must be valid JSON, strictly following this structure:
   "topic": "Central Topic",
   "children": [
     {
-      "id": "branch_1",
       "text": "Branch 1 Label",
       "children": [
-        {"id": "sub_1_1", "text": "Sub-item 1.1"},
-        {"id": "sub_1_2", "text": "Sub-item 1.2"}
+        {"text": "Sub-item 1.1"},
+        {"text": "Sub-item 1.2"}
       ]
     },
     {
-      "id": "branch_2",
       "text": "Branch 2 Label",
       "children": [
-        {"id": "sub_2_1", "text": "Sub-item 2.1"}
+        {"text": "Sub-item 2.1"}
       ]
     },
     {
-      "id": "branch_3",
       "text": "Branch 3 Label",
       "children": [
-        {"id": "sub_3_1", "text": "Sub-item 3.1"}
+        {"text": "Sub-item 3.1"}
       ]
     },
     {
-      "id": "branch_4",
       "text": "Branch 4 Label",
       "children": [
-        {"id": "sub_4_1", "text": "Sub-item 4.1"}
+        {"text": "Sub-item 4.1"}
       ]
     }
   ]
@@ -76,7 +72,7 @@ CRITICAL Requirements:
 - Central topic should be clear, specific, and have educational value
 - Main branches MUST strictly follow 4, 6, or 8 branches (even number rule)
 - Prioritize using mature educational theory frameworks to organize branch structure
-- Each node must have both id and text fields
+- Each node needs a text field. Do not invent node ids — the canvas assigns stable UUIDs
 - Branches should follow MECE principle (Mutually Exclusive, Collectively Exhaustive)
 - Sub-items should have hierarchy and instructional guidance significance
 - NEVER put leaf concepts as direct children of topic — every main branch MUST have nested children[]
@@ -94,32 +90,28 @@ MIND_MAP_AGENT_GENERATION_ZH = """你是一名专为提升教师思维教学水�
   "topic": "中心主题",
   "children": [
     {
-      "id": "fen_zhi_1",
       "text": "分支1标签",
       "children": [
-        {"id": "zi_xiang_1_1", "text": "子项1.1"},
-        {"id": "zi_xiang_1_2", "text": "子项1.2"}
+        {"text": "子项1.1"},
+        {"text": "子项1.2"}
       ]
     },
     {
-      "id": "fen_zhi_2",
       "text": "分支2标签",
       "children": [
-        {"id": "zi_xiang_2_1", "text": "子项2.1"}
+        {"text": "子项2.1"}
       ]
     },
     {
-      "id": "fen_zhi_3",
       "text": "分支3标签",
       "children": [
-        {"id": "zi_xiang_3_1", "text": "子项3.1"}
+        {"text": "子项3.1"}
       ]
     },
     {
-      "id": "fen_zhi_4",
       "text": "分支4标签",
       "children": [
-        {"id": "zi_xiang_4_1", "text": "子项4.1"}
+        {"text": "子项4.1"}
       ]
     }
   ]
@@ -139,7 +131,7 @@ MIND_MAP_AGENT_GENERATION_ZH = """你是一名专为提升教师思维教学水�
 - 中心主题应该清晰明确且具有教学价值
 - 主分支必须严格遵循4个、6个或8个（偶数规则）
 - 优先运用成熟的教学理论框架来组织分支结构
-- 每个节点必须有id和text字段
+- 每个节点只需要 text 字段。不要自造节点 id，画布会分配稳定 UUID
 - 分支应该遵循MECE原则（相互独立，完全穷尽）
 - 子项应该具有层次性和教学指导意义
 - 禁止把叶子概念直接挂在中心主题下——每个主分支必须包含嵌套的 children[]
@@ -158,11 +150,10 @@ The output must be valid JSON, strictly following this structure:
   "topic": "Central Topic",
   "children": [
     {
-      "id": "branch_1",
       "text": "Branch 1 Label",
       "children": [
-        {"id": "sub_1_1", "text": "Sub-item 1.1"},
-        {"id": "sub_1_2", "text": "Sub-item 1.2"}
+        {"text": "Sub-item 1.1"},
+        {"text": "Sub-item 1.2"}
       ]
     }
   ]
@@ -174,7 +165,7 @@ Rules:
   H1-equivalent from the content; if unclear, derive one concise educational label (do NOT paste the entire URL).
 - Exactly **4, 6, or 8** main branches (even count). Choose based on breadth of the substantive content. Use MECE where possible.
 - Apply pedagogy: you may use frameworks such as Bloom's Taxonomy, 4A, or inquiry cycles to organize branches when they fit the material.
-- Each node needs **id** and **text**. Sub-items should support instruction.
+- Each node needs **text** only (no invented ids). Sub-items should support instruction.
 - Ignore site chrome (menus, cookie banners, unrelated footers) when assigning branches.
 
 The user message will include optional Page URL and Page title, then the extracted content (plain text or markdown)."""
@@ -188,10 +179,9 @@ MIND_MAP_WEB_CONTENT_GENERATION_ZH = """你是面向教师的高级思维导图�
   "topic": "中心主题",
   "children": [
     {
-      "id": "fen_zhi_1",
       "text": "分支1标签",
       "children": [
-        {"id": "zi_xiang_1_1", "text": "子项1.1"}
+        {"text": "子项1.1"}
       ]
     }
   ]
@@ -202,7 +192,7 @@ MIND_MAP_WEB_CONTENT_GENERATION_ZH = """你是面向教师的高级思维导图�
 - **topic**：用页面核心主题的简短标签；优先使用提供的页面标题或正文中的主标题；若不清，则概括一个简洁的教学主题（不要把整段 URL 当作 topic）。
 - 主分支必须为 **4、6 或 8** 个（偶数）。根据实质内容广度选择。尽量 MECE。
 - 可自然运用布鲁姆分类、4A、探究循环等框架组织分支。
-- 每个节点需 **id** 与 **text**，子项应具有教学指导意义。
+- 每个节点只需 **text**（不要自造 id），子项应具有教学指导意义。
 - 分配分支时忽略网站导航、Cookie 条、与主题无关的页脚等。
 
 用户消息将包含可选的页面 URL、页面标题，以及提取的正文（纯文本或 Markdown）。"""
@@ -217,11 +207,10 @@ The output must be valid JSON, strictly following this structure:
   "topic": "Central Topic",
   "children": [
     {
-      "id": "branch_1",
       "text": "Branch 1 Label",
       "children": [
-        {"id": "sub_1_1", "text": "Sub-item 1.1"},
-        {"id": "sub_1_2", "text": "Sub-item 1.2"}
+        {"text": "Sub-item 1.1"},
+        {"text": "Sub-item 1.2"}
       ]
     }
   ]
@@ -234,7 +223,7 @@ Rules:
   chapters, major sections, or themes as main branches. If structure is weak, invent MECE teaching branches.
 - Cover the **whole** document — do not overweight the opening pages; balance early, middle, and late sections.
 - Sub-items should be concise instructional phrases (key ideas, not long quotes).
-- Each node needs **id** and **text**.
+- Each node needs **text** only (no invented ids).
 - Ignore extraction noise (repeated headers/footers, page numbers) when assigning branches.
 
 The user message will include an optional document title, then the extracted content (plain text or markdown)."""
@@ -248,10 +237,9 @@ MIND_MAP_DOCUMENT_CONTENT_GENERATION_ZH = """你是面向教师的高级思维�
   "topic": "中心主题",
   "children": [
     {
-      "id": "fen_zhi_1",
       "text": "分支1标签",
       "children": [
-        {"id": "zi_xiang_1_1", "text": "子项1.1"}
+        {"text": "子项1.1"}
       ]
     }
   ]
@@ -263,7 +251,7 @@ MIND_MAP_DOCUMENT_CONTENT_GENERATION_ZH = """你是面向教师的高级思维�
 - 主分支必须为 **4、6 或 8** 个（偶数）。结构清晰时优先按章节、大节或主题作主分支；结构不清时再概括为 MECE 教学分支。
 - 覆盖**全文**——不要偏重开头，兼顾前、中、后部分的要点。
 - 子项用简洁、有教学价值的短语（关键观点，不要长段原文）。
-- 每个节点需 **id** 与 **text**。
+- 每个节点只需 **text**（不要自造 id）。
 - 分配分支时忽略页眉页脚、页码等提取噪音。
 
 用户消息将包含可选的文档标题，以及提取的正文（纯文本或 Markdown）。"""
@@ -277,7 +265,7 @@ Your tasks:
 1. Set "topic" to the extracted central subject (NOT the full instruction sentence)
 2. Create exactly one main branch per user-specified label — use each label verbatim as branch "text"
 3. Generate 2-4 meaningful sub-items under each main branch
-4. Each node needs "id" and "text" fields
+4. Each node needs a "text" field. Do not invent node ids
 
 RULES:
 - Main branch count MUST equal the number of user-specified labels
@@ -289,8 +277,8 @@ Example structure:
 {{
   "topic": "Central Topic",
   "children": [
-    {{"id": "branch_1", "text": "User Label 1", "children": [{{"id": "sub_1_1", "text": "Sub 1.1"}}]}},
-    {{"id": "branch_2", "text": "User Label 2", "children": [{{"id": "sub_2_1", "text": "Sub 2.1"}}]}}
+    {{"text": "User Label 1", "children": [{{"text": "Sub 1.1"}}]}},
+    {{"text": "User Label 2", "children": [{{"text": "Sub 2.1"}}]}}
   ]
 }}"""
 
@@ -303,7 +291,7 @@ MIND_MAP_FIXED_CHILDREN_ZH = """你正在完成一个思维导图，用户已经
 1. "topic" 设为提取的中心主题（不是完整指令句）
 2. 每个用户指定的标签对应一个主分支——标签原文作为 branch 的 text
 3. 每个主分支下生成 2-4 个有意义的子项
-4. 每个节点需要 id 和 text 字段
+4. 每个节点只需要 text 字段，不要自造节点 id
 
 规则：
 - 主分支数量必须等于用户指定的标签数量
@@ -321,8 +309,8 @@ Output ONLY valid JSON with this structure:
 {
   "topic": "<node being expanded — copy verbatim from user message>",
   "children": [
-    {"id": "sub_1", "text": "Child 1"},
-    {"id": "sub_2", "text": "Child 2"}
+    {"text": "Child 1"},
+    {"text": "Child 2"}
   ]
 }
 
@@ -330,7 +318,7 @@ Rules:
 - Output ONLY valid JSON — no explanations, no markdown fences
 - "topic" MUST be exactly the node label being expanded (not the central topic)
 - Generate 4–6 DIRECT children under "children" only (one level — no nested grandchildren)
-- Each child needs "id" and "text" only — do NOT include "children" on child nodes
+- Each child needs "text" only — do NOT include "children" on child nodes, and do not invent ids
 - Children must relate to the expanded node AND stay coherent with the central topic and reference branches
 - Do NOT duplicate labels already listed as existing children
 - Use concise educational phrasing (nouns or short phrases)"""
@@ -345,8 +333,8 @@ MIND_MAP_BRANCH_EXPAND_ZH = """你正在为一个已有思维导图的某个节�
 {
   "topic": "<正在扩展的节点 — 与用户消息中的节点标签完全一致>",
   "children": [
-    {"id": "zi_1", "text": "子节点1"},
-    {"id": "zi_2", "text": "子节点2"}
+    {"text": "子节点1"},
+    {"text": "子节点2"}
   ]
 }
 
@@ -354,7 +342,7 @@ MIND_MAP_BRANCH_EXPAND_ZH = """你正在为一个已有思维导图的某个节�
 - 只输出有效 JSON — 不要解释，不要用代码块包裹
 - "topic" 必须是正在扩展的节点标签（不是中心主题）
 - 在 "children" 下生成 4–6 个直接子节点（仅一层，不要嵌套更深层级）
-- 每个子节点只需要 "id" 和 "text" — 子节点上不要包含 "children"
+- 每个子节点只需要 "text" — 子节点上不要包含 "children"，不要自造 id
 - 子节点须与扩展节点相关，并与中心主题及参考分支保持整体一致
 - 不要重复用户已列出的已有子节点
 - 使用简洁、有教学价值的短语（名词或名词短语）"""
@@ -376,10 +364,9 @@ Output ONLY valid JSON with this exact shape:
     "topic": "Central Topic",
     "children": [
       {
-        "id": "branch_1",
         "text": "Branch label",
         "children": [
-          {"id": "sub_1_1", "text": "Child label"}
+          {"text": "Child label"}
         ]
       }
     ]
@@ -391,7 +378,7 @@ Rules:
 - If it is NOT a mind/concept map (plain document, whiteboard text, photo of people, slide with bullets only, etc.): set "is_mindmap": false, "spec": null, and put a short reason. confidence should reflect certainty.
 - If it IS a mind/concept map: set "is_mindmap": true and fill "spec" with the reconstructed tree. confidence >= 0.55 only when hierarchy is clearly readable.
 - Prefer exact readable labels; if a label is illegible, use a short placeholder like "?" rather than guessing long text.
-- Each node needs "id" and "text". Preserve nesting depth seen in the drawing.
+- Each node needs "text" only (no invented ids). Preserve nesting depth seen in the drawing.
 - Main branch count may be any positive integer (do NOT force 4/6/8). Follow the drawing."""
 
 MIND_MAP_VISION_HANDDRAWN_ZH = """你是一个从照片或扫描件重建思维导图结构的视觉系统。
@@ -410,10 +397,9 @@ MIND_MAP_VISION_HANDDRAWN_ZH = """你是一个从照片或扫描件重建思维�
     "topic": "中心主题",
     "children": [
       {
-        "id": "fen_zhi_1",
         "text": "分支标签",
         "children": [
-          {"id": "zi_1_1", "text": "子节点标签"}
+          {"text": "子节点标签"}
         ]
       }
     ]
@@ -425,7 +411,7 @@ MIND_MAP_VISION_HANDDRAWN_ZH = """你是一个从照片或扫描件重建思维�
 - 若不是思维导图/概念图（普通文档、纯文字白板、人物照片、仅条目列表的幻灯片等）：设 "is_mindmap": false，"spec": null，并给出简短 reason；confidence 表示把握。
 - 若是思维导图/概念图：设 "is_mindmap": true，并填写重建后的 "spec"。仅当层级清晰可读时 confidence >= 0.55。
 - 优先使用图中可读标签；难以辨认时用简短占位如 "?"，不要臆造长文。
-- 每个节点需要 "id" 与 "text"。保留图中可见的嵌套深度。
+- 每个节点只需要 "text"（不要自造 id）。保留图中可见的嵌套深度。
 - 主分支数量可为任意正整数（不要强制 4/6/8），以图为准。"""
 
 # ============================================================================

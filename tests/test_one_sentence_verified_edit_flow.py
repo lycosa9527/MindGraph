@@ -32,10 +32,13 @@ def _mindmap_edit_context() -> dict:
     }
 
 
+CREATED_BRANCH_ID = "uid-created-branch"
+
+
 def _applied_bus_result(
     revision: int = 2,
     *,
-    node_id: str | None = "branch-r-1-0",
+    node_id: str | None = CREATED_BRANCH_ID,
 ) -> DiagramCommandResult:
     applied_ops = [{"op": "add_node", "text": "DIY", "node_id": node_id}] if node_id else []
     return DiagramCommandResult(
@@ -134,7 +137,7 @@ async def test_one_sentence_add_node_routes_through_verified_bus() -> None:
         hub_sync_mock.assert_not_awaited()
         branch_ac_mock.assert_awaited_once()
         assert branch_ac_mock.await_args is not None
-        assert branch_ac_mock.await_args.kwargs.get("node_id") == "branch-r-1-0"
+        assert branch_ac_mock.await_args.kwargs.get("node_id") == CREATED_BRANCH_ID
         emit_branch_mock.assert_not_awaited()
         assert "auto_complete_branch" in call_order
         assert "bus" in call_order
@@ -614,9 +617,9 @@ async def test_executor_applied_only_with_hub_persist_ok() -> None:
                     "evidence": {
                         "nodes": [
                             {"id": "topic", "type": "topic", "text": "Cars"},
-                            {"id": "branch-r-1-0", "text": "DIY"},
+                            {"id": CREATED_BRANCH_ID, "text": "DIY"},
                         ],
-                        "connections": [{"source": "topic", "target": "branch-r-1-0"}],
+                        "connections": [{"source": "topic", "target": CREATED_BRANCH_ID}],
                     },
                 }
             )
@@ -805,7 +808,7 @@ async def test_one_sentence_multi_add_node_chain_coalesced_acks() -> None:
     async def _bus_side_effect(_ws, _vid, command, *_args, **_kwargs):
         target = str(command.get("target") or "")
         bus_calls.append(target)
-        node_id = f"branch-r-1-{len(bus_calls) - 1}"
+        node_id = f"uid-created-{len(bus_calls) - 1}"
         return _applied_bus_result(revision=len(bus_calls) + 1, node_id=node_id)
 
     bus_mock = AsyncMock(side_effect=_bus_side_effect)

@@ -2,11 +2,13 @@ import { resolveMindMapNodeShape } from '@/config/mindMapDiagramStyles'
 import { MIND_MAP_GEOMETRY, mindMapConnectionAnchorY } from '@/config/mindMapGeometry'
 import type { MindGraphNodeData, NodeStyle } from '@/types'
 
-export function mindMapBranchSide(nodeId: string | undefined): 'left' | 'right' | null {
-  if (!nodeId) return null
-  if (nodeId.startsWith('branch-l-')) return 'left'
-  if (nodeId.startsWith('branch-r-')) return 'right'
-  return null
+import { resolveMindMapSideFromIdOrData } from '@/utils/mindMapLocation'
+
+export function mindMapBranchSide(
+  nodeId: string | undefined,
+  node?: { data?: Record<string, unknown> } | null
+): 'left' | 'right' | null {
+  return resolveMindMapSideFromIdOrData(nodeId, node ?? undefined)
 }
 
 type FlowNodeLike = {
@@ -137,7 +139,7 @@ export function resolveMindMapEdgeEndpoint(
     return { x: underlineTargetJoinX(fallback.x, side, role), y }
   }
 
-  const side = mindMapBranchSide(node.id)
+  const side = mindMapBranchSide(node.id, node)
   if (!side) {
     return shape === 'underline' ? { x: fallback.x, y } : fallback
   }

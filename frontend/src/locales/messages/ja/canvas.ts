@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': '保存',
   'canvas.shortcutGuide.clearText': '清空ノード文字',
   'canvas.shortcutGuide.learningSheetAnswers': '学習シートの解答を表示/非表示',
+  'canvas.shortcutGuide.recalcLayout': 'レイアウトを再計算',
   'canvas.shortcutGuide.multiSelect': 'ノード多选',
   'canvas.shortcutGuide.multiSelectDesc': 'Drag a box in pointer mode to select multiple nodes。',
   'canvas.shortcutGuide.multiSelectHint': 'ドラッグで範囲選択',

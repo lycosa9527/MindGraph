@@ -1,4 +1,10 @@
 import type { Connection, DiagramData, DiagramNode } from '@/types'
+import {
+  isMindMapBranchNode,
+  isPositionalMindMapBranchId,
+  mindMapNodeSide,
+  mindMapSideToChar,
+} from '@/utils/mindMapLocation'
 import { findNodeIdByMindMapUid, readMindMapNodeUid } from '@/utils/mindMapNodeUid'
 
 import { findNodeIdByPathKey, mindMapNodePathKey } from './mindMapStylePreservation'
@@ -49,9 +55,12 @@ function findNodeIdByTextSegmentsOnSide(
   nodes: DiagramNode[],
   connections: Connection[]
 ): string | null {
-  const prefix = side === 'l' ? 'branch-l-' : 'branch-r-'
+  const wanted = side === 'l' ? 'left' : 'right'
   const rootIds = connections
-    .filter((c) => c.source === 'topic' && c.target.startsWith(prefix))
+    .filter(
+      (c) =>
+        c.source === 'topic' && mindMapNodeSide(c.target, { nodes, connections }) === wanted
+    )
     .map((c) => c.target)
 
   for (const rootId of rootIds) {
@@ -98,7 +107,7 @@ function findNodeIdByOwnTextIdentity(
   const oldChildTexts = directChildTexts(oldId, oldNodes, oldConnections)
 
   const candidates = newNodes.filter(
-    (n) => n.id.startsWith('branch-') && (n.text ?? '') === ownText
+    (n) => isMindMapBranchNode(n) && (n.text ?? '') === ownText
   )
   if (candidates.length === 0) return null
   if (candidates.length === 1) return candidates[0].id
@@ -129,15 +138,18 @@ export function remapMindMapNodeIdAfterReload(
   if (oldId === 'topic') {
     return newNodes.some((node) => node.id === 'topic') ? 'topic' : null
   }
-  if (!oldId.startsWith('branch-')) {
-    return newNodes.some((node) => node.id === oldId) ? oldId : null
-  }
 
   const oldNode = oldNodes.find((node) => node.id === oldId)
   const stableUid = readMindMapNodeUid(oldNode)
   if (stableUid) {
     const byUid = findNodeIdByMindMapUid(newNodes, stableUid)
     if (byUid) return byUid
+  }
+  // After invert, node.id is identity. Leftover positional ids can still
+  // recycle during a rebuild, so uid is checked first and a recycled
+  // leftover token is not treated as the same person.
+  if (newNodes.some((node) => node.id === oldId) && !isPositionalMindMapBranchId(oldId)) {
+    return oldId
   }
 
   const segments = getMindMapTextSegments(oldId, oldNodes, oldConnections)
@@ -153,7 +165,10 @@ export function remapMindMapNodeIdAfterReload(
   }
 
   if (segments) {
-    const side: 'l' | 'r' = oldId.startsWith('branch-l-') ? 'l' : 'r'
+    const sideChar = mindMapSideToChar(
+      mindMapNodeSide(oldId, { nodes: oldNodes, connections: oldConnections }) ?? 'right'
+    )
+    const side: 'l' | 'r' = sideChar
     const sameSide = findNodeIdByTextSegmentsOnSide(segments, side, newNodes, newConnections)
     if (sameSide) return sameSide
     const otherSide: 'l' | 'r' = side === 'l' ? 'r' : 'l'

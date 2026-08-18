@@ -16,6 +16,7 @@ from copy import deepcopy
 from typing import Any
 
 from models.domain.diagrams import Diagram
+from services.diagram.mindmap_identity import identity_aliases, migrate_mindmap_diagram_payload
 from services.online_collab.spec.online_collab_live_spec_json import (
     json_get_live_spec,
     json_set_live_spec,
@@ -168,8 +169,17 @@ def merge_granular_into_spec(
     Optionally removes nodes/connections by ID (``deleted_node_ids`` /
     ``deleted_connection_ids``) before applying patches.
     """
+    typed_nodes = [row for row in (spec.get("nodes") or []) if isinstance(row, dict)]
+    aliases = identity_aliases(typed_nodes) if typed_nodes else {}
+
+    def remap_hint(hint: Any) -> str:
+        text = str(hint or "").strip()
+        if not text:
+            return text
+        return aliases.get(text, text)
+
     if deleted_node_ids:
-        to_delete: set[str] = {str(nid) for nid in deleted_node_ids if nid}
+        to_delete: set[str] = {remap_hint(nid) for nid in deleted_node_ids if nid}
         spec["nodes"] = [
             n for n in (spec.get("nodes") or []) if isinstance(n, dict) and str(n.get("id", "")) not in to_delete
         ]
@@ -184,15 +194,24 @@ def merge_granular_into_spec(
 
     skip_patch_ids: set[str] = set()
     if deleted_node_ids:
-        skip_patch_ids = {str(nid) for nid in deleted_node_ids if nid}
+        skip_patch_ids = {remap_hint(nid) for nid in deleted_node_ids if nid}
 
     if nodes:
         existing_nodes: list[dict[str, Any]] = list(spec.get("nodes") or [])
         if not isinstance(existing_nodes, list):
             existing_nodes = []
+        remapped_nodes: list[dict[str, Any]] = []
+        for row in nodes:
+            if not isinstance(row, dict):
+                continue
+            patched = dict(row)
+            raw_id = patched.get("id")
+            if isinstance(raw_id, str) and raw_id.strip():
+                patched["id"] = remap_hint(raw_id)
+            remapped_nodes.append(patched)
         spec["nodes"] = _merge_node_patches(
             existing_nodes,
-            nodes,
+            remapped_nodes,
             skip_node_ids=skip_patch_ids,
         )
 
@@ -200,9 +219,21 @@ def merge_granular_into_spec(
         conns: list[dict[str, Any]] = list(spec.get("connections") or [])
         if not isinstance(conns, list):
             conns = []
-        spec["connections"] = _merge_connection_patches(conns, connections)
+        remapped_conns: list[dict[str, Any]] = []
+        for row in connections:
+            if not isinstance(row, dict):
+                continue
+            patched = dict(row)
+            for key in ("source", "target"):
+                raw = patched.get(key)
+                if isinstance(raw, str) and raw.strip():
+                    patched[key] = remap_hint(raw)
+            remapped_conns.append(patched)
+        spec["connections"] = _merge_connection_patches(conns, remapped_conns)
 
     _prune_dangling_connections(spec)
+    if isinstance(spec.get("nodes"), list):
+        migrate_mindmap_diagram_payload(spec)
 
 
 _CHANGED_FULL = frozenset({"__full__"})
@@ -239,6 +270,8 @@ def apply_live_update(
     if spec is not None and not is_granular:
         if isinstance(spec, dict):
             out = deepcopy(spec)
+            if isinstance(out.get("nodes"), list):
+                migrate_mindmap_diagram_payload(out)
             out.pop("v", None)
             out["v"] = next_v
             return out, next_v, _CHANGED_FULL

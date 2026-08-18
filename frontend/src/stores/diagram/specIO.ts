@@ -14,6 +14,7 @@ import {
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
+import { migrateMindMapIdentityIds, resolveMindMapIdentityId } from '@/utils/mindMapIdentityMigrate'
 import {
   beginMindMapSpecLoadSession,
   markMindMapLoadStage,
@@ -167,7 +168,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
           return {
             ...node,
             style: {
-              ...mindMapStyleFromTheme(node, themeFromSpec, diagramStyleId),
+              ...mindMapStyleFromTheme(
+                node,
+                themeFromSpec,
+                diagramStyleId,
+                result.connections
+              ),
               ...(node.style || {}),
             },
           }
@@ -546,10 +552,16 @@ export function useSpecIOSlice(ctx: DiagramContext) {
   ): boolean {
     if (!ctx.data.value) return false
 
-    const deletedThisBatch = new Set(deletedNodeIds ? deletedNodeIds.filter(Boolean) : [])
+    const liveNodes = ctx.data.value.nodes
+    const remapPatchId = (hint: string): string =>
+      ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
+        ? resolveMindMapIdentityId(hint, liveNodes) ?? hint
+        : hint
+    const deletedHints = deletedNodeIds ? deletedNodeIds.filter(Boolean).map(remapPatchId) : []
+    const deletedThisBatch = new Set(deletedHints)
 
-    if (deletedNodeIds && deletedNodeIds.length > 0) {
-      const toDelete = new Set(deletedNodeIds.filter(Boolean))
+    if (deletedHints.length > 0) {
+      const toDelete = new Set(deletedHints)
       ctx.data.value.nodes = ctx.data.value.nodes.filter((n) => !toDelete.has(n.id))
     }
 
@@ -564,8 +576,13 @@ export function useSpecIOSlice(ctx: DiagramContext) {
 
     if (updatedNodes && updatedNodes.length > 0) {
       for (const updatedNode of updatedNodes) {
-        const nodeId = updatedNode.id as string
-        if (!nodeId || deletedThisBatch.has(nodeId)) continue
+        const rawId = updatedNode.id as string
+        if (!rawId) continue
+        const nodeId = remapPatchId(rawId)
+        if (deletedThisBatch.has(nodeId)) continue
+        if (nodeId !== rawId) {
+          updatedNode.id = nodeId
+        }
 
         const existingIndex = ctx.data.value.nodes.findIndex((n) => n.id === nodeId)
         if (existingIndex >= 0) {
@@ -592,8 +609,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (updatedConnections && updatedConnections.length > 0) {
       for (const updatedConn of updatedConnections) {
         const connId = updatedConn.id as string | undefined
-        const source = updatedConn.source as string
-        const target = updatedConn.target as string
+        const sourceRaw = updatedConn.source as string
+        const targetRaw = updatedConn.target as string
+        const source = sourceRaw ? remapPatchId(sourceRaw) : sourceRaw
+        const target = targetRaw ? remapPatchId(targetRaw) : targetRaw
+        if (source && source !== sourceRaw) updatedConn.source = source
+        if (target && target !== targetRaw) updatedConn.target = target
 
         let conns: Connection[]
         if (ctx.data.value.connections) {
@@ -632,6 +653,20 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       ctx.data.value.connections = ctx.data.value.connections.filter(
         (c) => nodeIdSet.has(c.source) && nodeIdSet.has(c.target)
       )
+    }
+
+    if (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') {
+      const styles = ctx.data.value._node_styles
+      const migrated = migrateMindMapIdentityIds(
+        ctx.data.value.nodes,
+        ctx.data.value.connections ?? [],
+        styles
+      )
+      ctx.data.value.nodes = migrated.nodes
+      ctx.data.value.connections = migrated.connections
+      if (migrated.nodeStyles) {
+        ctx.data.value._node_styles = migrated.nodeStyles
+      }
     }
 
     return true

@@ -21,9 +21,10 @@ import {
 import { useMindMapOpsSlice } from '@/stores/diagram/mindMapOps'
 import type { DiagramContext } from '@/stores/diagram/types'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
-import { loadMindMapSpec } from '@/stores/specLoader'
+import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramData, DiagramNode } from '@/types'
+import { isMindMapBranchNode, mindMapNodeSide } from '@/utils/mindMapLocation'
 import {
   buildClassicMindMapTopicHandlePositions,
   classicMindMapPillHandleInsetPx,
@@ -320,7 +321,7 @@ describe('mind map classic vs v2 separation', () => {
     expect(data._mindmap_diagram_style).toBeUndefined()
     expect(data._mindmap_canvas?.v2?.theme).toBe('ocean')
     expect(data._mindmap_canvas?.v2?.diagram_style).toBe('formal')
-    const branchNode = data.nodes.find((n) => n.id.startsWith('branch-r-1'))
+    const branchNode = data.nodes.find((n) => isMindMapBranchNode(n))
     expect(branchNode?.style?.nodeShape).toBeUndefined()
     expect(branchNode?.style?.backgroundColor).toBeUndefined()
     const branchConn = data.connections?.find((c) => c.source === 'topic')
@@ -338,6 +339,8 @@ describe('mind map classic vs v2 separation', () => {
       leftBranches: [],
       preserveLeftRight: true,
     })
+    const loadedBranch = loaded.nodes.find((n) => isMindMapBranchNode(n))
+    expect(loadedBranch).toBeTruthy()
     const data: DiagramData = {
       type: 'mindmap',
       nodes: loaded.nodes,
@@ -345,7 +348,7 @@ describe('mind map classic vs v2 separation', () => {
       _mindmap_theme: 'vibrantBlue',
       _mindmap_diagram_style: 'classic',
       _node_styles: {
-        'branch-r-0-0': { textColor: '#2a3d66', backgroundColor: '#eef2fb' },
+        [loadedBranch!.id]: { textColor: '#2a3d66', backgroundColor: '#eef2fb' },
       },
       _mindmap_canvas: {
         v2: {
@@ -359,7 +362,7 @@ describe('mind map classic vs v2 separation', () => {
     }
     const ctx = makeMindMapCtx(data)
     reconcileMindMapCanvasModeSwitch(ctx, 'v2', 'legacy')
-    const branchNode = data.nodes.find((n) => n.id.startsWith('branch-'))
+    const branchNode = data.nodes.find((n) => isMindMapBranchNode(n))
     expect(branchNode?.style?.textColor).toBeUndefined()
     expect(branchNode?.style?.backgroundColor).toBeUndefined()
     expect(data._mindmap_theme).toBeUndefined()
@@ -467,7 +470,12 @@ describe('mind map classic vs v2 separation', () => {
     })
 
     const rightHandles = result.connections
-      .filter((c) => c.source === 'topic' && c.target.startsWith('branch-r-'))
+      .filter(
+        (c) =>
+          c.source === 'topic' &&
+          mindMapNodeSide(c.target, { nodes: result.nodes, connections: result.connections }) ===
+            'right'
+      )
       .map((c) => c.sourceHandle)
     expect(rightHandles).toEqual([
       'mindmap-right-0',
@@ -476,12 +484,17 @@ describe('mind map classic vs v2 separation', () => {
       'mindmap-right-3',
     ])
     const leftHandles = result.connections
-      .filter((c) => c.source === 'topic' && c.target.startsWith('branch-l-'))
+      .filter(
+        (c) =>
+          c.source === 'topic' &&
+          mindMapNodeSide(c.target, { nodes: result.nodes, connections: result.connections }) ===
+            'left'
+      )
       .map((c) => c.sourceHandle)
     expect(leftHandles).toEqual(['mindmap-left-0'])
   })
 
-  it('legacy addMindMapBranch redistributes clockwise instead of forcing right', () => {
+  it('legacy addMindMapBranch without side redistributes clockwise', () => {
     const uiStore = useUIStore()
     uiStore.mindMapCanvasMode = 'legacy'
 
@@ -498,14 +511,24 @@ describe('mind map classic vs v2 separation', () => {
     })
     const ops = useMindMapOpsSlice(ctx)
 
-    expect(ops.addMindMapBranch('right', 'NewBranch', 'Child')).toBe(true)
+    expect(ops.addMindMapBranch(undefined, 'NewBranch', 'Child')).toBe(true)
 
     const leftTopicEdge = ctx.data.value?.connections?.find(
-      (c) => c.source === 'topic' && c.target.startsWith('branch-l-')
+      (c) =>
+        c.source === 'topic' &&
+        mindMapNodeSide(c.target, {
+          nodes: ctx.data.value?.nodes,
+          connections: ctx.data.value?.connections,
+        }) === 'left'
     )
     expect(leftTopicEdge?.target).toBeDefined()
     const newBranchNode = ctx.data.value?.nodes?.find((n) => n.text === 'NewBranch')
-    expect(newBranchNode?.id.startsWith('branch-l-')).toBe(true)
+    expect(
+      mindMapNodeSide(newBranchNode?.id ?? '', {
+        nodes: ctx.data.value?.nodes,
+        connections: ctx.data.value?.connections,
+      })
+    ).toBe('left')
   })
 
   it('legacy addMindMapBranch seeds two default children', () => {
@@ -525,7 +548,7 @@ describe('mind map classic vs v2 separation', () => {
     })
     const ops = useMindMapOpsSlice(ctx)
 
-    expect(ops.addMindMapBranch('right', 'NewBranch', 'Child')).toBe(true)
+    expect(ops.addMindMapBranch(undefined, 'NewBranch', 'Child')).toBe(true)
 
     const childTexts =
       ctx.data.value?.nodes
@@ -564,6 +587,34 @@ describe('mind map classic vs v2 separation', () => {
     expect(childEdges).toHaveLength(2)
   })
 
+  it('legacy addMindMapBranch with explicit side stays on that side', () => {
+    const uiStore = useUIStore()
+    uiStore.mindMapCanvasMode = 'legacy'
+
+    const loaded = loadMindMapSpec({
+      topic: 'Topic',
+      rightBranches: [{ text: 'OnlyRight' }],
+      leftBranches: [],
+      preserveLeftRight: true,
+    })
+    const ctx = makeMindMapCtx({
+      type: 'mindmap',
+      nodes: loaded.nodes,
+      connections: loaded.connections,
+    })
+    const ops = useMindMapOpsSlice(ctx)
+
+    expect(ops.addMindMapBranch('right', 'NewBranch', 'Child')).toBe(true)
+
+    const newBranchNode = ctx.data.value?.nodes?.find((n) => n.text === 'NewBranch')
+    expect(
+      mindMapNodeSide(newBranchNode?.id ?? '', {
+        nodes: ctx.data.value?.nodes,
+        connections: ctx.data.value?.connections,
+      })
+    ).toBe('right')
+  })
+
   it('v2 addMindMapBranch honors explicit side without default children', () => {
     enableMindMapV2CanvasFlag()
     const uiStore = useUIStore()
@@ -585,10 +636,47 @@ describe('mind map classic vs v2 separation', () => {
     expect(ops.addMindMapBranch('left', 'LeftBranch', 'Child')).toBe(true)
 
     const newBranchNode = ctx.data.value?.nodes?.find((n) => n.text === 'LeftBranch')
-    expect(newBranchNode?.id.startsWith('branch-l-')).toBe(true)
+    expect(
+      mindMapNodeSide(newBranchNode?.id ?? '', {
+        nodes: ctx.data.value?.nodes,
+        connections: ctx.data.value?.connections,
+      })
+    ).toBe('left')
     const childCount =
       ctx.data.value?.connections?.filter((c) => c.source === newBranchNode?.id).length ?? 0
     expect(childCount).toBe(0)
+  })
+
+  it('v2 addMindMapBranch without side rebalances a two-sided map', () => {
+    enableMindMapV2CanvasFlag()
+    const uiStore = useUIStore()
+    uiStore.mindMapCanvasMode = 'v2'
+
+    const loaded = loadMindMapSpec({
+      topic: 'Xiaomi Car',
+      children: [{ text: '机制' }, { text: '边界' }, { text: '产品线' }, { text: '反例' }],
+    })
+    const ctx = makeMindMapCtx({
+      type: 'mindmap',
+      nodes: loaded.nodes,
+      connections: loaded.connections,
+    })
+    const ops = useMindMapOpsSlice(ctx)
+    const before = nodesAndConnectionsToMindMapSpec(
+      ctx.data.value?.nodes ?? [],
+      ctx.data.value?.connections ?? []
+    )
+    expect(before.rightBranches.map((b) => b.text)).toEqual(['机制', '边界'])
+    expect(before.leftBranches.map((b) => b.text)).toEqual(['反例', '产品线'])
+
+    expect(ops.addMindMapBranch(undefined, '争议')).toBe(true)
+
+    const after = nodesAndConnectionsToMindMapSpec(
+      ctx.data.value?.nodes ?? [],
+      ctx.data.value?.connections ?? []
+    )
+    expect(after.rightBranches.map((b) => b.text)).toEqual(['机制', '边界', '产品线'])
+    expect(after.leftBranches.map((b) => b.text)).toEqual(['争议', '反例'])
   })
 
   it('classic topic handles evenly space per side when branch layout is unavailable', () => {

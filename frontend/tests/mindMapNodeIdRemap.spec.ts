@@ -9,7 +9,37 @@ import { MINDMAP_NODE_UID_DATA_KEY } from '@/utils/mindMapNodeUid'
 import type { Connection, DiagramNode } from '@/types'
 
 describe('remapMindMapNodeIdAfterReload', () => {
-  it('keeps selection on a later sibling when an earlier branch gains children', () => {
+  it('keeps the same UUID after a sibling insert (identity invert)', () => {
+    const oldNodes: DiagramNode[] = [
+      { id: 'topic', text: 'Root', type: 'topic' },
+      { id: 'uid-a', text: 'A', type: 'branch', data: { [MINDMAP_NODE_UID_DATA_KEY]: 'uid-a' } },
+      { id: 'uid-b', text: 'B', type: 'branch', data: { [MINDMAP_NODE_UID_DATA_KEY]: 'uid-b' } },
+    ]
+    const oldConnections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'uid-a' },
+      { id: 'c1', source: 'topic', target: 'uid-b' },
+    ]
+    const newNodes: DiagramNode[] = [
+      { id: 'topic', text: 'Root', type: 'topic' },
+      { id: 'uid-a', text: 'A', type: 'branch', data: { [MINDMAP_NODE_UID_DATA_KEY]: 'uid-a' } },
+      { id: 'uid-new', text: 'New', type: 'branch', data: { [MINDMAP_NODE_UID_DATA_KEY]: 'uid-new' } },
+      { id: 'uid-b', text: 'B', type: 'branch', data: { [MINDMAP_NODE_UID_DATA_KEY]: 'uid-b' } },
+    ]
+    const newConnections: Connection[] = [
+      { id: 'c0', source: 'topic', target: 'uid-a' },
+      { id: 'c1', source: 'topic', target: 'uid-new' },
+      { id: 'c2', source: 'topic', target: 'uid-b' },
+    ]
+
+    expect(
+      remapMindMapNodeIdAfterReload('uid-b', oldNodes, oldConnections, newNodes, newConnections)
+    ).toBe('uid-b')
+    expect(
+      remapMindMapNodeIdsAfterReload(['uid-a', 'uid-b'], oldNodes, oldConnections, newNodes, newConnections)
+    ).toEqual(['uid-a', 'uid-b'])
+  })
+
+  it('keeps selection on a later sibling when leftover positional ids recycle', () => {
     // Before: A=r-1-0, B=r-1-1 (selected). After paste under A: B becomes r-1-3.
     const oldNodes: DiagramNode[] = [
       { id: 'topic', text: 'Root', type: 'topic' },

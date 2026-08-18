@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Speichern',
   'canvas.shortcutGuide.clearText': 'Knotentext löschen',
   'canvas.shortcutGuide.learningSheetAnswers': 'Lernblatt-Antworten ein-/ausblenden',
+  'canvas.shortcutGuide.recalcLayout': 'Layout neu berechnen',
   'canvas.shortcutGuide.multiSelect': 'Mehrfachauswahl',
   'canvas.shortcutGuide.multiSelectDesc': 'Im Zeigermodus ein Rechteck ziehen, um mehrere Knoten auszuwählen.',
   'canvas.shortcutGuide.multiSelectHint': 'Ziehen für Rahmenauswahl',

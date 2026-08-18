@@ -11,6 +11,7 @@ Proprietary License
 
 from typing import Any, Dict, List, Optional
 
+from services.diagram.mindmap_location import is_mindmap_l1, mindmap_node_depth
 from utils.placeholder import is_placeholder_text
 
 
@@ -47,7 +48,7 @@ def _find_mindmap_branch_context(
     if not current_node:
         return (None, "", [])
     nid = current_node.get("id") or ""
-    if nid.startswith("branch-l-1-") or nid.startswith("branch-r-1-"):
+    if isinstance(nid, str) and nid and is_mindmap_l1(nid, connections):
         return (
             nid,
             _get_node_text(current_node),
@@ -57,7 +58,7 @@ def _find_mindmap_branch_context(
         if conn.get("target") == current_node_id:
             pid = conn.get("source")
             parent = next((n for n in nodes if n.get("id") == pid), None)
-            if isinstance(pid, str) and parent and (pid.startswith("branch-l-1-") or pid.startswith("branch-r-1-")):
+            if isinstance(pid, str) and parent and is_mindmap_l1(pid, connections):
                 return (
                     pid,
                     _get_node_text(parent),
@@ -88,7 +89,13 @@ def extract_mindmap_context(
     branch_nodes = [
         n
         for n in nodes
-        if (n.get("id") or "").startswith("branch-l-1-") or (n.get("id") or "").startswith("branch-r-1-")
+        if isinstance(n.get("id"), str)
+        and n.get("id")
+        and (
+            is_mindmap_l1(str(n.get("id")), connections)
+            if connections
+            else mindmap_node_depth(str(n.get("id")), nodes=nodes, node=n) == 1
+        )
     ]
     branch_names = [_get_node_text(n) for n in branch_nodes if _has_real_text(n)]
 

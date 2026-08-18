@@ -1,6 +1,7 @@
 import type { StylePresetColors } from '@/config/colorPalette'
 import { mindMapBranchDepth, sortMindMapTopicChildIds } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
+import { isMindMapTopicId } from '@/utils/mindMapLocation'
 
 /** Theme picker blue — unchanged. */
 export const MIND_MAP_VIBRANT_BLUE = '#4A72D4'
@@ -171,7 +172,7 @@ export function mindMapRainbowColorsForNode(
 ): RainbowBranchNodeColors | null {
   const accent = rainbowAccentForNode(nodeId, connections)
   if (!accent) return null
-  return mindMapRainbowNodeColors(accent, mindMapBranchDepth(nodeId))
+  return mindMapRainbowNodeColors(accent, mindMapBranchDepth(nodeId, null, connections))
 }
 
 /** Depth-layered branch colors for solid themes (formal / soft diagram styles). */
@@ -196,10 +197,15 @@ export function mindMapLayeredCenterTopicColors(
 
 export function mindMapLayeredBranchColorsForNode(
   nodeId: string,
-  accent: string
+  accent: string,
+  connections?: Connection[] | null,
+  node?: { data?: Record<string, unknown> } | null
 ): RainbowBranchNodeColors | null {
-  if (!nodeId.startsWith('branch-')) return null
-  return mindMapLayeredBranchColorsFromAccent(accent, mindMapBranchDepth(nodeId))
+  if (isMindMapTopicId(nodeId)) return null
+  return mindMapLayeredBranchColorsFromAccent(
+    accent,
+    mindMapBranchDepth(nodeId, node, connections)
+  )
 }
 
 /** Flat branch palette (legacy helper — non-rainbow themes). */

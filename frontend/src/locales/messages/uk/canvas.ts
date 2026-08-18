@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Зберегти',
   'canvas.shortcutGuide.clearText': 'Очистити текст вузла',
   'canvas.shortcutGuide.learningSheetAnswers': 'Показати/приховати відповіді навчального аркуша',
+  'canvas.shortcutGuide.recalcLayout': 'Перерахувати макет',
   'canvas.shortcutGuide.multiSelect': 'Множинне виділення',
   'canvas.shortcutGuide.multiSelectDesc': 'У режимі вказівника перетягніть рамку, щоб виділити кілька вузлів.',
   'canvas.shortcutGuide.multiSelectHint': 'Перетягніть для виділення рамкою',

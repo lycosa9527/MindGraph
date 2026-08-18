@@ -11,6 +11,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { mindMapControlScale } from '@/config/mindMapEBlackboard'
 import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'
+import { mindMapNodeSide } from '@/utils/mindMapLocation'
 
 const props = defineProps<{
   containerRef: HTMLElement | null
@@ -59,7 +60,11 @@ function tooltipFor(direction: 'top' | 'bottom' | 'left' | 'right', nodeId: stri
   if (nodeId === 'topic') {
     return direction === 'left' ? t('mindMap.add.leftBranch') : t('mindMap.add.rightBranch')
   }
-  const isLeftBranch = nodeId.startsWith('branch-l-')
+  const isLeftBranch =
+    mindMapNodeSide(nodeId, {
+      nodes: diagramStore.data?.nodes,
+      connections: diagramStore.data?.connections,
+    }) === 'left'
   if (direction === 'top') return t('mindMap.add.siblingAbove')
   if (direction === 'bottom') return t('mindMap.add.siblingBelow')
   if (direction === 'left') {

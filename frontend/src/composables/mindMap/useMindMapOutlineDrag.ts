@@ -2,6 +2,7 @@ import { ref } from 'vue'
 
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { useDiagramStore } from '@/stores'
+import { isMindMapBranchId } from '@/utils/mindMapLocation'
 
 export type OutlineDropPosition = 'before' | 'after' | 'child'
 
@@ -11,7 +12,7 @@ export function useMindMapOutlineDrag() {
   const dropTarget = ref<{ nodeId: string; position: OutlineDropPosition } | null>(null)
 
   function canDragNode(nodeId: string): boolean {
-    return nodeId !== 'topic' && nodeId.startsWith('branch-')
+    return nodeId !== 'topic' && isMindMapBranchId(nodeId, diagramStore.data?.nodes)
   }
 
   function onDragStart(event: DragEvent, nodeId: string): void {

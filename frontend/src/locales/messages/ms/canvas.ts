@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Menyimpan',
   'canvas.shortcutGuide.clearText': 'Padam teks simpul',
   'canvas.shortcutGuide.learningSheetAnswers': 'Menampilkan/menyembunyikan jawaban lembar pembelajaran',
+  'canvas.shortcutGuide.recalcLayout': 'Kira semula susun atur',
   'canvas.shortcutGuide.multiSelect': 'Multi-pilih',
   'canvas.shortcutGuide.multiSelectDesc': 'Seret kotak dalam mode penunjuk untuk memilih beberapa nod.',
   'canvas.shortcutGuide.multiSelectHint': 'Seret ke kotak pilih',

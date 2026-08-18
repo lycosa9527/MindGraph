@@ -87,7 +87,9 @@ const { getNodeStyle } = useTheme({
   diagramType: computed(() => props.data.diagramType),
 })
 
-const isChild = computed(() => mindMapBranchDepth(props.id) >= 2)
+const isChild = computed(() =>
+  mindMapBranchDepth(props.id, { data: props.data }, diagramStore.data?.connections) >= 2
+)
 const themeNodeType = computed(() => (isChild.value ? 'child' : 'branch'))
 const defaultStyle = computed(() => getNodeStyle(themeNodeType.value))
 const defaultMindMapTheme = computed(() => getMindMapThemeForDiagram(diagramStore.data))
@@ -146,7 +148,7 @@ const nodeStyle = computed((): CSSProperties => {
     color:
       style.textColor || mindMapThemeColors.value.text || defaultStyle.value.textColor || '#333333',
     fontFamily: style.fontFamily || MIND_MAP_GEOMETRY.fontFamily,
-    fontSize: `${style.fontSize || defaultStyle.value.fontSize || mindMapBranchFontSize(props.id)}px`,
+    fontSize: `${style.fontSize || defaultStyle.value.fontSize || mindMapBranchFontSize(props.id, { data: props.data }, diagramStore.data?.connections)}px`,
     fontWeight: style.fontWeight || defaultStyle.value.fontWeight || 'normal',
     fontStyle: style.fontStyle || 'normal',
     textDecoration: style.textDecoration || 'none',
@@ -214,7 +216,9 @@ const accessibleBranchLabel = computed(() => {
 const textMaxWidth = computed(() => {
   const label = ((props.data.label as string) || '').trim()
   if (!label && !numberPrefix.value) return `${MIND_MAP_BRANCH_MAX_TEXT_WIDTH}px`
-  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || mindMapBranchFontSize(props.id)
+  const fontSize =
+    parseFloat(nodeStyle.value.fontSize as string) ||
+    mindMapBranchFontSize(props.id, { data: props.data }, diagramStore.data?.connections)
   const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
   return `${resolveMindMapBranchBodyMaxWidthPx(label, numberPrefix.value, fontSize, {
     fontWeight,

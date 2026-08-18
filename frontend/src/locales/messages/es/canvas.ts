@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'Guardar',
   'canvas.shortcutGuide.clearText': 'Borrar texto del nodo',
   'canvas.shortcutGuide.learningSheetAnswers': 'Mostrar/ocultar respuestas de la ficha de aprendizaje',
+  'canvas.shortcutGuide.recalcLayout': 'Recalcular el diseño',
   'canvas.shortcutGuide.multiSelect': 'Selección múltiple',
   'canvas.shortcutGuide.multiSelectDesc': 'Arrastre un recuadro en modo puntero para seleccionar varios nodos.',
   'canvas.shortcutGuide.multiSelectHint': 'Arrastre para seleccionar por recuadro',

@@ -1,5 +1,6 @@
 import { sortMindMapChildIds } from '@/config/mindMapGeometry'
 import type { Connection, DiagramNode } from '@/types'
+import { mindMapNodeSide } from '@/utils/mindMapLocation'
 
 export interface MindMapOutlineNode {
   id: string
@@ -146,8 +147,8 @@ function sortIdsClockwiseFromTopic(
  * left column bottom→top. Matches layout `mindMapBranchesClockwiseOrder` and
  * presentation deep traversal (connection order can drift under sticky Y).
  *
- * Prefer geometric side-of-topic when positions exist; else ``branch-r-`` /
- * ``branch-l-`` prefixes; else polar from topic (12 o'clock).
+ * Prefer geometric side-of-topic when positions exist; else stamped /
+ * positional location; else polar from topic (12 o'clock).
  */
 function sortTopicLevelChildIds(
   childIds: string[],
@@ -158,9 +159,10 @@ function sortTopicLevelChildIds(
     return sortTopicLevelChildIdsBySide(childIds, nodeById, topicId)
   }
 
-  const right = childIds.filter((id) => id.startsWith('branch-r-'))
-  const left = childIds.filter((id) => id.startsWith('branch-l-'))
-  const other = childIds.filter((id) => !id.startsWith('branch-r-') && !id.startsWith('branch-l-'))
+  const nodes = [...nodeById.values()]
+  const right = childIds.filter((id) => mindMapNodeSide(id, { node: nodeById.get(id), nodes }) === 'right')
+  const left = childIds.filter((id) => mindMapNodeSide(id, { node: nodeById.get(id), nodes }) === 'left')
+  const other = childIds.filter((id) => mindMapNodeSide(id, { node: nodeById.get(id), nodes }) == null)
 
   if (right.length === 0 && left.length === 0) {
     return sortIdsClockwiseFromTopic(childIds, nodeById, topicId)

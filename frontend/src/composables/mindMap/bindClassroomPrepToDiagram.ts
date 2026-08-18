@@ -48,14 +48,18 @@ export function bindClassroomPrepToDiagram(options: {
         classroomStore.closeModal()
       }
       if (!switched) return
-      const liveIds = collectLiveNodeIds(diagramStore.data?.nodes)
+      const liveNodes = diagramStore.data?.nodes ?? []
       if (classroomStore.preparedSteps.length) {
-        const remapped = remapPreparedStepsToLive(classroomStore.preparedSteps, liveIds)
+        const remapped = remapPreparedStepsToLive(classroomStore.preparedSteps, liveNodes)
         if (
           remapped.length &&
-          preparedLectureFitsLive(classroomStore.preparedSteps, liveIds, classroomStore.specNodeIds)
+          preparedLectureFitsLive(
+            classroomStore.preparedSteps,
+            liveNodes,
+            classroomStore.specNodeIds
+          )
         ) {
-          classroomStore.setPreparedSteps(remapped, [...liveIds])
+          classroomStore.setPreparedSteps(remapped, [...collectLiveNodeIds(liveNodes)])
           return
         }
         classroomStore.setPreparedSteps([], [])

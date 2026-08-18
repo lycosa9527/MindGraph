@@ -99,6 +99,7 @@ export default {
   'canvas.shortcutGuide.save': 'සුරකින්න',
   'canvas.shortcutGuide.clearText': 'නෝඩ් පෙළ හිස් කරන්න',
   'canvas.shortcutGuide.learningSheetAnswers': 'ඉගෙනුම් පත්‍ර පිළිතුරු පෙන්වන්න/සඟවන්න',
+  'canvas.shortcutGuide.recalcLayout': 'Recalculate layout',
   'canvas.shortcutGuide.multiSelect': 'බහු-තේරීම',
   'canvas.shortcutGuide.multiSelectDesc': 'බහු නෝඩ් තේරීමට පොයින්ටර් මාදිලියේ කොටුවක් අදින්න.',
   'canvas.shortcutGuide.multiSelectHint': 'කොටුව තේරීමට අදින්න',

@@ -278,6 +278,11 @@ export function useCanvasPageEditorShortcuts(options: {
     toggleLearningSheetAnswersVisibility()
   }
 
+  function handleRecalcLayoutKey() {
+    if (isTypingInInput()) return
+    diagramStore.recalculateDiagramLayout()
+  }
+
   async function handleSaveKey() {
     if (!authStore.isAuthenticated) {
       notify.warning(t('editor.saveNeedsLogin'))
@@ -338,6 +343,7 @@ export function useCanvasPageEditorShortcuts(options: {
     { key: 'ArrowLeft', handler: () => handleMindMapArrowKey('ArrowLeft') },
     { key: 'ArrowRight', handler: () => handleMindMapArrowKey('ArrowRight') },
     { key: 'h', ctrl: true, shift: true, handler: handleToggleLearningSheetAnswersKey },
+    { key: 'l', ctrl: true, shift: true, handler: handleRecalcLayoutKey },
   ])
 
   return { handleSaveKey }

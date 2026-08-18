@@ -42,6 +42,22 @@ def test_extract_hierarchical_outline() -> None:
     assert outline.topic == "光合作用"
     assert len(outline.branches) == 2
     assert outline.branches[0].children == ["叶绿体"]
+    assert outline.branches[0].id is None
+    assert outline.branches[1].id is None
+
+
+def test_extract_hierarchical_string_branch_has_no_invented_id() -> None:
+    """Bare string children stay unlabeled; never mint branch-N."""
+    outline = extract_mindmap_outline({"topic": "Cars", "children": ["DIY", "Engine"]})
+    assert [branch.text for branch in outline.branches] == ["DIY", "Engine"]
+    assert all(branch.id is None for branch in outline.branches)
+
+
+def test_extract_hierarchical_leftover_id_is_dropped() -> None:
+    """LLM leftover ``branch_1`` is not adopted as an outline node id."""
+    outline = extract_mindmap_outline({"topic": "Cars", "children": [{"id": "branch_1", "text": "DIY"}]})
+    assert outline.branches[0].text == "DIY"
+    assert outline.branches[0].id is None
 
 
 def test_extract_nodes_outline() -> None:

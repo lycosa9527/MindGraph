@@ -81,8 +81,10 @@ describe('mind-map soft load (preferLaidOutMindMapNodes)', () => {
       expect(node.position).toEqual(stampedNode?.position)
     }
 
-    const hard = loadSpecForDiagramType(stamped, 'mindmap')
-    // Default path rebuilds layout from tree — does not keep the +10/+20 stamp.
+    const hard = loadSpecForDiagramType(stamped, 'mindmap', {
+      preferLaidOutMindMapNodes: false,
+    })
+    // Hard extract+relayout rebuilds from the tree and drops the +10/+20 stamp.
     const softTopic = soft.nodes.find((n) => n.id === 'topic')
     const hardTopic = hard.nodes.find((n) => n.id === 'topic')
     expect(softTopic?.position).not.toEqual(hardTopic?.position)
@@ -95,7 +97,8 @@ describe('mind-map soft load (preferLaidOutMindMapNodes)', () => {
     })
     const reloaded = loadSpecForDiagramType(
       { nodes: initial.nodes, connections: initial.connections },
-      'mindmap'
+      'mindmap',
+      { preferLaidOutMindMapNodes: false }
     )
     expect(reloaded.nodes.some((n) => n.id === 'topic')).toBe(true)
     expect(reloaded.connections.length).toBeGreaterThan(0)
@@ -413,18 +416,23 @@ describe('mind-map measure batch settle', () => {
 })
 
 describe('mind-map orthogonal sibling map', () => {
-  it('groups topic children by side and other edges by source', () => {
+  it('groups same-side topic→L1 children onto one trunk', () => {
+    const sideOf = (id: string): 'left' | 'right' | null => {
+      if (id.startsWith('uid-l')) return 'left'
+      if (id.startsWith('uid-r')) return 'right'
+      return null
+    }
     const edges = [
-      { id: 'e1', source: 'topic', target: 'branch-r-1-0' },
-      { id: 'e2', source: 'topic', target: 'branch-r-1-1' },
-      { id: 'e3', source: 'topic', target: 'branch-l-1-0' },
-      { id: 'e4', source: 'branch-r-1-0', target: 'branch-r-2-0' },
-      { id: 'e5', source: 'branch-r-1-0', target: 'branch-r-2-1' },
+      { id: 'e1', source: 'topic', target: 'uid-r0' },
+      { id: 'e2', source: 'topic', target: 'uid-r1' },
+      { id: 'e3', source: 'topic', target: 'uid-l0' },
+      { id: 'e4', source: 'uid-r0', target: 'uid-c0' },
+      { id: 'e5', source: 'uid-r0', target: 'uid-c1' },
     ]
-    const map = buildMindMapOrthogonalSiblingMap(edges)
+    const map = buildMindMapOrthogonalSiblingMap(edges, sideOf)
     expect(map.get('topic:right')?.map((e) => e.id)).toEqual(['e1', 'e2'])
     expect(map.get('topic:left')?.map((e) => e.id)).toEqual(['e3'])
-    expect(map.get('branch-r-1-0')?.map((e) => e.id)).toEqual(['e4', 'e5'])
-    expect(mindMapOrthogonalSiblingGroupKey('topic', 'branch-l-1-0')).toBe('topic:left')
+    expect(map.get('uid-r0')?.map((e) => e.id)).toEqual(['e4', 'e5'])
+    expect(mindMapOrthogonalSiblingGroupKey('topic', 'uid-l0', sideOf)).toBe('topic:left')
   })
 })

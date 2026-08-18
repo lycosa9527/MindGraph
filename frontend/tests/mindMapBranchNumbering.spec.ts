@@ -117,44 +117,44 @@ describe('mindMapBranchNumbering map', () => {
   it('skips the topic and numbers L1 clockwise then children', () => {
     const nodes: DiagramNode[] = [
       node('topic', '中心', 'topic', 0, 100),
-      node('branch-r-1-0', 'right-top', 'branch', 200, 40),
-      node('branch-r-1-1', 'right-bot', 'branch', 200, 120),
-      node('branch-l-1-0', 'left-top', 'branch', -200, 40),
-      node('branch-l-1-1', 'left-bot', 'branch', -200, 120),
-      node('branch-r-2-2', 'child', 'branch', 320, 40),
+      node('uid-rt', 'right-top', 'branch', 200, 40),
+      node('uid-rb', 'right-bot', 'branch', 200, 120),
+      node('uid-lt', 'left-top', 'branch', -200, 40),
+      node('uid-lb', 'left-bot', 'branch', -200, 120),
+      node('uid-child', 'child', 'branch', 320, 40),
     ]
     const connections: Connection[] = [
-      edge('e0', 'topic', 'branch-r-1-0'),
-      edge('e1', 'topic', 'branch-r-1-1'),
-      edge('e2', 'topic', 'branch-l-1-0'),
-      edge('e3', 'topic', 'branch-l-1-1'),
-      edge('e4', 'branch-r-1-0', 'branch-r-2-2'),
+      edge('e0', 'topic', 'uid-rt'),
+      edge('e1', 'topic', 'uid-rb'),
+      edge('e2', 'topic', 'uid-lt'),
+      edge('e3', 'topic', 'uid-lb'),
+      edge('e4', 'uid-rt', 'uid-child'),
     ]
     const map = buildMindMapBranchNumberMap(nodes, connections, 'decimal', 'outline')
     expect(map.has('topic')).toBe(false)
-    expect(map.get('branch-r-1-0')).toBe('1.')
-    expect(map.get('branch-r-1-1')).toBe('2.')
-    expect(map.get('branch-l-1-1')).toBe('3.')
-    expect(map.get('branch-l-1-0')).toBe('4.')
-    expect(map.get('branch-r-2-2')).toBe('1.1')
+    expect(map.get('uid-rt')).toBe('1.')
+    expect(map.get('uid-rb')).toBe('2.')
+    expect(map.get('uid-lb')).toBe('3.')
+    expect(map.get('uid-lt')).toBe('4.')
+    expect(map.get('uid-child')).toBe('1.1')
   })
 
   it('uses 前缀 glyph on L1 and restarting glyph on children', () => {
     const nodes: DiagramNode[] = [
       node('topic', 'T', 'topic', 0, 0),
-      node('branch-r-1-0', 'A', 'branch', 100, 0),
-      node('branch-r-2-1', 'a1', 'branch', 200, 0),
-      node('branch-r-2-2', 'a2', 'branch', 200, 40),
+      node('uid-a', 'A', 'branch', 100, 0),
+      node('uid-a1', 'a1', 'branch', 200, 0),
+      node('uid-a2', 'a2', 'branch', 200, 40),
     ]
     const connections: Connection[] = [
-      edge('e0', 'topic', 'branch-r-1-0'),
-      edge('e1', 'branch-r-1-0', 'branch-r-2-1'),
-      edge('e2', 'branch-r-1-0', 'branch-r-2-2'),
+      edge('e0', 'topic', 'uid-a'),
+      edge('e1', 'uid-a', 'uid-a1'),
+      edge('e2', 'uid-a', 'uid-a2'),
     ]
     const map = buildMindMapBranchNumberMap(nodes, connections, 'upperAlpha', 'lowerAlpha')
-    expect(map.get('branch-r-1-0')).toBe('A.')
-    expect(map.get('branch-r-2-1')).toBe('a.')
-    expect(map.get('branch-r-2-2')).toBe('b.')
+    expect(map.get('uid-a')).toBe('A.')
+    expect(map.get('uid-a1')).toBe('a.')
+    expect(map.get('uid-a2')).toBe('b.')
   })
 
   it('builds a 10-level outline path without a trailing dot', () => {
@@ -209,9 +209,9 @@ describe('mindMapBranchNumbering text helpers', () => {
   it('rebuilds the cached map when prefix style switches', () => {
     const nodes: DiagramNode[] = [
       node('topic', 'T', 'topic', 0, 0),
-      node('branch-r-1-0', 'A', 'branch', 100, 0),
+      node('uid-a', 'A', 'branch', 100, 0),
     ]
-    const connections: Connection[] = [edge('e0', 'topic', 'branch-r-1-0')]
+    const connections: Connection[] = [edge('e0', 'topic', 'uid-a')]
     const data = {
       _mindmap_branch_numbering: true,
       _mindmap_branch_numbering_prefix: 'decimal',
@@ -220,14 +220,14 @@ describe('mindMapBranchNumbering text helpers', () => {
       connections,
     }
     invalidateMindMapBranchNumberMapCache()
-    expect(mindMapBranchNumberMapFromData(data).get('branch-r-1-0')).toBe('1.')
+    expect(mindMapBranchNumberMapFromData(data).get('uid-a')).toBe('1.')
     data._mindmap_branch_numbering_prefix = 'chineseChapter'
-    expect(mindMapBranchNumberMapFromData(data).get('branch-r-1-0')).toBe('第一章')
+    expect(mindMapBranchNumberMapFromData(data).get('uid-a')).toBe('第一章')
   })
 
   it('sizes the branch box from this prefix glyphs, not a generic allowance', () => {
     const label = '分支1'
-    const id = 'branch-r-1-0'
+    const id = 'uid-a'
     const chapter = estimateNumberedBranchWidth(label, '第一章', id)
     const decimal = estimateNumberedBranchWidth(label, '1.', id)
     expect(chapter).toBeGreaterThan(decimal)

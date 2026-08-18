@@ -202,9 +202,8 @@ const menuItems = computed<MenuItem[]>(() => {
       items.push({
         label: t('diagram.contextMenu.addBranch'),
         action: () => {
-          const side = node.id.startsWith('branch-l-') ? 'left' : 'right'
           const childText = t('diagram.newChild')
-          if (diagramStore.addMindMapBranch(side, t('diagram.newBranch'), childText)) {
+          if (diagramStore.addMindMapBranch(undefined, t('diagram.newBranch'), childText)) {
             diagramStore.pushHistory(t('diagram.history.addBranch'))
           }
           emit('close')

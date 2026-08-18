@@ -7,6 +7,7 @@ import {
   MINDMAP_SIBLING_GAP,
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode } from '@/types'
+import { mindMapNodeDepth, mindMapNodeSide } from '@/utils/mindMapLocation'
 import { resolveNodeShape } from '@/utils/nodeShapeStyle'
 
 // ---------------------------------------------------------------------------
@@ -18,10 +19,18 @@ interface ParsedNodeId {
   depth: number
 }
 
-function parseNodeId(id: string): ParsedNodeId | null {
-  const m = id.match(/^branch-(r|l)-(\d+)-/)
-  if (!m) return null
-  return { side: m[1] as 'r' | 'l', depth: parseInt(m[2], 10) }
+function parseNodeId(
+  nodeId: string,
+  nodes: DiagramNode[],
+  connections: Connection[]
+): ParsedNodeId | null {
+  if (nodeId === 'topic') return null
+  const node = nodes.find((item) => item.id === nodeId)
+  if (!node || node.type === 'topic') return null
+  const side = mindMapNodeSide(nodeId, { node, nodes, connections })
+  if (!side) return null
+  const depth = mindMapNodeDepth(nodeId, { node, nodes, connections })
+  return { side: side === 'left' ? 'l' : 'r', depth }
 }
 
 function getNodeWidth(node: DiagramNode, nodeWidths: Record<string, number>): number {
@@ -82,7 +91,7 @@ export function recalculateMindMapLegacyColumnPositions(
   const leftMaxWidths = new Map<number, number>()
 
   for (const node of nodes) {
-    const parsed = parseNodeId(node.id)
+    const parsed = parseNodeId(node.id, nodes, connections)
     if (!parsed) continue
     const w = getNodeWidth(node, nodeWidths)
     const map = parsed.side === 'r' ? rightMaxWidths : leftMaxWidths
@@ -130,7 +139,7 @@ export function recalculateMindMapLegacyColumnPositions(
       return { ...node, position: { ...node.position, x: newX } }
     }
 
-    const parsed = parseNodeId(node.id)
+    const parsed = parseNodeId(node.id, nodes, connections)
     if (!parsed) return node
 
     const w = getNodeWidth(node, nodeWidths)
@@ -188,7 +197,7 @@ function correctYPositions(
   const rightRoots: string[] = []
   const leftRoots: string[] = []
   for (const cid of topicChildren) {
-    const parsed = parseNodeId(cid)
+    const parsed = parseNodeId(cid, nodes, connections)
     if (!parsed) continue
     if (parsed.side === 'r') rightRoots.push(cid)
     else leftRoots.push(cid)

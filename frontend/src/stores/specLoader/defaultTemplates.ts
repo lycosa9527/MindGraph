@@ -87,11 +87,9 @@ function templatesForLocale(lang: LocaleCode): Record<string, Record<string, unk
       _mindmap_diagram_style: DEFAULT_MIND_MAP_DIAGRAM_STYLE_ID,
       topic: lt('diagram.defaults.centralTopic', lang),
       children: Array.from({ length: 4 }, (_, bi) => ({
-        id: `branch_${bi}`,
         label: lt('diagram.defaults.branchN', lang, { n: bi + 1 }),
         text: lt('diagram.defaults.branchN', lang, { n: bi + 1 }),
         children: Array.from({ length: 2 }, (_, ci) => ({
-          id: `sub_${bi}_${ci}`,
           label: lt('diagram.defaults.childNM', lang, { n: bi + 1, m: ci + 1 }),
           text: lt('diagram.defaults.childNM', lang, { n: bi + 1, m: ci + 1 }),
           children: [],

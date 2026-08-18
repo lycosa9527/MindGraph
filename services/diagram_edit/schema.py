@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from services.diagram.mindmap_identity import CANVAS_UUID_RE
+
 
 def _fn(
     name: str,
@@ -54,7 +56,10 @@ def get_diagram_edit_tools() -> list[dict[str, Any]]:
                 "side": {
                     "type": "string",
                     "enum": ["left", "right"],
-                    "description": "Branch side when adding under topic (default right)",
+                    "description": (
+                        "Optional L1 side. Omit to let the canvas place the branch "
+                        "clockwise and keep left/right balanced."
+                    ),
                 },
                 "branch_index": {
                     "type": "integer",
@@ -157,10 +162,15 @@ def diagram_edit_function_call_to_legacy_command(
         }
 
     if name == "diagram.delete_node":
-        ident = args.get("node_identifier") or args.get("target")
+        ident = args.get("node_identifier") or args.get("node_id") or args.get("target")
         cmd = {"action": "delete_node", "confidence": 0.95}
-        if isinstance(ident, str):
-            cmd["target"] = ident.strip()
+        if isinstance(ident, str) and ident.strip():
+            text = ident.strip()
+            cmd["node_identifier"] = text
+            if CANVAS_UUID_RE.fullmatch(text):
+                cmd["node_id"] = text
+            else:
+                cmd["target"] = text
         if isinstance(ident, int):
             cmd["node_index"] = ident
         return cmd

@@ -194,10 +194,6 @@ class FeatureFlagSettings(BaseModel):
         default=False,
         description="Enable Kitty Agent (Qwen Omni Realtime multimodal)",
     )
-    FEATURE_DRAG_AND_DROP: bool = Field(
-        default=False,
-        description="Enable drag and drop functionality for diagram nodes",
-    )
     FEATURE_COURSE: bool = Field(default=False, description="Enable Thinking Course (思维课程) feature")
     FEATURE_MATE_LEARNING: bool = Field(
         default=False,

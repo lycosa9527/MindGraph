@@ -1,16 +1,17 @@
 /**
- * Stable identity for mind-map branches across tree rebuilds.
- * Layout ids (`branch-r-1-0`) are positional and change on move/reparent;
- * `data.mindMapUid` survives so styles/selection/dims can follow the node
- * even when multiple branches share the same label text.
+ * Stable identity for mind-map branches. After the identity invert, ``node.id``
+ * is this UUID (and ``data.mindMapUid`` matches it during the transition).
  */
+import { isLeftoverMindMapBranchId } from '@/utils/mindMapLocation'
 import { safeRandomUUID } from '@/utils/safeRandomUUID'
 import type { DiagramNode } from '@/types'
 
 export const MINDMAP_NODE_UID_DATA_KEY = 'mindMapUid'
 
 export type MindMapBranchUidCarrier = {
+  id?: string
   uid?: string
+  legacyId?: string
   text?: string
   children?: MindMapBranchUidCarrier[]
 }
@@ -36,13 +37,42 @@ export function ensureMindMapBranchUid(branch: MindMapBranchUidCarrier): string 
   return uid
 }
 
+/**
+ * Children-only specs may still carry ``id``. Stable ids become ``uid``;
+ * leftover invented ids become ``legacyId`` so load-migrate aliases survive.
+ */
+export function hydrateMindMapBranchIdentityFromSpec(branch: MindMapBranchUidCarrier): void {
+  const rawId = typeof branch.id === 'string' ? branch.id.trim() : ''
+  const existingUid = typeof branch.uid === 'string' ? branch.uid.trim() : ''
+  if (existingUid) {
+    branch.uid = existingUid
+  } else if (rawId && rawId !== 'topic' && !isLeftoverMindMapBranchId(rawId)) {
+    branch.uid = rawId
+  }
+  const existingLegacy = typeof branch.legacyId === 'string' ? branch.legacyId.trim() : ''
+  if (!existingLegacy && rawId && isLeftoverMindMapBranchId(rawId)) {
+    branch.legacyId = rawId
+  }
+  ensureMindMapBranchUid(branch)
+}
+
+export function hydrateMindMapBranchTree(
+  branches: MindMapBranchUidCarrier[] | undefined
+): void {
+  if (!branches) return
+  for (const branch of branches) {
+    hydrateMindMapBranchIdentityFromSpec(branch)
+    hydrateMindMapBranchTree(branch.children)
+  }
+}
+
 export function findNodeIdByMindMapUid(
   nodes: DiagramNode[],
   uid: string
 ): string | null {
   for (const node of nodes) {
-    if (!node.id.startsWith('branch-')) continue
-    if (readMindMapNodeUid(node) === uid) return node.id
+    if (node.id === 'topic') continue
+    if (node.id === uid || readMindMapNodeUid(node) === uid) return node.id
   }
   return null
 }

@@ -10,10 +10,10 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional
 
+from services.diagram.mindmap_identity import is_leftover_mindmap_branch_id, is_machine_node_id
 from services.diagram_edit.types import DiagramEditCommand, ExpectedEffect
 from services.diagram_edit.verify import normalize_diagram_text
 
-_STRUCTURAL_NODE_ID_RE = re.compile(r"^branch-[lr]-\d+-\d+$")
 _INDEX_PHRASE_RE = re.compile(
     r"^(第\s*\d+\s*[个個支]|the\s+\d+(st|nd|rd|th)\b|\d+\s*$)",
     re.IGNORECASE,
@@ -40,10 +40,6 @@ def _snapshot_node_text(node: Dict[str, Any]) -> str:
     return ""
 
 
-def _is_structural_node_id(value: str) -> bool:
-    return bool(_STRUCTURAL_NODE_ID_RE.match(value.strip()))
-
-
 def _is_index_phrase(value: str) -> bool:
     return bool(_INDEX_PHRASE_RE.match(value.strip()))
 
@@ -51,7 +47,7 @@ def _is_index_phrase(value: str) -> bool:
 def _is_human_label_candidate(value: Optional[str]) -> bool:
     if not value:
         return False
-    if _is_structural_node_id(value):
+    if is_machine_node_id(value):
         return False
     if value in ("topic", "center"):
         return False
@@ -97,11 +93,18 @@ def _resolve_delete_verify_label(
     """
     Label used for delete ``node_absent`` verify.
 
-    Prefer human text over positional mind-map ids (ids are reused after reload).
-    Return None when label is missing or duplicated — omit identifier rather than
-    emitting a recycled ``branch-*`` id.
+    Prefer a stable ``node.id`` (UUID). Recycled positional ``branch-*`` ids
+    are never used as the verify key — unique labels are used instead.
     """
     snapshot_nodes = _snapshot_nodes(before_snapshot)
+    id_first = (
+        _normalized_text(args.get("node_id")),
+        _normalized_text(legacy.get("node_id")),
+    )
+    for raw_id in id_first:
+        if raw_id and not is_leftover_mindmap_branch_id(raw_id) and _id_exists_in_snapshot(before_snapshot, raw_id):
+            return raw_id
+
     human_candidates = (
         _normalized_text(legacy.get("target")),
         _normalized_text(legacy.get("node_label")),
@@ -128,7 +131,7 @@ def _resolve_delete_verify_label(
     for raw_id in id_candidates:
         if not raw_id:
             continue
-        if not _is_structural_node_id(raw_id) and _is_human_label_candidate(raw_id):
+        if not is_leftover_mindmap_branch_id(raw_id) and _is_human_label_candidate(raw_id):
             if not snapshot_nodes:
                 return normalize_diagram_text(raw_id)
             matches = _label_match_count(before_snapshot, raw_id)
@@ -145,6 +148,13 @@ def _resolve_delete_verify_label(
         return None
 
     return None
+
+
+def _id_exists_in_snapshot(before_snapshot: Dict[str, Any], node_id: str) -> bool:
+    wanted = node_id.strip()
+    return any(
+        isinstance(node.get("id"), str) and node.get("id") == wanted for node in _snapshot_nodes(before_snapshot)
+    )
 
 
 def build_expected_effect(
@@ -178,7 +188,7 @@ def build_expected_effect(
         child_idx = args.get("child_index")
         if not isinstance(child_idx, int):
             child_idx = legacy.get("child_index")
-        side = _normalized_text(args.get("side")) or _normalized_text(legacy.get("side")) or "right"
+        side = _normalized_text(args.get("side")) or _normalized_text(legacy.get("side"))
 
         if branch_idx is not None and child_idx is not None:
             return ExpectedEffect(
@@ -223,7 +233,9 @@ def build_expected_effect(
 
     if tool == "diagram.update_node":
         ident = (
-            _normalized_text(args.get("node_identifier"))
+            _normalized_text(args.get("node_id"))
+            or _normalized_text(legacy.get("node_id"))
+            or _normalized_text(args.get("node_identifier"))
             or _normalized_text(legacy.get("node_identifier"))
             or _normalized_text(legacy.get("target"))
         )

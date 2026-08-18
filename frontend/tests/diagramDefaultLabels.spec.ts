@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   getAllEditablePlaceholderLabels,
+  isMindmapDefaultNodeLabel,
   isNodeDisplayPlaceholderLabel,
+  shouldReplaceLabelWithMathInsert,
 } from '@/stores/diagram/diagramDefaultLabels'
 
 describe('diagram default label display contrast', () => {
@@ -26,5 +28,14 @@ describe('diagram default label display contrast', () => {
     expect(editable.length).toBeGreaterThan(0)
     const sample = editable[0]
     expect(isNodeDisplayPlaceholderLabel('circle_map', 'context-0', sample)).toBe(true)
+  })
+
+  it('treats default mind-map labels as replaceable on UUID and leftover positional ids', () => {
+    expect(isMindmapDefaultNodeLabel('uid-branch', 'Branch 1')).toBe(true)
+    expect(isMindmapDefaultNodeLabel('uid-child', 'Child 1.1')).toBe(true)
+    expect(isMindmapDefaultNodeLabel('uid-custom', 'Custom')).toBe(false)
+    expect(isMindmapDefaultNodeLabel('branch-r-1-0', 'Branch 1')).toBe(true)
+    expect(shouldReplaceLabelWithMathInsert('mindmap', 'uid-branch', 'Branch 1')).toBe(true)
+    expect(shouldReplaceLabelWithMathInsert('mindmap', 'uid-custom', 'Custom')).toBe(false)
   })
 })
