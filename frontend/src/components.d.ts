@@ -380,6 +380,7 @@ declare module 'vue' {
     ShowcaseTeachingDocPreview: typeof import('./components/showcase/ShowcaseTeachingDocPreview.vue')['default']
     SidebarOutline: typeof import('./components/canvas/SidebarOutline.vue')['default']
     SidebarQuoteMarquee: typeof import('./components/sidebar/SidebarQuoteMarquee.vue')['default']
+    SidebarTokenUsage: typeof import('./components/sidebar/SidebarTokenUsage.vue')['default']
     SmartResponsePanel: typeof import('./components/admin/SmartResponsePanel.vue')['default']
     SoftwareAgreementDocument: typeof import('./components/auth/SoftwareAgreementDocument.vue')['default']
     SoftwareAgreementModal: typeof import('./components/auth/SoftwareAgreementModal.vue')['default']

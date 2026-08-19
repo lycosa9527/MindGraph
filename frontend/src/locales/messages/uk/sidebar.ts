@@ -105,6 +105,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'Пакетів ще немає',
   'sidebar.knowledgeSpaceHistory.title': 'Пакети',
   'sidebar.languageSettings': 'Налаштування мови',
+  'sidebar.tokenUsageToday': 'Today {usage}',
   'sidebar.library': 'Бібліотека',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

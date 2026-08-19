@@ -25,11 +25,13 @@ import {
 
 import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import SidebarQuoteMarquee from '@/components/sidebar/SidebarQuoteMarquee.vue'
+import SidebarTokenUsage from '@/components/sidebar/SidebarTokenUsage.vue'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 import { useSidebarPhilosophyQuote } from '@/composables/sidebar/useSidebarPhilosophyQuote'
 import { useSidebarThinkingCoinTaskPromo } from '@/composables/sidebar/useSidebarThinkingCoinTaskPromo'
 import { usePwaInstall } from '@/composables/usePwaInstall'
+import { useUIStore } from '@/stores/ui'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
 import { isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
 
@@ -44,6 +46,7 @@ const showShareSiteModal = ref(false)
 const { triggerImport } = useDiagramImport()
 const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.path))
 const { showPwaInstall, handlePwaInstall } = usePwaInstall((key) => s.t(key))
+const uiStore = useUIStore()
 const { quote } = useSidebarPhilosophyQuote()
 const { promoTitle, promoReward, taskPromoKey, showInviteAccent } = useSidebarThinkingCoinTaskPromo(
   sidebarCtx.thinkingCoinEarnTasks,
@@ -226,10 +229,11 @@ function handleVoiceNotes(): void {
                 </span>
               </div>
               <SidebarQuoteMarquee
-                v-if="quote"
+                v-if="uiStore.sidebarPoemEnabled && quote"
                 :text="quote.text"
                 :author="quote.author"
               />
+              <SidebarTokenUsage v-else-if="!uiStore.sidebarPoemEnabled" />
             </div>
           </div>
           <ChevronDown class="w-4 h-4 text-stone-400 shrink-0 ml-2" />

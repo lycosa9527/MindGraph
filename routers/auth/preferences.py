@@ -21,6 +21,7 @@ from services.utils.error_types import REDIS_ERRORS
 from utils.auth import get_current_user
 
 from .dependencies import get_language_dependency
+from .user_session_prefs import language_preference_patch_fields
 
 logger = logging.getLogger(__name__)
 
@@ -95,12 +96,7 @@ async def update_language_preferences(
     await user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
     await user_cache.cache_user(user)
 
-    return {
-        "ui_language": user.ui_language,
-        "prompt_language": user.prompt_language,
-        "ui_version": user.ui_version,
-        "match_prompt_to_ui": getattr(user, "match_prompt_to_ui", True),
-    }
+    return language_preference_patch_fields(user)
 
 
 @router.patch("/diagram-preferences")

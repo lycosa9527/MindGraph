@@ -105,6 +105,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': '아직 패키지가 없습니다',
   'sidebar.knowledgeSpaceHistory.title': '패키지',
   'sidebar.languageSettings': '언어 설정',
+  'sidebar.tokenUsageToday': 'Today {usage}',
   'sidebar.library': '라이브러리',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

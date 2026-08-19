@@ -14,7 +14,7 @@ import { useAuthStore, useUIStore } from '@/stores'
 const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
-const { t } = useLanguage()
+const { t, toggleLanguage } = useLanguage()
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const userName = computed(() => authStore.user?.username || '')
@@ -57,7 +57,7 @@ function goToAdmin(): void {
         <!-- Language Toggle -->
         <el-button
           circle
-          @click="uiStore.toggleLanguage"
+          @click="toggleLanguage"
         >
           {{ toolbarShortForUiCode(uiStore.language) }}
         </el-button>

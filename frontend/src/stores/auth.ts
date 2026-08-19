@@ -16,9 +16,7 @@ import { defineStore } from 'pinia'
 import { notify } from '@/composables/core/notifications'
 import { eventBus } from '@/composables/core/useEventBus'
 import { difyKeys } from '@/composables/queries/difyKeys'
-import { isAiContentLevelId } from '@/config/aiContentLevels'
 import { isEducationStage } from '@/constants/educationStage'
-import { mergeSchoolTierFeatures, normalizeSchoolTier } from '@/constants/schoolTier'
 import { i18n } from '@/i18n'
 import { isPromptOutputLanguageCode, isUiLocale } from '@/i18n/locales'
 import { useAiContentLevelStore } from '@/stores/aiContentLevel'
@@ -33,8 +31,6 @@ import type {
   CaptchaResponse,
   LoginCredentials,
   LoginResponse,
-  SchoolTier,
-  SchoolTierFeatures,
   User,
   UserRole,
 } from '@/types'
@@ -48,13 +44,13 @@ import { registerAiContentLevelAuthBridge } from '@/utils/aiContentLevelAuthBrid
 import { getAppQueryClient } from '@/utils/appQueryClient'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
+import { normalizeAuthUser } from '@/utils/normalizeAuthUser'
 import { clearSavedLoginCredentials } from '@/utils/savedLoginCredentials'
 import {
   ensureFreshSessionAfterAuthFailure,
   getSessionRefreshEpoch,
   refreshSessionAccessToken,
 } from '@/utils/sessionRefresh'
-import { DEFAULT_USER_AVATAR_EMOJI } from '@/utils/userAvatarEmoji'
 import { normalizeUserRole } from '@/utils/userRoleDisplay'
 import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
 import {
@@ -99,6 +95,7 @@ export const useAuthStore = defineStore('auth', () => {
   const lastAdminCapabilitiesFetchTime = ref<number>(0)
   const hasVerifiedAuthThisSession = ref(false) // Track if we've verified auth with server in this session
   const PROFILE_REFRESH_MIN_MS = 30_000
+  const SESSION_KICK_POLL_MS = 120_000
   const ADMIN_CAPABILITIES_CACHE_MS = 60_000
   let profileVisibilityListener: (() => void) | null = null
   /**
@@ -175,17 +172,11 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (storedUser) {
       try {
-        const parsed = JSON.parse(storedUser) as User
-        if (parsed.role) {
-          parsed.role = normalizeUserRole(parsed.role)
-        }
-        user.value = parsed
-        sessionEducationStage.value = isEducationStage(parsed.educationStage)
-          ? parsed.educationStage
-          : null
-        useAiContentLevelStore().hydrateFromProfile(
-          isAiContentLevelId(parsed.aiContentLevel) ? parsed.aiContentLevel : null
-        )
+        const normalized = normalizeAuthUser(JSON.parse(storedUser) as User)
+        user.value = normalized
+        sessionEducationStage.value = normalized.educationStage ?? null
+        useAiContentLevelStore().hydrateFromProfile(normalized.aiContentLevel ?? null)
+        sessionStorage.setItem(USER_KEY, JSON.stringify(normalized))
       } catch {
         user.value = null
       }
@@ -197,10 +188,11 @@ export const useAuthStore = defineStore('auth', () => {
       const legacyUser = localStorage.getItem(USER_KEY)
       if (legacyUser) {
         try {
-          user.value = JSON.parse(legacyUser)
-          // Migrate to sessionStorage
-          sessionStorage.setItem(USER_KEY, legacyUser)
-          // Clean up localStorage (tokens should not be there)
+          const normalized = normalizeAuthUser(JSON.parse(legacyUser) as User)
+          user.value = normalized
+          sessionEducationStage.value = normalized.educationStage ?? null
+          useAiContentLevelStore().hydrateFromProfile(normalized.aiContentLevel ?? null)
+          sessionStorage.setItem(USER_KEY, JSON.stringify(normalized))
           localStorage.removeItem(USER_KEY)
           localStorage.removeItem('access_token')
         } catch {
@@ -221,103 +213,6 @@ export const useAuthStore = defineStore('auth', () => {
     // This is kept for backward compatibility during transition
     token.value = newToken
     // Do NOT store in localStorage - security risk
-  }
-
-  function normalizeUser(backendUser: BackendUser): User {
-    // Backend returns: id, phone, name, organization (string or object), avatar
-    // Frontend expects: id, username, phone, schoolName, avatar, etc.
-    let avatar = backendUser.avatar || DEFAULT_USER_AVATAR_EMOJI
-    // Handle legacy avatar_01 format - convert to emoji
-    if (avatar.startsWith('avatar_')) {
-      avatar = DEFAULT_USER_AVATAR_EMOJI
-    }
-    // Handle organization which can be string or object
-    const org = backendUser.organization
-    const orgIsObject = typeof org === 'object' && org !== null
-    const orgId = orgIsObject ? org.id : undefined
-    const orgName = orgIsObject ? org.name : typeof org === 'string' ? org : undefined
-    const orgDisplayNameRaw =
-      orgIsObject && org.display_name != null ? String(org.display_name).trim() : ''
-    const orgDisplayName = orgDisplayNameRaw || undefined
-    const mindmateNameRaw =
-      orgIsObject && org.mindmate_agent_name != null ? String(org.mindmate_agent_name).trim() : ''
-    const mindmateAgentName = mindmateNameRaw || undefined
-    const mindmateAvatarRaw =
-      orgIsObject && org.mindmate_agent_avatar_url != null
-        ? String(org.mindmate_agent_avatar_url).trim()
-        : ''
-    const mindmateAgentAvatarUrl = mindmateAvatarRaw || undefined
-    const schoolTierRaw =
-      orgIsObject && org.school_tier != null ? normalizeSchoolTier(org.school_tier) : undefined
-    const schoolTierFeaturesRaw =
-      orgIsObject && org.school_tier_features != null ? org.school_tier_features : undefined
-    const schoolTier: SchoolTier | undefined = orgId ? (schoolTierRaw ?? 'trial') : undefined
-    const schoolTierFeatures: SchoolTierFeatures | undefined = orgId
-      ? mergeSchoolTierFeatures(schoolTier, schoolTierFeaturesRaw)
-      : undefined
-    const subscriptionExpired = orgIsObject && org.subscription_expired === true ? true : undefined
-    const displayLabel = orgDisplayName || orgName || backendUser.schoolName || ''
-
-    const allowsZh = backendUser.allows_simplified_chinese !== false
-    let uiLang = backendUser.ui_language ?? null
-    let promptLang = backendUser.prompt_language ?? null
-    if (!allowsZh) {
-      if ((uiLang || '').toLowerCase() === 'zh') {
-        uiLang = 'en'
-      }
-      if ((promptLang || '').toLowerCase() === 'zh') {
-        promptLang = 'en'
-      }
-    }
-
-    const loginPasswordSet =
-      backendUser.login_password_set === undefined ? true : Boolean(backendUser.login_password_set)
-
-    const matchPrompt =
-      typeof backendUser.match_prompt_to_ui === 'boolean'
-        ? backendUser.match_prompt_to_ui
-        : undefined
-
-    const thinkingCoinsRaw = backendUser.thinking_coins
-    const thinkingCoins =
-      thinkingCoinsRaw && typeof thinkingCoinsRaw === 'object'
-        ? {
-            balance: Number(thinkingCoinsRaw.balance ?? 0),
-            eligible: thinkingCoinsRaw.eligible === true,
-          }
-        : undefined
-
-    return {
-      id: String(backendUser.id || backendUser.user?.id || ''),
-      username:
-        backendUser.name || backendUser.username || backendUser.phone || backendUser.email || '',
-      phone: backendUser.phone || backendUser.user?.phone || '',
-      email: backendUser.email,
-      role: normalizeUserRole(backendUser.role),
-      schoolId: orgId ? String(orgId) : backendUser.schoolId,
-      schoolName: displayLabel,
-      avatar,
-      createdAt: backendUser.created_at || backendUser.createdAt,
-      lastLogin: backendUser.last_login || backendUser.lastLogin,
-      uiLanguage: uiLang,
-      promptLanguage: promptLang,
-      matchPromptToUi: matchPrompt,
-      uiVersion: backendUser.ui_version ?? null,
-      educationStage: isEducationStage(backendUser.education_stage)
-        ? backendUser.education_stage
-        : null,
-      aiContentLevel: isAiContentLevelId(backendUser.ai_content_level)
-        ? backendUser.ai_content_level
-        : null,
-      allowsSimplifiedChinese: allowsZh,
-      loginPasswordSet,
-      mindmateAgentName: mindmateAgentName || null,
-      mindmateAgentAvatarUrl: mindmateAgentAvatarUrl || null,
-      schoolTier: schoolTier ?? null,
-      schoolTierFeatures: schoolTierFeatures ?? null,
-      subscriptionExpired: subscriptionExpired ?? false,
-      thinkingCoins,
-    }
   }
 
   function patchThinkingCoinsSummary(summary: { balance: number; eligible: boolean }): void {
@@ -352,29 +247,31 @@ export const useAuthStore = defineStore('auth', () => {
     const uiStore = useUIStore()
     uiStore.applyUiVersionFromServerProfile(target.uiVersion ?? null)
     const hasServerUi = isUiLocale(target.uiLanguage ?? null)
+    const hasSavedUiLanguage =
+      typeof target.uiLanguage === 'string' && target.uiLanguage.trim().length > 0
     const hasServerPrompt = isPromptOutputLanguageCode(target.promptLanguage ?? null)
     const hasServerMatch = typeof target.matchPromptToUi === 'boolean'
     if (hasServerUi || hasServerPrompt || hasServerMatch) {
-      languagePrefsSeededForUserId.value = null
       uiStore.applyLanguageFromServerProfile(
         hasServerUi ? (target.uiLanguage ?? null) : null,
         hasServerPrompt ? (target.promptLanguage ?? null) : null,
         hasServerMatch ? { matchPromptToUi: target.matchPromptToUi } : undefined
       )
-      return
     }
-    if (languagePrefsSeededForUserId.value === target.id) {
-      return
-    }
-    if (languagePrefsSeedInFlight) {
+    if (
+      hasServerUi ||
+      hasSavedUiLanguage ||
+      languagePrefsSeededForUserId.value === target.id ||
+      languagePrefsSeedInFlight
+    ) {
       return
     }
     languagePrefsSeedInFlight = true
     void (async () => {
       try {
-        uiStore.syncGuestLocaleFromBrowser()
         const ok = await saveLanguagePreferences(uiStore.language, uiStore.promptLanguage, {
           matchPromptToUi: uiStore.matchPromptToUi,
+          silent: true,
         })
         if (ok) {
           languagePrefsSeededForUserId.value = target.id
@@ -388,7 +285,7 @@ export const useAuthStore = defineStore('auth', () => {
   function setUser(newUser: User | BackendUser): void {
     authVerificationBlockedByNetwork.value = false
     // Normalize backend user format to frontend format
-    const normalizedUser = normalizeUser(newUser)
+    const normalizedUser = normalizeAuthUser(newUser)
     user.value = normalizedUser
     sessionEducationStage.value = normalizedUser.educationStage ?? null
     useAiContentLevelStore().hydrateFromProfile(normalizedUser.aiContentLevel ?? null)
@@ -411,7 +308,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function saveLanguagePreferences(
     ui: Language,
     prompt: PromptLanguage,
-    options?: { uiVersion?: string; matchPromptToUi?: boolean }
+    options?: { uiVersion?: string; matchPromptToUi?: boolean; silent?: boolean }
   ): Promise<boolean> {
     try {
       const body: Record<string, string | boolean> = {
@@ -438,7 +335,9 @@ export const useAuthStore = defineStore('auth', () => {
         match_prompt_to_ui?: boolean
       }
       if (!response.ok) {
-        notify.error(typeof data.detail === 'string' ? data.detail : 'Failed to save preferences')
+        if (!options?.silent) {
+          notify.error(typeof data.detail === 'string' ? data.detail : 'Failed to save preferences')
+        }
         return false
       }
       if (user.value) {
@@ -457,7 +356,9 @@ export const useAuthStore = defineStore('auth', () => {
       }
       return true
     } catch {
-      notify.error('Failed to save preferences')
+      if (!options?.silent) {
+        notify.error('Failed to save preferences')
+      }
       return false
     }
   }
@@ -586,13 +487,12 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await response.json()
 
       if (response.ok && data.user) {
-        const normalizedUser = normalizeUser(data.user)
-        setUser(normalizedUser)
+        setUser(data.user)
         hasVerifiedAuthThisSession.value = true // Login is verification
         lastProfileRefreshTime.value = Date.now()
         startSessionMonitoring()
         eventBus.emit('auth:login_success', {})
-        return { success: true, user: normalizedUser }
+        return { success: true, user: user.value ?? undefined }
       }
 
       return { success: false, message: data.detail || data.message || 'Login failed' }
@@ -620,15 +520,14 @@ export const useAuthStore = defineStore('auth', () => {
         /* non-JSON body */
       }
 
-      const userPayload = data.user as Parameters<typeof normalizeUser>[0] | undefined
+      const userPayload = data.user as Parameters<typeof normalizeAuthUser>[0] | undefined
       if (response.ok && userPayload) {
-        const normalizedUser = normalizeUser(userPayload)
-        setUser(normalizedUser)
+        setUser(userPayload)
         hasVerifiedAuthThisSession.value = true
         lastProfileRefreshTime.value = Date.now()
         startSessionMonitoring()
         eventBus.emit('auth:login_success', {})
-        return { success: true, user: normalizedUser }
+        return { success: true, user: user.value ?? undefined }
       }
 
       const detail = data.detail as string | undefined
@@ -909,6 +808,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Reload /me after an event (login already has a payload). Not on a timer.
+   * Tab-focus callers omit bypassThrottle so PROFILE_REFRESH_MIN_MS applies.
+   */
   async function refreshUserProfile(options?: { bypassThrottle?: boolean }): Promise<boolean> {
     if (isMindgraphHeadlessExportSession() || !user.value) {
       return false
@@ -964,9 +867,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (response.ok) {
         const data = await response.json()
         if (data.user || data.id) {
-          const userData = data.user || data
-          const normalizedUser = normalizeUser(userData)
-          setUser(normalizedUser)
+          setUser(data.user || data)
         }
         return true
       }
@@ -995,10 +896,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function onProfileVisibilityRefresh(): void {
+  function onVisibleTabSessionEvents(): void {
     if (document.visibilityState !== 'visible' || !user.value) {
       return
     }
+    void checkSessionStatus()
     void refreshUserProfile()
   }
 
@@ -1009,26 +911,23 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     if (!profileVisibilityListener) {
-      profileVisibilityListener = onProfileVisibilityRefresh
+      profileVisibilityListener = onVisibleTabSessionEvents
       document.addEventListener('visibilitychange', profileVisibilityListener)
     }
 
-    sessionMonitorInterval.value = window.setInterval(async () => {
+    // Kick-from-another-device only. Profile (/me) is event-driven: login,
+    // checkAuth, tab focus, settings save, and explicit UI events.
+    sessionMonitorInterval.value = window.setInterval(() => {
       if (document.visibilityState !== 'visible') {
         return
       }
-      await checkSessionStatus()
-      await refreshUserProfile({ bypassThrottle: true })
-    }, 120000) // 2 minutes - balance between responsiveness and server load
+      void checkSessionStatus()
+    }, SESSION_KICK_POLL_MS)
 
-    // Only check immediately if not checked recently (within last 5 seconds).
-    // Profile refresh respects PROFILE_REFRESH_MIN_MS so a just-completed /me
-    // from checkAuth/login is not duplicated (interval still uses bypassThrottle).
     const now = Date.now()
     if (now - lastSessionCheckTime.value > 5000) {
-      checkSessionStatus()
       lastSessionCheckTime.value = now
-      void refreshUserProfile()
+      void checkSessionStatus()
     }
   }
 

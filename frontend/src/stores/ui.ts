@@ -44,6 +44,7 @@ export const MINDMAP_CANVAS_MODE_KEY = 'mindgraph_mindmap_canvas_mode'
 export const MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY =
   'mindgraph_mindmap_canvas_v2_default_migrated'
 export const E_BLACKBOARD_OPTIMIZE_KEY = 'mindgraph_e_blackboard_optimize'
+export const SIDEBAR_POEM_ENABLED_KEY = 'mindgraph_sidebar_poem_enabled'
 
 const VALID_MINDMAP_CANVAS_MODES: ReadonlySet<string> = new Set(['legacy', 'v2'])
 
@@ -130,6 +131,8 @@ export const useUIStore = defineStore('ui', () => {
    * `mindMapEBlackboard.ts`.
    */
   const eBlackboardOptimize = ref(false)
+  /** Sidebar poem under the user name. When off, daily token usage is shown instead. */
+  const sidebarPoemEnabled = ref(true)
   const isMobile = ref(false)
   // Word task panes are narrow — start collapsed; user can expand.
   const sidebarCollapsed = ref(isOfficeEmbedDesktop())
@@ -288,6 +291,7 @@ export const useUIStore = defineStore('ui', () => {
     }
 
     eBlackboardOptimize.value = localStorage.getItem(E_BLACKBOARD_OPTIMIZE_KEY) === '1'
+    sidebarPoemEnabled.value = localStorage.getItem(SIDEBAR_POEM_ENABLED_KEY) !== '0'
 
     if (isValidLanguage(storedLanguage)) {
       language.value = storedLanguage
@@ -355,16 +359,20 @@ export const useUIStore = defineStore('ui', () => {
   }
 
   function setLanguage(newLanguage: Language): void {
-    language.value = newLanguage
-    localStorage.setItem(LANGUAGE_KEY, newLanguage)
-    document.documentElement.lang = htmlLangForLocale(newLanguage)
     if (matchPromptToUi.value) {
       const matched = matchedPromptLanguageForUiLocale(newLanguage)
-      if (matched !== null) {
+      if (matched !== null && promptLanguage.value !== matched) {
         promptLanguage.value = matched
         localStorage.setItem(PROMPT_LANGUAGE_KEY, matched)
       }
     }
+    if (language.value === newLanguage) {
+      document.documentElement.lang = htmlLangForLocale(newLanguage)
+      return
+    }
+    language.value = newLanguage
+    localStorage.setItem(LANGUAGE_KEY, newLanguage)
+    document.documentElement.lang = htmlLangForLocale(newLanguage)
     languageSwitchSeq += 1
     const seq = languageSwitchSeq
     void loadLocaleMessages(newLanguage).then(() => {
@@ -376,11 +384,17 @@ export const useUIStore = defineStore('ui', () => {
   }
 
   function setPromptLanguage(lang: PromptLanguage): void {
+    if (promptLanguage.value === lang) {
+      return
+    }
     promptLanguage.value = lang
     localStorage.setItem(PROMPT_LANGUAGE_KEY, lang)
   }
 
   function setMatchPromptToUi(value: boolean): void {
+    if (matchPromptToUi.value === value) {
+      return
+    }
     matchPromptToUi.value = value
     localStorage.setItem(MATCH_PROMPT_TO_UI_KEY, value ? '1' : '0')
   }
@@ -415,6 +429,9 @@ export const useUIStore = defineStore('ui', () => {
   }
 
   function setUiVersion(version: UiVersion): void {
+    if (uiVersion.value === version) {
+      return
+    }
     uiVersion.value = version
     localStorage.setItem(UI_VERSION_KEY, version)
   }
@@ -449,11 +466,14 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.setItem(E_BLACKBOARD_OPTIMIZE_KEY, value ? '1' : '0')
   }
 
+  function setSidebarPoemEnabled(value: boolean): void {
+    sidebarPoemEnabled.value = value
+    localStorage.setItem(SIDEBAR_POEM_ENABLED_KEY, value ? '1' : '0')
+  }
+
   function applyUiVersionFromServerProfile(version: string | null | undefined): void {
     if (isValidUiVersion(version ?? null)) {
       setUiVersion(version as UiVersion)
-    } else {
-      setUiVersion('international')
     }
   }
 
@@ -605,6 +625,7 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.removeItem(MINDMAP_CANVAS_MODE_KEY)
     localStorage.removeItem(MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY)
     localStorage.removeItem(E_BLACKBOARD_OPTIMIZE_KEY)
+    localStorage.removeItem(SIDEBAR_POEM_ENABLED_KEY)
     applyTheme()
     initFromStorage()
   }
@@ -623,6 +644,7 @@ export const useUIStore = defineStore('ui', () => {
     uiVersion,
     mindMapCanvasMode,
     eBlackboardOptimize,
+    sidebarPoemEnabled,
     isMobile,
     sidebarCollapsed,
     wireframeMode,
@@ -652,6 +674,7 @@ export const useUIStore = defineStore('ui', () => {
     setUiVersion,
     setMindMapCanvasMode,
     setEBlackboardOptimize,
+    setSidebarPoemEnabled,
     applyUiVersionFromServerProfile,
     applyLanguageFromServerProfile,
     applyGuestLocaleFromBrowser,

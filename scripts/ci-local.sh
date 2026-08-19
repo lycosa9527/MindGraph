@@ -161,6 +161,7 @@ run_backend() {
     tests/test_assistant_markdown.py \
     tests/test_mindbot_dingtalk_diagram_display.py \
     tests/test_user_daily_token_quota.py \
+    tests/auth/test_user_session_prefs.py \
     tests/test_llm_daily_token_cap.py \
     tests/test_get_client_ip.py \
     tests/test_gewe_webhook_auth.py \
@@ -249,7 +250,10 @@ run_frontend() {
     tests/mindMapSeparation.spec.ts tests/mindMapLoadPreserveSides.spec.ts \
     tests/mindMapNodeUid.spec.ts tests/mindMapSubgraphMerge.spec.ts \
     tests/mindMapStringChildrenAudit.spec.ts \
-    tests/tsecCaptcha.spec.ts
+    tests/tsecCaptcha.spec.ts \
+    tests/loginRestoresUiLanguage.spec.ts tests/normalizeAuthUser.spec.ts \
+    tests/authBootstrapDedupe.spec.ts tests/formatGalleryLanguageMenuLabel.spec.ts \
+    tests/formatSidebarDailyTokens.spec.ts
 }
 
 run_chrome_extension() {

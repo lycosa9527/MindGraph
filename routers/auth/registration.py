@@ -55,6 +55,7 @@ from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
 from .helpers import auth_session_json_metadata, commit_user_with_retry, set_auth_cookies, track_user_activity
 from .sms import _verify_and_consume_sms_code
+from .user_session_prefs import user_preference_fields
 
 logger = logging.getLogger(__name__)
 
@@ -162,11 +163,7 @@ async def finalize_sms_registration_session(
             "phone": new_user.phone,
             "name": new_user.name,
             "organization": organization_session_payload(org),
-            "ui_language": getattr(new_user, "ui_language", None),
-            "prompt_language": getattr(new_user, "prompt_language", None),
-            "match_prompt_to_ui": getattr(new_user, "match_prompt_to_ui", True),
-            "education_stage": getattr(new_user, "education_stage", None),
-            "ai_content_level": getattr(new_user, "ai_content_level", None),
+            **user_preference_fields(new_user),
         },
     }
 
@@ -404,11 +401,7 @@ async def register(
             "phone": new_user.phone,
             "name": new_user.name,
             "organization": organization_session_payload(org),
-            "ui_language": getattr(new_user, "ui_language", None),
-            "prompt_language": getattr(new_user, "prompt_language", None),
-            "match_prompt_to_ui": getattr(new_user, "match_prompt_to_ui", True),
-            "education_stage": getattr(new_user, "education_stage", None),
-            "ai_content_level": getattr(new_user, "ai_content_level", None),
+            **user_preference_fields(new_user),
         },
     }
 

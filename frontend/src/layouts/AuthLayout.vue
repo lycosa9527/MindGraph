@@ -15,7 +15,7 @@ import { useFeatureFlagsStore, useUIStore } from '@/stores'
 const route = useRoute()
 const uiStore = useUIStore()
 const featureFlagsStore = useFeatureFlagsStore()
-const { t } = useLanguage()
+const { t, toggleLanguage } = useLanguage()
 
 const authLayoutMinimal = computed(() => route.meta.authLayoutMinimal === true)
 
@@ -83,7 +83,7 @@ const icpRegistrationNumber = '京ICP备2025126228号'
         <el-button
           circle
           class="!bg-white/10 !border-white/20 !text-white hover:!bg-white/20"
-          @click="uiStore.toggleLanguage"
+          @click="toggleLanguage"
         >
           {{ toolbarShortForUiCode(uiStore.language) }}
         </el-button>

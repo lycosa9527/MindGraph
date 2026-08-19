@@ -105,6 +105,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'Nog geen pakkette nie',
   'sidebar.knowledgeSpaceHistory.title': 'Pakkette',
   'sidebar.languageSettings': 'Taalinstellings',
+  'sidebar.tokenUsageToday': 'Today {usage}',
   'sidebar.library': 'Biblioteek',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

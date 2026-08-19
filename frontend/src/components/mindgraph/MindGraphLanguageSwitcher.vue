@@ -10,13 +10,14 @@ import { Check, Languages } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import { formatGalleryLanguageMenuLabel } from '@/i18n/galleryLanguageMenuLabel'
 import {
   getLocalesForInterfaceLanguagePicker,
   getPromptLanguageOptionsForPicker,
 } from '@/i18n/locales'
-import { useAuthStore } from '@/stores/auth'
 import type { Language } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
+import { persistLanguagePreferencesIfAuthenticated } from '@/utils/persistLanguagePreferences'
 
 const props = withDefaults(
   defineProps<{
@@ -27,7 +28,6 @@ const props = withDefaults(
 )
 
 const uiStore = useUIStore()
-const authStore = useAuthStore()
 const { t } = useLanguage()
 
 const languageRows = computed(() => {
@@ -41,11 +41,11 @@ const languageRows = computed(() => {
   enabled.sort((a, b) => orderIndex(a.code) - orderIndex(b.code) || a.code.localeCompare(b.code))
   return enabled.map((u) => {
     const prompt = promptOpts.find((p) => p.code === u.code)
-    const label = prompt ? prompt.label : u.nativeName
+    const nativeLabel = prompt ? prompt.label : u.nativeName
     const code = u.code as Language
     return {
       code,
-      label,
+      label: formatGalleryLanguageMenuLabel(code, nativeLabel),
     }
   })
 })
@@ -56,12 +56,8 @@ function onSelect(code: string): void {
   const lang = code as Language
   uiStore.setMatchPromptToUi(true)
   uiStore.setLanguage(lang)
-  uiStore.setUiLanguageExplicit(true)
+  persistLanguagePreferencesIfAuthenticated()
   void ensureFontsForLanguageCode(lang)
-  const promptCode = uiStore.promptLanguage
-  if (authStore.isAuthenticated) {
-    void authStore.saveLanguagePreferences(lang, promptCode, { matchPromptToUi: true })
-  }
 }
 </script>
 
@@ -172,6 +168,8 @@ function onSelect(code: string): void {
   display: block;
   width: 100%;
   text-align: center;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .mindgraph-lang-switcher__check {
@@ -192,9 +190,9 @@ function onSelect(code: string): void {
 <!-- Teleported dropdown — width lives on popper, not scoped subtree -->
 <style>
 .mindgraph-lang-switcher-popper.el-popper {
-  /* firm width: menu never wider than the popper */
-  width: min(180px, calc(100vw - 24px)) !important;
-  max-width: min(180px, calc(100vw - 24px)) !important;
+  /* bilingual native + Chinese labels need a bit more than the caption menu */
+  width: min(240px, calc(100vw - 24px)) !important;
+  max-width: min(240px, calc(100vw - 24px)) !important;
   box-sizing: border-box !important;
   padding: 4px !important;
   border: 1px solid #e7e5e4 !important;

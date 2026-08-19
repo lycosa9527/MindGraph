@@ -13,6 +13,7 @@ from utils.auth import user_daily_token_quota as quota_mod
 from utils.auth.token_stats_queries import BEIJING_TIMEZONE, beijing_date_key
 from utils.auth.user_daily_token_quota import (
     assert_user_daily_token_budget,
+    current_user_daily_token_payload,
     daily_token_cap,
     daily_token_limit_message,
     daily_token_quota_fields,
@@ -53,6 +54,19 @@ def test_daily_token_quota_fields_when_disabled(monkeypatch: pytest.MonkeyPatch)
     fields = daily_token_quota_fields(99)
     assert fields["token_daily_cap"] == 0
     assert fields["token_remaining_today"] == 0
+
+
+@pytest.mark.asyncio
+async def test_current_user_daily_token_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``/me`` payload nests cap, used, and remaining."""
+    monkeypatch.setenv("USER_DAILY_TOKEN_CAP", "1000")
+
+    async def _used(_user_id: int, _db_fallback: int | None = None) -> int:
+        return 250
+
+    monkeypatch.setattr(quota_mod, "resolve_daily_usage", _used)
+    payload = await current_user_daily_token_payload(42)
+    assert payload == {"cap": 1000, "used_today": 250, "remaining_today": 750}
 
 
 @pytest.mark.asyncio

@@ -105,6 +105,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': '暫無資料包',
   'sidebar.knowledgeSpaceHistory.title': '資料包',
   'sidebar.languageSettings': '界面UI設置',
+  'sidebar.tokenUsageToday': '今日 {usage}',
   'sidebar.library': '圖書館',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

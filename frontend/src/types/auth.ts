@@ -42,6 +42,12 @@ export interface ThinkingCoinsSummary {
   eligible: boolean
 }
 
+export interface DailyTokensSummary {
+  cap: number
+  usedToday: number
+  remainingToday: number
+}
+
 export interface User {
   id: string
   username: string
@@ -81,6 +87,8 @@ export interface User {
   subscriptionExpired?: boolean
   /** Trial-teacher thinking coin wallet summary from /me */
   thinkingCoins?: ThinkingCoinsSummary
+  /** Per-user daily LLM token budget from /me */
+  dailyTokens?: DailyTokensSummary
 }
 
 /**
@@ -124,6 +132,11 @@ export interface BackendUser {
   thinking_coins?: {
     balance?: number
     eligible?: boolean
+  }
+  daily_tokens?: {
+    cap?: number
+    used_today?: number
+    remaining_today?: number
   }
   user?: {
     id?: string | number

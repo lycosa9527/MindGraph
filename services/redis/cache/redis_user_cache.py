@@ -81,6 +81,7 @@ class UserCache:
             "last_login": user.last_login.isoformat() if user.last_login else "",
             "ui_language": getattr(user, "ui_language", None) or "",
             "prompt_language": getattr(user, "prompt_language", None) or "",
+            "ui_version": getattr(user, "ui_version", None) or "",
             "match_prompt_to_ui": "1" if getattr(user, "match_prompt_to_ui", True) else "0",
             "allows_simplified_chinese": "1" if getattr(user, "allows_simplified_chinese", True) else "0",
             "email_login_whitelisted_from_cn": "1" if getattr(user, "email_login_whitelisted_from_cn", False) else "0",
@@ -143,6 +144,7 @@ class UserCache:
 
         user.ui_language = normalized.get("ui_language") or None
         user.prompt_language = normalized.get("prompt_language") or None
+        user.ui_version = normalized.get("ui_version") or None
         mp = normalized.get("match_prompt_to_ui", "1")
         user.match_prompt_to_ui = mp not in ("0", "false", "False")
         asc = normalized.get("allows_simplified_chinese", "1")

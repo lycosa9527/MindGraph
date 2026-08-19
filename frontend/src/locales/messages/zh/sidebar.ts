@@ -103,6 +103,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': '暂无资料包',
   'sidebar.knowledgeSpaceHistory.title': '资料包',
   'sidebar.languageSettings': '界面UI设置',
+  'sidebar.tokenUsageToday': '今日 {usage}',
   'sidebar.library': '图书馆',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

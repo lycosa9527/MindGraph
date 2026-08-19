@@ -2,6 +2,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores'
+import { useUIStore } from '@/stores/ui'
 import type { SidebarQuote } from '@/types/sidebar-quotes'
 
 import {
@@ -45,12 +46,19 @@ function scheduleRotateTimer(callback: () => void): void {
 
 export function useSidebarPhilosophyQuote() {
   const authStore = useAuthStore()
+  const uiStore = useUIStore()
   const { currentLanguage } = useLanguage()
 
   const quote = ref<SidebarQuote | null>(null)
   const loading = ref(false)
   const activeBucket = ref<SidebarQuoteLocaleBucket | null>(null)
   let loadGeneration = 0
+
+  function stopQuotePlayback(): void {
+    quote.value = null
+    clearRotateTimer()
+    rotateCallback = null
+  }
 
   function requestQuoteRotation(): void {
     clearQuoteSessionCache()
@@ -59,10 +67,12 @@ export function useSidebarPhilosophyQuote() {
   }
 
   async function loadQuote(options: { forceNew: boolean }): Promise<void> {
-    if (!authStore.isAuthenticated || authStore.user?.id == null) {
-      quote.value = null
-      clearRotateTimer()
-      rotateCallback = null
+    if (
+      !authStore.isAuthenticated ||
+      authStore.user?.id == null ||
+      !uiStore.sidebarPoemEnabled
+    ) {
+      stopQuotePlayback()
       return
     }
 
@@ -90,13 +100,10 @@ export function useSidebarPhilosophyQuote() {
         writeQuoteSessionForPick(picked, { forceNew: options.forceNew })
         scheduleRotateTimer(requestQuoteRotation)
       } else {
-        clearRotateTimer()
-        rotateCallback = null
+        stopQuotePlayback()
       }
     } catch {
-      quote.value = null
-      clearRotateTimer()
-      rotateCallback = null
+      stopQuotePlayback()
     } finally {
       if (generation === loadGeneration) {
         loading.value = false
@@ -123,16 +130,21 @@ export function useSidebarPhilosophyQuote() {
         authStore.isAuthenticated,
         authStore.user?.id ?? null,
         quoteLocaleBucket(currentLanguage.value),
+        uiStore.sidebarPoemEnabled,
       ] as const,
-    ([authenticated, userId, bucket]) => {
+    ([authenticated, userId, bucket, poemEnabled]) => {
       if (!authenticated || userId == null) {
         loadGeneration += 1
-        quote.value = null
         activeBucket.value = null
-        clearRotateTimer()
-        rotateCallback = null
+        stopQuotePlayback()
         clearQuoteSessionCache()
         resetSidebarQuoteSessionState()
+        return
+      }
+
+      if (!poemEnabled) {
+        loadGeneration += 1
+        stopQuotePlayback()
         return
       }
 

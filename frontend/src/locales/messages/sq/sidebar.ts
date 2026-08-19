@@ -105,6 +105,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'Ende nuk ka paketa',
   'sidebar.knowledgeSpaceHistory.title': 'Paketat',
   'sidebar.languageSettings': 'Cilësimet e gjuhës',
+  'sidebar.tokenUsageToday': 'Today {usage}',
   'sidebar.library': 'Biblioteka',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

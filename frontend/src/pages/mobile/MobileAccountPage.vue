@@ -32,6 +32,7 @@ import {
 import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
+import { persistLanguagePreferencesIfAuthenticated } from '@/utils/persistLanguagePreferences'
 import { getRolePillStyle } from '@/utils/userRoleDisplay'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
@@ -119,19 +120,14 @@ const currentPromptLabel = computed(() => {
 
 function selectUiLanguage(code: string) {
   uiStore.setLanguage(code as Language)
-  uiStore.setUiLanguageExplicit(true)
-  void authStore.saveLanguagePreferences(code as Language, uiStore.promptLanguage, {
-    matchPromptToUi: uiStore.matchPromptToUi,
-  })
+  persistLanguagePreferencesIfAuthenticated()
   uiLangExpanded.value = false
 }
 
 function selectPromptLanguage(code: string) {
   uiStore.setPromptLanguage(code as PromptLanguage)
   uiStore.setMatchPromptToUi(false)
-  void authStore.saveLanguagePreferences(uiStore.language, code as PromptLanguage, {
-    matchPromptToUi: uiStore.matchPromptToUi,
-  })
+  persistLanguagePreferencesIfAuthenticated()
   promptLangExpanded.value = false
   promptSearchQuery.value = ''
 }

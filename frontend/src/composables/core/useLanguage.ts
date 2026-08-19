@@ -7,6 +7,7 @@ import { i18n } from '@/i18n'
 import type { MessageSchema } from '@/i18n/messageSchema'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
+import { persistLanguagePreferencesIfAuthenticated } from '@/utils/persistLanguagePreferences'
 import { safeI18nTranslate } from '@/utils/safeI18nTranslate'
 
 type MessageKey = keyof MessageSchema
@@ -67,6 +68,7 @@ export function useLanguage() {
 
   function setLanguage(lang: Language): void {
     uiStore.setLanguage(lang)
+    persistLanguagePreferencesIfAuthenticated()
   }
 
   function setPromptLanguage(lang: PromptLanguage): void {
@@ -75,6 +77,7 @@ export function useLanguage() {
 
   function toggleLanguage(): void {
     uiStore.toggleLanguage()
+    persistLanguagePreferencesIfAuthenticated()
   }
 
   function getNotification(key: string, ...args: unknown[]): string {

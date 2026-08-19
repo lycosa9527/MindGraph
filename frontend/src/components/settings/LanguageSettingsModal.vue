@@ -35,6 +35,7 @@ const draftUi = ref<Language>(uiStore.language)
 const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
 const draftMindMapCanvasMode = ref<MindMapCanvasMode>(uiStore.mindMapCanvasMode)
 const draftEBlackboardOptimize = ref(uiStore.eBlackboardOptimize)
+const draftSidebarPoemEnabled = ref(uiStore.sidebarPoemEnabled)
 const matchPromptToInterface = ref(uiStore.matchPromptToUi)
 
 const allowSimplifiedChinesePicker = computed(() => uiStore.languagePolicyAllowZh)
@@ -121,6 +122,7 @@ watch(visible, (v) => {
     draftPrompt.value = pr
     draftMindMapCanvasMode.value = uiStore.mindMapCanvasMode
     draftEBlackboardOptimize.value = uiStore.eBlackboardOptimize
+    draftSidebarPoemEnabled.value = uiStore.sidebarPoemEnabled
     matchPromptToInterface.value = uiStore.matchPromptToUi
     void ensureFontsForLanguageCode(draftPrompt.value)
     void ensureFontsForLanguageCode(draftUi.value)
@@ -171,6 +173,7 @@ async function save(): Promise<void> {
       return
     }
   }
+  uiStore.setSidebarPoemEnabled(draftSidebarPoemEnabled.value)
   uiStore.setMatchPromptToUi(matchPromptToInterface.value)
   uiStore.setLanguage(ui)
   if (!matchPromptToInterface.value) {
@@ -364,6 +367,41 @@ function onClose(): void {
         </div>
         <p class="language-settings-swiss__hint">
           {{ t('settings.language.eBlackboardHint') }}
+        </p>
+      </section>
+
+      <section>
+        <div class="language-settings-swiss__kicker">
+          <span>{{ t('settings.language.sidebarPoem') }}</span>
+        </div>
+        <div
+          class="language-settings-canvas-segmented"
+          role="radiogroup"
+          :aria-label="t('settings.language.sidebarPoem')"
+        >
+          <button
+            type="button"
+            role="radio"
+            class="language-settings-canvas-segment"
+            :class="{ 'is-active': !draftSidebarPoemEnabled }"
+            :aria-checked="!draftSidebarPoemEnabled"
+            @click="draftSidebarPoemEnabled = false"
+          >
+            {{ t('settings.language.sidebarPoemOff') }}
+          </button>
+          <button
+            type="button"
+            role="radio"
+            class="language-settings-canvas-segment"
+            :class="{ 'is-active': draftSidebarPoemEnabled }"
+            :aria-checked="draftSidebarPoemEnabled"
+            @click="draftSidebarPoemEnabled = true"
+          >
+            {{ t('settings.language.sidebarPoemOn') }}
+          </button>
+        </div>
+        <p class="language-settings-swiss__hint">
+          {{ t('settings.language.sidebarPoemHint') }}
         </p>
       </section>
     </div>

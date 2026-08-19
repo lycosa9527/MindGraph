@@ -105,6 +105,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'Brak pakietów',
   'sidebar.knowledgeSpaceHistory.title': 'Pakiety',
   'sidebar.languageSettings': 'Ustawienia języka',
+  'sidebar.tokenUsageToday': 'Today {usage}',
   'sidebar.library': 'Biblioteka',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

@@ -262,6 +262,11 @@ export default {
   'settings.language.eBlackboardOn': '開啟',
   'settings.language.eBlackboardHint':
     '在新版畫布上放大分支加號與摺疊控件；單擊選擇、雙擊編輯、雙指拖動平移/縮放，方便課堂電子白板操作',
+  'settings.language.sidebarPoem': '側邊欄詩句',
+  'settings.language.sidebarPoemHint':
+    '關閉後，用戶名下方顯示今日 Token 用量',
+  'settings.language.sidebarPoemOff': '關閉',
+  'settings.language.sidebarPoemOn': '開啟',
   'settings.version.title': '界面版本',
   'settings.version.chinese': '專業模式',
   'settings.version.international': '簡潔模式',

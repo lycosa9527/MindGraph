@@ -55,11 +55,13 @@ from utils.auth import (
 from utils.auth.mg_client import client_source_from_request
 from utils.auth.request_helpers import CSRF_COOKIE_NAME
 from utils.auth.thinking_coin_config import feature_thinking_coins_enabled
+from utils.auth.user_daily_token_quota import current_user_daily_token_payload
 from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
 from .dependencies import get_language_dependency
 from .helpers import auth_session_json_metadata, set_auth_cookies
 from .org_profile import organization_session_payload
+from .user_session_prefs import user_preference_fields
 
 _record_vpn_refresh_last_ip = record_vpn_refresh_last_ip
 
@@ -324,15 +326,10 @@ async def get_me(
             "login_password_set": getattr(current_user, "login_password_set", True),
             "organization": organization_session_payload(org),
             "thinking_coins": thinking_coins,
+            "daily_tokens": await current_user_daily_token_payload(int(current_user.id)),
             "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
             "last_login": (current_user.last_login.isoformat() if current_user.last_login else None),
-            "ui_language": getattr(current_user, "ui_language", None),
-            "prompt_language": getattr(current_user, "prompt_language", None),
-            "ui_version": getattr(current_user, "ui_version", None),
-            "match_prompt_to_ui": getattr(current_user, "match_prompt_to_ui", True),
-            "allows_simplified_chinese": getattr(current_user, "allows_simplified_chinese", True),
-            "education_stage": getattr(current_user, "education_stage", None),
-            "ai_content_level": getattr(current_user, "ai_content_level", None),
+            **user_preference_fields(current_user),
         }
     except BACKGROUND_INFRA_ERRORS as me_error:
         logger.error("Error in /me endpoint: %s", me_error, exc_info=True)

@@ -135,6 +135,39 @@ export function isRtlUiLocale(code: LocaleCode): boolean {
   return LOCALE_BY_CODE[code]?.rtl === true
 }
 
+function matchNavigatorTagToUiLocale(raw: string): LocaleCode | null {
+  const nav = raw.toLowerCase().replace(/_/g, '-')
+  for (const entry of SUPPORTED_UI_LOCALES) {
+    if (!entry.enabled) continue
+    const prefixes = entry.browserPrefixes ?? [entry.code]
+    for (const p of prefixes) {
+      const prefix = p.toLowerCase()
+      if (nav === prefix || nav.startsWith(`${prefix}-`)) {
+        return entry.code
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * Map a stored / server language tag to an enabled UI locale.
+ * Accepts exact codes (`zh`) and common BCP 47 aliases (`zh-CN`, `en-US`).
+ */
+export function coerceUiLocale(value: string | null | undefined): LocaleCode | null {
+  if (typeof value !== 'string') {
+    return null
+  }
+  const trimmed = value.trim()
+  if (trimmed.length === 0) {
+    return null
+  }
+  if (isUiLocale(trimmed)) {
+    return trimmed
+  }
+  return matchNavigatorTagToUiLocale(trimmed)
+}
+
 /**
  * Map browser language preferences to a supported UI locale (guest / login modal).
  * Walks `navigator.languages` in order, then `navigator.language`; falls back to DEFAULT_UI_LOCALE.
@@ -149,15 +182,9 @@ export function detectBrowserLocale(): LocaleCode {
     if (!raw) {
       continue
     }
-    const nav = raw.toLowerCase()
-    for (const entry of SUPPORTED_UI_LOCALES) {
-      if (!entry.enabled) continue
-      const prefixes = entry.browserPrefixes ?? [entry.code]
-      for (const p of prefixes) {
-        if (nav.startsWith(p.toLowerCase())) {
-          return entry.code
-        }
-      }
+    const matched = matchNavigatorTagToUiLocale(raw)
+    if (matched !== null) {
+      return matched
     }
   }
   return DEFAULT_UI_LOCALE
@@ -225,16 +252,30 @@ export type PromptOutputLanguageCode = string
 /** @deprecated Use PROMPT_OUTPUT_LANGUAGE_CODES */
 export const PROMPT_LANGUAGE_CODES: readonly string[] = PROMPT_OUTPUT_LANGUAGE_CODES
 
-/** Dropdown rows: API code, native label, English name, search terms for filter. */
+const CJK_CHAR = /[\u4e00-\u9fff]/
+
+function chineseNameFromRegistrySearch(search: string[], nativeLabel: string): string | null {
+  const nativeLower = nativeLabel.toLowerCase()
+  for (const term of search) {
+    if (CJK_CHAR.test(term) && term.toLowerCase() !== nativeLower) {
+      return term
+    }
+  }
+  return null
+}
+
+/** Dropdown rows: API code, native label, English name, Chinese name, search terms. */
 export const PROMPT_LANGUAGE_OPTIONS: {
   code: string
   label: string
   englishName: string
+  chineseName: string | null
   search: string[]
 }[] = _SORTED_REGISTRY.map((e) => ({
   code: e.code,
   label: e.nativeLabel,
   englishName: e.englishName,
+  chineseName: chineseNameFromRegistrySearch(e.search, e.nativeLabel),
   search: e.search,
 }))
 

@@ -1,8 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
 vi.mock('@/utils/sessionRefresh', () => ({
   refreshSessionAccessToken: vi.fn(),
+  getSessionRefreshEpoch: vi.fn(() => 0),
+  ensureFreshSessionAfterAuthFailure: vi.fn(async () => false),
 }))
 
 import { useAuthStore } from '@/stores/auth'
@@ -78,6 +80,10 @@ describe('auth bootstrap dedupe', () => {
     setActivePinia(createPinia())
   })
 
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('does not re-fetch /me on immediate session-monitor kick after checkAuth', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)
@@ -100,11 +106,6 @@ describe('auth bootstrap dedupe', () => {
     const authStore = useAuthStore()
     const ok = await authStore.checkAuth()
     expect(ok).toBe(true)
-
-    // Allow void refreshUserProfile() from startSessionMonitoring to settle.
-    await Promise.resolve()
-    await Promise.resolve()
-
     expect(meCallCount(fetchMock)).toBe(1)
     expect(
       fetchMock.mock.calls.some((call) => String(call[0]).includes('/api/auth/session-status'))
@@ -141,5 +142,44 @@ describe('auth bootstrap dedupe', () => {
 
     await authStore.loadAdminCapabilities({ force: true })
     expect(capabilitiesCallCount(fetchMock)).toBe(2)
+  })
+
+  it('does not poll /me on the kick-check interval', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/auth/me')) {
+        return jsonResponse({ user: meUser })
+      }
+      if (url.includes('/api/auth/admin/capabilities')) {
+        return jsonResponse(capsBody)
+      }
+      if (url.includes('/api/auth/session-status')) {
+        return jsonResponse({ status: 'active', token: 't' })
+      }
+      return jsonResponse({})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+
+    const authStore = useAuthStore()
+    expect(await authStore.checkAuth()).toBe(true)
+    await Promise.resolve()
+    await Promise.resolve()
+    const meAfterAuth = meCallCount(fetchMock)
+    const sessionAfterAuth = fetchMock.mock.calls.filter((call) =>
+      String(call[0]).includes('/api/auth/session-status')
+    ).length
+
+    await vi.advanceTimersByTimeAsync(120_000)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(meCallCount(fetchMock)).toBe(meAfterAuth)
+    expect(
+      fetchMock.mock.calls.filter((call) => String(call[0]).includes('/api/auth/session-status'))
+        .length
+    ).toBeGreaterThan(sessionAfterAuth)
+
+    authStore.stopSessionMonitoring()
   })
 })

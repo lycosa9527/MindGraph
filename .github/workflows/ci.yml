@@ -61,7 +61,8 @@ jobs:
             tests/test_generate_dingtalk_identity.py tests/test_library_save_user_notices.py \
             tests/test_generation_skip_registry.py             tests/test_mindbot_library_save_reply.py tests/test_assistant_markdown.py \
             tests/test_mindbot_dingtalk_diagram_display.py \
-            tests/test_user_daily_token_quota.py tests/test_llm_daily_token_cap.py \
+            tests/test_user_daily_token_quota.py tests/auth/test_user_session_prefs.py \
+            tests/test_llm_daily_token_cap.py \
             tests/test_get_client_ip.py tests/test_gewe_webhook_auth.py \
             tests/test_refresh_token_reuse.py tests/test_security_production_hardening.py \
             tests/test_csrf_protection.py \
@@ -127,7 +128,7 @@ jobs:
       - name: npm audit (high severity)
         run: npm audit --audit-level=high
       - name: Vitest (workshop reconnect + diagram meta + classroom)
-        run: npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts tests/useMindClassroomLecture.spec.ts tests/useMindClassroomLectureQueue.spec.ts tests/mindClassroomLaunchState.spec.ts tests/mindClassroomRemoteSteps.spec.ts tests/mindClassroomScript.spec.ts tests/mindClassroomPrepSlot.spec.ts tests/mindClassroomJobApi.spec.ts tests/warmupLectureTts.spec.ts tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts tests/unloadCanvasForLibrarySwitch.spec.ts tests/llmResultsPersist.spec.ts tests/llmResultsPersistAudit.spec.ts tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts tests/mindMapIdentityMigrate.spec.ts tests/branchMoveHitTest.spec.ts tests/mindMapDropPreviewShapes.spec.ts tests/mindMapSeparation.spec.ts tests/mindMapLoadPreserveSides.spec.ts tests/mindMapNodeUid.spec.ts tests/mindMapSubgraphMerge.spec.ts tests/mindMapStringChildrenAudit.spec.ts tests/tsecCaptcha.spec.ts
+        run: npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts tests/useMindClassroomLecture.spec.ts tests/useMindClassroomLectureQueue.spec.ts tests/mindClassroomLaunchState.spec.ts tests/mindClassroomRemoteSteps.spec.ts tests/mindClassroomScript.spec.ts tests/mindClassroomPrepSlot.spec.ts tests/mindClassroomJobApi.spec.ts tests/warmupLectureTts.spec.ts tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts tests/unloadCanvasForLibrarySwitch.spec.ts tests/llmResultsPersist.spec.ts tests/llmResultsPersistAudit.spec.ts tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts tests/mindMapIdentityMigrate.spec.ts tests/branchMoveHitTest.spec.ts tests/mindMapDropPreviewShapes.spec.ts tests/mindMapSeparation.spec.ts tests/mindMapLoadPreserveSides.spec.ts tests/mindMapNodeUid.spec.ts tests/mindMapSubgraphMerge.spec.ts tests/mindMapStringChildrenAudit.spec.ts tests/tsecCaptcha.spec.ts tests/loginRestoresUiLanguage.spec.ts tests/normalizeAuthUser.spec.ts tests/authBootstrapDedupe.spec.ts tests/formatGalleryLanguageMenuLabel.spec.ts tests/formatSidebarDailyTokens.spec.ts
 
   chrome-extension:
     runs-on: ubuntu-latest

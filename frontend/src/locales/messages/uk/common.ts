@@ -262,6 +262,11 @@ export default {
   'settings.language.eBlackboardOn': 'On',
   'settings.language.eBlackboardHint':
     'Enlarges branch + and collapse controls on the new canvas for classroom e-blackboards',
+  'settings.language.sidebarPoem': 'Sidebar poem',
+  'settings.language.sidebarPoemHint':
+    'When off, token usage for today is shown under your name',
+  'settings.language.sidebarPoemOff': 'Off',
+  'settings.language.sidebarPoemOn': 'On',
   'settings.version.title': 'Версія інтерфейсу',
   'settings.version.chinese': 'Професійний режим',
   'settings.version.international': 'Спрощений режим',

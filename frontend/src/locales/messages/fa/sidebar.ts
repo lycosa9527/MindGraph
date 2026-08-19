@@ -105,6 +105,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'No packages yet',
   'sidebar.knowledgeSpaceHistory.title': 'بسته ها',
   'sidebar.languageSettings': 'Language Settings',
+  'sidebar.tokenUsageToday': 'Today {usage}',
   'sidebar.library': 'کتابخانه',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

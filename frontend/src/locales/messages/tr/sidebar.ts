@@ -105,6 +105,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'Henüz paket yok',
   'sidebar.knowledgeSpaceHistory.title': 'Paketler',
   'sidebar.languageSettings': 'Dil ayarları',
+  'sidebar.tokenUsageToday': 'Today {usage}',
   'sidebar.library': 'Kitaplık',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

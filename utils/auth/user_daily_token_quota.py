@@ -49,6 +49,19 @@ def daily_token_quota_fields(used_today: int) -> dict[str, int]:
     }
 
 
+async def current_user_daily_token_payload(user_id: int) -> dict[str, int]:
+    """Nested daily-token fields for the signed-in user ``/me`` payload."""
+    used = await resolve_daily_usage(user_id)
+    cap = daily_token_cap()
+    if cap <= 0:
+        return {"cap": 0, "used_today": used, "remaining_today": 0}
+    return {
+        "cap": cap,
+        "used_today": used,
+        "remaining_today": max(0, cap - used),
+    }
+
+
 async def resolve_daily_usage(user_id: int, db_fallback: Optional[int] = None) -> int:
     """Best-effort today usage: max(Redis counter, optional DB fallback)."""
     redis_used = await get_daily_usage(user_id)

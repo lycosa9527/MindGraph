@@ -8,6 +8,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { SUPPORTED_UI_LOCALES, matchedPromptLanguageForUiLocale } from '@/i18n/locales'
 import type { Language } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
+import { persistLanguagePreferencesIfAuthenticated } from '@/utils/persistLanguagePreferences'
 
 const visible = defineModel<boolean>({ required: true })
 
@@ -45,11 +46,13 @@ function handleSwitch(): void {
       uiStore.setPromptLanguage(matched)
     }
   }
+  persistLanguagePreferencesIfAuthenticated()
   visible.value = false
 }
 
 function handleKeepChinese(): void {
   uiStore.setUiLanguageExplicit(true)
+  persistLanguagePreferencesIfAuthenticated()
   visible.value = false
 }
 

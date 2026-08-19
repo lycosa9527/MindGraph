@@ -105,6 +105,7 @@ export default {
   'sidebar.knowledgeSpaceHistory.empty': 'Wala pang mga package',
   'sidebar.knowledgeSpaceHistory.title': 'Mga Package',
   'sidebar.languageSettings': 'Mga Setting ng Wika',
+  'sidebar.tokenUsageToday': 'Today {usage}',
   'sidebar.library': 'Aklatan',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

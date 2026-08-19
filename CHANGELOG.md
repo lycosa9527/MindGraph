@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.17] - 2026-08-20
+
+> **Saved interface language comes back after login. The app no longer rebuilds the profile every two minutes.**
+
+### Fixed
+
+- **UI language restore** — Login no longer drops camelCase preference fields or writes Chrome English over a saved Chinese row. Tags such as `zh-CN` map to Simplified Chinese. Header and mobile language switches persist for the signed-in account.
+- **Language settings save** — The settings modal applies the new locale only after the server PATCH succeeds.
+
+### Changed
+
+- **Session monitor** — The 2-minute loop only checks kick-from-another-device. `/me` runs on login, tab focus, settings save, and explicit UI events (token usage, thinking coins, org admin change).
+
+### Added
+
+- **Sidebar poem toggle** — UI settings can hide the quote and show today’s token usage under the name. `/me` now includes daily token totals for that line.
+- **Shared preference payload** — Login, register, and `/me` return the same personalization fields. Redis user cache now stores `ui_version`.
+
+### Tests
+
+- `frontend/tests/loginRestoresUiLanguage.spec.ts` / `normalizeAuthUser.spec.ts` / `authBootstrapDedupe.spec.ts` / `formatGalleryLanguageMenuLabel.spec.ts` / `formatSidebarDailyTokens.spec.ts` / `tests/auth/test_user_session_prefs.py`
+
 ## [5.180.16] - 2026-08-20
 
 > **Tencent T-Sec is the default captcha. The login form has no image code; the Tencent popup runs when you click sign in. The old SVG captcha stays behind `CAPTCHA_PROVIDER=legacy`.**
