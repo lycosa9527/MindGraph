@@ -124,6 +124,7 @@ async def test_five_maps_all_node_actions_live(slug: str, action: str) -> None:
     voice_sessions[vid]["active_panel"] = "one_sentence"
     bus_mock = AsyncMock(side_effect=lambda *_a, **_k: _applied(action, mmap.branch_id))
     branch_mock = AsyncMock(return_value=True)
+    start_ac_mock = AsyncMock(return_value=True)
     ws_mock = AsyncMock(return_value=True)
     real_chat = llm_service.chat_raw
     recorded: List[Dict[str, Any]] = []
@@ -174,6 +175,10 @@ async def test_five_maps_all_node_actions_live(slug: str, action: str) -> None:
             patch("services.kitty.agent_loop.loop.dispatch_loop_tool", new=_dispatch),
             patch("services.kitty.agent_loop.tools.apply_kitty_legacy_diagram_command", bus_mock),
             patch("services.kitty.agent_loop.tools.emit_auto_complete_branch", branch_mock),
+            patch(
+                "services.kitty.agent_loop.tools.maybe_start_background_branch_autocomplete",
+                start_ac_mock,
+            ),
             patch("services.kitty.agent_loop.tools.send_kitty_ws_action", ws_mock),
             patch("services.kitty.agent_loop.loop.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
@@ -223,6 +228,10 @@ async def test_five_maps_all_node_actions_live(slug: str, action: str) -> None:
                 assert not is_leftover_mindmap_branch_id(node_id)
             if action == "add_node":
                 assert "扩展阅读" in str(command.get("target") or ""), command
+                start_ac_mock.assert_awaited()
+                assert start_ac_mock.await_args is not None
+                assert start_ac_mock.await_args.kwargs.get("node_id") == mmap.branch_id
+                assert result.reason == "await_canvas"
             if action == "update_center":
                 assert "导学" in str(command.get("target") or "") or mmap.topic in str(command.get("target") or ""), (
                     command
@@ -246,5 +255,61 @@ async def test_five_maps_all_node_actions_live(slug: str, action: str) -> None:
             assert result.action == "clarify_options"
             pending = voice_sessions[vid].get("pending_clarify_options")
             assert isinstance(pending, dict)
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.usefixtures("_live_llm_ready")
+@pytest.mark.asyncio
+@pytest.mark.parametrize("slug", [mmap.slug for mmap in _MAPS], ids=[mmap.slug for mmap in _MAPS])
+async def test_add_brand_branch_starts_autocomplete_live(slug: str) -> None:
+    """Same user line as the 枕头 session: add a named branch, then silent complete."""
+    mmap = _MAP_BY_SLUG[slug]
+    utterance = "添加一个品牌的分支"
+    ws = MagicMock()
+    vid = create_voice_session(
+        user_id="live-brand",
+        diagram_session_id=f"scope-{slug}-brand",
+        diagram_type="mindmap",
+    )
+    voice_sessions[vid]["context"] = mmap.context
+    voice_sessions[vid]["active_panel"] = "one_sentence"
+    created = f"uid-brand-{slug}"
+    bus_mock = AsyncMock(return_value=_applied("add_node", created))
+    start_ac_mock = AsyncMock(return_value=True)
+    try:
+        with (
+            patch("services.kitty.agent_loop.loop.llm_service.chat_raw", llm_service.chat_raw),
+            patch("services.kitty.agent_loop.tools.apply_kitty_legacy_diagram_command", bus_mock),
+            patch(
+                "services.kitty.agent_loop.tools.maybe_start_background_branch_autocomplete",
+                start_ac_mock,
+            ),
+            patch("services.kitty.agent_loop.tools.emit_auto_complete_branch", new=AsyncMock(return_value=True)),
+            patch("services.kitty.agent_loop.tools.send_kitty_ws_action", new=AsyncMock(return_value=True)),
+            patch("services.kitty.agent_loop.loop.emit_user_ack", new=AsyncMock(return_value=True)),
+            patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
+            patch("services.kitty.agent_loop.loop.load_kitty_live_context", new=AsyncMock(return_value=None)),
+            patch(
+                "services.kitty.agent_loop.loop.throttled_refresh_voice_context_from_library",
+                new=AsyncMock(),
+            ),
+            patch(
+                "services.kitty.agent_loop.loop.live_spec_newer_than_library",
+                new=AsyncMock(return_value=True),
+            ),
+        ):
+            result = await run_typed_agent_loop(ws, vid, utterance, dict(mmap.context))
+        print(f"\n[{slug}/品牌] outcome={result.outcome} action={result.action} reason={result.reason}")
+        assert result.outcome == RouteOutcome.EXECUTED, result
+        assert result.action == "add_node", result
+        assert result.reason == "await_canvas", result
+        bus_mock.assert_awaited()
+        command = mock_await_args(bus_mock)[2]
+        assert command.get("action") == "add_node", command
+        assert "品牌" in str(command.get("target") or ""), command
+        start_ac_mock.assert_awaited()
+        assert start_ac_mock.await_args is not None
+        assert start_ac_mock.await_args.kwargs.get("node_id") == created
     finally:
         voice_sessions.pop(vid, None)

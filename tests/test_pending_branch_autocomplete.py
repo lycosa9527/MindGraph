@@ -65,7 +65,7 @@ async def test_maybe_start_background_branch_autocomplete_emits_without_pending(
     websocket = MagicMock()
     with (
         patch(
-            "services.kitty.routing.pending_branch_autocomplete.safe_websocket_send",
+            "services.kitty.routing.pending_branch_autocomplete.send_kitty_ws_action",
             new_callable=AsyncMock,
         ) as send_mock,
         patch(
@@ -89,7 +89,7 @@ async def test_maybe_start_background_branch_autocomplete_emits_without_pending(
     assert get_pending_branch_autocomplete(session) is None
     send_mock.assert_awaited()
     assert send_mock.await_args is not None
-    sent = send_mock.await_args.args[1]
+    sent = send_mock.await_args.args[2]
     assert sent["action"] == "auto_complete_branch"
     assert sent["params"]["node_label"] == "罗技"
     assert sent["params"]["node_id"] == "branch-r-1-12"
@@ -107,7 +107,7 @@ async def test_maybe_start_background_branch_autocomplete_skips_child_add() -> N
     }
     websocket = MagicMock()
     with patch(
-        "services.kitty.routing.pending_branch_autocomplete.safe_websocket_send",
+        "services.kitty.routing.pending_branch_autocomplete.send_kitty_ws_action",
         new_callable=AsyncMock,
     ) as send_mock:
         started = await maybe_start_background_branch_autocomplete(
@@ -131,7 +131,7 @@ async def test_try_consume_accept_sends_auto_complete_branch_action() -> None:
     websocket = MagicMock()
     with (
         patch(
-            "services.kitty.routing.pending_branch_autocomplete.safe_websocket_send",
+            "services.kitty.routing.pending_branch_autocomplete.send_kitty_ws_action",
             new_callable=AsyncMock,
         ) as send_mock,
         patch(
@@ -157,7 +157,7 @@ async def test_try_consume_accept_sends_auto_complete_branch_action() -> None:
     assert get_pending_branch_autocomplete(voice_sessions[voice_session_id]) is None
     send_mock.assert_awaited()
     assert send_mock.await_args is not None
-    sent = send_mock.await_args.args[1]
+    sent = send_mock.await_args.args[2]
     assert sent["action"] == "auto_complete_branch"
     assert sent["params"]["node_label"] == "中国"
     fanout_mock.assert_awaited()
@@ -181,7 +181,7 @@ async def test_try_consume_decline_clears_without_action() -> None:
     websocket = MagicMock()
     with (
         patch(
-            "services.kitty.routing.pending_branch_autocomplete.safe_websocket_send",
+            "services.kitty.routing.pending_branch_autocomplete.send_kitty_ws_action",
             new_callable=AsyncMock,
         ) as send_mock,
         patch(

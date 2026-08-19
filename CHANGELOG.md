@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.15] - 2026-08-19
+
+> **Adding a mind-map main branch always starts silent auto-complete; Kitty waits for generate before saying it is done.**
+
+### Fixed
+
+- **Kitty branch complete** — Adding a mind-map main branch always starts silent auto-complete (typed loop + one-sentence router). The done-ack may say “正在补完整” because that work is running. Explicit `auto_complete_branch` is the same fill path. The loop does not say “补全好了” until generate finishes. Delete acks fall back to the spoken label when the UUID is missing from session context (`「」已删除`).
+
+### Tests
+
+- `tests/test_kitty_agent_loop.py` / `_five_maps.py` / `_five_maps_live.py` / `test_kitty_ack_library.py` / `test_pending_branch_autocomplete.py`
+
 ## [5.180.14] - 2026-08-19
 
 > **Kitty typed text uses a tool loop; mind-map string children keep a UUID; PNG export stays on html-to-image 1.11.11.**

@@ -68,6 +68,7 @@ async def test_five_maps_all_node_actions(slug: str, action: str) -> None:
     voice_sessions[vid]["active_panel"] = "one_sentence"
     bus_mock = AsyncMock(return_value=_applied(action, mmap.branch_id))
     branch_mock = AsyncMock(return_value=True)
+    start_ac_mock = AsyncMock(return_value=True)
     ws_mock = AsyncMock(return_value=True)
     chat_mock = AsyncMock(side_effect=[_tool_reply(tool_name, tool_args), {"content": "好的"}])
     try:
@@ -75,6 +76,10 @@ async def test_five_maps_all_node_actions(slug: str, action: str) -> None:
             patch("services.kitty.agent_loop.loop.llm_service.chat_raw", chat_mock),
             patch("services.kitty.agent_loop.tools.apply_kitty_legacy_diagram_command", bus_mock),
             patch("services.kitty.agent_loop.tools.emit_auto_complete_branch", branch_mock),
+            patch(
+                "services.kitty.agent_loop.tools.maybe_start_background_branch_autocomplete",
+                start_ac_mock,
+            ),
             patch("services.kitty.agent_loop.tools.send_kitty_ws_action", ws_mock),
             patch("services.kitty.agent_loop.loop.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
@@ -101,6 +106,10 @@ async def test_five_maps_all_node_actions(slug: str, action: str) -> None:
                 assert not is_leftover_mindmap_branch_id(str(command.get("node_id") or ""))
             if action == "add_node":
                 assert command.get("target") == "扩展阅读", command
+                start_ac_mock.assert_awaited()
+                assert start_ac_mock.await_args is not None
+                assert start_ac_mock.await_args.kwargs.get("node_id") == mmap.branch_id
+                assert result.reason == "await_canvas"
             if action == "update_center":
                 assert "导学" in str(command.get("target") or ""), command
         elif action == "auto_complete_branch":

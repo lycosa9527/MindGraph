@@ -433,6 +433,13 @@ async def run_typed_agent_loop(
             append_tool_message(messages, tool_call_id=str(call["id"]), payload=dispatched.payload)
             if dispatched.stop_clarify:
                 return _finish(voice_session_id, RouteOutcome.EXECUTED, action="clarify_options")
+            if dispatched.stop_after:
+                return _finish(
+                    voice_session_id,
+                    RouteOutcome.EXECUTED,
+                    action=dispatched.action,
+                    reason="await_canvas",
+                )
             if dispatched.stop_nonretryable:
                 err = error_code_from_payload(dispatched.payload) or "failed"
                 return _finish(voice_session_id, RouteOutcome.FAILED, reason=err, action=dispatched.action)

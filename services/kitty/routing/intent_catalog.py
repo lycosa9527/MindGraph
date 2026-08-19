@@ -147,7 +147,10 @@ KITTY_INTENT_ROWS: List[IntentRow] = [
         "kind": "ui",
         "channel": "ws_action",
         "hub_op": None,
-        "notes": "Canvas subgraph glow fill for an existing branch label.",
+        "notes": (
+            "Canvas subgraph glow fill. New L1 add_node always starts this "
+            "silently after verify — do not require a second 补全 turn."
+        ),
     },
     {
         "name": "multi_step_structural_edit",

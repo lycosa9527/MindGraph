@@ -310,6 +310,31 @@ def test_render_delete_branch_uses_label_not_uuid() -> None:
     assert slots["target"] == "争议"
 
 
+def test_slots_from_command_delete_falls_back_to_utterance() -> None:
+    """Delete ack uses the spoken label when the canvas id is not in session."""
+    command = {
+        "action": "delete_node",
+        "node_id": "a0d9a919-dd8e-4ca6-9e71-383662b67ac4",
+    }
+    session = {
+        "diagram_type": "mindmap",
+        "conversation_history": [{"role": "user", "content": "删除前沿与争议领域这个分支。"}],
+        "diagram_data": {"nodes": [{"id": "topic", "text": "枕头"}]},
+    }
+    slots = slots_from_command("delete_node", command, session)
+    assert slots["target"] == "前沿与争议领域"
+    done = render_ack_for_command(
+        "delete_node",
+        command,
+        session,
+        lang="zh",
+        phase="done",
+        variant_index=0,
+    )
+    assert "前沿与争议领域" in done
+    assert "a0d9a919" not in done
+
+
 def test_render_delete_child_with_branch_label() -> None:
     """Child delete under a branch uses branch-aware ack."""
     command = {"action": "delete_node", "branch_index": 0, "child_index": 1}

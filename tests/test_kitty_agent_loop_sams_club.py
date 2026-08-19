@@ -103,12 +103,17 @@ async def _run_loop(
     voice_sessions[vid]["active_panel"] = "one_sentence"
     chat_mock = AsyncMock(side_effect=chat_side_effect)
     bus_mock = AsyncMock(side_effect=bus_side_effect)
+    finished = False
     try:
         with (
             patch("services.kitty.agent_loop.loop.llm_service.chat_raw", chat_mock),
             patch("services.kitty.agent_loop.tools.apply_kitty_legacy_diagram_command", bus_mock),
             patch("services.kitty.agent_loop.loop.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
+            patch(
+                "services.kitty.agent_loop.tools.maybe_start_background_branch_autocomplete",
+                new=AsyncMock(return_value=False),
+            ),
             patch("services.kitty.agent_loop.loop.load_kitty_live_context", new=AsyncMock(return_value=None)),
             patch(
                 "services.kitty.agent_loop.loop.throttled_refresh_voice_context_from_library",
@@ -120,10 +125,11 @@ async def _run_loop(
             ),
         ):
             result = await run_typed_agent_loop(ws, vid, text, dict(context))
+        finished = True
         return result, vid, chat_mock, bus_mock
-    except Exception:
-        voice_sessions.pop(vid, None)
-        raise
+    finally:
+        if not finished:
+            voice_sessions.pop(vid, None)
 
 
 def test_sams_club_hydrate_uses_uuid_not_leftover() -> None:

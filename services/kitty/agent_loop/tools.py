@@ -21,6 +21,7 @@ from services.diagram.mindmap_location import is_leftover_mindmap_branch_id
 from services.diagram_edit.types import ToolResult
 from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.ack.ack_library import render_ack, render_ack_for_command, render_clarify_options_ack
+from services.kitty.ack.ack_slots import enrich_ack_session_context
 from services.kitty.adapters.diagram_command import apply_kitty_legacy_diagram_command
 from services.kitty.agent_loop.messages import read_diagram_tool_schema
 from services.kitty.agent_loop.results import tool_result_content, ui_result_content
@@ -40,7 +41,11 @@ from services.kitty.infra.bootstrap.kitty_diagram_vocabulary import (
     normalize_voice_desktop_canvas_diagram_type,
 )
 from services.kitty.routing.open_desktop_canvas import execute_open_desktop_canvas_library_draft
-from services.kitty.routing.pending_branch_autocomplete import emit_auto_complete_branch
+from services.kitty.routing.pending_branch_autocomplete import (
+    created_node_id_from_applied_ops,
+    emit_auto_complete_branch,
+    maybe_start_background_branch_autocomplete,
+)
 from services.kitty.routing.pending_clarify_options import arm_pending_clarify_options
 from services.kitty.session.runtime_state import voice_sessions
 
@@ -82,6 +87,7 @@ class ToolDispatchResult:
     action: str
     stop_clarify: bool = False
     stop_nonretryable: bool = False
+    stop_after: bool = False
     mutated: bool = False
 
 
@@ -343,8 +349,26 @@ async def _dispatch_structural(
     payload = tool_result_content(tool_result)
     error_code = tool_result.error_code
     mutated = tool_result.status == "applied"
+    stop_after = False
     if mutated:
-        ack_text = render_ack_for_command(action, command, session_context, lang=lang, phase="done")
+        live = voice_sessions.get(voice_session_id)
+        ack_ctx = enrich_ack_session_context(
+            session_context,
+            live if isinstance(live, dict) else None,
+            diagram_type=diagram_type,
+            command_text=command_text,
+        )
+        if action == "add_node":
+            # Always fill a new L1 branch; do not wait for a second “补全” turn.
+            stop_after = await maybe_start_background_branch_autocomplete(
+                websocket,
+                voice_session_id,
+                command,
+                ack_ctx,
+                command_text=command_text,
+                node_id=created_node_id_from_applied_ops(tool_result.applied_ops),
+            )
+        ack_text = render_ack_for_command(action, command, ack_ctx, lang=lang, phase="done")
         await emit_user_ack(
             websocket,
             voice_session_id,
@@ -357,6 +381,7 @@ async def _dispatch_structural(
         payload=payload,
         action=action,
         mutated=mutated,
+        stop_after=stop_after,
         stop_nonretryable=error_code in {"access_denied", "no_owner", "collab_active", "busy_llm_generating"},
     )
 
@@ -411,6 +436,7 @@ async def _dispatch_ui(
                 extra={"node_id": node_id or None, "target": target},
             ),
             action=action,
+            stop_after=sent,
             stop_nonretryable=not sent,
         )
 

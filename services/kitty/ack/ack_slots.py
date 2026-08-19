@@ -5,23 +5,75 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from services.diagram.mindmap_identity import is_machine_node_id
+from services.kitty.ack.ack_action_resolve import last_user_utterance
 
 
 def enrich_ack_session_context(
     session_context: Optional[Dict[str, Any]],
     voice_session: Optional[Dict[str, Any]] = None,
+    *,
+    diagram_type: str = "",
+    command_text: str = "",
 ) -> Dict[str, Any]:
     """Merge voice-session fields needed for acknowledgment templates."""
     merged: Dict[str, Any] = dict(session_context) if isinstance(session_context, dict) else {}
-    if not isinstance(voice_session, dict):
-        return merged
-    history = voice_session.get("conversation_history")
-    if isinstance(history, list):
-        merged["conversation_history"] = history
-    diagram_type = voice_session.get("diagram_type")
+    if isinstance(voice_session, dict):
+        history = voice_session.get("conversation_history")
+        if isinstance(history, list):
+            merged["conversation_history"] = history
+        session_type = voice_session.get("diagram_type")
+        if session_type and not merged.get("diagram_type"):
+            merged["diagram_type"] = str(session_type)
     if diagram_type and not merged.get("diagram_type"):
-        merged["diagram_type"] = str(diagram_type)
+        merged["diagram_type"] = diagram_type
+    if command_text.strip() and not last_user_utterance(merged):
+        merged["conversation_history"] = [{"role": "user", "content": command_text.strip()}]
     return merged
+
+
+_DELETE_PREFIXES = (
+    "请帮我删除",
+    "帮我删除",
+    "请删除",
+    "删除",
+    "删掉",
+    "去掉",
+    "移除",
+)
+_DELETE_SUFFIXES = (
+    "这个分支。",
+    "这个分支",
+    "这个节点。",
+    "这个节点",
+    "分支。",
+    "分支",
+    "节点。",
+    "节点",
+    "。",
+    "！",
+)
+
+
+def _label_from_delete_utterance(utterance: str) -> str:
+    """Pull a spoken node label out of a delete sentence when slots have no target."""
+    text = utterance.strip()
+    matched_prefix = False
+    for prefix in _DELETE_PREFIXES:
+        if text.startswith(prefix):
+            text = text[len(prefix) :].strip()
+            matched_prefix = True
+            break
+    if not matched_prefix:
+        return ""
+    text = text.strip("「」『』\"'")
+    for suffix in _DELETE_SUFFIXES:
+        if text.endswith(suffix):
+            text = text[: -len(suffix)].strip()
+            break
+    text = text.strip("「」『』\"'")
+    if not text or is_machine_node_id(text):
+        return ""
+    return _clip_label(text)
 
 
 def _clip_label(value: Any, *, limit: int = 48) -> str:
@@ -140,6 +192,13 @@ def slots_from_command(
             display = _display_slot(node_id, session_context)
             if display:
                 slots["target"] = display
+    if action == "delete_node" and "target" not in slots:
+        if slots.get("old_text"):
+            slots["target"] = slots["old_text"]
+        else:
+            from_utterance = _label_from_delete_utterance(last_user_utterance(session_context))
+            if from_utterance:
+                slots["target"] = from_utterance
 
     branch_index_raw = command.get("branch_index")
     if branch_index_raw is not None:

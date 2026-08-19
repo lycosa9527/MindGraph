@@ -38,6 +38,7 @@ def _mindmap_context(*, edit: bool = True, leftover_alias: bool = False) -> Dict
     if edit:
         context["one_sentence_phase"] = "edit"
         context["active_panel"] = "one_sentence"
+    context["diagram_type"] = "mind_map"
     return context
 
 
@@ -97,6 +98,7 @@ async def _run_loop(
     chat_side_effect: Any,
     bus_side_effect: Any,
     diagram_type: str = "mind_map",
+    branch_ac_mock: Optional[AsyncMock] = None,
 ) -> tuple[Any, str, AsyncMock, AsyncMock]:
     ws = MagicMock()
     vid = create_voice_session(user_id="1", diagram_session_id="scope-loop", diagram_type=diagram_type)
@@ -105,6 +107,8 @@ async def _run_loop(
         voice_sessions[vid]["active_panel"] = context.get("active_panel")
     chat_mock = AsyncMock(side_effect=chat_side_effect)
     bus_mock = AsyncMock(side_effect=bus_side_effect)
+    ac_mock = branch_ac_mock if branch_ac_mock is not None else AsyncMock(return_value=False)
+    finished = False
     try:
         with (
             patch("services.kitty.agent_loop.loop.llm_service.chat_raw", chat_mock),
@@ -112,6 +116,7 @@ async def _run_loop(
             patch("services.kitty.agent_loop.loop.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.emit_user_ack", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.tools.emit_auto_complete_branch", new=AsyncMock(return_value=True)),
+            patch("services.kitty.agent_loop.tools.maybe_start_background_branch_autocomplete", ac_mock),
             patch("services.kitty.agent_loop.tools.send_kitty_ws_action", new=AsyncMock(return_value=True)),
             patch("services.kitty.agent_loop.loop.load_kitty_live_context", new=AsyncMock(return_value=None)),
             patch(
@@ -124,10 +129,11 @@ async def _run_loop(
             ),
         ):
             result = await run_typed_agent_loop(ws, vid, text, dict(context))
+        finished = True
         return result, vid, chat_mock, bus_mock
-    except Exception:
-        voice_sessions.pop(vid, None)
-        raise
+    finally:
+        if not finished:
+            voice_sessions.pop(vid, None)
 
 
 @pytest.mark.asyncio
@@ -295,6 +301,63 @@ async def test_add_node_next_call_uses_created_node_id() -> None:
         first = bus_mock.await_args_list[0].args[2]
         assert first["action"] == "add_node"
         assert first.get("node_id") is None
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_add_node_starts_background_branch_autocomplete() -> None:
+    """Verified branch add starts silent auto-complete and does not invent a done line."""
+    context = _mindmap_context()
+    created = "uid-brand"
+    branch_ac = AsyncMock(return_value=True)
+    result, vid, chat_mock, bus_mock = await _run_loop(
+        "添加一个品牌的分支",
+        context=context,
+        chat_side_effect=[
+            _tool_reply("diagram.add_node", '{"text":"品牌"}', "call_add"),
+            _text_reply("这个分支补全好了"),
+        ],
+        bus_side_effect=[_applied(revision=2, node_id=created, op="add_node")],
+        branch_ac_mock=branch_ac,
+    )
+    try:
+        assert result.outcome == RouteOutcome.EXECUTED
+        assert result.action == "add_node"
+        assert result.reason == "await_canvas"
+        assert chat_mock.await_count == 1
+        bus_mock.assert_awaited_once()
+        branch_ac.assert_awaited_once()
+        ac_kwargs = mock_await_kwargs(branch_ac)
+        assert ac_kwargs.get("node_id") == created
+        assert ac_kwargs.get("command_text") == "添加一个品牌的分支"
+    finally:
+        voice_sessions.pop(vid, None)
+
+
+@pytest.mark.asyncio
+async def test_auto_complete_branch_stops_without_done_text() -> None:
+    """Explicit branch complete waits for canvas generate; loop must not say done yet."""
+    context = _mindmap_context()
+    result, vid, chat_mock, bus_mock = await _run_loop(
+        "补完品牌分支",
+        context=context,
+        chat_side_effect=[
+            _tool_reply(
+                "node_action.auto_complete_branch",
+                json.dumps({"node_id": "uid-hist", "target": "品牌"}, ensure_ascii=False),
+                "call_ac",
+            ),
+            _text_reply("这个分支补全好了"),
+        ],
+        bus_side_effect=[],
+    )
+    try:
+        assert result.outcome == RouteOutcome.EXECUTED
+        assert result.action == "auto_complete_branch"
+        assert result.reason == "await_canvas"
+        assert chat_mock.await_count == 1
+        bus_mock.assert_not_awaited()
     finally:
         voice_sessions.pop(vid, None)
 

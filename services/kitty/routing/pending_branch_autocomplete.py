@@ -227,10 +227,13 @@ async def maybe_start_background_branch_autocomplete(
     node_id: str | None = None,
 ) -> bool:
     """
-    After a successful mind-map branch add, start auto-complete without asking.
+    Fixed product rule: every new mind-map main branch starts silent auto-complete.
 
-    Returns True when the canvas action was emitted. Does not arm the yes/no offer.
-    ``node_id`` must be the real canvas id from the verified apply result when known.
+    Call after a verified ``add_node``. No extra utterance gate — “添加一个X分支”
+    is enough. Child adds are skipped by ``classify_add_node_variant``. Does not
+    arm the legacy yes/no offer. ``node_id`` is the canvas id from apply when known.
+
+    Returns True when the canvas action was emitted.
     """
     if classify_add_node_variant(command, session_context) != "branch":
         return False
