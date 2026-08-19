@@ -46,6 +46,7 @@ from services.auth.tsec.csp import (
     TSEC_CSP_FRAME_SRC,
     TSEC_CSP_SCRIPT_SRC,
     TSEC_CSP_STYLE_SRC,
+    TSEC_CSP_WORKER_SRC,
     tsec_csp_extra,
 )
 from services.showcase.storage import cos_showcase_enabled
@@ -333,6 +334,9 @@ async def add_security_headers(request: Request, call_next):
     - style-src: keeps 'unsafe-inline' — Vue/Element Plus inject styles at runtime
       via JS, which a nonce cannot cover. When T-Sec is live, also allow the
       TJCaptcha stylesheet CDNs (otherwise the widget times out blank).
+    - worker-src: production stays 'self' unless T-Sec is live, then blob: so
+      TJCaptcha can spawn its same-origin worker (Kitty Fun-ASR uses a static
+      /public worker and does not need blob:).
     - ws:/wss:: Required for Kitty Agent WebSocket connections
     - data: URIs: Required for canvas-to-image conversions
     - connect-src / media-src: when Showcase COS is on, allow the configured
@@ -402,7 +406,7 @@ async def add_security_headers(request: Request, call_next):
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             f"{script_src}"
-            "worker-src 'self'; "
+            f"worker-src 'self'{tsec_csp_extra(TSEC_CSP_WORKER_SRC)}; "
             f"style-src 'self' 'unsafe-inline'{tsec_csp_extra(TSEC_CSP_STYLE_SRC)}; "
             "img-src 'self' data: http: https: blob:; "
             f"font-src 'self' data:{tsec_csp_extra(TSEC_CSP_FONT_SRC)}; "

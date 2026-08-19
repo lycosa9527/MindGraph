@@ -8,6 +8,7 @@ import uuid
 from typing import Optional
 
 from services.auth.captcha_storage import get_captcha_storage
+from services.auth.tsec.result import TsecVerifyTrace
 from services.auth.tsec.verify import verify_tsec_ticket
 from services.utils.error_types import REDIS_ERRORS
 
@@ -22,12 +23,13 @@ async def exchange_tsec_ticket(
     ticket: Optional[str],
     randstr: Optional[str],
     user_ip: str,
+    trace: Optional[TsecVerifyTrace] = None,
 ) -> tuple[Optional[dict[str, str]], Optional[str]]:
     """Verify ticket then store a 4-char Redis captcha the existing auth APIs accept.
 
     Returns ({captcha_id, captcha}, None) on success, or (None, error_reason).
     """
-    is_valid, reason = await verify_tsec_ticket(ticket, randstr, user_ip)
+    is_valid, reason = await verify_tsec_ticket(ticket, randstr, user_ip, trace=trace)
     if not is_valid:
         return None, reason or "incorrect"
 

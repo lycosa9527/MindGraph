@@ -6,7 +6,11 @@ are present; otherwise the effective provider is legacy so local login still wor
 
 from __future__ import annotations
 
+import logging
 import os
+from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 PROVIDER_TSEC = "tsec"
 PROVIDER_LEGACY = "legacy"
@@ -43,6 +47,28 @@ def tencent_captcha_secret_key() -> str:
     return (os.getenv("TENCENT_CAPTCHA_SECRET_KEY", "") or "").strip() or (
         os.getenv("TENCENT_SMS_SECRET_KEY", "") or ""
     ).strip()
+
+
+def _optional_int_env(name: str) -> Optional[int]:
+    """Parse an optional reserved integer env, or None when unset/invalid."""
+    raw = (os.getenv(name, "") or "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        logger.warning("T-Sec ignoring invalid %s=%r", name, raw)
+        return None
+
+
+def tencent_captcha_business_id() -> Optional[int]:
+    """Optional reserved DescribeCaptchaResult BusinessId."""
+    return _optional_int_env("TENCENT_CAPTCHA_BUSINESS_ID")
+
+
+def tencent_captcha_scene_id() -> Optional[int]:
+    """Optional reserved DescribeCaptchaResult SceneId."""
+    return _optional_int_env("TENCENT_CAPTCHA_SCENE_ID")
 
 
 def tsec_credentials_ready() -> bool:

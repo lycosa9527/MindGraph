@@ -1,5 +1,6 @@
-import type { TencentCaptchaResult, TsecAidEncrypted } from '@/types/tsecCaptcha'
+import type { TencentCaptchaResult, TsecAidEncrypted, TsecSolvedCaptcha } from '@/types/tsecCaptcha'
 import { loadTjCaptcha, tsecUserLanguage } from '@/utils/tsec/loadTjCaptcha'
+import { tsecFrontendErrorReason } from '@/utils/tsec/tsecErrorCodes'
 
 export class TsecCaptchaClosedError extends Error {
   constructor() {
@@ -23,7 +24,7 @@ export async function showTsecCaptcha(
   appId: string,
   uiLocale: string,
   aidAuth: TsecAidEncrypted
-): Promise<{ ticket: string; randstr: string }> {
+): Promise<TsecSolvedCaptcha> {
   if (!aidAuth.aidEncrypted || aidAuth.aidEncryptedType !== 'cbc') {
     throw new TsecCaptchaFailedError('aid_encrypted_missing')
   }
@@ -40,10 +41,20 @@ export async function showTsecCaptcha(
           const ticket = (result.ticket || '').trim()
           const randstr = (result.randstr || '').trim()
           if (result.ret !== 0 || !ticket || !randstr || result.errorCode || isDisasterTicket(ticket)) {
-            reject(new TsecCaptchaFailedError(result.errorMessage || 'tsec_failed'))
+            reject(new TsecCaptchaFailedError(tsecFrontendErrorReason(result.errorCode, result.errorMessage)))
             return
           }
-          resolve({ ticket, randstr })
+          const solved: TsecSolvedCaptcha = { ticket, randstr }
+          if (result.sid) {
+            solved.sid = result.sid
+          }
+          if (typeof result.verifyDuration === 'number') {
+            solved.verifyDuration = result.verifyDuration
+          }
+          if (typeof result.actionDuration === 'number') {
+            solved.actionDuration = result.actionDuration
+          }
+          resolve(solved)
         },
         {
           userLanguage: tsecUserLanguage(uiLocale),

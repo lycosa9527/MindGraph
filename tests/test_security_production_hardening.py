@@ -135,6 +135,7 @@ async def test_production_csp_uses_nonce_when_request_state_has_nonce() -> None:
     assert "script-src 'self' 'nonce-testnonce123'" in csp
     assert "script-src 'self' 'unsafe-inline'" not in csp
     assert "worker-src 'self'" in csp
+    assert "worker-src 'self' blob:" not in csp
     # Styles intentionally keep 'unsafe-inline' for runtime-injected Vue/Element Plus styles.
     assert "style-src 'self' 'unsafe-inline'" in csp
     assert "myqcloud.com" not in csp

@@ -210,7 +210,8 @@ run_backend() {
     tests/test_kitty_agent_loop_sams_club.py \
     tests/test_prompt_to_diagram_result.py \
     tests/test_tsec_captcha.py \
-    tests/test_tsec_aid_encrypted.py
+    tests/test_tsec_aid_encrypted.py \
+    tests/test_tsec_result.py
 }
 
 run_frontend() {

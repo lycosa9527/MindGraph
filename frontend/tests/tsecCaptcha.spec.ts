@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
 import { TJ_CAPTCHA_SRC } from '@/types/tsecCaptcha'
 import { loadTjCaptcha, tsecUserLanguage } from '@/utils/tsec/loadTjCaptcha'
+import { tsecFrontendErrorReason } from '@/utils/tsec/tsecErrorCodes'
 import {
   TsecCaptchaClosedError,
   TsecCaptchaFailedError,
@@ -63,6 +64,46 @@ describe('showTsecCaptcha', () => {
     await expect(showTsecCaptcha('199999164', 'zh', aidAuth)).resolves.toEqual({
       ticket: 'tr03ok',
       randstr: '@Vki',
+    })
+  })
+
+  it('forwards sid and duration fields from the callback', async () => {
+    window.TencentCaptcha = class {
+      constructor(
+        _appId: string,
+        callback: (result: {
+          ret: number
+          ticket: string
+          randstr: string
+          sid: string
+          verifyDuration: number
+          actionDuration: number
+        }) => void
+      ) {
+        queueMicrotask(() =>
+          callback({
+            ret: 0,
+            ticket: 'tr03ok',
+            randstr: '@Vki',
+            sid: 'sid-9',
+            verifyDuration: 80,
+            actionDuration: 40,
+          })
+        )
+      }
+      show() {}
+      destroy() {}
+      getTicket() {
+        return { CaptchaAppId: '1', ticket: 'tr03ok' }
+      }
+    } as unknown as typeof window.TencentCaptcha
+
+    await expect(showTsecCaptcha('199999164', 'en', aidAuth)).resolves.toEqual({
+      ticket: 'tr03ok',
+      randstr: '@Vki',
+      sid: 'sid-9',
+      verifyDuration: 80,
+      actionDuration: 40,
     })
   })
 
@@ -142,8 +183,19 @@ describe('showTsecCaptcha', () => {
       }
     } as unknown as typeof window.TencentCaptcha
 
-    await expect(showTsecCaptcha('199999164', 'en', aidAuth)).rejects.toBeInstanceOf(
-      TsecCaptchaFailedError
+    await expect(showTsecCaptcha('199999164', 'en', aidAuth)).rejects.toMatchObject({
+      name: 'TsecCaptchaFailedError',
+      message: 'tsec_1001_jsload_error',
+    })
+  })
+})
+
+describe('tsecFrontendErrorReason', () => {
+  it('maps official Web callback errorCode values', () => {
+    expect(tsecFrontendErrorReason(1006, 'get_captcha_config_request_error')).toBe(
+      'tsec_1006_get_captcha_config_request_error'
     )
+    expect(tsecFrontendErrorReason(1002)).toBe('tsec_1002_captcha_show_timeout')
+    expect(tsecFrontendErrorReason(undefined, 'custom')).toBe('custom')
   })
 })

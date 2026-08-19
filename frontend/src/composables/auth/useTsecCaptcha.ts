@@ -8,7 +8,7 @@ import {
   TsecCaptchaFailedError,
   showTsecCaptcha,
 } from '@/utils/tsec/showTsecCaptcha'
-import type { TsecAidEncrypted, TsecMintedCaptcha } from '@/types/tsecCaptcha'
+import type { TsecAidEncrypted, TsecMintedCaptcha, TsecSolvedCaptcha } from '@/types/tsecCaptcha'
 
 export function useTsecCaptcha() {
   const featureFlagsStore = useFeatureFlagsStore()
@@ -51,11 +51,17 @@ export function useTsecCaptcha() {
     return { aidEncrypted: data.aid_encrypted, aidEncryptedType: 'cbc' }
   }
 
-  async function exchangeTicket(ticket: string, randstr: string): Promise<TsecMintedCaptcha> {
+  async function exchangeTicket(solved: TsecSolvedCaptcha): Promise<TsecMintedCaptcha> {
     const response = await apiRequest('/api/auth/tsec/exchange', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticket, randstr }),
+      body: JSON.stringify({
+        ticket: solved.ticket,
+        randstr: solved.randstr,
+        sid: solved.sid,
+        verify_duration: solved.verifyDuration,
+        action_duration: solved.actionDuration,
+      }),
     })
     if (!response.ok) {
       throw new TsecCaptchaFailedError('exchange_failed')
@@ -77,7 +83,7 @@ export function useTsecCaptcha() {
     try {
       const aidAuth = await fetchAidEncrypted()
       const solved = await showTsecCaptcha(appId, currentLanguage.value, aidAuth)
-      return await exchangeTicket(solved.ticket, solved.randstr)
+      return await exchangeTicket(solved)
     } catch (error) {
       if (error instanceof TsecCaptchaClosedError) {
         return null

@@ -18,6 +18,7 @@ from services.auth.tsec.config import (
     tencent_captcha_app_secret_key,
 )
 from services.auth.tsec.exchange import exchange_tsec_ticket
+from services.auth.tsec.result import TsecVerifyTrace
 from services.redis.rate_limiting.redis_rate_limiter import check_captcha_rate_limit
 from services.utils.error_types import REDIS_ERRORS
 from utils.auth import CAPTCHA_SESSION_COOKIE_NAME, RATE_LIMIT_WINDOW_MINUTES, is_https
@@ -29,10 +30,13 @@ router = APIRouter()
 
 
 class TsecExchangeRequest(BaseModel):
-    """Frontend callback ticket + randstr from TencentCaptcha."""
+    """Frontend TencentCaptcha callback fields used for verify + audit."""
 
     ticket: str = Field(..., min_length=8, max_length=2048)
     randstr: str = Field(..., min_length=1, max_length=64)
+    sid: Optional[str] = Field(default=None, max_length=128)
+    verify_duration: Optional[int] = Field(default=None, ge=0, le=600_000)
+    action_duration: Optional[int] = Field(default=None, ge=0, le=600_000)
 
 
 class TsecAidEncryptedResponse(BaseModel):
@@ -124,6 +128,11 @@ async def exchange_tsec_captcha(
         payload.ticket,
         payload.randstr,
         get_client_ip(request),
+        trace=TsecVerifyTrace(
+            sid=payload.sid,
+            verify_duration=payload.verify_duration,
+            action_duration=payload.action_duration,
+        ),
     )
     if minted is None:
         logger.warning("T-Sec exchange rejected: %s", reason)

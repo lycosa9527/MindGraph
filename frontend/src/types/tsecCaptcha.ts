@@ -10,6 +10,16 @@ export interface TencentCaptchaResult {
   appid?: string
   bizState?: unknown
   sid?: string
+  verifyDuration?: number
+  actionDuration?: number
+}
+
+export interface TsecSolvedCaptcha {
+  ticket: string
+  randstr: string
+  sid?: string
+  verifyDuration?: number
+  actionDuration?: number
 }
 
 export interface TencentCaptchaInstance {

@@ -13,10 +13,12 @@ from routers.auth.tsec import TsecExchangeRequest, exchange_tsec_captcha
 from services.auth.tsec import config as tsec_config
 from services.auth.tsec.client import TsecCaptchaClientError
 from services.auth.tsec.csp import (
+    TSEC_CSP_HOSTS,
     TSEC_CSP_SCRIPT_SRC,
     TSEC_CSP_STYLE_SRC,
     tsec_csp_enabled,
 )
+from services.auth.tsec.errors import CAPTCHA_CODE_REASONS, reason_for_client_error
 from services.auth.tsec.verify import verify_tsec_ticket
 from services.infrastructure.http import middleware as middleware_module
 from services.infrastructure.security import production_secrets_guard as guard_module
@@ -89,7 +91,7 @@ async def test_verify_accepts_captcha_code_one() -> None:
 @pytest.mark.parametrize("code", [7, 8, 9, 15, 16, 21, 26, 100])
 @pytest.mark.asyncio
 async def test_verify_rejects_non_success_codes(code: int) -> None:
-    """Non-1 CaptchaCode values are denied."""
+    """Non-1 CaptchaCode values are denied with official reason names."""
     with patch(
         "services.auth.tsec.verify.describe_captcha_result",
         new_callable=AsyncMock,
@@ -97,7 +99,48 @@ async def test_verify_rejects_non_success_codes(code: int) -> None:
     ):
         ok, reason = await verify_tsec_ticket("tr03validticket", "@Vki", "1.1.1.1")
     assert ok is False
-    assert reason == f"captcha_code_{code}"
+    assert reason == CAPTCHA_CODE_REASONS[code]
+
+
+@pytest.mark.asyncio
+async def test_verify_maps_unknown_captcha_code() -> None:
+    """Undocumented CaptchaCode values stay fail-closed with a numeric reason."""
+    with patch(
+        "services.auth.tsec.verify.describe_captcha_result",
+        new_callable=AsyncMock,
+        return_value={"CaptchaCode": 0, "CaptchaMsg": "not valid"},
+    ):
+        ok, reason = await verify_tsec_ticket("tr03validticket", "@Vki", "1.1.1.1")
+    assert ok is False
+    assert reason == "captcha_code_0"
+
+
+@pytest.mark.parametrize(
+    ("api_code", "expected"),
+    [
+        ("UnauthorizedOperation.Unauthorized", "cloud_api_unauthorized"),
+        ("UnauthorizedOperation.ErrAuth", "cloud_api_auth"),
+        ("InternalError", "cloud_api_internal"),
+        ("MissingParameter", "cloud_api_missing_parameter"),
+        ("AuthFailure.SignatureFailure", "cloud_api_AuthFailure.SignatureFailure"),
+    ],
+)
+def test_reason_for_cloud_api_error(api_code: str, expected: str) -> None:
+    """36926/36927 Cloud API Error.Code values have stable fail-closed reasons."""
+    assert reason_for_client_error(api_code) == expected
+
+
+@pytest.mark.asyncio
+async def test_verify_maps_cloud_api_unauthorized() -> None:
+    """Unpaid / no-package Cloud API errors do not skip captcha."""
+    with patch(
+        "services.auth.tsec.verify.describe_captcha_result",
+        new_callable=AsyncMock,
+        side_effect=TsecCaptchaClientError("UnauthorizedOperation.Unauthorized"),
+    ):
+        ok, reason = await verify_tsec_ticket("tr03validticket", "@Vki", "1.1.1.1")
+    assert ok is False
+    assert reason == "cloud_api_unauthorized"
 
 
 @pytest.mark.asyncio
@@ -195,12 +238,13 @@ async def test_production_csp_includes_tsec_hosts_when_enabled() -> None:
     assert f"script-src 'self' 'nonce-testnonce123' {TSEC_CSP_SCRIPT_SRC}" in csp
     assert f"style-src 'self' 'unsafe-inline' {TSEC_CSP_STYLE_SRC}" in csp
     assert f"font-src 'self' data: {TSEC_CSP_STYLE_SRC}" in csp
+    assert "worker-src 'self' blob:" in csp
 
 
 def test_vite_index_csp_allows_tsec_stylesheets() -> None:
     """Vite document CSP must list TJCaptcha CSS hosts (dev uses the meta tag)."""
     index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
     content = index_html.read_text(encoding="utf-8")
-    captcha_style_hosts = "https://turing.captcha.qcloud.com https://turing.captcha.gtimg.com"
-    assert captcha_style_hosts in content
-    assert "style-src 'self' 'unsafe-inline'" in content
+    assert TSEC_CSP_HOSTS in content
+    assert "script-src 'self' 'unsafe-inline'" in content
+    assert "worker-src 'self' blob:" in content

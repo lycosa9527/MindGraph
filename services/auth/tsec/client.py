@@ -15,6 +15,8 @@ import httpx
 from services.auth.tsec.config import (
     tencent_captcha_app_id,
     tencent_captcha_app_secret_key,
+    tencent_captcha_business_id,
+    tencent_captcha_scene_id,
     tencent_captcha_secret_id,
     tencent_captcha_secret_key,
 )
@@ -71,6 +73,31 @@ def _parse_captcha_app_id() -> int:
         raise TsecCaptchaClientError(f"Invalid TENCENT_CAPTCHA_APP_ID: {raw!r}") from exc
 
 
+def build_describe_captcha_body(ticket: str, randstr: str, user_ip: str) -> dict[str, Any]:
+    """Build every documented DescribeCaptchaResult input we can populate.
+
+    NeedGetCaptchaTime=1 so GetCaptchaTime is returned. BusinessId/SceneId are
+    reserved and sent only when configured. MacAddress/Imei are mobile-only and
+    are omitted on the web path.
+    """
+    body: dict[str, Any] = {
+        "CaptchaType": CAPTCHA_TYPE,
+        "Ticket": ticket,
+        "UserIp": user_ip,
+        "Randstr": randstr,
+        "CaptchaAppId": _parse_captcha_app_id(),
+        "AppSecretKey": tencent_captcha_app_secret_key(),
+        "NeedGetCaptchaTime": 1,
+    }
+    business_id = tencent_captcha_business_id()
+    if business_id is not None:
+        body["BusinessId"] = business_id
+    scene_id = tencent_captcha_scene_id()
+    if scene_id is not None:
+        body["SceneId"] = scene_id
+    return body
+
+
 async def describe_captcha_result(
     ticket: str,
     randstr: str,
@@ -81,14 +108,7 @@ async def describe_captcha_result(
 
     Raises TsecCaptchaClientError on timeout, HTTP failure, or Cloud API Error.
     """
-    body = {
-        "CaptchaType": CAPTCHA_TYPE,
-        "Ticket": ticket,
-        "UserIp": user_ip,
-        "Randstr": randstr,
-        "CaptchaAppId": _parse_captcha_app_id(),
-        "AppSecretKey": tencent_captcha_app_secret_key(),
-    }
+    body = build_describe_captcha_body(ticket, randstr, user_ip)
     payload = json.dumps(body)
     timestamp = int(time.time())
     headers = {
@@ -135,7 +155,12 @@ async def describe_captcha_result(
     error = resp_data.get("Error")
     if isinstance(error, dict):
         error_code = str(error.get("Code", "Unknown"))
-        logger.error("T-Sec Cloud API error: %s %s", error_code, error.get("Message", ""))
+        logger.error(
+            "T-Sec Cloud API error: code=%s msg=%s request_id=%s",
+            error_code,
+            error.get("Message", ""),
+            resp_data.get("RequestId"),
+        )
         raise TsecCaptchaClientError(error_code)
 
     return resp_data
