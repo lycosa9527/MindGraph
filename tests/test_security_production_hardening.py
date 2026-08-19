@@ -128,7 +128,7 @@ async def test_production_csp_uses_nonce_when_request_state_has_nonce() -> None:
         with patch.object(middleware_module, "config") as mock_config:
             mock_config.debug = False
             with patch.object(middleware_module, "cos_showcase_enabled", return_value=False):
-                with patch.object(middleware_module, "tsec_csp_enabled", return_value=False):
+                with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
                     result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
@@ -166,7 +166,7 @@ async def test_production_csp_allows_exact_cos_hosts_when_showcase_cos_on() -> N
                     "cos_browser_csp_sources",
                     return_value=cos_hosts,
                 ):
-                    with patch.object(middleware_module, "tsec_csp_enabled", return_value=False):
+                    with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
                         result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
@@ -189,7 +189,7 @@ async def test_production_csp_falls_back_to_unsafe_inline_without_nonce() -> Non
     with patch.object(middleware_module, "is_https", return_value=False):
         with patch.object(middleware_module, "config") as mock_config:
             mock_config.debug = False
-            with patch.object(middleware_module, "tsec_csp_enabled", return_value=False):
+            with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
                 result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
@@ -327,7 +327,7 @@ async def test_security_headers_allow_same_origin_frame_for_showcase_pdf() -> No
     with patch.object(middleware_module, "is_https", return_value=False):
         with patch.object(middleware_module, "config") as mock_config:
             mock_config.debug = True
-            with patch.object(middleware_module, "tsec_csp_enabled", return_value=False):
+            with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
                 result = await middleware_module.add_security_headers(request, _call_next)
 
     assert result.headers["X-Frame-Options"] == "SAMEORIGIN"
@@ -351,7 +351,7 @@ async def test_word_addin_csp_allows_office_js_cdn() -> None:
     with patch.object(middleware_module, "is_https", return_value=True):
         with patch.object(middleware_module, "config") as mock_config:
             mock_config.debug = False
-            with patch.object(middleware_module, "tsec_csp_enabled", return_value=False):
+            with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=False):
                 result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]

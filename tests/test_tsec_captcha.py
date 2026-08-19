@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -11,7 +12,11 @@ from fastapi import HTTPException
 from routers.auth.tsec import TsecExchangeRequest, exchange_tsec_captcha
 from services.auth.tsec import config as tsec_config
 from services.auth.tsec.client import TsecCaptchaClientError
-from services.auth.tsec.csp import TSEC_CSP_SCRIPT_SRC, tsec_csp_enabled
+from services.auth.tsec.csp import (
+    TSEC_CSP_SCRIPT_SRC,
+    TSEC_CSP_STYLE_SRC,
+    tsec_csp_enabled,
+)
 from services.auth.tsec.verify import verify_tsec_ticket
 from services.infrastructure.http import middleware as middleware_module
 from services.infrastructure.security import production_secrets_guard as guard_module
@@ -180,10 +185,22 @@ async def test_production_csp_includes_tsec_hosts_when_enabled() -> None:
         with patch.object(middleware_module, "config") as mock_config:
             mock_config.debug = False
             with patch.object(middleware_module, "cos_showcase_enabled", return_value=False):
-                with patch.object(middleware_module, "tsec_csp_enabled", return_value=True):
+                with patch("services.auth.tsec.csp.tsec_csp_enabled", return_value=True):
                     result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
     assert TSEC_CSP_SCRIPT_SRC in csp
     assert "https://ssl.captcha.qq.com" in csp
+    assert "https://turing.captcha.gtimg.com" in csp
     assert f"script-src 'self' 'nonce-testnonce123' {TSEC_CSP_SCRIPT_SRC}" in csp
+    assert f"style-src 'self' 'unsafe-inline' {TSEC_CSP_STYLE_SRC}" in csp
+    assert f"font-src 'self' data: {TSEC_CSP_STYLE_SRC}" in csp
+
+
+def test_vite_index_csp_allows_tsec_stylesheets() -> None:
+    """Vite document CSP must list TJCaptcha CSS hosts (dev uses the meta tag)."""
+    index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
+    content = index_html.read_text(encoding="utf-8")
+    captcha_style_hosts = "https://turing.captcha.qcloud.com https://turing.captcha.gtimg.com"
+    assert captcha_style_hosts in content
+    assert "style-src 'self' 'unsafe-inline'" in content

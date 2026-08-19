@@ -42,9 +42,11 @@ from services.infrastructure.utils.spa_handler import (
 )
 from services.auth.tsec.csp import (
     TSEC_CSP_CONNECT_SRC,
+    TSEC_CSP_FONT_SRC,
     TSEC_CSP_FRAME_SRC,
     TSEC_CSP_SCRIPT_SRC,
-    tsec_csp_enabled,
+    TSEC_CSP_STYLE_SRC,
+    tsec_csp_extra,
 )
 from services.showcase.storage import cos_showcase_enabled
 from services.utils.tencent_cos_client import cos_browser_csp_sources
@@ -298,33 +300,18 @@ def _word_addin_content_security_policy() -> str:
     """
     return (
         "default-src 'self'; "
-        f"script-src 'self' 'unsafe-inline' {_OFFICE_JS_CDN}{_tsec_csp_script_extra()}; "
+        f"script-src 'self' 'unsafe-inline' {_OFFICE_JS_CDN}{tsec_csp_extra(TSEC_CSP_SCRIPT_SRC)}; "
         "worker-src 'self' blob:; "
-        "style-src 'self' 'unsafe-inline'; "
+        f"style-src 'self' 'unsafe-inline'{tsec_csp_extra(TSEC_CSP_STYLE_SRC)}; "
         "img-src 'self' data: https: blob:; "
-        "font-src 'self' data:; "
-        f"connect-src 'self' {_OFFICE_JS_CDN}{_tsec_csp_connect_extra()}; "
+        f"font-src 'self' data:{tsec_csp_extra(TSEC_CSP_FONT_SRC)}; "
+        f"connect-src 'self' {_OFFICE_JS_CDN}{tsec_csp_extra(TSEC_CSP_CONNECT_SRC)}; "
         "media-src 'self' blob:; "
-        f"frame-src 'self' blob: {_WORD_ADDIN_MANUAL_FRAME}{_tsec_csp_frame_extra()}; "
+        f"frame-src 'self' blob: {_WORD_ADDIN_MANUAL_FRAME}{tsec_csp_extra(TSEC_CSP_FRAME_SRC)}; "
         "frame-ancestors *; "
         "base-uri 'self'; "
         "form-action 'self';"
     )
-
-
-def _tsec_csp_script_extra() -> str:
-    """script-src hosts for TJCaptcha.js when T-Sec is the live provider."""
-    return f" {TSEC_CSP_SCRIPT_SRC}" if tsec_csp_enabled() else ""
-
-
-def _tsec_csp_connect_extra() -> str:
-    """connect-src hosts for Tencent Captcha 2.0 when T-Sec is live."""
-    return f" {TSEC_CSP_CONNECT_SRC}" if tsec_csp_enabled() else ""
-
-
-def _tsec_csp_frame_extra() -> str:
-    """frame-src hosts for the Tencent captcha iframe when T-Sec is live."""
-    return f" {TSEC_CSP_FRAME_SRC}" if tsec_csp_enabled() else ""
 
 
 async def add_security_headers(request: Request, call_next):
@@ -344,7 +331,8 @@ async def add_security_headers(request: Request, call_next):
       inline onclick handlers / config bootstrap.
     - /word-addin/*: allow Microsoft Office.js CDN (see ``_word_addin_content_security_policy``).
     - style-src: keeps 'unsafe-inline' — Vue/Element Plus inject styles at runtime
-      via JS, which a nonce cannot cover.
+      via JS, which a nonce cannot cover. When T-Sec is live, also allow the
+      TJCaptcha stylesheet CDNs (otherwise the widget times out blank).
     - ws:/wss:: Required for Kitty Agent WebSocket connections
     - data: URIs: Required for canvas-to-image conversions
     - connect-src / media-src: when Showcase COS is on, allow the configured
@@ -389,15 +377,16 @@ async def add_security_headers(request: Request, call_next):
         # DEBUG mode: Allow Swagger UI resources from CDN (including source maps)
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            f"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net{_tsec_csp_script_extra()}; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
+            f"https://cdn.jsdelivr.net{tsec_csp_extra(TSEC_CSP_SCRIPT_SRC)}; "
             "worker-src 'self' blob:; "
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            f"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net{tsec_csp_extra(TSEC_CSP_STYLE_SRC)}; "
             "img-src 'self' data: http: https: blob: https://cdn.jsdelivr.net https://fastapi.tiangolo.com; "
-            "font-src 'self' data: https://cdn.jsdelivr.net; "
+            f"font-src 'self' data: https://cdn.jsdelivr.net{tsec_csp_extra(TSEC_CSP_FONT_SRC)}; "
             "connect-src 'self' ws: wss: blob: https://cdn.jsdelivr.net"
-            f"{cos_connect_clause}{_tsec_csp_connect_extra()}; "
+            f"{cos_connect_clause}{tsec_csp_extra(TSEC_CSP_CONNECT_SRC)}; "
             f"{media_src}"
-            f"frame-src 'self' blob: https://view.officeapps.live.com{_tsec_csp_frame_extra()}; "
+            f"frame-src 'self' blob: https://view.officeapps.live.com{tsec_csp_extra(TSEC_CSP_FRAME_SRC)}; "
             f"frame-ancestors {frame_ancestors}; "
             "base-uri 'self'; "
             "form-action 'self';"
@@ -409,17 +398,17 @@ async def add_security_headers(request: Request, call_next):
         # (legacy templates with inline handlers) keep the permissive fallback.
         csp_nonce = getattr(request.state, "csp_nonce", None)
         nonce_part = f"'nonce-{csp_nonce}'" if csp_nonce else "'unsafe-inline'"
-        script_src = f"script-src 'self' {nonce_part}{_tsec_csp_script_extra()}; "
+        script_src = f"script-src 'self' {nonce_part}{tsec_csp_extra(TSEC_CSP_SCRIPT_SRC)}; "
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             f"{script_src}"
             "worker-src 'self'; "
-            "style-src 'self' 'unsafe-inline'; "
+            f"style-src 'self' 'unsafe-inline'{tsec_csp_extra(TSEC_CSP_STYLE_SRC)}; "
             "img-src 'self' data: http: https: blob:; "
-            "font-src 'self' data:; "
-            f"connect-src 'self' ws: wss: blob:{cos_connect_clause}{_tsec_csp_connect_extra()}; "
+            f"font-src 'self' data:{tsec_csp_extra(TSEC_CSP_FONT_SRC)}; "
+            f"connect-src 'self' ws: wss: blob:{cos_connect_clause}{tsec_csp_extra(TSEC_CSP_CONNECT_SRC)}; "
             f"{media_src}"
-            f"frame-src 'self' blob: https://view.officeapps.live.com{_tsec_csp_frame_extra()}; "
+            f"frame-src 'self' blob: https://view.officeapps.live.com{tsec_csp_extra(TSEC_CSP_FRAME_SRC)}; "
             f"frame-ancestors {frame_ancestors}; "
             "base-uri 'self'; "
             "form-action 'self';"
