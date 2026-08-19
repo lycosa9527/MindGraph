@@ -135,6 +135,26 @@ describe('mindMapUid round-trip', () => {
     expect(readMindMapNodeUid(paint)).toBe(paint?.id)
   })
 
+  it('wraps bare string children so load can assign canvas uids', () => {
+    const loaded = loadMindMapSpec({
+      topic: '全息投影是什么',
+      children: [
+        {
+          text: '光学原理',
+          children: ['光场重建与相位编码', { text: '干涉记录' }, '  ', ''],
+        },
+      ],
+    })
+    const holography = loaded.nodes.find((node) => node.text === '光场重建与相位编码')
+    const interference = loaded.nodes.find((node) => node.text === '干涉记录')
+    expect(holography).toBeTruthy()
+    expect(interference).toBeTruthy()
+    const uid = readMindMapNodeUid(holography)
+    expect(uid).toBeTruthy()
+    expect(holography?.id).toBe(uid)
+    expect(loaded.nodes.filter((node) => node.type === 'branch')).toHaveLength(3)
+  })
+
   it('rebinds paste uids when source still exists (copy) but keeps cut uids', () => {
     const copyBranches = [{ text: '你好', uid: 'live-uid', children: [{ text: '子', uid: 'live-child' }] }]
     rebindMindMapBranchUidsForPaste(copyBranches, new Set(['live-uid', 'live-child']))

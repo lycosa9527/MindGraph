@@ -105,6 +105,8 @@ _SCALAR_LABEL_KEYS = frozenset(
     }
 )
 
+_BRANCH_TREE_KEYS = frozenset({"children", "leftBranches", "rightBranches"})
+
 _STRING_LIST_KEYS = frozenset(
     {
         "attributes",
@@ -185,21 +187,33 @@ def _coerce_analogies(value: Any) -> List[Any]:
     return analogies
 
 
+def _is_mind_map_type(diagram_type: str) -> bool:
+    return diagram_type in ("mind_map", "mindmap")
+
+
+def _coerce_side_value(value: Any, diagram_type: str) -> Any:
+    """Keep mind-map left/right branch arrays; scalars stay labels (double-bubble)."""
+    if isinstance(value, list) and (_is_mind_map_type(diagram_type) or any(isinstance(item, dict) for item in value)):
+        return _coerce_children(value)
+    return _coerce_label_value(value)
+
+
 def coerce_prompt_to_diagram_spec(spec: Any, diagram_type: str = "") -> Dict[str, Any]:
     """Coerce LLM label fields to strings so Vue Flow ``.trim`` never sees numbers/objects.
 
     Safe to call on nested children dicts (``diagram_type`` may be empty).
     """
-    _ = diagram_type
     if not isinstance(spec, dict):
         return {}
     out = dict(spec)
     for key in list(out.keys()):
-        if key in _SCALAR_LABEL_KEYS:
+        if key in ("left", "right"):
+            out[key] = _coerce_side_value(out.get(key), diagram_type)
+        elif key in _SCALAR_LABEL_KEYS:
             out[key] = _coerce_label_value(out.get(key))
         elif key in _STRING_LIST_KEYS:
             out[key] = _coerce_string_list(out.get(key))
-        elif key == "children":
+        elif key in _BRANCH_TREE_KEYS:
             out[key] = _coerce_children(out.get(key))
         elif key == "analogies":
             out[key] = _coerce_analogies(out.get(key))

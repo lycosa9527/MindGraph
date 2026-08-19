@@ -157,3 +157,39 @@ async def test_try_consume_backfills_target_on_pick() -> None:
     assert picked is not None
     assert picked["action"] == "add_node"
     assert picked["target"] == "罗技"
+
+
+@pytest.mark.asyncio
+async def test_try_consume_keeps_pending_on_unrecognized_reply() -> None:
+    """Unrecognized text must not silently drop pending clarify options."""
+    session: dict = {}
+    command = {
+        "action": "clarify_options",
+        "options": ["补全「中国」", "新增「中国」"],
+        "option_commands": [
+            {"action": "auto_complete_branch", "target": "中国"},
+            {"action": "add_node", "target": "中国"},
+        ],
+    }
+    assert arm_pending_clarify_options(session, command) is True
+
+    websocket = MagicMock()
+    with (
+        patch(
+            "services.kitty.routing.pending_clarify_options.voice_sessions",
+            {"voice_test": session},
+        ),
+        patch(
+            "services.kitty.routing.pending_clarify_options.emit_user_ack",
+            new=AsyncMock(),
+        ),
+    ):
+        picked = await try_consume_pending_clarify_options(
+            websocket,
+            "voice_test",
+            "随便聊聊",
+            {"language": "zh"},
+        )
+
+    assert picked is None
+    assert get_pending_clarify_options(session) is not None

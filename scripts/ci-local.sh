@@ -203,7 +203,12 @@ run_backend() {
     tests/test_mindmap_identity_kitty_e2e.py \
     tests/test_diagram_edit.py \
     tests/test_diagram_agent_context.py \
-    tests/test_kitty_ack_library.py
+    tests/test_kitty_ack_library.py \
+    tests/test_kitty_agent_loop.py \
+    tests/test_kitty_agent_loop_messages.py \
+    tests/test_kitty_agent_loop_five_maps.py \
+    tests/test_kitty_agent_loop_sams_club.py \
+    tests/test_prompt_to_diagram_result.py
 }
 
 run_frontend() {
@@ -238,7 +243,9 @@ run_frontend() {
     tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts \
     tests/mindMapIdentityMigrate.spec.ts \
     tests/branchMoveHitTest.spec.ts tests/mindMapDropPreviewShapes.spec.ts \
-    tests/mindMapSeparation.spec.ts tests/mindMapLoadPreserveSides.spec.ts
+    tests/mindMapSeparation.spec.ts tests/mindMapLoadPreserveSides.spec.ts \
+    tests/mindMapNodeUid.spec.ts tests/mindMapSubgraphMerge.spec.ts \
+    tests/mindMapStringChildrenAudit.spec.ts
 }
 
 run_chrome_extension() {

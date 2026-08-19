@@ -133,6 +133,8 @@ def mindmap_spec_to_canvas(
             return start_index
         idx = start_index
         for child in children:
+            if isinstance(child, (str, int, float, bool)):
+                child = {"text": str(child)}
             if not isinstance(child, dict):
                 continue
             label = str(child.get("text") or child.get("label") or "").strip()

@@ -1,0 +1,625 @@
+{
+  "topic": "中国茶文化",
+  "nodes": [
+    {
+      "id": "topic",
+      "type": "topic",
+      "text": "中国茶文化",
+      "position": {
+        "x": 400.0,
+        "y": 300.0
+      }
+    },
+    {
+      "id": "66a82bd2-6952-47ce-8102-0918c7613e0f",
+      "type": "branch",
+      "text": "历史渊源与演变",
+      "position": {
+        "x": 620.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "66a82bd2-6952-47ce-8102-0918c7613e0f",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "dc9f6119-89ee-4c61-9045-9e291464fe87",
+      "type": "branch",
+      "text": "神农尝百草起源说",
+      "position": {
+        "x": 840.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "dc9f6119-89ee-4c61-9045-9e291464fe87",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "87f13638-c4b6-40ab-ae59-c524adf8a318",
+      "type": "branch",
+      "text": "唐宋时期的兴盛与点茶",
+      "position": {
+        "x": 840.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "87f13638-c4b6-40ab-ae59-c524adf8a318",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "64265bc7-060d-4546-bf24-810ae2c244db",
+      "type": "branch",
+      "text": "明清时期的散茶冲泡",
+      "position": {
+        "x": 840.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "64265bc7-060d-4546-bf24-810ae2c244db",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "f435118f-0363-4c9f-b4e7-3f5954be128b",
+      "type": "branch",
+      "text": "近代茶文化的传播与国际化",
+      "position": {
+        "x": 840.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "f435118f-0363-4c9f-b4e7-3f5954be128b",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "f273ccfc-b581-4b5f-85b5-db6f171a1a26",
+      "type": "branch",
+      "text": "六大茶类体系",
+      "position": {
+        "x": 620.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "f273ccfc-b581-4b5f-85b5-db6f171a1a26",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "2695f2ad-c3a8-4afd-8d3f-61928e10c496",
+      "type": "branch",
+      "text": "绿茶：不发酵，代表龙井、碧螺春",
+      "position": {
+        "x": 840.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "2695f2ad-c3a8-4afd-8d3f-61928e10c496",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "4e3b93ca-2380-46ec-9371-5d7512aea30f",
+      "type": "branch",
+      "text": "白茶：微发酵，代表白毫银针",
+      "position": {
+        "x": 840.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "4e3b93ca-2380-46ec-9371-5d7512aea30f",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "c7b0da59-680f-4f90-aa3b-c188c3d35ba4",
+      "type": "branch",
+      "text": "黄茶：轻发酵，代表君山银针",
+      "position": {
+        "x": 840.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "c7b0da59-680f-4f90-aa3b-c188c3d35ba4",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "58306e29-23fc-4319-a4a9-d6fcc154fd13",
+      "type": "branch",
+      "text": "青茶（乌龙茶）：半发酵，代表铁观音、大红袍",
+      "position": {
+        "x": 840.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "58306e29-23fc-4319-a4a9-d6fcc154fd13",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "93dae182-8a39-4b1b-9b98-4b5c8211e5b8",
+      "type": "branch",
+      "text": "红茶：全发酵，代表祁门红茶、正山小种",
+      "position": {
+        "x": 840.0,
+        "y": 620.0
+      },
+      "data": {
+        "mindMapUid": "93dae182-8a39-4b1b-9b98-4b5c8211e5b8",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "746f4944-bb77-4fc9-9ad8-35657f08c083",
+      "type": "branch",
+      "text": "黑茶：后发酵，代表普洱茶、安化黑茶",
+      "position": {
+        "x": 840.0,
+        "y": 700.0
+      },
+      "data": {
+        "mindMapUid": "746f4944-bb77-4fc9-9ad8-35657f08c083",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "a8c1eeec-b5a4-42d1-8e15-01e1f6ab282d",
+      "type": "branch",
+      "text": "茶艺与冲泡技艺",
+      "position": {
+        "x": 620.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "a8c1eeec-b5a4-42d1-8e15-01e1f6ab282d",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "1d171ffd-c0a3-4b06-b00b-20c6b848274b",
+      "type": "branch",
+      "text": "泡茶四要素：水、器、火、境",
+      "position": {
+        "x": 840.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "1d171ffd-c0a3-4b06-b00b-20c6b848274b",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "d5b1027f-4014-43bf-8758-4fe071fad55b",
+      "type": "branch",
+      "text": "经典茶具介绍：紫砂壶、盖碗、公道杯",
+      "position": {
+        "x": 840.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "d5b1027f-4014-43bf-8758-4fe071fad55b",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "aa201d62-d115-4e66-999f-46bd4209cc39",
+      "type": "branch",
+      "text": "不同茶类的冲泡水温与时间控制",
+      "position": {
+        "x": 840.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "aa201d62-d115-4e66-999f-46bd4209cc39",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "fb0b0742-02db-48a3-9d51-25a789e6feef",
+      "type": "branch",
+      "text": "茶道礼仪与待客之道",
+      "position": {
+        "x": 840.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "fb0b0742-02db-48a3-9d51-25a789e6feef",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "6248567d-95e8-4e72-af30-49c25a238a16",
+      "type": "branch",
+      "text": "文化内涵与精神",
+      "position": {
+        "x": 180.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "6248567d-95e8-4e72-af30-49c25a238a16",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "c6f993b2-9f77-4f3a-bb4d-7af0e24b6ea5",
+      "type": "branch",
+      "text": "和敬清寂：儒家中和思想",
+      "position": {
+        "x": -40.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "c6f993b2-9f77-4f3a-bb4d-7af0e24b6ea5",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "0d13c2d0-8d51-4d09-a2df-539684b1f3d0",
+      "type": "branch",
+      "text": "天人合一：道家自然哲学",
+      "position": {
+        "x": -40.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "0d13c2d0-8d51-4d09-a2df-539684b1f3d0",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "29f910db-6b04-4e3c-982f-3deebd05f9ef",
+      "type": "branch",
+      "text": "禅茶一味：佛教修行境界",
+      "position": {
+        "x": -40.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "29f910db-6b04-4e3c-982f-3deebd05f9ef",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "ecaf6d4e-2b10-4e51-a903-9c3dd8105538",
+      "type": "branch",
+      "text": "茶诗、茶画与文学艺术体现",
+      "position": {
+        "x": -40.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "ecaf6d4e-2b10-4e51-a903-9c3dd8105538",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "0479d3ae-3f9d-4a23-be9d-71eaeedaeec9",
+      "type": "branch",
+      "text": "地域名茶分布",
+      "position": {
+        "x": 180.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "0479d3ae-3f9d-4a23-be9d-71eaeedaeec9",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "1d06da8f-432c-42c2-809e-82d1eb4e9629",
+      "type": "branch",
+      "text": "江南产区：西湖龙井、黄山毛峰",
+      "position": {
+        "x": -40.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "1d06da8f-432c-42c2-809e-82d1eb4e9629",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "639e5ad2-3cf3-4b6e-b87e-6ebc12d0f2a7",
+      "type": "branch",
+      "text": "西南产区：云南普洱、四川蒙顶甘露",
+      "position": {
+        "x": -40.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "639e5ad2-3cf3-4b6e-b87e-6ebc12d0f2a7",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "816ca62b-98bd-4a38-8c31-d7f5c763c5e9",
+      "type": "branch",
+      "text": "东南产区：福建铁观音、台湾冻顶乌龙",
+      "position": {
+        "x": -40.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "816ca62b-98bd-4a38-8c31-d7f5c763c5e9",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "fc15fa68-5e39-4f46-9550-7f8abb5fb042",
+      "type": "branch",
+      "text": "江北产区：信阳毛尖、六安瓜片",
+      "position": {
+        "x": -40.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "fc15fa68-5e39-4f46-9550-7f8abb5fb042",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "e5a95888-19ce-4ae4-9026-a3e1b1ed36ca",
+      "type": "branch",
+      "text": "现代传承与创新",
+      "position": {
+        "x": 180.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "e5a95888-19ce-4ae4-9026-a3e1b1ed36ca",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "9c4cbe2e-945f-44bc-b18a-4e223dbd22d4",
+      "type": "branch",
+      "text": "新式茶饮的发展与市场趋势",
+      "position": {
+        "x": -40.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "9c4cbe2e-945f-44bc-b18a-4e223dbd22d4",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "54cb9221-204c-46c6-a0ce-2499311a2f78",
+      "type": "branch",
+      "text": "茶文化进校园与社会普及教育",
+      "position": {
+        "x": -40.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "54cb9221-204c-46c6-a0ce-2499311a2f78",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "c48990ce-a2de-4292-810c-87f9c70ebe7b",
+      "type": "branch",
+      "text": "茶叶深加工与健康功效研究",
+      "position": {
+        "x": -40.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "c48990ce-a2de-4292-810c-87f9c70ebe7b",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "e68aa522-2c0f-4840-a069-fc260c4aed5e",
+      "type": "branch",
+      "text": "非遗保护与传统技艺的数字化保存",
+      "position": {
+        "x": -40.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "e68aa522-2c0f-4840-a069-fc260c4aed5e",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "e-topic-66a82bd2-6952-47ce-8102-0918c7613e0f",
+      "source": "topic",
+      "target": "66a82bd2-6952-47ce-8102-0918c7613e0f"
+    },
+    {
+      "id": "e-66a82bd2-6952-47ce-8102-0918c7613e0f-dc9f6119-89ee-4c61-9045-9e291464fe87",
+      "source": "66a82bd2-6952-47ce-8102-0918c7613e0f",
+      "target": "dc9f6119-89ee-4c61-9045-9e291464fe87"
+    },
+    {
+      "id": "e-66a82bd2-6952-47ce-8102-0918c7613e0f-87f13638-c4b6-40ab-ae59-c524adf8a318",
+      "source": "66a82bd2-6952-47ce-8102-0918c7613e0f",
+      "target": "87f13638-c4b6-40ab-ae59-c524adf8a318"
+    },
+    {
+      "id": "e-66a82bd2-6952-47ce-8102-0918c7613e0f-64265bc7-060d-4546-bf24-810ae2c244db",
+      "source": "66a82bd2-6952-47ce-8102-0918c7613e0f",
+      "target": "64265bc7-060d-4546-bf24-810ae2c244db"
+    },
+    {
+      "id": "e-66a82bd2-6952-47ce-8102-0918c7613e0f-f435118f-0363-4c9f-b4e7-3f5954be128b",
+      "source": "66a82bd2-6952-47ce-8102-0918c7613e0f",
+      "target": "f435118f-0363-4c9f-b4e7-3f5954be128b"
+    },
+    {
+      "id": "e-topic-f273ccfc-b581-4b5f-85b5-db6f171a1a26",
+      "source": "topic",
+      "target": "f273ccfc-b581-4b5f-85b5-db6f171a1a26"
+    },
+    {
+      "id": "e-f273ccfc-b581-4b5f-85b5-db6f171a1a26-2695f2ad-c3a8-4afd-8d3f-61928e10c496",
+      "source": "f273ccfc-b581-4b5f-85b5-db6f171a1a26",
+      "target": "2695f2ad-c3a8-4afd-8d3f-61928e10c496"
+    },
+    {
+      "id": "e-f273ccfc-b581-4b5f-85b5-db6f171a1a26-4e3b93ca-2380-46ec-9371-5d7512aea30f",
+      "source": "f273ccfc-b581-4b5f-85b5-db6f171a1a26",
+      "target": "4e3b93ca-2380-46ec-9371-5d7512aea30f"
+    },
+    {
+      "id": "e-f273ccfc-b581-4b5f-85b5-db6f171a1a26-c7b0da59-680f-4f90-aa3b-c188c3d35ba4",
+      "source": "f273ccfc-b581-4b5f-85b5-db6f171a1a26",
+      "target": "c7b0da59-680f-4f90-aa3b-c188c3d35ba4"
+    },
+    {
+      "id": "e-f273ccfc-b581-4b5f-85b5-db6f171a1a26-58306e29-23fc-4319-a4a9-d6fcc154fd13",
+      "source": "f273ccfc-b581-4b5f-85b5-db6f171a1a26",
+      "target": "58306e29-23fc-4319-a4a9-d6fcc154fd13"
+    },
+    {
+      "id": "e-f273ccfc-b581-4b5f-85b5-db6f171a1a26-93dae182-8a39-4b1b-9b98-4b5c8211e5b8",
+      "source": "f273ccfc-b581-4b5f-85b5-db6f171a1a26",
+      "target": "93dae182-8a39-4b1b-9b98-4b5c8211e5b8"
+    },
+    {
+      "id": "e-f273ccfc-b581-4b5f-85b5-db6f171a1a26-746f4944-bb77-4fc9-9ad8-35657f08c083",
+      "source": "f273ccfc-b581-4b5f-85b5-db6f171a1a26",
+      "target": "746f4944-bb77-4fc9-9ad8-35657f08c083"
+    },
+    {
+      "id": "e-topic-a8c1eeec-b5a4-42d1-8e15-01e1f6ab282d",
+      "source": "topic",
+      "target": "a8c1eeec-b5a4-42d1-8e15-01e1f6ab282d"
+    },
+    {
+      "id": "e-a8c1eeec-b5a4-42d1-8e15-01e1f6ab282d-1d171ffd-c0a3-4b06-b00b-20c6b848274b",
+      "source": "a8c1eeec-b5a4-42d1-8e15-01e1f6ab282d",
+      "target": "1d171ffd-c0a3-4b06-b00b-20c6b848274b"
+    },
+    {
+      "id": "e-a8c1eeec-b5a4-42d1-8e15-01e1f6ab282d-d5b1027f-4014-43bf-8758-4fe071fad55b",
+      "source": "a8c1eeec-b5a4-42d1-8e15-01e1f6ab282d",
+      "target": "d5b1027f-4014-43bf-8758-4fe071fad55b"
+    },
+    {
+      "id": "e-a8c1eeec-b5a4-42d1-8e15-01e1f6ab282d-aa201d62-d115-4e66-999f-46bd4209cc39",
+      "source": "a8c1eeec-b5a4-42d1-8e15-01e1f6ab282d",
+      "target": "aa201d62-d115-4e66-999f-46bd4209cc39"
+    },
+    {
+      "id": "e-a8c1eeec-b5a4-42d1-8e15-01e1f6ab282d-fb0b0742-02db-48a3-9d51-25a789e6feef",
+      "source": "a8c1eeec-b5a4-42d1-8e15-01e1f6ab282d",
+      "target": "fb0b0742-02db-48a3-9d51-25a789e6feef"
+    },
+    {
+      "id": "e-topic-6248567d-95e8-4e72-af30-49c25a238a16",
+      "source": "topic",
+      "target": "6248567d-95e8-4e72-af30-49c25a238a16"
+    },
+    {
+      "id": "e-6248567d-95e8-4e72-af30-49c25a238a16-c6f993b2-9f77-4f3a-bb4d-7af0e24b6ea5",
+      "source": "6248567d-95e8-4e72-af30-49c25a238a16",
+      "target": "c6f993b2-9f77-4f3a-bb4d-7af0e24b6ea5"
+    },
+    {
+      "id": "e-6248567d-95e8-4e72-af30-49c25a238a16-0d13c2d0-8d51-4d09-a2df-539684b1f3d0",
+      "source": "6248567d-95e8-4e72-af30-49c25a238a16",
+      "target": "0d13c2d0-8d51-4d09-a2df-539684b1f3d0"
+    },
+    {
+      "id": "e-6248567d-95e8-4e72-af30-49c25a238a16-29f910db-6b04-4e3c-982f-3deebd05f9ef",
+      "source": "6248567d-95e8-4e72-af30-49c25a238a16",
+      "target": "29f910db-6b04-4e3c-982f-3deebd05f9ef"
+    },
+    {
+      "id": "e-6248567d-95e8-4e72-af30-49c25a238a16-ecaf6d4e-2b10-4e51-a903-9c3dd8105538",
+      "source": "6248567d-95e8-4e72-af30-49c25a238a16",
+      "target": "ecaf6d4e-2b10-4e51-a903-9c3dd8105538"
+    },
+    {
+      "id": "e-topic-0479d3ae-3f9d-4a23-be9d-71eaeedaeec9",
+      "source": "topic",
+      "target": "0479d3ae-3f9d-4a23-be9d-71eaeedaeec9"
+    },
+    {
+      "id": "e-0479d3ae-3f9d-4a23-be9d-71eaeedaeec9-1d06da8f-432c-42c2-809e-82d1eb4e9629",
+      "source": "0479d3ae-3f9d-4a23-be9d-71eaeedaeec9",
+      "target": "1d06da8f-432c-42c2-809e-82d1eb4e9629"
+    },
+    {
+      "id": "e-0479d3ae-3f9d-4a23-be9d-71eaeedaeec9-639e5ad2-3cf3-4b6e-b87e-6ebc12d0f2a7",
+      "source": "0479d3ae-3f9d-4a23-be9d-71eaeedaeec9",
+      "target": "639e5ad2-3cf3-4b6e-b87e-6ebc12d0f2a7"
+    },
+    {
+      "id": "e-0479d3ae-3f9d-4a23-be9d-71eaeedaeec9-816ca62b-98bd-4a38-8c31-d7f5c763c5e9",
+      "source": "0479d3ae-3f9d-4a23-be9d-71eaeedaeec9",
+      "target": "816ca62b-98bd-4a38-8c31-d7f5c763c5e9"
+    },
+    {
+      "id": "e-0479d3ae-3f9d-4a23-be9d-71eaeedaeec9-fc15fa68-5e39-4f46-9550-7f8abb5fb042",
+      "source": "0479d3ae-3f9d-4a23-be9d-71eaeedaeec9",
+      "target": "fc15fa68-5e39-4f46-9550-7f8abb5fb042"
+    },
+    {
+      "id": "e-topic-e5a95888-19ce-4ae4-9026-a3e1b1ed36ca",
+      "source": "topic",
+      "target": "e5a95888-19ce-4ae4-9026-a3e1b1ed36ca"
+    },
+    {
+      "id": "e-e5a95888-19ce-4ae4-9026-a3e1b1ed36ca-9c4cbe2e-945f-44bc-b18a-4e223dbd22d4",
+      "source": "e5a95888-19ce-4ae4-9026-a3e1b1ed36ca",
+      "target": "9c4cbe2e-945f-44bc-b18a-4e223dbd22d4"
+    },
+    {
+      "id": "e-e5a95888-19ce-4ae4-9026-a3e1b1ed36ca-54cb9221-204c-46c6-a0ce-2499311a2f78",
+      "source": "e5a95888-19ce-4ae4-9026-a3e1b1ed36ca",
+      "target": "54cb9221-204c-46c6-a0ce-2499311a2f78"
+    },
+    {
+      "id": "e-e5a95888-19ce-4ae4-9026-a3e1b1ed36ca-c48990ce-a2de-4292-810c-87f9c70ebe7b",
+      "source": "e5a95888-19ce-4ae4-9026-a3e1b1ed36ca",
+      "target": "c48990ce-a2de-4292-810c-87f9c70ebe7b"
+    },
+    {
+      "id": "e-e5a95888-19ce-4ae4-9026-a3e1b1ed36ca-e68aa522-2c0f-4840-a069-fc260c4aed5e",
+      "source": "e5a95888-19ce-4ae4-9026-a3e1b1ed36ca",
+      "target": "e68aa522-2c0f-4840-a069-fc260c4aed5e"
+    }
+  ],
+  "diagram_type": "mindmap"
+}

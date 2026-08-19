@@ -1,0 +1,397 @@
+{
+  "topic": "新能源汽车",
+  "nodes": [
+    {
+      "id": "topic",
+      "type": "topic",
+      "text": "新能源汽车",
+      "position": {
+        "x": 400.0,
+        "y": 300.0
+      }
+    },
+    {
+      "id": "7a2860c2-b2c8-456a-8261-f1fd5414ce21",
+      "type": "branch",
+      "text": "技术架构与核心组件",
+      "position": {
+        "x": 620.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "7a2860c2-b2c8-456a-8261-f1fd5414ce21",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "ca478fa0-1ec6-4a07-9b36-c3f468a18eae",
+      "type": "branch",
+      "text": "动力电池系统",
+      "position": {
+        "x": 840.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "ca478fa0-1ec6-4a07-9b36-c3f468a18eae",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "7cea21dd-e68e-41a5-8709-21bcac4b242c",
+      "type": "branch",
+      "text": "电机驱动系统",
+      "position": {
+        "x": 840.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "7cea21dd-e68e-41a5-8709-21bcac4b242c",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "8b3e56df-16ea-4605-a599-144d4a21b22e",
+      "type": "branch",
+      "text": "电控管理系统",
+      "position": {
+        "x": 840.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "8b3e56df-16ea-4605-a599-144d4a21b22e",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "6aca7f82-0841-44f8-b478-d2b3ff40d37d",
+      "type": "branch",
+      "text": "充电与能源补给",
+      "position": {
+        "x": 840.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "6aca7f82-0841-44f8-b478-d2b3ff40d37d",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "af47efd2-dab3-4269-b749-e5e3800c7162",
+      "type": "branch",
+      "text": "主要类型与分类",
+      "position": {
+        "x": 620.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "af47efd2-dab3-4269-b749-e5e3800c7162",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "f945cede-9a19-43f1-ab0e-9839270ef6d0",
+      "type": "branch",
+      "text": "纯电动汽车 (BEV)",
+      "position": {
+        "x": 840.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "f945cede-9a19-43f1-ab0e-9839270ef6d0",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "451c0491-7f0c-4ff1-9816-35f1c3e55bb4",
+      "type": "branch",
+      "text": "混合动力汽车 (HEV)",
+      "position": {
+        "x": 840.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "451c0491-7f0c-4ff1-9816-35f1c3e55bb4",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "354562c9-43b3-4379-8471-a3e68ff53aef",
+      "type": "branch",
+      "text": "插电式混合动力 (PHEV)",
+      "position": {
+        "x": 840.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "354562c9-43b3-4379-8471-a3e68ff53aef",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "00320031-3419-45a0-8b29-1a77f6464d23",
+      "type": "branch",
+      "text": "燃料电池汽车 (FCEV)",
+      "position": {
+        "x": 840.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "00320031-3419-45a0-8b29-1a77f6464d23",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "02aa78b1-e7f8-45e1-bdaf-d7c8cd4f7fba",
+      "type": "branch",
+      "text": "市场生态与产业链",
+      "position": {
+        "x": 180.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "02aa78b1-e7f8-45e1-bdaf-d7c8cd4f7fba",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "fc559536-fd52-4776-93e7-9b7925f7f44d",
+      "type": "branch",
+      "text": "上游原材料供应",
+      "position": {
+        "x": -40.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "fc559536-fd52-4776-93e7-9b7925f7f44d",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "fb5af19b-f814-4552-80f7-3243f9d91e0d",
+      "type": "branch",
+      "text": "中游整车制造",
+      "position": {
+        "x": -40.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "fb5af19b-f814-4552-80f7-3243f9d91e0d",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "51e395ba-4a5e-4b8f-9a32-f79bfd4ed254",
+      "type": "branch",
+      "text": "下游销售与服务",
+      "position": {
+        "x": -40.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "51e395ba-4a5e-4b8f-9a32-f79bfd4ed254",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "1956f636-841d-4f73-9065-bcf933285aae",
+      "type": "branch",
+      "text": "基础设施配套",
+      "position": {
+        "x": -40.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "1956f636-841d-4f73-9065-bcf933285aae",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "b7e5f059-d75e-49e2-8a7e-9af54078daff",
+      "type": "branch",
+      "text": "社会影响与发展趋势",
+      "position": {
+        "x": 180.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "b7e5f059-d75e-49e2-8a7e-9af54078daff",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "e55f8d70-2f34-43ec-b7e4-fc6a9d23ebdc",
+      "type": "branch",
+      "text": "环境保护与碳减排",
+      "position": {
+        "x": -40.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "e55f8d70-2f34-43ec-b7e4-fc6a9d23ebdc",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "aa5b5f04-38b2-4c41-a347-d10755843c4f",
+      "type": "branch",
+      "text": "智能化与自动驾驶",
+      "position": {
+        "x": -40.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "aa5b5f04-38b2-4c41-a347-d10755843c4f",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "0e71d10e-cf60-4562-b9da-9489ab8ba23b",
+      "type": "branch",
+      "text": "政策法规与支持",
+      "position": {
+        "x": -40.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "0e71d10e-cf60-4562-b9da-9489ab8ba23b",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "3eb45d69-2c1f-48d6-b12f-bff4840096de",
+      "type": "branch",
+      "text": "消费者认知与接受度",
+      "position": {
+        "x": -40.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "3eb45d69-2c1f-48d6-b12f-bff4840096de",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "e-topic-7a2860c2-b2c8-456a-8261-f1fd5414ce21",
+      "source": "topic",
+      "target": "7a2860c2-b2c8-456a-8261-f1fd5414ce21"
+    },
+    {
+      "id": "e-7a2860c2-b2c8-456a-8261-f1fd5414ce21-ca478fa0-1ec6-4a07-9b36-c3f468a18eae",
+      "source": "7a2860c2-b2c8-456a-8261-f1fd5414ce21",
+      "target": "ca478fa0-1ec6-4a07-9b36-c3f468a18eae"
+    },
+    {
+      "id": "e-7a2860c2-b2c8-456a-8261-f1fd5414ce21-7cea21dd-e68e-41a5-8709-21bcac4b242c",
+      "source": "7a2860c2-b2c8-456a-8261-f1fd5414ce21",
+      "target": "7cea21dd-e68e-41a5-8709-21bcac4b242c"
+    },
+    {
+      "id": "e-7a2860c2-b2c8-456a-8261-f1fd5414ce21-8b3e56df-16ea-4605-a599-144d4a21b22e",
+      "source": "7a2860c2-b2c8-456a-8261-f1fd5414ce21",
+      "target": "8b3e56df-16ea-4605-a599-144d4a21b22e"
+    },
+    {
+      "id": "e-7a2860c2-b2c8-456a-8261-f1fd5414ce21-6aca7f82-0841-44f8-b478-d2b3ff40d37d",
+      "source": "7a2860c2-b2c8-456a-8261-f1fd5414ce21",
+      "target": "6aca7f82-0841-44f8-b478-d2b3ff40d37d"
+    },
+    {
+      "id": "e-topic-af47efd2-dab3-4269-b749-e5e3800c7162",
+      "source": "topic",
+      "target": "af47efd2-dab3-4269-b749-e5e3800c7162"
+    },
+    {
+      "id": "e-af47efd2-dab3-4269-b749-e5e3800c7162-f945cede-9a19-43f1-ab0e-9839270ef6d0",
+      "source": "af47efd2-dab3-4269-b749-e5e3800c7162",
+      "target": "f945cede-9a19-43f1-ab0e-9839270ef6d0"
+    },
+    {
+      "id": "e-af47efd2-dab3-4269-b749-e5e3800c7162-451c0491-7f0c-4ff1-9816-35f1c3e55bb4",
+      "source": "af47efd2-dab3-4269-b749-e5e3800c7162",
+      "target": "451c0491-7f0c-4ff1-9816-35f1c3e55bb4"
+    },
+    {
+      "id": "e-af47efd2-dab3-4269-b749-e5e3800c7162-354562c9-43b3-4379-8471-a3e68ff53aef",
+      "source": "af47efd2-dab3-4269-b749-e5e3800c7162",
+      "target": "354562c9-43b3-4379-8471-a3e68ff53aef"
+    },
+    {
+      "id": "e-af47efd2-dab3-4269-b749-e5e3800c7162-00320031-3419-45a0-8b29-1a77f6464d23",
+      "source": "af47efd2-dab3-4269-b749-e5e3800c7162",
+      "target": "00320031-3419-45a0-8b29-1a77f6464d23"
+    },
+    {
+      "id": "e-topic-02aa78b1-e7f8-45e1-bdaf-d7c8cd4f7fba",
+      "source": "topic",
+      "target": "02aa78b1-e7f8-45e1-bdaf-d7c8cd4f7fba"
+    },
+    {
+      "id": "e-02aa78b1-e7f8-45e1-bdaf-d7c8cd4f7fba-fc559536-fd52-4776-93e7-9b7925f7f44d",
+      "source": "02aa78b1-e7f8-45e1-bdaf-d7c8cd4f7fba",
+      "target": "fc559536-fd52-4776-93e7-9b7925f7f44d"
+    },
+    {
+      "id": "e-02aa78b1-e7f8-45e1-bdaf-d7c8cd4f7fba-fb5af19b-f814-4552-80f7-3243f9d91e0d",
+      "source": "02aa78b1-e7f8-45e1-bdaf-d7c8cd4f7fba",
+      "target": "fb5af19b-f814-4552-80f7-3243f9d91e0d"
+    },
+    {
+      "id": "e-02aa78b1-e7f8-45e1-bdaf-d7c8cd4f7fba-51e395ba-4a5e-4b8f-9a32-f79bfd4ed254",
+      "source": "02aa78b1-e7f8-45e1-bdaf-d7c8cd4f7fba",
+      "target": "51e395ba-4a5e-4b8f-9a32-f79bfd4ed254"
+    },
+    {
+      "id": "e-02aa78b1-e7f8-45e1-bdaf-d7c8cd4f7fba-1956f636-841d-4f73-9065-bcf933285aae",
+      "source": "02aa78b1-e7f8-45e1-bdaf-d7c8cd4f7fba",
+      "target": "1956f636-841d-4f73-9065-bcf933285aae"
+    },
+    {
+      "id": "e-topic-b7e5f059-d75e-49e2-8a7e-9af54078daff",
+      "source": "topic",
+      "target": "b7e5f059-d75e-49e2-8a7e-9af54078daff"
+    },
+    {
+      "id": "e-b7e5f059-d75e-49e2-8a7e-9af54078daff-e55f8d70-2f34-43ec-b7e4-fc6a9d23ebdc",
+      "source": "b7e5f059-d75e-49e2-8a7e-9af54078daff",
+      "target": "e55f8d70-2f34-43ec-b7e4-fc6a9d23ebdc"
+    },
+    {
+      "id": "e-b7e5f059-d75e-49e2-8a7e-9af54078daff-aa5b5f04-38b2-4c41-a347-d10755843c4f",
+      "source": "b7e5f059-d75e-49e2-8a7e-9af54078daff",
+      "target": "aa5b5f04-38b2-4c41-a347-d10755843c4f"
+    },
+    {
+      "id": "e-b7e5f059-d75e-49e2-8a7e-9af54078daff-0e71d10e-cf60-4562-b9da-9489ab8ba23b",
+      "source": "b7e5f059-d75e-49e2-8a7e-9af54078daff",
+      "target": "0e71d10e-cf60-4562-b9da-9489ab8ba23b"
+    },
+    {
+      "id": "e-b7e5f059-d75e-49e2-8a7e-9af54078daff-3eb45d69-2c1f-48d6-b12f-bff4840096de",
+      "source": "b7e5f059-d75e-49e2-8a7e-9af54078daff",
+      "target": "3eb45d69-2c1f-48d6-b12f-bff4840096de"
+    }
+  ],
+  "diagram_type": "mindmap"
+}

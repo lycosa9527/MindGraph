@@ -10,8 +10,8 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Literal
 
-from services.diagram.mindmap_identity import identity_aliases, is_machine_node_id
-from services.diagram.mindmap_location import mindmap_location_path_key
+from services.diagram.mindmap_identity import identity_aliases, is_machine_node_id, read_mindmap_uid
+from services.diagram.mindmap_location import is_leftover_mindmap_branch_id, mindmap_location_path_key
 
 Lang = Literal["zh", "en"]
 
@@ -49,6 +49,18 @@ def _node_display_text(node: Dict[str, Any]) -> str:
     return ""
 
 
+def _live_snapshot_id(node: Dict[str, Any]) -> str:
+    """Prefer durable UUID over leftover ``branch-*`` when uid is present."""
+    raw_id = node.get("id")
+    raw = raw_id.strip() if isinstance(raw_id, str) else ""
+    uid = read_mindmap_uid(node)
+    if raw and is_leftover_mindmap_branch_id(raw) and uid:
+        return uid
+    if raw:
+        return raw
+    return uid or ""
+
+
 def _compact_node(
     node: Dict[str, Any],
     *,
@@ -56,17 +68,20 @@ def _compact_node(
     nodes: List[Dict[str, Any]] | None = None,
 ) -> Dict[str, str]:
     entry: Dict[str, str] = {}
-    node_id = node.get("id")
-    if isinstance(node_id, str) and node_id.strip():
-        entry["id"] = node_id.strip()
+    raw_id = node.get("id")
+    raw = raw_id.strip() if isinstance(raw_id, str) else ""
+    live_id = _live_snapshot_id(node)
+    if live_id:
+        entry["id"] = live_id
     text = _node_display_text(node)
     if text:
         entry["text"] = text
     node_type = node.get("type")
     if isinstance(node_type, str) and node_type.strip():
         entry["type"] = node_type.strip()
-    if connections and isinstance(node_id, str) and node_id.strip():
-        path = mindmap_location_path_key(node_id.strip(), connections, nodes=nodes)
+    path_key = raw or live_id
+    if connections and path_key:
+        path = mindmap_location_path_key(path_key, connections, nodes=nodes)
         if path:
             entry["path"] = path
     return entry

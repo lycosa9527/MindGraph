@@ -6,6 +6,7 @@ import {
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { isEditablePlaceholderLabel } from '@/stores/diagram/diagramDefaultLabels'
 import type { Connection, DiagramNode } from '@/types'
+import { coerceMindMapBranch } from '@/utils/mindMapNodeUid'
 import {
   isMindMapSubgraphDebugEnabled,
   mindMapSubgraphDebug,
@@ -68,15 +69,15 @@ export function deepCloneMindMapBranch(branch: MindMapBranchSpec): MindMapBranch
 }
 
 export function normalizeGeneratedBranch(item: unknown): MindMapBranchSpec | null {
-  if (!item || typeof item !== 'object') return null
-  const rec = item as Record<string, unknown>
-  const text = String(rec.text ?? rec.label ?? '').trim()
+  const coerced = coerceMindMapBranch(item)
+  if (!coerced) return null
+  const text = String(coerced.text ?? coerced.label ?? '').trim()
   if (!text) return null
-  const rawChildren = Array.isArray(rec.children) ? rec.children : []
+  const rawChildren = Array.isArray(coerced.children) ? coerced.children : []
   const children = rawChildren
     .map(normalizeGeneratedBranch)
     .filter((c): c is MindMapBranchSpec => c !== null)
-  const uid = typeof rec.uid === 'string' && rec.uid.trim() ? rec.uid.trim() : undefined
+  const uid = typeof coerced.uid === 'string' && coerced.uid.trim() ? coerced.uid.trim() : undefined
   return {
     text,
     uid,

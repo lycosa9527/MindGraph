@@ -352,7 +352,8 @@ async def test_route_update_node_emits_success_ack() -> None:
             )
 
         assert result.outcome == RouteOutcome.EXECUTED
-        ack_mock.assert_awaited_once()
+        # Verified mindmap path: progress ack then done ack.
+        assert ack_mock.await_count == 2
         ack_text = mock_await_args(ack_mock)[2]
         # Rotating phrase pools may omit old_text; new label is always present.
         assert "小吃" in ack_text

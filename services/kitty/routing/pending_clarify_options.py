@@ -253,7 +253,6 @@ async def try_consume_pending_clarify_options(
 
     pick = classify_clarify_option_pick(command_text, len(commands))
     if pick is None:
-        clear_pending_clarify_options(live if isinstance(live, dict) else None)
         log_node_action(
             "clarify_unrecognized_reply",
             voice_session_id=voice_session_id,

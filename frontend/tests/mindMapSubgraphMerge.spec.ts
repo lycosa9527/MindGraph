@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import { nodesAndConnectionsToMindMapSpec, findBranchByNodeId } from '@/stores/specLoader/mindMap'
 import type { Connection, DiagramNode } from '@/types'
-import { mergeGeneratedBranchesIntoSpec, toDirectChildrenOnly } from '@/utils/mindMapSubgraphMerge'
+import {
+  extractBranchesFromGeneratedSpec,
+  mergeGeneratedBranchesIntoSpec,
+  normalizeGeneratedBranch,
+  toDirectChildrenOnly,
+} from '@/utils/mindMapSubgraphMerge'
 
 function node(id: string, text: string): DiagramNode {
   return { id, text, type: 'branch', position: { x: 0, y: 0 } }
@@ -114,6 +119,25 @@ describe('findBranchByNodeId', () => {
       connections
     )
     expect(found?.branch.text).toBe('喂养')
+  })
+})
+
+describe('normalizeGeneratedBranch', () => {
+  it('keeps bare string children as text objects', () => {
+    const branch = normalizeGeneratedBranch({
+      text: '光学原理',
+      children: ['光场重建与相位编码', { text: '干涉记录' }],
+    })
+    expect(branch?.text).toBe('光学原理')
+    expect(branch?.children?.map((child) => child.text)).toEqual([
+      '光场重建与相位编码',
+      '干涉记录',
+    ])
+    const fromSpec = extractBranchesFromGeneratedSpec({
+      topic: '全息投影是什么',
+      children: ['光场重建与相位编码'],
+    })
+    expect(fromSpec.map((item) => item.text)).toEqual(['光场重建与相位编码'])
   })
 })
 

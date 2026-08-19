@@ -59,12 +59,10 @@ def should_use_verified_diagram_edit(
     *,
     is_text_message: bool,
 ) -> bool:
-    """Mindmap + one-sentence edit + typed text → verified DiagramCommandBus."""
-    return (
-        is_text_message
-        and is_one_sentence_edit_mode(session_context, live_session)
-        and is_mindmap_diagram_type(diagram_type)
-    )
+    """Typed mindmap structural ops use verified DiagramCommandBus."""
+    del session_context
+    del live_session
+    return is_text_message and is_mindmap_diagram_type(diagram_type)
 
 
 def normalize_follow_up_actions(command: Dict[str, Any]) -> list[Dict[str, Any]]:

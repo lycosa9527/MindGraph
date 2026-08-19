@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.14] - 2026-08-19
+
+> **Kitty typed text uses a tool loop; mind-map string children keep a UUID; PNG export stays on html-to-image 1.11.11.**
+
+### Added
+
+- **Typed agent loop** — Keyboard and Fun-ASR `{type:"text"}` run an OpenAI-compatible ReAct loop (`qwen3.6-flash`, cap 5). Identity resolve runs first (durable UUID). Structural `diagram.*` go through the verified DiagramCommandBus; `auto_complete` / `clarify_options` target by `node_id` but are not ExpectedEffect verifies. Omni `function_call` stays one-shot.
+
+### Changed
+
+- **Typed mindmap edits** — All typed mindmap structural ops use the verified Bus (not only the one-sentence panel). Heuristics run only after LLM timeout, empty tools, or the step cap. Unrecognized clarify replies no longer drop the pending options.
+
+### Fixed
+
+- **Identity** — Leftover `branch-*` live ids migrate to `mindMapUid` before snapshot/dispatch. Successful `auto_complete` counts as progress so heuristics do not fire after a good UI tool. Insufficient thinking coins fail the turn instead of a fake heuristic success.
+- **LLM spec coerce** — Bare string children and mind-map `left` / `right` / `children` trees stay trees (some models emit a label string). Canvas hydrate no longer assigns `uid` onto a string.
+- **PNG/SVG/PDF export** — Pin `html-to-image` at 1.11.11. 1.11.12+ deep-clones SVG without inlining styles, so Vue Flow curves export with black ghost strokes.
+
+### Tests
+
+- `tests/test_kitty_agent_loop.py` / `_messages.py` / `_five_maps.py` / `_sams_club.py` (live optional: `LIVE_LLM=1`)
+- `frontend/tests/mindMapNodeUid.spec.ts` / `mindMapSubgraphMerge.spec.ts` / `mindMapStringChildrenAudit.spec.ts`
+- `tests/test_prompt_to_diagram_result.py`
+
 ## [5.180.13] - 2026-08-19
 
 > **思维讲堂 does not start a job or TTS until the mascot modal opens.**

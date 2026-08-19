@@ -114,15 +114,21 @@ async def test_transcription_event_memory_only_no_router() -> None:
 
 
 @pytest.mark.asyncio
-async def test_text_inbound_routes_with_from_voice_false() -> None:
-    """Test text inbound routes with from voice false."""
+async def test_text_inbound_routes_typed_agent_loop() -> None:
+    """Keyboard typed text uses the agent loop, not the one-shot router."""
     _, voice_session_id = await _make_event_runtime()
     try:
         bus = get_session_event_bus(voice_session_id)
-        with patch(
-            "services.kitty.session.event_handlers.route_voice_command",
-            new=AsyncMock(return_value=MagicMock(outcome=RouteOutcome.EXECUTED)),
-        ) as route_mock:
+        with (
+            patch(
+                "services.kitty.session.event_handlers.run_typed_agent_loop",
+                new=AsyncMock(return_value=MagicMock(outcome=RouteOutcome.EXECUTED)),
+            ) as loop_mock,
+            patch(
+                "services.kitty.session.event_handlers.route_voice_command",
+                new=AsyncMock(),
+            ) as route_mock,
+        ):
             await bus.emit(
                 KittyEvent(
                     kind="text_inbound",
@@ -132,29 +138,59 @@ async def test_text_inbound_routes_with_from_voice_false() -> None:
             )
             await _drain_bus()
 
-        route_mock.assert_awaited_once()
-        kwargs = mock_await_kwargs(route_mock)
-        assert kwargs["from_voice"] is False
-        assert kwargs["is_text_message"] is True
+        loop_mock.assert_awaited_once()
+        route_mock.assert_not_awaited()
+        assert mock_await_args(loop_mock)[2] == "open mindmate"
     finally:
         await _cleanup_event_runtime(voice_session_id)
 
 
 @pytest.mark.asyncio
-async def test_text_inbound_conversational_fallback_sends_omni() -> None:
-    """Test text inbound conversational fallback sends omni."""
+async def test_text_inbound_asr_uses_same_agent_loop() -> None:
+    """Fun-ASR ingress uses the same typed loop as keyboard."""
     _, voice_session_id = await _make_event_runtime()
     try:
         bus = get_session_event_bus(voice_session_id)
-        omni = AsyncMock()
         with (
             patch(
+                "services.kitty.session.event_handlers.run_typed_agent_loop",
+                new=AsyncMock(return_value=MagicMock(outcome=RouteOutcome.EXECUTED)),
+            ) as loop_mock,
+            patch(
                 "services.kitty.session.event_handlers.route_voice_command",
+                new=AsyncMock(),
+            ) as route_mock,
+        ):
+            await bus.emit(
+                KittyEvent(
+                    kind="text_inbound",
+                    voice_session_id=voice_session_id,
+                    payload={"text": "删除历史", "ingress_source": "asr"},
+                )
+            )
+            await _drain_bus()
+
+        loop_mock.assert_awaited_once()
+        route_mock.assert_not_awaited()
+    finally:
+        await _cleanup_event_runtime(voice_session_id)
+
+
+@pytest.mark.asyncio
+async def test_text_inbound_conversational_fallback_uses_text_reply() -> None:
+    """General typed chat fallback stays on the text reply path."""
+    _, voice_session_id = await _make_event_runtime()
+    try:
+        bus = get_session_event_bus(voice_session_id)
+        reply_mock = AsyncMock(return_value=True)
+        with (
+            patch(
+                "services.kitty.session.event_handlers.run_typed_agent_loop",
                 new=AsyncMock(return_value=MagicMock(outcome=RouteOutcome.CONVERSATIONAL_FALLBACK)),
             ),
             patch(
-                "services.kitty.session.event_handlers.get_session_omni_client",
-                return_value=omni,
+                "services.kitty.session.event_handlers.reply_text_only_conversational",
+                reply_mock,
             ),
         ):
             await bus.emit(
@@ -166,7 +202,8 @@ async def test_text_inbound_conversational_fallback_sends_omni() -> None:
             )
             await _drain_bus()
 
-        omni.send_text_message.assert_awaited_once_with("hello there")
+        reply_mock.assert_awaited_once()
+        assert mock_await_args(reply_mock)[2] == "hello there"
     finally:
         await _cleanup_event_runtime(voice_session_id)
 
@@ -225,13 +262,13 @@ async def test_teardown_clears_bus_memory_and_pending_refresh() -> None:
 
     with (
         patch(
-            "services.kitty.session.events.remove_session_event_bus",
+            "services.kitty.session.session_teardown.remove_session_event_bus",
         ) as remove_bus_mock,
         patch(
-            "services.kitty.session.memory.remove_session_memory",
+            "services.kitty.session.session_teardown.remove_session_memory",
         ) as remove_mem_mock,
         patch(
-            "services.kitty.omni.context_refresh.cancel_pending_omni_refresh",
+            "services.kitty.session.session_teardown.cancel_pending_omni_refresh",
         ) as cancel_mock,
     ):
         await teardown_session_event_handlers(voice_session_id)

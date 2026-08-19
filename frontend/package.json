@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.180.13",
+  "version": "5.180.14",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"
@@ -88,7 +88,7 @@
     "element-plus": "^2.14.3",
     "fflate": "^0.8.3",
     "highlight.js": "^11.11.1",
-    "html-to-image": "^1.11.13",
+    "html-to-image": "1.11.11",
     "jspdf": "^4.2.1",
     "katex": "^0.18.1",
     "markdown-it": "^15.0.0",

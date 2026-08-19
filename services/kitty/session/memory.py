@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Deque, Dict, List, Literal, Optional
 
 TurnRole = Literal["user", "assistant", "system"]
-TurnSource = Literal["transcription", "text", "omni_tts", "action"]
+TurnSource = Literal["transcription", "text", "omni_tts", "action", "tool"]
 
 
 @dataclass(slots=True)
@@ -67,6 +67,31 @@ class KittySessionMemory:
                 role="system",
                 content=text,
                 source="action",
+                action_taken=action,
+                diagram_revision=self.diagram_snapshot_rev,
+            )
+        )
+
+    def append_observation(
+        self,
+        summary: str,
+        *,
+        action: str,
+        revision: Optional[int] = None,
+    ) -> None:
+        """Persist a compact tool-result line (not a second observation dialect)."""
+        text = summary.strip()
+        if not text:
+            return
+        if revision is not None:
+            self.diagram_snapshot_rev = revision
+        else:
+            self.diagram_snapshot_rev += 1
+        self.turns.append(
+            KittyTurn(
+                role="system",
+                content=text,
+                source="tool",
                 action_taken=action,
                 diagram_revision=self.diagram_snapshot_rev,
             )

@@ -18,6 +18,8 @@ from services.kitty.ack.ack_emit import emit_user_ack
 from services.kitty.context.library_refresh import bump_voice_mutation_freshness
 from services.kitty.infra.control.kitty_workflow_trace import kitty_wf_log
 from services.kitty.omni.context_refresh import schedule_omni_context_refresh
+from services.kitty.agent_loop.loop import run_typed_agent_loop
+from services.kitty.diagram.diagram_utils import is_paragraph_text
 from services.kitty.routing.command_router import RouteOutcome, route_omni_function_call, route_voice_command
 from services.kitty.session.events import (
     KittyEvent,
@@ -135,14 +137,22 @@ async def _handle_text_inbound(runtime: KittySessionRuntime, payload: Dict[str, 
     edit_phase = session_context.get("one_sentence_phase")
     if str(session.get("active_panel") or "") == "one_sentence" and edit_phase != "create":
         edit_phase = edit_phase or "edit"
-    result = await route_voice_command(
-        runtime.websocket,
-        runtime.voice_session_id,
-        text,
-        session_context,
-        is_text_message=True,
-        from_voice=False,
-    )
+    if is_paragraph_text(text):
+        result = await route_voice_command(
+            runtime.websocket,
+            runtime.voice_session_id,
+            text,
+            session_context,
+            is_text_message=True,
+            from_voice=False,
+        )
+    else:
+        result = await run_typed_agent_loop(
+            runtime.websocket,
+            runtime.voice_session_id,
+            text,
+            session_context,
+        )
     if result.outcome == RouteOutcome.EXECUTED:
         return
     if result.outcome != RouteOutcome.CONVERSATIONAL_FALLBACK:

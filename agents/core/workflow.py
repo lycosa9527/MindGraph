@@ -35,6 +35,7 @@ from agents.core.prompt_requirements import (
     map_to_agent_params,
     merge_agent_params,
 )
+from agents.core.prompt_to_diagram_result import coerce_prompt_to_diagram_spec
 from agents.core.learning_sheet import (
     _clean_prompt_for_learning_sheet,
     _detect_learning_sheet_from_prompt,
@@ -612,6 +613,8 @@ Please generate a more accurate and detailed diagram based on the above context.
 
         agent_meta = artifact_metadata(agent_artifact)
         spec = artifact_to_spec_or_error(agent_artifact)
+        if isinstance(spec, dict) and not spec.get("error"):
+            spec = coerce_prompt_to_diagram_spec(spec, diagram_type)
 
         topic_to_lock = resolve_locked_topic(
             locked_topic,

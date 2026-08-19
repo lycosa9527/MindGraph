@@ -13,7 +13,38 @@ export type MindMapBranchUidCarrier = {
   uid?: string
   legacyId?: string
   text?: string
+  label?: string
   children?: MindMapBranchUidCarrier[]
+}
+
+/**
+ * LLM / import specs sometimes emit a bare string instead of ``{ text }``.
+ * Wrap those labels so uid hydrate never assigns onto a string. Canvas still
+ * mints ``uid`` — this does not invent identities.
+ */
+export function coerceMindMapBranch(item: unknown): MindMapBranchUidCarrier | null {
+  if (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
+    const text = String(item).trim()
+    return text ? { text } : null
+  }
+  if (item === null || typeof item !== 'object' || Array.isArray(item)) {
+    return null
+  }
+  const carrier = item as MindMapBranchUidCarrier
+  if (Array.isArray(carrier.children)) {
+    carrier.children = coerceMindMapBranchList(carrier.children)
+  }
+  return carrier
+}
+
+export function coerceMindMapBranchList(items: unknown): MindMapBranchUidCarrier[] {
+  if (!Array.isArray(items)) return []
+  const out: MindMapBranchUidCarrier[] = []
+  for (const item of items) {
+    const coerced = coerceMindMapBranch(item)
+    if (coerced) out.push(coerced)
+  }
+  return out
 }
 
 export function readMindMapNodeUid(
@@ -56,14 +87,21 @@ export function hydrateMindMapBranchIdentityFromSpec(branch: MindMapBranchUidCar
   ensureMindMapBranchUid(branch)
 }
 
+function stampMindMapBranchUids(branches: MindMapBranchUidCarrier[] | undefined): void {
+  if (!branches) return
+  for (const branch of branches) {
+    hydrateMindMapBranchIdentityFromSpec(branch)
+    stampMindMapBranchUids(branch.children)
+  }
+}
+
 export function hydrateMindMapBranchTree(
   branches: MindMapBranchUidCarrier[] | undefined
 ): void {
   if (!branches) return
-  for (const branch of branches) {
-    hydrateMindMapBranchIdentityFromSpec(branch)
-    hydrateMindMapBranchTree(branch.children)
-  }
+  const coerced = coerceMindMapBranchList(branches)
+  branches.splice(0, branches.length, ...coerced)
+  stampMindMapBranchUids(branches)
 }
 
 export function findNodeIdByMindMapUid(
@@ -85,6 +123,8 @@ export function rebindMindMapBranchUidsForPaste(
   branches: MindMapBranchUidCarrier[],
   existingUids: ReadonlySet<string>
 ): void {
+  const coerced = coerceMindMapBranchList(branches)
+  branches.splice(0, branches.length, ...coerced)
   const claimed = new Set(existingUids)
 
   function walk(branch: MindMapBranchUidCarrier & { children?: MindMapBranchUidCarrier[] }): void {

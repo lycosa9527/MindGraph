@@ -1,0 +1,397 @@
+{
+  "topic": "光合作用",
+  "nodes": [
+    {
+      "id": "topic",
+      "type": "topic",
+      "text": "光合作用",
+      "position": {
+        "x": 400.0,
+        "y": 300.0
+      }
+    },
+    {
+      "id": "7ff7a1d4-86df-4acc-b336-67c4647a80f4",
+      "type": "branch",
+      "text": "核心概念与原理",
+      "position": {
+        "x": 620.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "7ff7a1d4-86df-4acc-b336-67c4647a80f4",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "e5d646c2-0d6a-405f-b208-6dc432dd1afd",
+      "type": "branch",
+      "text": "定义：光能转化为化学能",
+      "position": {
+        "x": 840.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "e5d646c2-0d6a-405f-b208-6dc432dd1afd",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "56144a20-13fe-486d-8164-e61aeb748f7d",
+      "type": "branch",
+      "text": "总反应方程式",
+      "position": {
+        "x": 840.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "56144a20-13fe-486d-8164-e61aeb748f7d",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "b977adb9-ab8b-4b8b-afaf-708b6bd783a1",
+      "type": "branch",
+      "text": "能量转换本质",
+      "position": {
+        "x": 840.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "b977adb9-ab8b-4b8b-afaf-708b6bd783a1",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "c12d57f5-4d22-4289-8603-b89ae9ac1ac8",
+      "type": "branch",
+      "text": "物质变化实质",
+      "position": {
+        "x": 840.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "c12d57f5-4d22-4289-8603-b89ae9ac1ac8",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "228f8f96-adb8-4105-800d-b7599709f791",
+      "type": "branch",
+      "text": "生理过程机制",
+      "position": {
+        "x": 620.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "228f8f96-adb8-4105-800d-b7599709f791",
+        "mindMapSide": "right",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "b8e9b704-1fbb-49fe-b7b7-10cf3205668d",
+      "type": "branch",
+      "text": "光反应阶段",
+      "position": {
+        "x": 840.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "b8e9b704-1fbb-49fe-b7b7-10cf3205668d",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "f17e8908-4322-4cbe-a4b0-7ec12e06b6de",
+      "type": "branch",
+      "text": "暗反应（卡尔文循环）",
+      "position": {
+        "x": 840.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "f17e8908-4322-4cbe-a4b0-7ec12e06b6de",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "67fa9fa4-a5d8-4b04-86bc-9a9a50ed9ec8",
+      "type": "branch",
+      "text": "ATP与NADPH的作用",
+      "position": {
+        "x": 840.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "67fa9fa4-a5d8-4b04-86bc-9a9a50ed9ec8",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "e11dcdec-1278-430b-89b7-db58c2899a0a",
+      "type": "branch",
+      "text": "酶促反应条件",
+      "position": {
+        "x": 840.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "e11dcdec-1278-430b-89b7-db58c2899a0a",
+        "mindMapSide": "right",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "c461b4a8-4312-4d60-8807-b507987167f8",
+      "type": "branch",
+      "text": "影响因素分析",
+      "position": {
+        "x": 180.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "c461b4a8-4312-4d60-8807-b507987167f8",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "de3bd843-98c4-4236-9466-806fdf5d5ea3",
+      "type": "branch",
+      "text": "光照强度",
+      "position": {
+        "x": -40.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "de3bd843-98c4-4236-9466-806fdf5d5ea3",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "73903f54-81ce-4145-b908-cb3b6d811545",
+      "type": "branch",
+      "text": "二氧化碳浓度",
+      "position": {
+        "x": -40.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "73903f54-81ce-4145-b908-cb3b6d811545",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "f1d4338c-895e-4371-b344-4d96be459a22",
+      "type": "branch",
+      "text": "温度",
+      "position": {
+        "x": -40.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "f1d4338c-895e-4371-b344-4d96be459a22",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "2aa796b2-dc68-47f8-a83d-7a0deedaa2fe",
+      "type": "branch",
+      "text": "水分供应",
+      "position": {
+        "x": -40.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "2aa796b2-dc68-47f8-a83d-7a0deedaa2fe",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "cc5e772b-78f3-4dab-8cf5-36bd4022947b",
+      "type": "branch",
+      "text": "生态与实践意义",
+      "position": {
+        "x": 180.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "cc5e772b-78f3-4dab-8cf5-36bd4022947b",
+        "mindMapSide": "left",
+        "mindMapDepth": 1
+      }
+    },
+    {
+      "id": "fc7122bc-736a-4434-84da-2fceaa2ae20f",
+      "type": "branch",
+      "text": "生物圈碳氧平衡",
+      "position": {
+        "x": -40.0,
+        "y": 300.0
+      },
+      "data": {
+        "mindMapUid": "fc7122bc-736a-4434-84da-2fceaa2ae20f",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "cb38f4bc-67ec-43c8-b973-692bf322cd8b",
+      "type": "branch",
+      "text": "农业增产措施",
+      "position": {
+        "x": -40.0,
+        "y": 380.0
+      },
+      "data": {
+        "mindMapUid": "cb38f4bc-67ec-43c8-b973-692bf322cd8b",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "b156eba2-16a8-4f06-978b-de01d502c300",
+      "type": "branch",
+      "text": "全球气候变化关联",
+      "position": {
+        "x": -40.0,
+        "y": 460.0
+      },
+      "data": {
+        "mindMapUid": "b156eba2-16a8-4f06-978b-de01d502c300",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    },
+    {
+      "id": "72575059-ac80-43de-b35a-9f858072de00",
+      "type": "branch",
+      "text": "人类能源启示",
+      "position": {
+        "x": -40.0,
+        "y": 540.0
+      },
+      "data": {
+        "mindMapUid": "72575059-ac80-43de-b35a-9f858072de00",
+        "mindMapSide": "left",
+        "mindMapDepth": 2
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "e-topic-7ff7a1d4-86df-4acc-b336-67c4647a80f4",
+      "source": "topic",
+      "target": "7ff7a1d4-86df-4acc-b336-67c4647a80f4"
+    },
+    {
+      "id": "e-7ff7a1d4-86df-4acc-b336-67c4647a80f4-e5d646c2-0d6a-405f-b208-6dc432dd1afd",
+      "source": "7ff7a1d4-86df-4acc-b336-67c4647a80f4",
+      "target": "e5d646c2-0d6a-405f-b208-6dc432dd1afd"
+    },
+    {
+      "id": "e-7ff7a1d4-86df-4acc-b336-67c4647a80f4-56144a20-13fe-486d-8164-e61aeb748f7d",
+      "source": "7ff7a1d4-86df-4acc-b336-67c4647a80f4",
+      "target": "56144a20-13fe-486d-8164-e61aeb748f7d"
+    },
+    {
+      "id": "e-7ff7a1d4-86df-4acc-b336-67c4647a80f4-b977adb9-ab8b-4b8b-afaf-708b6bd783a1",
+      "source": "7ff7a1d4-86df-4acc-b336-67c4647a80f4",
+      "target": "b977adb9-ab8b-4b8b-afaf-708b6bd783a1"
+    },
+    {
+      "id": "e-7ff7a1d4-86df-4acc-b336-67c4647a80f4-c12d57f5-4d22-4289-8603-b89ae9ac1ac8",
+      "source": "7ff7a1d4-86df-4acc-b336-67c4647a80f4",
+      "target": "c12d57f5-4d22-4289-8603-b89ae9ac1ac8"
+    },
+    {
+      "id": "e-topic-228f8f96-adb8-4105-800d-b7599709f791",
+      "source": "topic",
+      "target": "228f8f96-adb8-4105-800d-b7599709f791"
+    },
+    {
+      "id": "e-228f8f96-adb8-4105-800d-b7599709f791-b8e9b704-1fbb-49fe-b7b7-10cf3205668d",
+      "source": "228f8f96-adb8-4105-800d-b7599709f791",
+      "target": "b8e9b704-1fbb-49fe-b7b7-10cf3205668d"
+    },
+    {
+      "id": "e-228f8f96-adb8-4105-800d-b7599709f791-f17e8908-4322-4cbe-a4b0-7ec12e06b6de",
+      "source": "228f8f96-adb8-4105-800d-b7599709f791",
+      "target": "f17e8908-4322-4cbe-a4b0-7ec12e06b6de"
+    },
+    {
+      "id": "e-228f8f96-adb8-4105-800d-b7599709f791-67fa9fa4-a5d8-4b04-86bc-9a9a50ed9ec8",
+      "source": "228f8f96-adb8-4105-800d-b7599709f791",
+      "target": "67fa9fa4-a5d8-4b04-86bc-9a9a50ed9ec8"
+    },
+    {
+      "id": "e-228f8f96-adb8-4105-800d-b7599709f791-e11dcdec-1278-430b-89b7-db58c2899a0a",
+      "source": "228f8f96-adb8-4105-800d-b7599709f791",
+      "target": "e11dcdec-1278-430b-89b7-db58c2899a0a"
+    },
+    {
+      "id": "e-topic-c461b4a8-4312-4d60-8807-b507987167f8",
+      "source": "topic",
+      "target": "c461b4a8-4312-4d60-8807-b507987167f8"
+    },
+    {
+      "id": "e-c461b4a8-4312-4d60-8807-b507987167f8-de3bd843-98c4-4236-9466-806fdf5d5ea3",
+      "source": "c461b4a8-4312-4d60-8807-b507987167f8",
+      "target": "de3bd843-98c4-4236-9466-806fdf5d5ea3"
+    },
+    {
+      "id": "e-c461b4a8-4312-4d60-8807-b507987167f8-73903f54-81ce-4145-b908-cb3b6d811545",
+      "source": "c461b4a8-4312-4d60-8807-b507987167f8",
+      "target": "73903f54-81ce-4145-b908-cb3b6d811545"
+    },
+    {
+      "id": "e-c461b4a8-4312-4d60-8807-b507987167f8-f1d4338c-895e-4371-b344-4d96be459a22",
+      "source": "c461b4a8-4312-4d60-8807-b507987167f8",
+      "target": "f1d4338c-895e-4371-b344-4d96be459a22"
+    },
+    {
+      "id": "e-c461b4a8-4312-4d60-8807-b507987167f8-2aa796b2-dc68-47f8-a83d-7a0deedaa2fe",
+      "source": "c461b4a8-4312-4d60-8807-b507987167f8",
+      "target": "2aa796b2-dc68-47f8-a83d-7a0deedaa2fe"
+    },
+    {
+      "id": "e-topic-cc5e772b-78f3-4dab-8cf5-36bd4022947b",
+      "source": "topic",
+      "target": "cc5e772b-78f3-4dab-8cf5-36bd4022947b"
+    },
+    {
+      "id": "e-cc5e772b-78f3-4dab-8cf5-36bd4022947b-fc7122bc-736a-4434-84da-2fceaa2ae20f",
+      "source": "cc5e772b-78f3-4dab-8cf5-36bd4022947b",
+      "target": "fc7122bc-736a-4434-84da-2fceaa2ae20f"
+    },
+    {
+      "id": "e-cc5e772b-78f3-4dab-8cf5-36bd4022947b-cb38f4bc-67ec-43c8-b973-692bf322cd8b",
+      "source": "cc5e772b-78f3-4dab-8cf5-36bd4022947b",
+      "target": "cb38f4bc-67ec-43c8-b973-692bf322cd8b"
+    },
+    {
+      "id": "e-cc5e772b-78f3-4dab-8cf5-36bd4022947b-b156eba2-16a8-4f06-978b-de01d502c300",
+      "source": "cc5e772b-78f3-4dab-8cf5-36bd4022947b",
+      "target": "b156eba2-16a8-4f06-978b-de01d502c300"
+    },
+    {
+      "id": "e-cc5e772b-78f3-4dab-8cf5-36bd4022947b-72575059-ac80-43de-b35a-9f858072de00",
+      "source": "cc5e772b-78f3-4dab-8cf5-36bd4022947b",
+      "target": "72575059-ac80-43de-b35a-9f858072de00"
+    }
+  ],
+  "diagram_type": "mindmap"
+}
