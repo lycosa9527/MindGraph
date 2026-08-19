@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'Masukkan captcha 4 karakter',
   'auth.captchaLoadFailed': 'Gagal memuat captcha',
   'auth.captchaNetworkError': 'Kesalahan jaringan, gagal memuat captcha',
+  'auth.tsecFailed': 'Verifikasi gagal. Silakan coba lagi.',
+  'auth.tsecUnavailable': 'Verifikasi belum dikonfigurasi. Coba lagi nanti.',
   'auth.changePassword': 'Ubah kata sandi',
   'auth.accountPlugin': 'Pengaya',
   'auth.apiTokenButton': 'Token API',

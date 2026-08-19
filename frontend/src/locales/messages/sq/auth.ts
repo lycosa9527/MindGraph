@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'Shkruani captcha me 4 karaktere',
   'auth.captchaLoadFailed': 'Captcha nuk u ngarkua',
   'auth.captchaNetworkError': 'Gabim rrjeti, captcha nuk u ngarkua',
+  'auth.tsecFailed': 'Verification failed. Please try again.',
+  'auth.tsecUnavailable': 'Verification is not configured. Please try again later.',
   'auth.changePassword': 'Ndrysho fjalëkalimin',
   'auth.accountPlugin': 'Shtesë',
   'auth.apiTokenButton': 'API Token',

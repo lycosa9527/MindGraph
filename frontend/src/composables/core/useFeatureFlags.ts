@@ -48,6 +48,8 @@ export function useFeatureFlags() {
   const featureThinkingCoins = computed(() => data.value?.feature_thinking_coins ?? false)
   const workshopChatPreviewOrgIds = computed(() => data.value?.workshop_chat_preview_org_ids ?? [])
   const featureOrgAccess = computed(() => data.value?.feature_org_access ?? {})
+  const captchaProvider = computed(() => data.value?.captcha_provider ?? 'legacy')
+  const tencentCaptchaAppId = computed(() => data.value?.tencent_captcha_app_id ?? '')
 
   return {
     featureRagChunkTest,
@@ -75,6 +77,8 @@ export function useFeatureFlags() {
     featureThinkingCoins,
     workshopChatPreviewOrgIds,
     featureOrgAccess,
+    captchaProvider,
+    tencentCaptchaAppId,
     isLoading,
     error,
   }

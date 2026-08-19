@@ -68,6 +68,8 @@ export default {
   'auth.captchaLength4': '请输入4位验证码',
   'auth.captchaLoadFailed': '验证码加载失败',
   'auth.captchaNetworkError': '网络错误，验证码加载失败',
+  'auth.tsecFailed': '验证失败，请重试',
+  'auth.tsecUnavailable': '人机验证未配置，请稍后重试',
   'auth.changePassword': '修改密码',
   'auth.accountPlugin': '插件',
   'auth.apiTokenButton': 'API令牌',

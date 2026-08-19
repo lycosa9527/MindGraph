@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'Введіть 4-символьну капчу',
   'auth.captchaLoadFailed': 'Не вдалося завантажити капчу',
   'auth.captchaNetworkError': 'Помилка мережі, не вдалося завантажити капчу',
+  'auth.tsecFailed': 'Перевірка не вдалася. Спробуйте ще раз.',
+  'auth.tsecUnavailable': 'Перевірку не налаштовано. Спробуйте пізніше.',
   'auth.changePassword': 'Змінити пароль',
   'auth.accountPlugin': 'Розширення',
   'auth.apiTokenButton': 'API Token',

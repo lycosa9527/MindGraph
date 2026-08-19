@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': '4 simvollu captcha daxil edin',
   'auth.captchaLoadFailed': 'Captcha yüklənmədi',
   'auth.captchaNetworkError': 'Şəbəkə xətası, captcha yüklənmədi',
+  'auth.tsecFailed': 'Verification failed. Please try again.',
+  'auth.tsecUnavailable': 'Verification is not configured. Please try again later.',
   'auth.changePassword': 'Şifrəni dəyiş',
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'API Token',

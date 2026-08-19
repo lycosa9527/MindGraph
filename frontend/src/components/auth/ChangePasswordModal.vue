@@ -11,7 +11,8 @@ import { Close } from '@element-plus/icons-vue'
 import { Eye, EyeOff, Loader2, RefreshCw } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { useAuthStore } from '@/stores'
+import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
+import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 
 const props = defineProps<{
   visible: boolean
@@ -23,8 +24,10 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
+const featureFlagsStore = useFeatureFlagsStore()
 const notify = useNotifications()
 const { t } = useLanguage()
+const { isTsecCaptcha, showLegacyCaptcha, resolveCaptchaProof } = useTsecCaptcha()
 
 const isVisible = computed({
   get: () => props.visible,
@@ -62,6 +65,12 @@ function resetForm() {
 }
 
 async function refreshCaptcha() {
+  if (!featureFlagsStore.flags) {
+    await featureFlagsStore.fetchFlags()
+  }
+  if (isTsecCaptcha.value) {
+    return
+  }
   captchaLoading.value = true
   try {
     const result = await authStore.fetchCaptcha()
@@ -105,17 +114,6 @@ async function handleSubmit() {
     return
   }
 
-  if (!formData.value.captcha || formData.value.captcha.length !== 4) {
-    notify.warning(t('auth.captchaLength4'))
-    return
-  }
-
-  if (!captchaId.value) {
-    notify.warning(t('auth.waitCaptchaLoad'))
-    void refreshCaptcha()
-    return
-  }
-
   if (formData.value.newPassword.length < 8) {
     notify.warning(t('auth.modal.passwordMin8'))
     return
@@ -129,6 +127,10 @@ async function handleSubmit() {
   isLoading.value = true
 
   try {
+    const proof = await resolveCaptchaProof(formData.value.captcha, captchaId.value)
+    if (!proof) {
+      return
+    }
     const response = await fetch('/api/auth/change-password', {
       method: 'PUT',
       credentials: 'same-origin',
@@ -136,8 +138,8 @@ async function handleSubmit() {
       body: JSON.stringify({
         current_password: formData.value.currentPassword,
         new_password: formData.value.newPassword,
-        captcha: formData.value.captcha,
-        captcha_id: captchaId.value,
+        captcha: proof.captcha,
+        captcha_id: proof.captcha_id,
       }),
     })
 
@@ -326,7 +328,7 @@ function handleBackdropClick(event: MouseEvent) {
               </div>
 
               <!-- Captcha -->
-              <div>
+              <div v-if="showLegacyCaptcha">
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                   for="change-password-captcha"

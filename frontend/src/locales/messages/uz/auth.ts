@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': '4 belgili captcha kiriting',
   'auth.captchaLoadFailed': 'Captcha yuklanmadi',
   'auth.captchaNetworkError': 'Tarmoq xatosi, captcha yuklanmadi',
+  'auth.tsecFailed': 'Verification failed. Please try again.',
+  'auth.tsecUnavailable': 'Verification is not configured. Please try again later.',
   'auth.changePassword': 'Parolni o’zgartirish',
   'auth.accountPlugin': 'Plagin',
   'auth.apiTokenButton': 'API Token',

@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'Vui lòng nhập captcha 4 ký tự',
   'auth.captchaLoadFailed': 'Không tải được captcha',
   'auth.captchaNetworkError': 'Lỗi mạng, không tải được captcha',
+  'auth.tsecFailed': 'Xác minh thất bại. Vui lòng thử lại.',
+  'auth.tsecUnavailable': 'Xác minh chưa được cấu hình. Vui lòng thử lại sau.',
   'auth.changePassword': 'Đổi mật khẩu',
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'API Token',

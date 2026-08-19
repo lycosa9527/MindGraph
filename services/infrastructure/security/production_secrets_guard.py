@@ -12,6 +12,11 @@ import os
 from urllib.parse import urlparse
 
 from config.settings import config
+from services.auth.tsec.config import (
+    PROVIDER_TSEC,
+    requested_captcha_provider,
+    tsec_credentials_ready,
+)
 from utils.auth.config import (
     AUTH_MODE,
     BAYI_DECRYPTION_KEY,
@@ -118,3 +123,10 @@ def enforce_production_security_guards() -> None:
         base = os.getenv("EXTERNAL_BASE_URL", "").strip()
         if not base:
             logger.warning("FEATURE_OAUTH_LOGIN=True but EXTERNAL_BASE_URL is unset; OAuth redirect URIs may fail")
+
+    if requested_captcha_provider() == PROVIDER_TSEC and not tsec_credentials_ready():
+        _fail(
+            "CAPTCHA_PROVIDER=tsec requires TENCENT_CAPTCHA_APP_ID, "
+            "TENCENT_CAPTCHA_APP_SECRET_KEY, and CAM SecretId/SecretKey "
+            "(TENCENT_CAPTCHA_SECRET_* or TENCENT_SMS_SECRET_*)"
+        )

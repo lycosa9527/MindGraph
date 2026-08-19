@@ -17,7 +17,8 @@ import { ElButton, ElInput } from 'element-plus'
 import { Close } from '@element-plus/icons-vue'
 
 import { useNotifications } from '@/composables'
-import { useAuthStore } from '@/stores'
+import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
+import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 
 const notify = useNotifications()
 
@@ -31,6 +32,8 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
+const featureFlagsStore = useFeatureFlagsStore()
+const { isTsecCaptcha, showLegacyCaptcha, resolveCaptchaProof } = useTsecCaptcha()
 
 const isVisible = computed({
   get: () => props.visible,
@@ -98,6 +101,12 @@ onBeforeUnmount(() => {
 })
 
 async function fetchCaptcha() {
+  if (!featureFlagsStore.flags) {
+    await featureFlagsStore.fetchFlags()
+  }
+  if (isTsecCaptcha.value) {
+    return
+  }
   captchaLoading.value = true
   captchaError.value = ''
   try {
@@ -164,7 +173,10 @@ function validateSmsCode(): boolean {
 }
 
 async function sendSmsCode() {
-  if (!validatePhone() || !validateCaptcha()) {
+  if (!validatePhone()) {
+    return
+  }
+  if (showLegacyCaptcha.value && !validateCaptcha()) {
     return
   }
 
@@ -172,6 +184,10 @@ async function sendSmsCode() {
   smsError.value = ''
 
   try {
+    const proof = await resolveCaptchaProof(captchaCode.value, captchaId.value)
+    if (!proof) {
+      return
+    }
     // Use credentials (token in httpOnly cookie)
     const response = await fetch('/api/auth/phone/send-code', {
       method: 'POST',
@@ -179,8 +195,8 @@ async function sendSmsCode() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         new_phone: newPhone.value,
-        captcha: captchaCode.value,
-        captcha_id: captchaId.value,
+        captcha: proof.captcha,
+        captcha_id: proof.captcha_id,
       }),
     })
 
@@ -323,7 +339,7 @@ async function handleSubmit() {
               </div>
 
               <!-- Captcha Row (only show before SMS sent) -->
-              <div v-if="!smsSent">
+              <div v-if="!smsSent && showLegacyCaptcha">
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                 >

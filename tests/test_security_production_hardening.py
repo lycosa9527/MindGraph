@@ -128,7 +128,8 @@ async def test_production_csp_uses_nonce_when_request_state_has_nonce() -> None:
         with patch.object(middleware_module, "config") as mock_config:
             mock_config.debug = False
             with patch.object(middleware_module, "cos_showcase_enabled", return_value=False):
-                result = await middleware_module.add_security_headers(request, _call_next)
+                with patch.object(middleware_module, "tsec_csp_enabled", return_value=False):
+                    result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
     assert "script-src 'self' 'nonce-testnonce123'" in csp
@@ -165,7 +166,8 @@ async def test_production_csp_allows_exact_cos_hosts_when_showcase_cos_on() -> N
                     "cos_browser_csp_sources",
                     return_value=cos_hosts,
                 ):
-                    result = await middleware_module.add_security_headers(request, _call_next)
+                    with patch.object(middleware_module, "tsec_csp_enabled", return_value=False):
+                        result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
     assert f"connect-src 'self' ws: wss: blob: {cos_hosts};" in csp
@@ -187,7 +189,8 @@ async def test_production_csp_falls_back_to_unsafe_inline_without_nonce() -> Non
     with patch.object(middleware_module, "is_https", return_value=False):
         with patch.object(middleware_module, "config") as mock_config:
             mock_config.debug = False
-            result = await middleware_module.add_security_headers(request, _call_next)
+            with patch.object(middleware_module, "tsec_csp_enabled", return_value=False):
+                result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
     assert "script-src 'self' 'unsafe-inline'" in csp
@@ -204,8 +207,9 @@ def test_production_guard_rejects_weak_bayi_passkey() -> None:
                 with patch.object(guard, "AUTH_MODE", "bayi"):
                     with patch.object(guard, "BAYI_PASSKEY", "123456"):
                         with patch.object(guard, "BAYI_DECRYPTION_KEY", "strong-bayi-key-value"):
-                            with pytest.raises(RuntimeError, match="BAYI_PASSKEY"):
-                                guard.enforce_production_security_guards()
+                            with patch.dict("os.environ", {"CAPTCHA_PROVIDER": "legacy"}, clear=False):
+                                with pytest.raises(RuntimeError, match="BAYI_PASSKEY"):
+                                    guard.enforce_production_security_guards()
 
 
 def test_verify_bayi_passkey_rejects_when_unset() -> None:
@@ -221,7 +225,11 @@ def test_production_guard_allows_default_db_password() -> None:
     default_url = "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph"
     with patch.object(guard, "_require_non_debug", return_value=True):
         with patch.object(guard, "_guard_redis_url", return_value=None):
-            with patch.dict("os.environ", {"DATABASE_URL": default_url}, clear=False):
+            with patch.dict(
+                "os.environ",
+                {"DATABASE_URL": default_url, "CAPTCHA_PROVIDER": "legacy"},
+                clear=False,
+            ):
                 guard.enforce_production_security_guards()
 
 
@@ -236,6 +244,7 @@ def test_production_guard_rejects_unauthenticated_redis_when_required() -> None:
                 "DATABASE_URL": safe_db,
                 "REDIS_URL": "redis://localhost:6379/0",
                 "REQUIRE_REDIS_AUTH": "true",
+                "CAPTCHA_PROVIDER": "legacy",
             },
         ):
             with pytest.raises(RuntimeError, match="REDIS_URL"):
@@ -318,7 +327,8 @@ async def test_security_headers_allow_same_origin_frame_for_showcase_pdf() -> No
     with patch.object(middleware_module, "is_https", return_value=False):
         with patch.object(middleware_module, "config") as mock_config:
             mock_config.debug = True
-            result = await middleware_module.add_security_headers(request, _call_next)
+            with patch.object(middleware_module, "tsec_csp_enabled", return_value=False):
+                result = await middleware_module.add_security_headers(request, _call_next)
 
     assert result.headers["X-Frame-Options"] == "SAMEORIGIN"
     assert "frame-ancestors 'self'" in result.headers["Content-Security-Policy"]
@@ -341,7 +351,8 @@ async def test_word_addin_csp_allows_office_js_cdn() -> None:
     with patch.object(middleware_module, "is_https", return_value=True):
         with patch.object(middleware_module, "config") as mock_config:
             mock_config.debug = False
-            result = await middleware_module.add_security_headers(request, _call_next)
+            with patch.object(middleware_module, "tsec_csp_enabled", return_value=False):
+                result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
     assert "https://appsforoffice.microsoft.com" in csp

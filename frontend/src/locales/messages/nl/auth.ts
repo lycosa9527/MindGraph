@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'Voer een captcha van 4 tekens in',
   'auth.captchaLoadFailed': 'Kan captcha niet laden',
   'auth.captchaNetworkError': 'Netwerkfout, captcha kan niet worden geladen',
+  'auth.tsecFailed': 'Verificatie mislukt. Probeer het opnieuw.',
+  'auth.tsecUnavailable': 'Verificatie is niet geconfigureerd. Probeer het later opnieuw.',
   'auth.changePassword': 'Wachtwoord wijzigen',
   'auth.accountPlugin': 'Plug-in',
   'auth.apiTokenButton': 'API-token',

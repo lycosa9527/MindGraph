@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'กรุณาใส่แคปชา 4 ตัวอักษร',
   'auth.captchaLoadFailed': 'โหลดแคปชาล้มเหลว',
   'auth.captchaNetworkError': 'เครือข่ายผิดพลาด โหลดแคปชาล้มเหลว',
+  'auth.tsecFailed': 'การยืนยันล้มเหลว กรุณาลองอีกครั้ง',
+  'auth.tsecUnavailable': 'ยังไม่ได้ตั้งค่าการยืนยัน กรุณาลองใหม่ภายหลัง',
   'auth.changePassword': 'เปลี่ยนรหัสผ่าน',
   'auth.accountPlugin': 'ปลั๊กอิน',
   'auth.apiTokenButton': 'API Token',

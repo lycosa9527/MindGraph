@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': '4 文字のキャプチャを入力してください',
   'auth.captchaLoadFailed': 'キャプチャの読み込みに失敗しました',
   'auth.captchaNetworkError': 'ネットワークエラー。キャプチャを読み込めませんでした',
+  'auth.tsecFailed': '認証に失敗しました。もう一度お試しください。',
+  'auth.tsecUnavailable': '認証が設定されていません。しばらくしてから再試行してください。',
   'auth.changePassword': 'パスワードを変更',
   'auth.accountPlugin': 'プラグイン',
   'auth.apiTokenButton': 'API トークン',

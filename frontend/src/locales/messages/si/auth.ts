@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'අකුරු 4ක captcha ඇතුළත් කරන්න',
   'auth.captchaLoadFailed': 'Captcha පූරණය අසාර්ථක විය',
   'auth.captchaNetworkError': 'ජාල දෝෂය, captcha පූරණය අසාර්ථක විය',
+  'auth.tsecFailed': 'Verification failed. Please try again.',
+  'auth.tsecUnavailable': 'Verification is not configured. Please try again later.',
   'auth.changePassword': 'මුරපදය වෙනස් කරන්න',
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'API Token',

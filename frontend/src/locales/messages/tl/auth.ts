@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'Ilagay ang 4-character na captcha',
   'auth.captchaLoadFailed': 'Hindi na-load ang captcha',
   'auth.captchaNetworkError': 'Error sa network, hindi na-load ang captcha',
+  'auth.tsecFailed': 'Verification failed. Please try again.',
+  'auth.tsecUnavailable': 'Verification is not configured. Please try again later.',
   'auth.changePassword': 'Palitan ang password',
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'API Token',

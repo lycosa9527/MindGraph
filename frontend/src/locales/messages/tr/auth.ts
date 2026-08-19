@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'Lütfen 4 karakterlik captcha\'yı girin',
   'auth.captchaLoadFailed': 'Captcha yüklenemedi',
   'auth.captchaNetworkError': 'Ağ hatası, captcha yüklenemedi',
+  'auth.tsecFailed': 'Doğrulama başarısız. Lütfen tekrar deneyin.',
+  'auth.tsecUnavailable': 'Doğrulama yapılandırılmamış. Lütfen daha sonra tekrar deneyin.',
   'auth.changePassword': 'Şifreyi değiştir',
   'auth.accountPlugin': 'Eklenti',
   'auth.apiTokenButton': 'API Jetonu',

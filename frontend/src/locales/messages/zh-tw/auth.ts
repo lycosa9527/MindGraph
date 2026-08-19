@@ -64,6 +64,8 @@ export default {
   'auth.captchaLength4': '請輸入4位驗證碼',
   'auth.captchaLoadFailed': '驗證碼加載失敗',
   'auth.captchaNetworkError': '網絡錯誤，驗證碼加載失敗',
+  'auth.tsecFailed': '驗證失敗，請重試',
+  'auth.tsecUnavailable': '人機驗證未配置，請稍後重試',
   'auth.changePassword': '修改密碼',
   'auth.accountPlugin': '插件',
   'auth.apiTokenButton': 'API令牌',

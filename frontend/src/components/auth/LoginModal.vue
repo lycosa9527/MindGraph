@@ -75,6 +75,7 @@ const {
   showForgotPassword,
   backToLogin,
   refreshCaptcha,
+  showLegacyCaptcha,
   handleLogin,
   handleRegister,
   sendRegisterEmailCode,
@@ -358,7 +359,7 @@ const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && pr
                   </div>
                 </div>
 
-                <div>
+                <div v-if="showLegacyCaptcha">
                   <label
                     class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                     for="login-captcha"
@@ -602,7 +603,7 @@ const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && pr
                   />
                 </div>
 
-                <div>
+                <div v-if="showLegacyCaptcha">
                   <label
                     class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                     for="register-captcha"
@@ -736,7 +737,7 @@ const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && pr
                   />
                 </div>
 
-                <div v-if="!smsSent">
+                <div v-if="!smsSent && showLegacyCaptcha">
                   <label
                     class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                     for="sms-login-captcha"
@@ -888,7 +889,7 @@ const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && pr
                   />
                 </div>
 
-                <div v-if="!smsSent">
+                <div v-if="!smsSent && showLegacyCaptcha">
                   <label
                     class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                     for="forgot-captcha"

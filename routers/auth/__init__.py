@@ -29,6 +29,7 @@ from . import (
     registration_overseas,
     session,
     sms,
+    tsec,
 )
 from .dingtalk_bind import router as dingtalk_bind_router
 from .oauth import router as oauth_router
@@ -69,6 +70,7 @@ router.include_router(login.router)
 router.include_router(sms.router)
 router.include_router(email.router)
 router.include_router(captcha.router)
+router.include_router(tsec.router)
 router.include_router(password.router)
 router.include_router(session.router)
 router.include_router(preferences.router)

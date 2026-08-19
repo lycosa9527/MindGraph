@@ -11,7 +11,8 @@ import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useRegisterRegionDetection } from '@/composables/auth/useRegisterRegionDetection'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
-import { useAuthStore, useUIStore } from '@/stores'
+import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
+import { useAuthStore, useFeatureFlagsStore, useUIStore } from '@/stores'
 import { isBrowserLanguageSimplifiedChinese } from '@/utils/clientRegion'
 import {
   loadSavedLoginIdentifier,
@@ -31,8 +32,10 @@ export function useLoginModal(
 ) {
   const authStore = useAuthStore()
   const uiStore = useUIStore()
+  const featureFlagsStore = useFeatureFlagsStore()
   const { t } = useLanguage()
   const notify = useNotifications()
+  const { isTsecCaptcha, showLegacyCaptcha, resolveCaptchaProof } = useTsecCaptcha()
 
   const currentView = ref<LoginModalViewState>('login')
   const activeTab = ref<string>('login')
@@ -289,6 +292,12 @@ export function useLoginModal(
   }
 
   async function refreshCaptcha() {
+    if (!featureFlagsStore.flags) {
+      await featureFlagsStore.fetchFlags()
+    }
+    if (isTsecCaptcha.value) {
+      return
+    }
     captchaLoading.value = true
     try {
       const result = await authStore.fetchCaptcha()
@@ -341,19 +350,13 @@ export function useLoginModal(
       return
     }
 
-    if (!loginForm.value.captcha || loginForm.value.captcha.length !== 4) {
-      notify.warning(t('auth.modal.enter4DigitCaptcha'))
-      return
-    }
-
-    if (!captchaId.value) {
-      notify.warning(t('auth.modal.waitCaptchaLoad'))
-      return
-    }
-
     isLoading.value = true
 
     try {
+      const proof = await resolveCaptchaProof(loginForm.value.captcha, captchaId.value)
+      if (!proof) {
+        return
+      }
       const id = loginForm.value.phone.trim()
       const isEmailLogin = id.includes('@')
       const result = await authStore.login(
@@ -361,14 +364,14 @@ export function useLoginModal(
           ? {
               email: id,
               password: loginForm.value.password,
-              captcha: loginForm.value.captcha,
-              captcha_id: captchaId.value,
+              captcha: proof.captcha,
+              captcha_id: proof.captcha_id,
             }
           : {
               phone: id,
               password: loginForm.value.password,
-              captcha: loginForm.value.captcha,
-              captcha_id: captchaId.value,
+              captcha: proof.captcha,
+              captcha_id: proof.captcha_id,
             }
       )
 
@@ -431,28 +434,24 @@ export function useLoginModal(
       notify.warning(registerEmailInvalidMessage.value)
       return
     }
-    if (!registerForm.value.captcha || registerForm.value.captcha.length !== 4) {
-      notify.warning(t('auth.modal.enterCaptchaFirst'))
-      return
-    }
-    if (!captchaId.value) {
-      notify.warning(t('auth.modal.waitCaptchaLoad'))
-      return
-    }
     if (emailCountdown.value > 0) {
       return
     }
 
     emailSending.value = true
     try {
+      const proof = await resolveCaptchaProof(registerForm.value.captcha, captchaId.value)
+      if (!proof) {
+        return
+      }
       const response = await fetch('/api/auth/email/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email,
           purpose: 'register',
-          captcha: registerForm.value.captcha,
-          captcha_id: captchaId.value,
+          captcha: proof.captcha,
+          captcha_id: proof.captcha_id,
         }),
       })
       const data = await response.json().catch(() => ({}))
@@ -481,16 +480,6 @@ export function useLoginModal(
       return
     }
 
-    if (!registerForm.value.captcha || registerForm.value.captcha.length !== 4) {
-      notify.warning(t('auth.modal.enter4DigitCaptcha'))
-      return
-    }
-
-    if (!captchaId.value) {
-      notify.warning(t('auth.modal.waitCaptchaLoad'))
-      return
-    }
-
     if (registerRegionLoading.value || registerRegion.value === null) {
       notify.warning(t('auth.modal.waitRegionDetection'))
       return
@@ -509,6 +498,10 @@ export function useLoginModal(
 
       isLoading.value = true
       try {
+        const proof = await resolveCaptchaProof(registerForm.value.captcha, captchaId.value)
+        if (!proof) {
+          return
+        }
         const response = await fetch('/api/auth/register-overseas', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -517,8 +510,8 @@ export function useLoginModal(
             password: registerForm.value.password,
             name: registerForm.value.name,
             email_code: registerForm.value.emailCode,
-            captcha: registerForm.value.captcha,
-            captcha_id: captchaId.value,
+            captcha: proof.captcha,
+            captcha_id: proof.captcha_id,
             outside_mainland_acknowledged: true,
           }),
         })
@@ -559,6 +552,10 @@ export function useLoginModal(
     isLoading.value = true
 
     try {
+      const proof = await resolveCaptchaProof(registerForm.value.captcha, captchaId.value)
+      if (!proof) {
+        return
+      }
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -567,8 +564,8 @@ export function useLoginModal(
           password: registerForm.value.password,
           name: registerForm.value.name,
           invitation_code: registerForm.value.invitationCode,
-          captcha: registerForm.value.captcha,
-          captcha_id: captchaId.value,
+          captcha: proof.captcha,
+          captcha_id: proof.captcha_id,
         }),
       })
 
@@ -603,16 +600,6 @@ export function useLoginModal(
       return
     }
 
-    if (!form.captcha || form.captcha.length !== 4) {
-      notify.warning(t('auth.modal.enterCaptchaFirst'))
-      return
-    }
-
-    if (!captchaId.value) {
-      notify.warning(t('auth.modal.waitCaptchaLoad'))
-      return
-    }
-
     const trimmed = form.phone.trim()
     const useEmail = trimmed.includes('@') && (type === 'reset' || type === 'login')
 
@@ -632,6 +619,10 @@ export function useLoginModal(
     smsSending.value = true
 
     try {
+      const proof = await resolveCaptchaProof(form.captcha, captchaId.value)
+      if (!proof) {
+        return
+      }
       if (useEmail) {
         const purpose = type === 'login' ? 'login' : 'reset_password'
         const response = await fetch('/api/auth/email/send', {
@@ -640,8 +631,8 @@ export function useLoginModal(
           body: JSON.stringify({
             email: trimmed,
             purpose,
-            captcha: form.captcha,
-            captcha_id: captchaId.value,
+            captcha: proof.captcha,
+            captcha_id: proof.captcha_id,
           }),
         })
         const data = await response.json().catch(() => ({}))
@@ -663,8 +654,8 @@ export function useLoginModal(
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             phone: form.phone,
-            captcha: form.captcha,
-            captcha_id: captchaId.value,
+            captcha: proof.captcha,
+            captcha_id: proof.captcha_id,
           }),
         })
 
@@ -920,6 +911,7 @@ export function useLoginModal(
     showForgotPassword,
     backToLogin,
     refreshCaptcha,
+    showLegacyCaptcha,
     handleLogin,
     handleRegister,
     sendRegisterEmailCode,

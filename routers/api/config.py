@@ -20,6 +20,7 @@ from models.domain.auth import User
 from models.domain.feature_org_access import FeatureOrgAccessEntry
 from routers.api.helpers import normalize_external_base_url
 from routers.auth.dependencies import get_current_user_optional
+from services.auth.tsec.config import effective_captcha_provider, public_captcha_app_id
 from services.feature_access.repository import load_feature_org_access_map
 from utils.auth import user_has_feature_access
 from utils.auth.roles import is_admin
@@ -100,6 +101,8 @@ class FeatureFlagsResponse(BaseModel):
     feature_kitty_agent: bool
     feature_auth_pixel_battle: bool
     feature_test_server_banner: bool
+    captcha_provider: str = "legacy"
+    tencent_captcha_app_id: str = ""
     workshop_chat_preview_org_ids: list[int]
     feature_org_access: dict[str, FeatureOrgAccessEntry] = Field(default_factory=dict)
 
@@ -156,6 +159,8 @@ async def get_feature_flags(
         feature_kitty_agent=kitty_agent_flag,
         feature_auth_pixel_battle=config.FEATURE_AUTH_PIXEL_BATTLE,
         feature_test_server_banner=config.FEATURE_TEST_SERVER_BANNER,
+        captcha_provider=effective_captcha_provider(),
+        tencent_captcha_app_id=public_captcha_app_id(),
         workshop_chat_preview_org_ids=sorted(config.WORKSHOP_CHAT_PREVIEW_ORG_IDS),
         feature_org_access=access_map,
     )

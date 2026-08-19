@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'Wpisz 4-znakową captchę',
   'auth.captchaLoadFailed': 'Nie udało się wczytać captchy',
   'auth.captchaNetworkError': 'Błąd sieci, nie udało się wczytać captchy',
+  'auth.tsecFailed': 'Weryfikacja nie powiodła się. Spróbuj ponownie.',
+  'auth.tsecUnavailable': 'Weryfikacja nie jest skonfigurowana. Spróbuj ponownie później.',
   'auth.changePassword': 'Zmień hasło',
   'auth.accountPlugin': 'Wtyczka',
   'auth.apiTokenButton': 'Token API',

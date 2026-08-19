@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'Veuillez saisir le captcha à 4 caractères',
   'auth.captchaLoadFailed': 'Échec du chargement du captcha',
   'auth.captchaNetworkError': 'Erreur réseau, échec du chargement du captcha',
+  'auth.tsecFailed': 'Échec de la vérification. Veuillez réessayer.',
+  'auth.tsecUnavailable': 'La vérification n’est pas configurée. Réessayez plus tard.',
   'auth.changePassword': 'Changer le mot de passe',
   'auth.accountPlugin': 'Extension',
   'auth.apiTokenButton': 'Jeton API',

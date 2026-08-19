@@ -100,7 +100,9 @@ jobs:
             tests/test_kitty_agent_loop_messages.py \
             tests/test_kitty_agent_loop_five_maps.py \
             tests/test_kitty_agent_loop_sams_club.py \
-            tests/test_prompt_to_diagram_result.py
+            tests/test_prompt_to_diagram_result.py \
+            tests/test_tsec_captcha.py \
+            tests/test_tsec_aid_encrypted.py
 
   frontend:
     runs-on: ubuntu-latest
@@ -124,7 +126,7 @@ jobs:
       - name: npm audit (high severity)
         run: npm audit --audit-level=high
       - name: Vitest (workshop reconnect + diagram meta + classroom)
-        run: npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts tests/useMindClassroomLecture.spec.ts tests/useMindClassroomLectureQueue.spec.ts tests/mindClassroomLaunchState.spec.ts tests/mindClassroomRemoteSteps.spec.ts tests/mindClassroomScript.spec.ts tests/mindClassroomPrepSlot.spec.ts tests/mindClassroomJobApi.spec.ts tests/warmupLectureTts.spec.ts tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts tests/unloadCanvasForLibrarySwitch.spec.ts tests/llmResultsPersist.spec.ts tests/llmResultsPersistAudit.spec.ts tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts tests/mindMapIdentityMigrate.spec.ts tests/branchMoveHitTest.spec.ts tests/mindMapDropPreviewShapes.spec.ts tests/mindMapSeparation.spec.ts tests/mindMapLoadPreserveSides.spec.ts tests/mindMapNodeUid.spec.ts tests/mindMapSubgraphMerge.spec.ts tests/mindMapStringChildrenAudit.spec.ts
+        run: npx vitest run tests/useWorkshopReconnect.spec.ts tests/mindmateDiagramMeta.spec.ts tests/useMindClassroomLecture.spec.ts tests/useMindClassroomLectureQueue.spec.ts tests/mindClassroomLaunchState.spec.ts tests/mindClassroomRemoteSteps.spec.ts tests/mindClassroomScript.spec.ts tests/mindClassroomPrepSlot.spec.ts tests/mindClassroomJobApi.spec.ts tests/warmupLectureTts.spec.ts tests/classroomDiagramJob.spec.ts tests/zhihuiDiagramProgress.spec.ts tests/unloadCanvasForLibrarySwitch.spec.ts tests/llmResultsPersist.spec.ts tests/llmResultsPersistAudit.spec.ts tests/llmResultsTeardown.spec.ts tests/shouldFlushBeforeLibrarySwitch.spec.ts tests/mindMapIdentityMigrate.spec.ts tests/branchMoveHitTest.spec.ts tests/mindMapDropPreviewShapes.spec.ts tests/mindMapSeparation.spec.ts tests/mindMapLoadPreserveSides.spec.ts tests/mindMapNodeUid.spec.ts tests/mindMapSubgraphMerge.spec.ts tests/mindMapStringChildrenAudit.spec.ts tests/tsecCaptcha.spec.ts
 
   chrome-extension:
     runs-on: ubuntu-latest

@@ -208,7 +208,9 @@ run_backend() {
     tests/test_kitty_agent_loop_messages.py \
     tests/test_kitty_agent_loop_five_maps.py \
     tests/test_kitty_agent_loop_sams_club.py \
-    tests/test_prompt_to_diagram_result.py
+    tests/test_prompt_to_diagram_result.py \
+    tests/test_tsec_captcha.py \
+    tests/test_tsec_aid_encrypted.py
 }
 
 run_frontend() {
@@ -245,7 +247,8 @@ run_frontend() {
     tests/branchMoveHitTest.spec.ts tests/mindMapDropPreviewShapes.spec.ts \
     tests/mindMapSeparation.spec.ts tests/mindMapLoadPreserveSides.spec.ts \
     tests/mindMapNodeUid.spec.ts tests/mindMapSubgraphMerge.spec.ts \
-    tests/mindMapStringChildrenAudit.spec.ts
+    tests/mindMapStringChildrenAudit.spec.ts \
+    tests/tsecCaptcha.spec.ts
 }
 
 run_chrome_extension() {

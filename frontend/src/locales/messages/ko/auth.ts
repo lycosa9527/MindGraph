@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': '4자리 캡차를 입력하세요',
   'auth.captchaLoadFailed': '캡차 불러오기에 실패했습니다',
   'auth.captchaNetworkError': '네트워크 오류로 캡차를 불러올 수 없습니다',
+  'auth.tsecFailed': '인증에 실패했습니다. 다시 시도해 주세요.',
+  'auth.tsecUnavailable': '인증이 구성되지 않았습니다. 나중에 다시 시도해 주세요.',
   'auth.changePassword': '비밀번호 변경',
   'auth.accountPlugin': '플러그인',
   'auth.apiTokenButton': 'API 토큰',

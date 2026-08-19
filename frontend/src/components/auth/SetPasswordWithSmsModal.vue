@@ -9,7 +9,8 @@ import { ElButton } from 'element-plus'
 import { Loader2 } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { useAuthStore } from '@/stores'
+import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
+import { useAuthStore, useFeatureFlagsStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 
 const props = defineProps<{ visible: boolean }>()
@@ -21,6 +22,8 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
+const featureFlagsStore = useFeatureFlagsStore()
+const { isTsecCaptcha, showLegacyCaptcha, resolveCaptchaProof } = useTsecCaptcha()
 
 const isVisible = computed({
   get: () => props.visible,
@@ -62,6 +65,12 @@ function close() {
 }
 
 async function loadCaptcha() {
+  if (!featureFlagsStore.flags) {
+    await featureFlagsStore.fetchFlags()
+  }
+  if (isTsecCaptcha.value) {
+    return
+  }
   captchaLoading.value = true
   try {
     const res = await authStore.fetchCaptcha()
@@ -83,28 +92,24 @@ async function sendResetSms() {
     notify.warning(t('auth.modal.phone11Digits'))
     return
   }
-  if (!captcha.value || captcha.value.length !== 4) {
-    notify.warning(t('auth.modal.enterCaptchaFirst'))
-    return
-  }
-  if (!captchaId.value) {
-    notify.warning(t('auth.modal.waitCaptchaLoad'))
-    return
-  }
   if (smsCountdown.value > 0) {
     return
   }
 
   smsSending.value = true
   try {
+    const proof = await resolveCaptchaProof(captcha.value, captchaId.value)
+    if (!proof) {
+      return
+    }
     const response = await fetch('/api/auth/sms/send-reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({
         phone: boundPhone.value,
-        captcha: captcha.value,
-        captcha_id: captchaId.value,
+        captcha: proof.captcha,
+        captcha_id: proof.captcha_id,
       }),
     })
     const data = await response.json().catch(() => ({}))
@@ -214,7 +219,7 @@ watch(
             {{ t('auth.phone') }}: {{ boundPhone }}
           </p>
           <div class="space-y-3">
-            <div>
+            <div v-if="showLegacyCaptcha">
               <label
                 class="block text-xs text-stone-500 mb-1"
                 for="sp-captcha"

@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'कृपया 4-अक्षर का कैप्चा दर्ज करें',
   'auth.captchaLoadFailed': 'कैप्चा लोड विफल',
   'auth.captchaNetworkError': 'नेटवर्क त्रुटि, कैप्चा लोड विफल',
+  'auth.tsecFailed': 'सत्यापन विफल रहा। कृपया पुनः प्रयास करें।',
+  'auth.tsecUnavailable': 'सत्यापन कॉन्फ़िगर नहीं है। बाद में पुनः प्रयास करें।',
   'auth.changePassword': 'पासवर्ड बदलें',
   'auth.accountPlugin': 'प्लगइन',
   'auth.apiTokenButton': 'API Token',

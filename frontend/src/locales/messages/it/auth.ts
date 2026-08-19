@@ -27,6 +27,8 @@ export default {
   'auth.captchaLength4': 'Inserisci il captcha di 4 caratteri',
   'auth.captchaLoadFailed': 'Impossibile caricare il captcha',
   'auth.captchaNetworkError': 'Errore di rete; impossibile caricare il captcha',
+  'auth.tsecFailed': 'Verifica non riuscita. Riprova.',
+  'auth.tsecUnavailable': 'La verifica non è configurata. Riprova più tardi.',
   'auth.changePassword': 'Cambia password',
   'auth.accountPlugin': 'Plugin',
   'auth.apiTokenButton': 'Token API',

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.16] - 2026-08-20
+
+> **Tencent T-Sec is the default captcha. The login form has no image code; the Tencent popup runs when you click sign in. The old SVG captcha stays behind `CAPTCHA_PROVIDER=legacy`.**
+
+### Added
+
+- **T-Sec captcha** — Default `CAPTCHA_PROVIDER=tsec`. On 同意协议并登录 (and register / send code / change password or phone), Tencent Captcha 2.0 pops up. After a pass, the server checks the ticket with `DescribeCaptchaResult` and the existing auth APIs still receive `captcha` + `captcha_id`. Set `CAPTCHA_PROVIDER=legacy` to restore the SVG image and 4-character field. The old captcha generate/verify code is unchanged.
+- **T-Sec AppId auth** — Each popup mints a one-time server-side `aidEncrypted` (AES-256-CBC, unique IV) so console **CaptchaAppId 强制校验** and **一次一密** both work. `AppSecretKey` never goes to the browser.
+- **Local SVG captcha** — On WSL/dev, set `CAPTCHA_PROVIDER=legacy` to keep the image + 4-character field. Production stays on T-Sec. SMS/email still use the 6-digit code.
+
+### Tests
+
+- `tests/test_tsec_captcha.py` / `tests/test_tsec_aid_encrypted.py` / `frontend/tests/tsecCaptcha.spec.ts`
+
 ## [5.180.15] - 2026-08-19
 
 > **Adding a mind-map main branch always starts silent auto-complete; Kitty waits for generate before saying it is done.**

@@ -61,6 +61,8 @@ interface FeatureFlagsResponse {
   feature_test_server_banner: boolean
   feature_oauth_login: boolean
   feature_thinking_coins: boolean
+  captcha_provider?: 'legacy' | 'tsec'
+  tencent_captcha_app_id?: string
   workshop_chat_preview_org_ids: number[]
   feature_org_access: Record<string, FeatureOrgAccessEntry>
 }
@@ -103,6 +105,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       feature_test_server_banner: false,
       feature_oauth_login: false,
       feature_thinking_coins: false,
+      captcha_provider: 'legacy',
+      tencent_captcha_app_id: '',
       workshop_chat_preview_org_ids: [],
       feature_org_access: {},
     }
@@ -165,6 +169,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_test_server_banner: raw.feature_test_server_banner ?? false,
           feature_oauth_login: raw.feature_oauth_login ?? false,
           feature_thinking_coins: raw.feature_thinking_coins ?? false,
+          captcha_provider: raw.captcha_provider === 'tsec' ? 'tsec' : 'legacy',
+          tencent_captcha_app_id: raw.tencent_captcha_app_id ?? '',
           feature_mindmap_v2_canvas: raw.feature_mindmap_v2_canvas ?? true,
         }
         flags.value = data
