@@ -14,7 +14,7 @@ export default {
     'Roy插着腰提醒您，您正在访问测试服务器，此站点会频繁下线并测试，正式使用请前往生产环境。',
   'app.testServer.confirm': '继续使用测试站',
   'app.testServer.jump': '前往正式环境',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': '测试环境',
   'app.testServer.watermark': '测试环境',
   'askOnce.apply': '应用',

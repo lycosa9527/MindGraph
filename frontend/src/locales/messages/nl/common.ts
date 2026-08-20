@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy, handen op de heupen, herinnert je eraan: je bevindt je op de testserver. Deze site gaat vaak offline om te testen. Gebruik de live site voor het echte werk.',
   'app.testServer.confirm': 'Blijf op proef',
   'app.testServer.jump': 'Ga naar de live-site',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'Testomgeving',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'Toepassen',

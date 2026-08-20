@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy ยืนมือเอวเตือนคุณ: คุณอยู่บนเซิร์ฟเวอร์ทดสอบ ไซต์นี้มักออฟไลน์เพื่อทดสอบ — ใช้ไซต์จริงสำหรับงานจริง',
   'app.testServer.confirm': 'อยู่ต่อที่ทดสอบ',
   'app.testServer.jump': 'ไปไซต์จริง',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'สภาพแวดล้อมทดสอบ',
   'app.testServer.watermark': 'เซิร์ฟเวอร์ทดสอบ',
   'askOnce.apply': 'ใช้',

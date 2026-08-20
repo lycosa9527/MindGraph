@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy가 허리에 손을 짚고 알려 드립니다: 테스트 서버에 있습니다. 이 사이트는 테스트로 자주 오프라인됩니다. 실제 작업은 라이브 사이트를 이용하세요.',
   'app.testServer.confirm': '테스트에 머물기',
   'app.testServer.jump': '라이브 사이트로',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': '테스트 환경',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': '적용',

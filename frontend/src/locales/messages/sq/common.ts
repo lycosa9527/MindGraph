@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy, me duart në ije, ju kujton: jeni në serverin e testimit. Ky sajt shpesh çaktivizohet për teste — përdorni sajtin live për punë reale.',
   'app.testServer.confirm': 'Qëndro në test',
   'app.testServer.jump': 'Shko te sajti live',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'Mjedisi i testimit',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'Apliko',

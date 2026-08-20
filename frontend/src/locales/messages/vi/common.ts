@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy, đặt tay lên hông, nhắc bạn: bạn đang ở máy chủ thử nghiệm. Trang này thường offline để thử nghiệm—hãy dùng trang chính thức cho công việc thực tế.',
   'app.testServer.confirm': 'Ở lại thử nghiệm',
   'app.testServer.jump': 'Đến trang chính thức',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'Môi trường thử nghiệm',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'Áp dụng',

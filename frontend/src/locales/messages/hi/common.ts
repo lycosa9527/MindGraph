@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy, हाथ कमर पर, याद दिलाते हैं: आप परीक्षण सर्वर पर हैं। यह साइट परीक्षण के लिए अक्सर ऑफ़लाइन होती है — वास्तविक कार्य के लिए लाइव साइट उपयोग करें।',
   'app.testServer.confirm': 'परीक्षण पर रहें',
   'app.testServer.jump': 'लाइव साइट पर जाएँ',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'परीक्षण वातावरण',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'लागू',

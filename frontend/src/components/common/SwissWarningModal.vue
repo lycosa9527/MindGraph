@@ -12,7 +12,7 @@
  * v-model; keep feature-flag / cadence logic in the parent.
  *
  * Current use: FEATURE_TEST_SERVER_BANNER (test env once/day + on login +
- * always on /auth; jump to mg.mindspringedu.com). See App.vue.
+ * always on /auth; jump to www.mindspringedu.com). See App.vue.
  */
 import { nextTick, onUnmounted, useTemplateRef, watch } from 'vue'
 
@@ -22,7 +22,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { BlackCat } from '@/utils/mascot/blackCat'
 import { markTestServerBannerShownToday } from '@/utils/testServerBanner'
 
-const PRODUCTION_URL = 'https://mg.mindspringedu.com'
+const PRODUCTION_URL = 'https://www.mindspringedu.com'
 
 const visible = defineModel<boolean>({ required: true })
 

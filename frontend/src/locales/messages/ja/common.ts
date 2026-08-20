@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy が腰に手を当ててお知らせします：テストサーバーにいます。このサイトはテストのため頻繁にオフラインになります。本番作業は本番サイトをご利用ください。',
   'app.testServer.confirm': 'テストのまま続ける',
   'app.testServer.jump': '本番サイトへ',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'テスト環境',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': '適用',

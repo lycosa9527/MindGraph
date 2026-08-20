@@ -55,7 +55,7 @@ export const CANVAS_COMMUNITY_EXPORT_MENU_ITEM = {
   divided: true,
 }
 
-/** Open 智绘 图示生图 — visible only with ``feature.zhihui`` (superadmin). */
+/** Open 智绘 图示生图 — hidden from the mind-map export menu for now. */
 export const CANVAS_ZHIHUI_DIAGRAM_MENU_ITEM = {
   command: 'zhihui_diagram' as CanvasZhihuiDiagramCommand,
   labelKey: 'zhihui.mode.diagram',

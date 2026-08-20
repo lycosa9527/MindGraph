@@ -55,7 +55,8 @@ const { triggerImportInPlace } = useDiagramImport()
 
 const showCommunityExport = computed(() => featureCommunity.value && authStore.isAuthenticated)
 
-const showZhihuiDiagramExport = computed(() => true)
+/** Hidden for now with the ZhiHui sidebar entry; flip when 图示生图 ships. */
+const showZhihuiDiagramExport = computed(() => false)
 
 const { handleAddChild, handleAddSibling, handleDeleteNode, handleAddBranch } = useNodeActions({
   registerEventBusListeners: false,

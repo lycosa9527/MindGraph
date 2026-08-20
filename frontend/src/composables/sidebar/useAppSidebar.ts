@@ -43,6 +43,9 @@ import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 import { isPaidSchoolTier } from '@/constants/schoolTier'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
 
+/** Hide ZhiHui sidebar entry until the studio is ready to ship. `/zhihui` stays reachable. */
+const HIDE_ZHIHUI_NAV = true
+
 /** Max graphemes for org name in sidebar header (total label ≈ 10 incl. 专属版). */
 const ORG_EDITION_MAX_ORG_NAME_LENGTH = 7
 
@@ -134,6 +137,9 @@ export function useAppSidebar() {
   const isAdminOrManager = computed(() => authStore.isAdminOrManager)
   const isAdmin = computed(() => authStore.isAdmin)
   const canAccessZhihui = computed(() => authStore.canAccessZhihui)
+  const showZhihuiNav = computed(
+    () => featureZhihui.value && canAccessZhihui.value && !HIDE_ZHIHUI_NAV,
+  )
   const isManagementPanelUser = computed(() => authStore.isManagementPanelUser)
   const { tabs: adminNavTabs, loadCapabilities: loadAdminNavCapabilities } = useAdminPanelTabs({
     loadOnMount: false,
@@ -602,7 +608,7 @@ export function useAppSidebar() {
         mode === 'mindmate' ||
         mode === 'mindgraph' ||
         mode === 'maite' ||
-        mode === 'zhihui'
+        (mode === 'zhihui' && showZhihuiNav.value)
       ) {
         expandedPanel.value = mode
         return
@@ -726,6 +732,7 @@ export function useAppSidebar() {
     featureCommunity,
     featureShowcase,
     featureZhihui,
+    showZhihuiNav,
     featureAskOnce,
     featureMateLearning,
     featureDebateverse,

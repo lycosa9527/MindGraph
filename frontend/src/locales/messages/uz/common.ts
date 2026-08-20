@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy qo’lida eslatadi: siz test serveridasiz. Bu sayt tez-tez sinov uchun yopiladi — haqiqiy ish uchun jonli saytdan foydalaning.',
   'app.testServer.confirm': 'Testda qoling',
   'app.testServer.jump': 'Jonli saytga o’tish',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'Test muhiti',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'Qo’llash',

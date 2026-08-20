@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy, hande op heupe, herinner jou: jy is op die toetsbediener. Hierdie webwerf gaan dikwels aflyn vir toetsing—gebruik die regte webwerf vir werk.',
   'app.testServer.confirm': 'Bly op toets',
   'app.testServer.jump': 'Gaan na regte webwerf',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'Toetsomgewing',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'Pas toe',

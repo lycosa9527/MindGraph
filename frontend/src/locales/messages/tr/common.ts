@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy, elleri belinde, hatırlatıyor: test sunucusundasınız. Bu site test için sık sık çevrimdışı olur — gerçek iş için canlı siteyi kullanın.',
   'app.testServer.confirm': 'Testte kal',
   'app.testServer.jump': 'Canlı siteye git',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'Test ortamı',
   'app.testServer.watermark': 'TEST SUNUCUSU',
   'askOnce.apply': 'Uygula',

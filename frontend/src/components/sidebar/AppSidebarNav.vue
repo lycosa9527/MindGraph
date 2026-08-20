@@ -67,7 +67,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         class="sidebar-nav-mind-section"
         :class="{
           'sidebar-nav-mind-section--expanded':
-            s.showPanel('mindmate') || s.showPanel('mindgraph') || s.showPanel('zhihui'),
+            s.showPanel('mindmate') ||
+            s.showPanel('mindgraph') ||
+            (s.showZhihuiNav && s.showPanel('zhihui')),
         }"
       >
         <el-tooltip
@@ -134,9 +136,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           </div>
         </transition>
 
-        <!-- ZhiHui (智绘) — admin only; fill layout keeps 管理面板 pinned below -->
+        <!-- ZhiHui (智绘) — hidden from sidebar for now; /zhihui stays reachable -->
         <el-tooltip
-          v-if="s.featureZhihui && s.canAccessZhihui"
+          v-if="s.showZhihuiNav"
           :content="s.t('sidebar.zhihui')"
           placement="right"
           :disabled="!s.isCollapsed"
@@ -159,7 +161,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         </el-tooltip>
         <transition name="panel-slide">
           <div
-            v-if="s.featureZhihui && s.canAccessZhihui && s.showPanel('zhihui')"
+            v-if="s.showZhihuiNav && s.showPanel('zhihui')"
             class="sidebar-panel sidebar-panel--fill"
           >
             <ZhiHuiHistory />
@@ -171,7 +173,9 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         class="sidebar-nav-rest"
         :class="{
           'sidebar-nav-rest--below-history':
-            s.showPanel('mindmate') || s.showPanel('mindgraph') || s.showPanel('zhihui'),
+            s.showPanel('mindmate') ||
+            s.showPanel('mindgraph') ||
+            (s.showZhihuiNav && s.showPanel('zhihui')),
         }"
       >
         <!-- Knowledge Space -->

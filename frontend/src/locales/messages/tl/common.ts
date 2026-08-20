@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Si Roy, nakasandal, ay nagpapaalala: nasa test server ka. Madalas offline ang site na ito para sa testing—gamitin ang live site para sa tunay na trabaho.',
   'app.testServer.confirm': 'Manatili sa test',
   'app.testServer.jump': 'Pumunta sa live site',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'Kapaligiran ng pagsubok',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'Ilapat',

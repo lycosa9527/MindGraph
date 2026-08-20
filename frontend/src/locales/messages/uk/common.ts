@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Рой, тримаючи руки на стегнах, нагадує: ви на тестовому сервері. Цей сайт часто відключається для тестів — для реальної роботи використовуйте робочий сайт.',
   'app.testServer.confirm': 'Залишитися на тесті',
   'app.testServer.jump': 'Перейти на робочий сайт',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'Тестове середовище',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'Застосувати',

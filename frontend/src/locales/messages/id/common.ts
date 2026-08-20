@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy, tangan di pinggang, mengingatkan Anda: Anda sedang di server uji. Situs ini sering offline untuk pengujian—gunakan situs langsung untuk pekerjaan nyata.',
   'app.testServer.confirm': 'Tetap di uji coba',
   'app.testServer.jump': 'Buka situs langsung',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'Lingkungan uji',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'Terapkan',

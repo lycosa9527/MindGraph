@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy, hands on hips, reminds you: you are on the test server. This site goes offline often for testing—use the live site for real work.',
   'app.testServer.confirm': 'Stay on test',
   'app.testServer.jump': 'Go to live site',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'Test environment',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'Apply',

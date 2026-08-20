@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy, tangan di pinggang, mengingatkan anda: anda berada di pelayan ujian. Laman ini sering offline untuk ujian—gunakan laman sebenar untuk kerja penting.',
   'app.testServer.confirm': 'Kekal di ujian',
   'app.testServer.jump': 'Pergi ke laman sebenar',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'Persekitaran ujian',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'Gunakan',

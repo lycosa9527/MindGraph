@@ -15,7 +15,7 @@ export default {
   'app.testServer.body': 'Roy, අත් යොමු කර, ඔබ පරීක්‍ෂණ සේවාදායකයේ යැයි මතක් කරයි. මෙම අඩවිය පරීක්‍ෂණ සඳහා නිතර offline වේ—සැබෑ වැඩ සඳහා live අඩවිය භාවිතා කරන්න.',
   'app.testServer.confirm': 'පරීක්‍ෂණයේ රැඳී සිටින්න',
   'app.testServer.jump': 'Live අඩවියට යන්න',
-  'app.testServer.productionHost': 'mg.mindspringedu.com',
+  'app.testServer.productionHost': 'www.mindspringedu.com',
   'app.testServer.title': 'පරීක්‍ෂණ පරිසරය',
   'app.testServer.watermark': 'TEST SERVER',
   'askOnce.apply': 'යොදන්න',
