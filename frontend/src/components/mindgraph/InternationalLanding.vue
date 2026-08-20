@@ -485,45 +485,39 @@ onMounted(() => {
         </transition>
       </div>
 
-      <!-- Diagram cards: thinking maps + advanced column on the right -->
+      <!-- Diagram cards: thinking maps, then advanced diagrams below -->
       <div class="intl-gallery">
-        <div class="intl-gallery-row">
-          <section class="intl-gallery-main">
-            <h2 class="intl-section-title">{{ t('landing.international.sectionTitle') }}</h2>
-            <div class="intl-grid">
-              <div
-                v-for="item in eightThinkingMapCards"
-                :key="item.type"
-                class="intl-card"
-                @click="handleCardClick(item)"
-              >
-                <div class="intl-card-preview">
-                  <DiagramPreviewSvg :type="item.type" />
-                </div>
-                <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
-                <p class="intl-card-desc">{{ t(item.descKey) }}</p>
-              </div>
+        <h2 class="intl-section-title">{{ t('landing.international.sectionTitle') }}</h2>
+        <div class="intl-grid">
+          <div
+            v-for="item in eightThinkingMapCards"
+            :key="item.type"
+            class="intl-card"
+            @click="handleCardClick(item)"
+          >
+            <div class="intl-card-preview">
+              <DiagramPreviewSvg :type="item.type" />
             </div>
-          </section>
-          <section class="intl-gallery-side">
-            <h2 class="intl-section-title">
-              {{ t('landing.international.advancedDiagramsTitle') }}
-            </h2>
-            <div class="intl-grid intl-grid--vertical">
-              <div
-                v-for="item in advancedDiagramCards"
-                :key="item.type"
-                class="intl-card"
-                @click="handleCardClick(item)"
-              >
-                <div class="intl-card-preview">
-                  <DiagramPreviewSvg :type="item.type" />
-                </div>
-                <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
-                <p class="intl-card-desc">{{ t(item.descKey) }}</p>
-              </div>
+            <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
+            <p class="intl-card-desc">{{ t(item.descKey) }}</p>
+          </div>
+        </div>
+        <h2 class="intl-section-title intl-section-title--secondary">
+          {{ t('landing.international.advancedDiagramsTitle') }}
+        </h2>
+        <div class="intl-grid">
+          <div
+            v-for="item in advancedDiagramCards"
+            :key="item.type"
+            class="intl-card"
+            @click="handleCardClick(item)"
+          >
+            <div class="intl-card-preview">
+              <DiagramPreviewSvg :type="item.type" />
             </div>
-          </section>
+            <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
+            <p class="intl-card-desc">{{ t(item.descKey) }}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -748,8 +742,8 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 24px;
-  padding-top: 48px;
-  margin-bottom: 24px;
+  padding-top: clamp(16px, 2.4vh, 48px);
+  margin-bottom: clamp(8px, 1.6vh, 24px);
 }
 
 .intl-hero-text {
@@ -1028,52 +1022,42 @@ onMounted(() => {
 /* ── Gallery (background + wind live on .intl-scroll + .intl-landing) ── */
 
 .intl-gallery {
+  --gallery-max: clamp(1400px, 72vw, 2400px);
+  --card-pad-y: clamp(8px, 1.4vh, 36px);
+  --card-pad-x: clamp(12px, 1.1vw, 36px);
+  --card-gap: clamp(8px, 1.4vh, 32px);
+  --card-preview-h: clamp(80px, 9.5vh, 220px);
+  --card-preview-mb: clamp(6px, 1.4vh, 28px);
+  --card-title-size: clamp(16px, 1.05vw, 26px);
+  --card-title-mb: clamp(2px, 0.6vh, 10px);
+  --card-desc-size: clamp(13px, 0.75vw, 18px);
   width: 100%;
   margin-top: 0;
-  padding: 20px 10px 16px;
+  padding: clamp(8px, 1.5vh, 28px) 10px clamp(8px, 1.2vh, 24px);
   box-sizing: border-box;
 }
 
-.intl-gallery-row {
-  display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 1fr);
-  column-gap: 80px;
-  row-gap: 24px;
-  max-width: 1750px;
+.intl-gallery .intl-section-title {
+  max-width: var(--gallery-max);
   margin-left: auto;
   margin-right: auto;
-  align-items: stretch;
+  margin-bottom: clamp(6px, 1.2vh, 28px);
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
-.intl-gallery-main,
-.intl-gallery-side {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.intl-gallery .intl-section-title {
-  margin: 0 0 20px;
-  padding: 0;
+.intl-gallery .intl-section-title--secondary {
+  margin-top: clamp(8px, 1.8vh, 48px);
 }
 
 .intl-gallery .intl-grid {
-  margin-left: 0;
-  margin-right: 0;
-  padding: 0;
-}
-
-.intl-gallery-side .intl-grid {
-  flex: 1 1 auto;
-  grid-template-rows: 1fr 1fr;
-}
-
-.intl-gallery-side .intl-card {
-  height: 100%;
+  max-width: var(--gallery-max);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .intl-section-title {
-  font-size: 24px;
+  font-size: clamp(20px, 1.25vw, 32px);
   font-weight: 600;
   color: var(--el-text-color-primary, #333);
   margin: 0 0 24px 10px;
@@ -1081,19 +1065,21 @@ onMounted(() => {
 
 .intl-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--card-gap);
   padding: 0 10px;
 }
 
-.intl-grid--vertical {
-  grid-template-columns: minmax(0, 1fr);
+@media (min-width: 1280px) {
+  .intl-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .intl-card {
   background: var(--el-bg-color, #fff);
   border-radius: 12px;
-  padding: 24px;
+  padding: var(--card-pad-y) var(--card-pad-x);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   cursor: pointer;
@@ -1105,19 +1091,19 @@ onMounted(() => {
 }
 
 .intl-card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-4px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   border-color: #667eea;
 }
 
 .intl-card:active {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
 }
 
 .intl-card-preview {
   width: 100%;
-  height: 150px;
-  margin-bottom: 20px;
+  height: var(--card-preview-h);
+  margin-bottom: var(--card-preview-mb);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1141,15 +1127,15 @@ onMounted(() => {
 }
 
 .intl-card-title {
-  font-size: 20px;
+  font-size: var(--card-title-size);
   font-weight: 600;
   color: var(--el-text-color-primary, #333);
-  margin: 0 0 8px;
+  margin: 0 0 var(--card-title-mb);
   text-align: center;
 }
 
 .intl-card-desc {
-  font-size: 14px;
+  font-size: var(--card-desc-size);
   color: var(--el-text-color-secondary, #666);
   text-align: center;
   margin: 0;
@@ -1194,30 +1180,6 @@ onMounted(() => {
   }
   10% {
     transform: scale(1.3);
-  }
-}
-
-/* Stack advanced column under thinking maps when 5 cards cannot sit in one row */
-@media (max-width: 1280px) {
-  .intl-gallery-row {
-    grid-template-columns: 1fr;
-  }
-
-  .intl-gallery-side .intl-section-title {
-    margin-top: 40px;
-  }
-
-  .intl-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  }
-
-  .intl-grid--vertical {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    grid-template-rows: none;
-  }
-
-  .intl-gallery-side .intl-card {
-    height: auto;
   }
 }
 
