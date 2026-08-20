@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': '학교 선택',
   'auth.quickRegOrgLoadError': '학교 목록을 불러올 수 없습니다. 다시 시도하세요.',
   'auth.quickRegMintError': '가입 채널을 열 수 없습니다. 다시 시도하세요.',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': '로그인 비밀번호 설정',
   'auth.setPasswordWithSmsTitle': 'SMS로 비밀번호 설정',
   'auth.setPasswordWithSmsHint': '연결된 휴대폰으로 코드를 보냅니다. 비밀번호 설정 후 비밀번호 또는 인증 코드로 로그인할 수 있습니다.',

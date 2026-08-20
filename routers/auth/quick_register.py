@@ -19,6 +19,7 @@ import os
 import secrets
 import time
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy import select
@@ -109,10 +110,17 @@ _REGISTER_QUICK_IP_MAX = _int_env("QUICK_REGISTER_IP_MAX", _DEFAULT_REGISTER_QUI
 _REGISTER_QUICK_IP_WINDOW = _int_env("QUICK_REGISTER_IP_WINDOW", _DEFAULT_REGISTER_QUICK_IP_WINDOW)
 _REGISTER_QUICK_PHONE_MAX = _int_env("QUICK_REGISTER_PHONE_MAX", _DEFAULT_REGISTER_QUICK_PHONE_MAX)
 _REGISTER_QUICK_PHONE_WINDOW = _int_env("QUICK_REGISTER_PHONE_WINDOW", _DEFAULT_REGISTER_QUICK_PHONE_WINDOW)
-_ROOM_CODE_GET_IP_MAX = _int_env("QUICK_REG_ROOM_GET_IP_MAX", 60)
-_ROOM_CODE_GET_IP_WINDOW = _int_env("QUICK_REG_ROOM_GET_IP_WINDOW", 60)
+# School Wi-Fi NATs a whole class onto one IP. 60/min 429s the attendee probe.
+_DEFAULT_PUBLIC_GET_IP_MAX = 600
+_DEFAULT_PUBLIC_GET_IP_WINDOW = 60
+_ROOM_CODE_GET_IP_MAX = _int_env("QUICK_REG_ROOM_GET_IP_MAX", _DEFAULT_PUBLIC_GET_IP_MAX)
+_ROOM_CODE_GET_IP_WINDOW = _int_env("QUICK_REG_ROOM_GET_IP_WINDOW", _DEFAULT_PUBLIC_GET_IP_WINDOW)
 _ROOM_CODE_GET_PER_TOKEN_MAX = _int_env("QUICK_REG_ROOM_GET_TOKEN_MAX", 240)
 _ROOM_CODE_GET_PER_TOKEN_WINDOW = _int_env("QUICK_REG_ROOM_GET_TOKEN_WINDOW", 60)
+_STATUS_GET_IP_MAX = _int_env("QUICK_REG_STATUS_GET_IP_MAX", _DEFAULT_PUBLIC_GET_IP_MAX)
+_STATUS_GET_IP_WINDOW = _int_env("QUICK_REG_STATUS_GET_IP_WINDOW", _DEFAULT_PUBLIC_GET_IP_WINDOW)
+_STATUS_GET_PER_TOKEN_MAX = _int_env("QUICK_REG_STATUS_GET_TOKEN_MAX", 600)
+_STATUS_GET_PER_TOKEN_WINDOW = _int_env("QUICK_REG_STATUS_GET_TOKEN_WINDOW", 60)
 
 
 def _token_log_id(raw: str) -> str:
@@ -143,6 +151,115 @@ def _room_code_secret_from_payload(data: object) -> str:
     return raw.strip()
 
 
+def _channel_token_from_query(channel_token: str | None, legacy_token: str | None) -> str:
+    """Prefer channel_token, then deprecated token=."""
+    return (channel_token or legacy_token or "").strip()
+
+
+def public_get_ip_max(kind: str) -> int:
+    """Per-IP cap for public channel GETs (status | room)."""
+    return _public_get_limit_bundle(kind)[2]
+
+
+def _public_get_limit_bundle(kind: str) -> tuple[str, str, int, int, int, int]:
+    """Return (ip_scope, token_scope, ip_max, ip_window, token_max, token_window)."""
+    if kind == "status":
+        return (
+            "quick_reg_status_ip",
+            "quick_reg_status_tok",
+            _STATUS_GET_IP_MAX,
+            _STATUS_GET_IP_WINDOW,
+            _STATUS_GET_PER_TOKEN_MAX,
+            _STATUS_GET_PER_TOKEN_WINDOW,
+        )
+    return (
+        "quick_reg_room_get_ip",
+        "quick_reg_room_get_tok",
+        _ROOM_CODE_GET_IP_MAX,
+        _ROOM_CODE_GET_IP_WINDOW,
+        _ROOM_CODE_GET_PER_TOKEN_MAX,
+        _ROOM_CODE_GET_PER_TOKEN_WINDOW,
+    )
+
+
+async def _enforce_public_channel_get_limits(
+    http_request: Request,
+    channel_key: str,
+    lang: Language,
+    kind: str,
+) -> None:
+    """Raise 429 when the public channel GET exceeds per-IP or per-token caps."""
+    ip_scope, token_scope, ip_max, ip_window, token_max, token_window = _public_get_limit_bundle(kind)
+    rate = get_rate_limiter()
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
+    allowed, _, _ = await rate.check_and_record(ip_scope, client_ip, ip_max, ip_window)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=Messages.error("quick_reg_rate_limited", lang),
+        )
+    allowed_t, _, _ = await rate.check_and_record(token_scope, _token_log_id(channel_key), token_max, token_window)
+    if not allowed_t:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=Messages.error("quick_reg_rate_limited", lang),
+        )
+
+
+async def _load_public_channel_payload(
+    http_request: Request,
+    channel_token: str | None,
+    legacy_token: str | None,
+    lang: Language,
+    kind: str,
+) -> tuple[str, dict[str, Any]]:
+    """Resolve a live channel token for public GETs (status / room-code)."""
+    http_forbid_if_registration_disabled(lang)
+    channel_key = _channel_token_from_query(channel_token, legacy_token)
+    if not channel_key:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=Messages.error("missing_required_fields", lang, "channel_token"),
+        )
+    await _enforce_public_channel_get_limits(http_request, channel_key, lang, kind)
+    token_payload = await get_token_data(channel_key)
+    if not token_payload:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Messages.error("quick_reg_channel_invalid", lang),
+        )
+    return channel_key, token_payload
+
+
+@router.get("/quick-register/status")
+async def quick_register_status(
+    http_request: Request,
+    channel_token: str | None = Query(
+        default=None,
+        min_length=20,
+        max_length=512,
+        description="Opaque quick-registration channel token (avoids clashing with generic ?token= in auth).",
+    ),
+    legacy_token: str | None = Query(
+        default=None,
+        min_length=20,
+        max_length=512,
+        alias="token",
+        description="Deprecated: use channel_token instead.",
+    ),
+    lang: Language = Depends(get_language_dependency),
+):
+    """Public: whether the channel is still open. Does not return the room code."""
+    await _load_public_channel_payload(
+        http_request,
+        channel_token,
+        legacy_token,
+        lang,
+        "status",
+    )
+    return {"valid": True}
+
+
 @router.get("/quick-register/room-code")
 async def quick_register_room_code(
     http_request: Request,
@@ -162,40 +279,13 @@ async def quick_register_room_code(
     lang: Language = Depends(get_language_dependency),
 ):
     """Public: current 6-digit room code and server time (for modal sync)."""
-    http_forbid_if_registration_disabled(lang)
-
-    channel_key = (channel_token or legacy_token or "").strip()
-    if not channel_key:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=Messages.error("missing_required_fields", lang, "channel_token"),
-        )
-    rate = get_rate_limiter()
-    client_ip = get_client_ip(http_request) if http_request else "unknown"
-    allowed, _, _ = await rate.check_and_record(
-        "quick_reg_room_get_ip", client_ip, _ROOM_CODE_GET_IP_MAX, _ROOM_CODE_GET_IP_WINDOW
+    channel_key, token_payload = await _load_public_channel_payload(
+        http_request,
+        channel_token,
+        legacy_token,
+        lang,
+        "room",
     )
-    if not allowed:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=Messages.error("quick_reg_rate_limited", lang),
-        )
-    tsha = _token_log_id(channel_key)
-    allowed_t, _, _ = await rate.check_and_record(
-        "quick_reg_room_get_tok", tsha, _ROOM_CODE_GET_PER_TOKEN_MAX, _ROOM_CODE_GET_PER_TOKEN_WINDOW
-    )
-    if not allowed_t:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=Messages.error("quick_reg_rate_limited", lang),
-        )
-
-    token_payload = await get_token_data(channel_key)
-    if not token_payload:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Messages.error("quick_reg_channel_invalid", lang),
-        )
 
     signups_count = (
         await get_workshop_usage_count(channel_key) if parse_channel_type(token_payload) == "workshop" else 0

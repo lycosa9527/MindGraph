@@ -54,7 +54,7 @@ onMounted(async () => {
   }
   try {
     const response = await apiRequest(
-      `/api/auth/quick-register/room-code?channel_token=${encodeURIComponent(props.quickRegToken)}`,
+      `/api/auth/quick-register/status?channel_token=${encodeURIComponent(props.quickRegToken)}`,
       { method: 'GET' }
     )
     if (response.ok) {

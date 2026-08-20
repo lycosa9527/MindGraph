@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'Zgjidhni shkollën',
   'auth.quickRegOrgLoadError': 'Shkollat nuk u ngarkuan. Provoni përsëri.',
   'auth.quickRegMintError': 'Kanali i regjistrimit nuk u hap. Provoni përsëri.',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Vendos fjalëkalimin e hyrjes',
   'auth.setPasswordWithSmsTitle': 'Vendos fjalëkalimin përmes SMS',
   'auth.setPasswordWithSmsHint': 'Dërgojmë një kod në telefonin tuaj të lidhur. Pas vendosjes së fjalëkalimit mund të hyni me fjalëkalim ose kod verifikimi.',

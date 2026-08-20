@@ -16,10 +16,12 @@ import {
   Lock,
   LogOut,
   Phone,
+  Share2,
   Smile,
 } from '@lucide/vue'
 
 import { ChangePasswordModal, ChangePhoneModal } from '@/components/auth'
+import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import AvatarSelectModal from '@/components/auth/AvatarSelectModal.vue'
 import SetPasswordWithSmsModal from '@/components/auth/SetPasswordWithSmsModal.vue'
 import { useLanguage } from '@/composables'
@@ -74,8 +76,12 @@ const showChangePhone = ref(false)
 const showChangePassword = ref(false)
 const showSetPasswordSms = ref(false)
 const showAvatarSelect = ref(false)
+const showQuickRegister = ref(false)
 
 const needsSetLoginPassword = computed(() => user.value?.loginPasswordSet === false)
+const canMintQuickRegister = computed(
+  () => authStore.isAdminOrManager && authStore.registrationEnabled
+)
 
 const uiLangExpanded = ref(false)
 const promptLangExpanded = ref(false)
@@ -211,6 +217,30 @@ async function handleLogout() {
         </button>
 
         <div class="border-t border-gray-100 mx-4" />
+
+        <button
+          v-if="canMintQuickRegister"
+          class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
+          @click="showQuickRegister = true"
+        >
+          <Share2
+            :size="20"
+            class="text-gray-500 shrink-0"
+          />
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-gray-900">
+              {{ t('landing.international.shareSite') }}
+            </div>
+          </div>
+          <ChevronRight
+            :size="18"
+            class="text-gray-400 shrink-0"
+          />
+        </button>
+        <div
+          v-if="canMintQuickRegister"
+          class="border-t border-gray-100 mx-4"
+        />
 
         <!-- Set login password (quick reg) or change password -->
         <button
@@ -448,6 +478,7 @@ async function handleLogout() {
       :visible="showAvatarSelect"
       @update:visible="showAvatarSelect = $event"
     />
+    <QuickRegisterModal v-model="showQuickRegister" />
   </div>
 </template>
 

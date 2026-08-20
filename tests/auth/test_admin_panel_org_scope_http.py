@@ -75,6 +75,30 @@ def test_platform_bd_denied_global_user_update(client: TestClient) -> None:
     assert response.status_code == 403
 
 
+def test_teacher_denied_mobile_organizations(client: TestClient) -> None:
+    """Teachers cannot list mobile org-management rows."""
+    app.dependency_overrides[get_current_user] = lambda: _make_user("teacher", user_id=11)
+    app.dependency_overrides[get_language_dependency] = lambda: "en"
+    response = client.get("/api/auth/admin/mobile/organizations")
+    assert response.status_code == 403
+
+
+def test_school_admin_denied_mobile_organizations(client: TestClient) -> None:
+    """School managers cannot list or create orgs on mobile."""
+    app.dependency_overrides[get_current_user] = lambda: _make_user("school_admin", organization_id=42, user_id=3)
+    app.dependency_overrides[get_language_dependency] = lambda: "en"
+    response = client.get("/api/auth/admin/mobile/organizations")
+    assert response.status_code == 403
+
+
+def test_expert_can_list_mobile_organizations(client: TestClient) -> None:
+    """Experts may hit the mobile org list (created-org scope)."""
+    app.dependency_overrides[get_current_user] = lambda: _make_user("expert", user_id=5)
+    app.dependency_overrides[get_language_dependency] = lambda: "en"
+    response = client.get("/api/auth/admin/mobile/organizations")
+    assert response.status_code != 403
+
+
 def test_platform_bd_can_read_global_stats(client: TestClient) -> None:
     """Test platform bd can read global stats."""
     app.dependency_overrides[get_current_user] = lambda: _make_user("platform_bd", user_id=9)

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.18] - 2026-08-21
+
+> **Super-admins and professionals can create a school from the phone hub and copy the invite code and link.**
+
+### Added
+
+- **Mobile organization management** — Super-admins, experts, and teaching researchers see an **组织管理** card on `/m`. Type a school name to create it; tap a row for the invite code and `{site}/auth?invite=…` link. Teachers and school managers never see the card. `/m/orgs` is blocked the same way.
+- **Scoped list API** — `GET /api/auth/admin/mobile/organizations` uses the same create-org permission as desktop. Super-admins get every school; professionals get only schools they created. The payload is id, name, invite code, and member count only (no token stats, Dify, branding, or manager contacts). Register on `/auth?invite=` pre-fills a validated invitation code.
+
+### Changed
+
+- **Mobile Kitty camera** — The `/m/kitty` camera control stays visible but is greyed out and inert until photo ingest is ready again (`kittyCameraEnabled`).
+
+### Fixed
+
+- **Quick registration classroom gaps** — Facilitator dialog no longer closes on overlay click or Escape (confirm before revoke). Attendee `/auth` refresh keeps the token in `sessionStorage`. Students probe `GET /api/auth/quick-register/status` (no room code). Public GET IP defaults are 600/minute. `pagehide` revokes the channel. Menu hides when signup is off; mobile account can mint; English label is Quick registration.
+
+### Tests
+
+- `frontend/tests/adminCapabilities.spec.ts` / `invitationCode.spec.ts` / `tests/auth/test_expert_invite_scope.py` / `test_admin_panel_org_scope_http.py` / `tests/auth/test_quick_register_routes.py` / `frontend/tests/quickRegToken.spec.ts`
+
 ## [5.180.17] - 2026-08-20
 
 > **Saved interface language comes back after login. The app no longer rebuilds the profile every two minutes.**

@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'Chọn trường',
   'auth.quickRegOrgLoadError': 'Không tải được danh sách trường. Vui lòng thử lại.',
   'auth.quickRegMintError': 'Không mở được kênh đăng ký. Vui lòng thử lại.',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Đặt mật khẩu đăng nhập',
   'auth.setPasswordWithSmsTitle': 'Đặt mật khẩu qua SMS',
   'auth.setPasswordWithSmsHint': 'Chúng tôi gửi mã tới số điện thoại đã liên kết. Sau khi đặt mật khẩu, bạn có thể đăng nhập bằng mật khẩu hoặc mã xác minh.',

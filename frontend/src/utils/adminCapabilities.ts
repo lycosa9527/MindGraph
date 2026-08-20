@@ -174,6 +174,26 @@ export function hasSuperadminPanelAccess(caps: AdminCapability[]): boolean {
   )
 }
 
+/** Superadmin, teaching researcher, or expert who can create/view invited orgs. */
+export function canManageOrganizationsOnMobile(caps: AdminCapability[]): boolean {
+  const canCreate = caps.includes('tab.invites.edit') || caps.includes('tab.organizations.edit')
+  return canCreate && (caps.includes('scope.global') || caps.includes('scope.invited_orgs'))
+}
+
+/**
+ * Mobile org card / route gate. After capabilities load, trust the API only so a
+ * stale client role cannot reveal the card to teachers or school managers.
+ */
+export function canSeeMobileOrgManagement(
+  payload: AdminCapabilitiesPayload | null | undefined,
+  loaded: boolean
+): boolean {
+  if (!loaded) {
+    return false
+  }
+  return canManageOrganizationsOnMobile(payload?.capabilities ?? [])
+}
+
 const TAB_EDIT_CAPABILITY: Record<string, AdminCapability> = {
   data_center: 'tab.data_center.edit',
   users: 'tab.users.edit',

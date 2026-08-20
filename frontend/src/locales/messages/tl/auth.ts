@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'Pumili ng paaralan',
   'auth.quickRegOrgLoadError': 'Hindi ma-load ang mga paaralan. Subukan muli.',
   'auth.quickRegMintError': 'Hindi mabuksan ang registration channel. Subukan muli.',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Itakda ang login password',
   'auth.setPasswordWithSmsTitle': 'Itakda ang password via SMS',
   'auth.setPasswordWithSmsHint': 'Nagpapadala kami ng code sa naka-bind na phone mo. Pagkatapos magtakda ng password, maaari kang mag-sign in gamit ang password o verification code.',

@@ -13,6 +13,7 @@ from typing import Optional, cast
 from fastapi import APIRouter, Depends
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.functions import coalesce as sa_coalesce
 from sqlalchemy.sql.functions import count as sa_count
 from sqlalchemy.sql.functions import sum as sa_sum
@@ -28,11 +29,11 @@ except ImportError:
 
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth.admin_panel_permissions import CAP_TAB_INVITES_VIEW
-from utils.auth.admin_scope import AdminScope, invite_org_filter
+from utils.auth.admin_scope import AdminScope, invite_org_filter, mobile_created_orgs_filter
 from utils.auth.org_privatization import org_privatization_list_field
 from utils.auth.role_constants import SCHOOL_ADMIN_ROLES
 
-from ..dependencies import get_language_dependency, require_panel_capability
+from ..dependencies import get_language_dependency, require_invite_org_create, require_panel_capability
 from ..helpers import utc_to_beijing_iso
 from .organization_dify import dify_list_fields
 from .organization_mindmate_branding import mindmate_branding_list_fields
@@ -42,27 +43,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/admin/invites/organizations")
-async def list_invite_organizations_admin(
-    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_INVITES_VIEW)),
-    db: AsyncSession = Depends(get_async_db),
-    _lang: Language = Depends(get_language_dependency),
-):
-    """List organizations for the invite-users tab (includes full invitation codes)."""
-    orgs = (
-        (
-            await db.execute(
-                select(Organization).where(invite_org_filter(scope, Organization.id)).order_by(Organization.id)
-            )
-        )
-        .scalars()
-        .all()
-    )
+async def _list_invite_organizations(
+    db: AsyncSession,
+    org_clause: ColumnElement,
+    user_org_clause: ColumnElement,
+) -> list[dict]:
+    """Serialize scoped organizations with invitation codes and member counts."""
+    org_rows = await db.execute(select(Organization).where(org_clause).order_by(Organization.id))
+    orgs = org_rows.scalars().all()
 
     user_counts_by_org: dict[int, int] = {}
     user_counts_stmt = (
         select(User.organization_id, sa_count(User.id).label("user_count"))
-        .where(User.organization_id.isnot(None), invite_org_filter(scope, User.organization_id))
+        .where(User.organization_id.isnot(None), user_org_clause)
         .group_by(User.organization_id)
     )
     for count_result in (await db.execute(user_counts_stmt)).all():
@@ -74,7 +67,7 @@ async def list_invite_organizations_admin(
         .where(
             User.organization_id.isnot(None),
             User.role.in_(tuple(SCHOOL_ADMIN_ROLES)),
-            invite_org_filter(scope, User.organization_id),
+            user_org_clause,
         )
         .order_by(User.organization_id, User.name)
     )
@@ -100,7 +93,7 @@ async def list_invite_organizations_admin(
                         TokenUsage.success,
                     ),
                 )
-                .where(invite_org_filter(scope, Organization.id))
+                .where(org_clause)
                 .group_by(Organization.id)
             )
             for org_stat in (await db.execute(org_token_stmt)).all():
@@ -144,3 +137,78 @@ async def list_invite_organizations_admin(
             }
         )
     return result
+
+
+def mobile_organization_public_fields(
+    org_id: int,
+    name: str,
+    invitation_code: Optional[str],
+    user_count: int,
+) -> dict:
+    """Fields the phone needs — no token stats, Dify, branding, or manager PII."""
+    return {
+        "id": org_id,
+        "name": name,
+        "invitation_code": invitation_code or "",
+        "user_count": user_count,
+    }
+
+
+async def _list_mobile_organizations(
+    db: AsyncSession,
+    org_clause: ColumnElement,
+) -> list[dict]:
+    """Serialize created-org rows for mobile (invite code + member count only)."""
+    org_rows = await db.execute(
+        select(Organization.id, Organization.name, Organization.invitation_code)
+        .where(org_clause)
+        .order_by(Organization.id)
+    )
+    orgs = org_rows.all()
+    org_ids = [cast(int, row.id) for row in orgs]
+    user_counts_by_org: dict[int, int] = {}
+    if org_ids:
+        user_counts_stmt = (
+            select(User.organization_id, sa_count(User.id).label("user_count"))
+            .where(User.organization_id.in_(org_ids))
+            .group_by(User.organization_id)
+        )
+        for count_result in (await db.execute(user_counts_stmt)).all():
+            user_counts_by_org[cast(int, count_result.organization_id)] = count_result.user_count
+
+    result = []
+    for row in orgs:
+        org_id = cast(int, row.id)
+        result.append(
+            mobile_organization_public_fields(
+                org_id,
+                str(row.name or ""),
+                cast(Optional[str], row.invitation_code),
+                user_counts_by_org.get(org_id, 0),
+            )
+        )
+    return result
+
+
+@router.get("/admin/invites/organizations")
+async def list_invite_organizations_admin(
+    scope: AdminScope = Depends(require_panel_capability(CAP_TAB_INVITES_VIEW)),
+    db: AsyncSession = Depends(get_async_db),
+    _lang: Language = Depends(get_language_dependency),
+):
+    """List organizations for the invite-users tab (includes full invitation codes)."""
+    return await _list_invite_organizations(
+        db,
+        invite_org_filter(scope, Organization.id),
+        invite_org_filter(scope, User.organization_id),
+    )
+
+
+@router.get("/admin/mobile/organizations")
+async def list_mobile_organizations_admin(
+    scope: AdminScope = Depends(require_invite_org_create),
+    db: AsyncSession = Depends(get_async_db),
+    _lang: Language = Depends(get_language_dependency),
+):
+    """Mobile org management: superadmin sees all; professionals see orgs they created."""
+    return await _list_mobile_organizations(db, mobile_created_orgs_filter(scope))

@@ -202,6 +202,9 @@ export default {
   'auth.quickRegSelectOrg': '選擇學校',
   'auth.quickRegOrgLoadError': '無法加載學校列表，請稍後重試。',
   'auth.quickRegMintError': '無法創建註冊通道，請稍後重試。',
+  'auth.quickRegCloseConfirmTitle': '結束快速註冊？',
+  'auth.quickRegCloseConfirm':
+    '關閉視窗後，目前的 QR 與房間碼會立刻失效，尚未加入的學生將無法繼續註冊。',
   'auth.setPasswordWithSms': '設置登錄密碼',
   'auth.setPasswordWithSmsTitle': '用短信設置登錄密碼',
   'auth.setPasswordWithSmsHint': '向已綁定手機發送短信驗證碼，設置後可使用密碼或驗證碼登錄。',

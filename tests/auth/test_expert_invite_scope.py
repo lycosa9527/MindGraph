@@ -6,12 +6,14 @@ from sqlalchemy.sql import false as sql_false
 from sqlalchemy.sql import true as sql_true
 
 from models.domain.auth import Organization
+from routers.auth.admin.invites import mobile_organization_public_fields
 from routers.auth.dependencies import _assert_invite_org_scope
 from utils.auth.admin_panel_permissions import CAP_SCOPE_INVITED_ORGS, CAP_TAB_INVITES_EDIT
 from utils.auth.admin_scope import (
     assert_resource_org_in_scope,
     build_admin_scope,
     invite_org_filter,
+    mobile_created_orgs_filter,
     org_filter,
     org_id_readable_in_panel_scope,
     panel_org_table_filter,
@@ -148,6 +150,32 @@ def test_require_invite_org_create_allows_expert_scope():
     _assert_invite_org_scope(scope, "en")
 
 
+def test_mobile_created_orgs_filter_superadmin_sees_all():
+    """Test mobile created orgs filter superadmin sees all."""
+    user = _User("superadmin", user_id=1)
+    scope = build_admin_scope(user, lang="en")
+    assert mobile_created_orgs_filter(scope).compare(sql_true())
+
+
+def test_mobile_created_orgs_filter_expert_is_created_only():
+    """Test mobile created orgs filter expert is created only."""
+    user = _User("expert", user_id=5)
+    scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10, 20}))
+    clause = mobile_created_orgs_filter(scope)
+    assert clause is not None
+    assert not clause.compare(sql_true())
+    assert not clause.compare(sql_false())
+
+
+def test_mobile_created_orgs_filter_platform_bd_is_created_only():
+    """Test mobile created orgs filter platform bd is created only."""
+    user = _User("platform_bd", user_id=9)
+    scope = build_admin_scope(user, lang="en", invited_org_ids=frozenset({10, 20}))
+    mobile_clause = mobile_created_orgs_filter(scope)
+    assert mobile_clause is not None
+    assert not mobile_clause.compare(sql_true())
+
+
 def test_require_invite_org_create_blocks_teacher_like_scope():
     """Test require invite org create blocks teacher like scope."""
     user = _User("school_admin", organization_id=42, user_id=3)
@@ -156,3 +184,12 @@ def test_require_invite_org_create_blocks_teacher_like_scope():
     with pytest.raises(HTTPException) as exc:
         _assert_invite_org_scope(scope, "en")
     assert exc.value.status_code == 403
+
+
+def test_mobile_organization_payload_is_minimal():
+    """Phone list must not include billing, Dify, branding, or manager fields."""
+    row = mobile_organization_public_fields(7, "Demo School", "ABC-234", 4)
+    assert set(row) == {"id", "name", "invitation_code", "user_count"}
+    assert row["invitation_code"] == "ABC-234"
+    empty_invite = mobile_organization_public_fields(8, "Empty", None, 0)
+    assert empty_invite["invitation_code"] == ""

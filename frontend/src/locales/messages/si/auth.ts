@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'පාසල තෝරන්න',
   'auth.quickRegOrgLoadError': 'පාසල් පූරණය කළ නොහැක. නැවත උත්සාහ කරන්න.',
   'auth.quickRegMintError': 'ලියාපදිංචි channel විවෘත කළ නොහැක. නැවත උත්සාහ කරන්න.',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Login මුරපදය සකසන්න',
   'auth.setPasswordWithSmsTitle': 'SMS හරහා මුරපදය සකසන්න',
   'auth.setPasswordWithSmsHint': 'bind කළ දුරකථනයට කේතය යවමු. මුරපදය සකසා password හෝ verification code login කළ හැක.',

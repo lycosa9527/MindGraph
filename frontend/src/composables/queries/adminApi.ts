@@ -20,6 +20,7 @@ import type { FeatureOrgAccessEntry } from '@/stores/featureFlags'
 import type { SchoolMemberBatchImportResponse } from '@/types/api'
 import { apiRequest, apiUpload } from '@/utils/apiClient'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
+import { type MobileOrganizationRow, parseMobileOrganizations } from '@/utils/mobileOrganizations'
 
 // ============================================================================
 // Core helper
@@ -671,8 +672,32 @@ export async function deleteAdminApiKey(id: number): Promise<void> {
 // Invites
 // ============================================================================
 
-export async function fetchAdminOrganizationInvites(): Promise<Record<string, unknown>> {
-  return adminFetchJson('/api/auth/admin/invites/organizations')
+export interface AdminInviteOrganization {
+  id: number
+  code: string
+  name: string
+  invitation_code: string
+  user_count: number
+  expires_at: string | null
+  is_active: boolean
+  created_at: string | null
+}
+
+function parseInviteOrganizations(data: unknown): AdminInviteOrganization[] {
+  if (!Array.isArray(data)) {
+    return []
+  }
+  return data as AdminInviteOrganization[]
+}
+
+export async function fetchAdminOrganizationInvites(): Promise<AdminInviteOrganization[]> {
+  const data = await adminFetchJson<unknown>('/api/auth/admin/invites/organizations')
+  return parseInviteOrganizations(data)
+}
+
+export async function fetchMobileOrganizations(): Promise<MobileOrganizationRow[]> {
+  const data = await adminFetchJson<unknown>('/api/auth/admin/mobile/organizations')
+  return parseMobileOrganizations(data)
 }
 
 // ============================================================================

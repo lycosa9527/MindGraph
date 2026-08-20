@@ -341,6 +341,7 @@ declare module 'vue' {
     MindmateMessages: typeof import('./components/panels/mindmate/MindmateMessages.vue')['default']
     MindmatePanel: typeof import('./components/panels/MindmatePanel.vue')['default']
     MindmateWelcome: typeof import('./components/panels/mindmate/MindmateWelcome.vue')['default']
+    MobileOrgInviteShare: typeof import('./components/mobile/MobileOrgInviteShare.vue')['default']
     MyFavoriteCasesModal: typeof import('./components/showcase/MyFavoriteCasesModal.vue')['default']
     MyPublishedCasesModal: typeof import('./components/showcase/MyPublishedCasesModal.vue')['default']
     NodePalettePanel: typeof import('./components/panels/NodePalettePanel.vue')['default']

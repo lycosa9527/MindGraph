@@ -332,6 +332,16 @@ def invite_org_filter(scope: AdminScope, column: Any) -> ColumnElement:
     return column.in_(panel_readable_org_id_subquery(scope))
 
 
+def mobile_created_orgs_filter(scope: AdminScope) -> ColumnElement:
+    """Mobile org list: superadmin sees every org; professionals see orgs they created."""
+    if is_superadmin(scope.actor):
+        return true()
+    actor_id = getattr(scope.actor, "id", None)
+    if actor_id is None:
+        return false()
+    return Organization.invited_by_user_id == int(actor_id)
+
+
 def org_id_readable_in_panel_scope(
     scope: AdminScope,
     org_id: int,

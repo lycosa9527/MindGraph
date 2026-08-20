@@ -9,6 +9,7 @@ import { ElButton, ElDialog, ElDropdown, ElDropdownItem, ElDropdownMenu } from '
 import { ChevronDown, Loader2, X } from '@lucide/vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { useQuickRegisterDialogClose } from '@/composables/auth/useQuickRegisterDialogClose'
 import { usePublicSiteUrl } from '@/composables/core/usePublicSiteUrl'
 import { useAuthStore } from '@/stores'
 import { authFetch } from '@/utils/api'
@@ -98,8 +99,18 @@ const selectedOrgLabel = computed(() => {
   return org ? String(org.display_name || org.name) : t('auth.quickRegSelectOrg')
 })
 
+const { dialogDismissLocked, requestClose } = useQuickRegisterDialogClose({
+  t,
+  token,
+  revokeKeepAlive: () => {
+    void revokeToken(true)
+  },
+})
+
 function close() {
-  visible.value = false
+  void requestClose(() => {
+    visible.value = false
+  })
 }
 
 function stopRoomCodeUi() {
@@ -345,6 +356,8 @@ onBeforeUnmount(() => {
   <ElDialog
     v-model="visible"
     :show-close="false"
+    :close-on-click-modal="!dialogDismissLocked"
+    :close-on-press-escape="!dialogDismissLocked"
     width="480px"
     class="intl-share-site-dialog"
     align-center

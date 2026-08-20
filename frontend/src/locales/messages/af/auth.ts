@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'Kies skool',
   'auth.quickRegOrgLoadError': 'Kon nie skole laai nie. Probeer asseblief weer.',
   'auth.quickRegMintError': 'Kon nie die registrasiekanaal oopmaak nie. Probeer asseblief weer.',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Stel aanmeldwagwoord',
   'auth.setPasswordWithSmsTitle': 'Stel wagwoord via SMS',
   'auth.setPasswordWithSmsHint': 'Ons stuur ’n kode na jou gekoppelde foon. Nadat jy ’n wagwoord gestel het, kan jy met wagwoord of ’n verifikasiekode aanmeld.',

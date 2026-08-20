@@ -42,7 +42,7 @@ const invitesQuery = useAdminOrganizationInvites({
 const isLoading = computed(() => invitesQuery.isFetching.value)
 const organizations = computed(() => {
   const data = invitesQuery.data.value
-  return Array.isArray(data) ? (data as Record<string, unknown>[]) : []
+  return Array.isArray(data) ? (data as unknown as Record<string, unknown>[]) : []
 })
 const createModalVisible = ref(false)
 const shareModalVisible = ref(false)

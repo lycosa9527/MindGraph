@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'Selecteer school',
   'auth.quickRegOrgLoadError': 'Kan scholen niet laden. Probeer het opnieuw.',
   'auth.quickRegMintError': 'Kan het registratiekanaal niet openen. Probeer het opnieuw.',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Stel het inlogwachtwoord in',
   'auth.setPasswordWithSmsTitle': 'Wachtwoord instellen via sms',
   'auth.setPasswordWithSmsHint': 'Wij sturen een code naar uw gebonden telefoon. Nadat u een wachtwoord heeft ingesteld, kunt u inloggen met een wachtwoord of een verificatiecode.',

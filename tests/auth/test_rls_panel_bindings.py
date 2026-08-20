@@ -68,6 +68,19 @@ async def test_require_admin_or_manager_with_rls_binds_panel_for_superadmin() ->
 
 
 @pytest.mark.asyncio
+async def test_require_admin_or_manager_with_rls_leaves_manager_unbound() -> None:
+    """School managers mint against authenticated RLS (own org only)."""
+    request = MagicMock()
+    request.state = SimpleNamespace()
+    user = as_user(SimpleNamespace(id=8, role="school_admin", organization_id=42))
+
+    result = await require_admin_or_manager_with_rls(request, user)
+
+    assert result is user
+    assert getattr(request.state, "rls_context", None) is None
+
+
+@pytest.mark.asyncio
 async def test_get_async_db_with_request_rls_applies_request_state(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

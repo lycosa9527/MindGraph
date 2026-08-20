@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'Seleziona scuola',
   'auth.quickRegOrgLoadError': 'Impossibile caricare le scuole. Riprova.',
   'auth.quickRegMintError': 'Impossibile aprire il canale di registrazione. Riprova.',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Imposta password di accesso',
   'auth.setPasswordWithSmsTitle': 'Imposta password via SMS',
   'auth.setPasswordWithSmsHint': 'Inviamo un codice al telefono collegato. Dopo aver impostato una password puoi accedere con password o codice di verifica.',

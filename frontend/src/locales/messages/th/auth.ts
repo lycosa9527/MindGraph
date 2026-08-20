@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'เลือกโรงเรียน',
   'auth.quickRegOrgLoadError': 'โหลดโรงเรียนไม่ได้ กรุณาลองอีกครั้ง',
   'auth.quickRegMintError': 'เปิดช่องทางสมัครไม่ได้ กรุณาลองอีกครั้ง',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'ตั้งรหัสผ่านเข้าสู่ระบบ',
   'auth.setPasswordWithSmsTitle': 'ตั้งรหัสผ่านผ่าน SMS',
   'auth.setPasswordWithSmsHint': 'เราส่งรหัสไปเบอร์ที่ผูกไว้ หลังตั้งรหัสผ่าน คุณเข้าสู่ระบบด้วยรหัสผ่านหรือรหัสยืนยันได้',

@@ -19,11 +19,12 @@ import { Close } from '@element-plus/icons-vue'
 import { ArrowLeft, Eye, EyeOff, Loader2, RefreshCw } from '@lucide/vue'
 
 import OAuthQrLoginModal from '@/components/auth/OAuthQrLoginModal.vue'
-import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
-import { useLoginModal } from '@/composables/auth/useLoginModal'
 import { useNotifications } from '@/composables'
+import { useLoginModal } from '@/composables/auth/useLoginModal'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+import { invitationCodeFromSearch } from '@/utils/invitationCode'
 import { initCatWalk } from '@/utils/mascot/catWalk'
-import { resolveOAuthInviteCode, shouldShowQrLoginLink } from '@/utils/oauthLoginUi'
+import { resolveOAuthInviteCode } from '@/utils/oauthLoginUi'
 
 const props = defineProps<{
   visible: boolean
@@ -109,6 +110,18 @@ const showQrLoginModal = ref(false)
 
 const oauthInviteCode = computed(() =>
   resolveOAuthInviteCode(route.query.invite, registerForm.value.invitationCode)
+)
+
+watch(
+  () => route.query.invite,
+  (invite) => {
+    const raw = typeof invite === 'string' ? invite : ''
+    const code = invitationCodeFromSearch(`?invite=${encodeURIComponent(raw)}`)
+    if (code && !registerForm.value.invitationCode) {
+      registerForm.value.invitationCode = code
+    }
+  },
+  { immediate: true }
 )
 
 function openQrLoginModal(): void {

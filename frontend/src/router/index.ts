@@ -12,6 +12,7 @@ import { userCanUseOnlineCollab } from '@/constants/schoolTier'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
+import { canSeeMobileOrgManagement } from '@/utils/adminCapabilities'
 import { CANVAS_ENTRY_PATH_KEY } from '@/utils/canvasBackNavigation'
 import {
   resolveMobileRouteRedirect,
@@ -68,6 +69,12 @@ const routes: RouteRecordRaw[] = [
     name: 'MobileAccount',
     component: () => import('@/pages/mobile/MobileAccountPage.vue'),
     meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('account') },
+  },
+  {
+    path: '/m/orgs',
+    name: 'MobileOrgs',
+    component: () => import('@/pages/mobile/MobileOrgsPage.vue'),
+    meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('orgs') },
   },
 
   // ── Desktop routes ────────────────────────────────────────────────
@@ -424,6 +431,18 @@ router.beforeEach(async (to, from) => {
   if (to.name === 'MobileKitty') {
     await featureFlagsStore.fetchFlags()
     if (!featureFlagsStore.getFeatureKittyAgent()) {
+      return { path: '/m' }
+    }
+  }
+
+  if (to.name === 'MobileOrgs') {
+    await authStore.loadAdminCapabilities()
+    if (
+      !canSeeMobileOrgManagement(
+        authStore.adminCapabilitiesPayload,
+        authStore.adminCapabilitiesLoaded
+      )
+    ) {
       return { path: '/m' }
     }
   }

@@ -135,6 +135,7 @@ export function useAppSidebar() {
     return isAuthenticated.value && authStore.user?.schoolId
   })
   const isAdminOrManager = computed(() => authStore.isAdminOrManager)
+  const registrationEnabled = computed(() => authStore.registrationEnabled)
   const isAdmin = computed(() => authStore.isAdmin)
   const canAccessZhihui = computed(() => authStore.canAccessZhihui)
   const showZhihuiNav = computed(
@@ -751,6 +752,7 @@ export function useAppSidebar() {
     hasOrganization,
     isAuthenticated,
     isAdminOrManager,
+    registrationEnabled,
     isAdmin,
     canAccessZhihui,
     isManagementPanelUser,

@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'Okul seç',
   'auth.quickRegOrgLoadError': 'Okullar yüklenemedi. Lütfen tekrar deneyin.',
   'auth.quickRegMintError': 'Kayıt kanalı açılamadı. Lütfen tekrar deneyin.',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Giriş şifresi belirle',
   'auth.setPasswordWithSmsTitle': 'SMS ile şifre belirle',
   'auth.setPasswordWithSmsHint': 'Bağlı telefonunuza bir kod göndeririz. Şifre belirledikten sonra şifre veya doğrulama kodu ile giriş yapabilirsiniz.',

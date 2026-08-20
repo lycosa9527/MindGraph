@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': '学校を選択',
   'auth.quickRegOrgLoadError': '学校を読み込めませんでした。もう一度お試しください。',
   'auth.quickRegMintError': '登録チャネルを開けませんでした。もう一度お試しください。',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'ログインパスワードを設定',
   'auth.setPasswordWithSmsTitle': 'SMS でパスワードを設定',
   'auth.setPasswordWithSmsHint': '登録電話番号にコードを送信します。パスワード設定後、パスワードまたは認証コードでサインインできます。',

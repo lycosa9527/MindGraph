@@ -10,6 +10,13 @@ import { AuthQuickRegisterModal, LoginModal } from '@/components/auth'
 import { useLanguage } from '@/composables'
 import { useAuthStore, useUIStore } from '@/stores'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
+import {
+  clearStoredQuickRegToken,
+  extractQuickRegTokenFromRedirect,
+  normalizeQuickRegToken,
+  readStoredQuickRegToken,
+  writeStoredQuickRegToken,
+} from '@/utils/quickRegToken'
 
 const router = useRouter()
 const route = useRoute()
@@ -28,23 +35,17 @@ function extractQuickRegFromRoute(
   r: RouteLocationNormalizedLoaded | { query: LocationQuery }
 ): string {
   const top = r.query.quick_reg
-  if (typeof top === 'string' && top.trim()) {
-    return top.trim()
+  if (typeof top === 'string') {
+    const fromTop = normalizeQuickRegToken(top)
+    if (fromTop) {
+      return fromTop
+    }
   }
   const red = r.query.redirect
   if (typeof red !== 'string' || !red) {
     return ''
   }
-  try {
-    const pathForUrl = red.startsWith('http')
-      ? red
-      : `${window.location.origin}${red.startsWith('/') ? '' : '/'}${red}`
-    const u = new URL(pathForUrl)
-    const t = u.searchParams.get('quick_reg')
-    return t && t.trim() ? t.trim() : ''
-  } catch {
-    return ''
-  }
+  return extractQuickRegTokenFromRedirect(red, window.location.origin)
 }
 
 function buildSanitizedQuery(r: RouteLocationNormalizedLoaded) {
@@ -83,7 +84,7 @@ const useQuickRegPanel = computed(() => quickRegToken.value.length > 0)
 async function hydrateAuthModeAndResolveQuickReg(): Promise<void> {
   await authStore.detectMode()
 
-  let t0 = extractQuickRegFromRoute(route)
+  let t0 = extractQuickRegFromRoute(route) || readStoredQuickRegToken()
   if (t0 && !authStore.registrationEnabled) {
     const hadQuickInQuery =
       Boolean(route.query.quick_reg) ||
@@ -91,10 +92,12 @@ async function hydrateAuthModeAndResolveQuickReg(): Promise<void> {
     if (hadQuickInQuery) {
       void router.replace({ path: route.path, query: buildSanitizedQuery(route) })
     }
+    clearStoredQuickRegToken()
     t0 = ''
   }
   if (t0) {
     quickRegToken.value = t0
+    writeStoredQuickRegToken(t0)
     if (route.query.quick_reg) {
       void router.replace({ path: route.path, query: buildSanitizedQuery(route) })
     }
@@ -130,12 +133,14 @@ function onLoginSuccess() {
 function onQuickRegSuccess() {
   dismissedBySuccess.value = true
   showLoginModal.value = false
+  clearStoredQuickRegToken()
   // Keep `quickRegToken` until the route leaves `/auth` so the login modal does not
   // mount for a frame before navigation (avoids a flash of the standard sign-in).
   onLoginSuccess()
 }
 
 function onQuickRegCancel() {
+  clearStoredQuickRegToken()
   quickRegToken.value = ''
   showLoginModal.value = true
   void router.replace({ path: '/auth' })

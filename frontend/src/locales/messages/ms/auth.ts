@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'Pilih sekolah',
   'auth.quickRegOrgLoadError': 'Tidak boleh memuat sekolah. Sila coba lagi.',
   'auth.quickRegMintError': 'Tidak boleh membuka saluran pendaftaran. Sila coba lagi.',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Atur kata sandi masuk',
   'auth.setPasswordWithSmsTitle': 'Atur kata sandi via SMS',
   'auth.setPasswordWithSmsHint': 'Kami mengirim kode ke telepon terikat Anda. Setelah mengatur kata sandi, Anda dapat masuk dengan kata sandi atau kode verifikasi.',

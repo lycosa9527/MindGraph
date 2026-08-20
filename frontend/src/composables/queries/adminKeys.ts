@@ -17,8 +17,7 @@ export const adminKeys = {
   organization: (orgId: number) => [...adminKeys.all, 'organization', orgId] as const,
   organizationManagers: (orgId: number) =>
     [...adminKeys.all, 'organization-managers', orgId] as const,
-  organizationUsers: (orgId: number) =>
-    [...adminKeys.all, 'organization-users', orgId] as const,
+  organizationUsers: (orgId: number) => [...adminKeys.all, 'organization-users', orgId] as const,
   organizationMindmateDifyHealth: (orgId: number) =>
     [...adminKeys.all, 'organization-mindmate-dify-health', orgId] as const,
   mindmateDifyDefault: () => [...adminKeys.all, 'mindmate-dify-default'] as const,
@@ -39,8 +38,10 @@ export const adminKeys = {
     [...adminKeys.all, 'trends-organization', params ?? {}] as const,
   trendsUser: (params?: Record<string, string | number | boolean | null | undefined>) =>
     [...adminKeys.all, 'trends-user', params ?? {}] as const,
-  userActivity: (userId: number, params?: Record<string, string | number | boolean | null | undefined>) =>
-    [...adminKeys.all, 'user-activity', userId, params ?? {}] as const,
+  userActivity: (
+    userId: number,
+    params?: Record<string, string | number | boolean | null | undefined>
+  ) => [...adminKeys.all, 'user-activity', userId, params ?? {}] as const,
 
   schoolStats: (organizationId: number) =>
     [...adminKeys.all, 'school-stats', organizationId] as const,
@@ -67,8 +68,7 @@ export const adminKeys = {
     all: () => [...adminKeys.all, 'markets'] as const,
     stats: () => [...adminKeys.all, 'markets', 'stats'] as const,
     orders: (limit?: number) => [...adminKeys.all, 'markets', 'orders', limit ?? 200] as const,
-    listings: (limit?: number) =>
-      [...adminKeys.all, 'markets', 'listings', limit ?? 500] as const,
+    listings: (limit?: number) => [...adminKeys.all, 'markets', 'listings', limit ?? 500] as const,
     subscriptions: (limit?: number) =>
       [...adminKeys.all, 'markets', 'subscriptions', limit ?? 200] as const,
   },
@@ -84,6 +84,7 @@ export const adminKeys = {
   invites: {
     all: () => [...adminKeys.all, 'invites'] as const,
     organizations: () => [...adminKeys.all, 'invites', 'organizations'] as const,
+    mobile: () => [...adminKeys.all, 'invites', 'mobile'] as const,
   },
 
   teacherUsage: {
@@ -137,9 +138,7 @@ export const adminKeys = {
       [...adminKeys.all, 'mindmate-export', 'conversations', params ?? {}] as const,
     messages: (conversationId: string, server: number) =>
       [...adminKeys.all, 'mindmate-export', 'messages', conversationId, server] as const,
-    jobs: (limit?: number) =>
-      [...adminKeys.all, 'mindmate-export', 'jobs', limit ?? 20] as const,
-    job: (jobId: number) =>
-      [...adminKeys.all, 'mindmate-export', 'job', jobId] as const,
+    jobs: (limit?: number) => [...adminKeys.all, 'mindmate-export', 'jobs', limit ?? 20] as const,
+    job: (jobId: number) => [...adminKeys.all, 'mindmate-export', 'job', jobId] as const,
   },
 }

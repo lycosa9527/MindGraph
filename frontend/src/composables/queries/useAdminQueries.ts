@@ -27,6 +27,7 @@ import {
   fetchAdminMindmateDifyDefault,
   fetchAdminOrganization,
   fetchAdminOrganizationInvites,
+  fetchMobileOrganizations,
   fetchAdminOrganizationManagers,
   fetchAdminOrganizationMindmateDifyHealth,
   fetchAdminOrganizations,
@@ -572,6 +573,15 @@ export function useAdminOrganizationInvites(options?: { enabled?: MaybeRefOrGett
   return useQuery({
     queryKey: adminKeys.invites.organizations(),
     queryFn: fetchAdminOrganizationInvites,
+    staleTime: ADMIN_STALE_MS.default,
+    enabled: options?.enabled,
+  })
+}
+
+export function useMobileOrganizations(options?: { enabled?: MaybeRefOrGetter<boolean> }) {
+  return useQuery({
+    queryKey: adminKeys.invites.mobile(),
+    queryFn: fetchMobileOrganizations,
     staleTime: ADMIN_STALE_MS.default,
     enabled: options?.enabled,
   })

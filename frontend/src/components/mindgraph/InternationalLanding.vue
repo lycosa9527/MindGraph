@@ -485,39 +485,45 @@ onMounted(() => {
         </transition>
       </div>
 
-      <!-- Diagram cards -->
+      <!-- Diagram cards: thinking maps + advanced column on the right -->
       <div class="intl-gallery">
-        <h2 class="intl-section-title">{{ t('landing.international.sectionTitle') }}</h2>
-        <div class="intl-grid">
-          <div
-            v-for="item in eightThinkingMapCards"
-            :key="item.type"
-            class="intl-card"
-            @click="handleCardClick(item)"
-          >
-            <div class="intl-card-preview">
-              <DiagramPreviewSvg :type="item.type" />
+        <div class="intl-gallery-row">
+          <section class="intl-gallery-main">
+            <h2 class="intl-section-title">{{ t('landing.international.sectionTitle') }}</h2>
+            <div class="intl-grid">
+              <div
+                v-for="item in eightThinkingMapCards"
+                :key="item.type"
+                class="intl-card"
+                @click="handleCardClick(item)"
+              >
+                <div class="intl-card-preview">
+                  <DiagramPreviewSvg :type="item.type" />
+                </div>
+                <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
+                <p class="intl-card-desc">{{ t(item.descKey) }}</p>
+              </div>
             </div>
-            <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
-            <p class="intl-card-desc">{{ t(item.descKey) }}</p>
-          </div>
-        </div>
-        <h2 class="intl-section-title intl-section-title--secondary">
-          {{ t('landing.international.advancedDiagramsTitle') }}
-        </h2>
-        <div class="intl-grid">
-          <div
-            v-for="item in advancedDiagramCards"
-            :key="item.type"
-            class="intl-card"
-            @click="handleCardClick(item)"
-          >
-            <div class="intl-card-preview">
-              <DiagramPreviewSvg :type="item.type" />
+          </section>
+          <section class="intl-gallery-side">
+            <h2 class="intl-section-title">
+              {{ t('landing.international.advancedDiagramsTitle') }}
+            </h2>
+            <div class="intl-grid intl-grid--vertical">
+              <div
+                v-for="item in advancedDiagramCards"
+                :key="item.type"
+                class="intl-card"
+                @click="handleCardClick(item)"
+              >
+                <div class="intl-card-preview">
+                  <DiagramPreviewSvg :type="item.type" />
+                </div>
+                <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
+                <p class="intl-card-desc">{{ t(item.descKey) }}</p>
+              </div>
             </div>
-            <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
-            <p class="intl-card-desc">{{ t(item.descKey) }}</p>
-          </div>
+          </section>
         </div>
       </div>
     </div>
@@ -1028,23 +1034,42 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-.intl-gallery .intl-section-title {
-  max-width: 1400px;
+.intl-gallery-row {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 1fr);
+  column-gap: 80px;
+  row-gap: 24px;
+  max-width: 1750px;
   margin-left: auto;
   margin-right: auto;
-  margin-bottom: 20px;
-  padding-left: 10px;
-  padding-right: 10px;
+  align-items: stretch;
 }
 
-.intl-gallery .intl-section-title--secondary {
-  margin-top: 40px;
+.intl-gallery-main,
+.intl-gallery-side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.intl-gallery .intl-section-title {
+  margin: 0 0 20px;
+  padding: 0;
 }
 
 .intl-gallery .intl-grid {
-  max-width: 1400px;
-  margin-left: auto;
-  margin-right: auto;
+  margin-left: 0;
+  margin-right: 0;
+  padding: 0;
+}
+
+.intl-gallery-side .intl-grid {
+  flex: 1 1 auto;
+  grid-template-rows: 1fr 1fr;
+}
+
+.intl-gallery-side .intl-card {
+  height: 100%;
 }
 
 .intl-section-title {
@@ -1056,9 +1081,13 @@ onMounted(() => {
 
 .intl-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px;
   padding: 0 10px;
+}
+
+.intl-grid--vertical {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .intl-card {
@@ -1165,6 +1194,30 @@ onMounted(() => {
   }
   10% {
     transform: scale(1.3);
+  }
+}
+
+/* Stack advanced column under thinking maps when 5 cards cannot sit in one row */
+@media (max-width: 1280px) {
+  .intl-gallery-row {
+    grid-template-columns: 1fr;
+  }
+
+  .intl-gallery-side .intl-section-title {
+    margin-top: 40px;
+  }
+
+  .intl-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  .intl-grid--vertical {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-rows: none;
+  }
+
+  .intl-gallery-side .intl-card {
+    height: auto;
   }
 }
 

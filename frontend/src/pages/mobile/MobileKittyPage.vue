@@ -65,6 +65,8 @@ const draft = ref('')
 const micDenied = ref(false)
 const cameraDenied = ref(false)
 const photoUploading = ref(false)
+/** Park mobile Kitty camera until photo ingest is ready again. */
+const kittyCameraEnabled = false
 const isDevBuild = import.meta.env.DEV
 
 const KITTY_DEBUG_MAX = 42
@@ -1017,12 +1019,30 @@ function handleChipActiveRetap(node: { id: string; text: string }): void {
         <label
           class="kitty-side-control kitty-side-control--camera"
           :class="{
-            'pointer-events-none opacity-40':
-              cameraDenied || !kittyServerEnabled || connecting || photoUploading,
+            'pointer-events-none opacity-40 cursor-not-allowed':
+              !kittyCameraEnabled ||
+              cameraDenied ||
+              !kittyServerEnabled ||
+              connecting ||
+              photoUploading,
             'active:bg-gray-200 cursor-pointer':
-              !cameraDenied && kittyServerEnabled && !connecting && !photoUploading,
+              kittyCameraEnabled &&
+              !cameraDenied &&
+              kittyServerEnabled &&
+              !connecting &&
+              !photoUploading,
           }"
-          :aria-label="t('mobile.kittyCameraLabel', '拍照或相册')"
+          :aria-label="
+            kittyCameraEnabled
+              ? t('mobile.kittyCameraLabel', '拍照或相册')
+              : t('mobile.kittyCameraDenied', '相机或图片不可用')
+          "
+          :title="
+            kittyCameraEnabled
+              ? t('mobile.kittyCameraLabel', '拍照或相册')
+              : t('mobile.kittyCameraDenied', '相机或图片不可用')
+          "
+          :aria-disabled="!kittyCameraEnabled"
         >
           <Loader2
             v-if="photoUploading"
@@ -1033,7 +1053,13 @@ function handleChipActiveRetap(node: { id: string; text: string }): void {
             type="file"
             accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
             class="hidden"
-            :disabled="!kittyServerEnabled || connecting || cameraDenied || photoUploading"
+            :disabled="
+              !kittyCameraEnabled ||
+              !kittyServerEnabled ||
+              connecting ||
+              cameraDenied ||
+              photoUploading
+            "
             @change="handleMobileKittyPhotoCapture"
           />
         </label>

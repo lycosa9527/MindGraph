@@ -215,6 +215,9 @@ export default {
   'auth.quickRegSelectOrg': '选择学校',
   'auth.quickRegOrgLoadError': '无法加载学校列表，请稍后重试。',
   'auth.quickRegMintError': '无法创建注册通道，请稍后重试。',
+  'auth.quickRegCloseConfirmTitle': '结束快速注册？',
+  'auth.quickRegCloseConfirm':
+    '关闭窗口后，当前二维码和房间码将立即失效，尚未加入的学生将无法继续注册。',
   'auth.setPasswordWithSms': '设置登录密码',
   'auth.setPasswordWithSmsTitle': '用短信设置登录密码',
   'auth.setPasswordWithSmsHint': '向已绑定手机发送短信验证码，设置后可使用密码或验证码登录。',

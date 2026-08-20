@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'Maktab tanlang',
   'auth.quickRegOrgLoadError': 'Maktablar yuklanmadi. Qayta qayta urinib ko’ring.',
   'auth.quickRegMintError': 'Ro’yxatdan o’tish kanali ochishila bilmedi. Qayta qayta urinib ko’ring.',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Kirish parolsi teyin et',
   'auth.setPasswordWithSmsTitle': 'SMS bilan parol teyin et',
   'auth.setPasswordWithSmsHint': 'Bagli telefonninuza kod yuborishirik. Parol teyin etdikden sonra parol yoki dogrulama kodni bilan kirisha bilersiniz.',

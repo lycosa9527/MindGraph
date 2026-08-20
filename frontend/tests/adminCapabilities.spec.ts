@@ -1,17 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
+import { visibleDataCenterViews } from '@/composables/admin/adminDataCenterViews'
 import {
+  canManageOrganizationsOnMobile,
+  canSeeMobileOrgManagement,
   canViewDataCenterTab,
   canViewUsersTab,
   fallbackCapabilitiesForRole,
   hasSuperadminPanelAccess,
   isDataCenterTabReadOnly,
   roleHasPanelAccess,
+  settingsSubtabRequiresCapabilities,
   tabEditCapability,
   tabRequiresCapabilities,
-  settingsSubtabRequiresCapabilities,
 } from '@/utils/adminCapabilities'
-import { visibleDataCenterViews } from '@/composables/admin/adminDataCenterViews'
 
 describe('adminCapabilities', () => {
   it('superadmin can edit organizations and settings', () => {
@@ -97,6 +99,71 @@ describe('adminCapabilities', () => {
     expect(settingsSubtabRequiresCapabilities('thinking_coins')).toEqual([
       'tab.settings.thinking_coins',
     ])
+  })
+
+  it('canSeeMobileOrgManagement hides the card until API caps load', () => {
+    expect(canSeeMobileOrgManagement(null, false)).toBe(false)
+    expect(canSeeMobileOrgManagement(null, true)).toBe(false)
+    expect(
+      canSeeMobileOrgManagement(
+        {
+          role: 'teacher',
+          capabilities: [],
+          org_ids: null,
+          read_only: false,
+          default_org_id: null,
+          panel_access: false,
+        },
+        true
+      )
+    ).toBe(false)
+    expect(
+      canSeeMobileOrgManagement(
+        {
+          role: 'school_admin',
+          capabilities: fallbackCapabilitiesForRole('school_admin'),
+          org_ids: [1],
+          read_only: false,
+          default_org_id: 1,
+          panel_access: true,
+        },
+        true
+      )
+    ).toBe(false)
+    expect(
+      canSeeMobileOrgManagement(
+        {
+          role: 'expert',
+          capabilities: fallbackCapabilitiesForRole('expert'),
+          org_ids: [],
+          read_only: false,
+          default_org_id: null,
+          panel_access: true,
+        },
+        true
+      )
+    ).toBe(true)
+    expect(
+      canSeeMobileOrgManagement(
+        {
+          role: 'superadmin',
+          capabilities: fallbackCapabilitiesForRole('superadmin'),
+          org_ids: null,
+          read_only: false,
+          default_org_id: null,
+          panel_access: true,
+        },
+        true
+      )
+    ).toBe(true)
+  })
+
+  it('canManageOrganizationsOnMobile allows create-org roles only', () => {
+    expect(canManageOrganizationsOnMobile(fallbackCapabilitiesForRole('superadmin'))).toBe(true)
+    expect(canManageOrganizationsOnMobile(fallbackCapabilitiesForRole('expert'))).toBe(true)
+    expect(canManageOrganizationsOnMobile(fallbackCapabilitiesForRole('platform_bd'))).toBe(true)
+    expect(canManageOrganizationsOnMobile(fallbackCapabilitiesForRole('school_admin'))).toBe(false)
+    expect(canManageOrganizationsOnMobile(fallbackCapabilitiesForRole('teacher'))).toBe(false)
   })
 
   it('public_dashboard settings subtab is superadmin-only', () => {

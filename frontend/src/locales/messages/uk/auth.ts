@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'Оберіть школу',
   'auth.quickRegOrgLoadError': 'Не вдалося завантажити школи. Спробуйте ще раз.',
   'auth.quickRegMintError': 'Не вдалося відкрити канал реєстрації. Спробуйте ще раз.',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'Встановити пароль для входу',
   'auth.setPasswordWithSmsTitle': 'Встановити пароль через SMS',
   'auth.setPasswordWithSmsHint': 'Ми надішлемо код на ваш прив\'язаний телефон. Після встановлення пароля ви зможете входити паролем або кодом підтвердження.',

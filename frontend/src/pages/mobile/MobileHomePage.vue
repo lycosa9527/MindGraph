@@ -1,15 +1,17 @@
 <script setup lang="ts">
 /**
  * MobileHomePage — Landing page for mobile.
- * MindGraph first (图示), then MindMate, Kitty (when FEATURE_KITTY_AGENT), account. Flex scroll uses min-h-0 so cards stay reachable.
+ * MindGraph first (图示), then MindMate, Kitty (when FEATURE_KITTY_AGENT),
+ * organization management (create-org roles), account. Flex scroll uses min-h-0 so cards stay reachable.
  */
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ChevronRight, MessageSquare, UserCog, Workflow } from '@lucide/vue'
+import { Building2, ChevronRight, MessageSquare, UserCog, Workflow } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
+import { canSeeMobileOrgManagement } from '@/utils/adminCapabilities'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -20,8 +22,13 @@ const displayName = computed(() => authStore.user?.username || '')
 
 const showKittyHubCard = computed(() => featureFlagsStore.flags?.feature_kitty_agent ?? false)
 
+const showOrgsCard = computed(() =>
+  canSeeMobileOrgManagement(authStore.adminCapabilitiesPayload, authStore.adminCapabilitiesLoaded)
+)
+
 onMounted(() => {
   void featureFlagsStore.fetchFlags()
+  void authStore.loadAdminCapabilities()
 })
 
 function goToMindMate() {
@@ -38,6 +45,10 @@ function goToKitty() {
 
 function goToAccount() {
   router.push('/m/account')
+}
+
+function goToOrgs() {
+  router.push('/m/orgs')
 }
 </script>
 
@@ -121,6 +132,31 @@ function goToAccount() {
           </div>
           <div class="text-sm text-gray-500 mt-0.5">
             {{ t('mobile.kittyCardDesc', '思维教学语音智能体') }}
+          </div>
+        </div>
+        <ChevronRight
+          :size="20"
+          class="text-gray-400 shrink-0"
+        />
+      </button>
+
+      <!-- Organization management (superadmin / expert / teaching researcher) -->
+      <button
+        v-if="showOrgsCard"
+        class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
+        @click="goToOrgs"
+      >
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-50 text-amber-600 shrink-0"
+        >
+          <Building2 :size="24" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-base font-semibold text-gray-900">
+            {{ t('mobile.orgsCardTitle') }}
+          </div>
+          <div class="text-sm text-gray-500 mt-0.5">
+            {{ t('mobile.orgsCardDesc') }}
           </div>
         </div>
         <ChevronRight

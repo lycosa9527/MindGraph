@@ -32,7 +32,8 @@ const hideHeader = computed(
     isHome.value ||
     route.name === 'MobileMindMate' ||
     route.name === 'MobileMindGraph' ||
-    route.name === 'MobileKitty'
+    route.name === 'MobileKitty' ||
+    route.name === 'MobileOrgs'
 )
 
 const showBackButton = computed(() => route.name === 'MobileCanvas')
@@ -49,6 +50,7 @@ const pageTitle = computed(() => {
     MobileMindMate: 'MindMate',
     MobileMindGraph: 'MindGraph',
     MobileKitty: 'Kitty',
+    MobileOrgs: t('mobile.orgsTitle'),
     MobileCanvas: 'MindGraph',
     MobileAccount: t('sidebar.account', 'Account'),
   }

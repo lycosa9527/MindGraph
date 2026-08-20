@@ -248,7 +248,7 @@ function handleVoiceNotes(): void {
               {{ s.t('mindgraphLanding.import') }}
             </el-dropdown-item>
             <el-dropdown-item
-              v-if="s.isAdminOrManager"
+              v-if="s.isAdminOrManager && s.registrationEnabled"
               @click="showShareSiteModal = true"
             >
               <Share2 class="w-4 h-4 mr-2" />
@@ -334,7 +334,7 @@ function handleVoiceNotes(): void {
               {{ s.t('mindgraphLanding.import') }}
             </el-dropdown-item>
             <el-dropdown-item
-              v-if="s.isAdminOrManager"
+              v-if="s.isAdminOrManager && s.registrationEnabled"
               @click="showShareSiteModal = true"
             >
               <Share2 class="w-4 h-4 mr-2" />

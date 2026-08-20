@@ -165,6 +165,9 @@ export default {
   'auth.quickRegSelectOrg': 'स्कूल चुनें',
   'auth.quickRegOrgLoadError': 'स्कूल लोड नहीं हो सके। पुनः प्रयास।',
   'auth.quickRegMintError': 'पंजीकरण चैनल नहीं खुल सका। पुनः प्रयास।',
+  'auth.quickRegCloseConfirmTitle': 'End quick registration?',
+  'auth.quickRegCloseConfirm':
+    'Closing this window stops new students from joining with the current QR and room code.',
   'auth.setPasswordWithSms': 'लॉग इन पासवर्ड सेट',
   'auth.setPasswordWithSmsTitle': 'SMS से पासवर्ड सेट',
   'auth.setPasswordWithSmsHint': 'बाउंड फ़ोन पर कोड भेजें। पासवर्ड सेट के बाद पासवर्ड या सत्यापन कोड से साइन इन।',
