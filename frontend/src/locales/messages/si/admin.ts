@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'ගුරු නියැලීම සඳහා පරිපාලක උපකරණ පුවරු.',
   'admin.feature.kittyAgent': 'Kitty Agent (හඬ සහ කැන්වසය)',
   'admin.feature.kittyAgentHint': 'Qwen-Omni රියල් ටයිම් බහුමාධ්‍ය නියෝජිතයා; WebSocket සහ REST org/user access රීති වලට ගරු කරන්න.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'සැකිලි සම්පත්',
   'admin.feature.templateHint': 'සැකිලි ගැලරිය සහ අදාළ API.',
   'admin.feature.workshopChat': 'වැඩමුළු (教研坊)',

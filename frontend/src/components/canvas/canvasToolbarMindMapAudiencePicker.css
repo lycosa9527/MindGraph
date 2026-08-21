@@ -82,6 +82,15 @@
   transform: translateX(-50%) rotate(45deg);
 }
 
+.mm-pro-guide--above .mm-pro-guide__arrow {
+  top: auto;
+  bottom: -5px;
+  border-left: none;
+  border-top: none;
+  border-right: 1px solid rgb(191 219 254 / 0.95);
+  border-bottom: 1px solid rgb(191 219 254 / 0.95);
+}
+
 .mm-pro-guide__card {
   position: relative;
   padding: 14px 14px 12px;

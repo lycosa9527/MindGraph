@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'Admin-dashboards vir onderwyserbetrokkenheid.',
   'admin.feature.kittyAgent': 'Kitty Agent (stem & doek)',
   'admin.feature.kittyAgentHint': 'Qwen-Omni intydse multimodale agent; WebSocket en REST respekteer org/gebruiker-toegangsreëls.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Sjabloongeriewe',
   'admin.feature.templateHint': 'Sjabloongalery en verwante API\'s.',
   'admin.feature.workshopChat': 'Werkswinkel (Jiao Yan Fang)',

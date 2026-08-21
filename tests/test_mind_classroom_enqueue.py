@@ -24,6 +24,8 @@ def test_find_reusable_includes_in_flight_jobs() -> None:
     assert "async def list_active_jobs" in text
     routes = Path("routers/features/mind_classroom/routes.py").read_text(encoding="utf-8")
     assert "_STALE_MINUTES = 15" in routes
+    assert 'if mode == "slide_deck" and not config.FEATURE_MIND_CLASSROOM_SLIDE_DECK:' in routes
+    assert 'mode = "canvas_tour"' in routes
     assert (
         "publish_classroom_job_snapshot(job_id)"
         in routes.split("async def _sweep_stale")[1].split("async def _refresh_queued_job")[0]

@@ -53,6 +53,7 @@ interface FeatureFlagsPayload extends AdminFeatureFlagsPayload {
   feature_mindbot: boolean
   feature_mindmate_export: boolean
   feature_kitty_agent: boolean
+  feature_mind_classroom_slide_deck: boolean
   feature_org_access?: Record<string, FeatureOrgAccessEntry>
 }
 
@@ -188,6 +189,12 @@ const ROWS: RowDef[] = [
     envKey: 'FEATURE_KITTY_AGENT',
     labelKey: 'admin.feature.kittyAgent',
     hintKey: 'admin.feature.kittyAgentHint',
+  },
+  {
+    apiKey: 'feature_mind_classroom_slide_deck',
+    envKey: 'FEATURE_MIND_CLASSROOM_SLIDE_DECK',
+    labelKey: 'admin.feature.mindClassroomSlideDeck',
+    hintKey: 'admin.feature.mindClassroomSlideDeckHint',
   },
 ]
 

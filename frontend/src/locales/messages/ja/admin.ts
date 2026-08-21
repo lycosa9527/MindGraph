@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': '教師エンゲージメントの管理ダッシュボード。',
   'admin.feature.kittyAgent': 'Kitty Agent（语音与キャンバス）',
   'admin.feature.kittyAgentHint': 'Qwen-Omni リアルタイムマルチモーダルエージェント；WebSocket と REST は組織/ユーザー権限に従います。',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'テンプレート资源',
   'admin.feature.templateHint': 'テンプレート库及相关接口。',
   'admin.feature.workshopChat': 'Workshop',

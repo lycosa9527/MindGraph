@@ -15,7 +15,7 @@
  * 1. DiagramTemplateInput - Generates on landing, then navigates here with pre-loaded diagram
  * 2. DiagramTypeGrid - "在画布中创建" → navigates here with diagram type
  *
- * The "AI生成图示" button in the toolbar uses useAutoComplete composable
+ * The "AI生成图示" button in the bottom AI cluster uses useAutoComplete
  * to generate content based on the topic extracted from existing nodes.
  *
  * Auto-save functionality (event + state driven):
@@ -32,7 +32,7 @@ import { storeToRefs } from 'pinia'
 import { ElMessageBox } from 'element-plus'
 
 import {
-  AIModelSelector,
+  CanvasBottomAiCluster,
   CanvasChrome,
   CanvasKittyVoiceCommandGuide,
   CanvasMindMapShortcutGuide,
@@ -1719,7 +1719,7 @@ onUnmounted(() => {
           <div
             class="ai-selector-wrap flex shrink-0 justify-center md:justify-center min-w-0 order-2 md:order-1"
           >
-            <AIModelSelector
+            <CanvasBottomAiCluster
               :host-displayed-llm-model="remoteHostDisplayedLlmModel"
               :is-collab-guest="isCollabGuest"
               @model-change="handleModelChange"

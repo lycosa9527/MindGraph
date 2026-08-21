@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'O’qituvchi meshgullugu uchun admin paneli.',
   'admin.feature.kittyAgent': 'Kitty Agent (ses va kanvas)',
   'admin.feature.kittyAgentHint': 'Qwen-Omni real vaxt multimodal agent; WebSocket va REST tashkilot/foydalanuvchi kirish qaydalarina riayet edir.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Shablon resurslari',
   'admin.feature.templateHint': 'Shablon qolingereyasi va API.',
   'admin.feature.workshopChat': 'Seminar (教研坊)',

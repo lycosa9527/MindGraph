@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.19] - 2026-08-22
+
+> **Canvas AI generate sits next to the model picker. 思维讲堂 slide lecture is gated off until it is ready.**
+
+### Changed
+
+- **Canvas AI chrome** — 「AI生成图示」moves from the top toolbar to the bottom bar, left of 「AI模型」, on mind maps and thinking maps. The classic 学段 caret is gone; new-canvas 「专业内容」sits after the LLM pills and stays **通用** until the user picks a level. Concept maps and mobile canvas are unchanged.
+- **思维讲堂 幻灯片讲解** — Gated by `FEATURE_MIND_CLASSROOM_SLIDE_DECK` (off by default). The option stays visible but greyed; hover shows 「正在开发中，近期上线」. Start, restart, ZhiHui, and the enqueue API all fall back to 画布语音巡讲 while the flag is off. Enable it in Admin → Features or `.env` to restore slide lecture.
+
+### Tests
+
+- `frontend/tests/featureFlagsFetchDedupe.spec.ts` / `tests/test_mind_classroom_enqueue.py`
+
 ## [5.180.18] - 2026-08-21
 
 > **Super-admins and professionals can create a school from the phone hub and copy the invite code and link.**

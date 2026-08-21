@@ -19,8 +19,6 @@ import {
   Upload,
 } from '@lucide/vue'
 
-import CanvasToolbarMindMapAiGenerate from '@/components/canvas/CanvasToolbarMindMapAiGenerate.vue'
-import CanvasToolbarMindMapAudiencePicker from '@/components/canvas/CanvasToolbarMindMapAudiencePicker.vue'
 import MindMapAppearanceDropdown from '@/components/canvas/MindMapAppearanceDropdown.vue'
 import MindMapExportOptionsPanel from '@/components/canvas/MindMapExportOptionsPanel.vue'
 import { useFeatureFlags } from '@/composables'
@@ -305,15 +303,6 @@ function handleAddChildClick() {
       <MindMapAppearanceDropdown :compact="props.compact" />
 
       <span class="mm-sep" />
-
-      <CanvasToolbarMindMapAudiencePicker :compact="props.compact" />
-
-      <CanvasToolbarMindMapAiGenerate :compact="props.compact" />
-
-      <span
-        v-if="!diagramStore.collabSessionActive"
-        class="mm-sep"
-      />
 
       <!-- Import / Export -->
       <div class="mm-btn-group">

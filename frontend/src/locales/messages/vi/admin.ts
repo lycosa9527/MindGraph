@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'Bảng điều khiển quản trị dành cho sự tham gia của giáo viên.',
   'admin.feature.kittyAgent': 'Kitty Agent (giọng nói và canvas)',
   'admin.feature.kittyAgentHint': 'Đại lý đa phương thức thời gian thực Qwen-Omni; WebSocket và REST tôn trọng quy tắc truy cập của tổ chức/người dùng.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Tài nguyên mẫu',
   'admin.feature.templateHint': 'Thư viện mẫu và các API liên quan.',
   'admin.feature.workshopChat': 'Workshop (教研坊)',

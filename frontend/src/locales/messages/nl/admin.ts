@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'Beheerdersdashboards voor betrokkenheid van docenten.',
   'admin.feature.kittyAgent': 'Kitty Agent (stem en canvas)',
   'admin.feature.kittyAgentHint': 'Qwen-Omni realtime multimodale agent; WebSocket en REST respecteren de toegangsregels voor organisaties en gebruikers.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Sjabloonbronnen',
   'admin.feature.templateHint': 'Sjabloongalerij en gerelateerde API\'s.',
   'admin.feature.workshopChat': 'Workshop (教研坊)',

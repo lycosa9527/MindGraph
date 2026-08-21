@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
- * Mind-map「AI生成图示」button — no 学段 caret. Audience comes from 专业内容.
+ * Bottom-bar「AI生成图示」button — no 学段 caret.
+ * New canvas uses 专业内容; classic generate is delegated to the parent.
  */
 import { ElTooltip } from 'element-plus'
 
@@ -10,11 +11,31 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useMindMapAudienceGenerate } from '@/composables/mindMap/audience/useMindMapAudienceGenerate'
 import { useDiagramStore } from '@/stores'
 
-const props = withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
+const props = withDefaults(
+  defineProps<{
+    compact?: boolean
+    tooltipPlacement?: 'top' | 'bottom'
+    /** Classic / thinking-map generate — parent handles click. */
+    delegateGenerate?: boolean
+  }>(),
+  { compact: false, tooltipPlacement: 'bottom', delegateGenerate: false }
+)
+
+const emit = defineEmits<{
+  aiGenerate: []
+}>()
 
 const { t } = useLanguage()
 const diagramStore = useDiagramStore()
 const { isAIGenerating, handleMindMapAiGenerate } = useMindMapAudienceGenerate()
+
+function onGenerateClick(): void {
+  if (props.delegateGenerate) {
+    emit('aiGenerate')
+    return
+  }
+  void handleMindMapAiGenerate()
+}
 
 const generateLabel = t('canvas.toolbar.aiGenerate')
 const generatingLabel = t('canvas.toolbar.aiGenerating')
@@ -24,7 +45,7 @@ const generatingLabel = t('canvas.toolbar.aiGenerating')
   <ElTooltip
     v-if="!diagramStore.collabSessionActive"
     :content="isAIGenerating ? generatingLabel : t('canvas.toolbar.aiGenerateTooltip')"
-    placement="bottom"
+    :placement="props.tooltipPlacement"
     :disabled="!props.compact"
   >
     <button
@@ -33,7 +54,7 @@ const generatingLabel = t('canvas.toolbar.aiGenerating')
       :class="{ 'mm-ai-generate--compact': props.compact, 'mm-ai-generate--busy': isAIGenerating }"
       :disabled="isAIGenerating"
       :aria-label="isAIGenerating ? generatingLabel : generateLabel"
-      @click="() => handleMindMapAiGenerate()"
+      @click="onGenerateClick"
     >
       <Wand2
         class="mm-ai-generate__icon h-4 w-4 shrink-0"

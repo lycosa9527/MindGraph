@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'Адмін-панелі залучення вчителів.',
   'admin.feature.kittyAgent': 'Kitty Agent (голос і canvas)',
   'admin.feature.kittyAgentHint': 'Мультимодальний агент Qwen-Omni в реальному часі; WebSocket і REST дотримуються правил доступу організації/користувача.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Ресурси шаблонів',
   'admin.feature.templateHint': 'Галерея шаблонів і пов\'язані API.',
   'admin.feature.workshopChat': 'Workshop (教研坊)',

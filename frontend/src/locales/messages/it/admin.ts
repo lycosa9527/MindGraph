@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'Tabellax di bord admin su l\'engagement dei docenti.',
   'admin.feature.kittyAgent': 'Agent Kitty (voix e canevas)',
   'admin.feature.kittyAgentHint': 'Agent multimodal tempo reale Qwen-Omni ; WebSocket e REST respectent i règles d’accesso org/utente.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Risorsas modellos',
   'admin.feature.templateHint': 'Galerie di modellos e API associées.',
   'admin.feature.workshopChat': 'Workshop (教研坊)',

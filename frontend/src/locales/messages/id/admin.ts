@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'Dasbor admin untuk keterlibatan guru.',
   'admin.feature.kittyAgent': 'Kitty Agent (suara & kanvas)',
   'admin.feature.kittyAgentHint': 'Agen multimodal waktu nyata Qwen-Omni; WebSocket dan REST menghormati aturan akses organisasi/pengguna.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Sumber daya templat',
   'admin.feature.templateHint': 'Galeri template dan API terkait.',
   'admin.feature.workshopChat': 'Lokakarya (教研坊)',

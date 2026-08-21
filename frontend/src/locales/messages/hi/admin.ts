@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'शिक्षक engagement हेतु एडमिन डैशबोर्ड।',
   'admin.feature.kittyAgent': 'Kitty Agent (वॉयस और कैनवास)',
   'admin.feature.kittyAgentHint': 'Qwen-Omni realtime multimodal agent; WebSocket/REST org/user access नियम।',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'टेम्पलेट संसाधन',
   'admin.feature.templateHint': 'टेम्पलेट गैलरी और संबंधित API।',
   'admin.feature.workshopChat': 'Workshop (教研坊)',

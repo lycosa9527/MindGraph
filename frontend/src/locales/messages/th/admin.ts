@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'แดชบอร์ดสำหรับผู้ดูแลเกี่ยวกับการมีส่วนร่วมของครู',
   'admin.feature.kittyAgent': 'Kitty Agent (voice & canvas)',
   'admin.feature.kittyAgentHint': 'เอเจนต์ Qwen-Omni แบบเรียลไทม์หลายโหมด; WebSocket และ REST ปฏิบัติตามกฎการเข้าถึงขององค์กร/ผู้ใช้',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'ทรัพยากรเทมเพลต',
   'admin.feature.templateHint': 'แกลเลอรีเทมเพลตและ API ที่เกี่ยวข้อง',
   'admin.feature.workshopChat': 'เวิร์กช็อป (教研坊)',

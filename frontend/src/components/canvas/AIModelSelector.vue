@@ -382,6 +382,10 @@ function getButtonStyle(modelKey: string) {
 <template>
   <div class="ai-model-selector z-20 max-w-full min-w-0">
     <div class="glass-container px-2.5 py-1 flex items-center gap-2">
+      <slot
+        v-if="!isConceptMap"
+        name="before"
+      />
       <!-- Label with icon (hidden for concept map — single AI control only) -->
       <div
         v-if="!isConceptMap"
@@ -546,6 +550,11 @@ function getButtonStyle(modelKey: string) {
       >
         <X class="h-3.5 w-3.5" />
       </button>
+
+      <slot
+        v-if="!isConceptMap"
+        name="after"
+      />
     </div>
   </div>
 </template>

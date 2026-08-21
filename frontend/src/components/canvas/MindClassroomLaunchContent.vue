@@ -2,9 +2,11 @@
 /**
  * Mind Classroom launch settings — readable modal / panel layout.
  */
-import { computed, nextTick } from 'vue'
+import { computed, nextTick, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
+
+import { ElTooltip } from 'element-plus'
 
 import {
   BookOpenCheck,
@@ -17,6 +19,7 @@ import {
 } from '@lucide/vue'
 
 import ProfessionalContentAudienceBanner from '@/components/canvas/ProfessionalContentAudienceBanner.vue'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import {
@@ -35,7 +38,7 @@ import {
   type MindClassroomToneId,
   type MindClassroomTourScopeId,
 } from '@/config/mindClassroom'
-import { useAiContentLevelStore, useAuthStore, useMindClassroomStore } from '@/stores'
+import { useAuthStore, useMindClassroomStore } from '@/stores'
 import {
   mindClassroomButtonChrome,
   mindClassroomProgressStats,
@@ -50,6 +53,7 @@ const props = withDefaults(
 )
 
 const { t } = useLanguage()
+const { featureMindClassroomSlideDeck } = useFeatureFlags()
 const notify = useNotifications()
 const authStore = useAuthStore()
 const classroomStore = useMindClassroomStore()
@@ -66,9 +70,6 @@ const {
   voiceWarmup,
   startInFlight,
 } = storeToRefs(classroomStore)
-const aiLevelStore = useAiContentLevelStore()
-const { level: audienceLevel } = storeToRefs(aiLevelStore)
-
 const hasPrepared = computed(() => preparedSteps.value.length > 0)
 const progressStats = computed(() => mindClassroomProgressStats(jobProgress.value))
 const buttonChrome = computed(() =>
@@ -125,7 +126,22 @@ const presentationOptions = computed(() =>
     title: t(`canvas.mindClassroom.settings.presentation.${id}.title`),
     desc: t(`canvas.mindClassroom.settings.presentation.${id}.desc`),
     icon: presentationIcons[id],
+    gated: id === 'slide_deck' && !featureMindClassroomSlideDeck.value,
   }))
+)
+
+const selectablePresentationIds = computed(() =>
+  featureMindClassroomSlideDeck.value ? MIND_CLASSROOM_PRESENTATION_IDS : (['canvas_tour'] as const)
+)
+
+watch(
+  featureMindClassroomSlideDeck,
+  (enabled) => {
+    if (!enabled && presentation.value === 'slide_deck') {
+      classroomStore.setPresentation('canvas_tour')
+    }
+  },
+  { immediate: true }
 )
 
 const tourScopeOptions = computed(() =>
@@ -157,6 +173,7 @@ function pickMastery(id: MindClassroomMasteryId): void {
 
 function pickPresentation(id: MindClassroomPresentationId): void {
   if (queueBusy.value) return
+  if (id === 'slide_deck' && !featureMindClassroomSlideDeck.value) return
   classroomStore.setPresentation(id)
 }
 
@@ -285,43 +302,55 @@ function handleRestart(): void {
           role="radiogroup"
           :aria-label="t('canvas.mindClassroom.settings.presentationTitle')"
         >
-          <button
+          <ElTooltip
             v-for="option in presentationOptions"
             :key="option.id"
-            type="button"
-            class="mc-mode"
-            :class="{ 'is-active': presentation === option.id }"
-            role="radio"
-            :aria-checked="presentation === option.id"
-            :disabled="queueBusy"
-            :tabindex="presentation === option.id ? 0 : -1"
-            @click="pickPresentation(option.id)"
-            @keydown="
-              handleRadioGroupKeydown(
-                $event,
-                MIND_CLASSROOM_PRESENTATION_IDS,
-                presentation,
-                pickPresentation
-              )
-            "
+            :content="t('canvas.mindClassroom.settings.presentation.slide_deck.comingSoon')"
+            placement="top"
+            :disabled="!option.gated"
           >
-            <span class="mc-mode__top">
-              <span class="mc-mode__icon">
-                <component
-                  :is="option.icon"
-                  class="h-4 w-4"
-                  :stroke-width="2"
-                />
-              </span>
-              <Check
-                v-if="presentation === option.id"
-                class="mc-mode__check"
-                :stroke-width="2.5"
-              />
+            <span class="mc-mode-hit">
+              <button
+                type="button"
+                class="mc-mode"
+                :class="{
+                  'is-active': presentation === option.id,
+                  'is-gated': option.gated,
+                }"
+                role="radio"
+                :aria-checked="presentation === option.id"
+                :aria-disabled="option.gated"
+                :disabled="queueBusy"
+                :tabindex="presentation === option.id ? 0 : -1"
+                @click="pickPresentation(option.id)"
+                @keydown="
+                  handleRadioGroupKeydown(
+                    $event,
+                    selectablePresentationIds,
+                    presentation,
+                    pickPresentation
+                  )
+                "
+              >
+                <span class="mc-mode__top">
+                  <span class="mc-mode__icon">
+                    <component
+                      :is="option.icon"
+                      class="h-4 w-4"
+                      :stroke-width="2"
+                    />
+                  </span>
+                  <Check
+                    v-if="presentation === option.id"
+                    class="mc-mode__check"
+                    :stroke-width="2.5"
+                  />
+                </span>
+                <span class="mc-mode__title">{{ option.title }}</span>
+                <span class="mc-mode__desc">{{ option.desc }}</span>
+              </button>
             </span>
-            <span class="mc-mode__title">{{ option.title }}</span>
-            <span class="mc-mode__desc">{{ option.desc }}</span>
-          </button>
+          </ElTooltip>
         </div>
 
         <div
@@ -453,9 +482,7 @@ function handleRestart(): void {
             'is-ready': buttonChrome.tone === 'ready',
             'is-failed': buttonChrome.tone === 'failed',
           }"
-          :style="
-            queueBusy ? { '--mc-launch-fill': `${startFillPercent}%` } : undefined
-          "
+          :style="queueBusy ? { '--mc-launch-fill': `${startFillPercent}%` } : undefined"
           :disabled="startLocked"
           :title="startFailed ? jobError || startLabel : undefined"
           :role="queueBusy && progressStats.total > 0 ? 'progressbar' : undefined"

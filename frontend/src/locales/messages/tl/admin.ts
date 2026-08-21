@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'Mga dashboard ng admin para sa pakikipag-ugnayan ng guro.',
   'admin.feature.kittyAgent': 'Kitty Agent (boses at canvas)',
   'admin.feature.kittyAgentHint': 'Qwen-Omni realtime multimodal agent; WebSocket at REST igalang ang mga panuntunan sa pag-access ng org/user.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Mga mapagkukunan ng template',
   'admin.feature.templateHint': 'Gallery ng template at mga nauugnay na API.',
   'admin.feature.workshopChat': 'Workshop (教研坊)',

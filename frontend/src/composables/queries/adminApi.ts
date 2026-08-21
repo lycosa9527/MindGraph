@@ -261,6 +261,7 @@ export interface AdminFeatureFlagsPayload {
   feature_markets?: boolean
   feature_mindbot?: boolean
   feature_kitty_agent?: boolean
+  feature_mind_classroom_slide_deck?: boolean
   feature_org_access?: Record<string, FeatureOrgAccessEntry>
 }
 

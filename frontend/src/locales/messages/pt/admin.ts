@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'Painéis de administração para envolvimento do professor.',
   'admin.feature.kittyAgent': 'Kitty Agente (voz e tela)',
   'admin.feature.kittyAgentHint': 'Qwen-Omni agente multimodal em tempo real; WebSocket e REST respeitam as regras de acesso da organização/usuário.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Recursos do modelo:',
   'admin.feature.templateHint': 'Galeria de modelos e APIs relacionadas.',
   'admin.feature.workshopChat': 'Oficina (教研坊)',

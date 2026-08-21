@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.celery import celery_app
+from config.settings import config
 from models.domain.auth import User
 from models.domain.mind_classroom import MindClassroomJob
 from repositories.mind_classroom_repo import MindClassroomJobRepository, MindClassroomSlideRepository
@@ -78,6 +79,8 @@ def _normalize_settings(body: ClassroomJobRequest) -> dict[str, Any]:
     mode = body.mode.strip()
     if mode not in _MODES:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid mode")
+    if mode == "slide_deck" and not config.FEATURE_MIND_CLASSROOM_SLIDE_DECK:
+        mode = "canvas_tour"
     mastery = body.mastery.strip() if body.mastery in _MASTERY else "first_look"
     tone = body.tone.strip() if body.tone in _TONES else "classroom"
     scope = body.tour_scope.strip() if body.tour_scope in _SCOPES else "main_branch"

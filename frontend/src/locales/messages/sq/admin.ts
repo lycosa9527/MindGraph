@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'Panele admin për angazhimin e mësuesve.',
   'admin.feature.kittyAgent': 'Kitty Agent (zë dhe kanavacë)',
   'admin.feature.kittyAgentHint': 'Agjent multimodal realtime Qwen-Omni; WebSocket dhe REST respektojnë rregullat e aksesit org/përdorues.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Burime shabllonesh',
   'admin.feature.templateHint': 'Galeri shabllonesh dhe API të lidhura.',
   'admin.feature.workshopChat': 'Workshop (教研坊)',

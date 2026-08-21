@@ -228,6 +228,10 @@ class FeatureFlagSettings(BaseModel):
             "new (v2) canvas is the default when True; classic remains available"
         ),
     )
+    FEATURE_MIND_CLASSROOM_SLIDE_DECK: bool = Field(
+        default=False,
+        description="Enable 思维讲堂 slide-lecture (幻灯片讲解) presentation mode",
+    )
 
 
 class DifySettings(BaseModel):

@@ -47,6 +47,7 @@ interface FeatureFlagsResponse {
   feature_debateverse: boolean
   feature_knowledge_space: boolean
   feature_mindmap_v2_canvas: boolean
+  feature_mind_classroom_slide_deck?: boolean
   feature_library: boolean
   feature_gewe: boolean
   feature_smart_response: boolean
@@ -91,6 +92,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       feature_debateverse: false,
       feature_knowledge_space: false,
       feature_mindmap_v2_canvas: true,
+      feature_mind_classroom_slide_deck: false,
       feature_library: false,
       feature_gewe: false,
       feature_smart_response: false,
@@ -172,6 +174,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           captcha_provider: raw.captcha_provider === 'tsec' ? 'tsec' : 'legacy',
           tencent_captcha_app_id: raw.tencent_captcha_app_id ?? '',
           feature_mindmap_v2_canvas: raw.feature_mindmap_v2_canvas ?? true,
+          feature_mind_classroom_slide_deck: raw.feature_mind_classroom_slide_deck ?? false,
         }
         flags.value = data
         lastFetchTime.value = epochAtStart === staleEpoch ? fetchedAt : 0
@@ -253,6 +256,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_mindmap_v2_canvas ?? true
   }
 
+  function getFeatureMindClassroomSlideDeck(): boolean {
+    return flags.value?.feature_mind_classroom_slide_deck ?? false
+  }
+
   function getFeatureLibrary(): boolean {
     return flags.value?.feature_library ?? false
   }
@@ -330,6 +337,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureDebateverse,
     getFeatureKnowledgeSpace,
     getFeatureMindmapV2Canvas,
+    getFeatureMindClassroomSlideDeck,
     getFeatureLibrary,
     getFeatureGewe,
     getFeatureSmartResponse,

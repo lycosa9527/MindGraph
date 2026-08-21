@@ -921,6 +921,8 @@ export default {
   'canvas.mindClassroom.settings.presentation.slide_deck.title': 'Slide lecture',
   'canvas.mindClassroom.settings.presentation.slide_deck.desc':
     'AI slides beside the map — dual-pane, page-by-page narration.',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon':
+    'In development — coming soon',
   'canvas.mindClassroom.settings.tourScopeTitle': 'Tour detail',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': 'Main branches',
   'canvas.mindClassroom.settings.tourScope.main_branch.desc': 'Walk first-level branches at a steady pace.',

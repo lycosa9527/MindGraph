@@ -141,6 +141,11 @@
   gap: 10px;
 }
 
+.mc-mode-hit {
+  display: block;
+  min-width: 0;
+}
+
 .mc-launch--modal .mc-mode-grid {
   grid-template-columns: 1fr 1fr;
 }
@@ -173,6 +178,17 @@
   border-color: transparent;
   background: #eff6ff;
   box-shadow: inset 0 0 0 1.5px #2563eb;
+}
+
+.mc-mode.is-gated {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+}
+
+.mc-mode.is-gated:hover {
+  border-color: #e2e8f0;
+  background: #fff;
 }
 
 .mc-mode__top {

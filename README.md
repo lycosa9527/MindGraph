@@ -213,6 +213,7 @@ Notable feature flags (see `env.example` for full list):
 | `FEATURE_OAUTH_LOGIN` | `False` | WeChat + DingTalk QR login |
 | `FEATURE_THINKING_COINS` | `False` | Trial-tier org thinking coin wallet |
 | `FEATURE_MINDMAP_V2_CANVAS` | `True` | Mind map v2 side-toolbar canvas (default layout; classic still available) |
+| `FEATURE_MIND_CLASSROOM_SLIDE_DECK` | `False` | 思维讲堂「幻灯片讲解」(greyed + coming-soon until enabled) |
 
 Production hardening: set `COLLAB_FANOUT_ORIGIN_SECRET` (shared across workers), `ALLOWED_HOSTS`, and see [docs/architecture/production_security_deploy.md](docs/architecture/production_security_deploy.md).
 

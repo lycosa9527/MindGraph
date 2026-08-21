@@ -952,6 +952,7 @@ export default {
   'canvas.mindClassroom.settings.presentation.slide_deck.title': '幻灯片讲解',
   'canvas.mindClassroom.settings.presentation.slide_deck.desc':
     'AI 生成幻灯片，左侧导图对照，右侧翻页讲解。',
+  'canvas.mindClassroom.settings.presentation.slide_deck.comingSoon': '正在开发中，近期上线',
   'canvas.mindClassroom.settings.tourScopeTitle': '巡讲粒度',
   'canvas.mindClassroom.settings.tourScope.main_branch.title': '按主分支',
   'canvas.mindClassroom.settings.tourScope.main_branch.desc': '一级分支逐步讲，节奏更稳。',

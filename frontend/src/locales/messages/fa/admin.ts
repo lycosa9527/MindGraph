@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'داشبوردهای مدیریتی برای تعامل معلمان.',
   'admin.feature.kittyAgent': 'Kitty نماینده (صدا و بوم)',
   'admin.feature.kittyAgentHint': 'عامل چندوجهی بلادرنگ Qwen-Omni؛ WebSocket و REST به قوانین دسترسی سازمان/کاربر احترام می‌گذارند.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'منابع الگو',
   'admin.feature.templateHint': 'گالری قالب و API های مرتبط.',
   'admin.feature.workshopChat': 'کارگاه (教研坊)',

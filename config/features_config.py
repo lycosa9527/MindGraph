@@ -65,6 +65,14 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_MINDMAP_V2_CANVAS", "True").lower() == "true"
 
     @property
+    def FEATURE_MIND_CLASSROOM_SLIDE_DECK(self):
+        """Enable 思维讲堂「幻灯片讲解」presentation mode.
+
+        Disabled by default. The option stays visible but greyed out until this is True.
+        """
+        return self._get_cached_value("FEATURE_MIND_CLASSROOM_SLIDE_DECK", "False").lower() == "true"
+
+    @property
     def FEATURE_DEBATEVERSE(self):
         """Enable DebateVerse (论境) debate system feature.
 

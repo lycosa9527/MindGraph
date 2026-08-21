@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': '教師活躍度管理端統計。',
   'admin.feature.kittyAgent': 'Kitty Agent（語音與畫布）',
   'admin.feature.kittyAgentHint': 'Qwen-Omni 實時多模態助手；WebSocket 與 REST 受機構/用戶權限控制。',
+  'admin.feature.mindClassroomSlideDeck': '思維講堂 · 幻燈片講解',
+  'admin.feature.mindClassroomSlideDeckHint':
+    '關閉時「幻燈片講解」在講堂裡保持可見但灰顯。預設關閉。',
   'admin.feature.template': '模板資源',
   'admin.feature.templateHint': '模板庫及相關接口。',
   'admin.feature.workshopChat': '教研坊',

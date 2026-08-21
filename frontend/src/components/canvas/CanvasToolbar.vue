@@ -94,15 +94,8 @@ function onBackgroundOpacityInput(v: number) {
   backgroundOpacity.value = v
 }
 
-const {
-  isAIGenerating,
-  isConceptMap,
-  moreApps,
-  virtualKeyboardOpen,
-  handleAIGenerate,
-  handleConceptGeneration,
-  handleMoreAppItem,
-} = useCanvasToolbarApps()
+const { isConceptMap, moreApps, virtualKeyboardOpen, handleConceptGeneration, handleMoreAppItem } =
+  useCanvasToolbarApps()
 
 const isMultiFlowMap = computed(() => diagramStore.type === 'multi_flow_map')
 const isBridgeMap = computed(() => diagramStore.type === 'bridge_map')
@@ -315,19 +308,14 @@ function handleToggleOrientation() {
         />
 
         <CanvasToolbarAiSection
-          v-if="!diagramStore.collabSessionActive || isConceptMap"
+          v-if="isConceptMap"
           :compact="compactToolbar"
-          :is-concept-map="isConceptMap"
-          :is-a-i-generating="isAIGenerating"
           :concept-generation-label="t('canvas.toolbar.conceptGeneration')"
-          :ai-generate-label="t('canvas.toolbar.aiGenerate')"
-          :ai-generating-label="t('canvas.toolbar.aiGenerating')"
           @concept-generation="handleConceptGeneration"
-          @ai-generate="handleAIGenerate"
         />
 
         <div
-          v-if="!diagramStore.collabSessionActive || isConceptMap"
+          v-if="isConceptMap"
           class="divider"
         />
 

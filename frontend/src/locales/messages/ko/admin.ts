@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': '교사 참여도 관리 대시보드.',
   'admin.feature.kittyAgent': 'Kitty Agent(음성·캔버스)',
   'admin.feature.kittyAgentHint': 'Qwen-Omni 실시간 멀티모달 에이전트; WebSocket과 REST가 조직/사용자 접근 규칙을 따릅니다.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': '템플릿 리소스',
   'admin.feature.templateHint': '템플릿 갤러리 및 관련 API.',
   'admin.feature.workshopChat': '워크숍(教研坊)',

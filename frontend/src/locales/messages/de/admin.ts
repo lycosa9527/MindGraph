@@ -81,6 +81,9 @@ export default {
   'admin.feature.teacherUsageHint': 'Admin-Dashboards zur Lehrkräfte-Engagement.',
   'admin.feature.kittyAgent': 'Kitty Agent (Sprache & Canvas)',
   'admin.feature.kittyAgentHint': 'Qwen-Omni-Echtzeit-Multimodal-Agent; WebSocket und REST respektieren Org-/Benutzer-Zugriffsregeln.',
+  'admin.feature.mindClassroomSlideDeck': 'Mind Classroom slide lecture',
+  'admin.feature.mindClassroomSlideDeckHint':
+    'When off, slide lecture stays visible but greyed out. Off by default.',
   'admin.feature.template': 'Vorlagenressourcen',
   'admin.feature.templateHint': 'Vorlagengalerie und zugehörige APIs.',
   'admin.feature.workshopChat': 'Workshop (教研坊)',

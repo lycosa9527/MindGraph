@@ -3,54 +3,34 @@ import { ElButton, ElTooltip } from 'element-plus'
 
 import { Sparkles } from '@lucide/vue'
 
-import CanvasToolbarAiGenerateSplit from '@/components/canvas/CanvasToolbarAiGenerateSplit.vue'
-
 withDefaults(
   defineProps<{
     compact?: boolean
-    isConceptMap: boolean
-    isAIGenerating: boolean
     conceptGenerationLabel: string
-    aiGenerateLabel: string
-    aiGeneratingLabel: string
   }>(),
   { compact: false }
 )
 
 const emit = defineEmits<{
   conceptGeneration: []
-  aiGenerate: []
 }>()
 </script>
 
 <template>
-  <template v-if="isConceptMap">
-    <div class="divider" />
-    <ElTooltip
-      :content="conceptGenerationLabel"
-      placement="bottom"
-      :disabled="!compact"
+  <div class="divider" />
+  <ElTooltip
+    :content="conceptGenerationLabel"
+    placement="bottom"
+    :disabled="!compact"
+  >
+    <ElButton
+      type="primary"
+      size="small"
+      class="ai-btn"
+      @click="emit('conceptGeneration')"
     >
-      <ElButton
-        type="primary"
-        size="small"
-        class="ai-btn"
-        @click="emit('conceptGeneration')"
-      >
-        <Sparkles class="w-4 h-4" />
-        <span v-if="!compact">{{ conceptGenerationLabel }}</span>
-      </ElButton>
-    </ElTooltip>
-  </template>
-  <template v-else>
-    <div class="divider" />
-    <CanvasToolbarAiGenerateSplit
-      variant="classic"
-      :compact="compact"
-      :is-a-i-generating="isAIGenerating"
-      :ai-generate-label="aiGenerateLabel"
-      :ai-generating-label="aiGeneratingLabel"
-      @ai-generate="emit('aiGenerate')"
-    />
-  </template>
+      <Sparkles class="w-4 h-4" />
+      <span v-if="!compact">{{ conceptGenerationLabel }}</span>
+    </ElButton>
+  </ElTooltip>
 </template>

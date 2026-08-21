@@ -41,7 +41,16 @@ const AI_CONTENT_LEVEL_ICONS: Record<AiContentLevelId, Component> = {
   expert: Award,
 }
 
-const props = withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
+const props = withDefaults(
+  defineProps<{
+    compact?: boolean
+    /** top = toolbar below the control; bottom = control sits on the canvas bottom bar */
+    anchor?: 'top' | 'bottom'
+  }>(),
+  { compact: false, anchor: 'top' }
+)
+
+const popoverPlacement = computed(() => (props.anchor === 'bottom' ? 'top-start' : 'bottom-start'))
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -92,6 +101,13 @@ const showProContentGuide = computed(
 const proContentGuideStyle = computed(() => {
   const rect = proContentAnchorRect.value
   if (!rect) {
+    if (props.anchor === 'bottom') {
+      return {
+        bottom: '72px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+      }
+    }
     return {
       top: '56px',
       left: '50%',
@@ -106,6 +122,13 @@ const proContentGuideStyle = computed(() => {
     halfWidth + 12,
     Math.min(viewportWidth - halfWidth - 12, anchorCenter)
   )
+  if (props.anchor === 'bottom') {
+    return {
+      top: `${rect.top - 10}px`,
+      left: `${clampedCenter}px`,
+      transform: 'translate(-50%, -100%)',
+    }
+  }
   return {
     top: `${rect.bottom + 10}px`,
     left: `${clampedCenter}px`,
@@ -252,7 +275,7 @@ function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): vo
   <ElPopover
     v-if="!diagramStore.collabSessionActive"
     v-model:visible="proContentPanelOpen"
-    placement="bottom-start"
+    :placement="popoverPlacement"
     :width="280"
     trigger="click"
     popper-class="mm-toolbar-popper mm-toolbar-popper--pro-content"
@@ -354,6 +377,7 @@ function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): vo
       <div
         v-if="showProContentGuide"
         class="mm-pro-guide"
+        :class="{ 'mm-pro-guide--above': props.anchor === 'bottom' }"
         role="dialog"
         :aria-label="t('canvas.toolbar.professionalContent.guideTitle')"
         :style="proContentGuideStyle"
@@ -402,5 +426,6 @@ function handleProContentKeydown(event: KeyboardEvent, id: AiContentLevelId): vo
   </Teleport>
 </template>
 
+<style src="./mindMapToolbarButtons.css"></style>
 <style scoped src="./canvasToolbarMindMapAudiencePicker.css"></style>
 <style src="./canvasToolbarMindMapPopper.css"></style>
