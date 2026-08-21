@@ -32,6 +32,7 @@ function flagsResponse(overrides: Record<string, unknown> = {}): Response {
       feature_debateverse: false,
       feature_knowledge_space: false,
       feature_mindmap_v2_canvas: true,
+      feature_mind_classroom_slide_deck: false,
       feature_library: true,
       feature_gewe: false,
       feature_smart_response: false,
