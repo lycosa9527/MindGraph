@@ -64,7 +64,7 @@ jobs:
             tests/test_user_daily_token_quota.py tests/auth/test_user_session_prefs.py \
             tests/test_llm_daily_token_cap.py \
             tests/test_get_client_ip.py tests/test_gewe_webhook_auth.py \
-            tests/test_refresh_token_reuse.py tests/test_security_production_hardening.py \
+            tests/test_refresh_token_reuse.py tests/test_device_limit_kickoff.py tests/test_security_production_hardening.py \
             tests/test_csrf_protection.py \
             tests/test_privacy_policy_static.py tests/test_privacy_policy_http.py \
             tests/test_workshop_chat_file_service.py tests/test_dingtalk_bind_service.py \

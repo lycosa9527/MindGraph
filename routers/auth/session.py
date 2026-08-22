@@ -45,6 +45,7 @@ from utils.auth import (
     compute_device_hash,
     create_access_token,
     create_refresh_token,
+    decode_access_token,
     get_client_ip,
     get_current_user,
     get_jwt_secret,
@@ -379,14 +380,15 @@ async def patch_profile(
 @router.get("/session-status")
 async def get_session_status(
     request: Request,
-    current_user: User = Depends(get_current_user),
     x_language: Optional[str] = Header(None, alias="X-Language"),
 ):
     """
-    Check if current session is still valid or has been invalidated.
+    Check if current session is still valid or has been kicked off.
 
-    Note: Session validity is already checked by get_current_user dependency.
-    This endpoint only checks for invalidation notifications (e.g., max device limit).
+    Must not depend on get_current_user: a kicked access token is already
+    Redis-invalid, so that dependency 401s before the kick notification can
+    be read. The frontend then tries /refresh; if the old refresh token was
+    not revoked, the old device steals the slot from the new login.
 
     Returns:
         - {"status": "active"} - Session is valid
@@ -396,46 +398,48 @@ async def get_session_status(
     get_request_language(x_language, accept_language)
     client_ip = get_client_ip(request)
 
-    logger.debug(
-        "[TokenAudit] /session-status called: user=%s, ip=%s",
-        current_user.id,
-        client_ip,
-    )
+    token = None
+    if request.cookies.get("access_token"):
+        token = request.cookies.get("access_token")
+    elif request.headers.get("Authorization"):
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+
+    if not token:
+        logger.info("[TokenAudit] Session status: INVALIDATED (no token): ip=%s", client_ip)
+        return {
+            "status": "invalidated",
+            "message": "Session invalidated",
+            "timestamp": datetime.now(tz=UTC).isoformat(),
+        }
+
+    payload = decode_access_token(token)
+    user_id_raw = payload.get("sub")
+    user_id = 0
+    if user_id_raw is not None:
+        try:
+            user_id = int(user_id_raw)
+        except (TypeError, ValueError):
+            user_id = 0
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+        )
+
+    logger.debug("[TokenAudit] /session-status called: user=%s, ip=%s", user_id, client_ip)
 
     try:
-        # Get token from request
-        token = None
-        if request.cookies.get("access_token"):
-            token = request.cookies.get("access_token")
-        elif request.headers.get("Authorization"):
-            auth_header = request.headers.get("Authorization", "")
-            if auth_header.startswith("Bearer "):
-                token = auth_header[7:]
-
-        if not token:
-            logger.info(
-                "[TokenAudit] Session status: INVALIDATED (no token): user=%s",
-                current_user.id,
-            )
-            return {
-                "status": "invalidated",
-                "message": "Session invalidated",
-                "timestamp": datetime.now(tz=UTC).isoformat(),
-            }
-
-        # Session is already validated by get_current_user dependency
-        # Only check for invalidation notifications (e.g., max device limit exceeded)
         session_manager = get_session_manager()
         token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
 
-        # Check for invalidation notification
-        notification = await session_manager.check_invalidation_notification(current_user.id, token_hash)
+        notification = await session_manager.check_invalidation_notification(user_id, token_hash)
         if notification:
-            # Clear notification after checking
-            await session_manager.clear_invalidation_notification(current_user.id, token_hash)
+            await session_manager.clear_invalidation_notification(user_id, token_hash)
             logger.info(
                 "[TokenAudit] Session status: INVALIDATED (max devices): user=%s, notification_ip=%s",
-                current_user.id,
+                user_id,
                 notification.get("ip_address", "unknown"),
             )
             return {
@@ -445,20 +449,26 @@ async def get_session_status(
                 "ip_address": notification.get("ip_address", "unknown"),
             }
 
-        # Session is valid (already validated by get_current_user)
-        # No need to call is_session_valid again - it's redundant
-        logger.debug(
-            "[TokenAudit] Session status: ACTIVE: user=%s, token=%s...",
-            current_user.id,
-            token_hash[:8],
-        )
-        return {"status": "active"}
+        if await session_manager.is_session_valid(user_id, token):
+            logger.debug(
+                "[TokenAudit] Session status: ACTIVE: user=%s, token=%s...",
+                user_id,
+                token_hash[:8],
+            )
+            return {"status": "active"}
     except BACKGROUND_INFRA_ERRORS as status_error:
         logger.error("Error checking session status: %s", status_error, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Session status unavailable",
         ) from status_error
+
+    # Missing notification (TTL/lost): let the client try /refresh.
+    # Kick-off revokes that refresh token so the old device cannot return.
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Session expired or invalidated. Please login again.",
+    )
 
 
 @router.post("/logout")

@@ -600,18 +600,27 @@ export function useAppSidebar() {
 
   /**
    * Keep MindMate / MindGraph / Mate Learning / ZhiHui history accordions in sync
-   * with the route: only one open, and the active app shows its history panel.
+   * with the route: only one open. Signed-in MindMate / MindGraph do not auto-open;
+   * click the nav item to expand. Login closes a leftover guest panel.
    */
   watch(
-    currentMode,
-    (mode) => {
+    [currentMode, isAuthenticated],
+    ([mode, authenticated], previous) => {
+      const justLoggedIn = Boolean(authenticated && previous && !previous[1])
+      const autoOpenMindHistory =
+        (mode === 'mindmate' || mode === 'mindgraph') && !authenticated
       if (
-        mode === 'mindmate' ||
-        mode === 'mindgraph' ||
+        autoOpenMindHistory ||
         mode === 'maite' ||
         (mode === 'zhihui' && showZhihuiNav.value)
       ) {
         expandedPanel.value = mode
+        return
+      }
+      if (mode === 'mindmate' || mode === 'mindgraph') {
+        if (justLoggedIn) {
+          expandedPanel.value = null
+        }
         return
       }
       if (

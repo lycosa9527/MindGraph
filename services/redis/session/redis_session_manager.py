@@ -49,8 +49,8 @@ SESSION_TTL_SECONDS = _keys.TTL_ACCESS_SESSION
 REFRESH_TOKEN_EXPIRY_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRY_DAYS", "7"))
 REFRESH_TOKEN_TTL_SECONDS = _keys.TTL_REFRESH_TOKEN
 
-# Maximum concurrent sessions per user (default: 2 devices)
-MAX_CONCURRENT_SESSIONS = int(os.getenv("MAX_CONCURRENT_SESSIONS", "2"))
+# Maximum concurrent sessions per user (default: 5 devices)
+MAX_CONCURRENT_SESSIONS = int(os.getenv("MAX_CONCURRENT_SESSIONS", "5"))
 
 
 def _hash_token(token: str) -> str:
@@ -129,6 +129,11 @@ redis.call('SADD',   key, entry)
 redis.call('EXPIRE', key, ttl)
 
 -- 4. Evict oldest sessions when over the limit.
+-- Never evict the entry just added (new device always keeps the slot).
+-- Must match select_oldest_sessions_to_evict().
+if (not max_s) or max_s < 1 then
+    max_s = 1
+end
 local count   = redis.call('SCARD', key)
 local evicted = {}
 if count > max_s then
@@ -138,19 +143,79 @@ if count > max_s then
         local cb = string.find(b, ':')
         local ta = ca and tonumber(string.sub(a, 1, ca - 1)) or 0
         local tb = cb and tonumber(string.sub(b, 1, cb - 1)) or 0
+        if ta == tb then
+            if a == entry then return false end
+            if b == entry then return true end
+        end
         return ta < tb
     end)
     local to_remove = count - max_s
-    for i = 1, to_remove do
-        if cur[i] then
+    local removed = 0
+    for i = 1, #cur do
+        if removed >= to_remove then
+            break
+        end
+        if cur[i] and cur[i] ~= entry then
             redis.call('SREM', key, cur[i])
             evicted[#evicted + 1] = cur[i]
+            removed = removed + 1
         end
     end
 end
 
 return evicted
 """
+
+
+def _session_entry_timestamp(entry: str) -> float:
+    """Parse the leading unix timestamp from a session set member."""
+    colon = entry.find(":")
+    if colon <= 0:
+        return 0.0
+    try:
+        return float(entry[:colon])
+    except ValueError:
+        return 0.0
+
+
+def select_oldest_sessions_to_evict(
+    entries: list[str],
+    new_entry: str,
+    max_sessions: int,
+) -> list[str]:
+    """
+    Choose oldest session members to drop so the set fits ``max_sessions``.
+
+    The newly stored ``new_entry`` is never evicted — a new device login must
+    always keep its slot, even when timestamps tie or the new prefix is malformed.
+    """
+    keep_limit = max_sessions if max_sessions >= 1 else 1
+    excess = len(entries) - keep_limit
+    if excess <= 0:
+        return []
+
+    ordered = sorted(
+        entries,
+        key=lambda item: (_session_entry_timestamp(item), item == new_entry),
+    )
+    evicted: list[str] = []
+    for item in ordered:
+        if len(evicted) >= excess:
+            break
+        if item != new_entry:
+            evicted.append(item)
+    return evicted
+
+
+def _as_session_entry_list(raw: object) -> list[bytes | str]:
+    """Normalize a Redis EVAL return into session-entry values."""
+    if raw is None:
+        return []
+    if isinstance(raw, (bytes, str)):
+        return [raw]
+    if isinstance(raw, (list, tuple)):
+        return [item for item in raw if isinstance(item, (bytes, str))]
+    return []
 
 
 class RedisSessionManager:
@@ -288,18 +353,7 @@ class RedisSessionManager:
                     )
                     return False
 
-                for evicted_entry in evicted_entries or []:
-                    _, _, evicted_token_hash = self._parse_session_entry(evicted_entry)
-                    if evicted_token_hash:
-                        await self.notify_invalidation(user_id, evicted_token_hash)
-
-                if evicted_entries:
-                    logger.info(
-                        "[Session] Evicted %s oldest session(s) for user %s (limit: %s)",
-                        len(evicted_entries),
-                        user_id,
-                        MAX_CONCURRENT_SESSIONS,
-                    )
+                await self._apply_evicted_sessions(user_id, evicted_entries)
 
                 logger.debug("[Session] Stored session for user %s", user_id)
                 return True
@@ -683,6 +737,28 @@ class RedisSessionManager:
             )
             return False
 
+    async def _apply_evicted_sessions(self, user_id: int, evicted_entries: object) -> int:
+        """Notify kicked access sessions and revoke the same device refresh tokens."""
+        entries = _as_session_entry_list(evicted_entries)
+        if not entries:
+            return 0
+
+        refresh_manager = get_refresh_token_manager()
+        for evicted_entry in entries:
+            _, evicted_device_hash, evicted_token_hash = self._parse_session_entry(evicted_entry)
+            if evicted_token_hash:
+                await self.notify_invalidation(user_id, evicted_token_hash)
+            if evicted_device_hash:
+                await refresh_manager.revoke_refresh_tokens_for_device(user_id, evicted_device_hash)
+
+        logger.info(
+            "[Session] Evicted %s oldest session(s) for user %s (limit: %s)",
+            len(entries),
+            user_id,
+            MAX_CONCURRENT_SESSIONS,
+        )
+        return len(entries)
+
     async def check_invalidation_notification(self, user_id: int, token_hash: str) -> Optional[Dict[str, Any]]:
         """
         Check if notification exists for token.
@@ -820,7 +896,12 @@ class RefreshTokenManager:
             )
             return None
 
-    async def _revoke_existing_device_tokens(self, user_id: int, device_hash: str) -> int:
+    async def _revoke_existing_device_tokens(
+        self,
+        user_id: int,
+        device_hash: str,
+        reason: str = "device_relogin",
+    ) -> int:
         """
         Revoke any existing refresh tokens for the same device.
 
@@ -830,6 +911,7 @@ class RefreshTokenManager:
         Args:
             user_id: User ID
             device_hash: Device fingerprint hash
+            reason: Audit reason passed to revoke_refresh_token
 
         Returns:
             Number of tokens revoked
@@ -854,7 +936,7 @@ class RefreshTokenManager:
                         token_data = json.loads(token_json)
                         if token_data.get("device_hash") == device_hash:
                             # Same device - revoke old token
-                            await self.revoke_refresh_token(user_id, existing_token_hash, reason="device_relogin")
+                            await self.revoke_refresh_token(user_id, existing_token_hash, reason=reason)
                             revoked += 1
                     except json.JSONDecodeError:
                         pass
@@ -876,6 +958,16 @@ class RefreshTokenManager:
                 exc_info=True,
             )
             return 0
+
+    async def revoke_refresh_tokens_for_device(self, user_id: int, device_hash: str) -> int:
+        """Revoke refresh tokens bound to one device (max-device kick-off)."""
+        if not device_hash:
+            return 0
+        return await self._revoke_existing_device_tokens(
+            user_id,
+            device_hash,
+            reason="max_devices_exceeded",
+        )
 
     async def store_refresh_token(
         self,
@@ -934,7 +1026,7 @@ class RefreshTokenManager:
             await AsyncRedisOps.set_with_ttl(lookup_key, str(user_id), REFRESH_TOKEN_TTL_SECONDS)
 
             # Enforce max concurrent sessions limit on refresh tokens
-            await self.enforce_max_tokens(user_id)
+            await self.enforce_max_tokens(user_id, protect_token_hash=token_hash)
 
             logger.info(
                 "[TokenAudit] Refresh token created: user=%s, ip=%s, device=%s",
@@ -1182,14 +1274,16 @@ class RefreshTokenManager:
             )
             return 0
 
-    async def enforce_max_tokens(self, user_id: int) -> int:
+    async def enforce_max_tokens(self, user_id: int, protect_token_hash: str = "") -> int:
         """
         Enforce MAX_CONCURRENT_SESSIONS limit on refresh tokens.
 
         If user has more refresh tokens than allowed, revoke the oldest ones.
+        ``protect_token_hash`` is never revoked so a new device login keeps its token.
 
         Args:
             user_id: User ID
+            protect_token_hash: Refresh token hash that must stay (the new login)
 
         Returns:
             Number of tokens revoked
@@ -1211,6 +1305,7 @@ class RefreshTokenManager:
             # Get all token hashes and their creation times
             token_hashes = await redis.smembers(user_tokens_key)
             tokens_with_time = []
+            protected = redis_decode_required(protect_token_hash) if protect_token_hash else ""
 
             for token_hash in token_hashes:
                 token_key = self._get_token_key(user_id, token_hash)
@@ -1227,18 +1322,21 @@ class RefreshTokenManager:
                     # Token expired but still in set, mark for cleanup
                     await redis.srem(user_tokens_key, token_hash)
 
-            # Sort by creation time (oldest first)
-            tokens_with_time.sort(key=lambda x: x[1])
+            excess = len(tokens_with_time) - MAX_CONCURRENT_SESSIONS
+            if excess <= 0:
+                return 0
 
-            # Revoke oldest tokens to stay within limit
-            tokens_to_revoke = len(tokens_with_time) - MAX_CONCURRENT_SESSIONS
+            revocable = [
+                (token_hash, created_at)
+                for token_hash, created_at in tokens_with_time
+                if not protected or redis_decode_required(token_hash) != protected
+            ]
+            revocable.sort(key=lambda item: item[1])
             revoked = 0
 
-            for i in range(tokens_to_revoke):
-                if i < len(tokens_with_time):
-                    token_hash = tokens_with_time[i][0]
-                    if await self.revoke_refresh_token(user_id, token_hash, reason="max_devices_exceeded"):
-                        revoked += 1
+            for token_hash, _created_at in revocable[:excess]:
+                if await self.revoke_refresh_token(user_id, token_hash, reason="max_devices_exceeded"):
+                    revoked += 1
 
             if revoked > 0:
                 logger.info(

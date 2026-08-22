@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.20] - 2026-08-22
+
+> **Signed-in sidebar history stays closed. A sixth device kicks the oldest session so the new login gets in.**
+
+### Changed
+
+- **Sidebar history** — After login, MindMate and MindGraph history stay collapsed on load. Click the nav item to open the list. Guests still auto-open.
+- **Device limit** — `MAX_CONCURRENT_SESSIONS` default is **5** (was 2). The sixth login evicts the oldest device.
+
+### Fixed
+
+- **Device kick-off** — A new login now keeps its slot. Access eviction and refresh revocation target the same old device. `/session-status` can report a kick without a still-valid Redis session, so the old device logs out instead of refreshing back in.
+
+### Tests
+
+- `tests/test_device_limit_kickoff.py`
+
 ## [5.180.19] - 2026-08-22
 
 > **Canvas AI generate sits next to the model picker. 思维讲堂 slide lecture is gated off until it is ready.**
