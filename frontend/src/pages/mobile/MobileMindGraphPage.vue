@@ -191,7 +191,7 @@ function handleFreeInput() {
           {{ t('landing.diagramGrid.sectionTitle') }}
         </div>
 
-        <!-- Diagram type grid — 2 columns -->
+        <!-- Diagram type grid -->
         <div class="grid grid-cols-3 gap-3">
           <button
             v-for="item in diagramTypes"

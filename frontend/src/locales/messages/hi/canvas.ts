@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'बनाएँ on canvas',
   'landing.diagramGrid.tree_map.desc': 'वर्गीकृत और समूह',
   'landing.diagramGrid.tree_map.title': 'ट्री मैप',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'विषय/संरचना (शाखाएँ, चरण, श्रेणियाँ…) या नीचे टेम्पलेट…',
   'landing.template.slot.criterion': 'वर्गीकरण',
   'landing.template.slot.event': 'घटना',

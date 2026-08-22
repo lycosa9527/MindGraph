@@ -5,12 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.24] - 2026-08-23
+
+> **Voice Notes is a Tencent ASR V2 conversation: speakers persist, history reopens the talk, and Start continues instead of wiping.**
+
+### Added
+
+- **Tencent realtime ASR V2** — Browser `WS /api/ws/voice-notes` signs and relays to Tencent Cloud. SecretKey stays on the server. Speaker diarization is always on, with engine fallback when `16k_zh_en_speaker_2.0` is not enabled.
+- **Talker editor** — Rename, merge, and reset speakers. Avatars use the custom name (Roy → R, 赵国庆 → 赵).
+- **Markdown interchange** — Saved transcript keeps speaker-prefixed lines plus a trailing comment for slots, remaps, voiceprint id, save clock, and elapsed time. History restore rebuilds that state immediately.
+- **Mobile Voice Notes page** — Home + Menu history, in-page recorder, stop saves, Generate mindmap is explicit. Save status sits next to Menu; the sheet shows session status only.
+
+### Changed
+
+- **History opens the conversation** — Selecting a previous voice note loads the transcript in Voice Notes, not the canvas.
+- **Continue recording** — Start after a restore or a previous stop appends new speech and reuses talker remaps / 24h voiceprint id. The 60-minute cap counts remaining time.
+
+### Fixed
+
+- **Duplicate save line** — “转录已于…保存” no longer appears both under the header and in the sheet.
+- **Mindmap generate** — The talker-status comment is stripped before the LLM sees the markdown.
+
+### Tests
+
+- `frontend/tests/voiceNotesMarkdown.spec.ts` / `voiceNotesTranscript.spec.ts` / `voiceNotesSaveStatus.spec.ts`
+- `tests/test_voice_notes_asr.py` / `tests/test_tencent_asr_v2.py`
+
+## [5.180.23] - 2026-08-23
+
+> **Token refresh no longer 429s after a login-page stampede.**
+
+### Changed
+
+- **`/api/auth/refresh` rate limit** — 60 attempts per minute per IP (was 10). Missing refresh-cookie calls are 401 and do not count. A successful login, register, OAuth, embed, or Bayi SSO clears that IP window so the new session can rotate. `/refresh` uses the shared Redis limiter singleton so that clear hits the same window.
+
+### Fixed
+
+- **Guest 401 → `/refresh`** — `apiClient` skips token refresh when there is no persisted user, so a login overlay cannot burn the IP limit before captcha succeeds.
+- **Post-login rotation race** — `emitLoginSuccess()` marks the session fresh for 20s so leftover 401s on the login tab do not rotate the new refresh cookie.
+
+### Tests
+
+- `tests/test_token_refresh_rate_limit.py`
+- `frontend/tests/hasPersistedAuthUser.spec.ts`
+
+## [5.180.22] - 2026-08-22
+
+> **Opening Showcase publish no longer evaluates pdf.js (or crash on `Iterator`).**
+
+### Fixed
+
+- **`Iterator is not defined` (PublishShowcaseModal)** — pdfjs-dist 6 evaluates `Iterator.prototype.join` as soon as the module loads. A static import from `renderPdfPreview` pulled that into the Showcase publish/detail chunk (~600 kB), so loading the chunk threw `ReferenceError` on WeChat / older WebViews (including on `/mindmate`). PDF.js is now loaded only when a PDF is actually previewed. A small `Iterator` stub still ships in `pwa-install-early.js` so that preview path works on those browsers.
+
+### Tests
+
+- `iteratorGlobalStub.spec.ts` — install when missing; pdfjs can set `prototype.join`; no-op if present.
+- `renderPdfPreview.spec.ts` — pdfjs-dist is a dynamic import only.
+
 ## [5.180.21] - 2026-08-22
 
 > **MindMate diagram previews stay on COS. /mindgraph is the card gallery for everyone.**
 
 ### Fixed
 
+- **WeChat QR login session** — After a successful scan, JWT cookies are set on the `RedirectResponse` the browser follows (they were written onto a discarded injected `Response`). `WxLogin` uses `self_redirect: false` so the top window receives the callback. Unbound WeChat identities still get `oauth_not_linked` — bind under **账户绑定** first; no account is created from a scan.
 - **MindMate preview `<img>`** — Cached `blob:` preview URLs were stripped by DOMPurify, so a just-generated diagram showed as a broken image. `blob:` is allowed for images; a missing preview no longer leaves an empty `<img>`.
 
 ### Added
@@ -23,8 +81,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Tests
 
-- `frontend/tests/markdownKatexSanitize.spec.ts` / `mindmateDiagramPreviewCache.spec.ts` / `loginRestoresUiLanguage.spec.ts`
-- `tests/test_temp_image_storage.py` / `test_serve_temp_image.py`
+- `frontend/tests/markdownKatexSanitize.spec.ts` / `mindmateDiagramPreviewCache.spec.ts` / `loginRestoresUiLanguage.spec.ts` / `oauthQrLogin.spec.ts`
+- `tests/test_temp_image_storage.py` / `test_serve_temp_image.py` / `test_oauth_login.py`
 
 ## [5.180.20] - 2026-08-22
 

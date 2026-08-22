@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'สร้างบนแคนวาส',
   'landing.diagramGrid.tree_map.desc': 'จำแนกและจัดกลุ่ม',
   'landing.diagramGrid.tree_map.title': 'แผนภูมิต้นไม้',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'อธิบายไดอะแกรมของคุณ หรือเลือกเทมเพลตด้านล่าง…',
   'landing.template.slot.criterion': 'เกณฑ์การจำแนก',
   'landing.template.slot.event': 'เหตุการณ์',

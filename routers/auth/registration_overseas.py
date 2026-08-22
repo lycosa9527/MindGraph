@@ -46,7 +46,7 @@ from utils.email_validation import validate_email_for_api
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
 from .email import verify_and_consume_email_code
-from .helpers import auth_session_json_metadata, commit_user_with_retry, set_auth_cookies, track_user_activity
+from .helpers import auth_session_json_metadata, commit_user_with_retry, issue_new_auth_cookies, track_user_activity
 from .user_session_prefs import user_preference_fields
 
 logger = logging.getLogger(__name__)
@@ -189,7 +189,7 @@ async def register_overseas(
     duration = time.time() - start_time
     registration_metrics.record_success(duration, retry_count, cache_write_success)
 
-    set_auth_cookies(response, token, refresh_token_value, http_request)
+    await issue_new_auth_cookies(response, token, refresh_token_value, http_request)
 
     await record_vpn_login_geo(new_user.id, http_request)
 

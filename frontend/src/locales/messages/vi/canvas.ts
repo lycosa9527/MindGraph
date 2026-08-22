@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Tạo trên canvas',
   'landing.diagramGrid.tree_map.desc': 'Phân loại & nhóm',
   'landing.diagramGrid.tree_map.title': 'Bản đồ cây',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Mô tả chủ đề hoặc cấu trúc của bạn (các nhánh, các bước, danh mục…) hoặc chọn mẫu bên dưới…',
   'landing.template.slot.criterion': 'Phân loại',
   'landing.template.slot.event': 'Sự kiện',

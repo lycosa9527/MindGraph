@@ -1238,6 +1238,8 @@ export default {
   'landing.diagramGrid.sectionTitle': '在画布中创建',
   'landing.diagramGrid.tree_map.desc': '分类',
   'landing.diagramGrid.tree_map.title': '树状图',
+  'landing.diagramGrid.voice_notes.desc': '录音生成导图',
+  'landing.diagramGrid.voice_notes.title': '语音笔记',
   'landing.template.freePlaceholder':
     '描述主题或结构要求，例如分支、步骤、分类…或从下方选择图示模板',
   'landing.template.slot.criterion': '分类标准',

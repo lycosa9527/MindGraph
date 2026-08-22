@@ -13,7 +13,7 @@
  * - Device binding prevents token theft across devices
  */
 import type { LocaleCode } from '@/i18n/locales'
-import { useAuthStore } from '@/stores/auth'
+import { AUTH_USER_STORAGE_KEY, useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import {
@@ -38,6 +38,18 @@ function resolveUploadFetchTarget(endpoint: string): { url: string; credentials:
 function isSessionTokenRefreshEndpoint(endpointOrUrl: string): boolean {
   const path = endpointOrUrl.split('?')[0] ?? endpointOrUrl
   return path === '/api/auth/refresh' || path.endsWith('/api/auth/refresh')
+}
+
+/** Guest 401s must not call /refresh (no cookie) and burn the IP rate limit. */
+export function hasPersistedAuthUser(): boolean {
+  if (useAuthStore().user) {
+    return true
+  }
+  try {
+    return Boolean(sessionStorage.getItem(AUTH_USER_STORAGE_KEY))
+  } catch {
+    return false
+  }
 }
 
 /** Current UI language for API `X-Language` (backend maps to zh / en / az for Messages). */
@@ -81,10 +93,7 @@ function handleUploadUnauthorizedAfterRetry(): void {
   })
 }
 
-function handleUnauthorizedAfterFailedRefresh(hadUserBeforeRefresh: boolean): void {
-  if (!hadUserBeforeRefresh) {
-    return
-  }
+function handleUnauthorizedAfterFailedRefresh(): void {
   // 429 means we hammered /refresh — keep the session; caller can retry later.
   if (isSessionRefreshRateLimited()) {
     return
@@ -130,9 +139,9 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
       return response
     }
 
-    // Check if user was previously authenticated (before refresh attempt)
-    const authStore = useAuthStore()
-    const hadUserBeforeRefresh = !!authStore.user || !!sessionStorage.getItem('auth_user')
+    if (!hasPersistedAuthUser()) {
+      return response
+    }
 
     const refreshed = await ensureFreshSessionAfterAuthFailure(epochAtStart)
 
@@ -149,7 +158,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
         credentials: 'same-origin',
       })
     } else {
-      handleUnauthorizedAfterFailedRefresh(hadUserBeforeRefresh)
+      handleUnauthorizedAfterFailedRefresh()
     }
   }
 
@@ -319,6 +328,9 @@ export async function apiUpload(
     if (isMindgraphHeadlessExportSession()) {
       return response
     }
+    if (!hasPersistedAuthUser()) {
+      return response
+    }
     const refreshed = await ensureFreshSessionAfterAuthFailure(epochAtStart)
 
     if (refreshed) {
@@ -333,7 +345,7 @@ export async function apiUpload(
         throw new Error('SESSION_EXPIRED')
       }
     } else {
-      handleUnauthorizedAfterFailedRefresh(true)
+      handleUnauthorizedAfterFailedRefresh()
     }
   }
 
@@ -375,6 +387,9 @@ export async function apiPutFormData(
     if (isMindgraphHeadlessExportSession()) {
       return response
     }
+    if (!hasPersistedAuthUser()) {
+      return response
+    }
     const refreshed = await ensureFreshSessionAfterAuthFailure(epochAtStart)
 
     if (refreshed) {
@@ -389,7 +404,7 @@ export async function apiPutFormData(
         throw new Error('SESSION_EXPIRED')
       }
     } else {
-      handleUnauthorizedAfterFailedRefresh(true)
+      handleUnauthorizedAfterFailedRefresh()
     }
   }
 

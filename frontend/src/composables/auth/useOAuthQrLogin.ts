@@ -4,9 +4,8 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { eventBus } from '@/composables/core/useEventBus'
 import { useAuthStore } from '@/stores'
-import { notifyOAuthError } from '@/utils/oauthLoginUi'
+import { notifyOAuthError, WX_LOGIN_SELF_REDIRECT } from '@/utils/oauthLoginUi'
 import apiClient from '@/utils/apiClient'
 
 export type OAuthProvider = 'wechat' | 'dingtalk'
@@ -139,7 +138,7 @@ export function useOAuthQrLogin(options: {
 
   function notifySuccess(): void {
     if (!isBindMode.value) {
-      eventBus.emit('auth:login_success', {})
+      authStore.emitLoginSuccess()
     }
     notify.success(
       isBindMode.value ? t('auth.oauthBindSuccess') : t('auth.qrLoginSuccess')
@@ -156,7 +155,7 @@ export function useOAuthQrLogin(options: {
     }
     el.innerHTML = ''
     new window.WxLogin({
-      self_redirect: true,
+      self_redirect: WX_LOGIN_SELF_REDIRECT,
       id: wechatContainerId,
       appid: appId,
       scope: 'snsapi_login',

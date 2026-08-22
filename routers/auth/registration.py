@@ -53,7 +53,7 @@ from utils.invitations import invitation_code_is_valid
 
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
-from .helpers import auth_session_json_metadata, commit_user_with_retry, set_auth_cookies, track_user_activity
+from .helpers import auth_session_json_metadata, commit_user_with_retry, issue_new_auth_cookies, track_user_activity
 from .sms import _verify_and_consume_sms_code
 from .user_session_prefs import user_preference_fields
 
@@ -138,7 +138,7 @@ async def finalize_sms_registration_session(
 
     duration = time.time() - start_time
     registration_metrics.record_success(duration, retry_count, cache_write_success)
-    set_auth_cookies(response, token, refresh_token_value, http_request)
+    await issue_new_auth_cookies(response, token, refresh_token_value, http_request)
     await record_vpn_login_geo(new_user.id, http_request)
     org_name = org.name if org else "None"
     log_method = "room_quick" if register_action == "register_quick" else "sms"
@@ -381,7 +381,7 @@ async def register(
     registration_metrics.record_success(duration, retry_count, cache_write_success)
 
     # Set cookies (both access and refresh tokens)
-    set_auth_cookies(response, token, refresh_token_value, http_request)
+    await issue_new_auth_cookies(response, token, refresh_token_value, http_request)
 
     await record_vpn_login_geo(new_user.id, http_request)
 

@@ -8,7 +8,6 @@
 import { computed, onBeforeUnmount, ref, toRef, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { eventBus } from '@/composables/core/useEventBus'
 import { useRegisterRegionDetection } from '@/composables/auth/useRegisterRegionDetection'
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
@@ -738,7 +737,7 @@ export function useLoginModal(
 
       if (response.ok && data.user) {
         authStore.setUser(data.user)
-        eventBus.emit('auth:login_success', {})
+        authStore.emitLoginSuccess()
         const userName = data.user?.name || ''
         notify.success(
           userName

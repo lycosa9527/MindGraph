@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Створити на полотні',
   'landing.diagramGrid.tree_map.desc': 'Класифікація та групування',
   'landing.diagramGrid.tree_map.title': 'Деревоподібна карта',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Опишіть тему або структуру (гілки, кроки, категорії…) або виберіть шаблон нижче…',
   'landing.template.slot.criterion': 'Класифікація',
   'landing.template.slot.event': 'Подія',

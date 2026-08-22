@@ -3,9 +3,12 @@ import { createPinia, setActivePinia } from 'pinia'
 
 vi.mock('@/utils/sessionRefresh', () => ({
   refreshSessionAccessToken: vi.fn(),
+  markSessionFreshAfterAuth: vi.fn(),
+  getSessionRefreshEpoch: vi.fn(() => 0),
+  ensureFreshSessionAfterAuthFailure: vi.fn(async () => true),
 }))
 
-import { refreshSessionAccessToken } from '@/utils/sessionRefresh'
+import { ensureFreshSessionAfterAuthFailure } from '@/utils/sessionRefresh'
 import { useAuthStore } from '@/stores/auth'
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -52,7 +55,8 @@ describe('loadAdminCapabilities', () => {
       }))
     )
     setActivePinia(createPinia())
-    vi.mocked(refreshSessionAccessToken).mockReset()
+    vi.mocked(ensureFreshSessionAfterAuthFailure).mockReset()
+    vi.mocked(ensureFreshSessionAfterAuthFailure).mockResolvedValue(true)
   })
 
   it('does not fetch before the session is verified this tab', async () => {
@@ -115,8 +119,6 @@ describe('loadAdminCapabilities', () => {
       return jsonResponse({})
     })
     vi.stubGlobal('fetch', fetchMock)
-    vi.mocked(refreshSessionAccessToken).mockResolvedValue(true)
-
     const authStore = useAuthStore()
     const ok = await authStore.checkAuth()
     expect(ok).toBe(true)
@@ -125,7 +127,7 @@ describe('loadAdminCapabilities', () => {
     // checkAuth fires loadAdminCapabilities; wait for the in-flight promise.
     await authStore.loadAdminCapabilities()
 
-    expect(refreshSessionAccessToken).toHaveBeenCalledTimes(1)
+    expect(ensureFreshSessionAfterAuthFailure).toHaveBeenCalledTimes(1)
     expect(capabilitiesHits).toBe(2)
     expect(authStore.adminCapabilitiesPayload?.panel_access).toBe(true)
     expect(authStore.adminCapabilitiesLoaded).toBe(true)

@@ -76,6 +76,30 @@ def clear_dependency_overrides() -> Generator[None, None, None]:
     app.dependency_overrides.clear()
 
 
+def test_list_diagrams_rejects_unknown_source_channel(client: TestClient) -> None:
+    """Unknown source_channel is 400 and must not coerce to mindgraph."""
+    app.dependency_overrides[get_current_user] = _make_user
+    listed = client.get("/api/diagrams?page=1&page_size=10&source_channel=kitty_voice")
+    assert listed.status_code == 400
+    assert listed.json()["detail"] == "Invalid source_channel"
+
+
+def test_create_diagram_rejects_unknown_source_channel(client: TestClient) -> None:
+    """Create rejects unknown provenance instead of storing mindgraph."""
+    app.dependency_overrides[get_current_user] = _make_user
+    created = client.post(
+        "/api/diagrams",
+        json={
+            "title": "x",
+            "diagram_type": "mindmap",
+            "spec": {"topic": "t"},
+            "source_channel": "kitty_voice",
+        },
+    )
+    assert created.status_code == 400
+    assert created.json()["detail"] == "Invalid source_channel"
+
+
 @requires_diagram_folders_schema
 def test_diagram_folder_lifecycle(client: TestClient) -> None:
     """Create folder, move diagram, list, rename, and delete folder."""

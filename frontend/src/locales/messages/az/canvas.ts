@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Kanvasda yaradın',
   'landing.diagramGrid.tree_map.desc': 'Təsnifat və qruplaşdırma',
   'landing.diagramGrid.tree_map.title': 'Ağac xəritəsi',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Diaqramınızı təsvir edin və ya aşağıdan şablon seçin…',
   'landing.template.slot.criterion': 'Təsnifat',
   'landing.template.slot.event': 'Hadisə',

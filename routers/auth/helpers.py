@@ -33,6 +33,7 @@ from services.auth.ip_geolocation import get_geolocation_service
 from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
 from services.monitoring.module_activity import track_module_activity
+from services.redis.rate_limiting.redis_rate_limiter import clear_token_refresh_attempts
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.session.redis_session_manager import get_session_manager
 from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
@@ -487,6 +488,17 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str, 
     # Seed the double-submit CSRF cookie so the first authenticated mutation
     # (including POST /api/auth/refresh and logout) carries a matching token.
     set_csrf_cookie(response, http_request)
+
+
+async def issue_new_auth_cookies(
+    response: Response, access_token: str, refresh_token: str, http_request: Request
+) -> None:
+    """Set session cookies and clear the /refresh IP window after a new login."""
+    set_auth_cookies(response, access_token, refresh_token, http_request)
+    try:
+        await clear_token_refresh_attempts(get_client_ip(http_request))
+    except BACKGROUND_INFRA_ERRORS:
+        logger.debug("[Auth] token_refresh rate-limit clear failed", exc_info=True)
 
 
 def auth_session_json_metadata() -> dict[str, int | str]:

@@ -44,6 +44,10 @@ const showWechat = computed(
 const showDingtalk = computed(
   () => props.provider === 'dingtalk' && (providers.value?.dingtalk_enabled ?? false)
 )
+
+const footerHint = computed(() =>
+  props.mode === 'bind' ? t('auth.accountBindingsHint') : t('auth.qrLoginNotLinked')
+)
 </script>
 
 <template>
@@ -95,7 +99,7 @@ const showDingtalk = computed(
       {{ t('auth.qrLoginProviderDisabled') }}
     </div>
     <p class="text-xs text-stone-400 text-center mt-3 px-2">
-      {{ t('auth.accountBindingsHint') }}
+      {{ footerHint }}
     </p>
   </div>
 </template>

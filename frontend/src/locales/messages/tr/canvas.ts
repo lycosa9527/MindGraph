@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Tuvalde oluştur',
   'landing.diagramGrid.tree_map.desc': 'Sınıflandır ve grupla',
   'landing.diagramGrid.tree_map.title': 'Ağaç Haritası',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Konunuzu veya yapınızı (dallar, adımlar, kategoriler…) açıklayın veya aşağıdan bir şablon seçin…',
   'landing.template.slot.criterion': 'Sınıflandırma',
   'landing.template.slot.event': 'Olay',

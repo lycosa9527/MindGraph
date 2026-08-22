@@ -453,6 +453,11 @@ class DiagramCreateRequest(BaseModel):
         max_length=150000,
         description="Base64 encoded thumbnail image (max ~100KB)",
     )
+    source_channel: Optional[str] = Field(
+        None,
+        max_length=32,
+        description="Provenance channel (mindgraph or voice_notes)",
+    )
 
     @field_validator("language")
     @classmethod

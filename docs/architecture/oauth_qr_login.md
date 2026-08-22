@@ -46,9 +46,10 @@ flowchart LR
 
 ## Login behavior
 
-- **Pre-linked users only** — scan succeeds at the identity provider but MindGraph returns `oauth_not_linked` until the user binds under **账户 → 账户绑定** (or an admin pre-links).
-- **Login UI** — Login modal: 忘记密码 \| 验证码登录 \| **二维码登录** → `OAuthQrLoginModal` (hidden when `feature_oauth_login` is false).
+- **Pre-linked users only** — scan succeeds at WeChat but MindGraph returns `oauth_not_linked` and **does not create an account**. Teachers sign in with password first, then **账户 → 账户绑定 → 绑定微信**. Login stays blocked until that row exists (or an admin pre-links).
+- **Login UI** — Login modal: 忘记密码 \| 验证码登录 \| **二维码登录** → `OAuthQrLoginModal` (hidden when `feature_oauth_login` is false). The QR panel reminds users to bind first.
 - **Org context** — QR login requires a valid school **invitation code** (`?invite=` on `/auth` or the register form field).
+- **Callback cookies** — WeChat GET callback sets JWT cookies on the returned `RedirectResponse` (same pattern as Word embed auth). `WxLogin` uses `self_redirect: false` so the top window follows that redirect.
 
 ## Account bindings (three providers)
 
@@ -116,7 +117,7 @@ Configure in external consoles (DingTalk requires **exact** URL match):
 
 | Official requirement | Doc source | Code location | Status |
 |---------------------|------------|---------------|--------|
-| WxLogin + `snsapi_login` + `self_redirect` | [Wechat_Login](https://developers.weixin.qq.com/doc/oplatform/Website_App/WeChat_Login/Wechat_Login.html) | `useOAuthQrLogin.ts` (`wxLogin.js`, scope, stylelite) | Match |
+| WxLogin + `snsapi_login` + `self_redirect: false` | [Wechat_Login](https://developers.weixin.qq.com/doc/oplatform/Website_App/WeChat_Login/Wechat_Login.html) | `useOAuthQrLogin.ts` (`wxLogin.js`, official default top-window jump) | Match |
 | Callback `?code=&state=` | WeChat doc | `router.py` `wechat_oauth/callback` | Match |
 | `GET sns/oauth2/access_token` | WeChat doc | `wechat_oauth_client.py` | Match |
 | Store `unionid` (fallback `openid`) | [UnionID doc](https://developers.weixin.qq.com/doc/oplatform/Website_App/WeChat_Login/Authorized_Interface_Calling_UnionID.html) | `WechatOauthClient.resolve_external_id` | Match |

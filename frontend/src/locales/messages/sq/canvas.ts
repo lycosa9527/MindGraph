@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Krijo në kanavacë',
   'landing.diagramGrid.tree_map.desc': 'Klasifiko dhe grupo',
   'landing.diagramGrid.tree_map.title': 'Hartë pemë',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Përshkruani temën ose strukturën (degë, hapa, kategori…) ose zgjidhni shabllon më poshtë…',
   'landing.template.slot.criterion': 'Klasifikim',
   'landing.template.slot.event': 'Ngjarje',

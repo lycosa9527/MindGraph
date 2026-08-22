@@ -83,7 +83,7 @@ from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
 from .email import verify_and_consume_email_code
-from .helpers import auth_session_json_metadata, set_auth_cookies, track_user_activity
+from .helpers import auth_session_json_metadata, issue_new_auth_cookies, track_user_activity
 from .sms import _verify_and_consume_sms_code
 from .user_session_prefs import user_preference_fields
 
@@ -227,7 +227,7 @@ async def _complete_login_after_otp_verified(
     )
     _raise_if_session_persistence_failed(session_ok, refresh_ok, lang, user.id, method)
 
-    set_auth_cookies(response, token, refresh_token_value, http_request)
+    await issue_new_auth_cookies(response, token, refresh_token_value, http_request)
 
     await record_vpn_login_geo(user.id, http_request)
 
@@ -487,7 +487,7 @@ async def login(
     _raise_if_session_persistence_failed(session_ok, refresh_ok, lang, user.id, "captcha")
 
     # Set cookies (both access and refresh tokens)
-    set_auth_cookies(response, token, refresh_token_value, http_request)
+    await issue_new_auth_cookies(response, token, refresh_token_value, http_request)
 
     await record_vpn_login_geo(user.id, http_request)
 
@@ -850,7 +850,7 @@ async def verify_bayi_passkey_login(
     )
 
     # Set cookies (both access and refresh tokens)
-    set_auth_cookies(response, token, refresh_token_value, request)
+    await issue_new_auth_cookies(response, token, refresh_token_value, request)
 
     await record_vpn_login_geo(auth_user.id, request)
 

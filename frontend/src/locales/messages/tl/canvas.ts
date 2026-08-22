@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Lumikha sa canvas',
   'landing.diagramGrid.tree_map.desc': 'Uriin at pangkatin',
   'landing.diagramGrid.tree_map.title': 'Mapa ng Puno',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Ilarawan ang iyong paksa o istraktura (mga sangay, hakbang, kategorya...) o pumili ng template sa ibaba...',
   'landing.template.slot.criterion': 'Pag-uuri',
   'landing.template.slot.event': 'Kaganapan',

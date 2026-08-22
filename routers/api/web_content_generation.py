@@ -30,6 +30,7 @@ from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identi
 from routers.api.vueflow_screenshot import capture_diagram_screenshot
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.http.llm_http_errors import raise_http_for_llm_error
+from services.features.voice_notes_markdown import strip_voice_notes_markdown_meta
 from services.knowledge.document_processor import DocumentProcessor
 from services.knowledge.doc_summary_ingest import DocSummaryIngestService
 from services.knowledge.doc_summary_limits import (
@@ -170,7 +171,7 @@ async def _generate_mindmap_from_resolved_content(
     kind = source_kind if source_kind in ("web", "document") else "web"
     try:
         result = await agent.generate_from_page_content(
-            page_content=page_content.strip(),
+            page_content=strip_voice_notes_markdown_meta(page_content).strip(),
             language=language,
             content_format=content_format,
             page_title=page_title,

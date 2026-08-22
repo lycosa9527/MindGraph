@@ -222,6 +222,7 @@ async def test_create_diagram_returns_structured_400() -> None:
         spec={"topic": "Lion"},
         language="en",
         thumbnail=None,
+        source_channel=None,
     )
     request = MagicMock()
     user = MagicMock()

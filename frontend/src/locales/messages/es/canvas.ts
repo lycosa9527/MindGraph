@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Crear en el lienzo',
   'landing.diagramGrid.tree_map.desc': 'Clasificar y agrupar',
   'landing.diagramGrid.tree_map.title': 'Mapa de árbol',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Describa su tema o estructura (ramas, pasos, categorías…) o elija una plantilla abajo…',
   'landing.template.slot.criterion': 'Clasificación',
   'landing.template.slot.event': 'Evento',

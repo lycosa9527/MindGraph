@@ -1,14 +1,13 @@
-"""Browser voice-notes WebSocket relay to DashScope Fun-ASR realtime.
+"""Browser voice-notes WebSocket relay to Tencent realtime ASR V2.
 
 Protocol (browser → server):
-  {"type": "start", "language_hints": ["zh"]}
+  {"type": "start", "diarization_enabled": true}
   {"type": "append", "audio": "<base64 pcm16>"}
   {"type": "stop"}
 
 Protocol (server → browser):
   {"type": "started"}
-  {"type": "partial", "text": "...", "final": false}
-  {"type": "final", "text": "..."}
+  {"type": "snapshot", "sentences": [{"text": "...", "speaker_id": 0, "final": true}]}
   {"type": "stopped"}
   {"type": "error", "code": "...", "message": "..."}
 
@@ -24,14 +23,26 @@ import binascii
 import json
 import logging
 import time
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from fastapi import WebSocket
 from starlette.websockets import WebSocketDisconnect
 
 from models.domain.auth import User
+from services.features.tencent_asr_v2 import TencentAsrV2Client
+from services.features.tencent_asr_v2_sentences import (
+    TencentAsrSentence,
+    normalize_speaker_context_id,
+    parse_speaker_context_id,
+    snapshot_browser_payload,
+)
+from services.features.tencent_asr_v2_errors import (
+    TencentAsrClassifiedError,
+    TencentAsrHandshakeError,
+    browser_error_payload,
+    format_tencent_asr_v2_log,
+)
 from services.features.voice_notes_usage import settle_voice_notes_usage
-from services.kitty.asr.fun_asr_realtime import FunAsrRealtimeClient
 from services.utils.error_types import LLM_PIPELINE_ERRORS
 from utils.ws_limits import (
     DEFAULT_MAX_WS_TEXT_BYTES,
@@ -49,16 +60,34 @@ def voice_notes_error_json(code: str, message: str) -> str:
     return json.dumps({"type": "error", "code": code, "message": message})
 
 
+def voice_notes_diarization_enabled(start_msg: dict[str, Any]) -> bool:
+    """Parse 区分说话人 from the bootstrap frame (engine is locked for the session)."""
+    raw = start_msg.get("diarization_enabled")
+    if isinstance(raw, bool):
+        return raw
+    if isinstance(raw, (int, float)):
+        return bool(raw)
+    if isinstance(raw, str):
+        return raw.strip().lower() in {"1", "true", "yes", "on"}
+    return False
+
+
+def _transcript_chars_from_sentences(sentences: list[TencentAsrSentence]) -> int:
+    """Count committed (steady) sentence characters for usage settle."""
+    return sum(len(item.text) for item in sentences if item.is_final)
+
+
 async def run_voice_notes_asr_relay(
     client_ws: WebSocket,
     *,
     user: Optional[User] = None,
-    language_hints: Optional[List[str]] = None,
+    diarization_enabled: bool = False,
+    speaker_context_id: str = "",
     rate_limiter: Optional[WebsocketMessageRateLimiter] = None,
     max_inbound_text_bytes: int = DEFAULT_MAX_WS_TEXT_BYTES,
 ) -> None:
-    """Relay authenticated browser PCM to Fun-ASR with meeting punctuation."""
-    client: Optional[FunAsrRealtimeClient] = None
+    """Relay authenticated browser PCM to Tencent ASR V2."""
+    client: Optional[TencentAsrV2Client] = None
     stopped_emitted = False
     pcm_bytes = 0
     transcript_chars = 0
@@ -68,18 +97,16 @@ async def run_voice_notes_asr_relay(
     async def emit(payload: dict[str, Any]) -> None:
         await safe_websocket_send_text(client_ws, json.dumps(payload))
 
-    async def on_partial(text: str, sentence_end: bool) -> None:
+    async def on_snapshot(sentences: list[TencentAsrSentence]) -> None:
         nonlocal transcript_chars
-        if sentence_end:
-            transcript_chars += len(str(text or "").strip())
-            await emit({"type": "final", "text": text})
-        else:
-            await emit({"type": "partial", "text": text, "final": False})
+        transcript_chars = _transcript_chars_from_sentences(sentences)
+        context_id = client.speaker_context_id if client is not None else ""
+        await emit(snapshot_browser_payload(sentences, context_id))
 
-    async def on_error(message: str) -> None:
+    async def on_error(classified: TencentAsrClassifiedError) -> None:
         nonlocal session_ok
         session_ok = False
-        await emit({"type": "error", "code": "upstream", "message": message})
+        await emit(browser_error_payload(classified))
 
     async def emit_stopped() -> None:
         nonlocal stopped_emitted
@@ -88,15 +115,21 @@ async def run_voice_notes_asr_relay(
         stopped_emitted = True
         await emit({"type": "stopped"})
 
+    logger.debug("[VoiceNotesASR] Tencent relay diarization=%s", diarization_enabled)
+
     try:
-        client = FunAsrRealtimeClient(
-            on_partial=on_partial,
+        client = TencentAsrV2Client(
+            on_snapshot=on_snapshot,
             on_error=on_error,
-            language_hints=language_hints,
-            semantic_punctuation_enabled=True,
+            speaker_diarization=diarization_enabled,
+            speaker_context_id=parse_speaker_context_id({"speaker_context_id": speaker_context_id}),
         )
         await client.start()
-        await emit({"type": "started"})
+        started: dict[str, Any] = {"type": "started"}
+        started_context = normalize_speaker_context_id(client.speaker_context_id)
+        if started_context:
+            started["speaker_context_id"] = started_context
+        await emit(started)
 
         while True:
             try:
@@ -126,8 +159,8 @@ async def run_voice_notes_asr_relay(
             if msg_type == "start":
                 continue
 
-            if msg_type in ("append", "input_audio_buffer.append"):
-                audio_b64 = data.get("audio") or data.get("data")
+            if msg_type == "append":
+                audio_b64 = data.get("audio")
                 if not audio_b64 or not isinstance(audio_b64, str):
                     continue
                 try:
@@ -139,20 +172,32 @@ async def run_voice_notes_asr_relay(
                     await client.send_pcm(pcm)
                 continue
 
-            if msg_type in ("stop", "finish", "session.finish"):
+            if msg_type == "stop":
                 if client is not None:
                     await client.finish()
                     client = None
                 await emit_stopped()
                 break
 
+    except TencentAsrHandshakeError as exc:
+        session_ok = False
+        voice_id = client.voice_id if client is not None else ""
+        logger.warning(
+            "[VoiceNotesASR] %s",
+            format_tencent_asr_v2_log(
+                exc.classified,
+                voice_id=voice_id,
+                phase="handshake",
+            ),
+        )
+        await emit(browser_error_payload(exc.classified))
     except RuntimeError as exc:
         session_ok = False
         logger.warning("[VoiceNotesASR] Start failed: %s", exc)
         await emit({"type": "error", "code": "asr_config", "message": str(exc)})
     except LLM_PIPELINE_ERRORS as exc:
         session_ok = False
-        logger.exception("[VoiceNotesASR] Relay failed: %s", exc)
+        logger.warning("[VoiceNotesASR] Relay failed: %s", exc)
         await emit({"type": "error", "code": "relay", "message": "Speech relay error"})
     finally:
         if client is not None:

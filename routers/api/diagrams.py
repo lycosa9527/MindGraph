@@ -62,6 +62,10 @@ from services.online_collab.spec.online_collab_live_spec import (
     spec_for_snapshot,
 )
 from services.diagram.semantic_spec_validation import ensure_valid_semantic_spec
+from services.diagram.source_channel import (
+    parse_list_source_channel,
+    resolve_diagram_source_channel,
+)
 from services.redis.cache._redis_diagram_cache_helpers import MAX_SPEC_SIZE_KB
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.auth.thinking_coin.client_event_service import load_user_org
@@ -234,7 +238,11 @@ async def create_diagram(
     Rate limited: 100 requests per minute per user.
     Max diagrams per user: tier-based (trial: 20; paid/personal: unlimited).
     """
-    # Rate limiting
+    try:
+        stored_channel = resolve_diagram_source_channel(req.source_channel)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid source_channel") from exc
+
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
@@ -255,7 +263,7 @@ async def create_diagram(
         thumbnail=req.thumbnail,
         max_per_user=diagram_cap,
         organization_id=user_org_id,
-        source_channel="mindgraph",
+        source_channel=stored_channel,
     )
 
     if not success:
@@ -312,6 +320,11 @@ async def list_diagrams(
     request: Request,
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(10, ge=1, le=50, description="Items per page"),
+    source_channel: Optional[str] = Query(
+        None,
+        max_length=32,
+        description="Optional provenance filter (mindgraph or voice_notes)",
+    ),
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -319,14 +332,24 @@ async def list_diagrams(
 
     Rate limited: 100 requests per minute per user.
     """
-    # Rate limiting
+    try:
+        channel = parse_list_source_channel(source_channel)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid source_channel") from exc
+
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
     async with actor_rls_session(current_user) as tier_db:
         diagram_cap = await max_diagrams_for_user(tier_db, current_user)
-    result = await cache.list_diagrams(current_user.id, page, page_size, max_per_user=diagram_cap)
+    result = await cache.list_diagrams(
+        current_user.id,
+        page,
+        page_size,
+        max_per_user=diagram_cap,
+        source_channel=channel,
+    )
 
     # Convert to response models
     items = []
@@ -350,6 +373,7 @@ async def list_diagrams(
                 is_pinned=d.get("is_pinned", False),
                 workshop_active=workshop_active,
                 folder_id=d.get("folder_id"),
+                source_channel=d.get("source_channel"),
             )
         )
 

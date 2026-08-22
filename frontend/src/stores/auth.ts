@@ -49,6 +49,7 @@ import { clearSavedLoginCredentials } from '@/utils/savedLoginCredentials'
 import {
   ensureFreshSessionAfterAuthFailure,
   getSessionRefreshEpoch,
+  markSessionFreshAfterAuth,
   refreshSessionAccessToken,
 } from '@/utils/sessionRefresh'
 import { normalizeUserRole } from '@/utils/userRoleDisplay'
@@ -59,7 +60,8 @@ import {
 } from '@/utils/workshopChatWsRegistry'
 
 // User data stored in sessionStorage (not tokens - those are in httpOnly cookies)
-const USER_KEY = 'auth_user'
+export const AUTH_USER_STORAGE_KEY = 'auth_user'
+const USER_KEY = AUTH_USER_STORAGE_KEY
 const MODE_KEY = 'auth_mode'
 const API_BASE = '/api/auth'
 
@@ -282,6 +284,11 @@ export const useAuthStore = defineStore('auth', () => {
     })()
   }
 
+  function emitLoginSuccess(): void {
+    markSessionFreshAfterAuth()
+    eventBus.emit('auth:login_success', {})
+  }
+
   function setUser(newUser: User | BackendUser): void {
     authVerificationBlockedByNetwork.value = false
     // Normalize backend user format to frontend format
@@ -491,7 +498,7 @@ export const useAuthStore = defineStore('auth', () => {
         hasVerifiedAuthThisSession.value = true // Login is verification
         lastProfileRefreshTime.value = Date.now()
         startSessionMonitoring()
-        eventBus.emit('auth:login_success', {})
+        emitLoginSuccess()
         return { success: true, user: user.value ?? undefined }
       }
 
@@ -526,7 +533,7 @@ export const useAuthStore = defineStore('auth', () => {
         hasVerifiedAuthThisSession.value = true
         lastProfileRefreshTime.value = Date.now()
         startSessionMonitoring()
-        eventBus.emit('auth:login_success', {})
+        emitLoginSuccess()
         return { success: true, user: user.value ?? undefined }
       }
 
@@ -1152,6 +1159,7 @@ export const useAuthStore = defineStore('auth', () => {
     initFromStorage,
     setToken,
     setUser,
+    emitLoginSuccess,
     setMode,
     clearAuth,
     login,

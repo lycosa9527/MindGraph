@@ -1,7 +1,7 @@
 /* global MG_CLIENT_ID, mgAuthStatus, mgBaseUrl, mgHydratePrefs, mgLoadPrefs, mgT */
 /**
  * Dedicated Voice Notes session for the Word add-in dialog.
- * Mic → WS /api/ws/voice-notes (mgat_ + account query) → Fun-ASR.
+ * Mic → WS /api/ws/voice-notes (mgat_ + account query) → Tencent ASR V2.
  */
 
 var MG_VOICE_TARGET_RATE = 16000

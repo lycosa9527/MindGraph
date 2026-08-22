@@ -5,22 +5,29 @@
  * Right-click: Start / Pause / Stop / View transcript / Jump / Exit.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { useDraggable, useWindowSize } from '@vueuse/core'
+
 import { storeToRefs } from 'pinia'
 
 import { Mic } from '@lucide/vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
+import { isMobileAppPath } from '@/composables/voiceNotes/mobileVoiceNotesFinish'
+import { useVoiceNotesSessionChrome } from '@/composables/voiceNotes/useVoiceNotesSessionChrome'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
 
 const FAB_SIZE = 56
 const FAB_PAD = 16
 
 const { t } = useLanguage()
+const route = useRoute()
 const voiceNotes = useVoiceNotesStore()
-const { enabled, recording, paused, connecting, bootstrapping, stopping, inputLevel } =
+const { enabled, recording, paused, connecting, bootstrapping, inputLevel } =
   storeToRefs(voiceNotes)
+const { actions } = useVoiceNotesSessionChrome()
+const isMobileShell = computed(() => route.meta.layout === 'mobile' || isMobileAppPath(route.path))
 
 const fabRef = ref<HTMLElement | null>(null)
 const menuOpen = ref(false)
@@ -61,28 +68,26 @@ const { x, y, isDragging } = useDraggable(fabRef, {
 })
 
 const fabStyle = computed(() => {
-  const level =
-    recording.value && !paused.value ? Math.min(1, Math.max(0, inputLevel.value)) : 0
-  const base =
-    !hasDragged.value
-      ? {
-          position: 'fixed' as const,
-          right: `${FAB_PAD}px`,
-          bottom: `${FAB_PAD}px`,
-          left: 'auto',
-          top: 'auto',
-          width: `${FAB_SIZE}px`,
-          height: `${FAB_SIZE}px`,
-        }
-      : {
-          position: 'fixed' as const,
-          left: `${x.value}px`,
-          top: `${y.value}px`,
-          right: 'auto',
-          bottom: 'auto',
-          width: `${FAB_SIZE}px`,
-          height: `${FAB_SIZE}px`,
-        }
+  const level = recording.value && !paused.value ? Math.min(1, Math.max(0, inputLevel.value)) : 0
+  const base = !hasDragged.value
+    ? {
+        position: 'fixed' as const,
+        right: `${FAB_PAD}px`,
+        bottom: `${FAB_PAD}px`,
+        left: 'auto',
+        top: 'auto',
+        width: `${FAB_SIZE}px`,
+        height: `${FAB_SIZE}px`,
+      }
+    : {
+        position: 'fixed' as const,
+        left: `${x.value}px`,
+        top: `${y.value}px`,
+        right: 'auto',
+        bottom: 'auto',
+        width: `${FAB_SIZE}px`,
+        height: `${FAB_SIZE}px`,
+      }
   return {
     ...base,
     '--vn-level': String(level),
@@ -102,21 +107,15 @@ const waveBarHeights = computed(() => {
 })
 
 const statusClass = computed(() => {
-  if (recording.value && !paused.value) return 'voice-notes-fab--recording'
   if (paused.value) return 'voice-notes-fab--paused'
   if (connecting.value || bootstrapping.value) return 'voice-notes-fab--connecting'
+  if (recording.value) return 'voice-notes-fab--recording'
   return ''
 })
 
-const canStart = computed(
-  () => !recording.value && !paused.value && !connecting.value && !stopping.value
-)
-const canPause = computed(() => recording.value && !paused.value && !stopping.value)
-const canStop = computed(() => (recording.value || paused.value) && !stopping.value)
-
 const fabTitle = computed(() => {
-  if (paused.value) return t('auth.voiceNotes.resume')
-  if (recording.value) return t('auth.voiceNotes.pause')
+  if (actions.value.canResume) return t('auth.voiceNotes.resume')
+  if (actions.value.canPause) return t('auth.voiceNotes.pause')
   return t('auth.voiceNotes.start')
 })
 
@@ -160,16 +159,15 @@ function syncDefaultDragOrigin(): void {
 
 /** Idle → start; recording → pause; paused → resume. */
 function cycleRecordState(): void {
-  if (connecting.value || stopping.value) return
-  if (!recording.value && !paused.value) {
+  if (actions.value.canStart) {
     void voiceNotes.startRecording()
     return
   }
-  if (recording.value && !paused.value) {
+  if (actions.value.canPause) {
     voiceNotes.pauseRecording()
     return
   }
-  if (paused.value) {
+  if (actions.value.canResume) {
     voiceNotes.resumeRecording()
   }
 }
@@ -206,6 +204,11 @@ function onStart(): void {
 
 function onPause(): void {
   voiceNotes.pauseRecording()
+  closeMenu()
+}
+
+function onResume(): void {
+  voiceNotes.resumeRecording()
   closeMenu()
 }
 
@@ -255,7 +258,7 @@ onUnmounted(() => {
 <template>
   <Teleport to="body">
     <button
-      v-show="enabled"
+      v-show="enabled && !isMobileShell"
       ref="fabRef"
       type="button"
       class="voice-notes-fab"
@@ -285,7 +288,7 @@ onUnmounted(() => {
     </button>
 
     <div
-      v-if="enabled && menuOpen"
+      v-if="enabled && !isMobileShell && menuOpen"
       class="voice-notes-ctx"
       :class="{
         'voice-notes-ctx--up': menuOpenUp,
@@ -299,16 +302,16 @@ onUnmounted(() => {
         type="button"
         class="voice-notes-ctx__item"
         role="menuitem"
-        :disabled="!canStart"
-        @click="onStart"
+        :disabled="!actions.canStart && !actions.canResume"
+        @click="actions.canResume ? onResume() : onStart()"
       >
-        {{ t('auth.voiceNotes.start') }}
+        {{ actions.canResume ? t('auth.voiceNotes.resume') : t('auth.voiceNotes.start') }}
       </button>
       <button
         type="button"
         class="voice-notes-ctx__item"
         role="menuitem"
-        :disabled="!canPause"
+        :disabled="!actions.canPause"
         @click="onPause"
       >
         {{ t('auth.voiceNotes.pause') }}
@@ -317,7 +320,7 @@ onUnmounted(() => {
         type="button"
         class="voice-notes-ctx__item"
         role="menuitem"
-        :disabled="!canStop"
+        :disabled="!actions.canStop"
         @click="onStop"
       >
         {{ t('auth.voiceNotes.stop') }}
@@ -334,7 +337,7 @@ onUnmounted(() => {
         type="button"
         class="voice-notes-ctx__item"
         role="menuitem"
-        :disabled="bootstrapping"
+        :disabled="!actions.canJump"
         @click="onJump"
       >
         {{ t('auth.voiceNotes.jumpToMindmap') }}

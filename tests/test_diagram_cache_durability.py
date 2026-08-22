@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import orjson
 import pytest
 
 from routers.api.diagrams import _as_utc_aware_datetime, _updated_at_matches
@@ -108,3 +110,87 @@ async def test_save_diagram_deletes_key_when_redis_write_fails() -> None:
     assert diagram_id == "diag-1"
     assert error is None
     redis.delete.assert_awaited_once_with(DIAGRAM_KEY.format(user_id=7, diagram_id="diag-1"))
+
+
+def _list_row(
+    diagram_id: str,
+    title: str,
+    source_channel: str | None,
+    updated_at: str,
+) -> dict[str, object]:
+    return {
+        "id": diagram_id,
+        "title": title,
+        "source_channel": source_channel,
+        "is_pinned": False,
+        "updated_at": updated_at,
+    }
+
+
+@pytest.mark.asyncio
+async def test_list_diagrams_rebuilds_cache_missing_source_channel_field() -> None:
+    """Missing source_channel on a cached row is a miss for the unfiltered list."""
+    cache = RedisDiagramCache()
+    stale = [{"id": "old", "title": "circle"}]
+    fresh = [
+        _list_row("m1", "circle", "mindgraph", "2026-01-01T00:00:00"),
+        _list_row("v1", "voice recording_202608230012", "voice_notes", "2026-01-02T00:00:00"),
+        _list_row("v2", "Renamed", "voice_notes", "2026-01-03T00:00:00"),
+    ]
+    redis = MagicMock()
+    redis.get = AsyncMock(return_value=json.dumps({"items": stale, "total": 1}))
+    redis.setex = AsyncMock()
+
+    with (
+        patch.object(cache, "_use_redis", return_value=True),
+        patch.object(cache, "_resolve_diagram_cap", new=AsyncMock(return_value=100)),
+        patch.object(cache, "_load_list_from_database", new=AsyncMock(return_value=list(fresh))),
+        patch(
+            "services.redis.cache.redis_diagram_cache.get_async_redis",
+            return_value=redis,
+        ),
+    ):
+        result = await cache.list_diagrams(7, page=1, page_size=10)
+
+    assert result["total"] == 3
+    redis.setex.assert_awaited()
+    written = orjson.loads(redis.setex.await_args.args[2])
+    assert written["total"] == 3
+    assert [row["id"] for row in written["items"]] == ["v2", "v1", "m1"]
+
+
+@pytest.mark.asyncio
+async def test_list_diagrams_channel_filter_reads_database_not_list_cache() -> None:
+    """Provenance filter loads tagged rows from DB and does not rewrite the list cache."""
+    cache = RedisDiagramCache()
+    tagged = [
+        _list_row("v2", "Renamed", "voice_notes", "2026-01-03T00:00:00"),
+        _list_row("v1", "voice recording_202608230012", "voice_notes", "2026-01-02T00:00:00"),
+    ]
+    redis = MagicMock()
+    redis.get = AsyncMock()
+    redis.setex = AsyncMock()
+    load_db = AsyncMock(return_value=list(tagged))
+
+    with (
+        patch.object(cache, "_use_redis", return_value=True),
+        patch.object(cache, "_resolve_diagram_cap", new=AsyncMock(return_value=100)),
+        patch.object(cache, "_load_list_from_database", new=load_db),
+        patch(
+            "services.redis.cache.redis_diagram_cache.get_async_redis",
+            return_value=redis,
+        ),
+    ):
+        result = await cache.list_diagrams(
+            7,
+            page=1,
+            page_size=1,
+            source_channel="voice_notes",
+        )
+
+    load_db.assert_awaited_once_with(7, source_channel="voice_notes")
+    assert result["total"] == 2
+    assert result["has_more"] is True
+    assert result["diagrams"][0]["id"] == "v2"
+    redis.get.assert_not_called()
+    redis.setex.assert_not_called()

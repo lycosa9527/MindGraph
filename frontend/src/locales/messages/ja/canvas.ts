@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': '在キャンバス中作成',
   'landing.diagramGrid.tree_map.desc': 'Classify & group',
   'landing.diagramGrid.tree_map.title': '树形图',
+  'landing.diagramGrid.voice_notes.desc': '録音してマインドマップ',
+  'landing.diagramGrid.voice_notes.title': 'ボイスノート',
   'landing.template.freePlaceholder': '説明トピック或结构要件，例如ブランチ、步骤、分类…或从下方选择図テンプレート',
   'landing.template.slot.criterion': '分类标准',
   'landing.template.slot.event': '事件',

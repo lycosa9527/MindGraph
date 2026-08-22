@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Crea su la zone di travail',
   'landing.diagramGrid.tree_map.desc': 'Classer e regruppor',
   'landing.diagramGrid.tree_map.title': 'Scheda arborescente',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Décrivez tuo diagramma o choisissez un modello di seguito…',
   'landing.template.slot.criterion': 'Critère di classement',
   'landing.template.slot.event': 'Événement',

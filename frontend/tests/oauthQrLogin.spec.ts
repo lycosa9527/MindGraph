@@ -9,6 +9,7 @@ import {
   oauthLoginFromRouteQuery,
   shouldShowAccountBindingsSection,
   shouldShowQrLoginLink,
+  WX_LOGIN_SELF_REDIRECT,
 } from '@/utils/oauthLoginUi'
 
 describe('oauthLoginUi', () => {
@@ -18,6 +19,10 @@ describe('oauthLoginUi', () => {
 
   it('resolveOAuthInviteCode falls back to register invitation code', () => {
     expect(resolveOAuthInviteCode(undefined, ' REG99 ')).toBe('REG99')
+  })
+
+  it('WxLogin jumps the top window so callback cookies apply', () => {
+    expect(WX_LOGIN_SELF_REDIRECT).toBe(false)
   })
 
   it('shouldShowQrLoginLink follows feature flag', () => {

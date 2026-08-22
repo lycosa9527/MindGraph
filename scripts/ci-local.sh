@@ -215,7 +215,11 @@ run_backend() {
     tests/test_prompt_to_diagram_result.py \
     tests/test_tsec_captcha.py \
     tests/test_tsec_aid_encrypted.py \
-    tests/test_tsec_result.py
+    tests/test_tsec_result.py \
+    tests/test_voice_notes_asr.py \
+    tests/test_tencent_asr_v2.py \
+    tests/test_tencent_asr_v2_errors.py \
+    tests/test_token_refresh_rate_limit.py
 }
 
 run_frontend() {
@@ -257,7 +261,10 @@ run_frontend() {
     tests/markdownKatexSanitize.spec.ts tests/mindmateDiagramPreviewCache.spec.ts \
     tests/loginRestoresUiLanguage.spec.ts tests/normalizeAuthUser.spec.ts \
     tests/authBootstrapDedupe.spec.ts tests/formatGalleryLanguageMenuLabel.spec.ts \
-    tests/formatSidebarDailyTokens.spec.ts
+    tests/formatSidebarDailyTokens.spec.ts \
+    tests/voiceNotesMarkdown.spec.ts tests/voiceNotesTranscript.spec.ts \
+    tests/voiceNotesSaveStatus.spec.ts tests/mobileVoiceNotesFinish.spec.ts \
+    tests/hasPersistedAuthUser.spec.ts
 }
 
 run_chrome_extension() {

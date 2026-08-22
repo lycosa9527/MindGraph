@@ -4,51 +4,28 @@
  * Closing does not stop an active recording.
  */
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
 import { ArrowUpRight, Copy, Mic, Pause, Square } from '@lucide/vue'
 
+import VoiceNotesSpeakerEditor from '@/components/voiceNotes/VoiceNotesSpeakerEditor.vue'
+import VoiceNotesTranscriptPane from '@/components/voiceNotes/VoiceNotesTranscriptPane.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { isMobileAppPath } from '@/composables/voiceNotes/mobileVoiceNotesFinish'
+import { useVoiceNotesSessionChrome } from '@/composables/voiceNotes/useVoiceNotesSessionChrome'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
 
 const { t } = useLanguage()
+const route = useRoute()
 const notify = useNotifications()
 const voiceNotes = useVoiceNotesStore()
-const {
-  modalOpen,
-  recording,
-  paused,
-  connecting,
-  ingesting,
-  stopping,
-  bootstrapping,
-  sessionStatus,
-  transcriptText,
-  elapsedMs,
-  liveText,
-  lines,
-} = storeToRefs(voiceNotes)
-
-const statusLabel = computed(() => {
-  switch (sessionStatus.value) {
-    case 'ingesting':
-      return t('auth.voiceNotes.ingesting')
-    case 'stopping':
-      return t('auth.voiceNotes.stopping')
-    case 'connecting':
-      return t('auth.voiceNotes.connecting')
-    case 'starting':
-      return t('auth.voiceNotes.starting')
-    case 'paused':
-      return t('auth.voiceNotes.paused')
-    case 'recording':
-      return t('auth.voiceNotes.recording')
-    default:
-      return t('auth.voiceNotes.idle')
-  }
-})
+const isMobileShell = computed(() => route.meta.layout === 'mobile' || isMobileAppPath(route.path))
+const { modalOpen, elapsedMs } = storeToRefs(voiceNotes)
+const { statusLabel, saveKind, statusClickable, onStatusClick, actions } =
+  useVoiceNotesSessionChrome()
 
 const elapsedLabel = computed(() => {
   const totalSec = Math.floor(elapsedMs.value / 1000)
@@ -56,14 +33,6 @@ const elapsedLabel = computed(() => {
   const ss = String(totalSec % 60).padStart(2, '0')
   return `${mm}:${ss}`
 })
-
-const canStart = computed(
-  () => !recording.value && !paused.value && !connecting.value && !stopping.value
-)
-const canPause = computed(() => recording.value && !paused.value && !stopping.value)
-const canResume = computed(() => recording.value && paused.value && !stopping.value)
-const canStop = computed(() => (recording.value || paused.value) && !stopping.value)
-const canCopy = computed(() => Boolean(transcriptText.value.trim()))
 
 function onClose(): void {
   voiceNotes.closeModal()
@@ -90,7 +59,7 @@ function onJump(): void {
 }
 
 async function onCopy(): Promise<void> {
-  const text = transcriptText.value.trim()
+  const text = voiceNotes.transcriptText.trim()
   if (!text) return
   try {
     await navigator.clipboard.writeText(text)
@@ -103,7 +72,7 @@ async function onCopy(): Promise<void> {
 
 <template>
   <el-dialog
-    :model-value="modalOpen"
+    :model-value="modalOpen && !isMobileShell"
     width="min(520px, 92vw)"
     append-to-body
     destroy-on-close
@@ -124,7 +93,16 @@ async function onCopy(): Promise<void> {
           aria-hidden="true"
         />
         <span class="vn-swiss__note">
-          <span class="vn-swiss__status">{{ statusLabel }}</span>
+          <span
+            class="vn-swiss__status"
+            :class="{
+              'vn-swiss__status--dirty': saveKind === 'unsaved',
+              'vn-swiss__status--saving': saveKind === 'saving',
+              'vn-swiss__status--click': statusClickable,
+            }"
+            @click="onStatusClick"
+            >{{ statusLabel }}</span
+          >
           <span class="vn-swiss__elapsed">{{ elapsedLabel }}</span>
         </span>
       </div>
@@ -132,33 +110,12 @@ async function onCopy(): Promise<void> {
 
     <div class="vn-swiss__stack">
       <div class="vn-swiss__kicker">
-        <span>{{ t('auth.voiceNotes.viewTranscript') }}</span>
+        <span class="vn-swiss__kicker-label">{{ t('auth.voiceNotes.viewTranscript') }}</span>
+        <VoiceNotesSpeakerEditor variant="pill" />
       </div>
 
-      <div
-        class="vn-swiss__body"
-        role="log"
-        aria-live="polite"
-      >
-        <p
-          v-for="(line, index) in lines"
-          :key="`${index}-${line.slice(0, 12)}`"
-          class="vn-swiss__line"
-        >
-          {{ line }}
-        </p>
-        <p
-          v-if="liveText.trim()"
-          class="vn-swiss__line vn-swiss__line--live"
-        >
-          {{ liveText }}
-        </p>
-        <p
-          v-if="!lines.length && !liveText.trim()"
-          class="vn-swiss__empty"
-        >
-          {{ t('auth.voiceNotes.empty') }}
-        </p>
+      <div class="vn-swiss__body">
+        <VoiceNotesTranscriptPane />
       </div>
     </div>
 
@@ -168,7 +125,7 @@ async function onCopy(): Promise<void> {
           <button
             type="button"
             class="vn-pill vn-pill--ghost"
-            :disabled="!canCopy"
+            :disabled="!actions.canCopy"
             @click="onCopy"
           >
             <Copy
@@ -181,7 +138,7 @@ async function onCopy(): Promise<void> {
           <button
             type="button"
             class="vn-pill vn-pill--ghost"
-            :disabled="bootstrapping"
+            :disabled="!actions.canJump"
             @click="onJump"
           >
             <span>{{ t('auth.voiceNotes.jumpToMindmap') }}</span>
@@ -195,10 +152,9 @@ async function onCopy(): Promise<void> {
 
         <div class="vn-swiss__footer-right">
           <button
-            v-if="canStart"
+            v-if="actions.canStart"
             type="button"
             class="vn-pill vn-pill--solid"
-            :disabled="connecting"
             @click="onStart"
           >
             <Mic
@@ -209,7 +165,7 @@ async function onCopy(): Promise<void> {
             {{ t('auth.voiceNotes.start') }}
           </button>
           <button
-            v-if="canPause"
+            v-if="actions.canPause"
             type="button"
             class="vn-pill vn-pill--ghost"
             @click="onPause"
@@ -222,7 +178,7 @@ async function onCopy(): Promise<void> {
             {{ t('auth.voiceNotes.pause') }}
           </button>
           <button
-            v-if="canResume"
+            v-if="actions.canResume"
             type="button"
             class="vn-pill vn-pill--solid"
             @click="onResume"
@@ -235,10 +191,9 @@ async function onCopy(): Promise<void> {
             {{ t('auth.voiceNotes.resume') }}
           </button>
           <button
-            v-if="canStop"
+            v-if="actions.canStop"
             type="button"
             class="vn-pill vn-pill--danger"
-            :disabled="ingesting"
             @click="onStop"
           >
             <Square
@@ -336,16 +291,33 @@ async function onCopy(): Promise<void> {
 .vn-swiss__note {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.55rem;
+  min-width: 0;
+  flex: 1 1 auto;
   font-size: 0.75rem;
   color: var(--vn-muted, #78716c);
-  white-space: nowrap;
 }
 
 .vn-swiss__status {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
   font-weight: 600;
+}
+
+.vn-swiss__status--dirty {
+  color: #d97706;
+}
+
+.vn-swiss__status--saving {
+  color: #2563eb;
+}
+
+.vn-swiss__status--click {
+  cursor: pointer;
 }
 
 .vn-swiss__elapsed {
@@ -363,12 +335,18 @@ async function onCopy(): Promise<void> {
 .vn-swiss__kicker {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.4rem;
   font-size: 0.7rem;
   font-weight: 650;
+  color: var(--vn-muted, #78716c);
+  position: relative;
+  z-index: 2;
+}
+
+.vn-swiss__kicker-label {
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--vn-muted, #78716c);
 }
 
 .vn-swiss__kicker::before {
@@ -380,31 +358,16 @@ async function onCopy(): Promise<void> {
 }
 
 .vn-swiss__body {
-  max-height: min(48vh, 26rem);
+  display: flex;
+  flex-direction: column;
+  height: min(48vh, 26rem);
   min-height: 10rem;
-  overflow-y: auto;
-  padding: 0.9rem 1rem;
+  overflow: hidden;
+  padding: 0;
   border: 1px solid var(--vn-border, #e7e5e4);
   border-radius: 10px;
   background: var(--vn-inset, #fafaf9);
-}
-
-.vn-swiss__line {
-  margin: 0 0 0.55rem;
   color: var(--vn-ink, #1c1917);
-  line-height: 1.55;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.vn-swiss__line--live {
-  color: var(--vn-muted, #78716c);
-}
-
-.vn-swiss__empty {
-  margin: 0;
-  color: var(--vn-subtle, #a8a29e);
-  line-height: 1.55;
 }
 
 .vn-swiss__footer {

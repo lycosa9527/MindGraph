@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 
 vi.mock('@/utils/sessionRefresh', () => ({
   refreshSessionAccessToken: vi.fn(),
+  markSessionFreshAfterAuth: vi.fn(),
   getSessionRefreshEpoch: vi.fn(() => 0),
   ensureFreshSessionAfterAuthFailure: vi.fn(async () => false),
 }))

@@ -32,7 +32,10 @@ from services.auth.oauth.oauth_login_service import (
     resolve_provider_flags,
     wechat_callback_url,
 )
-from services.auth.oauth.oauth_post_login import issue_oauth_browser_session
+from services.auth.oauth.oauth_post_login import (
+    issue_oauth_browser_session,
+    issue_oauth_login_redirect,
+)
 from services.auth.oauth.oauth_state_redis import consume_oauth_state, mint_oauth_state
 from services.auth.oauth.org_resolve import resolve_org_by_invitation_code
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -215,7 +218,6 @@ async def wechat_bind_start(
 @router.get("/wechat/callback")
 async def wechat_oauth_callback(
     request: Request,
-    response: Response,
     code: Optional[str] = Query(None),
     state: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_async_db),
@@ -248,9 +250,9 @@ async def wechat_oauth_callback(
             provider=OAUTH_PROVIDER_WECHAT,
             external_id=external_id,
         )
-        await issue_oauth_browser_session(user, request, response, db, method="oauth_wechat")
+        redirect = await issue_oauth_login_redirect(user, request, db, method="oauth_wechat")
         await db.commit()
-        return _auth_redirect(oauth_login=True)
+        return redirect
     except ValueError as exc:
         await db.rollback()
         return _oauth_failure_redirect(payload.mode, normalize_oauth_error_code(exc))
@@ -354,11 +356,13 @@ async def _complete_dingtalk_flow(
             provider=OAUTH_PROVIDER_DINGTALK,
             external_id=external_id,
         )
-        await issue_oauth_browser_session(user, request, response, db, method="oauth_dingtalk")
-        await db.commit()
         if json_response:
+            await issue_oauth_browser_session(user, request, response, db, method="oauth_dingtalk")
+            await db.commit()
             return {"ok": True}
-        return _auth_redirect(oauth_login=True)
+        redirect = await issue_oauth_login_redirect(user, request, db, method="oauth_dingtalk")
+        await db.commit()
+        return redirect
     except ValueError as exc:
         await db.rollback()
         if json_response:

@@ -1,5 +1,5 @@
 /**
- * Voice Notes — Fun-ASR realtime → Document Summary markdown.
+ * Voice Notes — Tencent ASR V2 realtime → Document Summary markdown.
  *
  * Session stoppers: max 60m duration, 2m silence auto-stop, mic lost,
  * WS drop / auth fail / started timeout, pagehide. Soft pause freezes silence.
@@ -12,10 +12,15 @@ import { defineStore } from 'pinia'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useNotifications } from '@/composables/core/useNotifications'
 import {
+  resolveVoiceNotesCanvasPath,
+  shouldWarnEmptyVoiceTranscript,
+} from '@/composables/voiceNotes/mobileVoiceNotesFinish'
+import {
   DOC_SUMMARY_API_BASE,
   DOC_SUMMARY_MAX_INPUT_CHARS,
   DOC_SUMMARY_PACKAGES_BASE,
 } from '@/config/docSummaryApi'
+import { SAVE } from '@/config/saveConfig'
 import { i18n } from '@/i18n'
 import {
   useAuthStore,
@@ -33,9 +38,30 @@ import {
   float32Rms,
   float32ToPcm16Base64,
 } from '@/utils/voiceNotesAudio'
+import { loadVoiceNotesConversation } from '@/utils/voiceNotesConversationRestore'
+import { serializeVoiceNotesMarkdown } from '@/utils/voiceNotesMarkdown'
+import {
+  VOICE_NOTES_MIN_SPEAKER_SLOTS,
+  type VoiceNotesTurn,
+  applySpeakerRemaps,
+  coalesceConsecutiveSpeakerTurns,
+  collectSnapshotSpeakerIds,
+  commitLiveTurns,
+  defaultSpeakerSlot,
+  mergeCaptureSnapshotTurns,
+  mergeSpeakerSlots,
+  remainingVoiceNotesDurationMs,
+  resolveCustomSpeakerLabel,
+  resolveSpeakerRemap,
+  shouldStopVoiceNotesOnServerError,
+  speakerIdsWithRemaps,
+  speakerLabelSuffix,
+  transcriptFromTurns,
+  turnsFromSnapshot,
+  voiceNotesErrorI18nKey,
+} from '@/utils/voiceNotesTranscript'
 
 const SCRIPT_PROCESS_BUFFER_SIZE = 2048
-const MAX_COMMITTED_LINES = 500
 /** Hard session cap. */
 const MAX_SESSION_MS = 60 * 60 * 1000
 /** Auto-stop when no speech energy / ASR text for this long (active recording only). */
@@ -68,15 +94,6 @@ function buildVoiceNotesWebSocketUrl(): string {
   return `${protocol}//${window.location.host}/api/ws/voice-notes`
 }
 
-function mapPromptLanguageToHints(lang: string): string[] {
-  const lower = (lang || 'zh').toLowerCase()
-  const base = lower.split('-')[0] || 'zh'
-  if (base === 'zh' || base === 'yue') return ['zh']
-  if (base === 'en') return ['en']
-  if (base === 'ja') return ['ja']
-  return ['zh', 'en']
-}
-
 function formatVoiceNoteTitle(date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return (
@@ -106,8 +123,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
   const connecting = ref(false)
   const ingesting = ref(false)
   const stopping = ref(false)
-  const lines = ref<string[]>([])
-  const liveText = ref('')
+  const turns = ref<VoiceNotesTurn[]>([])
   const elapsedMs = ref(0)
   const packageId = ref<number | null>(null)
   const diagramId = ref<string | null>(null)
@@ -116,6 +132,14 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
   const sessionReady = ref(false)
   /** Smoothed mic level 0–1 for FAB volume wave (active recording only). */
   const inputLevel = ref(0)
+  const speakerIds = ref<number[]>(mergeSpeakerSlots([], []))
+  const speakerNames = ref<Record<number, string>>({})
+  const speakerRemaps = ref<Record<number, number>>({})
+  let speakerContextId = ''
+  let captureTurnOffset = 0
+  const transcriptDirty = ref(false)
+  const lastSavedAt = ref<number | null>(null)
+  let transcriptSaveTimer: number | null = null
 
   let currentSessionStamp = 0
   let removeVisibilityListener: (() => void) | null = null
@@ -139,15 +163,15 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
   const processorRef = shallowRef<ScriptProcessorNode | null>(null)
   const mediaSourceRef = shallowRef<MediaStreamAudioSourceNode | null>(null)
 
-  const transcriptText = computed(() => {
-    const committed = lines.value.filter((s) => s.trim().length > 0)
-    const live = liveText.value.trim()
-    if (!live) return committed.join('\n')
-    if (committed.length === 0) return live
-    return `${committed.join('\n')}\n${live}`
-  })
+  const transcriptText = computed(() =>
+    transcriptFromTurns(turns.value, (speakerId) => labelForSpeakerId(speakerId))
+  )
 
   const hasActiveCapture = computed(() => recording.value || paused.value)
+  const canEditTranscript = computed(
+    () =>
+      !recording.value && !paused.value && !connecting.value && !stopping.value && !ingesting.value
+  )
 
   const sessionStatus = computed(() => {
     if (ingesting.value) return 'ingesting'
@@ -159,7 +183,10 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     return 'idle'
   })
 
-  function t(key: string): string {
+  function t(key: string, named?: Record<string, string | number>): string {
+    if (named) {
+      return i18n.global.t(key, named) as string
+    }
     return i18n.global.t(key) as string
   }
 
@@ -213,8 +240,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
   function startSessionWatchers(): void {
     clearWatchTimers()
     recordingStartedAt = Date.now()
-    pausedAccumulatedMs = 0
-    elapsedMs.value = 0
+    pausedAccumulatedMs = elapsedMs.value
     markSpeechActivity()
 
     elapsedTimer = window.setInterval(() => {
@@ -222,10 +248,13 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       elapsedMs.value = pausedAccumulatedMs + (Date.now() - recordingStartedAt)
     }, 250)
 
-    maxDurationTimer = window.setTimeout(() => {
-      notify.warning(t('auth.voiceNotes.maxDuration'))
-      void stopRecording('max_duration')
-    }, MAX_SESSION_MS)
+    maxDurationTimer = window.setTimeout(
+      () => {
+        notify.warning(t('auth.voiceNotes.maxDuration'))
+        void stopRecording('max_duration')
+      },
+      remainingVoiceNotesDurationMs(elapsedMs.value, MAX_SESSION_MS)
+    )
 
     silenceCheckTimer = window.setInterval(() => {
       if (!recording.value || paused.value || stopping.value) return
@@ -261,14 +290,22 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       bootstrapping.value = true
       error.value = null
       try {
-        const lang = String(uiStore.promptLanguage || uiStore.language || 'zh').split('-')[0] || 'zh'
+        const lang =
+          String(uiStore.promptLanguage || uiStore.language || 'zh').split('-')[0] || 'zh'
         const template = getDefaultTemplate('mindmap', uiStore.language)
         if (!template) {
           notify.warning(t('auth.voiceNotes.bootstrapFailed'))
           return false
         }
         const title = formatVoiceNoteTitle()
-        const saved = await savedDiagramsStore.saveDiagram(title, 'mindmap', template, lang)
+        const saved = await savedDiagramsStore.saveDiagram(
+          title,
+          'mindmap',
+          template,
+          lang,
+          null,
+          'voice_notes'
+        )
         if (!saved?.id) {
           notify.warning(t('auth.voiceNotes.saveFailed'))
           return false
@@ -292,9 +329,46 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
   }
 
   async function jumpToMindmap(): Promise<void> {
+    await flushTranscriptIfEdited()
     const ok = await ensureMindmapSession()
     if (!ok || !diagramId.value) return
-    await router.push({ path: '/canvas', query: { diagramId: diagramId.value } })
+    await router.push({
+      path: resolveVoiceNotesCanvasPath(router.currentRoute.value.path),
+      query: { diagramId: diagramId.value },
+    })
+  }
+
+  async function openSavedConversation(savedId: string, title: string): Promise<boolean> {
+    if (hasActiveCapture.value || connecting.value || stopping.value || ingesting.value) {
+      notify.warning(t('auth.voiceNotes.sessionBusy'))
+      return false
+    }
+    if (transcriptDirty.value) await ingestTranscript()
+    if (transcriptDirty.value) return false
+    try {
+      const restored = await loadVoiceNotesConversation(
+        savedId,
+        title,
+        String(i18n.global.t('auth.voiceNotes.speakerLabel'))
+      )
+      diagramId.value = restored.diagramId
+      packageId.value = restored.packageId
+      turns.value = restored.turns
+      speakerNames.value = restored.speakerNames
+      speakerIds.value = mergeSpeakerSlots([], restored.speakerIds)
+      speakerRemaps.value = restored.speakerRemaps
+      speakerContextId = restored.speakerContextId
+      captureTurnOffset = restored.turns.length
+      transcriptDirty.value = false
+      lastSavedAt.value = restored.savedAt ?? (restored.hasTranscript ? Date.now() : null)
+      elapsedMs.value = restored.elapsedMs
+      error.value = null
+      return true
+    } catch (exc) {
+      const msg = exc instanceof Error ? exc.message : t('auth.voiceNotes.bootstrapFailed')
+      notify.warning(msg)
+      return false
+    }
   }
 
   function unregisterVisibilityListener(): void {
@@ -405,12 +479,44 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     }
   }
 
-  function appendFinalLine(text: string): void {
-    const line = text.trim()
-    if (!line) return
-    const next = [...lines.value, line]
-    lines.value = next.length > MAX_COMMITTED_LINES ? next.slice(-MAX_COMMITTED_LINES) : next
-    liveText.value = ''
+  function applyEditedTurn(index: number, text: string): void {
+    if (!canEditTranscript.value) return
+    const current = turns.value[index]
+    if (!current || current.live) return
+    const next = [...turns.value]
+    next[index] = { ...current, text }
+    turns.value = next
+    transcriptDirty.value = true
+  }
+
+  function clearTranscriptSaveTimer(): void {
+    if (transcriptSaveTimer === null) return
+    window.clearTimeout(transcriptSaveTimer)
+    transcriptSaveTimer = null
+  }
+
+  function scheduleTranscriptSave(): void {
+    clearTranscriptSaveTimer()
+    if (!transcriptDirty.value) return
+    if (recording.value || paused.value || connecting.value || stopping.value || ingesting.value) {
+      return
+    }
+    transcriptSaveTimer = window.setTimeout(() => {
+      transcriptSaveTimer = null
+      void flushTranscriptIfEdited()
+    }, SAVE.AUTO_SAVE_DEBOUNCE_MS)
+  }
+
+  async function flushTranscriptIfEdited(): Promise<void> {
+    if (!transcriptDirty.value) return
+    await ingestTranscript()
+  }
+
+  function rememberSpeakerContext(data: Record<string, unknown>): void {
+    const contextId = data.speaker_context_id
+    if (typeof contextId === 'string' && contextId.trim()) {
+      speakerContextId = contextId.trim()
+    }
   }
 
   function handleServerPayload(data: Record<string, unknown>, sessionStamp: number): void {
@@ -420,16 +526,19 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       connecting.value = false
       sessionReady.value = true
       clearStartedTimeout()
+      rememberSpeakerContext(data)
       return
     }
-    if (typ === 'partial') {
-      liveText.value = String(data.text ?? '')
-      if (liveText.value.trim()) markSpeechActivity()
-      return
-    }
-    if (typ === 'final') {
-      appendFinalLine(String(data.text ?? ''))
-      markSpeechActivity()
+    if (typ === 'snapshot') {
+      speakerIds.value = speakerIdsWithRemaps(
+        speakerIds.value,
+        collectSnapshotSpeakerIds(data.sentences),
+        speakerRemaps.value
+      )
+      const incoming = applySpeakerRemaps(turnsFromSnapshot(data.sentences), speakerRemaps.value)
+      turns.value = mergeCaptureSnapshotTurns(turns.value.slice(0, captureTurnOffset), incoming)
+      rememberSpeakerContext(data)
+      if (turns.value.length > 0) markSpeechActivity()
       return
     }
     if (typ === 'stopped') {
@@ -439,7 +548,8 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     }
     if (typ === 'error') {
       const code = String(data.code ?? '')
-      const msg = String(data.message ?? t('auth.voiceNotes.genericError'))
+      const i18nKey = voiceNotesErrorI18nKey(code)
+      const msg = i18nKey ? t(i18nKey) : String(data.message ?? t('auth.voiceNotes.genericError'))
       error.value = msg
       if (code === 'daily_token_cap' || code === 'thinking_coin' || code === 'budget') {
         notify.warning(msg || t('auth.voiceNotes.budgetExceeded'))
@@ -452,7 +562,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
         return
       }
       notify.warning(msg)
-      if (code === 'asr_config' || code === 'upstream' || code === 'relay') {
+      if (shouldStopVoiceNotesOnServerError(code)) {
         void stopRecording('upstream_error')
       }
     }
@@ -576,7 +686,15 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
   }
 
   async function startRecording(): Promise<void> {
-    if (!enabled.value || connecting.value || recording.value || stopping.value) return
+    if (
+      !enabled.value ||
+      connecting.value ||
+      recording.value ||
+      stopping.value ||
+      ingesting.value
+    ) {
+      return
+    }
     if (!navigator.mediaDevices?.getUserMedia) {
       notify.warning(t('auth.voiceNotes.micUnavailable'))
       return
@@ -593,6 +711,8 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     error.value = null
     lastStopReason.value = null
     intentionalClose = false
+    turns.value = commitLiveTurns(turns.value)
+    captureTurnOffset = turns.value.length
     const sessionStamp = ++currentSessionStamp
     const socket = new WebSocket(buildVoiceNotesWebSocketUrl())
     wsRef.value = socket
@@ -603,7 +723,8 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
         socket.send(
           JSON.stringify({
             type: 'start',
-            language_hints: mapPromptLanguageToHints(String(uiStore.promptLanguage)),
+            diarization_enabled: true,
+            ...(speakerContextId ? { speaker_context_id: speakerContextId } : {}),
           })
         )
       } catch {
@@ -628,13 +749,6 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       }
     }
 
-    socket.onerror = () => {
-      if (sessionStamp !== currentSessionStamp) return
-      if (connecting.value || !sessionReady.value) {
-        notify.warning(t('auth.voiceNotes.wsError'))
-      }
-    }
-
     socket.onclose = (event: CloseEvent) => {
       if (sessionStamp !== currentSessionStamp) return
       wsRef.value = null
@@ -647,6 +761,11 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       if (event.code === 4001) {
         notify.warning(t('auth.voiceNotes.authFailed'))
         void stopRecording('auth')
+        return
+      }
+      if (connecting.value || !sessionReady.value) {
+        notify.warning(t('auth.voiceNotes.wsError'))
+        void abortSession('ws_error')
         return
       }
       if (recording.value || paused.value) {
@@ -662,7 +781,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
   }
 
   function pauseRecording(): void {
-    if (!recording.value || paused.value || stopping.value) return
+    if (!recording.value || !sessionReady.value || paused.value || stopping.value) return
     pausedAccumulatedMs = elapsedMs.value
     paused.value = true
     resetInputLevel()
@@ -691,19 +810,31 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     const pkgId = packageId.value
     if (!pkgId) return
 
-    const clipped =
-      text.length > DOC_SUMMARY_MAX_INPUT_CHARS ? text.slice(0, DOC_SUMMARY_MAX_INPUT_CHARS) : text
+    const savedAt = Date.now()
+    const content = serializeVoiceNotesMarkdown({
+      turns: turns.value,
+      speakerNames: speakerNames.value,
+      speakerIds: speakerIds.value,
+      speakerRemaps: speakerRemaps.value,
+      speakerContextId,
+      savedAt,
+      elapsedMs: elapsedMs.value,
+      labelForSpeakerId,
+      maxChars: DOC_SUMMARY_MAX_INPUT_CHARS,
+    })
     ingesting.value = true
     try {
       const lang = String(uiStore.promptLanguage || 'zh').split('-')[0] || 'zh'
       await apiRequestJson(`${DOC_SUMMARY_PACKAGES_BASE}/${pkgId}/documents/ingest-text`, {
         method: 'POST',
         body: JSON.stringify({
-          content: clipped,
+          content,
           title: formatVoiceNoteTitle(),
           language: lang,
         }),
       })
+      transcriptDirty.value = false
+      lastSavedAt.value = savedAt
       tryOpenDocSummaryPanel()
     } catch (exc) {
       const msg = exc instanceof Error ? exc.message : t('auth.voiceNotes.ingestFailed')
@@ -711,6 +842,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       notify.warning(msg)
     } finally {
       ingesting.value = false
+      if (transcriptDirty.value) scheduleTranscriptSave()
     }
   }
 
@@ -740,8 +872,8 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     clearStartedTimeout()
     stopMicrophoneGraph()
 
-    if (liveText.value.trim()) {
-      appendFinalLine(liveText.value)
+    if (turns.value.some((turn) => turn.live)) {
+      turns.value = commitLiveTurns(turns.value)
     }
 
     const sock = wsRef.value
@@ -759,6 +891,14 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     try {
       if (reason !== 'pagehide') {
         await ingestTranscript()
+      }
+      if (
+        shouldWarnEmptyVoiceTranscript({
+          lastStopReason: reason,
+          transcript: transcriptText.value,
+        })
+      ) {
+        notify.warning(t('auth.voiceNotes.emptyTranscript'))
       }
     } finally {
       stopping.value = false
@@ -784,13 +924,76 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     stopping.value = false
     packageId.value = null
     diagramId.value = null
-    lines.value = []
-    liveText.value = ''
+    turns.value = []
     elapsedMs.value = 0
     error.value = null
+    transcriptDirty.value = false
+    lastSavedAt.value = null
+    clearTranscriptSaveTimer()
+    speakerIds.value = mergeSpeakerSlots([], [])
+    speakerNames.value = {}
+    speakerRemaps.value = {}
+    speakerContextId = ''
+    captureTurnOffset = 0
     resetInputLevel()
     currentSessionStamp += 1
   }
+
+  function speakerLabelTemplate(): string {
+    return String(t('auth.voiceNotes.speakerLabel', { n: 1 }))
+  }
+
+  function labelForSpeakerId(speakerId: number): string {
+    return resolveCustomSpeakerLabel(
+      speakerNames.value[speakerId] ?? '',
+      String(t('auth.voiceNotes.speakerLabel', { n: speakerId + 1 })),
+      speakerLabelSuffix(speakerLabelTemplate())
+    )
+  }
+
+  function renameSpeaker(speakerId: number, name: string): void {
+    if (!Number.isInteger(speakerId) || speakerId < 0) return
+    const oldLabel = labelForSpeakerId(speakerId)
+    speakerNames.value = { ...speakerNames.value, [speakerId]: name }
+    speakerIds.value = mergeSpeakerSlots(speakerIds.value, [speakerId])
+    const newLabel = labelForSpeakerId(speakerId)
+    if (oldLabel !== newLabel) transcriptDirty.value = true
+  }
+
+  function mergeSpeakers(fromId: number, intoId: number): void {
+    if (fromId === intoId || fromId < 0 || intoId < 0) return
+    const target = resolveSpeakerRemap(intoId, speakerRemaps.value)
+    if (fromId === target) return
+    const nextRemaps = { ...speakerRemaps.value, [fromId]: target }
+    speakerRemaps.value = nextRemaps
+    turns.value = coalesceConsecutiveSpeakerTurns(applySpeakerRemaps(turns.value, nextRemaps))
+    const nextNames = { ...speakerNames.value }
+    delete nextNames[fromId]
+    speakerNames.value = nextNames
+    speakerIds.value = speakerIdsWithRemaps(speakerIds.value, [], nextRemaps)
+    transcriptDirty.value = true
+  }
+
+  function resetSpeaker(speakerId: number): void {
+    if (!Number.isInteger(speakerId) || speakerId < 0) return
+    if (speakerId >= VOICE_NOTES_MIN_SPEAKER_SLOTS) {
+      mergeSpeakers(speakerId, defaultSpeakerSlot(speakerId))
+      return
+    }
+    if (!(speakerId in speakerNames.value)) return
+    const nextNames = { ...speakerNames.value }
+    delete nextNames[speakerId]
+    speakerNames.value = nextNames
+    transcriptDirty.value = true
+  }
+
+  watch(transcriptDirty, (dirty) => {
+    if (dirty) {
+      scheduleTranscriptSave()
+      return
+    }
+    clearTranscriptSaveTimer()
+  })
 
   watch(
     () => authStore.isAuthenticated,
@@ -813,8 +1016,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     sessionReady,
     sessionStatus,
     inputLevel,
-    lines,
-    liveText,
+    turns,
     elapsedMs,
     packageId,
     diagramId,
@@ -822,10 +1024,22 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     lastStopReason,
     transcriptText,
     hasActiveCapture,
+    canEditTranscript,
+    applyEditedTurn,
+    flushTranscriptIfEdited,
+    speakerIds,
+    speakerNames,
+    transcriptDirty,
+    lastSavedAt,
+    labelForSpeakerId,
+    renameSpeaker,
+    mergeSpeakers,
+    resetSpeaker,
     enableAndOpen,
     openModal,
     closeModal,
     jumpToMindmap,
+    openSavedConversation,
     startRecording,
     pauseRecording,
     resumeRecording,

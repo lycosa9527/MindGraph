@@ -76,6 +76,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/mobile/MobileOrgsPage.vue'),
     meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('orgs') },
   },
+  {
+    path: '/m/voice-notes',
+    name: 'MobileVoiceNotes',
+    component: () => import('@/pages/mobile/MobileVoiceNotesPage.vue'),
+    meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('voiceNotes') },
+  },
 
   // ── Desktop routes ────────────────────────────────────────────────
   {

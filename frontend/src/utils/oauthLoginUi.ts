@@ -1,3 +1,6 @@
+/** Official WxLogin default: jump the top window so callback Set-Cookie is visible. */
+export const WX_LOGIN_SELF_REDIRECT = false
+
 /**
  * Resolve school invitation code for OAuth QR login from route or register form.
  */

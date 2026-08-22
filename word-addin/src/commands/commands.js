@@ -2,7 +2,7 @@
 /**
  * Ribbon executeFunction handlers.
  * MindMate / Settings open shell dialogs; Voice opens on Settings baseUrl
- * (same Origin as Fun-ASR WebSocket / CSWSH allowlist).
+ * (same Origin as Voice Notes WebSocket / CSWSH allowlist).
  */
 
 /** @type {Record<string, Office.Dialog | null>} */

@@ -1,7 +1,7 @@
-"""Voice Notes usage: daily-cap / thinking-coin preflight + Fun-ASR token settle.
+"""Voice Notes usage: daily-cap / thinking-coin preflight + ASR token settle.
 
-Fun-ASR is billed by audio duration upstream. We map PCM seconds to a token
-proxy so sessions count toward ``USER_DAILY_TOKEN_CAP`` and appear in
+Tencent ASR V2 is billed by audio duration upstream. We map PCM seconds to a
+token proxy so sessions count toward ``USER_DAILY_TOKEN_CAP`` and appear in
 ``token_usage`` like other paid AI features.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Optional
+from typing import Optional
 
 from models.domain.auth import User
 from models.domain.messages import Language
@@ -35,7 +35,7 @@ from utils.auth.connection_types import HttpOrWebSocket
 logger = logging.getLogger(__name__)
 
 VOICE_NOTES_REQUEST_TYPE = "voice_notes_asr"
-VOICE_NOTES_MODEL_ALIAS = "fun-asr-realtime"
+VOICE_NOTES_MODEL_ALIAS = "tencent-asr-v2"
 VOICE_NOTES_ENDPOINT_PATH = "/api/ws/voice-notes"
 
 # 16 kHz mono PCM16
@@ -71,7 +71,7 @@ async def assert_voice_notes_usage_budget(
     *,
     lang: Language = "en",
 ) -> None:
-    """Preflight thinking-coin balance or daily token cap before Fun-ASR start."""
+    """Preflight thinking-coin balance or daily token cap before ASR start."""
     await assert_llm_usage_budget(
         int(user.id),
         getattr(user, "organization_id", None),
@@ -113,7 +113,7 @@ async def settle_voice_notes_usage(
     started_at: float,
     success: bool = True,
 ) -> int:
-    """Record Fun-ASR proxy tokens + thinking-coin debit when applicable.
+    """Record ASR proxy tokens + thinking-coin debit when applicable.
 
     Returns total tokens recorded (0 when nothing to settle).
     """
@@ -179,15 +179,3 @@ async def settle_voice_notes_usage(
         logger.warning("[VoiceNotesASR] thinking-coin settle failed: %s", exc)
 
     return total_tokens
-
-
-def usage_settle_kwargs_from_counts(
-    pcm_bytes: int,
-    final_texts: list[str],
-) -> dict[str, Any]:
-    """Helper for tests / callers assembling settle inputs."""
-    transcript = "\n".join(part for part in final_texts if part.strip())
-    return {
-        "pcm_bytes": int(pcm_bytes),
-        "transcript_chars": len(transcript),
-    }

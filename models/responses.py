@@ -216,6 +216,7 @@ class DiagramListItem(BaseModel):
     is_pinned: bool = Field(False, description="Whether diagram is pinned to top")
     workshop_active: bool = Field(False, description="Whether diagram has a live collab session")
     folder_id: Optional[str] = Field(None, description="Archive folder UUID, if assigned")
+    source_channel: Optional[str] = Field(None, description="Provenance channel")
 
     model_config = ConfigDict(
         json_schema_extra={

@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_async_db
 from models.domain.auth import User
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
-from routers.auth.helpers import set_auth_cookies
+from routers.auth.helpers import issue_new_auth_cookies
 from services.auth.embed_session_handoff import (
     append_embed_query,
     consume_embed_handoff,
@@ -178,7 +178,7 @@ async def complete_embed_session(
         url=append_embed_query(sanitize_embed_next_path(next_path), EMBED_CLIENT_WORD),
         status_code=status.HTTP_302_FOUND,
     )
-    set_auth_cookies(redirect, access_token, refresh_token_value, request)
+    await issue_new_auth_cookies(redirect, access_token, refresh_token_value, request)
     # Avoid leaking one-time handoff codes via Referer to the SPA or third parties.
     redirect.headers["Referrer-Policy"] = "no-referrer"
     await record_vpn_login_geo(user.id, request)

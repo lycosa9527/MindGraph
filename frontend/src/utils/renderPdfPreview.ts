@@ -1,12 +1,21 @@
 import { gunzipSync } from 'fflate'
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
 
 import { fetchShowcaseAsset } from '@/utils/fetchShowcaseAsset'
 import { refreshWatermarkDensity, stampWatermarkOnElement } from '@/utils/showcaseWatermark'
 
+type PdfJsApi = Pick<typeof import('pdfjs-dist'), 'getDocument' | 'GlobalWorkerOptions'>
+
+let pdfJsApi: Promise<PdfJsApi> | null = null
 let workerConfigured = false
 
-function ensurePdfWorker(): void {
+function loadPdfJs(): Promise<PdfJsApi> {
+  if (!pdfJsApi) {
+    pdfJsApi = import('pdfjs-dist')
+  }
+  return pdfJsApi
+}
+
+function ensurePdfWorker(GlobalWorkerOptions: PdfJsApi['GlobalWorkerOptions']): void {
   if (workerConfigured) return
   const base = import.meta.env.BASE_URL.replace(/\/?$/, '/')
   GlobalWorkerOptions.workerSrc = `${base}pdf.worker.min.mjs`
@@ -53,7 +62,8 @@ async function renderPdfCanvas(
   signal?: AbortSignal,
   watermarkText?: string
 ): Promise<void> {
-  ensurePdfWorker()
+  const { getDocument, GlobalWorkerOptions } = await loadPdfJs()
+  ensurePdfWorker(GlobalWorkerOptions)
   // pdfjs 6: isEvalSupported removed; prefer canvas over canvasContext-only render.
   const loadingTask = getDocument({ data, disableAutoFetch: true })
   if (signal) {

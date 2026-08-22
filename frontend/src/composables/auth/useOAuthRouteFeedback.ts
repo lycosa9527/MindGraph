@@ -6,7 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { eventBus } from '@/composables/core/useEventBus'
+import { useAuthStore } from '@/stores'
 import {
   isOAuthRedirectError,
   notifyOAuthError,
@@ -59,7 +59,7 @@ export function useOAuthRouteFeedback(): void {
         return
       }
       if (oauthLoginFromRouteQuery(route.query.oauth_login)) {
-        eventBus.emit('auth:login_success', {})
+        useAuthStore().emitLoginSuccess()
         stripOAuthQuery()
       }
     },

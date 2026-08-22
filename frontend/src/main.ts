@@ -24,14 +24,15 @@ import { setAppQueryClient } from './utils/appQueryClient'
 import { isGuestAuthPath } from './utils/authRedirect'
 import { installCsrfFetchInterceptor } from './utils/installCsrfFetchInterceptor'
 import { installFrontendErrorReporting } from './utils/installFrontendErrorReporting'
-import { installIteratorHelpersPolyfill } from './utils/iteratorHelpersPolyfill'
+import { installIteratorGlobalStub } from './utils/iteratorGlobalStub'
 import { loadMobileDebugConsole } from './utils/loadMobileDebugConsole'
 import { syncOfficeEmbedFromSearch } from './utils/officeEmbed'
 import { bindPwaInstallListeners } from './utils/pwaInstall'
 import { reloadForStaleChunk } from './utils/staleChunkReload'
 
-// WeChat / older WebViews: install before any lazy route chunk evaluates.
-installIteratorHelpersPolyfill()
+// pdfjs-dist reads Iterator.prototype.join; classic pwa-install-early.js also
+// installs this before any module.
+installIteratorGlobalStub()
 
 // Office Word task-pane / ?embed=word-addin → desktop layout before first paint.
 syncOfficeEmbedFromSearch()

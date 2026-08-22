@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': '캔버스에서 만들기',
   'landing.diagramGrid.tree_map.desc': '분류와 그룹',
   'landing.diagramGrid.tree_map.title': '트리 맵',
+  'landing.diagramGrid.voice_notes.desc': '녹음 후 마인드맵',
+  'landing.diagramGrid.voice_notes.title': '음성 노트',
   'landing.template.freePlaceholder': '주제나 구조(가지, 단계, 범주…)를 설명하거나 아래 템플릿을 선택하세요…',
   'landing.template.slot.criterion': '분류',
   'landing.template.slot.event': '사건',

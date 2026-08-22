@@ -69,7 +69,7 @@ npm start      # terminal 2
 ## Notes
 
 - MindMate / Voice / Sign-in = Office **dialogs**; MindGraph / Showcase / Manual = **task panes**.
-- Voice opens **`{Settings baseUrl}/word-addin/src/taskpane/voice.html`** (same origin as the API), then mic → `WS /api/ws/voice-notes` with saved `mgat_` → Fun-ASR. Sign-in stays on the shell so you can change Server.
+- Voice opens **`{Settings baseUrl}/word-addin/src/taskpane/voice.html`** (same origin as the API), then mic → `WS /api/ws/voice-notes` with saved `mgat_` → Tencent ASR V2. Sign-in stays on the shell so you can change Server.
 - Production zip AppDomains must be **origins only** (never `…/word-addin`); path AppDomains make Office skip the CustomTab.
 - After Windows install: open a **document** (not only the blank start screen) to see the MindGraph ribbon.
 - AppSource public store listing is out of scope for v1.

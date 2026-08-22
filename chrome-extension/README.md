@@ -6,9 +6,11 @@ This folder is a **Manifest V3** extension for **Google Chrome** and **Microsoft
 
 Toolbar and store icons match the **web app favicon** ([`frontend/public/favicon.svg`](../frontend/public/favicon.svg)): stone-900 rounded square (`#1c1917`) with a white **M**.
 
-PNG sizes are generated for Chrome from that design. Regenerate after changing the SVG:
+PNG sizes are rasterized from that SVG at native pixel sizes (same pipeline as PWA / WeChat icons). Regenerate after changing the SVG:
 
-`python chrome-extension/scripts/generate_icons.py`
+`cd frontend && npm run generate-pwa-icons`
+
+or `python chrome-extension/scripts/generate_icons.py`
 
 Regenerated sizes: 16, 32, 48, 128, and **300** (Edge Add-ons store logo).
 

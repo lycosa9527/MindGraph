@@ -1,4 +1,4 @@
-"""Unit tests for Voice Notes Fun-ASR bridge helpers and punctuation flag."""
+"""Unit tests for Voice Notes Tencent ASR V2 bridge helpers."""
 
 from __future__ import annotations
 
@@ -9,11 +9,20 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from routers.api.voice_notes_ws import VOICE_NOTES_MAX_WS_MESSAGES_PER_SECOND
+from services.features.tencent_asr_v2_errors import (
+    TENCENT_ASR_CATEGORY_RETRY,
+    TENCENT_ASR_NO_V2_FRAME,
+    TencentAsrHandshakeError,
+    tencent_asr_connect_error,
+)
 from services.features.voice_notes_asr_bridge import (
     run_voice_notes_asr_relay,
     voice_notes_error_json,
 )
+from services.features.voice_notes_markdown import strip_voice_notes_markdown_meta
 from services.features.voice_notes_usage import (
+    VOICE_NOTES_MODEL_ALIAS,
     estimate_voice_notes_asr_tokens,
     voice_notes_budget_error_payload,
 )
@@ -22,28 +31,8 @@ from services.infrastructure.http.error_handler import (
     UserDailyTokenCapExceededError,
 )
 from services.infrastructure.monitoring.ws_metrics import _ENDPOINT_COUNTER
-from services.kitty.asr.fun_asr_realtime import build_fun_asr_run_task
 from services.monitoring.module_activity import VALID_MODULES
 from services.redis.redis_activity_tracker import RedisActivityTracker
-
-
-def test_fun_asr_run_task_semantic_punctuation_enabled() -> None:
-    """Voice notes pass semantic_punctuation_enabled=True for meeting punctuation."""
-    payload = build_fun_asr_run_task(
-        "task-vn",
-        model="fun-asr-realtime",
-        language_hints=["zh"],
-        semantic_punctuation_enabled=True,
-    )
-    assert payload["payload"]["parameters"]["semantic_punctuation_enabled"] is True
-    assert payload["payload"]["parameters"]["format"] == "pcm"
-    assert payload["payload"]["parameters"]["sample_rate"] == 16000
-
-
-def test_fun_asr_run_task_semantic_punctuation_default_false() -> None:
-    """Kitty path keeps semantic punctuation off by default."""
-    payload = build_fun_asr_run_task("task-kitty", model="fun-asr-realtime")
-    assert payload["payload"]["parameters"]["semantic_punctuation_enabled"] is False
 
 
 def test_voice_notes_error_json_shape() -> None:
@@ -70,16 +59,22 @@ def test_voice_notes_budget_error_codes() -> None:
     assert voice_notes_budget_error_payload(daily) == ("daily_token_cap", "cap hit")
 
 
+def test_voice_notes_ws_allows_high_rate_pcm_frames() -> None:
+    """96 kHz ScriptProcessor can exceed the default 40 msg/s WS cap."""
+    assert VOICE_NOTES_MAX_WS_MESSAGES_PER_SECOND >= 80
+
+
 def test_voice_notes_activity_and_metrics_wiring() -> None:
     """Module activity + WS metrics labels are registered for voice notes."""
     assert "voice_notes" in VALID_MODULES
     assert "voice_notes" in RedisActivityTracker.ACTIVITY_TYPES
     assert _ENDPOINT_COUNTER.get("voice_notes_asr") == "ws_voice_notes_connections"
+    assert VOICE_NOTES_MODEL_ALIAS == "tencent-asr-v2"
 
 
 @pytest.mark.asyncio
 async def test_voice_notes_relay_start_append_stop() -> None:
-    """Relay starts Fun-ASR, forwards PCM, finishes on stop."""
+    """Relay starts Tencent ASR V2, forwards PCM, finishes on stop."""
     sent: List[str] = []
     frames = [
         json.dumps({"type": "append", "audio": base64.b64encode(b"\x00\x01").decode()}),
@@ -99,7 +94,7 @@ async def test_voice_notes_relay_start_append_stop() -> None:
 
     with (
         patch(
-            "services.features.voice_notes_asr_bridge.FunAsrRealtimeClient",
+            "services.features.voice_notes_asr_bridge.TencentAsrV2Client",
             return_value=fake_asr,
         ),
         patch(
@@ -111,7 +106,7 @@ async def test_voice_notes_relay_start_append_stop() -> None:
             side_effect=lambda _ws, text: sent.append(text),
         ),
     ):
-        await run_voice_notes_asr_relay(MagicMock(), language_hints=["zh"])
+        await run_voice_notes_asr_relay(MagicMock())
 
     fake_asr.start.assert_awaited_once()
     fake_asr.send_pcm.assert_awaited()
@@ -126,7 +121,7 @@ async def test_voice_notes_relay_start_append_stop() -> None:
 
 @pytest.mark.asyncio
 async def test_voice_notes_relay_settles_usage_for_user() -> None:
-    """Successful relay with a user settles Fun-ASR proxy tokens."""
+    """Successful relay with a user settles ASR proxy tokens."""
     user = MagicMock()
     user.id = 42
     user.organization_id = 7
@@ -134,7 +129,7 @@ async def test_voice_notes_relay_settles_usage_for_user() -> None:
 
     with (
         patch(
-            "services.features.voice_notes_asr_bridge.FunAsrRealtimeClient",
+            "services.features.voice_notes_asr_bridge.TencentAsrV2Client",
         ) as ctor,
         patch(
             "services.features.voice_notes_asr_bridge.receive_websocket_text_frame",
@@ -165,8 +160,8 @@ async def test_voice_notes_relay_settles_usage_for_user() -> None:
 
 
 @pytest.mark.asyncio
-async def test_voice_notes_relay_passes_semantic_punctuation() -> None:
-    """FunAsrRealtimeClient is constructed with meeting punctuation enabled."""
+async def test_voice_notes_relay_passes_diarization_flag() -> None:
+    """TencentAsrV2Client is constructed with the session speaker toggle."""
     captured: dict[str, Any] = {}
 
     def fake_ctor(**kwargs: Any) -> MagicMock:
@@ -180,7 +175,7 @@ async def test_voice_notes_relay_passes_semantic_punctuation() -> None:
 
     with (
         patch(
-            "services.features.voice_notes_asr_bridge.FunAsrRealtimeClient",
+            "services.features.voice_notes_asr_bridge.TencentAsrV2Client",
             side_effect=fake_ctor,
         ),
         patch(
@@ -192,6 +187,51 @@ async def test_voice_notes_relay_passes_semantic_punctuation() -> None:
             new_callable=AsyncMock,
         ),
     ):
+        await run_voice_notes_asr_relay(
+            MagicMock(),
+            diarization_enabled=True,
+            speaker_context_id="vp-24h-abc",
+        )
+
+    assert captured.get("speaker_diarization") is True
+    assert captured.get("speaker_context_id") == "vp-24h-abc"
+
+
+@pytest.mark.asyncio
+async def test_voice_notes_relay_opening_handshake_timeout() -> None:
+    """Connect timeout is a classified handshake error, not a relay traceback."""
+    sent: List[str] = []
+    client = MagicMock()
+    client.start = AsyncMock(
+        side_effect=TencentAsrHandshakeError(tencent_asr_connect_error("timed out during opening handshake"))
+    )
+    client.finish = AsyncMock()
+    client.close = AsyncMock()
+
+    with (
+        patch(
+            "services.features.voice_notes_asr_bridge.TencentAsrV2Client",
+            return_value=client,
+        ),
+        patch(
+            "services.features.voice_notes_asr_bridge.safe_websocket_send_text",
+            side_effect=lambda _ws, text: sent.append(text),
+        ),
+    ):
         await run_voice_notes_asr_relay(MagicMock())
 
-    assert captured.get("semantic_punctuation_enabled") is True
+    payloads = [json.loads(item) for item in sent]
+    assert payloads[0]["type"] == "error"
+    assert payloads[0]["code"] == TENCENT_ASR_CATEGORY_RETRY
+    assert payloads[0]["provider_code"] == TENCENT_ASR_NO_V2_FRAME
+    assert any(item["type"] == "stopped" for item in payloads)
+    client.finish.assert_awaited()
+
+
+def test_strip_voice_notes_markdown_meta_keeps_talker_lines() -> None:
+    """Mindmap generate must not send the trailing talker-status comment."""
+    markdown = (
+        '说话人1：你好\nRoy：在的\n\n<!-- mg-voice-notes:1\n{"v":1,"ids":[0,2],"names":{"2":"Roy"},"ctx":"vp_1"}\n-->'
+    )
+    assert strip_voice_notes_markdown_meta(markdown) == "说话人1：你好\nRoy：在的"
+    assert strip_voice_notes_markdown_meta("说话人1：你好") == "说话人1：你好"

@@ -48,6 +48,7 @@ from services.redis.cache._redis_diagram_cache_helpers import (
     _redis_json_set_paths,
     count_diagrams_from_db,
 )
+from services.diagram.source_channel import list_items_missing_source_channel_field
 from services.redis.cache.diagram_new_id import assign_id_for_new_diagram
 from services.redis.cache.diagram_save_errors import describe_diagram_db_error
 from services.redis.cache.redis_cache_stampede import with_stampede_lock
@@ -607,18 +608,28 @@ class RedisDiagramCache:
         page: int = 1,
         page_size: int = 10,
         max_per_user: Optional[int] = None,
+        source_channel: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         List user's diagrams with pagination (cache-aside pattern).
 
         Checks Redis cache first. On cache miss, loads from database and caches in Redis.
         Pinned diagrams are sorted first, then by updated_at desc.
+        ``source_channel`` loads tagged rows from the database (not the list cache).
 
         Returns:
             Dict with 'diagrams', 'total', 'page', 'page_size', 'has_more', 'max_diagrams'
         """
         diagram_cap = await self._resolve_diagram_cap(user_id, max_per_user)
+        if source_channel:
+            items = await self._load_list_from_database(
+                user_id,
+                source_channel=source_channel,
+            )
+            return self._paginate_diagram_list(items, page, page_size, diagram_cap)
+
         list_key = self._get_user_list_key(user_id)
+        items: Optional[List[Dict[str, Any]]] = None
 
         # Try Redis cache first
         if self._use_redis():
@@ -628,50 +639,40 @@ class RedisDiagramCache:
                     cached = await redis.get(list_key)
                     if cached:
                         data = json.loads(cached)
-                        items = data.get("items", [])
-                        total = data.get("total", len(items))
-
-                        # Paginate cached results
-                        offset = (page - 1) * page_size
-                        paginated = items[offset : offset + page_size]
-
-                        return {
-                            "diagrams": paginated,
-                            "total": total,
-                            "page": page,
-                            "page_size": page_size,
-                            "has_more": offset + len(paginated) < total,
-                            "max_diagrams": diagram_cap,
-                        }
+                        cached_items = data.get("items", [])
+                        if not list_items_missing_source_channel_field(cached_items):
+                            items = cached_items
                 except REDIS_ERRORS as e:
                     logger.warning("[DiagramCache] Redis list cache read failed: %s", e)
 
-        # Cache miss: Load from database
-        items = await self._load_list_from_database(user_id)
+        if items is None:
+            items = await self._load_list_from_database(user_id)
+            items.sort(
+                key=lambda x: (x.get("is_pinned", False), x.get("updated_at", "") or ""),
+                reverse=True,
+            )
+            if self._use_redis():
+                redis = get_async_redis()
+                if redis:
+                    try:
+                        cache_data = {"items": items, "total": len(items)}
+                        await redis.setex(list_key, CACHE_TTL, orjson.dumps(cache_data))
+                    except REDIS_ERRORS as e:
+                        logger.warning("[DiagramCache] Redis list cache write failed: %s", e)
 
-        # Sort: pinned first (desc), then by updated_at desc
-        # Tuple key: (is_pinned descending, updated_at descending)
-        items.sort(
-            key=lambda x: (x.get("is_pinned", False), x.get("updated_at", "") or ""),
-            reverse=True,
-        )
+        return self._paginate_diagram_list(items, page, page_size, diagram_cap)
 
+    def _paginate_diagram_list(
+        self,
+        items: List[Dict[str, Any]],
+        page: int,
+        page_size: int,
+        diagram_cap: Optional[int],
+    ) -> Dict[str, Any]:
+        """Slice an already-filtered, already-sorted list."""
         total = len(items)
-
-        # Cache the full list in Redis
-        if self._use_redis():
-            redis = get_async_redis()
-            if redis:
-                try:
-                    cache_data = {"items": items, "total": total}
-                    await redis.setex(list_key, CACHE_TTL, orjson.dumps(cache_data))
-                except REDIS_ERRORS as e:
-                    logger.warning("[DiagramCache] Redis list cache write failed: %s", e)
-
-        # Paginate
         offset = (page - 1) * page_size
         paginated = items[offset : offset + page_size]
-
         return {
             "diagrams": paginated,
             "total": total,
@@ -681,14 +682,22 @@ class RedisDiagramCache:
             "max_diagrams": diagram_cap,
         }
 
-    async def _load_list_from_database(self, user_id: int) -> List[Dict[str, Any]]:
+    async def _load_list_from_database(
+        self,
+        user_id: int,
+        source_channel: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         """Load diagram list metadata from database."""
         try:
             async with user_rls_session(user_id) as db:
+                conditions = [
+                    Diagram.user_id == user_id,
+                    Diagram.is_deleted.is_(False),
+                ]
+                if source_channel:
+                    conditions.append(Diagram.source_channel == source_channel)
                 result = await db.execute(
-                    select(Diagram)
-                    .where(Diagram.user_id == user_id, Diagram.is_deleted.is_(False))
-                    .order_by(desc(Diagram.is_pinned), desc(Diagram.updated_at))
+                    select(Diagram).where(*conditions).order_by(desc(Diagram.is_pinned), desc(Diagram.updated_at))
                 )
                 diagrams = result.scalars().all()
 
@@ -705,6 +714,7 @@ class RedisDiagramCache:
                             "updated_at": (updated_at_val.isoformat() if updated_at_val is not None else None),
                             "is_pinned": getattr(d, "is_pinned", False),
                             "folder_id": getattr(d, "folder_id", None),
+                            "source_channel": getattr(d, "source_channel", None),
                             "workshop_code": getattr(d, "workshop_code", None) or None,
                             "workshop_expires_at": (expires_at_val.isoformat() if expires_at_val is not None else None),
                         }

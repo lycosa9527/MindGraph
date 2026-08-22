@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Skep op die sketsvlak',
   'landing.diagramGrid.tree_map.desc': 'Klassifiseer en groepeer',
   'landing.diagramGrid.tree_map.title': 'Boomkaart',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Beskryf jou diagram, of kies \'n sjabloon hieronder…',
   'landing.template.slot.criterion': 'Klassifikasie',
   'landing.template.slot.event': 'Gebeurtenis',

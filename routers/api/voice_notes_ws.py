@@ -1,14 +1,14 @@
 """
-Authenticated WebSocket bridge for Voice Notes → DashScope Fun-ASR realtime.
+Authenticated WebSocket bridge for Voice Notes → Tencent ASR V2.
 
 Browser bootstrap (first frame):
-  {"type": "start", "language_hints": ["zh"]}
+  {"type": "start", "diarization_enabled": true}
 
 Then:
   {"type": "append", "audio": "<base64 pcm16>"}
   {"type": "stop"}
 
-Downstream: started / partial / final / stopped / error.
+Downstream: started / snapshot / stopped / error.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -20,7 +20,7 @@ from __future__ import annotations
 import contextlib
 import json
 import logging
-from typing import Any, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, WebSocket
 from fastapi.websockets import WebSocketState
@@ -28,7 +28,12 @@ from starlette.websockets import WebSocketDisconnect
 
 from models.domain.messages import Language, get_request_language
 from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
-from services.features.voice_notes_asr_bridge import run_voice_notes_asr_relay, voice_notes_error_json
+from services.features.tencent_asr_v2_sentences import parse_speaker_context_id
+from services.features.voice_notes_asr_bridge import (
+    run_voice_notes_asr_relay,
+    voice_notes_diarization_enabled,
+    voice_notes_error_json,
+)
 from services.features.voice_notes_usage import (
     assert_voice_notes_usage_budget,
     schedule_voice_notes_session_activity,
@@ -47,7 +52,6 @@ from utils.collab_ws_origin import (
 )
 from utils.ws_context import ws_managed_session
 from utils.ws_limits import (
-    DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
     DEFAULT_MAX_WS_TEXT_BYTES,
     WebsocketMessageRateLimiter,
     inbound_text_exceeds_limit,
@@ -60,6 +64,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 _WS_CLOSE_REASON_MAX = 120
+# ScriptProcessor ~2048 samples; 96 kHz mics can exceed the default 40 msg/s cap.
+VOICE_NOTES_MAX_WS_MESSAGES_PER_SECOND = 80
 
 
 async def _reject_voice_notes_websocket(websocket: WebSocket, code: int, reason: str) -> None:
@@ -77,18 +83,6 @@ async def _reject_voice_notes_websocket(websocket: WebSocket, code: int, reason:
         logger.debug("[VoiceNotesASR] reject close skipped: %s", exc)
 
 
-def _language_hints_from_start(start_msg: dict[str, Any]) -> Optional[List[str]]:
-    """Parse optional language_hints / language from the bootstrap frame."""
-    raw = start_msg.get("language_hints")
-    if isinstance(raw, list):
-        hints = [str(item).strip() for item in raw if str(item).strip()]
-        return hints or None
-    language = start_msg.get("language")
-    if isinstance(language, str) and language.strip():
-        return [language.strip()]
-    return None
-
-
 def _ws_ui_language(websocket: WebSocket) -> Language:
     """Best-effort UI language for budget error messages."""
     return get_request_language(
@@ -99,7 +93,7 @@ def _ws_ui_language(websocket: WebSocket) -> Language:
 
 @router.websocket("/ws/voice-notes")
 async def voice_notes_websocket(websocket: WebSocket) -> None:
-    """Voice notes Fun-ASR websocket."""
+    """Voice notes Tencent ASR V2 websocket."""
     user, auth_error = await authenticate_websocket_user(websocket)
     if auth_error or user is None:
         logger.warning("[VoiceNotesASR] Auth rejected: %s", auth_error)
@@ -145,8 +139,8 @@ async def voice_notes_websocket(websocket: WebSocket) -> None:
 
 
 async def _voice_notes_session(websocket: WebSocket, user: Any) -> None:
-    """Handle bootstrap start frame then relay PCM to Fun-ASR."""
-    rate_limiter = WebsocketMessageRateLimiter(DEFAULT_MAX_WS_MESSAGES_PER_SECOND)
+    """Handle bootstrap start frame then relay PCM to Tencent ASR V2."""
+    rate_limiter = WebsocketMessageRateLimiter(VOICE_NOTES_MAX_WS_MESSAGES_PER_SECOND)
 
     try:
         raw = await receive_websocket_text_frame(websocket)
@@ -196,11 +190,13 @@ async def _voice_notes_session(websocket: WebSocket, user: Any) -> None:
         await websocket.close(code=4403, reason=message[:_WS_CLOSE_REASON_MAX])
         return
 
-    language_hints = _language_hints_from_start(start_msg)
+    diarization_enabled = voice_notes_diarization_enabled(start_msg)
+    speaker_context_id = parse_speaker_context_id(start_msg)
     logger.info(
-        "[VoiceNotesASR] Relay start user_id=%s language_hints=%s",
+        "[VoiceNotesASR] Relay start user_id=%s diarization=%s speaker_context=%s",
         user.id,
-        language_hints,
+        diarization_enabled,
+        bool(speaker_context_id),
     )
 
     async with ws_managed_session(
@@ -214,6 +210,7 @@ async def _voice_notes_session(websocket: WebSocket, user: Any) -> None:
         await run_voice_notes_asr_relay(
             websocket,
             user=user,
-            language_hints=language_hints,
+            diarization_enabled=diarization_enabled,
+            speaker_context_id=speaker_context_id,
             rate_limiter=rate_limiter,
         )

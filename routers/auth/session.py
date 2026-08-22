@@ -33,7 +33,7 @@ from services.auth.thinking_coin.wallet_payload import build_wallet_payload
 from services.auth.vpn_geo_enforcement import record_vpn_refresh_last_ip
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
-from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
+from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.session.redis_session_manager import (
     get_refresh_token_manager,
@@ -71,8 +71,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# Rate limiter for refresh endpoint
-_rate_limiter = RedisRateLimiter()
+# Shared limiter so login's clear_token_refresh_attempts hits this window.
+_REFRESH_MAX_ATTEMPTS = 60
+_REFRESH_WINDOW_SECONDS = 60
 
 
 @router.post("/refresh")
@@ -81,7 +82,7 @@ async def refresh_token(request: Request, response: Response):
     Refresh access token using refresh token from httpOnly cookie.
 
     Security measures:
-    - Rate limited: 10 attempts per minute per IP
+    - Rate limited: 60 attempts per minute per IP (missing cookie does not count)
     - Device binding: Validates device fingerprint
     - Token rotation: Issues new refresh token on each refresh
     - Audit logging: All refresh events are logged
@@ -94,12 +95,16 @@ async def refresh_token(request: Request, response: Response):
     # DEBUG: Log refresh attempt entry point
     logger.info("[TokenAudit] /refresh called: ip=%s", client_ip)
 
-    # Rate limiting: 10 refresh attempts per minute per IP
-    is_allowed, count, _ = await _rate_limiter.check_and_record(
+    refresh_token_value = request.cookies.get("refresh_token")
+    if not refresh_token_value:
+        logger.info("[TokenAudit] Refresh FAILED - no refresh token cookie: ip=%s", client_ip)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token provided")
+
+    is_allowed, count, _ = await get_rate_limiter().check_and_record(
         category="token_refresh",
         identifier=client_ip,
-        max_attempts=10,
-        window_seconds=60,
+        max_attempts=_REFRESH_MAX_ATTEMPTS,
+        window_seconds=_REFRESH_WINDOW_SECONDS,
     )
 
     if not is_allowed:
@@ -112,12 +117,6 @@ async def refresh_token(request: Request, response: Response):
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many refresh attempts. Please wait a moment.",
         )
-
-    # Get refresh token from httpOnly cookie
-    refresh_token_value = request.cookies.get("refresh_token")
-    if not refresh_token_value:
-        logger.info("[TokenAudit] Refresh FAILED - no refresh token cookie: ip=%s", client_ip)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No refresh token provided")
 
     # Hash refresh token once (used for both reverse lookup and validation)
     refresh_manager = get_refresh_token_manager()

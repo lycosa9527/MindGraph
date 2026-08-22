@@ -25,7 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from models.domain.auth import Organization, User
-from routers.auth.helpers import issue_access_token_with_vpn_geo, set_auth_cookies
+from routers.auth.helpers import issue_access_token_with_vpn_geo, issue_new_auth_cookies
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from services.redis.redis_bayi_token import get_bayi_token_tracker
@@ -328,9 +328,9 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
             logger.info("Bayi mode authentication successful: %s", user_phone)
 
         # Valid token: redirect to app home with the standard auth cookie set
-        # (access + refresh + CSRF seed via set_auth_cookies).
+        # (access + refresh + CSRF seed via issue_new_auth_cookies).
         redirect_response = RedirectResponse(url="/", status_code=303)
-        set_auth_cookies(redirect_response, jwt_token, refresh_token_value, request)
+        await issue_new_auth_cookies(redirect_response, jwt_token, refresh_token_value, request)
         return redirect_response
 
     except BACKGROUND_INFRA_ERRORS as e:

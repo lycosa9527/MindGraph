@@ -178,6 +178,7 @@ export interface SavedDiagram {
   is_pinned: boolean
   workshop_active?: boolean
   folder_id?: string | null
+  source_channel?: string | null
 }
 
 export interface DiagramFolder {
@@ -666,7 +667,8 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
     diagramType: string,
     spec: Record<string, unknown>,
     language: string = 'zh',
-    thumbnail: string | null = null
+    thumbnail: string | null = null,
+    sourceChannel: string | null = null
   ): Promise<SavedDiagramFull | null> {
     if (!authStore.isAuthenticated) return null
 
@@ -697,6 +699,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
           spec,
           language,
           thumbnail,
+          source_channel: sourceChannel,
         }),
       })
 
@@ -732,6 +735,7 @@ export const useSavedDiagramsStore = defineStore('savedDiagrams', () => {
         thumbnail: saved.thumbnail,
         updated_at: saved.updated_at,
         is_pinned: false,
+        source_channel: sourceChannel,
       })
       total.value++
 

@@ -301,6 +301,12 @@ async def clear_ip_attempts(ip: str) -> None:
     await limiter.clear("ip", ip)
 
 
+async def clear_token_refresh_attempts(ip: str) -> None:
+    """Clear /refresh IP window so a pre-login stampede cannot 429 the new session."""
+    limiter = get_rate_limiter()
+    await limiter.clear("token_refresh", ip)
+
+
 async def clear_captcha_attempts(identifier: str) -> None:
     """Clear captcha attempts on successful verification."""
     limiter = get_rate_limiter()

@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'කැන්වසය මත සාදන්න',
   'landing.diagramGrid.tree_map.desc': 'වර්ගීකරණය සහ කණ්ඩායම',
   'landing.diagramGrid.tree_map.title': 'වෘක්ෂ සිතියම',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'ඔබේ මාතෘකාව හෝ ව්‍යුහය විස්තර කරන්න (ශාඛා, පියවර, ප්‍රවර්ග...) නැතහොත් පහත අච්චුවක් තෝරන්න...',
   'landing.template.slot.criterion': 'වර්ගීකරණය',
   'landing.template.slot.event': 'සිදුවීම',

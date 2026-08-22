@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <!-- Dark rounded background (matching Tailwind stone-900: #1c1917) -->
-  <rect x="0" y="0" width="32" height="32" rx="6" ry="6" fill="#1c1917"/>
-  <!-- White M letter -->
-  <text x="16" y="23" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" fill="white">M</text>
+  <rect width="32" height="32" rx="6" ry="6" fill="#1c1917"/>
+  <!-- Segoe UI Semibold M outlined at font-size 18, baseline y=23, centered on x=16 -->
+  <path fill="#fff" d="M23.189 23H20.386V15.459Q20.386 14.237 20.491 12.761H20.421Q20.201 13.921 20.025 14.431L17.072 23H14.752L11.746 14.519Q11.623 14.176 11.351 12.761H11.271Q11.386 14.624 11.386 16.03V23H8.828V10.396H12.985L15.561 17.867Q15.868 18.764 16.009 19.669H16.062Q16.299 18.623 16.562 17.85L19.138 10.396H23.189Z"/>
 </svg>

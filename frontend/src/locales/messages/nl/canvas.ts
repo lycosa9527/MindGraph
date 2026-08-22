@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Creëer op canvas',
   'landing.diagramGrid.tree_map.desc': 'Classificeren en groeperen',
   'landing.diagramGrid.tree_map.title': 'Boomkaart',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Beschrijf uw onderwerp of structuur (takken, stappen, categorieën…) of kies hieronder een sjabloon…',
   'landing.template.slot.criterion': 'Classificatie',
   'landing.template.slot.event': 'Evenement',

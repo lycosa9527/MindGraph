@@ -2,12 +2,13 @@
 /**
  * MobileHomePage — Landing page for mobile.
  * MindGraph first (图示), then MindMate, Kitty (when FEATURE_KITTY_AGENT),
- * organization management (create-org roles), account. Flex scroll uses min-h-0 so cards stay reachable.
+ * Voice notes, organization management (create-org roles), account.
+ * Flex scroll uses min-h-0 so cards stay reachable.
  */
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { Building2, ChevronRight, MessageSquare, UserCog, Workflow } from '@lucide/vue'
+import { Building2, ChevronRight, MessageSquare, Mic, UserCog, Workflow } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
 import { useAuthStore, useFeatureFlagsStore } from '@/stores'
@@ -49,6 +50,10 @@ function goToAccount() {
 
 function goToOrgs() {
   router.push('/m/orgs')
+}
+
+function goToVoiceNotes() {
+  router.push('/m/voice-notes')
 }
 </script>
 
@@ -132,6 +137,29 @@ function goToOrgs() {
           </div>
           <div class="text-sm text-gray-500 mt-0.5">
             {{ t('mobile.kittyCardDesc', '思维教学语音智能体') }}
+          </div>
+        </div>
+        <ChevronRight
+          :size="20"
+          class="text-gray-400 shrink-0"
+        />
+      </button>
+
+      <button
+        class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
+        @click="goToVoiceNotes"
+      >
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-xl bg-rose-50 text-rose-600 shrink-0"
+        >
+          <Mic :size="24" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-base font-semibold text-gray-900">
+            {{ t('landing.diagramGrid.voice_notes.title') }}
+          </div>
+          <div class="text-sm text-gray-500 mt-0.5">
+            {{ t('landing.diagramGrid.voice_notes.desc') }}
           </div>
         </div>
         <ChevronRight

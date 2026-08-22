@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-vi.mock('@/utils/sessionRefresh', () => ({
-  refreshSessionAccessToken: vi.fn(),
-}))
+vi.mock('@/utils/sessionRefresh', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/sessionRefresh')>()
+  return {
+    ...actual,
+    refreshSessionAccessToken: vi.fn(),
+  }
+})
 
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'

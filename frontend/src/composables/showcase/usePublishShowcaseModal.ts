@@ -271,7 +271,7 @@ export function usePublishShowcaseModal(
     if (subject.value) dynamic.push(subject.value.slice(0, TAG_MAX_LENGTH))
     if (grade.value) dynamic.push(grade.value.slice(0, TAG_MAX_LENGTH))
     const merged = [...dynamic, ...metaRecommendedTags.value]
-    return [...new Set(merged)].filter((t) => !tags.value.includes(t))
+    return Array.from(new Set(merged)).filter((t) => !tags.value.includes(t))
   })
 
   function pickRecommendedTag(tag: string) {

@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Kanvasda yaradin',
   'landing.diagramGrid.tree_map.desc': 'Tesnifat va qruplashdirma',
   'landing.diagramGrid.tree_map.title': 'Daraxt xaritasi',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Diagrammaninizi tavsif edin yoki pastdan shablon tanlang…',
   'landing.template.slot.criterion': 'Tesnifat',
   'landing.template.slot.event': 'Hadise',

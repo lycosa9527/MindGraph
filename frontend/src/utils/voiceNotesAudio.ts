@@ -1,5 +1,5 @@
 /**
- * Voice-notes PCM helpers — Float32 → 16 kHz PCM16 base64 for Fun-ASR.
+ * Voice-notes PCM helpers — Float32 → 16 kHz PCM16 base64 for Tencent ASR V2.
  */
 
 export const VOICE_NOTES_TARGET_SAMPLE_RATE = 16000

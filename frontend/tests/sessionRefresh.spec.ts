@@ -107,6 +107,25 @@ describe('sessionRefresh stampede coordinator', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
+  it('markSessionFreshAfterAuth skips a following 401 refresh', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(null, { status: 200 }))
+    )
+    const {
+      markSessionFreshAfterAuth,
+      ensureFreshSessionAfterAuthFailure,
+      getSessionRefreshEpoch,
+    } = await loadSessionRefresh()
+    const epochAtStart = getSessionRefreshEpoch()
+    markSessionFreshAfterAuth()
+    vi.mocked(fetch).mockClear()
+    const ok = await ensureFreshSessionAfterAuthFailure(epochAtStart)
+    expect(ok).toBe(true)
+    expect(fetch).not.toHaveBeenCalled()
+    expect(getSessionRefreshEpoch()).toBe(epochAtStart + 1)
+  })
+
   it('marks rate_limit failure on HTTP 429', async () => {
     vi.stubGlobal(
       'fetch',

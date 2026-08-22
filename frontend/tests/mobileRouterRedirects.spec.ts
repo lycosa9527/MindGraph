@@ -11,6 +11,7 @@ describe('mobileRouteRedirect', () => {
     expect(resolveMobileRouteRedirect('/mindmate')).toBe('/m/mindmate')
     expect(resolveMobileRouteRedirect('/mindgraph')).toBe('/m/mindgraph')
     expect(resolveMobileRouteRedirect('/canvas')).toBe('/m/canvas')
+    expect(resolveMobileRouteRedirect('/voice-notes')).toBe('/m/voice-notes')
     expect(resolveMobileRouteRedirect('/')).toBe('/m')
   })
 

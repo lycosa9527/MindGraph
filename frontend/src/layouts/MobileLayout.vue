@@ -33,7 +33,8 @@ const hideHeader = computed(
     route.name === 'MobileMindMate' ||
     route.name === 'MobileMindGraph' ||
     route.name === 'MobileKitty' ||
-    route.name === 'MobileOrgs'
+    route.name === 'MobileOrgs' ||
+    route.name === 'MobileVoiceNotes'
 )
 
 const showBackButton = computed(() => route.name === 'MobileCanvas')
@@ -51,6 +52,7 @@ const pageTitle = computed(() => {
     MobileMindGraph: 'MindGraph',
     MobileKitty: 'Kitty',
     MobileOrgs: t('mobile.orgsTitle'),
+    MobileVoiceNotes: t('auth.voiceNotes.modalTitle'),
     MobileCanvas: 'MindGraph',
     MobileAccount: t('sidebar.account', 'Account'),
   }

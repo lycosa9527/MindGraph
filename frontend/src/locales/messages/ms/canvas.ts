@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Buat di atas kanvas',
   'landing.diagramGrid.tree_map.desc': 'Klasifikasi & kelompokkan',
   'landing.diagramGrid.tree_map.title': 'Peta Pohon',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Jelaskan topik atau struktur Anda (cabang, langkah, kategori…) atau pilih templat di bawah…',
   'landing.template.slot.criterion': 'Klasifikasi',
   'landing.template.slot.event': 'Peristiwa',

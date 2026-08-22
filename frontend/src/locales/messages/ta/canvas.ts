@@ -1188,6 +1188,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Create on canvas',
   'landing.diagramGrid.tree_map.desc': 'Classify & group',
   'landing.diagramGrid.tree_map.title': 'Tree Map',
+  'landing.diagramGrid.voice_notes.desc': 'Record & mindmap',
+  'landing.diagramGrid.voice_notes.title': 'Voice notes',
   'landing.template.freePlaceholder': 'Describe your topic or structure (branches, steps, categories…) or choose a template below…',
   'landing.template.slot.criterion': 'Classification',
   'landing.template.slot.event': 'Event',

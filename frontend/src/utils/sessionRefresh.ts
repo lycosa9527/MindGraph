@@ -84,6 +84,13 @@ export async function ensureFreshSessionAfterAuthFailure(
   return refreshSessionAccessToken()
 }
 
+/** After login/register cookies are set, leftover 401s must not rotate again. */
+export function markSessionFreshAfterAuth(): void {
+  refreshEpoch += 1
+  lastSuccessfulRefreshAt = Date.now()
+  lastRefreshFailure = null
+}
+
 export async function refreshSessionAccessToken(): Promise<boolean> {
   if (isMindgraphHeadlessExportSession()) {
     return false

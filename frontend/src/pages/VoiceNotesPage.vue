@@ -1,13 +1,14 @@
 <script setup lang="ts">
 /**
  * Dedicated Voice Notes entry (Word add-in + deep link).
- * Enables the shared mic → WS Fun-ASR session and opens the transcript UI.
+ * Enables the shared mic → WS Tencent ASR V2 session and opens the transcript UI.
  */
 import { onMounted } from 'vue'
 
 import { Mic, PanelLeftOpen } from '@lucide/vue'
 
 import { useLanguage } from '@/composables'
+import { useVoiceNotesSessionChrome } from '@/composables/voiceNotes/useVoiceNotesSessionChrome'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { useVoiceNotesStore } from '@/stores/voiceNotes'
@@ -16,6 +17,7 @@ const { t } = useLanguage()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const voiceNotes = useVoiceNotesStore()
+const { statusLabel, saveKind, statusClickable, onStatusClick } = useVoiceNotesSessionChrome()
 
 onMounted(() => {
   if (!authStore.isAuthenticated) {
@@ -29,9 +31,7 @@ onMounted(() => {
 
 <template>
   <div class="voice-notes-page flex flex-1 flex-col min-h-0 overflow-hidden bg-stone-50">
-    <header
-      class="flex h-14 shrink-0 items-center gap-2 border-b border-stone-200 bg-white px-4"
-    >
+    <header class="flex h-14 shrink-0 items-center gap-2 border-b border-stone-200 bg-white px-4">
       <button
         v-if="uiStore.sidebarCollapsed"
         type="button"
@@ -47,6 +47,21 @@ onMounted(() => {
         <h1 class="truncate text-sm font-semibold text-stone-800">
           {{ t('auth.voiceNotes.modalTitle') }}
         </h1>
+        <button
+          v-if="saveKind === 'saved' || saveKind === 'unsaved' || saveKind === 'saving'"
+          type="button"
+          class="truncate text-xs font-medium text-stone-500"
+          :class="{
+            'text-amber-600': saveKind === 'unsaved',
+            'text-blue-600': saveKind === 'saving',
+            'cursor-pointer': statusClickable,
+            'cursor-default': !statusClickable,
+          }"
+          :disabled="!statusClickable"
+          @click="onStatusClick"
+        >
+          {{ statusLabel }}
+        </button>
       </div>
     </header>
 
