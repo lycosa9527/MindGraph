@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.25] - 2026-08-23
+
+> **Voice Notes leftovers: Word speaks Tencent snapshots, ingest keeps one title, and the relay stops cleanly.**
+
+### Fixed
+
+- **Word Voice protocol** — The add-in now starts with `diarization_enabled` and renders `snapshot` sentences (speaker + live/final). Fun-ASR `partial`/`final` frames are gone.
+- **Ingest title** — Autosave reuses the session title instead of minting a new `voice recording_YYYYMMDDHHmm` on every flush.
+- **Cap preflight** — Start reserves 1 token so a user already at the daily cap cannot open a session.
+- **Relay after provider error** — PCM appends stop when Tencent reports an error; `finish()` still runs in `finally`.
+- **`asr_config` message** — Browser clients see a fixed “not configured” string; env names stay in the server log.
+
+### Tests
+
+- `tests/test_voice_notes_asr.py` — sanitized `asr_config`, stop-after-error, preflight token
+- Live Tencent tests skip when credentials are missing (not in CI)
+
 ## [5.180.24] - 2026-08-23
 
 > **Voice Notes is a Tencent ASR V2 conversation: speakers persist, history reopens the talk, and Start continues instead of wiping.**

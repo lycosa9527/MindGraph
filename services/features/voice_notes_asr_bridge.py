@@ -54,6 +54,8 @@ from utils.ws_limits import (
 
 logger = logging.getLogger(__name__)
 
+ASR_CONFIG_USER_MESSAGE = "Speech service is not configured"
+
 
 def voice_notes_error_json(code: str, message: str) -> str:
     """JSON error frame for the voice-notes browser client."""
@@ -93,6 +95,7 @@ async def run_voice_notes_asr_relay(
     transcript_chars = 0
     started_at = time.monotonic()
     session_ok = True
+    provider_failed = False
 
     async def emit(payload: dict[str, Any]) -> None:
         await safe_websocket_send_text(client_ws, json.dumps(payload))
@@ -104,8 +107,9 @@ async def run_voice_notes_asr_relay(
         await emit(snapshot_browser_payload(sentences, context_id))
 
     async def on_error(classified: TencentAsrClassifiedError) -> None:
-        nonlocal session_ok
+        nonlocal session_ok, provider_failed
         session_ok = False
+        provider_failed = True
         await emit(browser_error_payload(classified))
 
     async def emit_stopped() -> None:
@@ -132,9 +136,13 @@ async def run_voice_notes_asr_relay(
         await emit(started)
 
         while True:
+            if provider_failed:
+                break
             try:
                 msg = await receive_websocket_text_frame(client_ws)
             except WebSocketDisconnect:
+                break
+            if provider_failed:
                 break
 
             if inbound_text_exceeds_limit(msg, max_inbound_text_bytes):
@@ -160,6 +168,8 @@ async def run_voice_notes_asr_relay(
                 continue
 
             if msg_type == "append":
+                if provider_failed:
+                    break
                 audio_b64 = data.get("audio")
                 if not audio_b64 or not isinstance(audio_b64, str):
                     continue
@@ -170,6 +180,8 @@ async def run_voice_notes_asr_relay(
                 pcm_bytes += len(pcm)
                 if client is not None:
                     await client.send_pcm(pcm)
+                if provider_failed:
+                    break
                 continue
 
             if msg_type == "stop":
@@ -194,7 +206,7 @@ async def run_voice_notes_asr_relay(
     except RuntimeError as exc:
         session_ok = False
         logger.warning("[VoiceNotesASR] Start failed: %s", exc)
-        await emit({"type": "error", "code": "asr_config", "message": str(exc)})
+        await emit({"type": "error", "code": "asr_config", "message": ASR_CONFIG_USER_MESSAGE})
     except LLM_PIPELINE_ERRORS as exc:
         session_ok = False
         logger.warning("[VoiceNotesASR] Relay failed: %s", exc)

@@ -124,18 +124,53 @@ function mgVoiceBaseHostLabel(baseUrl) {
 }
 
 /**
- * @param {string} lang
- * @returns {string[]}
+ * @param {unknown} speakerId
+ * @returns {string}
  */
-function mgVoiceLanguageHints(lang) {
-  var base = String(lang || 'zh').toLowerCase().split('-')[0] || 'zh'
-  if (base === 'en') {
-    return ['en']
+function mgVoiceSpeakerLabel(speakerId) {
+  var n = Number(speakerId)
+  if (n !== n || n < 0) {
+    return ''
   }
-  if (base === 'ja') {
-    return ['ja']
+  return mgT('voiceSpeakerLabel').replace('{n}', String(Math.floor(n) + 1))
+}
+
+/**
+ * @param {{ final?: unknown }} item
+ * @returns {boolean}
+ */
+function mgVoiceSentenceIsFinal(item) {
+  return item.final === true || item.final === 1
+}
+
+/**
+ * @param {unknown} sentences
+ * @returns {{ committed: string[], live: string }}
+ */
+function mgVoiceSnapshotLines(sentences) {
+  var committed = []
+  var live = ''
+  if (!Array.isArray(sentences)) {
+    return { committed: committed, live: live }
   }
-  return ['zh']
+  var i
+  for (i = 0; i < sentences.length; i += 1) {
+    var item = sentences[i]
+    if (!item || typeof item !== 'object') {
+      continue
+    }
+    var text = String(item.text || '').trim()
+    if (!text) {
+      continue
+    }
+    var line = mgVoiceSpeakerLabel(item.speaker_id) + text
+    if (mgVoiceSentenceIsFinal(item)) {
+      committed.push(line)
+    } else {
+      live = line
+    }
+  }
+  return { committed: committed, live: live }
 }
 
 /**
@@ -163,6 +198,7 @@ function mgBootVoiceNotes(ui) {
   var startedAt = 0
   var pausedAccumMs = 0
   var lastSpeechAt = 0
+  var speakerContextId = ''
   var elapsedTimer = null
   var startedTimeoutTimer = null
   var maxDurationTimer = null
@@ -339,11 +375,20 @@ function mgBootVoiceNotes(ui) {
     syncButtons()
   }
 
+  function rememberSpeakerContext(data) {
+    var contextId = data && data.speaker_context_id
+    if (typeof contextId === 'string' && contextId.trim()) {
+      speakerContextId = contextId.trim()
+    }
+  }
+
   function handlePayload(data) {
     var type = data && data.type
+    var parsed
     if (type === 'started') {
       sessionReady = true
       connecting = false
+      rememberSpeakerContext(data)
       if (startedTimeoutTimer) {
         window.clearTimeout(startedTimeoutTimer)
         startedTimeoutTimer = null
@@ -353,23 +398,21 @@ function mgBootVoiceNotes(ui) {
       syncButtons()
       return
     }
-    if (type === 'partial') {
-      liveText = String(data.text || '')
-      if (liveText.trim()) {
+    if (type === 'snapshot') {
+      rememberSpeakerContext(data)
+      parsed = mgVoiceSnapshotLines(data.sentences)
+      lines = parsed.committed
+      liveText = parsed.live
+      if (lines.length || liveText.trim()) {
         markSpeech()
       }
-      renderTranscript()
-      return
-    }
-    if (type === 'final') {
-      var finalText = String(data.text || '').trim()
-      if (finalText) {
-        lines.push(finalText)
-        markSpeech()
-      }
-      liveText = ''
       renderTranscript()
       syncButtons()
+      return
+    }
+    if (type === 'stopped') {
+      sessionReady = false
+      connecting = false
       return
     }
     if (type === 'error') {
@@ -476,12 +519,11 @@ function mgBootVoiceNotes(ui) {
         return
       }
       try {
-        socket.send(
-          JSON.stringify({
-            type: 'start',
-            language_hints: mgVoiceLanguageHints(prefs.language),
-          })
-        )
+        var startMsg = { type: 'start', diarization_enabled: true }
+        if (speakerContextId) {
+          startMsg.speaker_context_id = speakerContextId
+        }
+        socket.send(JSON.stringify(startMsg))
       } catch (err2) {
         setStatus(mgT('voiceWsError'), 'err')
         stopAll(false)

@@ -139,6 +139,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
   let captureTurnOffset = 0
   const transcriptDirty = ref(false)
   const lastSavedAt = ref<number | null>(null)
+  const sessionTitle = ref('')
   let transcriptSaveTimer: number | null = null
 
   let currentSessionStamp = 0
@@ -298,6 +299,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
           return false
         }
         const title = formatVoiceNoteTitle()
+        sessionTitle.value = title
         const saved = await savedDiagramsStore.saveDiagram(
           title,
           'mindmap',
@@ -358,6 +360,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
       speakerIds.value = mergeSpeakerSlots([], restored.speakerIds)
       speakerRemaps.value = restored.speakerRemaps
       speakerContextId = restored.speakerContextId
+      sessionTitle.value = title
       captureTurnOffset = restored.turns.length
       transcriptDirty.value = false
       lastSavedAt.value = restored.savedAt ?? (restored.hasTranscript ? Date.now() : null)
@@ -695,6 +698,13 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     ) {
       return
     }
+    if (transcriptDirty.value) {
+      await flushTranscriptIfEdited()
+    }
+    if (transcriptDirty.value) {
+      notify.warning(t('auth.voiceNotes.ingestFailed'))
+      return
+    }
     if (!navigator.mediaDevices?.getUserMedia) {
       notify.warning(t('auth.voiceNotes.micUnavailable'))
       return
@@ -829,7 +839,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
         method: 'POST',
         body: JSON.stringify({
           content,
-          title: formatVoiceNoteTitle(),
+          title: sessionTitle.value.trim() || formatVoiceNoteTitle(),
           language: lang,
         }),
       })
@@ -934,6 +944,7 @@ export const useVoiceNotesStore = defineStore('voiceNotes', () => {
     speakerNames.value = {}
     speakerRemaps.value = {}
     speakerContextId = ''
+    sessionTitle.value = ''
     captureTurnOffset = 0
     resetInputLevel()
     currentSessionStamp += 1

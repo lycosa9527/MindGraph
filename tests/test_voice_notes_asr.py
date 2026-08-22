@@ -17,12 +17,15 @@ from services.features.tencent_asr_v2_errors import (
     tencent_asr_connect_error,
 )
 from services.features.voice_notes_asr_bridge import (
+    ASR_CONFIG_USER_MESSAGE,
     run_voice_notes_asr_relay,
     voice_notes_error_json,
 )
 from services.features.voice_notes_markdown import strip_voice_notes_markdown_meta
 from services.features.voice_notes_usage import (
     VOICE_NOTES_MODEL_ALIAS,
+    VOICE_NOTES_PREFLIGHT_TOKENS,
+    assert_voice_notes_usage_budget,
     estimate_voice_notes_asr_tokens,
     voice_notes_budget_error_payload,
 )
@@ -226,6 +229,111 @@ async def test_voice_notes_relay_opening_handshake_timeout() -> None:
     assert payloads[0]["provider_code"] == TENCENT_ASR_NO_V2_FRAME
     assert any(item["type"] == "stopped" for item in payloads)
     client.finish.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_voice_notes_relay_asr_config_hides_env_names() -> None:
+    """Config RuntimeError is logged server-side; the browser sees a fixed string."""
+    sent: List[str] = []
+    client = MagicMock()
+    client.start = AsyncMock(
+        side_effect=RuntimeError("Tencent ASR is not configured (TENCENT_ASR_APP_ID plus SecretId/SecretKey)")
+    )
+    client.finish = AsyncMock()
+    client.close = AsyncMock()
+
+    with (
+        patch(
+            "services.features.voice_notes_asr_bridge.TencentAsrV2Client",
+            return_value=client,
+        ),
+        patch(
+            "services.features.voice_notes_asr_bridge.safe_websocket_send_text",
+            side_effect=lambda _ws, text: sent.append(text),
+        ),
+    ):
+        await run_voice_notes_asr_relay(MagicMock())
+
+    payloads = [json.loads(item) for item in sent]
+    error = next(item for item in payloads if item["type"] == "error")
+    assert error["code"] == "asr_config"
+    assert error["message"] == ASR_CONFIG_USER_MESSAGE
+    assert "TENCENT_ASR" not in error["message"]
+    assert "Secret" not in error["message"]
+
+
+@pytest.mark.asyncio
+async def test_voice_notes_relay_stops_pcm_after_provider_error() -> None:
+    """Provider on_error stops the receive loop; later appends are not sent."""
+    sent: List[str] = []
+    pcm_calls: list[bytes] = []
+    frames = [
+        json.dumps({"type": "append", "audio": base64.b64encode(b"\x00\x01").decode()}),
+        json.dumps({"type": "append", "audio": base64.b64encode(b"\x00\x02").decode()}),
+        json.dumps({"type": "stop"}),
+    ]
+
+    async def fake_receive(_ws: Any) -> str:
+        if not frames:
+            raise RuntimeError("no more messages")
+        return frames.pop(0)
+
+    captured: dict[str, Any] = {}
+
+    def fake_ctor(**kwargs: Any) -> MagicMock:
+        captured.update(kwargs)
+        client = MagicMock()
+        client.start = AsyncMock()
+        client.finish = AsyncMock()
+        client.close = AsyncMock()
+
+        async def send_pcm(pcm: bytes) -> None:
+            pcm_calls.append(pcm)
+            on_error = captured.get("on_error")
+            if on_error is not None:
+                await on_error(tencent_asr_connect_error("upstream closed"))
+
+        client.send_pcm = AsyncMock(side_effect=send_pcm)
+        return client
+
+    with (
+        patch(
+            "services.features.voice_notes_asr_bridge.TencentAsrV2Client",
+            side_effect=fake_ctor,
+        ),
+        patch(
+            "services.features.voice_notes_asr_bridge.receive_websocket_text_frame",
+            side_effect=fake_receive,
+        ),
+        patch(
+            "services.features.voice_notes_asr_bridge.safe_websocket_send_text",
+            side_effect=lambda _ws, text: sent.append(text),
+        ),
+    ):
+        await run_voice_notes_asr_relay(MagicMock())
+
+    assert pcm_calls == [b"\x00\x01"]
+    types = [json.loads(item)["type"] for item in sent]
+    assert "error" in types
+    assert "stopped" in types
+
+
+@pytest.mark.asyncio
+async def test_voice_notes_preflight_reserves_one_token() -> None:
+    """Cap preflight uses 1 token so used == cap cannot start a session."""
+    user = MagicMock()
+    user.id = 7
+    user.organization_id = 3
+    budget = AsyncMock()
+    with patch(
+        "services.features.voice_notes_usage.assert_llm_usage_budget",
+        budget,
+    ):
+        await assert_voice_notes_usage_budget(user, lang="en")
+    budget.assert_awaited_once()
+    assert budget.await_args is not None
+    assert budget.await_args.kwargs["estimated_tokens"] == VOICE_NOTES_PREFLIGHT_TOKENS
+    assert VOICE_NOTES_PREFLIGHT_TOKENS == 1
 
 
 def test_strip_voice_notes_markdown_meta_keeps_talker_lines() -> None:

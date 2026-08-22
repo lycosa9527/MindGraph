@@ -8,6 +8,7 @@ Requires ``TENCENT_ASR_APP_ID`` plus ``TENCENT_SMS_SECRET_*`` (or ASR-specific k
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -18,15 +19,22 @@ from tests.smoke.mindmap_smoke_helpers import mindmap_smoke_helpers_load_dotenv
 
 _SILENCE_200MS = bytes(6400)
 
+mindmap_smoke_helpers_load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
-def _load_repo_dotenv() -> None:
-    mindmap_smoke_helpers_load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+_LIVE_APP_ID = os.getenv("TENCENT_ASR_APP_ID", "").strip()
+_LIVE_SECRET_ID = os.getenv("TENCENT_ASR_SECRET_ID", "").strip() or os.getenv("TENCENT_SMS_SECRET_ID", "").strip()
+_LIVE_SECRET_KEY = os.getenv("TENCENT_ASR_SECRET_KEY", "").strip() or os.getenv("TENCENT_SMS_SECRET_KEY", "").strip()
+_LIVE_TENCENT_ASR = bool(_LIVE_APP_ID and _LIVE_SECRET_ID and _LIVE_SECRET_KEY)
+
+pytestmark = pytest.mark.skipif(
+    not _LIVE_TENCENT_ASR,
+    reason="live Tencent credentials required",
+)
 
 
 @pytest.mark.asyncio
 async def test_tencent_asr_v2_live_handshake_and_end() -> None:
     """Sign, connect, handshake code=0, send PCM, finish with type=end."""
-    _load_repo_dotenv()
     credentials = load_tencent_asr_credentials()
     assert credentials.app_id.isdigit()
     assert not credentials.app_id.startswith("140")
@@ -54,7 +62,6 @@ async def test_tencent_asr_v2_live_handshake_and_end() -> None:
 @pytest.mark.asyncio
 async def test_tencent_asr_v2_live_speaker_engine_handshake() -> None:
     """Speaker SKU handshake; falls back to 16k_zh_en_speaker if 2.0 is rejected."""
-    _load_repo_dotenv()
     load_tencent_asr_credentials()
 
     errors: list[TencentAsrClassifiedError] = []

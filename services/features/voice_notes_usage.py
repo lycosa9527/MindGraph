@@ -42,6 +42,8 @@ VOICE_NOTES_ENDPOINT_PATH = "/api/ws/voice-notes"
 _PCM_BYTES_PER_SECOND = 16_000 * 2
 # Proxy units for daily-cap / admin cost (≈1 hour session → ~360k tokens).
 _TOKENS_PER_AUDIO_SECOND = 100
+# Any headroom: used == cap must fail (estimated_tokens=0 allows used + 0 == cap).
+VOICE_NOTES_PREFLIGHT_TOKENS = 1
 
 
 def estimate_voice_notes_asr_tokens(
@@ -76,7 +78,7 @@ async def assert_voice_notes_usage_budget(
         int(user.id),
         getattr(user, "organization_id", None),
         VOICE_NOTES_REQUEST_TYPE,
-        estimated_tokens=0,
+        estimated_tokens=VOICE_NOTES_PREFLIGHT_TOKENS,
         lang=lang,
     )
 
