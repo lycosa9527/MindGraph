@@ -95,16 +95,16 @@ describe('kitty surface import guards', () => {
     }
   })
 
-  it('desktop action poll does not statically import handlers or savedDiagrams', () => {
+  it('desktop action poll lazy-loads handlers and statically imports savedDiagrams', () => {
     const src = readSurface('composables/kitty/useKittyDesktopActionPoll.ts')
     expect(src).not.toMatch(
       /from\s+['"]@\/composables\/kitty\/kittyDesktopActionHandlers['"]/
     )
-    expect(src).not.toMatch(/from\s+['"]@\/stores\/savedDiagrams['"]/)
+    expect(src).toMatch(/from\s+['"]@\/stores\/savedDiagrams['"]/)
     expect(src).toMatch(
       /import\(\s*['"]@\/composables\/kitty\/kittyDesktopActionHandlers['"]\s*\)/
     )
-    expect(src).toMatch(/import\(\s*['"]@\/stores\/savedDiagrams['"]\s*\)/)
+    expect(src).not.toMatch(/import\(\s*['"]@\/stores\/savedDiagrams['"]\s*\)/)
   })
 
   it('canvas kitty seed imports scope helper not full action handlers', () => {

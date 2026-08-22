@@ -6,8 +6,10 @@
  * Actions stay in Redis FIFO (multi-worker safe via LPOP). Long-poll BLPOP chains
  * are no longer used — SSE carries the wake; REST only pops.
  *
- * Heavy action handlers + savedDiagrams (diagram/specLoader) load via dynamic import
- * before Redis LPOP so a failed chunk fetch never drops a queued action.
+ * Heavy action handlers load via dynamic import before Redis LPOP so a failed
+ * chunk fetch never drops a queued action. savedDiagrams stays a static import:
+ * canvas/library already pull it into the same graph, so a dynamic import
+ * cannot move it to another chunk.
  */
 import { onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -29,6 +31,7 @@ import { traceKittyWorkflow } from '@/composables/kitty/kittyWorkflowTrace'
 import { KITTY_MOBILE_WATCH_MS } from '@/composables/kitty/runKittyIntervalPoll'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { apiRequest } from '@/utils/apiClient'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
@@ -41,29 +44,24 @@ interface DesktopPairingResponse {
   primary_scope?: unknown
 }
 
-type KittyActionDeps = {
+type KittyActionHandlers = {
   handleKittyDesktopQueuedAction: (typeof import('@/composables/kitty/kittyDesktopActionHandlers'))['handleKittyDesktopQueuedAction']
-  useSavedDiagramsStore: (typeof import('@/stores/savedDiagrams'))['useSavedDiagramsStore']
 }
 
-let kittyActionDepsPromise: Promise<KittyActionDeps> | null = null
+let kittyActionHandlersPromise: Promise<KittyActionHandlers> | null = null
 
-function loadKittyActionDeps(): Promise<KittyActionDeps> {
-  if (kittyActionDepsPromise == null) {
-    kittyActionDepsPromise = Promise.all([
-      import('@/composables/kitty/kittyDesktopActionHandlers'),
-      import('@/stores/savedDiagrams'),
-    ])
-      .then(([handlers, saved]) => ({
+function loadKittyActionHandlers(): Promise<KittyActionHandlers> {
+  if (kittyActionHandlersPromise == null) {
+    kittyActionHandlersPromise = import('@/composables/kitty/kittyDesktopActionHandlers')
+      .then((handlers) => ({
         handleKittyDesktopQueuedAction: handlers.handleKittyDesktopQueuedAction,
-        useSavedDiagramsStore: saved.useSavedDiagramsStore,
       }))
       .catch((error: unknown) => {
-        kittyActionDepsPromise = null
+        kittyActionHandlersPromise = null
         throw error
       })
   }
-  return kittyActionDepsPromise
+  return kittyActionHandlersPromise
 }
 
 function pairingUrl(waitSec: number): string {
@@ -202,7 +200,7 @@ export function useKittyDesktopActionPoll(): void {
   }
 
   async function applyQueuedAction(action: unknown): Promise<void> {
-    const { handleKittyDesktopQueuedAction, useSavedDiagramsStore } = await loadKittyActionDeps()
+    const { handleKittyDesktopQueuedAction } = await loadKittyActionHandlers()
     await handleKittyDesktopQueuedAction(action, {
       routePath: route.path,
       savedDiagramsStore: useSavedDiagramsStore(),
@@ -219,7 +217,7 @@ export function useKittyDesktopActionPoll(): void {
     }
     drainInFlight = true
     try {
-      await loadKittyActionDeps()
+      await loadKittyActionHandlers()
       // Drain a few items in case several were enqueued while SSE was down.
       for (let i = 0; i < 8; i += 1) {
         if (!pollingAllowed()) {
@@ -389,7 +387,7 @@ export function useKittyDesktopActionPoll(): void {
     }
     watchTickInFlight = true
     try {
-      await loadKittyActionDeps()
+      await loadKittyActionHandlers()
       const data = await fetchDesktopPairing(0)
       if (!pollingAllowed()) {
         return
@@ -422,7 +420,7 @@ export function useKittyDesktopActionPoll(): void {
   function startWatching(): void {
     clearIntervalId()
     setPhase('watching')
-    void loadKittyActionDeps()
+    void loadKittyActionHandlers()
     startWakeStreamConnection()
     void tickWatch()
     intervalId = setInterval(() => {
