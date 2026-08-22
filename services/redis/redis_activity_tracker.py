@@ -32,7 +32,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Set
 
 from services.auth.ip_geolocation import get_geolocation_service
-from services.monitoring.city_flag_tracker import get_city_flag_tracker
+from services.monitoring.city_flag_tracker import record_mappable_location_flag
 from services.redis import keys as _keys
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
@@ -288,14 +288,7 @@ class RedisActivityTracker:
                 try:
                     geolocation = get_geolocation_service()
                     location = await geolocation.get_location(ip_address)
-                    if location and not location.get("is_fallback"):
-                        city = location.get("city", "")
-                        province = location.get("province", "")
-                        lat = location.get("lat")
-                        lng = location.get("lng")
-                        if city or province:
-                            flag_tracker = get_city_flag_tracker()
-                            await flag_tracker.record_city_flag(city, province, lat, lng)
+                    await record_mappable_location_flag(location)
                 except REDIS_ERRORS as e:
                     logger.debug("Failed to record city flag: %s", e)
 

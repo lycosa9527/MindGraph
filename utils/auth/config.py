@@ -48,11 +48,25 @@ JWT_EXPIRY_HOURS = max(1, ACCESS_TOKEN_EXPIRY_MINUTES // 60) if ACCESS_TOKEN_EXP
 # Reverse Proxy Configuration
 # ============================================================================
 
-TRUSTED_PROXY_IPS = [
-    ip.strip()
-    for ip in (os.getenv("TRUSTED_PROXY_IPS", "").split(",") if os.getenv("TRUSTED_PROXY_IPS") else [])
-    if ip.strip()
-]
+# NPM / Docker is the supported deploy: honor X-Forwarded-For from private peers.
+# Opt out with TRUSTED_PROXY_IPS=none (or off / disabled) if port 9527 is public.
+_TRUSTED_PROXY_DEFAULT = "private"
+_TRUSTED_PROXY_OFF = frozenset({"none", "off", "disabled", "false", "0"})
+
+
+def parse_trusted_proxy_ips(raw: Optional[str]) -> list[str]:
+    """Parse TRUSTED_PROXY_IPS. Unset or blank defaults to ``private``."""
+    if raw is None or not raw.strip():
+        return [_TRUSTED_PROXY_DEFAULT]
+    parts = [part.strip() for part in raw.split(",") if part.strip()]
+    if not parts:
+        return [_TRUSTED_PROXY_DEFAULT]
+    if any(part.lower() in _TRUSTED_PROXY_OFF for part in parts):
+        return []
+    return parts
+
+
+TRUSTED_PROXY_IPS = parse_trusted_proxy_ips(os.getenv("TRUSTED_PROXY_IPS"))
 
 # ============================================================================
 # Authentication Mode Configuration

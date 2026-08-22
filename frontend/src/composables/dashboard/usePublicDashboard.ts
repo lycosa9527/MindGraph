@@ -12,6 +12,11 @@ import { CanvasRenderer } from 'echarts/renderers'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useUIStore } from '@/stores/ui'
+import {
+  EMPTY_DASHBOARD_STATS,
+  applyDashboardStats,
+  type DashboardStats,
+} from '@/utils/publicDashboardStats'
 
 echarts.use([
   MapChart,
@@ -22,12 +27,8 @@ echarts.use([
   CanvasRenderer,
 ])
 
-export interface DashboardStats {
-  connected_users: number
-  registered_users: number
-  tokens_used_today: number
-  total_tokens_used: number
-}
+export type { DashboardStats } from '@/utils/publicDashboardStats'
+export { formatCompactNumber } from '@/utils/publicDashboardStats'
 
 export interface DashboardActivity {
   type?: string
@@ -54,15 +55,6 @@ const SERIES_SESSIONS = 'sessions'
 
 let chinaMapRegistered = false
 
-export function formatCompactNumber(num: number): string {
-  if (num >= 1_000_000) {
-    return `${(num / 1_000_000).toFixed(1)}M`
-  }
-  if (num >= 1_000) {
-    return `${(num / 1_000).toFixed(1)}K`
-  }
-  return num.toLocaleString()
-}
 
 async function ensureChinaMapRegistered(): Promise<void> {
   if (chinaMapRegistered) {
@@ -98,12 +90,7 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
   const notify = useNotifications()
 
   const isLoading = ref(true)
-  const stats = ref<DashboardStats>({
-    connected_users: 0,
-    registered_users: 0,
-    tokens_used_today: 0,
-    total_tokens_used: 0,
-  })
+  const stats = ref<DashboardStats>({ ...EMPTY_DASHBOARD_STATS })
   const activities = ref<DashboardActivity[]>([])
   const isRefreshing = ref(false)
 
@@ -156,12 +143,7 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
   }
 
   function applyStats(partial: Partial<DashboardStats>): void {
-    stats.value = {
-      connected_users: partial.connected_users ?? stats.value.connected_users,
-      registered_users: partial.registered_users ?? stats.value.registered_users,
-      tokens_used_today: partial.tokens_used_today ?? stats.value.tokens_used_today,
-      total_tokens_used: partial.total_tokens_used ?? stats.value.total_tokens_used,
-    }
+    stats.value = applyDashboardStats(stats.value, partial)
   }
 
   function prependActivity(item: DashboardActivity): void {
@@ -482,9 +464,9 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
           sseFailedAt = null
           stopFallbackPolling()
         } else if (data.type === 'stats_update') {
-          applyStats(data)
+          applyStats({ connected_users: data.connected_users })
         } else if (data.type === 'initial' && data.stats) {
-          applyStats(data.stats)
+          applyStats({ connected_users: data.stats.connected_users })
         } else if (data.type === 'error' && data.error) {
           notify.error(data.error)
         }
@@ -504,12 +486,15 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
       if (Date.now() - sseFailedAt > 30_000 && !fallbackTimer) {
         startFallbackPolling()
       }
-      void fetch('/api/public/stats', { credentials: 'include', method: 'HEAD' })
+      void fetch('/api/public/stats', { credentials: 'include' })
         .then((response) => {
           if (response.status === 401 || response.status === 403) {
             stopFallbackPolling()
             redirectOnAuthFailure(router, response.status)
             return
+          }
+          if (response.ok) {
+            void loadStats()
           }
           window.setTimeout(() => {
             if (!eventSource || eventSource.readyState === EventSource.CLOSED) {
@@ -572,7 +557,6 @@ export function usePublicDashboard(mapEl: { value: HTMLElement | null }) {
     stats,
     activities,
     isRefreshing,
-    formatCompactNumber,
     activityText,
     formatActivityTime,
     refreshActivityPanel,

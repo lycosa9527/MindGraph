@@ -4,6 +4,7 @@ from typing import cast
 from unittest.mock import patch
 
 from utils.auth import request_helpers
+from utils.auth.config import parse_trusted_proxy_ips
 from utils.auth.connection_types import HttpOrWebSocket
 
 
@@ -16,6 +17,16 @@ class _FakeConnection:
     def __init__(self, host: str, headers: dict[str, str] | None = None) -> None:
         self.client = _FakeClient(host)
         self.headers = headers or {}
+
+
+def test_parse_trusted_proxy_ips_defaults_to_private() -> None:
+    """NPM/Docker is the supported deploy: unset and blank mean private."""
+    assert parse_trusted_proxy_ips(None) == ["private"]
+    assert parse_trusted_proxy_ips("") == ["private"]
+    assert parse_trusted_proxy_ips("   ") == ["private"]
+    assert parse_trusted_proxy_ips("none") == []
+    assert parse_trusted_proxy_ips("off") == []
+    assert parse_trusted_proxy_ips("10.0.0.1,private") == ["10.0.0.1", "private"]
 
 
 def test_get_client_ip_ignores_forwarded_headers_without_trusted_proxy() -> None:

@@ -30,9 +30,14 @@ proxy_set_header Host $host;
 2. Set MindGraph env on the app host:
 
 ```bash
-TRUSTED_PROXY_IPS=127.0.0.1,<openresty-peer-ip>
+TRUSTED_PROXY_IPS=private
 FORCE_SECURE_COOKIES=true
 ```
+
+Unset or blank ``TRUSTED_PROXY_IPS`` now defaults to ``private`` (NPM / Docker).
+Pin exact peers instead with ``127.0.0.1,<openresty-peer-ip>`` if you prefer.
+Opt out with ``TRUSTED_PROXY_IPS=none`` only when port 9527 is reachable by
+untrusted hosts and you must ignore forwarded headers.
 
 `TRUSTED_PROXY_IPS` accepts exact IPs, CIDR ranges, and the keywords `private`
 (loopback + all RFC1918 / Docker / LAN ranges) and `loopback`. Behind a reverse

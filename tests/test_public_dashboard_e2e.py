@@ -179,6 +179,11 @@ async def test_activity_stream_emits_initial_event(
     assert parsed.get("type") in {"initial", "error", "heartbeat", "stats_update", "activity"}
     if parsed.get("type") == "initial":
         assert "stats" in parsed
+        stats = parsed["stats"]
+        assert "connected_users" in stats
+        assert "tokens_used_today" not in stats
+        assert "total_tokens_used" not in stats
+        assert "registered_users" not in stats
 
 
 @pytest.mark.asyncio

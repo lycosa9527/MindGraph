@@ -32,6 +32,13 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from config.settings import config
+from services.auth.china_geo import (
+    is_localhost_ip,
+    is_private_or_reserved_ip,
+    lookup_coordinates,
+    normalize_city_name,
+    normalize_province_name,
+)
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.utils.error_types import (
@@ -64,8 +71,8 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-# Key prefix
-LOCATION_PREFIX = "ip:location:"
+# v2: do not reuse v1 cache entries that defaulted failed lookups to Beijing.
+LOCATION_PREFIX = "ip:location:v2:"
 
 # Cache TTL: 30 days
 CACHE_TTL_SECONDS = 30 * 24 * 3600
@@ -76,129 +83,6 @@ DB_FILE_PATH_V6 = Path("data/ip2region_v6.xdb")  # IPv6 database (optional)
 
 # Patch cache file (patches take priority over main database)
 PATCHES_CACHE = Path("data/ip2region_patches_cache.json")
-
-# Mapping of city names to province names for ECharts map
-CITY_TO_PROVINCE = {
-    # Direct municipalities
-    "北京市": "北京",
-    "上海市": "上海",
-    "天津市": "天津",
-    "重庆市": "重庆",
-    # Jiangsu cities
-    "南京市": "江苏",
-    "苏州市": "江苏",
-    "无锡市": "江苏",
-    "常州市": "江苏",
-    "镇江市": "江苏",
-    "扬州市": "江苏",
-    "泰州市": "江苏",
-    "南通市": "江苏",
-    "盐城市": "江苏",
-    "淮安市": "江苏",
-    "宿迁市": "江苏",
-    "徐州市": "江苏",
-    "连云港市": "江苏",
-    # Zhejiang cities
-    "杭州市": "浙江",
-    "宁波市": "浙江",
-    "温州市": "浙江",
-    "嘉兴市": "浙江",
-    "湖州市": "浙江",
-    "绍兴市": "浙江",
-    "金华市": "浙江",
-    "衢州市": "浙江",
-    "舟山市": "浙江",
-    "台州市": "浙江",
-    "丽水市": "浙江",
-    # Guangdong cities
-    "广州市": "广东",
-    "深圳市": "广东",
-    "珠海市": "广东",
-    "汕头市": "广东",
-    "佛山市": "广东",
-    "韶关市": "广东",
-    "湛江市": "广东",
-    "肇庆市": "广东",
-    "江门市": "广东",
-    "茂名市": "广东",
-    "惠州市": "广东",
-    "梅州市": "广东",
-    "汕尾市": "广东",
-    "河源市": "广东",
-    "阳江市": "广东",
-    "清远市": "广东",
-    "东莞市": "广东",
-    "中山市": "广东",
-    "潮州市": "广东",
-    "揭阳市": "广东",
-    "云浮市": "广东",
-    # Shandong cities
-    "济南市": "山东",
-    "青岛市": "山东",
-    "淄博市": "山东",
-    "枣庄市": "山东",
-    "东营市": "山东",
-    "烟台市": "山东",
-    "潍坊市": "山东",
-    "济宁市": "山东",
-    "泰安市": "山东",
-    "威海市": "山东",
-    "日照市": "山东",
-    "临沂市": "山东",
-    "德州市": "山东",
-    "聊城市": "山东",
-    "滨州市": "山东",
-    "菏泽市": "山东",
-    # Add more mappings as needed
-}
-
-# Major Chinese cities/provinces coordinates
-# Format: {name: {"lat": latitude, "lng": longitude}}
-COORDINATES = {
-    # Provinces
-    "北京": {"lat": 39.9042, "lng": 116.4074},
-    "上海": {"lat": 31.2304, "lng": 121.4737},
-    "天津": {"lat": 39.3434, "lng": 117.3616},
-    "重庆": {"lat": 29.5630, "lng": 106.5516},
-    "广东": {"lat": 23.1291, "lng": 113.2644},  # Guangzhou
-    "江苏": {"lat": 32.0603, "lng": 118.7969},  # Nanjing
-    "浙江": {"lat": 30.2741, "lng": 120.1551},  # Hangzhou
-    "山东": {"lat": 36.6512, "lng": 117.1201},  # Jinan
-    "四川": {"lat": 30.6624, "lng": 104.0633},  # Chengdu
-    "湖北": {"lat": 30.5928, "lng": 114.3055},  # Wuhan
-    "河南": {"lat": 34.7466, "lng": 113.6254},  # Zhengzhou
-    "湖南": {"lat": 28.2278, "lng": 112.9388},  # Changsha
-    "河北": {"lat": 38.0428, "lng": 114.5149},  # Shijiazhuang
-    "安徽": {"lat": 31.8206, "lng": 117.2272},  # Hefei
-    "福建": {"lat": 26.0745, "lng": 119.2965},  # Fuzhou
-    "辽宁": {"lat": 41.8057, "lng": 123.4315},  # Shenyang
-    "陕西": {"lat": 34.3416, "lng": 108.9398},  # Xi'an
-    "江西": {"lat": 28.6820, "lng": 115.8579},  # Nanchang
-    "云南": {"lat": 25.0389, "lng": 102.7183},  # Kunming
-    "广西": {"lat": 22.8170, "lng": 108.3669},  # Nanning
-    "山西": {"lat": 37.8706, "lng": 112.5489},  # Taiyuan
-    "内蒙古": {"lat": 40.8414, "lng": 111.7519},  # Hohhot
-    "黑龙江": {"lat": 45.7731, "lng": 126.6849},  # Harbin
-    "吉林": {"lat": 43.8171, "lng": 125.3235},  # Changchun
-    "贵州": {"lat": 26.6470, "lng": 106.6302},  # Guiyang
-    "新疆": {"lat": 43.8256, "lng": 87.6168},  # Urumqi
-    "甘肃": {"lat": 36.0611, "lng": 103.8343},  # Lanzhou
-    "海南": {"lat": 20.0444, "lng": 110.1999},  # Haikou
-    "宁夏": {"lat": 38.4872, "lng": 106.2309},  # Yinchuan
-    "青海": {"lat": 36.6171, "lng": 101.7782},  # Xining
-    "西藏": {"lat": 29.6626, "lng": 91.1160},  # Lhasa
-    # Major cities (more specific)
-    "深圳": {"lat": 22.5431, "lng": 114.0579},
-    "广州": {"lat": 23.1291, "lng": 113.2644},
-    "杭州": {"lat": 30.2741, "lng": 120.1551},
-    "南京": {"lat": 32.0603, "lng": 118.7969},
-    "成都": {"lat": 30.6624, "lng": 104.0633},
-    "武汉": {"lat": 30.5928, "lng": 114.3055},
-    "西安": {"lat": 34.3416, "lng": 108.9398},
-    "苏州": {"lat": 31.2989, "lng": 120.5853},
-    "郑州": {"lat": 34.7466, "lng": 113.6254},
-    "长沙": {"lat": 28.2278, "lng": 112.9388},
-}
 
 
 class IPGeolocationService:
@@ -330,44 +214,9 @@ class IPGeolocationService:
         except ValueError:
             return 0
 
-    def _normalize_province_name(self, province: str) -> str:
-        """
-        Normalize province name to match ECharts map format.
-        Converts city names to province names (e.g., "南京市" -> "江苏").
-        """
-        if not province:
-            return province
-
-        # Check if it's a city name that needs conversion
-        if province in CITY_TO_PROVINCE:
-            return CITY_TO_PROVINCE[province]
-
-        # If it already ends with "省" or is a direct province name, return as-is
-        if province.endswith("省") or province in [
-            "北京",
-            "上海",
-            "天津",
-            "重庆",
-            "内蒙古",
-            "新疆",
-            "西藏",
-            "广西",
-            "宁夏",
-            "香港",
-            "澳门",
-        ]:
-            # Remove "省" suffix if present
-            return province.rstrip("省")
-
-        # If it ends with "市", try to find parent province
-        if province.endswith("市"):
-            # Try without "市" suffix
-            city_name = province
-            if city_name in CITY_TO_PROVINCE:
-                return CITY_TO_PROVINCE[city_name]
-
-        # Return as-is if no mapping found
-        return province
+    def _normalize_province_name(self, province: str, city: str = "") -> str:
+        """Normalize province name to match ECharts map format."""
+        return normalize_province_name(province, city)
 
     def _find_patch_for_ip(self, ip: str) -> Optional[Dict]:
         """
@@ -397,15 +246,10 @@ class IPGeolocationService:
 
                 if patch["start_int"] <= ip_int <= patch["end_int"]:
                     # Found matching patch - return location data
-                    province = patch.get("province", "")
-                    city = patch.get("city", "")
+                    city = normalize_city_name(patch.get("city", ""))
+                    province = self._normalize_province_name(patch.get("province", ""), city)
                     country = patch.get("country", "中国")
-
-                    # Normalize province name for ECharts map
-                    province = self._normalize_province_name(province)
-
-                    # Get coordinates for the location
-                    coords = self._get_coordinates(province, city)
+                    coords = lookup_coordinates(province, city) or {}
 
                     return {
                         "province": province,
@@ -482,11 +326,15 @@ class IPGeolocationService:
 
             if cached_data:
                 try:
-                    return json.loads(cached_data)
+                    cached_location = json.loads(cached_data)
                 except json.JSONDecodeError:
                     logger.warning("[IPGeo] Invalid cached data for IP %s", ip)
                     await redis.delete(cache_key)
                     return None
+                if cached_location.get("is_fallback"):
+                    await redis.delete(cache_key)
+                    return None
+                return cached_location
 
             return None
 
@@ -580,15 +428,14 @@ class IPGeolocationService:
             if len(parts) < 4:
                 return None
 
-            country = parts[0] if parts[0] != "0" else "中国"
-            province = parts[2] if parts[2] != "0" else ""
-            city = parts[3] if parts[3] != "0" else ""
-
-            # Normalize province name for ECharts map (convert city names to provinces)
-            province = self._normalize_province_name(province)
-
-            # Get approximate coordinates for Chinese provinces/cities
-            coords = self._get_coordinates(province, city)
+            country = parts[0] if parts[0] != "0" else ""
+            raw_province = parts[2] if parts[2] != "0" else ""
+            raw_city = parts[3] if parts[3] != "0" else ""
+            city = normalize_city_name(raw_city)
+            province = self._normalize_province_name(raw_province, city)
+            if not country and (province or city):
+                country = "中国"
+            coords = lookup_coordinates(province, city) or {}
 
             return {
                 "province": province,
@@ -602,57 +449,37 @@ class IPGeolocationService:
             logger.warning("[IPGeo] Local lookup error for IP %s: %s", ip, e)
             return None
 
-    def _get_coordinates(self, province: str, city: str) -> Dict[str, float]:
-        """
-        Get approximate coordinates for province/city.
-        This is a simplified mapping - expand as needed.
-        """
-        # Try city first, then province
-        if city and city in COORDINATES:
-            return COORDINATES[city]
-        if province and province in COORDINATES:
-            return COORDINATES[province]
-
-        # Default to Beijing if not found
-        return {"lat": 39.9042, "lng": 116.4074}
+    def _debug_localhost_location(self) -> Optional[Dict]:
+        """Optional Beijing pin for loopback in DEBUG only — never used in production."""
+        try:
+            if config.debug:
+                logger.debug("[IPGeo] Localhost IP mapped to Beijing (DEBUG mode)")
+                return {
+                    "province": "北京",
+                    "city": "北京",
+                    "lat": 39.9042,
+                    "lng": 116.4074,
+                    "country": "中国",
+                    "is_debug_localhost": True,
+                    "is_fallback": True,
+                }
+        except (AttributeError, TypeError) as exc:
+            logger.debug("Localhost IP geolocation debug pin skipped: %s", exc)
+        return None
 
     async def get_location(self, ip: str) -> Optional[Dict]:
         """
         Get location for an IP address using local database with patch support.
 
-        Process:
-        1. Check Redis cache
-        2. Check patch cache (patches take priority)
-        3. If no patch, lookup in local ip2region database
-        4. Store result in cache
-        5. Return location data
-
-        Args:
-            ip: IP address string
-
-        Returns:
-            Dict with {province, city, lat, lng, country} or None if lookup fails
+        Failed, private, and foreign lookups return None — they must not
+        appear as Beijing on the national map.
         """
-        # Handle localhost IPs - return default location in DEBUG mode for testing
-        if ip and (ip.startswith("127.") or ip.startswith("::1")):
-            try:
-                if config.debug:
-                    # Return Beijing location for localhost in DEBUG mode
-                    localhost_location = {
-                        "province": "北京",
-                        "city": "北京",
-                        "lat": 39.9042,
-                        "lng": 116.4074,
-                        "country": "中国",
-                    }
-                    logger.debug("[IPGeo] Localhost IP %s mapped to Beijing (DEBUG mode)", ip)
-                    return localhost_location
-            except (AttributeError, TypeError) as exc:
-                logger.debug("Localhost IP geolocation fallback failed: %s", exc)
-            # In production, skip localhost IPs
-            return None
-
         if not ip or ip == "unknown":
+            return None
+        if is_localhost_ip(ip):
+            return self._debug_localhost_location()
+        if is_private_or_reserved_ip(ip):
+            logger.debug("[IPGeo] Skipping private/reserved IP %s", ip)
             return None
 
         cached = await self._get_from_cache(ip)
@@ -682,24 +509,8 @@ class IPGeolocationService:
             )
             return location
 
-        # Lookup failed - return default Beijing location for display purposes
-        # Do NOT cache this default to avoid corrupting location data:
-        # - Foreign IPs/VPNs won't be permanently marked as Beijing
-        # - Transient failures won't persist incorrect data after recovery
-        logger.warning(
-            "[IPGeo] Lookup failed for IP %s, returning Beijing as fallback (not cached)",
-            ip,
-        )
-        default_location = {
-            "province": "北京",
-            "city": "北京",
-            "lat": 39.9042,
-            "lng": 116.4074,
-            "country": "中国",
-            "is_fallback": True,  # Flag to indicate this is a default location, not a real lookup
-        }
-        # Intentionally NOT caching the default location to allow retries on next lookup
-        return default_location
+        logger.debug("[IPGeo] Lookup failed for IP %s (no Beijing fallback)", ip)
+        return None
 
 
 # Global singleton instance with thread-safe initialization

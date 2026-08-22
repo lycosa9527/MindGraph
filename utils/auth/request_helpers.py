@@ -189,8 +189,8 @@ def describe_trusted_proxy_config() -> str:
     entries = tuple(TRUSTED_PROXY_IPS)
     if not entries:
         return (
-            "TRUSTED_PROXY_IPS empty -> forwarded headers IGNORED, using direct peer IP "
-            "(set TRUSTED_PROXY_IPS=private when behind a reverse proxy)"
+            "TRUSTED_PROXY_IPS=none -> forwarded headers IGNORED, using direct peer IP "
+            "(default is private; use that behind Nginx Proxy Manager)"
         )
     networks, literals = _parse_trusted_proxy_entries(entries)
     parts: list[str] = [f"{len(networks)} network range(s)"]

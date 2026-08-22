@@ -25,8 +25,9 @@ Proprietary License
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
+from services.auth.china_geo import is_china_mappable
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -75,11 +76,12 @@ class CityFlagTracker:
             lng: Optional longitude coordinate
         """
         if not city_name:
-            # Use province as fallback if city not available
             if province_name:
                 city_name = province_name
             else:
-                return  # No location data available
+                return
+        if lat is None or lng is None:
+            return
 
         flag_data = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -238,3 +240,16 @@ def get_city_flag_tracker() -> CityFlagTracker:
     if _CityFlagTrackerState.instance is None:
         _CityFlagTrackerState.instance = CityFlagTracker()
     return _CityFlagTrackerState.instance
+
+
+async def record_mappable_location_flag(location: Optional[Mapping[str, Any]]) -> None:
+    """Record a map pin only for a real China province with coordinates."""
+    if not location or not is_china_mappable(location):
+        return
+    city = str(location.get("city") or "").strip()
+    province = str(location.get("province") or "").strip()
+    lat = location.get("lat")
+    lng = location.get("lng")
+    if lat is None or lng is None:
+        return
+    await get_city_flag_tracker().record_city_flag(city, province, float(lat), float(lng))

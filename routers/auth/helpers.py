@@ -31,7 +31,7 @@ from models.domain.messages import Language, Messages
 from models.domain.user_activity_log import UserActivityLog
 from services.auth.ip_geolocation import get_geolocation_service
 from services.auth.vpn_geo_enforcement import record_vpn_login_geo
-from services.monitoring.city_flag_tracker import get_city_flag_tracker
+from services.monitoring.city_flag_tracker import record_mappable_location_flag
 from services.monitoring.module_activity import track_module_activity
 from services.redis.rate_limiting.redis_rate_limiter import clear_token_refresh_attempts
 from services.redis.redis_activity_tracker import get_activity_tracker
@@ -203,14 +203,7 @@ def _record_city_flag_async(ip_address: str) -> None:
         try:
             geolocation = get_geolocation_service()
             location = await geolocation.get_location(ip_address)
-            if location and not location.get("is_fallback"):
-                city = location.get("city", "")
-                province = location.get("province", "")
-                lat = location.get("lat")
-                lng = location.get("lng")
-                if city or province:
-                    flag_tracker = get_city_flag_tracker()
-                    await flag_tracker.record_city_flag(city, province, lat, lng)
+            await record_mappable_location_flag(location)
         except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("Failed to record city flag: %s", exc)
 
