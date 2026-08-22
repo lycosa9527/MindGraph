@@ -155,12 +155,13 @@ describe('login restores persisted UI language', () => {
     expect(prefBody.ui_version).toBeUndefined()
   })
 
-  it('does not reset UI version when the server profile omits ui_version', () => {
+  it('always uses the current MindGraph gallery, including leftover chinese profiles', () => {
     const uiStore = useUIStore()
     uiStore.setUiVersion('chinese')
+    expect(uiStore.uiVersion).toBe('international')
     uiStore.applyUiVersionFromServerProfile(null)
-    expect(uiStore.uiVersion).toBe('chinese')
-    uiStore.applyUiVersionFromServerProfile('international')
+    expect(uiStore.uiVersion).toBe('international')
+    uiStore.applyUiVersionFromServerProfile('chinese')
     expect(uiStore.uiVersion).toBe('international')
   })
 

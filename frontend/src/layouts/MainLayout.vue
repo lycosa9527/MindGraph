@@ -49,19 +49,15 @@ const hideAppSidebar = computed(
     isAdminPublicDashboardRoute(route) && canViewSettingsSubtab('public_dashboard')
 )
 
-/** CN `/mindgraph`: show content clearly for guests; other main routes keep blur + login hint overlay. */
-const shouldBlurGuestMain = computed(() => {
-  if (!isGuest.value) return false
-  if (uiStore.uiVersion === 'chinese' && route.path === '/mindgraph') return false
-  return true
-})
+/** Guests see a login overlay on main routes; sidebar stays clear. */
+const shouldBlurGuestMain = computed(() => isGuest.value)
 </script>
 
 <template>
   <div class="main-layout h-screen w-screen flex overflow-hidden">
     <AppSidebar v-if="!hideAppSidebar" />
 
-    <!-- Main content (blurred for guests except CN MindGraph landing; sidebar stays clear) -->
+    <!-- Main content (blurred for guests; sidebar stays clear) -->
     <main
       class="main-content relative flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
     >
@@ -89,9 +85,8 @@ const shouldBlurGuestMain = computed(() => {
         <div class="main-slot flex-1 min-h-0 flex flex-col overflow-hidden">
           <slot />
         </div>
-        <!-- ICP Registration Footer - Chinese version only -->
         <div
-          v-if="uiStore.uiVersion === 'chinese' && !hideAppSidebar"
+          v-if="!hideAppSidebar"
           class="icp-footer"
         >
           京ICP备2025126228号

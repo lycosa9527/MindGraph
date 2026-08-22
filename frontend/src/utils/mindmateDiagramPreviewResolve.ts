@@ -28,7 +28,8 @@ async function isPngBlob(blob: Blob): Promise<boolean> {
   if (blob.size < 4) {
     return false
   }
-  if (blob.type && blob.type !== 'image/png') {
+  const type = (blob.type || '').split(';')[0].trim().toLowerCase()
+  if (type && type !== 'image/png' && type !== 'application/octet-stream') {
     return false
   }
   const bytes = new Uint8Array(await blob.slice(0, 4).arrayBuffer())

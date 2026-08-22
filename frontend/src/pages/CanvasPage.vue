@@ -12,8 +12,8 @@
  * ephemeral clears + ``diagram:reset_requested`` for page-local refs.
  *
  * Users access this page via:
- * 1. DiagramTemplateInput - Generates on landing, then navigates here with pre-loaded diagram
- * 2. DiagramTypeGrid - "在画布中创建" → navigates here with diagram type
+ * 1. InternationalLanding prompt — generates, then navigates here with a pre-loaded diagram
+ * 2. InternationalLanding cards — "在画布中创建" → navigates here with a diagram type
  *
  * The "AI生成图示" button in the bottom AI cluster uses useAutoComplete
  * to generate content based on the topic extracted from existing nodes.

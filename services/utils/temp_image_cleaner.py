@@ -3,7 +3,8 @@ Temporary Image Cleanup Service
 ================================
 
 Background task to clean up old PNG files from temp_images/ directory.
-Automatically removes files older than 24 hours.
+Automatically removes local files older than 24 hours. COS copies of
+dingtalk_*.png stay so MindMate conversation history can hydrate them.
 
 100% async implementation - all file operations use asyncio.
 Compatible with Windows and Ubuntu when running under Uvicorn.

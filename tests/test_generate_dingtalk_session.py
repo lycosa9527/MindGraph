@@ -85,18 +85,11 @@ async def test_generate_dingtalk_closes_rls_before_llm_and_screenshot() -> None:
         ),
         patch.object(mod, "build_public_temp_image_url", return_value="https://x/t.png"),
         patch.object(mod, "generate_signed_url", return_value="/temp_images/x.png?sig=1"),
-        patch.object(mod.aiofiles, "open") as aio_open,
+        patch.object(mod, "persist_dingtalk_temp_png", new=AsyncMock()),
         patch.object(mod, "schedule_module_activity"),
         patch.object(mod, "schedule_user_usage_activity"),
-        patch.object(mod, "TEMP_IMAGES_DIR") as temp_dir,
+        patch.object(mod, "temp_images_signed_ttl", return_value=86400),
     ):
-        temp_dir.mkdir = MagicMock()
-        temp_dir.__truediv__ = MagicMock(return_value=MagicMock())
-        file_cm = MagicMock()
-        file_cm.__aenter__ = AsyncMock(return_value=AsyncMock(write=AsyncMock()))
-        file_cm.__aexit__ = AsyncMock(return_value=False)
-        aio_open.return_value = file_cm
-
         response = await mod.generate_dingtalk_png(req, _request(), None, _user())
 
     assert response is not None

@@ -276,6 +276,23 @@ class KnowledgeConfigMixin:
         return int(self._get_cached_value("COS_ZHIHUI_PRESIGN_GET_TTL", "300"))
 
     @property
+    def COS_TEMP_IMAGES_PREFIX(self) -> str:
+        """COS key prefix for generate_dingtalk / MindMate preview PNGs."""
+        return (
+            self._get_cached_value(
+                "COS_TEMP_IMAGES_PREFIX",
+                "temp_images/mindgraph",
+            )
+            .strip()
+            .rstrip("/")
+        )
+
+    @property
+    def COS_TEMP_IMAGES_URL_TTL_SECONDS(self) -> int:
+        """Signed /api/temp_images URL lifetime when COS holds the durable copy."""
+        return int(self._get_cached_value("COS_TEMP_IMAGES_URL_TTL_SECONDS", "315360000"))
+
+    @property
     def FILE_CENTER_WIKI_COMPILE(self) -> bool:
         """Compile a per-package wiki (markdown on disk) after chunk indexing (v2a)."""
         return self._get_cached_value("FILE_CENTER_WIKI_COMPILE", "true").lower() == "true"

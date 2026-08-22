@@ -567,15 +567,7 @@ export function useAppSidebar() {
   }
 
   function handleLogoClick() {
-    if (uiStore.uiVersion === 'international') {
-      router.push('/mindgraph')
-      return
-    }
-    if (currentMode.value === 'askonce') {
-      startNewAskOnce()
-    } else {
-      startNewChat()
-    }
+    router.push('/mindgraph')
   }
 
   async function handleDiagramSelect(diagram: SavedDiagram) {

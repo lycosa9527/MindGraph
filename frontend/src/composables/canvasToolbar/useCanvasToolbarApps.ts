@@ -133,18 +133,14 @@ export function useCanvasToolbarApps() {
         iconBg: 'bg-teal-100',
         iconColor: 'text-teal-600',
       },
-      ...(uiStore.uiVersion === 'international'
-        ? [
-            {
-              appKey: 'virtual_keyboard' as const,
-              name: t('canvas.toolbar.moreAppVirtualKeyboard'),
-              icon: Keyboard,
-              desc: t('canvas.toolbar.moreAppVirtualKeyboardDesc'),
-              iconBg: 'bg-slate-100',
-              iconColor: 'text-slate-600',
-            },
-          ]
-        : []),
+      {
+        appKey: 'virtual_keyboard' as const,
+        name: t('canvas.toolbar.moreAppVirtualKeyboard'),
+        icon: Keyboard,
+        desc: t('canvas.toolbar.moreAppVirtualKeyboardDesc'),
+        iconBg: 'bg-slate-100',
+        iconColor: 'text-slate-600',
+      },
     ]
     const withoutWaterfall = isConceptMap.value
       ? apps.filter((a) => a.appKey !== 'waterfall')

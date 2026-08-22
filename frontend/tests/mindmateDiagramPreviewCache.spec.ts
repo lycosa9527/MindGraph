@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { extractMindmatePreviewCacheKey } from '@/utils/mindmateDiagramPreviewCache'
-import { replaceMindmatePreviewImageUrl } from '@/utils/mindmateDiagramPreviewDisplay'
+import {
+  replaceMindmatePreviewImageUrl,
+  stripMindmatePreviewImageMarkdown,
+} from '@/utils/mindmateDiagramPreviewDisplay'
 
 describe('extractMindmatePreviewCacheKey', () => {
   it('extracts dingtalk temp filename from preview markdown', () => {
@@ -28,5 +31,27 @@ describe('replaceMindmatePreviewImageUrl', () => {
     expect(replaceMindmatePreviewImageUrl(content, 'blob:cached')).toBe(
       '![mg:abc](blob:cached)'
     )
+  })
+
+  it('replaces same-origin rewritten preview src with blob url', () => {
+    const content = '![mg:abc](/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x&exp=1)'
+    expect(replaceMindmatePreviewImageUrl(content, 'blob:http://localhost/1')).toBe(
+      '![mg:abc](blob:http://localhost/1)'
+    )
+  })
+
+  it('replaces proxied preview src with blob url', () => {
+    const remote =
+      'https://mg.mindspringedu.com/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x'
+    const content = `![](/api/proxy-image?url=${encodeURIComponent(remote)})`
+    expect(replaceMindmatePreviewImageUrl(content, 'blob:cached')).toBe('![](blob:cached)')
+  })
+})
+
+describe('stripMindmatePreviewImageMarkdown', () => {
+  it('removes a dead generate_dingtalk preview image', () => {
+    const content =
+      'Here you go\n![](/api/temp_images/dingtalk_deadbeef_1710000000.png?sig=x)\nThanks'
+    expect(stripMindmatePreviewImageMarkdown(content)).toBe('Here you go\n\nThanks')
   })
 })

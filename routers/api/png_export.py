@@ -17,7 +17,6 @@ import hashlib
 import logging
 import time
 import uuid
-from pathlib import Path
 from typing import Any, Optional, Tuple
 
 import aiofiles
@@ -71,6 +70,13 @@ from services.diagram.generation_skip_registry import (
 )
 from services.admin.user_usage_activity import schedule_user_usage_activity
 from services.diagram.library_save_user_notices import library_save_user_notice
+from services.diagram.temp_image_storage import (
+    hydrate_dingtalk_temp_png,
+    is_safe_dingtalk_temp_filename,
+    persist_dingtalk_temp_png,
+    temp_images_dir,
+    temp_images_signed_ttl,
+)
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.http.llm_http_errors import raise_http_for_llm_error
 from services.infrastructure.utils.browser import BrowserUnavailableError
@@ -170,8 +176,7 @@ def _resolve_prompt_to_diagram_payload(
     return spec, diagram_type
 
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-TEMP_IMAGES_DIR = _PROJECT_ROOT / "temp_images"
+TEMP_IMAGES_DIR = temp_images_dir()
 
 router = APIRouter(tags=["api"])
 
@@ -679,14 +684,10 @@ async def generate_dingtalk_png(
             except BACKGROUND_INFRA_ERRORS as e:
                 logger.debug("Failed to broadcast activity: %s", e)
 
-        # Save PNG to temp directory (ASYNC file I/O)
-        TEMP_IMAGES_DIR.mkdir(exist_ok=True)
-
-        # Generate unique filename (unique_id keys Redis skip metadata for MindBot)
+        # unique_id keys Redis skip metadata for MindBot
         unique_id = uuid.uuid4().hex[:8]
         timestamp = int(time.time())
         filename = f"dingtalk_{unique_id}_{timestamp}.png"
-        temp_path = TEMP_IMAGES_DIR / filename
 
         save_title = prompt[:50].strip() or "Diagram"
         dify_key = (save_identity.dify_user_key or "").strip()
@@ -750,12 +751,12 @@ async def generate_dingtalk_png(
                     db=preview_db,
                 )
 
-        # Write PNG content to file using aiofiles (100% async, non-blocking)
-        async with aiofiles.open(temp_path, "wb") as f:
-            await f.write(screenshot_bytes)
+        await persist_dingtalk_temp_png(filename, screenshot_bytes)
 
-        # Generate signed URL for security (24 hour expiration)
-        signed_path = generate_signed_url(filename, expiration_seconds=86400)
+        signed_path = generate_signed_url(
+            filename,
+            expiration_seconds=temp_images_signed_ttl(),
+        )
         if stored_diagram_id:
             # Survives in Dify message history when alt text / HTML comments are stripped.
             signed_path = f"{signed_path}&mgdid={stored_diagram_id}"
@@ -853,44 +854,30 @@ async def claim_generation_library_preview(
 @router.get("/temp_images/{filepath:path}")
 async def serve_temp_image(filepath: str, sig: Optional[str] = None, exp: Optional[int] = None):
     """
-    Serve temporary PNG files for DingTalk integration.
+    Serve generate_dingtalk / diagram preview PNGs.
 
-    Images require signed URLs with expiration for security.
-    Images auto-cleanup after 24 hours via background cleaner task.
-
-    Security Flow:
-    1. Check file exists (cleaner may have deleted it) → 404 if not found
-    2. Verify signed URL expiration → 403 if expired
-    3. Verify signature → 403 if invalid
-    4. Serve file if all checks pass
-
-    Coordination with Temp Image Cleaner:
-    - Cleaner deletes files older than 24h based on file mtime
-    - Signed URLs expire after 24h from generation time
-    - Both use same 24-hour window for consistency
-    - If cleaner deleted file → 404 (file not found)
-    - If URL expired but file exists → 403 (URL expired)
+    Signed URLs are required for durable dingtalk_*.png objects. Local files
+    still age out after 24h; COS hydrate restores them so MindMate history
+    keeps working. A valid HMAC is accepted after exp when the file exists.
+    Unsigned (legacy) URLs stay local-only with a 24h age cap.
     """
-    # Parse filename and signature from path
-    # Path format: filename.png?sig=...&exp=...
     if "?" in filepath:
         filename = filepath.split("?")[0]
     else:
         filename = filepath
 
-    # Security: Validate filename to prevent directory traversal
     if ".." in filename or "/" in filename or "\\" in filename:
         raise HTTPException(status_code=400, detail="Invalid filename")
 
-    temp_path = TEMP_IMAGES_DIR / filename
+    if sig and exp and is_safe_dingtalk_temp_filename(filename):
+        temp_path = await hydrate_dingtalk_temp_png(filename)
+    else:
+        temp_path = TEMP_IMAGES_DIR / filename
+        if not temp_path.exists():
+            temp_path = None
 
-    # Step 1: Check if file exists (cleaner may have deleted it)
-    # This check happens FIRST to distinguish between "file deleted" (404) and "URL expired" (403)
-    if not temp_path.exists():
-        # File doesn't exist - could be deleted by cleaner or never existed
-        # Check if this is a signed URL to provide better error message
+    if temp_path is None:
         if sig and exp:
-            # Signed URL but file doesn't exist - likely deleted by cleaner
             logger.debug("Temp image file not found (may have been cleaned): %s", filename)
         elif filename.startswith("dingtalk_"):
             logger.warning(
@@ -901,20 +888,15 @@ async def serve_temp_image(filepath: str, sig: Optional[str] = None, exp: Option
             )
         raise HTTPException(status_code=404, detail="Image not found or expired")
 
-    # Step 2: Verify signed URL if signature provided (new format)
     if sig and exp:
-        # Verify signature and expiration
-        if not verify_signed_url(filename, sig, exp):
-            logger.warning("Invalid or expired signed URL for temp image: %s", filename)
+        if not verify_signed_url(filename, sig, exp, allow_expired=True):
+            logger.warning("Invalid signed URL for temp image: %s", filename)
             raise HTTPException(status_code=403, detail="Invalid or expired image URL")
     else:
-        # Legacy support: Check if file exists and is not too old (max 24 hours)
-        # This allows existing URLs to work temporarily
-        # Uses same logic as temp_image_cleaner (24 hour max age)
         try:
             stat_result = await aiofiles.os.stat(temp_path)
             file_age = time.time() - stat_result.st_mtime
-            if file_age > 86400:  # 24 hours (matches cleanup threshold)
+            if file_age > 86400:
                 file_age_hours = file_age / 3600
                 logger.warning(
                     "Legacy temp image URL expired: %s (age: %.1fh)",

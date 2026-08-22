@@ -204,7 +204,9 @@ export function useMindMate(options: MindMateOptions = {}) {
       return
     }
     if (currentStreamingId.value) {
-      updateMessage(currentStreamingId.value, streamingBuffer.value, false)
+      const finalContent = streamingBuffer.value
+      updateMessage(currentStreamingId.value, finalContent, false)
+      queueMindmateDiagramPreviewPersist(finalContent)
     }
     state.value = 'idle'
     applyLoadPhase(mindMateLoadPhaseOnAbort())

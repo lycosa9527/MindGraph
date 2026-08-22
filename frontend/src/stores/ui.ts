@@ -68,12 +68,6 @@ export function ensureMindMapCanvasV2DefaultMigration(
   storage.setItem(MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY, '1')
 }
 
-const VALID_UI_VERSIONS: ReadonlySet<string> = new Set(['chinese', 'international'])
-
-function isValidUiVersion(value: string | null): value is UiVersion {
-  return value !== null && VALID_UI_VERSIONS.has(value)
-}
-
 function detectDefaultUiVersion(): UiVersion {
   return 'international'
 }
@@ -272,11 +266,9 @@ export const useUIStore = defineStore('ui', () => {
     browserLocaleHintDismissed.value = localStorage.getItem(BROWSER_LOCALE_HINT_KEY) === '1'
     matchPromptToUi.value = localStorage.getItem(MATCH_PROMPT_TO_UI_KEY) !== '0'
 
-    const storedVersion = localStorage.getItem(UI_VERSION_KEY)
-    if (isValidUiVersion(storedVersion)) {
-      uiVersion.value = storedVersion
-    } else {
-      uiVersion.value = detectDefaultUiVersion()
+    uiVersion.value = detectDefaultUiVersion()
+    if (localStorage.getItem(UI_VERSION_KEY) !== 'international') {
+      localStorage.setItem(UI_VERSION_KEY, 'international')
     }
 
     // Move every browser onto New canvas once; Classic only after an explicit choice.
@@ -428,12 +420,12 @@ export const useUIStore = defineStore('ui', () => {
     setLanguage(next)
   }
 
-  function setUiVersion(version: UiVersion): void {
-    if (uiVersion.value === version) {
+  function setUiVersion(_version: UiVersion): void {
+    if (uiVersion.value === 'international') {
       return
     }
-    uiVersion.value = version
-    localStorage.setItem(UI_VERSION_KEY, version)
+    uiVersion.value = 'international'
+    localStorage.setItem(UI_VERSION_KEY, 'international')
   }
 
   /**
@@ -471,10 +463,8 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.setItem(SIDEBAR_POEM_ENABLED_KEY, value ? '1' : '0')
   }
 
-  function applyUiVersionFromServerProfile(version: string | null | undefined): void {
-    if (isValidUiVersion(version ?? null)) {
-      setUiVersion(version as UiVersion)
-    }
+  function applyUiVersionFromServerProfile(_version: string | null | undefined): void {
+    setUiVersion('international')
   }
 
   function checkMobile(): void {

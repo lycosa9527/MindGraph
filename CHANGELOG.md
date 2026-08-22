@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.21] - 2026-08-22
+
+> **MindMate diagram previews stay on COS. /mindgraph is the card gallery for everyone.**
+
+### Fixed
+
+- **MindMate preview `<img>`** — Cached `blob:` preview URLs were stripped by DOMPurify, so a just-generated diagram showed as a broken image. `blob:` is allowed for images; a missing preview no longer leaves an empty `<img>`.
+
+### Added
+
+- **Durable generate_dingtalk PNGs** — After a MindMate / DingTalk diagram is generated, the PNG is written locally and mirrored to COS (`COS_TEMP_IMAGES_PREFIX`, same bucket as ZhiHui). `/api/temp_images` hydrates from COS when the 24h local cache is gone. Signed URLs last 10 years when COS is on; a valid HMAC still serves after `exp` so Dify history keeps working. COS upload failure does not fail generation.
+
+### Changed
+
+- **MindGraph home** — `/mindgraph` always uses the card gallery (`InternationalLanding`). The old Chinese landing (template box, type grid, discovery gallery) is gone. Interface version stays **international**; leftover `chinese` profile/localStorage values are ignored. Sidebar lists MindGraph above MindMate. Logo goes to `/mindgraph`. Guests get the login overlay on the home page too. The ICP footer is always shown. The canvas more-apps list always includes the virtual keyboard.
+
+### Tests
+
+- `frontend/tests/markdownKatexSanitize.spec.ts` / `mindmateDiagramPreviewCache.spec.ts` / `loginRestoresUiLanguage.spec.ts`
+- `tests/test_temp_image_storage.py` / `test_serve_temp_image.py`
+
 ## [5.180.20] - 2026-08-22
 
 > **Signed-in sidebar history stays closed. A sixth device kicks the oldest session so the new login gets in.**

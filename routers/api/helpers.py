@@ -287,7 +287,13 @@ def generate_signed_url(filename: str, expiration_seconds: int = 86400) -> str:
     return f"{filename}?sig={signature_b64}&exp={expiration}"
 
 
-def verify_signed_url(filename: str, signature: str, expiration: int) -> bool:
+def verify_signed_url(
+    filename: str,
+    signature: str,
+    expiration: int,
+    *,
+    allow_expired: bool = False,
+) -> bool:
     """
     Verify a signed URL for temporary image access.
 
@@ -295,12 +301,13 @@ def verify_signed_url(filename: str, signature: str, expiration: int) -> bool:
         filename: Image filename
         signature: URL signature
         expiration: Expiration timestamp
+        allow_expired: When True, accept a valid HMAC after exp (COS hydrate).
 
     Returns:
         True if signature is valid and not expired, False otherwise
     """
     # Check expiration
-    if int(time.time()) > expiration:
+    if not allow_expired and int(time.time()) > expiration:
         return False
 
     # Reconstruct message

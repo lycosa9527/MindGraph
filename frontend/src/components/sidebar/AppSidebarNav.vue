@@ -62,7 +62,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
     }"
   >
     <div class="sidebar-nav-main">
-      <!-- MindMate: chat history with collab sessions pinned at top of the list -->
+      <!-- MindGraph then MindMate (collab sessions pinned at top of chat history) -->
       <div
         class="sidebar-nav-mind-section"
         :class="{
@@ -72,6 +72,36 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
             (s.showZhihuiNav && s.showPanel('zhihui')),
         }"
       >
+        <el-tooltip
+          :content="s.t('sidebar.mindGraph')"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('mindgraph')"
+            @click="s.setMode('mindgraph')"
+          >
+            <Waypoints
+              class="nav-icon"
+              :size="NAV_ICON_SIZE"
+            />
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.mindGraph') }}</span
+            >
+          </div>
+        </el-tooltip>
+        <transition name="panel-slide">
+          <div
+            v-if="s.showPanel('mindgraph')"
+            class="sidebar-panel sidebar-panel--fill"
+          >
+            <DiagramHistory @select="s.handleDiagramSelect" />
+          </div>
+        </transition>
+
         <el-tooltip
           :content="s.mindMateNavLabel"
           placement="right"
@@ -103,36 +133,6 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
               :initial-visible-limit="mindmatePageChatHistoryLimit"
               :show-collab-sessions="s.showMindmateCollabSessions"
             />
-          </div>
-        </transition>
-
-        <el-tooltip
-          :content="s.t('sidebar.mindGraph')"
-          placement="right"
-          :disabled="!s.isCollapsed"
-        >
-          <div
-            class="nav-item"
-            :class="s.navItemClass('mindgraph')"
-            @click="s.setMode('mindgraph')"
-          >
-            <Waypoints
-              class="nav-icon"
-              :size="NAV_ICON_SIZE"
-            />
-            <span
-              v-if="!s.isCollapsed"
-              class="nav-label"
-              >{{ s.t('sidebar.mindGraph') }}</span
-            >
-          </div>
-        </el-tooltip>
-        <transition name="panel-slide">
-          <div
-            v-if="s.showPanel('mindgraph')"
-            class="sidebar-panel sidebar-panel--fill"
-          >
-            <DiagramHistory @select="s.handleDiagramSelect" />
           </div>
         </transition>
 

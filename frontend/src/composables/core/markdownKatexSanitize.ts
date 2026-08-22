@@ -117,9 +117,21 @@ const MARKDOWN_KATEX_ATTR = [
   'y2',
 ] as const
 
-export const markdownKatexDomPurifyConfig: { ADD_TAGS: string[]; ADD_ATTR: string[] } = {
+/**
+ * DOMPurify default URI policy plus ``blob:`` so MindMate can render cached
+ * generate_dingtalk previews (``URL.createObjectURL``) without stripping ``src``.
+ */
+export const MARKDOWN_ALLOWED_URI_REGEXP =
+  /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+
+export const markdownKatexDomPurifyConfig: {
+  ADD_TAGS: string[]
+  ADD_ATTR: string[]
+  ALLOWED_URI_REGEXP: RegExp
+} = {
   ADD_TAGS: [...MARKDOWN_KATEX_TAGS],
   ADD_ATTR: [...MARKDOWN_KATEX_ATTR],
+  ALLOWED_URI_REGEXP: MARKDOWN_ALLOWED_URI_REGEXP,
 }
 
 let markdownLinkSanitizeHookInstalled = false

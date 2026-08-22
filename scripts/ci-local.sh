@@ -155,6 +155,8 @@ run_backend() {
     tests/test_mindbot_pair_code_handler.py \
     tests/test_bind_code_parse.py \
     tests/test_generate_dingtalk_identity.py \
+    tests/test_temp_image_storage.py \
+    tests/test_serve_temp_image.py \
     tests/test_library_save_user_notices.py \
     tests/test_generation_skip_registry.py \
     tests/test_mindbot_library_save_reply.py \
@@ -252,6 +254,7 @@ run_frontend() {
     tests/mindMapNodeUid.spec.ts tests/mindMapSubgraphMerge.spec.ts \
     tests/mindMapStringChildrenAudit.spec.ts \
     tests/tsecCaptcha.spec.ts \
+    tests/markdownKatexSanitize.spec.ts tests/mindmateDiagramPreviewCache.spec.ts \
     tests/loginRestoresUiLanguage.spec.ts tests/normalizeAuthUser.spec.ts \
     tests/authBootstrapDedupe.spec.ts tests/formatGalleryLanguageMenuLabel.spec.ts \
     tests/formatSidebarDailyTokens.spec.ts

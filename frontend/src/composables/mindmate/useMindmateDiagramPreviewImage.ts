@@ -11,7 +11,10 @@ import {
   stripLibrarySaveSkipNotices,
   stripMindmateDiagramIdComments,
 } from '@/utils/mindmateDiagramMeta'
-import { replaceMindmatePreviewImageUrl } from '@/utils/mindmateDiagramPreviewDisplay'
+import {
+  replaceMindmatePreviewImageUrl,
+  stripMindmatePreviewImageMarkdown,
+} from '@/utils/mindmateDiagramPreviewDisplay'
 import { resolveMindmateDiagramPreviewBlob } from '@/utils/mindmateDiagramPreviewResolve'
 
 export function useMindmateDiagramPreviewImage(options: {
@@ -110,6 +113,8 @@ export function useMindmateDiagramPreviewImage(options: {
     )
     if (previewBlobUrl.value) {
       text = replaceMindmatePreviewImageUrl(text, previewBlobUrl.value)
+    } else if (previewUnavailable.value) {
+      text = stripMindmatePreviewImageMarkdown(text)
     }
     text = stripMindmateDiagramIdComments(text)
     const libraryId = options.libraryDiagramId?.()
