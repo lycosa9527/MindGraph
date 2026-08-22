@@ -31,6 +31,7 @@ from services.auth.thinking_coin.checkin_service import ensure_wallet_bootstrap
 from services.auth.thinking_coin.eligibility import user_eligible_for_thinking_coins
 from services.auth.thinking_coin.wallet_payload import build_wallet_payload
 from services.auth.vpn_geo_enforcement import record_vpn_refresh_last_ip
+from services.monitoring.module_activity import touch_signed_in_presence
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
@@ -283,12 +284,19 @@ async def refresh_token(request: Request, response: Response):
 
 @router.get("/me")
 async def get_me(
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get current authenticated user profile
     """
+    try:
+        await touch_signed_in_presence(user=current_user, request=request)
+    except BACKGROUND_INFRA_ERRORS as presence_error:
+        logger.debug("Signed-in presence touch failed: %s", presence_error)
+    except REDIS_ERRORS as presence_error:
+        logger.debug("Signed-in presence touch failed: %s", presence_error)
     try:
         # Get organization (use cache with database fallback)
         org = None

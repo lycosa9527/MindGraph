@@ -164,6 +164,11 @@ run_backend() {
     tests/test_mindbot_dingtalk_diagram_display.py \
     tests/test_user_daily_token_quota.py \
     tests/auth/test_user_session_prefs.py \
+    tests/auth/test_auth_me_presence.py \
+    tests/test_module_activity.py \
+    tests/test_national_dashboard.py \
+    tests/test_china_geo.py \
+    tests/test_ip_geolocation_national_map.py \
     tests/test_llm_daily_token_cap.py \
     tests/test_get_client_ip.py \
     tests/test_gewe_webhook_auth.py \

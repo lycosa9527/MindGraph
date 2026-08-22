@@ -5,8 +5,12 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from redis.exceptions import RedisError
 
-from services.monitoring.module_activity import track_module_activity
+from services.monitoring.module_activity import (
+    touch_signed_in_presence,
+    track_module_activity,
+)
 
 
 @pytest.mark.asyncio
@@ -105,3 +109,62 @@ async def test_track_module_activity_persist_usage_false() -> None:
         )
     tracker.record_activity.assert_awaited_once()
     schedule_usage.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_touch_signed_in_presence_reuses_session() -> None:
+    """Signed-in /me starts or reuses a live session without usage rows."""
+    user = MagicMock()
+    user.id = 3
+    user.phone = "13800000000"
+    user.name = "Tester"
+    user.organization_id = 7
+
+    tracker = MagicMock()
+    tracker.start_session = AsyncMock(return_value="session_3")
+
+    with (
+        patch(
+            "services.monitoring.module_activity.get_activity_tracker",
+            return_value=tracker,
+        ),
+        patch(
+            "services.monitoring.module_activity.get_client_ip",
+            return_value="223.104.38.38",
+        ),
+        patch(
+            "services.monitoring.module_activity.schedule_user_usage_activity",
+        ) as schedule_usage,
+    ):
+        await touch_signed_in_presence(user=user, request=MagicMock())
+
+    tracker.start_session.assert_awaited_once_with(
+        user_id=3,
+        user_phone="13800000000",
+        user_name="Tester",
+        ip_address="223.104.38.38",
+        reuse_existing=True,
+    )
+    schedule_usage.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_touch_signed_in_presence_skips_invalid_user() -> None:
+    """user_id <= 0 is a no-op."""
+    with patch(
+        "services.monitoring.module_activity.get_activity_tracker",
+    ) as get_tracker:
+        await touch_signed_in_presence(user_id=0)
+    get_tracker.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_touch_signed_in_presence_swallows_redis_error() -> None:
+    """Redis failures must not propagate to GET /api/auth/me."""
+    tracker = MagicMock()
+    tracker.start_session = AsyncMock(side_effect=RedisError("down"))
+    with patch(
+        "services.monitoring.module_activity.get_activity_tracker",
+        return_value=tracker,
+    ):
+        await touch_signed_in_presence(user_id=3, user_phone="13800000000")

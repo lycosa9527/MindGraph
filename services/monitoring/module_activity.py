@@ -4,6 +4,9 @@ Unified module activity tracking: Redis live + usage timeline + greppable logs.
 Call sites should prefer ``track_module_activity`` / ``schedule_module_activity``
 instead of wiring Redis, Postgres, and INFO logs separately.
 
+``touch_signed_in_presence`` is the signed-in map pin (GET /api/auth/me):
+reuse a live activity-tracker session without writing a login event.
+
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
@@ -21,7 +24,7 @@ from services.admin.user_usage_activity import (
     schedule_user_usage_activity,
 )
 from services.redis.redis_activity_tracker import get_activity_tracker
-from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth.connection_types import HttpOrWebSocket
 from utils.auth.mg_client import (
     activity_details_with_request_client,
@@ -30,6 +33,9 @@ from utils.auth.mg_client import (
 from utils.auth.request_helpers import get_client_ip
 
 logger = logging.getLogger(__name__)
+
+# RedisError is not in BACKGROUND_INFRA_ERRORS; presence must never fail /me.
+_PRESENCE_TOUCH_ERRORS = tuple(dict.fromkeys((*BACKGROUND_INFRA_ERRORS, *REDIS_ERRORS)))
 
 VALID_MODULES = frozenset(
     {
@@ -73,6 +79,39 @@ def _resolve_user_fields(
             str(name) if name else user_name,
         )
     return resolved_id, organization_id, user_phone or "", user_name
+
+
+async def touch_signed_in_presence(
+    *,
+    user: Optional[User] = None,
+    user_id: Optional[int] = None,
+    user_phone: Optional[str] = None,
+    user_name: Optional[str] = None,
+    request: Optional[HttpOrWebSocket] = None,
+) -> None:
+    """Reuse or start a live activity-tracker session for signed-in presence.
+
+    Used by GET /api/auth/me so the national map can pin a user as soon as
+    the SPA confirms identity. Does not write login history or usage rows.
+    Never raises to callers.
+    """
+    try:
+        uid, _org_id, phone, name = _resolve_user_fields(user, user_id, None, user_phone, user_name)
+        if uid <= 0:
+            return
+        ip_address = None
+        if request is not None:
+            ip_address = get_client_ip(request)
+        tracker = get_activity_tracker()
+        await tracker.start_session(
+            user_id=uid,
+            user_phone=phone,
+            user_name=name,
+            ip_address=ip_address,
+            reuse_existing=True,
+        )
+    except _PRESENCE_TOUCH_ERRORS as exc:
+        logger.debug("[UserActivity] presence_touch_failed: %s", exc)
 
 
 def _format_detail(detail: Optional[str], details: Optional[Mapping[str, Any]]) -> str:
