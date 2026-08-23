@@ -224,7 +224,8 @@ run_backend() {
     tests/test_voice_notes_asr.py \
     tests/test_tencent_asr_v2.py \
     tests/test_tencent_asr_v2_errors.py \
-    tests/test_token_refresh_rate_limit.py
+    tests/test_token_refresh_rate_limit.py \
+    tests/test_log_user_context.py
 }
 
 run_frontend() {

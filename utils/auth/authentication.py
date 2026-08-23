@@ -38,6 +38,7 @@ except ImportError:
     redis_hash_token = None
     get_session_manager = None
 
+from services.infrastructure.utils.log_user_context import bind_log_user
 from utils.db.rls_context import RlsContext, rls_async_session
 
 from .api_keys import get_api_key_record, track_api_key_usage, validate_api_key
@@ -96,11 +97,14 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
     """
     # Enterprise Mode: Skip authentication, return enterprise user
     if AUTH_MODE == "enterprise":
-        return await get_enterprise_user()
+        enterprise_user = await get_enterprise_user()
+        bind_log_user(enterprise_user)
+        return enterprise_user
 
     cached = getattr(request.state, AUTH_CONTEXT_USER_ATTR, None)
     if cached is not None:
         await raise_if_org_locked_or_expired_async(cached)
+        bind_log_user(cached)
         return cached
 
     # Standard and Bayi Mode: Validate JWT token
@@ -121,7 +125,9 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
 
     if token.startswith("mgat_"):
         account_number = request.headers.get("X-MG-Account", "").strip()
-        return await validate_user_token(token, account_number, request=request)
+        mgat_user = await validate_user_token(token, account_number, request=request)
+        bind_log_user(mgat_user)
+        return mgat_user
 
     payload = decode_access_token(token)
 
@@ -183,6 +189,7 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
 
     await raise_if_org_locked_or_expired_async(user)
     bind_mg_client_for_web(request)
+    bind_log_user(user)
 
     return user
 

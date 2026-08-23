@@ -23,6 +23,7 @@ from dotenv import load_dotenv
 
 from config.celery_broker_redis import patch_celery_redis_pools
 from config.settings import config
+from services.infrastructure.utils.log_user_context import format_log_user_suffix
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.infrastructure.sync.office_preview_fonts_cos import (
     warm_office_preview_fonts_once,
@@ -136,7 +137,11 @@ class UnifiedFormatter(logging.Formatter):
         # Process ID
         pid = record.process if hasattr(record, "process") else os.getpid()
 
-        return f"[{timestamp}] {colored_level} | {source} | [{pid}] {record.getMessage()}"
+        try:
+            user_suffix = format_log_user_suffix()
+        except (TypeError, ValueError, LookupError):
+            user_suffix = ""
+        return f"[{timestamp}] {colored_level} | {source} | [{pid}]{user_suffix} {record.getMessage()}"
 
 
 # Configure Celery logging

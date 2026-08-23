@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.26] - 2026-08-23
+
+> **Backend logs now show who is acting: `user=Name(id)` next to the pid.**
+
+### Changed
+
+- **Request actor on log lines** — Authenticated HTTP and WebSocket work binds the current user so `UnifiedFormatter` prints `user=赵国庆(42)` (name, else phone/email, else id) on every backend line for that request. Admin log parsing is unchanged; uvicorn's standalone formatter is left alone.
+
+### Tests
+
+- `tests/test_log_user_context.py` — name fallbacks, formatter suffix, middleware bind/reset
+- `tests/test_auth_ws_mgat.py` — WebSocket auth binds the same suffix
+
 ## [5.180.25] - 2026-08-23
 
 > **Voice Notes leftovers: Word speaks Tencent snapshots, ingest keeps one title, and the relay stops cleanly.**

@@ -34,6 +34,7 @@ from services.auth.security_logger import security_log
 from services.auth.vpn_geo_enforcement import maybe_enforce_vpn_cn_geo_async
 from services.infrastructure.http.feature_gate import feature_flag_gate
 from services.infrastructure.security.abuseipdb_middleware import abuseipdb_middleware
+from services.infrastructure.utils.log_user_context import bind_log_user, reset_log_user
 from services.infrastructure.utils.spa_handler import (
     apply_no_cache_headers,
     is_public_static_path,
@@ -597,8 +598,10 @@ async def auth_context_middleware(request: Request, call_next):
         finally:
             reset_rls_context(token)
     user = await resolve_authenticated_user_optional(request)
+    log_user_token = None
     if user is not None:
         setattr(request.state, AUTH_CONTEXT_USER_ATTR, user)
+        log_user_token = bind_log_user(user)
     preset = getattr(request.state, "rls_context", None)
     if preset is not None:
         token = set_rls_context(preset)
@@ -609,6 +612,7 @@ async def auth_context_middleware(request: Request, call_next):
     try:
         return await call_next(request)
     finally:
+        reset_log_user(log_user_token)
         reset_rls_context(token)
 
 

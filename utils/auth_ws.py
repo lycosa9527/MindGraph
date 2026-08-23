@@ -16,6 +16,7 @@ from typing import Any, Optional, Tuple
 from fastapi import HTTPException, WebSocket
 
 from services.auth.bearer_token import extract_bearer_token_from_websocket
+from services.infrastructure.utils.log_user_context import bind_log_user
 from utils.auth.auth_resolution import load_user_from_jwt_session_token
 from utils.auth.user_tokens import validate_user_token
 
@@ -55,9 +56,11 @@ async def authenticate_websocket_user(
             if isinstance(detail, str) and detail.strip():
                 return None, detail
             return None, "Invalid token"
+        bind_log_user(user)
         return user, None
 
     user = await load_user_from_jwt_session_token(token)
     if user is not None:
+        bind_log_user(user)
         return user, None
     return None, "Invalid token"

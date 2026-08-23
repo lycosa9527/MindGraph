@@ -23,6 +23,7 @@ from typing import Literal, cast
 from urllib.parse import urlparse
 
 from config.settings import config
+from services.infrastructure.utils.log_user_context import format_log_user_suffix
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 # Leading "[Tag]" in log messages (after pid); used for module-level ANSI highlights.
@@ -403,6 +404,10 @@ class UnifiedFormatter(logging.Formatter):
 
         # Add process ID to identify worker
         pid = os.getpid()
+        try:
+            user_suffix = format_log_user_suffix()
+        except (TypeError, ValueError, LookupError):
+            user_suffix = ""
 
         # Normalize message spacing: strip leading whitespace and normalize multiple spaces to single space
         message = record.getMessage().lstrip()
@@ -410,7 +415,7 @@ class UnifiedFormatter(logging.Formatter):
         if self.use_colors:
             message = _colorize_leading_module_tag(message, self.MODULE_TAG_COLORS, self.COLORS["RESET"])
 
-        line = f"[{timestamp}] {colored_level} | {source} | [{pid}] {message}"
+        line = f"[{timestamp}] {colored_level} | {source} | [{pid}]{user_suffix} {message}"
 
         if record.exc_info and not record.exc_text:
             record.exc_text = self.formatException(record.exc_info)
