@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'Lier DingTalk',
   'auth.unbindDingtalkOAuth': 'Délier DingTalk',
   'auth.oauthBindTitle': 'Scanner pour lier le compte',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': 'Lié avec succès',
   'auth.oauthUnbindError': 'Impossible de délier. Veuillez réessayer.',
   'auth.unbindWechatSuccess': 'WeChat délié',

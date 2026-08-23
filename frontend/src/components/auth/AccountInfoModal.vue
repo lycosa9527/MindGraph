@@ -728,6 +728,7 @@ watch(
       invite-code=""
       mode="bind"
       :initial-provider="oauthBindProvider"
+      lock-provider
       @success="handleOAuthBindSuccess"
     />
   </Teleport>

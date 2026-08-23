@@ -45,9 +45,14 @@ const showDingtalk = computed(
   () => props.provider === 'dingtalk' && (providers.value?.dingtalk_enabled ?? false)
 )
 
-const footerHint = computed(() =>
-  props.mode === 'bind' ? t('auth.accountBindingsHint') : t('auth.qrLoginNotLinked')
-)
+const footerHint = computed(() => {
+  if (props.provider === 'wechat') {
+    return props.mode === 'bind'
+      ? t('auth.wechatBindScanHint')
+      : t('auth.wechatLoginScanHint')
+  }
+  return props.mode === 'bind' ? t('auth.accountBindingsHint') : t('auth.qrLoginNotLinked')
+})
 </script>
 
 <template>
@@ -98,14 +103,25 @@ const footerHint = computed(() =>
     >
       {{ t('auth.qrLoginProviderDisabled') }}
     </div>
-    <p class="text-xs text-stone-400 text-center mt-3 px-2">
+    <p
+      v-if="showWechat || showDingtalk"
+      class="text-center mt-3 px-2 leading-6"
+      :class="
+        provider === 'wechat' ? 'text-sm text-stone-600' : 'text-xs text-stone-400'
+      "
+    >
       {{ footerHint }}
     </p>
   </div>
 </template>
 
 <style scoped>
-.oauth-qr-panel__wechat,
+.oauth-qr-panel__wechat {
+  width: 248px;
+  max-width: 100%;
+  height: 248px;
+  overflow: hidden;
+}
 .oauth-qr-panel__dingtalk {
   min-width: 220px;
   min-height: 220px;

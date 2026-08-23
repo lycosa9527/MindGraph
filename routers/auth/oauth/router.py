@@ -41,6 +41,7 @@ from services.auth.oauth.oauth_post_login import (
 from services.auth.oauth.oauth_state_redis import consume_oauth_state, mint_oauth_state
 from services.auth.oauth.org_resolve import resolve_org_by_invitation_code
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
+from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +157,7 @@ def _log_oauth_redirect_error(
 @router.get("/providers", response_model=OauthProvidersResponse)
 async def get_oauth_providers(
     invite: str = Query(..., min_length=1),
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Public: resolve org by invitation code and return enabled OAuth providers."""
@@ -183,6 +185,7 @@ async def get_oauth_providers(
 async def wechat_login_start(
     invite: str = Query(""),
     mode: str = Query(OAUTH_MODE_LOGIN),
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Mint state and return WxLogin parameters.
@@ -248,6 +251,7 @@ async def wechat_oauth_callback(
     request: Request,
     code: Optional[str] = Query(None),
     state: Optional[str] = Query(None),
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
     """WeChat redirect callback after scan."""
@@ -314,6 +318,7 @@ async def wechat_oauth_callback(
 @router.get("/dingtalk/start", response_model=OauthStartResponse)
 async def dingtalk_login_start(
     invite: str = Query(..., min_length=1),
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Mint state and return DTFrameLogin parameters."""
@@ -446,6 +451,7 @@ async def dingtalk_complete_post(
     body: DingtalkCompleteRequest,
     request: Request,
     response: Response,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Primary DingTalk login/bind completion from JS callback."""
@@ -467,6 +473,7 @@ async def dingtalk_callback_get(
     response: Response,
     auth_code: Optional[str] = Query(None, alias="authCode"),
     state: Optional[str] = Query(None),
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Fallback DingTalk redirect callback."""
@@ -486,6 +493,7 @@ async def dingtalk_bind_complete_post(
     body: DingtalkCompleteRequest,
     request: Request,
     response: Response,
+    _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
     """DingTalk bind completion from JS callback (alias)."""

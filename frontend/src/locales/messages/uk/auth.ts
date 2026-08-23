@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'Прив\'язати DingTalk',
   'auth.unbindDingtalkOAuth': 'Відв\'язати DingTalk',
   'auth.oauthBindTitle': 'Скануйте для прив\'язки облікового запису',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': 'Успішно прив\'язано',
   'auth.oauthUnbindError': 'Не вдалося відв\'язати. Спробуйте ще раз.',
   'auth.unbindWechatSuccess': 'WeChat відв\'язано',

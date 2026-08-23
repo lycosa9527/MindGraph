@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'I-link ang DingTalk',
   'auth.unbindDingtalkOAuth': 'I-unlink ang DingTalk',
   'auth.oauthBindTitle': 'I-scan para i-link ang account',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': 'Matagumpay na na-link',
   'auth.oauthUnbindError': 'Hindi ma-unlink. Subukan muli.',
   'auth.unbindWechatSuccess': 'Na-unlink ang WeChat',

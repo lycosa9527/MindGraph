@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'DingTalk लिंक',
   'auth.unbindDingtalkOAuth': 'DingTalk अनलिंक',
   'auth.oauthBindTitle': 'लिंक के लिए स्कैन',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': 'सफलतापूर्वक लिंक',
   'auth.oauthUnbindError': 'अनलिंक नहीं हो सका। पुनः प्रयास।',
   'auth.unbindWechatSuccess': 'WeChat अनलिंक',

@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'เชื่อม DingTalk',
   'auth.unbindDingtalkOAuth': 'ยกเลิกเชื่อม DingTalk',
   'auth.oauthBindTitle': 'สแกนเพื่อเชื่อมบัญชี',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': 'เชื่อมสำเร็จ',
   'auth.oauthUnbindError': 'ยกเลิกเชื่อมไม่ได้ กรุณาลองอีกครั้ง',
   'auth.unbindWechatSuccess': 'ยกเลิกเชื่อม WeChat แล้ว',

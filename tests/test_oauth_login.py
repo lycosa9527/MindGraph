@@ -15,7 +15,18 @@ from models.domain.auth import User
 from models.domain.oauth_user_link import OAUTH_PROVIDER_WECHAT
 from models.domain.organization_oauth_config import OrganizationOauthConfig
 from repositories.organization_oauth_config_repo import OrganizationOauthConfigRepository
-from routers.auth.oauth.router import wechat_oauth_callback
+from routers.auth.oauth.router import (
+    dingtalk_bind_complete_post,
+    dingtalk_bind_start,
+    dingtalk_callback_get,
+    dingtalk_complete_post,
+    dingtalk_login_start,
+    get_oauth_links,
+    get_oauth_providers,
+    wechat_bind_start,
+    wechat_login_start,
+    wechat_oauth_callback,
+)
 
 from services.auth.oauth.dingtalk_oauth_client import DingtalkContactProfile, DingtalkTokenResult
 from services.auth.oauth.oauth_constants import (
@@ -291,6 +302,26 @@ def test_wechat_callback_does_not_use_injected_response() -> None:
     """Cookies must go on the returned RedirectResponse, not a discarded Response param."""
     params = inspect.signature(wechat_oauth_callback).parameters
     assert "response" not in params
+
+
+def test_oauth_login_routes_bind_system_rls() -> None:
+    """Anonymous WeChat/DingTalk login must see users like /login (not deny_default)."""
+    for fn in (
+        get_oauth_providers,
+        wechat_login_start,
+        wechat_oauth_callback,
+        dingtalk_login_start,
+        dingtalk_complete_post,
+        dingtalk_callback_get,
+        dingtalk_bind_complete_post,
+    ):
+        assert "_system_rls" in inspect.signature(fn).parameters, fn.__name__
+
+
+def test_oauth_authenticated_routes_keep_user_rls() -> None:
+    """Session routes must not switch the request to system_bootstrap RLS."""
+    for fn in (wechat_bind_start, dingtalk_bind_start, get_oauth_links):
+        assert "_system_rls" not in inspect.signature(fn).parameters, fn.__name__
 
 
 def test_normalize_oauth_error_code_maps_client_errors() -> None:

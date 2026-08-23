@@ -315,6 +315,8 @@ export default {
   'auth.bindDingtalkOAuth': '綁定釘釘',
   'auth.unbindDingtalkOAuth': '解綁釘釘',
   'auth.oauthBindTitle': '掃碼綁定賬戶',
+  'auth.wechatBindScanHint': '請使用微信掃描二維碼綁定帳戶',
+  'auth.wechatLoginScanHint': '請使用微信掃描二維碼登錄',
   'auth.oauthBindSuccess': '綁定成功',
   'auth.oauthUnbindError': '解綁失敗，請稍後重試',
   'auth.unbindWechatSuccess': '微信已解綁',

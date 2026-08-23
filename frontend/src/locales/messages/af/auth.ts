@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'Koppel DingTalk',
   'auth.unbindDingtalkOAuth': 'Ontkoppel DingTalk',
   'auth.oauthBindTitle': 'Skandeer om rekening te koppel',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': 'Suksesvol gekoppel',
   'auth.oauthUnbindError': 'Kon nie ontkoppel nie. Probeer asseblief weer.',
   'auth.unbindWechatSuccess': 'WeChat ontkoppel',

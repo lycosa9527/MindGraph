@@ -5,7 +5,14 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
-import { isOAuthRedirectError, notifyOAuthError, WX_LOGIN_SELF_REDIRECT } from '@/utils/oauthLoginUi'
+import {
+  isOAuthRedirectError,
+  notifyOAuthError,
+  sizeWechatLoginIframe,
+  wechatLoginStyleHref,
+  WX_LOGIN_QR_SIZE_PX,
+  WX_LOGIN_SELF_REDIRECT,
+} from '@/utils/oauthLoginUi'
 import apiClient from '@/utils/apiClient'
 
 export type OAuthProvider = 'wechat' | 'dingtalk'
@@ -172,8 +179,12 @@ export function useOAuthQrLogin(options: {
       scope: 'snsapi_login',
       redirect_uri: redirectUri,
       state,
-      stylelite: 1,
+      href: wechatLoginStyleHref(window.location.origin),
+      onReady: () => {
+        sizeWechatLoginIframe(el, WX_LOGIN_QR_SIZE_PX)
+      },
     })
+    sizeWechatLoginIframe(el, WX_LOGIN_QR_SIZE_PX)
   }
 
   async function startDingtalkWidget(

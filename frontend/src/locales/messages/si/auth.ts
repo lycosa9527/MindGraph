@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'DingTalk සම‍බ‍න්‍ධ',
   'auth.unbindDingtalkOAuth': 'DingTalk වි‍ස‍ධ‍ම‍ක‍ර‍ණ',
   'auth.oauthBindTitle': 'Scan කර ගිණුම සම‍බ‍න්‍ධ',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': 'සාර්ථකව සම‍බ‍න්‍ධ',
   'auth.oauthUnbindError': 'වි‍ස‍ධ‍ම‍ක‍ර‍ණ කළ නොහැක. නැවත උත්සාහ කරන්න.',
   'auth.unbindWechatSuccess': 'WeChat වි‍ස‍ධ‍ම‍ක‍ර‍ණ',

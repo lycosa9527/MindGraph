@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'Lidh DingTalk',
   'auth.unbindDingtalkOAuth': 'Shkëput DingTalk',
   'auth.oauthBindTitle': 'Skanoni për të lidhur llogarinë',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': 'U lidh me sukses',
   'auth.oauthUnbindError': 'Shkëputja dështoi. Provoni përsëri.',
   'auth.unbindWechatSuccess': 'WeChat u shkëput',

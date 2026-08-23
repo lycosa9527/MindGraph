@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'Liên kết DingTalk',
   'auth.unbindDingtalkOAuth': 'Hủy liên kết DingTalk',
   'auth.oauthBindTitle': 'Quét để liên kết tài khoản',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': 'Liên kết thành công',
   'auth.oauthUnbindError': 'Không hủy liên kết được. Vui lòng thử lại.',
   'auth.unbindWechatSuccess': 'Đã hủy liên kết WeChat',

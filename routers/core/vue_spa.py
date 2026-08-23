@@ -278,7 +278,11 @@ async def vue_catch_all(request: Request, path: str):
             media_type = media_type_for_vue_dist_relpath(path)
             logger.debug("[Catch-all] Serving file: %s", file_path)
             return FileResponse(path=str(file_path), media_type=media_type)
-        # File doesn't exist, return 404
+        public_root = (VUE_DIST_DIR.parent / "public").resolve()
+        public_path = (public_root / path).resolve()
+        if public_path.is_file() and public_path.is_relative_to(public_root):
+            media_type = media_type_for_vue_dist_relpath(path)
+            return FileResponse(path=str(public_path), media_type=media_type)
         logger.warning("[Catch-all] File not found: %s (VUE_DIST_DIR: %s)", file_path, VUE_DIST_DIR)
         raise HTTPException(status_code=404, detail=f"File not found: {path}")
 

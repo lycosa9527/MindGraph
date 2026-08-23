@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.31] - 2026-08-24
+
+> **Bound WeChat scan login works again, and the login/bind QR fits the modal.**
+
+### Fixed
+
+- **WeChat login RLS** — A bound account still got `oauth_not_linked` after scan. The anonymous callback found `oauth_user_links.user_id` then could not see the `users` row under deny-default RLS (`OAuth login link user missing`). Public WeChat/DingTalk start and callback routes now bind `system_bootstrap` RLS, the same as `/login`.
+- **WeChat QR in the login modal** — WxLogin’s default 300×400 iframe overflowed `/auth` 微信登录 as well as Account bind. Official `href` CSS shrinks the QR; the iframe and modal card hug 248px. Footer is “请使用微信扫描二维码登录 / 绑定账户” (the not-linked copy is only a toast after scan).
+
+### Tests
+
+- `tests/test_oauth_login.py` — public OAuth routes bind system RLS; session bind/links routes do not
+- `frontend/tests/oauthQrLogin.spec.ts` — WxLogin href, iframe size, modal card width
+- `tests/test_vue_spa_static_mime.py` — `/oauth-wx-login.css` from `frontend/public` when dist is stale
+
 ## [5.180.30] - 2026-08-24
 
 > **WeChat bind/login QR can load under production CSP.**

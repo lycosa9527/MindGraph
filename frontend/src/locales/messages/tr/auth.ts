@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'DingTalk bağla',
   'auth.unbindDingtalkOAuth': 'DingTalk bağlantısını kaldır',
   'auth.oauthBindTitle': 'Hesabı bağlamak için tara',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': 'Başarıyla bağlandı',
   'auth.oauthUnbindError': 'Bağlantı kaldırılamadı. Lütfen tekrar deneyin.',
   'auth.unbindWechatSuccess': 'WeChat bağlantısı kaldırıldı',

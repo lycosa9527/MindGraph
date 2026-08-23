@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'DingTalk 연결',
   'auth.unbindDingtalkOAuth': 'DingTalk 연결 해제',
   'auth.oauthBindTitle': '스캔하여 계정 연결',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': '연결되었습니다',
   'auth.oauthUnbindError': '연결을 해제할 수 없습니다. 다시 시도하세요.',
   'auth.unbindWechatSuccess': 'WeChat 연결이 해제되었습니다',

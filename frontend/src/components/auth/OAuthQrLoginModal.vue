@@ -9,6 +9,7 @@ import { Close } from '@element-plus/icons-vue'
 import OAuthQrLoginPanel from './OAuthQrLoginPanel.vue'
 import { useLanguage } from '@/composables'
 import type { OAuthProvider, OAuthQrMode } from '@/composables/auth/useOAuthQrLogin'
+import { wechatQrModalMaxWidthPx } from '@/utils/oauthLoginUi'
 
 const props = defineProps<{
   visible: boolean
@@ -27,6 +28,11 @@ const { t } = useLanguage()
 
 const activeProvider = ref<OAuthProvider>('wechat')
 const mode = computed(() => props.mode ?? 'login')
+const wechatCardStyle = computed(() =>
+  activeProvider.value === 'wechat'
+    ? { maxWidth: `${wechatQrModalMaxWidthPx()}px` }
+    : undefined
+)
 
 const isVisible = computed({
   get: () => props.visible,
@@ -61,6 +67,7 @@ watch(
     >
       <div
         class="oauth-qr-modal-card bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden"
+        :style="wechatCardStyle"
         role="dialog"
         aria-modal="true"
         :aria-label="t('auth.qrLoginTitle')"

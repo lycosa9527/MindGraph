@@ -11,7 +11,12 @@ import {
   shouldShowQrLoginLink,
   shouldShowWechatBindRow,
   canStartWechatBind,
+  sizeWechatLoginIframe,
+  wechatLoginStyleHref,
+  wechatQrModalMaxWidthPx,
+  WX_LOGIN_QR_SIZE_PX,
   WX_LOGIN_SELF_REDIRECT,
+  WX_LOGIN_STYLE_HREF_PATH,
 } from '@/utils/oauthLoginUi'
 
 describe('oauthLoginUi', () => {
@@ -25,6 +30,28 @@ describe('oauthLoginUi', () => {
 
   it('WxLogin jumps the top window so callback cookies apply', () => {
     expect(WX_LOGIN_SELF_REDIRECT).toBe(false)
+  })
+
+  it('WxLogin href is the public /static stylesheet WeChat can fetch', () => {
+    expect(WX_LOGIN_STYLE_HREF_PATH).toBe('/oauth-wx-login.css')
+    expect(wechatLoginStyleHref('https://test.mindspringedu.com')).toBe(
+      encodeURIComponent('https://test.mindspringedu.com/oauth-wx-login.css')
+    )
+    expect(WX_LOGIN_QR_SIZE_PX).toBe(248)
+    expect(wechatQrModalMaxWidthPx()).toBe(288)
+  })
+
+  it('sizeWechatLoginIframe sets the official iframe to the modal QR size', () => {
+    const container = document.createElement('div')
+    const iframe = document.createElement('iframe')
+    iframe.setAttribute('width', '300')
+    iframe.setAttribute('height', '400')
+    container.appendChild(iframe)
+    sizeWechatLoginIframe(container, WX_LOGIN_QR_SIZE_PX)
+    expect(iframe.getAttribute('width')).toBe('248')
+    expect(iframe.getAttribute('height')).toBe('248')
+    expect(iframe.style.width).toBe('248px')
+    expect(iframe.style.height).toBe('248px')
   })
 
   it('shouldShowWechatBindRow hides when OAuth is off or WeChat is unavailable', () => {

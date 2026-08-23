@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'Tautkan DingTalk',
   'auth.unbindDingtalkOAuth': 'Lepas tautan DingTalk',
   'auth.oauthBindTitle': 'Pindai untuk menautkan akaun',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': 'Berjaya ditautkan',
   'auth.oauthUnbindError': 'Tidak boleh melepas tautan. Sila coba lagi.',
   'auth.unbindWechatSuccess': 'WeChat dilepas tautannya',

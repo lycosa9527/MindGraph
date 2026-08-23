@@ -330,6 +330,8 @@ export default {
   'auth.bindDingtalkOAuth': '绑定钉钉',
   'auth.unbindDingtalkOAuth': '解绑钉钉',
   'auth.oauthBindTitle': '扫码绑定账户',
+  'auth.wechatBindScanHint': '请使用微信扫描二维码绑定账户',
+  'auth.wechatLoginScanHint': '请使用微信扫描二维码登录',
   'auth.oauthBindSuccess': '绑定成功',
   'auth.oauthUnbindError': '解绑失败，请稍后重试',
   'auth.unbindWechatSuccess': '微信已解绑',

@@ -1,6 +1,36 @@
 /** Official WxLogin default: jump the top window so callback Set-Cookie is visible. */
 export const WX_LOGIN_SELF_REDIRECT = false
 
+/** Fitted QR size inside the bind/login modal (WxLogin default iframe is 300×400). */
+export const WX_LOGIN_QR_SIZE_PX = 248
+
+/** Horizontal padding on the QR modal card (`px-5` both sides). */
+export const WX_LOGIN_MODAL_PAD_PX = 40
+
+/** Tracked at frontend/public; FastAPI catch-all serves it when dist is stale. */
+export const WX_LOGIN_STYLE_HREF_PATH = '/oauth-wx-login.css'
+
+export function wechatQrModalMaxWidthPx(): number {
+  return WX_LOGIN_QR_SIZE_PX + WX_LOGIN_MODAL_PAD_PX
+}
+
+export function wechatLoginStyleHref(origin: string): string {
+  return encodeURIComponent(new URL(WX_LOGIN_STYLE_HREF_PATH, origin).href)
+}
+
+export function sizeWechatLoginIframe(container: HTMLElement, sizePx: number): void {
+  const iframe = container.querySelector('iframe')
+  if (!iframe) {
+    return
+  }
+  const px = `${sizePx}px`
+  iframe.setAttribute('width', String(sizePx))
+  iframe.setAttribute('height', String(sizePx))
+  iframe.style.width = px
+  iframe.style.height = px
+  iframe.style.border = 'none'
+}
+
 /**
  * Resolve school invitation code for OAuth QR login from route or register form.
  */

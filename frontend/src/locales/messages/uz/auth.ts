@@ -236,6 +236,8 @@ export default {
   'auth.bindDingtalkOAuth': 'DingTalk-u yopish',
   'auth.unbindDingtalkOAuth': 'DingTalk yopishntisini ochish',
   'auth.oauthBindTitle': 'Hisobi yopishmaq uchun skanerlang',
+  'auth.wechatBindScanHint': 'Please use WeChat to scan the QR code to bind your account',
+  'auth.wechatLoginScanHint': 'Please use WeChat to scan the QR code to sign in',
   'auth.oauthBindSuccess': 'Muvaffaqiyatli yopishndi',
   'auth.oauthUnbindError': 'Yopishnti ochishila bilmedi. Qayta qayta urinib ko’ring.',
   'auth.unbindWechatSuccess': 'WeChat yopishntisi ochishildi',

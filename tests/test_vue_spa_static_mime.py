@@ -29,6 +29,7 @@ vue_spa_module = importlib.import_module("routers.core.vue_spa")
         ("favicon.svg", "image/svg+xml"),
         ("font.woff2", "font/woff2"),
         ("unknown.bin", "application/octet-stream"),
+        ("oauth-wx-login.css", "text/css"),
     ],
 )
 def test_media_type_for_vue_dist_relpath(relpath: str, expected: str) -> None:
@@ -101,3 +102,28 @@ def test_setup_vue_spa_mounts_assets_in_debug(tmp_path: Path, monkeypatch: pytes
     response = client.get("/assets/index-test.css")
     assert response.status_code == 200
     assert "body{}" in response.text
+
+
+def test_catch_all_serves_wechat_qr_css_from_public(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """WxLogin href CSS is tracked in frontend/public and must be served before rebuild."""
+    dist_dir = tmp_path / "dist"
+    dist_dir.mkdir()
+    public_dir = tmp_path / "public"
+    public_dir.mkdir()
+    (public_dir / "oauth-wx-login.css").write_text(
+        ".impowerBox .qrcode { width: 220px; }",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(vue_spa_module, "VUE_DIST_DIR", dist_dir)
+
+    app = FastAPI()
+    app.include_router(vue_spa_module.router)
+    client = TestClient(app)
+
+    response = client.get("/oauth-wx-login.css")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/css")
+    assert ".impowerBox .qrcode" in response.text

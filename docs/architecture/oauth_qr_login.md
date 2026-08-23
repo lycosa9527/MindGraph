@@ -47,7 +47,7 @@ flowchart LR
 ## Login behavior
 
 - **Pre-linked users only** — scan succeeds at WeChat but MindGraph returns `oauth_not_linked` and **does not create an account**. Teachers sign in with password first, then **账户 → 账户绑定 → 绑定微信**. Login stays blocked until that row exists (or an admin pre-links).
-- **Login UI** — Login modal: 忘记密码 \| 验证码登录 / **微信登录** → WeChat QR (hidden when `feature_oauth_login` is false). The QR panel reminds users to bind first.
+- **Login UI** — Login modal: 忘记密码 \| 验证码登录 / **微信登录** → WeChat QR (hidden when `feature_oauth_login` is false). The panel asks the user to scan; `oauth_not_linked` is a toast after a scan that has no bind row.
 - **Org context** — WeChat login does not need an invitation code; the bound account is resolved after the scan. DingTalk QR login still needs `?invite=` or the register-form invitation code.
 - **Callback cookies** — WeChat GET callback sets JWT cookies on the returned `RedirectResponse` (same pattern as Word embed auth). `WxLogin` uses `self_redirect: false` so the top window follows that redirect.
 
@@ -92,6 +92,7 @@ Configure in external consoles (DingTalk requires **exact** URL match):
 ## Security
 
 - Redis OAuth `state` — 10 minute TTL, one-time use (matches WeChat `code` lifetime).
+- Anonymous WeChat/DingTalk login callbacks bind `system_bootstrap` RLS (same as `/login`) so `resolve_login_user` can load the bound `users` row. Without it, deny-default RLS finds the link then returns `oauth_not_linked` (`user missing`).
 - DingTalk `authCode` — exchange immediately on receipt; no retry queue.
 - When `dingtalk_corp_id` is set, validate `corpId` from the token response (`oauth_corp_mismatch` on mismatch).
 - Production guard warns when OAuth is enabled without HTTPS `EXTERNAL_BASE_URL`.
