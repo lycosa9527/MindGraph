@@ -467,14 +467,16 @@ ERRORS = {
         ),
     },
     "organization_expired": {
-        "zh": "您的学校订阅（{}）已于 {} 过期。请联系学校管理员续订订阅。",
+        "zh": ("您的学校订阅（{}）已于 {} 到期。教师与学校管理员均已锁定，请联系平台管理员续订。"),
         "en": (
-            "Your school subscription ({}) expired on {}. Please contact "
-            "your school administrator to renew the subscription."
+            "Your school subscription ({}) expired on {}. Teachers and "
+            "school managers are locked out. Please contact the platform "
+            "administrator to renew."
         ),
         "az": (
-            "Məktəb abunəliyiniz ({}) {} tarixində bitib. Abunəliyi "
-            "yeniləmək üçün məktəb administratoru ilə əlaqə saxlayın."
+            "Məktəb abunəliyiniz ({}) {} tarixində bitib. Müəllimlər və "
+            "məktəb menecerləri kilidlənib. Yeniləmək üçün platforma "
+            "administratoru ilə əlaqə saxlayın."
         ),
     },
     "sms_service_not_configured": {

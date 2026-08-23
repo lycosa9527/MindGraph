@@ -2,15 +2,15 @@
 
 MindGraph supports **WeChat Open Platform 网站应用** and **DingTalk OAuth 2.0 扫码登录** for end-user sign-in. This is separate from Gewe (admin WeChat bot) and from MindBot pair-code binding.
 
-## Feature flag (off by default)
+## Feature flag (on by default)
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `FEATURE_OAUTH_LOGIN` | **`False`** | Master switch; when off, `/api/auth/oauth/*` is gated and the frontend hides all QR login / OAuth bind UI |
-| `WECHAT_OAUTH_APP_ID` | *(empty)* | Global WeChat 网站应用 AppID — required only when feature is on |
+| `FEATURE_OAUTH_LOGIN` | **`True`** | Master switch; set `False` to gate `/api/auth/oauth/*` and hide QR login / WeChat bind |
+| `WECHAT_OAUTH_APP_ID` | *(empty)* | Global WeChat 网站应用 AppID — required for WeChat QR and bind |
 | `WECHAT_OAUTH_APP_SECRET` | *(empty)* | Global WeChat AppSecret |
 
-The public flags API exposes `feature_oauth_login` (defaults to `false` when unset). Set `FEATURE_OAUTH_LOGIN=True` in `.env` to enable platform-wide.
+WeChat login is **platform-wide**: `FEATURE_OAUTH_LOGIN` plus `WECHAT_OAUTH_APP_ID` / `WECHAT_OAUTH_APP_SECRET`. It is not a per-school setting. DingTalk stays off until the school adds AppKey/Secret. The public flags API exposes `feature_oauth_login`. Production warns if WeChat secrets are unset (WeChat stays off) and fails if only one of AppID/Secret is set.
 
 ## Official API references
 
@@ -47,8 +47,8 @@ flowchart LR
 ## Login behavior
 
 - **Pre-linked users only** — scan succeeds at WeChat but MindGraph returns `oauth_not_linked` and **does not create an account**. Teachers sign in with password first, then **账户 → 账户绑定 → 绑定微信**. Login stays blocked until that row exists (or an admin pre-links).
-- **Login UI** — Login modal: 忘记密码 \| 验证码登录 \| **二维码登录** → `OAuthQrLoginModal` (hidden when `feature_oauth_login` is false). The QR panel reminds users to bind first.
-- **Org context** — QR login requires a valid school **invitation code** (`?invite=` on `/auth` or the register form field).
+- **Login UI** — Login modal: 忘记密码 \| 验证码登录 / **微信登录** → WeChat QR (hidden when `feature_oauth_login` is false). The QR panel reminds users to bind first.
+- **Org context** — WeChat login does not need an invitation code; the bound account is resolved after the scan. DingTalk QR login still needs `?invite=` or the register-form invitation code.
 - **Callback cookies** — WeChat GET callback sets JWT cookies on the returned `RedirectResponse` (same pattern as Word embed auth). `WxLogin` uses `self_redirect: false` so the top window follows that redirect.
 
 ## Account bindings (three providers)
@@ -61,11 +61,11 @@ flowchart LR
 
 ## Admin UI (组织管理)
 
-Per-school toggles and **DingTalk AppKey / AppSecret / CorpId** live under **组织管理 → 编辑学校 → 其他设置** (General tab), not a separate tab. WeChat per-school is a toggle only (credentials are global in `.env`). Saving **其他设置** persists org fields and OAuth config together.
+**DingTalk AppKey / AppSecret / CorpId** live under **组织管理 → 编辑学校 → 其他设置** (General tab). WeChat status (AppID + callback) is shown there for operators but is not a school toggle — credentials stay in server `.env`. Saving **其他设置** persists DingTalk org fields.
 
 ## Data model
 
-- **`organization_oauth_configs`** — per org: WeChat toggle, DingTalk AppKey/Secret, optional `dingtalk_corp_id`.
+- **`organization_oauth_configs`** — per org DingTalk AppKey/Secret and optional `dingtalk_corp_id`.
 - **`oauth_user_links`** — maps `(org_id, provider, external_id)` → `user_id`. Stores WeChat `unionid` and DingTalk `unionId`.
 
 ## API routes (`/api/auth/oauth`)
@@ -75,7 +75,7 @@ Per-school toggles and **DingTalk AppKey / AppSecret / CorpId** live under **组
 | `GET /providers?invite=` | Public | Enabled providers + public widget params |
 | `GET /wechat/start`, `/wechat/callback` | Public / redirect | WeChat login |
 | `GET /dingtalk/start`, `POST /dingtalk/complete` | Public | DingTalk login (prefer JS `authCode` POST) |
-| `GET /links`, `DELETE /links/{provider}` | Session | Self-bind status / unbind |
+| `GET /links`, `DELETE /links/{provider}` | Session | Self-bind status / unbind (`wechat_enabled` is platform-wide) |
 | `GET /wechat/bind/start`, `/wechat/bind/callback` | Session | WeChat self-bind |
 | `GET /dingtalk/bind/start`, `POST /dingtalk/bind/complete` | Session | DingTalk self-bind |
 
@@ -102,8 +102,8 @@ Configure in external consoles (DingTalk requires **exact** URL match):
 
 1. Register **网站应用** at [open.weixin.qq.com](https://open.weixin.qq.com) — see [Wechat_Login](https://developers.weixin.qq.com/doc/oplatform/Website_App/WeChat_Login/Wechat_Login.html).
 2. Set **授权回调域** to your production domain.
-3. Set `WECHAT_OAUTH_APP_ID` / `WECHAT_OAUTH_APP_SECRET` in `.env` and `FEATURE_OAUTH_LOGIN=True`.
-4. Enable WeChat login per school: **组织管理 → 其他设置 → 扫码登录**.
+3. Set `WECHAT_OAUTH_APP_ID` / `WECHAT_OAUTH_APP_SECRET` in `.env` (`FEATURE_OAUTH_LOGIN` defaults on).
+4. Restart the app. WeChat bind/login is then available for every school. Set `FEATURE_OAUTH_LOGIN=False` to turn the whole OAuth surface off.
 
 ### DingTalk (per school, with school IT)
 
@@ -139,12 +139,18 @@ Backend exposes stable `oauth_*` codes via redirects (`/auth?error=…`) and JSO
 
 | Code | Meaning | Frontend toast |
 |------|---------|----------------|
-| `oauth_not_linked` | No bind for this WeChat/DingTalk identity | Warning — bind under Account linking |
+| `oauth_not_linked` | Scan succeeded but no `oauth_user_links` row — QR login never creates an account | Warning — register, password sign-in, then bind under Account linking |
+| `oauth_already_bound` | This user already has a different WeChat/DingTalk linked | Warning — unbind first |
 | `oauth_external_taken` | Identity already linked to another user | Warning |
+| `oauth_invalid_code` | WeChat `40029` / `40163` / `41008` — expired or reused `code` | Error — rescan |
+| `oauth_rate_limited` | WeChat `-1` / `45009` / `45011` | Error — wait and retry |
+| `oauth_misconfigured` | WeChat `40013` / `40125` or missing AppID/Secret | Error — admin |
 | `oauth_invalid_state` | Expired or invalid Redis state | Error — rescan |
 | `oauth_corp_mismatch` | DingTalk corpId ≠ school config | Error |
 | `oauth_exchange_failed` | Token/userinfo exchange failed | Error |
-| `oauth_disabled` | Feature off or provider disabled | Error |
+| `oauth_disabled` | Feature off, or DingTalk not enabled for the school | Error |
+
+WeChat `errcode` / `errmsg` / `rid` from [全局错误码](https://developers.weixin.qq.com/doc/oplatform/developers/errCode/) are logged on the backend (`WeChat sns/oauth2/access_token failed errcode=…`). Only the website-login subset is mapped to toasts.
 
 Frontend: `useOAuthRouteFeedback` in `App.vue` handles `/auth?error=…` (login) and `/?error=…` / `/?oauth_bind=wechat|dingtalk` (bind); `useOAuthQrLogin.ts` handles DingTalk JS POST and QR start failures. Shared mapping in `oauthLoginUi.ts`. Query params are stripped after toast.
 

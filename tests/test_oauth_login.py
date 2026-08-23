@@ -7,23 +7,27 @@ from types import SimpleNamespace
 from typing import cast
 
 import pytest
-from fastapi import Request
+from fastapi import HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
+from models.domain.oauth_user_link import OAUTH_PROVIDER_WECHAT
 from models.domain.organization_oauth_config import OrganizationOauthConfig
+from repositories.organization_oauth_config_repo import OrganizationOauthConfigRepository
 from routers.auth.oauth.router import wechat_oauth_callback
 
 from services.auth.oauth.dingtalk_oauth_client import DingtalkContactProfile, DingtalkTokenResult
 from services.auth.oauth.oauth_constants import (
     AUTH_ERROR_EXCHANGE_FAILED,
+    AUTH_ERROR_MISCONFIGURED,
     AUTH_ERROR_NOT_LINKED,
     normalize_oauth_error_code,
 )
 from services.auth.oauth.oauth_login_service import (
     oauth_feature_enabled,
     OauthLoginService,
+    require_wechat_callback_url,
     resolve_provider_flags,
     validate_dingtalk_corp_id,
     wechat_credentials_configured,
@@ -39,7 +43,6 @@ def _org_oauth_row(**fields: object) -> OrganizationOauthConfig:
     """Build org OAuth config row for tests."""
     payload: dict[str, object] = {
         "organization_id": 1,
-        "wechat_login_enabled": False,
         "dingtalk_login_enabled": False,
         "dingtalk_login_app_key": "",
         "dingtalk_login_app_secret": "",
@@ -81,7 +84,6 @@ def test_resolve_provider_flags_all_off_when_feature_disabled(
         lambda: False,
     )
     row = _org_oauth_row(
-        wechat_login_enabled=True,
         dingtalk_login_enabled=True,
         dingtalk_login_app_key="key",
         dingtalk_login_app_secret="secret",
@@ -89,6 +91,48 @@ def test_resolve_provider_flags_all_off_when_feature_disabled(
     flags = resolve_provider_flags(row)
     assert flags.wechat_enabled is False
     assert flags.dingtalk_enabled is False
+
+
+def test_resolve_provider_flags_wechat_on_without_org_row(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Missing org row still enables WeChat when the feature and credentials exist."""
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.oauth_feature_enabled",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.wechat_credentials_configured",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.config",
+        SimpleNamespace(WECHAT_OAUTH_APP_ID="wx123", WECHAT_OAUTH_APP_SECRET="sec"),
+    )
+    flags = resolve_provider_flags(None)
+    assert flags.wechat_enabled is True
+    assert flags.dingtalk_enabled is False
+
+
+def test_resolve_provider_flags_wechat_ignores_org_row(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """WeChat stays on when a DingTalk-only org row exists."""
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.oauth_feature_enabled",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.wechat_credentials_configured",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.config",
+        SimpleNamespace(WECHAT_OAUTH_APP_ID="wx123", WECHAT_OAUTH_APP_SECRET="sec"),
+    )
+    row = _org_oauth_row(dingtalk_login_enabled=False)
+    flags = resolve_provider_flags(row)
+    assert flags.wechat_enabled is True
 
 
 def test_resolve_provider_flags_dingtalk_requires_keys(
@@ -108,7 +152,6 @@ def test_resolve_provider_flags_dingtalk_requires_keys(
         SimpleNamespace(WECHAT_OAUTH_APP_ID="wx123", WECHAT_OAUTH_APP_SECRET="sec"),
     )
     row = _org_oauth_row(
-        wechat_login_enabled=True,
         dingtalk_login_enabled=True,
         dingtalk_login_app_key="",
         dingtalk_login_app_secret="secret",
@@ -197,6 +240,19 @@ def test_oauth_feature_enabled_reads_config(monkeypatch: pytest.MonkeyPatch) -> 
     assert oauth_feature_enabled() is True
 
 
+def test_require_wechat_callback_url_needs_external_base(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """WxLogin must not start with an empty redirect_uri."""
+    monkeypatch.delenv("EXTERNAL_BASE_URL", raising=False)
+    with pytest.raises(HTTPException) as exc_info:
+        require_wechat_callback_url()
+    assert exc_info.value.status_code == 503
+    assert exc_info.value.detail == AUTH_ERROR_MISCONFIGURED
+    monkeypatch.setenv("EXTERNAL_BASE_URL", "https://test.mindspringedu.com")
+    assert require_wechat_callback_url().endswith("/api/auth/oauth/wechat/callback")
+
+
 def test_wechat_credentials_configured_requires_both(monkeypatch: pytest.MonkeyPatch) -> None:
     """WeChat creds need app id and secret."""
     monkeypatch.setattr(
@@ -204,6 +260,31 @@ def test_wechat_credentials_configured_requires_both(monkeypatch: pytest.MonkeyP
         SimpleNamespace(WECHAT_OAUTH_APP_ID="wx", WECHAT_OAUTH_APP_SECRET=""),
     )
     assert wechat_credentials_configured() is False
+
+
+@pytest.mark.asyncio
+async def test_assert_wechat_without_credentials_is_misconfigured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Missing platform WeChat secrets is misconfigured, not a school disable."""
+
+    async def _missing_row(_self: OrganizationOauthConfigRepository, _organization_id: int) -> None:
+        return None
+
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.oauth_feature_enabled",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.wechat_credentials_configured",
+        lambda: False,
+    )
+    monkeypatch.setattr(OrganizationOauthConfigRepository, "get_by_org", _missing_row)
+    service = OauthLoginService(cast(AsyncSession, SimpleNamespace()))
+    with pytest.raises(HTTPException) as exc_info:
+        await service.assert_provider_enabled(1, OAUTH_PROVIDER_WECHAT)
+    assert exc_info.value.status_code == 503
+    assert exc_info.value.detail == AUTH_ERROR_MISCONFIGURED
 
 
 def test_wechat_callback_does_not_use_injected_response() -> None:
@@ -288,6 +369,73 @@ async def test_resolve_login_user_blocks_org_mismatch(
             organization_id=1,
             provider="wechat",
             external_id="wx-union-other-org",
+        )
+
+
+@pytest.mark.asyncio
+async def test_resolve_login_user_wechat_without_invite_uses_link(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Platform WeChat login finds the bound user without a school invite."""
+    linked = SimpleNamespace(id=9, organization_id=3)
+
+    class ResultStub:
+        """Scalar result stub."""
+
+        def scalar_one_or_none(self) -> object:
+            """Return the linked user."""
+            return linked
+
+    class DbStub:
+        """Session stub."""
+
+        async def execute(self, _stmt: object) -> ResultStub:
+            """Return the linked-user row."""
+            return ResultStub()
+
+    async def _list_by_external(
+        _self: object,
+        _provider: str,
+        _external_id: str,
+    ) -> list[object]:
+        return [SimpleNamespace(user_id=9)]
+
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.OauthUserLinkRepository.list_by_external",
+        _list_by_external,
+    )
+    service = OauthLoginService(db=cast(AsyncSession, DbStub()))
+    user = await service.resolve_login_user(
+        organization_id=0,
+        provider="wechat",
+        external_id="wx-union-global",
+    )
+    assert user.id == 9
+
+
+@pytest.mark.asyncio
+async def test_resolve_login_user_wechat_without_invite_unlinked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unscoped WeChat login still does not create an account."""
+
+    async def _list_empty(
+        _self: object,
+        _provider: str,
+        _external_id: str,
+    ) -> list[object]:
+        return []
+
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.OauthUserLinkRepository.list_by_external",
+        _list_empty,
+    )
+    service = OauthLoginService(db=cast(AsyncSession, SimpleNamespace()))
+    with pytest.raises(ValueError, match=AUTH_ERROR_NOT_LINKED):
+        await service.resolve_login_user(
+            organization_id=0,
+            provider="wechat",
+            external_id="wx-union-missing",
         )
 
 

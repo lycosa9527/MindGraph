@@ -575,6 +575,8 @@ export type EventTypes = {
   'auth:session_expired': { message?: string }
   /** Fired after an interactive sign-in (password, SMS, passkey, OAuth), not session restore. */
   'auth:login_success': Record<string, never>
+  /** School product term ended — teachers and school managers are hard-locked. */
+  'auth:school_expired': { schoolName: string; expiresAt: string; message: string }
 
   // MindMate Events
   'mindmate:opened': { diagramSessionId?: string }

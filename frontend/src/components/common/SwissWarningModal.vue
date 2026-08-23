@@ -5,16 +5,12 @@
  * Design: Swiss International Style (stone neutrals, geek-red accent bar,
  * hard border + offset shadow, dual actions).
  *
- * Canonical name: SwissWarningModal
- * Path: @/components/common/SwissWarningModal.vue
- *
- * Reuse: import for any blocking notice that needs this chrome. Wire with
- * v-model; keep feature-flag / cadence logic in the parent.
- *
- * Current use: FEATURE_TEST_SERVER_BANNER (test env once/day + on login +
+ * Defaults: FEATURE_TEST_SERVER_BANNER (test env once/day + on login +
  * always on /auth; jump to www.mindspringedu.com). See App.vue.
+ *
+ * School lockout: pass copy props, showJump=false, countTestServerDay=false.
  */
-import { nextTick, onUnmounted, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onUnmounted, useTemplateRef, watch } from 'vue'
 
 import { ArrowUpRight } from '@lucide/vue'
 
@@ -26,7 +22,41 @@ const PRODUCTION_URL = 'https://www.mindspringedu.com'
 
 const visible = defineModel<boolean>({ required: true })
 
+const props = withDefaults(
+  defineProps<{
+    badge?: string
+    envLabel?: string
+    title?: string
+    body?: string
+    host?: string
+    confirmLabel?: string
+    jumpLabel?: string
+    showJump?: boolean
+    countTestServerDay?: boolean
+  }>(),
+  {
+    showJump: true,
+    countTestServerDay: true,
+  }
+)
+
+const emit = defineEmits<{
+  confirm: []
+}>()
+
 const { t } = useLanguage()
+const badgeText = computed(() => props.badge ?? t('app.testServer.badge'))
+const envText = computed(() => props.envLabel ?? 'ENVIRONMENT')
+const titleText = computed(() => props.title ?? t('app.testServer.title'))
+const bodyText = computed(() => props.body ?? t('app.testServer.body'))
+const hostText = computed(() => {
+  if (props.host !== undefined) {
+    return props.host
+  }
+  return props.showJump ? t('app.testServer.productionHost') : ''
+})
+const confirmText = computed(() => props.confirmLabel ?? t('app.testServer.confirm'))
+const jumpText = computed(() => props.jumpLabel ?? t('app.testServer.jump'))
 const kittyHostRef = useTemplateRef<HTMLDivElement>('kittyHostRef')
 let kittyMascot: BlackCat | null = null
 
@@ -58,8 +88,9 @@ watch(
       return
     }
     if (isOpen) {
-      // Count this calendar day as notified once the modal is shown.
-      markTestServerBannerShownToday()
+      if (props.countTestServerDay) {
+        markTestServerBannerShownToday()
+      }
       document.body.style.overflow = 'hidden'
       await mountKittyMascot()
       return
@@ -78,6 +109,7 @@ onUnmounted(() => {
 })
 
 function handleConfirm(): void {
+  emit('confirm')
   visible.value = false
 }
 
@@ -104,36 +136,40 @@ function handleJump(): void {
           />
 
           <div class="swm-meta">
-            <span class="swm-badge">{{ t('app.testServer.badge') }}</span>
+            <span class="swm-badge">{{ badgeText }}</span>
             <span class="swm-rule" />
-            <span class="swm-env">ENVIRONMENT</span>
+            <span class="swm-env">{{ envText }}</span>
           </div>
 
           <h2
             id="swm-title"
             class="swm-title"
           >
-            {{ t('app.testServer.title') }}
+            {{ titleText }}
           </h2>
 
           <p
             id="swm-body"
             class="swm-body"
           >
-            {{ t('app.testServer.body') }}
+            {{ bodyText }}
           </p>
 
-          <p class="swm-host">
-            <span class="swm-host-value">{{ t('app.testServer.productionHost') }}</span>
+          <p
+            v-if="hostText"
+            class="swm-host"
+          >
+            <span class="swm-host-value">{{ hostText }}</span>
           </p>
 
           <div class="swm-actions">
             <button
+              v-if="showJump"
               type="button"
               class="swm-btn swm-btn-ghost"
               @click="handleConfirm"
             >
-              {{ t('app.testServer.confirm') }}
+              {{ confirmText }}
             </button>
             <div class="swm-jump-wrap">
               <div
@@ -144,10 +180,11 @@ function handleJump(): void {
               <button
                 type="button"
                 class="swm-btn swm-btn-solid"
-                @click="handleJump"
+                @click="showJump ? handleJump() : handleConfirm()"
               >
-                <span>{{ t('app.testServer.jump') }}</span>
+                <span>{{ showJump ? jumpText : confirmText }}</span>
                 <ArrowUpRight
+                  v-if="showJump"
                   class="swm-btn-icon"
                   :size="16"
                   :stroke-width="2"

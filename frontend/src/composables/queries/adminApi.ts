@@ -1143,7 +1143,7 @@ export async function recomputeAdminTeacherUsage(): Promise<{ recomputed?: numbe
 
 export interface AdminOrganizationOauthConfig {
   organization_id: number
-  wechat_login_enabled: boolean
+  wechat_enabled: boolean
   dingtalk_login_enabled: boolean
   dingtalk_login_app_key: string
   dingtalk_login_app_secret_set: boolean
@@ -1164,7 +1164,6 @@ export async function fetchAdminOrganizationOauthConfig(
 export async function updateAdminOrganizationOauthConfig(
   orgId: number,
   body: {
-    wechatLoginEnabled?: boolean
     dingtalkLoginEnabled?: boolean
     dingtalkLoginAppKey?: string
     dingtalkLoginAppSecret?: string
@@ -1175,7 +1174,6 @@ export async function updateAdminOrganizationOauthConfig(
   return adminFetchJson(`/api/auth/admin/organizations/${orgId}/oauth-config`, {
     method: 'PUT',
     body: JSON.stringify({
-      wechat_login_enabled: body.wechatLoginEnabled,
       dingtalk_login_enabled: body.dingtalkLoginEnabled,
       dingtalkLoginAppKey: body.dingtalkLoginAppKey,
       dingtalkLoginAppSecret: body.dingtalkLoginAppSecret,

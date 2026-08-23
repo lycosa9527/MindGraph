@@ -9,6 +9,8 @@ import {
   oauthLoginFromRouteQuery,
   shouldShowAccountBindingsSection,
   shouldShowQrLoginLink,
+  shouldShowWechatBindRow,
+  canStartWechatBind,
   WX_LOGIN_SELF_REDIRECT,
 } from '@/utils/oauthLoginUi'
 
@@ -23,6 +25,50 @@ describe('oauthLoginUi', () => {
 
   it('WxLogin jumps the top window so callback cookies apply', () => {
     expect(WX_LOGIN_SELF_REDIRECT).toBe(false)
+  })
+
+  it('shouldShowWechatBindRow hides when OAuth is off or WeChat is unavailable', () => {
+    expect(
+      shouldShowWechatBindRow({
+        showBindingsSection: true,
+        featureOauthLogin: true,
+        wechatAvailable: true,
+      })
+    ).toBe(true)
+    expect(
+      shouldShowWechatBindRow({
+        showBindingsSection: true,
+        featureOauthLogin: false,
+        wechatAvailable: true,
+      })
+    ).toBe(false)
+    expect(
+      shouldShowWechatBindRow({
+        showBindingsSection: true,
+        featureOauthLogin: true,
+        wechatAvailable: false,
+      })
+    ).toBe(false)
+    expect(
+      shouldShowWechatBindRow({
+        showBindingsSection: true,
+        featureOauthLogin: true,
+        wechatAvailable: false,
+        wechatLinked: true,
+      })
+    ).toBe(true)
+  })
+
+  it('canStartWechatBind needs feature and configured WeChat credentials', () => {
+    expect(
+      canStartWechatBind({ featureOauthLogin: true, wechatAvailable: true })
+    ).toBe(true)
+    expect(
+      canStartWechatBind({ featureOauthLogin: true, wechatAvailable: false })
+    ).toBe(false)
+    expect(
+      canStartWechatBind({ featureOauthLogin: false, wechatAvailable: true })
+    ).toBe(false)
   })
 
   it('shouldShowQrLoginLink follows feature flag', () => {
@@ -87,6 +133,22 @@ describe('oauthLoginUi', () => {
     expect(resolveOAuthError('wechat_exchange_failed')).toEqual({
       level: 'error',
       messageKey: 'auth.qrLoginExchangeFailed',
+    })
+    expect(resolveOAuthError('oauth_already_bound')).toEqual({
+      level: 'warning',
+      messageKey: 'auth.oauthAlreadyBound',
+    })
+    expect(resolveOAuthError('oauth_invalid_code')).toEqual({
+      level: 'error',
+      messageKey: 'auth.qrLoginInvalidCode',
+    })
+    expect(resolveOAuthError('oauth_rate_limited')).toEqual({
+      level: 'error',
+      messageKey: 'auth.qrLoginRateLimited',
+    })
+    expect(resolveOAuthError('oauth_misconfigured')).toEqual({
+      level: 'error',
+      messageKey: 'auth.qrLoginMisconfigured',
     })
   })
 

@@ -148,6 +148,7 @@ async def download_word_addin_zip(
     Production deploy zip: ``README.md`` + ``manifest.xml`` + ``windows/`` + ``mac/``.
 
     IT uploads the manifest via Microsoft 365 Centralized Deployment. Users do not run Node.
+    ``FEATURE_WORD_ADDIN`` is enforced by ``feature_flag_gate`` (404 when off).
     """
     async with actor_rls_session(current_user) as db:
         await assert_user_has_school_tier_feature(

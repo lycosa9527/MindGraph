@@ -18,7 +18,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 
 from models.domain.auth import User
-from models.domain.messages import Messages, get_request_language
+from models.domain.messages import Language, Messages, get_request_language
 from models.domain.user_api_token import UserAPIToken
 from services.redis.cache.redis_user_token_cache import user_token_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -32,7 +32,7 @@ except ImportError:
 
 from utils.auth.connection_types import HttpOrWebSocket
 from utils.auth.mg_client import bind_mg_client_from_connection, mg_client_display_label
-from utils.auth.org_subscription import ensure_org_subscription_current
+from utils.auth.org_subscription import enforce_org_accessible_or_raise
 from utils.auth.request_helpers import get_client_ip
 from utils.auth.school_tier import TIER_FEATURE_API_TOKEN, user_has_school_tier_feature
 from utils.db.session_open import system_rls_session, user_rls_session
@@ -70,13 +70,8 @@ async def _check_org_access_async(user: User) -> None:
     org_row = await _redis.org_cache.get_by_id(user.organization_id)
     if not org_row:
         return
-    is_active = org_row.is_active if hasattr(org_row, "is_active") else True
-    if not is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Organization account is locked. Please contact support.",
-        )
-    await ensure_org_subscription_current(org_row)
+    lang: Language = "en"
+    await enforce_org_accessible_or_raise(org_row, lang, user)
 
 
 def _connection_path(connection: HttpOrWebSocket) -> str:

@@ -12,11 +12,13 @@ import { useRegisterRegionDetection } from '@/composables/auth/useRegisterRegion
 import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { useTsecCaptcha } from '@/composables/auth/useTsecCaptcha'
 import { useAuthStore, useFeatureFlagsStore, useUIStore } from '@/stores'
+import { parseApiErrorDetail } from '@/utils/apiClient'
 import { isBrowserLanguageSimplifiedChinese } from '@/utils/clientRegion'
 import {
   loadSavedLoginIdentifier,
   saveLoginIdentifier,
 } from '@/utils/savedLoginCredentials'
+import { SCHOOL_EXPIRED_CODE, emitSchoolExpiredFromPayload } from '@/utils/schoolExpiredLockout'
 
 export type LoginModalViewState = 'login' | 'register' | 'sms-login' | 'forgot-password'
 
@@ -391,6 +393,9 @@ export function useLoginModal(
             closeModal()
           }, 1500)
         }
+      } else if (result.code === SCHOOL_EXPIRED_CODE) {
+        loginForm.value.captcha = ''
+        void refreshCaptcha()
       } else {
         notify.error(result.message || t('auth.loginFailed'))
         loginForm.value.captcha = ''
@@ -753,10 +758,14 @@ export function useLoginModal(
             closeModal()
           }, 1500)
         }
+      } else if (emitSchoolExpiredFromPayload(data)) {
+        /* Swiss lockout modal is shown from App.vue */
       } else {
         notify.error(
-          data.detail ||
-            (useEmailOtp ? t('auth.modal.emailLoginFailed') : t('auth.modal.smsLoginFailed'))
+          parseApiErrorDetail(
+            data,
+            useEmailOtp ? t('auth.modal.emailLoginFailed') : t('auth.modal.smsLoginFailed')
+          )
         )
       }
     } catch (error) {

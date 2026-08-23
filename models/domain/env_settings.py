@@ -217,6 +217,10 @@ class FeatureFlagSettings(BaseModel):
             "Enable MindBot (DingTalk HTTP callback ↔ per-organization Dify); disable with FEATURE_MINDBOT=false"
         ),
     )
+    FEATURE_WORD_ADDIN: bool = Field(
+        default=False,
+        description="Show the Word add-in download in Account and serve the deploy zip",
+    )
     FEATURE_MINDMATE_EXPORT: bool = Field(
         default=False,
         description="Enable the MindMate 记录导出 admin subtab (view/export Dify conversation history)",

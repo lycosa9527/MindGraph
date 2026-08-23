@@ -33,6 +33,7 @@ import {
   privacyPageHtmlLang,
 } from '@/utils/privacyPageLocale'
 import { isAdminPublicDashboardRoute } from '@/utils/publicDashboardRoute'
+import type { SchoolExpiredInfo } from '@/utils/schoolExpiredLockout'
 import { shouldShowTestServerBannerOnVisit } from '@/utils/testServerBanner'
 
 const notify = useNotifications()
@@ -109,13 +110,41 @@ const elLocale = shallowRef<Language | undefined>(undefined)
 const showBrowserLocaleHint = ref(false)
 /** Visibility for SwissWarningModal (@/components/common/SwissWarningModal.vue). */
 const showSwissWarning = ref(false)
+const showSchoolExpired = ref(false)
+const schoolExpiredSchool = ref('')
+const schoolExpiredDate = ref('')
 const showTestServerWatermark = ref(false)
 /** Login succeeded before feature flags finished loading. */
 const pendingLoginBanner = ref(false)
 const testServerFlagsReady = ref(false)
 
+const schoolExpiredHost = computed(() => {
+  const school = schoolExpiredSchool.value.trim()
+  const ended = schoolExpiredDate.value.trim()
+  if (school && ended) {
+    return t('app.schoolExpired.host', { school, date: ended })
+  }
+  return school || ended
+})
+
 function openSwissWarningModal(): void {
+  if (showSchoolExpired.value) {
+    return
+  }
   showSwissWarning.value = true
+}
+
+function onSchoolExpired(info: SchoolExpiredInfo): void {
+  schoolExpiredSchool.value = info.schoolName
+  schoolExpiredDate.value = info.expiresAt
+  showSwissWarning.value = false
+  showSchoolExpired.value = true
+}
+
+function onSchoolExpiredConfirm(): void {
+  if (authStore.user) {
+    void authStore.logout()
+  }
 }
 
 function onAuthLoginSuccess(): void {
@@ -129,6 +158,7 @@ function onAuthLoginSuccess(): void {
 }
 
 eventBus.on('auth:login_success', onAuthLoginSuccess)
+eventBus.on('auth:school_expired', onSchoolExpired)
 useOAuthRouteFeedback()
 
 watch(
@@ -335,6 +365,18 @@ onUnmounted(() => {
 
     <!-- SwissWarningModal: reusable Swiss Design warning chrome; see component file header. -->
     <SwissWarningModal v-model="showSwissWarning" />
+    <SwissWarningModal
+      v-model="showSchoolExpired"
+      :badge="t('app.schoolExpired.badge')"
+      :env-label="t('app.schoolExpired.env')"
+      :title="t('app.schoolExpired.title')"
+      :body="t('app.schoolExpired.body')"
+      :host="schoolExpiredHost"
+      :confirm-label="authStore.user ? t('app.schoolExpired.signOut') : t('app.schoolExpired.acknowledge')"
+      :show-jump="false"
+      :count-test-server-day="false"
+      @confirm="onSchoolExpiredConfirm"
+    />
 
     <TestServerWatermark v-if="showTestServerWatermark" />
 

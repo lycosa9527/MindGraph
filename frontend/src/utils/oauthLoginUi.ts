@@ -38,6 +38,32 @@ export function shouldShowAccountBindingsSection(input: {
 }
 
 /**
+ * WeChat bind pill is platform-wide. Hide it unless OAuth is on and WeChat
+ * is actually available (or already linked, so the user can unbind).
+ */
+export function shouldShowWechatBindRow(input: {
+  showBindingsSection: boolean
+  featureOauthLogin: boolean
+  wechatAvailable: boolean
+  wechatLinked?: boolean
+}): boolean {
+  if (!input.showBindingsSection || !input.featureOauthLogin) {
+    return false
+  }
+  return input.wechatAvailable || input.wechatLinked === true
+}
+
+/**
+ * Bind WeChat when the platform flag is on and credentials are configured.
+ */
+export function canStartWechatBind(input: {
+  featureOauthLogin: boolean
+  wechatAvailable: boolean
+}): boolean {
+  return input.featureOauthLogin && input.wechatAvailable
+}
+
+/**
  * Whether LoginModal should show the QR login link.
  */
 export function shouldShowQrLoginLink(featureOauthLogin: boolean): boolean {
@@ -58,10 +84,18 @@ export function resolveOAuthError(detail: string): OAuthErrorPresentation {
       return { level: 'warning', messageKey: 'auth.qrLoginNotLinked' }
     case 'oauth_external_taken':
       return { level: 'warning', messageKey: 'auth.oauthExternalTaken' }
+    case 'oauth_already_bound':
+      return { level: 'warning', messageKey: 'auth.oauthAlreadyBound' }
     case 'oauth_corp_mismatch':
       return { level: 'error', messageKey: 'auth.qrLoginCorpMismatch' }
     case 'oauth_invalid_state':
       return { level: 'error', messageKey: 'auth.qrLoginInvalidState' }
+    case 'oauth_invalid_code':
+      return { level: 'error', messageKey: 'auth.qrLoginInvalidCode' }
+    case 'oauth_rate_limited':
+      return { level: 'error', messageKey: 'auth.qrLoginRateLimited' }
+    case 'oauth_misconfigured':
+      return { level: 'error', messageKey: 'auth.qrLoginMisconfigured' }
     case 'oauth_disabled':
       return { level: 'error', messageKey: 'auth.qrLoginDisabled' }
     case 'oauth_exchange_failed':

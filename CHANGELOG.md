@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.29] - 2026-08-23
+
+> **WeChat QR login is platform-wide: no school toggle, no invite to open the QR.**
+
+### Changed
+
+- **WeChat is global** — `FEATURE_OAUTH_LOGIN` + `WECHAT_OAUTH_APP_ID` / `WECHAT_OAUTH_APP_SECRET` turn WeChat on for every school. The per-school `wechat_login_enabled` column is dropped. DingTalk stays per school.
+- **Auth footer** — Password login shows 忘记密码 centered against a left-aligned stack: 验证码登录 / 微信登录 (grey links, full-height divider). Clicking 微信登录 opens the WeChat QR (no DingTalk tab).
+- **No invite to scan** — WeChat login no longer needs a school invitation code. After scan, the bound account is resolved by `unionid`/`openid`. Bind-first still applies (`oauth_not_linked` does not create an account). DingTalk QR still needs an invite.
+- **Account bind pill** — Hidden when OAuth is off or WeChat is not configured.
+- **Production guard** — Missing WeChat secrets warn (WeChat stays off). A one-sided AppID/Secret pair aborts startup. Empty `EXTERNAL_BASE_URL` blocks WeChat start (`oauth_misconfigured`) so WxLogin never gets a blank `redirect_uri`.
+
+### Tests
+
+- `tests/test_oauth_login.py` — unscoped WeChat resolve, empty callback URL, flags ignore org rows
+- `tests/test_security_production_hardening.py` — OAuth on without WeChat secrets; partial secrets fail
+- `frontend/tests/oauthQrLogin.spec.ts` — bind pill hidden when OAuth is off
+
+## [5.180.28] - 2026-08-23
+
+> **Expired school subscriptions now hard-lock teachers and school managers.**
+
+### Changed
+
+- **School product expiry** — When `organizations.expires_at` is in the past (any tier: trial, lite, standard, professional), teachers and school managers can no longer sign in or keep using the product. Platform admins can still sign in to renew. Login and authenticated APIs return `403` with `{ code: "organization_expired" }`.
+- **Lockout modal** — Reuses SwissWarningModal (same chrome as the test-environment notice). Sign out if a session is still open; OK on the login page.
+
+### Tests
+
+- `tests/test_org_subscription.py` — hard lock, trial expiry, platform bypass, school-manager lock
+- `frontend/tests/schoolExpiredLockout.spec.ts` — structured / Chinese payload parse, single emit
+
+## [5.180.27] - 2026-08-23
+
+> **Word add-in download is off until `FEATURE_WORD_ADDIN=True`.**
+
+### Changed
+
+- **Account Word add-in pill** — Hidden by default. Set `FEATURE_WORD_ADDIN=True` in `.env` to show the Account plugin download. `GET /api/downloads/mindgraph-word-addin` is 404 while the flag is off. Hosted `/word-addin/` shell and embed auth stay on for already-installed add-ins.
+
+### Tests
+
+- `tests/test_feature_flag_hot_reload.py` — zip path gated off / allowed on
+
 ## [5.180.26] - 2026-08-23
 
 > **Backend logs now show who is acting: `user=Name(id)` next to the pid.**

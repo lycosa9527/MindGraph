@@ -148,9 +148,18 @@ class FeaturesConfigMixin:
     def FEATURE_OAUTH_LOGIN(self):
         """Enable WeChat / DingTalk OAuth QR login for end users.
 
-        Disabled by default. Set FEATURE_OAUTH_LOGIN=True in .env to enable.
+        On by default. Set FEATURE_OAUTH_LOGIN=False in .env to hide QR login
+        and account bind. WeChat still needs WECHAT_OAUTH_APP_ID / SECRET.
         """
-        return self._get_cached_value("FEATURE_OAUTH_LOGIN", "False").lower() == "true"
+        return self._get_cached_value("FEATURE_OAUTH_LOGIN", "True").lower() == "true"
+
+    @property
+    def FEATURE_WORD_ADDIN(self):
+        """Show the Word add-in download in Account and serve the deploy zip.
+
+        Disabled by default. Set FEATURE_WORD_ADDIN=True in .env to enable.
+        """
+        return self._get_cached_value("FEATURE_WORD_ADDIN", "False").lower() == "true"
 
     @property
     def WECHAT_OAUTH_APP_ID(self) -> str:

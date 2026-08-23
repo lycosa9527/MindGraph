@@ -18,8 +18,8 @@ import { Close } from '@element-plus/icons-vue'
 
 import { ArrowLeft, Eye, EyeOff, Loader2, RefreshCw } from '@lucide/vue'
 
+import LoginAuthAltLinks from '@/components/auth/LoginAuthAltLinks.vue'
 import OAuthQrLoginModal from '@/components/auth/OAuthQrLoginModal.vue'
-import { useNotifications } from '@/composables'
 import { useLoginModal } from '@/composables/auth/useLoginModal'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { invitationCodeFromSearch } from '@/utils/invitationCode'
@@ -103,7 +103,6 @@ const {
 } = useLoginModal(props, emit)
 
 const route = useRoute()
-const notify = useNotifications()
 const { featureOauthLogin } = useFeatureFlags()
 
 const showQrLoginModal = ref(false)
@@ -124,11 +123,7 @@ watch(
   { immediate: true }
 )
 
-function openQrLoginModal(): void {
-  if (!oauthInviteCode.value.trim()) {
-    notify.warning(t('auth.qrLoginInviteRequired'))
-    return
-  }
+function openWechatQrLogin(): void {
   showQrLoginModal.value = true
 }
 
@@ -427,36 +422,12 @@ const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && pr
                   {{ isLoading ? t('auth.modal.loggingIn') : loginSubmitLabel }}
                 </button>
 
-                <!-- Links -->
-                <div
-                  class="flex flex-wrap justify-center items-center gap-x-1 gap-y-1 pt-2 text-sm"
-                >
-                  <el-button
-                    type="primary"
-                    link
-                    @click="showForgotPassword"
-                  >
-                    {{ t('auth.forgotPassword') }}
-                  </el-button>
-                  <span class="text-stone-300 select-none">|</span>
-                  <el-button
-                    type="primary"
-                    link
-                    @click="showSmsLogin"
-                  >
-                    {{ t('auth.smsLogin') }}
-                  </el-button>
-                  <template v-if="featureOauthLogin">
-                    <span class="text-stone-300 select-none">|</span>
-                    <el-button
-                      type="primary"
-                      link
-                      @click="openQrLoginModal"
-                    >
-                      {{ t('auth.qrLogin') }}
-                    </el-button>
-                  </template>
-                </div>
+                <LoginAuthAltLinks
+                  :show-wechat-login="featureOauthLogin"
+                  @forgot="showForgotPassword"
+                  @sms="showSmsLogin"
+                  @wechat="openWechatQrLogin"
+                />
               </form>
 
               <!-- Register Form -->
@@ -1104,6 +1075,8 @@ const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && pr
   <OAuthQrLoginModal
     v-model:visible="showQrLoginModal"
     :invite-code="oauthInviteCode"
+    initial-provider="wechat"
+    lock-provider
     @success="onQrLoginSuccess"
   />
 </template>

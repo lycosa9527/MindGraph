@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 import httpx
 
 from services.auth.oauth.oauth_constants import WECHAT_ACCESS_TOKEN_URL, WECHAT_USERINFO_URL
+from services.auth.oauth.wechat_oauth_errors import log_wechat_api_error
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
 
 logger = logging.getLogger(__name__)
@@ -67,11 +68,11 @@ class WechatOauthClient:
             logger.warning("WeChat token exchange failed: %s", exc)
             raise ValueError("wechat_exchange_failed") from exc
         if data.get("errcode"):
-            logger.warning("WeChat token error: %s", data)
-            raise ValueError("wechat_exchange_failed")
+            raise ValueError(log_wechat_api_error(api="sns/oauth2/access_token", data=data))
         access = data.get("access_token")
         openid = data.get("openid")
         if not access or not openid:
+            logger.warning("WeChat token missing access_token/openid: keys=%s", sorted(data.keys()))
             raise ValueError("wechat_exchange_failed")
         unionid = data.get("unionid")
         refresh = data.get("refresh_token")
@@ -101,7 +102,7 @@ class WechatOauthClient:
             logger.warning("WeChat userinfo failed: %s", exc)
             raise ValueError("wechat_userinfo_failed") from exc
         if data.get("errcode"):
-            raise ValueError("wechat_userinfo_failed")
+            raise ValueError(log_wechat_api_error(api="sns/userinfo", data=data))
         nick = data.get("nickname")
         unionid = data.get("unionid")
         return WechatUserInfo(

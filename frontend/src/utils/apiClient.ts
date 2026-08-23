@@ -16,6 +16,7 @@ import type { LocaleCode } from '@/i18n/locales'
 import { AUTH_USER_STORAGE_KEY, useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
+import { emitSchoolExpiredFromPayload } from '@/utils/schoolExpiredLockout'
 import {
   ensureFreshSessionAfterAuthFailure,
   getSessionRefreshEpoch,
@@ -93,6 +94,17 @@ function handleUploadUnauthorizedAfterRetry(): void {
   })
 }
 
+async function noticeSchoolExpiredResponse(response: Response): Promise<void> {
+  if (response.status !== 403) {
+    return
+  }
+  const payload = await response
+    .clone()
+    .json()
+    .catch(() => null)
+  emitSchoolExpiredFromPayload(payload)
+}
+
 function handleUnauthorizedAfterFailedRefresh(): void {
   // 429 means we hammered /refresh — keep the session; caller can retry later.
   if (isSessionRefreshRateLimited()) {
@@ -161,6 +173,8 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
       handleUnauthorizedAfterFailedRefresh()
     }
   }
+
+  await noticeSchoolExpiredResponse(response)
 
   return response
 }
@@ -349,6 +363,7 @@ export async function apiUpload(
     }
   }
 
+  await noticeSchoolExpiredResponse(response)
   return response
 }
 
@@ -408,6 +423,7 @@ export async function apiPutFormData(
     }
   }
 
+  await noticeSchoolExpiredResponse(response)
   return response
 }
 

@@ -8,7 +8,7 @@ The add-in **shell is hosted on the MindGraph server** at `/word-addin/`. Users 
 
 ### 1. Download the deploy package
 
-Signed-in user with the Chrome-extension school tier:
+Requires ``FEATURE_WORD_ADDIN=True`` in server ``.env``. Signed-in user with the Chrome-extension school tier:
 
 **Account** → **插件** → **Word 加载项** → `mindgraph-word-addin.zip`
 

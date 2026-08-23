@@ -45,7 +45,7 @@ from services.mindbot.platforms.dingtalk import (
 from services.mindbot.telemetry.usage import persist_mindbot_usage_event
 from services.redis.cache.redis_org_cache import org_cache
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
-from utils.auth.org_subscription import ensure_org_subscription_current
+from utils.auth.org_subscription import is_org_subscription_expired
 
 logger = logging.getLogger(__name__)
 
@@ -80,10 +80,18 @@ async def _check_org_active(organization_id: int) -> Optional[tuple[int, dict[st
                 organization_id=organization_id,
             ),
         )
-    try:
-        await ensure_org_subscription_current(org)
-    except BACKGROUND_INFRA_ERRORS:
-        pass
+    if is_org_subscription_expired(org):
+        logger.warning(
+            "[MindBot] org_expired org_id=%s — rejecting inbound callback",
+            organization_id,
+        )
+        return (
+            403,
+            mindbot_error_headers(
+                MindbotErrorCode.ORG_LOCKED,
+                organization_id=organization_id,
+            ),
+        )
     return None
 
 

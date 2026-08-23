@@ -44,7 +44,14 @@ import { registerAiContentLevelAuthBridge } from '@/utils/aiContentLevelAuthBrid
 import { getAppQueryClient } from '@/utils/appQueryClient'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
+import { parseApiErrorDetail } from '@/utils/apiClient'
 import { normalizeAuthUser } from '@/utils/normalizeAuthUser'
+import {
+  SCHOOL_EXPIRED_CODE,
+  emitSchoolExpiredFromPayload,
+  emitSchoolExpiredLockout,
+  resetSchoolExpiredLockoutEmit,
+} from '@/utils/schoolExpiredLockout'
 import { clearSavedLoginCredentials } from '@/utils/savedLoginCredentials'
 import {
   ensureFreshSessionAfterAuthFailure,
@@ -242,7 +249,11 @@ export const useAuthStore = defineStore('auth', () => {
       return
     }
     subscriptionExpiredNotified.value = true
-    notify.warning(getTranslatedMessage('auth.schoolSubscriptionExpiredDowngraded'), 6000)
+    emitSchoolExpiredLockout({
+      schoolName: target.schoolName || '',
+      expiresAt: '',
+      message: '',
+    })
   }
 
   function applyUserLanguageFromProfile(target: User): void {
@@ -453,6 +464,7 @@ export const useAuthStore = defineStore('auth', () => {
     useAiContentLevelStore().hydrateFromLocal()
     authVerificationBlockedByNetwork.value = false
     subscriptionExpiredNotified.value = false
+    resetSchoolExpiredLockoutEmit()
     adminCapabilitiesPayload.value = null
     adminCapabilitiesLoaded.value = false
     lastAdminCapabilitiesFetchTime.value = 0
@@ -502,7 +514,17 @@ export const useAuthStore = defineStore('auth', () => {
         return { success: true, user: user.value ?? undefined }
       }
 
-      return { success: false, message: data.detail || data.message || 'Login failed' }
+      if (emitSchoolExpiredFromPayload(data)) {
+        return {
+          success: false,
+          code: SCHOOL_EXPIRED_CODE,
+          message: parseApiErrorDetail(data, 'Login failed'),
+        }
+      }
+      return {
+        success: false,
+        message: parseApiErrorDetail(data, data.message || 'Login failed'),
+      }
     } catch {
       return { success: false, message: 'Network error' }
     } finally {
@@ -537,11 +559,16 @@ export const useAuthStore = defineStore('auth', () => {
         return { success: true, user: user.value ?? undefined }
       }
 
-      const detail = data.detail as string | undefined
-      const message = data.message as string | undefined
+      if (emitSchoolExpiredFromPayload(data)) {
+        return {
+          success: false,
+          code: SCHOOL_EXPIRED_CODE,
+          message: parseApiErrorDetail(data, 'Login failed'),
+        }
+      }
       return {
         success: false,
-        message: detail || message || 'Login failed',
+        message: parseApiErrorDetail(data, 'Login failed'),
       }
     } catch {
       return { success: false, message: 'Network error' }
@@ -722,6 +749,13 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
 
+      if (response.status === 403) {
+        const payload = await response.json().catch(() => null)
+        if (emitSchoolExpiredFromPayload(payload)) {
+          return false
+        }
+      }
+
       // Auth failed - clear any stale user data
       if (user.value) {
         clearAuth()
@@ -841,6 +875,12 @@ export const useAuthStore = defineStore('auth', () => {
         }
         handleTokenExpired('您的登录已过期，请重新登录', undefined, { skipRecovery: true })
         return false
+      }
+      if (response.status === 403) {
+        const payload = await response.json().catch(() => null)
+        if (emitSchoolExpiredFromPayload(payload)) {
+          return false
+        }
       }
       if (!response.ok) {
         return false

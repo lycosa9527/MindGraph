@@ -74,7 +74,7 @@ from utils.auth import (
     verify_password_timing_dummy,
 )
 from utils.auth.config import BAYI_DEFAULT_ORG_CODE, BAYI_DEFAULT_ORG_ID, BAYI_PASSKEY
-from utils.auth.org_subscription import enforce_org_accessible_or_raise, ensure_org_subscription_current
+from utils.auth.org_subscription import enforce_org_accessible_or_raise
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from utils.email_mainland_china import raise_if_mainland_china_email_for_email_login
 from utils.email_validation import validate_email_for_api
@@ -238,8 +238,6 @@ async def _complete_login_after_otp_verified(
         if org:
             db.expunge(org)
             await org_cache.cache_org(org)
-    if org:
-        org = await ensure_org_subscription_current(org) or org
     org_name = org.name if org else "None"
 
     logger.info(
@@ -442,9 +440,9 @@ async def login(
     # Get organization (use cache with database fallback)
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
 
-    # Check organization status (locked; expired subscription downgrades to trial)
+    # Check organization status (admin lock or expired school product → hard lockout)
     if org:
-        org = await enforce_org_accessible_or_raise(org, lang)
+        org = await enforce_org_accessible_or_raise(org, lang, user)
 
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
@@ -579,9 +577,9 @@ async def login_with_sms(
     # Get organization and check status BEFORE consuming code (use cache)
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
 
-    # Check organization status (locked; expired subscription downgrades to trial)
+    # Check organization status (admin lock or expired school product → hard lockout)
     if org:
-        org = await enforce_org_accessible_or_raise(org, lang)
+        org = await enforce_org_accessible_or_raise(org, lang, user)
 
     # All validations passed - now consume the SMS code
     await _verify_and_consume_sms_code(request.phone, request.sms_code, "login", db, lang)
@@ -644,7 +642,7 @@ async def login_with_email(
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
 
     if org:
-        org = await enforce_org_accessible_or_raise(org, lang)
+        org = await enforce_org_accessible_or_raise(org, lang, user)
 
     if EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE != "bayi":
         must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(

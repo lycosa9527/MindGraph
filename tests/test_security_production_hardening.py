@@ -234,6 +234,52 @@ def test_production_guard_allows_default_db_password() -> None:
                 guard.enforce_production_security_guards()
 
 
+def test_production_guard_allows_oauth_without_wechat_secrets() -> None:
+    """OAuth can stay on for DingTalk while WeChat remains unconfigured."""
+    guard = production_secrets_guard_module
+    with patch.object(guard, "_require_non_debug", return_value=True):
+        with patch.object(guard, "_guard_database_url", return_value=None):
+            with patch.object(guard, "_guard_redis_url", return_value=None):
+                with patch.object(guard, "AUTH_MODE", "standard"):
+                    with patch.dict(
+                        "os.environ",
+                        {
+                            "FEATURE_OAUTH_LOGIN": "True",
+                            "WECHAT_OAUTH_APP_ID": "",
+                            "WECHAT_OAUTH_APP_SECRET": "",
+                            "EXTERNAL_BASE_URL": "https://example.com",
+                            "CAPTCHA_PROVIDER": "legacy",
+                            "FEATURE_GEWE": "False",
+                            "FEATURE_SMART_RESPONSE": "False",
+                        },
+                        clear=False,
+                    ):
+                        guard.enforce_production_security_guards()
+
+
+def test_production_guard_rejects_partial_wechat_secrets() -> None:
+    """AppID without Secret (or the reverse) is a production misconfig."""
+    guard = production_secrets_guard_module
+    with patch.object(guard, "_require_non_debug", return_value=True):
+        with patch.object(guard, "_guard_database_url", return_value=None):
+            with patch.object(guard, "_guard_redis_url", return_value=None):
+                with patch.object(guard, "AUTH_MODE", "standard"):
+                    with patch.dict(
+                        "os.environ",
+                        {
+                            "FEATURE_OAUTH_LOGIN": "True",
+                            "WECHAT_OAUTH_APP_ID": "wx-test-app-id",
+                            "WECHAT_OAUTH_APP_SECRET": "",
+                            "CAPTCHA_PROVIDER": "legacy",
+                            "FEATURE_GEWE": "False",
+                            "FEATURE_SMART_RESPONSE": "False",
+                        },
+                        clear=False,
+                    ):
+                        with pytest.raises(RuntimeError, match="WECHAT_OAUTH"):
+                            guard.enforce_production_security_guards()
+
+
 def test_production_guard_rejects_unauthenticated_redis_when_required() -> None:
     """REQUIRE_REDIS_AUTH=true must block an unauthenticated REDIS_URL in production."""
     guard = production_secrets_guard_module

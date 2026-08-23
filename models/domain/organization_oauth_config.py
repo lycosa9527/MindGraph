@@ -1,4 +1,4 @@
-"""Per-organization OAuth login configuration (WeChat toggle, DingTalk credentials)."""
+"""Per-organization DingTalk OAuth login credentials."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from models.domain.auth import Base
 
 
 class OrganizationOauthConfig(Base):
-    """OAuth QR login settings scoped to one school organization."""
+    """DingTalk QR login settings scoped to one school organization."""
 
     __tablename__ = "organization_oauth_configs"
     __table_args__ = (UniqueConstraint("organization_id", name="uq_organization_oauth_configs_org"),)
@@ -23,7 +23,6 @@ class OrganizationOauthConfig(Base):
         nullable=False,
         index=True,
     )
-    wechat_login_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     dingtalk_login_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     dingtalk_login_app_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
     dingtalk_login_app_secret: Mapped[str | None] = mapped_column(Text, nullable=True)

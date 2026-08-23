@@ -35,7 +35,6 @@ class OrganizationOauthConfigRepository:
         self,
         *,
         organization_id: int,
-        wechat_login_enabled: Optional[bool] = None,
         dingtalk_login_enabled: Optional[bool] = None,
         dingtalk_login_app_key: Optional[str] = None,
         dingtalk_login_app_secret: Optional[str] = None,
@@ -44,8 +43,6 @@ class OrganizationOauthConfigRepository:
     ) -> OrganizationOauthConfig:
         """Patch org OAuth config fields."""
         row = await self.get_or_create(organization_id)
-        if wechat_login_enabled is not None:
-            row.wechat_login_enabled = bool(wechat_login_enabled)
         if dingtalk_login_enabled is not None:
             row.dingtalk_login_enabled = bool(dingtalk_login_enabled)
         if dingtalk_login_app_key is not None:

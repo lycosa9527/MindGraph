@@ -51,6 +51,12 @@ const hideAppSidebar = computed(
 
 /** Guests see a login overlay on main routes; sidebar stays clear. */
 const shouldBlurGuestMain = computed(() => isGuest.value)
+
+/**
+ * MindGraph landing paints a full-column sheen. Overlay the ICP line so
+ * that animation continues behind the filing number instead of a blank bar.
+ */
+const overlayIcpOnLanding = computed(() => route.path.startsWith('/mindgraph'))
 </script>
 
 <template>
@@ -88,6 +94,7 @@ const shouldBlurGuestMain = computed(() => isGuest.value)
         <div
           v-if="!hideAppSidebar"
           class="icp-footer"
+          :class="{ 'icp-footer--overlay': overlayIcpOnLanding }"
         >
           京ICP备2025126228号
         </div>
@@ -134,6 +141,16 @@ const shouldBlurGuestMain = computed(() => isGuest.value)
   color: #999;
   user-select: none;
   pointer-events: none;
+}
+
+/* Landing: sit on the sheen (positioned against `main`, which is relative) */
+.icp-footer--overlay {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  background: transparent;
 }
 
 .main-sidebar-expand-btn {

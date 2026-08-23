@@ -21,6 +21,7 @@ from services.auth.oauth.oauth_constants import (
     AUTH_ERROR_INVALID_STATE,
     OAUTH_MODE_BIND,
     OAUTH_MODE_LOGIN,
+    OAUTH_ORG_UNSCOPED,
     normalize_oauth_error_code,
 )
 from services.auth.oauth.oauth_login_service import (
@@ -29,6 +30,7 @@ from services.auth.oauth.oauth_login_service import (
     encoded_callback_url,
     oauth_feature_enabled,
     public_site_base_url,
+    require_wechat_callback_url,
     resolve_provider_flags,
     wechat_callback_url,
 )
@@ -90,8 +92,8 @@ class OauthLinksResponse(BaseModel):
 
     wechat: Optional[OauthLinkItem] = None
     dingtalk: Optional[OauthLinkItem] = None
-    wechat_login_enabled: bool = False
-    dingtalk_login_enabled: bool = False
+    wechat_enabled: bool = False
+    dingtalk_enabled: bool = False
 
 
 def _mask_external_id(value: str) -> str:
@@ -134,6 +136,23 @@ def _oauth_failure_redirect(mode: str, error: str) -> RedirectResponse:
     return _auth_redirect(error)
 
 
+def _log_oauth_redirect_error(
+    *,
+    provider: str,
+    mode: str,
+    organization_id: int,
+    error: str,
+) -> None:
+    """Record the stable oauth_* code that the browser toast will show."""
+    logger.warning(
+        "OAuth %s %s failed org=%s error=%s",
+        provider,
+        mode,
+        organization_id,
+        error,
+    )
+
+
 @router.get("/providers", response_model=OauthProvidersResponse)
 async def get_oauth_providers(
     invite: str = Query(..., min_length=1),
@@ -162,25 +181,33 @@ async def get_oauth_providers(
 
 @router.get("/wechat/start", response_model=OauthStartResponse)
 async def wechat_login_start(
-    invite: str = Query(..., min_length=1),
+    invite: str = Query(""),
     mode: str = Query(OAUTH_MODE_LOGIN),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Mint state and return WxLogin parameters."""
-    org = await resolve_org_by_invitation_code(db, invite)
-    if org is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="organization_not_found")
-    service = OauthLoginService(db)
-    await service.assert_provider_enabled(org.id, OAUTH_PROVIDER_WECHAT)
-    flags = resolve_provider_flags(await service.get_org_config(org.id))
-    bind_user_id = None
+    """Mint state and return WxLogin parameters.
+
+    Invitation code is optional. WeChat is platform-wide; a missing invite
+    looks up the bound account after the scan.
+    """
     if mode == OAUTH_MODE_BIND:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="use_bind_start")
+    invite_code = (invite or "").strip()
+    org_id = OAUTH_ORG_UNSCOPED
+    if invite_code:
+        org = await resolve_org_by_invitation_code(db, invite_code)
+        if org is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="organization_not_found")
+        org_id = org.id
+    service = OauthLoginService(db)
+    await service.assert_provider_enabled(org_id, OAUTH_PROVIDER_WECHAT)
+    require_wechat_callback_url()
+    flags = resolve_provider_flags(await service.get_org_config(org_id))
     state = await mint_oauth_state(
-        organization_id=org.id,
+        organization_id=org_id,
         provider=OAUTH_PROVIDER_WECHAT,
         mode=mode,
-        user_id=bind_user_id,
+        user_id=None,
     )
     return OauthStartResponse(
         state=state,
@@ -200,6 +227,7 @@ async def wechat_bind_start(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="no_organization")
     service = OauthLoginService(db)
     await service.assert_provider_enabled(current_user.organization_id, OAUTH_PROVIDER_WECHAT)
+    require_wechat_callback_url()
     flags = resolve_provider_flags(await service.get_org_config(current_user.organization_id))
     state = await mint_oauth_state(
         organization_id=int(current_user.organization_id),
@@ -224,9 +252,11 @@ async def wechat_oauth_callback(
 ):
     """WeChat redirect callback after scan."""
     if not code or not state:
+        logger.warning("OAuth wechat callback missing code or state")
         return _auth_redirect(AUTH_ERROR_INVALID_STATE)
     payload = await consume_oauth_state(state)
     if payload is None or payload.provider != OAUTH_PROVIDER_WECHAT:
+        logger.warning("OAuth wechat callback invalid or expired state")
         return _auth_redirect(AUTH_ERROR_INVALID_STATE)
     service = OauthLoginService(db)
     try:
@@ -234,6 +264,12 @@ async def wechat_oauth_callback(
         external_id, openid, nickname = await service.exchange_wechat_identity(code)
         if payload.mode == OAUTH_MODE_BIND:
             if payload.user_id is None:
+                _log_oauth_redirect_error(
+                    provider=OAUTH_PROVIDER_WECHAT,
+                    mode=OAUTH_MODE_BIND,
+                    organization_id=payload.organization_id,
+                    error=AUTH_ERROR_INVALID_STATE,
+                )
                 return _oauth_failure_redirect(OAUTH_MODE_BIND, AUTH_ERROR_INVALID_STATE)
             await service.complete_bind(
                 organization_id=payload.organization_id,
@@ -255,10 +291,23 @@ async def wechat_oauth_callback(
         return redirect
     except ValueError as exc:
         await db.rollback()
-        return _oauth_failure_redirect(payload.mode, normalize_oauth_error_code(exc))
+        error = normalize_oauth_error_code(exc)
+        _log_oauth_redirect_error(
+            provider=OAUTH_PROVIDER_WECHAT,
+            mode=payload.mode,
+            organization_id=payload.organization_id,
+            error=error,
+        )
+        return _oauth_failure_redirect(payload.mode, error)
     except BACKGROUND_INFRA_ERRORS as exc:
         await db.rollback()
         logger.error("WeChat callback failed: %s", exc, exc_info=True)
+        _log_oauth_redirect_error(
+            provider=OAUTH_PROVIDER_WECHAT,
+            mode=payload.mode,
+            organization_id=payload.organization_id,
+            error=AUTH_ERROR_EXCHANGE_FAILED,
+        )
         return _oauth_failure_redirect(payload.mode, AUTH_ERROR_EXCHANGE_FAILED)
 
 
@@ -272,7 +321,7 @@ async def dingtalk_login_start(
     if org is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="organization_not_found")
     service = OauthLoginService(db)
-    row = await service.assert_provider_enabled(org.id, OAUTH_PROVIDER_DINGTALK)
+    row = await service.require_dingtalk_config(org.id)
     flags = resolve_provider_flags(row)
     use_corp = bool((row.dingtalk_corp_id or "").strip())
     state = await mint_oauth_state(
@@ -298,7 +347,7 @@ async def dingtalk_bind_start(
     if not current_user.organization_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="no_organization")
     service = OauthLoginService(db)
-    row = await service.assert_provider_enabled(current_user.organization_id, OAUTH_PROVIDER_DINGTALK)
+    row = await service.require_dingtalk_config(current_user.organization_id)
     flags = resolve_provider_flags(row)
     use_corp = bool((row.dingtalk_corp_id or "").strip())
     state = await mint_oauth_state(
@@ -332,7 +381,7 @@ async def _complete_dingtalk_flow(
         return _auth_redirect(AUTH_ERROR_INVALID_STATE)
     service = OauthLoginService(db)
     try:
-        row = await service.assert_provider_enabled(payload.organization_id, OAUTH_PROVIDER_DINGTALK)
+        row = await service.require_dingtalk_config(payload.organization_id)
         external_id, open_id, nick, _corp = await service.exchange_dingtalk_identity(row, auth_code)
         if payload.mode == OAUTH_MODE_BIND:
             if payload.user_id is None:
@@ -365,12 +414,25 @@ async def _complete_dingtalk_flow(
         return redirect
     except ValueError as exc:
         await db.rollback()
+        error = normalize_oauth_error_code(exc)
+        _log_oauth_redirect_error(
+            provider=OAUTH_PROVIDER_DINGTALK,
+            mode=payload.mode,
+            organization_id=payload.organization_id,
+            error=error,
+        )
         if json_response:
             raise OauthLoginService.map_value_error(exc) from exc
-        return _oauth_failure_redirect(payload.mode, normalize_oauth_error_code(exc))
+        return _oauth_failure_redirect(payload.mode, error)
     except BACKGROUND_INFRA_ERRORS as exc:
         await db.rollback()
         logger.error("DingTalk complete failed: %s", exc, exc_info=True)
+        _log_oauth_redirect_error(
+            provider=OAUTH_PROVIDER_DINGTALK,
+            mode=payload.mode,
+            organization_id=payload.organization_id,
+            error=AUTH_ERROR_EXCHANGE_FAILED,
+        )
         if json_response:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -470,8 +532,8 @@ async def get_oauth_links(
     return OauthLinksResponse(
         wechat=wechat_item,
         dingtalk=dingtalk_item,
-        wechat_login_enabled=flags.wechat_enabled,
-        dingtalk_login_enabled=flags.dingtalk_enabled,
+        wechat_enabled=flags.wechat_enabled,
+        dingtalk_enabled=flags.dingtalk_enabled,
     )
 
 

@@ -264,6 +264,7 @@ declare module 'vue' {
     LearningSheetOverlay: typeof import('./components/diagram/LearningSheetOverlay.vue')['default']
     LibraryCommentsHistory: typeof import('./components/sidebar/LibraryCommentsHistory.vue')['default']
     LlmPhaseRing: typeof import('./components/shared/LlmPhaseRing.vue')['default']
+    LoginAuthAltLinks: typeof import('./components/auth/LoginAuthAltLinks.vue')['default']
     LoginModal: typeof import('./components/auth/LoginModal.vue')['default']
     LogoQrScanModal: typeof import('./components/sidebar/LogoQrScanModal.vue')['default']
     MaiteDecomposeTables: typeof import('./components/maite/demo/MaiteDecomposeTables.vue')['default']

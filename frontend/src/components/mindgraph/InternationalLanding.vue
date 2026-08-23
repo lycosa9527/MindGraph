@@ -689,7 +689,8 @@ onMounted(() => {
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
-  padding: 0 20px 20px;
+  /* Extra bottom inset so the last cards clear the overlaid ICP line */
+  padding: 0 20px 56px;
 }
 
 @keyframes intlScrollSheen {

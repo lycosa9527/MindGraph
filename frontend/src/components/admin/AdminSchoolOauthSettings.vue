@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Embedded OAuth QR login settings (WeChat toggle + DingTalk keys) for 其他设置 tab.
+ * Embedded OAuth QR login settings (WeChat status + DingTalk keys) for 其他设置 tab.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -33,7 +33,6 @@ const loading = ref(false)
 const saving = ref(false)
 const config = ref<AdminOrganizationOauthConfig | null>(null)
 
-const wechatEnabled = ref(false)
 const dingtalkEnabled = ref(false)
 const dingtalkAppKey = ref('')
 const dingtalkCorpId = ref('')
@@ -57,7 +56,6 @@ async function loadConfig(): Promise<void> {
   try {
     const row = await fetchAdminOrganizationOauthConfig(props.orgId)
     config.value = row
-    wechatEnabled.value = row.wechat_login_enabled
     dingtalkEnabled.value = row.dingtalk_login_enabled
     dingtalkAppKey.value = row.dingtalk_login_app_key
     dingtalkCorpId.value = row.dingtalk_corp_id
@@ -78,7 +76,6 @@ async function saveConfig(): Promise<boolean> {
   saving.value = true
   try {
     const body: Parameters<typeof updateAdminOrganizationOauthConfig>[1] = {
-      wechatLoginEnabled: wechatEnabled.value,
       dingtalkLoginEnabled: dingtalkEnabled.value,
       dingtalkLoginAppKey: dingtalkAppKey.value.trim() || undefined,
       dingtalkCorpId: dingtalkCorpId.value.trim() || undefined,
@@ -156,18 +153,11 @@ defineExpose({ saveConfig })
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
         <span :class="labelClass">{{ t('admin.oauth.wechatToggle') }}</span>
         <div class="flex-1 min-w-0 max-w-2xl space-y-1">
-          <el-switch
-            v-model="wechatEnabled"
-            :disabled="fieldsReadOnly"
-          />
           <p class="mindbot-swiss-hint text-xs m-0">
             {{ t('admin.oauth.wechatHint') }}
           </p>
-          <p
-            v-if="config.wechat_app_id"
-            class="mindbot-swiss-hint text-xs m-0 break-all"
-          >
-            AppID: {{ config.wechat_app_id }}
+          <p class="mindbot-swiss-hint text-xs m-0 break-all">
+            AppID: {{ config.wechat_app_id || '—' }}
           </p>
         </div>
       </div>

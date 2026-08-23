@@ -32,6 +32,7 @@ class OauthUserLink(Base):
             name="uq_oauth_user_links_org_user_provider",
         ),
         Index("ix_oauth_user_links_user_org", "user_id", "organization_id"),
+        Index("ix_oauth_user_links_provider_external", "provider", "external_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

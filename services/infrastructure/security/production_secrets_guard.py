@@ -115,13 +115,14 @@ def enforce_production_security_guards() -> None:
         if not gewe_secret:
             _fail("GEWE_WEBHOOK_SECRET is required when FEATURE_GEWE=True")
 
-    if os.getenv("FEATURE_OAUTH_LOGIN", "False").strip().lower() in ("true", "1", "yes"):
+    if os.getenv("FEATURE_OAUTH_LOGIN", "True").strip().lower() in ("true", "1", "yes"):
         wechat_id = os.getenv("WECHAT_OAUTH_APP_ID", "").strip()
         wechat_secret = os.getenv("WECHAT_OAUTH_APP_SECRET", "").strip()
-        if not wechat_id or not wechat_secret:
-            _fail("WECHAT_OAUTH_APP_ID and WECHAT_OAUTH_APP_SECRET are required when FEATURE_OAUTH_LOGIN=True")
-        base = os.getenv("EXTERNAL_BASE_URL", "").strip()
-        if not base:
+        if bool(wechat_id) ^ bool(wechat_secret):
+            _fail("WECHAT_OAUTH_APP_ID and WECHAT_OAUTH_APP_SECRET must both be set (or both left empty)")
+        if not wechat_id:
+            logger.warning("FEATURE_OAUTH_LOGIN=True but WeChat AppID/Secret are unset; WeChat QR login stays off")
+        if not os.getenv("EXTERNAL_BASE_URL", "").strip():
             logger.warning("FEATURE_OAUTH_LOGIN=True but EXTERNAL_BASE_URL is unset; OAuth redirect URIs may fail")
 
     if requested_captcha_provider() == PROVIDER_TSEC and not tsec_credentials_ready():

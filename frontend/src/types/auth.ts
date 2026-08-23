@@ -163,6 +163,7 @@ export interface LoginResponse {
   token?: string
   user?: User
   message?: string
+  code?: string
 }
 
 export interface AuthState {

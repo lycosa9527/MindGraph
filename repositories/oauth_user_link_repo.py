@@ -133,6 +133,26 @@ class OauthUserLinkRepository:
         await self._db.flush()
         return result_rowcount(result) > 0
 
+    async def list_by_external(
+        self,
+        provider: str,
+        external_id: str,
+    ) -> list[OauthUserLink]:
+        """All org links for one provider identity, newest first."""
+        ext = (external_id or "").strip()[:128]
+        if not ext:
+            return []
+        prov = self._normalize_provider(provider)
+        stmt = (
+            select(OauthUserLink)
+            .where(
+                OauthUserLink.provider == prov,
+                OauthUserLink.external_id == ext,
+            )
+            .order_by(OauthUserLink.linked_at.desc())
+        )
+        return list((await self._db.execute(stmt)).scalars().all())
+
     async def resolve_user_id(
         self,
         organization_id: int,

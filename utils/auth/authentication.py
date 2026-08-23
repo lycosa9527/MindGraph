@@ -52,6 +52,13 @@ from .user_tokens import validate_user_token
 
 logger = logging.getLogger(__name__)
 
+
+def _is_logout_request(request: Request) -> bool:
+    """Logout must still clear cookies when the school product term has ended."""
+    path = request.url.path.rstrip("/")
+    return path.endswith("/logout")
+
+
 # Redis modules (optional)
 _redis = SimpleNamespace(
     available=False,
@@ -103,7 +110,8 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
 
     cached = getattr(request.state, AUTH_CONTEXT_USER_ATTR, None)
     if cached is not None:
-        await raise_if_org_locked_or_expired_async(cached)
+        if not _is_logout_request(request):
+            await raise_if_org_locked_or_expired_async(cached)
         bind_log_user(cached)
         return cached
 
@@ -187,7 +195,8 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-    await raise_if_org_locked_or_expired_async(user)
+    if not _is_logout_request(request):
+        await raise_if_org_locked_or_expired_async(user)
     bind_mg_client_for_web(request)
     bind_log_user(user)
 

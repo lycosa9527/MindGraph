@@ -20,7 +20,11 @@ import { useSchoolTierFeatures } from '@/composables/auth/useSchoolTierFeatures'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 import { resolveUserAvatarEmoji } from '@/utils/userAvatarEmoji'
-import { shouldShowAccountBindingsSection } from '@/utils/oauthLoginUi'
+import {
+  canStartWechatBind,
+  shouldShowAccountBindingsSection,
+  shouldShowWechatBindRow,
+} from '@/utils/oauthLoginUi'
 
 import ApiTokenModal from './ApiTokenModal.vue'
 import AvatarSelectModal from './AvatarSelectModal.vue'
@@ -45,7 +49,7 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
-const { featureMindbot, featureOauthLogin } = useFeatureFlags()
+const { featureMindbot, featureOauthLogin, featureWordAddin } = useFeatureFlags()
 const { canUseApiToken, canUseChromeExtension, showAccountPlugins } = useSchoolTierFeatures()
 
 const isVisible = computed({
@@ -73,8 +77,8 @@ const oauthLinksLoading = ref(false)
 const oauthLinks = ref<{
   wechat?: { nickname?: string | null; external_id_masked?: string }
   dingtalk?: { nickname?: string | null; external_id_masked?: string }
-  wechat_login_enabled?: boolean
-  dingtalk_login_enabled?: boolean
+  wechat_enabled?: boolean
+  dingtalk_enabled?: boolean
 } | null>(null)
 const nameEdit = ref('')
 const nameSaving = ref(false)
@@ -104,17 +108,29 @@ const showAccountBindingsSection = computed(() =>
     schoolId: authStore.user?.schoolId,
     featureMindbot: featureMindbot.value,
     featureOauthLogin: featureOauthLogin.value,
-    wechatLoginEnabled: oauthLinks.value?.wechat_login_enabled === true,
-    dingtalkLoginEnabled: oauthLinks.value?.dingtalk_login_enabled === true,
+    wechatLoginEnabled: oauthLinks.value?.wechat_enabled === true,
+    dingtalkLoginEnabled: oauthLinks.value?.dingtalk_enabled === true,
   })
 )
 
-const showWechatOAuthRow = computed(
-  () => featureOauthLogin.value && oauthLinks.value?.wechat_login_enabled === true
+const showWechatOAuthRow = computed(() =>
+  shouldShowWechatBindRow({
+    showBindingsSection: showAccountBindingsSection.value,
+    featureOauthLogin: featureOauthLogin.value,
+    wechatAvailable: oauthLinks.value?.wechat_enabled === true,
+    wechatLinked: oauthLinks.value?.wechat != null,
+  })
+)
+
+const canBindWechat = computed(() =>
+  canStartWechatBind({
+    featureOauthLogin: featureOauthLogin.value,
+    wechatAvailable: oauthLinks.value?.wechat_enabled === true,
+  })
 )
 
 const showDingtalkOAuthRow = computed(
-  () => featureOauthLogin.value && oauthLinks.value?.dingtalk_login_enabled === true
+  () => featureOauthLogin.value && oauthLinks.value?.dingtalk_enabled === true
 )
 
 const wechatOAuthLinked = computed(() => oauthLinks.value?.wechat != null)
@@ -142,14 +158,14 @@ async function fetchOauthLinks() {
       oauthLinks.value = (await res.json()) as typeof oauthLinks.value
     } else {
       oauthLinks.value = {
-        wechat_login_enabled: false,
-        dingtalk_login_enabled: false,
+        wechat_enabled: false,
+        dingtalk_enabled: false,
       }
     }
   } catch {
     oauthLinks.value = {
-      wechat_login_enabled: false,
-      dingtalk_login_enabled: false,
+      wechat_enabled: false,
+      dingtalk_enabled: false,
     }
   } finally {
     oauthLinksLoading.value = false
@@ -550,7 +566,7 @@ watch(
                           {{ t('auth.unbindWechat') }}
                         </el-button>
                         <el-button
-                          v-else
+                          v-else-if="canBindWechat"
                           round
                           size="small"
                           class="account-action-btn shrink-0"
@@ -636,7 +652,7 @@ watch(
                       {{ t('auth.downloadChromeExtension') }}
                     </a>
                     <a
-                      v-if="canUseChromeExtension"
+                      v-if="featureWordAddin && canUseChromeExtension"
                       class="account-plugin-pill account-plugin-pill--word"
                       :href="wordAddinZipUrl"
                       download

@@ -38,6 +38,7 @@ _PATH_FLAG_ATTRS: tuple[tuple[str, str], ...] = (
     ("/api/kitty", "FEATURE_KITTY_AGENT"),
     ("/ws/kitty", "FEATURE_KITTY_AGENT"),
     ("/api/auth/oauth", "FEATURE_OAUTH_LOGIN"),
+    ("/api/downloads/mindgraph-word-addin", "FEATURE_WORD_ADDIN"),
     ("/api/mcp", "FEATURE_MCP_HTTP"),
 )
 

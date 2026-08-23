@@ -100,7 +100,7 @@ Built for teachers, learners, and anyone who thinks better with pictures (especi
 
 - Optional **AbuseIPDB** and **Fail2ban** integration — see [docs/FAIL2BAN_SETUP.md](docs/FAIL2BAN_SETUP.md)
 - JWT and API key authentication with Redis cache-aside (5-minute TTL, SHA-256 fingerprinting)
-- **OAuth QR login** (WeChat + DingTalk, `FEATURE_OAUTH_LOGIN=False` by default) — see [docs/architecture/oauth_qr_login.md](docs/architecture/oauth_qr_login.md)
+- **OAuth QR login** (WeChat on by default once AppID/Secret are set; DingTalk per school) — see [docs/architecture/oauth_qr_login.md](docs/architecture/oauth_qr_login.md)
 - **DingTalk pair-code binding** — rotating 6-digit codes via MindBot; see [docs/architecture/dingtalk_account_binding.md](docs/architecture/dingtalk_account_binding.md)
 - CSRF double-submit protection; CSP script nonce on SPA shell (no `'unsafe-inline'` for scripts)
 - Captcha on password change; sessions revoked on password update
@@ -210,7 +210,8 @@ Notable feature flags (see `env.example` for full list):
 | `FEATURE_MINDBOT` | `True` | DingTalk MindBot → Dify |
 | `FEATURE_MINDMATE` | `False` | MindMate AI chat |
 | `FEATURE_KNOWLEDGE_SPACE` | `False` | RAG / Document Summary (requires Qdrant + Celery) |
-| `FEATURE_OAUTH_LOGIN` | `False` | WeChat + DingTalk QR login |
+| `FEATURE_OAUTH_LOGIN` | `True` | WeChat + DingTalk QR login (WeChat is platform-wide; DingTalk is per school) |
+| `FEATURE_WORD_ADDIN` | `False` | Account Word add-in download + deploy zip (hosted `/word-addin/` shell stays on) |
 | `FEATURE_THINKING_COINS` | `False` | Trial-tier org thinking coin wallet |
 | `FEATURE_MINDMAP_V2_CANVAS` | `True` | Mind map v2 side-toolbar canvas (default layout; classic still available) |
 | `FEATURE_MIND_CLASSROOM_SLIDE_DECK` | `False` | 思维讲堂「幻灯片讲解」(greyed + coming-soon until enabled) |

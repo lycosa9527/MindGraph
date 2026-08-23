@@ -5,7 +5,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
-import { notifyOAuthError, WX_LOGIN_SELF_REDIRECT } from '@/utils/oauthLoginUi'
+import { isOAuthRedirectError, notifyOAuthError, WX_LOGIN_SELF_REDIRECT } from '@/utils/oauthLoginUi'
 import apiClient from '@/utils/apiClient'
 
 export type OAuthProvider = 'wechat' | 'dingtalk'
@@ -79,13 +79,13 @@ export function useOAuthQrLogin(options: {
       return false
     }
     const data = (await res.json()) as {
-      wechat_login_enabled?: boolean
-      dingtalk_login_enabled?: boolean
+      wechat_enabled?: boolean
+      dingtalk_enabled?: boolean
     }
     providers.value = {
       organization_id: 0,
-      wechat_enabled: data.wechat_login_enabled === true,
-      dingtalk_enabled: data.dingtalk_login_enabled === true,
+      wechat_enabled: data.wechat_enabled === true,
+      dingtalk_enabled: data.dingtalk_enabled === true,
       wechat_app_id: '',
       dingtalk_client_id: '',
       dingtalk_scope: 'openid',
@@ -113,7 +113,17 @@ export function useOAuthQrLogin(options: {
         return
       }
       if (!invite.value) {
-        providerError.value = 'invite_required'
+        providers.value = {
+          organization_id: 0,
+          wechat_enabled: true,
+          dingtalk_enabled: false,
+          wechat_app_id: '',
+          dingtalk_client_id: '',
+          dingtalk_scope: 'openid',
+          wechat_redirect_uri: '',
+          dingtalk_redirect_uri: '',
+        }
+        activeTab.value = 'wechat'
         return
       }
       const res = await apiClient.get(
@@ -224,17 +234,25 @@ export function useOAuthQrLogin(options: {
     if (!providers.value) {
       return
     }
-    if (!isBindMode.value && !invite.value) {
+    if (!isBindMode.value && !invite.value && options.activeProvider() !== 'wechat') {
       return
     }
     const prov = options.activeProvider()
     if (prov === 'wechat' && providers.value.wechat_enabled) {
       const startPath = isBindMode.value
         ? '/api/auth/oauth/wechat/bind/start'
-        : `/api/auth/oauth/wechat/start?invite=${encodeURIComponent(invite.value)}`
+        : invite.value
+          ? `/api/auth/oauth/wechat/start?invite=${encodeURIComponent(invite.value)}`
+          : '/api/auth/oauth/wechat/start'
       const res = await apiClient.get(startPath)
       if (!res.ok) {
-        notify.error(t('auth.qrLoginStartFailed'))
+        const err = await res.json().catch(() => ({}))
+        const detail = typeof err.detail === 'string' ? err.detail : ''
+        if (detail && isOAuthRedirectError(detail)) {
+          notifyOAuthError(detail, notify, t)
+        } else {
+          notify.error(t('auth.qrLoginStartFailed'))
+        }
         return
       }
       const data = (await res.json()) as {
@@ -254,7 +272,13 @@ export function useOAuthQrLogin(options: {
         : `/api/auth/oauth/dingtalk/start?invite=${encodeURIComponent(invite.value)}`
       const res = await apiClient.get(startPath)
       if (!res.ok) {
-        notify.error(t('auth.qrLoginStartFailed'))
+        const err = await res.json().catch(() => ({}))
+        const detail = typeof err.detail === 'string' ? err.detail : ''
+        if (detail && isOAuthRedirectError(detail)) {
+          notifyOAuthError(detail, notify, t)
+        } else {
+          notify.error(t('auth.qrLoginStartFailed'))
+        }
         return
       }
       const data = (await res.json()) as {

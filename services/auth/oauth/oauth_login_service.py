@@ -20,12 +20,17 @@ from repositories.oauth_user_link_repo import OauthUserLinkRepository
 from repositories.organization_oauth_config_repo import OrganizationOauthConfigRepository
 from services.auth.oauth.dingtalk_oauth_client import DingtalkOauthClient, DingtalkContactProfile
 from services.auth.oauth.oauth_constants import (
+    AUTH_ERROR_ALREADY_BOUND,
     AUTH_ERROR_CORP_MISMATCH,
     AUTH_ERROR_DISABLED,
     AUTH_ERROR_EXCHANGE_FAILED,
     AUTH_ERROR_EXTERNAL_TAKEN,
+    AUTH_ERROR_INVALID_CODE,
+    AUTH_ERROR_MISCONFIGURED,
     AUTH_ERROR_NOT_LINKED,
+    AUTH_ERROR_RATE_LIMITED,
     DINGTALK_SCOPE_OPENID,
+    OAUTH_ORG_UNSCOPED,
     normalize_oauth_error_code,
 )
 from services.auth.oauth.wechat_oauth_client import WechatOauthClient
@@ -48,7 +53,7 @@ class OauthProviderFlags:
 
 def oauth_feature_enabled() -> bool:
     """True when FEATURE_OAUTH_LOGIN is on."""
-    return bool(getattr(config, "FEATURE_OAUTH_LOGIN", False))
+    return bool(getattr(config, "FEATURE_OAUTH_LOGIN", True))
 
 
 def wechat_credentials_configured() -> bool:
@@ -75,6 +80,17 @@ def wechat_callback_url() -> str:
     if not base:
         return ""
     return f"{base}/api/auth/oauth/wechat/callback"
+
+
+def require_wechat_callback_url() -> str:
+    """Return the WeChat callback or fail closed when EXTERNAL_BASE_URL is unset."""
+    url = wechat_callback_url()
+    if not url:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=AUTH_ERROR_MISCONFIGURED,
+        )
+    return url
 
 
 def dingtalk_callback_url() -> str:
@@ -122,10 +138,12 @@ def validate_dingtalk_corp_id(
 
 
 def resolve_provider_flags(row: Optional[OrganizationOauthConfig]) -> OauthProviderFlags:
-    """Build provider availability for frontend."""
-    wechat_on = bool(
-        oauth_feature_enabled() and wechat_credentials_configured() and row is not None and row.wechat_login_enabled
-    )
+    """Build provider availability for frontend.
+
+    WeChat is platform-wide (feature flag + .env AppID/Secret). DingTalk stays
+    per school because each school brings its own AppKey/Secret.
+    """
+    wechat_on = bool(oauth_feature_enabled() and wechat_credentials_configured())
     ding_key = (row.dingtalk_login_app_key or "").strip() if row else ""
     ding_secret = (row.dingtalk_login_app_secret or "").strip() if row else ""
     ding_on = bool(
@@ -190,8 +208,8 @@ class OauthLoginService:
         try:
             profile = await client.fetch_userinfo(token.access_token, token.openid)
             nickname = profile.nickname
-        except ValueError:
-            logger.debug("WeChat userinfo optional fetch skipped")
+        except ValueError as exc:
+            logger.warning("WeChat userinfo optional fetch skipped: %s", exc)
         external_id = WechatOauthClient.resolve_external_id(token, profile)
         return external_id, token.openid, nickname
 
@@ -223,7 +241,21 @@ class OauthLoginService:
         openid: Optional[str] = None,
         nickname: Optional[str] = None,
     ) -> None:
-        """Link OAuth identity to logged-in user."""
+        """Link OAuth identity to logged-in user.
+
+        Same WeChat/DingTalk on this user is idempotent. A different identity
+        requires unbind first. Identity already on another user is rejected.
+        """
+        existing = await self._link_repo.get_for_user(organization_id, user_id, provider)
+        incoming = (external_id or "").strip()
+        if existing is not None and (existing.external_id or "").strip() != incoming:
+            logger.info(
+                "OAuth bind blocked already_bound provider=%s org=%s user=%s",
+                provider,
+                organization_id,
+                user_id,
+            )
+            raise ValueError(AUTH_ERROR_ALREADY_BOUND)
         try:
             await self._link_repo.upsert_link(
                 organization_id=organization_id,
@@ -236,8 +268,20 @@ class OauthLoginService:
             )
         except ValueError as exc:
             if str(exc) == "external_id_taken":
+                logger.info(
+                    "OAuth bind blocked external_taken provider=%s org=%s user=%s",
+                    provider,
+                    organization_id,
+                    user_id,
+                )
                 raise ValueError(AUTH_ERROR_EXTERNAL_TAKEN) from exc
             raise
+        logger.info(
+            "OAuth bind ok provider=%s org=%s user=%s",
+            provider,
+            organization_id,
+            user_id,
+        )
 
     async def resolve_login_user(
         self,
@@ -246,14 +290,60 @@ class OauthLoginService:
         provider: str,
         external_id: str,
     ) -> User:
-        """Find linked user for login or raise oauth_not_linked."""
+        """Find linked user for login or raise oauth_not_linked.
+
+        QR login never creates an account. Teachers must register, then bind
+        WeChat/DingTalk under Account linking before scan sign-in works.
+        """
+        if int(organization_id) <= OAUTH_ORG_UNSCOPED:
+            return await self._resolve_login_user_unscoped(provider, external_id)
         uid = await self._link_repo.resolve_user_id(organization_id, provider, external_id)
         if uid is None:
+            logger.info(
+                "OAuth login not linked provider=%s org=%s — register and bind first",
+                provider,
+                organization_id,
+            )
             raise ValueError(AUTH_ERROR_NOT_LINKED)
         row = (await self._db.execute(select(User).where(User.id == uid))).scalar_one_or_none()
         if row is None:
+            logger.warning(
+                "OAuth login link user missing provider=%s org=%s user_id=%s",
+                provider,
+                organization_id,
+                uid,
+            )
             raise ValueError(AUTH_ERROR_NOT_LINKED)
         if row.organization_id != organization_id:
+            logger.warning(
+                "OAuth login org mismatch provider=%s org=%s user_id=%s user_org=%s",
+                provider,
+                organization_id,
+                uid,
+                row.organization_id,
+            )
+            raise ValueError(AUTH_ERROR_NOT_LINKED)
+        return row
+
+    async def _resolve_login_user_unscoped(self, provider: str, external_id: str) -> User:
+        """Find the bound user when login was started without a school invite."""
+        links = await self._link_repo.list_by_external(provider, external_id)
+        user_ids = {int(link.user_id) for link in links}
+        if len(user_ids) != 1:
+            logger.info(
+                "OAuth login not linked provider=%s unscoped matches=%s — register and bind first",
+                provider,
+                len(user_ids),
+            )
+            raise ValueError(AUTH_ERROR_NOT_LINKED)
+        uid = next(iter(user_ids))
+        row = (await self._db.execute(select(User).where(User.id == uid))).scalar_one_or_none()
+        if row is None:
+            logger.warning(
+                "OAuth login link user missing provider=%s unscoped user_id=%s",
+                provider,
+                uid,
+            )
             raise ValueError(AUTH_ERROR_NOT_LINKED)
         return row
 
@@ -269,15 +359,25 @@ class OauthLoginService:
         self,
         organization_id: int,
         provider: str,
-    ) -> OrganizationOauthConfig:
-        """Ensure provider is enabled for org."""
+    ) -> Optional[OrganizationOauthConfig]:
+        """Ensure the provider is available. DingTalk still needs a school row."""
         self.assert_feature_enabled()
         row = await self._org_repo.get_by_org(organization_id)
         flags = resolve_provider_flags(row)
-        if provider == OAUTH_PROVIDER_WECHAT and not flags.wechat_enabled:
+        if provider == OAUTH_PROVIDER_WECHAT:
+            if not flags.wechat_enabled:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=AUTH_ERROR_MISCONFIGURED,
+                )
+            return row
+        if provider == OAUTH_PROVIDER_DINGTALK and (row is None or not flags.dingtalk_enabled):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=AUTH_ERROR_DISABLED)
-        if provider == OAUTH_PROVIDER_DINGTALK and not flags.dingtalk_enabled:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=AUTH_ERROR_DISABLED)
+        return row
+
+    async def require_dingtalk_config(self, organization_id: int) -> OrganizationOauthConfig:
+        """DingTalk QR login needs a school AppKey/Secret row."""
+        row = await self.assert_provider_enabled(organization_id, OAUTH_PROVIDER_DINGTALK)
         if row is None:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=AUTH_ERROR_DISABLED)
         return row
@@ -288,10 +388,17 @@ class OauthLoginService:
         code = normalize_oauth_error_code(exc)
         if code == AUTH_ERROR_NOT_LINKED:
             return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=code)
+        if code == AUTH_ERROR_ALREADY_BOUND:
+            return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=code)
+        if code == AUTH_ERROR_RATE_LIMITED:
+            return HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=code)
+        if code == AUTH_ERROR_MISCONFIGURED:
+            return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=code)
         if code in {
             AUTH_ERROR_CORP_MISMATCH,
             AUTH_ERROR_EXTERNAL_TAKEN,
             AUTH_ERROR_EXCHANGE_FAILED,
+            AUTH_ERROR_INVALID_CODE,
         }:
             return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=code)
         return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=AUTH_ERROR_EXCHANGE_FAILED)

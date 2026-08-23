@@ -21,6 +21,7 @@ from services.auth.oauth.oauth_login_service import (
     dingtalk_callback_url,
     public_site_base_url,
     wechat_callback_url,
+    wechat_credentials_configured,
 )
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth.admin_scope import AdminScope
@@ -31,10 +32,13 @@ router = APIRouter(prefix="/organizations", tags=["Admin OAuth"])
 
 
 class OrganizationOauthConfigResponse(BaseModel):
-    """OAuth settings for one organization."""
+    """OAuth settings for one organization.
+
+    ``wechat_enabled`` is derived from FEATURE_OAUTH_LOGIN + AppID/Secret.
+    """
 
     organization_id: int
-    wechat_login_enabled: bool = False
+    wechat_enabled: bool = False
     dingtalk_login_enabled: bool = False
     dingtalk_login_app_key: str = ""
     dingtalk_login_app_secret_set: bool = False
@@ -49,7 +53,6 @@ class OrganizationOauthConfigResponse(BaseModel):
 class OrganizationOauthConfigUpdate(BaseModel):
     """Patch body for org OAuth config."""
 
-    wechat_login_enabled: Optional[bool] = None
     dingtalk_login_enabled: Optional[bool] = None
     dingtalk_login_app_key: Optional[str] = Field(None, alias="dingtalkLoginAppKey")
     dingtalk_login_app_secret: Optional[str] = Field(None, alias="dingtalkLoginAppSecret")
@@ -63,11 +66,11 @@ def _to_response(org_id: int, row) -> OrganizationOauthConfigResponse:
     secret_set = bool((row.dingtalk_login_app_secret or "").strip()) if row else False
     app_key = (row.dingtalk_login_app_key or "").strip() if row else ""
     corp = (row.dingtalk_corp_id or "").strip() if row else ""
-    wechat_on = bool(row.wechat_login_enabled) if row else False
+    wechat_on = bool(config.FEATURE_OAUTH_LOGIN and wechat_credentials_configured())
     ding_on = bool(row.dingtalk_login_enabled) if row else False
     return OrganizationOauthConfigResponse(
         organization_id=org_id,
-        wechat_login_enabled=wechat_on,
+        wechat_enabled=wechat_on,
         dingtalk_login_enabled=ding_on,
         dingtalk_login_app_key=app_key,
         dingtalk_login_app_secret_set=secret_set,
@@ -110,7 +113,6 @@ async def update_organization_oauth_config(
     try:
         row = await repo.upsert(
             organization_id=org_id,
-            wechat_login_enabled=body.wechat_login_enabled,
             dingtalk_login_enabled=body.dingtalk_login_enabled,
             dingtalk_login_app_key=body.dingtalk_login_app_key,
             dingtalk_login_app_secret=body.dingtalk_login_app_secret,

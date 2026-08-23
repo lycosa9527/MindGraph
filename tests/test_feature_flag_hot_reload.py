@@ -102,6 +102,39 @@ async def test_feature_flag_gate_blocks_mcp_when_disabled():
 
 
 @pytest.mark.asyncio
+async def test_feature_flag_gate_blocks_word_addin_download_when_disabled():
+    """Word add-in zip is gated when FEATURE_WORD_ADDIN is off."""
+    call_next = AsyncMock(return_value=MagicMock(status_code=200))
+    with patch(
+        "services.infrastructure.http.feature_gate.config",
+        SimpleNamespace(FEATURE_WORD_ADDIN=False),
+    ):
+        response = await feature_flag_gate(
+            _request("/api/downloads/mindgraph-word-addin"),
+            call_next,
+        )
+    assert response.status_code == 404
+    call_next.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_feature_flag_gate_allows_word_addin_download_when_enabled():
+    """Word add-in zip passes through when FEATURE_WORD_ADDIN is on."""
+    downstream = MagicMock(status_code=200)
+    call_next = AsyncMock(return_value=downstream)
+    with patch(
+        "services.infrastructure.http.feature_gate.config",
+        SimpleNamespace(FEATURE_WORD_ADDIN=True),
+    ):
+        response = await feature_flag_gate(
+            _request("/api/downloads/mindgraph-word-addin"),
+            call_next,
+        )
+    assert response is downstream
+    call_next.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_feature_flag_gate_allows_mcp_when_enabled():
     """MCP requests pass through when FEATURE_MCP_HTTP is on."""
     downstream = MagicMock(status_code=200)

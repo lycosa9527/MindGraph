@@ -53,7 +53,7 @@ const footerHint = computed(() =>
 <template>
   <div class="oauth-qr-panel">
     <div
-      v-if="mode === 'login' && !inviteCode.trim()"
+      v-if="mode === 'login' && !inviteCode.trim() && provider === 'dingtalk'"
       class="text-sm text-stone-500 text-center py-4"
     >
       {{ t('auth.qrLoginInviteRequired') }}

@@ -15,9 +15,10 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Optional
 
-from fastapi import HTTPException, Request, status
+from fastapi import HTTPException, Request
 
 from models.domain.auth import User
+from models.domain.messages import Language
 from services.auth.bearer_token import extract_bearer_token
 
 try:
@@ -31,7 +32,7 @@ except ImportError:
 
 from utils.auth.config import AUTH_MODE
 from utils.auth.mg_client import bind_mg_client_for_web
-from utils.auth.org_subscription import ensure_org_subscription_current
+from utils.auth.org_subscription import enforce_org_accessible_or_raise
 from utils.auth.tokens import decode_access_token
 from utils.auth.user_tokens import validate_user_token
 
@@ -50,8 +51,11 @@ if get_session_manager is not None:
     _redis.org_cache = org_cache
 
 
-async def raise_if_org_locked_or_expired_async(user: User) -> None:
-    """Raise HTTPException if org is locked; downgrade expired subscription to trial."""
+async def raise_if_org_locked_or_expired_async(
+    user: User,
+    lang: Language = "en",
+) -> None:
+    """Raise HTTPException if the school is admin-locked or the product term ended."""
     if not user.organization_id:
         return
     org = None
@@ -61,13 +65,7 @@ async def raise_if_org_locked_or_expired_async(user: User) -> None:
     except ImportError:
         org = None
     if org:
-        is_active = org.is_active if hasattr(org, "is_active") else True
-        if not is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Organization account is locked. Please contact support.",
-            )
-        await ensure_org_subscription_current(org)
+        await enforce_org_accessible_or_raise(org, lang, user)
 
 
 async def resolve_authenticated_user_optional(request: Request) -> Optional[User]:

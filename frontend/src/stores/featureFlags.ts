@@ -61,6 +61,7 @@ interface FeatureFlagsResponse {
   feature_auth_pixel_battle: boolean
   feature_test_server_banner: boolean
   feature_oauth_login: boolean
+  feature_word_addin: boolean
   feature_thinking_coins: boolean
   captcha_provider?: 'legacy' | 'tsec'
   tencent_captcha_app_id?: string
@@ -106,6 +107,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       feature_auth_pixel_battle: false,
       feature_test_server_banner: false,
       feature_oauth_login: false,
+      feature_word_addin: false,
       feature_thinking_coins: false,
       captcha_provider: 'legacy',
       tencent_captcha_app_id: '',
@@ -170,6 +172,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_auth_pixel_battle: raw.feature_auth_pixel_battle ?? false,
           feature_test_server_banner: raw.feature_test_server_banner ?? false,
           feature_oauth_login: raw.feature_oauth_login ?? false,
+          feature_word_addin: raw.feature_word_addin ?? false,
           feature_thinking_coins: raw.feature_thinking_coins ?? false,
           captcha_provider: raw.captcha_provider === 'tsec' ? 'tsec' : 'legacy',
           tencent_captcha_app_id: raw.tencent_captcha_app_id ?? '',

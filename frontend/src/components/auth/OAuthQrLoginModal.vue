@@ -15,6 +15,7 @@ const props = defineProps<{
   inviteCode: string
   mode?: OAuthQrMode
   initialProvider?: OAuthProvider
+  lockProvider?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -66,7 +67,13 @@ watch(
       >
         <div class="flex items-center justify-between px-5 py-4 border-b border-stone-100">
           <h2 class="text-base font-semibold text-stone-900">
-            {{ mode === 'bind' ? t('auth.oauthBindTitle') : t('auth.qrLoginTitle') }}
+            {{
+              mode === 'bind'
+                ? t('auth.oauthBindTitle')
+                : lockProvider
+                  ? t('auth.wechatLogin')
+                  : t('auth.qrLoginTitle')
+            }}
           </h2>
           <button
             type="button"
@@ -78,7 +85,10 @@ watch(
           </button>
         </div>
 
-        <div class="px-5 pt-3">
+        <div
+          v-if="!lockProvider"
+          class="px-5 pt-3"
+        >
           <div class="flex gap-2 mb-3">
             <button
               type="button"
@@ -107,7 +117,10 @@ watch(
           </div>
         </div>
 
-        <div class="px-5 pb-5">
+        <div
+          class="px-5 pb-5"
+          :class="lockProvider ? 'pt-5' : ''"
+        >
           <OAuthQrLoginPanel
             :invite-code="inviteCode"
             :mode="mode"

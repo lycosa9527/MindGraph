@@ -2,6 +2,14 @@
 
 MindGraph for Word (`word-addin/`) opens the live SPA in an Office.js task pane. Session cookies must be set on the **SPA origin**, not on `https://localhost` where the add-in shell runs.
 
+## Feature flag
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `FEATURE_WORD_ADDIN` | **`False`** | Account plugin download pill and `GET /api/downloads/mindgraph-word-addin`. Hosted `/word-addin/*` shell, embed handoff, and Voice stay available for add-ins already installed. |
+
+The public flags API exposes `feature_word_addin` (defaults to `false` when unset). Set `FEATURE_WORD_ADDIN=True` in `.env` to offer the deploy zip.
+
 ## Flow
 
 1. Settings stores phone + `mgat_` (OfficeRuntime.storage / localStorage) and **probes** `POST /api/auth/embed/probe` on Save (validates credentials only — no Redis handoff). When the shell is hosted at `/word-addin/*`, **Server URL is locked to `location.origin`** (CSP same-origin); stale test/prod defaults are migrated on hydrate.

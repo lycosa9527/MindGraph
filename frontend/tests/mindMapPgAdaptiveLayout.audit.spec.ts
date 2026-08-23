@@ -62,6 +62,7 @@ function enableMindMapV2Canvas(): void {
     feature_auth_pixel_battle: false,
     feature_test_server_banner: false,
     feature_oauth_login: false,
+    feature_word_addin: false,
     feature_thinking_coins: false,
     workshop_chat_preview_org_ids: [],
     feature_org_access: {},

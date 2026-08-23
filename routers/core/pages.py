@@ -44,7 +44,7 @@ from utils.auth import (
     hash_password,
     validate_bayi_token_body,
 )
-from utils.auth.org_subscription import ensure_org_subscription_current
+from utils.auth.org_subscription import is_org_subscription_expired
 from utils.db.session_open import system_rls_session
 
 _issue_bayi_access_token = issue_access_token_with_vpn_geo
@@ -263,7 +263,9 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                 logger.warning("Bayi SSO blocked: Organization %s is locked", org.code)
                 return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
-            org = await ensure_org_subscription_current(org) or org
+            if is_org_subscription_expired(org):
+                logger.warning("Bayi SSO blocked: Organization %s subscription expired", org.code)
+                return RedirectResponse(url=_BAYI_SSO_FALLBACK_REDIRECT, status_code=303)
 
             result = await db.execute(select(User).where(User.phone == user_phone))
             bayi_user = result.scalar_one_or_none()
