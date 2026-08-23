@@ -41,14 +41,10 @@ from services.infrastructure.utils.spa_handler import (
     should_apply_api_no_cache,
     should_apply_no_cache,
 )
-from services.auth.tsec.csp import (
-    TSEC_CSP_CONNECT_SRC,
-    TSEC_CSP_FONT_SRC,
-    TSEC_CSP_FRAME_SRC,
-    TSEC_CSP_SCRIPT_SRC,
-    TSEC_CSP_STYLE_SRC,
-    TSEC_CSP_WORKER_SRC,
-    tsec_csp_extra,
+from services.infrastructure.http.security_csp import (
+    debug_content_security_policy,
+    production_content_security_policy,
+    word_addin_content_security_policy,
 )
 from services.showcase.storage import cos_showcase_enabled
 from services.utils.tencent_cos_client import cos_browser_csp_sources
@@ -285,37 +281,6 @@ async def csrf_protection(request: Request, call_next):
     return response
 
 
-_OFFICE_JS_CDN = "https://appsforoffice.microsoft.com"
-_WORD_ADDIN_MANUAL_FRAME = "https://365.kdocs.cn"
-
-
-def _word_addin_content_security_policy() -> str:
-    """
-    CSP for ``/word-addin/*`` Office.js shell pages.
-
-    Task panes load Office.js from Microsoft's CDN and use inline boot scripts;
-    the main SPA CSP (nonce / no external scripts) would break the add-in.
-    Manual task pane embeds the platform quick guide (Kingsoft Docs).
-
-    ``frame-ancestors`` stays permissive enough for Office desktop/web hosts;
-    pairing with ``X-Frame-Options: DENY`` would block the task pane runtime.
-    """
-    return (
-        "default-src 'self'; "
-        f"script-src 'self' 'unsafe-inline' {_OFFICE_JS_CDN}{tsec_csp_extra(TSEC_CSP_SCRIPT_SRC)}; "
-        "worker-src 'self' blob:; "
-        f"style-src 'self' 'unsafe-inline'{tsec_csp_extra(TSEC_CSP_STYLE_SRC)}; "
-        "img-src 'self' data: https: blob:; "
-        f"font-src 'self' data:{tsec_csp_extra(TSEC_CSP_FONT_SRC)}; "
-        f"connect-src 'self' {_OFFICE_JS_CDN}{tsec_csp_extra(TSEC_CSP_CONNECT_SRC)}; "
-        "media-src 'self' blob:; "
-        f"frame-src 'self' blob: {_WORD_ADDIN_MANUAL_FRAME}{tsec_csp_extra(TSEC_CSP_FRAME_SRC)}; "
-        "frame-ancestors *; "
-        "base-uri 'self'; "
-        "form-action 'self';"
-    )
-
-
 async def add_security_headers(request: Request, call_next):
     """
     Add security headers to all HTTP responses.
@@ -331,7 +296,9 @@ async def add_security_headers(request: Request, call_next):
       handler on request.state) so 'unsafe-inline' is dropped for the app shell.
       Legacy template responses without a nonce keep 'unsafe-inline' for their
       inline onclick handlers / config bootstrap.
-    - /word-addin/*: allow Microsoft Office.js CDN (see ``_word_addin_content_security_policy``).
+    - /word-addin/*: allow Microsoft Office.js CDN (see ``word_addin_content_security_policy``).
+    - OAuth QR: always allow official WxLogin.js (res.wx.qq.com) and the
+      open.weixin.qq.com iframe, plus DingTalk ddlogin.js / login.dingtalk.com.
     - style-src: keeps 'unsafe-inline' — Vue/Element Plus inject styles at runtime
       via JS, which a nonce cannot cover. When T-Sec is live, also allow the
       TJCaptcha stylesheet CDNs (otherwise the widget times out blank).
@@ -377,46 +344,17 @@ async def add_security_headers(request: Request, call_next):
     cos_connect_clause = f" {cos_connect}" if cos_connect else ""
     media_src = f"media-src 'self' blob:{cos_connect_clause}; " if cos_connect else "media-src 'self' blob:; "
     if is_word_addin:
-        response.headers["Content-Security-Policy"] = _word_addin_content_security_policy()
+        response.headers["Content-Security-Policy"] = word_addin_content_security_policy()
     elif config.debug:
-        # DEBUG mode: Allow Swagger UI resources from CDN (including source maps)
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' "
-            f"https://cdn.jsdelivr.net{tsec_csp_extra(TSEC_CSP_SCRIPT_SRC)}; "
-            "worker-src 'self' blob:; "
-            f"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net{tsec_csp_extra(TSEC_CSP_STYLE_SRC)}; "
-            "img-src 'self' data: http: https: blob: https://cdn.jsdelivr.net https://fastapi.tiangolo.com; "
-            f"font-src 'self' data: https://cdn.jsdelivr.net{tsec_csp_extra(TSEC_CSP_FONT_SRC)}; "
-            "connect-src 'self' ws: wss: blob: https://cdn.jsdelivr.net"
-            f"{cos_connect_clause}{tsec_csp_extra(TSEC_CSP_CONNECT_SRC)}; "
-            f"{media_src}"
-            f"frame-src 'self' blob: https://view.officeapps.live.com{tsec_csp_extra(TSEC_CSP_FRAME_SRC)}; "
-            f"frame-ancestors {frame_ancestors}; "
-            "base-uri 'self'; "
-            "form-action 'self';"
+        response.headers["Content-Security-Policy"] = debug_content_security_policy(
+            frame_ancestors, cos_connect_clause, media_src
         )
     else:
-        # Production: Strict CSP without external CDN access.
-        # SPA shell responses set request.state.csp_nonce, letting us drop
-        # 'unsafe-inline' from script-src for the app shell. Other responses
-        # (legacy templates with inline handlers) keep the permissive fallback.
-        csp_nonce = getattr(request.state, "csp_nonce", None)
-        nonce_part = f"'nonce-{csp_nonce}'" if csp_nonce else "'unsafe-inline'"
-        script_src = f"script-src 'self' {nonce_part}{tsec_csp_extra(TSEC_CSP_SCRIPT_SRC)}; "
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            f"{script_src}"
-            f"worker-src 'self'{tsec_csp_extra(TSEC_CSP_WORKER_SRC)}; "
-            f"style-src 'self' 'unsafe-inline'{tsec_csp_extra(TSEC_CSP_STYLE_SRC)}; "
-            "img-src 'self' data: http: https: blob:; "
-            f"font-src 'self' data:{tsec_csp_extra(TSEC_CSP_FONT_SRC)}; "
-            f"connect-src 'self' ws: wss: blob:{cos_connect_clause}{tsec_csp_extra(TSEC_CSP_CONNECT_SRC)}; "
-            f"{media_src}"
-            f"frame-src 'self' blob: https://view.officeapps.live.com{tsec_csp_extra(TSEC_CSP_FRAME_SRC)}; "
-            f"frame-ancestors {frame_ancestors}; "
-            "base-uri 'self'; "
-            "form-action 'self';"
+        response.headers["Content-Security-Policy"] = production_content_security_policy(
+            getattr(request.state, "csp_nonce", None),
+            frame_ancestors,
+            cos_connect_clause,
+            media_src,
         )
 
     # Referrer Policy (controls info sent in Referer header)

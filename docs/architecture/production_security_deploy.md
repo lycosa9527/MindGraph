@@ -107,6 +107,8 @@ Deploy **backend and frontend build together**. CSRF double-submit is enforced o
 ```bash
 # Response headers (no unsafe-eval; HSTS should appear)
 curl -sI https://mg.mindspringedu.com/ | grep -iE 'strict-transport|content-security'
+# WeChat QR widget (bind/login) — header must list official 网站应用 hosts
+curl -sI https://mg.mindspringedu.com/ | grep -i content-security-policy | grep -E 'res.wx.qq.com|open.weixin.qq.com' || echo "FAIL: WeChat CSP hosts missing"
 
 # External PWA bootstrap (must not 404)
 curl -sI https://mg.mindspringedu.com/pwa-install-early.js | head -5

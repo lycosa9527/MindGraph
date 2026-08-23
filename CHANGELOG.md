@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.30] - 2026-08-24
+
+> **WeChat bind/login QR can load under production CSP.**
+
+### Fixed
+
+- **WxLogin.js CSP** — Production `script-src` (nonce, no `unsafe-inline`) blocked `https://res.wx.qq.com/connect/zh_CN/htmledition/js/wxLogin.js`, so Account → 绑定微信 toasted 无法启动扫码登录. Allow official 网站应用 hosts: `res.wx.qq.com` (script), `open.weixin.qq.com` (QR iframe), `long.open.weixin.qq.com` (QR uuid poll on `connect-src`). DingTalk `g.alicdn.com` / `login.dingtalk.com` get the same treatment.
+
+### Tests
+
+- `tests/test_oauth_csp.py` — official WeChat host allowlist; excludes 企业微信 / 公众号 / 网页微信
+- `tests/test_security_production_hardening.py` — production header includes WeChat hosts
+
 ## [5.180.29] - 2026-08-23
 
 > **WeChat QR login is platform-wide: no school toggle, no invite to open the QR.**

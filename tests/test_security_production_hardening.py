@@ -134,12 +134,17 @@ async def test_production_csp_uses_nonce_when_request_state_has_nonce() -> None:
     csp = result.headers["Content-Security-Policy"]
     assert "script-src 'self' 'nonce-testnonce123'" in csp
     assert "script-src 'self' 'unsafe-inline'" not in csp
+    assert "https://res.wx.qq.com" in csp
+    assert "https://open.weixin.qq.com" in csp
+    assert "https://long.open.weixin.qq.com" in csp
+    assert "https://g.alicdn.com" in csp
+    assert "https://login.dingtalk.com" in csp
     assert "worker-src 'self'" in csp
     assert "worker-src 'self' blob:" not in csp
     # Styles intentionally keep 'unsafe-inline' for runtime-injected Vue/Element Plus styles.
     assert "style-src 'self' 'unsafe-inline'" in csp
     assert "myqcloud.com" not in csp
-    assert "connect-src 'self' ws: wss: blob:; " in csp
+    assert "connect-src 'self' ws: wss: blob: https://open.weixin.qq.com" in csp
 
 
 @pytest.mark.asyncio
@@ -171,7 +176,8 @@ async def test_production_csp_allows_exact_cos_hosts_when_showcase_cos_on() -> N
                         result = await middleware_module.add_security_headers(request, _call_next)
 
     csp = result.headers["Content-Security-Policy"]
-    assert f"connect-src 'self' ws: wss: blob: {cos_hosts};" in csp
+    assert f"connect-src 'self' ws: wss: blob: {cos_hosts} " in csp
+    assert "https://open.weixin.qq.com" in csp
     assert f"media-src 'self' blob: {cos_hosts};" in csp
 
 

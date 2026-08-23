@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+from pathlib import Path
 
 from services.auth.oauth import dingtalk_oauth_client as dd
 from services.auth.oauth.oauth_constants import (
@@ -19,6 +20,15 @@ def test_wechat_client_uses_official_open_platform_urls() -> None:
     """WeChat token/userinfo URLs match open.weixin.qq.com website-app docs."""
     assert WECHAT_ACCESS_TOKEN_URL == "https://api.weixin.qq.com/sns/oauth2/access_token"
     assert WECHAT_USERINFO_URL == "https://api.weixin.qq.com/sns/userinfo"
+
+
+def test_frontend_wxlogin_script_url_is_official() -> None:
+    """Embed loads the official https wxLogin.js, not a local copy or http."""
+    source = (
+        Path(__file__).resolve().parents[1] / "frontend" / "src" / "composables" / "auth" / "useOAuthQrLogin.ts"
+    ).read_text(encoding="utf-8")
+    assert "https://res.wx.qq.com/connect/zh_CN/htmledition/js/wxLogin.js" in source
+    assert "http://res.wx.qq.com" not in source
 
 
 def test_dingtalk_client_uses_oauth2_not_legacy_oapi() -> None:

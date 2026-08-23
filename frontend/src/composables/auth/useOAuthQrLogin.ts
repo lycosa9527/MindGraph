@@ -1,7 +1,7 @@
 /**
  * OAuth QR login: load SDKs, fetch providers, render WxLogin / DTFrameLogin.
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
@@ -158,6 +158,7 @@ export function useOAuthQrLogin(options: {
 
   async function startWechatWidget(state: string, appId: string, redirectUri: string): Promise<void> {
     await loadScript(WX_SCRIPT, 'mg-wx-login-js')
+    await nextTick()
     const el = document.getElementById(wechatContainerId)
     if (!el || !window.WxLogin) {
       notify.error(t('auth.qrLoginStartFailed'))
@@ -182,6 +183,7 @@ export function useOAuthQrLogin(options: {
     scope: string
   ): Promise<void> {
     await loadScript(DD_SCRIPT, 'mg-dd-login-js')
+    await nextTick()
     const el = document.getElementById(dingtalkContainerId)
     if (!el || !window.DTFrameLogin) {
       notify.error(t('auth.qrLoginStartFailed'))

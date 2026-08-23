@@ -95,6 +95,12 @@ Configure in external consoles (DingTalk requires **exact** URL match):
 - DingTalk `authCode` — exchange immediately on receipt; no retry queue.
 - When `dingtalk_corp_id` is set, validate `corpId` from the token response (`oauth_corp_mismatch` on mismatch).
 - Production guard warns when OAuth is enabled without HTTPS `EXTERNAL_BASE_URL`.
+- CSP must allow official widget hosts or the bind/login modal cannot load the QR
+  ([`oauth_csp.py`](../../services/auth/oauth/oauth_csp.py), HTTP header + Vite `index.html` meta):
+  - WeChat parent: `script-src` `res.wx.qq.com`, `frame-src` `open.weixin.qq.com`,
+    `connect-src` `open.weixin.qq.com` + `long.open.weixin.qq.com` (QR uuid poll)
+  - DingTalk: `script-src` `g.alicdn.com`, `frame-src` / `connect-src` `login.dingtalk.com`
+  - Not listed: 企业微信 `open.work.weixin.qq.com`, 公众号 `mp.weixin.qq.com`, 网页微信 `wx.qq.com`
 
 ## Operator checklist
 
@@ -117,6 +123,7 @@ Configure in external consoles (DingTalk requires **exact** URL match):
 
 | Official requirement | Doc source | Code location | Status |
 |---------------------|------------|---------------|--------|
+| WxLogin.js from `res.wx.qq.com` + iframe `open.weixin.qq.com` + poll `long.open.weixin.qq.com` | [Wechat_Login](https://developers.weixin.qq.com/doc/oplatform/Website_App/WeChat_Login/Wechat_Login.html) | CSP `oauth_csp.py` + Vite `index.html` | Match |
 | WxLogin + `snsapi_login` + `self_redirect: false` | [Wechat_Login](https://developers.weixin.qq.com/doc/oplatform/Website_App/WeChat_Login/Wechat_Login.html) | `useOAuthQrLogin.ts` (`wxLogin.js`, official default top-window jump) | Match |
 | Callback `?code=&state=` | WeChat doc | `router.py` `wechat_oauth/callback` | Match |
 | `GET sns/oauth2/access_token` | WeChat doc | `wechat_oauth_client.py` | Match |

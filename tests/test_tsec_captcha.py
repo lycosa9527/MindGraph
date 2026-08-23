@@ -246,5 +246,8 @@ def test_vite_index_csp_allows_tsec_stylesheets() -> None:
     index_html = Path(__file__).resolve().parents[1] / "frontend" / "index.html"
     content = index_html.read_text(encoding="utf-8")
     assert TSEC_CSP_HOSTS in content
+    assert "https://res.wx.qq.com" in content
+    assert "https://open.weixin.qq.com" in content
+    assert "https://long.open.weixin.qq.com" in content
     assert "script-src 'self' 'unsafe-inline'" in content
     assert "worker-src 'self' blob:" in content
