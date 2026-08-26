@@ -175,6 +175,6 @@ export interface AuthState {
 }
 
 export interface SessionStatus {
-  status: 'valid' | 'invalidated' | 'expired'
+  status: 'active' | 'invalidated' | 'unauthenticated'
   message?: string
 }

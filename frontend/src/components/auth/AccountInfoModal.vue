@@ -49,7 +49,8 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
-const { featureMindbot, featureOauthLogin, featureWordAddin } = useFeatureFlags()
+const { featureMindbot, featureWechatLogin, featureDingtalkLogin, featureWordAddin } =
+  useFeatureFlags()
 const { canUseApiToken, canUseChromeExtension, showAccountPlugins } = useSchoolTierFeatures()
 
 const isVisible = computed({
@@ -107,8 +108,9 @@ const showAccountBindingsSection = computed(() =>
   shouldShowAccountBindingsSection({
     schoolId: authStore.user?.schoolId,
     featureMindbot: featureMindbot.value,
-    featureOauthLogin: featureOauthLogin.value,
-    wechatLoginEnabled: oauthLinks.value?.wechat_enabled === true,
+    featureWechatLogin: featureWechatLogin.value,
+    featureDingtalkLogin: featureDingtalkLogin.value,
+    wechatAvailable: oauthLinks.value?.wechat_enabled === true,
     dingtalkLoginEnabled: oauthLinks.value?.dingtalk_enabled === true,
   })
 )
@@ -116,7 +118,7 @@ const showAccountBindingsSection = computed(() =>
 const showWechatOAuthRow = computed(() =>
   shouldShowWechatBindRow({
     showBindingsSection: showAccountBindingsSection.value,
-    featureOauthLogin: featureOauthLogin.value,
+    featureWechatLogin: featureWechatLogin.value,
     wechatAvailable: oauthLinks.value?.wechat_enabled === true,
     wechatLinked: oauthLinks.value?.wechat != null,
   })
@@ -124,13 +126,13 @@ const showWechatOAuthRow = computed(() =>
 
 const canBindWechat = computed(() =>
   canStartWechatBind({
-    featureOauthLogin: featureOauthLogin.value,
+    featureWechatLogin: featureWechatLogin.value,
     wechatAvailable: oauthLinks.value?.wechat_enabled === true,
   })
 )
 
 const showDingtalkOAuthRow = computed(
-  () => featureOauthLogin.value && oauthLinks.value?.dingtalk_enabled === true
+  () => featureDingtalkLogin.value && oauthLinks.value?.dingtalk_enabled === true
 )
 
 const wechatOAuthLinked = computed(() => oauthLinks.value?.wechat != null)
@@ -147,7 +149,10 @@ const dingtalkStaffMasked = computed(
 )
 
 async function fetchOauthLinks() {
-  if (!authStore.user?.schoolId || !featureOauthLogin.value) {
+  if (
+    !authStore.user?.schoolId ||
+    (!featureDingtalkLogin.value && !featureWechatLogin.value)
+  ) {
     oauthLinks.value = null
     return
   }
@@ -338,8 +343,14 @@ async function saveDisplayName() {
 }
 
 watch(
-  () => [props.visible, featureMindbot.value, featureOauthLogin.value] as const,
-  ([visible, mindbotEnabled, oauthEnabled]) => {
+  () =>
+    [
+      props.visible,
+      featureMindbot.value,
+      featureDingtalkLogin.value,
+      featureWechatLogin.value,
+    ] as const,
+  ([visible, mindbotEnabled, dingtalkEnabled, wechatEnabled]) => {
     if (visible) {
       const u = (authStore.user?.username || '').trim()
       const looksLikeName =
@@ -348,7 +359,7 @@ watch(
       if (mindbotEnabled && authStore.user?.schoolId) {
         void fetchDingtalkBindStatus()
       }
-      if (oauthEnabled && authStore.user?.schoolId) {
+      if ((dingtalkEnabled || wechatEnabled) && authStore.user?.schoolId) {
         void fetchOauthLinks()
       }
     }

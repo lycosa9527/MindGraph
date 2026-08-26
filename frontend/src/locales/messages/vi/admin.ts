@@ -242,6 +242,8 @@ export default {
   'admin.oauth.officialDocsHint': 'Phù hợp với các tài liệu chính thức: WeChat WxLogin + trao đổi mã; DingTalk OAuth 2.0 DTFrameLogin + trao đổi authCode ngay lập tức (không phải oapi.dingtalk.com kế thừa).',
   'admin.oauth.wechatToggle': 'Cho phép đăng nhập WeChat QR',
   'admin.oauth.wechatHint': 'Trước tiên, giáo viên phải liên kết WeChat trong phần Liên kết tài khoản. Nền tảng AppID/Bí mật được đặt trong máy chủ .env.',
+  'admin.oauth.wechatOn': 'On',
+  'admin.oauth.wechatOff': 'Off',
   'admin.oauth.dingtalkToggle': 'Cho phép đăng nhập DingTalk QR',
   'admin.oauth.dingtalkAppKey': '__ GIỮ0__ __ GIỮ1__ (__ GIỮ2__)',
   'admin.oauth.dingtalkAppSecret': '__ GIỮ0__ __ GIỮ1__',

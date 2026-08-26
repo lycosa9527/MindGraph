@@ -24,7 +24,7 @@ import { useLoginModal } from '@/composables/auth/useLoginModal'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { invitationCodeFromSearch } from '@/utils/invitationCode'
 import { initCatWalk } from '@/utils/mascot/catWalk'
-import { resolveOAuthInviteCode } from '@/utils/oauthLoginUi'
+import { resolveOAuthInviteCode, shouldShowWechatLoginLink } from '@/utils/oauthLoginUi'
 
 const props = defineProps<{
   visible: boolean
@@ -103,7 +103,7 @@ const {
 } = useLoginModal(props, emit)
 
 const route = useRoute()
-const { featureOauthLogin } = useFeatureFlags()
+const { featureWechatLogin } = useFeatureFlags()
 
 const showQrLoginModal = ref(false)
 
@@ -423,7 +423,7 @@ const passThroughFooterClicks = computed(() => Boolean(props.lightBackdrop && pr
                 </button>
 
                 <LoginAuthAltLinks
-                  :show-wechat-login="featureOauthLogin"
+                  :show-wechat-login="shouldShowWechatLoginLink(featureWechatLogin)"
                   @forgot="showForgotPassword"
                   @sms="showSmsLogin"
                   @wechat="openWechatQrLogin"

@@ -86,11 +86,23 @@ def _fail(message: str) -> None:
     raise RuntimeError(message)
 
 
+def _warn_removed_oauth_master_flag() -> None:
+    """Leftover FEATURE_OAUTH_LOGIN no longer enables WeChat or DingTalk QR."""
+    if os.getenv("FEATURE_OAUTH_LOGIN") is None:
+        return
+    logger.warning(
+        "[SECURITY] FEATURE_OAUTH_LOGIN is removed and ignored. "
+        "Set FEATURE_WECHAT_LOGIN and/or FEATURE_DINGTALK_LOGIN "
+        "(both default off), then delete FEATURE_OAUTH_LOGIN from .env"
+    )
+
+
 def enforce_production_security_guards() -> None:
     """Raise RuntimeError when production configuration is unsafe."""
     if not _require_non_debug():
         return
 
+    _warn_removed_oauth_master_flag()
     _guard_database_url()
     _guard_redis_url()
 
@@ -115,15 +127,25 @@ def enforce_production_security_guards() -> None:
         if not gewe_secret:
             _fail("GEWE_WEBHOOK_SECRET is required when FEATURE_GEWE=True")
 
-    if os.getenv("FEATURE_OAUTH_LOGIN", "True").strip().lower() in ("true", "1", "yes"):
+    wechat_login_on = os.getenv("FEATURE_WECHAT_LOGIN", "False").strip().lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+    dingtalk_login_on = os.getenv("FEATURE_DINGTALK_LOGIN", "False").strip().lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+    if wechat_login_on:
         wechat_id = os.getenv("WECHAT_OAUTH_APP_ID", "").strip()
         wechat_secret = os.getenv("WECHAT_OAUTH_APP_SECRET", "").strip()
         if bool(wechat_id) ^ bool(wechat_secret):
             _fail("WECHAT_OAUTH_APP_ID and WECHAT_OAUTH_APP_SECRET must both be set (or both left empty)")
         if not wechat_id:
-            logger.warning("FEATURE_OAUTH_LOGIN=True but WeChat AppID/Secret are unset; WeChat QR login stays off")
-        if not os.getenv("EXTERNAL_BASE_URL", "").strip():
-            logger.warning("FEATURE_OAUTH_LOGIN=True but EXTERNAL_BASE_URL is unset; OAuth redirect URIs may fail")
+            logger.warning("FEATURE_WECHAT_LOGIN=True but WeChat AppID/Secret are unset; WeChat QR login stays off")
+    if (wechat_login_on or dingtalk_login_on) and not os.getenv("EXTERNAL_BASE_URL", "").strip():
+        logger.warning("OAuth QR is on but EXTERNAL_BASE_URL is unset; OAuth redirect URIs may fail")
 
     if requested_captcha_provider() == PROVIDER_TSEC and not tsec_credentials_ready():
         _fail(

@@ -3,12 +3,18 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
+from fastapi.testclient import TestClient
 
-from routers.auth.session import get_session_status
+from routers.auth.session import (
+    get_session_status,
+    refresh_token as refresh_token_endpoint,
+    router as session_router,
+)
 from services.redis.session.redis_session_manager import (
     RefreshTokenManager,
     RedisSessionManager,
+    select_oldest_refresh_hashes_to_revoke,
     select_oldest_sessions_to_evict,
 )
 
@@ -37,6 +43,63 @@ def test_eviction_never_drops_new_entry_when_timestamp_is_oldest() -> None:
     evicted = select_oldest_sessions_to_evict(entries, new_entry, max_sessions=2)
     assert new_entry not in evicted
     assert evicted == ["500.0:olda:oldahash"]
+
+
+def test_eviction_fifo_successive_logins_kick_oldest_then_next() -> None:
+    """Limit 2: C kicks A, then D kicks B. The newest login always stays."""
+    device_a = "1000.0:deva:hasha"
+    device_b = "2000.0:devb:hashb"
+    device_c = "3000.0:devc:hashc"
+    device_d = "4000.0:devd:hashd"
+
+    after_c = [device_a, device_b, device_c]
+    kicked_by_c = select_oldest_sessions_to_evict(after_c, device_c, max_sessions=2)
+    assert kicked_by_c == [device_a]
+    remaining = [entry for entry in after_c if entry not in kicked_by_c]
+    assert remaining == [device_b, device_c]
+
+    after_d = [*remaining, device_d]
+    kicked_by_d = select_oldest_sessions_to_evict(after_d, device_d, max_sessions=2)
+    assert kicked_by_d == [device_b]
+    remaining = [entry for entry in after_d if entry not in kicked_by_d]
+    assert remaining == [device_c, device_d]
+    assert device_d not in kicked_by_d
+
+
+def test_eviction_drops_every_excess_oldest_when_already_over_limit() -> None:
+    """Lowering the cap (or leftover rows) still keeps the new login plus the newest old one."""
+    new_entry = "5000.0:neve:newhash"
+    entries = [
+        "1000.0:deva:hasha",
+        "2000.0:devb:hashb",
+        "3000.0:devc:hashc",
+        "4000.0:devd:hashd",
+        new_entry,
+    ]
+    evicted = select_oldest_sessions_to_evict(entries, new_entry, max_sessions=2)
+    assert evicted == [
+        "1000.0:deva:hasha",
+        "2000.0:devb:hashb",
+        "3000.0:devc:hashc",
+    ]
+    assert new_entry not in evicted
+
+
+def test_refresh_fifo_successive_logins_revoke_oldest_then_next() -> None:
+    """Refresh tokens follow the same FIFO as access sessions."""
+    tokens = [
+        ("old_a", "2026-01-01T00:00:00+00:00"),
+        ("old_b", "2026-01-02T00:00:00+00:00"),
+        ("new_c", "2026-01-03T00:00:00+00:00"),
+    ]
+    first = select_oldest_refresh_hashes_to_revoke(tokens, "new_c", max_sessions=2)
+    assert first == ["old_a"]
+    remaining = [(token_hash, created_at) for token_hash, created_at in tokens if token_hash not in first]
+    remaining.append(("new_d", "2026-01-04T00:00:00+00:00"))
+    second = select_oldest_refresh_hashes_to_revoke(remaining, "new_d", max_sessions=2)
+    assert second == ["old_b"]
+    kept = [token_hash for token_hash, _created in remaining if token_hash not in second]
+    assert kept == ["new_c", "new_d"]
 
 
 def test_eviction_keeps_new_entry_when_max_sessions_is_zero() -> None:
@@ -77,6 +140,40 @@ async def test_store_session_revokes_refresh_for_evicted_device() -> None:
     assert stored is True
     notify.assert_awaited_once_with(7, "oldtokenhash")
     refresh.revoke_refresh_tokens_for_device.assert_awaited_once_with(7, "olddevicehash")
+
+
+@pytest.mark.asyncio
+async def test_store_session_revokes_each_excess_oldest_device() -> None:
+    """When already over the cap, every excess oldest device is kicked, not just one."""
+    mgr = RedisSessionManager()
+    evicted = ["1000.0:olda:hasha", "2000.0:oldb:hashb"]
+    mock_redis = AsyncMock()
+    mock_redis.exists = AsyncMock(return_value=False)
+    mock_redis.eval = AsyncMock(return_value=evicted)
+    refresh = AsyncMock()
+    refresh.revoke_refresh_tokens_for_device = AsyncMock(return_value=1)
+
+    with patch.object(mgr, "_use_redis", return_value=True):
+        with patch(
+            "services.redis.session.redis_session_manager.get_async_redis",
+            return_value=mock_redis,
+        ):
+            with patch(
+                "services.redis.session.redis_session_manager.get_refresh_token_manager",
+                return_value=refresh,
+            ):
+                with patch.object(mgr, "notify_invalidation", new_callable=AsyncMock) as notify:
+                    stored = await mgr.store_session(4, "new-access-jwt", device_hash="newdevice")
+
+    assert stored is True
+    assert notify.await_args_list == [
+        ((4, "hasha"),),
+        ((4, "hashb"),),
+    ]
+    assert refresh.revoke_refresh_tokens_for_device.await_args_list == [
+        ((4, "olda"),),
+        ((4, "oldb"),),
+    ]
 
 
 @pytest.mark.asyncio
@@ -219,3 +316,66 @@ async def test_session_status_401_when_missing_notification_lets_refresh_run() -
                 await get_session_status(request, x_language=None)
 
     assert exc_info.value.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_session_status_no_token_is_not_a_kick() -> None:
+    """Missing cookies must not look like a device-limit logout."""
+    request = MagicMock()
+    request.cookies = {}
+    request.headers = {}
+
+    result = await get_session_status(request, x_language=None)
+
+    assert result == {"status": "unauthenticated"}
+
+
+@pytest.mark.asyncio
+async def test_refresh_rejects_kicked_access_without_reuse_check() -> None:
+    """A kicked device must not rotate back in or trigger reuse revocation."""
+    request = MagicMock()
+    request.cookies = {"access_token": "kicked-jwt", "refresh_token": "old-refresh"}
+    request.headers = {}
+    response = MagicMock()
+    refresh_mgr = AsyncMock()
+    refresh_mgr.find_user_id_from_token = AsyncMock(return_value=42)
+    refresh_mgr.validate_refresh_token = AsyncMock()
+    session_mgr = AsyncMock()
+    session_mgr.check_invalidation_notification = AsyncMock(
+        return_value={"timestamp": "2026-01-01T00:00:00+00:00", "ip_address": "10.0.0.1"}
+    )
+    limiter = AsyncMock()
+    limiter.check_and_record = AsyncMock(return_value=(True, 1, 0))
+
+    with patch("routers.auth.session.get_client_ip", return_value="10.0.0.1"):
+        with patch("routers.auth.session.get_rate_limiter", return_value=limiter):
+            with patch("routers.auth.session.hash_refresh_token", return_value="oldhash"):
+                with patch("routers.auth.session.get_refresh_token_manager", return_value=refresh_mgr):
+                    with patch("routers.auth.session.get_session_manager", return_value=session_mgr):
+                        with pytest.raises(HTTPException) as exc_info:
+                            await refresh_token_endpoint(request, response)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Session ended: maximum device limit exceeded"
+    refresh_mgr.validate_refresh_token.assert_not_called()
+
+
+def _session_http_client() -> TestClient:
+    """HTTP client for session routes only (no app lifespan / Celery)."""
+    app = FastAPI()
+    app.include_router(session_router, prefix="/api/auth")
+    return TestClient(app)
+
+
+def test_http_session_status_without_cookie_is_unauthenticated() -> None:
+    """Anonymous GET must not return the kick-off 'Session invalidated' string."""
+    response = _session_http_client().get("/api/auth/session-status")
+    assert response.status_code == 200
+    assert response.json() == {"status": "unauthenticated"}
+
+
+def test_http_refresh_without_cookie_is_401() -> None:
+    """Overnight access expiry still needs a refresh cookie to stay signed in."""
+    response = _session_http_client().post("/api/auth/refresh")
+    assert response.status_code == 401
+    assert response.json()["detail"] == "No refresh token provided"

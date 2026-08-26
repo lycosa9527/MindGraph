@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.domain.auth import User
 from routers.auth.helpers import issue_new_auth_cookies, track_user_activity
 from services.redis.session.redis_session_manager import get_refresh_token_manager, get_session_manager
-from utils.auth import compute_device_hash, create_access_token, create_refresh_token, get_client_ip
+from utils.auth import assign_device_id, create_access_token, create_refresh_token, get_client_ip
 
 OAUTH_LOGIN_SUCCESS_PATH = "/?oauth_login=1"
 
@@ -27,7 +27,7 @@ async def issue_oauth_browser_session(
     client_ip = get_client_ip(http_request)
     token = create_access_token(user)
     refresh_value, refresh_hash = create_refresh_token(user.id)
-    device_hash = compute_device_hash(http_request)
+    device_hash = assign_device_id(http_request)
     user_agent = http_request.headers.get("User-Agent", "")
 
     await session_manager.store_session(user.id, token, device_hash=device_hash)
@@ -39,7 +39,7 @@ async def issue_oauth_browser_session(
         user_agent=user_agent,
         device_hash=device_hash,
     )
-    await issue_new_auth_cookies(response, token, refresh_value, http_request)
+    await issue_new_auth_cookies(response, token, refresh_value, http_request, device_hash=device_hash)
     await track_user_activity(
         user,
         "login",

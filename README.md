@@ -210,7 +210,8 @@ Notable feature flags (see `env.example` for full list):
 | `FEATURE_MINDBOT` | `True` | DingTalk MindBot → Dify |
 | `FEATURE_MINDMATE` | `False` | MindMate AI chat |
 | `FEATURE_KNOWLEDGE_SPACE` | `False` | RAG / Document Summary (requires Qdrant + Celery) |
-| `FEATURE_OAUTH_LOGIN` | `True` | WeChat + DingTalk QR login (WeChat is platform-wide; DingTalk is per school) |
+| `FEATURE_WECHAT_LOGIN` | `False` | WeChat QR login (platform-wide; production only — one Open Platform domain) |
+| `FEATURE_DINGTALK_LOGIN` | `False` | DingTalk QR login (per school AppKey/Secret; enable on production) |
 | `FEATURE_WORD_ADDIN` | `False` | Account Word add-in download + deploy zip (hosted `/word-addin/` shell stays on) |
 | `FEATURE_THINKING_COINS` | `False` | Trial-tier org thinking coin wallet |
 | `FEATURE_MINDMAP_V2_CANVAS` | `True` | Mind map v2 side-toolbar canvas (default layout; classic still available) |

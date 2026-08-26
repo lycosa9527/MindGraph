@@ -2,15 +2,16 @@
 
 MindGraph supports **WeChat Open Platform 网站应用** and **DingTalk OAuth 2.0 扫码登录** for end-user sign-in. This is separate from Gewe (admin WeChat bot) and from MindBot pair-code binding.
 
-## Feature flag (on by default)
+## Feature flags
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `FEATURE_OAUTH_LOGIN` | **`True`** | Master switch; set `False` to gate `/api/auth/oauth/*` and hide QR login / WeChat bind |
-| `WECHAT_OAUTH_APP_ID` | *(empty)* | Global WeChat 网站应用 AppID — required for WeChat QR and bind |
+| `FEATURE_WECHAT_LOGIN` | **`False`** | WeChat QR login/bind. WeChat Open Platform allows **one** callback domain — enable only on production |
+| `FEATURE_DINGTALK_LOGIN` | **`False`** | DingTalk QR login/bind (per school AppKey/Secret). Enable on production. |
+| `WECHAT_OAUTH_APP_ID` | *(empty)* | Global WeChat 网站应用 AppID — required when WeChat is on |
 | `WECHAT_OAUTH_APP_SECRET` | *(empty)* | Global WeChat AppSecret |
 
-WeChat login is **platform-wide**: `FEATURE_OAUTH_LOGIN` plus `WECHAT_OAUTH_APP_ID` / `WECHAT_OAUTH_APP_SECRET`. It is not a per-school setting. DingTalk stays off until the school adds AppKey/Secret. The public flags API exposes `feature_oauth_login`. Production warns if WeChat secrets are unset (WeChat stays off) and fails if only one of AppID/Secret is set.
+WeChat login is **platform-wide**: `FEATURE_WECHAT_LOGIN` plus AppID/Secret. It is not a per-school setting. DingTalk stays off until the school adds AppKey/Secret under `FEATURE_DINGTALK_LOGIN`. The public flags API exposes `feature_wechat_login` and `feature_dingtalk_login`. Shared `/providers` and `/links` stay up if either flag is on. Production validates WeChat secrets only when `FEATURE_WECHAT_LOGIN=True` (warns if unset; fails if only one of AppID/Secret is set). Leftover `FEATURE_OAUTH_LOGIN` is ignored (startup warning) — delete it from `.env`.
 
 ## Official API references
 
@@ -47,7 +48,7 @@ flowchart LR
 ## Login behavior
 
 - **Pre-linked users only** — scan succeeds at WeChat but MindGraph returns `oauth_not_linked` and **does not create an account**. Teachers sign in with password first, then **账户 → 账户绑定 → 绑定微信**. Login stays blocked until that row exists (or an admin pre-links).
-- **Login UI** — Login modal: 忘记密码 \| 验证码登录 / **微信登录** → WeChat QR (hidden when `feature_oauth_login` is false). The panel asks the user to scan; `oauth_not_linked` is a toast after a scan that has no bind row.
+- **Login UI** — Login modal: 忘记密码 \| 验证码登录 / **微信登录** → WeChat QR (hidden when `feature_wechat_login` is false). The panel asks the user to scan; `oauth_not_linked` is a toast after a scan that has no bind row.
 - **Org context** — WeChat login does not need an invitation code; the bound account is resolved after the scan. DingTalk QR login still needs `?invite=` or the register-form invitation code.
 - **Callback cookies** — WeChat GET callback sets JWT cookies on the returned `RedirectResponse` (same pattern as Word embed auth). `WxLogin` uses `self_redirect: false` so the top window follows that redirect.
 
@@ -72,7 +73,7 @@ flowchart LR
 
 | Route | Auth | Purpose |
 |-------|------|---------|
-| `GET /providers?invite=` | Public | Enabled providers + public widget params |
+| `GET /providers` | Public | Enabled providers; `?invite=` required for DingTalk |
 | `GET /wechat/start`, `/wechat/callback` | Public / redirect | WeChat login |
 | `GET /dingtalk/start`, `POST /dingtalk/complete` | Public | DingTalk login (prefer JS `authCode` POST) |
 | `GET /links`, `DELETE /links/{provider}` | Session | Self-bind status / unbind (`wechat_enabled` is platform-wide) |
@@ -109,16 +110,17 @@ Configure in external consoles (DingTalk requires **exact** URL match):
 
 1. Register **网站应用** at [open.weixin.qq.com](https://open.weixin.qq.com) — see [Wechat_Login](https://developers.weixin.qq.com/doc/oplatform/Website_App/WeChat_Login/Wechat_Login.html).
 2. Set **授权回调域** to your production domain.
-3. Set `WECHAT_OAUTH_APP_ID` / `WECHAT_OAUTH_APP_SECRET` in `.env` (`FEATURE_OAUTH_LOGIN` defaults on).
-4. Restart the app. WeChat bind/login is then available for every school. Set `FEATURE_OAUTH_LOGIN=False` to turn the whole OAuth surface off.
+3. Set `FEATURE_WECHAT_LOGIN=True` and `WECHAT_OAUTH_APP_ID` / `WECHAT_OAUTH_APP_SECRET` on the **production** server only.
+4. Restart the app. WeChat bind/login is then available for every school. Leave both flags `False` on local/dev. Set `FEATURE_DINGTALK_LOGIN=True` on production when school DingTalk QR is needed.
 
 ### DingTalk (per school, with school IT)
 
-1. Create **企业内部应用** with **登录第三方网站 / 扫码登录** — see [DingTalk OAuth doc](https://developers.dingtalk.com/document/app/use-dingtalk-account-to-log-on-to-third-party-websites-1).
-2. In **钉钉登录与分享**, set redirect URL to the DingTalk callback above (**exact match**).
-3. Apply **个人权限**: `permission-open_app_api_base`, `Contact.User.Read` (+ 个人手机号信息权限 if storing `mobile`).
-4. Provide AppKey, AppSecret, optional CorpId to MindGraph admin.
-5. Enter credentials in **组织管理 → 其他设置 → 扫码登录** and enable DingTalk login.
+1. Set `FEATURE_DINGTALK_LOGIN=True` on the production server `.env` (defaults off).
+2. Create **企业内部应用** with **登录第三方网站 / 扫码登录** — see [DingTalk OAuth doc](https://developers.dingtalk.com/document/app/use-dingtalk-account-to-log-on-to-third-party-websites-1).
+3. In **钉钉登录与分享**, set redirect URL to the DingTalk callback above (**exact match**).
+4. Apply **个人权限**: `permission-open_app_api_base`, `Contact.User.Read` (+ 个人手机号信息权限 if storing `mobile`).
+5. Provide AppKey, AppSecret, optional CorpId to MindGraph admin.
+6. Enter credentials in **组织管理 → 其他设置 → 扫码登录** and enable DingTalk login.
 
 ## Code ↔ official doc audit (verified in repo)
 

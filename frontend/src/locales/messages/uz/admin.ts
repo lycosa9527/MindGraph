@@ -242,6 +242,8 @@ export default {
   'admin.oauth.officialDocsHint': 'Resmi hujjatlere uygundur: WeChat WxLogin + kod mubatilesi; DingTalk OAuth 2.0 DTFrameLogin + derhal authCode mubatilesi (kohne oapi.dingtalk.com emas).',
   'admin.oauth.wechatToggle': 'WeChat QR kirishini faol et',
   'admin.oauth.wechatHint': 'O’qituvchiler avval Hisob yopishma altinda WeChat-i yopishmalidir. Platforma AppID/Tanlashret server .env-de teyin olunur.',
+  'admin.oauth.wechatOn': 'On',
+  'admin.oauth.wechatOff': 'Off',
   'admin.oauth.dingtalkToggle': 'DingTalk QR kirishini faol et',
   'admin.oauth.dingtalkAppKey': 'DingTalk AppKey (client_id)',
   'admin.oauth.dingtalkAppSecret': 'DingTalk AppTanlashret',

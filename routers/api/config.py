@@ -96,7 +96,8 @@ class FeatureFlagsResponse(BaseModel):
     feature_mindmate_collab: bool
     feature_markets: bool
     feature_mindbot: bool
-    feature_oauth_login: bool
+    feature_wechat_login: bool = False
+    feature_dingtalk_login: bool = False
     feature_word_addin: bool
     feature_mindmate_export: bool
     feature_thinking_coins: bool
@@ -156,7 +157,8 @@ async def get_feature_flags(
         feature_mindmate_collab=mindmate_collab_flag,
         feature_markets=config.FEATURE_MARKETS,
         feature_mindbot=config.FEATURE_MINDBOT,
-        feature_oauth_login=config.FEATURE_OAUTH_LOGIN,
+        feature_wechat_login=config.FEATURE_WECHAT_LOGIN,
+        feature_dingtalk_login=config.FEATURE_DINGTALK_LOGIN,
         feature_word_addin=config.FEATURE_WORD_ADDIN,
         feature_mindmate_export=config.FEATURE_MINDMATE_EXPORT,
         feature_thinking_coins=config.FEATURE_THINKING_COINS,

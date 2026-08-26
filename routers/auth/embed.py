@@ -37,7 +37,7 @@ from services.utils.error_types import REDIS_ERRORS
 from utils.auth import create_access_token, create_refresh_token
 from utils.auth.mg_client import bind_mg_client_from_header
 from utils.auth.request_helpers import get_client_ip
-from utils.auth.tokens import compute_device_hash
+from utils.auth.tokens import assign_device_id
 from utils.auth.user_tokens import validate_user_token
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 
@@ -156,7 +156,7 @@ async def complete_embed_session(
 
     access_token = create_access_token(user)
     refresh_token_value, refresh_token_hash = create_refresh_token(user.id)
-    device_hash = compute_device_hash(request)
+    device_hash = assign_device_id(request)
     client_ip = get_client_ip(request)
     user_agent = request.headers.get("User-Agent", "")
 
@@ -178,7 +178,7 @@ async def complete_embed_session(
         url=append_embed_query(sanitize_embed_next_path(next_path), EMBED_CLIENT_WORD),
         status_code=status.HTTP_302_FOUND,
     )
-    await issue_new_auth_cookies(redirect, access_token, refresh_token_value, request)
+    await issue_new_auth_cookies(redirect, access_token, refresh_token_value, request, device_hash=device_hash)
     # Avoid leaking one-time handoff codes via Referer to the SPA or third parties.
     redirect.headers["Referrer-Policy"] = "no-referrer"
     await record_vpn_login_geo(user.id, request)

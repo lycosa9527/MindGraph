@@ -183,4 +183,26 @@ describe('auth bootstrap dedupe', () => {
 
     authStore.stopSessionMonitoring()
   })
+
+  it('does not poll session-status immediately after login success', async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ status: 'active' }))
+    vi.stubGlobal('fetch', fetchMock)
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      value: 'visible',
+    })
+
+    const authStore = useAuthStore()
+    authStore.setUser(meUser)
+    authStore.emitLoginSuccess()
+    authStore.startSessionMonitoring()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(
+      fetchMock.mock.calls.some((call) => String(call[0]).includes('/api/auth/session-status'))
+    ).toBe(false)
+
+    authStore.stopSessionMonitoring()
+  })
 })

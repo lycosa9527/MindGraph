@@ -118,6 +118,56 @@ async def test_feature_flag_gate_blocks_word_addin_download_when_disabled():
 
 
 @pytest.mark.asyncio
+async def test_feature_flag_gate_blocks_wechat_when_disabled():
+    """WeChat QR routes are gated by FEATURE_WECHAT_LOGIN."""
+    call_next = AsyncMock(return_value=MagicMock(status_code=200))
+    with patch(
+        "services.infrastructure.http.feature_gate.config",
+        SimpleNamespace(FEATURE_WECHAT_LOGIN=False, FEATURE_DINGTALK_LOGIN=True),
+    ):
+        response = await feature_flag_gate(
+            _request("/api/auth/oauth/wechat/start"),
+            call_next,
+        )
+    assert response.status_code == 404
+    call_next.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_feature_flag_gate_allows_dingtalk_when_oauth_on():
+    """DingTalk stays available when OAuth is on and WeChat is off."""
+    downstream = MagicMock(status_code=200)
+    call_next = AsyncMock(return_value=downstream)
+    with patch(
+        "services.infrastructure.http.feature_gate.config",
+        SimpleNamespace(FEATURE_WECHAT_LOGIN=False, FEATURE_DINGTALK_LOGIN=True),
+    ):
+        response = await feature_flag_gate(
+            _request("/api/auth/oauth/dingtalk/start"),
+            call_next,
+        )
+    assert response is downstream
+    call_next.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_feature_flag_gate_allows_oauth_shared_when_wechat_only():
+    """/providers stays up when only WeChat is on."""
+    downstream = MagicMock(status_code=200)
+    call_next = AsyncMock(return_value=downstream)
+    with patch(
+        "services.infrastructure.http.feature_gate.config",
+        SimpleNamespace(FEATURE_WECHAT_LOGIN=True, FEATURE_DINGTALK_LOGIN=False),
+    ):
+        response = await feature_flag_gate(
+            _request("/api/auth/oauth/providers"),
+            call_next,
+        )
+    assert response is downstream
+    call_next.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_feature_flag_gate_allows_word_addin_download_when_enabled():
     """Word add-in zip passes through when FEATURE_WORD_ADDIN is on."""
     downstream = MagicMock(status_code=200)

@@ -37,6 +37,7 @@ from services.redis.redis_async_ops import AsyncRedisOps
 from services.redis.redis_client import is_redis_available
 from services.utils.error_types import REDIS_ERRORS
 from services.utils.typing_helpers import redis_decode_required
+from utils.auth.tokens import device_binding_matches
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +206,33 @@ def select_oldest_sessions_to_evict(
         if item != new_entry:
             evicted.append(item)
     return evicted
+
+
+def select_oldest_refresh_hashes_to_revoke(
+    tokens_with_time: list[tuple[str, str]],
+    protect_token_hash: str,
+    max_sessions: int,
+) -> list[str]:
+    """
+    Choose oldest refresh hashes to drop so the set fits ``max_sessions``.
+
+    ``protect_token_hash`` is never revoked — the login that just succeeded
+    keeps its refresh token. Successive overflows are FIFO: first extra login
+    drops the oldest, the next extra login drops the next oldest.
+    """
+    keep_limit = max_sessions if max_sessions >= 1 else 1
+    excess = len(tokens_with_time) - keep_limit
+    if excess <= 0:
+        return []
+
+    protected = protect_token_hash or ""
+    revocable = [
+        (token_hash, created_at)
+        for token_hash, created_at in tokens_with_time
+        if not protected or token_hash != protected
+    ]
+    revocable.sort(key=lambda item: item[1])
+    return [token_hash for token_hash, _created_at in revocable[:excess]]
 
 
 def _as_session_entry_list(raw: object) -> list[bytes | str]:
@@ -1051,6 +1079,7 @@ class RefreshTokenManager:
         token_hash: str,
         current_device_hash: Optional[str] = None,
         strict_device_check: bool = True,
+        current_user_agent: str = "",
     ) -> tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
         """
         Validate a refresh token and check device binding.
@@ -1058,8 +1087,9 @@ class RefreshTokenManager:
         Args:
             user_id: User ID
             token_hash: SHA256 hash of the refresh token
-            current_device_hash: Current device fingerprint (for device binding check)
-            strict_device_check: If True, reject on device mismatch. If False, log warning only.
+        current_device_hash: Current device fingerprint (for device binding check)
+        strict_device_check: If True, reject on device mismatch. If False, log warning only.
+        current_user_agent: Request User-Agent; used when the hash drifted but the browser did not.
 
         Returns:
             Tuple of (is_valid, token_data, error_message)
@@ -1116,7 +1146,13 @@ class RefreshTokenManager:
 
             # Check device binding
             if current_device_hash and strict_device_check:
-                if stored_device_hash and stored_device_hash != current_device_hash:
+                stored_user_agent = str(token_data.get("user_agent") or "")
+                if not device_binding_matches(
+                    stored_device_hash,
+                    current_device_hash,
+                    stored_user_agent,
+                    current_user_agent,
+                ):
                     logger.info(
                         "[RefreshToken] DEVICE MISMATCH: user=%s, stored_device=%s, current_device=%s",
                         user_id,
@@ -1124,6 +1160,11 @@ class RefreshTokenManager:
                         current_device_hash,
                     )
                     return False, token_data, "Device mismatch"
+                if stored_device_hash and stored_device_hash != current_device_hash:
+                    logger.info(
+                        "[RefreshToken] Device hash drifted, UA matched: user=%s",
+                        user_id,
+                    )
                 if not stored_device_hash:
                     logger.info(
                         "[RefreshToken] No stored device hash, skipping device check: user=%s",
@@ -1150,7 +1191,7 @@ class RefreshTokenManager:
         Args:
             user_id: User ID
             token_hash: SHA256 hash of the refresh token
-            reason: Reason for revocation (for audit logging)
+            reason: Audit reason. Only ``rotation`` writes a reuse marker.
 
         Returns:
             True if revoked successfully, False otherwise
@@ -1168,7 +1209,10 @@ class RefreshTokenManager:
             lookup_key = self._get_lookup_key(token_hash)
             reuse_key = self._get_reuse_marker_key(token_hash)
 
-            if reason != "refresh_token_reuse":
+            # Reuse markers are only for rotation. Kick / logout / same-device
+            # relogin must not look like theft: presenting that revoked token
+            # used to revoke every remaining session, including the new login.
+            if reason == "rotation":
                 await AsyncRedisOps.set_with_ttl(reuse_key, str(user_id), _keys.TTL_REFRESH_TOKEN)
 
             # Delete the token
@@ -1322,19 +1366,17 @@ class RefreshTokenManager:
                     # Token expired but still in set, mark for cleanup
                     await redis.srem(user_tokens_key, token_hash)
 
-            excess = len(tokens_with_time) - MAX_CONCURRENT_SESSIONS
-            if excess <= 0:
-                return 0
-
-            revocable = [
-                (token_hash, created_at)
-                for token_hash, created_at in tokens_with_time
-                if not protected or redis_decode_required(token_hash) != protected
+            decoded_tokens = [
+                (redis_decode_required(token_hash), created_at) for token_hash, created_at in tokens_with_time
             ]
-            revocable.sort(key=lambda item: item[1])
+            to_revoke = select_oldest_refresh_hashes_to_revoke(
+                decoded_tokens,
+                protected,
+                MAX_CONCURRENT_SESSIONS,
+            )
             revoked = 0
 
-            for token_hash, _created_at in revocable[:excess]:
+            for token_hash in to_revoke:
                 if await self.revoke_refresh_token(user_id, token_hash, reason="max_devices_exceeded"):
                     revoked += 1
 

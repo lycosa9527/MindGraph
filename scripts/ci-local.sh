@@ -174,6 +174,8 @@ run_backend() {
     tests/test_gewe_webhook_auth.py \
     tests/test_refresh_token_reuse.py \
     tests/test_device_limit_kickoff.py \
+    tests/test_device_hash_refresh.py \
+    tests/test_session_live_redis.py \
     tests/test_security_production_hardening.py \
     tests/test_csrf_protection.py \
     tests/test_privacy_policy_static.py \

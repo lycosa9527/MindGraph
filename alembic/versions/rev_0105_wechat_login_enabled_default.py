@@ -1,6 +1,6 @@
 """Drop unused per-school WeChat login toggle.
 
-WeChat QR login is platform-wide (FEATURE_OAUTH_LOGIN + AppID/Secret).
+WeChat QR login is platform-wide (FEATURE_WECHAT_LOGIN + AppID/Secret).
 DingTalk stays on organization_oauth_configs.
 
 Revision ID: 0105

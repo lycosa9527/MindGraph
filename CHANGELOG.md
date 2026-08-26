@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.32] - 2026-08-27
+
+> **WeChat and DingTalk QR login are separate `.env` flags, and the same browser stays signed in overnight.**
+
+### Changed
+
+- **`FEATURE_WECHAT_LOGIN`** — Defaults **`False`**. WeChat Open Platform allows one callback domain, so local/dev stay off. Production sets `FEATURE_WECHAT_LOGIN=True` plus AppID/Secret.
+- **`FEATURE_DINGTALK_LOGIN`** — Defaults **`False`**. Per-school AppKey/Secret still required. Replaces `FEATURE_OAUTH_LOGIN` (removed). Enable on production. Leftover `FEATURE_OAUTH_LOGIN` in `.env` is ignored and logs a production startup warning.
+- **Login footer** — 微信登录 follows `feature_wechat_login`. The QR widget asks `/providers` instead of assuming WeChat is on.
+- **Admin 其他设置** — WeChat row is status (on/off + AppID), not a school toggle. DingTalk editor follows `FEATURE_DINGTALK_LOGIN`.
+- **Device binding** — Login writes an httpOnly `mg_device` cookie (same path and TTL as refresh). Refresh prefers that id over request-header fingerprints. `REFRESH_TOKEN_EXPIRY_DAYS` is documented in `env.example` (default 7).
+
+### Fixed
+
+- **Overnight re-login** — Chrome changing `Accept-Encoding` or `Sec-CH-UA-*` between sessions looked like a new device, so the 7-day refresh token failed. Header fingerprints are now a fallback only; User-Agent still matches while the cookie is rolling out.
+- **Anonymous session-status** — `GET /session-status` without a cookie returned `invalidated`, which the SPA treated as a five-device kick. It now returns `unauthenticated`. After login, the kick poll waits so a stale 401 cannot look like a logout.
+- **Kicked refresh** — A device already kicked for the session cap could rotate back in via `/refresh`. Refresh checks the invalidation notice first and clears cookies. When already over `MAX_CONCURRENT_SESSIONS`, every excess oldest device is kicked, not just one.
+
+### Tests
+
+- `tests/test_oauth_login.py` — independent WeChat / DingTalk flags
+- `tests/test_feature_flag_hot_reload.py` — `/wechat` vs `/dingtalk` vs `/providers` gates
+- `tests/test_security_production_hardening.py` — WeChat secret pair checked only when WeChat is on; leftover `FEATURE_OAUTH_LOGIN` warns
+- `frontend/tests/oauthQrLogin.spec.ts` — WeChat login/bind helpers
+- `tests/test_device_hash_refresh.py` — cookie binding survives header drift
+- `tests/test_device_limit_kickoff.py` — kicked refresh stays out; no-cookie status is not a kick
+- `tests/test_session_live_redis.py` — FIFO kick-off and refresh TTL on live Redis
+
 ## [5.180.31] - 2026-08-24
 
 > **Bound WeChat scan login works again, and the login/bind QR fits the modal.**

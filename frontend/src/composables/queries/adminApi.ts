@@ -1149,7 +1149,8 @@ export interface AdminOrganizationOauthConfig {
   dingtalk_login_app_secret_set: boolean
   dingtalk_corp_id: string
   wechat_app_id: string
-  feature_oauth_login: boolean
+  feature_wechat_login: boolean
+  feature_dingtalk_login: boolean
   wechat_callback_url: string
   dingtalk_callback_url: string
   site_base_url: string

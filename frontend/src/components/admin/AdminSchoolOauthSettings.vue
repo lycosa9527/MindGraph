@@ -27,7 +27,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const { featureOauthLogin } = useFeatureFlags()
+const { featureDingtalkLogin, featureWechatLogin } = useFeatureFlags()
 
 const loading = ref(false)
 const saving = ref(false)
@@ -43,7 +43,9 @@ const replaceDingtalkSecret = ref(false)
 const labelClass =
   'mindbot-section-label mindbot-swiss-section-label shrink-0 text-[11px] font-semibold tracking-[0.14em] sm:w-[178px]'
 
-const showSection = computed(() => featureOauthLogin.value && props.orgId > 0)
+const showSection = computed(
+  () => (featureDingtalkLogin.value || featureWechatLogin.value) && props.orgId > 0
+)
 
 const fieldsReadOnly = computed(() => props.readOnly === true || saving.value)
 
@@ -70,7 +72,13 @@ async function loadConfig(): Promise<void> {
 }
 
 async function saveConfig(): Promise<boolean> {
-  if (!showSection.value || fieldsReadOnly.value || loading.value || !config.value) {
+  if (
+    !featureDingtalkLogin.value ||
+    !showSection.value ||
+    fieldsReadOnly.value ||
+    loading.value ||
+    !config.value
+  ) {
     return true
   }
   saving.value = true
@@ -112,9 +120,10 @@ function clearSecret(): void {
 }
 
 watch(
-  () => [props.orgId, props.active, featureOauthLogin.value] as const,
-  ([orgId, active, enabled]) => {
-    if (orgId && active !== false && enabled) {
+  () =>
+    [props.orgId, props.active, featureDingtalkLogin.value, featureWechatLogin.value] as const,
+  ([orgId, active, oauthOn, wechatOn]) => {
+    if (orgId && active !== false && (oauthOn || wechatOn)) {
       void loadConfig()
     }
   },
@@ -156,13 +165,19 @@ defineExpose({ saveConfig })
           <p class="mindbot-swiss-hint text-xs m-0">
             {{ t('admin.oauth.wechatHint') }}
           </p>
+          <p class="mindbot-swiss-hint text-xs m-0">
+            {{ config.wechat_enabled ? t('admin.oauth.wechatOn') : t('admin.oauth.wechatOff') }}
+          </p>
           <p class="mindbot-swiss-hint text-xs m-0 break-all">
             AppID: {{ config.wechat_app_id || '—' }}
           </p>
         </div>
       </div>
 
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+      <div
+        v-if="featureDingtalkLogin"
+        class="flex flex-col gap-3 sm:flex-row sm:items-start"
+      >
         <span :class="labelClass">{{ t('admin.oauth.dingtalkToggle') }}</span>
         <div class="flex-1 min-w-0 max-w-2xl space-y-3">
           <el-switch

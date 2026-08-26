@@ -242,6 +242,8 @@ export default {
   'admin.oauth.officialDocsHint': 'Cocok dengan dokumen resmi: WeChat WxLogin + pertukaran kode; DingTalk OAuth 2.0 DTFrameLogin + pertukaran authCode langsung (bukan warisan oapi.dingtalk.com).',
   'admin.oauth.wechatToggle': 'Aktifkan login WeChat QR',
   'admin.oauth.wechatHint': 'Guru harus menautkan WeChat pada Penautan akaun terlebih dahulu. Platform AppID/Rahasia diatur di server .env.',
+  'admin.oauth.wechatOn': 'On',
+  'admin.oauth.wechatOff': 'Off',
   'admin.oauth.dingtalkToggle': 'Aktifkan login DingTalk QR',
   'admin.oauth.dingtalkAppKey': '__TETAP0__ __TETAP1__ (__TETAP2__)',
   'admin.oauth.dingtalkAppSecret': '__TETAP0__ __TETAP1__',

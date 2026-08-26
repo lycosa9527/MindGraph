@@ -11,8 +11,11 @@ Use this when rolling hardened MindGraph to **mg.mindspringedu.com** (or any TLS
 | `BAYI_PASSKEY`, `BAYI_DECRYPTION_KEY` | `AUTH_MODE=bayi` |
 | `DEVICE_REGISTRATION_SECRET` | `FEATURE_SMART_RESPONSE=True` |
 | `GEWE_WEBHOOK_SECRET` | `FEATURE_GEWE=True` |
-| `WECHAT_OAUTH_APP_ID` + `WECHAT_OAUTH_APP_SECRET` | Both set to enable WeChat QR login; both empty leaves WeChat off; one-sided pair aborts startup |
-| `EXTERNAL_BASE_URL` | HTTPS public origin for OAuth callbacks (warns if unset while `FEATURE_OAUTH_LOGIN=True`) |
+| `FEATURE_WECHAT_LOGIN` | `True` on production only (WeChat Open Platform: one callback domain). Defaults off. |
+| `FEATURE_DINGTALK_LOGIN` | `True` on production when school DingTalk QR is needed. Defaults off. |
+| `FEATURE_OAUTH_LOGIN` | **Removed.** Delete from `.env`. A leftover value is ignored (startup warning); it does not enable QR login. |
+| `WECHAT_OAUTH_APP_ID` + `WECHAT_OAUTH_APP_SECRET` | Required when `FEATURE_WECHAT_LOGIN=True`; both empty leaves WeChat off; one-sided pair aborts startup |
+| `EXTERNAL_BASE_URL` | HTTPS public origin for OAuth callbacks (warns if unset while WeChat or DingTalk OAuth is on) |
 | `ENTERPRISE_MODE_PUBLIC_ACK=I_UNDERSTAND_PUBLIC_EXPOSURE_RISK` | `AUTH_MODE=enterprise` |
 
 Generate strong random passkeys; do **not** copy `CHANGE-ME-before-production` from `env.example`.

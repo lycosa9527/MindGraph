@@ -61,7 +61,7 @@ from utils.auth.user_daily_token_quota import current_user_daily_token_payload
 from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
 from .dependencies import get_language_dependency
-from .helpers import auth_session_json_metadata, set_auth_cookies
+from .helpers import auth_session_json_metadata, clear_auth_cookies, set_auth_cookies
 from .org_profile import organization_session_payload
 from .user_session_prefs import user_preference_fields
 
@@ -166,6 +166,21 @@ async def refresh_token(request: Request, response: Response):
             detail="Cannot determine user identity. Please log in again.",
         )
 
+    if access_token:
+        kicked_hash = hashlib.sha256(access_token.encode("utf-8")).hexdigest()
+        kick_notice = await get_session_manager().check_invalidation_notification(user_id, kicked_hash)
+        if kick_notice:
+            logger.info(
+                "[TokenAudit] Refresh FAILED - session kicked (max devices): user=%s, ip=%s",
+                user_id,
+                client_ip,
+            )
+            clear_auth_cookies(response, request)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session ended: maximum device limit exceeded",
+            )
+
     # DEBUG: Log device fingerprint headers used for hash
     user_agent = request.headers.get("User-Agent", "")
     accept_language = request.headers.get("Accept-Language", "")
@@ -196,7 +211,8 @@ async def refresh_token(request: Request, response: Response):
         user_id=user_id,
         token_hash=old_token_hash,
         current_device_hash=current_device_hash,
-        strict_device_check=True,  # Reject if device mismatch
+        strict_device_check=True,
+        current_user_agent=user_agent,
     )
 
     if not is_valid:
@@ -210,14 +226,7 @@ async def refresh_token(request: Request, response: Response):
             current_device_hash,
         )
 
-        # Clear invalid cookies
-        response.delete_cookie("access_token", path="/", samesite="lax", secure=is_https(request))
-        response.delete_cookie(
-            "refresh_token",
-            path="/api/auth",
-            samesite="strict",
-            secure=is_https(request),
-        )
+        clear_auth_cookies(response, request)
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -273,7 +282,13 @@ async def refresh_token(request: Request, response: Response):
     await _record_vpn_refresh_last_ip(user_id, request)
 
     # Set new cookies
-    set_auth_cookies(response, new_access_token, new_refresh_token, request)
+    set_auth_cookies(
+        response,
+        new_access_token,
+        new_refresh_token,
+        request,
+        device_hash=current_device_hash,
+    )
 
     logger.info("[TokenAudit] Token refreshed: user=%s, ip=%s", user_id, client_ip)
 
@@ -400,6 +415,7 @@ async def get_session_status(
     Returns:
         - {"status": "active"} - Session is valid
         - {"status": "invalidated", "message": "...", "timestamp": "..."} - Session was invalidated
+        - {"status": "unauthenticated"} - No access token cookie (not a device-limit kick)
     """
     accept_language = request.headers.get("Accept-Language", "")
     get_request_language(x_language, accept_language)
@@ -414,12 +430,8 @@ async def get_session_status(
             token = auth_header[7:]
 
     if not token:
-        logger.info("[TokenAudit] Session status: INVALIDATED (no token): ip=%s", client_ip)
-        return {
-            "status": "invalidated",
-            "message": "Session invalidated",
-            "timestamp": datetime.now(tz=UTC).isoformat(),
-        }
+        logger.info("[TokenAudit] Session status: unauthenticated (no token): ip=%s", client_ip)
+        return {"status": "unauthenticated"}
 
     payload = decode_access_token(token)
     user_id_raw = payload.get("sub")
@@ -547,16 +559,7 @@ async def logout(
             revoke_error,
         )
 
-    # Clear access token cookie
-    response.delete_cookie(key="access_token", path="/", samesite="lax", secure=is_https(request))
-
-    # Clear refresh token cookie
-    response.delete_cookie(
-        key="refresh_token",
-        path="/api/auth",
-        samesite="strict",
-        secure=is_https(request),
-    )
+    clear_auth_cookies(response, request)
 
     # Clear the double-submit CSRF cookie so no stale token lingers post-logout
     response.delete_cookie(

@@ -1,14 +1,32 @@
 /* Official WxLogin href stylesheet (ignored when stylelite=1).
    https://developers.weixin.qq.com/doc/oplatform/Website_App/WeChat_Login/Wechat_Login.html
+   Default .qrcode is a 280px inline img, left-aligned in a 300px iframe.
 */
-.impowerBox {
-  width: 220px !important;
-  margin: 0 auto !important;
+html,
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  text-align: center !important;
 }
-.impowerBox .qrcode {
-  width: 220px !important;
-  margin-top: 0 !important;
+.impowerBox,
+.wrp_code,
+.loginPanel {
+  display: block !important;
+  float: none !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+  text-align: center !important;
+}
+.impowerBox .qrcode,
+img.qrcode {
+  display: block !important;
+  float: none !important;
+  width: 248px !important;
+  height: auto !important;
+  margin: 0 auto !important;
   border: none !important;
+  box-sizing: border-box !important;
 }
 .impowerBox .title,
 .impowerBox .info,

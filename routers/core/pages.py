@@ -37,7 +37,7 @@ from utils.auth import (
     BAYI_DEFAULT_ORG_CODE,
     BAYI_DEFAULT_ORG_ID,
     BAYI_SSO_DEFAULT_DISPLAY_NAME,
-    compute_device_hash,
+    assign_device_id,
     create_refresh_token,
     decrypt_bayi_token,
     get_client_ip,
@@ -312,7 +312,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
             )
 
             jwt_token = await _issue_bayi_access_token(bayi_user, request)
-            device_hash = compute_device_hash(request)
+            device_hash = assign_device_id(request)
             await session_manager.store_session(bayi_user.id, jwt_token, device_hash=device_hash)
 
             # Issue a path-scoped refresh token so the SSO session uses the same
@@ -332,7 +332,9 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
         # Valid token: redirect to app home with the standard auth cookie set
         # (access + refresh + CSRF seed via issue_new_auth_cookies).
         redirect_response = RedirectResponse(url="/", status_code=303)
-        await issue_new_auth_cookies(redirect_response, jwt_token, refresh_token_value, request)
+        await issue_new_auth_cookies(
+            redirect_response, jwt_token, refresh_token_value, request, device_hash=device_hash
+        )
         return redirect_response
 
     except BACKGROUND_INFRA_ERRORS as e:

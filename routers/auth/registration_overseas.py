@@ -31,7 +31,7 @@ from services.redis.session.redis_session_manager import (
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import (
-    compute_device_hash,
+    assign_device_id,
     create_access_token,
     create_refresh_token,
     get_client_ip,
@@ -143,7 +143,7 @@ async def register_overseas(
     session_manager = get_session_manager()
     token = create_access_token(new_user)
     refresh_token_value, refresh_token_hash = create_refresh_token(new_user.id)
-    device_hash = compute_device_hash(http_request)
+    device_hash = assign_device_id(http_request)
     user_agent = http_request.headers.get("User-Agent", "")
 
     async def cache_user_async() -> None:
@@ -189,7 +189,7 @@ async def register_overseas(
     duration = time.time() - start_time
     registration_metrics.record_success(duration, retry_count, cache_write_success)
 
-    await issue_new_auth_cookies(response, token, refresh_token_value, http_request)
+    await issue_new_auth_cookies(response, token, refresh_token_value, http_request, device_hash=device_hash)
 
     await record_vpn_login_geo(new_user.id, http_request)
 

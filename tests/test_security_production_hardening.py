@@ -1,5 +1,6 @@
 """Regression tests for security production hardening."""
 
+import logging
 from pathlib import Path
 from types import SimpleNamespace
 from typing import cast
@@ -240,8 +241,10 @@ def test_production_guard_allows_default_db_password() -> None:
                 guard.enforce_production_security_guards()
 
 
-def test_production_guard_allows_oauth_without_wechat_secrets() -> None:
-    """OAuth can stay on for DingTalk while WeChat remains unconfigured."""
+def test_production_guard_warns_on_removed_oauth_master_flag(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Leftover FEATURE_OAUTH_LOGIN must not silently look like it still works."""
     guard = production_secrets_guard_module
     with patch.object(guard, "_require_non_debug", return_value=True):
         with patch.object(guard, "_guard_database_url", return_value=None):
@@ -251,9 +254,58 @@ def test_production_guard_allows_oauth_without_wechat_secrets() -> None:
                         "os.environ",
                         {
                             "FEATURE_OAUTH_LOGIN": "True",
+                            "FEATURE_WECHAT_LOGIN": "False",
+                            "FEATURE_DINGTALK_LOGIN": "False",
+                            "CAPTCHA_PROVIDER": "legacy",
+                            "FEATURE_GEWE": "False",
+                            "FEATURE_SMART_RESPONSE": "False",
+                        },
+                        clear=False,
+                    ):
+                        with caplog.at_level(logging.WARNING, logger=guard.logger.name):
+                            guard.enforce_production_security_guards()
+    assert "FEATURE_OAUTH_LOGIN is removed" in caplog.text
+    assert "FEATURE_WECHAT_LOGIN" in caplog.text
+
+
+def test_production_guard_allows_oauth_without_wechat_secrets() -> None:
+    """DingTalk OAuth can stay on while WeChat remains off and unconfigured."""
+    guard = production_secrets_guard_module
+    with patch.object(guard, "_require_non_debug", return_value=True):
+        with patch.object(guard, "_guard_database_url", return_value=None):
+            with patch.object(guard, "_guard_redis_url", return_value=None):
+                with patch.object(guard, "AUTH_MODE", "standard"):
+                    with patch.dict(
+                        "os.environ",
+                        {
+                            "FEATURE_DINGTALK_LOGIN": "True",
+                            "FEATURE_WECHAT_LOGIN": "False",
                             "WECHAT_OAUTH_APP_ID": "",
                             "WECHAT_OAUTH_APP_SECRET": "",
                             "EXTERNAL_BASE_URL": "https://example.com",
+                            "CAPTCHA_PROVIDER": "legacy",
+                            "FEATURE_GEWE": "False",
+                            "FEATURE_SMART_RESPONSE": "False",
+                        },
+                        clear=False,
+                    ):
+                        guard.enforce_production_security_guards()
+
+
+def test_production_guard_ignores_partial_wechat_secrets_when_wechat_off() -> None:
+    """Leftover WeChat secrets on local/dev do not abort when the flag is off."""
+    guard = production_secrets_guard_module
+    with patch.object(guard, "_require_non_debug", return_value=True):
+        with patch.object(guard, "_guard_database_url", return_value=None):
+            with patch.object(guard, "_guard_redis_url", return_value=None):
+                with patch.object(guard, "AUTH_MODE", "standard"):
+                    with patch.dict(
+                        "os.environ",
+                        {
+                            "FEATURE_DINGTALK_LOGIN": "True",
+                            "FEATURE_WECHAT_LOGIN": "False",
+                            "WECHAT_OAUTH_APP_ID": "wx-test-app-id",
+                            "WECHAT_OAUTH_APP_SECRET": "",
                             "CAPTCHA_PROVIDER": "legacy",
                             "FEATURE_GEWE": "False",
                             "FEATURE_SMART_RESPONSE": "False",
@@ -273,7 +325,8 @@ def test_production_guard_rejects_partial_wechat_secrets() -> None:
                     with patch.dict(
                         "os.environ",
                         {
-                            "FEATURE_OAUTH_LOGIN": "True",
+                            "FEATURE_DINGTALK_LOGIN": "True",
+                            "FEATURE_WECHAT_LOGIN": "True",
                             "WECHAT_OAUTH_APP_ID": "wx-test-app-id",
                             "WECHAT_OAUTH_APP_SECRET": "",
                             "CAPTCHA_PROVIDER": "legacy",

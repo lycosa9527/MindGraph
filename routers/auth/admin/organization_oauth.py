@@ -22,6 +22,7 @@ from services.auth.oauth.oauth_login_service import (
     public_site_base_url,
     wechat_callback_url,
     wechat_credentials_configured,
+    wechat_feature_enabled,
 )
 from services.utils.error_types import DATABASE_ERRORS
 from utils.auth.admin_scope import AdminScope
@@ -34,7 +35,7 @@ router = APIRouter(prefix="/organizations", tags=["Admin OAuth"])
 class OrganizationOauthConfigResponse(BaseModel):
     """OAuth settings for one organization.
 
-    ``wechat_enabled`` is derived from FEATURE_OAUTH_LOGIN + AppID/Secret.
+    ``wechat_enabled`` is FEATURE_WECHAT_LOGIN + AppID/Secret.
     """
 
     organization_id: int
@@ -44,7 +45,8 @@ class OrganizationOauthConfigResponse(BaseModel):
     dingtalk_login_app_secret_set: bool = False
     dingtalk_corp_id: str = ""
     wechat_app_id: str = ""
-    feature_oauth_login: bool = False
+    feature_wechat_login: bool = False
+    feature_dingtalk_login: bool = False
     wechat_callback_url: str = ""
     dingtalk_callback_url: str = ""
     site_base_url: str = ""
@@ -66,7 +68,7 @@ def _to_response(org_id: int, row) -> OrganizationOauthConfigResponse:
     secret_set = bool((row.dingtalk_login_app_secret or "").strip()) if row else False
     app_key = (row.dingtalk_login_app_key or "").strip() if row else ""
     corp = (row.dingtalk_corp_id or "").strip() if row else ""
-    wechat_on = bool(config.FEATURE_OAUTH_LOGIN and wechat_credentials_configured())
+    wechat_on = bool(wechat_feature_enabled() and wechat_credentials_configured())
     ding_on = bool(row.dingtalk_login_enabled) if row else False
     return OrganizationOauthConfigResponse(
         organization_id=org_id,
@@ -76,7 +78,8 @@ def _to_response(org_id: int, row) -> OrganizationOauthConfigResponse:
         dingtalk_login_app_secret_set=secret_set,
         dingtalk_corp_id=corp,
         wechat_app_id=(config.WECHAT_OAUTH_APP_ID or "").strip(),
-        feature_oauth_login=config.FEATURE_OAUTH_LOGIN,
+        feature_wechat_login=config.FEATURE_WECHAT_LOGIN,
+        feature_dingtalk_login=config.FEATURE_DINGTALK_LOGIN,
         wechat_callback_url=wechat_callback_url(),
         dingtalk_callback_url=dingtalk_callback_url(),
         site_base_url=public_site_base_url(),
@@ -107,7 +110,7 @@ async def update_organization_oauth_config(
     db: AsyncSession = Depends(_panel_mutate_db),
 ):
     """Update OAuth QR login settings for a school."""
-    if not config.FEATURE_OAUTH_LOGIN:
+    if not config.FEATURE_DINGTALK_LOGIN:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="feature_disabled")
     repo = OrganizationOauthConfigRepository(db)
     try:

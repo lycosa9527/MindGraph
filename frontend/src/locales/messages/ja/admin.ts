@@ -242,6 +242,8 @@ export default {
   'admin.oauth.officialDocsHint': 'Matches official docs: WeChat Wxログイン + code exchange; DingTalk OAuth 2.0 DTFrameログイン + immediate authCode exchange (not legacy oapi.dingtalk.com).',
   'admin.oauth.wechatToggle': 'WeChat QR ログインを有効化',
   'admin.oauth.wechatHint': '教師 must link WeChat under アカウント linking first. プラットフォーム AppID/Secret are set in server .env.',
+  'admin.oauth.wechatOn': 'On',
+  'admin.oauth.wechatOff': 'Off',
   'admin.oauth.dingtalkToggle': 'DingTalk QR ログインを有効化',
   'admin.oauth.dingtalkAppKey': 'DingTalk AppKey（client_id）',
   'admin.oauth.dingtalkAppSecret': '钉钉 AppSecret',

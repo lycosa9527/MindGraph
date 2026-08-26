@@ -119,23 +119,10 @@ export function useOAuthQrLogin(options: {
         }
         return
       }
-      if (!invite.value) {
-        providers.value = {
-          organization_id: 0,
-          wechat_enabled: true,
-          dingtalk_enabled: false,
-          wechat_app_id: '',
-          dingtalk_client_id: '',
-          dingtalk_scope: 'openid',
-          wechat_redirect_uri: '',
-          dingtalk_redirect_uri: '',
-        }
-        activeTab.value = 'wechat'
-        return
-      }
-      const res = await apiClient.get(
-        `/api/auth/oauth/providers?invite=${encodeURIComponent(invite.value)}`
-      )
+      const qs = invite.value
+        ? `?invite=${encodeURIComponent(invite.value)}`
+        : ''
+      const res = await apiClient.get(`/api/auth/oauth/providers${qs}`)
       if (!res.ok) {
         providerError.value = 'providers_failed'
         return

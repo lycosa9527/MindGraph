@@ -61,7 +61,7 @@ from utils.auth import (
     MAX_LOGIN_ATTEMPTS,
     RATE_LIMIT_WINDOW_MINUTES,
     check_account_lockout,
-    compute_device_hash,
+    assign_device_id,
     create_access_token,
     create_refresh_token,
     get_client_ip,
@@ -199,7 +199,7 @@ async def _complete_login_after_otp_verified(
 
     refresh_token_value, refresh_token_hash = create_refresh_token(user.id)
 
-    device_hash = compute_device_hash(http_request)
+    device_hash = assign_device_id(http_request)
 
     user_agent = http_request.headers.get("User-Agent", "")
     accept_language = http_request.headers.get("Accept-Language", "")
@@ -227,7 +227,7 @@ async def _complete_login_after_otp_verified(
     )
     _raise_if_session_persistence_failed(session_ok, refresh_ok, lang, user.id, method)
 
-    await issue_new_auth_cookies(response, token, refresh_token_value, http_request)
+    await issue_new_auth_cookies(response, token, refresh_token_value, http_request, device_hash=device_hash)
 
     await record_vpn_login_geo(user.id, http_request)
 
@@ -454,7 +454,7 @@ async def login(
     refresh_token_value, refresh_token_hash = create_refresh_token(user.id)
 
     # Compute device hash for session and token binding
-    device_hash = compute_device_hash(http_request)
+    device_hash = assign_device_id(http_request)
 
     # DEBUG: Log device fingerprint at login time
     user_agent = http_request.headers.get("User-Agent", "")
@@ -485,7 +485,7 @@ async def login(
     _raise_if_session_persistence_failed(session_ok, refresh_ok, lang, user.id, "captcha")
 
     # Set cookies (both access and refresh tokens)
-    await issue_new_auth_cookies(response, token, refresh_token_value, http_request)
+    await issue_new_auth_cookies(response, token, refresh_token_value, http_request, device_hash=device_hash)
 
     await record_vpn_login_geo(user.id, http_request)
 
@@ -817,7 +817,7 @@ async def verify_bayi_passkey_login(
     refresh_token_value, refresh_token_hash = create_refresh_token(auth_user.id)
 
     # Compute device hash for session and token binding
-    device_hash = compute_device_hash(request)
+    device_hash = assign_device_id(request)
 
     # DEBUG: Log device fingerprint at login time
     user_agent = request.headers.get("User-Agent", "")
@@ -848,7 +848,7 @@ async def verify_bayi_passkey_login(
     )
 
     # Set cookies (both access and refresh tokens)
-    await issue_new_auth_cookies(response, token, refresh_token_value, request)
+    await issue_new_auth_cookies(response, token, refresh_token_value, request, device_hash=device_hash)
 
     await record_vpn_login_geo(auth_user.id, request)
 

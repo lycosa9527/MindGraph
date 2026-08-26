@@ -51,9 +51,19 @@ class OauthProviderFlags:
     dingtalk_callback_url: str
 
 
-def oauth_feature_enabled() -> bool:
-    """True when FEATURE_OAUTH_LOGIN is on."""
-    return bool(getattr(config, "FEATURE_OAUTH_LOGIN", True))
+def wechat_feature_enabled() -> bool:
+    """True when FEATURE_WECHAT_LOGIN is on (production WeChat QR)."""
+    return bool(getattr(config, "FEATURE_WECHAT_LOGIN", False))
+
+
+def dingtalk_feature_enabled() -> bool:
+    """True when FEATURE_DINGTALK_LOGIN is on (per-school DingTalk QR)."""
+    return bool(getattr(config, "FEATURE_DINGTALK_LOGIN", False))
+
+
+def oauth_surface_enabled() -> bool:
+    """True when either QR provider flag is on (shared /providers, /links)."""
+    return wechat_feature_enabled() or dingtalk_feature_enabled()
 
 
 def wechat_credentials_configured() -> bool:
@@ -140,14 +150,14 @@ def validate_dingtalk_corp_id(
 def resolve_provider_flags(row: Optional[OrganizationOauthConfig]) -> OauthProviderFlags:
     """Build provider availability for frontend.
 
-    WeChat is platform-wide (feature flag + .env AppID/Secret). DingTalk stays
-    per school because each school brings its own AppKey/Secret.
+    WeChat is platform-wide (FEATURE_WECHAT_LOGIN + .env AppID/Secret).
+    DingTalk stays per school (FEATURE_DINGTALK_LOGIN + AppKey/Secret).
     """
-    wechat_on = bool(oauth_feature_enabled() and wechat_credentials_configured())
+    wechat_on = bool(wechat_feature_enabled() and wechat_credentials_configured())
     ding_key = (row.dingtalk_login_app_key or "").strip() if row else ""
     ding_secret = (row.dingtalk_login_app_secret or "").strip() if row else ""
     ding_on = bool(
-        oauth_feature_enabled() and row is not None and row.dingtalk_login_enabled and ding_key and ding_secret
+        dingtalk_feature_enabled() and row is not None and row.dingtalk_login_enabled and ding_key and ding_secret
     )
     app_id = (getattr(config, "WECHAT_OAUTH_APP_ID", "") or "").strip()
     scope = _dingtalk_scope_for_config(row) if row else DINGTALK_SCOPE_OPENID
@@ -347,9 +357,9 @@ class OauthLoginService:
             raise ValueError(AUTH_ERROR_NOT_LINKED)
         return row
 
-    def assert_feature_enabled(self) -> None:
-        """Raise if master OAuth flag is off."""
-        if not oauth_feature_enabled():
+    def assert_dingtalk_feature_enabled(self) -> None:
+        """Raise if FEATURE_DINGTALK_LOGIN is off."""
+        if not dingtalk_feature_enabled():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=AUTH_ERROR_DISABLED,
@@ -361,16 +371,21 @@ class OauthLoginService:
         provider: str,
     ) -> Optional[OrganizationOauthConfig]:
         """Ensure the provider is available. DingTalk still needs a school row."""
-        self.assert_feature_enabled()
         row = await self._org_repo.get_by_org(organization_id)
         flags = resolve_provider_flags(row)
         if provider == OAUTH_PROVIDER_WECHAT:
+            if not wechat_feature_enabled():
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=AUTH_ERROR_DISABLED,
+                )
             if not flags.wechat_enabled:
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail=AUTH_ERROR_MISCONFIGURED,
                 )
             return row
+        self.assert_dingtalk_feature_enabled()
         if provider == OAUTH_PROVIDER_DINGTALK and (row is None or not flags.dingtalk_enabled):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=AUTH_ERROR_DISABLED)
         return row

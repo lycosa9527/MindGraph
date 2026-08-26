@@ -8,7 +8,7 @@ import {
   oauthBindFromRouteQuery,
   oauthLoginFromRouteQuery,
   shouldShowAccountBindingsSection,
-  shouldShowQrLoginLink,
+  shouldShowWechatLoginLink,
   shouldShowWechatBindRow,
   canStartWechatBind,
   sizeWechatLoginIframe,
@@ -35,7 +35,7 @@ describe('oauthLoginUi', () => {
   it('WxLogin href is the public /static stylesheet WeChat can fetch', () => {
     expect(WX_LOGIN_STYLE_HREF_PATH).toBe('/oauth-wx-login.css')
     expect(wechatLoginStyleHref('https://test.mindspringedu.com')).toBe(
-      encodeURIComponent('https://test.mindspringedu.com/oauth-wx-login.css')
+      encodeURIComponent('https://test.mindspringedu.com/oauth-wx-login.css?v=2')
     )
     expect(WX_LOGIN_QR_SIZE_PX).toBe(248)
     expect(wechatQrModalMaxWidthPx()).toBe(288)
@@ -52,55 +52,58 @@ describe('oauthLoginUi', () => {
     expect(iframe.getAttribute('height')).toBe('248')
     expect(iframe.style.width).toBe('248px')
     expect(iframe.style.height).toBe('248px')
+    expect(iframe.style.display).toBe('block')
+    expect(iframe.style.marginLeft).toBe('auto')
+    expect(iframe.style.marginRight).toBe('auto')
   })
 
-  it('shouldShowWechatBindRow hides when OAuth is off or WeChat is unavailable', () => {
+  it('shouldShowWechatBindRow hides when WeChat flag is off or unavailable', () => {
     expect(
       shouldShowWechatBindRow({
         showBindingsSection: true,
-        featureOauthLogin: true,
+        featureWechatLogin: true,
         wechatAvailable: true,
       })
     ).toBe(true)
     expect(
       shouldShowWechatBindRow({
         showBindingsSection: true,
-        featureOauthLogin: false,
+        featureWechatLogin: false,
         wechatAvailable: true,
       })
     ).toBe(false)
     expect(
       shouldShowWechatBindRow({
         showBindingsSection: true,
-        featureOauthLogin: true,
+        featureWechatLogin: true,
         wechatAvailable: false,
       })
     ).toBe(false)
     expect(
       shouldShowWechatBindRow({
         showBindingsSection: true,
-        featureOauthLogin: true,
+        featureWechatLogin: true,
         wechatAvailable: false,
         wechatLinked: true,
       })
     ).toBe(true)
   })
 
-  it('canStartWechatBind needs feature and configured WeChat credentials', () => {
+  it('canStartWechatBind needs FEATURE_WECHAT_LOGIN and credentials', () => {
     expect(
-      canStartWechatBind({ featureOauthLogin: true, wechatAvailable: true })
+      canStartWechatBind({ featureWechatLogin: true, wechatAvailable: true })
     ).toBe(true)
     expect(
-      canStartWechatBind({ featureOauthLogin: true, wechatAvailable: false })
+      canStartWechatBind({ featureWechatLogin: true, wechatAvailable: false })
     ).toBe(false)
     expect(
-      canStartWechatBind({ featureOauthLogin: false, wechatAvailable: true })
+      canStartWechatBind({ featureWechatLogin: false, wechatAvailable: true })
     ).toBe(false)
   })
 
-  it('shouldShowQrLoginLink follows feature flag', () => {
-    expect(shouldShowQrLoginLink(true)).toBe(true)
-    expect(shouldShowQrLoginLink(false)).toBe(false)
+  it('shouldShowWechatLoginLink follows FEATURE_WECHAT_LOGIN', () => {
+    expect(shouldShowWechatLoginLink(true)).toBe(true)
+    expect(shouldShowWechatLoginLink(false)).toBe(false)
   })
 
   it('shouldShowAccountBindingsSection when mindbot enabled', () => {
@@ -108,20 +111,22 @@ describe('oauthLoginUi', () => {
       shouldShowAccountBindingsSection({
         schoolId: '1',
         featureMindbot: true,
-        featureOauthLogin: false,
-        wechatLoginEnabled: false,
+        featureDingtalkLogin: false,
+        featureWechatLogin: false,
+        wechatAvailable: false,
         dingtalkLoginEnabled: false,
       })
     ).toBe(true)
   })
 
-  it('shouldShowAccountBindingsSection when oauth provider enabled', () => {
+  it('shouldShowAccountBindingsSection when WeChat is on', () => {
     expect(
       shouldShowAccountBindingsSection({
         schoolId: '1',
         featureMindbot: false,
-        featureOauthLogin: true,
-        wechatLoginEnabled: true,
+        featureDingtalkLogin: false,
+        featureWechatLogin: true,
+        wechatAvailable: true,
         dingtalkLoginEnabled: false,
       })
     ).toBe(true)
@@ -132,8 +137,9 @@ describe('oauthLoginUi', () => {
       shouldShowAccountBindingsSection({
         schoolId: null,
         featureMindbot: false,
-        featureOauthLogin: true,
-        wechatLoginEnabled: true,
+        featureDingtalkLogin: true,
+        featureWechatLogin: true,
+        wechatAvailable: true,
         dingtalkLoginEnabled: false,
       })
     ).toBe(false)
@@ -141,8 +147,9 @@ describe('oauthLoginUi', () => {
       shouldShowAccountBindingsSection({
         schoolId: '2',
         featureMindbot: false,
-        featureOauthLogin: true,
-        wechatLoginEnabled: false,
+        featureDingtalkLogin: true,
+        featureWechatLogin: false,
+        wechatAvailable: false,
         dingtalkLoginEnabled: false,
       })
     ).toBe(false)

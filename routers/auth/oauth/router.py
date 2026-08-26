@@ -28,11 +28,13 @@ from services.auth.oauth.oauth_login_service import (
     OauthLoginService,
     dingtalk_callback_url,
     encoded_callback_url,
-    oauth_feature_enabled,
+    dingtalk_feature_enabled,
+    oauth_surface_enabled,
     public_site_base_url,
     require_wechat_callback_url,
     resolve_provider_flags,
     wechat_callback_url,
+    wechat_feature_enabled,
 )
 from services.auth.oauth.oauth_post_login import (
     issue_oauth_browser_session,
@@ -156,14 +158,27 @@ def _log_oauth_redirect_error(
 
 @router.get("/providers", response_model=OauthProvidersResponse)
 async def get_oauth_providers(
-    invite: str = Query(..., min_length=1),
+    invite: str = Query(""),
     _system_rls: None = Depends(bind_system_bootstrap_rls_dependency),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Public: resolve org by invitation code and return enabled OAuth providers."""
-    if not oauth_feature_enabled():
+    """Public: enabled OAuth providers. Invite is required for DingTalk."""
+    if not oauth_surface_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=AUTH_ERROR_DISABLED)
-    org = await resolve_org_by_invitation_code(db, invite)
+    invite_code = (invite or "").strip()
+    if not invite_code:
+        flags = resolve_provider_flags(None)
+        return OauthProvidersResponse(
+            organization_id=OAUTH_ORG_UNSCOPED,
+            wechat_enabled=flags.wechat_enabled,
+            dingtalk_enabled=False,
+            wechat_app_id=flags.wechat_app_id,
+            dingtalk_client_id="",
+            dingtalk_scope=flags.dingtalk_scope,
+            wechat_redirect_uri=encoded_callback_url(OAUTH_PROVIDER_WECHAT),
+            dingtalk_redirect_uri="",
+        )
+    org = await resolve_org_by_invitation_code(db, invite_code)
     if org is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="organization_not_found")
     service = OauthLoginService(db)
@@ -455,7 +470,7 @@ async def dingtalk_complete_post(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Primary DingTalk login/bind completion from JS callback."""
-    if not oauth_feature_enabled():
+    if not dingtalk_feature_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=AUTH_ERROR_DISABLED)
     return await _complete_dingtalk_flow(
         auth_code=body.auth_code,
@@ -497,7 +512,7 @@ async def dingtalk_bind_complete_post(
     db: AsyncSession = Depends(get_async_db),
 ):
     """DingTalk bind completion from JS callback (alias)."""
-    if not oauth_feature_enabled():
+    if not dingtalk_feature_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=AUTH_ERROR_DISABLED)
     return await _complete_dingtalk_flow(
         auth_code=body.auth_code,
@@ -515,7 +530,7 @@ async def get_oauth_links(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Return OAuth link status for account bindings UI."""
-    if not oauth_feature_enabled():
+    if not oauth_surface_enabled():
         return OauthLinksResponse()
     org_id = current_user.organization_id
     if not org_id:
@@ -552,7 +567,10 @@ async def delete_oauth_link(
     db: AsyncSession = Depends(get_async_db),
 ):
     """Self-unbind OAuth provider."""
-    if not oauth_feature_enabled():
+    if provider == OAUTH_PROVIDER_WECHAT:
+        if not wechat_feature_enabled():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=AUTH_ERROR_DISABLED)
+    elif not dingtalk_feature_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=AUTH_ERROR_DISABLED)
     if not current_user.organization_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="no_organization")

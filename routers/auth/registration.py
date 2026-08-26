@@ -40,7 +40,7 @@ from services.redis.session.redis_session_manager import (
 )
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS, REDIS_ERRORS
 from utils.auth import (
-    compute_device_hash,
+    assign_device_id,
     create_access_token,
     create_refresh_token,
     get_client_ip,
@@ -86,7 +86,7 @@ async def finalize_sms_registration_session(
 
     token = create_access_token(new_user)
     refresh_token_value, refresh_token_hash = create_refresh_token(new_user.id)
-    device_hash = compute_device_hash(http_request)
+    device_hash = assign_device_id(http_request)
     user_agent = http_request.headers.get("User-Agent", "")
 
     async def cache_user_async() -> None:
@@ -138,7 +138,7 @@ async def finalize_sms_registration_session(
 
     duration = time.time() - start_time
     registration_metrics.record_success(duration, retry_count, cache_write_success)
-    await issue_new_auth_cookies(response, token, refresh_token_value, http_request)
+    await issue_new_auth_cookies(response, token, refresh_token_value, http_request, device_hash=device_hash)
     await record_vpn_login_geo(new_user.id, http_request)
     org_name = org.name if org else "None"
     log_method = "room_quick" if register_action == "register_quick" else "sms"
@@ -321,7 +321,7 @@ async def register(
     refresh_token_value, refresh_token_hash = create_refresh_token(new_user.id)
 
     # Compute device hash for session and token binding
-    device_hash = compute_device_hash(http_request)
+    device_hash = assign_device_id(http_request)
     user_agent = http_request.headers.get("User-Agent", "")
 
     # Parallel cache write, session creation, and refresh token storage
@@ -381,7 +381,7 @@ async def register(
     registration_metrics.record_success(duration, retry_count, cache_write_success)
 
     # Set cookies (both access and refresh tokens)
-    await issue_new_auth_cookies(response, token, refresh_token_value, http_request)
+    await issue_new_auth_cookies(response, token, refresh_token_value, http_request, device_hash=device_hash)
 
     await record_vpn_login_geo(new_user.id, http_request)
 

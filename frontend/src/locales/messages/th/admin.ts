@@ -242,6 +242,8 @@ export default {
   'admin.oauth.officialDocsHint': 'สอดคล้องเอกสารทางการ: WeChat WxLogin + แลก code; DingTalk OAuth 2.0 DTFrameLogin + แลก authCode ทันที (ไม่ใช่ oapi.dingtalk.com แบบเก่า)',
   'admin.oauth.wechatToggle': 'เปิดใช้เข้าสู่ระบบ QR WeChat',
   'admin.oauth.wechatHint': 'ครูต้องเชื่อม WeChat ในส่วนผูกบัญชีก่อน AppID/Secret ของแพลตฟอร์มตั้งใน .env ของเซิร์ฟเวอร์',
+  'admin.oauth.wechatOn': 'On',
+  'admin.oauth.wechatOff': 'Off',
   'admin.oauth.dingtalkToggle': 'เปิดใช้เข้าสู่ระบบ QR DingTalk',
   'admin.oauth.dingtalkAppKey': 'DingTalk AppKey (client_id)',
   'admin.oauth.dingtalkAppSecret': 'DingTalk AppSecret',

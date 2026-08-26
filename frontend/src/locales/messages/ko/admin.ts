@@ -242,6 +242,8 @@ export default {
   'admin.oauth.officialDocsHint': '공식 문서와 동일: 위챗 WxLogin + 코드 교환; 딩톡 OAuth 2.0 DTFrameLogin + 사용자 정보.',
   'admin.oauth.wechatToggle': '위챗 QR 로그인 사용',
   'admin.oauth.wechatHint': '교사는 먼저 계정 연동에서 위챗을 연결해야 합니다. 플랫폼 AppID/Secret은 서버에 설정됩니다.',
+  'admin.oauth.wechatOn': 'On',
+  'admin.oauth.wechatOff': 'Off',
   'admin.oauth.dingtalkToggle': '딩톡 QR 로그인 사용',
   'admin.oauth.dingtalkAppKey': '딩톡 AppKey(client_id)',
   'admin.oauth.dingtalkAppSecret': '딩톡 AppSecret',

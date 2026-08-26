@@ -242,6 +242,8 @@ export default {
   'admin.oauth.officialDocsHint': 'Conforme alla documentazione ufficiale : WeChat WxLogin + scambio codice ; DingTalk OAuth 2.0 DTFrameLogin + scambio immediato d’authCode (non l’vecchio oapi.dingtalk.com).',
   'admin.oauth.wechatToggle': 'Attiva l\'accesso QR WeChat',
   'admin.oauth.wechatHint': 'I docentes devono prima lier WeChat sotto Collegamento account. AppID/Secret della piattaforma sono definiti nel .env del server.',
+  'admin.oauth.wechatOn': 'On',
+  'admin.oauth.wechatOff': 'Off',
   'admin.oauth.dingtalkToggle': 'Attiva l\'accesso QR DingTalk',
   'admin.oauth.dingtalkAppKey': 'DingTalk AppKey (client_id)',
   'admin.oauth.dingtalkAppSecret': 'DingTalk AppSecret',

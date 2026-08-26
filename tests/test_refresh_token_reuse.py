@@ -64,3 +64,54 @@ async def test_revoke_refresh_token_sets_reuse_marker_before_delete() -> None:
     await_args = mock_set_ttl.await_args
     assert await_args is not None
     assert await_args.args[1] == "7"
+
+
+@pytest.mark.asyncio
+async def test_revoke_max_devices_does_not_set_reuse_marker() -> None:
+    """A device-limit kick must not look like refresh-token theft."""
+    mgr = RefreshTokenManager()
+    mock_redis = AsyncMock()
+    mock_redis.srem = AsyncMock()
+
+    with patch.object(mgr, "_use_redis", return_value=True):
+        with patch(
+            "services.redis.session.redis_session_manager.get_async_redis",
+            return_value=mock_redis,
+        ):
+            with patch(
+                "services.redis.session.redis_session_manager.AsyncRedisOps.set_with_ttl",
+                new_callable=AsyncMock,
+            ) as mock_set_ttl:
+                with patch(
+                    "services.redis.session.redis_session_manager.AsyncRedisOps.delete",
+                    new_callable=AsyncMock,
+                    return_value=True,
+                ):
+                    await mgr.revoke_refresh_token(7, "kickedhash", reason="max_devices_exceeded")
+
+    mock_set_ttl.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_validate_kicked_refresh_does_not_reuse_nuke() -> None:
+    """Presenting a kicked refresh token must not revoke the new device."""
+    mgr = RefreshTokenManager()
+    with patch.object(mgr, "_use_redis", return_value=True):
+        with patch(
+            "services.redis.session.redis_session_manager.AsyncRedisOps.get",
+            new_callable=AsyncMock,
+            return_value=None,
+        ):
+            with patch.object(
+                mgr,
+                "_handle_refresh_token_reuse",
+                new_callable=AsyncMock,
+            ) as mock_reuse:
+                valid, _data, error = await mgr.validate_refresh_token(
+                    user_id=42,
+                    token_hash="kickedhash",
+                )
+
+    assert valid is False
+    assert error == "Invalid or expired refresh token"
+    mock_reuse.assert_not_awaited()

@@ -37,15 +37,23 @@ _PATH_FLAG_ATTRS: tuple[tuple[str, str], ...] = (
     ("/api/mindbot", "FEATURE_MINDBOT"),
     ("/api/kitty", "FEATURE_KITTY_AGENT"),
     ("/ws/kitty", "FEATURE_KITTY_AGENT"),
-    ("/api/auth/oauth", "FEATURE_OAUTH_LOGIN"),
+    ("/api/auth/oauth/wechat", "FEATURE_WECHAT_LOGIN"),
+    ("/api/auth/oauth/dingtalk", "FEATURE_DINGTALK_LOGIN"),
     ("/api/downloads/mindgraph-word-addin", "FEATURE_WORD_ADDIN"),
     ("/api/mcp", "FEATURE_MCP_HTTP"),
 )
+
+_OAUTH_SHARED_PREFIX = "/api/auth/oauth"
 
 
 def _feature_enabled(attr_name: str) -> bool:
     """Feature enabled."""
     return bool(getattr(config, attr_name, False))
+
+
+def _oauth_shared_enabled() -> bool:
+    """Shared /providers and /links stay up if either OAuth provider is on."""
+    return _feature_enabled("FEATURE_DINGTALK_LOGIN") or _feature_enabled("FEATURE_WECHAT_LOGIN")
 
 
 async def feature_flag_gate(request: Request, call_next):
@@ -60,4 +68,9 @@ async def feature_flag_gate(request: Request, call_next):
                 status_code=404,
                 content={"detail": "Feature is disabled"},
             )
+    if path.startswith(_OAUTH_SHARED_PREFIX) and not _oauth_shared_enabled():
+        return JSONResponse(
+            status_code=404,
+            content={"detail": "Feature is disabled"},
+        )
     return await call_next(request)

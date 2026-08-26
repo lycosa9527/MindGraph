@@ -41,11 +41,12 @@ from services.utils.error_types import BACKGROUND_INFRA_ERRORS, DATABASE_ERRORS
 from utils.auth import (
     ACCESS_TOKEN_EXPIRY_MINUTES,
     REFRESH_TOKEN_EXPIRY_DAYS,
-    compute_device_hash,
+    assign_device_id,
     create_access_token,
     get_client_ip,
     is_https,
 )
+from utils.auth.tokens import DEVICE_COOKIE_NAME, compute_device_hash
 from utils.auth.request_helpers import set_csrf_cookie
 from utils.auth.role_constants import normalize_role
 from utils.db.session_open import user_rls_session
@@ -395,7 +396,7 @@ async def create_user_session(
     token = create_access_token(user)
 
     # Compute device hash for session tracking
-    device_hash = compute_device_hash(http_request) if http_request else ""
+    device_hash = assign_device_id(http_request) if http_request else ""
 
     # Store new session in Redis (automatically limits concurrent sessions)
     await session_manager.store_session(user.id, token, device_hash=device_hash)
@@ -428,7 +429,13 @@ async def issue_access_token_with_vpn_geo(user: User, http_request: Request) -> 
 # ============================================================================
 
 
-def set_auth_cookies(response: Response, access_token: str, refresh_token: str, http_request: Request):
+def set_auth_cookies(
+    response: Response,
+    access_token: str,
+    refresh_token: str,
+    http_request: Request,
+    device_hash: str = "",
+):
     """
     Set authentication cookies for both access and refresh tokens.
 
@@ -437,14 +444,18 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str, 
     - Secure flag set based on HTTPS detection
     - Access token: max_age = 1 hour, path = /
     - Refresh token: max_age = 7 days, path = /api/auth (restricted)
+    - Device id: same path and max_age as refresh (not a header fingerprint)
 
     Args:
         response: FastAPI Response object
         access_token: JWT access token
         refresh_token: Refresh token for silent refresh
         http_request: FastAPI Request object for HTTPS detection
+        device_hash: Browser binding id written to ``mg_device``
     """
     is_secure = is_https(http_request)
+    refresh_max_age = REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60
+    binding_id = device_hash.strip().lower() if device_hash else compute_device_hash(http_request)
 
     # Set access token as httpOnly cookie
     response.set_cookie(
@@ -463,10 +474,21 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str, 
         value=refresh_token,
         httponly=True,
         secure=is_secure,
-        samesite="strict",  # Stricter for refresh token
-        path="/api/auth",  # Only sent to auth endpoints
-        max_age=REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60,  # 7 days default
+        samesite="lax",
+        path="/api/auth",
+        max_age=refresh_max_age,
     )
+
+    if binding_id:
+        response.set_cookie(
+            key=DEVICE_COOKIE_NAME,
+            value=binding_id,
+            httponly=True,
+            secure=is_secure,
+            samesite="lax",
+            path="/api/auth",
+            max_age=refresh_max_age,
+        )
 
     # Set flag cookie to indicate new login session (for AI disclaimer notification)
     response.set_cookie(
@@ -483,11 +505,36 @@ def set_auth_cookies(response: Response, access_token: str, refresh_token: str, 
     set_csrf_cookie(response, http_request)
 
 
+def clear_auth_cookies(response: Response, http_request: Request) -> None:
+    """Drop access and refresh cookies using the same path and SameSite as set.
+
+    ``mg_device`` is left in place so the next login in this browser reuses
+    the same device slot instead of consuming another concurrent session.
+    """
+    is_secure = is_https(http_request)
+    response.delete_cookie(
+        key="access_token",
+        path="/",
+        samesite="lax",
+        secure=is_secure,
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        path="/api/auth",
+        samesite="lax",
+        secure=is_secure,
+    )
+
+
 async def issue_new_auth_cookies(
-    response: Response, access_token: str, refresh_token: str, http_request: Request
+    response: Response,
+    access_token: str,
+    refresh_token: str,
+    http_request: Request,
+    device_hash: str = "",
 ) -> None:
     """Set session cookies and clear the /refresh IP window after a new login."""
-    set_auth_cookies(response, access_token, refresh_token, http_request)
+    set_auth_cookies(response, access_token, refresh_token, http_request, device_hash=device_hash)
     try:
         await clear_token_refresh_attempts(get_client_ip(http_request))
     except BACKGROUND_INFRA_ERRORS:

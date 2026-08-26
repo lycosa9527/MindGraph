@@ -202,7 +202,7 @@ def test_production_guard_requires_tsec_secrets() -> None:
                             "TENCENT_CAPTCHA_SECRET_KEY": "",
                             "TENCENT_SMS_SECRET_ID": "",
                             "TENCENT_SMS_SECRET_KEY": "",
-                            "FEATURE_OAUTH_LOGIN": "False",
+                            "FEATURE_DINGTALK_LOGIN": "False",
                             "FEATURE_GEWE": "False",
                             "FEATURE_SMART_RESPONSE": "False",
                         },

@@ -95,47 +95,76 @@ def hash_refresh_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
+DEVICE_COOKIE_NAME = "mg_device"
+_DEVICE_ID_HEX_CHARS = frozenset("0123456789abcdef")
+
+
+def _is_device_id(value: str) -> bool:
+    """True for a hex device id we issued (16-64 chars)."""
+    if len(value) < 16 or len(value) > 64:
+        return False
+    return all(char in _DEVICE_ID_HEX_CHARS for char in value)
+
+
+def read_device_cookie(request: Request) -> str:
+    """Return the httpOnly device cookie, or empty if missing or malformed."""
+    try:
+        raw = str(request.cookies.get(DEVICE_COOKIE_NAME) or "").strip().lower()
+    except (AttributeError, TypeError):
+        return ""
+    if _is_device_id(raw):
+        return raw
+    return ""
+
+
+def header_device_fingerprint(request: Request) -> str:
+    """Stable fallback when the device cookie is not on the request yet."""
+    user_agent = request.headers.get("User-Agent", "")
+    return hashlib.sha256(user_agent.encode("utf-8")).hexdigest()[:16]
+
+
 def compute_device_hash(request: Request) -> str:
     """
-    Compute a device fingerprint hash from request headers.
+    Identify this browser for refresh binding.
 
-    Uses multiple signals for more robust device identification:
-    - User-Agent: Browser and OS identification
-    - Accept-Language: Language preferences
-    - Accept-Encoding: Compression support (stable across sessions)
-    - Sec-CH-UA-Platform: Client hint for OS platform (if available)
-    - Sec-CH-UA-Mobile: Client hint for mobile/desktop (if available)
-
-    Note: We deliberately exclude IP address as it can change frequently
-    (e.g., mobile networks, VPN). The goal is to identify the same browser
-    on the same device, not the network location.
-
-    Args:
-        request: FastAPI Request object
-
-    Returns:
-        16-character hash string
+    Prefer the ``mg_device`` cookie (same jar and TTL as the refresh token).
+    Header fingerprints are only a migration fallback: Accept-Encoding and
+    Sec-CH-UA-* change between Chrome sessions and forced a daily re-login.
     """
-    # Core headers (always present)
-    user_agent = request.headers.get("User-Agent", "")
-    accept_language = request.headers.get("Accept-Language", "")
-    accept_encoding = request.headers.get("Accept-Encoding", "")
+    cookie_id = read_device_cookie(request)
+    if cookie_id:
+        return cookie_id
+    return header_device_fingerprint(request)
 
-    # Client hints (modern browsers only, more stable than User-Agent)
-    sec_ch_platform = request.headers.get("Sec-CH-UA-Platform", "")
-    sec_ch_mobile = request.headers.get("Sec-CH-UA-Mobile", "")
 
-    # Build fingerprint from stable signals
-    fingerprint_parts = [
-        user_agent,
-        accept_language,
-        accept_encoding,
-        sec_ch_platform,
-        sec_ch_mobile,
-    ]
+def assign_device_id(request: Request) -> str:
+    """Reuse the device cookie, or mint one on first login in this browser."""
+    existing = read_device_cookie(request)
+    if existing:
+        return existing
+    return secrets.token_hex(16)
 
-    fingerprint_str = "|".join(fingerprint_parts)
-    return hashlib.sha256(fingerprint_str.encode("utf-8")).hexdigest()[:16]
+
+def device_binding_matches(
+    stored_device_hash: str,
+    current_device_hash: str,
+    stored_user_agent: str,
+    current_user_agent: str,
+) -> bool:
+    """
+    True when this refresh request is still the same browser.
+
+    Cookie/hash equality is preferred. If the cookie is not on the request
+    yet (deploy or cookie blocked), the stored User-Agent still identifies
+    the browser so a 7-day refresh token is not thrown away.
+    """
+    if not stored_device_hash:
+        return True
+    if stored_device_hash == current_device_hash:
+        return True
+    stored_ua = stored_user_agent[:200]
+    current_ua = current_user_agent[:200]
+    return bool(stored_ua and current_ua and stored_ua == current_ua)
 
 
 def decode_access_token(token: str) -> dict:

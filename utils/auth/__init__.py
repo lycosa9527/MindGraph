@@ -116,7 +116,9 @@ from .roles import (
 # Token exports
 from .tokens import (
     api_key_header,
+    assign_device_id,
     compute_device_hash,
+    device_binding_matches,
     create_access_token,
     create_refresh_token,
     decode_access_token,
@@ -172,7 +174,9 @@ __all__ = [
     "create_access_token",
     "create_refresh_token",
     "hash_refresh_token",
+    "assign_device_id",
     "compute_device_hash",
+    "device_binding_matches",
     "decode_access_token",
     # Request helpers
     "is_https",

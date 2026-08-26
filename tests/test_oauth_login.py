@@ -30,13 +30,15 @@ from routers.auth.oauth.router import (
 
 from services.auth.oauth.dingtalk_oauth_client import DingtalkContactProfile, DingtalkTokenResult
 from services.auth.oauth.oauth_constants import (
+    AUTH_ERROR_DISABLED,
     AUTH_ERROR_EXCHANGE_FAILED,
     AUTH_ERROR_MISCONFIGURED,
     AUTH_ERROR_NOT_LINKED,
     normalize_oauth_error_code,
 )
 from services.auth.oauth.oauth_login_service import (
-    oauth_feature_enabled,
+    dingtalk_feature_enabled,
+    wechat_feature_enabled,
     OauthLoginService,
     require_wechat_callback_url,
     resolve_provider_flags,
@@ -89,9 +91,13 @@ def test_wechat_resolve_external_id_falls_back_openid() -> None:
 def test_resolve_provider_flags_all_off_when_feature_disabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Master flag off disables all providers."""
+    """OAuth flag off disables DingTalk; WeChat uses its own flag."""
     monkeypatch.setattr(
-        "services.auth.oauth.oauth_login_service.oauth_feature_enabled",
+        "services.auth.oauth.oauth_login_service.dingtalk_feature_enabled",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.wechat_feature_enabled",
         lambda: False,
     )
     row = _org_oauth_row(
@@ -107,9 +113,9 @@ def test_resolve_provider_flags_all_off_when_feature_disabled(
 def test_resolve_provider_flags_wechat_on_without_org_row(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Missing org row still enables WeChat when the feature and credentials exist."""
+    """Missing org row still enables WeChat when the WeChat flag and credentials exist."""
     monkeypatch.setattr(
-        "services.auth.oauth.oauth_login_service.oauth_feature_enabled",
+        "services.auth.oauth.oauth_login_service.wechat_feature_enabled",
         lambda: True,
     )
     monkeypatch.setattr(
@@ -130,7 +136,7 @@ def test_resolve_provider_flags_wechat_ignores_org_row(
 ) -> None:
     """WeChat stays on when a DingTalk-only org row exists."""
     monkeypatch.setattr(
-        "services.auth.oauth.oauth_login_service.oauth_feature_enabled",
+        "services.auth.oauth.oauth_login_service.wechat_feature_enabled",
         lambda: True,
     )
     monkeypatch.setattr(
@@ -151,7 +157,11 @@ def test_resolve_provider_flags_dingtalk_requires_keys(
 ) -> None:
     """DingTalk needs app key and secret."""
     monkeypatch.setattr(
-        "services.auth.oauth.oauth_login_service.oauth_feature_enabled",
+        "services.auth.oauth.oauth_login_service.dingtalk_feature_enabled",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.wechat_feature_enabled",
         lambda: True,
     )
     monkeypatch.setattr(
@@ -177,7 +187,7 @@ def test_resolve_provider_flags_dingtalk_embed_scope_openid_only(
 ) -> None:
     """DTFrameLogin iframe uses openid scope even when corp_id is configured."""
     monkeypatch.setattr(
-        "services.auth.oauth.oauth_login_service.oauth_feature_enabled",
+        "services.auth.oauth.oauth_login_service.dingtalk_feature_enabled",
         lambda: True,
     )
     monkeypatch.setattr(
@@ -242,13 +252,87 @@ async def test_exchange_dingtalk_identity_corp_mismatch(
         await service.exchange_dingtalk_identity(row, "auth-code-123")
 
 
-def test_oauth_feature_enabled_reads_config(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Feature flag helper reads config."""
+def test_dingtalk_feature_enabled_defaults_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    """DingTalk QR is off unless FEATURE_DINGTALK_LOGIN is set."""
     monkeypatch.setattr(
         "services.auth.oauth.oauth_login_service.config",
-        SimpleNamespace(FEATURE_OAUTH_LOGIN=True),
+        SimpleNamespace(FEATURE_DINGTALK_LOGIN=False),
     )
-    assert oauth_feature_enabled() is True
+    assert dingtalk_feature_enabled() is False
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.config",
+        SimpleNamespace(FEATURE_DINGTALK_LOGIN=True),
+    )
+    assert dingtalk_feature_enabled() is True
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.config",
+        SimpleNamespace(),
+    )
+    assert dingtalk_feature_enabled() is False
+
+
+def test_wechat_feature_enabled_defaults_off(monkeypatch: pytest.MonkeyPatch) -> None:
+    """WeChat QR is off unless FEATURE_WECHAT_LOGIN is set."""
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.config",
+        SimpleNamespace(FEATURE_WECHAT_LOGIN=False),
+    )
+    assert wechat_feature_enabled() is False
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.config",
+        SimpleNamespace(FEATURE_WECHAT_LOGIN=True),
+    )
+    assert wechat_feature_enabled() is True
+
+
+def test_resolve_provider_flags_wechat_off_without_wechat_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Credentials alone do not enable WeChat."""
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.wechat_feature_enabled",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.wechat_credentials_configured",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.config",
+        SimpleNamespace(WECHAT_OAUTH_APP_ID="wx123", WECHAT_OAUTH_APP_SECRET="sec"),
+    )
+    flags = resolve_provider_flags(None)
+    assert flags.wechat_enabled is False
+
+
+def test_resolve_provider_flags_wechat_independent_of_oauth(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """WeChat can stay on when DingTalk OAuth is off."""
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.dingtalk_feature_enabled",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.wechat_feature_enabled",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.wechat_credentials_configured",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.config",
+        SimpleNamespace(WECHAT_OAUTH_APP_ID="wx123", WECHAT_OAUTH_APP_SECRET="sec"),
+    )
+    row = _org_oauth_row(
+        dingtalk_login_enabled=True,
+        dingtalk_login_app_key="key",
+        dingtalk_login_app_secret="secret",
+    )
+    flags = resolve_provider_flags(row)
+    assert flags.wechat_enabled is True
+    assert flags.dingtalk_enabled is False
 
 
 def test_require_wechat_callback_url_needs_external_base(
@@ -283,7 +367,7 @@ async def test_assert_wechat_without_credentials_is_misconfigured(
         return None
 
     monkeypatch.setattr(
-        "services.auth.oauth.oauth_login_service.oauth_feature_enabled",
+        "services.auth.oauth.oauth_login_service.wechat_feature_enabled",
         lambda: True,
     )
     monkeypatch.setattr(
@@ -296,6 +380,31 @@ async def test_assert_wechat_without_credentials_is_misconfigured(
         await service.assert_provider_enabled(1, OAUTH_PROVIDER_WECHAT)
     assert exc_info.value.status_code == 503
     assert exc_info.value.detail == AUTH_ERROR_MISCONFIGURED
+
+
+@pytest.mark.asyncio
+async def test_assert_wechat_flag_off_is_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """FEATURE_WECHAT_LOGIN off is 404, not a secrets misconfig."""
+
+    async def _missing_row(_self: OrganizationOauthConfigRepository, _organization_id: int) -> None:
+        return None
+
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.wechat_feature_enabled",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "services.auth.oauth.oauth_login_service.wechat_credentials_configured",
+        lambda: True,
+    )
+    monkeypatch.setattr(OrganizationOauthConfigRepository, "get_by_org", _missing_row)
+    service = OauthLoginService(cast(AsyncSession, SimpleNamespace()))
+    with pytest.raises(HTTPException) as exc_info:
+        await service.assert_provider_enabled(1, OAUTH_PROVIDER_WECHAT)
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == AUTH_ERROR_DISABLED
 
 
 def test_wechat_callback_does_not_use_injected_response() -> None:
@@ -521,7 +630,7 @@ def _patch_oauth_session_deps(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda _uid: ("refresh-val", "refresh-hash"),
     )
     monkeypatch.setattr(
-        "services.auth.oauth.oauth_post_login.compute_device_hash",
+        "services.auth.oauth.oauth_post_login.assign_device_id",
         lambda _req: "devhash",
     )
     monkeypatch.setattr(

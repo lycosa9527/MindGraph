@@ -145,13 +145,22 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_LIBRARY", "False").lower() == "true"
 
     @property
-    def FEATURE_OAUTH_LOGIN(self):
-        """Enable WeChat / DingTalk OAuth QR login for end users.
+    def FEATURE_WECHAT_LOGIN(self):
+        """Enable platform-wide WeChat QR login (Open Platform 网站应用).
 
-        On by default. Set FEATURE_OAUTH_LOGIN=False in .env to hide QR login
-        and account bind. WeChat still needs WECHAT_OAUTH_APP_ID / SECRET.
+        Off by default. WeChat allows one callback domain, so only production
+        should set FEATURE_WECHAT_LOGIN=True plus WECHAT_OAUTH_APP_ID / SECRET.
         """
-        return self._get_cached_value("FEATURE_OAUTH_LOGIN", "True").lower() == "true"
+        return self._get_cached_value("FEATURE_WECHAT_LOGIN", "False").lower() == "true"
+
+    @property
+    def FEATURE_DINGTALK_LOGIN(self):
+        """Enable per-school DingTalk QR login.
+
+        Off by default. Set FEATURE_DINGTALK_LOGIN=True in production .env.
+        Each school still needs AppKey/Secret in 组织管理.
+        """
+        return self._get_cached_value("FEATURE_DINGTALK_LOGIN", "False").lower() == "true"
 
     @property
     def FEATURE_WORD_ADDIN(self):

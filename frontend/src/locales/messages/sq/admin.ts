@@ -242,6 +242,8 @@ export default {
   'admin.oauth.officialDocsHint': 'Përputhet me dokumentacionin zyrtar: WeChat WxLogin + shkëmbim kodi; DingTalk OAuth 2.0 DTFrameLogin + shkëmbim i menjëhershëm authCode (jo legacy oapi.dingtalk.com).',
   'admin.oauth.wechatToggle': 'Aktivizo hyrjen me QR WeChat',
   'admin.oauth.wechatHint': 'Mësuesit duhet të lidhin WeChat fillimisht te Lidhja e llogarisë. AppID/Secret i platformës vendosen në .env të serverit.',
+  'admin.oauth.wechatOn': 'On',
+  'admin.oauth.wechatOff': 'Off',
   'admin.oauth.dingtalkToggle': 'Aktivizo hyrjen me QR DingTalk',
   'admin.oauth.dingtalkAppKey': 'DingTalk AppKey (client_id)',
   'admin.oauth.dingtalkAppSecret': 'DingTalk AppSecret',

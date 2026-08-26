@@ -15,7 +15,9 @@ export function wechatQrModalMaxWidthPx(): number {
 }
 
 export function wechatLoginStyleHref(origin: string): string {
-  return encodeURIComponent(new URL(WX_LOGIN_STYLE_HREF_PATH, origin).href)
+  const url = new URL(WX_LOGIN_STYLE_HREF_PATH, origin)
+  url.searchParams.set('v', '2')
+  return encodeURIComponent(url.href)
 }
 
 export function sizeWechatLoginIframe(container: HTMLElement, sizePx: number): void {
@@ -29,6 +31,9 @@ export function sizeWechatLoginIframe(container: HTMLElement, sizePx: number): v
   iframe.style.width = px
   iframe.style.height = px
   iframe.style.border = 'none'
+  iframe.style.display = 'block'
+  iframe.style.marginLeft = 'auto'
+  iframe.style.marginRight = 'auto'
 }
 
 /**
@@ -51,8 +56,9 @@ export function resolveOAuthInviteCode(
 export function shouldShowAccountBindingsSection(input: {
   schoolId: string | null | undefined
   featureMindbot: boolean
-  featureOauthLogin: boolean
-  wechatLoginEnabled: boolean
+  featureWechatLogin: boolean
+  featureDingtalkLogin: boolean
+  wechatAvailable: boolean
   dingtalkLoginEnabled: boolean
 }): boolean {
   if (!input.schoolId) {
@@ -61,23 +67,26 @@ export function shouldShowAccountBindingsSection(input: {
   if (input.featureMindbot) {
     return true
   }
-  if (!input.featureOauthLogin) {
+  if (input.featureWechatLogin && input.wechatAvailable) {
+    return true
+  }
+  if (!input.featureDingtalkLogin) {
     return false
   }
-  return input.wechatLoginEnabled || input.dingtalkLoginEnabled
+  return input.dingtalkLoginEnabled
 }
 
 /**
- * WeChat bind pill is platform-wide. Hide it unless OAuth is on and WeChat
- * is actually available (or already linked, so the user can unbind).
+ * WeChat bind pill is platform-wide. Hide it unless WeChat login is on and
+ * available (or already linked, so the user can unbind).
  */
 export function shouldShowWechatBindRow(input: {
   showBindingsSection: boolean
-  featureOauthLogin: boolean
+  featureWechatLogin: boolean
   wechatAvailable: boolean
   wechatLinked?: boolean
 }): boolean {
-  if (!input.showBindingsSection || !input.featureOauthLogin) {
+  if (!input.showBindingsSection || !input.featureWechatLogin) {
     return false
   }
   return input.wechatAvailable || input.wechatLinked === true
@@ -87,17 +96,15 @@ export function shouldShowWechatBindRow(input: {
  * Bind WeChat when the platform flag is on and credentials are configured.
  */
 export function canStartWechatBind(input: {
-  featureOauthLogin: boolean
+  featureWechatLogin: boolean
   wechatAvailable: boolean
 }): boolean {
-  return input.featureOauthLogin && input.wechatAvailable
+  return input.featureWechatLogin && input.wechatAvailable
 }
 
-/**
- * Whether LoginModal should show the QR login link.
- */
-export function shouldShowQrLoginLink(featureOauthLogin: boolean): boolean {
-  return featureOauthLogin
+/** Whether the login footer should show WeChat QR. */
+export function shouldShowWechatLoginLink(featureWechatLogin: boolean): boolean {
+  return featureWechatLogin
 }
 
 export type OAuthErrorLevel = 'warning' | 'error'

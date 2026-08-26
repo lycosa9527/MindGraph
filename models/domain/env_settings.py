@@ -217,6 +217,14 @@ class FeatureFlagSettings(BaseModel):
             "Enable MindBot (DingTalk HTTP callback ↔ per-organization Dify); disable with FEATURE_MINDBOT=false"
         ),
     )
+    FEATURE_WECHAT_LOGIN: bool = Field(
+        default=False,
+        description="Enable WeChat QR login (production only; Open Platform allows one callback domain)",
+    )
+    FEATURE_DINGTALK_LOGIN: bool = Field(
+        default=False,
+        description="Enable DingTalk QR login (per school AppKey/Secret)",
+    )
     FEATURE_WORD_ADDIN: bool = Field(
         default=False,
         description="Show the Word add-in download in Account and serve the deploy zip",

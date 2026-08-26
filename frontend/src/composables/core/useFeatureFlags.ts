@@ -45,7 +45,8 @@ export function useFeatureFlags() {
   const featureMindmateCollab = computed(() => data.value?.feature_mindmate_collab ?? false)
   const featureMarkets = computed(() => data.value?.feature_markets ?? false)
   const featureMindbot = computed(() => data.value?.feature_mindbot ?? false)
-  const featureOauthLogin = computed(() => data.value?.feature_oauth_login ?? false)
+  const featureWechatLogin = computed(() => data.value?.feature_wechat_login ?? false)
+  const featureDingtalkLogin = computed(() => data.value?.feature_dingtalk_login ?? false)
   const featureWordAddin = computed(() => data.value?.feature_word_addin ?? false)
   const featureMindmateExport = computed(() => data.value?.feature_mindmate_export ?? false)
   const featureKittyAgent = computed(() => data.value?.feature_kitty_agent ?? false)
@@ -76,7 +77,8 @@ export function useFeatureFlags() {
     featureMindmateCollab,
     featureMarkets,
     featureMindbot,
-    featureOauthLogin,
+    featureWechatLogin,
+    featureDingtalkLogin,
     featureWordAddin,
     featureMindmateExport,
     featureKittyAgent,

@@ -297,6 +297,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   function emitLoginSuccess(): void {
     markSessionFreshAfterAuth()
+    // Skip the immediate kick poll; cookies were just set and a stale
+    // session-status 401 must not look like a device-limit logout.
+    lastSessionCheckTime.value = Date.now()
     eventBus.emit('auth:login_success', {})
   }
 
@@ -509,8 +512,8 @@ export const useAuthStore = defineStore('auth', () => {
         setUser(data.user)
         hasVerifiedAuthThisSession.value = true // Login is verification
         lastProfileRefreshTime.value = Date.now()
-        startSessionMonitoring()
         emitLoginSuccess()
+        startSessionMonitoring()
         return { success: true, user: user.value ?? undefined }
       }
 
@@ -554,8 +557,8 @@ export const useAuthStore = defineStore('auth', () => {
         setUser(userPayload)
         hasVerifiedAuthThisSession.value = true
         lastProfileRefreshTime.value = Date.now()
-        startSessionMonitoring()
         emitLoginSuccess()
+        startSessionMonitoring()
         return { success: true, user: user.value ?? undefined }
       }
 
@@ -947,8 +950,12 @@ export const useAuthStore = defineStore('auth', () => {
     if (document.visibilityState !== 'visible' || !user.value) {
       return
     }
-    void checkSessionStatus()
-    void refreshUserProfile()
+    void (async () => {
+      await checkSessionStatus()
+      if (user.value) {
+        await refreshUserProfile()
+      }
+    })()
   }
 
   function startSessionMonitoring(): void {

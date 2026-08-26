@@ -242,6 +242,8 @@ export default {
   'admin.oauth.officialDocsHint': 'නිල ලේඛනවලට ගැලපේ: WeChat WxLogin + කේත හුවමාරුව; DingTalk OAuth 2.0 DTFrameLogin + ක්ෂණික authCode හුවමාරුව (පරම්පරාගත oapi.dingtalk.com නොවේ).',
   'admin.oauth.wechatToggle': 'WeChat QR පිවිසුම සබල කරන්න',
   'admin.oauth.wechatHint': 'ගුරුවරුන් පළමුව ගිණුම් සම්බන්ධ කිරීම යටතේ WeChat සම්බන්ධ කළ යුතුය. Platform AppID/Secret server .env තුළ සකසා ඇත.',
+  'admin.oauth.wechatOn': 'On',
+  'admin.oauth.wechatOff': 'Off',
   'admin.oauth.dingtalkToggle': 'DingTalk QR පිවිසුම සබල කරන්න',
   'admin.oauth.dingtalkAppKey': 'DingTalk AppKey (Client_id)',
   'admin.oauth.dingtalkAppSecret': 'DingTalk AppSecret',

@@ -242,6 +242,8 @@ export default {
   'admin.oauth.officialDocsHint': 'با اسناد رسمی مطابقت دارد: WeChat WxLogin + تبادل کد؛ DingTalk OAuth 2.0 DTFrameLogin + تبادل فوری authCode (نه oapi.dingtalk.com قدیمی).',
   'admin.oauth.wechatToggle': 'فعال کردن ورود با کد QR',
   'admin.oauth.wechatHint': 'معلمان ابتدا باید WeChat را در بخش پیوند حساب کاربری پیوند دهند. شناسه برنامه/رمز پلتفرم در فایل .env سرور تنظیم شده است.',
+  'admin.oauth.wechatOn': 'On',
+  'admin.oauth.wechatOff': 'Off',
   'admin.oauth.dingtalkToggle': 'فعال کردن ورود با کد QR',
   'admin.oauth.dingtalkAppKey': 'DingTalk کلید برنامه (شناسه کلاینت)',
   'admin.oauth.dingtalkAppSecret': 'DingTalk راز برنامه',

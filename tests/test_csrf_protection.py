@@ -7,7 +7,9 @@ from starlette.responses import JSONResponse
 
 from routers.auth import helpers as auth_helpers
 from services.infrastructure.http import middleware as middleware_module
+from utils.auth.config import ACCESS_TOKEN_EXPIRY_MINUTES, REFRESH_TOKEN_EXPIRY_DAYS
 from utils.auth.request_helpers import CSRF_COOKIE_NAME, CSRF_HEADER_NAME
+from utils.auth.tokens import DEVICE_COOKIE_NAME
 
 
 def _make_request(method: str, path: str, cookies: dict, headers: dict):
@@ -161,8 +163,49 @@ def test_set_auth_cookies_seeds_csrf_cookie() -> None:
     response = JSONResponse(content={"ok": True})
     request = _make_request("POST", "/api/auth/login", cookies={}, headers={})
     with patch.object(auth_helpers, "is_https", return_value=True):
-        auth_helpers.set_auth_cookies(response, "access-jwt", "refresh-token", request)
+        auth_helpers.set_auth_cookies(response, "access-jwt", "refresh-token", request, device_hash="ab" * 16)
     cookie_names = _set_cookie_names(response)
     assert "access_token" in cookie_names
     assert "refresh_token" in cookie_names
+    assert DEVICE_COOKIE_NAME in cookie_names
     assert CSRF_COOKIE_NAME in cookie_names
+    refresh_header = ""
+    access_header = ""
+    device_header = ""
+    for header_name, header_value in response.raw_headers:
+        if header_name != b"set-cookie":
+            continue
+        text = header_value.decode("latin-1")
+        if text.startswith("refresh_token="):
+            refresh_header = text
+        if text.startswith("access_token="):
+            access_header = text
+        if text.startswith(f"{DEVICE_COOKIE_NAME}="):
+            device_header = text
+    refresh_max_age = REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60
+    assert f"Max-Age={refresh_max_age}" in refresh_header
+    assert "samesite=lax" in refresh_header.lower()
+    assert f"Max-Age={ACCESS_TOKEN_EXPIRY_MINUTES * 60}" in access_header
+    assert f"Max-Age={refresh_max_age}" in device_header
+
+
+def test_clear_auth_cookies_matches_refresh_samesite() -> None:
+    """Kick and logout must delete refresh with SameSite=lax, matching login."""
+    response = JSONResponse(content={"ok": True})
+    request = _make_request("POST", "/api/auth/logout", cookies={}, headers={})
+    with patch.object(auth_helpers, "is_https", return_value=True):
+        auth_helpers.clear_auth_cookies(response, request)
+    refresh_header = ""
+    device_header = ""
+    for header_name, header_value in response.raw_headers:
+        if header_name != b"set-cookie":
+            continue
+        text = header_value.decode("latin-1")
+        if text.startswith("refresh_token="):
+            refresh_header = text
+        if text.startswith(f"{DEVICE_COOKIE_NAME}="):
+            device_header = text
+    assert refresh_header
+    assert "samesite=lax" in refresh_header.lower()
+    assert "Max-Age=0" in refresh_header or "max-age=0" in refresh_header.lower()
+    assert device_header == ""

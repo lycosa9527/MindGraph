@@ -117,9 +117,14 @@ const footerHint = computed(() => {
 
 <style scoped>
 .oauth-qr-panel__wechat {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   width: 248px;
+  min-width: 0;
   max-width: 100%;
   height: 248px;
+  margin-inline: auto;
   overflow: hidden;
 }
 .oauth-qr-panel__dingtalk {
