@@ -34,6 +34,7 @@ from services.features.mindmate_collab.message_history import (
     normalize_seed_messages,
     persist_seed_messages,
 )
+from services.features.mindmate_collab.org_listing import list_visible_org_sessions
 from services.features.mindmate_collab.participant_ops import refresh_participant_ttl_for_code
 from services.features.mindmate_collab.redis_keys import (
     async_purge_session_redis_keys,
@@ -331,7 +332,7 @@ class MindmateCollabManager:
         """Return True when the user may join; participant registration happens on WS connect."""
         if await self.session_is_closing(session.code):
             return False
-        async with user_rls_session(user_id) as db:
+        async with user_rls_session(user_id, organization_id=session.organization_id) as db:
             allowed = await user_may_join_mindmate_collab(
                 db,
                 visibility=session.visibility,
@@ -360,7 +361,7 @@ class MindmateCollabManager:
             return False
         if session.visibility == ONLINE_COLLAB_VISIBILITY_NETWORK:
             return True
-        async with user_rls_session(user_id) as db:
+        async with user_rls_session(user_id, organization_id=session.organization_id) as db:
             return await user_may_join_mindmate_collab(
                 db,
                 visibility=session.visibility,
@@ -441,49 +442,17 @@ class MindmateCollabManager:
             await async_purge_session_redis_keys(redis, code, org_id, visibility)
         return True
 
-    async def list_org_sessions(self, user_id: int) -> List[Dict[str, Any]]:
+    async def list_org_sessions(
+        self,
+        user_id: int,
+        organization_id: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
         """List live organization-visible rooms for the viewer's org."""
-        async with user_rls_session(user_id) as db:
-            viewer = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
-            if not viewer or viewer.organization_id is None:
-                return []
-            org_id = viewer.organization_id
-            result = await db.execute(
-                select(MindmateCollabSession, User.name, User.phone, User.email)
-                .join(User, User.id == MindmateCollabSession.owner_user_id)
-                .where(
-                    MindmateCollabSession.organization_id == org_id,
-                    MindmateCollabSession.visibility == ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
-                    MindmateCollabSession.ended_at.is_(None),
-                )
-                .order_by(MindmateCollabSession.started_at.desc()),
-            )
-            rows = result.all()
-
-        codes = [
-            session.code
-            for session, _, _, _ in rows
-            if not (session.expires_at and is_online_collab_expired(session.expires_at))
-        ]
-        counts = await self.participant_counts_for_codes(codes)
-
-        sessions: List[Dict[str, Any]] = []
-        for session, owner_name, owner_phone, owner_email in rows:
-            if session.expires_at and is_online_collab_expired(session.expires_at):
-                continue
-            display = owner_name or owner_phone or owner_email or str(session.owner_user_id)
-            sessions.append(
-                {
-                    "session_id": session.id,
-                    "code": session.code,
-                    "title": session.title,
-                    "owner_name": display,
-                    "owner_user_id": session.owner_user_id,
-                    "participant_count": counts.get(normalize_collab_code(session.code), 0),
-                    "visibility": session.visibility,
-                },
-            )
-        return sessions
+        return await list_visible_org_sessions(
+            user_id,
+            organization_id=organization_id,
+            participant_counts_fn=self.participant_counts_for_codes,
+        )
 
     async def get_status(self, code: str) -> Optional[Dict[str, Any]]:
         """Return live session metadata for a code, or live=False when absent."""

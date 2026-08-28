@@ -2,6 +2,7 @@
 
 from unittest.mock import AsyncMock, patch
 
+from services.infrastructure.http.error_handler import LLMContentFilterError
 from services.monitoring.error_record import ErrorRecord
 from services.monitoring.error_reporting import (
     record_exception,
@@ -78,6 +79,31 @@ def test_record_failure_skips_when_collection_disabled():
     with patch("services.monitoring.error_reporting.error_collection_enabled", return_value=False):
         with patch("services.monitoring.error_reporting.ErrorCollectorService.record") as mock_record:
             record_failure(source="llm", component="x", message="msg")
+    mock_record.assert_not_called()
+
+
+def test_record_failure_skips_content_filter() -> None:
+    """Qwen safety refusals must not enter admin error collection."""
+    with (
+        patch("services.monitoring.error_reporting.error_collection_enabled", return_value=True),
+        patch("services.monitoring.error_reporting.ErrorCollectorService.record") as mock_record,
+    ):
+        record_failure(
+            source="llm",
+            component="LLMService",
+            message="Content filter: Input text data may contain inappropriate content.",
+            exception_type="LLMContentFilterError",
+        )
+        record_failure(
+            source="application",
+            component="http_exception",
+            message="输入可能包含不当内容，请修改输入内容",
+        )
+        record_exception(
+            source="llm",
+            component="LLMService",
+            exc=LLMContentFilterError("Content filter: blocked"),
+        )
     mock_record.assert_not_called()
 
 

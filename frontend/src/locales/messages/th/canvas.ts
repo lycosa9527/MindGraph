@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'ข้อความที่ดึงเกินจำกัดอินพุตโมเดล (~900,000 ตัวอักษร / qwen3.6-flash 991K tokens) กรุณาใช้เอกสารที่สั้นกว่า',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'ข้อความของไฟล์นี้ยาวเกินไปสำหรับโมเดล กรุณาอัปโหลดเอกสารที่สั้นกว่า (ต่ำกว่า ~900,000 ตัวอักษร)',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'ข้อความที่บันทึกหายหรือไม่ซิงก์และถูกล้างแล้ว กรุณาอัปโหลดหรือวางเอกสารอีกครั้ง',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'ใบเรียนรู้',
   'canvas.mindMapSideToolbar.oneSentence': 'สร้างแบบประโยคเดียว',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

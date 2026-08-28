@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'निकाला पाठ मॉडल सीमा (~900,000 अक्षर) से अधिक। छोटा दस्तावेज़ उपयोग करें।',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'यह file’s text is too long for the model. Please upload a shorter document (under ~900,000 characters of text).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'saved extract was missing or out of sync and has been cleared. Please upload or paste the document again.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'अध्ययन पत्र',
   'canvas.mindMapSideToolbar.oneSentence': 'एक वाक्य जनरेट',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

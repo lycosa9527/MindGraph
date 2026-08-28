@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Văn bản được trích xuất vượt quá giới hạn đầu vào của mô hình (~900.000 ký tự / mã thông báo qwen3.6-flash 991K). Vui lòng sử dụng một tài liệu ngắn hơn.',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Văn bản của tệp này quá dài đối với mô hình. Vui lòng tải lên một tài liệu ngắn hơn (dưới ~900.000 ký tự văn bản).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Bản trích xuất đã lưu bị thiếu hoặc không đồng bộ và đã bị xóa. Vui lòng tải lên hoặc dán lại tài liệu.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'Phiếu học tập',
   'canvas.mindMapSideToolbar.oneSentence': 'Tạo một câu',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

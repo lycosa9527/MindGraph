@@ -70,6 +70,30 @@ class LLMRateLimitError(LLMServiceError):
 class LLMContentFilterError(LLMServiceError):
     """Raised when content is flagged by safety filter - DO NOT RETRY."""
 
+    def __init__(self, message: str, user_message: Optional[str] = None):
+        """Store the provider message and optional localized user text."""
+        super().__init__(message)
+        self.user_message = user_message
+
+
+_CONTENT_FILTER_TEXT_MARKERS = (
+    "content filter",
+    "inappropriate content",
+    "datainspection",
+    "ip infringement",
+    "faq rule",
+    "custom rule blocked",
+    "不当内容",
+    "不当信息",
+    "安全审核",
+)
+
+
+def is_llm_content_filter_text(text: object) -> bool:
+    """True when provider or leftover retry text is a safety-filter refusal."""
+    lowered = str(text or "").lower()
+    return any(marker in lowered for marker in _CONTENT_FILTER_TEXT_MARKERS)
+
 
 class LLMProviderError(LLMServiceError):
     """Raised for provider-specific errors with error code."""
@@ -88,13 +112,14 @@ class LLMProviderError(LLMServiceError):
         self.user_message = user_message
 
 
-def attach_llm_user_message(exception: Exception, user_message: str) -> LLMProviderError:
-    """Set user-facing text on provider errors before re-raising."""
-    if isinstance(exception, LLMProviderError):
+def attach_llm_user_message(exception: Exception, user_message: str) -> Exception:
+    """Attach user-facing text without wrapping typed LLM exceptions."""
+    if isinstance(exception, (LLMProviderError, LLMContentFilterError)):
         exception.user_message = user_message
         return exception
-    wrapped = LLMProviderError(str(exception), user_message=user_message)
-    return wrapped
+    if isinstance(exception, LLMServiceError):
+        return exception
+    return LLMProviderError(str(exception), user_message=user_message)
 
 
 class LLMInvalidParameterError(LLMProviderError):

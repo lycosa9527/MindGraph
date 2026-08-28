@@ -93,7 +93,7 @@ type WebContentResult = {
   success?: boolean
   spec?: Record<string, unknown>
   error?: string
-  detail?: string | { code?: string; message?: string; max_chars?: number }
+  detail?: string | { code?: string; error_type?: string; message?: string; max_chars?: number }
   is_mindmap?: boolean
   source?: string
   confidence?: number
@@ -116,6 +116,22 @@ function isStorageConflictDetail(detail: WebContentResult['detail']): boolean {
   }
   if (typeof detail === 'string') {
     return detail.includes(DOC_SUMMARY_STORAGE_CONFLICT_CODE) || detail.includes('out of sync')
+  }
+  return false
+}
+
+export function isContentFilterDetail(detail: WebContentResult['detail']): boolean {
+  if (typeof detail === 'object' && detail !== null) {
+    const code = (detail.error_type || detail.code || '').toLowerCase()
+    if (code === 'content_filter') {
+      return true
+    }
+    return /content filter|inappropriate content|不当内容|不当信息|安全审核/i.test(
+      detail.message ?? ''
+    )
+  }
+  if (typeof detail === 'string') {
+    return /content filter|inappropriate content|不当内容|不当信息|安全审核/i.test(detail)
   }
   return false
 }
@@ -199,6 +215,10 @@ export function useMindMapDocumentSummary() {
       const response = await apiUpload('/api/canvas/generate_mindmap_from_image', formData)
       const result = (await response.json().catch(() => ({}))) as WebContentResult
       if (!response.ok) {
+        if (isContentFilterDetail(result.detail)) {
+          notify.warning(t('canvas.mindMapDocumentSummary.contentFiltered'))
+          return { applied: false, isMindmap: false }
+        }
         const detailMessage =
           typeof result.detail === 'string'
             ? result.detail
@@ -296,6 +316,10 @@ export function useMindMapDocumentSummary() {
             void queryClient.invalidateQueries({ queryKey: fileCenterKeys.package(packageId) })
           }
           void queryClient.invalidateQueries({ queryKey: fileCenterKeys.packages() })
+          return false
+        }
+        if (isContentFilterDetail(result.detail)) {
+          notify.warning(t('canvas.mindMapDocumentSummary.contentFiltered'))
           return false
         }
         const detailMessage =

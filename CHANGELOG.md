@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.33] - 2026-08-28
+
+> **Qwen safety-filter refusals toast and stay out of error collection. MindMate school seminars list colleagues' rooms again.**
+
+### Fixed
+
+- **Content filter is a 400, not a 502** — DashScope `DataInspectionFailed` (`Input text data may contain inappropriate content`) was wrapped into `LLMProviderError`, retried three times, then logged as `HTTPException` 502. Typed `LLMContentFilterError` is preserved, not retried, and mapped to HTTP 400 with `error_type: content_filter`.
+- **Error collection** — Safety-filter refusals are dropped at `record_failure` / `record_exception` (HTTP, LLM, leftover “All 3 attempts failed… Content filter”, and Chinese 不当内容 copy). Not a 5xx dump row.
+- **Voice Notes / Document Summary toast** — Package generate and image rebuild show “内容未通过安全审核，请修改文本后重试” instead of the raw provider string.
+- **Agent `success: false` leftover** — Filter-looking generate failures map to 400, not 500.
+- **MindMate org seminar list** — `GET /organization/sessions` opened a user RLS session without `app.organization_id`, so `rls_org_visible` hid colleagues' rooms. The school group modal and sidebar only showed the viewer's own seminar. Listing now binds the caller's org, merges the Redis org registry (including host-only rooms), and join checks use the same org GUC.
+
+### Tests
+
+- `tests/test_llm_http_errors.py` — attach keeps filter type; no retry; 400 body; not collected
+- `tests/test_error_reporting.py` — collector skips typed and Chinese filter text
+- `frontend/tests/useMindMapDocumentSummaryAccept.spec.ts` — `isContentFilterDetail`
+- `tests/test_mindmate_collab_org_listing.py` — org-bound SQL RLS; Redis fill-in when SQL only has the viewer's room
+- `frontend/tests/MindmateCollabHistory.spec.ts` — sidebar group list keeps a colleague's room
+
 ## [5.180.32] - 2026-08-27
 
 > **WeChat and DingTalk QR login are separate `.env` flags, and the same browser stays signed in overnight.**

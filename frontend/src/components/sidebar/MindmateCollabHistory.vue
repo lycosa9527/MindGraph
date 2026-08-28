@@ -22,6 +22,7 @@ import { authFetch } from '@/utils/api'
 import {
   formatMindmateCollabCode,
   loadLocalMindmateCollabSessions,
+  mergeMindmateCollabSessionLists,
   MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT,
   normalizeMindmateCollabCode,
   persistLocalMindmateCollabSessions,
@@ -74,19 +75,9 @@ const activeCode = computed(() => {
 
 const inMindmateCollabRoute = computed(() => route.path.startsWith('/mindmate/collab'))
 
-const mergedSessions = computed(() => {
-  const byCode = new Map<string, CollabSessionRow>()
-  for (const row of orgSessions.value) {
-    byCode.set(normalizeCode(row.code), row)
-  }
-  for (const row of localSessions.value) {
-    const key = normalizeCode(row.code)
-    if (!byCode.has(key)) {
-      byCode.set(key, row)
-    }
-  }
-  return Array.from(byCode.values())
-})
+const mergedSessions = computed(() =>
+  mergeMindmateCollabSessionLists(orgSessions.value, localSessions.value),
+)
 
 const isVisible = computed(() => loading.value || mergedSessions.value.length > 0)
 

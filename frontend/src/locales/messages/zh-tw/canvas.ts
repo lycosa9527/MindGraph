@@ -918,6 +918,7 @@ export default {
     '该文件提取出的文本过长，无法送给模型。请上传更短的文档（提取文本约 90 万字符以内）',
   'canvas.mindMapDocumentSummary.storageConflictCleared':
     '已保存的提取内容缺失或与存储不同步，已自动清除。请重新上传或粘贴文档。',
+  'canvas.mindMapDocumentSummary.contentFiltered': '內容未通過安全審核，請修改文字後重試',
   'canvas.mindMapSideToolbar.learningSheet': '挖空支架圖',
   'canvas.mindMapSideToolbar.oneSentence': '對話式修改',
   'canvas.mindMapSideToolbar.mindClassroom': '思維講堂',

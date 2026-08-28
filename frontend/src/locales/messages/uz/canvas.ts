@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Chixarilmish metn model kirish limitini ashir (~900 000 belgi / qwen3.6-flash 991K token). Daha qisa hujjat foydalaning.',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Bu faylin metni model uchun chox uzundur. Daha qisa hujjat yuklashyin (texminen 900 000 belgidan az).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Saqlangan olib tashlashish yox idi yoki sinxrondan chixmishdi va tozalashndi. Hujjati qayta yuklashyin yoki yapishdirin.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'Oyrenme vareqi',
   'canvas.mindMapSideToolbar.oneSentence': 'Bir cumle bilan yarat',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

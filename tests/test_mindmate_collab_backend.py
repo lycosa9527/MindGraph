@@ -167,6 +167,25 @@ async def test_resolve_dify_conversation_id_prefers_redis_meta() -> None:
 
 
 @pytest.mark.asyncio
+async def test_list_org_sessions_passes_caller_org_and_counts() -> None:
+    """Route org id is forwarded so listing does not open a bare user RLS session."""
+    mgr = MindmateCollabManager()
+    listed = [{"code": "8KZ-BAW", "owner_user_id": 3}]
+    with patch(
+        "services.features.mindmate_collab.manager.list_visible_org_sessions",
+        AsyncMock(return_value=listed),
+    ) as listing:
+        sessions = await mgr.list_org_sessions(5, organization_id=10)
+
+    listing.assert_awaited_once_with(
+        5,
+        organization_id=10,
+        participant_counts_fn=mgr.participant_counts_for_codes,
+    )
+    assert sessions == listed
+
+
+@pytest.mark.asyncio
 async def test_participant_counts_for_codes_batches_hlen() -> None:
     """Org browse uses one Redis pipeline for many participant counts."""
     mgr = MindmateCollabManager()

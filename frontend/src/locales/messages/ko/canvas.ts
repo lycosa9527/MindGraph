@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': '추출된 텍스트가 모델 입력 한도(~900,000자 / qwen3.6-flash 991K 토큰)를 초과합니다. 더 짧은 문서를 사용하세요.',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': '이 파일의 텍스트가 모델에 너무 깁니다. 더 짧은 문서를 업로드하세요(텍스트 약 900,000자 미만).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': '저장된 추출이 없거나 동기화되지 않아 지워졌습니다. 문서를 다시 업로드하거나 붙여넣으세요.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': '학습지',
   'canvas.mindMapSideToolbar.oneSentence': '한 문장 생성',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

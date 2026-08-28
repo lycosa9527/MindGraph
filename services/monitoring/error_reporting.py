@@ -12,8 +12,12 @@ import asyncio
 import traceback
 from typing import Any
 
-from services.monitoring.error_collector import ErrorCollectorService, record_error_async
+from services.infrastructure.http.error_handler import (
+    LLMContentFilterError,
+    is_llm_content_filter_text,
+)
 from services.monitoring.error_alert_config import error_collection_enabled
+from services.monitoring.error_collector import ErrorCollectorService, record_error_async
 from services.monitoring.error_record import ErrorRecord
 from services.monitoring.frontend_noise import is_benign_frontend_noise
 
@@ -31,6 +35,17 @@ VALID_ERROR_SOURCES = frozenset(
 )
 
 _VALID_SEVERITIES = frozenset({"debug", "info", "warning", "error", "critical"})
+
+
+def _is_llm_content_filter_event(
+    message: str,
+    exception_type: str = "",
+    exc: BaseException | None = None,
+) -> bool:
+    """Provider safety refusals are user-facing, not application faults."""
+    if isinstance(exc, LLMContentFilterError) or exception_type == "LLMContentFilterError":
+        return True
+    return is_llm_content_filter_text(message)
 
 
 def _build_record(
@@ -84,6 +99,8 @@ def record_failure(
         return
     if source == "frontend" and is_benign_frontend_noise(message):
         return
+    if _is_llm_content_filter_event(message, exception_type):
+        return
     record = _build_record(
         source=source,
         component=component,
@@ -116,11 +133,14 @@ def record_exception(
     """Enqueue an exception for async persistence."""
     if not error_collection_enabled():
         return
+    resolved = message if message is not None else str(exc)
+    if _is_llm_content_filter_event(resolved, type(exc).__name__, exc):
+        return
     stack = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
     record = _build_record(
         source=source,
         component=component,
-        message=message if message is not None else str(exc),
+        message=resolved,
         severity=severity,
         exception_type=type(exc).__name__,
         stacktrace=stack,
@@ -147,11 +167,14 @@ async def record_exception_async(
     message: str | None = None,
 ) -> int | None:
     """Persist an exception and return the new event id."""
+    resolved = message if message is not None else str(exc)
+    if _is_llm_content_filter_event(resolved, type(exc).__name__, exc):
+        return None
     stack = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
     record = _build_record(
         source=source,
         component=component,
-        message=message if message is not None else str(exc),
+        message=resolved,
         severity=severity,
         exception_type=type(exc).__name__,
         stacktrace=stack,
@@ -180,6 +203,8 @@ async def record_failure_async(
 ) -> int | None:
     """Persist a non-exception failure and return the new event id."""
     if source == "frontend" and is_benign_frontend_noise(message):
+        return None
+    if _is_llm_content_filter_event(message, exception_type):
         return None
     record = _build_record(
         source=source,
@@ -210,11 +235,14 @@ def record_exception_from_celery(
     """Persist an exception from a sync Celery task body via asyncio.run."""
     if not error_collection_enabled():
         return None
+    resolved = message if message is not None else str(exc)
+    if _is_llm_content_filter_event(resolved, type(exc).__name__, exc):
+        return None
     stack = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
     record = _build_record(
         source=source,
         component=component,
-        message=message if message is not None else str(exc),
+        message=resolved,
         severity=severity,
         exception_type=type(exc).__name__,
         stacktrace=stack,

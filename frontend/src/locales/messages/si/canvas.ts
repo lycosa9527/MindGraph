@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'උපුටා ගත් පෙළ ආදර්ශ ආදාන සීමාව ඉක්මවයි (~900,000 අක්ෂර / qwen3.6-flash 991K ටෝකන). කරුණාකර කෙටි ලේඛනයක් භාවිතා කරන්න.',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'මෙම ගොනුවේ පෙළ ආකෘතියට දිගු වැඩිය. කරුණාකර කෙටි ලේඛනයක් උඩුගත කරන්න (පෙළ අකුරු ~900,000 යටතේ).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'සුරකින ලද උධෘතය අස්ථානගත වී හෝ සමමුහුර්ත නොවී ඇති අතර එය හිස් කර ඇත. කරුණාකර ලේඛනය නැවත උඩුගත කරන්න හෝ අලවන්න.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'ඉගෙනුම් පත්රය',
   'canvas.mindMapSideToolbar.oneSentence': 'එක් වාක්‍යයක් ජනනය කරයි',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

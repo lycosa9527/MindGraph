@@ -28,6 +28,7 @@ from services.infrastructure.http.error_handler import (
     ThinkingCoinInsufficientError,
     UserDailyTokenCapExceededError,
 )
+from services.infrastructure.http.llm_http_errors import should_record_http_exception
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.monitoring.error_reporting import record_exception, record_failure
 from services.utils.error_types import BACKGROUND_INFRA_ERRORS
@@ -120,7 +121,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             logger.warning("HTTP %s: %s", exc.status_code, exc.detail)
     else:
         logger.warning("HTTP %s: %s", exc.status_code, exc.detail)
-        if exc.status_code >= 500:
+        if should_record_http_exception(exc.status_code, exc.detail):
             record_failure(
                 source="application",
                 component="http_exception",

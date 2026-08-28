@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Çıkarılan metin model giriş sınırını aşıyor (~900.000 karakter / qwen3.6-flash 991K token). Lütfen daha kısa bir belge kullanın.',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Bu dosyanın metni model için çok uzun. Lütfen daha kısa bir belge yükleyin (~900.000 karakterin altında).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Kaydedilen çıkarım eksik veya senkron dışıydı ve temizlendi. Lütfen belgeyi tekrar yükleyin veya yapıştırın.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'Öğrenme sayfası',
   'canvas.mindMapSideToolbar.oneSentence': 'Tek cümleyle oluştur',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

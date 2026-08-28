@@ -28,8 +28,11 @@ from models import (
 from models.domain.auth import User
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.api.vueflow_screenshot import capture_diagram_screenshot
-from services.infrastructure.http.error_handler import LLMServiceError
-from services.infrastructure.http.llm_http_errors import raise_http_for_llm_error
+from services.infrastructure.http.error_handler import LLMContentFilterError, LLMServiceError
+from services.infrastructure.http.llm_http_errors import (
+    is_llm_content_filter_detail,
+    raise_http_for_llm_error,
+)
 from services.features.voice_notes_markdown import strip_voice_notes_markdown_meta
 from services.knowledge.document_processor import DocumentProcessor
 from services.knowledge.doc_summary_ingest import DocSummaryIngestService
@@ -185,16 +188,26 @@ async def _generate_mindmap_from_resolved_content(
             generation_instructions=generation_instructions,
         )
     except LLMServiceError as exc:
-        logger.error(
-            "[ContentMindMap] LLM error endpoint=%s user=%s: %s",
-            endpoint_path,
-            user_id,
-            exc,
-        )
+        if isinstance(exc, LLMContentFilterError):
+            logger.warning(
+                "[ContentMindMap] content filter endpoint=%s user=%s: %s",
+                endpoint_path,
+                user_id,
+                exc,
+            )
+        else:
+            logger.error(
+                "[ContentMindMap] LLM error endpoint=%s user=%s: %s",
+                endpoint_path,
+                user_id,
+                exc,
+            )
         raise_http_for_llm_error(exc)
 
     if not result.get("success"):
         detail = result.get("error") or "Generation failed"
+        if is_llm_content_filter_detail(detail):
+            raise_http_for_llm_error(LLMContentFilterError(str(detail)))
         raise HTTPException(status_code=500, detail=detail)
 
     if user_id:

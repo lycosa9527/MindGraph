@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Çıxarılmış mətn model giriş limitini aşır (~900 000 simvol / qwen3.6-flash 991K token). Daha qısa sənəd istifadə edin.',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Bu faylın mətni model üçün çox uzundur. Daha qısa sənəd yükləyin (təxminən 900 000 simvoldan az).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Saxlanmış çıxarış yox idi və ya sinxrondan çıxmışdı və təmizləndi. Sənədi yenidən yükləyin və ya yapışdırın.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'Öyrənmə vərəqi',
   'canvas.mindMapSideToolbar.oneSentence': 'Bir cümlə ilə yarat',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

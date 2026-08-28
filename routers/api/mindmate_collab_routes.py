@@ -351,7 +351,10 @@ async def list_organization_sessions(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("mindmate_collab_list", identifier, max_requests=30, window_seconds=60)
 
-    sessions = await get_mindmate_collab_manager().list_org_sessions(current_user.id)
+    sessions = await get_mindmate_collab_manager().list_org_sessions(
+        current_user.id,
+        organization_id=current_user.organization_id,
+    )
     return {"sessions": sessions}
 
 

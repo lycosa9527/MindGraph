@@ -17,7 +17,12 @@ import logging
 import time
 from typing import Any, AsyncGenerator, Dict, List, NoReturn, Optional, Tuple
 
-from services.infrastructure.http.error_handler import LLMServiceError, LLMTimeoutError
+from services.infrastructure.http.error_handler import (
+    LLMContentFilterError,
+    LLMServiceError,
+    LLMTimeoutError,
+    is_llm_content_filter_text,
+)
 from services.monitoring.error_reporting import record_failure
 from services.infrastructure.utils.client_manager import client_manager
 from services.llm.llm_health import LLMHealthChecker
@@ -91,6 +96,8 @@ class LLMService:
         endpoint_path: str | None = None,
         request_id: str | None = None,
     ) -> None:
+        if isinstance(exc, LLMContentFilterError) or is_llm_content_filter_text(detail):
+            return
         record_failure(
             source="llm",
             component="LLMService",
@@ -119,6 +126,8 @@ class LLMService:
         """Re-raise pipeline failures; preserve timeouts as LLMTimeoutError."""
         kind = "Chat stream failed" if stream else "Chat failed"
         message = f"{kind} for model {model}: {detail}"
+        if isinstance(exc, LLMContentFilterError):
+            raise exc
         if isinstance(exc, LLMTimeoutError):
             raise LLMTimeoutError(message) from exc
         if isinstance(exc, TimeoutError):

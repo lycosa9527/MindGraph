@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Il testo extrait dépasse la limite d’input del modello (~900 000 caratteri / qwen3.6-flash 991K tokens). Usa un documento più court.',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Il testo di questo file è trop long per il modello. Carica un documento più court (meno di ~900 000 caratteri di testo).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'L’extrait salvato était manquant o désynchronisé e a été effacé. Carica o collez a nuovo il documento.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'Scheda d’apprendimento',
   'canvas.mindMapSideToolbar.oneSentence': 'Generazione en una phrase',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

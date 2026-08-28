@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Teks yang diekstraksi melebihi batas input model (~900.000 karakter / token qwen3.6-flash 991K). Silakan gunakan dokumen yang lebih pendek.',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Teks file ini terlalu panjang untuk model tersebut. Harap unggah dokumen yang lebih pendek (kurang dari ~900.000 karakter teks).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Ekstrak yang disimpan hilang atau tidak sinkron dan telah dihapus. Silakan unggah atau tempel kembali dokumen tersebut.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'Lembar pembelajaran',
   'canvas.mindMapSideToolbar.oneSentence': 'Hasilkan satu kalimat',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

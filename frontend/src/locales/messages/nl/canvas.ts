@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'De geëxtraheerde tekst overschrijdt de invoerlimiet van het model (~900.000 tekens / qwen3.6-flash 991K tokens). Gebruik een korter document.',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'De tekst van dit bestand is te lang voor het model. Upload een korter document (minder dan ongeveer 900.000 tekens aan tekst).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Het opgeslagen uittreksel ontbrak of was niet gesynchroniseerd en is gewist. Upload of plak het document opnieuw.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'Leerblad',
   'canvas.mindMapSideToolbar.oneSentence': 'Eén zin genereren',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

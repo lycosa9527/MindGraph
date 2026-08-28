@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Teksti i nxjerrë tejkalon kufirin e hyrjes (~900.000 karaktere / qwen3.6-flash 991K token). Përdorni dokument më të shkurtër.',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Teksti i këtij skedari është shumë i gjatë për modelin. Ngarkoni dokument më të shkurtër (nën ~900.000 karaktere teksti).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Nxjerrja e ruajtur mungonte ose ishte jashtë sinkronizimit dhe u pastrua. Ju lutemi ngarkoni ose ngjisni dokumentin përsëri.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'Fletë mësimi',
   'canvas.mindMapSideToolbar.oneSentence': 'Gjenerim me një fjali',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

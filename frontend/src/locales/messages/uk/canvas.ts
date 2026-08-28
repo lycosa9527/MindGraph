@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Витягнутий текст перевищує ліміт вводу моделі (~900 000 символів / qwen3.6-flash 991K токенів). Використайте коротший документ.',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Текст цього файлу занадто довгий для моделі. Завантажте коротший документ (до ~900 000 символів тексту).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Збережений витяг відсутній або не синхронізований і було очищено. Завантажте або вставте документ знову.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'Навчальний аркуш',
   'canvas.mindMapSideToolbar.oneSentence': 'Генерація одним реченням',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

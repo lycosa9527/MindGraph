@@ -868,6 +868,7 @@ export default {
   'canvas.mindMapDocumentSummary.contentTooLongForModel': 'Ang na-extract na text ay lumampas sa limitasyon ng pag-input ng modelo (~900,000 character / qwen3.6-flash 991K token). Mangyaring gumamit ng mas maikling dokumento.',
   'canvas.mindMapDocumentSummary.extractTooLongForModel': 'Masyadong mahaba ang text ng file na ito para sa modelo. Mangyaring mag-upload ng mas maikling dokumento (sa ilalim ng ~900,000 character ng teksto).',
   'canvas.mindMapDocumentSummary.storageConflictCleared': 'Ang naka-save na extract ay nawawala o hindi naka-sync at na-clear na. Paki-upload o i-paste muli ang dokumento.',
+  'canvas.mindMapDocumentSummary.contentFiltered': 'This content was blocked by the safety filter. Edit the text and try again.',
   'canvas.mindMapSideToolbar.learningSheet': 'Learning sheet',
   'canvas.mindMapSideToolbar.oneSentence': 'Bumuo ng isang pangungusap',
   'canvas.mindMapSideToolbar.mindClassroom': 'Mind Classroom',

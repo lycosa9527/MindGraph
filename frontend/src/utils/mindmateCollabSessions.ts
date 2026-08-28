@@ -75,6 +75,23 @@ export function persistLocalMindmateCollabSessions(rows: LocalMindmateCollabSess
   }
 }
 
+export function mergeMindmateCollabSessionLists<T extends { code: string }>(
+  orgSessions: T[],
+  localSessions: T[],
+): T[] {
+  const byCode = new Map<string, T>()
+  for (const row of orgSessions) {
+    byCode.set(normalizeMindmateCollabCode(row.code), row)
+  }
+  for (const row of localSessions) {
+    const key = normalizeMindmateCollabCode(row.code)
+    if (!byCode.has(key)) {
+      byCode.set(key, row)
+    }
+  }
+  return Array.from(byCode.values())
+}
+
 export function trackLocalMindmateCollabSession(row: LocalMindmateCollabSession): void {
   const key = normalizeMindmateCollabCode(row.code)
   const existing = loadLocalMindmateCollabSessions()
