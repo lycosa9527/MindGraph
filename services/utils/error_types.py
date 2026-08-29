@@ -8,6 +8,7 @@ Proprietary License
 
 from __future__ import annotations
 
+import binascii
 import json
 from typing import Tuple, Type
 
@@ -56,6 +57,20 @@ JSON_PARSE_ERRORS: Tuple[Type[Exception], ...] = (
     TypeError,
     ValueError,
     UnicodeDecodeError,
+)
+
+try:
+    from cryptography.exceptions import InvalidTag as _InvalidTag
+except ImportError:
+    _InvalidTag = ValueError
+
+# AES-GCM / base64 token unwrap
+CRYPTO_DECRYPT_ERRORS: Tuple[Type[Exception], ...] = (
+    ValueError,
+    TypeError,
+    UnicodeDecodeError,
+    binascii.Error,
+    _InvalidTag,
 )
 
 # SQLAlchemy database operations

@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AccountApiTokenField: typeof import('./components/auth/AccountApiTokenField.vue')['default']
     AccountInfoModal: typeof import('./components/auth/AccountInfoModal.vue')['default']
     AdminCosBackupsPanel: typeof import('./components/admin/AdminCosBackupsPanel.vue')['default']
     AdminCosCrowdsecPanel: typeof import('./components/admin/AdminCosCrowdsecPanel.vue')['default']

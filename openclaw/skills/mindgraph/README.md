@@ -11,7 +11,7 @@ This folder is versioned with the MindGraph app. It teaches WorkBuddy (OpenClaw)
 3. Copy the `mindgraph` folder to WorkBuddy `skills/` (e.g. `%USERPROFILE%\.workbuddy\skills\mindgraph`).
 4. Ready — no env UI, no pasting token in chat.
 
-If the user has **no token yet**, download **creates one** and writes it into `account.json`. If they already have a token, download **issues a new** `mgat_` (the raw secret is not stored, so the zip cannot reuse the old one) and the previous token stops working. Tokens last 90 days.
+If the user has **no token yet**, download **creates one** and writes it into `account.json`. If they already have a live token, download **reuses** it so the zip matches **账户信息**. Regenerating the token in the account modal invalidates old skill folders and the Chrome extension. Tokens last 90 days.
 
 ## Files in this bundle
 
@@ -26,7 +26,7 @@ If the user has **no token yet**, download **creates one** and writes it into `a
 
 The ClawHub and git copies are **not ready to go**. `account.json` is placeholders (`13800138000` / `mgat_paste_token_…`). The agent must treat those as unconfigured.
 
-If you did not download from 账户信息, put the three keys in `account.json` (or `skills.entries.mindgraph.env`). Never commit a real token. Each 账户信息 download **rotates** the `mgat_` — old skill folders and the Chrome extension using the previous token stop working.
+If you did not download from 账户信息, put the three keys in `account.json` (or `skills.entries.mindgraph.env`). Never commit a real token. Regenerating the token in 账户信息 invalidates old skill folders and the Chrome extension.
 
 ```json
 {

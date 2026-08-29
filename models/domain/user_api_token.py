@@ -1,7 +1,7 @@
 """User-scoped API tokens for OpenClaw and programmatic access (mgat_ prefix).
 
-One active token row per user (UNIQUE user_id). Raw token is never stored;
-SHA-256 hex hash is stored for lookup.
+One active token row per user (UNIQUE user_id). SHA-256 hex hash is stored
+for lookup. Optional AES-GCM ciphertext lets the account modal show the token.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -30,6 +30,7 @@ class UserAPIToken(Base):
         index=True,
     )
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    token_ciphertext: Mapped[str | None] = mapped_column(String(512), nullable=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

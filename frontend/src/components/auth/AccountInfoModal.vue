@@ -26,6 +26,7 @@ import {
   shouldShowWechatBindRow,
 } from '@/utils/oauthLoginUi'
 
+import AccountApiTokenField from './AccountApiTokenField.vue'
 import ApiTokenModal from './ApiTokenModal.vue'
 import AvatarSelectModal from './AvatarSelectModal.vue'
 import BindDingTalkAccountModal from './BindDingTalkAccountModal.vue'
@@ -63,6 +64,17 @@ const showChangePhoneModal = ref(false)
 const showChangePasswordModal = ref(false)
 const showSetPasswordSmsModal = ref(false)
 const showApiTokenModal = ref(false)
+const apiTokenRefreshTick = ref(0)
+
+function bumpApiTokenRefresh() {
+  apiTokenRefreshTick.value += 1
+}
+
+function scheduleTokenRefreshAfterDownload() {
+  window.setTimeout(() => {
+    bumpApiTokenRefresh()
+  }, 2000)
+}
 const showBindDingTalkModal = ref(false)
 const showUnbindPairModal = ref(false)
 const showOAuthBindModal = ref(false)
@@ -652,6 +664,7 @@ watch(
                       :href="openclawSkillZipUrl"
                       :title="t('auth.downloadOpenclawSkillHint')"
                       download
+                      @click="scheduleTokenRefreshAfterDownload"
                     >
                       {{ t('auth.downloadOpenclawSkill') }}
                     </a>
@@ -680,6 +693,12 @@ watch(
                       {{ t('auth.apiTokenButton') }}
                     </button>
                   </div>
+                  <AccountApiTokenField
+                    v-if="canUseApiToken"
+                    class="mt-3"
+                    :active="isVisible"
+                    :refresh-tick="apiTokenRefreshTick"
+                  />
                   <p
                     v-if="canUseApiToken"
                     class="mt-2 text-xs text-stone-400 leading-relaxed"
@@ -726,6 +745,7 @@ watch(
     <ApiTokenModal
       v-if="canUseApiToken"
       v-model:visible="showApiTokenModal"
+      @changed="bumpApiTokenRefresh"
     />
 
     <BindDingTalkAccountModal

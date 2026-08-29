@@ -115,6 +115,14 @@ export default {
   'auth.changePassword': '修改密码',
   'auth.accountPlugin': '插件',
   'auth.apiTokenButton': 'API令牌',
+  'auth.apiTokenVisible': '当前令牌',
+  'auth.apiTokenCopy': '复制',
+  'auth.apiTokenCopied': '已复制',
+  'auth.apiTokenCopyFailed': '复制失败',
+  'auth.apiTokenLoading': '加载中…',
+  'auth.apiTokenNone': '尚未生成令牌。下载技能包或点 API令牌 即可创建。',
+  'auth.apiTokenOpaque': '当前令牌无法回显，请重新生成。',
+  'auth.apiTokenExpires': '有效期至 {date}',
   'auth.downloadChromeExtension': 'Chrome 扩展',
   'auth.downloadWordAddin': 'Word 加载项',
   'auth.schoolTierFeatureUnavailable':
@@ -124,7 +132,7 @@ export default {
   'auth.diagramLimitReached':
     '体验版每位教师最多保存 {max} 张导图，请删除后再保存。',
   'auth.downloadOpenclawSkill': 'WorkBuddy技能包',
-  'auth.downloadOpenclawSkillHint': '下载即含账号与令牌。每次下载签发新令牌，旧技能包与扩展中的令牌会失效。',
+  'auth.downloadOpenclawSkillHint': '下载即含账号与当前令牌。重新生成令牌后，旧技能包与扩展会失效。',
   'auth.changePhoneButton': '更换手机',
   'auth.passwordChangeSuccess': '密码修改成功',
   'auth.passwordChangeFailed': '密码修改失败',

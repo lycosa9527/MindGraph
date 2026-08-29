@@ -96,7 +96,7 @@ Headers:
 
 When the user says 改账号 / 改 token / 换环境 / 绑定:
 
-1. **Prefer:** tell them to re-download **WorkBuddy技能包** from MindGraph **账户信息** and replace this skill folder. That zip writes `account.json` + `.env` (creates a token if they have none).
+1. **Prefer:** tell them to re-download **WorkBuddy技能包** from MindGraph **账户信息** and replace this skill folder. That zip writes `account.json` + `.env` (reuses the visible token, or creates one if they have none).
 2. **Never** write phone or `mgat_…` into `SKILL.md`.
 3. If they paste account + token in chat, write **`account.json` and `.env`** in this folder (same three keys). Do **not** write `demo.json`. Do not echo the token back.
 4. Confirm with `GET {MINDGRAPH_BASE_URL}/api/diagrams?page=1&page_size=1`. Report **HTTP status only**.

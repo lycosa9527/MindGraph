@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * ApiTokenModal — generate, display once, revoke user API token (WorkBuddy / extensions).
+ * ApiTokenModal — generate, display, revoke user API token (WorkBuddy / extensions).
  */
 import { computed, ref, watch } from 'vue'
 
@@ -16,6 +16,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
+  (e: 'changed'): void
 }>()
 
 const isVisible = computed({
@@ -25,6 +26,7 @@ const isVisible = computed({
 
 type StatusPayload = {
   exists: boolean
+  token: string | null
   expires_at: string | null
   last_used_at: string | null
   created_at: string | null
@@ -82,6 +84,7 @@ async function generateToken() {
     rawToken.value = data.token
     tokenExpiresAt.value = data.expires_at
     accountHint.value = data.account
+    emit('changed')
     view.value = 'token'
     await loadStatus()
   } finally {
@@ -100,6 +103,7 @@ async function revokeToken() {
     ElMessage.success('已吊销')
     view.value = 'status'
     rawToken.value = ''
+    emit('changed')
     await loadStatus()
   } finally {
     loading.value = false
@@ -107,8 +111,12 @@ async function revokeToken() {
 }
 
 async function copyToken() {
+  const token = rawToken.value || status.value?.token || ''
+  if (!token) {
+    return
+  }
   try {
-    await navigator.clipboard.writeText(rawToken.value)
+    await navigator.clipboard.writeText(token)
     ElMessage.success('已复制到剪贴板')
   } catch {
     ElMessage.error('复制失败')
@@ -141,7 +149,7 @@ function doneTokenView() {
                 @click="closeModal"
               />
               <h2 class="text-lg font-semibold text-stone-900 tracking-tight">API Token</h2>
-              <p class="text-xs text-stone-500 mt-1">用于 WorkBuddy 技能包、Chrome 扩展等外部工具，有效期 90 天。重新下载技能包会签发新令牌。</p>
+              <p class="text-xs text-stone-500 mt-1">用于 WorkBuddy 技能包、Chrome 扩展等外部工具，有效期 90 天。令牌会显示在账户信息中。重新生成会使旧技能包与扩展失效。</p>
             </div>
 
             <div class="p-8 space-y-4">
@@ -155,11 +163,34 @@ function doneTokenView() {
               <template v-else-if="view === 'status'">
                 <div
                   v-if="status?.exists"
-                  class="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600 space-y-1"
+                  class="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm text-stone-600 space-y-2"
                 >
                   <div>状态：有效</div>
                   <div v-if="status.expires_at">到期：{{ status.expires_at }}</div>
                   <div v-if="status.last_used_at">上次使用：{{ status.last_used_at }}</div>
+                  <div
+                    v-if="status.token"
+                    class="flex gap-2"
+                  >
+                    <input
+                      :value="status.token"
+                      type="text"
+                      readonly
+                      class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-stone-200 bg-white font-mono text-xs"
+                    />
+                    <el-button
+                      round
+                      size="small"
+                      @click="copyToken"
+                      >复制</el-button
+                    >
+                  </div>
+                  <div
+                    v-else
+                    class="text-xs text-stone-500"
+                  >
+                    当前令牌无法回显，请重新生成。
+                  </div>
                 </div>
                 <div
                   v-else
@@ -205,7 +236,7 @@ function doneTokenView() {
                 <div
                   class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
                 >
-                  此 Token 仅显示一次，请立即复制保存；关闭窗口后将无法再次查看完整 Token。
+                  令牌已保存在账户信息中，可随时再次查看。
                 </div>
                 <div
                   v-if="accountHint"

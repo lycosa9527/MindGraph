@@ -19,7 +19,10 @@ from models.domain.messages import Language, Messages
 from models.domain.user_api_token import UserAPIToken
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.auth.dependencies import get_language_dependency
-from services.auth.user_api_token_issue import issue_user_api_token
+from services.auth.user_api_token_issue import (
+    issue_user_api_token,
+    reveal_stored_user_api_token,
+)
 from services.redis.cache.redis_user_token_cache import user_token_cache
 from utils.auth import (
     get_current_user,
@@ -70,7 +73,7 @@ async def get_user_api_token_status(
     db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ) -> dict[str, Any]:
-    """Return metadata for the current user's API token (never the raw secret)."""
+    """Return metadata and the raw token when ciphertext is stored."""
     if not await user_has_school_tier_feature(db, current_user, TIER_FEATURE_API_TOKEN):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -86,6 +89,7 @@ async def get_user_api_token_status(
     if not row or as_utc_aware(row.expires_at) <= datetime.now(UTC):
         return {
             "exists": False,
+            "token": None,
             "expires_at": None,
             "last_used_at": None,
             "created_at": None,
@@ -93,6 +97,7 @@ async def get_user_api_token_status(
         }
     return {
         "exists": True,
+        "token": reveal_stored_user_api_token(row),
         "expires_at": row.expires_at.isoformat() if row.expires_at else None,
         "last_used_at": row.last_used_at.isoformat() if row.last_used_at else None,
         "created_at": row.created_at.isoformat() if row.created_at else None,
@@ -112,5 +117,6 @@ async def revoke_user_api_token(
         return {"ok": True, "revoked": False}
     await user_token_cache.invalidate_by_token_hash_64(row.token_hash)
     row.is_active = False
+    row.token_ciphertext = None
     await db.commit()
     return {"ok": True, "revoked": True}

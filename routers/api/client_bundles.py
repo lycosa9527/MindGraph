@@ -21,7 +21,10 @@ from models.domain.auth import User
 from models.domain.messages import Language
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.auth.dependencies import get_language_dependency
-from services.auth.user_api_token_issue import issue_user_api_token
+from services.auth.user_api_token_issue import (
+    ensure_user_api_token,
+    peek_live_user_api_token,
+)
 from services.auth.workbuddy_skill_bundle import zip_skill_directory
 from services.infrastructure.utils.pwa_manifest import public_site_origin_from_request
 from utils.auth import get_current_user
@@ -93,11 +96,10 @@ async def download_openclaw_skill_zip(
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> Response:
-    """Zip of the WorkBuddy skill with this user's account.json.
+    """Zip of the WorkBuddy skill with this user's current account.json.
 
-    Always issues a raw ``mgat_`` into ``account.json``: creates a token if
-    the user has none (or it is revoked/expired), otherwise replaces the
-    existing one so the zip can include the secret.
+    Reuses a live decryptable ``mgat_``. Mints one only when missing, revoked,
+    expired, or too old to display (hash-only row).
     """
     account = str(getattr(current_user, "phone", "") or "").strip()
     if not account:
@@ -109,14 +111,16 @@ async def download_openclaw_skill_zip(
             TIER_FEATURE_API_TOKEN,
             lang,
         )
-        identifier = get_rate_limit_identifier(current_user, request)
-        await check_endpoint_rate_limit(
-            "api_token_create",
-            identifier,
-            max_requests=10,
-            window_seconds=3600,
-        )
-        issued = await issue_user_api_token(db, current_user)
+        existing = await peek_live_user_api_token(db, current_user)
+        if existing is None:
+            identifier = get_rate_limit_identifier(current_user, request)
+            await check_endpoint_rate_limit(
+                "api_token_create",
+                identifier,
+                max_requests=10,
+                window_seconds=3600,
+            )
+        issued = existing or await ensure_user_api_token(db, current_user)
     origin = public_site_origin_from_request(request)
     try:
         data = zip_skill_directory(
