@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'Шкільну підписку завершено. Ваш обліковий запис переведено на пробний тариф. Зверніться до адміністратора платформи для поновлення.',
   'auth.diagramLimitReached': 'На пробних шкільних облікових записах можна зберегти до {max} діаграм на вчителя. Видаліть одну, щоб зберегти нову.',
   'auth.downloadOpenclawSkill': 'Навичка OpenClaw',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'Змінити телефон',
   'auth.passwordChangeSuccess': 'Пароль успішно змінено',
   'auth.passwordChangeFailed': 'Не вдалося змінити пароль',

@@ -1,12 +1,16 @@
 ---
 name: mindgraph
 description: Author a MindGraph semantic diagram spec, save it, and render PNG. You write the spec. MindGraph only stores and draws. Never call generate_graph or any prompt/LLM generate API.
-metadata: {"openclaw": {"emoji": "🧠", "requires": {"env": ["MINDGRAPH_BASE_URL", "MINDGRAPH_ACCOUNT", "MINDGRAPH_TOKEN"]}}}
+metadata: {"openclaw": {"emoji": "🧠"}}
 ---
 
 # MindGraph
 
-Use env `MINDGRAPH_BASE_URL`, `MINDGRAPH_ACCOUNT` (phone), `MINDGRAPH_TOKEN` (`mgat_…`). Never echo token/account. Human setup: see `README.md`.
+**WorkBuddy:** Auth lives **in this skill folder**, not in host env and not in `SKILL.md`. After the user installs a zip from **账户信息 → WorkBuddy技能包**, `account.json` and `.env` are already filled. **Do not** ask them to set `MINDGRAPH_*` environment variables.
+
+**First action (every session):** Read `account.json` next to this `SKILL.md`. If `MINDGRAPH_TOKEN` contains `paste_token`, or `MINDGRAPH_ACCOUNT` is `13800138000`, this folder is unconfigured (git/ClawHub copy) — tell the user to download **WorkBuddy技能包** and replace this folder. Ignore leftover `demo.json` if present.
+
+Never echo token/account. Human setup: see `README.md`.
 
 MindGraph is the **pen**. You are the **author**. Always build the semantic `spec` yourself — even if the user only gives a topic. Then save and render.
 
@@ -18,7 +22,7 @@ MindGraph is the **pen**. You are the **author**. Always build the semantic `spe
 
 Intent → `diagram_type` → author `spec` (cookbook) → `POST /api/diagrams` → `GET …/png`.
 
-Edit an existing diagram: `GET /api/diagrams/{id}` → `PATCH …/nodes` → PNG.
+Edit an existing diagram: `GET /api/diagrams/{id}` → `PATCH …/nodes` with a full `spec` → PNG.
 
 ## Pick `diagram_type`
 
@@ -73,30 +77,32 @@ Named-type aliases: `mindmap` → `mind_map`; 类比图 → `bridge_map`; 复流
 
 ## Auth (every request)
 
+**Read `account.json` first** (same folder as this file). Resolve `MINDGRAPH_BASE_URL`, `MINDGRAPH_ACCOUNT`, `MINDGRAPH_TOKEN` in this order (first complete, non-placeholder set wins). Do **not** require host env.
+
+Placeholder = token contains `paste_token`, or account is `13800138000`. Treat as missing.
+
+1. This skill folder’s **`account.json`** — top-level keys, or `skills.entries.mindgraph.env`.
+2. This skill folder’s **`.env`** (same three keys).
+3. Process env only if both files are missing or placeholder.
+
+Headers:
+
 - `Authorization: Bearer {MINDGRAPH_TOKEN}`
 - `X-MG-Account: {MINDGRAPH_ACCOUNT}` (**required** with `mgat_`)
-- `X-MG-Client: openclaw` (recommended)
+- `X-MG-Client: workbuddy` (or `openclaw`)
 - `X-Request-Id` (recommended on long PNG calls)
-
-Use **current** env values every time. After user changes credentials, host may need restart/reload before new env applies.
 
 ### Change account / token (skill-creator)
 
-When the user says edit this skill / 改账号 / 改 token / 换环境:
+When the user says 改账号 / 改 token / 换环境 / 绑定:
 
-1. **Never** write phone or `mgat_…` into `SKILL.md`. Auth is **env only**.
-2. Set these three keys (keep any key the user did not change):
-   - `MINDGRAPH_BASE_URL` — HTTPS origin, no trailing slash
-   - `MINDGRAPH_ACCOUNT` — phone / login
-   - `MINDGRAPH_TOKEN` — `mgat_…` (90 days)
-3. Write them here, first match wins:
-   1. Host skill env: `skills.entries.mindgraph.env` in WorkBuddy / OpenClaw config (e.g. `%USERPROFILE%\.openclaw\openclaw.json`, WorkBuddy 技能设置 JSON).
-   2. Else the **installed** skill `demo.json` env block (local machine only).
-   3. Else tell the user the three values must be pasted in 技能 / 环境变量. Do not invent a new file in `SKILL.md`.
-4. Confirm with `GET {MINDGRAPH_BASE_URL}/api/diagrams?page=1&page_size=1` (same auth headers). Report **HTTP status only**. Never echo the token in chat or in files you show the user.
-5. Tell the user to **save + restart** WorkBuddy/OpenClaw (or reload skills) so the new env is loaded.
+1. **Prefer:** tell them to re-download **WorkBuddy技能包** from MindGraph **账户信息** and replace this skill folder. That zip writes `account.json` + `.env` (creates a token if they have none).
+2. **Never** write phone or `mgat_…` into `SKILL.md`.
+3. If they paste account + token in chat, write **`account.json` and `.env`** in this folder (same three keys). Do **not** write `demo.json`. Do not echo the token back.
+4. Confirm with `GET {MINDGRAPH_BASE_URL}/api/diagrams?page=1&page_size=1`. Report **HTTP status only**.
+5. Restart is optional if you just wrote the files; use the new values on the next request.
 
-Do not publish or commit a `demo.json` that contains a real token.
+Do not publish or commit `account.json` / `.env` that contain a real token.
 
 ### HTTP errors (not spec)
 
@@ -104,7 +110,7 @@ Do **not** rewrite the spec or call any generate API for these. Never echo the t
 
 | Code | Meaning | What to do |
 |------|---------|------------|
-| **401** | Token missing/wrong, or no `X-MG-Account` | Ask the user to check `MINDGRAPH_TOKEN` + `MINDGRAPH_ACCOUNT`, save env, restart WorkBuddy/OpenClaw. |
+| **401** | Token missing/wrong, or no `X-MG-Account` | Ask the user to re-download **WorkBuddy技能包** from 账户信息 and replace this folder. Restart WorkBuddy. |
 | **403** | School tier lacks `api_token` / `chrome_extension`, or diagram library cap | Tell the user; do not retry. |
 | **429** | Rate limit (PNG ~20/min; export ~100/min) | Wait, then retry the **same** call once. |
 | **500** on PNG | Draw failed | Retry PNG **once**. If it fails again, tell the user. Keep the saved spec. |
@@ -258,20 +264,16 @@ Required shapes only. Aliases accepted: `contexts`→`context`; `left_topic`/`ri
 
 ## B. Patch existing
 
-`GET {MINDGRAPH_BASE_URL}/api/diagrams/{id}` then:
+`GET {MINDGRAPH_BASE_URL}/api/diagrams/{id}` then **prefer full replace** `{ "spec": { } }` (same validator as create). Then **A3**.
 
-```json
-{ "action": "update", "updates": [{ "node_id": "<canvas-uuid>", "new_text": "New label" }] }
-```
-
-Or full replace `{ "spec": { } }` (same validator as create). Actions: `update` | `add` | `delete`. Then **A3**.
+Structured `action` is optional and limited: `update` needs a stored node `id` (cookbook nodes often have none); `add` only appends a top-level `children` item. Prefer rewriting the whole `spec`.
 
 ## Optional shortcuts
 
 | Path | When |
 |------|------|
 | `POST /api/export_png` | Spec → PNG bytes (no library save); body `diagram_data` + `diagram_type` |
-| `GET /api/diagrams` | List before editing |
+| `GET /api/diagrams?page=1&page_size=10` | List (`page` / `page_size`, max 50; not `limit`) |
 
 ## Best practices
 

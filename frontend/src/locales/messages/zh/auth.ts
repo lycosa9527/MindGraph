@@ -124,6 +124,7 @@ export default {
   'auth.diagramLimitReached':
     '体验版每位教师最多保存 {max} 张导图，请删除后再保存。',
   'auth.downloadOpenclawSkill': 'WorkBuddy技能包',
+  'auth.downloadOpenclawSkillHint': '下载即含账号与令牌。每次下载签发新令牌，旧技能包与扩展中的令牌会失效。',
   'auth.changePhoneButton': '更换手机',
   'auth.passwordChangeSuccess': '密码修改成功',
   'auth.passwordChangeFailed': '密码修改失败',

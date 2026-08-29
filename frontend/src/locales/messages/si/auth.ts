@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'ඔබේ පාසල් දායකත්‍වය අවසන්. ගිණුම දැන් trial tier හි. අලුත් කිරීමට වේදිකා පරිපාලක අමතන්න.',
   'auth.diagramLimitReached': 'Trial පාසල් ගුරුවරයෙකුට {max} දක්වා සුරැකි රූප සටහන්. අලුත් එකක් සුරැකීමට එකක් මකන්න.',
   'auth.downloadOpenclawSkill': 'OpenClaw skill',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'දුරකථන අංකය වෙනස් කරන්න',
   'auth.passwordChangeSuccess': 'මුරපදය සාර්ථකව වෙනස් විය',
   'auth.passwordChangeFailed': 'මුරපදය වෙනස් කිරීම අසාර්ථක විය',

@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'Gói đăng ký trường của bạn đã hết hạn. Tài khoản hiện ở gói dùng thử. Liên hệ quản trị viên nền tảng để gia hạn.',
   'auth.diagramLimitReached': 'Trường dùng thử cho phép tối đa {max} sơ đồ đã lưu mỗi giáo viên. Hãy xóa một sơ đồ để lưu sơ đồ mới.',
   'auth.downloadOpenclawSkill': 'Kỹ năng OpenClaw',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'Đổi số điện thoại',
   'auth.passwordChangeSuccess': 'Đổi mật khẩu thành công',
   'auth.passwordChangeFailed': 'Đổi mật khẩu thất bại',

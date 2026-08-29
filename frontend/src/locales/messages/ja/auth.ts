@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': '学校のサブスクリプションが終了しました。アカウントはトライアルプランになりました。更新はプラットフォーム管理者にお問い合わせください。',
   'auth.diagramLimitReached': 'トライアル学校では教師あたり最大 {max} 件の図を保存できます。新しい図を保存するには 1 件削除してください。',
   'auth.downloadOpenclawSkill': 'OpenClaw スキル',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': '電話番号を変更',
   'auth.passwordChangeSuccess': 'パスワードを変更しました',
   'auth.passwordChangeFailed': 'パスワードの変更に失敗しました',

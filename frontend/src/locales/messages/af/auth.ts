@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'Jou skoolintekening het geëindig. Jou rekening is nou op die proefvlak. Kontak jou platformadministrateur om te hernu.',
   'auth.diagramLimitReached': 'Proefskole laat tot {max} gestoorde diagramme per onderwyser toe. Verwyder een om ’n nuwe diagram te stoor.',
   'auth.downloadOpenclawSkill': 'OpenClaw-vaardigheid',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'Verander foon',
   'auth.passwordChangeSuccess': 'Wagwoord suksesvol verander',
   'auth.passwordChangeFailed': 'Wagwoordverandering het misluk',

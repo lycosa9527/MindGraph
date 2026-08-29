@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'Maktab obunangiz tugadi. Hisobingiz endi sinov darajasida. Yangilash uchun platforma adminingiz bilan bog’laning.',
   'auth.diagramLimitReached': 'Sinov maktablarida har bir o’qituvchi uchun eng ko’pi bilan {max} ta saqlangan diagramma mumkin. Yangi diagramma saqlash uchun birini o’chiring.',
   'auth.downloadOpenclawSkill': 'OpenClaw skill',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'Telefonni o’zgartirish',
   'auth.passwordChangeSuccess': 'Parol muvaffaqiyatli o’zgartirildi',
   'auth.passwordChangeFailed': 'Parol o’zgartirilmadi',

@@ -1,85 +1,49 @@
-# MindGraph OpenClaw skill
+# MindGraph WorkBuddy / OpenClaw skill
 
-This folder is versioned with the MindGraph app. It teaches OpenClaw how to call MindGraph’s HTTP API using your account token.
+This folder is versioned with the MindGraph app. It teaches WorkBuddy (OpenClaw) how to call MindGraph’s HTTP API.
 
-**Agent behavior (`SKILL.md`):** OpenClaw / WorkBuddy **picks the diagram type** (named type wins; else thinking intent + lookalikes; unclear → `mind_map`) and **authors the semantic `spec`**. MindGraph is only the pen — validate, save (`POST /api/diagrams`), draw (`GET …/png`). **No** `generate_graph` or other prompt-to-diagram APIs. Cookbook + picker live in `SKILL.md`. Bad specs → **400** `invalid_diagram_spec`; broken JSON → **422**.
-
-Human install / env / WorkBuddy notes stay in this README so the skill file stays short for the model.
+**Agent behavior (`SKILL.md`):** Pick the diagram type, author the semantic `spec`, then save and draw. MindGraph is the pen. Credentials come from **`account.json`** (filled when the user downloads the zip from 账户信息).
 
 ## Install (end users)
 
-```bash
-openclaw skills install mindgraph
-```
+1. In MindGraph: **账户信息 → WorkBuddy技能包** (downloads a zip).
+2. Unzip. **`account.json` and `.env`** already have your phone, `mgat_` token, and server URL.
+3. Copy the `mindgraph` folder to WorkBuddy `skills/` (e.g. `%USERPROFILE%\.workbuddy\skills\mindgraph`).
+4. Ready — no env UI, no pasting token in chat.
 
-Or copy this folder to the OpenClaw workspace `skills/mindgraph/`.
-
-## Configure
-
-**Fast path:** open **`demo.json`** in this folder — it is a ready-made `skills.entries` block you can merge into your OpenClaw config (e.g. `~/.openclaw/openclaw.json` or your host’s equivalent, such as Tencent WorkBuddy skill settings if the UI accepts JSON). Delete the `_instructions` key after merging.
-
-Minimal shape:
-
-```json
-{
-  "skills": {
-    "entries": {
-      "mindgraph": {
-        "env": {
-          "MINDGRAPH_BASE_URL": "https://test.mindspringedu.com",
-          "MINDGRAPH_ACCOUNT": "138xxxxxxxx",
-          "MINDGRAPH_TOKEN": "mgat_..."
-        }
-      }
-    }
-  }
-}
-```
-
-- **MINDGRAPH_BASE_URL**: HTTPS origin of your MindGraph deployment (no trailing slash). Use the same origin you would use for API calls (not only the `/mindgraph` SPA path).
-- **MINDGRAPH_ACCOUNT**: Phone number / account login (same as in MindGraph).
-- **MINDGRAPH_TOKEN**: Generated in the app under **账户信息 → API Token** (shown once; **90-day** validity).
-
-**HTTP timeouts:** PNG render (`GET /api/diagrams/{id}/png` or `POST /api/export_png`) uses headless Chromium. Allow **at least ~180 seconds** read timeout. Default short timeouts in HTTP clients cause spurious failures.
-
-### Tencent WorkBuddy (where is `env`?)
-
-WorkBuddy is built on the OpenClaw stack, but **the UI changes by version** and there is **no single documented screen** that always says “skill environment variables.” Try this order:
-
-1. **Settings / 设置** in WorkBuddy → search for **技能**, **Skills**, **Claw**, **OpenClaw**, **高级**, or **配置文件** — some builds expose a **JSON** or **per-skill** section where you can paste the `skills.entries.mindgraph.env` block from **`demo.json`** (same shape as the JSON above).
-2. **Skill hub / 技能市场** → open the installed **MindGraph** (or your imported skill) → look for **配置**, **环境变量**, **编辑**, or a **⋯** menu on the skill card.
-3. **Config file on disk** (if the app uses the standard layout): merge `demo.json` into **`%USERPROFILE%\.openclaw\openclaw.json`** if that file exists after WorkBuddy has run once. Other locations to check: **`%USERPROFILE%\.codebuddy\`**, **`%APPDATA%\CodeBuddy`**, or a **`.workbuddy`** folder under your user profile (per CodeBuddy docs for `models.json`). Close WorkBuddy, edit, save, restart.
-4. **No env UI found:** Many WorkBuddy tutorials (e.g. third-party skills) put secrets **in the chat** (“here is my base URL / account / token”). You can do the same for testing: give **`MINDGRAPH_BASE_URL`**, **`MINDGRAPH_ACCOUNT`**, and **`MINDGRAPH_TOKEN`** in the Claw dialog; the model should follow **`SKILL.md`** and call the API with those values **without echoing the token**.
-
-If nothing works, use **WorkBuddy / CodeBuddy in-app feedback** or **Tencent Cloud support** and ask specifically: *where to set `skills.entries.<name>.env` for OpenClaw skills* for your build.
-
-### Setup (first-time)
-
-1. Log into MindGraph in the browser.
-2. Open **账户信息** → **API Token** → **生成 Token**.
-3. Set `MINDGRAPH_TOKEN`, `MINDGRAPH_ACCOUNT` (phone), and `MINDGRAPH_BASE_URL` (default test: `https://test.mindspringedu.com`) in the skill env (see above).
-4. Tokens expire after **90 days**; regenerate from the same UI.
-
-### After you change auth
-
-MindGraph applies new tokens and account checks on **every request**—no wait on the server. If you edit `MINDGRAPH_*` in OpenClaw/WorkBuddy and calls still fail or act like the old token, your **client** may have loaded env only at startup: **save** the config, then **restart** WorkBuddy or OpenClaw (or use a “reload skills / config” action if the product provides one). The next requests will use the new values.
-
-## Publish updates (maintainers)
-
-From the MindGraph repo root:
-
-```bash
-npm i -g clawhub
-clawhub login
-clawhub skill publish ./openclaw/skills/mindgraph --slug mindgraph --name "MindGraph" --version 1.7.0 --tags latest
-```
-
-Bump the **ClawHub** `--version` when `SKILL.md` or this README changes (current publish target: **1.7.0**).
+If the user has **no token yet**, download **creates one** and writes it into `account.json`. If they already have a token, download **issues a new** `mgat_` (the raw secret is not stored, so the zip cannot reuse the old one) and the previous token stops working. Tokens last 90 days.
 
 ## Files in this bundle
 
 | File | Role |
 |------|------|
-| `SKILL.md` | Spec-only pen path, type picker, cookbook, auth, skill-creator env steps, 400/422 |
-| `demo.json` | Copy-paste `skills.entries.mindgraph` for `openclaw.json` |
-| `README.md` | Install, env, WorkBuddy hints, setup, publish command |
+| `SKILL.md` | Spec-only pen path, type picker, cookbook, auth, `account.json` |
+| `account.json` | Credentials (JSON). Download zip is filled; the repo copy is placeholders |
+| `.env` | Same three keys, for hosts that load a skill-folder env file |
+| `README.md` | Install notes |
+
+## Manual / ClawHub
+
+The ClawHub and git copies are **not ready to go**. `account.json` is placeholders (`13800138000` / `mgat_paste_token_…`). The agent must treat those as unconfigured.
+
+If you did not download from 账户信息, put the three keys in `account.json` (or `skills.entries.mindgraph.env`). Never commit a real token. Each 账户信息 download **rotates** the `mgat_` — old skill folders and the Chrome extension using the previous token stop working.
+
+```json
+{
+  "MINDGRAPH_BASE_URL": "https://test.mindspringedu.com",
+  "MINDGRAPH_ACCOUNT": "138xxxxxxxx",
+  "MINDGRAPH_TOKEN": "mgat_..."
+}
+```
+
+**HTTP timeouts:** PNG render often needs **~180 seconds**.
+
+## Publish updates (maintainers)
+
+```bash
+npm i -g clawhub
+clawhub login
+clawhub skill publish ./openclaw/skills/mindgraph --slug mindgraph --name "MindGraph" --version 1.8.0 --tags latest
+```
+
+Publish target: **1.8.0**. Keep `account.json` as placeholders in git.

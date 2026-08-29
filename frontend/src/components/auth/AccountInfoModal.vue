@@ -650,6 +650,7 @@ watch(
                       v-if="canUseApiToken"
                       class="account-plugin-pill account-plugin-pill--openclaw"
                       :href="openclawSkillZipUrl"
+                      :title="t('auth.downloadOpenclawSkillHint')"
                       download
                     >
                       {{ t('auth.downloadOpenclawSkill') }}
@@ -679,6 +680,12 @@ watch(
                       {{ t('auth.apiTokenButton') }}
                     </button>
                   </div>
+                  <p
+                    v-if="canUseApiToken"
+                    class="mt-2 text-xs text-stone-400 leading-relaxed"
+                  >
+                    {{ t('auth.downloadOpenclawSkillHint') }}
+                  </p>
                 </div>
               </div>
             </div>

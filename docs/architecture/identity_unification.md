@@ -68,7 +68,7 @@ Uses the same `mg_user_{pk}` via Bearer auth. Fetches unified history from `GET 
 
 ## API client source (`X-MG-Client`)
 
-mgat_ clients send `X-MG-Client` (`chrome-extension`, `edge-extension`, `openclaw`, `file-reader`). The server sanitizes the label, binds it on `request.state.mg_client`, emits `[TokenAudit]` lines, and records `client_source` on Redis activity sessions / history (admin realtime). Browser JWT sessions bind as `web`. See [`utils/auth/mg_client.py`](../../utils/auth/mg_client.py).
+mgat_ clients send `X-MG-Client` (`chrome-extension`, `edge-extension`, `openclaw`, `workbuddy`, `file-reader`). The server sanitizes the label, binds it on `request.state.mg_client`, emits `[TokenAudit]` lines, and records `client_source` on Redis activity sessions / history (admin realtime). Browser JWT sessions bind as `web`. See [`utils/auth/mg_client.py`](../../utils/auth/mg_client.py).
 
 ## Related docs
 

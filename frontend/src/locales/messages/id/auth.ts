@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'Langganan sekolah Anda telah berakhir. Akun Anda sekarang pada tingkat uji coba. Hubungi administrator platform untuk memperpanjang.',
   'auth.diagramLimitReached': 'Sekolah uji coba mengizinkan hingga {max} diagram tersimpan per guru. Hapus satu untuk menyimpan diagram baru.',
   'auth.downloadOpenclawSkill': 'Skill OpenClaw',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'Ubah nomor telepon',
   'auth.passwordChangeSuccess': 'Kata sandi berhasil diubah',
   'auth.passwordChangeFailed': 'Gagal mengubah kata sandi',

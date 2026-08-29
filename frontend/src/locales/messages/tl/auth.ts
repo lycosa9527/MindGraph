@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'Natapos na ang subscription ng iyong paaralan. Nasa trial tier na ang account mo. Makipag-ugnayan sa platform administrator para mag-renew.',
   'auth.diagramLimitReached': 'Hanggang {max} saved diagram bawat guro ang pinapayagan ng trial schools. Mag-delete ng isa para mag-save ng bago.',
   'auth.downloadOpenclawSkill': 'OpenClaw skill',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'Palitan ang phone',
   'auth.passwordChangeSuccess': 'Matagumpay na napalitan ang password',
   'auth.passwordChangeFailed': 'Hindi napalitan ang password',

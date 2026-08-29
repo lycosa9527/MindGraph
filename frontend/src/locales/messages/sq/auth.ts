@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'Abonimi shkollor ka përfunduar. Llogaria juaj është në nivelin provë. Kontaktoni administratorin e platformës për rinovim.',
   'auth.diagramLimitReached': 'Shkollat provë lejojnë deri në {max} diagrame të ruajtura për mësues. Fshini një për të ruajtur një të re.',
   'auth.downloadOpenclawSkill': 'Aftësi OpenClaw',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'Ndrysho telefonin',
   'auth.passwordChangeSuccess': 'Fjalëkalimi u ndryshua me sukses',
   'auth.passwordChangeFailed': 'Ndryshimi i fjalëkalimit dështoi',

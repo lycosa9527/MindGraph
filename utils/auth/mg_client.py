@@ -1,7 +1,7 @@
 """
 Resolve and sanitize X-MG-Client labels for mgat_ / session traffic.
 
-External clients (Chrome/Edge extension, OpenClaw, file-reader) send
+External clients (Chrome/Edge extension, WorkBuddy / OpenClaw, file-reader) send
 ``X-MG-Client`` with every API-token request. Browser JWT sessions are
 labeled ``web``. Values are bound on ``request.state`` once per request so
 activity tracking and logs can attribute traffic without re-parsing headers.
@@ -33,6 +33,7 @@ KNOWN_MG_CLIENTS = frozenset(
         "chrome-extension",
         "edge-extension",
         "openclaw",
+        "workbuddy",
         "file-reader",
         "mcp",
         "word-addin",
@@ -45,6 +46,7 @@ MG_CLIENT_DISPLAY_LABELS = {
     "chrome-extension": "Chrome extension",
     "edge-extension": "Edge extension",
     "openclaw": "OpenClaw",
+    "workbuddy": "WorkBuddy",
     "file-reader": "File reader",
     "mcp": "MCP",
     "word-addin": "Word add-in",

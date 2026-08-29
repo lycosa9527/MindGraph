@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'Your school subscription has ended. Your account is now on the trial tier. Contact your platform administrator to renew.',
   'auth.diagramLimitReached': 'Trial schools allow up to {max} saved diagrams per teacher. Delete one to save a new diagram.',
   'auth.downloadOpenclawSkill': 'OpenClaw skill',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'Change phone',
   'auth.passwordChangeSuccess': 'Password changed successfully',
   'auth.passwordChangeFailed': 'Password change failed',

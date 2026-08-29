@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'Okul aboneliğiniz sona erdi. Hesabınız artık deneme katmanında. Yenilemek için platform yöneticinizle iletişime geçin.',
   'auth.diagramLimitReached': 'Deneme okulları öğretmen başına en fazla {max} kayıtlı diyagrama izin verir. Yeni diyagram kaydetmek için birini silin.',
   'auth.downloadOpenclawSkill': 'OpenClaw becerisi',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'Telefonu değiştir',
   'auth.passwordChangeSuccess': 'Şifre başarıyla değiştirildi',
   'auth.passwordChangeFailed': 'Şifre değiştirme başarısız',

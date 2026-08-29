@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'La suscripción de su escuela ha finalizado. Su cuenta ahora está en el plan de prueba. Contacte al administrador de la plataforma para renovar.',
   'auth.diagramLimitReached': 'Las escuelas de prueba permiten hasta {max} diagramas guardados por docente. Elimine uno para guardar un diagrama nuevo.',
   'auth.downloadOpenclawSkill': 'Skill de OpenClaw',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'Cambiar teléfono',
   'auth.passwordChangeSuccess': 'Contraseña cambiada correctamente',
   'auth.passwordChangeFailed': 'No se pudo cambiar la contraseña',

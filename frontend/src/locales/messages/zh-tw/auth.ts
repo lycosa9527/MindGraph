@@ -117,6 +117,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': '學校訂閱已到期，教師與學校管理員均已鎖定。如需續訂請聯繫平台管理員。',
   'auth.diagramLimitReached': '体验版每位教师最多保存 {max} 张导图，请删除后再保存。',
   'auth.downloadOpenclawSkill': 'WorkBuddy技能包',
+  'auth.downloadOpenclawSkillHint': '下載即含帳號與令牌。每次下載簽發新令牌，舊技能包與擴充功能中的令牌會失效。',
   'auth.changePhoneButton': '更換手機',
   'auth.passwordChangeSuccess': '密碼修改成功',
   'auth.passwordChangeFailed': '密碼修改失敗',

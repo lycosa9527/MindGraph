@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'L\'abbonamento della tua scuola è terminato. Il tuo account è ora in prova. Contatta l\'amministratore della piattaforma per rinnovare.',
   'auth.diagramLimitReached': 'Le scuole in prova consentono fino a {max} diagrammi salvati per docente. Elimina uno per salvarne uno nuovo.',
   'auth.downloadOpenclawSkill': 'Skill OpenClaw',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'Cambia telefono',
   'auth.passwordChangeSuccess': 'Password modificata correttamente',
   'auth.passwordChangeFailed': 'Impossibile modificare la password',

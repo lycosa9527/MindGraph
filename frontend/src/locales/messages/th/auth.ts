@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'การสมัครโรงเรียนของคุณสิ้นสุดแล้ว บัญชีอยู่ระดับทดลอง ติดต่อผู้ดูแลแพลตฟอร์มเพื่อต่ออายุ',
   'auth.diagramLimitReached': 'โรงเรียนทดลองบันทึกไดอะแกรมได้ครูละสูงสุด {max} รายการ ลบบางรายการเพื่อบันทึกใหม่',
   'auth.downloadOpenclawSkill': 'สกิล OpenClaw',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'เปลี่ยนโทรศัพท์',
   'auth.passwordChangeSuccess': 'เปลี่ยนรหัสผ่านสำเร็จ',
   'auth.passwordChangeFailed': 'เปลี่ยนรหัสผ่านล้มเหลว',

@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': '학교 구독이 종료되었습니다. 계정이 체험 요금제로 변경되었습니다. 갱신하려면 플랫폼 관리자에게 문의하세요.',
   'auth.diagramLimitReached': '체험 학교는 교사당 저장 다이어그램을 최대 {max}개까지 허용합니다. 새로 저장하려면 하나를 삭제하세요.',
   'auth.downloadOpenclawSkill': 'OpenClaw 스킬',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': '전화번호 변경',
   'auth.passwordChangeSuccess': '비밀번호가 변경되었습니다',
   'auth.passwordChangeFailed': '비밀번호 변경에 실패했습니다',

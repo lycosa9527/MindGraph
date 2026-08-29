@@ -1,0 +1,17 @@
+{
+  "MINDGRAPH_BASE_URL": "https://test.mindspringedu.com",
+  "MINDGRAPH_ACCOUNT": "13800138000",
+  "MINDGRAPH_TOKEN": "mgat_paste_token_from_account_settings",
+  "skills": {
+    "entries": {
+      "mindgraph": {
+        "enabled": true,
+        "env": {
+          "MINDGRAPH_BASE_URL": "https://test.mindspringedu.com",
+          "MINDGRAPH_ACCOUNT": "13800138000",
+          "MINDGRAPH_TOKEN": "mgat_paste_token_from_account_settings"
+        }
+      }
+    }
+  }
+}

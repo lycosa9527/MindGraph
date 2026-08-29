@@ -94,9 +94,34 @@ def test_skill_tells_creator_where_to_put_credentials() -> None:
     block = text.split("### Change account / token")[1].split("### HTTP errors")[0]
     assert "Never" in block
     assert "SKILL.md" in block
-    assert "MINDGRAPH_ACCOUNT" in block
-    assert "MINDGRAPH_TOKEN" in block
-    assert "demo.json" in block
+    assert "account.json" in block
+    assert "WorkBuddy技能包" in block
     assert "/api/diagrams?page=1&page_size=1" in block
     assert "HTTP status only" in block
     assert "restart" in block.lower()
+
+
+def test_skill_reads_account_json_first() -> None:
+    """Downloaded zip is ready: agent must prefer account.json, not host env."""
+    text = _SKILL.read_text(encoding="utf-8")
+    assert '"requires"' not in text.split("---", 2)[1]
+    assert "Do not** ask them to set" in text
+    assert "First action" in text
+    assert "paste_token" in text
+    assert "13800138000" in text
+    assert "Ignore leftover `demo.json`" in text
+    auth = text.split("## Auth (every request)")[1].split("### Change account")[0]
+    assert "account.json" in auth
+    assert ".env" in auth
+    assert "Do **not** require host env" in auth
+    assert "Read `account.json` first" in auth
+    assert "workbuddy" in auth
+
+
+def test_skill_prefers_full_spec_patch() -> None:
+    """Structured add/update is limited; full spec replace is the edit path."""
+    text = _SKILL.read_text(encoding="utf-8")
+    patch = text.split("## B. Patch existing")[1].split("## Optional shortcuts")[0]
+    assert "prefer full replace" in patch
+    assert "page_size" in text.split("## Optional shortcuts")[1]
+    assert "`limit`" in text.split("## Optional shortcuts")[1]

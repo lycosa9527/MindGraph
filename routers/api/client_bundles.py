@@ -19,7 +19,10 @@ from fastapi.responses import Response
 
 from models.domain.auth import User
 from models.domain.messages import Language
+from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.auth.dependencies import get_language_dependency
+from services.auth.user_api_token_issue import issue_user_api_token
+from services.auth.workbuddy_skill_bundle import zip_skill_directory
 from services.infrastructure.utils.pwa_manifest import public_site_origin_from_request
 from utils.auth import get_current_user
 from utils.auth.school_tier import (
@@ -86,10 +89,19 @@ def _bundle_response(data: bytes, filename: str) -> Response:
 
 @router.get("/downloads/mindgraph-openclaw-skill")
 async def download_openclaw_skill_zip(
+    request: Request,
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> Response:
-    """Zip of `openclaw/skills/mindgraph` for OpenClaw / WorkBuddy."""
+    """Zip of the WorkBuddy skill with this user's account.json.
+
+    Always issues a raw ``mgat_`` into ``account.json``: creates a token if
+    the user has none (or it is revoked/expired), otherwise replaces the
+    existing one so the zip can include the secret.
+    """
+    account = str(getattr(current_user, "phone", "") or "").strip()
+    if not account:
+        raise HTTPException(status_code=400, detail="Account phone is required for the skill pack")
     async with actor_rls_session(current_user) as db:
         await assert_user_has_school_tier_feature(
             db,
@@ -97,8 +109,23 @@ async def download_openclaw_skill_zip(
             TIER_FEATURE_API_TOKEN,
             lang,
         )
+        identifier = get_rate_limit_identifier(current_user, request)
+        await check_endpoint_rate_limit(
+            "api_token_create",
+            identifier,
+            max_requests=10,
+            window_seconds=3600,
+        )
+        issued = await issue_user_api_token(db, current_user)
+    origin = public_site_origin_from_request(request)
     try:
-        data = _zip_directory(_OPENCLAW_SKILL_DIR, "mindgraph")
+        data = zip_skill_directory(
+            _OPENCLAW_SKILL_DIR,
+            "mindgraph",
+            origin,
+            issued.account or account,
+            issued.token,
+        )
     except FileNotFoundError:
         logger.warning("[ClientBundles] OpenClaw skill dir missing: %s", _OPENCLAW_SKILL_DIR)
         raise HTTPException(status_code=404, detail="OpenClaw skill bundle not available on this server") from None

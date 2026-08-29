@@ -6,9 +6,7 @@ All Rights Reserved
 Proprietary License
 """
 
-import hashlib
-import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -21,6 +19,7 @@ from models.domain.messages import Language, Messages
 from models.domain.user_api_token import UserAPIToken
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.auth.dependencies import get_language_dependency
+from services.auth.user_api_token_issue import issue_user_api_token
 from services.redis.cache.redis_user_token_cache import user_token_cache
 from utils.auth import (
     get_current_user,
@@ -34,8 +33,6 @@ from utils.auth.school_tier import (
 )
 
 router = APIRouter(tags=["Authentication"])
-
-TOKEN_TTL_DAYS = 90
 
 
 @router.post("/api-token", dependencies=[Depends(require_not_mgat_for_token_mint)])
@@ -59,42 +56,11 @@ async def create_user_api_token(
         max_requests=10,
         window_seconds=3600,
     )
-
-    raw = f"mgat_{secrets.token_hex(32)}"
-    token_hash_full = hashlib.sha256(raw.encode("utf-8")).hexdigest()
-    now = datetime.now(UTC)
-    expires_at = now + timedelta(days=TOKEN_TTL_DAYS)
-
-    result = await db.execute(select(UserAPIToken).where(UserAPIToken.user_id == current_user.id))
-    existing = result.scalar_one_or_none()
-    if existing:
-        await user_token_cache.invalidate_by_token_hash_64(existing.token_hash)
-        existing.token_hash = token_hash_full
-        existing.expires_at = expires_at
-        existing.is_active = True
-        existing.created_at = now
-        existing.last_used_at = None
-    else:
-        row = UserAPIToken(
-            user_id=current_user.id,
-            token_hash=token_hash_full,
-            expires_at=expires_at,
-            created_at=now,
-            last_used_at=None,
-            is_active=True,
-        )
-        db.add(row)
-        existing = row
-
-    await db.commit()
-    await db.refresh(existing)
-
-    await user_token_cache.set_from_row(raw, existing)
-
+    issued = await issue_user_api_token(db, current_user)
     return {
-        "token": raw,
-        "expires_at": expires_at.isoformat(),
-        "account": current_user.phone,
+        "token": issued.token,
+        "expires_at": issued.expires_at.isoformat(),
+        "account": issued.account,
     }
 
 

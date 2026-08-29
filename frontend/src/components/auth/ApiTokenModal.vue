@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * ApiTokenModal — generate, display once, revoke user API token (OpenClaw).
+ * ApiTokenModal — generate, display once, revoke user API token (WorkBuddy / extensions).
  */
 import { computed, ref, watch } from 'vue'
 
@@ -141,7 +141,7 @@ function doneTokenView() {
                 @click="closeModal"
               />
               <h2 class="text-lg font-semibold text-stone-900 tracking-tight">API Token</h2>
-              <p class="text-xs text-stone-500 mt-1">用于 OpenClaw 等外部工具，有效期 90 天</p>
+              <p class="text-xs text-stone-500 mt-1">用于 WorkBuddy 技能包、Chrome 扩展等外部工具，有效期 90 天。重新下载技能包会签发新令牌。</p>
             </div>
 
             <div class="p-8 space-y-4">

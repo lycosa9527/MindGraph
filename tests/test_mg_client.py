@@ -22,6 +22,7 @@ def test_sanitize_known_clients() -> None:
     """First-party client labels normalize to canonical slugs."""
     assert sanitize_mg_client_label("Chrome-Extension") == "chrome-extension"
     assert sanitize_mg_client_label(" openclaw ") == "openclaw"
+    assert sanitize_mg_client_label("workbuddy") == "workbuddy"
     assert sanitize_mg_client_label("file-reader") == "file-reader"
     assert "chrome-extension" in KNOWN_MG_CLIENTS
 
@@ -74,6 +75,7 @@ def test_display_labels() -> None:
     """Known clients have friendly display names."""
     assert mg_client_display_label("chrome-extension") == "Chrome extension"
     assert mg_client_display_label("openclaw") == "OpenClaw"
+    assert mg_client_display_label("workbuddy") == "WorkBuddy"
     assert mg_client_display_label("mcp") == "MCP"
     assert "mcp" in KNOWN_MG_CLIENTS
     assert mg_client_display_label("custom-bot") == "custom-bot"

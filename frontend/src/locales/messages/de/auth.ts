@@ -38,6 +38,7 @@ export default {
   'auth.schoolSubscriptionExpiredDowngraded': 'Das Schulabonnement ist abgelaufen. Ihr Konto befindet sich nun in der Testversion. Wenden Sie sich an Ihren Plattformadministrator zur Verlängerung.',
   'auth.diagramLimitReached': 'Testschulen erlauben bis zu {max} gespeicherte Diagramme pro Lehrkraft. Löschen Sie eines, um ein neues zu speichern.',
   'auth.downloadOpenclawSkill': 'OpenClaw-Skill',
+  'auth.downloadOpenclawSkillHint': 'Includes account and token. Each download issues a new token; old skill packs and the Chrome extension stop working.',
   'auth.changePhoneButton': 'Telefonnummer ändern',
   'auth.passwordChangeSuccess': 'Passwort erfolgreich geändert',
   'auth.passwordChangeFailed': 'Passwortänderung fehlgeschlagen',
