@@ -117,7 +117,7 @@ export default {
   'auth.schoolTierFeatureUnavailable': 'This feature requires the Standard or Professional school tier (Basic tier excluded).',
   'auth.schoolSubscriptionExpiredDowngraded': 'Your school subscription has ended. Teachers and school managers are locked out. Contact the platform administrator to renew.',
   'auth.diagramLimitReached': 'Trial schools allow up to {max} saved diagrams per teacher. Delete one to save a new diagram.',
-  'auth.downloadOpenclawSkill': 'OpenClaw skill',
+  'auth.downloadOpenclawSkill': 'WorkBuddy skill',
   'auth.changePhoneButton': 'Change phone',
   'auth.passwordChangeSuccess': 'Password changed successfully',
   'auth.passwordChangeFailed': 'Password change failed',

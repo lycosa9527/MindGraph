@@ -86,3 +86,17 @@ def test_skill_http_errors_are_short_and_actionable() -> None:
     assert "Never echo the token" in box
     assert "generate API" in box
     assert "JWT token required" not in text
+
+
+def test_skill_tells_creator_where_to_put_credentials() -> None:
+    """Skill-creator must edit env, not SKILL.md, and must not echo the token."""
+    text = _SKILL.read_text(encoding="utf-8")
+    block = text.split("### Change account / token")[1].split("### HTTP errors")[0]
+    assert "Never" in block
+    assert "SKILL.md" in block
+    assert "MINDGRAPH_ACCOUNT" in block
+    assert "MINDGRAPH_TOKEN" in block
+    assert "demo.json" in block
+    assert "/api/diagrams?page=1&page_size=1" in block
+    assert "HTTP status only" in block
+    assert "restart" in block.lower()

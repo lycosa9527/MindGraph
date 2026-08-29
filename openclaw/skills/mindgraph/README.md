@@ -71,15 +71,15 @@ From the MindGraph repo root:
 ```bash
 npm i -g clawhub
 clawhub login
-clawhub skill publish ./openclaw/skills/mindgraph --slug mindgraph --name "MindGraph" --version 1.6.0 --tags latest
+clawhub skill publish ./openclaw/skills/mindgraph --slug mindgraph --name "MindGraph" --version 1.7.0 --tags latest
 ```
 
-Bump the **ClawHub** `--version` when `SKILL.md` or this README changes (current publish target: **1.6.0**).
+Bump the **ClawHub** `--version` when `SKILL.md` or this README changes (current publish target: **1.7.0**).
 
 ## Files in this bundle
 
 | File | Role |
 |------|------|
-| `SKILL.md` | Spec-only pen path, type picker (lookalikes + examples), cookbook, auth, 400/422 |
+| `SKILL.md` | Spec-only pen path, type picker, cookbook, auth, skill-creator env steps, 400/422 |
 | `demo.json` | Copy-paste `skills.entries.mindgraph` for `openclaw.json` |
 | `README.md` | Install, env, WorkBuddy hints, setup, publish command |

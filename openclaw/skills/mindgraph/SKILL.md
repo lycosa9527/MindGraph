@@ -80,6 +80,24 @@ Named-type aliases: `mindmap` → `mind_map`; 类比图 → `bridge_map`; 复流
 
 Use **current** env values every time. After user changes credentials, host may need restart/reload before new env applies.
 
+### Change account / token (skill-creator)
+
+When the user says edit this skill / 改账号 / 改 token / 换环境:
+
+1. **Never** write phone or `mgat_…` into `SKILL.md`. Auth is **env only**.
+2. Set these three keys (keep any key the user did not change):
+   - `MINDGRAPH_BASE_URL` — HTTPS origin, no trailing slash
+   - `MINDGRAPH_ACCOUNT` — phone / login
+   - `MINDGRAPH_TOKEN` — `mgat_…` (90 days)
+3. Write them here, first match wins:
+   1. Host skill env: `skills.entries.mindgraph.env` in WorkBuddy / OpenClaw config (e.g. `%USERPROFILE%\.openclaw\openclaw.json`, WorkBuddy 技能设置 JSON).
+   2. Else the **installed** skill `demo.json` env block (local machine only).
+   3. Else tell the user the three values must be pasted in 技能 / 环境变量. Do not invent a new file in `SKILL.md`.
+4. Confirm with `GET {MINDGRAPH_BASE_URL}/api/diagrams?page=1&page_size=1` (same auth headers). Report **HTTP status only**. Never echo the token in chat or in files you show the user.
+5. Tell the user to **save + restart** WorkBuddy/OpenClaw (or reload skills) so the new env is loaded.
+
+Do not publish or commit a `demo.json` that contains a real token.
+
 ### HTTP errors (not spec)
 
 Do **not** rewrite the spec or call any generate API for these. Never echo the token.

@@ -116,7 +116,7 @@ export default {
   'auth.schoolTierFeatureUnavailable': '当前学校版本不支持此功能，请升级至标准教研版或校本共建版（基础教研版不含此功能）',
   'auth.schoolSubscriptionExpiredDowngraded': '學校訂閱已到期，教師與學校管理員均已鎖定。如需續訂請聯繫平台管理員。',
   'auth.diagramLimitReached': '体验版每位教师最多保存 {max} 张导图，请删除后再保存。',
-  'auth.downloadOpenclawSkill': 'OpenClaw 技能包',
+  'auth.downloadOpenclawSkill': 'WorkBuddy技能包',
   'auth.changePhoneButton': '更換手機',
   'auth.passwordChangeSuccess': '密碼修改成功',
   'auth.passwordChangeFailed': '密碼修改失敗',

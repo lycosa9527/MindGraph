@@ -123,7 +123,7 @@ export default {
     '学校订阅已到期，教师与学校管理员均已锁定。如需续订请联系平台管理员。',
   'auth.diagramLimitReached':
     '体验版每位教师最多保存 {max} 张导图，请删除后再保存。',
-  'auth.downloadOpenclawSkill': 'OpenClaw 技能包',
+  'auth.downloadOpenclawSkill': 'WorkBuddy技能包',
   'auth.changePhoneButton': '更换手机',
   'auth.passwordChangeSuccess': '密码修改成功',
   'auth.passwordChangeFailed': '密码修改失败',
