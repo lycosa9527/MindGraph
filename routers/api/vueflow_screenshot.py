@@ -11,7 +11,7 @@ Flow:
 3. Set the diagram spec in sessionStorage
 4. Navigate to /export-render (minimal page that renders DiagramCanvas only)
 5. Wait until the app signals it is ready for a headless pane click (initial fit + paint)
-6. Simulate a click on the Vue Flow pane (same as a user click on the canvas background)
+6. Simulate a click on empty pane chrome (not the fitted nodes) so Vue Flow re-layouts
 7. Run the app's finalize() (second fit + paint), which sets __MINDGRAPH_RENDER_COMPLETE
 8. Screenshot the .vue-flow-wrapper element
 9. Return PNG bytes
@@ -41,6 +41,8 @@ MINDMAP_CANVAS_MODE_KEY = "mindgraph_mindmap_canvas_mode"
 MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY = "mindgraph_mindmap_canvas_v2_default_migrated"
 RENDER_TIMEOUT_SECONDS = 20
 RENDER_POLL_INTERVAL_MS = 500
+# After fit-view the graph sits in the middle; click empty pane chrome, not a node.
+_PANE_EMPTY_CLICK_INSET_PX = 12.0
 # Playwright and layout behave poorly at extreme sizes; keep server PNG requests bounded.
 _MIN_VIEWPORT_W = 400
 _MAX_VIEWPORT_W = 4096
@@ -168,18 +170,25 @@ async def _wait_for_headless_click_pending(
     )
 
 
-async def _click_pane_center(page) -> None:
-    """Fire a real pane click so Vue Flow runs the same handler as a user (re-layout, etc.)."""
+def pane_empty_click_point(box: dict[str, float]) -> tuple[float, float]:
+    """Top-left inset of the pane. Fit-view parks nodes in the middle, not here."""
+    return (
+        float(box["x"]) + _PANE_EMPTY_CLICK_INSET_PX,
+        float(box["y"]) + _PANE_EMPTY_CLICK_INSET_PX,
+    )
+
+
+async def _click_pane_empty(page) -> None:
+    """Fire a real background pane click (not a node) so Vue Flow re-layouts."""
     pane = page.locator(".vue-flow__pane").first
     await pane.wait_for(state="visible", timeout=5000)
     box = await pane.bounding_box()
     if box:
-        await page.mouse.click(
-            box["x"] + box["width"] / 2,
-            box["y"] + box["height"] / 2,
-        )
+        click_x, click_y = pane_empty_click_point(box)
+        await page.mouse.click(click_x, click_y)
     else:
-        await pane.click()
+        inset = int(_PANE_EMPTY_CLICK_INSET_PX)
+        await pane.click(position={"x": inset, "y": inset})
 
 
 async def _run_export_finalize(page) -> None:
@@ -212,7 +221,7 @@ async def _screenshot_canvas(
             "No .vue-flow__node elements found after render",
         ) from exc
 
-    await _click_pane_center(page)
+    await _click_pane_empty(page)
     await _run_export_finalize(page)
 
     await page.evaluate("document.querySelectorAll('.el-notification, .el-message').forEach(el => el.remove())")

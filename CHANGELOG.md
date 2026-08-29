@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.34] - 2026-08-29
+
+> **Headless PNG export no longer captures a selected node or the floating editor bar. WorkBuddy skill download reuses the token shown in 账户信息.**
+
+### Fixed
+
+- **Export PNG chrome** — After fit-view, Playwright clicked the pane center and hit a node, so WorkBuddy / `/api/diagrams/{id}/png` shots included selection glow, `+` handles, and the floating toolbar. The click is now empty pane chrome. `/export-render` is read-only, clears selection before the shot, and does not mount editor overlays.
+
+### Changed
+
+- **账户信息 API token** — The live `mgat_` is always visible (copy + expiry). Downloading **WorkBuddy技能包** reuses that token; it mints only when missing, revoked, expired, or an old hash-only row. Regenerating the token is what invalidates old skill packs and the Chrome extension.
+
+### Tests
+
+- `tests/test_vueflow_screenshot_click.py` — empty-pane click is inset, not center
+- `frontend/tests/useDiagramCanvasVueFlowUi.spec.ts` — headless export disables node selection
+- `tests/test_user_api_token_secret.py` — ciphertext round-trip; JWT previous-secret unwrap; ensure does not mint a live token
+
 ## [5.180.33] - 2026-08-28
 
 > **Qwen safety-filter refusals toast and stay out of error collection. MindMate school seminars list colleagues' rooms again.**

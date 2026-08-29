@@ -6,9 +6,9 @@
  * Renders only DiagramCanvasHost (no auth, toolbar, sidebar, panels, etc.)
  *
  * Sequence: first fit (wait for `view:fit_completed` + `waitForNextPaint`) →
- * set `__MINDGRAPH_EXPORT_HEADLESS_CLICK_PENDING`. Playwright clicks the Vue Flow
- * pane, then calls `__MINDGRAPH_EXPORT_finalize()` (second fit + paint) which sets
- * `__MINDGRAPH_RENDER_COMPLETE`. No fixed delays; timing is event + rAF driven.
+ * set `__MINDGRAPH_EXPORT_HEADLESS_CLICK_PENDING`. Playwright clicks empty pane
+ * chrome (not a fitted node), then `__MINDGRAPH_EXPORT_finalize()` clears
+ * selection, second-fits, and sets `__MINDGRAPH_RENDER_COMPLETE`.
  *
  * `fit-view-on-init` is off so DiagramCanvas does not schedule its own delayed fit
  * (e.g. FIT_VIEWPORT_DELAY) on top of this page’s explicit `forExport` fits.
@@ -72,6 +72,8 @@ window.__MINDGRAPH_RENDER_ERROR = null
 
 onMounted(async () => {
   try {
+    diagramStore.isReadonly = true
+    diagramStore.clearSelection()
     const specJson = sessionStorage.getItem(EXPORT_SPEC_KEY)
     if (!specJson) {
       window.__MINDGRAPH_RENDER_ERROR = 'No spec found in sessionStorage'
@@ -106,6 +108,7 @@ onMounted(async () => {
 
     window.__MINDGRAPH_EXPORT_finalize = async () => {
       try {
+        diagramStore.clearSelection()
         await nextTick()
         // Playwright has performed a real pane click (same as user pane click on the background).
         const secondFitDone = waitForFitCompletedSafety()

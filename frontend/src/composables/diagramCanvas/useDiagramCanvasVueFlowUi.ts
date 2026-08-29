@@ -4,6 +4,7 @@ import { presentationDiagramEditLockedRef } from '@/composables/presentation/pre
 import { learningSheetPickActive } from '@/composables/mindMap/useLearningSheetCustomMode'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import type { PresentationToolId } from '@/types'
+import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 export interface UseDiagramCanvasVueFlowUiOptions {
   diagramStore: ReturnType<typeof useDiagramSession>
@@ -116,6 +117,7 @@ export function useDiagramCanvasVueFlowUi(
   )
 
   const elementsSelectable = computed(() => {
+    if (isMindgraphHeadlessExportSession()) return false
     if (learningSheetPickActive.value) return false
     if (presentationStrokeToolActive.value) return false
     if (presentationPointerEditMode.value) return true

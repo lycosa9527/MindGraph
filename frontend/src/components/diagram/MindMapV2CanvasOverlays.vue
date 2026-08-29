@@ -12,6 +12,7 @@ import type {
   FloatingToolbarSize,
 } from '@/composables/canvasToolbar/useNodeFloatingToolbarPosition'
 import { useUIStore } from '@/stores'
+import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 import MindMapCollapseToggleOverlay from './MindMapCollapseToggleOverlay.vue'
 import MindMapDirectionalAddOverlay from './MindMapDirectionalAddOverlay.vue'
@@ -32,6 +33,7 @@ const props = defineProps<{
 }>()
 
 const uiStore = useUIStore()
+const headlessExport = isMindgraphHeadlessExportSession()
 
 const branchMove = inject<{ state: { value: { active: boolean } } } | null>('branchMove', null)
 const branchMoveActive = computed(() => branchMove?.state.value.active === true)
@@ -41,12 +43,12 @@ const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasC
 
 <template>
   <LearningSheetFloatBar
-    v-if="!presentationDiagramEditLocked && !uiStore.exportWireframeOutline"
+    v-if="!headlessExport && !presentationDiagramEditLocked && !uiStore.exportWireframeOutline"
   />
 
   <!-- Hide toolbar / add handles so they do not cover the explain bubble. -->
   <CanvasNodeFloatingToolbar
-    v-if="!presentationDiagramEditLocked && !nodeExplainOpen"
+    v-if="!headlessExport && !presentationDiagramEditLocked && !nodeExplainOpen"
     :position="floatingToolbarPosition"
     :node-id="floatingToolbarAnchorId"
     :ai-generating="subgraphGenerating"
@@ -58,6 +60,7 @@ const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasC
 
   <MindMapDirectionalAddOverlay
     v-if="
+      !headlessExport &&
       !presentationDiagramEditLocked &&
       !uiStore.exportWireframeOutline &&
       !nodeExplainOpen &&
@@ -67,7 +70,12 @@ const resolvedContainer = computed((): HTMLElement | null => unref(props.canvasC
     :teleport-target="presentationTeleportTarget"
   />
   <MindMapCollapseToggleOverlay
-    v-if="!presentationDiagramEditLocked && !uiStore.exportWireframeOutline && !branchMoveActive"
+    v-if="
+      !headlessExport &&
+      !presentationDiagramEditLocked &&
+      !uiStore.exportWireframeOutline &&
+      !branchMoveActive
+    "
     :container-ref="resolvedContainer"
     :teleport-target="presentationTeleportTarget"
   />
