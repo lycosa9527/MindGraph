@@ -309,7 +309,7 @@ export default {
   'auth.qrLoginInviteRequired': '请先填写学校邀请码后再使用扫码登录',
   'auth.qrLoginProvidersFailed': '无法加载扫码登录配置，请稍后重试',
   'auth.qrLoginProviderDisabled': '此扫码登录方式暂不可用',
-  'auth.qrLoginNotLinked': '未找到已绑定的账号。请先注册并用密码登录，在「账户绑定」中绑定微信后再扫码登录。',
+  'auth.qrLoginNotLinked': '请先绑定账号。请用密码登录后，在「账户绑定」中绑定微信，再扫码登录。',
   'auth.qrLoginExchangeFailed': '扫码登录失败，请重试',
   'auth.qrLoginInvalidState': '扫码会话已过期，请关闭后重新扫码',
   'auth.qrLoginInvalidCode': '微信授权码已过期或已使用，请关闭二维码后重新扫码',

@@ -15,6 +15,28 @@ from typing import Any, Mapping, Optional
 
 from services.markets.alipay_settings import AlipayEnvConfig
 
+PAGE_PAY_PRODUCT_CODE = "FAST_INSTANT_TRADE_PAY"
+PAGE_PAY_SUBJECT_MAX = 256
+_PAGE_PAY_SUBJECT_FORBIDDEN = ("/", "=", "&")
+
+
+def page_pay_subject(raw: str) -> str:
+    """Sanitize listing title for ``alipay.trade.page.pay`` subject (max 256)."""
+    text = raw.strip()
+    for char in _PAGE_PAY_SUBJECT_FORBIDDEN:
+        text = text.replace(char, " ")
+    return " ".join(text.split())[:PAGE_PAY_SUBJECT_MAX]
+
+
+def markets_return_url(external_base: str, *, order_id: int | None = None) -> str | None:
+    """Browser return after page pay. Payment result still comes from notify/query."""
+    base = external_base.rstrip("/")
+    if not base:
+        return None
+    if order_id is None:
+        return f"{base}/template?alipay=return"
+    return f"{base}/template?alipay=return&order_id={order_id}"
+
 
 def minor_to_yuan_str(price_minor: int) -> str:
     """Minor to yuan str."""

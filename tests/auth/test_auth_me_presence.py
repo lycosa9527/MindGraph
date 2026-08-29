@@ -43,10 +43,13 @@ async def test_get_me_touches_signed_in_presence() -> None:
 
     with (
         patch("routers.auth.session.touch_signed_in_presence", touch),
-        patch("routers.auth.session.feature_thinking_coins_enabled", return_value=False),
-        patch("routers.auth.session.get_user_role", return_value="teacher"),
-        patch("routers.auth.session.current_user_daily_token_payload", tokens),
-        patch("routers.auth.session.organization_session_payload", return_value=None),
+        patch(
+            "routers.auth.session_user_payload.feature_thinking_coins_enabled",
+            return_value=False,
+        ),
+        patch("routers.auth.session_user_payload.get_user_role", return_value="teacher"),
+        patch("routers.auth.session_user_payload.current_user_daily_token_payload", tokens),
+        patch("routers.auth.session_user_payload.organization_session_payload", return_value=None),
     ):
         payload = await get_me(request, user, db)
 
@@ -54,6 +57,7 @@ async def test_get_me_touches_signed_in_presence() -> None:
     assert payload["id"] == 3
     assert payload["phone"] == "13800000000"
     assert payload["role"] == "teacher"
+    assert payload["thinking_coins"] == {"balance": 0, "eligible": False}
     tokens.assert_awaited_once_with(3)
 
 
@@ -70,12 +74,16 @@ async def test_get_me_returns_profile_if_presence_raises() -> None:
             "routers.auth.session.touch_signed_in_presence",
             AsyncMock(side_effect=RuntimeError("tracker down")),
         ),
-        patch("routers.auth.session.feature_thinking_coins_enabled", return_value=False),
-        patch("routers.auth.session.get_user_role", return_value="teacher"),
-        patch("routers.auth.session.current_user_daily_token_payload", tokens),
-        patch("routers.auth.session.organization_session_payload", return_value=None),
+        patch(
+            "routers.auth.session_user_payload.feature_thinking_coins_enabled",
+            return_value=False,
+        ),
+        patch("routers.auth.session_user_payload.get_user_role", return_value="teacher"),
+        patch("routers.auth.session_user_payload.current_user_daily_token_payload", tokens),
+        patch("routers.auth.session_user_payload.organization_session_payload", return_value=None),
     ):
         payload = await get_me(request, user, db)
 
     assert payload["id"] == 3
+    assert payload["thinking_coins"] == {"balance": 0, "eligible": False}
     tokens.assert_awaited_once_with(3)

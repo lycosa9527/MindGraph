@@ -27,7 +27,6 @@ from config.database import get_async_db
 from models.domain.auth import Organization, User
 from models.domain.messages import Language, Messages
 from models.requests.requests_auth import RegisterRequest, RegisterWithSMSRequest
-from routers.auth.org_profile import organization_session_payload
 from services.auth.phone_uniqueness import any_user_id_with_phone
 from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.monitoring.registration_metrics import registration_metrics
@@ -54,8 +53,8 @@ from utils.invitations import invitation_code_is_valid
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
 from .helpers import auth_session_json_metadata, commit_user_with_retry, issue_new_auth_cookies, track_user_activity
+from .session_user_payload import build_session_user_payload
 from .sms import _verify_and_consume_sms_code
-from .user_session_prefs import user_preference_fields
 
 logger = logging.getLogger(__name__)
 
@@ -158,13 +157,7 @@ async def finalize_sms_registration_session(
     )
     return {
         **auth_session_json_metadata(),
-        "user": {
-            "id": new_user.id,
-            "phone": new_user.phone,
-            "name": new_user.name,
-            "organization": organization_session_payload(org),
-            **user_preference_fields(new_user),
-        },
+        "user": await build_session_user_payload(db, new_user, org),
     }
 
 
@@ -396,13 +389,7 @@ async def register(
 
     return {
         **auth_session_json_metadata(),
-        "user": {
-            "id": new_user.id,
-            "phone": new_user.phone,
-            "name": new_user.name,
-            "organization": organization_session_payload(org),
-            **user_preference_fields(new_user),
-        },
+        "user": await build_session_user_payload(db, new_user, org),
     }
 
 

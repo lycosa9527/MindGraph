@@ -2,7 +2,13 @@
 /**
  * Password-login footer: forgot password, then a two-line SMS / WeChat stack.
  */
+import { computed, onMounted } from 'vue'
+
 import { useLanguage } from '@/composables'
+import {
+  hydratePersistedOAuthLoginError,
+  persistedOAuthLoginError,
+} from '@/utils/oauthLoginUi'
 
 defineProps<{
   showWechatLogin: boolean
@@ -15,6 +21,14 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useLanguage()
+
+const showNotLinkedHint = computed(
+  () => persistedOAuthLoginError.value === 'oauth_not_linked'
+)
+
+onMounted(() => {
+  hydratePersistedOAuthLoginError()
+})
 
 const linkClass =
   'm-0 p-0 border-0 bg-transparent text-sm leading-5 text-stone-500 hover:text-stone-900 cursor-pointer'
@@ -51,4 +65,10 @@ const linkClass =
       </button>
     </div>
   </div>
+  <p
+    v-if="showWechatLogin && showNotLinkedHint"
+    class="mt-3 text-center text-sm text-red-600 leading-6"
+  >
+    {{ t('auth.qrLoginNotLinked') }}
+  </p>
 </template>

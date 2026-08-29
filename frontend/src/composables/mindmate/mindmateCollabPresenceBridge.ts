@@ -35,7 +35,3 @@ export function useMindmateCollabPresenceBridge() {
     updatePresence,
   }
 }
-
-export function clearMindmateCollabPresenceSnapshot(): void {
-  onlineUserIds.value = new Set()
-}

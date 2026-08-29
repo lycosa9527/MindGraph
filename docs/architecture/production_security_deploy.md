@@ -15,7 +15,8 @@ Use this when rolling hardened MindGraph to **mg.mindspringedu.com** (or any TLS
 | `FEATURE_DINGTALK_LOGIN` | `True` on production when school DingTalk QR is needed. Defaults off. |
 | `FEATURE_OAUTH_LOGIN` | **Removed.** Delete from `.env`. A leftover value is ignored (startup warning); it does not enable QR login. |
 | `WECHAT_OAUTH_APP_ID` + `WECHAT_OAUTH_APP_SECRET` | Required when `FEATURE_WECHAT_LOGIN=True`; both empty leaves WeChat off; one-sided pair aborts startup |
-| `EXTERNAL_BASE_URL` | HTTPS public origin for OAuth callbacks (warns if unset while WeChat or DingTalk OAuth is on) |
+| `EXTERNAL_BASE_URL` | HTTPS public origin for OAuth callbacks and Alipay `return_url` (warns if unset while WeChat or DingTalk OAuth is on) |
+| `ALIPAY_APP_ID` + `ALIPAY_NOTIFY_BASE_URL` + certs in `data/alipay-certs/` | Required when `FEATURE_MARKETS=True`. Certificate-mode upload folder (gitignored); override with `ALIPAY_CERT_DIR`. Notify URL: `{ALIPAY_NOTIFY_BASE_URL}/api/markets/payments/alipay/notify`. Product is 电脑网站支付 (`alipay.trade.page.pay`). |
 | `ENTERPRISE_MODE_PUBLIC_ACK=I_UNDERSTAND_PUBLIC_EXPOSURE_RISK` | `AUTH_MODE=enterprise` |
 
 Generate strong random passkeys; do **not** copy `CHANGE-ME-before-production` from `env.example`.

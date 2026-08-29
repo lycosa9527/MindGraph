@@ -4,9 +4,14 @@ import {
   resolveOAuthInviteCode,
   resolveOAuthError,
   isOAuthRedirectError,
+  notifyOAuthError,
   oauthErrorFromRouteQuery,
   oauthBindFromRouteQuery,
   oauthLoginFromRouteQuery,
+  persistOAuthLoginError,
+  persistedOAuthLoginError,
+  clearPersistedOAuthLoginError,
+  hydratePersistedOAuthLoginError,
   shouldShowAccountBindingsSection,
   shouldShowWechatLoginLink,
   shouldShowWechatBindRow,
@@ -14,6 +19,7 @@ import {
   sizeWechatLoginIframe,
   wechatLoginStyleHref,
   wechatQrModalMaxWidthPx,
+  OAUTH_NOT_LINKED_TOAST_MS,
   WX_LOGIN_QR_SIZE_PX,
   WX_LOGIN_SELF_REDIRECT,
   WX_LOGIN_STYLE_HREF_PATH,
@@ -157,8 +163,9 @@ describe('oauthLoginUi', () => {
 
   it('resolveOAuthError maps backend codes to i18n keys', () => {
     expect(resolveOAuthError('oauth_not_linked')).toEqual({
-      level: 'warning',
+      level: 'error',
       messageKey: 'auth.qrLoginNotLinked',
+      durationMs: OAUTH_NOT_LINKED_TOAST_MS,
     })
     expect(resolveOAuthError('oauth_external_taken')).toEqual({
       level: 'warning',
@@ -209,5 +216,42 @@ describe('oauthLoginUi', () => {
     expect(oauthLoginFromRouteQuery(['1'])).toBe(true)
     expect(oauthLoginFromRouteQuery('0')).toBe(false)
     expect(oauthLoginFromRouteQuery(undefined)).toBe(false)
+  })
+
+  it('persistOAuthLoginError keeps only oauth_not_linked for the login banner', () => {
+    clearPersistedOAuthLoginError()
+    persistOAuthLoginError('oauth_exchange_failed')
+    expect(persistedOAuthLoginError.value).toBe('')
+    persistOAuthLoginError('oauth_not_linked')
+    expect(persistedOAuthLoginError.value).toBe('oauth_not_linked')
+    clearPersistedOAuthLoginError()
+    persistOAuthLoginError('oauth_not_linked')
+    persistedOAuthLoginError.value = ''
+    hydratePersistedOAuthLoginError()
+    expect(persistedOAuthLoginError.value).toBe('oauth_not_linked')
+    clearPersistedOAuthLoginError()
+  })
+
+  it('notifyOAuthError toasts bind-first as an error and persists it', () => {
+    clearPersistedOAuthLoginError()
+    const calls: { level: string; message: string; duration?: number }[] = []
+    const notify = {
+      warning: (message: string, duration?: number) => {
+        calls.push({ level: 'warning', message, duration })
+      },
+      error: (message: string, duration?: number) => {
+        calls.push({ level: 'error', message, duration })
+      },
+    }
+    notifyOAuthError('oauth_not_linked', notify, (key) => key)
+    expect(calls).toEqual([
+      {
+        level: 'error',
+        message: 'auth.qrLoginNotLinked',
+        duration: OAUTH_NOT_LINKED_TOAST_MS,
+      },
+    ])
+    expect(persistedOAuthLoginError.value).toBe('oauth_not_linked')
+    clearPersistedOAuthLoginError()
   })
 })

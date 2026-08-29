@@ -22,15 +22,20 @@ import { authFetch } from '@/utils/api'
 import {
   formatMindmateCollabCode,
   loadLocalMindmateCollabSessions,
+  LOCAL_MINDMATE_COLLAB_SESSIONS_KEY,
   mergeMindmateCollabSessionLists,
+  MINDMATE_COLLAB_ENDED_CODES_KEY,
+  MINDMATE_COLLAB_SESSION_REMOVED_EVENT,
   MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT,
   normalizeMindmateCollabCode,
   persistLocalMindmateCollabSessions,
   trackLocalMindmateCollabSession,
+  wasMindmateCollabCodeRecentlyEnded,
   type LocalMindmateCollabSession,
 } from '@/utils/mindmateCollabSessions'
 import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
 import {
+  removeLocalMindmateCollabSessionByCode,
   requestMindmateCollabStop,
   teardownMindmateCollabClient,
 } from '@/utils/mindmateCollabTeardown'
@@ -110,6 +115,9 @@ async function pruneStaleLocalSessions(): Promise<void> {
   const survivors: CollabSessionRow[] = []
   for (const row of localSessions.value) {
     const key = normalizeCode(row.code)
+    if (wasMindmateCollabCodeRecentlyEnded(row.code)) {
+      continue
+    }
     if (orgKeys.has(key)) {
       survivors.push({ ...row, live: true })
       continue
@@ -143,10 +151,12 @@ async function fetchSessions(showSpinner = true): Promise<void> {
     const response = await authFetch('/api/mindmate/collab/organization/sessions')
     if (response.ok) {
       const data = await response.json()
-      orgSessions.value = ((data.sessions || []) as CollabSessionRow[]).map((row) => ({
-        ...row,
-        live: true,
-      }))
+      orgSessions.value = ((data.sessions || []) as CollabSessionRow[])
+        .filter((row) => !wasMindmateCollabCodeRecentlyEnded(row.code))
+        .map((row) => ({
+          ...row,
+          live: true,
+        }))
     } else {
       notify.error(t('mindgraphLanding.loadOrgSessionsFailed'))
     }
@@ -154,7 +164,7 @@ async function fetchSessions(showSpinner = true): Promise<void> {
     if (hostedRes.ok) {
       const hostedData = await hostedRes.json()
       const hosted = hostedData.session as CollabSessionRow | null
-      if (hosted?.code) {
+      if (hosted?.code && !wasMindmateCollabCodeRecentlyEnded(hosted.code)) {
         trackLocalMindmateCollabSession(hosted)
         loadLocalSessions()
       }
@@ -167,8 +177,49 @@ async function fetchSessions(showSpinner = true): Promise<void> {
   }
 }
 
+function evictSessionByCode(code: string): void {
+  const key = normalizeCode(code)
+  if (!key) {
+    return
+  }
+  orgSessions.value = orgSessions.value.filter((row) => normalizeCode(row.code) !== key)
+  localSessions.value = localSessions.value.filter((row) => normalizeCode(row.code) !== key)
+}
+
+function onSessionRemoved(event: Event): void {
+  const detail = (event as CustomEvent<{ code?: string }>).detail
+  evictSessionByCode(String(detail?.code || ''))
+  loadLocalSessions()
+}
+
+function evictRecentlyEndedRows(): void {
+  orgSessions.value = orgSessions.value.filter(
+    (row) => !wasMindmateCollabCodeRecentlyEnded(row.code),
+  )
+  localSessions.value = localSessions.value.filter(
+    (row) => !wasMindmateCollabCodeRecentlyEnded(row.code),
+  )
+}
+
+function onStorage(event: StorageEvent): void {
+  if (event.key === LOCAL_MINDMATE_COLLAB_SESSIONS_KEY) {
+    loadLocalSessions()
+  }
+  if (
+    event.key === LOCAL_MINDMATE_COLLAB_SESSIONS_KEY
+    || event.key === MINDMATE_COLLAB_ENDED_CODES_KEY
+  ) {
+    evictRecentlyEndedRows()
+  }
+}
+
 function openSession(row: CollabSessionRow): void {
   const formatted = formatCode(row.code)
+  if (wasMindmateCollabCodeRecentlyEnded(formatted)) {
+    evictSessionByCode(formatted)
+    notify.info(t('mindmate.collabRoomEndedHost'))
+    return
+  }
   if (route.path === '/mindmate') {
     setEmbeddedCollabRoomCode(formatted)
     return
@@ -203,14 +254,14 @@ async function stopSession(row: CollabSessionRow): Promise<void> {
   const wasActive =
     rowKey === activeCode.value
     || rowKey === normalizeCode(embeddedCollabRoomCode.value || '')
-  orgSessions.value = orgSessions.value.filter((s) => s.session_id !== row.session_id)
-  localSessions.value = localSessions.value.filter((s) => s.session_id !== row.session_id)
-  persistLocalSessions()
+  evictSessionByCode(row.code)
   if (wasActive) {
     teardownMindmateCollabClient(row.code, { removeFromHistory: true })
     if (inMindmateCollabRoute.value) {
       void router.push('/mindmate')
     }
+  } else {
+    removeLocalMindmateCollabSessionByCode(row.code)
   }
   void requestMindmateCollabStop(row.session_id).then((ok) => {
     if (ok) {
@@ -226,11 +277,15 @@ onMounted(() => {
   void fetchSessions(true)
   refreshTimer = setInterval(() => void fetchSessions(false), ORG_REFRESH_INTERVAL_MS)
   window.addEventListener(MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT, loadLocalSessions)
+  window.addEventListener(MINDMATE_COLLAB_SESSION_REMOVED_EVENT, onSessionRemoved)
+  window.addEventListener('storage', onStorage)
 })
 
 onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
   window.removeEventListener(MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT, loadLocalSessions)
+  window.removeEventListener(MINDMATE_COLLAB_SESSION_REMOVED_EVENT, onSessionRemoved)
+  window.removeEventListener('storage', onStorage)
 })
 </script>
 

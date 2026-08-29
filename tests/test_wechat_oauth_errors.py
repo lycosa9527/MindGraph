@@ -2,20 +2,25 @@
 
 from __future__ import annotations
 
+import importlib
 from types import SimpleNamespace
 from typing import Optional, cast
 
 import pytest
+from fastapi import HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from models.domain.oauth_user_link import OAUTH_PROVIDER_WECHAT
 from services.auth.oauth.oauth_constants import (
     AUTH_ERROR_ALREADY_BOUND,
+    AUTH_ERROR_DISABLED,
     AUTH_ERROR_EXCHANGE_FAILED,
     AUTH_ERROR_EXTERNAL_TAKEN,
     AUTH_ERROR_INVALID_CODE,
     AUTH_ERROR_MISCONFIGURED,
     AUTH_ERROR_NOT_LINKED,
     AUTH_ERROR_RATE_LIMITED,
+    OAUTH_MODE_LOGIN,
     normalize_oauth_error_code,
 )
 from services.auth.oauth.oauth_login_service import OauthLoginService
@@ -29,6 +34,8 @@ from services.auth.oauth.wechat_oauth_errors import (
     map_wechat_errcode,
     parse_wechat_errcode,
 )
+
+oauth_callback_mod = importlib.import_module("routers.auth.oauth.router")
 
 
 def test_parse_wechat_errcode_ignores_success() -> None:
@@ -167,3 +174,105 @@ async def test_resolve_login_user_not_linked_is_not_signup(
             provider="wechat",
             external_id="wx-unknown",
         )
+
+
+class _RollbackDb:
+    """Session stub that records rollback."""
+
+    def __init__(self) -> None:
+        self.rolled_back = False
+
+    async def rollback(self) -> None:
+        """Mark rollback."""
+        self.rolled_back = True
+
+
+def _callback_request() -> Request:
+    """Minimal ASGI request for the WeChat callback."""
+    return Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/api/auth/oauth/wechat/callback",
+            "raw_path": b"/api/auth/oauth/wechat/callback",
+            "query_string": b"",
+            "headers": [],
+            "scheme": "https",
+            "server": ("testserver", 443),
+            "client": ("203.0.113.9", 12345),
+        }
+    )
+
+
+async def _consume_wechat_login_state(_state: str) -> SimpleNamespace:
+    """Unscoped WeChat login state."""
+    return SimpleNamespace(
+        provider=OAUTH_PROVIDER_WECHAT,
+        mode=OAUTH_MODE_LOGIN,
+        organization_id=0,
+        user_id=None,
+    )
+
+
+@pytest.mark.asyncio
+async def test_wechat_callback_not_linked_redirects_to_auth_toast(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unbound scan must 303 to /auth?error=oauth_not_linked for the login toast."""
+
+    async def _assert_enabled(_self: object, _org_id: int, _provider: str) -> None:
+        return None
+
+    async def _exchange(_self: object, _code: str) -> tuple[str, str, str]:
+        return ("wx-union", "wx-open", "nick")
+
+    async def _resolve_unlinked(_self: object, **_kwargs: object) -> None:
+        raise ValueError(AUTH_ERROR_NOT_LINKED)
+
+    monkeypatch.setattr(
+        oauth_callback_mod,
+        "consume_oauth_state",
+        _consume_wechat_login_state,
+    )
+    monkeypatch.setattr(OauthLoginService, "assert_provider_enabled", _assert_enabled)
+    monkeypatch.setattr(OauthLoginService, "exchange_wechat_identity", _exchange)
+    monkeypatch.setattr(OauthLoginService, "resolve_login_user", _resolve_unlinked)
+    db = _RollbackDb()
+    redirect = await oauth_callback_mod.wechat_oauth_callback(
+        request=_callback_request(),
+        code="wx-code",
+        state="st",
+        _system_rls=None,
+        db=cast(AsyncSession, db),
+    )
+    assert redirect.status_code == 303
+    assert redirect.headers["location"] == f"/auth?error={AUTH_ERROR_NOT_LINKED}"
+    assert db.rolled_back is True
+
+
+@pytest.mark.asyncio
+async def test_wechat_callback_http_error_redirects_instead_of_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Provider HTTPException after scan must still become a login-page toast."""
+
+    async def _assert_disabled(_self: object, _org_id: int, _provider: str) -> None:
+        raise HTTPException(status_code=404, detail=AUTH_ERROR_DISABLED)
+
+    monkeypatch.setattr(
+        oauth_callback_mod,
+        "consume_oauth_state",
+        _consume_wechat_login_state,
+    )
+    monkeypatch.setattr(OauthLoginService, "assert_provider_enabled", _assert_disabled)
+    db = _RollbackDb()
+    redirect = await oauth_callback_mod.wechat_oauth_callback(
+        request=_callback_request(),
+        code="wx-code",
+        state="st",
+        _system_rls=None,
+        db=cast(AsyncSession, db),
+    )
+    assert redirect.status_code == 303
+    assert redirect.headers["location"] == f"/auth?error={AUTH_ERROR_DISABLED}"
+    assert db.rolled_back is True

@@ -30,7 +30,6 @@ from models.requests.requests_auth import (
     LoginWithSMSRequest,
     PasskeyVerifyRequest,
 )
-from routers.auth.org_profile import organization_session_payload
 from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
 from services.auth.geoip_country import email_cn_geo_blocked
 from services.auth.vpn_geo_enforcement import record_vpn_login_geo
@@ -78,14 +77,13 @@ from utils.auth.org_subscription import enforce_org_accessible_or_raise
 from utils.db.rls_request import bind_system_bootstrap_rls_dependency
 from utils.email_mainland_china import raise_if_mainland_china_email_for_email_login
 from utils.email_validation import validate_email_for_api
-from utils.user_avatar_defaults import DEFAULT_USER_AVATAR_EMOJI
 
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
 from .email import verify_and_consume_email_code
 from .helpers import auth_session_json_metadata, issue_new_auth_cookies, track_user_activity
+from .session_user_payload import build_session_user_payload
 from .sms import _verify_and_consume_sms_code
-from .user_session_prefs import user_preference_fields
 
 _bg_tasks: set[asyncio.Task] = set()
 
@@ -256,16 +254,7 @@ async def _complete_login_after_otp_verified(
 
     return {
         **auth_session_json_metadata(),
-        "user": {
-            "id": user.id,
-            "phone": user.phone,
-            "email": getattr(user, "email", None),
-            "name": user.name,
-            "organization": organization_session_payload(org),
-            "avatar": user.avatar or DEFAULT_USER_AVATAR_EMOJI,
-            "role": get_user_role(user),
-            **user_preference_fields(user),
-        },
+        "user": await build_session_user_payload(db, user, org),
     }
 
 
@@ -508,16 +497,7 @@ async def login(
 
     return {
         **auth_session_json_metadata(),
-        "user": {
-            "id": user.id,
-            "phone": user.phone,
-            "email": getattr(user, "email", None),
-            "name": user.name,
-            "organization": organization_session_payload(org),
-            "avatar": user.avatar or DEFAULT_USER_AVATAR_EMOJI,
-            "role": get_user_role(user),
-            **user_preference_fields(user),
-        },
+        "user": await build_session_user_payload(db, user, org),
     }
 
 
@@ -867,11 +847,5 @@ async def verify_bayi_passkey_login(
 
     return {
         **auth_session_json_metadata(),
-        "user": {
-            "id": auth_user.id,
-            "phone": auth_user.phone,
-            "name": auth_user.name,
-            "role": effective_role,
-            **user_preference_fields(auth_user),
-        },
+        "user": await build_session_user_payload(db, auth_user, None),
     }

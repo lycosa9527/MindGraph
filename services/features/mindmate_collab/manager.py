@@ -383,6 +383,25 @@ class MindmateCollabManager:
             "expires_at": session.expires_at.isoformat() + "Z" if session.expires_at else None,
         }
 
+    async def _host_stop_already_settled(
+        self,
+        session_id: str,
+        actor_user_id: int,
+        reason: str,
+    ) -> bool:
+        """True when the host retries stop after the room is already ended."""
+        if reason not in {"owner", "single_host"}:
+            return False
+        async with system_rls_session() as db:
+            session = (
+                await db.execute(
+                    select(MindmateCollabSession).where(MindmateCollabSession.id == session_id),
+                )
+            ).scalar_one_or_none()
+        if session is None or session.ended_at is None:
+            return False
+        return session.owner_user_id == actor_user_id
+
     async def stop_session(
         self,
         session_id: str,
@@ -411,8 +430,16 @@ class MindmateCollabManager:
                         select(MindmateCollabSession).where(MindmateCollabSession.id == session_id),
                     )
                 ).scalar_one_or_none()
-                if not session or session.ended_at is not None:
-                    return False
+                if not session:
+                    return await self._host_stop_already_settled(
+                        session_id,
+                        actor_user_id,
+                        reason,
+                    )
+                if session.ended_at is not None:
+                    if session.owner_user_id != actor_user_id:
+                        return False
+                    return reason in {"owner", "single_host"}
                 if reason == "owner" and session.owner_user_id != actor_user_id:
                     return False
                 code = session.code

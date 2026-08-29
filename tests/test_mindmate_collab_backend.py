@@ -88,6 +88,95 @@ async def test_session_payload_includes_owner_and_expiry() -> None:
 
 
 @pytest.mark.asyncio
+async def test_stop_session_owner_already_ended_is_success() -> None:
+    """A second host stop after ended_at is set must not look like a failure."""
+    mgr = MindmateCollabManager()
+    session = MagicMock()
+    session.ended_at = datetime(2026, 8, 28, 6, 12, 27, tzinfo=UTC)
+    session.owner_user_id = 3
+
+    fake_sess = AsyncMock()
+    fake_result = MagicMock()
+    fake_result.scalar_one_or_none.return_value = session
+    fake_sess.execute = AsyncMock(return_value=fake_result)
+    context = AsyncMock()
+    context.__aenter__.return_value = fake_sess
+    context.__aexit__.return_value = None
+
+    with patch(
+        "services.features.mindmate_collab.manager.user_rls_session",
+        return_value=context,
+    ):
+        ok = await mgr.stop_session("sess-ended", 3, reason="owner")
+
+    assert ok is True
+
+
+@pytest.mark.asyncio
+async def test_stop_session_owner_hidden_ended_row_is_success() -> None:
+    """RLS may hide an ended row; host retry still settles as success via system read."""
+    mgr = MindmateCollabManager()
+    ended = MagicMock()
+    ended.ended_at = datetime(2026, 8, 28, 6, 12, 27, tzinfo=UTC)
+    ended.owner_user_id = 3
+
+    user_sess = AsyncMock()
+    user_result = MagicMock()
+    user_result.scalar_one_or_none.return_value = None
+    user_sess.execute = AsyncMock(return_value=user_result)
+    user_ctx = AsyncMock()
+    user_ctx.__aenter__.return_value = user_sess
+    user_ctx.__aexit__.return_value = None
+
+    system_sess = AsyncMock()
+    system_result = MagicMock()
+    system_result.scalar_one_or_none.return_value = ended
+    system_sess.execute = AsyncMock(return_value=system_result)
+    system_ctx = AsyncMock()
+    system_ctx.__aenter__.return_value = system_sess
+    system_ctx.__aexit__.return_value = None
+
+    with (
+        patch(
+            "services.features.mindmate_collab.manager.user_rls_session",
+            return_value=user_ctx,
+        ),
+        patch(
+            "services.features.mindmate_collab.manager.system_rls_session",
+            return_value=system_ctx,
+        ),
+    ):
+        ok = await mgr.stop_session("sess-ended", 3, reason="owner")
+
+    assert ok is True
+
+
+@pytest.mark.asyncio
+async def test_stop_session_non_owner_already_ended_is_rejected() -> None:
+    """Ended rooms stay unauthorized for anyone other than the host."""
+    mgr = MindmateCollabManager()
+    session = MagicMock()
+    session.ended_at = datetime(2026, 8, 28, 6, 12, 27, tzinfo=UTC)
+    session.owner_user_id = 3
+
+    fake_sess = AsyncMock()
+    fake_result = MagicMock()
+    fake_result.scalar_one_or_none.return_value = session
+    fake_sess.execute = AsyncMock(return_value=fake_result)
+    context = AsyncMock()
+    context.__aenter__.return_value = fake_sess
+    context.__aexit__.return_value = None
+
+    with patch(
+        "services.features.mindmate_collab.manager.user_rls_session",
+        return_value=context,
+    ):
+        ok = await mgr.stop_session("sess-ended", 5, reason="owner")
+
+    assert ok is False
+
+
+@pytest.mark.asyncio
 async def test_join_by_code_rejected_when_room_closing() -> None:
     """REST join fails while the closing marker is set."""
     mgr = MindmateCollabManager()

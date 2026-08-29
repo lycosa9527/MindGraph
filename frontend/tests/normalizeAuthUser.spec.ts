@@ -51,6 +51,19 @@ describe('normalizeAuthUser', () => {
     })
   })
 
+  it('maps thinking coins from a login payload so the sidebar can show without /me', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      thinking_coins: { balance: 42, eligible: true },
+    })
+    expect(user.thinkingCoins).toEqual({ balance: 42, eligible: true })
+  })
+
+  it('leaves thinking coins unset when login omits the field', () => {
+    const user = normalizeAuthUser(loginPayload)
+    expect(user.thinkingCoins).toBeUndefined()
+  })
+
   it('coerces BCP 47 aliases such as zh-CN to the enabled UI locale', () => {
     const user = normalizeAuthUser({
       ...loginPayload,

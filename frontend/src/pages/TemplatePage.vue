@@ -3,11 +3,28 @@
  * TemplatePage - Template library with filters and thumbnail grid
  * Features: Scene filters, Subject filters, Template thumbnails
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { Folder, Search } from '@lucide/vue'
 
+import { LoginModal } from '@/components/auth'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+import { notify } from '@/composables/core/notifications'
+import {
+  MARKET_PAY_NEED_LOGIN,
+  fetchMarketOrder,
+  formatListingYuan,
+  isAlipayReturnQuery,
+  parseAlipayReturnOrderId,
+  startMarketPagePay,
+} from '@/composables/markets/marketPagePay'
+import {
+  MOCK_TEMPLATE_LISTINGS,
+  listingRowToTemplate,
+  type MarketListingRow,
+  type TemplateResource,
+} from '@/composables/markets/templateCatalog'
 import { apiRequest } from '@/utils/apiClient'
 
 // Filter options
@@ -37,20 +54,12 @@ const activeScene = ref<string>('全部')
 const activeSubject = ref<string>('全部')
 const searchQuery = ref('')
 
-// Template resource type
-interface TemplateResource {
-  id: string
-  title: string
-  thumbnail: string
-  type: 'MindMate' | 'MindGraph'
-  scene: string
-  subject: string
-  views: number
-  downloads: number
-}
-
 const { featureMarkets } = useFeatureFlags()
+const route = useRoute()
 const apiListings = ref<TemplateResource[]>([])
+const payingListingId = ref<number | null>(null)
+const showLoginModal = ref(false)
+const returnBanner = ref('')
 
 async function fetchMarketTemplateListings(): Promise<void> {
   if (!featureMarkets.value) {
@@ -73,23 +82,8 @@ async function fetchMarketTemplateListings(): Promise<void> {
     apiListings.value = []
     return
   }
-  const rows = (await res.json()) as Array<{
-    id: number
-    title: string
-    product_type: string | null
-    scene: string | null
-    subject: string | null
-  }>
-  apiListings.value = rows.map((row) => ({
-    id: String(row.id),
-    title: row.title,
-    thumbnail: '',
-    type: row.product_type === 'MindMate' ? 'MindMate' : 'MindGraph',
-    scene: row.scene ?? '',
-    subject: row.subject ?? '',
-    views: 0,
-    downloads: 0,
-  }))
+  const rows = (await res.json()) as MarketListingRow[]
+  apiListings.value = rows.map(listingRowToTemplate)
 }
 
 watch(
@@ -100,135 +94,11 @@ watch(
   { immediate: true }
 )
 
-// Mock template data when 市场 feature is off
-const mockTemplates: TemplateResource[] = [
-  {
-    id: '1',
-    title: '小学语文课文思维导图模板',
-    thumbnail: '',
-    type: 'MindGraph',
-    scene: '教学通用',
-    subject: '语文',
-    views: 1234,
-    downloads: 567,
-  },
-  {
-    id: '2',
-    title: '初中数学公式整理思维导图',
-    thumbnail: '',
-    type: 'MindGraph',
-    scene: '总结汇报',
-    subject: '数学',
-    views: 2345,
-    downloads: 890,
-  },
-  {
-    id: '3',
-    title: '英语语法知识点总结',
-    thumbnail: '',
-    type: 'MindMate',
-    scene: '教学通用',
-    subject: '英语',
-    views: 1567,
-    downloads: 432,
-  },
-  {
-    id: '4',
-    title: '高中化学元素周期表思维导图',
-    thumbnail: '',
-    type: 'MindGraph',
-    scene: '教学通用',
-    subject: '化学',
-    views: 3456,
-    downloads: 1234,
-  },
-  {
-    id: '5',
-    title: '班级文化建设主题班会',
-    thumbnail: '',
-    type: 'MindMate',
-    scene: '主题班会',
-    subject: '综合实践',
-    views: 987,
-    downloads: 321,
-  },
-  {
-    id: '6',
-    title: '物理力学知识框架',
-    thumbnail: '',
-    type: 'MindGraph',
-    scene: '总结汇报',
-    subject: '物理',
-    views: 2134,
-    downloads: 765,
-  },
-  {
-    id: '7',
-    title: '历史朝代年表思维导图',
-    thumbnail: '',
-    type: 'MindGraph',
-    scene: '教学通用',
-    subject: '历史',
-    views: 4567,
-    downloads: 1890,
-  },
-  {
-    id: '8',
-    title: '地理气候类型总结',
-    thumbnail: '',
-    type: 'MindMate',
-    scene: '总结汇报',
-    subject: '地理',
-    views: 1789,
-    downloads: 654,
-  },
-  {
-    id: '9',
-    title: '生物细胞结构图解',
-    thumbnail: '',
-    type: 'MindGraph',
-    scene: '教学通用',
-    subject: '生物',
-    views: 2890,
-    downloads: 987,
-  },
-  {
-    id: '10',
-    title: '政治考点梳理思维导图',
-    thumbnail: '',
-    type: 'MindMate',
-    scene: '总结汇报',
-    subject: '政治',
-    views: 1234,
-    downloads: 456,
-  },
-  {
-    id: '11',
-    title: '音乐乐理知识框架',
-    thumbnail: '',
-    type: 'MindMate',
-    scene: '教学通用',
-    subject: '音乐',
-    views: 876,
-    downloads: 234,
-  },
-  {
-    id: '12',
-    title: '美术色彩理论思维导图',
-    thumbnail: '',
-    type: 'MindGraph',
-    scene: '教学通用',
-    subject: '美术',
-    views: 1567,
-    downloads: 543,
-  },
-]
-
 const baseTemplates = computed(() => {
   if (featureMarkets.value) {
     return apiListings.value
   }
-  return mockTemplates
+  return MOCK_TEMPLATE_LISTINGS
 })
 
 // Filtered templates
@@ -292,6 +162,60 @@ function getPlaceholderColor(id: string): string {
   }
   return colors[hash % colors.length]
 }
+
+async function confirmAlipayReturn(): Promise<void> {
+  if (!isAlipayReturnQuery(route.query)) {
+    return
+  }
+  const orderId = parseAlipayReturnOrderId(route.query)
+  if (orderId === null) {
+    returnBanner.value = '正在确认支付结果，请稍候刷新本页。'
+    return
+  }
+  returnBanner.value = '正在确认支付结果…'
+  try {
+    const order = await fetchMarketOrder(orderId)
+    if (order.status === 'paid') {
+      returnBanner.value = '支付成功，模板已开通。'
+      return
+    }
+    returnBanner.value = '支付处理中，到账后可直接使用模板。'
+  } catch (error) {
+    if (error instanceof Error && error.message === MARKET_PAY_NEED_LOGIN) {
+      showLoginModal.value = true
+      returnBanner.value = '请登录后查看支付结果。'
+      return
+    }
+    returnBanner.value = '暂时无法确认支付结果，请稍后刷新。'
+  }
+}
+
+async function onTemplateCardClick(template: TemplateResource): Promise<void> {
+  if (!featureMarkets.value || template.listingId === null) {
+    return
+  }
+  if (payingListingId.value !== null) {
+    return
+  }
+  payingListingId.value = template.listingId
+  try {
+    await startMarketPagePay(template.listingId)
+  } catch (error) {
+    if (error instanceof Error && error.message === MARKET_PAY_NEED_LOGIN) {
+      showLoginModal.value = true
+      notify.warning('请先登录后再购买模板')
+      return
+    }
+    const message = error instanceof Error ? error.message : '发起支付失败'
+    notify.error(message)
+  } finally {
+    payingListingId.value = null
+  }
+}
+
+onMounted(() => {
+  void confirmAlipayReturn()
+})
 </script>
 
 <template>
@@ -376,6 +300,13 @@ function getPlaceholderColor(id: string): string {
       </div>
     </div>
 
+    <div
+      v-if="returnBanner"
+      class="mx-6 mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+    >
+      {{ returnBanner }}
+    </div>
+
     <!-- Template grid -->
     <div class="template-grid flex-1 overflow-y-auto p-6">
       <div
@@ -386,6 +317,7 @@ function getPlaceholderColor(id: string): string {
           v-for="template in displayTemplates"
           :key="template.id"
           class="template-card group cursor-pointer"
+          @click="onTemplateCardClick(template)"
         >
           <!-- Thumbnail -->
           <div
@@ -426,7 +358,13 @@ function getPlaceholderColor(id: string): string {
               <span
                 class="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 px-3 py-1.5 rounded-full"
               >
-                使用模板
+                {{
+                  featureMarkets && template.listingId
+                    ? payingListingId === template.listingId
+                      ? '正在跳转支付宝…'
+                      : '支付宝购买'
+                    : '使用模板'
+                }}
               </span>
             </div>
           </div>
@@ -439,8 +377,9 @@ function getPlaceholderColor(id: string): string {
               {{ template.title }}
             </h3>
             <div class="flex items-center gap-3 text-xs text-stone-400">
-              <span>{{ formatNumber(template.views) }} 浏览</span>
-              <span>{{ formatNumber(template.downloads) }} 使用</span>
+              <span v-if="template.priceMinor !== null">{{ formatListingYuan(template.priceMinor) }}</span>
+              <span v-else>{{ formatNumber(template.views) }} 浏览</span>
+              <span v-if="template.priceMinor === null">{{ formatNumber(template.downloads) }} 使用</span>
             </div>
           </div>
         </div>
@@ -456,6 +395,10 @@ function getPlaceholderColor(id: string): string {
         <p class="text-sm">尝试调整筛选条件或搜索关键词</p>
       </div>
     </div>
+    <LoginModal
+      v-model:visible="showLoginModal"
+      @success="showLoginModal = false"
+    />
   </div>
 </template>
 

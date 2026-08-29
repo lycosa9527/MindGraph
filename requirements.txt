@@ -40,7 +40,7 @@ aiohttp>=3.14.3  # Used by Dify client (MindMate integration)
 openai>=2.53.0
 python-multipart>=0.0.32
 httpx[http2]>=0.28.1  # Primary async HTTP client with HTTP/2 (LLM clients, SMS)
-alipay-sdk-python>=3.7.1160  # Alipay Open Platform (gateway; e.g. alipay.trade.page.pay)
+alipay-sdk-python>=3.7.1160  # Official Python 通用版 SDK for v3 电脑网站支付 (page_execute)
 mcp[cli]>=2,<3  # MCP Streamable HTTP at /api/mcp (MCPServer; transport kwargs on streamable_http_app)
 # Cap <16: langgraph-sdk 0.4.x (pulled by langgraph≥1.2.10) requires websockets>=14,<16.
 # Bump to 17+ only after langgraph-sdk raises that ceiling.

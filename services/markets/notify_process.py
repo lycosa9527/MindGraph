@@ -28,6 +28,7 @@ from services.markets.alipay_common import (
 )
 from services.markets.alipay_notify import verify_async_notify
 from services.markets.alipay_settings import AlipayEnvConfig
+from services.markets.alipay_trade_query import query_paid_trade_fields, query_trade_by_out_trade_no
 from services.markets.entitlement_service import entitlement_expires_from_listing, grant_or_extend_entitlement
 from services.markets.subscription_service import subscription_period_end
 
@@ -82,6 +83,26 @@ async def apply_trade_notify(
         )
         return "fail"
 
+    return await fulfill_paid_order(
+        session,
+        order,
+        trade_no=trade_no,
+        notify_id=notify_id,
+    )
+
+
+async def fulfill_paid_order(
+    session: AsyncSession,
+    order: MarketOrder,
+    *,
+    trade_no: str | None,
+    notify_id: str | None,
+) -> str:
+    """Mark a pending order paid, record the notify id, and grant entitlement."""
+    if order.status == "paid":
+        return "success"
+
+    pay_repo = MarketPaymentRepository(session)
     if notify_id:
         existing = await pay_repo.get_by_notify_id(notify_id)
         if existing is not None:
@@ -115,6 +136,39 @@ async def apply_trade_notify(
 
     await session.commit()
     return "success"
+
+
+async def fulfill_pending_order_from_query(
+    session: AsyncSession,
+    order: MarketOrder,
+    cfg: AlipayEnvConfig,
+) -> MarketOrder:
+    """If notify is late, confirm page-pay via ``alipay.trade.query`` (docs fallback)."""
+    if order.status != "pending":
+        return order
+    body = query_trade_by_out_trade_no(cfg, order.out_trade_no)
+    if body is None:
+        return order
+    paid = query_paid_trade_fields(body)
+    if paid is None:
+        return order
+    trade_no, total_amount = paid
+    if not verify_notify_amount(total_amount, order.amount_minor):
+        logger.warning(
+            "[Markets] Query amount mismatch out_trade_no=%s expected=%s got=%s",
+            order.out_trade_no,
+            order.amount_minor,
+            total_amount,
+        )
+        return order
+    await fulfill_paid_order(
+        session,
+        order,
+        trade_no=trade_no,
+        notify_id=f"query:{trade_no}",
+    )
+    await session.refresh(order)
+    return order
 
 
 async def _apply_subscription_renewal_notify(

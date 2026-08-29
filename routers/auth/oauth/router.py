@@ -156,6 +156,25 @@ def _log_oauth_redirect_error(
     )
 
 
+def _redirect_from_http_exception(
+    *,
+    provider: str,
+    mode: str,
+    organization_id: int,
+    exc: HTTPException,
+) -> RedirectResponse:
+    """Turn a callback HTTPException into the same /auth?error= toast as ValueError."""
+    raw = exc.detail if isinstance(exc.detail, str) else AUTH_ERROR_EXCHANGE_FAILED
+    error = normalize_oauth_error_code(raw)
+    _log_oauth_redirect_error(
+        provider=provider,
+        mode=mode,
+        organization_id=organization_id,
+        error=error,
+    )
+    return _oauth_failure_redirect(mode, error)
+
+
 @router.get("/providers", response_model=OauthProvidersResponse)
 async def get_oauth_providers(
     invite: str = Query(""),
@@ -318,6 +337,14 @@ async def wechat_oauth_callback(
             error=error,
         )
         return _oauth_failure_redirect(payload.mode, error)
+    except HTTPException as exc:
+        await db.rollback()
+        return _redirect_from_http_exception(
+            provider=OAUTH_PROVIDER_WECHAT,
+            mode=payload.mode,
+            organization_id=payload.organization_id,
+            exc=exc,
+        )
     except BACKGROUND_INFRA_ERRORS as exc:
         await db.rollback()
         logger.error("WeChat callback failed: %s", exc, exc_info=True)

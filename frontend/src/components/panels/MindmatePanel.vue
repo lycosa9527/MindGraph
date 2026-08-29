@@ -27,6 +27,7 @@ import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
 import {
   loadLocalMindmateCollabSessions,
   normalizeMindmateCollabCode,
+  wasMindmateCollabCodeRecentlyEnded,
 } from '@/utils/mindmateCollabSessions'
 import {
   requestMindmateCollabStop,
@@ -205,6 +206,10 @@ function handleCollabSessionStarted(payload: {
   visibility?: 'organization' | 'network'
   ownerUserId?: number
 }) {
+  if (wasMindmateCollabCodeRecentlyEnded(payload.code)) {
+    notify.info(t('mindmate.collabRoomEndedHost'))
+    return
+  }
   collabSeedMessages.value = mapThreadToCollabSeed(mindMate.messages.value)
   collabRoomCode.value = payload.code
   if (payload.visibility === 'network' || payload.visibility === 'organization') {
@@ -306,6 +311,9 @@ watch(
       return
     }
     if (code && code !== collabRoomCode.value) {
+      if (wasMindmateCollabCodeRecentlyEnded(code)) {
+        return
+      }
       if (collabSeedMessages.value.length === 0) {
         collabSeedMessages.value = mapThreadToCollabSeed(mindMate.messages.value)
       }
@@ -319,8 +327,7 @@ watch(
       if (localRow?.title) {
         collabRoomTitle.value = localRow.title
       }
-    }
-    if (!code && collabRoomCode.value) {
+    } else if (!code && collabRoomCode.value) {
       exitCollabChatroomMode()
     }
   },
@@ -395,7 +402,11 @@ async function startNewConversation() {
     )
     exitCollabChatroomMode({ removeFromHistory: true })
     if (sessionId) {
-      void requestMindmateCollabStop(sessionId)
+      void requestMindmateCollabStop(sessionId).then((ok) => {
+        if (!ok) {
+          notify.error(t('collab.endFailed'))
+        }
+      })
     }
   } else if (isCollabChatroomMode.value) {
     exitCollabChatroomMode()

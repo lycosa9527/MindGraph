@@ -20,7 +20,9 @@ import {
 } from '@/utils/mindmateCollabTeardown'
 import {
   formatMindmateCollabCode,
+  markMindmateCollabCodeEnded,
   trackLocalMindmateCollabSession,
+  wasMindmateCollabCodeRecentlyEnded,
 } from '@/utils/mindmateCollabSessions'
 
 const props = withDefaults(
@@ -125,6 +127,10 @@ async function joinRoomAndConnect(): Promise<void> {
   if (!code) {
     return
   }
+  if (wasMindmateCollabCodeRecentlyEnded(code)) {
+    emit('ended', 'host')
+    return
+  }
   const generation = ++joinGeneration
   joining.value = true
   try {
@@ -136,6 +142,16 @@ async function joinRoomAndConnect(): Promise<void> {
       return
     }
     if (!response.ok) {
+      const hostJustEnded = wasMindmateCollabCodeRecentlyEnded(code)
+      if (response.status === 404 || hostJustEnded) {
+        markMindmateCollabCodeEnded(code)
+        teardownMindmateCollabClient(code, { removeFromHistory: true })
+        emit('ended', 'host')
+        if (!hostJustEnded) {
+          notify.error(await parseJoinErrorDetail(response))
+        }
+        return
+      }
       notify.error(await parseJoinErrorDetail(response))
       emit('ended', 'left')
       return

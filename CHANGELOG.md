@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Voice Notes / Document Summary toast** — Package generate and image rebuild show “内容未通过安全审核，请修改文本后重试” instead of the raw provider string.
 - **Agent `success: false` leftover** — Filter-looking generate failures map to 400, not 500.
 - **MindMate org seminar list** — `GET /organization/sessions` opened a user RLS session without `app.organization_id`, so `rls_org_visible` hid colleagues' rooms. The school group modal and sidebar only showed the viewer's own seminar. Listing now binds the caller's org, merges the Redis org registry (including host-only rooms), and join checks use the same org GUC.
+- **End MindMate seminar** — First `POST /collab/stop` already succeeded; a follow-up join/stop on the closed room returned 404 and the UI showed “end failed”. Host stop is now idempotent (including when RLS hides the ended row), the sidebar evicts the room immediately (including other tabs via `localStorage`), and this tab will not rejoin that invite code. Ending a seminar no longer clears org-wide online presence.
 
 ### Tests
 
@@ -24,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `frontend/tests/useMindMapDocumentSummaryAccept.spec.ts` — `isContentFilterDetail`
 - `tests/test_mindmate_collab_org_listing.py` — org-bound SQL RLS; Redis fill-in when SQL only has the viewer's room
 - `frontend/tests/MindmateCollabHistory.spec.ts` — sidebar group list keeps a colleague's room
+- `tests/test_mindmate_collab_backend.py` — host stop is idempotent when the room is already ended
+- `frontend/tests/useMindmateCollab.spec.ts` — ended invite codes are not rejoined or re-tracked; org presence survives teardown
 
 ## [5.180.32] - 2026-08-27
 

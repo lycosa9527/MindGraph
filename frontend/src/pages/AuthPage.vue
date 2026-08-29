@@ -10,6 +10,7 @@ import { AuthQuickRegisterModal, LoginModal } from '@/components/auth'
 import { useLanguage } from '@/composables'
 import { useAuthStore, useUIStore } from '@/stores'
 import { getSafePostAuthPath } from '@/utils/authRedirect'
+import { clearPersistedOAuthLoginError } from '@/utils/oauthLoginUi'
 import {
   clearStoredQuickRegToken,
   extractQuickRegTokenFromRedirect,
@@ -121,6 +122,7 @@ watch(
 )
 
 function onLoginSuccess() {
+  clearPersistedOAuthLoginError()
   dismissedBySuccess.value = true
   const redir = getSafePostAuthPath(route.query.redirect)
   router.push(redir).catch(() => {

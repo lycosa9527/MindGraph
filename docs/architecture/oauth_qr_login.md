@@ -149,7 +149,7 @@ Backend exposes stable `oauth_*` codes via redirects (`/auth?error=…`) and JSO
 
 | Code | Meaning | Frontend toast |
 |------|---------|----------------|
-| `oauth_not_linked` | Scan succeeded but no `oauth_user_links` row — QR login never creates an account | Warning — register, password sign-in, then bind under Account linking |
+| `oauth_not_linked` | Scan succeeded but no `oauth_user_links` row — QR login never creates an account | Error toast + login-form hint — bind under Account linking first |
 | `oauth_already_bound` | This user already has a different WeChat/DingTalk linked | Warning — unbind first |
 | `oauth_external_taken` | Identity already linked to another user | Warning |
 | `oauth_invalid_code` | WeChat `40029` / `40163` / `41008` — expired or reused `code` | Error — rescan |

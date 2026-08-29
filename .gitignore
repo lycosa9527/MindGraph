@@ -82,6 +82,8 @@ data/**
 !data/crowdsec/
 !data/crowdsec/README.md
 !data/crowdsec/blocklist_baseline.txt
+# Alipay cert-mode upload (private key + 3 .crt). Never commit.
+data/alipay-certs/
 captcha_store.json
 
 # Database files

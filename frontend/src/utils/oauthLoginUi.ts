@@ -1,3 +1,5 @@
+import { ref } from 'vue'
+
 /** Official WxLogin default: jump the top window so callback Set-Cookie is visible. */
 export const WX_LOGIN_SELF_REDIRECT = false
 
@@ -112,13 +114,58 @@ export type OAuthErrorLevel = 'warning' | 'error'
 export interface OAuthErrorPresentation {
   level: OAuthErrorLevel
   messageKey: string
+  durationMs?: number
+}
+
+/** Unbound scan: keep the toast readable on the login card. */
+export const OAUTH_NOT_LINKED_TOAST_MS = 10000
+
+const OAUTH_NOT_LINKED_STORAGE_KEY = 'mg_oauth_login_error'
+
+/** Last unbound-scan error so the login form can keep the bind-first hint. */
+export const persistedOAuthLoginError = ref('')
+
+export function persistOAuthLoginError(detail: string): void {
+  if (detail !== 'oauth_not_linked') {
+    return
+  }
+  persistedOAuthLoginError.value = detail
+  try {
+    sessionStorage.setItem(OAUTH_NOT_LINKED_STORAGE_KEY, detail)
+  } catch {
+    return
+  }
+}
+
+export function hydratePersistedOAuthLoginError(): void {
+  if (persistedOAuthLoginError.value) {
+    return
+  }
+  try {
+    persistedOAuthLoginError.value = sessionStorage.getItem(OAUTH_NOT_LINKED_STORAGE_KEY) || ''
+  } catch {
+    persistedOAuthLoginError.value = ''
+  }
+}
+
+export function clearPersistedOAuthLoginError(): void {
+  persistedOAuthLoginError.value = ''
+  try {
+    sessionStorage.removeItem(OAUTH_NOT_LINKED_STORAGE_KEY)
+  } catch {
+    return
+  }
 }
 
 /** Map backend OAuth error codes to i18n keys and toast severity. */
 export function resolveOAuthError(detail: string): OAuthErrorPresentation {
   switch (detail) {
     case 'oauth_not_linked':
-      return { level: 'warning', messageKey: 'auth.qrLoginNotLinked' }
+      return {
+        level: 'error',
+        messageKey: 'auth.qrLoginNotLinked',
+        durationMs: OAUTH_NOT_LINKED_TOAST_MS,
+      }
     case 'oauth_external_taken':
       return { level: 'warning', messageKey: 'auth.oauthExternalTaken' }
     case 'oauth_already_bound':
@@ -156,17 +203,20 @@ export function isOAuthRedirectError(detail: string): boolean {
   )
 }
 
+type OAuthNotifyFn = (message: string, duration?: number) => void
+
 export function notifyOAuthError(
   detail: string,
-  notify: { warning: (message: string) => void; error: (message: string) => void },
+  notify: { warning: OAuthNotifyFn; error: OAuthNotifyFn },
   t: (key: string) => string
 ): void {
-  const { level, messageKey } = resolveOAuthError(detail)
+  persistOAuthLoginError(detail)
+  const { level, messageKey, durationMs } = resolveOAuthError(detail)
   const message = t(messageKey)
   if (level === 'warning') {
-    notify.warning(message)
+    notify.warning(message, durationMs)
   } else {
-    notify.error(message)
+    notify.error(message, durationMs)
   }
 }
 

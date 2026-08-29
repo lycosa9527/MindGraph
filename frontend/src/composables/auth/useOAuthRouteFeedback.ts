@@ -8,6 +8,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useAuthStore } from '@/stores'
 import {
+  clearPersistedOAuthLoginError,
   isOAuthRedirectError,
   notifyOAuthError,
   oauthBindFromRouteQuery,
@@ -59,6 +60,7 @@ export function useOAuthRouteFeedback(): void {
         return
       }
       if (oauthLoginFromRouteQuery(route.query.oauth_login)) {
+        clearPersistedOAuthLoginError()
         useAuthStore().emitLoginSuccess()
         stripOAuthQuery()
       }

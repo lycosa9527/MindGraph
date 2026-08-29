@@ -2,10 +2,11 @@
  * Client-side MindMate collab session teardown (live UI state + optional history removal).
  */
 import { setEmbeddedCollabRoomCode } from '@/composables/mindmate/mindmateCollabEmbeddedBridge'
-import { clearMindmateCollabPresenceSnapshot } from '@/composables/mindmate/mindmateCollabPresenceBridge'
 import { authFetch } from '@/utils/api'
 import {
   loadLocalMindmateCollabSessions,
+  markMindmateCollabCodeEnded,
+  MINDMATE_COLLAB_SESSION_REMOVED_EVENT,
   normalizeMindmateCollabCode,
   persistLocalMindmateCollabSessions,
 } from '@/utils/mindmateCollabSessions'
@@ -20,10 +21,16 @@ export function removeLocalMindmateCollabSessionByCode(code: string | null | und
     return
   }
   const key = normalizeMindmateCollabCode(code)
+  markMindmateCollabCodeEnded(key)
   const next = loadLocalMindmateCollabSessions().filter(
     (row) => normalizeMindmateCollabCode(row.code) !== key,
   )
   persistLocalMindmateCollabSessions(next)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent(MINDMATE_COLLAB_SESSION_REMOVED_EVENT, { detail: { code: key } }),
+    )
+  }
 }
 
 export function resolveMindmateCollabSessionId(
@@ -43,10 +50,9 @@ export function resolveMindmateCollabSessionId(
   return row?.session_id ?? null
 }
 
-/** Release embedded bridge and presence without dropping sidebar rejoin history. */
+/** Release the embedded room pointer without dropping sidebar rejoin history. */
 export function releaseMindmateCollabClientState(): void {
   setEmbeddedCollabRoomCode(null)
-  clearMindmateCollabPresenceSnapshot()
 }
 
 /** Tear down live client state; optionally drop sidebar history when the room is finished. */
@@ -60,6 +66,10 @@ export function teardownMindmateCollabClient(
   releaseMindmateCollabClientState()
 }
 
+export function mindmateCollabStopSucceeded(status: number): boolean {
+  return (status >= 200 && status < 300) || status === 404
+}
+
 export async function requestMindmateCollabStop(sessionId: string): Promise<boolean> {
   try {
     const response = await authFetch('/api/mindmate/collab/stop', {
@@ -67,7 +77,7 @@ export async function requestMindmateCollabStop(sessionId: string): Promise<bool
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId }),
     })
-    return response.ok
+    return mindmateCollabStopSucceeded(response.status)
   } catch {
     return false
   }

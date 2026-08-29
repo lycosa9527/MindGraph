@@ -13,7 +13,7 @@ from alipay.aop.api.domain.PeriodRuleParams import PeriodRuleParams
 from alipay.aop.api.request.AlipayUserAgreementPageSignRequest import AlipayUserAgreementPageSignRequest
 
 from models.domain.markets import MarketListing, MarketSubscription
-from services.markets.alipay_client import build_alipay_client
+from services.markets.alipay_client import apply_cert_sns, build_alipay_client
 from services.markets.alipay_common import (
     listing_billing_interval,
     listing_execute_time,
@@ -81,6 +81,7 @@ def build_agreement_sign_form_html(
     request.notify_url = notify_url
     if return_url:
         request.return_url = return_url
+    apply_cert_sns(request, cfg)
 
     return client.page_execute(request, http_method="POST")
 

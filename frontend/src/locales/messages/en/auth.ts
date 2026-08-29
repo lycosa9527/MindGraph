@@ -295,7 +295,7 @@ export default {
   'auth.qrLoginInviteRequired': 'Enter your school invitation code before using QR login',
   'auth.qrLoginProvidersFailed': 'Could not load QR login settings. Please try again.',
   'auth.qrLoginProviderDisabled': 'This sign-in method is not available',
-  'auth.qrLoginNotLinked': 'No account is linked to this WeChat. Register, sign in with password, then bind WeChat under Account linking before scanning again.',
+  'auth.qrLoginNotLinked': 'Please bind your account first. Sign in with your password, link WeChat under Account linking, then scan again.',
   'auth.qrLoginExchangeFailed': 'QR sign-in failed. Please try again.',
   'auth.qrLoginInvalidState': 'QR session expired. Close and scan again.',
   'auth.qrLoginInvalidCode': 'WeChat authorization expired or was already used. Close the QR and scan again.',

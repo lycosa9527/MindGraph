@@ -5,7 +5,79 @@
  */
 
 export const LOCAL_MINDMATE_COLLAB_SESSIONS_KEY = 'mindmate_collab_recent_sessions'
+export const MINDMATE_COLLAB_ENDED_CODES_KEY = 'mindmate_collab_recently_ended'
 export const MINDMATE_COLLAB_SESSIONS_CHANGED_EVENT = 'mindmate-collab-sessions-changed'
+export const MINDMATE_COLLAB_SESSION_REMOVED_EVENT = 'mindmate-collab-session-removed'
+
+const ENDED_CODE_TTL_MS = 15_000
+const recentlyEndedCodes = new Map<string, number>()
+
+function persistEndedCodes(): void {
+  if (typeof localStorage === 'undefined') {
+    return
+  }
+  const now = Date.now()
+  const payload: Record<string, number> = {}
+  for (const [key, markedAt] of recentlyEndedCodes) {
+    if (now - markedAt <= ENDED_CODE_TTL_MS) {
+      payload[key] = markedAt
+    } else {
+      recentlyEndedCodes.delete(key)
+    }
+  }
+  try {
+    localStorage.setItem(MINDMATE_COLLAB_ENDED_CODES_KEY, JSON.stringify(payload))
+  } catch {
+    // quota / privacy mode
+  }
+}
+
+function hydrateEndedCodesFromStorage(): void {
+  if (typeof localStorage === 'undefined') {
+    return
+  }
+  try {
+    const raw = localStorage.getItem(MINDMATE_COLLAB_ENDED_CODES_KEY)
+    if (!raw) {
+      return
+    }
+    const parsed = JSON.parse(raw) as Record<string, number>
+    const now = Date.now()
+    for (const [key, markedAt] of Object.entries(parsed)) {
+      if (typeof markedAt !== 'number' || now - markedAt > ENDED_CODE_TTL_MS) {
+        continue
+      }
+      const existing = recentlyEndedCodes.get(key)
+      if (existing == null || markedAt > existing) {
+        recentlyEndedCodes.set(key, markedAt)
+      }
+    }
+  } catch {
+    // ignore corrupt storage
+  }
+}
+
+/** Remember a room code so stop/teardown does not immediately rejoin it. */
+export function markMindmateCollabCodeEnded(code: string): void {
+  recentlyEndedCodes.set(normalizeMindmateCollabCode(code), Date.now())
+  persistEndedCodes()
+}
+
+/** True when this invite code was just ended (this tab or another tab on the same origin). */
+export function wasMindmateCollabCodeRecentlyEnded(code: string): boolean {
+  hydrateEndedCodesFromStorage()
+  const key = normalizeMindmateCollabCode(code)
+  const markedAt = recentlyEndedCodes.get(key)
+  if (markedAt == null) {
+    return false
+  }
+  if (Date.now() - markedAt > ENDED_CODE_TTL_MS) {
+    recentlyEndedCodes.delete(key)
+    persistEndedCodes()
+    return false
+  }
+  return true
+}
 
 export interface LocalMindmateCollabSession {
   session_id: string
@@ -93,6 +165,9 @@ export function mergeMindmateCollabSessionLists<T extends { code: string }>(
 }
 
 export function trackLocalMindmateCollabSession(row: LocalMindmateCollabSession): void {
+  if (wasMindmateCollabCodeRecentlyEnded(row.code)) {
+    return
+  }
   const key = normalizeMindmateCollabCode(row.code)
   const existing = loadLocalMindmateCollabSessions()
   const next = [row, ...existing.filter((s) => normalizeMindmateCollabCode(s.code) !== key)]

@@ -26,10 +26,16 @@ from routers.auth.dependencies import get_current_user
 from routers.features.markets.helpers import require_markets_enabled
 from services.markets.alipay_agreement_sign import build_agreement_sign_form_html
 from services.markets.alipay_agreement_unsign import unsign_agreement
-from services.markets.alipay_common import minor_to_yuan_str, trade_notify_url, utc_now_naive
+from services.markets.alipay_common import (
+    markets_return_url,
+    minor_to_yuan_str,
+    trade_notify_url,
+    utc_now_naive,
+)
 from services.markets.alipay_notify_dispatch import dispatch_alipay_notify
 from services.markets.alipay_page_pay import build_page_pay_form_html
 from services.markets.alipay_settings import AlipayEnvConfig, load_alipay_config
+from services.markets.notify_process import fulfill_pending_order_from_query
 from services.markets.entitlement_service import entitlement_to_dict, list_active_entitlements
 from services.markets.subscription_service import (
     get_or_create_subscription_intent,
@@ -69,12 +75,10 @@ def _user_external_logon_id(user: User) -> str:
     return f"mg_user_{user.id}"
 
 
-def _subscription_return_url() -> str | None:
-    """Subscription return url."""
+def _markets_return_url(*, order_id: int | None = None) -> str | None:
+    """Browser return after Alipay page pay or agreement sign."""
     external = normalize_external_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
-    if external:
-        return f"{external}/template"
-    return None
+    return markets_return_url(external, order_id=order_id)
 
 
 class ListingOut(BaseModel):
@@ -116,6 +120,20 @@ class OrderOut(BaseModel):
     currency: str
     subscription_id: Optional[int] = None
     created_at: str
+
+
+def _order_out(order: MarketOrder) -> OrderOut:
+    """Map an order row to the public schema."""
+    return OrderOut(
+        id=order.id,
+        listing_id=order.listing_id,
+        out_trade_no=order.out_trade_no,
+        status=order.status,
+        amount_minor=order.amount_minor,
+        currency=order.currency,
+        subscription_id=order.subscription_id,
+        created_at=order.created_at.isoformat() if order.created_at else "",
+    )
 
 
 class SubscriptionOut(BaseModel):
@@ -238,16 +256,7 @@ async def create_order(
         title=listing.title,
         prompt_preview=f"order listing={listing.id} amount={order.amount_minor}",
     )
-    return OrderOut(
-        id=order.id,
-        listing_id=order.listing_id,
-        out_trade_no=order.out_trade_no,
-        status=order.status,
-        amount_minor=order.amount_minor,
-        currency=order.currency,
-        subscription_id=order.subscription_id,
-        created_at=order.created_at.isoformat() if order.created_at else "",
-    )
+    return _order_out(order)
 
 
 @router.post("/orders/{order_id}/pay", response_class=HTMLResponse)
@@ -276,11 +285,40 @@ async def pay_order(
         cfg=cfg,
         out_trade_no=order.out_trade_no,
         total_amount_yuan=minor_to_yuan_str(order.amount_minor),
-        subject=listing.title[:128],
+        subject=listing.title,
         notify_url=trade_notify_url(cfg),
-        return_url=_subscription_return_url(),
+        return_url=_markets_return_url(order_id=order.id),
     )
     return HTMLResponse(content=html)
+
+
+@router.get("/orders/{order_id}", response_model=OrderOut)
+async def get_order(
+    order_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    user: User = Depends(get_current_user),
+) -> OrderOut:
+    """Return the buyer's order; pending rows may reconcile via trade.query."""
+    require_markets_enabled()
+    orepo = MarketOrderRepository(db)
+    order = await orepo.get_by_id(order_id)
+    if order is None or order.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    if order.status == "pending":
+        cfg = load_alipay_config()
+        if cfg is not None:
+            try:
+                order = await fulfill_pending_order_from_query(db, order, cfg)
+            except DATABASE_ERRORS:
+                logger.exception("[Markets] Trade query fulfill failed order_id=%s", order_id)
+                await db.rollback()
+                order = await orepo.get_by_id(order_id)
+                if order is None or order.user_id != user.id:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Order not found",
+                    ) from None
+    return _order_out(order)
 
 
 @router.get("/orders", response_model=list[OrderOut])
@@ -307,19 +345,7 @@ async def my_orders(
     )
     if rows and len(rows) == limit:
         response.headers["X-Next-Cursor"] = str(rows[-1].id)
-    return [
-        OrderOut(
-            id=r.id,
-            listing_id=r.listing_id,
-            out_trade_no=r.out_trade_no,
-            status=r.status,
-            amount_minor=r.amount_minor,
-            currency=r.currency,
-            subscription_id=r.subscription_id,
-            created_at=r.created_at.isoformat() if r.created_at else "",
-        )
-        for r in rows
-    ]
+    return [_order_out(r) for r in rows]
 
 
 @router.get("/entitlements", response_model=list[EntitlementOut])
@@ -410,7 +436,7 @@ async def sign_subscription(
         listing=listing,
         external_logon_id=_user_external_logon_id(user),
         notify_url=trade_notify_url(cfg),
-        return_url=_subscription_return_url(),
+        return_url=_markets_return_url(),
     )
     return HTMLResponse(content=html)
 
