@@ -2,7 +2,7 @@
 
 This folder is versioned with the MindGraph app. It teaches OpenClaw how to call MindGraph’s HTTP API using your account token.
 
-**Agent behavior (`SKILL.md`):** Two generate paths — (1) **agent-authored semantic `spec`** → save → PNG (no LLM), or (2) **native prompt** via `generate_graph` when the user only gives a topic. Both converge on `POST /api/diagrams` + `GET …/png`. Intent→type table and per-type cookbook live in `SKILL.md`. Bad specs → **400** `invalid_diagram_spec`; broken JSON → **422**.
+**Agent behavior (`SKILL.md`):** OpenClaw / WorkBuddy **picks the diagram type** (named type wins; else thinking intent + lookalikes; unclear → `mind_map`) and **authors the semantic `spec`**. MindGraph is only the pen — validate, save (`POST /api/diagrams`), draw (`GET …/png`). **No** `generate_graph` or other prompt-to-diagram APIs. Cookbook + picker live in `SKILL.md`. Bad specs → **400** `invalid_diagram_spec`; broken JSON → **422**.
 
 Human install / env / WorkBuddy notes stay in this README so the skill file stays short for the model.
 
@@ -40,7 +40,7 @@ Minimal shape:
 - **MINDGRAPH_ACCOUNT**: Phone number / account login (same as in MindGraph).
 - **MINDGRAPH_TOKEN**: Generated in the app under **账户信息 → API Token** (shown once; **90-day** validity).
 
-**HTTP timeouts:** Any host or tool that calls **`/api/web_content_mindmap_png`** (or other LLM + export routes) should allow **at least ~180 seconds** read timeout unless you know your server is faster. Default short timeouts in HTTP clients cause spurious failures.
+**HTTP timeouts:** PNG render (`GET /api/diagrams/{id}/png` or `POST /api/export_png`) uses headless Chromium. Allow **at least ~180 seconds** read timeout. Default short timeouts in HTTP clients cause spurious failures.
 
 ### Tencent WorkBuddy (where is `env`?)
 
@@ -71,15 +71,15 @@ From the MindGraph repo root:
 ```bash
 npm i -g clawhub
 clawhub login
-clawhub skill publish ./openclaw/skills/mindgraph --slug mindgraph --name "MindGraph" --version 1.4.0 --tags latest
+clawhub skill publish ./openclaw/skills/mindgraph --slug mindgraph --name "MindGraph" --version 1.6.0 --tags latest
 ```
 
-Bump the **ClawHub** `--version` when `SKILL.md` or this README changes (current publish target: **1.4.0**).
+Bump the **ClawHub** `--version` when `SKILL.md` or this README changes (current publish target: **1.6.0**).
 
 ## Files in this bundle
 
 | File | Role |
 |------|------|
-| `SKILL.md` | Slim agent instructions: 2 generate paths, intent table, cookbook, auth headers, 400/422 |
+| `SKILL.md` | Spec-only pen path, type picker (lookalikes + examples), cookbook, auth, 400/422 |
 | `demo.json` | Copy-paste `skills.entries.mindgraph` for `openclaw.json` |
 | `README.md` | Install, env, WorkBuddy hints, setup, publish command |
