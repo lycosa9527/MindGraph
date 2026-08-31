@@ -24,6 +24,7 @@ from . import (
     organizations,
     performance,
     roles,
+    school_user_activity,
     school_users,
     settings,
     stats,
@@ -44,6 +45,7 @@ admin_router.include_router(invites.router)
 admin_router.include_router(roles.router)
 admin_router.include_router(users.router)
 admin_router.include_router(school_users.router)
+admin_router.include_router(school_user_activity.router)
 admin_router.include_router(settings.router)
 admin_router.include_router(stats.router)
 admin_router.include_router(showcase.router)

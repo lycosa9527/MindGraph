@@ -49,6 +49,8 @@ export const adminKeys = {
     [...adminKeys.all, 'school-trends', params ?? {}] as const,
   schoolTokenStats: (organizationId: number) =>
     [...adminKeys.all, 'school-token-stats', organizationId] as const,
+  schoolUserActivity: (organizationId: number, year: number) =>
+    [...adminKeys.all, 'school-user-activity', organizationId, year] as const,
 
   apiKeys: () => [...adminKeys.all, 'api-keys'] as const,
 

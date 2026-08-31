@@ -20,6 +20,7 @@ describe('adminCapabilities', () => {
     const caps = fallbackCapabilitiesForRole('superadmin')
     expect(caps).toContain('tab.organizations.view')
     expect(caps).toContain('tab.organizations.edit')
+    expect(caps).toContain('tab.school_dashboard.activity.view')
     expect(hasSuperadminPanelAccess(caps)).toBe(true)
   })
 
@@ -32,6 +33,7 @@ describe('adminCapabilities', () => {
     expect(caps).not.toContain('tab.invites.view')
     expect(caps).not.toContain('tab.settings.view')
     expect(caps).not.toContain('tab.settings.mindmate_export')
+    expect(caps).not.toContain('tab.school_dashboard.activity.view')
     expect(visibleDataCenterViews(caps)).toEqual(['school_dashboard'])
     expect(isDataCenterTabReadOnly(caps)).toBe(false)
   })
@@ -55,6 +57,7 @@ describe('adminCapabilities', () => {
     expect(caps).toContain('scope.invited_orgs')
     expect(caps).not.toContain('tab.users.edit')
     expect(caps).not.toContain('tab.organizations.edit')
+    expect(caps).not.toContain('tab.school_dashboard.activity.view')
   })
 
   it('expert has organizations view, invites, and invited-org scope only', () => {

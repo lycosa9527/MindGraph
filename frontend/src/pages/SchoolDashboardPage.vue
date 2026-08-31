@@ -20,6 +20,7 @@ import AdminOrgTokenTrendDialog from '@/components/admin/AdminOrgTokenTrendDialo
 import AdminTrendChartModal from '@/components/admin/AdminTrendChartModal.vue'
 import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
 import SchoolDashboardQuotaCard from '@/components/school/SchoolDashboardQuotaCard.vue'
+import SchoolDashboardActivityTab from '@/components/school/SchoolDashboardActivityTab.vue'
 import SchoolDashboardUsersTab from '@/components/school/SchoolDashboardUsersTab.vue'
 import SchoolAddMemberDialog from '@/components/school/SchoolAddMemberDialog.vue'
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
@@ -94,7 +95,8 @@ const {
   managerRemaining,
 } = useSchoolDashboardQuotas(computed(() => stats.value.quotas))
 
-const activeTab = ref<'overview' | 'tokens' | 'users'>('overview')
+const canViewActivityTab = computed(() => can('tab.school_dashboard.activity.view'))
+const activeTab = ref<'overview' | 'tokens' | 'users' | 'activity'>('overview')
 
 function openOrgTrend(
   period: TokenTrendPeriod = 'week',
@@ -158,6 +160,12 @@ onAdminEvent('admin:mutation_completed', ({ domain, entityId }) => {
   }
   if (effectiveOrgId.value === Number(entityId)) {
     void loadStats()
+  }
+})
+
+watch(canViewActivityTab, (allowed) => {
+  if (!allowed && activeTab.value === 'activity') {
+    activeTab.value = 'overview'
   }
 })
 
@@ -237,6 +245,11 @@ onMounted(async () => {
           <el-tab-pane
             :label="t('admin.schoolUsersTab')"
             name="users"
+          />
+          <el-tab-pane
+            v-if="canViewActivityTab"
+            :label="t('admin.schoolActivity.tab')"
+            name="activity"
           />
         </el-tabs>
 
@@ -423,6 +436,13 @@ onMounted(async () => {
 
         <template v-else-if="activeTab === 'users'">
           <SchoolDashboardUsersTab
+            v-if="effectiveOrgId != null"
+            :org-id="effectiveOrgId"
+          />
+        </template>
+
+        <template v-else-if="activeTab === 'activity' && canViewActivityTab">
+          <SchoolDashboardActivityTab
             v-if="effectiveOrgId != null"
             :org-id="effectiveOrgId"
           />

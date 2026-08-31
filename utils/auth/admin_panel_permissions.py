@@ -48,6 +48,7 @@ CAP_FEATURE_ZHIHUI: Final[str] = "feature.zhihui"
 CAP_TAB_DATA_CENTER_VIEW: Final[str] = "tab.data_center.view"
 CAP_TAB_DATA_CENTER_EDIT: Final[str] = "tab.data_center.edit"
 CAP_TAB_SCHOOL_DASHBOARD_VIEW: Final[str] = "tab.school_dashboard.view"
+CAP_TAB_SCHOOL_DASHBOARD_ACTIVITY_VIEW: Final[str] = "tab.school_dashboard.activity.view"
 CAP_TAB_USERS_VIEW: Final[str] = "tab.users.view"
 CAP_TAB_USERS_EDIT: Final[str] = "tab.users.edit"
 CAP_TAB_ORGANIZATIONS_VIEW: Final[str] = "tab.organizations.view"
@@ -118,6 +119,7 @@ _SUPERADMIN_CAPS: frozenset[str] = (
             CAP_TAB_DATA_CENTER_VIEW,
             CAP_TAB_DATA_CENTER_EDIT,
             CAP_TAB_SCHOOL_DASHBOARD_VIEW,
+            CAP_TAB_SCHOOL_DASHBOARD_ACTIVITY_VIEW,
             CAP_TAB_USERS_VIEW,
             CAP_TAB_USERS_EDIT,
             CAP_TAB_ORGANIZATIONS_VIEW,

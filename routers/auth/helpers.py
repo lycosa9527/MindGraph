@@ -134,8 +134,8 @@ async def track_user_activity(
                 ip_address=ip_address,
                 reuse_existing=True,
             )
-            if db and normalize_role(user.role) == "teacher":
-                await _log_login_and_compute_stats(user.id, db)
+            if db:
+                await _log_login_and_compute_stats(user.id, db, user.role)
             method = str(detail_map.get("method") or "").strip()
             await track_module_activity(
                 user=user,
@@ -161,13 +161,17 @@ async def track_user_activity(
         logger.debug("Failed to track user activity: %s", e)
 
 
-async def _log_login_and_compute_stats(user_id: int, db: AsyncSession) -> None:
-    """Persist login to user_activity_log and trigger stats compute (fire-and-forget).
+async def _log_login_and_compute_stats(
+    user_id: int,
+    db: AsyncSession,
+    role: str | None = None,
+) -> None:
+    """Persist login to user_activity_log and trigger teacher stats when needed.
 
     The login activity log is committed on the caller's session so that it stays
-    within the request transaction boundary.  The usage-stats computation runs in
-    its own isolated session so a stats failure can never corrupt or partially
-    roll back the already-committed login record.
+    within the request transaction boundary.  Teacher usage-stats computation
+    runs in its own isolated session so a stats failure can never corrupt or
+    partially roll back the already-committed login record.
     """
     try:
         log_entry = UserActivityLog(
@@ -183,6 +187,9 @@ async def _log_login_and_compute_stats(user_id: int, db: AsyncSession) -> None:
             await db.rollback()
         except DATABASE_ERRORS as rollback_exc:
             logger.debug("Rollback after login log failure: %s", rollback_exc)
+        return
+
+    if normalize_role(role) != "teacher":
         return
 
     try:

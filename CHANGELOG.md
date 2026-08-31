@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.35] - 2026-09-01
+
+> **数据中心 → 学校仪表盘 adds 用户活跃度分析 for super-admins: selected-school totals, active users, and login frequency, with a Beijing timestamp on every card.**
+
+### Added
+
+- **用户活跃度分析** — Super-admin-only tab next to 用户 (`tab.school_dashboard.activity.view`). Metrics follow the school picker. Twelve Swiss cards in three sections: 用户总量, 活跃数据, 使用频次. Year picker and series use the Asia/Shanghai calendar. Each card shows `generated_at` as Beijing wall clock.
+- **年度注销/停用** — Empty state only. Users are hard-deleted; there is no churn history.
+- **`GET /api/auth/admin/stats/school/user-activity`** — Selected-school payload (`year`, `min_year`, `generated_at`, totals / activity / frequency). Future years and years before the school’s first member are rejected. Panel RLS is re-pinned to the resolved org; the school fence is `users.organization_id`.
+- **Login activity log** — Password, SMS, WeChat/DingTalk, and register persist `user_activity_log` for every role. Teacher-usage recompute stays teacher-only.
+
+### Tests
+
+- `tests/test_school_user_activity_compute.py` — Beijing aggregations, high/low frequency, year bounds
+- `tests/auth/test_school_user_activity_http.py` — 403 for school manager / teaching researcher; 400 without org or future year; 200 shape
+- `tests/test_login_activity_persist.py` — non-teacher login row, no usage-stats recompute
+- `tests/test_rls_user_activity_log_policy.py` / `tests/db/test_rls_user_activity_log.py` — `user_activity_log` stays user-owned; live RLS gated on `RUN_RLS_DB_TESTS=1`
+- `frontend/tests/schoolActivityChartCard.spec.ts` — twelve timestamped cards, capability hidden from school managers
+
 ## [5.180.34] - 2026-08-29
 
 > **Headless PNG export no longer captures a selected node or the floating editor bar. WorkBuddy skill download reuses the token shown in 账户信息.**

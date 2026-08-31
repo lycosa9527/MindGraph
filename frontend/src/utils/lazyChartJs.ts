@@ -14,6 +14,8 @@ export function loadChartJs(): Promise<typeof ChartType> {
         Chart,
         LineController,
         LineElement,
+        BarController,
+        BarElement,
         PointElement,
         LinearScale,
         CategoryScale,
@@ -25,6 +27,8 @@ export function loadChartJs(): Promise<typeof ChartType> {
       Chart.register(
         LineController,
         LineElement,
+        BarController,
+        BarElement,
         PointElement,
         LinearScale,
         CategoryScale,
