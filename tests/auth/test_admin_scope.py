@@ -29,6 +29,7 @@ from utils.auth.admin_panel_permissions import (
     CAP_TAB_INVITES_VIEW,
     CAP_TAB_ORGANIZATIONS_VIEW,
     CAP_TAB_SCHOOL_DASHBOARD_ACTIVITY_VIEW,
+    CAP_TAB_SCHOOL_DASHBOARD_FEATURE_USAGE_VIEW,
     CAP_TAB_SCHOOL_DASHBOARD_VIEW,
     CAP_TAB_SETTINGS_EDIT,
     CAP_TAB_SETTINGS_VIEW,
@@ -70,6 +71,7 @@ def test_school_admin_has_school_member_caps_without_global_scope():
     assert CAP_TAB_USERS_EDIT in caps
     assert CAP_TAB_SCHOOL_DASHBOARD_VIEW in caps
     assert CAP_TAB_SCHOOL_DASHBOARD_ACTIVITY_VIEW not in caps
+    assert CAP_TAB_SCHOOL_DASHBOARD_FEATURE_USAGE_VIEW not in caps
     assert CAP_TAB_DATA_CENTER_VIEW not in caps
     assert CAP_TAB_INVITES_VIEW not in caps
     assert CAP_TAB_SETTINGS_VIEW not in caps
@@ -82,6 +84,7 @@ def test_superadmin_has_users_tab():
     caps = capabilities_for_role("superadmin")
     assert CAP_TAB_USERS_VIEW in caps
     assert CAP_TAB_SCHOOL_DASHBOARD_ACTIVITY_VIEW in caps
+    assert CAP_TAB_SCHOOL_DASHBOARD_FEATURE_USAGE_VIEW in caps
     assert CAP_SCOPE_GLOBAL in caps
     assert CAP_SETTINGS_MINDMATE_EXPORT in caps
 
@@ -168,6 +171,7 @@ def test_platform_bd_has_readonly_global_tabs_and_invite_edit():
     assert CAP_SCOPE_GLOBAL in caps
     assert CAP_SCOPE_INVITED_ORGS in caps
     assert CAP_TAB_SCHOOL_DASHBOARD_ACTIVITY_VIEW not in caps
+    assert CAP_TAB_SCHOOL_DASHBOARD_FEATURE_USAGE_VIEW not in caps
 
 
 def test_platform_bd_invite_scope_keeps_global_org_ids():

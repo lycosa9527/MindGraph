@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.36] - 2026-09-01
+
+> **数据中心 → 学校仪表盘 adds 系统功能使用情况分析 for super-admins: module access, process metrics, and usage judgement, checked against a production dump.**
+
+### Added
+
+- **系统功能使用情况分析** — Super-admin-only tab next to 用户活跃度分析 (`tab.school_dashboard.feature_usage.view`). Three sections: 模块访问数据, 业务流程数据, 功能使用研判. Year picker and series use the Asia/Shanghai calendar. Each card shows `generated_at` as Beijing wall clock.
+- **模块访问** — Per-module Swiss cards: **年度访问量** is distinct users (not page views), plus 年度使用次数, **人均使用次数**, and a one-sentence 备注. Monthly use sparkline on access cards only.
+- **业务流程** — Same modules as 业务: **年度办结总量** and 流程通过率 from feature events; **LLM 失败率** and **LLM 平均响应时长** from `token_usage`. Capacity is idle only when both logs are empty.
+- **`GET /api/auth/admin/stats/school/feature-usage`** — Selected-school payload (`year`, `min_year`, `generated_at`, `enrolled`, `modules`, `judgement`). Panel RLS is re-pinned; the school fence is current member `user_id`s. Future years and years before the school’s first member are rejected.
+- **Maite persist** — `maite_*` actions are valid `user_usage_activities` actions so 迈特学习法 can appear after new events.
+
+### Changed
+
+- **Dump-backed mapping** — Token query no longer filters to a fixed type list. Production types from the 2026-08-31 dump map in: voice Omni/parsing → Kitty, ThinkGuide and concept-map focus → canvas, mind-classroom → 智绘, `kitty_agent_loop_*` → Kitty. Smoke `mindmap_smoke_*` rows stay dropped. `/api/generate_dingtalk` and `source=dingtalk` stay on 钉钉; `source=zhihui` does not steal mapped canvas actions.
+- **Bottleneck floors** — Slow means above the median **and** over a module floor (canvas/钉钉/Kitty 8s; MindMate/AskOnce 90s; 语音笔记 180s; 智绘/迈特/案例 60s) so streaming chat is not a false bottleneck.
+- **TOP 5** — Coverage ranking lists only modules with visitors. Copy states 覆盖率 = UV / 当前在籍.
+
+### Tests
+
+- `tests/test_school_feature_usage_compute.py` — UV vs counts, DingTalk/智绘 attribution, usage vs token pass/fail, module slow floors, TOP 5 without zero-visit padding, dump request types
+- `tests/auth/test_school_feature_usage_http.py` — 403 for school manager / teaching researcher; 400 without org or future year; 200 shape
+- `tests/test_rls_user_usage_activities_policy.py` / `tests/db/test_rls_user_usage_activities.py` — `user_usage_activities` stays user-owned; live RLS gated on `RUN_RLS_DB_TESTS=1`
+- `frontend/tests/schoolFeatureUsageChartCard.spec.ts` — labeled heroes, LLM chips, capability hidden from school managers
+
 ## [5.180.35] - 2026-09-01
 
 > **数据中心 → 学校仪表盘 adds 用户活跃度分析 for super-admins: selected-school totals, active users, and login frequency, with a Beijing timestamp on every card.**

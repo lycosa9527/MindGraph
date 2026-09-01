@@ -21,6 +21,7 @@ import AdminTrendChartModal from '@/components/admin/AdminTrendChartModal.vue'
 import SchoolDashboardOrgPicker from '@/components/school/SchoolDashboardOrgPicker.vue'
 import SchoolDashboardQuotaCard from '@/components/school/SchoolDashboardQuotaCard.vue'
 import SchoolDashboardActivityTab from '@/components/school/SchoolDashboardActivityTab.vue'
+import SchoolDashboardFeatureUsageTab from '@/components/school/SchoolDashboardFeatureUsageTab.vue'
 import SchoolDashboardUsersTab from '@/components/school/SchoolDashboardUsersTab.vue'
 import SchoolAddMemberDialog from '@/components/school/SchoolAddMemberDialog.vue'
 import AdminSwissKpiCard from '@/components/admin/swiss/AdminSwissKpiCard.vue'
@@ -96,7 +97,8 @@ const {
 } = useSchoolDashboardQuotas(computed(() => stats.value.quotas))
 
 const canViewActivityTab = computed(() => can('tab.school_dashboard.activity.view'))
-const activeTab = ref<'overview' | 'tokens' | 'users' | 'activity'>('overview')
+const canViewFeatureUsageTab = computed(() => can('tab.school_dashboard.feature_usage.view'))
+const activeTab = ref<'overview' | 'tokens' | 'users' | 'activity' | 'feature_usage'>('overview')
 
 function openOrgTrend(
   period: TokenTrendPeriod = 'week',
@@ -165,6 +167,12 @@ onAdminEvent('admin:mutation_completed', ({ domain, entityId }) => {
 
 watch(canViewActivityTab, (allowed) => {
   if (!allowed && activeTab.value === 'activity') {
+    activeTab.value = 'overview'
+  }
+})
+
+watch(canViewFeatureUsageTab, (allowed) => {
+  if (!allowed && activeTab.value === 'feature_usage') {
     activeTab.value = 'overview'
   }
 })
@@ -250,6 +258,11 @@ onMounted(async () => {
             v-if="canViewActivityTab"
             :label="t('admin.schoolActivity.tab')"
             name="activity"
+          />
+          <el-tab-pane
+            v-if="canViewFeatureUsageTab"
+            :label="t('admin.schoolFeatureUsage.tab')"
+            name="feature_usage"
           />
         </el-tabs>
 
@@ -443,6 +456,13 @@ onMounted(async () => {
 
         <template v-else-if="activeTab === 'activity' && canViewActivityTab">
           <SchoolDashboardActivityTab
+            v-if="effectiveOrgId != null"
+            :org-id="effectiveOrgId"
+          />
+        </template>
+
+        <template v-else-if="activeTab === 'feature_usage' && canViewFeatureUsageTab">
+          <SchoolDashboardFeatureUsageTab
             v-if="effectiveOrgId != null"
             :org-id="effectiveOrgId"
           />

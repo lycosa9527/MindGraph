@@ -55,6 +55,14 @@ VALID_ACTIVITY_ACTIONS = frozenset(
         "showcase_engage",
         "canvas_translate",
         "relationship_labels",
+        "maite_problem",
+        "maite_ocr",
+        "maite_inquiry",
+        "maite_diagnosis",
+        "maite_remedy",
+        "maite_variant",
+        "maite_mentor",
+        "maite_report",
     }
 )
 _VALID_SOURCES = VALID_ACTIVITY_SOURCES

@@ -21,6 +21,7 @@ export type AdminCapability =
   | 'tab.data_center.edit'
   | 'tab.school_dashboard.view'
   | 'tab.school_dashboard.activity.view'
+  | 'tab.school_dashboard.feature_usage.view'
   | 'tab.users.view'
   | 'tab.users.edit'
   | 'tab.organizations.view'
@@ -74,6 +75,7 @@ const SUPERADMIN_CAPS: AdminCapability[] = [
   'tab.data_center.edit',
   'tab.school_dashboard.view',
   'tab.school_dashboard.activity.view',
+  'tab.school_dashboard.feature_usage.view',
   'tab.users.view',
   'tab.users.edit',
   'tab.organizations.view',
