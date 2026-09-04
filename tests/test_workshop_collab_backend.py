@@ -26,6 +26,7 @@ from fastapi import HTTPException
 from redis.exceptions import ResponseError
 
 from services.online_collab.participant.canvas_collab_locks import (
+    drop_nodes_paired_with_dropped_connections,
     filter_granular_connections_for_locks,
     filter_granular_nodes_for_locks,
     node_locked_by_other_user,
@@ -40,6 +41,7 @@ from services.online_collab.redis.online_collab_redis_keys import (
 from services.diagram.mindmap_identity import identity_aliases
 from services.online_collab.spec.online_collab_live_spec import (
     apply_live_update,
+    granular_has_leftover_mindmap_ids,
     merge_granular_into_spec,
 )
 
@@ -199,6 +201,117 @@ class TestMergeGranularIntoSpec:
         new_edge = next(conn for conn in spec["connections"] if conn["id"] == "e-new")
         assert "insert_after_target" not in new_edge
 
+    def test_adds_uuid_identity_node_with_sibling_hint(self) -> None:
+        """New mind-map UUID nodes must append; hint must not remap onto an existing id."""
+        existing = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+        added = "3f2a9c1e-7b4d-4e8a-9c1e-7b4d4e8a9c1e"
+        spec: dict[str, Any] = {
+            "type": "mindmap",
+            "nodes": [
+                {"id": "topic", "text": "主题", "type": "topic"},
+                {
+                    "id": existing,
+                    "text": "已有",
+                    "type": "branch",
+                    "data": {"mindMapUid": existing},
+                },
+            ],
+            "connections": [
+                {"id": "e0", "source": "topic", "target": existing},
+            ],
+        }
+        merge_granular_into_spec(
+            spec,
+            [
+                {
+                    "id": added,
+                    "text": "新节点",
+                    "type": "branch",
+                    "data": {"mindMapUid": added},
+                }
+            ],
+            [
+                {
+                    "id": f"edge-topic-{added}",
+                    "source": "topic",
+                    "target": added,
+                    "insert_after_target": existing,
+                }
+            ],
+        )
+        node_ids = [str(node.get("id")) for node in spec["nodes"]]
+        assert added in node_ids
+        assert existing in node_ids
+        targets = [conn["target"] for conn in spec["connections"] if conn["source"] == "topic"]
+        assert targets == [existing, added]
+
+    def test_insert_after_target_remaps_legacy_alias(self) -> None:
+        """Peer leftover sibling hint must match the live UUID edge."""
+        live_a = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+        live_b = "bbbbbbbb-cccc-dddd-eeee-ffffffffffff"
+        added = "3f2a9c1e-7b4d-4e8a-9c1e-7b4d4e8a9c1e"
+        spec: dict[str, Any] = {
+            "type": "mindmap",
+            "nodes": [
+                {"id": "topic", "text": "主题", "type": "topic"},
+                {
+                    "id": live_a,
+                    "text": "A",
+                    "type": "branch",
+                    "data": {"mindMapUid": live_a, "mindMapLegacyId": "branch-r-1-0"},
+                },
+                {
+                    "id": live_b,
+                    "text": "B",
+                    "type": "branch",
+                    "data": {"mindMapUid": live_b, "mindMapLegacyId": "branch-r-1-1"},
+                },
+            ],
+            "connections": [
+                {"id": "e0", "source": "topic", "target": live_a},
+                {"id": "e1", "source": "topic", "target": live_b},
+            ],
+        }
+        merge_granular_into_spec(
+            spec,
+            [
+                {
+                    "id": added,
+                    "text": "新",
+                    "type": "branch",
+                    "data": {"mindMapUid": added},
+                }
+            ],
+            [
+                {
+                    "id": "e-new",
+                    "source": "topic",
+                    "target": added,
+                    "insert_after_target": "branch-r-1-0",
+                }
+            ],
+        )
+        targets = [conn["target"] for conn in spec["connections"] if conn["source"] == "topic"]
+        assert targets == [live_a, added, live_b]
+
+
+def test_granular_detects_leftover_live_ids() -> None:
+    """Leftover invented ids on the live spec force the Python migrate path."""
+    current = {"nodes": [{"id": "branch-r-1-0", "text": "A"}], "connections": []}
+    assert granular_has_leftover_mindmap_ids(current, None, None, None)
+    uuid_spec = {
+        "nodes": [{"id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "text": "A"}],
+        "connections": [],
+    }
+    assert not granular_has_leftover_mindmap_ids(uuid_spec, None, None, None)
+    leftover_hint = {
+        "id": "e-new",
+        "source": "topic",
+        "target": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        "insert_after_target": "branch-r-1-0",
+    }
+    assert granular_has_leftover_mindmap_ids(uuid_spec, None, [leftover_hint], None)
+
 
 # ---------------------------------------------------------------------------
 # apply_live_update
@@ -323,6 +436,18 @@ class TestLockHelpers:
         conns = [{"source": "n3", "target": "n4"}]
         result = filter_granular_connections_for_locks(self.CODE, self.BOB_ID, conns, _no_editors(), None)
         assert len(result) == 1
+
+    def test_drop_nodes_paired_with_dropped_parent_edge(self) -> None:
+        """New child + edge: if the edge is lock-filtered, drop the child patch too."""
+        incoming_nodes = [{"id": "new-child", "text": ""}]
+        incoming_conns = [{"id": "e-new", "source": "n1", "target": "new-child"}]
+        kept_nodes = drop_nodes_paired_with_dropped_connections(
+            incoming_nodes,
+            incoming_nodes,
+            incoming_conns,
+            [],
+        )
+        assert kept_nodes == []
 
     def test_filter_granular_nodes_no_id_passes_through(self) -> None:
         """Nodes without an id field are let through (cannot lock an anonymous node)."""

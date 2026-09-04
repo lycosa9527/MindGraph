@@ -94,6 +94,37 @@ def filter_granular_connections_for_locks(
     return out
 
 
+def _connection_pair_key(conn: Dict[str, Any]) -> tuple[Any, Any, Any]:
+    """Identity for matching an incoming connection against the filtered set."""
+    return (conn.get("id"), conn.get("source"), conn.get("target"))
+
+
+def drop_nodes_paired_with_dropped_connections(
+    incoming_nodes: List[Any],
+    filtered_nodes: List[Any],
+    incoming_connections: List[Any],
+    filtered_connections: List[Any],
+) -> List[Any]:
+    """Drop new-node patches whose only edge in this batch was lock-filtered."""
+    kept_pairs = {_connection_pair_key(conn) for conn in filtered_connections if isinstance(conn, dict)}
+    dropped_targets: set[str] = set()
+    for conn in incoming_connections:
+        if not isinstance(conn, dict):
+            continue
+        if _connection_pair_key(conn) in kept_pairs:
+            continue
+        target = conn.get("target")
+        if isinstance(target, str) and target:
+            dropped_targets.add(target)
+    if not dropped_targets:
+        return filtered_nodes
+    incoming_ids = {str(node.get("id")) for node in incoming_nodes if isinstance(node, dict) and node.get("id")}
+    paired = dropped_targets & incoming_ids
+    if not paired:
+        return filtered_nodes
+    return [node for node in filtered_nodes if not (isinstance(node, dict) and str(node.get("id", "")) in paired)]
+
+
 def filter_deleted_node_ids_for_locks(
     code: str,
     sender_id: int,

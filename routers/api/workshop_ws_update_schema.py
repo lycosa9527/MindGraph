@@ -14,6 +14,8 @@ from typing import Any, Dict, FrozenSet, List, Optional, Set
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 _MAX_UPDATE_NEST_DEPTH = 4
+# Full spec includes ``_mindmap_canvas.v2.node_styles_by_path.<id>.<style>``.
+_MAX_SPEC_NEST_DEPTH = 6
 _MAX_NODE_STRING_UTF8 = 256_000
 _MAX_DATA_OBJECT_KEYS = 64
 
@@ -60,7 +62,10 @@ _ALLOWED_CONNECTION_TOP_KEYS: FrozenSet[str] = frozenset(
         "target",
         "sourceHandle",
         "targetHandle",
+        "sourcePosition",
+        "targetPosition",
         "type",
+        "edgeType",
         "style",
         "data",
         "label",
@@ -68,6 +73,11 @@ _ALLOWED_CONNECTION_TOP_KEYS: FrozenSet[str] = frozenset(
         "selected",
         "zIndex",
         "interactionWidth",
+        "arrowheadDirection",
+        "arrowheadLocked",
+        "linkedFromConnectionId",
+        # Transport-only sibling-order hint; stripped before Redis persist.
+        "insert_after_target",
     }
 )
 
@@ -171,7 +181,7 @@ class CollabWsUpdateSchemaModel(BaseModel):
         if self.spec is not None:
             if not isinstance(self.spec, dict):
                 raise ValueError("spec must be an object")
-            err = _validate_depth_and_strings(self.spec, 0, _MAX_UPDATE_NEST_DEPTH, text_limit)
+            err = _validate_depth_and_strings(self.spec, 0, _MAX_SPEC_NEST_DEPTH, text_limit)
             if err:
                 raise ValueError(err)
         return self

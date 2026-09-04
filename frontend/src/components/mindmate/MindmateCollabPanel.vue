@@ -47,6 +47,7 @@ const emit = defineEmits<{
     code: string
     visibility?: 'organization' | 'network'
     ownerUserId?: number
+    seedThread?: boolean
   }): void
 }>()
 
@@ -116,7 +117,11 @@ function getFormattedCode(): string {
   return code.length === 6 ? `${code.slice(0, 3)}-${code.slice(3, 6)}` : code
 }
 
-function navigateToRoom(code: string, sessionMeta?: Record<string, unknown>) {
+function navigateToRoom(
+  code: string,
+  sessionMeta?: Record<string, unknown>,
+  options?: { seedThread?: boolean },
+) {
   collabPopoverVisible.value = false
   stopOrgRefresh()
   const formatted = formatMindmateCollabCode(code)
@@ -136,6 +141,7 @@ function navigateToRoom(code: string, sessionMeta?: Record<string, unknown>) {
       code: formatted,
       visibility: (sessionMeta?.visibility as 'organization' | 'network') || 'organization',
       ownerUserId: Number(sessionMeta?.owner_user_id || 0) || undefined,
+      seedThread: Boolean(options?.seedThread),
     })
     return
   }
@@ -183,7 +189,7 @@ async function startSeminar(visibility: 'organization' | 'network') {
       const data = (await response.json()) as Record<string, unknown>
       applyThinkingCoinMutation(extractThinkingCoinsFooter(data))
       notify.success(t('mindmate.collabStarted'))
-      navigateToRoom(String(data.code || ''), data)
+      navigateToRoom(String(data.code || ''), data, { seedThread: true })
     } else {
       const err = await response.json().catch(() => ({}))
       notify.error((err as { detail?: string }).detail || t('mindmate.collabStartFailed'))
@@ -684,43 +690,6 @@ defineExpose({ prefillAndAutoJoin })
 .sw-panel--join-code {
   container-type: inline-size;
   container-name: collab-join-panel;
-}
-
-.sw-start-btn {
-  width: 100%;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 12px;
-  background: #fafaf9;
-  color: #44403c;
-  font-size: 12px;
-  font-weight: 500;
-  border: 1px solid #e7e5e4;
-  border-radius: 8px;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-}
-
-.sw-start-btn:hover:not(:disabled) {
-  background: #f5f5f4;
-  border-color: #d6d3d1;
-}
-
-.sw-start-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.sw-start-btn__spinner {
-  width: 13px;
-  height: 13px;
-  animation: mmc-collab-spin 0.8s linear infinite;
-  flex-shrink: 0;
 }
 
 .sw-sessions {

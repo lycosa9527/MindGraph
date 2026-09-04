@@ -3,27 +3,36 @@
  * MindMate collab chatroom — inline seminar mode inside MindMate (/mindmate).
  * Swiss-style layout aligned with MindmateInput; generic chat vs @MindMate AI.
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { ElButton } from 'element-plus'
 
-import { useLanguage, useNotifications } from '@/composables'
-import { useMindmateCollab, type MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
-import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
-import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import MindmateCollabBreadcrumb from '@/components/mindmate/MindmateCollabBreadcrumb.vue'
+import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
+import { useLanguage, useNotifications } from '@/composables'
+import {
+  ensureMarkdownRenderer,
+  markdownRendererReady,
+  renderRichMarkdownHtml,
+} from '@/composables/core/lazyMarkdown'
+import { useMindMateBranding } from '@/composables/mindmate/useMindMateBranding'
+import {
+  type MindmateCollabMessage,
+  useMindmateCollab,
+} from '@/composables/mindmate/useMindmateCollab'
+import { useAuthStore } from '@/stores/auth'
 import { authFetch } from '@/utils/api'
 import { confirmMindmateCollabStop } from '@/utils/mindmateCollabConfirm'
-import {
-  requestMindmateCollabStop,
-  teardownMindmateCollabClient,
-} from '@/utils/mindmateCollabTeardown'
 import {
   formatMindmateCollabCode,
   markMindmateCollabCodeEnded,
   trackLocalMindmateCollabSession,
   wasMindmateCollabCodeRecentlyEnded,
 } from '@/utils/mindmateCollabSessions'
+import {
+  requestMindmateCollabStop,
+  teardownMindmateCollabClient,
+} from '@/utils/mindmateCollabTeardown'
 
 const props = withDefaults(
   defineProps<{
@@ -52,6 +61,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const authStore = useAuthStore()
 const { displayName: mindmateAgentName, avatarUrl: mindmateAvatarUrl } = useMindMateBranding()
 
 const normalizedCode = computed(() => formatMindmateCollabCode(props.roomCode))
@@ -190,6 +200,7 @@ onUnmounted(() => {
 })
 
 onMounted(() => {
+  void ensureMarkdownRenderer()
   void joinRoomAndConnect()
 })
 
@@ -269,7 +280,50 @@ function handleRetryConnection(): void {
   void joinRoomAndConnect()
 }
 
-defineExpose({ stopRoom, handleRetryConnection })
+function isOwnMessage(msg: MindmateCollabMessage): boolean {
+  if (msg.role !== 'user') {
+    return false
+  }
+  const selfId = Number(authStore.user?.id)
+  const senderId = Number(msg.sender_user_id)
+  return selfId > 0 && senderId === selfId
+}
+
+const transcript = computed(() => {
+  void markdownRendererReady.value
+  return messages.value.map((msg, idx) => ({
+    key: msg.id ?? msg.clientKey ?? `msg-${idx}-${msg.role}`,
+    msg,
+    isOwn: isOwnMessage(msg),
+    html: msg.role === 'assistant' ? renderRichMarkdownHtml(msg.content) : null,
+  }))
+})
+
+const messagesScrollEl = ref<HTMLElement | null>(null)
+
+function isMessagesNearBottom(): boolean {
+  const el = messagesScrollEl.value
+  if (!el) {
+    return true
+  }
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 80
+}
+
+function scrollMessagesToBottom(): void {
+  const el = messagesScrollEl.value
+  if (!el) {
+    return
+  }
+  el.scrollTop = el.scrollHeight
+}
+
+watch(messages, async () => {
+  const stickToBottom = isMessagesNearBottom()
+  await nextTick()
+  if (stickToBottom) {
+    scrollMessagesToBottom()
+  }
+})
 </script>
 
 <template>
@@ -332,7 +386,10 @@ defineExpose({ stopRoom, handleRetryConnection })
     </div>
 
     <div class="mindmate-collab-room__messages">
-      <div class="mindmate-collab-room__messages-scroll">
+      <div
+        ref="messagesScrollEl"
+        class="mindmate-collab-room__messages-scroll"
+      >
         <div class="mindmate-collab-room__messages-inner">
         <div
           v-if="joining && !connected"
@@ -342,43 +399,60 @@ defineExpose({ stopRoom, handleRetryConnection })
         </div>
 
         <div
-          v-for="(msg, idx) in messages"
-          :key="msg.id ?? msg.clientKey ?? `msg-${idx}-${msg.role}`"
+          v-for="row in transcript"
+          :key="row.key"
           class="mindmate-collab-room__msg-row"
-          :class="msg.role === 'user' ? 'mindmate-collab-room__msg-row--user' : 'mindmate-collab-room__msg-row--assistant'"
+          :class="row.isOwn ? 'mindmate-collab-room__msg-row--own' : 'mindmate-collab-room__msg-row--other'"
         >
           <div
-            v-if="msg.role === 'assistant'"
+            v-if="!row.isOwn"
             class="w-8 h-8 rounded-full shrink-0 overflow-hidden bg-stone-100 border border-stone-200"
           >
             <img
+              v-if="row.msg.role === 'assistant'"
               :src="mindmateAvatarUrl"
               :alt="mindmateAgentName"
               class="w-full h-full object-cover"
             />
+            <span
+              v-else
+              class="flex w-full h-full items-center justify-center text-xs font-medium text-stone-600"
+              aria-hidden="true"
+            >
+              {{ (row.msg.username || '?').trim().slice(0, 1).toUpperCase() }}
+            </span>
           </div>
           <div class="mindmate-collab-room__msg-body">
             <div
-              v-if="msg.role === 'user' && msg.username"
-              class="text-[11px] text-stone-500 mb-1 px-1"
-            >
-              {{ msg.username }}
-            </div>
-            <div
-              v-else-if="msg.role === 'assistant'"
+              v-if="row.msg.role === 'assistant'"
               class="text-[11px] text-stone-500 mb-1 px-1"
             >
               {{ mindmateAgentName }}
             </div>
             <div
-              class="mindmate-collab-room__bubble text-sm rounded-2xl px-3.5 py-2.5 whitespace-pre-wrap leading-relaxed"
-              :class="
-                msg.role === 'user'
-                  ? 'bg-stone-800 text-stone-50 text-left'
-                  : 'bg-stone-100 text-stone-800 border border-stone-200/80'
-              "
+              v-else-if="!row.isOwn && row.msg.username"
+              class="text-[11px] text-stone-500 mb-1 px-1"
             >
-              {{ msg.content }}
+              {{ row.msg.username }}
+            </div>
+            <div
+              class="mindmate-collab-room__bubble text-sm rounded-2xl px-3.5 py-2.5 leading-relaxed"
+              :class="[
+                row.isOwn
+                  ? 'bg-stone-800 text-stone-50 text-left'
+                  : 'bg-stone-100 text-stone-800 border border-stone-200/80',
+                row.msg.streaming ? 'mindmate-collab-room__bubble--streaming' : '',
+                row.html ? '' : 'whitespace-pre-wrap',
+              ]"
+            >
+              <div
+                v-if="row.html"
+                class="mindmate-collab-room__markdown"
+                v-html="row.html"
+              />
+              <template v-else>
+                {{ row.msg.content }}
+              </template>
             </div>
           </div>
         </div>
@@ -469,7 +543,7 @@ defineExpose({ stopRoom, handleRetryConnection })
   min-width: 0;
 }
 
-.mindmate-collab-room__msg-row--user {
+.mindmate-collab-room__msg-row--own {
   flex-direction: row-reverse;
 }
 
@@ -480,11 +554,11 @@ defineExpose({ stopRoom, handleRetryConnection })
   flex-direction: column;
 }
 
-.mindmate-collab-room__msg-row--user .mindmate-collab-room__msg-body {
+.mindmate-collab-room__msg-row--own .mindmate-collab-room__msg-body {
   align-items: flex-end;
 }
 
-.mindmate-collab-room__msg-row--assistant .mindmate-collab-room__msg-body {
+.mindmate-collab-room__msg-row--other .mindmate-collab-room__msg-body {
   align-items: flex-start;
 }
 
@@ -493,6 +567,43 @@ defineExpose({ stopRoom, handleRetryConnection })
   width: fit-content;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.mindmate-collab-room__bubble--streaming::after {
+  content: '▍';
+  margin-left: 0.1em;
+  animation: mmc-caret 1s step-end infinite;
+}
+
+@keyframes mmc-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+.mindmate-collab-room__markdown :deep(p) {
+  margin: 0 0 0.5em;
+}
+
+.mindmate-collab-room__markdown :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.mindmate-collab-room__markdown :deep(pre) {
+  overflow-x: auto;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(28, 25, 23, 0.06);
+}
+
+.mindmate-collab-room__markdown :deep(code) {
+  font-size: 0.85em;
+}
+
+.mindmate-collab-room__markdown :deep(ul),
+.mindmate-collab-room__markdown :deep(ol) {
+  margin: 0 0 0.5em;
+  padding-left: 1.25em;
 }
 
 .mindmate-collab-room__end-btn {

@@ -250,6 +250,7 @@ export function useCanvasPageCollabDiff(options: UseCanvasPageCollabDiffOptions)
             '[CollabDebug] granular diff over server cap but getSpecForWorkshopUpdate returned null'
           )
         }
+        return
       }
 
       if (import.meta.env.DEV) {

@@ -4,33 +4,44 @@
  */
 import { ref, watch } from 'vue'
 
-import MindmateCollabMembersPanel from '@/components/mindmate/MindmateCollabMembersPanel.vue'
-import MindmateDmDrawer from '@/components/mindmate/MindmateDmDrawer.vue'
-import MindmateCollabRoom from '@/components/mindmate/MindmateCollabRoom.vue'
-import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
-import { useLanguage } from '@/composables'
 import { Users } from '@lucide/vue'
 
-const props = defineProps<{
-  roomCode: string
-  seedMessages?: MindmateCollabMessage[]
-}>()
+import MindmateCollabMembersPanel from '@/components/mindmate/MindmateCollabMembersPanel.vue'
+import MindmateCollabRoom from '@/components/mindmate/MindmateCollabRoom.vue'
+import MindmateDmDrawer from '@/components/mindmate/MindmateDmDrawer.vue'
+import { useLanguage } from '@/composables'
+import type { MindmateCollabMessage } from '@/composables/mindmate/useMindmateCollab'
+
+const props = withDefaults(
+  defineProps<{
+    roomCode: string
+    seedMessages?: MindmateCollabMessage[]
+    /** False on the standalone /mindmate/collab route (room shows its own header). */
+    embedded?: boolean
+  }>(),
+  {
+    seedMessages: () => [],
+    embedded: true,
+  }
+)
 
 const emit = defineEmits<{
   (e: 'ended', reason: 'idle' | 'host' | 'left'): void
-  (e: 'room-meta', payload: {
-    title: string
-    visibility: string
-    sessionId: string
-    code: string
-    ownerId: number
-  }): void
+  (
+    e: 'room-meta',
+    payload: {
+      title: string
+      visibility: string
+      sessionId: string
+      code: string
+      ownerId: number
+    }
+  ): void
 }>()
 
 const { t } = useLanguage()
 
 const sessionId = ref('')
-const roomTitle = ref('')
 const roomVisibility = ref('organization')
 const showMembers = ref(false)
 
@@ -38,10 +49,9 @@ watch(
   () => props.roomCode,
   () => {
     sessionId.value = ''
-    roomTitle.value = ''
     roomVisibility.value = 'organization'
     showMembers.value = false
-  },
+  }
 )
 
 const dmPartnerId = ref<number | null>(null)
@@ -60,7 +70,6 @@ function onRoomMeta(payload: {
   ownerId: number
 }) {
   sessionId.value = payload.sessionId
-  roomTitle.value = payload.title
   roomVisibility.value = payload.visibility
   emit('room-meta', {
     title: payload.title,
@@ -77,9 +86,13 @@ function toggleMembers(): void {
 </script>
 
 <template>
-  <div class="mindmate-collab-embed flex flex-row flex-1 min-h-0 min-w-0 w-full overflow-hidden relative">
+  <div
+    class="mindmate-collab-embed flex flex-row flex-1 min-h-0 min-w-0 w-full overflow-hidden relative"
+  >
     <main class="mindmate-collab-embed__main flex flex-col flex-1 min-w-0 min-h-0">
-      <div class="mindmate-collab-embed__toolbar shrink-0 flex justify-end px-3 py-2 border-b border-stone-100 md:hidden">
+      <div
+        class="mindmate-collab-embed__toolbar shrink-0 flex justify-end px-3 py-2 border-b border-stone-100 md:hidden"
+      >
         <button
           type="button"
           class="inline-flex items-center gap-1.5 text-xs font-medium text-stone-600 px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white"
@@ -94,7 +107,7 @@ function toggleMembers(): void {
         </button>
       </div>
       <MindmateCollabRoom
-        embedded
+        :embedded="embedded"
         :room-code="roomCode"
         :seed-messages="seedMessages"
         @ended="emit('ended', $event)"
@@ -111,7 +124,6 @@ function toggleMembers(): void {
         v-if="sessionId"
         :session-id="sessionId"
         :room-code="roomCode"
-        :room-title="roomTitle"
         :visibility="roomVisibility"
         @message="openDm"
       />

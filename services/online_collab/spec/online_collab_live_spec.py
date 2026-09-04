@@ -17,6 +17,7 @@ from typing import Any
 
 from models.domain.diagrams import Diagram
 from services.diagram.mindmap_identity import identity_aliases, migrate_mindmap_diagram_payload
+from services.diagram.mindmap_location import is_leftover_mindmap_branch_id
 from services.online_collab.spec.online_collab_live_spec_json import (
     json_get_live_spec,
     json_set_live_spec,
@@ -45,6 +46,40 @@ def _parse_db_spec(diagram: Diagram) -> dict[str, Any]:
         return data if isinstance(data, dict) else {}
     except (json.JSONDecodeError, TypeError, ValueError):
         return {}
+
+
+def _is_leftover_id(value: Any) -> bool:
+    """True when ``value`` is a leftover invented mind-map branch id."""
+    return isinstance(value, str) and is_leftover_mindmap_branch_id(value)
+
+
+def granular_has_leftover_mindmap_ids(
+    current: dict[str, Any] | None,
+    nodes: list[Any] | None,
+    connections: list[Any] | None,
+    deleted_node_ids: list[str] | None,
+) -> bool:
+    """True when live spec or this patch still uses leftover invented ids."""
+    if isinstance(current, dict):
+        for node in current.get("nodes") or []:
+            if isinstance(node, dict) and _is_leftover_id(node.get("id")):
+                return True
+    for patch in nodes or []:
+        if isinstance(patch, dict) and _is_leftover_id(patch.get("id")):
+            return True
+    for conn in connections or []:
+        if not isinstance(conn, dict):
+            continue
+        if (
+            _is_leftover_id(conn.get("source"))
+            or _is_leftover_id(conn.get("target"))
+            or _is_leftover_id(conn.get("insert_after_target"))
+        ):
+            return True
+    for nid in deleted_node_ids or []:
+        if _is_leftover_id(nid):
+            return True
+    return False
 
 
 def _prune_dangling_connections(spec: dict[str, Any]) -> None:
@@ -224,7 +259,7 @@ def merge_granular_into_spec(
             if not isinstance(row, dict):
                 continue
             patched = dict(row)
-            for key in ("source", "target"):
+            for key in ("source", "target", "insert_after_target"):
                 raw = patched.get(key)
                 if isinstance(raw, str) and raw.strip():
                     patched[key] = remap_hint(raw)
@@ -367,6 +402,8 @@ async def seed_live_spec_from_diagram(
     parsed = _parse_db_spec(diagram)
     if "type" not in parsed and diagram.diagram_type:
         parsed["type"] = diagram.diagram_type
+    if isinstance(parsed.get("nodes"), list):
+        migrate_mindmap_diagram_payload(parsed)
     parsed["v"] = 1
     await write_live_spec(redis, code, parsed, ttl_sec)
     return parsed

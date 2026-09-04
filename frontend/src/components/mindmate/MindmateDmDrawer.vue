@@ -141,7 +141,7 @@ function closeDrawer(): void {
           :loading="sending"
           @click="sendMessage"
         >
-          Send
+          {{ t('mindmate.collabSend') }}
         </ElButton>
       </div>
     </div>

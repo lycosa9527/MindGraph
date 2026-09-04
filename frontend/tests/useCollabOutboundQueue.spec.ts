@@ -46,6 +46,21 @@ describe('useCollabOutboundQueue', () => {
     expect(payloads.filter((x) => x === id1).length).toBe(2)
   })
 
+  it('nack without id unblocks the next queued op', () => {
+    const sent: string[] = []
+    const q = useCollabOutboundQueue({
+      send: (p) => {
+        sent.push(String(p.client_op_id))
+      },
+      canFlush: () => true,
+    })
+    const id1 = q.enqueue({ type: 'update', nodes: [{ id: 'a' }] })
+    const id2 = q.enqueue({ type: 'update', nodes: [{ id: 'b' }] })
+    expect(sent).toEqual([id1])
+    q.acknowledge(null)
+    expect(sent).toEqual([id1, id2])
+  })
+
   it('legacy ack without id dequeues head when in flight', () => {
     const q = useCollabOutboundQueue({
       send: () => {},

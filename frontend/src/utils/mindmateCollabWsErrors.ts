@@ -3,13 +3,7 @@
  */
 
 export type MindmateCollabConnectionStatus =
-  | 'idle'
-  | 'connecting'
-  | 'connected'
-  | 'reconnecting'
-  | 'failed'
-
-export const MINDMATE_COLLAB_MAX_WS_RECONNECT = 5
+  'idle' | 'connecting' | 'connected' | 'reconnecting' | 'failed'
 
 /** Locale key for a server `type: error` frame `code` field. */
 export function mindmateCollabWsErrorLocaleKey(errorCode: string): string | null {
@@ -36,11 +30,11 @@ export function mindmateCollabWsErrorLocaleKey(errorCode: string): string | null
 /** Error codes where the optimistic user message was not persisted. */
 export function mindmateCollabWsErrorRollsBackSend(errorCode: string): boolean {
   return (
-    errorCode === 'room_closed'
-    || errorCode === 'rate_limit'
-    || errorCode === 'content_too_long'
-    || errorCode === 'message_too_large'
-    || errorCode === 'invalid_payload'
+    errorCode === 'room_closed' ||
+    errorCode === 'rate_limit' ||
+    errorCode === 'content_too_long' ||
+    errorCode === 'message_too_large' ||
+    errorCode === 'invalid_payload'
   )
 }
 
@@ -48,9 +42,15 @@ export function mindmateCollabWsErrorRollsBackSend(errorCode: string): boolean {
 export function mindmateCollabDisconnectShouldNotify(
   closeCode: number,
   suppressReconnect: boolean,
-  reconnectExhausted: boolean,
+  reconnectExhausted: boolean
 ): 'none' | 'reconnecting' | 'closed_reason' | 'reconnect_failed' {
-  if (closeCode === 4010 || closeCode === 4011 || closeCode === 4003 || closeCode === 1008 || closeCode === 4029) {
+  if (
+    closeCode === 4010 ||
+    closeCode === 4011 ||
+    closeCode === 4003 ||
+    closeCode === 1008 ||
+    closeCode === 4029
+  ) {
     return 'none'
   }
   if (closeCode === 1000 || closeCode === 1001) {

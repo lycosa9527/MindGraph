@@ -42,6 +42,7 @@ from services.online_collab.redis.online_collab_redis_locks import fcall_spec_gr
 from services.online_collab.redis.redis8_features import tdigest_record_latency
 from services.online_collab.spec.online_collab_live_spec import (
     apply_live_update,
+    granular_has_leftover_mindmap_ids,
     read_live_spec,
     seed_live_spec_from_diagram,
     spec_for_snapshot,
@@ -211,7 +212,14 @@ async def _mutate_live_spec_json(
         current = seeded
 
     # Granular fast path: single atomic FCALL — no Python read-modify-write loop.
-    if is_granular:
+    # Leftover invented ids must go through Python merge so they migrate to UUIDs.
+    skip_fcall = granular_has_leftover_mindmap_ids(
+        current,
+        nodes_for_merge,
+        conns_list,
+        deleted_node_ids,
+    )
+    if is_granular and not skip_fcall:
         result = await fcall_spec_granular_apply(
             redis,
             code,

@@ -193,6 +193,18 @@ function uniqueLabelId(hint: string, nodes: readonly DiagramNode[]): string | nu
   return matches[0]?.id ?? null
 }
 
+/** Resolve id / uid / leftover invented id to the live canvas id (no label match). */
+export function resolveMindMapAliasId(
+  hint: string | null | undefined,
+  nodes: readonly DiagramNode[]
+): string | null {
+  if (!hint || !hint.trim()) return null
+  const cleaned = hint.trim()
+  const mapped = mindMapIdentityAliases(nodes)[cleaned]
+  if (!mapped || isLeftoverMindMapBranchId(mapped)) return null
+  return mapped
+}
+
 /** Resolve id / uid / leftover invented id / unique label to the live canvas id. */
 export function resolveMindMapIdentityId(
   hint: string | null | undefined,
@@ -200,7 +212,7 @@ export function resolveMindMapIdentityId(
 ): string | null {
   if (!hint || !hint.trim()) return null
   const cleaned = hint.trim()
-  const mapped = mindMapIdentityAliases(nodes)[cleaned] ?? uniqueLabelId(cleaned, nodes)
+  const mapped = resolveMindMapAliasId(cleaned, nodes) ?? uniqueLabelId(cleaned, nodes)
   if (mapped && isLeftoverMindMapBranchId(mapped)) return null
   return mapped
 }

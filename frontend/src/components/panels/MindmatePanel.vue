@@ -205,12 +205,15 @@ function handleCollabSessionStarted(payload: {
   code: string
   visibility?: 'organization' | 'network'
   ownerUserId?: number
+  seedThread?: boolean
 }) {
   if (wasMindmateCollabCodeRecentlyEnded(payload.code)) {
     notify.info(t('mindmate.collabRoomEndedHost'))
     return
   }
-  collabSeedMessages.value = mapThreadToCollabSeed(mindMate.messages.value)
+  collabSeedMessages.value = payload.seedThread
+    ? mapThreadToCollabSeed(mindMate.messages.value)
+    : []
   collabRoomCode.value = payload.code
   if (payload.visibility === 'network' || payload.visibility === 'organization') {
     collabVisibility.value = payload.visibility
@@ -313,9 +316,6 @@ watch(
     if (code && code !== collabRoomCode.value) {
       if (wasMindmateCollabCodeRecentlyEnded(code)) {
         return
-      }
-      if (collabSeedMessages.value.length === 0) {
-        collabSeedMessages.value = mapThreadToCollabSeed(mindMate.messages.value)
       }
       collabRoomCode.value = code
       const localRow = loadLocalMindmateCollabSessions().find(

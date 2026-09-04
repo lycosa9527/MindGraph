@@ -105,3 +105,29 @@ def _diagram_update_validation_error(
         elif len(cop_raw) > _MAX_CLIENT_OP_ID_LENGTH:
             errors.append(f"client_op_id exceeds max length ({_MAX_CLIENT_OP_ID_LENGTH})")
     return errors[0] if errors else None
+
+
+def client_op_id_from_message(message: Dict[str, Any]) -> Optional[str]:
+    """Return a bounded client_op_id from a WS frame, if present."""
+    raw = message.get("client_op_id")
+    if not isinstance(raw, str):
+        return None
+    stripped = raw.strip()
+    if not stripped:
+        return None
+    return stripped[:_MAX_CLIENT_OP_ID_LENGTH]
+
+
+def error_payload_with_update_client_op(
+    payload: Dict[str, Any],
+    message: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Echo client_op_id onto an error only when the inbound frame is an update."""
+    if message.get("type") != "update":
+        return payload
+    client_op_id = client_op_id_from_message(message)
+    if not client_op_id:
+        return payload
+    out = dict(payload)
+    out["client_op_id"] = client_op_id
+    return out

@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.38] - 2026-09-04
+
+> **Workshop canvas collab keeps sibling order and two-peer adds in sync. MindMate seminar chat renders markdown and aligns your own bubbles by user id.**
+
+### Added
+
+- **Client sibling insert** — New edges carry `insert_after_target`. Frontend merge (`collabConnectionInsert.ts`) matches the backend insert index so Enter-to-add lands in the same child order on every peer.
+- **Two-peer add sync** — Alice add then Bob add is visible both ways. Leftover `branch-r-*` sibling hints remap to the live UUID child.
+- **Outbound update nack** — Workshop WS errors echo `client_op_id` (including rate-limit, depth, and internal errors on `update` frames) so the sender dequeues the in-flight op instead of stalling FIFO.
+- **MindMate seminar markdown** — Assistant bubbles render rich markdown with a streaming caret. Own user messages align right by `sender_user_id`; other people show a username label.
+
+### Changed
+
+- **Live spec leftover ids** — Granular Redis FCALL is skipped when the live spec or patch still uses invented branch ids; Python merge migrates them. Seeding from the DB migrates mind-map identity first.
+- **Lock-filtered add** — If a new node's only edge is dropped by another editor's lock, the orphan node patch is dropped too.
+- **Collab update schema** — Accepts `insert_after_target`, handle positions, `edgeType`, arrowhead fields, and `linkedFromConnectionId`. Full-spec nest depth is 6 so V2 `node_styles_by_path` is not rejected.
+- **MindMate seminar chrome** — Standalone `/mindmate/collab` reuses `MindmateCollabEmbed`. The current thread is seeded only when starting a seminar, not when joining. DM Send is localized.
+- **Granular-over-cap** — A diff that exceeds the server cap no longer falls through to a second send path.
+
+### Tests
+
+- `frontend/tests/collabConnectionInsert.spec.ts` — insert index and endpoint remap
+- `frontend/tests/collabTwoPeerSync.spec.ts` — Alice/Bob add order and leftover sibling hints
+- `frontend/tests/shouldNackCollabOutboundOnError.spec.ts` — FIFO nack vs lock noise
+- `tests/test_workshop_collab_two_peer_sync.py` — shared live spec plus local merges
+- `tests/test_workshop_collab_backend.py` — insert-after, leftover remap, lock-dropped node
+- `tests/test_workshop_update_schema.py` — `insert_after_target` and echoed `client_op_id`
+
 ## [5.180.37] - 2026-09-04
 
 > **Language settings adds mind-map V3 chrome: a Word-style ribbon, with height and last tab saved on the account.**

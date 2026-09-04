@@ -4,6 +4,7 @@ import { nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader/mindMap'
 import {
   migrateMindMapIdentityIds,
   mindMapIdentityAliases,
+  resolveMindMapAliasId,
   resolveMindMapIdentityId,
 } from '@/utils/mindMapIdentityMigrate'
 import {
@@ -120,6 +121,16 @@ describe('mind-map identity invert', () => {
       { id: 'uid-diy-2', type: 'branch', text: 'DIY' },
     ]
     expect(resolveMindMapIdentityId('DIY', dupes)).toBeNull()
+  })
+
+  it('collab alias resolve does not match unique labels', () => {
+    const nodes: DiagramNode[] = [
+      { id: 'topic', type: 'topic', text: 'Cars' },
+      { id: 'uid-diy', type: 'branch', text: 'DIY' },
+    ]
+    expect(resolveMindMapIdentityId('DIY', nodes)).toBe('uid-diy')
+    expect(resolveMindMapAliasId('DIY', nodes)).toBeNull()
+    expect(resolveMindMapAliasId('uid-diy', nodes)).toBe('uid-diy')
   })
 
   it('extract keeps uid and leftover positional id for a later layout reload', () => {

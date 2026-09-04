@@ -25,6 +25,7 @@ from routers.api.workshop_ws_handlers_presence import (
     build_participants_with_names,
 )
 from routers.api.workshop_ws_handlers_update import handle_update
+from routers.api.workshop_ws_handlers_update_validate import error_payload_with_update_client_op
 from services.features.workshop_ws_connection_state import (
     ACTIVE_CONNECTIONS,
     AnyHandle,
@@ -294,7 +295,14 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
                 record_ws_rate_limit_hit()
             except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("Failed to record rate limit metric: %s", exc)
-            await ctx_send(ctx, {"type": "error", "message": "Rate limit exceeded"})
+            rate_err: Dict[str, Any] = {"type": "error", "message": "Rate limit exceeded"}
+            try:
+                peeked = json.loads(data)
+            except json.JSONDecodeError:
+                peeked = None
+            if isinstance(peeked, dict):
+                rate_err = error_payload_with_update_client_op(rate_err, peeked)
+            await ctx_send(ctx, rate_err)
             continue
 
         now_loop = time.monotonic()
@@ -365,10 +373,13 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
         if collab_json_exceeds_depth(message, MAX_COLLAB_INBOUND_JSON_DEPTH):
             await ctx_send(
                 ctx,
-                {
-                    "type": "error",
-                    "message": "JSON nesting depth exceeds server limit",
-                },
+                error_payload_with_update_client_op(
+                    {
+                        "type": "error",
+                        "message": "JSON nesting depth exceeds server limit",
+                    },
+                    message,
+                ),
             )
             continue
 
@@ -394,10 +405,13 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
                 )
                 await ctx_send(
                     ctx,
-                    {
-                        "type": "error",
-                        "message": "Internal error processing message. Please try again.",
-                    },
+                    error_payload_with_update_client_op(
+                        {
+                            "type": "error",
+                            "message": "Internal error processing message. Please try again.",
+                        },
+                        message,
+                    ),
                 )
             asyncio.create_task(
                 tdigest_record_latency(

@@ -7,7 +7,6 @@ import OrgContactsPanel from '@/components/social/OrgContactsPanel.vue'
 defineProps<{
   sessionId: string
   roomCode: string
-  roomTitle: string
   visibility?: string
 }>()
 

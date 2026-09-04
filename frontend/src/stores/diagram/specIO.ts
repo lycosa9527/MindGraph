@@ -14,7 +14,11 @@ import {
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 import { resolveSessionMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
-import { migrateMindMapIdentityIds, resolveMindMapIdentityId } from '@/utils/mindMapIdentityMigrate'
+import {
+  remapCollabConnectionEndpoints,
+  spliceCollabConnection,
+} from '@/utils/collabConnectionInsert'
+import { migrateMindMapIdentityIds, resolveMindMapAliasId } from '@/utils/mindMapIdentityMigrate'
 import {
   beginMindMapSpecLoadSession,
   markMindMapLoadStage,
@@ -555,7 +559,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const liveNodes = ctx.data.value.nodes
     const remapPatchId = (hint: string): string =>
       ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
-        ? resolveMindMapIdentityId(hint, liveNodes) ?? hint
+        ? resolveMindMapAliasId(hint, liveNodes) ?? hint
         : hint
     const deletedHints = deletedNodeIds ? deletedNodeIds.filter(Boolean).map(remapPatchId) : []
     const deletedThisBatch = new Set(deletedHints)
@@ -608,13 +612,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
 
     if (updatedConnections && updatedConnections.length > 0) {
       for (const updatedConn of updatedConnections) {
-        const connId = updatedConn.id as string | undefined
-        const sourceRaw = updatedConn.source as string
-        const targetRaw = updatedConn.target as string
-        const source = sourceRaw ? remapPatchId(sourceRaw) : sourceRaw
-        const target = targetRaw ? remapPatchId(targetRaw) : targetRaw
-        if (source && source !== sourceRaw) updatedConn.source = source
-        if (target && target !== targetRaw) updatedConn.target = target
+        const remapped = remapCollabConnectionEndpoints(updatedConn, remapPatchId)
 
         let conns: Connection[]
         if (ctx.data.value.connections) {
@@ -624,23 +622,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
           ctx.data.value.connections = conns
         }
 
-        const existingIndex = connId
-          ? conns.findIndex((c) => (c as unknown as Record<string, unknown>).id === connId)
-          : source && target
-            ? conns.findIndex((c) => c.source === source && c.target === target)
-            : -1
-
-        if (!source && !target && !connId) continue
-
-        if (existingIndex >= 0) {
-          const existing = conns[existingIndex]
-          conns[existingIndex] = {
-            ...existing,
-            ...updatedConn,
-          } as Connection
-        } else {
-          conns.push(updatedConn as unknown as Connection)
-        }
+        spliceCollabConnection(conns as Array<{ id?: string; source?: string; target?: string }>, remapped)
       }
     }
 

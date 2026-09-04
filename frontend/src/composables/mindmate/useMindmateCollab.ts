@@ -7,17 +7,18 @@ import { useWebSocket } from '@vueuse/core'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
-import { shouldReconnectMindmateCollab } from '@/utils/mindmateCollabSessions'
 import {
   computeMindmateCollabReconnectDelayMs,
+  MINDMATE_COLLAB_RECONNECT,
   mindmateCollabPermanentFailureLocaleKey,
   shouldScheduleMindmateCollabReconnect,
 } from '@/utils/mindmateCollabReconnect'
+import { shouldReconnectMindmateCollab } from '@/utils/mindmateCollabSessions'
 import {
+  type MindmateCollabConnectionStatus,
   mindmateCollabDisconnectShouldNotify,
   mindmateCollabWsErrorLocaleKey,
   mindmateCollabWsErrorRollsBackSend,
-  type MindmateCollabConnectionStatus,
 } from '@/utils/mindmateCollabWsErrors'
 
 export interface MindmateCollabMessage {
@@ -92,7 +93,6 @@ export function useMindmateCollab(
   let idleTickInterval: ReturnType<typeof setInterval> | null = null
   let pendingReconnectFailedNotify = false
   let lastOptimisticSendContent: string | null = null
-  let reconnectAttempt = 0
   let lastCloseCode = 1006
 
   function stopIdleCountdownTick(): void {
@@ -206,7 +206,6 @@ export function useMindmateCollab(
           pendingReconnectFailedNotify = true
           return false
         }
-        reconnectAttempt = retried + 1
         connectionStatus.value = 'reconnecting'
         syncWsResumeProtocols()
         refreshWsUrlForConnect()
@@ -214,7 +213,7 @@ export function useMindmateCollab(
       },
       delay: (retried) => {
         const base = computeMindmateCollabReconnectDelayMs(retried)
-        return base + Math.floor(Math.random() * 1000)
+        return base + Math.floor(Math.random() * MINDMATE_COLLAB_RECONNECT.JITTER_MS)
       },
     },
     onConnected() {
@@ -464,7 +463,6 @@ export function useMindmateCollab(
     lastOptimisticSendContent = null
     pendingReconnectFailedNotify = false
     shutdownPending.value = false
-    reconnectAttempt = 0
     lastCloseCode = 1006
     connectionStatus.value = 'idle'
     clearIdleCountdown()
@@ -478,7 +476,6 @@ export function useMindmateCollab(
     suppressReconnect.value = false
     pendingReconnectFailedNotify = false
     shutdownPending.value = false
-    reconnectAttempt = 0
     connectionStatus.value = 'connecting'
     syncWsResumeProtocols()
     refreshWsUrlForConnect()
@@ -531,7 +528,6 @@ export function useMindmateCollab(
     suppressReconnect.value = false
     pendingReconnectFailedNotify = false
     shutdownPending.value = false
-    reconnectAttempt = 0
     connectionStatus.value = 'connecting'
     syncWsResumeProtocols()
     refreshWsUrlForConnect()

@@ -28,6 +28,7 @@ from routers.api.workshop_ws_handlers_update_validate import (
     _MAX_COLLAB_UPDATE_NODES,
     _diagram_update_validation_error,
     _full_spec_validation_error,
+    client_op_id_from_message,
 )
 from routers.api.workshop_ws_update_schema import collab_update_schema_error
 from services.features.workshop_ws_registry import ACTIVE_EDITORS as active_editors
@@ -59,6 +60,7 @@ from services.online_collab.lifecycle.online_collab_session_closing import (
 from services.online_collab.participant.canvas_collab_locks import (
     build_connection_endpoints_map,
     build_locked_by_others_node_ids,
+    drop_nodes_paired_with_dropped_connections,
     filter_deleted_connection_ids_for_locks,
     filter_deleted_node_ids_for_locks,
     filter_granular_connections_for_locks,
@@ -151,6 +153,16 @@ async def _send(ctx: Any, payload: dict, msg_type: str = "error") -> None:
         await ctx.websocket.send_json(payload)
 
 
+async def _send_update_error(ctx: Any, message: Dict[str, Any], payload: dict) -> None:
+    """Send an update error and echo ``client_op_id`` so the sender can nack FIFO."""
+    client_op_id = client_op_id_from_message(message)
+    out = dict(payload)
+    out.setdefault("type", "error")
+    if client_op_id:
+        out["client_op_id"] = client_op_id
+    await _send(ctx, out)
+
+
 async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
     """Process an `update` message from a collaborator."""
     verr = _diagram_update_validation_error(ctx.diagram_id, message)
@@ -162,7 +174,7 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             ctx.code,
             verr,
         )
-        await _send(ctx, {"type": "error", "message": verr})
+        await _send_update_error(ctx, message, {"message": verr})
         return
 
     schema_err = collab_update_schema_error(message)
@@ -171,21 +183,18 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             record_ws_collab_update_schema_reject()
         except BACKGROUND_INFRA_ERRORS:
             pass
-        await _send(
+        await _send_update_error(
             ctx,
-            {
-                "type": "error",
-                "code": "update_invalid",
-                "message": schema_err,
-            },
+            message,
+            {"code": "update_invalid", "message": schema_err},
         )
         return
 
     if await workshop_session_is_closing(ctx.code):
-        await _send(
+        await _send_update_error(
             ctx,
+            message,
             {
-                "type": "error",
                 "message": (
                     "Workshop is shutting down — updates are no longer accepted. "
                     "Wait for the session to end and reconnect."
@@ -236,19 +245,14 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
 
     await get_online_collab_manager().refresh_participant_ttl(ctx.code, ctx.user.id)
 
-    client_op_id: Optional[str] = None
-    raw_client_op = message.get("client_op_id")
-    if isinstance(raw_client_op, str):
-        cop_stripped = raw_client_op.strip()
-        if cop_stripped:
-            client_op_id = cop_stripped[:_MAX_CLIENT_OP_ID_LENGTH]
+    client_op_id = client_op_id_from_message(message)
 
     redis = get_async_redis()
     if not redis:
-        await _send(
+        await _send_update_error(
             ctx,
+            message,
             {
-                "type": "error",
                 "message": (
                     "Live diagram sync unavailable - Redis is not reachable. "
                     "Reconnect or use resync if the problem persists."
@@ -345,6 +349,14 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 editors_redis,
             )
 
+        if filtered_nodes is not None and filtered_connections is not None and nodes is not None:
+            filtered_nodes = drop_nodes_paired_with_dropped_connections(
+                nodes,
+                filtered_nodes,
+                connections or [],
+                filtered_connections,
+            )
+
         out_node_ids = [n.get("id") for n in (filtered_nodes or []) if isinstance(n, dict)]
         out_conn_ids = [c.get("id") for c in (filtered_connections or []) if isinstance(c, dict)]
 
@@ -371,10 +383,10 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 record_ws_collab_granular_lock_reject()
             except BACKGROUND_INFRA_ERRORS as exc:
                 logger.debug("lock reject metric skipped: %s", exc)
-            await _send(
+            await _send_update_error(
                 ctx,
+                message,
                 {
-                    "type": "error",
                     "code": "update_rejected",
                     "message": ("Update rejected: another collaborator is editing a conflicting node."),
                 },
@@ -426,10 +438,10 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                     record_ws_collab_granular_lock_reject()
                 except BACKGROUND_INFRA_ERRORS as exc:
                     logger.debug("lock reject metric skipped: %s", exc)
-                await _send(
+                await _send_update_error(
                     ctx,
+                    message,
                     {
-                        "type": "error",
                         "code": "update_rejected",
                         "message": ("Full spec update rejected: another collaborator is editing one or more nodes."),
                     },
@@ -442,10 +454,10 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                     if isinstance(n, dict) and n.get("id") and str(n.get("id")) in locked_by_others
                 }
                 if locked_ids:
-                    await _send(
+                    await _send_update_error(
                         ctx,
+                        message,
                         {
-                            "type": "error",
                             "code": "update_rejected",
                             "message": (
                                 "Full spec update rejected: another collaborator "
@@ -472,10 +484,10 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             )
         except BACKGROUND_INFRA_ERRORS:
             pass
-        await _send(
+        await _send_update_error(
             ctx,
+            message,
             {
-                "type": "error",
                 "message": ("Server is busy applying other updates. Retry in a moment."),
             },
         )
@@ -491,10 +503,10 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
                 )
             except BACKGROUND_INFRA_ERRORS:
                 pass
-            await _send(
+            await _send_update_error(
                 ctx,
+                message,
                 {
-                    "type": "error",
                     "message": ("This room has too many concurrent edits. Retry shortly."),
                 },
             )
@@ -621,10 +633,10 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             record_ws_live_spec_merge_failure()
         except BACKGROUND_INFRA_ERRORS as exc:
             logger.debug("merge failure metric skipped: %s", exc)
-        await _send(
+        await _send_update_error(
             ctx,
+            message,
             {
-                "type": "error",
                 "message": ("Live diagram sync unavailable. Reconnect or use resync if the problem persists."),
             },
         )
@@ -683,14 +695,13 @@ async def handle_update(ctx: Any, message: Dict[str, Any]) -> None:
             ctx.user.id,
             ctx.code,
         )
-        await _send(
+        await _send_update_error(
             ctx,
+            message,
             {
-                "type": "error",
                 "code": "broadcast_failed",
                 "message": "Update could not be delivered. Please resync.",
             },
-            "error",
         )
         return
 

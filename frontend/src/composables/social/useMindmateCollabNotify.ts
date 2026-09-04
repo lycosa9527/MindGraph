@@ -218,8 +218,3 @@ export function useMindmateCollabNotify(): void {
     disconnectNotify()
   })
 }
-
-/** @deprecated Use useMindmateCollabNotify */
-export function useOrgPresenceWs(): void {
-  useMindmateCollabNotify()
-}

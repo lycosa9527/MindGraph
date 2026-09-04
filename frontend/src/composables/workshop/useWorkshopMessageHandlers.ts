@@ -19,6 +19,24 @@ import type { CollabSyncVersion } from './useCollabSyncVersion'
 // applySnapshotFrame / evaluateLiveSpecGap are now used inside useCollabSyncVersion;
 // they are intentionally NOT imported here any more.
 
+/** Update errors that fail the in-flight outbound op (not lock/claim noise). */
+const COLLAB_UPDATE_QUEUE_NACK_CODES = new Set([
+  'update_invalid',
+  'update_rejected',
+  'broadcast_failed',
+])
+
+/** True when an error frame should dequeue the sender's in-flight update. */
+export function shouldNackCollabOutboundOnError(message: {
+  code?: string
+  client_op_id?: string
+}): boolean {
+  if (typeof message.client_op_id === 'string' && message.client_op_id.trim()) {
+    return true
+  }
+  return typeof message.code === 'string' && COLLAB_UPDATE_QUEUE_NACK_CODES.has(message.code)
+}
+
 /** Same as `useLanguage().t` (workshop passes that into message deps). */
 export type WorkshopMessageTranslateFn = UseLanguageTranslate
 
@@ -551,6 +569,13 @@ export function dispatchWorkshopMessage(
             : message.message || deps.t('workshopCanvas.errorGeneric')
         )
         break
+      }
+      if (shouldNackCollabOutboundOnError(message)) {
+        const nackOpId =
+          typeof message.client_op_id === 'string' && message.client_op_id
+            ? message.client_op_id
+            : null
+        deps.acknowledgeOutboundUpdate(nackOpId)
       }
       deps.notify.error(message.message || deps.t('workshopCanvas.errorGeneric'))
       if (
