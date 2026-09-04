@@ -5,10 +5,7 @@
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { MindMapCanvasMode } from '@/stores/ui'
 import type { Connection, DiagramNode } from '@/types'
-import {
-  mindMapNodeDepth,
-  sortMindMapTopicChildIdsBySide,
-} from '@/utils/mindMapLocation'
+import { mindMapNodeDepth, sortMindMapTopicChildIdsBySide } from '@/utils/mindMapLocation'
 
 export const MIND_MAP_GEOMETRY = {
   /** Depth 2+ branch / leaf labels */
@@ -279,7 +276,7 @@ export function syncMindMapConnectionStrokeColorsForCanvasMode(
   nodes: DiagramNode[],
   mode: MindMapCanvasMode
 ): void {
-  if (mode === 'v2') {
+  if (mode === 'v2' || mode === 'v3') {
     const topic = nodes.find((node) => node.id === 'topic')
     syncMindMapConnectionStrokeColors(connections, resolveMindMapTopicBorderColor(topic))
     return

@@ -29,7 +29,7 @@ const uiStore = useUIStore()
 const authStore = useAuthStore()
 const { t } = useLanguage()
 const notify = useNotifications()
-const { featureMindmapV2Canvas } = useFeatureFlags()
+const { featureMindmapV2Canvas, featureMindmapV3Canvas } = useFeatureFlags()
 
 const draftUi = ref<Language>(uiStore.language)
 const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
@@ -301,10 +301,10 @@ function onClose(): void {
           <span>{{ t('settings.language.mindMapCanvas') }}</span>
         </div>
         <!--
-          Swiss 50/50 split segmented control (reference pattern).
+          Swiss equal-split segmented control (V1 / V2 / V3).
           Use plain <button role="radio"> — NOT ElRadioGroup/ElRadioButton (shows circles).
           Styles: settings-language-swiss.css → .language-settings-canvas-segmented / -segment
-          Active half: .is-active on the selected button; v-model via click + :class binding.
+          Active segment: .is-active on the selected button; v-model via click + :class binding.
         -->
         <div
           class="language-settings-canvas-segmented"
@@ -315,21 +315,34 @@ function onClose(): void {
             type="button"
             role="radio"
             class="language-settings-canvas-segment"
+            :class="{ 'is-active': draftMindMapCanvasMode === 'legacy' }"
+            :aria-checked="draftMindMapCanvasMode === 'legacy'"
+            @click="draftMindMapCanvasMode = 'legacy'"
+          >
+            {{ t('settings.language.mindMapCanvasV1') }}
+          </button>
+          <button
+            type="button"
+            role="radio"
+            class="language-settings-canvas-segment"
             :class="{ 'is-active': draftMindMapCanvasMode === 'v2' }"
             :aria-checked="draftMindMapCanvasMode === 'v2'"
             @click="draftMindMapCanvasMode = 'v2'"
           >
             {{ t('settings.language.mindMapCanvasV2') }}
           </button>
+          <!-- V3 = bubble-style chrome (old JS bars); the diagram stays V2. -->
           <button
+            v-if="featureMindmapV3Canvas"
             type="button"
             role="radio"
             class="language-settings-canvas-segment"
-            :class="{ 'is-active': draftMindMapCanvasMode === 'legacy' }"
-            :aria-checked="draftMindMapCanvasMode === 'legacy'"
-            @click="draftMindMapCanvasMode = 'legacy'"
+            data-testid="mindmap-canvas-v3-segment"
+            :class="{ 'is-active': draftMindMapCanvasMode === 'v3' }"
+            :aria-checked="draftMindMapCanvasMode === 'v3'"
+            @click="draftMindMapCanvasMode = 'v3'"
           >
-            {{ t('settings.language.mindMapCanvasLegacy') }}
+            {{ t('settings.language.mindMapCanvasV3') }}
           </button>
         </div>
         <p class="language-settings-swiss__hint">

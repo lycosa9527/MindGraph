@@ -51,25 +51,26 @@ export function syncMindMapStoreLayoutPositions(ctx: DiagramContext): void {
   const connections = ctx.data.value.connections ?? []
   const canvasMode = resolveSessionMindMapCanvasMode(ctx.mindMapCanvasMode.value)
 
-  // v2: sole layout owner is mindMapV2LayoutResult — write-back only (no second compute).
-  if (canvasMode === 'v2' && ctx.writeBackMindMapV2LayoutFromComputed) {
+  const v2Family = canvasMode === 'v2' || canvasMode === 'v3'
+
+  // v2/v3: sole layout owner is mindMapV2LayoutResult — write-back only (no second compute).
+  if (v2Family && ctx.writeBackMindMapV2LayoutFromComputed) {
     ctx.writeBackMindMapV2LayoutFromComputed()
     return
   }
 
-  const collapsedPaths = canvasMode === 'v2' ? getMindMapCollapsedPaths(ctx.data.value) : []
-  const collapsedNodeIds =
-    canvasMode === 'v2'
-      ? getMindMapCollapsedNodeIds(ctx.data.value.nodes, connections, collapsedPaths)
-      : new Set<string>()
-  const preserveIncomingY = canvasMode === 'v2' && ctx.mindMapPreserveIncomingY.value
+  const collapsedPaths = v2Family ? getMindMapCollapsedPaths(ctx.data.value) : []
+  const collapsedNodeIds = v2Family
+    ? getMindMapCollapsedNodeIds(ctx.data.value.nodes, connections, collapsedPaths)
+    : new Set<string>()
+  const preserveIncomingY = v2Family && ctx.mindMapPreserveIncomingY.value
   const options: MindMapV2LayoutOptions | undefined = preserveIncomingY
     ? { preserveIncomingY: true }
     : undefined
 
   // Legacy (always) or v2 fallback before the Vue Flow slice wires write-back.
   const { nodes: laidOut, gaps } = computeMindMapDisplayLayout(
-    canvasMode,
+    v2Family ? 'v2' : 'legacy',
     ctx.data.value.nodes,
     connections,
     ctx.mindMapTopicActualWidth.value,

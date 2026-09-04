@@ -138,6 +138,13 @@ export function normalizeAuthUser(source: BackendUser | User): User {
 
   const educationRaw = raw.education_stage ?? raw.educationStage ?? null
   const aiLevelRaw = raw.ai_content_level ?? raw.aiContentLevel ?? null
+  const ribbonClassicRaw = raw.v3_ribbon_classic ?? raw.v3RibbonClassic
+  const ribbonTabRaw = raw.v3_ribbon_tab ?? raw.v3RibbonTab
+  const ribbonTabs = new Set(['file', 'home', 'design', 'review', 'ai'])
+  const ribbonTab =
+    typeof ribbonTabRaw === 'string' && ribbonTabs.has(ribbonTabRaw.trim().toLowerCase())
+      ? ribbonTabRaw.trim().toLowerCase()
+      : null
 
   return {
     id: String(raw.id || raw.user?.id || ''),
@@ -156,6 +163,8 @@ export function normalizeAuthUser(source: BackendUser | User): User {
     uiVersion: raw.ui_version ?? raw.uiVersion ?? null,
     educationStage: isEducationStage(educationRaw) ? educationRaw : null,
     aiContentLevel: isAiContentLevelId(aiLevelRaw) ? aiLevelRaw : null,
+    v3RibbonClassic: ribbonClassicRaw === true,
+    v3RibbonTab: ribbonTab,
     allowsSimplifiedChinese: allowsZh,
     loginPasswordSet: resolveLoginPasswordSet(raw),
     mindmateAgentName: mindmateAgentName || null,

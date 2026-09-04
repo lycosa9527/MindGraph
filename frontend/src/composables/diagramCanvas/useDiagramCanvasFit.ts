@@ -1,24 +1,24 @@
 import type { Ref } from 'vue'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
 import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { ANIMATION, CANVAS, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
 import type { usePanelsStore } from '@/stores/panels'
-import { animateViewportTransition, cancelViewportTransition } from '@/utils/viewportTransition'
 import { useUIStore } from '@/stores/ui'
 import {
   isDesktopConceptMapManualViewport,
   isMindMapDiagramType,
 } from '@/utils/conceptMapDesktopViewport'
+import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
+import { computePanToKeepNodeInSafeFraction } from '@/utils/mindMapEnsureNodeVisible'
 import {
   parseFitPaddingPx,
   resolveMindMapSideToolbarLeftReservePx,
 } from '@/utils/mindMapSideToolbarFitReserve'
-import { computePanToKeepNodeInSafeFraction } from '@/utils/mindMapEnsureNodeVisible'
+import { animateViewportTransition, cancelViewportTransition } from '@/utils/viewportTransition'
 
 type DiagramStore = ReturnType<typeof useDiagramSession>
 type PanelsStore = ReturnType<typeof usePanelsStore>
@@ -84,7 +84,9 @@ export function useDiagramCanvasFit(options: {
 
   const viewBus = diagramStore.viewBus
   const uiStore = useUIStore()
-  const useMindMapV2 = useMindMapV2Chrome()
+  const useMindMapV2 = computed(() =>
+    isSessionMindMapV2VisualDesignActive(diagramStore.mindMapCanvasMode)
+  )
   const { sidebarExpanded, sidebarVisible } = useMindMapSideToolbarState()
   const isFittedForPanel = ref(false)
   const hasInitialFitDoneForDiagram = ref(false)
@@ -412,8 +414,7 @@ export function useDiagramCanvasFit(options: {
   ): void {
     if (!nodeId) return
     const animate = options?.animate !== false
-    const safeFraction =
-      options?.safeFraction ?? FIT_PADDING.MIND_MAP_KEEP_VISIBLE_SAFE_FRACTION
+    const safeFraction = options?.safeFraction ?? FIT_PADDING.MIND_MAP_KEEP_VISIBLE_SAFE_FRACTION
     const maxAttempts = 12
 
     const tryApply = (attempt: number): void => {
@@ -494,9 +495,12 @@ export function useDiagramCanvasFit(options: {
           return
         }
         hasInitialFitDoneForDiagram.value = true
-        setTimeout(() => {
-          fitToFullCanvas(true)
-        }, Math.max(ANIMATION.FIT_VIEWPORT_DELAY, 450))
+        setTimeout(
+          () => {
+            fitToFullCanvas(true)
+          },
+          Math.max(ANIMATION.FIT_VIEWPORT_DELAY, 450)
+        )
         return
       }
       if (diagramStore.type === 'concept_map') {

@@ -65,6 +65,15 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_MINDMAP_V2_CANVAS", "True").lower() == "true"
 
     @property
+    def FEATURE_MINDMAP_V3_CANVAS(self):
+        """Expose V3 (D3) mind map canvas in Language settings.
+
+        Enabled by default. Requires FEATURE_MINDMAP_V2_CANVAS. Set
+        FEATURE_MINDMAP_V3_CANVAS=False in .env to hide V3 and clamp it to v2.
+        """
+        return self._get_cached_value("FEATURE_MINDMAP_V3_CANVAS", "True").lower() == "true"
+
+    @property
     def FEATURE_MIND_CLASSROOM_SLIDE_DECK(self):
         """Enable 思维讲堂「幻灯片讲解」presentation mode.
 

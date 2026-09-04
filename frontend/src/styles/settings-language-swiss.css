@@ -264,7 +264,7 @@
 }
 
 .language-settings-canvas-segment {
-  flex: 1 1 50%;
+  flex: 1 1 0;
   min-width: 0;
   margin: 0;
   padding: 0.55rem 0.5rem;

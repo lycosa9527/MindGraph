@@ -47,3 +47,17 @@ def test_diagram_preferences_still_accepts_education_stage() -> None:
     body = DiagramPreferencesUpdate.model_validate({"education_stage": "高中"})
     assert body.education_stage == "高中"
     assert "ai_content_level" not in body.model_fields_set
+
+
+def test_diagram_preferences_accepts_v3_ribbon_fields() -> None:
+    """V3 ribbon height and last tab can PATCH without 学段."""
+    body = DiagramPreferencesUpdate.model_validate({"v3_ribbon_classic": True, "v3_ribbon_tab": "Design"})
+    assert body.v3_ribbon_classic is True
+    assert body.v3_ribbon_tab == "design"
+    assert "education_stage" not in body.model_fields_set
+
+
+def test_diagram_preferences_rejects_unknown_v3_ribbon_tab() -> None:
+    """Unknown ribbon tabs fail validation instead of being stored."""
+    with pytest.raises(ValidationError):
+        DiagramPreferencesUpdate.model_validate({"v3_ribbon_tab": "favorites"})

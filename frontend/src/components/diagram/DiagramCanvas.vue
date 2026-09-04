@@ -56,6 +56,7 @@ import {
   CONCEPT_MAP_GENERATING_KEY,
   useConceptMapRelationship,
 } from '@/composables/editor/useConceptMapRelationship'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useMindMapSubgraphSuggest } from '@/composables/editor/useMindMapSubgraphSuggest'
 import { MIND_MAP_CANVAS_VARIANT_KEY } from '@/composables/mindMap/mindMapCanvasVariantKey'
 import {
@@ -401,6 +402,7 @@ const {
   handleExplainBubbleSizeChange,
   handleFloatingToolbarExplainNode,
   scheduleExplainBubbleMeasure,
+  openNodeExplain,
 } = useDiagramCanvasNodeExplain({
   canvasContainer,
   nodes,
@@ -605,6 +607,21 @@ let unregisterLayoutRecalcSession: (() => void) | null = null
 onMounted(() => {
   unregisterLayoutRecalcSession = registerDiagramLayoutRecalcSession(diagramStore)
   void ensureMarkdownRenderer()
+  eventBus.onWithOwner(
+    'mindmap:ai_subgraph_requested',
+    ({ nodeId }) => {
+      void generateSubgraph(nodeId ?? floatingToolbarAnchorId.value)
+    },
+    'DiagramCanvas'
+  )
+  eventBus.onWithOwner(
+    'mindmap:explain_node_requested',
+    ({ nodeId }) => {
+      const id = nodeId ?? floatingToolbarAnchorId.value
+      if (id) openNodeExplain(id)
+    },
+    'DiagramCanvas'
+  )
   unsubscribeEventBus = mountSubscriptions({
     diagramStore,
     getNodes: () => unref(getVueFlowNodes) as unknown as MindGraphNode[],
@@ -647,6 +664,7 @@ onUnmounted(() => {
   unregisterLayoutRecalcSession = null
   unsubscribeEventBus?.()
   unsubscribeEventBus = null
+  eventBus.removeAllListenersForOwner('DiagramCanvas')
   clearFitTimersOnUnmount()
   clearDoubleBubbleTimer()
   mobileTouchCleanup.value?.()

@@ -11,18 +11,26 @@ import { apiRequest } from '@/utils/apiClient'
 
 function syncMindMapCanvasModeForFlags(data: FeatureFlagsResponse): void {
   const uiStore = useUIStore()
+  const v3Enabled = data.feature_mindmap_v3_canvas ?? true
   if (!data.feature_mindmap_v2_canvas) {
     // Runtime-only Classic: do not persist, or re-enabling the flag would stick
     // everyone on Classic after the v2-default migration.
-    if (uiStore.mindMapCanvasMode === 'v2') {
+    if (uiStore.mindMapCanvasMode === 'v2' || uiStore.mindMapCanvasMode === 'v3') {
       uiStore.setMindMapCanvasMode('legacy', { persist: false })
     }
     return
+  }
+  if (!v3Enabled && uiStore.mindMapCanvasMode === 'v3') {
+    uiStore.setMindMapCanvasMode('v2', { persist: false })
   }
   const stored = localStorage.getItem(MINDMAP_CANVAS_MODE_KEY)
   // Explicit Classic (after v2-default migration) stays Classic; else New canvas.
   if (stored === 'legacy') {
     uiStore.setMindMapCanvasMode('legacy')
+    return
+  }
+  if (stored === 'v3' && v3Enabled) {
+    uiStore.setMindMapCanvasMode('v3')
     return
   }
   uiStore.setMindMapCanvasMode('v2')
@@ -47,6 +55,7 @@ interface FeatureFlagsResponse {
   feature_debateverse: boolean
   feature_knowledge_space: boolean
   feature_mindmap_v2_canvas: boolean
+  feature_mindmap_v3_canvas?: boolean
   feature_mind_classroom_slide_deck?: boolean
   feature_library: boolean
   feature_gewe: boolean
@@ -94,6 +103,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       feature_debateverse: false,
       feature_knowledge_space: false,
       feature_mindmap_v2_canvas: true,
+      feature_mindmap_v3_canvas: true,
       feature_mind_classroom_slide_deck: false,
       feature_library: false,
       feature_gewe: false,
@@ -180,6 +190,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           captcha_provider: raw.captcha_provider === 'tsec' ? 'tsec' : 'legacy',
           tencent_captcha_app_id: raw.tencent_captcha_app_id ?? '',
           feature_mindmap_v2_canvas: raw.feature_mindmap_v2_canvas ?? true,
+          feature_mindmap_v3_canvas: raw.feature_mindmap_v3_canvas ?? true,
           feature_mind_classroom_slide_deck: raw.feature_mind_classroom_slide_deck ?? false,
         }
         flags.value = data
@@ -260,6 +271,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   function getFeatureMindmapV2Canvas(): boolean {
     // Product default is v2-on; avoid classic flash before the first /api/config/features fetch.
     return flags.value?.feature_mindmap_v2_canvas ?? true
+  }
+
+  function getFeatureMindmapV3Canvas(): boolean {
+    return flags.value?.feature_mindmap_v3_canvas ?? true
   }
 
   function getFeatureMindClassroomSlideDeck(): boolean {
@@ -343,6 +358,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureDebateverse,
     getFeatureKnowledgeSpace,
     getFeatureMindmapV2Canvas,
+    getFeatureMindmapV3Canvas,
     getFeatureMindClassroomSlideDeck,
     getFeatureLibrary,
     getFeatureGewe,

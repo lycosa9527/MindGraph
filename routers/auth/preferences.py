@@ -105,13 +105,15 @@ async def update_diagram_preferences(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """Persist classic 学段 and/or mind-map 专业程度 for the signed-in user."""
+    """Persist 学段, 专业程度, and/or V3 ribbon defaults for the signed-in user."""
     stage_set = "education_stage" in body.model_fields_set
     level_set = "ai_content_level" in body.model_fields_set
-    if not stage_set and not level_set:
+    ribbon_classic_set = "v3_ribbon_classic" in body.model_fields_set
+    ribbon_tab_set = "v3_ribbon_tab" in body.model_fields_set
+    if not stage_set and not level_set and not ribbon_classic_set and not ribbon_tab_set:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Provide at least one of education_stage, ai_content_level",
+            detail=("Provide at least one of education_stage, ai_content_level, v3_ribbon_classic, v3_ribbon_tab"),
         )
 
     result = await db.execute(select(User).where(User.id == current_user.id))
@@ -126,6 +128,10 @@ async def update_diagram_preferences(
         user.education_stage = body.education_stage
     if level_set:
         user.ai_content_level = body.ai_content_level
+    if ribbon_classic_set:
+        user.v3_ribbon_classic = body.v3_ribbon_classic
+    if ribbon_tab_set:
+        user.v3_ribbon_tab = body.v3_ribbon_tab
 
     try:
         await db.commit()
@@ -149,4 +155,6 @@ async def update_diagram_preferences(
     return {
         "education_stage": getattr(user, "education_stage", None),
         "ai_content_level": getattr(user, "ai_content_level", None),
+        "v3_ribbon_classic": bool(getattr(user, "v3_ribbon_classic", False)),
+        "v3_ribbon_tab": getattr(user, "v3_ribbon_tab", None),
     }

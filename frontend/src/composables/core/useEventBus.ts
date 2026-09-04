@@ -128,11 +128,15 @@ export type EventTypes = {
   'diagram:layout_recalc_bump': Record<string, never>
   'diagram:branch_moved': Record<string, never>
   'mindmap:canvas_mode_changed': {
-    previousMode: 'legacy' | 'v2'
-    newMode: 'legacy' | 'v2'
+    previousMode: 'legacy' | 'v2' | 'v3'
+    newMode: 'legacy' | 'v2' | 'v3'
   }
   'snapshot:requested': Record<string, never>
+  'snapshot:recall_requested': { versionNumber: number }
+  'snapshot:delete_requested': { versionNumber: number }
   'diagram:workshop_snapshot_applied': Record<string, never>
+  'mindmap:ai_subgraph_requested': { nodeId?: string }
+  'mindmap:explain_node_requested': { nodeId?: string }
   'concept_map:link_drop': { sourceId: string; targetId: string; linkedFromConnectionId?: string }
   /**
    * Link handle (node menu or relationship menu): start drawing a link. Uses Pointer events so
@@ -510,6 +514,7 @@ export type EventTypes = {
   }
   'view:fit_for_export_requested': Record<string, never>
   'view:zoom_reset_requested': Record<string, never>
+  'view:hand_tool_toggle_requested': { active?: boolean }
   'view:viewport_snapshot_save': Record<string, never>
   'view:viewport_snapshot_restore': {
     animate?: boolean
@@ -698,6 +703,7 @@ export type EventTypes = {
   'canvas:resized': { width: number; height: number }
   'canvas:fit_requested': { animate?: boolean }
   'canvas:show_slot_full_modal': Record<string, never>
+  'canvas:save_requested': Record<string, never>
 
   // Window Events
   'window:resized': { width: number; height: number }
@@ -706,6 +712,8 @@ export type EventTypes = {
   'toolbar:export_requested': { format: string; options?: CanvasExportOptions }
   'toolbar:worksheet_text_requested': Record<string, never>
   'toolbar:zhihui_diagram_requested': Record<string, never>
+  'presentation:start_requested': Record<string, never>
+  'collab:open_requested': { mode: 'organization' | 'network' | 'stop' }
   'toolbar:import_file': { file: File }
 
   // File Events

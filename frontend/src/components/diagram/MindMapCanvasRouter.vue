@@ -1,9 +1,7 @@
 <script setup lang="ts">
 /**
- * Routes mind maps to legacy or v2 canvas shells.
- * V2 is eager — async canvas was the dominant library-open delay (~1–2s to first shell mount).
- * Legacy stays lazy (rare mode switch).
- * Mode comes from the injected diagram session (editor syncs UI; Showcase uses gallery policy).
+ * Routes mind maps to classic (V1) or V2 Vue Flow.
+ * V3 bubble-style chrome is swapped on CanvasPage; this router still mounts V2.
  */
 import { computed, defineAsyncComponent } from 'vue'
 

@@ -12,6 +12,7 @@ import { nextTick, onMounted, onUnmounted } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import {
   BRANCH_NODE_HEIGHT,
   DEFAULT_CENTER_Y,
@@ -19,9 +20,9 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import { consumeMindMapPostEditSiblingAnchor } from '@/composables/mindMap/mindMapCanvasEnterGuard'
-import { useDiagramSession } from '@/composables/diagram/useDiagramSession'
 import { braceMapRootId, isBraceMapSubpartNode } from '@/stores/diagram/braceMapParentResolve'
 import { isDiagramPresentationReadOnly } from '@/stores/diagram/presentationReadOnlyGuard'
+import type { MindMapCanvasMode } from '@/stores/ui'
 import type { DiagramNode } from '@/types'
 import { isSessionMindMapV2VisualDesignActive } from '@/utils/mindMapCanvasMode'
 import {
@@ -30,8 +31,8 @@ import {
   recordMindMapSiblingInsertAttempt,
 } from '@/utils/mindMapSiblingDebug'
 
-/** V2 canvas: Enter/Tab create focuses inline edit — success toasts steal focus. */
-function shouldToastMindMapNodeAdd(sessionMode: 'legacy' | 'v2'): boolean {
+/** V2/V3 canvas: Enter/Tab create focuses inline edit — success toasts steal focus. */
+function shouldToastMindMapNodeAdd(sessionMode: MindMapCanvasMode): boolean {
   return !isSessionMindMapV2VisualDesignActive(sessionMode)
 }
 

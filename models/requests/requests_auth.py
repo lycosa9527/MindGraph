@@ -901,10 +901,14 @@ class LanguagePreferencesUpdate(BaseModel):
         return stripped
 
 
+_V3_RIBBON_TABS = frozenset(("file", "home", "design", "review", "ai"))
+
+
 class DiagramPreferencesUpdate(BaseModel):
     """PATCH body for /api/auth/diagram-preferences.
 
-    At least one field must be present. ``null`` clears that preference.
+    At least one field must be present. ``null`` clears that preference
+    for education/audience fields. Ribbon fields reject unknown tabs.
     """
 
     education_stage: Optional[str] = Field(
@@ -916,6 +920,15 @@ class DiagramPreferencesUpdate(BaseModel):
         None,
         max_length=32,
         description="Mind-map 专业程度 id (general…expert), or null to clear",
+    )
+    v3_ribbon_classic: Optional[bool] = Field(
+        None,
+        description="True when the V3 ribbon is in classic (full) height",
+    )
+    v3_ribbon_tab: Optional[str] = Field(
+        None,
+        max_length=16,
+        description="Last V3 ribbon tab (file|home|design|review|ai)",
     )
 
     @field_validator("education_stage")
@@ -938,4 +951,15 @@ class DiagramPreferencesUpdate(BaseModel):
         stripped = value.strip().lower()
         if not is_valid_ai_content_level(stripped):
             raise ValueError("ai_content_level must be a supported 专业程度 id")
+        return stripped
+
+    @field_validator("v3_ribbon_tab")
+    @classmethod
+    def validate_v3_ribbon_tab(cls, value):
+        """Allow null (clear) or a known V3 ribbon tab id."""
+        if value is None:
+            return None
+        stripped = value.strip().lower()
+        if stripped not in _V3_RIBBON_TABS:
+            raise ValueError("v3_ribbon_tab must be file, home, design, review, or ai")
         return stripped

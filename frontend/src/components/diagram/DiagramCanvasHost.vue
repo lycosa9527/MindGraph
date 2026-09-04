@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Routes to MindMapCanvasRouter (lazy legacy/v2 split) or shared DiagramCanvas for other types.
+ * Routes to MindMapCanvasRouter (legacy / v2 / v3) or shared DiagramCanvas for other types.
  */
 import { computed } from 'vue'
 

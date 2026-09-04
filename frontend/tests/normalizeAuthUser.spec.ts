@@ -64,6 +64,26 @@ describe('normalizeAuthUser', () => {
     expect(user.thinkingCoins).toBeUndefined()
   })
 
+  it('hydrates V3 ribbon height and last tab from /me', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      v3_ribbon_classic: true,
+      v3_ribbon_tab: 'Review',
+    })
+    expect(user.v3RibbonClassic).toBe(true)
+    expect(user.v3RibbonTab).toBe('review')
+  })
+
+  it('drops unknown V3 ribbon tabs', () => {
+    const user = normalizeAuthUser({
+      ...loginPayload,
+      v3RibbonClassic: false,
+      v3RibbonTab: 'favorites',
+    })
+    expect(user.v3RibbonClassic).toBe(false)
+    expect(user.v3RibbonTab).toBeNull()
+  })
+
   it('coerces BCP 47 aliases such as zh-CN to the enabled UI locale', () => {
     const user = normalizeAuthUser({
       ...loginPayload,

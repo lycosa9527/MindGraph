@@ -12,6 +12,7 @@ import {
   deleteMindMapNumberingLiveFields,
   writeMindMapNumberingLiveFields,
 } from '@/utils/mindMapBranchNumbering'
+import { isMindMapV2FamilyMode, layoutMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from '../specLoader'
 import { emitCtxEvent, getMindMapCurveExtents } from './events'
@@ -122,7 +123,7 @@ function retainMeasuredDimensions(ctx: DiagramContext, newNodes: DiagramNode[]):
 
 function stylesByPathForMode(data: DiagramData, mode: MindMapCanvasMode): Map<string, NodeStyle> {
   const buckets = data._mindmap_canvas
-  if (mode === 'v2') {
+  if (isMindMapV2FamilyMode(mode)) {
     return stylesRecordToMap(buckets?.v2?.node_styles_by_path)
   }
   const legacy = buckets?.legacy?.node_styles_by_path
@@ -139,12 +140,12 @@ export function hydrateMindMapCanvasStylesOnLoad(data: DiagramData, mode: MindMa
   const bucketStyles = stylesByPathForMode(data, mode)
 
   if (bucketStyles.size > 0) {
-    const themeId =
-      mode === 'v2' ? (data._mindmap_canvas?.v2?.theme ?? data._mindmap_theme) : undefined
-    const diagramStyleId =
-      mode === 'v2'
-        ? (data._mindmap_canvas?.v2?.diagram_style ?? data._mindmap_diagram_style)
-        : undefined
+    const themeId = isMindMapV2FamilyMode(mode)
+      ? (data._mindmap_canvas?.v2?.theme ?? data._mindmap_theme)
+      : undefined
+    const diagramStyleId = isMindMapV2FamilyMode(mode)
+      ? (data._mindmap_canvas?.v2?.diagram_style ?? data._mindmap_diagram_style)
+      : undefined
     data._node_styles = applyMindMapStylesByPath(
       data.nodes,
       connections,
@@ -173,7 +174,7 @@ export function hydrateMindMapCanvasStylesOnLoad(data: DiagramData, mode: MindMa
     }
   }
 
-  if (mode === 'v2') {
+  if (isMindMapV2FamilyMode(mode)) {
     const theme = data._mindmap_canvas?.v2?.theme ?? data._mindmap_theme
     if (theme) {
       data._mindmap_theme = theme
@@ -191,9 +192,11 @@ export function hydrateMindMapCanvasStylesOnLoad(data: DiagramData, mode: MindMa
       {
         branch_numbering: data._mindmap_branch_numbering === true,
         branch_numbering_prefix:
-          data._mindmap_branch_numbering_prefix ?? data._mindmap_canvas?.v2?.branch_numbering_prefix,
+          data._mindmap_branch_numbering_prefix ??
+          data._mindmap_canvas?.v2?.branch_numbering_prefix,
         branch_numbering_nested:
-          data._mindmap_branch_numbering_nested ?? data._mindmap_canvas?.v2?.branch_numbering_nested,
+          data._mindmap_branch_numbering_nested ??
+          data._mindmap_canvas?.v2?.branch_numbering_nested,
       },
       data
     )
@@ -222,6 +225,9 @@ export function reconcileMindMapCanvasModeSwitch(
   newMode: MindMapCanvasMode
 ): boolean {
   if (previousMode === newMode) return false
+  if (isMindMapV2FamilyMode(previousMode) && isMindMapV2FamilyMode(newMode)) {
+    return false
+  }
   if (!isMindMapType(ctx.type.value)) return false
   if (!ctx.data.value?.nodes?.length) return false
 
@@ -239,7 +245,7 @@ export function reconcileMindMapCanvasModeSwitch(
       rightBranches: spec.rightBranches,
       preserveLeftRight: true,
     },
-    { canvasMode: newMode }
+    { canvasMode: layoutMindMapCanvasMode(newMode) }
   )
 
   const stylesByPath = stylesByPathForMode(data, newMode)
@@ -247,7 +253,7 @@ export function reconcileMindMapCanvasModeSwitch(
 
   let themeId: string | null | undefined
   let diagramStyleId: string | null | undefined
-  if (newMode === 'v2') {
+  if (isMindMapV2FamilyMode(newMode)) {
     themeId = v2Bucket?.theme ?? data._mindmap_theme
     if (themeId) {
       data._mindmap_theme = themeId
@@ -293,7 +299,7 @@ export function reconcileMindMapCanvasModeSwitch(
   data.connections = result.connections
   data._node_styles = mergedNodeStyles
 
-  if (newMode === 'v2') {
+  if (isMindMapV2FamilyMode(newMode)) {
     const collapsedSeed = v2Bucket?.collapsed_paths ?? data._collapsed_paths ?? []
     const remapped = remapMindMapCollapsedPathsAfterReload(
       oldNodes,

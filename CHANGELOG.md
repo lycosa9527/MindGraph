@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.180.37] - 2026-09-04
+
+> **Language settings adds mind-map V3 chrome: a Word-style ribbon, with height and last tab saved on the account.**
+
+### Added
+
+- **Mind map V3 chrome** — Isolated under `frontend/src/canvas-v3/`. File / Home / Design / Review / AI ribbon (expanded or collapsed pills), top toolbar, bottom status bar, and right property dock. The diagram stays on V2 (`MindMapV2Canvas`); V2 ↔ V3 does not remount Vue Flow.
+- **Language settings V1 / V2 / V3** — Segmented control when `FEATURE_MINDMAP_V3_CANVAS` is on (default). Flag off hides the V3 segment and clamps `v3` → `v2` in memory (does not persist). Showcase and export-render stay on v2.
+- **Account ribbon prefs** — `users.v3_ribbon_classic` and `users.v3_ribbon_tab` (Alembic 0108). Classic height and last tab persist on the account via `PATCH /api/auth/diagram-preferences`, not browser storage.
+- **`FEATURE_MINDMAP_V3_CANVAS`** — Defaults True. Requires `FEATURE_MINDMAP_V2_CANVAS`. Documented in README and env.example.
+
+### Changed
+
+- Chrome gates split: `useMindMapV2Chrome()` is V2 only; `useMindMapV3Chrome()` is V3 only; layout and theme still use the V2 family (`useMindMapV2FamilyVisual()`).
+- Frontend npm overrides pin `browserslist` ≥ 4.28.7 and `fast-uri` ≥ 3.1.7 so `npm audit --audit-level=high` stays clean.
+
+### Tests
+
+- `frontend/tests/mindMapV3Chrome.spec.ts` — V3 chrome gate vs V2
+- `frontend/tests/useV3RibbonState.spec.ts` — hydrate and persist classic height + last tab
+- `frontend/tests/mindMapCanvasModeV3.spec.ts` — flag clamp `v3` → `v2`
+- `frontend/tests/languageSettingsCanvasV3.spec.ts` — V3 segment visibility
+- `frontend/tests/mindMapSeparation.spec.ts` — V2/V3 family
+- `frontend/tests/normalizeAuthUser.spec.ts` — ribbon fields on `/me`
+- `tests/auth/test_user_session_prefs.py` / `tests/test_ai_content_level_pref.py` — diagram-preferences ribbon fields
+
 ## [5.180.36] - 2026-09-01
 
 > **数据中心 → 学校仪表盘 adds 系统功能使用情况分析 for super-admins: module access, process metrics, and usage judgement, checked against a production dump.**

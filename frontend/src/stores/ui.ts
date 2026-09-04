@@ -26,7 +26,7 @@ export type PromptLanguage = PromptOutputLanguageCode
 
 export type AppMode = 'mindmate' | 'mindgraph' | 'template' | 'course' | 'community'
 export type UiVersion = 'chinese' | 'international'
-export type MindMapCanvasMode = 'legacy' | 'v2'
+export type MindMapCanvasMode = 'legacy' | 'v2' | 'v3'
 
 const THEME_KEY = 'mindgraph_theme'
 const LANGUAGE_KEY = 'language'
@@ -46,7 +46,7 @@ export const MINDMAP_CANVAS_V2_DEFAULT_MIGRATION_KEY =
 export const E_BLACKBOARD_OPTIMIZE_KEY = 'mindgraph_e_blackboard_optimize'
 export const SIDEBAR_POEM_ENABLED_KEY = 'mindgraph_sidebar_poem_enabled'
 
-const VALID_MINDMAP_CANVAS_MODES: ReadonlySet<string> = new Set(['legacy', 'v2'])
+const VALID_MINDMAP_CANVAS_MODES: ReadonlySet<string> = new Set(['legacy', 'v2', 'v3'])
 
 function isValidMindMapCanvasMode(value: string | null): value is MindMapCanvasMode {
   return value !== null && VALID_MINDMAP_CANVAS_MODES.has(value)

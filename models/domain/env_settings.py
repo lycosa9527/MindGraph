@@ -240,6 +240,12 @@ class FeatureFlagSettings(BaseModel):
             "new (v2) canvas is the default when True; classic remains available"
         ),
     )
+    FEATURE_MINDMAP_V3_CANVAS: bool = Field(
+        default=True,
+        description=(
+            "Show V3 (D3) mind map canvas in Language settings; requires FEATURE_MINDMAP_V2_CANVAS; off clamps V3 to v2"
+        ),
+    )
     FEATURE_MIND_CLASSROOM_SLIDE_DECK: bool = Field(
         default=False,
         description="Enable 思维讲堂 slide-lecture (幻灯片讲解) presentation mode",

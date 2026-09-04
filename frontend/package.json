@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.180.36",
+  "version": "5.180.37",
   "type": "module",
   "engines": {
     "node": ">=26.0.0"
@@ -137,6 +137,8 @@
     "vue-tsc": "^3.3.9"
   },
   "overrides": {
+    "browserslist": "^4.28.7",
+    "fast-uri": "^3.1.7",
     "glob": "^13.0.6",
     "brace-expansion": "^5.0.8",
     "minimatch": "^10.2.5",

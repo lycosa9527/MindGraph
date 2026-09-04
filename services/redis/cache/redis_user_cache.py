@@ -88,6 +88,8 @@ class UserCache:
             "login_password_set": "1" if getattr(user, "login_password_set", True) else "0",
             "education_stage": getattr(user, "education_stage", None) or "",
             "ai_content_level": getattr(user, "ai_content_level", None) or "",
+            "v3_ribbon_classic": "1" if getattr(user, "v3_ribbon_classic", False) else "0",
+            "v3_ribbon_tab": getattr(user, "v3_ribbon_tab", None) or "",
         }
 
     def _deserialize_user(self, data: dict[bytes | str, bytes | str]) -> User:
@@ -158,6 +160,9 @@ class UserCache:
 
         user.education_stage = normalized.get("education_stage") or None
         user.ai_content_level = normalized.get("ai_content_level") or None
+        ribbon_classic = normalized.get("v3_ribbon_classic", "0")
+        user.v3_ribbon_classic = ribbon_classic in ("1", "true", "True")
+        user.v3_ribbon_tab = normalized.get("v3_ribbon_tab") or None
 
         return user
 

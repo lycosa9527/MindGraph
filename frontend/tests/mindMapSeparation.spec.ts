@@ -24,13 +24,13 @@ import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { loadMindMapSpec, nodesAndConnectionsToMindMapSpec } from '@/stores/specLoader'
 import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramData, DiagramNode } from '@/types'
-import { isMindMapBranchNode, mindMapNodeSide } from '@/utils/mindMapLocation'
 import {
   buildClassicMindMapTopicHandlePositions,
   classicMindMapPillHandleInsetPx,
   classicMindMapSideHandleTopPercent,
   withClassicMindMapTopicSourceHandle,
 } from '@/utils/classicMindMapTopicHandles'
+import { isMindMapBranchNode, mindMapNodeSide } from '@/utils/mindMapLocation'
 
 function enableMindMapV2CanvasFlag(): void {
   const flagsStore = useFeatureFlagsStore()
@@ -367,6 +367,43 @@ describe('mind map classic vs v2 separation', () => {
     expect(branchNode?.style?.backgroundColor).toBeUndefined()
     expect(data._mindmap_theme).toBeUndefined()
     expect(data._mindmap_diagram_style).toBeUndefined()
+  })
+
+  it('reconcileMindMapCanvasModeSwitch is a no-op for v2 to v3', () => {
+    enableMindMapV2CanvasFlag()
+    const loaded = loadMindMapSpec(
+      {
+        topic: 'Topic',
+        rightBranches: [{ text: 'Branch A' }],
+        leftBranches: [],
+        preserveLeftRight: true,
+      },
+      { canvasMode: 'v2' }
+    )
+    const data: DiagramData = {
+      type: 'mindmap',
+      nodes: loaded.nodes,
+      connections: loaded.connections,
+      _mindmap_theme: 'ocean',
+      _mindmap_diagram_style: 'formal',
+      _node_styles: {},
+      _mindmap_canvas: {
+        v2: {
+          node_styles_by_path: {
+            'r/0': { nodeShape: 'rounded', backgroundColor: '#fff' },
+          },
+          theme: 'ocean',
+          diagram_style: 'formal',
+        },
+      },
+    }
+    const ctx = makeMindMapCtx(data)
+    const nodesBefore = data.nodes
+    const changed = reconcileMindMapCanvasModeSwitch(ctx, 'v2', 'v3')
+    expect(changed).toBe(false)
+    expect(data.nodes).toBe(nodesBefore)
+    expect(data._mindmap_theme).toBe('ocean')
+    expect(data._mindmap_canvas?.v2?.theme).toBe('ocean')
   })
 
   it('reconcileMindMapCanvasModeSwitch restores v2 diagram_style from bucket', () => {
@@ -792,5 +829,4 @@ describe('mind map classic vs v2 separation', () => {
     expect(handles[0]?.transform).toMatch(/^translate\(-\d+(\.\d+)?px, -50%\)$/)
     expect(handles[2]?.transform).toMatch(/^translate\(-\d+(\.\d+)?px, -50%\)$/)
   })
-
 })

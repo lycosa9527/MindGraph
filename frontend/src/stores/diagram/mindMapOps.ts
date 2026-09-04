@@ -10,6 +10,7 @@ import {
   readEffectiveMindMapCanvasMode,
   resolveSessionMindMapCanvasMode,
 } from '@/utils/mindMapCanvasMode'
+import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import {
   isMindMapBranchId,
   isMindMapBranchNode,
@@ -24,7 +25,6 @@ import {
   readMindMapNodeUid,
   rebindMindMapBranchUidsForPaste,
 } from '@/utils/mindMapNodeUid'
-import { markMindMapInlineEditStage } from '@/utils/mindMapInlineEditDebug'
 import {
   recordMindMapSiblingInsertAttempt,
   recordMindMapSiblingInsertFailure,
@@ -82,7 +82,6 @@ import {
 import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
-
 function ctxCanvasMode(ctx: DiagramContext) {
   const sessionMode = ctx.mindMapCanvasMode
   if (sessionMode == null) {
@@ -98,7 +97,6 @@ function ctxV2Visuals(ctx: DiagramContext): boolean {
 function loadCtxMindMapSpec(ctx: DiagramContext, spec: Record<string, unknown>) {
   return loadMindMapSpec(spec, { canvasMode: ctxCanvasMode(ctx) })
 }
-
 
 function defaultNewNodeText(): string {
   return String(i18n.global.t('diagram.editable.placeholder')).replace(/[….]{1,3}$/u, '')
@@ -227,8 +225,7 @@ export function cancelMindMapPendingInlineEdit(
   mindMapPendingEditArmedAtMs = 0
   detachMindMapPendingEditPointerGuard()
   if (previousPending) {
-    const stage =
-      reason === 'focus-tick-success' ? 'pending:open-phase-done' : 'pending:cancel'
+    const stage = reason === 'focus-tick-success' ? 'pending:open-phase-done' : 'pending:cancel'
     markMindMapInlineEditStage(stage, {
       nodeId: previousPending,
       editingId: ctx.mindMapEditingNodeId.value,
@@ -607,8 +604,12 @@ function commitMindMapReload(
     result.nodes,
     result.connections,
     ctx.data.value._node_styles,
-    reloadCanvasMode === 'v2' ? resolveActiveMindMapThemeId(ctx.data.value) : null,
-    reloadCanvasMode === 'v2' ? ctx.data.value._mindmap_diagram_style : undefined,
+    reloadCanvasMode === 'v2' || reloadCanvasMode === 'v3'
+      ? resolveActiveMindMapThemeId(ctx.data.value)
+      : null,
+    reloadCanvasMode === 'v2' || reloadCanvasMode === 'v3'
+      ? ctx.data.value._mindmap_diagram_style
+      : undefined,
     remapMindMapNodeIdAfterReload,
     reloadCanvasMode
   )
@@ -1512,8 +1513,10 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     }
 
     const isLeftBranch =
-      mindMapNodeSide(nodeId, { nodes: data.value?.nodes, connections: data.value?.connections }) ===
-      'left'
+      mindMapNodeSide(nodeId, {
+        nodes: data.value?.nodes,
+        connections: data.value?.connections,
+      }) === 'left'
     const outward: 'left' | 'right' = isLeftBranch ? 'left' : 'right'
     const inward: 'left' | 'right' = isLeftBranch ? 'right' : 'left'
 

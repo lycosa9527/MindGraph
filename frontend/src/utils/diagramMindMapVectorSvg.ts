@@ -4,6 +4,7 @@
 import { renderMindMapVectorEdges } from '@/utils/diagramMindMapVectorEdges'
 import type { MindMapVectorSnapshot } from '@/utils/diagramMindMapVectorModel'
 import { renderMindMapVectorNode } from '@/utils/diagramMindMapVectorNodes'
+import { layoutMindMapCanvasMode } from '@/utils/mindMapCanvasMode'
 
 const VIEW_PADDING = 24
 
@@ -45,7 +46,7 @@ export function buildMindMapVectorSvg(snapshot: MindMapVectorSnapshot): MindMapV
   const edges = renderMindMapVectorEdges({
     connections: snapshot.connections,
     nodes: snapshot.nodes,
-    canvasMode: snapshot.canvasMode,
+    canvasMode: layoutMindMapCanvasMode(snapshot.canvasMode),
     diagramStyleId: snapshot.diagramStyleId,
     outlineWireframe: snapshot.outlineWireframe,
     topicActualWidth: snapshot.topicActualWidth,

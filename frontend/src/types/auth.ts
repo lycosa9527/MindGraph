@@ -71,6 +71,10 @@ export interface User {
   educationStage?: string | null
   /** Persisted mind-map 专业程度 id; null = unset (defaults to general) */
   aiContentLevel?: string | null
+  /** V3 ribbon classic (full) height; false / unset = simplified */
+  v3RibbonClassic?: boolean
+  /** Last V3 ribbon tab id (file|home|design|review|ai) */
+  v3RibbonTab?: string | null
   /** False for overseas email accounts: Simplified Chinese (`zh`) UI is not available */
   allowsSimplifiedChinese?: boolean
   /** False for quick-registration users until they set a known password (SMS) */
@@ -127,6 +131,8 @@ export interface BackendUser {
   match_prompt_to_ui?: boolean
   education_stage?: string | null
   ai_content_level?: string | null
+  v3_ribbon_classic?: boolean | null
+  v3_ribbon_tab?: string | null
   allows_simplified_chinese?: boolean
   login_password_set?: boolean
   thinking_coins?: {

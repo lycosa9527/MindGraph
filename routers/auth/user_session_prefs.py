@@ -23,6 +23,8 @@ def user_preference_fields(user: User) -> dict[str, Any]:
         "allows_simplified_chinese": _bool_pref(user, "allows_simplified_chinese", True),
         "education_stage": getattr(user, "education_stage", None),
         "ai_content_level": getattr(user, "ai_content_level", None),
+        "v3_ribbon_classic": bool(getattr(user, "v3_ribbon_classic", False)),
+        "v3_ribbon_tab": getattr(user, "v3_ribbon_tab", None),
     }
 
 

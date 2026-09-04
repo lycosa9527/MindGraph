@@ -241,7 +241,7 @@ export function applyMindMapStylesByPath(
   previousDepthByPath?: Map<string, number>,
   canvasMode: MindMapCanvasMode = readEffectiveMindMapCanvasMode()
 ): Record<string, NodeStyle> {
-  const v2Visuals = canvasMode === 'v2'
+  const v2Visuals = canvasMode === 'v2' || canvasMode === 'v3'
   const nodeStyles: Record<string, NodeStyle> = {}
 
   // Classic: restore sanitized path styles only — never seed v2 theme defaults.

@@ -33,8 +33,8 @@ import type { NodeShape } from '@/utils/nodeShapeStyle'
 import { layoutMindMapSideLegacy } from './mindMapLegacyLayout'
 import type { MindMapBranchSpec } from './mindMapLegacyLayout'
 import {
-  estimateNumberedBranchBoxWidth,
   estimateNodeWidthForCanvasMode,
+  estimateNumberedBranchBoxWidth,
   estimateTopicNodeHeightForCanvasMode,
   estimateTopicNodeWidthForCanvasMode,
   measureBranchNodeHeightForCanvasMode,
@@ -501,9 +501,7 @@ export function findBranchByNodeId(
   }
 
   const topicChildIds = childrenMap.get('topic') ?? []
-  const rightIds = topicChildIds.filter(
-    (id) => mindMapNodeSide(id, { connections }) === 'right'
-  )
+  const rightIds = topicChildIds.filter((id) => mindMapNodeSide(id, { connections }) === 'right')
   const leftIds = topicChildIds.filter((id) => mindMapNodeSide(id, { connections }) === 'left')
 
   if (walkLevel(rightIds, rightBranches, rightBranches)) return result
@@ -558,7 +556,7 @@ export function loadMindMapSpec(
   hydrateMindMapBranchTree(leftBranches)
   const canvasMode: MindMapCanvasMode =
     options?.canvasMode ?? (readMindMapV2VisualDesignActive() ? 'v2' : 'legacy')
-  const v2Visuals = canvasMode === 'v2'
+  const v2Visuals = canvasMode === 'v2' || canvasMode === 'v3'
   const diagramStyleId =
     (spec._mindmap_diagram_style as string | undefined) ??
     (spec.mindmap_diagram_style as string | undefined)

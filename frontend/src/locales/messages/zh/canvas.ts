@@ -134,7 +134,6 @@ export default {
   'canvas.toolbar.mindMapAppearanceButtonLabel': '{style} · {theme}',
   'canvas.toolbar.mindMapAppearanceDiagramStyle': '导图样式',
   'canvas.toolbar.mindMapAppearanceThemeColor': '主题颜色',
-
   'canvas.toolbar.mindMapAppearanceNumbering': '编号',
   'canvas.toolbar.mindMapAppearanceNumberingEnable': '启用',
   'canvas.toolbar.mindMapAppearanceNumberingHide': '隐藏',
@@ -180,7 +179,7 @@ export default {
   'canvas.toolbar.aiGenerate': 'AI生成图示',
   'canvas.toolbar.aiGenerateTooltip': '根据中心主题生成',
   'canvas.toolbar.aiGenerating': '生成中…',
-'canvas.toolbar.professionalContent.label': '专业内容',
+  'canvas.toolbar.professionalContent.label': '专业内容',
   'canvas.toolbar.professionalContent.tooltip': '选择 AI 生成内容的受众难度',
   'canvas.toolbar.professionalContent.panelTitle': '期望的AI生成内容专业程度',
   'canvas.toolbar.professionalContent.guideTitle': '先选受众难度',
@@ -208,8 +207,7 @@ export default {
     '后续 AI 生成内容将按「通用」风格，不额外约束难度',
   'canvas.toolbar.professionalContent.notify.afterGenerated':
     '当前内容为「{current}」难度；后续我将按「{next}」为你辅助生成',
-  'canvas.toolbar.professionalContent.audienceLine':
-    '当前受众：{level}（来自顶部「专业内容」）',
+  'canvas.toolbar.professionalContent.audienceLine': '当前受众：{level}（来自顶部「专业内容」）',
   'canvas.toolbar.educationStage': '学段',
   'canvas.toolbar.educationStageTooltip': '选择学段，影响 AI 生成内容深度',
   'canvas.toolbar.educationStageClear': '通用',
@@ -498,6 +496,7 @@ export default {
   'canvas.toolbar.historyGroup': '撤销与恢复',
   'canvas.toolbar.redo': '恢复',
   'canvas.toolbar.redoShortcut': 'Ctrl + Y',
+  'canvas.toolbar.saveShortcut': 'Ctrl + S',
   'canvas.toolbar.selectBranchOrChild': '请先选择分支或子节点',
   'canvas.toolbar.selectCategoryOrLeafDelete': '请选择分类或子项节点（主题节点不可删除）',
   'canvas.toolbar.selectCauseOrEffectForAdd':
@@ -640,7 +639,8 @@ export default {
   'canvas.mindMapSlideOverlay.branch': '分支',
   'canvas.mindMapSlideOverlay.region': '幻灯片放映控制',
   'canvas.mindMapSlideOverlay.progress': '幻灯片进度，点击跳转',
-  'canvas.mindMapSlideOverlay.shortcuts': '点击画布或按 Space/→ 下一页 · ← 上一页 · Home/End 首尾页 · Esc 退出幻灯片',
+  'canvas.mindMapSlideOverlay.shortcuts':
+    '点击画布或按 Space/→ 下一页 · ← 上一页 · Home/End 首尾页 · Esc 退出幻灯片',
   'canvas.mindMapSlideOverlay.exit': '退出幻灯片',
   'canvas.mindMapSlideOverlay.collapse': '收起控制栏',
   'canvas.mindMapSlideOverlay.expand': '展开控制栏',
@@ -747,18 +747,19 @@ export default {
     '检测到手绘思维导图「{topic}」。已重建到画布，结构大纲已保存到文档总结。',
   'canvas.mindMapOneSentence.photoHanddrawnLocalReply':
     '检测到手绘思维导图「{topic}」。已在本机画布重建，结构大纲已保存到文档总结。图库同步未完成，请保存或重试。',
-  'canvas.mindMapOneSentence.photoOcrReply':
-    '已识别图片文字：\n{excerpt}\n\n全文已存入文档总结。',
+  'canvas.mindMapOneSentence.photoOcrReply': '已识别图片文字：\n{excerpt}\n\n全文已存入文档总结。',
   'canvas.mindMapOneSentence.photoFailed': '无法处理该图片。',
   'canvas.mindMapOneSentence.micDenied': '麦克风不可用，请检查浏览器权限',
   'canvas.mindMapOneSentence.ttsToggle': '朗读开关',
-  'canvas.mindMapOneSentence.kittyWelcome': '你好，告诉我你想画什么思维图示，或之后继续让我帮你修改。',
+  'canvas.mindMapOneSentence.kittyWelcome':
+    '你好，告诉我你想画什么思维图示，或之后继续让我帮你修改。',
   'canvas.mindMapOneSentence.switchDiagramType': '好的，正在切换到{type}…',
   'canvas.mindMapOneSentence.kittyGenerating': '好的，正在生成导图…',
   'canvas.mindMapOneSentence.kittyGenerateDone': '导图已生成。继续输入即可修改分支或节点。',
   'canvas.mindMapOneSentence.kittyGenerateFailed': '导图生成失败，请重试或调整描述。',
   'canvas.mindMapOneSentence.kittyEditFailed': '未能完成修改，请换个说法再试。',
-  'canvas.mindMapOneSentence.kittyEditStale': '这次修改未在画布生效（可能已过期或无变化），请再试一次。',
+  'canvas.mindMapOneSentence.kittyEditStale':
+    '这次修改未在画布生效（可能已过期或无变化），请再试一次。',
   'canvas.mindMapOneSentence.kittyEditVerifyFailed': '画布未能确认这次修改，导图已保持原样。',
   'canvas.mindMapOneSentence.kittyEditPersistFailed': '本地已改好，但同步失败，请稍后再试。',
   'canvas.mindMapOneSentence.kittyContextSyncFailed': '画布同步失败，请稍后再试一次。',
@@ -775,20 +776,23 @@ export default {
   'canvas.mindMapOneSentence.kittyEditAccessDenied': '当前没有权限修改这张导图。',
   'canvas.mindMapOneSentence.kittyEditCollabActive':
     '实时协作进行中，Kitty 暂不修改导图，以免和协作编辑冲突。',
-  'canvas.mindMapOneSentence.kittyEditStaleRevision': '导图刚被更新过，这次修改过期了。请再说一次你的修改。',
+  'canvas.mindMapOneSentence.kittyEditStaleRevision':
+    '导图刚被更新过，这次修改过期了。请再说一次你的修改。',
   'canvas.mindMapOneSentence.kittyEditTimeout': '这次修改超时了，导图可能未更新。请再试一次。',
   'canvas.mindMapOneSentence.kittyEditNoOwner': '暂时找不到可编辑的画布，请确认画布已打开后再试。',
   'canvas.mindMapOneSentence.kittyEditAddFailed': '抱歉，没能添加该节点。请确认名称后再试。',
   'canvas.mindMapOneSentence.kittyEditUpdateFailed': '抱歉，没能修改该节点。请确认名称后再试。',
   'canvas.mindMapOneSentence.kittyEditCenterFailed': '抱歉，没能更新主题。请再试一次。',
   'canvas.mindMapOneSentence.kittyEditDeleteFailed': '抱歉，没能删除该节点。请确认名称后再试。',
-  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed': '抱歉，没能为该分支自动补全。你可以再说一次「自动补全」。',
+  'canvas.mindMapOneSentence.kittyEditBranchCompleteFailed':
+    '抱歉，没能为该分支自动补全。你可以再说一次「自动补全」。',
   'canvas.mindMapOneSentence.kittyBranchCompleteDone': '这个分支补全好了。',
   'canvas.mindMapOneSentence.kittyBranchesCompleteDone': '这几个分支都补全好了。',
   'canvas.mindMapOneSentence.kittyBranchesCompletePartial':
     '有的分支补全好了，有的没成功。你可以再说一次「自动补全」。',
   'canvas.mindMapOneSentence.kittyWorking': '好的，正在处理…',
-  'canvas.mindMapOneSentence.kittyUnavailable': 'Kitty 暂不可用，请确认已开启 FEATURE_KITTY_AGENT。',
+  'canvas.mindMapOneSentence.kittyUnavailable':
+    'Kitty 暂不可用，请确认已开启 FEATURE_KITTY_AGENT。',
   'canvas.mindMapOneSentence.kittyConnectFailed':
     '暂时无法连接画布 Kitty。请确认电脑端已打开该导图，然后重试。',
   'canvas.mindMapOneSentence.clarifyChoices': '请选择一项',
@@ -839,7 +843,8 @@ export default {
   'canvas.mindMapDocumentSummary.sourceDeleted': '已删除来源，可以重新上传',
   'canvas.mindMapDocumentSummary.extractStarted': '正在提取内容…',
   'canvas.mindMapDocumentSummary.extractFailed': '无法从该文件提取文字',
-  'canvas.mindMapDocumentSummary.sourceBoundHint': 'Markdown 已就绪。可生成思维导图，或删除后来源后重新上传。',
+  'canvas.mindMapDocumentSummary.sourceBoundHint':
+    'Markdown 已就绪。可生成思维导图，或删除后来源后重新上传。',
   'canvas.mindMapDocumentSummary.deleteToRetry': '请先删除此来源，再重新上传、粘贴或粘贴网页链接。',
   'canvas.mindMapDocumentSummary.chatIntroLite':
     '下载文件读取工具，输入配对码，将微信或钉钉聊天记录发送到此图表。',
@@ -1013,8 +1018,7 @@ export default {
     '问你一句：提到「{title}」，你会联想到什么？图上给出了：{children}。我们对照看看（{index}/{total}）。',
   'canvas.mindClassroom.lecture.script.branch.socratic':
     '追问：「{title}」为什么要单独成支？它与子点「{children}」是什么关系？请先自己答，再对照导图（{index}/{total}）。',
-  'canvas.mindClassroom.lecture.script.branch.fast':
-    '「{title}」→ {children}。（{index}/{total}）',
+  'canvas.mindClassroom.lecture.script.branch.fast': '「{title}」→ {children}。（{index}/{total}）',
   'canvas.mindClassroom.lecture.script.branch.close_read':
     '精读「{title}」。请逐条看清下属信息：{children}。这一支在第 {index}/{total} 段，留意用词与层级。',
   'canvas.mindClassroom.lecture.script.branch.examples':
@@ -1027,8 +1031,7 @@ export default {
     '复习收束：把「{topic}」合上书能否复述主干？若某一支卡壳，回到导图那一支再过一遍即可。',
   'canvas.mindClassroom.lecture.script.closing.teach':
     '备课收束：面向「{audience}」讲「{topic}」时，可按导图顺序开场—展开—收束。你也可以把某一支拆成课堂提问。',
-  'canvas.mindMapSideToolbar.oneSentenceIntro':
-    '用一句话描述主题或修改要求，智能生成并调整导图',
+  'canvas.mindMapSideToolbar.oneSentenceIntro': '用一句话描述主题或修改要求，智能生成并调整导图',
   'canvas.mindMapSideToolbar.documentSummary': '文档总结',
   'fileCenter.intro':
     '资料包是为当前图表整理的来源集合。添加文件、笔记或网页后，图表会基于这些来源自动补全分支。',
@@ -1066,8 +1069,7 @@ export default {
   'canvas.mindMapSideToolbar.outlineEmpty': '暂无节点内容',
   'canvas.mindMapSideToolbar.aiGenerateTab': 'AI智能生成',
   'canvas.mindMapSideToolbar.outlineEditHint': '双击节点文字可以直接实时修改噢',
-  'canvas.mindMapSideToolbar.outlineIntro':
-    '用大纲编辑导图结构，拖拽调序，粘贴多行可批量添加',
+  'canvas.mindMapSideToolbar.outlineIntro': '用大纲编辑导图结构，拖拽调序，粘贴多行可批量添加',
   'canvas.mindMapSideToolbar.outlineDragHint':
     '拖拽调整顺序；放到节点上方/下方为同级换位，放到中间为子节点',
   'canvas.mindMapSideToolbar.outlinePasteHint': '选中节点后粘贴多行文本，可批量添加同级节点',
@@ -1288,4 +1290,62 @@ export default {
   'canvasPage.collabConnected': '已连接',
   'canvas.topBar.viewOnly': '仅查看',
   'canvasPage.collabParticipantsMore': '更多',
+  'canvas.v3.file': '文件',
+  'canvas.v3.nodes': '节点',
+  'canvas.v3.tools': '工具',
+  'canvas.v3.empty': '清空',
+  'canvas.v3.nodeCount': '节点: {count}',
+  'canvas.v3.aiModel': 'AI 模型',
+  'canvas.v3.resetView': '重置视图',
+  'canvas.v3.apply': '应用',
+  'canvas.v3.resetStyles': '重置样式',
+  'canvas.v3.backToGallery': '返回图库',
+  'canvas.v3.auto': '自动',
+  'canvas.v3.line': '线稿',
+  'canvas.v3.learn': '学习',
+  'canvas.v3.palette': '节点面板',
+  'canvas.v3.exportImage': '导出图片',
+  'canvas.v3.saveMg': '保存 .mg',
+  'canvas.v3.mindMate': 'MindMate AI',
+  'canvas.v3.editMode': '编辑模式: 激活',
+  'canvas.v3.fontFamily': '字体',
+  'canvas.v3.fontSize': '字号',
+  'canvas.v3.textStyle': '文字样式',
+  'canvas.v3.colorText': '文字',
+  'canvas.v3.colorFill': '填充',
+  'canvas.v3.colorStroke': '边框',
+  'canvas.v3.ribbon.tabFile': '文件',
+  'canvas.v3.ribbon.tabHome': '开始',
+  'canvas.v3.ribbon.tabDesign': '设计',
+  'canvas.v3.ribbon.tabReview': '审阅',
+  'canvas.v3.ribbon.tabAi': 'AI',
+  'canvas.v3.ribbon.expand': '展开功能区',
+  'canvas.v3.ribbon.collapse': '收起为工具栏',
+  'canvas.v3.ribbon.groupDocument': '文档',
+  'canvas.v3.ribbon.groupExchange': '导入导出',
+  'canvas.v3.ribbon.groupVersions': '版本',
+  'canvas.v3.ribbon.groupDanger': '重置',
+  'canvas.v3.ribbon.groupClipboard': '剪贴板',
+  'canvas.v3.ribbon.groupFont': '字体',
+  'canvas.v3.ribbon.groupParagraph': '段落',
+  'canvas.v3.ribbon.groupNodes': '节点',
+  'canvas.v3.ribbon.groupInsert': '插入',
+  'canvas.v3.ribbon.groupEditing': '编辑',
+  'canvas.v3.ribbon.groupStructure': '结构',
+  'canvas.v3.ribbon.groupTheme': '主题',
+  'canvas.v3.ribbon.groupStyle': '样式',
+  'canvas.v3.ribbon.groupNumbering': '编号',
+  'canvas.v3.ribbon.groupSketch': '线稿',
+  'canvas.v3.ribbon.groupLearn': '学习',
+  'canvas.v3.ribbon.groupOutline': '大纲',
+  'canvas.v3.ribbon.groupLanguage': '语言',
+  'canvas.v3.ribbon.groupCollaborate': '协作',
+  'canvas.v3.ribbon.groupPresent': '演示',
+  'canvas.v3.ribbon.groupGenerate': '生成',
+  'canvas.v3.ribbon.groupModel': '模型',
+  'canvas.v3.ribbon.groupAssist': '助手',
+  'canvas.v3.ribbon.groupOnNode': '节点',
+  'canvas.v3.ribbon.alignLeft': '左对齐',
+  'canvas.v3.ribbon.alignCenter': '居中',
+  'canvas.v3.ribbon.alignRight': '右对齐',
 } as const

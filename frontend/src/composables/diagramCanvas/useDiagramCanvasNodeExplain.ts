@@ -69,5 +69,6 @@ export function useDiagramCanvasNodeExplain(options: {
     handleExplainBubbleSizeChange,
     handleFloatingToolbarExplainNode,
     scheduleExplainBubbleMeasure,
+    openNodeExplain,
   }
 }

@@ -31,6 +31,9 @@ import { storeToRefs } from 'pinia'
 
 import { ElMessageBox } from 'element-plus'
 
+import V3PropertyPanel from '@/canvas-v3/V3PropertyPanel.vue'
+import V3StatusBar from '@/canvas-v3/V3StatusBar.vue'
+import V3TopToolbar from '@/canvas-v3/V3TopToolbar.vue'
 import {
   CanvasBottomAiCluster,
   CanvasChrome,
@@ -136,15 +139,16 @@ import { useKittyDesktopLlmModelPublish } from '@/composables/kitty/useKittyDesk
 import { useKittyDesktopSelectionPublish } from '@/composables/kitty/useKittyDesktopSelectionPublish'
 import { useKittyDesktopVoicePhase } from '@/composables/kitty/useKittyDesktopVoicePhase'
 import { useKittyVoiceSelectionBus } from '@/composables/kitty/useKittyVoiceSelectionBus'
+import { requestClassroomStop } from '@/composables/mindMap/classroomCommands'
 import {
   learningSheetNeedsPresentationConfirm,
   resumeLearningSheetAfterPresentation,
   suspendLearningSheetForPresentation,
 } from '@/composables/mindMap/useLearningSheetCustomMode'
-import { requestClassroomStop } from '@/composables/mindMap/classroomCommands'
 import { useMindClassroomLecture } from '@/composables/mindMap/useMindClassroomLecture'
 import { useMindMapSlidePresentation } from '@/composables/mindMap/useMindMapSlidePresentation'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { useMindMapV2Chrome, useMindMapV3Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
+import { registerV3RibbonPageBridge } from '@/composables/canvasPage/registerV3RibbonPageBridge'
 import {
   setPresentationDiagramEditLocked,
   setPresentationFullscreenRoot,
@@ -471,6 +475,8 @@ const showZoomControls = computed(() => {
 })
 
 const useMindMapV2 = useMindMapV2Chrome()
+/** V3 bubble-style chrome (old JS bars); the Vue Flow diagram stays V2. */
+const useMindMapV3 = useMindMapV3Chrome()
 
 eventBus.onWithOwner(
   'mindmap:canvas_mode_changed',
@@ -484,15 +490,18 @@ eventBus.onWithOwner(
 const fitViewOnInit = computed(() => {
   const type = diagramStore.type
   if (type === 'concept_map') return false
-  // V2 mind maps: one-shot fit on enter via useDiagramCanvasFit.handleNodesInitialized;
+  // V2/V3 mind maps: one-shot fit on enter via useDiagramCanvasFit.handleNodesInitialized;
   // keep false here so node/panel watches do not auto-refit while editing.
-  if (useMindMapV2.value) return false
+  if (useMindMapV2.value || useMindMapV3.value) return false
   return true
 })
 
 const featureKnowledgeSpaceFlag = computed(() => featureFlagsStore.getFeatureKnowledgeSpace())
+const isMindMapRibbonFamily = computed(() => useMindMapV2.value || useMindMapV3.value)
 const fileCenterEnabled = computed(() =>
-  DOC_SUMMARY_LITE_UI ? useMindMapV2.value : featureKnowledgeSpaceFlag.value && useMindMapV2.value
+  DOC_SUMMARY_LITE_UI
+    ? isMindMapRibbonFamily.value
+    : featureKnowledgeSpaceFlag.value && isMindMapRibbonFamily.value
 )
 const fileCenterActivePackage = createFileCenterActivePackage(fileCenterEnabled)
 provide(FILE_CENTER_ACTIVE_PACKAGE_KEY, fileCenterActivePackage)
@@ -500,7 +509,8 @@ const ragBranchExpandEnabled = computed(() => fileCenterEnabled.value && !DOC_SU
 useMindMapRagBranchExpand(ragBranchExpandEnabled)
 
 const isMindMapPresentationMode = computed(
-  () => useMindMapV2.value && presentationRailOpen.value && canUsePresentationTools.value
+  () =>
+    isMindMapRibbonFamily.value && presentationRailOpen.value && canUsePresentationTools.value
 )
 
 /** All diagram types use the simplified 4-tool presentation rail when open. */
@@ -601,7 +611,7 @@ const showMindMapShortcutGuide = computed(
 
 const showMindMapSideToolbar = computed(
   () =>
-    useMindMapV2.value &&
+    isMindMapRibbonFamily.value &&
     !presentationRailOpen.value &&
     !mindClassroomSlideDeck.value &&
     Boolean(diagramStore.data) &&
@@ -610,7 +620,7 @@ const showMindMapSideToolbar = computed(
 
 const showLearningSheetExportNudge = computed(
   () =>
-    useMindMapV2.value &&
+    isMindMapRibbonFamily.value &&
     !isMindMapPresentationMode.value &&
     !mindClassroomSlideDeck.value &&
     !isViewer.value
@@ -1134,6 +1144,16 @@ const { handleSaveKey } = useCanvasPageEditorShortcuts({
   isCollabGuest,
 })
 
+registerV3RibbonPageBridge({
+  handleSaveKey,
+  handleSnapshotRecall,
+  handleSnapshotDelete,
+  handleStartPresentationWithTier,
+  handleOpenCollab,
+  handleHandToolToggle,
+  handToolActive,
+})
+
 // LLM generation completed + cancel on start: handled by useDiagramAutoSave
 
 // Watch for diagram type changes in store
@@ -1551,8 +1571,24 @@ onUnmounted(() => {
       @exit="slidePresentation.exitSlideShow()"
     />
 
-    <CanvasChrome v-if="showCanvasChrome">
+    <CanvasChrome
+      v-if="showCanvasChrome"
+      :class="{ 'shadow-none': useMindMapV3 }"
+    >
+      <V3TopToolbar
+        v-if="useMindMapV3"
+        :auto-saved-status="autoSavedStatusText"
+        :is-dirty="diagramAutoSave.isDirty.value"
+        :is-saving="diagramAutoSave.isSaving.value"
+        :snapshots="snapshotHistory.snapshots.value"
+        :active-snapshot-version="snapshotHistory.activeSnapshotVersion.value"
+        :recalling-snapshot-version="recallingSnapshotVersion"
+        :workshop-code="workshopCode"
+        :is-collab-guest="isCollabGuest"
+        :is-viewer="isViewer"
+      />
       <CanvasTopBar
+        v-else
         :auto-saved-status="autoSavedStatusText"
         :slot-full-and-new-diagram="isSlotsFullAndNewDiagram"
         :is-dirty="diagramAutoSave.isDirty.value"
@@ -1677,6 +1713,7 @@ onUnmounted(() => {
           <MindClassroomLectureOverlay v-if="mindClassroomCanvasTour" />
         </div>
         <MindClassroomSlidePane v-if="mindClassroomSlideDeck" />
+        <V3PropertyPanel v-if="useMindMapV3 && !mindClassroomSlideDeck" />
       </div>
 
       <!-- MindMate floating panel - rounded card, inset to clear floating toolbars -->
@@ -1702,9 +1739,15 @@ onUnmounted(() => {
       </Transition>
     </div>
 
+    <V3StatusBar
+      v-if="useMindMapV3 && showBottomBar"
+      :zoom="canvasZoom"
+      :hand-tool-active="handToolActive"
+    />
+
     <!-- Bottom controls: shortcut guide (mind map) + floating glass toolbar card -->
     <div
-      v-if="showBottomBar"
+      v-if="showBottomBar && !useMindMapV3"
       class="canvas-bottom-controls absolute bottom-3 left-0 right-0 z-20 flex justify-center px-2 sm:px-4 pointer-events-none"
     >
       <div

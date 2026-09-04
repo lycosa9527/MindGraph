@@ -215,6 +215,7 @@ Notable feature flags (see `env.example` for full list):
 | `FEATURE_WORD_ADDIN` | `False` | Account Word add-in download + deploy zip (hosted `/word-addin/` shell stays on) |
 | `FEATURE_THINKING_COINS` | `False` | Trial-tier org thinking coin wallet |
 | `FEATURE_MINDMAP_V2_CANVAS` | `True` | Mind map v2 side-toolbar canvas (default layout; classic still available) |
+| `FEATURE_MINDMAP_V3_CANVAS` | `True` | Mind map V3 D3 canvas in Language settings (requires v2 flag; off clamps to v2) |
 | `FEATURE_MIND_CLASSROOM_SLIDE_DECK` | `False` | 思维讲堂「幻灯片讲解」(greyed + coming-soon until enabled) |
 
 Production hardening: set `COLLAB_FANOUT_ORIGIN_SECRET` (shared across workers), `ALLOWED_HOSTS`, and see [docs/architecture/production_security_deploy.md](docs/architecture/production_security_deploy.md).

@@ -28,12 +28,12 @@ import {
 } from '../specLoader'
 import { getEdgeTypeForDiagram } from './events'
 import { getMindMapCollapsedNodeIds, getMindMapCollapsedPaths } from './mindMapCollapse'
-import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import {
   type MindMapDisplayLayoutResult,
   computeMindMapDisplayLayout,
   mergeMindMapLayoutPositions,
 } from './mindMapDisplayLayout'
+import { isDiagramPresentationReadOnly } from './presentationReadOnlyGuard'
 import type { DiagramContext } from './types'
 
 export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
@@ -101,7 +101,9 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     const diagramType = ctx.type.value
     if (diagramType !== 'mindmap' && diagramType !== 'mind_map') return null
     if (!ctx.data.value?.nodes) return null
-    if (effectiveMindMapMode.value !== 'v2') return null
+    if (effectiveMindMapMode.value !== 'v2' && effectiveMindMapMode.value !== 'v3') {
+      return null
+    }
 
     // Hold stamped XY while measure-batch accumulates — live width/height maps
     // must not reshape Vue Flow node-by-node before flush.
@@ -228,7 +230,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     }
 
     if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-      const useV2Layout = effectiveMindMapMode.value === 'v2'
+      const useV2Layout = effectiveMindMapMode.value === 'v2' || effectiveMindMapMode.value === 'v3'
       const connections = ctx.data.value.connections ?? []
       const firstLevelBranchCount = connections.filter((c) => c.source === 'topic').length
 

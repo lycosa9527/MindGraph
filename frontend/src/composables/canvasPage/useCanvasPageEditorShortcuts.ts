@@ -11,10 +11,6 @@ import {
   tryCollabGuardedUndo,
 } from '@/composables/canvasPage/useCanvasCollabHistoryGuard'
 import { useMindMapSideToolbarState } from '@/composables/canvasToolbar/useMindMapSideToolbarState'
-import {
-  toggleLearningSheetAnswersVisibility,
-} from '@/composables/mindMap/useLearningSheetCustomMode'
-import { useMindMapV2Chrome } from '@/composables/mindMap/useMindMapV2Chrome'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useEditorShortcuts, useKeyboard } from '@/composables/core/useKeyboard'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -37,6 +33,11 @@ import {
   isMindMapCanvasEnterGuarded,
   shouldBlockCanvasEnterShortcut,
 } from '@/composables/mindMap/mindMapCanvasEnterGuard'
+import { toggleLearningSheetAnswersVisibility } from '@/composables/mindMap/useLearningSheetCustomMode'
+import {
+  useMindMapV2Chrome,
+  useMindMapV2FamilyVisual,
+} from '@/composables/mindMap/useMindMapV2Chrome'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, usePanelsStore } from '@/stores'
 import { useMindMapSubgraphPreviewStore } from '@/stores/mindMapSubgraphPreview'
 
@@ -65,6 +66,7 @@ export function useCanvasPageEditorShortcuts(options: {
 
   const panelsStore = usePanelsStore()
   const useMindMapV2 = useMindMapV2Chrome()
+  const useMindMapV2Family = useMindMapV2FamilyVisual()
   const { activeTool, closeActiveTool } = useMindMapSideToolbarState()
 
   function isTypingInInput(): boolean {
@@ -166,14 +168,13 @@ export function useCanvasPageEditorShortcuts(options: {
 
   function handleMindMapArrowKey(key: string) {
     if (isTypingInInput()) return
-    if (!useMindMapV2.value) return
+    if (!useMindMapV2Family.value) return
     if (!isMindMapDiagramType(diagramStore.type)) return
     const direction = mindMapArrowKeyToDirection(key)
     if (!direction) return
 
-    const rects = buildMindMapNavRectsFromLayout(
-      diagramStore.vueFlowNodes,
-      (nodeId) => diagramStore.getNodeDimension(nodeId)
+    const rects = buildMindMapNavRectsFromLayout(diagramStore.vueFlowNodes, (nodeId) =>
+      diagramStore.getNodeDimension(nodeId)
     )
     if (rects.length === 0) return
 

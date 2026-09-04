@@ -1,19 +1,14 @@
 import { eventBus } from '@/composables/core/useEventBus'
 import { DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
+import type { MindMapCanvasMode } from '@/stores/ui'
 import type { DiagramNode, DiagramType, MindGraphEdgeType } from '@/types'
 import { mindMapNodeSide } from '@/utils/mindMapLocation'
-
-import type { MindMapCanvasMode } from '@/stores/ui'
 
 import type { DiagramEvent, DiagramEventType, EventCallback, MindMapCurveExtents } from './types'
 
 const eventSubscribers = new Map<DiagramEventType | '*', Set<EventCallback>>()
 
-export function emitEvent(
-  type: DiagramEventType,
-  payload?: unknown,
-  bridgeToAppBus = true
-): void {
+export function emitEvent(type: DiagramEventType, payload?: unknown, bridgeToAppBus = true): void {
   // Quiet / preview sessions must not touch the shared subscriber map or app bus.
   if (!bridgeToAppBus) return
 
@@ -84,7 +79,7 @@ export function getEdgeTypeForDiagram(
   mindMapCanvasMode: MindMapCanvasMode = 'legacy'
 ): MindGraphEdgeType {
   if (diagramType === 'mindmap' || diagramType === 'mind_map') {
-    return mindMapCanvasMode === 'v2' ? 'mindmapOrthogonal' : 'curved'
+    return mindMapCanvasMode === 'legacy' ? 'curved' : 'mindmapOrthogonal'
   }
   if (!diagramType) return 'curved'
 
